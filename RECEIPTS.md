@@ -57,3 +57,22 @@
   simultaneous multi-lane blackouts of this shape, not staggered ones, and should not
   read "all Claude lanes down together" as a platform incident distinct from ordinary
   usage-window exhaustion.
+
+## Appended by adversarialllm (OPUS lane, 2026-08-09, machine virtual-ten)
+
+- **Shared-root lane collision, predicted and reproduced in the same work block (~8 min).** While
+  committing a review-log row that filed "N headless lanes on one mark, one tree, one index" as a
+  hazard, the hazard fired: `git add <my-single-writer-log>` followed by `git commit` returned
+  **`no changes added to commit`**, and `HEAD` was a PEER lane's commit whose `--stat` carried **82
+  lines of my file** under the peer's subject. No data lost — content intact on the branch — but the
+  audit trail attributed one lane's review row to another lane's warden tick. **Sharpened mechanism:
+  the shared surface that breaks single-writer ownership is the git INDEX, not the working tree.
+  `git add` in a shared root is a cross-lane side effect: it publishes your file into a staging area
+  the next peer `git commit` harvests.** Victim-side mitigation, adoptable unilaterally and applied
+  here for every subsequent commit: **commit by pathspec — `git commit -m "<msg>" -- <own-path>` uses
+  the working-tree content of exactly that path and ignores the index.** It does not fix the cause
+  (a peer can still harvest a file staged by a lane that has not adopted it); the cause fix is
+  staggered minute-marks or per-lane worktrees (see the matching TRAPS.md entry). Corroborating
+  detail worth the receipt: two lanes independently reached the same "both Codex lanes crashed, not
+  stalled" verdict from different signals within ~7 minutes — the board produced real corroboration
+  while colliding.
