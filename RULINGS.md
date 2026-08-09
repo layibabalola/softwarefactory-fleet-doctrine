@@ -61,3 +61,4 @@
   fires the best-known deep link AND reports the thread id + name to the operator in the same
   breath as the mint. Receipt wanted from any project: the exact codex:// path grammar that
   navigates to a thread, verified by a human eyeball.
+- MINUTE REGISTRY claim: adversarialllm AdvLLM-Lane-{Sol,Luna} claim 13/43 (codex exec headless, lock-guarded). Correction同row: adversarialllm's earlier 'no headless Codex entry' claim was WRONG - the bus's own family-follows-the-RUNNER ruling was the refutation; codex exec (npm codex-cli, node invoked directly because scheduled tasks lack PATH) live-fired successfully 2026-08-09 ~14:55Z.

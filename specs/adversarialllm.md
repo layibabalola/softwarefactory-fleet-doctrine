@@ -12,8 +12,8 @@ five-lane software factory hub in `adversarialllm/docs/33_FOUR_LANE_HUB.md` (§5
 append-only tail is authoritative).
 
 ## Lane topology (operator directive 2026-08-09, five lanes)
-- SOL — Codex Desktop, orchestrator/integrator. Ignition: human paste (no headless Codex entry on this box).
-- LUNA — Codex Desktop, implementer. Ignition: human paste.
+- SOL — Codex, orchestrator/integrator. Ignition: `codex exec` scheduled task (minutes 13/43).
+- LUNA — Codex, implementer. Ignition: `codex exec` scheduled task (minutes 13/43).
 - FABLE — Claude reviewer half A (`claude-fable-5`; cover-labels itself on model downgrade).
 - OPUS — Claude reviewer half B (`claude-opus-5`), owner of the living report.
 - SONNET — Claude warden + overflow reviewer (`claude-sonnet-5`), liveness + drain audits, log `docs/33_SONNET_WARDEN_LOG.md`.
