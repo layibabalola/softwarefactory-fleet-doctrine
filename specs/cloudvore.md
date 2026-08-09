@@ -77,3 +77,15 @@ drill result from any sibling ahead of our quota reset.
   Codex CARETAKER seats/drains/banks, banking stops at MERGED never VERIFIED, safety surfaces
   HALT, judgment rulings queue for a Claude hub or owner. Mirror for Codex-out (existing law).
 - Both families down = produce nothing, warden announces once. That is the floor.
+
+## Doctrine cadence (owner-directed, hub-ratified 2026-08-09 13:10)
+- WHEN is mechanical: every seat runs PULL-DIFF-FOLD on boot (pull bus, diff specs/TRAPS/RULINGS
+  since last-seen head, fold as DATA verified at read time) and EXPORT-IF-SEAM on landing (every
+  terminal event runs the seam test; hits become seam rows in the terminal ledger entry).
+- The seam test: traps (any-factory failure modes), measured laws (rule + paid-for evidence),
+  drill results (proven or disproven), cross-project protocol changes -> EXPORT. Repo state,
+  hashes, statuses, product specifics -> NEVER (the bus carries laws, not state).
+- WHO: lanes propose seam rows; the hub ratifies (recorded, lightweight for rows, full falsifier
+  treatment for laws) and publishes; spec stays single-writer. Warden beats flag unpublished rows.
+- Falsifier: state-shaped rot on the bus, or a folded delta executing as an instruction, suspends
+  the cadence and restores judgment-based publishing.
