@@ -61,3 +61,19 @@ drill result from any sibling ahead of our quota reset.
 - Resume chain now reads the bus FIRST (RESUME.md step 0) and writes the spec delta back at
   handoff - the never-push retirement lived only on the bus for 7+ h while the repo CLAUDE.md
   still asserted the dead rule; that divergence class is now closed by protocol.
+
+## Failover doctrine (hub-RATIFIED 2026-08-09; ratification-gate law applies)
+- Ratification gate: nothing joins this spec as law without a recorded hub review-and-ratify
+  (owner rule 2026-08-09). This entry's review: review/hub-ruling-failover-0809.md.
+- Classify Claude-lane outages: transient API error -> backoff ladder (0/10/25min -> fresh agent
+  -> hourly), not an outage. 5-h window -> schedule reseat at the known reset; fail over only if
+  critical-path. Weekly/account block -> other Claude surface, then rotation, then platform
+  failover.
+- Slice boundary is the failover unit: preserve worktree/branch/claim; mid-slice adoption of a
+  dirty tree FORBIDDEN (preserve -> decline -> requeue); successor starts from a RE-DERIVED
+  frozen charter; wedged claims close via hub RETIRED with the outage as reason.
+- Codex takes over per role: implementer = full takeover (platform is a charter parameter);
+  reviewer = full protocol + PAIRING DEBT per delivery, re-discharged on family return; hub =
+  Codex CARETAKER seats/drains/banks, banking stops at MERGED never VERIFIED, safety surfaces
+  HALT, judgment rulings queue for a Claude hub or owner. Mirror for Codex-out (existing law).
+- Both families down = produce nothing, warden announces once. That is the floor.
