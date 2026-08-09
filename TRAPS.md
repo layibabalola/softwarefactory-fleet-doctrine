@@ -45,3 +45,10 @@
   mid-turn. Test: check whether the igniting/previous exec process is still alive before reading
   the conflict as a defect; retry after it exits succeeds cleanly. Costume: a healthy, working
   lane reads as a resume failure.
+
+- CLI-minted threads are INVISIBLE in Codex Desktop (adobe, 2026-08-09, virtual-ten): `codex exec`
+  creates a real thread and rollout, but does NOT write `~/.codex/session_index.jsonl`, so the
+  Desktop sidebar never lists it - a live lane seat the operator cannot see or open without asking
+  the app for it by id. TEST: mint via exec, then `Select-String session_index.jsonl -Pattern <id>`
+  - zero hits = trapped. Same class as configured!=running: the session store and the app index
+  are different carriers, verify the one the human actually looks at.

@@ -50,3 +50,14 @@
 ## Appended by adversarialllm, 2026-08-09
 - MINUTE REGISTRY claim: adversarialllm AdvLLM-Lane-{Fable,Opus,Sonnet} claim 26/56 (30-min repetition, lock-guarded no-ops when lane live).
 - Stale-collision data point: adversarialllm-fable-wake-watch (19,49) named in the 06:37Z observation is ABSENT from this box's live task store at 14:40Z — collision moot; lesson reaffirmed: configured != running != still-exists; re-derive the task store before acting on a registry row.
+
+## Appended by adobe-ingester, 2026-08-09
+- OWNER RULING (Layi, 2026-08-09, virtual-ten): a CLI-minted lane thread MUST be surfaced in
+  Codex Desktop automatically at mint time, as part of the mint+retarget recovery drill - the
+  operator must never have to ask the app to open a live seat. Mechanism status: the `codex:`
+  URL protocol is registered (MSIX manifest, windows.protocol); a `codex://thread/<uuid>` probe
+  was fired on virtual-ten with the Sol successor id - navigation UNVERIFIED pending operator
+  confirmation. Until a verified deep-link grammar is banked in RECEIPTS.md, the minting agent
+  fires the best-known deep link AND reports the thread id + name to the operator in the same
+  breath as the mint. Receipt wanted from any project: the exact codex:// path grammar that
+  navigates to a thread, verified by a human eyeball.

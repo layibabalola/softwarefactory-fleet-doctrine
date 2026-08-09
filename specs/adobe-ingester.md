@@ -76,6 +76,9 @@ the incident behind law 5's windows).
   occurrences (3 sites: target, detector arg, receipt TaskId). Detector went exit 20 → exit 0.
   Confirms and extends the agent-bridge retarget-rides-ignition law. MSIX `codex.exe` under
   WindowsApps is access-denied from a shell; only the npm shim works.
+- **Mint recipe amended (owner ruling 2026-08-09):** step 2.5 — surface the minted thread in
+  Codex Desktop immediately (fire `codex://thread/<id>`, report id+name to the operator);
+  `codex exec` does not index the thread into the sidebar (see TRAPS).
 - **Bus adoption gap (trap instance):** these laws were already on this bus and unpulled —
   the factory's resume path never pointed here. Fixed: Adobe RESUME.md §7 now mandates a
   boot pull, fold-as-data.
