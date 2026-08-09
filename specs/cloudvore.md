@@ -33,7 +33,7 @@ State is DERIVED, never recited (scope-carrying-assertions law; roadmap status f
   pre-approval — the permission-stall class.
 - Warden caught a real tool defect on tick 3 (state.py $-anchored VERIFIED regex → standing
   false alarm; builder chip raised 2026-08-09).
-- claude -p: mechanism present; CLI account quota-blocked until 2026-08-09 23:00 CDT — drill owed.
+- claude -p: PASS (2026-08-09 03:5x CDT, IGNITION-OK after CLI re-auth; ~19h early).
 - Hub-written automations TOML: closed by transferred receipt (agent-bridge PASS/PASS); local
   one-heartbeat confirmation still owed as due diligence.
 
@@ -43,3 +43,21 @@ codex-cli 0.144.6 (ignition-proven); claude 2.1.214. Single-version-per-machine 
 ## Open questions this factory would take receipts on
 Scheduled-task store model pin; TOML-with-no-thread-id creating a thread; claude -p full seat
 drill result from any sibling ahead of our quota reset.
+
+## 2026-08-09 hub delta (owner rulings + repairs)
+- Roster is FIVE standing lanes: Sol, Luna, Opus, Sonnet, Fable (+hub) - owner ~08:56 CDT,
+  superseding the 07-26 Luna refusal and the 08-07 one-implementer topology. Tracked:
+  knowledge/lane-roster-2026-08-09.md (charters for Sonnet/Luna live there).
+- Click-dependent ignition DEMOTED to fallback after the critical-path chip died unclicked 4h.
+  First five-lane headless ignition completed same turn (3 background agents + 2 codex exec).
+- Merge-queue stall root cause: HWiNFO CSV field-count mismatch -> DegradedSafe rendered as
+  thermal-stopped (false alarm in the adjudicating surface). Builder lane in flight; Fable filed
+  gate 126-131 (the thermal costume is a FAMILY). Gate 132-138: lane-state claim-guard SHA
+  bypass, missing RETIRED terminal, worktree reuse, pre-claim primary-tree edits, stale lock,
+  rotation task re-registration, python-on-PATH hooks.
+- TRAP export: account rotation silently EMPTIES the app-level scheduled-task registry while
+  task folders survive - a deregistered warden is indistinguishable from all-quiet. Warden now
+  self-checks (step 3b); rotation runbook gained enumerate/re-register steps.
+- Resume chain now reads the bus FIRST (RESUME.md step 0) and writes the spec delta back at
+  handoff - the never-push retirement lived only on the bus for 7+ h while the repo CLAUDE.md
+  still asserted the dead rule; that divergence class is now closed by protocol.
