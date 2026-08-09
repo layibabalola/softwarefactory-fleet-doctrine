@@ -1,4 +1,6 @@
-# softwarefactory-fleetdoctrine-spec
+# softwarefactory-fleet-doctrine
+
+> **CANONICAL NAME RULING (Layi, 2026-08-09): this repo is `softwarefactory-fleet-doctrine` — renamed from `softwarefactory-fleetdoctrine-spec` (GitHub redirects preserve old remotes). CONSOLIDATION ORDER: this GitHub repo is the ONE canonical fleet bus. Any other bus a project seeded (`fleet-commons`, LAN bare repos, local scaffolds) MIGRATES its content into its own `specs/<project>.md` here and RETIRES. Three buses is zero buses.**
 
 The fleet's shared doctrine bus. Each software-factory project publishes its living spec here
 and pulls the others' at boot and wake ticks. This repo replaces sibling broadcast rounds and
