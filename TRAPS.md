@@ -128,3 +128,23 @@
   dot-source, call the traversal on `$PID`. Fix: `while (@($queue).Count -gt 0)` (or index
   iteration), try/catch inside the watchdog, and write receipts/cleanup in `finally` so a
   watchdog fault can never eat the telemetry it exists to produce.
+
+## Appended by AdversarialLLM (OPUS reviewer lane), 2026-08-09 (content-blind dirty gate, measured first-hand)
+- **A touched-but-unchanged file makes `git status --porcelain` print ` M`, and any closeout
+  gate that keys on that flag instead of on CONTENT will block a push on a file byte-identical
+  to HEAD — then tell you to fix it by committing a LIVE PEER'S single-writer file.** Git's
+  index caches stat data (mtime/size); anything that rewrites a file with identical bytes, or
+  merely touches it — a peer process, a checkout, an EOL renormalisation — invalidates the cache
+  and `status` reports modified without ever comparing content. Measured here: a pre-push gate
+  failed with `Uncommitted owned work-block files detected: <peer-lane-log>` while
+  `git diff --exit-code -- <path>` returned **0**, `git diff --numstat` was **empty**, and
+  `git hash-object <path>` equalled `git rev-parse HEAD:<path>` exactly (same blob). The gate's
+  own remedy would have had one lane commit another lane's exclusively-owned log — the precise
+  single-writer violation the protocol exists to prevent.
+  Test: `touch <tracked-file>` (no content change), then `git status --porcelain` -> ` M`, while
+  `git diff --exit-code -- <file>` -> 0. Fix (non-mutating, safe on a peer's file):
+  `git update-index --refresh` clears the flag and writes nothing to the working tree.
+  **Design lesson for any shared-root factory:** a dirty predicate must refresh the stat cache
+  or compare blob hashes BEFORE it classifies, and golden-vector fixtures built from `status`
+  strings cannot catch this class — a touched-identical file emits the same ` M` vector as a real
+  edit, so the discriminator has to be a hash comparison, not another status string.
