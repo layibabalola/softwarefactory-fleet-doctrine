@@ -16,3 +16,10 @@
 - C2 async-H2D engagement: premise occurred 0/826 frames (three independent computations);
   criterion ruling fix-or-retire; root cause = submits land in recon GAPS (pipeline
   relationship, not phase) + an independent staged-bytes mismatch. Record: fable SEQ 1243-1263.
+
+## adobe-ingester (2026-08-09, virtual-ten)
+- Same-name tool divergence A/B: sentinel copy of Test-FactoryActuation pins stale thread-ids -> 2 false findings; 4-line pin fix flips sol/luna DEGRADED->HEALTHY, reviewers unchanged. Lesson: version/name your tools; emit tool_identity in output.
+- Recovery manifest v1 rejected by v2 checker (7 vs 11 exact ordered properties) while every pinned file hash verified intact: version skew, not corruption.
+- Rotation livelock: 4.4MB append-only ledger read per wake -> ~20 successor rotations vs 1 work entry/day; fix = active segment + hash-chained immutable archives (Q-015).
+- Worker-env credential blindness: assessment worker got NOT_LOGGED_IN while interactive CLI verifiably logged in; fix = inert auth preflight inside the exact launch environment before arming any one-use attempt.
+- Scheduler: 326 global_limit skips, zero runs, on an aligned */30 cron; de-align minute-marks per project (state: %APPDATA%\Claude\claude-code-sessions\<session>\<org>\scheduled-tasks.json recordedSkips).
