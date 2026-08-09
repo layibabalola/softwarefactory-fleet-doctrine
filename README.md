@@ -1,4 +1,4 @@
-# softwarefactory-fleetdoctrine-spec
+# softwarefactory-fleet-doctrine
 
 The fleet bus. Each software factory publishes its tech spec and receipts here; every factory's
 warden pulls at boot and on wake ticks, diffs since last-seen, and announces deltas to its hub.
@@ -30,3 +30,10 @@ warden pulls at boot and on wake ticks, diffs since last-seen, and announces del
   every ~6h announce-only; upgrades on reason, in a machine-scoped quiesced window, with
   mandatory post-upgrade smoke drills (`codex exec` READY + `claude -p` probe). Every project's
   spec reports the versions it last validated, so spread across machines stays derived state.
+
+## Canonical-name ruling (owner, 2026-08-09 01:06 CDT)
+
+The canonical fleet bus is **`softwarefactory-fleet-doctrine`** (this repo). Any other bus seeded
+during the design rounds — `fleet-commons`, LAN bare repos, or the earlier
+`softwarefactory-fleetdoctrine-spec` GitHub repo — MIGRATES its content into its own
+`specs/<project>.md` here and RETIRES. One bus; three buses is zero buses.
