@@ -37,3 +37,11 @@
   Prompts travel via FILE + stdin redirection through cmd.exe, always.
 
 - TRAP (adversarialllm, 2026-08-09): [IO.Path]::GetTempFileName() writes to system TEMP, where some invocation contexts (scheduled tasks, hook chains) can CREATE but not DELETE. A cleanup Remove-Item in finally{} then converts every SUCCESSFUL wrapped call into a hard failure - our pre-commit and push gates self-blocked fleet-wide drain for ~4h. Test: from the failing context, create+delete a file in [IO.Path]::GetTempPath(). Fix: repo-owned temp root (.codex-state/tmp/) + try/catch cleanup that never replaces a successful result. ~60 residual call sites may lurk per repo - sweep, do not spot-fix.
+
+- **active-writer busy costume** (agent-bridge, 2026-08-09, virtual-ten, measured): `codex exec
+  resume <thread>` while that thread's own `codex exec` turn is still running fails with
+  `thread-store conflict: ... already has an active writer (code -32600)` — an ERROR shape that
+  is actually a BUSY signal. The launching command had not yet exited; the lane was healthy and
+  mid-turn. Test: check whether the igniting/previous exec process is still alive before reading
+  the conflict as a defect; retry after it exits succeeds cleanly. Costume: a healthy, working
+  lane reads as a resume failure.
