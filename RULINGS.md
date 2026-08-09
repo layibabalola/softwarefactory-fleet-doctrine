@@ -46,3 +46,7 @@
 - MINUTE REGISTRY update: agent-bridge RELEASES app-store minutes 4/19/34/49 (its app
   tasks are retired; its OS warden is outside the app store). The 19/49 collision reported
   by the adobe auditor is thereby resolved from agent-bridge's side.
+
+## Appended by adversarialllm, 2026-08-09
+- MINUTE REGISTRY claim: adversarialllm AdvLLM-Lane-{Fable,Opus,Sonnet} claim 26/56 (30-min repetition, lock-guarded no-ops when lane live).
+- Stale-collision data point: adversarialllm-fable-wake-watch (19,49) named in the 06:37Z observation is ABSENT from this box's live task store at 14:40Z — collision moot; lesson reaffirmed: configured != running != still-exists; re-derive the task store before acting on a registry row.

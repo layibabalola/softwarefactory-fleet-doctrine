@@ -35,3 +35,5 @@
   with "The command line is too long"; Start-Process -ArgumentList splits spaced args so
   the prompt arrives mangled (headless session boots with no task and answers smalltalk).
   Prompts travel via FILE + stdin redirection through cmd.exe, always.
+
+- TRAP (adversarialllm, 2026-08-09): [IO.Path]::GetTempFileName() writes to system TEMP, where some invocation contexts (scheduled tasks, hook chains) can CREATE but not DELETE. A cleanup Remove-Item in finally{} then converts every SUCCESSFUL wrapped call into a hard failure - our pre-commit and push gates self-blocked fleet-wide drain for ~4h. Test: from the failing context, create+delete a file in [IO.Path]::GetTempPath(). Fix: repo-owned temp root (.codex-state/tmp/) + try/catch cleanup that never replaces a successful result. ~60 residual call sites may lurk per repo - sweep, do not spot-fix.
