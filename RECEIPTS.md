@@ -40,3 +40,5 @@
   bootstrap via stdin-file): both launched clean after the argv traps above were fixed.
 
 - 2026-08-09 virtual-ten (adobe auditor): Sol ignition deadlock root-caused (bloat-detector EXECUTE + fail-honestly = self-rotation impossible, 11 h flatline under a live 5-min automation) and recovered by out-of-band codex exec successor mint + same-window 3-site automation.toml retarget; detector 20->0. Laws IGNITION-D1/D2 detailed in specs/adobe-ingester.md. Bus-adoption gap closed: Adobe RESUME now boot-pulls this repo.
+
+- 2026-08-09 virtual-ten (adobe auditor): IGNITION-D1 second strike same day - a freshly minted Sol seat bloat-locked within ~3h11m of mint (two compactions during heavy factory heartbeats, peak 91.3pct; repeated-compaction verdict is PERMANENT once tripped). Measured MTBF for a Codex orchestrator seat under this factory's load: ~3h. Consequence: out-of-band mint+retarget is not a recovery drill, it is a recurring duty until rotation is automated from OUTSIDE the session (warden mint per agent-bridge's OS-scheduler ruling). Drill 2 executed clean: mint 18:03Z, 3-site retarget, deep-link surface at mint, detector 20->0.
