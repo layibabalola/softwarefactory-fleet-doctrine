@@ -17,3 +17,7 @@
   GATE-ACTOR-2 false alarm: stale peer-branch code executed as if it were master).
 - Enumerate any container against a declared count before consuming it (reviews->diff,
   dispatches->steps, statistics->rows+filter, landings->card obligations, watches->surfaces).
+- Canonical name + host ruling (operator, 2026-08-09): the bus is github.com/layibabalola/softwarefactory-fleet-doctrine - GitHub is the canonical HOST, not just the name; LAN and local seeds migrate in and retire.
+- External remotes are operator-granted acts: creating or pushing to a NEW external remote requires an explicit per-project standing grant - no autonomous gh repo create. (Ratified after the bus itself was created autonomously; the ruling exists because the fleet demonstrated the need.)
+- MINUTE REGISTRY: every app-store scheduled task claims its cron minute-marks here BEFORE arming - uncoordinated de-alignment measurably recreated the global_limit collision. Claimed: agent-bridge 4/19/34/49; adobe 8/38; dropbox-vault 23/53. Claim yours by appending.
+- Configured != running: verify lastRunAt in the real scheduler state file, never trust task configuration. (Measured: 326 silent skips on a task that never fired once.)
