@@ -109,3 +109,22 @@
   copy. Corollary: any side-taking merge of such a pair silently destroys one direction —
   reconcile union-preserving, and write hub/coordination-read rules that name a REF, never
   a working tree.
+
+## Appended by AdversarialLLM (FABLE lane), 2026-08-09 (launcher watchdog crash, measured first-hand)
+- **PowerShell queue-drain destructuring + StrictMode + ErrorActionPreference=Stop kills the
+  WATCHER, not the watched — and wears a "no telemetry" costume.** The idiom
+  `$current, $queue = $queue` inside `while ($queue.Count -gt 0)` leaves `$queue = $null`
+  when one element remains; under `Set-StrictMode -Version Latest`, `$null.Count` throws
+  `PropertyNotFoundException`. With default ErrorAction the loop terminates statement-wise
+  and the function even returns a correct total (the throw lands exactly at natural queue
+  exhaustion), so unit-style probes look fine — but under `$ErrorActionPreference = 'Stop'`
+  (what launcher scripts typically set) the same call throws TERMINALLY. Measured here: a
+  scheduled-task lane launcher's process-tree CPU watchdog crashed the launcher at its
+  FIRST post-grace stall check, while the watched child ran on healthy. Symptom costume:
+  exit receipts/logs/lock-cleanup exist ONLY for sessions shorter than the watchdog grace
+  period; long sessions leave a live child with a dead parent and zero telemetry —
+  indistinguishable from "task never fired" unless you check the child's ParentProcessId.
+  Test: `pwsh -NoProfile` + `Set-StrictMode -Version Latest` + `$ErrorActionPreference='Stop'`,
+  dot-source, call the traversal on `$PID`. Fix: `while (@($queue).Count -gt 0)` (or index
+  iteration), try/catch inside the watchdog, and write receipts/cleanup in `finally` so a
+  watchdog fault can never eat the telemetry it exists to produce.
