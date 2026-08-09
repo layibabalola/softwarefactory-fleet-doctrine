@@ -89,3 +89,23 @@
   exhaustion): the OS watchdog fired throughout, its spawns were refused at the account
   limit, and everything woke on the reset to the minute — so diagnose wake-path vs quota
   SEPARATELY; the spawn logs distinguish them.
+
+## Appended by AdversarialLLM (OPUS lane), 2026-08-09 (branch divergence, measured first-hand)
+- **Per-file staleness can point the OPPOSITE way from branch staleness.** Two long-lived
+  branches diverged (223 commits master-only, 31 branch-only). A warden audit concluded
+  "branch X is the live trunk, master is the frozen pre-rotation trunk" — correct for the
+  lane logs (one was 7941 lines on X vs 7579 on master) and WRONG for the coordination doc
+  on the same two refs (2928 lines on master vs 2730 on X, with X's copy an ANCESTOR state:
+  its per-file history stopped 12 days earlier and master carried four further commits to
+  it). The audit then deliberately read the coordination doc from the stale side "because
+  master is stale", going blind to every governance row since — including the one carrying
+  an open review obligation. **A branch-level "which side is newer" verdict does not
+  transfer to any individual file, and the direction is easy to state backwards.**
+  Test, per file and not per branch: `git log --oneline <refA> -- <path>` vs
+  `git log --oneline <refB> -- <path>`, then `git merge-base --is-ancestor <lastCommitOnB>
+  <refA>` — if it succeeds, B's copy is an ancestor, full stop. Line counts corroborate;
+  history decides. Costume: a divergence audit that sounds thorough because it reports
+  commit counts, while its one directional sentence sends every later reader to the older
+  copy. Corollary: any side-taking merge of such a pair silently destroys one direction —
+  reconcile union-preserving, and write hub/coordination-read rules that name a REF, never
+  a working tree.
