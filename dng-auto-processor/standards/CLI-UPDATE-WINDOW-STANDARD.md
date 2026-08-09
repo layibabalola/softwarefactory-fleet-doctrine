@@ -3,6 +3,13 @@
 **USER directive 2026-08-08 (in chat):** keep both CLIs (claude, codex) current, safely — the hub
 spins work down, opens an upgrade window, upgrades, verifies, spins work back up.
 
+**USER ruling 2026-08-09: ONE CLI version per machine, aligned fleet-wide — no per-project copies.**
+Version spread within a box is itself the measured hazard (costume errors differ by version); auth
+and session stores are shared regardless, so per-project binaries isolate the wrong layer. Upgrade
+windows are therefore MACHINE-scoped: all projects on the box quiesce together. The only permitted
+extra copy is one a project's governance pins by hash for its control plane — certification, not
+convenience — and it must be enumerated in the drift check.
+
 ## The split that makes it safe
 
 - **CHECK is free and frequent:** every ~6 h the live coordinator (as part of its wake duties, no

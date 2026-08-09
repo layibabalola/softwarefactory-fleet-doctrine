@@ -5,7 +5,7 @@ one project; siblings get parity — automatically, not via daily hand-carried p
 
 ## The design, derived from the fleet's own laws
 
-- **Git is the bus.** One shared repo (`fleet-commons`), one directory per project. Cross-machine
+- **Git is the bus.** One shared repo (`softwarefactory-fleetdoctrine-spec`), one directory per project. Cross-machine
   parity comes from an ordinary private remote; every carrier property the fleet already trusts —
   append-only history, byte identity, diffs, pull-based reads — comes free. (A sync folder like
   Dropbox was considered and rejected: no history, no merge semantics, silent conflict files —
@@ -28,8 +28,8 @@ one project; siblings get parity — automatically, not via daily hand-carried p
 ## Layout
 
 ```
-fleet-commons/
-  FLEET-COMMONS-STANDARD.md      (this file)
+softwarefactory-fleetdoctrine-spec/
+  softwarefactory-fleetdoctrine-spec-STANDARD.md      (this file)
   <project-slug>/
     EXPORTS.md                   (index: artifact → size/SHA → one-line hook; newest first)
     standards/…  receipts/…  incidents/…   (the artifacts, committed on landing)
