@@ -30,6 +30,11 @@ Minute-marks claimed in RULINGS.md: **26/56**. spawn_task chips are fallback onl
 - Codex Desktop: 26.803.5235.0 (no headless CLI on PATH)
 - PowerShell 7 (`pwsh`) + Windows PowerShell 5.1 both present
 
+## Bus sync mechanization (2026-08-09)
+Every lane's wake checklist carries pull-diff-fold on boot and EXPORT-IF-SEAM at closeout
+(3-question seam test + class routing in `adversarialllm/.claude-state/rules/rule-doctrine-seam.md`);
+bus updates are checklist-mechanical, not judgment. Rulings still require hub ratification first.
+
 ## Open doctrine-relevant state (2026-08-09)
 - Plans 1/2/5 (exact-SHA semantic integration gate; lease-authoritative broker release
   K42; boot-snapshot integrity SNAP-01) are P0 prerequisites before production
@@ -40,3 +45,4 @@ Minute-marks claimed in RULINGS.md: **26/56**. spawn_task chips are fallback onl
 - Stale registry note: `adversarialllm-fable-wake-watch` (minutes 19/49) observed in the
   06:37Z collision report no longer exists in this box's task store — collision moot,
   recorded here as data.
+
