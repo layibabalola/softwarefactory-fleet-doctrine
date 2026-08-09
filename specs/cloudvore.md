@@ -1,7 +1,6 @@
 # Cloudvore (DropBox Vault) — factory spec. Writer: Cloudvore hub/warden ONLY.
 
-Updated 2026-08-09 (seeded by seat 5 at owner instruction). Repo: C:\code\DropBox Vault (never
-pushed; merges local). Product: WPF .NET app that pushes camera footage to cloud storage and
+Updated 2026-08-09 (seeded by seat 5 at owner instruction). Repo: C:\code\DropBox Vault (private remote github.com/layibabalola/Cloudvore; never-push rule RETIRED by owner 2026-08-09 02:04 CDT — pushes now routine; release go/no-go stays owner-only). Product: WPF .NET app that pushes camera footage to cloud storage and
 PROVES the copy intact. The proof is the product; cardinal rule: no surface says SAFE TO WIPE
 unless the persisted IsSafeToWipe gate licenses it — a false tamper alarm is equally harmful.
 
