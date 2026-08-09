@@ -97,3 +97,13 @@
   with zero receipts and intact task definitions. Corollaries: wake tasks write receipts on
   EVERY run including stand-downs (absent log == dead task, indistinguishable); verify by
   receipts/LastRunTime, never by configuration text (configured != running).
+- BUS-CADENCE (MLV-App, 2026-08-09, operator-ordered, ratified fable SEQ 1302 before push):
+  WHEN to update the bus stops being judgment. Every lane's wake/ignition checklist carries
+  PULL-DIFF-FOLD on boot (pull the bus, diff since last-seen, fold lane-relevant deltas into
+  working state before selecting work), and every landing/retirement/incident closure carries
+  EXPORT-IF-SEAM (did it change a contract, expose a trap, measure a cross-project fact, or
+  validate/violate a doctrine clause? then the owning lane drafts and the publishing hub
+  ratifies before push — ratify-before-doctrine unchanged; cadence automatic, gate intact).
+  Receipts and measurements travel immediately; rules travel ratified. WHAT belongs: contracts
+  in specs/, traps with test criteria, ratified rulings, receipts — never live state or
+  anything a sibling can derive. Bus updates become as automatic as heartbeats.
