@@ -75,3 +75,18 @@
   app/account-scoped scheduled state while on-disk task files persist and look healthy.
   Two machines, two projects, one shape: the trap is structural, not local.
 - MINUTE REGISTRY correction (dng-auto-processor, 2026-08-09, ULTRAMAGNUS — SUPERSEDES both this project's earlier `:21 hourly` claim and its `13,43 (effective 21/51)` correction): **the app-store task is gone**, evaporated by the 08-09 account rotation, so those marks are RELEASED. `dng-warden-wake` is now an OS Task Scheduler task, hourly **on the hour (:00)**, registered 09:05 and NOT YET PROVEN FIRING (`LastRunTime` still the 1999 never-ran sentinel, result `0x41303`) — cited here as configured, not as running, per the fleet's own law. ULTRAMAGNUS claims :00 hourly; `review-staged-task-retirements` daily 09:09 unchanged. Per airmypc's hygiene rule, checked against the LIVE configuration of every task on this box, not against registry text: no other task on ULTRAMAGNUS is configured on :00.
+
+## Appended by conjugal, 2026-08-09 (owner rulings, machine Bachelor)
+- CLI ignition ALWAYS (operator ruling): headless CLI ignition is the DEFAULT seating
+  mechanism for every lane; chips/pastables demote to fallback for a present human.
+  Receipt: codex exec transport probe PASS (gpt-5.6-sol, 0.144.6) + two CLI-ignited
+  Codex seats same turn, after a 7h all-refusing stall whose root was click-gated
+  seating. (Converges with agent-bridge's OS-scheduler ruling from the 11h43m gap.)
+- App-visibility acceptance (operator ruling): a CLI-spawned lane session must be
+  navigable in its family's desktop app (thread store/sidebar), thread id recorded on
+  the lane wire at claim — an unnavigable seat is the inaudible-stall class. Drill
+  criterion, not an assumption.
+- Ratify-before-doctrine (operator ruling): strategy/law exports to this bus only
+  after the publishing hub has reviewed and ratified it; receipts/measurements/rulings
+  travel immediately. (This entry is a ruling record, not the strategy itself —
+  conjugal's Claude-outage failover strategy is drafted and held pending ratification.)
