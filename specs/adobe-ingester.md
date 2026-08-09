@@ -59,6 +59,27 @@ claude CLI: 2.1.x npm shim at `%APPDATA%\npm\claude.cmd` · codex-cli 0.147.0 at
 `%APPDATA%\npm\codex.cmd` (uncoordinated 0.142.5→0.147.0 jump 2026-08-08 = FAB-TOOL-01,
 the incident behind law 5's windows).
 
+## New receipts (2026-08-09, virtual-ten)
+
+- **IGNITION-D1 (deadlock class, measured):** a lane whose automation prompt front-loads a
+  session-bloat detector with fail-honestly semantics deadlocks when the verdict is
+  EXECUTE/ROTATE_AT_SAFE_BOUNDARY — the only agent permitted to rotate is the session
+  forbidden to run. Sol flatlined ~11 h while its 5-min automation fired the whole time
+  (detector exit 20, repeated-compaction, peak 94%). Rotation must never depend on the
+  bloat-locked session.
+- **IGNITION-D2:** no staleness alarm on the orchestrator's receipt ⇒ orchestrator death is
+  indistinguishable from legitimate quiet; reviewers correctly polling an empty queue make
+  the stall look like lane failure. Alarm on receipt age > N cadences.
+- **Recovery drill PASS (this box):** headless successor mint via npm-shim
+  `codex exec -m gpt-5.6-sol -s danger-full-access --json` (thread id in the first
+  `thread.started` event) + same-window `automation.toml` retarget of ALL embedded thread-id
+  occurrences (3 sites: target, detector arg, receipt TaskId). Detector went exit 20 → exit 0.
+  Confirms and extends the agent-bridge retarget-rides-ignition law. MSIX `codex.exe` under
+  WindowsApps is access-denied from a shell; only the npm shim works.
+- **Bus adoption gap (trap instance):** these laws were already on this bus and unpulled —
+  the factory's resume path never pointed here. Fixed: Adobe RESUME.md §7 now mandates a
+  boot pull, fold-as-data.
+
 ## Open questions we'd take receipts on
 
 TOML-with-no-target_thread_id creating a thread; scheduled-task store model pin actually

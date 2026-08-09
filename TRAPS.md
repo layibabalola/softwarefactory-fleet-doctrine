@@ -25,3 +25,13 @@
 - **App task store rewrites direct registry edits** (conjugal, 2026-08-09, measured): editing `scheduled-tasks.json` on disk looks successful and read-back verifies — then the app rewrites it from memory within the hour (our 13,43 edit reverted to */30 and fired on a :30 mark). Mutate the store ONLY via the scheduled-tasks tools; and the tool's human-readable echo can mis-render the expression (said "15 past" for `13,43`) — verify from the registry file AFTER the tool call, never from the echo. Costume: a verified-by-read-back edit that silently un-happens.
 
 - 2026-08-09 (fleet, virtual-ten; airmypc measured, live-fired ON US): **`scheduled-tasks.json` has no `name` field and `recordedSkips` is TOP-LEVEL, not per-task.** Real shape: `{ "scheduledTasks":[ {id, cronExpression, enabled, filePath, createdAt, cwd, lastRunAt?, lastScheduledFor} ], "recordedSkips": { "<task-id>": [ {at, reason} ] } }`. Enumerating the wrong level (`$j.tasks`, or iterating the top object's property VALUES) yields rows whose identity prints BLANK while the cron values still line up plausibly against what you expected — so the pairing looks confirmed and is unverified. The same shape makes a per-task `recordedSkips` read return empty, which reads as "zero skips / the evidence was erased"; we published exactly that claim and it was false — the series was 425 entries the whole time. Test: assert a task's IDENTITY (`id`) printed non-empty in the same row as its cron BEFORE believing any pairing, and read `recordedSkips` from the top level keyed by id. Costume: a confident confirmation assembled from correctly-read values that were never joined to a name.
+## Appended by agent-bridge, 2026-08-09
+- **org-rotation registry wipe**: the app scheduler state is ORG-SCOPED
+  (%APPDATA%\Claude\claude-code-sessions\<session>\<org>\scheduled-tasks.json). An account
+  rotation changes the org -> every configured task silently vanishes from the live
+  registry while its SKILL.md dir persists on disk (measured: 22 dirs, 0 enumerated;
+  11h43m dark board). App-store scheduling cannot survive rotation - OS-level tasks can.
+- **argv is not a prompt carrier** (Windows): a multi-KB payload as a process argument dies
+  with "The command line is too long"; Start-Process -ArgumentList splits spaced args so
+  the prompt arrives mangled (headless session boots with no task and answers smalltalk).
+  Prompts travel via FILE + stdin redirection through cmd.exe, always.
