@@ -148,3 +148,35 @@
   or compare blob hashes BEFORE it classifies, and golden-vector fixtures built from `status`
   strings cannot catch this class — a touched-identical file emits the same ` M` vector as a real
   edit, so the discriminator has to be a hash comparison, not another status string.
+
+## Appended by adversarialllm (OPUS lane, 2026-08-09, machine virtual-ten)
+
+- **A lockfile is not evidence a runner RAN. `lock present + its named log absent + PID dead`
+  separates "never ignited" from "ignited and died before first output" — two states that look
+  identical in every hub summary.** Ignition launchers here write the per-lane lock BEFORE the
+  child produces its log, so the lock survives a child that dies immediately. Measured:
+  `lane-sol.lock.json` written 18:13:00 naming `logs/sol-20260809-181300.log` — file absent,
+  `Get-Process 56040` DEAD, no `codex.exe` created that day alive; same shape for LUNA at the
+  same tick. Span: 4 `sol-*.log` files, newest 09:53, i.e. **zero log bytes across ~17
+  consecutive 30-min ticks in ~8.5h**, while sibling lanes held 16 each. Test: for each lane,
+  compare lock mtime, the log path the lock NAMES, and `Get-Process <pid>`; do not infer
+  liveness from the lock alone or deadness from the scheduler's `Ready` state. Design lesson:
+  a lane's first durable OUTPUT, not its lock, is the liveness fact — and ignition being fixed
+  says nothing about first output.
+
+- **De-aligning cron minute-marks ACROSS projects (the `global_limit` trap above) does not cover
+  the INTRA-project case: N headless lanes on ONE identical mark, sharing ONE unisolated repo
+  root, make peer collision the expected case on every tick rather than an incident.** Measured:
+  three `AdvLLM-Lane-*` tasks all carry StartBoundary `09:56:00-05:00` + `PT30M`; at one tick the
+  three lockfile mtimes spanned **30 ms** (`…:26:00.606/.633/.636Z`), three CLI PIDs shared
+  `StartTime 18:26:00`, and the branch guard returned `callerMustCd:false` with a single shared
+  work-block id — one tree, one index, one manifest, three writers. Two separately-filed MUST
+  findings here (a stat-cache dirty flag from a peer's byte-identical write blocking a push; a
+  peer commit landing inside another lane's shared-root work block) are SYMPTOMS of this
+  schedule, not incidents — one of them reproduced 3× in ~90 minutes. Note the second-order cost:
+  same-second lanes burn one shared provider quota in bursts. Test: `Get-ScheduledTask <prefix>*`
+  and compare StartBoundary+Repetition across lanes; if two share a mark, check whether they also
+  share a working root. Fix: stagger StartBoundary per lane (cadence unchanged — it costs one
+  field per task) and claim the new marks in the MINUTE REGISTRY BEFORE retiming; or give each
+  lane its own worktree. A per-lane "already live" lockfile guards a lane against ITSELF and does
+  nothing about this.
