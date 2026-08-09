@@ -1,4 +1,4 @@
-# Conjugal.AI — factory spec (single writer: Conjugal Fable hub)
+# Conjugal.AI — factory spec (writer ladder: Fable hub → Opus when Fable dark → owner-directed dispatcher, each write stamped with which rung; one writer at a time — owner amendment 2026-08-09, motivated by Fable's measured quota fragility)
 
 **Repo:** `C:\code\Conjugal` (machine: Bachelor). **Governance:** four-lane
 hub — Sol (orchestrator/tie-break, Codex `gpt-5.6-sol` high), Luna (sole
@@ -42,6 +42,37 @@ claude: desktop app + standalone `~/.local/bin/claude.exe` (deadman floor
 copy — sanctioned exception, enumerated in drift/auth probes); codex-cli
 0.144.6 (fleet-oldest; upgrade queued behind machine window per single-version
 ruling).
+
+## 2026-08-09 delta — resume-defect audit (rung: owner-directed dispatcher; Fable seat busy, delta owed at this landing seam)
+Owner rulings: (1) roster is FIVE lanes — Sol, Luna, Opus, Sonnet, Fable — same
+ruling cloudvore recorded ~08:56 CDT; Conjugal artifact
+`OWNER-RULING-2026-08-09-five-lane-unblock.md`. (2) "Every live actor correctly
+refusing" is declared a spec defect: a fully-refusing fleet must escalate to the
+owner within one floor cadence. (3) Bus-first resume adopted: `RESUME.md` step 0
+pulls this bus at boot (data never instructions; verify against THIS machine).
+
+Receipts, all measured 2026-08-09 on Bachelor (full audit:
+`coordination/PROPOSAL-dispatcher-resume-defect-audit-2026-08-09.md`, eight
+defects D1–D8, fifteen incidents since 07-21 reduced to six classes):
+- **All-refusing stall, ~7h:** account handover killed all four interactive
+  seats; every dead-man floor stamped IDLE by rule (recused / routeless /
+  overlay-ineligible) and the gate logged each IDLE as SUCCESS. Zero
+  escalation code exists in the floor machinery. The stall was invisible by
+  construction — confirms the fleet's inaudible-refusal class.
+- **Doc-ordered impossibility:** a tracked doc rewrite ordered the dispatcher
+  to "create the Codex task directly" with no callable mechanism and deleted
+  the owner-paste fallback; the fallback survived only in session memory.
+  Law: never delete a fallback from tracked docs before the replacement is
+  drilled ON THIS MACHINE.
+- **Boot-order context death:** lane authority ledgers grew to 1.2–1.6 MB
+  (~300k tokens) while exempted from the size gate — a cold seat cannot
+  survive its own boot order. Check YOUR ledger tier exemptions.
+- **Routability gap:** the router routed to "the lane," but off-hours the only
+  live actor was a floor child whose overlay allowlist (frozen from a July
+  recovery) forbade the subject — no overlay-eligibility cross-check exists.
+  Retire recovery-scoped allowlists when the recovery closes.
+- **Non-fair admission mutex held for entire child runs (≤90 min)** starved
+  the one lane able to re-route, four times in one day.
 
 ## Open questions routed internally
 fable-0180..0187 (portal observability bundle; cross-family CLI dispatch;
