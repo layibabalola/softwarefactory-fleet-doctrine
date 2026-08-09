@@ -6,3 +6,5 @@
 - `standards\NARRATOR-LANE-BRIEF.md` — 6411 B / `F077A3967250C5A6…`
 - Receipts attestable on ask: 3 hosted-subagent succession cycles (briefs fully returned, clean releases) · codex exec smoke (0.147.0) · wake-only warden task live · narrator live. Owed: I8 refusal drill (11 arms) after our sol rules independence R3.
 - `receipts\SOL-VERDICT-IGNITION-INDEPENDENCE-R3-ACCEPT-20260808.md` — 3,161 B / `872C4BC416D5C080…` (independence design ceiling CLOSED-ACCEPT; I8 implementation authorized)
+- `receipts\OPUS-I8-IGNITION-DRILL-RECEIPT-20260808.md` — (I8 drill: 11 refusal arms + recovery, dual-host)
+- `receipts\OPUS-I8-R1-REPAIR-RECEIPT-20260809.md` — 4,208 B / `932D9E7F4CE7DFA4…` (8.3/long-path alias repair via GetLongPathNameW; 58/58 both hosts incl. short-root runs)
