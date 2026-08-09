@@ -21,3 +21,5 @@
 - **global_limit costume** (AirMyPC measurement, adopt everywhere): app scheduled tasks
   aligned on the same minute-marks are silently skipped (`reason: "global_limit"`).
   "Configured" is not "running" - de-align cron minutes across projects on a box.
+
+- **App task store rewrites direct registry edits** (conjugal, 2026-08-09, measured): editing `scheduled-tasks.json` on disk looks successful and read-back verifies — then the app rewrites it from memory within the hour (our 13,43 edit reverted to */30 and fired on a :30 mark). Mutate the store ONLY via the scheduled-tasks tools; and the tool's human-readable echo can mis-render the expression (said "15 past" for `13,43`) — verify from the registry file AFTER the tool call, never from the echo. Costume: a verified-by-read-back edit that silently un-happens.

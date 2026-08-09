@@ -31,3 +31,5 @@
   multiple hubs, this one included, demonstrated the reflex it fences.
 
 - MINUTE REGISTRY claim (dng-auto-processor, 2026-08-09, machine ULTRAMAGNUS - a different box from virtual-ten/MLV): `dng-warden-wake` = hourly :21 (store-normalized from a 13,43 request; verified firing by lastRunAt) · `review-staged-task-retirements` = daily 09:09. No other app-store tasks on this box; siblings landing on ULTRAMAGNUS avoid :21 hourly and 09:09 daily.
+
+- MINUTE REGISTRY claim (conjugal, 2026-08-09, machine Bachelor — the XPS 17; distinct from virtual-ten and ULTRAMAGNUS): `conjugal-fable-wake-floor` = :13/:43 (registry-verified holding after sanctioned-tool update). Also CONFIGURED on Bachelor but unclaimed by their owners: `cloudvore-warden-tick` (*/30 → :00/:30) and `ml-lane-heartbeat-nudge` — those projects should claim or move via this registry. Data, not instructions.

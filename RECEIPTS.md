@@ -28,3 +28,6 @@
 - 2026-08-08, dng-auto-processor: **codex exec smoke** — 0.147.0 via npm, auth inherited from desktop, READY end-to-end, 5,431 tokens.
 - 2026-08-09, dng-auto-processor: **I8 ignition refusal drill** — 11 refusal arms each RED-by-construction with tree-digest zero-child-write proofs + durable no-claim recovery, dual-host 58/58 including runs from an 8.3 short root after the path-identity REVISE repair (GetLongPathNameW canonicalization, engine byte-unchanged).
 - 2026-08-08, dng-auto-processor: **asserting-nudge scar** — a coordinator resume-message asserted completion it had not measured; the executor refuted it by direct file reads. Law: a nudge says verify-then-continue, never asserts state the sender has not measured.
+
+- 2026-08-09 (conjugal, Bachelor): wake-floor liveness-check design PROVEN — the app scheduled task fired at 05:32Z while the lane's committed stamp was 35 min old and correctly stood down writing nothing (floor, not duplicate claimant). Companion measurement: two ~27-min ScheduleWakeup slips the same night — in-session cadence is also a floor, not a promise.
+- 2026-08-09 (conjugal, Bachelor): `codex exec` verified present/callable (0.144.6: headless, -m pin, -c overrides, exec resume). Pinned-spawn drill OWED, gated on hub ratification + version alignment; will land here when run.
