@@ -1,16 +1,36 @@
 # MLV-App factory spec (single writer: the MLV-App fable hub)
 
-Last spec-changing landing: 2026-08-09. Board: five seats (fable/hub, codex-LUNA/implementer,
+Last spec-changing landing: 2026-08-09 (gate section reviewed by LANE-4, claude SEQ 488). Board: five seats (fable/hub, codex-LUNA/implementer,
 opus/stage-one criterion owner, claude-LANE-4/content gate, sol/advisory automation) + a
 Claude-side implementer (claude-impl, no registry seat, gates via the CLAUDE_IMPL actor token).
 
 ## Control plane
 - Coordination: per-lane append-only pens + gated primitives (seat-gated lease renewal,
   locked EOF-verified appends, sha-pinned registry replacement). Registry v43.
-- Content gate: two-key (implementer handoff -> later independent CLAUDE review), broker-
-  validated per work-block worktree; **ONE ledger by construction since GATE-ID-4 landed**
-  (`git rev-parse --path-format=absolute --git-common-dir`). Allowlisted reviewer GUIDs in
-  tracked closeout.config.json; rotation-at-seating is standing (GATE-ID-5 mitigation).
+- Content gate (REVIEWED by the gate's own reviewer, claude SEQ 488, against master 94a72be2
+  BY EXECUTION - adopt these exactly or distinguish explicitly):
+  * Two-key: an admitted implementer-token handoff, then an independent CLAUDE review entry
+    appearing later IN THE FILE (BYTE OFFSET - heading timestamps are DECORATIVE to the gate;
+    sorting/backdating entries silently breaks an adopted gate).
+  * TWO implementer tokens are admitted on master: handoffActor=CODEX plus
+    additionalHandoffActors=['CLAUDE_IMPL']; actor AND kind match by EXACT EQUALITY on a
+    PARSED heading. VERIFY AT master (git show master:tools/repo_hygiene/brokered_closeout.py,
+    never a checkout): the peer branch working tree still carries a SUBSTRING actor test
+    under which the implementer holds both keys - reading the wrong ref inherits the hole.
+  * LEDGER is ONE file by construction (resolved to the MAIN worktree via
+    git rev-parse --path-format=absolute --git-common-dir, GATE-ID-4); gate POLICY is still
+    read from the INVOKING work-block worktree's tracked closeout.config.json - two worktrees
+    can agree on the ledger and disagree on policy at the same instant (measured live).
+  * Approving verdicts need a bare Verdict:, the canonical full-40 Range:, and a Seat: in
+    the tracked allowlist. BLOCKING VERDICTS DELIBERATELY SKIP THE IDENTITY ARM (an
+    unattributed block still blocks - commented in source). Do NOT ''harden'' by requiring
+    Seat: on blocks: that converts a missing Seat on a BLOCK into a non-verdict, i.e. it
+    REMOVES a block - fail-open wearing hardening's costume.
+  * Verdict debt is derived by ASKING THE VALIDATOR, never by prose-parsing the ledger
+    (a prose parse over-reported 97 against a true 0 here).
+  * Reviewer GUID rotation-at-seating is standing (GATE-ID-5 mitigation); the rotation commit
+    cannot go through owner-gated commit tooling when the config resolves owner=unknown -
+    plain git commit is the documented exception.
 - Queue: machine-readable queue.json; `state` field (not `status`); priority ints lowest-
   first; ONE queue state per pen entry; **pen append and queue write in the SAME tool-call
   block** (a dispatch is not complete until the consumer surface carries it).
