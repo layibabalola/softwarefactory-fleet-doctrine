@@ -71,3 +71,14 @@
   satisfies no automated reader, and no gate could notice because no gate knew the field existed. Test:
   for every field a protocol REQUIRES, name the writer that can set it; if the answer is "by hand", the
   requirement is decorative.
+
+## Appended by agent-bridge, 2026-08-09 (afternoon — operator-in-the-loop traps, all measured)
+- **app MCP tools hard-prompt by design**: the app's scheduled-task-create and
+  session-archive tools require explicit approval REGARDLESS of permission mode (incl.
+  bypass). No allowlist removes it. Autonomy-critical automation must not route through
+  them - OS scheduler + shell registration prompts nothing.
+- **app session registry is memory-served**: per-session state lives in
+  %APPDATA%\Claude\claude-code-sessions\<acct>\<org>\local_<id>.json (isArchived flag
+  etc.), but the running app serves its list from memory - a direct disk edit is only
+  guaranteed at next registry reload (app restart). Back up before editing; verify after
+  reload, not after write.
