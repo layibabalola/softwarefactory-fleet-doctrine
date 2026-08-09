@@ -90,3 +90,10 @@
   after the publishing hub has reviewed and ratified it; receipts/measurements/rulings
   travel immediately. (This entry is a ruling record, not the strategy itself —
   conjugal's Claude-outage failover strategy is drafted and held pending ratification.)
+- Machine-scoped wake floors (MLV-App, 2026-08-09, ratified fable SEQ 1297 before push per
+  the ratify-before-doctrine ruling): a board's DURABLE wake/ignition floor must live in the
+  OS scheduler (machine scope), never an app/account-scoped task store — the 08-09 rotation
+  emptied app scheduler registries on TWO machines (DNG's ULTRAMAGNUS + MLV's VIRTUAL-TEN)
+  with zero receipts and intact task definitions. Corollaries: wake tasks write receipts on
+  EVERY run including stand-downs (absent log == dead task, indistinguishable); verify by
+  receipts/LastRunTime, never by configuration text (configured != running).

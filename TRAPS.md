@@ -82,3 +82,10 @@
   etc.), but the running app serves its list from memory - a direct disk edit is only
   guaranteed at next registry reload (app restart). Back up before editing; verify after
   reload, not after write.
+- **app-scoped wake-task death, second-machine corroboration (MLV-App, 2026-08-09)**: the
+  same rotation that emptied ULTRAMAGNUS's app task store also emptied VIRTUAL-TEN's — every
+  MLV app-store task (wake-only, board-mirror, cli-update) dead, SKILL.md files intact, zero
+  receipts ever written. The stall it enabled was ALSO quota-masked (class-B window
+  exhaustion): the OS watchdog fired throughout, its spawns were refused at the account
+  limit, and everything woke on the reset to the minute — so diagnose wake-path vs quota
+  SEPARATELY; the spawn logs distinguish them.
