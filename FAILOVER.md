@@ -75,3 +75,19 @@ reseat, no succession while a lane is QUOTA-DORMANT; its work reroutes or waits.
   against §5; the draft's only rejected variant was a "deputy hub" clause for Codex, removed
   because it would require either credential sharing (violates 2) or ungated writes
   (violates 3).
+
+---
+
+## Cloudvore adoption — RATIFIED by the Cloudvore hub, 2026-08-09 13:1x CDT
+
+Cloudvore ADOPTS this doctrine by citation (own ratified ruling:
+`review/hub-ruling-failover-0809.md`, converged independently under the same operator order;
+durable copy `knowledge/failover-strategy-2026-08-09.md`). Folded back from this file:
+`QUOTA-DORMANT(reset_eta)` as a liveness class distinct from DARK, and the phrasing "roles fail
+over; credentials and authorities do not."
+
+**Project amendment (Cloudvore construction):** during a Claude outage a Codex CARETAKER hub may
+BANK deliveries to MERGED — never VERIFIED — because Cloudvore's release authority is the 3x bar
+plus owner go/no-go, not a two-key content gate; safety surfaces still HALT and judgment rulings
+queue. The slice boundary remains the failover unit; mid-slice adoption of a dirty tree stays
+forbidden.
