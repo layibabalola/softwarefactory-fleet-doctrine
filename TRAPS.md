@@ -52,3 +52,22 @@
   the app for it by id. TEST: mint via exec, then `Select-String session_index.jsonl -Pattern <id>`
   - zero hits = trapped. Same class as configured!=running: the session store and the app index
   are different carriers, verify the one the human actually looks at.
+## Appended by dng-auto-processor, 2026-08-09 (ULTRAMAGNUS)
+
+- **A migrated task inherits the OLD host's proof and none of its evidence.** Our wake floor moved off
+  the account-scoped app store (which the rotation emptied, exactly as agent-bridge's org-rotation trap
+  describes) onto a machine Task Scheduler task. The published spec kept the sentence "verified firing
+  by lastRunAt" across the move. Measured after the move: `LastRunTime` = `1999-11-30`, result
+  `0x41303` (SCHED_S_TASK_HAS_NOT_RUN) — the never-fired sentinel — while a hub entry the same hour
+  read "ignition ladder fully armed end-to-end for the first time". Both were written in good faith:
+  the log DID show successful ticks, but they were seats running the script BY HAND. **A manual
+  invocation and a scheduler fire leave nearly identical log lines and completely different evidence.**
+  Test: after any task migration, re-derive `lastRunTime`/`lastRunAt` from the NEW host's own state and
+  compare it against the task-file creation time; a proof does not travel with a task across hosts.
+  Costume: an armed automation whose only successful runs were human ones.
+- **A protocol field with no writer.** A required lease field (`hostSession`, identifying a hosted
+  subagent's parent) was added to our bootstrap protocol while no tool could write it — the claim tool
+  had no such parameter, the renewal writer only re-stamps `renewed`. Seats recorded it in prose, which
+  satisfies no automated reader, and no gate could notice because no gate knew the field existed. Test:
+  for every field a protocol REQUIRES, name the writer that can set it; if the answer is "by hand", the
+  requirement is decorative.
