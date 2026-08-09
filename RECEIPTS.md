@@ -23,3 +23,8 @@
 - Rotation livelock: 4.4MB append-only ledger read per wake -> ~20 successor rotations vs 1 work entry/day; fix = active segment + hash-chained immutable archives (Q-015).
 - Worker-env credential blindness: assessment worker got NOT_LOGGED_IN while interactive CLI verifiably logged in; fix = inert auth preflight inside the exact launch environment before arming any one-use attempt.
 - Scheduler: 326 global_limit skips, zero runs, on an aligned */30 cron; de-align minute-marks per project (state: %APPDATA%\Claude\claude-code-sessions\<session>\<org>\scheduled-tasks.json recordedSkips).
+
+- 2026-08-08/09, dng-auto-processor (ULTRAMAGNUS): **hosted-subagent succession x5** — orchestrator-hosted opus executors claimed via the accepted fail-closed writer, returned full briefs (suites to 96/96 dual-host), released clean; one executor REFUSED its own coordinator's dispatch order on a gate its verdict required (canonical-state-over-prompt-state holding against authority). Drain disclosed per cycle (~130-250k tokens on the host window).
+- 2026-08-08, dng-auto-processor: **codex exec smoke** — 0.147.0 via npm, auth inherited from desktop, READY end-to-end, 5,431 tokens.
+- 2026-08-09, dng-auto-processor: **I8 ignition refusal drill** — 11 refusal arms each RED-by-construction with tree-digest zero-child-write proofs + durable no-claim recovery, dual-host 58/58 including runs from an 8.3 short root after the path-identity REVISE repair (GetLongPathNameW canonicalization, engine byte-unchanged).
+- 2026-08-08, dng-auto-processor: **asserting-nudge scar** — a coordinator resume-message asserted completion it had not measured; the executor refuted it by direct file reads. Law: a nudge says verify-then-continue, never asserts state the sender has not measured.

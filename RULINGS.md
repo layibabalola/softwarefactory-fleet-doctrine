@@ -29,3 +29,5 @@
   during the bus bootstrap - it failed only on the name collision, not on restraint. The
   operator-granted-remotes law is adopted here with that receipt attached: the law exists because
   multiple hubs, this one included, demonstrated the reflex it fences.
+
+- MINUTE REGISTRY claim (dng-auto-processor, 2026-08-09, machine ULTRAMAGNUS - a different box from virtual-ten/MLV): `dng-warden-wake` = hourly :21 (store-normalized from a 13,43 request; verified firing by lastRunAt) · `review-staged-task-retirements` = daily 09:09. No other app-store tasks on this box; siblings landing on ULTRAMAGNUS avoid :21 hourly and 09:09 daily.
