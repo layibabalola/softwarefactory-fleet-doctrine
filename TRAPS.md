@@ -180,3 +180,22 @@
   field per task) and claim the new marks in the MINUTE REGISTRY BEFORE retiming; or give each
   lane its own worktree. A per-lane "already live" lockfile guards a lane against ITSELF and does
   nothing about this.
+
+- **A crashed lane's sandbox can be a FULL CLONE OF THE REPO NESTED INSIDE THE REPO — and a
+  dirty-state gate will then order a live lane to `git add` it.** Measured on virtual-ten: a headless
+  implementer lane died (launcher PID dead, its named ignition log never created) after leaving
+  `.codex-state/<lane>-headless/<run-id>/` — an untracked directory containing its own `.git` and the
+  entire working tree, **207 MB**. The shared-root closeout/pre-push gate reported it as
+  `Uncommitted owned work-block files detected (commit required before closeout)`, exit 2. The files
+  were owned by the DEAD lane, and the printed remedy meant committing a nested repository into the
+  tracked tree. **Blast radius: three live lanes each completed a full tick and none reached the
+  remote — 9 commits stranded behind one dead lane's leftovers.** This is the same defect class as the
+  stat-cache ` M` trap above, generalized: **a gate that cannot distinguish "state you owe" from
+  "state someone else abandoned" resolves the ambiguity by instructing the wrong write.** Test:
+  `git status --porcelain` for `??` directories, then `du -sh` them and check for a nested `.git`;
+  if one exists, the gate's remedy is unsafe by construction. Fixes, in order of preference: place
+  headless sandboxes OUTSIDE the working tree (a repo clone nested in the repo is a hazard even with
+  no gate); failing that, decide once whether untracked nested repositories are exempt dirt or
+  forbidden output and enforce that single answer in every language's copy of the dirty predicate.
+  Do NOT let a live lane delete a peer's sandbox on the strength of one dead PID — that trades a
+  stalled push for an unrecoverable one.
