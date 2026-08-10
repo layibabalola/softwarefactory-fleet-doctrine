@@ -251,3 +251,63 @@
   General rule: **never derive a health signal by pattern-matching an agent's own output, because
   agents read and quote the very signals you are matching.** Classify structured exit state
   (exit code + a bounded stderr tail), never narrative.
+
+- **ADDENDUM 2, same trap, and it is no longer about narrative at all (adversarialllm OPUS,
+  2026-08-09, first-hand, reproduced byte-for-byte): A TRANSCRIPT CLASSIFIER MATCHED A LANE'S OWN
+  TOKEN COUNT AS AN HTTP 5xx.** The `api` error class was defined as
+  `'\b5\d\d\b|ECONNRESET|ETIMEDOUT|fetch failed|overloaded|internal server error'`. A completely
+  healthy monitoring tick (`exit=0`, full report, receipt `outcome:exit-clean`) was classified `api`
+  because its own metrics block contained `- **Context**: 36% (72,578 / 200,000 tokens)` — the comma
+  makes **`578` word-bounded on both sides**, so `\b5\d\d\b` matched. Enumerated every `\b5\d\d\b` in
+  that 3,907-byte log: **exactly one hit, and it was the token count.** Re-running the classifier
+  function over the same file reproduced the live receipt's evidence string character for character.
+  **The earlier lesson was "don't pattern-match narrative"; this is stronger — don't pattern-match
+  ARITHMETIC either.** Token counts, line numbers, byte sizes, durations and percentages land in the
+  500-599 band constantly, and every agent that follows a metrics discipline prints them by
+  construction. **Test: run your classifier over a healthy transcript that contains any number
+  between 500 and 599. If it emits a receipt, the class is a coin-flip on every well-behaved agent
+  you have.** Bare-numeral HTTP status matching must be anchored to status context
+  (`status 5\d\d`, `HTTP/\d\.\d 5\d\d`), never a loose `\b5\d\d\b`.
+
+- **REGEX TRAP, generic, found while diagnosing the above (adversarialllm OPUS, 2026-08-09,
+  first-hand, predicted then confirmed against three live records): INTERPOLATING AN ALTERNATION INTO
+  A CONTEXT-CAPTURE REGEX SILENTLY BINDS THE CONTEXT TO ONLY THE FIRST AND LAST BRANCHES.** The code
+  built its evidence snippet as `".{0,80}$pattern.{0,40}"` where `$pattern` was `a|b|c`. Because
+  alternation has the lowest precedence, that parses as `(.{0,80}a) | (b) | (c.{0,40})` — **leading
+  context for the first branch only, trailing for the last only, and NO context at all for anything
+  in between.** Confirmed against three real receipts whose classes matched three different branch
+  positions; every evidence string had exactly the predicted shape (first-branch matches ended
+  precisely at the match, last-branch matches began precisely at the match). **Consequence is
+  diagnostic, not functional, which is why it survives review: classification is correct while the
+  one human-auditable field in the record is truncated differently per class — and the missing
+  context is usually the part that would reveal the match was quoted prose.** Fix is one character
+  pair: `".{0,80}(?:$pattern).{0,40}"`. **Test: for each branch of your alternation, assert the
+  captured evidence contains text on BOTH sides of the match.**
+
+- **WINDOWS CLI TRAP, fleet-wide, fails OPEN (adversarialllm OPUS, 2026-08-09, first-hand):
+  `powershell -NoProfile -File script.ps1 -Paths 'a','b'` DELIVERS ONE STRING, NOT TWO, AND A
+  `[string[]]` PARAMETER ACCEPTS IT SILENTLY.** `-File` passes every token as a literal string, so
+  the PowerShell array literal never parses; the parameter binds the entire comma-joined blob —
+  quotes included — as a **single element**. Measured: a path-claim broker returned
+  `ok:true, status:paths-claimed, paths:["'a/b.js','c/d.jsonl'"]` — one element naming a path that
+  does not exist. **The danger is the direction of the failure: the caller believes it holds claims
+  it does not hold, and a mutual-exclusion mechanism that fails open is worse than none, because it
+  is trusted.** Workaround that works: **one path per invocation** (verified — each call then echoed
+  its path back correctly). Structural fixes: use `-Command` when you need real PowerShell argument
+  types, and make any script taking `[string[]]` validate that each element resolves to a real
+  tracked-or-present path and fail loudly when it does not. **Test: pass two paths and assert the
+  returned array has length 2.**
+
+- **ADDENDUM to the cross-account sandbox trap above — HOW IT WAS ACTUALLY CLEARED, and the new
+  hazard the fix created (adversarialllm, 2026-08-09, first-hand):** the Codex-side coordinator
+  bundled the unreadable foreign trees into git bundles (preserving them, not deleting), then moved
+  everything into the repo's **git-ignored** temp directory. That unblocked five lanes in nine
+  minutes and drained a 30-commit backlog — good, careful work. **But the gate is now green because
+  the state moved into the one subtree the predicate cannot see, not because the ownership question
+  was answered:** the 233 MB is still in the working directory, still owned by the other OS account,
+  still unreadable by git. **And no durable record of the move existed anywhere** — no ledger row, no
+  log entry, nothing committed; the sole evidence was directory mtimes and a runner log that itself
+  lived under an ignored path. **General rule: relocating blocking state into an ignored path is a
+  legitimate unblock and an illegitimate resolution. If you do it, write the row that says where the
+  data went and who may delete it — otherwise the next seat inherits 233 MB it cannot identify,
+  behind a gate that will now stay green no matter what accumulates there.**
