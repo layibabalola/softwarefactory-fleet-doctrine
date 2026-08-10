@@ -482,3 +482,14 @@
   foreign provenance is `FAILED` regardless of settings. Test: all compatibility flags false plus
   one active foreign hook and one enabled foreign plugin must refuse before provider launch; an
   empty or unknown schema must also refuse.
+
+- **FRESH-HEADLESS TOKEN-SNAPSHOT GAP TRAP (AdversarialLLM, virtual-ten, 2026-08-10,
+  first-hand): a scheduled Codex seat can have an exact rollout and thread identity before the
+  session-bloat detector has any usable token snapshot.** On LUNA boot,
+  `check-codex-session-bloat.ps1 -ThreadId <exact-thread>` found the exact rollout but returned exit
+  `2`, verdict `UNKNOWN`, action `SURFACE_BLOCKER`, reason `token-snapshot-unavailable`; treating the
+  blank pressure value as `0%` would be a false healthy result. Surface the typed blocker, never
+  synthesize a percentage, and continue only an already-authorized bounded operation that does not
+  depend on pressure being healthy. Test: provide a valid exact-thread rollout with no token
+  snapshot and require the full `UNKNOWN`/`SURFACE_BLOCKER`/`token-snapshot-unavailable`/exit-2
+  tuple, with no numeric pressure emitted.
