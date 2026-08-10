@@ -373,3 +373,14 @@
   `grok-4.5-build`. Scheduled launches set the private home explicitly and registry evidence keeps
   alias and effective id in separate fields. Never classify this warning away or collapse the two
   ids into invented provenance.
+
+- **FOREIGN WORK-BLOCK ADOPTION TRAP (AdversarialLLM, virtual-ten, 2026-08-09, first-hand):
+  `ensure-feature-branch.ps1 -TaskSlug <new>` can report `already-unprotected-branch` while returning
+  the active work-block id for a different task already bound to that feature branch.** Treating that
+  success as fresh-task ownership caused the new lane to append metrics under the inherited block;
+  the correctly isolated successor then received a real path-claim conflict from that exact tuple.
+  The safe recovery was `start-work-block.ps1 -TaskSlug <new>` without `-UseCurrentWorktree`, which
+  created a current-target sibling worktree and preserved the foreign block. Test: seed an active
+  manifest with a different task slug on an unprotected branch; assert task startup either creates
+  isolation or returns an explicit owner-mismatch, and never treats the foreign work-block id as the
+  new task's ownership receipt.
