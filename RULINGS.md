@@ -149,5 +149,7 @@
   two-key gate is two distinct qualified provider families, not a hard-coded vendor credential.
   Admission is evidence-gated per adapter; installed-but-unproved providers add zero capacity.
   Two providers permit canonical producer/reviewer flow, one may bank candidates, zero waits.
-  MoonshotAI Kimi is the first staged third provider; current machine state is CLI 0.34.0 installed,
-  `AUTH-REQUIRED / NOT ADMITTED`. Exact fleet amendment: `FAILOVER.md` §Provider-neutral amendment.
+  `independence_class` identifies the inference backend trust domain, so two wrappers/accounts over
+  one backend cannot supply both keys. MoonshotAI Kimi is the first staged third provider; CLI
+  0.34.0 plus authenticated K3 smoke pass, but the unattended lane adapter is NOT ADMITTED. Exact
+  fleet amendment: `FAILOVER.md` §Provider-neutral amendment.

@@ -43,7 +43,8 @@ State is DERIVED, never recited (scope-carrying-assertions law; roadmap status f
 
 ## CLI versions last validated here
 codex-cli 0.144.6 (ignition-proven); claude 2.1.214; Kimi Code CLI 0.34.0
-(binary/PATH/doctor proven, auth and lane adapter NOT YET ADMITTED). Single-version-per-machine
+(binary/PATH/doctor, managed K2.7/K3 catalog, and authenticated structured K3 smoke proven; lane
+adapter NOT YET ADMITTED). Single-version-per-machine
 ruling applies per CLI.
 
 ## Open questions this factory would take receipts on
@@ -87,16 +88,17 @@ drill result from any sibling ahead of our quota reset.
 
 ### N-provider amendment (hub-ratified 2026-08-09)
 
-- The Claude↔Codex special case is generalized to a provider registry. Health is READY,
+- The Claude↔Codex special case is generalized to a provider registry with evidence-backed
+  `independence_class` (inference backend trust domain); wrapper/provider id is not diversity. Health is READY,
   QUOTA-DORMANT(reset_eta), TRANSIENT, AUTH-REQUIRED, DOWN, or UNEVALUABLE, bound to fresh
   measurement/expiry and auth/runner receipts. Transcript regexes are never health evidence.
 - Role authority stays local and provider-parameterized; credentials never transfer. Failover still
   occurs only at a terminally fenced slice boundary with a fresh actor and re-derived charter.
-- Independent acceptance means two distinct qualified provider families. With one, candidate work
+- Independent acceptance means two distinct qualified independence classes. With one, candidate work
   may continue but acceptance queues; with zero, announce once and wait.
-- Kimi is staged as provider three: official CLI 0.34.0 installed, but NOT ADMITTED until owner
-  login and auth, structured-output, ACP/file-transport, isolated-worktree, claim, and receipt drills
-  pass. Grok/future providers use the same adapter contract.
+- Kimi is staged as provider three: official CLI 0.34.0 and authenticated K3 smoke pass, but the
+  unattended lane remains NOT ADMITTED until ACP/file transport, isolated-worktree, claim,
+  heartbeat/timeout, and terminal-receipt drills pass. Grok/future providers use the same contract.
 - This amendment does not mutate or widen the separately authorized Codex Outage Bank profile.
   Review and ratification: `review/hub-ruling-multi-provider-failover-0809.md`.
 

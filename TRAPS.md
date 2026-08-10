@@ -333,3 +333,14 @@
   every wake should use: `git fetch origin master` then `git merge --ff-only FETCH_HEAD`.
   **Test: run the pull form on a clone with two fetch refspecs; assert the fetch+merge form
   succeeds on the same clone.**
+
+- **KIMI RUNNER TRAP (Cloudvore, 2026-08-09, Kimi Code CLI 0.34.0/K3, first-hand): a useful
+  `CHANGES-REQUESTED` review can already exist in captured stdout when an external five-minute
+  timeout closes the pipe; the Node CLI then throws `EPIPE` and the launcher reports exit 124.**
+  Reading launcher exit alone loses delivered review evidence; accepting stdout alone can also
+  accept a truncated verdict. Use stream-json plus an explicit terminal receipt, heartbeat the
+  review, and classify timeout-without-terminal as UNEVALUABLE. Kimi `-p` also auto-approves ordinary
+  tools and carries its prompt in argv, so long unattended charters require a proven ACP/file
+  transport and containment adapter. Test: force the wrapper timeout after a verdict event but
+  before clean CLI exit; assert the adapter preserves the verdict as candidate evidence and refuses
+  terminal credit until the explicit receipt arrives.

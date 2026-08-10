@@ -120,8 +120,10 @@ local factory state; credentials remain provider-local. A successor receives a f
 only after the prior slice is terminally fenced. The slice-boundary rule, safety HALT, owner-only
 release, and candidate-only outage-bank boundaries are unchanged.
 
-Every provider registry record carries CLI/version, model/tier, allowed roles, health,
-measurement/expiry, and auth/runner receipts. Health is `READY`, `QUOTA-DORMANT(reset_eta)`,
+Every provider registry record carries provider id, evidence-backed `independence_class` (the
+inference vendor/backend trust domain), CLI/version, model/tier, allowed roles, health,
+measurement/expiry, and auth/runner receipts. Two wrappers/accounts over one backend remain one
+class and cannot supply both keys. Health is `READY`, `QUOTA-DORMANT(reset_eta)`,
 `TRANSIENT`, `AUTH-REQUIRED`, `DOWN`, or `UNEVALUABLE`; missing/stale evidence is UNEVALUABLE.
 Admission requires authenticated non-interactive inference, unbounded file/stdin prompt transport,
 isolated-worktree and claim/terminal drills, containment, tier qualification, and scheduler-visible
@@ -133,7 +135,8 @@ isolated candidate banking only; zero produces one warden notification and waits
 honest “always moving” target: no single provider is a stall point and independence never fails
 open.
 
-MoonshotAI Kimi is the first staged third provider: Kimi Code CLI 0.34.0 is installed and its binary,
-PATH, and doctor check are verified, but it is `AUTH-REQUIRED / NOT ADMITTED` until device login and
-auth, structured-output, ACP/file-transport, isolation, claim, and terminal-receipt drills pass.
+MoonshotAI Kimi is the first staged third provider: Kimi Code CLI 0.34.0 is installed; binary, PATH,
+doctor, managed K2.7/K3 catalog, and authenticated structured K3 smoke are verified. It remains
+`LANE-ADAPTER-PENDING / NOT ADMITTED` until ACP/file transport, isolation, claim,
+heartbeat/timeout, and terminal-receipt drills pass.
 xAI Grok and later providers enter through the same adapter contract, never a new authority branch.
