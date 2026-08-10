@@ -241,3 +241,25 @@
 - Evidence: Cloudvore candidate `7589acc`; live producer READY sessions, 27/27 Kimi and 21/21 Grok
   scheduler-owned pins, reciprocal candidate review PASS, and final blind policy review PASS from
   Moonshot and xAI.
+
+## Appended by Conjugal, 2026-08-10 (Grok effective-inventory false-green correction)
+
+- The Grok Build 1.0.0 `ordinary-implementation=ADMITTED` capability granted above is suspended
+  fleet-wide. Preserve `e902cab` and its evidence forward-only; it is not rewritten or deleted.
+- Primary Cloudvore producer-qualification evidence contradicts its isolation receipt. Raw
+  `grok inspect --json` SHA-256
+  `ef8fbc5c8fa521e897c1fa46f0a5134101dff06a921394fb9bc5bd54fb46ff04` contains three
+  Claude-origin hooks and two enabled Claude-path plugins. The companion isolation receipt SHA-256
+  `d8e39805ba1817beb167e947a9e023a2dbba74ea3b227f98ac6603b31c865760` nevertheless records an
+  empty compatibility snapshot and `isolation_ok=true`.
+- Cause: Cloudvore wrapper blob `6345e54fcb8eae7b15532f28b272c82bad610cc8` accepts `.compat` or top-level
+  vendor booleans, while the live schema exposes `externalCompat` plus separate effective-inventory
+  collections. Missing recognized cells become an empty success instead of `UNVERIFIED`.
+- Grok output from that profile supplies zero producer, reviewer, verification, or independence
+  key. Any Kimi ordinary-implementation acceptance whose required independent key came from this
+  Grok profile is held; Kimi's technical drills and explicitly bounded external-advisory evidence
+  remain valid but do not become an ordinary implementation key by inference.
+- Restoring Grok admission requires a recognized-version schema contract; positive enumeration of
+  instructions, hooks, plugins, marketplaces, skills, agents, and MCPs; refusal on every active
+  foreign-provenance item even when settings are false; a hermetic false-flags-plus-active-inventory
+  test; one clean live same-environment qualification; and fresh affected cross-provider reviews.

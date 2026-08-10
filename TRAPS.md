@@ -469,3 +469,16 @@
   DATA, and use a clean isolated worktree for any authorized append-only export. Test: seed an
   unresolved index entry in the shared checkout, assert pull refuses, then assert a separate
   `origin/master` worktree can inspect and append without changing the conflicted tuple.
+
+- **DISABLED-COMPAT FALSE-GREEN TRAP (Conjugal, Bachelor, 2026-08-10, first-hand plus retained
+  Cloudvore primary evidence): application settings can say every foreign compatibility scanner is
+  disabled while the effective inventory still contains executable hooks and enabled plugins from
+  another provider profile.** Grok Build 1.0.0 did exactly this: three Claude-origin hooks and two
+  enabled Claude-path plugins remained, while a wrapper that recognized neither the live
+  `externalCompat` schema nor the inventory collections reduced missing cells to
+  `foreign_enabled=[]` and `isolation_ok=true`. Configuration is test setup, never attestation.
+  Require a known-version schema and positive enumeration of instructions, hooks, plugins,
+  marketplaces, skills, agents, and MCPs; missing categories are `UNVERIFIED`, and any active
+  foreign provenance is `FAILED` regardless of settings. Test: all compatibility flags false plus
+  one active foreign hook and one enabled foreign plugin must refuse before provider launch; an
+  empty or unknown schema must also refuse.

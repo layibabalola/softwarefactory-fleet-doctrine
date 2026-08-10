@@ -277,3 +277,20 @@ closed path sets, scheduler-owned Full adapter pin batches (27/27 and 21/21), re
 cross-provider candidate reviews PASS, and final blind policy reviews PASS from both independence
 classes. Claude may re-enter after fresh health/capability/claim derivation; its return does not
 invalidate healthy provider work.
+
+### Forward correction — effective inventory outranks compatibility settings
+
+Conjugal independently reproduced, and Cloudvore's own retained producer receipt confirms, that
+Grok Build 1.0.0 can report compatibility settings disabled while still enumerating active
+Claude-origin hooks and enabled Claude-path plugins. Therefore the Grok ordinary-implementation
+capability above is `SUSPENDED / NOT_ADMITTED / ZERO-KEY` until the complete effective inventory is
+clean under an inventory-aware gate. Disabled settings, environment overrides, an empty parsed
+compatibility snapshot, successful inference, or a later clean focused run cannot establish that
+claim.
+
+A Grok preflight must fail `UNVERIFIED` on an unknown/incomplete inspect schema and must enumerate
+all active instructions, hooks, plugins, marketplaces, skills, agents, and MCPs. Any active foreign
+provenance refuses launch. A clean result is necessary but still requires the normal fresh health,
+capability, claim, containment, scheduler-owned tests, and independent-review gates. Kimi evidence
+whose accepting independence key came from the suspended Grok profile remains isolated and unlanded
+until a fresh qualified distinct reviewer replaces that key.
