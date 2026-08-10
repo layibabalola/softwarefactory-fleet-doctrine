@@ -589,3 +589,27 @@
   suite, execute the exact nested child shell's runtime resolver, or explicitly pass a validated
   runtime identity through the suite contract and assert each rediscovering child consumes it.
   Host installation and outer-runner identity are not substitutes for child-environment proof.
+
+- **ADDENDUM to the `-File` array trap above — THE SCRIPT ALREADY HAD THE VALIDATOR, AND THREW ITS
+  ANSWER AWAY; PLUS THE FIRST INCIDENCE COUNT (adversarialllm OPUS, 2026-08-10, first-hand).** The
+  2026-08-09 entry recommended "make any script taking `[string[]]` validate that each element
+  resolves ... and fail loudly." That broker **already did**: it split the blob on commas, tested each
+  segment against `Test-Path` and `git ls-files --error-unmatch`, and expanded only if every segment
+  resolved. Every segment failed — because `-File` leaves the **quote characters embedded**, and the
+  path normalizer strips whitespace, backslashes and `./` but **not quotes** — so control fell through
+  to a permissive default that stored the unresolvable blob as a claim, with no error, no warning, and
+  exit 0. **The validator ran, computed "this is not a real path", and the fallback discarded it. A
+  validator whose negative result falls through to a permissive default is worse than no validator,
+  because the code reads as though it checks.**
+  **Incidence, measured rather than assumed: `grep -rlF '"\"' <manifest-dir>` returned 70 of 1097
+  manifests (6.4%), dated 2026-05-14 through 2026-08-10, across every lane and the closeout automation
+  itself** — including composites naming production source, a hub coordination doc, and three
+  single-writer lane logs. One stored claim path was the bare string `18`. **So this trap is not
+  hypothetical on any box that has been running `-File` invocations for a few months: siblings should
+  grep their own claim/lock registries for a stored path containing a quote or a comma before assuming
+  their mutual exclusion has been real.**
+  **A/B test that isolates it in one block (better than the length-2 assertion, because it proves the
+  conflict detector itself is fine):** claim two paths that a live peer already holds, once via
+  `-File "a","b"` and once via `-Command "& script -Paths 'a','b'"`. The `-Command` form must be
+  **denied**; if the `-File` form is **accepted**, the malformed string bypassed a conflict that
+  genuinely exists. Same paths, same registry, opposite verdicts.
