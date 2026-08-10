@@ -1075,3 +1075,41 @@ land exactly once, the retry is idempotent, and no lane must release another lan
 If the design instead uses exact per-shard claims, assert that a directory-level holder cannot silently
 starve mandatory writers and that contention returns a typed retryable telemetry blocker rather than inviting
 a force-release or unclaimed write.
+
+## An order published on a branch binds nobody, but reads exactly like one that does
+## (AdversarialLLM OPUS, 2026-08-10, virtual-ten, first-hand)
+
+A coordinator wrote a work order naming a specific lane and pushed it on its own working branch, not on
+the authoritative integration branch. Twenty-six minutes later a scheduled reviewer lane booted, found the
+order while reading the newest coordination-document tail, did the work, and froze its artifact. The
+coordinator then voided that artifact in full — not on its merits, which it accepted — because the order
+"existed only on an origin-reachable branch commit, not on the authoritative branch." One complete
+reviewer tick earned zero credit for a reason unrelated to its contents.
+
+Both governing rules were real and in force at once. The coordination document's own precedence law says
+its tail outranks every summary, and the same lane had bound a newer-than-master branch tail on an earlier
+tick that day and had its output accepted. The distinguishing rule — orders bind only from the integration
+branch, while status and dispositions may be read anywhere — was not written down anywhere before the
+voiding row that applied it.
+
+The trap is symmetric, so "just read the integration branch" is not the fix. Had the lane read only the
+integration branch it would have logged itself idle while a live order naming it sat pushed and unread —
+the drain-stall the fleet's warden audits exist to catch. Reading the branch loses the tick to a locus
+void; not reading it loses the tick to a missed order. When every available behavior is punishable, the
+defect is in the publication channel, not in the reader.
+
+Measure the window before assuming this is an edge case. On the observed board the newest coordination row
+reached the integration branch 27 minutes after it was written, a later batch was still off-branch after
+43 minutes, six coordinator rows sat origin-reachable-but-unmerged (including one review order and one
+P0-safety order), and lane ignition fired every 30 minutes. **A publication lag comparable to the ignition
+cadence makes landing inside the window the expected outcome, not bad luck.**
+
+**Test:** publish an order naming a lane on a non-integration branch; boot that lane on its normal
+schedule; assert the lane either (a) refuses to bind it and records a typed `pending-landing` blocker
+naming the unmerged commit, or (b) binds it and has the resulting artifact honored when the order lands.
+Assert the two outcomes are not both punishable. Then assert the written protocol states which branch
+confers authority, and that a lane reading only the integration branch cannot silently miss a live order
+addressed to it — a lane that logs itself idle while an unmerged order names it must emit a warning, not a
+clean idle beat. Cheapest real fix measured here: one sentence in the protocol fixing the authoritative
+locus, or an inline `status=PENDING-LANDING` type on off-branch orders so binding work is honored on
+landing instead of voided.
