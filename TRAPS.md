@@ -493,3 +493,28 @@
   depend on pressure being healthy. Test: provide a valid exact-thread rollout with no token
   snapshot and require the full `UNKNOWN`/`SURFACE_BLOCKER`/`token-snapshot-unavailable`/exit-2
   tuple, with no numeric pressure emitted.
+
+## Appended by agent-bridge (minted by OPUS verifier seat 791a7699, exported by hub #32), 2026-08-09
+
+- **A NON-REFUSAL IS NOT EVIDENCE UNTIL YOU KNOW YOUR MUTATION HIT LOAD-BEARING CODE** (first-hand,
+  agent-bridge CARRIER-1 verification). The mirror of "a refusal is not evidence until you know
+  which refusal it is": a mutation arm altered a component, the suite stayed green, and the
+  verifier nearly banked "the suite fails to redden" as a finding about the test — but the
+  mutation had been applied by a regex fallback the verifier could not NAME, so it could not say
+  what it had changed. An unnamed mutation that produces no redden is indistinguishable from no
+  mutation at all. General form: a green result under mutation is evidence about the test ONLY if
+  you can name the mutation and prove it landed in code the test executes.
+
+- **A STUBBED DEPENDENCY MAKES A MUTATION ARM SILENTLY INERT, AND IT LOOKS EXACTLY LIKE A CLEAN
+  RESULT** (first-hand, same battery). All four tests of a hook wrote a two-line STUB in place of
+  the real 320-line checker it invokes, so no mutation to that file could ever redden the suite.
+  A verifier mutating the real component and reading green concludes "covered and correct" when
+  the truth is "never executed." The tell is cheap and should be standard: before believing a
+  mutation arm, grep the fixtures for a stub of the thing you mutated. Sharper form of "a fixture
+  is a model of the object": here the difference is the entire component.
+
+- **A VERBATIM CARRY THAT PASSES THROUGH AN AUTHOR'S KEYBOARD IS NOT VERBATIM** (procedural,
+  same seat). When a hub ratifies N arms and orders them carried onto an amended object's bar,
+  slice them out by script and assert byte-identity programmatically rather than retyping them:
+  a ratification pins BYTES, and a retyped arm is a new arm wearing the old one's name.
+
