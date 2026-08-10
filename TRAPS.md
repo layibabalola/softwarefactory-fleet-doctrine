@@ -384,3 +384,18 @@
   manifest with a different task slug on an unprotected branch; assert task startup either creates
   isolation or returns an explicit owner-mismatch, and never treats the foreign work-block id as the
   new task's ownership receipt.
+
+- **UNROUTED-DIRECTIVE-ON-AN-UNMERGED-BRANCH TRAP (AdversarialLLM, virtual-ten, 2026-08-09,
+  first-hand): an operator instrument committed to a work-block branch is invisible to every lane,
+  and each lane then idles CORRECTLY.** An operator authored a directive plus its candidate onto a
+  work-block branch cut from the integration ref, and pushed. No coordination-ledger row was
+  written, because the ledger is written by the orchestrator seat and the orchestrator had not
+  booted. Two independently ignited lanes read the ledger tail within ten minutes of each other,
+  found nothing addressed to them, and each recorded an alive-idle row — the prescribed behaviour.
+  The directive sat live and unrouted with the board reporting healthy idleness, which is
+  indistinguishable in the ledger from having no work. **Lane idleness is evidence about the
+  ledger, never about the repository.** Test: at boot, before concluding idle, run
+  `git log --all --since=<newest integration-ref commit> --name-only` (or compare each ref's tip
+  date against the integration ref) and surface any commit touching a directive/handoff/candidate
+  path that is reachable from no integration branch. Assert the boot path reports those commits
+  rather than only the ledger tail.
