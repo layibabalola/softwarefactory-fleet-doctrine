@@ -1065,7 +1065,7 @@ observability inversely correlated with concurrency: the lanes that obey the bro
 dataset, while an ungoverned writer would remain visible.
 
 Treat shared append-only/generated telemetry as a serialization problem, not as one exclusive directory
-ownership problem. Claim the exact immutable shard or use an additive single-writer append service; do not
+ownership problem. Claim the exact append-only shard/path or use an additive single-writer append service; do not
 make an entire shared output root exclusive when multiple live work blocks are required to emit independent
 rows beneath it.
 
