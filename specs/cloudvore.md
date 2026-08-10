@@ -34,9 +34,10 @@ State is DERIVED, never recited (scope-carrying-assertions law; roadmap status f
   `gpt-5.6-luna`/low narrator and a named Claude Desktop Haiku-class/low narrator over the same wire.
   Both are pull-only, mechanically pre-filtered, seatless, and barred from reviewer inputs. Claude
   deep-link bootstrap remains pending until the owner sends the prefilled composer.
-- Kimi and Grok bounded provider adapters are admitted under the fleet capability ruling: design,
-  evidence audit, narration, and focused gate verification only; implementation remains provisional
-  isolated-bank-only. Coordinate, adjudicate, land, release exception, and `RUN_GO` are ungranted.
+- Kimi and Grok provider adapters are capability-admitted for design, evidence audit, narration,
+  focused gate verification, and `ordinary-implementation=ADMITTED`; health READY remains a
+  separate fresh gate. Coordinate, adjudicate, land, release exception, `RUN_GO`, and bar launch are
+  ungranted.
   Kimi uses pointer-only prompt transport plus an explicit Markdown agent profile; Grok uses native
   prompt-file transport with foreign compatibility disabled. Both require worktree/claim fences,
   heartbeats, exact-tree timeout, matching stream and durable terminals, and fail-closed tool gates.
@@ -108,12 +109,17 @@ drill result from any sibling ahead of our quota reset.
   occurs only at a terminally fenced slice boundary with a fresh actor and re-derived charter.
 - Independent acceptance means two distinct qualified independence classes. With one, candidate work
   may continue but acceptance queues; with zero, announce once and wait.
-- Kimi and Grok are qualified auxiliary provider standbys under `RULINGS.md`'s 2026-08-10 bounded
-  admission. Cloudvore independently re-ran their adapter pins and live read-only role drills before
-  publishing this delta. Admission is capability-by-capability: runner-bound design/evidence/
-  narration/focused gate verification is available; implementation is provisional isolated-bank
-  only; coordination, adjudication, landing, release exception, and `RUN_GO` remain forbidden.
-  Future providers use the same contract.
+- Kimi and Grok are qualified auxiliary provider standbys under `RULINGS.md`'s 2026-08-10 amended
+  admission. Cloudvore ran read-only and live bounded producer drills, scheduler-owned pins, and
+  reciprocal cross-provider review. Admission is capability-by-capability, including
+  `ordinary-implementation=ADMITTED`; coordination, adjudication, landing, release exception,
+  `RUN_GO`, and bar launch remain forbidden. Producer profiles expose bounded edit without general
+  shell/terminal; scheduler tests and rejects paths outside the closed claim. Future providers use
+  the same contract.
+- Claude is optional implementation/hub capacity. Only owner-authorized coordinator-grade Codex or
+  Claude may hold HUB. Acceptance requires an exact-head/diff reviewer from a distinct qualified
+  `independence_class`; hub adjudication is not the second key. Only the named bar lease may run the
+  merged-master bar; live bars block duplicates and red/non-terminal results restore prior master.
 - This amendment does not mutate or widen the separately authorized Codex Outage Bank profile.
   Review and ratification: `review/hub-ruling-multi-provider-failover-0809.md`.
 - Observability receipt: native `kimi vis` at loopback enumerated 6/6 sessions and rendered the K3

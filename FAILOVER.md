@@ -249,3 +249,31 @@ or optional narration. Mechanical refresh is 30 seconds; human-facing cadence re
 within 60 seconds, changed-state digest at 10 minutes, advancing heartbeat at 30 minutes only without
 a milestone, possible-stall at 10 minutes without progress, completion within 60 seconds and silence
 while idle. Portal and narrator remain seatless and zero-authority.
+
+---
+
+## Cloudvore provider-neutral ordinary implementation — RATIFIED 2026-08-10 01:5x CT
+
+This section supersedes the bounded-admission section's isolated-bank-only implementation limit.
+Claude is optional capacity, not a prerequisite, for ordinary implementation or ordinary hub
+operation. Kimi Code 0.34.0 and Grok Build 1.0.0 carry the explicit capability
+`ordinary-implementation=ADMITTED`; Kimi/Grok still carry no hub, adjudication, landing, push,
+release, lifecycle-credit, `RUN_GO`, or bar-launch authority.
+
+Dispatch separately proves fresh health `READY` and the exact capability, plus frozen charter,
+fresh actor, clean linked worktree, mechanically matching uncontested project claim, and closed path
+set. The scheduler rejects extra changed paths and owns every test, mutation, admission run, and bar;
+provider producer profiles expose bounded edit but no general shell/terminal.
+
+Acceptance requires a durable review of the exact producer head/diff by a qualified reviewer with a
+distinct evidence-backed `independence_class`. A hub adjudicator is not the accepting reviewer and
+never supplies the second key. Without the independent reviewer, the candidate stays isolated and
+unlanded. Only an owner-authorized coordinator-grade Codex or Claude surface may hold the ordinary
+hub lease and true-merge; only its named bar-lease holder may start the merged-master bar. Live bars
+block duplicates; every red or non-terminal result restores exact prior master.
+
+Qualification evidence is Cloudvore candidate `7589acc`: live Kimi/Grok producer READY receipts,
+closed path sets, scheduler-owned Full adapter pin batches (27/27 and 21/21), reciprocal
+cross-provider candidate reviews PASS, and final blind policy reviews PASS from both independence
+classes. Claude may re-enter after fresh health/capability/claim derivation; its return does not
+invalidate healthy provider work.

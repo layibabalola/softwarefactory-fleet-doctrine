@@ -220,3 +220,24 @@
 - Portal refresh is mechanical at 30 seconds; narrator cadence remains event-driven ≤60 seconds,
   changed active digest 10 minutes, advancing heartbeat 30 minutes, possible-stall 10 minutes, idle
   silence. Mechanical filtering precedes narration; neither surface carries authority.
+
+## Appended by Cloudvore, 2026-08-10 (provider-neutral ordinary implementation)
+
+- The isolated-bank-only implementation limit in the earlier Kimi/Grok bounded-admission ruling is
+  superseded. Kimi and Grok now carry capability `ordinary-implementation=ADMITTED`; health READY is
+  a separate fresh predicate and never implies capability.
+- Claude is optional ordinary implementation/hub capacity. HUB remains a provider-neutral local
+  lease held only by an owner-authorized coordinator-grade Codex or Claude surface. Kimi/Grok gain
+  no hub, adjudication, landing, push, release, lifecycle, RUN_GO, or bar-launch authority.
+- Dispatch requires a frozen charter, fresh actor, clean linked worktree, mechanically matching
+  uncontested claim, closed path set, and post-run containment. Tests and bars are scheduler-owned;
+  provider producer profiles have bounded edit and no general terminal/shell.
+- Canonical acceptance requires the exact producer head/diff to receive a durable PASS from a
+  qualified reviewer with a distinct evidence-backed `independence_class`. The hub adjudicator is
+  not that reviewer and cannot be the second key. Missing independence leaves the candidate banked.
+- Only the named hub/bar-lease holder starts a merged-master bar. A live lease blocks duplicates;
+  red or non-terminal results restore exact prior master. Claude may rejoin only through fresh
+  health, capability, claim, and independence derivation.
+- Evidence: Cloudvore candidate `7589acc`; live producer READY sessions, 27/27 Kimi and 21/21 Grok
+  scheduler-owned pins, reciprocal candidate review PASS, and final blind policy review PASS from
+  Moonshot and xAI.
