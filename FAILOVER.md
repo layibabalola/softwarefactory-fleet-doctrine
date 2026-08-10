@@ -120,6 +120,12 @@ local factory state; credentials remain provider-local. A successor receives a f
 only after the prior slice is terminally fenced. The slice-boundary rule, safety HALT, owner-only
 release, and candidate-only outage-bank boundaries are unchanged.
 
+Every additional provider runner subscribes through the same PULL-DIFF-FOLD handshake before work
+and records the consumed doctrine commit in its terminal receipt. Provider-derived findings may
+propose doctrine amendments, but a runner never gains canonical doctrine authority and never races a
+doctrine write. Only the hub-authorized publisher transaction may commit and push after the proposed
+delta is independently reviewed and ratified.
+
 Every provider registry record carries provider id, evidence-backed `independence_class` (the
 inference vendor/backend trust domain), CLI/version, model/tier, allowed roles, health,
 measurement/expiry, and auth/runner receipts. Two wrappers/accounts over one backend remain one

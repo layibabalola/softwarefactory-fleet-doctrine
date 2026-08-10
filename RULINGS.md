@@ -153,6 +153,11 @@
   one backend cannot supply both keys. MoonshotAI Kimi is the first staged third provider; CLI
   0.34.0 plus authenticated K3 smoke pass, but the unattended lane adapter is NOT ADMITTED. Exact
   fleet amendment: `FAILOVER.md` §Provider-neutral amendment.
+- Provider doctrine subscription (owner clarification, 2026-08-09): every additional provider
+  runner performs PULL-DIFF-FOLD before work and records the consumed doctrine commit in its terminal
+  receipt. Provider-derived amendments are proposals only; runners never race doctrine writes or
+  inherit canonical authority. Only a hub-authorized publisher transaction may commit/push after
+  independent review and ratification. Kimi remains advisory-only until separately admitted.
 - Provider session portals (Cloudvore/Kimi, 2026-08-09, locally verified): every adapter records a
   session id and exposes a pull-only observer over native artifacts. The portal is seatless and its
   view is never liveness, provenance, or gate evidence. Kimi Code CLI 0.34.0 `kimi vis` successfully
