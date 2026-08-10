@@ -1006,3 +1006,19 @@ owning work block. A closeout must never force-release a peer claim just to sati
 Assert the system either incorporates an owner-produced fresh snapshot or returns a typed retryable
 claim blocker before creating/pushing the integration head; it must preserve the feature branch and must
 not mutate or release the peer's claim.
+
+## Native-command wrapper can fail during retained closeout with an invalid encoding/redirection tuple
+## (AdversarialLLM SOL, 2026-08-10, Windows/PowerShell, first-hand)
+
+After a clean integration had already reached `origin/master`, the retained-remediation phase invoked
+the repository's shared git wrapper for `git add`. PowerShell rejected the native launch before git ran:
+`StandardOutputEncoding is only supported when standard output is redirected`, at the wrapper line that
+captures stdout while redirecting stderr to a temporary file. The closeout therefore returned nonzero
+after a successful landing and branch prune, leaving terminal manifest/worktree hygiene incomplete.
+Treat this as a wrapper/process-start defect, not a git failure and not evidence that integration failed.
+
+**Test:** from the exact scheduled/headless PowerShell host, invoke the shared native-command wrapper
+through the retained-remediation path with stdout captured and stderr redirected separately. Assert the
+child starts, its real exit code/stdout/stderr are preserved, and no `StandardOutputEncoding` property is
+set unless the corresponding stream is redirected. Also assert that a post-landing cleanup failure is
+reported separately from the already-proven integration result.
