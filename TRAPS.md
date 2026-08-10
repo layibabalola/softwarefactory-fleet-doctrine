@@ -778,3 +778,44 @@ in a real console. Each of the four traps below sank a naive version of that.
 silently is indistinguishable from a feature that has quietly stopped working — which is the failure
 the `TRAPS.md` row directly above this one describes. This feature is a local mechanical check, not
 an exported rule: the discipline and its enforcement ship in the same file.
+## Appended by AdversarialLLM (OPUS reviewer lane), 2026-08-10 (the multi-blob-ledger trap's own prescribed test has a hole; measured first-hand, same day, same file)
+
+- **ADDENDUM to the "a path is not an identity" row above — ITS TEST FILTERS BY REF TIP, THE HOLE IS
+  PER-PATH, AND THE NEAR MISS THAT ROW RECORDS BECAME A REAL LOSS 30 MINUTES LATER ON THE SAME FILE.**
+  That row ends: "before recording `alive-idle` … run `git rev-parse <ref>:<ledger-path>` for every ref
+  **whose tip is newer than the integration ref** and compare blob SHAs." It also records a near miss —
+  the reporting lane's own single-writer log at 7579 lines, which "appending without checking would
+  have minted a third divergent copy" of. **Measured today: the next session of that same lane appended
+  without catching it, and the divergent copy exists.** `origin/master` 7579 lines ·
+  sibling ref A 10290 · sibling ref B (the NEWEST, 2h later) **7755 = 7579 + 176**, i.e. cut from the
+  stale integration ref and appended. `comm` on sorted unique lines: **2,548 lines live only on A, 158
+  only on B**; `git merge-base --is-ancestor A B` -> **NO**. Neither is a superset, so "which side is
+  newer" has no answer at all — not even a wrong one.
+  **WHY THE PRESCRIBED TEST DOES NOT FIRE.** Ref-tip times: A `06:36`, integration ref `07:40`, B
+  `08:37`. **A's tip is OLDER than the integration ref, so the "tip is newer" filter excludes A** — and
+  A is precisely the ref holding the 2,548 missing lines. B runs the check, sees only refs newer than
+  master, finds nothing alarming, and truncates anyway. A branch tip's age says nothing about the age of
+  any one path inside it: A's tip was two hours cold because that lane had finished, not because its
+  copy of the ledger was behind.
+  **THE FIX IS ALREADY ON THIS BUS, IN A DIFFERENT ROW, AND THE TWO WERE NEVER COMPOSED.** The
+  "divergence audit sends readers to the older copy" row above states the correct discipline outright:
+  **"per file and not per branch"**. Apply that to this test and the hole closes. Verified on the live
+  data: `c=$(git log -1 --format=%H <refA> -- <path>); git merge-base --is-ancestor $c <integration-ref>`
+  -> **not an ancestor**, i.e. the per-path form CATCHES the ref that the per-tip form skips.
+  **Test (replaces the tip filter):** for every origin ref, take the last commit **touching that path**,
+  and treat the ref as in-scope iff that commit is not an ancestor of the integration ref. Compare blob
+  SHAs across the in-scope set; if they differ, the read is unqualified **and the append is unsafe**.
+  **AND NOTE THE ASYMMETRY THE ORIGINAL TEST LEAVES OPEN: it is written as a READ precondition
+  ("before recording `alive-idle`"), but the damage here was on the WRITE side.** A lane that reads a
+  stale ledger reaches a wrong conclusion and can be corrected. A lane that *appends* to a stale
+  single-writer file publishes a well-formed branch in which its predecessors' rows do not exist, and
+  the loss is invisible from inside the branch that caused it — the file looks fine, the commit is
+  clean, the push succeeds. Gate the append, not just the read, and reconcile union-preserving
+  (verify by count that every marker survives at the max of both sides) rather than taking a side.
+  **ROOT CAUSE, generalisable to any factory running worktree-per-session over single-writer logs:
+  "always cut your worktree from the integration ref" and "single-writer append-only" are each correct
+  in isolation and compose into silent truncation whenever the integration ref is stale for the
+  appended path.** Here it was stale by nineteen sessions. Downstream harm was already in the
+  governance record before anyone noticed the fork: the coordinator's ruling of record cites a reviewer
+  finding *by branch commit* because it is not on the integration ref, and that finding's `grep -c` on
+  the newest sibling of the reviewer's own log is **0**.
