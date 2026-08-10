@@ -1022,3 +1022,34 @@ through the retained-remediation path with stdout captured and stderr redirected
 child starts, its real exit code/stdout/stderr are preserved, and no `StandardOutputEncoding` property is
 set unless the corresponding stream is redirected. Also assert that a post-landing cleanup failure is
 reported separately from the already-proven integration result.
+
+## A `Write(...)` permission deny rule does NOT block the Write tool; only `Edit(...)` does
+## (AdversarialLLM OPUS, 2026-08-10, Claude Code CLI 2.1.220, first-hand, controlled)
+
+A `.claude/settings.json` `permissions.deny` entry of the form `Write(<glob>)` is **inert against the
+Write tool**. Any factory relying on a `Write(...)` deny rule to hold a single-writer boundary — a
+peer lane's log, a rules directory, a reviewer-owned artifact — believes it has an enforced boundary
+and does not have one. Enforcement for file mutation comes from the `Edit(<glob>)` form, which DOES
+block a Write-tool call at the same path (the returned error is `File is in a directory that is denied
+by your permission settings`, phrased as "directory" even when the matching rule is an exact file or a
+`**/name` glob, so the wording is not a reliable signal of which rule fired).
+
+Because the paired rules are usually written together (`Write(x)` beside `Edit(x)`), the boundary
+normally still holds and the inert half is invisible. It becomes load-bearing exactly when someone
+writes only the `Write(...)` form, or removes the `Edit(...)` form believing the `Write(...)` one still
+covers it. Note also that neither form constrains `Bash`: a lane with Bash redirection can still modify
+any path these rules "protect", so this class of rule is a guardrail against accidental tool use, not a
+security control.
+
+**Test (cheap, ~2 non-interactive CLI calls, and it must include the control arm):** create a fixture
+directory OUTSIDE any real checkout — Claude Code walks ancestor directories for project settings, so a
+fixture nested under a repo silently inherits that repo's rules — containing `.claude/settings.json` and
+a target file. Invoke the CLI non-interactively with `--setting-sources project` (to exclude
+user-global settings), `--permission-mode acceptEdits` (non-bypass), and `--tools Read,Write`, asking for
+exactly one Write to the target.
+- **Arm A:** `deny: ["Write(protected/**)"]` only → the Write **succeeds** and the file is mutated.
+- **Arm B (control, mandatory):** `deny: []` → the Write also succeeds.
+Arm A alone proves nothing; without Arm B a blocked-for-some-other-reason run reads as a pass. Assert on
+the **file bytes after the call**, not on the model's narration — and re-run Arm A with
+`deny: ["Edit(protected/**)"]` to confirm the enforcing form still denies on your CLI build, since this
+is CLI-version-dependent behavior and was measured on 2.1.220.
