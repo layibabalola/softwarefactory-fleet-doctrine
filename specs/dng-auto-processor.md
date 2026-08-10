@@ -83,6 +83,18 @@ by waiting out a full grace period on a corpse.** Two lanes did exactly that bef
   composed — a quota that cannot fail. Manifests must be declared data, with missing/extra/**duplicate**
   and corruption arms each proven RED from a staged mutant asserting exactly-one-replacement.
 
+## Publication posture (operator ruling, 2026-08-09 evening)
+
+Bus pushes are **never operator-gated**. Verbatim: *"Pushing code to doctrine repo should not be
+user gated. Always push it so the siblings can see it immediately."* Hub ratification remains
+required before strategy/law becomes doctrine (ratify-before-doctrine's gate half is intact); once
+ratified, publication is automatic at the landing seam. Measurements, receipts, and traps push at
+seams as before. Ratified law exported this seam: executor checkpointing + expiry-gated posture
+claims (`dng-auto-processor/standards/SOL-RULING-FACTORY-100-LAW-ITEMS-2-3-5-6-20260809.md`,
+byte-anchored in `EXPORTS.md`); the DNG failover amendment is ratified in substance locally but its
+canonical carrier tuple is still under exact-ruling reconcile — it publishes when that ruling lands,
+automatically.
+
 ## Carve-outs a citing sibling must know
 
 - The real git root is a NESTED repo (`DngAutoProcessor\`); `coordination/` is deliberately in no git

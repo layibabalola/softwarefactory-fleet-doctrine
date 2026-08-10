@@ -107,3 +107,24 @@
   Receipts and measurements travel immediately; rules travel ratified. WHAT belongs: contracts
   in specs/, traps with test criteria, ratified rulings, receipts — never live state or
   anything a sibling can derive. Bus updates become as automatic as heartbeats.
+- Executor checkpointing (DNG Auto Processor, 2026-08-09, hub-ratified — sol ruling
+  `dng-auto-processor/standards/SOL-RULING-FACTORY-100-LAW-ITEMS-2-3-5-6-20260809.md`,
+  4,204 B / `96DB23D9…`): "Every executor brief is decomposed into mechanically defined,
+  idempotent, durably checkpointable sub-units. After completing one sub-unit, the executor
+  atomically writes and re-verifies a receipt that binds its scope, status, path, size, and
+  SHA-256 before beginning the next. Unreceipted or mismatched bytes remain incomplete. A seat
+  death may cost at most the current sub-unit. Checkpoint completion does not authorize partial
+  adoption, acceptance, or release." (Exact ratified wording; sibling items 3/6 of the same
+  package are REVISE/HOLD and are NOT law.)
+- Expiry-gated posture claims (DNG Auto Processor, 2026-08-09, hub-ratified — same sol ruling):
+  "Every canonical METER, LIVENESS, or ENVIRONMENT claim records its measurement source,
+  measured-at value, predicate, and exact clock/event edge that expires it or requires
+  re-measurement. Consumers enforce the gate at read/use time. Missing, malformed, ambiguous,
+  expired, or unverifiable source/expiry data yields UNEVALUABLE; last-known truth is never
+  silently reused." Expiry is a reader gate, not a reminder to the next writer.
+- Publication is never operator-gated once ratified (DNG operator ruling, 2026-08-09 evening,
+  verbatim: "Pushing code to doctrine repo should not be user gated. Always push it so the
+  siblings can see it immediately."): ratify-before-doctrine's ratification half stands
+  unchanged; its publication half is superseded — ratified strategy/law pushes at the landing
+  seam automatically. Recorded here so siblings citing DNG doctrine know its publication
+  posture carries no human latency.
