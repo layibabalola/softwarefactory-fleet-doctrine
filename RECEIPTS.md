@@ -190,3 +190,26 @@
   clone stayed clean. Disposition: suite attempt consumed, no retry, Kimi remains
   `NOT_ADMITTED`/zero-key/external-advisory only. This is a launch-environment discovery red, not
   Kimi provider failure or missing host Python.
+
+## Appended by agent-bridge, 2026-08-10 (operator-relayed Kimi parity research)
+
+- A cross-machine Fable survey, relayed directly by the operator, reported a wider Moonshot API
+  ladder: `kimi-k3` for flagship/high-inference work; `kimi-k2.7-code` (plus a high-speed variant)
+  for coding; `kimi-k2.6` for general mid-tier work; and `kimi-k2.5` as the lowest-cost listed tier.
+  It proposed K3 for hard verification/adjudication, K2.7-Code for implementation, K2.6 for broad
+  review, and K2.5 for mechanical/bulk work.
+- The survey's prices and market specifications are EXTERNAL STRATEGY INPUTS, not locally reproduced
+  admission evidence. The local Kimi Code CLI `0.34.0` catalog uses different managed identities
+  (`kimi-code/k3`, `kimi-code/kimi-for-coding`, and variants), so API and managed-CLI names must not
+  be treated as aliases without effective-backend proof.
+- Local cross-check: the current provider-onboarding implementation pins only `kimi-code/k3`, and
+  every qualification record carries empty `role_cells`. No Kimi profile currently gains routing,
+  seat, vote, or independence authority from this research.
+- Fleet disposition: `specs/agent-bridge.md` now carries a proposed parity program covering exact
+  per-profile registry rows, role-shaped benchmarks, negative controls, cross-provider reproduction,
+  short-expiry role cells, and failover mappings. Every Kimi tier remains one
+  `independence_class=moonshot-kimi`; intra-family diversity can improve work quality and cost but
+  cannot supply both sides of an independent acceptance gate.
+- Sequencing is forward-only: land the frozen K3 onboarding subject unchanged, then qualify the
+  wider model ladder in a separate candidate. This receipt grants no admission, ratification,
+  landing, publication, routing capacity, or doctrine ruling.

@@ -75,3 +75,85 @@ different alias or effort.
 
 Primary source: Kimi Code CLI configuration/model documentation,
 `https://moonshotai.github.io/kimi-code/en/configuration/config-files`.
+
+## Kimi provider-parity strategy — operator-relayed research candidate (2026-08-10)
+
+Status: **PROPOSED STRATEGY, NOT ADMISSION, ROUTING, OR DOCTRINE RULING.** The
+operator relayed a fresh cross-machine Fable survey of Moonshot's wider API model
+ladder. Its market specifications and prices are planning inputs only until a local
+catalog/API discovery and an exact-profile admission drill reproduce them. In
+particular, an API product name is not assumed equivalent to a Kimi Code managed
+alias.
+
+The reported planning ladder is:
+
+| reported API identity | reported character | proposed fleet use after admission |
+|---|---|---|
+| `kimi-k3` | flagship/high-inference, long-context reasoning | hard adjudication, hub planning, or verifier escalation |
+| `kimi-k2.7-code` and its high-speed variant | coding-tuned, thinking-enabled | primary implementation, repair, and code-heavy review |
+| `kimi-k2.6` | general mid-tier | broad adversarial reading and medium-inference review |
+| `kimi-k2.5` | lowest-cost listed tier | mechanical transforms, bounded bulk work, and low-risk maintenance |
+
+The survey reported provisional input/output prices per million tokens of `$3/$15`
+for K3, `$0.95/$4` for K2.7-Code and K2.6, and `$0.60/$3` for K2.5. These values
+MUST be re-read from an authoritative current billing/catalog surface at each cost
+benchmark; they never enter an admission receipt by citation alone.
+
+### Identity seam that must stay explicit
+
+- The local managed CLI catalog exposes `kimi-code/k3` and
+  `kimi-code/kimi-for-coding`, whereas the survey names API identities `kimi-k3`
+  and `kimi-k2.7-code`. The adapter must record the requested identity, effective
+  backend, transport (`managed CLI` versus `API`), effort/thinking mode, and adapter
+  version. Name similarity, display labels, and pricing pages never prove alias
+  equivalence. Neither K2.6 nor K2.5 appeared in the measured local managed catalog;
+  their availability and exact API identifiers remain unverified on this machine.
+- The current provider-onboarding candidate pins only `kimi-code/k3`; every
+  qualification record deliberately carries empty role cells. K3 transport success
+  therefore admits neither K3 nor any sibling model to a fleet role.
+- Adding K2.7-Code, K2.6, or K2.5 is a separate post-landing candidate. It must not
+  alter the frozen K3 onboarding subject and invalidate already-bound review votes.
+
+### Parity program for fleet proposals
+
+1. **Registry parity:** create one immutable profile row per exact
+   `provider/model/effort/adapter@version` and transport. Pin context, modalities,
+   tool support, effective backend, discovery time, expiry, and
+   `independence_class=moonshot-kimi`. No sibling or effort inherits another row.
+2. **Capability parity:** benchmark each candidate against the acts actually carried
+   by the Claude lanes: hub/roadmap adjudication, falsification-first verification,
+   implementation, guard/review work, and narration/mechanical maintenance. A model
+   is admitted to named acts, never to a vague provider-wide tier.
+3. **Evidence parity:** require terminal and refusal receipts, same-session resume,
+   workspace read/write containment, tool correctness, effective-model proof,
+   timeout/process-tree cleanup, seeded-defect catch controls, context consumption,
+   latency, and normalized cost. Authority-bearing cells additionally require an
+   immutable reproduction by a qualified different provider family.
+4. **Role-cell parity:** grant short-expiry role cells separately. The initial
+   strategy candidate is K3 high/max for one high-authority or high-verification role,
+   K2.7-Code for implementation, K2.6 for general review, and K2.5 for mechanical
+   work. Benchmarks may overturn the pairing; labels may not.
+5. **Independence parity:** every Kimi tier remains one Moonshot provider-family key.
+   K3, K2.7, K2.6, and K2.5 may provide useful intra-family diversity, but they can
+   never author, independently clear, and finally adjudicate the same canonical
+   object without a non-Moonshot arm.
+6. **Failover parity:** Kimi may take over Claude-shaped workload capacity after the
+   relevant cells are admitted, but never all independent governance keys. Every
+   failover plan must name the surviving non-Moonshot reviewer/adjudicator, the
+   seat-transition mechanism, expiry, and the exact work that remains bank-only.
+
+Proposed sequencing: finish and land the frozen K3 onboarding candidate unchanged;
+freshly qualify and admit its exact K3 profiles; then open a separate model-ladder
+candidate for K2.7-Code, K2.6, and K2.5. Until then, the wider ladder is a strategy
+input and may generate benchmark/admission proposals, but supplies zero routing
+capacity and zero independence keys.
+
+Research pointers relayed by the operator (non-authoritative until reproduced):
+Kimi platform K2.7-Code quickstart
+`https://platform.kimi.ai/docs/guide/kimi-k2-7-code-quickstart`; Codersera K3 guide
+`https://codersera.com/blog/kimi-k3-complete-guide-2026/`; Morph model/pricing list
+`https://www.morphllm.com/kimi-api`; NxCode K2.5/K3 pricing report
+`https://www.nxcode.io/resources/news/kimi-k2-5-pricing-plans-api-costs-2026`;
+MarkTechPost K2.7-Code release report
+`https://www.marktechpost.com/2026/06/12/moonshot-ai-releases-kimi-k2-7-code-a-coding-model-reporting-21-8-on-kimi-code-bench-v2-over-k2-6/`;
+and Lorphic K2 model overview `https://lorphic.com/kimi-k2-models/`.
