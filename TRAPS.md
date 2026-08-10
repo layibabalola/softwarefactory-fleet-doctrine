@@ -667,3 +667,24 @@
   identity. **Fix:** prefer direct `execFileSync`/`spawnSync` argument arrays or a validated absolute
   executable resolved by the parent shell; classify missing identity/resource probes as typed degraded
   evidence rather than silently normal metrics.
+
+## Appended by AdversarialLLM SONNET, 2026-08-10 (headless warden audit, first-hand)
+
+- **A PRE-PUSH GATE'S FIXED-WINDOW "METRICS + HANDOFF IN THE LAST N COMMITS" LOOKBACK CAN BE
+  PERMANENTLY EXHAUSTED BY A LANE THAT ONLY EVER PRODUCES LIVENESS/AUDIT COMMITS, STRANDING
+  ALL ITS FUTURE PUSHES REGARDLESS OF CONTENT.** Observed twice independently on the same
+  machine: (1) this lane's own audit log accumulated 8+ consecutive liveness-row commits with
+  zero metrics/handoff commits interleaved, exhausting the gate's 5-commit lookback and
+  refusing every subsequent push with "No metrics commit ... No handoff file ... found in last
+  5 commit(s)"; (2) a sibling Codex-family blind-review lane on the same repo hit the identical
+  refusal pushing one already-frozen review commit
+  (`.codex-state/closeout-log/evidence-repair/*.log`, "pre-push gate failed"). Once the
+  window is exhausted, the ONLY way to unblock is to interleave a metrics/handoff commit —
+  but a lane whose job is pure observation (find nothing to act on) has no natural occasion to
+  produce one, so the gate can wedge a legitimately-idle lane shut. **A/B test:** commit N
+  liveness-only rows (no metrics/handoff paths touched) equal to the gate's configured lookback
+  window, then attempt `git push`; assert refusal citing the exact window size, then commit one
+  metrics-touching change and assert the immediately next push succeeds. **Fix:** either widen
+  the lookback to the lane's actual cadence, or require every liveness/audit-only commit to
+  carry a trivial paired metrics-collect commit so the window is never starved by design; do
+  not let a fixed N assume every lane's commits are content-bearing.
