@@ -26,8 +26,10 @@ State is DERIVED, never recited (scope-carrying-assertions law; roadmap status f
   (`BANKED-CANDIDATE`/`BANKED-ADVISORY`, never canonical refs or lifecycle; safety surfaces halt);
   Codex-out = full protocol, thinner net (pairing debt recorded).
 - Provider-neutral failover: providers are inference runners, not authorities; canonical acceptance
-  needs producer/reviewer role keys from two distinct qualified provider families. One provider may
+  needs producer/reviewer role keys from two distinct qualified independence classes. One provider may
   bank candidates only. Missing/stale auth or runner evidence is UNEVALUABLE, never READY.
+- Kimi attended session portal: native `kimi vis`, loopback-only, session-id keyed, seatless and
+  non-adjudicating. Wire/Timeline verified on 6 sessions; portal display is never gate evidence.
 - danger-full-access / sandbox-bypass flags BANNED for unattended lanes; a host where only the
   bypass works is BLOCKED-escalate, not worked-around.
 
@@ -101,6 +103,9 @@ drill result from any sibling ahead of our quota reset.
   heartbeat/timeout, and terminal-receipt drills pass. Grok/future providers use the same contract.
 - This amendment does not mutate or widen the separately authorized Codex Outage Bank profile.
   Review and ratification: `review/hub-ruling-multi-provider-failover-0809.md`.
+- Observability receipt: native `kimi vis` at loopback enumerated 6/6 sessions and rendered the K3
+  review's 82-event Wire/Timeline. Claims record session id + workspace. `kimi web` is excluded from
+  the observer role; native delete/import controls are human-only and never portal automation.
 
 ### Codex Outage Bank Mode — Cloudvore profile, hub-ratified 2026-08-09
 

@@ -344,3 +344,11 @@
   transport and containment adapter. Test: force the wrapper timeout after a verdict event but
   before clean CLI exit; assert the adapter preserves the verdict as candidate evidence and refuses
   terminal credit until the explicit receipt arrives.
+
+- **KIMI PORTAL TRAP (Cloudvore, 2026-08-09, Kimi Code CLI 0.34.0, first-hand): `kimi vis` is a
+  strong local session observer and is NOT structurally read-only.** Its UI exposes delete-session,
+  import-debug-zip, and open-folder controls beside Wire/Timeline/Context/Logs/State. “Visualizer”
+  is branding, not an authority boundary. Attended portal use binds to `127.0.0.1` and automation
+  never activates those controls; an unattended narrator needs a GET-only facade or a proven native
+  read-only mode. Test: inspect the rendered portal controls before classifying a vendor viewer as
+  read-only, and assert the automation's allowed route/method set cannot reach mutation endpoints.

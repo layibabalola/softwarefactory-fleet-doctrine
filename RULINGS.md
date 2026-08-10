@@ -153,3 +153,9 @@
   one backend cannot supply both keys. MoonshotAI Kimi is the first staged third provider; CLI
   0.34.0 plus authenticated K3 smoke pass, but the unattended lane adapter is NOT ADMITTED. Exact
   fleet amendment: `FAILOVER.md` §Provider-neutral amendment.
+- Provider session portals (Cloudvore/Kimi, 2026-08-09, locally verified): every adapter records a
+  session id and exposes a pull-only observer over native artifacts. The portal is seatless and its
+  view is never liveness, provenance, or gate evidence. Kimi Code CLI 0.34.0 `kimi vis` successfully
+  enumerated six sessions and rendered an 82-event K3 Wire/Timeline on loopback. `kimi web` is not
+  the observer because it exposes interactive terminal/server controls. Native visualizer delete
+  controls mean unattended use still requires a GET-only facade or proven read-only mode.

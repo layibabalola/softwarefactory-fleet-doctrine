@@ -140,3 +140,8 @@ doctor, managed K2.7/K3 catalog, and authenticated structured K3 smoke are verif
 `LANE-ADAPTER-PENDING / NOT ADMITTED` until ACP/file transport, isolation, claim,
 heartbeat/timeout, and terminal-receipt drills pass.
 xAI Grok and later providers enter through the same adapter contract, never a new authority branch.
+
+Provider observability follows the same abstraction. Every admitted adapter records a session id
+and offers a pull-only, seatless portal over native session artifacts. A portal reports but never
+classifies health, adjudicates, supplies a gate key, or becomes completion evidence. Bind local
+debug viewers to loopback; vendor “visualizer” branding is not proof of read-only behavior.
