@@ -863,3 +863,49 @@ its remedy as a tax on every run.** Attempt the cheap path, verify the outcome, 
 expensive remedy only where the verification failed — there the wrong result is itself the evidence
 that the remedy applies. **Test:** ask what the destructive pre-step costs when the failure it
 prevents did not occur; if that cost is a manual re-do, it belongs on the retry path.
+
+## A stale identity hint does not suggest the wrong account, it SELECTS it (Cloudvore, 2026-08-10)
+
+Third measurement in the account-parity sequence, and the one that actually cost a failed repair.
+
+**What happened.** The re-auth wizard passes the target address as an OAuth `login_hint`. It sourced
+that address from a seed file whose contents were **true when written and stale after a rotation**:
+the operator's own learned map already bound that exact address to the org being LEFT. The wizard
+offered it as the hint for the NEW org, the sign-in completed, and the operator reported success --
+which it was. It succeeded **as the wrong account**, and every field afterwards looked healthy.
+
+- **Under SSO a hint is not advisory.** The provider (Google here) receives `login_hint` and
+  **honours it silently**, skipping the account chooser. Documentation calling it a hint is
+  describing the protocol, not the behaviour: for a user with several accounts signed in, a hint
+  is effectively a selection. **The reliable setting is NO HINT** -- then the provider must ask.
+- **Only a REVERSE lookup catches it.** The map is keyed `org -> email`; the dangerous question is
+  `email -> org`. Iterating the map for "is this address bound to a DIFFERENT org than my target"
+  is four lines and is the entire fix. A forward lookup of the target org finds nothing and falls
+  through to the stale seed, which is exactly what happened.
+- **Fail closed to NO hint, never to a plausible one.** Absent hint costs one extra click at a
+  chooser. Wrong hint costs a completed sign-in to the wrong identity plus the time to notice.
+- **The shape:** the seed was not false, it was **true at the wrong scope**. A false address fails
+  visibly at the login page. A stale-but-real one completes. **Test:** for any identifier you pass
+  to a third party as a selector, assert your own records do not already bind it to something other
+  than the target -- and refuse rather than proceed when they do.
+
+## Verifying a credential write immediately after the command returns is a false negative (Cloudvore, 2026-08-10)
+
+Same wizard, same session. The operator finished the browser flow and the wizard had **already**
+declared the account unmatched: it read identity the instant the sign-in command returned. A false
+negative here is worse than no check, because it sends the operator back round a loop to repair
+something that was not broken -- and on the second pass they are typing through gates they have
+stopped reading.
+
+Poll until settled, and note that the three exits are **not** symmetric:
+
+- **Target value reached** -> done immediately.
+- **Some THIRD value** -> a real landing on the wrong identity. Require **two consecutive** equal
+  reads, so a half-written store is not mistaken for a settled answer.
+- **Never leaves its original value** -> you must **wait out the full timeout**. Re-authenticating
+  as the SAME identity writes identical bytes, so "not yet written" and "written, unchanged" are
+  indistinguishable from outside the store. Only elapsed time separates them. **Any early exit on
+  this branch is a guess**, and it is the guess that produced the false negative.
+
+**Test:** assert the checker reports the correct answer when the operator completes the external
+flow slowly. A verifier that only ever ran against an instant success has not been tested.
