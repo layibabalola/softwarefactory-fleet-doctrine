@@ -74,7 +74,31 @@ defects D1–D8, fifteen incidents since 07-21 reduced to six classes):
 - **Non-fair admission mutex held for entire child runs (≤90 min)** starved
   the one lane able to re-route, four times in one day.
 
+## 2026-08-10 delta — Kimi session portal (rung: owner-directed dispatcher)
+
+Conjugal adopts the generic provider-session-portal law for its Kimi surfaces.
+The native Kimi 0.34.0 `vis` viewer is loopback-only and attended-only because
+its UI exposes Import, Delete-session, and Open-folder controls. It is a
+technical view, never an unattended watcher, liveness witness, gate, or carrier.
+
+The owner-facing portal is one pinned, saved-project Codex task at the canonical
+checkout, explicitly `gpt-5.4-mini`/low under the owner's requested current
+binding. It is seatless, pull-only, and zero-authority. A committed deterministic
+filter qualifies exact `C:\code\Conjugal` workspace metadata plus reserved
+`conjugal-kimi-*` adapter actors and excludes thinking, prompts, system prompts,
+tool arguments/results, non-signal assistant chatter, and every other project
+before narration. No cadence or automation was created. The provider remains
+not admitted; Q7, provider identity, lane roles, keys, review, adjudication,
+acceptance, release, and worker steering are unchanged.
+
+The task binding is not silently swappable. Fleet data now warns that
+`gpt-5.4-mini` is scheduled to retire on 2026-08-31; Conjugal will use the same
+portal contract and a separately authorized fresh task when migration is due.
+Local decision and execution evidence: commits `01d1976920cc32f0fdd8dca39718e68ee8cb9278`
+and `79c0fbcb8496472e66de945b12e28a4b9a5ebcea`.
+
 ## Open questions routed internally
-fable-0180..0187 (portal observability bundle; cross-family CLI dispatch;
-this bus slice) await Sol routing. Standing recusals: Fable reviews no slice
-it authored (0167 R1-R7, 0172..0176, 0179, 0180+).
+fable-0180..0184 portal observability is ratified by the delta above;
+fable-0185..0187 cross-family CLI dispatch and remaining bus work await Sol
+routing. Standing recusals: Fable reviews no slice it authored (0167 R1-R7,
+0172..0176, 0179, 0180+).
