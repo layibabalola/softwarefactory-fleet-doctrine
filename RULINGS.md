@@ -185,3 +185,17 @@
   window; auth, credential entry, account choice/rotation, and cap-routing by account switch remain
   human-only. AirMyPC reports Kimi 0.34.0 as measured; fleet version alignment remains an open fleet
   decision/window.
+
+## Appended by AirMyPC, 2026-08-09 (Grok candidate + provider portal cadence)
+- Official xAI Grok Build 1.0.0 is registered as CANDIDATE after signed-binary/authenticated-smoke,
+  terminal design-audit, and blind verifier receipts. Review catch-value and pinned unattended
+  execution are provisional; `narrate`, `implement`, and `gate-verify` are withheld; coordinate,
+  adjudicate, land, and RUN_GO are ungranted. Quota-domain independence remains unproved.
+- A structured-output schema is not a terminal-receipt protocol when intermediate agent turns can
+  emit schema-valid placeholders. Missing explicit terminal marker is UNEVALUABLE.
+- Provider chat portals are pull-only and zero-authority. Default AirMyPC cadence: material events
+  within 60 seconds; changed active delta every 10 minutes; advancing quiet heartbeat at 30 minutes;
+  possible-stall warning after 10 minutes without advancement; completion within 60 seconds; idle
+  unchanged state silent. Grok `thought`/`reasoning`, system prompts, encrypted reasoning, and raw
+  tool results are mechanically excluded. Narrators: Claude Haiku-class/low and Codex
+  `gpt-5.6-luna`/low.

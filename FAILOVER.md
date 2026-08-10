@@ -189,3 +189,30 @@ ruling admits the adapter.
 
 AirMyPC's stricter local rule is: a useful partial review captured before timeout is evidence for
 repair, never a gate key. Missing terminal receipt is `UNEVALUABLE` and queues fail-closed.
+
+---
+
+## AirMyPC Grok candidate and provider-chat portal — RATIFIED 2026-08-09 23:0x CT
+
+AirMyPC measured official xAI Grok Build 1.0.0 (`3cd0d0cbce`), valid X.AI LLC Authenticode,
+SHA-256 `B238FE6B…E92585D1`, pre-existing grok.com OIDC, catalog alias `grok-4.5`, and observed backend
+`grok-4.5-build`. Read-only smoke passed with no auth-file mutation. The pinned official installer
+does not verify a published checksum, so the signature/hash are recorded evidence and fleet version
+alignment remains open.
+
+A bounded design audit and a fresh blind verifier demonstrated substantive review value. The verifier
+completed under pinned unattended mode plus read-only sandbox, reran 24/24, bound the subject hashes,
+and signed a terminal changes-required receipt. AirMyPC grants only provisional design/evidence and
+unattended-execution evidence. `narrate`, `implement`, and `gate-verify` remain withheld; coordinate,
+adjudicate, land, and RUN_GO remain ungranted; the xAI credential domain remains CANDIDATE. Installed
+Grok adds zero canonical release capacity until the remaining adapter, portal-redaction,
+quota/refusal, isolated-role, and clean verifier drills pass and a later ruling grants capabilities.
+
+Provider chat relays are script-filtered first and narrated second. Grok relays must drop the headless
+`thought` field, `chat_history.type=reasoning`, system prompts, encrypted reasoning, and raw tool
+results. Default AirMyPC cadence is event-driven within 60 seconds for material transitions, changed
+active digest every 10 minutes, advancing quiet heartbeat at 30 minutes, possible-stall warning at
+10 minutes without advancement, completion within 60 seconds, and silence when idle/unchanged.
+Narrators have zero authority. AirMyPC selects Codex `gpt-5.6-luna`/low and Claude Haiku-class/low;
+this supersedes AirMyPC's earlier `gpt-5.4-mini` narrator choice because that Codex model is scheduled
+to retire on 2026-08-31.

@@ -374,6 +374,21 @@
   alias and effective id in separate fields. Never classify this warning away or collapse the two
   ids into invented provenance.
 
+- **GROK TERMINAL-RECEIPT TRAP (AirMyPC, 2026-08-09, Grok Build 1.0.0, first-hand):** `--json-schema`
+  constrained intermediate assistant turns as well as the final response. The agent emitted valid
+  placeholder verdict objects before read tools and exhausted the bounded turn without any terminal
+  verdict. Likewise, plan/dontAsk headless calibration emitted tool requests but no completed
+  terminal response; the decisive run required xAI's unattended permission mode plus a read-only
+  sandbox. A schema-valid object, exit 0, or queued tool request is not a receipt. Require an explicit
+  terminal marker plus process completion; missing marker is UNEVALUABLE. Test intermediate
+  tool-turns and the final turn separately.
+- **GROK REASONING-RELAY TRAP (same receipt):** the headless JSON envelope contains `thought`, and
+  native `chat_history.jsonl` contains explicit `type=reasoning` rows alongside assistant/tool data.
+  A generic JSONL tailer will leak private reasoning into the chat portal and potentially contaminate
+  an independent reviewer. Mechanically drop `thought`, reasoning/system records, encrypted reasoning,
+  and raw tool-result bodies before any narrator or peer sees the delta; red-test the forbidden field
+  set. Prompting a small narrator to “ignore” those fields is not a control.
+
 - **FOREIGN WORK-BLOCK ADOPTION TRAP (AdversarialLLM, virtual-ten, 2026-08-09, first-hand):
   `ensure-feature-branch.ps1 -TaskSlug <new>` can report `already-unprotected-branch` while returning
   the active work-block id for a different task already bound to that feature branch.** Treating that

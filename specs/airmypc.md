@@ -73,12 +73,12 @@ owes a final-child outcome mechanism before it can be detector-of-record.
 | Anthropic | Claude Code 2.1.220 | Existing roster; Fable/Opus share one proven quota domain on this box |
 | OpenAI | Codex CLI 0.147.0 | Luna/Sol/lead-codex registered and live-capable |
 | MoonshotAI | Kimi Code 0.34.0 | Installed, PATH/doctor/provider/design smoke pass; domain candidate; adapter/gate pending |
-| xAI | none | Absent; enters through the same adapter contract |
+| xAI | Grok Build 1.0.0 (`3cd0d0cbce`) | Signed transport/smoke and review catch-value pass; domain candidate; adapter/gate pending |
 
 Install/upgrade requires explicit current user direction or a hub-scheduled quiescent fleet window.
 Authentication, account selection/rotation, credential entry, and account-switch routing around a
-cap are always human-only. AirMyPC reports 0.34.0 as its measured Kimi version; fleet alignment is an
-open fleet decision/window, not declared locally.
+cap are always human-only. AirMyPC reports Kimi 0.34.0 and Grok Build 1.0.0 as measured local
+versions; fleet alignment is an open fleet decision/window, not declared locally.
 
 ## Kimi receipts this seam
 
@@ -103,15 +103,63 @@ timeout/EPIPE trap. Review catch-value is demonstrated; terminal verifier delive
 
 Installed-but-unproved providers add zero canonical release capacity.
 
+## Grok receipts this seam
+
+Official xAI Grok Build 1.0.0 was installed from `x.ai/cli` under direct current user authority.
+Binary SHA-256 is `B238FE6B…E92585D1`; Authenticode is valid and signed by X.AI LLC. The official
+installer was version-pinned but does not verify a published checksum. A pre-existing grok.com OIDC
+session exposed catalog alias `grok-4.5` and observed backend `grok-4.5-build`; no login, logout, API
+key, credential, account, or auth-file mutation occurred. Read-only smoke returned the exact expected
+string with exit 0 and unchanged auth mtime.
+
+The first schema-constrained design fire emitted placeholder objects before tools and no terminal
+receipt, so it is UNEVALUABLE. An isolated retry produced a terminal fail-closed design audit.
+
+Blind session `019fe9ce-e5a4-7380-81ee-800982ea801d` reviewed the isolated Luna WARDEN-HARDEN
+candidate without peer-verdict exposure. Under pinned unattended mode plus read-only sandbox it
+completed in 263 seconds, reran 24/24, verified all three hashes, and signed CHANGES_REQUIRED with
+raw counts 0 BLOCKER / 2 REQUIRED / 3 MINOR / 2 NIT. Codex independently reproduced the material
+findings. One restart-storm impact was narrowed because the installed Windows task has
+`RestartCount=0`; the child-result/floor-result contract remains a minor observability decision.
+
+Capability disposition:
+
+- signed transport and authenticated smoke: PASS;
+- long-horizon reasoning, design review, evidence audit: PROVISIONAL-PASS;
+- unattended execution: PROVISIONAL-PASS only for pinned unattended mode + read-only sandbox;
+- portal artifact discovery: PASS-MEASURED, redaction adapter owed;
+- narrate, implement, gate-verify: WITHHELD;
+- coordinate, adjudicate, land, RUN_GO: UNGRANTED;
+- credential/quota domain: CANDIDATE, not behaviorally proven distinct.
+
+Grok adds zero canonical release capacity until the remaining adapter/domain/refusal/isolated-role
+drills pass and a later hub ruling grants each capability.
+
+## Provider chat portal cadence
+
+AirMyPC's provider-neutral chat portal mechanically pre-filters native session carriers before a
+small narrator sees them. Grok carriers are JSONL under the percent-encoded cwd/session directory:
+`events.jsonl`, `updates.jsonl`, `chat_history.jsonl`, and summary/state files. The filter drops
+headless `thought`, `chat_history.type=reasoning`, system prompts, encrypted reasoning, and raw tool
+results. Only event metadata, terminal assistant output, bounded errors, artifact pointers, and user
+questions are eligible.
+
+Cadence: event-driven within 60 seconds for start/finish, phase, gate, commit, blocker, question,
+failover, and recovery; changed-state digest every 10 minutes while active; one 30-minute heartbeat
+only when work is advancing without a milestone; possible-stall alert after 10 minutes without
+advancement; completion within 60 seconds; idle/unchanged stays silent. Claude uses Haiku-class/low;
+Codex uses `gpt-5.6-luna`/low. Narrators are seatless and hold zero authority.
+
 ## Admission phases
 
 1. Registry/outcome receipts; red replay of the healthy 05:20–07:57 window must not fire, and green
    replay of the direct 10:20–12:04 quota window must return the receipt ETA.
-2. Kimi domain and adapter smoke: provider/domain receipt, file/stdin or ACP prompt transport, isolated
-   worktree, claim/lease/heartbeat, timeout and explicit terminal receipt.
+2. Kimi/Grok domain and adapter smoke: provider/domain receipt, file/stdin or ACP prompt transport,
+   isolated worktree, claim/lease/heartbeat, timeout and explicit terminal receipt.
 3. Bank-only subject drill under no-land/no-push/no-adjudication/no-RUN_GO controls.
-4. Verifier drill: Codex implements a seeded-defect subject; Kimi reviews under its own identity; a
-   signed bounded verdict, distinct-provider/domain/actor proof, and clean recusal are mandatory.
+4. Verifier drill: Codex implements a seeded-defect subject; the candidate provider reviews under its
+   own identity; a signed bounded verdict, distinct-provider/domain/actor proof, and clean recusal
+   are mandatory.
 5. Only a later hub ruling may grant `gate-verify`; every other authority is separately drilled/ruled.
 
 ## Laws and traps exported
@@ -123,6 +171,8 @@ Installed-but-unproved providers add zero canonical release capacity.
 - Never classify health by regexing agent narrative; structured exit + bounded STDERR only.
 - Timeout with useful stdout but no terminal receipt is `UNEVALUABLE`, not PASS and not empty failure.
 - A provider portal is seatless observation only and cannot supply liveness, provenance, or a gate key.
+- Structured-output schemas are not terminal receipts when intermediate agent turns can satisfy them.
+- Grok portal relays must discard `thought` and `reasoning` records mechanically before narration.
 
 ## Open provider-continuity work
 
@@ -131,7 +181,8 @@ Installed-but-unproved providers add zero canonical release capacity.
 3. Qualify a bounded Kimi ACP/file transport that returns an explicit terminal receipt.
 4. Re-run the seeded verifier drill; rule `gate-verify` only on a signed pass.
 5. Decide the fleet-aligned Kimi version in a quiescent upgrade window.
-6. Onboard xAI Grok/future providers through the same registry, independence, smoke, and drill bar.
+6. Implement and red-test the Grok portal filter and explicit terminal-receipt parser.
+7. Run Grok quota/refusal, isolated implement/bank, and fresh no-calibration verifier drills.
 
 ## Publication contract
 

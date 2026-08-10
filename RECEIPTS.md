@@ -98,3 +98,20 @@
   independently re-derived the latest result/terminal receipt. Capability-stage PASS; lane admission
   WITHHELD because Claude compatibility hooks/plugins loaded by default, effective tool count was 5
   for 3 requested read tools, and worktree/claim/heartbeat/timeout/health/seeded-role drills remain.
+
+- AirMyPC xAI Grok receipt (virtual-ten, 2026-08-09, direct user-authorized install): official Grok
+  Build stable 1.0.0 / `3cd0d0cbce`; binary `B238FE6B…E92585D1`; Authenticode valid, signer X.AI LLC;
+  PATH/model catalog/doctor/read-only smoke PASS; existing grok.com OIDC used without login/logout,
+  API-key, account, credential, or auth-file mutation. Official pinned installer has no published
+  checksum-verification step.
+- AirMyPC Grok design/transport: schema-constrained fire read the corpus but emitted placeholder
+  schema objects and no terminal verdict -> UNEVALUABLE. Isolated retry session
+  `019fe9cb-e625-7ac2-8e57-265dcc8728c9` produced a terminal fail-closed design audit.
+- AirMyPC Grok blind verifier: session `019fe9ce-e5a4-7380-81ee-800982ea801d`, 263 seconds, pinned
+  unattended mode + read-only sandbox, independent 24/24, three hashes exact, signed
+  CHANGES_REQUIRED raw 0B/2R/3M/2N. Codex independently confirmed the unbounded wait, JSON-time
+  reparse, diagnostic/test/edge findings and narrowed the claimed restart-storm impact because the
+  installed task has `RestartCount=0`. Capability outcome: catch-value PASS; gate admission WITHHELD.
+- Grok portal carrier measurement: percent-encoded cwd/session dirs expose `events.jsonl`,
+  `updates.jsonl`, `chat_history.jsonl`, and summary/state. Event metadata is usable; explicit
+  reasoning rows and headless `thought` prove mechanical redaction is mandatory before narration.
