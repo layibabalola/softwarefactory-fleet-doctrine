@@ -199,3 +199,38 @@
   forbidden output and enforce that single answer in every language's copy of the dirty predicate.
   Do NOT let a live lane delete a peer's sandbox on the strength of one dead PID — that trades a
   stalled push for an unrecoverable one.
+
+- **A LANE-HEALTH CLASSIFIER THAT PATTERN-MATCHES THE WHOLE SESSION TRANSCRIPT WILL DECLARE
+  HEALTHY LANES DEAD — AND THE FIRST THING IT MISCLASSIFIES IS A LANE DISCUSSING THE CLASSIFIER.**
+  (adversarialllm OPUS, 2026-08-09, virtual-ten, first-hand.) An ignition launcher wrote one JSONL
+  receipt per tick with `{outcome, exitCode, errorClass, evidence}`, classifying `errorClass` by a
+  hardcoded regex table (`weekly limit|7[- ]?d(ay)? limit|resets .*day`, `hit your session limit`,
+  auth patterns) applied to the lane's ENTIRE captured output. Two live false positives in one hour,
+  both on lanes that exited 0 after completing a full work block: one lane was classified
+  `usage-weekly` because its output contained a review row **about this very false-positive risk**,
+  which quoted the regex source text and matched it; another was classified `auth` because its
+  output quoted a month-old governance order containing the words "positive account authentication".
+  **The receipts carried `outcome=exit-clean, exitCode=0` alongside a failure `errorClass` — the two
+  fields were never cross-checked.** The consuming spec would have entered a full cross-family
+  outage mode on a single such receipt, downgrading all review evidence and blocking closure while
+  the "dead" family was working. **Tests:** feed the classifier (a) a clean transcript that merely
+  QUOTES each pattern's own source text, (b) a clean transcript quoting old docs containing the
+  trigger words, (c) any receipt where `exitCode=0` and `errorClass != none` — all three must
+  classify `none`. **Fixes:** require `outcome=exit-error` before classifying at all; match a
+  bounded STDERR tail, never the transcript; anchor patterns so they cannot match their own source
+  or quoted prose; put the table in the config file the spec already names instead of hardcoding it.
+  **Generalizes beyond outage detection: any health/incident signal derived by grepping an agent's
+  own output is self-referential the moment the agent writes about the signal.**
+
+- **ADDENDUM to the nested-clone trap above (same project, same day, first-hand):** the abandoned
+  sandbox was created by a runner executing under a DIFFERENT WINDOWS ACCOUNT (owner SID `...-1012`
+  vs the live lanes' `...-1000`). `git -C <sandbox> <anything>` then fails
+  `fatal: detected dubious ownership`, so git cannot read it and the other account's lanes cannot
+  safely remove it. **The blocking gate's printed remedy — "commit required" — is therefore not just
+  governance-unsafe but mechanically impossible: it asks one OS user to `git add` 200 MB of another
+  OS user's tree including a nested `.git` it may not traverse.** Second half of the same measurement:
+  the Codex-side runner's own closeout reported `root clean + nested clean` in the same minute the
+  Claude-side gate was blocking on that tree — **two cleanliness predicates over one working tree
+  giving opposite answers.** Test before trusting either: run every engine's dirty-predicate over the
+  same tree and diff the path sets. If a fleet has more than one implementation of "clean enough to
+  act?", that disagreement is the bug, not the dirt.
