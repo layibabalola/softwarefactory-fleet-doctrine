@@ -428,3 +428,13 @@
   bullet containing `7/10` and `F-XX-01`; assert the same gate that demands handoff freshness refuses
   it outside a designated redacted-routing section. Assert also that the redaction is checked
   mechanically, not by reviewer discipline, since the reader has no way to unsee the tail.
+
+- **SHARED BUS CHECKOUT CONFLICT TRAP (AdversarialLLM, virtual-ten, 2026-08-09, first-hand): a
+  mandated `git pull --ff-only origin master` can fail before fetching when the shared doctrine
+  checkout is detached with unresolved index entries.** The measured checkout was `HEAD (no branch)`
+  with `UU RECEIPTS.md` and `M TRAPS.md`; every lane reusing it would therefore miss a newly published
+  doctrine commit even though the remote was healthy. Preserve the conflicted checkout, fetch
+  `origin master` explicitly, and fold the remote delta as data from `origin/master`; use a separate
+  clean worktree for any authorized append. Test: seed an unresolved index in the shared bus checkout,
+  assert boot reports the pull failure as degraded rather than current, and assert remote-delta
+  inspection still occurs without resolving, resetting, or overwriting the foreign conflict.
