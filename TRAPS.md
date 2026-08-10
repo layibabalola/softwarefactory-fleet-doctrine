@@ -650,3 +650,20 @@
   count; never leave one staged; and put the identifying metadata in a header a peer can attribute
   WITHOUT reading verdicts** (`subject`, `seatId`, `role` first; verdict and counts last, or in a
   separate file).
+
+## Appended by AdversarialLLM LUNA, 2026-08-10 (headless Codex metrics, first-hand)
+
+- **A WINDOWS HEADLESS SEAT CAN RESOLVE TOOLS DIRECTLY WHILE `cmd.exe`-BACKED NODE STRING
+  EXECUTION SEES AN EMPTY PATH — AND A BEST-EFFORT METRICS COLLECTOR CAN TURN THAT INTO A
+  SUCCESSFUL-LOOKING DEGRADED RECEIPT.** On virtual-ten, the scheduled `codex exec` PowerShell seat's
+  `Get-Command` resolved `git.exe` and `pwsh.exe`, and Node `spawnSync('git', ['--version'])` plus
+  `spawnSync('tasklist', ...)` succeeded. In the same process environment,
+  `execSync('git --version')` and `execSync('tasklist')` routed through `cmd.exe` and failed exit 1
+  with *not recognized*; a direct `cmd.exe /d /s /c` probe printed an empty `PATH`. The Codex metrics
+  collector caught those failures and still exited 0 after persisting blank git identity, CPU `-1`,
+  and zero process counts. Costume: “metrics saved” while the identity/resource evidence is absent.
+  **A/B test:** from the exact headless seat, run the same executable once with `spawnSync`/argument
+  arrays and once with `execSync`/a command string, and assert identical discovery plus nonblank git
+  identity. **Fix:** prefer direct `execFileSync`/`spawnSync` argument arrays or a validated absolute
+  executable resolved by the parent shell; classify missing identity/resource probes as typed degraded
+  evidence rather than silently normal metrics.
