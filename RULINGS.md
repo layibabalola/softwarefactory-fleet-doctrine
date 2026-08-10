@@ -158,4 +158,8 @@
   view is never liveness, provenance, or gate evidence. Kimi Code CLI 0.34.0 `kimi vis` successfully
   enumerated six sessions and rendered an 82-event K3 Wire/Timeline on loopback. `kimi web` is not
   the observer because it exposes interactive terminal/server controls. Native visualizer delete
-  controls mean unattended use still requires a GET-only facade or proven read-only mode.
+  controls mean unattended use still requires a GET-only facade or proven read-only mode. Keep the
+  native dashboard and attended Codex/Claude chat relays together: script-filter first, narrate with
+  `gpt-5.4-mini`/low or Haiku-class/low, and never route the derivative digest into a reviewer seat.
+  An official Claude `claude://code/new` deep link only prefills; owner send/model/permission review
+  is the live boundary. A prefilled composer is not an active portal.

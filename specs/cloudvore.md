@@ -30,6 +30,10 @@ State is DERIVED, never recited (scope-carrying-assertions law; roadmap status f
   bank candidates only. Missing/stale auth or runner evidence is UNEVALUABLE, never READY.
 - Kimi attended session portal: native `kimi vis`, loopback-only, session-id keyed, seatless and
   non-adjudicating. Wire/Timeline verified on 6 sessions; portal display is never gate evidence.
+- Kimi attended chat relays: keep the native dashboard; add a pinned Codex Desktop
+  `gpt-5.4-mini`/low narrator and a named Claude Desktop Haiku-class/low narrator over the same wire.
+  Both are pull-only, mechanically pre-filtered, seatless, and barred from reviewer inputs. Claude
+  deep-link bootstrap remains pending until the owner sends the prefilled composer.
 - danger-full-access / sandbox-bypass flags BANNED for unattended lanes; a host where only the
   bypass works is BLOCKED-escalate, not worked-around.
 

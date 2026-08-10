@@ -145,3 +145,10 @@ Provider observability follows the same abstraction. Every admitted adapter reco
 and offers a pull-only, seatless portal over native session artifacts. A portal reports but never
 classifies health, adjudicates, supplies a gate key, or becomes completion evidence. Bind local
 debug viewers to loopback; vendor “visualizer” branding is not proof of read-only behavior.
+
+Keep detailed native dashboards and attended chat relays as separate, coexisting views. Chat relays
+pull and mechanically pre-filter the same durable event stream, then use the cheapest capable
+low-effort narrator (currently Codex `gpt-5.4-mini`/low or Claude Haiku-class/low) to render deltas.
+They never prompt a worker, forward peer reasoning to a reviewer, or become a carrier of record.
+Inference tier follows authority, not volume: any relay that can steer, mutate, approve, or rule is
+not a narrator and must move to a separately claimed coordinator-grade surface.

@@ -352,3 +352,10 @@
   never activates those controls; an unattended narrator needs a GET-only facade or a proven native
   read-only mode. Test: inspect the rendered portal controls before classifying a vendor viewer as
   read-only, and assert the automation's allowed route/method set cannot reach mutation endpoints.
+
+- **A visible prefilled composer is not a live portal.** Claude Desktop's official
+  `claude://code/new` link opens a Code composer with folder/prompt context but intentionally does
+  not send the prompt or choose its model. Record it as `PENDING-OWNER-SEND` until the owner selects
+  the cheap narrator model, accepts the folder/permissions, sends, and a first digest proves the
+  wire is readable. Test: require a completed digest with exact evidence paths, not merely an open
+  Claude window.
