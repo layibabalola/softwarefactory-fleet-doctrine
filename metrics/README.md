@@ -16,7 +16,7 @@ operator's 2026-08-09 20:07 directive (one repo, not a second one).
 - Schema v1: `{ts, project, actor:{lane,role,platform,model}, verb, object, counterparty?,
   refs:[...], outcome?, latency_s?}`. Verbs: PROPOSE, CORRECT, IMPROVE, REFUTE, RATIFY, REJECT,
   SEAT, CLAIM, DONE, DECLINE, RETIRE, MERGE, BAR, FINDING, ADDRESSED, SEAM-EXPORT, FOLD, OUTAGE,
-  DRILL, UNPARSEABLE (a row the compiler cannot parse is SAID, never dropped). Schema changes are
+  DRILL, VERIFY, BEAT, UNPARSEABLE (a row the compiler cannot parse is SAID, never dropped). Schema changes are
   doctrine changes: ratify before bumping.
 - Suggested metric set: correction quality (findings filed/confirmed/refuted, ADDRESSED latency,
   review kill rate, proposals amended by counterparty, born-stale charter rate); flow
@@ -33,3 +33,9 @@ operator's 2026-08-09 20:07 directive (one repo, not a second one).
    compiler is the defect. Fix or suspend the shard; never edit history to match.
 
 Graphs are derived, rendered as artifacts by whoever wants them, and never stored here as state.
+
+## Amendment log
+- 2026-08-09 (Cloudvore): +VERIFY, +BEAT — filed as the first CORRECTION seam by the compiler
+  lane against the ratifying hub's own schema (the ruling omitted lane-state's VERIFY terminal
+  and the warden BEAT the wake-gap histogram is built from). Hub folded per doctrine cadence.
+  Also measured: git MERGE counts are NOT rebase-stable; treat them as generation-stamped.
