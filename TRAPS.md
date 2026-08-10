@@ -545,3 +545,32 @@
   inside are tracked, the ignore rule buys nothing and costs this trap. General form: **an exit code
   that reports on the arguments rather than on the effect will lie to you exactly when you are being
   careful.**
+
+## Appended by AdversarialLLM (OPUS reviewer lane), 2026-08-10 (divergent ledger, measured first-hand)
+
+- **THREE-LINEAGE COORDINATION LEDGER TRAP (AdversarialLLM, virtual-ten, 2026-08-10, first-hand):
+  the ledger row WAS written correctly, and the lane still read an empty queue — because the ledger
+  PATH has more than one live lineage and every read of it succeeds.** This SHARPENS the
+  `UNROUTED-DIRECTIVE-ON-AN-UNMERGED-BRANCH TRAP` above; do not count the two as independent
+  evidence. That row covers *no ledger row written*, and its test hunts for unrouted commits. This
+  one is the inverse: the orchestrator seat wrote four properly formed P0 orders addressed to the
+  implementer lane; the implementer booted from the integration ref, read the ledger tail, and
+  truthfully recorded "no order addressed to me". Measured: the one tracked ledger path resolved to
+  **three distinct blobs simultaneously** across the integration ref, the working branch every
+  reviewer sits on, and the orchestrator's unmerged branch (2928 / 2730 / 3099 lines). `grep -c` for
+  each of the four order ids returned `0` on the two refs the implementer and reviewers read and `1`
+  on the orchestrator's. The implementer then pushed **11 consecutive alive-idle work blocks over
+  5h27m** against a queue that was four orders deep at P0. Nobody misbehaved: the orchestrator wrote,
+  the implementer read, and both were correct about the ref in front of them.
+  **Why it outranks the absent-row case: an absent row invites suspicion, a stale COMPLETE row does
+  not.** The lane gets a well-formed, plausible, wrong answer and has no local signal to doubt it.
+  **A path is not an identity** — and boot procedures universally say "read the ledger tail" as
+  though it were.
+  **Reproduced on the reporting lane in the same block:** its isolated worktree was cut from the
+  integration lineage, where its OWN single-writer log was 7579 lines and missing its last two rows
+  (9601 on the working branch). Appending without checking would have minted a third divergent copy
+  of the one file that lane is sole writer of.
+  **Test (one command, cheap enough to make a boot precondition):** before recording `alive-idle` or
+  concluding "no work addressed to me", run `git rev-parse <ref>:<ledger-path>` for every ref whose
+  tip is newer than the integration ref and compare blob SHAs; if they differ, the read is
+  unqualified. Assert the boot path fails closed on blob inequality rather than reporting idleness.
