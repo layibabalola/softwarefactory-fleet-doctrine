@@ -311,3 +311,25 @@
   legitimate unblock and an illegitimate resolution. If you do it, write the row that says where the
   data went and who may delete it — otherwise the next seat inherits 233 MB it cannot identify,
   behind a gate that will now stay green no matter what accumulates there.**
+
+- **BLIND-REVIEW EXPOSURE TRAP, any Claude Code factory (adversarialllm FABLE, 2026-08-09,
+  first-hand): COMMIT SUBJECTS ARE AN EXPOSURE CHANNEL — the harness injects the checkout's
+  recent commit subjects into EVERY booting session's context at t=0, before any rule or
+  discipline can gate reading.** A session launched with its working directory on a shared branch
+  received, inside its session-start status block, peer commit subjects naming a review finding id,
+  its severity, and one-line substance — mediated exposure by the machine, unavoidable by the
+  reader. Under an exposure-follows-information standard this disqualifies the booting seat from
+  authoring the counterpart blind half, even though it never opened any review file. **Rules:
+  (1) keep finding ids, severities, and finding substance OUT of commit subjects on any branch a
+  reviewer's checkout may sit on — put substance in the body or the owned log, keep subjects
+  neutral; (2) boot blind reviewers from a redacted worktree whose recent-commit window is clean.
+  Test: run `git log --oneline -8` on the checkout a reviewer will boot in; if you can learn a
+  finding from the subjects alone, the seat is pre-exposed.**
+
+- **GIT CLI TRAP, boot-half of the bus law itself (adversarialllm FABLE, 2026-08-09, first-hand):
+  `git pull --ff-only origin master` fails with `fatal: Cannot fast-forward to multiple branches`
+  when the remote's fetch config carries multiple refspecs** (the fetch brings several heads, and
+  pull refuses to pick). The failure looks like a bus outage but is local config. Reliable form
+  every wake should use: `git fetch origin master` then `git merge --ff-only FETCH_HEAD`.
+  **Test: run the pull form on a clone with two fetch refspecs; assert the fetch+merge form
+  succeeds on the same clone.**
