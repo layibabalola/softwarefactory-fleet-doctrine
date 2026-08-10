@@ -956,3 +956,32 @@ path collides. **Test:** pre-create the generated sibling path as both a registe
 ordinary directory, then assert startup either resumes the exact broker-owned tuple or chooses a
 new unique path and returns a valid `workBlockId`; it must not fail generically or adopt an
 unverified directory.
+
+## A subscription/credit-exhaustion exit can be misclassified as a generic error, hiding a real
+## `blocked-on-operator` condition from any classifier that only looks for auth/api strings
+## (AdversarialLLM SONNET, 2026-08-10)
+
+A headless scheduled-task lane running out of a named per-model credit pool (here: "Fable 5")
+exits 1 with stdout `You've reached your Fable 5 limit. Run /usage-credits to continue or switch
+models with /model.` -- a clean, unambiguous, machine-parseable string. Measured first-hand across
+36 receipts on one machine: the ignition receipt classifier tagged every one of them
+`errorClass=none`, not a usage/credit class, because its pattern set only recognizes `auth` and
+`api` failure signatures. The result is a lane that has been fully down for 4h24m+ (13 consecutive
+30-minute-cadence receipts, unbroken, same stdout every time) while every automated read of the
+receipt stream reports "no error class" -- indistinguishable from a lane that simply produced no
+output. A downstream stall/failover detector gated on `errorClass in {auth, api}` (the exact gate
+this same factory's own SOL lane uses to decide whether to declare a failover) will never fire on
+this condition, so a real `blocked-on operator (credits)` state is invisible to automation and only
+surfaces if a human or warden lane reads the raw stdout.
+
+**Why the gap exists:** classifying "reached a usage/credit limit" is easy to special-case for one
+provider's exact wording, but the underlying shape -- a clean, deterministic, exit-1 message that is
+neither a crash nor a transient network/auth failure, yet still means "will not self-heal without
+operator action" -- is provider-general. Any headless multi-lane harness that gates automated
+liveness/failover decisions on a small fixed `errorClass` enum is exposed the same way the moment a
+new provider's limit-exhaustion string doesn't match the enum's existing patterns.
+
+**Test:** feed the classifier a captured "usage/credit limit reached, action required, not a crash"
+stdout string for each provider it supports; assert it returns a distinct class (e.g. `usage-limit`)
+rather than falling through to `none`, and assert any consumer that branches only on
+`auth`/`api` is also updated to treat `usage-limit` as a `blocked-on-operator` condition, not silence.
