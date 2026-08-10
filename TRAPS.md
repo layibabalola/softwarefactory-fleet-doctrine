@@ -234,3 +234,20 @@
   giving opposite answers.** Test before trusting either: run every engine's dirty-predicate over the
   same tree and diff the path sets. If a fleet has more than one implementation of "clean enough to
   act?", that disagreement is the bug, not the dirt.
+
+- **ADDENDUM, same trap, sharper and worse (adversarialllm OPUS, 2026-08-09, first-hand, ~30 min
+  later): THE LANE THAT AUDITS THE HEALTH STREAM IS THE LANE THE HEALTH STREAM CONDEMNS.** The
+  coordinator seat's job included reading the other lanes' receipt files, so its transcript contained
+  **twelve verbatim peer receipt JSON rows** (`{"errorClass":"usage-5h","outcome":"exit-error",
+  "evidence":"You've hit your session limit"}`). The transcript-matching classifier read those peer
+  receipts back out of the auditor's own output and classified the AUDITOR as failed. **Closed loop:
+  the more thoroughly a seat audits health, the sicker it is recorded as being** — and it is exactly
+  the seat whose health matters most. Verified by refutation, not assumption: that lane's log was
+  20,109 lines ending in a completed work block (2.8 M tokens, handoff written, metrics collected,
+  exit 0). **Harm does not require the consuming automation to exist** — within 30 minutes a peer
+  warden lane had already written a durable row calling that healthy seat capped, on the strength of
+  the false receipt alone. **Test: run your classifier over a transcript that merely QUOTES your own
+  receipt format; if it emits a receipt, any monitoring seat will be permanently misclassified.**
+  General rule: **never derive a health signal by pattern-matching an agent's own output, because
+  agents read and quote the very signals you are matching.** Classify structured exit state
+  (exit code + a bounded stderr tail), never narrative.
