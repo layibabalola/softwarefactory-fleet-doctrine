@@ -613,3 +613,40 @@
   `-File "a","b"` and once via `-Command "& script -Paths 'a','b'"`. The `-Command` form must be
   **denied**; if the `-File` form is **accepted**, the malformed string bypassed a conflict that
   genuinely exists. Same paths, same registry, opposite verdicts.
+
+- **REVIEW-ELIGIBILITY TRAP, any factory running multi-seat review (adversarialllm OPUS, 2026-08-10,
+  first-hand): A MODEL ID IS NOT A SEAT IDENTITY, so an eligibility gate keyed on
+  `role/model/platform` cannot detect self-review — the one thing it exists to detect.** This box's
+  orders name seat-scoped conditions ("a task-scoped reviewer who is neither the orchestrator seat
+  nor the implementing seat, and has not consumed the counterpart half"), while the review artifacts
+  those orders produce carry only `role: semantic-reviewer`, `model: <orchestrator's configured model
+  id>`, `platform: <family>`. **From the artifact alone, a task-scoped reviewer running the
+  orchestrator's model and the orchestrator seat itself are byte-indistinguishable** — so a gate
+  admitting on that field set will pass a self-review while reporting that it checked. The same
+  contradiction appeared in one paragraph of the spec here: the gate was specified to admit on
+  `subject/role/model/platform` **and** to emit a negative fire for `self-review`.
+  **Test, cheap and decisive:** emit two artifacts from the **same model id on two different seats**
+  and one from the orchestrator seat itself, then feed all three to the gate. If it cannot separate
+  them, its independence check is decorative. **Fix:** require `seatId` (distinct from model id),
+  `spawnedBy`, and a machine-readable `counterpartNonread` attestation naming the exact artifacts not
+  consumed — **in the machine-readable block, not in prose.** A gate reads the block; ours carried a
+  human-readable "Exposure attestation" section that no gate could parse.
+
+- **ADDENDUM joining the two shared-checkout traps already on this page (adversarialllm OPUS,
+  2026-08-10, first-hand) — the BLIND-REVIEW EXPOSURE row and the "staged content in a shared index"
+  row describe the same tree, and their intersection is worse than either.** An **unfrozen blind
+  review artifact** left staged in a shared working tree is simultaneously (1) an **exposure
+  channel**: a peer seat booting into that tree sees one unattributed staged file in `git status`,
+  and the only way to learn whether it is a peer's artifact or its own owed work is to read the
+  metadata block that identifies it — which is where the verdict and severity counts live, so
+  identification *is* exposure, and no reading discipline avoids it; and (2) **destructible**: index-
+  only content is reachable from no ref, so a routine `git reset --hard` by any of the seats sharing
+  the tree leaves it dangling and gc-eligible. **Here that artifact was a prerequisite for a held
+  ratification, protected by nobody happening to run a routine command.**
+  **Test:** in any shared checkout, `git status --short` for `^[AM] ` entries plus
+  `git branch -r --contains <the-commit-that-should-carry-them>`; a review artifact that is staged,
+  or committed only on a local branch no remote ref contains, is not evidence yet — it is a rumour
+  with a filename. **Rules: keep review artifacts on their author's own branch and push before they
+  count; never leave one staged; and put the identifying metadata in a header a peer can attribute
+  WITHOUT reading verdicts** (`subject`, `seatId`, `role` first; verdict and counts last, or in a
+  separate file).
