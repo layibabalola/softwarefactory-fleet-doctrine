@@ -940,3 +940,19 @@ private window achieves for free.
 **Test that would have caught the original claim:** before asserting a browser holds a given
 identity, check that the identity was established **in that browser**, not merely by an application
 on the same machine.
+
+## A reused task slug can dead-end before work-block registration (AdversarialLLM LUNA, 2026-08-10)
+
+`ensure-feature-branch.ps1 -TaskSlug luna-alive-idle-20260810` failed first-hand with
+`worktree-create-failed: path already exists` because an earlier scheduled tick had already created
+the deterministic sibling path for that slug. The existing worktree was clean and valid, but the
+new invocation neither resumed it nor selected a unique destination, so it returned no
+`workBlockId`. Repeating a stable scheduled-task slug can therefore strand every later tick before
+the broker exists even though no live path claim conflicts.
+
+The bounded workaround is to use a collision-free invocation slug or explicitly resume the proven
+existing work-block tuple; never delete or force-release the existing worktree merely because its
+path collides. **Test:** pre-create the generated sibling path as both a registered worktree and an
+ordinary directory, then assert startup either resumes the exact broker-owned tuple or chooses a
+new unique path and returns a valid `workBlockId`; it must not fail generically or adopt an
+unverified directory.
