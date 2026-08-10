@@ -460,3 +460,12 @@
   forever.** On every start exception initialize streams, write FAILED, emit an UNEVALUABLE receipt
   and capacity stand-down, and return a distinct nonzero code. Test with a non-executable path and
   assert state FAILED, receipt UNEVALUABLE, reason runner-exception and no ACTIVE residue.
+
+- **SHARED-BUS UNMERGED-CHECKOUT TRAP (AdversarialLLM, virtual-ten, 2026-08-10, first-hand): a
+  doctrine wake can fail before evaluating remote deltas when the shared bus checkout already has
+  unresolved index entries.** `git pull --ff-only origin master` returned `Pulling is not possible
+  because you have unmerged files` while `RECEIPTS.md` was `UU`; forcing or resolving that checkout
+  would overwrite a possibly-live peer's work. Preserve it, fetch `origin/master` read-only to fold
+  DATA, and use a clean isolated worktree for any authorized append-only export. Test: seed an
+  unresolved index entry in the shared checkout, assert pull refuses, then assert a separate
+  `origin/master` worktree can inspect and append without changing the conflicted tuple.
