@@ -115,3 +115,20 @@
 - Grok portal carrier measurement: percent-encoded cwd/session dirs expose `events.jsonl`,
   `updates.jsonl`, `chat_history.jsonl`, and summary/state. Event metadata is usable; explicit
   reasoning rows and headless `thought` prove mechanical redaction is mandatory before narration.
+
+- AirMyPC provider onboarding harness (virtual-ten, 2026-08-10): 23/23 covering Kimi think/tool
+  redaction; Grok thought/reasoning/system/tool redaction; valid/missing/multiple/nonzero/timed-out/
+  wrong-binding/fractional receipts; edit-revert/create-delete mutation; bounded process termination;
+  Class-B reset parsing and fail-closed routing.
+- Final adapter subject `90C81EEC…DC148`, host evidence `E0E116AD…60BCE`. Kimi focused review
+  receipt `5EFBF808…D25A50`: PASS 0B/0R/0M/1N, workspace unchanged. Grok focused read-only review
+  receipt `11288863…261D`: PASS 0/0/0/0, workspace unchanged. Earlier missing-terminal Grok runs
+  remain UNEVALUABLE.
+- Seeded-verifier drills: both providers independently found the planted defects. Isolated-bank
+  implementation drills changed only their bank workspaces; host reruns passed 3/3; nothing copied
+  or landed. Deliberately invalid Kimi path yielded exit 22, FAILED, UNEVALUABLE, runner-exception and
+  a stand-down capacity row rather than ghost ACTIVE state.
+- Provider-domain failover receipt: direct Claude Code 2.1.220 probe returned exit 1,
+  `terminal_reason=api_error`, HTTP 429, reset 03:20 America/Chicago; local refusal receipt SHA-256
+  `0DAFAEDE…06E5`. Contemporaneous Kimi/Grok healthy receipts establish distinct surviving routes
+  from the current Anthropic Class-B domain. No login/logout/account/credential/auth-file mutation.

@@ -222,3 +222,30 @@ active digest every 10 minutes, advancing quiet heartbeat at 30 minutes, possibl
 Narrators have zero authority. AirMyPC selects Codex `gpt-5.6-luna`/low and Claude Haiku-class/low;
 this supersedes AirMyPC's earlier `gpt-5.4-mini` narrator choice because that Codex model is scheduled
 to retire on 2026-08-31.
+
+---
+
+## AirMyPC Kimi/Grok bounded admission — RATIFIED 2026-08-10 00:2x CT
+
+AirMyPC completed the adapter, portal-redaction, refusal, timeout, mutation, seeded-verifier and
+isolated-bank drills. A 23-case shared harness passed. A direct Claude Code 2.1.220 probe returned
+HTTP 429 with reset 03:20 CT while Kimi and Grok returned healthy terminal receipts, proving both are
+surviving routes distinct from the current Anthropic Class-B quota domain.
+
+Kimi Code 0.34.0 and Grok Build 1.0.0 are admitted only through AirMyPC's bounded runner for design
+review, evidence audit, filtered narration and focused gate verification. Both are provisional
+bank-only implementers in isolated claimed workspaces. Kimi review tools are read/glob/grep only;
+Grok is pinned to unattended mode plus read-only sandbox and focused prompts. Neither provider can
+coordinate, adjudicate, land, issue a release exception or `RUN_GO`, and neither expands the five
+functional lane roster.
+
+The router requires `HEALTHY` capacity plus an explicitly `ADMITTED` capability. Each failover run
+gets a fresh id, exact subject hash, non-author/recusal proof, deadline, mutation sentinel and exactly
+one terminal receipt. Missing/malformed/partial/timed-out/nonzero/multiply signed output remains
+UNEVALUABLE. A later success never launders an earlier partial run.
+
+The portal filter mechanically drops private reasoning, prompts and raw tool bodies before display
+or optional narration. Mechanical refresh is 30 seconds; human-facing cadence remains material event
+within 60 seconds, changed-state digest at 10 minutes, advancing heartbeat at 30 minutes only without
+a milestone, possible-stall at 10 minutes without progress, completion within 60 seconds and silence
+while idle. Portal and narrator remain seatless and zero-authority.

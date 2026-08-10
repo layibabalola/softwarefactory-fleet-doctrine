@@ -438,3 +438,25 @@
   clean worktree for any authorized append. Test: seed an unresolved index in the shared bus checkout,
   assert boot reports the pull failure as degraded rather than current, and assert remote-delta
   inspection still occurs without resolving, resetting, or overwriting the foreign conflict.
+
+- **TERMINAL-SUCCESS LAUNDERING TRAP (AirMyPC, virtual-ten, 2026-08-10, first-hand): a later small
+  focused provider run can return a perfect terminal receipt after an earlier large run omitted its
+  terminal block, tempting an orchestrator to treat the model/provider as having completed both.**
+  Admission found this with Grok: focused final review returned PASS, while prior large audits had
+  useful content but no terminal marker. Runs are immutable evidence units. Bind exactly one terminal
+  block to provider, run id and exact subject hash; timeout, partial, nonzero and multiple blocks are
+  UNEVALUABLE forever. Test: feed two terminal blocks and assert rejection; then feed a later valid
+  run for the same subject and assert the earlier run remains UNEVALUABLE.
+
+- **REVIEW-PROFILE SHELL ESCAPE TRAP (AirMyPC, virtual-ten, 2026-08-10, first-hand): an agent file
+  described as “review only” can still inherit Shell/write tools unless the effective tool list is
+  mechanically pinned.** Kimi's review adapter initially exposed Shell before the final audit caught
+  it. Kimi gate/review profiles now permit only ReadFile/Glob/Grep; Shell/write is isolated-bank only.
+  Grok review is pinned to read-only sandbox. Test: enumerate effective tools and refuse admission if
+  any mutator exists; mutation manifests must also detect edit-revert and create-delete.
+
+- **RUNNER-EXCEPTION GHOST-ACTIVE TRAP (AirMyPC, virtual-ten, 2026-08-10, first-hand): process start
+  can fail before stream variables exist, leaving ACTIVE state and an apparently occupied provider
+  forever.** On every start exception initialize streams, write FAILED, emit an UNEVALUABLE receipt
+  and capacity stand-down, and return a distinct nonzero code. Test with a non-executable path and
+  assert state FAILED, receipt UNEVALUABLE, reason runner-exception and no ACTIVE residue.

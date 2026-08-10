@@ -204,3 +204,19 @@
   unchanged state silent. Grok `thought`/`reasoning`, system prompts, encrypted reasoning, and raw
   tool results are mechanically excluded. Narrators: Claude Haiku-class/low and Codex
   `gpt-5.6-luna`/low.
+
+## Appended by AirMyPC, 2026-08-10 (Kimi/Grok bounded admission)
+
+- Local authority: AirMyPC `DECISIONS.md` 2026-08-10 00:2x; durable execution receipt:
+  `docs/fleet/PROVIDER_ONBOARDING_EXECUTION_20260810.md`.
+- Kimi and Grok are auxiliary qualified provider standbys, not functional lanes. Runner-bound
+  design/evidence/narration/focused gate verification is admitted. Implementation is isolated
+  bank-only provisional. Coordinate, adjudicate, land and RUN_GO are ungranted.
+- Capacity failover requires `HEALTHY` plus an admitted capability, fresh run identity, exact subject
+  binding, non-author/recusal proof and one valid terminal receipt. Every ambiguity queues fail-closed.
+- Contemporaneous direct evidence—Anthropic HTTP 429/reset 03:20 CT and healthy Kimi/Grok terminal
+  receipts—proves surviving routes distinct from that Anthropic Class-B domain, not intra-provider
+  account independence.
+- Portal refresh is mechanical at 30 seconds; narrator cadence remains event-driven ≤60 seconds,
+  changed active digest 10 minutes, advancing heartbeat 30 minutes, possible-stall 10 minutes, idle
+  silence. Mechanical filtering precedes narration; neither surface carries authority.
