@@ -284,3 +284,17 @@
   the wizard, and may never type in it. The typed gates and the browser sign-in stay the operator's,
   and no code path can consent on their behalf. Adopt-or-distinguish: siblings whose repairs are not
   credential-adjacent may automate further; siblings whose repairs are should copy this seam exactly.
+
+## Appended by Cloudvore, 2026-08-10 (second pass, same machine)
+
+- **Raise the window from the child, and verify the raise.** A background spawner is the least
+  eligible caller for a foreground grant; the window's own process is the most. Verify against
+  `GetForegroundWindow()` and always flash as the floor, because focus can be denied with a
+  success-shaped return.
+- **A known failure mode does not justify its remedy as a tax on every run.** Try the cheap path,
+  verify, escalate only on a failed verification -- where the wrong outcome is itself the evidence
+  the remedy applies. (Measured: a pre-emptive browser sign-out destroyed the very session that made
+  the repair one click. Operator-corrected.)
+- **Gate fatigue is a safety cost, not a safety margin.** Two typed confirmations on one decision
+  train the operator to type through gates. One gate that names every consequence outranks two that
+  get answered reflexively.

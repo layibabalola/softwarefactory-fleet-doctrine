@@ -819,3 +819,47 @@ an exported rule: the discipline and its enforcement ship in the same file.
   governance record before anyone noticed the fork: the coordinator's ruling of record cites a reviewer
   finding *by branch commit* because it is not on the integration ref, and that finding's `grep -c` on
   the newest sibling of the reviewer's own log is **0**.
+
+## Raising a console you just spawned: it owns no window (Cloudvore, Bachelor/XPS-17, 2026-08-10)
+
+Follow-on to the attended-surface row above. The console opened and then went **under**, and every
+obvious fix was aimed at the wrong object.
+
+- **On Windows 11 the spawned process owns NO window.** `CREATE_NEW_CONSOLE` from a background hook
+  is handed to **Windows Terminal**, not conhost. Measured: the pwsh process reports
+  `MainWindowHandle=0` and an empty `MainWindowTitle`, its own `conhost.exe` child *also* reports 0,
+  and the only real handle belongs to a `WindowsTerminal` process whose title is the pwsh path. So
+  `$proc.MainWindowHandle` and `GetConsoleWindow()` both fail — and they fail by finding **nothing**,
+  not by erroring, so the focus code looks like it ran. **Test:** assert the handle you are about to
+  raise is non-zero AND `IsWindowVisible`; if it is not, you never had a window.
+- **The lookup that spans both hosts is the TITLE.** Set a distinctive console title, then
+  `EnumWindows` for a visible top-level window containing it. That finds the conhost window and the
+  Terminal window equally, and the title is what lets the operator find the right **tab** — because
+  Terminal reuses an existing window, the console can arrive as a background tab, where raising the
+  window still leaves the wrong tab in front.
+- **`SetForegroundWindow` is refused silently, with a success-shaped return.** Unless you own the
+  foreground you must borrow the foreground thread's input queue: `AttachThreadInput` → set →
+  detach (always detach, including on the failure path). **Verify against `GetForegroundWindow()`
+  afterwards** rather than trusting the call; it can still lose to the foreground lock timeout.
+- **Do the raising from the CHILD, not the spawner.** Windows grants the foreground change to the
+  window's own process far more readily than to a third party — and the spawner here is a background
+  hook, the least eligible caller on the box.
+- **`FlashWindowEx` is the floor, and it runs whether or not focus was won.** Flashing cannot be
+  refused by the foreground lock. A focus attempt that silently lost, with nothing flashing, is
+  indistinguishable from a feature that was never wired up.
+
+## Do not clear the browser session before the first attempt (Cloudvore, 2026-08-10, operator-corrected)
+
+An account-repair wizard opened the provider's sign-out page up front, reasoning that a live browser
+session silently returns you to the account you are leaving. That danger is real — but the premise
+was backwards in the common case, and the operator caught it: **the browser holds the session you
+WANT.** The desktop app is already signed into the target account and it authenticated *through that
+browser*, so the live cookie is the target's. The stale identity lives in the CLI's own credential
+store, which the CLI's own sign-out already clears. Clearing the browser up front therefore destroys
+the exact session that makes the repair one click, and converts it into a full manual sign-in.
+
+**The general shape, which is the part worth carrying: a known failure mode does not justify paying
+its remedy as a tax on every run.** Attempt the cheap path, verify the outcome, and escalate to the
+expensive remedy only where the verification failed — there the wrong result is itself the evidence
+that the remedy applies. **Test:** ask what the destructive pre-step costs when the failure it
+prevents did not occur; if that cost is a manual re-do, it belongs on the retry path.
