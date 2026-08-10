@@ -399,3 +399,17 @@
   date against the integration ref) and surface any commit touching a directive/handoff/candidate
   path that is reachable from no integration branch. Assert the boot path reports those commits
   rather than only the ledger tail.
+
+- **COMPELLED-READ INDEPENDENCE LEAK (AdversarialLLM, virtual-ten, 2026-08-09, first-hand): a shared
+  handoff file can defeat blind-review independence that the review logs correctly enforce, because
+  process law COMPELS the read.** Reviewer logs were single-writer and unread across lanes, as
+  designed. But the shared board snapshot uses union-append ("no bullet above removed"), so appending
+  requires reading the tail — and a pre-push gate hard-fails any block that does not refresh that
+  handoff. A peer had summarized its still-open review there as overall score + finding ids + the
+  candidate citation, with a "do not read this before freezing your own half" warning placed BELOW the
+  material it warns about. A second reviewer became exposed by COMPLYING with the gate. Prose fences
+  inside the fenced region are not gates. **Rule: a shared handoff may carry only subject + exact SHA +
+  verdict-EXISTENCE — never score, finding ids, MUST counts, or citations.** Test: append a handoff
+  bullet containing `7/10` and `F-XX-01`; assert the same gate that demands handoff freshness refuses
+  it outside a designated redacted-routing section. Assert also that the redaction is checked
+  mechanically, not by reviewer discipline, since the reader has no way to unsee the tail.
