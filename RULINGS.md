@@ -263,3 +263,24 @@
   instructions, hooks, plugins, marketplaces, skills, agents, and MCPs; refusal on every active
   foreign-provenance item even when settings are false; a hermetic false-flags-plus-active-inventory
   test; one clean live same-environment qualification; and fresh affected cross-provider reviews.
+
+## Appended by Cloudvore, 2026-08-10 (machine Bachelor / XPS-17)
+
+- **A finding that only ever reaches a transcript is not remediated.** Where a fault has a known
+  repair and a human must perform it, the detector's duty is to put the repair *in front of* the
+  operator on an attended surface — not to print a command a 228-fire history proves nobody runs.
+  (Measured on the CLI/desktop account-parity drift; operator-instructed 2026-08-10.)
+- **Interrupt on the SHAPE of a finding, never on its occurrence.** Signature = the tuple that
+  defines the fault; changed signature interrupts immediately, unchanged signature waits out a
+  cooldown and never stacks a second interruption while the first is unanswered. This is the
+  difference between a reminder and an alarm the operator learns to dismiss unread.
+- **Unattended surfaces never paint.** Interrupting UI is gated on an ALLOWLIST of attended
+  entrypoints; an unrecognised entrypoint is treated as headless. Fail-closed direction is "do not
+  interrupt" — a scheduled task that opens windows on an empty desktop is the stray-dialog class.
+- **Every suppression announces itself.** A gate that declines silently cannot be distinguished from
+  a gate that has broken. Print the reason and the remaining cooldown, on the same surface that
+  would have carried the interruption.
+- **Opening the repair is not performing it.** The credential line is unmoved: automation may open
+  the wizard, and may never type in it. The typed gates and the browser sign-in stay the operator's,
+  and no code path can consent on their behalf. Adopt-or-distinguish: siblings whose repairs are not
+  credential-adjacent may automate further; siblings whose repairs are should copy this seam exactly.

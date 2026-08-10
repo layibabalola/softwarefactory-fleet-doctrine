@@ -734,3 +734,47 @@
   when the branch touches a review artifact for a subject with an open blind quorum. **The general
   form is the part worth carrying: a trap row tells a sibling what to fear; only a hook tells a
   sibling's machine what to refuse.**
+
+## Attended-surface popups: four traps under one feature (Cloudvore, machine Bachelor/XPS-17, 2026-08-10)
+
+**The setup.** A SessionStart hook detected that the Claude CLI was signed into a different account
+than the desktop app — the depleted-account drift that no amount of waiting clears. It printed the
+fix command every time. Measured: it had fired **228 times, five of them inside five minutes**, and
+the CLI was still on the wrong account. The remedy was to stop printing and open the repair wizard
+in a real console. Each of the four traps below sank a naive version of that.
+
+- **A detector that only prints is not a control.** 228 correct reports changed nothing. The
+  discriminator between a control and a log is whether anything *blocks or interrupts* on the
+  finding. **Test:** count the detector's own fires against the number of times the condition was
+  actually remediated; if the ratio is unbounded, it is a log wearing a control's name.
+- **Popup-per-detection is a window storm, and the storm is worse than silence.** Five windows in
+  five minutes trains the operator to close on sight, after which the drift *looks* handled. Gate on
+  the **shape** of the finding, not its occurrence: a signature over (desktop-account, cli-account,
+  sorted reasons). Signature CHANGED ⇒ show at once, cooldown or not, because that is new
+  information. Signature UNCHANGED ⇒ cooldown, and never a second window while the first is open.
+  **Test:** run the detector twice in a row and assert the second run refuses with a reason.
+- **The spawned console can refuse itself, and it looks identical to success.** The wizard correctly
+  declines to touch credentials unless a real keyboard is attached. Passing `stdin=DEVNULL` to the
+  spawn — the reflex for a detached process — makes `[Console]::IsInputRedirected` **True** inside
+  the child, so the window opens, prints REFUSED, and the operator sees a popup that cannot work.
+  Leave the std handles **unset** and pass `CREATE_NEW_CONSOLE`. **Test:** spawn a probe through the
+  exact production path that writes the child's own `IsInputRedirected` / `UserInteractive` to a
+  file, and assert the parent's interactivity predicate would return true *inside the child*.
+  Measured here: `IsInputRedirected=false`, predicate true — but only without the DEVNULL.
+- **A hook's children can be killed by the Job Object the hook runs in.** The console dies as the
+  operator reads line one, and the failure is indistinguishable from them closing it. Add
+  `CREATE_BREAKAWAY_FROM_JOB`, and **retry without it** — not every job permits breakaway, so a
+  single-flag spawn fails closed to no window at all. **Test:** assert the console outlives the
+  parent session.
+- **The gate that matters is attendance, and unknown must mean no.** A scheduled warden tick or a
+  headless lane painting a window on an unattended desktop is the same failure class as a probe that
+  left an OAuth page on the operator's screen (Cloudvore, 2026-07-21). Gate on an **allowlist** of
+  attended entrypoints (`CLAUDE_CODE_ENTRYPOINT` ∈ cli, claude-desktop, IDEs); an unrecognised value
+  is far more likely to be a new headless surface than a new terminal. **Test:** unset the entrypoint
+  and assert refusal — that is the cron case.
+
+**And the rung that makes it not-folklore:** every refusal PRINTS its reason into the transcript
+(`no popup: same drift, last shown 12m ago (cooldown 240m)`). A suppression path that returns
+silently is indistinguishable from a feature that has quietly stopped working — which is the failure
+the `TRAPS.md` row directly above this one describes. This feature is a local mechanical check, not
+an exported rule: the discipline and its enforcement ship in the same file.
