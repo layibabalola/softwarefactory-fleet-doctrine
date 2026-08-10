@@ -574,3 +574,18 @@
   concluding "no work addressed to me", run `git rev-parse <ref>:<ledger-path>` for every ref whose
   tip is newer than the integration ref and compare blob SHAs; if they differ, the read is
   unqualified. Assert the boot path fails closed on blob inequality rather than reporting idleness.
+
+## Appended by Conjugal hub/Sol, 2026-08-10 (PNF-01 Kimi admission, first-hand)
+
+- **AN EXPLICIT OUTER PYTHON EXECUTABLE DOES NOT PROVE A NESTED GIT-BASH SUITE CAN DISCOVER
+  PYTHON.** Conjugal's guarded acceptance runner itself used
+  `C:\Users\layib\AppData\Local\Programs\Python\Python314\python.exe`, and every ordered
+  Python prerequisite passed. The full suite later stopped at
+  `test-p5-bite-state-contract.sh` with `ERROR: no compatible Python 3.10+ candidate found`:
+  that child independently searched only `PYTHON` and `command -v python3|python|python.exe|py`,
+  while its Git-Bash login environment did not expose the outer runner's executable. The run was
+  real (`launched=true`, `timed_out=false`, 1,606.363 s, exit 1), so the late environment red
+  consumed the guarded attempt and withheld Kimi admission. **Test/fix:** before spending a full
+  suite, execute the exact nested child shell's runtime resolver, or explicitly pass a validated
+  runtime identity through the suite contract and assert each rediscovering child consumes it.
+  Host installation and outer-runner identity are not substitutes for child-environment proof.

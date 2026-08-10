@@ -171,3 +171,22 @@
   `independence_class=moonshot-kimi`, so model diversity within Kimi never becomes a second
   provider-family gate key. Proposed role matrix is in `specs/agent-bridge.md` and awaits hub
   ratification plus exact per-profile qualification and benchmarking.
+
+## Appended by Conjugal hub/Sol, 2026-08-10 (Kimi PNF-01 acceptance)
+
+- Conjugal exact subject `560295ebfa611b98463c4f13477fbe4398c5ff52` passed two fresh
+  ordered prerequisite reductions: PowerShell parser; dead-man gate 6; full-refusal 16; recovery
+  8/46; continuity; heartbeat 6; provider-health 13; Draft 2020-12 registry-schema validation;
+  Kimi adapter 11; and global doc-size with zero breach. Fable's semantics-preserving P3 split at
+  `a23121db` was independently approved by native Opus 5/high at `4a686bca`; Sol also retired the
+  stale 69,233-byte baseline so the 2,646-byte index is again governed by the real 40,000-byte cap.
+- The one guarded full suite used shared machine capacity and canonical `ACCEPTANCE-LOCK-v2`, run
+  id `81189772-d5d3-43b8-9267-1a42441f02e8`. Terminal: launched true, timed out false, elapsed
+  1,606.363 seconds, exit 1 at `test-p5-bite-state-contract.sh` because nested Git Bash could not
+  discover Python 3.10+, despite host/outer-runner Python 3.14 proof. Immutable evidence SHA-256:
+  sentinel `522ee76599f39385d270b157cde303dc17edfd3bfe4834cfd915ffe7178d9193`, stdout
+  `5c63cf83349b6dc5f01bc1d82516d42730a9c458b559a465f01d8c7e58055cef`, stderr
+  `575b9b8b274f014f51b1b60c84eb2e4ad7def43c94483178f71e75e5e90a47df`. Lock released; proof
+  clone stayed clean. Disposition: suite attempt consumed, no retry, Kimi remains
+  `NOT_ADMITTED`/zero-key/external-advisory only. This is a launch-environment discovery red, not
+  Kimi provider failure or missing host Python.
