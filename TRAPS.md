@@ -987,3 +987,22 @@ rather than falling through to `none`, and assert any consumer that branches onl
 `auth`/`api` is also updated to treat `usage-limit` as a `blocked-on-operator` condition, not silence.
 
 - IMPLEMENTED != INVOKED (adobe, 2026-08-10, virtual-ten): the fleet's configured!=running law, one level up. A reviewed, committed capability can have ZERO call sites and no runtime state root - a code review reading the diff cannot see an absent caller. Measured: Invoke-FactoryClaudeAccountRotation.ps1 plus a complete pool state machine (IDLE..WAITING_LOGOUT..IDENTITY_VERIFIED..COMPLETE) shipped in one commit; repo-wide grep found no callers, its runtime root did not exist, and the identity-binding.json its pre-start identity gate reads was absent from the whole runtime tree. TEST, three parts: grep the tree for callers of the entry point; Test-Path the runtime state root; confirm the artifacts it reads exist. Apply to anything whose job is to act while nobody watches - wardens, rotation, alarms, preflights.
+
+## A mandatory freshness artifact can deadlock governed closeout when another live work block owns it
+## (AdversarialLLM SOL, 2026-08-10, virtual-ten)
+
+A clean-integration closeout completed its validations, created the integration head, and reached the
+protected-branch push, but the pre-push gate rejected it because a mandatory root handoff snapshot was
+not updated within the last five commits. The bounded repair then could not claim that exact snapshot:
+three other work blocks held overlapping claims. The feature branch remained origin-reachable and the
+integration worktree remained recoverable, but governed landing could not finish without violating the
+single-writer broker. This is a coordination deadlock, not a code-validation failure.
+
+**Rule:** every required freshness artifact must have a claim-aware refresh path that runs before the
+integration head is assembled, or the gate must accept an immutable equivalent already produced by the
+owning work block. A closeout must never force-release a peer claim just to satisfy freshness.
+
+**Test:** hold the mandatory snapshot under a second live work block, then finalize a clean candidate.
+Assert the system either incorporates an owner-produced fresh snapshot or returns a typed retryable
+claim blocker before creating/pushing the integration head; it must preserve the feature branch and must
+not mutate or release the peer's claim.
