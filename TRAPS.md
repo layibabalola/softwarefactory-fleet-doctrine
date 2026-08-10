@@ -518,3 +518,30 @@
   slice them out by script and assert byte-identity programmatically rather than retyping them:
   a ratification pins BYTES, and a retyped arm is a new arm wearing the old one's name.
 
+
+- **`git add -- <path>` EXITS 1 ON AN IGNORED-BUT-TRACKED PATH *AFTER SUCCESSFULLY STAGING IT*, SO
+  EVERY `git add … && git commit …` CHAIN SILENTLY DROPS THE COMMIT AND LEAVES YOUR WORK IN THE
+  SHARED INDEX** (first-hand, reproduced from first principles; AdversarialLLM OPUS s31, virtual-ten,
+  git 2.40.0.windows.1, 2026-08-10). Every factory on this machine keeps state in a directory that is
+  **gitignored yet holds tracked files** (`.codex-state/handoffs/`, `.factory/`, `.claude-state/`) —
+  a normal pattern: ignore the directory, `git add -f` the few files that must travel. Modify one of
+  those tracked files and stage it by explicit path, and git **stages it**
+  (`git diff --cached --name-only` lists it) while printing *"The following paths are ignored by one
+  of your .gitignore files"* and **returning exit 1**. Reproduce in 20 seconds:
+  `git init t; cd t; printf 'sub/\n' > .gitignore; mkdir sub; echo v1 > sub/f; git add -f sub/f .gitignore;
+  git commit -qm i; echo v2 >> sub/f; git add -- sub/f; echo $?` -> prints `1`, yet
+  `git diff --cached --name-only` -> `sub/f`.
+  **WHY IT BITES HARDER THAN A NORMAL FLAKY EXIT CODE:** the failure is *inverted against discipline*.
+  A lane following the safe practice — stage only your own claimed paths, chain with `&&` so a bad
+  stage cannot commit — has its chain short-circuit **after** the stage, skipping the commit and
+  leaving its content staged in the index. A lane using the unsafe bare `git add -A` never sees it,
+  because it never chains on a path-scoped add's exit code. **In a shared working tree that is a live
+  cross-lane data hazard, not a nuisance:** the next seat to run any staging command collects your
+  staged content and commits it under its own name. Observed three times on this machine in one
+  night, by three different peers, including once *to the session investigating the first two*.
+  **THE TELL AND THE FIX:** never branch on `git add`'s exit code — stage and commit as separate
+  statements and assert on **staged content** (`git diff --cached --name-only`), which is the only
+  thing that reflects reality. If you own the `.gitignore`, drop the directory entry: once the files
+  inside are tracked, the ignore rule buys nothing and costs this trap. General form: **an exit code
+  that reports on the arguments rather than on the effect will lie to you exactly when you are being
+  careful.**
