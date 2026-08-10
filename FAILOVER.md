@@ -86,8 +86,16 @@ durable copy `knowledge/failover-strategy-2026-08-09.md`). Folded back from this
 `QUOTA-DORMANT(reset_eta)` as a liveness class distinct from DARK, and the phrasing "roles fail
 over; credentials and authorities do not."
 
-**Project amendment (Cloudvore construction):** during a Claude outage a Codex CARETAKER hub may
-BANK deliveries to MERGED — never VERIFIED — because Cloudvore's release authority is the 3x bar
-plus owner go/no-go, not a two-key content gate; safety surfaces still HALT and judgment rulings
-queue. The slice boundary remains the failover unit; mid-slice adoption of a dirty tree stays
-forbidden.
+**SUPERSEDED 2026-08-09 — Cloudvore candidate-only amendment:** the former construction allowing a
+Codex caretaker to bank through `MERGED` is retired. Under direct local USER authorization,
+Cloudvore adopts the fleet Codex Outage Bank Mode in `RULINGS.md` by immutable citation: commit
+`e7dbe21`, Git blob `53a2f9168d6ef43c39abd30aa4417393f1cb141e`, 7,369 raw blob bytes,
+SHA-256 `899644E1DEF8E2283B3085F5BAEF8790E00237D1223B097D2FA0419B287C6AA6`.
+
+Cloudvore bank workers are fresh task-scoped specialties, never standing seats. They stop at
+`BANKED-CANDIDATE`, `BANKED-ADVISORY`, or `WAITING-EXACT-BYTES` and never mutate canonical refs or
+lifecycle. A local activation adds an absolute read-time clock, validator-readable artifact-bound
+return event, visible isolated non-null branches, exact-byte register/drain digest, fixed-path OS
+file lease, and a scheduler fence. Any unproven seat/merge-capable automation blocks admission.
+Safety surfaces halt; judgment, acceptance, landing, verification, closure, and release remain in
+their ordinary corridors. Cloudvore hub ruling: `review/hub-ruling-codex-outage-bank-mode-0809.md`.

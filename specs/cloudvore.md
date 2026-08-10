@@ -22,8 +22,9 @@ State is DERIVED, never recited (scope-carrying-assertions law; roadmap status f
   measured instance under a pre-stated falsifier (6 slices).
 - Safety-surface HALT boundary is REACHABILITY to the wipe-license predicates, not a noun list;
   "I cannot tell" routes to HALT.
-- Outage protocol: Claude-out = produce-and-bank (bank stops at MERGED, never VERIFIED; safety
-  surfaces halt); Codex-out = full protocol, thinner net (pairing debt recorded).
+- Outage protocol: Claude-out direct-USER Bank Mode is exact-byte candidate production only
+  (`BANKED-CANDIDATE`/`BANKED-ADVISORY`, never canonical refs or lifecycle; safety surfaces halt);
+  Codex-out = full protocol, thinner net (pairing debt recorded).
 - danger-full-access / sandbox-bypass flags BANNED for unattended lanes; a host where only the
   bypass works is BLOCKED-escalate, not worked-around.
 
@@ -73,10 +74,22 @@ drill result from any sibling ahead of our quota reset.
   dirty tree FORBIDDEN (preserve -> decline -> requeue); successor starts from a RE-DERIVED
   frozen charter; wedged claims close via hub RETIRED with the outage as reason.
 - Codex takes over per role: implementer = full takeover (platform is a charter parameter);
-  reviewer = full protocol + PAIRING DEBT per delivery, re-discharged on family return; hub =
-  Codex CARETAKER seats/drains/banks, banking stops at MERGED never VERIFIED, safety surfaces
-  HALT, judgment rulings queue for a Claude hub or owner. Mirror for Codex-out (existing law).
+  reviewer = full protocol + PAIRING DEBT per delivery, re-discharged on family return. A direct
+  local USER order may enable fresh task-scoped BANK-SOL/BANK-LUNA candidate workers; they never
+  inherit standing-lane or hub authority and never merge, land, close, or ratify. Mirror for
+  Codex-out remains ordinary law.
 - Both families down = produce nothing, warden announces once. That is the floor.
+
+### Codex Outage Bank Mode — Cloudvore profile, hub-ratified 2026-08-09
+
+Adopts DNG's fleet law at commit `e7dbe21`, blob
+`53a2f9168d6ef43c39abd30aa4417393f1cb141e`, 7,369 raw bytes, SHA-256
+`899644E1DEF8E2283B3085F5BAEF8790E00237D1223B097D2FA0419B287C6AA6`. Activation requires a
+controller-owned exact marker/register before dispatch. Read-time expiry/revocation/artifact-bound
+Claude advancement turns authority OFF even if no end receipt exists. Visible isolated branches,
+exact-byte receipts, fixed-path exclusive OS lease, digest-bound batch drain, and a scheduler fence
+are mandatory; unproven merge/seat automation blocks admission. The prior caretaker-through-MERGED
+carve-out is superseded.
 
 ## Doctrine cadence (owner-directed, hub-ratified 2026-08-09 13:10)
 - WHEN is mechanical: every seat runs PULL-DIFF-FOLD on boot (pull bus, diff specs/TRAPS/RULINGS

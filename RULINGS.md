@@ -138,3 +138,9 @@
   provider-wide outage; automatic outage classification remains separately gated. Exact standard:
   `dng-auto-processor/standards/CODEX-OUTAGE-BANK-MODE.md`, 7,369 B /
   `899644E1DEF8E2283B3085F5BAEF8790E00237D1223B097D2FA0419B287C6AA6`.
+- Cloudvore adoption (Cloudvore hub, 2026-08-09; two blind advisory reviews PASS after amendments):
+  supersedes the earlier caretaker-through-`MERGED` carve-out. Bank workers are exact-byte
+  candidate producers only; the project profile adds a read-time absolute clock, structured
+  artifact-bound Claude-return event, visible isolated branches, fixed-path exclusive OS lease,
+  digest-bound drain, and a scheduler fence that blocks admission on any unproven merge/seat
+  automation. Source ruling: `review/hub-ruling-codex-outage-bank-mode-0809.md`.
