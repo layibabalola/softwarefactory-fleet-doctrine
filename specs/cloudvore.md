@@ -1,6 +1,6 @@
 # Cloudvore (DropBox Vault) — factory spec. Writer: Cloudvore hub/warden ONLY.
 
-Updated 2026-08-09 (seeded by seat 5 at owner instruction). Repo: C:\code\DropBox Vault (private remote github.com/layibabalola/Cloudvore; never-push rule RETIRED by owner 2026-08-09 02:04 CDT — pushes now routine; release go/no-go stays owner-only). Product: WPF .NET app that pushes camera footage to cloud storage and
+Updated 2026-08-10 (seeded by seat 5 at owner instruction). Repo: C:\code\DropBox Vault (private remote github.com/layibabalola/Cloudvore; never-push rule RETIRED by owner 2026-08-09 02:04 CDT — pushes now routine; release go/no-go stays owner-only). Product: WPF .NET app that pushes camera footage to cloud storage and
 PROVES the copy intact. The proof is the product; cardinal rule: no surface says SAFE TO WIPE
 unless the persisted IsSafeToWipe gate licenses it — a false tamper alarm is equally harmful.
 
@@ -31,13 +31,15 @@ State is DERIVED, never recited (scope-carrying-assertions law; roadmap status f
 - Kimi attended session portal: native `kimi vis`, loopback-only, session-id keyed, seatless and
   non-adjudicating. Wire/Timeline verified on 6 sessions; portal display is never gate evidence.
 - Kimi attended chat relays: keep the native dashboard; add a pinned Codex Desktop
-  `gpt-5.4-mini`/low narrator and a named Claude Desktop Haiku-class/low narrator over the same wire.
+  `gpt-5.6-luna`/low narrator and a named Claude Desktop Haiku-class/low narrator over the same wire.
   Both are pull-only, mechanically pre-filtered, seatless, and barred from reviewer inputs. Claude
   deep-link bootstrap remains pending until the owner sends the prefilled composer.
-- Grok staged provider: official Grok Build 1.0.0, grok.com auth, `grok-4.5`, prompt-file structured
-  and streaming terminal receipts, durable sessions, and provider-portal read PASS. NOT ADMITTED
-  pending foreign-compat isolation/effective-tool assertion plus worktree/claim,
-  heartbeat/timeout/health, and seeded role drills.
+- Kimi and Grok bounded provider adapters are admitted under the fleet capability ruling: design,
+  evidence audit, narration, and focused gate verification only; implementation remains provisional
+  isolated-bank-only. Coordinate, adjudicate, land, release exception, and `RUN_GO` are ungranted.
+  Kimi uses pointer-only prompt transport plus an explicit Markdown agent profile; Grok uses native
+  prompt-file transport with foreign compatibility disabled. Both require worktree/claim fences,
+  heartbeats, exact-tree timeout, matching stream and durable terminals, and fail-closed tool gates.
 - danger-full-access / sandbox-bypass flags BANNED for unattended lanes; a host where only the
   bypass works is BLOCKED-escalate, not worked-around.
 
@@ -53,8 +55,8 @@ State is DERIVED, never recited (scope-carrying-assertions law; roadmap status f
 
 ## CLI versions last validated here
 codex-cli 0.144.6 (ignition-proven); claude 2.1.214; Kimi Code CLI 0.34.0; Grok Build 1.0.0
-(binary/PATH/doctor, managed K2.7/K3 catalog, and authenticated structured K3 smoke proven; lane
-adapter NOT YET ADMITTED). Single-version-per-machine
+(binary/PATH/doctor/authenticated inference plus bounded adapter and live terminal drills proven).
+Single-version-per-machine
 ruling applies per CLI.
 
 ## Open questions this factory would take receipts on
@@ -106,11 +108,12 @@ drill result from any sibling ahead of our quota reset.
   occurs only at a terminally fenced slice boundary with a fresh actor and re-derived charter.
 - Independent acceptance means two distinct qualified independence classes. With one, candidate work
   may continue but acceptance queues; with zero, announce once and wait.
-- Kimi is staged as provider three: official CLI 0.34.0 and authenticated K3 smoke pass, but the
-  unattended lane remains NOT ADMITTED until ACP/file transport, isolated-worktree, claim,
-  heartbeat/timeout, and terminal-receipt drills pass. Grok is staged as provider four with stronger
-  prompt-file/terminal transport evidence but remains NOT ADMITTED on its named isolation and lane
-  drills. Future providers use the same contract.
+- Kimi and Grok are qualified auxiliary provider standbys under `RULINGS.md`'s 2026-08-10 bounded
+  admission. Cloudvore independently re-ran their adapter pins and live read-only role drills before
+  publishing this delta. Admission is capability-by-capability: runner-bound design/evidence/
+  narration/focused gate verification is available; implementation is provisional isolated-bank
+  only; coordination, adjudication, landing, release exception, and `RUN_GO` remain forbidden.
+  Future providers use the same contract.
 - This amendment does not mutate or widen the separately authorized Codex Outage Bank profile.
   Review and ratification: `review/hub-ruling-multi-provider-failover-0809.md`.
 - Observability receipt: native `kimi vis` at loopback enumerated 6/6 sessions and rendered the K3
