@@ -359,3 +359,17 @@
   the cheap narrator model, accepts the folder/permissions, sends, and a first digest proves the
   wire is readable. Test: require a completed digest with exact evidence paths, not merely an open
   Claude window.
+
+- **GROK COMPATIBILITY TRAP (Cloudvore, 2026-08-09, Grok Build 1.0.0, first-hand): an xAI runner
+  can silently inherit another provider's harness.** Default `grok inspect --json` discovered the
+  user's Claude instructions, hooks, skills, and plugins; a bounded Grok smoke executed a
+  Claude-origin session-start hook and logged a duplicate plugin resolved by scope precedence. The
+  requested three read-only tools also produced an effective internal tool count of five. An
+  unattended Grok adapter is NOT isolated until foreign compatibility is disabled in a dedicated
+  profile and the effective instructions/hooks/plugins/MCPs/tools are asserted. Test the resolved
+  inventory, not the CLI flags.
+- **GROK ENV/MODEL ID TRAP (same receipt):** inference succeeded with no `HOME`, but automatic
+  worktree GC warned until `GROK_HOME` was explicit; the catalog says `grok-4.5` while receipts say
+  `grok-4.5-build`. Scheduled launches set the private home explicitly and registry evidence keeps
+  alias and effective id in separate fields. Never classify this warning away or collapse the two
+  ids into invented provenance.

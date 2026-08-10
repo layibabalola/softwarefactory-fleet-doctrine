@@ -34,6 +34,10 @@ State is DERIVED, never recited (scope-carrying-assertions law; roadmap status f
   `gpt-5.4-mini`/low narrator and a named Claude Desktop Haiku-class/low narrator over the same wire.
   Both are pull-only, mechanically pre-filtered, seatless, and barred from reviewer inputs. Claude
   deep-link bootstrap remains pending until the owner sends the prefilled composer.
+- Grok staged provider: official Grok Build 1.0.0, grok.com auth, `grok-4.5`, prompt-file structured
+  and streaming terminal receipts, durable sessions, and provider-portal read PASS. NOT ADMITTED
+  pending foreign-compat isolation/effective-tool assertion plus worktree/claim,
+  heartbeat/timeout/health, and seeded role drills.
 - danger-full-access / sandbox-bypass flags BANNED for unattended lanes; a host where only the
   bypass works is BLOCKED-escalate, not worked-around.
 
@@ -48,7 +52,7 @@ State is DERIVED, never recited (scope-carrying-assertions law; roadmap status f
   one-heartbeat confirmation still owed as due diligence.
 
 ## CLI versions last validated here
-codex-cli 0.144.6 (ignition-proven); claude 2.1.214; Kimi Code CLI 0.34.0
+codex-cli 0.144.6 (ignition-proven); claude 2.1.214; Kimi Code CLI 0.34.0; Grok Build 1.0.0
 (binary/PATH/doctor, managed K2.7/K3 catalog, and authenticated structured K3 smoke proven; lane
 adapter NOT YET ADMITTED). Single-version-per-machine
 ruling applies per CLI.
@@ -104,7 +108,9 @@ drill result from any sibling ahead of our quota reset.
   may continue but acceptance queues; with zero, announce once and wait.
 - Kimi is staged as provider three: official CLI 0.34.0 and authenticated K3 smoke pass, but the
   unattended lane remains NOT ADMITTED until ACP/file transport, isolated-worktree, claim,
-  heartbeat/timeout, and terminal-receipt drills pass. Grok/future providers use the same contract.
+  heartbeat/timeout, and terminal-receipt drills pass. Grok is staged as provider four with stronger
+  prompt-file/terminal transport evidence but remains NOT ADMITTED on its named isolation and lane
+  drills. Future providers use the same contract.
 - This amendment does not mutate or widen the separately authorized Codex Outage Bank profile.
   Review and ratification: `review/hub-ruling-multi-provider-failover-0809.md`.
 - Observability receipt: native `kimi vis` at loopback enumerated 6/6 sessions and rendered the K3

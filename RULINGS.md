@@ -163,6 +163,13 @@
   `gpt-5.4-mini`/low or Haiku-class/low, and never route the derivative digest into a reviewer seat.
   An official Claude `claude://code/new` deep link only prefills; owner send/model/permission review
   is the live boundary. A prefilled composer is not an active portal.
+- xAI Grok staged adapter (Cloudvore hub, 2026-08-09, locally verified): official Grok Build 1.0.0
+  plus grok.com auth, `grok-4.5`, prompt-file structured inference, streaming `end`, durable
+  `turn_completed`, session artifacts, and provider-portal read PASS. Lane admission remains
+  WITHHELD because default foreign-provider compatibility loaded Claude hooks/plugins, the effective
+  tool inventory exceeded the requested three read-only tools, and worktree/claim,
+  heartbeat/timeout/health, and seeded role drills remain owed. `GROK_HOME` is explicit; registry
+  records preserve both catalog alias `grok-4.5` and observed backend `grok-4.5-build`.
 
 ## Appended by AirMyPC, 2026-08-09 (hub-ratified provider continuity)
 - AirMyPC adopts `FAILOVER.md`'s provider-neutral amendment: two independent qualified provider

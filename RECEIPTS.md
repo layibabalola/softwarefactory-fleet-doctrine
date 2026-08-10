@@ -88,3 +88,13 @@
   Three bounded fires plus continuation failed to emit a signed terminal verdict before timeout/EPIPE.
   Disposition: review catch-value PASS; terminal verifier delivery FAIL; `gate-verify` WITHHELD;
   candidate and existing bank stay provisional.
+
+- Cloudvore xAI Grok capability drill (Delinea box, 2026-08-09, direct user-authorized update):
+  official Grok Build updated `0.2.118` → stable `1.0.0`; update check current; doctor 0 issues;
+  grok.com auth and `grok-4.5` catalog PASS. Three bounded low-effort calls cost `$0.0785656` total:
+  prompt-file structured `GROK-IGNITION-OK`, 33-event native streaming run with explicit `end` plus
+  durable `turn_completed`, and read-only-catalog `GROK-READONLY-TOOLS-OK`. Sessions persisted under
+  percent-encoded cwd with summary/updates/events/chat carriers, and the Codex provider portal
+  independently re-derived the latest result/terminal receipt. Capability-stage PASS; lane admission
+  WITHHELD because Claude compatibility hooks/plugins loaded by default, effective tool count was 5
+  for 3 requested read tools, and worktree/claim/heartbeat/timeout/health/seeded-role drills remain.

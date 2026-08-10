@@ -139,7 +139,19 @@ MoonshotAI Kimi is the first staged third provider: Kimi Code CLI 0.34.0 is inst
 doctor, managed K2.7/K3 catalog, and authenticated structured K3 smoke are verified. It remains
 `LANE-ADAPTER-PENDING / NOT ADMITTED` until ACP/file transport, isolation, claim,
 heartbeat/timeout, and terminal-receipt drills pass.
-xAI Grok and later providers enter through the same adapter contract, never a new authority branch.
+xAI Grok is staged next: official Grok Build 1.0.0, grok.com auth, `grok-4.5`, prompt-file
+transport, structured output, native streaming terminal receipt, durable session artifacts, and a
+portal read are locally verified. It remains `LANE-ADAPTER-PENDING / NOT ADMITTED` until foreign
+compatibility is isolated, effective tools are pinned, and worktree/claim, heartbeat/timeout/health,
+and seeded role drills pass. Later providers enter through the same adapter contract, never a new
+authority branch.
+
+The Grok adapter sets `GROK_HOME` explicitly, uses `--prompt-file` and
+`--output-format streaming-json`, and requires both the stdout `end` event and durable
+`turn_completed` update with matching identity. Registry records keep catalog alias and observed
+effective backend model separately. Default Claude/Cursor compatibility, inherited foreign hooks,
+and a tool inventory broader than the requested allowlist are admission failures until inspected
+and disabled/pinned; interactive convenience is not provider isolation.
 
 Provider observability follows the same abstraction. Every admitted adapter records a session id
 and offers a pull-only, seatless portal over native session artifacts. A portal reports but never
@@ -152,6 +164,11 @@ low-effort narrator (currently Codex `gpt-5.4-mini`/low or Claude Haiku-class/lo
 They never prompt a worker, forward peer reasoning to a reviewer, or become a carrier of record.
 Inference tier follows authority, not volume: any relay that can steer, mutate, approve, or rule is
 not a narrator and must move to a separately claimed coordinator-grade surface.
+
+Grok portals derive percent-encoded cwd plus session id under `$GROK_HOME/sessions` and pull
+`summary.json`, `updates.jsonl`, `events.jsonl`, and `chat_history.jsonl`. They exclude thought
+content and relay only terminal outcomes, errors, and artifact pointers. `grok dashboard` is an
+attended terminal view, not a gate or a carrier of record.
 
 ---
 
