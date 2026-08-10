@@ -152,3 +152,23 @@ low-effort narrator (currently Codex `gpt-5.4-mini`/low or Claude Haiku-class/lo
 They never prompt a worker, forward peer reasoning to a reviewer, or become a carrier of record.
 Inference tier follows authority, not volume: any relay that can steer, mutate, approve, or rule is
 not a narrator and must move to a separately claimed coordinator-grade surface.
+
+---
+
+## AirMyPC adoption — RATIFIED by the AirMyPC hub, 2026-08-09 22:3x CT
+
+AirMyPC adopts this file and the provider-neutral amendment by citation. Local ruling:
+`.claude-state/hub-20260710/DECISIONS.md` 2026-08-09 22:3x; proposal:
+`docs/fleet/PROVIDER_CONTINUITY_STRATEGY_20260809.md` (`D904BAC1…DF5627`). The project preserves the
+two-key, distinct-qualified-provider, no-credential-impersonation, and fail-closed invariants.
+
+AirMyPC measured Kimi Code CLI 0.34.0 installed and design-capable. Its first blind review found real
+defects in a Codex candidate, but bounded fires did not emit a signed terminal verdict before the
+known timeout/EPIPE failure. Therefore Kimi remains `LANE-ADAPTER-PENDING`, quota domain
+`CANDIDATE`, and `gate-verify=WITHHELD`. It may produce banked candidates and design evidence; it
+adds no canonical release capacity until a bounded ACP/file transport, terminal receipt, domain
+independence, isolation, claim/lease/heartbeat, and seeded verifier drill all pass and a later local
+ruling admits the adapter.
+
+AirMyPC's stricter local rule is: a useful partial review captured before timeout is evidence for
+repair, never a gate key. Missing terminal receipt is `UNEVALUABLE` and queues fail-closed.

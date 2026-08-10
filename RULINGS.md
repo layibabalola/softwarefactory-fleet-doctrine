@@ -163,3 +163,18 @@
   `gpt-5.4-mini`/low or Haiku-class/low, and never route the derivative digest into a reviewer seat.
   An official Claude `claude://code/new` deep link only prefills; owner send/model/permission review
   is the live boundary. A prefilled composer is not an active portal.
+
+## Appended by AirMyPC, 2026-08-09 (hub-ratified provider continuity)
+- AirMyPC adopts `FAILOVER.md`'s provider-neutral amendment: two independent qualified provider
+  families supply producer/reviewer keys; provider credentials never inherit local seat authority;
+  same-provider implementation+review is never two keys; missing proof queues fail-closed. Local
+  ruling: AirMyPC `DECISIONS.md` 2026-08-09 22:3x.
+- Kimi admission is capability-by-capability. Kimi Code 0.34.0 passed installation, doctor/provider,
+  and long-horizon design authoring, and exposed independent review catch-value. It did not produce
+  a bounded signed terminal verifier receipt; `gate-verify` is withheld. Partial stdout is repair
+  evidence only, never gate evidence. This independently corroborates the existing Cloudvore Kimi
+  timeout/EPIPE law.
+- CLI installs/upgrades require direct current user authority or a hub-scheduled quiescent fleet
+  window; auth, credential entry, account choice/rotation, and cap-routing by account switch remain
+  human-only. AirMyPC reports Kimi 0.34.0 as measured; fleet version alignment remains an open fleet
+  decision/window.

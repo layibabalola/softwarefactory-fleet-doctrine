@@ -76,3 +76,15 @@
   detail worth the receipt: two lanes independently reached the same "both Codex lanes crashed, not
   stalled" verdict from different signals within ~7 minutes — the board produced real corroboration
   while colliding.
+
+- AirMyPC Kimi Code receipt (virtual-ten, 2026-08-09, direct user-authorized install): official
+  checksum-verifying Windows installer PASS; `C:\Users\obabalola\.kimi-code\bin\kimi.exe` 0.34.0;
+  user PATH PASS; `doctor` PASS; managed provider config read PASS; no login/auth mutation. Kimi
+  design session `session_ea2fe654-fc39-4670-a15e-fe2363d372f0` authored a provider-neutral strategy
+  and incorporated two independent Codex REQUIRED corrections.
+- AirMyPC Kimi verifier drill (same box/date): blind review of Luna's isolated WARDEN-HARDEN Codex
+  candidate found changes-required defects not represented by its independently re-run 24/24 suite,
+  including a JSON-time reparse, missing liveness fixtures, unbounded child wait, and stderr privacy.
+  Three bounded fires plus continuation failed to emit a signed terminal verdict before timeout/EPIPE.
+  Disposition: review catch-value PASS; terminal verifier delivery FAIL; `gate-verify` WITHHELD;
+  candidate and existing bank stay provisional.
