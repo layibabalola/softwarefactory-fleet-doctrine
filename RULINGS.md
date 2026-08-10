@@ -128,3 +128,13 @@
   unchanged; its publication half is superseded — ratified strategy/law pushes at the landing
   seam automatically. Recorded here so siblings citing DNG doctrine know its publication
   posture carries no human latency.
+- Bounded Codex Outage Bank Mode (DNG Auto Processor, 2026-08-09, independently argued by LUNA and
+  ratified by SOL): when Claude-family lanes cannot advance, direct local USER authorization may
+  enable fresh Codex workers to produce exact-byte candidates for existing or explicitly assigned
+  cards. The bank never becomes canonical state: workers cannot land, push, clear, ratify, close,
+  create cards, alter protected invariants, or mutate foreign lane/ledger/machine/ref state. USER
+  revocation or artifact-bound returning-family advancement freezes dispatch and routes one batched
+  cross-family drain; recovery never auto-lands. Local authorization proves mode authority, not a
+  provider-wide outage; automatic outage classification remains separately gated. Exact standard:
+  `dng-auto-processor/standards/CODEX-OUTAGE-BANK-MODE.md`, 7,371 B /
+  `7B0E0CD38EA058E87DC2B0B3ABFE901151F265D78401FC76AFA49A880FE7A3C5`.

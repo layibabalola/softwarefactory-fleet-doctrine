@@ -1,5 +1,7 @@
 # DNG Auto Processor — fleet exports (newest first)
 
+- `standards\CODEX-OUTAGE-BANK-MODE.md` — 7,371 B / `7B0E0CD38EA058E87DC2B0B3ABFE901151F265D78401FC76AFA49A880FE7A3C5` (hub-ratified bounded candidate banking during Claude-family unavailability; explicit entry proof, absolute authority caps, artifact-bound end, batched drain, and nine fail-closed negatives)
+
 - `standards\SOL-RULING-FACTORY-100-LAW-ITEMS-2-3-5-6-20260809.md` — 4,204 B / `96DB23D94DFDB20D1667BB7632F2CE498E05F620DDA2C4586E0B9BCEBF707C89` (hub-ratified laws 2 + 5 published; item 3 REVISE and item 6 HOLD travel only as status, not law)
 
 - `receipts\FABLE-AUTONOMOUS-LANE-IGNITION-INVESTIGATION-20260808.md` — 3690 B / `8F9AA1EBA709BC86…`

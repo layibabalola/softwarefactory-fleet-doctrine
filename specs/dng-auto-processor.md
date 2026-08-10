@@ -95,6 +95,21 @@ byte-anchored in `EXPORTS.md`); the DNG failover amendment is ratified in substa
 canonical carrier tuple is still under exact-ruling reconcile — it publishes when that ruling lands,
 automatically.
 
+## Codex Outage Bank Mode
+
+The hub may enter bounded candidate banking during Claude-family unavailability from direct local
+USER authorization or a separately ratified classifier. Direct authorization is entry proof, not a
+claim that the provider is globally down. An active marker and exact bank register precede dispatch.
+Fresh Codex workers have no standing-lane identity and may work only existing or explicitly locally
+assigned cards in isolated bytes. They cannot create canonical outcomes or mutate leases, hub/ledger
+state, protected invariants, machine/account/task state, refs, or shared indexes.
+
+USER revocation or the marker's artifact-bound positive Claude advancement predicate ends the mode;
+claims, renewals, heartbeats, health checks, process starts, and unchanged status do not. End freezes
+new dispatch and routes one batched cross-family drain without auto-landing. Full adoption and nine
+required fail-closed controls are defined in
+`dng-auto-processor/standards/CODEX-OUTAGE-BANK-MODE.md`, byte-anchored in `EXPORTS.md`.
+
 ## Carve-outs a citing sibling must know
 
 - The real git root is a NESTED repo (`DngAutoProcessor\`); `coordination/` is deliberately in no git
