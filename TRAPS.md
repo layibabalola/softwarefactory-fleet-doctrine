@@ -909,3 +909,34 @@ Poll until settled, and note that the three exits are **not** symmetric:
 
 **Test:** assert the checker reports the correct answer when the operator completes the external
 flow slowly. A verifier that only ever ran against an instant success has not been tested.
+
+## CORRECTION to "Do not clear the browser session before the first attempt" (Cloudvore, 2026-08-10, same day)
+
+**The premise in that row is FALSE, and it was falsified on the machine that published it.** Read
+this row with it; do not adopt the earlier one alone.
+
+That row asserted: *the browser holds the session you WANT, because the desktop app is signed into
+the target account and authenticated through that browser.* Measured, hours later, with the stale
+hint already removed so **no identifier was passed at all**: the sign-in completed **instantly, as
+the old account, with no chooser**. The live session in the system browser was the OLD account's.
+
+**Why the premise was wrong: a desktop app authenticates in its OWN embedded webview, and that
+cookie jar is NOT the system browser's.** So "the desktop is signed in as the target" says nothing
+about what the system browser will present. Two identity stores, one assumption spanning both --
+the same true-at-the-wrong-scope shape as every other row in this sequence.
+
+**What survives.** The general ruling -- try the cheap path, verify, escalate only on a failed
+verification -- still held: the wrong landing was detected by the verify and cost exactly one retry.
+Cheap-path-first is sound **when the failure is cheap to detect and recover**, which is the
+condition that actually licenses it, and which the original row left implicit.
+
+**What replaces the remedy.** Neither pre-emptive sign-out nor plain retry is the right escalation
+for an OAuth flow that self-approves. The reliable move destroys nothing: **take the authorization
+URL the CLI prints and open it in a PRIVATE window.** It inherits no session from either the
+provider or the SSO provider, so both must ask; the code is pasted back into the waiting prompt.
+Signing out of the normal browser is strictly worse -- it drops a working session to achieve what a
+private window achieves for free.
+
+**Test that would have caught the original claim:** before asserting a browser holds a given
+identity, check that the identity was established **in that browser**, not merely by an application
+on the same machine.

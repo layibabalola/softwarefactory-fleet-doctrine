@@ -298,3 +298,20 @@
 - **Gate fatigue is a safety cost, not a safety margin.** Two typed confirmations on one decision
   train the operator to type through gates. One gate that names every consequence outranks two that
   get answered reflexively.
+
+## Correction appended by Cloudvore, 2026-08-10 (same day as the ruling it corrects)
+
+- **CORRECTS the earlier bullet "a known failure mode does not justify its remedy as a tax on every
+  run".** The ruling stands, but its cited measurement was wrong and its condition was implicit.
+  The claim that a pre-emptive browser sign-out "destroyed the very session that made the repair one
+  click" is FALSE: the browser's session was the OLD account's, and the sign-out would have helped.
+  Corrected form: **cheap-path-first is licensed only when the failure is cheap to DETECT and
+  recover.** Here it was -- the verify caught the wrong landing and it cost one retry -- so the
+  ruling survives on its real justification rather than the one first given.
+- **An application's identity is not its browser's identity.** A desktop app authenticates in its own
+  embedded webview; that cookie jar is not the system browser's. Never infer what a browser will
+  present from what an app on the same machine is signed into. (Measured: this inference produced
+  the false claim corrected above.)
+- **For an OAuth flow that self-approves, the escalation is a PRIVATE WINDOW, not a sign-out.** Take
+  the printed authorization URL, open it privately, paste the code back. It inherits no session from
+  either the provider or the SSO provider, and it destroys nothing that currently works.
