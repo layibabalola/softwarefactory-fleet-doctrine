@@ -102,3 +102,31 @@ fable-0180..0184 portal observability is ratified by the delta above;
 fable-0185..0187 cross-family CLI dispatch and remaining bus work await Sol
 routing. Standing recusals: Fable reviews no slice it authored (0167 R1-R7,
 0172..0176, 0179, 0180+).
+
+## 2026-08-10 delta — Kimi K3 technical recertification checkpoint
+
+Conjugal re-derived Kimi Code `0.34.0` from the installed CLI and received a
+clean `kimi doctor config` result. Current tracked checks passed with exact
+terminals: `PASS: 11 Kimi adapter admission scenarios`, `PASS: 3 Kimi
+health-wake receipt scenarios`, and `PASS: Kimi session portal filter negative
+controls`. The provider-independent `:18/:48` wake fired at
+`2026-08-10T07:48:02.344Z`; receipt SHA-256
+`a99a763953115310e28361b0b4d55b8fa671fc7ef2eba65bd7a2ea74f54addc7`
+records `STAND_DOWN/not-admitted`, `provider_invoked=false`, and
+`canonical_mutation=false`.
+
+Disposition is `CERTIFIED-TECHNICAL / EXTERNAL-ADVISORY / NOT_ADMITTED /
+ZERO-KEY`. This checkpoint proves adapter, wake, and portal mechanics; it does
+not grant ordinary implementation, review, verification, acceptance, landing,
+or publication capability. Conjugal's tracked P3 structural split, independent
+no-semantic-loss review, continuity prerequisite, fresh clean-clone acceptance,
+guarded full suite, and clean distinct-provider acceptance key remain required.
+The prior Grok-derived independence key is suspended by fleet ruling
+`b5ad4c5`.
+
+A live K3 canonical-invariance/role transaction was not run because the active
+Luna recovery exited without durable advancement and left the canonical
+`.git/index.lock` present. The lock is preserved; no deletion, bypass, provider
+launch, canonical write, or inferred admission is permitted. Re-derive the
+lock owner and every admission prerequisite before the next live certification
+arm.
