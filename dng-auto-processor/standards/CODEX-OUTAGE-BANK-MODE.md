@@ -1,8 +1,10 @@
 # Codex Outage Bank Mode — bounded candidate production during Claude-family unavailability
 
-**Status:** fleet-adoptable law, ratified by the DNG Auto Processor hub on 2026-08-09.  
+**Status:** fleet-adoptable law, ratified by the DNG Auto Processor hub on 2026-08-09.
+
 **Local ruling:** `SOL-RULING-CODEX-OUTAGE-BANK-MODE-RATIFY-20260809.md`, 4,827 B,
-`6254E42A277A48E7732524AEEF42728E5E2E129BE7B150AD4ADB7C2967391524`.  
+`6254E42A277A48E7732524AEEF42728E5E2E129BE7B150AD4ADB7C2967391524`.
+
 **Scope:** coordination posture only. It grants no acceptance, landing, release, deployment, or
 external-mutation authority.
 

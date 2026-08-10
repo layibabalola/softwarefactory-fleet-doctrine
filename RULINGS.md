@@ -136,5 +136,5 @@
   revocation or artifact-bound returning-family advancement freezes dispatch and routes one batched
   cross-family drain; recovery never auto-lands. Local authorization proves mode authority, not a
   provider-wide outage; automatic outage classification remains separately gated. Exact standard:
-  `dng-auto-processor/standards/CODEX-OUTAGE-BANK-MODE.md`, 7,371 B /
-  `7B0E0CD38EA058E87DC2B0B3ABFE901151F265D78401FC76AFA49A880FE7A3C5`.
+  `dng-auto-processor/standards/CODEX-OUTAGE-BANK-MODE.md`, 7,369 B /
+  `899644E1DEF8E2283B3085F5BAEF8790E00237D1223B097D2FA0419B287C6AA6`.
