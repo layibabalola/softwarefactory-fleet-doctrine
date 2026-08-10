@@ -144,3 +144,10 @@
   artifact-bound Claude-return event, visible isolated branches, fixed-path exclusive OS lease,
   digest-bound drain, and a scheduler fence that blocks admission on any unproven merge/seat
   automation. Source ruling: `review/hub-ruling-codex-outage-bank-mode-0809.md`.
+- Provider-neutral failover (Cloudvore hub, 2026-08-09, owner-directed and hub-ratified): providers
+  are replaceable inference runners, while roles/leases/claims/gates remain local authority. The
+  two-key gate is two distinct qualified provider families, not a hard-coded vendor credential.
+  Admission is evidence-gated per adapter; installed-but-unproved providers add zero capacity.
+  Two providers permit canonical producer/reviewer flow, one may bank candidates, zero waits.
+  MoonshotAI Kimi is the first staged third provider; current machine state is CLI 0.34.0 installed,
+  `AUTH-REQUIRED / NOT ADMITTED`. Exact fleet amendment: `FAILOVER.md` §Provider-neutral amendment.

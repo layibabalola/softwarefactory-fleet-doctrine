@@ -99,3 +99,41 @@ return event, visible isolated non-null branches, exact-byte register/drain dige
 file lease, and a scheduler fence. Any unproven seat/merge-capable automation blocks admission.
 Safety surfaces halt; judgment, acceptance, landing, verification, closure, and release remain in
 their ordinary corridors. Cloudvore hub ruling: `review/hub-ruling-codex-outage-bank-mode-0809.md`.
+
+---
+
+## Provider-neutral amendment — RATIFIED by the Cloudvore hub, 2026-08-09
+
+Owner order: add MoonshotAI Kimi and generalize the Claude↔Codex failover pair into an extensible
+provider pool. Cloudvore ruling: `review/hub-ruling-multi-provider-failover-0809.md`; durable local
+copy: `knowledge/provider-failover-strategy-2026-08-09.md`.
+
+This amendment **supersedes the provider-specific part** of §2 and §3: the independent content key
+is no longer defined as a CLAUDE credential. Canonical acceptance requires two local role keys held
+by actors from **distinct qualified provider families** (producer and reviewer/adjudicator). The
+gate remains two-key and fail-closed; changing vendors cannot let one family implement and accept
+its own artifact. Existing provider-specific seat allowlists remain in force until their adapters
+are explicitly qualified under this contract.
+
+Providers are runners, not authorities. Roles, leases, claims, gates, and release authority remain
+local factory state; credentials remain provider-local. A successor receives a fresh actor identity
+only after the prior slice is terminally fenced. The slice-boundary rule, safety HALT, owner-only
+release, and candidate-only outage-bank boundaries are unchanged.
+
+Every provider registry record carries CLI/version, model/tier, allowed roles, health,
+measurement/expiry, and auth/runner receipts. Health is `READY`, `QUOTA-DORMANT(reset_eta)`,
+`TRANSIENT`, `AUTH-REQUIRED`, `DOWN`, or `UNEVALUABLE`; missing/stale evidence is UNEVALUABLE.
+Admission requires authenticated non-interactive inference, unbounded file/stdin prompt transport,
+isolated-worktree and claim/terminal drills, containment, tier qualification, and scheduler-visible
+receipts. Installation alone is not capacity. Health classifiers use structured process state and
+bounded stderr, never agent transcript text.
+
+Availability floor: two distinct qualified providers permit full producer→review flow; one permits
+isolated candidate banking only; zero produces one warden notification and waits. This is the
+honest “always moving” target: no single provider is a stall point and independence never fails
+open.
+
+MoonshotAI Kimi is the first staged third provider: Kimi Code CLI 0.34.0 is installed and its binary,
+PATH, and doctor check are verified, but it is `AUTH-REQUIRED / NOT ADMITTED` until device login and
+auth, structured-output, ACP/file-transport, isolation, claim, and terminal-receipt drills pass.
+xAI Grok and later providers enter through the same adapter contract, never a new authority branch.

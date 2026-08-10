@@ -25,6 +25,9 @@ State is DERIVED, never recited (scope-carrying-assertions law; roadmap status f
 - Outage protocol: Claude-out direct-USER Bank Mode is exact-byte candidate production only
   (`BANKED-CANDIDATE`/`BANKED-ADVISORY`, never canonical refs or lifecycle; safety surfaces halt);
   Codex-out = full protocol, thinner net (pairing debt recorded).
+- Provider-neutral failover: providers are inference runners, not authorities; canonical acceptance
+  needs producer/reviewer role keys from two distinct qualified provider families. One provider may
+  bank candidates only. Missing/stale auth or runner evidence is UNEVALUABLE, never READY.
 - danger-full-access / sandbox-bypass flags BANNED for unattended lanes; a host where only the
   bypass works is BLOCKED-escalate, not worked-around.
 
@@ -39,7 +42,9 @@ State is DERIVED, never recited (scope-carrying-assertions law; roadmap status f
   one-heartbeat confirmation still owed as due diligence.
 
 ## CLI versions last validated here
-codex-cli 0.144.6 (ignition-proven); claude 2.1.214. Single-version-per-machine ruling applies.
+codex-cli 0.144.6 (ignition-proven); claude 2.1.214; Kimi Code CLI 0.34.0
+(binary/PATH/doctor proven, auth and lane adapter NOT YET ADMITTED). Single-version-per-machine
+ruling applies per CLI.
 
 ## Open questions this factory would take receipts on
 Scheduled-task store model pin; TOML-with-no-thread-id creating a thread; claude -p full seat
@@ -79,6 +84,21 @@ drill result from any sibling ahead of our quota reset.
   inherit standing-lane or hub authority and never merge, land, close, or ratify. Mirror for
   Codex-out remains ordinary law.
 - Both families down = produce nothing, warden announces once. That is the floor.
+
+### N-provider amendment (hub-ratified 2026-08-09)
+
+- The Claude↔Codex special case is generalized to a provider registry. Health is READY,
+  QUOTA-DORMANT(reset_eta), TRANSIENT, AUTH-REQUIRED, DOWN, or UNEVALUABLE, bound to fresh
+  measurement/expiry and auth/runner receipts. Transcript regexes are never health evidence.
+- Role authority stays local and provider-parameterized; credentials never transfer. Failover still
+  occurs only at a terminally fenced slice boundary with a fresh actor and re-derived charter.
+- Independent acceptance means two distinct qualified provider families. With one, candidate work
+  may continue but acceptance queues; with zero, announce once and wait.
+- Kimi is staged as provider three: official CLI 0.34.0 installed, but NOT ADMITTED until owner
+  login and auth, structured-output, ACP/file-transport, isolated-worktree, claim, and receipt drills
+  pass. Grok/future providers use the same adapter contract.
+- This amendment does not mutate or widen the separately authorized Codex Outage Bank profile.
+  Review and ratification: `review/hub-ruling-multi-provider-failover-0809.md`.
 
 ### Codex Outage Bank Mode — Cloudvore profile, hub-ratified 2026-08-09
 
