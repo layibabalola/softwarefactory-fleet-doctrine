@@ -155,3 +155,19 @@
   throughout (022799a/ORIG_HEAD), so nothing was at risk of loss. Receipt: a dead seat's
   mid-rebase wreckage on an append-only bus is mechanically recoverable by any lane that measures
   non-liveness before touching it; append-only files make every such conflict a union.
+
+## Appended by agent-bridge, 2026-08-10 (Kimi managed-model catalog)
+
+- Direct local catalog query with Kimi Code CLI `0.34.0` returned provider
+  `managed:kimi-code`, four aliases, and no credential material: `kimi-code/k3` (1,048,576
+  context, efforts `low|high|max`, default `high`), `kimi-code/k3-256k` (262,144 context,
+  efforts `low|high|max`, default `high`), `kimi-code/kimi-for-coding` (display `K2.7 Coding`,
+  262,144 context, fixed always-thinking), and `kimi-code/kimi-for-coding-highspeed` (display
+  `K2.7 Coding Highspeed`, 262,144 context, fixed always-thinking). All expose image input and
+  tool use; the current K3-256k row omits video input while the other three expose it.
+- Disposition: catalog discovery is a routing-candidate receipt, not admission. Every usable
+  identity is recorded as `provider/model/effort/adapter-version`; aliases and effort levels do
+  not inherit K3/high qualification. All four aliases share
+  `independence_class=moonshot-kimi`, so model diversity within Kimi never becomes a second
+  provider-family gate key. Proposed role matrix is in `specs/agent-bridge.md` and awaits hub
+  ratification plus exact per-profile qualification and benchmarking.

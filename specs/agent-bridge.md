@@ -37,3 +37,41 @@ silent skips). This file exists so that never repeats.
 - The warden syncs this repo each run: pull always; add/commit/push ONLY
   `specs/agent-bridge.md` and attributed appends. Hubs read `RULINGS.md` + `TRAPS.md` at
   boot and ADOPT-OR-DISTINGUISH on the WAL.
+
+## Kimi model portfolio — measured proposal, awaiting hub ratification (2026-08-10)
+
+Operator order: exploit model diversity inside every provider, while retaining exact
+`provider/model/effort/adapter-version` identity. Kimi Code CLI `0.34.0` was queried locally
+through its authenticated managed catalog (`kimi provider list --json`). The catalog returned
+exactly four aliases under provider `managed:kimi-code`:
+
+| exact profile candidate | catalog display | context | intended fleet role |
+|---|---|---:|---|
+| `moonshot/kimi-code/k3/native:low/kimi-code-cli@0.34.0` | K3 | 1,048,576 | narration, relay, triage, bounded summarization; never a final gate vote |
+| `moonshot/kimi-code/k3/native:high/kimi-code-cli@0.34.0` | K3 | 1,048,576 | default complex implementation, design, and deep review candidate |
+| `moonshot/kimi-code/k3/native:max/kimi-code-cli@0.34.0` | K3 | 1,048,576 | escalation profile for the hardest adjudication-grade analysis; reserve for measured need |
+| `moonshot/kimi-code/k3-256k/native:low/kimi-code-cli@0.34.0` | K3-256k | 262,144 | fast bounded-context scan, relay, and low-risk maintenance candidate |
+| `moonshot/kimi-code/k3-256k/native:high/kimi-code-cli@0.34.0` | K3-256k | 262,144 | ordinary bounded-context implementation/review candidate when the 256k window is sufficient |
+| `moonshot/kimi-code/k3-256k/native:max/kimi-code-cli@0.34.0` | K3-256k | 262,144 | bounded-context escalation candidate; benchmark against full K3 before preference |
+| `moonshot/kimi-code/kimi-for-coding/native:fixed(always-thinking)/kimi-code-cli@0.34.0` | K2.7 Coding | 262,144 | alternate same-provider coding architecture/second-opinion candidate |
+| `moonshot/kimi-code/kimi-for-coding-highspeed/native:fixed(always-thinking)/kimi-code-cli@0.34.0` | K2.7 Coding Highspeed | 262,144 | throughput-oriented ordinary coding, iteration, and repair candidate |
+
+Measured capabilities: all four aliases expose thinking, always-thinking, image input, and
+tool use; K3, K2.7 Coding, and K2.7 Coding Highspeed also expose video input, while the
+current K3-256k catalog row does not. Only K3 and K3-256k expose selectable efforts, exactly
+`low|high|max`, with `high` as the current managed default. The K2.7 aliases expose no
+selectable effort list; their fleet identity is therefore explicitly
+`native:fixed(always-thinking)`, never the vague label `low` or `high`.
+
+Routing ranks exact profiles, not provider names. Intra-Moonshot model diversity can improve
+latency, cost, and error correlation, but it remains one `independence_class=moonshot-kimi`
+and can never supply both keys of a cross-provider acceptance gate. No newly listed profile is
+admitted by catalog discovery. Before routing, each profile requires its own exact-model receipt,
+effective-backend verification, terminal/containment drills, current qualification expiry, and
+MODEL-BENCH cells for latency, task accuracy, review catch rate, tool correctness, terminal
+reliability, context consumption, and normalized cost. Until those cells exist, the table is a
+qualification/routing proposal; the already-qualified K3/high evidence does not transfer to a
+different alias or effort.
+
+Primary source: Kimi Code CLI configuration/model documentation,
+`https://moonshotai.github.io/kimi-code/en/configuration/config-files`.
