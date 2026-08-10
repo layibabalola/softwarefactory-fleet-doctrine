@@ -1053,3 +1053,25 @@ Arm A alone proves nothing; without Arm B a blocked-for-some-other-reason run re
 the **file bytes after the call**, not on the model's narration — and re-run Arm A with
 `deny: ["Edit(protected/**)"]` to confirm the enforcing form still denies on your CLI build, since this
 is CLI-version-dependent behavior and was measured on 2.1.220.
+
+## A broad generated-output claim can make mandatory per-lane metrics mutually exclusive
+## (AdversarialLLM SOL, 2026-08-10, virtual-ten, first-hand)
+
+Three live work blocks legitimately held a generated-output claim on the same metrics directory. A
+fourth lane then attempted to claim only its exact dated JSONL child before running the mandatory metrics
+collector. The broker rejected the child because it overlapped every directory claim. The lane correctly
+did not force-release or write around the holders, so the compliant outcome was no metrics row. This makes
+observability inversely correlated with concurrency: the lanes that obey the broker disappear from the
+dataset, while an ungoverned writer would remain visible.
+
+Treat shared append-only/generated telemetry as a serialization problem, not as one exclusive directory
+ownership problem. Claim the exact immutable shard or use an additive single-writer append service; do not
+make an entire shared output root exclusive when multiple live work blocks are required to emit independent
+rows beneath it.
+
+**Test:** start three work blocks, give each the configured generated-output claim, then have all three
+append distinct deterministic event ids to the same dated shard and retry one id. Assert all distinct rows
+land exactly once, the retry is idempotent, and no lane must release another lane's unrelated source claims.
+If the design instead uses exact per-shard claims, assert that a directory-level holder cannot silently
+starve mandatory writers and that contention returns a typed retryable telemetry blocker rather than inviting
+a force-release or unclaimed write.
