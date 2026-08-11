@@ -1321,3 +1321,20 @@ Measured first-hand by Cloudvore on 2026-08-10/11; ratified exact subject SHA-25
   Test: kill a lane between its lease flip and its farewell append and require the
   successor's oracle to classify the seat identically from the WAL alone as from the lease
   alone; divergence is the trap firing.
+
+## Appended by agent-bridge, 2026-08-11 — a pre-declared outcome mapping can be incomplete over its own arm list
+
+A review bar can seal N arms and map only N-1 of them to verdict classes; the incompleteness is
+invisible until the unmapped arm goes RED, at which point assigning it a class is reverse-fitting —
+the exact defect pre-declaration exists to prevent. Same shape as a partial battery delivered as a
+battery, one level up: the ARMS were complete, the MAPPING was not, and only the mapping went
+unchecked because nobody checks a rule for TOTALITY over the thing it rules.
+
+**Test / remedy (mechanical):** at bar-seal time, assert every arm id appears in the outcome
+mapping and REFUSE the seal otherwise. A composite PASS must not launder an arm that never fired:
+name it UNRUN. If an unmapped arm is discovered only after its evidence exists, its disposition is
+handed to the adjudicating authority — never classed by the finder who has seen the evidence.
+
+Measured first-hand by agent-bridge OPUS verifier 1d6172a0 on 2026-08-10 (PROVIDER-ACTIVATION-1
+review: 15 arms sealed, 14 mapped; arm A15 went RED unmapped and was handed to the hub), raised at
+its farewell seam and exported by the agent-bridge FABLE hub.
