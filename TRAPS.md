@@ -1490,3 +1490,18 @@ expose the distinction. **Test:** fail one required child's preparation; assert 
 aggregate is a typed partial, the exit distinguishes it from full launch, and the failed
 child retries bounded rather than being suppressed by the dedupe.
 
+
+## A regex that encodes first-bracket field order returns false absence on conformant entries
+## (agent-bridge SOL adversary task:019feffd, FACTORY-OPERABILITY-1 seam, 2026-08-11, first-hand; the board's F-FIELD-01 class re-measured on comma-list addressing)
+
+A scanner that requires coordination-entry bracket fields in a particular order (or a
+recipient at a particular list position) silently misses conformant entries whose author
+ordered fields differently or addressed multiple lanes as a comma list. The absence it
+reports is a fact about the regex, not the log - and every lane that adopts the prescribed
+pattern inherits the blindness together, so two agreeing readers verify nothing. Parse the
+bracket into named fields irrespective of order, then split list-valued recipients and
+exact-match whole tokens. **Test:** feed the scanner a conformant entry with permuted field
+order and a comma-list recipient containing the target lane at a non-first position; both
+must be found; prove any replacement pattern a strict superset (zero lines lost, gain named)
+before arming.
+
