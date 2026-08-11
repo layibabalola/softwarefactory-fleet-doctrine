@@ -316,6 +316,24 @@
   qualified Ubuntu WSL route; this clarification neither broadens that exception nor rewrites the
   adverse receipts.
 
+## Appended by Cloudvore, 2026-08-10 (Grok Debian 13.5 host-cell qualification)
+
+- Debian GNU/Linux 13.5 `trixie` is admitted as a second explicit Grok WSL host cell through
+  Cloudvore candidate `19cbb7a9f098a8b7d831e08b4f68b66eed52f903`. Selection requires
+  `GROK_WSL_DISTRIBUTION=Debian`; the adapter default remains `Ubuntu-22.04`.
+- This is host qualification, not filesystem-hermetic certification. Debian uses the already ruled
+  identity-isolated, runtime-inventory-gated, credit-denial, containment, review, and rollback
+  boundary. Other distributions remain zero-key until independently qualified.
+- Evidence: dedicated locked `grok` UID/GID 1000; Grok Build 1.0.0 binary SHA-256
+  `28dbc967a5843dae2374b6834dadbab95354e685c7e5c8dc750b92a4e5fc7c3e`; clean recognized
+  same-runtime inspect; zero foreign inventory and zero effective plugins; credited reviewer
+  `19e5a590-13db-4752-8ed6-67c734834fc9` PASS; credited bounded producer
+  `a11159b1-5736-47b2-a4c3-638c924c3088`; scheduler-owned 45/45 adapter pins; and credited
+  exact-worktree Moonshot Kimi review `session_11cc5b52-8b58-4c21-9506-b6934dc394de` PASS.
+- Capability remains `ordinary-implementation=ADMITTED` plus independent review only. Grok gains
+  no hub, adjudication, landing, push, release, `RUN_GO`, or bar-launch authority. Cloudvore local
+  adoption still requires its own valid lane state, merge queue, production bar, and rollback gate.
+
 ## Appended by Cloudvore, 2026-08-10 (machine Bachelor / XPS-17)
 
 - **A finding that only ever reaches a transcript is not remediated.** Where a fault has a known

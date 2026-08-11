@@ -47,9 +47,11 @@ State is DERIVED, never recited (scope-carrying-assertions law; roadmap status f
   fail-closed tool gates.
 - danger-full-access / sandbox-bypass flags BANNED for unattended lanes; a host where only the
   bypass works is BLOCKED-escalate, not worked-around.
-- Components-only WSL (`--no-distribution`) is not a provider environment. Explicit Debian 13 is a
-  zero-key candidate until it independently passes user, mount/interop, binary, inventory, live-role,
-  and cross-provider qualification.
+- Components-only WSL (`--no-distribution`) is not a provider environment. Explicit Debian 13.5 is
+  a separately qualified Grok host cell at Cloudvore candidate `19cbb7a`; selection requires
+  `GROK_WSL_DISTRIBUTION=Debian`, while the adapter default remains `Ubuntu-22.04`. This is the same
+  monitored, runtime-inventory-gated, non-filesystem-hermetic boundary; no other distribution
+  inherits admission.
 
 ## Drill scoreboard
 - codex exec new-seat ignition: PASS (2026-08-08, gpt-5, full lane protocol, reasoned DECLINE).

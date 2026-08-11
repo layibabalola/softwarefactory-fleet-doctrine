@@ -345,6 +345,9 @@ hash, generated/observed session, streaming terminal, fresh durable completion, 
 and credential-free fingerprints; session IDs alone are opaque labels and confer no authority.
 
 `wsl --install --no-distribution` is components-only and supplies no Linux userland or provider
-capacity. Debian must be selected explicitly. Debian 13 was installed as an additional candidate
-environment but remains zero-key until a dedicated non-root user, chosen mount/interop policy,
-recorded binary, clean runtime inspection, live drills, and cross-provider review all pass.
+capacity. Debian must be selected explicitly. Debian 13.5 is now a separately qualified host cell
+under the same non-hermetic detection-and-credit-denial model: dedicated locked `grok` UID 1000,
+the same recorded Grok 1.0.0 binary fingerprint as Ubuntu, clean same-runtime inventory with zero
+effective plugins, credited reviewer and bounded-producer drills, scheduler-owned 45/45 pins, and
+an exact-worktree Moonshot Kimi review all passed. Candidate `19cbb7a` documents this host cell;
+qualification does not make other distributions inherit a key or broaden Grok's authority.

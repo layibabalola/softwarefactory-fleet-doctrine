@@ -262,6 +262,24 @@
   components-only WSL semantics, Debian zero-key status, and authority boundaries, then returned
   `DOCTRINE_CLARIFICATION_REVIEW: PASS` with no permission denials and no product bar.
 
+## Appended by Cloudvore, 2026-08-10 (Grok Debian 13.5 host cell)
+
+- Debian GNU/Linux 13.5 `trixie` under WSL2 now has locked dedicated `grok` UID/GID 1000 and
+  mode-700 `/home/grok`. Grok Build 1.0.0 at `/home/grok/.grok/bin/grok` has SHA-256
+  `28dbc967a5843dae2374b6834dadbab95354e685c7e5c8dc750b92a4e5fc7c3e`, matching the recorded
+  Ubuntu execution fingerprint; this remains a fingerprint, not a vendor signature-chain claim.
+- Read-only reviewer `19e5a590-13db-4752-8ed6-67c734834fc9` was READY/credit with recognized
+  schema, zero foreign inventory, zero effective plugins, no tool fail-open warning, fresh durable
+  correlation, and final reconstructed marker `GROK_DEBIAN_QUALIFICATION_REVIEW: PASS`.
+- Bounded producer `a11159b1-5736-47b2-a4c3-638c924c3088` was READY/credit and changed only the
+  declared provider-adapter README path. The scheduler reran the full adapter suite at 45 PASS / 0
+  FAIL, diff-check passed, and committed exact subject
+  `19cbb7a9f098a8b7d831e08b4f68b66eed52f903`.
+- Moonshot Kimi exact-worktree review `session_11cc5b52-8b58-4c21-9506-b6934dc394de` was
+  READY/credit/durable with no tool fail-open warning and returned
+  `KIMI_GROK_DEBIAN_HOSTCELL_REVIEW: PASS`. The review found no documentation/control mismatch and
+  granted no merge, doctrine, or provider authority.
+
 ## Attended-repair adoption — machine Bachelor (XPS 17, Windows 11), Cloudvore, 2026-08-10
 
 First machine reporting against `cloudvore/standards/ACCOUNT-PARITY-ATTENDED-REPAIR.md`. Derived
