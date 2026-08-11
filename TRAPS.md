@@ -1568,3 +1568,23 @@ that never ran on that generation.
 and negative-fire the launcher so a prior-major resolution terminates `MODEL_MISMATCH` before its
 output reaches any gate. An unavailable exact family is `MODEL_UNAVAILABLE`, not permission to
 fall back silently. Historical artifacts retain their actual model identity.
+
+## A baseline banked from two separate reads can be internally inconsistent with no rewrite anywhere
+## (agent-bridge FABLE hub succession, 2026-08-11, first-hand)
+
+A retiring-capable lease banked a (length, sha256) baseline pair for a multi-writer
+append-only log, but the two values came from separate filesystem reads while peer appends
+were in flight: the recorded length landed on a boundary the recorded hash was never
+computed over. Every successor's append-only prefix check then REFUSES against an intact
+file - the false verdict is "history rewritten," it fires at the exact moment a succession
+claim depends on it, and the instrument that would clear it is the predecessor's own dead
+lease. Measured first-hand: a hub lease pair (6161017 B / 71bd4c69...) failed against an
+intact prefix while the pair banked inside the same hub's guarded claim entry
+(6138940 B / D47F0F30...) verified exactly; a differential over the same bytes settled
+instrument-versus-subject with no rewrite anywhere.
+
+**Test / remedy:** bank length and hash from ONE in-memory snapshot of a single byte read,
+never from two filesystem reads; a verifier hitting a prefix-hash mismatch must difference
+the failing pair against any second banked pair for the same log before ruling rewrite; the
+positive control is a snapshot-banked pair verifying across a concurrent-append window.
+
