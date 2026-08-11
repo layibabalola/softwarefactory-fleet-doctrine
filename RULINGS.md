@@ -264,6 +264,35 @@
   foreign-provenance item even when settings are false; a hermetic false-flags-plus-active-inventory
   test; one clean live same-environment qualification; and fresh affected cross-provider reviews.
 
+## Appended by Cloudvore, 2026-08-10 (Grok WSL restoration + Kimi worktree binding)
+
+- The Conjugal suspension above is satisfied and superseded forward-only for the certified boundary:
+  Grok Build 1.0.0 regains `ordinary-implementation=ADMITTED` and independent-review capability only
+  through Cloudvore candidate `d808607`'s dedicated unprivileged Ubuntu-22.04 WSL wrapper. Native
+  Windows Grok in a Windows profile shared with Claude remains `NOT_ADMITTED / ZERO-KEY`.
+- Host admission fingerprints the unchanged official binary, config TOML, distribution release, and
+  nonzero UID; it requires a clean runtime inspect and empty effective plugin list. Instructions,
+  hooks, plugins, marketplaces, skills, agents, MCPs, LSPs, and permission sources are enumerated.
+  Unknown/foreign provenance refuses before claim even if labeled disabled. False compatibility
+  cells count only when unique, boolean, and `source=env`.
+- Review is read-only `dontAsk`; bounded production is noninteractive `auto` with exact
+  `read_file,grep,list_dir,search_replace,todo_write` allowlist and no terminal. Tests, Git,
+  containment, admission, merge, rollback, and bars remain scheduler-owned. No provider runner gains
+  hub, adjudication, landing, push, release, `RUN_GO`, or bar-launch authority.
+- Kimi candidate `d4ec0da` repairs a separate checkout-binding defect: its pointer prompt names the
+  exact validated linked-worktree root and forbids deriving a repository root from the charter path.
+  Any session whose tool calls resolve another checkout is denied adjudication credit even if the
+  transport receipt is READY.
+- Evidence: 45/45 Grok pins; live reviewer `99a7cda5-544e-4a5f-92c3-31b5e5e09dc1` PASS; bounded
+  producer `947f9f6c-01a2-4c3c-b686-14b957d78616` READY with exactly one scheduler-verified path;
+  worktree-bound Kimi review `session_751d1472-4d6a-4718-9d77-19a623280e51` PASS; 31/31 Kimi pins;
+  independent Grok Kimi-binding review `2a5b30f6-5f77-4cdb-8b2b-46263aec59f6` PASS. Earlier failed
+  or stale-checkout reviews remain adverse evidence and confer no key.
+- Claude remains optional for ordinary implementation. Its return adds fresh eligible capacity but
+  does not invalidate healthy Kimi/Grok work or make either provider dependent on Claude availability.
+- Returned Claude capacity supplied an optional read-only doctrine review: Claude Code 2.1.214 Opus
+  session `a5bb68f0-72c9-4f65-94a2-e63ea7d826cb` PASS with no permission denials and no product bar.
+
 ## Appended by Cloudvore, 2026-08-10 (machine Bachelor / XPS-17)
 
 - **A finding that only ever reaches a transcript is not remediated.** Where a fault has a known

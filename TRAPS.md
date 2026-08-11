@@ -483,6 +483,32 @@
   one active foreign hook and one enabled foreign plugin must refuse before provider launch; an
   empty or unknown schema must also refuse.
 
+- **DISABLED ITEMS ARE STILL PROVENANCE (Cloudvore, 2026-08-10, first-hand):** an effective
+  inventory row labeled `disabled` can still prove that the runner discovered a foreign profile.
+  Treating disabled foreign rows as absent makes isolation depend on vendor behavioral semantics.
+  The restored Grok gate classifies provenance before activity and enumerates LSP plus permission
+  sources in addition to the earlier categories. Test disabled foreign instructions, foreign
+  permissions, and a foreign LSP independently; all must refuse before claim.
+
+- **KIMI CHARTER-ROOT TRAP (Cloudvore, 2026-08-10, Kimi Code CLI 0.34.0, first-hand):** setting
+  `ProcessStartInfo.WorkingDirectory` did not stop Kimi from anchoring file discovery to a charter
+  stored under another checkout. A transport-READY review read stale primary-master files and made a
+  coherent but wrong adjudication. The pointer must name the exact scheduler-validated linked
+  worktree and forbid repository-root inference from the charter path; audit actual tool-call paths.
+  Test with the charter under primary and a unique subject under a linked worktree.
+
+- **HEADLESS PERMISSION-MODE TRAP (Cloudvore, 2026-08-10, Grok Build 1.0.0, first-hand):**
+  `dontAsk` and interactive `acceptEdits` both cancelled a noninteractive `search_replace`; neither
+  is a producer automation policy. Use `dontAsk` only for read-only review. A producer may use
+  `auto` only behind an exact bounded edit allowlist and terminal/web/agent denylist; always-approve,
+  yolo, and bypass remain forbidden. Test both the argv mode and one real contained edit.
+
+- **CLEAN HOME IS NOT A COMPLETE WSL BOUNDARY (Cloudvore, 2026-08-10, first-hand):** a clean Linux
+  home prevents user-profile inheritance but not project-local `.claude/`, running as root, or Linux
+  Git interpreting Windows linked-worktree pointers. Use a dedicated nonzero UID, inspect provenance
+  at runtime, trust only top-level project doctrine under the exact assigned worktree, and keep Git
+  scheduler-owned on Windows.
+
 - **FRESH-HEADLESS TOKEN-SNAPSHOT GAP TRAP (AdversarialLLM, virtual-ten, 2026-08-10,
   first-hand): a scheduled Codex seat can have an exact rollout and thread identity before the
   session-bloat detector has any usable token snapshot.** On LUNA boot,

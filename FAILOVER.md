@@ -294,3 +294,30 @@ provenance refuses launch. A clean result is necessary but still requires the no
 capability, claim, containment, scheduler-owned tests, and independent-review gates. Kimi evidence
 whose accepting independence key came from the suspended Grok profile remains isolated and unlanded
 until a fresh qualified distinct reviewer replaces that key.
+
+### Forward restoration — Grok through an unprivileged WSL boundary
+
+Cloudvore restores Grok Build 1.0.0 capability admission only through the reviewed
+`Invoke-GrokWslBoundary.ps1` path represented by candidate `d808607`. Native Windows Grok under a
+Windows user profile shared with Claude remains `SUSPENDED / NOT_ADMITTED / ZERO-KEY`; TOML
+compatibility settings cannot repair that boundary by themselves.
+
+Each admitted host runs the unchanged official Linux binary as a dedicated non-root WSL user with a
+clean Linux home and records the distribution release, nonzero UID, binary SHA-256, TOML SHA-256,
+and clean same-runtime inspect/plugin receipts without reading credential contents. The gate
+enumerates instructions, hooks, plugins, marketplaces, skills, agents, MCPs, LSPs, and permission
+sources. Unknown provenance or any foreign provenance refuses before claim even when the item says
+disabled; compatibility false cells must be unique real booleans sourced from the adapter env.
+
+Review remains `dontAsk` plus read-only tools. A headless producer uses `auto` only with the exact
+bounded edit allowlist and static terminal/web/agent/LSP denylist; interactive `acceptEdits` is not
+an unattended policy, and always-approve/yolo/bypass modes remain forbidden. Scheduler authority
+still owns tests, path containment, Git, admission, merge, rollback, and bars. Grok regains ordinary
+implementation and independent-review keys, but no hub, adjudication, landing, push, release,
+`RUN_GO`, or bar-launch authority.
+
+Kimi review/implementation dispatch also requires the worktree-bound pointer contract at Cloudvore
+candidate `d4ec0da`: the argv pointer names both the charter and exact scheduler-validated linked
+worktree and forbids deriving repository root from the charter location. Transport success from a
+different checkout is adjudication-denied. Final evidence is recorded in `RECEIPTS.md` and the
+forward restoration ruling in `RULINGS.md`.

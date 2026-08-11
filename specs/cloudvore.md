@@ -37,10 +37,13 @@ State is DERIVED, never recited (scope-carrying-assertions law; roadmap status f
 - Kimi and Grok provider adapters are capability-admitted for design, evidence audit, narration,
   focused gate verification, and `ordinary-implementation=ADMITTED`; health READY remains a
   separate fresh gate. Coordinate, adjudicate, land, release exception, `RUN_GO`, and bar launch are
-  ungranted.
-  Kimi uses pointer-only prompt transport plus an explicit Markdown agent profile; Grok uses native
-  prompt-file transport with foreign compatibility disabled. Both require worktree/claim fences,
-  heartbeats, exact-tree timeout, matching stream and durable terminals, and fail-closed tool gates.
+  ungranted. Grok is admitted only through the host-qualified dedicated unprivileged WSL boundary;
+  native Windows Grok in the shared Claude profile remains zero-key.
+  Kimi uses pointer-only prompt transport plus an explicit Markdown agent profile and must name the
+  exact assigned linked-worktree root so a charter path cannot redirect checkout discovery. Grok
+  uses native prompt-file transport with inventory-proven foreign isolation. Both require
+  worktree/claim fences, heartbeats, exact-tree timeout, matching stream and durable terminals, and
+  fail-closed tool gates.
 - danger-full-access / sandbox-bypass flags BANNED for unattended lanes; a host where only the
   bypass works is BLOCKED-escalate, not worked-around.
 
@@ -109,7 +112,7 @@ drill result from any sibling ahead of our quota reset.
   occurs only at a terminally fenced slice boundary with a fresh actor and re-derived charter.
 - Independent acceptance means two distinct qualified independence classes. With one, candidate work
   may continue but acceptance queues; with zero, announce once and wait.
-- Kimi and Grok are qualified auxiliary provider standbys under `RULINGS.md`'s 2026-08-10 amended
+- Kimi and WSL-isolated Grok are qualified auxiliary provider standbys under `RULINGS.md`'s 2026-08-10 amended
   admission. Cloudvore ran read-only and live bounded producer drills, scheduler-owned pins, and
   reciprocal cross-provider review. Admission is capability-by-capability, including
   `ordinary-implementation=ADMITTED`; coordination, adjudication, landing, release exception,

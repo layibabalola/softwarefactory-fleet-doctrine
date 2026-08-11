@@ -236,6 +236,10 @@
 - Claude Opus returned HTTP 429 during the earlier bar with no inference consumed. Grok and Kimi
   completed the repair/review loop independently; Claude's later return is optional extra capacity,
   not a prerequisite for restoration.
+- After Claude capacity returned, Claude Code 2.1.214 Opus read-only session
+  `a5bb68f0-72c9-4f65-94a2-e63ea7d826cb` independently reviewed the five-file doctrine draft in
+  safe mode with zero permission denials and returned `CLAUDE_DOCTRINE_REVIEW: PASS`. It launched no
+  product bar and supplied an additional review, not a restoration prerequisite.
 
 ## Attended-repair adoption — machine Bachelor (XPS 17, Windows 11), Cloudvore, 2026-08-10
 
