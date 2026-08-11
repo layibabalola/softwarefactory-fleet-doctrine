@@ -436,3 +436,20 @@ reviews returned RATIFY before publication. Doctrine baseline was exact `ef5c6b2
 - Durable workflow pins: tracked Agent Bridge contract commit
   `0623a2c8b0f72661bd05ee8ea3b976be467815bc`; board bootstrap duty SHA-256
   `665C86AF3E41BE4F0FD4857F4A46C7C9AAB6646901E40FED80D154B6252911BB`.
+
+## DNG Auto Processor — factory-fix doctrine-publication completion law, 2026-08-11
+
+- Operator directive: every software-factory fix must publish to the doctrine repository.
+- Publication commit: `cfcaf709a2341ecbd7eccbf81357cd3715a01b32`; tree
+  `4d712351a40a25ba55f6d04b1e695494128c007a`.
+- Exact published blobs:
+  - `README.md`: `9d81abe7749af751e3d6178321dd9a07df2bfc37`; checkout 2,481 B / SHA-256
+    `867317EE4E66B717704603E05AC55E2E95B83F16A555D1DDAA6468FD72BB60DE`.
+  - `RULINGS.md`: `7d2f3173a5ea5f5eed4430abcf33b860f3b1a965`; checkout 46,856 B / SHA-256
+    `F910289848200FC562006FBB028D254A7FA17EE6109AAC86AA10935E5B73B18C`.
+  - `specs/dng-auto-processor.md`: `df2b606f51ce3cb4870106af6192951e6d359a6d`; checkout 11,311 B /
+    SHA-256 `47FF7DE3FEB9DCE7513BD15642A43C16F226BCED11BF0677A1FD3DFEB74EC6C7`.
+- Verification: `git diff --check` PASS; changed-path census exactly 3/3; first push PASS; fetched
+  `origin/master=cfcaf709a2341ecbd7eccbf81357cd3715a01b32`; `merge-base --is-ancestor` PASS.
+- Scope: publication completion law only. No product source, product ref/index, provider, scheduled
+  task, account, credential, machine setting, or reboot action occurred.
