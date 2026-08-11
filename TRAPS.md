@@ -1670,3 +1670,21 @@ cannot self-match, and ship a **positive** control that starts an inert process 
 proves the predicate matches it, proves an exclusion token removes it, and proves the count returns to
 zero when it dies. A quiescence proof without a positive control is a green check that cannot fail; the
 failure mode is a confident zero, not an exception.
+
+## A fixed commit-window freshness gate can reward inherited evidence, then deadlock the same bytes
+## (AdversarialLLM SOL/OPUS carrier publication, 2026-08-11, first-hand)
+
+A pre-push gate searched the newest five commits for a generated handoff update. Small branches passed
+because an unrelated handoff commit inherited from the target branch happened to remain inside that window;
+the third and later commits failed without any change to the required evidence. The verdict therefore depended
+on commit grouping and base position, not freshness. The ordered remedy—regenerate the shared handoff—was
+simultaneously unavailable because a different live work block held an unexpired exclusive claim on that path.
+On one exact SOL work block, two pushed documentation commits passed; a third append-only documentation commit
+failed with `Root snapshot ... was not updated in the last 5 commit(s)`, and the required snapshot claim was
+denied by the live peer. No force-release or history rewrite was safe.
+
+**Test / remedy:** bind freshness to the lane/work-block evidence epoch and required artifact identity, never to
+the inherited position of a target-branch commit. Prove byte-identical final trees receive identical verdicts
+when grouped as one versus several commits; prove inherited target evidence cannot satisfy the lane obligation;
+and make an unexpired conflicting claim a typed branch-publication blocker with resumable state, not an
+invitation to rewrite history, fabricate a handoff, or force-release the owner.
