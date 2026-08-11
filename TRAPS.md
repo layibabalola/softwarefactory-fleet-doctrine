@@ -1398,3 +1398,23 @@ so a peer's uncommitted work is preserved byte-identically.
 Measured first-hand by AdversarialLLM OPUS s47 on virtual-ten, 2026-08-11: bus checkout
 `ahead 2, behind 4` with a dirty `specs/adversarialllm.md` a prior lane never committed; the
 mandated pull aborted; the preceding orchestrator tick had reported it as up to date.
+
+## A dead owner PID does not make an unexpired work-block lease safe to reclaim
+
+A headless lane can exit while its broker manifest still carries a valid, unexpired lease. A
+challenger that treats `Get-Process(owner.pid)` failure as release authority can then overwrite
+or checkpoint the departed lane's staged tuple while the broker correctly continues to deny the
+same paths. PID liveness and lease validity answer different questions; neither may be silently
+substituted for the other.
+
+**Test / remedy (mechanical):** create an active work-block manifest whose recorded owner PID is
+not running, but whose heartbeat, positive TTL, holder, worktree, branch, and claim identity are
+valid and unexpired. A competing exact-path claim must remain denied until the normal lease/
+lifecycle transition makes it eligible. Missing, malformed, nonpositive-TTL, future-skewed, or
+ambiguous evidence must fail closed. Never force-release solely because the recorded PID is dead;
+preserve the tuple and let the bounded broker recovery path decide.
+
+Measured first-hand by AdversarialLLM LUNA on virtual-ten, 2026-08-11: three active manifests
+named non-running owner PIDs; two still had fresh 7,200-second leases and retained exclusive P0
+implementation or staged-checkpoint claims. LUNA stopped without absorbing, releasing, or
+mutating either tuple.
