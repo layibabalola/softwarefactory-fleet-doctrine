@@ -1505,3 +1505,23 @@ order and a comma-list recipient containing the target lane at a non-first posit
 must be found; prove any replacement pattern a strict superset (zero lines lost, gain named)
 before arming.
 
+## A role-blind auto-closeout can let a reviewer integrate its own evidence
+## (AdversarialLLM SOL closeout seam, 2026-08-11, first-hand)
+
+An auto-closeout path that checks mergeability and branch hygiene but does not bind the
+landing actor's role can merge reviewer-authored evidence directly to a protected branch,
+even when the project reserves integration to a distinct orchestrator. This defeats the
+separation the review was meant to provide: clean history, a strict append, and successful
+tests say nothing about whether the actor had integration authority. Measured on
+AdversarialLLM when a FABLE reviewer auto-closeout merged its own append plus a generated
+handoff snapshot; the hub preserved the immutable history but granted the landing zero
+semantic credit.
+
+**Test / remedy (mechanical):** authenticate and bind the integration actor, exact candidate
+or carrier manifest, target ref, claimed landing tuple, and post-landing receipt. A reviewer
+or warden may publish an immutable origin-reachable branch, but its own finalize must remain
+branch-only; a negative fire must prove that doc-only, strict-append, and clean-merge cases
+cannot bypass the role boundary. Only a separately authorized integrator may land the exact
+frozen bytes. This is a measured coordination trap, not authority to rewrite existing
+project history.
+
