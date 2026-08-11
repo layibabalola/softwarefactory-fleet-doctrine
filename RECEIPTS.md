@@ -213,3 +213,59 @@
 - Sequencing is forward-only: land the frozen K3 onboarding subject unchanged, then qualify the
   wider model ladder in a separate candidate. This receipt grants no admission, ratification,
   landing, publication, routing capacity, or doctrine ruling.
+
+## Appended by Cloudvore, 2026-08-10 (Grok WSL restoration and Kimi root binding)
+
+- Environment: Ubuntu 22.04.5 LTS under WSL2; dedicated `grok` UID 1000; clean `/home/grok`;
+  unchanged official Grok Build 1.0.0 Linux binary SHA-256
+  `28dbc967a5843dae2374b6834dadbab95354e685c7e5c8dc750b92a4e5fc7c3e`; authenticated Windows
+  Grok TOML SHA-256 `2b0a7999e214da693bad71ff5489cdb65e216596436e09f9a3920517f984a11a`.
+  Credentials were neither copied nor read. Native Windows shared-Claude-profile Grok remains
+  zero-key.
+- Grok subject `d808607e60095dab3c14d1d8bcef8bccf559463d`: 45/45 hermetic pins, PowerShell parse
+  clean, diff check clean, doc-size clean. Exact-head live reviewer
+  `99a7cda5-544e-4a5f-92c3-31b5e5e09dc1` is READY/credit/durable/PASS with clean inventory.
+  Bounded producer `947f9f6c-01a2-4c3c-b686-14b957d78616` is READY/credit and changed only its
+  chartered README path; scheduler verified and committed evidence `7492b07`.
+- Kimi worktree-binding subject `d4ec0da4b3c75a17fce23fd7bc16dc6a9f2acd4c`: 31/31 pins and
+  independent WSL Grok review `2a5b30f6-5f77-4cdb-8b2b-46263aec59f6` PASS. The first Kimi review
+  `session_a11605f5-e809-4aa0-869b-f668c74cf5d2` is adjudication-denied because tool calls read
+  primary master. Correctly bound final review `session_751d1472-4d6a-4718-9d77-19a623280e51`
+  is READY/credit/PASS and reads provider-adapter sources only under the exact assigned worktree.
+  Portal: `http://127.0.0.1:58628/sessions/session_751d1472-4d6a-4718-9d77-19a623280e51?tab=timeline`.
+- Claude Opus returned HTTP 429 during the earlier bar with no inference consumed. Grok and Kimi
+  completed the repair/review loop independently; Claude's later return is optional extra capacity,
+  not a prerequisite for restoration.
+
+## Attended-repair adoption — machine Bachelor (XPS 17, Windows 11), Cloudvore, 2026-08-10
+
+First machine reporting against `cloudvore/standards/ACCOUNT-PARITY-ATTENDED-REPAIR.md`. Derived
+from the detector's own trace log, not from a claim that it was installed.
+
+- **315 hook fires** recorded. **9** reached a popup decision (the rest had no drift). **3** opened
+  a window; **6** were suppressed, each announcing its reason.
+- **The drift it was built for was real and is now closed.** The CLI sat on an exhausted account
+  (`c96755fb`) while the desktop was on `b59121b3`; all three axes now agree on `b59121b3`.
+- Refusal reasons observed **verbatim in production**, one per gate:
+  - `no popup: entrypoint sdk-py is not an attended surface, so nothing paints a window on an unattended desktop`
+  - `no popup: entrypoint sdk-cli is not an attended surface, ...`
+  - `no popup: entrypoint (unset) is not an attended surface, ...`
+  - `no popup: the wizard window for this same drift is still open`
+  - `popup suppressed by CLAUDE_PARITY_POPUP`
+- **The allowlist earned its design choice on live data.** `sdk-cli` appeared as a real headless
+  entrypoint that was NOT in the test set — it was refused because the gate is an ALLOWLIST, not a
+  denylist of surfaces someone thought of in advance. A denylist would have painted a window there.
+- Child-interactivity probed through the exact production spawn path: `IsInputRedirected=false`,
+  `UserInteractive=true`, and the repair tool's own predicate returns true **inside the child** — so
+  the window that opens is not one that refuses itself.
+
+**Honest limits of this receipt — small N, and one branch unproven.**
+
+- All 3 opens were **commissioning-forced** (`CLAUDE_PARITY_POPUP_FORCE=1` after clearing state).
+  No window has yet opened spontaneously on a drift the operator had not just induced.
+- **The COOLDOWN branch has never fired in production.** Only the liveness branch was observed,
+  because the drift was remediated within the hour. It is covered by construction and by the
+  suppression tests, not by field evidence. A sibling adopting this should not read "gates verified"
+  as "all four gates verified in the wild".
+- Total elapsed observation is one day on one machine. Nothing here says anything about the other
+  fleet boxes; per the standard, each machine files its own row.
