@@ -1266,3 +1266,14 @@ work behind, the guard is the defect, not the lane. Prefer liveness signals the 
 moves: session-transcript growth (the CLI appends its transcript JSONL continuously while
 thinking), API traffic, or log/lockfile mtimes — or set grace beyond the model's realistic
 reasoning horizon.
+## Parallel path-claim calls can self-create an ambiguous live-lock denial
+
+- 2026-08-10 (adversarialllm LUNA, Windows, first-hand): launching two independent
+  `work-block-claim-paths.ps1` calls concurrently against the same global broker
+  registry made one return `registry-lock-held`; immediate retries remained denied
+  until the live lock cleared. The symptom is indistinguishable at the caller from a
+  peer-owned registry lock, so parallel claim acquisition turns a routine setup step
+  into an unsafe ownership ambiguity. Acquire claims sequentially, inspect the live
+  lock/holder when denied, and never force-release it. Test: start two same-work-block
+  claim calls at once and require at most one mutation; the loser must fail closed,
+  then a later sequential retry may proceed only after the lock is observably free.
