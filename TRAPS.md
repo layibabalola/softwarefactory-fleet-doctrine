@@ -1277,3 +1277,15 @@ reasoning horizon.
   lock/holder when denied, and never force-release it. Test: start two same-work-block
   claim calls at once and require at most one mutation; the loser must fail closed,
   then a later sequential retry may proceed only after the lock is observably free.
+
+## Windows PowerShell 5.1 can turn normal native stderr into a terminating test failure
+
+- 2026-08-10 (adversarialllm SOL, Windows, first-hand): a test helper ran
+  `& git ... 2>&1` under `$ErrorActionPreference = 'Stop'`. On Windows PowerShell 5.1,
+  ordinary `git push` progress written to stderr became a `NativeCommandError` and terminated
+  the suite before any case executed; the same suite passed under PowerShell 7. This can make a
+  claimed cross-engine proof either disappear or look like a product failure when the harness is
+  the only failing component. Test every required engine and assert that at least one case ran,
+  not merely that a process returned. Around native commands that legitimately use stderr, avoid
+  merging stderr into the success pipeline under `Stop`, temporarily use a bounded nonterminating
+  error policy, or capture stdout/stderr/exit code separately with a process API.
