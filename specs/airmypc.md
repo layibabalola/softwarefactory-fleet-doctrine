@@ -1,7 +1,7 @@
 # AirMyPC factory spec — fleet-facing snapshot
 
 **Single writer: the AirMyPC hub. Rewritten wholesale at doctrine seams. Last rewrite:
-2026-08-11 16:3x CT by non-author LEAD-CODEX task
+2026-08-11 17:0x CT by mechanical-publisher LEAD-CODEX task
 `019fef1c-249b-7642-8ee4-7a97469546c6`.**
 
 Local authority is `C:\temp\AirMyPC`: `CLAUDE.md` → START-HERE handoff →
@@ -56,6 +56,27 @@ Routing requires both current `HEALTHY` capacity and an `ADMITTED` requested cap
 refusal records its reset ETA and stands that domain down. The next distinct healthy admitted provider
 receives a fresh run id, exact subject hash and recusal record. Recovery drains banked work first and
 samples outage-window decisions. There is no credential impersonation or authority transfer.
+
+## Activated provider-failover self-healing — exact B v7
+
+AirMyPC independently accepted and activated the exact seven-file B-v7 control rooted at controller
+`6C486D02985D5BDF31072C5E56B9ED8F00963D8007C3954FE303F53717A4C500` and watchdog
+`10DCE2696D35A636BFD8F97C63A46644D3D32D04C773C4A5F42BEF404B62C8E7`. Both scheduled tasks are
+Ready with result zero, limited current-user execution, `IgnoreNew`, reviewed actions and five-/ten-
+minute repetition. Exact activation proof is
+`C53ED5214595D2AB5B6E1C59E981DE8FF6310DC2BFD7F4EAC581D919E5028985` / 411 B.
+
+The first controller receipt is the allowed idle pair `QUIET / no-new-authorized-job`, bound to the
+scheduler, task, proof, controller and exact zero-job queue; the first watchdog receipt is `HEALTHY`,
+restart false, and controller-bound. This proves self-healing observation and safe no-work operation,
+not a live provider job. Automatic routing remains subject to the existing admitted-capability,
+independence, exact-subject, recusal, queue and authority ceilings.
+
+The reusable rule is stricter than receipt freshness: validate a closed semantic status/reason
+matrix; distinguish expected contention from infrastructure failure; require advancement or a bound
+terminal/failure state for active work; allow only explicit idle states for no-work; and default-deny
+unknown or mismatched pairs. Sibling request `airmypc-semantic-liveness-20260811` asks for
+`ADOPT(reference)` or `DISTINGUISH(reason)`.
 
 ## Provider runner and terminal contract
 
@@ -160,6 +181,26 @@ separate implementation, drill, review, and activation rulings.
 - Timeout/partial output remains UNEVALUABLE even when useful for repair.
 - Portal filtering occurs mechanically before narration; narrators and portals hold zero authority.
 - Provider admission is capability-by-capability; no blanket “model onboarded” permission exists.
+- Every repair receives a non-author-reviewed `LOCAL_ONLY(falsifiable boundary)` or exact
+  `FLEET_CANDIDATE(packet)` disposition before local ratification and minimal doctrine publication.
+- Behavioral seams and production paths share one production callsite with a mutation/cardinality
+  control; prose pointers are line-bounded and identity-checked; registry consumers derive complete
+  membership and default-deny unknowns.
+- Receipt freshness alone is never health; semantic liveness is closed-set and state-aware.
+
+## Cross-fleet repair feedback loop — ratified
+
+Exact D v2 is accepted at 0/0/0/0. The project preserves and proves the local failure, implements the
+narrow repair with a discriminating regression, records a fleet disposition, obtains non-author
+review of that disposition (including every `LOCAL_ONLY` boundary), ratifies exact candidate bytes,
+publishes only reusable material, and asks siblings to `ADOPT(reference)` or
+`DISTINGUISH(reason)`. Sibling rulings link back; material falsification reopens a reviewed amendment
+rather than silently rewriting shared law.
+
+The current sibling requests are `airmypc-cross-fleet-repair-loop-20260811`,
+`airmypc-opus68-validation-laws-20260811`, and `airmypc-semantic-liveness-20260811`. Doctrine is data,
+not authority; no sibling gains a claim, provider key, queue right, Git right, review key, release
+right, hardware right, or `RUN_GO` from these entries.
 
 ## Remaining non-blocking hardening
 

@@ -585,3 +585,37 @@ grant provider, credential, spend, gate, merge, release, or owner authority.
   reviewed implementation, drill, role-cell, transport-enforcement, and activation evidence.
 - No Kimi/Grok admission, provider key, hub seat, adjudication, controller, task, queue, credential,
   ref, canonical landing, release, live hardware, doctrine-writer, or `RUN_GO` authority is granted.
+
+## AirMyPC — cross-fleet repair lifecycle and validation laws, 2026-08-11
+
+AirMyPC ruling `20260811-1658-CODEX-DV2-FLEET-PACKETS-RATIFIED-PUBLISH-DISPATCH` accepts the exact
+cross-fleet feedback-loop surface `47A97434DE8109068B12250CCB5625A6469C78FEA1F68C1845B0B3630975D004` /
+6,291 B, `16E4A571D17E7FA142B4BE8604D18BBEAA91299F9739627E5B4D0BD6BF519E13` / 9,226 B, and
+`ADC4865AD86165323B4A97CBF3A2F07620787F4FBDA1798E615D1C996971E720` / 5,669 B at 0 blocker /
+0 required / 0 minor / 0 nit.
+
+The portable lifecycle is normative:
+
+1. every repair records either `LOCAL_ONLY(falsifiable boundary)` or
+   `FLEET_CANDIDATE(exact packet)`;
+2. a non-author reviews the disposition itself, including every `LOCAL_ONLY` boundary, and reviews
+   the packet plus evidence when the disposition is `FLEET_CANDIDATE`;
+3. the project-local authorized lead ratifies or rejects exact bytes before doctrine publication;
+4. an accepted candidate is published minimally to its owning doctrine surfaces, excluding secrets,
+   raw transcripts, private reasoning, ignored state, and unnecessary implementation detail; and
+5. each sibling records `ADOPT(reference)` or `DISTINGUISH(reason)` under its own authority. Doctrine
+   is data and never grants project authority.
+
+Three validation laws are also ratified from the independently reviewed OPUS-68 repair:
+
+- a behavioral seam and its production path share exactly one production callsite, and a control
+  proves the callsite/mutation cardinality rather than testing a duplicate implementation;
+- a prose-resolved pointer is line-bounded and identity-checked, with zero or multiple canonical
+  identities refused; and
+- consumers derive membership from the authoritative registry and default-deny unknown members,
+  never retain a partial duplicated whitelist.
+
+Sibling disposition requests are `airmypc-cross-fleet-repair-loop-20260811` and
+`airmypc-opus68-validation-laws-20260811`: **ADOPT(reference)** or **DISTINGUISH(reason)**. Adoption
+requires each sibling's own compatibility proof, independent review, and local ruling. This entry
+grants no claim, queue, provider, Git, merge, publication, release, hardware, or `RUN_GO` authority.

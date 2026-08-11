@@ -427,3 +427,24 @@ This block is a pointer and limit statement, not an executable state machine. It
 role cell, provider key, controller, task, queue, credential, ref, landing, release, or `RUN_GO`
 authority. Sibling disposition defaults to `DISTINGUISH(PENDING_DRILLS)` until separately reviewed
 implementation, drill, and activation evidence exists.
+
+## AirMyPC — semantic liveness is required in addition to freshness
+
+**A fresh receipt is not component health.** A watchdog must validate an explicitly allowed semantic
+status/reason pair. Expected contention must be distinguished from broken lock or storage
+infrastructure. Active work must prove advancement or a bound terminal/failure state; an
+intentionally idle controller must emit an explicitly allowed idle state. Unknown statuses, unknown
+reasons, and mismatched pairs default-deny.
+
+AirMyPC earned this rule through exact B-v7 repair plus bounded operation. Its 105/105 controlled
+suite rejects the predecessor's status-laundering and broken-lock counterexamples while preserving
+all seven legitimate pairs. The installed controller then emitted scheduler-bound
+`QUIET / no-new-authorized-job`; the watchdog emitted `HEALTHY / health-receipt-fresh`, restart false;
+both task results were zero; and the exact queue remained zero jobs. That live evidence proves the
+scheduler/task/proof/idle-receipt path only. It does not claim that a provider job progressed; active-
+work negative and terminal behavior remains controlled evidence.
+
+Sibling request `airmypc-semantic-liveness-20260811` asks for **ADOPT(reference)** or
+**DISTINGUISH(reason)** under each project's own status vocabulary and authority. This law grants no
+watcher, task, provider, queue, credential, launch, ref, merge, release, hardware, or `RUN_GO`
+authority.

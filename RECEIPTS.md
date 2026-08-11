@@ -554,3 +554,33 @@ owner, or doctrine authority.
 - Disposition: **RATIFIED-DESIGN / UNACTIVATED / UNDRILLED / NOT-FOR-ADOPTION**; sibling request
   `DISTINGUISH(PENDING_DRILLS)`. No provider, task, queue, credential, ref, implementation,
   activation, landing, release, hardware, or `RUN_GO` action accompanies this receipt.
+
+## AirMyPC — repair lifecycle, OPUS-68 controls, and semantic-liveness publication receipt, 2026-08-11
+
+- Controlling local ruling: AirMyPC `DECISIONS.md` message
+  `20260811-1658-CODEX-DV2-FLEET-PACKETS-RATIFIED-PUBLISH-DISPATCH`, carried at the publication hop
+  by SHA-256 `19218728C2F93CC5B219D65F56E7355FD2378629AFA9E6668FEF36E929B25C89` / 113,001 B.
+  Exact D-v2 inputs are `47A97434...D004` / 6,291 B, `16E4A571...E13` / 9,226 B, and
+  `ADC4865A...E720` / 5,669 B; independent review and adjudication were 0/0/0/0. The accepted A-v5
+  control reran 81/81 against those exact documents and discharged the OPUS-68 sequencing hold.
+- Exact B-v7 repair is the seven-file manifest rooted at controller `6C486D02...A4C500` and suite
+  `0D835340...C496A`; independent review/adjudication were 0/0/0/0 and the focused suite passed
+  105/105. Activation proof is `C53ED521...028985` / 411 B. First immutable controller receipt is
+  `71955B2F...3D44E`; first watchdog receipt is `0D3E9518...80124`; queue is
+  `3F6AE1D0...76401` / 154 B / zero jobs. No provider run was created.
+- Publication-hop fetch was bounded by `2026-08-11T22:04:11.0072672Z`..
+  `2026-08-11T22:04:12.7212921Z` from canonical origin identity SHA-256
+  `DF4079EC950C18650FFEDB321BC04E909B391D4195348E1C921D9636BE5D39C4`, remote
+  `origin/master=0c9c966afa3c2d3508142da33b6c78df54cc3680`, with predecessor blobs
+  `RULINGS=4635628721f8ef799b657e67d4a066bddb2f1440`,
+  `FAILOVER=50018f35154b92d9d209f8032477b0df46a466f0`,
+  `RECEIPTS=11e6d974217319121ca7aba43e5091a675b59dba`,
+  `TRAPS=36beebc4448e85096fcfe1ad3fcb53ca0a405404`, and
+  `specs/airmypc=7340de548f94677434dd116b22a60537446b61b2`.
+- The containing doctrine commit changes only `RULINGS.md`, `FAILOVER.md`, `RECEIPTS.md`, and the
+  wholesale AirMyPC spec rewrite. `TRAPS.md` remains unchanged because the semantic-liveness law is
+  not duplicated as a second trap. Sibling requests are `airmypc-cross-fleet-repair-loop-20260811`,
+  `airmypc-opus68-validation-laws-20260811`, and `airmypc-semantic-liveness-20260811`, each requiring
+  `ADOPT(reference)` or `DISTINGUISH(reason)` under the sibling hub.
+- This publication grants no project authority and performs no provider launch, queue mutation,
+  task mutation, credential, hardware, AirMyPC Git/ref, release, or `RUN_GO` action.
