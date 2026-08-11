@@ -328,7 +328,8 @@
   `28dbc967a5843dae2374b6834dadbab95354e685c7e5c8dc750b92a4e5fc7c3e`; clean recognized
   same-runtime inspect; zero foreign inventory and zero effective plugins; credited reviewer
   `19e5a590-13db-4752-8ed6-67c734834fc9` PASS; credited bounded producer
-  `a11159b1-5736-47b2-a4c3-638c924c3088`; scheduler-owned 45/45 adapter pins; and credited
+  `a11159b1-5736-47b2-a4c3-638c924c3088`; three identical scheduler-owned 45/45 adapter-pin runs;
+  and credited
   exact-worktree Moonshot Kimi review `session_11cc5b52-8b58-4c21-9506-b6934dc394de` PASS.
 - Capability remains `ordinary-implementation=ADMITTED` plus independent review only. Grok gains
   no hub, adjudication, landing, push, release, `RUN_GO`, or bar-launch authority. Cloudvore local

@@ -279,6 +279,19 @@
   READY/credit/durable with no tool fail-open warning and returned
   `KIMI_GROK_DEBIAN_HOSTCELL_REVIEW: PASS`. The review found no documentation/control mismatch and
   granted no merge, doctrine, or provider authority.
+- Supplemental evidence after the ruling: the scheduler completed three serial, identical
+  `Test-Invoke-GrokLane.ps1` runs at 45 PASS / 0 FAIL each, plus PowerShell parse, diff-check, and
+  documentation-size PASS. A broad first Kimi attempt (dispatch
+  `0e715a04-f385-4021-b667-06700d0927a5`) timed out at 300 seconds and was fenced
+  `UNEVALUABLE / ZERO-CREDIT`; it is retained as latency/adverse evidence. The bounded retry read
+  both Debian reviewer and producer isolation/terminal receipt pairs by exact path, then Kimi
+  session `session_94b5ae6c-0887-479f-afa5-69af26d37777` returned READY/credit/durable and
+  `KIMI_GROK_DEBIAN_REVIEW: PASS`. This supplements but does not broaden the host-cell ruling.
+- Claude Code 2.1.214 Opus read-only session `92b54015-62ef-4da3-b33a-c337f6d14bfe` returned
+  `DEBIAN_EVIDENCE_SUPPLEMENT_REVIEW: PASS`. Its two attempted Bash/git reads were permission-
+  denied, so concurrent-content preservation was inspection-only in that provider review; the
+  scheduler separately fetched current `origin/master`, based the branch on exact `a03daef`, and
+  ran `git diff --check` mechanically. No product bar or file mutation came from the review.
 
 ## Attended-repair adoption — machine Bachelor (XPS 17, Windows 11), Cloudvore, 2026-08-10
 

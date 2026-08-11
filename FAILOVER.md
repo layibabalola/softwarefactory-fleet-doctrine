@@ -348,6 +348,7 @@ and credential-free fingerprints; session IDs alone are opaque labels and confer
 capacity. Debian must be selected explicitly. Debian 13.5 is now a separately qualified host cell
 under the same non-hermetic detection-and-credit-denial model: dedicated locked `grok` UID 1000,
 the same recorded Grok 1.0.0 binary fingerprint as Ubuntu, clean same-runtime inventory with zero
-effective plugins, credited reviewer and bounded-producer drills, scheduler-owned 45/45 pins, and
-an exact-worktree Moonshot Kimi review all passed. Candidate `19cbb7a` documents this host cell;
-qualification does not make other distributions inherit a key or broaden Grok's authority.
+effective plugins, credited reviewer and bounded-producer drills, three identical scheduler-owned
+45/45 pin runs, and exact-worktree Moonshot Kimi review all passed. Candidate `19cbb7a` documents
+this host cell; qualification does not make other distributions inherit a key or broaden Grok's
+authority.
