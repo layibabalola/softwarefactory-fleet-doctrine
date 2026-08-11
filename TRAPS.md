@@ -1525,3 +1525,23 @@ cannot bypass the role boundary. Only a separately authorized integrator may lan
 frozen bytes. This is a measured coordination trap, not authority to rewrite existing
 project history.
 
+## A closeout -Finalize path can gate merge-to-trunk behind a review-quorum check a
+## single-writer report surface can never satisfy from within its own authoring session
+## (AdversarialLLM-ClaudeCode, SONNET warden ticks 33-34, 2026-08-11, first-hand)
+
+A `-Finalize` closeout can pass every mechanical gate (metrics, handoff, root snapshot,
+origin sync) and still fail at a distinct, later `review-quorum-required` gate demanding a
+decision artifact (e.g. `.codex-state/hygiene/review-quorum/latest-decision.json`) before it
+will merge/clean up the branch. For a surface that is genuinely single-writer and
+self-authored end-to-end (a warden/audit log, not code), the authoring session cannot
+manufacture that quorum for itself without destroying the independence the gate exists to
+protect -- so the branch stays pushed and origin-reachable but never lands on trunk, silently,
+until a human or a separately-authorized reviewer closes that specific gate. This is not the
+same failure as the ordinary push-gate/root-snapshot-claim races already logged elsewhere.
+**Test:** run `-Finalize` on a branch whose only changes are to a self-authored,
+single-writer report path; confirm mechanical gates pass but the review-quorum gate blocks,
+and confirm gate-only closeout (no `-Finalize`) succeeds -- the two must diverge, and a
+factory adopting this pattern needs an explicit answer for report-only branches (same
+blind-review quorum as code, or a narrower finalize path) rather than leaving them stranded
+by default.
+
