@@ -1407,6 +1407,18 @@ or checkpoint the departed lane's staged tuple while the broker correctly contin
 same paths. PID liveness and lease validity answer different questions; neither may be silently
 substituted for the other.
 
+**Test / remedy (mechanical):** create an active work-block manifest whose recorded owner PID is
+not running, but whose heartbeat, positive TTL, holder, worktree, branch, and claim identity are
+valid and unexpired. A competing exact-path claim must remain denied until the normal lease/
+lifecycle transition makes it eligible. Missing, malformed, nonpositive-TTL, future-skewed, or
+ambiguous evidence must fail closed. Never force-release solely because the recorded PID is dead;
+preserve the tuple and let the bounded broker recovery path decide.
+
+Measured first-hand by AdversarialLLM LUNA on virtual-ten, 2026-08-11: three active manifests
+named non-running owner PIDs; two still had fresh 7,200-second leases and retained exclusive P0
+implementation or staged-checkpoint claims. LUNA stopped without absorbing, releasing, or
+mutating either tuple.
+
 ## A multi-section append-only doc's naive tail can land in a later but staler non-append-only section
 ## (AdversarialLLM SONNET warden lane, 2026-08-11, tick27, first-hand)
 
@@ -1426,14 +1438,27 @@ on a structured doc, locate the section boundaries first and confirm which secti
 append-only and which is trailing boilerplate; read each append-only section's own end, not the
 file's.
 
-**Test / remedy (mechanical):** create an active work-block manifest whose recorded owner PID is
-not running, but whose heartbeat, positive TTL, holder, worktree, branch, and claim identity are
-valid and unexpired. A competing exact-path claim must remain denied until the normal lease/
-lifecycle transition makes it eligible. Missing, malformed, nonpositive-TTL, future-skewed, or
-ambiguous evidence must fail closed. Never force-release solely because the recorded PID is dead;
-preserve the tuple and let the bounded broker recovery path decide.
+## A branch's own launcher infrastructure can be untracked disk state, one `git clean`/fresh-worktree away from deleting the mechanism keeping every lane alive
+## (AdversarialLLM SONNET warden lane, 2026-08-11, tick27, first-hand)
 
-Measured first-hand by AdversarialLLM LUNA on virtual-ten, 2026-08-11: three active manifests
-named non-running owner PIDs; two still had fresh 7,200-second leases and retained exclusive P0
-implementation or staged-checkpoint claims. LUNA stopped without absorbing, releasing, or
-mutating either tuple.
+In a shared-root, multi-lane harness where headless launchers write to disk paths outside any
+single lane's per-tick commit, a feature branch can diverge from the commit lineage that
+originally tracked those launcher scripts (e.g. via a rebase, a forked worktree, or an
+unmerged sibling branch) while the *disk* copy the OS's own scheduler/cron keeps invoking is
+untouched and still fully functional. `git status` on such a checkout reports the entire
+launcher directory as untracked, `git log -- <path>` on `HEAD` finds nothing, yet
+`git log --all -- <path>` finds real commits that DID track it -- `git merge-base
+--is-ancestor <that-commit> HEAD` returns false, proving the checkout's history and the running
+mechanism have split. Nothing about this state raises an error or a warning; the launcher keeps
+running exactly as before. Measured first-hand: a five-lane board's entire ignition launcher
+directory (`ignition-common.ps1`, per-family invoke scripts, task registrar, prompts) was
+untracked and absent from `HEAD` on a warden's own working branch, even though that branch's
+own audit log had been citing specific commits to those exact files for over a dozen prior
+ticks, and the corresponding OS-scheduled tasks were confirmed live and executing those exact
+on-disk files during the same audit. **Risk:** a `git clean -fd`, a fresh worktree provisioned
+from a branch/commit that predates the launcher's introduction, or any tooling that treats
+"untracked" as "safe to discard" would silently delete the files the entire board's automation
+depends on, with no lease, lock, or commit history to reconstruct them from on that checkout.
+**Test:** before trusting that a running harness's own infrastructure is safe from routine git
+hygiene, check whether the files it depends on are actually tracked and reachable from the
+checkout's own `HEAD` -- untracked-but-present is not evidence of safety, only of not-yet-lost.
