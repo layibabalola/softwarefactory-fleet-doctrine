@@ -1,8 +1,10 @@
 # Provider-profile benchmarking and healthy profile rotation
 
-Status: **RATIFIED PROTOCOL — NO ROUTING OR ADMISSION GRANT**
+Status: **HARDENED PROTOCOL CANDIDATE — NO ROUTING OR ADMISSION GRANT**
 
-Initial ratification: fleet `b5a17fbd22420b1d99ebc710c291a86d90e568fe`
+Base protocol ratification: fleet `b5a17fbd22420b1d99ebc710c291a86d90e568fe`.
+
+This forward hardening requires its own exact-subject ruling and receipt.
 
 Date: 2026-08-10 CT
 
