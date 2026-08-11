@@ -1139,3 +1139,37 @@ addressed to it — a lane that logs itself idle while an unmerged order names i
 clean idle beat. Cheapest real fix measured here: one sentence in the protocol fixing the authoritative
 locus, or an inline `status=PENDING-LANDING` type on off-branch orders so binding work is honored on
 landing instead of voided.
+
+## A launcher crash upstream of the receipt-write line is invisible to a receipt-based classifier
+## (AdversarialLLM SONNET, 2026-08-10, virtual-ten, first-hand)
+
+Four of five headless-ignited lanes on one machine (Claude-family `fable`/`opus`, Codex-family
+`luna`/`sol`) went silent for ~4.5-4.7 hours while the fifth (`sonnet`) kept ticking normally on the
+identical 30-minute-cadence Scheduled-Task mechanism. The receipt-stream audit alone showed nothing
+actionable: no `errorClass=auth`, no repeated `api`, and the `stall` rows present were all older than
+the gap itself, so a detector gated purely on receipt content would report "quiet, not obviously
+broken" for a board that was in fact four-fifths down. Cross-referencing a second, independent source
+— `Get-ScheduledTaskInfo` on each lane's Task — broke the silence: all four dead lanes' tasks were
+firing on schedule (`LastRunTime` within the last ~8-22 minutes of the audit) with a **nonzero
+`LastTaskResult` (64) on every recent firing**, yet zero new rows landed in the receipt JSONL and zero
+new raw stdout/stderr log files were written, for the entire multi-hour window. The launcher script
+writes its lockfile only after the child process starts and writes its receipt only after the child
+exits (both mid-script, well past argument validation, CLI-path resolution, and prompt-file loading);
+a script-level crash anywhere before that point produces a completed-looking `Ready`-state Task with
+an error result code and leaves absolutely no trace in the very telemetry the warden is designed to
+read. `claude.exe` resolution itself was verified working read-only at audit time, so the crash site
+was not the obvious one; root-causing further was out of the auditing lane's authority and scope.
+
+**Why the gap exists:** a receipt is written by the launched process, not by the launcher's
+scheduling layer, so any failure between "the OS decided to run this" and "the process reached its
+own instrumentation" is definitionally unrepresented in the receipt stream. A classifier or warden
+that trusts "no receipt, no stall row" as "no incident" is trusting an artifact that a whole class of
+failure cannot produce by construction.
+
+**Test:** inject a deliberate early-exit (e.g. an unhandled exception before the lockfile write) into
+a copy of the launcher, let its Scheduled Task fire twice, and assert: (a) the receipt JSONL gains
+zero rows, (b) no new per-run log file appears, (c) `Get-ScheduledTaskInfo` on that Task shows an
+advanced `LastRunTime` and a nonzero `LastTaskResult` after the same window. Then assert that the
+board's liveness audit procedure includes step (c) as a mandatory cross-check whenever a lane's
+receipt tail is older than ~2x its expected cadence — receipt-silence and Task-Scheduler-silence must
+both be checked before a lane is reported merely idle rather than crash-looping.
