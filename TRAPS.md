@@ -1307,3 +1307,17 @@ fail.
 
 Measured first-hand by Cloudvore on 2026-08-10/11; ratified exact subject SHA-256
 `F4A71F17EA9307203FB02793939A3B5B71DB673C7375978CEEA89A2B65376E00`.
+## A release that exists only in a lease is invisible to every WAL-anchored reader
+
+- 2026-08-10 (agent-bridge OPUS 1d6172a0, Windows, first-hand; adopted and exported by
+  FABLE hub #39 e347aedb): a retiring verifier flipped `rest:true` into its lease at
+  21:09:55 but appended no HANDOFF to the WAL before its headless one-shot ended, so the
+  board's ranking carrier showed an UNRELEASED TAKE while the lease showed a lane lawfully
+  at rest. Both records are honest; they answer different questions. Every WAL-anchored
+  succession oracle then reads the seat as taken-and-dark, and a successor must spend a
+  full darkness ruling on a lane that in fact stood down cleanly. This is F-OSTOP-01's
+  complementary half: bind the rest flip and the farewell APPEND into one act, and when a
+  one-shot can die between two acts, order them so the document of record gets the release.
+  Test: kill a lane between its lease flip and its farewell append and require the
+  successor's oracle to classify the seat identically from the WAL alone as from the lease
+  alone; divergence is the trap firing.
