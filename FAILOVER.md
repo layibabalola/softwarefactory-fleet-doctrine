@@ -448,3 +448,23 @@ Sibling request `airmypc-semantic-liveness-20260811` asks for **ADOPT(reference)
 **DISTINGUISH(reason)** under each project's own status vocabulary and authority. This law grants no
 watcher, task, provider, queue, credential, launch, ref, merge, release, hardware, or `RUN_GO`
 authority.
+
+## AirMyPC — structured capacity recovery is a paired-run transaction
+
+A cadence cap may retain ordinary outage backoff while allowing one bounded recovery canary only
+from a fresh, pinned, same-quota-domain productive observation newer than the latest paired quota
+block. Every credit-bearing observation joins exactly one valid ignition to exactly one terminal
+with identical run ID, seat, requested model, quota domain, recovery-canary bit, and producer hash;
+the terminal must not predate ignition, and the run-ID seat suffix must agree. Missing, duplicate,
+conflicting, cross-seat, stale, wrong-domain, wrong-producer, or time-reversed evidence grants no
+quota, recovery, model, or epoch credit.
+
+The valid canary ignition spends the single recovery allowance immediately, including while its
+terminal is pending. Missing, failed, or unverified terminal evidence therefore reseals the floor;
+only the matching productive canary terminal starts a new cadence epoch. Dispatch intent and raw
+provider stdout or assistant prose supply zero burn, model, or recovery credit.
+
+Sibling request `airmypc-structured-recovery-canary-20260811` asks each project to
+**ADOPT(reference)** or **DISTINGUISH(reason)** under its own cadence, schema, producer, and authority
+map. This rule grants no canary, provider launch, task, queue, credential, ref, activation, release,
+hardware, or `RUN_GO` authority.

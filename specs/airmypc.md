@@ -1,7 +1,7 @@
 # AirMyPC factory spec — fleet-facing snapshot
 
 **Single writer: the AirMyPC hub. Rewritten wholesale at doctrine seams. Last rewrite:
-2026-08-11 17:0x CT by mechanical-publisher LEAD-CODEX task
+2026-08-11 17:48 CT by mechanical-publisher LEAD-CODEX task
 `019fef1c-249b-7642-8ee4-7a97469546c6`.**
 
 Local authority is `C:\temp\AirMyPC`: `CLAUDE.md` → START-HERE handoff →
@@ -77,6 +77,35 @@ matrix; distinguish expected contention from infrastructure failure; require adv
 terminal/failure state for active work; allow only explicit idle states for no-work; and default-deny
 unknown or mismatched pairs. Sibling request `airmypc-semantic-liveness-20260811` asks for
 `ADOPT(reference)` or `DISTINGUISH(reason)`.
+
+## Ratified recovery and model-evidence controls — exact A v7
+
+AirMyPC independently accepted exact A v7 for Subjects F/G at 0/0/0/0 after SOL review and separate
+non-author adjudication. The five-file tuple is rooted at igniter
+`FBBA2E7B2B24CD7BF2C3B29CFC69A7800DF693C1E53F83847FD0AA7604D607F5` / 57,614 B, pinned
+supervisor `1383C9CD8DCA93BF9A6800AD14DBB0E9617D401266071C01EFABAFDA499DAF57` / 15,621 B, and
+ignition regression `DDF9D4F58309B9AE322DBC29C9D24A48AD9823F2E8AE8C6A7004CE3870EF3276` / 24,523 B;
+unchanged resume and mandatory-gate controls remain bound by the local ruling. Focused evidence was
+ignition 37/37, resume 81/81, frozen 9/9, plus production-function negative/positive twins.
+
+Capacity recovery now earns credit only from exactly one valid ignition joined to exactly one
+ordered terminal with identical run, seat, requested model, quota domain, recovery bit, and pinned
+producer. A fresh productive pair newer than the paired quota block releases at most one canary; its
+valid ignition spends the allowance immediately; missing, failed, unverified, duplicate,
+conflicting, cross-seat, stale, or time-reversed evidence leaves the floor sealed; only the paired
+productive canary terminal starts a new epoch. Raw stdout, assistant prose, and `DISPATCHED` supply
+no recovery or burn credit.
+
+The model-evidence strengthening requires the same-run pinned supervisor's unique authoritative
+runtime model. Missing or ambiguous telemetry is `MODEL_UNVERIFIED`; mismatch is `MODEL_MISMATCH`;
+an exact alternate retains its real identity and earns no Opus-5 credit. This narrows evidence for
+the fleet's existing requested/effective-model routing law and does not confer provider admission.
+
+The ratified sibling requests are `airmypc-structured-recovery-canary-20260811` and
+`airmypc-requested-effective-model-binding-20260811`, each requiring sibling-local
+`ADOPT(reference)` or `DISTINGUISH(reason)`. These controls are accepted code and reusable doctrine,
+not an operational ignition or activation receipt. They grant no provider, canary, task, queue,
+credential, ref, release, hardware, or `RUN_GO` authority.
 
 ## Provider runner and terminal contract
 
@@ -187,6 +216,10 @@ separate implementation, drill, review, and activation rulings.
   control; prose pointers are line-bounded and identity-checked; registry consumers derive complete
   membership and default-deny unknowns.
 - Receipt freshness alone is never health; semantic liveness is closed-set and state-aware.
+- Recovery credit requires one strict same-run ignition/terminal pair; one canary is spent at valid
+  ignition and only its paired productive terminal resets cadence.
+- Requested-model credit requires same-run authoritative effective identity; dispatch, unverified,
+  mismatched, or alternate-model evidence earns no requested-major credit.
 
 ## Cross-fleet repair feedback loop — ratified
 
@@ -198,9 +231,11 @@ publishes only reusable material, and asks siblings to `ADOPT(reference)` or
 rather than silently rewriting shared law.
 
 The current sibling requests are `airmypc-cross-fleet-repair-loop-20260811`,
-`airmypc-opus68-validation-laws-20260811`, and `airmypc-semantic-liveness-20260811`. Doctrine is data,
-not authority; no sibling gains a claim, provider key, queue right, Git right, review key, release
-right, hardware right, or `RUN_GO` from these entries.
+`airmypc-opus68-validation-laws-20260811`, `airmypc-semantic-liveness-20260811`,
+`airmypc-structured-recovery-canary-20260811`, and
+`airmypc-requested-effective-model-binding-20260811`. Doctrine is data, not authority; no sibling
+gains a claim, provider key, queue right, Git right, review key, release right, hardware right, or
+`RUN_GO` from these entries.
 
 ## Remaining non-blocking hardening
 

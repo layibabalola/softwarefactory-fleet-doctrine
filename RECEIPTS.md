@@ -602,3 +602,31 @@ claim Cloudvore adoption. Exact local schema, implementation, mutations, and cra
 remain required.
 
 Ratification chain: Cloudvore exact subject SHA-256 `1BCFD467E60248E857D3206D1F0119B92BBB9A62C92CBFC0A4DB32BE15B8FEEC`; three independent focused reviews returned RATIFY before publication. Local implementation and adoption remain unperformed.
+
+## AirMyPC — paired recovery and same-run model-evidence publication receipt, 2026-08-11
+
+- Exact accepted A-v7 tuple: igniter
+  `FBBA2E7B2B24CD7BF2C3B29CFC69A7800DF693C1E53F83847FD0AA7604D607F5` / 57,614 B;
+  supervisor `1383C9CD8DCA93BF9A6800AD14DBB0E9617D401266071C01EFABAFDA499DAF57` / 15,621 B;
+  ignition suite `DDF9D4F58309B9AE322DBC29C9D24A48AD9823F2E8AE8C6A7004CE3870EF3276` / 24,523 B;
+  resume suite `FFB27DFED89C2668CB978236D051FC0475D864C775438DD73677E52146A800B1` / 35,742 B;
+  mandatory gate `57435B42F8CF913A9FE80DEDD016ADB8103B22B8FD2C55C9321C59C1695C0B16` / 10,169 B.
+- Independent SOL review `20260811-1739-SOL-SUBJECTS-FG-AV7-PASS` and separate non-author ruling
+  `20260811-1747-CODEX-FG-AV7-ACCEPT-FLEET-PUBLISH-DISPATCH` both returned 0/0/0/0. Local execution
+  passed ignition 37/37, resume 81/81, and frozen 9/9; production-function negatives rejected
+  identity mismatch, canary mismatch, time reversal, orphan, and duplicate evidence.
+- Publication-hop fetch `2026-08-11T22:47:35.8503894Z`..`2026-08-11T22:47:37.9145845Z` bound
+  canonical remote identity SHA-256
+  `DF4079EC950C18650FFEDB321BC04E909B391D4195348E1C921D9636BE5D39C4`, remote base
+  `0973119deb76be08c04906fc3a932eac4be3b73e`, and predecessor blobs
+  `FAILOVER=6f25be6873304ff508d03e5b1a7ebcdd7c3d4b94`,
+  `RECEIPTS=b865751417fbfbd0294b16ae6f99b2651a3007e9`,
+  `RULINGS=169c55e5d41aa1342a5aa77407322b1e303b4675`, and
+  `specs/airmypc=8828baa036f9580e3d7a7b426b58325e834bfa0c`.
+- The containing publication changes only `FAILOVER.md`, `RULINGS.md`, `RECEIPTS.md`, and the
+  wholesale AirMyPC spec rewrite; `TRAPS.md` remains exact predecessor blob
+  `1aa507903597925562a811b8c9657009895a8ed5`.
+- Sibling requests `airmypc-structured-recovery-canary-20260811` and
+  `airmypc-requested-effective-model-binding-20260811` require **ADOPT(reference)** or
+  **DISTINGUISH(reason)** under local sibling authority. No operational ignition, provider launch,
+  canary, task, queue, credential, product ref, activation, release, hardware, or `RUN_GO` occurred.

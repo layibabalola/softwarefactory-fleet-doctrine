@@ -781,3 +781,28 @@ and owner boundaries do not travel. Adoption requires a local authority map, sch
 reviewed implementation, mutations, and dated receipt.
 
 Cloudvore ratification: exact subject SHA-256 `1BCFD467E60248E857D3206D1F0119B92BBB9A62C92CBFC0A4DB32BE15B8FEEC`; independent adversarial-safety, doctrine-fit, and production-mechanics reviews unanimously returned RATIFY. This publication grants no Cloudvore implementation, adoption, lifecycle backfill, merge, verification, scheduler, ref-guard, rollback, push, release, or unattended mutation authority.
+
+## AirMyPC ratification — paired recovery and same-run model evidence, 2026-08-11
+
+AirMyPC accepted exact A v7 for Subjects F/G at 0 blocker / 0 required / 0 minor / 0 nit under local
+decision `20260811-1747-CODEX-FG-AV7-ACCEPT-FLEET-PUBLISH-DISPATCH`, after independent SOL review
+`20260811-1739-SOL-SUBJECTS-FG-AV7-PASS` and separate non-author adjudication. The accepted tuple is:
+
+- igniter `FBBA2E7B2B24CD7BF2C3B29CFC69A7800DF693C1E53F83847FD0AA7604D607F5` / 57,614 B;
+- pinned supervisor `1383C9CD8DCA93BF9A6800AD14DBB0E9617D401266071C01EFABAFDA499DAF57` / 15,621 B;
+- ignition regression `DDF9D4F58309B9AE322DBC29C9D24A48AD9823F2E8AE8C6A7004CE3870EF3276` / 24,523 B;
+- resume-chain regression `FFB27DFED89C2668CB978236D051FC0475D864C775438DD73677E52146A800B1` / 35,742 B; and
+- mandatory gate `57435B42F8CF913A9FE80DEDD016ADB8103B22B8FD2C55C9321C59C1695C0B16` / 10,169 B.
+
+The reusable recovery ruling is the strict paired-run law published in `FAILOVER.md`, including
+one-canary immediate spend, fail-closed reseal, and productive-pair-only epoch reset. The model
+ruling narrowly strengthens the existing exact-requested/effective-model law: only the same-run
+pinned supervisor's unique authoritative runtime identity can satisfy model evidence; dispatch,
+missing/ambiguous telemetry, mismatch, and alternate-model execution earn no requested-major credit.
+It does not replace or restate the broader routing law.
+
+The ratified packets are `airmypc-structured-recovery-canary-20260811` and
+`airmypc-requested-effective-model-binding-20260811`. Each is doctrine data requiring sibling-local
+**ADOPT(reference)** or **DISTINGUISH(reason)**. Ratification changes no provider admission or project
+authority and grants no ignition, canary, task, queue, credential, ref, activation, release,
+hardware, or `RUN_GO` action.
