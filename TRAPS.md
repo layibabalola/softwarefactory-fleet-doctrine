@@ -1289,3 +1289,21 @@ reasoning horizon.
   not merely that a process returned. Around native commands that legitimately use stderr, avoid
   merging stderr into the success pipeline under `Stop`, temporarily use a bounded nonterminating
   error policy, or capture stdout/stderr/exit code separately with a process API.
+
+## Assurance-green can hide an inoperable factory
+
+A factory can retain exact green acceptance evidence while its canonical observer times out, its
+accepted deliveries cannot reach the project's verified terminal, or unknown rows silently fall
+out of the metric denominator. A scalar score, green badge, commit count, or empty-looking partial
+queue can therefore report success while the delivery control plane is unusable.
+
+**Test:** hold the accepted subject's assurance evidence green. In separate production-wiring arms,
+(a) force the ordinary state observer past its whole-command deadline, (b) add one unknown or
+over-age delivery subject, and (c) remove it from a joinable metric denominator. Assert ASSURANCE
+stays `SATISFIED`, OPERABILITY becomes `PRESSURED` or `UNEVALUABLE`, missing population remains
+visible, and no aggregate, advisory next action, or cached result authorizes mutation. Delete the
+production source-reader call as an anti-vacuity mutation and require the rendered-output test to
+fail.
+
+Measured first-hand by Cloudvore on 2026-08-10/11; ratified exact subject SHA-256
+`F4A71F17EA9307203FB02793939A3B5B71DB673C7375978CEEA89A2B65376E00`.

@@ -438,3 +438,73 @@
   bar, rollback-controller, release, credential, or owner authority.
 - This ruling grants no profile, role cell, project adoption, selector, dispatcher, watcher, seat,
   vote, or routing capacity. Every executable step remains a later exact candidate and ruling.
+
+## Appended by Cloudvore hub, 2026-08-11 — factory health is an ordered pair
+
+A software factory reports **ASSURANCE** and **OPERABILITY** separately:
+
+- **ASSURANCE** asks whether an accepted subject carries every project-required correctness,
+  safety, independence, containment, admission, and rollback predicate.
+- **OPERABILITY** asks whether the project's canonical control plane can derive the state needed by
+  its ordinary transitions within its locally ratified service objective, and whether accepted work
+  moves through the project's own delivery lifecycle without unknown or over-age debt.
+
+The axes form an ordered pair and neither supplies credit to the other. No combined number, grade,
+rank, colour, badge, trend, or threshold may authorize dispatch, acceptance, merge, verification,
+retirement, publication, release, or satisfaction of either axis. If a presentation shows a
+roll-up, it is labelled `DIAGNOSTIC / ZERO-AUTHORITY`, retains both typed axis states including
+`UNEVALUABLE`, and never hides the worst constituent state. Every authority-bearing consumer reads
+the relevant axis and its canonical evidence directly.
+
+The portable states are:
+
+- `assurance = SATISFIED | UNSATISFIED | UNEVALUABLE`
+- `operability = NORMAL | PRESSURED | UNEVALUABLE`
+
+`UNEVALUABLE` is epistemic: it is neither healthy nor unhealthy and grants no credit to a
+transition that requires the missing predicate. It does not block an independently valid safety
+stop, preservation action, or zero-credit terminal fence.
+
+Each project maps these axes only from its named canonical authorities. Every observation binds its
+project-local raw state, normalized category, source reader, subject/unit, population, observation
+window, authority fingerprint and watermark, measured-at time, expiry, and UNKNOWN rule. Concepts
+absent from a project are `NOT_APPLICABLE(reason)`, never silently zero. Unknown or unjoinable rows
+remain in the coverage denominator and cannot disappear from latency, age, rejection, or throughput
+claims. A health report is a read-only projection; it creates no fleet ledger and never outranks its
+sources.
+
+Project-local thresholds, lifecycle names, actor topology, queue mechanics, resource limits, and
+service objectives do not travel as fleet values. A pressure result may nominate an already
+authorized next observation or drain candidate, naming the authority still required. It grants no
+priority override, merge, verification, retirement, pruning, deletion, reset, force-release,
+backfill, publication, release, or unattended queue mutation. It may report
+`NO AUTHORIZED ACTION`.
+
+### Minimum adoption proof
+
+A project may claim adoption only after one production-path, machine-readable report proves:
+
+1. both axes are always present with the portable typed states;
+2. every value has one canonical authority mapping, explicit scope and population, and visible
+   UNKNOWN/NOT_APPLICABLE coverage;
+3. the whole ordinary-path command terminates within a predeclared local service objective or emits
+   one terminal `UNEVALUABLE` result with a distinct non-success exit, without cached credit,
+   silent retry, or a held writer/merge/admission/cleanup lease;
+4. a post-computation authority-fingerprint change returns `UNEVALUABLE(source_changed)` rather
+   than a stale result;
+5. an assurance false-green mutation removes one required acceptance predicate through production
+   wiring and the assurance axis loses credit;
+6. an operability false-green mutation introduces unknown or over-age project-local delivery debt
+   through production wiring and the operability axis ceases to be `NORMAL` or becomes
+   `UNEVALUABLE`; and
+7. no aggregate or `next_action` field can execute or authorize a state mutation.
+
+The service objective is justified independently by the caller's control-path need and a declared
+representative load envelope. It is not set or raised merely to encompass the implementation being
+measured. A threshold change is a reviewed local ruling with before/after receipts.
+
+Cloudvore ratification: exact local subject SHA-256
+`F4A71F17EA9307203FB02793939A3B5B71DB673C7375978CEEA89A2B65376E00`, independently RATIFY-reviewed
+by adversarial-safety, cross-project-doctrine, and mechanical-adoption reviewers. This publication
+grants no Cloudvore adoption credit and no observer, queue, scheduler, cleanup, merge, bar,
+publication, or release authority.

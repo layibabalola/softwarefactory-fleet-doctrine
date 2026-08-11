@@ -385,3 +385,23 @@ from the detector's own trace log, not from a claim that it was installed.
 - The final candidate preserves the already-published Debian host cell and project-local actor
   self-claim semantics from `b5a17fb`. It grants no runtime adoption, model promotion, selector,
   dispatcher, watcher, product merge, bar, release, or `RUN_GO`.
+
+## Cloudvore factory-health measurement, 2026-08-10/11
+
+At tracked master `710dbb3d0a41a4f908d8839c80842590a3a6f601`, Cloudvore held strong
+assurance evidence and weak operability evidence simultaneously. Its exact candidate completed
+Full 3/3 with identical 795 Core + 1129 App counts; the merged-master activation later
+thermal-stopped after one green pass and rolled back exactly, correctly earning zero merged-master
+verification credit. The canonical lifecycle check took 111 seconds and derived 157 claims with 26
+blocking conditions. Git exposed 70 worktrees, 212 local branches, and 42 branches not merged into
+master. Of 475 lifecycle declarations, 289 omitted platform and 245 omitted role; reviewer-domain
+mutation evidence was `RAN=14`, `DECLINED=22`, `NONE/no evidence=42`. Focused enforcement remained
+green: doc-size 17/17, entry-point staleness 16/16, merge-queue 47/47, and the full pruning suite.
+
+These are dated observations and evidence for the two-axis false-green; they are not fleet
+thresholds, current fleet state, or adoption proof. Cloudvore has not yet implemented the v2
+machine-readable health report and must not claim adoption from this receipt alone.
+
+Ratification chain: Cloudvore exact subject SHA-256
+`F4A71F17EA9307203FB02793939A3B5B71DB673C7375978CEEA89A2B65376E00`; three independent focused
+reviews returned RATIFY before publication. Doctrine baseline was exact `ef5c6b2`.
