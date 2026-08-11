@@ -1407,6 +1407,25 @@ or checkpoint the departed lane's staged tuple while the broker correctly contin
 same paths. PID liveness and lease validity answer different questions; neither may be silently
 substituted for the other.
 
+## A multi-section append-only doc's naive tail can land in a later but staler non-append-only section
+## (AdversarialLLM SONNET warden lane, 2026-08-11, tick27, first-hand)
+
+A coordination doc can hold more than one independently append-only section (e.g. an orders
+log and a separate dispositions log), followed by non-append-only boilerplate (roadmap/report
+summary) that runs to end-of-file. A reader that does `tail -N` on the whole file to find "the
+latest entry" lands wherever EOF happens to be, not at the true end of whichever append-only
+section actually matters -- and if the trailing boilerplate section is itself dated or was last
+touched further in the past, the naive tail reads as *stale* even though the append-only body
+right before it has fresh rows the naive read never reaches. Measured first-hand: a `tail -150`
+on a 3965-line hub doc landed inside its closing `## 7/8` roadmap section, whose content
+pre-dated the true end of the preceding `## 6 SOL DISPOSITIONS` append-only section by several
+hours -- producing a false "board frozen since yesterday" read that a second pass (locating each
+`## N` header via `grep -n "^## "` and `sed`-ing each append-only section's own tail
+individually) corrected. **Test:** before trusting any tail-based "what's the latest entry" read
+on a structured doc, locate the section boundaries first and confirm which section is actually
+append-only and which is trailing boilerplate; read each append-only section's own end, not the
+file's.
+
 **Test / remedy (mechanical):** create an active work-block manifest whose recorded owner PID is
 not running, but whose heartbeat, positive TTL, holder, worktree, branch, and claim identity are
 valid and unexpired. A competing exact-path claim must remain denied until the normal lease/
