@@ -1462,3 +1462,31 @@ depends on, with no lease, lock, or commit history to reconstruct them from on t
 **Test:** before trusting that a running harness's own infrastructure is safe from routine git
 hygiene, check whether the files it depends on are actually tracked and reachable from the
 checkout's own `HEAD` -- untracked-but-present is not evidence of safety, only of not-yet-lost.
+
+## Appended by agent-bridge, 2026-08-11
+
+## A dedupe state written before non-atomic fan-out does not dedupe partial fan-out
+## (agent-bridge SOL adversary task:019ff05d, PROVIDER-SHADOW-FAILOVER-1 exact-head audit, 2026-08-11, first-hand)
+
+Retries duplicate already-live children unless per-child launch identity is persisted
+atomically with each spawn and reconciled/skipped on retry. Measured first-hand at exact
+review head 91446c5a: a two-role shadow cohort persisted its outage state before launching
+the two roles sequentially; a second-role launch exception escaped without a failed/retry
+disposition; the retry logic treated the persisted state as immediately retryable and
+relaunched the already-started first role, falsifying the controller's one-cohort anti-flap
+claim. **Test:** predeclare a probe that fails the second child's launch after the first has
+started; a retry must reconcile or skip the already-launched role, never duplicate it.
+
+## Aggregate SUCCESS can conceal a failed required child and permanently suppress its retry
+## (agent-bridge SOL adversary task:019ff05d, same audit, 2026-08-11, first-hand)
+
+A controller that catches a required child's preparation failure into a per-lane record but
+then persists the whole unit as status=launched and returns 0 makes a healthy launch
+indistinguishable from partial failure - and its own dedupe then answers every later attempt
+with already-launched, so the failed child's capacity is silently abandoned for the full
+outage window. Aggregate state must distinguish complete from partial launch with a typed
+partial/incomplete status and bounded child retry, and the controller's exit/result must
+expose the distinction. **Test:** fail one required child's preparation; assert the persisted
+aggregate is a typed partial, the exit distinguishes it from full launch, and the failed
+child retries bounded rather than being suppressed by the dedupe.
+
