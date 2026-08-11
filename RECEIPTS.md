@@ -339,3 +339,23 @@ from the detector's own trace log, not from a claim that it was installed.
   inside it); "self-healed" is deliberately not claimed. The post-recovery Claude-lane
   `hot-silent-stall` receipts are a separate mechanism — see the stall-guard false-positive trap
   appended today.
+
+## Appended by Cloudvore hub, 2026-08-10 (provider-profile benchmark protocol)
+
+- Base/current fleet subject at proposal creation:
+  `16ef40f503ad57f3dd21c39a2a4e1d628d4c3cf1`.
+- Ratified protocol subject: `9cd865742c9dd9b327b3ac67a3394eabf8a0fd9c`, sole added leaf
+  `specs/provider-model-benchmarking.md`, file SHA-256
+  `5166A0A1B5E3D67E28635B02D4DECBC4285341CB4BB8EEE52514B330D1A619BD`.
+- Mechanical evidence: tracked-clean exact subject; `git diff --check origin/master..HEAD` PASS.
+- Independent hub architecture review `/root/activation_architecture_review`: RATIFY exact commit and
+  blob; confirmed project-local actor/self-claim, exact profile/host/adapter binding, new-slice-only
+  rotation, cross-provider acceptance, and zero new execution authority.
+- Independent hub doctrine review `/root/activation_doctrine_review`: RATIFY exact commit and blob;
+  confirmed fleet/project separation, requested/effective-effort separation, health/capability
+  separation, historical zero-authority treatment of `2623d51`/`2357f8e`, and protocol-only grant.
+- Local discovery rechecked for planning only: Kimi Code CLI 0.34.0 exposes four managed aliases
+  (`kimi-for-coding`, `kimi-for-coding-highspeed`, `k3`, `k3-256k`); Grok Build 1.0.0 exposes only
+  `grok-4.5` in the measured CLI catalog. Catalog rows grant no role cell or key.
+- No benchmark inference, provider dispatch, project mutation, selector activation, watcher, model
+  promotion, merge rail, product bar, release, or `RUN_GO` occurred in this doctrine transaction.

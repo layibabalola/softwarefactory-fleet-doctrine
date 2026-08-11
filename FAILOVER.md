@@ -352,3 +352,34 @@ effective plugins, credited reviewer and bounded-producer drills, three identica
 45/45 pin runs, and exact-worktree Moonshot Kimi review all passed. Candidate `19cbb7a` documents
 this host cell; qualification does not make other distributions inherit a key or broaden Grok's
 authority.
+
+## Healthy provider-profile rotation after project-local admission
+
+Provider diversity is normal evidence gathering, not only outage recovery, but it remains subordinate
+to project-local capability and authority. Health and capability are independent predicates: a
+healthy profile without a fresh admitted role cell is ineligible, and an admitted role cell with
+stale or non-ready health is also ineligible.
+
+Rotation occurs only at a new slice boundary from an already hub-authorized frozen manifest. It
+selects an eligible exact profile for an existing functional role and creates no standing seat. A
+controller constitutes a fresh project-local actor bound to the exact worktree; that actor emits its
+own claim before provider inference. No scheduler or adapter impersonates the actor, and no provider
+runner receives lifecycle, hub, merge, bar, rollback, push, release, or owner authority.
+
+Eligibility binds project, provider, observed effective backend/model, requested effort,
+observed-or-null effective effort, transport, exact project-adapter manifest, host boundary, role,
+expiry, and independence class. Catalog effort is not effective-effort evidence. Ubuntu and Debian
+Grok routes remain distinct host cells; native Windows Grok in a Claude-shared profile remains
+zero-key. Same-provider models and same-provider host cells never supply both acceptance keys.
+
+The selector is read-only until separately admitted. It filters health and capability, preserves the
+two-class gate, emits an exact reason/expiry/next-probe plan, and revalidates immediately before any
+future launch. It never invents or reprioritizes work, creates a charter, requeues, transfers a live
+claim, or performs mid-slice succession. A health loss permits termination only of the exact captured
+actor/process tree under existing authority with first-red evidence preserved; the hub applies the
+existing succession procedure.
+
+Returning Claude capacity is considered only for later new slices and never preempts healthy work.
+Canonical Fable debt retains its named authority route and cannot be discharged by Kimi/Grok shadow
+review. Profile promotion, project adoption, dispatch, and watcher activation each require later
+exact-evidence rulings; this protocol alone changes no live routing.

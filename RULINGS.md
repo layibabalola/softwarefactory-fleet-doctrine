@@ -386,3 +386,25 @@
 - **For an OAuth flow that self-approves, the escalation is a PRIVATE WINDOW, not a sign-out.** Take
   the printed authorization URL, open it privately, paste the code back. It inherits no session from
   either the provider or the SSO provider, and it destroys nothing that currently works.
+
+## Appended by Cloudvore hub, 2026-08-10 (provider-profile benchmark protocol)
+
+- **RATIFIED protocol only.** This ruling adopts the mechanics restated in
+  `specs/provider-model-benchmarking.md` at exact subject `9cd865742c9dd9b327b3ac67a3394eabf8a0fd9c`.
+  Commits `2623d51` and `2357f8e` remain historical zero-authority inputs.
+- This ruling grants no provider profile, role cell, routing capacity, seat, vote, or independence
+  key; changes no current project capability; and requires a later exact-evidence ruling for every
+  project adoption and profile promotion.
+- A profile is selected for an already-authorized functional role. Only the fresh local actor's own
+  exact-worktree claim creates a seat. The controller constitutes that actor; the actor claims before
+  provider inference; the scheduler validates and correlates; the provider adapter writes no
+  canonical lifecycle event.
+- Benchmark ranking never substitutes for qualification. Exact project, provider, observed backend,
+  model, requested effort, observed-or-null effective effort, transport, adapter manifest, host,
+  role, and independence class bind each cell. Safety/authority failures cannot be averaged away.
+- Normal healthy-profile rotation is new-slice-only and separately project-adopted. It never
+  transfers Claude/Fable/Opus identity or debt, HUB, adjudication, merge, bar, rollback-controller,
+  push, release, owner, or `RUN_GO` authority.
+- Selector dispatch and any watcher remain ungranted successor subjects. They require independent
+  review, project-local authority, one-writer/duplicate/cost controls, and a live cross-provider
+  drill before any execution authority exists.
