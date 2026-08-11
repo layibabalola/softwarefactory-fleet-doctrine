@@ -95,6 +95,16 @@ byte-anchored in `EXPORTS.md`); the DNG failover amendment is ratified in substa
 canonical carrier tuple is still under exact-ruling reconcile — it publishes when that ruling lands,
 automatically.
 
+**Completion hardening (operator ruling, 2026-08-11).** Every software-factory fix now has doctrine
+publication as a terminal completion predicate, not merely an optional seam check. After the normal
+review/ratification gate, the publisher exports the portable defect, prevention invariant, exact
+subject/evidence tuple, applicability, limits, and rollback posture; pushes; verifies the remote
+contains the doctrine commit; and records that commit back in the project hub/evidence. Before that
+proof, the repair remains `FIXED-LOCALLY-PENDING-DOCTRINE` or `PUBLICATION-BLOCKED`, even if local
+bytes and tests are green. A publication failure does not roll back a safe repair, but it cannot be
+laundered by retirement, handoff, account rotation, or unrelated success. Private implementation
+bytes, credentials, customer data, transcripts, and reasoning remain outside the bus.
+
 ## Codex Outage Bank Mode
 
 The hub may enter bounded candidate banking during Claude-family unavailability from direct local

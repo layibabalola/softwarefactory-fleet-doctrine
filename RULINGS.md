@@ -508,3 +508,23 @@ Cloudvore ratification: exact local subject SHA-256
 by adversarial-safety, cross-project-doctrine, and mechanical-adoption reviewers. This publication
 grants no Cloudvore adoption credit and no observer, queue, scheduler, cleanup, merge, bar,
 publication, or release authority.
+
+## Appended by DNG Auto Processor operator, 2026-08-11 — factory fixes publish before closeout
+
+Operator directive: *"All fixes related to the software factory need to be published to doctrine
+repo".* This strengthens automatic bus publication from cadence into a completion predicate.
+
+Every repair to factory coordination, lifecycle, claims, leases, worktrees, admission, provider
+routing, tests/gates, merge/rollback, warden/succession, roadmap, health, evidence, publication, or
+doctrine transport remains incomplete until its normally reviewed and ratified portable result is
+committed to this canonical repository, pushed, and proven contained by the remote doctrine commit.
+Before that proof the only truthful terminal labels are `FIXED-LOCALLY-PENDING-DOCTRINE` or
+`PUBLICATION-BLOCKED(reason, owner, next_probe)`.
+
+The publication carries the reusable defect and prevention invariant, exact subject/evidence tuple,
+applicability, limits, and rollback posture. Behavior changes update the owning project spec;
+reusable law, traps, receipts, or hash-bound artifacts update their canonical surfaces as applicable.
+Credentials, customer data, raw transcripts, private reasoning, and project-private implementation
+bytes do not travel. A failed publication does not undo a safe landed repair, but its closeout debt
+survives handoff, retirement, account rotation, and unrelated success. Ratify-before-doctrine,
+single-writer publication, provider zero-authority, and project-local acceptance laws remain intact.
