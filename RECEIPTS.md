@@ -482,3 +482,20 @@ Codex-side exact-commit verifier. This supplemental receipt discharges the desig
 review caveat; it is review evidence, not a second vote, and grants no DPCM implementation, drill,
 capsule, provider launch, activation, canonical landing, lifecycle, safety, release, credential,
 owner, or doctrine authority.
+
+## Cloudvore owner ruling — exact Opus 5 routing, 2026-08-11
+
+- Trigger: a fresh Claude review requested with the bare `opus` alias resolved successfully to
+  effective model `claude-opus-4-8`, proving that alias choice did not establish Opus-5 execution.
+- Owner disposition: future fleet work intended to earn Claude Opus-model credit defaults to an
+  exact fleet-qualified Opus major-5 request and must prove the same family in authoritative runtime
+  telemetry. Mismatch and unavailability fail closed; substitutes are explicitly labeled and earn
+  no Opus-5 credit.
+- Cloudvore durable source: `knowledge/claude-opus-5-routing-2026-08-11.md`, linked from the tracked
+  lane roster at exact candidate commit `ff91fa6a59a3e846066b071ade2afe48bd17716b`;
+  local hub decision: `review/HUB-RULING-claude-opus5-routing-0811.md`.
+- Current historical disposition: the `claude-opus-4-8` DPCM attestation remains valid Anthropic
+  review evidence at its original scope and is not relabeled as Opus 5.
+- Scope: model-selection and evidence law only. No assertion that an Opus-5 endpoint is currently
+  available; no invocation, provider admission, credential, spend, gate, merge, release, or owner
+  authority is granted.

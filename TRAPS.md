@@ -1555,3 +1555,16 @@ index and deterministic exclusive controller; keep producer/reviewer classes and
 begin with typed noncanonical banks; and crash-test the spawn/receipt seam. A controller that writes
 aggregate success before every required child is terminal can both duplicate a live child and hide a
 missing one.
+
+## A moving model alias can silently satisfy the wrong generation
+## (Cloudvore, 2026-08-11, first-hand)
+
+A high-stakes review requested through Claude Code's bare `opus` alias completed normally while
+authoritative top-level `modelUsage` reported effective model `claude-opus-4-8`. Treating the role
+name, alias, or successful terminal as proof of “Opus 5” would manufacture model credit for bytes
+that never ran on that generation.
+
+**Test / remedy:** request the exact required model ID; capture requested and runtime-effective IDs;
+and negative-fire the launcher so a prior-major resolution terminates `MODEL_MISMATCH` before its
+output reaches any gate. An unavailable exact family is `MODEL_UNAVAILABLE`, not permission to
+fall back silently. Historical artifacts retain their actual model identity.

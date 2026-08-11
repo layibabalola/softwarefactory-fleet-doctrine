@@ -547,3 +547,24 @@ Pre-activation implementation or drill execution requires separate exact project
 `DPCM_ADMISSION_DRILL` envelope that cannot select production work or write production refs,
 lifecycle, or banks. No production capsule may be issued or interpreted and no production child may
 be prepared until a later project activation names exact implemented heads and evidence.
+
+## Fleet — exact Claude Opus 5 routing, owner ruling 2026-08-11
+
+**AN OPUS LANE IS A ROLE; CLAUDE OPUS 5 IS A MODEL IDENTITY.** For future fleet seats intended to
+earn Claude Opus-model credit, the default required family is Opus major 5. Dispatchers must request
+an exact account-eligible, fleet-qualified Opus-5 model ID, not the moving `opus` alias, and retain
+both the requested ID and the effective model reported by authoritative runtime telemetry. Prefer
+the highest fleet-qualified Opus-5 revision; a marketing name, prompt self-report, lane name, or
+launcher choice is not proof of the effective model.
+
+If runtime resolution is not exact Opus major 5, terminate
+`MODEL_MISMATCH(requested,effective)` before the result can satisfy a gate, review debt, or model-
+diversity claim. If no exact Opus-5 model is exposed to the account/region/CLI, terminate
+`MODEL_UNAVAILABLE(claude-opus-5)` and wait. Silent fallback to Opus 4.x, Sonnet, Fable, or another
+provider earns no Opus-5 credit. A separately authorized bounded substitute must preserve its real
+identity and `SUBSTITUTE-NOT-OPUS5`; it cannot discharge a requirement specifically owed to Opus 5.
+
+Before first fleet credit, Opus 5 requires an account-scoped availability observation and one
+bounded read-only smoke receipt containing exact requested/effective IDs, CLI version, terminal
+reason, and quota/auth state. This routing law does not assert current endpoint availability or
+grant provider, credential, spend, gate, merge, release, or owner authority.
