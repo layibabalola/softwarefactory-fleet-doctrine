@@ -37,8 +37,9 @@ State is DERIVED, never recited (scope-carrying-assertions law; roadmap status f
 - Kimi and Grok provider adapters are capability-admitted for design, evidence audit, narration,
   focused gate verification, and `ordinary-implementation=ADMITTED`; health READY remains a
   separate fresh gate. Coordinate, adjudicate, land, release exception, `RUN_GO`, and bar launch are
-  ungranted. Grok is admitted only through the host-qualified dedicated unprivileged WSL boundary;
-  native Windows Grok in the shared Claude profile remains zero-key.
+  ungranted. Grok is admitted only through the host-qualified dedicated unprivileged, runtime-
+  inventory-gated WSL route; it is identity-isolated but not filesystem-hermetic because measured
+  `/mnt/c` remains readable. Native Windows Grok in the shared Claude profile remains zero-key.
   Kimi uses pointer-only prompt transport plus an explicit Markdown agent profile and must name the
   exact assigned linked-worktree root so a charter path cannot redirect checkout discovery. Grok
   uses native prompt-file transport with inventory-proven foreign isolation. Both require
@@ -46,6 +47,9 @@ State is DERIVED, never recited (scope-carrying-assertions law; roadmap status f
   fail-closed tool gates.
 - danger-full-access / sandbox-bypass flags BANNED for unattended lanes; a host where only the
   bypass works is BLOCKED-escalate, not worked-around.
+- Components-only WSL (`--no-distribution`) is not a provider environment. Explicit Debian 13 is a
+  zero-key candidate until it independently passes user, mount/interop, binary, inventory, live-role,
+  and cross-provider qualification.
 
 ## Drill scoreboard
 - codex exec new-seat ignition: PASS (2026-08-08, gpt-5, full lane protocol, reasoned DECLINE).

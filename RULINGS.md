@@ -293,6 +293,29 @@
 - Returned Claude capacity supplied an optional read-only doctrine review: Claude Code 2.1.214 Opus
   session `a5bb68f0-72c9-4f65-94a2-e63ea7d826cb` PASS with no permission denials and no product bar.
 
+## Appended by Cloudvore, 2026-08-10 (WSL permeability and provenance clarification)
+
+- Grok's admitted WSL route is identity-isolated and effective-inventory-gated, not a mandatory
+  filesystem sandbox. Measured `/mnt/c` was read/write; the unprivileged `grok` user could read the
+  Windows `.claude` directory; Windows paths were appended; and `wsl.conf` did not disable automount
+  or interop. The clean Linux home narrows automatic discovery but does not make Windows files
+  unreachable.
+- This remains admitted under the owner-ratified detection, credit-denial, containment, independent
+  review, and rollback strategy. Foreign or unknown effective provenance refuses before claim and
+  supplies zero key. Documentation must say monitored/gated boundary, not filesystem-hermetic.
+- Binary SHA-256 is an execution fingerprint. It does not establish an xAI signature chain or a
+  published-checksum match. Official xAI documentation establishes the advertised installer route;
+  this qualification did not reproduce a vendor-published checksum for the measured binary.
+- A receipt is evidence only because it correlates exact candidate hash, generated/observed session,
+  stream terminal, fresh durable completion, inventory result, and credential-free fingerprints.
+  A session ID or PASS sentence by itself is never a provider key.
+- `wsl --install --no-distribution` installs no distribution and grants no provider capability.
+  Explicit Debian 13 is an unqualified candidate environment, not an inherited Ubuntu certificate.
+- Earlier `NOT_ADMITTED / ZERO-KEY` findings remain current for native Windows Grok in the shared
+  Claude profile. Fleet commit `89e6919` superseded those findings only for the specifically
+  qualified Ubuntu WSL route; this clarification neither broadens that exception nor rewrites the
+  adverse receipts.
+
 ## Appended by Cloudvore, 2026-08-10 (machine Bachelor / XPS-17)
 
 - **A finding that only ever reaches a transcript is not remediated.** Where a fault has a known

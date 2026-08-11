@@ -241,6 +241,27 @@
   safe mode with zero permission denials and returned `CLAUDE_DOCTRINE_REVIEW: PASS`. It launched no
   product bar and supplied an additional review, not a restoration prerequisite.
 
+## Appended by Cloudvore, 2026-08-10 (WSL permeability measurement)
+
+- Ubuntu 22.04 `grok` UID 1000 measurement: `/etc/wsl.conf` contained only systemd enablement;
+  `/mnt/c` was DrvFs/9p read-write; `/mnt/c/Users/layib/.claude` was readable; Windows PATH entries
+  were appended; the WSL interop binfmt handler appeared absent at measurement time. This proves an
+  identity-separated but non-hermetic filesystem boundary. No `.claude` contents were read.
+- Binary SHA-256
+  `28dbc967a5843dae2374b6834dadbab95354e685c7e5c8dc750b92a4e5fc7c3e` is retained as the exact
+  execution fingerprint. xAI's official documentation advertises `https://x.ai/cli/install.sh`, but
+  no vendor-published matching checksum/signature was located or reproduced; earlier “official
+  binary” language is narrowed accordingly.
+- WSL 2.7.8 explicitly defines `--no-distribution` as optional-components-only. Explicit install
+  produced Debian GNU/Linux 13.5 `trixie` under WSL2. It currently ran only as root during release
+  discovery and is `NOT_QUALIFIED / ZERO-KEY`; no Grok binary, credentials, or provider claim were
+  installed or granted there.
+- Claude Code 2.1.214 Opus independently reviewed the five-file clarification read-only in session
+  `8c5a18d7-a734-4d50-a59a-de6d0a80e8ed`. It checked the measured boundary, preservation of the
+  owner-ratified detection/credit-denial/rollback model, hash wording, receipt correlation,
+  components-only WSL semantics, Debian zero-key status, and authority boundaries, then returned
+  `DOCTRINE_CLARIFICATION_REVIEW: PASS` with no permission denials and no product bar.
+
 ## Attended-repair adoption — machine Bachelor (XPS 17, Windows 11), Cloudvore, 2026-08-10
 
 First machine reporting against `cloudvore/standards/ACCOUNT-PARITY-ATTENDED-REPAIR.md`. Derived

@@ -302,8 +302,8 @@ Cloudvore restores Grok Build 1.0.0 capability admission only through the review
 Windows user profile shared with Claude remains `SUSPENDED / NOT_ADMITTED / ZERO-KEY`; TOML
 compatibility settings cannot repair that boundary by themselves.
 
-Each admitted host runs the unchanged official Linux binary as a dedicated non-root WSL user with a
-clean Linux home and records the distribution release, nonzero UID, binary SHA-256, TOML SHA-256,
+Each admitted host runs the recorded Linux binary as a dedicated non-root WSL user with a clean
+Linux home and records the distribution release, nonzero UID, binary SHA-256, TOML SHA-256,
 and clean same-runtime inspect/plugin receipts without reading credential contents. The gate
 enumerates instructions, hooks, plugins, marketplaces, skills, agents, MCPs, LSPs, and permission
 sources. Unknown provenance or any foreign provenance refuses before claim even when the item says
@@ -321,3 +321,30 @@ candidate `d4ec0da`: the argv pointer names both the charter and exact scheduler
 worktree and forbids deriving repository root from the charter location. Transport success from a
 different checkout is adjudication-denied. Final evidence is recorded in `RECEIPTS.md` and the
 forward restoration ruling in `RULINGS.md`.
+
+### Forward clarification — identity isolation is not filesystem hermeticity
+
+The certified WSL route is identity-isolated and runtime-inventory-gated, not filesystem-hermetic.
+On the measured Ubuntu host, DrvFs mounted `/mnt/c` read/write, the `grok` UID could read the Windows
+`.claude` directory, and Windows paths were appended to `PATH`; `/etc/wsl.conf` enabled systemd but
+did not disable automount or interop. The wrapper intentionally exposes the Windows Grok home plus
+the assigned prompt/worktree. A clean `/home/grok` prevents automatic Linux-home inheritance but
+does not make Windows profile paths unreachable.
+
+Admission therefore relies on the previously ruled detection-and-credit-denial model: same-runtime
+effective-inventory inspection, empty effective plugin resolution, closed tools and paths, durable
+terminal correlation, scheduler containment, independent review, and rollback. Any observed foreign
+inventory or boundary uncertainty refuses before claim and supplies zero key. Consumers must not
+describe this route as a mandatory mount sandbox. Filesystem-hermetic status requires a separately
+qualified mount namespace/container exposing only named paths.
+
+The recorded binary SHA-256 identifies exactly what ran; it is not a vendor signature or published
+checksum comparison. xAI documents its `x.ai/cli/install.sh` distribution route but no matching
+published checksum/signature chain was reproduced in this qualification. Receipts bind the candidate
+hash, generated/observed session, streaming terminal, fresh durable completion, runtime inventory,
+and credential-free fingerprints; session IDs alone are opaque labels and confer no authority.
+
+`wsl --install --no-distribution` is components-only and supplies no Linux userland or provider
+capacity. Debian must be selected explicitly. Debian 13 was installed as an additional candidate
+environment but remains zero-key until a dedicated non-root user, chosen mount/interop policy,
+recorded binary, clean runtime inspection, live drills, and cross-provider review all pass.

@@ -509,6 +509,19 @@
   at runtime, trust only top-level project doctrine under the exact assigned worktree, and keep Git
   scheduler-owned on Windows.
 
+- **WSL IDENTITY != MOUNT ISOLATION (Cloudvore, 2026-08-10, first-hand):** the dedicated `grok`
+  UID still saw read/write `/mnt/c`, could read the Windows `.claude` directory, and inherited
+  Windows PATH entries. A clean Linux home changes the default discovery identity; it does not make
+  DrvFs paths unreachable. If policy accepts detection plus rollback, say so and require runtime
+  inventory/credit denial. If policy requires prevention, use and qualify a mount namespace or
+  container with named bind mounts. Test readability from the actual provider UID rather than
+  inferring it from `/home` contents.
+
+- **COMPONENTS-ONLY WSL IS NOT DEBIAN (Cloudvore, 2026-08-10, first-hand plus Microsoft contract):**
+  `wsl --install --no-distribution` installs required WSL components and no distribution. Plain
+  `wsl --install` defaults to Ubuntu; Debian requires explicit selection. Never infer a distro,
+  release, user, binary, or provider capability from the presence of WSL components.
+
 - **FRESH-HEADLESS TOKEN-SNAPSHOT GAP TRAP (AdversarialLLM, virtual-ten, 2026-08-10,
   first-hand): a scheduled Codex seat can have an exact rollout and thread identity before the
   session-bloat detector has any usable token snapshot.** On LUNA boot,
