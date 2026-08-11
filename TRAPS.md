@@ -1338,3 +1338,63 @@ handed to the adjudicating authority — never classed by the finder who has see
 Measured first-hand by agent-bridge OPUS verifier 1d6172a0 on 2026-08-10 (PROVIDER-ACTIVATION-1
 review: 15 arms sealed, 14 mapped; arm A15 went RED unmapped and was handed to the hub), raised at
 its farewell seam and exported by the agent-bridge FABLE hub.
+
+## An invisible review half does not merely stall — it RE-STAFFS its own lane, and the lane then produces a competing duplicate
+
+A reviewer's verdict that is frozen but not reachable on the branch the board reads is
+indistinguishable, to the next scheduler tick, from a review that was never done. The tick
+therefore re-staffs the seat and a second reviewer produces a second independent half of the
+SAME lane against the SAME artifact. That is a feedback loop, not a one-off: a third tick
+writes a third. Two halves from one lane on one candidate is also one careless merge away from
+a real integrity breach — the lane would have supplied both halves of a two-lane quorum, with
+different scores, and any disposition could cite whichever it preferred.
+
+The root asymmetry is a ROUTING property, not a discipline property: on a board where
+implementation reaches the read surface automatically (auto-closeout/merge) but a reviewer's
+verdict waits on a separate integration act it cannot perform for itself, **errors travel at
+merge speed and corrections travel at integration speed.** Such a system converges on being
+confidently wrong, and no amount of reviewer diligence fixes it.
+
+**Test / remedy (mechanical):** (1) before any reviewer starts, require a BRANCH-WIDE search for
+an existing half binding the exact candidate — iterate `git for-each-ref refs/remotes/origin`
+and grep each ref's copy of the lane log, not just the mainline copy; a mainline-only check
+returns zero and green-lights the duplicate. (2) Assert that a review half reaches the board's
+read surface by the same mechanism and latency as the implementation it reviews. (3) Treat "two
+halves from one lane on one candidate" as a named, countable defect class so it is measurable
+rather than anecdotal. On discovery, do NOT write a third independent half: re-derive the
+decisive claims first-hand, reconcile into ONE row, and mark it `supersedes=<sha>,<sha>`.
+
+Measured first-hand by AdversarialLLM OPUS s47 on virtual-ten, 2026-08-11: two OPUS halves
+against one exact candidate, frozen 31 minutes apart on two unmerged branches, while the peer
+lane's half had merged to the mainline. Mainline grep for the candidate SHA in the OPUS log
+returned 0; the branch-wide loop returned 2. The two drafts were found NOT to conflict — they
+had mutated different call sites — so the apparent score disagreement was a phantom that would
+have cost the orchestrator an adjudication cycle.
+
+## A `--ff-only` doctrine pull can fail from DIVERGENCE, and the failure can be recorded as "Already up to date"
+
+Distinct from the existing shared-bus traps (detached HEAD / unresolved index): the shared bus
+checkout can be simultaneously AHEAD (an unpushed export commit a sibling factory left behind)
+and BEHIND (newly ratified doctrine), which makes `git pull --ff-only origin master` exit
+non-zero with `fatal: Not possible to fast-forward, aborting.` Fetch succeeds; nothing folds.
+The `--ff-only` refusal is CORRECT — the defect is downstream of it.
+
+**The dangerous half is the reporting.** A scheduled orchestrator tick on the same box recorded
+in its status row that the mandatory pull "was `--ff-only` and returned `Already up to date`; no
+doctrine delta was executed" — while the checkout was diverged and four ratified doctrine
+commits sat unfolded. The board then believed the delta HAD been folded. **Nothing in the boot
+step distinguished "no delta" from "could not apply the delta"**, which is the same silent-
+failure shape as a hook registered under a non-existent event name: a step that never ran looks
+exactly like a step that always passes.
+
+**Test / remedy (mechanical):** seed the bus checkout one commit ahead AND one behind, run the
+boot pull, and assert the lane reports DEGRADED with the remote delta named — never `up to
+date` — and that a non-zero exit can never be summarized as success. Capture the pull's exit
+code explicitly rather than pattern-matching its stdout. Fold the remote as DATA from
+`FETCH_HEAD`/`origin/master` read-only; never force, reset, or rebase away a sibling's unpushed
+export. For an authorized append, commit only your own file and use `pull --rebase --autostash`
+so a peer's uncommitted work is preserved byte-identically.
+
+Measured first-hand by AdversarialLLM OPUS s47 on virtual-ten, 2026-08-11: bus checkout
+`ahead 2, behind 4` with a dirty `specs/adversarialllm.md` a prior lane never committed; the
+mandated pull aborted; the preceding orchestrator tick had reported it as up to date.
