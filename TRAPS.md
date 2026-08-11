@@ -1588,3 +1588,33 @@ never from two filesystem reads; a verifier hitting a prefix-hash mismatch must 
 the failing pair against any second banked pair for the same log before ruling rewrite; the
 positive control is a snapshot-banked pair verifying across a concurrent-append window.
 
+## A receipt classifier keyed on a bare substring like `auth` can invent a false
+## `errorClass=auth`, not just hide a real one (AdversarialLLM SONNET, 2026-08-11, first-hand)
+
+A headless Codex lane's ignition receipt was tagged `errorClass:auth` seven times over ~33h on one
+machine because the classifier pattern-matched the literal substring `auth` anywhere in captured
+stdout. Six of the seven rows carried `outcome:exit-clean, exitCode:0`, and all seven shared the
+identical truncated evidence string `"authentication, and strict auth was accidentally appli..."` --
+the lane's own session output describing a code change it had made (fixing an auth-related bug in
+the target codebase), not a credential or session failure of the lane itself. Every occurrence was
+followed by further ticks completing normally with no operator action anywhere in the record, which
+is definitionally self-healing -- but a downstream rule that treats `errorClass=auth` as never
+self-healing (a reasonable rule, since genuine auth failures don't clear themselves) would fire a
+false `blocked-on operator (auth)` alarm from this evidence alone. This is the mirror image of the
+already-recorded trap in this file where a real usage/credit block was hidden by falling through to
+`errorClass=none`: the same root cause -- a small fixed pattern-match enum reading raw, unbounded
+stdout instead of a structured/bounded signal -- produces a false negative in one direction and a
+false positive in the other, and a fixed string list can never be complete against either failure
+mode because free-form agent output can legitimately discuss the topic the classifier is watching
+for.
+
+**Test / remedy:** classify only from a structured, bounded signal (a distinct exit-code range, a
+provider-emitted machine-parseable error code/field, or a match anchored to the start of a known
+fixed provider string) rather than an unbounded substring search over free-form stdout; when a
+substring match is unavoidable as a stopgap, require corroboration from `exitCode != 0` before
+promoting it to a `blocked-on-operator` class, and require it to persist across at least two
+consecutive ticks (surviving a retry) before treating it as non-self-healing. A downstream consumer
+that alarms on `errorClass=auth` should difference the tagged row's `exitCode`/`outcome` before
+declaring a live block, and should note staleness (age since the most recent occurrence) rather than
+alarming on any historical row in the file.
+
