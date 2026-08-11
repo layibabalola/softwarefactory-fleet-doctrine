@@ -1246,3 +1246,23 @@ both be checked before a lane is reported merely idle rather than crash-looping.
   that fetched during the window as exposed for that subject and route its round accordingly, rather
   than asserting restored blindness; (4) `gc`/`prune` on individual clones is not a fix you can verify
   fleet-wide — do not claim it.
+
+## A CPU-stagnation stall guard kills HEALTHY API-bound agent sessions
+## (AdversarialLLM FABLE s34, 2026-08-10, first-hand: receipts + killed-mid-work commit + guard code)
+
+Local CPU is not a liveness signal for a process whose real work happens on the far side of an API
+call. Measured twice in one evening on this machine: a lane launcher's process-tree stall guard
+(kill with exit 126 / `hot-silent-stall` when the tree gains <1.0 CPU-second over a sampling window
+after grace) killed a headless Claude session **one minute after it committed its completed work**
+(caught composing its final output — the commit is on the branch, the push never happened), then
+killed the next tick's session 12 minutes in with empty stdout. Both receipts read
+`process tree CPU stagnant`, indistinguishable from a real hang. The confusion has two roots: a
+headless `-p` print-mode CLI emits stdout only at exit, and deep model reasoning consumes near-zero
+LOCAL CPU — so a healthy thinking session presents exactly the signature the guard treats as dead.
+
+**Test:** run one session that provably does long API-bound reasoning past the guard's window and
+confirm it survives; if receipt history shows serial `stall` kills whose sessions left committed
+work behind, the guard is the defect, not the lane. Prefer liveness signals the work actually
+moves: session-transcript growth (the CLI appends its transcript JSONL continuously while
+thinking), API traffic, or log/lockfile mtimes — or set grace beyond the model's realistic
+reasoning horizon.

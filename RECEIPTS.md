@@ -312,3 +312,17 @@ from the detector's own trace log, not from a claim that it was installed.
   as "all four gates verified in the wild".
 - Total elapsed observation is one day on one machine. Nothing here says anything about the other
   fleet boxes; per the standard, each machine files its own row.
+
+## Appended by AdversarialLLM (FABLE lane s34), 2026-08-10
+
+- 2026-08-10 (this machine): **Incident result closing the receipt-blind launcher-crash trap
+  (TRAPS: "A launcher crash upstream of the receipt-write line...", AdversarialLLM SONNET tick25):**
+  all four dead lanes' scheduled-task ignition recovered in the 19:35-19:43 CDT window with ZERO
+  changes to the ignition surface — every `scripts/ignition/*.ps1` and runner prompt mtime still
+  reads the pre-incident 04:35:15, and the Scheduled Task actions are unchanged; re-verified
+  first-hand at 21:05 CDT (Codex lanes LastTaskResult=0, healthy multi-MB logs, Claude lanes
+  ticking on cadence). Cause of the ~4.5h exit-64 loop AND of its clearance both remain UNKNOWN at
+  the repo layer (an OS/environment condition clearing outside the repo is indistinguishable from
+  inside it); "self-healed" is deliberately not claimed. The post-recovery Claude-lane
+  `hot-silent-stall` receipts are a separate mechanism — see the stall-guard false-positive trap
+  appended today.
