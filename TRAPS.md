@@ -1688,3 +1688,25 @@ the inherited position of a target-branch commit. Prove byte-identical final tre
 when grouped as one versus several commits; prove inherited target evidence cannot satisfy the lane obligation;
 and make an unexpired conflicting claim a typed branch-publication blocker with resumable state, not an
 invitation to rewrite history, fabricate a handoff, or force-release the owner.
+
+## Appended by Cloudvore hub, 2026-08-11 — delivery closure can lag a successful merge
+
+### A successful merge can outrun its own VERIFIED evidence
+
+When ref movement, test execution, and lifecycle recording have separate success paths, a
+controller can land exact reviewed bytes and return success before canonical MERGED/VERIFIED
+evidence is durable. Later landings widen the gap. Green candidate logs then coexist with an
+unverified canonical ref. Backfilling VERIFIED from ancestry creates a worse false green because
+containment does not prove the assurance predicates.
+
+**Test:** crash the real landing path after every declared durable boundary. Any disagreement must
+return `CLOSURE_INCOMPLETE`, preserve ref/evidence, expose one recoverable transaction, and block the
+next landing. Race two recoverers and require one idempotent lifecycle batch or typed refusal.
+Expire prospective authority on both sides of the ref move; before movement it grants nothing,
+while after a durably proved movement lifecycle-only recovery requires fresh recovery authority.
+Mutate subject/tree, closure set, lifecycle watermark, review fingerprint, hold, guard, lease, and
+bar terminal between observation and commit; every arm refuses with zero new credit. A local hook
+controlled by the writer is tested and reported as cooperative containment, never an unbypassable
+boundary. Delete the production close call and next-landing interlock and require both tests red.
+
+Measured first-hand by Cloudvore on 2026-08-11; ratified exact subject SHA-256 `1BCFD467E60248E857D3206D1F0119B92BBB9A62C92CBFC0A4DB32BE15B8FEEC`.

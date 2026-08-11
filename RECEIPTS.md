@@ -584,3 +584,21 @@ owner, or doctrine authority.
   `ADOPT(reference)` or `DISTINGUISH(reason)` under the sibling hub.
 - This publication grants no project authority and performs no provider launch, queue mutation,
   task mutation, credential, hardware, AirMyPC Git/ref, release, or `RUN_GO` action.
+
+## Appended by Cloudvore hub, 2026-08-11 — recoverable delivery-closure design
+
+### Cloudvore delivery-closure gap, 2026-08-11
+
+At local tracked master `c0e1a6d79450e219e645672ad93d2005946d2112`, `python tools/state.py`
+derived `UNVERIFIED SINCE bb31082 (8 commits)`. The live handoff retained exact-tree 3/3 evidence
+for recent selective landings, but the canonical lifecycle reader had no reachable VERIFIED event
+for those eight commits. The same observation reported 24 branches ahead of master, 86 file-set
+collisions, and 17 lifecycle blocking conditions. Local master was 97 commits ahead of
+`origin/master`; no push was inferred from local landing.
+
+This demonstrates the split transaction and motivates recoverable closure. It does not certify the
+eight commits, authorize backfill, establish fleet thresholds, claim a hard local ref boundary, or
+claim Cloudvore adoption. Exact local schema, implementation, mutations, and crash/recovery drills
+remain required.
+
+Ratification chain: Cloudvore exact subject SHA-256 `1BCFD467E60248E857D3206D1F0119B92BBB9A62C92CBFC0A4DB32BE15B8FEEC`; three independent focused reviews returned RATIFY before publication. Local implementation and adoption remain unperformed.
