@@ -528,3 +528,22 @@ Credentials, customer data, raw transcripts, private reasoning, and project-priv
 bytes do not travel. A failed publication does not undo a safe landed repair, but its closeout debt
 survives handoff, retirement, account rotation, and unrelated success. Ratify-before-doctrine,
 single-writer publication, provider zero-authority, and project-local acceptance laws remain intact.
+
+## Cloudvore — dual-primary continuity control-plane design, 2026-08-11
+
+**DESIGN ONLY / DPCM NOT_ADMITTED — RUNNER CONTINUITY REQUIRES AN INDEPENDENT CONTROL PLANE.** A
+future project may keep ordinary candidate work moving when its configured primary coordinator-
+capable independence classes are proved DOWN, or may bank noncanonically when they are UNEVALUABLE,
+only after separately ratifying and activating a sealed, expiring continuity design. Authority must
+come from an external monotonic hub-ratified index and one deterministic controller under the same
+exclusive mode lease observed by every authority-bearing writer. One admitted auxiliary class may
+produce only an isolated unreviewed candidate; two distinct qualified classes may produce and
+blindly review an exact head. Providers receive no hub, Git, lifecycle, bar, release, push, doctrine,
+credential, or owner authority, and the controller supplies no acceptance key. The first future
+admissible rung stops at typed noncanonical banks. Canonical landing requires another separately
+ratified exact-tree integration rail. Safety reachability, findings/disputes, unknown authority,
+stale evidence, and semantic judgment always wait. This ruling authorizes design publication only.
+Pre-activation implementation or drill execution requires separate exact project authority under a
+`DPCM_ADMISSION_DRILL` envelope that cannot select production work or write production refs,
+lifecycle, or banks. No production capsule may be issued or interpreted and no production child may
+be prepared until a later project activation names exact implemented heads and evidence.

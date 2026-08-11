@@ -1545,3 +1545,13 @@ factory adopting this pattern needs an explicit answer for report-only branches 
 blind-review quorum as code, or a narrower finalize path) rather than leaving them stranded
 by default.
 
+## Cloudvore — runner redundancy without control-plane redundancy, 2026-08-11
+
+**RUNNER REDUNDANCY WITHOUT CONTROL-PLANE REDUNDANCY IS A FALSE AVAILABILITY CLAIM.** Two READY
+auxiliary runners do not keep a factory alive when health declaration, claims, tests, review
+adjudication, Git, bars, and landing still require a down primary-provider hub. Granting an auxiliary
+model hub tools collapses the authority boundary. Put preauthorized authority in an external sealed
+index and deterministic exclusive controller; keep producer/reviewer classes and seats distinct;
+begin with typed noncanonical banks; and crash-test the spawn/receipt seam. A controller that writes
+aggregate success before every required child is terminal can both duplicate a live child and hide a
+missing one.

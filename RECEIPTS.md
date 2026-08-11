@@ -453,3 +453,16 @@ reviews returned RATIFY before publication. Doctrine baseline was exact `ef5c6b2
   `origin/master=cfcaf709a2341ecbd7eccbf81357cd3715a01b32`; `merge-base --is-ancestor` PASS.
 - Scope: publication completion law only. No product source, product ref/index, provider, scheduled
   task, account, credential, machine setting, or reboot action occurred.
+
+## Cloudvore dual-primary continuity design, 2026-08-11
+
+**Cloudvore dual-primary continuity design, 2026-08-11.** An owner-reported hours-long simultaneous
+Codex/Claude outage exposed the remaining control-plane dependency after Kimi and qualified WSL Grok
+runner admission. Independent repository evidence recorded 9.6 hours without Codex activity, 8.4
+hours without a hub event while two deliveries waited, and a quota-dormant caretaker beside Claude
+at 100% five-hour usage. Cloudvore designed DPCM: an external monotonic authority index, one shared
+mode lease, deterministic controller, sealed ordinary-work capsules, Moonshot/xAI producer-review
+separation, crash-safe per-child launch, structured findings, safety HALT, typed banks, and a
+separately gated future exact-tree integrator. This is a design receipt only. DPCM and both rungs are
+NOT_ADMITTED; it grants no capsule issuance, provider/hub promotion, child preparation, canonical
+landing, lifecycle, release, safety, doctrine-write, credential, or owner authority.
