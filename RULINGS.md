@@ -408,3 +408,33 @@
 - Selector dispatch and any watcher remain ungranted successor subjects. They require independent
   review, project-local authority, one-writer/duplicate/cost controls, and a live cross-provider
   drill before any execution authority exists.
+
+## Forward hardening by Cloudvore hub, 2026-08-10 (provider-profile benchmark protocol)
+
+- **RATIFIED forward mechanics only.** Exact subject
+  `b2553824c55ad912c59175c8a8d5d0607ceaf2d9`, file
+  `specs/provider-model-benchmarking.md`, SHA-256
+  `EC42382E8C3588211F4DE3152F2DE1CD057EB3E865935917A6DEE6BED7C9EE6A`, supersedes the
+  procedural mechanics of subject `9cd8657` where they conflict. The base ruling's zero-authority
+  and project-local adoption limits remain unchanged.
+- Historical admission is not benchmark fitness. Kimi K2.7 Coding and the Grok 4.5 Ubuntu/Debian
+  role/host cells are separately admitted historical cells but remain benchmark-unproven until a
+  fresh exact-profile re-probe. Kimi Highspeed, K3, and K3-256k remain candidate-only. “Highspeed”
+  is a label, not performance evidence; the measured Grok CLI remains a one-model role/host program,
+  not a multi-model comparison.
+- A null, catalog-only, or freely drifting effective effort is discovery/zero-credit evidence and
+  cannot promote a role cell. Qualification requires proved exact runtime identity, per-band floors,
+  a control profile and evidence version frozen before results, and non-cherry-picked denominators.
+- Exploration is deterministic and bounded per the exact spec. Preference requires predeclared
+  Pareto non-inferiority plus a strict primary-metric gain; otherwise selection is
+  least-sampled-first with a deterministic byte-order tie break. No hub-chosen scalar leaderboard
+  exists.
+- Selection and launch each require a fresh, healthy, admitted, bookable acceptance-key reviewer
+  from a different independence class. Absence records `NO_INDEPENDENT_REVIEWER` and dispatches
+  nothing. Same-provider profiles or host cells never supply both acceptance keys.
+- The bounded lifecycle recovery ladder is ratified as design law: preserve/quarantine first-red
+  bytes, block dependent credit, allow independently eligible work, and require full derivation
+  after repair. It cannot impersonate a dormant provider, mint `MERGED`/`VERIFIED`, or acquire Git,
+  bar, rollback-controller, release, credential, or owner authority.
+- This ruling grants no profile, role cell, project adoption, selector, dispatcher, watcher, seat,
+  vote, or routing capacity. Every executable step remains a later exact candidate and ruling.

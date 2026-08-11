@@ -383,3 +383,26 @@ Returning Claude capacity is considered only for later new slices and never pree
 Canonical Fable debt retains its named authority route and cannot be discharged by Kimi/Grok shadow
 review. Profile promotion, project adoption, dispatch, and watcher activation each require later
 exact-evidence rulings; this protocol alone changes no live routing.
+
+### Forward hardening: evidence rotation is fail-closed at both ends
+
+Healthy rotation may explore only fresh exact role cells after project-local admission. Historical
+admission, catalog discovery, an alias label, and provider availability do not establish benchmark
+fitness. Null or unproved effective effort supplies zero qualification credit.
+
+Before selecting a producer, the planner must prove a fresh, healthy, admitted, bookable
+acceptance-key reviewer from a different independence class for the slice deadline. It must prove
+that fact again immediately before launch. If either proof fails, record
+`NO_INDEPENDENT_REVIEWER` and dispatch nothing; do not weaken the acceptance topology to consume
+capacity.
+
+Exploration starts a new bounded epoch when the eligible set, frozen control, or evidence version
+changes. Outside that epoch, a preferred profile exists only under the ratified deterministic
+Pareto rule; non-dominating profiles remain least-sampled-first. Provider recovery adds capacity at
+a later slice boundary and never preempts live work or transfers a claim.
+
+Coordination corruption degrades only the dependent transition when its exact scope is known.
+Quarantine first-red bytes, notify the owner/hub once and on material change, keep missing evidence
+non-green, and allow independently eligible slices to advance. Automated recovery remains
+plan/KEEP unless a unique syntactic repair matches its preimage; ambiguous lifecycle meaning and
+all authority-bearing transitions remain human/hub adjudications.

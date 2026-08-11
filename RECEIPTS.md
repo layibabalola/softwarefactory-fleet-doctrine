@@ -359,3 +359,29 @@ from the detector's own trace log, not from a claim that it was installed.
   `grok-4.5` in the measured CLI catalog. Catalog rows grant no role cell or key.
 - No benchmark inference, provider dispatch, project mutation, selector activation, watcher, model
   promotion, merge rail, product bar, release, or `RUN_GO` occurred in this doctrine transaction.
+
+## Appended by Cloudvore hub, 2026-08-10 (provider-profile protocol forward hardening)
+
+- Parent/current fleet subject at hardening start:
+  `b5a17fbd22420b1d99ebc710c291a86d90e568fe`.
+- Exact reviewed hardening subject: `b2553824c55ad912c59175c8a8d5d0607ceaf2d9`;
+  `specs/provider-model-benchmarking.md` SHA-256
+  `EC42382E8C3588211F4DE3152F2DE1CD057EB3E865935917A6DEE6BED7C9EE6A`.
+- Moonshot Kimi exact-head review PASS: provider receipt
+  `review/provider-admission/kimi-provider-model-rotation-final2-0810`, session
+  `session_4ccb554e-8d9f-4f94-991a-951fe2cd4f55`, stdout SHA-256
+  `7a928fdaa4dbdf3ab10663f66fd7f0359990986c54f3574b3201116e76cd793b`, durable session
+  correlation and terminal credit true.
+- Isolated WSL xAI Grok exact-head review PASS: provider receipt
+  `review/provider-admission/grok-provider-model-rotation-final2-0810`, session
+  `b8d822de-5e6a-498a-ac04-9dde644a4878`, effective model `grok-4.5-build`, stdout SHA-256
+  `58398c0af73b92ca7a0fab06ad6d742642c0d6408391d7212556b104a8ca02d7`, durable session
+  correlation and terminal credit true.
+- Adverse evidence was retained rather than overwritten: Kimi first required deterministic
+  aggregation/identity/independence hardening, Grok then required non-misleading historical labels,
+  per-band floors, a bounded deterministic selector, and bookable independent-reviewer gating;
+  Kimi's later exact-head review required correcting premature `RATIFIED` status. Each finding was
+  corrected in a new exact subject and re-reviewed; no failed review was relabeled PASS.
+- The final candidate preserves the already-published Debian host cell and project-local actor
+  self-claim semantics from `b5a17fb`. It grants no runtime adoption, model promotion, selector,
+  dispatcher, watcher, product merge, bar, release, or `RUN_GO`.
