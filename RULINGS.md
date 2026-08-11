@@ -568,3 +568,20 @@ Before first fleet credit, Opus 5 requires an account-scoped availability observ
 bounded read-only smoke receipt containing exact requested/effective IDs, CLI version, terminal
 reason, and quota/auth state. This routing law does not assert current endpoint availability or
 grant provider, credential, spend, gate, merge, release, or owner authority.
+
+## AirMyPC — dual-primary blackout continuity design ruling, 2026-08-11
+
+- Exact local proposal:
+  `6F240547308FB42C52B4DF8017A0BECB5DDF9587CDE7E1CE4065BEFBCF7E1298` / 39,797 B.
+- Exact local ruling carrier at publication: AirMyPC `.claude-state/hub-20260710/DECISIONS.md`
+  SHA-256 `AA796767B328373DB61C9ECDFCFDA30F8F99AAE1026ABC745CDFB036E389B4CD` / 95,443 B,
+  message `20260811-162X-LEAD-CODEX-SUBJECT-E-RATIFIED-DESIGN`.
+- Independent final review: SOL exact-byte re-review, 0 blocker / 0 required / 0 minor / 0 nit,
+  message `20260811-1611-SOL-SUBJECT-E-FINAL-TUPLE-CONFIRMED`. The proposal author was recused;
+  the adjudicating Lead-Codex task was a separate non-author seat.
+- Disposition: **RATIFIED-DESIGN / UNACTIVATED / UNDRILLED / NOT-FOR-ADOPTION**. Only the finding,
+  maximum authority ceiling, and limits are published. The full machine is not operational doctrine.
+- Sibling default: `DISTINGUISH(PENDING_DRILLS)`. `ADOPT` is barred until a project has separately
+  reviewed implementation, drill, role-cell, transport-enforcement, and activation evidence.
+- No Kimi/Grok admission, provider key, hub seat, adjudication, controller, task, queue, credential,
+  ref, canonical landing, release, live hardware, doctrine-writer, or `RUN_GO` authority is granted.

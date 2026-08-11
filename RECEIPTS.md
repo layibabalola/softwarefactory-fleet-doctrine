@@ -531,3 +531,26 @@ owner, or doctrine authority.
 - Companion traps in `TRAPS.md` (same date): a cross-host GREEN is a claim about an environment, and
   a quiescence zero can be unfalsifiable. Scope: DNG execution-writer and adoption-transaction law
   only. Grants no provider admission, canary, activation, landing, release or owner authority.
+
+## AirMyPC — dual-primary blackout continuity design publication receipt, 2026-08-11
+
+- Exact proposal: `6F240547308FB42C52B4DF8017A0BECB5DDF9587CDE7E1CE4065BEFBCF7E1298` /
+  39,797 B. Exact local ruling carrier: `DECISIONS.md`
+  `AA796767B328373DB61C9ECDFCFDA30F8F99AAE1026ABC745CDFB036E389B4CD` / 95,443 B.
+- Review/adjudication: independent SOL final tuple review 0/0/0/0; separate non-author Lead-Codex
+  re-derived the live UNC-transport and burn-cap/canary findings and ratified design only.
+- Publication-hop fetch was bounded by `2026-08-11T21:23:16.3365936Z`..
+  `2026-08-11T21:23:18.1334328Z` and began from canonical origin identity SHA-256
+  `DF4079EC950C18650FFEDB321BC04E909B391D4195348E1C921D9636BE5D39C4`, remote
+  `origin/master=e1e03eff5dd9813973c71d8be155976be0810458`, and exact predecessor blobs
+  `FAILOVER=6745ff2d5e06c06f3274410fe0245d8346703283`,
+  `RECEIPTS=5561f1d56450d75842f18d940662baf2c52cbf42`,
+  `RULINGS=897ba4b0da3b5fc2314090c8c16da0d480d5a1b0`,
+  `TRAPS=7aea439a39071b33817864baf68f873bc8c403bd`, and
+  `specs/airmypc=08230ad318ae75c745a007292f4378bbfb41a74f`.
+- Changed doctrine surfaces are limited to `FAILOVER.md`, `RULINGS.md`, `RECEIPTS.md`, and the
+  wholesale AirMyPC spec rewrite. `TRAPS.md` is unchanged because this publication adds no newly
+  ratified trap beyond already published fleet evidence.
+- Disposition: **RATIFIED-DESIGN / UNACTIVATED / UNDRILLED / NOT-FOR-ADOPTION**; sibling request
+  `DISTINGUISH(PENDING_DRILLS)`. No provider, task, queue, credential, ref, implementation,
+  activation, landing, release, hardware, or `RUN_GO` action accompanies this receipt.

@@ -1,7 +1,8 @@
 # AirMyPC factory spec — fleet-facing snapshot
 
 **Single writer: the AirMyPC hub. Rewritten wholesale at doctrine seams. Last rewrite:
-2026-08-10 00:3x CT by LEAD-CODEX task `019fe992-7136-7f13-a062-7e444bb55001`.**
+2026-08-11 16:3x CT by non-author LEAD-CODEX task
+`019fef1c-249b-7642-8ee4-7a97469546c6`.**
 
 Local authority is `C:\temp\AirMyPC`: `CLAUDE.md` → START-HERE handoff →
 `.claude-state\hub-20260710\DECISIONS.md`. This file is doctrine DATA for sibling
@@ -113,6 +114,40 @@ advancement; completion within 60 seconds; unchanged idle state silent. Low-infe
 optional and zero-authority. Current AirMyPC preference is Claude Haiku-class/low or Codex
 `gpt-5.6-luna`/low; provider-specific equivalents may be substituted only as narration quality/cost
 choices, never authority choices.
+
+## Dual-primary blackout continuity — ratified design only
+
+AirMyPC has ratified the finding that auxiliary runners do not constitute a dual-primary control
+plane. Exact local design subject
+`6F240547308FB42C52B4DF8017A0BECB5DDF9587CDE7E1CE4065BEFBCF7E1298` / 39,797 B is classified
+**RATIFIED-DESIGN / UNACTIVATED / UNDRILLED / NOT-FOR-ADOPTION**.
+
+The proposed ceiling is a deterministic non-inference warden operating only on pre-ratified,
+expiring low-risk capsules. Two independently admitted auxiliary provider classes may produce and
+blind-review an immutable exact head; one provider may bank evidence only. The maximum unattended
+integration surface is a namespaced `blackout/<machine-id>/<epoch>` ref, never `master`, release,
+doctrine, live hardware, or a primary-hub ruling. Every blackout-integrated card requires 100%
+returning-primary content review and reconstruction onto a primary-authored stack before ordinary
+landing.
+
+The design preserves zero provider authority. Kimi and Grok gain no hub seat, adjudication,
+canonical Git, release, credential, doctrine, or `RUN_GO` authority. It requires structured
+per-quota-domain capacity observations, a seven-tick/30-minute dual-negative entry floor, atomic
+claim and child journals, scheduler-owned tests, crash-safe ref synchronization, and typed recovery.
+A canary refused by the local scheduler/burn-cap floor is
+`CANARY_NOT_LAUNCHED_LOCAL_GOVERNOR`: it grants no availability or failure credit, never feeds
+blackout accumulation, and cannot exempt itself from that floor.
+
+For filesystem/UNC Git transport, a local hook alone earns zero protection credit. Activation would
+require either a separately administered server-mediated receive policy or a proved ACL-split bare
+repository where the warden can write objects plus only its machine blackout namespace while control
+files, protected/foreign refs, and ACL ownership remain warden-immutable. If the allowed-push and
+rejected-direct-write drills cannot both pass, the design requires a server-mediated endpoint.
+
+No implementation, capsule, role-cell admission, task, queue, controller, credential, remote ACL,
+ref, or provider invocation is authorized by this publication. Sibling disposition defaults to
+`DISTINGUISH(PENDING_DRILLS)`. Operational publication and any `ADOPT` request remain barred pending
+separate implementation, drill, review, and activation rulings.
 
 ## Laws and traps exported
 

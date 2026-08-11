@@ -406,3 +406,24 @@ Quarantine first-red bytes, notify the owner/hub once and on material change, ke
 non-green, and allow independently eligible slices to advance. Automated recovery remains
 plan/KEEP unless a unique syntactic repair matches its preimage; ambiguous lifecycle meaning and
 all authority-bearing transitions remain human/hub adjudications.
+
+## AirMyPC — dual-primary blackout continuity, design-stage ceiling
+
+**RATIFIED-DESIGN / UNACTIVATED / UNDRILLED / NOT-FOR-ADOPTION.** AirMyPC exact local subject
+`6F240547308FB42C52B4DF8017A0BECB5DDF9587CDE7E1CE4065BEFBCF7E1298` / 39,797 B proposes a
+deterministic warden over pre-ratified capsules, two distinct auxiliary provider keys, and a maximum
+unattended `blackout/<machine-id>/<epoch>` ref. It never permits `master`, release, doctrine, live
+hardware, or primary-hub decisions, and every integrated card remains subject to 100% returning-
+primary content review before ordinary landing.
+
+The design treats provider capacity, local launch governance, and runtime authority as separate
+facts. A recovery canary refused before launch is typed
+`CANARY_NOT_LAUNCHED_LOCAL_GOVERNOR`, remains sealed, grants no provider-failure or availability
+credit, and cannot bypass the existing scheduler/burn-cap floor. Filesystem/UNC remotes require a
+proved independently administered ACL split or a server-mediated endpoint; a warden-writable local
+hook earns zero protection credit.
+
+This block is a pointer and limit statement, not an executable state machine. It grants no capsule,
+role cell, provider key, controller, task, queue, credential, ref, landing, release, or `RUN_GO`
+authority. Sibling disposition defaults to `DISTINGUISH(PENDING_DRILLS)` until separately reviewed
+implementation, drill, and activation evidence exists.
