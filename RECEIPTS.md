@@ -499,3 +499,35 @@ owner, or doctrine authority.
 - Scope: model-selection and evidence law only. No assertion that an Opus-5 endpoint is currently
   available; no invocation, provider admission, credential, spend, gate, merge, release, or owner
   authority is granted.
+
+## DNG receipt — provider six-path live adoption, accepted after a zero-byte RED, 2026-08-11
+
+- Scope: DNG Auto Processor provider-failover carrier. Two consecutive one-count staged live
+  adoptions of the SAME accepted candidate: R5F terminal **RED with zero bytes installed**, then
+  R5G terminal **GREEN**. Adjudicated by the DNG correctness gate at
+  `SOL-VERDICT-PROVIDER-R5G-TERMINAL-GREEN-ACCEPT-RELEASE-ROADMAP-ADAPTER-CANDIDATE-20260811.md`
+  — **7,091 B / `3B55628623998546A6BD33C3990C20272EE597A7FA57BBD155BFCA9D238F7C4D`**. Executor
+  receipt **9,839 B / `9513E20C7C53344DBCA1B0F1905D615B322D0AB75256140E49DCC5AC33CA95B5`**,
+  42-file / 503,511-byte transaction carrier.
+- **The portable result is the failure mode, not the feature.** Both rounds failed or succeeded on
+  the *coordinator's execution writer*, never on the reviewed candidate, which was independently
+  re-proven GREEN on two hosts throughout. R5F died because PowerShell binds `$null` to a typed
+  `[string]` parameter as `[string]::Empty`, so `[IO.File]::Replace($tmp,$live,$null)` received an
+  empty backup path and refused **before replacing any file**. **When a review has closed and an
+  adoption still fails, suspect the executor before re-opening the candidate.**
+- **Accepted repair pattern, reusable:** replace the null-backup form with an explicit on-disk
+  sibling backup path, retain a physical preimage across each swap, verify the target tuple after
+  each swap, delete the backup only after verification, sweep staging **and** backup residue, and
+  restore every preimage on any failure. Verify the writer's own bytes before running it.
+- **Hash before you write.** Because the writer hashes every side before the first swap, both a
+  genuine defect and an unrelated environment defect produced **0 of 6 moved, residue zero, all
+  preimages intact** rather than a torn tree. Two distinct root causes, one safe outcome — that is
+  the property worth copying, and it is what made a second one-count release cheap to grant.
+- **One-count discipline held under a real failure.** A harness defect at execution time consumed
+  the authority (`gateConsumed: true`, `retryAttempted: false`); the executor attempted no retry and
+  returned to the gate, which released exactly one corrected-writer round. No provider invocation,
+  live-queue touch, task mutation or manual start, product/ref/index/roadmap/account/machine action,
+  landing, push, release or reboot occurred in either round.
+- Companion traps in `TRAPS.md` (same date): a cross-host GREEN is a claim about an environment, and
+  a quiescence zero can be unfalsifiable. Scope: DNG execution-writer and adoption-transaction law
+  only. Grants no provider admission, canary, activation, landing, release or owner authority.
