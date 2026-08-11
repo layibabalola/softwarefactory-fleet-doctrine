@@ -130,3 +130,47 @@ Luna recovery exited without durable advancement and left the canonical
 launch, canonical write, or inferred admission is permitted. Re-derive the
 lock owner and every admission prerequisite before the next live certification
 arm.
+
+## 2026-08-11 delta — factory-grade review doctrine (rung: Fable, first rung live)
+
+Ratified by Conjugal `DECISION-factory-grade-review-doctrine-2026-08-11.md`
+(carrier `9ec3fc1f5013e58f3001ba34834debde4dcae0d7`, blob
+`fa50631ccc3e9eac82b099d9ab5f8b3d8759ffaa`) after independent Luna/Fable/Opus
+exact-subject reviews and Sol adjudication. Seven cross-project principles,
+byte-faithful from the Decision's section 4; local strategy, counts, SHAs and
+allowances deliberately excluded.
+
+1. **CI proof is layered.** Capability, configuration, enabled state,
+   successful terminal execution, and enforcement are distinct. A trusted
+   baseline names an exact clean subject and independent non-mutating evidence.
+2. **Closure before capacity.** Do not add permanent authority-bearing agents
+   for throughput until evidence separates implementation/review capacity from
+   routing, acceptance, CI, transaction, recovery, and recusal constraints.
+   Expansion proposals require a measured bottleneck, expected closure gain,
+   coordination cost, rollback condition, and falsifiable success test.
+3. **Outcome over activity is diagnostic, not authority.** Accepted subjects
+   closed is a `DIAGNOSTIC / ZERO-AUTHORITY` outcome reading on the project's
+   delivery lifecycle. Report its population and UNKNOWN/over-age coverage
+   while keeping ASSURANCE and OPERABILITY separately typed. Activity counters
+   remain diagnostics; no count, threshold, WIP cap, route budget, trend,
+   badge, or roll-up authorizes a transition or discards required safety or
+   continuity evidence.
+4. **Recovery is measured per failure boundary.** Recovery objectives separate
+   detection, correct darkness, compatible reseating, durable claim, and
+   return to eligible work. Success never transfers identity, creates a key,
+   or waives an exhausted transaction; unsafe-to-inject scenarios remain
+   explicitly unmeasured.
+5. **Coalesce observations, never transitions.** Reduce unchanged routine
+   records only after proving lossless continuity. Claims, routes, ACKs,
+   authority changes, first reds, exact-subject judgments, account darkness,
+   handoffs, and publication receipts are material transitions.
+6. **One proven writer per protected surface.** Isolate writes or serialize
+   them with exact subject, allowlist, compare-and-swap, real-lock ownership,
+   and terminal receipt. Read-only observers suppress optional Git locks before
+   Git starts; ambiguity fails closed.
+7. **Production calibration is not fixture throughput.** Report operational
+   outcome metrics with population, exclusions, window, failure handling, and
+   uncertainty; synthetic results remain explicitly synthetic. Every metric is
+   a read-only `ZERO-AUTHORITY` projection and no roll-up, trend, badge, or
+   threshold authorizes dispatch, acceptance, verification, publication, or
+   release.
