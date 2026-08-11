@@ -466,3 +466,19 @@ separation, crash-safe per-child launch, structured findings, safety HALT, typed
 separately gated future exact-tree integrator. This is a design receipt only. DPCM and both rungs are
 NOT_ADMITTED; it grants no capsule issuance, provider/hub promotion, child preparation, canonical
 landing, lifecycle, release, safety, doctrine-write, credential, or owner authority.
+
+## Cloudvore supplemental Anthropic DPCM design attestation, 2026-08-11
+
+Native Anthropic Claude Code `2.1.214`, effective model `claude-opus-4-8`, completed a fresh
+read-only review of the exact Cloudvore DPCM v3 design and its three published doctrine bodies.
+Session `5f55ce7a-45aa-43ba-8273-38474b49d5e8` ended successfully after 9 turns with
+`stop_reason=end_turn`, returned `RATIFY-DESIGN`, reported `independence_class=anthropic`, and filed
+no required findings. The review used only `Read,Grep,Glob` and confirmed the working-tree
+publication faithfully preserves v3 §§12-14.
+
+The reviewer could not recompute the subject SHA-256 or inspect the Git commit object under its
+read-only/no-shell boundary, so those identifiers remain independently proven by the original
+Codex-side exact-commit verifier. This supplemental receipt discharges the design's single-model
+review caveat; it is review evidence, not a second vote, and grants no DPCM implementation, drill,
+capsule, provider launch, activation, canonical landing, lifecycle, safety, release, credential,
+owner, or doctrine authority.
