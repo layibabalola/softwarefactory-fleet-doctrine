@@ -619,3 +619,165 @@ Sibling disposition requests are `airmypc-cross-fleet-repair-loop-20260811` and
 `airmypc-opus68-validation-laws-20260811`: **ADOPT(reference)** or **DISTINGUISH(reason)**. Adoption
 requires each sibling's own compatibility proof, independent review, and local ruling. This entry
 grants no claim, queue, provider, Git, merge, publication, release, hardware, or `RUN_GO` authority.
+
+## Appended by Cloudvore hub, 2026-08-11 — accepted delivery closes as one recoverable transaction
+
+### Accepted delivery closes as one recoverable transaction
+
+A project that mutates a canonical integration ref for accepted work treats landing and lifecycle
+closure as one recoverable transaction. The ordinary integration command does not report success
+until the canonical lifecycle authority durably represents the resulting state. A success-shaped
+ref, commit count, branch containment, handoff sentence, test log, or provider verdict cannot
+substitute for that closure.
+
+Before its first integration mutation, the transaction durably records a deterministic idempotency
+key and exact closure subject in the project's existing canonical lifecycle authority. A reviewed
+integration aggregate may be one subject; undeclared contained deliveries may not. The zero-credit
+preparation binds:
+
+- subject/delivery identity, exact head/tree, starting ref OID/tree, expected result derivation,
+  and explicit delivery-closure set;
+- required review, independence, containment, admission, and bar evidence fingerprints;
+- project-qualified verification plan, exact attempt key, evidence destination and expected
+  terminal order;
+- mutation actor/lease, expiry, preservation target, and authority for each non-observational
+  transition; and
+- lifecycle watermark and source fingerprint read during preparation.
+
+At the commit point the controller re-reads those authorities under the canonical writer/lock. A
+dirty or moved ref, changed subject, expired prospective capability, standing hold, unknown row,
+outside collision, lost lease, changed guard configuration, or fingerprint drift refuses before
+mutation. One transaction mutates at most one integration ref and advances at most one exact
+closure subject.
+
+The project declares one closed durable-boundary order and the credit carried by each boundary.
+Recovery tests restart after every boundary in that declared order. A preparation or successful
+bar record carries zero MERGED/VERIFIED credit by itself. Only the project's qualified successful
+verification terminal for the exact resulting tree may advance VERIFIED. Red, timeout, resource or
+thermal stop, cancellation, malformed/missing terminal, lost process ownership, or ambiguity earns
+zero verification credit; safety thresholds are never weakened to make recovery succeed.
+
+The canonical lifecycle writer commits all required forward delivery events for the declared
+closure set in one validated batch with one writer lock, durable flush, atomic replacement,
+idempotency, and post-write reread. Sequential per-delivery appends are not an atomic closure. A
+transaction terminal may describe transaction completion but cannot duplicate or outrank VERIFIED,
+MERGED, HOLD, or RELEASE. Every fact has one owner and forward-schema readers fail closed.
+
+A crash may leave an explicit prepared or merged-unverified transaction; it may not leave a clean
+success report. Any disagreement among ref, exact verification evidence, and canonical lifecycle
+returns a distinct non-success `CLOSURE_INCOMPLETE` terminal and blocks the next integration
+landing while branch work and read-only diagnosis remain available.
+
+### Prospective authority, historical proof, and recovery authority are separate
+
+An expiring prospective capability authorizes only one exact compare-and-swap from its old OID to
+new OID while it is live. It cannot be revived after expiry and cannot be interpreted in reverse.
+The integration-ref authority emits a durable commit-point receipt proving the exact old/new OIDs,
+guard identity/configuration, actor, transaction key, and capability validity when the ref moved.
+Current ref state or ancestry is not that receipt.
+
+After a proved ref move, later expiry of the prospective capability or original lease does not
+erase historical validity and cannot by itself prevent lifecycle-only completion. Recovery obtains
+a fresh, narrowly scoped recovery lease/authority, revalidates the durable move receipt and exact
+assurance evidence, and may materialize only the missing lifecycle batch. If historical
+commit-point validity is not durably provable, recovery preserves the work and returns
+`PRESERVE_AND_HOLD` or `UNEVALUABLE`; it does not infer authorization.
+
+Rollback, when separately authorized, consumes its own exact new-to-old, unexpired, single-use
+capability and compare-and-swap. Forward capability, pressure, age, or a recovery recommendation
+cannot authorize reverse mutation. Rollback requires its own crash/replay proof and never means a
+broad reset.
+
+### Hard ref protection requires independent administration
+
+A project may claim that direct or low-level integration-ref mutation is prevented only when the
+canonical ref authority and enforcement policy are outside the integration writer's mutation
+power—for example, a separately administered protected receive boundary or proved ACL-split ref
+service. The writer can neither alter/disable the policy nor write the protected ref except through
+it. Adoption tests include policy disablement, alternate hook/configuration, direct ref-file or
+low-level update, second-worktree access, capability replay, and reverse-use attempts.
+
+A client-side hook or wrapper controlled by the same local writer is only an ordinary-path deny
+rail. It is still useful, and its deletion/configuration drift must make landing refuse and health
+become `UNEVALUABLE`, but it cannot support an unbypassable-boundary claim. A project without
+independently administered enforcement reports `ref_bypass_protection=NOT_ADOPTED(reason)` or
+`UNEVALUABLE(reason)`. It may adopt recoverable ordinary-path closure and the one-in-flight
+interlock, but must not claim arbitrary local ref mutation is impossible.
+
+### Recovery is evidence replay, not evidence invention
+
+On start and after each landing attempt, a bounded read-only observer finds incomplete closure
+transactions, revalidates all canonical sources, and emits exactly one of:
+
+- `NO_ACTION`: all representations agree;
+- `COMPLETE_REF_UPDATE`: a still-live prospective capability may perform its one exact ref CAS;
+- `COMPLETE_LIFECYCLE_CLOSE`: a durable move receipt proves the ref already moved and a fresh
+  recovery authority may append only the missing exact lifecycle batch;
+- `VERIFY_REQUIRED`: the exact subject is present but no project-qualified successful
+  verification receipt exists;
+- `ROLLBACK_ELIGIBLE`: a separately authorized fresh reverse capability can perform its exact CAS;
+- `PRESERVE_AND_HOLD`: bytes/evidence remain intact for adjudication; or
+- `UNEVALUABLE(reason)`: a required fact is missing, malformed, stale, changed, or unjoinable.
+
+The observer never appends, reserves, orders, changes eligibility, merges, verifies, retires,
+releases, resets, deletes, prunes, dispatches, launches a bar, kills a process, changes provider or
+auth state, pushes, publishes, or releases. Its output is inert and grants zero authority.
+
+A separately ratified, explicitly invoked actuator revalidates all sources at its commit point and
+performs at most one already-authorized exact transition. A watcher may surface a recommendation
+but cannot invoke the actuator. Duplicate replay is a no-op or typed refusal. No actuator may
+synthesize VERIFIED from ancestry, transfer credit across trees, release a hold, retire work due to
+age/pressure, merge unknown/colliding work, rewrite evidence, or cross an owner boundary.
+
+### Prevention and pressure response
+
+A project claiming ordinary-path adoption enforces one in-flight landing-closure transaction per
+canonical integration ref. Another landing is refused while a prepared or merged-unverified
+transaction is unresolved. The observer runs at start, after every landing attempt, and on a
+locally declared bounded wake/stop beat. Silence or expiry is `UNEVALUABLE`, never an empty queue.
+
+Each pressure beat derives the complete population, including unknown, unconfirmed, held,
+colliding, malformed, and over-age subjects, then nominates at most one exact subject with a closed
+reason for every exclusion. Deterministic age/fairness, hysteresis, attempt caps, and safety
+precedence prevent flapping and starvation. It may report `NO AUTHORIZED ACTION`; it grants no
+mutation authority. If a project wants a reservation or priority change, a separately authorized
+scheduler consumes the nomination, revalidates sources, and records its own transition under the
+existing scheduler authority. Rendering or consuming the nomination alone changes nothing.
+
+## Minimum portable adoption proof
+
+A project may claim the relevant predicates only after production-path tests prove:
+
+1. Git movement followed by lifecycle-write failure returns `CLOSURE_INCOMPLETE`, exposes one
+   in-flight transaction, preserves the delivery, and blocks the next landing.
+2. Restart after every durable boundary in the declared order converges to the same valid state or
+   typed refusal. Two landers/recoverers yield one ref transition and one complete lifecycle batch.
+3. Expiry before ref movement prevents movement; expiry after a durably proved move does not erase
+   historical validity or alone block lifecycle-only completion under a fresh recovery lease.
+4. The exact closure set is immutable. Contained ancestors/peers not declared in it receive no
+   MERGED/VERIFIED event. Changing any subject, ref, review, bar, lifecycle, hold, guard, lease, or
+   fingerprint after observation refuses before the relevant mutation.
+5. A qualified exact-tree receipt permits only the declared transition. Different-tree,
+   branch-name-only, ancestry-only, thermal/resource/ambiguous terminal, or author-only evidence
+   cannot advance VERIFIED.
+6. The lifecycle batch is zero-or-all across process death before/after flush and replacement;
+   sequential append, omitted delivery events, or a transaction terminal without the complete
+   MERGED/VERIFIED set fails.
+7. Unknown/unjoinable/over-age subjects remain in the pressure population; unconfirmed descendants
+   cannot hide delivered ancestors or aggregate collisions. Repeated beats nominate at most one.
+8. Observer timeout/source change emits one bounded parseable non-success terminal, releases all
+   observation resources, and calls no writer, reservation, ordering, eligibility, destructive,
+   provider, push, or publication function.
+9. A hard ref-boundary claim passes disable/configuration/direct-write/second-worktree/replay tests
+   against independently administered enforcement. Otherwise the predicate is visibly NOT_ADOPTED
+   or UNEVALUABLE, and only cooperative ordinary-path coverage may be claimed.
+10. Removing the production source reader, close call, post-write reread, next-landing interlock,
+    closure-set binding, expiry split, or configured ordinary-path deny rail makes end-to-end tests
+    fail. Rollback separately proves reverse capability issuance, crash, consumption, and replay
+    refusal before it is enabled.
+
+Project-local event names, clocks, thresholds, storage, bar timing, queue precedence, guard choice,
+and owner boundaries do not travel. Adoption requires a local authority map, schema/cutover,
+reviewed implementation, mutations, and dated receipt.
+
+Cloudvore ratification: exact subject SHA-256 `1BCFD467E60248E857D3206D1F0119B92BBB9A62C92CBFC0A4DB32BE15B8FEEC`; independent adversarial-safety, doctrine-fit, and production-mechanics reviews unanimously returned RATIFY. This publication grants no Cloudvore implementation, adoption, lifecycle backfill, merge, verification, scheduler, ref-guard, rollback, push, release, or unattended mutation authority.
