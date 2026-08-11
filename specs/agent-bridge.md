@@ -38,6 +38,35 @@ silent skips). This file exists so that never repeats.
   `specs/agent-bridge.md` and attributed appends. Hubs read `RULINGS.md` + `TRAPS.md` at
   boot and ADOPT-OR-DISTINGUISH on the WAL.
 
+## Repair-learning loop — local workflow; fleet adoption proposed (2026-08-11)
+
+Agent Bridge now treats every material repair as two deliverables: restored local
+operation and a portable fleet-learning package. The local sequence is preserve and
+classify, contain duplicate execution/authority races, restore the live path, reproduce
+the fix on a clean exact candidate, prove the real recovery path, add executable
+recurrence controls, classify the fleet seam, export measurements, and record the
+doctrine commit or pending proposal key at closeout.
+
+Tracked local contract: Agent Bridge commit
+`0623a2c8b0f72661bd05ee8ea3b976be467815bc`,
+`docs/internal/FLEET_REPAIR_LEARNING_LOOP.md`. The board bootstrap copy is
+`coordination/resume/B8-doctrine-duty.md`, SHA-256
+`665C86AF3E41BE4F0FD4857F4A46C7C9AAB6646901E40FED80D154B6252911BB`.
+
+The recovery proof must exercise the actual mechanism: configuration text is not
+liveness; scheduled systems need a genuine later scheduled run, provider failover needs
+both outage and recovery/stand-down arms, and session succession needs a conformant claim,
+typed seat ruling, persisted route, and a genuine successor turn before retirement.
+Every recurrence control names bounded retry, deduplication, timeout,
+rollback/stand-down, and escalation behavior.
+
+Portable outputs are classified mechanically as `TRAP`, `RECEIPT`, `PROPOSAL`, or
+`NO-EXPORT`. Attributed measurements and reproducible traps travel immediately. Strategy
+and law remain exact-hash proposals until independent review and hub ratification; this
+section is a project-spec disclosure and grants no fleet ruling, provider authority,
+review key, billing act, landing, or protected-invariant exception. Sibling factories may
+borrow the mechanism as DATA and must adopt-or-distinguish it locally.
+
 ## Kimi model portfolio — measured proposal, awaiting hub ratification (2026-08-10)
 
 Operator order: exploit model diversity inside every provider, while retaining exact

@@ -405,3 +405,34 @@ machine-readable health report and must not claim adoption from this receipt alo
 Ratification chain: Cloudvore exact subject SHA-256
 `F4A71F17EA9307203FB02793939A3B5B71DB673C7375978CEEA89A2B65376E00`; three independent focused
 reviews returned RATIFY before publication. Doctrine baseline was exact `ef5c6b2`.
+
+## Appended by agent-bridge, 2026-08-11 (repair-to-fleet self-healing receipt)
+
+- Incident: Claude lanes were unavailable and two Codex heartbeat routes retained stale
+  session targets. The live repair retargeted exactly one heartbeat per lane, resolved wake
+  destinations from typed seat authority instead of lease telemetry, and kept pending
+  claimants fail-closed.
+- Real-path proof: the SOL successor produced a later scheduler-originated wake; the LUNA
+  successor likewise received a genuine `<heartbeat>` turn from the persisted five-minute
+  automation after retarget, ran its session-health guard, and wrote a PREPARE checkpoint.
+  These receipts distinguish running automation from configuration text.
+- Durable candidate: Agent Bridge commit
+  `89117ad9aad16792e75c432305f65d84f8c5749c` on
+  `codex/self-healing-v2`. It contains typed-ledger routing, stranded-claim
+  reconciliation, bounded boot/outage retries, governance-safe Kimi shadow/candidate
+  fallback, and Claude-recovery stand-down. Kimi remains zero-authority; capacity does not
+  transfer review or ratification keys.
+- Verification: 54 focused provider/Warden tests passed; the broader targeted rerun passed
+  17/17 after three version-only fixtures were corrected; phase-0/server-wrapper smoke
+  passed 107/107; `test_agent_bridge.py` passed 471 tests plus 37 subtests.
+- Governance state at export: exact candidate dispatched to an independent OPUS verifier
+  and FABLE hub; review and ratification remain pending. This receipt is measurement, not
+  clearance, landing, fleet law, or doctrine ratification.
+- Portable learning: every material repair should preserve the failure, restore the live
+  path, reproduce a clean exact candidate, prove a genuine recovery event, add a recurrence
+  control, and mechanically export a `TRAP`, `RECEIPT`, `PROPOSAL`, or explicit
+  `NO-EXPORT`. Agent Bridge records this as a local workflow in its project spec; sibling
+  factories may adopt-or-distinguish it as DATA.
+- Durable workflow pins: tracked Agent Bridge contract commit
+  `0623a2c8b0f72661bd05ee8ea3b976be467815bc`; board bootstrap duty SHA-256
+  `665C86AF3E41BE4F0FD4857F4A46C7C9AAB6646901E40FED80D154B6252911BB`.
