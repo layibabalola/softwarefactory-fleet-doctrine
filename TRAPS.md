@@ -1618,3 +1618,55 @@ that alarms on `errorClass=auth` should difference the tagged row's `exitCode`/`
 declaring a live block, and should note staleness (age since the most recent occurrence) rather than
 alarming on any historical row in the file.
 
+
+## DNG — a comment that inverts its code is a defect class, not a typo
+## (DNG Auto Processor, 2026-08-11, first-hand, twice-measured)
+
+A live ignition automation carried the comment "skip standby/retired/handoff" while the code below it
+launched on `retired-clean` and `handoff-offered` past grace, skipping only `standby*`. **Two independent
+readers concluded from the comment that a cleanly retired lane could never be revived** — one of them a
+coordinator deciding whether to hand-spawn seats the automation would have opened by itself. Nothing
+failed, no test went red, and the automation was correct throughout: the only broken artifact was the
+sentence a human reads before deciding whether to trust it.
+
+**In automation that decides whether work happens at all, prose is part of the interface.** A wrong
+comment does not degrade behaviour, it degrades the operator's model of behaviour — which is exactly the
+layer that then adds redundant seats, or stands down when it should act.
+
+**Test / remedy:** for any branch-selecting automation, assert the comment's enumerated set against the
+code's enumerated set as a review dimension of its own, and treat a mismatch as a blocker rather than a
+cleanup. When correcting one, state the correction in place with the date and the wrong conclusion it
+caused, and prove the executable token stream byte-identical so the fix cannot smuggle behaviour.
+
+## DNG — a cross-host GREEN is a claim about an environment, and a zero can be unfalsifiable
+## (DNG Auto Processor, 2026-08-11, first-hand)
+
+Two measurement traps from one live-adoption transaction, both of which produced a *confident* wrong
+number rather than an error.
+
+**1. The runtime's name resolution manufactured a RED on an accepted artifact.** A Windows PowerShell 5.1
+child launched from a pwsh 7 parent inherits a `PSModulePath` under which `Get-FileHash` does not resolve
+— the 7 module directories shadow 5.1's. An install writer already proven `GREEN 6/6` on both hosts by an
+independent reviewer aborted at its first hash, on both 5.1 legs, with an empty stdout. The reviewer's
+proof was honest; it was simply obtained under a clean environment. **"GREEN on both hosts" names an
+environment as much as a script — state the module path / environment a cross-host proof was taken
+under, or the next executor rediscovers this.** Third instance in five days on this machine of host
+divergence arriving through the runtime's *name-resolution* layer rather than the code under test
+(prior: 8.3 short names yielding a 30-vs-29 file census between the same two hosts).
+
+The saving grace is worth copying: the writer hashes **before** it swaps, so it failed **closed** — 0 of 6
+moved, residue zero, every path at preimage. This class can manufacture a false RED, never a partial
+install. Hash-then-write converts an environment defect into a wasted run instead of a torn tree.
+
+**2. A process-quiescence sweep counted the process doing the measuring.** A "no provider processes
+running" predicate whose pattern was written literally in the invoking command matched its own shell, so
+the same predicate on the same machine at the same instant returned 0 or 1 depending on the *shape of the
+caller*. Worse, the paired unrestricted sweep — the control that was supposed to prove the predicate
+could match at all — had drifted to matching nothing, so a zero live count was a green check that could
+not fail.
+
+**Test / remedy:** build the pattern at runtime (or exclude the measuring PID explicitly) so the sweep
+cannot self-match, and ship a **positive** control that starts an inert process carrying the token,
+proves the predicate matches it, proves an exclusion token removes it, and proves the count returns to
+zero when it dies. A quiescence proof without a positive control is a green check that cannot fail; the
+failure mode is a confident zero, not an exception.
