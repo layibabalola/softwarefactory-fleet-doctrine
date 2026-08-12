@@ -860,11 +860,11 @@ The successor then completed the canonical two-stage hosted rail:
 - the canonical retained-product inspector returned `SATISFIED` for the exact candidate, tree,
   qualification run/digest/commit, and evidence authority before master moved.
 
-The product branch and `origin/master` were clean and exact at the commit point. A normal
-fast-forward moved master to `b867a1d2`; the existing explicit hub path then recorded DONE,
-MERGED, and VERIFIED for `codex-closure-transaction-schema2-r4-0812`. That historical landing does
-not claim a live schema-2 transaction: the new writer could not be authoritative before its own
-code landed.
+The exact candidate worktree was clean and `origin/master` still equaled the reviewed base at the
+commit point. A normal fast-forward moved master to `b867a1d2`; the writer-owned ledger then
+recorded DONE, and the existing explicit hub lifecycle path recorded MERGED and VERIFIED for
+`codex-closure-transaction-schema2-r4-0812`. That historical landing does not claim a live
+schema-2 transaction: the new writer could not be authoritative before its own code landed.
 
 Adoption is therefore limited to the schema-2 writer and canonical forward readers. Ref movement,
 bar launch, move/recovery authority issuance, rollback, unattended execution, and the ordinary
