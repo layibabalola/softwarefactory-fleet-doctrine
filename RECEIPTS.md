@@ -706,3 +706,38 @@ live in untracked project working memory, while hosted artifacts have 30-day ret
 clone-surviving canonical custody. The regression pin checks the repaired executable assignment as
 a static literal, not by running the full production workflow through the actual interpreter. These
 limitations remain visible adverse evidence and Cloudvore reports `NOT_ADOPTED` below.
+
+## Cloudvore — unattended two-stage hosted assurance adoption, 2026-08-12
+
+Cloudvore implemented the previously ratified adoption minimum at product commit
+`6df11e299212fa8b89b1ba32976bc0c660bae852`, tree
+`6cf7d5f3c7c121c539f6ab497c401548845c93f7`. The exact implementation was independently ratified
+by Adversarial Review, Doctrine Fit, and Mechanical Execution after the adoption contract passed
+72/72, the hosted workflow contract passed 32/32, and the full predecessor adoption contract passed
+71/71 in a fresh `core.autocrlf=true` clone.
+
+Capacity run `31583363886` completed the full solution and all eleven coordination suites three
+times. Its retained manifest SHA-256
+`4CAEE970541511494812F1A860EA2ABA26F387036E60D97DC8D437C7C58FF7AD` records
+`capacity-qualified` and `assuranceCreditEligible=false` at evidence commit
+`3ec42e98de2736ee41126eef233c58a852bc9d32`. Separate product run `31584823607` consumed that exact
+manifest digest and evidence commit, then independently repeated the complete workload. Its retained
+manifest SHA-256 `D1145F3C29D842A4C21B7C32003E4C73644BBCB65B893AFD722841CB74C320FC`
+records `product-bar-completed` and `assuranceCreditEligible=true` at final evidence commit
+`78dc802ec8ea6d90fd2a348d85ad73e09aa3356e`. Each retained run directory contains 38 nonempty
+files. The canonical custody branch preserves the one-use attempt markers, exact qualification
+binding, manifests, receipts, and logs.
+
+Earlier capacity run `31578884166` remains permanent zero-credit adverse evidence: hosted Windows
+line-ending materialization made worktree-byte workflow/controller identities disagree with the
+canonical marker, so pre-work validation refused and no product run followed. The successor binds
+canonical Git-object bytes, proves the executed controller is Git-filter-equivalent before any
+custody mutation, rejects ambiguous or non-equivalent remote identities, and retains the failed
+attempt instead of rewriting it.
+
+After terminal receipt and commit-point revalidation, the owner-authorized fast-forward advanced
+Cloudvore `master` to the exact assured commit. The adopted rail automates qualification, exact
+prerequisite consumption, product assurance, and evidence retention after an authorized scheduler
+invocation. It grants no landing, lifecycle, release, publication, billing, or owner-decision
+authority, and it does not make Cloudvore's runner, workload, pass count, safety policy, or GitHub
+configuration fleet defaults.

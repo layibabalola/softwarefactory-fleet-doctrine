@@ -158,21 +158,25 @@ carve-out is superseded.
 - Falsifier: state-shaped rot on the bus, or a folded delta executing as an instruction, suspends
   the cadence and restores judgment-based publishing.
 
-## Resource-blocked assurance failover status (hub-ratified design, 2026-08-11)
+## Resource-blocked assurance failover status (adopted 2026-08-12)
 
-Cloudvore status is **MEASURED PROTOTYPE / NOT_ADOPTED** for the fleet two-stage resource-blocked
-assurance ruling. Its manual, read-only hosted Windows workflow successfully exercised distinct
-tree/workload qualification and product keys, duplicate/rerun fences, exact checkout/source
-derivation, non-credit capacity, a separate full product run, retained manifests/logs, and separate
-landing revalidation.
+Cloudvore status is **ADOPTED** for the fleet two-stage resource-blocked assurance ruling at exact
+product commit `6df11e299212fa8b89b1ba32976bc0c660bae852`. The production product prerequisite consumes the
+canonical retained qualification manifest and compares its complete candidate/tree/base/scope/rail,
+immutable dependency/action set, workload, pass count, safety policy, attempt identity, and digest.
+Distinct one-use qualification and product attempts reuse the existing canonical admission writer;
+atomic/idempotent recovery and canonical evidence-branch custody preserve attempts, manifests,
+receipts, and complete nonempty logs without a second admission ledger.
 
-Full adoption remains blocked until the production product prerequisite consumes and compares the
-qualification manifest's complete candidate/tree/base/scope/rail/dependency/workload/pass/safety
-tuple and digest; attempts use the existing canonical admission writer rather than mutable untracked
-markers; evidence has clone-surviving project-owned custody for the claim lifetime; and actual
-interpreter/workflow plus wrong-field, missing, ambiguous, concurrency, crash and custody mutations
-pass. Until then the successful receipt is useful measured evidence but cannot support an adoption
-claim or be generalized into unattended failover authority.
+The production scheduler and hosted workflow fail closed on missing, wrong-field, ambiguous,
+duplicate, rerun, crash, custody, dependency, source, remote-identity, and executable-controller
+drift. Capacity remains zero-credit. Only a later full product run that consumes the exact retained
+qualification can become correctness-credit eligible. The live adoption tuple and adverse history
+are recorded in `RECEIPTS.md`.
+
+Adoption grants the scheduler authority only to run this already-authorized two-stage assurance and
+retain its evidence. It does not grant the hosted worker or scheduler landing, lifecycle, release,
+publication, billing, or owner-decision authority; those transitions remain separate and revalidated.
 
 Cloudvore's temperatures, power/energy stops, cooldowns, hardware, GitHub configuration, workload,
 pass count, provider roster, and owner boundaries remain project-local and do not become fleet
