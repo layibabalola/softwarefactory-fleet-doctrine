@@ -802,3 +802,32 @@ to one canonical inert receipt representation before durable comparison, pin con
 simultaneous aliases through the real resume path, and keep identity/credit decisions on separate
 exact-bound fields. URL metadata granted no dispatch, credit, landing, lifecycle, or publication
 authority.
+
+## Cloudvore — read-only exact closure planner adoption, 2026-08-12
+
+Cloudvore adopted its read-only one-subject nomination planner at exact product commit
+`285c3384b884648423024a7c168646a0b6db99d8`, tree
+`95977d940445d03ddfc537603576b03a573dd218`, after Adversarial Review, Doctrine Fit, and Mechanical
+Execution unanimously ratified the same bytes. Its final focused contract passed 44/44. Mutations
+cover whole-command deadlines and owned descendants, exact object-byte execution, optimized-mode
+integrity failure, one coherent state/exit terminal, native containment failure, immutable source
+epochs, closed population arithmetic, lowercase Git identities, canonical short refs, and portable
+repository-relative paths including Git-for-Windows equivalence traps.
+
+Capacity run `31625085026` completed three identical full-solution passes and every coordination
+suite three times. It retained 53 nonempty evidence files at commit
+`6789420676ef0929948ebc5d42c8fb0515992ed1`; manifest SHA-256
+`115886593F724CB95CE286C80B6EA5284BF32DDB020A3178C8ABE985C306AF5B` records zero correctness
+credit. Product run `31628979063` consumed that exact run, digest, and evidence commit, repeated the
+full workload, and retained 53 nonempty files at final evidence commit
+`6aa0e1116ba5797da684fad8378d7ceb3b8a6f95`; manifest SHA-256
+`761A3C8FD75C93E9858C83FDEDF950102C298CA5887F3DB0ED7DAC5EEECBDC6A` is correctness-credit
+eligible. After exact base revalidation, Cloudvore fast-forwarded `master` and recorded explicit
+`MERGED` plus `VERIFIED` lifecycle events.
+
+The first post-land observer terminal at `2026-08-12T19:05:28Z` was deliberately not green:
+`ASSURANCE=SATISFIED` and `OPERABILITY=PRESSURED`, with 216 claims, 29 lifecycle blockers, and 29
+queue subjects. Raw queue arithmetic closed as 38 refs = 29 subjects + 3 aliases + 1 explicit
+assurance-custody exclusion + 5 subsumed refs; 21 subjects were unconfirmed and 54 collision edges
+remained visible. The planner grants no execution authority, and the recoverable closure actuator
+remains `NOT_ADOPTED`.

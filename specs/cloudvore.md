@@ -202,8 +202,16 @@ was `ASSURANCE=SATISFIED` and `OPERABILITY=PRESSURED`, with 21 lifecycle blocker
 queue subjects. The observer and its inert `next_action` have no Git, lifecycle, bar, dispatch,
 cleanup, publication, release, or capacity-reservation authority.
 
-Cloudvore's separate read-only single-subject nomination planner and recoverable closure actuator
-remain **NOT_ADOPTED** until their exact implementation, production-path mutation suite, independent
-hub ratification, hosted evidence, and lifecycle closure complete. No queue pressure, grade, color,
-or recommendation may cross that boundary or weaken safety, thermal, review, exact-tree, or owner
-gates. Thresholds, deadlines, queue policy, and actuator mechanics remain Cloudvore-local.
+Cloudvore's read-only single-subject nomination planner is **ADOPTED** at exact product commit
+`285c3384b884648423024a7c168646a0b6db99d8`, tree
+`95977d940445d03ddfc537603576b03a573dd218`. Its independently governed launcher owns exact-object
+acquisition and execution under one deadline, and its source epoch, closed queue arithmetic,
+canonical cross-platform identities, deterministic age/head ordering, and explicit reasons preserve
+every visible subject while naming at most one. Every terminal retains zero Git, lifecycle, bar,
+dispatch, cleanup, publication, release, or capacity-reservation authority.
+
+The recoverable closure actuator remains **NOT_ADOPTED**. No nomination, queue pressure, grade,
+color, or recommendation may merge, verify, retire, clean, reserve, or weaken safety, thermal,
+review, exact-tree, or owner gates. Thresholds, deadlines, queue policy, and actuator mechanics
+remain Cloudvore-local. The exact planner adoption tuple and post-land pressured observation are in
+`RECEIPTS.md`.
