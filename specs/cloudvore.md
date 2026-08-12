@@ -181,3 +181,24 @@ publication, billing, or owner-decision authority; those transitions remain sepa
 Cloudvore's temperatures, power/energy stops, cooldowns, hardware, GitHub configuration, workload,
 pass count, provider roster, and owner boundaries remain project-local and do not become fleet
 defaults. The dated measured tuple is recorded in `RECEIPTS.md`.
+
+## Two-axis factory-health status (observer adopted 2026-08-12)
+
+Cloudvore status is **ADOPTED** for its read-only implementation of the fleet factory-health
+ordered-pair ruling at exact product commit `8fc1751a9c69e011506c499c0b86ef857da61eea`, tree
+`50097efea7ff36e8ab03fcc3500492fb14e9b310`. The observer measures exact retained product
+assurance separately from lifecycle/queue operability, uses one bounded source epoch and exact
+reader blobs, owns descendant process trees, retains unknown, malformed, missing, or unjoinable
+inputs as `UNEVALUABLE`, and keeps held, aliased, unconfirmed, excluded, subsumed, or colliding rows
+visible instead of silently shrinking populations.
+
+The adoption receipt is deliberately not a green factory claim: its first post-landing observation
+was `ASSURANCE=SATISFIED` and `OPERABILITY=PRESSURED`, with 21 lifecycle blockers and 23 visible
+queue subjects. The observer and its inert `next_action` have no Git, lifecycle, bar, dispatch,
+cleanup, publication, release, or capacity-reservation authority.
+
+Cloudvore's separate read-only single-subject nomination planner and recoverable closure actuator
+remain **NOT_ADOPTED** until their exact implementation, production-path mutation suite, independent
+hub ratification, hosted evidence, and lifecycle closure complete. No queue pressure, grade, color,
+or recommendation may cross that boundary or weaken safety, thermal, review, exact-tree, or owner
+gates. Thresholds, deadlines, queue policy, and actuator mechanics remain Cloudvore-local.

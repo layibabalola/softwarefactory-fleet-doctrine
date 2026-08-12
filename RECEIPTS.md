@@ -741,3 +741,35 @@ prerequisite consumption, product assurance, and evidence retention after an aut
 invocation. It grants no landing, lifecycle, release, publication, billing, or owner-decision
 authority, and it does not make Cloudvore's runner, workload, pass count, safety policy, or GitHub
 configuration fleet defaults.
+
+## Cloudvore — fail-closed factory-health observer adoption, 2026-08-12
+
+Cloudvore adopted its read-only implementation of the fleet two-axis factory-health ruling at
+exact product commit `8fc1751a9c69e011506c499c0b86ef857da61eea`, tree
+`50097efea7ff36e8ab03fcc3500492fb14e9b310`. Adversarial Review, Doctrine Fit, and Mechanical
+Execution unanimously ratified the exact aggregate and its one-path guard successor. The final
+local contract passed 32/32 factory-health tests and 5/5 retained-assurance inspector tests; the
+inherited unattended hosted-admission contracts remained 72/72 and 32/32.
+
+Capacity run `31602531680` completed three full solution passes and every top-level coordination
+suite three times. Its retained manifest SHA-256
+`72E3E41A23D2E877A646BEDE857C9FD4E08E1BC119A29A589EAB2195302F3498` records zero correctness
+credit at evidence commit `51426b381568fb5d64a18dbcda8c9f7ab9fa0d3e`. Product run `31605052105`
+consumed that exact qualification tuple and independently repeated the workload. Its retained
+manifest SHA-256 `1483DD4B4E398A6451271A1B47D1F283F746FEAEFBE380F46D695BD30C959C89`
+records product credit at final evidence commit `f7edf21f1a99ec99cbf98a648f1ac1670f580485`.
+Each run directory contains exactly 50 regular nonempty files.
+
+The first capacity attempt, run `31601987028`, remains permanent zero-credit adverse evidence. It
+caught an inert contiguous forbidden process-name-kill token in the observer's own test source;
+the exact one-path successor split only that inert construction, left production bytes unchanged,
+and preserved both the runtime guard and a positive control that rejects the real token.
+
+After exact fast-forward and nine explicit lifecycle closure pairs, the canonical observer emitted
+one ordered terminal: `ASSURANCE=SATISFIED` for exact master/tree and
+`OPERABILITY=PRESSURED`. The measured population was 204 claims, 21 lifecycle blockers, and 23
+queue subjects; raw queue arithmetic closed as 32 refs = 23 subjects + 3 aliases + 1 explicit
+assurance-custody exclusion + 5 subsumed refs. The report therefore did not launder accepted debt
+into a green aggregate. It owns exact reader blobs and descendant process trees under one deadline,
+preserves UNKNOWN/HOLD/collision populations, and grants no mutation, dispatch, merge, lifecycle,
+cleanup, or publication authority.
