@@ -178,6 +178,11 @@ Adoption grants the scheduler authority only to run this already-authorized two-
 retain its evidence. It does not grant the hosted worker or scheduler landing, lifecycle, release,
 publication, billing, or owner-decision authority; those transitions remain separate and revalidated.
 
+Cloudvore additionally pins crash-resume convergence across GitHub's REST `url`/`html_url` shape
+and the CLI's browser-URL shape. The URL is inert receipt metadata; candidate, tree, base, attempt,
+qualification, custody, and credit predicates remain independently exact-bound. The dated incident,
+zero-duplicate recovery, and successful broad-path recurrence drill are in `RECEIPTS.md`.
+
 Cloudvore's temperatures, power/energy stops, cooldowns, hardware, GitHub configuration, workload,
 pass count, provider roster, and owner boundaries remain project-local and do not become fleet
 defaults. The dated measured tuple is recorded in `RECEIPTS.md`.

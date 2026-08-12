@@ -773,3 +773,32 @@ assurance-custody exclusion + 5 subsumed refs. The report therefore did not laun
 into a green aggregate. It owns exact reader blobs and descendant process trees under one deadline,
 preserves UNKNOWN/HOLD/collision populations, and grants no mutation, dispatch, merge, lifecycle,
 cleanup, or publication authority.
+
+## Cloudvore — hosted recovery URL-shape incident and closure, 2026-08-12
+
+During exact product `73ff7568443756996be937f2dd1dcda93c1591dc`, capacity run `31612345435`
+completed and was retained at evidence commit `6aab247462d588e231e674979092f7f8411094c6`, manifest
+SHA-256 `A2FFEA4BCD089EBED4FE5C4022BB9F9D4A1671104B87FC5AAA36B8D413C220AB`. A resumed broad
+controller then refused `partial receipt mismatch: url`: GitHub's REST census exposed the API
+resource in `url` and browser identity in `html_url`, while `gh run view --json url` exposed the
+browser identity. Evidence remained exact and no duplicate capacity run was dispatched. Separate
+canonical retain/dispatch/retain commands preserved that qualification and completed product run
+`31614261587`, retained at `156fa3166dbf99b54701ca135be477d9990d154e`, manifest SHA-256
+`48793809E1EF6456AFECA7D21CCA746CA9B738AD80CF060C2D3CB073BFAAC4D7`.
+
+Cloudvore repaired the seam at exact product `2242999f6df31219c9817ad56685df532b25e482`, tree
+`9c8935b65b6e21e404d930e32341e8a6dbfb080a`. Three hub lanes ratified the exact two-path
+successor after its production adoption contract passed 73/73 and hosted workflow contract passed
+32/32. A live recurrence drill used the repaired broad controller: capacity run `31617271614`
+retained at `bbc267973f56c970d8162d5623875bf54ac1bbbc`, manifest SHA-256
+`35EB00C3AABF42DCAFCAF0350F6B3CB20597DB3CAFD291EC622BD35B26486F34`, then the same broad
+transaction automatically dispatched product run `31619076743`. Product evidence retained at
+`bf5d311019735832b63c87e8b62512fa4d7e2f03`, manifest SHA-256
+`00D2960CDC878877E54887748DA55972BC42D9770CDF6281B873A636D0987708`; the canonical inspector
+returned `SATISFIED` before exact fast-forward.
+
+The portable lesson is data-shape convergence, not GitHub URL trust: normalize multiple API shapes
+to one canonical inert receipt representation before durable comparison, pin conflicting
+simultaneous aliases through the real resume path, and keep identity/credit decisions on separate
+exact-bound fields. URL metadata granted no dispatch, credit, landing, lifecycle, or publication
+authority.
