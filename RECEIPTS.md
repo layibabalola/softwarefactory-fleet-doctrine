@@ -831,3 +831,42 @@ queue subjects. Raw queue arithmetic closed as 38 refs = 29 subjects + 3 aliases
 assurance-custody exclusion + 5 subsumed refs; 21 subjects were unconfirmed and 54 collision edges
 remained visible. The planner grants no execution authority, and the recoverable closure actuator
 remains `NOT_ADOPTED`.
+
+## Cloudvore — schema-2 lifecycle writer and forward-reader adoption, 2026-08-12
+
+Cloudvore landed exact product commit `b867a1d2ac0c5a5d2088f164cf8da7f3dcfa571a`, tree
+`7e16d558eaaf5b02c935eafce30f226634901952`, as a fast-forward from exact prior master
+`285c3384b884648423024a7c168646a0b6db99d8`. The seven-path aggregate implements the schema-2
+lifecycle writer and canonical queue/prune forward readers; it does not implement a ref-moving
+actuator.
+
+The first exact capacity attempt, GitHub run `31642123125` on predecessor tree
+`9151f9738e4efc4990880c7525432072ae7d35bf`, failed the coordination phase when an outer test
+watchdog expired around a governed launcher whose own two-second deadline and typed refusal were
+unchanged. It remains adverse, zero-credit evidence. Exact successor `b867a1d2` changed only that
+test's outer watchdog from 5 to 15 seconds; Fable, Sol, and Mechanics independently ratified the
+successor and confirmed the production planner blob and inner deadline were byte-identical.
+
+The successor then completed the canonical two-stage hosted rail:
+
+- capacity qualification run `31643059276` succeeded but remained zero credit; retained evidence
+  commit `91a8b044703808597cedfcf6b3bfc428928a8257`, manifest SHA-256
+  `280a4e65a2f16b458ae8d0d552343ce9f6544f13f3c6b06936f0047bf75d933f`;
+- product run `31644715140` succeeded and consumed that exact qualification tuple; retained
+  evidence head `4c92a5aa86cb210d1acc5ff2e3d47feaa9e9a989`, product manifest SHA-256
+  `9b43cef973d09eac5632c5ea2fe26717765962c2a0e790244a73a9fb622ed6c9`;
+- each retained run directory contains exactly 53 regular nonempty files: three full solution logs,
+  three rounds of all 16 top-level coordination suites, the immutable manifest, and its receipt;
+- the canonical retained-product inspector returned `SATISFIED` for the exact candidate, tree,
+  qualification run/digest/commit, and evidence authority before master moved.
+
+The product branch and `origin/master` were clean and exact at the commit point. A normal
+fast-forward moved master to `b867a1d2`; the existing explicit hub path then recorded DONE,
+MERGED, and VERIFIED for `codex-closure-transaction-schema2-r4-0812`. That historical landing does
+not claim a live schema-2 transaction: the new writer could not be authoritative before its own
+code landed.
+
+Adoption is therefore limited to the schema-2 writer and canonical forward readers. Ref movement,
+bar launch, move/recovery authority issuance, rollback, unattended execution, and the ordinary
+recoverable `land-one` actuator remain NOT_ADOPTED. This receipt grants no lifecycle, Git, release,
+publication, billing, or owner-decision authority to hosted workers or observers.

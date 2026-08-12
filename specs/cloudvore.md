@@ -215,3 +215,19 @@ color, or recommendation may merge, verify, retire, clean, reserve, or weaken sa
 review, exact-tree, or owner gates. Thresholds, deadlines, queue policy, and actuator mechanics
 remain Cloudvore-local. The exact planner adoption tuple and post-land pressured observation are in
 `RECEIPTS.md`.
+
+Cloudvore's schema-2 lifecycle writer and canonical forward-reader slice is **ADOPTED** at exact
+product commit `b867a1d2ac0c5a5d2088f164cf8da7f3dcfa571a`, tree
+`7e16d558eaaf5b02c935eafce30f226634901952`. It adds exact `PREPARED`, zero-credit `BARRED`, and
+atomic `MERGED` + `VERIFIED` + `CLOSED` lifecycle closure to the existing ledger, with native
+single-writer locking, exact annotated move/recovery objects, temporal and actor joins, replay
+convergence, and one canonical transaction reducer consumed by merge and destructive-prune
+readers. Malformed schema-1 or schema-2 history disables destructive pruning rather than shrinking
+the population.
+
+This adoption covers only the writer and forward readers. The landed slice was closed through the
+previous explicit hub lifecycle path because schema-2 was not authoritative before its own landing;
+no live schema-2 landing transaction is claimed. Ref movement, bar launch, move-receipt issuance,
+recovery-lease issuance, rollback, unattended invocation, and the ordinary `land-one` actuator
+remain **NOT_ADOPTED**. The dated exact assurance tuple, adverse run, reviews, and landing are in
+`RECEIPTS.md`.
