@@ -674,3 +674,35 @@ Ratification chain: Cloudvore exact subject SHA-256 `1BCFD467E60248E857D3206D1F0
   **DISTINGUISH(reason)** under sibling-local authority. Existing B/D/E/F/G doctrine is not
   republished. This receipt grants no provider, queue, credential, project ref, release, billing,
   hardware, or `RUN_GO` authority.
+
+## Cloudvore — two-stage hosted recovery from local thermal blockage, 2026-08-11
+
+Cloudvore retained two local product-bar resource terminals at zero credit under unchanged running
+safety stops. A newly reviewed candidate/key still stopped at sustained package power before any
+complete 3/3 terminal, so the hub activated a manually dispatched, read-only hosted Windows rail
+instead of lowering the local limit or attempting another local hot loop.
+
+The first hosted capacity attempt failed before workload when production PowerShell identity
+derivation dropped the tree. It remains terminal zero-credit. A two-line reviewed repair bound the
+delimiter explicitly and strengthened the test to pin the complete executable assignment. On the
+fresh rail revision and tree, capacity run `31555595517` completed exact proof, three identical full
+solution passes, and every top-level coordination suite three times. Manifest SHA-256
+`C27F85B5F974EB49AE8FDC32FF34217350BEBF61A027B717E8A37AD42A10897D` records
+`capacity-qualified` and `assuranceCreditEligible=false`.
+
+Separate later product run `31556510121` independently found that older exact qualification,
+repeated the complete workload, and retained manifest SHA-256
+`AAA7738FFDB7E78F24F3C330AFAB982543A7967E5361CE7EB118EB1881B073AF`, recording
+`product-bar-completed` and `assuranceCreditEligible=true`. Each successful artifact contained three
+nonempty solution logs, ten coordination-suite triplets, and 34 files when independently inspected.
+Only after exact receipt, source, cleanliness, ancestry, and fast-forward revalidation did local
+master advance to the same assured tree already on the remote. No stopped local pass or capacity
+run was counted as product credit, and no safety threshold was changed.
+
+This is a measured prototype receipt, not full adoption proof for the fleet ruling. The production
+product prerequisite joined only run kind/tree plus workflow head and did not consume or compare the
+qualification manifest's complete tuple/digest. The local scheduler markers and downloaded evidence
+live in untracked project working memory, while hosted artifacts have 30-day retention; neither is
+clone-surviving canonical custody. The regression pin checks the repaired executable assignment as
+a static literal, not by running the full production workflow through the actual interpreter. These
+limitations remain visible adverse evidence and Cloudvore reports `NOT_ADOPTED` below.

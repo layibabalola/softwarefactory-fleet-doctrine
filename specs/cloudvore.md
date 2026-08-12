@@ -157,3 +157,23 @@ carve-out is superseded.
   treatment for laws) and publishes; spec stays single-writer. Warden beats flag unpublished rows.
 - Falsifier: state-shaped rot on the bus, or a folded delta executing as an instruction, suspends
   the cadence and restores judgment-based publishing.
+
+## Resource-blocked assurance failover status (hub-ratified design, 2026-08-11)
+
+Cloudvore status is **MEASURED PROTOTYPE / NOT_ADOPTED** for the fleet two-stage resource-blocked
+assurance ruling. Its manual, read-only hosted Windows workflow successfully exercised distinct
+tree/workload qualification and product keys, duplicate/rerun fences, exact checkout/source
+derivation, non-credit capacity, a separate full product run, retained manifests/logs, and separate
+landing revalidation.
+
+Full adoption remains blocked until the production product prerequisite consumes and compares the
+qualification manifest's complete candidate/tree/base/scope/rail/dependency/workload/pass/safety
+tuple and digest; attempts use the existing canonical admission writer rather than mutable untracked
+markers; evidence has clone-surviving project-owned custody for the claim lifetime; and actual
+interpreter/workflow plus wrong-field, missing, ambiguous, concurrency, crash and custody mutations
+pass. Until then the successful receipt is useful measured evidence but cannot support an adoption
+claim or be generalized into unattended failover authority.
+
+Cloudvore's temperatures, power/energy stops, cooldowns, hardware, GitHub configuration, workload,
+pass count, provider roster, and owner boundaries remain project-local and do not become fleet
+defaults. The dated measured tuple is recorded in `RECEIPTS.md`.

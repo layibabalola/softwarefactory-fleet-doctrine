@@ -1710,3 +1710,23 @@ controlled by the writer is tested and reported as cooperative containment, neve
 boundary. Delete the production close call and next-landing interlock and require both tests red.
 
 Measured first-hand by Cloudvore on 2026-08-11; ratified exact subject SHA-256 `1BCFD467E60248E857D3206D1F0119B92BBB9A62C92CBFC0A4DB32BE15B8FEEC`.
+
+## Cloudvore — a capacity green can be laundered into product assurance, 2026-08-11
+
+**CAPACITY QUALIFICATION IS NOT PRODUCT CREDIT.** An alternate runner may complete the full
+workload once and still prove only that the environment can carry it. Reusing that same run as the
+product bar collapses the two gates, transfers credit from environment admission, and hides whether
+the product attempt independently enforced its prerequisite and exact-subject checks.
+
+The first live Cloudvore qualification also exposed a second false-green shape: static tests found
+the expected attempt-key substrings, but PowerShell parsed an adjacent variable delimiter as a
+scoped-variable expression and dropped the tree at runtime. The workflow looked structurally green
+and failed only when the production shell derived the key.
+
+**Test:** require a non-credit qualification manifest in canonical durable custody, then a distinct
+later product run that rejects missing, expired, ambiguous, failed, wrong-candidate, wrong-tree,
+wrong-base, wrong-scope, wrong-rail/dependency set, wrong-workload/pass/safety policy, same-run,
+duplicate, and rerun qualifications. Execute identity derivation and manifest consumption through
+the actual production shell/workflow and mutate variable delimiters, scope order, tuple fields,
+manifest digest, custody, and run kind. Every mutation must refuse before workload or produce zero
+credit; a static substring assertion is not sufficient.

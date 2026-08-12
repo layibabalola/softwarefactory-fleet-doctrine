@@ -836,3 +836,107 @@ The ratified packets are `airmypc-structured-failure-quarantine-20260811` and
 **ADOPT(reference)** or **DISTINGUISH(reason)**. Existing AirMyPC B/D/E/F/G doctrine is cited, not
 republished. These rulings grant no sibling project authority and no provider, task, queue,
 credential, ref, activation, release, billing, hardware, or `RUN_GO` action.
+
+## Cloudvore ratification — two-stage resource-blocked assurance failover, 2026-08-11
+
+### Resource stops are terminals, never partial assurance
+
+A temperature, power, energy, memory, disk, quota, runner-capacity, or other resource safety stop
+is a typed non-success terminal for its exact candidate, workload, attempt key, and execution
+environment. It earns zero partial, replayed, or inferred correctness credit. A colder start,
+elapsed time, an idle runner, a different machine, or pressure does not reopen the stopped attempt,
+lower a safety limit, shorten the required workload, or turn completed substeps green.
+
+Every execution attempt has a unique, deterministic, one-use attempt key and one terminal. A
+separate stable circuit subject binds candidate tree, workload, pass count, safety policy, and
+execution environment. Multiple resource terminals may affect that circuit only through separately
+authorized successor attempts with distinct keys; an attempt key is never reused. A locally defined
+terminal count may enter durable deferral or circuit-open state for the stable circuit subject.
+
+Recovery preserves candidate bytes and evidence, releases scarce leases while waiting, and may only
+tighten start/admission conditions. It never weakens running stops, review, independence, rollback,
+exact-tree, or required-pass gates. A new reviewed subject or an explicitly authorized transition
+backed by measured capacity evidence uses a new circuit subject and attempt key and inherits no
+green from stopped attempts.
+
+### Alternate execution requires two distinct stages
+
+When the ordinary execution environment cannot complete the required assurance workload under
+unchanged safety constraints, a project may use a separately authorized alternate execution rail
+only through two distinct exact-subject attempts:
+
+1. **Capacity qualification** proves that the exact alternate rail revision can execute the exact
+   candidate/tree, base, scope, workload definition, pass count, and safety policy. Its durable
+   terminal is explicitly `assurance_credit_eligible=false`. It is environment-admission evidence,
+   not product correctness evidence.
+2. **Product assurance** is a later fresh attempt with its own deterministic key. Before workload
+   execution it reads the retained qualification manifest through the canonical admission authority
+   and independently proves exactly one older successful qualification bound to the same exact
+   candidate/tree, rail revision and immutable dependency/action set, base, scope, workload, pass
+   count, and safety policy. The product attempt durably records the qualification manifest digest
+   it consumed. It then independently reruns the complete product assurance workload. Only its own
+   qualified terminal may set `assurance_credit_eligible=true`.
+
+One run cannot satisfy both stages. Qualification logs, partially completed local passes, prior-tree
+receipts, branch containment, or a successful run on another rail revision cannot transfer credit.
+A failed, cancelled, timed-out, ambiguous, or rerun attempt remains a terminal attempt and is not
+retried under a renamed label. A production repair creates a newly reviewed rail revision and fresh
+subject/key; earlier evidence remains adverse history.
+
+### Dispatch and evidence are fail-closed
+
+Before each dispatch, the canonical scheduler uses the project's existing canonical admission
+authority and atomic writer to record a durable attempt containing the exact subject tuple, rail
+revision and immutable dependency/action set, deterministic key, authority, and expected evidence.
+This is not a second admission ledger. The writer provides lock/CAS, idempotency, crash recovery,
+and post-write reread; local untracked scratch files or remote run census cannot satisfy this
+predicate. Remote concurrency and rerun refusal remain defense in depth. Provider workers and the
+alternate runner receive no lifecycle, landing, push, release, publication, or owner authority
+merely by running the workload.
+
+The alternate rail checks out only the exact candidate identifier and independently re-derives
+commit/tree, base ancestry, ordinal changed-path scope digest, rail revision and immutable
+dependency/action set, workload identity, pass count, safety policy, and attempt key before
+executing work. It emits a machine-readable manifest plus complete logs into durable project-owned
+custody with content hashes and retention at least as long as the assurance claim. Missing or
+expired custody, source/rail/dependency drift, malformed identity, duplicate/rerun detection,
+prerequisite ambiguity, or non-success produces zero credit.
+
+An exact successful product-assurance receipt licenses only the separately authorized next
+transition for that exact tree. Landing still revalidates local/remote source, clean state, ancestry,
+holds, lifecycle, and fast-forward or compare-and-swap predicates at the commit point. Hosted or
+remote success does not itself merge, append lifecycle, push, publish, release, or claim aggregate
+factory health.
+
+### Minimum portable proof
+
+A project may claim adoption only after production-path tests prove:
+
+1. every resource terminal yields zero correctness credit, preserves evidence, releases unstarted
+   scarce leases, and cannot be reopened by age, pressure, relabeling, attempt-key reuse, or weaker
+   safety settings; multiple terminals aggregate only under a separately typed stable circuit
+   subject and separately authorized one-use successor keys;
+2. product assurance refuses without exactly one older successful non-credit qualification manifest
+   in canonical custody for the same full subject, immutable rail/dependency set, workload and
+   safety tuple, and records the consumed manifest digest;
+3. qualification and product keys are distinct, duplicate/rerun attempts refuse, and two concurrent
+   dispatches produce at most one admitted run per key;
+4. candidate, tree, base, scope, rail revision, immutable dependency/action set, workload, pass
+   count, safety policy, qualification digest, or custody drift before either stage produces typed
+   non-success and no transferred credit;
+5. qualification success remains non-credit even when it runs the complete workload; product
+   success comes only from a separate full execution and exact retained manifest;
+6. runtime identity derivation and qualification-manifest consumption execute through the actual
+   production shell/interpreter and workflow wiring in tests; static substring checks alone cannot
+   admit the rail;
+7. a failed proof-stage run remains terminal, a repaired rail requires fresh review and a new key,
+   and no evidence from the failed run transfers; and
+8. canonical attempt recording is atomic, idempotent, crash-recoverable, clone-surviving, and
+   mutation-tested without introducing a second admission ledger; and receipt consumption calls no
+   landing/lifecycle/push/release/publication function until a separately authorized commit-point
+   transaction revalidates every local predicate.
+
+Project-local resource thresholds, hardware, provider, hosting service, workflow syntax, clocks,
+cooldown/backoff, ledger schema, pass count, workload, costs, and owner boundaries do not travel.
+Sibling projects adopt by local authority map, reviewed implementation, mutations, and dated
+receipt, or record `DISTINGUISH(reason)`.
