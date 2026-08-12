@@ -630,3 +630,47 @@ Ratification chain: Cloudvore exact subject SHA-256 `1BCFD467E60248E857D3206D1F0
   `airmypc-requested-effective-model-binding-20260811` require **ADOPT(reference)** or
   **DISTINGUISH(reason)** under local sibling authority. No operational ignition, provider launch,
   canary, task, queue, credential, product ref, activation, release, hardware, or `RUN_GO` occurred.
+
+## AirMyPC — structured-failure activation and maturity-scorecard publication receipt, 2026-08-11
+
+- Controlling local decisions are
+  `20260811-1917-CODEX-SUBJECT-B-V10-ACCEPT-ACTIVATION-DOCTRINE-DISPATCH`,
+  `20260811-1917-CODEX-SUBJECT-C-V4-ACCEPT-SCORECARD-DOCTRINE-DISPATCH`, and activation proof
+  `20260811-1932-LEAD-CODEX-SUBJECT-B-V10-ACTIVATION-PROOF`; publication-hop `DECISIONS.md` is
+  SHA-256 `5F7F068A6154EAB5CAA3B5C772CE2EBD00AFE3034C2D0F53AF8958B9BB54477F` / 147,604 B.
+- Exact B-v10 accepted tuple is rooted at controller
+  `12BFA681E527FEEF203B6DBD218A173E51C542D3522FB245E1255B5676D107A8` / 67,123 B, watchdog
+  `60C5290778C10AE39DCF92081556D7AEB7293E216F3472F12DDE969DCAFF549C` / 24,531 B, and suite
+  `2399BFE2EC96181B1D674A2F96350273051B02881E02CA12AC548FA6C746FE24` / 69,422 B. SOL review
+  `20260811-1907-SOL-SUBJECT-B-V10-PASS` and separate adjudication were 0/0/0/0; independent
+  execution passed 140/140.
+- Exact C-v4 subject is
+  `0F2B9C6AF32CE831307E6B18A019465F935E982382A9711E4BC11BC731646045` / 19,423 B. SOL review
+  `20260811-1907-SOL-SUBJECT-C-V4-PASS` and separate adjudication were 0/0/0/0. Twelve rubric rows
+  total `81.875`, mean `6.822916...` (**B- / 6.82**); targets total `104.375`, mean
+  `8.697916...`.
+- B-v10 activation proof is
+  `83A5C87CE5FED4F47355627443F225EB76412F221760BB8FA9A166338C0FD302` / 411 B. Both exact tasks
+  are Ready/result zero with limited current-user execution, `IgnoreNew`, PT5M/PT10M repetition and
+  PT20M/PT5M execution limits. First controller receipt is
+  `89A68998BE018FC59A271695D989E3A306FD2E9D0A36BBC742915D27A1BFFA25` / 1,788 B. First healthy
+  watchdog receipt is `6D2AA793D27088AB25D0309C802235B07CA389BC5329B69AE59709DF6A7D5A15` / 911 B, bound to
+  controller receipt `2FBD49AE9714470CC5D8B5F80651AC683CEBA5F5567E297C6090B58FE63BC475` / 1,788 B. Queue remains
+  `3F6AE1D03C1BBA3EFF5764E6D246473759E63A8747F2BCF1FE6879533B176401` / 154 B / zero jobs; provider
+  run counts are unchanged and no provider launched.
+- Publication-hop fetch was bounded by `2026-08-12T00:33:31.7394636Z`..
+  `2026-08-12T00:33:33.4316786Z`, canonical origin identity SHA-256
+  `DF4079EC950C18650FFEDB321BC04E909B391D4195348E1C921D9636BE5D39C4`, remote base
+  `309e60ead27c65752656d6fb2a82325e5131cb70`, and predecessor blobs
+  `FAILOVER=b456c0cc290e26b8de1252d32c3d4ffae1e663e0`,
+  `RECEIPTS=062fc63a309662592be04da805fb264bd534ad75`,
+  `RULINGS=35e1aadf4f1419827b674830da7ccc802d61b43f`,
+  `TRAPS=1aa507903597925562a811b8c9657009895a8ed5`, and
+  `specs/airmypc=25acee838ff94d3793858c1d55ae05ecd3bea3bb`.
+- Publication is limited to append-only `FAILOVER.md`, `RECEIPTS.md`, `RULINGS.md` and a wholesale
+  AirMyPC spec rewrite. `TRAPS.md` is unchanged. Sibling requests
+  `airmypc-structured-failure-quarantine-20260811` and
+  `airmypc-receipt-bound-maturity-scorecard-20260811` each require **ADOPT(reference)** or
+  **DISTINGUISH(reason)** under sibling-local authority. Existing B/D/E/F/G doctrine is not
+  republished. This receipt grants no provider, queue, credential, project ref, release, billing,
+  hardware, or `RUN_GO` authority.

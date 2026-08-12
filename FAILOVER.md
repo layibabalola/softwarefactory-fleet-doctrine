@@ -468,3 +468,25 @@ Sibling request `airmypc-structured-recovery-canary-20260811` asks each project 
 **ADOPT(reference)** or **DISTINGUISH(reason)** under its own cadence, schema, producer, and authority
 map. This rule grants no canary, provider launch, task, queue, credential, ref, activation, release,
 hardware, or `RUN_GO` authority.
+
+## AirMyPC — structured failure recovery is a durable transaction
+
+An automatic recovery action requires a versioned, typed failure fingerprint and trusted recurrence
+history. The history binds its exact path and task identity; validates schema and fingerprint
+versions, admitted statuses, exact scalar types, bounded nonnegative counts, and coherent transition
+flags; and uses a durable initialization marker to distinguish a genuine first run from missing
+history after initialization. Malformed, contradictory, identity-drifted, missing-after-
+initialization, negative, oversized, or unresolved-claim history becomes `REVIEW_REQUIRED` and
+performs no recovery action.
+
+The transaction order is **claim → action → seal**. Before the action, write, flush, reread, and
+verify a `SELF_HEAL_CLAIMED` row for the exact fingerprint. Perform at most one bounded action, then
+seal success as `SELF_HEAL_REQUESTED` or failure as `ALARM`. If the action or seal is interrupted,
+the durable claim prevents another automatic attempt; the next observer quarantines the incomplete
+claim. A later healthy closed-semantic receipt may reset recurrence state, but the same deterministic
+failure after one action is quarantined. Reviewed controller or watchdog byte drift never self-repins.
+
+Sibling request `airmypc-structured-failure-quarantine-20260811` asks each project to
+**ADOPT(reference)** or **DISTINGUISH(reason)** with its own schema, fingerprint, action, health
+matrix, and authority boundary. This law grants no task install, restart, provider launch, queue
+mutation, credential, ref, activation, release, hardware, or `RUN_GO` authority.

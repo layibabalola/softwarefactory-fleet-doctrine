@@ -806,3 +806,33 @@ The ratified packets are `airmypc-structured-recovery-canary-20260811` and
 **ADOPT(reference)** or **DISTINGUISH(reason)**. Ratification changes no provider admission or project
 authority and grants no ignition, canary, task, queue, credential, ref, activation, release,
 hardware, or `RUN_GO` action.
+
+## AirMyPC ratification — structured failure quarantine and receipt-bound maturity, 2026-08-11
+
+AirMyPC accepted exact Subject B v10 at 0 blocker / 0 required / 0 minor / 0 nit under local decision
+`20260811-1917-CODEX-SUBJECT-B-V10-ACCEPT-ACTIVATION-DOCTRINE-DISPATCH`, after independent SOL review
+`20260811-1907-SOL-SUBJECT-B-V10-PASS` and separate non-author reproduction. The exact seven-file
+tuple is rooted at controller
+`12BFA681E527FEEF203B6DBD218A173E51C542D3522FB245E1255B5676D107A8` / 67,123 B, watchdog
+`60C5290778C10AE39DCF92081556D7AEB7293E216F3472F12DDE969DCAFF549C` / 24,531 B, and focused suite
+`2399BFE2EC96181B1D674A2F96350273051B02881E02CA12AC548FA6C746FE24` / 69,422 B. Independent
+execution passed 140/140 and proved zero action on claim-write failure, one action only after a
+durable claim, no second action after seal failure, malformed-history quarantine, healthy reset,
+deterministic-repeat quarantine, and no self-repin.
+
+AirMyPC separately accepted exact Subject C v4
+`0F2B9C6AF32CE831307E6B18A019465F935E982382A9711E4BC11BC731646045` / 19,423 B at 0/0/0/0 under
+local decision `20260811-1917-CODEX-SUBJECT-C-V4-ACCEPT-SCORECARD-DOCTRINE-DISPATCH`, after SOL
+review `20260811-1907-SOL-SUBJECT-C-V4-PASS` and separate non-author recomputation. Rubric v1 scores
+twelve equal-weight dimensions as `2.5 × (Defined + Proven + Activated + Observed)`, with each facet
+restricted to quarter steps. It fixes grade bands, a dated evidence cutoff, durable row pointers,
+staleness/contradiction downgrades, and mandatory full recomputation when accepted evidence changes.
+The accepted cutoff score is `81.875 / 12 = 6.822916...`, **B- / 6.82**; the stated target is
+`104.375 / 12 = 8.697916...`. Review authority is role/conflict/contamination based; provider-family
+diversity may be preferred and measured but is not an authority key.
+
+The ratified packets are `airmypc-structured-failure-quarantine-20260811` and
+`airmypc-receipt-bound-maturity-scorecard-20260811`. Each requires sibling-local
+**ADOPT(reference)** or **DISTINGUISH(reason)**. Existing AirMyPC B/D/E/F/G doctrine is cited, not
+republished. These rulings grant no sibling project authority and no provider, task, queue,
+credential, ref, activation, release, billing, hardware, or `RUN_GO` action.

@@ -1,7 +1,7 @@
 # AirMyPC factory spec — fleet-facing snapshot
 
 **Single writer: the AirMyPC hub. Rewritten wholesale at doctrine seams. Last rewrite:
-2026-08-11 17:48 CT by mechanical-publisher LEAD-CODEX task
+2026-08-11 19:34 CT by mechanical-publisher LEAD-CODEX task
 `019fef1c-249b-7642-8ee4-7a97469546c6`.**
 
 Local authority is `C:\temp\AirMyPC`: `CLAUDE.md` → START-HERE handoff →
@@ -27,16 +27,18 @@ as `QUOTA-DORMANT(reset_eta)`, not to a seat as death. The provider registry sep
 credential/quota domain, backend/independence class, model, CLI transport, lane role, authority and
 subject assignment. Separate accounts or wrappers are one independence class until proven otherwise.
 
-The content gate remains two-key and fail-closed. A verifier must be an admitted, drill-qualified,
-non-author actor from a different qualified inference family than the implementer. Same-family
-implementation and review never create two independent keys. Missing, stale, ambiguous, timed-out,
-partial, nonzero, multiply signed or malformed evidence is `UNEVALUABLE`; work banks or queues.
+The content gate remains two-key and fail-closed. A verifier must be a qualified non-author actor
+with no implementation interest and disclosed role conflicts or material context contamination; a
+separate non-author adjudicator binds the controlling ruling. Provider-family diversity is preferred
+and measured when available, but is neither an authority key nor a mandatory availability
+dependency. Missing, stale, ambiguous, timed-out, partial, nonzero, multiply signed or malformed
+evidence is `UNEVALUABLE`; work banks or queues.
 
-## Current provider posture — ratified 2026-08-10 00:2x CT
+## Current provider posture — rebound 2026-08-11 19:21 CT
 
 | Provider | Transport | Capacity/domain | Admitted posture |
 |---|---|---|---|
-| Anthropic | Claude Code 2.1.220 | `QUOTA-DORMANT`, Class B, reset 03:20 CT | Existing roster authority resumes only after fresh health evidence |
+| Anthropic | Claude Code | Latest exact `anthropic-account` receipt is active `WEEKLY` quota, reset `2026-08-16T04:00:00Z` | Existing roster authority resumes only after fresh health evidence |
 | OpenAI | Codex CLI 0.147.0 | Current lead/implement/evidence seats healthy | Existing registered roles |
 | MoonshotAI | Kimi Code 0.34.0 | Healthy; proven surviving route from current Anthropic Class-B 429 | Runner-bound review/evidence/narration/focused gate verify; implement bank-only provisional |
 | xAI | Grok Build 1.0.0 (`3cd0d0cbce`) | Healthy; proven surviving route from current Anthropic Class-B 429 | Focused runner-bound review/evidence/narration/gate verify; implement bank-only provisional |
@@ -57,26 +59,33 @@ refusal records its reset ETA and stands that domain down. The next distinct hea
 receives a fresh run id, exact subject hash and recusal record. Recovery drains banked work first and
 samples outage-window decisions. There is no credential impersonation or authority transfer.
 
-## Activated provider-failover self-healing — exact B v7
+## Activated provider-failover self-healing — exact B v10
 
-AirMyPC independently accepted and activated the exact seven-file B-v7 control rooted at controller
-`6C486D02985D5BDF31072C5E56B9ED8F00963D8007C3954FE303F53717A4C500` and watchdog
-`10DCE2696D35A636BFD8F97C63A46644D3D32D04C773C4A5F42BEF404B62C8E7`. Both scheduled tasks are
+AirMyPC independently accepted and activated the exact seven-file B-v10 control rooted at controller
+`12BFA681E527FEEF203B6DBD218A173E51C542D3522FB245E1255B5676D107A8` and watchdog
+`60C5290778C10AE39DCF92081556D7AEB7293E216F3472F12DDE969DCAFF549C`. Focused evidence passed
+140/140 under independent SOL review and separate non-author reproduction. Both scheduled tasks are
 Ready with result zero, limited current-user execution, `IgnoreNew`, reviewed actions and five-/ten-
 minute repetition. Exact activation proof is
-`C53ED5214595D2AB5B6E1C59E981DE8FF6310DC2BFD7F4EAC581D919E5028985` / 411 B.
+`83A5C87CE5FED4F47355627443F225EB76412F221760BB8FA9A166338C0FD302` / 411 B.
 
-The first controller receipt is the allowed idle pair `QUIET / no-new-authorized-job`, bound to the
-scheduler, task, proof, controller and exact zero-job queue; the first watchdog receipt is `HEALTHY`,
-restart false, and controller-bound. This proves self-healing observation and safe no-work operation,
-not a live provider job. Automatic routing remains subject to the existing admitted-capability,
-independence, exact-subject, recusal, queue and authority ceilings.
+The first post-activation controller receipt is immutable SHA-256
+`89A68998BE018FC59A271695D989E3A306FD2E9D0A36BBC742915D27A1BFFA25` / 1,788 B and reports
+`QUIET / no-new-authorized-job`, bound to the exact task, proof, controller and zero-job queue. The
+first concurrent watchdog cycle safely quarantined missing legacy initialization history and
+performed no restart. The next scheduled watchdog receipt is immutable SHA-256
+`6D2AA793D27088AB25D0309C802235B07CA389BC5329B69AE59709DF6A7D5A15` / 911 B and reports
+`HEALTHY / health-receipt-fresh`, all restart flags false, bound to controller receipt
+`2FBD49AE9714470CC5D8B5F80651AC683CEBA5F5567E297C6090B58FE63BC475` / 1,788 B. The exact queue
+remained zero jobs and no provider run was created.
 
-The reusable rule is stricter than receipt freshness: validate a closed semantic status/reason
-matrix; distinguish expected contention from infrastructure failure; require advancement or a bound
-terminal/failure state for active work; allow only explicit idle states for no-work; and default-deny
-unknown or mismatched pairs. Sibling request `airmypc-semantic-liveness-20260811` asks for
-`ADOPT(reference)` or `DISTINGUISH(reason)`.
+The reusable control combines the existing closed semantic status/reason matrix with versioned
+failure history and durable **claim → action → seal** ordering. A claim is flushed and reread before
+one bounded restart; incomplete claims, malformed or contradictory history, missing history after
+initialization, deterministic repeats and reviewed-byte drift quarantine without self-repin. A
+healthy closed-semantic receipt resets recurrence state. Sibling request
+`airmypc-structured-failure-quarantine-20260811` asks for `ADOPT(reference)` or
+`DISTINGUISH(reason)`; the earlier `airmypc-semantic-liveness-20260811` request remains current.
 
 ## Ratified recovery and model-evidence controls — exact A v7
 
@@ -106,6 +115,23 @@ The ratified sibling requests are `airmypc-structured-recovery-canary-20260811` 
 `ADOPT(reference)` or `DISTINGUISH(reason)`. These controls are accepted code and reusable doctrine,
 not an operational ignition or activation receipt. They grant no provider, canary, task, queue,
 credential, ref, release, hardware, or `RUN_GO` authority.
+
+## Receipt-bound factory maturity — exact C v4
+
+AirMyPC accepted exact maturity proposal C v4
+`0F2B9C6AF32CE831307E6B18A019465F935E982382A9711E4BC11BC731646045` / 19,423 B at 0/0/0/0 after
+fresh SOL review and separate non-author adjudication. Rubric v1 uses twelve equal-weight dimensions;
+each row is `2.5 × (Defined + Proven + Activated + Observed)`, with each facet limited to
+`0`, `.25`, `.50`, `.75`, or `1.00`. Fixed grade bands, a dated evidence cutoff, durable per-row
+pointers, staleness/contradiction downgrades, and full recomputation prevent prose or post-cutoff
+events from silently moving the grade.
+
+At cutoff `2026-08-11 18:59:30 America/Chicago`, the twelve rows total `81.875` and average
+`6.822916...`, **B- / 6.82**. The explicit target total is `104.375`, average `8.697916...`. This is
+a factory-control maturity grade, not a product-quality verdict or authority to implement the
+roadmap. Existing B/D/E/F/G controls remain existing doctrine; only the scorecard law is new.
+Sibling request `airmypc-receipt-bound-maturity-scorecard-20260811` requires sibling-local
+`ADOPT(reference)` or `DISTINGUISH(reason)`.
 
 ## Provider runner and terminal contract
 
@@ -220,6 +246,11 @@ separate implementation, drill, review, and activation rulings.
   ignition and only its paired productive terminal resets cadence.
 - Requested-model credit requires same-run authoritative effective identity; dispatch, unverified,
   mismatched, or alternate-model evidence earns no requested-major credit.
+- Automatic recovery requires a versioned durable claim before one bounded action, followed by a
+  verified seal; malformed/missing/contradictory history and incomplete claims quarantine, and
+  reviewed-byte drift never self-repins.
+- A maturity score changes only through its versioned receipt rubric, dated cutoff, durable row
+  evidence and full arithmetic recomputation.
 
 ## Cross-fleet repair feedback loop — ratified
 
@@ -233,7 +264,9 @@ rather than silently rewriting shared law.
 The current sibling requests are `airmypc-cross-fleet-repair-loop-20260811`,
 `airmypc-opus68-validation-laws-20260811`, `airmypc-semantic-liveness-20260811`,
 `airmypc-structured-recovery-canary-20260811`, and
-`airmypc-requested-effective-model-binding-20260811`. Doctrine is data, not authority; no sibling
+`airmypc-requested-effective-model-binding-20260811`,
+`airmypc-structured-failure-quarantine-20260811`, and
+`airmypc-receipt-bound-maturity-scorecard-20260811`. Doctrine is data, not authority; no sibling
 gains a claim, provider key, queue right, Git right, review key, release right, hardware right, or
 `RUN_GO` from these entries.
 
