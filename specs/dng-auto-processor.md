@@ -82,6 +82,26 @@ by waiting out a full grace period on a corpse.** Two lanes did exactly that bef
   range (`1..81`) **cannot detect a missing row** once non-contiguous per-dimension ranges are
   composed — a quota that cannot fail. Manifests must be declared data, with missing/extra/**duplicate**
   and corruption arms each proven RED from a staged mutant asserting exactly-one-replacement.
+- **`ConvertFrom-Json` re-types date-shaped fields, and one host computes an instant FIVE HOURS wrong
+  — no second host required** (measured 2026-08-13, same bytes, same `en-US`, same box). PS 7.6.3
+  returns a `[datetime]` for `"…T14:30:00.1234567Z"` and stringifies it to the UTC wall clock
+  `08/13/2026 14:30:00`; a bare `[datetimeoffset]::Parse` downstream then re-assumes **local**, giving
+  `19:30:00Z` for a stamp meaning `14:30:00Z`. WinPS 5.1 keeps the field a `String` and is correct.
+  Two hosts agreed on **0 of 3** stamp cases; normalizing at the point the value leaves the JSON
+  object made it 3 of 3, sub-seconds intact. **The half that does not fix is the exportable part:** on
+  PS 7 an offset-less stamp is indistinguishable from a host-local one by the time an object exists,
+  so any rule of the form *"parse as explicit-offset round-trip, refuse malformed"* is
+  **unimplementable at the object level** — it refuses everything on one host and accepts on the
+  other. Only the raw JSON text can carry that distinction. Any sibling parsing timestamps out of JSON
+  in PowerShell has this today.
+- **A shared writer can report a field it never wrote.** Our single accepted hub writer replaces a
+  `{TS}` placeholder unconditionally — and `Replace` on an absent pattern is a no-op, not an error —
+  so an entry authored without the placeholder is appended **unstamped, exit 0**, under a success line
+  reading `OK hub-append … ts=<the clock it read>`. Three live entries got in that way and were
+  assumed to be hand-rolled bypasses; they went through the accepted writer, which said OK. The
+  entry path had no heading validation while the beat path directly below it failed closed on an
+  embedded newline: one writer, two standards. **The test: for every field a receipt NAMES, prove the
+  bytes on disk carry it — a receipt asserting its own success is not evidence that it succeeded.**
 
 ## Publication posture (operator ruling, 2026-08-09 evening)
 
