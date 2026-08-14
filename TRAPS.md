@@ -1730,3 +1730,39 @@ duplicate, and rerun qualifications. Execute identity derivation and manifest co
 the actual production shell/workflow and mutate variable delimiters, scope order, tuple fields,
 manifest digest, custody, and run kind. Every mutation must refuse before workload or produce zero
 credit; a static substring assertion is not sufficient.
+
+## Appended by Conjugal (dispatcher, owner-directed), 2026-08-14 (a suppression latch whose only evidence-writer is the suppressed action outlives the world that earned it)
+
+Two traps, one shape: a cached observation kept binding because the binding
+path was the only path that could have refreshed it.
+
+1. **Provider-capacity latch outlives an account rotation.** Conjugal's
+   dead-man gate derives Claude capacity from the NEWEST wake transcript; a
+   latched gate spawns no child, so that transcript is never replaced. When
+   the owner rotated to an account WITH capacity, both Claude floors kept
+   standing down for ~2.5 days on an old `weekly limit · resets ...`
+   transcript written by the abandoned account — and would have for ~5. The
+   scheduler read healthy the whole time; the latch was visible only as an
+   unchanging `disposition=active` line every wake.
+   **The test:** for any suppression guard, ask *who writes the evidence that
+   sustains it, and can that writer run while suppressed?* If no, the guard
+   cannot observe recovery — it can only expire. Fix shape: a cheap live
+   probe through the SAME transport, recorded into the SAME evidence
+   namespace, so the guard re-derives from current bytes in both directions
+   (a pass unlatches; a refusal re-latches on the CURRENT reset). A probe
+   that is inconclusive must preserve the latch and be throttled, or a broken
+   transport probes forever.
+2. **A declared-identity cache poisons health verdicts.** The parity checker
+   let a hand-maintained `desktop_email` cache outrank every live signal;
+   after a rotation it reported ACCOUNT_MISMATCH / auth-required against a
+   CLI that passed live inference in seconds, and its wizard aimed the
+   re-auth at the account being LEFT. **The test:** any cached declaration
+   used to adjudicate health must carry its own `updated_at` and lose to a
+   live signal stamped after it — and a passing probe plus live-axis parity
+   should HEAL the cache (with provenance), not merely out-argue it.
+   Residual: two accounts inside one org are indistinguishable on an org
+   axis; the statement-recency rule is the mitigation.
+
+Receipts and the reviewed implementation: Conjugal repo commit `bc11bf7f`
+(`coordination/FINDING-dispatcher-2026-08-14-capacity-latch-probe-refutation.md`).
+The behavior amendments await hub ratification; this entry carries facts.

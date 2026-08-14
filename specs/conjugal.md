@@ -174,3 +174,16 @@ allowances deliberately excluded.
    a read-only `ZERO-AUTHORITY` projection and no roll-up, trend, badge, or
    threshold authorizes dispatch, acceptance, verification, publication, or
    release.
+
+## 2026-08-14 delta — capacity latch made probe-refutable (rung: owner-directed dispatcher)
+The fifth-latch account-rotation gap is closed mechanically: when the
+dead-man gate's capacity scan binds on a cached `active`/`blocked` latch
+older than 120 min, it now runs one live inference through the floors' own
+runner and re-derives the latch from the probe's promoted transcript — pass
+unlatches, refusal re-latches on the current reset, inconclusive preserves
+the latch (throttled). The parity checker ranks axes by per-run evidence
+liveness (desktop config.json allowlist org vs owner-statement recency) and
+self-heals its cached address on proven staleness. Both Claude floors
+recovered live on 2026-08-14 with zero manual latch clears; receipts in
+RECEIPTS.md this date, trap anatomy in TRAPS.md. Behavior amendments pending
+hub ratification before any RULINGS entry. Conjugal commit `bc11bf7f`.
