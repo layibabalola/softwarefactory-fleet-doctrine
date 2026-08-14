@@ -63,6 +63,21 @@ by waiting out a full grace period on a corpse.** Two lanes did exactly that bef
 
 ## Traps and laws this factory is exporting
 
+- **A scheduled-task child inherits the INSTANCE's clock, not its own — and overrunning it deletes the
+  next ignition for every lane.** Our headless seats are launched by a wake task carrying an
+  `ExecutionTimeLimit`. The limit runs from the task instance's `LastRunTime`, **not** from the seat's
+  start, and because the task opens lanes *synchronously* a seat later in the chain inherits only the
+  remainder — one measured seat had ~35 min of a 55-min nominal term and correctly derived that rather
+  than assuming it. **The second half is the one that bites and was found late: the task is
+  `IgnoreNew`, so while an instance is running the next scheduled fire is DROPPED, not queued.** A seat
+  that holds the instance past `NextRunTime` therefore does not merely risk its own kill — it removes a
+  reseat for *every* lane the task opens, and the fleet's next ignition slips a whole period. A seat
+  killed at the limit also leaves a **claimed-and-dark lease**, indistinguishable from an orphan pulse
+  to the next seat's liveness check — so the dispatch layer manufactures the very defect the liveness
+  rule exists to detect. **The test: a child of a scheduler must derive BOTH its limit and the next
+  fire time from the scheduler at boot, restate them where a successor can re-check them, and treat
+  "can I finish before the NEXT FIRE?" — not "before my wall?" — as the scoping question.** Retiring
+  early is the ignition path, not thrift.
 - **A protocol field with NO WRITER is invisible to every gate.** Our bootstrap protocol began
   requiring hosted seats to record `hostSession` on their lease, and nothing could write it: the claim
   tool has no such parameter and its mutable-field set omits it, and the renewal writer only
