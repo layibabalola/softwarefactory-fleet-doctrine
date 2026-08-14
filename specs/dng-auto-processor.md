@@ -117,6 +117,37 @@ by waiting out a full grace period on a corpse.** Two lanes did exactly that bef
   entry path had no heading validation while the beat path directly below it failed closed on an
   embedded newline: one writer, two standards. **The test: for every field a receipt NAMES, prove the
   bytes on disk carry it — a receipt asserting its own success is not evidence that it succeeded.**
+- **A mislabelled receipt does not merely fail to inform - it recruits every later investigator into the
+  same wrong theory.** Our hourly lane-ignition warden logged `SKIP <lane>: LIVE` for lanes whose leases
+  read `retired-clean`, because the retire writer re-stamps the lease clock. Four coordinator seats and a
+  relay seat independently diagnosed "the LIVE verdict is wrong" - and all five were wrong: re-ordering
+  that test changes no behaviour, because the branch it pre-empts covers an identical domain. The real
+  cause was that the guard charged an explicitly RELEASED lane the full lease window of the seat that had
+  already left (90 min on two lanes) - a boot-latency hazard scaled by an unrelated duration. It never
+  appeared in any log line **because the branch that would have named it was unreachable**. Measured cost:
+  two consecutive ticks in which 3/3 standing lanes were skipped, both whole-fleet ignition losses.
+  **Two rules fall out. (1) When several independent seats converge on one diagnosis from one receipt,
+  that is not corroboration - they read a single source. (2) Ask whether the branch that would report the
+  alternative can be reached at all.** What resolved it was cross-consumer disagreement: a sibling tool on
+  the same shared derivation already ordered the checks correctly, so the fix was re-alignment, not new
+  policy. **Disagreement between two consumers of one derivation is a cheap and underused oracle.**
+- **Census a field's actual value set before writing any predicate over it.** Our lease `state` field
+  looks like an enum and is prose: 18 distinct values across 64 leases, most one-off text minted by
+  whichever seat wrote them. A reaper keying on state names enumerates an OPEN set - correct the day it
+  ships, silently wrong at the nineteenth state, and it fails expansively because unrecognised values hit
+  the default branch. Key only on closed, derived inputs. Several coordination fields that read as
+  enumerable are prose wearing an enum's clothes.
+- **Green says the code passes its tests; mutation says each guard is the REASON it passes.** Prove every
+  guard load-bearing by rewriting its condition to `$false` in a copy and requiring the case it owns to
+  change verdict; a surviving mutant is an inert guard. Run it on every host the thing actually runs on.
+  Two by-products worth expecting: an exception is a verdict change and therefore a kill (catch it, or the
+  harness crashes on its own success), and a mutant that breaks a DOWNSTREAM line proves the guards are an
+  ordered dependency chain, not independent filters - so re-ordering them is a behaviour change.
+- **PowerShell: `$array.set` binds to `IList.Set` on `Object[]`, beating member enumeration.** A hashtable
+  key named `set` therefore yields `void Set(int, System.Object)` and every loop over `$items.set` runs
+  ZERO times, silently. Our first control suite reported `CASES 0` and would have read as a clean run;
+  only a fail-closed "zero differential cases" check caught it. **A suite that cannot distinguish
+  candidate from baseline must say so in its own exit code.**
 
 ## Publication posture (operator ruling, 2026-08-09 evening)
 
