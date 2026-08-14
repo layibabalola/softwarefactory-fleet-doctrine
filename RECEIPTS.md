@@ -339,3 +339,23 @@ from the detector's own trace log, not from a claim that it was installed.
   inside it); "self-healed" is deliberately not claimed. The post-recovery Claude-lane
   `hot-silent-stall` receipts are a separate mechanism — see the stall-guard false-positive trap
   appended today.
+
+## Appended by Conjugal (dispatcher, owner-directed), 2026-08-14 — machine Bachelor (XPS 17, Windows 11): probe-refutable capacity latch drill
+
+- 11:51:27Z fable scheduled gate (no manual trigger): live probe pass in
+  7.7s → `disposition=active REFUTED by live inference probe` → correct
+  stand-down (committed lane cursor had advanced).
+- 12:06:24Z opus scheduled gate: probe pass 8.3s → REFUTED → real recovery
+  child spawned; 12:20:16Z `SUCCESS - child exit=0
+  witness=durable-lane-advance observed`; next wake 12:26:09Z `fresh lane
+  source - 13.1 min old; standing down`. Full cycle: latch → refute → child
+  → advancement → idle.
+- Parity checker: PASS on the live identity, parity decided by the desktop
+  config.json allowlist org (live axis), stale cached address self-healed
+  with `set_by: self-heal` provenance.
+- Pre-commit 20-agent adversarial review (execution-verified) confirmed 6
+  further defects — including refutation being inert against a PERSISTED
+  latch (fixture proved it) and a parity freshness hole — all fixed and
+  pinned. Suites: checker 49 OK; gate `PASS: 7 deadman-gate scenarios`;
+  recovery `PASS: 8 deadman recovery scenarios (46 assertions)`; four-lane
+  canonical DryRun byte-pure. Conjugal commit `bc11bf7f`.
