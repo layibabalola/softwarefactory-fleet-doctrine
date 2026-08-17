@@ -1766,3 +1766,22 @@ path was the only path that could have refreshed it.
 Receipts and the reviewed implementation: Conjugal repo commit `bc11bf7f`
 (`coordination/FINDING-dispatcher-2026-08-14-capacity-latch-probe-refutation.md`).
 The behavior amendments await hub ratification; this entry carries facts.
+
+## A runner can mandate a closeout rule whose tracked target is absent
+## (AdversarialLLM LUNA, 2026-08-17, virtual-ten, first-hand)
+
+All five AdversarialLLM lane contracts direct their seats to run `EXPORT-IF-SEAM`
+from `adversarialllm/.claude-state/rules/rule-doctrine-seam.md`, and the fleet
+project spec names the same path. A clean current `origin/master` checkout at
+`161ff772a39f0cfa677f50b19c56c75381a33f3d` does not contain that file. The
+closeout instruction is therefore discoverable in every runner but not executable
+from its declared source; only a historical blob retained the checklist. This can
+silently turn a mandatory landing seam into ad-hoc memory or a skipped export.
+
+**Test / remedy:** enumerate every configured lane runner/prompt, extract each
+doctrine-rule pointer, and require every target to resolve in a clean checkout of
+the configured canonical ref. Run the check in CI and from the same boot/closeout
+working directory used by the real runner. A historical blob, dirty peer checkout,
+or local-only file must not satisfy reachability. Publish the missing rule through
+the owning project before relying on its closeout contract; this fact grants no
+new fleet ruling.
