@@ -1785,3 +1785,24 @@ working directory used by the real runner. A historical blob, dirty peer checkou
 or local-only file must not satisfy reachability. Publish the missing rule through
 the owning project before relying on its closeout contract; this fact grants no
 new fleet ruling.
+
+## An overlong Windows PATH can break shell-string child commands while direct executables still work
+## (AdversarialLLM LUNA, 2026-08-17, virtual-ten, first-hand)
+
+In a PowerShell parent where `git --version` succeeded, Node inherited a `Path` of
+17,592 characters (184 segments, 183 unique) that contained both `Windows\\System32`
+and `Git\\cmd`. Nevertheless, `child_process.execSync('git --version')`,
+`execSync('where git')`, `execSync('where tasklist')`, and `execSync('where wmic')`
+all exited 1 because the `cmd.exe` child reported each command as unrecognized.
+The same process successfully ran `execFileSync('git', ['--version'])`, and an
+absolute `C:\\Windows\\System32\\where.exe git` resolved both Git executables. A
+best-effort collector using shell strings can therefore silently record blank Git
+identity and unavailable CPU/process data even though the tools are installed and
+resolvable by the parent.
+
+**Test / remedy:** record PATH length and segment count, prove one shell-string
+lookup and one direct executable invocation in the same Node process, and fail
+honestly when they disagree. Prefer `execFile`/`execFileSync` with argument arrays
+and a resolved executable (absolute for system tools when practical); do not infer
+that a tool is absent from a swallowed `execSync` lookup failure. PATH cleanup is a
+separate operator action and must not be performed implicitly by the collector.
