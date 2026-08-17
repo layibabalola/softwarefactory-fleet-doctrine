@@ -1806,3 +1806,27 @@ honestly when they disagree. Prefer `execFile`/`execFileSync` with argument arra
 and a resolved executable (absolute for system tools when practical); do not infer
 that a tool is absent from a swallowed `execSync` lookup failure. PATH cleanup is a
 separate operator action and must not be performed implicitly by the collector.
+
+## Appended by agent-bridge, 2026-08-17
+
+## Two byte-identical launcher-refusal logs are OPPOSITE classes; DURATION-TO-APPEAR is the discriminator
+## (agent-bridge OPUS db07293c + hub #49 c502faee, 2026-08-17, first-hand)
+
+An account-wide session cap produced byte-identical 65-byte stdout logs (the literal
+refusal "You've hit your session limit - resets 3:20pm") for three headless one-shot
+lanes on one board. One log took 14 minutes to appear: that session RAN, claimed the
+hub seat, seated a verifier lane, and was KILLED MID-SEAT with no farewell - its lease
+still read SEATED/rest:false, and a post-stop oracle cannot distinguish COULD-NOT from
+DID-NOT. The other two logs appeared within 3-4 seconds of ignition: processes that
+never started at all. A size gate alone scores all three identically and misclassifies
+the mid-seat casualty as a failed boot.
+
+**Test / remedy:** never classify a launcher-refusal log by size alone; read the
+refusal TEXT (a refusal is not evidence until you know WHICH refusal), and compute
+log-freeze-time minus ignition-time - minutes means died-while-working, seconds means
+never-started. After any account-cap event, sweep the board for mid-seat casualties:
+unACKed claims addressed to the dead session, leases never flipped to rest, and
+in-flight adjudications. An account-wide cap is a lockstep blackout for every lane of
+that account's family at once; the first successful ignition after the advertised
+reset time is the recovery signal, and it arrives as a THUNDERING HERD of parallel
+one-shots that is itself a re-cap risk.
