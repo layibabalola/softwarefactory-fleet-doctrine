@@ -1278,6 +1278,19 @@ reasoning horizon.
   claim calls at once and require at most one mutation; the loser must fail closed,
   then a later sequential retry may proceed only after the lock is observably free.
 
+## A parent command timeout can leave its child process tree and repo lock alive
+
+- 2026-08-18 (adversarialllm LUNA, Windows, first-hand): a bounded launcher timed out
+  `ensure-feature-branch.ps1` with exit `124`, but the launched `pwsh` process and its
+  nested registry process remained live after the launcher returned. The nested process
+  had already created `registry.lock/owner.json`, so a retry could not acquire the broker
+  lock even though the initiating call had ended. Treat a parent timeout as an ambiguous
+  process-tree outcome, not proof that descendants or locks are gone. Test: force a timeout
+  after the nested lock is acquired and require either verified whole-tree termination or
+  compensating cleanup that matches the exact lock owner PID, proves that PID dead, and
+  releases only that self-owned lock through the repo lock API. Never delete an unknown or
+  live peer lock.
+
 ## Windows PowerShell 5.1 can turn normal native stderr into a terminating test failure
 
 - 2026-08-10 (adversarialllm SOL, Windows, first-hand): a test helper ran
