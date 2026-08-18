@@ -22,6 +22,7 @@ from pathlib import Path
 import re
 import sqlite3
 import sys
+import threading
 import uuid
 from typing import Any, Iterable, Sequence
 
@@ -43,10 +44,15 @@ MAX_STATE_BYTES = 16_777_216
 MAX_ARTIFACT_BYTES = 16_777_216
 MAX_CAPSULE_SOURCE_BYTES = 16_777_216
 MAX_CAPSULE_TEMP_BACKLOG = 1
+MAX_CAPSULE_POISON_OWNERS = 258  # 256 unique sources plus retained temp/public handles.
+MAX_BROKER_ARTIFACT_POISON_OWNERS = 6
 MAX_CAPACITY_WINDOW_SECONDS = 31_622_400
 MAX_CLOCK_SKEW_SECONDS = 5
 DIGEST_RE = re.compile(r"^sha256:[0-9a-f]{64}$")
 _UNPROVEN_CAPSULE_OWNERS: dict[str, list[Any]] = {}
+_BROKER_ARTIFACT_CLEANUP_POISON: dict[str, list[Any]] = {}
+_CAPSULE_PROCESS_LOCK = threading.RLock()
+_BROKER_PROCESS_LOCK = threading.RLock()
 
 SCHEMAS = {
     "profile": "universal-project-profile-v1.schema.json",
@@ -257,9 +263,39 @@ def _attempt_file_close_verified(handle: Any) -> bool:
 def _retain_unproven_capsule_owner(output_path: Path, owner: Any) -> None:
     """Retain an unproven owner behind the deterministic per-output retry fence."""
 
-    key = os.path.normcase(os.path.abspath(str(output_path)))
-    owners = _UNPROVEN_CAPSULE_OWNERS.setdefault(key, [])
-    owners.append(owner)
+    with _CAPSULE_PROCESS_LOCK:
+        key = os.path.normcase(os.path.abspath(str(output_path)))
+        owners = _UNPROVEN_CAPSULE_OWNERS.setdefault(key, [])
+        if not any(
+            existing is owner
+            or (isinstance(existing, tuple) and isinstance(owner, tuple) and existing == owner)
+            for existing in owners
+        ):
+            if sum(len(values) for values in _UNPROVEN_CAPSULE_OWNERS.values()) >= MAX_CAPSULE_POISON_OWNERS:
+                raise ControlError("CAPSULE_CLEANUP_POISON_OVERFLOW")
+            owners.append(owner)
+
+
+def assert_process_cleanup_clear() -> None:
+    """Surface process-wide capsule poison at an explicit shutdown boundary."""
+
+    with _CAPSULE_PROCESS_LOCK:
+        if _UNPROVEN_CAPSULE_OWNERS:
+            raise ControlError("CAPSULE_CLEANUP_POISONED")
+
+
+def _retain_broker_artifact_owner(poison_key: str, owner: Any) -> None:
+    with _BROKER_PROCESS_LOCK:
+        owners = _BROKER_ARTIFACT_CLEANUP_POISON.setdefault(poison_key, [])
+        if not any(existing is owner for existing in owners):
+            if len(owners) >= MAX_BROKER_ARTIFACT_POISON_OWNERS:
+                raise ControlError("ARTIFACT_CLEANUP_POISON_OVERFLOW")
+            owners.append(owner)
+
+
+def _broker_artifact_cleanup_poisoned(poison_key: str) -> bool:
+    with _BROKER_PROCESS_LOCK:
+        return poison_key in _BROKER_ARTIFACT_CLEANUP_POISON
 
 
 def _open_posix_anonymous_temporary(
@@ -277,7 +313,7 @@ def _open_posix_anonymous_temporary(
         if descriptor_owned:
             try:
                 close_proven = _close_owned_descriptor(descriptor)
-            except OSError as close_error:
+            except BaseException as close_error:
                 if refusal_path is not None:
                     _surface_temp_cleanup_refusal(refusal_path)
                     _retain_unproven_capsule_owner(refusal_path, ("descriptor", descriptor))
@@ -855,7 +891,7 @@ def _build_evidence_capsule_private(request: Any, output_path: Path) -> dict[str
     output_path = Path(output_path)
     output_key = os.path.normcase(os.path.abspath(str(output_path)))
     if (
-        output_key in _UNPROVEN_CAPSULE_OWNERS
+        _UNPROVEN_CAPSULE_OWNERS
         or output_path.with_name(output_path.name + ".cleanup-blocked").exists()
     ):
         raise ControlError("CAPSULE_TEMP_BACKLOG")
@@ -1166,7 +1202,8 @@ def build_evidence_capsule(request: Any, output_path: Path) -> dict[str, Any]:
 
     public_reason: str | None = None
     try:
-        return _build_evidence_capsule_private(request, output_path)
+        with _CAPSULE_PROCESS_LOCK:
+            return _build_evidence_capsule_private(request, output_path)
     except BaseException as exc:
         if isinstance(exc, ControlError):
             public_reason = exc.reason
@@ -1194,6 +1231,7 @@ class UniversalProviderBroker:
         except OSError as exc:
             raise ControlError("STATE_UNEVALUABLE") from exc
         self.database = self.state_root / "universal-provider-control-v1.db"
+        self._artifact_poison_key = os.path.normcase(os.path.abspath(str(self.state_root)))
         self._os_locks: dict[str, Any] = {}
         self._artifact_handles: dict[
             str, list[tuple[Path, Any, tuple[int, int, int, int], str, int]]
@@ -1286,8 +1324,19 @@ class UniversalProviderBroker:
     def close(self) -> None:
         for lease_id in list(self._os_locks):
             self._release_os_lock(lease_id)
+        cleanup_refused = False
         for lease_id in list(self._artifact_handles):
-            self._release_artifact_handles(lease_id)
+            try:
+                self._release_artifact_handles(lease_id)
+            except ControlError:
+                cleanup_refused = True
+        if (
+            cleanup_refused
+            or self._unproven_artifact_handles
+            or _broker_artifact_cleanup_poisoned(self._artifact_poison_key)
+        ):
+            raise ControlError("ARTIFACT_CLEANUP_POISONED")
+        assert_process_cleanup_clear()
 
     def __del__(self) -> None:  # pragma: no cover - defensive interpreter cleanup
         try:
@@ -1422,6 +1471,8 @@ class UniversalProviderBroker:
     def _open_artifact_handles(
         self, lease_id: str, artifacts: Sequence[tuple[Path, str, int]]
     ) -> str:
+        if _broker_artifact_cleanup_poisoned(self._artifact_poison_key):
+            raise ControlError("ARTIFACT_CLEANUP_POISONED")
         retained: list[tuple[Path, Any, tuple[int, int, int, int], str, int]] = []
         identities: list[dict[str, Any]] = []
         current_handle: Any | None = None
@@ -1466,10 +1517,12 @@ class UniversalProviderBroker:
             if current_handle is not None:
                 if not _attempt_file_close_verified(current_handle):
                     self._unproven_artifact_handles.setdefault(lease_id, []).append(current_handle)
+                    _retain_broker_artifact_owner(self._artifact_poison_key, current_handle)
                     cleanup_proven = False
             for _path, handle, _identity, _digest, _ceiling in retained:
                 if not _attempt_file_close_verified(handle):
                     self._unproven_artifact_handles.setdefault(lease_id, []).append(handle)
+                    _retain_broker_artifact_owner(self._artifact_poison_key, handle)
                     cleanup_proven = False
             if not cleanup_proven:
                 raise ControlError("ARTIFACT_HANDLE_CLEANUP_REFUSED")
@@ -1536,6 +1589,8 @@ class UniversalProviderBroker:
             unproven.append(record)
         if unproven:
             self._artifact_handles[lease_id] = unproven
+            for record in unproven:
+                _retain_broker_artifact_owner(self._artifact_poison_key, record[1])
             raise ControlError("ARTIFACT_HANDLE_CLEANUP_REFUSED")
         self._artifact_handles.pop(lease_id, None)
         self._artifact_close_attempted.pop(lease_id, None)
@@ -1685,6 +1740,9 @@ class UniversalProviderBroker:
         The caller creates a child suspended, calls this interface, and may resume it only for an
         ALLOW_ATTESTED result.  This function itself cannot create or resume any process.
         """
+
+        if _broker_artifact_cleanup_poisoned(self._artifact_poison_key):
+            return {"status": "UNEVALUABLE", "reason": "ARTIFACT_CLEANUP_POISONED"}
 
         try:
             _enforce_complexity(request)

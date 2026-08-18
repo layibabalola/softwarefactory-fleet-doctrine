@@ -2152,6 +2152,117 @@ class UniversalProviderControlTests(unittest.TestCase):
         broker._artifact_handles.pop(lease_id)
         broker._artifact_close_attempted.pop(lease_id)
 
+    # Exact fe060bf R9 RED -> R10 GREEN process/broker poison rotation twins.
+
+    def test_r10_01_capsule_poison_blocks_distinct_output_before_acquisition(self) -> None:
+        source = self.root / "r10-capsule-poison-source.bin"
+        source.write_bytes(b"capsule-global-poison")
+        request = self.capsule_request(source, lengths=[8])
+        first_output = self.root / "r10-capsule-first.bin"
+        first_key = os.path.normcase(os.path.abspath(str(first_output)))
+        with mock.patch.object(upc, "_close_file_handle_verified", return_value=False):
+            with self.assertRaisesRegex(
+                upc.ControlError, "CAPSULE_TEMP_CLEANUP_REFUSED"
+            ):
+                upc.build_evidence_capsule(request, first_output)
+        owners = upc._UNPROVEN_CAPSULE_OWNERS[first_key]
+        owner_ids = [id(owner) for owner in owners]
+        self.assertEqual(len(owner_ids), len(set(owner_ids)))
+        self.assertLessEqual(len(owners), upc.MAX_CAPSULE_POISON_OWNERS)
+
+        rotated_output = self.root / "r10-capsule-rotated.bin"
+        with mock.patch.object(Path, "open", side_effect=AssertionError("new handle acquired")):
+            with self.assertRaises(upc.ControlError) as caught:
+                upc.build_evidence_capsule(request, rotated_output)
+        self.assertEqual(caught.exception.reason, "CAPSULE_TEMP_BACKLOG")
+        self.assertFalse(rotated_output.exists())
+        self.assertEqual([id(owner) for owner in upc._UNPROVEN_CAPSULE_OWNERS[first_key]], owner_ids)
+        with self.assertRaisesRegex(upc.ControlError, "CAPSULE_CLEANUP_POISONED"):
+            upc.assert_process_cleanup_clear()
+
+        for owner in owners:
+            if hasattr(owner, "close") and not owner.closed:
+                owner.close()
+        upc._UNPROVEN_CAPSULE_OWNERS.pop(first_key)
+        first_output.with_name(first_output.name + ".cleanup-blocked").unlink()
+        upc.assert_process_cleanup_clear()
+
+    def test_r10_02_broker_artifact_poison_blocks_fresh_lease_and_close(self) -> None:
+        broker = upc.UniversalProviderBroker(self.root / "r10-broker-poison")
+        self.transition(broker)
+        admitted = self.authorize(broker)
+        lease_id = admitted["leaseId"]
+        terminal = self.process_observation(admitted, "EXITED", phase="TERMINAL")
+        with mock.patch.object(upc, "_close_file_handle_verified", return_value=False):
+            with self.assertRaisesRegex(
+                upc.ControlError, "ARTIFACT_HANDLE_CLEANUP_REFUSED"
+            ):
+                broker.release_child(
+                    process_observation=terminal, fleet_secret=self.secret, now=self.now
+                )
+        poison_key = broker._artifact_poison_key
+        owners = upc._BROKER_ARTIFACT_CLEANUP_POISON[poison_key]
+        self.assertEqual(len(owners), len({id(owner) for owner in owners}))
+        close_calls = len(broker._artifact_close_attempted[lease_id])
+
+        rotated_request = self.make_request("request-r10-rotated-after-terminal")
+        with mock.patch.object(
+            broker, "_open_artifact_handles", side_effect=AssertionError("artifact reopened")
+        ) as acquisition:
+            rotated = self.authorize(broker, rotated_request, confirm=False)
+        self.assertEqual(rotated, {
+            "status": "UNEVALUABLE", "reason": "ARTIFACT_CLEANUP_POISONED"
+        })
+        acquisition.assert_not_called()
+        restarted = upc.UniversalProviderBroker(self.root / "r10-broker-poison")
+        self.assertEqual(
+            self.authorize(restarted, rotated_request, confirm=False)["reason"],
+            "ARTIFACT_CLEANUP_POISONED",
+        )
+        with self.assertRaisesRegex(upc.ControlError, "ARTIFACT_CLEANUP_POISONED"):
+            broker.close()
+        self.assertEqual(len(broker._artifact_close_attempted[lease_id]), close_calls)
+
+        for owner in owners:
+            if not owner.closed:
+                owner.close()
+        upc._BROKER_ARTIFACT_CLEANUP_POISON.pop(poison_key)
+        broker._artifact_handles.pop(lease_id)
+        broker._artifact_close_attempted.pop(lease_id)
+
+    def test_r10_03_posix_runtimeerror_close_poison_blocks_output_rotation(self) -> None:
+        source = self.root / "r10-posix-runtime-source.bin"
+        source.write_bytes(b"posix-runtime-poison")
+        request = self.capsule_request(source, lengths=[8])
+        first_output = self.root / "r10-posix-runtime-first.bin"
+        first_key = os.path.normcase(os.path.abspath(str(first_output)))
+        private_value = "PRIVATE-POSIX-RUNTIME-CLOSE"
+        with mock.patch.object(upc.os, "open", return_value=1042):
+            with mock.patch.object(upc.os, "fdopen", side_effect=RuntimeError("private fdopen")):
+                with mock.patch.object(
+                    upc, "_close_owned_descriptor", side_effect=RuntimeError(private_value)
+                ):
+                    with self.assertRaisesRegex(
+                        upc.ControlError, "CAPSULE_TEMP_CLEANUP_REFUSED"
+                    ):
+                        upc._open_posix_anonymous_temporary(
+                            self.root, 2, 0x400000, first_output
+                        )
+        self.assertEqual(
+            upc._UNPROVEN_CAPSULE_OWNERS[first_key], [("descriptor", 1042)]
+        )
+        rotated_output = self.root / "r10-posix-runtime-rotated.bin"
+        with mock.patch.object(Path, "open", side_effect=AssertionError("new handle acquired")):
+            with self.assertRaises(upc.ControlError) as caught:
+                upc.build_evidence_capsule(request, rotated_output)
+        rendered = "".join(traceback.format_exception(caught.exception))
+        self.assertEqual(caught.exception.reason, "CAPSULE_TEMP_BACKLOG")
+        self.assertIsNone(caught.exception.__cause__)
+        self.assertIsNone(caught.exception.__context__)
+        self.assertNotIn(private_value, rendered)
+        upc._UNPROVEN_CAPSULE_OWNERS.pop(first_key)
+        first_output.with_name(first_output.name + ".cleanup-blocked").unlink()
+
     # Bounded exact evidence capsule controls.
 
     def capsule_request(self, source: Path, *, lengths: list[int]) -> dict:

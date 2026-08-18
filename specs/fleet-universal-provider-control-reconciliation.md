@@ -1,4 +1,4 @@
-# Universal provider-control reconciliation R9
+# Universal provider-control reconciliation R10
 
 Status: **CANDIDATE / ZERO AUTHORITY / NO DEPLOYMENT**
 
@@ -123,7 +123,16 @@ post-reset quiet; and add required capacity dimensions. They may never weaken th
     fence blocks repetition. `temporaryCleanup=CLEAN` is assigned only after discard and every
     required close prove success. Windows checks the BOOL and `GetLastError` outcome of both delete
     disposition and `CloseHandle`; false, exception, or ambiguous results are cleanup refusal.
-    Errors remain stable/no-echo: the complete public capsule boundary, including preflight and all
+    Any unproven capsule owner creates a process-wide cleanup poison before control returns. The
+    first bounded owner set is retained exactly once without retry; every later capsule request,
+    including one rotating to a distinct output path, denies before acquiring a source, temporary,
+    or output handle. An explicit process-close assertion surfaces outstanding poison. Admission
+    artifacts use the same rule at broker scope, keyed to the canonical state root rather than a
+    random request or lease: terminal release cannot reopen acquisition, fresh request/broker
+    rotation denies before authorization artifacts are acquired, and broker close cannot silently
+    discard outstanding poison. POSIX anonymous-descriptor close catches every exception class,
+    retains the sole descriptor owner, and establishes the process-wide fence before returning a
+    stable refusal. Errors remain stable/no-echo: the complete public capsule boundary, including preflight and all
     handlers/finalizers, raises a new `ControlError` only after private exception state has cleared,
     with no private `__cause__`, `__context__`, or formatted traceback content.
 18. Bounded turns, bounded context, exact capsules, milestone compaction, and cache affinity are
@@ -160,7 +169,7 @@ unchanged zero-inference ticks, full-child claimant/OS-lock behavior, rollback, 
 gate. A canary is separately authorized, one per quota domain, bounded, and automatically returns
 to CLOSED on ambiguity or failure. User-present hardware and project release gates are unchanged.
 
-## R9 evidence map
+## R10 evidence map
 
 The hostile suite in `tests/test_universal_provider_control.py` reproduces every retained
 reconciliation finding: unenforced schemas; malformed-newest fallback; unkeyed identity; permissive
@@ -199,3 +208,11 @@ unproven publication/source/admission-artifact owners remain retained after exac
 preflight and finalizer exceptions are fully sanitized, Windows false disposition/CloseHandle
 outcomes deny with a bounded fence, and POSIX anonymous-descriptor close refusal blocks repetition.
 The candidate author remains recused.
+
+Exact fe060bf R9-red/R10-green twins prove a capsule cleanup refusal poisons the entire process
+before a distinct output can acquire handles, an admission-artifact refusal poisons the canonical
+broker state root before fresh lease/request rotation can reacquire artifacts, process/broker close
+surfaces the outstanding poison, and a non-`OSError` POSIX anonymous-descriptor close failure retains
+the sole owner and blocks repetition. The 102-control universal suite and retained 37-control
+governor suite run on Python 3.13 and 3.14; hosted Windows and Ubuntu checks remain required before
+adjudication. The candidate author remains recused.
