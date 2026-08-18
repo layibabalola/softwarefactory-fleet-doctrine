@@ -1,0 +1,176 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/layibabalola/softwarefactory-fleet-doctrine/schemas/provider-usage-event-v1.schema.json",
+  "title": "Software factory provider usage event v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "event_id",
+    "ts",
+    "project",
+    "host_cell",
+    "quota_domain_id",
+    "provider",
+    "transport",
+    "actor",
+    "event",
+    "measurement"
+  ],
+  "properties": {
+    "schema_version": { "const": 1 },
+    "event_id": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{7,127}$" },
+    "ts": { "type": "string", "format": "date-time" },
+    "project": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{0,79}$" },
+    "host_cell": { "type": "string", "pattern": "^(opaque:|hmac-sha256:)[a-f0-9]{16,64}$" },
+    "quota_domain_id": { "type": "string", "pattern": "^[a-z0-9-]+/(opaque:|hmac-sha256:)[a-f0-9]{16,64}$" },
+    "provider": { "type": "string", "pattern": "^[a-z0-9-]{2,40}$" },
+    "transport": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:+/-]{0,79}$" },
+    "model_requested": { "type": ["string", "null"], "pattern": "^[A-Za-z0-9][A-Za-z0-9._:+/-]{0,119}$" },
+    "model_effective": { "type": ["string", "null"], "pattern": "^[A-Za-z0-9][A-Za-z0-9._:+/-]{0,119}$" },
+    "effort_requested": { "type": ["string", "null"], "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,39}$" },
+    "effort_effective": { "type": ["string", "null"], "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,39}$" },
+    "actor": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["lane", "role"],
+      "properties": {
+        "lane": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,79}$" },
+        "role": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,79}$" }
+      }
+    },
+    "task_id_hash": { "type": ["string", "null"], "pattern": "^(sha256:)?[a-f0-9]{64}$" },
+    "session_id_hash": { "type": ["string", "null"], "pattern": "^(sha256:)?[a-f0-9]{64}$" },
+    "idle_input_fingerprint": { "type": ["string", "null"], "pattern": "^[a-f0-9]{64}$" },
+    "seat_epoch": { "type": ["integer", "null"], "minimum": 0 },
+    "event": {
+      "enum": [
+        "ADMISSION_REQUESTED",
+        "ADMISSION_ADMITTED",
+        "ADMISSION_DENIED",
+        "PROCESS_STARTED",
+        "USAGE_OBSERVED",
+        "CHECKPOINTED",
+        "TERMINAL",
+        "CAPACITY_BLOCKED",
+        "RESET_OBSERVED",
+        "IDLE_SKIPPED",
+        "UNPARSEABLE"
+      ]
+    },
+    "outcome": {
+      "type": ["string", "null"],
+      "enum": [
+        null,
+        "WIP",
+        "COMPLETED",
+        "APPROVED",
+        "CHANGES_REQUESTED",
+        "BLOCKED",
+        "REFUSED",
+        "QUOTA_DORMANT",
+        "NO_ACTIONABLE_WORK",
+        "FAILED",
+        "UNKNOWN"
+      ]
+    },
+    "reason_codes": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]{2,63}$" }
+    },
+    "measurement": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["quality", "source"],
+      "properties": {
+        "quality": { "enum": ["exact", "estimated", "mixed", "unknown"] },
+        "source": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,119}$" },
+        "request_count": { "$ref": "#/$defs/nonNegativeOrUnknown" },
+        "input_tokens": { "$ref": "#/$defs/nonNegativeOrUnknown" },
+        "cached_input_tokens": { "$ref": "#/$defs/nonNegativeOrUnknown" },
+        "cache_write_tokens": { "$ref": "#/$defs/nonNegativeOrUnknown" },
+        "reasoning_tokens": { "$ref": "#/$defs/nonNegativeOrUnknown" },
+        "output_tokens": { "$ref": "#/$defs/nonNegativeOrUnknown" },
+        "tool_calls": { "$ref": "#/$defs/nonNegativeOrUnknown" },
+        "cost_usd": {
+          "oneOf": [
+            { "type": "number", "minimum": 0 },
+            { "const": "unknown" }
+          ]
+        },
+        "window_utilization_pct": {
+          "oneOf": [
+            { "type": "number", "minimum": 0, "maximum": 100 },
+            { "const": "unknown" }
+          ]
+        },
+        "reset_at": {
+          "anyOf": [
+            { "type": "string", "format": "date-time" },
+            { "const": "unknown" }
+          ]
+        },
+        "active_seconds": { "$ref": "#/$defs/nonNegativeOrUnknown" },
+        "context_tokens": { "$ref": "#/$defs/nonNegativeOrUnknown" }
+      }
+    },
+    "refs": {
+      "type": "array",
+      "maxItems": 20,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["kind", "sha256"],
+        "properties": {
+          "kind": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,39}$" },
+          "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+          "project_local_path": {
+            "type": ["string", "null"],
+            "maxLength": 300,
+            "pattern": "^[A-Za-z0-9._-]+(/[A-Za-z0-9._-]+)*$"
+          }
+        }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "event": { "const": "IDLE_SKIPPED" } }, "required": ["event"] },
+      "then": {
+        "required": ["idle_input_fingerprint"],
+        "properties": {
+          "idle_input_fingerprint": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+          "measurement": {
+            "required": [
+              "request_count",
+              "input_tokens",
+              "cached_input_tokens",
+              "cache_write_tokens",
+              "reasoning_tokens",
+              "output_tokens",
+              "tool_calls"
+            ],
+            "properties": {
+              "request_count": { "const": 0 },
+              "input_tokens": { "const": 0 },
+              "cached_input_tokens": { "const": 0 },
+              "cache_write_tokens": { "const": 0 },
+              "reasoning_tokens": { "const": 0 },
+              "output_tokens": { "const": 0 },
+              "tool_calls": { "const": 0 }
+            }
+          }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "nonNegativeOrUnknown": {
+      "oneOf": [
+        { "type": "integer", "minimum": 0 },
+        { "const": "unknown" }
+      ]
+    }
+  }
+}

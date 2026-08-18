@@ -940,3 +940,48 @@ Project-local resource thresholds, hardware, provider, hosting service, workflow
 cooldown/backoff, ledger schema, pass count, workload, costs, and owner boundaries do not travel.
 Sibling projects adopt by local authority map, reviewed implementation, mutations, and dated
 receipt, or record `DISTINGUISH(reason)`.
+
+## Fleet ratification — provider capacity governor v1, 2026-08-18
+
+The provider-neutral capacity, telemetry, context-discipline, and quality-preserving routing
+contract in `specs/fleet-provider-capacity-governor.md` is **ACCEPTED as doctrine and as a read-only
+reference conformance engine** at 0 blocker / 0 required / 0 minor / 0 nit. The exact accepted Git
+subject is commit `224a6705d81dfbc670313cdcef4d825216f2b380`, tree
+`569957a2b62eb0e2e99c1490a9cbec0002894e42`, parent
+`fa8e19d0630b2a246bcb46a112f247b160e97c1f`. Independent stranger review
+`[MSG 20260818-124425-CODEX-FLEET-GOVERNOR-R7-STRANGER-REVIEW]` returned PASS at 0/0/0/0.
+The R1–R6 changes-required history remains adverse evidence; its strict-schema, stale-capacity,
+idle-proof, claimant-fence/identity, privacy, no-echo, dependency-lock, resource-bound, and schema
+reference findings are closed by the exact R7 commit chain, not erased.
+
+The exact accepted artifact tuple is:
+
+- workflow `99E90B944F7AF4360116B77F15C9B30AD36DAEA8DF54544C5CA8690133431462` / 2,092 B;
+- `.gitignore` `6FEADED4E28EA86E001A6751B4E3D960E8B7C31B9616FF9936B79297086E809B` / 23 B;
+- root README `98E69C89D86AC02CB7170F85B7429C326F4406530B30FC4CEC609AEBF5BA78C5` / 2,904 B;
+- metrics README `D8F9E2202A220D42FEB2B59E99FBC80CECBDD0D1BF494DA2EEF139F34268871F` / 3,567 B;
+- direct requirements `228314F5E6E5464E6FB85BFE42E9DB5224EAD14F0AE753121C153DC0AB7234CB` / 185 B;
+- hash lock `01BB5B11588B8B9459700B65C3374B77A71C2EAAE29F8BF3693974D2F1537BF1` / 13,714 B;
+- admission schema `2A88C79365E7DE29E109712D67F770990F73109845B3A61131F28E9DB63EB8A9` / 6,680 B;
+- usage-event schema `2C3C68D7B288CCE18DBF46FA5A1ED37E57EB21A1E1BEB9B9FFCF85CCCF29271F` / 6,183 B;
+- admission example `E6B1D902D6AC8101A64C3A98ABBCA16C45C93D667DF79DE2F974BECB95A58141` / 1,469 B;
+- usage examples `9F32C4734FF40473C00B4E8F64C39CCEE351459740FA4DCDFA86D293C5543969` / 2,254 B;
+- doctrine spec `D0F50349080910BF1026AB29BAB16822511B80A860CAD4865EEEE4C04A29B244` / 21,695 B;
+- reference engine `EDDECC5C6DC66C04F9949FCCC911DF75B0DE58B615C29F73DA8C8C9535130266` / 36,346 B; and
+- focused tests `B40CFE7FBAAA15BFE7F08B60721257909447BB9B0E8B3683D88BFB24EE4094DD` / 37,316 B.
+
+Adjudicator reproduction passed 37/37 focused tests, Python compilation, both example CLI paths,
+Python-3.13 hash-locked dependency resolution, workflow YAML parsing, read-only engine AST inspection,
+diff checking, and Git object integrity. The accepted portable law is: quota resets update capacity
+telemetry only; they never open the automatic-launch gate, enable a task, create a process, or drain
+work. Provider admission is keyed by an opaque quota domain, requires deterministic model-free
+orchestration, strict bounded/no-echo intake, exact claimant fencing, a completion reserve, and
+quality-preserving role evidence. Raw telemetry and identities remain machine-local; doctrine
+receives only reviewed schemas, opaque identifiers, and aggregate project-authored evidence.
+
+This ruling leaves `automatic_launch_gate=CLOSED`. It grants **no** runtime deployment, provider
+launch, task enablement, gate opening, project-local adoption, scheduler or lease mutation, auth or
+credential action, raw telemetry publication, model substitution, push, merge, or release authority.
+Every project must separately ADOPT(reference) with a local authority map, pinned supervisor/adapter,
+negative controls, and dated receipts, or DISTINGUISH(reason). A capacity reset alone can never
+satisfy or bypass that local adoption boundary.
