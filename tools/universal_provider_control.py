@@ -45,7 +45,11 @@ MAX_ARTIFACT_BYTES = 16_777_216
 MAX_CAPSULE_SOURCE_BYTES = 16_777_216
 MAX_CAPSULE_TEMP_BACKLOG = 1
 MAX_CAPSULE_POISON_OWNERS = 258  # 256 unique sources plus retained temp/public handles.
-MAX_BROKER_ARTIFACT_POISON_OWNERS = 6
+MAX_PREPARED_LEASES_PER_STATE_ROOT = 4  # Conservative root quarantine ceiling before acquisition.
+ARTIFACT_HANDLES_PER_LEASE = 6
+MAX_BROKER_ARTIFACT_POISON_OWNERS = (
+    MAX_PREPARED_LEASES_PER_STATE_ROOT * ARTIFACT_HANDLES_PER_LEASE
+)
 MAX_CAPACITY_WINDOW_SECONDS = 31_622_400
 MAX_CLOCK_SKEW_SECONDS = 5
 DIGEST_RE = re.compile(r"^sha256:[0-9a-f]{64}$")
@@ -53,6 +57,31 @@ _UNPROVEN_CAPSULE_OWNERS: dict[str, list[Any]] = {}
 _BROKER_ARTIFACT_CLEANUP_POISON: dict[str, list[Any]] = {}
 _CAPSULE_PROCESS_LOCK = threading.RLock()
 _BROKER_PROCESS_LOCK = threading.RLock()
+_BROKER_ROOT_RUNTIMES: dict[str, "_BrokerRootRuntime"] = {}
+
+
+class _BrokerRootRuntime:
+    """Process-local singleton owners for one canonical state root."""
+
+    def __init__(self) -> None:
+        self.lock = threading.RLock()
+        self.os_locks: dict[str, Any] = {}
+        self.os_lock_release_attempted: dict[str, set[str]] = {}
+        self.unproven_os_locks: dict[str, Any] = {}
+        self.artifact_handles: dict[
+            str, list[tuple[Path, Any, tuple[int, int, int, int], str, int]]
+        ] = {}
+        self.artifact_close_attempted: dict[str, set[int]] = {}
+        self.unproven_artifact_handles: dict[str, list[Any]] = {}
+
+
+def _broker_root_runtime(poison_key: str) -> _BrokerRootRuntime:
+    with _BROKER_PROCESS_LOCK:
+        runtime = _BROKER_ROOT_RUNTIMES.get(poison_key)
+        if runtime is None:
+            runtime = _BrokerRootRuntime()
+            _BROKER_ROOT_RUNTIMES[poison_key] = runtime
+        return runtime
 
 SCHEMAS = {
     "profile": "universal-project-profile-v1.schema.json",
@@ -258,6 +287,20 @@ def _attempt_file_close_verified(handle: Any) -> bool:
         return _close_file_handle_verified(handle)
     except BaseException:
         return False
+
+
+def _unlock_os_lock_handle(handle: Any) -> None:
+    """Attempt the platform unlock while the retained file object remains the sole owner."""
+
+    handle.seek(0)
+    if os.name == "nt":
+        import msvcrt
+
+        msvcrt.locking(handle.fileno(), msvcrt.LK_UNLCK, 1)
+    else:  # pragma: no cover - exercised by the Ubuntu workflow
+        import fcntl
+
+        fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
 
 
 def _retain_unproven_capsule_owner(output_path: Path, owner: Any) -> None:
@@ -1232,12 +1275,16 @@ class UniversalProviderBroker:
             raise ControlError("STATE_UNEVALUABLE") from exc
         self.database = self.state_root / "universal-provider-control-v1.db"
         self._artifact_poison_key = os.path.normcase(os.path.abspath(str(self.state_root)))
-        self._os_locks: dict[str, Any] = {}
-        self._artifact_handles: dict[
-            str, list[tuple[Path, Any, tuple[int, int, int, int], str, int]]
-        ] = {}
-        self._artifact_close_attempted: dict[str, set[int]] = {}
-        self._unproven_artifact_handles: dict[str, list[Any]] = {}
+        self._root_runtime = _broker_root_runtime(self._artifact_poison_key)
+        self._root_lock = self._root_runtime.lock
+        # These aliases intentionally point at root-singleton maps shared by every broker instance
+        # in this process.  A second object cannot lose or bypass the first object's live owners.
+        self._os_locks = self._root_runtime.os_locks
+        self._os_lock_release_attempted = self._root_runtime.os_lock_release_attempted
+        self._unproven_os_locks = self._root_runtime.unproven_os_locks
+        self._artifact_handles = self._root_runtime.artifact_handles
+        self._artifact_close_attempted = self._root_runtime.artifact_close_attempted
+        self._unproven_artifact_handles = self._root_runtime.unproven_artifact_handles
         try:
             with self._connect() as connection:
                 connection.executescript(
@@ -1322,23 +1369,28 @@ class UniversalProviderBroker:
             raise ControlError("STATE_UNEVALUABLE") from exc
 
     def close(self) -> None:
-        for lease_id in list(self._os_locks):
-            self._release_os_lock(lease_id)
-        cleanup_refused = False
-        for lease_id in list(self._artifact_handles):
-            try:
-                self._release_artifact_handles(lease_id)
-            except ControlError:
-                cleanup_refused = True
-        if (
-            cleanup_refused
-            or self._unproven_artifact_handles
-            or _broker_artifact_cleanup_poisoned(self._artifact_poison_key)
-        ):
-            raise ControlError("ARTIFACT_CLEANUP_POISONED")
-        assert_process_cleanup_clear()
+        """Administrative assertion only; never a substitute for authenticated terminal release."""
+
+        with self._root_lock:
+            with self._connect() as connection:
+                active = connection.execute(
+                    "SELECT COUNT(*) FROM leases WHERE state IN ('ACTIVE','RESUME_ATTESTED')"
+                ).fetchone()[0]
+            if active:
+                raise ControlError("ACTIVE_LEASES_REMAIN")
+            if self._unproven_os_locks:
+                raise ControlError("OS_LOCK_CLEANUP_POISONED")
+            if (
+                self._unproven_artifact_handles
+                or _broker_artifact_cleanup_poisoned(self._artifact_poison_key)
+            ):
+                raise ControlError("ARTIFACT_CLEANUP_POISONED")
+            if self._os_locks or self._artifact_handles:
+                raise ControlError("BROKER_OWNERS_REMAIN")
+            assert_process_cleanup_clear()
 
     def __del__(self) -> None:  # pragma: no cover - defensive interpreter cleanup
+        # Deliberately assertion-only: garbage collection cannot release child authority.
         try:
             self.close()
         except BaseException:
@@ -1406,6 +1458,8 @@ class UniversalProviderBroker:
 
     def _acquire_os_lock(self, lease_id: str, quota_domain_id: str) -> None:
         path = self._lock_path(quota_domain_id)
+        handle: Any | None = None
+        public_reason: str | None = None
         try:
             handle = path.open("a+b")
             opened = os.fstat(handle.fileno())
@@ -1425,36 +1479,51 @@ class UniversalProviderBroker:
                 import fcntl
 
                 fcntl.flock(handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
-        except ControlError:
-            try:
-                handle.close()
-            except (OSError, UnboundLocalError):
-                pass
-            raise
-        except (OSError, BlockingIOError) as exc:
-            try:
-                handle.close()
-            except (OSError, UnboundLocalError):
-                pass
-            raise ControlError("QUOTA_DOMAIN_OS_LOCK_HELD") from exc
+        except BaseException as exc:
+            public_reason = (
+                exc.reason if isinstance(exc, ControlError) else "QUOTA_DOMAIN_OS_LOCK_HELD"
+            )
+        if public_reason is not None:
+            if handle is not None and not _attempt_file_close_verified(handle):
+                self._os_locks[lease_id] = handle
+                self._os_lock_release_attempted[lease_id] = {"close-attempted", "close-refused"}
+                self._unproven_os_locks[lease_id] = handle
+                public_reason = "OS_LOCK_CLEANUP_REFUSED"
+            raise ControlError(public_reason) from None
         self._os_locks[lease_id] = handle
+        self._os_lock_release_attempted[lease_id] = set()
 
     def _release_os_lock(self, lease_id: str) -> None:
-        handle = self._os_locks.pop(lease_id, None)
+        handle = self._os_locks.get(lease_id)
         if handle is None:
             return
-        try:
-            handle.seek(0)
-            if os.name == "nt":
-                import msvcrt
+        attempted = self._os_lock_release_attempted.setdefault(lease_id, set())
+        if lease_id in self._unproven_os_locks or "close-refused" in attempted:
+            raise ControlError("OS_LOCK_CLEANUP_POISONED")
 
-                msvcrt.locking(handle.fileno(), msvcrt.LK_UNLCK, 1)
-            else:  # pragma: no cover
-                import fcntl
+        if "unlock-attempted" not in attempted:
+            attempted.add("unlock-attempted")
+            try:
+                _unlock_os_lock_handle(handle)
+            except BaseException:
+                attempted.add("unlock-refused")
 
-                fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
-        finally:
-            handle.close()
+        close_proven = False
+        if "close-attempted" not in attempted:
+            attempted.add("close-attempted")
+            close_proven = _attempt_file_close_verified(handle)
+            if not close_proven:
+                attempted.add("close-refused")
+        if not close_proven:
+            self._unproven_os_locks[lease_id] = handle
+            raise ControlError("OS_LOCK_CLEANUP_REFUSED") from None
+
+        unlock_refused = "unlock-refused" in attempted
+        self._os_locks.pop(lease_id, None)
+        self._os_lock_release_attempted.pop(lease_id, None)
+        self._unproven_os_locks.pop(lease_id, None)
+        if unlock_refused:
+            raise ControlError("OS_LOCK_UNLOCK_REFUSED") from None
 
     def _os_lock_is_current(self, lease_id: str, quota_domain_id: str) -> bool:
         handle = self._os_locks.get(lease_id)
@@ -1595,6 +1664,25 @@ class UniversalProviderBroker:
         self._artifact_handles.pop(lease_id, None)
         self._artifact_close_attempted.pop(lease_id, None)
 
+    def _release_terminal_owners(self, lease_id: str) -> None:
+        """Attempt every terminal owner once, then surface the strongest stable refusal."""
+
+        reasons: list[str] = []
+        try:
+            self._release_os_lock(lease_id)
+        except ControlError as exc:
+            reasons.append(exc.reason)
+        try:
+            self._release_artifact_handles(lease_id)
+        except ControlError as exc:
+            reasons.append(exc.reason)
+        if reasons:
+            if any(reason in {"OS_LOCK_CLEANUP_REFUSED", "OS_LOCK_CLEANUP_POISONED"} for reason in reasons):
+                raise ControlError("OS_LOCK_CLEANUP_POISONED") from None
+            if "ARTIFACT_HANDLE_CLEANUP_REFUSED" in reasons:
+                raise ControlError("ARTIFACT_HANDLE_CLEANUP_REFUSED") from None
+            raise ControlError(reasons[0]) from None
+
     def _verified_gate_row(
         self, connection: sqlite3.Connection, *, fleet_secret: bytes | None, now: dt.datetime
     ) -> tuple[sqlite3.Row, dict[str, Any] | None]:
@@ -1721,7 +1809,44 @@ class UniversalProviderBroker:
                 raise
         return before
 
+    def _cleanup_poison_reason(self) -> str | None:
+        if self._unproven_os_locks:
+            return "OS_LOCK_CLEANUP_POISONED"
+        if _broker_artifact_cleanup_poisoned(self._artifact_poison_key):
+            return "ARTIFACT_CLEANUP_POISONED"
+        return None
+
     def authorize_suspended_child(
+        self,
+        *,
+        request: Any,
+        profile: Any,
+        inventory: Any,
+        health: Any,
+        native_evidence: Sequence[Any],
+        manual_authorization: Any | None,
+        local_stable_identity: bytes,
+        fleet_secret: bytes,
+        process_observation: Any,
+        now: dt.datetime,
+    ) -> dict[str, Any]:
+        """Serialize poison check, acquisition, lease publication, and result publication per root."""
+
+        with self._root_lock:
+            return self._authorize_suspended_child_root_locked(
+                request=request,
+                profile=profile,
+                inventory=inventory,
+                health=health,
+                native_evidence=native_evidence,
+                manual_authorization=manual_authorization,
+                local_stable_identity=local_stable_identity,
+                fleet_secret=fleet_secret,
+                process_observation=process_observation,
+                now=now,
+            )
+
+    def _authorize_suspended_child_root_locked(
         self,
         *,
         request: Any,
@@ -1741,8 +1866,9 @@ class UniversalProviderBroker:
         ALLOW_ATTESTED result.  This function itself cannot create or resume any process.
         """
 
-        if _broker_artifact_cleanup_poisoned(self._artifact_poison_key):
-            return {"status": "UNEVALUABLE", "reason": "ARTIFACT_CLEANUP_POISONED"}
+        poison_reason = self._cleanup_poison_reason()
+        if poison_reason is not None:
+            return {"status": "UNEVALUABLE", "reason": poison_reason}
 
         try:
             _enforce_complexity(request)
@@ -1826,8 +1952,7 @@ class UniversalProviderBroker:
                     )
                 except ControlError as exc:
                     for leaked_lease in set(self._artifact_handles) - prior_artifact_handles:
-                        self._release_os_lock(leaked_lease)
-                        self._release_artifact_handles(leaked_lease)
+                        self._release_terminal_owners(leaked_lease)
                     result = {"status": "UNEVALUABLE", "reason": exc.reason}
                 if result.get("status") == "PREPARED_SUSPENDED":
                     held_lease_id = result["leaseId"]
@@ -1843,8 +1968,7 @@ class UniversalProviderBroker:
                 except sqlite3.Error:
                     pass
                 if held_lease_id is not None:
-                    self._release_os_lock(held_lease_id)
-                    self._release_artifact_handles(held_lease_id)
+                    self._release_terminal_owners(held_lease_id)
                 raise
 
     def _authorize_locked(
@@ -2021,6 +2145,12 @@ class UniversalProviderBroker:
         if request["priorIdleFingerprint"] == request["demandFingerprint"]:
             raise ControlError("NO_ACTIONABLE_WORK")
 
+        prepared_count = int(connection.execute(
+            "SELECT COUNT(*) FROM leases WHERE state IN ('ACTIVE','RESUME_ATTESTED')"
+        ).fetchone()[0])
+        if prepared_count >= MAX_PREPARED_LEASES_PER_STATE_ROOT:
+            raise ControlError("STATE_ROOT_LEASE_LIMIT")
+
         active = connection.execute(
             """SELECT reservations_json FROM leases WHERE state IN ('ACTIVE','RESUME_ATTESTED') AND (
                 quota_domain_id=? OR session_id_hash=? OR (seat_id_hash=? AND seat_epoch=?))""",
@@ -2141,12 +2271,27 @@ class UniversalProviderBroker:
                     (manual_authorization["authorizationId"], digest_json(manual_authorization), request["requestId"], int(gate["transition_epoch"])),
                 )
         except BaseException:
-            self._release_os_lock(lease_id)
-            self._release_artifact_handles(lease_id)
+            self._release_terminal_owners(lease_id)
             raise
         return attestation
 
     def confirm_resume_boundary(
+        self, *, lease_id: str, process_observation: Any, fleet_secret: bytes, now: dt.datetime
+    ) -> dict[str, Any]:
+        """Linearizable final admission boundary for one canonical state root."""
+
+        with self._root_lock:
+            poison_reason = self._cleanup_poison_reason()
+            if poison_reason is not None:
+                raise ControlError(poison_reason)
+            return self._confirm_resume_boundary_root_locked(
+                lease_id=lease_id,
+                process_observation=process_observation,
+                fleet_secret=fleet_secret,
+                now=now,
+            )
+
+    def _confirm_resume_boundary_root_locked(
         self, *, lease_id: str, process_observation: Any, fleet_secret: bytes, now: dt.datetime
     ) -> dict[str, Any]:
         """Return launch authority only after a second fresh suspended-process/handle check."""
@@ -2233,6 +2378,16 @@ class UniversalProviderBroker:
     def release_child(
         self, *, process_observation: Any, fleet_secret: bytes, now: dt.datetime
     ) -> dict[str, Any]:
+        """Serialize terminal proof, lease publication, and cleanup-poison publication per root."""
+
+        with self._root_lock:
+            return self._release_child_root_locked(
+                process_observation=process_observation, fleet_secret=fleet_secret, now=now
+            )
+
+    def _release_child_root_locked(
+        self, *, process_observation: Any, fleet_secret: bytes, now: dt.datetime
+    ) -> dict[str, Any]:
         """Release only from a fresh authenticated terminal observation of the exact claimant."""
 
         lease_id = process_observation.get("leaseId") if isinstance(process_observation, dict) else None
@@ -2271,11 +2426,24 @@ class UniversalProviderBroker:
                 raise
         if ambiguous:
             raise ControlError("TERMINAL_PROCESS_AMBIGUOUS")
-        self._release_os_lock(lease_id)
-        self._release_artifact_handles(lease_id)
+        self._release_terminal_owners(lease_id)
         return {"status": "RELEASED", "leaseId": lease_id}
 
     def recover_orphan(
+        self,
+        *,
+        process_observation: Any,
+        fleet_secret: bytes,
+        now: dt.datetime,
+    ) -> dict[str, Any]:
+        """Serialize authenticated dead recovery and owner disposition per canonical root."""
+
+        with self._root_lock:
+            return self._recover_orphan_root_locked(
+                process_observation=process_observation, fleet_secret=fleet_secret, now=now
+            )
+
+    def _recover_orphan_root_locked(
         self,
         *,
         process_observation: Any,
@@ -2318,8 +2486,7 @@ class UniversalProviderBroker:
                 if connection.in_transaction:
                     connection.execute("ROLLBACK")
                 raise
-        self._release_os_lock(lease_id)
-        self._release_artifact_handles(lease_id)
+        self._release_terminal_owners(lease_id)
         return {"status": "RELEASED", "leaseId": lease_id}
 
 

@@ -11,6 +11,7 @@ import sqlite3
 import subprocess
 import sys
 import tempfile
+import threading
 import traceback
 import unittest
 from unittest import mock
@@ -59,6 +60,27 @@ class UniversalProviderControlTests(unittest.TestCase):
         self.request = self.make_request()
 
     def tearDown(self) -> None:
+        # Tests that prove an active claimant remains fenced intentionally cannot use broker.close()
+        # as a destructor.  Dispose their synthetic handles only after each assertion boundary so
+        # Windows can remove the private temporary tree; this is not a production release path.
+        root_key = os.path.normcase(os.path.abspath(str(self.root.resolve())))
+        for key, runtime in list(upc._BROKER_ROOT_RUNTIMES.items()):
+            if key == root_key or key.startswith(root_key + os.sep):
+                handles = list(runtime.os_locks.values())
+                handles.extend(record[1] for values in runtime.artifact_handles.values() for record in values)
+                for handle in handles:
+                    try:
+                        handle.close()
+                    except BaseException:
+                        pass
+                runtime.os_locks.clear()
+                runtime.os_lock_release_attempted.clear()
+                runtime.unproven_os_locks.clear()
+                runtime.artifact_handles.clear()
+                runtime.artifact_close_attempted.clear()
+                runtime.unproven_artifact_handles.clear()
+                upc._BROKER_ARTIFACT_CLEANUP_POISON.pop(key, None)
+                upc._BROKER_ROOT_RUNTIMES.pop(key, None)
         self.temp.cleanup()
 
     def make_profile(self) -> dict:
@@ -1066,7 +1088,8 @@ class UniversalProviderControlTests(unittest.TestCase):
         self.transition(first_broker)
         first = self.authorize(first_broker)
         self.assertEqual(first["status"], "ALLOW_ATTESTED")
-        first_broker.close()
+        with self.assertRaisesRegex(upc.ControlError, "ACTIVE_LEASES_REMAIN"):
+            first_broker.close()
         restarted = upc.UniversalProviderBroker(root)
         self.assertEqual(self.authorize(restarted)["reason"], "ACTIVE_AUTHORITY_NOT_REPLAYABLE")
         connection = sqlite3.connect(restarted.database)
@@ -1074,6 +1097,12 @@ class UniversalProviderControlTests(unittest.TestCase):
             self.assertEqual(connection.execute("SELECT state FROM leases").fetchone()[0], "RESUME_ATTESTED")
         finally:
             connection.close()
+        restarted.release_child(
+            process_observation=self.process_observation(first, "EXITED", phase="TERMINAL"),
+            fleet_secret=self.secret,
+            now=self.now,
+        )
+        restarted.close()
 
     def test_r2_05_canary_epoch_and_reseal_r1_red_r2_green(self) -> None:
         broker = upc.UniversalProviderBroker(self.root / "r2-canary")
@@ -1173,7 +1202,7 @@ class UniversalProviderControlTests(unittest.TestCase):
 
     def test_r2_14_lock_and_rollback_controls_remain_r1_red_r2_green(self) -> None:
         source = Path(upc.__file__).read_text(encoding="utf-8")
-        for token in ("_is_reparse(path)", "_release_os_lock(held_lease_id)", "_release_artifact_handles(held_lease_id)"):
+        for token in ("_is_reparse(path)", "_release_terminal_owners(held_lease_id)"):
             self.assertIn(token, source)
 
     # Exact 4fc0fe1 R2 RED -> R3 GREEN review twins.
@@ -1509,7 +1538,11 @@ class UniversalProviderControlTests(unittest.TestCase):
                 )
             self.assertEqual(observed["bytes"], expected_size + 1)
         finally:
-            broker.close()
+            broker.recover_orphan(
+                process_observation=self.process_observation(prepared, "DEAD"),
+                fleet_secret=self.secret,
+                now=self.now,
+            )
 
     def test_r5_04_sixty_four_hardlink_aliases_use_one_open_hash_pass(self) -> None:
         source = self.root / "r5-alias-source.bin"
@@ -2193,7 +2226,15 @@ class UniversalProviderControlTests(unittest.TestCase):
         admitted = self.authorize(broker)
         lease_id = admitted["leaseId"]
         terminal = self.process_observation(admitted, "EXITED", phase="TERMINAL")
-        with mock.patch.object(upc, "_close_file_handle_verified", return_value=False):
+        os_handle = broker._os_locks[lease_id]
+
+        def refuse_artifact_only(handle):
+            if handle is os_handle:
+                handle.close()
+                return True
+            return False
+
+        with mock.patch.object(upc, "_close_file_handle_verified", side_effect=refuse_artifact_only):
             with self.assertRaisesRegex(
                 upc.ControlError, "ARTIFACT_HANDLE_CLEANUP_REFUSED"
             ):
@@ -2262,6 +2303,287 @@ class UniversalProviderControlTests(unittest.TestCase):
         self.assertNotIn(private_value, rendered)
         upc._UNPROVEN_CAPSULE_OWNERS.pop(first_key)
         first_output.with_name(first_output.name + ".cleanup-blocked").unlink()
+
+    # Exact bd9c559 R10 RED -> R11 GREEN root-linearization and owner-lifetime twins.
+
+    def test_r11_01_root_lock_linearizes_terminal_authorize_confirm_and_close(self) -> None:
+        root = self.root / "r11-linearizable-root"
+        terminal_broker = upc.UniversalProviderBroker(root)
+        self.transition(terminal_broker)
+        prepared = self.authorize(terminal_broker, confirm=False)
+        peer = upc.UniversalProviderBroker(root)
+        self.assertIs(terminal_broker._root_lock, peer._root_lock)
+        terminal = self.process_observation(prepared, "EXITED", phase="TERMINAL")
+        resume = self.admission_observation(
+            self.request, phase="RESUME", lease_id=prepared["leaseId"]
+        )
+        rotated = self.make_request("request-r11-concurrent-rotation")
+        os_handle = terminal_broker._os_locks[prepared["leaseId"]]
+        entered_cleanup = threading.Event()
+        finish_cleanup = threading.Event()
+        real_close = upc._close_file_handle_verified
+        results: dict[str, object] = {}
+
+        def blocking_artifact_refusal(handle):
+            if handle is os_handle:
+                return real_close(handle)
+            entered_cleanup.set()
+            if not finish_cleanup.wait(5):
+                raise AssertionError("concurrent cleanup barrier timeout")
+            return False
+
+        def capture(name, callable_):
+            try:
+                results[name] = callable_()
+            except BaseException as exc:
+                results[name] = exc
+
+        with mock.patch.object(
+            upc, "_close_file_handle_verified", side_effect=blocking_artifact_refusal
+        ):
+            terminal_thread = threading.Thread(
+                target=capture,
+                args=(
+                    "terminal",
+                    lambda: terminal_broker.release_child(
+                        process_observation=terminal, fleet_secret=self.secret, now=self.now
+                    ),
+                ),
+            )
+            terminal_thread.start()
+            self.assertTrue(entered_cleanup.wait(5))
+            contenders = [
+                threading.Thread(
+                    target=capture,
+                    args=(
+                        "authorize",
+                        lambda: self.authorize(peer, rotated, confirm=False),
+                    ),
+                ),
+                threading.Thread(
+                    target=capture,
+                    args=(
+                        "confirm",
+                        lambda: peer.confirm_resume_boundary(
+                            lease_id=prepared["leaseId"], process_observation=resume,
+                            fleet_secret=self.secret, now=self.now,
+                        ),
+                    ),
+                ),
+                threading.Thread(target=capture, args=("close", peer.close)),
+            ]
+            for thread in contenders:
+                thread.start()
+            finish_cleanup.set()
+            for thread in [terminal_thread, *contenders]:
+                thread.join(10)
+                self.assertFalse(thread.is_alive())
+
+        self.assertIsInstance(results["terminal"], upc.ControlError)
+        self.assertEqual(results["terminal"].reason, "ARTIFACT_HANDLE_CLEANUP_REFUSED")
+        self.assertEqual(
+            results["authorize"],
+            {"status": "UNEVALUABLE", "reason": "ARTIFACT_CLEANUP_POISONED"},
+        )
+        self.assertIsInstance(results["confirm"], upc.ControlError)
+        self.assertEqual(results["confirm"].reason, "ARTIFACT_CLEANUP_POISONED")
+        self.assertIsInstance(results["close"], upc.ControlError)
+        self.assertEqual(results["close"].reason, "ARTIFACT_CLEANUP_POISONED")
+        self.assertNotIn("PREPARED_SUSPENDED", {str(value) for value in results.values()})
+        self.assertNotIn("ALLOW_ATTESTED", {str(value) for value in results.values()})
+
+    def test_r11_02_all_prepared_lease_owners_fit_exact_poison_bound(self) -> None:
+        broker = upc.UniversalProviderBroker(self.root / "r11-multi-lease")
+        self.transition(broker)
+        prepared_leases = [self.authorize(broker, confirm=False)]
+        provider_inputs = (
+            ("openai", "openai-responses/1.0", {"primary": 0.05, "secondary": 0.05}, "3", "4"),
+            ("kimi", "kimi-code/1.0", {"context": 0.05, "monthly": 0.05}, "5", "6"),
+            ("grok", "xai-api/1.0", {"requests": 0.05, "tokens": 0.05}, "7", "8"),
+        )
+        for provider, adapter, estimates, seat_digit, session_digit in provider_inputs:
+            request = self.make_request(f"request-r11-{provider}-lease")
+            request.update(
+                provider=provider,
+                adapterVersion=adapter,
+                quotaDomainId=upc.derive_quota_domain_id(provider, self.identity, self.secret),
+                seatIdHash="hmac-sha256:" + seat_digit * 64,
+                sessionIdHash="hmac-sha256:" + session_digit * 64,
+                windowEstimates=estimates,
+            )
+            prepared_leases.append(self.authorize(
+                broker, request, confirm=False,
+                native_evidence=[self.make_native(provider)],
+                process_observation=self.admission_observation(request),
+            ))
+        self.assertEqual(
+            {prepared["status"] for prepared in prepared_leases}, {"PREPARED_SUSPENDED"}
+        )
+        self.assertEqual(len(broker._artifact_handles), upc.MAX_PREPARED_LEASES_PER_STATE_ROOT)
+
+        fifth_identity = b"second-local-account-alias"
+        fifth = self.make_request("request-r11-root-limit")
+        fifth["quotaDomainId"] = upc.derive_quota_domain_id(
+            "claude", fifth_identity, self.secret
+        )
+        fifth["seatIdHash"] = "hmac-sha256:" + "9" * 64
+        fifth["sessionIdHash"] = "hmac-sha256:" + "a" * 64
+        fifth_native = self.make_native("claude")
+        fifth_native["quotaDomainId"] = fifth["quotaDomainId"]
+        self.resign_native(fifth_native)
+        with mock.patch.object(
+            broker, "_open_artifact_handles", side_effect=AssertionError("fifth lease acquired")
+        ) as acquisition:
+            refused = self.authorize(
+                broker, fifth, confirm=False, local_stable_identity=fifth_identity,
+                native_evidence=[fifth_native],
+                process_observation=self.admission_observation(fifth),
+            )
+        self.assertEqual(refused["reason"], "STATE_ROOT_LEASE_LIMIT")
+        acquisition.assert_not_called()
+
+        os_handles = set(broker._os_locks.values())
+        real_close = upc._close_file_handle_verified
+
+        def refuse_artifacts(handle):
+            return real_close(handle) if handle in os_handles else False
+
+        with mock.patch.object(upc, "_close_file_handle_verified", side_effect=refuse_artifacts):
+            for prepared in prepared_leases:
+                with self.assertRaisesRegex(
+                    upc.ControlError, "ARTIFACT_HANDLE_CLEANUP_REFUSED"
+                ):
+                    broker.release_child(
+                        process_observation=self.process_observation(
+                            prepared, "EXITED", phase="TERMINAL"
+                        ),
+                        fleet_secret=self.secret,
+                        now=self.now,
+                    )
+
+        owners = upc._BROKER_ARTIFACT_CLEANUP_POISON[broker._artifact_poison_key]
+        self.assertEqual(len(owners), upc.MAX_BROKER_ARTIFACT_POISON_OWNERS)
+        self.assertEqual(len(owners), len({id(owner) for owner in owners}))
+        self.assertLessEqual(len(owners), upc.MAX_BROKER_ARTIFACT_POISON_OWNERS)
+        attempted = {lease: set(values) for lease, values in broker._artifact_close_attempted.items()}
+        with mock.patch.object(
+            upc, "_close_file_handle_verified", side_effect=AssertionError("owner retried")
+        ) as retry:
+            with self.assertRaisesRegex(
+                upc.ControlError, "ARTIFACT_HANDLE_CLEANUP_REFUSED"
+            ):
+                broker.release_child(
+                    process_observation=self.process_observation(
+                        prepared_leases[-1], "EXITED", phase="TERMINAL"
+                    ),
+                    fleet_secret=self.secret,
+                    now=self.now,
+                )
+        retry.assert_not_called()
+        self.assertEqual(broker._artifact_close_attempted, attempted)
+
+    def test_r11_03_os_lock_unlock_and_close_failures_are_attempt_once_no_echo(self) -> None:
+        broker = upc.UniversalProviderBroker(self.root / "r11-os-lock-owners")
+        self.transition(broker)
+        first = self.authorize(broker, confirm=False)
+        private_unlock = "PRIVATE-UNLOCK-RUNTIME"
+        with mock.patch.object(
+            upc, "_unlock_os_lock_handle", side_effect=RuntimeError(private_unlock)
+        ):
+            with self.assertRaises(upc.ControlError) as unlock_error:
+                broker.release_child(
+                    process_observation=self.process_observation(
+                        first, "EXITED", phase="TERMINAL"
+                    ),
+                    fleet_secret=self.secret,
+                    now=self.now,
+                )
+        self.assertEqual(unlock_error.exception.reason, "OS_LOCK_UNLOCK_REFUSED")
+        self.assertIsNone(unlock_error.exception.__cause__)
+        self.assertIsNone(unlock_error.exception.__context__)
+        self.assertNotIn(private_unlock, "".join(traceback.format_exception(unlock_error.exception)))
+        self.assertNotIn(first["leaseId"], broker._os_locks)
+
+        second_request = self.make_request("request-r11-os-close-refusal")
+        second = self.authorize(broker, second_request, confirm=False)
+        os_handle = broker._os_locks[second["leaseId"]]
+        real_close = upc._close_file_handle_verified
+        private_close = "PRIVATE-OS-CLOSE-OSError"
+
+        def refuse_os_close(handle):
+            if handle is os_handle:
+                raise OSError(private_close)
+            return real_close(handle)
+
+        with mock.patch.object(upc, "_close_file_handle_verified", side_effect=refuse_os_close):
+            with self.assertRaises(upc.ControlError) as close_error:
+                broker.release_child(
+                    process_observation=self.process_observation(
+                        second, "EXITED", phase="TERMINAL"
+                    ),
+                    fleet_secret=self.secret,
+                    now=self.now,
+                )
+        self.assertEqual(close_error.exception.reason, "OS_LOCK_CLEANUP_POISONED")
+        self.assertIsNone(close_error.exception.__cause__)
+        self.assertIsNone(close_error.exception.__context__)
+        self.assertNotIn(private_close, "".join(traceback.format_exception(close_error.exception)))
+        self.assertIs(broker._os_locks[second["leaseId"]], os_handle)
+        self.assertIs(broker._unproven_os_locks[second["leaseId"]], os_handle)
+        self.assertIn("close-refused", broker._os_lock_release_attempted[second["leaseId"]])
+        with mock.patch.object(
+            upc, "_close_file_handle_verified", side_effect=AssertionError("OS owner retried")
+        ) as retry:
+            with self.assertRaisesRegex(upc.ControlError, "OS_LOCK_CLEANUP_POISONED"):
+                broker.release_child(
+                    process_observation=self.process_observation(
+                        second, "EXITED", phase="TERMINAL"
+                    ),
+                    fleet_secret=self.secret,
+                    now=self.now,
+                )
+        retry.assert_not_called()
+        rotated = self.authorize(
+            broker, self.make_request("request-r11-after-os-poison"), confirm=False
+        )
+        self.assertEqual(rotated["reason"], "OS_LOCK_CLEANUP_POISONED")
+
+    def test_r11_04_close_and_del_are_assertions_not_child_release(self) -> None:
+        root = self.root / "r11-administrative-close"
+        broker = upc.UniversalProviderBroker(root)
+        self.transition(broker)
+        allowed = self.authorize(broker)
+        lease_id = allowed["leaseId"]
+        os_owner = broker._os_locks[lease_id]
+        artifact_owners = [record[1] for record in broker._artifact_handles[lease_id]]
+        with self.assertRaisesRegex(upc.ControlError, "ACTIVE_LEASES_REMAIN"):
+            broker.close()
+        broker.__del__()
+        peer = upc.UniversalProviderBroker(root)
+        self.assertIs(peer._os_locks[lease_id], os_owner)
+        self.assertEqual(
+            [record[1] for record in peer._artifact_handles[lease_id]], artifact_owners
+        )
+        with self.assertRaisesRegex(upc.ControlError, "ACTIVE_LEASES_REMAIN"):
+            peer.close()
+        connection = sqlite3.connect(peer.database)
+        try:
+            self.assertEqual(
+                connection.execute(
+                    "SELECT state FROM leases WHERE lease_id=?", (lease_id,)
+                ).fetchone()[0],
+                "RESUME_ATTESTED",
+            )
+        finally:
+            connection.close()
+        peer.release_child(
+            process_observation=self.process_observation(
+                allowed, "EXITED", phase="TERMINAL"
+            ),
+            fleet_secret=self.secret,
+            now=self.now,
+        )
+        peer.close()
 
     # Bounded exact evidence capsule controls.
 

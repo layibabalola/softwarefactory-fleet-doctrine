@@ -1,4 +1,4 @@
-# Universal provider-control reconciliation R10
+# Universal provider-control reconciliation R11
 
 Status: **CANDIDATE / ZERO AUTHORITY / NO DEPLOYMENT**
 
@@ -132,7 +132,20 @@ post-reset quiet; and add required capacity dimensions. They may never weaken th
     rotation denies before authorization artifacts are acquired, and broker close cannot silently
     discard outstanding poison. POSIX anonymous-descriptor close catches every exception class,
     retains the sole descriptor owner, and establishes the process-wide fence before returning a
-    stable refusal. Errors remain stable/no-echo: the complete public capsule boundary, including preflight and all
+    stable refusal. Within one process, every broker object for the same canonical state root shares
+    one root-scoped owner registry and reentrant lock. Poison check, artifact acquisition, lease and
+    confirmation publication, authenticated terminal/recovery, cleanup-poison publication, and
+    administrative assertion are linearizable across those objects and threads. Admission has a
+    four-prepared-lease root quarantine ceiling before artifact acquisition; six retained artifacts
+    per lease therefore give an exact 24-owner refusal bound, and every owner of every already-
+    prepared lease remains retained. OS-lock unlock and close have distinct attempt-once states;
+    the handle is not removed until close is proven, and an unproven close remains retained and
+    poisons later admission. `close()` and `__del__` are administrative assertions only: they never
+    release an ACTIVE or RESUME_ATTESTED child, OS lock, or artifact. Only authenticated terminal or
+    DEAD recovery can do that. The owner registry and poison are honestly process-local; SQLite
+    claimant rows and OS quota locks are the cross-process fence. Process exit releases kernel
+    handles, while a surviving process can clear no poison by constructing another broker object.
+    Errors remain stable/no-echo: the complete public capsule boundary, including preflight and all
     handlers/finalizers, raises a new `ControlError` only after private exception state has cleared,
     with no private `__cause__`, `__context__`, or formatted traceback content.
 18. Bounded turns, bounded context, exact capsules, milestone compaction, and cache affinity are
@@ -169,7 +182,7 @@ unchanged zero-inference ticks, full-child claimant/OS-lock behavior, rollback, 
 gate. A canary is separately authorized, one per quota domain, bounded, and automatically returns
 to CLOSED on ambiguity or failure. User-present hardware and project release gates are unchanged.
 
-## R10 evidence map
+## R11 evidence map
 
 The hostile suite in `tests/test_universal_provider_control.py` reproduces every retained
 reconciliation finding: unenforced schemas; malformed-newest fallback; unkeyed identity; permissive
@@ -216,3 +229,13 @@ surfaces the outstanding poison, and a non-`OSError` POSIX anonymous-descriptor 
 the sole owner and blocks repetition. The 102-control universal suite and retained 37-control
 governor suite run on Python 3.13 and 3.14; hosted Windows and Ubuntu checks remain required before
 adjudication. The candidate author remains recused.
+
+Exact bd9c559 R10-red/R11-green twins prove a terminal cleanup refusal linearizes before concurrent
+authorization, confirmation, and close across distinct same-root broker objects; no PREPARED or
+ALLOW result can appear after poison. Four prepared provider leases fill the pre-acquisition
+quarantine and all 24 possible refused artifact owners remain retained without overflow or retry.
+RuntimeError unlock and OSError close failures have attempt-once, no-echo OS-lock ownership, and
+administrative close/destruction preserves active child authority until authenticated terminal
+release. The 106-control universal suite and retained 37-control governor suite run on Python 3.13
+and 3.14; hosted Windows and Ubuntu checks remain required before adjudication. The candidate author
+remains recused.
