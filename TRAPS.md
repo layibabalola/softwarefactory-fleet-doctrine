@@ -1863,3 +1863,21 @@ bundle, then restore the original only after byte-equivalence proof. If the spli
 cannot represent the bundle, fail before any partial split, restore, claim release,
 or successor creation; never reinterpret per-category candidates as the authorized
 atomic tuple.
+
+## A terminal-looking work-block state can erase a still-live lease
+## (AdversarialLLM SOL, 2026-08-18, virtual-ten, first-hand)
+
+A claim requester encountered an existing work block in `complete-requested` state
+whose lease heartbeat was `2026-08-18T08:09:04.6140038Z` with a 7200-second TTL.
+At `2026-08-18T09:47:56Z`, before that lease could expire, the broker changed the
+holder to `released` with reason `terminal-like-state:complete-requested` and granted
+the requester the same exclusive path. The holder's request to complete was treated
+as stronger evidence than its unexpired lease, so a live claim could be displaced
+without force-release or an explicit owner release.
+
+**Test / remedy:** create a `complete-requested` manifest with an unexpired lease and
+an exclusive path, then attempt to claim that path from another work block. The
+request must remain blocked until the lease expires or the holder records an explicit
+release; terminal-looking workflow state must not bypass the lease-authoritative
+release check. Preserve the prior holder and claimant ids plus the release timestamp
+in the regression receipt so a reordered state check cannot recreate the defect.
