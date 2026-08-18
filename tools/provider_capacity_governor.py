@@ -101,6 +101,12 @@ def _canonical_hash(value: Any) -> str:
     return hashlib.sha256(encoded).hexdigest()
 
 
+def _canonical_session_id(value: Any) -> str | None:
+    if value is None:
+        return None
+    return value.removeprefix("sha256:")
+
+
 def _strict_object(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
     value: dict[str, Any] = {}
     for key, child in pairs:
@@ -216,6 +222,10 @@ def _validate_publishable_event_values(event: dict[str, Any]) -> None:
             normalized.startswith(("/", "~"))
             or "//" in normalized
             or any(re.fullmatch(r"[a-z]:", component) for component in lowered)
+            or any(
+                re.fullmatch(r"[a-z]:(?:users|documents and settings)", component)
+                for component in lowered
+            )
             or any(
                 lowered[index] in {"home", "users"} and index + 1 < len(lowered)
                 for index in range(len(lowered))
@@ -381,7 +391,7 @@ def _validate_claimant_rows(active_leases: list[dict[str, Any]]) -> None:
             "seat_id/seat_epoch",
         )
         row_sessions = {
-            session
+            _canonical_session_id(session)
             for session in (
                 lease.get("registered_session_id_hash"),
                 lease.get("observed_session_id_hash"),
@@ -391,7 +401,7 @@ def _validate_claimant_rows(active_leases: list[dict[str, Any]]) -> None:
         for session in row_sessions:
             claim(
                 seen_sessions,
-                session.removeprefix("sha256:"),
+                session,
                 index,
                 "session_id_hash",
             )
@@ -524,11 +534,13 @@ def decide(snapshot: Any) -> dict[str, Any]:
         if lease.get("state") == "STARTING":
             live_count += 1
             continue
+        registered_session_id = _canonical_session_id(lease.get("registered_session_id_hash"))
+        observed_session_id = _canonical_session_id(lease.get("observed_session_id_hash"))
         identity_agrees = (
             lease.get("provider_requested") == lease.get("provider_observed")
             and lease.get("model_requested") == lease.get("model_observed")
-            and lease.get("registered_session_id_hash") is not None
-            and lease.get("registered_session_id_hash") == lease.get("observed_session_id_hash")
+            and registered_session_id is not None
+            and registered_session_id == observed_session_id
             and lease.get("registry_status") == "verified"
             and lease.get("progress_status") in {"fresh", "unavailable"}
         )

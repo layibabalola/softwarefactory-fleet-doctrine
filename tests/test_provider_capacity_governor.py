@@ -222,6 +222,25 @@ class ProviderCapacityGovernorTests(unittest.TestCase):
                 with self.assertRaisesRegex(MODULE.ContractError, "duplicates active_leases"):
                     MODULE.decide(snapshot)
 
+    def test_r4_red_row_local_session_prefix_variants_are_r5_green_equivalent(self):
+        digest = "c" * 64
+        for registered, observed in (
+            ("sha256:" + digest, digest),
+            (digest, "sha256:" + digest),
+        ):
+            with self.subTest(registered_prefixed=registered.startswith("sha256:")):
+                snapshot = copy.deepcopy(self.snapshot)
+                snapshot["active_leases"].append(
+                    self._lease(
+                        registered_session_id_hash=registered,
+                        observed_session_id_hash=observed,
+                    )
+                )
+                decision = MODULE.decide(snapshot)
+                self.assertEqual("DENY", decision["decision"])
+                self.assertIn("CONCURRENCY_LIMIT", decision["reason_codes"])
+                self.assertNotIn("IDENTITY_AMBIGUOUS", decision["reason_codes"])
+
     def test_live_process_with_stale_lease_degrades_without_takeover(self):
         self.snapshot["active_leases"].append(
             self._lease(expires_at="2026-08-18T15:59:59Z")
@@ -321,6 +340,30 @@ class ProviderCapacityGovernorTests(unittest.TestCase):
                     "paths? prohibited|path required|publishable value prohibited",
                 ):
                     MODULE.validate_usage_event(event)
+
+    def test_r4_red_embedded_drive_relative_user_paths_are_r5_green_rejected(self):
+        base = json.loads((ROOT / "examples" / "provider-usage-events-v1.jsonl").read_text().splitlines()[0])
+        variants = (
+            "x/C:Users/Alice/secret",
+            "x/c:uSeRs/Alice/secret",
+            r"x/C:Users\Alice\secret",
+        )
+        for value in variants:
+            with self.subTest(value_kind="drive-relative"):
+                event = copy.deepcopy(base)
+                event["model_requested"] = value
+                with self.assertRaisesRegex(MODULE.ContractError, "publishable value prohibited"):
+                    MODULE.validate_usage_event(event)
+
+        escaped = copy.deepcopy(base)
+        escaped["model_requested"] = r"x/C:Users\Alice\secret"
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "embedded-drive-relative.jsonl"
+            path.write_text(json.dumps(escaped) + "\n", encoding="utf-8")
+            result = self._run_cli("validate-events", path)
+            self.assertEqual(2, result.returncode, result.stdout)
+            self.assertIn("publishable value prohibited", result.stdout)
+            self.assertNotIn("Alice", result.stdout)
 
     def test_r2_red_duplicate_and_nonfinite_snapshot_cli_is_r3_green_rejected(self):
         raw = (ROOT / "examples" / "provider-admission-snapshot-v1.json").read_text()

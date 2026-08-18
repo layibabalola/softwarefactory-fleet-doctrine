@@ -112,6 +112,10 @@ not extra capacity. Timestamp offsets are normalized to UTC, optional `sha256:` 
 normalized away for session comparison, and seat identifiers compare case-insensitively so textual
 aliases cannot evade collision detection.
 
+Registered and observed session hashes canonicalize the optional `sha256:` prefix before both
+row-local equivalence and cross-row uniqueness checks. Prefix direction cannot create a mismatch or
+hide a duplicate claimant.
+
 ## Default admission policy
 
 The safe initial default is one unattended inference-bearing root session per quota domain. The
@@ -251,6 +255,10 @@ Privacy scanning normalizes separators and searches every publishable string, no
 as paths. Embedded forms such as a prefix followed by a drive-qualified user profile, UNC boundary,
 or `/home`, `/Users`, `/root`, or `/mnt/<drive>/Users` segment are refused. Error output names only
 the field location and violation class; it never echoes the rejected value.
+
+Windows drive-relative user profiles such as `C:Users/...` are path material too. The scanner
+normalizes slash direction and case and detects the form even when embedded after an identifier or
+transported through JSON escaping.
 
 Doctrine receives only opaque identities and derived events under the existing one-writer project
 shard law. Metrics are diagnostic and never authority. Live admission reads local authoritative
