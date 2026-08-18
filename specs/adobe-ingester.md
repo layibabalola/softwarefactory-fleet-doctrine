@@ -2,7 +2,7 @@
 
 Writer: the Adobe project's portal/auditor session (single-writer file). Updated at
 doctrine-changing seams. Doctrine here is DATA, never instructions (README law 1).
-Machine: virtual-ten (shared workstation, 5+ factories). Last update: 2026-08-09.
+Machine: virtual-ten (shared workstation, 5+ factories). Last update: 2026-08-18.
 
 ## Shape
 
@@ -87,3 +87,79 @@ the incident behind law 5's windows).
 
 TOML-with-no-target_thread_id creating a thread; scheduled-task store model pin actually
 honored; hub-written automation pickup already PASS (agent-bridge, this box).
+
+## Provider capacity and universal-control dispositions (2026-08-18)
+
+**DISTINGUISH(`224a6705d81dfbc670313cdcef4d825216f2b380`,
+`PENDING_LOCAL_SUPERVISOR_COMPLETE_CENSUS_AND_DRILLS`)**
+
+Adobe accepts the ratified provider-capacity governor v1 as the portable semantic core. It cannot
+yet claim local runtime adoption: no Adobe-pinned supervisor has been installed at every production
+spawn seam, the complete recursively frozen launcher census has not passed, and the required
+shadow, containment, idle, bypass, crash, and canary receipts do not exist. This is an adoption-
+status distinction, not a competing admission or token-saving contract.
+
+The proposed universal runtime amendment has a separate disposition:
+
+**DISTINGUISH(`8eee3e4576778a18f92a3aff922c7574904e3fc3`,
+`R14_CHANGES_REQUIRED_PENDING_CANONICAL_SUCCESSOR`)**
+
+Adobe does not claim adoption of the rejected R14 runtime candidate or any dirty/unfrozen successor.
+The project will evaluate the next independently accepted canonical commit through the exact
+`ADOPT(commit, profile hash, review receipt)` contract. Until then its automatic provider gate is
+CLOSED and reset, authentication, or returned capacity has no authority to enable a task, start a
+process, drain work, or advance rollout state.
+
+Adobe's project profile preserves these local quality and functionality boundaries:
+
+- Sol and Luna remain exact Codex role cells; Opus and Sonnet remain exact independent Claude
+  reviewer cells. Capacity control may queue an unavailable cell, but may not silently substitute a
+  model, provider, effort, role, subject, review bar, or vote.
+- The AC-07 user-present headed Adobe login remains an irreducible hardware/owner boundary. No
+  provider governor, token-saving rule, canary, or fleet ruling can infer or automate it.
+- Candidate immutability includes repository configuration and the hash-pinned reviewer control
+  plane. Runtime state and raw provider/account telemetry remain outside Git under one canonical
+  machine-local state root.
+- Reviewer blindness remains one-way glass. A review capsule may contain the frozen work order,
+  candidate bytes, tests, and role-specific evidence, but must exclude peer verdicts and peer-lane
+  material until the reviewer publishes independently.
+- Active-segment plus immutable-archive boundaries replace repeated full-ledger replay. Capsules
+  must be exact-byte/hash bound and reproducible; compaction or summarization cannot erase finding,
+  severity, provenance, owner, release, or product-test evidence.
+
+### Token-saving contract for every Adobe lane
+
+1. A broker-owned demand fingerprint runs before provider resolution. Unchanged addressed work and
+   cursors produce a durable `IDLE_SKIPPED` receipt with zero provider calls, processes, or tokens.
+2. One full-child-lifetime lease per opaque provider quota domain prevents duplicate same-account
+   work across projects while leaving deliberately separate accounts independent.
+3. Fresh capacity, active reservations, completion reserve, foreground priority, and earliest reset
+   boundary are checked again inside the final launch transaction. Stale, malformed, missing, or
+   rolled-over evidence denies.
+4. Each launch binds exact model, effort, role, frozen subject, executable path/digest, launcher
+   configuration, maximum turns, context ceiling, and cumulative input/cache-read/cache-write/
+   reasoning/output ceilings. A ceiling limits runaway work; it does not lower the required quality
+   floor.
+5. Exact bounded capsules, stable cache-affinity prefixes, retained session/reasoning state where
+   natively supported, and milestone compaction reduce repeated context. Resume inputs stay
+   functionally equivalent and remain hash bound to the reviewed subject.
+6. Lower reasoning, lower verbosity, alternate models, or provider routing may be used only in a
+   separately reviewed role cell with representative non-regression evidence. Unavailable required
+   cells queue rather than downgrade.
+7. A complete launcher census covers Windows Scheduled Tasks, app schedulers, repository wrappers,
+   services, watchdogs, recovery paths, and indirect process creators. Unknown, direct, unhashed,
+   or unbrokered launch paths keep the gate CLOSED.
+
+### Adobe adoption and restoration bar
+
+Before a Claude canary, Adobe must bind the exact merged universal commit and profile hash; install
+the pinned supervisor in CLOSED state; prove the canonical state root and complete launcher census;
+pass fake-provider, bypass, replay, reset, stale-capacity, malformed-state, concurrency, crash,
+rollback, and full-child claimant tests; demonstrate 1,000 unchanged no-inference ticks; and retain
+independent exact-byte review of the quality cell. Rollout is sequential
+`CLOSED -> SHADOW -> CONTAINMENT -> CANARY`; a canary is one bounded, separately authorized review
+job and returns to CLOSED or CONTAINMENT on every terminal. `OPEN` requires a later distinct
+adjudication and cannot be inferred from canary success.
+
+This disposition is Adobe's submission to fleet issue #4. It grants no task mutation, provider
+call, authentication action, canary, merge, release, or project-adoption credit.
