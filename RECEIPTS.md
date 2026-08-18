@@ -940,3 +940,27 @@ not proven and are not inferred. The project's failover v0.1 remains rejected, n
 ratified, and this receipt creates no project adoption of the fleet provider-capacity governor, no task
 enable/disable authority, no family-out or MODE transition, and no staffing, review, campaign, or
 production credit.
+
+## Cloudvore — host pre-reset containment correction, 2026-08-18 — machine BACHELOR
+
+At `2026-08-18T18:16Z`, an action-chain census found three enabled scheduled tasks whose pinned
+entrypoints could directly create unattended Claude processes: `Conjugal-Deadman-Fable`,
+`Conjugal-Deadman-Opus`, and `Magic Lantern Lane Supervisor`. The first two invoked explicit
+Fable/Opus Claude runners; the mixed-provider supervisor configured Fable and Opus Claude lanes and
+called the provider executable through its process-launch path. This contradicted the asserted
+host-wide closed-gate condition even though an earlier project list of seven other Claude tasks had
+been disabled.
+
+At `2026-08-18T18:18Z`, the three exact tasks were disabled. Immediate reread returned `Disabled`
+and `Settings.Enabled=false` for all three. A process census found no unattended Claude CLI child
+from a scheduled launcher. The attended Claude Desktop process tree was observed but deliberately
+left untouched. Enabled thermal-attribution and admission-bypass tasks that mentioned Claude were
+source-inspected as observers rather than launchers and were also left untouched.
+
+The generic MLV GPU file-drop worker and its watchdog remained enabled to preserve non-provider
+bench functionality; neither its pending/running artifacts nor its current process tree contained a
+provider job. Because that worker could execute a future submitted provider script, production-path
+bypass refusal remains a required local adoption proof. This receipt records a reversible containment
+action and point-in-time observation only. It does not install the fleet governor, open an automatic
+gate, enable a task, launch a provider, or grant project adoption, lifecycle, landing, push, merge, or
+release authority.
