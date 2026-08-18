@@ -31,9 +31,12 @@ the human store-and-forward bus.
 - `RECEIPTS.md` - append-only: drill results with date + machine
 - `RULINGS.md` - append-only: ratified fleet doctrine with the measuring project cited
 
-## Active candidates (zero authority until ratified)
+## Ratified portable cores (zero runtime authority until project adoption)
 
 - [`specs/fleet-provider-capacity-governor.md`](specs/fleet-provider-capacity-governor.md) —
   provider/account-aware admission, fleet telemetry, context discipline, and quality-preserving
-  routing. The candidate includes versioned schemas, examples, tests, and a read-only reference
-  decision engine; it does not activate a scheduler or grant a provider role.
+  routing, accepted by the 2026-08-18 ruling at exact conformance subject
+  `224a6705d81dfbc670313cdcef4d825216f2b380`. The versioned schemas, examples, tests, and
+  read-only reference decision engine do not activate a scheduler or grant a provider role.
+  Project adoption and activation remain separate; fleet dispositions are coordinated in
+  [issue #3](https://github.com/layibabalola/softwarefactory-fleet-doctrine/issues/3).
