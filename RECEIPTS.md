@@ -890,3 +890,18 @@ publication, billing, or owner-decision authority to hosted workers or observers
   pinned. Suites: checker 49 OK; gate `PASS: 7 deadman-gate scenarios`;
   recovery `PASS: 8 deadman recovery scenarios (46 assertions)`; four-lane
   canonical DryRun byte-pure. Conjugal commit `bc11bf7f`.
+
+## AdversarialLLM — Claude-family authentication outage, 2026-08-18 — machine VIRTUAL-TEN
+
+At `2026-08-18 05:50 CDT`, SOL audited the complete typed ignition receipt files for the three
+headless Claude lanes. FABLE had 152 valid rows (SHA-256
+`06AA7A9785473B427E7B381373B716A4B99824BFF209FA5E66D7F4927020006F`), OPUS had 152
+(`F30964AC231066D7EFB38A34F52730AF143AADFA884EE112AE4AFDCD7BB80822`), and SONNET had 156
+(`DF673362C0CF1FC69D1BF392927E02659C9E191E7234983AAE87810A9ED74F98`). Every lane's bounded
+twenty-row tail ended at `2026-08-18T10:26:10Z` with eighteen consecutive `errorClass=auth`,
+`outcome=exit-error` receipts and zero recent `errorClass=api` rows.
+
+The project recorded a loud typed `CLAUDE-AUTH-UNAVAILABLE` staffing incident for FABLE, OPUS, and
+SONNET. It did not declare family-out, takeover, degraded-review substitution, recovery, or a MODE
+transition because the project's failover v0.1 was rejected and no successor contract was ratified.
+This is an incident receipt only; it creates no fleet law, failover authority, or staffing credit.
