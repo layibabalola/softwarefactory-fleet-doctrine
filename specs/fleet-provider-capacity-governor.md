@@ -117,6 +117,28 @@ admission.
 Capacity failure supersedes ordinary exponential backoff. A provider reset observation clears only
 the backoff caused by that same quota event. Recovery happens without spending an inference probe.
 
+### Pre-reset containment barrier
+
+The repair must be installed while the provider is unavailable. Waiting for reset creates the same
+race the governor exists to prevent. Before the next capacity window opens:
+
+1. enumerate every unattended launcher for the affected quota domain and disable only that exact
+   allowlist;
+2. prove there is no surviving inference-bearing launcher process (desktop UI and authentication
+   helpers are not inference credit);
+3. keep the automatic launch gate `closed` while installing the supervisor, adapters, and tests;
+4. require every re-enabled launcher to enter through the same pinned supervisor entrypoint and
+   reject direct provider invocation structurally;
+5. run frozen reset, concurrency, refusal, orphan, and no-work controls with the provider still
+   unavailable or through a no-inference fake adapter;
+6. move the gate from `closed` to `open` only after the exact supervisor build and policy hash pass;
+7. re-enable one bounded canary launcher, not the whole fleet, and preserve the completion reserve;
+8. automatically return the gate to `closed` on identity ambiguity, duplicate claimant, telemetry
+   loss, quota refusal, or a direct-launch bypass.
+
+A reset observation updates capacity state only. It never changes `automatic_launch_gate`, enables a
+scheduled task, creates a process, or drains queued work by itself.
+
 ## Quality-preserving task routing
 
 Savings come from removing duplicate work, shrinking irrelevant context, and moving mechanical

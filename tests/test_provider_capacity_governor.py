@@ -61,6 +61,14 @@ class ProviderCapacityGovernorTests(unittest.TestCase):
         self.assertEqual("DENY", decision["decision"])
         self.assertIn("CAPACITY_UNKNOWN", decision["reason_codes"])
 
+    def test_reset_does_not_open_automatic_launch_gate(self):
+        self.snapshot["policy"]["automatic_launch_gate"] = "closed"
+        self.snapshot["capacity"]["status"] = "available"
+        self.snapshot["capacity"]["utilization_pct"] = 0
+        decision = MODULE.decide(self.snapshot)
+        self.assertEqual("DENY", decision["decision"])
+        self.assertIn("AUTOMATIC_GATE_CLOSED", decision["reason_codes"])
+
     def test_owner_override_is_explicit_but_does_not_steal_live_claim(self):
         self.snapshot["request"]["owner_override"] = True
         self.snapshot["capacity"]["status"] = "unknown"

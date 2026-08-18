@@ -12,6 +12,7 @@
       "type": "object",
       "additionalProperties": false,
       "required": [
+        "automatic_launch_gate",
         "max_automatic_concurrency",
         "interactive_reserve_pct",
         "deny_background_when_capacity_unknown",
@@ -19,6 +20,7 @@
         "max_agent_turns"
       ],
       "properties": {
+        "automatic_launch_gate": { "enum": ["closed", "open"] },
         "max_automatic_concurrency": { "type": "integer", "minimum": 1, "maximum": 32 },
         "interactive_reserve_pct": { "type": "number", "minimum": 0, "maximum": 100 },
         "deny_background_when_capacity_unknown": { "type": "boolean" },

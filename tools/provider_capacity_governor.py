@@ -235,6 +235,11 @@ def decide(snapshot: Any) -> dict[str, Any]:
     if status == "exhausted":
         reasons.append("CAPACITY_EXHAUSTED")
     is_background = request.get("foreground") is not True
+    automatic_gate = policy.get("automatic_launch_gate")
+    if automatic_gate not in {"closed", "open"}:
+        raise ContractError("policy.automatic_launch_gate: expected closed or open")
+    if is_background and automatic_gate == "closed":
+        reasons.append("AUTOMATIC_GATE_CLOSED")
     if (
         status == "unknown"
         and is_background
