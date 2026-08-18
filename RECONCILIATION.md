@@ -5,9 +5,9 @@ The active exact-subject coordination locus is doctrine issue
 and portable/rejected split is the
 [reconciliation comment](https://github.com/layibabalola/softwarefactory-fleet-doctrine/issues/4#issuecomment-5332348238).
 
-The R8 implementation candidate retains all R1/R2/R3/R4/R5/R6/R7 hostile discriminators and adds
-exact R7-red/R8-green exception-topology, Windows owner-transfer, and POSIX descriptor-transfer
-twins. It is described in
+The R9 implementation candidate retains all R1/R2/R3/R4/R5/R6/R7/R8 hostile discriminators and
+adds exact R8-red/R9-green verified-close, complete boundary-sanitization, Windows false-outcome,
+and POSIX refusal-fence twins. It is described in
 [`specs/fleet-universal-provider-control-reconciliation.md`](specs/fleet-universal-provider-control-reconciliation.md).
 It is zero authority until independently reviewed, distinctly adjudicated, hosted-green, recorded in
 `RULINGS.md`, merged to canonical master, and separately adopted by each project.

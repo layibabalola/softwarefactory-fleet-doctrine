@@ -1,4 +1,4 @@
-# Universal provider-control reconciliation R8
+# Universal provider-control reconciliation R9
 
 Status: **CANDIDATE / ZERO AUTHORITY / NO DEPLOYMENT**
 
@@ -118,8 +118,14 @@ post-reset quiet; and add required capacity dimensions. They may never weaken th
     `.tmp-owned` name prevents repeated accumulation. Public outputs are never path-cleaned after a
     failure, so a replacement occupant cannot be removed. Every retained admission artifact is
     likewise reread at resume using its exact retained size and ceiling plus at most one drift byte.
-    Errors remain stable/no-echo: a public `ControlError` is raised only after the private handler
-    has exited, with no private `__cause__`, `__context__`, or formatted traceback content.
+    Owner state detaches only after one verified close outcome. Unproven temporary, publication,
+    source, or admission-artifact owners remain retained and surfaced; their deterministic refusal
+    fence blocks repetition. `temporaryCleanup=CLEAN` is assigned only after discard and every
+    required close prove success. Windows checks the BOOL and `GetLastError` outcome of both delete
+    disposition and `CloseHandle`; false, exception, or ambiguous results are cleanup refusal.
+    Errors remain stable/no-echo: the complete public capsule boundary, including preflight and all
+    handlers/finalizers, raises a new `ControlError` only after private exception state has cleared,
+    with no private `__cause__`, `__context__`, or formatted traceback content.
 18. Bounded turns, bounded context, exact capsules, milestone compaction, and cache affinity are
     efficiency controls only. They cannot change or weaken model, effort, role, frozen subject,
     independent-provider requirements, findings severity, product tests, or release/hardware gates.
@@ -154,7 +160,7 @@ unchanged zero-inference ticks, full-child claimant/OS-lock behavior, rollback, 
 gate. A canary is separately authorized, one per quota domain, bounded, and automatically returns
 to CLOSED on ambiguity or failure. User-present hardware and project release gates are unchanged.
 
-## R8 evidence map
+## R9 evidence map
 
 The hostile suite in `tests/test_universal_provider_control.py` reproduces every retained
 reconciliation finding: unenforced schemas; malformed-newest fallback; unkeyed identity; permissive
@@ -187,3 +193,9 @@ Exact 019d1c4 R7-red/R8-green twins prove primary and cleanup failures retain no
 chain or formatted traceback content, Windows native-handle-to-CRT-to-file-object transfer failures
 dispose exactly the current owner, and POSIX `O_TMPFILE` descriptor transfer closes once on failure
 without double-close on success. The candidate author remains recused.
+
+Exact d350e7c R8-red/R9-green twins prove CLEAN requires verified disposition and every close,
+unproven publication/source/admission-artifact owners remain retained after exactly one attempt,
+preflight and finalizer exceptions are fully sanitized, Windows false disposition/CloseHandle
+outcomes deny with a bounded fence, and POSIX anonymous-descriptor close refusal blocks repetition.
+The candidate author remains recused.

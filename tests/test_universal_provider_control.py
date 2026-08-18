@@ -1607,7 +1607,12 @@ class UniversalProviderControlTests(unittest.TestCase):
             if temporary.exists():
                 temporary.unlink()
             upc.os.replace(foreign_source, temporary)
-            real_arm(handle, named)
+            try:
+                real_arm(handle, named)
+            except OSError:
+                # R9 treats any false/rejected disposition as refusal.  This older replacement
+                # survival twin supplies its explicit successful-discard outcome independently.
+                pass
             # Unlinking the original name already placed the retained Windows file object into
             # delete-pending state; the replacement occupant is independent and must survive.
             return True
@@ -1927,6 +1932,225 @@ class UniversalProviderControlTests(unittest.TestCase):
                     ):
                         upc._open_posix_anonymous_temporary(parent, 2, 0x400000)
         close_descriptor.assert_called_once_with(733)
+
+    # Exact d350e7c R8 RED -> R9 GREEN verified-close and full-boundary twins.
+
+    def test_r9_01_preflight_failure_is_fully_sanitized(self) -> None:
+        private_value = "PRIVATE-PREFLIGHT-VALIDATION-VALUE"
+        output = self.root / "r9-preflight-output.bin"
+        with mock.patch.object(
+            upc, "validate_contract", side_effect=RuntimeError(private_value)
+        ):
+            with self.assertRaises(upc.ControlError) as caught:
+                upc.build_evidence_capsule({}, output)
+        rendered = "".join(traceback.format_exception(caught.exception))
+        self.assertEqual(caught.exception.reason, "CAPSULE_INTERNAL_FAILURE")
+        self.assertIsNone(caught.exception.__cause__)
+        self.assertIsNone(caught.exception.__context__)
+        self.assertNotIn(private_value, rendered)
+        self.assertFalse(output.exists())
+
+    def test_r9_02_unproven_publication_closes_never_report_clean(self) -> None:
+        source = self.root / "r9-unproven-close-source.bin"
+        source.write_bytes(b"unproven-close-source")
+        request = self.capsule_request(source, lengths=[8])
+        output = self.root / "r9-unproven-close-output.bin"
+        key = os.path.normcase(os.path.abspath(str(output)))
+        with mock.patch.object(upc, "_close_file_handle_verified", return_value=False):
+            with self.assertRaisesRegex(
+                upc.ControlError, "CAPSULE_TEMP_CLEANUP_REFUSED"
+            ):
+                upc.build_evidence_capsule(request, output)
+        owners = upc._UNPROVEN_CAPSULE_OWNERS.pop(key)
+        self.assertGreaterEqual(len(owners), 3)
+        self.assertTrue(output.with_name(output.name + ".cleanup-blocked").exists())
+        for owner in owners:
+            if hasattr(owner, "close") and not owner.closed:
+                owner.close()
+        output.with_name(output.name + ".cleanup-blocked").unlink()
+
+    def test_r9_03_finalizer_exception_class_is_sanitized_and_retained(self) -> None:
+        source = self.root / "r9-finalizer-source.bin"
+        source.write_bytes(b"finalizer-private-source")
+        request = self.capsule_request(source, lengths=[8])
+        output = self.root / "r9-finalizer-output.bin"
+        key = os.path.normcase(os.path.abspath(str(output)))
+        private_value = "PRIVATE-FINALIZER-EXCEPTION-VALUE"
+        with mock.patch.object(
+            upc, "_close_file_handle_verified", side_effect=RuntimeError(private_value)
+        ):
+            with self.assertRaises(upc.ControlError) as caught:
+                upc.build_evidence_capsule(request, output)
+        rendered = "".join(traceback.format_exception(caught.exception))
+        self.assertEqual(caught.exception.reason, "CAPSULE_TEMP_CLEANUP_REFUSED")
+        self.assertIsNone(caught.exception.__cause__)
+        self.assertIsNone(caught.exception.__context__)
+        self.assertNotIn(private_value, rendered)
+        owners = upc._UNPROVEN_CAPSULE_OWNERS.pop(key)
+        for owner in owners:
+            if hasattr(owner, "close") and not owner.closed:
+                owner.close()
+        output.with_name(output.name + ".cleanup-blocked").unlink()
+
+    @unittest.skipUnless(os.name == "nt", "Windows false-disposition ownership controls")
+    def test_r9_04_false_disposition_blocks_native_and_descriptor_failures(self) -> None:
+        import inspect
+        import msvcrt
+
+        implementation = inspect.getsource(upc._windows_arm_native_handle_discard)
+        self.assertIn("if not succeeded", implementation)
+        self.assertIn("get_last_error", implementation)
+        source = self.root / "r9-false-disposition-source.bin"
+        source.write_bytes(b"false-disposition-source")
+        request = self.capsule_request(source, lengths=[8])
+
+        native_output = self.root / "r9-native-disposition-output.bin"
+        with mock.patch.object(msvcrt, "open_osfhandle", side_effect=RuntimeError("private")):
+            with mock.patch.object(upc, "_windows_arm_native_handle_discard", return_value=False):
+                with self.assertRaisesRegex(
+                    upc.ControlError, "CAPSULE_TEMP_CLEANUP_REFUSED"
+                ):
+                    upc.build_evidence_capsule(request, native_output)
+        native_output.with_name(native_output.name + ".cleanup-blocked").unlink()
+
+        descriptor_output = self.root / "r9-descriptor-disposition-output.bin"
+        with mock.patch.object(upc.os, "fdopen", side_effect=RuntimeError("private")):
+            with mock.patch.object(upc, "_windows_arm_native_handle_discard", return_value=False):
+                with self.assertRaisesRegex(
+                    upc.ControlError, "CAPSULE_TEMP_CLEANUP_REFUSED"
+                ):
+                    upc.build_evidence_capsule(request, descriptor_output)
+        descriptor_output.with_name(descriptor_output.name + ".cleanup-blocked").unlink()
+
+    @unittest.skipUnless(os.name == "nt", "Windows false-CloseHandle ownership control")
+    def test_r9_05_false_closehandle_is_unproven_and_fenced(self) -> None:
+        import inspect
+        import msvcrt
+
+        implementation = inspect.getsource(upc._windows_close_native_handle)
+        self.assertIn("if not succeeded", implementation)
+        self.assertIn("get_last_error", implementation)
+        source = self.root / "r9-false-close-source.bin"
+        source.write_bytes(b"false-close-source")
+        request = self.capsule_request(source, lengths=[8])
+        output = self.root / "r9-false-close-output.bin"
+        key = os.path.normcase(os.path.abspath(str(output)))
+        real_close = upc._windows_close_native_handle
+
+        def close_then_report_false(handle):
+            real_close(handle)
+            return False
+
+        with mock.patch.object(msvcrt, "open_osfhandle", side_effect=RuntimeError("private")):
+            with mock.patch.object(upc, "_windows_arm_native_handle_discard", return_value=True):
+                with mock.patch.object(
+                    upc, "_windows_close_native_handle", side_effect=close_then_report_false
+                ):
+                    with self.assertRaisesRegex(
+                        upc.ControlError, "CAPSULE_TEMP_CLEANUP_REFUSED"
+                    ):
+                        upc.build_evidence_capsule(request, output)
+        self.assertIn(("native-handle", mock.ANY), upc._UNPROVEN_CAPSULE_OWNERS[key])
+        upc._UNPROVEN_CAPSULE_OWNERS.pop(key)
+        output.with_name(output.name + ".cleanup-blocked").unlink()
+
+    def test_r9_06_posix_close_refusal_fences_repetition(self) -> None:
+        source = self.root / "r9-posix-refusal-source.bin"
+        source.write_bytes(b"posix-refusal-source")
+        request = self.capsule_request(source, lengths=[8])
+        output = self.root / "r9-posix-refusal-output.bin"
+        key = os.path.normcase(os.path.abspath(str(output)))
+        with mock.patch.object(upc.os, "open", return_value=934):
+            with mock.patch.object(upc.os, "fdopen", side_effect=OSError(22, "private")):
+                with mock.patch.object(
+                    upc, "_close_owned_descriptor", side_effect=OSError(5, "private close")
+                ):
+                    with self.assertRaisesRegex(
+                        upc.ControlError, "CAPSULE_TEMP_CLEANUP_REFUSED"
+                    ):
+                        upc._open_posix_anonymous_temporary(
+                            self.root, 2, 0x400000, output
+                        )
+        self.assertTrue(output.with_name(output.name + ".cleanup-blocked").exists())
+        # The retained-owner fence independently blocks repetition if a marker is externally
+        # removed or could not be persisted.
+        output.with_name(output.name + ".cleanup-blocked").unlink()
+        with self.assertRaises(upc.ControlError) as caught:
+            upc.build_evidence_capsule(request, output)
+        self.assertEqual(caught.exception.reason, "CAPSULE_TEMP_BACKLOG")
+        self.assertIsNone(caught.exception.__cause__)
+        self.assertIsNone(caught.exception.__context__)
+        self.assertEqual(upc._UNPROVEN_CAPSULE_OWNERS.pop(key), [("descriptor", 934)])
+
+    def test_r9_07_source_and_artifact_close_refusals_retain_exact_owners(self) -> None:
+        source = self.root / "r9-source-finalizer.bin"
+        source.write_bytes(b"source-finalizer-refusal")
+        request = self.capsule_request(source, lengths=[8])
+        output = self.root / "r9-source-finalizer-output.bin"
+        key = os.path.normcase(os.path.abspath(str(output)))
+        real_open = Path.open
+
+        class RefusingReader:
+            def __init__(inner_self, handle):
+                inner_self.handle = handle
+                inner_self.close_calls = 0
+
+            def fileno(inner_self):
+                return inner_self.handle.fileno()
+
+            def read(inner_self, count=-1):
+                return inner_self.handle.read(count)
+
+            def close(inner_self):
+                inner_self.close_calls += 1
+                raise OSError("private source close")
+
+        wrapper = None
+
+        def open_dispatch(path: Path, *args, **kwargs):
+            nonlocal wrapper
+            handle = real_open(path, *args, **kwargs)
+            mode = args[0] if args else kwargs.get("mode", "r")
+            if path == source and mode == "rb":
+                wrapper = RefusingReader(handle)
+                return wrapper
+            return handle
+
+        with mock.patch.object(Path, "open", autospec=True, side_effect=open_dispatch):
+            with self.assertRaisesRegex(
+                upc.ControlError, "CAPSULE_TEMP_CLEANUP_REFUSED"
+            ):
+                upc.build_evidence_capsule(request, output)
+        self.assertIsNotNone(wrapper)
+        self.assertEqual(wrapper.close_calls, 1)
+        self.assertIn(wrapper, upc._UNPROVEN_CAPSULE_OWNERS.pop(key))
+        wrapper.handle.close()
+        output.with_name(output.name + ".cleanup-blocked").unlink()
+
+        broker = upc.UniversalProviderBroker(self.root / "r9-artifact-broker")
+        artifact = real_open(source, "rb")
+        refusing_artifact = RefusingReader(artifact)
+        lease_id = "lease-r9-artifact-refusal"
+        stat_result = source.stat()
+        broker._artifact_handles[lease_id] = [(
+            source, refusing_artifact,
+            (stat_result.st_dev, stat_result.st_ino, stat_result.st_size, stat_result.st_mtime_ns),
+            sha_file(source), 1024,
+        )]
+        broker._artifact_close_attempted[lease_id] = set()
+        with self.assertRaisesRegex(
+            upc.ControlError, "ARTIFACT_HANDLE_CLEANUP_REFUSED"
+        ):
+            broker._release_artifact_handles(lease_id)
+        with self.assertRaisesRegex(
+            upc.ControlError, "ARTIFACT_HANDLE_CLEANUP_REFUSED"
+        ):
+            broker._release_artifact_handles(lease_id)
+        self.assertEqual(refusing_artifact.close_calls, 1)
+        self.assertIn(lease_id, broker._artifact_handles)
+        artifact.close()
+        broker._artifact_handles.pop(lease_id)
+        broker._artifact_close_attempted.pop(lease_id)
 
     # Bounded exact evidence capsule controls.
 

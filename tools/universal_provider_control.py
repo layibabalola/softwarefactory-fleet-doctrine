@@ -46,6 +46,7 @@ MAX_CAPSULE_TEMP_BACKLOG = 1
 MAX_CAPACITY_WINDOW_SECONDS = 31_622_400
 MAX_CLOCK_SKEW_SECONDS = 5
 DIGEST_RE = re.compile(r"^sha256:[0-9a-f]{64}$")
+_UNPROVEN_CAPSULE_OWNERS: dict[str, list[Any]] = {}
 
 SCHEMAS = {
     "profile": "universal-project-profile-v1.schema.json",
@@ -197,14 +198,17 @@ def _windows_arm_native_handle_discard(native_handle: int) -> bool:
     ]
     kernel.SetFileInformationByHandle.restype = wintypes.BOOL
     disposition = FileDispositionInfo(True)
-    return bool(
+    succeeded = bool(
         kernel.SetFileInformationByHandle(
-            native_handle, 4, ctypes.byref(disposition), ctypes.sizeof(disposition),
+            native_handle, 4, ctypes.byref(disposition), ctypes.sizeof(disposition)
         )
     )
+    if not succeeded:
+        raise OSError(ctypes.get_last_error(), "native discard failed")
+    return True
 
 
-def _windows_close_native_handle(native_handle: int) -> None:
+def _windows_close_native_handle(native_handle: int) -> bool:
     """Close a Windows handle while it is still owned by the native-handle state."""
 
     import ctypes
@@ -213,16 +217,54 @@ def _windows_close_native_handle(native_handle: int) -> None:
     kernel = ctypes.WinDLL("kernel32", use_last_error=True)
     kernel.CloseHandle.argtypes = [wintypes.HANDLE]
     kernel.CloseHandle.restype = wintypes.BOOL
-    kernel.CloseHandle(native_handle)
+    succeeded = bool(kernel.CloseHandle(native_handle))
+    if not succeeded:
+        raise OSError(ctypes.get_last_error(), "native close failed")
+    return True
 
 
-def _close_owned_descriptor(descriptor: int) -> None:
+def _close_owned_descriptor(descriptor: int) -> bool:
     """Close a descriptor exactly once while it, rather than a file object, owns the handle."""
 
     os.close(descriptor)
+    return True
 
 
-def _open_posix_anonymous_temporary(parent: Path, flags: int, anonymous_flag: int) -> Any:
+def _close_file_handle_verified(handle: Any) -> bool:
+    """Attempt one file-object close and require an observable closed state."""
+
+    try:
+        handle.close()
+    except BaseException:
+        pass
+    if bool(getattr(handle, "closed", False)):
+        return True
+    wrapped = getattr(handle, "handle", None)
+    if wrapped is not None and bool(getattr(wrapped, "closed", False)):
+        return True
+    return False
+
+
+def _attempt_file_close_verified(handle: Any) -> bool:
+    """Contain every close exception class while retaining an unproven owner."""
+
+    try:
+        return _close_file_handle_verified(handle)
+    except BaseException:
+        return False
+
+
+def _retain_unproven_capsule_owner(output_path: Path, owner: Any) -> None:
+    """Retain an unproven owner behind the deterministic per-output retry fence."""
+
+    key = os.path.normcase(os.path.abspath(str(output_path)))
+    owners = _UNPROVEN_CAPSULE_OWNERS.setdefault(key, [])
+    owners.append(owner)
+
+
+def _open_posix_anonymous_temporary(
+    parent: Path, flags: int, anonymous_flag: int, refusal_path: Path | None = None
+) -> Any:
     """Open O_TMPFILE with explicit fd-to-file-object ownership transfer."""
 
     descriptor = os.open(str(parent), flags | anonymous_flag, 0o600)
@@ -234,11 +276,19 @@ def _open_posix_anonymous_temporary(parent: Path, flags: int, anonymous_flag: in
     except BaseException:
         if descriptor_owned:
             try:
-                _close_owned_descriptor(descriptor)
+                close_proven = _close_owned_descriptor(descriptor)
             except OSError as close_error:
+                if refusal_path is not None:
+                    _surface_temp_cleanup_refusal(refusal_path)
+                    _retain_unproven_capsule_owner(refusal_path, ("descriptor", descriptor))
                 # An unproven close forbids named fallback.  The outer public boundary replaces
                 # this private error topology with the stable cleanup-refusal reason.
                 raise ControlError("CAPSULE_TEMP_CLEANUP_REFUSED") from close_error
+            if not close_proven:
+                if refusal_path is not None:
+                    _surface_temp_cleanup_refusal(refusal_path)
+                    _retain_unproven_capsule_owner(refusal_path, ("descriptor", descriptor))
+                raise ControlError("CAPSULE_TEMP_CLEANUP_REFUSED")
         raise
 
 
@@ -289,16 +339,42 @@ def _open_owned_temporary(temporary: Path, output_path: Path) -> tuple[Any, bool
             descriptor_owned = False  # File object now owns the descriptor and native handle.
             return file_object, True
         except BaseException:
+            cleanup_proven = True
             if native_handle_owned:
                 try:
-                    _windows_arm_native_handle_discard(int(handle))
-                finally:
-                    _windows_close_native_handle(int(handle))
+                    cleanup_proven = _windows_arm_native_handle_discard(int(handle))
+                except BaseException:
+                    cleanup_proven = False
+                try:
+                    close_proven = _windows_close_native_handle(int(handle))
+                    cleanup_proven = close_proven and cleanup_proven
+                    if not close_proven:
+                        _retain_unproven_capsule_owner(
+                            output_path, ("native-handle", int(handle))
+                        )
+                except BaseException:
+                    cleanup_proven = False
+                    _retain_unproven_capsule_owner(output_path, ("native-handle", int(handle)))
             elif descriptor_owned and descriptor is not None:
                 try:
-                    _windows_arm_native_handle_discard(msvcrt.get_osfhandle(descriptor))
-                finally:
-                    _close_owned_descriptor(descriptor)
+                    cleanup_proven = _windows_arm_native_handle_discard(
+                        msvcrt.get_osfhandle(descriptor)
+                    )
+                except BaseException:
+                    cleanup_proven = False
+                try:
+                    close_proven = _close_owned_descriptor(descriptor)
+                    cleanup_proven = close_proven and cleanup_proven
+                    if not close_proven:
+                        _retain_unproven_capsule_owner(
+                            output_path, ("descriptor", descriptor)
+                        )
+                except BaseException:
+                    cleanup_proven = False
+                    _retain_unproven_capsule_owner(output_path, ("descriptor", descriptor))
+            if not cleanup_proven:
+                _surface_temp_cleanup_refusal(output_path)
+                raise ControlError("CAPSULE_TEMP_CLEANUP_REFUSED")
             raise
 
     flags = os.O_RDWR | getattr(os, "O_CLOEXEC", 0)
@@ -311,7 +387,7 @@ def _open_owned_temporary(temporary: Path, output_path: Path) -> tuple[Any, bool
     if anonymous_flag and proc_fd_root.is_dir():
         try:
             return _open_posix_anonymous_temporary(
-                output_path.parent, flags, anonymous_flag
+                output_path.parent, flags, anonymous_flag, output_path
             ), False
         except OSError as exc:
             import errno
@@ -773,40 +849,61 @@ def _verify_process_observation(
             raise ControlError("LEASE_PROCESS_MISMATCH")
 
 
-def build_evidence_capsule(request: Any, output_path: Path) -> dict[str, Any]:
+def _build_evidence_capsule_private(request: Any, output_path: Path) -> dict[str, Any]:
     """Build an exact-slice capsule without allocating unbounded source or result bytes."""
 
+    output_path = Path(output_path)
+    output_key = os.path.normcase(os.path.abspath(str(output_path)))
+    if (
+        output_key in _UNPROVEN_CAPSULE_OWNERS
+        or output_path.with_name(output_path.name + ".cleanup-blocked").exists()
+    ):
+        raise ControlError("CAPSULE_TEMP_BACKLOG")
     validate_contract("capsule_request", request)
     total = sum(int(item["length"]) for item in request["slices"])
     if total > int(request["maxBytes"]):
         raise ControlError("CAPSULE_SIZE_LIMIT")
-    output_path = Path(output_path)
     # One deterministic private name per output is itself an O(1) crash/refusal fence: a failed
     # cleanup cannot cause successive random hardlinks to accumulate.
     temporary = output_path.with_name(output_path.name + ".tmp-owned")
     sources: dict[tuple[int, int], dict[str, Any]] = {}
     lexical_identities: dict[str, tuple[int, int]] = {}
     pending_handle: Any | None = None
+    pending_close_attempted = False
     temporary_handle: Any | None = None
     published_handle: Any | None = None
+    temporary_close_attempted = False
+    published_close_attempted = False
     temporary_identity: tuple[int, int] | None = None
     temporary_named = True
     temporary_owned = False
     public_error: ControlError | None = None
+    discard_ok = True
     slice_payloads: list[bytearray] = [bytearray(int(item["length"])) for item in request["slices"]]
     capsule_hash = hashlib.sha256()
     results: list[dict[str, Any]] = []
 
-    def close_publication_handles() -> None:
+    def close_publication_handles() -> bool:
         nonlocal temporary_handle, published_handle
-        for handle in (published_handle, temporary_handle):
-            if handle is not None:
-                try:
-                    handle.close()
-                except OSError:
-                    pass
-        published_handle = None
-        temporary_handle = None
+        nonlocal temporary_close_attempted, published_close_attempted
+        proven = True
+        if published_handle is not None:
+            if not published_close_attempted:
+                published_close_attempted = True
+                if _attempt_file_close_verified(published_handle):
+                    published_handle = None
+            if published_handle is not None:
+                _retain_unproven_capsule_owner(output_path, published_handle)
+                proven = False
+        if temporary_handle is not None:
+            if not temporary_close_attempted:
+                temporary_close_attempted = True
+                if _attempt_file_close_verified(temporary_handle):
+                    temporary_handle = None
+            if temporary_handle is not None:
+                _retain_unproven_capsule_owner(output_path, temporary_handle)
+                proven = False
+        return proven
 
     def map_publication_error(exc: BaseException) -> ControlError:
         if isinstance(exc, ControlError):
@@ -848,6 +945,7 @@ def build_evidence_capsule(request: Any, output_path: Path) -> dict[str, Any]:
                 "slices": [(index, int(item["offset"]), int(item["length"]))],
                 "aliases": [alias],
                 "handle": None,
+                "closeAttempted": False,
             }
 
         # Open one representative per stable identity and prove it is the grouped file.
@@ -860,7 +958,6 @@ def build_evidence_capsule(request: Any, output_path: Path) -> dict[str, Any]:
                 or int(opened.st_size) != entry["expected_size"]
                 or not _path_has_identity(entry["path"], entry["identity"])
             ):
-                handle.close()
                 raise ControlError("CAPSULE_SOURCE_DRIFT")
             entry["handle"] = handle
             pending_handle = None
@@ -952,9 +1049,9 @@ def build_evidence_capsule(request: Any, output_path: Path) -> dict[str, Any]:
             "capsuleSha256": "sha256:" + capsule_hash.hexdigest(),
             "payloadBytes": total,
             "sliceCount": len(results),
-            # Required by the runtime schema.  This provisional internal value is replaced with
-            # the actual retained-handle cleanup outcome before the result can be returned.
-            "temporaryCleanup": "CLEAN",
+            # Pre-publication schema validation uses the conservative non-clean state.  CLEAN is
+            # assigned only after discard and every required owner close prove successful.
+            "temporaryCleanup": "REFUSED_BOUNDED",
             "slices": results,
         }
         validate_contract("capsule", result)
@@ -1014,23 +1111,19 @@ def build_evidence_capsule(request: Any, output_path: Path) -> dict[str, Any]:
         ):
             raise ControlError("CAPSULE_PUBLICATION_BYTES_DRIFT")
 
-        cleanup_ok = not temporary_owned or _attempt_arm_owned_temp_discard(
+        discard_ok = not temporary_owned or _attempt_arm_owned_temp_discard(
             temporary_handle, temporary_named
         )
-        if not cleanup_ok:
+        if not discard_ok:
             _surface_temp_cleanup_refusal(output_path)
-        result["temporaryCleanup"] = "CLEAN" if cleanup_ok else "REFUSED_BOUNDED"
-        validate_contract("capsule", result)
-        close_publication_handles()
     except BaseException as exc:
-        cleanup_ok = True
+        discard_ok = True
         if temporary_owned and temporary_handle is not None:
-            cleanup_ok = _attempt_arm_owned_temp_discard(temporary_handle, temporary_named)
-        if not cleanup_ok:
+            discard_ok = _attempt_arm_owned_temp_discard(temporary_handle, temporary_named)
+        if not discard_ok:
             _surface_temp_cleanup_refusal(output_path)
-        close_publication_handles()
         mapped = (
-            map_publication_error(exc) if cleanup_ok
+            map_publication_error(exc) if discard_ok
             else ControlError("CAPSULE_TEMP_CLEANUP_REFUSED")
         )
         # Do not raise while the private exception is active: even ``from None`` retains a private
@@ -1038,23 +1131,52 @@ def build_evidence_capsule(request: Any, output_path: Path) -> dict[str, Any]:
         # raised after the handler and finally suite have cleared private exception state.
         public_error = ControlError(mapped.reason)
     finally:
-        close_publication_handles()
+        finalizers_proven = close_publication_handles()
         if pending_handle is not None:
-            try:
-                pending_handle.close()
-            except OSError:
-                pass
+            if not pending_close_attempted:
+                pending_close_attempted = True
+                if _attempt_file_close_verified(pending_handle):
+                    pending_handle = None
+            if pending_handle is not None:
+                _retain_unproven_capsule_owner(output_path, pending_handle)
+                finalizers_proven = False
         for entry in sources.values():
             handle = entry.get("handle")
             if handle is None:
                 continue
-            try:
-                handle.close()
-            except OSError:
-                pass
+            if not entry["closeAttempted"]:
+                entry["closeAttempted"] = True
+                if _attempt_file_close_verified(handle):
+                    entry["handle"] = None
+            if entry["handle"] is not None:
+                _retain_unproven_capsule_owner(output_path, handle)
+                finalizers_proven = False
+        if not finalizers_proven:
+            _surface_temp_cleanup_refusal(output_path)
+            public_error = ControlError("CAPSULE_TEMP_CLEANUP_REFUSED")
     if public_error is not None:
         raise public_error from None
+    result["temporaryCleanup"] = "CLEAN" if discard_ok else "REFUSED_BOUNDED"
+    validate_contract("capsule", result)
     return result
+
+
+def build_evidence_capsule(request: Any, output_path: Path) -> dict[str, Any]:
+    """Sanitized public boundary for every capsule validation, handler, and finalizer failure."""
+
+    public_reason: str | None = None
+    try:
+        return _build_evidence_capsule_private(request, output_path)
+    except BaseException as exc:
+        if isinstance(exc, ControlError):
+            public_reason = exc.reason
+        elif isinstance(exc, OSError):
+            public_reason = "CAPSULE_IO_FAILURE"
+        else:
+            public_reason = "CAPSULE_INTERNAL_FAILURE"
+    # This raise is deliberately outside the handler.  The public exception retains no private
+    # cause/context chain or inner formatted traceback from any preflight/finalizer exception class.
+    raise ControlError(public_reason or "CAPSULE_INTERNAL_FAILURE") from None
 
 
 class UniversalProviderBroker:
@@ -1076,6 +1198,8 @@ class UniversalProviderBroker:
         self._artifact_handles: dict[
             str, list[tuple[Path, Any, tuple[int, int, int, int], str, int]]
         ] = {}
+        self._artifact_close_attempted: dict[str, set[int]] = {}
+        self._unproven_artifact_handles: dict[str, list[Any]] = {}
         try:
             with self._connect() as connection:
                 connection.executescript(
@@ -1308,7 +1432,6 @@ class UniversalProviderBroker:
                 current_handle = handle
                 before = os.fstat(handle.fileno())
                 if before.st_size < 0 or before.st_size > ceiling:
-                    handle.close()
                     raise ControlError("ARTIFACT_SIZE_LIMIT")
                 expected_size = int(before.st_size)
                 hasher = hashlib.sha256()
@@ -1339,15 +1462,20 @@ class UniversalProviderBroker:
                 current_handle = None
                 identities.append({"path": os.path.normcase(str(path)), "sha256": actual, "bytes": total})
         except BaseException:
+            cleanup_proven = True
             if current_handle is not None:
-                try:
-                    current_handle.close()
-                except OSError:
-                    pass
+                if not _attempt_file_close_verified(current_handle):
+                    self._unproven_artifact_handles.setdefault(lease_id, []).append(current_handle)
+                    cleanup_proven = False
             for _path, handle, _identity, _digest, _ceiling in retained:
-                handle.close()
+                if not _attempt_file_close_verified(handle):
+                    self._unproven_artifact_handles.setdefault(lease_id, []).append(handle)
+                    cleanup_proven = False
+            if not cleanup_proven:
+                raise ControlError("ARTIFACT_HANDLE_CLEANUP_REFUSED")
             raise
         self._artifact_handles[lease_id] = retained
+        self._artifact_close_attempted[lease_id] = set()
         return digest_json(identities)
 
     def _artifact_handles_are_current(self, lease_id: str) -> bool:
@@ -1395,11 +1523,22 @@ class UniversalProviderBroker:
             return False
 
     def _release_artifact_handles(self, lease_id: str) -> None:
-        for _path, handle, _identity, _digest, _ceiling in self._artifact_handles.pop(lease_id, []):
-            try:
-                handle.close()
-            except OSError:
-                pass
+        retained = self._artifact_handles.get(lease_id, [])
+        attempted = self._artifact_close_attempted.setdefault(lease_id, set())
+        unproven: list[tuple[Path, Any, tuple[int, int, int, int], str, int]] = []
+        for record in retained:
+            handle = record[1]
+            owner_key = id(handle)
+            if owner_key not in attempted:
+                attempted.add(owner_key)
+                if _attempt_file_close_verified(handle):
+                    continue
+            unproven.append(record)
+        if unproven:
+            self._artifact_handles[lease_id] = unproven
+            raise ControlError("ARTIFACT_HANDLE_CLEANUP_REFUSED")
+        self._artifact_handles.pop(lease_id, None)
+        self._artifact_close_attempted.pop(lease_id, None)
 
     def _verified_gate_row(
         self, connection: sqlite3.Connection, *, fleet_secret: bytes | None, now: dt.datetime
