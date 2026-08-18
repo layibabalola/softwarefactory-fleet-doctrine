@@ -38,6 +38,7 @@ class ProviderCapacityGovernorTests(unittest.TestCase):
             "provider_observed": "anthropic",
             "model_observed": "claude-opus-5",
             "seat_epoch": 7,
+            "seat_id": "review-seat",
             "registered_session_id_hash": "sha256:" + "c" * 64,
             "observed_session_id_hash": "sha256:" + "c" * 64,
             "registry_status": "verified",
@@ -168,6 +169,59 @@ class ProviderCapacityGovernorTests(unittest.TestCase):
                 self.assertEqual("DENY", decision["decision"])
                 self.assertIn(case["reason"], decision["reason_codes"])
 
+    def test_r3_red_impossible_claimant_timelines_are_r4_green_rejected(self):
+        cases = (
+            {"startup_fence_expires_at": "2026-08-18T15:58:00Z"},
+            {"startup_fence_expires_at": "2026-08-18T15:57:59Z"},
+            {"cooldown_expires_at": "2026-08-18T15:58:00Z"},
+            {"cooldown_expires_at": "2026-08-18T15:57:59Z"},
+            {"startup_fence_expires_at": "2026-08-18T16:10:00Z"},
+            {"startup_fence_expires_at": "2026-08-18T16:10:01Z"},
+            {"cooldown_expires_at": "2026-08-18T16:10:00Z"},
+            {"cooldown_expires_at": "2026-08-18T16:10:01Z"},
+        )
+        for changes in cases:
+            with self.subTest(changes=changes):
+                snapshot = copy.deepcopy(self.snapshot)
+                snapshot["active_leases"].append(self._lease(**changes))
+                with self.assertRaisesRegex(MODULE.ContractError, "claimant timeline"):
+                    MODULE.decide(snapshot)
+
+    def test_r3_red_duplicate_claimant_identities_are_r4_green_rejected(self):
+        unique_second = {
+            "lease_id": "existing-lease-0002",
+            "process_id": 4343,
+            "process_start_time": "2026-08-18T15:58:30Z",
+            "seat_id": "implementation-seat",
+            "seat_epoch": 8,
+            "registered_session_id_hash": "sha256:" + "d" * 64,
+            "observed_session_id_hash": "sha256:" + "d" * 64,
+        }
+        collisions = (
+            {"lease_id": "existing-lease-0001"},
+            {"process_id": 4242, "process_start_time": "2026-08-18T15:58:00Z"},
+            {"process_id": 4242, "process_start_time": "2026-08-18T10:58:00-05:00"},
+            {
+                "registered_session_id_hash": "sha256:" + "c" * 64,
+                "observed_session_id_hash": "sha256:" + "c" * 64,
+            },
+            {
+                "registered_session_id_hash": "c" * 64,
+                "observed_session_id_hash": "c" * 64,
+            },
+            {"seat_id": "review-seat", "seat_epoch": 7},
+            {"seat_id": "REVIEW-SEAT", "seat_epoch": 7},
+        )
+        for collision in collisions:
+            with self.subTest(collision=collision):
+                snapshot = copy.deepcopy(self.snapshot)
+                snapshot["active_leases"].append(self._lease())
+                second = dict(unique_second)
+                second.update(collision)
+                snapshot["active_leases"].append(self._lease(**second))
+                with self.assertRaisesRegex(MODULE.ContractError, "duplicates active_leases"):
+                    MODULE.decide(snapshot)
+
     def test_live_process_with_stale_lease_degrades_without_takeover(self):
         self.snapshot["active_leases"].append(
             self._lease(expires_at="2026-08-18T15:59:59Z")
@@ -182,7 +236,6 @@ class ProviderCapacityGovernorTests(unittest.TestCase):
             {"observed_session_id_hash": "sha256:" + "d" * 64},
             {"model_observed": "claude-sonnet-5"},
             {"process_status": "ambiguous"},
-            {"process_start_time": "2026-08-18T16:00:01Z"},
         ):
             with self.subTest(changes=changes):
                 snapshot = copy.deepcopy(self.snapshot)
@@ -243,10 +296,16 @@ class ProviderCapacityGovernorTests(unittest.TestCase):
         email["actor"]["role"] = "real-account@example.invalid"
         with self.assertRaisesRegex(MODULE.ContractError, "email-like"):
             MODULE.validate_usage_event(email)
-        disguised_path = copy.deepcopy(base)
-        disguised_path["model_requested"] = "C:/Users/alice/raw-account.json"
-        with self.assertRaisesRegex(MODULE.ContractError, "publishable value prohibited"):
-            MODULE.validate_usage_event(disguised_path)
+        for embedded_path in (
+            "x/C:/Users/Alice/secret",
+            "safe//home/alice/secret",
+            "prefix/Users/Alice/secret",
+        ):
+            with self.subTest(embedded_path=embedded_path):
+                disguised_path = copy.deepcopy(base)
+                disguised_path["model_requested"] = embedded_path
+                with self.assertRaisesRegex(MODULE.ContractError, "publishable value prohibited"):
+                    MODULE.validate_usage_event(disguised_path)
         for unsafe_path in (
             "C:/Users/alice/usage.json",
             "/home/alice/usage.json",
@@ -323,6 +382,32 @@ class ProviderCapacityGovernorTests(unittest.TestCase):
         with mock.patch.object(MODULE, "SCHEMA_ROOT", ROOT / "schemas-does-not-exist"):
             with self.assertRaisesRegex(MODULE.ContractError, "schema unavailable"):
                 MODULE.decide(self.snapshot)
+        MODULE._schema_validator.cache_clear()
+
+    def test_r3_red_schema_bytes_use_r4_green_strict_decoder(self):
+        original = (ROOT / "schemas" / "provider-admission-snapshot-v1.schema.json").read_bytes()
+        decoded = original.decode("utf-8")
+        cases = {
+            "duplicate": decoded.replace(
+                '"$schema":',
+                '"$schema": "duplicate", "$schema":',
+                1,
+            ).encode("utf-8"),
+            "nonfinite": decoded.replace('"title":', '"extension": NaN, "title":', 1).encode("utf-8"),
+            "invalid-utf8": b"\xff",
+        }
+        with tempfile.TemporaryDirectory() as directory:
+            schema_root = Path(directory)
+            for name, payload in cases.items():
+                with self.subTest(name=name):
+                    (schema_root / "provider-admission-snapshot-v1.schema.json").write_bytes(payload)
+                    MODULE._schema_validator.cache_clear()
+                    with mock.patch.object(MODULE, "SCHEMA_ROOT", schema_root):
+                        with self.assertRaisesRegex(
+                            MODULE.ContractError,
+                            "schema unavailable or invalid",
+                        ):
+                            MODULE.decide(self.snapshot)
         MODULE._schema_validator.cache_clear()
 
     def test_r2_red_unlocked_dependency_is_r3_green_hash_locked_in_ci(self):

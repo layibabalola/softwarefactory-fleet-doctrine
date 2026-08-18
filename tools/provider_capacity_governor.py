@@ -138,9 +138,10 @@ def _schema_validator(schema_name: str) -> Any:
         raise ContractError("jsonschema dependency unavailable; conformance fails closed")
     schema_path = SCHEMA_ROOT / schema_name
     try:
-        schema = json.loads(schema_path.read_text(encoding="utf-8"))
+        raw = schema_path.read_bytes()
+        schema = _strict_json_loads(_decode_utf8(raw, str(schema_path)), str(schema_path))
         jsonschema.Draft202012Validator.check_schema(schema)
-    except (OSError, json.JSONDecodeError, jsonschema.SchemaError) as exc:
+    except (OSError, ContractError, jsonschema.SchemaError) as exc:
         raise ContractError(f"{schema_name}: schema unavailable or invalid: {exc}") from exc
     return jsonschema.Draft202012Validator(
         schema,
@@ -213,9 +214,20 @@ def _validate_publishable_event_values(event: dict[str, Any]) -> None:
         lowered = normalized.lower().split("/")
         if (
             normalized.startswith(("/", "~"))
-            or re.match(r"^[A-Za-z]:/", normalized)
-            or (len(lowered) >= 2 and lowered[0] in {"home", "root", "users"})
-            or (len(lowered) >= 3 and lowered[0] == "mnt" and lowered[2] == "users")
+            or "//" in normalized
+            or any(re.fullmatch(r"[a-z]:", component) for component in lowered)
+            or any(
+                lowered[index] in {"home", "users"} and index + 1 < len(lowered)
+                for index in range(len(lowered))
+            )
+            or "root" in lowered
+            or any(
+                lowered[index] == "mnt"
+                and index + 2 < len(lowered)
+                and re.fullmatch(r"[a-z]", lowered[index + 1])
+                and lowered[index + 2] == "users"
+                for index in range(len(lowered))
+            )
         ):
             raise ContractError(f"{path}: absolute or user-profile publishable value prohibited")
     for index, ref in enumerate(event.get("refs", [])):
@@ -334,6 +346,57 @@ def validate_usage_file(path: Path) -> dict[str, Any]:
     return {"valid": not errors, "event_count": count, "errors": errors}
 
 
+def _validate_claimant_rows(active_leases: list[dict[str, Any]]) -> None:
+    seen_lease_ids: dict[str, int] = {}
+    seen_processes: dict[tuple[int, datetime], int] = {}
+    seen_sessions: dict[str, int] = {}
+    seen_seat_epochs: dict[tuple[str, int], int] = {}
+
+    def claim(seen: dict[Any, int], identity: Any, index: int, field: str) -> None:
+        previous = seen.get(identity)
+        if previous is not None:
+            raise ContractError(
+                f"active_leases[{index}].{field}: claimant identity duplicates active_leases[{previous}]"
+            )
+        seen[identity] = index
+
+    for index, lease in enumerate(active_leases):
+        claim(seen_lease_ids, lease["lease_id"], index, "lease_id")
+        claim(
+            seen_processes,
+            (
+                lease["process_id"],
+                _parse_utc(
+                    lease["process_start_time"],
+                    f"active_leases[{index}].process_start_time",
+                ),
+            ),
+            index,
+            "process_id/process_start_time",
+        )
+        claim(
+            seen_seat_epochs,
+            (lease["seat_id"].casefold(), lease["seat_epoch"]),
+            index,
+            "seat_id/seat_epoch",
+        )
+        row_sessions = {
+            session
+            for session in (
+                lease.get("registered_session_id_hash"),
+                lease.get("observed_session_id_hash"),
+            )
+            if session is not None
+        }
+        for session in row_sessions:
+            claim(
+                seen_sessions,
+                session.removeprefix("sha256:"),
+                index,
+                "session_id_hash",
+            )
+
+
 def decide(snapshot: Any) -> dict[str, Any]:
     if not isinstance(snapshot, dict):
         raise ContractError("snapshot: expected object")
@@ -352,6 +415,7 @@ def decide(snapshot: Any) -> dict[str, Any]:
         raise ContractError("policy, request, and capacity must be objects")
     if not isinstance(active_leases, list):
         raise ContractError("active_leases: expected array")
+    _validate_claimant_rows(active_leases)
     quota_domain_id = request.get("quota_domain_id")
     match = QUOTA_DOMAIN_RE.fullmatch(str(quota_domain_id))
     if not match:
@@ -426,6 +490,14 @@ def decide(snapshot: Any) -> dict[str, Any]:
             lease.get("cooldown_expires_at"),
             f"active_leases[{index}].cooldown_expires_at",
         )
+        if not (
+            process_start_time < startup_fence_expires_at < expires_at
+            and process_start_time < cooldown_expires_at < expires_at
+        ):
+            raise ContractError(
+                f"active_leases[{index}]: claimant timeline must satisfy "
+                "process_start_time < each fence expiry < expires_at"
+            )
         if lease.get("quota_domain_id") != quota_domain_id:
             continue
         fence_active = False

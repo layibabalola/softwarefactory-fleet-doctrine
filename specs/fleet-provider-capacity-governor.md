@@ -98,6 +98,20 @@ Startup and cooldown fences are independent of process liveness. Every claimant 
 even when the original process is already dead. Process death can clear liveness, but it cannot
 erase the bounded launch/cooldown interval created by the attempt.
 
+Claimant chronology is strict:
+
+`process_start_time < startup_fence_expires_at < lease expires_at`
+
+`process_start_time < cooldown_expires_at < lease expires_at`
+
+The two fence expiries have no required ordering relative to each other. Equal or reversed outer
+boundaries are invalid input and fail closed. Within one frozen snapshot,
+`lease_id`, `(process_id, process_start_time)`, opaque session identity, and
+`(seat_id, seat_epoch)` are each unique across claimant rows. A collision is identity ambiguity,
+not extra capacity. Timestamp offsets are normalized to UTC, optional `sha256:` prefixes are
+normalized away for session comparison, and seat identifiers compare case-insensitively so textual
+aliases cannot evade collision detection.
+
 ## Default admission policy
 
 The safe initial default is one unattended inference-bearing root session per quota domain. The
@@ -233,6 +247,11 @@ in opaque HMAC-derived fields. Email-like values are prohibited. Evidence refere
 only normalized project-relative paths with forward-slash components. Absolute POSIX, Windows,
 UNC, home-relative, traversal, and user-profile paths are rejected.
 
+Privacy scanning normalizes separators and searches every publishable string, not only fields named
+as paths. Embedded forms such as a prefix followed by a drive-qualified user profile, UNC boundary,
+or `/home`, `/Users`, `/root`, or `/mnt/<drive>/Users` segment are refused. Error output names only
+the field location and violation class; it never echoes the rejected value.
+
 Doctrine receives only opaque identities and derived events under the existing one-writer project
 shard law. Metrics are diagnostic and never authority. Live admission reads local authoritative
 state, not Git metrics. A telemetry outage cannot turn into an admission success.
@@ -242,6 +261,10 @@ absence, validator absence, invalid format, extra properties, or malformed claim
 closed. The CLI remains a frozen decision/telemetry conformance tool only: it does not inspect live
 processes, acquire leases, mutate the automatic gate, or launch a provider. Projects populate the
 snapshot from their separately reviewed host-local supervisor.
+
+Schema files themselves pass through the same strict UTF-8, duplicate-key, and non-finite-number
+decoder before `Draft202012Validator.check_schema`; trusted repository location does not weaken byte
+or JSON intake rules.
 
 CI installs the schema validator and its format dependencies from a generated, hash-locked
 requirements artifact using `--require-hashes`. The small direct-requirement file is the reviewed
