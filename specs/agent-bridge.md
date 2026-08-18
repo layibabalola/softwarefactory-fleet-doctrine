@@ -273,3 +273,36 @@ orientation bound, hash carriers, self-derivation, and named unread evidence; th
 is partial token-efficiency conformance, not proof of the full capsule contract.
 Until every remaining P0 gate and fresh review closes, the legacy Warden remains
 disabled and all Claude restoration authority remains closed.
+
+### Reconciliation with active fleet candidates
+
+The precedence rule is singular and fail-closed:
+
+1. The accepted subject `224a6705d81dfbc670313cdcef4d825216f2b380`
+   remains the only portable normative provider-capacity contract until a later
+   exact subject is independently reviewed, distinctly adjudicated, recorded in
+   `RULINGS.md`, and merged to canonical master.
+2. Fleet PR #10 R14 subject `874605e43531c9aa230ee16851f8107a8e0d9cec`
+   is a proposed additive successor and zero-authority conformance workbench. Its
+   hosted matrix is evidence, not law. Agent Bridge neither rejects it nor adopts
+   it before the required ruling and canonical merge.
+3. Agent Bridge subject `13d697c2b778ed566ebb90147aca77bd28f80824`
+   is project-local runtime evidence, not a competing universal doctrine. The
+   Conjugal runtime-extension draft and every other project adapter have the same
+   status: useful comparative evidence only. Project dispositions from Adobe,
+   Cloudvore, Conjugal, DNG, and other factories describe local adoption state and
+   cannot override the portable core or grant Agent Bridge authority.
+
+R14 is strictly stronger than the current Agent Bridge candidate in several
+material respects: strict schema/HMAC-qualified capacity and health records;
+persistent claimant/reservation fencing; exact four-surface launcher census;
+single-use canary authorization; 1,000 unchanged zero-inference ticks; and retained
+artifact/publication ownership with cleanup poison. Agent Bridge therefore proposes
+to consume a ratified R14 descendant rather than fork those semantics. Until that
+happens, its local subject may advance only closed-state installation, shadow, and
+containment evidence under the accepted v1 invariants. It cannot reach CANARY from
+local tests alone.
+
+If R14 or a descendant is ratified, Agent Bridge must publish a new exact disposition
+against that canonical commit and profile hash. No branch head, hosted-green run,
+provider recovery, or successful local probe silently updates this disposition.
