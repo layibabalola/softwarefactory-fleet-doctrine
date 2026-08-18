@@ -182,6 +182,66 @@ def _path_has_identity(path: Path, identity: tuple[int, int]) -> bool:
         return False
 
 
+def _windows_arm_native_handle_discard(native_handle: int) -> bool:
+    """Attach delete disposition to the current Windows native-handle owner."""
+
+    import ctypes
+    from ctypes import wintypes
+
+    class FileDispositionInfo(ctypes.Structure):
+        _fields_ = [("DeleteFile", wintypes.BOOLEAN)]
+
+    kernel = ctypes.WinDLL("kernel32", use_last_error=True)
+    kernel.SetFileInformationByHandle.argtypes = [
+        wintypes.HANDLE, ctypes.c_int, wintypes.LPVOID, wintypes.DWORD,
+    ]
+    kernel.SetFileInformationByHandle.restype = wintypes.BOOL
+    disposition = FileDispositionInfo(True)
+    return bool(
+        kernel.SetFileInformationByHandle(
+            native_handle, 4, ctypes.byref(disposition), ctypes.sizeof(disposition),
+        )
+    )
+
+
+def _windows_close_native_handle(native_handle: int) -> None:
+    """Close a Windows handle while it is still owned by the native-handle state."""
+
+    import ctypes
+    from ctypes import wintypes
+
+    kernel = ctypes.WinDLL("kernel32", use_last_error=True)
+    kernel.CloseHandle.argtypes = [wintypes.HANDLE]
+    kernel.CloseHandle.restype = wintypes.BOOL
+    kernel.CloseHandle(native_handle)
+
+
+def _close_owned_descriptor(descriptor: int) -> None:
+    """Close a descriptor exactly once while it, rather than a file object, owns the handle."""
+
+    os.close(descriptor)
+
+
+def _open_posix_anonymous_temporary(parent: Path, flags: int, anonymous_flag: int) -> Any:
+    """Open O_TMPFILE with explicit fd-to-file-object ownership transfer."""
+
+    descriptor = os.open(str(parent), flags | anonymous_flag, 0o600)
+    descriptor_owned = True
+    try:
+        handle = os.fdopen(descriptor, "w+b", closefd=True)
+        descriptor_owned = False
+        return handle
+    except BaseException:
+        if descriptor_owned:
+            try:
+                _close_owned_descriptor(descriptor)
+            except OSError as close_error:
+                # An unproven close forbids named fallback.  The outer public boundary replaces
+                # this private error topology with the stable cleanup-refusal reason.
+                raise ControlError("CAPSULE_TEMP_CLEANUP_REFUSED") from close_error
+        raise
+
+
 def _open_owned_temporary(temporary: Path, output_path: Path) -> tuple[Any, bool]:
     """Create a retained temp whose cleanup is handle-bound or explicitly bounded.
 
@@ -216,11 +276,29 @@ def _open_owned_temporary(temporary: Path, output_path: Path) -> tuple[Any, bool
             if code in (80, 183):
                 raise ControlError("CAPSULE_TEMP_COLLISION")
             raise OSError(code, "owned temporary create failed")
+        native_handle_owned = True
+        descriptor: int | None = None
+        descriptor_owned = False
         try:
-            descriptor = msvcrt.open_osfhandle(int(handle), os.O_RDWR | getattr(os, "O_BINARY", 0))
-            return os.fdopen(descriptor, "w+b", closefd=True), True
+            descriptor = msvcrt.open_osfhandle(
+                int(handle), os.O_RDWR | getattr(os, "O_BINARY", 0)
+            )
+            native_handle_owned = False  # CRT descriptor now owns the same native handle.
+            descriptor_owned = True
+            file_object = os.fdopen(descriptor, "w+b", closefd=True)
+            descriptor_owned = False  # File object now owns the descriptor and native handle.
+            return file_object, True
         except BaseException:
-            kernel.CloseHandle(handle)
+            if native_handle_owned:
+                try:
+                    _windows_arm_native_handle_discard(int(handle))
+                finally:
+                    _windows_close_native_handle(int(handle))
+            elif descriptor_owned and descriptor is not None:
+                try:
+                    _windows_arm_native_handle_discard(msvcrt.get_osfhandle(descriptor))
+                finally:
+                    _close_owned_descriptor(descriptor)
             raise
 
     flags = os.O_RDWR | getattr(os, "O_CLOEXEC", 0)
@@ -232,8 +310,9 @@ def _open_owned_temporary(temporary: Path, output_path: Path) -> tuple[Any, bool
     proc_fd_root = Path("/proc/self/fd")
     if anonymous_flag and proc_fd_root.is_dir():
         try:
-            descriptor = os.open(str(output_path.parent), flags | anonymous_flag, 0o600)
-            return os.fdopen(descriptor, "w+b", closefd=True), False
+            return _open_posix_anonymous_temporary(
+                output_path.parent, flags, anonymous_flag
+            ), False
         except OSError as exc:
             import errno
 
@@ -285,25 +364,8 @@ def _arm_owned_temp_discard(handle: Any, named: bool) -> bool:
         return True  # O_TMPFILE is reclaimed when the retained handle closes.
     if os.name != "nt":
         return False  # Named POSIX fallback is surfaced and bounded; it is never path-unlinked.
-    import ctypes
     import msvcrt
-    from ctypes import wintypes
-
-    class FileDispositionInfo(ctypes.Structure):
-        _fields_ = [("DeleteFile", wintypes.BOOLEAN)]
-
-    kernel = ctypes.WinDLL("kernel32", use_last_error=True)
-    kernel.SetFileInformationByHandle.argtypes = [
-        wintypes.HANDLE, ctypes.c_int, wintypes.LPVOID, wintypes.DWORD,
-    ]
-    kernel.SetFileInformationByHandle.restype = wintypes.BOOL
-    disposition = FileDispositionInfo(True)
-    return bool(
-        kernel.SetFileInformationByHandle(
-            msvcrt.get_osfhandle(handle.fileno()), 4,
-            ctypes.byref(disposition), ctypes.sizeof(disposition),
-        )
-    )
+    return _windows_arm_native_handle_discard(msvcrt.get_osfhandle(handle.fileno()))
 
 
 def _attempt_arm_owned_temp_discard(handle: Any, named: bool) -> bool:
@@ -730,6 +792,7 @@ def build_evidence_capsule(request: Any, output_path: Path) -> dict[str, Any]:
     temporary_identity: tuple[int, int] | None = None
     temporary_named = True
     temporary_owned = False
+    public_error: ControlError | None = None
     slice_payloads: list[bytearray] = [bytearray(int(item["length"])) for item in request["slices"]]
     capsule_hash = hashlib.sha256()
     results: list[dict[str, Any]] = []
@@ -970,9 +1033,10 @@ def build_evidence_capsule(request: Any, output_path: Path) -> dict[str, Any]:
             map_publication_error(exc) if cleanup_ok
             else ControlError("CAPSULE_TEMP_CLEANUP_REFUSED")
         )
-        if mapped is exc:
-            raise
-        raise mapped from exc
+        # Do not raise while the private exception is active: even ``from None`` retains a private
+        # __context__.  Only the stable reason crosses this boundary; the new public exception is
+        # raised after the handler and finally suite have cleared private exception state.
+        public_error = ControlError(mapped.reason)
     finally:
         close_publication_handles()
         if pending_handle is not None:
@@ -988,6 +1052,8 @@ def build_evidence_capsule(request: Any, output_path: Path) -> dict[str, Any]:
                 handle.close()
             except OSError:
                 pass
+    if public_error is not None:
+        raise public_error from None
     return result
 
 

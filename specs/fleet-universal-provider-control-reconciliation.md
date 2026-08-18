@@ -1,4 +1,4 @@
-# Universal provider-control reconciliation R7
+# Universal provider-control reconciliation R8
 
 Status: **CANDIDATE / ZERO AUTHORITY / NO DEPLOYMENT**
 
@@ -109,12 +109,17 @@ post-reset quiet; and add required capacity dimensions. They may never weaken th
     disposal is attached to the retained DELETE-capable file handle; Linux prefers anonymous
     `O_TMPFILE` and selects, before writing, the ordinary-user `/proc/self/fd` plus
     `linkat(AT_SYMLINK_FOLLOW)` publication route. It never relies on privileged `AT_EMPTY_PATH`
-    and never changes route after writing. A named fallback never path-deletes: refusal is returned
+    and never changes route after writing. The POSIX anonymous descriptor is explicitly owned until
+    `fdopen` succeeds; an injected `fdopen` failure closes that descriptor exactly once before any
+    fallback or propagation. Windows likewise tracks the sole owner across native handle, CRT
+    descriptor, and file-object states; every failed transfer arms retained-handle deletion and
+    closes exactly the current owner. A named fallback never path-deletes: refusal is returned
     as required `temporaryCleanup=REFUSED_BOUNDED`, creates one deterministic no-value block marker, and the deterministic
     `.tmp-owned` name prevents repeated accumulation. Public outputs are never path-cleaned after a
     failure, so a replacement occupant cannot be removed. Every retained admission artifact is
     likewise reread at resume using its exact retained size and ceiling plus at most one drift byte.
-    Errors remain stable/no-echo.
+    Errors remain stable/no-echo: a public `ControlError` is raised only after the private handler
+    has exited, with no private `__cause__`, `__context__`, or formatted traceback content.
 18. Bounded turns, bounded context, exact capsules, milestone compaction, and cache affinity are
     efficiency controls only. They cannot change or weaken model, effort, role, frozen subject,
     independent-provider requirements, findings severity, product tests, or release/hardware gates.
@@ -149,7 +154,7 @@ unchanged zero-inference ticks, full-child claimant/OS-lock behavior, rollback, 
 gate. A canary is separately authorized, one per quota domain, bounded, and automatically returns
 to CLOSED on ambiguity or failure. User-present hardware and project release gates are unchanged.
 
-## R7 evidence map
+## R8 evidence map
 
 The hostile suite in `tests/test_universal_provider_control.py` reproduces every retained
 reconciliation finding: unenforced schemas; malformed-newest fallback; unkeyed identity; permissive
@@ -177,3 +182,8 @@ uses the capability-free exact-fd route, `temporaryCleanup` is mandatory runtime
 helper exceptions are contained behind stable no-echo refusal results, and the successful cleanup
 path remains green. The 87-control universal suite and retained 37-control governor suite run on
 both Python 3.13 and 3.14; the dual-platform hosted matrix remains required before adjudication.
+
+Exact 019d1c4 R7-red/R8-green twins prove primary and cleanup failures retain no private exception
+chain or formatted traceback content, Windows native-handle-to-CRT-to-file-object transfer failures
+dispose exactly the current owner, and POSIX `O_TMPFILE` descriptor transfer closes once on failure
+without double-close on success. The candidate author remains recused.

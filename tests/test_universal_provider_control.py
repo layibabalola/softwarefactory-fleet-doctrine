@@ -11,6 +11,7 @@ import sqlite3
 import subprocess
 import sys
 import tempfile
+import traceback
 import unittest
 from unittest import mock
 
@@ -1785,6 +1786,147 @@ class UniversalProviderControlTests(unittest.TestCase):
         self.assertEqual(result["temporaryCleanup"], "CLEAN")
         self.assertFalse(success_output.with_name(success_output.name + ".cleanup-blocked").exists())
         success_temporary.unlink()
+
+    # Exact 019d1c4 R7 RED -> R8 GREEN exception-topology and handle-owner twins.
+
+    def test_r8_01_primary_failure_has_no_private_exception_topology(self) -> None:
+        source = self.root / "r8-primary-source.bin"
+        source.write_bytes(b"primary-private-source")
+        request = self.capsule_request(source, lengths=[8])
+        output = self.root / "r8-primary-output.bin"
+        private_value = "PRIVATE-PRIMARY-TRACE-VALUE"
+        real_validate = upc.validate_contract
+
+        def fail_capsule(kind, value):
+            real_validate(kind, value)
+            if kind == "capsule":
+                raise RuntimeError(private_value)
+
+        with mock.patch.object(upc, "validate_contract", side_effect=fail_capsule):
+            with self.assertRaises(upc.ControlError) as caught:
+                upc.build_evidence_capsule(request, output)
+        error = caught.exception
+        self.assertEqual(error.reason, "CAPSULE_INTERNAL_FAILURE")
+        self.assertIsNone(error.__cause__)
+        self.assertIsNone(error.__context__)
+        self.assertNotIn(private_value, "".join(traceback.format_exception(error)))
+
+    def test_r8_02_cleanup_failure_has_no_private_exception_topology(self) -> None:
+        source = self.root / "r8-cleanup-source.bin"
+        source.write_bytes(b"cleanup-private-source")
+        request = self.capsule_request(source, lengths=[8])
+        output = self.root / "r8-cleanup-output.bin"
+        primary_value = "PRIVATE-PRIMARY-CONTEXT-VALUE"
+        cleanup_value = "PRIVATE-CLEANUP-CONTEXT-VALUE"
+        real_validate = upc.validate_contract
+
+        def fail_capsule(kind, value):
+            real_validate(kind, value)
+            if kind == "capsule":
+                raise RuntimeError(primary_value)
+
+        with mock.patch.object(upc, "validate_contract", side_effect=fail_capsule):
+            with mock.patch.object(
+                upc, "_arm_owned_temp_discard", side_effect=RuntimeError(cleanup_value)
+            ):
+                with self.assertRaises(upc.ControlError) as caught:
+                    upc.build_evidence_capsule(request, output)
+        error = caught.exception
+        rendered = "".join(traceback.format_exception(error))
+        self.assertEqual(error.reason, "CAPSULE_TEMP_CLEANUP_REFUSED")
+        self.assertIsNone(error.__cause__)
+        self.assertIsNone(error.__context__)
+        self.assertNotIn(primary_value, rendered)
+        self.assertNotIn(cleanup_value, rendered)
+        marker = output.with_name(output.name + ".cleanup-blocked")
+        if marker.exists():
+            marker.unlink()
+        temporary = output.with_name(output.name + ".tmp-owned")
+        if temporary.exists():
+            temporary.unlink()
+
+    @unittest.skipUnless(os.name == "nt", "Windows native-handle ownership control")
+    def test_r8_03_open_osfhandle_failure_closes_native_owner_once(self) -> None:
+        import msvcrt
+
+        source = self.root / "r8-open-osfhandle-source.bin"
+        source.write_bytes(b"open-osfhandle-source")
+        request = self.capsule_request(source, lengths=[8])
+        output = self.root / "r8-open-osfhandle-output.bin"
+        temporary = output.with_name(output.name + ".tmp-owned")
+        private_value = "PRIVATE-OPEN-OSFHANDLE-VALUE"
+        real_arm = upc._windows_arm_native_handle_discard
+        real_close = upc._windows_close_native_handle
+
+        with mock.patch.object(msvcrt, "open_osfhandle", side_effect=RuntimeError(private_value)):
+            with mock.patch.object(upc, "_windows_arm_native_handle_discard", wraps=real_arm) as arm:
+                with mock.patch.object(upc, "_windows_close_native_handle", wraps=real_close) as close:
+                    with self.assertRaises(upc.ControlError) as caught:
+                        upc.build_evidence_capsule(request, output)
+        self.assertEqual(arm.call_count, 1)
+        self.assertEqual(close.call_count, 1)
+        self.assertFalse(temporary.exists())
+        self.assertIsNone(caught.exception.__cause__)
+        self.assertIsNone(caught.exception.__context__)
+        self.assertNotIn(private_value, "".join(traceback.format_exception(caught.exception)))
+
+    @unittest.skipUnless(os.name == "nt", "Windows CRT-descriptor ownership control")
+    def test_r8_04_fdopen_failure_closes_descriptor_owner_once(self) -> None:
+        source = self.root / "r8-fdopen-source.bin"
+        source.write_bytes(b"fdopen-owner-source")
+        request = self.capsule_request(source, lengths=[8])
+        output = self.root / "r8-fdopen-output.bin"
+        temporary = output.with_name(output.name + ".tmp-owned")
+        private_value = "PRIVATE-FDOPEN-VALUE"
+        real_arm = upc._windows_arm_native_handle_discard
+        real_close_descriptor = upc._close_owned_descriptor
+
+        with mock.patch.object(upc.os, "fdopen", side_effect=RuntimeError(private_value)):
+            with mock.patch.object(upc, "_windows_arm_native_handle_discard", wraps=real_arm) as arm:
+                with mock.patch.object(
+                    upc, "_close_owned_descriptor", wraps=real_close_descriptor
+                ) as close_descriptor:
+                    with mock.patch.object(upc, "_windows_close_native_handle") as close_native:
+                        with self.assertRaises(upc.ControlError) as caught:
+                            upc.build_evidence_capsule(request, output)
+        self.assertEqual(arm.call_count, 1)
+        self.assertEqual(close_descriptor.call_count, 1)
+        close_native.assert_not_called()
+        self.assertFalse(temporary.exists())
+        self.assertIsNone(caught.exception.__cause__)
+        self.assertIsNone(caught.exception.__context__)
+        self.assertNotIn(private_value, "".join(traceback.format_exception(caught.exception)))
+
+    def test_r8_05_posix_fdopen_transfer_closes_exact_owner_once(self) -> None:
+        parent = self.root / "r8-posix-model"
+        parent.mkdir()
+        private_value = "PRIVATE-POSIX-FDOPEN-VALUE"
+        with mock.patch.object(upc.os, "open", return_value=731):
+            with mock.patch.object(upc.os, "fdopen", side_effect=RuntimeError(private_value)):
+                with mock.patch.object(upc, "_close_owned_descriptor") as close_descriptor:
+                    with self.assertRaisesRegex(RuntimeError, private_value):
+                        upc._open_posix_anonymous_temporary(parent, 2, 0x400000)
+        close_descriptor.assert_called_once_with(731)
+
+        sentinel = object()
+        with mock.patch.object(upc.os, "open", return_value=732):
+            with mock.patch.object(upc.os, "fdopen", return_value=sentinel):
+                with mock.patch.object(upc, "_close_owned_descriptor") as close_descriptor:
+                    self.assertIs(
+                        upc._open_posix_anonymous_temporary(parent, 2, 0x400000), sentinel
+                    )
+        close_descriptor.assert_not_called()
+
+        with mock.patch.object(upc.os, "open", return_value=733):
+            with mock.patch.object(upc.os, "fdopen", side_effect=OSError(22, private_value)):
+                with mock.patch.object(
+                    upc, "_close_owned_descriptor", side_effect=OSError(5, "private close")
+                ) as close_descriptor:
+                    with self.assertRaisesRegex(
+                        upc.ControlError, "CAPSULE_TEMP_CLEANUP_REFUSED"
+                    ):
+                        upc._open_posix_anonymous_temporary(parent, 2, 0x400000)
+        close_descriptor.assert_called_once_with(733)
 
     # Bounded exact evidence capsule controls.
 

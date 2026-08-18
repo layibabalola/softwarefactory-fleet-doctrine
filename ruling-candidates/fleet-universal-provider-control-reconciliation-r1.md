@@ -1,4 +1,4 @@
-# Ruling candidate: universal provider-control reconciliation R7
+# Ruling candidate: universal provider-control reconciliation R8
 
 Status: **PROPOSED ONLY — NOT A RULING**
 
@@ -6,9 +6,9 @@ Subject issue: <https://github.com/layibabalola/softwarefactory-fleet-doctrine/i
 
 Candidate proposition: adopt the strict additive runtime-reference and project-profile framework in
 `specs/fleet-universal-provider-control-reconciliation.md` as the next reviewed amendment to the
-ratified provider-capacity governor. R7 repairs the unprivileged Linux publication, required
-cleanup evidence, and cleanup-helper containment findings from R6 review while retaining every
-R1/R2/R3/R4/R5/R6 repair; this retained filename is an
+ratified provider-capacity governor. R8 repairs the exception-topology and cross-platform
+temporary-handle ownership findings from R7 review while retaining every
+R1/R2/R3/R4/R5/R6/R7 repair; this retained filename is an
 issue pointer and is not a final ruling.
 
 The proposition explicitly grants no deployment, task mutation, provider call, authentication,
