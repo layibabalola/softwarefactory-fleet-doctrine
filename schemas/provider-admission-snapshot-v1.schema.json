@@ -1,0 +1,152 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/layibabalola/softwarefactory-fleet-doctrine/schemas/provider-admission-snapshot-v1.schema.json",
+  "title": "Software factory provider admission snapshot v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "observed_at", "policy", "request", "capacity", "active_leases"],
+  "properties": {
+    "schema_version": { "const": 1 },
+    "observed_at": { "type": "string", "format": "date-time" },
+    "policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "automatic_launch_gate",
+        "capacity_observation_max_age_seconds",
+        "max_automatic_concurrency",
+        "interactive_reserve_pct",
+        "deny_background_when_capacity_unknown",
+        "max_slice_minutes",
+        "max_agent_turns"
+      ],
+      "properties": {
+        "automatic_launch_gate": { "enum": ["closed", "open"] },
+        "capacity_observation_max_age_seconds": { "type": "integer", "minimum": 1, "maximum": 86400 },
+        "max_automatic_concurrency": { "type": "integer", "minimum": 1, "maximum": 32 },
+        "interactive_reserve_pct": { "type": "number", "minimum": 0, "maximum": 100 },
+        "deny_background_when_capacity_unknown": { "type": "boolean" },
+        "max_slice_minutes": { "type": "integer", "minimum": 1, "maximum": 240 },
+        "max_agent_turns": { "type": "integer", "minimum": 1, "maximum": 500 }
+      }
+    },
+    "request": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "request_id",
+        "project",
+        "quota_domain_id",
+        "provider",
+        "role",
+        "foreground",
+        "actionable_work",
+        "requires_exact_profile",
+        "model_requested",
+        "effort_requested",
+        "estimated_window_pct",
+        "slice_minutes",
+        "max_agent_turns",
+        "idle_input_fingerprint",
+        "prior_idle_input_fingerprint"
+      ],
+      "properties": {
+        "request_id": { "type": "string", "minLength": 8, "maxLength": 128 },
+        "project": { "type": "string", "minLength": 1, "maxLength": 80 },
+        "quota_domain_id": { "type": "string", "pattern": "^[a-z0-9-]+/(opaque:|hmac-sha256:)[a-f0-9]{16,64}$" },
+        "provider": { "type": "string", "pattern": "^[a-z0-9-]{2,40}$" },
+        "role": { "type": "string", "minLength": 1, "maxLength": 80 },
+        "foreground": { "type": "boolean" },
+        "owner_override": { "type": "boolean", "default": false },
+        "actionable_work": { "type": "boolean" },
+        "requires_exact_profile": { "type": "boolean" },
+        "profile_available": { "type": "boolean" },
+        "model_requested": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "effort_requested": { "type": ["string", "null"], "maxLength": 40 },
+        "estimated_window_pct": {
+          "oneOf": [
+            { "type": "number", "minimum": 0, "maximum": 100 },
+            { "const": "unknown" }
+          ]
+        },
+        "slice_minutes": { "type": "integer", "minimum": 1, "maximum": 240 },
+        "max_agent_turns": { "type": "integer", "minimum": 1, "maximum": 500 },
+        "evidence_capsule_sha256": { "type": ["string", "null"], "pattern": "^[a-f0-9]{64}$" },
+        "idle_input_fingerprint": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+        "prior_idle_input_fingerprint": { "type": ["string", "null"], "pattern": "^[a-f0-9]{64}$" }
+      }
+    },
+    "capacity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["quota_domain_id", "status", "utilization_pct", "reserved_pct", "observed_at", "reset_at"],
+      "properties": {
+        "quota_domain_id": { "type": "string" },
+        "status": { "enum": ["available", "exhausted", "unknown"] },
+        "utilization_pct": {
+          "oneOf": [
+            { "type": "number", "minimum": 0, "maximum": 100 },
+            { "const": "unknown" }
+          ]
+        },
+        "reserved_pct": { "type": "number", "minimum": 0, "maximum": 100 },
+        "observed_at": { "type": "string", "format": "date-time" },
+        "reset_at": {
+          "anyOf": [
+            { "type": "string", "format": "date-time" },
+            { "const": "unknown" }
+          ]
+        }
+      }
+    },
+    "active_leases": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "lease_id",
+          "quota_domain_id",
+          "state",
+          "expires_at",
+          "startup_fence_expires_at",
+          "cooldown_expires_at",
+          "process_id",
+          "process_start_time",
+          "process_status",
+          "provider_requested",
+          "model_requested",
+          "provider_observed",
+          "model_observed",
+          "seat_epoch",
+          "seat_id",
+          "registered_session_id_hash",
+          "observed_session_id_hash",
+          "registry_status",
+          "progress_status"
+        ],
+        "properties": {
+          "lease_id": { "type": "string", "minLength": 8, "maxLength": 128 },
+          "quota_domain_id": { "type": "string", "pattern": "^[a-z0-9-]+/(opaque:|hmac-sha256:)[a-f0-9]{16,64}$" },
+          "state": { "enum": ["STARTING", "CLAIMED", "RUNNING", "CHECKPOINTED", "COOLDOWN"] },
+          "expires_at": { "type": "string", "format": "date-time" },
+          "startup_fence_expires_at": { "type": "string", "format": "date-time" },
+          "cooldown_expires_at": { "type": "string", "format": "date-time" },
+          "process_id": { "type": "integer", "minimum": 1 },
+          "process_start_time": { "type": "string", "format": "date-time" },
+          "process_status": { "enum": ["live", "dead", "ambiguous"] },
+          "provider_requested": { "type": "string", "pattern": "^[a-z0-9-]{2,40}$" },
+          "model_requested": { "type": "string", "minLength": 1, "maxLength": 120 },
+          "provider_observed": { "type": ["string", "null"], "pattern": "^[a-z0-9-]{2,40}$" },
+          "model_observed": { "type": ["string", "null"], "maxLength": 120 },
+          "seat_epoch": { "type": "integer", "minimum": 0 },
+          "seat_id": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,79}$" },
+          "registered_session_id_hash": { "type": ["string", "null"], "pattern": "^(sha256:)?[a-f0-9]{64}$" },
+          "observed_session_id_hash": { "type": ["string", "null"], "pattern": "^(sha256:)?[a-f0-9]{64}$" },
+          "registry_status": { "enum": ["verified", "mismatch", "unknown"] },
+          "progress_status": { "enum": ["fresh", "stale", "unavailable"] }
+        }
+      }
+    }
+  }
+}

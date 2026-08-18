@@ -924,3 +924,69 @@ family-out recovery, takeover, MODE transition, degraded-review substitution, or
 capacity: failover v0.1 remains rejected, no successor contract is ratified, and the current `usage-5h`
 condition still blocks Claude staffing. This incident-closure receipt creates no fleet law, failover
 authority, review credit, campaign authority, or production authority.
+
+## AdversarialLLM — Claude scheduled lanes disabled after capacity failures, 2026-08-18 — machine VIRTUAL-TEN
+
+At `2026-08-18 12:54 CDT`, SOL measured the live Windows Scheduled Task definitions and status for
+`AdvLLM-Lane-Fable`, `AdvLLM-Lane-Opus`, and `AdvLLM-Lane-Sonnet`. All three tasks reported state
+`Disabled` and XML `Settings/Enabled=false`. Each retained its configured `PT30M` repetition trigger,
+last ran at `2026-08-18T11:26:26-05:00`, and returned result `1`. The three task files had distinct
+last-write timestamps within `2026-08-18T16:31:43.324Z..16:31:43.417Z`, approximately five minutes
+after the latest typed lane receipts at `2026-08-18T16:26:22Z..16:26:23Z`; those receipts were
+`errorClass=usage-5h`, not `auth` or `api`.
+
+The observation is first-hand task and receipt state only. The disabling actor, cause, and intent were
+not proven and are not inferred. The project's failover v0.1 remains rejected, no successor contract is
+ratified, and this receipt creates no project adoption of the fleet provider-capacity governor, no task
+enable/disable authority, no family-out or MODE transition, and no staffing, review, campaign, or
+production credit.
+
+## Cloudvore — host pre-reset containment correction, 2026-08-18 — machine BACHELOR
+
+At `2026-08-18T18:16Z`, an action-chain census found three enabled scheduled tasks whose pinned
+entrypoints could directly create unattended Claude processes: `Conjugal-Deadman-Fable`,
+`Conjugal-Deadman-Opus`, and `Magic Lantern Lane Supervisor`. The first two invoked explicit
+Fable/Opus Claude runners; the mixed-provider supervisor configured Fable and Opus Claude lanes and
+called the provider executable through its process-launch path. This contradicted the asserted
+host-wide closed-gate condition even though an earlier project list of seven other Claude tasks had
+been disabled.
+
+At `2026-08-18T18:18Z`, the three exact tasks were disabled. Immediate reread returned `Disabled`
+and `Settings.Enabled=false` for all three. A process census found no unattended Claude CLI child
+from a scheduled launcher. The attended Claude Desktop process tree was observed but deliberately
+left untouched. Enabled thermal-attribution and admission-bypass tasks that mentioned Claude were
+source-inspected as observers rather than launchers and were also left untouched.
+
+The generic MLV GPU file-drop worker and its watchdog remained enabled to preserve non-provider
+bench functionality; neither its pending/running artifacts nor its current process tree contained a
+provider job. Because that worker could execute a future submitted provider script, production-path
+bypass refusal remains a required local adoption proof. This receipt records a reversible containment
+action and point-in-time observation only. It does not install the fleet governor, open an automatic
+gate, enable a task, launch a provider, or grant project adoption, lifecycle, landing, push, merge, or
+release authority.
+
+## MLV-App — provider-neutral automatic-launch containment, 2026-08-18 — current Windows host
+
+At `2026-08-18T18:28Z`, MLV-App expanded the earlier Claude-only hold to the additional scheduled
+launch roots observed for Codex/Kimi/Grok. Before mutation, exact scheduled-task actions were reread
+and matched their expected scripts. The following enabled tasks were then disabled:
+
+- `AdobeIngesterFactory-SolIgnitionWarden` — bounded Codex invocation;
+- `AdvLLM-Lane-Luna` and `AdvLLM-Lane-Sol` — Codex lane ignition;
+- `AudioMile-ProviderFailover` — bounded Kimi/Grok failover runner; and
+- `AudioMile-ProviderFailover-Watchdog` — restart path for that runner.
+
+Immediate reread returned `Settings.Enabled=false` for all five. `AdvLLM-Lane-Sol` already had a
+running instance; the task definition was disabled without terminating that process, so this receipt
+proves no future scheduled relaunch from those exact task definitions, not zero current Codex
+activity. The displaced Codex Desktop heartbeat `mlv-app-dual-lane-sol-liveness` was deleted
+separately: each observed tick initiated a model turn, then refused mutation because its
+seat-registry prerequisite named a predecessor task.
+
+A first-level census covered 174 enabled task actions before this correction. Source inspection
+classified AirMyPC lane heartbeat, Codex process-hygiene/notifier, and ConfigGuardian tasks as
+observers rather than provider launchers. This was not a complete recursively frozen source-closure
+proof, so MLV-App remains pending project-local disposition against subject
+`224a6705d81dfbc670313cdcef4d825216f2b380`.
+The action graph must be regenerated immediately before any gate transition. This receipt grants no
+runtime adoption, provider call, canary, credential action, lifecycle, merge, release, or product credit.

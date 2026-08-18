@@ -39,3 +39,12 @@ Graphs are derived, rendered as artifacts by whoever wants them, and never store
   lane against the ratifying hub's own schema (the ruling omitted lane-state's VERIFY terminal
   and the warden BEAT the wake-gap histogram is built from). Hub folded per doctrine cadence.
   Also measured: git MERGE counts are NOT rebase-stable; treat them as generation-stamped.
+
+## Candidate extension: provider capacity events (NOT YET RATIFIED)
+
+The fleet provider-capacity candidate proposes append-only
+`metrics/<project>/provider-usage-YYYY-MM.jsonl` shards conforming to
+`schemas/provider-usage-event-v1.schema.json`. This is a separate event shape from interaction
+schema v1 and grants no live admission authority. Projects must not publish raw account identifiers,
+credentials, prompts, transcripts, or command lines. Until a fleet ruling ratifies the extension,
+the schema and examples are conformance candidates only.
