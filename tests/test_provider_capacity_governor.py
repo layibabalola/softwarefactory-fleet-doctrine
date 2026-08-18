@@ -1,7 +1,9 @@
 import copy
 import importlib.util
 import json
+import subprocess
 import sys
+import tempfile
 import unittest
 from pathlib import Path
 from unittest import mock
@@ -26,6 +28,8 @@ class ProviderCapacityGovernorTests(unittest.TestCase):
             "quota_domain_id": self.snapshot["request"]["quota_domain_id"],
             "state": "RUNNING",
             "expires_at": "2026-08-18T16:10:00Z",
+            "startup_fence_expires_at": "2026-08-18T15:59:00Z",
+            "cooldown_expires_at": "2026-08-18T15:59:30Z",
             "process_id": 4242,
             "process_start_time": "2026-08-18T15:58:00Z",
             "process_status": "live",
@@ -41,6 +45,15 @@ class ProviderCapacityGovernorTests(unittest.TestCase):
         }
         lease.update(overrides)
         return lease
+
+    def _run_cli(self, *args):
+        return subprocess.run(
+            [sys.executable, str(MODULE_PATH), *map(str, args)],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
 
     def test_example_is_admitted(self):
         decision = MODULE.decide(self.snapshot)
@@ -84,9 +97,12 @@ class ProviderCapacityGovernorTests(unittest.TestCase):
         self.assertIn("CAPACITY_OBSERVATION_FROM_FUTURE", MODULE.decide(future)["reason_codes"])
 
     def test_schema_date_time_format_is_enforced(self):
-        self.snapshot["capacity"]["observed_at"] = "not-a-date-time"
-        with self.assertRaisesRegex(MODULE.ContractError, "schema violation|invalid RFC3339"):
-            MODULE.decide(self.snapshot)
+        for invalid in ("not-a-date-time", "2026-08-18 16:00:00Z"):
+            with self.subTest(value=invalid):
+                snapshot = copy.deepcopy(self.snapshot)
+                snapshot["capacity"]["observed_at"] = invalid
+                with self.assertRaisesRegex(MODULE.ContractError, "schema violation|invalid RFC3339"):
+                    MODULE.decide(snapshot)
 
     def test_r1_red_unchanged_prior_idle_fingerprint_is_r2_green_denied(self):
         self.snapshot["request"]["prior_idle_input_fingerprint"] = self.snapshot["request"][
@@ -123,6 +139,34 @@ class ProviderCapacityGovernorTests(unittest.TestCase):
     def test_dead_process_with_fresh_lease_is_not_live(self):
         self.snapshot["active_leases"].append(self._lease(process_status="dead"))
         self.assertEqual("ADMIT", MODULE.decide(self.snapshot)["decision"])
+
+    def test_r2_red_dead_starting_claimant_is_r3_green_fenced_independently(self):
+        cases = (
+            {
+                "startup_fence_expires_at": "2026-08-18T16:01:00Z",
+                "cooldown_expires_at": "2026-08-18T15:59:30Z",
+                "reason": "STARTUP_FENCE_ACTIVE",
+            },
+            {
+                "startup_fence_expires_at": "2026-08-18T15:59:00Z",
+                "cooldown_expires_at": "2026-08-18T16:01:00Z",
+                "reason": "COOLDOWN_ACTIVE",
+            },
+        )
+        for case in cases:
+            with self.subTest(reason=case["reason"]):
+                snapshot = copy.deepcopy(self.snapshot)
+                snapshot["active_leases"].append(
+                    self._lease(
+                        state="STARTING",
+                        process_status="dead",
+                        startup_fence_expires_at=case["startup_fence_expires_at"],
+                        cooldown_expires_at=case["cooldown_expires_at"],
+                    )
+                )
+                decision = MODULE.decide(snapshot)
+                self.assertEqual("DENY", decision["decision"])
+                self.assertIn(case["reason"], decision["reason_codes"])
 
     def test_live_process_with_stale_lease_degrades_without_takeover(self):
         self.snapshot["active_leases"].append(
@@ -190,8 +234,85 @@ class ProviderCapacityGovernorTests(unittest.TestCase):
     def test_r1_red_extra_identity_field_is_r2_green_schema_failure(self):
         event = json.loads((ROOT / "examples" / "provider-usage-events-v1.jsonl").read_text().splitlines()[0])
         event["account_identifier"] = "real-account@example.invalid"
-        with self.assertRaisesRegex(MODULE.ContractError, "schema violation"):
+        with self.assertRaisesRegex(MODULE.ContractError, "schema violation|prohibited"):
             MODULE.validate_usage_event(event)
+
+    def test_r2_red_email_and_unsafe_paths_are_r3_green_rejected(self):
+        base = json.loads((ROOT / "examples" / "provider-usage-events-v1.jsonl").read_text().splitlines()[0])
+        email = copy.deepcopy(base)
+        email["actor"]["role"] = "real-account@example.invalid"
+        with self.assertRaisesRegex(MODULE.ContractError, "email-like"):
+            MODULE.validate_usage_event(email)
+        disguised_path = copy.deepcopy(base)
+        disguised_path["model_requested"] = "C:/Users/alice/raw-account.json"
+        with self.assertRaisesRegex(MODULE.ContractError, "publishable value prohibited"):
+            MODULE.validate_usage_event(disguised_path)
+        for unsafe_path in (
+            "C:/Users/alice/usage.json",
+            "/home/alice/usage.json",
+            "\\\\server\\share\\usage.json",
+            "Users/alice/usage.json",
+            "../private/usage.json",
+        ):
+            with self.subTest(path=unsafe_path):
+                event = copy.deepcopy(base)
+                event["refs"][0]["project_local_path"] = unsafe_path
+                with self.assertRaisesRegex(
+                    MODULE.ContractError,
+                    "paths? prohibited|path required|publishable value prohibited",
+                ):
+                    MODULE.validate_usage_event(event)
+
+    def test_r2_red_duplicate_and_nonfinite_snapshot_cli_is_r3_green_rejected(self):
+        raw = (ROOT / "examples" / "provider-admission-snapshot-v1.json").read_text()
+        cases = {
+            "duplicate.json": raw.replace(
+                '"schema_version": 1,',
+                '"schema_version": 1, "schema_version": 1,',
+                1,
+            ),
+            "nan.json": raw.replace('"estimated_window_pct": 8', '"estimated_window_pct": NaN', 1),
+            "negative-infinity.json": raw.replace(
+                '"estimated_window_pct": 8',
+                '"estimated_window_pct": -Infinity',
+                1,
+            ),
+        }
+        with tempfile.TemporaryDirectory() as directory:
+            for name, payload in cases.items():
+                with self.subTest(name=name):
+                    path = Path(directory) / name
+                    path.write_text(payload, encoding="utf-8")
+                    result = self._run_cli("decide", path)
+                    self.assertEqual(2, result.returncode, result.stdout)
+                    self.assertRegex(result.stdout, "duplicate JSON key|non-finite JSON number")
+
+    def test_r2_red_duplicate_nonfinite_and_invalid_utf8_jsonl_cli_is_r3_green_rejected(self):
+        raw = (ROOT / "examples" / "provider-usage-events-v1.jsonl").read_text().splitlines()[0]
+        cases = {
+            "duplicate.jsonl": raw.replace('"schema_version":1,', '"schema_version":1,"schema_version":1,', 1).encode(),
+            "infinity.jsonl": raw.replace('"request_count":73', '"request_count":Infinity', 1).encode(),
+            "invalid-utf8.jsonl": b"\xff\n",
+        }
+        with tempfile.TemporaryDirectory() as directory:
+            for name, payload in cases.items():
+                with self.subTest(name=name):
+                    path = Path(directory) / name
+                    path.write_bytes(payload + (b"\n" if not payload.endswith(b"\n") else b""))
+                    result = self._run_cli("validate-events", path)
+                    self.assertEqual(2, result.returncode, result.stdout)
+                    self.assertRegex(result.stdout, "duplicate JSON key|non-finite JSON number|invalid UTF-8")
+
+    def test_every_snapshot_date_time_is_explicitly_parsed(self):
+        self.snapshot["active_leases"].append(
+            self._lease(
+                quota_domain_id="anthropic/hmac-sha256:ffffffffffffffffffffffffffffffff",
+                process_status="dead",
+                startup_fence_expires_at="not-a-date-time",
+            )
+        )
+        with self.assertRaisesRegex(MODULE.ContractError, "schema violation|invalid RFC3339"):
+            MODULE.decide(self.snapshot)
 
     def test_schema_or_validator_absence_fails_closed(self):
         MODULE._schema_validator.cache_clear()
@@ -203,6 +324,31 @@ class ProviderCapacityGovernorTests(unittest.TestCase):
             with self.assertRaisesRegex(MODULE.ContractError, "schema unavailable"):
                 MODULE.decide(self.snapshot)
         MODULE._schema_validator.cache_clear()
+
+    def test_r2_red_unlocked_dependency_is_r3_green_hash_locked_in_ci(self):
+        lock_path = ROOT / "requirements-provider-capacity-governor.lock.txt"
+        lock = lock_path.read_text(encoding="utf-8")
+        self.assertNotIn("--index-url", lock)
+        for package in (
+            "jsonschema==4.25.1",
+            "rfc3339-validator==",
+            "jsonschema-specifications==",
+            "referencing==",
+            "rpds-py==",
+        ):
+            self.assertIn(package, lock)
+        lines = lock.splitlines()
+        package_indexes = [
+            index
+            for index, line in enumerate(lines)
+            if line and not line.startswith(("#", " ")) and "==" in line
+        ]
+        self.assertGreater(len(package_indexes), 5)
+        for index in package_indexes:
+            self.assertIn("--hash=sha256:", lines[index + 1], lines[index])
+        workflow = (ROOT / ".github" / "workflows" / "provider-capacity-governor.yml").read_text()
+        self.assertIn("--require-hashes", workflow)
+        self.assertIn(lock_path.name, workflow)
 
 
 if __name__ == "__main__":

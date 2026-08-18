@@ -10,6 +10,7 @@ on:
       - "tests/test_provider_capacity_governor.py"
       - "tools/provider_capacity_governor.py"
       - "requirements-provider-capacity-governor.txt"
+      - "requirements-provider-capacity-governor.lock.txt"
   push:
     branches: [master]
     paths:
@@ -20,6 +21,7 @@ on:
       - "tests/test_provider_capacity_governor.py"
       - "tools/provider_capacity_governor.py"
       - "requirements-provider-capacity-governor.txt"
+      - "requirements-provider-capacity-governor.lock.txt"
   workflow_dispatch:
 
 permissions:
@@ -45,7 +47,7 @@ jobs:
           python-version: "3.13"
 
       - name: Install pinned schema validator
-        run: python -m pip install --disable-pip-version-check -r requirements-provider-capacity-governor.txt
+        run: python -m pip install --disable-pip-version-check --require-hashes -r requirements-provider-capacity-governor.lock.txt
 
       - name: Run semantic negative controls
         run: python -m unittest discover -s tests -p 'test_provider_capacity_governor.py' -v

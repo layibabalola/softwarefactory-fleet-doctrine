@@ -21,22 +21,22 @@
     "schema_version": { "const": 1 },
     "event_id": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{7,127}$" },
     "ts": { "type": "string", "format": "date-time" },
-    "project": { "type": "string", "minLength": 1, "maxLength": 80 },
+    "project": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{0,79}$" },
     "host_cell": { "type": "string", "pattern": "^(opaque:|hmac-sha256:)[a-f0-9]{16,64}$" },
     "quota_domain_id": { "type": "string", "pattern": "^[a-z0-9-]+/(opaque:|hmac-sha256:)[a-f0-9]{16,64}$" },
     "provider": { "type": "string", "pattern": "^[a-z0-9-]{2,40}$" },
-    "transport": { "type": "string", "minLength": 1, "maxLength": 80 },
-    "model_requested": { "type": ["string", "null"], "maxLength": 120 },
-    "model_effective": { "type": ["string", "null"], "maxLength": 120 },
-    "effort_requested": { "type": ["string", "null"], "maxLength": 40 },
-    "effort_effective": { "type": ["string", "null"], "maxLength": 40 },
+    "transport": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:+/-]{0,79}$" },
+    "model_requested": { "type": ["string", "null"], "pattern": "^[A-Za-z0-9][A-Za-z0-9._:+/-]{0,119}$" },
+    "model_effective": { "type": ["string", "null"], "pattern": "^[A-Za-z0-9][A-Za-z0-9._:+/-]{0,119}$" },
+    "effort_requested": { "type": ["string", "null"], "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,39}$" },
+    "effort_effective": { "type": ["string", "null"], "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,39}$" },
     "actor": {
       "type": "object",
       "additionalProperties": false,
       "required": ["lane", "role"],
       "properties": {
-        "lane": { "type": "string", "minLength": 1, "maxLength": 80 },
-        "role": { "type": "string", "minLength": 1, "maxLength": 80 }
+        "lane": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,79}$" },
+        "role": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,79}$" }
       }
     },
     "task_id_hash": { "type": ["string", "null"], "pattern": "^(sha256:)?[a-f0-9]{64}$" },
@@ -85,7 +85,7 @@
       "required": ["quality", "source"],
       "properties": {
         "quality": { "enum": ["exact", "estimated", "mixed", "unknown"] },
-        "source": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "source": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,119}$" },
         "request_count": { "$ref": "#/$defs/nonNegativeOrUnknown" },
         "input_tokens": { "$ref": "#/$defs/nonNegativeOrUnknown" },
         "cached_input_tokens": { "$ref": "#/$defs/nonNegativeOrUnknown" },
@@ -123,9 +123,13 @@
         "additionalProperties": false,
         "required": ["kind", "sha256"],
         "properties": {
-          "kind": { "type": "string", "minLength": 1, "maxLength": 40 },
+          "kind": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,39}$" },
           "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
-          "project_local_path": { "type": ["string", "null"], "maxLength": 300 }
+          "project_local_path": {
+            "type": ["string", "null"],
+            "maxLength": 300,
+            "pattern": "^[A-Za-z0-9._-]+(/[A-Za-z0-9._-]+)*$"
+          }
         }
       }
     }

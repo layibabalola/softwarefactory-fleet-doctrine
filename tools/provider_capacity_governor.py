@@ -28,6 +28,9 @@ QUOTA_DOMAIN_RE = re.compile(
     r"^(?P<provider>[a-z0-9-]+)/(?:opaque:|hmac-sha256:)[a-f0-9]{16,64}$"
 )
 HASH_RE = re.compile(r"^[a-f0-9]{64}$")
+RFC3339_RE = re.compile(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$")
+EMAIL_RE = re.compile(r"(?i)(?<![A-Z0-9._%+-])[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}(?![A-Z0-9.-])")
+SAFE_PATH_COMPONENT_RE = re.compile(r"^[A-Za-z0-9._-]+$")
 EVENTS = {
     "ADMISSION_REQUESTED",
     "ADMISSION_ADMITTED",
@@ -44,6 +47,14 @@ EVENTS = {
 PROHIBITED_KEYS = {
     "account_id",
     "account_email",
+    "account_identifier",
+    "account_alias",
+    "organization_id",
+    "org_id",
+    "tenant_id",
+    "subscription_id",
+    "user_id",
+    "username",
     "email",
     "api_key",
     "access_token",
@@ -73,6 +84,8 @@ class ContractError(ValueError):
 def _parse_utc(value: Any, field: str) -> datetime:
     if not isinstance(value, str):
         raise ContractError(f"{field}: expected RFC3339 string")
+    if not RFC3339_RE.fullmatch(value):
+        raise ContractError(f"{field}: invalid RFC3339 timestamp")
     normalized = value[:-1] + "+00:00" if value.endswith("Z") else value
     try:
         parsed = datetime.fromisoformat(normalized)
@@ -86,6 +99,37 @@ def _parse_utc(value: Any, field: str) -> datetime:
 def _canonical_hash(value: Any) -> str:
     encoded = json.dumps(value, sort_keys=True, separators=(",", ":")).encode("utf-8")
     return hashlib.sha256(encoded).hexdigest()
+
+
+def _strict_object(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
+    value: dict[str, Any] = {}
+    for key, child in pairs:
+        if key in value:
+            raise ContractError(f"duplicate JSON key prohibited: {key!r}")
+        value[key] = child
+    return value
+
+
+def _reject_nonfinite_json(value: str) -> None:
+    raise ContractError(f"non-finite JSON number prohibited: {value}")
+
+
+def _strict_json_loads(raw: str, source: str) -> Any:
+    try:
+        return json.loads(
+            raw,
+            object_pairs_hook=_strict_object,
+            parse_constant=_reject_nonfinite_json,
+        )
+    except json.JSONDecodeError as exc:
+        raise ContractError(f"{source}: invalid JSON: {exc.msg}") from exc
+
+
+def _decode_utf8(raw: bytes, source: str) -> str:
+    try:
+        return raw.decode("utf-8")
+    except UnicodeDecodeError as exc:
+        raise ContractError(f"{source}: invalid UTF-8") from exc
 
 
 @lru_cache(maxsize=2)
@@ -126,6 +170,17 @@ def _walk_keys(value: Any, path: str = "$") -> Iterable[tuple[str, str]]:
             yield from _walk_keys(child, f"{path}[{index}]")
 
 
+def _walk_strings(value: Any, path: str = "$") -> Iterable[tuple[str, str]]:
+    if isinstance(value, dict):
+        for key, child in value.items():
+            yield from _walk_strings(child, f"{path}.{key}")
+    elif isinstance(value, list):
+        for index, child in enumerate(value):
+            yield from _walk_strings(child, f"{path}[{index}]")
+    elif isinstance(value, str):
+        yield path, value
+
+
 def _validate_opaque_event(event: dict[str, Any]) -> None:
     leaked = [(path, key) for path, key in _walk_keys(event) if key.lower() in PROHIBITED_KEYS]
     if leaked:
@@ -133,10 +188,49 @@ def _validate_opaque_event(event: dict[str, Any]) -> None:
         raise ContractError(f"{path}.{key}: raw identity, credential, prompt, or transcript data prohibited")
 
 
+def _validate_project_local_path(value: Any, field: str) -> None:
+    if value is None:
+        return
+    if not isinstance(value, str) or not value:
+        raise ContractError(f"{field}: non-empty project-relative path required")
+    if value.startswith(("/", "\\", "~")) or "\\" in value or re.match(r"^[A-Za-z]:", value):
+        raise ContractError(f"{field}: absolute, UNC, home, and Windows paths prohibited")
+    components = value.split("/")
+    if any(component in {"", ".", ".."} or not SAFE_PATH_COMPONENT_RE.fullmatch(component) for component in components):
+        raise ContractError(f"{field}: normalized project-relative path required")
+    lowered = [component.lower() for component in components]
+    if lowered[0] in {"home", "root", "users"} or (
+        len(lowered) >= 3 and lowered[0] == "mnt" and lowered[2] == "users"
+    ):
+        raise ContractError(f"{field}: user-profile paths prohibited")
+
+
+def _validate_publishable_event_values(event: dict[str, Any]) -> None:
+    for path, value in _walk_strings(event):
+        if EMAIL_RE.search(value):
+            raise ContractError(f"{path}: email-like publishable value prohibited")
+        normalized = value.replace("\\", "/")
+        lowered = normalized.lower().split("/")
+        if (
+            normalized.startswith(("/", "~"))
+            or re.match(r"^[A-Za-z]:/", normalized)
+            or (len(lowered) >= 2 and lowered[0] in {"home", "root", "users"})
+            or (len(lowered) >= 3 and lowered[0] == "mnt" and lowered[2] == "users")
+        ):
+            raise ContractError(f"{path}: absolute or user-profile publishable value prohibited")
+    for index, ref in enumerate(event.get("refs", [])):
+        if isinstance(ref, dict):
+            _validate_project_local_path(
+                ref.get("project_local_path"),
+                f"refs[{index}].project_local_path",
+            )
+
+
 def validate_usage_event(event: Any) -> None:
     if not isinstance(event, dict):
         raise ContractError("event: expected object")
     _validate_opaque_event(event)
+    _validate_publishable_event_values(event)
     _validate_schema(event, "provider-usage-event-v1.schema.json")
     required = {
         "schema_version",
@@ -170,6 +264,8 @@ def validate_usage_event(event: Any) -> None:
     measurement = event["measurement"]
     if not isinstance(measurement, dict):
         raise ContractError("measurement: expected object")
+    if measurement.get("reset_at") not in (None, "unknown"):
+        _parse_utc(measurement["reset_at"], "measurement.reset_at")
     if measurement.get("quality") not in {"exact", "estimated", "mixed", "unknown"}:
         raise ContractError("measurement.quality: unsupported value")
     if not isinstance(measurement.get("source"), str) or not measurement["source"]:
@@ -220,19 +316,20 @@ def validate_usage_file(path: Path) -> dict[str, Any]:
     count = 0
     event_ids: set[str] = set()
     errors: list[str] = []
-    with path.open("r", encoding="utf-8") as handle:
+    with path.open("rb") as handle:
         for line_number, raw in enumerate(handle, 1):
             if not raw.strip():
                 continue
             try:
-                event = json.loads(raw)
+                decoded = _decode_utf8(raw, f"line {line_number}")
+                event = _strict_json_loads(decoded, f"line {line_number}")
                 validate_usage_event(event)
                 event_id = event["event_id"]
                 if event_id in event_ids:
                     raise ContractError(f"event_id: duplicate {event_id!r}")
                 event_ids.add(event_id)
                 count += 1
-            except (json.JSONDecodeError, ContractError) as exc:
+            except ContractError as exc:
                 errors.append(f"line {line_number}: {exc}")
     return {"valid": not errors, "event_count": count, "errors": errors}
 
@@ -264,6 +361,8 @@ def decide(snapshot: Any) -> dict[str, Any]:
     if capacity.get("quota_domain_id") != quota_domain_id:
         raise ContractError("capacity.quota_domain_id: must equal request quota domain")
     capacity_observed_at = _parse_utc(capacity.get("observed_at"), "capacity.observed_at")
+    if capacity.get("reset_at") != "unknown":
+        _parse_utc(capacity.get("reset_at"), "capacity.reset_at")
     owner_override = request.get("owner_override") is True
     reasons: list[str] = []
     warnings: list[str] = []
@@ -314,19 +413,36 @@ def decide(snapshot: Any) -> dict[str, Any]:
         warnings.append("OWNER_OVERRIDE_CAPACITY_UNKNOWN")
     live_count = 0
     for index, lease in enumerate(active_leases):
+        expires_at = _parse_utc(lease.get("expires_at"), f"active_leases[{index}].expires_at")
+        process_start_time = _parse_utc(
+            lease.get("process_start_time"),
+            f"active_leases[{index}].process_start_time",
+        )
+        startup_fence_expires_at = _parse_utc(
+            lease.get("startup_fence_expires_at"),
+            f"active_leases[{index}].startup_fence_expires_at",
+        )
+        cooldown_expires_at = _parse_utc(
+            lease.get("cooldown_expires_at"),
+            f"active_leases[{index}].cooldown_expires_at",
+        )
         if lease.get("quota_domain_id") != quota_domain_id:
             continue
-        expires_at = _parse_utc(lease.get("expires_at"), f"active_leases[{index}].expires_at")
+        fence_active = False
+        if cooldown_expires_at > observed_at:
+            reasons.append("COOLDOWN_ACTIVE")
+            fence_active = True
+        if lease.get("state") == "STARTING" and startup_fence_expires_at > observed_at:
+            reasons.append("STARTUP_FENCE_ACTIVE")
+            fence_active = True
+        if fence_active:
+            continue
         process_status = lease.get("process_status")
         if process_status == "dead":
             continue
         if process_status == "ambiguous":
             reasons.append("IDENTITY_AMBIGUOUS")
             continue
-        process_start_time = _parse_utc(
-            lease.get("process_start_time"),
-            f"active_leases[{index}].process_start_time",
-        )
         if process_start_time > observed_at or expires_at <= process_start_time:
             reasons.append("IDENTITY_AMBIGUOUS")
             continue
@@ -398,8 +514,8 @@ def decide(snapshot: Any) -> dict[str, Any]:
 
 
 def _load_json(path: Path) -> Any:
-    with path.open("r", encoding="utf-8") as handle:
-        return json.load(handle)
+    raw = path.read_bytes()
+    return _strict_json_loads(_decode_utf8(raw, str(path)), str(path))
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -418,7 +534,7 @@ def main(argv: list[str] | None = None) -> int:
         result = decide(_load_json(args.path))
         print(json.dumps(result, indent=2, sort_keys=True))
         return 0 if result["decision"] == "ADMIT" else 3
-    except (OSError, json.JSONDecodeError, ContractError) as exc:
+    except (OSError, ContractError) as exc:
         print(json.dumps({"valid": False, "errors": [str(exc)]}, indent=2, sort_keys=True))
         return 2
 
