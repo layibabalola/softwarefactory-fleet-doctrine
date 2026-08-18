@@ -86,6 +86,13 @@ A fresh file written by an orphan watcher is never process liveness. Watchers re
 and owner-process identity every poll and exit on mismatch. An ambiguous process is not killed and
 does not authorize takeover; it produces a durable blocker.
 
+The frozen admission snapshot carries process ID/start time, `live`/`dead`/`ambiguous` process
+status, requested and observed provider/model, seat epoch, registered and observed opaque session
+hashes, registry status, and progress status for every claimant record. A dead process is not made
+live by a fresh lease. A live process with a stale lease, or any live identity/registry/session
+mismatch, denies takeover with a non-green reason. A `STARTING` process remains fenced through its
+bounded startup expiry even before observed identity is available.
+
 ## Default admission policy
 
 The safe initial default is one unattended inference-bearing root session per quota domain. The
@@ -108,6 +115,12 @@ Before unattended admission, the supervisor requires:
 - a bounded session estimate derived from completed comparable slices;
 - a reserve for foreground work and one required independent review;
 - actionable work whose deterministic input fingerprint changed since the last idle result.
+
+The policy sets `capacity_observation_max_age_seconds`. Capacity observations later than the frozen
+snapshot or older than that bound deny admission. Every request carries the current deterministic
+idle-input fingerprint and the prior `IDLE_SKIPPED` fingerprint (or `null` when no prior idle result
+exists). Identical current and prior fingerprints deny unattended admission; an owner override does
+not convert unchanged idle input into work.
 
 The initial reserve may be 30% of a provider window, but it is a canary value, not doctrine truth.
 Projects tune it from measured windows. Unknown capacity blocks unattended sessions by default.
@@ -201,9 +214,19 @@ Raw usage remains project-local. Each project compiles append-only events confor
 - capacity window, utilization, reset, reservation, and refusal classification;
 - useful outcome such as completed slice, accepted review, blocker found, or idle/no-work.
 
+`IDLE_SKIPPED` is a proof-bearing event: it requires the deterministic input fingerprint and
+explicit zero request, input, cached-input, cache-write, reasoning, output, and tool-call counters.
+Missing, `unknown`, or nonzero counters cannot be published as idle/no-inference.
+
 Doctrine receives only opaque identities and derived events under the existing one-writer project
 shard law. Metrics are diagnostic and never authority. Live admission reads local authoritative
 state, not Git metrics. A telemetry outage cannot turn into an admission success.
+
+The reference CLI loads and enforces both Draft 2020-12 schemas before semantic evaluation. Schema
+absence, validator absence, invalid format, extra properties, or malformed claimant state fails
+closed. The CLI remains a frozen decision/telemetry conformance tool only: it does not inspect live
+processes, acquire leases, mutate the automatic gate, or launch a provider. Projects populate the
+snapshot from their separately reviewed host-local supervisor.
 
 ## Evidence campaign and non-regression bar
 

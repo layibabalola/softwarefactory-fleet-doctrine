@@ -41,6 +41,7 @@
     },
     "task_id_hash": { "type": ["string", "null"], "pattern": "^(sha256:)?[a-f0-9]{64}$" },
     "session_id_hash": { "type": ["string", "null"], "pattern": "^(sha256:)?[a-f0-9]{64}$" },
+    "idle_input_fingerprint": { "type": ["string", "null"], "pattern": "^[a-f0-9]{64}$" },
     "seat_epoch": { "type": ["integer", "null"], "minimum": 0 },
     "event": {
       "enum": [
@@ -91,6 +92,7 @@
         "cache_write_tokens": { "$ref": "#/$defs/nonNegativeOrUnknown" },
         "reasoning_tokens": { "$ref": "#/$defs/nonNegativeOrUnknown" },
         "output_tokens": { "$ref": "#/$defs/nonNegativeOrUnknown" },
+        "tool_calls": { "$ref": "#/$defs/nonNegativeOrUnknown" },
         "cost_usd": {
           "oneOf": [
             { "type": "number", "minimum": 0 },
@@ -128,6 +130,37 @@
       }
     }
   },
+  "allOf": [
+    {
+      "if": { "properties": { "event": { "const": "IDLE_SKIPPED" } }, "required": ["event"] },
+      "then": {
+        "required": ["idle_input_fingerprint"],
+        "properties": {
+          "idle_input_fingerprint": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+          "measurement": {
+            "required": [
+              "request_count",
+              "input_tokens",
+              "cached_input_tokens",
+              "cache_write_tokens",
+              "reasoning_tokens",
+              "output_tokens",
+              "tool_calls"
+            ],
+            "properties": {
+              "request_count": { "const": 0 },
+              "input_tokens": { "const": 0 },
+              "cached_input_tokens": { "const": 0 },
+              "cache_write_tokens": { "const": 0 },
+              "reasoning_tokens": { "const": 0 },
+              "output_tokens": { "const": 0 },
+              "tool_calls": { "const": 0 }
+            }
+          }
+        }
+      }
+    }
+  ],
   "$defs": {
     "nonNegativeOrUnknown": {
       "oneOf": [

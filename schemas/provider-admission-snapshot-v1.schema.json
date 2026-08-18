@@ -13,6 +13,7 @@
       "additionalProperties": false,
       "required": [
         "automatic_launch_gate",
+        "capacity_observation_max_age_seconds",
         "max_automatic_concurrency",
         "interactive_reserve_pct",
         "deny_background_when_capacity_unknown",
@@ -21,6 +22,7 @@
       ],
       "properties": {
         "automatic_launch_gate": { "enum": ["closed", "open"] },
+        "capacity_observation_max_age_seconds": { "type": "integer", "minimum": 1, "maximum": 86400 },
         "max_automatic_concurrency": { "type": "integer", "minimum": 1, "maximum": 32 },
         "interactive_reserve_pct": { "type": "number", "minimum": 0, "maximum": 100 },
         "deny_background_when_capacity_unknown": { "type": "boolean" },
@@ -44,7 +46,9 @@
         "effort_requested",
         "estimated_window_pct",
         "slice_minutes",
-        "max_agent_turns"
+        "max_agent_turns",
+        "idle_input_fingerprint",
+        "prior_idle_input_fingerprint"
       ],
       "properties": {
         "request_id": { "type": "string", "minLength": 8, "maxLength": 128 },
@@ -68,7 +72,8 @@
         "slice_minutes": { "type": "integer", "minimum": 1, "maximum": 240 },
         "max_agent_turns": { "type": "integer", "minimum": 1, "maximum": 500 },
         "evidence_capsule_sha256": { "type": ["string", "null"], "pattern": "^[a-f0-9]{64}$" },
-        "idle_input_fingerprint": { "type": ["string", "null"], "pattern": "^[a-f0-9]{64}$" }
+        "idle_input_fingerprint": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+        "prior_idle_input_fingerprint": { "type": ["string", "null"], "pattern": "^[a-f0-9]{64}$" }
       }
     },
     "capacity": {
@@ -99,12 +104,41 @@
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["lease_id", "quota_domain_id", "state", "expires_at"],
+        "required": [
+          "lease_id",
+          "quota_domain_id",
+          "state",
+          "expires_at",
+          "process_id",
+          "process_start_time",
+          "process_status",
+          "provider_requested",
+          "model_requested",
+          "provider_observed",
+          "model_observed",
+          "seat_epoch",
+          "registered_session_id_hash",
+          "observed_session_id_hash",
+          "registry_status",
+          "progress_status"
+        ],
         "properties": {
           "lease_id": { "type": "string", "minLength": 8, "maxLength": 128 },
-          "quota_domain_id": { "type": "string" },
+          "quota_domain_id": { "type": "string", "pattern": "^[a-z0-9-]+/(opaque:|hmac-sha256:)[a-f0-9]{16,64}$" },
           "state": { "enum": ["STARTING", "CLAIMED", "RUNNING", "CHECKPOINTED"] },
-          "expires_at": { "type": "string", "format": "date-time" }
+          "expires_at": { "type": "string", "format": "date-time" },
+          "process_id": { "type": "integer", "minimum": 1 },
+          "process_start_time": { "type": "string", "format": "date-time" },
+          "process_status": { "enum": ["live", "dead", "ambiguous"] },
+          "provider_requested": { "type": "string", "pattern": "^[a-z0-9-]{2,40}$" },
+          "model_requested": { "type": "string", "minLength": 1, "maxLength": 120 },
+          "provider_observed": { "type": ["string", "null"], "pattern": "^[a-z0-9-]{2,40}$" },
+          "model_observed": { "type": ["string", "null"], "maxLength": 120 },
+          "seat_epoch": { "type": "integer", "minimum": 0 },
+          "registered_session_id_hash": { "type": ["string", "null"], "pattern": "^(sha256:)?[a-f0-9]{64}$" },
+          "observed_session_id_hash": { "type": ["string", "null"], "pattern": "^(sha256:)?[a-f0-9]{64}$" },
+          "registry_status": { "enum": ["verified", "mismatch", "unknown"] },
+          "progress_status": { "enum": ["fresh", "stale", "unavailable"] }
         }
       }
     }

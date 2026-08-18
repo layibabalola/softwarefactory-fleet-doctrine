@@ -14,8 +14,14 @@ import json
 import re
 import sys
 from datetime import datetime, timedelta, timezone
+from functools import lru_cache
 from pathlib import Path
 from typing import Any, Iterable
+
+try:
+    import jsonschema
+except ImportError:  # pragma: no cover - exercised by deployment environments, not this test env
+    jsonschema = None
 
 
 QUOTA_DOMAIN_RE = re.compile(
@@ -53,9 +59,11 @@ TOKEN_FIELDS = {
     "cache_write_tokens",
     "reasoning_tokens",
     "output_tokens",
+    "tool_calls",
     "active_seconds",
     "context_tokens",
 }
+SCHEMA_ROOT = Path(__file__).resolve().parents[1] / "schemas"
 
 
 class ContractError(ValueError):
@@ -80,6 +88,34 @@ def _canonical_hash(value: Any) -> str:
     return hashlib.sha256(encoded).hexdigest()
 
 
+@lru_cache(maxsize=2)
+def _schema_validator(schema_name: str) -> Any:
+    if jsonschema is None:
+        raise ContractError("jsonschema dependency unavailable; conformance fails closed")
+    schema_path = SCHEMA_ROOT / schema_name
+    try:
+        schema = json.loads(schema_path.read_text(encoding="utf-8"))
+        jsonschema.Draft202012Validator.check_schema(schema)
+    except (OSError, json.JSONDecodeError, jsonschema.SchemaError) as exc:
+        raise ContractError(f"{schema_name}: schema unavailable or invalid: {exc}") from exc
+    return jsonschema.Draft202012Validator(
+        schema,
+        format_checker=jsonschema.FormatChecker(),
+    )
+
+
+def _validate_schema(value: Any, schema_name: str) -> None:
+    validator = _schema_validator(schema_name)
+    errors = sorted(validator.iter_errors(value), key=lambda error: list(error.absolute_path))
+    if not errors:
+        return
+    error = errors[0]
+    location = "$"
+    for component in error.absolute_path:
+        location += f"[{component}]" if isinstance(component, int) else f".{component}"
+    raise ContractError(f"{location}: schema violation: {error.message}")
+
+
 def _walk_keys(value: Any, path: str = "$") -> Iterable[tuple[str, str]]:
     if isinstance(value, dict):
         for key, child in value.items():
@@ -101,6 +137,7 @@ def validate_usage_event(event: Any) -> None:
     if not isinstance(event, dict):
         raise ContractError("event: expected object")
     _validate_opaque_event(event)
+    _validate_schema(event, "provider-usage-event-v1.schema.json")
     required = {
         "schema_version",
         "event_id",
@@ -155,8 +192,22 @@ def validate_usage_event(event: Any) -> None:
         raise ContractError("outcome: TERMINAL requires an explicit non-green-or-green outcome")
     if event["event"] == "USAGE_OBSERVED" and not any(field in measurement for field in TOKEN_FIELDS):
         raise ContractError("measurement: USAGE_OBSERVED requires at least one usage field")
-    if event["event"] == "IDLE_SKIPPED" and measurement.get("request_count") not in (None, 0):
-        raise ContractError("measurement.request_count: IDLE_SKIPPED must consume zero model requests")
+    if event["event"] == "IDLE_SKIPPED":
+        zero_fields = {
+            "request_count",
+            "input_tokens",
+            "cached_input_tokens",
+            "cache_write_tokens",
+            "reasoning_tokens",
+            "output_tokens",
+            "tool_calls",
+        }
+        nonzero = sorted(field for field in zero_fields if measurement.get(field) != 0)
+        if nonzero:
+            raise ContractError(
+                "measurement: IDLE_SKIPPED requires explicit zero counters: "
+                + ", ".join(nonzero)
+            )
     for field in ("task_id_hash", "session_id_hash"):
         value = event.get(field)
         if value is not None:
@@ -189,6 +240,7 @@ def validate_usage_file(path: Path) -> dict[str, Any]:
 def decide(snapshot: Any) -> dict[str, Any]:
     if not isinstance(snapshot, dict):
         raise ContractError("snapshot: expected object")
+    _validate_schema(snapshot, "provider-admission-snapshot-v1.schema.json")
     for field in ("schema_version", "observed_at", "policy", "request", "capacity", "active_leases"):
         if field not in snapshot:
             raise ContractError(f"snapshot: missing {field}")
@@ -211,7 +263,7 @@ def decide(snapshot: Any) -> dict[str, Any]:
         raise ContractError("request.provider: must equal quota-domain provider prefix")
     if capacity.get("quota_domain_id") != quota_domain_id:
         raise ContractError("capacity.quota_domain_id: must equal request quota domain")
-    _parse_utc(capacity.get("observed_at"), "capacity.observed_at")
+    capacity_observed_at = _parse_utc(capacity.get("observed_at"), "capacity.observed_at")
     owner_override = request.get("owner_override") is True
     reasons: list[str] = []
     warnings: list[str] = []
@@ -235,11 +287,22 @@ def decide(snapshot: Any) -> dict[str, Any]:
     if status == "exhausted":
         reasons.append("CAPACITY_EXHAUSTED")
     is_background = request.get("foreground") is not True
+    if (
+        is_background
+        and request.get("actionable_work") is True
+        and request.get("prior_idle_input_fingerprint") == request.get("idle_input_fingerprint")
+    ):
+        reasons.append("UNCHANGED_IDLE_INPUT")
     automatic_gate = policy.get("automatic_launch_gate")
     if automatic_gate not in {"closed", "open"}:
         raise ContractError("policy.automatic_launch_gate: expected closed or open")
     if is_background and automatic_gate == "closed":
         reasons.append("AUTOMATIC_GATE_CLOSED")
+    max_capacity_age = policy.get("capacity_observation_max_age_seconds")
+    if capacity_observed_at > observed_at:
+        reasons.append("CAPACITY_OBSERVATION_FROM_FUTURE")
+    elif observed_at - capacity_observed_at > timedelta(seconds=max_capacity_age):
+        reasons.append("CAPACITY_OBSERVATION_STALE")
     if (
         status == "unknown"
         and is_background
@@ -254,8 +317,37 @@ def decide(snapshot: Any) -> dict[str, Any]:
         if lease.get("quota_domain_id") != quota_domain_id:
             continue
         expires_at = _parse_utc(lease.get("expires_at"), f"active_leases[{index}].expires_at")
-        if expires_at > observed_at and lease.get("state") in {"STARTING", "CLAIMED", "RUNNING", "CHECKPOINTED"}:
+        process_status = lease.get("process_status")
+        if process_status == "dead":
+            continue
+        if process_status == "ambiguous":
+            reasons.append("IDENTITY_AMBIGUOUS")
+            continue
+        process_start_time = _parse_utc(
+            lease.get("process_start_time"),
+            f"active_leases[{index}].process_start_time",
+        )
+        if process_start_time > observed_at or expires_at <= process_start_time:
+            reasons.append("IDENTITY_AMBIGUOUS")
+            continue
+        if expires_at <= observed_at:
+            reasons.append("LIVE_PROCESS_STALE_LEASE")
+            continue
+        if lease.get("state") == "STARTING":
             live_count += 1
+            continue
+        identity_agrees = (
+            lease.get("provider_requested") == lease.get("provider_observed")
+            and lease.get("model_requested") == lease.get("model_observed")
+            and lease.get("registered_session_id_hash") is not None
+            and lease.get("registered_session_id_hash") == lease.get("observed_session_id_hash")
+            and lease.get("registry_status") == "verified"
+            and lease.get("progress_status") in {"fresh", "unavailable"}
+        )
+        if not identity_agrees:
+            reasons.append("IDENTITY_AMBIGUOUS")
+            continue
+        live_count += 1
     max_concurrency = policy.get("max_automatic_concurrency")
     if not isinstance(max_concurrency, int) or max_concurrency < 1:
         raise ContractError("policy.max_automatic_concurrency: positive integer required")

@@ -3,6 +3,7 @@
   "observed_at": "2026-08-18T16:00:00Z",
   "policy": {
     "automatic_launch_gate": "open",
+    "capacity_observation_max_age_seconds": 120,
     "max_automatic_concurrency": 1,
     "interactive_reserve_pct": 30,
     "deny_background_when_capacity_unknown": true,
@@ -26,7 +27,8 @@
     "slice_minutes": 12,
     "max_agent_turns": 14,
     "evidence_capsule_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-    "idle_input_fingerprint": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+    "idle_input_fingerprint": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "prior_idle_input_fingerprint": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
   },
   "capacity": {
     "quota_domain_id": "anthropic/hmac-sha256:0123456789abcdef0123456789abcdef",
