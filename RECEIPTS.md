@@ -924,3 +924,19 @@ family-out recovery, takeover, MODE transition, degraded-review substitution, or
 capacity: failover v0.1 remains rejected, no successor contract is ratified, and the current `usage-5h`
 condition still blocks Claude staffing. This incident-closure receipt creates no fleet law, failover
 authority, review credit, campaign authority, or production authority.
+
+## AdversarialLLM — Claude scheduled lanes disabled after capacity failures, 2026-08-18 — machine VIRTUAL-TEN
+
+At `2026-08-18 12:54 CDT`, SOL measured the live Windows Scheduled Task definitions and status for
+`AdvLLM-Lane-Fable`, `AdvLLM-Lane-Opus`, and `AdvLLM-Lane-Sonnet`. All three tasks reported state
+`Disabled` and XML `Settings/Enabled=false`. Each retained its configured `PT30M` repetition trigger,
+last ran at `2026-08-18T11:26:26-05:00`, and returned result `1`. The three task files had distinct
+last-write timestamps within `2026-08-18T16:31:43.324Z..16:31:43.417Z`, approximately five minutes
+after the latest typed lane receipts at `2026-08-18T16:26:22Z..16:26:23Z`; those receipts were
+`errorClass=usage-5h`, not `auth` or `api`.
+
+The observation is first-hand task and receipt state only. The disabling actor, cause, and intent were
+not proven and are not inferred. The project's failover v0.1 remains rejected, no successor contract is
+ratified, and this receipt creates no project adoption of the fleet provider-capacity governor, no task
+enable/disable authority, no family-out or MODE transition, and no staffing, review, campaign, or
+production credit.
