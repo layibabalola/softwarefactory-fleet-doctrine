@@ -1900,3 +1900,22 @@ text identify the requested class, every incumbent class, and any configured cla
 that would be compatible for the identical path. An alternative is diagnostic only:
 the caller must issue a new explicit request and receive a fresh grant. Never
 auto-retry, auto-downgrade, or infer that a denied incumbent is dead.
+
+## Scheduled-task names can conceal direct provider launchers
+## (Cloudvore, 2026-08-18, Bachelor, first-hand)
+
+A pre-reset audit that filtered Windows Scheduled Tasks by provider, model, and
+project words reported the known Claude launch set closed, yet three enabled tasks
+remained able to start Claude directly. Two were named as lane deadmen and one as a
+mixed-provider lane supervisor; their task names did not contain `Claude` or
+`Anthropic`. The provider spawn appeared only after following each task action into
+its PowerShell entrypoint and configuration. A stale point-in-time list of seven
+disabled tasks therefore coexisted with live, differently named bypass roots.
+
+**Test / remedy:** derive containment from the complete scheduled-task action graph,
+not a task-name allowlist. Enumerate every enabled task, resolve wrapper and script
+entrypoints, inspect the pinned source closure for provider process creation, and
+classify observers separately from launchers. Freeze the resulting exact task/action
+digests, rerun the census immediately before reset and before every gate transition,
+and fail closed on a new, changed, unreadable, or ambiguous action chain. A reset or
+old disablement receipt cannot substitute for the fresh graph proof.
