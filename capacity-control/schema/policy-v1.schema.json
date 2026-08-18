@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://softwarefactory.local/fleet/policy-v1.schema.json",
+  "title": "Fleet capacity policy v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "max_concurrent_leases_per_domain", "snapshot_max_age_seconds", "lease_max_seconds", "post_reset_quiet_seconds", "reserve_fraction_by_priority"],
+  "properties": {
+    "schema": {"const": "fleet-capacity-policy/v1"},
+    "max_concurrent_leases_per_domain": {"type": "integer", "minimum": 1, "maximum": 64},
+    "snapshot_max_age_seconds": {"type": "integer", "minimum": 1, "maximum": 86400},
+    "lease_max_seconds": {"type": "integer", "minimum": 1, "maximum": 21600},
+    "post_reset_quiet_seconds": {"type": "integer", "minimum": 0, "maximum": 86400},
+    "reserve_fraction_by_priority": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["OWNER_FOREGROUND", "REQUIRED_REVIEW", "PRODUCT_WORK", "BACKGROUND"],
+      "properties": {
+        "OWNER_FOREGROUND": {"type": "number", "minimum": 0, "exclusiveMaximum": 1},
+        "REQUIRED_REVIEW": {"type": "number", "minimum": 0, "exclusiveMaximum": 1},
+        "PRODUCT_WORK": {"type": "number", "minimum": 0, "exclusiveMaximum": 1},
+        "BACKGROUND": {"type": "number", "minimum": 0, "exclusiveMaximum": 1}
+      }
+    }
+  }
+}

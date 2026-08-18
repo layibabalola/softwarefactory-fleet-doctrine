@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://softwarefactory.local/fleet/evidence-capsule-v1.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "subject_digest", "manifest_digest", "payload_bytes", "items"],
+  "properties": {
+    "schema": {"const": "fleet-evidence-capsule/v1"},
+    "subject_digest": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+    "manifest_digest": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+    "payload_bytes": {"type": "integer", "minimum": 0},
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["relative_path", "file_sha256", "start_line", "end_line", "purpose", "content"],
+        "properties": {
+          "relative_path": {"type": "string"},
+          "file_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+          "start_line": {"type": "integer", "minimum": 1},
+          "end_line": {"type": "integer", "minimum": 1},
+          "purpose": {"type": "string"},
+          "content": {"type": "string"}
+        }
+      }
+    }
+  }
+}

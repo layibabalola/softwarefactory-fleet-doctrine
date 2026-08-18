@@ -187,3 +187,29 @@ self-heals its cached address on proven staleness. Both Claude floors
 recovered live on 2026-08-14 with zero manual latch clears; receipts in
 RECEIPTS.md this date, trap anatomy in TRAPS.md. Behavior amendments pending
 hub ratification before any RULINGS entry. Conjugal commit `bc11bf7f`.
+
+## 2026-08-18 delta — fleet usage-control candidate measurements
+
+Conjugal measured the shared Anthropic exhaustion incident with Cloudvore and contributed native
+usage normalization plus capacity normalization to `capacity-control/`. This is a
+`CANDIDATE / ZERO LIVE AUTHORITY / NOT ADOPTED` finding, not a scheduler or model-routing change.
+
+- A fresh Anthropic five-hour window reached the first hard refusal in 41m36s while two independent
+  `claude-opus-5/max` roots ran against the same quota domain. Conjugal's admission mutex is
+  repository-local and cannot see a Cloudvore root.
+- The exact provider text `You've hit your session limit` was not a recognized capacity marker, so
+  ordinary child-failure backoff retried inside the outage and Fable's third retry extended 1h31m
+  beyond reset.
+- Idle floor contracts can invoke maximum-effort inference to prove zero routes and commit a
+  heartbeat. Multi-megabyte lane/mailbox inputs amplified cached context without producing a review
+  key or product transition.
+- A live non-inference canary at five-hour `100%`, weekly `60%` normalized the provider snapshot and
+  returned `HOLD / HARD_CAP_FORECAST`, issued no lease, and launched no provider process.
+- The merged reference suite passed 28/28 across reserve/hard-cap, stale/unknown/future evidence,
+  post-reset quiet, same-domain serialization, distinct-account parallelism, replay, expiry, and
+  native Claude/Codex/Kimi/Grok token-accounting shapes.
+
+Conjugal has not integrated or enabled the broker. Adoption remains gated on the exact owning lanes
+repairing demand-driven floor eligibility and session-limit classification, pinning reviewed broker
+bytes outside the mutable bus checkout, proving no direct-launch bypass, and rerunning the existing
+model/effort, independent-review, continuity, dead-man, and product regression bars unchanged.
