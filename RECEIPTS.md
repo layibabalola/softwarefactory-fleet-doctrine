@@ -1005,6 +1005,8 @@ one-turn diagnostic requests reached the exact configured Fable, Sonnet, and Opu
 under deliberately low cost ceilings. This proves provider reachability only, not governed restoration.
 
 The candidate's pre-remediation focused baseline was 64 passing tests. Two independent reviews each returned
-64/100 and NO-GO. Subsequent remediation remains uncommitted and unreviewed. This receipt records submission
-and containment only: it grants no canary, activation, scheduled-task enablement, seat, review, campaign,
-landing, production, or release authority.
+64/100 and NO-GO. Remediation subject `13d697c2b778ed566ebb90147aca77bd28f80824` is committed and backed up;
+71 focused tests and lint pass, and a standalone clone passes 471 legacy tests plus 37 subtests. Fresh
+independent review, complete host launcher inventory, and a governed canary remain pending. This receipt
+records submission, remediation evidence, and containment only: it grants no canary, activation,
+scheduled-task enablement, seat, review, campaign, landing, production, or release authority.

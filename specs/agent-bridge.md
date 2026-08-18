@@ -260,9 +260,16 @@ cost ceilings terminated the probes. Those observations establish provider
 reachability only and are not a governed canary or admission receipt.
 
 The project candidate's pre-remediation focused suite had 64 passing tests, while
-two independent reviews each scored it 64/100 and NO-GO. Remediation is currently
-uncommitted and unreviewed. Existing Claude boot payloads already use addressed WAL
-reads, an approximately 48 KiB orientation bound, hash carriers, self-derivation,
-and named unread evidence; that is partial token-efficiency conformance, not proof
-of the full capsule contract. Until every P0 gate and fresh review closes, the
-legacy Warden remains disabled and all Claude restoration authority remains closed.
+two independent reviews each scored it 64/100 and NO-GO. Remediation subject
+`13d697c2b778ed566ebb90147aca77bd28f80824` is now committed and backed up: 71
+focused governor tests and lint pass, and a standalone clone passes all 471 legacy
+tests plus 37 subtests. It adds locked and pre-resume recovery revalidation,
+resolved executable/path/SHA and actual-image binding, complete argv/cwd/environment
+launch-context binding, policy-required capacity evidence, mandatory Windows
+exact-subject handles, and a zero-inference status surface. It has not yet received
+fresh independent review or a complete host launcher-inventory proof. Existing
+Claude boot payloads already use addressed WAL reads, an approximately 48 KiB
+orientation bound, hash carriers, self-derivation, and named unread evidence; that
+is partial token-efficiency conformance, not proof of the full capsule contract.
+Until every remaining P0 gate and fresh review closes, the legacy Warden remains
+disabled and all Claude restoration authority remains closed.
