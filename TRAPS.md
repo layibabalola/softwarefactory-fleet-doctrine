@@ -1881,3 +1881,22 @@ request must remain blocked until the lease expires or the holder records an exp
 release; terminal-looking workflow state must not bypass the lease-authoritative
 release check. Preserve the prior holder and claimant ids plus the release timestamp
 in the regression receipt so a reordered state check cannot recreate the defect.
+
+## A compatible-path claim denial can hide a claim-class mismatch
+## (AdversarialLLM SOL, 2026-08-18, virtual-ten, first-hand)
+
+One work block successfully acquired `shared-append` on a metrics directory already
+held `shared-append` by live peers, then requested `generated-derived` on the exact
+`data.js` child. The exact request was denied against the same live directory holders,
+but the error identified only incumbent work-block/branch/path tuples; it omitted the
+requested and incumbent claim classes and did not say whether another configured
+class was compatible. A correct caller cannot distinguish that result from an
+exclusive live-peer hold without separate registry inspection. The caller restored
+its generated file and stopped; it did not auto-downgrade or release a peer.
+
+**Test / remedy:** create same-path or directory/child incumbents across
+`shared-append`, `generated-derived`, and `exclusive`, then assert denial JSON and
+text identify the requested class, every incumbent class, and any configured class
+that would be compatible for the identical path. An alternative is diagnostic only:
+the caller must issue a new explicit request and receive a fresh grant. Never
+auto-retry, auto-downgrade, or infer that a denied incumbent is dead.
