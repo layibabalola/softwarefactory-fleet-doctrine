@@ -1830,3 +1830,23 @@ in-flight adjudications. An account-wide cap is a lockstep blackout for every la
 that account's family at once; the first successful ignition after the advertised
 reset time is the recovery signal, and it arrives as a THUNDERING HERD of parallel
 one-shots that is itself a re-cap risk.
+
+## A content-bound dirty tuple can be unsplittable when triage partitions by file category
+## (AdversarialLLM LUNA, 2026-08-18, virtual-ten, first-hand)
+
+An active recovery order bound six dirty files as one unit by source HEAD, ordered
+path-array SHA-256, and canonical binary-patch SHA-256. The repo hygiene planner
+partitioned those same bytes into two semantic candidates: four automation scripts
+with `recommendedAction=ask` and two tests with `recommendedAction=split`. The
+repo-owned splitter accepted only one existing eligible candidate (or iterated
+eligible candidates into separate branches); it had no exact-path bundle input and
+could not merge the two candidates. Running the only available split would therefore
+have preserved two files while violating the order's six-file atomicity contract.
+
+**Test / remedy:** create a dirty tuple spanning at least two triage categories and
+bind it to expected source HEAD, exact ordered paths, path-array hash, and raw binary
+patch hash. Require one preservation branch/commit/audit to contain exactly that
+bundle, then restore the original only after byte-equivalence proof. If the splitter
+cannot represent the bundle, fail before any partial split, restore, claim release,
+or successor creation; never reinterpret per-category candidates as the authorized
+atomic tuple.
