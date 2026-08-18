@@ -251,14 +251,15 @@ in opaque HMAC-derived fields. Email-like values are prohibited. Evidence refere
 only normalized project-relative paths with forward-slash components. Absolute POSIX, Windows,
 UNC, home-relative, traversal, and user-profile paths are rejected.
 
-Privacy scanning normalizes separators and searches every publishable string, not only fields named
-as paths. Embedded forms such as a prefix followed by a drive-qualified user profile, UNC boundary,
-or `/home`, `/Users`, `/root`, or `/mnt/<drive>/Users` segment are refused. Error output names only
-the field location and violation class; it never echoes the rejected value.
+Privacy scanning applies Unicode NFKC and case normalization, normalizes separators, and searches
+every publishable string, not only fields named as paths. Embedded forms such as a prefix followed
+by any Windows drive-relative or drive-qualified component, a UNC boundary, or `/home`, `/Users`,
+`/root`, or `/mnt/<drive>/Users` segment are refused. Thus `[A-Za-z]:...` is path material whether it
+appears as `C:Temp`, `x/C:Private`, a mixed-case/backslash form, or a JSON-escaped equivalent.
 
-Windows drive-relative user profiles such as `C:Users/...` are path material too. The scanner
-normalizes slash direction and case and detects the form even when embedded after an identifier or
-transported through JSON escaping.
+Every contract and CLI failure renders only a stable `location`, `validator`, and `reason` code.
+Schema diagnostics never render the validator library's raw message or instance, and no diagnostic
+echoes rejected keys, values, malformed input, byte content, filesystem paths, or profile material.
 
 Doctrine receives only opaque identities and derived events under the existing one-writer project
 shard law. Metrics are diagnostic and never authority. Live admission reads local authoritative

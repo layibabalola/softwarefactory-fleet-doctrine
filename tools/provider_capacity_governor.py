@@ -13,6 +13,7 @@ import hashlib
 import json
 import re
 import sys
+import unicodedata
 from datetime import datetime, timedelta, timezone
 from functools import lru_cache
 from pathlib import Path
@@ -77,8 +78,62 @@ TOKEN_FIELDS = {
 SCHEMA_ROOT = Path(__file__).resolve().parents[1] / "schemas"
 
 
+def _reason_code(message: str) -> str:
+    """Map internal diagnostics to a stable, non-sensitive public reason code."""
+    lowered = message.casefold()
+    mappings = (
+        ("duplicate json key", "JSON_DUPLICATE_KEY"),
+        ("non-finite json", "JSON_NONFINITE_NUMBER"),
+        ("invalid utf-8", "UTF8_INVALID"),
+        ("invalid json", "JSON_MALFORMED"),
+        ("jsonschema dependency unavailable", "SCHEMA_VALIDATOR_UNAVAILABLE"),
+        ("schema unavailable or invalid", "SCHEMA_UNAVAILABLE_OR_INVALID"),
+        ("schema violation", "SCHEMA_VALIDATION_FAILED"),
+        ("rfc3339", "RFC3339_INVALID"),
+        ("timezone is required", "RFC3339_INVALID"),
+        ("claimant timeline", "CLAIMANT_TIMELINE_INVALID"),
+        ("claimant identity duplicates", "CLAIMANT_IDENTITY_COLLISION"),
+        ("event_id: duplicate", "EVENT_ID_DUPLICATE"),
+        ("email-like", "PRIVACY_VALUE_PROHIBITED"),
+        ("publishable value prohibited", "PRIVACY_VALUE_PROHIBITED"),
+        ("paths prohibited", "PRIVACY_VALUE_PROHIBITED"),
+        ("path required", "PRIVACY_VALUE_PROHIBITED"),
+        ("raw identity", "PRIVACY_VALUE_PROHIBITED"),
+        ("data prohibited", "PRIVACY_VALUE_PROHIBITED"),
+    )
+    for marker, code in mappings:
+        if marker in lowered:
+            return code
+    return "CONTRACT_INVALID"
+
+
 class ContractError(ValueError):
-    pass
+    """Public contract failure whose rendering cannot echo rejected input."""
+
+    def __init__(
+        self,
+        message: str = "",
+        *,
+        location: str = "$",
+        validator: str = "contract",
+        reason: str | None = None,
+    ) -> None:
+        self.location = location
+        self.validator = validator
+        self.reason = reason or _reason_code(message)
+        super().__init__(
+            f"location={self.location};validator={self.validator};reason={self.reason}"
+        )
+
+
+class SafeArgumentParser(argparse.ArgumentParser):
+    """Argparse variant that never reflects rejected command-line text."""
+
+    def error(self, message: str) -> None:
+        del message
+        error = ContractError(validator="cli", reason="CLI_ARGUMENT_INVALID")
+        print(json.dumps({"valid": False, "errors": [str(error)]}, indent=2, sort_keys=True))
+        raise SystemExit(2)
 
 
 def _parse_utc(value: Any, field: str) -> datetime:
@@ -111,13 +166,13 @@ def _strict_object(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
     value: dict[str, Any] = {}
     for key, child in pairs:
         if key in value:
-            raise ContractError(f"duplicate JSON key prohibited: {key!r}")
+            raise ContractError(reason="JSON_DUPLICATE_KEY", validator="json")
         value[key] = child
     return value
 
 
 def _reject_nonfinite_json(value: str) -> None:
-    raise ContractError(f"non-finite JSON number prohibited: {value}")
+    raise ContractError(reason="JSON_NONFINITE_NUMBER", validator="json")
 
 
 def _strict_json_loads(raw: str, source: str) -> Any:
@@ -127,28 +182,62 @@ def _strict_json_loads(raw: str, source: str) -> Any:
             object_pairs_hook=_strict_object,
             parse_constant=_reject_nonfinite_json,
         )
+    except ContractError as exc:
+        raise ContractError(
+            location=source,
+            validator=exc.validator,
+            reason=exc.reason,
+        ) from exc
     except json.JSONDecodeError as exc:
-        raise ContractError(f"{source}: invalid JSON: {exc.msg}") from exc
+        raise ContractError(
+            location=source,
+            validator="json",
+            reason="JSON_MALFORMED",
+        ) from exc
 
 
 def _decode_utf8(raw: bytes, source: str) -> str:
     try:
         return raw.decode("utf-8")
     except UnicodeDecodeError as exc:
-        raise ContractError(f"{source}: invalid UTF-8") from exc
+        raise ContractError(
+            location=source,
+            validator="utf8",
+            reason="UTF8_INVALID",
+        ) from exc
 
 
 @lru_cache(maxsize=2)
 def _schema_validator(schema_name: str) -> Any:
     if jsonschema is None:
-        raise ContractError("jsonschema dependency unavailable; conformance fails closed")
+        raise ContractError(
+            location="#",
+            validator="Draft202012Validator",
+            reason="SCHEMA_VALIDATOR_UNAVAILABLE",
+        )
     schema_path = SCHEMA_ROOT / schema_name
     try:
         raw = schema_path.read_bytes()
-        schema = _strict_json_loads(_decode_utf8(raw, str(schema_path)), str(schema_path))
+        schema = _strict_json_loads(_decode_utf8(raw, "#"), "#")
         jsonschema.Draft202012Validator.check_schema(schema)
-    except (OSError, ContractError, jsonschema.SchemaError) as exc:
-        raise ContractError(f"{schema_name}: schema unavailable or invalid: {exc}") from exc
+    except OSError as exc:
+        raise ContractError(
+            location="#",
+            validator="schema-loader",
+            reason="SCHEMA_UNAVAILABLE_OR_INVALID",
+        ) from exc
+    except ContractError as exc:
+        raise ContractError(
+            location="#",
+            validator="schema-json",
+            reason=exc.reason,
+        ) from exc
+    except jsonschema.SchemaError as exc:
+        raise ContractError(
+            location="#",
+            validator="Draft202012Validator",
+            reason="SCHEMA_UNAVAILABLE_OR_INVALID",
+        ) from exc
     return jsonschema.Draft202012Validator(
         schema,
         format_checker=jsonschema.FormatChecker(),
@@ -161,10 +250,16 @@ def _validate_schema(value: Any, schema_name: str) -> None:
     if not errors:
         return
     error = errors[0]
-    location = "$"
-    for component in error.absolute_path:
-        location += f"[{component}]" if isinstance(component, int) else f".{component}"
-    raise ContractError(f"{location}: schema violation: {error.message}")
+    # Report only the controlled schema location and validator keyword. Instance paths,
+    # messages, rejected keys, and rejected values are intentionally never rendered.
+    location = "#"
+    for component in error.absolute_schema_path:
+        location += "/" + str(component)
+    raise ContractError(
+        location=location,
+        validator=str(error.validator or "schema"),
+        reason="SCHEMA_VALIDATION_FAILED",
+    )
 
 
 def _walk_keys(value: Any, path: str = "$") -> Iterable[tuple[str, str]]:
@@ -216,16 +311,12 @@ def _validate_publishable_event_values(event: dict[str, Any]) -> None:
     for path, value in _walk_strings(event):
         if EMAIL_RE.search(value):
             raise ContractError(f"{path}: email-like publishable value prohibited")
-        normalized = value.replace("\\", "/")
-        lowered = normalized.lower().split("/")
+        normalized = unicodedata.normalize("NFKC", value).replace("\\", "/")
+        lowered = normalized.casefold().split("/")
         if (
             normalized.startswith(("/", "~"))
             or "//" in normalized
-            or any(re.fullmatch(r"[a-z]:", component) for component in lowered)
-            or any(
-                re.fullmatch(r"[a-z]:(?:users|documents and settings)", component)
-                for component in lowered
-            )
+            or any(re.match(r"^[a-z]:", component) for component in lowered)
             or any(
                 lowered[index] in {"home", "users"} and index + 1 < len(lowered)
                 for index in range(len(lowered))
@@ -343,8 +434,9 @@ def validate_usage_file(path: Path) -> dict[str, Any]:
             if not raw.strip():
                 continue
             try:
-                decoded = _decode_utf8(raw, f"line {line_number}")
-                event = _strict_json_loads(decoded, f"line {line_number}")
+                line_location = f"$line[{line_number}]"
+                decoded = _decode_utf8(raw, line_location)
+                event = _strict_json_loads(decoded, line_location)
                 validate_usage_event(event)
                 event_id = event["event_id"]
                 if event_id in event_ids:
@@ -352,7 +444,7 @@ def validate_usage_file(path: Path) -> dict[str, Any]:
                 event_ids.add(event_id)
                 count += 1
             except ContractError as exc:
-                errors.append(f"line {line_number}: {exc}")
+                errors.append(str(exc))
     return {"valid": not errors, "event_count": count, "errors": errors}
 
 
@@ -599,11 +691,11 @@ def decide(snapshot: Any) -> dict[str, Any]:
 
 def _load_json(path: Path) -> Any:
     raw = path.read_bytes()
-    return _strict_json_loads(_decode_utf8(raw, str(path)), str(path))
+    return _strict_json_loads(_decode_utf8(raw, "$"), "$")
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description=__doc__)
+    parser = SafeArgumentParser(description=__doc__)
     subparsers = parser.add_subparsers(dest="command", required=True)
     validate_parser = subparsers.add_parser("validate-events", help="validate a provider usage JSONL shard")
     validate_parser.add_argument("path", type=Path)
@@ -618,7 +710,11 @@ def main(argv: list[str] | None = None) -> int:
         result = decide(_load_json(args.path))
         print(json.dumps(result, indent=2, sort_keys=True))
         return 0 if result["decision"] == "ADMIT" else 3
-    except (OSError, ContractError) as exc:
+    except OSError:
+        error = ContractError(validator="io", reason="IO_ERROR")
+        print(json.dumps({"valid": False, "errors": [str(error)]}, indent=2, sort_keys=True))
+        return 2
+    except ContractError as exc:
         print(json.dumps({"valid": False, "errors": [str(exc)]}, indent=2, sort_keys=True))
         return 2
 

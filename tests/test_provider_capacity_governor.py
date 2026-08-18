@@ -102,7 +102,7 @@ class ProviderCapacityGovernorTests(unittest.TestCase):
             with self.subTest(value=invalid):
                 snapshot = copy.deepcopy(self.snapshot)
                 snapshot["capacity"]["observed_at"] = invalid
-                with self.assertRaisesRegex(MODULE.ContractError, "schema violation|invalid RFC3339"):
+                with self.assertRaisesRegex(MODULE.ContractError, "SCHEMA_VALIDATION_FAILED|RFC3339_INVALID"):
                     MODULE.decide(snapshot)
 
     def test_r1_red_unchanged_prior_idle_fingerprint_is_r2_green_denied(self):
@@ -134,7 +134,7 @@ class ProviderCapacityGovernorTests(unittest.TestCase):
 
     def test_r1_red_malformed_lease_state_is_r2_green_schema_failure(self):
         self.snapshot["active_leases"].append(self._lease(state="RUNNING "))
-        with self.assertRaisesRegex(MODULE.ContractError, "schema violation"):
+        with self.assertRaisesRegex(MODULE.ContractError, "SCHEMA_VALIDATION_FAILED"):
             MODULE.decide(self.snapshot)
 
     def test_dead_process_with_fresh_lease_is_not_live(self):
@@ -184,7 +184,7 @@ class ProviderCapacityGovernorTests(unittest.TestCase):
             with self.subTest(changes=changes):
                 snapshot = copy.deepcopy(self.snapshot)
                 snapshot["active_leases"].append(self._lease(**changes))
-                with self.assertRaisesRegex(MODULE.ContractError, "claimant timeline"):
+                with self.assertRaisesRegex(MODULE.ContractError, "CLAIMANT_TIMELINE_INVALID"):
                     MODULE.decide(snapshot)
 
     def test_r3_red_duplicate_claimant_identities_are_r4_green_rejected(self):
@@ -219,7 +219,7 @@ class ProviderCapacityGovernorTests(unittest.TestCase):
                 second = dict(unique_second)
                 second.update(collision)
                 snapshot["active_leases"].append(self._lease(**second))
-                with self.assertRaisesRegex(MODULE.ContractError, "duplicates active_leases"):
+                with self.assertRaisesRegex(MODULE.ContractError, "CLAIMANT_IDENTITY_COLLISION"):
                     MODULE.decide(snapshot)
 
     def test_r4_red_row_local_session_prefix_variants_are_r5_green_equivalent(self):
@@ -283,37 +283,37 @@ class ProviderCapacityGovernorTests(unittest.TestCase):
     def test_idle_event_with_model_request_is_rejected(self):
         event = json.loads((ROOT / "examples" / "provider-usage-events-v1.jsonl").read_text().splitlines()[1])
         event["measurement"]["request_count"] = 1
-        with self.assertRaisesRegex(MODULE.ContractError, "schema violation"):
+        with self.assertRaisesRegex(MODULE.ContractError, "SCHEMA_VALIDATION_FAILED"):
             MODULE.validate_usage_event(event)
 
     def test_r1_red_idle_with_omitted_counter_or_tokens_is_r2_green_rejected(self):
         base = json.loads((ROOT / "examples" / "provider-usage-events-v1.jsonl").read_text().splitlines()[1])
         missing = copy.deepcopy(base)
         missing["measurement"].pop("request_count")
-        with self.assertRaisesRegex(MODULE.ContractError, "schema violation"):
+        with self.assertRaisesRegex(MODULE.ContractError, "SCHEMA_VALIDATION_FAILED"):
             MODULE.validate_usage_event(missing)
         inferred = copy.deepcopy(base)
         inferred["measurement"]["input_tokens"] = 999
-        with self.assertRaisesRegex(MODULE.ContractError, "schema violation"):
+        with self.assertRaisesRegex(MODULE.ContractError, "SCHEMA_VALIDATION_FAILED"):
             MODULE.validate_usage_event(inferred)
 
     def test_raw_identity_or_credentials_are_rejected(self):
         event = json.loads((ROOT / "examples" / "provider-usage-events-v1.jsonl").read_text().splitlines()[0])
         event["account_email"] = "forbidden@example.invalid"
-        with self.assertRaisesRegex(MODULE.ContractError, "prohibited"):
+        with self.assertRaisesRegex(MODULE.ContractError, "PRIVACY_VALUE_PROHIBITED"):
             MODULE.validate_usage_event(event)
 
     def test_r1_red_extra_identity_field_is_r2_green_schema_failure(self):
         event = json.loads((ROOT / "examples" / "provider-usage-events-v1.jsonl").read_text().splitlines()[0])
         event["account_identifier"] = "real-account@example.invalid"
-        with self.assertRaisesRegex(MODULE.ContractError, "schema violation|prohibited"):
+        with self.assertRaisesRegex(MODULE.ContractError, "SCHEMA_VALIDATION_FAILED|PRIVACY_VALUE_PROHIBITED"):
             MODULE.validate_usage_event(event)
 
     def test_r2_red_email_and_unsafe_paths_are_r3_green_rejected(self):
         base = json.loads((ROOT / "examples" / "provider-usage-events-v1.jsonl").read_text().splitlines()[0])
         email = copy.deepcopy(base)
         email["actor"]["role"] = "real-account@example.invalid"
-        with self.assertRaisesRegex(MODULE.ContractError, "email-like"):
+        with self.assertRaisesRegex(MODULE.ContractError, "PRIVACY_VALUE_PROHIBITED"):
             MODULE.validate_usage_event(email)
         for embedded_path in (
             "x/C:/Users/Alice/secret",
@@ -323,7 +323,7 @@ class ProviderCapacityGovernorTests(unittest.TestCase):
             with self.subTest(embedded_path=embedded_path):
                 disguised_path = copy.deepcopy(base)
                 disguised_path["model_requested"] = embedded_path
-                with self.assertRaisesRegex(MODULE.ContractError, "publishable value prohibited"):
+                with self.assertRaisesRegex(MODULE.ContractError, "PRIVACY_VALUE_PROHIBITED"):
                     MODULE.validate_usage_event(disguised_path)
         for unsafe_path in (
             "C:/Users/alice/usage.json",
@@ -337,7 +337,7 @@ class ProviderCapacityGovernorTests(unittest.TestCase):
                 event["refs"][0]["project_local_path"] = unsafe_path
                 with self.assertRaisesRegex(
                     MODULE.ContractError,
-                    "paths? prohibited|path required|publishable value prohibited",
+                    "PRIVACY_VALUE_PROHIBITED",
                 ):
                     MODULE.validate_usage_event(event)
 
@@ -352,7 +352,7 @@ class ProviderCapacityGovernorTests(unittest.TestCase):
             with self.subTest(value_kind="drive-relative"):
                 event = copy.deepcopy(base)
                 event["model_requested"] = value
-                with self.assertRaisesRegex(MODULE.ContractError, "publishable value prohibited"):
+                with self.assertRaisesRegex(MODULE.ContractError, "PRIVACY_VALUE_PROHIBITED"):
                     MODULE.validate_usage_event(event)
 
         escaped = copy.deepcopy(base)
@@ -362,8 +362,117 @@ class ProviderCapacityGovernorTests(unittest.TestCase):
             path.write_text(json.dumps(escaped) + "\n", encoding="utf-8")
             result = self._run_cli("validate-events", path)
             self.assertEqual(2, result.returncode, result.stdout)
-            self.assertIn("publishable value prohibited", result.stdout)
+            self.assertIn("PRIVACY_VALUE_PROHIBITED", result.stdout)
             self.assertNotIn("Alice", result.stdout)
+
+    def test_r5_red_generic_drive_relative_components_are_r6_green_rejected(self):
+        base = json.loads((ROOT / "examples" / "provider-usage-events-v1.jsonl").read_text().splitlines()[0])
+        variants = (
+            "x/C:Private/SENTINEL_DRIVE_SECRET",
+            "C:Temp/SENTINEL_DRIVE_SECRET",
+            r"x\c:pRiVaTe\SENTINEL_DRIVE_SECRET",
+            "x/Ｃ：Ｐｒｉｖａｔｅ/SENTINEL_DRIVE_SECRET",
+        )
+        for value in variants:
+            with self.subTest(value_kind="normalized-drive-relative"):
+                event = copy.deepcopy(base)
+                event["model_requested"] = value
+                with self.assertRaisesRegex(
+                    MODULE.ContractError,
+                    "PRIVACY_VALUE_PROHIBITED",
+                ) as caught:
+                    MODULE.validate_usage_event(event)
+                self.assertNotIn("SENTINEL_DRIVE_SECRET", str(caught.exception))
+
+        event = copy.deepcopy(base)
+        event["actor"]["role"] = r"prefix\C:Private\SENTINEL_JSON_ESCAPED_SECRET"
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "drive-relative.jsonl"
+            path.write_text(json.dumps(event) + "\n", encoding="utf-8")
+            result = self._run_cli("validate-events", path)
+            self.assertEqual(2, result.returncode, result.stdout)
+            self.assertIn("reason=PRIVACY_VALUE_PROHIBITED", result.stdout)
+            self.assertNotIn(
+                "SENTINEL_JSON_ESCAPED_SECRET",
+                result.stdout + result.stderr,
+            )
+
+    def test_r5_red_cli_errors_are_r6_green_stable_and_never_echo_input(self):
+        base = json.loads((ROOT / "examples" / "provider-usage-events-v1.jsonl").read_text().splitlines()[0])
+        schema_cases = []
+        pattern = copy.deepcopy(base)
+        pattern["project"] = "SENTINEL PATTERN SECRET"
+        schema_cases.append(("pattern", "SENTINEL PATTERN SECRET", pattern))
+        enum = copy.deepcopy(base)
+        enum["event"] = "SENTINEL_ENUM_SECRET"
+        schema_cases.append(("enum", "SENTINEL_ENUM_SECRET", enum))
+        typed = copy.deepcopy(base)
+        typed["seat_epoch"] = "SENTINEL_TYPE_SECRET"
+        schema_cases.append(("type", "SENTINEL_TYPE_SECRET", typed))
+        additional = copy.deepcopy(base)
+        additional["SENTINEL_ADDITIONAL_SECRET"] = "opaque"
+        schema_cases.append(
+            ("additionalProperties", "SENTINEL_ADDITIONAL_SECRET", additional)
+        )
+
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            for validator, sentinel, event in schema_cases:
+                with self.subTest(failure=validator):
+                    path = root / f"{validator}.jsonl"
+                    path.write_text(json.dumps(event) + "\n", encoding="utf-8")
+                    result = self._run_cli("validate-events", path)
+                    self.assertEqual(2, result.returncode, result.stdout)
+                    self.assertIn(f"validator={validator}", result.stdout)
+                    self.assertIn("reason=SCHEMA_VALIDATION_FAILED", result.stdout)
+                    self.assertNotIn(sentinel, result.stdout + result.stderr)
+
+            byte_cases = (
+                (
+                    "duplicate.jsonl",
+                    b'{"SENTINEL_DUPLICATE_SECRET":1,"SENTINEL_DUPLICATE_SECRET":2}\n',
+                    "SENTINEL_DUPLICATE_SECRET",
+                    "JSON_DUPLICATE_KEY",
+                ),
+                (
+                    "malformed.jsonl",
+                    b'{"SENTINEL_MALFORMED_SECRET":\n',
+                    "SENTINEL_MALFORMED_SECRET",
+                    "JSON_MALFORMED",
+                ),
+                (
+                    "nonfinite.jsonl",
+                    b'{"SENTINEL_NONFINITE_SECRET":NaN}\n',
+                    "SENTINEL_NONFINITE_SECRET",
+                    "JSON_NONFINITE_NUMBER",
+                ),
+                (
+                    "utf8.jsonl",
+                    b'{"x":"SENTINEL_UTF8_SECRET"}\xff\n',
+                    "SENTINEL_UTF8_SECRET",
+                    "UTF8_INVALID",
+                ),
+            )
+            for name, payload, sentinel, reason in byte_cases:
+                with self.subTest(failure=reason):
+                    path = root / name
+                    path.write_bytes(payload)
+                    result = self._run_cli("validate-events", path)
+                    self.assertEqual(2, result.returncode, result.stdout)
+                    self.assertIn(f"reason={reason}", result.stdout)
+                    self.assertNotIn(sentinel, result.stdout + result.stderr)
+                    report = json.loads(result.stdout)
+                    self.assertEqual(1, len(report["errors"]))
+                    self.assertRegex(
+                        report["errors"][0],
+                        r"^location=[^;]+;validator=[A-Za-z0-9.$_-]+;reason=[A-Z0-9_]+$",
+                    )
+
+        argument_sentinel = "SENTINEL_INVALID_COMMAND_SECRET"
+        result = self._run_cli(argument_sentinel)
+        self.assertEqual(2, result.returncode, result.stdout)
+        self.assertIn("reason=CLI_ARGUMENT_INVALID", result.stdout)
+        self.assertNotIn(argument_sentinel, result.stdout + result.stderr)
 
     def test_r2_red_duplicate_and_nonfinite_snapshot_cli_is_r3_green_rejected(self):
         raw = (ROOT / "examples" / "provider-admission-snapshot-v1.json").read_text()
@@ -387,7 +496,7 @@ class ProviderCapacityGovernorTests(unittest.TestCase):
                     path.write_text(payload, encoding="utf-8")
                     result = self._run_cli("decide", path)
                     self.assertEqual(2, result.returncode, result.stdout)
-                    self.assertRegex(result.stdout, "duplicate JSON key|non-finite JSON number")
+                    self.assertRegex(result.stdout, "JSON_DUPLICATE_KEY|JSON_NONFINITE_NUMBER")
 
     def test_r2_red_duplicate_nonfinite_and_invalid_utf8_jsonl_cli_is_r3_green_rejected(self):
         raw = (ROOT / "examples" / "provider-usage-events-v1.jsonl").read_text().splitlines()[0]
@@ -403,7 +512,7 @@ class ProviderCapacityGovernorTests(unittest.TestCase):
                     path.write_bytes(payload + (b"\n" if not payload.endswith(b"\n") else b""))
                     result = self._run_cli("validate-events", path)
                     self.assertEqual(2, result.returncode, result.stdout)
-                    self.assertRegex(result.stdout, "duplicate JSON key|non-finite JSON number|invalid UTF-8")
+                    self.assertRegex(result.stdout, "JSON_DUPLICATE_KEY|JSON_NONFINITE_NUMBER|UTF8_INVALID")
 
     def test_every_snapshot_date_time_is_explicitly_parsed(self):
         self.snapshot["active_leases"].append(
@@ -413,17 +522,17 @@ class ProviderCapacityGovernorTests(unittest.TestCase):
                 startup_fence_expires_at="not-a-date-time",
             )
         )
-        with self.assertRaisesRegex(MODULE.ContractError, "schema violation|invalid RFC3339"):
+        with self.assertRaisesRegex(MODULE.ContractError, "SCHEMA_VALIDATION_FAILED|RFC3339_INVALID"):
             MODULE.decide(self.snapshot)
 
     def test_schema_or_validator_absence_fails_closed(self):
         MODULE._schema_validator.cache_clear()
         with mock.patch.object(MODULE, "jsonschema", None):
-            with self.assertRaisesRegex(MODULE.ContractError, "fails closed"):
+            with self.assertRaisesRegex(MODULE.ContractError, "SCHEMA_VALIDATOR_UNAVAILABLE"):
                 MODULE.decide(self.snapshot)
         MODULE._schema_validator.cache_clear()
         with mock.patch.object(MODULE, "SCHEMA_ROOT", ROOT / "schemas-does-not-exist"):
-            with self.assertRaisesRegex(MODULE.ContractError, "schema unavailable"):
+            with self.assertRaisesRegex(MODULE.ContractError, "SCHEMA_UNAVAILABLE_OR_INVALID"):
                 MODULE.decide(self.snapshot)
         MODULE._schema_validator.cache_clear()
 
@@ -448,7 +557,7 @@ class ProviderCapacityGovernorTests(unittest.TestCase):
                     with mock.patch.object(MODULE, "SCHEMA_ROOT", schema_root):
                         with self.assertRaisesRegex(
                             MODULE.ContractError,
-                            "schema unavailable or invalid",
+                            "JSON_DUPLICATE_KEY|JSON_NONFINITE_NUMBER|UTF8_INVALID",
                         ):
                             MODULE.decide(self.snapshot)
         MODULE._schema_validator.cache_clear()
