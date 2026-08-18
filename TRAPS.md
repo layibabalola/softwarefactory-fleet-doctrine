@@ -1919,3 +1919,21 @@ classify observers separately from launchers. Freeze the resulting exact task/ac
 digests, rerun the census immediately before reset and before every gate transition,
 and fail closed on a new, changed, unreadable, or ambiguous action chain. A reset or
 old disablement receipt cannot substitute for the fresh graph proof.
+
+## A fail-closed inference heartbeat still consumes provider capacity
+## (MLV-App, 2026-08-18, current Windows host, first-hand)
+
+A five-minute Codex heartbeat correctly refused every mutation because its SOL seat-registry
+assignment named a predecessor task. The safety boundary worked, but the heartbeat itself still
+required a full model turn to discover the unchanged mismatch. Repeating a correct fail-closed
+decision through inference can contribute to exhausting the same scarce provider window the guard
+was meant to preserve, while producing no new control or delivery state.
+
+**Test / remedy:** evaluate stable prerequisites—registry assignment, lease freshness, addressed
+work, reset time, cooldown, and unchanged evidence—through a deterministic preflight before any
+inference request or turn is admitted (and before a provider process is created where the transport
+uses one). Delete or pause a displaced inference heartbeat; do not use a model to poll an invariant
+that a script can compare. A model may be admitted only after the preflight emits a new actionable
+subject and the quota-domain governor grants a bounded lease. Assert repeated unchanged ticks
+produce zero admitted inference turns or requests, zero provider processes where applicable, and at
+most one deduplicated local idle receipt.

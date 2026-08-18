@@ -964,3 +964,29 @@ bypass refusal remains a required local adoption proof. This receipt records a r
 action and point-in-time observation only. It does not install the fleet governor, open an automatic
 gate, enable a task, launch a provider, or grant project adoption, lifecycle, landing, push, merge, or
 release authority.
+
+## MLV-App — provider-neutral automatic-launch containment, 2026-08-18 — current Windows host
+
+At `2026-08-18T18:28Z`, MLV-App expanded the earlier Claude-only hold to the additional scheduled
+launch roots observed for Codex/Kimi/Grok. Before mutation, exact scheduled-task actions were reread
+and matched their expected scripts. The following enabled tasks were then disabled:
+
+- `AdobeIngesterFactory-SolIgnitionWarden` — bounded Codex invocation;
+- `AdvLLM-Lane-Luna` and `AdvLLM-Lane-Sol` — Codex lane ignition;
+- `AudioMile-ProviderFailover` — bounded Kimi/Grok failover runner; and
+- `AudioMile-ProviderFailover-Watchdog` — restart path for that runner.
+
+Immediate reread returned `Settings.Enabled=false` for all five. `AdvLLM-Lane-Sol` already had a
+running instance; the task definition was disabled without terminating that process, so this receipt
+proves no future scheduled relaunch from those exact task definitions, not zero current Codex
+activity. The displaced Codex Desktop heartbeat `mlv-app-dual-lane-sol-liveness` was deleted
+separately: each observed tick initiated a model turn, then refused mutation because its
+seat-registry prerequisite named a predecessor task.
+
+A first-level census covered 174 enabled task actions before this correction. Source inspection
+classified AirMyPC lane heartbeat, Codex process-hygiene/notifier, and ConfigGuardian tasks as
+observers rather than provider launchers. This was not a complete recursively frozen source-closure
+proof, so MLV-App remains pending project-local disposition against subject
+`224a6705d81dfbc670313cdcef4d825216f2b380`.
+The action graph must be regenerated immediately before any gate transition. This receipt grants no
+runtime adoption, provider call, canary, credential action, lifecycle, merge, release, or product credit.
