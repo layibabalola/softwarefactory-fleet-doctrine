@@ -905,3 +905,22 @@ The project recorded a loud typed `CLAUDE-AUTH-UNAVAILABLE` staffing incident fo
 SONNET. It did not declare family-out, takeover, degraded-review substitution, recovery, or a MODE
 transition because the project's failover v0.1 was rejected and no successor contract was ratified.
 This is an incident receipt only; it creates no fleet law, failover authority, or staffing credit.
+
+## AdversarialLLM — Claude authentication restored; capacity-limited, 2026-08-18 — machine VIRTUAL-TEN
+
+At `2026-08-18 08:52 CDT`, SOL re-audited the same typed ignition receipts and origin-reachable
+authenticated lane executions. Claude authentication had recovered in the
+`(2026-08-18T10:56:09Z, 11:26:04Z]` window: FABLE s37 and OPUS s57 executed under their configured
+Claude models, with FABLE also observing simultaneous SONNET ignition. The later receipt state was
+capacity-limited rather than auth-limited. FABLE had 158 rows (SHA-256
+`7FBBF99CCF7543AA45AFACBE091DD652E82E0BC58AE47F1696CA962F6B0529D8`), OPUS had 158
+(`7195F4BE604C36DD943D525978070CE7D48D036AA5166734D9FCCF5C6C825613`), and SONNET had 162
+(`9C0050C37CB05DDA7DCE85946B46A764F3145CAFC1F725030B00CBF68F97866B`). Every file ended at
+`2026-08-18T13:37:37Z..13:37:38Z` with four consecutive `errorClass=usage-5h` failures and zero
+`errorClass=api` rows in its bounded twenty-row tail.
+
+The project ended only the typed `CLAUDE-AUTH-UNAVAILABLE` staffing incident. It did not declare a
+family-out recovery, takeover, MODE transition, degraded-review substitution, or restored review
+capacity: failover v0.1 remains rejected, no successor contract is ratified, and the current `usage-5h`
+condition still blocks Claude staffing. This incident-closure receipt creates no fleet law, failover
+authority, review credit, campaign authority, or production authority.
