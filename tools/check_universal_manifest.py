@@ -14,7 +14,7 @@ from typing import Any
 
 
 ROOT = Path(__file__).resolve().parents[1]
-MANIFEST = "manifests/universal-provider-control-reconciliation-r11.json"
+MANIFEST = "manifests/universal-provider-control-reconciliation-r12.json"
 SELF_PATTERN = re.compile(
     rb'("canonicalGitBlobSha256"\s*:\s*"sha256:)([0-9a-f]{64})(")'
 )
@@ -58,6 +58,16 @@ def _oid(treeish: str, path: str) -> str:
     return run.stdout.strip()
 
 
+def canonical_self_sha256(raw: bytes) -> str:
+    """Return the zeroed-field self digest over canonical Git blob bytes only."""
+
+    matches = list(SELF_PATTERN.finditer(raw))
+    if len(matches) != 1:
+        raise ManifestError("MANIFEST_SELF_INVALID")
+    zeroed = SELF_PATTERN.sub(lambda match: match.group(1) + b"0" * 64 + match.group(3), raw)
+    return "sha256:" + hashlib.sha256(zeroed).hexdigest()
+
+
 def check(treeish: str) -> int:
     raw = _git(_blob_spec(treeish, MANIFEST))
     assert isinstance(raw, bytes)
@@ -90,11 +100,7 @@ def check(treeish: str) -> int:
         raise ManifestError("MANIFEST_SELF_INVALID")
     if self_binding.get("bytes") != len(raw):
         raise ManifestError("MANIFEST_SELF_SIZE_MISMATCH")
-    matches = list(SELF_PATTERN.finditer(raw))
-    if len(matches) != 1:
-        raise ManifestError("MANIFEST_SELF_INVALID")
-    zeroed = SELF_PATTERN.sub(lambda match: match.group(1) + b"0" * 64 + match.group(3), raw)
-    expected_self = "sha256:" + hashlib.sha256(zeroed).hexdigest()
+    expected_self = canonical_self_sha256(raw)
     if self_binding.get("canonicalGitBlobSha256") != expected_self:
         raise ManifestError("MANIFEST_SELF_MISMATCH")
     print(f"MANIFEST_PASS subjects={len(subjects)} self=PASS treeish={treeish}")

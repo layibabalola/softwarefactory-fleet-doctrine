@@ -1154,14 +1154,12 @@ class UniversalProviderControlTests(unittest.TestCase):
     def test_r2_08_portable_git_blob_manifest_r1_red_r2_green(self) -> None:
         import check_universal_manifest as checker
 
-        raw = (ROOT / checker.MANIFEST).read_bytes()
+        raw = checker._git(checker._blob_spec(":", checker.MANIFEST))
+        self.assertIsInstance(raw, bytes)
         matches = list(checker.SELF_PATTERN.finditer(raw))
         self.assertEqual(len(matches), 1)
-        zeroed = checker.SELF_PATTERN.sub(
-            lambda match: match.group(1) + b"0" * 64 + match.group(3), raw
-        )
         value = json.loads(raw.decode("utf-8"))["manifestSelf"]["canonicalGitBlobSha256"]
-        self.assertEqual(value, "sha256:" + hashlib.sha256(zeroed).hexdigest())
+        self.assertEqual(value, checker.canonical_self_sha256(raw))
 
     def test_r2_09_digest_grammar_r1_red_r2_green(self) -> None:
         broker = upc.UniversalProviderBroker(self.root / "r2-digest")
@@ -1433,16 +1431,16 @@ class UniversalProviderControlTests(unittest.TestCase):
         source = self.root / "r4-publication-source.bin"
         source.write_bytes(b"publication-source")
         request = self.capsule_request(source, lengths=[8])
-        real_link = upc.os.link
+        real_publication = upc._publication_syscall
 
         raced_output = self.root / "r4-raced-output.bin"
         foreign = b"FOREIGN-AFTER-PRECHECK"
 
-        def create_foreign_then_link(src, dst):
+        def create_foreign_then_link(src, dst, **kwargs):
             Path(dst).write_bytes(foreign)
-            return real_link(src, dst)
+            return real_publication(src, dst, **kwargs)
 
-        with mock.patch.object(upc.os, "link", side_effect=create_foreign_then_link):
+        with mock.patch.object(upc, "_publication_syscall", side_effect=create_foreign_then_link):
             with self.assertRaisesRegex(upc.ControlError, "CAPSULE_OUTPUT_EXISTS"):
                 upc.build_evidence_capsule(request, raced_output)
         self.assertEqual(raced_output.read_bytes(), foreign)
@@ -1450,13 +1448,13 @@ class UniversalProviderControlTests(unittest.TestCase):
         replaced_output = self.root / "r4-replaced-output.bin"
         replacement = b"FOREIGN-REPLACEMENT"
 
-        def replace_owned_then_fail(src, dst):
-            real_link(src, dst)
+        def replace_owned_then_fail(src, dst, **kwargs):
+            real_publication(src, dst, **kwargs)
             Path(dst).unlink()
             Path(dst).write_bytes(replacement)
             raise RuntimeError("private publication failure")
 
-        with mock.patch.object(upc.os, "link", side_effect=replace_owned_then_fail):
+        with mock.patch.object(upc, "_publication_syscall", side_effect=replace_owned_then_fail):
             with self.assertRaisesRegex(upc.ControlError, "CAPSULE_PUBLICATION_IDENTITY_DRIFT"):
                 upc.build_evidence_capsule(request, replaced_output)
         self.assertEqual(replaced_output.read_bytes(), replacement)
@@ -1470,12 +1468,12 @@ class UniversalProviderControlTests(unittest.TestCase):
         foreign_source.write_bytes(b"FOREIGN-LINK-BYTES")
         request = self.capsule_request(source, lengths=[8])
         output = self.root / "r5-substituted-publication.bin"
-        real_link = upc.os.link
+        real_publication = upc._publication_syscall
 
-        def substitute_source_path(_src, dst):
-            real_link(foreign_source, dst)
+        def substitute_source_path(_src, dst, **_kwargs):
+            real_publication(foreign_source, dst)
 
-        with mock.patch.object(upc.os, "link", side_effect=substitute_source_path):
+        with mock.patch.object(upc, "_publication_syscall", side_effect=substitute_source_path):
             with self.assertRaisesRegex(upc.ControlError, "CAPSULE_PUBLICATION_IDENTITY_DRIFT"):
                 upc.build_evidence_capsule(request, output)
         self.assertEqual(output.read_bytes(), foreign_source.read_bytes())
@@ -1606,13 +1604,13 @@ class UniversalProviderControlTests(unittest.TestCase):
         source.write_bytes(b"link-raise-source")
         request = self.capsule_request(source, lengths=[8])
         output = self.root / "r5-link-raise-output.bin"
-        real_link = upc.os.link
+        real_publication = upc._publication_syscall
 
-        def link_then_raise(src, dst):
-            real_link(src, dst)
+        def link_then_raise(src, dst, **kwargs):
+            real_publication(src, dst, **kwargs)
             raise RuntimeError("private wrapper failure after link")
 
-        with mock.patch.object(upc.os, "link", side_effect=link_then_raise):
+        with mock.patch.object(upc, "_publication_syscall", side_effect=link_then_raise):
             result = upc.build_evidence_capsule(request, output)
         self.assertEqual(result["capsuleSha256"], sha_file(output))
         self.assertEqual(output.read_bytes(), source.read_bytes()[:8])
@@ -1715,7 +1713,10 @@ class UniversalProviderControlTests(unittest.TestCase):
     # Exact 300e2bb R6 RED -> R7 GREEN portability and cleanup-contract twins.
 
     def test_r7_01_unprivileged_linux_proc_fd_publication(self) -> None:
-        implementation = inspect.getsource(upc._publish_owned_temporary)
+        implementation = (
+            inspect.getsource(upc._publish_owned_temporary)
+            + inspect.getsource(upc._publication_syscall)
+        )
         self.assertIn("/proc/self/fd/", implementation)
         self.assertIn("0x400", implementation)
         self.assertNotIn("0x1000", implementation)
@@ -2584,6 +2585,52 @@ class UniversalProviderControlTests(unittest.TestCase):
             now=self.now,
         )
         peer.close()
+
+    # Exact 52ca345 R11 hosted RED -> R12 GREEN checkout-EOL and linkat-injection twins.
+
+    def test_r12_01_manifest_self_uses_canonical_git_blob_under_crlf_checkout(self) -> None:
+        import check_universal_manifest as checker
+
+        r11_tests = subprocess.check_output(
+            ["git", "show", "52ca3452a12656a13e62eba5c6b0641e43440f32:tests/test_universal_provider_control.py"],
+            cwd=ROOT, text=True, encoding="utf-8",
+        )
+        self.assertIn("raw = (ROOT / checker.MANIFEST).read_bytes()", r11_tests)
+        canonical = checker._git(checker._blob_spec(":", checker.MANIFEST))
+        self.assertIsInstance(canonical, bytes)
+        declared = json.loads(canonical.decode("utf-8"))["manifestSelf"]["canonicalGitBlobSha256"]
+        self.assertEqual(declared, checker.canonical_self_sha256(canonical))
+
+        lf = (
+            b'{"canonicalGitBlobSha256":"sha256:' + b"0" * 64 + b'"}\n'
+        )
+        crlf = lf.replace(b"\n", b"\r\n")
+        self.assertNotEqual(checker.canonical_self_sha256(lf), checker.canonical_self_sha256(crlf))
+        self.assertEqual(
+            checker.canonical_self_sha256(lf),
+            "sha256:" + hashlib.sha256(lf).hexdigest(),
+        )
+
+    def test_r12_02_posix_hostile_mutations_patch_actual_publication_syscall(self) -> None:
+        r11_tests = subprocess.check_output(
+            ["git", "show", "52ca3452a12656a13e62eba5c6b0641e43440f32:tests/test_universal_provider_control.py"],
+            cwd=ROOT, text=True, encoding="utf-8",
+        )
+        r11_engine = subprocess.check_output(
+            ["git", "show", "52ca3452a12656a13e62eba5c6b0641e43440f32:tools/universal_provider_control.py"],
+            cwd=ROOT, text=True, encoding="utf-8",
+        )
+        self.assertIn('mock.patch.object(upc.os, "link"', r11_tests)
+        self.assertNotIn("def _publication_syscall(", r11_engine)
+        publication = inspect.getsource(upc._publish_owned_temporary)
+        syscall = inspect.getsource(upc._publication_syscall)
+        current_tests = (
+            inspect.getsource(self.test_r4_03_no_clobber_publication_preserves_foreign_races)
+            + inspect.getsource(self.test_r5_01_publication_binds_retained_temp_identity_and_exact_bytes)
+        )
+        self.assertGreaterEqual(publication.count("_publication_syscall("), 2)
+        self.assertIn("libc.linkat", syscall)
+        self.assertIn('mock.patch.object(upc, "_publication_syscall"', current_tests)
 
     # Bounded exact evidence capsule controls.
 

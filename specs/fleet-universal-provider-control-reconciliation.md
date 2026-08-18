@@ -1,4 +1,4 @@
-# Universal provider-control reconciliation R11
+# Universal provider-control reconciliation R12
 
 Status: **CANDIDATE / ZERO AUTHORITY / NO DEPLOYMENT**
 
@@ -154,7 +154,13 @@ post-reset quiet; and add required capacity dimensions. They may never weaken th
 19. Capacity enforces `lastResetAt <= observedAt < resetsAt`, bounded future skew, and a finite
     window. Requests have profile-bounded age and validity duration, not merely an expiry.
 20. Candidate manifests hash canonical Git blob bytes across checkout EOL policies and include the
-    manifest via an exact zeroed-field self-binding without recursive-digest claims.
+    manifest via an exact zeroed-field self-binding without recursive-digest claims. Both checker
+    and hostile test read the indexed/committed Git blob, never checkout bytes; an explicit LF/CRLF
+    discriminator proves checkout conversion cannot redefine the subject.
+21. Named hard-link publication and the ordinary-user `/proc/self/fd` plus
+    `linkat(AT_SYMLINK_FOLLOW)` route pass through one explicit no-clobber syscall seam. Hostile race,
+    foreign-source, replacement, and link-then-raise controls patch that exact seam, so Ubuntu cannot
+    silently execute an unmutated production syscall while the test patches only `os.link`.
 
 ## Provider-normalization dimensions
 
@@ -182,7 +188,7 @@ unchanged zero-inference ticks, full-child claimant/OS-lock behavior, rollback, 
 gate. A canary is separately authorized, one per quota domain, bounded, and automatically returns
 to CLOSED on ambiguity or failure. User-present hardware and project release gates are unchanged.
 
-## R11 evidence map
+## R12 evidence map
 
 The hostile suite in `tests/test_universal_provider_control.py` reproduces every retained
 reconciliation finding: unenforced schemas; malformed-newest fallback; unkeyed identity; permissive
@@ -239,3 +245,11 @@ administrative close/destruction preserves active child authority until authenti
 release. The 106-control universal suite and retained 37-control governor suite run on Python 3.13
 and 3.14; hosted Windows and Ubuntu checks remain required before adjudication. The candidate author
 remains recused.
+
+Exact 52ca345 R11-hosted-red/R12-green twins bind the failed PR #10 run `32196027799`: Windows
+Python 3.13/3.14 no longer derives manifest self-hashes from CRLF checkout bytes, and Ubuntu Python
+3.13/3.14 now injects the foreign-race and source-substitution mutations through the actual anonymous
+`linkat` publication seam. The prior exact R11 tests are retained as RED evidence, expectations are
+unchanged, and no test is skipped. The 108-control universal suite and retained 37-control governor
+suite run locally on Python 3.13 and 3.14; a fresh hosted Windows/Ubuntu run on exact R12 bytes remains
+required before adjudication. The candidate author remains recused.

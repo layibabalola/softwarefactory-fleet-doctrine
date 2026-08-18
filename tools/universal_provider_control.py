@@ -479,13 +479,38 @@ def _open_owned_temporary(temporary: Path, output_path: Path) -> tuple[Any, bool
         raise ControlError("CAPSULE_TEMP_COLLISION") from exc
 
 
+def _publication_syscall(
+    source: str | Path,
+    output_path: Path,
+    *,
+    target_directory_fd: int | None = None,
+    flags: int = 0,
+) -> None:
+    """Single injectable no-clobber syscall seam for named and anonymous publication routes."""
+
+    if target_directory_fd is None:
+        os.link(source, output_path)
+        return
+    import ctypes
+
+    libc = ctypes.CDLL(None, use_errno=True)
+    libc.linkat.argtypes = [ctypes.c_int, ctypes.c_char_p, ctypes.c_int, ctypes.c_char_p, ctypes.c_int]
+    libc.linkat.restype = ctypes.c_int
+    if libc.linkat(
+        -100, os.fsencode(source), target_directory_fd, os.fsencode(output_path.name), flags
+    ) != 0:
+        error = ctypes.get_errno()
+        if error == 17:
+            raise FileExistsError(error, "capsule output exists", str(output_path))
+        raise OSError(error, "anonymous retained publication failed", str(output_path))
+
+
 def _publish_owned_temporary(handle: Any, temporary: Path, named: bool, output_path: Path) -> None:
     """Atomically create the public no-clobber link from the retained file object."""
 
     if named:
-        os.link(temporary, output_path)
+        _publication_syscall(temporary, output_path)
         return
-    import ctypes
 
     retained_identity = _stable_file_identity(os.fstat(handle.fileno()))
     proc_source = f"/proc/self/fd/{handle.fileno()}"
@@ -496,18 +521,13 @@ def _publish_owned_temporary(handle: Any, temporary: Path, named: bool, output_p
     if proc_identity != retained_identity:
         raise ControlError("CAPSULE_PUBLICATION_ROUTE_DRIFT")
 
-    libc = ctypes.CDLL(None, use_errno=True)
-    libc.linkat.argtypes = [ctypes.c_int, ctypes.c_char_p, ctypes.c_int, ctypes.c_char_p, ctypes.c_int]
-    libc.linkat.restype = ctypes.c_int
     directory = os.open(str(output_path.parent), os.O_RDONLY | getattr(os, "O_DIRECTORY", 0))
     try:
         # AT_FDCWD + /proc/self/fd + AT_SYMLINK_FOLLOW is the documented unprivileged O_TMPFILE
         # publication route.  Do not fall back after bytes have been written.
-        if libc.linkat(-100, os.fsencode(proc_source), directory, os.fsencode(output_path.name), 0x400) != 0:
-            error = ctypes.get_errno()
-            if error == 17:
-                raise FileExistsError(error, "capsule output exists", str(output_path))
-            raise OSError(error, "anonymous retained publication failed", str(output_path))
+        _publication_syscall(
+            proc_source, output_path, target_directory_fd=directory, flags=0x400
+        )
     finally:
         os.close(directory)
 
