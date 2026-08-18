@@ -1,6 +1,10 @@
 # Fleet provider capacity governor
 
-Status: **CANDIDATE — NO LIVE ADMISSION, ROUTING, OR AUTHORITY GRANT**
+Status: **RATIFIED PORTABLE CORE — NO LIVE ADMISSION, ROUTING, OR AUTHORITY GRANT**
+
+Accepted conformance subject: `224a6705d81dfbc670313cdcef4d825216f2b380`
+(`RULINGS.md`, 2026-08-18). Project adoption and activation remain separate. Fleet dispositions
+are coordinated in [issue #3](https://github.com/layibabalola/softwarefactory-fleet-doctrine/issues/3).
 
 Date: 2026-08-18 CT
 
