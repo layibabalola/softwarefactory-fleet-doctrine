@@ -246,6 +246,15 @@ literals (`NaN`, `Infinity`, and `-Infinity`) are invalid before schema evaluati
 `date-time` field is also parsed explicitly as timezone-bearing RFC 3339, so admission does not
 depend on an optional format-checker implementation.
 
+The reference intake policy rejects an input larger than 1,048,576 bytes. A JSONL shard is also
+limited to 256 physical lines and 65,536 bytes per line (excluding the LF delimiter). Before any
+recursive privacy walker or schema evaluation, the decoded JSON tree is checked iteratively for a
+maximum root-inclusive depth of 64, 256 members in any object, 256 items in any array, and 4,096
+total value nodes. The same input-byte and tree limits protect schema files. Parser recursion,
+memory, or overflow and equivalent walker or schema-evaluation resource failures, as well as every
+limit breach, fail closed as `JSON_COMPLEXITY_LIMIT`, CLI exit 2, with an empty standard-error
+stream and no input, path, or traceback echo.
+
 Publishable identifiers use reviewed slug-like formats; account and user identifiers remain only
 in opaque HMAC-derived fields. Email-like values are prohibited. Evidence references may contain
 only normalized project-relative paths with forward-slash components. Absolute POSIX, Windows,
@@ -273,7 +282,10 @@ snapshot from their separately reviewed host-local supervisor.
 
 Schema files themselves pass through the same strict UTF-8, duplicate-key, and non-finite-number
 decoder before `Draft202012Validator.check_schema`; trusted repository location does not weaken byte
-or JSON intake rules.
+or JSON intake rules. Every `$ref` is preflighted as a resolvable document-local JSON Pointer;
+external, malformed, or unresolved references are refused as the no-echo
+`SCHEMA_REFERENCE_ERROR`. Validator and referencing-library resolution failures are caught at both
+construction and iteration boundaries and produce the same stable error.
 
 CI installs the schema validator and its format dependencies from a generated, hash-locked
 requirements artifact using `--require-hashes`. The small direct-requirement file is the reviewed

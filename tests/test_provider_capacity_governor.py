@@ -1,6 +1,7 @@
 import copy
 import importlib.util
 import json
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -473,6 +474,190 @@ class ProviderCapacityGovernorTests(unittest.TestCase):
         self.assertEqual(2, result.returncode, result.stdout)
         self.assertIn("reason=CLI_ARGUMENT_INVALID", result.stdout)
         self.assertNotIn(argument_sentinel, result.stdout + result.stderr)
+
+        missing_sentinel = "SENTINEL_MISSING_PATH_SECRET.json"
+        result = self._run_cli("decide", Path(tempfile.gettempdir()) / missing_sentinel)
+        self.assertEqual(2, result.returncode, result.stdout)
+        self.assertEqual("", result.stderr)
+        self.assertIn("reason=IO_ERROR", result.stdout)
+        self.assertNotIn(missing_sentinel, result.stdout + result.stderr)
+
+    def test_r6_red_resource_boundaries_are_r7_green_in_real_subprocesses(self):
+        def assert_complexity(result):
+            self.assertEqual(2, result.returncode, result.stdout)
+            self.assertEqual("", result.stderr)
+            self.assertIn("reason=JSON_COMPLEXITY_LIMIT", result.stdout)
+            self.assertNotIn("Traceback", result.stdout)
+
+        def assert_within_shape_limit(result):
+            self.assertEqual(2, result.returncode, result.stdout)
+            self.assertEqual("", result.stderr)
+            self.assertNotIn("reason=JSON_COMPLEXITY_LIMIT", result.stdout)
+            self.assertRegex(
+                result.stdout,
+                r"reason=(?:CONTRACT_INVALID|SCHEMA_VALIDATION_FAILED)",
+            )
+
+        snapshot_bytes = (ROOT / "examples" / "provider-admission-snapshot-v1.json").read_bytes()
+        base_event = json.loads(
+            (ROOT / "examples" / "provider-usage-events-v1.jsonl").read_text().splitlines()[0]
+        )
+        compact_event = json.dumps(base_event, separators=(",", ":")).encode("utf-8")
+
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+
+            exact_input = root / "exact-input.json"
+            exact_input.write_bytes(
+                snapshot_bytes + b" " * (MODULE.MAX_INPUT_BYTES - len(snapshot_bytes))
+            )
+            accepted = self._run_cli("decide", exact_input)
+            self.assertEqual(0, accepted.returncode, accepted.stdout)
+            self.assertEqual("", accepted.stderr)
+            over_input = root / "over-input.json"
+            over_input.write_bytes(exact_input.read_bytes() + b" ")
+            assert_complexity(self._run_cli("decide", over_input))
+
+            exact_line = root / "exact-line.jsonl"
+            exact_line.write_bytes(
+                compact_event
+                + b" " * (MODULE.MAX_JSONL_LINE_BYTES - len(compact_event))
+                + b"\n"
+            )
+            accepted = self._run_cli("validate-events", exact_line)
+            self.assertEqual(0, accepted.returncode, accepted.stdout)
+            self.assertEqual("", accepted.stderr)
+            over_line = root / "over-line.jsonl"
+            over_line.write_bytes(exact_line.read_bytes()[:-1] + b" \n")
+            assert_complexity(self._run_cli("validate-events", over_line))
+
+            events = []
+            for index in range(MODULE.MAX_JSONL_LINES + 1):
+                event = copy.deepcopy(base_event)
+                event["event_id"] = f"limit-event-{index:04d}"
+                events.append(json.dumps(event, separators=(",", ":")))
+            exact_lines = root / "exact-lines.jsonl"
+            exact_lines.write_text(
+                "\n".join(events[: MODULE.MAX_JSONL_LINES]) + "\n",
+                encoding="utf-8",
+            )
+            accepted = self._run_cli("validate-events", exact_lines)
+            self.assertEqual(0, accepted.returncode, accepted.stdout)
+            self.assertEqual("", accepted.stderr)
+            over_lines = root / "over-lines.jsonl"
+            over_lines.write_text("\n".join(events) + "\n", encoding="utf-8")
+            assert_complexity(self._run_cli("validate-events", over_lines))
+
+            shape_twins = []
+            exact_depth = "[" * (MODULE.MAX_JSON_DEPTH - 1) + "0" + "]" * (
+                MODULE.MAX_JSON_DEPTH - 1
+            )
+            over_depth = "[" * MODULE.MAX_JSON_DEPTH + "0" + "]" * MODULE.MAX_JSON_DEPTH
+            shape_twins.append(("depth", exact_depth, over_depth))
+
+            exact_object = {f"k{index:03d}": 0 for index in range(MODULE.MAX_OBJECT_MEMBERS)}
+            over_object = dict(exact_object)
+            over_object["overflow"] = 0
+            shape_twins.append(
+                ("object-members", json.dumps(exact_object), json.dumps(over_object))
+            )
+
+            exact_array = [0] * MODULE.MAX_ARRAY_ITEMS
+            over_array = exact_array + [0]
+            shape_twins.append(
+                ("array-items", json.dumps(exact_array), json.dumps(over_array))
+            )
+
+            def node_tree(total_nodes):
+                list_count = 16
+                scalar_count = total_nodes - 1 - list_count
+                groups = []
+                for _ in range(list_count):
+                    width = min(MODULE.MAX_ARRAY_ITEMS, scalar_count)
+                    groups.append([0] * width)
+                    scalar_count -= width
+                self.assertEqual(0, scalar_count)
+                return groups
+
+            shape_twins.append(
+                (
+                    "total-nodes",
+                    json.dumps(node_tree(MODULE.MAX_TOTAL_NODES)),
+                    json.dumps(node_tree(MODULE.MAX_TOTAL_NODES + 1)),
+                )
+            )
+
+            for name, exact_payload, over_payload in shape_twins:
+                with self.subTest(limit=name):
+                    exact_path = root / f"exact-{name}.jsonl"
+                    exact_path.write_text(exact_payload + "\n", encoding="utf-8")
+                    assert_within_shape_limit(
+                        self._run_cli("validate-events", exact_path)
+                    )
+                    over_path = root / f"over-{name}.jsonl"
+                    over_path.write_text(over_payload + "\n", encoding="utf-8")
+                    assert_complexity(self._run_cli("validate-events", over_path))
+
+            deep_sentinel = "SENTINEL_1800_NESTING_SECRET"
+            deep_path = root / "deep-1800.jsonl"
+            deep_path.write_text(
+                "[" * 1800 + json.dumps(deep_sentinel) + "]" * 1800 + "\n",
+                encoding="utf-8",
+            )
+            deep_result = self._run_cli("validate-events", deep_path)
+            assert_complexity(deep_result)
+            self.assertNotIn(deep_sentinel, deep_result.stdout + deep_result.stderr)
+
+    def test_r6_red_broken_schema_ref_is_r7_green_sanitized_in_subprocess(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            tool_root = root / "tools"
+            schema_root = root / "schemas"
+            tool_root.mkdir()
+            schema_root.mkdir()
+            copied_tool = tool_root / MODULE_PATH.name
+            shutil.copy2(MODULE_PATH, copied_tool)
+            for schema_name in (
+                "provider-admission-snapshot-v1.schema.json",
+                "provider-usage-event-v1.schema.json",
+            ):
+                shutil.copy2(ROOT / "schemas" / schema_name, schema_root / schema_name)
+            usage_schema = schema_root / "provider-usage-event-v1.schema.json"
+            original_schema = usage_schema.read_text(encoding="utf-8")
+            cases = (
+                ("SENTINEL_BROKEN_REF_SECRET", "#/$defs/SENTINEL_BROKEN_REF_SECRET"),
+                (
+                    "SENTINEL_EXTERNAL_REF_SECRET",
+                    "https://example.invalid/SENTINEL_EXTERNAL_REF_SECRET",
+                ),
+            )
+            for sentinel, replacement in cases:
+                with self.subTest(ref_kind=sentinel):
+                    usage_schema.write_text(
+                        original_schema.replace(
+                            "#/$defs/nonNegativeOrUnknown",
+                            replacement,
+                        ),
+                        encoding="utf-8",
+                    )
+                    result = subprocess.run(
+                        [
+                            sys.executable,
+                            str(copied_tool),
+                            "validate-events",
+                            str(ROOT / "examples" / "provider-usage-events-v1.jsonl"),
+                        ],
+                        cwd=ROOT,
+                        capture_output=True,
+                        text=True,
+                        check=False,
+                    )
+                    self.assertEqual(2, result.returncode, result.stdout)
+                    self.assertEqual("", result.stderr)
+                    self.assertIn("reason=SCHEMA_REFERENCE_ERROR", result.stdout)
+                    self.assertNotIn(sentinel, result.stdout + result.stderr)
+                    self.assertNotIn(str(root), result.stdout + result.stderr)
+                    self.assertNotIn("Traceback", result.stdout + result.stderr)
 
     def test_r2_red_duplicate_and_nonfinite_snapshot_cli_is_r3_green_rejected(self):
         raw = (ROOT / "examples" / "provider-admission-snapshot-v1.json").read_text()

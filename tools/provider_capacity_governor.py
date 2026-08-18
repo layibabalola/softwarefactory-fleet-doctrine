@@ -24,6 +24,11 @@ try:
 except ImportError:  # pragma: no cover - exercised by deployment environments, not this test env
     jsonschema = None
 
+try:
+    import referencing.exceptions as referencing_exceptions
+except ImportError:  # pragma: no cover - installed transitively with jsonschema
+    referencing_exceptions = None
+
 
 QUOTA_DOMAIN_RE = re.compile(
     r"^(?P<provider>[a-z0-9-]+)/(?:opaque:|hmac-sha256:)[a-f0-9]{16,64}$"
@@ -76,6 +81,14 @@ TOKEN_FIELDS = {
     "context_tokens",
 }
 SCHEMA_ROOT = Path(__file__).resolve().parents[1] / "schemas"
+MAX_INPUT_BYTES = 1_048_576
+MAX_JSONL_LINE_BYTES = 65_536
+MAX_JSONL_LINES = 256
+MAX_JSON_DEPTH = 64
+MAX_OBJECT_MEMBERS = 256
+MAX_ARRAY_ITEMS = 256
+MAX_TOTAL_NODES = 4_096
+COMPLEXITY_EXCEPTIONS = (RecursionError, MemoryError, OverflowError)
 
 
 def _reason_code(message: str) -> str:
@@ -136,6 +149,119 @@ class SafeArgumentParser(argparse.ArgumentParser):
         raise SystemExit(2)
 
 
+def _complexity_error(*, location: str = "$") -> ContractError:
+    return ContractError(
+        location=location,
+        validator="json-complexity",
+        reason="JSON_COMPLEXITY_LIMIT",
+    )
+
+
+def _reference_error() -> ContractError:
+    return ContractError(
+        location="#",
+        validator="schema-reference",
+        reason="SCHEMA_REFERENCE_ERROR",
+    )
+
+
+def _reference_exception_types() -> tuple[type[BaseException], ...]:
+    candidates: list[type[BaseException]] = []
+    if jsonschema is not None:
+        for name in ("_RefResolutionError", "_WrappedReferencingError"):
+            candidate = getattr(jsonschema.exceptions, name, None)
+            if isinstance(candidate, type):
+                candidates.append(candidate)
+    if referencing_exceptions is not None:
+        for name in (
+            "CannotDetermineSpecification",
+            "InvalidAnchor",
+            "NoInternalID",
+            "NoSuchAnchor",
+            "NoSuchResource",
+            "PointerToNowhere",
+            "Unresolvable",
+            "Unretrievable",
+        ):
+            candidate = getattr(referencing_exceptions, name, None)
+            if isinstance(candidate, type):
+                candidates.append(candidate)
+    return tuple(candidates)
+
+
+def _read_bounded_file(path: Path) -> bytes:
+    try:
+        with path.open("rb") as handle:
+            raw = handle.read(MAX_INPUT_BYTES + 1)
+    except COMPLEXITY_EXCEPTIONS as exc:
+        raise _complexity_error() from exc
+    if len(raw) > MAX_INPUT_BYTES:
+        raise _complexity_error()
+    return raw
+
+
+def _enforce_json_complexity(value: Any, *, location: str = "$") -> None:
+    """Apply iterative shape limits before recursive walkers or schema evaluation."""
+    try:
+        stack: list[tuple[Any, int]] = [(value, 1)]
+        nodes = 0
+        while stack:
+            child, depth = stack.pop()
+            nodes += 1
+            if nodes > MAX_TOTAL_NODES or depth > MAX_JSON_DEPTH:
+                raise _complexity_error(location=location)
+            if isinstance(child, dict):
+                if len(child) > MAX_OBJECT_MEMBERS:
+                    raise _complexity_error(location=location)
+                stack.extend((nested, depth + 1) for nested in child.values())
+            elif isinstance(child, list):
+                if len(child) > MAX_ARRAY_ITEMS:
+                    raise _complexity_error(location=location)
+                stack.extend((nested, depth + 1) for nested in child)
+    except ContractError:
+        raise
+    except COMPLEXITY_EXCEPTIONS as exc:
+        raise _complexity_error(location=location) from exc
+
+
+def _preflight_schema_references(schema: Any) -> None:
+    """Permit only resolvable, document-local JSON Pointer references."""
+    try:
+        stack = [schema]
+        while stack:
+            child = stack.pop()
+            if isinstance(child, dict):
+                reference = child.get("$ref")
+                if reference is not None:
+                    if reference == "#":
+                        target = schema
+                    elif not isinstance(reference, str) or not reference.startswith("#/"):
+                        raise _reference_error()
+                    else:
+                        target = schema
+                        for encoded in reference[2:].split("/"):
+                            if re.search(r"~(?![01])", encoded):
+                                raise _reference_error()
+                            component = encoded.replace("~1", "/").replace("~0", "~")
+                            if isinstance(target, dict) and component in target:
+                                target = target[component]
+                            elif (
+                                isinstance(target, list)
+                                and component.isdigit()
+                                and int(component) < len(target)
+                            ):
+                                target = target[int(component)]
+                            else:
+                                raise _reference_error()
+                stack.extend(child.values())
+            elif isinstance(child, list):
+                stack.extend(child)
+    except ContractError:
+        raise
+    except COMPLEXITY_EXCEPTIONS as exc:
+        raise _complexity_error(location="#") from exc
+
+
 def _parse_utc(value: Any, field: str) -> datetime:
     if not isinstance(value, str):
         raise ContractError(f"{field}: expected RFC3339 string")
@@ -177,11 +303,13 @@ def _reject_nonfinite_json(value: str) -> None:
 
 def _strict_json_loads(raw: str, source: str) -> Any:
     try:
-        return json.loads(
+        value = json.loads(
             raw,
             object_pairs_hook=_strict_object,
             parse_constant=_reject_nonfinite_json,
         )
+        _enforce_json_complexity(value, location=source)
+        return value
     except ContractError as exc:
         raise ContractError(
             location=source,
@@ -194,6 +322,8 @@ def _strict_json_loads(raw: str, source: str) -> Any:
             validator="json",
             reason="JSON_MALFORMED",
         ) from exc
+    except COMPLEXITY_EXCEPTIONS as exc:
+        raise _complexity_error(location=source) from exc
 
 
 def _decode_utf8(raw: bytes, source: str) -> str:
@@ -217,8 +347,9 @@ def _schema_validator(schema_name: str) -> Any:
         )
     schema_path = SCHEMA_ROOT / schema_name
     try:
-        raw = schema_path.read_bytes()
+        raw = _read_bounded_file(schema_path)
         schema = _strict_json_loads(_decode_utf8(raw, "#"), "#")
+        _preflight_schema_references(schema)
         jsonschema.Draft202012Validator.check_schema(schema)
     except OSError as exc:
         raise ContractError(
@@ -229,7 +360,7 @@ def _schema_validator(schema_name: str) -> Any:
     except ContractError as exc:
         raise ContractError(
             location="#",
-            validator="schema-json",
+            validator=exc.validator,
             reason=exc.reason,
         ) from exc
     except jsonschema.SchemaError as exc:
@@ -238,18 +369,53 @@ def _schema_validator(schema_name: str) -> Any:
             validator="Draft202012Validator",
             reason="SCHEMA_UNAVAILABLE_OR_INVALID",
         ) from exc
-    return jsonschema.Draft202012Validator(
-        schema,
-        format_checker=jsonschema.FormatChecker(),
-    )
+    except COMPLEXITY_EXCEPTIONS as exc:
+        raise _complexity_error(location="#") from exc
+    except _reference_exception_types() as exc:
+        raise _reference_error() from exc
+    try:
+        return jsonschema.Draft202012Validator(
+            schema,
+            format_checker=jsonschema.FormatChecker(),
+        )
+    except COMPLEXITY_EXCEPTIONS as exc:
+        raise _complexity_error(location="#") from exc
+    except _reference_exception_types() as exc:
+        raise _reference_error() from exc
+    except Exception as exc:
+        raise ContractError(
+            location="#",
+            validator="Draft202012Validator",
+            reason="SCHEMA_CONSTRUCTION_ERROR",
+        ) from exc
 
 
 def _validate_schema(value: Any, schema_name: str) -> None:
     validator = _schema_validator(schema_name)
-    errors = sorted(validator.iter_errors(value), key=lambda error: list(error.absolute_path))
-    if not errors:
+    first_error = None
+    first_key = None
+    try:
+        for error in validator.iter_errors(value):
+            key = tuple(
+                (0, component) if isinstance(component, int) else (1, str(component))
+                for component in error.absolute_path
+            )
+            if first_error is None or key < first_key:
+                first_error = error
+                first_key = key
+    except COMPLEXITY_EXCEPTIONS as exc:
+        raise _complexity_error() from exc
+    except _reference_exception_types() as exc:
+        raise _reference_error() from exc
+    except Exception as exc:
+        raise ContractError(
+            location="#",
+            validator="schema-evaluation",
+            reason="SCHEMA_EVALUATION_ERROR",
+        ) from exc
+    if first_error is None:
         return
-    error = errors[0]
+    error = first_error
     # Report only the controlled schema location and validator keyword. Instance paths,
     # messages, rejected keys, and rejected values are intentionally never rendered.
     location = "#"
@@ -340,6 +506,7 @@ def _validate_publishable_event_values(event: dict[str, Any]) -> None:
 
 
 def validate_usage_event(event: Any) -> None:
+    _enforce_json_complexity(event)
     if not isinstance(event, dict):
         raise ContractError("event: expected object")
     _validate_opaque_event(event)
@@ -429,22 +596,32 @@ def validate_usage_file(path: Path) -> dict[str, Any]:
     count = 0
     event_ids: set[str] = set()
     errors: list[str] = []
-    with path.open("rb") as handle:
-        for line_number, raw in enumerate(handle, 1):
-            if not raw.strip():
-                continue
-            try:
-                line_location = f"$line[{line_number}]"
-                decoded = _decode_utf8(raw, line_location)
-                event = _strict_json_loads(decoded, line_location)
-                validate_usage_event(event)
-                event_id = event["event_id"]
-                if event_id in event_ids:
-                    raise ContractError(f"event_id: duplicate {event_id!r}")
-                event_ids.add(event_id)
-                count += 1
-            except ContractError as exc:
-                errors.append(str(exc))
+    raw_file = _read_bounded_file(path)
+    try:
+        lines = raw_file.split(b"\n")
+    except COMPLEXITY_EXCEPTIONS as exc:
+        raise _complexity_error() from exc
+    if lines and lines[-1] == b"":
+        lines.pop()
+    if len(lines) > MAX_JSONL_LINES or any(
+        len(raw) > MAX_JSONL_LINE_BYTES for raw in lines
+    ):
+        raise _complexity_error()
+    for line_number, raw in enumerate(lines, 1):
+        if not raw.strip():
+            continue
+        try:
+            line_location = f"$line[{line_number}]"
+            decoded = _decode_utf8(raw, line_location)
+            event = _strict_json_loads(decoded, line_location)
+            validate_usage_event(event)
+            event_id = event["event_id"]
+            if event_id in event_ids:
+                raise ContractError(f"event_id: duplicate {event_id!r}")
+            event_ids.add(event_id)
+            count += 1
+        except ContractError as exc:
+            errors.append(str(exc))
     return {"valid": not errors, "event_count": count, "errors": errors}
 
 
@@ -500,6 +677,7 @@ def _validate_claimant_rows(active_leases: list[dict[str, Any]]) -> None:
 
 
 def decide(snapshot: Any) -> dict[str, Any]:
+    _enforce_json_complexity(snapshot)
     if not isinstance(snapshot, dict):
         raise ContractError("snapshot: expected object")
     _validate_schema(snapshot, "provider-admission-snapshot-v1.schema.json")
@@ -690,7 +868,7 @@ def decide(snapshot: Any) -> dict[str, Any]:
 
 
 def _load_json(path: Path) -> Any:
-    raw = path.read_bytes()
+    raw = _read_bounded_file(path)
     return _strict_json_loads(_decode_utf8(raw, "$"), "$")
 
 
@@ -716,6 +894,14 @@ def main(argv: list[str] | None = None) -> int:
         return 2
     except ContractError as exc:
         print(json.dumps({"valid": False, "errors": [str(exc)]}, indent=2, sort_keys=True))
+        return 2
+    except COMPLEXITY_EXCEPTIONS:
+        error = _complexity_error()
+        print(json.dumps({"valid": False, "errors": [str(error)]}, indent=2, sort_keys=True))
+        return 2
+    except Exception:
+        error = ContractError(validator="internal", reason="INTERNAL_ERROR")
+        print(json.dumps({"valid": False, "errors": [str(error)]}, indent=2, sort_keys=True))
         return 2
 
 
