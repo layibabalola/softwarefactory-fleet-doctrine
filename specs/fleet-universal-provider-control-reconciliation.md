@@ -1,4 +1,4 @@
-# Universal provider-control reconciliation R13
+# Universal provider-control reconciliation R14
 
 Status: **CANDIDATE / ZERO AUTHORITY / NO DEPLOYMENT**
 
@@ -111,7 +111,10 @@ post-reset quiet; and add required capacity dimensions. They may never weaken th
     `linkat(AT_SYMLINK_FOLLOW)` publication route. It never relies on privileged `AT_EMPTY_PATH`
     and never changes route after writing. The POSIX anonymous descriptor is explicitly owned until
     `fdopen` succeeds; an injected `fdopen` failure closes that descriptor exactly once before any
-    fallback or propagation. Windows likewise tracks the sole owner across native handle, CRT
+    fallback or propagation. The target-directory descriptor used by `linkat` is also an explicit
+    attempt-once owner: false, exception, or ambiguous close retains the exact descriptor, creates
+    process-wide cleanup poison, and remains refusal even after the public link's identity and bytes
+    verify exactly. Windows likewise tracks the sole owner across native handle, CRT
     descriptor, and file-object states; every failed transfer arms retained-handle deletion and
     closes exactly the current owner. A named fallback never path-deletes: refusal is returned
     as required `temporaryCleanup=REFUSED_BOUNDED`, creates one deterministic no-value block marker, and the deterministic
@@ -192,7 +195,7 @@ unchanged zero-inference ticks, full-child claimant/OS-lock behavior, rollback, 
 gate. A canary is separately authorized, one per quota domain, bounded, and automatically returns
 to CLOSED on ambiguity or failure. User-present hardware and project release gates are unchanged.
 
-## R13 evidence map
+## R14 evidence map
 
 The hostile suite in `tests/test_universal_provider_control.py` reproduces every retained
 reconciliation finding: unenforced schemas; malformed-newest fallback; unkeyed identity; permissive
@@ -262,6 +265,15 @@ Exact 6c821f7 R12-hosted-history-red/R13-green evidence binds PR #10 run `321967
 four matrix jobs lacked predecessor object `52ca345...` in the default shallow checkout. R13 sets
 `fetch-depth: 0`, verifies the predecessor commit plus exact test and engine blobs before the suite,
 and exercises both full-history success and stable simulated shallow absence. The 109-control
-universal suite and retained 37-control governor suite run locally on Python 3.13 and 3.14; a fresh
-hosted Windows/Ubuntu run on exact R13 bytes remains required. Production reference-engine bytes are
-unchanged from R12. The candidate author remains recused.
+universal suite and retained 37-control governor suite ran locally on Python 3.13 and 3.14 and all
+four hosted jobs passed on exact R13 in PR #10 run `32197400392`. Production reference-engine bytes
+were unchanged from R12. The candidate author remains recused.
+
+Exact ecc8f07 R13-red/R14-green evidence binds hosted-green PR #10 run `32197400392` and its
+doctrine/safety PASS plus mechanics 0-blocker/1-required review. The native Ubuntu control completes
+an exact anonymous-file link, then injects both false and exceptional target-directory descriptor
+close outcomes. R14 retains the descriptor once, returns one stable no-echo cleanup refusal, blocks
+rotated and repeated outputs before new acquisition, and proves exact public bytes never convert the
+unproven close to `temporaryCleanup=CLEAN`. The 110-control universal suite and retained 37-control
+governor suite run on Python 3.13 and 3.14; fresh hosted Windows/Ubuntu checks remain required on the
+exact R14 bytes. The candidate author remains recused from review and adjudication.

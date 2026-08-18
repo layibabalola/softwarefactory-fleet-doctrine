@@ -5,10 +5,11 @@ The active exact-subject coordination locus is doctrine issue
 and portable/rejected split is the
 [reconciliation comment](https://github.com/layibabalola/softwarefactory-fleet-doctrine/issues/4#issuecomment-5332348238).
 
-The R13 implementation candidate retains every R1 through R12 hostile discriminator and repairs
-only the exact shallow-history failure from PR #10 run 32196730880. Hosted checkout now fetches full
-history and verifies the exact R11 commit and two predecessor blobs before semantic tests; missing
-history fails with one stable no-echo reason. It is described in
+The R14 implementation candidate retains every R1 through R13 hostile discriminator. Exact R13 was
+hosted-green in PR #10 run 32197400392 and passed doctrine and safety review; R14 repairs the sole
+remaining mechanics requirement by treating the POSIX publication target-directory descriptor as
+an explicit attempt-once owner. An unproven close retains that exact owner, poisons later capsule
+acquisition, and cannot be hidden by a successfully verified public link. It is described in
 [`specs/fleet-universal-provider-control-reconciliation.md`](specs/fleet-universal-provider-control-reconciliation.md).
 It is zero authority until independently reviewed, distinctly adjudicated, hosted-green, recorded in
 `RULINGS.md`, merged to canonical master, and separately adopted by each project.

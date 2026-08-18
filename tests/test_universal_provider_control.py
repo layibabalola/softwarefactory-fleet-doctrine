@@ -28,23 +28,25 @@ SHA_B = "sha256:" + "b" * 64
 SHA_C = "sha256:" + "c" * 64
 SHA_D = "sha256:" + "d" * 64
 R11_PREDECESSOR = "52ca3452a12656a13e62eba5c6b0641e43440f32"
+R13_PREDECESSOR = "ecc8f076c4f0273f92c8d9f841bceff3684233ca"
 R11_REQUIRED_BLOBS = {
     "tests/test_universal_provider_control.py",
     "tools/universal_provider_control.py",
 }
+R13_REQUIRED_BLOBS = {"tools/universal_provider_control.py"}
 
 
 def sha_file(path: Path) -> str:
     return "sha256:" + hashlib.sha256(path.read_bytes()).hexdigest()
 
 
-def required_predecessor_blob(path: str) -> str:
-    """Read exact R11 evidence or fail with one stable no-echo history reason."""
+def required_history_blob(commit: str, path: str, allowed: set[str]) -> str:
+    """Read exact predecessor evidence or fail with one stable no-echo history reason."""
 
-    if path not in R11_REQUIRED_BLOBS:
+    if path not in allowed:
         raise AssertionError("REQUIRED_HISTORY_PATH_INVALID")
     run = subprocess.run(
-        ["git", "show", f"{R11_PREDECESSOR}:{path}"],
+        ["git", "show", f"{commit}:{path}"],
         cwd=ROOT,
         text=True,
         encoding="utf-8",
@@ -54,6 +56,14 @@ def required_predecessor_blob(path: str) -> str:
     if run.returncode != 0:
         raise AssertionError("REQUIRED_HISTORY_OBJECT_UNAVAILABLE") from None
     return run.stdout
+
+
+def required_predecessor_blob(path: str) -> str:
+    return required_history_blob(R11_PREDECESSOR, path, R11_REQUIRED_BLOBS)
+
+
+def required_r13_blob(path: str) -> str:
+    return required_history_blob(R13_PREDECESSOR, path, R13_REQUIRED_BLOBS)
 
 
 class UniversalProviderControlTests(unittest.TestCase):
@@ -2676,6 +2686,98 @@ class UniversalProviderControlTests(unittest.TestCase):
             workflow.index("Verify required predecessor history"),
             workflow.index("Run semantic negative controls"),
         )
+
+    # Exact ecc8f07 R13 RED -> R14 GREEN target-directory owner-lifetime twin.
+
+    def test_r14_01_posix_directory_close_refusal_poison_is_attempt_once(self) -> None:
+        r13_publication = required_r13_blob("tools/universal_provider_control.py")
+        self.assertIn("os.close(directory)", r13_publication)
+        current_publication = inspect.getsource(upc._publish_owned_temporary)
+        self.assertNotIn("os.close(directory)", current_publication)
+        self.assertIn("_close_owned_descriptor(directory)", current_publication)
+        self.assertIn('("target-directory-descriptor", directory)', current_publication)
+        self.assertEqual(upc.MAX_CAPSULE_POISON_OWNERS, 259)
+
+        if os.name != "posix":
+            return
+        if not Path("/proc/self/fd").is_dir() or not getattr(os, "O_TMPFILE", 0):
+            self.skipTest("native anonymous publication route unavailable")
+
+        source = self.root / "r14-directory-owner-source.bin"
+        source.write_bytes(b"directory-owner-refusal")
+        request = self.capsule_request(source, lengths=[8])
+        real_close = upc._close_owned_descriptor
+        flags = os.O_RDWR | getattr(os, "O_CLOEXEC", 0)
+        private_value = "PRIVATE-R14-DIRECTORY-CLOSE"
+
+        for index, close_outcome in enumerate((False, RuntimeError(private_value))):
+            output = self.root / f"r14-directory-owner-{index}.bin"
+            key = os.path.normcase(os.path.abspath(str(output)))
+            close_calls: list[int] = []
+
+            try:
+                probe = upc._open_posix_anonymous_temporary(
+                    output.parent, flags, os.O_TMPFILE, output
+                )
+            except OSError:
+                self.skipTest("test filesystem lacks native O_TMPFILE support")
+            else:
+                self.assertTrue(upc._attempt_file_close_verified(probe))
+
+            def force_anonymous(_temporary, candidate_output):
+                return (
+                    upc._open_posix_anonymous_temporary(
+                        candidate_output.parent, flags, os.O_TMPFILE, candidate_output
+                    ),
+                    False,
+                )
+
+            def refuse_directory_close(descriptor):
+                close_calls.append(descriptor)
+                if isinstance(close_outcome, BaseException):
+                    raise close_outcome
+                return close_outcome
+
+            with mock.patch.object(upc, "_open_owned_temporary", side_effect=force_anonymous):
+                with mock.patch.object(
+                    upc, "_close_owned_descriptor", side_effect=refuse_directory_close
+                ):
+                    with self.assertRaises(upc.ControlError) as caught:
+                        upc.build_evidence_capsule(request, output)
+
+            self.assertEqual(caught.exception.reason, "CAPSULE_TEMP_CLEANUP_REFUSED")
+            self.assertIsNone(caught.exception.__cause__)
+            self.assertIsNone(caught.exception.__context__)
+            self.assertNotIn(private_value, "".join(traceback.format_exception(caught.exception)))
+            self.assertEqual(output.read_bytes(), source.read_bytes()[:8])
+            self.assertEqual(len(close_calls), 1)
+            owners = upc._UNPROVEN_CAPSULE_OWNERS[key]
+            self.assertEqual(owners, [("target-directory-descriptor", close_calls[0])])
+            self.assertLessEqual(
+                sum(len(values) for values in upc._UNPROVEN_CAPSULE_OWNERS.values()),
+                upc.MAX_CAPSULE_POISON_OWNERS,
+            )
+
+            rotated = self.root / f"r14-directory-owner-rotated-{index}.bin"
+            with mock.patch.object(
+                upc, "_open_owned_temporary", side_effect=AssertionError("new owner acquired")
+            ) as acquisition:
+                with mock.patch.object(
+                    upc, "_close_owned_descriptor", side_effect=AssertionError("owner retried")
+                ) as retry:
+                    for blocked_output in (rotated, output):
+                        with self.assertRaisesRegex(upc.ControlError, "CAPSULE_TEMP_BACKLOG"):
+                            upc.build_evidence_capsule(request, blocked_output)
+            acquisition.assert_not_called()
+            retry.assert_not_called()
+            self.assertEqual(close_calls, [owners[0][1]])
+            with self.assertRaisesRegex(upc.ControlError, "CAPSULE_CLEANUP_POISONED"):
+                upc.assert_process_cleanup_clear()
+
+            real_close(owners[0][1])
+            upc._UNPROVEN_CAPSULE_OWNERS.pop(key)
+            output.with_name(output.name + ".cleanup-blocked").unlink()
+            upc.assert_process_cleanup_clear()
 
     # Bounded exact evidence capsule controls.
 
