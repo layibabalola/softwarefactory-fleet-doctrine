@@ -1,4 +1,4 @@
-# Universal provider-control reconciliation R6
+# Universal provider-control reconciliation R7
 
 Status: **CANDIDATE / ZERO AUTHORITY / NO DEPLOYMENT**
 
@@ -106,9 +106,11 @@ post-reset quiet; and add required capacity dimensions. They may never weaken th
     destination-identity proof, and an exact bounded destination-byte rehash. A link wrapper that
     raises after completing the exact link is verified as success; absent or foreign destinations
     fail without deleting foreign bytes. No branch check-then-unlinks a pathname. Windows temp
-    disposal is attached to the retained DELETE-capable file handle; POSIX prefers anonymous
-    `O_TMPFILE` plus handle-based `linkat`. A named fallback never path-deletes: refusal is returned
-    as `REFUSED_BOUNDED`, creates one deterministic no-value block marker, and the deterministic
+    disposal is attached to the retained DELETE-capable file handle; Linux prefers anonymous
+    `O_TMPFILE` and selects, before writing, the ordinary-user `/proc/self/fd` plus
+    `linkat(AT_SYMLINK_FOLLOW)` publication route. It never relies on privileged `AT_EMPTY_PATH`
+    and never changes route after writing. A named fallback never path-deletes: refusal is returned
+    as required `temporaryCleanup=REFUSED_BOUNDED`, creates one deterministic no-value block marker, and the deterministic
     `.tmp-owned` name prevents repeated accumulation. Public outputs are never path-cleaned after a
     failure, so a replacement occupant cannot be removed. Every retained admission artifact is
     likewise reread at resume using its exact retained size and ceiling plus at most one drift byte.
@@ -147,7 +149,7 @@ unchanged zero-inference ticks, full-child claimant/OS-lock behavior, rollback, 
 gate. A canary is separately authorized, one per quota domain, bounded, and automatically returns
 to CLOSED on ambiguity or failure. User-present hardware and project release gates are unchanged.
 
-## R6 evidence map
+## R7 evidence map
 
 The hostile suite in `tests/test_universal_provider_control.py` reproduces every retained
 reconciliation finding: unenforced schemas; malformed-newest fallback; unkeyed identity; permissive
@@ -169,3 +171,9 @@ Exact 58e4146 R5-red/R6-green twins prove private and public replacement occupan
 cleanup boundary, cleanup refusal is surfaced and repetition-bounded, and the complete 83-control
 suite passes unchanged production behavior on Python 3.13 and 3.14. The candidate's author remains
 recused from review and adjudication.
+
+Exact 300e2bb R6-red/R7-green twins prove ordinary unprivileged Linux anonymous-file publication
+uses the capability-free exact-fd route, `temporaryCleanup` is mandatory runtime evidence, cleanup
+helper exceptions are contained behind stable no-echo refusal results, and the successful cleanup
+path remains green. The 87-control universal suite and retained 37-control governor suite run on
+both Python 3.13 and 3.14; the dual-platform hosted matrix remains required before adjudication.

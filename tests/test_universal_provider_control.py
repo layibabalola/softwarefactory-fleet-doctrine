@@ -3,7 +3,9 @@ from __future__ import annotations
 import copy
 import datetime as dt
 import hashlib
+import inspect
 import json
+import os
 from pathlib import Path
 import sqlite3
 import subprocess
@@ -1670,6 +1672,119 @@ class UniversalProviderControlTests(unittest.TestCase):
         for leftover in self.root.glob("r6-refusal-output.bin.tmp-*"):
             leftover.unlink()
         output.with_name(output.name + ".cleanup-blocked").unlink()
+
+    # Exact 300e2bb R6 RED -> R7 GREEN portability and cleanup-contract twins.
+
+    def test_r7_01_unprivileged_linux_proc_fd_publication(self) -> None:
+        implementation = inspect.getsource(upc._publish_owned_temporary)
+        self.assertIn("/proc/self/fd/", implementation)
+        self.assertIn("0x400", implementation)
+        self.assertNotIn("0x1000", implementation)
+        if os.name != "posix":
+            return
+        if os.geteuid() == 0:
+            self.skipTest("control requires an ordinary unprivileged account")
+        if not Path("/proc/self/fd").is_dir() or not getattr(os, "O_TMPFILE", 0):
+            self.skipTest("procfs O_TMPFILE route is unavailable")
+
+        source = self.root / "r7-unprivileged-source.bin"
+        source.write_bytes(b"ordinary-linux-publication")
+        request = self.capsule_request(source, lengths=[12])
+        output = self.root / "r7-unprivileged-output.bin"
+        observed_named: list[bool] = []
+        real_open_owned = upc._open_owned_temporary
+
+        def capture_route(temporary, candidate_output):
+            handle, named = real_open_owned(temporary, candidate_output)
+            observed_named.append(named)
+            return handle, named
+
+        with mock.patch.object(upc, "_open_owned_temporary", side_effect=capture_route):
+            result = upc.build_evidence_capsule(request, output)
+        if observed_named == [True]:
+            self.skipTest("test filesystem does not support O_TMPFILE")
+        self.assertEqual(observed_named, [False])
+        self.assertEqual(result["temporaryCleanup"], "CLEAN")
+        self.assertEqual(output.read_bytes(), source.read_bytes()[:12])
+
+    def test_r7_02_temporary_cleanup_is_required_runtime_evidence(self) -> None:
+        capsule = {
+            "schema": "fleet-universal-evidence-capsule/v1",
+            "capsuleSha256": SHA_A,
+            "payloadBytes": 1,
+            "sliceCount": 1,
+            "temporaryCleanup": "CLEAN",
+            "slices": [{
+                "reference": "evidence/one.bin", "offset": 0, "length": 1,
+                "sliceSha256": SHA_A,
+            }],
+        }
+        upc.validate_contract("capsule", capsule)
+        capsule.pop("temporaryCleanup")
+        with self.assertRaisesRegex(upc.ControlError, "SCHEMA_VALIDATION_FAILED"):
+            upc.validate_contract("capsule", capsule)
+
+    def test_r7_03_cleanup_helper_exception_is_contained_after_publication(self) -> None:
+        source = self.root / "r7-helper-source.bin"
+        source.write_bytes(b"cleanup-helper-source")
+        request = self.capsule_request(source, lengths=[8])
+        output = self.root / "r7-helper-output.bin"
+        temporary = output.with_name(output.name + ".tmp-owned")
+
+        def forced_named(candidate_temporary, _candidate_output):
+            return candidate_temporary.open("x+b"), True
+
+        with mock.patch.object(upc, "_open_owned_temporary", side_effect=forced_named):
+            with mock.patch.object(
+                upc, "_arm_owned_temp_discard",
+                side_effect=RuntimeError("private cleanup helper detail"),
+            ):
+                result = upc.build_evidence_capsule(request, output)
+        self.assertEqual(result["temporaryCleanup"], "REFUSED_BOUNDED")
+        self.assertNotIn("private cleanup helper detail", upc.canonical_json(result))
+        self.assertEqual(output.read_bytes(), source.read_bytes()[:8])
+        self.assertTrue(output.with_name(output.name + ".cleanup-blocked").exists())
+        temporary.unlink()
+        output.with_name(output.name + ".cleanup-blocked").unlink()
+
+    def test_r7_04_cleanup_helper_exception_failure_and_success_are_stable(self) -> None:
+        source = self.root / "r7-helper-failure-source.bin"
+        source.write_bytes(b"cleanup-helper-failure-source")
+        request = self.capsule_request(source, lengths=[8])
+        failure_output = self.root / "r7-helper-failure-output.bin"
+        failure_temporary = failure_output.with_name(failure_output.name + ".tmp-owned")
+        real_validate = upc.validate_contract
+
+        def forced_named(candidate_temporary, _candidate_output):
+            return candidate_temporary.open("x+b"), True
+
+        def fail_private_validation(kind, value):
+            real_validate(kind, value)
+            if kind == "capsule":
+                raise RuntimeError("private primary failure detail")
+
+        with mock.patch.object(upc, "_open_owned_temporary", side_effect=forced_named):
+            with mock.patch.object(upc, "validate_contract", side_effect=fail_private_validation):
+                with mock.patch.object(
+                    upc, "_arm_owned_temp_discard",
+                    side_effect=RuntimeError("private cleanup failure detail"),
+                ):
+                    with self.assertRaises(upc.ControlError) as caught:
+                        upc.build_evidence_capsule(request, failure_output)
+        self.assertEqual(caught.exception.reason, "CAPSULE_TEMP_CLEANUP_REFUSED")
+        self.assertNotIn("private", str(caught.exception))
+        self.assertTrue(failure_output.with_name(failure_output.name + ".cleanup-blocked").exists())
+        failure_temporary.unlink()
+        failure_output.with_name(failure_output.name + ".cleanup-blocked").unlink()
+
+        success_output = self.root / "r7-helper-success-output.bin"
+        success_temporary = success_output.with_name(success_output.name + ".tmp-owned")
+        with mock.patch.object(upc, "_open_owned_temporary", side_effect=forced_named):
+            with mock.patch.object(upc, "_arm_owned_temp_discard", return_value=True):
+                result = upc.build_evidence_capsule(request, success_output)
+        self.assertEqual(result["temporaryCleanup"], "CLEAN")
+        self.assertFalse(success_output.with_name(success_output.name + ".cleanup-blocked").exists())
+        success_temporary.unlink()
 
     # Bounded exact evidence capsule controls.
 

@@ -225,7 +225,12 @@ def _open_owned_temporary(temporary: Path, output_path: Path) -> tuple[Any, bool
 
     flags = os.O_RDWR | getattr(os, "O_CLOEXEC", 0)
     anonymous_flag = getattr(os, "O_TMPFILE", 0)
-    if anonymous_flag:
+    # Select the capability-free publication route before any capsule bytes are written.  The
+    # /proc/self/fd route uses linkat(AT_SYMLINK_FOLLOW), unlike AT_EMPTY_PATH, and therefore does
+    # not require CAP_DAC_READ_SEARCH from an ordinary Linux runner.  If procfs is unavailable we
+    # choose the bounded named fallback now; there is no post-write route fallback.
+    proc_fd_root = Path("/proc/self/fd")
+    if anonymous_flag and proc_fd_root.is_dir():
         try:
             descriptor = os.open(str(output_path.parent), flags | anonymous_flag, 0o600)
             return os.fdopen(descriptor, "w+b", closefd=True), False
@@ -248,12 +253,23 @@ def _publish_owned_temporary(handle: Any, temporary: Path, named: bool, output_p
         return
     import ctypes
 
+    retained_identity = _stable_file_identity(os.fstat(handle.fileno()))
+    proc_source = f"/proc/self/fd/{handle.fileno()}"
+    try:
+        proc_identity = _stable_file_identity(os.stat(proc_source, follow_symlinks=True))
+    except OSError as exc:
+        raise ControlError("CAPSULE_PUBLICATION_ROUTE_UNAVAILABLE") from exc
+    if proc_identity != retained_identity:
+        raise ControlError("CAPSULE_PUBLICATION_ROUTE_DRIFT")
+
     libc = ctypes.CDLL(None, use_errno=True)
     libc.linkat.argtypes = [ctypes.c_int, ctypes.c_char_p, ctypes.c_int, ctypes.c_char_p, ctypes.c_int]
     libc.linkat.restype = ctypes.c_int
     directory = os.open(str(output_path.parent), os.O_RDONLY | getattr(os, "O_DIRECTORY", 0))
     try:
-        if libc.linkat(handle.fileno(), b"", directory, os.fsencode(output_path.name), 0x1000) != 0:
+        # AT_FDCWD + /proc/self/fd + AT_SYMLINK_FOLLOW is the documented unprivileged O_TMPFILE
+        # publication route.  Do not fall back after bytes have been written.
+        if libc.linkat(-100, os.fsencode(proc_source), directory, os.fsencode(output_path.name), 0x400) != 0:
             error = ctypes.get_errno()
             if error == 17:
                 raise FileExistsError(error, "capsule output exists", str(output_path))
@@ -288,6 +304,15 @@ def _arm_owned_temp_discard(handle: Any, named: bool) -> bool:
             ctypes.byref(disposition), ctypes.sizeof(disposition),
         )
     )
+
+
+def _attempt_arm_owned_temp_discard(handle: Any, named: bool) -> bool:
+    """Contain cleanup-helper failures in the stable, no-echo refusal contract."""
+
+    try:
+        return bool(_arm_owned_temp_discard(handle, named))
+    except BaseException:
+        return False
 
 
 def _surface_temp_cleanup_refusal(output_path: Path) -> None:
@@ -864,6 +889,9 @@ def build_evidence_capsule(request: Any, output_path: Path) -> dict[str, Any]:
             "capsuleSha256": "sha256:" + capsule_hash.hexdigest(),
             "payloadBytes": total,
             "sliceCount": len(results),
+            # Required by the runtime schema.  This provisional internal value is replaced with
+            # the actual retained-handle cleanup outcome before the result can be returned.
+            "temporaryCleanup": "CLEAN",
             "slices": results,
         }
         validate_contract("capsule", result)
@@ -923,7 +951,9 @@ def build_evidence_capsule(request: Any, output_path: Path) -> dict[str, Any]:
         ):
             raise ControlError("CAPSULE_PUBLICATION_BYTES_DRIFT")
 
-        cleanup_ok = not temporary_owned or _arm_owned_temp_discard(temporary_handle, temporary_named)
+        cleanup_ok = not temporary_owned or _attempt_arm_owned_temp_discard(
+            temporary_handle, temporary_named
+        )
         if not cleanup_ok:
             _surface_temp_cleanup_refusal(output_path)
         result["temporaryCleanup"] = "CLEAN" if cleanup_ok else "REFUSED_BOUNDED"
@@ -932,7 +962,7 @@ def build_evidence_capsule(request: Any, output_path: Path) -> dict[str, Any]:
     except BaseException as exc:
         cleanup_ok = True
         if temporary_owned and temporary_handle is not None:
-            cleanup_ok = _arm_owned_temp_discard(temporary_handle, temporary_named)
+            cleanup_ok = _attempt_arm_owned_temp_discard(temporary_handle, temporary_named)
         if not cleanup_ok:
             _surface_temp_cleanup_refusal(output_path)
         close_publication_handles()

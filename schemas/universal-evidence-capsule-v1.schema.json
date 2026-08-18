@@ -3,7 +3,7 @@
   "$id": "https://softwarefactory.invalid/schemas/universal-evidence-capsule-v1.schema.json",
   "type": "object",
   "additionalProperties": false,
-  "required": ["schema", "capsuleSha256", "payloadBytes", "sliceCount", "slices"],
+  "required": ["schema", "capsuleSha256", "payloadBytes", "sliceCount", "temporaryCleanup", "slices"],
   "properties": {
     "schema": {"const": "fleet-universal-evidence-capsule/v1"},
     "capsuleSha256": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
