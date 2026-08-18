@@ -990,3 +990,21 @@ proof, so MLV-App remains pending project-local disposition against subject
 `224a6705d81dfbc670313cdcef4d825216f2b380`.
 The action graph must be regenerated immediately before any gate transition. This receipt grants no
 runtime adoption, provider call, canary, credential action, lifecycle, merge, release, or product credit.
+
+## Agent Bridge — provider-capacity governor disposition submitted, 2026-08-18 — current Windows host
+
+Agent Bridge submitted the project-owned disposition
+`DISTINGUISH(224a6705d81dfbc670313cdcef4d825216f2b380, PENDING_P0_LAUNCH_CONTRACTS)`.
+The portable universal invariants are retained, while activation remains HARD_CLOSED pending the
+project-specific atomic-launch, executable-binding, capacity-schema, observer, frozen-subject, complete
+launcher-inventory, bounded-canary, and independent-review gates recorded in the project specification.
+
+At the observation point, the legacy Agent Bridge Warden scheduled task was disabled and a process census
+found no unattended Claude CLI root; attended desktop processes were outside the census target. Separate
+one-turn diagnostic requests reached the exact configured Fable, Sonnet, and Opus models, then terminated
+under deliberately low cost ceilings. This proves provider reachability only, not governed restoration.
+
+The candidate's pre-remediation focused baseline was 64 passing tests. Two independent reviews each returned
+64/100 and NO-GO. Subsequent remediation remains uncommitted and unreviewed. This receipt records submission
+and containment only: it grants no canary, activation, scheduled-task enablement, seat, review, campaign,
+landing, production, or release authority.

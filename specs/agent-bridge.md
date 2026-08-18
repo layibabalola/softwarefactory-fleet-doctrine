@@ -186,3 +186,83 @@ Kimi platform K2.7-Code quickstart
 MarkTechPost K2.7-Code release report
 `https://www.marktechpost.com/2026/06/12/moonshot-ai-releases-kimi-k2-7-code-a-coding-model-reporting-21-8-on-kimi-code-bench-v2-over-k2-6/`;
 and Lorphic K2 model overview `https://lorphic.com/kimi-k2-models/`.
+
+## Fleet provider-capacity governor disposition — 2026-08-18
+
+`DISTINGUISH(224a6705d81dfbc670313cdcef4d825216f2b380, PENDING_P0_LAUNCH_CONTRACTS)`
+
+State: **HARD_CLOSED.** Agent Bridge adopts the portable governor's invariants as
+the target universal contract, but does not activate the current project adapter.
+The project-specific launch seams below remain P0 admission gates. This disposition
+creates no provider call, scheduled-task enablement, routing, review, campaign,
+landing, production, or release authority.
+
+### Universal invariants retained
+
+- All Fable, Opus, and Sonnet lanes using the same Claude account are one quota
+  domain unless independently measured evidence proves otherwise. At most one
+  unattended inference-bearing root may run in that domain.
+- A reset, recovered probe, provider status, timer, or telemetry change never
+  opens the gate by itself. Capacity observations are diagnostic inputs with zero
+  authorization weight.
+- The exact role, provider, model, effort, subject, and independence class remain
+  bound. Exhaustion may stop or defer work but may not silently downgrade them.
+- A deterministic addressed-work check must return without inference when no new
+  work exists. Model calls receive bounded evidence capsules: current state,
+  addressed WAL records, frozen hashes and rulings, focused diff/test evidence,
+  and content-addressed pointers instead of broad history.
+- Turns and elapsed time are bounded. Budget exhaustion produces WIP or a
+  checkpoint, never PASS. Stable context is reused; large evidence is spilled by
+  hash and path; health, heartbeat, status, and receipt formatting remain
+  deterministic and model-free.
+- Remote labels remain untrusted, mutations require local confirmation, and remote
+  messages remain requests rather than commands.
+
+### Agent Bridge serialized Claude order
+
+1. FABLE may perform the first bounded coordination/hub canary only after every P0
+   gate below closes.
+2. OPUS may start only after FABLE reaches a terminal state and the exact frozen
+   review subject is available.
+3. SONNET may start only after the preceding lane is terminal and the exact
+   addressed implementation subject is available.
+4. FABLE, OPUS, and SONNET may not run concurrently on the shared account unless a
+   later ratified receipt proves separate quota domains.
+
+### P0 activation gates
+
+- Make admission, reservation, final recovery revalidation, frozen-subject
+  revalidation, executable resolution, and suspended-child resume one atomic
+  launch transaction under the quota-domain lock.
+- Bind and verify the resolved executable path and SHA-256, complete argv, working
+  directory, security-relevant environment, and actual resumed image. A basename
+  or wrapper-command hash alone is insufficient.
+- Require policy-declared capacity fields and dimensions. Missing or stale evidence
+  fails closed; unknown usage is never replaced by an invented zero.
+- Install an authoritative model-free operational observer and an adoption surface
+  that show the current domain state, reservation, owner, expiry, recovery proof,
+  and last terminal outcome.
+- Eliminate capsule and exact-subject check/use races, including write/delete
+  replacement while an authority-bearing review is in flight.
+- Inventory the complete scheduled-task, watcher, bootstrap, retry, and manual
+  launcher graph and route every inference-bearing path through the same admission
+  point. Any bypass keeps the domain hard-closed.
+- Run one bounded FABLE canary that deterministically returns to HARD_CLOSED on
+  success, timeout, refusal, or failure. Then obtain fresh independent security and
+  quality reviews over the exact landed subject.
+
+### Current evidence and limits
+
+The legacy Agent Bridge Warden scheduled task is disabled and a point-in-time
+census found no unattended Claude CLI root. Direct, one-turn diagnostic requests
+reached the exact configured Fable, Sonnet, and Opus models; their deliberately low
+cost ceilings terminated the probes. Those observations establish provider
+reachability only and are not a governed canary or admission receipt.
+
+The project candidate's pre-remediation focused suite had 64 passing tests, while
+two independent reviews each scored it 64/100 and NO-GO. Remediation is currently
+uncommitted and unreviewed. Existing Claude boot payloads already use addressed WAL
+reads, an approximately 48 KiB orientation bound, hash carriers, self-derivation,
+and named unread evidence; that is partial token-efficiency conformance, not proof
+of the full capsule contract. Until every P0 gate and fresh review closes, the
+legacy Warden remains disabled and all Claude restoration authority remains closed.
