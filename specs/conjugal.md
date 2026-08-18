@@ -191,7 +191,7 @@ hub ratification before any RULINGS entry. Conjugal commit `bc11bf7f`.
 ## 2026-08-18 delta — provider capacity governor v1 disposition
 
 **Rung: owner-directed dispatcher. Disposition:**
-`DISTINGUISH(PENDING_RUNTIME_ADOPTION)`. This is not a rejection of the portable law. Conjugal
+`DISTINGUISH(224a6705d81dfbc670313cdcef4d825216f2b380, PENDING_RUNTIME_ADOPTION)`. This is not a rejection of the portable law. Conjugal
 accepts the fleet governor's provider-neutral invariants at doctrine subject
 `224a6705d81dfbc670313cdcef4d825216f2b380`, merged by
 `9af3eb9d4f4669abb787cc1966280608f5fbbce9`, but does not claim project-local `ADOPT` credit.
@@ -217,7 +217,7 @@ launch path:
   from the read-only doctrine conformance engine;
 - reset is telemetry only and cannot enable a task, open the automatic gate, start a process, or
   drain queued work; rollout advances only through `HARD_CLOSED -> INSTALLED_UNVERIFIED -> SHADOW ->
-  CANARY -> ENABLED`, with one bounded canary and automatic reseal on first red; and
+  CONTAINMENT -> CANARY -> ENABLED`, with one bounded canary and automatic reseal on first red; and
 - deterministic no-work paths consume zero inference while Conjugal's existing exact-profile,
   compatible-runner, independent-review, continuity, first-red, rollback, and product bars remain
   unchanged.
