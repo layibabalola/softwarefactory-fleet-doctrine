@@ -27,10 +27,33 @@ SHA_A = "sha256:" + "a" * 64
 SHA_B = "sha256:" + "b" * 64
 SHA_C = "sha256:" + "c" * 64
 SHA_D = "sha256:" + "d" * 64
+R11_PREDECESSOR = "52ca3452a12656a13e62eba5c6b0641e43440f32"
+R11_REQUIRED_BLOBS = {
+    "tests/test_universal_provider_control.py",
+    "tools/universal_provider_control.py",
+}
 
 
 def sha_file(path: Path) -> str:
     return "sha256:" + hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def required_predecessor_blob(path: str) -> str:
+    """Read exact R11 evidence or fail with one stable no-echo history reason."""
+
+    if path not in R11_REQUIRED_BLOBS:
+        raise AssertionError("REQUIRED_HISTORY_PATH_INVALID")
+    run = subprocess.run(
+        ["git", "show", f"{R11_PREDECESSOR}:{path}"],
+        cwd=ROOT,
+        text=True,
+        encoding="utf-8",
+        capture_output=True,
+        check=False,
+    )
+    if run.returncode != 0:
+        raise AssertionError("REQUIRED_HISTORY_OBJECT_UNAVAILABLE") from None
+    return run.stdout
 
 
 class UniversalProviderControlTests(unittest.TestCase):
@@ -2591,10 +2614,7 @@ class UniversalProviderControlTests(unittest.TestCase):
     def test_r12_01_manifest_self_uses_canonical_git_blob_under_crlf_checkout(self) -> None:
         import check_universal_manifest as checker
 
-        r11_tests = subprocess.check_output(
-            ["git", "show", "52ca3452a12656a13e62eba5c6b0641e43440f32:tests/test_universal_provider_control.py"],
-            cwd=ROOT, text=True, encoding="utf-8",
-        )
+        r11_tests = required_predecessor_blob("tests/test_universal_provider_control.py")
         self.assertIn("raw = (ROOT / checker.MANIFEST).read_bytes()", r11_tests)
         canonical = checker._git(checker._blob_spec(":", checker.MANIFEST))
         self.assertIsInstance(canonical, bytes)
@@ -2612,14 +2632,8 @@ class UniversalProviderControlTests(unittest.TestCase):
         )
 
     def test_r12_02_posix_hostile_mutations_patch_actual_publication_syscall(self) -> None:
-        r11_tests = subprocess.check_output(
-            ["git", "show", "52ca3452a12656a13e62eba5c6b0641e43440f32:tests/test_universal_provider_control.py"],
-            cwd=ROOT, text=True, encoding="utf-8",
-        )
-        r11_engine = subprocess.check_output(
-            ["git", "show", "52ca3452a12656a13e62eba5c6b0641e43440f32:tools/universal_provider_control.py"],
-            cwd=ROOT, text=True, encoding="utf-8",
-        )
+        r11_tests = required_predecessor_blob("tests/test_universal_provider_control.py")
+        r11_engine = required_predecessor_blob("tools/universal_provider_control.py")
         self.assertIn('mock.patch.object(upc.os, "link"', r11_tests)
         self.assertNotIn("def _publication_syscall(", r11_engine)
         publication = inspect.getsource(upc._publish_owned_temporary)
@@ -2631,6 +2645,37 @@ class UniversalProviderControlTests(unittest.TestCase):
         self.assertGreaterEqual(publication.count("_publication_syscall("), 2)
         self.assertIn("libc.linkat", syscall)
         self.assertIn('mock.patch.object(upc, "_publication_syscall"', current_tests)
+
+    # Exact 6c821f7 R12 hosted-history RED -> R13 GREEN shallow/full-history twin.
+
+    def test_r13_01_required_predecessor_history_is_present_or_stably_fails(self) -> None:
+        for path in sorted(R11_REQUIRED_BLOBS):
+            self.assertTrue(required_predecessor_blob(path))
+
+        private_stderr = "PRIVATE-SHALLOW-GIT-DETAIL"
+        missing = subprocess.CompletedProcess(
+            args=["git", "show"], returncode=128, stdout="", stderr=private_stderr
+        )
+        with mock.patch.object(subprocess, "run", return_value=missing):
+            with self.assertRaises(AssertionError) as caught:
+                required_predecessor_blob("tests/test_universal_provider_control.py")
+        self.assertEqual(str(caught.exception), "REQUIRED_HISTORY_OBJECT_UNAVAILABLE")
+        self.assertIsNone(caught.exception.__cause__)
+        self.assertIsNone(caught.exception.__context__)
+        self.assertNotIn(private_stderr, "".join(traceback.format_exception(caught.exception)))
+
+        workflow = (ROOT / ".github/workflows/provider-capacity-governor.yml").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn("fetch-depth: 0", workflow)
+        self.assertIn("Verify required predecessor history", workflow)
+        self.assertIn(f"{R11_PREDECESSOR}^{{commit}}", workflow)
+        for path in R11_REQUIRED_BLOBS:
+            self.assertIn(f"{R11_PREDECESSOR}:{path}", workflow)
+        self.assertLess(
+            workflow.index("Verify required predecessor history"),
+            workflow.index("Run semantic negative controls"),
+        )
 
     # Bounded exact evidence capsule controls.
 

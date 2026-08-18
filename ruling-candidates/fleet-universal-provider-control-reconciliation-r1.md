@@ -1,4 +1,4 @@
-# Ruling candidate: universal provider-control reconciliation R12
+# Ruling candidate: universal provider-control reconciliation R13
 
 Status: **PROPOSED ONLY — NOT A RULING**
 
@@ -6,10 +6,10 @@ Subject issue: <https://github.com/layibabalola/softwarefactory-fleet-doctrine/i
 
 Candidate proposition: adopt the strict additive runtime-reference and project-profile framework in
 `specs/fleet-universal-provider-control-reconciliation.md` as the next reviewed amendment to the
-ratified provider-capacity governor. R12 repairs the exact PR #10 hosted failures by deriving
-manifest self-bindings only from canonical Git blob bytes and routing both named and anonymous
-publication through one mutation-testable syscall seam that reaches the real unprivileged POSIX
-`linkat` route, while retaining every R1 through R11 repair; this retained filename is an
+ratified provider-capacity governor. R13 repairs the exact PR #10 shallow-history failure by
+requiring full hosted history and an exact R11 commit/blob preflight before the retained cross-
+generation semantic suite, with stable failure when history is absent, while retaining every R1
+through R12 repair; this retained filename is an
 issue pointer and is not a final ruling.
 
 The proposition explicitly grants no deployment, task mutation, provider call, authentication,

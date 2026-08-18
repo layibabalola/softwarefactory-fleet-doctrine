@@ -1,4 +1,4 @@
-# Universal provider-control reconciliation R12
+# Universal provider-control reconciliation R13
 
 Status: **CANDIDATE / ZERO AUTHORITY / NO DEPLOYMENT**
 
@@ -161,6 +161,10 @@ post-reset quiet; and add required capacity dimensions. They may never weaken th
     `linkat(AT_SYMLINK_FOLLOW)` route pass through one explicit no-clobber syscall seam. Hostile race,
     foreign-source, replacement, and link-then-raise controls patch that exact seam, so Ubuntu cannot
     silently execute an unmutated production syscall while the test patches only `os.link`.
+22. Cross-generation discriminators require the exact R11 predecessor commit and the exact test and
+    engine blobs they inspect. Hosted checkout uses full history and performs a `git cat-file -e`
+    preflight for all three subjects before installing or running semantic tests. A missing shallow
+    object is `REQUIRED_HISTORY_OBJECT_UNAVAILABLE`; tests never skip, downgrade, or echo Git stderr.
 
 ## Provider-normalization dimensions
 
@@ -188,7 +192,7 @@ unchanged zero-inference ticks, full-child claimant/OS-lock behavior, rollback, 
 gate. A canary is separately authorized, one per quota domain, bounded, and automatically returns
 to CLOSED on ambiguity or failure. User-present hardware and project release gates are unchanged.
 
-## R12 evidence map
+## R13 evidence map
 
 The hostile suite in `tests/test_universal_provider_control.py` reproduces every retained
 reconciliation finding: unenforced schemas; malformed-newest fallback; unkeyed identity; permissive
@@ -253,3 +257,11 @@ Python 3.13/3.14 no longer derives manifest self-hashes from CRLF checkout bytes
 unchanged, and no test is skipped. The 108-control universal suite and retained 37-control governor
 suite run locally on Python 3.13 and 3.14; a fresh hosted Windows/Ubuntu run on exact R12 bytes remains
 required before adjudication. The candidate author remains recused.
+
+Exact 6c821f7 R12-hosted-history-red/R13-green evidence binds PR #10 run `32196730880`, where all
+four matrix jobs lacked predecessor object `52ca345...` in the default shallow checkout. R13 sets
+`fetch-depth: 0`, verifies the predecessor commit plus exact test and engine blobs before the suite,
+and exercises both full-history success and stable simulated shallow absence. The 109-control
+universal suite and retained 37-control governor suite run locally on Python 3.13 and 3.14; a fresh
+hosted Windows/Ubuntu run on exact R13 bytes remains required. Production reference-engine bytes are
+unchanged from R12. The candidate author remains recused.
