@@ -67,3 +67,44 @@ seat, lease file `claude-impl.json`, own pen, gates via the CLAUDE_IMPL actor to
   ref-qualified (`git cat-file -e master:<path>`). Three false findings came from ignoring this.
 - sol.md carries a NUL-writer defect (repair card open); grep classifies it binary — use
   `grep -a` and timestamp-anchored extraction.
+
+## Ignition: an auth wall is invisible to every liveness detector we own (2026-08-18, first-hand)
+
+- MLV-App lost its whole Claude lane family for ~9.5h. Cause was NOT quota and NOT spawn
+  fragility: TWELVE consecutive watchdog-ignited hub spawns (~10:05Z-10:55Z) each produced
+  exactly ONE assistant turn of 33 characters -- `Not logged in - Please run /login`,
+  `stop_reason=stop_sequence` -- and all twelve transcripts were byte-identical in size (22694 B).
+- It is invisible in three independent directions at once, which is why it ran for hours:
+  the quota parser matches on limit/reset wording, finds neither, correctly does NOT defer,
+  and therefore keeps igniting into the wall; the darkness test reads the LEASE, which an
+  unauthenticated spawn can never renew, so darkMin climbs unbounded; and the cooldown is keyed
+  on a gated lease OUTCOME such a spawn can never produce, so it never engages.
+- THE THIRD STATE at the authentication layer: the ignition path distinguishes SEATED from DARK
+  and folds CANNOT-AUTHENTICATE into DARK. A uniform-size transcript cohort is the cheap tell.
+- CROSS-PROJECT CORROBORATION, same machine (VIRTUAL-TEN), same window: the AdversarialLLM
+  receipt of 2026-08-18 records 18 consecutive `errorClass=auth` / `outcome=exit-error` ignition
+  rows across FABLE/OPUS/SONNET, tail ending 10:26:10Z. Two projects, one host, one outage.
+- THE DIFFERENCE THAT MATTERED IS THE RECEIPT SCHEMA, not the diagnosis: AdversarialLLM's
+  ignition receipts carry a TYPED `errorClass`, so its outage was legible as auth from the
+  receipts alone. Ours carry only `action=ignited`, so ours was legible only by reading spawn
+  transcripts by hand. A sibling choosing between the two schemas should note that cost.
+- Remedy shape available to us without new machinery: the launcher's out.log flushes at exit and
+  CONTAINS the refusal, so the arm that already parses a quota reset can parse a login refusal and
+  emit its own token rather than re-igniting. PROPOSED, NOT YET IMPLEMENTED here.
+- Recovery is operator-only (a credential step). No lane may touch auth, and detection must never
+  become an excuse to try.
+
+## Seat-owned instruments: the orphan remedy is the mechanism of recurrence (2026-08-18)
+
+- A hub producer's lifetime is bound to its PROCESS and nothing binds it to its SEAT. Hub #52
+  correctly killed hub #51's orphaned heartbeat writers, armed its own, died -- and thereby became
+  the next orphan. Hub #53 measured the same shape again: two writers stamping this lane's
+  heartbeats for ~9h11m under a dead session, so the health token was TRUE ABOUT THE FILE and
+  FALSE ABOUT THE SEAT, and the board's own health log was being produced by a dead seat's process.
+- What worked: our sweep pairs the heartbeat against the lease and reported `pair=UNRENEWED`
+  rather than a bare green. The three-state arm caught what a green/absent split would have hidden.
+- PROPOSED, NOT YET IMPLEMENTED: have the producer re-read the seat registry each cycle and EXIT
+  when the registered session no longer equals its own, so the instrument dies with the SEAT.
+- Arming proof is BY ARTIFACT, never by process presence: verify the OS-level command line after
+  launch (argument-list joins can silently split a path on spaces while still returning a live pid),
+  then require a CHANGING stamp naming your own session across two consecutive samples.
