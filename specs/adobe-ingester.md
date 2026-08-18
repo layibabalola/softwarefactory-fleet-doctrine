@@ -88,17 +88,27 @@ the incident behind law 5's windows).
 TOML-with-no-target_thread_id creating a thread; scheduled-task store model pin actually
 honored; hub-written automation pickup already PASS (agent-bridge, this box).
 
-## Universal provider-control disposition (2026-08-18)
+## Provider capacity and universal-control dispositions (2026-08-18)
+
+**DISTINGUISH(`224a6705d81dfbc670313cdcef4d825216f2b380`,
+`PENDING_LOCAL_SUPERVISOR_COMPLETE_CENSUS_AND_DRILLS`)**
+
+Adobe accepts the ratified provider-capacity governor v1 as the portable semantic core. It cannot
+yet claim local runtime adoption: no Adobe-pinned supervisor has been installed at every production
+spawn seam, the complete recursively frozen launcher census has not passed, and the required
+shadow, containment, idle, bypass, crash, and canary receipts do not exist. This is an adoption-
+status distinction, not a competing admission or token-saving contract.
+
+The proposed universal runtime amendment has a separate disposition:
 
 **DISTINGUISH(`8eee3e4576778a18f92a3aff922c7574904e3fc3`,
 `R14_CHANGES_REQUIRED_PENDING_CANONICAL_SUCCESSOR`)**
 
-Adobe Ingester accepts the fleet's provider-neutral direction and the ratified capacity-governor
-foundation, but does not claim adoption of the rejected R14 runtime candidate or any dirty/unfrozen
-successor. The project will evaluate the next independently accepted canonical commit through the
-exact `ADOPT(commit, profile hash, review receipt)` contract. Until then its automatic provider
-gate is CLOSED and reset, authentication, or returned capacity has no authority to enable a task,
-start a process, drain work, or advance rollout state.
+Adobe does not claim adoption of the rejected R14 runtime candidate or any dirty/unfrozen successor.
+The project will evaluate the next independently accepted canonical commit through the exact
+`ADOPT(commit, profile hash, review receipt)` contract. Until then its automatic provider gate is
+CLOSED and reset, authentication, or returned capacity has no authority to enable a task, start a
+process, drain work, or advance rollout state.
 
 Adobe's project profile preserves these local quality and functionality boundaries:
 
