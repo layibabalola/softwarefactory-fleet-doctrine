@@ -1010,3 +1010,17 @@ The candidate's pre-remediation focused baseline was 64 passing tests. Two indep
 independent review, complete host launcher inventory, and a governed canary remain pending. This receipt
 records submission, remediation evidence, and containment only: it grants no canary, activation,
 scheduled-task enablement, seat, review, campaign, landing, production, or release authority.
+
+## Agent Bridge — first-level host launcher census, 2026-08-18 — current Windows host
+
+A fresh Scheduled Task action census matched 35 task actions by provider/lane/Agent Bridge terms: 32 were
+disabled and three were enabled. The enabled actions were the AirMyPC model-free lane-heartbeat and two Codex
+process-hygiene observer/cleanup tasks. Direct source inspection found no provider-process creation in the
+heartbeat; the hygiene actions inspect or stop eligible processes rather than launch inference. The Agent Bridge
+Warden and Agent Bridge lane-lifecycle supervisor remained disabled.
+
+A concurrent process census found only the attended Claude Desktop root and its Electron children; no headless
+Claude CLI root was present. This is a first-level scheduled-action and process observation, not a recursively
+frozen source-closure proof: archived/manual scripts and cross-project launcher roots still require a complete
+manifest before a recovery attestation or canary. The census therefore preserves HARD_CLOSED and grants no
+provider call, task enablement, canary, review, campaign, production, or release authority.
