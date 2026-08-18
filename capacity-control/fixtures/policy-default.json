@@ -1,5 +1,6 @@
 {
   "schema": "fleet-capacity-policy/v1",
+  "automatic_launch_gate": "open",
   "max_concurrent_leases_per_domain": 1,
   "snapshot_max_age_seconds": 300,
   "lease_max_seconds": 1200,
@@ -9,5 +10,8 @@
     "REQUIRED_REVIEW": 0.15,
     "PRODUCT_WORK": 0.25,
     "BACKGROUND": 0.35
+  },
+  "required_windows_by_provider": {
+    "anthropic": ["five-hour", "weekly"]
   }
 }

@@ -24,7 +24,9 @@ DOMAIN_B = "anthropic:sha256:" + "b" * 64
 
 
 def policy() -> dict:
-    return json.loads((ROOT / "policy" / "default-v1.json").read_text(encoding="utf-8"))
+    value = json.loads((ROOT / "policy" / "default-v1.json").read_text(encoding="utf-8"))
+    value["automatic_launch_gate"] = "open"
+    return value
 
 
 def request(request_id="req-0001", domain=DOMAIN_A, priority="PRODUCT_WORK", role="IMPLEMENT", **changes) -> dict:
@@ -92,14 +94,21 @@ class EvaluationTests(unittest.TestCase):
     def test_green_admission(self):
         self.assertEqual("ADMIT", broker.evaluate(request(), snapshot(), policy(), [], NOW).status)
 
+    def test_closed_gate_and_policy_required_dimensions_refuse(self):
+        closed = policy(); closed["automatic_launch_gate"] = "closed"
+        self.assertIn("AUTOMATIC_LAUNCH_GATE_CLOSED", broker.evaluate(request(), snapshot(), closed, [], NOW).reasons)
+        incomplete = request(); incomplete["budget"]["window_estimates"].pop("weekly")
+        self.assertIn("WINDOW_ESTIMATE_MISSING", broker.evaluate(incomplete, snapshot(), policy(), [], NOW).reasons)
+
     def test_reserve_and_hard_cap(self):
         self.assertIn("RESERVE_FORECAST", broker.evaluate(request(), snapshot(used=0.65), policy(), [], NOW).reasons)
         self.assertIn("HARD_CAP_FORECAST", broker.evaluate(request(), snapshot(used=0.9), policy(), [], NOW).reasons)
 
-    def test_owner_override_crosses_soft_reserve_not_hard_cap(self):
+    def test_owner_override_is_not_self_asserted(self):
         owner = request(priority="OWNER_FOREGROUND", owner_override=True)
-        self.assertEqual("ADMIT", broker.evaluate(owner, snapshot(used=0.8), policy(), [], NOW).status)
-        self.assertIn("HARD_CAP_FORECAST", broker.evaluate(owner, snapshot(used=0.9), policy(), [], NOW).reasons)
+        result = broker.evaluate(owner, snapshot(used=0.8), policy(), [], NOW)
+        self.assertEqual("REFUSE", result.status)
+        self.assertIn("OWNER_OVERRIDE_UNSUPPORTED", result.reasons)
 
     def test_stale_future_unknown_and_missing_refuse(self):
         stale = snapshot(observed=NOW - dt.timedelta(minutes=6))
@@ -127,6 +136,27 @@ class EvaluationTests(unittest.TestCase):
             broker.evaluate(bad, snapshot(), policy(), [], NOW)
         with self.assertRaisesRegex(broker.BrokerError, "quota domain"):
             broker.evaluate(request(), snapshot(domain=DOMAIN_B), policy(), [], NOW)
+        wrong_provider_domain = request(domain="openai:sha256:" + "a" * 64)
+        with self.assertRaisesRegex(broker.BrokerError, "provider prefix"):
+            broker.evaluate(wrong_provider_domain, snapshot(domain=wrong_provider_domain["profile"]["quota_domain"]), policy(), [], NOW)
+
+    def test_runtime_rejects_schema_drift(self):
+        missing = request(); del missing["profile"]["transport"]
+        with self.assertRaisesRegex(broker.BrokerError, "key set mismatch"):
+            broker.evaluate(missing, snapshot(), policy(), [], NOW)
+        extra = snapshot(); extra["unexpected"] = True
+        with self.assertRaisesRegex(broker.BrokerError, "key set mismatch"):
+            broker.evaluate(request(), extra, policy(), [], NOW)
+
+    def test_file_intake_rejects_duplicate_keys_and_nonfinite_numbers(self):
+        with tempfile.TemporaryDirectory() as folder:
+            path = pathlib.Path(folder) / "value.json"
+            path.write_text('{"a":1,"a":2}', encoding="utf-8")
+            with self.assertRaisesRegex(broker.BrokerError, "duplicate JSON"):
+                broker.read_json(path)
+            path.write_text('{"a":NaN}', encoding="utf-8")
+            with self.assertRaisesRegex(broker.BrokerError, "non-finite"):
+                broker.read_json(path)
 
 
 class TransactionTests(unittest.TestCase):
@@ -244,6 +274,10 @@ class TransactionTests(unittest.TestCase):
             payload = json.loads(row["payload_json"])
             self.assertEqual("PAUSED_BUDGET", payload["terminal_class"])
             self.assertEqual(evidence, payload["evidence_digest"])
+            replay = instance.decide(request(), snapshot(), policy(), NOW + dt.timedelta(seconds=1))
+            self.assertEqual("REFUSE", replay["status"])
+            self.assertEqual(["TERMINAL_REQUEST_REPLAY"], replay["reason_codes"])
+            self.assertIsNone(replay["lease"])
         finally:
             instance.close()
 

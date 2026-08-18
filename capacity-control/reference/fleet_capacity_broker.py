@@ -13,6 +13,7 @@ import argparse
 import datetime as dt
 import hashlib
 import json
+import math
 import os
 import pathlib
 import sqlite3
@@ -69,9 +70,21 @@ def digest(value: Any) -> str:
 
 
 def read_json(path: pathlib.Path) -> dict[str, Any]:
+    def strict_object(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
+        value: dict[str, Any] = {}
+        for key, item in pairs:
+            if key in value:
+                raise ValueError("duplicate JSON object key")
+            value[key] = item
+        return value
+
     try:
-        value = json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError) as exc:
+        value = json.loads(
+            path.read_text(encoding="utf-8"),
+            object_pairs_hook=strict_object,
+            parse_constant=lambda _value: (_ for _ in ()).throw(ValueError("non-finite JSON number")),
+        )
+    except (OSError, json.JSONDecodeError, UnicodeError, ValueError) as exc:
         raise BrokerError(f"cannot read {path}: {exc}") from exc
     if not isinstance(value, dict):
         raise BrokerError(f"{path} must contain a JSON object")
@@ -86,13 +99,26 @@ def validate_digest(value: Any, field: str) -> str:
     return value
 
 
-def validate_domain(value: Any) -> str:
+def validate_domain(value: Any, provider: str | None = None) -> str:
     if not isinstance(value, str) or ":sha256:" not in value:
         raise BrokerError("quota_domain must be provider:sha256:<64 lowercase hex>")
     prefix, suffix = value.rsplit(":sha256:", 1)
     if not prefix or len(suffix) != 64 or any(c not in "0123456789abcdef" for c in suffix):
         raise BrokerError("quota_domain must be provider:sha256:<64 lowercase hex>")
+    if provider is not None and prefix != provider:
+        raise BrokerError("quota_domain provider prefix does not match provider")
     return value
+
+
+def require_exact_keys(value: dict[str, Any], expected: set[str], field: str) -> None:
+    missing = sorted(expected - value.keys())
+    extra = sorted(value.keys() - expected)
+    if missing or extra:
+        raise BrokerError(
+            f"{field} key set mismatch"
+            + (f"; missing={','.join(missing)}" if missing else "")
+            + (f"; extra={','.join(extra)}" if extra else "")
+        )
 
 
 def validate_request(request: dict[str, Any]) -> None:
@@ -102,9 +128,7 @@ def validate_request(request: dict[str, Any]) -> None:
         "request_id", "project", "lane", "subject_digest", "role", "priority", "profile",
         "issued_at", "expires_at", "budget", "quality_contract", "owner_override",
     }
-    missing = sorted(required - request.keys())
-    if missing:
-        raise BrokerError("request missing: " + ", ".join(missing))
+    require_exact_keys(request, required | {"schema"}, "request")
     if request["role"] not in ROLES or request["priority"] not in PRIORITIES:
         raise BrokerError("request role or priority is invalid")
     issued = parse_time(request["issued_at"], "request.issued_at")
@@ -115,13 +139,19 @@ def validate_request(request: dict[str, Any]) -> None:
     profile = request.get("profile")
     if not isinstance(profile, dict):
         raise BrokerError("request.profile must be an object")
+    require_exact_keys(
+        profile,
+        {"provider", "quota_domain", "independence_class", "requested_model", "requested_effort", "transport"},
+        "request.profile",
+    )
     for field in ("provider", "quota_domain", "independence_class", "requested_model", "transport"):
         if not isinstance(profile.get(field), str) or not profile[field]:
             raise BrokerError(f"request.profile.{field} is required")
-    validate_domain(profile["quota_domain"])
+    validate_domain(profile["quota_domain"], profile["provider"])
     budget = request.get("budget")
     if not isinstance(budget, dict):
         raise BrokerError("request.budget must be an object")
+    require_exact_keys(budget, {"max_wall_seconds", "max_turns", "max_context_tokens", "window_estimates"}, "request.budget")
     for field in ("max_wall_seconds", "max_turns", "max_context_tokens"):
         if not isinstance(budget.get(field), int) or budget[field] <= 0:
             raise BrokerError(f"request.budget.{field} must be a positive integer")
@@ -129,11 +159,12 @@ def validate_request(request: dict[str, Any]) -> None:
     if not isinstance(estimates, dict) or not estimates:
         raise BrokerError("request.budget.window_estimates must be a non-empty object")
     for name, value in estimates.items():
-        if not isinstance(name, str) or not isinstance(value, (int, float)) or not 0 <= float(value) <= 1:
+        if not isinstance(name, str) or not isinstance(value, (int, float)) or not math.isfinite(float(value)) or not 0 <= float(value) <= 1:
             raise BrokerError("window estimates must be named fractions in [0,1]")
     quality = request.get("quality_contract")
     if not isinstance(quality, dict) or quality.get("requires_exact_profile") is not True:
         raise BrokerError("quality contract must require the exact profile")
+    require_exact_keys(quality, {"requires_exact_profile", "role_cell_evidence"}, "request.quality_contract")
     if not isinstance(quality.get("role_cell_evidence"), str) or not quality["role_cell_evidence"]:
         raise BrokerError("quality contract requires role_cell_evidence")
     if not isinstance(request["owner_override"], bool):
@@ -143,6 +174,7 @@ def validate_request(request: dict[str, Any]) -> None:
 
 
 def validate_snapshot(snapshot: dict[str, Any], request: dict[str, Any]) -> None:
+    require_exact_keys(snapshot, {"schema", "provider", "quota_domain", "observed_at", "windows", "source"}, "snapshot")
     if snapshot.get("schema") != SNAPSHOT_SCHEMA:
         raise BrokerError("unsupported snapshot schema")
     profile = request["profile"]
@@ -158,11 +190,12 @@ def validate_snapshot(snapshot: dict[str, Any], request: dict[str, Any]) -> None
     for window in windows:
         if not isinstance(window, dict) or not isinstance(window.get("name"), str):
             raise BrokerError("snapshot window has invalid shape")
+        require_exact_keys(window, {"name", "used_fraction", "resets_at", "window_started_at"}, "snapshot.window")
         if window["name"] in names:
             raise BrokerError("snapshot window names must be unique")
         names.add(window["name"])
         used = window.get("used_fraction")
-        if used is not None and (not isinstance(used, (int, float)) or not 0 <= float(used) <= 1):
+        if used is not None and (not isinstance(used, (int, float)) or not math.isfinite(float(used)) or not 0 <= float(used) <= 1):
             raise BrokerError("snapshot used_fraction must be null or a fraction in [0,1]")
         if window.get("resets_at") is not None:
             parse_time(window["resets_at"], "snapshot.window.resets_at")
@@ -171,22 +204,32 @@ def validate_snapshot(snapshot: dict[str, Any], request: dict[str, Any]) -> None
     source = snapshot.get("source")
     if not isinstance(source, dict) or not isinstance(source.get("kind"), str):
         raise BrokerError("snapshot.source is invalid")
+    require_exact_keys(source, {"kind", "artifact_sha256"}, "snapshot.source")
     artifact = source.get("artifact_sha256")
     if not isinstance(artifact, str) or len(artifact) != 64 or any(c not in "0123456789abcdef" for c in artifact):
         raise BrokerError("snapshot.source.artifact_sha256 is invalid")
 
 
 def validate_policy(policy: dict[str, Any]) -> None:
+    required = {
+        "schema", "automatic_launch_gate", "max_concurrent_leases_per_domain",
+        "snapshot_max_age_seconds", "lease_max_seconds", "post_reset_quiet_seconds",
+        "reserve_fraction_by_priority", "required_windows_by_provider",
+    }
+    require_exact_keys(policy, required, "policy")
     if policy.get("schema") != POLICY_SCHEMA:
         raise BrokerError("unsupported policy schema")
     for field in (
         "max_concurrent_leases_per_domain", "snapshot_max_age_seconds", "lease_max_seconds",
-        "post_reset_quiet_seconds", "reserve_fraction_by_priority",
+        "post_reset_quiet_seconds", "reserve_fraction_by_priority", "automatic_launch_gate",
+        "required_windows_by_provider",
     ):
         if field not in policy:
             raise BrokerError(f"policy missing {field}")
     if not isinstance(policy["max_concurrent_leases_per_domain"], int) or policy["max_concurrent_leases_per_domain"] < 1:
         raise BrokerError("max_concurrent_leases_per_domain must be positive")
+    if policy["automatic_launch_gate"] not in {"closed", "open"}:
+        raise BrokerError("automatic_launch_gate must be closed or open")
     for field in ("snapshot_max_age_seconds", "lease_max_seconds", "post_reset_quiet_seconds"):
         if not isinstance(policy[field], int) or policy[field] < 0:
             raise BrokerError(f"{field} must be a nonnegative integer")
@@ -197,6 +240,14 @@ def validate_policy(policy: dict[str, Any]) -> None:
         raise BrokerError("policy must define every priority reserve")
     if any(not isinstance(v, (int, float)) or not 0 <= float(v) < 1 for v in reserves.values()):
         raise BrokerError("reserve fractions must be in [0,1)")
+    required_windows = policy["required_windows_by_provider"]
+    if not isinstance(required_windows, dict) or not required_windows:
+        raise BrokerError("required_windows_by_provider must be a non-empty object")
+    for provider, names in required_windows.items():
+        if not isinstance(provider, str) or not provider or not isinstance(names, list) or not names:
+            raise BrokerError("every provider must define required capacity windows")
+        if any(not isinstance(name, str) or not name for name in names) or len(set(names)) != len(names):
+            raise BrokerError("required provider windows must be unique non-empty strings")
 
 
 @dataclass(frozen=True)
@@ -216,6 +267,8 @@ def evaluate(
     validate_snapshot(snapshot, request)
     validate_policy(policy)
     reasons: list[str] = []
+    if policy["automatic_launch_gate"] != "open":
+        reasons.append("AUTOMATIC_LAUNCH_GATE_CLOSED")
     issued = parse_time(request["issued_at"], "request.issued_at")
     expires = parse_time(request["expires_at"], "request.expires_at")
     observed = parse_time(snapshot["observed_at"], "snapshot.observed_at")
@@ -243,8 +296,19 @@ def evaluate(
     requested = request["budget"]["window_estimates"]
     reserve = float(policy["reserve_fraction_by_priority"][request["priority"]])
     owner_override = bool(request["owner_override"])
+    if owner_override:
+        reasons.append("OWNER_OVERRIDE_UNSUPPORTED")
     windows = {window["name"]: window for window in snapshot["windows"]}
-    for name, estimate in requested.items():
+    provider = request["profile"]["provider"]
+    required_names = policy["required_windows_by_provider"].get(provider)
+    if required_names is None:
+        reasons.append("PROVIDER_CAPACITY_POLICY_MISSING")
+        required_names = []
+    for name in required_names:
+        if name not in requested:
+            reasons.append("WINDOW_ESTIMATE_MISSING")
+            continue
+        estimate = requested[name]
         window = windows.get(name)
         if window is None:
             reasons.append("WINDOW_MISSING")
@@ -269,7 +333,7 @@ def evaluate(
     unique = tuple(dict.fromkeys(reasons))
     if not unique:
         status = "ADMIT"
-    elif any(reason in {"REQUEST_FROM_FUTURE", "REQUEST_EXPIRED", "BUDGET_EXCEEDS_LEASE_MAX"} for reason in unique):
+    elif any(reason in {"REQUEST_FROM_FUTURE", "REQUEST_EXPIRED", "BUDGET_EXCEEDS_LEASE_MAX", "OWNER_OVERRIDE_UNSUPPORTED"} for reason in unique):
         status = "REFUSE"
     else:
         status = "HOLD"
@@ -350,17 +414,34 @@ class Broker:
                 "SELECT request_digest, decision_json FROM decisions WHERE request_id=?",
                 (request["request_id"],),
             ).fetchone()
-            if prior is not None:
-                if prior["request_digest"] != request_digest:
-                    raise ConflictingReplay("request_id was reused with different bytes")
-                decision = json.loads(prior["decision_json"])
-                self._commit()
-                return decision
-
             self.db.execute(
                 "UPDATE leases SET state='EXPIRED' WHERE state='ACTIVE' AND expires_at<=?",
                 (iso(at),),
             )
+            if prior is not None:
+                if prior["request_digest"] != request_digest:
+                    raise ConflictingReplay("request_id was reused with different bytes")
+                decision = json.loads(prior["decision_json"])
+                prior_lease = decision.get("lease")
+                if prior_lease is not None:
+                    state = self.db.execute(
+                        "SELECT state FROM leases WHERE lease_id=? AND request_id=?",
+                        (prior_lease["lease_id"], request["request_id"]),
+                    ).fetchone()
+                    if state is None or state["state"] != "ACTIVE":
+                        decision = {
+                            "schema": DECISION_SCHEMA,
+                            "status": "REFUSE",
+                            "reason_codes": ["TERMINAL_REQUEST_REPLAY"],
+                            "request_id": request["request_id"],
+                            "request_digest": request_digest,
+                            "snapshot_digest": snapshot_digest,
+                            "policy_digest": policy_digest,
+                            "decided_at": iso(at),
+                            "lease": None,
+                        }
+                self._commit()
+                return decision
             domain = request["profile"]["quota_domain"]
             active = list(
                 self.db.execute(

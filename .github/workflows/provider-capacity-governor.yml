@@ -4,6 +4,7 @@ on:
   pull_request:
     paths:
       - ".github/workflows/provider-capacity-governor.yml"
+      - "capacity-control/**"
       - "examples/provider-*"
       - "schemas/provider-*"
       - "specs/fleet-provider-capacity-governor.md"
@@ -15,6 +16,7 @@ on:
     branches: [master]
     paths:
       - ".github/workflows/provider-capacity-governor.yml"
+      - "capacity-control/**"
       - "examples/provider-*"
       - "schemas/provider-*"
       - "specs/fleet-provider-capacity-governor.md"
@@ -51,6 +53,12 @@ jobs:
 
       - name: Run semantic negative controls
         run: python -m unittest discover -s tests -p 'test_provider_capacity_governor.py' -v
+
+      - name: Run runtime-extension negative controls
+        run: python -m unittest discover -s capacity-control/tests -p 'test_*.py' -v
+
+      - name: Compile runtime-extension references
+        run: python -m compileall -q capacity-control/reference
 
       - name: Validate example telemetry shard
         run: python tools/provider_capacity_governor.py validate-events examples/provider-usage-events-v1.jsonl

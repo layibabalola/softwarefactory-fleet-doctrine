@@ -20,7 +20,7 @@
     "max_wall_seconds": 900,
     "max_turns": 12,
     "max_context_tokens": 120000,
-    "window_estimates": {"five_hour": 0.05, "weekly": 0.01}
+    "window_estimates": {"five-hour": 0.05, "weekly": 0.01}
   },
   "quality_contract": {
     "requires_exact_profile": true,
