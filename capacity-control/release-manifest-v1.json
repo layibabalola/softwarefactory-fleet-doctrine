@@ -1,0 +1,76 @@
+{
+  "schema": "fleet-capacity-release-manifest/v1",
+  "status": "CANDIDATE_ZERO_AUTHORITY",
+  "source_commit": "bf81d4cdbcfc3a60a73a5f2c5b66613e238f6430",
+  "generated_at": "2026-08-18T16:32:11Z",
+  "files": [
+    {
+      "path": "reference/fleet_capacity_broker.py",
+      "sha256": "ce5219c1b0d66b27ae93dfcb6547a8f56f483b53e7db46d6918a66ec7e1fa3af",
+      "bytes": 23476,
+      "role": "runtime"
+    },
+    {
+      "path": "reference/normalize_usage.py",
+      "sha256": "4484fd732aaa7db782e067d904d8b71e013666441939a590c78820fa17b7417d",
+      "bytes": 11140,
+      "role": "runtime"
+    },
+    {
+      "path": "reference/classify_provider_terminal.py",
+      "sha256": "7986c119642fc99cb7768c7774e1881cf3480d87976b785a83bd987af8587170",
+      "bytes": 4695,
+      "role": "runtime"
+    },
+    {
+      "path": "reference/verify_release.py",
+      "sha256": "c4dab5d9eb6f1bcca4d0af153a98df6f920f7f7667d274a73e053490f74a1a2c",
+      "bytes": 4043,
+      "role": "runtime"
+    },
+    {
+      "path": "policy/default-v1.json",
+      "sha256": "3036bb9dd31a127ff9b7718e2c5e7d206547894602af4213b0ebd07c16dedb77",
+      "bytes": 332,
+      "role": "policy"
+    },
+    {
+      "path": "schema/admission-request-v1.schema.json",
+      "sha256": "1f84029ad779e6301b4ee29ff350e3354665f9d813332b9cc6fdf89bf935402d",
+      "bytes": 2877,
+      "role": "schema"
+    },
+    {
+      "path": "schema/capacity-snapshot-v1.schema.json",
+      "sha256": "2d4898dcb21fedff72f6271e0e1cd08283efebae9135f454fadb196d23abc387",
+      "bytes": 1550,
+      "role": "schema"
+    },
+    {
+      "path": "schema/admission-decision-v1.schema.json",
+      "sha256": "077d6a05128d74d15e0123ce9ccf2156a640f58e2d6c6ae96dd80fa8332803a2",
+      "bytes": 1575,
+      "role": "schema"
+    },
+    {
+      "path": "schema/usage-event-v1.schema.json",
+      "sha256": "e0cee6cf115eb556d024ede1c955651bed040729f6ab4d5671f56c5fb8b6d038",
+      "bytes": 2650,
+      "role": "schema"
+    },
+    {
+      "path": "schema/policy-v1.schema.json",
+      "sha256": "d2c50346510f8efab3025ca9d5a10ea7f9a35acad6fa4dd13e0cb641568c7f6b",
+      "bytes": 1363,
+      "role": "schema"
+    }
+  ],
+  "activation_requires": [
+    "project-local authority map and ADOPT(reference) ruling",
+    "copy into a project- or machine-owned installation; never execute mutable bus bytes",
+    "pin and verify this manifest SHA-256 before every provider launch",
+    "process-tree wrapper enforcing wall, turn, and context budgets",
+    "provider adapter proving fresh capacity and requested/effective profile",
+    "project regression, concurrency, crash, and rollback evidence"
+  ]
+}
