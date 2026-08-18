@@ -1,0 +1,39 @@
+{
+  "schema_version": 1,
+  "observed_at": "2026-08-18T16:00:00Z",
+  "policy": {
+    "max_automatic_concurrency": 1,
+    "interactive_reserve_pct": 30,
+    "deny_background_when_capacity_unknown": true,
+    "max_slice_minutes": 15,
+    "max_agent_turns": 16
+  },
+  "request": {
+    "request_id": "mlv-app-review-0001",
+    "project": "mlv-app",
+    "quota_domain_id": "anthropic/hmac-sha256:0123456789abcdef0123456789abcdef",
+    "provider": "anthropic",
+    "role": "independent-review",
+    "foreground": false,
+    "owner_override": false,
+    "actionable_work": true,
+    "requires_exact_profile": true,
+    "profile_available": true,
+    "model_requested": "claude-opus-5",
+    "effort_requested": "max",
+    "estimated_window_pct": 8,
+    "slice_minutes": 12,
+    "max_agent_turns": 14,
+    "evidence_capsule_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "idle_input_fingerprint": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+  },
+  "capacity": {
+    "quota_domain_id": "anthropic/hmac-sha256:0123456789abcdef0123456789abcdef",
+    "status": "available",
+    "utilization_pct": 40,
+    "reserved_pct": 10,
+    "observed_at": "2026-08-18T15:59:30Z",
+    "reset_at": "2026-08-18T20:00:00Z"
+  },
+  "active_leases": []
+}

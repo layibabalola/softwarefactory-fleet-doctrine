@@ -30,3 +30,10 @@ the human store-and-forward bus.
 - `TRAPS.md` - append-only: costume failures and environment traps, with the test for each
 - `RECEIPTS.md` - append-only: drill results with date + machine
 - `RULINGS.md` - append-only: ratified fleet doctrine with the measuring project cited
+
+## Active candidates (zero authority until ratified)
+
+- [`specs/fleet-provider-capacity-governor.md`](specs/fleet-provider-capacity-governor.md) —
+  provider/account-aware admission, fleet telemetry, context discipline, and quality-preserving
+  routing. The candidate includes versioned schemas, examples, tests, and a read-only reference
+  decision engine; it does not activate a scheduler or grant a provider role.
