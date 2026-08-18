@@ -121,6 +121,7 @@ facts are observable. Missing fields remain `null`; they are never invented.
 - `reference/fleet_capacity_broker.py` — provider-free reference broker. It never spawns commands.
 - `reference/normalize_usage.py` — structured Claude, Codex, Kimi, and Grok usage normalization.
 - `reference/classify_provider_terminal.py` — bounded model-free quota/auth terminal classifier.
+- `reference/verify_release.py` — exact installed-file and expected-manifest hash verification.
 - `tests/test_fleet_capacity_broker.py` — identity, reserve, freshness, replay, and concurrency
   conformance tests.
 
