@@ -1,4 +1,4 @@
-# Universal provider-control reconciliation R13
+# Universal provider-control reconciliation R14
 
 Status: **CANDIDATE / ZERO AUTHORITY / NO DEPLOYMENT**
 
@@ -31,8 +31,10 @@ resume, terminate, authenticate, schedule, or contact a provider. Initial admiss
 `PREPARED_SUSPENDED` lease while retaining exact artifact and quota-lock handles. A second fresh,
 HMAC-qualified observation of the actual suspended image and argv must pass the inside-lock resume
 boundary before `ALLOW_ATTESTED` exists.
-The resume boundary rejects `now >= lease.expires_at`; expiry never releases the persistent
-claimant, reservation, OS lock, or artifact handles, and an expired CANARY attempt reseals CLOSED.
+The resume boundary rejects `now >= lease.expires_at` and `now >= capacityValidUntil`, where
+`capacityValidUntil` is the earliest authenticated `resetsAt` across every estimated capacity
+dimension at preparation. Expiry or rollover never releases the persistent claimant, reservation,
+OS lock, or artifact handles, and an expired or rolled-over CANARY attempt reseals CLOSED.
 
 ## Universal invariants
 
@@ -47,7 +49,9 @@ post-reset quiet; and add required capacity dimensions. They may never weaken th
    and exact-hash bound to doctrine, broker, project profile, complete inventory, qualified broker
    health, independent review, and tests. Exact canonical signed bytes are persisted and every gate
    read revalidates bytes, HMAC, epoch, expiry, digest, and duplicated binding columns. Forged, NULL,
-   expired, noncanonical, or mismatched green state reports only CLOSED.
+   expired, noncanonical, or mismatched green state reports only CLOSED. Forward rollout is strictly
+   `CLOSED -> SHADOW -> CONTAINMENT -> CANARY -> OPEN`; skipping a stage or moving directly from
+   CLOSED to OPEN is refused. A safety close may return any stage to CLOSED.
 4. Quota identity is `provider/hmac-sha256:<hex>` derived from a host-local stable identity and a
    fleet secret. Raw or unkeyed account identifiers never enter requests, receipts, or doctrine.
 5. A canonical state root is HMAC bound into the profile and its database name is fixed. Choosing a
@@ -67,11 +71,16 @@ post-reset quiet; and add required capacity dimensions. They may never weaken th
    `REQUEST_REPLAY_CONFLICT`. Cached prepared/allowed results are never authority: duplicate,
    restart, or broker-close replay is denied while its persistent lease remains fenced.
 10. A fresh strict HMAC observer receipt first proves the actual child is suspended and binds PID,
-    immutable start, loaded image path/digest, actual argv, request, session, seat, and seat epoch.
-    A claimant also binds quota domain, exact executable path and digest, canonical argv and its model /
-    effort / frozen-subject positions, launcher-config bytes, role, subject path and digest, opaque
-    session, opaque seat and epoch, PID and immutable start time, context capsule, compaction
-    checkpoint, cache-affinity manifest, and the canonical value and digest of all capacity estimates.
+     immutable start, loaded image path/digest, actual argv, request, session, seat, and seat epoch.
+     A claimant also binds quota domain, exact executable path and digest, canonical argv and its model /
+     effort / role / turn / context / cumulative-token-ceiling / frozen-subject positions,
+     launcher-config bytes, an exact reviewed provider/adapter/model/effort/role/executable allowlist
+     entry, subject path and digest, opaque
+     session, opaque seat and epoch, PID and immutable start time, context capsule, compaction
+     checkpoint, cache-affinity manifest, current and prior demand fingerprints, the canonical value
+     and digest of all capacity estimates, and the earliest capacity-valid boundary. The resulting
+     launch attestation repeats those identities and ceilings; a launch wrapper cannot silently select
+     a cheaper model, weaker effort, different role, or larger resource envelope.
 11. All final path, file, schema, HMAC, health, inventory, capacity, gate, subject, argv, and process
     checks run again after `BEGIN IMMEDIATE`. Pre-lock checks provide no launch authority.
 12. The persistent claimant and active reservations remain until a fresh authenticated terminal
@@ -95,8 +104,11 @@ post-reset quiet; and add required capacity dimensions. They may never weaken th
     quota domain, project profile, reviewer receipt, and short expiry. A non-null arbitrary digest
     is not authority. Only one canary may consume a gate epoch; any terminal success, failure, or
     ambiguity reseals CLOSED, and a new authorization ID cannot create a sequential canary.
-16. An unchanged deterministic demand fingerprint produces a proof-bearing `IDLE_SKIPPED` with zero
-    provider calls, processes, and token counters. It never enters the admission callable.
+16. The broker recomputes current and prior deterministic demand fingerprints from the retained,
+    byte-hashed addressed-work and cursor inputs; caller-supplied current or prior fingerprints are
+    assertions to verify, never trusted truth. Equal broker-computed fingerprints produce a
+    proof-bearing `IDLE_SKIPPED` with zero provider calls, processes, and token counters. It never
+    enters the admission callable.
 17. Evidence capsules consolidate lexical and hard-link aliases by stable retained file identity;
     conflicting alias digest or size denies. Each identity is opened once, every alias identity is
     rechecked, and one forward pass reads exactly the initial finite size plus at most one drift
@@ -136,8 +148,8 @@ post-reset quiet; and add required capacity dimensions. They may never weaken th
     one root-scoped owner registry and reentrant lock. Poison check, artifact acquisition, lease and
     confirmation publication, authenticated terminal/recovery, cleanup-poison publication, and
     administrative assertion are linearizable across those objects and threads. Admission has a
-    four-prepared-lease root quarantine ceiling before artifact acquisition; six retained artifacts
-    per lease therefore give an exact 24-owner refusal bound, and every owner of every already-
+    four-prepared-lease root quarantine ceiling before artifact acquisition; ten retained artifacts
+    per lease therefore give an exact 40-owner refusal bound, and every owner of every already-
     prepared lease remains retained. OS-lock unlock and close have distinct attempt-once states;
     the handle is not removed until close is proven, and an unproven close remains retained and
     poisons later admission. `close()` and `__del__` are administrative assertions only: they never
@@ -148,11 +160,16 @@ post-reset quiet; and add required capacity dimensions. They may never weaken th
     Errors remain stable/no-echo: the complete public capsule boundary, including preflight and all
     handlers/finalizers, raises a new `ControlError` only after private exception state has cleared,
     with no private `__cause__`, `__context__`, or formatted traceback content.
-18. Bounded turns, bounded context, exact capsules, milestone compaction, and cache affinity are
-    efficiency controls only. They cannot change or weaken model, effort, role, frozen subject,
-    independent-provider requirements, findings severity, product tests, or release/hardware gates.
+18. Bounded turns, bounded context, cumulative input/cache-read/cache-write/reasoning/output ceilings,
+    exact capsules, milestone compaction, and cache affinity are enforced launch-envelope controls.
+    Every bound is profile-limited, argv-bound, digest-bound, and repeated in the launch attestation.
+    They cannot change or weaken model, effort, role, frozen subject, independent-provider
+    requirements, findings severity, product tests, or release/hardware gates.
 19. Capacity enforces `lastResetAt <= observedAt < resetsAt`, bounded future skew, and a finite
-    window. Requests have profile-bounded age and validity duration, not merely an expiry.
+    window. Requests have profile-bounded age and validity duration, not merely an expiry. The
+    earliest `resetsAt` is persisted in the prepared lease, binding digest, and attestation; the
+    final `BEGIN IMMEDIATE` confirmation refuses `confirmAt >= capacityValidUntil`, retaining all
+    fences and transactionally resealing a CANARY CLOSED.
 20. Candidate manifests hash canonical Git blob bytes across checkout EOL policies and include the
     manifest via an exact zeroed-field self-binding without recursive-digest claims. Both checker
     and hostile test read the indexed/committed Git blob, never checkout bytes; an explicit LF/CRLF
@@ -161,10 +178,6 @@ post-reset quiet; and add required capacity dimensions. They may never weaken th
     `linkat(AT_SYMLINK_FOLLOW)` route pass through one explicit no-clobber syscall seam. Hostile race,
     foreign-source, replacement, and link-then-raise controls patch that exact seam, so Ubuntu cannot
     silently execute an unmutated production syscall while the test patches only `os.link`.
-22. Cross-generation discriminators require the exact R11 predecessor commit and the exact test and
-    engine blobs they inspect. Hosted checkout uses full history and performs a `git cat-file -e`
-    preflight for all three subjects before installing or running semantic tests. A missing shallow
-    object is `REQUIRED_HISTORY_OBJECT_UNAVAILABLE`; tests never skip, downgrade, or echo Git stderr.
 
 ## Provider-normalization dimensions
 
@@ -188,11 +201,12 @@ Doctrine merge alone does not activate a project. Each project must publish one 
 
 Before any canary, the project must prove its state root and broker singleton, all four census
 surfaces, direct-invocation prohibition, fake-provider refusal and concurrency controls, 1,000
-unchanged zero-inference ticks, full-child claimant/OS-lock behavior, rollback, and current CLOSED
-gate. A canary is separately authorized, one per quota domain, bounded, and automatically returns
+unchanged zero-inference ticks, full-child claimant/OS-lock behavior, rollback, exact reviewed role
+profiles, and the sequential CLOSED, SHADOW, and CONTAINMENT evidence. A canary is separately
+authorized, one per quota domain, bounded, and automatically returns
 to CLOSED on ambiguity or failure. User-present hardware and project release gates are unchanged.
 
-## R13 evidence map
+## R14 evidence map
 
 The hostile suite in `tests/test_universal_provider_control.py` reproduces every retained
 reconciliation finding: unenforced schemas; malformed-newest fallback; unkeyed identity; permissive
@@ -258,10 +272,13 @@ unchanged, and no test is skipped. The 108-control universal suite and retained 
 suite run locally on Python 3.13 and 3.14; a fresh hosted Windows/Ubuntu run on exact R12 bytes remains
 required before adjudication. The candidate author remains recused.
 
-Exact 6c821f7 R12-hosted-history-red/R13-green evidence binds PR #10 run `32196730880`, where all
-four matrix jobs lacked predecessor object `52ca345...` in the default shallow checkout. R13 sets
-`fetch-depth: 0`, verifies the predecessor commit plus exact test and engine blobs before the suite,
-and exercises both full-history success and stable simulated shallow absence. The 109-control
-universal suite and retained 37-control governor suite run locally on Python 3.13 and 3.14; a fresh
-hosted Windows/Ubuntu run on exact R13 bytes remains required. Production reference-engine bytes are
-unchanged from R12. The candidate author remains recused.
+R14 retains immutable R13 commit `ecc8f07` and replaces its full-history checkout and predecessor
+preflight with self-contained current canonical-blob and live publication-seam controls. It adds five
+hostile repair groups:
+prepare-before-reset and confirm-after-reset denial with retained fences and CANARY reseal; exact
+reviewed provider/adapter/model/effort/role/executable admission; argv and attestation binding for
+turn, context, and every cumulative token ceiling; broker recomputation of both current and prior
+demand from frozen addressed-work/cursor bytes; and enforced CONTAINMENT with stage-skip refusal.
+The 113-control universal suite and retained 37-control governor suite must pass on the exact R14
+bytes; fresh hosted Windows/Ubuntu checks remain required before adjudication. The candidate author
+remains recused.

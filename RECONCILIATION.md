@@ -5,10 +5,13 @@ The active exact-subject coordination locus is doctrine issue
 and portable/rejected split is the
 [reconciliation comment](https://github.com/layibabalola/softwarefactory-fleet-doctrine/issues/4#issuecomment-5332348238).
 
-The R13 implementation candidate retains every R1 through R12 hostile discriminator and repairs
-only the exact shallow-history failure from PR #10 run 32196730880. Hosted checkout now fetches full
-history and verifies the exact R11 commit and two predecessor blobs before semantic tests; missing
-history fails with one stable no-echo reason. It is described in
+The R14 implementation candidate retains every R1 through R13 hostile discriminator. It binds the
+earliest capacity rollover to preparation and final resume, admits only an exact reviewed
+provider/adapter/model/effort/role/executable profile, binds turn, context, and cumulative token
+ceilings into argv and attestation, recomputes demand from frozen addressed-work and cursor inputs,
+and enforces the sequential `CLOSED -> SHADOW -> CONTAINMENT -> CANARY -> OPEN` rollout. It also
+replaces R13's full-history hosted dependency with self-contained current-subject controls. It is
+described in
 [`specs/fleet-universal-provider-control-reconciliation.md`](specs/fleet-universal-provider-control-reconciliation.md).
 It is zero authority until independently reviewed, distinctly adjudicated, hosted-green, recorded in
 `RULINGS.md`, merged to canonical master, and separately adopted by each project.

@@ -8,8 +8,11 @@
     "schema", "requestId", "project", "issuedAt", "expiresAt", "provider", "adapterVersion",
     "quotaDomainId", "priority", "model", "effort", "role", "seatIdHash", "seatEpoch", "sessionIdHash", "subjectPath", "subjectSha256",
     "executablePath", "executableSha256", "argv", "argvSha256", "argvBindings",
-    "launcherConfigPath", "launcherConfigSha256", "actionableWork", "demandFingerprint",
-    "priorIdleFingerprint", "maxWallSeconds", "maxTurns", "maxContextTokens", "contextCapsuleSha256",
+    "launcherConfigPath", "launcherConfigSha256", "actionableWork", "addressedWorkPath",
+    "addressedWorkSha256", "cursorPath", "cursorSha256", "priorIdleAddressedWorkPath",
+    "priorIdleAddressedWorkSha256", "priorIdleCursorPath", "priorIdleCursorSha256",
+    "demandFingerprint", "priorIdleFingerprint", "maxWallSeconds", "maxTurns",
+    "maxContextTokens", "cumulativeTokenCeilings", "contextCapsuleSha256",
     "contextCapsulePath", "compactionCheckpointPath", "compactionCheckpointSha256",
     "cacheAffinityManifestPath", "cacheAffinityKeySha256", "windowEstimates", "canary", "manualAuthorizationSha256"
   ],
@@ -40,26 +43,50 @@
     "argvSha256": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
     "argvBindings": {
       "type": "object", "additionalProperties": false,
-      "required": ["modelIndex", "effortIndex", "subjectIndex"],
+      "required": ["modelIndex", "effortIndex", "subjectIndex", "roleIndex", "maxTurnsIndex",
+        "maxContextTokensIndex", "maxInputTokensIndex", "maxCacheReadTokensIndex",
+        "maxCacheWriteTokensIndex", "maxReasoningTokensIndex", "maxOutputTokensIndex"],
       "properties": {
         "modelIndex": {"type": "integer", "minimum": 1, "maximum": 63},
         "effortIndex": {"type": "integer", "minimum": 1, "maximum": 63},
-        "subjectIndex": {"type": "integer", "minimum": 1, "maximum": 63}
+        "subjectIndex": {"type": "integer", "minimum": 1, "maximum": 63},
+        "roleIndex": {"type": "integer", "minimum": 1, "maximum": 63},
+        "maxTurnsIndex": {"type": "integer", "minimum": 1, "maximum": 63},
+        "maxContextTokensIndex": {"type": "integer", "minimum": 1, "maximum": 63},
+        "maxInputTokensIndex": {"type": "integer", "minimum": 1, "maximum": 63},
+        "maxCacheReadTokensIndex": {"type": "integer", "minimum": 1, "maximum": 63},
+        "maxCacheWriteTokensIndex": {"type": "integer", "minimum": 1, "maximum": 63},
+        "maxReasoningTokensIndex": {"type": "integer", "minimum": 1, "maximum": 63},
+        "maxOutputTokensIndex": {"type": "integer", "minimum": 1, "maximum": 63}
       }
     },
     "launcherConfigPath": {"type": "string", "minLength": 1, "maxLength": 1024},
     "launcherConfigSha256": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
     "actionableWork": {"const": true},
+    "addressedWorkPath": {"type": "string", "minLength": 1, "maxLength": 1024},
+    "addressedWorkSha256": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+    "cursorPath": {"type": "string", "minLength": 1, "maxLength": 1024},
+    "cursorSha256": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+    "priorIdleAddressedWorkPath": {"type": "string", "minLength": 1, "maxLength": 1024},
+    "priorIdleAddressedWorkSha256": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+    "priorIdleCursorPath": {"type": "string", "minLength": 1, "maxLength": 1024},
+    "priorIdleCursorSha256": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
     "demandFingerprint": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
-    "priorIdleFingerprint": {
-      "oneOf": [
-        {"type": "null"},
-        {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"}
-      ]
-    },
+    "priorIdleFingerprint": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
     "maxWallSeconds": {"type": "integer", "minimum": 1, "maximum": 3600},
     "maxTurns": {"type": "integer", "minimum": 1, "maximum": 64},
     "maxContextTokens": {"type": "integer", "minimum": 1024, "maximum": 1000000},
+    "cumulativeTokenCeilings": {
+      "type": "object", "additionalProperties": false,
+      "required": ["inputTokens", "cacheReadTokens", "cacheWriteTokens", "reasoningTokens", "outputTokens"],
+      "properties": {
+        "inputTokens": {"type": "integer", "minimum": 1, "maximum": 1000000000},
+        "cacheReadTokens": {"type": "integer", "minimum": 0, "maximum": 10000000000},
+        "cacheWriteTokens": {"type": "integer", "minimum": 0, "maximum": 1000000000},
+        "reasoningTokens": {"type": "integer", "minimum": 0, "maximum": 1000000000},
+        "outputTokens": {"type": "integer", "minimum": 1, "maximum": 1000000000}
+      }
+    },
     "contextCapsuleSha256": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
     "contextCapsulePath": {"type": "string", "minLength": 1, "maxLength": 1024},
     "compactionCheckpointPath": {"type": "string", "minLength": 1, "maxLength": 1024},

@@ -46,7 +46,7 @@ MAX_CAPSULE_SOURCE_BYTES = 16_777_216
 MAX_CAPSULE_TEMP_BACKLOG = 1
 MAX_CAPSULE_POISON_OWNERS = 258  # 256 unique sources plus retained temp/public handles.
 MAX_PREPARED_LEASES_PER_STATE_ROOT = 4  # Conservative root quarantine ceiling before acquisition.
-ARTIFACT_HANDLES_PER_LEASE = 6
+ARTIFACT_HANDLES_PER_LEASE = 10
 MAX_BROKER_ARTIFACT_POISON_OWNERS = (
     MAX_PREPARED_LEASES_PER_STATE_ROOT * ARTIFACT_HANDLES_PER_LEASE
 )
@@ -159,6 +159,19 @@ def digest_json(value: Any) -> str:
     except (TypeError, ValueError, RecursionError, MemoryError, OverflowError) as exc:
         raise ControlError("JSON_INVALID") from exc
     return "sha256:" + hasher.hexdigest()
+
+
+def canonical_demand_fingerprint(addressed_work_sha256: str, cursor_sha256: str) -> str:
+    """Bind model-free demand identity to broker-rehashed addressed work and cursor bytes."""
+
+    require_sha256(addressed_work_sha256, "DEMAND_INPUT_INVALID")
+    require_sha256(cursor_sha256, "DEMAND_INPUT_INVALID")
+    return digest_json(
+        {
+            "addressedWorkSha256": addressed_work_sha256,
+            "cursorSha256": cursor_sha256,
+        }
+    )
 
 
 def contract_hmac(domain: str, value: dict[str, Any], fleet_secret: bytes, signature_field: str) -> str:
@@ -1311,7 +1324,7 @@ class UniversalProviderBroker:
                 """
                 CREATE TABLE IF NOT EXISTS gate_state (
                     singleton INTEGER PRIMARY KEY CHECK (singleton = 1),
-                    state TEXT NOT NULL CHECK (state IN ('CLOSED','SHADOW','CANARY','OPEN')),
+                    state TEXT NOT NULL CHECK (state IN ('CLOSED','SHADOW','CONTAINMENT','CANARY','OPEN')),
                     transition_epoch INTEGER NOT NULL CHECK (transition_epoch >= 0),
                     transition_digest TEXT,
                     transition_bytes BLOB,
@@ -1344,6 +1357,7 @@ class UniversalProviderBroker:
                     reservations_json TEXT NOT NULL,
                     issued_at TEXT NOT NULL,
                     expires_at TEXT NOT NULL,
+                    capacity_valid_until TEXT NOT NULL,
                     state TEXT NOT NULL,
                     terminal_digest TEXT,
                     gate_epoch INTEGER NOT NULL DEFAULT 0,
@@ -1374,6 +1388,7 @@ class UniversalProviderBroker:
                 for name, declaration in (
                     ("gate_epoch", "INTEGER NOT NULL DEFAULT 0"),
                     ("is_canary", "INTEGER NOT NULL DEFAULT 0"),
+                    ("capacity_valid_until", "TEXT"),
                 ):
                     if name not in lease_columns:
                         connection.execute(f"ALTER TABLE leases ADD COLUMN {name} {declaration}")
@@ -1707,7 +1722,7 @@ class UniversalProviderBroker:
         self, connection: sqlite3.Connection, *, fleet_secret: bytes | None, now: dt.datetime
     ) -> tuple[sqlite3.Row, dict[str, Any] | None]:
         row = connection.execute("SELECT * FROM gate_state WHERE singleton=1").fetchone()
-        if row is None or row["state"] not in {"CLOSED", "SHADOW", "CANARY", "OPEN"}:
+        if row is None or row["state"] not in {"CLOSED", "SHADOW", "CONTAINMENT", "CANARY", "OPEN"}:
             raise ControlError("GATE_STATE_INVALID")
         raw = row["transition_bytes"]
         # The sole unsigned state is the initial or automatic fail-closed seal.
@@ -1784,8 +1799,17 @@ class UniversalProviderBroker:
                 if transition["to"] == "CLOSED":
                     if transition["cause"] != "SAFETY_CLOSE":
                         raise ControlError("GATE_TRANSITION_UNAUTHORIZED")
-                elif transition["cause"] != "INDEPENDENT_ADJUDICATION":
-                    raise ControlError("GATE_TRANSITION_UNAUTHORIZED")
+                else:
+                    if transition["cause"] != "INDEPENDENT_ADJUDICATION":
+                        raise ControlError("GATE_TRANSITION_UNAUTHORIZED")
+                    next_stage = {
+                        "CLOSED": "SHADOW",
+                        "SHADOW": "CONTAINMENT",
+                        "CONTAINMENT": "CANARY",
+                        "CANARY": "OPEN",
+                    }.get(str(row["state"]))
+                    if transition["to"] != next_stage:
+                        raise ControlError("GATE_STAGE_SKIP")
                 connection.execute(
                     """UPDATE gate_state SET
                         state=?, transition_epoch=?, transition_digest=?, transition_bytes=?, transition_hmac=?, expires_at=?, broker_digest=?,
@@ -2038,6 +2062,9 @@ class UniversalProviderBroker:
             raise ControlError("TURN_BOUND_EXCEEDED")
         if request["maxContextTokens"] > profile["efficiency"]["maxContextTokens"]:
             raise ControlError("CONTEXT_BOUND_EXCEEDED")
+        for token_class, ceiling in request["cumulativeTokenCeilings"].items():
+            if ceiling > profile["efficiency"]["maxCumulativeTokenCeilings"][token_class]:
+                raise ControlError("CUMULATIVE_TOKEN_BOUND_EXCEEDED")
         issued = parse_time(request["issuedAt"])
         expires = parse_time(request["expiresAt"])
         if (
@@ -2077,7 +2104,7 @@ class UniversalProviderBroker:
             raise ControlError("BROKER_HEALTH_STALE")
 
         gate, gate_transition = self._verified_gate_row(connection, fleet_secret=fleet_secret, now=now)
-        if gate["state"] in {"CLOSED", "SHADOW"}:
+        if gate["state"] in {"CLOSED", "SHADOW", "CONTAINMENT"}:
             raise ControlError("AUTOMATIC_LAUNCH_GATE_CLOSED")
         if gate_transition is None:
             raise ControlError("GATE_TRANSITION_RECORD_INVALID")
@@ -2127,6 +2154,19 @@ class UniversalProviderBroker:
         ]
         if len(matching) != 1:
             raise ControlError("LAUNCHER_NOT_IN_COMPLETE_INVENTORY")
+        allowlist_match = [
+            entry for entry in profile["launchAllowlist"]
+            if entry == {
+                "provider": request["provider"],
+                "adapterVersion": request["adapterVersion"],
+                "model": request["model"],
+                "effort": request["effort"],
+                "role": request["role"],
+                "executableSha256": executable_digest,
+            }
+        ]
+        if len(allowlist_match) != 1:
+            raise ControlError("LAUNCH_PROFILE_NOT_REVIEWED")
 
         argv = request["argv"]
         if request["argvSha256"] != digest_json(argv):
@@ -2139,6 +2179,19 @@ class UniversalProviderBroker:
                 argv[bindings["modelIndex"]] != request["model"]
                 or argv[bindings["effortIndex"]] != request["effort"]
                 or argv[bindings["subjectIndex"]] != request["subjectSha256"]
+                or argv[bindings["roleIndex"]] != request["role"]
+                or argv[bindings["maxTurnsIndex"]] != str(request["maxTurns"])
+                or argv[bindings["maxContextTokensIndex"]] != str(request["maxContextTokens"])
+                or argv[bindings["maxInputTokensIndex"]]
+                != str(request["cumulativeTokenCeilings"]["inputTokens"])
+                or argv[bindings["maxCacheReadTokensIndex"]]
+                != str(request["cumulativeTokenCeilings"]["cacheReadTokens"])
+                or argv[bindings["maxCacheWriteTokensIndex"]]
+                != str(request["cumulativeTokenCeilings"]["cacheWriteTokens"])
+                or argv[bindings["maxReasoningTokensIndex"]]
+                != str(request["cumulativeTokenCeilings"]["reasoningTokens"])
+                or argv[bindings["maxOutputTokensIndex"]]
+                != str(request["cumulativeTokenCeilings"]["outputTokens"])
             ):
                 raise ControlError("ARGV_BINDING_DRIFT")
         except IndexError as exc:
@@ -2162,7 +2215,30 @@ class UniversalProviderBroker:
         subject = _canonical_executable(request["subjectPath"])
         if _hash_file(subject) != request["subjectSha256"]:
             raise ControlError("FROZEN_SUBJECT_DRIFT")
-        if request["priorIdleFingerprint"] == request["demandFingerprint"]:
+        addressed_work = _canonical_executable(request["addressedWorkPath"])
+        cursor = _canonical_executable(request["cursorPath"])
+        prior_idle_work = _canonical_executable(request["priorIdleAddressedWorkPath"])
+        prior_idle_cursor = _canonical_executable(request["priorIdleCursorPath"])
+        demand_inputs = (
+            (addressed_work, request["addressedWorkSha256"]),
+            (cursor, request["cursorSha256"]),
+            (prior_idle_work, request["priorIdleAddressedWorkSha256"]),
+            (prior_idle_cursor, request["priorIdleCursorSha256"]),
+        )
+        for path, expected_digest in demand_inputs:
+            if _hash_file(path) != expected_digest:
+                raise ControlError("DEMAND_INPUT_DRIFT")
+        demand_fingerprint = canonical_demand_fingerprint(
+            request["addressedWorkSha256"], request["cursorSha256"]
+        )
+        prior_idle_fingerprint = canonical_demand_fingerprint(
+            request["priorIdleAddressedWorkSha256"], request["priorIdleCursorSha256"]
+        )
+        if request["demandFingerprint"] != demand_fingerprint:
+            raise ControlError("DEMAND_FINGERPRINT_DRIFT")
+        if request["priorIdleFingerprint"] != prior_idle_fingerprint:
+            raise ControlError("PRIOR_IDLE_FINGERPRINT_DRIFT")
+        if prior_idle_fingerprint == demand_fingerprint:
             raise ControlError("NO_ACTIONABLE_WORK")
 
         prepared_count = int(connection.execute(
@@ -2188,6 +2264,7 @@ class UniversalProviderBroker:
             raise ControlError("CAPACITY_DIMENSION_MISSING")
         quiet = dt.timedelta(seconds=policy["postResetQuietSeconds"])
         reserve = float(policy["reserveFloorByPriority"][request["priority"]])
+        capacity_valid_until: dt.datetime | None = None
         for name, estimate in estimates.items():
             dimension = dimensions[name]
             last_reset = parse_time(dimension["lastResetAt"])
@@ -2196,6 +2273,8 @@ class UniversalProviderBroker:
                 raise ControlError("CAPACITY_TIME_INVALID")
             if now >= resets:
                 raise ControlError("CAPACITY_WINDOW_ROLLED_OVER")
+            if capacity_valid_until is None or resets < capacity_valid_until:
+                capacity_valid_until = resets
             if now - last_reset < quiet:
                 raise ControlError("POST_RESET_QUIET")
             projected = float(dimension["usedFraction"]) + float(estimate)
@@ -2203,6 +2282,9 @@ class UniversalProviderBroker:
                 raise ControlError("HARD_CAP_FORECAST")
             if projected > 1.0 - reserve:
                 raise ControlError("PRIORITY_RESERVE_FORECAST")
+        if capacity_valid_until is None:
+            raise ControlError("CAPACITY_DIMENSION_MISSING")
+        capacity_valid_until_text = iso(capacity_valid_until)
 
         binding = {
             "requestId": request["requestId"],
@@ -2224,6 +2306,12 @@ class UniversalProviderBroker:
             "cacheAffinityKeySha256": request["cacheAffinityKeySha256"],
             "windowEstimates": estimates,
             "windowEstimatesSha256": digest_json(estimates),
+            "capacityValidUntil": capacity_valid_until_text,
+            "maxTurns": request["maxTurns"],
+            "maxContextTokens": request["maxContextTokens"],
+            "cumulativeTokenCeilings": request["cumulativeTokenCeilings"],
+            "demandFingerprint": demand_fingerprint,
+            "priorIdleFingerprint": prior_idle_fingerprint,
             "subjectPath": os.path.normcase(str(subject)),
             "subjectSha256": request["subjectSha256"],
             "processId": process_id,
@@ -2239,6 +2327,10 @@ class UniversalProviderBroker:
             (checkpoint, request["compactionCheckpointSha256"], MAX_ARTIFACT_BYTES),
             (cache_manifest, request["cacheAffinityKeySha256"], MAX_ARTIFACT_BYTES),
             (subject, request["subjectSha256"], MAX_ARTIFACT_BYTES),
+            (addressed_work, request["addressedWorkSha256"], MAX_ARTIFACT_BYTES),
+            (cursor, request["cursorSha256"], MAX_ARTIFACT_BYTES),
+            (prior_idle_work, request["priorIdleAddressedWorkSha256"], MAX_ARTIFACT_BYTES),
+            (prior_idle_cursor, request["priorIdleCursorSha256"], MAX_ARTIFACT_BYTES),
         )
         artifact_handle_digest = self._open_artifact_handles(lease_id, artifacts)
         attestation = {
@@ -2249,6 +2341,7 @@ class UniversalProviderBroker:
             "quotaDomainId": request["quotaDomainId"],
             "issuedAt": iso(now),
             "expiresAt": iso(lease_expires),
+            "capacityValidUntil": capacity_valid_until_text,
             "gateEpoch": int(gate["transition_epoch"]),
             "gateTransitionSha256": digest_json(gate_transition),
             "processId": process_id,
@@ -2260,6 +2353,14 @@ class UniversalProviderBroker:
             "executableSha256": executable_digest,
             "argvSha256": request["argvSha256"],
             "launcherConfigSha256": request["launcherConfigSha256"],
+            "model": request["model"],
+            "effort": request["effort"],
+            "role": request["role"],
+            "maxTurns": request["maxTurns"],
+            "maxContextTokens": request["maxContextTokens"],
+            "cumulativeTokenCeilings": request["cumulativeTokenCeilings"],
+            "demandFingerprint": demand_fingerprint,
+            "priorIdleFingerprint": prior_idle_fingerprint,
             "windowEstimates": estimates,
             "windowEstimatesSha256": digest_json(estimates),
             "bindingSha256": binding_digest,
@@ -2276,12 +2377,14 @@ class UniversalProviderBroker:
                 """INSERT INTO leases(
                     lease_id, request_id, quota_domain_id, process_id, process_start_time,
                     seat_id_hash, seat_epoch, session_id_hash, binding_digest, reservations_json,
-                    issued_at, expires_at, state, terminal_digest, gate_epoch, is_canary
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'ACTIVE', NULL, ?, ?)""",
+                    issued_at, expires_at, capacity_valid_until, state, terminal_digest,
+                    gate_epoch, is_canary
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'ACTIVE', NULL, ?, ?)""",
                 (
                     lease_id, request["requestId"], request["quotaDomainId"], process_id, iso(start),
                     request["seatIdHash"], request["seatEpoch"], request["sessionIdHash"],
                     binding_digest, canonical_json(estimates), iso(now), iso(lease_expires),
+                    capacity_valid_until_text,
                     int(gate["transition_epoch"]), 1 if request["canary"] else 0,
                 ),
             )
@@ -2330,6 +2433,15 @@ class UniversalProviderBroker:
                     # authenticated terminal or DEAD recovery proof.  Only launch authority dies.
                     connection.execute("COMMIT")
                     raise ControlError("LEASE_EXPIRED_BEFORE_RESUME")
+                capacity_valid_until = lease["capacity_valid_until"]
+                if not isinstance(capacity_valid_until, str):
+                    raise ControlError("CAPACITY_BOUNDARY_INVALID")
+                if at >= parse_time(capacity_valid_until):
+                    if lease["is_canary"]:
+                        self._seal_closed(connection)
+                    # Rollover kills launch authority, never the claimant fences or retained owners.
+                    connection.execute("COMMIT")
+                    raise ControlError("CAPACITY_WINDOW_ROLLED_OVER_BEFORE_RESUME")
                 gate, transition = self._verified_gate_row(connection, fleet_secret=fleet_secret, now=at)
                 if transition is None or int(gate["transition_epoch"]) != int(lease["gate_epoch"]):
                     raise ControlError("GATE_BINDING_DRIFT")
