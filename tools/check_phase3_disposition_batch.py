@@ -6,10 +6,12 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 from pathlib import Path
 import re
 import subprocess
 import sys
+import tempfile
 from typing import Any
 
 
@@ -26,7 +28,32 @@ SPEC_BINDING_TREE = "402d6818937d4ecb64ac807c77c5792fd121947e"
 R26_CANDIDATE = "e70a044f31dd2f43ab7c716d63a4eb89318c61b6"
 R26_MERGE = "909f769d02e8412e51e28e242cfa8d00dadc9a3d"
 PROJECT_IDS = {"cloudvore", "mlv-app", "salesforce-tools"}
+LEDGER_PROJECT_IDS = {
+    "adobe-ingester",
+    "adversarialllm",
+    "agent-bridge",
+    "airmypc",
+    "cloudvore",
+    "conjugal",
+    "dng-auto-processor",
+    "mlv-app",
+    "salesforce-tools",
+}
 SPEC_PATHS = {f"specs/{project_id}.md" for project_id in PROJECT_IDS}
+PUBLISHED_REMOTE_ALLOWLIST = {
+    "cloudvore": {
+        "remote": "https://github.com/layibabalola/Cloudvore.git",
+        "publishedRef": "refs/heads/codex/r26-zero-authority-disposition-candidate-20260819",
+    },
+    "mlv-app": {
+        "remote": "https://github.com/layibabalola/MLV-App.git",
+        "publishedRef": "refs/heads/codex/r26-zero-authority-disposition-candidate-20260819",
+    },
+    "salesforce-tools": {
+        "remote": "https://github.com/layibabalola/SalesforceSupportTools.git",
+        "publishedRef": "refs/heads/codex/r26-zero-authority-disposition-candidate-20260819",
+    },
+}
 EXPECTED_PROJECT_CANDIDATE_SHA256 = {
     "cloudvore": "7bbafaa69078bf3464f5e54c6f1e0a689113c54ce7df7f494d017beef58be436",
     "mlv-app": "55544254f982890efa8b2e309b0eeb2be09f85d7f09f7da86083ba2856cbf9ba",
@@ -47,6 +74,10 @@ ALLOWED_PHASE3_PATHS = {
 }
 SHA_PATTERN = re.compile(r"[0-9a-f]{40,64}")
 FORMAL_ADOPT_PATTERN = re.compile(r"\bADOPT\s*\(", re.IGNORECASE)
+REMOTE_FETCH_DEPTH = 64
+REMOTE_GIT_TIMEOUT_SECONDS = 60
+REMOTE_MAX_ARTIFACT_BYTES = 1_048_576
+REMOTE_TEMP_PREFIX = "fleet-doctrine-r26-phase3-remote-"
 
 
 class Phase3Error(ValueError):
@@ -274,7 +305,10 @@ def verify_batch(batch: dict[str, Any], treeish: str = "HEAD") -> None:
         raise Phase3Error("BATCH_IDENTITY_INVALID")
     _verify_frozen_base(batch["frozenBase"], treeish)
     ledger = load_json(_blob(treeish, LEDGER_PATH))
-    if ledger.get("census", {}).get("baseCommit") != SPEC_BINDING_COMMIT:
+    census = ledger.get("census")
+    if not isinstance(census, dict):
+        raise Phase3Error("LEDGER_CENSUS_INVALID")
+    if census.get("baseCommit") != SPEC_BINDING_COMMIT:
         raise Phase3Error("LEDGER_CENSUS_BASE_MISMATCH")
     if ledger.get("summary") != {
         "projectCount": 9,
@@ -284,11 +318,28 @@ def verify_batch(batch: dict[str, Any], treeish: str = "HEAD") -> None:
     }:
         raise Phase3Error("LEDGER_SUMMARY_OVERCLAIM")
     rows = ledger.get("projects")
-    if not isinstance(rows, list):
+    if not isinstance(rows, list) or any(not isinstance(row, dict) for row in rows):
         raise Phase3Error("LEDGER_PROJECTS_INVALID")
-    ledger_rows = {
-        row.get("projectId"): row for row in rows if isinstance(row, dict)
-    }
+    ledger_ids = [row.get("projectId") for row in rows]
+    if (
+        len(rows) != len(LEDGER_PROJECT_IDS)
+        or any(not isinstance(project_id, str) for project_id in ledger_ids)
+        or ledger_ids != sorted(LEDGER_PROJECT_IDS)
+        or len(set(ledger_ids)) != len(ledger_ids)
+    ):
+        raise Phase3Error("LEDGER_PROJECT_SET_INVALID")
+    ledger_rows = {row["projectId"]: row for row in rows}
+    for project_id, row in ledger_rows.items():
+        evidence = row.get("evidence")
+        if not isinstance(evidence, dict) or "projectCandidate" not in evidence:
+            raise Phase3Error("LEDGER_PROJECT_CANDIDATE_MIGRATION_INVALID")
+        project_candidate = evidence["projectCandidate"]
+        if (
+            project_id in PROJECT_IDS and project_candidate is None
+        ) or (
+            project_id not in PROJECT_IDS and project_candidate is not None
+        ):
+            raise Phase3Error("LEDGER_PROJECT_CANDIDATE_MIGRATION_INVALID")
     projects = batch["projects"]
     if not isinstance(projects, list) or len(projects) != len(PROJECT_IDS):
         raise Phase3Error("PROJECT_SET_INVALID")
@@ -307,20 +358,278 @@ def verify_batch(batch: dict[str, Any], treeish: str = "HEAD") -> None:
         raise Phase3Error("SUMMARY_OVERCLAIM")
 
 
-def verify_remotes(batch: dict[str, Any]) -> None:
-    for project in batch["projects"]:
-        candidate = project["projectCandidate"]
+def _remote_environment(askpass_path: Path, global_config_path: Path) -> dict[str, str]:
+    environment = {
+        key: value
+        for key, value in os.environ.items()
+        if not key.upper().startswith(("GIT_", "GCM_"))
+        and key.upper() not in {"SSH_ASKPASS", "SSH_ASKPASS_REQUIRE"}
+    }
+    environment.update(
+        {
+            "GIT_TERMINAL_PROMPT": "0",
+            "GIT_ASKPASS": str(askpass_path),
+            "SSH_ASKPASS": str(askpass_path),
+            "SSH_ASKPASS_REQUIRE": "force",
+            "GCM_INTERACTIVE": "Never",
+            "GIT_CONFIG_GLOBAL": str(global_config_path),
+            "GIT_CONFIG_COUNT": "0",
+        }
+    )
+    return environment
+
+
+def _run_remote_git(
+    args: list[str],
+    *,
+    cwd: Path,
+    environment: dict[str, str],
+    project_id: str,
+    error: str,
+    text: bool = False,
+) -> bytes | str:
+    try:
         run = subprocess.run(
-            ["git", "ls-remote", candidate["remote"], candidate["publishedRef"]],
-            cwd=ROOT,
+            ["git", *args],
+            cwd=cwd,
+            env=environment,
             check=False,
             capture_output=True,
-            text=True,
-            encoding="utf-8",
+            text=text,
+            encoding="utf-8" if text else None,
+            timeout=REMOTE_GIT_TIMEOUT_SECONDS,
         )
-        expected = f"{candidate['commit']}\t{candidate['publishedRef']}"
-        if run.returncode != 0 or run.stdout.strip() != expected:
-            raise Phase3Error(f"PUBLISHED_REMOTE_REF_MISMATCH:{project['projectId']}")
+    except subprocess.TimeoutExpired as exc:
+        raise Phase3Error(f"PUBLISHED_REMOTE_GIT_TIMEOUT:{project_id}") from exc
+    except OSError as exc:
+        raise Phase3Error(f"PUBLISHED_REMOTE_GIT_EXECUTION_FAILED:{project_id}") from exc
+    if run.returncode != 0:
+        raise Phase3Error(f"{error}:{project_id}")
+    return run.stdout
+
+
+def _write_askpass(temp_root: Path) -> Path:
+    if os.name == "nt":
+        path = temp_root / "deny-askpass.cmd"
+        path.write_bytes(b"@echo off\r\nexit /b 1\r\n")
+    else:
+        path = temp_root / "deny-askpass.sh"
+        path.write_bytes(b"#!/bin/sh\nexit 1\n")
+        path.chmod(0o700)
+    return path
+
+
+def _remote_commit_tuple(
+    repo: Path,
+    environment: dict[str, str],
+    project_id: str,
+    commit: str,
+) -> tuple[str, list[str]]:
+    value = _run_remote_git(
+        ["show", "-s", "--format=%T%n%P", commit],
+        cwd=repo,
+        environment=environment,
+        project_id=project_id,
+        error="PUBLISHED_REMOTE_COMMIT_UNAVAILABLE",
+        text=True,
+    )
+    lines = value.splitlines()
+    if (
+        len(lines) != 2
+        or SHA_PATTERN.fullmatch(lines[0]) is None
+        or any(SHA_PATTERN.fullmatch(parent) is None for parent in lines[1].split())
+    ):
+        raise Phase3Error(f"PUBLISHED_REMOTE_COMMIT_OBJECT_INVALID:{project_id}")
+    return lines[0], lines[1].split() if lines[1] else []
+
+
+def _remote_artifact_oid(
+    repo: Path,
+    environment: dict[str, str],
+    project_id: str,
+    commit: str,
+    path: str,
+) -> str:
+    raw = _run_remote_git(
+        ["ls-tree", "-z", "--full-tree", commit, "--", path],
+        cwd=repo,
+        environment=environment,
+        project_id=project_id,
+        error="PUBLISHED_REMOTE_ARTIFACT_LOOKUP_FAILED",
+    )
+    entries = raw[:-1].split(b"\0") if raw.endswith(b"\0") else []
+    if len(entries) != 1 or b"\t" not in entries[0]:
+        raise Phase3Error(f"PUBLISHED_REMOTE_ARTIFACT_ENTRY_INVALID:{project_id}")
+    metadata, raw_path = entries[0].split(b"\t", 1)
+    try:
+        mode, object_type, oid = metadata.decode("ascii").split()
+        decoded_path = raw_path.decode("utf-8")
+    except (UnicodeDecodeError, ValueError) as exc:
+        raise Phase3Error(f"PUBLISHED_REMOTE_ARTIFACT_ENTRY_INVALID:{project_id}") from exc
+    if (
+        mode not in {"100644", "100755"}
+        or object_type != "blob"
+        or SHA_PATTERN.fullmatch(oid) is None
+        or decoded_path != path
+    ):
+        raise Phase3Error(f"PUBLISHED_REMOTE_ARTIFACT_ENTRY_INVALID:{project_id}")
+    return oid
+
+
+def _verify_remote_project(project: dict[str, Any]) -> None:
+    project_id = project.get("projectId")
+    if project_id not in PROJECT_IDS:
+        raise Phase3Error("PUBLISHED_REMOTE_PROJECT_INVALID")
+    candidate = project.get("projectCandidate")
+    if not isinstance(candidate, dict):
+        raise Phase3Error(f"PUBLISHED_REMOTE_CANDIDATE_INVALID:{project_id}")
+    allowlisted = PUBLISHED_REMOTE_ALLOWLIST[project_id]
+    if {
+        "remote": candidate.get("remote"),
+        "publishedRef": candidate.get("publishedRef"),
+    } != allowlisted:
+        raise Phase3Error(f"PUBLISHED_REMOTE_URL_REF_NOT_ALLOWLISTED:{project_id}")
+
+    with tempfile.TemporaryDirectory(prefix=REMOTE_TEMP_PREFIX) as temp_name:
+        temp_root = Path(temp_name)
+        askpass_path = _write_askpass(temp_root)
+        global_config_path = temp_root / "empty-gitconfig"
+        global_config_path.write_text("# intentionally empty\n", encoding="ascii")
+        environment = _remote_environment(askpass_path, global_config_path)
+        repo = temp_root / "objects"
+        repo.mkdir()
+        _run_remote_git(
+            ["init", "--quiet"],
+            cwd=repo,
+            environment=environment,
+            project_id=project_id,
+            error="PUBLISHED_REMOTE_INIT_FAILED",
+        )
+        remote = allowlisted["remote"]
+        published_ref = allowlisted["publishedRef"]
+        advertised = _run_remote_git(
+            ["ls-remote", "--exit-code", "--refs", "--", remote, published_ref],
+            cwd=repo,
+            environment=environment,
+            project_id=project_id,
+            error="PUBLISHED_REMOTE_REF_QUERY_FAILED",
+            text=True,
+        )
+        if advertised.splitlines() != [f"{candidate['commit']}\t{published_ref}"]:
+            raise Phase3Error(f"PUBLISHED_REMOTE_REF_MISMATCH:{project_id}")
+        _run_remote_git(
+            [
+                "fetch",
+                "--quiet",
+                "--no-tags",
+                "--no-recurse-submodules",
+                "--depth",
+                str(REMOTE_FETCH_DEPTH),
+                "--",
+                remote,
+                published_ref,
+            ],
+            cwd=repo,
+            environment=environment,
+            project_id=project_id,
+            error="PUBLISHED_REMOTE_FETCH_FAILED",
+        )
+        fetched = _run_remote_git(
+            ["rev-parse", "--verify", "--end-of-options", "FETCH_HEAD^{commit}"],
+            cwd=repo,
+            environment=environment,
+            project_id=project_id,
+            error="PUBLISHED_REMOTE_FETCH_HEAD_INVALID",
+            text=True,
+        ).strip()
+        if fetched != candidate["commit"]:
+            raise Phase3Error(f"PUBLISHED_REMOTE_FETCH_HEAD_MISMATCH:{project_id}")
+
+        tree, parents = _remote_commit_tuple(repo, environment, project_id, candidate["commit"])
+        if tree != candidate["tree"]:
+            raise Phase3Error(f"PUBLISHED_REMOTE_TREE_MISMATCH:{project_id}")
+        if len(parents) != 1:
+            raise Phase3Error(f"PUBLISHED_REMOTE_PARENT_COUNT_INVALID:{project_id}")
+        if parents[0] != candidate["parent"]:
+            raise Phase3Error(f"PUBLISHED_REMOTE_PARENT_MISMATCH:{project_id}")
+        _run_remote_git(
+            ["cat-file", "-e", f"{candidate['baseCommit']}^{{commit}}"],
+            cwd=repo,
+            environment=environment,
+            project_id=project_id,
+            error="PUBLISHED_REMOTE_BASE_UNAVAILABLE",
+        )
+        _run_remote_git(
+            ["merge-base", "--is-ancestor", candidate["baseCommit"], candidate["commit"]],
+            cwd=repo,
+            environment=environment,
+            project_id=project_id,
+            error="PUBLISHED_REMOTE_BASE_ANCESTRY_MISMATCH",
+        )
+
+        artifacts = candidate.get("artifacts")
+        if not isinstance(artifacts, list) or not artifacts:
+            raise Phase3Error(f"PUBLISHED_REMOTE_ARTIFACT_SET_INVALID:{project_id}")
+        for artifact in artifacts:
+            if not isinstance(artifact, dict) or not isinstance(artifact.get("path"), str):
+                raise Phase3Error(f"PUBLISHED_REMOTE_ARTIFACT_RECORD_INVALID:{project_id}")
+            path = artifact["path"]
+            oid = _remote_artifact_oid(
+                repo,
+                environment,
+                project_id,
+                candidate["commit"],
+                path,
+            )
+            if oid != artifact.get("gitBlobOid"):
+                raise Phase3Error(f"PUBLISHED_REMOTE_ARTIFACT_BLOB_MISMATCH:{project_id}")
+            raw_size = _run_remote_git(
+                ["cat-file", "-s", oid],
+                cwd=repo,
+                environment=environment,
+                project_id=project_id,
+                error="PUBLISHED_REMOTE_ARTIFACT_SIZE_UNAVAILABLE",
+                text=True,
+            ).strip()
+            try:
+                size = int(raw_size)
+            except ValueError as exc:
+                raise Phase3Error(f"PUBLISHED_REMOTE_ARTIFACT_SIZE_INVALID:{project_id}") from exc
+            if size < 0 or size > REMOTE_MAX_ARTIFACT_BYTES:
+                raise Phase3Error(f"PUBLISHED_REMOTE_ARTIFACT_SIZE_LIMIT:{project_id}")
+            if size != artifact.get("bytes"):
+                raise Phase3Error(f"PUBLISHED_REMOTE_ARTIFACT_BYTE_MISMATCH:{project_id}")
+            raw = _run_remote_git(
+                ["cat-file", "blob", oid],
+                cwd=repo,
+                environment=environment,
+                project_id=project_id,
+                error="PUBLISHED_REMOTE_ARTIFACT_READ_FAILED",
+            )
+            if len(raw) != size:
+                raise Phase3Error(f"PUBLISHED_REMOTE_ARTIFACT_READ_SIZE_MISMATCH:{project_id}")
+            if hashlib.sha256(raw).hexdigest() != artifact.get("sha256"):
+                raise Phase3Error(f"PUBLISHED_REMOTE_ARTIFACT_SHA256_MISMATCH:{project_id}")
+
+
+def verify_remotes(batch: dict[str, Any]) -> None:
+    projects = batch.get("projects")
+    if (
+        not isinstance(projects, list)
+        or len(projects) != len(PROJECT_IDS)
+        or any(not isinstance(project, dict) for project in projects)
+    ):
+        raise Phase3Error("PUBLISHED_REMOTE_PROJECT_SET_INVALID")
+    ids = [project.get("projectId") for project in projects]
+    if ids != sorted(PROJECT_IDS):
+        raise Phase3Error("PUBLISHED_REMOTE_PROJECT_SET_INVALID")
+    for project in projects:
+        project_id = project["projectId"]
+        if _canonical_sha256(project.get("projectCandidate")) != EXPECTED_PROJECT_CANDIDATE_SHA256[
+            project_id
+        ]:
+            raise Phase3Error(f"PUBLISHED_REMOTE_CANDIDATE_EXACT_BINDING_MISMATCH:{project_id}")
+        _verify_remote_project(project)
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -336,7 +645,16 @@ def main(argv: list[str] | None = None) -> int:
     except Phase3Error as exc:
         print(f"FAIL: {exc}", file=sys.stderr)
         return 1
-    print("PASS: phase-3 published project distinctions are exact, zero-authority, and closed-set")
+    if args.verify_remotes:
+        print(
+            "PASS: phase-3 published project distinctions are exact, zero-authority, closed-set; "
+            "REMOTES VERIFIED"
+        )
+    else:
+        print(
+            "PASS LOCAL-ONLY: phase-3 published project distinctions are exact, zero-authority, "
+            "closed-set; REMOTES NOT VERIFIED"
+        )
     return 0
 
 

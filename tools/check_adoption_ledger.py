@@ -288,7 +288,7 @@ def _verify_project_candidate(candidate: Any, *, project_id: str, spec_bytes: by
         "PROJECT_CANDIDATE_INVALID",
     )
     if _contains_formal_adopt(candidate):
-        raise LedgerError("PROJECT_CANDIDATE_ADOPT_OVERCLAIM")
+        raise LedgerError("PROJECT_CANDIDATE_ADOPTION_OVERCLAIM")
     if (
         not isinstance(candidate["remote"], str)
         or re.fullmatch(r"https://github\.com/[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+\.git", candidate["remote"])

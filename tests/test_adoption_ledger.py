@@ -926,7 +926,7 @@ class AdoptionLedgerTests(unittest.TestCase):
         spec_bytes = MODULE._blob(project["evidence"]["commit"], project["specPath"])
         candidate = copy.deepcopy(project["evidence"]["projectCandidate"])
         candidate["disposition"]["statement"] += " ADOPT(0000000000000000000000000000000000000000)"
-        with self.assertRaisesRegex(MODULE.LedgerError, "PROJECT_CANDIDATE_ADOPT_OVERCLAIM"):
+        with self.assertRaisesRegex(MODULE.LedgerError, "PROJECT_CANDIDATE_ADOPTION_OVERCLAIM"):
             MODULE._verify_project_candidate(
                 candidate, project_id="salesforce-tools", spec_bytes=spec_bytes
             )

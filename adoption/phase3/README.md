@@ -19,5 +19,10 @@ python tools/check_phase3_disposition_batch.py --treeish HEAD
 python -m unittest discover -s tests -p "test_phase3_disposition_batch.py" -v
 ```
 
-`--verify-remotes` additionally verifies each exact published ref with `git ls-remote`; hosted CI
-does not require network access. None of these checks invokes a provider or changes runtime state.
+Without `--verify-remotes`, the checker emits `PASS LOCAL-ONLY` and `REMOTES NOT VERIFIED` so local
+structure success cannot be mistaken for publication verification. `--verify-remotes` accepts only
+the three exact allowlisted GitHub URL/ref pairs, uses a bounded temporary repository with prompts
+disabled and command timeouts, fetches each ref, and rederives the commit tree, sole parent, base
+ancestry, and every artifact Git blob, byte count, and SHA-256. The publishing CI runs this remote
+mode. Temporary Git objects are removed on every exit. None of these checks invokes a provider or
+changes runtime state.
