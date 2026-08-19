@@ -63,6 +63,8 @@ class AutomatedRotationAmendmentTests(unittest.TestCase):
             "may not extend a window, auto-renew it, increase concurrency",
             "Planning is not launch authority",
             "every provider-bearing automatic gate remains",
+            "3dc9100507c35e3724200dabaa3df6ffd2eb3cd0",
+            "Neither project-local mechanism ratifies the other",
         ):
             self.assertIn(required, normalized_candidate)
 

@@ -85,6 +85,27 @@ existing inside-lock R14 checks revalidate the exact plan, window, inventory,
 health, capacity, request, executable, argv, subject, process image, claimant,
 and remaining limits.
 
+## Canonical DNG competing evidence
+
+Canonical master `92912d9a8bfdbb944ef040379b3d62b5dc7a985a` publishes a
+DNG-local automated three-lane campaign at product subject
+`3dc9100507c35e3724200dabaa3df6ffd2eb3cd0` and shipping-evidence subject
+`4f5cacfa2f03c916ab8123ecd8e0e2b9d6bdea41`. DNG reports serial Fable, Opus,
+and Sonnet execution, a closed gate between slices, fresh per-slice capacity and
+one-use permits, bounded terminal artifacts, and exact residual-lease release.
+This is material project evidence that unattended serial rotation can be built
+without simultaneous quota-domain roots; it is not independent review or
+portable adoption evidence for this candidate.
+
+The candidates remain deliberately distinguished. DNG binds a standing local
+owner directive to fresh lane-specific one-use permits and explicitly declines
+this candidate's reusable 24-hour create-once window. This candidate instead
+requires an expiring signed window plus fresh transactional broker admission for
+every run. Neither project-local mechanism ratifies the other. A citing project
+must preserve the stricter common intersection—serial domain ownership, current
+capacity, one-run broker admission, closed-between-runs behavior, terminal
+fencing, and zero acceptance authority—and publish its exact local disposition.
+
 ## Project disposition
 
 Each project must publish one exact outcome after canonical ratification:
