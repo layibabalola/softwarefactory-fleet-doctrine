@@ -5068,6 +5068,42 @@ class UniversalProviderControlTests(unittest.TestCase):
         self.assertFalse(manifest["authority"]["containmentOrCanaryCredit"])
         self.assertEqual(manifest["authority"]["automaticGateState"], "CLOSED")
 
+    def test_r25_01_two_endpoint_truncation_regression_stays_floor_one(self) -> None:
+        started = "2026-08-19T04:33:55.7504409Z"
+        completed = "2026-08-19T04:33:55.7524401Z"
+        exact_delta_ns = (
+            upc._canonical_rfc3339_utc_epoch_nanoseconds(completed)
+            - upc._canonical_rfc3339_utc_epoch_nanoseconds(started)
+        )
+        self.assertEqual(exact_delta_ns, 1_999_200)
+        self.assertEqual(exact_delta_ns // 1_000_000, 1)
+        # The old datetime-microsecond path truncates both endpoints independently and
+        # incorrectly observes 2.000 ms, which is the exact regression this fixture retains.
+        old_started = upc.parse_time(started)
+        old_completed = upc.parse_time(completed)
+        old_delta = old_completed - old_started
+        old_floor_ms = (
+            old_delta.days * 86400000
+            + old_delta.seconds * 1000
+            + old_delta.microseconds // 1000
+        )
+        self.assertEqual(old_floor_ms, 2)
+
+        receipt = upc.strict_json_file(
+            ROOT / "receipts" / "attended-provider-rotation-20260819.json"
+        )
+        forged_floor_two = copy.deepcopy(receipt)
+        entry = forged_floor_two["requests"][0]
+        entry["startedAt"] = started
+        entry["completedAt"] = completed
+        entry["wallDurationMs"] = 2
+        entry["durationMs"] = 1
+        entry["durationApiMs"] = 1
+        with self.assertRaisesRegex(
+            upc.ControlError, "ATTENDED_ROTATION_WALL_DURATION_MISMATCH"
+        ):
+            upc.validate_contract("attended_rotation_receipt", forged_floor_two)
+
     def test_r17_07_low_level_request_primitives_are_not_public(self) -> None:
         broker = upc.UniversalProviderBroker(self.root / "r17-no-public-primitives")
         self.assertFalse(hasattr(broker, "begin_provider_request"))

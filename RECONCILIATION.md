@@ -92,5 +92,11 @@ fraction directly to integer epoch nanoseconds and floors the exact completed-mi
 milliseconds; it never routes through `datetime.microsecond`. The four retained rows and aggregate remain
 unchanged. This is evidence-only and grants no runtime/provider authority.
 
+R25 preserves exact frozen R24 `0d20d6158d0ff66d6da9c9e7db8065a9e5c71189` and retains the
+durable old-bug witness: `55.7504409Z` to `55.7524401Z` is exactly 1,999,200 ns and floors to 1 ms,
+while independently truncating both endpoints to microseconds produces the incorrect 2 ms. The full
+receipt validator rejects a forged 2 ms wall duration for that pair. R25 changes no implementation or
+authority surface; it remains evidence-only, zero authority, and CLOSED.
+
 Standing containment is unchanged: provider capacity, reset, or authentication cannot open an
 automatic-launch gate or re-enable a launcher.

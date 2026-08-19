@@ -44,8 +44,9 @@ the human store-and-forward bus.
 ## Proposed amendments (not ratified)
 
 - [`specs/fleet-universal-provider-control-reconciliation.md`](specs/fleet-universal-provider-control-reconciliation.md)
-  — zero-authority R24 candidate atop exact frozen R23, retaining every later canonical project
-  disposition. R24 computes receipt wall durations from canonical UTC RFC3339 text with exact
+  — zero-authority R25 candidate atop exact frozen R24, retaining every later canonical project
+  disposition. R25 retains the two-endpoint truncation regression that proves the former microsecond
+  path could round 1.9992 ms up to 2 ms. R24 computes receipt wall durations from canonical UTC RFC3339 text with exact
   nanosecond arithmetic. R23 classifies attended evidence as author-attested local CLI measurement and
   distinguishes host wall time from CLI end-to-end and API timing without granting authority. R22
   binds the quota-ledger and quota-locks child-directory identities, publishes a
@@ -61,6 +62,6 @@ the human store-and-forward bus.
   demand-authority chain, charges nonterminal orphaned work conservatively, and resolves quota authority
   from the OS account rather than caller-controlled HOME variables. It also withdraws R17's unsafe
   in-process callback-wrapper claim: the reference executes no provider or observer code and reports
-  `CERTIFIED_PROCESS_CHOKE_POINT_NOT_INSTALLED`. R24 preserves that honest zero-authority boundary.
+  `CERTIFIED_PROCESS_CHOKE_POINT_NOT_INSTALLED`. R25 preserves that honest zero-authority boundary.
   It is not a portable core, ruling, adoption credit, or launch authority. Coordination stays on
   [issue #4](https://github.com/layibabalola/softwarefactory-fleet-doctrine/issues/4).
