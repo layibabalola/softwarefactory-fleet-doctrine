@@ -283,6 +283,16 @@ therefore records `BLOCKED_DECLARED_TUPLE_MISMATCH`; Cloudvore may not silently 
 and installation remains barred pending fleet adjudication. The accompanying receipt is
 `cloudvore/provider-governor/PROPOSAL-RECEIPT-20260818.md`.
 
+The proposal also binds the accepted additive universal reconciliation at candidate
+`874605e43531c9aa230ee16851f8107a8e0d9cec`, tree
+`cafc358fd7b60812070cf9a465d7de38b88487c8`, canonical merge
+`488cf0dc0c2c2ddd1ab024c6377e1fd6d61eef1d`. Its Cloudvore policy specimen is
+`cloudvore/provider-governor/cloudvore-project-profile-proposal-v1.json` and validates against the
+canonical `universal-project-profile-v1` schema. The specimen's state-root HMAC is explicitly
+non-production and must be replaced by the installed machine-local identity before any stage can
+advance. R14 is additive portable doctrine and deployment-inert reference code, not Cloudvore
+runtime adoption.
+
 There are two compatible, non-substitutable axes. Tracker #3's fleet activation lifecycle remains
 the sole launch-state vocabulary: `HARD_CLOSED`, `INSTALLED_UNVERIFIED`, `SHADOW`, `CONTAINMENT`,
 `CANARY`, `ENABLED`. The ratified spec's campaign results remain evidence gates:

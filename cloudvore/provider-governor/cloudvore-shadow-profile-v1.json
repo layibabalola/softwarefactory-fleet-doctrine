@@ -5,6 +5,16 @@
     "sha256": "424a56c8700813c06bf31ac3b5b8c34b323f1ef6b1f38685e51bb89764957887",
     "size_bytes": 17321
   },
+  "accepted_reconciliation": {
+    "candidate_commit": "874605e43531c9aa230ee16851f8107a8e0d9cec",
+    "candidate_tree": "cafc358fd7b60812070cf9a465d7de38b88487c8",
+    "candidate_parent": "ecc8f076c4f0273f92c8d9f841bceff3684233ca",
+    "manifest_blob": "7c280b1960e158b01483ab9ab77e69589f60f6ac",
+    "manifest_sha256": "a2b4024f76f526014d174ea8b3bf9315777f26e8314039f8814f79ec1c864382",
+    "canonical_merge": "488cf0dc0c2c2ddd1ab024c6377e1fd6d61eef1d",
+    "project_profile": "cloudvore/provider-governor/cloudvore-project-profile-proposal-v1.json",
+    "authority": "PORTABLE_DOCTRINE_ONLY"
+  },
   "accepted_contract": {
     "commit": "224a6705d81dfbc670313cdcef4d825216f2b380",
     "tree": "569957a2b62eb0e2e99c1490a9cbec0002894e42",
@@ -71,27 +81,42 @@
       "family": "anthropic",
       "lanes": ["OPUS", "FABLE", "SONNET"],
       "launch_seam": "review/run-claude-*.ps1",
+      "observed_launcher_sha256": ["1d3921f3a15bb3ca08c011fff0025e06ffe53389b51ab8db31262ea0fc10342b"],
       "current_conformance": "PENDING_LOCAL_SUPERVISOR_AND_DRILLS"
     },
     {
       "family": "openai",
       "lanes": ["HUB", "SOL", "LUNA"],
       "launch_seam": "direct codex exec wrappers",
+      "observed_launcher_sha256": ["a12262dd43c77d91c837e6f29c3808bbaa995942305a26541f03930ae71d0505"],
       "current_conformance": "PENDING_LOCAL_SUPERVISOR_AND_DRILLS"
     },
     {
       "family": "moonshot",
       "lanes": ["KIMI_IMPLEMENTER", "KIMI_REVIEWER"],
       "launch_seam": "Invoke-KimiLane.ps1",
+      "observed_launcher_sha256": [
+        "40f92619194ed2970af4acf8ee18c29bd1f0bde7be0b7051e14eac5381b0c909",
+        "0fac41dbbbb04efce4fb6b1a3801cb6ff67b4b2b15cd7d9e131fd85230bd9516"
+      ],
       "current_conformance": "PENDING_LOCAL_SUPERVISOR_AND_DRILLS"
     },
     {
       "family": "xai",
       "lanes": ["GROK_IMPLEMENTER", "GROK_REVIEWER"],
       "launch_seam": "Invoke-GrokLane.ps1 via Invoke-GrokWslBoundary.ps1",
+      "observed_launcher_sha256": [
+        "fb175b43e3da8657170f732f7a16d216a812ac0c42185a121c4a12ccfffdce1f",
+        "46b64c4e81d49f3b24a050880e9b0f60c4f9d81756db61833e6382f40ea79747"
+      ],
       "current_conformance": "PENDING_LOCAL_SUPERVISOR_AND_DRILLS"
     }
   ],
+  "deterministic_router": {
+    "path": "tools/provider-router.py",
+    "observed_sha256": "48e2161522d70f95dfe99bb334927103a9e3d2a1088fa11c9775bb52ab2e5021",
+    "authority": "PLAN_ONLY_NOT_ADMISSION_SUPERVISOR"
+  },
   "translation_boundary": {
     "may_translate": ["native_identity", "cache_fields", "usage_fields", "reset_fields", "terminal_fields", "refusal_fields"],
     "must_not_translate": ["admission_semantics", "authority", "quality_gate", "independence_credit", "budget_stop_meaning", "role", "model", "effort"]

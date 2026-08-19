@@ -4,9 +4,13 @@ import subprocess
 import unittest
 from pathlib import Path
 
+from jsonschema import Draft202012Validator
+
 
 ROOT = Path(__file__).resolve().parents[2]
 PROFILE_PATH = Path(__file__).with_name("cloudvore-shadow-profile-v1.json")
+UNIVERSAL_PROFILE_PATH = Path(__file__).with_name("cloudvore-project-profile-proposal-v1.json")
+UNIVERSAL_PROFILE_SCHEMA_PATH = ROOT / "schemas" / "universal-project-profile-v1.schema.json"
 SPEC_PATH = ROOT / "specs" / "cloudvore.md"
 ACCEPTED_SUBJECT = "224a6705d81dfbc670313cdcef4d825216f2b380"
 ACCEPTED_TREE = "569957a2b62eb0e2e99c1490a9cbec0002894e42"
@@ -39,6 +43,7 @@ class CloudvoreShadowProfileTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.profile = load_strict_json(PROFILE_PATH)
+        cls.universal_profile = load_strict_json(UNIVERSAL_PROFILE_PATH)
         cls.spec = SPEC_PATH.read_text(encoding="utf-8")
 
     def test_profile_is_zero_authority_and_hard_closed(self):
@@ -51,6 +56,21 @@ class CloudvoreShadowProfileTests(unittest.TestCase):
         self.assertIn("provider_launch", self.profile["no_authority"])
         self.assertIn("project_adoption", self.profile["no_authority"])
         self.assertIn("fleet_adoption", self.profile["no_authority"])
+
+    def test_ratified_reconciliation_and_project_profile_are_exact_bound(self):
+        reconciliation = self.profile["accepted_reconciliation"]
+        self.assertEqual("874605e43531c9aa230ee16851f8107a8e0d9cec", reconciliation["candidate_commit"])
+        self.assertEqual("cafc358fd7b60812070cf9a465d7de38b88487c8", reconciliation["candidate_tree"])
+        self.assertEqual("488cf0dc0c2c2ddd1ab024c6377e1fd6d61eef1d", reconciliation["canonical_merge"])
+        self.assertEqual("PORTABLE_DOCTRINE_ONLY", reconciliation["authority"])
+        schema = load_strict_json(UNIVERSAL_PROFILE_SCHEMA_PATH)
+        Draft202012Validator.check_schema(schema)
+        Draft202012Validator(schema).validate(self.universal_profile)
+        self.assertEqual("cloudvore", self.universal_profile["project"])
+        self.assertEqual("UNKNOWN", self.universal_profile["independenceClass"])
+        self.assertFalse(self.universal_profile["invariants"]["directProviderInvocation"])
+        self.assertFalse(self.universal_profile["invariants"]["resetCanOpenGate"])
+        self.assertEqual(1, self.universal_profile["policy"]["maxConcurrentPerQuotaDomain"])
 
     def test_profile_pins_the_accepted_contract_and_every_artifact(self):
         contract = self.profile["accepted_contract"]
@@ -109,6 +129,13 @@ class CloudvoreShadowProfileTests(unittest.TestCase):
             self.assertEqual(
                 "PENDING_LOCAL_SUPERVISOR_AND_DRILLS", adapter["current_conformance"]
             )
+            self.assertGreaterEqual(len(adapter["observed_launcher_sha256"]), 1)
+            for digest in adapter["observed_launcher_sha256"]:
+                self.assertEqual(64, len(digest))
+        self.assertEqual(
+            "PLAN_ONLY_NOT_ADMISSION_SUPERVISOR",
+            self.profile["deterministic_router"]["authority"],
+        )
         boundary = self.profile["translation_boundary"]
         self.assertIn("usage_fields", boundary["may_translate"])
         self.assertIn("admission_semantics", boundary["must_not_translate"])
