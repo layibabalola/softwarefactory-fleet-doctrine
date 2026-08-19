@@ -112,9 +112,11 @@ process, drain work, or advance rollout state.
 
 Adobe's project profile preserves these local quality and functionality boundaries:
 
-- Sol and Luna remain exact Codex role cells; Opus and Sonnet remain exact independent Claude
-  reviewer cells. Capacity control may queue an unavailable cell, but may not silently substitute a
-  model, provider, effort, role, subject, review bar, or vote.
+- Sol and Luna remain exact Codex role cells; Opus and Sonnet remain separately blinded Claude
+  reviewer cells. The same-provider pair supplies at most one acceptance key unless a distinct,
+  evidence-backed `independence_class` is separately ratified. Capacity control may queue an
+  unavailable cell, but may not silently substitute a model, provider, effort, role, independence
+  class, subject, review bar, or vote.
 - The AC-07 user-present headed Adobe login remains an irreducible hardware/owner boundary. No
   provider governor, token-saving rule, canary, or fleet ruling can infer or automate it.
 - Candidate immutability includes repository configuration and the hash-pinned reviewer control
@@ -132,7 +134,8 @@ Adobe's project profile preserves these local quality and functionality boundari
 1. A broker-owned demand fingerprint runs before provider resolution. Unchanged addressed work and
    cursors produce a durable `IDLE_SKIPPED` receipt with zero provider calls, processes, or tokens.
 2. One full-child-lifetime lease per opaque provider quota domain prevents duplicate same-account
-   work across projects while leaving deliberately separate accounts independent.
+   work across projects while leaving deliberately separate accounts quota-separated. Quota-domain
+   separation does not itself create an independent acceptance key.
 3. Fresh capacity, active reservations, completion reserve, foreground priority, and earliest reset
    boundary are checked again inside the final launch transaction. Stale, malformed, missing, or
    rolled-over evidence denies.
@@ -158,8 +161,10 @@ pass fake-provider, bypass, replay, reset, stale-capacity, malformed-state, conc
 rollback, and full-child claimant tests; demonstrate 1,000 unchanged no-inference ticks; and retain
 independent exact-byte review of the quality cell. Rollout is sequential
 `CLOSED -> SHADOW -> CONTAINMENT -> CANARY`; a canary is one bounded, separately authorized review
-job and returns to CLOSED or CONTAINMENT on every terminal. `OPEN` requires a later distinct
-adjudication and cannot be inferred from canary success.
+job and unconditionally reseals `CLOSED` on success, failure, timeout, refusal, or ambiguity. A later
+`CONTAINMENT` or `OPEN` transition requires fresh authenticated evidence and distinct adjudication;
+neither can be inferred from canary success.
 
-This disposition is Adobe's submission to fleet issue #4. It grants no task mutation, provider
-call, authentication action, canary, merge, release, or project-adoption credit.
+Adobe's provider-governor v1 disposition is submitted to fleet issue #3; its universal-runtime
+candidate disposition is submitted to issue #4. Neither grants task mutation, provider call,
+authentication action, canary, merge, release, or project-adoption credit.
