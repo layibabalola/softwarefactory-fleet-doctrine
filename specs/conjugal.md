@@ -187,3 +187,81 @@ self-heals its cached address on proven staleness. Both Claude floors
 recovered live on 2026-08-14 with zero manual latch clears; receipts in
 RECEIPTS.md this date, trap anatomy in TRAPS.md. Behavior amendments pending
 hub ratification before any RULINGS entry. Conjugal commit `bc11bf7f`.
+
+## 2026-08-18 delta — provider capacity governor v1 disposition
+
+**Rung: owner-directed dispatcher. Disposition:**
+`DISTINGUISH(224a6705d81dfbc670313cdcef4d825216f2b380, PENDING_RUNTIME_ADOPTION)`. This is not a rejection of the portable law. Conjugal
+accepts the fleet governor's provider-neutral invariants at doctrine subject
+`224a6705d81dfbc670313cdcef4d825216f2b380`, merged by
+`9af3eb9d4f4669abb787cc1966280608f5fbbce9`, but does not claim project-local `ADOPT` credit.
+
+Conjugal's independently developed zero-authority candidate remains available at remote branch
+`codex/fleet-usage-control-0818`, commit `37f1246543c86300089b77a51a3b8ad2c5292b8d`. Its 28/28
+reference controls and non-inference Anthropic hold canary are corroborating evidence, not a second
+universal contract and not a live supervisor. Where it differs, the ratified fleet v1 contract is
+the portable baseline.
+
+Before Conjugal may change this disposition to `ADOPT(reference)`, its owning lanes must freeze and
+independently review an exact local runtime subject that proves all of the following on the actual
+launch path:
+
+- every unattended provider invocation enters one pinned host-local supervisor; direct invocation
+  and mutable doctrine-checkout execution are structurally refused;
+- the final process-creation boundary revalidates the closed/open gate, quota-domain identity,
+  required capacity dimensions, exact subject/model/effort, resolved executable path and digest,
+  broker/request/decision digests, and lease freshness without a check/use gap;
+- the lease remains bound to the contained process tree through terminal cleanup, while duplicate,
+  stale, ambiguous, malformed, or observer-dark state fails closed;
+- provider observers and scheduler/watcher integrations are operationally exercised, not inferred
+  from the read-only doctrine conformance engine;
+- reset is telemetry only and cannot enable a task, open the automatic gate, start a process, or
+  drain queued work; rollout advances only through `HARD_CLOSED -> INSTALLED_UNVERIFIED -> SHADOW ->
+  CONTAINMENT -> CANARY -> ENABLED`, with one bounded canary and automatic reseal on first red; and
+- deterministic no-work paths consume zero inference while Conjugal's existing exact-profile,
+  compatible-runner, independent-review, continuity, first-red, rollback, and product bars remain
+  unchanged.
+
+Until those exact local receipts exist, Claude capacity returning grants no Conjugal launch or
+adoption authority. Codex, Kimi, Grok, and future providers enter through the same quota-domain,
+bounded-slice, evidence-capsule, and non-regression contract; provider availability never supplies
+role or independence credit.
+
+## 2026-08-18 delta — universal provider-control reconciliation R14 disposition
+
+**Rung: owner-directed dispatcher. Disposition:**
+`DISTINGUISH(874605e43531c9aa230ee16851f8107a8e0d9cec,
+PENDING_LOCAL_SUPERVISOR_COMPLETE_CENSUS_SHADOW_AND_CONTAINMENT,
+5bff7d4498b1b14c1b3488fef849d5b28a06bb89)`.
+
+Conjugal accepts the R14 portable law as canonical doctrine through ruling commit
+`88c25551d7a350e191555e74ef82fcdff0d4a09a` and canonical merge
+`488cf0dc0c2c2ddd1ab024c6377e1fd6d61eef1d`. This project disposition is an
+adoption-status distinction, not a semantic fork and not an `ADOPT` claim. The accepted reference
+is deployment-inert and does not replace Conjugal's actual launcher boundary.
+
+Immutable local proof is Conjugal commit
+`5bff7d4498b1b14c1b3488fef849d5b28a06bb89`, tree
+`d27dbe84af4076ea6e38a5152435f41d68a73cba`: its
+`coordination/lanes/sol.md` blob
+`ec8a1049cd0b7f2e78f18f30330745a10428e715` records the current disabled,
+`HARD_CLOSED` Fable and Opus roots and the absence of current positive native-capacity
+proof. While Conjugal remains at this `HARD_CLOSED` stage, owner-directive blob
+`da43e0ed44c941c74bb551a39fa7486cfb38b340` authorizes only provider-free
+closed-state work. This proof establishes the current local difference and missing-guard
+baseline only; it is not proof of a complete launcher census, 1,000 zero-inference ticks,
+SHADOW, CONTAINMENT, canary, or adoption.
+
+The reviewed R14 subject is an ancestor of its adjudication commit. The separately reported
+expanded launch-envelope subject `8eee3e4576778a18f92a3aff922c7574904e3fc3` is not in that ancestry
+or in canonical Git custody. It remains adverse sibling evidence and must not be reconstructed from
+narrative or credited to R14 review. Any later expanded amendment requires one forward-only frozen
+descendant, a canonical Git-blob manifest, hosted checks, fresh exact-head doctrine/safety/mechanics
+review, and distinct adjudication. That future amendment cannot silently change this disposition.
+
+Conjugal remains `HARD_CLOSED`: its Fable and Opus scheduled roots are disabled and still point to
+the existing project dead-man gate rather than a pinned R14 supervisor. No complete four-surface
+launcher census, 1,000-tick deterministic idle proof, exact installed-byte profile, authenticated
+observer/health chain, full-child containment receipt, rollback receipt, or independently reviewed
+SHADOW/CONTAINMENT packet exists. Those missing local proofs, rather than provider availability,
+block a canary and project adoption.
