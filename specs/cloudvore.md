@@ -269,3 +269,49 @@ Cloudvore's earlier local 39/39 candidate exercise—ten simultaneous OS-process
 provider normalizers, session-limit classification, release-drift refusal, and five guard-removal
 mutations—is supplementary design evidence only. It is not installed, not authoritative, and does
 not satisfy the production-path or dated-receipt requirements above.
+
+### Universal SHADOW proposal and disposition matrix (2026-08-18)
+
+Cloudvore's design submission is the machine-readable
+`cloudvore/provider-governor/cloudvore-shadow-profile-v1.json`, sourced from design SHA-256
+`424A56C8700813C06BF31AC3B5B8C34B323F1EF6B1F38685E51BB89764957887` / 17,321 bytes. Its status is
+`PROPOSED_ZERO_AUTHORITY`; it pins all 13 paths to their accepted Git-object bytes and does not
+install or activate anything. Validation found that the artifact tuple printed in `RULINGS.md`
+disagrees with the accepted Git bytes for `README.md`, `metrics/README.md`, and
+`examples/provider-usage-events-v1.jsonl` (whose declared hash is 65 hex characters). The profile
+therefore records `BLOCKED_DECLARED_TUPLE_MISMATCH`; Cloudvore may not silently choose either tuple,
+and installation remains barred pending fleet adjudication. The accompanying receipt is
+`cloudvore/provider-governor/PROPOSAL-RECEIPT-20260818.md`.
+
+There are two compatible, non-substitutable axes. Tracker #3's fleet activation lifecycle remains
+the sole launch-state vocabulary: `HARD_CLOSED`, `INSTALLED_UNVERIFIED`, `SHADOW`, `CONTAINMENT`,
+`CANARY`, `ENABLED`. The ratified spec's campaign results remain evidence gates:
+`SHADOW_PASS`, `CONTAINMENT_PASS`, `CAPACITY_PASS`, `CONTEXT_PASS`, and `ROUTING_PASS`. A result does
+not itself advance activation state. `ROUTING_PASS` is required only before changing a model or
+effort cell; preserving the exact cell does not manufacture a routing pass.
+
+| Cloudvore evidence surface | Fleet activation stage affected | Current disposition | Promotion evidence |
+|---|---|---|---|
+| Install tuple and local supervisor/adapter manifest | `INSTALLED_UNVERIFIED` | `BLOCKED_DECLARED_TUPLE_MISMATCH` | Fleet correction/adjudication, then exact 13-artifact intake plus extension, policy, executable, Python, dependency, and installed-file hashes |
+| Counterfactual decisions, capsules, normalized events, zero launch effect | `SHADOW` / `SHADOW_PASS` | `PENDING` | Three deterministic fake/no-inference runs, mutations, independent review, and bounded attended receipts for each retained family |
+| One host-wide claimant and structural direct-launch closure | `CONTAINMENT` / `CONTAINMENT_PASS` | `PENDING` | Same-domain single flight, distinct-domain independence, startup/cooldown/orphan fences, complete launcher census, and bypass refusal |
+| Fresh native capacity plus completion/review reserve | `CANARY` prerequisite / `CAPACITY_PASS` | `PENDING` | Required provider dimensions, freshness, refusal/reset quiet, reservation boundary, and launch-time revalidation |
+| Bounded evidence capsules and continuations | `CANARY` prerequisite when provider input changes / `CONTEXT_PASS` | `PENDING` | Frozen replay with no missed blocker, weaker severity, dropped work, prompt drift, authority drift, or silent truncation |
+| Any model/effort substitution | `CANARY` prerequisite when routing changes / `ROUTING_PASS` | `NOT_REQUESTED` | Blinded role-specific non-inferiority; otherwise exact requested/effective provider, model, effort, tier, role, and independence class remain unchanged |
+| One explicitly authorized bounded job | `CANARY` | `BARRED` | Separate owner authority after all applicable prior evidence; automatic return to `HARD_CLOSED` on failure |
+| Unattended use | `ENABLED` | `BARRED` | Project-owned `ADOPT(reference)`, unchanged quality/authority bars, dated receipts, rollback proof, and separate activation authority |
+
+The provider/lane mapping is exhaustive for the presently designed Cloudvore hub: Anthropic
+(`OPUS`, `FABLE`, `SONNET`), OpenAI (`HUB`, `SOL`, `LUNA`), Moonshot (`KIMI_IMPLEMENTER`,
+`KIMI_REVIEWER`), and xAI (`GROK_IMPLEMENTER`, `GROK_REVIEWER`). All four families are currently
+`PENDING_LOCAL_SUPERVISOR_AND_DRILLS`. Provider adapters may translate only native identity, cache,
+usage, reset, refusal, and terminal fields. They may not alter admission semantics, authority,
+quality gates, independence credit, budget-stop meaning, role, model, or effort. Missing native
+fields remain `unknown` and fail closed where required.
+
+The proposed SHADOW sidecar observes already-authorized attended work and evaluates a frozen
+counterfactual snapshot. It has no spawn, block, enable, kill, resume, retry, routing, substitution,
+review-credit, Git, hosted, landing, merge, release, or adoption authority. Deterministic unchanged
+idle emits `IDLE_SKIPPED` only with explicit zero request/token/tool counters. A reset emits
+`RESET_OBSERVED` and updates telemetry only. The automatic gate remains `closed`; current operational
+conformance is **not established for any Cloudvore provider family**.
