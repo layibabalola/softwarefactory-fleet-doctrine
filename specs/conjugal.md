@@ -217,7 +217,9 @@ launch path:
   from the read-only doctrine conformance engine;
 - reset is telemetry only and cannot enable a task, open the automatic gate, start a process, or
   drain queued work; rollout advances only through `HARD_CLOSED -> INSTALLED_UNVERIFIED -> SHADOW ->
-  CONTAINMENT -> CANARY -> ENABLED`, with one bounded canary and automatic reseal on first red; and
+  CONTAINMENT -> CANARY -> CLOSED`; every bounded canary terminal, including success,
+  unconditionally reseals `CLOSED`, and any later `ENABLED`/`OPEN` transition requires fresh,
+  separately reviewed authority and exact proof; and
 - deterministic no-work paths consume zero inference while Conjugal's existing exact-profile,
   compatible-runner, independent-review, continuity, first-red, rollback, and product bars remain
   unchanged.
@@ -232,7 +234,7 @@ role or independence credit.
 **Rung: owner-directed dispatcher. Disposition:**
 `DISTINGUISH(874605e43531c9aa230ee16851f8107a8e0d9cec,
 PENDING_LOCAL_SUPERVISOR_COMPLETE_CENSUS_SHADOW_AND_CONTAINMENT,
-5bff7d4498b1b14c1b3488fef849d5b28a06bb89)`.
+ISSUE4_RECEIPT_5335872248_SHA256_03e86eb31a5ecf7fb091f0fa24387ad2d059366f2094440ff6ce2441fdaa8017)`.
 
 Conjugal accepts the R14 portable law as canonical doctrine through ruling commit
 `88c25551d7a350e191555e74ef82fcdff0d4a09a` and canonical merge
@@ -240,17 +242,16 @@ Conjugal accepts the R14 portable law as canonical doctrine through ruling commi
 adoption-status distinction, not a semantic fork and not an `ADOPT` claim. The accepted reference
 is deployment-inert and does not replace Conjugal's actual launcher boundary.
 
-Immutable local proof is Conjugal commit
-`5bff7d4498b1b14c1b3488fef849d5b28a06bb89`, tree
-`d27dbe84af4076ea6e38a5152435f41d68a73cba`: its
-`coordination/lanes/sol.md` blob
-`ec8a1049cd0b7f2e78f18f30330745a10428e715` records the current disabled,
-`HARD_CLOSED` Fable and Opus roots and the absence of current positive native-capacity
-proof. While Conjugal remains at this `HARD_CLOSED` stage, owner-directive blob
-`da43e0ed44c941c74bb551a39fa7486cfb38b340` authorizes only provider-free
-closed-state work. This proof establishes the current local difference and missing-guard
-baseline only; it is not proof of a complete launcher census, 1,000 zero-inference ticks,
-SHADOW, CONTAINMENT, canary, or adoption.
+Immutable local proof is the accessible fleet-doctrine issue #4 receipt
+[`5335872248`](https://github.com/layibabalola/softwarefactory-fleet-doctrine/issues/4#issuecomment-5335872248),
+whose 1,288-byte UTF-8 body has SHA-256
+`03e86eb31a5ecf7fb091f0fa24387ad2d059366f2094440ff6ce2441fdaa8017`. The receipt
+records the current disabled Fable and Opus roots, both nested Claude Desktop scheduler
+preferences set to `false`, post-change config SHA-256
+`3707ce6d1ba6d1ae3150a8b658a9bdec9cf7108a1b490eed14b6497ba94a1660`, and live
+hot-reload/containment as `UNPROVEN`. This proof establishes the current `HARD_CLOSED`
+local difference and missing-guard baseline only; it is not proof of a complete launcher
+census, 1,000 zero-inference ticks, SHADOW, CONTAINMENT, canary, or adoption.
 
 The reviewed R14 subject is an ancestor of its adjudication commit. The separately reported
 expanded launch-envelope subject `8eee3e4576778a18f92a3aff922c7574904e3fc3` is not in that ancestry
