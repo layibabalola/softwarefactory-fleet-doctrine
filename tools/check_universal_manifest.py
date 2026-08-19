@@ -14,7 +14,7 @@ from typing import Any
 
 
 ROOT = Path(__file__).resolve().parents[1]
-MANIFEST = "manifests/universal-provider-control-reconciliation-r18.json"
+MANIFEST = "manifests/universal-provider-control-reconciliation-r19.json"
 SELF_PATTERN = re.compile(
     rb'("canonicalGitBlobSha256"\s*:\s*"sha256:)([0-9a-f]{64})(")'
 )
@@ -75,7 +75,7 @@ def _commit_tuple(commit: str) -> tuple[str, list[str]]:
 
 
 def verify_reconciliation(manifest: dict[str, Any], treeish: str = "HEAD") -> None:
-    """Verify the exact R15-R17 linear subjects and ordered canonical-master merges."""
+    """Verify the exact R15-R19 linear subjects and ordered canonical-master merges."""
 
     reconciliation = manifest.get("reconciliation")
     if not isinstance(reconciliation, dict):
@@ -86,7 +86,10 @@ def verify_reconciliation(manifest: dict[str, Any], treeish: str = "HEAD") -> No
     )
     r17_names = ("r16Final", "r17Wip", "r17CanonicalMaster", "r17MasterMerge")
     r18_names = ("r17ManifestFreeze", "r17Final", "r18Wip")
-    if all(name in reconciliation for name in r18_names):
+    r19_names = ("r18Final", "r19Wip")
+    if all(name in reconciliation for name in r19_names):
+        names = base_names + r17_names + r18_names + r19_names
+    elif all(name in reconciliation for name in r18_names):
         names = base_names + r17_names + r18_names
     elif all(name in reconciliation for name in r17_names):
         names = base_names + r17_names
@@ -143,6 +146,15 @@ def verify_reconciliation(manifest: dict[str, Any], treeish: str = "HEAD") -> No
         ):
             raise ManifestError("RECONCILIATION_ORDER_INVALID")
         terminal = r18_wip
+    if all(name in reconciliation for name in r19_names):
+        r18_final = reconciliation["r18Final"]
+        r19_wip = reconciliation["r19Wip"]
+        if (
+            r18_final["orderedParents"] != [terminal["commit"]]
+            or r19_wip["orderedParents"] != [r18_final["commit"]]
+        ):
+            raise ManifestError("RECONCILIATION_ORDER_INVALID")
+        terminal = r19_wip
     if treeish != ":":
         run = subprocess.run(
             ["git", "merge-base", "--is-ancestor", terminal["commit"], treeish],

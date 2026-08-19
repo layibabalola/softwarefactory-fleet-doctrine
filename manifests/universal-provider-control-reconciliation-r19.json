@@ -1,0 +1,513 @@
+{
+  "schema": "fleet-universal-provider-control-candidate-manifest/v2",
+  "status": "CANDIDATE_ZERO_AUTHORITY",
+  "subjectCoverage": "R19_RESTART_STABLE_PREPARED_ROOT_REPARSE_OBSERVER_SEPARATION_TEST_ISOLATION_ZERO_AUTHORITY",
+  "reconciliation": {
+    "r15Base": {
+      "commit": "30cd9b97eeebd30cb209bdb9798c38b415c9a0b4",
+      "tree": "06aac4b6eb09ba896c98fd402851af09629d5351",
+      "orderedParents": [
+        "00542530bfebad8ad7646724f64720adda8d1b49",
+        "874605e43531c9aa230ee16851f8107a8e0d9cec"
+      ],
+      "orderedParentTrees": [
+        "994b337e8b316cec31adc8bf4d5aaaaded299f7a",
+        "cafc358fd7b60812070cf9a465d7de38b88487c8"
+      ]
+    },
+    "r16PreMaster": {
+      "commit": "a560c63cbe72736efe4e1d5c3ecfac25d04f68d2",
+      "tree": "36528454016fcaf71e63c75e751864e3305827da",
+      "orderedParents": [
+        "30cd9b97eeebd30cb209bdb9798c38b415c9a0b4"
+      ],
+      "orderedParentTrees": [
+        "06aac4b6eb09ba896c98fd402851af09629d5351"
+      ]
+    },
+    "r16FrozenBeforeLatestMaster": {
+      "commit": "5956637cf088429364307c6816976d676bbb5092",
+      "tree": "8a1d67957b5e6a8e946d38d68da6d529512191fe",
+      "orderedParents": [
+        "a0786f2eee16770632a2a947f65db64e60dd9820"
+      ],
+      "orderedParentTrees": [
+        "88f3caba68a192a159879e5f7dd2092f7cec50bc"
+      ]
+    },
+    "canonicalFleetMaster": {
+      "commit": "cd21e5830ccb894af5847ce113af8a7d6570748a",
+      "tree": "df856f1b9548c0a15b989de1539b26bfc2f0db0a",
+      "orderedParents": [
+        "193b90f9e65450b4317c573f4de2e43d4120c3ff",
+        "3a06045e882b59fcc9ed508849eceada2d8fce12"
+      ],
+      "orderedParentTrees": [
+        "fdf2447fe780aaff2587de4e3af4823c63e66cdc",
+        "73110ee640dbc00ba0a7e4c95af0be7f97eedea6"
+      ]
+    },
+    "r16MasterMerge": {
+      "commit": "c6bc94fe3afcdbc927641164fd2d42c621c0bb67",
+      "tree": "4d93e13f455033b44b6fd1db1269b9f751278360",
+      "orderedParents": [
+        "5956637cf088429364307c6816976d676bbb5092",
+        "cd21e5830ccb894af5847ce113af8a7d6570748a"
+      ],
+      "orderedParentTrees": [
+        "8a1d67957b5e6a8e946d38d68da6d529512191fe",
+        "df856f1b9548c0a15b989de1539b26bfc2f0db0a"
+      ]
+    },
+    "r16Final": {
+      "commit": "0daf7b003932b611a01e5a4b5c50848b96873ca1",
+      "tree": "087983c0fdf0f80e3c609de06ba580fa6454383f",
+      "orderedParents": [
+        "c6bc94fe3afcdbc927641164fd2d42c621c0bb67"
+      ],
+      "orderedParentTrees": [
+        "4d93e13f455033b44b6fd1db1269b9f751278360"
+      ]
+    },
+    "r17Wip": {
+      "commit": "c27b4d8ebfa6a0ff8c9a2f346ec441b0155b2f0d",
+      "tree": "88ec1ef98c853630edf01438902c1c62e749fc69",
+      "orderedParents": [
+        "0daf7b003932b611a01e5a4b5c50848b96873ca1"
+      ],
+      "orderedParentTrees": [
+        "087983c0fdf0f80e3c609de06ba580fa6454383f"
+      ]
+    },
+    "r17CanonicalMaster": {
+      "commit": "5b7f79acd81f2855e1cc0e80d03ae358b1b643fb",
+      "tree": "37c004e57714fad7d8bf4769d7b09cc271204e20",
+      "orderedParents": [
+        "87bcb03b8232c249f20a6f8fbd0b59b9a124d3ac"
+      ],
+      "orderedParentTrees": [
+        "3a44ec3cd003837da1fe87bbc6f73d1514458285"
+      ]
+    },
+    "r17MasterMerge": {
+      "commit": "d6e044cfe9fec75737e6a74ff28daa09c1cc4f29",
+      "tree": "f0957cb9148bf3fa153a340632ef6d9472cf1754",
+      "orderedParents": [
+        "c27b4d8ebfa6a0ff8c9a2f346ec441b0155b2f0d",
+        "5b7f79acd81f2855e1cc0e80d03ae358b1b643fb"
+      ],
+      "orderedParentTrees": [
+        "88ec1ef98c853630edf01438902c1c62e749fc69",
+        "37c004e57714fad7d8bf4769d7b09cc271204e20"
+      ]
+    },
+    "r17ManifestFreeze": {
+      "commit": "7e378c3700f3c73fb621e8a77451ae5325d69db6",
+      "tree": "fa689245a5b2d1773ae8ae055ca84b0cb9de4bb6",
+      "orderedParents": [
+        "d6e044cfe9fec75737e6a74ff28daa09c1cc4f29"
+      ],
+      "orderedParentTrees": [
+        "f0957cb9148bf3fa153a340632ef6d9472cf1754"
+      ]
+    },
+    "r17Final": {
+      "commit": "868265b3044c9d59753f9c01b446a4e933a08629",
+      "tree": "f1c018862729f3ba6d6893b211eb459a74ab7309",
+      "orderedParents": [
+        "7e378c3700f3c73fb621e8a77451ae5325d69db6"
+      ],
+      "orderedParentTrees": [
+        "fa689245a5b2d1773ae8ae055ca84b0cb9de4bb6"
+      ]
+    },
+    "r18Wip": {
+      "commit": "4f2bde6b00bedca6f1369793f09cc64cd1d9a2cd",
+      "tree": "b014e48a65365862659ea730d810e7f6b534f55c",
+      "orderedParents": [
+        "868265b3044c9d59753f9c01b446a4e933a08629"
+      ],
+      "orderedParentTrees": [
+        "f1c018862729f3ba6d6893b211eb459a74ab7309"
+      ]
+    },
+    "r18Final": {
+      "commit": "cfb39bbb1da4476d241cc734a1ce007db168c274",
+      "tree": "b902c7fc4bfcfe0da124e4cd550fff0dcd267b3e",
+      "orderedParents": [
+        "4f2bde6b00bedca6f1369793f09cc64cd1d9a2cd"
+      ],
+      "orderedParentTrees": [
+        "b014e48a65365862659ea730d810e7f6b534f55c"
+      ]
+    },
+    "r19Wip": {
+      "commit": "4e59d74e5eacbee5e847dff2847481cd649bc837",
+      "tree": "e8b90708935b240edfb4af165c01c64c65665d3b",
+      "orderedParents": [
+        "cfb39bbb1da4476d241cc734a1ce007db168c274"
+      ],
+      "orderedParentTrees": [
+        "b902c7fc4bfcfe0da124e4cd550fff0dcd267b3e"
+      ]
+    }
+  },
+  "authority": {
+    "providerExecution": false,
+    "processSpawnResumeKill": false,
+    "containmentOrCanaryCredit": false,
+    "automaticGateState": "CLOSED",
+    "referenceExecutionBoundary": "NOT_INSTALLED",
+    "directInvocationImpossible": false,
+    "activationRequiresSeparateAdjudication": true
+  },
+  "validation": {
+    "universalProviderControl": {
+      "passed": 155,
+      "failed": 0,
+      "r19Added": 7
+    },
+    "providerCapacityGovernor": {
+      "passed": 37,
+      "failed": 0
+    },
+    "hosted": {
+      "requiredFresh": true,
+      "claimedGreen": false
+    },
+    "providerInvocation": false,
+    "activation": false
+  },
+  "subjectFiles": [
+    {
+      "path": ".github/workflows/provider-capacity-governor.yml",
+      "gitBlobOid": "0d7b29dd6f0634dd31aa1d3f54f4832adaa6ed51",
+      "sha256": "sha256:d3c7ce5bd9783dbf6c97144f6fa76adf8224466475fff1f4349bd617fce56a4b",
+      "bytes": 3233
+    },
+    {
+      "path": "README.md",
+      "gitBlobOid": "19b2f92a0c3a7f0901e8dc3ec40e96bc23c6cd7c",
+      "sha256": "sha256:c94700c74f26eba317db5ae81dcf3025287c3ac258e6172d83f8a8e855d51fd6",
+      "bytes": 4308
+    },
+    {
+      "path": "RECEIPTS.md",
+      "gitBlobOid": "97b328aa90bd2b98c45b8316e9890910e32db01e",
+      "sha256": "sha256:7bfe78ac6963f5c3594baec9fad395f853e99b884a06d9f2995b8606f968b2e6",
+      "bytes": 90688
+    },
+    {
+      "path": "RECONCILIATION.md",
+      "gitBlobOid": "2ca472ab40ca0c123191c542db83972157f265bb",
+      "sha256": "sha256:6e537defc56f9760e781ab7a706866853063f2744f2aa1c8b4d03cd1c6fda72d",
+      "bytes": 3773
+    },
+    {
+      "path": "RULINGS.md",
+      "gitBlobOid": "34520b7f75386ab2dba6948bb27d256d3b06c2c9",
+      "sha256": "sha256:3f1563a4f77cd679b017d79cc86fd521e55d2c77f1079b8d8b26993a843919e5",
+      "bytes": 84029
+    },
+    {
+      "path": "TRAPS.md",
+      "gitBlobOid": "afa258e7b7c507b25f4d1a7c34bda38080652dfb",
+      "sha256": "sha256:ad94fbe3b952870ef09718b51f0797d5c1ba25326becee836535258e1a906728",
+      "bytes": 158158
+    },
+    {
+      "path": "examples/provider-admission-snapshot-v1.json",
+      "gitBlobOid": "e52f458b0624fabe41c94929cf722f1b6a8d3047",
+      "sha256": "sha256:e6b1d902d6ac8101a64c3a98abbca16c45c93d667df79de2f974becb95a58141",
+      "bytes": 1469
+    },
+    {
+      "path": "examples/provider-usage-events-v1.jsonl",
+      "gitBlobOid": "7686eb251638e83418cd86b52979633c6b103b93",
+      "sha256": "sha256:9f32c4734ff40473c00b4e8f64c39ccee351459740fa4dcdfa86d293c5543969",
+      "bytes": 2254
+    },
+    {
+      "path": "manifests/universal-provider-control-reconciliation-r17.json",
+      "gitBlobOid": "b169505b2f952b226483f594273c224cb9435de5",
+      "sha256": "sha256:939f8222e82acef58af278cabf2a28e573accbf0d4a54ae60ddfe185f70d052f",
+      "bytes": 13028
+    },
+    {
+      "path": "manifests/universal-provider-control-reconciliation-r18.json",
+      "gitBlobOid": "b564475aeaa33f5130110d3fe76c7a7bc5baea04",
+      "sha256": "sha256:c0f6518cec14a259695930031df07bc2117b804b6be2cb937656f981ff4af489",
+      "bytes": 18655
+    },
+    {
+      "path": "requirements-provider-capacity-governor.lock.txt",
+      "gitBlobOid": "22ca9e3fc5c6eadd26000f47c297963da4c3a849",
+      "sha256": "sha256:01bb5b11588b8b9459700b65c3374b77a71c2eaae29f8bf3693974d2f1537bf1",
+      "bytes": 13714
+    },
+    {
+      "path": "requirements-provider-capacity-governor.txt",
+      "gitBlobOid": "d0cd80c01a281a6b97afee09466264774c44688c",
+      "sha256": "sha256:228314f5e6e5464e6fb85bfe42e9db5224ead14f0ae753121c153dc0ab7234cb",
+      "bytes": 185
+    },
+    {
+      "path": "schemas/provider-admission-snapshot-v1.schema.json",
+      "gitBlobOid": "4c29309a29f60736d294ceee143d837c744faa2b",
+      "sha256": "sha256:2a88c79365e7de29e109712d67f770990f73109845b3a61131f28e9db63eb8a9",
+      "bytes": 6680
+    },
+    {
+      "path": "schemas/provider-native-capacity-evidence-v1.schema.json",
+      "gitBlobOid": "9c80864627b60c4d217eed2a907fe51f37d28a30",
+      "sha256": "sha256:bf09454ce88e3c6d6131ffc009a8601c1ef149726f2e8b2f35e55be91276a96f",
+      "bytes": 4562
+    },
+    {
+      "path": "schemas/provider-usage-event-v1.schema.json",
+      "gitBlobOid": "5c90f178d904568136ee3bbb7feca6c5da2f6d25",
+      "sha256": "sha256:2c3c68d7b288cce18dbf46fa5a1ed37e57eb21a1e1beb9b9ffcf85cccf29271f",
+      "bytes": 6183
+    },
+    {
+      "path": "schemas/universal-broker-health-v1.schema.json",
+      "gitBlobOid": "98ad95fd6fb26f9b384b5c8c0f1ff205815e5426",
+      "sha256": "sha256:4e0475f4c24b78a1095b2e00efa516609e4278b214279217a4e6527b72a5002e",
+      "bytes": 928
+    },
+    {
+      "path": "schemas/universal-canary-success-receipt-v1.schema.json",
+      "gitBlobOid": "f6de362e1a062353ef0496be950325a1d5fac375",
+      "sha256": "sha256:6daa9bc402c859a492027cf483eaf7f35018a19f1ef824c66aaf6d91ee291d6d",
+      "bytes": 1789
+    },
+    {
+      "path": "schemas/universal-capacity-observation-v1.schema.json",
+      "gitBlobOid": "9039f80de643b521c32d08565d645f244545f740",
+      "sha256": "sha256:f8c2506c8654c0f7b143ca74fa68ddfdc7244cd5f74ddea4d39fa332ffc04fec",
+      "bytes": 1461
+    },
+    {
+      "path": "schemas/universal-control-request-v1.schema.json",
+      "gitBlobOid": "5226358fda674796b10341c703f9be55a180c00c",
+      "sha256": "sha256:207105080ce89a295b7e92b92956985e9099d99564d0813a2f01e6f0f219bde3",
+      "bytes": 7583
+    },
+    {
+      "path": "schemas/universal-demand-snapshot-v1.schema.json",
+      "gitBlobOid": "7382385f0ba455710e5b0ab6a839418a6864b5f5",
+      "sha256": "sha256:91f7bd4f3a9b477702d5d0b5e3a62e83b8ba280d712388e6d04995fc187a4bea",
+      "bytes": 1432
+    },
+    {
+      "path": "schemas/universal-evidence-capsule-request-v1.schema.json",
+      "gitBlobOid": "baa7b26b05744542ecfbe1c3ea60010b90bff91d",
+      "sha256": "sha256:9051d46a65cc7d52f35891c4ae50aa208427607dbd045cb3f54498556a5b162a",
+      "bytes": 1337
+    },
+    {
+      "path": "schemas/universal-evidence-capsule-v1.schema.json",
+      "gitBlobOid": "c6dd7dab540388f1ca8ebd774b2a188c02789ecb",
+      "sha256": "sha256:aa81a146014908f73dfa173d620b20f6baf94d6f18068a49a38f470aa9e61a41",
+      "bytes": 1297
+    },
+    {
+      "path": "schemas/universal-gate-transition-v1.schema.json",
+      "gitBlobOid": "79fd254926bf1ff118ba97b9863e1ce2e8269acd",
+      "sha256": "sha256:26188edfe7f9f4edfa3345178a4db194d31da2b9ebc313f71908c836bb949405",
+      "bytes": 3390
+    },
+    {
+      "path": "schemas/universal-launch-attestation-v1.schema.json",
+      "gitBlobOid": "299b893e6984664aaa3012d16e8784ab2e7432fd",
+      "sha256": "sha256:2d0df106d2d76954d22a1e09ed4f330c27a775d0625991cee1a81f3f2ebecc7b",
+      "bytes": 5734
+    },
+    {
+      "path": "schemas/universal-launcher-inventory-v1.schema.json",
+      "gitBlobOid": "a4e123b578bdcd9e747a0ef900776a76d07bed45",
+      "sha256": "sha256:308d59f2c9f4ddb1d9c53d2a11d9a04abcab2b1e2cfffa3014039c9eb67a4dde",
+      "bytes": 2613
+    },
+    {
+      "path": "schemas/universal-manual-canary-authorization-v1.schema.json",
+      "gitBlobOid": "706cb96fc133624b160bd63a653356baf390d6db",
+      "sha256": "sha256:da469a6c3720503afd8259e4b4cbabb70d77f0604c57d65e85bb0d826bf61d2c",
+      "bytes": 1207
+    },
+    {
+      "path": "schemas/universal-output-quality-receipt-v1.schema.json",
+      "gitBlobOid": "ba8cd7ca5a8e7bcfde184c8f0d4740ec269bd066",
+      "sha256": "sha256:d1a2a414ce9f36ef8ddcb6e33ff10676f248ec23cafb28057257dbda91f0c793",
+      "bytes": 2387
+    },
+    {
+      "path": "schemas/universal-prior-idle-receipt-v1.schema.json",
+      "gitBlobOid": "ec13e6a331755a29e8161ce0d3460b093fa92510",
+      "sha256": "sha256:a738a171b01b5e96a1eb3f0c4ebe54fe21ec2965d4a0bb964e15c27f49ee53c2",
+      "bytes": 1991
+    },
+    {
+      "path": "schemas/universal-process-observation-v1.schema.json",
+      "gitBlobOid": "cfcae139fdbbc994a4200dbbabfc5761f9c9b1b9",
+      "sha256": "sha256:e1aa92c433eaf745052108d124e45cf23c333c17246fc3fc9709a2a48ff170a7",
+      "bytes": 3905
+    },
+    {
+      "path": "schemas/universal-process-tree-termination-receipt-v1.schema.json",
+      "gitBlobOid": "958db0e260ee675efad9e2369b42b60d13f3815a",
+      "sha256": "sha256:7a97112d2a95c045f690c70f6c34da6f8b9421ab291688eca70ce860ca3a0e46",
+      "bytes": 1711
+    },
+    {
+      "path": "schemas/universal-project-profile-v1.schema.json",
+      "gitBlobOid": "85d4fef6c72f71c6bee8befc4bb83cd37ec39a0e",
+      "sha256": "sha256:1d66976aa6abdf509078ab4ed53298606973660b4175b9ae4abfc82b79c1077b",
+      "bytes": 9079
+    },
+    {
+      "path": "schemas/universal-provider-request-permit-v1.schema.json",
+      "gitBlobOid": "9c5ddc90f04cabdbd4a855e4ed9eefe45573e1a7",
+      "sha256": "sha256:078a3418bccda41ae8566b61f66ae319e4855992cf6c964c9453d7851635d9e0",
+      "bytes": 1963
+    },
+    {
+      "path": "schemas/universal-provider-usage-checkpoint-v1.schema.json",
+      "gitBlobOid": "625075a51682184ac437844003b5a573a8bc7153",
+      "sha256": "sha256:a9ab5a812b4f790dd72bf2c9e8304aae681cc879c8bdbf8281df59477f8d5fbc",
+      "bytes": 2252
+    },
+    {
+      "path": "schemas/universal-quality-equivalence-receipt-v1.schema.json",
+      "gitBlobOid": "833634bb9e2f2e71e28c3af8d22ad246af878a02",
+      "sha256": "sha256:d97a87476ca992d19f0b04ea53200d31ba3c4fbbb93206001ce96a99650049cf",
+      "bytes": 1344
+    },
+    {
+      "path": "schemas/universal-stage-proof-v1.schema.json",
+      "gitBlobOid": "e6e214ba10f9f9f86342d4355bb639b1941a9b4e",
+      "sha256": "sha256:67d690150aede09fd64e9e9f3ee135a570dd305ac4b0e1a423be4434d5cf7eca",
+      "bytes": 1668
+    },
+    {
+      "path": "schemas/universal-terminal-request-permit-v1.schema.json",
+      "gitBlobOid": "72a1f8c09331b1d98d66147a5a409a5d4d299d49",
+      "sha256": "sha256:ee2090d30466626fb692e93739aed0131e8067575cf576b23a8b56dc63245a49",
+      "bytes": 1477
+    },
+    {
+      "path": "schemas/universal-wrapper-boundary-certification-v1.schema.json",
+      "gitBlobOid": "aa649a50c3a189be802cf9373f8b35267cab7989",
+      "sha256": "sha256:16504d84f328c798b31d68ffdc8da0767f01831b49dab7a787f294af56fb6045",
+      "bytes": 2080
+    },
+    {
+      "path": "specs/adobe-ingester.md",
+      "gitBlobOid": "f91bbd6be126dc1513c299069677b986b90cd716",
+      "sha256": "sha256:2221ec9696aec68cde4b3095eb7491c819c37b8709b347d64e6dae47c863b890",
+      "bytes": 11966
+    },
+    {
+      "path": "specs/adversarialllm.md",
+      "gitBlobOid": "33fe9c7fb7cc31b1f172b9216475fef5fe97aaad",
+      "sha256": "sha256:0d5758fc43094a9029491852faee190c8b34ec28d3fb14c561f82b87137ed99f",
+      "bytes": 12264
+    },
+    {
+      "path": "specs/agent-bridge.md",
+      "gitBlobOid": "b2070f78be89aa21cf2e6e6e270b03851bb0d029",
+      "sha256": "sha256:f0273af87737a2e0d43a1cb93f7a7d6e07ef126720650cdb4cbb26eb3690b8f2",
+      "bytes": 25409
+    },
+    {
+      "path": "specs/airmypc.md",
+      "gitBlobOid": "f173f47ca2c045fe24b6ec9383614585d10775d8",
+      "sha256": "sha256:64938d756d71e0dff45ddf1aa631511f66bece3ea83ad793845cd232bbd3ea78",
+      "bytes": 27990
+    },
+    {
+      "path": "specs/cloudvore.md",
+      "gitBlobOid": "6b76ddf037f36dc9fb9e513dc139b595c4b8ddd8",
+      "sha256": "sha256:4c97c871ef6a8f4d35deb5bc78ceccdde8db35ad2bb7d1647237ab817af84b13",
+      "bytes": 23436
+    },
+    {
+      "path": "specs/conjugal.md",
+      "gitBlobOid": "ffca347d90689766a3418a65a0f12e464bfdfe78",
+      "sha256": "sha256:21ceff9723877f8409af47651eeacbe5be4ea8b813e515af92aa7abce4f86d29",
+      "bytes": 17556
+    },
+    {
+      "path": "specs/dng-auto-processor.md",
+      "gitBlobOid": "5ac014b835800bb4537ccdd03a06bc335f9bf660",
+      "sha256": "sha256:0c311ccf1499fd5a46aaec4ad42279c66503bf263b1b2eeed28726461c4a2a26",
+      "bytes": 25881
+    },
+    {
+      "path": "specs/fleet-provider-capacity-governor.md",
+      "gitBlobOid": "ce76474b469a41bce60c2332ad6efdc6f08aed0c",
+      "sha256": "sha256:601430238d79d273d7589a65546b6a24c56b62475ec1dc92c2edab16bbb6810c",
+      "bytes": 22332
+    },
+    {
+      "path": "specs/fleet-universal-provider-control-reconciliation.md",
+      "gitBlobOid": "15f48de8af2336185991cb399299630f1016a536",
+      "sha256": "sha256:0f1d25775319612c75e2cde2385cb362c7c705fbe25d81f67f06920efc537722",
+      "bytes": 32858
+    },
+    {
+      "path": "specs/mlv-app.md",
+      "gitBlobOid": "858b513e4e9e17eef1cd6864a351ee4905940f8b",
+      "sha256": "sha256:8dfd9dbb3cf31bfae1f036f444c0ce59494522de373276efc6f4d86167f97f40",
+      "bytes": 19624
+    },
+    {
+      "path": "specs/provider-model-benchmarking.md",
+      "gitBlobOid": "aa75b091da79665aa307d71ef140f915cc5e0bc0",
+      "sha256": "sha256:9f56b8c45698bf6d524396b5172e0e178483ba44036c1b522eb1fc0c8360b7e2",
+      "bytes": 22007
+    },
+    {
+      "path": "specs/salesforce-tools.md",
+      "gitBlobOid": "302be516c652d3185d299e3b66ed9ba5abc8b3d3",
+      "sha256": "sha256:380c9a13221042d104c0a5b768dfd28570dcd6a6b92fc8538227dadce10094fd",
+      "bytes": 1652
+    },
+    {
+      "path": "tests/test_provider_capacity_governor.py",
+      "gitBlobOid": "22128dc6b640ae140e5b2e3695609323966de0fc",
+      "sha256": "sha256:b40cfe7fbaaa15bfe7f08b60721257909447bb9b0e8b3683d88bfb24ee4094dd",
+      "bytes": 37316
+    },
+    {
+      "path": "tests/test_universal_provider_control.py",
+      "gitBlobOid": "c37a37af75db8f104a33357ab24213834353ba1e",
+      "sha256": "sha256:77d206cb6505fa6122f74633bcbfda3eb9e832a078c0949aec314a4bf0e3f187",
+      "bytes": 235768
+    },
+    {
+      "path": "tools/check_universal_manifest.py",
+      "gitBlobOid": "83a88ee04343a5c53bd9a1eed6960695febfb5b3",
+      "sha256": "sha256:e5b26ec925f9664fb9636a2e5f3b8e42490bafd8db0c4744e3ebb1ea6d6d20b5",
+      "bytes": 9441
+    },
+    {
+      "path": "tools/provider_capacity_governor.py",
+      "gitBlobOid": "e765bf5c2892eb958dae819af6e000b64ef7fc03",
+      "sha256": "sha256:eddecc5c6dc66c04f9949fccc911df75b0de58b615c29f73da8c8c9535130266",
+      "bytes": 36346
+    },
+    {
+      "path": "tools/universal_provider_control.py",
+      "gitBlobOid": "ab200e5d3971be13a0f1cb53839bab327ad65d54",
+      "sha256": "sha256:816aba386546b2971751a83b98101758d3b11c3a3734749b63250e4fcae875c6",
+      "bytes": 252034
+    }
+  ],
+  "manifestSelf": {
+    "path": "manifests/universal-provider-control-reconciliation-r19.json",
+    "canonicalGitBlobSha256": "sha256:4b6159651c4b5eeca11f6a0ed04a8e8bcc0d1013ae05870692cfe3dadd3e98c6",
+    "bytes": 19571,
+    "rule": "SHA-256 of this exact Git blob after replacing only the 64 hex digits in canonicalGitBlobSha256 with zeroes"
+  }
+}
