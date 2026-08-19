@@ -190,7 +190,7 @@ This distinction binds the project-published default ref
 `6c9e54d7962711c7a90828159c172b130ad7d594`. The project-owned machine-readable receipt at
 `adversarialllm/docs/reports/softwarefactory-r26-disposition-20260819.json` is exact Git blob
 `a337a9bea93daf94e619653edb8b5241ee29b6af`, 3,471 bytes, SHA-256
-`0e34d895cb84dd7a1e74f3f527a3a832bdbb859e87a27ba2b831ad94bc4532da`. It records
+`33a784a39e9451db68acb96d26b550fd6a8c4aea140b78ac66fde47724e16b7d`. It records
 `DISTINGUISH`, `adopted=false`, `automaticLaunchGate=CLOSED`, and zero provider, process,
 scheduler, authentication, gate-opening, activation, adoption, or host-hard-close authority.
 
@@ -202,10 +202,10 @@ The exact project-candidate binding uses base commit
 
 | Artifact | Git blob | Bytes | SHA-256 |
 | --- | --- | ---: | --- |
-| `adversarialllm/docs/reports/softwarefactory-r26-disposition-20260819.json` | `a337a9bea93daf94e619653edb8b5241ee29b6af` | 3,471 | `0e34d895cb84dd7a1e74f3f527a3a832bdbb859e87a27ba2b831ad94bc4532da` |
-| `adversarialllm/docs/reports/softwarefactory-r26-disposition-20260819.md` | `a7baf849dca2dea2f56874b3393afead7bd5e6ba` | 3,488 | `666fdc6a9632481edf6e9edd18c4e69d70181bcffa6fbada57ae0b6e1d427708` |
-| `scripts/verify-fleet-doctrine-disposition.ps1` | `fbc60a92704f8fe9495933953b4ac1a5c332db5d` | 15,183 | `706c9c38b65e0b432f192441c15c027c391636c9617f91d31dd4da11d832beec` |
-| `scripts/tests/fleet-doctrine-disposition.tests.ps1` | `9cb528a7967e11164d8e5378b63a6022e70b077c` | 6,404 | `bf8cde03b21acb390b3624c4f49c70c247fc0d6b28d01f4515032f43ffca406f` |
+| `adversarialllm/docs/reports/softwarefactory-r26-disposition-20260819.json` | `a337a9bea93daf94e619653edb8b5241ee29b6af` | 3,471 | `33a784a39e9451db68acb96d26b550fd6a8c4aea140b78ac66fde47724e16b7d` |
+| `adversarialllm/docs/reports/softwarefactory-r26-disposition-20260819.md` | `a7baf849dca2dea2f56874b3393afead7bd5e6ba` | 3,488 | `d0b5f941b93bca18a4c6906900004612daa8da9077daaa6f635fc0f45e10bcd7` |
+| `scripts/verify-fleet-doctrine-disposition.ps1` | `fbc60a92704f8fe9495933953b4ac1a5c332db5d` | 15,183 | `0155c19228638a02c254d6811c0f7402aa996fbfbb0d2eee22033c5e4aff1c35` |
+| `scripts/tests/fleet-doctrine-disposition.tests.ps1` | `9cb528a7967e11164d8e5378b63a6022e70b077c` | 6,404 | `cc7649c9a59760406dfe74c7f23d7ec2ec66ace5c9ec22c7ec912ff97e380ee5` |
 
 The companion report, read-only exact-object verifier, and its hostile controls remain project-owned
 evidence. Their publication does not transfer proof from another project, install a supervisor, open a
