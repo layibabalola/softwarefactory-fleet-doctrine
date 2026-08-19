@@ -1,4 +1,5 @@
 import contextlib
+import hashlib
 import importlib.util
 import io
 import json
@@ -207,6 +208,23 @@ class LauncherCandidateClassifierTests(unittest.TestCase):
              contextlib.redirect_stderr(stderr):
             self.assertEqual(MODULE.main(), 2)
         self.assertEqual(stderr.getvalue(), "ERROR classify_launcher_candidates: INPUT_REFUSED\n")
+
+    def test_published_conjugal_manifest_is_complete_and_exact(self):
+        path = MODULE_PATH.parents[1] / "findings" / "conjugal-launcher-review-5bff7d44.json"
+        data = path.read_bytes()
+        canonical = data.rstrip(b"\n")
+        self.assertEqual(len(canonical), 19069)
+        self.assertEqual(
+            hashlib.sha256(canonical).hexdigest(),
+            "ea01fb26c539691e4ad6e1b432a0b9542c4e6552cb1cda92f9c25489e82ece35",
+        )
+        manifest = json.loads(canonical)
+        self.assertEqual(manifest["subjectCommit"], "5bff7d4498b1b14c1b3488fef849d5b28a06bb89")
+        self.assertEqual(manifest["subjectTree"], "d27dbe84af4076ea6e38a5152435f41d68a73cba")
+        counts = {name: 0 for name in MODULE.REVIEW_DISPOSITIONS}
+        for entry in manifest["entries"]:
+            counts[entry["disposition"]] += 1
+        self.assertEqual(counts, {"LAUNCHER": 23, "NON_LAUNCHER": 95, "UNKNOWN": 0})
 
 
 if __name__ == "__main__":
