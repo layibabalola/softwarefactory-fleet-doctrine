@@ -183,6 +183,31 @@ class LauncherCandidateClassifierTests(unittest.TestCase):
         self.assertEqual(result["pendingCount"], 1)
         self.assertEqual(result["status"], "REVIEW_INCOMPLETE_ZERO_AUTHORITY")
 
+    def test_review_refuses_array_or_object_disposition_without_traceback(self):
+        report = self._frozen(self._classify({"launch.sh": "exec claude --print\n"}))
+        row = report["candidates"][0]
+        for disposition in (["LAUNCHER"], {"value": "LAUNCHER"}):
+            review = {
+                "schema": MODULE.REVIEW_SCHEMA,
+                "subjectCommit": report["subjectCommit"],
+                "subjectTree": report["subjectTree"],
+                "entries": [{"path": row["path"], "sha256": row["sha256"], "disposition": disposition}],
+            }
+            with self.subTest(disposition=disposition):
+                with self.assertRaisesRegex(ValueError, "^REVIEW_DISPOSITION$"):
+                    MODULE.reconcile_review(report, review)
+                with tempfile.TemporaryDirectory() as temporary:
+                    manifest = Path(temporary) / "review.json"
+                    manifest.write_text(json.dumps(review), encoding="utf-8")
+                    stderr = io.StringIO()
+                    with mock.patch.object(
+                        sys,
+                        "argv",
+                        ["classifier", ".", "--review-manifest", str(manifest)],
+                    ), mock.patch.object(MODULE, "classify_tree", return_value=report), contextlib.redirect_stderr(stderr):
+                        self.assertEqual(MODULE.main(), 2)
+                    self.assertEqual(stderr.getvalue(), "ERROR classify_launcher_candidates: INPUT_REFUSED\n")
+
     def test_review_template_binds_every_candidate_as_unknown(self):
         report = self._frozen(self._classify({"b.py": "# claude\n", "a.sh": "exec kimi --print\n"}))
         template = MODULE.review_template(report)

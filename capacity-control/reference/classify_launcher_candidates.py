@@ -332,7 +332,7 @@ def reconcile_review(report: dict[str, object], review: dict[str, object]) -> di
         disposition = entry.get("disposition")
         if not isinstance(path, str) or path in reviewed:
             raise ValueError("REVIEW_DUPLICATE_PATH")
-        if disposition not in REVIEW_DISPOSITIONS:
+        if not isinstance(disposition, str) or disposition not in REVIEW_DISPOSITIONS:
             raise ValueError("REVIEW_DISPOSITION")
         if path not in candidate_by_path:
             raise ValueError("REVIEW_EXTRA_PATH")
