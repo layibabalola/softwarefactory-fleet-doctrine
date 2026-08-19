@@ -52,6 +52,20 @@ class LauncherCandidateClassifierTests(unittest.TestCase):
         )
         self.assertEqual([row["path"] for row in first["candidates"]], ["a.py", "b.py"])
 
+    def test_oversize_source_is_refused_and_counted_unresolved(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            (root / "large.ps1").write_bytes(b"# claude\n" + b"x" * MODULE.MAX_FILE_BYTES)
+            result = MODULE.classify_tree(root)
+        self.assertEqual(result["candidateCount"], 0)
+        self.assertEqual(result["unresolvedCount"], 1)
+        self.assertEqual(result["refused"], [{"path": "large.ps1", "reason": "SOURCE_TOO_LARGE"}])
+
+    def test_even_all_direct_candidates_remain_zero_authority(self):
+        result = self._classify({"launch.sh": "exec claude --print\n"})
+        self.assertEqual(result["classificationCounts"], {"DIRECT_STATIC": 1})
+        self.assertEqual(result["status"], "INCOMPLETE_ZERO_AUTHORITY")
+
 
 if __name__ == "__main__":
     unittest.main()
