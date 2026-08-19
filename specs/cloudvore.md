@@ -269,3 +269,40 @@ Cloudvore's earlier local 39/39 candidate exercise—ten simultaneous OS-process
 provider normalizers, session-limit classification, release-drift refusal, and five guard-removal
 mutations—is supplementary design evidence only. It is not installed, not authoritative, and does
 not satisfy the production-path or dated-receipt requirements above.
+
+### Project-owned universal SHADOW proposal (2026-08-18)
+
+Cloudvore remains **HARD_CLOSED** and retains its existing
+**DISTINGUISH(224a6705d81dfbc670313cdcef4d825216f2b380,
+PENDING_LOCAL_ADAPTER_AND_DRILLS)** disposition. Its additive R14 disposition is:
+
+**DISTINGUISH(874605e43531c9aa230ee16851f8107a8e0d9cec,
+PENDING_LOCAL_ADAPTER_AND_DRILLS,
+Cloudvore@b47c689d5c1db211c7da7f9155eea54918af7fa2:knowledge/provider-capacity-governor-shadow-proposal-receipt-2026-08-18.md)**
+
+The referenced product proposal is commit `b47c689d5c1db211c7da7f9155eea54918af7fa2`,
+tree `606543330f8416ef33f35af9cb955654c2a2cf63`, on Cloudvore PR #1. It is immutable proposal evidence,
+not installation, SHADOW execution, project adoption, fleet adoption, or launch authority.
+This evidence binding supersedes the product tuple recorded by fleet merge
+`8316f51b6a2b99c8674807678458639ad7c7b16a`, tree
+`b9a1c31d05ae215799005525d1b239b3e017a267`; it does not supersede or open any runtime,
+adoption, lifecycle, or provider gate.
+
+| Product-owned proposal artifact | Git blob | SHA-256 | Bytes |
+|---|---|---|---:|
+| `tools/provider-capacity-governor-shadow/provenance/HUB-DESIGN-provider-capacity-governor-shadow-adoption-0818.md` | `e8e80d9cb304158cce220ee59fd2211522c1675d` | `424A56C8700813C06BF31AC3B5B8C34B323F1EF6B1F38685E51BB89764957887` | 17,321 |
+| `knowledge/provider-capacity-governor-shadow-profile-v1.json` | `01874af8fd0705fb5ab9caec0f57f192f8fd80b1` | `E729AE6FA60CB5D5D9C41894D94C256911132FED0EFF25B330018397D6FB0940` | 8,048 |
+| `knowledge/provider-capacity-governor-shadow-profile-v1.schema.json` | `cbbe8baf2a54a2c9fffb2f4bc9c255d81a329717` | `7765C0006E24954E1C111FCF882182D8FC7841EE4D5D65B6159D8A2F661CDA56` | 8,855 |
+| `tools/provider-capacity-governor-shadow.tests.py` | `1f83a6689a777115050cd2437cf01c78ea3a64ac` | `BF7F494E8D77B448E18083E1990673B824662AC0FE7C9E2D153D936A592FA1F4` | 18,324 |
+| `knowledge/provider-capacity-governor-shadow-proposal-manifest-v1.json` | `abc8d0e831531bf593bcc3c15aa33e55f6aa625f` | `FA306B41658BDD18A65F2CA30EE3AE20A106847CA0C379B405709A81D8A8CB84` | 2,304 |
+| `knowledge/provider-capacity-governor-shadow-proposal-receipt-2026-08-18.md` | `8ac15385ba280bb89de8209ed1797f1aac5eae7e` | `380BD1D899D02FC5D1C29F8E88400BAC65456E63782FBE599E564345A53C6FE1` | 5,127 |
+
+The exact source preimage intentionally preserves two Markdown hard-break spaces and its final
+blank line; its byte/hash binding is authoritative.
+
+The accepted usage-event digest is correct, has 64 hexadecimal characters, and matches its Git
+object. Only the `README.md` and `metrics/README.md` ruling tuples mismatch accepted object bytes.
+The strict Draft 2020-12 profile and 12 focused negative controls exact-pin every declared tuple,
+accepted artifact, adapter/router field, and no-authority member while preserving `score`, `grade`,
+`doctrine_write`, and `publication` as non-authoritative. All Anthropic, OpenAI, Moonshot, and xAI
+lanes remain `PENDING_LOCAL_SUPERVISOR_AND_DRILLS`; no evidence gate or reset advances activation.

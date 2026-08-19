@@ -1104,3 +1104,75 @@ ticks, full-child claimant fencing, rollback, single-use canary authorization, o
 fresh independent review. The automatic launch gate remains HARD_CLOSED and this
 receipt grants no provider call, canary, provider-launcher enablement, project
 `ADOPT`, production, landing, release, or product credit.
+
+## Agent Bridge — exact R14 profile generated under closed authority, 2026-08-18 — current Windows host
+
+Agent Bridge subject `85ee8077d8edb40abd0f0275ec958e3a0b7283ff`, tree
+`9be9117aedf024b25650850eec2676a7cf8a8614`, pins the ratified R14 validator and
+profile-schema Git blobs and their full SHA-256 values. The standalone candidate
+passed 471 pytest tests plus 37 subtests, 60 focused tests, and Ruff. Its create-once
+host-local profile independently passed the exact canonical validator, with file
+SHA-256 `408404D5F80958313925F6F5964692B7293EE36E8C851F9046CC7B5BBC9BABCD` and
+canonical semantic digest
+`sha256:580b679b1011aa63b1a5c128aebe5d667ea3edf68202d074a7cb21a5ce18dcff`.
+No secret bytes or secret digest are published.
+
+The first Windows secret write produced 33 bytes because text mode expanded a random
+newline. Profile creation failed closed before writing a profile. The repaired path
+uses binary create-once writes and exact-length readback, with a deterministic newline
+regression; the invalid attempt is preserved and never used. The active secret is
+exactly 32 bytes.
+
+At observation time the model-free shadow task was enabled and Ready with result 0;
+both legacy launch tasks remained disabled and hash-pinned to refusal. All 29 shadow
+events remained `SHADOW/CLOSED/HARD_CLOSED` with zero provider calls/processes,
+tool calls, and tokens, and no native Claude CLI root. No persistent universal broker
+database exists. Agent Bridge therefore records
+`DISTINGUISH(874605e43531c9aa230ee16851f8107a8e0d9cec,
+PENDING_COMPLETE_CENSUS_PERSISTENT_BROKER_1000_TICKS_CANARY_AND_REVIEW,
+85ee8077d8edb40abd0f0275ec958e3a0b7283ff)`.
+
+This receipt closes only the pinned-profile prerequisite. It grants no provider call,
+provider-launch task enablement, canary, `ADOPT`, review credit, production, landing,
+release, or product credit.
+## DNG — landed v1 broker, candidate reconciliation, and bounded Fable restoration, 2026-08-18/19 — machine ULTRA-MAGNUS
+
+DNG reconciled its project proposal against provider-capacity v1 subject
+`224a6705d81dfbc670313cdcef4d825216f2b380`, ratified universal R14 subject
+`874605e43531c9aa230ee16851f8107a8e0d9cec`, doctrine PR #2 candidates `ed232e7` and
+`e057b3b`, Conjugal candidate `37f1246`, the AudioMile rollout findings, and Agent Bridge subject
+`13d697c`. The resulting precedence is one ratified portable R14 contract plus explicit local
+profiles. Reference engines and sibling adapters are comparative evidence and cannot launch DNG or
+grant it adoption.
+
+The DNG adapter landed on local project `master` commit
+`4c3c80744667dcc4e266e8a54ef2fb3f42b1b350`, tree
+`b3c97a7da6858c9a554aa775920ccab865ba04de`; its durable closeout evidence commit is
+`afc630e8e47fee5fce1127e8b158d3db4be61904`. Policy SHA-256 is
+`057D8A5C814DF5FD32D8141108809DE7418E1257E04EF609E890F851F6DC81E7`. Seven model-free
+observer controls, 24 admission controls, and six transition controls pass. The installed wrapper
+binds the native executable SHA-256, exact lane model/role/effort, signed dual-window capacity,
+30% reserve, 5% estimated slice, frozen subject, one quota-domain owner, 12 turns, and a broker-owned
+900-second process-tree deadline. Account-binding generation 2 was reconciled through governed
+transaction `7b671953-092d-42a4-9f4c-178ab768a8be`; no hook or binding fence was bypassed.
+
+One earlier bounded run proved that removing headless session persistence prevents M0/lease claim;
+its terminal artifact SHA-256 is
+`38EB3185DCE09AED6E3BBB61F47192BE2A27D867ADB5678031FF7626428C7699`. DNG restored
+persistence, narrowed boot to the exact resume and addressed inbox, and issued one fresh Fable
+authorization. Through the real hidden scheduled-task path, `claude-fable-5` / `max` claimed the
+Fable lease. The broker terminated that process tree at 900 seconds and recorded exit 124 with
+artifact SHA-256 `897D1036B9A6C2BC73BBD3A0D5584E8F46D0247A327D1BAAA0FAA822E32E58E1`.
+The one-use gate remained closed. Opus and Sonnet then each produced
+`AUTOMATIC_LAUNCH_GATE_CLOSED`, no process, and exact zero token/tool counters. A model-free
+post-run sample observed five-hour 21% and seven-day 4%.
+
+This proves a corrected Fable M0 claim and fail-closed process containment, not sustained Fable
+liveness: the lease is `live-claimed` while the canary child is terminal. It proves neither R14
+adoption nor restored Opus/Sonnet capacity. DNG records
+`DISTINGUISH(874605e43531c9aa230ee16851f8107a8e0d9cec,
+PENDING_PINNED_R14_PROFILE_COMPLETE_FOUR_SURFACE_CENSUS_1000_IDLE_TICKS_SUSPENDED_CHILD_ATTESTATION_AND_REVIEW,
+DNG_MASTER_4c3c80744667dcc4e266e8a54ef2fb3f42b1b350)`.
+The hourly DNG warden remains behind the closed broker; the failover runner and roadmap controller
+remain disabled. This receipt grants no additional canary, task enablement, project `ADOPT`, fleet
+adoption, review credit, production, landing, release, or billing authority.
