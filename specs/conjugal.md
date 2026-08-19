@@ -226,3 +226,29 @@ Until those exact local receipts exist, Claude capacity returning grants no Conj
 adoption authority. Codex, Kimi, Grok, and future providers enter through the same quota-domain,
 bounded-slice, evidence-capsule, and non-regression contract; provider availability never supplies
 role or independence credit.
+
+## 2026-08-18 delta — universal provider-control reconciliation R14 disposition
+
+**Rung: owner-directed dispatcher. Disposition:**
+`DISTINGUISH(874605e43531c9aa230ee16851f8107a8e0d9cec,
+PENDING_LOCAL_SUPERVISOR_COMPLETE_CENSUS_SHADOW_AND_CONTAINMENT)`.
+
+Conjugal accepts the R14 portable law as canonical doctrine through ruling commit
+`88c25551d7a350e191555e74ef82fcdff0d4a09a` and canonical merge
+`488cf0dc0c2c2ddd1ab024c6377e1fd6d61eef1d`. This project disposition is an
+adoption-status distinction, not a semantic fork and not an `ADOPT` claim. The accepted reference
+is deployment-inert and does not replace Conjugal's actual launcher boundary.
+
+The reviewed R14 subject is an ancestor of its adjudication commit. The separately reported
+expanded launch-envelope subject `8eee3e4576778a18f92a3aff922c7574904e3fc3` is not in that ancestry
+or in canonical Git custody. It remains adverse sibling evidence and must not be reconstructed from
+narrative or credited to R14 review. Any later expanded amendment requires one forward-only frozen
+descendant, a canonical Git-blob manifest, hosted checks, fresh exact-head doctrine/safety/mechanics
+review, and distinct adjudication. That future amendment cannot silently change this disposition.
+
+Conjugal remains `HARD_CLOSED`: its Fable and Opus scheduled roots are disabled and still point to
+the existing project dead-man gate rather than a pinned R14 supervisor. No complete four-surface
+launcher census, 1,000-tick deterministic idle proof, exact installed-byte profile, authenticated
+observer/health chain, full-child containment receipt, rollback receipt, or independently reviewed
+SHADOW/CONTAINMENT packet exists. Those missing local proofs, rather than provider availability,
+block a canary and project adoption.
