@@ -14,7 +14,7 @@ from typing import Any
 
 
 ROOT = Path(__file__).resolve().parents[1]
-MANIFEST = "manifests/universal-provider-control-reconciliation-r15.json"
+MANIFEST = "manifests/universal-provider-control-reconciliation-r16.json"
 SELF_PATTERN = re.compile(
     rb'("canonicalGitBlobSha256"\s*:\s*"sha256:)([0-9a-f]{64})(")'
 )
@@ -58,6 +58,60 @@ def _oid(treeish: str, path: str) -> str:
     return run.stdout.strip()
 
 
+def _commit_tuple(commit: str) -> tuple[str, list[str]]:
+    run = subprocess.run(
+        ["git", "show", "-s", "--format=%T%n%P", commit], cwd=ROOT,
+        check=False, capture_output=True, text=True, encoding="utf-8",
+    )
+    if run.returncode != 0:
+        raise ManifestError("RECONCILIATION_OBJECT_UNAVAILABLE")
+    lines = run.stdout.splitlines()
+    if len(lines) != 2 or re.fullmatch(r"[0-9a-f]{40,64}", lines[0]) is None:
+        raise ManifestError("RECONCILIATION_OBJECT_INVALID")
+    parents = lines[1].split() if lines[1] else []
+    if any(re.fullmatch(r"[0-9a-f]{40,64}", parent) is None for parent in parents):
+        raise ManifestError("RECONCILIATION_OBJECT_INVALID")
+    return lines[0], parents
+
+
+def verify_reconciliation(manifest: dict[str, Any], treeish: str = "HEAD") -> None:
+    """Verify the exact linear WIP and ordered canonical-master/R15 merge topology."""
+
+    reconciliation = manifest.get("reconciliation")
+    if not isinstance(reconciliation, dict):
+        raise ManifestError("RECONCILIATION_INVALID")
+    for name in ("r15Base", "r16PreMaster", "canonicalFleetMaster", "r16MasterMerge"):
+        record = reconciliation.get(name)
+        if not isinstance(record, dict) or set(record) != {
+            "commit", "tree", "orderedParents", "orderedParentTrees"
+        }:
+            raise ManifestError("RECONCILIATION_INVALID")
+        tree, parents = _commit_tuple(record["commit"])
+        if tree != record["tree"] or parents != record["orderedParents"]:
+            raise ManifestError("RECONCILIATION_COMMIT_MISMATCH")
+        if len(parents) != len(record["orderedParentTrees"]):
+            raise ManifestError("RECONCILIATION_PARENT_TREE_MISMATCH")
+        actual_parent_trees = [_commit_tuple(parent)[0] for parent in parents]
+        if actual_parent_trees != record["orderedParentTrees"]:
+            raise ManifestError("RECONCILIATION_PARENT_TREE_MISMATCH")
+    r15 = reconciliation["r15Base"]
+    pre_master = reconciliation["r16PreMaster"]
+    canonical = reconciliation["canonicalFleetMaster"]
+    merged = reconciliation["r16MasterMerge"]
+    if (
+        pre_master["orderedParents"] != [r15["commit"]]
+        or merged["orderedParents"] != [pre_master["commit"], canonical["commit"]]
+    ):
+        raise ManifestError("RECONCILIATION_ORDER_INVALID")
+    if treeish != ":":
+        run = subprocess.run(
+            ["git", "merge-base", "--is-ancestor", merged["commit"], treeish],
+            cwd=ROOT, check=False, capture_output=True,
+        )
+        if run.returncode != 0:
+            raise ManifestError("RECONCILIATION_NOT_ANCESTOR")
+
+
 def canonical_self_sha256(raw: bytes) -> str:
     """Return the zeroed-field self digest over canonical Git blob bytes only."""
 
@@ -77,6 +131,7 @@ def check(treeish: str) -> int:
         raise ManifestError("MANIFEST_INVALID") from exc
     if manifest.get("schema") != "fleet-universal-provider-control-candidate-manifest/v2":
         raise ManifestError("MANIFEST_SCHEMA_INVALID")
+    verify_reconciliation(manifest, treeish)
     subjects = manifest.get("subjectFiles")
     if not isinstance(subjects, list) or not subjects:
         raise ManifestError("MANIFEST_SUBJECTS_INVALID")

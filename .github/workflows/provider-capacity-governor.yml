@@ -25,6 +25,7 @@ on:
       - "manifests/universal-provider-control-reconciliation-r13.json"
       - "manifests/universal-provider-control-reconciliation-r14.json"
       - "manifests/universal-provider-control-reconciliation-r15.json"
+      - "manifests/universal-provider-control-reconciliation-r16.json"
       - "RECONCILIATION.md"
       - "tests/test_provider_capacity_governor.py"
       - "tests/test_universal_provider_control.py"
@@ -58,6 +59,7 @@ on:
       - "manifests/universal-provider-control-reconciliation-r13.json"
       - "manifests/universal-provider-control-reconciliation-r14.json"
       - "manifests/universal-provider-control-reconciliation-r15.json"
+      - "manifests/universal-provider-control-reconciliation-r16.json"
       - "RECONCILIATION.md"
       - "tests/test_provider_capacity_governor.py"
       - "tests/test_universal_provider_control.py"
@@ -97,6 +99,10 @@ jobs:
           $requiredSubjects = @(
             '8eee3e4576778a18f92a3aff922c7574904e3fc3^{commit}',
             '874605e43531c9aa230ee16851f8107a8e0d9cec^{commit}',
+            '30cd9b97eeebd30cb209bdb9798c38b415c9a0b4^{commit}',
+            'a560c63cbe72736efe4e1d5c3ecfac25d04f68d2^{commit}',
+            '24c9f5d142663940fb1370818982af8662afb001^{commit}',
+            'a0786f2eee16770632a2a947f65db64e60dd9820^{commit}',
             'ecc8f076c4f0273f92c8d9f841bceff3684233ca:tools/universal_provider_control.py'
           )
           foreach ($subject in $requiredSubjects) {

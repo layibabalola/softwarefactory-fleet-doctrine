@@ -327,3 +327,17 @@ contention, and successful-canary return to CONTAINMENT followed by one-use rece
 The 121-control universal suite and retained 37-control governor suite must pass on exact R15 bytes
 on Python 3.13 and 3.14 for Windows and Ubuntu. The candidate invokes no provider, grants no runtime
 authority, and the author remains recused from review, adjudication, merge, and activation.
+
+R16 preserves exact R15 merge `30cd9b97eeebd30cb209bdb9798c38b415c9a0b4`, freezes its linear
+provider-accounting implementation at `a560c63cbe72736efe4e1d5c3ecfac25d04f68d2`, then merges canonical
+fleet master `24c9f5d142663940fb1370818982af8662afb001` at ordered-parent merge
+`a0786f2eee16770632a2a947f65db64e60dd9820`. The merge retains every current project disposition.
+Twelve R16 hostile groups prove broker-persisted fresh/monotonic/one-use prior-idle receipts;
+profile-pinned canonical demand; pre-call, per-turn, context-peak, cumulative-token and terminal
+reserve accounting; cross-root durable claims that survive owner loss until authenticated recovery;
+immutable issued/expiry/capacity/watchdog bindings; typed HMAC quality and wrapper certifications;
+typed process-tree termination and output-quality reconciliation; a same-process broker permit CLI
+that cannot spawn a provider; completed usage across serial leases; monotonic termination that cannot
+mint canary success; canonical schema/HMAC/digest/epoch validation of stored canary receipts; and
+exact-key request-permit token ceilings. The candidate remains zero authority and makes no provider
+call; the author remains recused from review, adjudication, merge, and activation.

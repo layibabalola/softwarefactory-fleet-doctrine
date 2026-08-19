@@ -1,0 +1,293 @@
+{
+    "schema": "fleet-universal-provider-control-candidate-manifest/v2",
+    "status": "CANDIDATE_ZERO_AUTHORITY",
+    "subjectCoverage": "R16_DURABLE_DEMAND_ACCOUNTING_TERMINATION_AND_CANONICAL_DISPOSITIONS",
+    "reconciliation": {
+        "r15Base": {
+            "commit": "30cd9b97eeebd30cb209bdb9798c38b415c9a0b4",
+            "tree": "06aac4b6eb09ba896c98fd402851af09629d5351",
+            "orderedParents": [
+                "00542530bfebad8ad7646724f64720adda8d1b49",
+                "874605e43531c9aa230ee16851f8107a8e0d9cec"
+            ],
+            "orderedParentTrees": [
+                "994b337e8b316cec31adc8bf4d5aaaaded299f7a",
+                "cafc358fd7b60812070cf9a465d7de38b88487c8"
+            ]
+        },
+        "r16PreMaster": {
+            "commit": "a560c63cbe72736efe4e1d5c3ecfac25d04f68d2",
+            "tree": "36528454016fcaf71e63c75e751864e3305827da",
+            "orderedParents": [
+                "30cd9b97eeebd30cb209bdb9798c38b415c9a0b4"
+            ],
+            "orderedParentTrees": [
+                "06aac4b6eb09ba896c98fd402851af09629d5351"
+            ]
+        },
+        "canonicalFleetMaster": {
+            "commit": "24c9f5d142663940fb1370818982af8662afb001",
+            "tree": "8117b354b51c98e610d6c066171f828744015c98",
+            "orderedParents": [
+                "d1dedf5a36eb9ae2f2c8052eb7c24d6d204841cc",
+                "edca292792562689a9ad75ff429bcf8c8b9ea250"
+            ],
+            "orderedParentTrees": [
+                "cba93f2e29b2fc4b4ee34bcae2460c0a147d1b22",
+                "8117b354b51c98e610d6c066171f828744015c98"
+            ]
+        },
+        "r16MasterMerge": {
+            "commit": "a0786f2eee16770632a2a947f65db64e60dd9820",
+            "tree": "88f3caba68a192a159879e5f7dd2092f7cec50bc",
+            "orderedParents": [
+                "a560c63cbe72736efe4e1d5c3ecfac25d04f68d2",
+                "24c9f5d142663940fb1370818982af8662afb001"
+            ],
+            "orderedParentTrees": [
+                "36528454016fcaf71e63c75e751864e3305827da",
+                "8117b354b51c98e610d6c066171f828744015c98"
+            ]
+        }
+    },
+    "inputs": {
+        "issue": 4,
+        "scope": "BROKER_OWNED_DEMAND_DURABLE_QUOTA_PER_CALL_ACCOUNTING_TYPED_QUALITY_MONOTONIC_TERMINATION_CANONICAL_DISPOSITIONS"
+    },
+    "retainedProjectDispositions": {
+        "canonicalMaster": "24c9f5d142663940fb1370818982af8662afb001",
+        "paths": [
+            "specs/adobe-ingester.md",
+            "specs/adversarialllm.md",
+            "specs/agent-bridge.md",
+            "specs/conjugal.md",
+            "specs/dng-auto-processor.md"
+        ]
+    },
+    "validation": {
+        "universalHostileControls": {
+            "passed": 134,
+            "failed": 0,
+            "retainedR15": 121,
+            "r16Added": 13
+        },
+        "ratifiedGovernorControls": {
+            "passed": 37,
+            "failed": 0
+        },
+        "pythonCompile": "PASS",
+        "pythonVersions": [
+            "3.13",
+            "3.14"
+        ],
+        "workflowPlatforms": [
+            "windows-latest",
+            "ubuntu-latest"
+        ],
+        "hostedWorkflow": "FRESH_RECONCILED_R16_RUN_REQUIRED_BEFORE_ADJUDICATION",
+        "providerInvocation": false,
+        "deployment": false,
+        "automaticLaunchGate": "CLOSED_BY_CONTRACT"
+    },
+    "authorRecusal": {
+        "review": true,
+        "adjudication": true,
+        "merge": true,
+        "activation": true
+    },
+    "hashSemantics": "sha256 and byte counts are over canonical Git blob bytes addressed by gitBlobOid, never checkout bytes",
+    "subjectFiles": [
+        {
+            "path": ".github/workflows/provider-capacity-governor.yml",
+            "gitBlobOid": "c54787a81a882410978be5d091be934f4b1fdabf",
+            "sha256": "sha256:a194f8180dd8c469c98b05261cedb02d950bec1a1023f724edacd29413fa047b",
+            "bytes": 6380
+        },
+        {
+            "path": "README.md",
+            "gitBlobOid": "6bffdca9a9c68919e2efc7bc3ee16d6782417282",
+            "sha256": "sha256:aa48cc3a80d914113c11daa408aa7c42eeac8494c2f8f3aa2729bf55d2b30f00",
+            "bytes": 3887
+        },
+        {
+            "path": "RECEIPTS.md",
+            "gitBlobOid": "2674b6acd41fa88d9a8a0fe88ca22f3c8f7af33c",
+            "sha256": "sha256:77294a0afa2c9c42362648d482792bfe5bc700f14fb5f1e658325b04bc2b729f",
+            "bytes": 85801
+        },
+        {
+            "path": "RECONCILIATION.md",
+            "gitBlobOid": "2a0e26028713fb2b9c7cbecf3c1a2205cc5fff23",
+            "sha256": "sha256:3b3ebc65eb3010965e209879b76ca0981c511d4400446ac6741d28f6b2ec864c",
+            "bytes": 2527
+        },
+        {
+            "path": "RULINGS.md",
+            "gitBlobOid": "34520b7f75386ab2dba6948bb27d256d3b06c2c9",
+            "sha256": "sha256:3f1563a4f77cd679b017d79cc86fd521e55d2c77f1079b8d8b26993a843919e5",
+            "bytes": 84029
+        },
+        {
+            "path": "ruling-candidates/fleet-universal-provider-control-reconciliation-r1.md",
+            "gitBlobOid": "aca3c28fb7346ca3a2db17f2d4cab07b6f221fc8",
+            "sha256": "sha256:c2ca9d3cd52b0b096f501a47061bec00e28a2d843f847821c2404550a3b4ffb3",
+            "bytes": 1677
+        },
+        {
+            "path": "schemas/universal-canary-success-receipt-v1.schema.json",
+            "gitBlobOid": "0a2d18e1d981519cbcd040264a863803ec62dfe3",
+            "sha256": "sha256:20d60bf3c538f1cac98a628baa3707eaaf50df6d73bead3105d346e68db8afb8",
+            "bytes": 1716
+        },
+        {
+            "path": "schemas/universal-control-request-v1.schema.json",
+            "gitBlobOid": "74cc1efd7824838f257bd3cfe9b50fe5a65298b7",
+            "sha256": "sha256:9e884e40a6a348e4f48df660ff04b77c189cfd4d99136924f97c83f366f6b32e",
+            "bytes": 7356
+        },
+        {
+            "path": "schemas/universal-demand-snapshot-v1.schema.json",
+            "gitBlobOid": "7382385f0ba455710e5b0ab6a839418a6864b5f5",
+            "sha256": "sha256:91f7bd4f3a9b477702d5d0b5e3a62e83b8ba280d712388e6d04995fc187a4bea",
+            "bytes": 1432
+        },
+        {
+            "path": "schemas/universal-gate-transition-v1.schema.json",
+            "gitBlobOid": "79fd254926bf1ff118ba97b9863e1ce2e8269acd",
+            "sha256": "sha256:26188edfe7f9f4edfa3345178a4db194d31da2b9ebc313f71908c836bb949405",
+            "bytes": 3390
+        },
+        {
+            "path": "schemas/universal-launch-attestation-v1.schema.json",
+            "gitBlobOid": "68148a0e31438c243e75a6c138c5727018b9f092",
+            "sha256": "sha256:827ee13bb61f24e72ca7f691fec65ee8c57a6e63d9c9e90472b584f7e1e1f8e5",
+            "bytes": 4915
+        },
+        {
+            "path": "schemas/universal-output-quality-receipt-v1.schema.json",
+            "gitBlobOid": "75a4a69a33a0bea4cf2447e43dff84ee4d22c78d",
+            "sha256": "sha256:732c3d86a8045b81daba69b2e4cd4f26b233560433728372448eb6b0ad587734",
+            "bytes": 1269
+        },
+        {
+            "path": "schemas/universal-prior-idle-receipt-v1.schema.json",
+            "gitBlobOid": "06f23dbf0fd958ff1abe615baf58e1a8ecc049fc",
+            "sha256": "sha256:61a58abd2bbebdcd9541ed90c048c7e6600b3f761e9bba513de66fa98a27b18f",
+            "bytes": 1546
+        },
+        {
+            "path": "schemas/universal-process-observation-v1.schema.json",
+            "gitBlobOid": "cfcae139fdbbc994a4200dbbabfc5761f9c9b1b9",
+            "sha256": "sha256:e1aa92c433eaf745052108d124e45cf23c333c17246fc3fc9709a2a48ff170a7",
+            "bytes": 3905
+        },
+        {
+            "path": "schemas/universal-process-tree-termination-receipt-v1.schema.json",
+            "gitBlobOid": "61850d030f6bb174e4099f5630db8d8e3ee945fe",
+            "sha256": "sha256:26272f5f30b251a3d1ffcd7b5a4ad2abc750327ee1d4061346dabae7a77a37a5",
+            "bytes": 1053
+        },
+        {
+            "path": "schemas/universal-project-profile-v1.schema.json",
+            "gitBlobOid": "85d4fef6c72f71c6bee8befc4bb83cd37ec39a0e",
+            "sha256": "sha256:1d66976aa6abdf509078ab4ed53298606973660b4175b9ae4abfc82b79c1077b",
+            "bytes": 9079
+        },
+        {
+            "path": "schemas/universal-provider-request-permit-v1.schema.json",
+            "gitBlobOid": "9c5ddc90f04cabdbd4a855e4ed9eefe45573e1a7",
+            "sha256": "sha256:078a3418bccda41ae8566b61f66ae319e4855992cf6c964c9453d7851635d9e0",
+            "bytes": 1963
+        },
+        {
+            "path": "schemas/universal-provider-usage-checkpoint-v1.schema.json",
+            "gitBlobOid": "c5e351710e143589547a79b86f2af4eda2ccc10a",
+            "sha256": "sha256:d170821f74b1ec3b636232179ca6eda91709feeac2d003807453d76688de9924",
+            "bytes": 2105
+        },
+        {
+            "path": "schemas/universal-quality-equivalence-receipt-v1.schema.json",
+            "gitBlobOid": "833634bb9e2f2e71e28c3af8d22ad246af878a02",
+            "sha256": "sha256:d97a87476ca992d19f0b04ea53200d31ba3c4fbbb93206001ce96a99650049cf",
+            "bytes": 1344
+        },
+        {
+            "path": "schemas/universal-stage-proof-v1.schema.json",
+            "gitBlobOid": "e6e214ba10f9f9f86342d4355bb639b1941a9b4e",
+            "sha256": "sha256:67d690150aede09fd64e9e9f3ee135a570dd305ac4b0e1a423be4434d5cf7eca",
+            "bytes": 1668
+        },
+        {
+            "path": "schemas/universal-terminal-request-permit-v1.schema.json",
+            "gitBlobOid": "686685bac6c75ded6459b8633e1b0a2d8734ef9b",
+            "sha256": "sha256:181f47a3fc6f7c3fbcdb33125a4253ef797da12e3d16ebc5276308dc94386ecb",
+            "bytes": 1175
+        },
+        {
+            "path": "schemas/universal-wrapper-boundary-certification-v1.schema.json",
+            "gitBlobOid": "c3b63163a6fa82330d95ffb2ad56a8911bfb4399",
+            "sha256": "sha256:888836cdfff5b78ab92c736c1b4c0cab4494385757fa2ca21652284487571a15",
+            "bytes": 1499
+        },
+        {
+            "path": "specs/adobe-ingester.md",
+            "gitBlobOid": "f91bbd6be126dc1513c299069677b986b90cd716",
+            "sha256": "sha256:2221ec9696aec68cde4b3095eb7491c819c37b8709b347d64e6dae47c863b890",
+            "bytes": 11966
+        },
+        {
+            "path": "specs/adversarialllm.md",
+            "gitBlobOid": "33fe9c7fb7cc31b1f172b9216475fef5fe97aaad",
+            "sha256": "sha256:0d5758fc43094a9029491852faee190c8b34ec28d3fb14c561f82b87137ed99f",
+            "bytes": 12264
+        },
+        {
+            "path": "specs/agent-bridge.md",
+            "gitBlobOid": "1fb32b5a0b5810efb131686c94202b087badb38c",
+            "sha256": "sha256:2bfe6ba3d11d6e20bce951532ff1f5e4461c23c0cf0c08b84fdfc3e20613653a",
+            "bytes": 22547
+        },
+        {
+            "path": "specs/conjugal.md",
+            "gitBlobOid": "4f45cd0290e8fc282a6185619cee954a1daac329",
+            "sha256": "sha256:f42df2311ec61527c48c9f404127d5e80796baeb1cba1c936f7df07e7e716c96",
+            "bytes": 17292
+        },
+        {
+            "path": "specs/dng-auto-processor.md",
+            "gitBlobOid": "96c42a536b5c9ef9348d79f0851e5b0455f21456",
+            "sha256": "sha256:97df62b7e06be8caadef2e3f603a32374975ed58621cdfe5f19cbce6173452c2",
+            "bytes": 21261
+        },
+        {
+            "path": "specs/fleet-universal-provider-control-reconciliation.md",
+            "gitBlobOid": "d1b862d0b7a216a563b3306a993e3df1e203fb77",
+            "sha256": "sha256:680751c3f10419ae5a8b82291aac2beed16d8defe0e3e4287fbe0dcf1b629cde",
+            "bytes": 28038
+        },
+        {
+            "path": "tests/test_universal_provider_control.py",
+            "gitBlobOid": "e49e287d208172c82d839ded28756420fd49c534",
+            "sha256": "sha256:808455087c9ba1f2fff0380654f2d6f656522abc91a1dd6a991a70b2fe001bb7",
+            "bytes": 201159
+        },
+        {
+            "path": "tools/check_universal_manifest.py",
+            "gitBlobOid": "51999c55557a2d10506b9fd5bebc3f6d2e19448a",
+            "sha256": "sha256:be680c765ae09d2d68ea09cb146bd9edcdc6fccb28c8baa84e74e6e3711e536f",
+            "bytes": 7053
+        },
+        {
+            "path": "tools/universal_provider_control.py",
+            "gitBlobOid": "b0a1393f8fa5e566ac0449961447364fb3fd7052",
+            "sha256": "sha256:07411461135d9e4dce5c589bca432e6a5440d5df85dc869b1474f1d516ab87d6",
+            "bytes": 194756
+        }
+    ],
+    "manifestSelf": {
+        "path": "manifests/universal-provider-control-reconciliation-r16.json",
+        "canonicalGitBlobSha256": "sha256:3d05ff91b7e04163620522fc13d35a0419eec9de8bf760c02df8872fd24dc654",
+        "bytes": 12688,
+        "rule": "SHA-256 of this exact Git blob after replacing only the 64 hex digits in canonicalGitBlobSha256 with zeroes"
+    }
+}

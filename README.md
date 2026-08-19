@@ -44,7 +44,9 @@ the human store-and-forward bus.
 ## Proposed amendments (not ratified)
 
 - [`specs/fleet-universal-provider-control-reconciliation.md`](specs/fleet-universal-provider-control-reconciliation.md)
-  — zero-authority R15 candidate linearly reconciling the ratified R14 exact subject
-  `874605e43531c9aa230ee16851f8107a8e0d9cec` with the certified-boundary hostile repairs.
+  — zero-authority R16 candidate preserving the R15 reconciliation, then merging canonical fleet
+  master `24c9f5d142663940fb1370818982af8662afb001` so every later project disposition remains in
+  subject. R16 adds broker-owned demand receipts, durable quota-domain accounting, certified
+  request/turn/terminal boundaries, immutable temporal HMACs, and typed quality/termination proof.
   It is not a portable core, ruling, adoption credit, or launch authority. Coordination stays on
   [issue #4](https://github.com/layibabalola/softwarefactory-fleet-doctrine/issues/4).

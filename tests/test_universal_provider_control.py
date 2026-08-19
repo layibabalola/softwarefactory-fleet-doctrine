@@ -3746,6 +3746,63 @@ class UniversalProviderControlTests(unittest.TestCase):
         with self.assertRaisesRegex(upc.ControlError, "SCHEMA_VALIDATION_FAILED"):
             upc.validate_contract("request_permit", forged)
 
+    def test_r16_13_manifest_verifies_exact_ordered_reconciliation_and_forged_negatives(self) -> None:
+        import check_universal_manifest as checker
+
+        reconciliation = {
+            "r15Base": {
+                "commit": "30cd9b97eeebd30cb209bdb9798c38b415c9a0b4",
+                "tree": "06aac4b6eb09ba896c98fd402851af09629d5351",
+                "orderedParents": [
+                    "00542530bfebad8ad7646724f64720adda8d1b49",
+                    "874605e43531c9aa230ee16851f8107a8e0d9cec",
+                ],
+                "orderedParentTrees": [
+                    "994b337e8b316cec31adc8bf4d5aaaaded299f7a",
+                    "cafc358fd7b60812070cf9a465d7de38b88487c8",
+                ],
+            },
+            "r16PreMaster": {
+                "commit": "a560c63cbe72736efe4e1d5c3ecfac25d04f68d2",
+                "tree": "36528454016fcaf71e63c75e751864e3305827da",
+                "orderedParents": ["30cd9b97eeebd30cb209bdb9798c38b415c9a0b4"],
+                "orderedParentTrees": ["06aac4b6eb09ba896c98fd402851af09629d5351"],
+            },
+            "canonicalFleetMaster": {
+                "commit": "24c9f5d142663940fb1370818982af8662afb001",
+                "tree": "8117b354b51c98e610d6c066171f828744015c98",
+                "orderedParents": [
+                    "d1dedf5a36eb9ae2f2c8052eb7c24d6d204841cc",
+                    "edca292792562689a9ad75ff429bcf8c8b9ea250",
+                ],
+                "orderedParentTrees": [
+                    "cba93f2e29b2fc4b4ee34bcae2460c0a147d1b22",
+                    "8117b354b51c98e610d6c066171f828744015c98",
+                ],
+            },
+            "r16MasterMerge": {
+                "commit": "a0786f2eee16770632a2a947f65db64e60dd9820",
+                "tree": "88f3caba68a192a159879e5f7dd2092f7cec50bc",
+                "orderedParents": [
+                    "a560c63cbe72736efe4e1d5c3ecfac25d04f68d2",
+                    "24c9f5d142663940fb1370818982af8662afb001",
+                ],
+                "orderedParentTrees": [
+                    "36528454016fcaf71e63c75e751864e3305827da",
+                    "8117b354b51c98e610d6c066171f828744015c98",
+                ],
+            },
+        }
+        checker.verify_reconciliation({"reconciliation": reconciliation}, ":")
+        swapped = copy.deepcopy(reconciliation)
+        swapped["r16MasterMerge"]["orderedParents"].reverse()
+        with self.assertRaisesRegex(checker.ManifestError, "RECONCILIATION_COMMIT_MISMATCH"):
+            checker.verify_reconciliation({"reconciliation": swapped}, ":")
+        forged_tree = copy.deepcopy(reconciliation)
+        forged_tree["r15Base"]["orderedParentTrees"][0] = "0" * 40
+        with self.assertRaisesRegex(checker.ManifestError, "RECONCILIATION_PARENT_TREE_MISMATCH"):
+            checker.verify_reconciliation({"reconciliation": forged_tree}, ":")
+
     # Bounded exact evidence capsule controls.
 
     def capsule_request(self, source: Path, *, lengths: list[int]) -> dict:
