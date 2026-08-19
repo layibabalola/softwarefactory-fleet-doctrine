@@ -43,6 +43,7 @@ ALLOWED_PHASE2_PATHS = {
     "adoption/phase2/README.md",
     BATCH_PATH,
     LEDGER_PATH,
+    "specs/adversarialllm.md",
     "specs/cloudvore.md",
     "specs/mlv-app.md",
     "specs/salesforce-tools.md",

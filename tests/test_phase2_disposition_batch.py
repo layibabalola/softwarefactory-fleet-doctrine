@@ -138,6 +138,7 @@ class Phase2DispositionBatchTests(unittest.TestCase):
                 "adoption/phase3/README.md",
                 "adoption/phase3/r26-published-project-disposition-intake.json",
                 "adoption/universal-token-control-r26.json",
+                "specs/adversarialllm.md",
                 "specs/cloudvore.md",
                 "specs/mlv-app.md",
                 "specs/salesforce-tools.md",

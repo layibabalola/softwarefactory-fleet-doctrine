@@ -687,6 +687,7 @@ def verify_remotes(batch: dict[str, Any]) -> None:
             project_id
         ]:
             raise Phase3Error(f"PUBLISHED_REMOTE_CANDIDATE_EXACT_BINDING_MISMATCH:{project_id}")
+    for project in projects:
         _verify_remote_project(project)
 
 
