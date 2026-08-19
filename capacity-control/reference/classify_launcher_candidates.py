@@ -10,7 +10,9 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 import re
+import subprocess
 from pathlib import Path
 
 
@@ -42,10 +44,7 @@ def _sha256(data: bytes) -> str:
     return "sha256:" + hashlib.sha256(data).hexdigest()
 
 
-def _classify(path: Path, root: Path) -> dict[str, object]:
-    if path.is_symlink():
-        raise ValueError("SYMLINK_SOURCE_REFUSED")
-    data = path.read_bytes()
+def _classify_data(relative_path: str, data: bytes) -> dict[str, object]:
     if len(data) > MAX_FILE_BYTES:
         raise ValueError("SOURCE_TOO_LARGE")
     text = data.decode("utf-8", errors="replace")
@@ -83,7 +82,7 @@ def _classify(path: Path, root: Path) -> dict[str, object]:
         "REFERENCE_ONLY": "P3_REFERENCE",
     }[classification]
     return {
-        "path": path.relative_to(root).as_posix(),
+        "path": relative_path,
         "sha256": _sha256(data),
         "bytes": len(data),
         "providers": providers,
@@ -94,6 +93,35 @@ def _classify(path: Path, root: Path) -> dict[str, object]:
             "providerLines": {name: provider_lines[name] for name in providers},
             "primitiveLines": {name: primitive_lines[name] for name in primitives},
         },
+    }
+
+
+def _classify(path: Path, root: Path) -> dict[str, object]:
+    if path.is_symlink():
+        raise ValueError("SYMLINK_SOURCE_REFUSED")
+    return _classify_data(path.relative_to(root).as_posix(), path.read_bytes())
+
+
+def _report(root: str, rows: list[dict[str, object]], refused: list[dict[str, str]], **identity: str) -> dict[str, object]:
+    counts: dict[str, int] = {}
+    priorities: dict[str, int] = {}
+    for row in rows:
+        key = str(row["classification"])
+        counts[key] = counts.get(key, 0) + 1
+        priority = str(row["reviewPriority"])
+        priorities[priority] = priorities.get(priority, 0) + 1
+    unresolved = sum(counts.get(key, 0) for key in ("INDIRECT_VARIABLE", "UNRESOLVED_FLOW", "REFERENCE_ONLY"))
+    return {
+        "schema": "conjugal-launcher-candidate-classification/v1",
+        "status": "INCOMPLETE_ZERO_AUTHORITY",
+        "root": root,
+        **identity,
+        "candidateCount": len(rows),
+        "classificationCounts": dict(sorted(counts.items())),
+        "reviewPriorityCounts": dict(sorted(priorities.items())),
+        "unresolvedCount": unresolved + len(refused),
+        "refused": refused,
+        "candidates": rows,
     }
 
 
@@ -113,25 +141,78 @@ def classify_tree(root: Path) -> dict[str, object]:
             continue
         if row["providers"]:
             rows.append(row)
-    counts: dict[str, int] = {}
-    priorities: dict[str, int] = {}
-    for row in rows:
-        key = str(row["classification"])
-        counts[key] = counts.get(key, 0) + 1
-        priority = str(row["reviewPriority"])
-        priorities[priority] = priorities.get(priority, 0) + 1
-    unresolved = sum(counts.get(key, 0) for key in ("INDIRECT_VARIABLE", "UNRESOLVED_FLOW", "REFERENCE_ONLY"))
-    return {
-        "schema": "conjugal-launcher-candidate-classification/v1",
-        "status": "INCOMPLETE_ZERO_AUTHORITY",
-        "root": str(root),
-        "candidateCount": len(rows),
-        "classificationCounts": dict(sorted(counts.items())),
-        "reviewPriorityCounts": dict(sorted(priorities.items())),
-        "unresolvedCount": unresolved + len(refused),
-        "refused": refused,
-        "candidates": rows,
-    }
+    return _report(str(root), rows, refused, sourceMode="WORKING_TREE")
+
+
+def _git(repo: Path, *arguments: str, text: bool = False) -> subprocess.CompletedProcess:
+    environment = os.environ.copy()
+    environment["GIT_OPTIONAL_LOCKS"] = "0"
+    return subprocess.run(
+        ["git", "--no-optional-locks", "-C", str(repo), *arguments],
+        check=True,
+        capture_output=True,
+        text=text,
+        env=environment,
+    )
+
+
+def classify_git_tree(repo: Path, treeish: str) -> dict[str, object]:
+    repo = repo.resolve(strict=True)
+    commit = _git(repo, "rev-parse", f"{treeish}^{{commit}}", text=True).stdout.strip()
+    tree = _git(repo, "rev-parse", f"{commit}^{{tree}}", text=True).stdout.strip()
+    if not re.fullmatch(r"[0-9a-f]{40}", commit) or not re.fullmatch(r"[0-9a-f]{40}", tree):
+        raise ValueError("GIT_SUBJECT_IDENTITY")
+    listing = _git(repo, "ls-tree", "-r", "-z", "--full-tree", commit).stdout
+    sources: list[tuple[str, str]] = []
+    for record in listing.split(b"\0"):
+        if not record:
+            continue
+        metadata, raw_path = record.split(b"\t", 1)
+        _mode, kind, raw_oid = metadata.split(b" ", 2)
+        path = raw_path.decode("utf-8", errors="surrogateescape")
+        parts = Path(path).parts
+        if kind == b"blob" and Path(path).suffix.lower() in SOURCE_SUFFIXES and not any(part.casefold() in EXCLUDED_PARTS for part in parts):
+            sources.append((path, raw_oid.decode("ascii")))
+    environment = os.environ.copy()
+    environment["GIT_OPTIONAL_LOCKS"] = "0"
+    process = subprocess.Popen(
+        ["git", "--no-optional-locks", "-C", str(repo), "cat-file", "--batch"],
+        stdin=subprocess.PIPE,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        env=environment,
+    )
+    assert process.stdin is not None and process.stdout is not None
+    rows: list[dict[str, object]] = []
+    refused: list[dict[str, str]] = []
+    try:
+        for path, oid in sources:
+            process.stdin.write((oid + "\n").encode("ascii"))
+            process.stdin.flush()
+            header = process.stdout.readline().decode("ascii").strip().split()
+            if len(header) != 3 or header[0] != oid or header[1] != "blob":
+                raise ValueError("GIT_BLOB_HEADER")
+            size = int(header[2])
+            data = process.stdout.read(size)
+            if len(data) != size or process.stdout.read(1) != b"\n":
+                raise ValueError("GIT_BLOB_TRUNCATED")
+            try:
+                row = _classify_data(path, data)
+            except ValueError as exc:
+                refused.append({"path": path, "reason": str(exc)})
+                continue
+            if row["providers"]:
+                rows.append(row)
+    finally:
+        process.stdin.close()
+        return_code = process.wait(timeout=30)
+        assert process.stderr is not None
+        process.stderr.read()
+        process.stdout.close()
+        process.stderr.close()
+    if return_code != 0:
+        raise ValueError("GIT_CAT_FILE_FAILURE")
+    return _report(str(repo), rows, refused, sourceMode="GIT_COMMIT", subjectCommit=commit, subjectTree=tree)
 
 
 def reconcile_review(report: dict[str, object], review: dict[str, object]) -> dict[str, object]:
@@ -212,12 +293,13 @@ def _strict_json(path: Path) -> dict[str, object]:
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("root", type=Path)
+    parser.add_argument("--git-treeish")
     parser.add_argument("--review-manifest", type=Path)
     parser.add_argument("--emit-review-template", action="store_true")
     args = parser.parse_args()
     if args.review_manifest and args.emit_review_template:
         parser.error("--review-manifest and --emit-review-template are mutually exclusive")
-    report = classify_tree(args.root)
+    report = classify_git_tree(args.root, args.git_treeish) if args.git_treeish else classify_tree(args.root)
     if args.review_manifest:
         output = reconcile_review(report, _strict_json(args.review_manifest))
     elif args.emit_review_template:

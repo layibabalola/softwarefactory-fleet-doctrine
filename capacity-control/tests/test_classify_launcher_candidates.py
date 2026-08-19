@@ -1,4 +1,6 @@
 import importlib.util
+import os
+import subprocess
 import tempfile
 import unittest
 from pathlib import Path
@@ -112,6 +114,25 @@ class LauncherCandidateClassifierTests(unittest.TestCase):
         self.assertTrue(all(entry["disposition"] == "UNKNOWN" for entry in template["entries"]))
         result = MODULE.reconcile_review(report, template)
         self.assertEqual(result["pendingCount"], 2)
+
+    def test_git_subject_scan_ignores_working_tree_drift(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            environment = os.environ.copy()
+            environment["GIT_OPTIONAL_LOCKS"] = "0"
+            subprocess.run(["git", "init", "-q", str(root)], check=True, env=environment)
+            subprocess.run(["git", "-C", str(root), "config", "user.email", "test@example.invalid"], check=True, env=environment)
+            subprocess.run(["git", "-C", str(root), "config", "user.name", "test"], check=True, env=environment)
+            source = root / "launch.ps1"
+            source.write_text("$runner='claude.exe'\nStart-Process -FilePath $runner\n", encoding="utf-8")
+            subprocess.run(["git", "-C", str(root), "add", "launch.ps1"], check=True, env=environment)
+            subprocess.run(["git", "-C", str(root), "commit", "-q", "-m", "subject"], check=True, env=environment)
+            source.write_text("# working tree no longer mentions a provider\n", encoding="utf-8")
+            report = MODULE.classify_git_tree(root, "HEAD")
+        self.assertEqual(report["sourceMode"], "GIT_COMMIT")
+        self.assertRegex(report["subjectCommit"], r"^[0-9a-f]{40}$")
+        self.assertRegex(report["subjectTree"], r"^[0-9a-f]{40}$")
+        self.assertEqual(report["classificationCounts"], {"INDIRECT_VARIABLE": 1})
 
 
 if __name__ == "__main__":
