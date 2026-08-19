@@ -5154,6 +5154,32 @@ class UniversalProviderControlTests(unittest.TestCase):
         self.assertFalse(manifest["authority"]["containmentOrCanaryCredit"])
         self.assertEqual(manifest["authority"]["automaticGateState"], "CLOSED")
 
+    def test_r26_03_manifest_verifies_frozen_candidate_across_later_doctrine(self) -> None:
+        import check_universal_manifest as checker
+
+        self.assertEqual(checker.check("HEAD"), 0)
+
+    def test_r26_04_manifest_requires_frozen_candidate_ancestry(self) -> None:
+        import check_universal_manifest as checker
+
+        with mock.patch.object(checker, "_is_ancestor", return_value=False):
+            with self.assertRaisesRegex(
+                checker.ManifestError, "MANIFEST_CANDIDATE_NOT_ANCESTOR"
+            ):
+                checker._frozen_manifest_bytes("HEAD")
+
+    def test_r26_05_manifest_rejects_post_candidate_manifest_drift(self) -> None:
+        import check_universal_manifest as checker
+
+        with (
+            mock.patch.object(checker, "_is_ancestor", return_value=True),
+            mock.patch.object(checker, "_git", side_effect=[b"frozen", b"drifted"]),
+        ):
+            with self.assertRaisesRegex(
+                checker.ManifestError, "MANIFEST_FROZEN_BLOB_MISMATCH"
+            ):
+                checker._frozen_manifest_bytes("HEAD")
+
     def test_r17_07_low_level_request_primitives_are_not_public(self) -> None:
         broker = upc.UniversalProviderBroker(self.root / "r17-no-public-primitives")
         self.assertFalse(hasattr(broker, "begin_provider_request"))
