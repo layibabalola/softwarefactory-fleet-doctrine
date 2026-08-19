@@ -4898,6 +4898,35 @@ class UniversalProviderControlTests(unittest.TestCase):
         with self.assertRaisesRegex(upc.ControlError, "SCHEMA_VALIDATION_FAILED"):
             upc.validate_contract("token_control_policy", extra)
 
+    def test_r22_07_manifest_binds_child_receipt_policy_and_master_merge(self) -> None:
+        import check_universal_manifest as checker
+
+        manifest_path = ROOT / "manifests" / "universal-provider-control-reconciliation-r22.json"
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        reconciliation = manifest["reconciliation"]
+        tuples = {
+            record["commit"]: (record["tree"], record["orderedParents"])
+            for record in reconciliation.values()
+        }
+        for record in reconciliation.values():
+            for parent, tree in zip(record["orderedParents"], record["orderedParentTrees"]):
+                tuples.setdefault(parent, (tree, []))
+        with mock.patch.object(checker, "_commit_tuple", side_effect=lambda commit: tuples[commit]):
+            checker.verify_reconciliation({"reconciliation": reconciliation}, ":")
+            forged = copy.deepcopy(reconciliation)
+            forged["r22MasterMerge"]["orderedParents"].reverse()
+            with self.assertRaisesRegex(checker.ManifestError, "RECONCILIATION_COMMIT_MISMATCH"):
+                checker.verify_reconciliation({"reconciliation": forged}, ":")
+        subject_paths = {subject["path"] for subject in manifest["subjectFiles"]}
+        self.assertIn("receipts/attended-provider-rotation-20260819.json", subject_paths)
+        self.assertIn("policy/universal-provider-token-control-r22.json", subject_paths)
+        self.assertIn("schemas/universal-attended-rotation-receipt-v1.schema.json", subject_paths)
+        self.assertIn("schemas/universal-provider-token-control-policy-v1.schema.json", subject_paths)
+        self.assertEqual(manifest["status"], "CANDIDATE_ZERO_AUTHORITY")
+        self.assertFalse(manifest["authority"]["providerExecution"])
+        self.assertFalse(manifest["authority"]["containmentOrCanaryCredit"])
+        self.assertEqual(manifest["authority"]["automaticGateState"], "CLOSED")
+
     def test_r17_07_low_level_request_primitives_are_not_public(self) -> None:
         broker = upc.UniversalProviderBroker(self.root / "r17-no-public-primitives")
         self.assertFalse(hasattr(broker, "begin_provider_request"))

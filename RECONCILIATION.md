@@ -66,7 +66,9 @@ and retry ceilings, exact cache-affinity TTL scheduling, conservative failure/re
 a 20 percent completion reserve in every quota window, and positive separately certified direct-launch
 enforcement. Serialization alone cannot satisfy those controls.
 
-R22 preserves exact frozen R21 `4bca2c36ca69a584cc4c506ad36f1cef66fefab3`. Stable authority
+R22 preserves exact frozen R21 `4bca2c36ca69a584cc4c506ad36f1cef66fefab3` and additively
+reconciles canonical master `44a33fce7fb0b0f5c17b576397d7d0e0fc9b0c35` through ordered-parent
+merge `3b8f957ea8e05cf6629c02ec7ea39e8c961b9396`. Stable authority
 snapshots now retain the exact `quota-ledger` or `quota-locks` child directory in addition to every
 trusted-base-to-provider-control component, and revalidate that child before and after database or
 lock use. The four successful attended requests are published as a privacy-safe structured receipt

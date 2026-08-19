@@ -469,7 +469,9 @@ credit. R21 retains the universal hosted workflow's exact 168-control universal,
 and 77-control runtime-workbench matrix on pull requests and master pushes. It adds no provider execution,
 process resume/kill, containment, CANARY, or OPEN authority; adoption remains CLOSED.
 
-R22 preserves exact frozen R21 `4bca2c36ca69a584cc4c506ad36f1cef66fefab3`. The stable authority
+R22 preserves exact frozen R21 `4bca2c36ca69a584cc4c506ad36f1cef66fefab3` and additively
+reconciles canonical master `44a33fce7fb0b0f5c17b576397d7d0e0fc9b0c35` through ordered-parent
+merge `3b8f957ea8e05cf6629c02ec7ea39e8c961b9396`. The stable authority
 snapshot includes the exact direct child used by each surface: `quota-ledger` for the canonical
 SQLite database and `quota-locks` for the OS-lock namespace. Both child identities are checked along
 with the full trusted ancestor chain immediately before and after open/use under the relevant lock.
@@ -491,3 +493,7 @@ retry ceilings, exact cache-affinity TTL with cold-prefix fallback, conservative
 attempt charging, a 20 percent every-window completion reserve, and separately certified positive
 direct-launch enforcement. R22 adds no provider execution, process resume/kill, containment, CANARY,
 or OPEN authority; adoption remains CLOSED.
+
+The exact R22 candidate is validated by 175 universal controls, 37 retained governor controls, and
+77 canonical runtime-workbench controls on Python 3.13 and 3.14. Hosted Windows and Ubuntu checks on
+the frozen subject remain required and unclaimed.
