@@ -1074,9 +1074,13 @@ cadence. Twelve observed iterations, including the real scheduled path, returned
 cache-creation, reasoning, output, and tool counters. The task's first scheduled result was 0. The legacy
 Agent Bridge Warden and lifecycle supervisor remained disabled.
 
-Installation manifest SHA-256 is `00F4025AEF9F35874DDD878DDD31014D3299187B38D9DBC3F0EF06FD219DB98C`;
+Installation manifest SHA-256 is `E3663B1C554CD5CB6C0C733F17C12B2AF664A8EE9B9204C902349ED9BD124AE6`;
 the explicitly incomplete launcher-inventory SHA-256 is
-`97543548F6DA914781A324A190F08609D2FB4D16B88378A40E5BD900A9739B8E`; local shadow receipt SHA-256 is
-`96F591B3CA59E8FA4CC15AFCB4094EA57A1D672E4E574A5E062827F85DA6004E`. This advances only SHADOW.
+`AFC34B6DD4C15FB11AB4D5B8FC8F031E56BAC6154C541A4882D142DD876682B4`; local shadow receipt SHA-256 is
+`61C7DF09F5DA30A411BB6836E4C08E74199CAD8241E2D6F117987EAED259C1B9`.
+The original disabled legacy task XML was preserved, and both task actions were replaced by hash-pinned
+quarantine refusal script `BE23319A57D4752E9A8AA345893FE96DC37E7E6F42B34630F6755AF6EB5011AC`.
+A negative control returned exit 78 with `REFUSED_LEGACY_LAUNCH`, a verified closed shadow gate, and zero
+provider calls/tokens. This advances only SHADOW.
 It grants no recovery attestation, provider call, canary, task enablement for a provider launcher, project
 ADOPT, review credit, campaign, production, landing, or release authority.

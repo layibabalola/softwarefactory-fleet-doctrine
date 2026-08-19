@@ -325,9 +325,17 @@ execution, returned `HARD_CLOSED`, `recovery=MISSING`, no native Claude CLI root
 zero provider calls, and zero input/cache/reasoning/output tokens. The legacy
 Warden and lifecycle supervisor remain disabled. The installation manifest,
 incomplete inventory, and local receipt have SHA-256 values
-`00F4025AEF9F35874DDD878DDD31014D3299187B38D9DBC3F0EF06FD219DB98C`,
-`97543548F6DA914781A324A190F08609D2FB4D16B88378A40E5BD900A9739B8E`,
-and `96F591B3CA59E8FA4CC15AFCB4094EA57A1D672E4E574A5E062827F85DA6004E`.
+`E3663B1C554CD5CB6C0C733F17C12B2AF664A8EE9B9204C902349ED9BD124AE6`,
+`AFC34B6DD4C15FB11AB4D5B8FC8F031E56BAC6154C541A4882D142DD876682B4`,
+and `61C7DF09F5DA30A411BB6836E4C08E74199CAD8241E2D6F117987EAED259C1B9`.
+
+The two disabled legacy task definitions were backed up by exact XML SHA-256
+and their actions replaced with hash-pinned quarantine refusal script SHA-256
+`BE23319A57D4752E9A8AA345893FE96DC37E7E6F42B34630F6755AF6EB5011AC`.
+A direct negative control returned exit 78, `REFUSED_LEGACY_LAUNCH`, with the
+shadow gate verified closed and zero provider calls/tokens. Accidental task
+re-enablement therefore reaches refusal rather than the former direct launch
+action; both task definitions remain disabled.
 
 This advances only offline installation and SHADOW evidence. The launcher census
 is explicitly incomplete, no qualified capacity observer or recovery attestation
