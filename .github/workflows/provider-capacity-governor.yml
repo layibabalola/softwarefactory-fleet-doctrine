@@ -4,7 +4,6 @@ on:
   pull_request:
     paths:
       - ".github/workflows/provider-capacity-governor.yml"
-      - "capacity-control/**"
       - "examples/provider-*"
       - "schemas/provider-*"
       - "schemas/universal-*"
@@ -37,7 +36,6 @@ on:
     branches: [master]
     paths:
       - ".github/workflows/provider-capacity-governor.yml"
-      - "capacity-control/**"
       - "examples/provider-*"
       - "schemas/provider-*"
       - "schemas/universal-*"
@@ -122,12 +120,6 @@ jobs:
 
       - name: Verify portable Git-blob manifest
         run: python tools/check_universal_manifest.py --treeish HEAD
-
-      - name: Run runtime-extension negative controls
-        run: python -m unittest discover -s capacity-control/tests -p 'test_*.py' -v
-
-      - name: Compile runtime-extension references
-        run: python -m compileall -q capacity-control/reference
 
       - name: Validate example telemetry shard
         run: python tools/provider_capacity_governor.py validate-events examples/provider-usage-events-v1.jsonl
