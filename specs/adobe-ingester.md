@@ -103,7 +103,7 @@ The ratified universal runtime amendment has a separate exact disposition:
 
 **DISTINGUISH(`874605e43531c9aa230ee16851f8107a8e0d9cec`,
 `HARD_CLOSED_WORK_ORDER_NOT_AUTHORIZED_PENDING_ACTIVE_ORDER_SEAM_AND_FRESH_REVIEWER_BEARING_QUORUM`,
-`HUB-SHA256:B879E104FB20DDB504F1F43816D2E42F6605A0C09D66E221480F2BB45BE91C8`)**
+`issue-4-comment-5335883778`)**
 
 Canonical merge `488cf0dc0c2c2ddd1ab024c6377e1fd6d61eef1d` ratifies exact technical subject
 `874605e43531c9aa230ee16851f8107a8e0d9cec`. Adobe accepts its portable invariants without a
