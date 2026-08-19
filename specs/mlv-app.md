@@ -359,3 +359,36 @@ complete recursive launcher census under one pinned supervisor; exact host-bound
 inventory receipts; and separately authorized one-use canary execution whose every terminal path
 reseals CLOSED. That later subject requires fresh non-author review and distinct adjudication; no
 evidence or approval in this section may be silently transferred to it.
+
+## Universal token-control R26 current disposition (2026-08-19 phase 3)
+
+MLV-App's current project disposition is:
+
+**DISTINGUISH(909f769d02e8412e51e28e242cfa8d00dadc9a3d, MLV_APP_R26_CANDIDATE_ZERO_AUTHORITY_CURRENT_MASTER_HAS_NO_INSTALLED_TOKEN_CONTROL_SUPERVISOR_COMPLETE_LAUNCHER_CENSUS_REQUEST_LEVEL_ACCOUNTING_1000_IDLE_TICKS_FULL_CHILD_FENCING_ROLLBACK_QUALITY_EQUIVALENCE_OR_CURRENT_CLOSED_GATE_PROOF, MLV_APP_BASE_30889f77e2000190b94d59f80f6a03b12ce3e0d3)**
+
+This row folds the independently accepted, project-owned candidate published at
+`https://github.com/layibabalola/MLV-App.git`, ref
+`refs/heads/codex/r26-zero-authority-disposition-candidate-20260819`, commit
+`81bc1ad472daaf1cad2609a80fa86495a7684367`, tree
+`8da47414d2b0f746d109659246badf17099af99c`, sole parent
+`13eacc900662f4ba5df0659b0c4ff493abe9f0c5`.
+
+| Published candidate artifact | Git blob | Bytes | SHA-256 |
+|---|---|---:|---|
+| `docs/universal-token-control-r26-disposition-candidate-2026-08-19.json` | `b3366e8495150e2d69f299409a78a44e33fd637c` | 14,552 | `2e760867258e4c22c49d0fdaccfe6a7b0f59b312e80ca2f9c5e5b405b9d57ec9` |
+| `tools/universal-token-control-r26-disposition-candidate.tests.py` | `c40b2f11a764c8945674befa3d4afa92f3b452f6` | 25,117 | `61013cad4afbdbd38349e1dfa011956c599024436c4ef4bf5263b165049315d1` |
+
+The evidence JSON remains `CANDIDATE_ZERO_AUTHORITY`: all fourteen authority members are false,
+including sibling-proof transfer, and all twenty adoption-proof gaps remain
+`NOT_PRODUCED_OR_CREDITED_AT_THIS_CANDIDATE`. Model and effort binding are missing from the base
+direct turn-start path. Role and review policy, plus quality and functionality baseline rules, are
+pinned only as project boundaries; no R26 preservation or equivalence receipt is credited.
+
+This disposition is not project adoption, fleet adoption, installation, runtime activation,
+provider or authentication invocation, process action, launcher or scheduler mutation, canary
+credit, merge, push, or release authority. The automatic gate remains CLOSED. A later adoption row
+still requires the full pinned supervisor/action graph, complete launcher census, fake-provider and
+concurrency controls, request-level accounting, 1,000 unchanged zero-inference ticks, full-child
+fencing, rollback, signed installation, positive direct-launch enforcement, exact model/effort/role
+binding, fresh independent review, quality/functionality equivalence, and a current CLOSED-gate
+proof. No sibling candidate can supply those proofs.

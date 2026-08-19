@@ -306,3 +306,34 @@ The strict Draft 2020-12 profile and 12 focused negative controls exact-pin ever
 accepted artifact, adapter/router field, and no-authority member while preserving `score`, `grade`,
 `doctrine_write`, and `publication` as non-authoritative. All Anthropic, OpenAI, Moonshot, and xAI
 lanes remain `PENDING_LOCAL_SUPERVISOR_AND_DRILLS`; no evidence gate or reset advances activation.
+
+## Universal token-control R26 current disposition (2026-08-19 phase 3)
+
+Cloudvore's current project disposition is:
+
+**DISTINGUISH(909f769d02e8412e51e28e242cfa8d00dadc9a3d, CLOUDVORE_R26_CANDIDATE_ZERO_AUTHORITY_PENDING_PINNED_LOCAL_SUPERVISOR_COMPLETE_LAUNCHER_CENSUS_REQUEST_LEVEL_TOKEN_ACCOUNTING_1000_IDLE_TICKS_FULL_CHILD_FENCING_ROLLBACK_AND_CURRENT_CLOSED_GATE_PROOF, CLOUDVORE_BASE_db3e5fd155a6efe41947f5d4aa0bbc4a3d2098a8)**
+
+This row folds the independently accepted, project-owned candidate published at
+`https://github.com/layibabalola/Cloudvore.git`, ref
+`refs/heads/codex/r26-zero-authority-disposition-candidate-20260819`, commit
+`3ea3a09230aff318caef30980bfa76d48f189874`, tree
+`713c1c0aeef3405c7e6b0674b4217db4be83612a`, sole parent
+`ad2c1918d6358071e4e61d676a407dede8970c00`.
+
+| Published candidate artifact | Git blob | Bytes | SHA-256 |
+|---|---|---:|---|
+| `knowledge/universal-token-control-r26-disposition-candidate-2026-08-19.json` | `54221d2cca9e6160975ec2c4a3a416021b499546` | 12,168 | `922bcd510f1bbf6d7dfbf68a2d602abe967e0c5069e3a48c70edb0e3fcc1abff` |
+| `tools/universal-token-control-r26-disposition-candidate.tests.py` | `92fdec7729616fc35daaf73f72ffaef6e91843d8` | 26,754 | `153d99adbc57a31a88d95c1fe7d9e261206f6592e4226903cead11e699759c21` |
+
+The evidence JSON remains `CANDIDATE_ZERO_AUTHORITY`: all eleven authority members are false and
+all eleven adoption-proof gaps remain `NOT_PRODUCED_OR_CREDITED_AT_THIS_CANDIDATE`. Its model,
+effort, role, review, quality, and functionality anchors are pinned project boundaries only, not
+R26 runtime evidence, and carry no adoption credit.
+
+This disposition is not project adoption, fleet adoption, installation, runtime activation,
+provider invocation, launcher or scheduler mutation, canary credit, merge, push, or release
+authority. The automatic gate remains CLOSED. A later adoption row still requires the complete
+pinned supervisor/adapter and launcher inventory, fake-provider and concurrency controls,
+request-level token accounting, 1,000 unchanged zero-inference ticks, full-child fencing, rollback,
+positive direct-launch enforcement, exact quality/functionality non-regression, and a current
+CLOSED-gate proof. No sibling or doctrine evidence transfers those proofs.
