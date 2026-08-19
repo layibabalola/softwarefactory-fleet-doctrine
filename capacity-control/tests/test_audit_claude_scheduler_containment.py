@@ -1,8 +1,12 @@
+import contextlib
 import importlib.util
+import io
 import json
+import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 
 MODULE_PATH = Path(__file__).parents[1] / "reference" / "audit_claude_scheduler_containment.py"
@@ -64,6 +68,31 @@ class ClaudeSchedulerContainmentAuditTests(unittest.TestCase):
             store.write_text('{"tasks":[]}', encoding="utf-8")
             with self.assertRaisesRegex(ValueError, "DUPLICATE_JSON_KEY"):
                 MODULE.audit(config, [store])
+
+    def test_oversize_json_is_refused_before_read(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            path = Path(temporary) / "large.json"
+            with path.open("wb") as stream:
+                stream.truncate(MODULE.MAX_JSON_BYTES + 1)
+            with self.assertRaisesRegex(ValueError, "JSON_TOO_LARGE"):
+                MODULE._strict_json(path)
+
+    def test_task_tree_and_path_bounds_fail_closed(self):
+        nested: object = {"leaf": True}
+        for _ in range(MODULE.MAX_JSON_DEPTH + 1):
+            nested = {"child": nested}
+        with self.assertRaisesRegex(ValueError, "TASK_TREE_LIMIT"):
+            list(MODULE._task_objects(nested))
+        with self.assertRaisesRegex(ValueError, "TASK_PATH_LIMIT"):
+            MODULE.audit(Path("config"), [Path("task")] * (MODULE.MAX_TASK_PATHS + 1))
+
+    def test_cli_error_is_stable_and_does_not_echo_private_details(self):
+        stderr = io.StringIO()
+        with mock.patch.object(sys, "argv", ["audit", "--config", "private", "--tasks", "private"]), \
+             mock.patch.object(MODULE, "audit", side_effect=OSError("C:/secret/token")), \
+             contextlib.redirect_stderr(stderr):
+            self.assertEqual(MODULE.main(), 2)
+        self.assertEqual(stderr.getvalue(), "ERROR audit_claude_scheduler_containment: INPUT_REFUSED\n")
 
 
 if __name__ == "__main__":

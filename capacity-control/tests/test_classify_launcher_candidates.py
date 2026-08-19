@@ -1,9 +1,14 @@
+import contextlib
 import importlib.util
+import io
+import json
 import os
 import subprocess
+import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 
 MODULE_PATH = Path(__file__).parents[1] / "reference" / "classify_launcher_candidates.py"
@@ -186,6 +191,22 @@ class LauncherCandidateClassifierTests(unittest.TestCase):
         self.assertRegex(report["subjectCommit"], r"^[0-9a-f]{40}$")
         self.assertRegex(report["subjectTree"], r"^[0-9a-f]{40}$")
         self.assertEqual(report["classificationCounts"], {"INDIRECT_VARIABLE": 1})
+
+    def test_review_manifest_is_bounded_before_decode(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            path = Path(temporary) / "review.json"
+            with path.open("wb") as stream:
+                stream.truncate(MODULE.MAX_REVIEW_BYTES + 1)
+            with self.assertRaisesRegex(ValueError, "REVIEW_INPUT_LIMIT"):
+                MODULE._strict_json(path)
+
+    def test_cli_error_is_stable_and_does_not_echo_git_or_path_details(self):
+        stderr = io.StringIO()
+        with mock.patch.object(sys, "argv", ["classifier", "C:/private"]), \
+             mock.patch.object(MODULE, "classify_tree", side_effect=ValueError("stderr C:/secret token")), \
+             contextlib.redirect_stderr(stderr):
+            self.assertEqual(MODULE.main(), 2)
+        self.assertEqual(stderr.getvalue(), "ERROR classify_launcher_candidates: INPUT_REFUSED\n")
 
 
 if __name__ == "__main__":

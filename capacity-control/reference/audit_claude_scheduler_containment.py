@@ -6,11 +6,17 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import sys
 from pathlib import Path
 from typing import Any, Iterable
 
 
 MAX_JSON_BYTES = 1024 * 1024
+MAX_AGGREGATE_JSON_BYTES = 16 * 1024 * 1024
+MAX_TASK_PATHS = 256
+MAX_TASK_OBJECTS = 4096
+MAX_JSON_NODES = 65536
+MAX_JSON_DEPTH = 64
 
 
 def _sha256(data: bytes) -> str:
@@ -20,7 +26,10 @@ def _sha256(data: bytes) -> str:
 def _strict_json(path: Path) -> tuple[Any, bytes]:
     if path.is_symlink():
         raise ValueError("SYMLINK_REFUSED")
-    data = path.read_bytes()
+    if path.stat().st_size > MAX_JSON_BYTES:
+        raise ValueError("JSON_TOO_LARGE")
+    with path.open("rb") as stream:
+        data = stream.read(MAX_JSON_BYTES + 1)
     if len(data) > MAX_JSON_BYTES:
         raise ValueError("JSON_TOO_LARGE")
 
@@ -41,17 +50,31 @@ def _strict_json(path: Path) -> tuple[Any, bytes]:
 
 
 def _task_objects(value: Any) -> Iterable[dict[str, Any]]:
-    if isinstance(value, dict):
-        if "id" in value and "enabled" in value and ("filePath" in value or "cronExpression" in value):
-            yield value
-        for child in value.values():
-            yield from _task_objects(child)
-    elif isinstance(value, list):
-        for child in value:
-            yield from _task_objects(child)
+    stack: list[tuple[Any, int]] = [(value, 0)]
+    visited = 0
+    emitted = 0
+    while stack:
+        current, depth = stack.pop()
+        visited += 1
+        if visited > MAX_JSON_NODES or depth > MAX_JSON_DEPTH:
+            raise ValueError("TASK_TREE_LIMIT")
+        if isinstance(current, dict):
+            if "id" in current and "enabled" in current and ("filePath" in current or "cronExpression" in current):
+                emitted += 1
+                if emitted > MAX_TASK_OBJECTS:
+                    raise ValueError("TASK_COUNT_LIMIT")
+                yield current
+            stack.extend((child, depth + 1) for child in reversed(list(current.values())))
+        elif isinstance(current, list):
+            stack.extend((child, depth + 1) for child in reversed(current))
 
 
 def audit(config_path: Path, task_paths: list[Path], project_prefix: str = "conjugal-") -> dict[str, Any]:
+    if len(task_paths) > MAX_TASK_PATHS:
+        raise ValueError("TASK_PATH_LIMIT")
+    aggregate = config_path.stat().st_size + sum(path.stat().st_size for path in task_paths)
+    if aggregate > MAX_AGGREGATE_JSON_BYTES:
+        raise ValueError("TASK_AGGREGATE_LIMIT")
     config, config_data = _strict_json(config_path)
     if not isinstance(config, dict) or not isinstance(config.get("preferences"), dict):
         raise ValueError("CONFIG_SCHEMA")
@@ -116,7 +139,12 @@ def main() -> int:
     parser.add_argument("--tasks", required=True, type=Path, nargs="+")
     parser.add_argument("--project-prefix", default="conjugal-")
     args = parser.parse_args()
-    print(json.dumps(audit(args.config, args.tasks, args.project_prefix), sort_keys=True, separators=(",", ":")))
+    try:
+        result = audit(args.config, args.tasks, args.project_prefix)
+    except (OSError, UnicodeError, ValueError, json.JSONDecodeError):
+        print("ERROR audit_claude_scheduler_containment: INPUT_REFUSED", file=sys.stderr)
+        return 2
+    print(json.dumps(result, sort_keys=True, separators=(",", ":")))
     return 0
 
 

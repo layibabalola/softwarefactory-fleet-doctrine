@@ -13,10 +13,16 @@ import json
 import os
 import re
 import subprocess
+import sys
 from pathlib import Path
 
 
 MAX_FILE_BYTES = 2 * 1024 * 1024
+MAX_LISTING_BYTES = 16 * 1024 * 1024
+MAX_AGGREGATE_SOURCE_BYTES = 64 * 1024 * 1024
+MAX_SOURCE_FILES = 16384
+MAX_CANDIDATES = 4096
+MAX_REVIEW_BYTES = 4 * 1024 * 1024
 MAX_EVIDENCE_LINES_PER_KIND = 64
 SOURCE_SUFFIXES = {".bat", ".cmd", ".js", ".ps1", ".psm1", ".py", ".sh", ".ts"}
 EXCLUDED_PARTS = {".git", "node_modules", "tmp"}
@@ -100,7 +106,11 @@ def _classify_data(relative_path: str, data: bytes) -> dict[str, object]:
 def _classify(path: Path, root: Path) -> dict[str, object]:
     if path.is_symlink():
         raise ValueError("SYMLINK_SOURCE_REFUSED")
-    return _classify_data(path.relative_to(root).as_posix(), path.read_bytes())
+    if path.stat().st_size > MAX_FILE_BYTES:
+        raise ValueError("SOURCE_TOO_LARGE")
+    with path.open("rb") as stream:
+        data = stream.read(MAX_FILE_BYTES + 1)
+    return _classify_data(path.relative_to(root).as_posix(), data)
 
 
 def _report(root: str, rows: list[dict[str, object]], refused: list[dict[str, str]], **identity: str) -> dict[str, object]:
@@ -138,11 +148,19 @@ def classify_tree(root: Path) -> dict[str, object]:
     root = root.resolve(strict=True)
     rows: list[dict[str, object]] = []
     refused: list[dict[str, str]] = []
+    source_count = 0
+    aggregate = 0
     for path in sorted(root.rglob("*"), key=lambda item: item.as_posix().casefold()):
         if not path.is_file() or path.suffix.lower() not in SOURCE_SUFFIXES:
             continue
         if any(part.casefold() in EXCLUDED_PARTS for part in path.relative_to(root).parts):
             continue
+        source_count += 1
+        aggregate += path.stat().st_size
+        if source_count > MAX_SOURCE_FILES:
+            raise ValueError("SOURCE_COUNT_LIMIT")
+        if aggregate > MAX_AGGREGATE_SOURCE_BYTES:
+            raise ValueError("SOURCE_AGGREGATE_LIMIT")
         try:
             row = _classify(path, root)
         except (OSError, ValueError) as exc:
@@ -150,6 +168,8 @@ def classify_tree(root: Path) -> dict[str, object]:
             continue
         if row["providers"]:
             rows.append(row)
+            if len(rows) > MAX_CANDIDATES:
+                raise ValueError("CANDIDATE_COUNT_LIMIT")
     return _report(str(root), rows, refused, sourceMode="WORKING_TREE")
 
 
@@ -165,23 +185,57 @@ def _git(repo: Path, *arguments: str, text: bool = False) -> subprocess.Complete
     )
 
 
+def _git_bounded(repo: Path, limit: int, *arguments: str) -> bytes:
+    environment = os.environ.copy()
+    environment["GIT_OPTIONAL_LOCKS"] = "0"
+    process = subprocess.Popen(
+        ["git", "--no-optional-locks", "-C", str(repo), *arguments],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.DEVNULL,
+        env=environment,
+    )
+    assert process.stdout is not None
+    try:
+        output = process.stdout.read(limit + 1)
+        if len(output) > limit:
+            process.kill()
+            process.wait(timeout=30)
+            raise ValueError("GIT_OUTPUT_LIMIT")
+        if process.wait(timeout=30) != 0:
+            raise ValueError("GIT_COMMAND_FAILED")
+        return output
+    finally:
+        process.stdout.close()
+
+
 def classify_git_tree(repo: Path, treeish: str) -> dict[str, object]:
     repo = repo.resolve(strict=True)
     commit = _git(repo, "rev-parse", f"{treeish}^{{commit}}", text=True).stdout.strip()
     tree = _git(repo, "rev-parse", f"{commit}^{{tree}}", text=True).stdout.strip()
     if not re.fullmatch(r"[0-9a-f]{40}", commit) or not re.fullmatch(r"[0-9a-f]{40}", tree):
         raise ValueError("GIT_SUBJECT_IDENTITY")
-    listing = _git(repo, "ls-tree", "-r", "-z", "--full-tree", commit).stdout
-    sources: list[tuple[str, str]] = []
+    listing = _git_bounded(repo, MAX_LISTING_BYTES, "ls-tree", "-r", "-z", "--long", "--full-tree", commit)
+    sources: list[tuple[str, str, int]] = []
+    refused: list[dict[str, str]] = []
+    aggregate = 0
     for record in listing.split(b"\0"):
         if not record:
             continue
         metadata, raw_path = record.split(b"\t", 1)
-        _mode, kind, raw_oid = metadata.split(b" ", 2)
+        _mode, kind, raw_oid, raw_size = metadata.split()
         path = raw_path.decode("utf-8", errors="surrogateescape")
         parts = Path(path).parts
         if kind == b"blob" and Path(path).suffix.lower() in SOURCE_SUFFIXES and not any(part.casefold() in EXCLUDED_PARTS for part in parts):
-            sources.append((path, raw_oid.decode("ascii")))
+            size = int(raw_size)
+            if size > MAX_FILE_BYTES:
+                refused.append({"path": path, "reason": "SOURCE_TOO_LARGE"})
+                continue
+            aggregate += size
+            if len(sources) >= MAX_SOURCE_FILES:
+                raise ValueError("SOURCE_COUNT_LIMIT")
+            if aggregate > MAX_AGGREGATE_SOURCE_BYTES:
+                raise ValueError("SOURCE_AGGREGATE_LIMIT")
+            sources.append((path, raw_oid.decode("ascii"), size))
     environment = os.environ.copy()
     environment["GIT_OPTIONAL_LOCKS"] = "0"
     process = subprocess.Popen(
@@ -193,15 +247,16 @@ def classify_git_tree(repo: Path, treeish: str) -> dict[str, object]:
     )
     assert process.stdin is not None and process.stdout is not None
     rows: list[dict[str, object]] = []
-    refused: list[dict[str, str]] = []
     try:
-        for path, oid in sources:
+        for path, oid, expected_size in sources:
             process.stdin.write((oid + "\n").encode("ascii"))
             process.stdin.flush()
             header = process.stdout.readline().decode("ascii").strip().split()
             if len(header) != 3 or header[0] != oid or header[1] != "blob":
                 raise ValueError("GIT_BLOB_HEADER")
             size = int(header[2])
+            if size != expected_size or size > MAX_FILE_BYTES:
+                raise ValueError("GIT_BLOB_SIZE")
             data = process.stdout.read(size)
             if len(data) != size or process.stdout.read(1) != b"\n":
                 raise ValueError("GIT_BLOB_TRUNCATED")
@@ -212,6 +267,8 @@ def classify_git_tree(repo: Path, treeish: str) -> dict[str, object]:
                 continue
             if row["providers"]:
                 rows.append(row)
+                if len(rows) > MAX_CANDIDATES:
+                    raise ValueError("CANDIDATE_COUNT_LIMIT")
     finally:
         process.stdin.close()
         return_code = process.wait(timeout=30)
@@ -313,7 +370,13 @@ def _strict_json(path: Path) -> dict[str, object]:
             result[key] = value
         return result
 
-    value = json.loads(path.read_text(encoding="utf-8"), object_pairs_hook=pairs, parse_constant=lambda _: (_ for _ in ()).throw(ValueError("NONFINITE_JSON")))
+    if path.is_symlink() or path.stat().st_size > MAX_REVIEW_BYTES:
+        raise ValueError("REVIEW_INPUT_LIMIT")
+    with path.open("rb") as stream:
+        data = stream.read(MAX_REVIEW_BYTES + 1)
+    if len(data) > MAX_REVIEW_BYTES:
+        raise ValueError("REVIEW_INPUT_LIMIT")
+    value = json.loads(data.decode("utf-8"), object_pairs_hook=pairs, parse_constant=lambda _: (_ for _ in ()).throw(ValueError("NONFINITE_JSON")))
     if not isinstance(value, dict):
         raise ValueError("REVIEW_SCHEMA")
     return value
@@ -328,13 +391,17 @@ def main() -> int:
     args = parser.parse_args()
     if args.review_manifest and args.emit_review_template:
         parser.error("--review-manifest and --emit-review-template are mutually exclusive")
-    report = classify_git_tree(args.root, args.git_treeish) if args.git_treeish else classify_tree(args.root)
-    if args.review_manifest:
-        output = reconcile_review(report, _strict_json(args.review_manifest))
-    elif args.emit_review_template:
-        output = review_template(report)
-    else:
-        output = report
+    try:
+        report = classify_git_tree(args.root, args.git_treeish) if args.git_treeish else classify_tree(args.root)
+        if args.review_manifest:
+            output = reconcile_review(report, _strict_json(args.review_manifest))
+        elif args.emit_review_template:
+            output = review_template(report)
+        else:
+            output = report
+    except (OSError, UnicodeError, ValueError, subprocess.SubprocessError, json.JSONDecodeError):
+        print("ERROR classify_launcher_candidates: INPUT_REFUSED", file=sys.stderr)
+        return 2
     print(json.dumps(output, sort_keys=True, separators=(",", ":")))
     return 0
 
