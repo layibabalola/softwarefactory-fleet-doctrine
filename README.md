@@ -44,13 +44,16 @@ the human store-and-forward bus.
 ## Proposed amendments (not ratified)
 
 - [`specs/fleet-universal-provider-control-reconciliation.md`](specs/fleet-universal-provider-control-reconciliation.md)
-  — zero-authority R19 candidate atop exact frozen R18, retaining every later canonical project
-  disposition. R19 makes PREPARED publication restart-convergent under an advancing clock, rejects a
+  — zero-authority R20 candidate atop exact frozen R19, retaining every later canonical project
+  disposition. R20 samples a broker-owned clock before admission serialization, rejects stale or future
+  caller time as authority, validates every path component from the trusted OS-account base through the
+  ledger and lock authority, and runs the canonical workbench negatives on the exact universal workflow.
+  R19 makes PREPARED publication restart-convergent under an advancing clock, rejects a
   reparse/junction at the OS-account authority root itself, precisely enforces observer-key separation,
   and isolates all tests from the persistent account ledger. R18 binds admission to the newest signed
   demand-authority chain, charges nonterminal orphaned work conservatively, and resolves quota authority
   from the OS account rather than caller-controlled HOME variables. It also withdraws R17's unsafe
   in-process callback-wrapper claim: the reference executes no provider or observer code and reports
-  `CERTIFIED_PROCESS_CHOKE_POINT_NOT_INSTALLED`. R19 preserves that honest zero-authority boundary.
+  `CERTIFIED_PROCESS_CHOKE_POINT_NOT_INSTALLED`. R20 preserves that honest zero-authority boundary.
   It is not a portable core, ruling, adoption credit, or launch authority. Coordination stays on
   [issue #4](https://github.com/layibabalola/softwarefactory-fleet-doctrine/issues/4).

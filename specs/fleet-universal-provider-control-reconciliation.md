@@ -1,4 +1,4 @@
-# Universal provider-control reconciliation R19
+# Universal provider-control reconciliation R20
 
 Status: **CANDIDATE / ZERO AUTHORITY / NO DEPLOYMENT**
 
@@ -396,3 +396,22 @@ this no-execution reference can prove. The reference test harness redirects the 
 authority to a deterministic per-test temporary root before any broker construction and proves the
 persistent account ledger is unchanged. R19 remains zero authority: provider execution, process
 resume/kill, containment, CANARY, and OPEN credit are all unavailable, and adoption leaves CLOSED.
+
+R20 preserves exact frozen R19 `f62b916eb952d9515a785334b7fcc5f204155a3b` without adding any
+execution surface. `authorize_suspended_child` obtains exactly one broker-owned UTC sample before the
+canonical root lock, rejects a caller timestamp outside the permitted skew, and uses the same sampled
+instant for the entire serialized admission or retry. A stale caller cannot replay an expired lease; a
+future caller cannot extend it; and an injected advancing broker clock proves restart convergence while
+retaining the original expiry. Production uses real UTC and tests inject a deterministic clock.
+
+The canonical OS-account authority validation walks every component from the trusted account base to the
+authority root before either the quota ledger or quota lock is used. Existing symlink, junction, or reparse
+components fail closed, while absent ordinary directories are created and revalidated one component at a
+time. The rule is based on component identity rather than lexical resolved-path spelling, avoiding Windows
+8.3 aliases as a false-positive heuristic. Real Windows junction/POSIX symlink twins and a portable mocked
+component test cover both ledger and lock access.
+
+The same universal provider-capacity workflow that validates the exact candidate on pull requests and
+master pushes now runs all canonical `capacity-control/tests/test_*.py` workbench negatives in addition to
+the universal and governor suites. R20 remains a zero-authority reference: provider execution, process
+resume/kill, containment, CANARY, and OPEN credit remain unavailable, and adoption leaves CLOSED.

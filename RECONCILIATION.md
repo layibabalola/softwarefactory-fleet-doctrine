@@ -43,5 +43,12 @@ versus launch-artifact separation executable, and redirects the full test harnes
 temporary authority root. The production choke-point prerequisite and zero-authority/CLOSED status are
 unchanged.
 
+R20 preserves exact frozen R19 `f62b916eb952d9515a785334b7fcc5f204155a3b`. Admission samples one
+broker-owned UTC instant before acquiring the canonical root lock and uses it throughout the decision;
+caller time is compatibility input only and stale/future divergence fails closed. The canonical authority
+walk rejects every symlink, junction, or reparse component from the trusted OS-account base through both
+ledger and lock paths. The universal hosted workflow also runs the complete canonical runtime-workbench
+negative suite on pull requests and master pushes. No provider execution or staged-gate authority is added.
+
 Standing containment is unchanged: provider capacity, reset, or authentication cannot open an
 automatic-launch gate or re-enable a launcher.

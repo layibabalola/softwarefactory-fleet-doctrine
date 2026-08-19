@@ -100,21 +100,38 @@ def _os_account_authority_root() -> Path:
         raise RuntimeError("OS_ACCOUNT_AUTHORITY_UNAVAILABLE") from exc
 
 
-_CANONICAL_QUOTA_AUTHORITY_ROOT = (
-    _os_account_authority_root() / "SoftwareFactory" / "provider-control"
-)
+_CANONICAL_QUOTA_TRUSTED_BASE = _os_account_authority_root()
+_CANONICAL_QUOTA_AUTHORITY_ROOT = _CANONICAL_QUOTA_TRUSTED_BASE / "SoftwareFactory" / "provider-control"
 _CANONICAL_QUOTA_LEDGER_ROOT = _CANONICAL_QUOTA_AUTHORITY_ROOT / "quota-ledger"
+
+
+def _default_broker_clock() -> dt.datetime:
+    return dt.datetime.now(UTC)
 
 
 def _validated_quota_authority_root(reason: str) -> Path:
     """Create and return the canonical account authority without following a reparse root."""
 
+    base = _CANONICAL_QUOTA_TRUSTED_BASE
     authority = _CANONICAL_QUOTA_AUTHORITY_ROOT
     try:
-        if authority.exists() and (not authority.is_dir() or _is_reparse(authority)):
+        if not base.exists() or not base.is_dir() or _is_reparse(base):
             raise ControlError(reason)
-        authority.mkdir(mode=0o700, parents=True, exist_ok=True)
-        if not authority.is_dir() or _is_reparse(authority):
+        try:
+            relative = authority.relative_to(base)
+        except ValueError as exc:
+            raise ControlError(reason) from exc
+        current = base
+        for component in relative.parts:
+            current = current / component
+            if current.exists():
+                if not current.is_dir() or _is_reparse(current):
+                    raise ControlError(reason)
+            else:
+                current.mkdir(mode=0o700)
+                if not current.is_dir() or _is_reparse(current):
+                    raise ControlError(reason)
+        if current != authority or not authority.is_dir() or _is_reparse(authority):
             raise ControlError(reason)
         resolved = authority.resolve(strict=True)
         return resolved
@@ -1580,7 +1597,7 @@ class UniversalProviderBroker:
 
     def __init__(self, state_root: Path, *, clock: Callable[[], dt.datetime] | None = None):
         self.state_root = Path(state_root)
-        self._clock = clock
+        self._clock = clock if clock is not None else _default_broker_clock
         try:
             if self.state_root.exists() and (not self.state_root.is_dir() or _is_reparse(self.state_root)):
                 raise ControlError("STATE_BOUNDARY_INVALID")
@@ -1802,8 +1819,13 @@ class UniversalProviderBroker:
             raise ControlError("STATE_UNEVALUABLE") from exc
 
     def _authoritative_now(self, supplied: dt.datetime) -> dt.datetime:
-        observed = self._clock() if self._clock is not None else supplied
-        if not isinstance(observed, dt.datetime) or observed.tzinfo is None:
+        observed = self._clock()
+        if (
+            not isinstance(observed, dt.datetime)
+            or observed.tzinfo is None
+            or not isinstance(supplied, dt.datetime)
+            or supplied.tzinfo is None
+        ):
             raise ControlError("BROKER_CLOCK_INVALID")
         return observed.astimezone(UTC)
 
@@ -3034,6 +3056,12 @@ class UniversalProviderBroker:
     ) -> dict[str, Any]:
         """Serialize poison check, acquisition, lease publication, and result publication per root."""
 
+        try:
+            sampled_now = self._authoritative_now(now)
+            if abs((now.astimezone(UTC) - sampled_now).total_seconds()) > MAX_CLOCK_SKEW_SECONDS:
+                raise ControlError("CALLER_TIME_DIVERGES")
+        except ControlError as exc:
+            return {"status": "UNEVALUABLE", "reason": exc.reason}
         with self._root_lock:
             return self._authorize_suspended_child_root_locked(
                 request=request,
@@ -3045,7 +3073,7 @@ class UniversalProviderBroker:
                 local_stable_identity=local_stable_identity,
                 fleet_secret=fleet_secret,
                 process_observation=process_observation,
-                now=now,
+                now=sampled_now,
             )
 
     def _authorize_suspended_child_root_locked(

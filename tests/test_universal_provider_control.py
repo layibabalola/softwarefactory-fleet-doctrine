@@ -41,13 +41,19 @@ class UniversalProviderControlTests(unittest.TestCase):
         # Ordinary test discovery must never touch the persistent OS-account quota authority.
         # Override both module paths before constructing any broker, using a deterministic child of
         # this test's private temporary root.  The production resolver remains covered separately.
+        self.default_quota_trusted_base = upc._CANONICAL_QUOTA_TRUSTED_BASE
         self.default_quota_authority_root = upc._CANONICAL_QUOTA_AUTHORITY_ROOT
         self.default_quota_ledger_root = upc._CANONICAL_QUOTA_LEDGER_ROOT
+        upc._CANONICAL_QUOTA_TRUSTED_BASE = self.root
         upc._CANONICAL_QUOTA_AUTHORITY_ROOT = self.root / "test-account-authority"
         upc._CANONICAL_QUOTA_LEDGER_ROOT = (
             upc._CANONICAL_QUOTA_AUTHORITY_ROOT / "quota-ledger"
         )
         self.now = dt.datetime(2026, 8, 18, 20, 0, tzinfo=UTC)
+        self.default_clock_patch = mock.patch.object(
+            upc, "_default_broker_clock", side_effect=lambda: self.now
+        )
+        self.default_clock_patch.start()
         self.secret = b"S" * 32
         self.termination_secret = b"T" * 32
         self.quality_secret = b"Q" * 32
@@ -143,6 +149,8 @@ class UniversalProviderControlTests(unittest.TestCase):
                 runtime.unproven_artifact_handles.clear()
                 upc._BROKER_ARTIFACT_CLEANUP_POISON.pop(key, None)
                 upc._BROKER_ROOT_RUNTIMES.pop(key, None)
+        self.default_clock_patch.stop()
+        upc._CANONICAL_QUOTA_TRUSTED_BASE = self.default_quota_trusted_base
         upc._CANONICAL_QUOTA_AUTHORITY_ROOT = self.default_quota_authority_root
         upc._CANONICAL_QUOTA_LEDGER_ROOT = self.default_quota_ledger_root
         self.temp.cleanup()
@@ -995,6 +1003,7 @@ class UniversalProviderControlTests(unittest.TestCase):
         process["observedAt"] = upc.iso(later_now)
         process["processStartTime"] = upc.iso(later_now - dt.timedelta(seconds=1))
         process["observerHmacSha256"] = upc.contract_hmac("process-observation-v1", process, self.secret, "observerHmacSha256")
+        broker._clock = lambda: later_now
         result = self.authorize(broker, later_request, native_evidence=[native], now=later_now, process_observation=process)
         self.assertEqual(first["status"], "ALLOW_ATTESTED")
         self.assertEqual(result["reason"], "PRIOR_IDLE_RECEIPT_INVALID")
@@ -1677,6 +1686,7 @@ class UniversalProviderControlTests(unittest.TestCase):
         receipt["observerHmacSha256"] = upc.contract_hmac(
             "process-observation-v1", receipt, self.secret, "observerHmacSha256"
         )
+        broker._clock = lambda: later
         with self.assertRaisesRegex(upc.ControlError, "LEASE_EXPIRED_BEFORE_RESUME"):
             broker.confirm_resume_boundary(
                 lease_id=prepared["leaseId"], process_observation=receipt,
@@ -1690,6 +1700,7 @@ class UniversalProviderControlTests(unittest.TestCase):
         finally:
             connection.close()
 
+        broker._clock = lambda: self.now
         canary_broker = upc.UniversalProviderBroker(self.root / "r3-expired-canary")
         self.transition(canary_broker, "CANARY")
         canary_request = self.make_request("request-r3-expired-canary")
@@ -1710,6 +1721,7 @@ class UniversalProviderControlTests(unittest.TestCase):
         canary_receipt["observerHmacSha256"] = upc.contract_hmac(
             "process-observation-v1", canary_receipt, self.secret, "observerHmacSha256"
         )
+        canary_broker._clock = lambda: later
         with self.assertRaisesRegex(upc.ControlError, "LEASE_EXPIRED_BEFORE_RESUME"):
             canary_broker.confirm_resume_boundary(
                 lease_id=canary_prepared["leaseId"], process_observation=canary_receipt,
@@ -3125,6 +3137,7 @@ class UniversalProviderControlTests(unittest.TestCase):
         resume["observerHmacSha256"] = upc.contract_hmac(
             "process-observation-v1", resume, self.secret, "observerHmacSha256"
         )
+        broker._clock = lambda: later
         with self.assertRaisesRegex(
             upc.ControlError, "LEASE_EXPIRED_BEFORE_RESUME"
         ):
@@ -3145,6 +3158,7 @@ class UniversalProviderControlTests(unittest.TestCase):
         finally:
             connection.close()
 
+        broker._clock = lambda: self.now
         canary = upc.UniversalProviderBroker(self.root / "r12-rollover-canary")
         self.transition(canary, "CANARY")
         canary_request = self.make_request("request-r12-rollover-canary")
@@ -3167,6 +3181,7 @@ class UniversalProviderControlTests(unittest.TestCase):
         canary_resume["observerHmacSha256"] = upc.contract_hmac(
             "process-observation-v1", canary_resume, self.secret, "observerHmacSha256"
         )
+        canary._clock = lambda: later
         with self.assertRaisesRegex(
             upc.ControlError, "LEASE_EXPIRED_BEFORE_RESUME"
         ):
@@ -3360,10 +3375,12 @@ class UniversalProviderControlTests(unittest.TestCase):
         broker = upc.UniversalProviderBroker(self.root / "r15-watchdog")
         self.transition(broker)
         allowed = self.authorize(broker, begin_request=False)
+        later = self.now + dt.timedelta(seconds=61)
+        broker._clock = lambda: later
         with self.assertRaisesRegex(upc.ControlError, "RUNTIME_TERMINATION_REQUIRED"):
             broker.check_runtime_boundary(
                 lease_id=allowed["leaseId"], fleet_secret=self.secret,
-                now=self.now + dt.timedelta(seconds=61),
+                now=later,
             )
         with broker._connect() as connection:
             state = connection.execute(
@@ -3778,6 +3795,7 @@ class UniversalProviderControlTests(unittest.TestCase):
         allowed = self.authorize(broker, request, manual_authorization=authorization)
         terminal = self.process_observation(allowed, "EXITED", phase="TERMINAL")
         later = self.now + dt.timedelta(seconds=61)
+        broker._clock = lambda: later
         with self.assertRaisesRegex(upc.ControlError, "RUNTIME_TERMINATION_REQUIRED"):
             broker.check_runtime_boundary(
                 lease_id=allowed["leaseId"], fleet_secret=self.secret, now=later
@@ -4306,7 +4324,7 @@ class UniversalProviderControlTests(unittest.TestCase):
 
     def test_r19_01_prepared_retry_survives_restart_with_advancing_time(self) -> None:
         root = self.root / "r19-restart-convergence"
-        first = upc.UniversalProviderBroker(root)
+        first = upc.UniversalProviderBroker(root, clock=lambda: self.now)
         self.transition(first)
         request = self.make_request("request-r19-restart-convergence")
         original_process = self.admission_observation(request)
@@ -4327,7 +4345,7 @@ class UniversalProviderControlTests(unittest.TestCase):
         self.assertEqual(prepared["state"], "PREPARED")
 
         self.now += dt.timedelta(seconds=1)
-        restarted = upc.UniversalProviderBroker(root)
+        restarted = upc.UniversalProviderBroker(root, clock=lambda: self.now)
         recovered = self.authorize(
             restarted, request, confirm=False, begin_request=False,
             process_observation=copy.deepcopy(original_process), now=self.now,
@@ -4462,6 +4480,116 @@ class UniversalProviderControlTests(unittest.TestCase):
         self.assertEqual(before, signature())
         self.assertTrue(
             broker._quota_ledger_path().is_relative_to(self.root)
+        )
+
+    def test_r20_01_stale_caller_time_cannot_replay_after_authoritative_expiry(self) -> None:
+        authoritative = [self.now]
+        broker = upc.UniversalProviderBroker(
+            self.root / "r20-stale-caller", clock=lambda: authoritative[0]
+        )
+        self.transition(broker)
+        request = self.make_request("request-r20-stale-caller")
+        prepared = self.authorize(broker, request, confirm=False, begin_request=False)
+        self.assertEqual(prepared["status"], "PREPARED_SUSPENDED")
+        authoritative[0] = self.now + dt.timedelta(seconds=request["maxWallSeconds"] + 1)
+        blocked = self.authorize(
+            broker, request, confirm=False, begin_request=False,
+            now=self.now, profile=self.profile,
+        )
+        self.assertEqual(blocked, {"status": "UNEVALUABLE", "reason": "CALLER_TIME_DIVERGES"})
+        with self.assertRaisesRegex(upc.ControlError, "LEASE_EXPIRED_BEFORE_RESUME"):
+            broker.confirm_resume_boundary(
+                lease_id=prepared["leaseId"],
+                process_observation=self.admission_observation(
+                    request, phase="RESUME", lease_id=prepared["leaseId"]
+                ),
+                fleet_secret=self.secret, now=self.now,
+            )
+
+    def test_r20_02_future_caller_time_cannot_extend_sampled_lease(self) -> None:
+        broker = upc.UniversalProviderBroker(
+            self.root / "r20-future-caller", clock=lambda: self.now
+        )
+        self.transition(broker)
+        request = self.make_request("request-r20-future-caller")
+        prepared = self.authorize(
+            broker, request, confirm=False, begin_request=False,
+            now=self.now + dt.timedelta(seconds=4),
+        )
+        self.assertEqual(prepared["status"], "PREPARED_SUSPENDED")
+        self.assertEqual(upc.parse_time(prepared["issuedAt"]), self.now)
+        self.assertEqual(
+            upc.parse_time(prepared["expiresAt"]),
+            self.now + dt.timedelta(seconds=request["maxWallSeconds"]),
+        )
+
+    def test_r20_03_every_authority_ancestor_component_is_reparse_checked(self) -> None:
+        base = self.root / "r20-mocked-trusted-base"
+        base.mkdir()
+        authority = base / "SoftwareFactory" / "provider-control"
+        marked = base / "SoftwareFactory"
+        real_is_reparse = upc._is_reparse
+
+        def mark_ancestor(path: Path) -> bool:
+            if os.path.normcase(os.path.abspath(str(path))) == os.path.normcase(
+                os.path.abspath(str(marked))
+            ):
+                return True
+            return real_is_reparse(path)
+
+        with mock.patch.object(upc, "_CANONICAL_QUOTA_TRUSTED_BASE", base), \
+                mock.patch.object(upc, "_CANONICAL_QUOTA_AUTHORITY_ROOT", authority), \
+                mock.patch.object(upc, "_CANONICAL_QUOTA_LEDGER_ROOT", authority / "quota-ledger"), \
+                mock.patch.object(upc, "_is_reparse", side_effect=mark_ancestor):
+            broker = upc.UniversalProviderBroker(self.root / "r20-mocked-ancestor")
+            with self.assertRaisesRegex(upc.ControlError, "QUOTA_LEDGER_BOUNDARY_INVALID"):
+                broker._quota_ledger_path()
+            with self.assertRaisesRegex(upc.ControlError, "QUOTA_LOCK_BOUNDARY_INVALID"):
+                broker._lock_path(self.quota_id)
+
+    def test_r20_04_real_ancestor_junction_or_symlink_is_rejected(self) -> None:
+        base = self.root / "r20-real-trusted-base"
+        base.mkdir()
+        target = self.root / "r20-real-target"
+        target.mkdir()
+        ancestor = base / "SoftwareFactory"
+        created = False
+        if os.name == "nt":
+            run = subprocess.run(
+                ["cmd", "/c", "mklink", "/J", str(ancestor), str(target)],
+                capture_output=True, text=True, check=False, timeout=15,
+            )
+            created = run.returncode == 0
+        else:
+            try:
+                ancestor.symlink_to(target, target_is_directory=True)
+                created = True
+            except (OSError, NotImplementedError):
+                created = False
+        if not created:
+            source = inspect.getsource(upc._validated_quota_authority_root)
+            self.assertIn("for component in relative.parts", source)
+            self.assertIn("_is_reparse(current)", source)
+            return
+        authority = ancestor / "provider-control"
+        with mock.patch.object(upc, "_CANONICAL_QUOTA_TRUSTED_BASE", base), \
+                mock.patch.object(upc, "_CANONICAL_QUOTA_AUTHORITY_ROOT", authority), \
+                mock.patch.object(upc, "_CANONICAL_QUOTA_LEDGER_ROOT", authority / "quota-ledger"):
+            broker = upc.UniversalProviderBroker(self.root / "r20-real-ancestor")
+            with self.assertRaisesRegex(upc.ControlError, "QUOTA_LEDGER_BOUNDARY_INVALID"):
+                broker._quota_ledger_path()
+            with self.assertRaisesRegex(upc.ControlError, "QUOTA_LOCK_BOUNDARY_INVALID"):
+                broker._lock_path(self.quota_id)
+
+    def test_r20_05_universal_workflow_runs_exact_workbench_suite(self) -> None:
+        workflow = (
+            ROOT / ".github/workflows/provider-capacity-governor.yml"
+        ).read_text(encoding="utf-8")
+        self.assertIn("pull_request:", workflow)
+        self.assertIn("push:\n    branches: [master]", workflow)
+        self.assertIn(
+            'python -m unittest discover -s capacity-control/tests -p "test_*.py" -v',
+            workflow,
         )
 
     def test_r17_07_low_level_request_primitives_are_not_public(self) -> None:
