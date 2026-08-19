@@ -197,7 +197,7 @@ LOCAL_ADAPTER_LANDED_AND_BOUNDED_FABLE_RESTORATION_BEGUN_WITH_GATE_CLOSED)**
 PENDING_PINNED_R14_PROFILE_COMPLETE_FOUR_SURFACE_CENSUS_1000_IDLE_TICKS_SUSPENDED_CHILD_ATTESTATION_AND_REVIEW,
 DNG_MASTER_3dc9100507c35e3724200dabaa3df6ffd2eb3cd0)**
 
-**DISTINGUISH(b632e0669e6cda8d4828b9aa8442b8388941a996,
+**DISTINGUISH(6aafb089719aec1582a2dd3edcf7463d73ca9767,
 LOCAL_STANDING_OWNER_DIRECTIVE_WITH_FRESH_ONE_SHOT_PER_SLICE_PERMITS_NOT_A_SELF_RENEWING_24_HOUR_WINDOW,
 DNG_MASTER_3dc9100507c35e3724200dabaa3df6ffd2eb3cd0)**
 
@@ -268,12 +268,15 @@ capacity, claimant, exact-subject, bounded-context, and fail-closed gate invaria
   `CANDIDATE_ZERO_AUTHORITY`. It reconciles competing portable semantics for DNG only; project
   adapters and dispositions remain local and explicit.
 - **Automated bounded provider rotation R1 candidate**
-  (`b632e0669e6cda8d4828b9aa8442b8388941a996`): accept its serial quota-domain rule, fresh
+  (`6aafb089719aec1582a2dd3edcf7463d73ca9767`, rooted at
+  `b632e0669e6cda8d4828b9aa8442b8388941a996`): accept its serial quota-domain rule, fresh
   transactional admission, exact-subject bounds, zero-credit outputs, and closed-between-runs
   posture. DNG distinguishes its 24-hour create-once window and no-auto-renew rule: the operator's
   durable project directive is standing authority, while each actual slice still receives a fresh,
   expiring, lane-specific one-use permit after current capacity proof. This is a local adapter
-  proposal and execution receipt, not candidate ratification or R14 adoption.
+  proposal and execution receipt, not candidate ratification or R14 adoption. The candidate's own
+  `Canonical DNG competing evidence` section records the reciprocal distinction and the stricter
+  shared intersection.
 
 DNG additionally rejects three tempting savings as unsafe generalizations: the Claude Desktop
 idle-sensitive cache is not canonical capacity evidence; removing session persistence breaks M0
