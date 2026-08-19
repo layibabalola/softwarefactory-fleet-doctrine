@@ -8,6 +8,7 @@ import hashlib
 import json
 import os
 import pathlib
+import re
 import sys
 from typing import Any, Sequence
 
@@ -20,6 +21,14 @@ MAX_SOURCE_BYTES = 16 * 1024 * 1024
 MAX_AGGREGATE_SOURCE_BYTES = 64 * 1024 * 1024
 MAX_SOURCE_LINES = 200_000
 MAX_CAPSULE_PAYLOAD_BYTES = 1024 * 1024
+MAX_JSON_DEPTH = 64
+MAX_JSON_NODES = 65_536
+MAX_PATH_CHARS = 32_767
+MAX_PURPOSE_CHARS = 256
+SHA256 = re.compile(r"[0-9a-f]{64}")
+SUBJECT_DIGEST = re.compile(r"sha256:[0-9a-f]{64}")
+MANIFEST_KEYS = {"schema", "subject_digest", "workspace_root", "max_payload_bytes", "items"}
+ITEM_KEYS = {"relative_path", "sha256", "start_line", "end_line", "purpose"}
 
 
 class CapsuleError(RuntimeError):
@@ -27,7 +36,7 @@ class CapsuleError(RuntimeError):
 
 
 def canonical_json(value: Any) -> str:
-    return json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=True)
+    return json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=True, allow_nan=False)
 
 
 def digest_json(value: Any) -> str:
@@ -46,13 +55,80 @@ def read_bounded(path: pathlib.Path, maximum: int) -> bytes:
     return data
 
 
+def validate_json_shape(data: bytes) -> None:
+    depth = 0
+    nodes = 0
+    quoted = False
+    escaped = False
+    for byte in data:
+        if quoted:
+            if escaped:
+                escaped = False
+            elif byte == 92:
+                escaped = True
+            elif byte == 34:
+                quoted = False
+            continue
+        if byte == 34:
+            quoted = True
+        elif byte in (91, 123):
+            depth += 1
+            nodes += 1
+            if depth > MAX_JSON_DEPTH or nodes > MAX_JSON_NODES:
+                raise CapsuleError("JSON_SHAPE_LIMIT")
+        elif byte in (93, 125):
+            depth -= 1
+            if depth < 0:
+                raise CapsuleError("INVALID_JSON")
+        elif byte in (44, 58):
+            nodes += 1
+            if nodes > MAX_JSON_NODES:
+                raise CapsuleError("JSON_SHAPE_LIMIT")
+
+
+def strict_json(data: bytes) -> Any:
+    validate_json_shape(data)
+
+    def pairs(values: list[tuple[str, Any]]) -> dict[str, Any]:
+        result: dict[str, Any] = {}
+        for key, value in values:
+            if key in result:
+                raise CapsuleError("DUPLICATE_JSON_KEY")
+            result[key] = value
+        return result
+
+    return json.loads(
+        data.decode("utf-8"),
+        object_pairs_hook=pairs,
+        parse_constant=lambda _: (_ for _ in ()).throw(CapsuleError("NONFINITE_JSON")),
+    )
+
+
+def canonical_relative_path(value: Any) -> str:
+    if not isinstance(value, str) or not value or len(value) > MAX_PATH_CHARS:
+        raise CapsuleError("RELATIVE_PATH_SCHEMA")
+    normalized = value.replace("\\", "/")
+    segments = normalized.split("/")
+    windows = pathlib.PureWindowsPath(value)
+    if pathlib.PurePosixPath(normalized).is_absolute() or windows.is_absolute() or windows.drive:
+        raise CapsuleError("RELATIVE_PATH_SCHEMA")
+    if any(segment in ("", ".", "..") for segment in segments):
+        raise CapsuleError("RELATIVE_PATH_SCHEMA")
+    return normalized
+
+
 def build(manifest: dict[str, Any]) -> dict[str, Any]:
     if not isinstance(manifest, dict):
         raise CapsuleError("MANIFEST_SCHEMA")
+    if set(manifest) != MANIFEST_KEYS:
+        raise CapsuleError("MANIFEST_SCHEMA")
     if manifest.get("schema") != REQUEST_SCHEMA:
         raise CapsuleError("unsupported capsule request schema")
+    subject_digest = manifest.get("subject_digest")
+    if not isinstance(subject_digest, str) or not SUBJECT_DIGEST.fullmatch(subject_digest):
+        raise CapsuleError("SUBJECT_DIGEST_SCHEMA")
     root_value = manifest.get("workspace_root")
-    if not isinstance(root_value, str) or not root_value:
+    if not isinstance(root_value, str) or not root_value or len(root_value) > MAX_PATH_CHARS:
         raise CapsuleError("workspace_root is required")
     root = pathlib.Path(root_value).resolve(strict=True)
     if not root.is_dir():
@@ -70,8 +146,8 @@ def build(manifest: dict[str, Any]) -> dict[str, Any]:
     aggregate_source_bytes=0
     for item in items:
         if not isinstance(item, dict): raise CapsuleError("capsule item must be an object")
-        relative=item.get("relative_path")
-        if not isinstance(relative,str) or not relative: raise CapsuleError("relative_path is required")
+        if set(item) != ITEM_KEYS: raise CapsuleError("ITEM_SCHEMA")
+        relative=canonical_relative_path(item.get("relative_path"))
         unresolved=root/relative
         if unresolved.is_symlink(): raise CapsuleError("SYMLINK_REFUSED")
         candidate=unresolved.resolve(strict=True)
@@ -83,15 +159,16 @@ def build(manifest: dict[str, Any]) -> dict[str, Any]:
         aggregate_source_bytes+=source_size
         if aggregate_source_bytes>MAX_AGGREGATE_SOURCE_BYTES: raise CapsuleError("SOURCE_AGGREGATE_LIMIT")
         start=item.get("start_line"); end=item.get("end_line")
-        if not isinstance(start,int) or not isinstance(end,int) or start<1 or end<start:
+        if isinstance(start,bool) or isinstance(end,bool) or not isinstance(start,int) or not isinstance(end,int) or start<1 or end<start:
             raise CapsuleError(f"invalid line range: {relative}")
-        key=(relative.replace('\\','/'),start,end)
+        canonical=candidate.relative_to(root).as_posix()
+        key=(canonical,start,end)
         if key in seen: raise CapsuleError(f"duplicate capsule slice: {relative}:{start}-{end}")
         seen.add(key)
         purpose=item.get("purpose")
-        if not isinstance(purpose,str) or not purpose: raise CapsuleError(f"purpose is required: {relative}")
+        if not isinstance(purpose,str) or not purpose or len(purpose)>MAX_PURPOSE_CHARS: raise CapsuleError(f"purpose is required: {relative}")
         expected=item.get("sha256")
-        if not isinstance(expected,str): raise CapsuleError("FILE_HASH_SCHEMA")
+        if not isinstance(expected,str) or not SHA256.fullmatch(expected): raise CapsuleError("FILE_HASH_SCHEMA")
         preflight.append((candidate,key,expected,purpose))
 
     output_items=[]
@@ -110,13 +187,13 @@ def build(manifest: dict[str, Any]) -> dict[str, Any]:
         if payload_bytes>maximum: raise CapsuleError("capsule payload exceeds max_payload_bytes")
         output_items.append({"relative_path":key[0],"file_sha256":actual,"start_line":start,"end_line":end,"purpose":purpose,"content":content})
     identity_manifest={key:value for key,value in manifest.items() if key!="workspace_root"}
-    return {"schema":CAPSULE_SCHEMA,"subject_digest":manifest.get("subject_digest"),"manifest_digest":digest_json(identity_manifest),"payload_bytes":payload_bytes,"items":output_items}
+    return {"schema":CAPSULE_SCHEMA,"subject_digest":subject_digest,"manifest_digest":digest_json(identity_manifest),"payload_bytes":payload_bytes,"items":output_items}
 
 
 def write_atomic(path: pathlib.Path, value: dict[str, Any]) -> None:
     path.parent.mkdir(parents=True,exist_ok=True)
     temporary=path.with_name(f".{path.name}.{os.getpid()}.tmp")
-    temporary.write_text(json.dumps(value,indent=2,sort_keys=True)+"\n",encoding="utf-8")
+    temporary.write_text(json.dumps(value,indent=2,sort_keys=True,allow_nan=False)+"\n",encoding="utf-8")
     os.replace(temporary,path)
 
 
@@ -126,11 +203,11 @@ def main(argv: Sequence[str] | None=None) -> int:
     parser.add_argument("--output",type=pathlib.Path)
     args=parser.parse_args(argv)
     try:
-        manifest=json.loads(read_bounded(args.manifest,MAX_MANIFEST_BYTES).decode("utf-8")); result=build(manifest)
+        manifest=strict_json(read_bounded(args.manifest,MAX_MANIFEST_BYTES)); result=build(manifest)
         if args.output: write_atomic(args.output,result)
-        else: print(json.dumps(result,indent=2,sort_keys=True))
+        else: print(json.dumps(result,indent=2,sort_keys=True,allow_nan=False))
         return 0
-    except (OSError,UnicodeError,json.JSONDecodeError,CapsuleError):
+    except (OSError,UnicodeError,json.JSONDecodeError,CapsuleError,ValueError,TypeError,OverflowError,AttributeError,RecursionError):
         print(json.dumps({"error":"INPUT_REFUSED"},sort_keys=True),file=sys.stderr)
         return 22
 

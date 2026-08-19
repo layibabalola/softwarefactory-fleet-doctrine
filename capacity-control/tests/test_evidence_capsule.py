@@ -44,7 +44,7 @@ class CapsuleTests(unittest.TestCase):
         outside=self.root.parent/(self.root.name+"-outside"); outside.write_text("secret\n",encoding="utf-8")
         try:
             item={"relative_path":"../"+outside.name,"sha256":hashlib.sha256(outside.read_bytes()).hexdigest(),"start_line":1,"end_line":1,"purpose":"bad"}
-            with self.assertRaisesRegex(capsule.CapsuleError,"escapes workspace"): capsule.build(self.manifest(items=[item]))
+            with self.assertRaisesRegex(capsule.CapsuleError,"RELATIVE_PATH_SCHEMA"): capsule.build(self.manifest(items=[item]))
         finally: outside.unlink()
         with self.assertRaisesRegex(capsule.CapsuleError,"exceeds"): capsule.build(self.manifest(max_payload_bytes=2))
 
@@ -70,6 +70,39 @@ class CapsuleTests(unittest.TestCase):
     def test_non_object_manifest_is_fixed_schema_error(self):
         with self.assertRaisesRegex(capsule.CapsuleError,"MANIFEST_SCHEMA"):
             capsule.build([])
+
+    def test_manifest_schema_is_exact_and_bounded(self):
+        with self.assertRaisesRegex(capsule.CapsuleError,"MANIFEST_SCHEMA"):
+            capsule.build(self.manifest(extra="private"))
+        with self.assertRaisesRegex(capsule.CapsuleError,"SUBJECT_DIGEST_SCHEMA"):
+            capsule.build(self.manifest(subject_digest="C:/private/token"))
+        item=self.manifest()["items"][0].copy(); item["start_line"]=True
+        with self.assertRaisesRegex(capsule.CapsuleError,"line range"):
+            capsule.build(self.manifest(items=[item]))
+        item=self.manifest()["items"][0].copy(); item["purpose"]="x"*(capsule.MAX_PURPOSE_CHARS+1)
+        with self.assertRaisesRegex(capsule.CapsuleError,"purpose"):
+            capsule.build(self.manifest(items=[item]))
+
+    def test_relative_path_is_canonical_and_never_echoes_root(self):
+        for alias in (str(self.file),"./ledger.md","nested/../ledger.md"):
+            item=self.manifest()["items"][0].copy(); item["relative_path"]=alias
+            with self.assertRaisesRegex(capsule.CapsuleError,"RELATIVE_PATH_SCHEMA"):
+                capsule.build(self.manifest(items=[item]))
+        result=capsule.build(self.manifest())
+        self.assertEqual(result["items"][0]["relative_path"],"ledger.md")
+        self.assertNotIn(str(self.root),json.dumps(result))
+
+    def test_deep_duplicate_and_nonfinite_manifest_are_fixed_refusals(self):
+        deep=b"["*(capsule.MAX_JSON_DEPTH+1)+b"0"+b"]"*(capsule.MAX_JSON_DEPTH+1)
+        stderr=io.StringIO()
+        with mock.patch.object(capsule,"read_bounded",return_value=deep), mock.patch.object(capsule.json,"loads",side_effect=AssertionError("parser must not run")), contextlib.redirect_stderr(stderr):
+            code=capsule.main(["--manifest","C:/private/manifest.json"])
+        self.assertEqual(code,22); self.assertEqual(json.loads(stderr.getvalue()),{"error":"INPUT_REFUSED"})
+        for raw in (b'{"schema":"x","schema":"y"}',b'{"schema":NaN}'):
+            stderr=io.StringIO()
+            with mock.patch.object(capsule,"read_bounded",return_value=raw), contextlib.redirect_stderr(stderr):
+                code=capsule.main(["--manifest","C:/private/manifest.json"])
+            self.assertEqual(code,22); self.assertEqual(json.loads(stderr.getvalue()),{"error":"INPUT_REFUSED"}); self.assertNotIn("private",stderr.getvalue())
 
     def test_cli_error_is_fixed_and_does_not_echo_private_path(self):
         stderr=io.StringIO()

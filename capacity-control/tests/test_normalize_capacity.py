@@ -58,5 +58,15 @@ class CapacityTests(unittest.TestCase):
                 code=normalizer.main(["--provider","anthropic","--input",str(path),"--quota-domain",DOMAIN,"--observed-at","2026-08-18T16:00:00Z"])
             self.assertEqual(code,22); self.assertEqual(json.loads(stderr.getvalue()),{"error":"INPUT_REFUSED"})
 
+    def test_nonfinite_and_out_of_range_utilization_are_fixed_refusals(self):
+        for utilization in (float("nan"),float("inf"),-1,101,True,"private"):
+            raw={"five_hour":{"utilization":utilization,"resets_at":"2026-08-18T20:20:00Z"}}
+            with tempfile.TemporaryDirectory() as temporary:
+                path=pathlib.Path(temporary)/"private-token.json"; path.write_text(json.dumps(raw),encoding="utf-8")
+                stderr=io.StringIO()
+                with contextlib.redirect_stderr(stderr):
+                    code=normalizer.main(["--provider","anthropic","--input",str(path),"--quota-domain",DOMAIN,"--observed-at","2026-08-18T16:00:00Z"])
+            self.assertEqual(code,22); self.assertEqual(json.loads(stderr.getvalue()),{"error":"INPUT_REFUSED"}); self.assertNotIn("private",stderr.getvalue())
+
 
 if __name__=="__main__": unittest.main()

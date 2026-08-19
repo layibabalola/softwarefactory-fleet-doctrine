@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import datetime as dt
 import json
+import math
 import pathlib
 import sys
 from typing import Any, Iterable, Sequence
@@ -18,10 +19,45 @@ MAX_METADATA_BYTES = 1024 * 1024
 MAX_INPUT_LINES = 200_000
 MAX_JSON_DEPTH = 64
 MAX_JSON_NODES = 65536
+MAX_USAGE_INTEGER = 2**63 - 1
 
 
 class NormalizeError(RuntimeError):
     pass
+
+
+def strict_json(text: str) -> Any:
+    def pairs(values: list[tuple[str, Any]]) -> dict[str, Any]:
+        result: dict[str, Any] = {}
+        for key, value in values:
+            if key in result: raise NormalizeError("DUPLICATE_JSON_KEY")
+            result[key] = value
+        return result
+
+    def finite_float(value: str) -> float:
+        result=float(value)
+        if not math.isfinite(result): raise NormalizeError("NONFINITE_JSON")
+        return result
+
+    return json.loads(
+        text,
+        object_pairs_hook=pairs,
+        parse_float=finite_float,
+        parse_constant=lambda _: (_ for _ in ()).throw(NormalizeError("NONFINITE_JSON")),
+    )
+
+
+def token_count(value: Any) -> int:
+    if value is None: return 0
+    if isinstance(value,bool) or not isinstance(value,int) or value<0 or value>MAX_USAGE_INTEGER:
+        raise NormalizeError("TOKEN_COUNT_SCHEMA")
+    return value
+
+
+def count_sum(*values: int) -> int:
+    result=sum(values)
+    if result<0 or result>MAX_USAGE_INTEGER: raise NormalizeError("TOKEN_COUNT_SCHEMA")
+    return result
 
 
 def read_bounded(path: pathlib.Path, maximum: int, line_limit: int | None = None) -> bytes:
@@ -57,7 +93,7 @@ def validate_json_shape(data: bytes) -> None:
 def json_lines(lines: Iterable[str]) -> Iterable[dict[str, Any]]:
     for line in lines:
         try:
-            value = json.loads(line)
+            value = strict_json(line)
         except json.JSONDecodeError:
             continue
         if isinstance(value, dict):
@@ -109,18 +145,19 @@ def normalize_anthropic(events: Iterable[dict[str, Any]]) -> tuple[dict[str, Any
             continue
         seen.add(message_id)
         if isinstance(message.get("model"), str): models.add(message["model"])
-        input_other = int(native.get("input_tokens") or 0)
-        cache_read = int(native.get("cache_read_input_tokens") or 0)
-        cache_create = int(native.get("cache_creation_input_tokens") or 0)
-        output = int(native.get("output_tokens") or 0)
+        input_other = token_count(native.get("input_tokens"))
+        cache_read = token_count(native.get("cache_read_input_tokens"))
+        cache_create = token_count(native.get("cache_creation_input_tokens"))
+        output = token_count(native.get("output_tokens"))
         details = native.get("output_tokens_details") or {}
-        reasoning = int(details.get("thinking_tokens") or 0) if isinstance(details, dict) else 0
-        usage["input_tokens"] += input_other + cache_create
-        usage["cached_input_tokens"] += cache_read
-        usage["output_tokens"] += output
-        usage["reasoning_tokens"] += reasoning
-        usage["peak_context_tokens"] = max(int(usage["peak_context_tokens"]), input_other + cache_create + cache_read)
-        usage["turns"] += 1
+        reasoning = token_count(details.get("thinking_tokens")) if isinstance(details, dict) else 0
+        current_input=count_sum(input_other,cache_create)
+        usage["input_tokens"] = count_sum(int(usage["input_tokens"]),current_input)
+        usage["cached_input_tokens"] = count_sum(int(usage["cached_input_tokens"]),cache_read)
+        usage["output_tokens"] = count_sum(int(usage["output_tokens"]),output)
+        usage["reasoning_tokens"] = count_sum(int(usage["reasoning_tokens"]),reasoning)
+        usage["peak_context_tokens"] = max(int(usage["peak_context_tokens"]), count_sum(current_input,cache_read))
+        usage["turns"] = count_sum(int(usage["turns"]),1)
     usage["wall_seconds"] = wall_seconds(timestamps)
     return usage, next(iter(models)) if len(models) == 1 else None, str(session_id) if session_id else None
 
@@ -144,14 +181,14 @@ def normalize_openai(events: Iterable[dict[str, Any]]) -> tuple[dict[str, Any], 
             info = payload.get("info")
             if isinstance(info, dict) and isinstance(info.get("total_token_usage"), dict):
                 last_total = info["total_token_usage"]
-                if isinstance(info.get("last_token_usage"), dict): turns += 1
+                if isinstance(info.get("last_token_usage"), dict): turns = count_sum(turns,1)
                 context = info.get("model_context_window")
-                if isinstance(context, int): usage["peak_context_tokens"] = max(int(usage["peak_context_tokens"]), int(last_total.get("input_tokens") or 0))
+                if isinstance(context, int) and not isinstance(context,bool): usage["peak_context_tokens"] = max(int(usage["peak_context_tokens"]), token_count(last_total.get("input_tokens")))
     if last_total:
-        usage["input_tokens"] = int(last_total.get("input_tokens") or 0)
-        usage["cached_input_tokens"] = int(last_total.get("cached_input_tokens") or 0)
-        usage["output_tokens"] = int(last_total.get("output_tokens") or 0)
-        usage["reasoning_tokens"] = int(last_total.get("reasoning_output_tokens") or 0)
+        usage["input_tokens"] = token_count(last_total.get("input_tokens"))
+        usage["cached_input_tokens"] = token_count(last_total.get("cached_input_tokens"))
+        usage["output_tokens"] = token_count(last_total.get("output_tokens"))
+        usage["reasoning_tokens"] = token_count(last_total.get("reasoning_output_tokens"))
     usage["turns"] = turns
     usage["wall_seconds"] = wall_seconds(timestamps)
     return usage, str(model) if model else None, str(session_id) if session_id else None
@@ -169,14 +206,14 @@ def normalize_moonshot(events: Iterable[dict[str, Any]]) -> tuple[dict[str, Any]
         native = event.get("usage")
         if not isinstance(native, dict): continue
         if isinstance(event.get("model"), str): models.add(event["model"])
-        other = int(native.get("inputOther") or 0)
-        cached = int(native.get("inputCacheRead") or 0)
-        created = int(native.get("inputCacheCreation") or 0)
-        usage["input_tokens"] += other + created
-        usage["cached_input_tokens"] += cached
-        usage["output_tokens"] += int(native.get("output") or 0)
-        usage["peak_context_tokens"] = max(int(usage["peak_context_tokens"]), other + created + cached)
-        usage["turns"] += 1
+        other = token_count(native.get("inputOther"))
+        cached = token_count(native.get("inputCacheRead"))
+        created = token_count(native.get("inputCacheCreation"))
+        usage["input_tokens"] = count_sum(int(usage["input_tokens"]),other,created)
+        usage["cached_input_tokens"] = count_sum(int(usage["cached_input_tokens"]),cached)
+        usage["output_tokens"] = count_sum(int(usage["output_tokens"]),token_count(native.get("output")))
+        usage["peak_context_tokens"] = max(int(usage["peak_context_tokens"]), count_sum(other,created,cached))
+        usage["turns"] = count_sum(int(usage["turns"]),1)
     usage["wall_seconds"] = wall_seconds(timestamps)
     return usage, next(iter(models)) if len(models) == 1 else None, None
 
@@ -202,12 +239,12 @@ def normalize_xai(events: Iterable[dict[str, Any]]) -> tuple[dict[str, Any], str
     if latest:
         _, native, session_id = latest
         usage.update({
-            "input_tokens": int(native.get("inputTokens") or 0),
-            "cached_input_tokens": int(native.get("cachedReadTokens") or 0),
-            "output_tokens": int(native.get("outputTokens") or 0),
-            "reasoning_tokens": int(native.get("reasoningTokens") or 0),
-            "peak_context_tokens": int(native.get("inputTokens") or 0),
-            "turns": int(native.get("numTurns") or native.get("modelCalls") or 0),
+            "input_tokens": token_count(native.get("inputTokens")),
+            "cached_input_tokens": token_count(native.get("cachedReadTokens")),
+            "output_tokens": token_count(native.get("outputTokens")),
+            "reasoning_tokens": token_count(native.get("reasoningTokens")),
+            "peak_context_tokens": token_count(native.get("inputTokens")),
+            "turns": token_count(native.get("numTurns") if native.get("numTurns") is not None else native.get("modelCalls")),
             "wall_seconds": wall_seconds(timestamps),
         })
     return usage, next(iter(models)) if len(models) == 1 else None, str(session_id) if session_id else None
@@ -247,11 +284,11 @@ def main(argv: Sequence[str] | None = None) -> int:
     try:
         metadata_bytes=read_bounded(args.metadata,MAX_METADATA_BYTES)
         validate_json_shape(metadata_bytes)
-        metadata = json.loads(metadata_bytes.decode("utf-8"))
+        metadata = strict_json(metadata_bytes.decode("utf-8"))
         input_bytes=read_bounded(args.input,MAX_INPUT_BYTES,MAX_INPUT_LINES)
         validate_json_shape(input_bytes)
         result = normalize(args.provider, input_bytes.decode("utf-8",errors="replace").splitlines(), metadata)
-        encoded = json.dumps(result, indent=2, sort_keys=True) + "\n"
+        encoded = json.dumps(result, indent=2, sort_keys=True, allow_nan=False) + "\n"
         if args.output: args.output.write_text(encoded, encoding="utf-8")
         else: print(encoded, end="")
         return 0

@@ -95,6 +95,24 @@ class NormalizeTests(unittest.TestCase):
                 code=normalizer.main(["--provider","openai","--input",str(source),"--metadata",str(metadata)])
             self.assertEqual(code,22); self.assertEqual(json.loads(stderr.getvalue()),{"error":"INPUT_REFUSED"})
 
+    def test_negative_and_unbounded_token_values_are_fixed_refusals(self):
+        hostile = {
+            "anthropic":{"type":"assistant","message":{"id":"m","usage":{"input_tokens":-1}}},
+            "openai":{"type":"event_msg","payload":{"type":"token_count","info":{"total_token_usage":{"input_tokens":-1},"last_token_usage":{}}}},
+            "moonshot":{"type":"usage.record","usageScope":"turn","usage":{"inputOther":-1}},
+            "xai":{"timestamp":1,"params":{"update":{"sessionUpdate":"turn_completed","usage":{"inputTokens":-1}}}},
+        }
+        for provider,event in hostile.items():
+            with self.subTest(provider=provider), tempfile.TemporaryDirectory() as temporary:
+                root=pathlib.Path(temporary); source=root/"private-token.jsonl"; metadata=root/"metadata.json"
+                source.write_text(json.dumps(event),encoding="utf-8"); metadata.write_text(json.dumps(META),encoding="utf-8")
+                stderr=io.StringIO()
+                with contextlib.redirect_stderr(stderr): code=normalizer.main(["--provider",provider,"--input",str(source),"--metadata",str(metadata)])
+                self.assertEqual(code,22); self.assertEqual(json.loads(stderr.getvalue()),{"error":"INPUT_REFUSED"}); self.assertNotIn("private",stderr.getvalue())
+        too_large=normalizer.MAX_USAGE_INTEGER+1
+        with self.assertRaises(normalizer.NormalizeError):
+            normalizer.normalize("anthropic",lines({"type":"assistant","message":{"id":"m","usage":{"input_tokens":too_large}}}),META)
+
 
 if __name__ == "__main__":
     unittest.main()

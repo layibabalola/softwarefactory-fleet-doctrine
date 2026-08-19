@@ -7,6 +7,7 @@ import argparse
 import datetime as dt
 import hashlib
 import json
+import math
 import pathlib
 import sys
 from typing import Any, Sequence
@@ -21,6 +22,35 @@ MAX_JSON_NODES = 65536
 
 class CapacityError(RuntimeError):
     pass
+
+
+def strict_json(text: str) -> Any:
+    def pairs(values: list[tuple[str, Any]]) -> dict[str, Any]:
+        result: dict[str, Any] = {}
+        for key, value in values:
+            if key in result: raise CapacityError("DUPLICATE_JSON_KEY")
+            result[key] = value
+        return result
+
+    def finite_float(value: str) -> float:
+        result=float(value)
+        if not math.isfinite(result): raise CapacityError("NONFINITE_JSON")
+        return result
+
+    return json.loads(
+        text,
+        object_pairs_hook=pairs,
+        parse_float=finite_float,
+        parse_constant=lambda _: (_ for _ in ()).throw(CapacityError("NONFINITE_JSON")),
+    )
+
+
+def used_fraction(value: Any) -> float | None:
+    if value is None: return None
+    if isinstance(value,bool) or not isinstance(value,(int,float)): raise CapacityError("UTILIZATION_SCHEMA")
+    result=float(value)
+    if not math.isfinite(result) or result<0 or result>100: raise CapacityError("UTILIZATION_SCHEMA")
+    return result/100
 
 
 def parse_time(value: Any) -> dt.datetime | None:
@@ -73,7 +103,7 @@ def anthropic(raw: dict[str, Any]) -> list[dict[str, Any]]:
         if not isinstance(bucket,dict): continue
         used=bucket.get("utilization")
         reset=parse_time(bucket.get("resets_at"))
-        windows.append({"name":name,"used_fraction":float(used)/100 if isinstance(used,(int,float)) else None,"resets_at":iso(reset),"window_started_at":iso(reset-durations[native]) if reset else None})
+        windows.append({"name":name,"used_fraction":used_fraction(used),"resets_at":iso(reset),"window_started_at":iso(reset-durations[native]) if reset else None})
     if not windows: raise CapacityError("Anthropic evidence contains no five_hour or seven_day bucket")
     return windows
 
@@ -81,7 +111,7 @@ def anthropic(raw: dict[str, Any]) -> list[dict[str, Any]]:
 def openai(lines: list[str]) -> list[dict[str, Any]]:
     latest=None
     for line in lines:
-        try: event=json.loads(line)
+        try: event=strict_json(line)
         except json.JSONDecodeError: continue
         payload=event.get("payload") if isinstance(event,dict) else None
         if isinstance(payload,dict) and payload.get("type")=="token_count" and isinstance(payload.get("rate_limits"),dict): latest=payload["rate_limits"]
@@ -93,7 +123,7 @@ def openai(lines: list[str]) -> list[dict[str, Any]]:
         used=bucket.get("used_percent"); reset_epoch=bucket.get("resets_at"); minutes=bucket.get("window_minutes")
         reset=dt.datetime.fromtimestamp(float(reset_epoch),dt.timezone.utc) if isinstance(reset_epoch,(int,float)) else None
         started=reset-dt.timedelta(minutes=float(minutes)) if reset and isinstance(minutes,(int,float)) else None
-        windows.append({"name":name,"used_fraction":float(used)/100 if isinstance(used,(int,float)) else None,"resets_at":iso(reset),"window_started_at":iso(started)})
+        windows.append({"name":name,"used_fraction":used_fraction(used),"resets_at":iso(reset),"window_started_at":iso(started)})
     if not windows: raise CapacityError("OpenAI rate_limits contains no primary or secondary window")
     return windows
 
@@ -101,7 +131,7 @@ def openai(lines: list[str]) -> list[dict[str, Any]]:
 def normalize(provider: str, text: str, quota_domain: str, observed_at: str, artifact_hash: str) -> dict[str, Any]:
     if ":sha256:" not in quota_domain: raise CapacityError("quota_domain must be opaque provider:sha256 form")
     if provider=="anthropic":
-        try: raw=json.loads(text)
+        try: raw=strict_json(text)
         except json.JSONDecodeError as exc: raise CapacityError("Anthropic evidence must be one JSON object") from exc
         if not isinstance(raw,dict): raise CapacityError("Anthropic evidence must be one JSON object")
         windows=anthropic(raw)
@@ -122,7 +152,7 @@ def main(argv: Sequence[str] | None=None) -> int:
         raw=read_bounded(args.input)
         validate_json_shape(raw)
         result=normalize(args.provider,raw.decode("utf-8"),args.quota_domain,args.observed_at,hashlib.sha256(raw).hexdigest())
-        encoded=json.dumps(result,indent=2,sort_keys=True)+"\n"
+        encoded=json.dumps(result,indent=2,sort_keys=True,allow_nan=False)+"\n"
         if args.output: args.output.write_text(encoded,encoding="utf-8")
         else: print(encoded,end="")
         return 0
