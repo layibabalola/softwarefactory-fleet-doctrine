@@ -66,5 +66,8 @@ the human store-and-forward bus.
   The exact R25 candidate was subsequently preserved and additively reconciled with canonical master
   `c1529bc3030c6663e0be63c4789b07530b9b2ecc`; the reconciliation retains CLOSED status and grants no
   provider, containment, canary, or adoption authority.
+  R26 preserves pushed R25 and makes the malformed-SQLite test fixture private (0600) on POSIX so
+  hosted Linux reaches the intended parser failure after the unchanged production state boundary.
+  This is test-only portability evidence; runtime mechanics and zero-authority CLOSED status do not change.
   It is not a portable core, ruling, adoption credit, or launch authority. Coordination stays on
   [issue #4](https://github.com/layibabalola/softwarefactory-fleet-doctrine/issues/4).

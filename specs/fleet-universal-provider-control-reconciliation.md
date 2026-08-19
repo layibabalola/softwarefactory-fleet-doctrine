@@ -1,4 +1,4 @@
-# Universal provider-control reconciliation R25
+# Universal provider-control reconciliation R26
 
 Status: **CANDIDATE / ZERO AUTHORITY / NO DEPLOYMENT**
 
@@ -537,6 +537,18 @@ newer DNG project disposition is retained. This reconciliation changes no execut
 The exact R25 candidate is validated by 181 universal controls, 37 retained governor controls, and
 78 canonical runtime-workbench controls on Python 3.13 and 3.14. Hosted checks remain required and
 unclaimed; validation and publication do not grant authority.
+
+R26 preserves exact pushed R25 `309b3e69eceb54c3de0879b55b5f3459777a2fe4` and repairs only the
+portable setup of the malformed-SQLite negative fixture. POSIX creates ordinary files as mode 0644
+under the hosted runner's default umask, so the production boundary correctly rejected that fixture
+as `STATE_BOUNDARY_INVALID` before SQLite parsing. The fixture now applies mode 0600 on POSIX and
+asserts the effective mode before broker construction, allowing the intended malformed parser path
+to fail closed as `STATE_UNEVALUABLE`. Windows behavior is unchanged. Broker runtime, parser,
+policy, authority, and gate mechanics are byte-identical to R25.
+
+The exact R26 candidate retains 181 universal controls, 37 governor controls, and 78 canonical
+runtime-workbench controls on Python 3.13 and 3.14. It remains evidence-only, zero authority, and
+CLOSED; hosted checks remain required and unclaimed.
 
 R24 preserves exact frozen R23 `ac2db2152fe23aa989745d36a71c67d33da4c89f`. Canonical receipt
 timestamps use uppercase `T`/`Z`, UTC only, calendar-valid whole seconds, and zero to nine decimal

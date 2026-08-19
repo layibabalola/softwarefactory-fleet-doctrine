@@ -60,6 +60,7 @@ jobs:
             '92912d9a8bfdbb944ef040379b3d62b5dc7a985a^{commit}',
             '70132a8b5b1b35f951a6860783787b0248a09f99^{commit}',
             'c1529bc3030c6663e0be63c4789b07530b9b2ecc^{commit}',
+            '309b3e69eceb54c3de0879b55b5f3459777a2fe4^{commit}',
             '44a33fce7fb0b0f5c17b576397d7d0e0fc9b0c35^{commit}',
             'ecc8f076c4f0273f92c8d9f841bceff3684233ca:tools/universal_provider_control.py'
           )

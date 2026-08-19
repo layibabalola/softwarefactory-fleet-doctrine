@@ -904,7 +904,14 @@ class UniversalProviderControlTests(unittest.TestCase):
 
         malformed = self.root / "malformed-state"
         malformed.mkdir()
-        (malformed / "universal-provider-control-v1.db").write_bytes(b"not sqlite")
+        malformed_database = malformed / "universal-provider-control-v1.db"
+        malformed_database.write_bytes(b"not sqlite")
+        if os.name != "nt":
+            # The production boundary correctly rejects group/world-readable state before
+            # parsing it. Keep this parser fixture private so it reaches the intended
+            # malformed-SQLite fail-closed branch on hosted POSIX runners.
+            malformed_database.chmod(0o600)
+            self.assertEqual(stat.S_IMODE(malformed_database.stat().st_mode), 0o600)
         with self.assertRaisesRegex(upc.ControlError, "STATE_UNEVALUABLE"):
             upc.UniversalProviderBroker(malformed)
 
@@ -5104,10 +5111,10 @@ class UniversalProviderControlTests(unittest.TestCase):
         ):
             upc.validate_contract("attended_rotation_receipt", forged_floor_two)
 
-    def test_r25_02_manifest_binds_truncation_witness_and_master_merge(self) -> None:
+    def test_r26_02_manifest_binds_posix_fixture_repair_and_r25_parent(self) -> None:
         import check_universal_manifest as checker
 
-        manifest_path = ROOT / "manifests" / "universal-provider-control-reconciliation-r25.json"
+        manifest_path = ROOT / "manifests" / "universal-provider-control-reconciliation-r26.json"
         manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
         reconciliation = manifest["reconciliation"]
         tuples = {
@@ -5120,7 +5127,7 @@ class UniversalProviderControlTests(unittest.TestCase):
         with mock.patch.object(checker, "_commit_tuple", side_effect=lambda commit: tuples[commit]):
             checker.verify_reconciliation({"reconciliation": reconciliation}, ":")
             forged = copy.deepcopy(reconciliation)
-            forged["r25LatestMasterMerge"]["orderedParents"].reverse()
+            forged["r26Evidence"]["orderedParents"] = ["0" * 40]
             with self.assertRaisesRegex(checker.ManifestError, "RECONCILIATION_COMMIT_MISMATCH"):
                 checker.verify_reconciliation({"reconciliation": forged}, ":")
         self.assertEqual(
@@ -5137,6 +5144,10 @@ class UniversalProviderControlTests(unittest.TestCase):
                 "70132a8b5b1b35f951a6860783787b0248a09f99",
                 "c1529bc3030c6663e0be63c4789b07530b9b2ecc",
             ],
+        )
+        self.assertEqual(
+            reconciliation["r25Final"]["commit"],
+            "309b3e69eceb54c3de0879b55b5f3459777a2fe4",
         )
         self.assertEqual(manifest["status"], "CANDIDATE_ZERO_AUTHORITY")
         self.assertFalse(manifest["authority"]["providerExecution"])
