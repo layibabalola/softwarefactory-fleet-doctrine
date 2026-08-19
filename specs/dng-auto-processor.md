@@ -43,16 +43,17 @@ by waiting out a full grace period on a corpse.** Two lanes did exactly that bef
 - **Hosted seats need a lease field, and it is the one thing the protocol forgot** — see the trap
   below. A hosted subagent has no harness transcript of its own, so it cannot self-measure context
   and must report CONTEXT-UNKNOWN rather than a confident verdict.
-- **Wake floor: `dng-warden-wake`, and its status is CONFIGURED, NOT PROVEN.** It moved off the
+- **Wake floor: `dng-warden-wake`.** It moved off the
   account-scoped app store — which the 08-09 account rotation silently emptied, exactly as cloudvore's
-  TRAP predicted — and is now a machine Task Scheduler task registered 09:05, hourly on the hour, run
+  TRAP predicted — and became a machine Task Scheduler task registered 09:05, run
   through `run-hidden.vbs` (never a console binary under an Interactive principal, or a window pops on
-  every fire). **The scheduler's own record still reads the never-ran sentinel (`LastRunTime`
+  every fire). **At the time of this 08-09 measurement, the scheduler's own record still read the never-ran sentinel (`LastRunTime`
   1999-11-30, result `0x41303`), and its first due mark had not yet arrived when this was written.**
   The manual ticks in `warden-wake.log` are seats running the script by hand; they are not scheduler
   fires and do not discharge the fleet's `configured != running` law. The old app-store task's
   "verified by lastRunAt" claim did NOT migrate with the task. Verify from `lastRunAt` before any
-  sibling cites this as an armed floor.
+  sibling cites this historical paragraph as current status. The later production evidence in this
+  spec supersedes the initial `CONFIGURED, NOT PROVEN` posture.
 - **Codex lanes:** desktop automations pulse sol/luna every 10 min against pinned threads; codex-cli
   installed for new-thread ignition (exec smoke-proven).
 - **Ignition independence:** the I8 design ceiling reached CLOSED-ACCEPT (I1–I8: one-byte-array prompt
@@ -201,16 +202,22 @@ DNG_MASTER_3dc9100507c35e3724200dabaa3df6ffd2eb3cd0)**
 LOCAL_STANDING_OWNER_DIRECTIVE_WITH_FRESH_ONE_SHOT_PER_SLICE_PERMITS_NOT_A_SELF_RENEWING_24_HOUR_WINDOW,
 DNG_MASTER_3dc9100507c35e3724200dabaa3df6ffd2eb3cd0)**
 
+**DISTINGUISH(909f769d02e8412e51e28e242cfa8d00dadc9a3d,
+R26_CANDIDATE_ZERO_AUTHORITY_LOCAL_RUNTIME_RETAINS_STRICTER_30_PERCENT_RESERVE_AND_EXACT_LANE_BOUNDS_PENDING_REQUEST_LEVEL_TOKEN_ACCOUNTING_CACHE_WEIGHT_QUALITY_EQUIVALENCE_DIRECT_LAUNCH_CERTIFICATION_AND_CURRENT_REVIEW,
+DNG_MASTER_3dc9100507c35e3724200dabaa3df6ffd2eb3cd0,
+POLICY_SHA256_510D37692541B5E5F9247FBF21BE5FE60609BD9CF9B387246DF268F65D2A4228)**
+
 The first disposition records materially stronger project-local evidence against provider-capacity
-governor v1. The second is controlling for present DNG convergence: DNG accepts the pinned R14
-candidate as its additive portable target, but does **not** claim project or fleet adoption. The
-canonical R14 manifest remains `CANDIDATE_ZERO_AUTHORITY`; this local target selection cannot ratify
-it. The third
-reconciles the competing automated-rotation candidate without granting it authority or claiming its
-window contract was installed. R14's
+governor v1. The second preserves DNG's R14 convergence record. The third reconciles the competing
+automated-rotation candidate without granting it authority or claiming its window contract was
+installed. The fourth is controlling for present DNG convergence: canonical master merged exact R26
+candidate `e70a044f31dd2f43ab7c716d63a4eb89318c61b6`, but the pinned R26 manifest remains
+`CANDIDATE_ZERO_AUTHORITY`, `CLOSED`, not installed, not activated, and without a positive
+direct-invocation-impossible claim. Its hosted checks remain required and unclaimed. This project
+disposition therefore proves neither DNG adoption nor fleet adoption. R26's
 deployment-inert reference engine is a contract and hostile-test oracle, not DNG's runtime
 executable. Reset, authentication, capacity return, a green test, a lease claim, or a successful
-provider call cannot change either disposition.
+provider call cannot change these dispositions.
 
 ### Exact DNG token-saving profile
 
@@ -234,7 +241,7 @@ retaining its exact role, model, `max` effort, review obligations, tests, and pr
   not expendable token overhead; and
 - spill the provider stream to a content-hashed local artifact rather than inject it into another
   lane's context. Every CANARY authorization is one-use and reseals the gate before process creation;
-- on every hourly tick, consider Fable, Opus, and Sonnet in that fixed order, refresh model-free
+- on every five-minute wake floor, consider Fable, Opus, and Sonnet in that fixed order, refresh model-free
   capacity immediately before each slice, and never overlap two DNG lane provider processes; and
 - after terminal evidence, release a leftover live lease only when its content-hashed artifact has
   exactly one session ID and it exactly matches the lease. The canonical writer records the consumed
@@ -263,7 +270,7 @@ capacity, claimant, exact-subject, bounded-context, and fail-closed gate invaria
   dimensions, frozen-subject revalidation under the quota lock, model-free observation, and a
   process-tree wall clock locally. It does not infer that these closures satisfy Agent Bridge or
   R14's complete suspended-child, inventory, retained-owner, and review contract.
-- **Universal R14 candidate** (`874605e43531c9aa230ee16851f8107a8e0d9cec`): DNG's controlling
+- **Universal R14 candidate** (`874605e43531c9aa230ee16851f8107a8e0d9cec`): DNG's historical
   portable target for local reconciliation, while its canonical manifest remains
   `CANDIDATE_ZERO_AUTHORITY`. It reconciles competing portable semantics for DNG only; project
   adapters and dispositions remain local and explicit.
@@ -277,6 +284,18 @@ capacity, claimant, exact-subject, bounded-context, and fail-closed gate invaria
   proposal and execution receipt, not candidate ratification or R14 adoption. The candidate's own
   `Canonical DNG competing evidence` section records the reciprocal distinction and the stricter
   shared intersection.
+- **Universal R26 candidate** (`e70a044f31dd2f43ab7c716d63a4eb89318c61b6`, merged at
+  `909f769d02e8412e51e28e242cfa8d00dadc9a3d`): accept the universal no-work-before-session rule,
+  bounded prompt/work capsules, conservative reserve, retry accounting, cache-affinity expiry,
+  quality floor, and separately certified launch-boundary requirements as the current portable
+  target. DNG's 30% window reserve is stricter than R26's 20% floor, and its fixed per-slice turn,
+  context, estimated-capacity, and process-tree limits remain installed. DNG distinguishes because
+  its adapter does not yet reserve and reconcile every provider request in token units, apply full
+  input-envelope weight to cache reads, separately accumulate cache write/uncached input/reasoning/
+  output and failed-attempt usage, pin the reviewed R26 quality-equivalence cell, or positively
+  certify that all direct production launches are impossible. R26's 181 universal, 37 governor,
+  and 78 runtime-workbench controls are green in its pinned manifest, but hosted validation is
+  unclaimed and execution/activation authority is false.
 
 DNG additionally rejects three tempting savings as unsafe generalizations: the Claude Desktop
 idle-sensitive cache is not canonical capacity evidence; removing session persistence breaks M0
@@ -340,18 +359,39 @@ The processes were serial, the gate was closed between slices, Sonnet retired it
 matching residual leases were released by exact terminal-artifact proof through the canonical
 writer. A fresh model-free observation after the campaign read five-hour 2% and seven-day 5%.
 
+Subsequent production fires proved the campaign recurs without operator participation. In a
+later pass, Fable terminal artifact SHA-256
+`81893E3E661EFE26BF8EFBFFEA188E4746AFDE11E505F855BA5268525643FC3B` and Opus terminal artifact
+SHA-256 `9183245C974A536755566270D555D58B33604783F7093D94F20698CDB51D2F9D` each drove the same exact
+artifact-to-session cleanup before the next lane began. Only one provider process occupied the
+shared quota domain at a time, capacity was refreshed before every slice, and the automatic gate
+returned closed after every permit consumption.
+
 This is honest **bounded automated three-lane restoration proven**, not sustained simultaneous lane
-liveness and not fleet adoption. `dng-warden-wake` remains hourly behind the closed broker; each
+liveness and not fleet adoption. `dng-warden-wake` now has a five-minute wake floor behind the closed
+broker; `IgnoreNew` drops fires while a pass is active, so the first boundary after completion starts
+the next capacity-gated pass without overlap. Each
 future slice requires new capacity evidence and a distinct expiring permit. DNG Provider Failover
 Runner and Software Factory Roadmap Controller remain disabled.
 
-Promotion to R14 `ADOPT` requires canonical ratification, a pinned schema-valid R14 project profile,
-complete four-surface launcher inventory and direct-invocation prohibition, 1,000 unchanged
-zero-inference ticks,
-suspended-child actual-image/argv attestation, full claimant and retained-owner fencing, rollback,
-current CLOSED gate, and fresh independent security and quality review over the exact landed
-subject. Fleet convergence is the closed set of project-owned pinned dispositions and receipts; a
-universal doctrine merge or this DNG canary alone is never fleet-wide adoption.
+The USER's 2026-08-19 utilization compromise changed only the wake floor from hourly to five
+minutes. The hidden task action, fixed Fable/Opus/Sonnet order, exact models/roles/`max` effort,
+`IgnoreNew`, 55-minute task wall, one-use permits, shared-domain mutex, 12-turn/900-second slice
+bounds, and 30% reserve were preserved. The first immediate pass observed five-hour 64% and
+seven-day 21%, issued Fable authorization `78d8a1128b024663a786531ae14cc281`, consumed it at
+2026-08-19T10:19:28-05:00, resealed the gate before provider process creation, and ran exactly one
+managed Fable process. If a later slice would cross the reserve, that lane records a model-free HOLD;
+cadence cannot override capacity.
+
+Promotion to the current universal candidate's `ADOPT` requires canonical ratification, a pinned
+schema-valid current project profile, complete launcher inventory and certified direct-invocation
+prohibition, request-level token reservation/reconciliation with the complete R26 accounting
+dimensions, reviewed cache/prefix/capsule/retry ceilings, exact quality-equivalence receipts,
+1,000 unchanged zero-inference ticks, suspended-child actual-image/argv attestation, full claimant
+and retained-owner fencing, rollback, a current CLOSED gate, and fresh independent security and
+quality review over the exact landed subject. Fleet convergence is the closed set of project-owned
+pinned dispositions and receipts; a universal doctrine merge or this DNG canary alone is never
+fleet-wide adoption.
 
 ## Carve-outs a citing sibling must know
 

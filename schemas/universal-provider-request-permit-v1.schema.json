@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://softwarefactory.invalid/schemas/universal-provider-request-permit-v1.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "permitId", "requestId", "leaseId", "issuedAt", "expiresAt", "requestBoundaryMode", "requestCount", "inputEnvelopeTokens", "generatedEnvelopeTokens", "terminalReserveTokens", "tokenCeilings", "bindingSha256", "permitHmacSha256"],
+  "properties": {
+    "schema": {"const": "fleet-universal-provider-request-permit/v1"},
+    "permitId": {"type": "string", "pattern": "^permit-[0-9a-f]{32}$"},
+    "requestId": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{7,127}$"},
+    "leaseId": {"type": "string", "pattern": "^lease-[0-9a-f]{32}$"},
+    "issuedAt": {"type": "string", "format": "date-time"},
+    "expiresAt": {"type": "string", "format": "date-time"},
+    "requestBoundaryMode": {"const": "SINGLE_REQUEST_PROCESS"},
+    "requestCount": {"const": 1},
+    "inputEnvelopeTokens": {"type": "integer", "minimum": 1, "maximum": 12000000000},
+    "generatedEnvelopeTokens": {"type": "integer", "minimum": 1, "maximum": 2000000000},
+    "terminalReserveTokens": {"type": "integer", "minimum": 1, "maximum": 1000000000},
+    "tokenCeilings": {
+      "type": "object", "additionalProperties": false,
+      "required": ["inputTokens", "cacheReadTokens", "cacheWriteTokens", "reasoningTokens", "outputTokens"],
+      "properties": {
+        "inputTokens": {"type": "integer", "minimum": 1},
+        "cacheReadTokens": {"type": "integer", "minimum": 1},
+        "cacheWriteTokens": {"type": "integer", "minimum": 1},
+        "reasoningTokens": {"type": "integer", "minimum": 1},
+        "outputTokens": {"type": "integer", "minimum": 1}
+      }
+    },
+    "bindingSha256": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+    "permitHmacSha256": {"type": "string", "pattern": "^hmac-sha256:[0-9a-f]{64}$"}
+  }
+}

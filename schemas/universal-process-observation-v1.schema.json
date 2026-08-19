@@ -28,12 +28,27 @@
     "seatIdHash": {"type": "string", "pattern": "^hmac-sha256:[0-9a-f]{64}$"},
     "seatEpoch": {"type": "integer", "minimum": 1, "maximum": 9223372036854775807},
     "sessionIdHash": {"type": "string", "pattern": "^hmac-sha256:[0-9a-f]{64}$"},
+    "providerRequestCount": {"type": "integer", "minimum": 0, "maximum": 1},
+    "providerRequestPermitSha256": {"oneOf": [{"type": "null"}, {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"}]},
+    "tokenUsage": {
+      "type": "object", "additionalProperties": false,
+      "required": ["inputTokens", "cacheReadTokens", "cacheWriteTokens", "reasoningTokens", "outputTokens"],
+      "properties": {
+        "inputTokens": {"type": "integer", "minimum": 0}, "cacheReadTokens": {"type": "integer", "minimum": 0},
+        "cacheWriteTokens": {"type": "integer", "minimum": 0}, "reasoningTokens": {"type": "integer", "minimum": 0},
+        "outputTokens": {"type": "integer", "minimum": 0}
+      }
+    },
+    "providerUsageCheckpointSha256": {"oneOf": [{"type": "null"}, {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"}]},
+    "terminalRequestPermitSha256": {"oneOf": [{"type": "null"}, {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"}]},
+    "processTreeTerminationReceipt": {"type": "object"},
+    "outputQualityReceipt": {"oneOf": [{"type": "null"}, {"type": "object"}]},
     "observerHmacSha256": {"type": "string", "pattern": "^hmac-sha256:[0-9a-f]{64}$"}
   },
   "allOf": [
     {"if": {"properties": {"phase": {"const": "ADMISSION"}}}, "then": {"properties": {"leaseId": {"type": "null"}, "status": {"const": "SUSPENDED"}}}},
     {"if": {"properties": {"phase": {"const": "RESUME"}}}, "then": {"properties": {"leaseId": {"type": "string", "pattern": "^lease-[0-9a-f]{32}$"}, "status": {"const": "SUSPENDED"}}}},
-    {"if": {"properties": {"phase": {"const": "TERMINAL"}}}, "then": {"properties": {"leaseId": {"type": "string", "pattern": "^lease-[0-9a-f]{32}$"}, "status": {"enum": ["EXITED", "FAILED", "AMBIGUOUS"]}}}},
+    {"if": {"properties": {"phase": {"const": "TERMINAL"}}}, "then": {"required": ["providerRequestCount", "providerRequestPermitSha256", "tokenUsage", "providerUsageCheckpointSha256", "terminalRequestPermitSha256", "processTreeTerminationReceipt", "outputQualityReceipt"], "properties": {"leaseId": {"type": "string", "pattern": "^lease-[0-9a-f]{32}$"}, "status": {"enum": ["EXITED", "FAILED", "AMBIGUOUS"]}}}},
     {"if": {"properties": {"phase": {"const": "RECOVERY"}}}, "then": {"properties": {"leaseId": {"type": "string", "pattern": "^lease-[0-9a-f]{32}$"}, "status": {"enum": ["DEAD", "LIVE", "AMBIGUOUS"]}}}}
   ]
 }

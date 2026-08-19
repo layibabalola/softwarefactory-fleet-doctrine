@@ -1,5 +1,13 @@
 # Receipts (append-only; drill + result + date + machine)
 
+- 2026-08-19 attended provider rotation: four serialized one-turn/no-tools successful requests are
+  recorded in `receipts/attended-provider-rotation-20260819.json`, public provenance issue #4 comment
+  `5337603712`. Recomputed totals are input 7, cache-create 59,319, cache-read 10,723, output 7,540.
+  Disposition: `PRE_SHADOW_SEALED`, `providerAuthority=false`, `adoptionCredit=false`; evidence only.
+  R23 classifies this as `AUTHOR_ATTESTED_LOCAL_CLI_MEASUREMENT`, not provider-authenticated or
+  independently observed. CLI end-to-end/API durations and host-observed wall duration are distinct;
+  the token totals receive motivation/measurement credit only and no authority credit.
+
 - claude -p headless full session (hooks obeyed, answered from resume pointer): PASS 2026-08-08, Delinea box.
 - codex exec new-thread ignition, zero human: PASS 2026-08-08 on at least 3 machines (READY; ~6-20k tokens; desktop auth inherited).
 - codex exec resume <id> "<prompt>" mid-flight steering of a live headless thread: PASS, production use (agent-bridge, 4+ resumes).
