@@ -23,6 +23,37 @@ def _sha256(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
 
 
+def _validate_json_shape(data: bytes) -> None:
+    depth = 0
+    tokens = 0
+    quoted = False
+    escaped = False
+    for byte in data:
+        if quoted:
+            if escaped:
+                escaped = False
+            elif byte == 92:
+                escaped = True
+            elif byte == 34:
+                quoted = False
+            continue
+        if byte == 34:
+            quoted = True
+        elif byte in (91, 123):
+            depth += 1
+            tokens += 1
+            if depth > MAX_JSON_DEPTH or tokens > MAX_JSON_NODES:
+                raise ValueError("JSON_SHAPE_LIMIT")
+        elif byte in (93, 125):
+            depth -= 1
+            if depth < 0:
+                raise ValueError("INVALID_JSON")
+        elif byte in (44, 58):
+            tokens += 1
+            if tokens > MAX_JSON_NODES:
+                raise ValueError("JSON_SHAPE_LIMIT")
+
+
 def _strict_json(path: Path) -> tuple[Any, bytes]:
     if path.is_symlink():
         raise ValueError("SYMLINK_REFUSED")
@@ -32,6 +63,7 @@ def _strict_json(path: Path) -> tuple[Any, bytes]:
         data = stream.read(MAX_JSON_BYTES + 1)
     if len(data) > MAX_JSON_BYTES:
         raise ValueError("JSON_TOO_LARGE")
+    _validate_json_shape(data)
 
     def pairs(values: list[tuple[str, Any]]) -> dict[str, Any]:
         result: dict[str, Any] = {}

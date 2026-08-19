@@ -31,6 +31,9 @@ DECISION_SCHEMA = "fleet-capacity-admission-decision/v1"
 POLICY_SCHEMA = "fleet-capacity-policy/v1"
 PRIORITIES = {"OWNER_FOREGROUND", "REQUIRED_REVIEW", "PRODUCT_WORK", "BACKGROUND"}
 ROLES = {"IMPLEMENT", "REVIEW", "DESIGN", "NARRATE", "COORDINATE", "PROBE"}
+MAX_JSON_BYTES = 1024 * 1024
+MAX_JSON_DEPTH = 64
+MAX_JSON_TOKENS = 65536
 
 
 class BrokerError(RuntimeError):
@@ -69,25 +72,55 @@ def digest(value: Any) -> str:
     return "sha256:" + hashlib.sha256(canonical_json(value).encode("utf-8")).hexdigest()
 
 
+def validate_json_shape(data: bytes) -> None:
+    depth=0; tokens=0; quoted=False; escaped=False
+    for byte in data:
+        if quoted:
+            if escaped: escaped=False
+            elif byte==92: escaped=True
+            elif byte==34: quoted=False
+            continue
+        if byte==34: quoted=True
+        elif byte in (91,123):
+            depth+=1; tokens+=1
+            if depth>MAX_JSON_DEPTH or tokens>MAX_JSON_TOKENS: raise BrokerError("JSON_SHAPE_LIMIT")
+        elif byte in (93,125):
+            depth-=1
+            if depth<0: raise BrokerError("INVALID_JSON")
+        elif byte in (44,58):
+            tokens+=1
+            if tokens>MAX_JSON_TOKENS: raise BrokerError("JSON_SHAPE_LIMIT")
+
+
 def read_json(path: pathlib.Path) -> dict[str, Any]:
     def strict_object(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
         value: dict[str, Any] = {}
         for key, item in pairs:
             if key in value:
-                raise ValueError("duplicate JSON object key")
+                raise ValueError("DUPLICATE_JSON_KEY")
             value[key] = item
         return value
 
     try:
+        if path.is_symlink(): raise BrokerError("SYMLINK_REFUSED")
+        if path.stat().st_size>MAX_JSON_BYTES: raise BrokerError("JSON_TOO_LARGE")
+        with path.open("rb") as source: data=source.read(MAX_JSON_BYTES+1)
+        if len(data)>MAX_JSON_BYTES: raise BrokerError("JSON_TOO_LARGE")
+        validate_json_shape(data)
         value = json.loads(
-            path.read_text(encoding="utf-8"),
+            data.decode("utf-8"),
             object_pairs_hook=strict_object,
-            parse_constant=lambda _value: (_ for _ in ()).throw(ValueError("non-finite JSON number")),
+            parse_constant=lambda _value: (_ for _ in ()).throw(ValueError("NONFINITE_JSON")),
         )
-    except (OSError, json.JSONDecodeError, UnicodeError, ValueError) as exc:
-        raise BrokerError(f"cannot read {path}: {exc}") from exc
+    except BrokerError:
+        raise
+    except ValueError as exc:
+        reason=str(exc)
+        raise BrokerError(reason if reason in {"DUPLICATE_JSON_KEY","NONFINITE_JSON"} else "INVALID_JSON") from exc
+    except (OSError, json.JSONDecodeError, UnicodeError) as exc:
+        raise BrokerError("JSON_INPUT_REFUSED") from exc
     if not isinstance(value, dict):
-        raise BrokerError(f"{path} must contain a JSON object")
+        raise BrokerError("JSON_OBJECT_REQUIRED")
     return value
 
 
@@ -561,8 +594,9 @@ def build_parser() -> argparse.ArgumentParser:
 
 def main(argv: Sequence[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
-    broker = Broker(args.state)
+    broker = None
     try:
+        broker = Broker(args.state)
         if args.command == "decide":
             at = parse_time(args.now, "--now") if args.now else now_utc()
             decision = broker.decide(read_json(args.request), read_json(args.snapshot), read_json(args.policy), at)
@@ -576,14 +610,14 @@ def main(argv: Sequence[str] | None = None) -> int:
         )
         print(canonical_json({"released": changed, "lease_id": args.lease_id}))
         return 0 if changed else 24
-    except ConflictingReplay as exc:
-        print(canonical_json({"error": "CONFLICTING_REPLAY", "detail": str(exc)}), file=sys.stderr)
+    except ConflictingReplay:
+        print(canonical_json({"error": "CONFLICTING_REPLAY"}), file=sys.stderr)
         return 25
-    except BrokerError as exc:
-        print(canonical_json({"error": "UNEVALUABLE", "detail": str(exc)}), file=sys.stderr)
+    except (BrokerError,OSError,sqlite3.Error):
+        print(canonical_json({"error": "INPUT_REFUSED"}), file=sys.stderr)
         return 22
     finally:
-        broker.close()
+        if broker is not None: broker.close()
 
 
 if __name__ == "__main__":

@@ -1,12 +1,15 @@
 from __future__ import annotations
 
 import datetime as dt
+import contextlib
 import importlib.util
+import io
 import json
 import pathlib
 import tempfile
 import threading
 import unittest
+from unittest import mock
 
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
@@ -152,11 +155,21 @@ class EvaluationTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as folder:
             path = pathlib.Path(folder) / "value.json"
             path.write_text('{"a":1,"a":2}', encoding="utf-8")
-            with self.assertRaisesRegex(broker.BrokerError, "duplicate JSON"):
+            with self.assertRaisesRegex(broker.BrokerError, "DUPLICATE_JSON_KEY"):
                 broker.read_json(path)
             path.write_text('{"a":NaN}', encoding="utf-8")
-            with self.assertRaisesRegex(broker.BrokerError, "non-finite"):
+            with self.assertRaisesRegex(broker.BrokerError, "NONFINITE_JSON"):
                 broker.read_json(path)
+
+    def test_file_intake_pre_read_limit_and_cli_no_echo(self):
+        with tempfile.TemporaryDirectory() as folder:
+            path=pathlib.Path(folder)/"private-token.json"; path.write_text("{}",encoding="utf-8")
+            with mock.patch.object(broker,"MAX_JSON_BYTES",1), self.assertRaisesRegex(broker.BrokerError,"JSON_TOO_LARGE"):
+                broker.read_json(path)
+            stderr=io.StringIO(); state=pathlib.Path(folder)/"state.sqlite3"
+            with mock.patch.object(broker,"read_json",side_effect=broker.BrokerError("C:/private/token")), contextlib.redirect_stderr(stderr):
+                code=broker.main(["decide","--request",str(path),"--snapshot",str(path),"--policy",str(path),"--state",str(state)])
+            self.assertEqual(code,22); self.assertEqual(json.loads(stderr.getvalue()),{"error":"INPUT_REFUSED"}); self.assertNotIn("private",stderr.getvalue())
 
 
 class TransactionTests(unittest.TestCase):

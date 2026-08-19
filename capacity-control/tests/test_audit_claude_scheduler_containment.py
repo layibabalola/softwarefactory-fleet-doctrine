@@ -77,6 +77,14 @@ class ClaudeSchedulerContainmentAuditTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "JSON_TOO_LARGE"):
                 MODULE._strict_json(path)
 
+    def test_deep_json_is_refused_before_parser_allocation(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            path = Path(temporary) / "deep.json"
+            path.write_bytes(b"[" * (MODULE.MAX_JSON_DEPTH + 1) + b"0" + b"]" * (MODULE.MAX_JSON_DEPTH + 1))
+            with mock.patch.object(MODULE.json, "loads", side_effect=AssertionError("parser must not run")):
+                with self.assertRaisesRegex(ValueError, "JSON_SHAPE_LIMIT"):
+                    MODULE._strict_json(path)
+
     def test_task_tree_and_path_bounds_fail_closed(self):
         nested: object = {"leaf": True}
         for _ in range(MODULE.MAX_JSON_DEPTH + 1):
