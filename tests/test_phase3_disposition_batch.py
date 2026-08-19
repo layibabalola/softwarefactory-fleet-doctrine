@@ -505,9 +505,18 @@ class Phase3DispositionBatchTests(unittest.TestCase):
             "python tools/check_phase3_disposition_batch.py --treeish HEAD --verify-remotes",
             workflow,
         )
-        self.assertIn("R26_REMOTE_GITHUB_TOKEN: ${{ secrets.R26_CROSS_REPO_READ_TOKEN }}", workflow)
-        self.assertIn("if: env.R26_REMOTE_GITHUB_TOKEN != ''", workflow)
-        self.assertIn("if: env.R26_REMOTE_GITHUB_TOKEN == ''", workflow)
+        self.assertIn(
+            "R26_REMOTE_AUTH_CONFIGURED: ${{ secrets.R26_CROSS_REPO_READ_TOKEN != '' }}",
+            workflow,
+        )
+        self.assertEqual(
+            1,
+            workflow.count(
+                "R26_REMOTE_GITHUB_TOKEN: ${{ secrets.R26_CROSS_REPO_READ_TOKEN }}"
+            ),
+        )
+        self.assertIn("if: env.R26_REMOTE_AUTH_CONFIGURED == 'true'", workflow)
+        self.assertIn("if: env.R26_REMOTE_AUTH_CONFIGURED != 'true'", workflow)
         self.assertIn("REMOTES NOT VERIFIED - R26_CROSS_REPO_READ_TOKEN is not configured", workflow)
 
     def test_summary_cannot_claim_adoption_or_runtime_authority(self):

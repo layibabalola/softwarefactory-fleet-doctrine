@@ -16,7 +16,7 @@ concurrency:
 jobs:
   evidence:
     env:
-      R26_REMOTE_GITHUB_TOKEN: ${{ secrets.R26_CROSS_REPO_READ_TOKEN }}
+      R26_REMOTE_AUTH_CONFIGURED: ${{ secrets.R26_CROSS_REPO_READ_TOKEN != '' }}
     strategy:
       fail-fast: false
       matrix:
@@ -49,11 +49,13 @@ jobs:
         run: python tools/check_phase3_disposition_batch.py --treeish HEAD
 
       - name: Verify published project Git objects when cross-repo read authority exists
-        if: env.R26_REMOTE_GITHUB_TOKEN != ''
+        if: env.R26_REMOTE_AUTH_CONFIGURED == 'true'
+        env:
+          R26_REMOTE_GITHUB_TOKEN: ${{ secrets.R26_CROSS_REPO_READ_TOKEN }}
         run: python tools/check_phase3_disposition_batch.py --treeish HEAD --verify-remotes
 
       - name: Report unavailable remote verification authority
-        if: env.R26_REMOTE_GITHUB_TOKEN == ''
+        if: env.R26_REMOTE_AUTH_CONFIGURED != 'true'
         run: echo "REMOTES NOT VERIFIED - R26_CROSS_REPO_READ_TOKEN is not configured"
 
       - name: Reverify the frozen adoption ledger
