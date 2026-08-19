@@ -97,10 +97,12 @@ ALLOWED_PHASE3_PATHS = {
     "tests/test_phase3_disposition_batch.py",
     "tests/test_phase5_stale_reconciliation.py",
     "tests/test_adversarialllm_utilization_shadow_doctrine.py",
+    "tests/test_universal_provider_control.py",
     "tools/check_adoption_ledger.py",
     "tools/check_phase2_disposition_batch.py",
     "tools/check_phase3_disposition_batch.py",
     "tools/check_phase5_stale_reconciliation.py",
+    "tools/check_universal_manifest.py",
 }
 PHASE3_SCOPE_FREEZE_COMMIT = "0c417d8ccf4b0b2b142766fd4aa00072ae150a30"
 SHA_PATTERN = re.compile(r"[0-9a-f]{40,64}")
