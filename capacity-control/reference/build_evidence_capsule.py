@@ -19,6 +19,7 @@ MAX_ITEMS = 4096
 MAX_SOURCE_BYTES = 16 * 1024 * 1024
 MAX_AGGREGATE_SOURCE_BYTES = 64 * 1024 * 1024
 MAX_SOURCE_LINES = 200_000
+MAX_CAPSULE_PAYLOAD_BYTES = 1024 * 1024
 
 
 class CapsuleError(RuntimeError):
@@ -46,6 +47,8 @@ def read_bounded(path: pathlib.Path, maximum: int) -> bytes:
 
 
 def build(manifest: dict[str, Any]) -> dict[str, Any]:
+    if not isinstance(manifest, dict):
+        raise CapsuleError("MANIFEST_SCHEMA")
     if manifest.get("schema") != REQUEST_SCHEMA:
         raise CapsuleError("unsupported capsule request schema")
     root_value = manifest.get("workspace_root")
@@ -55,7 +58,7 @@ def build(manifest: dict[str, Any]) -> dict[str, Any]:
     if not root.is_dir():
         raise CapsuleError("workspace_root is not a directory")
     maximum = manifest.get("max_payload_bytes")
-    if not isinstance(maximum, int) or maximum <= 0:
+    if not isinstance(maximum, int) or isinstance(maximum,bool) or maximum <= 0 or maximum > MAX_CAPSULE_PAYLOAD_BYTES:
         raise CapsuleError("max_payload_bytes must be positive")
     items = manifest.get("items")
     if not isinstance(items, list) or not items:
@@ -63,37 +66,48 @@ def build(manifest: dict[str, Any]) -> dict[str, Any]:
     if len(items) > MAX_ITEMS:
         raise CapsuleError("ITEM_COUNT_LIMIT")
     seen: set[tuple[str, int, int]] = set()
-    output_items=[]
-    payload_bytes=0
+    preflight=[]
     aggregate_source_bytes=0
     for item in items:
         if not isinstance(item, dict): raise CapsuleError("capsule item must be an object")
         relative=item.get("relative_path")
         if not isinstance(relative,str) or not relative: raise CapsuleError("relative_path is required")
-        candidate=(root/relative).resolve(strict=True)
+        unresolved=root/relative
+        if unresolved.is_symlink(): raise CapsuleError("SYMLINK_REFUSED")
+        candidate=unresolved.resolve(strict=True)
         try: candidate.relative_to(root)
         except ValueError as exc: raise CapsuleError(f"path escapes workspace: {relative}") from exc
-        if not candidate.is_file(): raise CapsuleError(f"item is not a regular file: {relative}")
-        raw=read_bounded(candidate,MAX_SOURCE_BYTES)
-        aggregate_source_bytes+=len(raw)
+        if candidate.is_symlink() or not candidate.is_file(): raise CapsuleError(f"item is not a regular file: {relative}")
+        source_size=candidate.stat().st_size
+        if source_size>MAX_SOURCE_BYTES: raise CapsuleError("INPUT_TOO_LARGE")
+        aggregate_source_bytes+=source_size
         if aggregate_source_bytes>MAX_AGGREGATE_SOURCE_BYTES: raise CapsuleError("SOURCE_AGGREGATE_LIMIT")
-        if raw.count(b"\n")+(0 if not raw or raw.endswith(b"\n") else 1)>MAX_SOURCE_LINES: raise CapsuleError("SOURCE_LINE_LIMIT")
-        actual=hashlib.sha256(raw).hexdigest()
-        if item.get("sha256") != actual: raise CapsuleError(f"file hash mismatch: {relative}")
-        try: text=raw.decode("utf-8")
-        except UnicodeDecodeError as exc: raise CapsuleError(f"item is not UTF-8: {relative}") from exc
         start=item.get("start_line"); end=item.get("end_line")
         if not isinstance(start,int) or not isinstance(end,int) or start<1 or end<start:
             raise CapsuleError(f"invalid line range: {relative}")
-        lines=text.splitlines(keepends=True)
-        if end>len(lines): raise CapsuleError(f"line range exceeds file: {relative}")
         key=(relative.replace('\\','/'),start,end)
         if key in seen: raise CapsuleError(f"duplicate capsule slice: {relative}:{start}-{end}")
         seen.add(key)
-        content=''.join(lines[start-1:end]); size=len(content.encode('utf-8')); payload_bytes+=size
-        if payload_bytes>maximum: raise CapsuleError("capsule payload exceeds max_payload_bytes")
         purpose=item.get("purpose")
         if not isinstance(purpose,str) or not purpose: raise CapsuleError(f"purpose is required: {relative}")
+        expected=item.get("sha256")
+        if not isinstance(expected,str): raise CapsuleError("FILE_HASH_SCHEMA")
+        preflight.append((candidate,key,expected,purpose))
+
+    output_items=[]
+    payload_bytes=0
+    for candidate,key,expected,purpose in preflight:
+        relative,start,end=key
+        raw=read_bounded(candidate,MAX_SOURCE_BYTES)
+        if raw.count(b"\n")+(0 if not raw or raw.endswith(b"\n") else 1)>MAX_SOURCE_LINES: raise CapsuleError("SOURCE_LINE_LIMIT")
+        actual=hashlib.sha256(raw).hexdigest()
+        if expected != actual: raise CapsuleError(f"file hash mismatch: {relative}")
+        try: text=raw.decode("utf-8")
+        except UnicodeDecodeError as exc: raise CapsuleError(f"item is not UTF-8: {relative}") from exc
+        lines=text.splitlines(keepends=True)
+        if end>len(lines): raise CapsuleError(f"line range exceeds file: {relative}")
+        content=''.join(lines[start-1:end]); size=len(content.encode('utf-8')); payload_bytes+=size
+        if payload_bytes>maximum: raise CapsuleError("capsule payload exceeds max_payload_bytes")
         output_items.append({"relative_path":key[0],"file_sha256":actual,"start_line":start,"end_line":end,"purpose":purpose,"content":content})
     identity_manifest={key:value for key,value in manifest.items() if key!="workspace_root"}
     return {"schema":CAPSULE_SCHEMA,"subject_digest":manifest.get("subject_digest"),"manifest_digest":digest_json(identity_manifest),"payload_bytes":payload_bytes,"items":output_items}

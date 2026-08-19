@@ -34,6 +34,7 @@ ROLES = {"IMPLEMENT", "REVIEW", "DESIGN", "NARRATE", "COORDINATE", "PROBE"}
 MAX_JSON_BYTES = 1024 * 1024
 MAX_JSON_DEPTH = 64
 MAX_JSON_TOKENS = 65536
+MAX_JSON_AGGREGATE_BYTES = 3 * 1024 * 1024
 
 
 class BrokerError(RuntimeError):
@@ -122,6 +123,16 @@ def read_json(path: pathlib.Path) -> dict[str, Any]:
     if not isinstance(value, dict):
         raise BrokerError("JSON_OBJECT_REQUIRED")
     return value
+
+
+def preflight_json_inputs(paths: Sequence[pathlib.Path]) -> None:
+    aggregate=0
+    for path in paths:
+        if path.is_symlink(): raise BrokerError("SYMLINK_REFUSED")
+        size=path.stat().st_size
+        if size>MAX_JSON_BYTES: raise BrokerError("JSON_TOO_LARGE")
+        aggregate+=size
+        if aggregate>MAX_JSON_AGGREGATE_BYTES: raise BrokerError("JSON_AGGREGATE_LIMIT")
 
 
 def validate_digest(value: Any, field: str) -> str:
@@ -289,7 +300,7 @@ class Evaluation:
     reasons: tuple[str, ...]
 
 
-def evaluate(
+def _evaluate(
     request: dict[str, Any],
     snapshot: dict[str, Any],
     policy: dict[str, Any],
@@ -371,6 +382,18 @@ def evaluate(
     else:
         status = "HOLD"
     return Evaluation(status, unique or ("ALL_GATES_GREEN",))
+
+
+def evaluate(
+    request: dict[str, Any], snapshot: dict[str, Any], policy: dict[str, Any],
+    active_leases: Sequence[sqlite3.Row | dict[str, Any]], at: dt.datetime,
+) -> Evaluation:
+    try:
+        return _evaluate(request,snapshot,policy,active_leases,at)
+    except BrokerError:
+        raise
+    except (ValueError,TypeError,OverflowError,AttributeError,RecursionError) as exc:
+        raise BrokerError("INPUT_VALUE_REFUSED") from exc
 
 
 class Broker:
@@ -596,12 +619,16 @@ def main(argv: Sequence[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     broker = None
     try:
-        broker = Broker(args.state)
         if args.command == "decide":
+            input_paths=(args.request,args.snapshot,args.policy)
+            preflight_json_inputs(input_paths)
+            request_value,snapshot_value,policy_value=(read_json(path) for path in input_paths)
+            broker = Broker(args.state)
             at = parse_time(args.now, "--now") if args.now else now_utc()
-            decision = broker.decide(read_json(args.request), read_json(args.snapshot), read_json(args.policy), at)
+            decision = broker.decide(request_value,snapshot_value,policy_value,at)
             print(json.dumps(decision, indent=2, sort_keys=True))
             return 0 if decision["status"] == "ADMIT" else 23
+        broker = Broker(args.state)
         changed = broker.release(
             args.lease_id,
             args.request_id,
@@ -613,7 +640,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     except ConflictingReplay:
         print(canonical_json({"error": "CONFLICTING_REPLAY"}), file=sys.stderr)
         return 25
-    except (BrokerError,OSError,sqlite3.Error):
+    except (BrokerError,OSError,sqlite3.Error,ValueError,TypeError,OverflowError,AttributeError,RecursionError):
         print(canonical_json({"error": "INPUT_REFUSED"}), file=sys.stderr)
         return 22
     finally:

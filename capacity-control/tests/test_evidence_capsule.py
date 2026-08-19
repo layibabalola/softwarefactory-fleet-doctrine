@@ -60,6 +60,17 @@ class CapsuleTests(unittest.TestCase):
         with mock.patch.object(capsule,"MAX_ITEMS",0):
             with self.assertRaisesRegex(capsule.CapsuleError,"ITEM_COUNT_LIMIT"): capsule.build(self.manifest())
 
+    def test_manifest_payload_and_aggregate_preflight_refuse_before_open(self):
+        with self.assertRaisesRegex(capsule.CapsuleError,"max_payload_bytes"):
+            capsule.build(self.manifest(max_payload_bytes=capsule.MAX_CAPSULE_PAYLOAD_BYTES+1))
+        with mock.patch.object(capsule,"MAX_AGGREGATE_SOURCE_BYTES",self.file.stat().st_size-1), mock.patch.object(capsule,"read_bounded",side_effect=AssertionError("source must not open")):
+            with self.assertRaisesRegex(capsule.CapsuleError,"SOURCE_AGGREGATE_LIMIT"):
+                capsule.build(self.manifest())
+
+    def test_non_object_manifest_is_fixed_schema_error(self):
+        with self.assertRaisesRegex(capsule.CapsuleError,"MANIFEST_SCHEMA"):
+            capsule.build([])
+
     def test_cli_error_is_fixed_and_does_not_echo_private_path(self):
         stderr=io.StringIO()
         with mock.patch.object(capsule,"read_bounded",side_effect=OSError("C:/private/token")), contextlib.redirect_stderr(stderr):

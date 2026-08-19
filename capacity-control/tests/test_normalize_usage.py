@@ -83,6 +83,18 @@ class NormalizeTests(unittest.TestCase):
                 code=normalizer.main(["--provider","openai","--input",str(source),"--metadata",str(metadata)])
         self.assertEqual(code,22); self.assertEqual(json.loads(stderr.getvalue()),{"error":"INPUT_REFUSED"}); self.assertNotIn("private",stderr.getvalue())
 
+    def test_hostile_parsed_value_and_deep_metadata_are_fixed_no_echo(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root=pathlib.Path(temporary); source=root/"private-token.jsonl"; metadata=root/"metadata.json"
+            source.write_text(json.dumps({"type":"assistant","message":{"id":"m","usage":{"input_tokens":"C:/private/token"}}}),encoding="utf-8")
+            metadata.write_text(json.dumps(META),encoding="utf-8"); stderr=io.StringIO()
+            with contextlib.redirect_stderr(stderr): code=normalizer.main(["--provider","anthropic","--input",str(source),"--metadata",str(metadata)])
+            self.assertEqual(code,22); self.assertEqual(json.loads(stderr.getvalue()),{"error":"INPUT_REFUSED"}); self.assertNotIn("private",stderr.getvalue())
+            metadata.write_bytes(b"["*(normalizer.MAX_JSON_DEPTH+1)+b"0"+b"]"*(normalizer.MAX_JSON_DEPTH+1)); stderr=io.StringIO()
+            with mock.patch.object(normalizer.json,"loads",side_effect=AssertionError("parser must not run")), contextlib.redirect_stderr(stderr):
+                code=normalizer.main(["--provider","openai","--input",str(source),"--metadata",str(metadata)])
+            self.assertEqual(code,22); self.assertEqual(json.loads(stderr.getvalue()),{"error":"INPUT_REFUSED"})
+
 
 if __name__ == "__main__":
     unittest.main()

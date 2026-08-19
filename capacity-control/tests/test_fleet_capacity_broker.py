@@ -171,6 +171,21 @@ class EvaluationTests(unittest.TestCase):
                 code=broker.main(["decide","--request",str(path),"--snapshot",str(path),"--policy",str(path),"--state",str(state)])
             self.assertEqual(code,22); self.assertEqual(json.loads(stderr.getvalue()),{"error":"INPUT_REFUSED"}); self.assertNotIn("private",stderr.getvalue())
 
+    def test_aggregate_inputs_refuse_before_state_creation(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root=pathlib.Path(folder); paths=[]
+            for name in ("request.json","snapshot.json","policy.json"):
+                path=root/name; path.write_text("{}",encoding="utf-8"); paths.append(path)
+            state=root/"state.sqlite3"; stderr=io.StringIO()
+            with mock.patch.object(broker,"MAX_JSON_AGGREGATE_BYTES",5), contextlib.redirect_stderr(stderr):
+                code=broker.main(["decide","--request",str(paths[0]),"--snapshot",str(paths[1]),"--policy",str(paths[2]),"--state",str(state)])
+            self.assertEqual(code,22); self.assertFalse(state.exists()); self.assertEqual(json.loads(stderr.getvalue()),{"error":"INPUT_REFUSED"})
+
+    def test_huge_numeric_is_fixed_broker_error(self):
+        hostile=request(); hostile["budget"]["window_estimates"]={"five-hour":10**400,"weekly":0.1}
+        with self.assertRaisesRegex(broker.BrokerError,"INPUT_VALUE_REFUSED"):
+            broker.evaluate(hostile,snapshot(),policy(),[],NOW)
+
 
 class TransactionTests(unittest.TestCase):
     def setUp(self):

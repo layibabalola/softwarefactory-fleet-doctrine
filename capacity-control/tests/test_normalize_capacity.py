@@ -45,5 +45,18 @@ class CapacityTests(unittest.TestCase):
                 code=normalizer.main(["--provider","anthropic","--input",str(path),"--quota-domain",DOMAIN,"--observed-at","2026-08-18T16:00:00Z"])
         self.assertEqual(code,22); self.assertEqual(json.loads(stderr.getvalue()),{"error":"INPUT_REFUSED"}); self.assertNotIn("private",stderr.getvalue())
 
+    def test_hostile_numeric_and_deep_json_are_fixed_no_echo(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            path=pathlib.Path(temporary)/"private-token.jsonl"
+            event={"payload":{"type":"token_count","rate_limits":{"primary":{"used_percent":1,"window_minutes":1,"resets_at":10**400}}}}
+            path.write_text(json.dumps(event),encoding="utf-8"); stderr=io.StringIO()
+            with contextlib.redirect_stderr(stderr):
+                code=normalizer.main(["--provider","openai","--input",str(path),"--quota-domain","openai:sha256:"+"a"*64,"--observed-at","2026-08-18T16:00:00Z"])
+            self.assertEqual(code,22); self.assertEqual(json.loads(stderr.getvalue()),{"error":"INPUT_REFUSED"}); self.assertNotIn("private",stderr.getvalue())
+            path.write_bytes(b"["*(normalizer.MAX_JSON_DEPTH+1)+b"0"+b"]"*(normalizer.MAX_JSON_DEPTH+1)); stderr=io.StringIO()
+            with mock.patch.object(normalizer.json,"loads",side_effect=AssertionError("parser must not run")), contextlib.redirect_stderr(stderr):
+                code=normalizer.main(["--provider","anthropic","--input",str(path),"--quota-domain",DOMAIN,"--observed-at","2026-08-18T16:00:00Z"])
+            self.assertEqual(code,22); self.assertEqual(json.loads(stderr.getvalue()),{"error":"INPUT_REFUSED"})
+
 
 if __name__=="__main__": unittest.main()

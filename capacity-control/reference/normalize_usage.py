@@ -16,6 +16,8 @@ TERMINALS = {"SUCCESS", "PAUSED_BUDGET", "QUOTA_BLOCKED", "REFUSED", "FAILED", "
 MAX_INPUT_BYTES = 16 * 1024 * 1024
 MAX_METADATA_BYTES = 1024 * 1024
 MAX_INPUT_LINES = 200_000
+MAX_JSON_DEPTH = 64
+MAX_JSON_NODES = 65536
 
 
 class NormalizeError(RuntimeError):
@@ -30,6 +32,26 @@ def read_bounded(path: pathlib.Path, maximum: int, line_limit: int | None = None
     if line_limit is not None and data.count(b"\n")+(0 if not data or data.endswith(b"\n") else 1)>line_limit:
         raise NormalizeError("INPUT_LINE_LIMIT")
     return data
+
+
+def validate_json_shape(data: bytes) -> None:
+    depth=0; nodes=0; quoted=False; escaped=False
+    for byte in data:
+        if quoted:
+            if escaped: escaped=False
+            elif byte==92: escaped=True
+            elif byte==34: quoted=False
+            continue
+        if byte==34: quoted=True
+        elif byte in (91,123):
+            depth+=1; nodes+=1
+            if depth>MAX_JSON_DEPTH or nodes>MAX_JSON_NODES: raise NormalizeError("JSON_SHAPE_LIMIT")
+        elif byte in (93,125):
+            depth-=1
+            if depth<0: raise NormalizeError("INVALID_JSON")
+        elif byte in (44,58):
+            nodes+=1
+            if nodes>MAX_JSON_NODES: raise NormalizeError("JSON_SHAPE_LIMIT")
 
 
 def json_lines(lines: Iterable[str]) -> Iterable[dict[str, Any]]:
@@ -223,14 +245,17 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--output", type=pathlib.Path)
     args = parser.parse_args(argv)
     try:
-        metadata = json.loads(read_bounded(args.metadata,MAX_METADATA_BYTES).decode("utf-8"))
+        metadata_bytes=read_bounded(args.metadata,MAX_METADATA_BYTES)
+        validate_json_shape(metadata_bytes)
+        metadata = json.loads(metadata_bytes.decode("utf-8"))
         input_bytes=read_bounded(args.input,MAX_INPUT_BYTES,MAX_INPUT_LINES)
+        validate_json_shape(input_bytes)
         result = normalize(args.provider, input_bytes.decode("utf-8",errors="replace").splitlines(), metadata)
         encoded = json.dumps(result, indent=2, sort_keys=True) + "\n"
         if args.output: args.output.write_text(encoded, encoding="utf-8")
         else: print(encoded, end="")
         return 0
-    except (OSError, UnicodeError, KeyError, json.JSONDecodeError, NormalizeError):
+    except (OSError, UnicodeError, KeyError, json.JSONDecodeError, NormalizeError, ValueError, TypeError, OverflowError, AttributeError, RecursionError):
         print(json.dumps({"error": "INPUT_REFUSED"}, sort_keys=True), file=sys.stderr)
         return 22
 

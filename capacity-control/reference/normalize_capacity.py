@@ -15,6 +15,8 @@ from typing import Any, Sequence
 SCHEMA = "fleet-capacity-snapshot/v1"
 MAX_INPUT_BYTES = 16 * 1024 * 1024
 MAX_INPUT_LINES = 200_000
+MAX_JSON_DEPTH = 64
+MAX_JSON_NODES = 65536
 
 
 class CapacityError(RuntimeError):
@@ -41,6 +43,26 @@ def read_bounded(path: pathlib.Path) -> bytes:
     if len(data)>MAX_INPUT_BYTES: raise CapacityError("INPUT_TOO_LARGE")
     if data.count(b"\n")+(0 if not data or data.endswith(b"\n") else 1)>MAX_INPUT_LINES: raise CapacityError("INPUT_LINE_LIMIT")
     return data
+
+
+def validate_json_shape(data: bytes) -> None:
+    depth=0; nodes=0; quoted=False; escaped=False
+    for byte in data:
+        if quoted:
+            if escaped: escaped=False
+            elif byte==92: escaped=True
+            elif byte==34: quoted=False
+            continue
+        if byte==34: quoted=True
+        elif byte in (91,123):
+            depth+=1; nodes+=1
+            if depth>MAX_JSON_DEPTH or nodes>MAX_JSON_NODES: raise CapacityError("JSON_SHAPE_LIMIT")
+        elif byte in (93,125):
+            depth-=1
+            if depth<0: raise CapacityError("INVALID_JSON")
+        elif byte in (44,58):
+            nodes+=1
+            if nodes>MAX_JSON_NODES: raise CapacityError("JSON_SHAPE_LIMIT")
 
 
 def anthropic(raw: dict[str, Any]) -> list[dict[str, Any]]:
@@ -98,12 +120,13 @@ def main(argv: Sequence[str] | None=None) -> int:
     args=parser.parse_args(argv)
     try:
         raw=read_bounded(args.input)
+        validate_json_shape(raw)
         result=normalize(args.provider,raw.decode("utf-8"),args.quota_domain,args.observed_at,hashlib.sha256(raw).hexdigest())
         encoded=json.dumps(result,indent=2,sort_keys=True)+"\n"
         if args.output: args.output.write_text(encoded,encoding="utf-8")
         else: print(encoded,end="")
         return 0
-    except (OSError,UnicodeError,CapacityError):
+    except (OSError,UnicodeError,CapacityError,ValueError,TypeError,OverflowError,AttributeError,RecursionError):
         print(json.dumps({"error":"INPUT_REFUSED"},sort_keys=True),file=sys.stderr)
         return 22
 
