@@ -45,8 +45,9 @@ the human store-and-forward bus.
 
 - [`specs/fleet-universal-provider-control-reconciliation.md`](specs/fleet-universal-provider-control-reconciliation.md)
   — zero-authority R16 candidate preserving the R15 reconciliation, then merging canonical fleet
-  master `24c9f5d142663940fb1370818982af8662afb001` so every later project disposition remains in
-  subject. R16 adds broker-owned demand receipts, durable quota-domain accounting, certified
+  master `cd21e5830ccb894af5847ce113af8a7d6570748a` so every later project disposition remains in
+  subject, including the AirMyPC and corrected Conjugal records. R16 adds broker-owned demand
+  receipts, durable quota-domain accounting, certified
   request/turn/terminal boundaries, immutable temporal HMACs, and typed quality/termination proof.
   It is not a portable core, ruling, adoption credit, or launch authority. Coordination stays on
   [issue #4](https://github.com/layibabalola/softwarefactory-fleet-doctrine/issues/4).

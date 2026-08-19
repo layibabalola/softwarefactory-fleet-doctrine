@@ -80,7 +80,10 @@ def verify_reconciliation(manifest: dict[str, Any], treeish: str = "HEAD") -> No
     reconciliation = manifest.get("reconciliation")
     if not isinstance(reconciliation, dict):
         raise ManifestError("RECONCILIATION_INVALID")
-    for name in ("r15Base", "r16PreMaster", "canonicalFleetMaster", "r16MasterMerge"):
+    for name in (
+        "r15Base", "r16PreMaster", "r16FrozenBeforeLatestMaster",
+        "canonicalFleetMaster", "r16MasterMerge",
+    ):
         record = reconciliation.get(name)
         if not isinstance(record, dict) or set(record) != {
             "commit", "tree", "orderedParents", "orderedParentTrees"
@@ -96,11 +99,13 @@ def verify_reconciliation(manifest: dict[str, Any], treeish: str = "HEAD") -> No
             raise ManifestError("RECONCILIATION_PARENT_TREE_MISMATCH")
     r15 = reconciliation["r15Base"]
     pre_master = reconciliation["r16PreMaster"]
+    frozen = reconciliation["r16FrozenBeforeLatestMaster"]
     canonical = reconciliation["canonicalFleetMaster"]
     merged = reconciliation["r16MasterMerge"]
     if (
         pre_master["orderedParents"] != [r15["commit"]]
-        or merged["orderedParents"] != [pre_master["commit"], canonical["commit"]]
+        or frozen["orderedParents"] != ["a0786f2eee16770632a2a947f65db64e60dd9820"]
+        or merged["orderedParents"] != [frozen["commit"], canonical["commit"]]
     ):
         raise ManifestError("RECONCILIATION_ORDER_INVALID")
     if treeish != ":":

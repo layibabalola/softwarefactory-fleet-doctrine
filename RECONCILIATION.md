@@ -7,9 +7,11 @@ and portable/rejected split is the
 
 The R16 implementation candidate preserves the exact R15 merge
 `30cd9b97eeebd30cb209bdb9798c38b415c9a0b4`, advances linearly through frozen pre-master commit
-`a560c63cbe72736efe4e1d5c3ecfac25d04f68d2`, and then merges canonical fleet master
-`24c9f5d142663940fb1370818982af8662afb001` at exact ordered-parent reconciliation merge
-`a0786f2eee16770632a2a947f65db64e60dd9820`. That topology retains certified-boundary WIP,
+`a560c63cbe72736efe4e1d5c3ecfac25d04f68d2`, preserves the first canonical-master reconciliation
+at `a0786f2eee16770632a2a947f65db64e60dd9820`, and freezes its manifest delta at
+`5956637cf088429364307c6816976d676bbb5092`. It then additively merges the newer canonical fleet
+master `cd21e5830ccb894af5847ce113af8a7d6570748a` at exact ordered-parent reconciliation merge
+`c6bc94fe3afcdbc927641164fd2d42c621c0bb67`. That topology retains certified-boundary WIP,
 ratified R14 directory-owner mechanics, and all later project dispositions without rewriting any
 ancestor. It retains every R1 through R15 hostile discriminator,
 including R14's attempt-once POSIX target-directory descriptor owner and native hostile twin. It binds the
