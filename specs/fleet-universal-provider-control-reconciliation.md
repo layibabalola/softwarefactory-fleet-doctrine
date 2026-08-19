@@ -495,5 +495,5 @@ direct-launch enforcement. R22 adds no provider execution, process resume/kill, 
 or OPEN authority; adoption remains CLOSED.
 
 The exact R22 candidate is validated by 175 universal controls, 37 retained governor controls, and
-77 canonical runtime-workbench controls on Python 3.13 and 3.14. Hosted Windows and Ubuntu checks on
+78 canonical runtime-workbench controls on Python 3.13 and 3.14. Hosted Windows and Ubuntu checks on
 the frozen subject remain required and unclaimed.
