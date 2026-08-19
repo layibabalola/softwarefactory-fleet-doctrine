@@ -6,9 +6,30 @@ on:
       - ".github/workflows/provider-capacity-governor.yml"
       - "examples/provider-*"
       - "schemas/provider-*"
+      - "schemas/universal-*"
       - "specs/fleet-provider-capacity-governor.md"
+      - "specs/fleet-universal-provider-control-reconciliation.md"
+      - "ruling-candidates/fleet-universal-provider-control-reconciliation-r1.md"
+      - "manifests/universal-provider-control-reconciliation-r1.json"
+      - "manifests/universal-provider-control-reconciliation-r2.json"
+      - "manifests/universal-provider-control-reconciliation-r3.json"
+      - "manifests/universal-provider-control-reconciliation-r4.json"
+      - "manifests/universal-provider-control-reconciliation-r5.json"
+      - "manifests/universal-provider-control-reconciliation-r6.json"
+      - "manifests/universal-provider-control-reconciliation-r7.json"
+      - "manifests/universal-provider-control-reconciliation-r8.json"
+      - "manifests/universal-provider-control-reconciliation-r9.json"
+      - "manifests/universal-provider-control-reconciliation-r10.json"
+      - "manifests/universal-provider-control-reconciliation-r11.json"
+      - "manifests/universal-provider-control-reconciliation-r12.json"
+      - "manifests/universal-provider-control-reconciliation-r13.json"
+      - "manifests/universal-provider-control-reconciliation-r14.json"
+      - "RECONCILIATION.md"
       - "tests/test_provider_capacity_governor.py"
+      - "tests/test_universal_provider_control.py"
       - "tools/provider_capacity_governor.py"
+      - "tools/universal_provider_control.py"
+      - "tools/check_universal_manifest.py"
       - "requirements-provider-capacity-governor.txt"
       - "requirements-provider-capacity-governor.lock.txt"
   push:
@@ -17,9 +38,30 @@ on:
       - ".github/workflows/provider-capacity-governor.yml"
       - "examples/provider-*"
       - "schemas/provider-*"
+      - "schemas/universal-*"
       - "specs/fleet-provider-capacity-governor.md"
+      - "specs/fleet-universal-provider-control-reconciliation.md"
+      - "ruling-candidates/fleet-universal-provider-control-reconciliation-r1.md"
+      - "manifests/universal-provider-control-reconciliation-r1.json"
+      - "manifests/universal-provider-control-reconciliation-r2.json"
+      - "manifests/universal-provider-control-reconciliation-r3.json"
+      - "manifests/universal-provider-control-reconciliation-r4.json"
+      - "manifests/universal-provider-control-reconciliation-r5.json"
+      - "manifests/universal-provider-control-reconciliation-r6.json"
+      - "manifests/universal-provider-control-reconciliation-r7.json"
+      - "manifests/universal-provider-control-reconciliation-r8.json"
+      - "manifests/universal-provider-control-reconciliation-r9.json"
+      - "manifests/universal-provider-control-reconciliation-r10.json"
+      - "manifests/universal-provider-control-reconciliation-r11.json"
+      - "manifests/universal-provider-control-reconciliation-r12.json"
+      - "manifests/universal-provider-control-reconciliation-r13.json"
+      - "manifests/universal-provider-control-reconciliation-r14.json"
+      - "RECONCILIATION.md"
       - "tests/test_provider_capacity_governor.py"
+      - "tests/test_universal_provider_control.py"
       - "tools/provider_capacity_governor.py"
+      - "tools/universal_provider_control.py"
+      - "tools/check_universal_manifest.py"
       - "requirements-provider-capacity-governor.txt"
       - "requirements-provider-capacity-governor.lock.txt"
   workflow_dispatch:
@@ -33,24 +75,51 @@ concurrency:
 
 jobs:
   contracts:
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, ubuntu-latest]
+        python-version: ["3.13", "3.14"]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
     steps:
       - name: Check out candidate
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           persist-credentials: false
+          fetch-depth: 0
+
+      - name: Verify required predecessor history
+        shell: pwsh
+        run: |
+          $requiredSubjects = @(
+            '52ca3452a12656a13e62eba5c6b0641e43440f32^{commit}',
+            '52ca3452a12656a13e62eba5c6b0641e43440f32:tests/test_universal_provider_control.py',
+            '52ca3452a12656a13e62eba5c6b0641e43440f32:tools/universal_provider_control.py'
+          )
+          foreach ($subject in $requiredSubjects) {
+            git cat-file -e $subject 2>$null
+            if ($LASTEXITCODE -ne 0) {
+              Write-Error 'REQUIRED_HISTORY_OBJECT_UNAVAILABLE'
+              exit 1
+            }
+          }
 
       - name: Set up Python
         uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
         with:
-          python-version: "3.13"
+          python-version: ${{ matrix.python-version }}
 
       - name: Install pinned schema validator
         run: python -m pip install --disable-pip-version-check --require-hashes -r requirements-provider-capacity-governor.lock.txt
 
       - name: Run semantic negative controls
-        run: python -m unittest discover -s tests -p 'test_provider_capacity_governor.py' -v
+        run: |
+          python -m unittest discover -s tests -p "test_provider_capacity_governor.py" -v
+          python -m unittest discover -s tests -p "test_universal_provider_control.py" -v
+
+      - name: Verify portable Git-blob manifest
+        run: python tools/check_universal_manifest.py --treeish HEAD
 
       - name: Validate example telemetry shard
         run: python tools/provider_capacity_governor.py validate-events examples/provider-usage-events-v1.jsonl

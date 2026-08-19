@@ -1,0 +1,65 @@
+{
+  "schema": "fleet-universal-provider-control-candidate-manifest/v2",
+  "status": "CANDIDATE_ZERO_AUTHORITY",
+  "r1Preservation": {
+    "commit": "d98934c31ee3e0470263e6433cb436414d594301",
+    "tree": "af652de0b3853d06bbc36cbaa2a02461cb7a644b",
+    "manifestSha256": "sha256:569abb01c7a7d7b927c04ff45b559e8836681d0d461b016425f999a656f8dbe2",
+    "localPreservationRef": "preserved/universal-provider-control-r1-d98934c"
+  },
+  "authoredFrom": "9af3eb9d4f4669abb787cc1966280608f5fbbce9",
+  "rebasedOnto": "ecfbf1821fc508cdac0e80b95c9273ada836d0c8",
+  "inputs": {
+    "ratifiedGovernorCandidate": "224a6705d81dfbc670313cdcef4d825216f2b380",
+    "ratifiedGovernorRuling": "55a5808aa9edffcf9c86f1f9c2837a12a5c3c5d1",
+    "conjugalCandidate": "37f1246543c86300089b77a51a3b8ad2c5292b8d",
+    "conjugalCommitTree": "35a44265d358aa8ec3544ba2f08e0ef8e4b38216",
+    "reconciliationIssue": 4,
+    "reconciliationComment": 5332348238,
+    "securityVerdict": {"blocker": 5, "required": 4},
+    "mechanicsVerdict": {"blocker": 4, "required": 5},
+    "doctrineVerdict": {"blocker": 2, "required": 2}
+  },
+  "validation": {
+    "universalHostileControls": {"passed": 66, "failed": 0, "retainedR1": 52, "r1RedR2Green": 14},
+    "ratifiedGovernorControls": {"passed": 37, "failed": 0},
+    "pythonCompile": "PASS",
+    "workflowPlatforms": ["windows-latest", "ubuntu-latest"],
+    "hostedWorkflow": "REQUIRED_BEFORE_ADJUDICATION",
+    "providerInvocation": false,
+    "deployment": false,
+    "automaticLaunchGate": "CLOSED_BY_CONTRACT"
+  },
+  "authorRecusal": {"review": true, "adjudication": true, "merge": true, "activation": true},
+  "hashSemantics": "sha256 and byte counts are over canonical Git blob bytes addressed by gitBlobOid, never checkout bytes",
+  "subjectFiles": [
+    {"path":".github/workflows/provider-capacity-governor.yml","gitBlobOid":"f1af6c9456b4bed532e529d018a5a2ff593fcd63","sha256":"sha256:8fc5fee9d50aac026490ddd2265c284ca1daf4f8f6384afe614cbd932950cdee","bytes":3387},
+    {"path":"README.md","gitBlobOid":"5903400fe8459a209084d175a27770e92f050284","sha256":"sha256:594121d4d0b9b4320a87e9315894478809b43016549e716d82be005bfa78b409","bytes":3655},
+    {"path":"RECONCILIATION.md","gitBlobOid":"cb2a05affa714603229f83339953b65f119d6d1e","sha256":"sha256:2794028bbc19baa1946101cdd433ee88980f1b6ab362da81a2b9562345644a3f","bytes":912},
+    {"path":"manifests/universal-provider-control-reconciliation-r1.json","gitBlobOid":"e8bb114d1754c071bde619917040ed6511f6d456","sha256":"sha256:569abb01c7a7d7b927c04ff45b559e8836681d0d461b016425f999a656f8dbe2","bytes":4358},
+    {"path":"ruling-candidates/fleet-universal-provider-control-reconciliation-r1.md","gitBlobOid":"e832078ceb34ecf05915ba7a78e0ce43bfa26e03","sha256":"sha256:b1142cd14c12a488ebae6bfda026352f52db45da0e04f681773b28a07aa4f493","bytes":1455},
+    {"path":"schemas/provider-native-capacity-evidence-v1.schema.json","gitBlobOid":"9c80864627b60c4d217eed2a907fe51f37d28a30","sha256":"sha256:bf09454ce88e3c6d6131ffc009a8601c1ef149726f2e8b2f35e55be91276a96f","bytes":4562},
+    {"path":"schemas/universal-broker-health-v1.schema.json","gitBlobOid":"98ad95fd6fb26f9b384b5c8c0f1ff205815e5426","sha256":"sha256:4e0475f4c24b78a1095b2e00efa516609e4278b214279217a4e6527b72a5002e","bytes":928},
+    {"path":"schemas/universal-capacity-observation-v1.schema.json","gitBlobOid":"9039f80de643b521c32d08565d645f244545f740","sha256":"sha256:f8c2506c8654c0f7b143ca74fa68ddfdc7244cd5f74ddea4d39fa332ffc04fec","bytes":1461},
+    {"path":"schemas/universal-control-request-v1.schema.json","gitBlobOid":"3d9f75ed871c453dd325424e71e43dd0948e8993","sha256":"sha256:5ce4b5bbd0cb7c3c02b404b86312f539603ad4feac364a51c5f72fa43fd30c57","bytes":4749},
+    {"path":"schemas/universal-evidence-capsule-request-v1.schema.json","gitBlobOid":"baa7b26b05744542ecfbe1c3ea60010b90bff91d","sha256":"sha256:9051d46a65cc7d52f35891c4ae50aa208427607dbd045cb3f54498556a5b162a","bytes":1337},
+    {"path":"schemas/universal-evidence-capsule-v1.schema.json","gitBlobOid":"2e04df02a4b7a738fe42d29683d9e2f472412a40","sha256":"sha256:f5658742a3911fe0d1556da2eb643b047a1691eafc0e659cfc28067a3d7ad4e9","bytes":1213},
+    {"path":"schemas/universal-gate-transition-v1.schema.json","gitBlobOid":"64b9261d6fe22d533853cd29a834b14945085f69","sha256":"sha256:7112b6792689041165376cbd213e135350701b546d7fcd8adbfd6e4575a9cbdd","bytes":1751},
+    {"path":"schemas/universal-launch-attestation-v1.schema.json","gitBlobOid":"66ddc635e754056be9033ec71389ac2e0d5ba1bc","sha256":"sha256:a69745c464ff243262a15d80d73a547f65b6e70beaeaa787982e498b7af2aa69","bytes":2526},
+    {"path":"schemas/universal-launcher-inventory-v1.schema.json","gitBlobOid":"a4e123b578bdcd9e747a0ef900776a76d07bed45","sha256":"sha256:308d59f2c9f4ddb1d9c53d2a11d9a04abcab2b1e2cfffa3014039c9eb67a4dde","bytes":2613},
+    {"path":"schemas/universal-manual-canary-authorization-v1.schema.json","gitBlobOid":"706cb96fc133624b160bd63a653356baf390d6db","sha256":"sha256:da469a6c3720503afd8259e4b4cbabb70d77f0604c57d65e85bb0d826bf61d2c","bytes":1207},
+    {"path":"schemas/universal-process-observation-v1.schema.json","gitBlobOid":"3cdd7412abfb490325d01481bfc5e8d23e03428b","sha256":"sha256:943a8151e3f737235fad0220bc163eaa3aa2ba1234dbed804f640d5c4ecc1de4","bytes":2612},
+    {"path":"schemas/universal-project-profile-v1.schema.json","gitBlobOid":"40790b64747786c7c6d506cd92618349d852129e","sha256":"sha256:60207ac83c96a13a44c96eaff2574bff625dcc7b7a0ecd72d04b2f0ee4d5be79","bytes":5522},
+    {"path":"specs/fleet-provider-capacity-governor.md","gitBlobOid":"ce76474b469a41bce60c2332ad6efdc6f08aed0c","sha256":"sha256:601430238d79d273d7589a65546b6a24c56b62475ec1dc92c2edab16bbb6810c","bytes":22332},
+    {"path":"specs/fleet-universal-provider-control-reconciliation.md","gitBlobOid":"5e62cbddbd034bb2e75d14afb2ab4d0fc79def2f","sha256":"sha256:cb3ed5d8e660c22438736e12577e2fc877bb8f2d9720f2fa2adbcef4fffab03f","bytes":10257},
+    {"path":"tests/test_universal_provider_control.py","gitBlobOid":"4876190477837e07b79aa7226c6e5bad3d333639","sha256":"sha256:24be682cdab3bff62006969f421bf603f69d0ace81975d96834ca5d4a32ea6c6","bytes":64373},
+    {"path":"tools/check_universal_manifest.py","gitBlobOid":"15fcc89dbd85a1aa336afbbc6fcccdda91a5a458","sha256":"sha256:f7fcd42284f2e6dabc90d7ad79f672c73fbe03b6c39530f315e8cdd63e5fb442","bytes":4227},
+    {"path":"tools/universal_provider_control.py","gitBlobOid":"812f35273ff399862109cd17a0c98b87772cb143","sha256":"sha256:03942dd60655c9daf7f309d7377d22b9f27f800d0cfe0ea2e33ebee5cc25786a","bytes":79149}
+  ],
+  "manifestSelf": {
+    "path": "manifests/universal-provider-control-reconciliation-r2.json",
+    "canonicalGitBlobSha256": "sha256:4b4e9735efb4a2cc04890fe0023cef0b77b952bd501d7a8f2abf50d0cec907cc",
+    "bytes": 6865,
+    "rule": "SHA-256 of this exact Git blob after replacing only the 64 hex digits in canonicalGitBlobSha256 with zeroes"
+  }
+}
