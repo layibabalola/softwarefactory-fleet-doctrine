@@ -7,6 +7,12 @@ single-writer spec commit and Git blob. `ADOPT`, `DISTINGUISH`, and `REJECT` mea
 current-candidate project disposition; `STALE` means only the exact prior R14 disposition exists;
 `MISSING` means no explicit disposition exists. Doctrine publication never changes any row by itself.
 
+Phase 3 records independently accepted published candidates from Cloudvore, MLV-App, and
+Salesforce/context-ultra as current `DISTINGUISH` rows. Their exact remote refs, commits, trees,
+parents, artifact Git blobs, byte counts, SHA-256 values, and statements are frozen in
+`phase3/r26-published-project-disposition-intake.json` and exact-bound by the production checker.
+All authority and proof-credit members remain false; see `phase3/README.md`.
+
 The checker closes on a changed or omitted project spec, a stale evidence pin, a fabricated
 disposition, any attempt to convert `CANDIDATE_ZERO_AUTHORITY` into runtime/project/fleet adoption,
 or any token-saving claim that drops exact model, effort, role, review, quality, or functionality

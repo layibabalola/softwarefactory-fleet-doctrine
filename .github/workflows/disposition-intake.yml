@@ -40,5 +40,11 @@ jobs:
       - name: Verify phase-2 blockers against frozen project evidence
         run: python tools/check_phase2_disposition_batch.py --treeish HEAD
 
+      - name: Run phase-3 published-project distinction controls
+        run: python -m unittest discover -s tests -p "test_phase3_disposition_batch.py" -v
+
+      - name: Verify exact zero-authority phase-3 distinctions
+        run: python tools/check_phase3_disposition_batch.py --treeish HEAD
+
       - name: Reverify the frozen adoption ledger
         run: python tools/check_adoption_ledger.py --treeish HEAD

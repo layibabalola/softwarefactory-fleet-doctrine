@@ -38,12 +38,20 @@ PROJECT_IDS = {
 ALLOWED_PHASE2_PATHS = {
     ".github/workflows/disposition-intake.yml",
     "adoption/README.md",
+    "adoption/phase3/README.md",
+    "adoption/phase3/r26-published-project-disposition-intake.json",
     "adoption/phase2/README.md",
     BATCH_PATH,
+    LEDGER_PATH,
+    "specs/cloudvore.md",
+    "specs/mlv-app.md",
+    "specs/salesforce-tools.md",
     "tests/test_phase2_disposition_batch.py",
+    "tests/test_phase3_disposition_batch.py",
     "tests/test_adoption_ledger.py",
     "tools/check_adoption_ledger.py",
     "tools/check_phase2_disposition_batch.py",
+    "tools/check_phase3_disposition_batch.py",
 }
 OWNER_EVIDENCE_REQUIREMENTS = [
     "PROJECT_OWNED_COMMIT_AND_GIT_BLOB_BINDING_R26_E70A044_AND_MERGE_909F769",

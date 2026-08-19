@@ -1,0 +1,172 @@
+{
+  "schema": "fleet-r26-published-project-disposition-intake/v1",
+  "status": "PUBLISHED_PROJECT_DISTINCTIONS_ZERO_AUTHORITY",
+  "frozenBase": {
+    "publishedMasterCommit": "082f631c7b474211bbe8ecbc783a4fd9cdd2ada0",
+    "publishedMasterTree": "8bba889936defcf5e46573ca26daa81f544a2a81",
+    "initialSpecFoldCommit": "c025c1f5b32c71e77142d592107013fbbb677336",
+    "initialSpecFoldTree": "5e90a7fb72c1c7bc593f8dbfd7d097be18a9c20f",
+    "specBindingCommit": "928606d0151814e50ed051d8d5819ca4e23c5940",
+    "specBindingTree": "402d6818937d4ecb64ac807c77c5792fd121947e",
+    "r26Candidate": "e70a044f31dd2f43ab7c716d63a4eb89318c61b6",
+    "r26Merge": "909f769d02e8412e51e28e242cfa8d00dadc9a3d"
+  },
+  "summary": {
+    "projectCount": 3,
+    "distinguishCandidates": 3,
+    "adoptionClaims": 0,
+    "runtimeAuthorityClaims": 0
+  },
+  "projects": [
+    {
+      "projectId": "cloudvore",
+      "specPath": "specs/cloudvore.md",
+      "centralEvidence": {
+        "commit": "928606d0151814e50ed051d8d5819ca4e23c5940",
+        "gitBlobOid": "d1490080f87f8d523cc87fb6ccd91af39b7d2fd7"
+      },
+      "projectCandidate": {
+        "remote": "https://github.com/layibabalola/Cloudvore.git",
+        "publishedRef": "refs/heads/codex/r26-zero-authority-disposition-candidate-20260819",
+        "commit": "3ea3a09230aff318caef30980bfa76d48f189874",
+        "tree": "713c1c0aeef3405c7e6b0674b4217db4be83612a",
+        "parent": "ad2c1918d6358071e4e61d676a407dede8970c00",
+        "baseCommit": "db3e5fd155a6efe41947f5d4aa0bbc4a3d2098a8",
+        "candidateStatus": "CANDIDATE_ZERO_AUTHORITY",
+        "primaryEvidencePath": "knowledge/universal-token-control-r26-disposition-candidate-2026-08-19.json",
+        "dispositionPath": "knowledge/universal-token-control-r26-disposition-candidate-2026-08-19.json",
+        "artifacts": [
+          {
+            "path": "knowledge/universal-token-control-r26-disposition-candidate-2026-08-19.json",
+            "gitBlobOid": "54221d2cca9e6160975ec2c4a3a416021b499546",
+            "bytes": 12168,
+            "sha256": "922bcd510f1bbf6d7dfbf68a2d602abe967e0c5069e3a48c70edb0e3fcc1abff"
+          },
+          {
+            "path": "tools/universal-token-control-r26-disposition-candidate.tests.py",
+            "gitBlobOid": "92fdec7729616fc35daaf73f72ffaef6e91843d8",
+            "bytes": 26754,
+            "sha256": "153d99adbc57a31a88d95c1fe7d9e261206f6592e4226903cead11e699759c21"
+          }
+        ],
+        "disposition": {
+          "kind": "DISTINGUISH",
+          "subjectCommit": "909f769d02e8412e51e28e242cfa8d00dadc9a3d",
+          "statement": "DISTINGUISH(909f769d02e8412e51e28e242cfa8d00dadc9a3d, CLOUDVORE_R26_CANDIDATE_ZERO_AUTHORITY_PENDING_PINNED_LOCAL_SUPERVISOR_COMPLETE_LAUNCHER_CENSUS_REQUEST_LEVEL_TOKEN_ACCOUNTING_1000_IDLE_TICKS_FULL_CHILD_FENCING_ROLLBACK_AND_CURRENT_CLOSED_GATE_PROOF, CLOUDVORE_BASE_db3e5fd155a6efe41947f5d4aa0bbc4a3d2098a8)"
+        },
+        "authorityClaims": {
+          "projectAdoption": false,
+          "fleetAdoption": false,
+          "runtimeActivation": false,
+          "providerInvocation": false,
+          "schedulerMutation": false,
+          "mergePushRelease": false
+        },
+        "adoptionProofCredit": false,
+        "nonRegressionCredit": false
+      }
+    },
+    {
+      "projectId": "mlv-app",
+      "specPath": "specs/mlv-app.md",
+      "centralEvidence": {
+        "commit": "928606d0151814e50ed051d8d5819ca4e23c5940",
+        "gitBlobOid": "16dce1b3eb1f8f2409de57f1872cb6ea58f8f5e9"
+      },
+      "projectCandidate": {
+        "remote": "https://github.com/layibabalola/MLV-App.git",
+        "publishedRef": "refs/heads/codex/r26-zero-authority-disposition-candidate-20260819",
+        "commit": "81bc1ad472daaf1cad2609a80fa86495a7684367",
+        "tree": "8da47414d2b0f746d109659246badf17099af99c",
+        "parent": "13eacc900662f4ba5df0659b0c4ff493abe9f0c5",
+        "baseCommit": "30889f77e2000190b94d59f80f6a03b12ce3e0d3",
+        "candidateStatus": "CANDIDATE_ZERO_AUTHORITY",
+        "primaryEvidencePath": "docs/universal-token-control-r26-disposition-candidate-2026-08-19.json",
+        "dispositionPath": "docs/universal-token-control-r26-disposition-candidate-2026-08-19.json",
+        "artifacts": [
+          {
+            "path": "docs/universal-token-control-r26-disposition-candidate-2026-08-19.json",
+            "gitBlobOid": "b3366e8495150e2d69f299409a78a44e33fd637c",
+            "bytes": 14552,
+            "sha256": "2e760867258e4c22c49d0fdaccfe6a7b0f59b312e80ca2f9c5e5b405b9d57ec9"
+          },
+          {
+            "path": "tools/universal-token-control-r26-disposition-candidate.tests.py",
+            "gitBlobOid": "c40b2f11a764c8945674befa3d4afa92f3b452f6",
+            "bytes": 25117,
+            "sha256": "61013cad4afbdbd38349e1dfa011956c599024436c4ef4bf5263b165049315d1"
+          }
+        ],
+        "disposition": {
+          "kind": "DISTINGUISH",
+          "subjectCommit": "909f769d02e8412e51e28e242cfa8d00dadc9a3d",
+          "statement": "DISTINGUISH(909f769d02e8412e51e28e242cfa8d00dadc9a3d, MLV_APP_R26_CANDIDATE_ZERO_AUTHORITY_CURRENT_MASTER_HAS_NO_INSTALLED_TOKEN_CONTROL_SUPERVISOR_COMPLETE_LAUNCHER_CENSUS_REQUEST_LEVEL_ACCOUNTING_1000_IDLE_TICKS_FULL_CHILD_FENCING_ROLLBACK_QUALITY_EQUIVALENCE_OR_CURRENT_CLOSED_GATE_PROOF, MLV_APP_BASE_30889f77e2000190b94d59f80f6a03b12ce3e0d3)"
+        },
+        "authorityClaims": {
+          "projectAdoption": false,
+          "fleetAdoption": false,
+          "runtimeActivation": false,
+          "providerInvocation": false,
+          "schedulerMutation": false,
+          "mergePushRelease": false
+        },
+        "adoptionProofCredit": false,
+        "nonRegressionCredit": false
+      }
+    },
+    {
+      "projectId": "salesforce-tools",
+      "specPath": "specs/salesforce-tools.md",
+      "centralEvidence": {
+        "commit": "928606d0151814e50ed051d8d5819ca4e23c5940",
+        "gitBlobOid": "140328b886c5bf8fe122d896f46e214d1a77151f"
+      },
+      "projectCandidate": {
+        "remote": "https://github.com/layibabalola/SalesforceSupportTools.git",
+        "publishedRef": "refs/heads/codex/r26-zero-authority-disposition-candidate-20260819",
+        "commit": "f9f1e9990e5daa3a6d797e26e5c0baeeceb23c2a",
+        "tree": "e45c5badcb0e9cdd48877377d04855fdb7450f13",
+        "parent": "3fd3d4a09f77d7b7a5e9fcbc45ca5621ce4727dd",
+        "baseCommit": "3fd3d4a09f77d7b7a5e9fcbc45ca5621ce4727dd",
+        "candidateStatus": "DISTINGUISH_CANDIDATE_ZERO_AUTHORITY",
+        "primaryEvidencePath": "docs/provider-control/R26-CURRENT-STATE-EVIDENCE.json",
+        "dispositionPath": "docs/provider-control/R26-DISPOSITION-CANDIDATE.md",
+        "artifacts": [
+          {
+            "path": "docs/provider-control/R26-CURRENT-STATE-EVIDENCE.json",
+            "gitBlobOid": "15a3e40884dab3be1d76a1aca459d6b4267a1d75",
+            "bytes": 6023,
+            "sha256": "9f4bedd0700fc2cf3096b3e2ca697a554c5cbb5d10ffe40f3ec56f40172992f4"
+          },
+          {
+            "path": "docs/provider-control/R26-DISPOSITION-CANDIDATE.md",
+            "gitBlobOid": "9704fd3e8c18cf20ff9930f51a3fd634923c4067",
+            "bytes": 4959,
+            "sha256": "6e4ede6c672e5bad9152896ea6e4dfeaef2caf0466d3b0b32106381713db5f08"
+          },
+          {
+            "path": "tools/provider-control/test-r26-disposition-candidate.ps1",
+            "gitBlobOid": "d9715622ba6472ad5c9bfe9cef61c380a7dd306b",
+            "bytes": 23029,
+            "sha256": "07b87c72d353ae02d6b9a8d45aa2992e49a6994d4e53a3e814c09db8fa2f7cf4"
+          }
+        ],
+        "disposition": {
+          "kind": "DISTINGUISH",
+          "subjectCommit": "909f769d02e8412e51e28e242cfa8d00dadc9a3d",
+          "statement": "DISTINGUISH(909f769d02e8412e51e28e242cfa8d00dadc9a3d, R26_CANDIDATE_ZERO_AUTHORITY_CURRENT_DIRECT_PROVIDER_SUBPROCESS_AND_OPT_IN_SCHEDULED_STANDUP_PATHS_REMAIN_OUTSIDE_A_PINNED_FAIL_CLOSED_SUPERVISOR_PENDING_COMPLETE_LAUNCHER_CENSUS_EXACT_MODEL_EFFORT_ROLE_REVIEW_QUALITY_FUNCTIONALITY_BINDINGS_REQUEST_TOKEN_ACCOUNTING_1000_UNCHANGED_ZERO_INFERENCE_TICKS_FULL_CHILD_FENCING_ROLLBACK_CURRENT_CLOSED_GATE_AND_REVIEW, SALESFORCE_MAIN_3fd3d4a09f77d7b7a5e9fcbc45ca5621ce4727dd, EVIDENCE_SHA256_9f4bedd0700fc2cf3096b3e2ca697a554c5cbb5d10ffe40f3ec56f40172992f4)"
+        },
+        "authorityClaims": {
+          "projectAdoption": false,
+          "fleetAdoption": false,
+          "runtimeActivation": false,
+          "providerInvocation": false,
+          "schedulerMutation": false,
+          "mergePushRelease": false
+        },
+        "adoptionProofCredit": false,
+        "nonRegressionCredit": false
+      }
+    }
+  ]
+}

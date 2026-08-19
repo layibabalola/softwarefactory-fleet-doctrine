@@ -38,7 +38,7 @@ class AdoptionLedgerTests(unittest.TestCase):
         project["status"] = "ADOPT"
         project["blocker"] = None
         ledger["summary"]["counts"]["ADOPT"] = 1
-        ledger["summary"]["counts"]["DISTINGUISH"] = 0
+        ledger["summary"]["counts"]["DISTINGUISH"] = 3
 
         prefix = "receipts/project-adoption/dng-auto-processor"
         artifacts = {}
@@ -516,7 +516,7 @@ class AdoptionLedgerTests(unittest.TestCase):
 
         dng["status"] = "ADOPT"
         dng["blocker"] = None
-        ledger["summary"]["counts"]["DISTINGUISH"] = 0
+        ledger["summary"]["counts"]["DISTINGUISH"] = 3
         ledger["summary"]["counts"]["ADOPT"] = 1
         with self.assertRaisesRegex(MODULE.LedgerError, "CURRENT_DISPOSITION_STATUS_MISMATCH"):
             MODULE.verify_ledger(ledger, "HEAD")
@@ -841,15 +841,109 @@ class AdoptionLedgerTests(unittest.TestCase):
         with self.assertRaisesRegex(MODULE.LedgerError, "STALE_DISPOSITION_SUBJECT_INVALID"):
             MODULE.verify_ledger(ledger, "HEAD")
 
-    def test_missing_cannot_carry_invented_project_evidence(self):
+    def test_published_project_candidate_is_required_only_for_the_exact_three_rows(self):
         ledger = self._copy()
-        salesforce = self._project(ledger, "salesforce-tools")
-        salesforce["evidence"]["disposition"] = {
-            "status": "DISTINGUISH",
-            "subjectCommit": "874605e43531c9aa230ee16851f8107a8e0d9cec",
-        }
-        with self.assertRaisesRegex(MODULE.LedgerError, "MISSING_STATUS_HAS_DISPOSITION_EVIDENCE"):
+        self._project(ledger, "salesforce-tools")["evidence"]["projectCandidate"] = None
+        with self.assertRaisesRegex(MODULE.LedgerError, "PROJECT_CANDIDATE_REQUIRED"):
             MODULE.verify_ledger(ledger, "HEAD")
+
+        ledger = self._copy()
+        self._project(ledger, "adobe-ingester")["evidence"]["projectCandidate"] = copy.deepcopy(
+            self._project(ledger, "cloudvore")["evidence"]["projectCandidate"]
+        )
+        with self.assertRaisesRegex(MODULE.LedgerError, "PROJECT_CANDIDATE_UNEXPECTED"):
+            MODULE.verify_ledger(ledger, "HEAD")
+
+    def test_published_project_candidate_entire_object_is_exact_bound(self):
+        for project_id in sorted(MODULE.PROJECT_CANDIDATE_IDS):
+            with self.subTest(project_id=project_id):
+                candidate = self._project(self._copy(), project_id)["evidence"]["projectCandidate"]
+                canonical = json.dumps(
+                    candidate, ensure_ascii=False, separators=(",", ":"), sort_keys=True
+                ).encode("utf-8")
+                self.assertEqual(
+                    MODULE.EXPECTED_PROJECT_CANDIDATE_SHA256[project_id],
+                    hashlib.sha256(canonical).hexdigest(),
+                )
+
+    def test_candidate_commit_and_tree_substitutions_fail_exact_binding(self):
+        project = self._project(self._copy(), "cloudvore")
+        spec_bytes = MODULE._blob(project["evidence"]["commit"], project["specPath"])
+        for field, value in (("commit", "0" * 40), ("tree", "1" * 40)):
+            with self.subTest(field=field):
+                candidate = copy.deepcopy(project["evidence"]["projectCandidate"])
+                candidate[field] = value
+                with self.assertRaisesRegex(
+                    MODULE.LedgerError, "PROJECT_CANDIDATE_EXACT_BINDING_MISMATCH"
+                ):
+                    MODULE._verify_project_candidate(
+                        candidate, project_id="cloudvore", spec_bytes=spec_bytes
+                    )
+
+    def test_coordinated_artifact_or_statement_substitution_still_fails_frozen_digest(self):
+        project = self._project(self._copy(), "mlv-app")
+        original = project["evidence"]["projectCandidate"]
+        original_spec = MODULE._blob(project["evidence"]["commit"], project["specPath"])
+        mutations = []
+
+        artifact_candidate = copy.deepcopy(original)
+        artifact = artifact_candidate["artifacts"][0]
+        old_row = (
+            f"| `{artifact['path']}` | `{artifact['gitBlobOid']}` | "
+            f"{artifact['bytes']:,} | `{artifact['sha256']}` |"
+        ).encode("utf-8")
+        artifact["gitBlobOid"] = "2" * 40
+        artifact["bytes"] += 1
+        artifact["sha256"] = "3" * 64
+        new_row = (
+            f"| `{artifact['path']}` | `{artifact['gitBlobOid']}` | "
+            f"{artifact['bytes']:,} | `{artifact['sha256']}` |"
+        ).encode("utf-8")
+        mutations.append((artifact_candidate, original_spec.replace(old_row, new_row)))
+
+        statement_candidate = copy.deepcopy(original)
+        old_statement = statement_candidate["disposition"]["statement"]
+        new_statement = old_statement.replace("MLV_APP_R26", "MLV_APP_FABRICATED_R26")
+        statement_candidate["disposition"]["statement"] = new_statement
+        mutations.append(
+            (
+                statement_candidate,
+                original_spec.replace(old_statement.encode("utf-8"), new_statement.encode("utf-8")),
+            )
+        )
+
+        for candidate, coordinated_spec in mutations:
+            with self.subTest(statement=candidate["disposition"]["statement"][:40]):
+                with self.assertRaisesRegex(
+                    MODULE.LedgerError, "PROJECT_CANDIDATE_EXACT_BINDING_MISMATCH"
+                ):
+                    MODULE._verify_project_candidate(
+                        candidate, project_id="mlv-app", spec_bytes=coordinated_spec
+                    )
+
+    def test_candidate_rejects_recursive_adopt_and_authority_or_proof_credit(self):
+        project = self._project(self._copy(), "salesforce-tools")
+        spec_bytes = MODULE._blob(project["evidence"]["commit"], project["specPath"])
+        candidate = copy.deepcopy(project["evidence"]["projectCandidate"])
+        candidate["disposition"]["statement"] += " ADOPT(0000000000000000000000000000000000000000)"
+        with self.assertRaisesRegex(MODULE.LedgerError, "PROJECT_CANDIDATE_ADOPT_OVERCLAIM"):
+            MODULE._verify_project_candidate(
+                candidate, project_id="salesforce-tools", spec_bytes=spec_bytes
+            )
+
+        candidate = copy.deepcopy(project["evidence"]["projectCandidate"])
+        candidate["authorityClaims"]["runtimeActivation"] = True
+        with self.assertRaisesRegex(MODULE.LedgerError, "PROJECT_CANDIDATE_AUTHORITY_OVERCLAIM"):
+            MODULE._verify_project_candidate(
+                candidate, project_id="salesforce-tools", spec_bytes=spec_bytes
+            )
+
+        candidate = copy.deepcopy(project["evidence"]["projectCandidate"])
+        candidate["adoptionProofCredit"] = True
+        with self.assertRaisesRegex(MODULE.LedgerError, "PROJECT_CANDIDATE_PROOF_OVERCLAIM"):
+            MODULE._verify_project_candidate(
+                candidate, project_id="salesforce-tools", spec_bytes=spec_bytes
+            )
 
     def test_summary_cannot_convert_publication_into_fleet_adoption(self):
         ledger = self._copy()
