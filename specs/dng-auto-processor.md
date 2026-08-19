@@ -197,13 +197,15 @@ LOCAL_ADAPTER_LANDED_AND_BOUNDED_FABLE_RESTORATION_BEGUN_WITH_GATE_CLOSED)**
 PENDING_PINNED_R14_PROFILE_COMPLETE_FOUR_SURFACE_CENSUS_1000_IDLE_TICKS_SUSPENDED_CHILD_ATTESTATION_AND_REVIEW,
 DNG_MASTER_3dc9100507c35e3724200dabaa3df6ffd2eb3cd0)**
 
-**DISTINGUISH(b632e0669e6cda8d4828b9aa8442b8388941a996,
+**DISTINGUISH(6aafb089719aec1582a2dd3edcf7463d73ca9767,
 LOCAL_STANDING_OWNER_DIRECTIVE_WITH_FRESH_ONE_SHOT_PER_SLICE_PERMITS_NOT_A_SELF_RENEWING_24_HOUR_WINDOW,
 DNG_MASTER_3dc9100507c35e3724200dabaa3df6ffd2eb3cd0)**
 
 The first disposition records materially stronger project-local evidence against provider-capacity
-governor v1. The second is controlling for present fleet convergence: DNG accepts ratified universal
-R14 as its additive portable target, but does **not** claim project or fleet adoption. The third
+governor v1. The second is controlling for present DNG convergence: DNG accepts the pinned R14
+candidate as its additive portable target, but does **not** claim project or fleet adoption. The
+canonical R14 manifest remains `CANDIDATE_ZERO_AUTHORITY`; this local target selection cannot ratify
+it. The third
 reconciles the competing automated-rotation candidate without granting it authority or claiming its
 window contract was installed. R14's
 deployment-inert reference engine is a contract and hostile-test oracle, not DNG's runtime
@@ -261,16 +263,20 @@ capacity, claimant, exact-subject, bounded-context, and fail-closed gate invaria
   dimensions, frozen-subject revalidation under the quota lock, model-free observation, and a
   process-tree wall clock locally. It does not infer that these closures satisfy Agent Bridge or
   R14's complete suspended-child, inventory, retained-owner, and review contract.
-- **Universal R14** (`874605e43531c9aa230ee16851f8107a8e0d9cec`): controlling portable
-  target. It supersedes competing portable semantics where they differ, while project adapters and
-  dispositions remain local and explicit.
+- **Universal R14 candidate** (`874605e43531c9aa230ee16851f8107a8e0d9cec`): DNG's controlling
+  portable target for local reconciliation, while its canonical manifest remains
+  `CANDIDATE_ZERO_AUTHORITY`. It reconciles competing portable semantics for DNG only; project
+  adapters and dispositions remain local and explicit.
 - **Automated bounded provider rotation R1 candidate**
-  (`b632e0669e6cda8d4828b9aa8442b8388941a996`): accept its serial quota-domain rule, fresh
+  (`6aafb089719aec1582a2dd3edcf7463d73ca9767`, rooted at
+  `b632e0669e6cda8d4828b9aa8442b8388941a996`): accept its serial quota-domain rule, fresh
   transactional admission, exact-subject bounds, zero-credit outputs, and closed-between-runs
   posture. DNG distinguishes its 24-hour create-once window and no-auto-renew rule: the operator's
   durable project directive is standing authority, while each actual slice still receives a fresh,
   expiring, lane-specific one-use permit after current capacity proof. This is a local adapter
-  proposal and execution receipt, not candidate ratification or R14 adoption.
+  proposal and execution receipt, not candidate ratification or R14 adoption. The candidate's own
+  `Canonical DNG competing evidence` section records the reciprocal distinction and the stricter
+  shared intersection.
 
 DNG additionally rejects three tempting savings as unsafe generalizations: the Claude Desktop
 idle-sensitive cache is not canonical capacity evidence; removing session persistence breaks M0
@@ -339,8 +345,9 @@ liveness and not fleet adoption. `dng-warden-wake` remains hourly behind the clo
 future slice requires new capacity evidence and a distinct expiring permit. DNG Provider Failover
 Runner and Software Factory Roadmap Controller remain disabled.
 
-Promotion to R14 `ADOPT` requires a pinned schema-valid R14 project profile, complete four-surface
-launcher inventory and direct-invocation prohibition, 1,000 unchanged zero-inference ticks,
+Promotion to R14 `ADOPT` requires canonical ratification, a pinned schema-valid R14 project profile,
+complete four-surface launcher inventory and direct-invocation prohibition, 1,000 unchanged
+zero-inference ticks,
 suspended-child actual-image/argv attestation, full claimant and retained-owner fencing, rollback,
 current CLOSED gate, and fresh independent security and quality review over the exact landed
 subject. Fleet convergence is the closed set of project-owned pinned dispositions and receipts; a
