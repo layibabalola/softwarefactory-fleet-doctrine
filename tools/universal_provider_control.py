@@ -1057,6 +1057,37 @@ def parse_time(value: Any) -> dt.datetime:
     return parsed.astimezone(UTC)
 
 
+_CANONICAL_RFC3339_UTC = re.compile(
+    r"^(?P<year>[0-9]{4})-(?P<month>0[1-9]|1[0-2])-"
+    r"(?P<day>0[1-9]|[12][0-9]|3[01])T"
+    r"(?P<hour>[01][0-9]|2[0-3]):(?P<minute>[0-5][0-9]):"
+    r"(?P<second>[0-5][0-9])(?:\.(?P<fraction>[0-9]{1,9}))?Z$"
+)
+
+
+def _canonical_rfc3339_utc_epoch_nanoseconds(value: Any) -> int:
+    """Parse canonical UTC RFC3339 without truncating its 1-9 fractional digits."""
+
+    if not isinstance(value, str):
+        raise ControlError("DATE_TIME_INVALID")
+    match = _CANONICAL_RFC3339_UTC.fullmatch(value)
+    if match is None:
+        raise ControlError("DATE_TIME_INVALID")
+    try:
+        whole = dt.datetime(
+            int(match.group("year")), int(match.group("month")), int(match.group("day")),
+            int(match.group("hour")), int(match.group("minute")), int(match.group("second")),
+            tzinfo=UTC,
+        )
+    except ValueError as exc:
+        raise ControlError("DATE_TIME_INVALID") from exc
+    epoch = dt.datetime(1970, 1, 1, tzinfo=UTC)
+    delta = whole - epoch
+    whole_seconds = delta.days * 86400 + delta.seconds
+    fraction = (match.group("fraction") or "").ljust(9, "0")
+    return whole_seconds * 1_000_000_000 + int(fraction or "0")
+
+
 def iso(value: dt.datetime) -> str:
     return value.astimezone(UTC).isoformat(timespec="microseconds").replace("+00:00", "Z")
 
@@ -1093,17 +1124,14 @@ def _validate_attended_rotation_semantics(value: dict[str, Any]) -> None:
     for digest_key in ("promptSha256", "outputSha256"):
         if len({entry[digest_key] for entry in requests}) != 4:
             raise ControlError("ATTENDED_ROTATION_HASH_DUPLICATE")
-    previous_completed: dt.datetime | None = None
+    previous_completed_ns: int | None = None
     duration_semantics = value["durationSemantics"]
     for entry in requests:
-        started = parse_time(entry["startedAt"])
-        completed = parse_time(entry["completedAt"])
-        delta = completed - started
-        wall_duration_ms = (
-            delta.days * 86400000 + delta.seconds * 1000 + delta.microseconds // 1000
-        )
-        if completed <= started or (
-            previous_completed is not None and started < previous_completed
+        started_ns = _canonical_rfc3339_utc_epoch_nanoseconds(entry["startedAt"])
+        completed_ns = _canonical_rfc3339_utc_epoch_nanoseconds(entry["completedAt"])
+        wall_duration_ms = (completed_ns - started_ns) // 1_000_000
+        if completed_ns <= started_ns or (
+            previous_completed_ns is not None and started_ns < previous_completed_ns
         ):
             raise ControlError("ATTENDED_ROTATION_OVERLAP_INVALID")
         if entry["wallDurationMs"] != wall_duration_ms:
@@ -1117,7 +1145,7 @@ def _validate_attended_rotation_semantics(value: dict[str, Any]) -> None:
             > duration_semantics["maxHostOutsideCliMs"]
         ):
             raise ControlError("ATTENDED_ROTATION_DURATION_OVERHEAD_INVALID")
-        previous_completed = completed
+        previous_completed_ns = completed_ns
     aggregate = value["aggregate"]
     expected = {
         "requestCount": len(requests),

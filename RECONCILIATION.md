@@ -85,5 +85,12 @@ provider-authenticated or independently observed, and no raw provider receipt is
 issue URL is informational and validation-independent. Token totals receive motivation/measurement
 credit only, never provider, adoption, containment, or activation authority.
 
+R24 preserves exact frozen R23 `ac2db2152fe23aa989745d36a71c67d33da4c89f` and corrects the
+generic timestamp precision rule. Receipt timestamps are canonical UTC RFC3339 with `Z`, calendar-valid
+whole seconds, and zero to nine fractional digits. Validation converts the whole second plus right-padded
+fraction directly to integer epoch nanoseconds and floors the exact completed-minus-started delta to
+milliseconds; it never routes through `datetime.microsecond`. The four retained rows and aggregate remain
+unchanged. This is evidence-only and grants no runtime/provider authority.
+
 Standing containment is unchanged: provider capacity, reset, or authentication cannot open an
 automatic-launch gate or re-enable a launcher.

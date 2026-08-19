@@ -1,4 +1,4 @@
-# Universal provider-control reconciliation R23
+# Universal provider-control reconciliation R24
 
 Status: **CANDIDATE / ZERO AUTHORITY / NO DEPLOYMENT**
 
@@ -500,8 +500,8 @@ the frozen subject remain required and unclaimed.
 
 R23 preserves exact frozen R22 `91f2d940c39bd15a76074a59deaeee8d13936fad` without changing
 broker mechanics or runtime authority. The attended receipt defines `wallDurationMs` as
-`floor((completedAt-startedAt) / 1 millisecond)`; timestamp precision finer than a microsecond cannot
-change that floor. `durationMs` means `CLAUDE_CLI_REPORTED_END_TO_END`, `durationApiMs` means
+`floor((completedAt-startedAt) / 1 millisecond)`. `durationMs` means
+`CLAUDE_CLI_REPORTED_END_TO_END`, `durationApiMs` means
 `CLAUDE_CLI_REPORTED_API`, and `wallDurationMs` means `HOST_OBSERVED_WALL`. Validation requires
 `0 <= API <= CLI <= wall`, at most 10,000 ms outside the reported API, and at most 5,000 ms host
 overhead/timestamp rounding outside the CLI duration. The four wall durations are 34,299, 59,757,
@@ -517,3 +517,12 @@ CLOSED.
 The exact R23 candidate is validated by 177 universal controls, 37 retained governor controls, and
 78 canonical runtime-workbench controls on Python 3.13 and 3.14. Hosted checks remain required and
 unclaimed; validation and publication do not grant authority.
+
+R24 preserves exact frozen R23 `ac2db2152fe23aa989745d36a71c67d33da4c89f`. Canonical receipt
+timestamps use uppercase `T`/`Z`, UTC only, calendar-valid whole seconds, and zero to nine decimal
+fractional digits. Validation parses the whole second and right-pads the fraction to nine digits,
+forming integer epoch nanoseconds before subtracting and flooring by 1,000,000. It never truncates to
+`datetime.microsecond`: an exact 1.9992 ms delta floors to 1 ms, 0.9999 ms floors to 0, and 2.0000 ms
+floors to 2. Offsets, lowercase `z`, malformed dates, and more than nine fractional digits fail closed.
+The exact four receipt rows still recompute 151,033 ms wall time and unchanged token totals. R24 changes
+no broker mechanics or authority; it remains evidence-only, zero authority, and CLOSED.

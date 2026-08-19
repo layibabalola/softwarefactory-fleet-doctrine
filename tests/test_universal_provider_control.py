@@ -5001,6 +5001,49 @@ class UniversalProviderControlTests(unittest.TestCase):
         self.assertFalse(manifest["authority"]["containmentOrCanaryCredit"])
         self.assertEqual(manifest["authority"]["automaticGateState"], "CLOSED")
 
+    def test_r24_01_rfc3339_nanoseconds_floor_without_microsecond_truncation(self) -> None:
+        start = "2026-08-19T04:00:00.0000000Z"
+
+        def floor_ms(completed: str) -> int:
+            return (
+                upc._canonical_rfc3339_utc_epoch_nanoseconds(completed)
+                - upc._canonical_rfc3339_utc_epoch_nanoseconds(start)
+            ) // 1_000_000
+
+        self.assertEqual(floor_ms("2026-08-19T04:00:00.0009999Z"), 0)
+        self.assertEqual(floor_ms("2026-08-19T04:00:00.0010000Z"), 1)
+        self.assertEqual(floor_ms("2026-08-19T04:00:00.0019992Z"), 1)
+        self.assertEqual(floor_ms("2026-08-19T04:00:00.0020000Z"), 2)
+        self.assertEqual(
+            (
+                upc._canonical_rfc3339_utc_epoch_nanoseconds(
+                    "2026-08-19T04:01:00.0000001Z"
+                )
+                - upc._canonical_rfc3339_utc_epoch_nanoseconds(
+                    "2026-08-19T04:00:59.9999999Z"
+                )
+            ) // 1_000_000,
+            0,
+        )
+        for malformed in (
+            "2026-08-19T04:00:00.1234567890Z",
+            "2026-08-19T04:00:00.1234567+00:00",
+            "2026-08-19T04:00:00.1234567z",
+            "2026-02-30T04:00:00.1234567Z",
+            "2026-08-19 04:00:00.1234567Z",
+        ):
+            with self.subTest(malformed=malformed):
+                with self.assertRaisesRegex(upc.ControlError, "DATE_TIME_INVALID"):
+                    upc._canonical_rfc3339_utc_epoch_nanoseconds(malformed)
+        receipt = upc.strict_json_file(
+            ROOT / "receipts" / "attended-provider-rotation-20260819.json"
+        )
+        upc.validate_contract("attended_rotation_receipt", receipt)
+        offset = copy.deepcopy(receipt)
+        offset["requests"][0]["startedAt"] = "2026-08-19T04:33:55.7504404+00:00"
+        with self.assertRaisesRegex(upc.ControlError, "SCHEMA_VALIDATION_FAILED"):
+            upc.validate_contract("attended_rotation_receipt", offset)
+
     def test_r17_07_low_level_request_primitives_are_not_public(self) -> None:
         broker = upc.UniversalProviderBroker(self.root / "r17-no-public-primitives")
         self.assertFalse(hasattr(broker, "begin_provider_request"))
