@@ -3,7 +3,7 @@
   "$id": "https://softwarefactory.invalid/schemas/universal-prior-idle-receipt-v1.schema.json",
   "type": "object",
   "additionalProperties": false,
-  "required": ["schema", "receiptId", "project", "recordedAt", "expiresAt", "sequence", "demandSnapshot", "demandFingerprint", "stateRootIdentity", "receiptHmacSha256"],
+  "required": ["schema", "receiptId", "project", "recordedAt", "expiresAt", "sequence", "authorityPath", "authoritySha256", "demandSnapshot", "demandFingerprint", "stateRootIdentity", "receiptHmacSha256"],
   "properties": {
     "schema": {"const": "fleet-universal-prior-idle-receipt/v1"},
     "receiptId": {"type": "string", "pattern": "^idle-[0-9a-f]{32}$"},
@@ -11,6 +11,8 @@
     "recordedAt": {"type": "string", "format": "date-time"},
     "expiresAt": {"type": "string", "format": "date-time"},
     "sequence": {"type": "integer", "minimum": 1, "maximum": 9223372036854775807},
+    "authorityPath": {"type": "string", "minLength": 1, "maxLength": 4096},
+    "authoritySha256": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
     "demandSnapshot": {
       "type": "object", "additionalProperties": false,
       "required": ["schema", "project", "addressedWork", "cursor"],

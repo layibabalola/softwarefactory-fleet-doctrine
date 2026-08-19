@@ -59,6 +59,12 @@ class UniversalProviderControlTests(unittest.TestCase):
         self.root = Path(self.temp.name)
         self.now = dt.datetime(2026, 8, 18, 20, 0, tzinfo=UTC)
         self.secret = b"S" * 32
+        self.termination_secret = b"T" * 32
+        self.quality_secret = b"Q" * 32
+        self.receipt_signer_secrets = {
+            "process-tree-observer": self.termination_secret,
+            "output-quality-observer": self.quality_secret,
+        }
         # The production quota ledger is deliberately canonical across state roots.  Give every
         # isolated test a distinct synthetic account so intentional active leases cannot leak
         # authority into a later case.
@@ -66,6 +72,16 @@ class UniversalProviderControlTests(unittest.TestCase):
         self.quota_id = upc.derive_quota_domain_id("claude", self.identity, self.secret)
         self.launcher = self.root / "controlled-launcher.exe"
         self.launcher.write_bytes(b"reference launcher bytes\n")
+        self.provider_executable = self.root / "pinned-provider.exe"
+        self.provider_executable.write_bytes(b"pinned provider adapter bytes\n")
+        self.termination_evidence = self.root / "termination-evidence.json"
+        self.termination_evidence.write_bytes(b'{"rootExited":true,"descendants":0}\n')
+        self.output_artifact = self.root / "retained-output.bin"
+        self.output_artifact.write_bytes(b"candidate output bytes\n")
+        self.reference_output = self.root / "retained-reference.bin"
+        self.reference_output.write_bytes(b"reference output bytes\n")
+        self.output_review = self.root / "retained-output-review.json"
+        self.output_review.write_bytes(b'{"nonInferior":true}\n')
         self.subject = self.root / "frozen-subject.bin"
         self.subject.write_bytes(b"frozen review subject\n")
         self.launcher_config = self.root / "launcher-config.json"
@@ -97,6 +113,10 @@ class UniversalProviderControlTests(unittest.TestCase):
             "addressedWork": [],
             "cursor": {"stream": "issues", "sequence": 3, "checkpointSha256": SHA_D},
         }
+        self.prior_idle_authority = self.root / "broker-observed-prior-idle.json"
+        self.prior_idle_authority.write_bytes(
+            upc.canonical_json(self.prior_idle_snapshot).encode("utf-8")
+        )
         self.demand_authority = self.root / "broker-observed-demand.json"
         self.demand_authority.write_bytes(upc.canonical_json(self.demand_snapshot).encode("utf-8"))
         self.request = self.make_request()
@@ -372,6 +392,8 @@ class UniversalProviderControlTests(unittest.TestCase):
             "subjectSha256": sha_file(self.subject),
             "executablePath": str(self.launcher.resolve()),
             "executableSha256": sha_file(self.launcher),
+            "providerExecutablePath": str(self.provider_executable.resolve()),
+            "providerExecutableSha256": sha_file(self.provider_executable),
             "argv": [
                 str(self.launcher.resolve()), "claude-opus-4-1", "high", sha_file(self.subject),
                 "IMPLEMENT", "8", "32768", "50000", "500000", "50000", "50000", "25000",
@@ -396,6 +418,8 @@ class UniversalProviderControlTests(unittest.TestCase):
                 "schema": "fleet-universal-prior-idle-receipt/v1", "receiptId": "idle-" + "1" * 32,
                 "project": "test-project", "recordedAt": upc.iso(self.now - dt.timedelta(seconds=10)),
                 "expiresAt": upc.iso(self.now + dt.timedelta(seconds=50)), "sequence": 1,
+                "authorityPath": str(self.prior_idle_authority.resolve()),
+                "authoritySha256": sha_file(self.prior_idle_authority),
                 "demandSnapshot": copy.deepcopy(self.prior_idle_snapshot),
                 "demandFingerprint": upc.digest_json(upc.canonical_demand_snapshot(self.prior_idle_snapshot)),
                 "stateRootIdentity": state_root_identity,
@@ -449,12 +473,17 @@ class UniversalProviderControlTests(unittest.TestCase):
             "issuedAt": upc.iso(self.now - dt.timedelta(seconds=2)),
             "expiresAt": upc.iso(self.now + dt.timedelta(minutes=10)),
             "wrapperExecutableSha256": request["executableSha256"],
+            "providerExecutableSha256": request["providerExecutableSha256"],
             "launcherConfigSha256": request["launcherConfigSha256"],
             "argvContractSha256": request["argvContractSha256"],
             "requestBoundaryMode": "SINGLE_REQUEST_PROCESS",
-            "brokerPermitCommand": "provider-request-permit",
+            "brokerPermitCommand": "brokered-single-request",
             "directInvocationImpossible": True,
             "processTreeTerminationRequired": True,
+            "terminationObserverId": "process-tree-observer",
+            "terminationObserverKeySha256": upc.signer_key_sha256(self.termination_secret),
+            "qualityObserverId": "output-quality-observer",
+            "qualityObserverKeySha256": upc.signer_key_sha256(self.quality_secret),
             "independentReviewSha256": SHA_C,
             "certificationHmacSha256": "hmac-sha256:" + "0" * 64,
         }
@@ -561,14 +590,21 @@ class UniversalProviderControlTests(unittest.TestCase):
                     "schema": "fleet-universal-process-tree-termination-receipt/v1",
                     "receiptId": "termination-" + "3" * 32,
                     "leaseId": result["leaseId"], "observedAt": upc.iso(self.now),
+                    "expiresAt": upc.iso(self.now + dt.timedelta(minutes=1)),
+                    "bindingSha256": result["bindingSha256"],
                     "rootProcessId": result["processId"],
                     "rootProcessStartTime": result["processStartTime"],
                     "rootExited": True, "liveDescendantCount": 0,
                     "observerQualified": True,
+                    "observerId": "process-tree-observer",
+                    "observerKeySha256": upc.signer_key_sha256(self.termination_secret),
+                    "evidencePath": str(self.termination_evidence.resolve()),
+                    "evidenceSha256": sha_file(self.termination_evidence),
+                    "retainedEvidenceBytes": self.termination_evidence.stat().st_size,
                     "receiptHmacSha256": "hmac-sha256:" + "0" * 64,
                 }
                 termination["receiptHmacSha256"] = upc.contract_hmac(
-                    "process-tree-termination-receipt-v1", termination, self.secret,
+                    "process-tree-termination-receipt-v1", termination, self.termination_secret,
                     "receiptHmacSha256",
                 )
                 usage = {
@@ -583,15 +619,15 @@ class UniversalProviderControlTests(unittest.TestCase):
                 output_quality = None
                 if permit is not None:
                     broker = self.brokers[result["leaseId"]]
-                    broker.checkpoint_provider_usage(
+                    broker._checkpoint_provider_usage(
                         lease_id=result["leaseId"], phase="PRE_TURN", turn_count=1,
                         current_context_tokens=1000, peak_context_tokens=1000,
                         token_usage=usage, fleet_secret=self.secret, now=self.now,
                     )
-                    terminal_permit = broker.issue_terminal_request_permit(
+                    terminal_permit = broker._issue_terminal_request_permit(
                         lease_id=result["leaseId"], fleet_secret=self.secret, now=self.now
                     )
-                    checkpoint = broker.checkpoint_provider_usage(
+                    checkpoint = broker._checkpoint_provider_usage(
                         lease_id=result["leaseId"], phase="TERMINAL", turn_count=1,
                         current_context_tokens=1000, peak_context_tokens=1000,
                         token_usage=usage, fleet_secret=self.secret, now=self.now,
@@ -602,14 +638,27 @@ class UniversalProviderControlTests(unittest.TestCase):
                         "schema": "fleet-universal-output-quality-receipt/v1",
                         "receiptId": "output-quality-" + "4" * 32,
                         "leaseId": result["leaseId"], "requestId": result["requestId"],
-                        "completedAt": upc.iso(self.now), "outputSha256": SHA_A,
+                        "bindingSha256": result["bindingSha256"],
+                        "completedAt": upc.iso(self.now),
+                        "expiresAt": upc.iso(self.now + dt.timedelta(minutes=1)),
+                        "outputPath": str(self.output_artifact.resolve()),
+                        "outputSha256": sha_file(self.output_artifact),
+                        "retainedOutputBytes": self.output_artifact.stat().st_size,
+                        "referenceOutputPath": str(self.reference_output.resolve()),
+                        "referenceOutputSha256": sha_file(self.reference_output),
+                        "retainedReferenceBytes": self.reference_output.stat().st_size,
                         "qualitySubjectSha256": self.request["subjectSha256"],
                         "providerUsageCheckpointSha256": checkpoint_digest,
-                        "nonInferior": True, "independentReviewSha256": SHA_B,
+                        "nonInferior": True,
+                        "observerId": "output-quality-observer",
+                        "observerKeySha256": upc.signer_key_sha256(self.quality_secret),
+                        "independentReviewPath": str(self.output_review.resolve()),
+                        "independentReviewSha256": sha_file(self.output_review),
+                        "retainedIndependentReviewBytes": self.output_review.stat().st_size,
                         "receiptHmacSha256": "hmac-sha256:" + "0" * 64,
                     }
                     output_quality["receiptHmacSha256"] = upc.contract_hmac(
-                        "output-quality-receipt-v1", output_quality, self.secret,
+                        "output-quality-receipt-v1", output_quality, self.quality_secret,
                         "receiptHmacSha256",
                     )
                 artifacts = {
@@ -648,6 +697,7 @@ class UniversalProviderControlTests(unittest.TestCase):
                     "leaseId": "lease-" + "e" * 32,
                     "requestId": "request-test-transition",
                     "completedAt": upc.iso(self.now - dt.timedelta(seconds=1)),
+                    "expiresAt": upc.iso(self.now + dt.timedelta(minutes=5)),
                     "gateEpoch": epoch - 1,
                     "gateTransitionSha256": prior_digest or SHA_A,
                     "projectProfileSha256": upc.digest_json(self.profile),
@@ -741,6 +791,7 @@ class UniversalProviderControlTests(unittest.TestCase):
         return proof
 
     def authorize(self, broker: upc.UniversalProviderBroker, request: dict | None = None, **changes) -> dict:
+        broker.install_independent_receipt_signers(self.receipt_signer_secrets)
         confirm = changes.pop("confirm", True)
         begin_request = changes.pop("begin_request", True)
         preserve_prior_idle = changes.pop("preserve_prior_idle", False)
@@ -755,9 +806,15 @@ class UniversalProviderControlTests(unittest.TestCase):
                     receipt = self.prior_receipts.get(key)
                     if receipt is None:
                         admission_now = changes.get("now", self.now)
-                        receipt = broker.record_prior_idle(
-                            project=project, demand_snapshot=self.prior_idle_snapshot,
+                        broker.pin_demand_authority(
+                            project=project,
+                            authority_path=self.prior_idle_authority,
+                            authority_sha256=sha_file(self.prior_idle_authority),
                             fleet_secret=self.secret,
+                            now=admission_now - dt.timedelta(seconds=11),
+                        )
+                        receipt = broker.record_prior_idle(
+                            project=project, fleet_secret=self.secret,
                             now=admission_now - dt.timedelta(seconds=10),
                             max_age_seconds=self.profile["policy"]["maxPriorIdleAgeSeconds"],
                         )
@@ -789,7 +846,7 @@ class UniversalProviderControlTests(unittest.TestCase):
             )
             self.brokers[result["leaseId"]] = broker
             if begin_request:
-                self.permits[result["leaseId"]] = broker.begin_provider_request(
+                self.permits[result["leaseId"]] = broker._begin_provider_request(
                     lease_id=result["leaseId"], fleet_secret=self.secret, now=self.now
                 )
             return confirmed
@@ -950,14 +1007,16 @@ class UniversalProviderControlTests(unittest.TestCase):
         request = copy.deepcopy(self.request)
         broker = upc.UniversalProviderBroker(self.root / "idle.db")
         self.transition(broker)
-        request["priorIdleReceipt"] = broker.record_prior_idle(
-            project=request["project"], demand_snapshot=request["demandSnapshot"],
-            fleet_secret=self.secret, now=self.now - dt.timedelta(seconds=10),
+        broker.pin_demand_authority(
+            project=request["project"], authority_path=self.demand_authority,
+            authority_sha256=sha_file(self.demand_authority), fleet_secret=self.secret,
+            now=self.now - dt.timedelta(seconds=11),
         )
-        self.assertEqual(
-            self.authorize(broker, request, preserve_prior_idle=True)["reason"],
-            "NO_ACTIONABLE_WORK",
-        )
+        with self.assertRaisesRegex(upc.ControlError, "PRIOR_IDLE_ACTIONABLE_WORK"):
+            broker.record_prior_idle(
+                project=request["project"], fleet_secret=self.secret,
+                now=self.now - dt.timedelta(seconds=10),
+            )
 
     def test_one_thousand_unchanged_ticks_make_zero_provider_calls_and_processes(self) -> None:
         admission = mock.Mock(side_effect=AssertionError("provider boundary called"))
@@ -3207,12 +3266,12 @@ class UniversalProviderControlTests(unittest.TestCase):
         broker = upc.UniversalProviderBroker(self.root / "r15-single-request")
         self.transition(broker)
         allowed = self.authorize(broker, begin_request=False)
-        first = broker.begin_provider_request(
+        first = broker._begin_provider_request(
             lease_id=allowed["leaseId"], fleet_secret=self.secret, now=self.now
         )
         upc.validate_contract("request_permit", first)
         with self.assertRaisesRegex(upc.ControlError, "PROVIDER_REQUEST_LIMIT_REACHED"):
-            broker.begin_provider_request(
+            broker._begin_provider_request(
                 lease_id=allowed["leaseId"], fleet_secret=self.secret, now=self.now
             )
         with broker._connect() as connection:
@@ -3234,9 +3293,16 @@ class UniversalProviderControlTests(unittest.TestCase):
             upc.canonical_demand_fingerprint(reversed_snapshot),
         )
         broker = upc.UniversalProviderBroker(self.root / "r15-idle-receipt")
+        self.prior_idle_authority.write_bytes(
+            upc.canonical_json(self.prior_idle_snapshot).encode("utf-8")
+        )
+        broker.pin_demand_authority(
+            project="test-project", authority_path=self.prior_idle_authority,
+            authority_sha256=sha_file(self.prior_idle_authority), fleet_secret=self.secret,
+            now=self.now - dt.timedelta(seconds=1),
+        )
         receipt = broker.record_prior_idle(
-            project="test-project", demand_snapshot=snapshot,
-            fleet_secret=self.secret, now=self.now,
+            project="test-project", fleet_secret=self.secret, now=self.now,
         )
         upc.validate_contract("prior_idle_receipt", receipt)
         forged = copy.deepcopy(receipt)
@@ -3451,13 +3517,18 @@ class UniversalProviderControlTests(unittest.TestCase):
     def test_r16_01_prior_idle_is_persisted_fresh_monotonic_and_one_use(self) -> None:
         broker = upc.UniversalProviderBroker(self.root / "r16-idle")
         self.transition(broker)
+        broker.pin_demand_authority(
+            project="test-project", authority_path=self.prior_idle_authority,
+            authority_sha256=sha_file(self.prior_idle_authority), fleet_secret=self.secret,
+            now=self.now - dt.timedelta(seconds=13),
+        )
         older = broker.record_prior_idle(
-            project="test-project", demand_snapshot=self.prior_idle_snapshot,
-            fleet_secret=self.secret, now=self.now - dt.timedelta(seconds=12),
+            project="test-project", fleet_secret=self.secret,
+            now=self.now - dt.timedelta(seconds=12),
         )
         newest = broker.record_prior_idle(
-            project="test-project", demand_snapshot=self.prior_idle_snapshot,
-            fleet_secret=self.secret, now=self.now - dt.timedelta(seconds=10),
+            project="test-project", fleet_secret=self.secret,
+            now=self.now - dt.timedelta(seconds=10),
         )
         stale_request = self.make_request("request-r16-idle-stale")
         stale_request["priorIdleReceipt"] = older
@@ -3496,34 +3567,34 @@ class UniversalProviderControlTests(unittest.TestCase):
         broker = upc.UniversalProviderBroker(self.root / "r16-accounting")
         self.transition(broker)
         allowed = self.authorize(broker, begin_request=False)
-        permit = broker.begin_provider_request(
+        permit = broker._begin_provider_request(
             lease_id=allowed["leaseId"], fleet_secret=self.secret, now=self.now
         )
         first_usage = {
             "inputTokens": 1000, "cacheReadTokens": 2000, "cacheWriteTokens": 100,
             "reasoningTokens": 500, "outputTokens": 20000,
         }
-        broker.checkpoint_provider_usage(
+        broker._checkpoint_provider_usage(
             lease_id=allowed["leaseId"], phase="PRE_TURN", turn_count=1,
             current_context_tokens=4000, peak_context_tokens=4000,
             token_usage=first_usage, fleet_secret=self.secret, now=self.now,
         )
         over_reserve = dict(first_usage, outputTokens=20001)
         with self.assertRaisesRegex(upc.ControlError, "COMPLETION_RESERVE_VIOLATION"):
-            broker.checkpoint_provider_usage(
+            broker._checkpoint_provider_usage(
                 lease_id=allowed["leaseId"], phase="PRE_TURN", turn_count=2,
                 current_context_tokens=4000, peak_context_tokens=4000,
                 token_usage=over_reserve, fleet_secret=self.secret, now=self.now,
             )
-        terminal = broker.issue_terminal_request_permit(
+        terminal = broker._issue_terminal_request_permit(
             lease_id=allowed["leaseId"], fleet_secret=self.secret, now=self.now
         )
         with self.assertRaisesRegex(upc.ControlError, "TERMINAL_REQUEST_ALREADY_ISSUED"):
-            broker.issue_terminal_request_permit(
+            broker._issue_terminal_request_permit(
                 lease_id=allowed["leaseId"], fleet_secret=self.secret, now=self.now
             )
         final_usage = dict(first_usage, outputTokens=25000)
-        checkpoint = broker.checkpoint_provider_usage(
+        checkpoint = broker._checkpoint_provider_usage(
             lease_id=allowed["leaseId"], phase="TERMINAL", turn_count=1,
             current_context_tokens=4000, peak_context_tokens=4000,
             token_usage=final_usage, fleet_secret=self.secret, now=self.now,
@@ -3623,7 +3694,7 @@ class UniversalProviderControlTests(unittest.TestCase):
         self.assertEqual(broker.gate_state(fleet_secret=self.secret, now=self.now), "CLOSED")
         self.assertIn(allowed["leaseId"], broker._os_locks)
 
-    def test_r16_08_permit_cli_is_same_process_brokered_and_never_spawns_provider(self) -> None:
+    def test_r16_08_reusable_permit_cli_is_absent_and_never_reads_secret(self) -> None:
         import contextlib
         import io
 
@@ -3633,16 +3704,15 @@ class UniversalProviderControlTests(unittest.TestCase):
         secret_file = self.root / "fleet-secret.bin"
         secret_file.write_bytes(self.secret)
         output = io.StringIO()
-        with mock.patch("subprocess.Popen", side_effect=AssertionError("provider spawned")):
+        with mock.patch("pathlib.Path.read_bytes", side_effect=AssertionError("secret read")):
             with contextlib.redirect_stdout(output):
                 code = upc.main([
                     "provider-request-permit", str(broker.state_root), allowed["leaseId"],
                     str(secret_file.resolve()), upc.iso(self.now),
                 ])
-        self.assertEqual(code, 0)
-        permit = json.loads(output.getvalue())
-        self.assertEqual(permit["requestCount"], 1)
-        upc.validate_contract("request_permit", permit)
+        self.assertEqual(code, 2)
+        result = json.loads(output.getvalue())
+        self.assertEqual(result, {"status": "UNEVALUABLE", "reason": "ARGUMENT_ERROR"})
 
     def test_r16_09_completed_usage_accumulates_across_terminal_leases(self) -> None:
         first = upc.UniversalProviderBroker(self.root / "r16-usage-first")
@@ -3738,7 +3808,7 @@ class UniversalProviderControlTests(unittest.TestCase):
         broker = upc.UniversalProviderBroker(self.root / "r16-permit-keys")
         self.transition(broker)
         allowed = self.authorize(broker, begin_request=False)
-        permit = broker.begin_provider_request(
+        permit = broker._begin_provider_request(
             lease_id=allowed["leaseId"], fleet_secret=self.secret, now=self.now
         )
         forged = copy.deepcopy(permit)
@@ -3873,6 +3943,242 @@ class UniversalProviderControlTests(unittest.TestCase):
         with mock.patch.object(upc.os, "fstat", return_value=bound):
             with self.assertRaisesRegex(upc.ControlError, "CAPSULE_SOURCE_DRIFT"):
                 upc.build_evidence_capsule(request, self.root / "identity-capsule.bin")
+
+    def test_r17_01_terminal_reserve_is_bound_to_frozen_checkpoint(self) -> None:
+        broker = upc.UniversalProviderBroker(self.root / "r17-terminal-baseline")
+        self.transition(broker)
+        allowed = self.authorize(broker, begin_request=False)
+        broker._begin_provider_request(
+            lease_id=allowed["leaseId"], fleet_secret=self.secret, now=self.now
+        )
+        usage = {"inputTokens": 10, "cacheReadTokens": 20, "cacheWriteTokens": 1,
+                 "reasoningTokens": 5, "outputTokens": 100}
+        baseline = broker._checkpoint_provider_usage(
+            lease_id=allowed["leaseId"], phase="PRE_TURN", turn_count=1,
+            current_context_tokens=100, peak_context_tokens=100, token_usage=usage,
+            fleet_secret=self.secret, now=self.now,
+        )
+        terminal = broker._issue_terminal_request_permit(
+            lease_id=allowed["leaseId"], fleet_secret=self.secret, now=self.now
+        )
+        self.assertEqual(terminal["baselineCheckpointSha256"], upc.digest_json(baseline))
+        self.assertEqual(terminal["baselineOutputTokens"], 100)
+        with self.assertRaisesRegex(upc.ControlError, "TERMINAL_REQUEST_ALREADY_ISSUED"):
+            broker._checkpoint_provider_usage(
+                lease_id=allowed["leaseId"], phase="PRE_TURN", turn_count=2,
+                current_context_tokens=100, peak_context_tokens=100, token_usage=usage,
+                fleet_secret=self.secret, now=self.now,
+            )
+        with self.assertRaisesRegex(upc.ControlError, "TERMINAL_RESERVE_DELTA_EXCEEDED"):
+            broker._checkpoint_provider_usage(
+                lease_id=allowed["leaseId"], phase="TERMINAL", turn_count=1,
+                current_context_tokens=100, peak_context_tokens=100,
+                token_usage=dict(usage, outputTokens=5101),
+                fleet_secret=self.secret, now=self.now,
+            )
+
+    def test_r17_02_checkpoint_head_tamper_blocks_terminal_permit(self) -> None:
+        broker = upc.UniversalProviderBroker(self.root / "r17-checkpoint-head")
+        self.transition(broker)
+        allowed = self.authorize(broker, begin_request=False)
+        broker._begin_provider_request(
+            lease_id=allowed["leaseId"], fleet_secret=self.secret, now=self.now
+        )
+        usage = {"inputTokens": 1, "cacheReadTokens": 1, "cacheWriteTokens": 0,
+                 "reasoningTokens": 0, "outputTokens": 1}
+        broker._checkpoint_provider_usage(
+            lease_id=allowed["leaseId"], phase="PRE_TURN", turn_count=1,
+            current_context_tokens=1, peak_context_tokens=1, token_usage=usage,
+            fleet_secret=self.secret, now=self.now,
+        )
+        connection = sqlite3.connect(broker.database)
+        try:
+            connection.execute(
+                "UPDATE token_reservations SET checkpoint_head_hmac=? WHERE lease_id=?",
+                ("hmac-sha256:" + "0" * 64, allowed["leaseId"]),
+            )
+            connection.commit()
+        finally:
+            connection.close()
+        with self.assertRaisesRegex(upc.ControlError, "USAGE_CHECKPOINT_DRIFT"):
+            broker._issue_terminal_request_permit(
+                lease_id=allowed["leaseId"], fleet_secret=self.secret, now=self.now
+            )
+
+    def test_r17_03_quota_release_is_published_before_local_success(self) -> None:
+        broker = upc.UniversalProviderBroker(self.root / "r17-release-2pc")
+        self.transition(broker)
+        allowed = self.authorize(broker)
+        terminal = self.process_observation(allowed, "EXITED", phase="TERMINAL")
+        connection = sqlite3.connect(broker.database)
+        initial_success_count = connection.execute(
+            "SELECT COUNT(*) FROM canary_success_receipts"
+        ).fetchone()[0]
+        connection.close()
+        with mock.patch.object(
+            broker, "_release_quota_claim", side_effect=upc.ControlError("INJECTED_RELEASE_FAILURE")
+        ):
+            with self.assertRaisesRegex(upc.ControlError, "INJECTED_RELEASE_FAILURE"):
+                broker.release_child(
+                    process_observation=terminal, fleet_secret=self.secret, now=self.now
+                )
+        connection = sqlite3.connect(broker.database)
+        try:
+            state = connection.execute(
+                "SELECT state FROM leases WHERE lease_id=?", (allowed["leaseId"],)
+            ).fetchone()[0]
+            success_count = connection.execute(
+                "SELECT COUNT(*) FROM canary_success_receipts"
+            ).fetchone()[0]
+        finally:
+            connection.close()
+        self.assertEqual(state, "RELEASE_PREPARED")
+        self.assertEqual(success_count, initial_success_count)
+        self.assertEqual(
+            broker.release_child(
+                process_observation=terminal, fleet_secret=self.secret, now=self.now
+            )["status"],
+            "RELEASED",
+        )
+
+    def test_r17_04_quota_root_is_not_reselected_from_changed_home(self) -> None:
+        first = upc.UniversalProviderBroker(self.root / "r17-root-first")
+        first_path = first._quota_ledger_path()
+        with mock.patch.object(Path, "home", return_value=self.root / "hostile-home"):
+            second = upc.UniversalProviderBroker(self.root / "r17-root-second")
+            second_path = second._quota_ledger_path()
+        self.assertEqual(first_path, second_path)
+
+    def test_r17_05_certified_wrapper_invokes_provider_once_without_secret_or_permit(self) -> None:
+        broker = upc.UniversalProviderBroker(self.root / "r17-wrapper")
+        self.transition(broker)
+        allowed = self.authorize(broker, begin_request=False)
+        wrapper = broker.provision_brokered_single_request(
+            lease_id=allowed["leaseId"], fleet_secret=self.secret
+        )
+        calls: list[dict] = []
+
+        def provider(spec: dict) -> dict:
+            calls.append(copy.deepcopy(spec))
+            self.assertNotIn("permit", json.dumps(spec).lower())
+            self.assertNotIn(self.secret.hex(), json.dumps(spec))
+            return {
+                "result": {"text": "ok"},
+                "tokenUsage": {"inputTokens": 100, "cacheReadTokens": 1000,
+                               "cacheWriteTokens": 10, "reasoningTokens": 100,
+                               "outputTokens": 100},
+                "currentContextTokens": 1000, "peakContextTokens": 1000,
+            }
+
+        def termination(context: dict) -> dict:
+            receipt = {
+                "schema": "fleet-universal-process-tree-termination-receipt/v1",
+                "receiptId": "termination-" + "a" * 32,
+                "leaseId": context["leaseId"], "bindingSha256": context["bindingSha256"],
+                "observedAt": context["observedAt"],
+                "expiresAt": upc.iso(self.now + dt.timedelta(minutes=1)),
+                "rootProcessId": context["processId"],
+                "rootProcessStartTime": context["processStartTime"],
+                "rootExited": True, "liveDescendantCount": 0, "observerQualified": True,
+                "observerId": "process-tree-observer",
+                "observerKeySha256": upc.signer_key_sha256(self.termination_secret),
+                "evidencePath": str(self.termination_evidence.resolve()),
+                "evidenceSha256": sha_file(self.termination_evidence),
+                "retainedEvidenceBytes": self.termination_evidence.stat().st_size,
+                "receiptHmacSha256": "hmac-sha256:" + "0" * 64,
+            }
+            receipt["receiptHmacSha256"] = upc.contract_hmac(
+                "process-tree-termination-receipt-v1", receipt, self.termination_secret,
+                "receiptHmacSha256",
+            )
+            return receipt
+
+        def quality(context: dict) -> dict:
+            receipt = {
+                "schema": "fleet-universal-output-quality-receipt/v1",
+                "receiptId": "output-quality-" + "b" * 32,
+                "leaseId": context["leaseId"], "requestId": context["requestId"],
+                "bindingSha256": context["bindingSha256"], "completedAt": context["observedAt"],
+                "expiresAt": upc.iso(self.now + dt.timedelta(minutes=1)),
+                "outputPath": str(self.output_artifact.resolve()),
+                "outputSha256": sha_file(self.output_artifact),
+                "retainedOutputBytes": self.output_artifact.stat().st_size,
+                "referenceOutputPath": str(self.reference_output.resolve()),
+                "referenceOutputSha256": sha_file(self.reference_output),
+                "retainedReferenceBytes": self.reference_output.stat().st_size,
+                "qualitySubjectSha256": context["subjectSha256"],
+                "providerUsageCheckpointSha256": context["providerUsageCheckpointSha256"],
+                "nonInferior": True, "observerId": "output-quality-observer",
+                "observerKeySha256": upc.signer_key_sha256(self.quality_secret),
+                "independentReviewPath": str(self.output_review.resolve()),
+                "independentReviewSha256": sha_file(self.output_review),
+                "retainedIndependentReviewBytes": self.output_review.stat().st_size,
+                "receiptHmacSha256": "hmac-sha256:" + "0" * 64,
+            }
+            receipt["receiptHmacSha256"] = upc.contract_hmac(
+                "output-quality-receipt-v1", receipt, self.quality_secret,
+                "receiptHmacSha256",
+            )
+            return receipt
+
+        result = wrapper.invoke(
+            provider_call=provider, termination_observer=termination,
+            quality_observer=quality, now=self.now,
+        )
+        self.assertEqual(result["status"], "COMPLETED")
+        self.assertEqual(len(calls), 1)
+        self.assertNotIn("permit", json.dumps(result).lower())
+        with self.assertRaisesRegex(upc.ControlError, "WRAPPER_CAPABILITY_INVALID_OR_USED"):
+            wrapper.invoke(
+                provider_call=provider, termination_observer=termination,
+                quality_observer=quality, now=self.now,
+            )
+
+    def test_r17_06_prepared_quota_publication_retries_exactly(self) -> None:
+        broker = upc.UniversalProviderBroker(self.root / "r17-publication-retry")
+        self.transition(broker)
+        request = self.make_request("request-r17-publication-retry")
+        real_activate = broker._activate_quota_claim
+        with mock.patch.object(
+            broker, "_activate_quota_claim",
+            side_effect=upc.ControlError("INJECTED_ACTIVATION_FAILURE"),
+        ):
+            blocked = self.authorize(
+                broker, request, confirm=False, begin_request=False
+            )
+        self.assertEqual(blocked["reason"], "QUOTA_PUBLICATION_INCOMPLETE")
+        recovered = self.authorize(
+            broker, request, confirm=False, begin_request=False
+        )
+        self.assertEqual(recovered["status"], "PREPARED_SUSPENDED")
+        with broker._quota_connect() as connection:
+            state = connection.execute(
+                "SELECT state FROM quota_claims WHERE lease_id=?", (recovered["leaseId"],)
+            ).fetchone()[0]
+        self.assertEqual(state, "ACTIVE")
+
+    def test_r17_07_low_level_request_primitives_are_not_public(self) -> None:
+        broker = upc.UniversalProviderBroker(self.root / "r17-no-public-primitives")
+        self.assertFalse(hasattr(broker, "begin_provider_request"))
+        self.assertFalse(hasattr(broker, "checkpoint_provider_usage"))
+        self.assertFalse(hasattr(broker, "issue_terminal_request_permit"))
+
+    def test_r17_08_completed_usage_is_partitioned_by_each_capacity_window(self) -> None:
+        broker = upc.UniversalProviderBroker(self.root / "r17-window-ledger")
+        self.transition(broker)
+        allowed = self.authorize(broker)
+        terminal = self.process_observation(allowed, "EXITED", phase="TERMINAL")
+        broker.release_child(
+            process_observation=terminal, fleet_secret=self.secret, now=self.now
+        )
+        with broker._quota_connect() as connection:
+            rows = connection.execute(
+                """SELECT dimension_name,last_reset_at,resets_at,usage_json
+                FROM completed_usage_windows WHERE quota_domain_id=? ORDER BY dimension_name""",
+                (self.quota_id,),
+            ).fetchall()
+        self.assertEqual([row["dimension_name"] for row in rows], ["session", "weekly"])
+        self.assertTrue(all(json.loads(row["usage_json"])["outputTokens"] == 100 for row in rows))
 
 
 if __name__ == "__main__":

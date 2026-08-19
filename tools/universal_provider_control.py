@@ -21,10 +21,11 @@ import os
 from pathlib import Path
 import re
 import sqlite3
+import stat
 import sys
 import threading
 import uuid
-from typing import Any, Iterable, Sequence
+from typing import Any, Callable, Iterable, Mapping, Sequence
 
 try:
     import jsonschema
@@ -46,7 +47,7 @@ MAX_CAPSULE_SOURCE_BYTES = 16_777_216
 MAX_CAPSULE_TEMP_BACKLOG = 1
 MAX_CAPSULE_POISON_OWNERS = 259  # 256 sources plus temp/public/target-directory owners.
 MAX_PREPARED_LEASES_PER_STATE_ROOT = 4  # Conservative root quarantine ceiling before acquisition.
-ARTIFACT_HANDLES_PER_LEASE = 7
+ARTIFACT_HANDLES_PER_LEASE = 8
 MAX_BROKER_ARTIFACT_POISON_OWNERS = (
     MAX_PREPARED_LEASES_PER_STATE_ROOT * ARTIFACT_HANDLES_PER_LEASE
 )
@@ -58,6 +59,9 @@ _BROKER_ARTIFACT_CLEANUP_POISON: dict[str, list[Any]] = {}
 _CAPSULE_PROCESS_LOCK = threading.RLock()
 _BROKER_PROCESS_LOCK = threading.RLock()
 _BROKER_ROOT_RUNTIMES: dict[str, "_BrokerRootRuntime"] = {}
+_CANONICAL_QUOTA_LEDGER_ROOT = (
+    Path.home().resolve() / ".softwarefactory-provider-control.quota-ledger"
+)
 
 
 class _BrokerRootRuntime:
@@ -73,6 +77,8 @@ class _BrokerRootRuntime:
         ] = {}
         self.artifact_close_attempted: dict[str, set[int]] = {}
         self.unproven_artifact_handles: dict[str, list[Any]] = {}
+        self.independent_receipt_signers: dict[str, bytes] = {}
+        self.wrapper_capabilities: dict[str, tuple[str, bytes]] = {}
 
 
 def _broker_root_runtime(poison_key: str) -> _BrokerRootRuntime:
@@ -246,6 +252,135 @@ def verify_contract_hmac(
     expected = contract_hmac(domain, value, fleet_secret, signature_field)
     if not isinstance(supplied, str) or not hmac.compare_digest(supplied, expected):
         raise ControlError("CONTRACT_HMAC_INVALID")
+
+
+def signer_key_sha256(secret: bytes) -> str:
+    """Return the public pin for one scoped symmetric signer without exposing its key."""
+
+    if not isinstance(secret, bytes) or len(secret) < 32:
+        raise ControlError("SIGNER_KEY_INVALID")
+    return "sha256:" + hashlib.sha256(secret).hexdigest()
+
+
+def _verify_retained_artifact(path_value: str, expected_sha256: str, expected_bytes: int) -> Path:
+    """Open and hash the exact retained receipt artifact under stable file identity."""
+
+    path = _canonical_executable(path_value)
+    try:
+        if _is_reparse(path):
+            raise ControlError("RETAINED_ARTIFACT_INVALID")
+        before = path.stat(follow_symlinks=False)
+        if before.st_size != expected_bytes or not 1 <= expected_bytes <= MAX_ARTIFACT_BYTES:
+            raise ControlError("RETAINED_ARTIFACT_INVALID")
+        identity = _stable_file_identity(before)
+        hasher = hashlib.sha256()
+        total = 0
+        with path.open("rb", buffering=0) as handle:
+            if _stable_file_identity(os.fstat(handle.fileno())) != identity:
+                raise ControlError("RETAINED_ARTIFACT_INVALID")
+            while True:
+                chunk = handle.read(STREAM_CHUNK_BYTES)
+                if not chunk:
+                    break
+                total += len(chunk)
+                if total > MAX_ARTIFACT_BYTES:
+                    raise ControlError("RETAINED_ARTIFACT_INVALID")
+                hasher.update(chunk)
+        if (
+            total != expected_bytes
+            or "sha256:" + hasher.hexdigest() != expected_sha256
+            or not _path_has_identity(path, identity)
+        ):
+            raise ControlError("RETAINED_ARTIFACT_INVALID")
+        return path
+    except ControlError:
+        raise
+    except OSError as exc:
+        raise ControlError("RETAINED_ARTIFACT_INVALID") from exc
+
+
+def _stable_json_artifact(
+    path_value: str | Path, *, expected_sha256: str | None = None,
+    reason: str = "ARTIFACT_UNREADABLE",
+) -> tuple[Path, dict[str, Any], str, bytes]:
+    """Read one bounded JSON artifact exactly once under a stable direct-file identity."""
+
+    try:
+        path = Path(path_value)
+        if not path.is_absolute() or not path.is_file() or _is_reparse(path):
+            raise ControlError(reason)
+        resolved = path.resolve(strict=True)
+        before = path.stat(follow_symlinks=False)
+        if before.st_size < 2 or before.st_size > MAX_INPUT_BYTES:
+            raise ControlError(reason)
+        identity = _stable_file_identity(before)
+        with path.open("rb", buffering=0) as handle:
+            if _stable_file_identity(os.fstat(handle.fileno())) != identity:
+                raise ControlError(reason)
+            raw = handle.read(MAX_INPUT_BYTES + 1)
+        if len(raw) > MAX_INPUT_BYTES or not _path_has_identity(path, identity):
+            raise ControlError(reason)
+        digest = "sha256:" + hashlib.sha256(raw).hexdigest()
+        if expected_sha256 is not None and digest != expected_sha256:
+            raise ControlError(reason)
+        value = strict_json_bytes(raw)
+        return resolved, value, digest, raw
+    except ControlError:
+        raise
+    except OSError as exc:
+        raise ControlError(reason) from exc
+
+
+@contextmanager
+def _stable_sqlite_connection(
+    path: Path, boundary_reason: str, data_reason: str | None = None
+) -> Iterable[sqlite3.Connection]:
+    """Hold and revalidate the exact database inode across SQLite open/use/close."""
+
+    descriptor: int | None = None
+    connection: sqlite3.Connection | None = None
+    try:
+        flags = os.O_RDWR | os.O_CREAT | getattr(os, "O_BINARY", 0)
+        descriptor = os.open(path, flags, 0o600)
+        opened_stat = os.fstat(descriptor)
+        identity = _stable_file_identity(opened_stat)
+        if not stat.S_ISREG(opened_stat.st_mode) or opened_stat.st_size > MAX_STATE_BYTES:
+            raise ControlError(boundary_reason)
+        if os.name != "nt":
+            if opened_stat.st_uid != os.getuid() or stat.S_IMODE(opened_stat.st_mode) & 0o077:
+                raise ControlError(boundary_reason)
+        if _is_reparse(path) or not _path_has_identity(path, identity):
+            raise ControlError(boundary_reason)
+        for suffix in ("-wal", "-shm"):
+            sidecar = Path(str(path) + suffix)
+            if sidecar.exists() and (sidecar.stat().st_size or _is_reparse(sidecar)):
+                raise ControlError(boundary_reason)
+        connection = sqlite3.connect(path, timeout=30, isolation_level=None)
+        connection.row_factory = sqlite3.Row
+        journal_mode = connection.execute("PRAGMA journal_mode=DELETE").fetchone()[0]
+        if str(journal_mode).lower() != "delete":
+            raise ControlError(boundary_reason)
+        database_path = Path(connection.execute("PRAGMA database_list").fetchone()[2])
+        if (
+            database_path.resolve(strict=True) != path.resolve(strict=True)
+            or not _path_has_identity(path, identity)
+            or _stable_file_identity(os.fstat(descriptor)) != identity
+        ):
+            raise ControlError(boundary_reason)
+        yield connection
+        if not _path_has_identity(path, identity):
+            raise ControlError(boundary_reason)
+    except ControlError:
+        raise
+    except sqlite3.Error as exc:
+        raise ControlError(data_reason or boundary_reason) from exc
+    except OSError as exc:
+        raise ControlError(boundary_reason) from exc
+    finally:
+        if connection is not None:
+            connection.close()
+        if descriptor is not None:
+            os.close(descriptor)
 
 
 def require_sha256(value: Any, reason: str = "DIGEST_INVALID") -> str:
@@ -1384,8 +1519,9 @@ def build_evidence_capsule(request: Any, output_path: Path) -> dict[str, Any]:
 class UniversalProviderBroker:
     """SQLite reference broker with a persisted fail-closed gate and request replay law."""
 
-    def __init__(self, state_root: Path):
+    def __init__(self, state_root: Path, *, clock: Callable[[], dt.datetime] | None = None):
         self.state_root = Path(state_root)
+        self._clock = clock
         try:
             if self.state_root.exists() and (not self.state_root.is_dir() or _is_reparse(self.state_root)):
                 raise ControlError("STATE_BOUNDARY_INVALID")
@@ -1407,6 +1543,8 @@ class UniversalProviderBroker:
         self._artifact_handles = self._root_runtime.artifact_handles
         self._artifact_close_attempted = self._root_runtime.artifact_close_attempted
         self._unproven_artifact_handles = self._root_runtime.unproven_artifact_handles
+        self._independent_receipt_signers = self._root_runtime.independent_receipt_signers
+        self._wrapper_capabilities = self._root_runtime.wrapper_capabilities
         try:
             with self._connect() as connection:
                 connection.executescript(
@@ -1500,6 +1638,16 @@ class UniversalProviderBroker:
                     used_at TEXT,
                     UNIQUE(project, sequence)
                 );
+                CREATE TABLE IF NOT EXISTS demand_authorities (
+                    project TEXT PRIMARY KEY,
+                    authority_path TEXT NOT NULL,
+                    authority_sha256 TEXT NOT NULL,
+                    snapshot_bytes BLOB NOT NULL,
+                    pin_epoch INTEGER NOT NULL DEFAULT 1,
+                    prior_authority_hmac TEXT,
+                    pinned_at TEXT NOT NULL,
+                    authority_hmac TEXT NOT NULL
+                );
                 CREATE TABLE IF NOT EXISTS certification_artifacts (
                     artifact_digest TEXT PRIMARY KEY,
                     artifact_kind TEXT NOT NULL,
@@ -1552,6 +1700,8 @@ class UniversalProviderBroker:
                     ("binding_bytes", "BLOB"),
                     ("binding_hmac", "TEXT"),
                     ("watchdog_deadline", "TEXT"),
+                    ("quota_ledger_instance_id", "TEXT"),
+                    ("capacity_windows_json", "TEXT"),
                 ):
                     if name not in lease_columns:
                         connection.execute(f"ALTER TABLE leases ADD COLUMN {name} {declaration}")
@@ -1567,15 +1717,54 @@ class UniversalProviderBroker:
                 for name, declaration in (
                     ("terminal_permit_digest", "TEXT"),
                     ("latest_checkpoint_digest", "TEXT"),
+                    ("terminal_baseline_digest", "TEXT"),
+                    ("terminal_baseline_sequence", "INTEGER"),
+                    ("terminal_baseline_output", "INTEGER"),
+                    ("latest_checkpoint_sequence", "INTEGER"),
+                    ("checkpoint_head_hmac", "TEXT"),
                 ):
                     if name not in reservation_columns:
                         connection.execute(
                             f"ALTER TABLE token_reservations ADD COLUMN {name} {declaration}"
                         )
+                demand_columns = {
+                    row[1] for row in connection.execute("PRAGMA table_info(demand_authorities)")
+                }
+                for name, declaration in (
+                    ("pin_epoch", "INTEGER NOT NULL DEFAULT 1"),
+                    ("prior_authority_hmac", "TEXT"),
+                ):
+                    if name not in demand_columns:
+                        connection.execute(
+                            f"ALTER TABLE demand_authorities ADD COLUMN {name} {declaration}"
+                        )
         except ControlError:
             raise
         except (OSError, sqlite3.Error) as exc:
             raise ControlError("STATE_UNEVALUABLE") from exc
+
+    def _authoritative_now(self, supplied: dt.datetime) -> dt.datetime:
+        observed = self._clock() if self._clock is not None else supplied
+        if not isinstance(observed, dt.datetime) or observed.tzinfo is None:
+            raise ControlError("BROKER_CLOCK_INVALID")
+        return observed.astimezone(UTC)
+
+    def install_independent_receipt_signers(
+        self, signers: Mapping[str, bytes]
+    ) -> None:
+        """Control-plane provisioning; certified provider wrappers never receive these keys."""
+
+        if not isinstance(signers, Mapping) or not signers:
+            raise ControlError("INDEPENDENT_RECEIPT_SIGNER_INVALID")
+        checked: dict[str, bytes] = {}
+        for signer_id, secret in signers.items():
+            if not isinstance(signer_id, str) or not isinstance(secret, bytes) or len(secret) < 32:
+                raise ControlError("INDEPENDENT_RECEIPT_SIGNER_INVALID")
+            checked[signer_id] = bytes(secret)
+        with self._root_lock:
+            if self._independent_receipt_signers and self._independent_receipt_signers != checked:
+                raise ControlError("INDEPENDENT_RECEIPT_SIGNER_ROTATION_REQUIRED")
+            self._independent_receipt_signers.update(checked)
 
     def close(self) -> None:
         """Administrative assertion only; never a substitute for authenticated terminal release."""
@@ -1635,12 +1824,12 @@ class UniversalProviderBroker:
     def _quota_ledger_path(self) -> Path:
         """Return the one machine/account authority database, never a caller state-root path."""
 
-        directory = Path.home() / ".softwarefactory-provider-control.quota-ledger"
+        directory = _CANONICAL_QUOTA_LEDGER_ROOT
         try:
-            home = Path.home().resolve(strict=True)
+            authority_parent = directory.parent.resolve(strict=True)
             directory.mkdir(mode=0o700, exist_ok=True)
             resolved = directory.resolve(strict=True)
-            if _is_reparse(directory) or resolved.parent != home:
+            if _is_reparse(directory) or resolved.parent != authority_parent:
                 raise ControlError("QUOTA_LEDGER_BOUNDARY_INVALID")
             database = directory / "universal-quota-domain-v1.db"
             if database.exists() and (
@@ -1656,45 +1845,125 @@ class UniversalProviderBroker:
     @contextmanager
     def _quota_connect(self) -> Iterable[sqlite3.Connection]:
         try:
-            connection = sqlite3.connect(self._quota_ledger_path(), timeout=30, isolation_level=None)
-            connection.row_factory = sqlite3.Row
-            connection.execute("PRAGMA busy_timeout=30000")
-            connection.executescript(
-                """
-                CREATE TABLE IF NOT EXISTS quota_claims (
-                    quota_domain_id TEXT PRIMARY KEY,
-                    lease_id TEXT UNIQUE NOT NULL,
-                    process_id INTEGER NOT NULL,
-                    process_start_time TEXT NOT NULL,
-                    state_root_identity TEXT NOT NULL,
-                    binding_digest TEXT NOT NULL,
-                    state TEXT NOT NULL CHECK (state IN ('ACTIVE','RELEASED')),
-                    updated_at TEXT NOT NULL,
-                    terminal_digest TEXT,
-                    record_hmac TEXT NOT NULL
-                );
-                CREATE TABLE IF NOT EXISTS completed_usage (
-                    quota_domain_id TEXT NOT NULL,
-                    capacity_valid_until TEXT NOT NULL,
-                    usage_json TEXT NOT NULL,
-                    updated_at TEXT NOT NULL,
-                    record_hmac TEXT NOT NULL,
-                    PRIMARY KEY(quota_domain_id, capacity_valid_until)
-                );
-                """
-            )
+            with _stable_sqlite_connection(
+                self._quota_ledger_path(), "QUOTA_LEDGER_BOUNDARY_INVALID",
+                "QUOTA_LEDGER_UNEVALUABLE",
+            ) as connection:
+                connection.execute("PRAGMA busy_timeout=30000")
+                prior_schema = connection.execute(
+                    "SELECT sql FROM sqlite_master WHERE type='table' AND name='quota_claims'"
+                ).fetchone()
+                if prior_schema is not None and "PREPARED" not in prior_schema["sql"]:
+                    connection.execute("BEGIN IMMEDIATE")
+                    connection.execute("ALTER TABLE quota_claims RENAME TO quota_claims_r16")
+                    connection.execute(
+                        """CREATE TABLE quota_claims (
+                        quota_domain_id TEXT PRIMARY KEY, lease_id TEXT UNIQUE NOT NULL,
+                        process_id INTEGER NOT NULL, process_start_time TEXT NOT NULL,
+                        state_root_identity TEXT NOT NULL, binding_digest TEXT NOT NULL,
+                        state TEXT NOT NULL CHECK (state IN ('PREPARED','ACTIVE','RELEASING','RELEASED')),
+                        updated_at TEXT NOT NULL, terminal_digest TEXT,
+                        publication_digest TEXT, ledger_instance_id TEXT,
+                        record_hmac TEXT NOT NULL)"""
+                    )
+                    connection.execute(
+                        """INSERT INTO quota_claims(
+                        quota_domain_id, lease_id, process_id, process_start_time,
+                        state_root_identity, binding_digest, state, updated_at,
+                        terminal_digest, publication_digest, ledger_instance_id, record_hmac)
+                        SELECT quota_domain_id, lease_id, process_id, process_start_time,
+                        state_root_identity, binding_digest, state, updated_at,
+                        terminal_digest, NULL, NULL, record_hmac FROM quota_claims_r16"""
+                    )
+                    connection.execute("DROP TABLE quota_claims_r16")
+                    connection.execute("COMMIT")
+                connection.executescript(
+                    """
+                    CREATE TABLE IF NOT EXISTS quota_claims (
+                        quota_domain_id TEXT PRIMARY KEY,
+                        lease_id TEXT UNIQUE NOT NULL,
+                        process_id INTEGER NOT NULL,
+                        process_start_time TEXT NOT NULL,
+                        state_root_identity TEXT NOT NULL,
+                        binding_digest TEXT NOT NULL,
+                        state TEXT NOT NULL CHECK (state IN ('PREPARED','ACTIVE','RELEASING','RELEASED')),
+                        updated_at TEXT NOT NULL,
+                        terminal_digest TEXT,
+                        publication_digest TEXT,
+                        ledger_instance_id TEXT,
+                        record_hmac TEXT NOT NULL
+                    );
+                    CREATE TABLE IF NOT EXISTS completed_usage (
+                        quota_domain_id TEXT NOT NULL,
+                        capacity_valid_until TEXT NOT NULL,
+                        usage_json TEXT NOT NULL,
+                        updated_at TEXT NOT NULL,
+                        record_hmac TEXT NOT NULL,
+                        PRIMARY KEY(quota_domain_id, capacity_valid_until)
+                    );
+                    CREATE TABLE IF NOT EXISTS ledger_meta (
+                        singleton INTEGER PRIMARY KEY CHECK (singleton=1),
+                        database_id TEXT NOT NULL,
+                        record_hmac TEXT NOT NULL
+                    );
+                    CREATE TABLE IF NOT EXISTS completed_usage_windows (
+                        quota_domain_id TEXT NOT NULL,
+                        dimension_name TEXT NOT NULL,
+                        last_reset_at TEXT NOT NULL,
+                        resets_at TEXT NOT NULL,
+                        usage_json TEXT NOT NULL,
+                        updated_at TEXT NOT NULL,
+                        record_hmac TEXT NOT NULL,
+                        PRIMARY KEY(quota_domain_id, dimension_name, last_reset_at, resets_at)
+                    );
+                    """
+                )
+                columns = {row[1] for row in connection.execute("PRAGMA table_info(quota_claims)")}
+                if "publication_digest" not in columns:
+                    connection.execute("ALTER TABLE quota_claims ADD COLUMN publication_digest TEXT")
+                if "ledger_instance_id" not in columns:
+                    connection.execute("ALTER TABLE quota_claims ADD COLUMN ledger_instance_id TEXT")
+                yield connection
+        except ControlError:
+            raise
         except sqlite3.Error as exc:
             raise ControlError("QUOTA_LEDGER_UNEVALUABLE") from exc
-        try:
-            yield connection
-        except sqlite3.Error as exc:
-            raise ControlError("QUOTA_LEDGER_UNEVALUABLE") from exc
-        finally:
-            connection.close()
 
     @staticmethod
     def _quota_record_hmac(record: dict[str, Any], fleet_secret: bytes) -> str:
         return contract_hmac("quota-ledger-record-v1", record, fleet_secret, "recordHmacSha256")
+
+    def _quota_ledger_identity(self, fleet_secret: bytes) -> str:
+        with self._quota_connect() as connection:
+            connection.execute("BEGIN IMMEDIATE")
+            try:
+                row = connection.execute(
+                    "SELECT database_id, record_hmac FROM ledger_meta WHERE singleton=1"
+                ).fetchone()
+                if row is None:
+                    database_id = "ledger-" + uuid.uuid4().hex
+                    record = {"databaseId": database_id, "recordHmacSha256": ""}
+                    record["recordHmacSha256"] = contract_hmac(
+                        "quota-ledger-identity-v1", record, fleet_secret,
+                        "recordHmacSha256",
+                    )
+                    connection.execute(
+                        "INSERT INTO ledger_meta(singleton,database_id,record_hmac) VALUES (1,?,?)",
+                        (database_id, record["recordHmacSha256"]),
+                    )
+                else:
+                    database_id = row["database_id"]
+                    verify_contract_hmac(
+                        "quota-ledger-identity-v1",
+                        {"databaseId": database_id, "recordHmacSha256": row["record_hmac"]},
+                        fleet_secret, "recordHmacSha256",
+                    )
+                connection.execute("COMMIT")
+                return database_id
+            except BaseException:
+                if connection.in_transaction:
+                    connection.execute("ROLLBACK")
+                raise
 
     def _reserve_quota_claim(
         self,
@@ -1707,6 +1976,7 @@ class UniversalProviderBroker:
         fleet_secret: bytes,
         now: dt.datetime,
     ) -> None:
+        ledger_instance_id = self._quota_ledger_identity(fleet_secret)
         with self._quota_connect() as connection:
             connection.execute("BEGIN IMMEDIATE")
             try:
@@ -1722,13 +1992,15 @@ class UniversalProviderBroker:
                         "bindingSha256": prior["binding_digest"], "state": prior["state"],
                         "updatedAt": prior["updated_at"],
                         "terminalSha256": prior["terminal_digest"],
+                        "publicationSha256": prior["publication_digest"],
+                        "ledgerInstanceId": prior["ledger_instance_id"],
                         "recordHmacSha256": prior["record_hmac"],
                     }
                     verify_contract_hmac(
                         "quota-ledger-record-v1", prior_record, fleet_secret,
                         "recordHmacSha256",
                     )
-                    if prior["state"] == "ACTIVE":
+                    if prior["state"] != "RELEASED":
                         raise ControlError("QUOTA_DOMAIN_DURABLE_CLAIM_HELD")
                 record = {
                     "quotaDomainId": quota_domain_id,
@@ -1737,9 +2009,11 @@ class UniversalProviderBroker:
                     "processStartTime": process_start_time,
                     "stateRootIdentity": self.state_root_identity(fleet_secret),
                     "bindingSha256": binding_digest,
-                    "state": "ACTIVE",
+                    "state": "PREPARED",
                     "updatedAt": iso(now),
                     "terminalSha256": None,
+                    "publicationSha256": None,
+                    "ledgerInstanceId": ledger_instance_id,
                     "recordHmacSha256": "",
                 }
                 record["recordHmacSha256"] = self._quota_record_hmac(record, fleet_secret)
@@ -1747,10 +2021,12 @@ class UniversalProviderBroker:
                     """INSERT OR REPLACE INTO quota_claims(
                     quota_domain_id, lease_id, process_id, process_start_time,
                     state_root_identity, binding_digest, state, updated_at, terminal_digest,
-                    record_hmac) VALUES (?, ?, ?, ?, ?, ?, 'ACTIVE', ?, NULL, ?)""",
+                    publication_digest, ledger_instance_id, record_hmac
+                    ) VALUES (?, ?, ?, ?, ?, ?, 'PREPARED', ?, NULL, NULL, ?, ?)""",
                     (
                         quota_domain_id, lease_id, process_id, process_start_time,
                         record["stateRootIdentity"], binding_digest, record["updatedAt"],
+                        ledger_instance_id,
                         record["recordHmacSha256"],
                     ),
                 )
@@ -1760,9 +2036,65 @@ class UniversalProviderBroker:
                     connection.execute("ROLLBACK")
                 raise
 
+    def _activate_quota_claim(
+        self, *, quota_domain_id: str, lease_id: str, publication_digest: str,
+        fleet_secret: bytes, now: dt.datetime,
+    ) -> None:
+        with self._quota_connect() as connection:
+            connection.execute("BEGIN IMMEDIATE")
+            try:
+                row = connection.execute(
+                    "SELECT * FROM quota_claims WHERE quota_domain_id=? AND lease_id=?",
+                    (quota_domain_id, lease_id),
+                ).fetchone()
+                if row is None:
+                    raise ControlError("QUOTA_LEDGER_PREPARED_CLAIM_MISSING")
+                prior = {
+                    "quotaDomainId": row["quota_domain_id"], "leaseId": row["lease_id"],
+                    "processId": row["process_id"],
+                    "processStartTime": row["process_start_time"],
+                    "stateRootIdentity": row["state_root_identity"],
+                    "bindingSha256": row["binding_digest"], "state": row["state"],
+                    "updatedAt": row["updated_at"], "terminalSha256": row["terminal_digest"],
+                    "publicationSha256": row["publication_digest"],
+                    "ledgerInstanceId": row["ledger_instance_id"],
+                    "recordHmacSha256": row["record_hmac"],
+                }
+                verify_contract_hmac(
+                    "quota-ledger-record-v1", prior, fleet_secret, "recordHmacSha256"
+                )
+                if row["state"] == "ACTIVE":
+                    if row["publication_digest"] != publication_digest:
+                        raise ControlError("QUOTA_LEDGER_CLAIM_DRIFT")
+                    connection.execute("COMMIT")
+                    return
+                if row["state"] != "PREPARED":
+                    raise ControlError("QUOTA_LEDGER_PREPARED_CLAIM_MISSING")
+                record = dict(prior)
+                record.update(
+                    state="ACTIVE", updatedAt=iso(now), publicationSha256=publication_digest,
+                    recordHmacSha256="",
+                )
+                record["recordHmacSha256"] = self._quota_record_hmac(record, fleet_secret)
+                changed = connection.execute(
+                    """UPDATE quota_claims SET state='ACTIVE', updated_at=?,
+                    publication_digest=?, record_hmac=? WHERE quota_domain_id=? AND lease_id=?
+                    AND state='PREPARED'""",
+                    (record["updatedAt"], publication_digest, record["recordHmacSha256"],
+                     quota_domain_id, lease_id),
+                )
+                if changed.rowcount != 1:
+                    raise ControlError("QUOTA_LEDGER_PREPARED_CLAIM_MISSING")
+                connection.execute("COMMIT")
+            except BaseException:
+                if connection.in_transaction:
+                    connection.execute("ROLLBACK")
+                raise
+
     def _verify_quota_claim(
         self, lease: sqlite3.Row, fleet_secret: bytes
     ) -> None:
+        ledger_instance_id = self._quota_ledger_identity(fleet_secret)
         with self._quota_connect() as connection:
             row = connection.execute(
                 "SELECT * FROM quota_claims WHERE quota_domain_id=?",
@@ -1776,6 +2108,8 @@ class UniversalProviderBroker:
             "stateRootIdentity": row["state_root_identity"],
             "bindingSha256": row["binding_digest"], "state": row["state"],
             "updatedAt": row["updated_at"], "terminalSha256": row["terminal_digest"],
+            "publicationSha256": row["publication_digest"],
+            "ledgerInstanceId": row["ledger_instance_id"],
             "recordHmacSha256": row["record_hmac"],
         }
         verify_contract_hmac(
@@ -1786,7 +2120,13 @@ class UniversalProviderBroker:
             or row["process_id"] != lease["process_id"]
             or row["process_start_time"] != lease["process_start_time"]
             or row["binding_digest"] != lease["binding_digest"]
+            or row["publication_digest"] != digest_json({
+                "leaseId": lease["lease_id"], "requestId": lease["request_id"],
+                "bindingSha256": lease["binding_digest"],
+            })
             or row["state_root_identity"] != self.state_root_identity(fleet_secret)
+            or row["ledger_instance_id"] != ledger_instance_id
+            or row["ledger_instance_id"] != lease["quota_ledger_instance_id"]
         ):
             raise ControlError("QUOTA_LEDGER_CLAIM_DRIFT")
 
@@ -1799,10 +2139,53 @@ class UniversalProviderBroker:
         fleet_secret: bytes,
         now: dt.datetime,
     ) -> None:
-        self._verify_quota_claim(lease, fleet_secret)
+        ledger_instance_id = self._quota_ledger_identity(fleet_secret)
         with self._quota_connect() as connection:
             connection.execute("BEGIN IMMEDIATE")
             try:
+                current = connection.execute(
+                    "SELECT * FROM quota_claims WHERE quota_domain_id=? AND lease_id=?",
+                    (lease["quota_domain_id"], lease["lease_id"]),
+                ).fetchone()
+                if current is None:
+                    raise ControlError("QUOTA_LEDGER_CLAIM_MISSING")
+                current_record = {
+                    "quotaDomainId": current["quota_domain_id"], "leaseId": current["lease_id"],
+                    "processId": current["process_id"],
+                    "processStartTime": current["process_start_time"],
+                    "stateRootIdentity": current["state_root_identity"],
+                    "bindingSha256": current["binding_digest"], "state": current["state"],
+                    "updatedAt": current["updated_at"],
+                    "terminalSha256": current["terminal_digest"],
+                    "publicationSha256": current["publication_digest"],
+                    "ledgerInstanceId": current["ledger_instance_id"],
+                    "recordHmacSha256": current["record_hmac"],
+                }
+                verify_contract_hmac(
+                    "quota-ledger-record-v1", current_record, fleet_secret,
+                    "recordHmacSha256",
+                )
+                publication_digest = digest_json({
+                    "leaseId": lease["lease_id"], "requestId": lease["request_id"],
+                    "bindingSha256": lease["binding_digest"],
+                })
+                if (
+                    current["process_id"] != lease["process_id"]
+                    or current["process_start_time"] != lease["process_start_time"]
+                    or current["binding_digest"] != lease["binding_digest"]
+                    or current["publication_digest"] != publication_digest
+                    or current["state_root_identity"] != self.state_root_identity(fleet_secret)
+                    or current["ledger_instance_id"] != ledger_instance_id
+                    or current["ledger_instance_id"] != lease["quota_ledger_instance_id"]
+                ):
+                    raise ControlError("QUOTA_LEDGER_CLAIM_DRIFT")
+                if current["state"] == "RELEASED":
+                    if current["terminal_digest"] != terminal_digest:
+                        raise ControlError("QUOTA_LEDGER_RELEASE_CONFLICT")
+                    connection.execute("COMMIT")
+                    return
+                if current["state"] not in {"ACTIVE", "RELEASING"}:
+                    raise ControlError("QUOTA_LEDGER_CLAIM_DRIFT")
                 record = {
                     "quotaDomainId": lease["quota_domain_id"], "leaseId": lease["lease_id"],
                     "processId": lease["process_id"],
@@ -1810,13 +2193,17 @@ class UniversalProviderBroker:
                     "stateRootIdentity": self.state_root_identity(fleet_secret),
                     "bindingSha256": lease["binding_digest"], "state": "RELEASED",
                     "updatedAt": iso(now), "terminalSha256": terminal_digest,
+                    "publicationSha256": publication_digest,
+                    "ledgerInstanceId": current["ledger_instance_id"],
                     "recordHmacSha256": "",
                 }
                 record["recordHmacSha256"] = self._quota_record_hmac(record, fleet_secret)
                 released = connection.execute(
                     """UPDATE quota_claims SET state='RELEASED', updated_at=?, terminal_digest=?,
-                    record_hmac=? WHERE quota_domain_id=? AND lease_id=? AND state='ACTIVE'""",
-                    (record["updatedAt"], terminal_digest, record["recordHmacSha256"],
+                    publication_digest=?, record_hmac=? WHERE quota_domain_id=? AND lease_id=?
+                    AND state IN ('ACTIVE','RELEASING')""",
+                    (record["updatedAt"], terminal_digest, record["publicationSha256"],
+                     record["recordHmacSha256"],
                      lease["quota_domain_id"], lease["lease_id"]),
                 )
                 if released.rowcount != 1:
@@ -1857,26 +2244,188 @@ class UniversalProviderBroker:
                      canonical_json(totals), usage_record["updatedAt"],
                      usage_record["recordHmacSha256"]),
                 )
+                capacity_windows = strict_json_bytes(
+                    lease["capacity_windows_json"].encode("utf-8")
+                )
+                for dimension_name, window in capacity_windows.items():
+                    prior_window = connection.execute(
+                        """SELECT * FROM completed_usage_windows WHERE quota_domain_id=?
+                        AND dimension_name=? AND last_reset_at=? AND resets_at=?""",
+                        (lease["quota_domain_id"], dimension_name,
+                         window["lastResetAt"], window["resetsAt"]),
+                    ).fetchone()
+                    window_totals = {name: 0 for name in usage}
+                    if prior_window is not None:
+                        prior_window_record = {
+                            "quotaDomainId": prior_window["quota_domain_id"],
+                            "dimensionName": prior_window["dimension_name"],
+                            "lastResetAt": prior_window["last_reset_at"],
+                            "resetsAt": prior_window["resets_at"],
+                            "usage": strict_json_bytes(
+                                prior_window["usage_json"].encode("utf-8")
+                            ),
+                            "updatedAt": prior_window["updated_at"],
+                            "recordHmacSha256": prior_window["record_hmac"],
+                        }
+                        verify_contract_hmac(
+                            "quota-usage-window-record-v1", prior_window_record,
+                            fleet_secret, "recordHmacSha256",
+                        )
+                        window_totals.update(prior_window_record["usage"])
+                    window_totals = {
+                        name: int(window_totals[name]) + int(usage[name])
+                        for name in window_totals
+                    }
+                    window_record = {
+                        "quotaDomainId": lease["quota_domain_id"],
+                        "dimensionName": dimension_name,
+                        "lastResetAt": window["lastResetAt"],
+                        "resetsAt": window["resetsAt"],
+                        "usage": window_totals, "updatedAt": iso(now),
+                        "recordHmacSha256": "",
+                    }
+                    window_record["recordHmacSha256"] = contract_hmac(
+                        "quota-usage-window-record-v1", window_record, fleet_secret,
+                        "recordHmacSha256",
+                    )
+                    connection.execute(
+                        """INSERT OR REPLACE INTO completed_usage_windows(
+                        quota_domain_id, dimension_name, last_reset_at, resets_at,
+                        usage_json, updated_at, record_hmac) VALUES (?, ?, ?, ?, ?, ?, ?)""",
+                        (lease["quota_domain_id"], dimension_name,
+                         window["lastResetAt"], window["resetsAt"],
+                         canonical_json(window_totals), window_record["updatedAt"],
+                         window_record["recordHmacSha256"]),
+                    )
                 connection.execute("COMMIT")
             except BaseException:
                 if connection.in_transaction:
                     connection.execute("ROLLBACK")
                 raise
 
-    def record_prior_idle(
-        self, *, project: str, demand_snapshot: Any, fleet_secret: bytes, now: dt.datetime,
-        max_age_seconds: int = 60,
+    def pin_demand_authority(
+        self, *, project: str, authority_path: Path, authority_sha256: str,
+        fleet_secret: bytes, now: dt.datetime,
     ) -> dict[str, Any]:
-        """Create the broker-owned one-use input proving a previously observed idle cursor."""
+        """Persist the exact broker-observed demand source before an idle receipt can exist."""
 
-        normalized = canonical_demand_snapshot(demand_snapshot)
+        path, observed, observed_sha256, raw = _stable_json_artifact(
+            authority_path, expected_sha256=authority_sha256,
+            reason="DEMAND_AUTHORITY_DRIFT",
+        )
+        normalized = canonical_demand_snapshot(observed)
         if normalized["project"] != project:
             raise ControlError("PRIOR_IDLE_PROJECT_MISMATCH")
+        with self._connect() as connection:
+            connection.execute("BEGIN IMMEDIATE")
+            try:
+                prior = connection.execute(
+                    "SELECT * FROM demand_authorities WHERE project=?", (project,)
+                ).fetchone()
+                epoch = 1
+                prior_hmac = None
+                canonical_path = os.path.normcase(str(path))
+                if prior is not None:
+                    prior_snapshot = canonical_demand_snapshot(
+                        strict_json_bytes(prior["snapshot_bytes"])
+                    )
+                    prior_record = {
+                        "project": project, "authorityPath": prior["authority_path"],
+                        "authoritySha256": prior["authority_sha256"],
+                        "demandSnapshot": prior_snapshot,
+                        "pinEpoch": int(prior["pin_epoch"]),
+                        "priorAuthorityHmacSha256": prior["prior_authority_hmac"],
+                        "pinnedAt": prior["pinned_at"],
+                        "authorityHmacSha256": prior["authority_hmac"],
+                    }
+                    verify_contract_hmac(
+                        "demand-authority-pin-v1", prior_record, fleet_secret,
+                        "authorityHmacSha256",
+                    )
+                    if (
+                        prior["authority_path"] != canonical_path
+                        or normalized["cursor"]["stream"]
+                        != prior_snapshot["cursor"]["stream"]
+                        or int(normalized["cursor"]["sequence"])
+                        < int(prior_snapshot["cursor"]["sequence"])
+                    ):
+                        raise ControlError("DEMAND_AUTHORITY_ROTATION_REQUIRED")
+                    epoch = int(prior["pin_epoch"]) + 1
+                    prior_hmac = prior["authority_hmac"]
+                record = {
+                    "project": project, "authorityPath": canonical_path,
+                    "authoritySha256": observed_sha256, "demandSnapshot": normalized,
+                    "pinEpoch": epoch, "priorAuthorityHmacSha256": prior_hmac,
+                    "pinnedAt": iso(self._authoritative_now(now)),
+                    "authorityHmacSha256": "",
+                }
+                record["authorityHmacSha256"] = contract_hmac(
+                    "demand-authority-pin-v1", record, fleet_secret,
+                    "authorityHmacSha256",
+                )
+                connection.execute(
+                    """INSERT INTO demand_authorities(
+                    project, authority_path, authority_sha256, snapshot_bytes, pin_epoch,
+                    prior_authority_hmac, pinned_at, authority_hmac)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                    ON CONFLICT(project) DO UPDATE SET authority_path=excluded.authority_path,
+                    authority_sha256=excluded.authority_sha256,
+                    snapshot_bytes=excluded.snapshot_bytes, pin_epoch=excluded.pin_epoch,
+                    prior_authority_hmac=excluded.prior_authority_hmac,
+                    pinned_at=excluded.pinned_at, authority_hmac=excluded.authority_hmac""",
+                    (project, canonical_path, observed_sha256,
+                     canonical_json(normalized).encode("utf-8"), epoch, prior_hmac,
+                     record["pinnedAt"], record["authorityHmacSha256"]),
+                )
+                connection.execute("COMMIT")
+            except BaseException:
+                if connection.in_transaction:
+                    connection.execute("ROLLBACK")
+                raise
+        return record
+
+    def record_prior_idle(
+        self, *, project: str, fleet_secret: bytes, now: dt.datetime,
+        max_age_seconds: int = 60,
+    ) -> dict[str, Any]:
+        """Sign only a fresh broker-pinned source that proves no actionable addressed work."""
+
         if not isinstance(max_age_seconds, int) or not 1 <= max_age_seconds <= 300:
             raise ControlError("PRIOR_IDLE_MAX_AGE_INVALID")
         with self._connect() as connection:
             connection.execute("BEGIN IMMEDIATE")
             try:
+                authority = connection.execute(
+                    "SELECT * FROM demand_authorities WHERE project=?", (project,)
+                ).fetchone()
+                if authority is None:
+                    raise ControlError("DEMAND_AUTHORITY_NOT_PINNED")
+                normalized = canonical_demand_snapshot(
+                    strict_json_bytes(authority["snapshot_bytes"])
+                )
+                pin = {
+                    "project": project, "authorityPath": authority["authority_path"],
+                    "authoritySha256": authority["authority_sha256"],
+                    "demandSnapshot": normalized, "pinEpoch": int(authority["pin_epoch"]),
+                    "priorAuthorityHmacSha256": authority["prior_authority_hmac"],
+                    "pinnedAt": authority["pinned_at"],
+                    "authorityHmacSha256": authority["authority_hmac"],
+                }
+                verify_contract_hmac(
+                    "demand-authority-pin-v1", pin, fleet_secret, "authorityHmacSha256"
+                )
+                authority_path, observed, observed_sha256, _ = _stable_json_artifact(
+                    authority["authority_path"],
+                    expected_sha256=authority["authority_sha256"],
+                    reason="DEMAND_AUTHORITY_DRIFT",
+                )
+                if (
+                    observed_sha256 != authority["authority_sha256"]
+                    or canonical_demand_snapshot(observed) != normalized
+                ):
+                    raise ControlError("DEMAND_AUTHORITY_DRIFT")
+                if any(item["state"] in {"OPEN", "READY"} for item in normalized["addressedWork"]):
+                    raise ControlError("PRIOR_IDLE_ACTIONABLE_WORK")
                 sequence = int(connection.execute(
                     "SELECT COALESCE(MAX(sequence), 0) + 1 FROM prior_idle_receipts WHERE project=?",
                     (project,),
@@ -1888,6 +2437,8 @@ class UniversalProviderBroker:
                     "recordedAt": iso(now.astimezone(UTC)),
                     "expiresAt": iso(now.astimezone(UTC) + dt.timedelta(seconds=max_age_seconds)),
                     "sequence": sequence,
+                    "authorityPath": authority["authority_path"],
+                    "authoritySha256": authority["authority_sha256"],
                     "demandSnapshot": normalized,
                     "demandFingerprint": digest_json(normalized),
                     "stateRootIdentity": self.state_root_identity(fleet_secret),
@@ -1917,18 +2468,16 @@ class UniversalProviderBroker:
     def _connect(self) -> Iterable[sqlite3.Connection]:
         self._validate_state_boundary()
         try:
-            connection = sqlite3.connect(self.database, timeout=30, isolation_level=None)
-            connection.row_factory = sqlite3.Row
-            connection.execute("PRAGMA foreign_keys=ON")
-            connection.execute("PRAGMA busy_timeout=30000")
+            with _stable_sqlite_connection(
+                self.database, "STATE_BOUNDARY_INVALID", "STATE_UNEVALUABLE"
+            ) as connection:
+                connection.execute("PRAGMA foreign_keys=ON")
+                connection.execute("PRAGMA busy_timeout=30000")
+                yield connection
+        except ControlError:
+            raise
         except sqlite3.Error as exc:
             raise ControlError("STATE_UNEVALUABLE") from exc
-        try:
-            yield connection
-        except sqlite3.Error as exc:
-            raise ControlError("STATE_UNEVALUABLE") from exc
-        finally:
-            connection.close()
 
     def _lock_path(self, quota_domain_id: str) -> Path:
         name = hashlib.sha256(quota_domain_id.encode("ascii")).hexdigest() + ".lock"
@@ -2324,6 +2873,8 @@ class UniversalProviderBroker:
                             or receipt_value["projectProfileSha256"] != transition["projectProfileSha256"]
                             or receipt_value["inventorySha256"] != transition["inventorySha256"]
                             or parse_time(receipt_value["completedAt"]) > at + dt.timedelta(seconds=5)
+                            or parse_time(receipt_value["completedAt"]) < at - dt.timedelta(minutes=5)
+                            or parse_time(receipt_value["expiresAt"]) <= at
                         ):
                             raise ControlError("CANARY_SUCCESS_RECEIPT_INVALID")
                         used = connection.execute(
@@ -2502,7 +3053,23 @@ class UniversalProviderBroker:
                         connection.execute("ROLLBACK")
                         return {"status": "UNEVALUABLE", "reason": "REQUEST_REPLAY_CONFLICT"}
                     result = strict_json_bytes(prior["result_json"].encode("utf-8"))
-                    if result.get("status") in {"PREPARED_SUSPENDED", "ALLOW_ATTESTED"}:
+                    if result.get("status") == "PREPARED_SUSPENDED":
+                        connection.execute("COMMIT")
+                        try:
+                            self._activate_quota_claim(
+                                quota_domain_id=result["quotaDomainId"],
+                                lease_id=result["leaseId"],
+                                publication_digest=digest_json({
+                                    "leaseId": result["leaseId"],
+                                    "requestId": result["requestId"],
+                                    "bindingSha256": result["bindingSha256"],
+                                }),
+                                fleet_secret=fleet_secret, now=now.astimezone(UTC),
+                            )
+                            return result
+                        except ControlError:
+                            return {"status": "UNEVALUABLE", "reason": "QUOTA_PUBLICATION_INCOMPLETE"}
+                    if result.get("status") == "ALLOW_ATTESTED":
                         connection.execute("COMMIT")
                         return {"status": "UNEVALUABLE", "reason": "ACTIVE_AUTHORITY_NOT_REPLAYABLE"}
                     connection.execute("COMMIT")
@@ -2533,6 +3100,19 @@ class UniversalProviderBroker:
                     (request_id, request_digest, canonical_json(result)),
                 )
                 connection.execute("COMMIT")
+                if result.get("status") == "PREPARED_SUSPENDED":
+                    publication_digest = digest_json({
+                        "leaseId": result["leaseId"], "requestId": result["requestId"],
+                        "bindingSha256": result["bindingSha256"],
+                    })
+                    try:
+                        self._activate_quota_claim(
+                            quota_domain_id=result["quotaDomainId"],
+                            lease_id=result["leaseId"], publication_digest=publication_digest,
+                            fleet_secret=fleet_secret, now=now.astimezone(UTC),
+                        )
+                    except ControlError:
+                        return {"status": "UNEVALUABLE", "reason": "QUOTA_PUBLICATION_INCOMPLETE"}
                 return result
             except BaseException:
                 try:
@@ -2688,6 +3268,13 @@ class UniversalProviderBroker:
         executable_digest = _hash_file(executable)
         if executable_digest != request["executableSha256"]:
             raise ControlError("EXECUTABLE_DIGEST_DRIFT")
+        provider_executable = _canonical_executable(request["providerExecutablePath"])
+        provider_executable_digest = _hash_file(provider_executable)
+        if (
+            provider_executable_digest != request["providerExecutableSha256"]
+            or os.path.normcase(str(provider_executable)) == os.path.normcase(str(executable))
+        ):
+            raise ControlError("WRAPPER_PROVIDER_IDENTITY_INVALID")
         matching = [
             launcher
             for launcher in inventory["launchers"]
@@ -2793,6 +3380,7 @@ class UniversalProviderBroker:
         if (
             digest_json(boundary_certification) != request["boundaryCertificationSha256"]
             or boundary_certification["wrapperExecutableSha256"] != executable_digest
+            or boundary_certification["providerExecutableSha256"] != provider_executable_digest
             or boundary_certification["launcherConfigSha256"] != request["launcherConfigSha256"]
             or boundary_certification["argvContractSha256"] != request["argvContractSha256"]
             or boundary_certification["requestBoundaryMode"] != request["requestBoundaryMode"]
@@ -2802,10 +3390,11 @@ class UniversalProviderBroker:
             raise ControlError("BOUNDARY_CERTIFICATION_BINDING_INVALID")
 
         authority = profile["demandAuthority"]
-        authority_path = _canonical_executable(authority["snapshotPath"])
-        if _hash_file(authority_path) != authority["snapshotSha256"]:
-            raise ControlError("DEMAND_AUTHORITY_DRIFT")
-        authoritative_snapshot = canonical_demand_snapshot(strict_json_file(authority_path))
+        authority_path, authority_value, authority_digest, _ = _stable_json_artifact(
+            authority["snapshotPath"], expected_sha256=authority["snapshotSha256"],
+            reason="DEMAND_AUTHORITY_DRIFT",
+        )
+        authoritative_snapshot = canonical_demand_snapshot(authority_value)
         demand_snapshot = canonical_demand_snapshot(request["demandSnapshot"])
         if authoritative_snapshot != demand_snapshot:
             raise ControlError("DEMAND_AUTHORITY_DRIFT")
@@ -2823,10 +3412,26 @@ class UniversalProviderBroker:
         prior_idle_fingerprint = prior_idle["demandFingerprint"]
         prior_recorded = parse_time(prior_idle["recordedAt"])
         prior_expires = parse_time(prior_idle["expiresAt"])
+        try:
+            _, prior_authority_value, prior_authority_digest, _ = _stable_json_artifact(
+                prior_idle["authorityPath"],
+                expected_sha256=prior_idle["authoritySha256"],
+                reason="PRIOR_IDLE_RECEIPT_INVALID",
+            )
+            observed_prior_snapshot = canonical_demand_snapshot(prior_authority_value)
+        except ControlError:
+            raise ControlError("PRIOR_IDLE_RECEIPT_INVALID") from None
         if (
             prior_idle["project"] != request["project"]
             or prior_idle["stateRootIdentity"] != self.state_root_identity(fleet_secret)
             or digest_json(prior_idle_snapshot) != prior_idle_fingerprint
+            or any(item["state"] in {"OPEN", "READY"} for item in prior_idle_snapshot["addressedWork"])
+            or prior_authority_digest != prior_idle["authoritySha256"]
+            or observed_prior_snapshot != prior_idle_snapshot
+            or demand_snapshot["cursor"]["stream"]
+            != prior_idle_snapshot["cursor"]["stream"]
+            or int(demand_snapshot["cursor"]["sequence"])
+            <= int(prior_idle_snapshot["cursor"]["sequence"])
             or prior_recorded > now
             or prior_expires <= now
             or now - prior_recorded
@@ -2895,6 +3500,7 @@ class UniversalProviderBroker:
         quiet = dt.timedelta(seconds=policy["postResetQuietSeconds"])
         reserve = float(policy["reserveFloorByPriority"][request["priority"]])
         capacity_valid_until: dt.datetime | None = None
+        capacity_windows: dict[str, dict[str, str]] = {}
         for name, estimate in estimates.items():
             dimension = dimensions[name]
             last_reset = parse_time(dimension["lastResetAt"])
@@ -2905,6 +3511,9 @@ class UniversalProviderBroker:
                 raise ControlError("CAPACITY_WINDOW_ROLLED_OVER")
             if capacity_valid_until is None or resets < capacity_valid_until:
                 capacity_valid_until = resets
+            capacity_windows[name] = {
+                "lastResetAt": iso(last_reset), "resetsAt": iso(resets)
+            }
             if now - last_reset < quiet:
                 raise ControlError("POST_RESET_QUIET")
             projected = float(dimension["usedFraction"]) + float(estimate)
@@ -2937,18 +3546,53 @@ class UniversalProviderBroker:
                 for name in ceilings
             ):
                 raise ControlError("COMPLETED_USAGE_CEILING_EXCEEDED")
+        with self._quota_connect() as quota_connection:
+            for dimension_name, window in capacity_windows.items():
+                completed_window = quota_connection.execute(
+                    """SELECT * FROM completed_usage_windows WHERE quota_domain_id=?
+                    AND dimension_name=? AND last_reset_at=? AND resets_at=?""",
+                    (request["quotaDomainId"], dimension_name,
+                     window["lastResetAt"], window["resetsAt"]),
+                ).fetchone()
+                if completed_window is None:
+                    continue
+                window_usage = strict_json_bytes(
+                    completed_window["usage_json"].encode("utf-8")
+                )
+                window_record = {
+                    "quotaDomainId": completed_window["quota_domain_id"],
+                    "dimensionName": completed_window["dimension_name"],
+                    "lastResetAt": completed_window["last_reset_at"],
+                    "resetsAt": completed_window["resets_at"],
+                    "usage": window_usage, "updatedAt": completed_window["updated_at"],
+                    "recordHmacSha256": completed_window["record_hmac"],
+                }
+                verify_contract_hmac(
+                    "quota-usage-window-record-v1", window_record, fleet_secret,
+                    "recordHmacSha256",
+                )
+                if any(
+                    int(window_usage[name]) + int(ceilings[name])
+                    > int(profile["efficiency"]["maxReservedTokenCeilings"][name])
+                    for name in ceilings
+                ):
+                    raise ControlError("COMPLETED_USAGE_CEILING_EXCEEDED")
         lease_expires = min(
             expires, now + dt.timedelta(seconds=request["maxWallSeconds"]), capacity_valid_until
         )
         issued_at_text = iso(now)
         expires_at_text = iso(lease_expires)
         watchdog_deadline_text = expires_at_text
+        quota_ledger_instance_id = self._quota_ledger_identity(fleet_secret)
 
         binding = {
             "requestId": request["requestId"],
             "quotaDomainId": request["quotaDomainId"],
+            "quotaLedgerInstanceId": quota_ledger_instance_id,
             "executablePath": os.path.normcase(str(executable)),
             "executableSha256": executable_digest,
+            "providerExecutablePath": os.path.normcase(str(provider_executable)),
+            "providerExecutableSha256": provider_executable_digest,
             "provider": request["provider"],
             "adapterVersion": request["adapterVersion"],
             "model": request["model"],
@@ -2959,6 +3603,7 @@ class UniversalProviderBroker:
             "seatIdHash": request["seatIdHash"],
             "seatEpoch": request["seatEpoch"],
             "sessionIdHash": request["sessionIdHash"],
+            "argv": list(request["argv"]),
             "argvSha256": request["argvSha256"],
             "argvContractSha256": request["argvContractSha256"],
             "launcherConfigSha256": request["launcherConfigSha256"],
@@ -2968,6 +3613,7 @@ class UniversalProviderBroker:
             "compactionCheckpointSha256": request["compactionCheckpointSha256"],
             "cacheAffinityKeySha256": request["cacheAffinityKeySha256"],
             "capacityValidUntil": capacity_valid_until_text,
+            "capacityWindows": capacity_windows,
             "issuedAt": issued_at_text,
             "expiresAt": expires_at_text,
             "watchdogDeadline": watchdog_deadline_text,
@@ -2995,6 +3641,7 @@ class UniversalProviderBroker:
         lease_id = "lease-" + uuid.uuid4().hex
         artifacts = (
             (executable, request["executableSha256"], MAX_ARTIFACT_BYTES),
+            (provider_executable, request["providerExecutableSha256"], MAX_ARTIFACT_BYTES),
             (launcher_config, request["launcherConfigSha256"], MAX_ARTIFACT_BYTES),
             (capsule, request["contextCapsuleSha256"], policy["evidenceCapsuleMaxBytes"]),
             (checkpoint, request["compactionCheckpointSha256"], MAX_ARTIFACT_BYTES),
@@ -3009,9 +3656,11 @@ class UniversalProviderBroker:
             "requestId": request["requestId"],
             "leaseId": lease_id,
             "quotaDomainId": request["quotaDomainId"],
+            "quotaLedgerInstanceId": quota_ledger_instance_id,
             "issuedAt": issued_at_text,
             "expiresAt": expires_at_text,
             "capacityValidUntil": capacity_valid_until_text,
+            "capacityWindows": capacity_windows,
             "watchdogDeadline": watchdog_deadline_text,
             "gateEpoch": int(gate["transition_epoch"]),
             "gateTransitionSha256": digest_json(gate_transition),
@@ -3022,6 +3671,9 @@ class UniversalProviderBroker:
             "sessionIdHash": request["sessionIdHash"],
             "executablePath": str(executable),
             "executableSha256": executable_digest,
+            "providerExecutablePath": str(provider_executable),
+            "providerExecutableSha256": provider_executable_digest,
+            "argv": list(request["argv"]),
             "argvSha256": request["argvSha256"],
             "argvContractSha256": request["argvContractSha256"],
             "launcherConfigSha256": request["launcherConfigSha256"],
@@ -3061,15 +3713,17 @@ class UniversalProviderBroker:
                     lease_id, request_id, quota_domain_id, process_id, process_start_time,
                     seat_id_hash, seat_epoch, session_id_hash, binding_digest, binding_bytes,
                     binding_hmac, reservations_json, issued_at, expires_at, capacity_valid_until,
-                    watchdog_deadline, state, terminal_digest,
+                    watchdog_deadline, quota_ledger_instance_id, capacity_windows_json,
+                    state, terminal_digest,
                     gate_epoch, is_canary
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'ACTIVE', NULL, ?, ?)""",
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'ACTIVE', NULL, ?, ?)""",
                 (
                     lease_id, request["requestId"], request["quotaDomainId"], process_id, iso(start),
                     request["seatIdHash"], request["seatEpoch"], request["sessionIdHash"],
                     binding_digest, binding_bytes, binding_hmac, canonical_json(estimates),
                     issued_at_text, expires_at_text, capacity_valid_until_text,
-                    watchdog_deadline_text,
+                    watchdog_deadline_text, quota_ledger_instance_id,
+                    canonical_json(capacity_windows),
                     int(gate["transition_epoch"]), 1 if request["canary"] else 0,
                 ),
             )
@@ -3140,6 +3794,9 @@ class UniversalProviderBroker:
         temporal = {
             "issuedAt": lease["issued_at"], "expiresAt": lease["expires_at"],
             "capacityValidUntil": lease["capacity_valid_until"],
+            "capacityWindows": strict_json_bytes(
+                lease["capacity_windows_json"].encode("utf-8")
+            ),
             "watchdogDeadline": lease["watchdog_deadline"],
         }
         if (
@@ -3147,6 +3804,10 @@ class UniversalProviderBroker:
             or lease["binding_hmac"] != binding_record["bindingHmacSha256"]
             or attestation.get("bindingSha256") != lease["binding_digest"]
             or attestation.get("bindingHmacSha256") != lease["binding_hmac"]
+            or binding_record.get("quotaLedgerInstanceId")
+            != lease["quota_ledger_instance_id"]
+            or attestation.get("quotaLedgerInstanceId")
+            != lease["quota_ledger_instance_id"]
             or any(binding_record.get(name) != value for name, value in temporal.items())
             or any(attestation.get(name) != value for name, value in temporal.items())
         ):
@@ -3175,6 +3836,77 @@ class UniversalProviderBroker:
         ):
             raise ControlError("RUNTIME_OWNER_EVIDENCE_MISSING")
 
+    @staticmethod
+    def _runtime_deadline(lease: sqlite3.Row) -> dt.datetime:
+        return min(
+            parse_time(lease["expires_at"]),
+            parse_time(lease["capacity_valid_until"]),
+            parse_time(lease["watchdog_deadline"]),
+        )
+
+    def _require_live_runtime_boundary(
+        self, connection: sqlite3.Connection, lease: sqlite3.Row, at: dt.datetime
+    ) -> None:
+        if at >= self._runtime_deadline(lease):
+            if lease["is_canary"]:
+                self._seal_closed(connection)
+            connection.execute(
+                "UPDATE leases SET state='TERMINATION_REQUIRED' WHERE lease_id=? AND state!='RELEASED'",
+                (lease["lease_id"],),
+            )
+            raise ControlError("RUNTIME_TERMINATION_REQUIRED")
+
+    @staticmethod
+    def _checkpoint_head_hmac(
+        *, lease_id: str, digest: str, sequence: int, fleet_secret: bytes
+    ) -> str:
+        return contract_hmac(
+            "provider-usage-checkpoint-head-v1",
+            {"leaseId": lease_id, "checkpointSha256": digest, "sequence": sequence,
+             "headHmacSha256": ""},
+            fleet_secret,
+            "headHmacSha256",
+        )
+
+    def _validated_checkpoint_row(
+        self,
+        *,
+        row: sqlite3.Row,
+        reservation: sqlite3.Row,
+        lease: sqlite3.Row,
+        fleet_secret: bytes,
+    ) -> dict[str, Any]:
+        raw = row["checkpoint_bytes"]
+        if not isinstance(raw, bytes) or len(raw) > MAX_INPUT_BYTES:
+            raise ControlError("USAGE_CHECKPOINT_DRIFT")
+        value = strict_json_bytes(raw)
+        if raw != canonical_json(value).encode("utf-8"):
+            raise ControlError("USAGE_CHECKPOINT_DRIFT")
+        validate_contract("usage_checkpoint", value)
+        verify_contract_hmac(
+            "provider-usage-checkpoint-v1", value, fleet_secret, "checkpointHmacSha256"
+        )
+        digest = digest_json(value)
+        sequence = int(row["sequence"])
+        expected_head = self._checkpoint_head_hmac(
+            lease_id=lease["lease_id"], digest=digest, sequence=sequence,
+            fleet_secret=fleet_secret,
+        )
+        if (
+            digest != row["checkpoint_digest"]
+            or value["sequence"] != sequence
+            or value["recordedAt"] != row["recorded_at"]
+            or value["leaseId"] != lease["lease_id"]
+            or value["requestId"] != lease["request_id"]
+            or value["bindingSha256"] != lease["binding_digest"]
+            or value["providerRequestPermitSha256"] != reservation["permit_digest"]
+            or reservation["latest_checkpoint_digest"] != digest
+            or int(reservation["latest_checkpoint_sequence"] or -1) != sequence
+            or not hmac.compare_digest(reservation["checkpoint_head_hmac"] or "", expected_head)
+        ):
+            raise ControlError("USAGE_CHECKPOINT_DRIFT")
+        return value
+
     def confirm_resume_boundary(
         self, *, lease_id: str, process_observation: Any, fleet_secret: bytes, now: dt.datetime
     ) -> dict[str, Any]:
@@ -3196,7 +3928,7 @@ class UniversalProviderBroker:
     ) -> dict[str, Any]:
         """Return launch authority only after a second fresh suspended-process/handle check."""
 
-        at = now.astimezone(UTC)
+        at = self._authoritative_now(now)
         with self._connect() as connection:
             connection.execute("BEGIN IMMEDIATE")
             try:
@@ -3263,12 +3995,12 @@ class UniversalProviderBroker:
                     connection.execute("ROLLBACK")
                 raise
 
-    def begin_provider_request(
+    def _begin_provider_request(
         self, *, lease_id: str, fleet_secret: bytes, now: dt.datetime
     ) -> dict[str, Any]:
         """Issue the sole provider-call permit after conservative reservation, immediately pre-call."""
 
-        at = now.astimezone(UTC)
+        at = self._authoritative_now(now)
         with self._root_lock, self._connect() as connection:
             connection.execute("BEGIN IMMEDIATE")
             try:
@@ -3336,6 +4068,7 @@ class UniversalProviderBroker:
                     "tokenUsage": initial_usage,
                     "providerRequestPermitSha256": digest_json(permit),
                     "terminalRequestPermitSha256": None,
+                    "previousCheckpointSha256": None,
                     "bindingSha256": attestation["bindingSha256"],
                     "checkpointHmacSha256": "",
                 }
@@ -3351,10 +4084,15 @@ class UniversalProviderBroker:
                     ) VALUES (?, 1, ?, ?, ?)""",
                     (lease_id, checkpoint_digest, canonical_json(checkpoint).encode("utf-8"), iso(at)),
                 )
+                head_hmac = self._checkpoint_head_hmac(
+                    lease_id=lease_id, digest=checkpoint_digest, sequence=1,
+                    fleet_secret=fleet_secret,
+                )
                 connection.execute(
                     """UPDATE token_reservations SET permit_count=1, permit_digest=?,
-                    latest_checkpoint_digest=?, state='IN_FLIGHT' WHERE lease_id=?""",
-                    (digest_json(permit), checkpoint_digest, lease_id),
+                    latest_checkpoint_digest=?, latest_checkpoint_sequence=1,
+                    checkpoint_head_hmac=?, state='IN_FLIGHT' WHERE lease_id=?""",
+                    (digest_json(permit), checkpoint_digest, head_hmac, lease_id),
                 )
                 connection.execute("COMMIT")
                 return permit
@@ -3363,7 +4101,7 @@ class UniversalProviderBroker:
                     connection.execute("ROLLBACK")
                 raise
 
-    def checkpoint_provider_usage(
+    def _checkpoint_provider_usage(
         self,
         *,
         lease_id: str,
@@ -3379,7 +4117,7 @@ class UniversalProviderBroker:
 
         if phase not in {"PRE_TURN", "TERMINAL"}:
             raise ControlError("USAGE_CHECKPOINT_PHASE_INVALID")
-        at = now.astimezone(UTC)
+        at = self._authoritative_now(now)
         with self._root_lock, self._connect() as connection:
             connection.execute("BEGIN IMMEDIATE")
             try:
@@ -3391,6 +4129,7 @@ class UniversalProviderBroker:
                 ).fetchone()
                 if lease is None or reservation is None or lease["state"] != "RESUME_ATTESTED":
                     raise ControlError("USAGE_CHECKPOINT_NOT_ATTESTED")
+                self._require_live_runtime_boundary(connection, lease, at)
                 attestation, _ = self._verified_immutable_lease_binding(
                     connection, lease, fleet_secret
                 )
@@ -3401,10 +4140,8 @@ class UniversalProviderBroker:
                 ).fetchone()
                 if prior is None or reservation["permit_digest"] is None:
                     raise ControlError("USAGE_CHECKPOINT_PRIOR_MISSING")
-                prior_value = strict_json_bytes(prior["checkpoint_bytes"])
-                verify_contract_hmac(
-                    "provider-usage-checkpoint-v1", prior_value, fleet_secret,
-                    "checkpointHmacSha256",
+                prior_value = self._validated_checkpoint_row(
+                    row=prior, reservation=reservation, lease=lease, fleet_secret=fleet_secret,
                 )
                 ceilings = strict_json_bytes(reservation["ceilings_json"].encode("utf-8"))
                 if set(token_usage) != set(ceilings) or any(
@@ -3431,6 +4168,8 @@ class UniversalProviderBroker:
                 ):
                     raise ControlError("PROVIDER_USAGE_ENVELOPE_EXCEEDED")
                 terminal_digest = reservation["terminal_permit_digest"]
+                if phase == "PRE_TURN" and terminal_digest is not None:
+                    raise ControlError("TERMINAL_REQUEST_ALREADY_ISSUED")
                 ordinary_output_ceiling = int(ceilings["outputTokens"]) - int(
                     reservation["terminal_reserve"]
                 )
@@ -3438,6 +4177,19 @@ class UniversalProviderBroker:
                     raise ControlError("COMPLETION_RESERVE_VIOLATION")
                 if phase == "TERMINAL" and terminal_digest is None:
                     raise ControlError("TERMINAL_REQUEST_PERMIT_REQUIRED")
+                if (
+                    phase == "TERMINAL"
+                    and (
+                        reservation["terminal_baseline_digest"] is None
+                        or prior["checkpoint_digest"] != reservation["terminal_baseline_digest"]
+                        or int(prior["sequence"])
+                        != int(reservation["terminal_baseline_sequence"] or -1)
+                        or token_usage["outputTokens"]
+                        - int(reservation["terminal_baseline_output"] or 0)
+                        > int(reservation["terminal_reserve"])
+                    )
+                ):
+                    raise ControlError("TERMINAL_RESERVE_DELTA_EXCEEDED")
                 checkpoint = {
                     "schema": "fleet-universal-provider-usage-checkpoint/v1",
                     "checkpointId": "usage-" + uuid.uuid4().hex,
@@ -3448,6 +4200,7 @@ class UniversalProviderBroker:
                     "peakContextTokens": peak_context_tokens, "tokenUsage": token_usage,
                     "providerRequestPermitSha256": reservation["permit_digest"],
                     "terminalRequestPermitSha256": terminal_digest if phase == "TERMINAL" else None,
+                    "previousCheckpointSha256": prior["checkpoint_digest"],
                     "bindingSha256": lease["binding_digest"], "checkpointHmacSha256": "",
                 }
                 checkpoint["checkpointHmacSha256"] = contract_hmac(
@@ -3463,23 +4216,34 @@ class UniversalProviderBroker:
                     (lease_id, checkpoint["sequence"], checkpoint_digest,
                      canonical_json(checkpoint).encode("utf-8"), iso(at)),
                 )
+                head_hmac = self._checkpoint_head_hmac(
+                    lease_id=lease_id, digest=checkpoint_digest,
+                    sequence=checkpoint["sequence"], fleet_secret=fleet_secret,
+                )
                 connection.execute(
-                    "UPDATE token_reservations SET latest_checkpoint_digest=? WHERE lease_id=?",
-                    (checkpoint_digest, lease_id),
+                    """UPDATE token_reservations SET latest_checkpoint_digest=?,
+                    latest_checkpoint_sequence=?, checkpoint_head_hmac=? WHERE lease_id=?""",
+                    (checkpoint_digest, checkpoint["sequence"], head_hmac, lease_id),
                 )
                 connection.execute("COMMIT")
                 return checkpoint
-            except BaseException:
+            except BaseException as exc:
+                if (
+                    connection.in_transaction and isinstance(exc, ControlError)
+                    and exc.reason == "RUNTIME_TERMINATION_REQUIRED"
+                ):
+                    connection.execute("COMMIT")
+                    raise
                 if connection.in_transaction:
                     connection.execute("ROLLBACK")
                 raise
 
-    def issue_terminal_request_permit(
+    def _issue_terminal_request_permit(
         self, *, lease_id: str, fleet_secret: bytes, now: dt.datetime
     ) -> dict[str, Any]:
         """Issue exactly one typed terminal request that alone may consume completion reserve."""
 
-        at = now.astimezone(UTC)
+        at = self._authoritative_now(now)
         with self._root_lock, self._connect() as connection:
             connection.execute("BEGIN IMMEDIATE")
             try:
@@ -3491,6 +4255,7 @@ class UniversalProviderBroker:
                 ).fetchone()
                 if lease is None or reservation is None or lease["state"] != "RESUME_ATTESTED":
                     raise ControlError("TERMINAL_REQUEST_NOT_ATTESTED")
+                self._require_live_runtime_boundary(connection, lease, at)
                 attestation, _ = self._verified_immutable_lease_binding(
                     connection, lease, fleet_secret
                 )
@@ -3498,24 +4263,27 @@ class UniversalProviderBroker:
                 if reservation["terminal_permit_digest"] is not None:
                     raise ControlError("TERMINAL_REQUEST_ALREADY_ISSUED")
                 latest = connection.execute(
-                    "SELECT checkpoint_bytes FROM usage_checkpoints WHERE lease_id=? ORDER BY sequence DESC LIMIT 1",
+                    """SELECT checkpoint_digest, checkpoint_bytes, sequence, recorded_at
+                    FROM usage_checkpoints WHERE lease_id=? ORDER BY sequence DESC LIMIT 1""",
                     (lease_id,),
                 ).fetchone()
                 if latest is None:
                     raise ControlError("USAGE_CHECKPOINT_PRIOR_MISSING")
-                checkpoint = strict_json_bytes(latest["checkpoint_bytes"])
+                checkpoint = self._validated_checkpoint_row(
+                    row=latest, reservation=reservation, lease=lease, fleet_secret=fleet_secret,
+                )
+                if (
+                    checkpoint["terminalRequestPermitSha256"] is not None
+                    or checkpoint["phase"] != "PRE_TURN"
+                ):
+                    raise ControlError("USAGE_CHECKPOINT_DRIFT")
                 ceilings = strict_json_bytes(reservation["ceilings_json"].encode("utf-8"))
                 ordinary_ceiling = int(ceilings["outputTokens"]) - int(
                     reservation["terminal_reserve"]
                 )
                 if checkpoint["tokenUsage"]["outputTokens"] > ordinary_ceiling:
                     raise ControlError("COMPLETION_RESERVE_VIOLATION")
-                boundary = min(
-                    parse_time(lease["expires_at"]), parse_time(lease["capacity_valid_until"]),
-                    parse_time(lease["watchdog_deadline"]),
-                )
-                if at >= boundary:
-                    raise ControlError("RUNTIME_TERMINATION_REQUIRED")
+                boundary = self._runtime_deadline(lease)
                 permit = {
                     "schema": "fleet-universal-terminal-request-permit/v1",
                     "permitId": "terminal-" + uuid.uuid4().hex,
@@ -3524,6 +4292,9 @@ class UniversalProviderBroker:
                     "terminalRequestCount": 1,
                     "terminalReserveTokens": int(reservation["terminal_reserve"]),
                     "ordinaryOutputCeiling": ordinary_ceiling,
+                    "baselineCheckpointSha256": latest["checkpoint_digest"],
+                    "baselineCheckpointSequence": int(latest["sequence"]),
+                    "baselineOutputTokens": int(checkpoint["tokenUsage"]["outputTokens"]),
                     "bindingSha256": attestation["bindingSha256"],
                     "permitHmacSha256": "",
                 }
@@ -3539,12 +4310,21 @@ class UniversalProviderBroker:
                     (lease_id, permit_digest, canonical_json(permit).encode("utf-8"), iso(at)),
                 )
                 connection.execute(
-                    "UPDATE token_reservations SET terminal_permit_digest=? WHERE lease_id=?",
-                    (permit_digest, lease_id),
+                    """UPDATE token_reservations SET terminal_permit_digest=?,
+                    terminal_baseline_digest=?, terminal_baseline_sequence=?,
+                    terminal_baseline_output=? WHERE lease_id=?""",
+                    (permit_digest, latest["checkpoint_digest"], int(latest["sequence"]),
+                     int(checkpoint["tokenUsage"]["outputTokens"]), lease_id),
                 )
                 connection.execute("COMMIT")
                 return permit
             except BaseException as exc:
+                if (
+                    connection.in_transaction and isinstance(exc, ControlError)
+                    and exc.reason == "RUNTIME_TERMINATION_REQUIRED"
+                ):
+                    connection.execute("COMMIT")
+                    raise
                 if (
                     connection.in_transaction and isinstance(exc, ControlError)
                     and exc.reason in {
@@ -3566,7 +4346,7 @@ class UniversalProviderBroker:
     ) -> dict[str, Any]:
         """Certified wrapper watchdog hook; expiry requires immediate process-tree termination."""
 
-        at = now.astimezone(UTC)
+        at = self._authoritative_now(now)
         with self._root_lock, self._connect() as connection:
             connection.execute("BEGIN IMMEDIATE")
             try:
@@ -3647,24 +4427,27 @@ class UniversalProviderBroker:
             raise ControlError("PROCESS_OBSERVATION_BINDING_DRIFT")
 
     def release_child(
-        self, *, process_observation: Any, fleet_secret: bytes, now: dt.datetime
+        self, *, process_observation: Any, fleet_secret: bytes,
+        receipt_signer_secrets: Mapping[str, bytes] | None = None, now: dt.datetime
     ) -> dict[str, Any]:
         """Serialize terminal proof, lease publication, and cleanup-poison publication per root."""
 
         with self._root_lock:
             return self._release_child_root_locked(
-                process_observation=process_observation, fleet_secret=fleet_secret, now=now
+                process_observation=process_observation, fleet_secret=fleet_secret,
+                receipt_signer_secrets=receipt_signer_secrets, now=now
             )
 
     def _release_child_root_locked(
-        self, *, process_observation: Any, fleet_secret: bytes, now: dt.datetime
+        self, *, process_observation: Any, fleet_secret: bytes,
+        receipt_signer_secrets: Mapping[str, bytes] | None, now: dt.datetime
     ) -> dict[str, Any]:
         """Release only from a fresh authenticated terminal observation of the exact claimant."""
 
         lease_id = process_observation.get("leaseId") if isinstance(process_observation, dict) else None
         if not isinstance(lease_id, str):
             raise ControlError("TERMINAL_EVIDENCE_INVALID")
-        at = now.astimezone(UTC)
+        at = self._authoritative_now(now)
         ambiguous = False
         canary_success_digest: str | None = None
         quota_release_required = False
@@ -3676,6 +4459,7 @@ class UniversalProviderBroker:
                     raise ControlError("LEASE_UNKNOWN")
                 if row["state"] == "TERMINATION_REQUIRED":
                     raise ControlError("TERMINATION_REQUIRED_FENCED")
+                deadline_expired = at >= self._runtime_deadline(row)
                 _verify_process_observation(
                     process_observation, fleet_secret=fleet_secret, now=at, phase="TERMINAL", lease=row
                 )
@@ -3686,25 +4470,57 @@ class UniversalProviderBroker:
                 if reservation is None:
                     raise ControlError("TOKEN_RESERVATION_MISSING")
                 quota_release_required = row["state"] != "RELEASED"
-                self._verified_immutable_lease_binding(
+                attestation, binding_record = self._verified_immutable_lease_binding(
                     connection, row, fleet_secret,
-                    require_active_quota=row["state"] != "RELEASED",
+                    require_active_quota=row["state"] not in {"RELEASE_PREPARED", "RELEASED"},
                 )
+                certification_row = connection.execute(
+                    "SELECT artifact_bytes FROM certification_artifacts WHERE artifact_digest=? AND artifact_kind='WRAPPER_BOUNDARY'",
+                    (attestation["boundaryCertificationSha256"],),
+                ).fetchone()
+                effective_signers = (
+                    receipt_signer_secrets
+                    if receipt_signer_secrets is not None
+                    else self._independent_receipt_signers
+                )
+                if certification_row is None or not effective_signers:
+                    raise ControlError("INDEPENDENT_RECEIPT_SIGNER_REQUIRED")
+                boundary_certification = strict_json_bytes(certification_row["artifact_bytes"])
                 termination = process_observation["processTreeTerminationReceipt"]
                 validate_contract("process_tree_termination", termination)
+                termination_secret = effective_signers.get(
+                    boundary_certification["terminationObserverId"]
+                )
+                if (
+                    termination_secret is None
+                    or signer_key_sha256(termination_secret)
+                    != boundary_certification["terminationObserverKeySha256"]
+                    or termination["observerId"] != boundary_certification["terminationObserverId"]
+                    or termination["observerKeySha256"]
+                    != boundary_certification["terminationObserverKeySha256"]
+                ):
+                    raise ControlError("PROCESS_TREE_TERMINATION_SIGNER_INVALID")
                 verify_contract_hmac(
-                    "process-tree-termination-receipt-v1", termination, fleet_secret,
+                    "process-tree-termination-receipt-v1", termination, termination_secret,
                     "receiptHmacSha256",
                 )
                 if (
                     termination["leaseId"] != lease_id
+                    or termination["bindingSha256"] != row["binding_digest"]
                     or termination["rootProcessId"] != row["process_id"]
                     or termination["rootProcessStartTime"] != row["process_start_time"]
                     or parse_time(termination["observedAt"]) > at + dt.timedelta(seconds=5)
+                    or parse_time(termination["observedAt"]) < at - dt.timedelta(seconds=60)
+                    or parse_time(termination["expiresAt"]) <= at
                 ):
                     raise ControlError("PROCESS_TREE_TERMINATION_INVALID")
+                _verify_retained_artifact(
+                    termination["evidencePath"], termination["evidenceSha256"],
+                    termination["retainedEvidenceBytes"],
+                )
                 checkpoint_row = connection.execute(
-                    "SELECT checkpoint_digest, checkpoint_bytes FROM usage_checkpoints WHERE lease_id=? ORDER BY sequence DESC LIMIT 1",
+                    """SELECT checkpoint_digest, checkpoint_bytes, sequence, recorded_at
+                    FROM usage_checkpoints WHERE lease_id=? ORDER BY sequence DESC LIMIT 1""",
                     (lease_id,),
                 ).fetchone()
                 request_count = process_observation["providerRequestCount"]
@@ -3728,11 +4544,9 @@ class UniversalProviderBroker:
                 else:
                     if request_count != 1 or checkpoint_row is None:
                         raise ControlError("PROVIDER_USAGE_CHECKPOINT_MISSING")
-                    checkpoint = strict_json_bytes(checkpoint_row["checkpoint_bytes"])
-                    validate_contract("usage_checkpoint", checkpoint)
-                    verify_contract_hmac(
-                        "provider-usage-checkpoint-v1", checkpoint, fleet_secret,
-                        "checkpointHmacSha256",
+                    checkpoint = self._validated_checkpoint_row(
+                        row=checkpoint_row, reservation=reservation, lease=row,
+                        fleet_secret=fleet_secret,
                     )
                     if (
                         reservation["permit_count"] != 1
@@ -3751,19 +4565,51 @@ class UniversalProviderBroker:
                         raise ControlError("PROVIDER_REQUEST_ACCOUNTING_INVALID")
                     output_quality = process_observation["outputQualityReceipt"]
                     validate_contract("output_quality", output_quality)
+                    quality_secret = effective_signers.get(
+                        boundary_certification["qualityObserverId"]
+                    )
+                    if (
+                        quality_secret is None
+                        or signer_key_sha256(quality_secret)
+                        != boundary_certification["qualityObserverKeySha256"]
+                        or output_quality["observerId"] != boundary_certification["qualityObserverId"]
+                        or output_quality["observerKeySha256"]
+                        != boundary_certification["qualityObserverKeySha256"]
+                    ):
+                        raise ControlError("OUTPUT_QUALITY_SIGNER_INVALID")
                     verify_contract_hmac(
-                        "output-quality-receipt-v1", output_quality, fleet_secret,
+                        "output-quality-receipt-v1", output_quality, quality_secret,
                         "receiptHmacSha256",
                     )
                     if (
                         output_quality["leaseId"] != lease_id
                         or output_quality["requestId"] != row["request_id"]
+                        or output_quality["bindingSha256"] != row["binding_digest"]
+                        or output_quality["qualitySubjectSha256"] != binding_record["subjectSha256"]
                         or output_quality["providerUsageCheckpointSha256"]
                         != checkpoint_row["checkpoint_digest"]
+                        or parse_time(output_quality["completedAt"]) > at + dt.timedelta(seconds=5)
+                        or parse_time(output_quality["completedAt"]) < at - dt.timedelta(seconds=60)
+                        or parse_time(output_quality["completedAt"]) >= self._runtime_deadline(row)
+                        or parse_time(output_quality["expiresAt"]) <= at
                     ):
                         raise ControlError("OUTPUT_QUALITY_RECEIPT_INVALID")
+                    _verify_retained_artifact(
+                        output_quality["outputPath"], output_quality["outputSha256"],
+                        output_quality["retainedOutputBytes"],
+                    )
+                    _verify_retained_artifact(
+                        output_quality["referenceOutputPath"],
+                        output_quality["referenceOutputSha256"],
+                        output_quality["retainedReferenceBytes"],
+                    )
+                    _verify_retained_artifact(
+                        output_quality["independentReviewPath"],
+                        output_quality["independentReviewSha256"],
+                        output_quality["retainedIndependentReviewBytes"],
+                    )
                 terminal_digest = digest_json(process_observation)
-                if row["state"] == "RELEASED":
+                if row["state"] in {"RELEASE_PREPARED", "RELEASED"}:
                     if row["terminal_digest"] != terminal_digest:
                         raise ControlError("LEASE_RELEASE_CONFLICT")
                 elif process_observation["status"] == "AMBIGUOUS":
@@ -3772,61 +4618,17 @@ class UniversalProviderBroker:
                     ambiguous = True
                 else:
                     connection.execute(
-                        "UPDATE leases SET state='RELEASED', terminal_digest=? WHERE lease_id=?",
+                        "UPDATE leases SET state='RELEASE_PREPARED', terminal_digest=? WHERE lease_id=?",
                         (terminal_digest, lease_id),
                     )
-                    connection.execute(
-                        "UPDATE token_reservations SET state=?, actual_usage_json=? WHERE lease_id=?",
-                        (
-                            "COMPLETED" if process_observation["status"] == "EXITED" else "FAILED",
-                            canonical_json(usage), lease_id,
-                        ),
-                    )
-                    if row["is_canary"]:
-                        if process_observation["status"] == "EXITED" and request_count == 1:
-                            prior = connection.execute(
-                                "SELECT result_json FROM requests WHERE request_id=?", (row["request_id"],)
-                            ).fetchone()
-                            attestation = strict_json_bytes(prior["result_json"].encode("utf-8"))
-                            receipt = {
-                                "schema": "fleet-universal-canary-success-receipt/v1",
-                                "receiptId": "canary-success-" + uuid.uuid4().hex,
-                                "leaseId": lease_id,
-                                "requestId": row["request_id"],
-                                "completedAt": iso(at),
-                                "gateEpoch": int(row["gate_epoch"]),
-                                "gateTransitionSha256": attestation["gateTransitionSha256"],
-                                "projectProfileSha256": attestation["profileSha256"],
-                                "inventorySha256": attestation["inventorySha256"],
-                                "providerRequestPermitSha256": reservation["permit_digest"],
-                                "providerUsageCheckpointSha256": checkpoint_row["checkpoint_digest"],
-                                "outputQualityReceiptSha256": digest_json(output_quality),
-                                "tokenUsageSha256": digest_json(usage),
-                                "success": True,
-                                "receiptHmacSha256": "",
-                            }
-                            receipt["receiptHmacSha256"] = contract_hmac(
-                                "canary-success-receipt-v1", receipt, fleet_secret,
-                                "receiptHmacSha256",
-                            )
-                            validate_contract("canary_success", receipt)
-                            connection.execute(
-                                """INSERT INTO canary_success_receipts(
-                                    receipt_id, receipt_digest, receipt_bytes, gate_epoch,
-                                    profile_digest, inventory_digest, used_at
-                                ) VALUES (?, ?, ?, ?, ?, ?, NULL)""",
-                                (
-                                    receipt["receiptId"], digest_json(receipt),
-                                    canonical_json(receipt).encode("utf-8"), row["gate_epoch"],
-                                    receipt["projectProfileSha256"], receipt["inventorySha256"],
-                                ),
-                            )
-                            canary_success_digest = digest_json(receipt)
-                            self._seal_containment(connection)
-                        else:
-                            self._seal_closed(connection)
                 connection.execute("COMMIT")
             except BaseException as exc:
+                if (
+                    connection.in_transaction and isinstance(exc, ControlError)
+                    and exc.reason == "RUNTIME_TERMINATION_REQUIRED"
+                ):
+                    connection.execute("COMMIT")
+                    raise
                 if (
                     connection.in_transaction and isinstance(exc, ControlError)
                     and "row" in locals() and row is not None and row["is_canary"]
@@ -3845,11 +4647,213 @@ class UniversalProviderBroker:
                 row, terminal_digest=terminal_digest, usage=usage,
                 fleet_secret=fleet_secret, now=at,
             )
+        with self._connect() as connection:
+            connection.execute("BEGIN IMMEDIATE")
+            try:
+                current = connection.execute(
+                    "SELECT * FROM leases WHERE lease_id=?", (lease_id,)
+                ).fetchone()
+                current_reservation = connection.execute(
+                    "SELECT * FROM token_reservations WHERE lease_id=?", (lease_id,)
+                ).fetchone()
+                if current is None or current_reservation is None:
+                    raise ControlError("LEASE_UNKNOWN")
+                if current["terminal_digest"] != terminal_digest:
+                    raise ControlError("LEASE_RELEASE_CONFLICT")
+                if current["state"] == "RELEASE_PREPARED":
+                    connection.execute(
+                        "UPDATE leases SET state='RELEASED' WHERE lease_id=? AND state='RELEASE_PREPARED'",
+                        (lease_id,),
+                    )
+                    connection.execute(
+                        "UPDATE token_reservations SET state=?, actual_usage_json=? WHERE lease_id=?",
+                        (
+                            "COMPLETED" if process_observation["status"] == "EXITED" else "FAILED",
+                            canonical_json(usage), lease_id,
+                        ),
+                    )
+                    if current["is_canary"]:
+                        if (
+                            not deadline_expired
+                            and process_observation["status"] == "EXITED"
+                            and request_count == 1
+                        ):
+                            receipt = {
+                                "schema": "fleet-universal-canary-success-receipt/v1",
+                                "receiptId": "canary-success-" + uuid.uuid4().hex,
+                                "leaseId": lease_id,
+                                "requestId": current["request_id"],
+                                "completedAt": iso(at),
+                                "expiresAt": iso(min(
+                                    self._runtime_deadline(current), at + dt.timedelta(minutes=5)
+                                )),
+                                "gateEpoch": int(current["gate_epoch"]),
+                                "gateTransitionSha256": attestation["gateTransitionSha256"],
+                                "projectProfileSha256": attestation["profileSha256"],
+                                "inventorySha256": attestation["inventorySha256"],
+                                "providerRequestPermitSha256": current_reservation["permit_digest"],
+                                "providerUsageCheckpointSha256": checkpoint_row["checkpoint_digest"],
+                                "outputQualityReceiptSha256": digest_json(output_quality),
+                                "tokenUsageSha256": digest_json(usage),
+                                "success": True,
+                                "receiptHmacSha256": "",
+                            }
+                            receipt["receiptHmacSha256"] = contract_hmac(
+                                "canary-success-receipt-v1", receipt, fleet_secret,
+                                "receiptHmacSha256",
+                            )
+                            validate_contract("canary_success", receipt)
+                            canary_success_digest = digest_json(receipt)
+                            connection.execute(
+                                """INSERT INTO canary_success_receipts(
+                                receipt_id, receipt_digest, receipt_bytes, gate_epoch,
+                                profile_digest, inventory_digest, used_at
+                                ) VALUES (?, ?, ?, ?, ?, ?, NULL)""",
+                                (
+                                    receipt["receiptId"], canary_success_digest,
+                                    canonical_json(receipt).encode("utf-8"), current["gate_epoch"],
+                                    receipt["projectProfileSha256"], receipt["inventorySha256"],
+                                ),
+                            )
+                            self._seal_containment(connection)
+                        else:
+                            self._seal_closed(connection)
+                elif current["state"] != "RELEASED":
+                    raise ControlError("LEASE_RELEASE_STATE_INVALID")
+                connection.execute("COMMIT")
+            except BaseException:
+                if connection.in_transaction:
+                    connection.execute("ROLLBACK")
+                raise
         self._release_terminal_owners(lease_id)
         result = {"status": "RELEASED", "leaseId": lease_id}
         if canary_success_digest is not None:
             result["canarySuccessReceiptSha256"] = canary_success_digest
         return result
+
+    def provision_brokered_single_request(
+        self, *, lease_id: str, fleet_secret: bytes
+    ) -> "CertifiedBrokeredSingleRequest":
+        """Provision an opaque one-use wrapper capability; the wrapper never receives the key."""
+
+        if not isinstance(fleet_secret, bytes) or len(fleet_secret) < 32:
+            raise ControlError("FLEET_SECRET_INVALID")
+        with self._root_lock, self._connect() as connection:
+            lease = connection.execute(
+                "SELECT * FROM leases WHERE lease_id=?", (lease_id,)
+            ).fetchone()
+            if lease is None or lease["state"] != "RESUME_ATTESTED":
+                raise ControlError("LEASE_NOT_ATTESTED")
+            self._verified_immutable_lease_binding(connection, lease, fleet_secret)
+            capability = "wrapper-capability-" + uuid.uuid4().hex
+            self._wrapper_capabilities[capability] = (lease_id, bytes(fleet_secret))
+        return CertifiedBrokeredSingleRequest(self, lease_id, capability)
+
+    def _consume_wrapper_capability(self, capability: str, lease_id: str) -> bytes:
+        with self._root_lock:
+            record = self._wrapper_capabilities.pop(capability, None)
+            if record is None or record[0] != lease_id:
+                raise ControlError("WRAPPER_CAPABILITY_INVALID_OR_USED")
+            return record[1]
+
+    def _run_brokered_single_request(
+        self,
+        *,
+        lease_id: str,
+        capability: str,
+        provider_call: Callable[[dict[str, Any]], Mapping[str, Any]],
+        termination_observer: Callable[[dict[str, Any]], dict[str, Any]],
+        quality_observer: Callable[[dict[str, Any]], dict[str, Any]],
+        now: dt.datetime,
+    ) -> dict[str, Any]:
+        """Consume one capability and internally complete the sole certified provider request."""
+
+        fleet_secret = self._consume_wrapper_capability(capability, lease_id)
+        at = self._authoritative_now(now)
+        permit = self._begin_provider_request(
+            lease_id=lease_id, fleet_secret=fleet_secret, now=at
+        )
+        with self._connect() as connection:
+            lease = connection.execute(
+                "SELECT * FROM leases WHERE lease_id=?", (lease_id,)
+            ).fetchone()
+            reservation = connection.execute(
+                "SELECT * FROM token_reservations WHERE lease_id=?", (lease_id,)
+            ).fetchone()
+            attestation, binding = self._verified_immutable_lease_binding(
+                connection, lease, fleet_secret
+            )
+        zero_usage = {name: 0 for name in strict_json_bytes(
+            reservation["ceilings_json"].encode("utf-8")
+        )}
+        pre_turn = self._checkpoint_provider_usage(
+            lease_id=lease_id, phase="PRE_TURN", turn_count=1,
+            current_context_tokens=0, peak_context_tokens=0,
+            token_usage=zero_usage, fleet_secret=fleet_secret, now=at,
+        )
+        provider_spec = {
+            "providerExecutablePath": attestation["providerExecutablePath"],
+            "providerExecutableSha256": attestation["providerExecutableSha256"],
+            "argv": list(attestation["argv"]),
+            "model": attestation["model"], "effort": attestation["effort"],
+            "role": attestation["role"], "maxTurns": attestation["maxTurns"],
+            "maxContextTokens": attestation["maxContextTokens"],
+            "tokenCeilings": permit["tokenCeilings"],
+        }
+        supplied = provider_call(provider_spec)
+        if not isinstance(supplied, Mapping) or set(supplied) != {
+            "result", "tokenUsage", "currentContextTokens", "peakContextTokens"
+        }:
+            raise ControlError("BROKERED_PROVIDER_RESULT_INVALID")
+        terminal_permit = self._issue_terminal_request_permit(
+            lease_id=lease_id, fleet_secret=fleet_secret, now=self._authoritative_now(at)
+        )
+        terminal_checkpoint = self._checkpoint_provider_usage(
+            lease_id=lease_id, phase="TERMINAL", turn_count=1,
+            current_context_tokens=int(supplied["currentContextTokens"]),
+            peak_context_tokens=int(supplied["peakContextTokens"]),
+            token_usage=dict(supplied["tokenUsage"]), fleet_secret=fleet_secret,
+            now=self._authoritative_now(at),
+        )
+        observer_context = {
+            "leaseId": lease_id, "requestId": lease["request_id"],
+            "bindingSha256": lease["binding_digest"],
+            "processId": lease["process_id"],
+            "processStartTime": lease["process_start_time"],
+            "subjectSha256": binding["subjectSha256"],
+            "providerUsageCheckpointSha256": digest_json(terminal_checkpoint),
+            "providerResult": supplied["result"], "observedAt": iso(self._authoritative_now(at)),
+        }
+        output_receipt = quality_observer(dict(observer_context))
+        termination_receipt = termination_observer(dict(observer_context))
+        terminal_observation = {
+            "schema": "fleet-universal-process-observation/v1", "phase": "TERMINAL",
+            "requestId": lease["request_id"], "leaseId": lease_id,
+            "observedAt": iso(self._authoritative_now(at)), "status": "EXITED",
+            "processId": lease["process_id"],
+            "processStartTime": lease["process_start_time"],
+            "imagePath": attestation["executablePath"],
+            "imageSha256": attestation["executableSha256"],
+            "actualArgv": attestation["argv"], "actualArgvSha256": attestation["argvSha256"],
+            "seatIdHash": attestation["seatIdHash"], "seatEpoch": attestation["seatEpoch"],
+            "sessionIdHash": attestation["sessionIdHash"], "providerRequestCount": 1,
+            "providerRequestPermitSha256": digest_json(permit),
+            "tokenUsage": dict(supplied["tokenUsage"]),
+            "providerUsageCheckpointSha256": digest_json(terminal_checkpoint),
+            "terminalRequestPermitSha256": digest_json(terminal_permit),
+            "processTreeTerminationReceipt": termination_receipt,
+            "outputQualityReceipt": output_receipt, "observerHmacSha256": "",
+        }
+        terminal_observation["observerHmacSha256"] = contract_hmac(
+            "process-observation-v1", terminal_observation, fleet_secret,
+            "observerHmacSha256",
+        )
+        release = self.release_child(
+            process_observation=terminal_observation, fleet_secret=fleet_secret,
+            now=self._authoritative_now(at),
+        )
+        return {"status": "COMPLETED", "leaseId": lease_id,
+                "providerResult": supplied["result"], "release": release}
 
     def recover_orphan(
         self,
@@ -3874,7 +4878,7 @@ class UniversalProviderBroker:
     ) -> dict[str, Any]:
         """Release only a proven-dead exact claimant; LIVE/AMBIGUOUS remains fenced."""
 
-        at = now.astimezone(UTC)
+        at = self._authoritative_now(now)
         _enforce_complexity(process_observation)
         validate_contract("process_observation", process_observation)
         verify_contract_hmac(
@@ -3897,25 +4901,103 @@ class UniversalProviderBroker:
                     raise ControlError("ORPHAN_NOT_PROVEN_DEAD")
                 if process_observation["status"] != "DEAD":
                     raise ControlError("ORPHAN_NOT_PROVEN_DEAD")
-                connection.execute(
-                    "UPDATE leases SET state='RELEASED', terminal_digest=? WHERE lease_id=?",
-                    (digest_json(process_observation), lease_id),
+                reservation = connection.execute(
+                    "SELECT * FROM token_reservations WHERE lease_id=?", (lease_id,)
+                ).fetchone()
+                if reservation is None:
+                    raise ControlError("TOKEN_RESERVATION_MISSING")
+                self._verified_immutable_lease_binding(
+                    connection, row, fleet_secret,
+                    require_active_quota=row["state"] != "RELEASE_PREPARED",
                 )
-                if row["is_canary"]:
-                    self._seal_closed(connection)
+                recovery_usage = {
+                    "inputTokens": 0, "cacheReadTokens": 0, "cacheWriteTokens": 0,
+                    "reasoningTokens": 0, "outputTokens": 0,
+                }
+                if int(reservation["permit_count"]) == 1:
+                    latest = connection.execute(
+                        """SELECT checkpoint_digest, checkpoint_bytes, sequence, recorded_at
+                        FROM usage_checkpoints WHERE lease_id=? ORDER BY sequence DESC LIMIT 1""",
+                        (lease_id,),
+                    ).fetchone()
+                    if latest is not None:
+                        latest_value = self._validated_checkpoint_row(
+                            row=latest, reservation=reservation, lease=row,
+                            fleet_secret=fleet_secret,
+                        )
+                        recovery_usage = dict(latest_value["tokenUsage"])
+                    else:
+                        recovery_usage = strict_json_bytes(
+                            reservation["ceilings_json"].encode("utf-8")
+                        )
+                terminal_digest = digest_json(process_observation)
+                connection.execute(
+                    "UPDATE leases SET state='RELEASE_PREPARED', terminal_digest=? WHERE lease_id=?",
+                    (terminal_digest, lease_id),
+                )
                 connection.execute("COMMIT")
             except BaseException:
                 if connection.in_transaction:
                     connection.execute("ROLLBACK")
                 raise
         self._release_quota_claim(
-            row, terminal_digest=digest_json(process_observation),
-            usage={"inputTokens": 0, "cacheReadTokens": 0, "cacheWriteTokens": 0,
-                   "reasoningTokens": 0, "outputTokens": 0},
+            row, terminal_digest=terminal_digest, usage=recovery_usage,
             fleet_secret=fleet_secret, now=at,
         )
+        with self._connect() as connection:
+            connection.execute("BEGIN IMMEDIATE")
+            current = connection.execute(
+                "SELECT * FROM leases WHERE lease_id=?", (lease_id,)
+            ).fetchone()
+            if (
+                current is None or current["state"] != "RELEASE_PREPARED"
+                or current["terminal_digest"] != terminal_digest
+            ):
+                connection.execute("ROLLBACK")
+                raise ControlError("LEASE_RELEASE_STATE_INVALID")
+            connection.execute(
+                "UPDATE leases SET state='RELEASED' WHERE lease_id=?", (lease_id,)
+            )
+            connection.execute(
+                "UPDATE token_reservations SET state='FAILED', actual_usage_json=? WHERE lease_id=?",
+                (canonical_json(recovery_usage), lease_id),
+            )
+            if current["is_canary"]:
+                self._seal_closed(connection)
+            connection.execute("COMMIT")
         self._release_terminal_owners(lease_id)
         return {"status": "RELEASED", "leaseId": lease_id}
+
+
+class CertifiedBrokeredSingleRequest:
+    """Opaque one-shot facade. It carries no fleet/observer secret and emits no permit."""
+
+    __slots__ = ("_broker", "_lease_id", "_capability", "_used", "_lock")
+
+    def __init__(self, broker: UniversalProviderBroker, lease_id: str, capability: str):
+        self._broker = broker
+        self._lease_id = lease_id
+        self._capability = capability
+        self._used = False
+        self._lock = threading.Lock()
+
+    def invoke(
+        self,
+        *,
+        provider_call: Callable[[dict[str, Any]], Mapping[str, Any]],
+        termination_observer: Callable[[dict[str, Any]], dict[str, Any]],
+        quality_observer: Callable[[dict[str, Any]], dict[str, Any]],
+        now: dt.datetime,
+    ) -> dict[str, Any]:
+        with self._lock:
+            if self._used:
+                raise ControlError("WRAPPER_CAPABILITY_INVALID_OR_USED")
+            self._used = True
+        return self._broker._run_brokered_single_request(
+            lease_id=self._lease_id, capability=self._capability,
+            provider_call=provider_call, termination_observer=termination_observer,
+            quality_observer=quality_observer, now=now,
+        )
 
 
 def _parser() -> SafeArgumentParser:
@@ -3931,11 +5013,6 @@ def _parser() -> SafeArgumentParser:
     capsule.add_argument("output")
     gate = sub.add_parser("gate-state")
     gate.add_argument("database")
-    permit = sub.add_parser("provider-request-permit")
-    permit.add_argument("state_root")
-    permit.add_argument("lease_id")
-    permit.add_argument("fleet_secret_file")
-    permit.add_argument("now")
     return parser
 
 
@@ -3954,14 +5031,6 @@ def main(argv: list[str] | None = None) -> int:
             result = build_evidence_capsule(value, Path(args.output))
         elif args.command == "gate-state":
             result = {"status": "PASS", "automaticLaunchGate": UniversalProviderBroker(Path(args.database)).gate_state()}
-        elif args.command == "provider-request-permit":
-            secret_path = _canonical_executable(args.fleet_secret_file)
-            secret = secret_path.read_bytes()
-            if len(secret) < 32 or len(secret) > 4096:
-                raise ControlError("FLEET_SECRET_INVALID")
-            result = UniversalProviderBroker(Path(args.state_root)).begin_provider_request(
-                lease_id=args.lease_id, fleet_secret=secret, now=parse_time(args.now)
-            )
         else:  # pragma: no cover
             raise ControlError("ARGUMENT_ERROR")
         sys.stdout.write(canonical_json(result) + "\n")

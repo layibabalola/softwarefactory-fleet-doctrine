@@ -329,10 +329,11 @@ on Python 3.13 and 3.14 for Windows and Ubuntu. The candidate invokes no provide
 authority, and the author remains recused from review, adjudication, merge, and activation.
 
 R16 preserves exact R15 merge `30cd9b97eeebd30cb209bdb9798c38b415c9a0b4`, freezes its linear
-provider-accounting implementation at `a560c63cbe72736efe4e1d5c3ecfac25d04f68d2`, then merges canonical
-fleet master `24c9f5d142663940fb1370818982af8662afb001` at ordered-parent merge
-`a0786f2eee16770632a2a947f65db64e60dd9820`. The merge retains every current project disposition.
-Twelve R16 hostile groups prove broker-persisted fresh/monotonic/one-use prior-idle receipts;
+provider-accounting implementation at `a560c63cbe72736efe4e1d5c3ecfac25d04f68d2`, reconciles through
+ordered-parent merge `a0786f2eee16770632a2a947f65db64e60dd9820`, then binds canonical fleet
+master `cd21e5830ccb894af5847ce113af8a7d6570748a` at merge
+`c6bc94fe3afcdbc927641164fd2d42c621c0bb67`. The merge retains every current project disposition.
+Thirteen R16 hostile groups prove broker-persisted fresh/monotonic/one-use prior-idle receipts;
 profile-pinned canonical demand; pre-call, per-turn, context-peak, cumulative-token and terminal
 reserve accounting; cross-root durable claims that survive owner loss until authenticated recovery;
 immutable issued/expiry/capacity/watchdog bindings; typed HMAC quality and wrapper certifications;
@@ -341,3 +342,20 @@ that cannot spawn a provider; completed usage across serial leases; monotonic te
 mint canary success; canonical schema/HMAC/digest/epoch validation of stored canary receipts; and
 exact-key request-permit token ceilings. The candidate remains zero authority and makes no provider
 call; the author remains recused from review, adjudication, merge, and activation.
+
+R17 is a linear, zero-authority hardening candidate atop preserved R16 subject
+`0daf7b003932b611a01e5a4b5c50848b96873ca1`. It removes the reusable permit CLI and exposes only an
+opaque, one-use certified wrapper that internally invokes exactly one pinned provider callback without
+passing or returning a permit or fleet secret. Wrapper and provider executable identities are distinct.
+Every usage checkpoint is canonical, HMAC-authenticated, previous-digest chained, and bound to a signed
+mutable head. A terminal permit freezes the checkpoint digest, sequence, and output baseline; later
+ordinary turns are forbidden and terminal output may increase only by the reserved completion allowance.
+Demand authority is read once under stable identity and rotated through a signed monotonic pin chain.
+Independent termination and quality observers bind fresh retained evidence, candidate/reference output,
+the exact subject, and immutable launch binding. Cross-root quota claims use PREPARED/ACTIVE and
+RELEASE_PREPARED/global-RELEASED/local-RELEASED ordering; local success or canary evidence cannot precede
+durable release, and orphan recovery charges the latest verified use or the full conservative reservation.
+The canonical quota database path is fixed at process installation time, uses a signed instance identity,
+stable descriptor checks, DELETE journaling, and usage ledgers partitioned by every capacity dimension and
+reset window. The candidate remains deployment-inert until independent review, adjudication, merge, and a
+separate staged activation decision.

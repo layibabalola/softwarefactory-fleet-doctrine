@@ -44,10 +44,10 @@ the human store-and-forward bus.
 ## Proposed amendments (not ratified)
 
 - [`specs/fleet-universal-provider-control-reconciliation.md`](specs/fleet-universal-provider-control-reconciliation.md)
-  — zero-authority R16 candidate preserving the R15 reconciliation, then merging canonical fleet
-  master `cd21e5830ccb894af5847ce113af8a7d6570748a` so every later project disposition remains in
-  subject, including the AirMyPC and corrected Conjugal records. R16 adds broker-owned demand
-  receipts, durable quota-domain accounting, certified
-  request/turn/terminal boundaries, immutable temporal HMACs, and typed quality/termination proof.
+  — zero-authority R17 candidate atop preserved R16, retaining every later canonical project
+  disposition. R17 replaces reusable permit exposure with a one-use certified wrapper, chains and
+  authenticates per-call usage, freezes the terminal reserve baseline, orders durable quota release
+  before local/canary success, binds a canonical ledger identity and per-dimension reset windows, and
+  requires independently signed retained quality and process-tree evidence.
   It is not a portable core, ruling, adoption credit, or launch authority. Coordination stays on
   [issue #4](https://github.com/layibabalola/softwarefactory-fleet-doctrine/issues/4).

@@ -3,7 +3,7 @@
   "$id": "https://softwarefactory.invalid/schemas/universal-provider-usage-checkpoint-v1.schema.json",
   "type": "object",
   "additionalProperties": false,
-  "required": ["schema", "checkpointId", "leaseId", "requestId", "recordedAt", "sequence", "phase", "providerRequestCount", "turnCount", "currentContextTokens", "peakContextTokens", "tokenUsage", "providerRequestPermitSha256", "terminalRequestPermitSha256", "bindingSha256", "checkpointHmacSha256"],
+  "required": ["schema", "checkpointId", "leaseId", "requestId", "recordedAt", "sequence", "phase", "providerRequestCount", "turnCount", "currentContextTokens", "peakContextTokens", "tokenUsage", "providerRequestPermitSha256", "terminalRequestPermitSha256", "previousCheckpointSha256", "bindingSha256", "checkpointHmacSha256"],
   "properties": {
     "schema": {"const": "fleet-universal-provider-usage-checkpoint/v1"},
     "checkpointId": {"type": "string", "pattern": "^usage-[0-9a-f]{32}$"},
@@ -19,6 +19,7 @@
     "tokenUsage": {"type": "object", "additionalProperties": false, "required": ["inputTokens", "cacheReadTokens", "cacheWriteTokens", "reasoningTokens", "outputTokens"], "properties": {"inputTokens": {"type": "integer", "minimum": 0}, "cacheReadTokens": {"type": "integer", "minimum": 0}, "cacheWriteTokens": {"type": "integer", "minimum": 0}, "reasoningTokens": {"type": "integer", "minimum": 0}, "outputTokens": {"type": "integer", "minimum": 0}}},
     "providerRequestPermitSha256": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
     "terminalRequestPermitSha256": {"oneOf": [{"type": "null"}, {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"}]},
+    "previousCheckpointSha256": {"oneOf": [{"type": "null"}, {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"}]},
     "bindingSha256": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
     "checkpointHmacSha256": {"type": "string", "pattern": "^hmac-sha256:[0-9a-f]{64}$"}
   }

@@ -7,7 +7,7 @@
   "required": [
     "schema", "requestId", "project", "issuedAt", "expiresAt", "provider", "adapterVersion",
     "quotaDomainId", "priority", "model", "effort", "role", "qualityTier", "qualityEquivalenceReceipt", "qualityEquivalenceReceiptSha256", "seatIdHash", "seatEpoch", "sessionIdHash", "subjectPath", "subjectSha256",
-    "executablePath", "executableSha256", "argv", "argvSha256", "argvBindings",
+    "executablePath", "executableSha256", "providerExecutablePath", "providerExecutableSha256", "argv", "argvSha256", "argvBindings",
     "launcherConfigPath", "launcherConfigSha256", "argvContractSha256", "requestBoundaryMode",
     "boundaryCertification", "boundaryCertificationSha256", "actionableWork", "demandSnapshot", "demandFingerprint",
     "priorIdleReceipt", "maxWallSeconds", "maxTurns", "maxContextTokens",
@@ -39,6 +39,8 @@
     "subjectSha256": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
     "executablePath": {"type": "string", "minLength": 3, "maxLength": 1024},
     "executableSha256": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+    "providerExecutablePath": {"type": "string", "minLength": 3, "maxLength": 1024},
+    "providerExecutableSha256": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
     "argv": {
       "type": "array", "minItems": 4, "maxItems": 64,
       "items": {"type": "string", "minLength": 1, "maxLength": 1024}

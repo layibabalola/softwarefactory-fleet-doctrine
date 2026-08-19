@@ -3,7 +3,7 @@
   "$id": "https://softwarefactory.invalid/schemas/universal-terminal-request-permit-v1.schema.json",
   "type": "object",
   "additionalProperties": false,
-  "required": ["schema", "permitId", "leaseId", "requestId", "issuedAt", "expiresAt", "terminalRequestCount", "terminalReserveTokens", "ordinaryOutputCeiling", "bindingSha256", "permitHmacSha256"],
+  "required": ["schema", "permitId", "leaseId", "requestId", "issuedAt", "expiresAt", "terminalRequestCount", "terminalReserveTokens", "ordinaryOutputCeiling", "baselineCheckpointSha256", "baselineCheckpointSequence", "baselineOutputTokens", "bindingSha256", "permitHmacSha256"],
   "properties": {
     "schema": {"const": "fleet-universal-terminal-request-permit/v1"},
     "permitId": {"type": "string", "pattern": "^terminal-[0-9a-f]{32}$"},
@@ -14,6 +14,9 @@
     "terminalRequestCount": {"const": 1},
     "terminalReserveTokens": {"type": "integer", "minimum": 1},
     "ordinaryOutputCeiling": {"type": "integer", "minimum": 0},
+    "baselineCheckpointSha256": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+    "baselineCheckpointSequence": {"type": "integer", "minimum": 2},
+    "baselineOutputTokens": {"type": "integer", "minimum": 0},
     "bindingSha256": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
     "permitHmacSha256": {"type": "string", "pattern": "^hmac-sha256:[0-9a-f]{64}$"}
   }
