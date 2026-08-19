@@ -212,7 +212,7 @@ class LauncherCandidateClassifierTests(unittest.TestCase):
     def test_published_conjugal_manifest_is_complete_and_exact(self):
         path = MODULE_PATH.parents[1] / "findings" / "conjugal-launcher-review-5bff7d44.json"
         data = path.read_bytes()
-        canonical = data.rstrip(b"\n")
+        canonical = data.rstrip(b"\r\n")
         self.assertEqual(len(canonical), 19069)
         self.assertEqual(
             hashlib.sha256(canonical).hexdigest(),
