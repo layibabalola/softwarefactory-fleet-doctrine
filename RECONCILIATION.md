@@ -50,5 +50,14 @@ walk rejects every symlink, junction, or reparse component from the trusted OS-a
 ledger and lock paths. The universal hosted workflow also runs the complete canonical runtime-workbench
 negative suite on pull requests and master pushes. No provider execution or staged-gate authority is added.
 
+R21 preserves exact frozen R20 `962dc355cf2049309bedbda48e4a1a174776745f`. The caller-skew sample
+remains pre-lock only; admission re-samples the authoritative clock after the root lock, local SQLite
+write lock, quota-domain OS lock, and durable quota-ledger write lock. A wait that crosses any evidence
+or lease deadline cannot publish or activate PREPARED authority. On POSIX, a missing passwd-home
+`.local/share` is created component-by-component through `O_DIRECTORY|O_NOFOLLOW` descriptors with UID
+and mode validation. Ledger and lock paths retain every trusted-base-to-authority component identity,
+revalidate before and after opening, and poison the authority on replacement ambiguity. Windows account
+selection is unchanged. The candidate remains reference-only, zero authority, and CLOSED.
+
 Standing containment is unchanged: provider capacity, reset, or authentication cannot open an
 automatic-launch gate or re-enable a launcher.

@@ -149,6 +149,10 @@ class UniversalProviderControlTests(unittest.TestCase):
                 runtime.unproven_artifact_handles.clear()
                 upc._BROKER_ARTIFACT_CLEANUP_POISON.pop(key, None)
                 upc._BROKER_ROOT_RUNTIMES.pop(key, None)
+        upc._QUOTA_AUTHORITY_POISON = {
+            key for key in upc._QUOTA_AUTHORITY_POISON
+            if not key.startswith(os.path.normcase(os.path.abspath(str(self.root))))
+        }
         self.default_clock_patch.stop()
         upc._CANONICAL_QUOTA_TRUSTED_BASE = self.default_quota_trusted_base
         upc._CANONICAL_QUOTA_AUTHORITY_ROOT = self.default_quota_authority_root
@@ -4620,6 +4624,118 @@ class UniversalProviderControlTests(unittest.TestCase):
             upc.UniversalProviderBroker(self.root / "r20-manifest-closed").gate_state(),
             "CLOSED",
         )
+
+    def test_r21_01_root_lock_wait_resamples_and_cannot_prepare_expired_lease(self) -> None:
+        clock = [self.now]
+        broker = upc.UniversalProviderBroker(
+            self.root / "r21-root-lock-clock", clock=lambda: clock[0]
+        )
+        self.transition(broker)
+        request = self.make_request("request-r21-root-lock-clock")
+        request["maxWallSeconds"] = 60
+
+        original_authorize = broker.authorize_suspended_child
+        armed = [False]
+
+        def arm_authorize(**arguments: object) -> dict:
+            armed[0] = True
+            return original_authorize(**arguments)
+
+        class SelectiveAdvancingLock:
+            def __enter__(inner_self):
+                if armed[0]:
+                    clock[0] = self.now + dt.timedelta(seconds=61)
+                return inner_self
+
+            def __exit__(inner_self, *_: object) -> None:
+                return None
+
+        broker._root_lock = SelectiveAdvancingLock()
+        with mock.patch.object(broker, "authorize_suspended_child", side_effect=arm_authorize):
+            result = self.authorize(
+                broker, request, confirm=False, begin_request=False, now=self.now,
+            )
+        self.assertEqual(result["status"], "UNEVALUABLE")
+        self.assertIn(
+            result["reason"],
+            {"LEASE_BOUNDARY_EXPIRED", "REQUEST_TIME_INVALID", "PROCESS_OBSERVATION_STALE"},
+        )
+        with broker._connect() as connection:
+            self.assertEqual(connection.execute("SELECT COUNT(*) FROM leases").fetchone()[0], 0)
+
+    def test_r21_02_quota_lock_wait_resamples_before_durable_publication(self) -> None:
+        clock = [self.now]
+        broker = upc.UniversalProviderBroker(
+            self.root / "r21-quota-lock-clock", clock=lambda: clock[0]
+        )
+        self.transition(broker)
+        request = self.make_request("request-r21-quota-lock-clock")
+        request["maxWallSeconds"] = 60
+        acquire = broker._acquire_os_lock
+
+        def delayed_acquire(lease_id: str, quota_domain_id: str) -> None:
+            acquire(lease_id, quota_domain_id)
+            clock[0] = self.now + dt.timedelta(seconds=61)
+
+        with mock.patch.object(broker, "_acquire_os_lock", side_effect=delayed_acquire):
+            result = self.authorize(
+                broker, request, confirm=False, begin_request=False, now=self.now,
+            )
+        self.assertEqual(
+            result, {"status": "UNEVALUABLE", "reason": "ADMISSION_TIME_ELAPSED"}
+        )
+        with broker._connect() as connection:
+            self.assertEqual(connection.execute("SELECT COUNT(*) FROM leases").fetchone()[0], 0)
+
+    def test_r21_03_posix_missing_account_base_is_created_nofollow(self) -> None:
+        if os.name == "nt":
+            source = inspect.getsource(upc._ensure_posix_account_data_base)
+            self.assertIn('getattr(os, "O_NOFOLLOW", 0)', source)
+            self.assertIn("dir_fd=descriptor", source)
+            self.assertIn("child_stat.st_uid != owner", source)
+            return
+        home = self.root / "fresh-passwd-home"
+        home.mkdir(mode=0o700)
+        base = upc._ensure_posix_account_data_base(home)
+        self.assertEqual(base, home / ".local" / "share")
+        for path in (home / ".local", base):
+            item = path.stat(follow_symlinks=False)
+            self.assertEqual(item.st_uid, os.getuid())
+            self.assertEqual(stat.S_IMODE(item.st_mode), 0o700)
+            self.assertFalse(path.is_symlink())
+
+    def test_r21_04_ledger_component_swap_is_poisoned_before_use(self) -> None:
+        broker = upc.UniversalProviderBroker(self.root / "r21-ledger-swap")
+        authority = upc._CANONICAL_QUOTA_AUTHORITY_ROOT
+        displaced = authority.with_name(authority.name + "-displaced")
+
+        def swap(surface: str) -> None:
+            if surface == "ledger":
+                authority.rename(displaced)
+                authority.mkdir(mode=0o700)
+
+        with mock.patch.object(broker, "_after_authority_snapshot", side_effect=swap):
+            with self.assertRaisesRegex(upc.ControlError, "QUOTA_LEDGER_BOUNDARY_INVALID"):
+                with broker._quota_connect():
+                    pass
+        with self.assertRaisesRegex(upc.ControlError, "QUOTA_LEDGER_BOUNDARY_INVALID"):
+            broker._quota_ledger_path()
+
+    def test_r21_05_lock_component_swap_is_poisoned_before_use(self) -> None:
+        broker = upc.UniversalProviderBroker(self.root / "r21-lock-swap")
+        authority = upc._CANONICAL_QUOTA_AUTHORITY_ROOT
+        displaced = authority.with_name(authority.name + "-displaced")
+
+        def swap(surface: str) -> None:
+            if surface == "lock":
+                authority.rename(displaced)
+                authority.mkdir(mode=0o700)
+
+        with mock.patch.object(broker, "_after_authority_snapshot", side_effect=swap):
+            with self.assertRaisesRegex(upc.ControlError, "QUOTA_LOCK_BOUNDARY_INVALID"):
+                broker._acquire_os_lock("lease-r21-swapped-lock", self.quota_id)
+        with self.assertRaisesRegex(upc.ControlError, "QUOTA_LOCK_BOUNDARY_INVALID"):
+            broker._lock_path(self.quota_id)
 
     def test_r17_07_low_level_request_primitives_are_not_public(self) -> None:
         broker = upc.UniversalProviderBroker(self.root / "r17-no-public-primitives")

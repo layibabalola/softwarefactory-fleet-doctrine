@@ -59,6 +59,59 @@ _BROKER_ARTIFACT_CLEANUP_POISON: dict[str, list[Any]] = {}
 _CAPSULE_PROCESS_LOCK = threading.RLock()
 _BROKER_PROCESS_LOCK = threading.RLock()
 _BROKER_ROOT_RUNTIMES: dict[str, "_BrokerRootRuntime"] = {}
+_QUOTA_AUTHORITY_POISON: set[str] = set()
+
+
+def _poison_quota_authority() -> None:
+    _QUOTA_AUTHORITY_POISON.add(
+        os.path.normcase(os.path.abspath(str(_CANONICAL_QUOTA_AUTHORITY_ROOT)))
+    )
+
+
+def _ensure_posix_account_data_base(home: Path) -> Path:
+    """Create ``.local/share`` under the passwd home without following components."""
+
+    flags = os.O_RDONLY | getattr(os, "O_DIRECTORY", 0) | getattr(os, "O_NOFOLLOW", 0)
+    descriptors: list[int] = []
+    try:
+        if not home.is_absolute() or home.is_symlink():
+            raise RuntimeError("OS_ACCOUNT_AUTHORITY_UNAVAILABLE")
+        descriptor = os.open(home, flags)
+        descriptors.append(descriptor)
+        owner = os.getuid()
+        home_stat = os.fstat(descriptor)
+        if not stat.S_ISDIR(home_stat.st_mode) or home_stat.st_uid != owner:
+            raise RuntimeError("OS_ACCOUNT_AUTHORITY_UNAVAILABLE")
+        current = home
+        for component in (".local", "share"):
+            created = False
+            try:
+                os.mkdir(component, 0o700, dir_fd=descriptor)
+                created = True
+            except FileExistsError:
+                pass
+            child = os.open(component, flags, dir_fd=descriptor)
+            descriptors.append(child)
+            child_stat = os.fstat(child)
+            if (
+                not stat.S_ISDIR(child_stat.st_mode)
+                or child_stat.st_uid != owner
+                or stat.S_IMODE(child_stat.st_mode) & 0o022
+            ):
+                raise RuntimeError("OS_ACCOUNT_AUTHORITY_UNAVAILABLE")
+            if created:
+                os.fchmod(child, 0o700)
+            descriptor = child
+            current = current / component
+        return current
+    except (OSError, RuntimeError) as exc:
+        raise RuntimeError("OS_ACCOUNT_AUTHORITY_UNAVAILABLE") from exc
+    finally:
+        for descriptor in reversed(descriptors):
+            try:
+                os.close(descriptor)
+            except OSError:
+                pass
 
 
 def _os_account_authority_root() -> Path:
@@ -95,7 +148,8 @@ def _os_account_authority_root() -> Path:
                 ctypes.windll.kernel32.CloseHandle(token)
         import pwd
 
-        return (Path(pwd.getpwuid(os.getuid()).pw_dir).resolve(strict=True) / ".local" / "share")
+        home = Path(pwd.getpwuid(os.getuid()).pw_dir)
+        return _ensure_posix_account_data_base(home)
     except (OSError, KeyError, RuntimeError) as exc:
         raise RuntimeError("OS_ACCOUNT_AUTHORITY_UNAVAILABLE") from exc
 
@@ -115,6 +169,9 @@ def _validated_quota_authority_root(reason: str) -> Path:
     base = _CANONICAL_QUOTA_TRUSTED_BASE
     authority = _CANONICAL_QUOTA_AUTHORITY_ROOT
     try:
+        poison_key = os.path.normcase(os.path.abspath(str(authority)))
+        if poison_key in _QUOTA_AUTHORITY_POISON:
+            raise ControlError(reason)
         if not base.exists() or not base.is_dir() or _is_reparse(base):
             raise ControlError(reason)
         try:
@@ -139,6 +196,53 @@ def _validated_quota_authority_root(reason: str) -> Path:
         raise
     except OSError as exc:
         raise ControlError(reason) from exc
+
+
+def _quota_authority_snapshot(reason: str) -> tuple[tuple[Path, tuple[int, int]], ...]:
+    """Capture every stable authority component identity for later in-lock revalidation."""
+
+    _validated_quota_authority_root(reason)
+    base = _CANONICAL_QUOTA_TRUSTED_BASE
+    authority = _CANONICAL_QUOTA_AUTHORITY_ROOT
+    try:
+        relative = authority.relative_to(base)
+        paths = [base]
+        current = base
+        for component in relative.parts:
+            current = current / component
+            paths.append(current)
+        snapshot: list[tuple[Path, tuple[int, int]]] = []
+        for path in paths:
+            item = path.stat(follow_symlinks=False)
+            if not stat.S_ISDIR(item.st_mode) or _is_reparse(path):
+                raise ControlError(reason)
+            snapshot.append((path, _stable_file_identity(item)))
+        return tuple(snapshot)
+    except ControlError:
+        raise
+    except (OSError, ValueError) as exc:
+        raise ControlError(reason) from exc
+
+
+def _revalidate_quota_authority_snapshot(
+    snapshot: tuple[tuple[Path, tuple[int, int]], ...], reason: str
+) -> None:
+    """Fail closed and poison this authority if any captured component was replaced."""
+
+    try:
+        if not snapshot:
+            raise ControlError(reason)
+        for path, identity in snapshot:
+            item = path.stat(follow_symlinks=False)
+            if (
+                not stat.S_ISDIR(item.st_mode)
+                or _is_reparse(path)
+                or _stable_file_identity(item) != identity
+            ):
+                raise ControlError(reason)
+    except (ControlError, OSError):
+        _poison_quota_authority()
+        raise ControlError(reason) from None
 
 
 class _BrokerRootRuntime:
@@ -1919,18 +2023,35 @@ class UniversalProviderBroker:
             ):
                 raise ControlError("QUOTA_LEDGER_BOUNDARY_INVALID")
             return database
-        except ControlError:
+        except ControlError as exc:
+            if exc.reason == "QUOTA_LEDGER_BOUNDARY_INVALID":
+                _poison_quota_authority()
             raise
         except OSError as exc:
             raise ControlError("QUOTA_LEDGER_BOUNDARY_INVALID") from exc
 
+    def _after_authority_snapshot(self, surface: str) -> None:
+        """Deterministic hostile-test seam before an authority-bearing path is opened."""
+
+        if surface not in {"ledger", "lock"}:
+            raise ControlError("QUOTA_AUTHORITY_SURFACE_INVALID")
+
     @contextmanager
     def _quota_connect(self) -> Iterable[sqlite3.Connection]:
         try:
+            snapshot = _quota_authority_snapshot("QUOTA_LEDGER_BOUNDARY_INVALID")
+            database = self._quota_ledger_path()
+            self._after_authority_snapshot("ledger")
+            _revalidate_quota_authority_snapshot(
+                snapshot, "QUOTA_LEDGER_BOUNDARY_INVALID"
+            )
             with _stable_sqlite_connection(
-                self._quota_ledger_path(), "QUOTA_LEDGER_BOUNDARY_INVALID",
+                database, "QUOTA_LEDGER_BOUNDARY_INVALID",
                 "QUOTA_LEDGER_UNEVALUABLE",
             ) as connection:
+                _revalidate_quota_authority_snapshot(
+                    snapshot, "QUOTA_LEDGER_BOUNDARY_INVALID"
+                )
                 connection.execute("PRAGMA busy_timeout=30000")
                 prior_schema = connection.execute(
                     "SELECT sql FROM sqlite_master WHERE type='table' AND name='quota_claims'"
@@ -2005,7 +2126,12 @@ class UniversalProviderBroker:
                     connection.execute("ALTER TABLE quota_claims ADD COLUMN publication_digest TEXT")
                 if "ledger_instance_id" not in columns:
                     connection.execute("ALTER TABLE quota_claims ADD COLUMN ledger_instance_id TEXT")
-                yield connection
+                try:
+                    yield connection
+                finally:
+                    _revalidate_quota_authority_snapshot(
+                        snapshot, "QUOTA_LEDGER_BOUNDARY_INVALID"
+                    )
         except ControlError:
             raise
         except sqlite3.Error as exc:
@@ -2057,11 +2183,15 @@ class UniversalProviderBroker:
         binding_digest: str,
         fleet_secret: bytes,
         now: dt.datetime,
-    ) -> None:
+        valid_until: dt.datetime,
+    ) -> dt.datetime:
         ledger_instance_id = self._quota_ledger_identity(fleet_secret)
         with self._quota_connect() as connection:
             connection.execute("BEGIN IMMEDIATE")
             try:
+                now = self._authoritative_now(now)
+                if now >= valid_until:
+                    raise ControlError("ADMISSION_TIME_ELAPSED")
                 prior = connection.execute(
                     "SELECT * FROM quota_claims WHERE quota_domain_id=?", (quota_domain_id,)
                 ).fetchone()
@@ -2093,7 +2223,7 @@ class UniversalProviderBroker:
                         prior["publication_digest"] is None,
                     )):
                         connection.execute("COMMIT")
-                        return
+                        return now
                     if prior["state"] != "RELEASED":
                         raise ControlError("QUOTA_DOMAIN_DURABLE_CLAIM_HELD")
                 record = {
@@ -2125,6 +2255,7 @@ class UniversalProviderBroker:
                     ),
                 )
                 connection.execute("COMMIT")
+                return now
             except BaseException:
                 if connection.in_transaction:
                     connection.execute("ROLLBACK")
@@ -2138,11 +2269,14 @@ class UniversalProviderBroker:
 
     def _activate_quota_claim(
         self, *, quota_domain_id: str, lease_id: str, publication_digest: str,
-        fleet_secret: bytes, now: dt.datetime,
+        fleet_secret: bytes, now: dt.datetime, valid_until: dt.datetime,
     ) -> None:
         with self._quota_connect() as connection:
             connection.execute("BEGIN IMMEDIATE")
             try:
+                now = self._authoritative_now(now)
+                if now >= valid_until:
+                    raise ControlError("ADMISSION_TIME_ELAPSED")
                 row = connection.execute(
                     "SELECT * FROM quota_claims WHERE quota_domain_id=? AND lease_id=?",
                     (quota_domain_id, lease_id),
@@ -2601,15 +2735,19 @@ class UniversalProviderBroker:
             raise ControlError("QUOTA_LOCK_BOUNDARY_INVALID") from exc
 
     def _acquire_os_lock(self, lease_id: str, quota_domain_id: str) -> None:
+        snapshot = _quota_authority_snapshot("QUOTA_LOCK_BOUNDARY_INVALID")
         path = self._lock_path(quota_domain_id)
         handle: Any | None = None
         public_reason: str | None = None
         try:
+            self._after_authority_snapshot("lock")
+            _revalidate_quota_authority_snapshot(snapshot, "QUOTA_LOCK_BOUNDARY_INVALID")
             handle = path.open("a+b")
             opened = os.fstat(handle.fileno())
             current = path.stat()
             if (opened.st_dev, opened.st_ino) != (current.st_dev, current.st_ino) or _is_reparse(path):
                 raise ControlError("QUOTA_LOCK_BOUNDARY_INVALID")
+            _revalidate_quota_authority_snapshot(snapshot, "QUOTA_LOCK_BOUNDARY_INVALID")
             handle.seek(0, os.SEEK_END)
             if handle.tell() == 0:
                 handle.write(b"0")
@@ -2623,11 +2761,14 @@ class UniversalProviderBroker:
                 import fcntl
 
                 fcntl.flock(handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+            _revalidate_quota_authority_snapshot(snapshot, "QUOTA_LOCK_BOUNDARY_INVALID")
         except BaseException as exc:
             public_reason = (
                 exc.reason if isinstance(exc, ControlError) else "QUOTA_DOMAIN_OS_LOCK_HELD"
             )
         if public_reason is not None:
+            if public_reason == "QUOTA_LOCK_BOUNDARY_INVALID":
+                _poison_quota_authority()
             if handle is not None and not _attempt_file_close_verified(handle):
                 self._os_locks[lease_id] = handle
                 self._os_lock_release_attempted[lease_id] = {"close-attempted", "close-refused"}
@@ -3063,6 +3204,7 @@ class UniversalProviderBroker:
         except ControlError as exc:
             return {"status": "UNEVALUABLE", "reason": exc.reason}
         with self._root_lock:
+            post_lock_now = self._authoritative_now(sampled_now)
             return self._authorize_suspended_child_root_locked(
                 request=request,
                 profile=profile,
@@ -3073,7 +3215,7 @@ class UniversalProviderBroker:
                 local_stable_identity=local_stable_identity,
                 fleet_secret=fleet_secret,
                 process_observation=process_observation,
-                now=sampled_now,
+                now=post_lock_now,
             )
 
     def _authorize_suspended_child_root_locked(
@@ -3150,6 +3292,7 @@ class UniversalProviderBroker:
         request_digest = digest_json(replay_material)
         with self._connect() as connection:
             connection.execute("BEGIN IMMEDIATE")
+            now = self._authoritative_now(now)
             held_lease_id: str | None = None
             try:
                 prior = connection.execute(
@@ -3172,6 +3315,11 @@ class UniversalProviderBroker:
                                     "bindingSha256": result["bindingSha256"],
                                 }),
                                 fleet_secret=fleet_secret, now=now.astimezone(UTC),
+                                valid_until=min(
+                                    parse_time(result["expiresAt"]),
+                                    parse_time(result["capacityValidUntil"]),
+                                    parse_time(result["watchdogDeadline"]),
+                                ),
                             )
                             return result
                         except ControlError:
@@ -3220,6 +3368,11 @@ class UniversalProviderBroker:
                             quota_domain_id=result["quotaDomainId"],
                             lease_id=result["leaseId"], publication_digest=publication_digest,
                             fleet_secret=fleet_secret, now=now.astimezone(UTC),
+                            valid_until=min(
+                                parse_time(result["expiresAt"]),
+                                parse_time(result["capacityValidUntil"]),
+                                parse_time(result["watchdogDeadline"]),
+                            ),
                         )
                     except ControlError:
                         return {"status": "UNEVALUABLE", "reason": "QUOTA_PUBLICATION_INCOMPLETE"}
@@ -3763,6 +3916,28 @@ class UniversalProviderBroker:
         issued_at_text = iso(lease_anchor)
         expires_at_text = iso(lease_expires)
         watchdog_deadline_text = expires_at_text
+        admission_deadlines = [
+            lease_expires,
+            issued + dt.timedelta(seconds=profile["policy"]["maxRequestAgeSeconds"]),
+            start + dt.timedelta(seconds=120),
+            parse_time(observation["observedAt"])
+            + dt.timedelta(seconds=policy["maxObservationAgeSeconds"]),
+            parse_time(inventory["capturedAt"])
+            + dt.timedelta(seconds=policy["maxInventoryAgeSeconds"]),
+            parse_time(health["observedAt"])
+            + dt.timedelta(seconds=policy["maxBrokerHealthAgeSeconds"]),
+            parse_time(gate["expires_at"]),
+            parse_time(quality_receipt["expiresAt"]),
+            parse_time(boundary_certification["expiresAt"]),
+            prior_expires,
+            prior_recorded
+            + dt.timedelta(seconds=profile["policy"]["maxPriorIdleAgeSeconds"]),
+        ]
+        if manual_authorization is not None:
+            admission_deadlines.append(parse_time(manual_authorization["expiresAt"]))
+        admission_valid_until = min(admission_deadlines)
+        if admission_valid_until <= now:
+            raise ControlError("ADMISSION_TIME_ELAPSED")
         quota_ledger_instance_id = self._quota_ledger_identity(fleet_secret)
 
         binding = {
@@ -3891,10 +4066,14 @@ class UniversalProviderBroker:
         quota_prepared = False
         try:
             self._acquire_os_lock(lease_id, request["quotaDomainId"])
-            self._reserve_quota_claim(
+            now = self._authoritative_now(now)
+            if now >= admission_valid_until:
+                raise ControlError("ADMISSION_TIME_ELAPSED")
+            now = self._reserve_quota_claim(
                 quota_domain_id=request["quotaDomainId"], lease_id=lease_id,
                 process_id=process_id, process_start_time=iso(start),
                 binding_digest=binding_digest, fleet_secret=fleet_secret, now=now,
+                valid_until=admission_valid_until,
             )
             quota_prepared = True
             self._before_local_quota_publication(lease_id)

@@ -1,4 +1,4 @@
-# Universal provider-control reconciliation R20
+# Universal provider-control reconciliation R21
 
 Status: **CANDIDATE / ZERO AUTHORITY / NO DEPLOYMENT**
 
@@ -415,3 +415,24 @@ The same universal provider-capacity workflow that validates the exact candidate
 master pushes now runs all canonical `capacity-control/tests/test_*.py` workbench negatives in addition to
 the universal and governor suites. R20 remains a zero-authority reference: provider execution, process
 resume/kill, containment, CANARY, and OPEN credit remain unavailable, and adoption leaves CLOSED.
+
+R21 preserves exact frozen R20 `962dc355cf2049309bedbda48e4a1a174776745f`. The initial broker-clock
+sample exists only to reject a stale or future caller timestamp before serialization. Admission obtains
+a new broker-owned sample immediately after the canonical root lock and local SQLite write lock, then
+again after the quota-domain OS lock and durable quota-ledger write lock. The latest sample governs every
+freshness, rollover, admission-deadline, lease, persistence, and activation decision. A contended lock
+that advances past any request, process, health, inventory, capacity, prior-idle, certification, canary,
+gate, or lease deadline cannot return an activatable PREPARED result. Restart convergence still derives
+the same immutable lease identity and never extends the original deadline.
+
+On POSIX, the OS passwd home is the account authority source. If `.local/share` is absent, each component
+is created relative to a retained parent descriptor and reopened with `O_DIRECTORY|O_NOFOLLOW`; UID,
+directory type, and non-group/world-writable mode are checked after creation. Windows token-profile
+resolution is unchanged. From that trusted base through `SoftwareFactory/provider-control`, every
+directory identity is captured and revalidated immediately before and after opening either the canonical
+ledger or quota lock. A deterministic or native directory replacement fails closed and poisons the
+authority for the process rather than falling through to a substituted database or lock namespace.
+
+R21 retains the universal hosted workflow's exact 167-control universal, 37-control governor, and
+77-control runtime-workbench matrix on pull requests and master pushes. It adds no provider execution,
+process resume/kill, containment, CANARY, or OPEN authority; adoption remains CLOSED.
