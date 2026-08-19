@@ -106,6 +106,24 @@ _CANONICAL_QUOTA_AUTHORITY_ROOT = (
 _CANONICAL_QUOTA_LEDGER_ROOT = _CANONICAL_QUOTA_AUTHORITY_ROOT / "quota-ledger"
 
 
+def _validated_quota_authority_root(reason: str) -> Path:
+    """Create and return the canonical account authority without following a reparse root."""
+
+    authority = _CANONICAL_QUOTA_AUTHORITY_ROOT
+    try:
+        if authority.exists() and (not authority.is_dir() or _is_reparse(authority)):
+            raise ControlError(reason)
+        authority.mkdir(mode=0o700, parents=True, exist_ok=True)
+        if not authority.is_dir() or _is_reparse(authority):
+            raise ControlError(reason)
+        resolved = authority.resolve(strict=True)
+        return resolved
+    except ControlError:
+        raise
+    except OSError as exc:
+        raise ControlError(reason) from exc
+
+
 class _BrokerRootRuntime:
     """Process-local singleton owners for one canonical state root."""
 
@@ -1866,9 +1884,9 @@ class UniversalProviderBroker:
 
         directory = _CANONICAL_QUOTA_LEDGER_ROOT
         try:
-            authority = _CANONICAL_QUOTA_AUTHORITY_ROOT
-            authority.mkdir(mode=0o700, parents=True, exist_ok=True)
-            authority_parent = authority.resolve(strict=True)
+            authority_parent = _validated_quota_authority_root(
+                "QUOTA_LEDGER_BOUNDARY_INVALID"
+            )
             directory.mkdir(mode=0o700, exist_ok=True)
             resolved = directory.resolve(strict=True)
             if _is_reparse(directory) or resolved.parent != authority_parent:
@@ -2546,9 +2564,7 @@ class UniversalProviderBroker:
         # quota concurrently.  The lock namespace is therefore canonical per OS account/host.
         directory = _CANONICAL_QUOTA_AUTHORITY_ROOT / "quota-locks"
         try:
-            authority = _CANONICAL_QUOTA_AUTHORITY_ROOT
-            authority.mkdir(mode=0o700, parents=True, exist_ok=True)
-            authority = authority.resolve(strict=True)
+            authority = _validated_quota_authority_root("QUOTA_LOCK_BOUNDARY_INVALID")
             directory.mkdir(mode=0o700, exist_ok=True)
             resolved_directory = directory.resolve(strict=True)
             if _is_reparse(directory) or resolved_directory.parent != authority:
@@ -3266,7 +3282,12 @@ class UniversalProviderBroker:
             raise ControlError("REQUEST_TIME_INVALID")
         process_id = process_observation["processId"]
         start = parse_time(process_observation["processStartTime"])
-        if start > now + dt.timedelta(seconds=5) or now - start > dt.timedelta(seconds=120):
+        process_observed = parse_time(process_observation["observedAt"])
+        if (
+            start > now + dt.timedelta(seconds=5)
+            or now - start > dt.timedelta(seconds=120)
+            or process_observed > now
+        ):
             raise ControlError("PROCESS_IDENTITY_INVALID")
 
         profile_digest = digest_json(profile)
@@ -3463,6 +3484,14 @@ class UniversalProviderBroker:
             == signer_key_sha256(fleet_secret)
             or boundary_certification["qualityObserverKeySha256"]
             == signer_key_sha256(fleet_secret)
+            or boundary_certification["terminationObserverKeySha256"] in {
+                executable_digest, provider_executable_digest,
+                request["launcherConfigSha256"], request["argvContractSha256"],
+            }
+            or boundary_certification["qualityObserverKeySha256"] in {
+                executable_digest, provider_executable_digest,
+                request["launcherConfigSha256"], request["argvContractSha256"],
+            }
             or boundary_certification["independentReviewSha256"] in {
                 executable_digest, provider_executable_digest,
                 request["launcherConfigSha256"], request["argvContractSha256"],
@@ -3691,10 +3720,19 @@ class UniversalProviderBroker:
                     for name in ceilings
                 ):
                     raise ControlError("COMPLETED_USAGE_CEILING_EXCEEDED")
+        # The PREPARED identity must survive a broker restart.  Bind its time window to immutable,
+        # already authenticated request/process evidence rather than the caller's retry time.  The
+        # latest authenticated request/process timestamp is conservative: retry cannot extend wall
+        # time, and a future process observation is rejected above rather than shifting authority.
+        lease_anchor = max(issued, start, process_observed)
         lease_expires = min(
-            expires, now + dt.timedelta(seconds=request["maxWallSeconds"]), capacity_valid_until
+            expires,
+            lease_anchor + dt.timedelta(seconds=request["maxWallSeconds"]),
+            capacity_valid_until,
         )
-        issued_at_text = iso(now)
+        if lease_expires <= now:
+            raise ControlError("LEASE_BOUNDARY_EXPIRED")
+        issued_at_text = iso(lease_anchor)
         expires_at_text = iso(lease_expires)
         watchdog_deadline_text = expires_at_text
         quota_ledger_instance_id = self._quota_ledger_identity(fleet_secret)

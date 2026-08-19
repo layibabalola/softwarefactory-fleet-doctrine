@@ -36,5 +36,12 @@ choke point with exact executable/argv, advancing broker clock, pre-call budgets
 termination, and independent observer trust. It is zero authority until independently reviewed, distinctly adjudicated, hosted-green, recorded in
 `RULINGS.md`, merged to canonical master, and separately adopted by each project.
 
+R19 preserves exact frozen R18 `cfb39bbb1da4476d241cc734a1ce007db168c274`. It derives PREPARED
+temporal identity from immutable request/process evidence so restart retries cannot extend or change
+the lease, rejects reparse/junction authority roots before ledger or lock creation, makes observer-key
+versus launch-artifact separation executable, and redirects the full test harness to a private
+temporary authority root. The production choke-point prerequisite and zero-authority/CLOSED status are
+unchanged.
+
 Standing containment is unchanged: provider capacity, reset, or authentication cannot open an
 automatic-launch gate or re-enable a launcher.

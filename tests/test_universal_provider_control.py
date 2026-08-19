@@ -38,6 +38,15 @@ class UniversalProviderControlTests(unittest.TestCase):
     def setUp(self) -> None:
         self.temp = tempfile.TemporaryDirectory()
         self.root = Path(self.temp.name)
+        # Ordinary test discovery must never touch the persistent OS-account quota authority.
+        # Override both module paths before constructing any broker, using a deterministic child of
+        # this test's private temporary root.  The production resolver remains covered separately.
+        self.default_quota_authority_root = upc._CANONICAL_QUOTA_AUTHORITY_ROOT
+        self.default_quota_ledger_root = upc._CANONICAL_QUOTA_LEDGER_ROOT
+        upc._CANONICAL_QUOTA_AUTHORITY_ROOT = self.root / "test-account-authority"
+        upc._CANONICAL_QUOTA_LEDGER_ROOT = (
+            upc._CANONICAL_QUOTA_AUTHORITY_ROOT / "quota-ledger"
+        )
         self.now = dt.datetime(2026, 8, 18, 20, 0, tzinfo=UTC)
         self.secret = b"S" * 32
         self.termination_secret = b"T" * 32
@@ -134,6 +143,8 @@ class UniversalProviderControlTests(unittest.TestCase):
                 runtime.unproven_artifact_handles.clear()
                 upc._BROKER_ARTIFACT_CLEANUP_POISON.pop(key, None)
                 upc._BROKER_ROOT_RUNTIMES.pop(key, None)
+        upc._CANONICAL_QUOTA_AUTHORITY_ROOT = self.default_quota_authority_root
+        upc._CANONICAL_QUOTA_LEDGER_ROOT = self.default_quota_ledger_root
         self.temp.cleanup()
 
     def make_profile(self) -> dict:
@@ -4263,6 +4274,166 @@ class UniversalProviderControlTests(unittest.TestCase):
         self.transition(broker)
         blocked = self.authorize(broker, request, confirm=False, begin_request=False)
         self.assertEqual(blocked["reason"], "OBSERVER_INDEPENDENCE_INVALID")
+
+    def test_r19_01_prepared_retry_survives_restart_with_advancing_time(self) -> None:
+        root = self.root / "r19-restart-convergence"
+        first = upc.UniversalProviderBroker(root)
+        self.transition(first)
+        request = self.make_request("request-r19-restart-convergence")
+        original_process = self.admission_observation(request)
+        with mock.patch.object(
+            first, "_before_local_quota_publication",
+            side_effect=upc.ControlError("INJECTED_PRE_LOCAL_CRASH"),
+        ):
+            blocked = self.authorize(
+                first, request, confirm=False, begin_request=False,
+                process_observation=copy.deepcopy(original_process),
+            )
+        self.assertEqual(blocked["reason"], "QUOTA_PUBLICATION_INCOMPLETE")
+        with first._quota_connect() as connection:
+            prepared = connection.execute(
+                "SELECT lease_id,binding_digest,state FROM quota_claims WHERE quota_domain_id=?",
+                (self.quota_id,),
+            ).fetchone()
+        self.assertEqual(prepared["state"], "PREPARED")
+
+        self.now += dt.timedelta(seconds=1)
+        restarted = upc.UniversalProviderBroker(root)
+        recovered = self.authorize(
+            restarted, request, confirm=False, begin_request=False,
+            process_observation=copy.deepcopy(original_process), now=self.now,
+            profile=self.profile,
+        )
+        self.assertEqual(recovered["status"], "PREPARED_SUSPENDED", recovered)
+        self.assertEqual(recovered["leaseId"], prepared["lease_id"])
+        self.assertEqual(recovered["bindingSha256"], prepared["binding_digest"])
+        self.assertEqual(
+            recovered["issuedAt"], original_process["observedAt"]
+        )
+        self.assertEqual(
+            upc.parse_time(recovered["expiresAt"]),
+            upc.parse_time(original_process["observedAt"])
+            + dt.timedelta(seconds=request["maxWallSeconds"]),
+        )
+
+    def test_r19_02_nonreproducible_prepared_claimant_stays_fenced(self) -> None:
+        root = self.root / "r19-nonreproducible"
+        first = upc.UniversalProviderBroker(root)
+        self.transition(first)
+        request = self.make_request("request-r19-nonreproducible")
+        original_process = self.admission_observation(request)
+        with mock.patch.object(
+            first, "_before_local_quota_publication",
+            side_effect=upc.ControlError("INJECTED_PRE_LOCAL_CRASH"),
+        ):
+            self.authorize(
+                first, request, confirm=False, begin_request=False,
+                process_observation=copy.deepcopy(original_process),
+            )
+        self.now += dt.timedelta(seconds=1)
+        restarted = upc.UniversalProviderBroker(root)
+        changed_process = self.admission_observation(request)
+        blocked = self.authorize(
+            restarted, request, confirm=False, begin_request=False,
+            process_observation=changed_process, now=self.now, profile=self.profile,
+        )
+        self.assertEqual(blocked["status"], "UNEVALUABLE")
+        self.assertEqual(blocked["reason"], "QUOTA_DOMAIN_DURABLE_CLAIM_HELD")
+        with restarted._quota_connect() as connection:
+            row = connection.execute(
+                "SELECT lease_id,state,publication_digest FROM quota_claims WHERE quota_domain_id=?",
+                (self.quota_id,),
+            ).fetchone()
+        self.assertEqual(row["state"], "PREPARED")
+        self.assertIsNone(row["publication_digest"])
+
+    def test_r19_03_canonical_authority_root_reparse_is_rejected(self) -> None:
+        broker = upc.UniversalProviderBroker(self.root / "r19-authority-root-reparse")
+        authority = upc._CANONICAL_QUOTA_AUTHORITY_ROOT
+        real_is_reparse = upc._is_reparse
+
+        def mark_authority(path: Path) -> bool:
+            if os.path.normcase(os.path.abspath(str(path))) == os.path.normcase(
+                os.path.abspath(str(authority))
+            ):
+                return True
+            return real_is_reparse(path)
+
+        with mock.patch.object(upc, "_is_reparse", side_effect=mark_authority):
+            with self.assertRaisesRegex(upc.ControlError, "QUOTA_LEDGER_BOUNDARY_INVALID"):
+                broker._quota_ledger_path()
+            with self.assertRaisesRegex(upc.ControlError, "QUOTA_LOCK_BOUNDARY_INVALID"):
+                broker._lock_path(self.quota_id)
+
+    def test_r19_04_real_authority_root_symlink_is_rejected_when_supported(self) -> None:
+        target = self.root / "r19-real-authority-target"
+        target.mkdir()
+        link = self.root / "r19-real-authority-link"
+        try:
+            link.symlink_to(target, target_is_directory=True)
+        except (OSError, NotImplementedError):
+            source = inspect.getsource(upc._validated_quota_authority_root)
+            self.assertIn("_is_reparse(authority)", source)
+            return
+        with mock.patch.object(upc, "_CANONICAL_QUOTA_AUTHORITY_ROOT", link), \
+                mock.patch.object(upc, "_CANONICAL_QUOTA_LEDGER_ROOT", link / "quota-ledger"):
+            broker = upc.UniversalProviderBroker(self.root / "r19-real-root-reparse")
+            with self.assertRaisesRegex(upc.ControlError, "QUOTA_LEDGER_BOUNDARY_INVALID"):
+                broker._quota_ledger_path()
+
+    def test_r19_05_observer_keys_cannot_alias_launch_artifact_identities(self) -> None:
+        hostile_keys = (
+            ("terminationObserverKeySha256", "executableSha256"),
+            ("qualityObserverKeySha256", "launcherConfigSha256"),
+            ("terminationObserverKeySha256", "argvContractSha256"),
+        )
+        for serial, (observer_field, request_field) in enumerate(hostile_keys, start=1):
+            with self.subTest(observer=observer_field, artifact=request_field):
+                request = self.make_request(f"request-r19-observer-artifact-{serial}")
+                boundary = request["boundaryCertification"]
+                boundary[observer_field] = request[request_field]
+                boundary["certificationHmacSha256"] = upc.contract_hmac(
+                    "wrapper-boundary-certification-v1", boundary, self.secret,
+                    "certificationHmacSha256",
+                )
+                request["boundaryCertificationSha256"] = upc.digest_json(boundary)
+                self.request = request
+                self.profile = self.make_profile()
+                self.inventory = self.make_inventory()
+                self.health = self.make_health()
+                broker = upc.UniversalProviderBroker(
+                    self.root / f"r19-observer-artifact-{serial}"
+                )
+                self.transition(broker)
+                blocked = self.authorize(
+                    broker, request, confirm=False, begin_request=False
+                )
+                self.assertEqual(blocked["reason"], "OBSERVER_INDEPENDENCE_INVALID")
+
+    def test_r19_06_test_brokers_never_mutate_default_account_ledger(self) -> None:
+        default_database = (
+            self.default_quota_authority_root / "quota-ledger" /
+            "universal-quota-domain-v1.db"
+        )
+
+        def signature() -> tuple[bool, int | None, int | None]:
+            if not default_database.exists():
+                return (False, None, None)
+            value = default_database.stat()
+            return (True, value.st_size, value.st_mtime_ns)
+
+        before = signature()
+        broker = upc.UniversalProviderBroker(self.root / "r19-test-isolation")
+        self.transition(broker)
+        allowed = self.authorize(
+            broker, self.make_request("request-r19-test-isolation"),
+            confirm=False, begin_request=False,
+        )
+        self.assertEqual(allowed["status"], "PREPARED_SUSPENDED")
+        self.assertEqual(before, signature())
+        self.assertTrue(
+            broker._quota_ledger_path().is_relative_to(self.root)
+        )
 
     def test_r17_07_low_level_request_primitives_are_not_public(self) -> None:
         broker = upc.UniversalProviderBroker(self.root / "r17-no-public-primitives")

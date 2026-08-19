@@ -1,4 +1,4 @@
-# Universal provider-control reconciliation R15
+# Universal provider-control reconciliation R19
 
 Status: **CANDIDATE / ZERO AUTHORITY / NO DEPLOYMENT**
 
@@ -367,17 +367,32 @@ stable descriptor checks, DELETE journaling, and usage ledgers partitioned by ev
 reset window. The candidate remains deployment-inert until independent review, adjudication, merge, and a
 separate staged activation decision.
 
-R18 advances additively from exact R17. Durable PREPARED claims use deterministic HMAC lease identity,
-so a crash after global reservation but before local publication replays the exact claim and converges
-instead of leaking permanent capacity. Admission consumes the newest unused prior-idle receipt and
+R18 advances additively from exact R17. Durable PREPARED claims use deterministic HMAC lease identity.
+Admission consumes the newest unused prior-idle receipt and
 verifies the newest current authority pin, its HMAC, exact retained snapshot, monotonic epoch, and prior
 pin link. Once a provider permit exists, dead/nonterminal recovery charges the full reservation unless
 independent terminal evidence proves the exact final usage. Ledger and lock authority resolve from the
-OS account database/known profile, not HOME or USERPROFILE. Termination and quality observers must be
-distinct from one another, the fleet signer, launch executable, provider executable, launcher config,
-and argv contract. The reference implementation deliberately has no provider callback, wrapper
+OS account database/known profile, not HOME or USERPROFILE. The reference implementation deliberately
+has no provider callback, wrapper
 capability, provider spawn, resume, watchdog, or kill surface; `directInvocationImpossible=false` and
 `reference-only-no-execution` are schema-bound. A project must supply the separate production choke
 point described by laws 22-23 and independent retained observer evidence before any staged authority.
 Merging, ratifying, or locally adopting R18 leaves every automatic gate CLOSED and grants zero
 containment, canary, or OPEN authority.
+
+R19 preserves exact frozen R18 `cfb39bbb1da4476d241cc734a1ce007db168c274` and repairs its
+restart-time convergence gap without adding execution authority. PREPARED lease time is anchored to
+the latest of the authenticated request issue, exact suspended-process start, and non-future signed
+process observation, so a restart with an
+advancing broker clock reproduces the same binding and lease while never extending the original wall,
+request-expiry, or capacity boundary. A claimant that cannot reproduce the exact process and binding
+remains durably fenced. The canonical OS-account authority root itself, as well as its ledger, lock
+directory, database, and lock children, rejects symlinks, junctions, and reparse points. Observer IDs
+must differ from one another; observer key hashes must differ from one another, the fleet signer key,
+and the wrapper executable, provider executable, launcher configuration, and argv-contract digests.
+The separately retained independent-review digest must also differ from those launch artifacts.
+Distinct observer processes and operators remain a production deployment prerequisite, not something
+this no-execution reference can prove. The reference test harness redirects the canonical quota
+authority to a deterministic per-test temporary root before any broker construction and proves the
+persistent account ledger is unchanged. R19 remains zero authority: provider execution, process
+resume/kill, containment, CANARY, and OPEN credit are all unavailable, and adoption leaves CLOSED.
