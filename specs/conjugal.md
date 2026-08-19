@@ -231,13 +231,26 @@ role or independence credit.
 
 **Rung: owner-directed dispatcher. Disposition:**
 `DISTINGUISH(874605e43531c9aa230ee16851f8107a8e0d9cec,
-PENDING_LOCAL_SUPERVISOR_COMPLETE_CENSUS_SHADOW_AND_CONTAINMENT)`.
+PENDING_LOCAL_SUPERVISOR_COMPLETE_CENSUS_SHADOW_AND_CONTAINMENT,
+5bff7d4498b1b14c1b3488fef849d5b28a06bb89)`.
 
 Conjugal accepts the R14 portable law as canonical doctrine through ruling commit
 `88c25551d7a350e191555e74ef82fcdff0d4a09a` and canonical merge
 `488cf0dc0c2c2ddd1ab024c6377e1fd6d61eef1d`. This project disposition is an
 adoption-status distinction, not a semantic fork and not an `ADOPT` claim. The accepted reference
 is deployment-inert and does not replace Conjugal's actual launcher boundary.
+
+Immutable local proof is Conjugal commit
+`5bff7d4498b1b14c1b3488fef849d5b28a06bb89`, tree
+`d27dbe84af4076ea6e38a5152435f41d68a73cba`: its
+`coordination/lanes/sol.md` blob
+`ec8a1049cd0b7f2e78f18f30330745a10428e715` records the current disabled,
+`HARD_CLOSED` Fable and Opus roots and the absence of current positive native-capacity
+proof. While Conjugal remains at this `HARD_CLOSED` stage, owner-directive blob
+`da43e0ed44c941c74bb551a39fa7486cfb38b340` authorizes only provider-free
+closed-state work. This proof establishes the current local difference and missing-guard
+baseline only; it is not proof of a complete launcher census, 1,000 zero-inference ticks,
+SHADOW, CONTAINMENT, canary, or adoption.
 
 The reviewed R14 subject is an ancestor of its adjudication commit. The separately reported
 expanded launch-envelope subject `8eee3e4576778a18f92a3aff922c7574904e3fc3` is not in that ancestry
