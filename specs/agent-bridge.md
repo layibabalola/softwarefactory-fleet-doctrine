@@ -187,13 +187,17 @@ MarkTechPost K2.7-Code release report
 `https://www.marktechpost.com/2026/06/12/moonshot-ai-releases-kimi-k2-7-code-a-coding-model-reporting-21-8-on-kimi-code-bench-v2-over-k2-6/`;
 and Lorphic K2 model overview `https://lorphic.com/kimi-k2-models/`.
 
-## Fleet provider-capacity governor disposition — 2026-08-18
+## Fleet universal provider-control disposition — 2026-08-18
 
-`DISTINGUISH(224a6705d81dfbc670313cdcef4d825216f2b380, PENDING_P0_LAUNCH_CONTRACTS)`
+`DISTINGUISH(874605e43531c9aa230ee16851f8107a8e0d9cec, PENDING_LOCAL_R14_PROFILE_COMPLETE_CENSUS_1000_TICKS_CANARY_AND_REVIEW, 13d697c2b778ed566ebb90147aca77bd28f80824)`
 
 Rollout state: **SHADOW**; automatic launch gate: **HARD_CLOSED.** Agent Bridge
-adopts the portable governor's invariants as the target universal contract, but
-does not activate the current project adapter.
+retains the portable invariants of provider-capacity governor v1 and accepts the
+ratified R14 universal contract as its conformance target, but does not claim local
+adoption or activate the current project adapter. The earlier
+`DISTINGUISH(224a6705d81dfbc670313cdcef4d825216f2b380, PENDING_P0_LAUNCH_CONTRACTS)`
+remains historical evidence; this exact R14 disposition supersedes it for current
+conformance reporting.
 The project-specific launch seams below remain P0 admission gates. This disposition
 creates no provider call, scheduled-task enablement, routing, review, campaign,
 landing, production, or release authority.
@@ -279,14 +283,15 @@ disabled and all Claude restoration authority remains closed.
 
 The precedence rule is singular and fail-closed:
 
-1. The accepted subject `224a6705d81dfbc670313cdcef4d825216f2b380`
-   remains the only portable normative provider-capacity contract until a later
-   exact subject is independently reviewed, distinctly adjudicated, recorded in
-   `RULINGS.md`, and merged to canonical master.
-2. Fleet PR #10 R14 subject `874605e43531c9aa230ee16851f8107a8e0d9cec`
-   is a proposed additive successor and zero-authority conformance workbench. Its
-   hosted matrix is evidence, not law. Agent Bridge neither rejects it nor adopts
-   it before the required ruling and canonical merge.
+1. Provider-capacity governor v1 subject
+   `224a6705d81dfbc670313cdcef4d825216f2b380` remains valid doctrine and historical
+   local conformance evidence.
+2. Universal R14 subject `874605e43531c9aa230ee16851f8107a8e0d9cec`
+   was independently reviewed and distinctly adjudicated, and reached canonical
+   master in ratification commit `488cf0dc0c2c2ddd1ab024c6377e1fd6d61eef1d`.
+   It is now the additive portable conformance target. Its doctrine status does not
+   create Agent Bridge runtime authority, so this project records the exact
+   `DISTINGUISH` above rather than `ADOPT`.
 3. Agent Bridge subject `13d697c2b778ed566ebb90147aca77bd28f80824`
    is project-local runtime evidence, not a competing universal doctrine. The
    Conjugal runtime-extension draft and every other project adapter have the same
@@ -294,19 +299,18 @@ The precedence rule is singular and fail-closed:
    Cloudvore, Conjugal, DNG, and other factories describe local adoption state and
    cannot override the portable core or grant Agent Bridge authority.
 
-R14 is strictly stronger than the current Agent Bridge candidate in several
+Ratified R14 is strictly stronger than the current Agent Bridge candidate in several
 material respects: strict schema/HMAC-qualified capacity and health records;
 persistent claimant/reservation fencing; exact four-surface launcher census;
 single-use canary authorization; 1,000 unchanged zero-inference ticks; and retained
-artifact/publication ownership with cleanup poison. Agent Bridge therefore proposes
-to consume a ratified R14 descendant rather than fork those semantics. Until that
-happens, its local subject may advance only closed-state installation, shadow, and
-containment evidence under the accepted v1 invariants. It cannot reach CANARY from
-local tests alone.
-
-If R14 or a descendant is ratified, Agent Bridge must publish a new exact disposition
-against that canonical commit and profile hash. No branch head, hosted-green run,
-provider recovery, or successful local probe silently updates this disposition.
+artifact/publication ownership with cleanup poison. Agent Bridge will consume the
+ratified contract through a pinned local R14 profile rather than fork those
+semantics. Until the profile, complete census, 1,000-tick shadow proof, full-child
+fencing, rollback, canary authorization, and fresh review exist, its local subject
+may advance only closed-state installation, shadow, and containment evidence. It
+cannot reach CANARY from local tests alone. No branch head, hosted-green run,
+provider recovery, capacity reset, or successful local probe silently updates this
+disposition.
 
 ### Fail-closed restoration progress
 

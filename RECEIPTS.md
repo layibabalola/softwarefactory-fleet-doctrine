@@ -1084,3 +1084,23 @@ A negative control returned exit 78 with `REFUSED_LEGACY_LAUNCH`, a verified clo
 provider calls/tokens. This advances only SHADOW.
 It grants no recovery attestation, provider call, canary, task enablement for a provider launcher, project
 ADOPT, review credit, campaign, production, landing, or release authority.
+
+## Agent Bridge — reconciled disposition against ratified universal R14, 2026-08-18
+
+Canonical master ratified universal provider-control R14 in commit
+`488cf0dc0c2c2ddd1ab024c6377e1fd6d61eef1d`, bound to exact reviewed subject
+`874605e43531c9aa230ee16851f8107a8e0d9cec`. Agent Bridge therefore supersedes its
+current conformance report with
+`DISTINGUISH(874605e43531c9aa230ee16851f8107a8e0d9cec,
+PENDING_LOCAL_R14_PROFILE_COMPLETE_CENSUS_1000_TICKS_CANARY_AND_REVIEW,
+13d697c2b778ed566ebb90147aca77bd28f80824)`. The prior v1 disposition remains
+historical evidence rather than a competing portable contract.
+
+This reconciliation accepts R14 as the target doctrine but does not claim project
+adoption. The installed Agent Bridge subject and SHADOW/quarantine receipts prove
+containment and zero-inference operation only; they do not yet prove a pinned R14
+project profile, a complete four-surface launcher inventory, 1,000 unchanged shadow
+ticks, full-child claimant fencing, rollback, single-use canary authorization, or
+fresh independent review. The automatic launch gate remains HARD_CLOSED and this
+receipt grants no provider call, canary, provider-launcher enablement, project
+`ADOPT`, production, landing, release, or product credit.
