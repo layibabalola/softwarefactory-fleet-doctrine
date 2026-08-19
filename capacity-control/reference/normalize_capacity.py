@@ -13,6 +13,8 @@ from typing import Any, Sequence
 
 
 SCHEMA = "fleet-capacity-snapshot/v1"
+MAX_INPUT_BYTES = 16 * 1024 * 1024
+MAX_INPUT_LINES = 200_000
 
 
 class CapacityError(RuntimeError):
@@ -32,8 +34,13 @@ def iso(value: dt.datetime | None) -> str | None:
     return value.isoformat().replace("+00:00", "Z") if value else None
 
 
-def source_hash(path: pathlib.Path) -> str:
-    return hashlib.sha256(path.read_bytes()).hexdigest()
+def read_bounded(path: pathlib.Path) -> bytes:
+    if path.is_symlink(): raise CapacityError("SYMLINK_REFUSED")
+    if path.stat().st_size > MAX_INPUT_BYTES: raise CapacityError("INPUT_TOO_LARGE")
+    with path.open("rb") as source: data=source.read(MAX_INPUT_BYTES+1)
+    if len(data)>MAX_INPUT_BYTES: raise CapacityError("INPUT_TOO_LARGE")
+    if data.count(b"\n")+(0 if not data or data.endswith(b"\n") else 1)>MAX_INPUT_LINES: raise CapacityError("INPUT_LINE_LIMIT")
+    return data
 
 
 def anthropic(raw: dict[str, Any]) -> list[dict[str, Any]]:
@@ -90,13 +97,14 @@ def main(argv: Sequence[str] | None=None) -> int:
     parser.add_argument("--output",type=pathlib.Path)
     args=parser.parse_args(argv)
     try:
-        result=normalize(args.provider,args.input.read_text(encoding="utf-8"),args.quota_domain,args.observed_at,source_hash(args.input))
+        raw=read_bounded(args.input)
+        result=normalize(args.provider,raw.decode("utf-8"),args.quota_domain,args.observed_at,hashlib.sha256(raw).hexdigest())
         encoded=json.dumps(result,indent=2,sort_keys=True)+"\n"
         if args.output: args.output.write_text(encoded,encoding="utf-8")
         else: print(encoded,end="")
         return 0
-    except (OSError,CapacityError) as exc:
-        print(json.dumps({"error":"UNEVALUABLE","detail":str(exc)},sort_keys=True),file=sys.stderr)
+    except (OSError,UnicodeError,CapacityError):
+        print(json.dumps({"error":"INPUT_REFUSED"},sort_keys=True),file=sys.stderr)
         return 22
 
 

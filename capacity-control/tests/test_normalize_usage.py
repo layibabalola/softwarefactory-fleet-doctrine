@@ -1,10 +1,14 @@
 from __future__ import annotations
 
 import importlib.util
+import contextlib
+import io
 import json
 import pathlib
 import sys
+import tempfile
 import unittest
+from unittest import mock
 
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
@@ -69,6 +73,15 @@ class NormalizeTests(unittest.TestCase):
         self.assertIsNone(result["effective_profile"]["model"])
         self.assertEqual(0, result["usage"]["input_tokens"])
         self.assertEqual("unknown", result["session_id"])
+
+    def test_cli_pre_read_limit_and_no_echo(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root=pathlib.Path(temporary); source=root/"private-token.jsonl"; metadata=root/"metadata.json"
+            source.write_text("{}\n",encoding="utf-8"); metadata.write_text(json.dumps(META),encoding="utf-8")
+            stderr=io.StringIO()
+            with mock.patch.object(normalizer,"MAX_INPUT_BYTES",1), contextlib.redirect_stderr(stderr):
+                code=normalizer.main(["--provider","openai","--input",str(source),"--metadata",str(metadata)])
+        self.assertEqual(code,22); self.assertEqual(json.loads(stderr.getvalue()),{"error":"INPUT_REFUSED"}); self.assertNotIn("private",stderr.getvalue())
 
 
 if __name__ == "__main__":

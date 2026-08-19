@@ -1,11 +1,15 @@
 from __future__ import annotations
 
 import datetime as dt
+import contextlib
 import importlib.util
+import io
 import json
 import pathlib
 import sys
+import tempfile
 import unittest
+from unittest import mock
 
 
 ROOT=pathlib.Path(__file__).resolve().parents[1]
@@ -32,6 +36,14 @@ class CapacityTests(unittest.TestCase):
     def test_missing_or_unsupported_capacity_is_unevaluable(self):
         with self.assertRaises(normalizer.CapacityError): normalizer.normalize("anthropic","{}",DOMAIN,"2026-08-18T16:00:00Z","1"*64)
         with self.assertRaises(normalizer.CapacityError): normalizer.normalize("moonshot","{}",DOMAIN,"2026-08-18T16:00:00Z","1"*64)
+
+    def test_cli_pre_read_limit_and_no_echo(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            path=pathlib.Path(temporary)/"private-token.json"; path.write_text("{}",encoding="utf-8")
+            stderr=io.StringIO()
+            with mock.patch.object(normalizer,"MAX_INPUT_BYTES",1), contextlib.redirect_stderr(stderr):
+                code=normalizer.main(["--provider","anthropic","--input",str(path),"--quota-domain",DOMAIN,"--observed-at","2026-08-18T16:00:00Z"])
+        self.assertEqual(code,22); self.assertEqual(json.loads(stderr.getvalue()),{"error":"INPUT_REFUSED"}); self.assertNotIn("private",stderr.getvalue())
 
 
 if __name__=="__main__": unittest.main()

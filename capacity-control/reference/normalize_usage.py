@@ -13,10 +13,23 @@ from typing import Any, Iterable, Sequence
 
 SCHEMA = "fleet-inference-usage-event/v1"
 TERMINALS = {"SUCCESS", "PAUSED_BUDGET", "QUOTA_BLOCKED", "REFUSED", "FAILED", "CANCELLED", "UNEVALUABLE"}
+MAX_INPUT_BYTES = 16 * 1024 * 1024
+MAX_METADATA_BYTES = 1024 * 1024
+MAX_INPUT_LINES = 200_000
 
 
 class NormalizeError(RuntimeError):
     pass
+
+
+def read_bounded(path: pathlib.Path, maximum: int, line_limit: int | None = None) -> bytes:
+    if path.is_symlink(): raise NormalizeError("SYMLINK_REFUSED")
+    if path.stat().st_size > maximum: raise NormalizeError("INPUT_TOO_LARGE")
+    with path.open("rb") as source: data=source.read(maximum+1)
+    if len(data)>maximum: raise NormalizeError("INPUT_TOO_LARGE")
+    if line_limit is not None and data.count(b"\n")+(0 if not data or data.endswith(b"\n") else 1)>line_limit:
+        raise NormalizeError("INPUT_LINE_LIMIT")
+    return data
 
 
 def json_lines(lines: Iterable[str]) -> Iterable[dict[str, Any]]:
@@ -210,15 +223,15 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--output", type=pathlib.Path)
     args = parser.parse_args(argv)
     try:
-        metadata = json.loads(args.metadata.read_text(encoding="utf-8"))
-        with args.input.open("r", encoding="utf-8", errors="replace") as source:
-            result = normalize(args.provider, source, metadata)
+        metadata = json.loads(read_bounded(args.metadata,MAX_METADATA_BYTES).decode("utf-8"))
+        input_bytes=read_bounded(args.input,MAX_INPUT_BYTES,MAX_INPUT_LINES)
+        result = normalize(args.provider, input_bytes.decode("utf-8",errors="replace").splitlines(), metadata)
         encoded = json.dumps(result, indent=2, sort_keys=True) + "\n"
         if args.output: args.output.write_text(encoded, encoding="utf-8")
         else: print(encoded, end="")
         return 0
-    except (OSError, KeyError, json.JSONDecodeError, NormalizeError) as exc:
-        print(json.dumps({"error": "UNEVALUABLE", "detail": str(exc)}, sort_keys=True), file=sys.stderr)
+    except (OSError, UnicodeError, KeyError, json.JSONDecodeError, NormalizeError):
+        print(json.dumps({"error": "INPUT_REFUSED"}, sort_keys=True), file=sys.stderr)
         return 22
 
 
