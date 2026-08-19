@@ -37,8 +37,8 @@ class AdoptionLedgerTests(unittest.TestCase):
         project = self._project(ledger, "dng-auto-processor")
         project["status"] = "ADOPT"
         project["blocker"] = None
-        ledger["summary"]["counts"]["ADOPT"] = 1
-        ledger["summary"]["counts"]["DISTINGUISH"] = 4
+        ledger["summary"]["counts"]["ADOPT"] += 1
+        ledger["summary"]["counts"]["DISTINGUISH"] -= 1
 
         prefix = "receipts/project-adoption/dng-auto-processor"
         artifacts = {}
@@ -516,8 +516,8 @@ class AdoptionLedgerTests(unittest.TestCase):
 
         dng["status"] = "ADOPT"
         dng["blocker"] = None
-        ledger["summary"]["counts"]["DISTINGUISH"] = 4
-        ledger["summary"]["counts"]["ADOPT"] = 1
+        ledger["summary"]["counts"]["DISTINGUISH"] -= 1
+        ledger["summary"]["counts"]["ADOPT"] += 1
         with self.assertRaisesRegex(MODULE.LedgerError, "CURRENT_DISPOSITION_STATUS_MISMATCH"):
             MODULE.verify_ledger(ledger, "HEAD")
 

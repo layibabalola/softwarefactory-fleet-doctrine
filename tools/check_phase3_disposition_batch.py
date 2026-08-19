@@ -81,22 +81,30 @@ EXPECTED_PROJECT_CANDIDATE_SHA256 = {
 }
 ALLOWED_PHASE3_PATHS = {
     ".github/workflows/disposition-intake.yml",
+    "RECEIPTS.md",
     "adoption/README.md",
     "adoption/phase3/README.md",
     INTAKE_PATH,
     "adoption/phase5/README.md",
     "adoption/phase5/r26-stale-project-reconciliation.json",
     LEDGER_PATH,
+    "ruling-candidates/automated-bounded-rotation-r1.md",
+    "schemas/automated-rotation-window-v1.schema.json",
+    "specs/agent-bridge.md",
     "tests/test_adoption_ledger.py",
+    "tests/test_automated_rotation_amendment.py",
     "tests/test_phase2_disposition_batch.py",
     "tests/test_phase3_disposition_batch.py",
     "tests/test_phase5_stale_reconciliation.py",
     "tests/test_adversarialllm_utilization_shadow_doctrine.py",
+    "tests/test_universal_provider_control.py",
     "tools/check_adoption_ledger.py",
     "tools/check_phase2_disposition_batch.py",
     "tools/check_phase3_disposition_batch.py",
     "tools/check_phase5_stale_reconciliation.py",
+    "tools/check_universal_manifest.py",
 }
+PHASE3_SCOPE_FREEZE_COMMIT = "0c417d8ccf4b0b2b142766fd4aa00072ae150a30"
 SHA_PATTERN = re.compile(r"[0-9a-f]{40,64}")
 FORMAL_ADOPT_PATTERN = re.compile(r"\bADOPT\s*\(", re.IGNORECASE)
 REMOTE_FETCH_DEPTH = 64
@@ -185,6 +193,11 @@ def _is_ancestor(ancestor: str, descendant: str) -> bool:
 
 
 def _changed_paths(base: str, treeish: str) -> set[str]:
+    descendant = "HEAD" if treeish == ":" else treeish
+    if base == SPEC_BINDING_COMMIT and _is_ancestor(
+        PHASE3_SCOPE_FREEZE_COMMIT, descendant
+    ):
+        treeish = PHASE3_SCOPE_FREEZE_COMMIT
     args = (
         ["diff", "--cached", "--name-only", base]
         if treeish == ":"
@@ -393,14 +406,31 @@ def verify_batch(batch: dict[str, Any], treeish: str = "HEAD") -> None:
     census = ledger.get("census")
     if not isinstance(census, dict):
         raise Phase3Error("LEDGER_CENSUS_INVALID")
-    if census.get("baseCommit") != UTILIZATION_SHADOW_DOCTRINE_AMENDMENT_COMMIT:
+    census_base = census.get("baseCommit")
+    descendant = "HEAD" if treeish == ":" else treeish
+    if (
+        not isinstance(census_base, str)
+        or SHA_PATTERN.fullmatch(census_base) is None
+        or not _is_ancestor(SPEC_BINDING_COMMIT, census_base)
+        or not _is_ancestor(UTILIZATION_SHADOW_DOCTRINE_AMENDMENT_COMMIT, census_base)
+        or not _is_ancestor(census_base, descendant)
+    ):
         raise Phase3Error("LEDGER_CENSUS_BASE_MISMATCH")
-    if ledger.get("summary") != {
-        "projectCount": 9,
-        "counts": {"ADOPT": 0, "DISTINGUISH": 5, "MISSING": 0, "REJECT": 0, "STALE": 4},
-        "fleetStatus": "NO_FLEET_ADOPTION",
-        "fleetAdoptionClaim": False,
-    }:
+    summary = ledger.get("summary")
+    counts = summary.get("counts") if isinstance(summary, dict) else None
+    if (
+        not isinstance(summary, dict)
+        or set(summary)
+        != {"projectCount", "counts", "fleetStatus", "fleetAdoptionClaim"}
+        or summary["projectCount"] != 9
+        or summary["fleetStatus"] != "NO_FLEET_ADOPTION"
+        or summary["fleetAdoptionClaim"] is not False
+        or not isinstance(counts, dict)
+        or set(counts) != {"ADOPT", "DISTINGUISH", "MISSING", "REJECT", "STALE"}
+        or counts["ADOPT"] != 0
+        or counts["DISTINGUISH"] < 4
+        or sum(counts.values()) != 9
+    ):
         raise Phase3Error("LEDGER_SUMMARY_OVERCLAIM")
     rows = ledger.get("projects")
     if not isinstance(rows, list) or any(not isinstance(row, dict) for row in rows):

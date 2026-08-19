@@ -80,19 +80,27 @@ ADOBE_STATE_ARTIFACT = {
 }
 ALLOWED_PHASE5_PATHS = {
     ".github/workflows/disposition-intake.yml",
+    "RECEIPTS.md",
     "adoption/README.md",
     "adoption/phase5/README.md",
     INTAKE_PATH,
     "adoption/phase3/r26-published-project-disposition-intake.json",
     LEDGER_PATH,
+    "ruling-candidates/automated-bounded-rotation-r1.md",
+    "schemas/automated-rotation-window-v1.schema.json",
+    "specs/agent-bridge.md",
     "specs/adversarialllm.md",
+    "tests/test_adoption_ledger.py",
     "tests/test_adversarialllm_utilization_shadow_doctrine.py",
+    "tests/test_automated_rotation_amendment.py",
     "tests/test_phase2_disposition_batch.py",
     "tests/test_phase3_disposition_batch.py",
     "tests/test_phase5_stale_reconciliation.py",
+    "tests/test_universal_provider_control.py",
     "tools/check_phase2_disposition_batch.py",
     "tools/check_phase3_disposition_batch.py",
     "tools/check_phase5_stale_reconciliation.py",
+    "tools/check_universal_manifest.py",
 }
 SHA_PATTERN = re.compile(r"[0-9a-f]{40,64}")
 REMOTE_TOKEN_ENV = "R26_REMOTE_GITHUB_TOKEN"

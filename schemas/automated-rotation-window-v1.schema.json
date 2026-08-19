@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/layibabalola/softwarefactory-fleet-doctrine/schemas/automated-rotation-window-v1.schema.json",
+  "title": "Automated bounded provider rotation window v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "window_id",
+    "project",
+    "provider_family",
+    "quota_identity_hash",
+    "policy_sha256",
+    "candidate_subject_sha256",
+    "authorized_lanes",
+    "issued_at",
+    "expires_at",
+    "max_runs",
+    "max_wall_seconds",
+    "max_turns",
+    "max_context_tokens",
+    "min_interval_seconds",
+    "signature_hmac_sha256",
+    "authority",
+    "schema_version"
+  ],
+  "properties": {
+    "window_id": {"type": "string", "format": "uuid"},
+    "project": {"type": "string", "pattern": "^[A-Za-z0-9_.:-]{1,128}$"},
+    "provider_family": {"type": "string", "pattern": "^[A-Za-z0-9_.:-]{1,128}$"},
+    "quota_identity_hash": {"type": "string", "pattern": "^[A-Fa-f0-9]{64}$"},
+    "policy_sha256": {"type": "string", "pattern": "^[A-Fa-f0-9]{64}$"},
+    "candidate_subject_sha256": {"type": "string", "pattern": "^[A-Fa-f0-9]{64}$"},
+    "authorized_lanes": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 64,
+      "uniqueItems": true,
+      "items": {"type": "string", "pattern": "^[A-Za-z0-9_.:-]{1,128}$"}
+    },
+    "issued_at": {"type": "string", "format": "date-time"},
+    "expires_at": {"type": "string", "format": "date-time"},
+    "max_runs": {"type": "integer", "minimum": 1, "maximum": 288},
+    "max_wall_seconds": {"type": "integer", "minimum": 60, "maximum": 1800},
+    "max_turns": {"type": "integer", "minimum": 1, "maximum": 16},
+    "max_context_tokens": {"type": "integer", "minimum": 1024, "maximum": 100000},
+    "min_interval_seconds": {"type": "integer", "minimum": 60, "maximum": 3600},
+    "signature_hmac_sha256": {"type": "string", "pattern": "^[A-Fa-f0-9]{64}$"},
+    "authority": {"const": "LOCAL_OWNER_AUTOMATION_WINDOW_ZERO_ADOPTION_AUTHORITY"},
+    "schema_version": {"const": 1}
+  }
+}

@@ -1184,3 +1184,29 @@ DNG_MASTER_4c3c80744667dcc4e266e8a54ef2fb3f42b1b350)`.
 The hourly DNG warden remains behind the closed broker; the failover runner and roadmap controller
 remain disabled. This receipt grants no additional canary, task enablement, project `ADOPT`, fleet
 adoption, review credit, production, landing, release, or billing authority.
+
+## Agent Bridge — current R26 distinction under closed authority, 2026-08-19
+
+Agent Bridge project owner evidence commit
+`9a77fb450adb8481a511daf57567921682ddcc5a`, Git blob
+`68e81ce60b20f04c9267926b40c82f8185b050d9`, records one current disposition
+against exact R26 candidate `e70a044f31dd2f43ab7c716d63a4eb89318c61b6`
+and tree-identical merge `909f769d02e8412e51e28e242cfa8d00dadc9a3d`.
+The local closed implementation candidate is Agent Bridge commit
+`ea50e08cee3a42576e4ace18e587a738fe73cf7b`, tree
+`8d2aae0eb4927661a3d8ef4100e71b28a69b8f26`, backed up on the project-local
+origin branch. It is uninstalled and supplies no live-launch authority.
+
+Agent Bridge records
+`DISTINGUISH(909f769d02e8412e51e28e242cfa8d00dadc9a3d,
+R26_CANDIDATE_ZERO_AUTHORITY_PENDING_REQUEST_LEVEL_TOKEN_ACCOUNTING_CACHE_WEIGHT_NON_REGRESSION_RECEIPT_COMPLETE_CENSUS_PERSISTENT_BROKER_1000_TICKS_CANARY_AND_REVIEW,
+ea50e08cee3a42576e4ace18e587a738fe73cf7b)`.
+R26 remains `CANDIDATE_ZERO_AUTHORITY`. The local runtime remains
+`SHADOW/HARD_CLOSED`; the complete census, persistent broker, qualified evidence,
+full-child fencing, rollback, 1,000 unchanged ticks, one-use authorization, bounded
+canary, and fresh exact-subject review remain open. The six R26 non-regression
+dimensions are not claimed as current adoption evidence.
+
+This receipt is a project `DISTINGUISH`, not `ADOPT`. It grants no provider call,
+task enablement, gate transition, canary, project or fleet adoption, production,
+landing, release, or billing authority.

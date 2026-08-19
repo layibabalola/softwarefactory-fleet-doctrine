@@ -650,7 +650,7 @@ class Phase3DispositionBatchTests(unittest.TestCase):
             with self.assertRaisesRegex(MODULE.Phase3Error, "PHASE3_SCOPE_VIOLATION"):
                 MODULE.verify_batch(self._copy(), "HEAD")
 
-    def test_phase3_scope_allows_phase5_zero_authority_reconciliation(self):
+    def test_phase3_scope_allows_later_zero_authority_reconciliations(self):
         def changed_paths(base, treeish):
             if (base, treeish) == (MODULE.MASTER_COMMIT, MODULE.INITIAL_FOLD_COMMIT):
                 return set(MODULE.SPEC_PATHS)
@@ -679,9 +679,11 @@ class Phase3DispositionBatchTests(unittest.TestCase):
                 "tests/test_phase2_disposition_batch.py",
                 "tests/test_phase3_disposition_batch.py",
                 "tests/test_phase5_stale_reconciliation.py",
+                "tests/test_universal_provider_control.py",
                 "tools/check_phase2_disposition_batch.py",
                 "tools/check_phase3_disposition_batch.py",
                 "tools/check_phase5_stale_reconciliation.py",
+                "tools/check_universal_manifest.py",
             }
 
         with mock.patch.object(MODULE, "_changed_paths", side_effect=changed_paths):
