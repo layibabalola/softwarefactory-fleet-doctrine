@@ -15,6 +15,7 @@ from pathlib import Path
 
 
 MAX_FILE_BYTES = 2 * 1024 * 1024
+MAX_EVIDENCE_LINES_PER_KIND = 64
 SOURCE_SUFFIXES = {".bat", ".cmd", ".js", ".ps1", ".psm1", ".py", ".sh", ".ts"}
 EXCLUDED_PARTS = {".git", "node_modules", "tmp"}
 REVIEW_DISPOSITIONS = {"LAUNCHER", "NON_LAUNCHER", "UNKNOWN"}
@@ -48,12 +49,21 @@ def _classify(path: Path, root: Path) -> dict[str, object]:
     if len(data) > MAX_FILE_BYTES:
         raise ValueError("SOURCE_TOO_LARGE")
     text = data.decode("utf-8", errors="replace")
-    providers = sorted(name for name, pattern in PROVIDERS.items() if pattern.search(text))
-    primitives = sorted(name for name, pattern in PRIMITIVES.items() if pattern.search(text))
+    lines = text.splitlines()
+    provider_lines = {
+        name: [number for number, line in enumerate(lines, 1) if pattern.search(line)][:MAX_EVIDENCE_LINES_PER_KIND]
+        for name, pattern in PROVIDERS.items()
+    }
+    primitive_lines = {
+        name: [number for number, line in enumerate(lines, 1) if pattern.search(line)][:MAX_EVIDENCE_LINES_PER_KIND]
+        for name, pattern in PRIMITIVES.items()
+    }
+    providers = sorted(name for name, matches in provider_lines.items() if matches)
+    primitives = sorted(name for name, matches in primitive_lines.items() if matches)
     same_line = any(
         any(pattern.search(line) for pattern in PROVIDERS.values())
         and any(pattern.search(line) for pattern in PRIMITIVES.values())
-        for line in text.splitlines()
+        for line in lines
     )
     if same_line:
         classification = "DIRECT_STATIC"
@@ -65,6 +75,13 @@ def _classify(path: Path, root: Path) -> dict[str, object]:
         classification = "UNRESOLVED_FLOW"
     else:
         classification = "REFERENCE_ONLY"
+    priority = {
+        "DIRECT_STATIC": "P0_DIRECT",
+        "INDIRECT_VARIABLE": "P0_DIRECT",
+        "REGISTRATION_SURFACE": "P1_REGISTRATION",
+        "UNRESOLVED_FLOW": "P2_UNRESOLVED",
+        "REFERENCE_ONLY": "P3_REFERENCE",
+    }[classification]
     return {
         "path": path.relative_to(root).as_posix(),
         "sha256": _sha256(data),
@@ -72,6 +89,11 @@ def _classify(path: Path, root: Path) -> dict[str, object]:
         "providers": providers,
         "launchPrimitives": primitives,
         "classification": classification,
+        "reviewPriority": priority,
+        "evidence": {
+            "providerLines": {name: provider_lines[name] for name in providers},
+            "primitiveLines": {name: primitive_lines[name] for name in primitives},
+        },
     }
 
 
@@ -92,9 +114,12 @@ def classify_tree(root: Path) -> dict[str, object]:
         if row["providers"]:
             rows.append(row)
     counts: dict[str, int] = {}
+    priorities: dict[str, int] = {}
     for row in rows:
         key = str(row["classification"])
         counts[key] = counts.get(key, 0) + 1
+        priority = str(row["reviewPriority"])
+        priorities[priority] = priorities.get(priority, 0) + 1
     unresolved = sum(counts.get(key, 0) for key in ("INDIRECT_VARIABLE", "UNRESOLVED_FLOW", "REFERENCE_ONLY"))
     return {
         "schema": "conjugal-launcher-candidate-classification/v1",
@@ -102,6 +127,7 @@ def classify_tree(root: Path) -> dict[str, object]:
         "root": str(root),
         "candidateCount": len(rows),
         "classificationCounts": dict(sorted(counts.items())),
+        "reviewPriorityCounts": dict(sorted(priorities.items())),
         "unresolvedCount": unresolved + len(refused),
         "refused": refused,
         "candidates": rows,

@@ -26,7 +26,11 @@ class LauncherCandidateClassifierTests(unittest.TestCase):
             {"deadman.ps1": "$cfg = @{ Runner='claude.exe' }\nStart-Process -FilePath $cfg.Runner\n"}
         )
         self.assertEqual(result["classificationCounts"], {"INDIRECT_VARIABLE": 1})
+        self.assertEqual(result["reviewPriorityCounts"], {"P0_DIRECT": 1})
         self.assertEqual(result["unresolvedCount"], 1)
+        candidate = result["candidates"][0]
+        self.assertEqual(candidate["evidence"]["providerLines"], {"CLAUDE": [1]})
+        self.assertEqual(candidate["evidence"]["primitiveLines"], {"POWERSHELL_START_PROCESS": [2]})
 
     def test_separates_direct_registration_and_reference(self):
         result = self._classify(
