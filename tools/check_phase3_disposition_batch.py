@@ -30,6 +30,10 @@ PHASE3_PUBLISHED_COMMIT = "0c417d8ccf4b0b2b142766fd4aa00072ae150a30"
 PHASE3_PUBLISHED_TREE = "dbe000aad9c2ee857dbaf8d2b1e311cade720ce1"
 ADVERSARIAL_SPEC_BINDING_COMMIT = "73abc64b92aa96defca08ceab83b75c656dd3357"
 ADVERSARIAL_SPEC_BINDING_TREE = "5f383c1475c0168677724fcf155092be7d1010d2"
+PRE_ADVERSARIAL_SPEC_REPAIR_COMMIT = "8b20d13c2c27ab6375872be92982ef4b5ff229d5"
+PRE_ADVERSARIAL_SPEC_REPAIR_TREE = "5f7778baf2e46d64662fdef3074b9b0e6833a7f9"
+ADVERSARIAL_SPEC_REPAIR_COMMIT = "f204b17d4f2be86fe8eb666c6fb1d58ed2633c57"
+ADVERSARIAL_SPEC_REPAIR_TREE = "02e4214f7f18ca09d1053218e5747ac9e7a53514"
 R26_CANDIDATE = "e70a044f31dd2f43ab7c716d63a4eb89318c61b6"
 R26_MERGE = "909f769d02e8412e51e28e242cfa8d00dadc9a3d"
 INITIAL_PROJECT_IDS = {"cloudvore", "mlv-app", "salesforce-tools"}
@@ -65,7 +69,7 @@ PUBLISHED_REMOTE_ALLOWLIST = {
     },
 }
 EXPECTED_PROJECT_CANDIDATE_SHA256 = {
-    "adversarialllm": "7f9b4947e2188eb829a52e935c0434a4ed13f1d6d20b7fb2beebe28433f19399",
+    "adversarialllm": "07fba4c159ad9250d196945ce6e479c91f7b85040620037b315ce4dd1d0cf47f",
     "cloudvore": "7bbafaa69078bf3464f5e54c6f1e0a689113c54ce7df7f494d017beef58be436",
     "mlv-app": "55544254f982890efa8b2e309b0eeb2be09f85d7f09f7da86083ba2856cbf9ba",
     "salesforce-tools": "b2278e858cf70c0a6eecca6d7842709e9cc6fe4598fa13af6bf64929c05b0f6f",
@@ -215,6 +219,8 @@ def _verify_frozen_base(base: Any, treeish: str) -> None:
         "specBindingTree": SPEC_BINDING_TREE,
         "adversarialSpecBindingCommit": ADVERSARIAL_SPEC_BINDING_COMMIT,
         "adversarialSpecBindingTree": ADVERSARIAL_SPEC_BINDING_TREE,
+        "adversarialSpecRepairCommit": ADVERSARIAL_SPEC_REPAIR_COMMIT,
+        "adversarialSpecRepairTree": ADVERSARIAL_SPEC_REPAIR_TREE,
         "r26Candidate": R26_CANDIDATE,
         "r26Merge": R26_MERGE,
     }
@@ -243,10 +249,23 @@ def _verify_frozen_base(base: Any, treeish: str) -> None:
         "specs/adversarialllm.md"
     }:
         raise Phase3Error("ADVERSARIAL_SPEC_BINDING_SCOPE_INVALID")
+    if _commit_tuple(PRE_ADVERSARIAL_SPEC_REPAIR_COMMIT)[0] != PRE_ADVERSARIAL_SPEC_REPAIR_TREE:
+        raise Phase3Error("PRE_ADVERSARIAL_SPEC_REPAIR_OBJECT_MISMATCH")
+    if not _is_ancestor(ADVERSARIAL_SPEC_BINDING_COMMIT, PRE_ADVERSARIAL_SPEC_REPAIR_COMMIT):
+        raise Phase3Error("PRE_ADVERSARIAL_SPEC_REPAIR_LINEAGE_MISMATCH")
+    if _commit_tuple(ADVERSARIAL_SPEC_REPAIR_COMMIT) != (
+        ADVERSARIAL_SPEC_REPAIR_TREE,
+        [PRE_ADVERSARIAL_SPEC_REPAIR_COMMIT],
+    ):
+        raise Phase3Error("ADVERSARIAL_SPEC_REPAIR_OBJECT_MISMATCH")
+    if _changed_paths(PRE_ADVERSARIAL_SPEC_REPAIR_COMMIT, ADVERSARIAL_SPEC_REPAIR_COMMIT) != {
+        "specs/adversarialllm.md"
+    }:
+        raise Phase3Error("ADVERSARIAL_SPEC_REPAIR_SCOPE_INVALID")
     descendant = "HEAD" if treeish == ":" else treeish
-    if not _is_ancestor(ADVERSARIAL_SPEC_BINDING_COMMIT, descendant):
-        raise Phase3Error("ADVERSARIAL_SPEC_BINDING_NOT_ANCESTOR")
-    if not _changed_paths(ADVERSARIAL_SPEC_BINDING_COMMIT, treeish).issubset(ALLOWED_PHASE3_PATHS):
+    if not _is_ancestor(ADVERSARIAL_SPEC_REPAIR_COMMIT, descendant):
+        raise Phase3Error("ADVERSARIAL_SPEC_REPAIR_NOT_ANCESTOR")
+    if not _changed_paths(ADVERSARIAL_SPEC_REPAIR_COMMIT, treeish).issubset(ALLOWED_PHASE3_PATHS):
         raise Phase3Error("PHASE3_SCOPE_VIOLATION")
 
 
@@ -282,7 +301,7 @@ def _verify_project(
         "CENTRAL_EVIDENCE_INVALID",
     )
     evidence_commit = (
-        ADVERSARIAL_SPEC_BINDING_COMMIT
+        ADVERSARIAL_SPEC_REPAIR_COMMIT
         if project_id == "adversarialllm"
         else SPEC_BINDING_COMMIT
     )
@@ -340,7 +359,7 @@ def verify_batch(batch: dict[str, Any], treeish: str = "HEAD") -> None:
     census = ledger.get("census")
     if not isinstance(census, dict):
         raise Phase3Error("LEDGER_CENSUS_INVALID")
-    if census.get("baseCommit") != ADVERSARIAL_SPEC_BINDING_COMMIT:
+    if census.get("baseCommit") != ADVERSARIAL_SPEC_REPAIR_COMMIT:
         raise Phase3Error("LEDGER_CENSUS_BASE_MISMATCH")
     if ledger.get("summary") != {
         "projectCount": 9,

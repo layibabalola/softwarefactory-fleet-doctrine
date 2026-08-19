@@ -10,6 +10,8 @@
     "specBindingTree": "402d6818937d4ecb64ac807c77c5792fd121947e",
     "adversarialSpecBindingCommit": "73abc64b92aa96defca08ceab83b75c656dd3357",
     "adversarialSpecBindingTree": "5f383c1475c0168677724fcf155092be7d1010d2",
+    "adversarialSpecRepairCommit": "f204b17d4f2be86fe8eb666c6fb1d58ed2633c57",
+    "adversarialSpecRepairTree": "02e4214f7f18ca09d1053218e5747ac9e7a53514",
     "r26Candidate": "e70a044f31dd2f43ab7c716d63a4eb89318c61b6",
     "r26Merge": "909f769d02e8412e51e28e242cfa8d00dadc9a3d"
   },
@@ -24,8 +26,8 @@
       "projectId": "adversarialllm",
       "specPath": "specs/adversarialllm.md",
       "centralEvidence": {
-        "commit": "73abc64b92aa96defca08ceab83b75c656dd3357",
-        "gitBlobOid": "e0a4d71eb39cab70c9f0efbf3cf46e072bd58a74"
+        "commit": "f204b17d4f2be86fe8eb666c6fb1d58ed2633c57",
+        "gitBlobOid": "f169a661956830aced574e6c3fa6f4989098e892"
       },
       "projectCandidate": {
         "remote": "https://github.com/layibabalola/AdversarialLLM-ClaudeCode.git",
@@ -42,25 +44,25 @@
             "path": "adversarialllm/docs/reports/softwarefactory-r26-disposition-20260819.json",
             "gitBlobOid": "a337a9bea93daf94e619653edb8b5241ee29b6af",
             "bytes": 3471,
-            "sha256": "0e34d895cb84dd7a1e74f3f527a3a832bdbb859e87a27ba2b831ad94bc4532da"
+            "sha256": "33a784a39e9451db68acb96d26b550fd6a8c4aea140b78ac66fde47724e16b7d"
           },
           {
             "path": "adversarialllm/docs/reports/softwarefactory-r26-disposition-20260819.md",
             "gitBlobOid": "a7baf849dca2dea2f56874b3393afead7bd5e6ba",
             "bytes": 3488,
-            "sha256": "666fdc6a9632481edf6e9edd18c4e69d70181bcffa6fbada57ae0b6e1d427708"
+            "sha256": "d0b5f941b93bca18a4c6906900004612daa8da9077daaa6f635fc0f45e10bcd7"
           },
           {
             "path": "scripts/verify-fleet-doctrine-disposition.ps1",
             "gitBlobOid": "fbc60a92704f8fe9495933953b4ac1a5c332db5d",
             "bytes": 15183,
-            "sha256": "706c9c38b65e0b432f192441c15c027c391636c9617f91d31dd4da11d832beec"
+            "sha256": "0155c19228638a02c254d6811c0f7402aa996fbfbb0d2eee22033c5e4aff1c35"
           },
           {
             "path": "scripts/tests/fleet-doctrine-disposition.tests.ps1",
             "gitBlobOid": "9cb528a7967e11164d8e5378b63a6022e70b077c",
             "bytes": 6404,
-            "sha256": "bf8cde03b21acb390b3624c4f49c70c247fc0d6b28d01f4515032f43ffca406f"
+            "sha256": "cc7649c9a59760406dfe74c7f23d7ec2ec66ace5c9ec22c7ec912ff97e380ee5"
           }
         ],
         "disposition": {

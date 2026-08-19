@@ -160,6 +160,7 @@ class Phase3DispositionBatchTests(unittest.TestCase):
             "initialSpecFoldCommit",
             "specBindingCommit",
             "adversarialSpecBindingCommit",
+            "adversarialSpecRepairCommit",
         ):
             with self.subTest(field=field):
                 batch = self._copy()
@@ -541,6 +542,11 @@ class Phase3DispositionBatchTests(unittest.TestCase):
             if (base, treeish) == (
                 MODULE.PHASE3_PUBLISHED_COMMIT,
                 MODULE.ADVERSARIAL_SPEC_BINDING_COMMIT,
+            ):
+                return {"specs/adversarialllm.md"}
+            if (base, treeish) == (
+                MODULE.PRE_ADVERSARIAL_SPEC_REPAIR_COMMIT,
+                MODULE.ADVERSARIAL_SPEC_REPAIR_COMMIT,
             ):
                 return {"specs/adversarialllm.md"}
             return {"src/runtime.py"}

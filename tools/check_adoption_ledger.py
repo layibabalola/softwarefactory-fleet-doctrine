@@ -44,7 +44,7 @@ PROJECT_CANDIDATE_PUBLISHED_REFS = {
     "salesforce-tools": "refs/heads/codex/r26-zero-authority-disposition-candidate-20260819",
 }
 EXPECTED_PROJECT_CANDIDATE_SHA256 = {
-    "adversarialllm": "7f9b4947e2188eb829a52e935c0434a4ed13f1d6d20b7fb2beebe28433f19399",
+    "adversarialllm": "07fba4c159ad9250d196945ce6e479c91f7b85040620037b315ce4dd1d0cf47f",
     "cloudvore": "7bbafaa69078bf3464f5e54c6f1e0a689113c54ce7df7f494d017beef58be436",
     "mlv-app": "55544254f982890efa8b2e309b0eeb2be09f85d7f09f7da86083ba2856cbf9ba",
     "salesforce-tools": "b2278e858cf70c0a6eecca6d7842709e9cc6fe4598fa13af6bf64929c05b0f6f",
