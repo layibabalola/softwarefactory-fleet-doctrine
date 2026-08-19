@@ -526,3 +526,7 @@ forming integer epoch nanoseconds before subtracting and flooring by 1,000,000. 
 floors to 2. Offsets, lowercase `z`, malformed dates, and more than nine fractional digits fail closed.
 The exact four receipt rows still recompute 151,033 ms wall time and unchanged token totals. R24 changes
 no broker mechanics or authority; it remains evidence-only, zero authority, and CLOSED.
+
+The exact R24 candidate is validated by 179 universal controls, 37 retained governor controls, and
+78 canonical runtime-workbench controls on Python 3.13 and 3.14. Hosted checks remain required and
+unclaimed; validation and publication do not grant authority.

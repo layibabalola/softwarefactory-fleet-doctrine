@@ -14,7 +14,7 @@ from typing import Any
 
 
 ROOT = Path(__file__).resolve().parents[1]
-MANIFEST = "manifests/universal-provider-control-reconciliation-r23.json"
+MANIFEST = "manifests/universal-provider-control-reconciliation-r24.json"
 SELF_PATTERN = re.compile(
     rb'("canonicalGitBlobSha256"\s*:\s*"sha256:)([0-9a-f]{64})(")'
 )
@@ -75,7 +75,7 @@ def _commit_tuple(commit: str) -> tuple[str, list[str]]:
 
 
 def verify_reconciliation(manifest: dict[str, Any], treeish: str = "HEAD") -> None:
-    """Verify the exact R15-R23 linear subjects and ordered canonical-master merges."""
+    """Verify the exact R15-R24 linear subjects and ordered canonical-master merges."""
 
     reconciliation = manifest.get("reconciliation")
     if not isinstance(reconciliation, dict):
@@ -96,7 +96,13 @@ def verify_reconciliation(manifest: dict[str, Any], treeish: str = "HEAD") -> No
         "r22ManifestFreeze", "r22Repair",
     )
     r23_names = ("r22Final", "r23Wip", "r23Evidence")
-    if all(name in reconciliation for name in r23_names):
+    r24_names = ("r23Final", "r24Wip", "r24Evidence")
+    if all(name in reconciliation for name in r24_names):
+        names = (
+            base_names + r17_names + r18_names + r19_names + r20_names
+            + r21_names + r22_names + r23_names + r24_names
+        )
+    elif all(name in reconciliation for name in r23_names):
         names = (
             base_names + r17_names + r18_names + r19_names + r20_names
             + r21_names + r22_names + r23_names
@@ -237,6 +243,17 @@ def verify_reconciliation(manifest: dict[str, Any], treeish: str = "HEAD") -> No
         ):
             raise ManifestError("RECONCILIATION_ORDER_INVALID")
         terminal = r23_evidence
+    if all(name in reconciliation for name in r24_names):
+        r23_final = reconciliation["r23Final"]
+        r24_wip = reconciliation["r24Wip"]
+        r24_evidence = reconciliation["r24Evidence"]
+        if (
+            r23_final["orderedParents"] != [terminal["commit"]]
+            or r24_wip["orderedParents"] != [r23_final["commit"]]
+            or r24_evidence["orderedParents"] != [r24_wip["commit"]]
+        ):
+            raise ManifestError("RECONCILIATION_ORDER_INVALID")
+        terminal = r24_evidence
     if treeish != ":":
         run = subprocess.run(
             ["git", "merge-base", "--is-ancestor", terminal["commit"], treeish],
