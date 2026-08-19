@@ -24,6 +24,7 @@ on:
       - "manifests/universal-provider-control-reconciliation-r12.json"
       - "manifests/universal-provider-control-reconciliation-r13.json"
       - "manifests/universal-provider-control-reconciliation-r14.json"
+      - "manifests/universal-provider-control-reconciliation-r15.json"
       - "RECONCILIATION.md"
       - "tests/test_provider_capacity_governor.py"
       - "tests/test_universal_provider_control.py"
@@ -56,6 +57,7 @@ on:
       - "manifests/universal-provider-control-reconciliation-r12.json"
       - "manifests/universal-provider-control-reconciliation-r13.json"
       - "manifests/universal-provider-control-reconciliation-r14.json"
+      - "manifests/universal-provider-control-reconciliation-r15.json"
       - "RECONCILIATION.md"
       - "tests/test_provider_capacity_governor.py"
       - "tests/test_universal_provider_control.py"
@@ -96,10 +98,10 @@ jobs:
       - name: Install pinned schema validator
         run: python -m pip install --disable-pip-version-check --require-hashes -r requirements-provider-capacity-governor.lock.txt
 
-      - name: Run semantic negative controls
-        run: |
-          python -m unittest discover -s tests -p "test_provider_capacity_governor.py" -v
-          python -m unittest discover -s tests -p "test_universal_provider_control.py" -v
+      - name: Run governor semantic negative controls
+        run: python -m unittest discover -s tests -p "test_provider_capacity_governor.py" -v
+      - name: Run universal broker semantic negative controls
+        run: python -m unittest discover -s tests -p "test_universal_provider_control.py" -v
 
       - name: Verify portable Git-blob manifest
         run: python tools/check_universal_manifest.py --treeish HEAD

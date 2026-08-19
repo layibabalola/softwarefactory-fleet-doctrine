@@ -148,8 +148,9 @@ post-reset quiet; and add required capacity dimensions. They may never weaken th
     one root-scoped owner registry and reentrant lock. Poison check, artifact acquisition, lease and
     confirmation publication, authenticated terminal/recovery, cleanup-poison publication, and
     administrative assertion are linearizable across those objects and threads. Admission has a
-    four-prepared-lease root quarantine ceiling before artifact acquisition; ten retained artifacts
-    per lease therefore give an exact 40-owner refusal bound, and every owner of every already-
+    four-prepared-lease root quarantine ceiling before artifact acquisition; six retained executable,
+    config, capsule, checkpoint, cache, and subject artifacts per lease therefore give an exact
+    24-owner refusal bound, and every owner of every already-
     prepared lease remains retained. OS-lock unlock and close have distinct attempt-once states;
     the handle is not removed until close is proven, and an unproven close remains retained and
     poisons later admission. `close()` and `__del__` are administrative assertions only: they never
@@ -178,6 +179,34 @@ post-reset quiet; and add required capacity dimensions. They may never weaken th
     `linkat(AT_SYMLINK_FOLLOW)` route pass through one explicit no-clobber syscall seam. Hostile race,
     foreign-source, replacement, and link-then-raise controls patch that exact seam, so Ubuntu cannot
     silently execute an unmutated production syscall while the test patches only `os.link`.
+22. Provider access is certified `SINGLE_REQUEST_PROCESS`, not a launcher hint. Admission reserves
+    the full input/cache-read/cache-write/reasoning/output envelope and a terminal-output reserve in
+    SQLite before resume. The wrapper must obtain exactly one HMAC-bound permit immediately before
+    its sole provider request; a second permit, a terminal count mismatch, missing permit digest, or
+    any reported usage above a reserved class is fail-closed. Prepared binding bytes and their fleet-
+    secret HMAC are immutable; final confirm and pre-request issuance compare the lease, attestation,
+    earliest capacity boundary, exact argv template/count/order, launcher configuration, quality
+    cell, and certification digest transactionally.
+23. Runtime authority ends at the earliest request, lease, capacity, or watchdog boundary. The
+    certified wrapper calls the watchdog boundary and must terminate the process tree on
+    `RUNTIME_TERMINATION_REQUIRED`; the broker persists that state without releasing claimant, OS-
+    lock, artifact, or token fences. Process-id/start-time pairs are permanently claimed so a serial
+    launch cannot reuse a stale observation after release.
+24. Demand is a strict broker-normalized semantic snapshot of addressed work and cursor identity.
+    Object formatting and work-list order cannot create work. Prior-idle identity is a broker-owned,
+    state-root-bound HMAC receipt, so callers cannot select arbitrary raw files or hashes. Capacity
+    reservation fractions are derived conservatively from the complete token envelope and the
+    reviewed adapter budget; caller-supplied fractions are forbidden.
+25. The universal quality floor independently requires the canonical priority-to-role mapping,
+    `high` effort, `FRONTIER_HIGH`, a frontier model family, and an exact reviewed cell that includes
+    quality-equivalence, executable, launcher-config, argv-contract, single-request certification,
+    and watchdog certification. A project cannot self-label a tiny/minimal cell as equivalent.
+26. Rollout proofs are typed, fresh, one-use, HMAC-bound, and chained to the prior transition,
+    profile, inventory, hosted negative suite, and independent review. A successful CANARY produces
+    a token/permit-bound success receipt and returns automatically to unsigned fail-closed
+    CONTAINMENT. Only a later CONTAINMENT-to-OPEN adjudication may consume that receipt once;
+    CANARY-to-OPEN and stage skipping are forbidden. Quota-domain OS locks live in one canonical
+    per-account host namespace, independent of caller-selected state roots.
 
 ## Provider-normalization dimensions
 
@@ -282,3 +311,12 @@ demand from frozen addressed-work/cursor bytes; and enforced CONTAINMENT with st
 The 113-control universal suite and retained 37-control governor suite must pass on the exact R14
 bytes; fresh hosted Windows/Ubuntu checks remain required before adjudication. The candidate author
 remains recused.
+
+R15 preserves immutable R14 commit `8eee3e4576778a18f92a3aff922c7574904e3fc3` and closes the
+remaining provider-boundary bypasses. Seven new hostile groups prove persistent one-request permits,
+semantic demand plus broker-owned idle receipts, immutable binding-HMAC comparison, runtime expiry
+termination state, universal quality and exact argv/config review, alternate-state-root OS-lock
+contention, and successful-canary return to CONTAINMENT followed by one-use receipt adjudication.
+The 120-control universal suite and retained 37-control governor suite must pass on exact R15 bytes
+on Python 3.13 and 3.14 for Windows and Ubuntu. The candidate invokes no provider, grants no runtime
+authority, and the author remains recused from review, adjudication, merge, and activation.

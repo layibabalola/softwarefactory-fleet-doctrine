@@ -66,6 +66,7 @@ class UniversalProviderControlTests(unittest.TestCase):
         self.health = self.make_health()
         self.native = self.make_native()
         self.request = self.make_request()
+        self.permits: dict[str, dict] = {}
 
     def tearDown(self) -> None:
         # Tests that prove an active claimant remains fenced intentionally cannot use broker.close()
@@ -113,6 +114,13 @@ class UniversalProviderControlTests(unittest.TestCase):
                     "reasoningTokens": 100000,
                     "outputTokens": 50000,
                 },
+                "maxReservedTokenCeilings": {
+                    "inputTokens": 100000,
+                    "cacheReadTokens": 1000000,
+                    "cacheWriteTokens": 100000,
+                    "reasoningTokens": 100000,
+                    "outputTokens": 50000,
+                },
                 "milestoneCompactionRequired": True,
                 "cacheAffinityRequired": True,
                 "capsuleRequired": True,
@@ -125,7 +133,21 @@ class UniversalProviderControlTests(unittest.TestCase):
                     "model": "claude-opus-4-1",
                     "effort": "high",
                     "role": "IMPLEMENT",
+                    "qualityTier": "FRONTIER_HIGH",
+                    "qualityEquivalenceReceiptSha256": SHA_A,
                     "executableSha256": sha_file(self.launcher),
+                    "launcherConfigSha256": sha_file(self.launcher_config),
+                    "argvContractSha256": upc.canonical_argv_contract(
+                        [str(self.launcher.resolve()), "claude-opus-4-1", "high", sha_file(self.subject),
+                         "IMPLEMENT", "8", "32768", "50000", "500000", "50000", "50000", "25000"],
+                        {"modelIndex": 1, "effortIndex": 2, "subjectIndex": 3, "roleIndex": 4,
+                         "maxTurnsIndex": 5, "maxContextTokensIndex": 6, "maxInputTokensIndex": 7,
+                         "maxCacheReadTokensIndex": 8, "maxCacheWriteTokensIndex": 9,
+                         "maxReasoningTokensIndex": 10, "maxOutputTokensIndex": 11},
+                    ),
+                    "requestBoundaryMode": "SINGLE_REQUEST_PROCESS",
+                    "boundaryCertificationSha256": SHA_B,
+                    "runtimeWatchdogCertified": True,
                 }
                 for provider, adapter in (
                     ("claude", "claude-code/1.0"),
@@ -156,6 +178,12 @@ class UniversalProviderControlTests(unittest.TestCase):
                     "openai-responses/1.0": ["primary", "secondary"],
                     "kimi-code/1.0": ["context", "monthly"],
                     "xai-api/1.0": ["requests", "tokens"],
+                },
+                "capacityTokenBudgets": {
+                    "claude-code/1.0": 10000000,
+                    "openai-responses/1.0": 10000000,
+                    "kimi-code/1.0": 10000000,
+                    "xai-api/1.0": 10000000,
                 },
             },
             "invariants": {
@@ -273,6 +301,7 @@ class UniversalProviderControlTests(unittest.TestCase):
         return common
 
     def make_request(self, request_id: str = "request-0001") -> dict:
+        state_root_identity = getattr(self, "current_state_root_identity", "hmac-sha256:" + "0" * 64)
         request = {
             "schema": "fleet-universal-control-request/v1",
             "requestId": request_id,
@@ -286,6 +315,8 @@ class UniversalProviderControlTests(unittest.TestCase):
             "model": "claude-opus-4-1",
             "effort": "high",
             "role": "IMPLEMENT",
+            "qualityTier": "FRONTIER_HIGH",
+            "qualityEquivalenceReceiptSha256": SHA_A,
             "seatIdHash": "hmac-sha256:" + "1" * 64,
             "seatEpoch": 7,
             "sessionIdHash": "hmac-sha256:" + "2" * 64,
@@ -306,17 +337,22 @@ class UniversalProviderControlTests(unittest.TestCase):
             },
             "launcherConfigPath": str(self.launcher_config.resolve()),
             "launcherConfigSha256": sha_file(self.launcher_config),
+            "argvContractSha256": "",
+            "requestBoundaryMode": "SINGLE_REQUEST_PROCESS",
+            "boundaryCertificationSha256": SHA_B,
             "actionableWork": True,
-            "addressedWorkPath": str(self.addressed_work.resolve()),
-            "addressedWorkSha256": sha_file(self.addressed_work),
-            "cursorPath": str(self.cursor.resolve()),
-            "cursorSha256": sha_file(self.cursor),
-            "priorIdleAddressedWorkPath": str(self.prior_idle_work.resolve()),
-            "priorIdleAddressedWorkSha256": sha_file(self.prior_idle_work),
-            "priorIdleCursorPath": str(self.prior_idle_cursor.resolve()),
-            "priorIdleCursorSha256": sha_file(self.prior_idle_cursor),
+            "demandSnapshot": {
+                "schema": "fleet-universal-demand-snapshot/v1", "project": "test-project",
+                "addressedWork": [{"kind": "ISSUE", "id": "issue-4", "state": "READY", "subjectSha256": sha_file(self.subject)}],
+                "cursor": {"stream": "issues", "sequence": 4, "checkpointSha256": SHA_C},
+            },
             "demandFingerprint": "",
-            "priorIdleFingerprint": "",
+            "priorIdleReceipt": {
+                "schema": "fleet-universal-prior-idle-receipt/v1", "receiptId": "idle-" + "1" * 32,
+                "project": "test-project", "recordedAt": upc.iso(self.now - dt.timedelta(seconds=10)),
+                "demandFingerprint": SHA_D, "stateRootIdentity": state_root_identity,
+                "receiptHmacSha256": "hmac-sha256:" + "0" * 64,
+            },
             "maxWallSeconds": 60,
             "maxTurns": 8,
             "maxContextTokens": 32768,
@@ -327,27 +363,34 @@ class UniversalProviderControlTests(unittest.TestCase):
                 "reasoningTokens": 50000,
                 "outputTokens": 25000,
             },
+            "inputEnvelopeTokens": 600000,
+            "generatedEnvelopeTokens": 75000,
+            "terminalReserveTokens": 5000,
             "contextCapsulePath": str(self.capsule.resolve()),
             "contextCapsuleSha256": sha_file(self.capsule),
             "compactionCheckpointPath": str(self.checkpoint.resolve()),
             "compactionCheckpointSha256": sha_file(self.checkpoint),
             "cacheAffinityManifestPath": str(self.cache_manifest.resolve()),
             "cacheAffinityKeySha256": sha_file(self.cache_manifest),
-            "windowEstimates": {"session": 0.05, "weekly": 0.05},
             "canary": False,
             "manualAuthorizationSha256": None,
         }
-        request["demandFingerprint"] = upc.canonical_demand_fingerprint(
-            request["addressedWorkSha256"], request["cursorSha256"]
-        )
-        request["priorIdleFingerprint"] = upc.canonical_demand_fingerprint(
-            request["priorIdleAddressedWorkSha256"], request["priorIdleCursorSha256"]
-        )
+        request["demandFingerprint"] = upc.canonical_demand_fingerprint(request["demandSnapshot"])
         request["argvSha256"] = upc.digest_json(request["argv"])
+        request["argvContractSha256"] = upc.canonical_argv_contract(request["argv"], request["argvBindings"])
+        if state_root_identity != "hmac-sha256:" + "0" * 64:
+            request["priorIdleReceipt"]["receiptHmacSha256"] = upc.contract_hmac(
+                "prior-idle-receipt-v1", request["priorIdleReceipt"], self.secret, "receiptHmacSha256"
+            )
         return request
 
     def bind_runtime(self, broker: upc.UniversalProviderBroker) -> None:
-        self.profile["coordination"]["stateRootIdentity"] = broker.state_root_identity(self.secret)
+        self.current_state_root_identity = broker.state_root_identity(self.secret)
+        self.profile["coordination"]["stateRootIdentity"] = self.current_state_root_identity
+        self.request["priorIdleReceipt"]["stateRootIdentity"] = self.current_state_root_identity
+        self.request["priorIdleReceipt"]["receiptHmacSha256"] = upc.contract_hmac(
+            "prior-idle-receipt-v1", self.request["priorIdleReceipt"], self.secret, "receiptHmacSha256"
+        )
         self.health = self.make_health()
 
     def resign_native(self, value: dict) -> dict:
@@ -428,6 +471,19 @@ class UniversalProviderControlTests(unittest.TestCase):
             "sessionIdHash": result["sessionIdHash"],
             "observerHmacSha256": "hmac-sha256:" + "0" * 64,
         }
+        if phase == "TERMINAL":
+            permit = self.permits.get(result["leaseId"])
+            observation.update(
+                providerRequestCount=1 if permit is not None else 0,
+                providerRequestPermitSha256=upc.digest_json(permit) if permit is not None else None,
+                tokenUsage={
+                    "inputTokens": 100, "cacheReadTokens": 1000, "cacheWriteTokens": 10,
+                    "reasoningTokens": 100, "outputTokens": 100,
+                } if permit is not None else {
+                    "inputTokens": 0, "cacheReadTokens": 0, "cacheWriteTokens": 0,
+                    "reasoningTokens": 0, "outputTokens": 0,
+                },
+            )
         observation["observerHmacSha256"] = upc.contract_hmac(
             "process-observation-v1", observation, self.secret, "observerHmacSha256"
         )
@@ -435,8 +491,44 @@ class UniversalProviderControlTests(unittest.TestCase):
 
     def transition(self, broker: upc.UniversalProviderBroker, target: str = "OPEN") -> None:
         self.bind_runtime(broker)
-        stages = ["CLOSED", "SHADOW", "CONTAINMENT", "CANARY", "OPEN"]
+        if target == "OPEN":
+            stages = ["CLOSED", "SHADOW", "CONTAINMENT", "OPEN"]
+        else:
+            stages = ["CLOSED", "SHADOW", "CONTAINMENT", "CANARY"]
+        prior_digest = None
         for epoch, (source, destination) in enumerate(zip(stages, stages[1:]), start=1):
+            canary_receipt = None
+            if destination == "OPEN":
+                canary_receipt = SHA_D
+                with broker._connect() as connection:
+                    connection.execute(
+                        """INSERT OR REPLACE INTO canary_success_receipts(
+                            receipt_id, receipt_digest, receipt_bytes, gate_epoch,
+                            profile_digest, inventory_digest, used_at
+                        ) VALUES (?, ?, ?, ?, ?, ?, NULL)""",
+                        (
+                            "canary-success-" + "f" * 32, canary_receipt, b"{}", epoch - 1,
+                            upc.digest_json(self.profile), upc.digest_json(self.inventory),
+                        ),
+                    )
+            proof_type = {
+                "SHADOW": "SHADOW_VALIDATION", "CONTAINMENT": "CONTAINMENT_ENFORCEMENT",
+                "CANARY": "CANARY_READINESS", "OPEN": "CANARY_SUCCESS_ADJUDICATION",
+            }[destination]
+            proof = {
+                "schema": "fleet-universal-stage-proof/v1", "proofId": "stage-" + f"{epoch:032x}",
+                "proofType": proof_type, "issuedAt": upc.iso(self.now - dt.timedelta(seconds=1)),
+                "expiresAt": upc.iso(self.now + dt.timedelta(minutes=10)), "targetStage": destination,
+                "priorTransitionSha256": prior_digest,
+                "projectProfileSha256": upc.digest_json(self.profile),
+                "inventorySha256": upc.digest_json(self.inventory),
+                "hostedNegativeSuiteSha256": SHA_C, "independentReviewSha256": SHA_B,
+                "canarySuccessReceiptSha256": canary_receipt, "oneUse": True,
+                "proofHmacSha256": "hmac-sha256:" + "0" * 64,
+            }
+            proof["proofHmacSha256"] = upc.contract_hmac(
+                "stage-proof-v1", proof, self.secret, "proofHmacSha256"
+            )
             transition = {
                 "schema": "fleet-universal-gate-transition/v1",
                 "transitionId": f"transition-{epoch:04d}",
@@ -453,21 +545,49 @@ class UniversalProviderControlTests(unittest.TestCase):
                 "brokerHealthSha256": upc.digest_json(self.health),
                 "reviewReceiptSha256": SHA_B,
                 "testReceiptSha256": SHA_C,
+                "stageProof": proof,
                 "authorizationHmacSha256": "hmac-sha256:" + "0" * 64,
             }
             transition["authorizationHmacSha256"] = upc.contract_hmac(
                 "gate-transition-v1", transition, self.secret, "authorizationHmacSha256"
             )
             broker.transition_gate(transition, fleet_secret=self.secret, now=self.now)
+            prior_digest = upc.digest_json(transition)
             if destination == target:
                 return
         self.fail(f"unknown gate target {target}")
 
+    def stage_proof(self, target: str, *, prior: str | None = None, receipt: str | None = None, serial: int = 99) -> dict:
+        proof = {
+            "schema": "fleet-universal-stage-proof/v1", "proofId": "stage-" + f"{serial:032x}",
+            "proofType": {"CLOSED": "SAFETY_CLOSE", "SHADOW": "SHADOW_VALIDATION",
+                          "CONTAINMENT": "CONTAINMENT_ENFORCEMENT", "CANARY": "CANARY_READINESS",
+                          "OPEN": "CANARY_SUCCESS_ADJUDICATION"}[target],
+            "issuedAt": upc.iso(self.now - dt.timedelta(seconds=1)),
+            "expiresAt": upc.iso(self.now + dt.timedelta(minutes=5)), "targetStage": target,
+            "priorTransitionSha256": prior, "projectProfileSha256": upc.digest_json(self.profile),
+            "inventorySha256": upc.digest_json(self.inventory), "hostedNegativeSuiteSha256": SHA_C,
+            "independentReviewSha256": SHA_B, "canarySuccessReceiptSha256": receipt,
+            "oneUse": True, "proofHmacSha256": "hmac-sha256:" + "0" * 64,
+        }
+        proof["proofHmacSha256"] = upc.contract_hmac(
+            "stage-proof-v1", proof, self.secret, "proofHmacSha256"
+        )
+        return proof
+
     def authorize(self, broker: upc.UniversalProviderBroker, request: dict | None = None, **changes) -> dict:
         confirm = changes.pop("confirm", True)
+        begin_request = changes.pop("begin_request", True)
         selected_request = request or self.request
         if "profile" not in changes:
             self.bind_runtime(broker)
+            expected_root = broker.state_root_identity(self.secret)
+            if selected_request["priorIdleReceipt"]["stateRootIdentity"] != expected_root:
+                selected_request["priorIdleReceipt"]["stateRootIdentity"] = expected_root
+                selected_request["priorIdleReceipt"]["receiptHmacSha256"] = upc.contract_hmac(
+                    "prior-idle-receipt-v1", selected_request["priorIdleReceipt"], self.secret,
+                    "receiptHmacSha256",
+                )
         supplied_process = changes.pop("process_observation", None)
         if supplied_process is None:
             supplied_process = self.admission_observation(selected_request)
@@ -487,9 +607,14 @@ class UniversalProviderControlTests(unittest.TestCase):
         result = broker.authorize_suspended_child(**arguments)
         if confirm and result.get("status") == "PREPARED_SUSPENDED":
             resume = self.admission_observation(selected_request, phase="RESUME", lease_id=result["leaseId"])
-            return broker.confirm_resume_boundary(
+            confirmed = broker.confirm_resume_boundary(
                 lease_id=result["leaseId"], process_observation=resume, fleet_secret=self.secret, now=self.now
             )
+            if begin_request:
+                self.permits[result["leaseId"]] = broker.begin_provider_request(
+                    lease_id=result["leaseId"], fleet_secret=self.secret, now=self.now
+                )
+            return confirmed
         return result
 
     # Retained canonical controls and exact runtime-schema enforcement.
@@ -596,7 +721,7 @@ class UniversalProviderControlTests(unittest.TestCase):
         terminal = self.process_observation(first, "EXITED", phase="TERMINAL")
         broker.release_child(process_observation=terminal, fleet_secret=self.secret, now=self.now)
         third = self.make_request("request-0004")
-        self.assertEqual(self.authorize(broker, third)["status"], "ALLOW_ATTESTED")
+        self.assertEqual(self.authorize(broker, third)["reason"], "PROCESS_IDENTITY_ALREADY_CLAIMED")
 
     def test_expiry_does_not_silently_release_child_reservation(self) -> None:
         broker = upc.UniversalProviderBroker(self.root / "expiry.db")
@@ -620,11 +745,12 @@ class UniversalProviderControlTests(unittest.TestCase):
         self.assertEqual(result["reason"], "QUOTA_DOMAIN_LEASE_HELD")
 
     def test_multi_window_dimension_cannot_be_selected_away(self) -> None:
-        request = copy.deepcopy(self.request)
-        del request["windowEstimates"]["weekly"]
+        native = copy.deepcopy(self.native)
+        del native["payload"]["weeklyUtilization"]
+        self.resign_native(native)
         broker = upc.UniversalProviderBroker(self.root / "dimension.db")
         self.transition(broker)
-        self.assertEqual(self.authorize(broker, request)["reason"], "SCHEMA_VALIDATION_FAILED")
+        self.assertEqual(self.authorize(broker, native_evidence=[native])["reason"], "SCHEMA_VALIDATION_FAILED")
 
     def test_priority_reserve_floor_applies_per_window(self) -> None:
         native = copy.deepcopy(self.native)
@@ -644,15 +770,12 @@ class UniversalProviderControlTests(unittest.TestCase):
 
     def test_deterministic_no_work_fingerprint_blocks(self) -> None:
         request = copy.deepcopy(self.request)
-        request["priorIdleAddressedWorkPath"] = request["addressedWorkPath"]
-        request["priorIdleAddressedWorkSha256"] = request["addressedWorkSha256"]
-        request["priorIdleCursorPath"] = request["cursorPath"]
-        request["priorIdleCursorSha256"] = request["cursorSha256"]
-        request["priorIdleFingerprint"] = upc.canonical_demand_fingerprint(
-            request["priorIdleAddressedWorkSha256"], request["priorIdleCursorSha256"]
-        )
         broker = upc.UniversalProviderBroker(self.root / "idle.db")
         self.transition(broker)
+        request["priorIdleReceipt"]["demandFingerprint"] = request["demandFingerprint"]
+        request["priorIdleReceipt"]["receiptHmacSha256"] = upc.contract_hmac(
+            "prior-idle-receipt-v1", request["priorIdleReceipt"], self.secret, "receiptHmacSha256"
+        )
         self.assertEqual(self.authorize(broker, request)["reason"], "NO_ACTIONABLE_WORK")
 
     def test_one_thousand_unchanged_ticks_make_zero_provider_calls_and_processes(self) -> None:
@@ -786,6 +909,7 @@ class UniversalProviderControlTests(unittest.TestCase):
             "inventorySha256": upc.digest_json(self.inventory),
             "brokerHealthSha256": upc.digest_json(self.health),
             "reviewReceiptSha256": SHA_B, "testReceiptSha256": SHA_C,
+            "stageProof": self.stage_proof("OPEN", receipt=SHA_D, serial=97),
             "authorizationHmacSha256": "hmac-sha256:" + "0" * 64,
         }
         transition["authorizationHmacSha256"] = upc.contract_hmac(
@@ -805,7 +929,8 @@ class UniversalProviderControlTests(unittest.TestCase):
             "brokerExecutableSha256": sha_file(Path(upc.__file__).resolve()),
             "projectProfileSha256": upc.digest_json(self.profile), "inventorySha256": upc.digest_json(self.inventory),
             "brokerHealthSha256": upc.digest_json(self.health), "reviewReceiptSha256": SHA_B,
-            "testReceiptSha256": SHA_C, "authorizationHmacSha256": "hmac-sha256:" + "f" * 64,
+            "testReceiptSha256": SHA_C, "stageProof": self.stage_proof("OPEN", receipt=SHA_D, serial=98),
+            "authorizationHmacSha256": "hmac-sha256:" + "f" * 64,
         }
         with self.assertRaisesRegex(upc.ControlError, "CONTRACT_HMAC_INVALID"):
             broker.transition_gate(transition, fleet_secret=self.secret, now=self.now)
@@ -1014,9 +1139,9 @@ class UniversalProviderControlTests(unittest.TestCase):
             if changed["subjectSha256"] == SHA_D:
                 self.assertEqual(outcome["reason"], "ARGV_BINDING_DRIFT")
             elif changed["model"] != self.request["model"] or changed["effort"] != self.request["effort"]:
-                self.assertEqual(outcome["reason"], "LAUNCH_PROFILE_NOT_REVIEWED")
+                self.assertIn(outcome["reason"], {"LAUNCH_PROFILE_NOT_REVIEWED", "UNIVERSAL_QUALITY_FLOOR_VIOLATION", "SCHEMA_VALIDATION_FAILED"})
             else:
-                self.assertEqual(outcome["reason"], "LAUNCH_PROFILE_NOT_REVIEWED")
+                self.assertIn(outcome["reason"], {"LAUNCH_PROFILE_NOT_REVIEWED", "UNIVERSAL_QUALITY_FLOOR_VIOLATION"})
 
     def test_canary_requires_manual_authorization(self) -> None:
         broker = upc.UniversalProviderBroker(self.root / "canary.db")
@@ -1303,11 +1428,15 @@ class UniversalProviderControlTests(unittest.TestCase):
         canary_broker = upc.UniversalProviderBroker(self.root / "r3-expired-canary")
         self.transition(canary_broker, "CANARY")
         canary_request = self.make_request("request-r3-expired-canary")
+        canary_identity = b"canary-expiry-independent-account"
+        canary_request["quotaDomainId"] = upc.derive_quota_domain_id("claude", canary_identity, self.secret)
         canary_request["maxWallSeconds"] = 1
         canary_request["canary"] = True
         authorization = self.make_canary_authorization(canary_request, "canary-r3-expiry")
         canary_prepared = self.authorize(
-            canary_broker, canary_request, manual_authorization=authorization, confirm=False
+            canary_broker, canary_request, manual_authorization=authorization, confirm=False,
+            local_stable_identity=canary_identity,
+            native_evidence=[self.resign_native({**copy.deepcopy(self.native), "quotaDomainId": canary_request["quotaDomainId"]})],
         )
         canary_receipt = self.admission_observation(
             canary_request, phase="RESUME", lease_id=canary_prepared["leaseId"]
@@ -1372,18 +1501,22 @@ class UniversalProviderControlTests(unittest.TestCase):
         self.assertFalse(output.exists())
         self.assertEqual(list(self.root.glob("r3-cleanup.out.tmp-*")), [])
 
-    def test_r3_05_window_estimates_value_and_digest_are_attested(self) -> None:
+    def test_r3_05_capacity_estimates_are_broker_derived_not_caller_selected(self) -> None:
         first_broker = upc.UniversalProviderBroker(self.root / "r3-estimates-a")
         self.transition(first_broker)
         first = self.authorize(first_broker)
-        self.assertEqual(first["windowEstimates"], self.request["windowEstimates"])
-        self.assertEqual(first["windowEstimatesSha256"], upc.digest_json(self.request["windowEstimates"]))
+        self.assertNotIn("windowEstimates", first)
+        with first_broker._connect() as connection:
+            derived = json.loads(connection.execute(
+                "SELECT reservations_json FROM leases WHERE lease_id=?", (first["leaseId"],)
+            ).fetchone()[0])
+        self.assertEqual(set(derived), {"session", "weekly"})
+        self.assertEqual(derived["session"], derived["weekly"])
         changed = self.make_request("request-r3-estimates-b")
         changed["windowEstimates"] = {"session": 0.04, "weekly": 0.04}
         second_broker = upc.UniversalProviderBroker(self.root / "r3-estimates-b")
         self.transition(second_broker)
-        second = self.authorize(second_broker, changed)
-        self.assertNotEqual(first["bindingSha256"], second["bindingSha256"])
+        self.assertEqual(self.authorize(second_broker, changed)["reason"], "SCHEMA_VALIDATION_FAILED")
 
     def test_r3_06_ambiguous_canary_recovery_reseals_and_malformed_is_stable(self) -> None:
         broker = upc.UniversalProviderBroker(self.root / "r3-canary-recovery")
@@ -2384,7 +2517,7 @@ class UniversalProviderControlTests(unittest.TestCase):
         prepared = self.authorize(terminal_broker, confirm=False)
         peer = upc.UniversalProviderBroker(root)
         self.assertIs(terminal_broker._root_lock, peer._root_lock)
-        terminal = self.process_observation(prepared, "EXITED", phase="TERMINAL")
+        terminal = self.process_observation(prepared, "FAILED", phase="TERMINAL")
         resume = self.admission_observation(
             self.request, phase="RESUME", lease_id=prepared["leaseId"]
         )
@@ -2467,25 +2600,27 @@ class UniversalProviderControlTests(unittest.TestCase):
         broker = upc.UniversalProviderBroker(self.root / "r11-multi-lease")
         self.transition(broker)
         prepared_leases = [self.authorize(broker, confirm=False)]
-        provider_inputs = (
-            ("openai", "openai-responses/1.0", {"primary": 0.05, "secondary": 0.05}, "3", "4"),
-            ("kimi", "kimi-code/1.0", {"context": 0.05, "monthly": 0.05}, "5", "6"),
-            ("grok", "xai-api/1.0", {"requests": 0.05, "tokens": 0.05}, "7", "8"),
-        )
-        for provider, adapter, estimates, seat_digit, session_digit in provider_inputs:
-            request = self.make_request(f"request-r11-{provider}-lease")
+        provider_inputs = (("3", "4"), ("5", "6"), ("7", "8"))
+        for offset, (seat_digit, session_digit) in enumerate(provider_inputs, start=1):
+            identity = f"independent-account-{offset}".encode("ascii")
+            request = self.make_request(f"request-r11-claude-{offset}-lease")
             request.update(
-                provider=provider,
-                adapterVersion=adapter,
-                quotaDomainId=upc.derive_quota_domain_id(provider, self.identity, self.secret),
+                quotaDomainId=upc.derive_quota_domain_id("claude", identity, self.secret),
                 seatIdHash="hmac-sha256:" + seat_digit * 64,
                 sessionIdHash="hmac-sha256:" + session_digit * 64,
-                windowEstimates=estimates,
+            )
+            native = self.make_native("claude")
+            native["quotaDomainId"] = request["quotaDomainId"]
+            self.resign_native(native)
+            process = self.admission_observation(request)
+            process["processId"] += offset
+            process["observerHmacSha256"] = upc.contract_hmac(
+                "process-observation-v1", process, self.secret, "observerHmacSha256"
             )
             prepared_leases.append(self.authorize(
                 broker, request, confirm=False,
-                native_evidence=[self.make_native(provider)],
-                process_observation=self.admission_observation(request),
+                native_evidence=[native], local_stable_identity=identity,
+                process_observation=process,
             ))
         self.assertEqual(
             {prepared["status"] for prepared in prepared_leases}, {"PREPARED_SUSPENDED"}
@@ -2526,7 +2661,7 @@ class UniversalProviderControlTests(unittest.TestCase):
                 ):
                     broker.release_child(
                         process_observation=self.process_observation(
-                            prepared, "EXITED", phase="TERMINAL"
+                            prepared, "FAILED", phase="TERMINAL"
                         ),
                         fleet_secret=self.secret,
                         now=self.now,
@@ -2545,7 +2680,7 @@ class UniversalProviderControlTests(unittest.TestCase):
             ):
                 broker.release_child(
                     process_observation=self.process_observation(
-                        prepared_leases[-1], "EXITED", phase="TERMINAL"
+                        prepared_leases[-1], "FAILED", phase="TERMINAL"
                     ),
                     fleet_secret=self.secret,
                     now=self.now,
@@ -2564,7 +2699,7 @@ class UniversalProviderControlTests(unittest.TestCase):
             with self.assertRaises(upc.ControlError) as unlock_error:
                 broker.release_child(
                     process_observation=self.process_observation(
-                        first, "EXITED", phase="TERMINAL"
+                        first, "FAILED", phase="TERMINAL"
                     ),
                     fleet_secret=self.secret,
                     now=self.now,
@@ -2576,7 +2711,14 @@ class UniversalProviderControlTests(unittest.TestCase):
         self.assertNotIn(first["leaseId"], broker._os_locks)
 
         second_request = self.make_request("request-r11-os-close-refusal")
-        second = self.authorize(broker, second_request, confirm=False)
+        second_process = self.admission_observation(second_request)
+        second_process["processId"] += 1
+        second_process["observerHmacSha256"] = upc.contract_hmac(
+            "process-observation-v1", second_process, self.secret, "observerHmacSha256"
+        )
+        second = self.authorize(
+            broker, second_request, confirm=False, process_observation=second_process
+        )
         os_handle = broker._os_locks[second["leaseId"]]
         real_close = upc._close_file_handle_verified
         private_close = "PRIVATE-OS-CLOSE-OSError"
@@ -2590,7 +2732,7 @@ class UniversalProviderControlTests(unittest.TestCase):
             with self.assertRaises(upc.ControlError) as close_error:
                 broker.release_child(
                     process_observation=self.process_observation(
-                        second, "EXITED", phase="TERMINAL"
+                        second, "FAILED", phase="TERMINAL"
                     ),
                     fleet_secret=self.secret,
                     now=self.now,
@@ -2608,7 +2750,7 @@ class UniversalProviderControlTests(unittest.TestCase):
             with self.assertRaisesRegex(upc.ControlError, "OS_LOCK_CLEANUP_POISONED"):
                 broker.release_child(
                     process_observation=self.process_observation(
-                        second, "EXITED", phase="TERMINAL"
+                        second, "FAILED", phase="TERMINAL"
                     ),
                     fleet_secret=self.secret,
                     now=self.now,
@@ -2719,7 +2861,7 @@ class UniversalProviderControlTests(unittest.TestCase):
             "process-observation-v1", resume, self.secret, "observerHmacSha256"
         )
         with self.assertRaisesRegex(
-            upc.ControlError, "CAPACITY_WINDOW_ROLLED_OVER_BEFORE_RESUME"
+            upc.ControlError, "LEASE_EXPIRED_BEFORE_RESUME"
         ):
             broker.confirm_resume_boundary(
                 lease_id=prepared["leaseId"], process_observation=resume,
@@ -2741,12 +2883,16 @@ class UniversalProviderControlTests(unittest.TestCase):
         canary = upc.UniversalProviderBroker(self.root / "r12-rollover-canary")
         self.transition(canary, "CANARY")
         canary_request = self.make_request("request-r12-rollover-canary")
+        canary_identity = b"rollover-canary-independent-account"
+        canary_request["quotaDomainId"] = upc.derive_quota_domain_id("claude", canary_identity, self.secret)
         canary_request["canary"] = True
         authorization = self.make_canary_authorization(
             canary_request, "canary-r12-rollover"
         )
         canary_prepared = self.authorize(
-            canary, canary_request, native_evidence=[native],
+            canary, canary_request,
+            native_evidence=[self.resign_native({**copy.deepcopy(native), "quotaDomainId": canary_request["quotaDomainId"]})],
+            local_stable_identity=canary_identity,
             manual_authorization=authorization, confirm=False,
         )
         canary_resume = self.admission_observation(
@@ -2757,7 +2903,7 @@ class UniversalProviderControlTests(unittest.TestCase):
             "process-observation-v1", canary_resume, self.secret, "observerHmacSha256"
         )
         with self.assertRaisesRegex(
-            upc.ControlError, "CAPACITY_WINDOW_ROLLED_OVER_BEFORE_RESUME"
+            upc.ControlError, "LEASE_EXPIRED_BEFORE_RESUME"
         ):
             canary.confirm_resume_boundary(
                 lease_id=canary_prepared["leaseId"], process_observation=canary_resume,
@@ -2783,7 +2929,7 @@ class UniversalProviderControlTests(unittest.TestCase):
         other = upc.UniversalProviderBroker(self.root / "r12-unreviewed-economy")
         self.transition(other)
         self.assertEqual(
-            self.authorize(other, economy)["reason"], "LAUNCH_PROFILE_NOT_REVIEWED"
+            self.authorize(other, economy)["reason"], "SCHEMA_VALIDATION_FAILED"
         )
 
     def test_r13_03_turn_context_and_all_token_ceilings_are_argv_bound_and_attested(self) -> None:
@@ -2808,6 +2954,7 @@ class UniversalProviderControlTests(unittest.TestCase):
 
         unbound = self.make_request("request-r12-token-unbound")
         unbound["cumulativeTokenCeilings"]["outputTokens"] -= 1
+        unbound["generatedEnvelopeTokens"] -= 1
         third = upc.UniversalProviderBroker(self.root / "r12-token-unbound")
         self.transition(third)
         self.assertEqual(self.authorize(third, unbound)["reason"], "ARGV_BINDING_DRIFT")
@@ -2822,18 +2969,21 @@ class UniversalProviderControlTests(unittest.TestCase):
         )
 
         forged_prior = self.make_request("request-r12-prior-forged")
-        forged_prior["priorIdleFingerprint"] = SHA_A
         second = upc.UniversalProviderBroker(self.root / "r12-prior-forged")
         self.transition(second)
+        forged_prior["priorIdleReceipt"]["stateRootIdentity"] = second.state_root_identity(self.secret)
+        forged_prior["priorIdleReceipt"]["demandFingerprint"] = SHA_A
         self.assertEqual(
-            self.authorize(second, forged_prior)["reason"], "PRIOR_IDLE_FINGERPRINT_DRIFT"
+            self.authorize(second, forged_prior)["reason"], "CONTRACT_HMAC_INVALID"
         )
 
         drifted = self.make_request("request-r12-demand-bytes-drift")
-        self.addressed_work.write_bytes(b'{"work":["foreign"]}\n')
+        drifted["demandSnapshot"]["addressedWork"].append(
+            {"kind": "ISSUE", "id": "foreign", "state": "READY", "subjectSha256": SHA_A}
+        )
         third = upc.UniversalProviderBroker(self.root / "r12-demand-bytes-drift")
         self.transition(third)
-        self.assertEqual(self.authorize(third, drifted)["reason"], "DEMAND_INPUT_DRIFT")
+        self.assertEqual(self.authorize(third, drifted)["reason"], "DEMAND_FINGERPRINT_DRIFT")
 
     def test_r13_05_rollout_requires_containment_and_forbids_stage_skips(self) -> None:
         broker = upc.UniversalProviderBroker(self.root / "r12-stage-skip")
@@ -2851,6 +3001,7 @@ class UniversalProviderControlTests(unittest.TestCase):
             "inventorySha256": upc.digest_json(self.inventory),
             "brokerHealthSha256": upc.digest_json(self.health),
             "reviewReceiptSha256": SHA_B, "testReceiptSha256": SHA_C,
+            "stageProof": self.stage_proof("OPEN", receipt=SHA_D, serial=96),
             "authorizationHmacSha256": "hmac-sha256:" + "0" * 64,
         }
         transition["authorizationHmacSha256"] = upc.contract_hmac(
@@ -2867,6 +3018,159 @@ class UniversalProviderControlTests(unittest.TestCase):
         self.assertEqual(
             self.authorize(containment)["reason"], "AUTOMATIC_LAUNCH_GATE_CLOSED"
         )
+
+    # R15 certified-boundary and typed-proof hostile controls.
+
+    def test_r15_01_single_request_process_permit_is_persisted_and_one_use(self) -> None:
+        broker = upc.UniversalProviderBroker(self.root / "r15-single-request")
+        self.transition(broker)
+        allowed = self.authorize(broker, begin_request=False)
+        first = broker.begin_provider_request(
+            lease_id=allowed["leaseId"], fleet_secret=self.secret, now=self.now
+        )
+        upc.validate_contract("request_permit", first)
+        with self.assertRaisesRegex(upc.ControlError, "PROVIDER_REQUEST_LIMIT_REACHED"):
+            broker.begin_provider_request(
+                lease_id=allowed["leaseId"], fleet_secret=self.secret, now=self.now
+            )
+        with broker._connect() as connection:
+            row = connection.execute(
+                "SELECT permit_count, permit_digest, state FROM token_reservations WHERE lease_id=?",
+                (allowed["leaseId"],),
+            ).fetchone()
+        self.assertEqual(tuple(row), (1, upc.digest_json(first), "IN_FLIGHT"))
+
+    def test_r15_02_semantic_demand_is_order_independent_and_idle_receipt_is_broker_signed(self) -> None:
+        snapshot = copy.deepcopy(self.request["demandSnapshot"])
+        snapshot["addressedWork"].append(
+            {"kind": "REVIEW", "id": "review-9", "state": "OPEN", "subjectSha256": SHA_A}
+        )
+        reversed_snapshot = copy.deepcopy(snapshot)
+        reversed_snapshot["addressedWork"].reverse()
+        self.assertEqual(
+            upc.canonical_demand_fingerprint(snapshot),
+            upc.canonical_demand_fingerprint(reversed_snapshot),
+        )
+        broker = upc.UniversalProviderBroker(self.root / "r15-idle-receipt")
+        receipt = broker.record_prior_idle(
+            project="test-project", demand_snapshot=snapshot,
+            fleet_secret=self.secret, now=self.now,
+        )
+        upc.validate_contract("prior_idle_receipt", receipt)
+        forged = copy.deepcopy(receipt)
+        forged["demandFingerprint"] = SHA_B
+        with self.assertRaisesRegex(upc.ControlError, "CONTRACT_HMAC_INVALID"):
+            upc.verify_contract_hmac(
+                "prior-idle-receipt-v1", forged, self.secret, "receiptHmacSha256"
+            )
+
+    def test_r15_03_mutable_lease_capacity_cannot_extend_immutable_attestation(self) -> None:
+        broker = upc.UniversalProviderBroker(self.root / "r15-binding-drift")
+        self.transition(broker)
+        prepared = self.authorize(broker, confirm=False)
+        with broker._connect() as connection:
+            connection.execute(
+                "UPDATE leases SET capacity_valid_until=? WHERE lease_id=?",
+                (upc.iso(self.now + dt.timedelta(days=1)), prepared["leaseId"]),
+            )
+        resume = self.admission_observation(
+            self.request, phase="RESUME", lease_id=prepared["leaseId"]
+        )
+        with self.assertRaisesRegex(upc.ControlError, "LEASE_BINDING_DRIFT"):
+            broker.confirm_resume_boundary(
+                lease_id=prepared["leaseId"], process_observation=resume,
+                fleet_secret=self.secret, now=self.now,
+            )
+        self.assertIn(prepared["leaseId"], broker._os_locks)
+
+    def test_r15_04_runtime_watchdog_marks_termination_required_at_boundary(self) -> None:
+        broker = upc.UniversalProviderBroker(self.root / "r15-watchdog")
+        self.transition(broker)
+        allowed = self.authorize(broker, begin_request=False)
+        with self.assertRaisesRegex(upc.ControlError, "RUNTIME_TERMINATION_REQUIRED"):
+            broker.check_runtime_boundary(
+                lease_id=allowed["leaseId"], fleet_secret=self.secret,
+                now=self.now + dt.timedelta(seconds=61),
+            )
+        with broker._connect() as connection:
+            state = connection.execute(
+                "SELECT state FROM leases WHERE lease_id=?", (allowed["leaseId"],)
+            ).fetchone()[0]
+        self.assertEqual(state, "TERMINATION_REQUIRED")
+        self.assertIn(allowed["leaseId"], broker._os_locks)
+
+    def test_r15_05_quality_floor_and_exact_argv_contract_reject_weak_or_extra_launches(self) -> None:
+        weak = self.make_request("request-r15-weak")
+        weak["model"] = "tiny-economy-model"
+        weak["argv"][weak["argvBindings"]["modelIndex"]] = weak["model"]
+        weak["argvSha256"] = upc.digest_json(weak["argv"])
+        weak["argvContractSha256"] = upc.canonical_argv_contract(weak["argv"], weak["argvBindings"])
+        broker = upc.UniversalProviderBroker(self.root / "r15-quality")
+        self.transition(broker)
+        self.assertEqual(
+            self.authorize(broker, weak)["reason"], "UNIVERSAL_QUALITY_FLOOR_VIOLATION"
+        )
+        extra = self.make_request("request-r15-extra")
+        extra["argv"].append("--direct-provider-bypass")
+        extra["argvSha256"] = upc.digest_json(extra["argv"])
+        other = upc.UniversalProviderBroker(self.root / "r15-argv-extra")
+        self.transition(other)
+        self.assertEqual(self.authorize(other, extra)["reason"], "ARGV_CONTRACT_DRIFT")
+
+    def test_r15_06_alternate_state_root_cannot_bypass_machine_quota_lock(self) -> None:
+        first = upc.UniversalProviderBroker(self.root / "r15-root-a")
+        self.transition(first)
+        held = self.authorize(first, confirm=False)
+        self.assertEqual(held["status"], "PREPARED_SUSPENDED")
+
+        second = upc.UniversalProviderBroker(self.root / "r15-root-b")
+        self.transition(second)
+        request = self.make_request("request-r15-other-root")
+        process = self.admission_observation(request)
+        process["processId"] += 99
+        process["observerHmacSha256"] = upc.contract_hmac(
+            "process-observation-v1", process, self.secret, "observerHmacSha256"
+        )
+        self.assertEqual(
+            self.authorize(second, request, confirm=False, process_observation=process)["reason"],
+            "QUOTA_DOMAIN_OS_LOCK_HELD",
+        )
+
+    def test_r15_07_successful_canary_returns_to_containment_and_receipt_opens_once(self) -> None:
+        broker = upc.UniversalProviderBroker(self.root / "r15-canary-proof")
+        self.transition(broker, "CANARY")
+        request = self.make_request("request-r15-canary")
+        request["canary"] = True
+        authorization = self.make_canary_authorization(request, "canary-r15-proof")
+        allowed = self.authorize(broker, request, manual_authorization=authorization)
+        released = broker.release_child(
+            process_observation=self.process_observation(allowed, "EXITED", phase="TERMINAL"),
+            fleet_secret=self.secret, now=self.now,
+        )
+        self.assertEqual(broker.gate_state(fleet_secret=self.secret, now=self.now), "CONTAINMENT")
+        receipt_digest = released["canarySuccessReceiptSha256"]
+        proof = self.stage_proof("OPEN", receipt=receipt_digest, serial=150)
+        transition = {
+            "schema": "fleet-universal-gate-transition/v1", "transitionId": "transition-r15-open",
+            "transitionEpoch": 4, "issuedAt": upc.iso(self.now - dt.timedelta(seconds=1)),
+            "expiresAt": upc.iso(self.now + dt.timedelta(minutes=5)), "from": "CONTAINMENT",
+            "to": "OPEN", "cause": "INDEPENDENT_ADJUDICATION", "doctrineCommitSha256": SHA_A,
+            "brokerExecutableSha256": sha_file(Path(upc.__file__).resolve()),
+            "projectProfileSha256": upc.digest_json(self.profile),
+            "inventorySha256": upc.digest_json(self.inventory),
+            "brokerHealthSha256": upc.digest_json(self.health), "reviewReceiptSha256": SHA_B,
+            "testReceiptSha256": SHA_C, "stageProof": proof,
+            "authorizationHmacSha256": "hmac-sha256:" + "0" * 64,
+        }
+        transition["authorizationHmacSha256"] = upc.contract_hmac(
+            "gate-transition-v1", transition, self.secret, "authorizationHmacSha256"
+        )
+        self.assertEqual(broker.transition_gate(transition, fleet_secret=self.secret, now=self.now), "OPEN")
+        with broker._connect() as connection:
+            used = connection.execute(
+                "SELECT used_at FROM canary_success_receipts WHERE receipt_digest=?", (receipt_digest,)
+            ).fetchone()[0]
+        self.assertEqual(used, upc.iso(self.now))
 
     # Bounded exact evidence capsule controls.
 

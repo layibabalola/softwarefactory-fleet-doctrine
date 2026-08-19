@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://softwarefactory.invalid/schemas/universal-demand-snapshot-v1.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "project", "addressedWork", "cursor"],
+  "properties": {
+    "schema": {"const": "fleet-universal-demand-snapshot/v1"},
+    "project": {"type": "string", "pattern": "^[a-z][a-z0-9-]{1,62}$"},
+    "addressedWork": {
+      "type": "array", "maxItems": 256, "uniqueItems": true,
+      "items": {
+        "type": "object", "additionalProperties": false,
+        "required": ["kind", "id", "state", "subjectSha256"],
+        "properties": {
+          "kind": {"enum": ["ISSUE", "PR", "REVIEW", "DELIVERY", "INCIDENT"]},
+          "id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"},
+          "state": {"enum": ["OPEN", "READY", "BLOCKED", "DONE"]},
+          "subjectSha256": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"}
+        }
+      }
+    },
+    "cursor": {
+      "type": "object", "additionalProperties": false,
+      "required": ["stream", "sequence", "checkpointSha256"],
+      "properties": {
+        "stream": {"type": "string", "pattern": "^[a-z][a-z0-9._:-]{0,63}$"},
+        "sequence": {"type": "integer", "minimum": 0, "maximum": 9223372036854775807},
+        "checkpointSha256": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"}
+      }
+    }
+  }
+}

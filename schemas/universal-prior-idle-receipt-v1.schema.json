@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://softwarefactory.invalid/schemas/universal-prior-idle-receipt-v1.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "receiptId", "project", "recordedAt", "demandFingerprint", "stateRootIdentity", "receiptHmacSha256"],
+  "properties": {
+    "schema": {"const": "fleet-universal-prior-idle-receipt/v1"},
+    "receiptId": {"type": "string", "pattern": "^idle-[0-9a-f]{32}$"},
+    "project": {"type": "string", "pattern": "^[a-z][a-z0-9-]{1,62}$"},
+    "recordedAt": {"type": "string", "format": "date-time"},
+    "demandFingerprint": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+    "stateRootIdentity": {"type": "string", "pattern": "^hmac-sha256:[0-9a-f]{64}$"},
+    "receiptHmacSha256": {"type": "string", "pattern": "^hmac-sha256:[0-9a-f]{64}$"}
+  }
+}
