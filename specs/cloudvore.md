@@ -270,79 +270,34 @@ provider normalizers, session-limit classification, release-drift refusal, and f
 mutations—is supplementary design evidence only. It is not installed, not authoritative, and does
 not satisfy the production-path or dated-receipt requirements above.
 
-### Universal SHADOW proposal and disposition matrix (2026-08-18)
+### Project-owned universal SHADOW proposal (2026-08-18)
 
-Cloudvore's exact R14 disposition is:
+Cloudvore remains **HARD_CLOSED** and retains its existing
+**DISTINGUISH(224a6705d81dfbc670313cdcef4d825216f2b380,
+PENDING_LOCAL_ADAPTER_AND_DRILLS)** disposition. Its additive R14 disposition is:
 
 **DISTINGUISH(874605e43531c9aa230ee16851f8107a8e0d9cec,
-PENDING_LOCAL_SUPERVISOR_ADAPTER_COMPLETE_CENSUS_AND_DRILLS,
-cloudvore/provider-governor/PROPOSAL-RECEIPT-20260818.md)**
+PENDING_LOCAL_ADAPTER_AND_DRILLS,
+Cloudvore@2ee30e75e6dba20342bdf994f216bd9ac221374a:knowledge/provider-capacity-governor-shadow-proposal-receipt-2026-08-18.md)**
 
-This is keyed to the accepted R14 candidate and canonical merge
-`488cf0dc0c2c2ddd1ab024c6377e1fd6d61eef1d`. It is separate from, and does not erase, the historical
-`224a670...` capacity-governor disposition above.
+The referenced product proposal is commit `2ee30e75e6dba20342bdf994f216bd9ac221374a`,
+tree `6d22df464269bbf8b1929fc19f3f078a4091b666`, on Cloudvore PR #1. It is immutable proposal evidence,
+not installation, SHADOW execution, project adoption, fleet adoption, or launch authority.
 
-Cloudvore's design submission is the machine-readable
-`cloudvore/provider-governor/cloudvore-shadow-profile-v1.json`, sourced from design SHA-256
-`424A56C8700813C06BF31AC3B5B8C34B323F1EF6B1F38685E51BB89764957887` / 17,321 bytes. Its status is
-`PROPOSED_ZERO_AUTHORITY`; it pins all 13 paths to their accepted Git-object bytes and does not
-install or activate anything. Validation parses the accepted `RULINGS.md` Git blob and finds two
-true ruling/object mismatches, for `README.md` and `metrics/README.md`. Its usage-example hash and
-the tracked source design both carry the correct 64-character digest; the 65-character value
-appeared only in PR #17's prior profile and is retained as adverse transcription evidence. The
-profile records `BLOCKED_TWO_RULING_MISMATCHES_ONE_PRIOR_PROFILE_TRANSCRIPTION_MISMATCH`; Cloudvore may not silently choose
-either README tuple, and installation remains barred pending fleet adjudication. The accompanying receipt is
-`cloudvore/provider-governor/PROPOSAL-RECEIPT-20260818.md`.
+| Product-owned proposal artifact | Git blob | SHA-256 | Bytes |
+|---|---|---|---:|
+| `tools/provider-capacity-governor-shadow/provenance/HUB-DESIGN-provider-capacity-governor-shadow-adoption-0818.md` | `e8e80d9cb304158cce220ee59fd2211522c1675d` | `424A56C8700813C06BF31AC3B5B8C34B323F1EF6B1F38685E51BB89764957887` | 17,321 |
+| `knowledge/provider-capacity-governor-shadow-profile-v1.json` | `01874af8fd0705fb5ab9caec0f57f192f8fd80b1` | `E729AE6FA60CB5D5D9C41894D94C256911132FED0EFF25B330018397D6FB0940` | 8,048 |
+| `knowledge/provider-capacity-governor-shadow-profile-v1.schema.json` | `cbbe8baf2a54a2c9fffb2f4bc9c255d81a329717` | `7765C0006E24954E1C111FCF882182D8FC7841EE4D5D65B6159D8A2F661CDA56` | 8,855 |
+| `tools/provider-capacity-governor-shadow.tests.py` | `d7f7915299c79513dbab3099ec19738f5dc62f69` | `38BDBDEFB240D87C5B6E03CCDC53B374F9D9104B57039EDF7669B410B4697591` | 9,931 |
+| `knowledge/provider-capacity-governor-shadow-proposal-manifest-v1.json` | `be08924f1765883db6a776ac05c2efa8f2b39e47` | `111C73F688F113ECBBD229BABBD8BF3C92A74ED7CB6FEEAF2A18E11654B15DED` | 2,303 |
+| `knowledge/provider-capacity-governor-shadow-proposal-receipt-2026-08-18.md` | `cdaf66b12bd7b8781495a8d5a82edfe705ac09ac` | `4EE58B575DF854AFB6D87D785A21215D285F5D0D7DEA7414411CB5CEFF0A10AF` | 4,293 |
 
-The exact source preimage is now tracked at
-`cloudvore/provider-governor/provenance/HUB-DESIGN-provider-capacity-governor-shadow-adoption-0818.md`.
-The versioned envelope is validated against strict Draft 2020-12 schema
-`cloudvore/provider-governor/cloudvore-shadow-profile-v1.schema.json`; unknown, missing, and unsafe
-semantic mutations are negative controls. The same profile exact-binds `score`, `grade`,
-`doctrine_write`, and `publication` as non-authoritative admission sources. This PR submits
-`cloudvore/provider-governor/**` as a Cloudvore-owned proposal/provenance namespace for doctrine
-review; the namespace itself grants no runtime or cross-project write authority before canonical
-merge adjudication.
+The exact source preimage intentionally preserves two Markdown hard-break spaces and its final
+blank line; its byte/hash binding is authoritative.
 
-The proposal also binds the accepted additive universal reconciliation at candidate
-`874605e43531c9aa230ee16851f8107a8e0d9cec`, tree
-`cafc358fd7b60812070cf9a465d7de38b88487c8`, canonical merge
-`488cf0dc0c2c2ddd1ab024c6377e1fd6d61eef1d`. Its Cloudvore policy specimen is
-`cloudvore/provider-governor/cloudvore-project-profile-proposal-v1.json` and validates against the
-canonical `universal-project-profile-v1` schema. The specimen's state-root HMAC is explicitly
-non-production and must be replaced by the installed machine-local identity before any stage can
-advance. R14 is additive portable doctrine and deployment-inert reference code, not Cloudvore
-runtime adoption.
-
-There are two compatible, non-substitutable axes. Tracker #3's fleet activation lifecycle remains
-the sole launch-state vocabulary: `HARD_CLOSED`, `INSTALLED_UNVERIFIED`, `SHADOW`, `CONTAINMENT`,
-`CANARY`, `ENABLED`. The ratified spec's campaign results remain evidence gates:
-`SHADOW_PASS`, `CONTAINMENT_PASS`, `CAPACITY_PASS`, `CONTEXT_PASS`, and `ROUTING_PASS`. A result does
-not itself advance activation state. `ROUTING_PASS` is required only before changing a model or
-effort cell; preserving the exact cell does not manufacture a routing pass.
-
-| Cloudvore evidence surface | Fleet activation stage affected | Current disposition | Promotion evidence |
-|---|---|---|---|
-| Install tuple and local supervisor/adapter manifest | `INSTALLED_UNVERIFIED` | `BLOCKED_TWO_RULING_MISMATCHES_ONE_PRIOR_PROFILE_TRANSCRIPTION_MISMATCH` | Fleet correction/adjudication, then exact 13-artifact intake plus extension, policy, executable, Python, dependency, and installed-file hashes |
-| Counterfactual decisions, capsules, normalized events, zero launch effect | `SHADOW` / `SHADOW_PASS` | `PENDING` | Three deterministic fake/no-inference runs, mutations, independent review, and bounded attended receipts for each retained family |
-| One host-wide claimant and structural direct-launch closure | `CONTAINMENT` / `CONTAINMENT_PASS` | `PENDING` | Same-domain single flight, distinct-domain independence, startup/cooldown/orphan fences, complete launcher census, and bypass refusal |
-| Fresh native capacity plus completion/review reserve | `CANARY` prerequisite / `CAPACITY_PASS` | `PENDING` | Required provider dimensions, freshness, refusal/reset quiet, reservation boundary, and launch-time revalidation |
-| Bounded evidence capsules and continuations | `CANARY` prerequisite when provider input changes / `CONTEXT_PASS` | `PENDING` | Frozen replay with no missed blocker, weaker severity, dropped work, prompt drift, authority drift, or silent truncation |
-| Any model/effort substitution | `CANARY` prerequisite when routing changes / `ROUTING_PASS` | `NOT_REQUESTED` | Blinded role-specific non-inferiority; otherwise exact requested/effective provider, model, effort, tier, role, and independence class remain unchanged |
-| One explicitly authorized bounded job | `CANARY` | `BARRED` | Separate owner authority after all applicable prior evidence; automatic return to `HARD_CLOSED` on failure |
-| Unattended use | `ENABLED` | `BARRED` | Project-owned `ADOPT(reference)`, unchanged quality/authority bars, dated receipts, rollback proof, and separate activation authority |
-
-The provider/lane mapping is exhaustive for the presently designed Cloudvore hub: Anthropic
-(`OPUS`, `FABLE`, `SONNET`), OpenAI (`HUB`, `SOL`, `LUNA`), Moonshot (`KIMI_IMPLEMENTER`,
-`KIMI_REVIEWER`), and xAI (`GROK_IMPLEMENTER`, `GROK_REVIEWER`). All four families are currently
-`PENDING_LOCAL_SUPERVISOR_AND_DRILLS`. Provider adapters may translate only native identity, cache,
-usage, reset, refusal, and terminal fields. They may not alter admission semantics, authority,
-quality gates, independence credit, budget-stop meaning, role, model, or effort. Missing native
-fields remain `unknown` and fail closed where required.
-
-The proposed SHADOW sidecar observes already-authorized attended work and evaluates a frozen
-counterfactual snapshot. It has no spawn, block, enable, kill, resume, retry, routing, substitution,
-review-credit, Git, hosted, landing, merge, release, or adoption authority. Deterministic unchanged
-idle emits `IDLE_SKIPPED` only with explicit zero request/token/tool counters. A reset emits
-`RESET_OBSERVED` and updates telemetry only. The automatic gate remains `closed`; current operational
-conformance is **not established for any Cloudvore provider family**.
+The accepted usage-event digest is correct, has 64 hexadecimal characters, and matches its Git
+object. Only the `README.md` and `metrics/README.md` ruling tuples mismatch accepted object bytes.
+The strict Draft 2020-12 profile and focused negative controls preserve `score`, `grade`,
+`doctrine_write`, and `publication` as non-authoritative. All Anthropic, OpenAI, Moonshot, and xAI
+lanes remain `PENDING_LOCAL_SUPERVISOR_AND_DRILLS`; no evidence gate or reset advances activation.
