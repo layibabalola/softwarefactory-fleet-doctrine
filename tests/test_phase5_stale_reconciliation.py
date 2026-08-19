@@ -102,7 +102,7 @@ class Phase5StaleReconciliationTests(unittest.TestCase):
             with self.assertRaisesRegex(MODULE.Phase5Error, "PHASE5_SCOPE_VIOLATION"):
                 MODULE.verify_batch(self._copy(), "HEAD")
 
-    def test_phase5_scope_allows_exact_utilization_shadow_doctrine_binding(self):
+    def test_phase5_scope_allows_later_zero_authority_reconciliations(self):
         with mock.patch.object(
             MODULE,
             "_changed_paths",
@@ -111,6 +111,8 @@ class Phase5StaleReconciliationTests(unittest.TestCase):
                 "adoption/universal-token-control-r26.json",
                 "specs/adversarialllm.md",
                 "tests/test_adversarialllm_utilization_shadow_doctrine.py",
+                "tests/test_universal_provider_control.py",
+                "tools/check_universal_manifest.py",
             },
         ):
             MODULE.verify_batch(self._copy(), "HEAD")
