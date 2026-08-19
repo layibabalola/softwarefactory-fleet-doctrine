@@ -1,0 +1,51 @@
+{
+  "schema": "fleet-universal-provider-control-candidate-manifest/v1",
+  "status": "CANDIDATE_ZERO_AUTHORITY",
+  "authoredFrom": "9af3eb9d4f4669abb787cc1966280608f5fbbce9",
+  "rebasedOnto": "ecfbf1821fc508cdac0e80b95c9273ada836d0c8",
+  "inputs": {
+    "ratifiedGovernorCandidate": "224a6705d81dfbc670313cdcef4d825216f2b380",
+    "ratifiedGovernorRuling": "55a5808aa9edffcf9c86f1f9c2837a12a5c3c5d1",
+    "conjugalCandidate": "37f1246543c86300089b77a51a3b8ad2c5292b8d",
+    "conjugalCommitTree": "35a44265d358aa8ec3544ba2f08e0ef8e4b38216",
+    "reconciliationIssue": 4,
+    "reconciliationComment": 5332348238
+  },
+  "validation": {
+    "universalHostileControls": {"passed": 52, "failed": 0},
+    "ratifiedGovernorControls": {"passed": 37, "failed": 0},
+    "pythonCompile": "PASS",
+    "workflowYaml": "PASS",
+    "providerInvocation": false,
+    "deployment": false,
+    "automaticLaunchGate": "CLOSED_BY_CONTRACT"
+  },
+  "authorRecusal": {
+    "review": true,
+    "adjudication": true,
+    "merge": true,
+    "activation": true
+  },
+  "subjectFiles": [
+    {"path": ".github/workflows/provider-capacity-governor.yml", "sha256": "sha256:f6c0e6e94522a78a09afb229bf895196cc29c693425f931da44b5a3b78e89a7b", "bytes": 3013},
+    {"path": "README.md", "sha256": "sha256:d15ddabe86218f14d5a9089a997804f7c01e6979c01e7c69ab512c6e976040c2", "bytes": 3620},
+    {"path": "RECONCILIATION.md", "sha256": "sha256:99e492881d8de583c07881d8e135030b10c2186bb17692473310df778f8f7249", "bytes": 871},
+    {"path": "ruling-candidates/fleet-universal-provider-control-reconciliation-r1.md", "sha256": "sha256:099a4ca009794291ec5feadae841097a08acce2e9ded29a282c657663e4efec3", "bytes": 1345},
+    {"path": "schemas/provider-native-capacity-evidence-v1.schema.json", "sha256": "sha256:d9d0e91a134163a99031192bd14106dd4554bcb3a731616a0c571c8219f07a5f", "bytes": 4661},
+    {"path": "schemas/universal-broker-health-v1.schema.json", "sha256": "sha256:6002c554e4f3e50db91fd721ecc9904dc7907c199a3a388eb73cdc05da8f51be", "bytes": 945},
+    {"path": "schemas/universal-capacity-observation-v1.schema.json", "sha256": "sha256:e3aa97bf501e55e127f1a8dc022086713f73bb8db501ee665f5c86629c2fefb8", "bytes": 1490},
+    {"path": "schemas/universal-control-request-v1.schema.json", "sha256": "sha256:fe66f4ede6c13e30725e09e7208aff06192f1cd5047d4c93fb56dcc2851bae47", "bytes": 4831},
+    {"path": "schemas/universal-evidence-capsule-request-v1.schema.json", "sha256": "sha256:08dfcd8b8558a9a803066853b891fa9197da8aeb685890536d327b228cf73753", "bytes": 1162},
+    {"path": "schemas/universal-evidence-capsule-v1.schema.json", "sha256": "sha256:768d7b43988f8f2c69b7125c8b4ecb71dacfd511c453993ae99bc82836977b6b", "bytes": 1239},
+    {"path": "schemas/universal-gate-transition-v1.schema.json", "sha256": "sha256:cb78bfb90d310736fe79389aa06b1784f38fc2722a07b7c18664d80c430b71bf", "bytes": 1776},
+    {"path": "schemas/universal-launch-attestation-v1.schema.json", "sha256": "sha256:96ee504817ac6b2acfad166196fab642063dc6d8656814e7087c003f5aae0d3a", "bytes": 1900},
+    {"path": "schemas/universal-launcher-inventory-v1.schema.json", "sha256": "sha256:8f3be82e1b3d637e32a76d99ab904fd5b492a83476fe3144a4bedf6601925485", "bytes": 1939},
+    {"path": "schemas/universal-manual-canary-authorization-v1.schema.json", "sha256": "sha256:b88094ca30f01d97fa9f214bc3e25977886c31e03617dcab959d29873263a2b7", "bytes": 1226},
+    {"path": "schemas/universal-process-observation-v1.schema.json", "sha256": "sha256:d8dce67256a365c3090a9576d1f1768fe499ba85f1bd212112b1b6e51d82c991", "bytes": 1123},
+    {"path": "schemas/universal-project-profile-v1.schema.json", "sha256": "sha256:3dff16711a6311d0a1d023d982836f2b39fe1985cd7b2ba6cb97e913266f7177", "bytes": 5412},
+    {"path": "specs/fleet-provider-capacity-governor.md", "sha256": "sha256:0f8657ba85602d80fa9013a0aa8956d812742e1c5289eab05d4d4f62fc84c37f", "bytes": 22679},
+    {"path": "specs/fleet-universal-provider-control-reconciliation.md", "sha256": "sha256:e1c27a4b013b41e620c0d01b0704166f67ba1a5cbf51752ee2295c4dd5e20826", "bytes": 8719},
+    {"path": "tests/test_universal_provider_control.py", "sha256": "sha256:675a258996592b67a08a4e71c60ed2dc44869e83ae3315001ac50866d4978b95", "bytes": 53956},
+    {"path": "tools/universal_provider_control.py", "sha256": "sha256:41655dddccfa8774dfb55da96e35086acb54dd40d66c668e1b7025c8a5003f21", "bytes": 61268}
+  ]
+}

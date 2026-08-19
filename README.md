@@ -40,3 +40,11 @@ the human store-and-forward bus.
   read-only reference decision engine do not activate a scheduler or grant a provider role.
   Project adoption and activation remain separate; fleet dispositions are coordinated in
   [issue #3](https://github.com/layibabalola/softwarefactory-fleet-doctrine/issues/3).
+
+## Proposed amendments (not ratified)
+
+- [`specs/fleet-universal-provider-control-reconciliation.md`](specs/fleet-universal-provider-control-reconciliation.md)
+  — zero-authority R14 candidate reconciling the ratified governor, Conjugal portable controls,
+  Agent Bridge NO-GO findings, and stranger-review repairs. It is not a portable core, ruling,
+  adoption credit, or launch authority. Coordination stays on
+  [issue #4](https://github.com/layibabalola/softwarefactory-fleet-doctrine/issues/4).
