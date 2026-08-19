@@ -110,6 +110,13 @@ class Phase3DispositionBatchTests(unittest.TestCase):
             (ROOT / "adoption" / "universal-token-control-r26.json").read_bytes()
         )
 
+    def setUp(self):
+        environment = mock.patch.dict(
+            MODULE.os.environ, {MODULE.REMOTE_TOKEN_ENV: ""}, clear=False
+        )
+        environment.start()
+        self.addCleanup(environment.stop)
+
     def _copy(self):
         return copy.deepcopy(self.batch)
 
@@ -320,6 +327,31 @@ class Phase3DispositionBatchTests(unittest.TestCase):
         self.assertTrue(ls_tree_calls)
         self.assertTrue(all("--" in args for args in ls_tree_calls))
 
+    def test_explicit_ci_token_is_temp_config_only_and_never_child_environment(self):
+        project, stub = self._remote_fixture("salesforce-tools")
+        token = "github_pat_0123456789ABCDEFGHIJKLMNOP"
+        with (
+            mock.patch.dict(MODULE.os.environ, {MODULE.REMOTE_TOKEN_ENV: token}, clear=False),
+            mock.patch.object(MODULE, "_run_remote_git", side_effect=stub),
+        ):
+            MODULE._verify_remote_project(project)
+        self.assertNotIn(token.encode("ascii"), stub.global_config_bytes)
+        expected_basic = MODULE.base64.b64encode(f"x-access-token:{token}".encode("ascii"))
+        self.assertIn(expected_basic, stub.global_config_bytes)
+        self.assertNotIn(b"helper = manager", stub.global_config_bytes)
+        self.assertTrue(
+            all(MODULE.REMOTE_TOKEN_ENV not in environment for _, _, environment, *_ in stub.calls)
+        )
+
+        project, _ = self._remote_fixture("salesforce-tools")
+        with mock.patch.dict(
+            MODULE.os.environ, {MODULE.REMOTE_TOKEN_ENV: "invalid\ntoken"}, clear=False
+        ):
+            with self.assertRaisesRegex(
+                MODULE.Phase3Error, "PUBLISHED_REMOTE_AUTH_TOKEN_INVALID"
+            ):
+                MODULE._verify_remote_project(project)
+
     def test_remote_url_and_ref_are_exact_allowlisted(self):
         for field, value in (
             ("remote", "https://github.com/example/Cloudvore.git"),
@@ -473,6 +505,10 @@ class Phase3DispositionBatchTests(unittest.TestCase):
             "python tools/check_phase3_disposition_batch.py --treeish HEAD --verify-remotes",
             workflow,
         )
+        self.assertIn("R26_REMOTE_GITHUB_TOKEN: ${{ secrets.R26_CROSS_REPO_READ_TOKEN }}", workflow)
+        self.assertIn("if: env.R26_REMOTE_GITHUB_TOKEN != ''", workflow)
+        self.assertIn("if: env.R26_REMOTE_GITHUB_TOKEN == ''", workflow)
+        self.assertIn("REMOTES NOT VERIFIED - R26_CROSS_REPO_READ_TOKEN is not configured", workflow)
 
     def test_summary_cannot_claim_adoption_or_runtime_authority(self):
         for field in ("adoptionClaims", "runtimeAuthorityClaims"):

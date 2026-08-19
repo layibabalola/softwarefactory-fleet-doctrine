@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import base64
 import hashlib
 import json
 import os
@@ -78,6 +79,7 @@ REMOTE_FETCH_DEPTH = 64
 REMOTE_GIT_TIMEOUT_SECONDS = 60
 REMOTE_MAX_ARTIFACT_BYTES = 1_048_576
 REMOTE_TEMP_PREFIX = "fleet-doctrine-r26-phase3-remote-"
+REMOTE_TOKEN_ENV = "R26_REMOTE_GITHUB_TOKEN"
 
 
 class Phase3Error(ValueError):
@@ -363,7 +365,7 @@ def _remote_environment(askpass_path: Path, global_config_path: Path) -> dict[st
         key: value
         for key, value in os.environ.items()
         if not key.upper().startswith(("GIT_", "GCM_"))
-        and key.upper() not in {"SSH_ASKPASS", "SSH_ASKPASS_REQUIRE"}
+        and key.upper() not in {"SSH_ASKPASS", "SSH_ASKPASS_REQUIRE", REMOTE_TOKEN_ENV}
     }
     environment.update(
         {
@@ -420,14 +422,28 @@ def _write_askpass(temp_root: Path) -> Path:
     return path
 
 
-def _write_global_git_config(temp_root: Path) -> Path:
+def _remote_auth_token() -> str | None:
+    token = os.environ.get(REMOTE_TOKEN_ENV)
+    if token is None or token == "":
+        return None
+    if re.fullmatch(r"[A-Za-z0-9_]{20,512}", token) is None:
+        raise Phase3Error("PUBLISHED_REMOTE_AUTH_TOKEN_INVALID")
+    return token
+
+
+def _write_global_git_config(temp_root: Path, token: str | None) -> Path:
     path = temp_root / "gitconfig"
-    content = (
-        b"[http]\n\tsslBackend = schannel\n[credential]\n\thelper = manager\n"
-        if os.name == "nt"
-        else b"# intentionally empty\n"
-    )
+    content = b"[http]\n\tsslBackend = schannel\n" if os.name == "nt" else b""
+    if token is not None:
+        basic = base64.b64encode(f"x-access-token:{token}".encode("ascii"))
+        content += b'[http "https://github.com/"]\n\textraHeader = AUTHORIZATION: basic ' + basic + b"\n"
+    elif os.name == "nt":
+        content += b"[credential]\n\thelper = manager\n"
+    else:
+        content += b"# intentionally empty\n"
     path.write_bytes(content)
+    if os.name != "nt":
+        path.chmod(0o600)
     return path
 
 
@@ -501,11 +517,12 @@ def _verify_remote_project(project: dict[str, Any]) -> None:
         "publishedRef": candidate.get("publishedRef"),
     } != allowlisted:
         raise Phase3Error(f"PUBLISHED_REMOTE_URL_REF_NOT_ALLOWLISTED:{project_id}")
+    token = _remote_auth_token()
 
     with tempfile.TemporaryDirectory(prefix=REMOTE_TEMP_PREFIX) as temp_name:
         temp_root = Path(temp_name)
         askpass_path = _write_askpass(temp_root)
-        global_config_path = _write_global_git_config(temp_root)
+        global_config_path = _write_global_git_config(temp_root, token)
         environment = _remote_environment(askpass_path, global_config_path)
         repo = temp_root / "objects"
         repo.mkdir()

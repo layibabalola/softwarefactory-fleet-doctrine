@@ -23,8 +23,12 @@ Without `--verify-remotes`, the checker emits `PASS LOCAL-ONLY` and `REMOTES NOT
 structure success cannot be mistaken for publication verification. `--verify-remotes` accepts only
 the three exact allowlisted GitHub URL/ref pairs, uses a bounded temporary repository with prompts
 disabled and command timeouts, fetches each ref, and rederives the commit tree, sole parent, base
-ancestry, and every artifact Git blob, byte count, and SHA-256. The publishing CI runs this remote
-mode. Git system and user configuration are disabled; the temporary Windows config names only the
-installed `schannel` TLS backend and noninteractive credential manager. Terminal and askpass
-prompts remain disabled. Temporary Git objects are removed on every exit. None of these checks
-invokes a provider or changes runtime state.
+ancestry, and every artifact Git blob, byte count, and SHA-256. Publishing CI always runs local-only
+verification. It runs remote mode only when the explicit `R26_CROSS_REPO_READ_TOKEN` secret grants
+cross-private-repository read authority; otherwise a separate step states `REMOTES NOT VERIFIED`.
+The optional token is encoded only in the temporary GitHub-scoped config, never argv, output, or the
+Git child environment. Git system and user configuration are disabled; the temporary Windows
+config names only the installed `schannel` TLS backend and, for local proof without an explicit
+token, the noninteractive credential manager. Terminal and askpass prompts remain disabled.
+Temporary Git objects are removed on every exit. None of these checks invokes a provider or changes
+runtime state.
