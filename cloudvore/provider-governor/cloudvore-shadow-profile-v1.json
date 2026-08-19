@@ -2,6 +2,7 @@
   "schema": "cloudvore-provider-governor-shadow-profile/v1",
   "proposal_status": "PROPOSED_ZERO_AUTHORITY",
   "source_design": {
+    "path": "cloudvore/provider-governor/provenance/HUB-DESIGN-provider-capacity-governor-shadow-adoption-0818.md",
     "sha256": "424a56c8700813c06bf31ac3b5b8c34b323f1ef6b1f38685e51bb89764957887",
     "size_bytes": 17321
   },
@@ -19,28 +20,44 @@
     "commit": "224a6705d81dfbc670313cdcef4d825216f2b380",
     "tree": "569957a2b62eb0e2e99c1490a9cbec0002894e42",
     "parent": "fa8e19d0630b2a246bcb46a112f247b160e97c1f",
-    "ruling_artifact_tuple_status": "BLOCKED_DECLARED_TUPLE_MISMATCH",
-    "ruling_declared_mismatches": [
+    "ruling_commit": "55a5808aa9edffcf9c86f1f9c2837a12a5c3c5d1",
+    "ruling_merge": "9af3eb9d4f4669abb787cc1966280608f5fbbce9",
+    "ruling_blob": "79b4e8a4708ee5aec5a770a1aa8849d5bc4b1390",
+    "ruling_blob_sha256": "a51993ef43320c7a6c3038b6e43a2ec72eee68406b948172dd499624bb2bae5b",
+    "declared_tuple_status": "BLOCKED_TWO_RULING_MISMATCHES_ONE_PRIOR_PROFILE_TRANSCRIPTION_MISMATCH",
+    "declared_tuple_checks": [
       {
         "path": "README.md",
-        "declared_sha256": "98e69c89d86ac02cb7170f85b7429c326f4406530b30fc4cec609aebf5ba78c5",
-        "declared_size_bytes": 2904,
+        "prior_profile_sha256": "98e69c89d86ac02cb7170f85b7429c326f4406530b30fc4cec609aebf5ba78c5",
+        "source_design_sha256": "98e69c89d86ac02cb7170f85b7429c326f4406530b30fc4cec609aebf5ba78c5",
+        "source_design_size_bytes": 2904,
+        "ruling_declared_sha256": "98e69c89d86ac02cb7170f85b7429c326f4406530b30fc4cec609aebf5ba78c5",
+        "ruling_declared_size_bytes": 2904,
         "git_object_sha256": "4034ca23155bb349324946d2ece95be4dd8c2a6089ea270401d4c2c7fd7052c6",
-        "git_object_size_bytes": 2873
+        "git_object_size_bytes": 2873,
+        "classification": "RULING_TUPLE_MISMATCH"
       },
       {
         "path": "metrics/README.md",
-        "declared_sha256": "d8f9e2202a220d42feb2b59e99fbc80cecbdd0d1bf494da2eef139f34268871f",
-        "declared_size_bytes": 3567,
+        "prior_profile_sha256": "d8f9e2202a220d42feb2b59e99fbc80cecbdd0d1bf494da2eef139f34268871f",
+        "source_design_sha256": "d8f9e2202a220d42feb2b59e99fbc80cecbdd0d1bf494da2eef139f34268871f",
+        "source_design_size_bytes": 3567,
+        "ruling_declared_sha256": "d8f9e2202a220d42feb2b59e99fbc80cecbdd0d1bf494da2eef139f34268871f",
+        "ruling_declared_size_bytes": 3567,
         "git_object_sha256": "de3a3414648983f28f4aec25302537c6fae34531d3ce0399c8c9de9129631c0b",
-        "git_object_size_bytes": 3528
+        "git_object_size_bytes": 3528,
+        "classification": "RULING_TUPLE_MISMATCH"
       },
       {
         "path": "examples/provider-usage-events-v1.jsonl",
-        "declared_sha256": "9f32c4734ff40473c00b4e8f64c39ccee351459740fa4dcdffa86d293c5543969",
-        "declared_size_bytes": 2254,
+        "prior_profile_sha256": "9f32c4734ff40473c00b4e8f64c39ccee351459740fa4dcdffa86d293c5543969",
+        "source_design_sha256": "9f32c4734ff40473c00b4e8f64c39ccee351459740fa4dcdfa86d293c5543969",
+        "source_design_size_bytes": 2254,
+        "ruling_declared_sha256": "9f32c4734ff40473c00b4e8f64c39ccee351459740fa4dcdfa86d293c5543969",
+        "ruling_declared_size_bytes": 2254,
         "git_object_sha256": "9f32c4734ff40473c00b4e8f64c39ccee351459740fa4dcdfa86d293c5543969",
-        "git_object_size_bytes": 2254
+        "git_object_size_bytes": 2254,
+        "classification": "PRIOR_PROFILE_TRANSCRIPTION_ONLY"
       }
     ],
     "artifact_manifest": [
@@ -142,6 +159,12 @@
     "IDLE_SKIPPED",
     "UNPARSEABLE"
   ],
+  "source_exclusions": {
+    "excluded_from_admission_authority": ["score", "grade", "doctrine_write", "publication"],
+    "score_or_grade_may_authorize": false,
+    "doctrine_write_may_authorize_runtime": false,
+    "publication_may_authorize_runtime": false
+  },
   "no_authority": [
     "provider_launch",
     "process_kill",
@@ -156,6 +179,8 @@
     "merge",
     "release",
     "project_adoption",
-    "fleet_adoption"
+    "fleet_adoption",
+    "doctrine_write",
+    "publication"
   ]
 }

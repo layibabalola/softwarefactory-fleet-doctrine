@@ -272,16 +272,37 @@ not satisfy the production-path or dated-receipt requirements above.
 
 ### Universal SHADOW proposal and disposition matrix (2026-08-18)
 
+Cloudvore's exact R14 disposition is:
+
+**DISTINGUISH(874605e43531c9aa230ee16851f8107a8e0d9cec,
+PENDING_LOCAL_SUPERVISOR_ADAPTER_COMPLETE_CENSUS_AND_DRILLS,
+cloudvore/provider-governor/PROPOSAL-RECEIPT-20260818.md)**
+
+This is keyed to the accepted R14 candidate and canonical merge
+`488cf0dc0c2c2ddd1ab024c6377e1fd6d61eef1d`. It is separate from, and does not erase, the historical
+`224a670...` capacity-governor disposition above.
+
 Cloudvore's design submission is the machine-readable
 `cloudvore/provider-governor/cloudvore-shadow-profile-v1.json`, sourced from design SHA-256
 `424A56C8700813C06BF31AC3B5B8C34B323F1EF6B1F38685E51BB89764957887` / 17,321 bytes. Its status is
 `PROPOSED_ZERO_AUTHORITY`; it pins all 13 paths to their accepted Git-object bytes and does not
-install or activate anything. Validation found that the artifact tuple printed in `RULINGS.md`
-disagrees with the accepted Git bytes for `README.md`, `metrics/README.md`, and
-`examples/provider-usage-events-v1.jsonl` (whose declared hash is 65 hex characters). The profile
-therefore records `BLOCKED_DECLARED_TUPLE_MISMATCH`; Cloudvore may not silently choose either tuple,
-and installation remains barred pending fleet adjudication. The accompanying receipt is
+install or activate anything. Validation parses the accepted `RULINGS.md` Git blob and finds two
+true ruling/object mismatches, for `README.md` and `metrics/README.md`. Its usage-example hash and
+the tracked source design both carry the correct 64-character digest; the 65-character value
+appeared only in PR #17's prior profile and is retained as adverse transcription evidence. The
+profile records `BLOCKED_TWO_RULING_MISMATCHES_ONE_PRIOR_PROFILE_TRANSCRIPTION_MISMATCH`; Cloudvore may not silently choose
+either README tuple, and installation remains barred pending fleet adjudication. The accompanying receipt is
 `cloudvore/provider-governor/PROPOSAL-RECEIPT-20260818.md`.
+
+The exact source preimage is now tracked at
+`cloudvore/provider-governor/provenance/HUB-DESIGN-provider-capacity-governor-shadow-adoption-0818.md`.
+The versioned envelope is validated against strict Draft 2020-12 schema
+`cloudvore/provider-governor/cloudvore-shadow-profile-v1.schema.json`; unknown, missing, and unsafe
+semantic mutations are negative controls. The same profile exact-binds `score`, `grade`,
+`doctrine_write`, and `publication` as non-authoritative admission sources. This PR submits
+`cloudvore/provider-governor/**` as a Cloudvore-owned proposal/provenance namespace for doctrine
+review; the namespace itself grants no runtime or cross-project write authority before canonical
+merge adjudication.
 
 The proposal also binds the accepted additive universal reconciliation at candidate
 `874605e43531c9aa230ee16851f8107a8e0d9cec`, tree
@@ -302,7 +323,7 @@ effort cell; preserving the exact cell does not manufacture a routing pass.
 
 | Cloudvore evidence surface | Fleet activation stage affected | Current disposition | Promotion evidence |
 |---|---|---|---|
-| Install tuple and local supervisor/adapter manifest | `INSTALLED_UNVERIFIED` | `BLOCKED_DECLARED_TUPLE_MISMATCH` | Fleet correction/adjudication, then exact 13-artifact intake plus extension, policy, executable, Python, dependency, and installed-file hashes |
+| Install tuple and local supervisor/adapter manifest | `INSTALLED_UNVERIFIED` | `BLOCKED_TWO_RULING_MISMATCHES_ONE_PRIOR_PROFILE_TRANSCRIPTION_MISMATCH` | Fleet correction/adjudication, then exact 13-artifact intake plus extension, policy, executable, Python, dependency, and installed-file hashes |
 | Counterfactual decisions, capsules, normalized events, zero launch effect | `SHADOW` / `SHADOW_PASS` | `PENDING` | Three deterministic fake/no-inference runs, mutations, independent review, and bounded attended receipts for each retained family |
 | One host-wide claimant and structural direct-launch closure | `CONTAINMENT` / `CONTAINMENT_PASS` | `PENDING` | Same-domain single flight, distinct-domain independence, startup/cooldown/orphan fences, complete launcher census, and bypass refusal |
 | Fresh native capacity plus completion/review reserve | `CANARY` prerequisite / `CAPACITY_PASS` | `PENDING` | Required provider dimensions, freshness, refusal/reset quiet, reservation boundary, and launch-time revalidation |

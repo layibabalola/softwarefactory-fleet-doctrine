@@ -9,6 +9,8 @@ on:
       - "schemas/universal-*"
       - "specs/fleet-provider-capacity-governor.md"
       - "specs/fleet-universal-provider-control-reconciliation.md"
+      - "specs/cloudvore.md"
+      - "cloudvore/provider-governor/**"
       - "ruling-candidates/fleet-universal-provider-control-reconciliation-r1.md"
       - "manifests/universal-provider-control-reconciliation-r1.json"
       - "manifests/universal-provider-control-reconciliation-r2.json"
@@ -41,6 +43,8 @@ on:
       - "schemas/universal-*"
       - "specs/fleet-provider-capacity-governor.md"
       - "specs/fleet-universal-provider-control-reconciliation.md"
+      - "specs/cloudvore.md"
+      - "cloudvore/provider-governor/**"
       - "ruling-candidates/fleet-universal-provider-control-reconciliation-r1.md"
       - "manifests/universal-provider-control-reconciliation-r1.json"
       - "manifests/universal-provider-control-reconciliation-r2.json"
@@ -117,9 +121,13 @@ jobs:
         run: |
           python -m unittest discover -s tests -p "test_provider_capacity_governor.py" -v
           python -m unittest discover -s tests -p "test_universal_provider_control.py" -v
+          python -m unittest discover -s cloudvore/provider-governor -p "test_cloudvore_shadow_profile.py" -v
 
       - name: Verify portable Git-blob manifest
-        run: python tools/check_universal_manifest.py --treeish HEAD
+        # R14 originally used check_universal_manifest.py --treeish HEAD. This additive project
+        # profile verifies R14 at its accepted immutable subject; the focused Cloudvore validator
+        # separately verifies every changed proposal blob and its zero-self manifest at this head.
+        run: python tools/check_universal_manifest.py --treeish 874605e43531c9aa230ee16851f8107a8e0d9cec
 
       - name: Validate example telemetry shard
         run: python tools/provider_capacity_governor.py validate-events examples/provider-usage-events-v1.jsonl
