@@ -366,6 +366,9 @@ MLV-App's current project disposition is:
 
 **DISTINGUISH(909f769d02e8412e51e28e242cfa8d00dadc9a3d, MLV_APP_R26_CANDIDATE_ZERO_AUTHORITY_CURRENT_MASTER_HAS_NO_INSTALLED_TOKEN_CONTROL_SUPERVISOR_COMPLETE_LAUNCHER_CENSUS_REQUEST_LEVEL_ACCOUNTING_1000_IDLE_TICKS_FULL_CHILD_FENCING_ROLLBACK_QUALITY_EQUIVALENCE_OR_CURRENT_CLOSED_GATE_PROOF, MLV_APP_BASE_30889f77e2000190b94d59f80f6a03b12ce3e0d3)**
 
+This disposition binds exact R26 candidate `e70a044f31dd2f43ab7c716d63a4eb89318c61b6`
+and its exact merge `909f769d02e8412e51e28e242cfa8d00dadc9a3d`.
+
 This row folds the independently accepted, project-owned candidate published at
 `https://github.com/layibabalola/MLV-App.git`, ref
 `refs/heads/codex/r26-zero-authority-disposition-candidate-20260819`, commit
