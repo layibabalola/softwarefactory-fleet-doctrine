@@ -3879,6 +3879,21 @@ class UniversalProviderControlTests(unittest.TestCase):
         with self.assertRaisesRegex(checker.ManifestError, "RECONCILIATION_PARENT_TREE_MISMATCH"):
             checker.verify_reconciliation({"reconciliation": forged_tree}, ":")
 
+    def test_r17_09_manifest_verifies_exact_ordered_merge_and_forged_negatives(self) -> None:
+        import check_universal_manifest as checker
+
+        manifest_path = ROOT / "manifests" / "universal-provider-control-reconciliation-r17.json"
+        reconciliation = json.loads(manifest_path.read_text(encoding="utf-8"))["reconciliation"]
+        checker.verify_reconciliation({"reconciliation": reconciliation}, ":")
+        swapped = copy.deepcopy(reconciliation)
+        swapped["r17MasterMerge"]["orderedParents"].reverse()
+        with self.assertRaisesRegex(checker.ManifestError, "RECONCILIATION_COMMIT_MISMATCH"):
+            checker.verify_reconciliation({"reconciliation": swapped}, ":")
+        forged_tree = copy.deepcopy(reconciliation)
+        forged_tree["r17Wip"]["orderedParentTrees"][0] = "0" * 40
+        with self.assertRaisesRegex(checker.ManifestError, "RECONCILIATION_PARENT_TREE_MISMATCH"):
+            checker.verify_reconciliation({"reconciliation": forged_tree}, ":")
+
     # Bounded exact evidence capsule controls.
 
     def capsule_request(self, source: Path, *, lengths: list[int]) -> dict:
