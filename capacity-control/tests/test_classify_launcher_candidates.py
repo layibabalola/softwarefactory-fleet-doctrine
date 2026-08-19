@@ -76,6 +76,18 @@ class LauncherCandidateClassifierTests(unittest.TestCase):
             [(row["path"], row["sha256"]) for row in second["candidates"]],
         )
         self.assertEqual([row["path"] for row in first["candidates"]], ["a.py", "b.py"])
+        self.assertEqual(first["root"], ".")
+
+    def test_working_tree_refusal_does_not_echo_private_details(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            source = root / "private.ps1"
+            source.write_text("# claude\n", encoding="utf-8")
+            with mock.patch.object(MODULE, "_classify", side_effect=OSError("C:/secret/token")):
+                result = MODULE.classify_tree(root)
+        self.assertEqual(result["root"], ".")
+        self.assertEqual(result["refused"], [{"path": "private.ps1", "reason": "INPUT_REFUSED"}])
+        self.assertNotIn("secret", json.dumps(result))
 
     def test_oversize_source_is_refused_and_counted_unresolved(self):
         with tempfile.TemporaryDirectory() as temporary:

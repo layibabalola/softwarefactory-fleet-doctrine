@@ -28,6 +28,10 @@ SOURCE_SUFFIXES = {".bat", ".cmd", ".js", ".ps1", ".psm1", ".py", ".sh", ".ts"}
 EXCLUDED_PARTS = {".git", "node_modules", "tmp"}
 REVIEW_DISPOSITIONS = {"LAUNCHER", "NON_LAUNCHER", "UNKNOWN"}
 REVIEW_SCHEMA = "conjugal-launcher-review/v2"
+PUBLIC_REFUSAL_REASONS = {
+    "SOURCE_TOO_LARGE",
+    "SYMLINK_SOURCE_REFUSED",
+}
 
 PROVIDERS = {
     "CLAUDE": re.compile(r"(?i)\b(?:claude(?:\.exe)?|anthropic)\b"),
@@ -113,6 +117,11 @@ def _classify(path: Path, root: Path) -> dict[str, object]:
     return _classify_data(path.relative_to(root).as_posix(), data)
 
 
+def _public_refusal_reason(error: BaseException) -> str:
+    reason = str(error)
+    return reason if reason in PUBLIC_REFUSAL_REASONS else "INPUT_REFUSED"
+
+
 def _report(root: str, rows: list[dict[str, object]], refused: list[dict[str, str]], **identity: str) -> dict[str, object]:
     counts: dict[str, int] = {}
     priorities: dict[str, int] = {}
@@ -148,29 +157,32 @@ def classify_tree(root: Path) -> dict[str, object]:
     root = root.resolve(strict=True)
     rows: list[dict[str, object]] = []
     refused: list[dict[str, str]] = []
-    source_count = 0
-    aggregate = 0
-    for path in sorted(root.rglob("*"), key=lambda item: item.as_posix().casefold()):
+    sources: list[Path] = []
+    for path in root.rglob("*"):
         if not path.is_file() or path.suffix.lower() not in SOURCE_SUFFIXES:
             continue
-        if any(part.casefold() in EXCLUDED_PARTS for part in path.relative_to(root).parts):
+        relative = path.relative_to(root)
+        if any(part.casefold() in EXCLUDED_PARTS for part in relative.parts):
             continue
-        source_count += 1
-        aggregate += path.stat().st_size
-        if source_count > MAX_SOURCE_FILES:
+        sources.append(path)
+        if len(sources) > MAX_SOURCE_FILES:
             raise ValueError("SOURCE_COUNT_LIMIT")
+
+    aggregate = 0
+    for path in sorted(sources, key=lambda item: item.relative_to(root).as_posix().casefold()):
+        aggregate += path.stat().st_size
         if aggregate > MAX_AGGREGATE_SOURCE_BYTES:
             raise ValueError("SOURCE_AGGREGATE_LIMIT")
         try:
             row = _classify(path, root)
         except (OSError, ValueError) as exc:
-            refused.append({"path": path.relative_to(root).as_posix(), "reason": str(exc)})
+            refused.append({"path": path.relative_to(root).as_posix(), "reason": _public_refusal_reason(exc)})
             continue
         if row["providers"]:
             rows.append(row)
             if len(rows) > MAX_CANDIDATES:
                 raise ValueError("CANDIDATE_COUNT_LIMIT")
-    return _report(str(root), rows, refused, sourceMode="WORKING_TREE")
+    return _report(".", rows, refused, sourceMode="WORKING_TREE")
 
 
 def _git(repo: Path, *arguments: str, text: bool = False) -> subprocess.CompletedProcess:
@@ -263,7 +275,7 @@ def classify_git_tree(repo: Path, treeish: str) -> dict[str, object]:
             try:
                 row = _classify_data(path, data)
             except ValueError as exc:
-                refused.append({"path": path, "reason": str(exc)})
+                refused.append({"path": path, "reason": _public_refusal_reason(exc)})
                 continue
             if row["providers"]:
                 rows.append(row)
