@@ -1,4 +1,5 @@
 import copy
+import hashlib
 import importlib.util
 import json
 from pathlib import Path
@@ -29,22 +30,116 @@ class AdoptionLedgerTests(unittest.TestCase):
     def _project(self, ledger, project_id):
         return next(project for project in ledger["projects"] if project["projectId"] == project_id)
 
-    def _adopt_non_regression_evidence(self):
-        evidence = {}
-        for index, dimension in enumerate(MODULE.NON_REGRESSION_DIMENSIONS, start=1):
+    def _synthetic_adopt(self):
+        ledger = self._copy()
+        project = self._project(ledger, "dng-auto-processor")
+        project["status"] = "ADOPT"
+        project["blocker"] = None
+        project["evidence"]["disposition"] = {
+            "status": "ADOPT",
+            "subjectCommit": MODULE.EXPECTED_MERGE,
+        }
+        ledger["summary"]["counts"]["ADOPT"] = 1
+        ledger["summary"]["counts"]["DISTINGUISH"] = 0
+
+        receipt_path = (
+            "receipts/project-adoption/dng-auto-processor/"
+            "r26-non-regression.json"
+        )
+        receipt = {
+            "schema": MODULE.ADOPT_RECEIPT_SCHEMA,
+            "projectId": "dng-auto-processor",
+            "candidateCommit": MODULE.EXPECTED_CANDIDATE,
+            "mergeCommit": MODULE.EXPECTED_MERGE,
+            "dimensions": {
+                dimension: {
+                    "claim": MODULE.NON_REGRESSION_CLAIMS[dimension],
+                    "passed": True,
+                }
+                for dimension in MODULE.NON_REGRESSION_DIMENSIONS
+            },
+        }
+        receipt_bytes = json.dumps(
+            receipt, sort_keys=True, separators=(",", ":")
+        ).encode("utf-8")
+        receipt_sha256 = f"sha256:{hashlib.sha256(receipt_bytes).hexdigest()}"
+        project["nonRegressionEvidence"] = {}
+        for dimension in MODULE.NON_REGRESSION_DIMENSIONS:
             claim = MODULE.NON_REGRESSION_CLAIMS[dimension]
-            receipt_sha256 = f"sha256:{index:064x}"
-            evidence[dimension] = {
+            project["nonRegressionEvidence"][dimension] = {
                 "claim": claim,
+                "receiptPath": receipt_path,
                 "receiptSha256": receipt_sha256,
                 "anchor": MODULE._adopt_non_regression_anchor(
-                    dimension, claim, receipt_sha256
+                    dimension,
+                    claim,
+                    receipt_path,
+                    receipt_sha256,
                 ),
             }
-        return evidence
+        spec_lines = [
+            f"ADOPT (`{MODULE.EXPECTED_MERGE}`)",
+            f"Exact R26 candidate: {MODULE.EXPECTED_CANDIDATE}",
+            f"Exact R26 merge: {MODULE.EXPECTED_MERGE}",
+            *(record["anchor"] for record in project["nonRegressionEvidence"].values()),
+        ]
+        return ledger, "\n".join(spec_lines).encode("utf-8"), {
+            receipt_path: receipt_bytes
+        }
 
-    def _evidence_bytes(self, evidence):
-        return "\n".join(record["anchor"] for record in evidence.values()).encode("ascii")
+    def _verify_synthetic_adopt(
+        self,
+        ledger,
+        spec_bytes,
+        receipt_blobs,
+        *,
+        receipt_commit=None,
+    ):
+        original_blob = MODULE._blob
+        original_blob_size = MODULE._blob_size
+        original_last_path_commit = MODULE._last_path_commit
+        project = self._project(ledger, "dng-auto-processor")
+        evidence_commit = project["evidence"]["commit"]
+
+        def receipt_at(treeish, path):
+            value = receipt_blobs.get(path)
+            if isinstance(value, dict):
+                return value.get(treeish, value.get("*"))
+            return value
+
+        def synthetic_blob(treeish, path):
+            if path == project["specPath"]:
+                return spec_bytes
+            if path.startswith(f"{MODULE.ADOPT_RECEIPT_PREFIX}/"):
+                value = receipt_at(treeish, path)
+                if value is None:
+                    raise MODULE.LedgerError("GIT_BLOB_UNAVAILABLE")
+                return value
+            return original_blob(treeish, path)
+
+        def synthetic_blob_size(treeish, path, *, error="GIT_BLOB_SIZE_UNAVAILABLE"):
+            if path.startswith(f"{MODULE.ADOPT_RECEIPT_PREFIX}/"):
+                value = receipt_at(treeish, path)
+                if value is None:
+                    raise MODULE.LedgerError(error)
+                return len(value)
+            return original_blob_size(treeish, path, error=error)
+
+        def synthetic_last_path_commit(treeish, path):
+            if path.startswith(f"{MODULE.ADOPT_RECEIPT_PREFIX}/"):
+                if receipt_at(treeish, path) is None:
+                    raise MODULE.LedgerError("PROJECT_EVIDENCE_HISTORY_INVALID")
+                return receipt_commit or evidence_commit
+            return original_last_path_commit(treeish, path)
+
+        with (
+            mock.patch.object(MODULE, "_blob", side_effect=synthetic_blob),
+            mock.patch.object(MODULE, "_blob_size", side_effect=synthetic_blob_size),
+            mock.patch.object(
+                MODULE, "_last_path_commit", side_effect=synthetic_last_path_commit
+            ),
+        ):
+            MODULE.verify_ledger(ledger, "HEAD")
 
     def test_canonical_ledger_matches_closed_project_owned_evidence(self):
         MODULE.verify_ledger(self._copy(), "HEAD")
@@ -74,6 +169,31 @@ class AdoptionLedgerTests(unittest.TestCase):
         ledger["candidate"]["manifest"]["status"] = "RATIFIED"
         with self.assertRaisesRegex(MODULE.LedgerError, "MANIFEST_STATUS_CLAIM_MISMATCH"):
             MODULE.verify_ledger(ledger, "HEAD")
+
+    def test_manifest_zero_authority_requires_strict_json_booleans(self):
+        original_blob = MODULE._blob
+        manifest_bytes = original_blob(MODULE.EXPECTED_CANDIDATE, MODULE.EXPECTED_MANIFEST)
+        manifest = MODULE.load_ledger(manifest_bytes)
+        cases = {
+            "false_as_zero": ("providerExecution", 0),
+            "true_as_one": ("activationRequiresSeparateAdjudication", 1),
+        }
+        for name, (field, invalid_value) in cases.items():
+            with self.subTest(name=name):
+                invalid_manifest = copy.deepcopy(manifest)
+                invalid_manifest["authority"][field] = invalid_value
+                invalid_bytes = json.dumps(invalid_manifest).encode("utf-8")
+
+                def manifest_override(treeish, path):
+                    if treeish == MODULE.EXPECTED_CANDIDATE and path == MODULE.EXPECTED_MANIFEST:
+                        return invalid_bytes
+                    return original_blob(treeish, path)
+
+                with mock.patch.object(MODULE, "_blob", side_effect=manifest_override):
+                    with self.assertRaisesRegex(
+                        MODULE.LedgerError, "MANIFEST_AUTHORITY_DRIFT"
+                    ):
+                        MODULE.verify_ledger(self._copy(), "HEAD")
 
     def test_all_six_non_regression_dimensions_are_mandatory_and_ordered(self):
         ledger = self._copy()
@@ -150,48 +270,144 @@ class AdoptionLedgerTests(unittest.TestCase):
             with self.assertRaisesRegex(MODULE.LedgerError, "CURRENT_DISPOSITION_CONFLICT"):
                 MODULE.verify_ledger(self._copy(), "HEAD")
 
-    def test_adopt_non_regression_rejects_incidental_dimension_words(self):
-        incidental_words = {
+    def test_synthetic_adopt_row_passes_end_to_end_with_recomputed_receipt(self):
+        ledger, spec_bytes, receipt_blobs = self._synthetic_adopt()
+        self._verify_synthetic_adopt(ledger, spec_bytes, receipt_blobs)
+
+    def test_synthetic_adopt_rejects_incidental_words_and_incomplete_wiring(self):
+        ledger, spec_bytes, receipt_blobs = self._synthetic_adopt()
+        project = self._project(ledger, "dng-auto-processor")
+        project["nonRegressionEvidence"] = {
             dimension: dimension for dimension in MODULE.NON_REGRESSION_DIMENSIONS
         }
+        spec_bytes = (
+            f"ADOPT (`{MODULE.EXPECTED_MERGE}`)\n"
+            f"Exact R26 candidate: {MODULE.EXPECTED_CANDIDATE}\n"
+            f"Exact R26 merge: {MODULE.EXPECTED_MERGE}\n"
+            "model effort role review quality functionality"
+        ).encode("ascii")
         with self.assertRaisesRegex(
             MODULE.LedgerError, "ADOPT_NON_REGRESSION_EVIDENCE_INVALID"
         ):
-            MODULE._verify_adopt_non_regression(
-                incidental_words,
-                b"model effort role review quality functionality",
+            self._verify_synthetic_adopt(ledger, spec_bytes, receipt_blobs)
+
+    def test_synthetic_adopt_rejects_invalid_structured_records(self):
+        mutations = {
+            "missing_receipt_path": lambda record: record.pop("receiptPath"),
+            "wrong_claim": lambda record: record.update({"claim": "MODEL"}),
+            "malformed_digest": lambda record: record.update(
+                {"receiptSha256": "sha256:not-a-digest"}
+            ),
+            "forged_anchor": lambda record: record.update(
+                {"anchor": f"{record['anchor']}-fabricated"}
+            ),
+        }
+        for name, mutate in mutations.items():
+            with self.subTest(name=name):
+                ledger, spec_bytes, receipt_blobs = self._synthetic_adopt()
+                record = self._project(ledger, "dng-auto-processor")[
+                    "nonRegressionEvidence"
+                ]["model"]
+                mutate(record)
+                with self.assertRaisesRegex(
+                    MODULE.LedgerError, "ADOPT_NON_REGRESSION_EVIDENCE_INVALID"
+                ):
+                    self._verify_synthetic_adopt(ledger, spec_bytes, receipt_blobs)
+
+    def test_synthetic_adopt_rejects_nonexistent_or_forged_receipt(self):
+        ledger, spec_bytes, receipt_blobs = self._synthetic_adopt()
+        with self.assertRaisesRegex(MODULE.LedgerError, "ADOPT_RECEIPT_UNAVAILABLE"):
+            self._verify_synthetic_adopt(ledger, spec_bytes, {})
+
+        receipt_path, receipt_bytes = next(iter(receipt_blobs.items()))
+        with self.assertRaisesRegex(
+            MODULE.LedgerError, "ADOPT_RECEIPT_SHA256_MISMATCH"
+        ):
+            self._verify_synthetic_adopt(
+                ledger,
+                spec_bytes,
+                {receipt_path: receipt_bytes + b"\n"},
             )
 
-    def test_adopt_non_regression_rejects_invalid_structured_anchors(self):
-        evidence = self._adopt_non_regression_evidence()
-        evidence["model"]["claim"] = "MODEL"
-        with self.assertRaisesRegex(
-            MODULE.LedgerError, "ADOPT_NON_REGRESSION_EVIDENCE_INVALID"
-        ):
-            MODULE._verify_adopt_non_regression(evidence, self._evidence_bytes(evidence))
+    def test_synthetic_adopt_rejects_quoted_or_negated_anchor(self):
+        for prefix in ('"', "> ", "NOT "):
+            with self.subTest(form=prefix):
+                ledger, spec_bytes, receipt_blobs = self._synthetic_adopt()
+                anchor = self._project(ledger, "dng-auto-processor")[
+                    "nonRegressionEvidence"
+                ]["model"]["anchor"]
+                replacement = f'{prefix}{anchor}"' if prefix == '"' else f"{prefix}{anchor}"
+                spec_bytes = spec_bytes.replace(
+                    anchor.encode("ascii"), replacement.encode("ascii"), 1
+                )
+                with self.assertRaisesRegex(
+                    MODULE.LedgerError, "ADOPT_NON_REGRESSION_EVIDENCE_MISSING"
+                ):
+                    self._verify_synthetic_adopt(ledger, spec_bytes, receipt_blobs)
 
-        evidence = self._adopt_non_regression_evidence()
-        evidence["quality"]["receiptSha256"] = "sha256:not-a-digest"
-        with self.assertRaisesRegex(
-            MODULE.LedgerError, "ADOPT_NON_REGRESSION_EVIDENCE_INVALID"
-        ):
-            MODULE._verify_adopt_non_regression(evidence, self._evidence_bytes(evidence))
-
-        evidence = self._adopt_non_regression_evidence()
-        evidence["functionality"]["anchor"] += "-fabricated"
-        with self.assertRaisesRegex(
-            MODULE.LedgerError, "ADOPT_NON_REGRESSION_EVIDENCE_INVALID"
-        ):
-            MODULE._verify_adopt_non_regression(evidence, self._evidence_bytes(evidence))
-
-    def test_adopt_non_regression_requires_structured_anchors_in_project_evidence(self):
-        evidence = self._adopt_non_regression_evidence()
+        ledger, spec_bytes, receipt_blobs = self._synthetic_adopt()
+        anchor = self._project(ledger, "dng-auto-processor")["nonRegressionEvidence"][
+            "model"
+        ]["anchor"]
+        spec_bytes += f"\n{anchor}".encode("ascii")
         with self.assertRaisesRegex(
             MODULE.LedgerError, "ADOPT_NON_REGRESSION_EVIDENCE_MISSING"
         ):
-            MODULE._verify_adopt_non_regression(evidence, b"model")
+            self._verify_synthetic_adopt(ledger, spec_bytes, receipt_blobs)
 
-        MODULE._verify_adopt_non_regression(evidence, self._evidence_bytes(evidence))
+    def test_synthetic_adopt_receipt_wiring_fails_closed(self):
+        ledger, spec_bytes, receipt_blobs = self._synthetic_adopt()
+        project = self._project(ledger, "dng-auto-processor")
+        record = project["nonRegressionEvidence"]["model"]
+        record["receiptPath"] = "receipts/project-adoption/other/r26.json"
+        with self.assertRaisesRegex(MODULE.LedgerError, "ADOPT_RECEIPT_PATH_INVALID"):
+            self._verify_synthetic_adopt(ledger, spec_bytes, receipt_blobs)
+
+        ledger, spec_bytes, receipt_blobs = self._synthetic_adopt()
+        with self.assertRaisesRegex(
+            MODULE.LedgerError, "ADOPT_RECEIPT_COMMIT_MISMATCH"
+        ):
+            self._verify_synthetic_adopt(
+                ledger,
+                spec_bytes,
+                receipt_blobs,
+                receipt_commit=MODULE.EXPECTED_MERGE,
+            )
+
+        ledger, spec_bytes, receipt_blobs = self._synthetic_adopt()
+        receipt_path, receipt_bytes = next(iter(receipt_blobs.items()))
+        with self.assertRaisesRegex(MODULE.LedgerError, "ADOPT_RECEIPT_DRIFT"):
+            self._verify_synthetic_adopt(
+                ledger,
+                spec_bytes,
+                {receipt_path: {"*": receipt_bytes, "HEAD": receipt_bytes + b"\n"}},
+            )
+
+        ledger, spec_bytes, receipt_blobs = self._synthetic_adopt()
+        receipt_path = next(iter(receipt_blobs))
+        with self.assertRaisesRegex(MODULE.LedgerError, "ADOPT_RECEIPT_SIZE_INVALID"):
+            self._verify_synthetic_adopt(
+                ledger,
+                spec_bytes,
+                {receipt_path: b"x" * (MODULE.MAX_ADOPT_RECEIPT_BYTES + 1)},
+            )
+
+    def test_synthetic_adopt_receipt_rejects_bool_one(self):
+        ledger, spec_bytes, receipt_blobs = self._synthetic_adopt()
+        receipt_path, receipt_bytes = next(iter(receipt_blobs.items()))
+        receipt = MODULE.load_ledger(receipt_bytes)
+        receipt["dimensions"]["model"]["passed"] = 1
+        invalid_receipt = json.dumps(
+            receipt, sort_keys=True, separators=(",", ":")
+        ).encode("utf-8")
+        with self.assertRaisesRegex(
+            MODULE.LedgerError, "ADOPT_RECEIPT_BINDING_INVALID"
+        ):
+            self._verify_synthetic_adopt(
+                ledger,
+                spec_bytes,
+                {receipt_path: invalid_receipt},
+            )
 
     def test_project_rows_must_be_sorted_and_unique(self):
         ledger = self._copy()

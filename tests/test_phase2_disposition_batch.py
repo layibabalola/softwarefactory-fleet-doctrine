@@ -134,6 +134,7 @@ class Phase2DispositionBatchTests(unittest.TestCase):
             MODULE,
             "_changed_paths",
             return_value={
+                "adoption/README.md",
                 "tests/test_adoption_ledger.py",
                 "tools/check_adoption_ledger.py",
                 "tests/test_phase2_disposition_batch.py",

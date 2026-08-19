@@ -37,6 +37,7 @@ PROJECT_IDS = {
 }
 ALLOWED_PHASE2_PATHS = {
     ".github/workflows/disposition-intake.yml",
+    "adoption/README.md",
     "adoption/phase2/README.md",
     BATCH_PATH,
     "tests/test_phase2_disposition_batch.py",

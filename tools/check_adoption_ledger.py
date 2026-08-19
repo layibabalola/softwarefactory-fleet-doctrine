@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 from pathlib import Path
 import re
@@ -50,6 +51,9 @@ NON_REGRESSION_CLAIMS = {
 NON_REGRESSION_RULE = (
     "TOKEN_SAVINGS_MUST_NOT_REGRESS_EXACT_MODEL_EFFORT_ROLE_REVIEW_QUALITY_OR_FUNCTIONALITY"
 )
+ADOPT_RECEIPT_SCHEMA = "fleet-project-r26-non-regression-receipt/v1"
+ADOPT_RECEIPT_PREFIX = "receipts/project-adoption"
+MAX_ADOPT_RECEIPT_BYTES = 65_536
 STATUS_BLOCKERS = {
     "ADOPT": None,
     "DISTINGUISH": "PROJECT_OWNER_DISTINCTION_OPEN",
@@ -98,6 +102,21 @@ def _blob_spec(treeish: str, path: str) -> str:
 
 def _blob(treeish: str, path: str) -> bytes:
     return _git(["show", _blob_spec(treeish, path)], error="GIT_BLOB_UNAVAILABLE")  # type: ignore[return-value]
+
+
+def _blob_size(treeish: str, path: str, *, error: str = "GIT_BLOB_SIZE_UNAVAILABLE") -> int:
+    value = _git(
+        ["cat-file", "-s", _blob_spec(treeish, path)],
+        text=True,
+        error=error,
+    ).strip()
+    try:
+        size = int(value)
+    except ValueError as exc:
+        raise LedgerError(error) from exc
+    if size < 0:
+        raise LedgerError(error)
+    return size
 
 
 def _oid(treeish: str, path: str) -> str:
@@ -251,8 +270,15 @@ def _verify_candidate(candidate: Any) -> None:
         "directInvocationImpossible": False,
         "activationRequiresSeparateAdjudication": True,
     }
-    if authority != expected_manifest_authority:
+    if set(authority) != set(expected_manifest_authority):
         raise LedgerError("MANIFEST_AUTHORITY_DRIFT")
+    for field, expected in expected_manifest_authority.items():
+        actual = authority[field]
+        if isinstance(expected, bool):
+            if actual is not expected:
+                raise LedgerError("MANIFEST_AUTHORITY_DRIFT")
+        elif actual != expected:
+            raise LedgerError("MANIFEST_AUTHORITY_DRIFT")
     hosted = validation.get("hosted")
     if not isinstance(hosted, dict) or hosted.get("claimedGreen") is not False:
         raise LedgerError("HOSTED_GREEN_IMPROPERLY_CLAIMED")
@@ -283,36 +309,142 @@ def _verify_non_regression(non_regression: Any) -> None:
         raise LedgerError("NON_REGRESSION_DIMENSIONS_MISMATCH")
 
 
-def _adopt_non_regression_anchor(dimension: str, claim: str, receipt_sha256: str) -> str:
+def _adopt_non_regression_anchor(
+    dimension: str,
+    claim: str,
+    receipt_path: str,
+    receipt_sha256: str,
+) -> str:
     return (
         "R26_NON_REGRESSION_EVIDENCE["
-        f"dimension={dimension};claim={claim};receiptSha256={receipt_sha256}]"
+        f"dimension={dimension};claim={claim};receiptPath={receipt_path};"
+        f"receiptSha256={receipt_sha256}]"
     )
 
 
-def _verify_adopt_non_regression(non_regression_evidence: Any, evidence_bytes: bytes) -> None:
+def _bounded_adopt_receipt(treeish: str, path: str) -> bytes:
+    size = _blob_size(treeish, path, error="ADOPT_RECEIPT_UNAVAILABLE")
+    if size <= 0 or size > MAX_ADOPT_RECEIPT_BYTES:
+        raise LedgerError("ADOPT_RECEIPT_SIZE_INVALID")
+    try:
+        receipt_bytes = _blob(treeish, path)
+    except LedgerError as exc:
+        raise LedgerError("ADOPT_RECEIPT_UNAVAILABLE") from exc
+    if len(receipt_bytes) != size:
+        raise LedgerError("ADOPT_RECEIPT_SIZE_INVALID")
+    return receipt_bytes
+
+
+def _verify_adopt_receipt(
+    receipt_bytes: bytes,
+    *,
+    project_id: str,
+) -> None:
+    try:
+        receipt = load_ledger(receipt_bytes)
+    except LedgerError as exc:
+        raise LedgerError("ADOPT_RECEIPT_INVALID") from exc
+    receipt = _require_exact_keys(
+        receipt,
+        {"schema", "projectId", "candidateCommit", "mergeCommit", "dimensions"},
+        "ADOPT_RECEIPT_INVALID",
+    )
+    if (
+        receipt["schema"] != ADOPT_RECEIPT_SCHEMA
+        or receipt["projectId"] != project_id
+        or receipt["candidateCommit"] != EXPECTED_CANDIDATE
+        or receipt["mergeCommit"] != EXPECTED_MERGE
+    ):
+        raise LedgerError("ADOPT_RECEIPT_BINDING_INVALID")
+    dimensions = _require_exact_keys(
+        receipt["dimensions"],
+        set(NON_REGRESSION_DIMENSIONS),
+        "ADOPT_RECEIPT_INVALID",
+    )
+    for dimension in NON_REGRESSION_DIMENSIONS:
+        result = _require_exact_keys(
+            dimensions[dimension],
+            {"claim", "passed"},
+            "ADOPT_RECEIPT_INVALID",
+        )
+        if result["claim"] != NON_REGRESSION_CLAIMS[dimension] or result["passed"] is not True:
+            raise LedgerError("ADOPT_RECEIPT_BINDING_INVALID")
+
+
+def _verify_adopt_non_regression(
+    non_regression_evidence: Any,
+    evidence_bytes: bytes,
+    *,
+    project_id: str,
+    evidence_commit: str,
+    base_commit: str,
+    treeish: str,
+) -> None:
     non_regression_evidence = _require_exact_keys(
         non_regression_evidence,
         set(NON_REGRESSION_DIMENSIONS),
         "ADOPT_NON_REGRESSION_EVIDENCE_INVALID",
     )
+    try:
+        evidence_lines = evidence_bytes.decode("utf-8").splitlines()
+    except UnicodeDecodeError as exc:
+        raise LedgerError("PROJECT_EVIDENCE_UTF8_INVALID") from exc
+    receipt_digests: dict[str, str] = {}
     for dimension in NON_REGRESSION_DIMENSIONS:
         record = _require_exact_keys(
             non_regression_evidence[dimension],
-            {"claim", "receiptSha256", "anchor"},
+            {"claim", "receiptPath", "receiptSha256", "anchor"},
             "ADOPT_NON_REGRESSION_EVIDENCE_INVALID",
         )
         claim = record["claim"]
+        receipt_path = record["receiptPath"]
         receipt_sha256 = record["receiptSha256"]
         anchor = record["anchor"]
         if claim != NON_REGRESSION_CLAIMS[dimension]:
             raise LedgerError("ADOPT_NON_REGRESSION_EVIDENCE_INVALID")
+        expected_prefix = f"{ADOPT_RECEIPT_PREFIX}/{project_id}/"
+        if (
+            not isinstance(receipt_path, str)
+            or len(receipt_path) > 220
+            or re.fullmatch(
+                rf"{re.escape(expected_prefix)}[a-z0-9][a-z0-9._-]{{0,127}}\.json",
+                receipt_path,
+            )
+            is None
+        ):
+            raise LedgerError("ADOPT_RECEIPT_PATH_INVALID")
         if not isinstance(receipt_sha256, str) or SHA256_PATTERN.fullmatch(receipt_sha256) is None:
             raise LedgerError("ADOPT_NON_REGRESSION_EVIDENCE_INVALID")
-        expected_anchor = _adopt_non_regression_anchor(dimension, claim, receipt_sha256)
+
+        if receipt_path not in receipt_digests:
+            try:
+                receipt_last_commit = _last_path_commit(base_commit, receipt_path)
+            except LedgerError as exc:
+                raise LedgerError("ADOPT_RECEIPT_UNAVAILABLE") from exc
+            if receipt_last_commit != evidence_commit:
+                raise LedgerError("ADOPT_RECEIPT_COMMIT_MISMATCH")
+            receipt_bytes = _bounded_adopt_receipt(evidence_commit, receipt_path)
+            _verify_adopt_receipt(receipt_bytes, project_id=project_id)
+            if _bounded_adopt_receipt(base_commit, receipt_path) != receipt_bytes:
+                raise LedgerError("ADOPT_RECEIPT_DRIFT")
+            if _bounded_adopt_receipt(treeish, receipt_path) != receipt_bytes:
+                raise LedgerError("ADOPT_RECEIPT_DRIFT")
+            receipt_digests[receipt_path] = (
+                f"sha256:{hashlib.sha256(receipt_bytes).hexdigest()}"
+            )
+        computed_sha256 = receipt_digests[receipt_path]
+        if receipt_sha256 != computed_sha256:
+            raise LedgerError("ADOPT_RECEIPT_SHA256_MISMATCH")
+
+        expected_anchor = _adopt_non_regression_anchor(
+            dimension,
+            claim,
+            receipt_path,
+            receipt_sha256,
+        )
         if anchor != expected_anchor:
             raise LedgerError("ADOPT_NON_REGRESSION_EVIDENCE_INVALID")
-        if expected_anchor.encode("ascii") not in evidence_bytes:
+        if evidence_lines.count(expected_anchor) != 1:
             raise LedgerError("ADOPT_NON_REGRESSION_EVIDENCE_MISSING")
 
 
@@ -408,7 +540,14 @@ def _verify_project(
         if non_regression_evidence is not None:
             raise LedgerError("NON_ADOPT_HAS_ADOPTION_CREDIT")
     else:
-        _verify_adopt_non_regression(non_regression_evidence, evidence_bytes)
+        _verify_adopt_non_regression(
+            non_regression_evidence,
+            evidence_bytes,
+            project_id=project_id,
+            evidence_commit=evidence_commit,
+            base_commit=base_commit,
+            treeish=treeish,
+        )
     return path, status
 
 

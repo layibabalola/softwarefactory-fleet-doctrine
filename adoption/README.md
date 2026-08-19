@@ -10,7 +10,17 @@ current-candidate project disposition; `STALE` means only the exact prior R14 di
 The checker closes on a changed or omitted project spec, a stale evidence pin, a fabricated
 disposition, any attempt to convert `CANDIDATE_ZERO_AUTHORITY` into runtime/project/fleet adoption,
 or any token-saving claim that drops exact model, effort, role, review, quality, or functionality
-from the required non-regression dimensions:
+from the required non-regression dimensions.
+
+A future `ADOPT` row must bind every dimension to a standalone canonical anchor in the exact
+project spec and to a bounded JSON receipt under
+`receipts/project-adoption/<project-id>/<receipt>.json`. The receipt must be committed atomically
+with the project evidence, remain byte-identical at census and checked tree, bind the exact R26
+candidate and merge, record all six exact claims with strict JSON `true`, and match the ledger's
+recomputed SHA-256. A digest-shaped string, a quoted or negated anchor, or doctrine publication
+alone earns no adoption credit.
+
+Run the fail-closed verification with:
 
 ```console
 python tools/check_adoption_ledger.py --treeish HEAD
