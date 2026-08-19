@@ -3,7 +3,9 @@ import hashlib
 import importlib.util
 import json
 from pathlib import Path
+import subprocess
 import sys
+import tempfile
 import unittest
 from unittest import mock
 
@@ -260,55 +262,150 @@ class AdoptionLedgerTests(unittest.TestCase):
         spec_bytes,
         receipt_blobs,
         *,
-        receipt_commit=None,
+        receipt_from_prior_commit=False,
     ):
-        original_blob = MODULE._blob
-        original_blob_size = MODULE._blob_size
-        original_last_path_commit = MODULE._last_path_commit
         project = self._project(ledger, "dng-auto-processor")
-        evidence_commit = project["evidence"]["commit"]
+        receipt_path = next(iter(receipt_blobs))
 
-        def receipt_at(treeish, path):
-            value = receipt_blobs.get(path)
-            if isinstance(value, dict):
-                return value.get(treeish, value.get("*"))
-            return value
+        def git(repo, *args):
+            run = subprocess.run(
+                ["git", *args],
+                cwd=repo,
+                check=False,
+                capture_output=True,
+                text=True,
+                encoding="utf-8",
+            )
+            if run.returncode != 0:
+                self.fail(
+                    f"synthetic Git command failed ({' '.join(args)}): {run.stderr.strip()}"
+                )
+            return run.stdout.strip()
 
-        def synthetic_blob(treeish, path):
-            if path == project["specPath"]:
-                return spec_bytes
-            if path.startswith(f"{MODULE.ADOPT_RECEIPT_PREFIX}/"):
-                value = receipt_at(treeish, path)
-                if value is None:
-                    raise MODULE.LedgerError("GIT_BLOB_UNAVAILABLE")
-                return value
-            return original_blob(treeish, path)
+        def write_blob(repo, path, raw):
+            target = repo / path
+            if raw is None:
+                if target.exists():
+                    target.unlink()
+                return
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_bytes(raw)
 
-        def synthetic_blob_size(treeish, path, *, error="GIT_BLOB_SIZE_UNAVAILABLE"):
-            if path.startswith(f"{MODULE.ADOPT_RECEIPT_PREFIX}/"):
-                value = receipt_at(treeish, path)
-                if value is None:
-                    raise MODULE.LedgerError(error)
-                return len(value)
-            return original_blob_size(treeish, path, error=error)
+        def evidence_blob(value):
+            return value.get("*") if isinstance(value, dict) else value
 
-        def synthetic_last_path_commit(treeish, path):
-            if path.startswith(f"{MODULE.ADOPT_RECEIPT_PREFIX}/"):
-                if receipt_at(treeish, path) is None:
-                    raise MODULE.LedgerError("PROJECT_EVIDENCE_HISTORY_INVALID")
-                if receipt_commit and path.endswith("/r26-non-regression.json"):
-                    return receipt_commit
-                return evidence_commit
-            return original_last_path_commit(treeish, path)
+        with tempfile.TemporaryDirectory(prefix="r26-adopt-git-") as temp:
+            repo = Path(temp) / "repo"
+            source_head_run = subprocess.run(
+                [
+                    "git",
+                    "-c",
+                    "safe.directory=*",
+                    "-C",
+                    str(ROOT),
+                    "rev-parse",
+                    "HEAD",
+                ],
+                check=False,
+                capture_output=True,
+                text=True,
+                encoding="utf-8",
+            )
+            if source_head_run.returncode != 0:
+                self.fail(
+                    f"synthetic Git source lookup failed: {source_head_run.stderr.strip()}"
+                )
+            source_head = source_head_run.stdout.strip()
+            clone = subprocess.run(
+                [
+                    "git",
+                    "-c",
+                    "safe.directory=*",
+                    "clone",
+                    "--quiet",
+                    "--no-hardlinks",
+                    str(ROOT),
+                    str(repo),
+                ],
+                check=False,
+                capture_output=True,
+                text=True,
+                encoding="utf-8",
+            )
+            if clone.returncode != 0:
+                self.fail(f"synthetic Git clone failed: {clone.stderr.strip()}")
+            git(repo, "config", "user.name", "R26 Synthetic Evidence")
+            git(repo, "config", "user.email", "r26-synthetic@example.invalid")
+            git(repo, "config", "core.autocrlf", "false")
+            git(repo, "checkout", "--quiet", "--detach", source_head)
 
-        with (
-            mock.patch.object(MODULE, "_blob", side_effect=synthetic_blob),
-            mock.patch.object(MODULE, "_blob_size", side_effect=synthetic_blob_size),
-            mock.patch.object(
-                MODULE, "_last_path_commit", side_effect=synthetic_last_path_commit
-            ),
-        ):
-            MODULE.verify_ledger(ledger, "HEAD")
+            if receipt_from_prior_commit:
+                write_blob(repo, receipt_path, evidence_blob(receipt_blobs[receipt_path]))
+                git(repo, "add", "--", receipt_path)
+                git(repo, "commit", "--quiet", "-m", "test: add prior receipt evidence")
+
+            write_blob(repo, project["specPath"], spec_bytes)
+            evidence_paths = [project["specPath"]]
+            for path, value in receipt_blobs.items():
+                if receipt_from_prior_commit and path == receipt_path:
+                    continue
+                raw = evidence_blob(value)
+                write_blob(repo, path, raw)
+                if raw is not None:
+                    evidence_paths.append(path)
+            git(repo, "add", "--", *evidence_paths)
+            git(repo, "commit", "--quiet", "-m", "test: add coherent adoption evidence")
+            evidence_commit = git(repo, "rev-parse", "HEAD")
+            project["evidence"]["commit"] = evidence_commit
+            project["evidence"]["gitBlobOid"] = git(
+                repo, "rev-parse", f"{evidence_commit}:{project['specPath']}"
+            )
+            ledger["census"]["baseCommit"] = evidence_commit
+            for candidate in ledger["projects"]:
+                actual_last_commit = git(
+                    repo,
+                    "log",
+                    "-1",
+                    "--format=%H",
+                    evidence_commit,
+                    "--",
+                    candidate["specPath"],
+                )
+                self.assertEqual(
+                    candidate["evidence"]["commit"],
+                    actual_last_commit,
+                    f"incoherent evidence commit for {candidate['projectId']}",
+                )
+
+            ledger_path = repo / MODULE.LEDGER_PATH
+            ledger_path.write_text(
+                json.dumps(ledger, indent=2) + "\n", encoding="utf-8", newline="\n"
+            )
+            git(repo, "add", "--", MODULE.LEDGER_PATH)
+            git(repo, "commit", "--quiet", "-m", "test: bind adoption ledger to evidence")
+
+            drifted = False
+            drift_paths = []
+            for path, value in receipt_blobs.items():
+                if not isinstance(value, dict) or "HEAD" not in value:
+                    continue
+                write_blob(repo, path, value["HEAD"])
+                drifted = True
+                drift_paths.append(path)
+            if drifted:
+                git(repo, "add", "--all", "--", *drift_paths)
+                git(repo, "commit", "--quiet", "-m", "test: introduce post-ledger drift")
+
+            treeish = git(repo, "rev-parse", "HEAD")
+            original_root = MODULE.ROOT
+            try:
+                MODULE.ROOT = repo
+                committed_ledger = MODULE.load_ledger(
+                    MODULE._blob(treeish, MODULE.LEDGER_PATH)
+                )
+                MODULE.verify_ledger(committed_ledger, treeish)
+            finally:
+                MODULE.ROOT = original_root
 
     def test_canonical_ledger_matches_closed_project_owned_evidence(self):
         MODULE.verify_ledger(self._copy(), "HEAD")
@@ -674,7 +771,7 @@ class AdoptionLedgerTests(unittest.TestCase):
                 ledger,
                 spec_bytes,
                 receipt_blobs,
-                receipt_commit=MODULE.EXPECTED_MERGE,
+                receipt_from_prior_commit=True,
             )
 
         ledger, spec_bytes, receipt_blobs = self._synthetic_adopt()
