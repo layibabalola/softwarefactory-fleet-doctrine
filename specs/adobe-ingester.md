@@ -102,17 +102,22 @@ status distinction, not a competing admission or token-saving contract.
 The ratified universal runtime amendment has a separate exact disposition:
 
 **DISTINGUISH(`874605e43531c9aa230ee16851f8107a8e0d9cec`,
-`PENDING_LOCAL_CLOSED_INSTALL_COMPLETE_CENSUS_SHADOW_AND_CONTAINMENT`,
-`issue-4-comment-5335816292`)**
+`HARD_CLOSED_WORK_ORDER_NOT_AUTHORIZED_PENDING_ACTIVE_ORDER_SEAM_AND_FRESH_REVIEWER_BEARING_QUORUM`,
+`HUB-SHA256:B879E104FB20DDB504F1F43816D2E42F6605A0C09D66E221480F2BB45BE91C8`)**
 
 Canonical merge `488cf0dc0c2c2ddd1ab024c6377e1fd6d61eef1d` ratifies exact technical subject
 `874605e43531c9aa230ee16851f8107a8e0d9cec`. Adobe accepts its portable invariants without a
-semantic fork, but cannot claim local runtime adoption: the project-owned work-order request exists,
-while the pinned CLOSED supervisor, recursively frozen census, shadow/containment receipts, and
-runtime review do not. Rejected sibling `8eee3e4576778a18f92a3aff922c7574904e3fc3` remains adverse
-history rather than Adobe's controlling subject. Until the local proof exists, the automatic
-provider gate is CLOSED and reset, authentication, or returned capacity has no authority to enable
-a task, start a process, drain work, or advance rollout state.
+semantic fork, but cannot claim local runtime adoption. Sol completed the local intake adjudication
+without creating a work order: the sole active Luna order has an unresolved state/work-order
+conflict, Q-021 remains 2/4, and no lawful reviewer-bearing quorum is available to sequence new
+production-infrastructure work. The final state evidence is SHA-256
+`60BDD1DB525AF6D07600C1C3AB1CA8A7FBC3B72371F07FFD43DCC632AF05AE48`. All seven scoped task
+definitions were reread Disabled; five still allow demand-start and remain a future authorized
+work-order defect, not a completed repair. Rejected sibling
+`8eee3e4576778a18f92a3aff922c7574904e3fc3` remains adverse history rather than Adobe's controlling
+subject. Until the authority and local runtime proof exist, the automatic provider gate is CLOSED
+and reset, authentication, or returned capacity has no authority to enable a task, start a process,
+drain work, or advance rollout state.
 
 Adobe's project profile preserves these local quality and functionality boundaries:
 
