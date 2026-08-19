@@ -23,7 +23,7 @@
     }
   },
   "census": {
-    "baseCommit": "928606d0151814e50ed051d8d5819ca4e23c5940",
+    "baseCommit": "68c97f69d283bd54bb7c6a5ce485a7850446d4d7",
     "projectSpecGlob": "specs/*.md",
     "nonProjectSpecs": [
       "specs/fleet-provider-capacity-governor.md",
