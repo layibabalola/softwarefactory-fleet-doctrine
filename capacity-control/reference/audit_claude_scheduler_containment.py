@@ -122,9 +122,13 @@ def audit(config_path: Path, task_paths: list[Path], project_prefix: str = "conj
         reasons.append("GLOBAL_PREFERENCES_NOT_FALSE")
 
     unique: dict[str, dict[str, Any]] = {}
+    total_task_objects = 0
     for path in sorted(task_paths, key=lambda item: item.as_posix().casefold()):
         value, store_data = _strict_json(path)
         for task in _task_objects(value):
+            total_task_objects += 1
+            if total_task_objects > MAX_TASK_OBJECTS:
+                raise ValueError("TASK_COUNT_LIMIT")
             canonical = json.dumps(task, sort_keys=True, separators=(",", ":")).encode("utf-8")
             digest = _sha256(canonical)
             task_id = task.get("id")

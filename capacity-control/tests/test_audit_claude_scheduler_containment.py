@@ -107,6 +107,18 @@ class ClaudeSchedulerContainmentAuditTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "TASK_PATH_LIMIT"):
             MODULE.audit(Path("config"), [Path("task")] * (MODULE.MAX_TASK_PATHS + 1))
 
+    def test_task_count_limit_is_global_across_stores(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root=Path(temporary); config=root/"config.json"
+            config.write_text(json.dumps({"preferences":{"coworkScheduledTasksEnabled":False,"ccdScheduledTasksEnabled":False}}),encoding="utf-8")
+            stores=[]
+            for index in range(2):
+                store=root/f"tasks-{index}.json"
+                store.write_text(json.dumps({"tasks":[{"id":f"task-{index}","enabled":False,"filePath":"prompt.md"}]}),encoding="utf-8")
+                stores.append(store)
+            with mock.patch.object(MODULE,"MAX_TASK_OBJECTS",1), self.assertRaisesRegex(ValueError,"TASK_COUNT_LIMIT"):
+                MODULE.audit(config,stores)
+
     def test_cli_error_is_stable_and_does_not_echo_private_details(self):
         stderr = io.StringIO()
         with mock.patch.object(sys, "argv", ["audit", "--config", "private", "--tasks", "private"]), \
