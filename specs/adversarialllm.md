@@ -175,3 +175,41 @@ re-enable and no reset-driven queue drain is allowed. This section grants no run
 enablement, provider launch, canary, gate opening, model substitution, review credit, or release
 authority.
 
+## 2026-08-19 R26 project-published disposition binding
+
+**DISTINGUISH(909f769d02e8412e51e28e242cfa8d00dadc9a3d, ADVERSARIALLLM_R26_ZERO_AUTHORITY_EVIDENCE_ONLY_AUTOMATIC_GATE_CLOSED_NO_PROJECT_OWNED_R26_ADOPTION_RULING, ADVERSARIALLLM_MASTER_8f01ea860d22c0e0c0a8c5ac9f7c290b1c050c14, DISPOSITION_BLOB_a337a9bea93daf94e619653edb8b5241ee29b6af)**
+
+This project disposition addresses exact R26 candidate
+`e70a044f31dd2f43ab7c716d63a4eb89318c61b6` and exact canonical merge
+`909f769d02e8412e51e28e242cfa8d00dadc9a3d`.
+
+This distinction binds the project-published default ref
+`https://github.com/layibabalola/AdversarialLLM-ClaudeCode.git` `refs/heads/master` at commit
+`8f01ea860d22c0e0c0a8c5ac9f7c290b1c050c14`, tree
+`4b39858e0421257fc997bb827571b35fb712e15a`, sole parent
+`6c9e54d7962711c7a90828159c172b130ad7d594`. The project-owned machine-readable receipt at
+`adversarialllm/docs/reports/softwarefactory-r26-disposition-20260819.json` is exact Git blob
+`a337a9bea93daf94e619653edb8b5241ee29b6af`, 3,471 bytes, SHA-256
+`0e34d895cb84dd7a1e74f3f527a3a832bdbb859e87a27ba2b831ad94bc4532da`. It records
+`DISTINGUISH`, `adopted=false`, `automaticLaunchGate=CLOSED`, and zero provider, process,
+scheduler, authentication, gate-opening, activation, adoption, or host-hard-close authority.
+
+The exact project-candidate binding uses base commit
+`4ca508a041d589aaaa07f995b34238cd43a9303f`, candidate status
+`DISTINGUISH_ZERO_AUTHORITY_EVIDENCE_ONLY`, primary evidence path
+`adversarialllm/docs/reports/softwarefactory-r26-disposition-20260819.json`, and disposition path
+`adversarialllm/docs/reports/softwarefactory-r26-disposition-20260819.md`.
+
+| Artifact | Git blob | Bytes | SHA-256 |
+| --- | --- | ---: | --- |
+| `adversarialllm/docs/reports/softwarefactory-r26-disposition-20260819.json` | `a337a9bea93daf94e619653edb8b5241ee29b6af` | 3,471 | `0e34d895cb84dd7a1e74f3f527a3a832bdbb859e87a27ba2b831ad94bc4532da` |
+| `adversarialllm/docs/reports/softwarefactory-r26-disposition-20260819.md` | `a7baf849dca2dea2f56874b3393afead7bd5e6ba` | 3,488 | `666fdc6a9632481edf6e9edd18c4e69d70181bcffa6fbada57ae0b6e1d427708` |
+| `scripts/verify-fleet-doctrine-disposition.ps1` | `fbc60a92704f8fe9495933953b4ac1a5c332db5d` | 15,183 | `706c9c38b65e0b432f192441c15c027c391636c9617f91d31dd4da11d832beec` |
+| `scripts/tests/fleet-doctrine-disposition.tests.ps1` | `9cb528a7967e11164d8e5378b63a6022e70b077c` | 6,404 | `bf8cde03b21acb390b3624c4f49c70c247fc0d6b28d01f4515032f43ffca406f` |
+
+The companion report, read-only exact-object verifier, and its hostile controls remain project-owned
+evidence. Their publication does not transfer proof from another project, install a supervisor, open a
+gate, enable a task, launch a provider, or satisfy any R26 adoption proof. AdversarialLLM remains
+`DISTINGUISH`, not `ADOPT`; exact model, effort, role, review, quality, and functionality requirements
+remain unchanged.
+
