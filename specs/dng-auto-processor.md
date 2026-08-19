@@ -43,16 +43,17 @@ by waiting out a full grace period on a corpse.** Two lanes did exactly that bef
 - **Hosted seats need a lease field, and it is the one thing the protocol forgot** — see the trap
   below. A hosted subagent has no harness transcript of its own, so it cannot self-measure context
   and must report CONTEXT-UNKNOWN rather than a confident verdict.
-- **Wake floor: `dng-warden-wake`, and its status is CONFIGURED, NOT PROVEN.** It moved off the
+- **Wake floor: `dng-warden-wake`.** It moved off the
   account-scoped app store — which the 08-09 account rotation silently emptied, exactly as cloudvore's
-  TRAP predicted — and is now a machine Task Scheduler task registered 09:05, hourly on the hour, run
+  TRAP predicted — and became a machine Task Scheduler task registered 09:05, run
   through `run-hidden.vbs` (never a console binary under an Interactive principal, or a window pops on
-  every fire). **The scheduler's own record still reads the never-ran sentinel (`LastRunTime`
+  every fire). **At the time of this 08-09 measurement, the scheduler's own record still read the never-ran sentinel (`LastRunTime`
   1999-11-30, result `0x41303`), and its first due mark had not yet arrived when this was written.**
   The manual ticks in `warden-wake.log` are seats running the script by hand; they are not scheduler
   fires and do not discharge the fleet's `configured != running` law. The old app-store task's
   "verified by lastRunAt" claim did NOT migrate with the task. Verify from `lastRunAt` before any
-  sibling cites this as an armed floor.
+  sibling cites this historical paragraph as current status. The later production evidence in this
+  spec supersedes the initial `CONFIGURED, NOT PROVEN` posture.
 - **Codex lanes:** desktop automations pulse sol/luna every 10 min against pinned threads; codex-cli
   installed for new-thread ignition (exec smoke-proven).
 - **Ignition independence:** the I8 design ceiling reached CLOSED-ACCEPT (I1–I8: one-byte-array prompt
@@ -240,7 +241,7 @@ retaining its exact role, model, `max` effort, review obligations, tests, and pr
   not expendable token overhead; and
 - spill the provider stream to a content-hashed local artifact rather than inject it into another
   lane's context. Every CANARY authorization is one-use and reseals the gate before process creation;
-- on every hourly tick, consider Fable, Opus, and Sonnet in that fixed order, refresh model-free
+- on every five-minute wake floor, consider Fable, Opus, and Sonnet in that fixed order, refresh model-free
   capacity immediately before each slice, and never overlap two DNG lane provider processes; and
 - after terminal evidence, release a leftover live lease only when its content-hashed artifact has
   exactly one session ID and it exactly matches the lease. The canonical writer records the consumed
@@ -358,7 +359,7 @@ The processes were serial, the gate was closed between slices, Sonnet retired it
 matching residual leases were released by exact terminal-artifact proof through the canonical
 writer. A fresh model-free observation after the campaign read five-hour 2% and seven-day 5%.
 
-Subsequent hourly production fires proved the campaign recurs without operator participation. In a
+Subsequent production fires proved the campaign recurs without operator participation. In a
 later pass, Fable terminal artifact SHA-256
 `81893E3E661EFE26BF8EFBFFEA188E4746AFDE11E505F855BA5268525643FC3B` and Opus terminal artifact
 SHA-256 `9183245C974A536755566270D555D58B33604783F7093D94F20698CDB51D2F9D` each drove the same exact
@@ -367,9 +368,20 @@ shared quota domain at a time, capacity was refreshed before every slice, and th
 returned closed after every permit consumption.
 
 This is honest **bounded automated three-lane restoration proven**, not sustained simultaneous lane
-liveness and not fleet adoption. `dng-warden-wake` remains hourly behind the closed broker; each
+liveness and not fleet adoption. `dng-warden-wake` now has a five-minute wake floor behind the closed
+broker; `IgnoreNew` drops fires while a pass is active, so the first boundary after completion starts
+the next capacity-gated pass without overlap. Each
 future slice requires new capacity evidence and a distinct expiring permit. DNG Provider Failover
 Runner and Software Factory Roadmap Controller remain disabled.
+
+The USER's 2026-08-19 utilization compromise changed only the wake floor from hourly to five
+minutes. The hidden task action, fixed Fable/Opus/Sonnet order, exact models/roles/`max` effort,
+`IgnoreNew`, 55-minute task wall, one-use permits, shared-domain mutex, 12-turn/900-second slice
+bounds, and 30% reserve were preserved. The first immediate pass observed five-hour 64% and
+seven-day 21%, issued Fable authorization `78d8a1128b024663a786531ae14cc281`, consumed it at
+2026-08-19T10:19:28-05:00, resealed the gate before provider process creation, and ran exactly one
+managed Fable process. If a later slice would cross the reserve, that lane records a model-free HOLD;
+cadence cannot override capacity.
 
 Promotion to the current universal candidate's `ADOPT` requires canonical ratification, a pinned
 schema-valid current project profile, complete launcher inventory and certified direct-invocation
