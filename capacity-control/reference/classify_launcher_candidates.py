@@ -17,6 +17,7 @@ from pathlib import Path
 MAX_FILE_BYTES = 2 * 1024 * 1024
 SOURCE_SUFFIXES = {".bat", ".cmd", ".js", ".ps1", ".psm1", ".py", ".sh", ".ts"}
 EXCLUDED_PARTS = {".git", "node_modules", "tmp"}
+REVIEW_DISPOSITIONS = {"LAUNCHER", "NON_LAUNCHER", "UNKNOWN"}
 
 PROVIDERS = {
     "CLAUDE": re.compile(r"(?i)\b(?:claude(?:\.exe)?|anthropic)\b"),
@@ -107,11 +108,76 @@ def classify_tree(root: Path) -> dict[str, object]:
     }
 
 
+def reconcile_review(report: dict[str, object], review: dict[str, object]) -> dict[str, object]:
+    if set(review) != {"schema", "entries"} or review.get("schema") != "conjugal-launcher-review/v1":
+        raise ValueError("REVIEW_SCHEMA")
+    entries = review.get("entries")
+    if not isinstance(entries, list):
+        raise ValueError("REVIEW_SCHEMA")
+    candidates = report.get("candidates")
+    if not isinstance(candidates, list):
+        raise ValueError("REPORT_SCHEMA")
+    candidate_by_path = {str(row["path"]): row for row in candidates}
+    if len(candidate_by_path) != len(candidates):
+        raise ValueError("REPORT_DUPLICATE_PATH")
+    reviewed: dict[str, dict[str, str]] = {}
+    for entry in entries:
+        if not isinstance(entry, dict) or set(entry) != {"path", "sha256", "disposition"}:
+            raise ValueError("REVIEW_SCHEMA")
+        path = entry.get("path")
+        digest = entry.get("sha256")
+        disposition = entry.get("disposition")
+        if not isinstance(path, str) or path in reviewed:
+            raise ValueError("REVIEW_DUPLICATE_PATH")
+        if disposition not in REVIEW_DISPOSITIONS:
+            raise ValueError("REVIEW_DISPOSITION")
+        if path not in candidate_by_path:
+            raise ValueError("REVIEW_EXTRA_PATH")
+        if digest != candidate_by_path[path]["sha256"]:
+            raise ValueError("REVIEW_HASH_MISMATCH")
+        reviewed[path] = {"sha256": str(digest), "disposition": str(disposition)}
+    missing = sorted(set(candidate_by_path) - set(reviewed))
+    if missing:
+        raise ValueError("REVIEW_MISSING_PATH")
+    counts = {name: 0 for name in sorted(REVIEW_DISPOSITIONS)}
+    for entry in reviewed.values():
+        counts[entry["disposition"]] += 1
+    refused = report.get("refused")
+    refused_count = len(refused) if isinstance(refused, list) else 0
+    pending = counts["UNKNOWN"] + refused_count
+    return {
+        "schema": "conjugal-launcher-review-result/v1",
+        "status": "REVIEWED_CLASSIFICATION_ZERO_AUTHORITY" if pending == 0 else "REVIEW_INCOMPLETE_ZERO_AUTHORITY",
+        "candidateCount": len(candidate_by_path),
+        "reviewCounts": counts,
+        "refusedCount": refused_count,
+        "pendingCount": pending,
+    }
+
+
+def _strict_json(path: Path) -> dict[str, object]:
+    def pairs(values: list[tuple[str, object]]) -> dict[str, object]:
+        result: dict[str, object] = {}
+        for key, value in values:
+            if key in result:
+                raise ValueError("DUPLICATE_JSON_KEY")
+            result[key] = value
+        return result
+
+    value = json.loads(path.read_text(encoding="utf-8"), object_pairs_hook=pairs, parse_constant=lambda _: (_ for _ in ()).throw(ValueError("NONFINITE_JSON")))
+    if not isinstance(value, dict):
+        raise ValueError("REVIEW_SCHEMA")
+    return value
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("root", type=Path)
+    parser.add_argument("--review-manifest", type=Path)
     args = parser.parse_args()
-    print(json.dumps(classify_tree(args.root), sort_keys=True, separators=(",", ":")))
+    report = classify_tree(args.root)
+    output = reconcile_review(report, _strict_json(args.review_manifest)) if args.review_manifest else report
+    print(json.dumps(output, sort_keys=True, separators=(",", ":")))
     return 0
 
 

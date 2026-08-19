@@ -66,6 +66,40 @@ class LauncherCandidateClassifierTests(unittest.TestCase):
         self.assertEqual(result["classificationCounts"], {"DIRECT_STATIC": 1})
         self.assertEqual(result["status"], "INCOMPLETE_ZERO_AUTHORITY")
 
+    def test_review_requires_exact_population_and_hashes(self):
+        report = self._classify({"launch.sh": "exec claude --print\n"})
+        candidate = report["candidates"][0]
+        with self.assertRaisesRegex(ValueError, "REVIEW_MISSING_PATH"):
+            MODULE.reconcile_review(report, {"schema": "conjugal-launcher-review/v1", "entries": []})
+        with self.assertRaisesRegex(ValueError, "REVIEW_HASH_MISMATCH"):
+            MODULE.reconcile_review(
+                report,
+                {
+                    "schema": "conjugal-launcher-review/v1",
+                    "entries": [{"path": candidate["path"], "sha256": "sha256:" + "0" * 64, "disposition": "LAUNCHER"}],
+                },
+            )
+
+    def test_review_never_grants_runtime_authority(self):
+        report = self._classify({"launch.sh": "exec claude --print\n", "note.py": "# anthropic\n"})
+        entries = [
+            {"path": row["path"], "sha256": row["sha256"], "disposition": "LAUNCHER" if row["path"] == "launch.sh" else "NON_LAUNCHER"}
+            for row in report["candidates"]
+        ]
+        result = MODULE.reconcile_review(report, {"schema": "conjugal-launcher-review/v1", "entries": entries})
+        self.assertEqual(result["pendingCount"], 0)
+        self.assertEqual(result["status"], "REVIEWED_CLASSIFICATION_ZERO_AUTHORITY")
+
+    def test_unknown_review_remains_incomplete(self):
+        report = self._classify({"launch.sh": "exec claude --print\n"})
+        row = report["candidates"][0]
+        result = MODULE.reconcile_review(
+            report,
+            {"schema": "conjugal-launcher-review/v1", "entries": [{"path": row["path"], "sha256": row["sha256"], "disposition": "UNKNOWN"}]},
+        )
+        self.assertEqual(result["pendingCount"], 1)
+        self.assertEqual(result["status"], "REVIEW_INCOMPLETE_ZERO_AUTHORITY")
+
 
 if __name__ == "__main__":
     unittest.main()
