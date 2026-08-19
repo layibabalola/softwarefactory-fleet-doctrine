@@ -30,6 +30,25 @@ NON_PROJECT_SPECS = {
     "specs/fleet-universal-provider-control-reconciliation.md",
     "specs/provider-model-benchmarking.md",
 }
+PROJECT_CANDIDATE_IDS = {"cloudvore", "mlv-app", "salesforce-tools"}
+PROJECT_CANDIDATE_STATUSES = {
+    "cloudvore": "CANDIDATE_ZERO_AUTHORITY",
+    "mlv-app": "CANDIDATE_ZERO_AUTHORITY",
+    "salesforce-tools": "DISTINGUISH_CANDIDATE_ZERO_AUTHORITY",
+}
+EXPECTED_PROJECT_CANDIDATE_SHA256 = {
+    "cloudvore": "7bbafaa69078bf3464f5e54c6f1e0a689113c54ce7df7f494d017beef58be436",
+    "mlv-app": "55544254f982890efa8b2e309b0eeb2be09f85d7f09f7da86083ba2856cbf9ba",
+    "salesforce-tools": "b2278e858cf70c0a6eecca6d7842709e9cc6fe4598fa13af6bf64929c05b0f6f",
+}
+PROJECT_CANDIDATE_AUTHORITY_FIELDS = {
+    "projectAdoption",
+    "fleetAdoption",
+    "runtimeActivation",
+    "providerInvocation",
+    "schedulerMutation",
+    "mergePushRelease",
+}
 FINAL_DISPOSITIONS = {"ADOPT", "DISTINGUISH", "REJECT"}
 LEDGER_STATUSES = FINAL_DISPOSITIONS | {"STALE", "MISSING"}
 NON_REGRESSION_DIMENSIONS = [
@@ -100,6 +119,8 @@ STATUS_BLOCKERS = {
 }
 SHA_PATTERN = re.compile(r"[0-9a-f]{40,64}")
 SHA256_PATTERN = re.compile(r"sha256:[0-9a-f]{64}")
+RAW_SHA256_PATTERN = re.compile(r"[0-9a-f]{64}")
+FORMAL_ADOPT_PATTERN = re.compile(r"\bADOPT\s*\(", re.IGNORECASE)
 DISPOSITION_PATTERN = re.compile(
     rb"\b(DISTINGUISH|REJECT)\s*\(\s*`?([0-9a-f]{40,64})`?",
     re.IGNORECASE,
@@ -230,6 +251,144 @@ def _require_sha(value: Any, code: str) -> str:
     if not isinstance(value, str) or SHA_PATTERN.fullmatch(value) is None:
         raise LedgerError(code)
     return value
+
+
+def _contains_formal_adopt(value: Any) -> bool:
+    if isinstance(value, str):
+        return FORMAL_ADOPT_PATTERN.search(value) is not None
+    if isinstance(value, dict):
+        return any(
+            _contains_formal_adopt(key) or _contains_formal_adopt(member)
+            for key, member in value.items()
+        )
+    if isinstance(value, list):
+        return any(_contains_formal_adopt(member) for member in value)
+    return False
+
+
+def _verify_project_candidate(candidate: Any, *, project_id: str, spec_bytes: bytes) -> None:
+    candidate = _require_exact_keys(
+        candidate,
+        {
+            "remote",
+            "publishedRef",
+            "commit",
+            "tree",
+            "parent",
+            "baseCommit",
+            "candidateStatus",
+            "primaryEvidencePath",
+            "dispositionPath",
+            "artifacts",
+            "disposition",
+            "authorityClaims",
+            "adoptionProofCredit",
+            "nonRegressionCredit",
+        },
+        "PROJECT_CANDIDATE_INVALID",
+    )
+    if _contains_formal_adopt(candidate):
+        raise LedgerError("PROJECT_CANDIDATE_ADOPTION_OVERCLAIM")
+    if (
+        not isinstance(candidate["remote"], str)
+        or re.fullmatch(r"https://github\.com/[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+\.git", candidate["remote"])
+        is None
+        or candidate["publishedRef"]
+        != "refs/heads/codex/r26-zero-authority-disposition-candidate-20260819"
+    ):
+        raise LedgerError("PROJECT_CANDIDATE_PUBLICATION_INVALID")
+    for key in ("commit", "tree", "parent", "baseCommit"):
+        _require_sha(candidate[key], "PROJECT_CANDIDATE_OBJECT_INVALID")
+    if candidate["candidateStatus"] != PROJECT_CANDIDATE_STATUSES[project_id]:
+        raise LedgerError("PROJECT_CANDIDATE_STATUS_INVALID")
+
+    artifacts = candidate["artifacts"]
+    if not isinstance(artifacts, list) or len(artifacts) < 2:
+        raise LedgerError("PROJECT_CANDIDATE_ARTIFACTS_INVALID")
+    paths: list[str] = []
+    for artifact in artifacts:
+        artifact = _require_exact_keys(
+            artifact,
+            {"path", "gitBlobOid", "bytes", "sha256"},
+            "PROJECT_CANDIDATE_ARTIFACT_INVALID",
+        )
+        path = artifact["path"]
+        if (
+            not isinstance(path, str)
+            or not path
+            or path.startswith(("/", "\\"))
+            or ".." in Path(path).parts
+            or not isinstance(artifact["bytes"], int)
+            or isinstance(artifact["bytes"], bool)
+            or artifact["bytes"] <= 0
+        ):
+            raise LedgerError("PROJECT_CANDIDATE_ARTIFACT_INVALID")
+        _require_sha(artifact["gitBlobOid"], "PROJECT_CANDIDATE_ARTIFACT_BLOB_INVALID")
+        if (
+            not isinstance(artifact["sha256"], str)
+            or RAW_SHA256_PATTERN.fullmatch(artifact["sha256"]) is None
+        ):
+            raise LedgerError("PROJECT_CANDIDATE_ARTIFACT_SHA256_INVALID")
+        exact_row = (
+            f"| `{path}` | `{artifact['gitBlobOid']}` | "
+            f"{artifact['bytes']:,} | `{artifact['sha256']}` |"
+        ).encode("utf-8")
+        if exact_row not in spec_bytes:
+            raise LedgerError("PROJECT_CANDIDATE_ARTIFACT_NOT_IN_SPEC")
+        paths.append(path)
+    if len(paths) != len(set(paths)):
+        raise LedgerError("PROJECT_CANDIDATE_ARTIFACT_DUPLICATE")
+    if candidate["primaryEvidencePath"] not in paths or candidate["dispositionPath"] not in paths:
+        raise LedgerError("PROJECT_CANDIDATE_PRIMARY_ARTIFACT_MISSING")
+
+    disposition = _require_exact_keys(
+        candidate["disposition"],
+        {"kind", "subjectCommit", "statement"},
+        "PROJECT_CANDIDATE_DISPOSITION_INVALID",
+    )
+    if (
+        disposition["kind"] != "DISTINGUISH"
+        or disposition["subjectCommit"] != EXPECTED_MERGE
+        or not isinstance(disposition["statement"], str)
+        or not disposition["statement"].startswith(f"DISTINGUISH({EXPECTED_MERGE}, ")
+        or spec_bytes.count(disposition["statement"].encode("utf-8")) != 1
+    ):
+        raise LedgerError("PROJECT_CANDIDATE_DISPOSITION_INVALID")
+
+    authority = _require_exact_keys(
+        candidate["authorityClaims"],
+        PROJECT_CANDIDATE_AUTHORITY_FIELDS,
+        "PROJECT_CANDIDATE_AUTHORITY_INVALID",
+    )
+    if any(value is not False for value in authority.values()):
+        raise LedgerError("PROJECT_CANDIDATE_AUTHORITY_OVERCLAIM")
+    if candidate["adoptionProofCredit"] is not False or candidate["nonRegressionCredit"] is not False:
+        raise LedgerError("PROJECT_CANDIDATE_PROOF_OVERCLAIM")
+
+    canonical_sha256 = hashlib.sha256(
+        json.dumps(
+            candidate,
+            ensure_ascii=False,
+            separators=(",", ":"),
+            sort_keys=True,
+        ).encode("utf-8")
+    ).hexdigest()
+    if canonical_sha256 != EXPECTED_PROJECT_CANDIDATE_SHA256[project_id]:
+        raise LedgerError("PROJECT_CANDIDATE_EXACT_BINDING_MISMATCH")
+
+    scalar_tokens = [
+        candidate["remote"],
+        candidate["publishedRef"],
+        candidate["commit"],
+        candidate["tree"],
+        candidate["parent"],
+        candidate["baseCommit"],
+        candidate["candidateStatus"],
+        candidate["primaryEvidencePath"],
+        candidate["dispositionPath"],
+    ]
+    if any(token.encode("utf-8") not in spec_bytes for token in scalar_tokens):
+        raise LedgerError("PROJECT_CANDIDATE_BINDING_NOT_IN_SPEC")
 
 
 def _dispositions(blob: bytes) -> set[tuple[str, str]]:
@@ -939,7 +1098,7 @@ def _verify_project(
 
     evidence = _require_exact_keys(
         project["evidence"],
-        {"commit", "gitBlobOid", "disposition"},
+        {"commit", "gitBlobOid", "disposition", "projectCandidate"},
         "PROJECT_EVIDENCE_INVALID",
     )
     evidence_commit = _require_sha(evidence["commit"], "PROJECT_EVIDENCE_COMMIT_INVALID")
@@ -953,6 +1112,17 @@ def _verify_project(
     if _oid(base_commit, path) != evidence_blob_oid or _oid(treeish, path) != evidence_blob_oid:
         raise LedgerError("PROJECT_SPEC_DRIFT")
     evidence_bytes = _blob(evidence_commit, path)
+    project_candidate = evidence["projectCandidate"]
+    if project_id in PROJECT_CANDIDATE_IDS:
+        if status != "DISTINGUISH" or project_candidate is None:
+            raise LedgerError("PROJECT_CANDIDATE_REQUIRED")
+        _verify_project_candidate(
+            project_candidate,
+            project_id=project_id,
+            spec_bytes=evidence_bytes,
+        )
+    elif project_candidate is not None:
+        raise LedgerError("PROJECT_CANDIDATE_UNEXPECTED")
     markers = _dispositions(evidence_bytes)
     current_markers = {
         marker for marker in markers if marker[1] in {EXPECTED_CANDIDATE, EXPECTED_MERGE}

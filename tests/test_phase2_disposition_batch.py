@@ -135,10 +135,18 @@ class Phase2DispositionBatchTests(unittest.TestCase):
             "_changed_paths",
             return_value={
                 "adoption/README.md",
+                "adoption/phase3/README.md",
+                "adoption/phase3/r26-published-project-disposition-intake.json",
+                "adoption/universal-token-control-r26.json",
+                "specs/cloudvore.md",
+                "specs/mlv-app.md",
+                "specs/salesforce-tools.md",
                 "tests/test_adoption_ledger.py",
                 "tools/check_adoption_ledger.py",
                 "tests/test_phase2_disposition_batch.py",
                 "tools/check_phase2_disposition_batch.py",
+                "tests/test_phase3_disposition_batch.py",
+                "tools/check_phase3_disposition_batch.py",
             },
         ):
             MODULE.verify_batch(batch, "HEAD")
