@@ -93,6 +93,8 @@ def audit(config_path: Path, task_paths: list[Path], project_prefix: str = "conj
         (row for row in unique.values() if row["enabled"]),
         key=lambda row: (row["id"].casefold(), row["objectSha256"]),
     )
+    if globally_enabled:
+        reasons.append("GLOBAL_TASK_ENABLED")
     return {
         "schema": "claude-scheduler-containment-audit/v1",
         "status": "CLOSED_ON_DISK_HOT_RELOAD_UNPROVEN" if not reasons else "UNCONTAINED_ZERO_AUTHORITY",

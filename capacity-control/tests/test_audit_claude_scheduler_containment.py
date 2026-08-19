@@ -46,12 +46,13 @@ class ClaudeSchedulerContainmentAuditTests(unittest.TestCase):
         self.assertIn("PROJECT_TASK_ENABLED", result["reasons"])
         self.assertEqual(result["globallyEnabledTaskCount"], 1)
 
-    def test_other_project_enabled_task_is_reported_without_opening_local_status(self):
+    def test_other_project_enabled_task_fails_runtime_containment(self):
         result = self._audit(
             {"coworkScheduledTasksEnabled": False, "ccdScheduledTasksEnabled": False},
             [{"id": "cloudvore-warden", "enabled": True, "filePath": "prompt.md"}],
         )
-        self.assertEqual(result["status"], "CLOSED_ON_DISK_HOT_RELOAD_UNPROVEN")
+        self.assertEqual(result["status"], "UNCONTAINED_ZERO_AUTHORITY")
+        self.assertIn("GLOBAL_TASK_ENABLED", result["reasons"])
         self.assertEqual(result["globallyEnabledTasks"][0]["id"], "cloudvore-warden")
 
     def test_duplicate_json_keys_are_refused(self):
