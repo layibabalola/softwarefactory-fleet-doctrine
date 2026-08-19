@@ -40,6 +40,7 @@ class RemoteGitStub:
             self.blobs[artifact["path"]] = (oid, raw)
         self.fetch_head = self.candidate["commit"]
         self.parents = [self.candidate["parent"]]
+        self.global_config_bytes = None
 
     def __call__(
         self,
@@ -53,6 +54,8 @@ class RemoteGitStub:
     ):
         self.calls.append((list(args), Path(cwd), dict(environment), project_id, error, text))
         self.roots.append(Path(cwd).parent)
+        if self.global_config_bytes is None:
+            self.global_config_bytes = Path(environment["GIT_CONFIG_GLOBAL"]).read_bytes()
 
         def output(value):
             if text:
@@ -299,8 +302,15 @@ class Phase3DispositionBatchTests(unittest.TestCase):
             self.assertEqual(environment["GIT_ASKPASS"], environment["SSH_ASKPASS"])
             self.assertIn(MODULE.REMOTE_TEMP_PREFIX, environment["GIT_ASKPASS"])
             self.assertEqual("force", environment["SSH_ASKPASS_REQUIRE"])
+            self.assertEqual("1", environment["GIT_CONFIG_NOSYSTEM"])
             self.assertEqual("0", environment["GIT_CONFIG_COUNT"])
             self.assertIn(MODULE.REMOTE_TEMP_PREFIX, environment["GIT_CONFIG_GLOBAL"])
+        expected_config = (
+            b"[http]\n\tsslBackend = schannel\n[credential]\n\thelper = manager\n"
+            if MODULE.os.name == "nt"
+            else b"# intentionally empty\n"
+        )
+        self.assertEqual(expected_config, stub.global_config_bytes)
         fetch = next(args for args, *_ in stub.calls if args[0] == "fetch")
         self.assertIn("--no-tags", fetch)
         self.assertIn("--no-recurse-submodules", fetch)

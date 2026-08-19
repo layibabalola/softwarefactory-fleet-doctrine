@@ -372,6 +372,7 @@ def _remote_environment(askpass_path: Path, global_config_path: Path) -> dict[st
             "SSH_ASKPASS": str(askpass_path),
             "SSH_ASKPASS_REQUIRE": "force",
             "GCM_INTERACTIVE": "Never",
+            "GIT_CONFIG_NOSYSTEM": "1",
             "GIT_CONFIG_GLOBAL": str(global_config_path),
             "GIT_CONFIG_COUNT": "0",
         }
@@ -416,6 +417,17 @@ def _write_askpass(temp_root: Path) -> Path:
         path = temp_root / "deny-askpass.sh"
         path.write_bytes(b"#!/bin/sh\nexit 1\n")
         path.chmod(0o700)
+    return path
+
+
+def _write_global_git_config(temp_root: Path) -> Path:
+    path = temp_root / "gitconfig"
+    content = (
+        b"[http]\n\tsslBackend = schannel\n[credential]\n\thelper = manager\n"
+        if os.name == "nt"
+        else b"# intentionally empty\n"
+    )
+    path.write_bytes(content)
     return path
 
 
@@ -493,8 +505,7 @@ def _verify_remote_project(project: dict[str, Any]) -> None:
     with tempfile.TemporaryDirectory(prefix=REMOTE_TEMP_PREFIX) as temp_name:
         temp_root = Path(temp_name)
         askpass_path = _write_askpass(temp_root)
-        global_config_path = temp_root / "empty-gitconfig"
-        global_config_path.write_text("# intentionally empty\n", encoding="ascii")
+        global_config_path = _write_global_git_config(temp_root)
         environment = _remote_environment(askpass_path, global_config_path)
         repo = temp_root / "objects"
         repo.mkdir()

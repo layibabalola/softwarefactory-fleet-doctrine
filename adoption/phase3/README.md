@@ -24,5 +24,7 @@ structure success cannot be mistaken for publication verification. `--verify-rem
 the three exact allowlisted GitHub URL/ref pairs, uses a bounded temporary repository with prompts
 disabled and command timeouts, fetches each ref, and rederives the commit tree, sole parent, base
 ancestry, and every artifact Git blob, byte count, and SHA-256. The publishing CI runs this remote
-mode. Temporary Git objects are removed on every exit. None of these checks invokes a provider or
-changes runtime state.
+mode. Git system and user configuration are disabled; the temporary Windows config names only the
+installed `schannel` TLS backend and noninteractive credential manager. Terminal and askpass
+prompts remain disabled. Temporary Git objects are removed on every exit. None of these checks
+invokes a provider or changes runtime state.
