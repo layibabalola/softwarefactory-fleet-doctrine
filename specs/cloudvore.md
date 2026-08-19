@@ -231,3 +231,41 @@ no live schema-2 landing transaction is claimed. Ref movement, bar launch, move-
 recovery-lease issuance, rollback, unattended invocation, and the ordinary `land-one` actuator
 remain **NOT_ADOPTED**. The dated exact assurance tuple, adverse run, reviews, and landing are in
 `RECEIPTS.md`.
+
+## Provider capacity governor v1 status (2026-08-18)
+
+Cloudvore records
+**DISTINGUISH(224a6705d81dfbc670313cdcef4d825216f2b380, PENDING_LOCAL_ADAPTER_AND_DRILLS)**
+against the fleet contract accepted at that subject, tree
+`569957a2b62eb0e2e99c1490a9cbec0002894e42`. There is no semantic objection to the portable
+contract. Cloudvore cannot yet claim `ADOPT(reference)` because the project has not installed and
+proved a pinned host-local supervisor at its canonical provider-spawn seam.
+
+Until that proof exists, Cloudvore's `automatic_launch_gate` remains **CLOSED** for unattended
+Claude roots governed by this contract. A quota reset or fresh capacity observation updates local
+capacity state only; it cannot open the gate, enable a scheduled task, create a model process, or
+drain queued work. This status grants no runtime deployment, launcher mutation, provider call,
+credential action, model substitution, merge, landing, push, or release authority.
+
+Cloudvore may replace this disposition with `ADOPT(reference)` only after a dated project receipt
+binds an exact supervisor build and policy hash to the local authority map and proves, on the real
+production launch path:
+
+1. one host-wide claimant for the same opaque quota domain across repositories, independent
+   parallelism for deliberately distinct domains, and process-tree/startup/cooldown fencing;
+2. a fresh native Anthropic capacity adapter plus bounded usage normalization and refusal
+   classification that never publishes raw account identity or provider prose;
+3. deterministic no-work, duplicate, stale-capacity, reset, budget-boundary, ambiguous-process,
+   crash/recovery, and direct-launch-bypass negative controls with zero unintended inference;
+4. exact requested/effective model and effort preservation, a completion reserve, and unchanged
+   Cloudvore role, independent-review, product-bar, lifecycle, landing, rollback, and release gates;
+5. exact installed-file/manifest verification and mutation tests that fail when admission,
+   freshness, reserve, process ownership, profile comparison, or reset-quiet enforcement is
+   removed; and
+6. staged `SHADOW_PASS` then `CONTAINMENT_PASS` receipts before any bounded canary. Capacity,
+   context, and routing stages require their own later evidence and cannot inherit a lower stage.
+
+Cloudvore's earlier local 39/39 candidate exercise—ten simultaneous OS-process contenders, four
+provider normalizers, session-limit classification, release-drift refusal, and five guard-removal
+mutations—is supplementary design evidence only. It is not installed, not authoritative, and does
+not satisfy the production-path or dated-receipt requirements above.

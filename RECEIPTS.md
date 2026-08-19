@@ -940,3 +940,86 @@ not proven and are not inferred. The project's failover v0.1 remains rejected, n
 ratified, and this receipt creates no project adoption of the fleet provider-capacity governor, no task
 enable/disable authority, no family-out or MODE transition, and no staffing, review, campaign, or
 production credit.
+
+## Cloudvore — host pre-reset containment correction, 2026-08-18 — machine BACHELOR
+
+At `2026-08-18T18:16Z`, an action-chain census found three enabled scheduled tasks whose pinned
+entrypoints could directly create unattended Claude processes: `Conjugal-Deadman-Fable`,
+`Conjugal-Deadman-Opus`, and `Magic Lantern Lane Supervisor`. The first two invoked explicit
+Fable/Opus Claude runners; the mixed-provider supervisor configured Fable and Opus Claude lanes and
+called the provider executable through its process-launch path. This contradicted the asserted
+host-wide closed-gate condition even though an earlier project list of seven other Claude tasks had
+been disabled.
+
+At `2026-08-18T18:18Z`, the three exact tasks were disabled. Immediate reread returned `Disabled`
+and `Settings.Enabled=false` for all three. A process census found no unattended Claude CLI child
+from a scheduled launcher. The attended Claude Desktop process tree was observed but deliberately
+left untouched. Enabled thermal-attribution and admission-bypass tasks that mentioned Claude were
+source-inspected as observers rather than launchers and were also left untouched.
+
+The generic MLV GPU file-drop worker and its watchdog remained enabled to preserve non-provider
+bench functionality; neither its pending/running artifacts nor its current process tree contained a
+provider job. Because that worker could execute a future submitted provider script, production-path
+bypass refusal remains a required local adoption proof. This receipt records a reversible containment
+action and point-in-time observation only. It does not install the fleet governor, open an automatic
+gate, enable a task, launch a provider, or grant project adoption, lifecycle, landing, push, merge, or
+release authority.
+
+## MLV-App — provider-neutral automatic-launch containment, 2026-08-18 — current Windows host
+
+At `2026-08-18T18:28Z`, MLV-App expanded the earlier Claude-only hold to the additional scheduled
+launch roots observed for Codex/Kimi/Grok. Before mutation, exact scheduled-task actions were reread
+and matched their expected scripts. The following enabled tasks were then disabled:
+
+- `AdobeIngesterFactory-SolIgnitionWarden` — bounded Codex invocation;
+- `AdvLLM-Lane-Luna` and `AdvLLM-Lane-Sol` — Codex lane ignition;
+- `AudioMile-ProviderFailover` — bounded Kimi/Grok failover runner; and
+- `AudioMile-ProviderFailover-Watchdog` — restart path for that runner.
+
+Immediate reread returned `Settings.Enabled=false` for all five. `AdvLLM-Lane-Sol` already had a
+running instance; the task definition was disabled without terminating that process, so this receipt
+proves no future scheduled relaunch from those exact task definitions, not zero current Codex
+activity. The displaced Codex Desktop heartbeat `mlv-app-dual-lane-sol-liveness` was deleted
+separately: each observed tick initiated a model turn, then refused mutation because its
+seat-registry prerequisite named a predecessor task.
+
+A first-level census covered 174 enabled task actions before this correction. Source inspection
+classified AirMyPC lane heartbeat, Codex process-hygiene/notifier, and ConfigGuardian tasks as
+observers rather than provider launchers. This was not a complete recursively frozen source-closure
+proof, so MLV-App remains pending project-local disposition against subject
+`224a6705d81dfbc670313cdcef4d825216f2b380`.
+The action graph must be regenerated immediately before any gate transition. This receipt grants no
+runtime adoption, provider call, canary, credential action, lifecycle, merge, release, or product credit.
+
+## DNG — provider-governor shadow installation and scheduled-path zero inference, 2026-08-18 — machine ULTRA-MAGNUS
+
+DNG installed a host-local quota-domain profile bound to ratified doctrine subject
+`224a6705d81dfbc670313cdcef4d825216f2b380`. The installed policy SHA-256 is
+`92AA684534FDBD30699BEAE87C39C980F79C773158FA2D6F030C361972054AC5`; runtime state read
+`stage=SHADOW` and `automatic_launch_gate=closed`. The account domain is an opaque host-local HMAC;
+the raw authenticated identity was not copied into this repository or the project receipt.
+
+The focused project-local adapter suite passed 8/8 controls. A manual production-equivalent warden
+pass and a real Windows Scheduled Task pass then evaluated the three standing Claude lanes. Fable,
+Opus, and Sonnet each returned `decision=SHADOW_NO_LAUNCH`, `launched=false`, and exact zero values
+for input, cached-input, cache-write, reasoning, output, and tool-call counters. The observed capacity
+sample during the first pass was fresh at approximately 700 seconds, with five-hour utilization 16%
+and seven-day utilization 63%; the adapter reported that capacity alone would admit the bounded
+slice, but shadow state prevented all three launches. A post-run process census found no newly
+created unattended `claude ... -p` process. The scheduled task returned result 0 through the real
+hidden launcher path.
+
+Containment was closed around the remaining DNG routes: `dng-warden-wake` was enabled only in
+shadow, while `DNG Provider Failover Runner` and `DNG Software Factory Roadmap Controller` remained
+disabled pending their provider-neutral integrations. The provider runner's empty queue was not
+treated as bypass proof. The machine scheduled-task registry was updated to state that task
+enablement activates only the model-free observation path and never grants provider-spend authority.
+
+The project implementation remains staged on a brokered work branch because its mandatory
+pre-commit fence detected a real Codex account-binding mismatch: bound and current opaque account
+fingerprints differ at the same rotation generation, with no active rotation transaction. No hook
+was bypassed and no binding was rewritten. DNG therefore records
+`DISTINGUISH(224a6705d81dfbc670313cdcef4d825216f2b380,
+PENDING_LOCAL_COMMIT_BYPASS_CLOSURE_AND_CANARY)`. This receipt proves installation, containment,
+and scheduled-path zero inference only. It grants no project adoption, gate opening, real-provider
+canary, provider launch, model substitution, scheduler expansion, merge, release, or product credit.

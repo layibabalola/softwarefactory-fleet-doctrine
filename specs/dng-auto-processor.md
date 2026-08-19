@@ -186,6 +186,60 @@ new dispatch and routes one batched cross-family drain without auto-landing. Ful
 required fail-closed controls are defined in
 `dng-auto-processor/standards/CODEX-OUTAGE-BANK-MODE.md`, byte-anchored in `EXPORTS.md`.
 
+## Provider capacity governor v1 status (2026-08-18)
+
+DNG's formal disposition is:
+
+**DISTINGUISH(224a6705d81dfbc670313cdcef4d825216f2b380,
+PENDING_LOCAL_COMMIT_BYPASS_CLOSURE_AND_CANARY)**
+
+This is a temporary maturity distinction, not a disagreement with the portable core. DNG accepts
+the ratified quota-domain, reset-containment, deterministic-orchestration, completion-reserve,
+exact-role, bounded-context, and zero-credit-on-resource-stop invariants without amendment. It
+cannot yet claim `ADOPT(reference)` because its local adapter is staged rather than committed, two
+other provider-bearing launch roots remain contained by disabled tasks rather than brokered, and no
+real-provider canary has run.
+
+The exact DNG profile currently under local adoption is:
+
+- one host-local HMAC-derived opaque domain for the authenticated Anthropic account; raw account
+  identity is not persisted in doctrine or project telemetry;
+- both five-hour and seven-day capacity dimensions required, with a maximum observation age of 900
+  seconds; absent, malformed, future, stale, or incomplete capacity holds unattended work;
+- 30% completion/foreground reserve and a maximum estimated slice of 5 percentage points;
+- one inference-bearing root per quota domain, enforced by a quota-domain named mutex held across
+  the provider process;
+- exact Fable/Opus/Sonnet model plus `max` effort, no silent fallback, and at most 12 turns;
+- deterministic addressed-work and lane-liveness derivation before admission, with no-work
+  reported as `IDLE_SKIPPED` and all token/tool counters exactly zero;
+- a content-addressed subject fingerprint, 100k automatic compaction, dynamic-system-prompt
+  exclusion for cache reuse, no prompt suggestions, no headless-session persistence, and provider
+  output spilled to a hashed local artifact instead of recirculated through coordination context;
+- rollout state `SHADOW` with `automatic_launch_gate=closed`; reset telemetry has no writer path to
+  the gate and therefore cannot enable a task or launch a process.
+
+The staged project-local implementation is
+`scripts/invoke-fleet-provider-admission.ps1`,
+`scripts/install-fleet-provider-admission.ps1`,
+`scripts/fleet-provider-admission.policy.json`, and
+`scripts/test-fleet-provider-admission.ps1`. Eight focused controls pass: shadow zero-inference,
+no-work zero counters, stale-capacity refusal, completion-reserve refusal, closed-gate refusal,
+bounded fake-provider canary, executable-digest mutation refusal, and max-turn mutation refusal.
+
+The production `dng-warden-wake` task is enabled only through this shadow path. Its Fable, Opus,
+and Sonnet decisions have each produced a zero-token `SHADOW_NO_LAUNCH` receipt. The DNG Provider
+Failover Runner and Software Factory Roadmap Controller remain disabled because their model-bearing
+paths have not yet been integrated with the universal admission boundary. The product-repository
+checkpoint is additionally held by a pre-existing Codex account-binding mismatch; that hold is
+preserved rather than bypassed.
+
+Promotion to `ADOPT(reference)` requires a committed local adapter, structural direct-launch
+prohibition for every provider family, final subject/executable revalidation at the launch seam,
+same-domain concurrency and crash-recovery controls, shadow evidence across multiple provider
+windows, one bounded Fable canary, and a dated post-canary receipt. Fleet convergence remains the
+closed set of project-owned `ADOPT(reference)` or `DISTINGUISH(reason)` dispositions coordinated by
+the canonical adoption campaign in issue #3.
+
 ## Carve-outs a citing sibling must know
 
 - The real git root is a NESTED repo (`DngAutoProcessor\`); `coordination/` is deliberately in no git

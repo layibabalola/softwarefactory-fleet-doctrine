@@ -1,6 +1,15 @@
 # Fleet provider capacity governor
 
-Status: **CANDIDATE — NO LIVE ADMISSION, ROUTING, OR AUTHORITY GRANT**
+> Reconciliation candidate: the additive strict runtime/profile amendment is under independent
+> review in [`fleet-universal-provider-control-reconciliation.md`](fleet-universal-provider-control-reconciliation.md).
+> It has zero authority until separately adjudicated and merged; this ratified baseline remains the
+> controlling doctrine meanwhile.
+
+Status: **RATIFIED PORTABLE CORE — NO LIVE ADMISSION, ROUTING, OR AUTHORITY GRANT**
+
+Accepted conformance subject: `224a6705d81dfbc670313cdcef4d825216f2b380`
+(`RULINGS.md`, 2026-08-18). Project adoption and activation remain separate. Fleet dispositions
+are coordinated in [issue #3](https://github.com/layibabalola/softwarefactory-fleet-doctrine/issues/3).
 
 Date: 2026-08-18 CT
 
