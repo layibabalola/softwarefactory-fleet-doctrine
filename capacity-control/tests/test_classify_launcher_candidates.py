@@ -29,6 +29,8 @@ class LauncherCandidateClassifierTests(unittest.TestCase):
         )
         self.assertEqual(result["classificationCounts"], {"INDIRECT_VARIABLE": 1})
         self.assertEqual(result["reviewPriorityCounts"], {"P0_DIRECT": 1})
+        self.assertEqual(result["flowUnresolvedCount"], 1)
+        self.assertEqual(result["reviewPendingCount"], 1)
         self.assertEqual(result["unresolvedCount"], 1)
         candidate = result["candidates"][0]
         self.assertEqual(candidate["evidence"]["providerLines"], {"CLAUDE": [1]})
@@ -46,7 +48,9 @@ class LauncherCandidateClassifierTests(unittest.TestCase):
             result["classificationCounts"],
             {"DIRECT_STATIC": 1, "REFERENCE_ONLY": 1, "REGISTRATION_SURFACE": 1},
         )
-        self.assertEqual(result["unresolvedCount"], 1)
+        self.assertEqual(result["flowUnresolvedCount"], 1)
+        self.assertEqual(result["reviewPendingCount"], 3)
+        self.assertEqual(result["unresolvedCount"], 3)
 
     def test_output_is_deterministic_and_excludes_tmp(self):
         files = {"b.py": "# claude\n", "a.py": "# kimi\n", "tmp/ignored.py": "exec grok --run\n"}
@@ -64,12 +68,17 @@ class LauncherCandidateClassifierTests(unittest.TestCase):
             (root / "large.ps1").write_bytes(b"# claude\n" + b"x" * MODULE.MAX_FILE_BYTES)
             result = MODULE.classify_tree(root)
         self.assertEqual(result["candidateCount"], 0)
+        self.assertEqual(result["flowUnresolvedCount"], 1)
+        self.assertEqual(result["reviewPendingCount"], 1)
         self.assertEqual(result["unresolvedCount"], 1)
         self.assertEqual(result["refused"], [{"path": "large.ps1", "reason": "SOURCE_TOO_LARGE"}])
 
     def test_even_all_direct_candidates_remain_zero_authority(self):
         result = self._classify({"launch.sh": "exec claude --print\n"})
         self.assertEqual(result["classificationCounts"], {"DIRECT_STATIC": 1})
+        self.assertEqual(result["flowUnresolvedCount"], 0)
+        self.assertEqual(result["reviewPendingCount"], 1)
+        self.assertEqual(result["unresolvedCount"], 1)
         self.assertEqual(result["status"], "INCOMPLETE_ZERO_AUTHORITY")
 
     def test_review_requires_exact_population_and_hashes(self):

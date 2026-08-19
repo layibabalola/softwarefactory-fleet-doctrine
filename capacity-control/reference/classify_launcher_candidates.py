@@ -110,7 +110,13 @@ def _report(root: str, rows: list[dict[str, object]], refused: list[dict[str, st
         counts[key] = counts.get(key, 0) + 1
         priority = str(row["reviewPriority"])
         priorities[priority] = priorities.get(priority, 0) + 1
-    unresolved = sum(counts.get(key, 0) for key in ("INDIRECT_VARIABLE", "UNRESOLVED_FLOW", "REFERENCE_ONLY"))
+    flow_unresolved = sum(
+        counts.get(key, 0) for key in ("INDIRECT_VARIABLE", "UNRESOLVED_FLOW", "REFERENCE_ONLY")
+    ) + len(refused)
+    # Automated flow classification is triage, never review.  Even a syntactically
+    # direct launch or registration surface remains unresolved until its exact
+    # hash receives a review disposition.
+    review_pending = len(rows) + len(refused)
     return {
         "schema": "conjugal-launcher-candidate-classification/v1",
         "status": "INCOMPLETE_ZERO_AUTHORITY",
@@ -119,7 +125,9 @@ def _report(root: str, rows: list[dict[str, object]], refused: list[dict[str, st
         "candidateCount": len(rows),
         "classificationCounts": dict(sorted(counts.items())),
         "reviewPriorityCounts": dict(sorted(priorities.items())),
-        "unresolvedCount": unresolved + len(refused),
+        "flowUnresolvedCount": flow_unresolved,
+        "reviewPendingCount": review_pending,
+        "unresolvedCount": review_pending,
         "refused": refused,
         "candidates": rows,
     }
