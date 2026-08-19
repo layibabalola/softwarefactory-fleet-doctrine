@@ -14,7 +14,7 @@ from typing import Any
 
 
 ROOT = Path(__file__).resolve().parents[1]
-MANIFEST = "manifests/universal-provider-control-reconciliation-r17.json"
+MANIFEST = "manifests/universal-provider-control-reconciliation-r18.json"
 SELF_PATTERN = re.compile(
     rb'("canonicalGitBlobSha256"\s*:\s*"sha256:)([0-9a-f]{64})(")'
 )
@@ -85,7 +85,13 @@ def verify_reconciliation(manifest: dict[str, Any], treeish: str = "HEAD") -> No
         "canonicalFleetMaster", "r16MasterMerge",
     )
     r17_names = ("r16Final", "r17Wip", "r17CanonicalMaster", "r17MasterMerge")
-    names = base_names + r17_names if all(name in reconciliation for name in r17_names) else base_names
+    r18_names = ("r17ManifestFreeze", "r17Final", "r18Wip")
+    if all(name in reconciliation for name in r18_names):
+        names = base_names + r17_names + r18_names
+    elif all(name in reconciliation for name in r17_names):
+        names = base_names + r17_names
+    else:
+        names = base_names
     if set(reconciliation) != set(names):
         raise ManifestError("RECONCILIATION_INVALID")
     for name in names:
@@ -114,7 +120,7 @@ def verify_reconciliation(manifest: dict[str, Any], treeish: str = "HEAD") -> No
     ):
         raise ManifestError("RECONCILIATION_ORDER_INVALID")
     terminal = merged
-    if names != base_names:
+    if all(name in reconciliation for name in r17_names):
         r16_final = reconciliation["r16Final"]
         r17_wip = reconciliation["r17Wip"]
         r17_master = reconciliation["r17CanonicalMaster"]
@@ -126,6 +132,17 @@ def verify_reconciliation(manifest: dict[str, Any], treeish: str = "HEAD") -> No
         ):
             raise ManifestError("RECONCILIATION_ORDER_INVALID")
         terminal = r17_merge
+    if all(name in reconciliation for name in r18_names):
+        r17_freeze = reconciliation["r17ManifestFreeze"]
+        r17_final = reconciliation["r17Final"]
+        r18_wip = reconciliation["r18Wip"]
+        if (
+            r17_freeze["orderedParents"] != [terminal["commit"]]
+            or r17_final["orderedParents"] != [r17_freeze["commit"]]
+            or r18_wip["orderedParents"] != [r17_final["commit"]]
+        ):
+            raise ManifestError("RECONCILIATION_ORDER_INVALID")
+        terminal = r18_wip
     if treeish != ":":
         run = subprocess.run(
             ["git", "merge-base", "--is-ancestor", terminal["commit"], treeish],

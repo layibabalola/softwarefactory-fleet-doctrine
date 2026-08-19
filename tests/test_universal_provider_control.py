@@ -3930,6 +3930,33 @@ class UniversalProviderControlTests(unittest.TestCase):
             with self.assertRaisesRegex(checker.ManifestError, "RECONCILIATION_PARENT_TREE_MISMATCH"):
                 checker.verify_reconciliation({"reconciliation": forged_tree}, ":")
 
+    def test_r18_06_manifest_binds_final_lineage_and_grants_zero_gate_authority(self) -> None:
+        import check_universal_manifest as checker
+
+        manifest_path = ROOT / "manifests" / "universal-provider-control-reconciliation-r18.json"
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        reconciliation = manifest["reconciliation"]
+        tuples = {
+            record["commit"]: (record["tree"], record["orderedParents"])
+            for record in reconciliation.values()
+        }
+        for record in reconciliation.values():
+            for parent, tree in zip(record["orderedParents"], record["orderedParentTrees"]):
+                tuples.setdefault(parent, (tree, []))
+        with mock.patch.object(checker, "_commit_tuple", side_effect=lambda commit: tuples[commit]):
+            checker.verify_reconciliation({"reconciliation": reconciliation}, ":")
+            forged = copy.deepcopy(reconciliation)
+            forged["r18Wip"]["orderedParents"] = ["0" * 40]
+            with self.assertRaisesRegex(checker.ManifestError, "RECONCILIATION_COMMIT_MISMATCH"):
+                checker.verify_reconciliation({"reconciliation": forged}, ":")
+        self.assertEqual(manifest["status"], "CANDIDATE_ZERO_AUTHORITY")
+        self.assertFalse(manifest["authority"]["providerExecution"])
+        self.assertFalse(manifest["authority"]["containmentOrCanaryCredit"])
+        self.assertEqual(
+            upc.UniversalProviderBroker(self.root / "r18-manifest-closed").gate_state(),
+            "CLOSED",
+        )
+
     # Bounded exact evidence capsule controls.
 
     def capsule_request(self, source: Path, *, lengths: list[int]) -> dict:

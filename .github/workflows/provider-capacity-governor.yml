@@ -43,6 +43,9 @@ jobs:
             'c27b4d8ebfa6a0ff8c9a2f346ec441b0155b2f0d^{commit}',
             '5b7f79acd81f2855e1cc0e80d03ae358b1b643fb^{commit}',
             'd6e044cfe9fec75737e6a74ff28daa09c1cc4f29^{commit}',
+            '7e378c3700f3c73fb621e8a77451ae5325d69db6^{commit}',
+            '868265b3044c9d59753f9c01b446a4e933a08629^{commit}',
+            '4f2bde6b00bedca6f1369793f09cc64cd1d9a2cd^{commit}',
             'ecc8f076c4f0273f92c8d9f841bceff3684233ca:tools/universal_provider_control.py'
           )
           foreach ($subject in $requiredSubjects) {
