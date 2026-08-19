@@ -195,11 +195,17 @@ LOCAL_ADAPTER_LANDED_AND_BOUNDED_FABLE_RESTORATION_BEGUN_WITH_GATE_CLOSED)**
 
 **DISTINGUISH(874605e43531c9aa230ee16851f8107a8e0d9cec,
 PENDING_PINNED_R14_PROFILE_COMPLETE_FOUR_SURFACE_CENSUS_1000_IDLE_TICKS_SUSPENDED_CHILD_ATTESTATION_AND_REVIEW,
-DNG_MASTER_4c3c80744667dcc4e266e8a54ef2fb3f42b1b350)**
+DNG_MASTER_3dc9100507c35e3724200dabaa3df6ffd2eb3cd0)**
+
+**DISTINGUISH(b632e0669e6cda8d4828b9aa8442b8388941a996,
+LOCAL_STANDING_OWNER_DIRECTIVE_WITH_FRESH_ONE_SHOT_PER_SLICE_PERMITS_NOT_A_SELF_RENEWING_24_HOUR_WINDOW,
+DNG_MASTER_3dc9100507c35e3724200dabaa3df6ffd2eb3cd0)**
 
 The first disposition records materially stronger project-local evidence against provider-capacity
 governor v1. The second is controlling for present fleet convergence: DNG accepts ratified universal
-R14 as its additive portable target, but does **not** claim project or fleet adoption. R14's
+R14 as its additive portable target, but does **not** claim project or fleet adoption. The third
+reconciles the competing automated-rotation candidate without granting it authority or claiming its
+window contract was installed. R14's
 deployment-inert reference engine is a contract and hostile-test oracle, not DNG's runtime
 executable. Reset, authentication, capacity return, a green test, a lease claim, or a successful
 provider call cannot change either disposition.
@@ -225,7 +231,12 @@ retaining its exact role, model, `max` effort, review obligations, tests, and pr
   `CONTEXT-UNKNOWN` and prevents the lease claim; persistence is therefore a correctness control,
   not expendable token overhead; and
 - spill the provider stream to a content-hashed local artifact rather than inject it into another
-  lane's context. Every CANARY authorization is one-use and reseals the gate before process creation.
+  lane's context. Every CANARY authorization is one-use and reseals the gate before process creation;
+- on every hourly tick, consider Fable, Opus, and Sonnet in that fixed order, refresh model-free
+  capacity immediately before each slice, and never overlap two DNG lane provider processes; and
+- after terminal evidence, release a leftover live lease only when its content-hashed artifact has
+  exactly one session ID and it exactly matches the lease. The canonical writer records the consumed
+  permit as actor; missing, ambiguous, or mismatched evidence leaves the lease untouched.
 
 These are one universal envelope plus a project profile, not forced identical lane behavior.
 Codex/OpenAI, Kimi, Grok, different provider accounts, and sibling Claude projects keep separate
@@ -253,6 +264,13 @@ capacity, claimant, exact-subject, bounded-context, and fail-closed gate invaria
 - **Universal R14** (`874605e43531c9aa230ee16851f8107a8e0d9cec`): controlling portable
   target. It supersedes competing portable semantics where they differ, while project adapters and
   dispositions remain local and explicit.
+- **Automated bounded provider rotation R1 candidate**
+  (`b632e0669e6cda8d4828b9aa8442b8388941a996`): accept its serial quota-domain rule, fresh
+  transactional admission, exact-subject bounds, zero-credit outputs, and closed-between-runs
+  posture. DNG distinguishes its 24-hour create-once window and no-auto-renew rule: the operator's
+  durable project directive is standing authority, while each actual slice still receives a fresh,
+  expiring, lane-specific one-use permit after current capacity proof. This is a local adapter
+  proposal and execution receipt, not candidate ratification or R14 adoption.
 
 DNG additionally rejects three tempting savings as unsafe generalizations: the Claude Desktop
 idle-sensitive cache is not canonical capacity evidence; removing session persistence breaks M0
@@ -273,6 +291,22 @@ observer, and gate-transition script SHA-256 values are respectively
 `6BAD61A9BEABCD9F6BEBD8F8AA6A5E5F607A661246A31B9D95F82C7F583759CA`.
 Seven signed observer controls, 24 admission controls, and six transition controls pass (37 total).
 
+The automatic round-robin follow-on landed on local `master` commit
+`3dc9100507c35e3724200dabaa3df6ffd2eb3cd0`, tree
+`ec470b413e41c8baf0b2f8169957697632869016`. Its durable shipping evidence ref is
+`refs/software-factory/evidence/d2ea67c8f18b4c93b28797cf06292b74` at
+`4f5cacfa2f03c916ab8123ecd8e0e2b9d6bdea41`, tree
+`736605892decb26ff28cafa212754967a9a0e695`. The installed-candidate policy, broker, observer,
+and gate-transition hashes are respectively
+`510D37692541B5E5F9247FBF21BE5FE60609BD9CF9B387246DF268F65D2A4228`,
+`DFDA356791A109A9796DAD1DC20E2BD81990D2E510DCEA8F158D22072BF73393`,
+`67E6905DDBB84711784BC58A4365D0E08AFC0C4930A638B31E07730BC1BBCA4C`, and
+`51D54C2A2708F2B8374FE39EDD13B08F3D9B5C54B54D3558B73338E0C449BB69`.
+Twenty-seven admission, seven capacity-observer, and twenty transition controls pass (54 total).
+The production warden additionally passes 18 shared-liveness, 16 succession, and five exact
+terminal-release controls; its machine-local SHA-256 is
+`4C668AD38CA249FAB99435F5B5EA6D178D15CDF5011A4BCF24259AC0C8B3A606`.
+
 The pre-existing Codex account-binding hold was closed through governed rotation transaction
 `7b671953-092d-42a4-9f4c-178ab768a8be`; it was not bypassed. The production wrapper SHA-256 is
 `092269055BF7A396A3CF79C6161A18F84295E0FB9D774077767E3330D767E03B`, pinned to native Claude
@@ -288,12 +322,22 @@ then terminated the process tree at 900 seconds and recorded terminal artifact S
 closed, and Opus plus Sonnet each emitted `AUTOMATIC_LAUNCH_GATE_CLOSED` with exact zero token/tool
 counters. A post-run model-free observation read five-hour 21% and seven-day 4%.
 
-This is honest **restoration begun**, not sustained lane liveness: the Fable lease changed to
-`live-claimed`, but its canary child is terminal. The lease claim proves that the corrected M0 path
-works; it does not prove a currently live coordinator and grants no Opus/Sonnet or sequential-canary
-authority. `dng-warden-wake` remains hourly behind the closed broker, while DNG Provider Failover
-Runner and Software Factory Roadmap Controller remain disabled. No further Claude lane may be
-restored from this receipt alone.
+The first unattended sequential campaign then exercised all three exact local profiles through the
+real warden path. Fable (`claude-fable-5`, coordinator, `max`) reached its 900-second wall cap with
+terminal artifact SHA-256
+`4675C2A2E2C4F6146A0611964F8A19BDE9C12F490E421E04F6CD03FDB5B673BC`; Opus
+(`claude-opus-5`, executor, `max`) reached its turn cap with artifact SHA-256
+`3233C74A1D46E5B3D108A0D0D483BEC64949998E35A6818DD1E76AE9CC34A934`; Sonnet
+(`claude-sonnet-5`, verifier, `max`) returned an autocompaction-thrash diagnosis with artifact
+SHA-256 `91AD03CD1F5885F434833913B85118A14E2B8AAE708A05643ED6FF572169FF52`.
+The processes were serial, the gate was closed between slices, Sonnet retired itself, and the two
+matching residual leases were released by exact terminal-artifact proof through the canonical
+writer. A fresh model-free observation after the campaign read five-hour 2% and seven-day 5%.
+
+This is honest **bounded automated three-lane restoration proven**, not sustained simultaneous lane
+liveness and not fleet adoption. `dng-warden-wake` remains hourly behind the closed broker; each
+future slice requires new capacity evidence and a distinct expiring permit. DNG Provider Failover
+Runner and Software Factory Roadmap Controller remain disabled.
 
 Promotion to R14 `ADOPT` requires a pinned schema-valid R14 project profile, complete four-surface
 launcher inventory and direct-invocation prohibition, 1,000 unchanged zero-inference ticks,
