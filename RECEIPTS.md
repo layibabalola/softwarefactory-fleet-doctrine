@@ -1135,6 +1135,49 @@ PENDING_COMPLETE_CENSUS_PERSISTENT_BROKER_1000_TICKS_CANARY_AND_REVIEW,
 This receipt closes only the pinned-profile prerequisite. It grants no provider call,
 provider-launch task enablement, canary, `ADOPT`, review credit, production, landing,
 release, or product credit.
+
+## Agent Bridge — retired reusable recovery authority and pinned R14 census validator, 2026-08-19
+
+Agent Bridge subject `7f91d21e00b4394a22357b383eda850d20115ca1`, tree
+`70b3363e17ffed9165d057c7d421811f33720c9b`, supersedes the project evidence
+subject while preserving the already validated host-local R14 profile. Exact new or
+changed product bindings include:
+
+| Path | Git blob | SHA-256 of Git blob bytes | Bytes |
+|---|---|---|---:|
+| `core/r14_census.py` | `0a863f5f62bb1dc6d6a4545a4576e5a0a2d3dac4` | `ad29041c95f932247b18759b922dc7f5c11c867230916c7c2aeb234da716a016` | 3,785 |
+| `core/r14_profile.py` | `ae6cf56ef3af4d261dd0fbfc5573c2507fd0176a` | `33f680e7d4c599aa827134d3763c5a624be952efce21889de0601d09e941060b` | 11,596 |
+| `core/recovery_gate.py` | `1c2a84fa4e1ae72c7e6dcbe8e7488528f0fd9a41` | `283151884331a33a920c2e57e1c6fb7619dcb75c8dd455cac96ff09d54835e77` | 1,395 |
+| `fleet_capacity.py` | `994855b54fc1b2b514e07077f80b2f9b55fa7b0b` | `7325853a00edcc4aab0893cf5b102cee0e85b84fa14a28b273c96802fce4b942` | 19,492 |
+
+The earlier repository-only recovery preflight could issue a reusable `CANARY`
+attestation without the ratified R14 persistent broker, complete four-surface
+inventory, single-use authorization, or fresh independent review. New issuance and
+acceptance of every such legacy file now return
+`R14_LEGACY_RECOVERY_ATTESTATION_RETIRED`. No grandfathered candidate attestation can
+open the gate.
+
+The added `r14-census-check` consumes the exact canonical R14 validator and launcher-
+inventory schema, validates all four surface classes and live launcher hashes, and
+separately binds the broker executable and census method. It emits configuration-
+only zero-runtime authority. The live partial inventory was negatively exercised
+through the exact pinned validator and rejected `SCHEMA_VALIDATION_FAILED`.
+
+Verification passed 11 focused tests, changed-file Ruff, compilation, and diff
+checks. The complete suite passed 919 tests plus 47 subtests after deselecting only two
+linked-worktree path assertions that reproduced unchanged on pristine predecessor
+subject `85ee8077d8edb40abd0f0275ec958e3a0b7283ff`; two transient failures from the
+first unfiltered run passed on immediate rerun. The subject is backed up on its
+existing project branch but is not installed. Runtime remains `SHADOW/HARD_CLOSED`.
+Agent Bridge records
+`DISTINGUISH(874605e43531c9aa230ee16851f8107a8e0d9cec,
+PENDING_COMPLETE_CENSUS_PERSISTENT_BROKER_1000_TICKS_CANARY_AND_REVIEW,
+7f91d21e00b4394a22357b383eda850d20115ca1)`.
+
+This receipt grants no provider call, recovery evidence, canary authorization,
+task enablement, independent review, project `ADOPT`, production, landing, release,
+or product credit.
+
 ## DNG — landed v1 broker, candidate reconciliation, and bounded Fable restoration, 2026-08-18/19 — machine ULTRA-MAGNUS
 
 DNG reconciled its project proposal against provider-capacity v1 subject

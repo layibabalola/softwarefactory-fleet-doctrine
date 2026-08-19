@@ -189,7 +189,7 @@ and Lorphic K2 model overview `https://lorphic.com/kimi-k2-models/`.
 
 ## Fleet universal provider-control disposition — 2026-08-18
 
-`DISTINGUISH(874605e43531c9aa230ee16851f8107a8e0d9cec, PENDING_COMPLETE_CENSUS_PERSISTENT_BROKER_1000_TICKS_CANARY_AND_REVIEW, 85ee8077d8edb40abd0f0275ec958e3a0b7283ff)`
+`DISTINGUISH(874605e43531c9aa230ee16851f8107a8e0d9cec, PENDING_COMPLETE_CENSUS_PERSISTENT_BROKER_1000_TICKS_CANARY_AND_REVIEW, 7f91d21e00b4394a22357b383eda850d20115ca1)`
 
 Rollout state: **SHADOW**; automatic launch gate: **HARD_CLOSED.** Agent Bridge
 retains the portable invariants of provider-capacity governor v1 and accepts the
@@ -292,8 +292,10 @@ The precedence rule is singular and fail-closed:
    It is now the additive portable conformance target. Its doctrine status does not
    create Agent Bridge runtime authority, so this project records the exact
    `DISTINGUISH` above rather than `ADOPT`.
-3. Agent Bridge subject `85ee8077d8edb40abd0f0275ec958e3a0b7283ff`
-   is the current project-local closed-state evidence, not a competing universal doctrine. The
+3. Agent Bridge subject `7f91d21e00b4394a22357b383eda850d20115ca1`
+   is the current project-local closed-state evidence, superseding the earlier profile-only
+   subject `85ee8077d8edb40abd0f0275ec958e3a0b7283ff` without changing its valid
+   host-local profile. It is not a competing universal doctrine. The
    Conjugal runtime-extension draft and every other project adapter have the same
    status: useful comparative evidence only. Project dispositions from Adobe,
    Cloudvore, Conjugal, DNG, and other factories describe local adoption state and
@@ -388,3 +390,34 @@ ticks, single-use canary authorization, one bounded canary returning CLOSED, and
 fresh independent exact-subject review remain mandatory. This section grants no
 provider call, task enablement for a provider launcher, canary, project `ADOPT`,
 production, landing, or release authority.
+
+### R14 recovery-authority retirement and census validation — 2026-08-19
+
+Exact Agent Bridge subject `7f91d21e00b4394a22357b383eda850d20115ca1`, tree
+`70b3363e17ffed9165d057c7d421811f33720c9b`, removes issuance and acceptance
+of the older repository-only reusable recovery attestation. That candidate-era
+surface could name `CANARY` without R14's persistent broker, complete four-surface
+inventory, one-use authorization, and fresh review. Both old files and new issuance
+now fail closed with `R14_LEGACY_RECOVERY_ATTESTATION_RETIRED`; the compatibility
+command creates no key, receipt, attestation, process, or provider call.
+
+The same subject adds diagnostic `r14-census-check`. It loads the exact pinned R14
+validator, project-profile schema, and launcher-inventory schema by canonical Git
+blob SHA-256 and Git object id while accepting checkout-only LF/CRLF rendering
+differences. It rejects lone carriage returns. A census configuration pass binds all
+four canonical surface classes plus the live broker executable and census-method
+hashes, but carries `R14_CENSUS_CONFIGURATION_ZERO_RUNTIME_AUTHORITY`. The current
+partial host inventory remains rejected by the real canonical validator with
+`SCHEMA_VALIDATION_FAILED`.
+
+Focused verification passed 11 tests, changed-file Ruff, compilation, and diff
+checks. The complete suite passed 919 tests plus 47 subtests with two linked-worktree
+path assertions deselected only after both failures reproduced unchanged on pristine
+subject `85ee8077d8edb40abd0f0275ec958e3a0b7283ff`; two transient socket/timing failures
+from the first unfiltered run passed on immediate rerun. Repository-wide Ruff retains
+three unrelated pre-existing unused-import findings outside this subject's diff.
+
+This advances containment and exact census validation only. It does not prove a
+complete census or persistent broker, install these bytes, modify the running
+SHADOW task, issue recovery evidence or canary authority, supply independent review,
+or claim `ADOPT`. The automatic launch gate remains `HARD_CLOSED`.
