@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://softwarefactory.invalid/schemas/universal-wrapper-boundary-certification-v1.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "certificationId", "issuedAt", "expiresAt", "wrapperExecutableSha256", "launcherConfigSha256", "argvContractSha256", "requestBoundaryMode", "brokerPermitCommand", "directInvocationImpossible", "processTreeTerminationRequired", "independentReviewSha256", "certificationHmacSha256"],
+  "properties": {
+    "schema": {"const": "fleet-universal-wrapper-boundary-certification/v1"},
+    "certificationId": {"type": "string", "pattern": "^boundary-[0-9a-f]{32}$"},
+    "issuedAt": {"type": "string", "format": "date-time"},
+    "expiresAt": {"type": "string", "format": "date-time"},
+    "wrapperExecutableSha256": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+    "launcherConfigSha256": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+    "argvContractSha256": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+    "requestBoundaryMode": {"const": "SINGLE_REQUEST_PROCESS"},
+    "brokerPermitCommand": {"const": "provider-request-permit"},
+    "directInvocationImpossible": {"const": true},
+    "processTreeTerminationRequired": {"const": true},
+    "independentReviewSha256": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+    "certificationHmacSha256": {"type": "string", "pattern": "^hmac-sha256:[0-9a-f]{64}$"}
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://softwarefactory.invalid/schemas/universal-quality-equivalence-receipt-v1.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "receiptId", "issuedAt", "expiresAt", "provider", "model", "effort", "role", "referenceSubjectSha256", "candidateSubjectSha256", "nonInferior", "independentReviewSha256", "receiptHmacSha256"],
+  "properties": {
+    "schema": {"const": "fleet-universal-quality-equivalence-receipt/v1"},
+    "receiptId": {"type": "string", "pattern": "^quality-[0-9a-f]{32}$"},
+    "issuedAt": {"type": "string", "format": "date-time"},
+    "expiresAt": {"type": "string", "format": "date-time"},
+    "provider": {"enum": ["claude", "openai", "kimi", "grok"]},
+    "model": {"type": "string", "minLength": 1, "maxLength": 128},
+    "effort": {"const": "high"},
+    "role": {"type": "string", "pattern": "^[A-Z][A-Z0-9_]{1,31}$"},
+    "referenceSubjectSha256": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+    "candidateSubjectSha256": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+    "nonInferior": {"const": true},
+    "independentReviewSha256": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+    "receiptHmacSha256": {"type": "string", "pattern": "^hmac-sha256:[0-9a-f]{64}$"}
+  }
+}

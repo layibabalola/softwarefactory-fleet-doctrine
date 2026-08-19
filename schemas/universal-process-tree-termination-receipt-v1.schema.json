@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://softwarefactory.invalid/schemas/universal-process-tree-termination-receipt-v1.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "receiptId", "leaseId", "observedAt", "rootProcessId", "rootProcessStartTime", "rootExited", "liveDescendantCount", "observerQualified", "receiptHmacSha256"],
+  "properties": {
+    "schema": {"const": "fleet-universal-process-tree-termination-receipt/v1"},
+    "receiptId": {"type": "string", "pattern": "^termination-[0-9a-f]{32}$"},
+    "leaseId": {"type": "string", "pattern": "^lease-[0-9a-f]{32}$"},
+    "observedAt": {"type": "string", "format": "date-time"},
+    "rootProcessId": {"type": "integer", "minimum": 1},
+    "rootProcessStartTime": {"type": "string", "format": "date-time"},
+    "rootExited": {"const": true},
+    "liveDescendantCount": {"const": 0},
+    "observerQualified": {"const": true},
+    "receiptHmacSha256": {"type": "string", "pattern": "^hmac-sha256:[0-9a-f]{64}$"}
+  }
+}

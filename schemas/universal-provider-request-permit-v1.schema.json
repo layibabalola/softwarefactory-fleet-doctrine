@@ -16,7 +16,17 @@
     "inputEnvelopeTokens": {"type": "integer", "minimum": 1, "maximum": 12000000000},
     "generatedEnvelopeTokens": {"type": "integer", "minimum": 1, "maximum": 2000000000},
     "terminalReserveTokens": {"type": "integer", "minimum": 1, "maximum": 1000000000},
-    "tokenCeilings": {"type": "object"},
+    "tokenCeilings": {
+      "type": "object", "additionalProperties": false,
+      "required": ["inputTokens", "cacheReadTokens", "cacheWriteTokens", "reasoningTokens", "outputTokens"],
+      "properties": {
+        "inputTokens": {"type": "integer", "minimum": 1},
+        "cacheReadTokens": {"type": "integer", "minimum": 1},
+        "cacheWriteTokens": {"type": "integer", "minimum": 1},
+        "reasoningTokens": {"type": "integer", "minimum": 1},
+        "outputTokens": {"type": "integer", "minimum": 1}
+      }
+    },
     "bindingSha256": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
     "permitHmacSha256": {"type": "string", "pattern": "^hmac-sha256:[0-9a-f]{64}$"}
   }

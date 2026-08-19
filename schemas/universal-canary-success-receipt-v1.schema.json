@@ -3,7 +3,7 @@
   "$id": "https://softwarefactory.invalid/schemas/universal-canary-success-receipt-v1.schema.json",
   "type": "object",
   "additionalProperties": false,
-  "required": ["schema", "receiptId", "leaseId", "requestId", "completedAt", "gateEpoch", "gateTransitionSha256", "projectProfileSha256", "inventorySha256", "providerRequestPermitSha256", "tokenUsageSha256", "success", "receiptHmacSha256"],
+  "required": ["schema", "receiptId", "leaseId", "requestId", "completedAt", "gateEpoch", "gateTransitionSha256", "projectProfileSha256", "inventorySha256", "providerRequestPermitSha256", "providerUsageCheckpointSha256", "outputQualityReceiptSha256", "tokenUsageSha256", "success", "receiptHmacSha256"],
   "properties": {
     "schema": {"const": "fleet-universal-canary-success-receipt/v1"},
     "receiptId": {"type": "string", "pattern": "^canary-success-[0-9a-f]{32}$"},
@@ -15,6 +15,8 @@
     "projectProfileSha256": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
     "inventorySha256": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
     "providerRequestPermitSha256": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+    "providerUsageCheckpointSha256": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+    "outputQualityReceiptSha256": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
     "tokenUsageSha256": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
     "success": {"const": true},
     "receiptHmacSha256": {"type": "string", "pattern": "^hmac-sha256:[0-9a-f]{64}$"}

@@ -6,10 +6,10 @@
   "additionalProperties": false,
   "required": [
     "schema", "requestId", "project", "issuedAt", "expiresAt", "provider", "adapterVersion",
-    "quotaDomainId", "priority", "model", "effort", "role", "qualityTier", "qualityEquivalenceReceiptSha256", "seatIdHash", "seatEpoch", "sessionIdHash", "subjectPath", "subjectSha256",
+    "quotaDomainId", "priority", "model", "effort", "role", "qualityTier", "qualityEquivalenceReceipt", "qualityEquivalenceReceiptSha256", "seatIdHash", "seatEpoch", "sessionIdHash", "subjectPath", "subjectSha256",
     "executablePath", "executableSha256", "argv", "argvSha256", "argvBindings",
     "launcherConfigPath", "launcherConfigSha256", "argvContractSha256", "requestBoundaryMode",
-    "boundaryCertificationSha256", "actionableWork", "demandSnapshot", "demandFingerprint",
+    "boundaryCertification", "boundaryCertificationSha256", "actionableWork", "demandSnapshot", "demandFingerprint",
     "priorIdleReceipt", "maxWallSeconds", "maxTurns", "maxContextTokens",
     "cumulativeTokenCeilings", "inputEnvelopeTokens", "generatedEnvelopeTokens",
     "terminalReserveTokens", "contextCapsuleSha256",
@@ -31,6 +31,7 @@
     "role": {"type": "string", "pattern": "^[A-Z][A-Z0-9_]{1,31}$"},
     "qualityTier": {"const": "FRONTIER_HIGH"},
     "qualityEquivalenceReceiptSha256": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+    "qualityEquivalenceReceipt": {"type": "object"},
     "seatIdHash": {"type": "string", "pattern": "^hmac-sha256:[0-9a-f]{64}$"},
     "seatEpoch": {"type": "integer", "minimum": 1, "maximum": 9223372036854775807},
     "sessionIdHash": {"type": "string", "pattern": "^hmac-sha256:[0-9a-f]{64}$"},
@@ -67,6 +68,7 @@
     "argvContractSha256": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
     "requestBoundaryMode": {"const": "SINGLE_REQUEST_PROCESS"},
     "boundaryCertificationSha256": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+    "boundaryCertification": {"type": "object"},
     "actionableWork": {"const": true},
     "demandSnapshot": {
       "type": "object", "additionalProperties": false,
