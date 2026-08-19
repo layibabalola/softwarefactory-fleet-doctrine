@@ -77,5 +77,13 @@ with prompt/output hashes and recomputed token totals; it is external provenance
 enforced by a strict schema plus the numeric R22 policy profile rather than prose markers alone.
 R22 remains reference-only, zero authority, and CLOSED.
 
+R23 preserves exact frozen R22 `91f2d940c39bd15a76074a59deaeee8d13936fad` and changes only
+evidence semantics. `wallDurationMs` is the floor of host-observed `completedAt-startedAt`; the two
+CLI fields are explicitly `CLAUDE_CLI_REPORTED_END_TO_END` and `CLAUDE_CLI_REPORTED_API`, with
+bounded CLI/API and host/CLI overhead. Provenance is `AUTHOR_ATTESTED_LOCAL_CLI_MEASUREMENT`, not
+provider-authenticated or independently observed, and no raw provider receipt is committed. The
+issue URL is informational and validation-independent. Token totals receive motivation/measurement
+credit only, never provider, adoption, containment, or activation authority.
+
 Standing containment is unchanged: provider capacity, reset, or authentication cannot open an
 automatic-launch gate or re-enable a launcher.

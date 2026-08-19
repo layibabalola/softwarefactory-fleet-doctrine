@@ -1094,20 +1094,35 @@ def _validate_attended_rotation_semantics(value: dict[str, Any]) -> None:
         if len({entry[digest_key] for entry in requests}) != 4:
             raise ControlError("ATTENDED_ROTATION_HASH_DUPLICATE")
     previous_completed: dt.datetime | None = None
+    duration_semantics = value["durationSemantics"]
     for entry in requests:
         started = parse_time(entry["startedAt"])
         completed = parse_time(entry["completedAt"])
+        delta = completed - started
+        wall_duration_ms = (
+            delta.days * 86400000 + delta.seconds * 1000 + delta.microseconds // 1000
+        )
         if completed <= started or (
             previous_completed is not None and started < previous_completed
         ):
             raise ControlError("ATTENDED_ROTATION_OVERLAP_INVALID")
-        if entry["durationApiMs"] > entry["durationMs"]:
+        if entry["wallDurationMs"] != wall_duration_ms:
+            raise ControlError("ATTENDED_ROTATION_WALL_DURATION_MISMATCH")
+        if not (0 <= entry["durationApiMs"] <= entry["durationMs"] <= wall_duration_ms):
             raise ControlError("ATTENDED_ROTATION_DURATION_INVALID")
+        if (
+            entry["durationMs"] - entry["durationApiMs"]
+            > duration_semantics["maxCliOutsideApiMs"]
+            or wall_duration_ms - entry["durationMs"]
+            > duration_semantics["maxHostOutsideCliMs"]
+        ):
+            raise ControlError("ATTENDED_ROTATION_DURATION_OVERHEAD_INVALID")
         previous_completed = completed
     aggregate = value["aggregate"]
     expected = {
         "requestCount": len(requests),
         "turnCount": sum(entry["numTurns"] for entry in requests),
+        "totalWallDurationMs": sum(entry["wallDurationMs"] for entry in requests),
         "totalDurationMs": sum(entry["durationMs"] for entry in requests),
         "totalApiDurationMs": sum(entry["durationApiMs"] for entry in requests),
         "inputTokens": sum(entry["inputTokens"] for entry in requests),

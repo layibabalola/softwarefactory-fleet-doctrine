@@ -4,7 +4,7 @@
   "title": "Privacy-safe attended provider rotation receipt v1",
   "type": "object",
   "additionalProperties": false,
-  "required": ["schema", "receiptId", "recordedAt", "issueReceiptUrl", "disposition", "providerAuthority", "adoptionCredit", "privacy", "requests", "aggregate"],
+  "required": ["schema", "receiptId", "recordedAt", "disposition", "providerAuthority", "adoptionCredit", "creditClassification", "provenance", "durationSemantics", "privacy", "requests", "aggregate"],
   "properties": {
     "schema": {"const": "fleet-universal-attended-rotation-receipt/v1"},
     "receiptId": {"type": "string", "pattern": "^[a-z][a-z0-9-]{1,127}$"},
@@ -13,6 +13,32 @@
     "disposition": {"const": "PRE_SHADOW_SEALED"},
     "providerAuthority": {"const": false},
     "adoptionCredit": {"const": false},
+    "creditClassification": {"const": "MOTIVATION_AND_MEASUREMENT_ONLY"},
+    "provenance": {
+      "type": "object", "additionalProperties": false,
+      "required": ["classification", "providerAuthenticated", "independentObserver", "rawProviderReceiptCommitted", "authorityCredit", "sourceIssueUrlInformational", "sourceIssueUrlRequiredForValidation"],
+      "properties": {
+        "classification": {"const": "AUTHOR_ATTESTED_LOCAL_CLI_MEASUREMENT"},
+        "providerAuthenticated": {"const": false},
+        "independentObserver": {"const": false},
+        "rawProviderReceiptCommitted": {"const": false},
+        "authorityCredit": {"const": false},
+        "sourceIssueUrlInformational": {"const": true},
+        "sourceIssueUrlRequiredForValidation": {"const": false}
+      }
+    },
+    "durationSemantics": {
+      "type": "object", "additionalProperties": false,
+      "required": ["durationMs", "durationApiMs", "wallDurationMs", "wallDurationConvention", "maxCliOutsideApiMs", "maxHostOutsideCliMs"],
+      "properties": {
+        "durationMs": {"const": "CLAUDE_CLI_REPORTED_END_TO_END"},
+        "durationApiMs": {"const": "CLAUDE_CLI_REPORTED_API"},
+        "wallDurationMs": {"const": "HOST_OBSERVED_WALL"},
+        "wallDurationConvention": {"const": "FLOOR_COMPLETED_AT_MINUS_STARTED_AT_MILLISECONDS"},
+        "maxCliOutsideApiMs": {"const": 10000},
+        "maxHostOutsideCliMs": {"const": 5000}
+      }
+    },
     "privacy": {
       "type": "object", "additionalProperties": false,
       "required": ["sessionIdentifiersIncluded", "localPathsIncluded", "promptAndOutputRetained"],
@@ -28,11 +54,12 @@
     },
     "aggregate": {
       "type": "object", "additionalProperties": false,
-      "required": ["requestCount", "turnCount", "maxConcurrentRequests", "totalDurationMs", "totalApiDurationMs", "inputTokens", "cacheCreateTokens", "cacheReadTokens", "outputTokens"],
+      "required": ["requestCount", "turnCount", "maxConcurrentRequests", "totalWallDurationMs", "totalDurationMs", "totalApiDurationMs", "inputTokens", "cacheCreateTokens", "cacheReadTokens", "outputTokens"],
       "properties": {
         "requestCount": {"const": 4},
         "turnCount": {"const": 4},
         "maxConcurrentRequests": {"const": 1},
+        "totalWallDurationMs": {"const": 151033},
         "totalDurationMs": {"const": 141230},
         "totalApiDurationMs": {"const": 116472},
         "inputTokens": {"const": 7},
@@ -45,13 +72,14 @@
   "$defs": {
     "request": {
       "type": "object", "additionalProperties": false,
-      "required": ["sequence", "laneRole", "model", "startedAt", "completedAt", "durationMs", "durationApiMs", "maxTurns", "numTurns", "tools", "exitCode", "terminalState", "subtype", "isError", "stderrSha256", "promptSha256", "outputSha256", "inputTokens", "cacheCreateTokens", "cacheReadTokens", "outputTokens"],
+      "required": ["sequence", "laneRole", "model", "startedAt", "completedAt", "wallDurationMs", "durationMs", "durationApiMs", "maxTurns", "numTurns", "tools", "exitCode", "terminalState", "subtype", "isError", "stderrSha256", "promptSha256", "outputSha256", "inputTokens", "cacheCreateTokens", "cacheReadTokens", "outputTokens"],
       "properties": {
         "sequence": {"type": "integer", "minimum": 1, "maximum": 4},
         "laneRole": {"enum": ["claude-impl", "opus", "claude", "fable"]},
         "model": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$"},
         "startedAt": {"type": "string", "format": "date-time"},
         "completedAt": {"type": "string", "format": "date-time"},
+        "wallDurationMs": {"type": "integer", "minimum": 1, "maximum": 3600000},
         "durationMs": {"type": "integer", "minimum": 1, "maximum": 3600000},
         "durationApiMs": {"type": "integer", "minimum": 1, "maximum": 3600000},
         "maxTurns": {"const": 1},

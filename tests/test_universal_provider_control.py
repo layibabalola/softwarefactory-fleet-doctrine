@@ -4927,6 +4927,56 @@ class UniversalProviderControlTests(unittest.TestCase):
         self.assertFalse(manifest["authority"]["containmentOrCanaryCredit"])
         self.assertEqual(manifest["authority"]["automaticGateState"], "CLOSED")
 
+    def test_r23_01_attended_duration_and_provenance_are_non_authoritative(self) -> None:
+        receipt = upc.strict_json_file(
+            ROOT / "receipts" / "attended-provider-rotation-20260819.json"
+        )
+        upc.validate_contract("attended_rotation_receipt", receipt)
+        self.assertEqual(
+            [entry["wallDurationMs"] for entry in receipt["requests"]],
+            [34299, 59757, 26400, 30577],
+        )
+        self.assertEqual(receipt["aggregate"]["totalWallDurationMs"], 151033)
+        self.assertEqual(
+            receipt["durationSemantics"],
+            {
+                "durationMs": "CLAUDE_CLI_REPORTED_END_TO_END",
+                "durationApiMs": "CLAUDE_CLI_REPORTED_API",
+                "wallDurationMs": "HOST_OBSERVED_WALL",
+                "wallDurationConvention": "FLOOR_COMPLETED_AT_MINUS_STARTED_AT_MILLISECONDS",
+                "maxCliOutsideApiMs": 10000,
+                "maxHostOutsideCliMs": 5000,
+            },
+        )
+        self.assertEqual(
+            receipt["provenance"]["classification"],
+            "AUTHOR_ATTESTED_LOCAL_CLI_MEASUREMENT",
+        )
+        self.assertFalse(receipt["provenance"]["providerAuthenticated"])
+        self.assertFalse(receipt["provenance"]["independentObserver"])
+        self.assertFalse(receipt["provenance"]["rawProviderReceiptCommitted"])
+        self.assertFalse(receipt["provenance"]["authorityCredit"])
+        self.assertEqual(receipt["creditClassification"], "MOTIVATION_AND_MEASUREMENT_ONLY")
+        without_informational_url = copy.deepcopy(receipt)
+        del without_informational_url["issueReceiptUrl"]
+        upc.validate_contract("attended_rotation_receipt", without_informational_url)
+        wrong_wall = copy.deepcopy(receipt)
+        wrong_wall["requests"][0]["wallDurationMs"] += 1
+        with self.assertRaisesRegex(
+            upc.ControlError, "ATTENDED_ROTATION_WALL_DURATION_MISMATCH"
+        ):
+            upc.validate_contract("attended_rotation_receipt", wrong_wall)
+        unbounded_overhead = copy.deepcopy(receipt)
+        unbounded_overhead["requests"][0]["durationApiMs"] = 1
+        with self.assertRaisesRegex(
+            upc.ControlError, "ATTENDED_ROTATION_DURATION_OVERHEAD_INVALID"
+        ):
+            upc.validate_contract("attended_rotation_receipt", unbounded_overhead)
+        forged_authority = copy.deepcopy(receipt)
+        forged_authority["provenance"]["authorityCredit"] = True
+        with self.assertRaisesRegex(upc.ControlError, "SCHEMA_VALIDATION_FAILED"):
+            upc.validate_contract("attended_rotation_receipt", forged_authority)
+
     def test_r17_07_low_level_request_primitives_are_not_public(self) -> None:
         broker = upc.UniversalProviderBroker(self.root / "r17-no-public-primitives")
         self.assertFalse(hasattr(broker, "begin_provider_request"))
