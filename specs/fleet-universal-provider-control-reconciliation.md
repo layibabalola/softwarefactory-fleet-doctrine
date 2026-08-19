@@ -1,4 +1,4 @@
-# Universal provider-control reconciliation R14
+# Universal provider-control reconciliation R15
 
 Status: **CANDIDATE / ZERO AUTHORITY / NO DEPLOYMENT**
 
@@ -7,7 +7,8 @@ Issue: <https://github.com/layibabalola/softwarefactory-fleet-doctrine/issues/4>
 Reconciliation input comment:
 <https://github.com/layibabalola/softwarefactory-fleet-doctrine/issues/4#issuecomment-5332348238>
 
-Exact starting baseline: `9af3eb9d4f4669abb787cc1966280608f5fbbce9`.
+Exact immutable parents: certified-boundary WIP `00542530bfebad8ad7646724f64720adda8d1b49`
+and ratified R14 directory-owner subject `874605e43531c9aa230ee16851f8107a8e0d9cec`.
 
 This is an additive reference amendment to the ratified provider-capacity governor. It does not
 replace that governor, deploy a supervisor, change a task, open a gate, authenticate, contact a
@@ -123,7 +124,10 @@ post-reset quiet; and add required capacity dimensions. They may never weaken th
     `linkat(AT_SYMLINK_FOLLOW)` publication route. It never relies on privileged `AT_EMPTY_PATH`
     and never changes route after writing. The POSIX anonymous descriptor is explicitly owned until
     `fdopen` succeeds; an injected `fdopen` failure closes that descriptor exactly once before any
-    fallback or propagation. Windows likewise tracks the sole owner across native handle, CRT
+    fallback or propagation. The target-directory descriptor used by `linkat` is also an explicit
+    attempt-once owner: false, exception, or ambiguous close retains the exact descriptor, creates
+    process-wide cleanup poison, and remains refusal even after the public link's identity and bytes
+    verify exactly. Windows likewise tracks the sole owner across native handle, CRT
     descriptor, and file-object states; every failed transfer arms retained-handle deletion and
     closes exactly the current owner. A named fallback never path-deletes: refusal is returned
     as required `temporaryCleanup=REFUSED_BOUNDED`, creates one deterministic no-value block marker, and the deterministic
@@ -312,11 +316,14 @@ The 113-control universal suite and retained 37-control governor suite must pass
 bytes; fresh hosted Windows/Ubuntu checks remain required before adjudication. The candidate author
 remains recused.
 
-R15 preserves immutable R14 commit `8eee3e4576778a18f92a3aff922c7574904e3fc3` and closes the
-remaining provider-boundary bypasses. Seven new hostile groups prove persistent one-request permits,
+R15 linearly binds certified-boundary WIP `00542530bfebad8ad7646724f64720adda8d1b49`
+(itself preserving adverse R14 commit `8eee3e4576778a18f92a3aff922c7574904e3fc3`) and ratified
+directory-owner subject `874605e43531c9aa230ee16851f8107a8e0d9cec` without rewriting either.
+The exact native R14 hostile twin proves the target-directory descriptor is closed once or retained
+as process-wide cleanup poison even after a verified link. Seven R15 hostile groups prove persistent one-request permits,
 semantic demand plus broker-owned idle receipts, immutable binding-HMAC comparison, runtime expiry
 termination state, universal quality and exact argv/config review, alternate-state-root OS-lock
 contention, and successful-canary return to CONTAINMENT followed by one-use receipt adjudication.
-The 120-control universal suite and retained 37-control governor suite must pass on exact R15 bytes
+The 121-control universal suite and retained 37-control governor suite must pass on exact R15 bytes
 on Python 3.13 and 3.14 for Windows and Ubuntu. The candidate invokes no provider, grants no runtime
 authority, and the author remains recused from review, adjudication, merge, and activation.

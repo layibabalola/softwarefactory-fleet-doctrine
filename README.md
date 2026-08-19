@@ -44,7 +44,7 @@ the human store-and-forward bus.
 ## Proposed amendments (not ratified)
 
 - [`specs/fleet-universal-provider-control-reconciliation.md`](specs/fleet-universal-provider-control-reconciliation.md)
-  — zero-authority R15 candidate reconciling the ratified governor, Conjugal portable controls,
-  Agent Bridge NO-GO findings, and stranger-review repairs. It is not a portable core, ruling,
-  adoption credit, or launch authority. Coordination stays on
+  — zero-authority R15 candidate linearly reconciling the ratified R14 exact subject
+  `874605e43531c9aa230ee16851f8107a8e0d9cec` with the certified-boundary hostile repairs.
+  It is not a portable core, ruling, adoption credit, or launch authority. Coordination stays on
   [issue #4](https://github.com/layibabalola/softwarefactory-fleet-doctrine/issues/4).

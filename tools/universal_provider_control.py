@@ -44,7 +44,7 @@ MAX_STATE_BYTES = 16_777_216
 MAX_ARTIFACT_BYTES = 16_777_216
 MAX_CAPSULE_SOURCE_BYTES = 16_777_216
 MAX_CAPSULE_TEMP_BACKLOG = 1
-MAX_CAPSULE_POISON_OWNERS = 258  # 256 unique sources plus retained temp/public handles.
+MAX_CAPSULE_POISON_OWNERS = 259  # 256 sources plus temp/public/target-directory owners.
 MAX_PREPARED_LEASES_PER_STATE_ROOT = 4  # Conservative root quarantine ceiling before acquisition.
 ARTIFACT_HANDLES_PER_LEASE = 6
 MAX_BROKER_ARTIFACT_POISON_OWNERS = (
@@ -586,6 +586,8 @@ def _publish_owned_temporary(handle: Any, temporary: Path, named: bool, output_p
         raise ControlError("CAPSULE_PUBLICATION_ROUTE_DRIFT")
 
     directory = os.open(str(output_path.parent), os.O_RDONLY | getattr(os, "O_DIRECTORY", 0))
+    directory_owned = True
+    directory_close_attempted = False
     try:
         # AT_FDCWD + /proc/self/fd + AT_SYMLINK_FOLLOW is the documented unprivileged O_TMPFILE
         # publication route.  Do not fall back after bytes have been written.
@@ -593,7 +595,25 @@ def _publish_owned_temporary(handle: Any, temporary: Path, named: bool, output_p
             proc_source, output_path, target_directory_fd=directory, flags=0x400
         )
     finally:
-        os.close(directory)
+        # The target-directory descriptor is authority-bearing publication state.  Detach it only
+        # after one verified close outcome; an exception or false outcome retains the exact owner,
+        # poisons every later capsule acquisition in this process, and can never be hidden by a
+        # successfully created/verified public link.
+        if directory_owned and not directory_close_attempted:
+            directory_close_attempted = True
+            close_proven = False
+            try:
+                close_proven = bool(_close_owned_descriptor(directory))
+            except BaseException:
+                close_proven = False
+            if close_proven:
+                directory_owned = False
+            else:
+                _retain_unproven_capsule_owner(
+                    output_path, ("target-directory-descriptor", directory)
+                )
+                _surface_temp_cleanup_refusal(output_path)
+                raise ControlError("CAPSULE_TEMP_CLEANUP_REFUSED")
 
 
 def _arm_owned_temp_discard(handle: Any, named: bool) -> bool:
@@ -1273,6 +1293,15 @@ def _build_evidence_capsule_private(request: Any, output_path: Path) -> dict[str
             or not _path_has_identity(output_path, temporary_identity)
         ):
             raise ControlError("CAPSULE_PUBLICATION_BYTES_DRIFT")
+
+        # A syscall wrapper may legitimately raise after a proven link and still be accepted, but
+        # an unproven target-directory close is retained process authority, not a link result.  It
+        # must remain a cleanup refusal even after exact public identity and bytes are verified.
+        if (
+            isinstance(link_error, ControlError)
+            and link_error.reason == "CAPSULE_TEMP_CLEANUP_REFUSED"
+        ):
+            raise link_error
 
         discard_ok = not temporary_owned or _attempt_arm_owned_temp_discard(
             temporary_handle, temporary_named
