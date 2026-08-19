@@ -8,16 +8,78 @@
     "initialSpecFoldTree": "5e90a7fb72c1c7bc593f8dbfd7d097be18a9c20f",
     "specBindingCommit": "928606d0151814e50ed051d8d5819ca4e23c5940",
     "specBindingTree": "402d6818937d4ecb64ac807c77c5792fd121947e",
+    "adversarialSpecBindingCommit": "73abc64b92aa96defca08ceab83b75c656dd3357",
+    "adversarialSpecBindingTree": "5f383c1475c0168677724fcf155092be7d1010d2",
     "r26Candidate": "e70a044f31dd2f43ab7c716d63a4eb89318c61b6",
     "r26Merge": "909f769d02e8412e51e28e242cfa8d00dadc9a3d"
   },
   "summary": {
-    "projectCount": 3,
-    "distinguishCandidates": 3,
+    "projectCount": 4,
+    "distinguishCandidates": 4,
     "adoptionClaims": 0,
     "runtimeAuthorityClaims": 0
   },
   "projects": [
+    {
+      "projectId": "adversarialllm",
+      "specPath": "specs/adversarialllm.md",
+      "centralEvidence": {
+        "commit": "73abc64b92aa96defca08ceab83b75c656dd3357",
+        "gitBlobOid": "e0a4d71eb39cab70c9f0efbf3cf46e072bd58a74"
+      },
+      "projectCandidate": {
+        "remote": "https://github.com/layibabalola/AdversarialLLM-ClaudeCode.git",
+        "publishedRef": "refs/heads/master",
+        "commit": "8f01ea860d22c0e0c0a8c5ac9f7c290b1c050c14",
+        "tree": "4b39858e0421257fc997bb827571b35fb712e15a",
+        "parent": "6c9e54d7962711c7a90828159c172b130ad7d594",
+        "baseCommit": "4ca508a041d589aaaa07f995b34238cd43a9303f",
+        "candidateStatus": "DISTINGUISH_ZERO_AUTHORITY_EVIDENCE_ONLY",
+        "primaryEvidencePath": "adversarialllm/docs/reports/softwarefactory-r26-disposition-20260819.json",
+        "dispositionPath": "adversarialllm/docs/reports/softwarefactory-r26-disposition-20260819.md",
+        "artifacts": [
+          {
+            "path": "adversarialllm/docs/reports/softwarefactory-r26-disposition-20260819.json",
+            "gitBlobOid": "a337a9bea93daf94e619653edb8b5241ee29b6af",
+            "bytes": 3471,
+            "sha256": "0e34d895cb84dd7a1e74f3f527a3a832bdbb859e87a27ba2b831ad94bc4532da"
+          },
+          {
+            "path": "adversarialllm/docs/reports/softwarefactory-r26-disposition-20260819.md",
+            "gitBlobOid": "a7baf849dca2dea2f56874b3393afead7bd5e6ba",
+            "bytes": 3488,
+            "sha256": "666fdc6a9632481edf6e9edd18c4e69d70181bcffa6fbada57ae0b6e1d427708"
+          },
+          {
+            "path": "scripts/verify-fleet-doctrine-disposition.ps1",
+            "gitBlobOid": "fbc60a92704f8fe9495933953b4ac1a5c332db5d",
+            "bytes": 15183,
+            "sha256": "706c9c38b65e0b432f192441c15c027c391636c9617f91d31dd4da11d832beec"
+          },
+          {
+            "path": "scripts/tests/fleet-doctrine-disposition.tests.ps1",
+            "gitBlobOid": "9cb528a7967e11164d8e5378b63a6022e70b077c",
+            "bytes": 6404,
+            "sha256": "bf8cde03b21acb390b3624c4f49c70c247fc0d6b28d01f4515032f43ffca406f"
+          }
+        ],
+        "disposition": {
+          "kind": "DISTINGUISH",
+          "subjectCommit": "909f769d02e8412e51e28e242cfa8d00dadc9a3d",
+          "statement": "DISTINGUISH(909f769d02e8412e51e28e242cfa8d00dadc9a3d, ADVERSARIALLLM_R26_ZERO_AUTHORITY_EVIDENCE_ONLY_AUTOMATIC_GATE_CLOSED_NO_PROJECT_OWNED_R26_ADOPTION_RULING, ADVERSARIALLLM_MASTER_8f01ea860d22c0e0c0a8c5ac9f7c290b1c050c14, DISPOSITION_BLOB_a337a9bea93daf94e619653edb8b5241ee29b6af)"
+        },
+        "authorityClaims": {
+          "projectAdoption": false,
+          "fleetAdoption": false,
+          "runtimeActivation": false,
+          "providerInvocation": false,
+          "schedulerMutation": false,
+          "mergePushRelease": false
+        },
+        "adoptionProofCredit": false,
+        "nonRegressionCredit": false
+      }
+    },
     {
       "projectId": "cloudvore",
       "specPath": "specs/cloudvore.md",

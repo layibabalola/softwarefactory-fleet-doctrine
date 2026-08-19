@@ -26,9 +26,14 @@ INITIAL_FOLD_COMMIT = "c025c1f5b32c71e77142d592107013fbbb677336"
 INITIAL_FOLD_TREE = "5e90a7fb72c1c7bc593f8dbfd7d097be18a9c20f"
 SPEC_BINDING_COMMIT = "928606d0151814e50ed051d8d5819ca4e23c5940"
 SPEC_BINDING_TREE = "402d6818937d4ecb64ac807c77c5792fd121947e"
+PHASE3_PUBLISHED_COMMIT = "0c417d8ccf4b0b2b142766fd4aa00072ae150a30"
+PHASE3_PUBLISHED_TREE = "dbe000aad9c2ee857dbaf8d2b1e311cade720ce1"
+ADVERSARIAL_SPEC_BINDING_COMMIT = "73abc64b92aa96defca08ceab83b75c656dd3357"
+ADVERSARIAL_SPEC_BINDING_TREE = "5f383c1475c0168677724fcf155092be7d1010d2"
 R26_CANDIDATE = "e70a044f31dd2f43ab7c716d63a4eb89318c61b6"
 R26_MERGE = "909f769d02e8412e51e28e242cfa8d00dadc9a3d"
-PROJECT_IDS = {"cloudvore", "mlv-app", "salesforce-tools"}
+INITIAL_PROJECT_IDS = {"cloudvore", "mlv-app", "salesforce-tools"}
+PROJECT_IDS = INITIAL_PROJECT_IDS | {"adversarialllm"}
 LEDGER_PROJECT_IDS = {
     "adobe-ingester",
     "adversarialllm",
@@ -40,8 +45,12 @@ LEDGER_PROJECT_IDS = {
     "mlv-app",
     "salesforce-tools",
 }
-SPEC_PATHS = {f"specs/{project_id}.md" for project_id in PROJECT_IDS}
+SPEC_PATHS = {f"specs/{project_id}.md" for project_id in INITIAL_PROJECT_IDS}
 PUBLISHED_REMOTE_ALLOWLIST = {
+    "adversarialllm": {
+        "remote": "https://github.com/layibabalola/AdversarialLLM-ClaudeCode.git",
+        "publishedRef": "refs/heads/master",
+    },
     "cloudvore": {
         "remote": "https://github.com/layibabalola/Cloudvore.git",
         "publishedRef": "refs/heads/codex/r26-zero-authority-disposition-candidate-20260819",
@@ -56,6 +65,7 @@ PUBLISHED_REMOTE_ALLOWLIST = {
     },
 }
 EXPECTED_PROJECT_CANDIDATE_SHA256 = {
+    "adversarialllm": "7f9b4947e2188eb829a52e935c0434a4ed13f1d6d20b7fb2beebe28433f19399",
     "cloudvore": "7bbafaa69078bf3464f5e54c6f1e0a689113c54ce7df7f494d017beef58be436",
     "mlv-app": "55544254f982890efa8b2e309b0eeb2be09f85d7f09f7da86083ba2856cbf9ba",
     "salesforce-tools": "b2278e858cf70c0a6eecca6d7842709e9cc6fe4598fa13af6bf64929c05b0f6f",
@@ -203,6 +213,8 @@ def _verify_frozen_base(base: Any, treeish: str) -> None:
         "initialSpecFoldTree": INITIAL_FOLD_TREE,
         "specBindingCommit": SPEC_BINDING_COMMIT,
         "specBindingTree": SPEC_BINDING_TREE,
+        "adversarialSpecBindingCommit": ADVERSARIAL_SPEC_BINDING_COMMIT,
+        "adversarialSpecBindingTree": ADVERSARIAL_SPEC_BINDING_TREE,
         "r26Candidate": R26_CANDIDATE,
         "r26Merge": R26_MERGE,
     }
@@ -214,14 +226,27 @@ def _verify_frozen_base(base: Any, treeish: str) -> None:
         raise Phase3Error("INITIAL_SPEC_FOLD_OBJECT_MISMATCH")
     if _commit_tuple(SPEC_BINDING_COMMIT) != (SPEC_BINDING_TREE, [INITIAL_FOLD_COMMIT]):
         raise Phase3Error("SPEC_BINDING_OBJECT_MISMATCH")
+    if _commit_tuple(PHASE3_PUBLISHED_COMMIT)[0] != PHASE3_PUBLISHED_TREE:
+        raise Phase3Error("PHASE3_PUBLISHED_OBJECT_MISMATCH")
+    if not _is_ancestor(SPEC_BINDING_COMMIT, PHASE3_PUBLISHED_COMMIT):
+        raise Phase3Error("PHASE3_PUBLISHED_LINEAGE_MISMATCH")
+    if _commit_tuple(ADVERSARIAL_SPEC_BINDING_COMMIT) != (
+        ADVERSARIAL_SPEC_BINDING_TREE,
+        [PHASE3_PUBLISHED_COMMIT],
+    ):
+        raise Phase3Error("ADVERSARIAL_SPEC_BINDING_OBJECT_MISMATCH")
     if _changed_paths(MASTER_COMMIT, INITIAL_FOLD_COMMIT) != SPEC_PATHS:
         raise Phase3Error("INITIAL_SPEC_FOLD_SCOPE_INVALID")
     if _changed_paths(INITIAL_FOLD_COMMIT, SPEC_BINDING_COMMIT) != SPEC_PATHS:
         raise Phase3Error("SPEC_BINDING_SCOPE_INVALID")
+    if _changed_paths(PHASE3_PUBLISHED_COMMIT, ADVERSARIAL_SPEC_BINDING_COMMIT) != {
+        "specs/adversarialllm.md"
+    }:
+        raise Phase3Error("ADVERSARIAL_SPEC_BINDING_SCOPE_INVALID")
     descendant = "HEAD" if treeish == ":" else treeish
-    if not _is_ancestor(SPEC_BINDING_COMMIT, descendant):
-        raise Phase3Error("SPEC_BINDING_NOT_ANCESTOR")
-    if not _changed_paths(SPEC_BINDING_COMMIT, treeish).issubset(ALLOWED_PHASE3_PATHS):
+    if not _is_ancestor(ADVERSARIAL_SPEC_BINDING_COMMIT, descendant):
+        raise Phase3Error("ADVERSARIAL_SPEC_BINDING_NOT_ANCESTOR")
+    if not _changed_paths(ADVERSARIAL_SPEC_BINDING_COMMIT, treeish).issubset(ALLOWED_PHASE3_PATHS):
         raise Phase3Error("PHASE3_SCOPE_VIOLATION")
 
 
@@ -256,9 +281,14 @@ def _verify_project(
         {"commit", "gitBlobOid"},
         "CENTRAL_EVIDENCE_INVALID",
     )
+    evidence_commit = (
+        ADVERSARIAL_SPEC_BINDING_COMMIT
+        if project_id == "adversarialllm"
+        else SPEC_BINDING_COMMIT
+    )
     if central != {
-        "commit": SPEC_BINDING_COMMIT,
-        "gitBlobOid": _oid(SPEC_BINDING_COMMIT, project["specPath"]),
+        "commit": evidence_commit,
+        "gitBlobOid": _oid(evidence_commit, project["specPath"]),
     }:
         raise Phase3Error("CENTRAL_EVIDENCE_MISMATCH")
     if (
@@ -286,7 +316,7 @@ def _verify_project(
         or disposition.get("kind") != "DISTINGUISH"
         or disposition.get("subjectCommit") != R26_MERGE
         or not isinstance(disposition.get("statement"), str)
-        or _blob(SPEC_BINDING_COMMIT, project["specPath"]).count(
+        or _blob(evidence_commit, project["specPath"]).count(
             disposition["statement"].encode("utf-8")
         )
         != 1
@@ -310,11 +340,11 @@ def verify_batch(batch: dict[str, Any], treeish: str = "HEAD") -> None:
     census = ledger.get("census")
     if not isinstance(census, dict):
         raise Phase3Error("LEDGER_CENSUS_INVALID")
-    if census.get("baseCommit") != SPEC_BINDING_COMMIT:
+    if census.get("baseCommit") != ADVERSARIAL_SPEC_BINDING_COMMIT:
         raise Phase3Error("LEDGER_CENSUS_BASE_MISMATCH")
     if ledger.get("summary") != {
         "projectCount": 9,
-        "counts": {"ADOPT": 0, "DISTINGUISH": 4, "MISSING": 0, "REJECT": 0, "STALE": 5},
+        "counts": {"ADOPT": 0, "DISTINGUISH": 5, "MISSING": 0, "REJECT": 0, "STALE": 4},
         "fleetStatus": "NO_FLEET_ADOPTION",
         "fleetAdoptionClaim": False,
     }:
@@ -352,8 +382,8 @@ def verify_batch(batch: dict[str, Any], treeish: str = "HEAD") -> None:
     if ids != sorted(PROJECT_IDS) or len(ids) != len(set(ids)):
         raise Phase3Error("PROJECT_SET_INVALID")
     if batch["summary"] != {
-        "projectCount": 3,
-        "distinguishCandidates": 3,
+        "projectCount": 4,
+        "distinguishCandidates": 4,
         "adoptionClaims": 0,
         "runtimeAuthorityClaims": 0,
     }:

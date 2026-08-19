@@ -155,14 +155,19 @@ class Phase3DispositionBatchTests(unittest.TestCase):
             MODULE.load_json(b'{"schema":"a","schema":"b"}')
 
     def test_published_master_and_forward_spec_commits_are_immutable(self):
-        for field in ("publishedMasterCommit", "initialSpecFoldCommit", "specBindingCommit"):
+        for field in (
+            "publishedMasterCommit",
+            "initialSpecFoldCommit",
+            "specBindingCommit",
+            "adversarialSpecBindingCommit",
+        ):
             with self.subTest(field=field):
                 batch = self._copy()
                 batch["frozenBase"][field] = "0" * 40
                 with self.assertRaisesRegex(MODULE.Phase3Error, "FROZEN_BASE_MISMATCH"):
                     MODULE.verify_batch(batch, "HEAD")
 
-    def test_exact_three_project_closed_set_is_required(self):
+    def test_exact_four_project_closed_set_is_required(self):
         batch = self._copy()
         batch["projects"].pop()
         with self.assertRaisesRegex(MODULE.Phase3Error, "PROJECT_SET_INVALID"):
@@ -533,6 +538,11 @@ class Phase3DispositionBatchTests(unittest.TestCase):
                 return set(MODULE.SPEC_PATHS)
             if (base, treeish) == (MODULE.INITIAL_FOLD_COMMIT, MODULE.SPEC_BINDING_COMMIT):
                 return set(MODULE.SPEC_PATHS)
+            if (base, treeish) == (
+                MODULE.PHASE3_PUBLISHED_COMMIT,
+                MODULE.ADVERSARIAL_SPEC_BINDING_COMMIT,
+            ):
+                return {"specs/adversarialllm.md"}
             return {"src/runtime.py"}
 
         with mock.patch.object(MODULE, "_changed_paths", side_effect=changed_paths):

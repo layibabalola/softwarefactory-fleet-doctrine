@@ -841,7 +841,7 @@ class AdoptionLedgerTests(unittest.TestCase):
         with self.assertRaisesRegex(MODULE.LedgerError, "STALE_DISPOSITION_SUBJECT_INVALID"):
             MODULE.verify_ledger(ledger, "HEAD")
 
-    def test_published_project_candidate_is_required_only_for_the_exact_three_rows(self):
+    def test_published_project_candidate_is_required_only_for_the_exact_four_rows(self):
         ledger = self._copy()
         self._project(ledger, "salesforce-tools")["evidence"]["projectCandidate"] = None
         with self.assertRaisesRegex(MODULE.LedgerError, "PROJECT_CANDIDATE_REQUIRED"):
