@@ -1,0 +1,18 @@
+{
+  "schema": "fleet-capacity-policy/v1",
+  "automatic_launch_gate": "closed",
+  "max_concurrent_leases_per_domain": 1,
+  "snapshot_max_age_seconds": 300,
+  "lease_max_seconds": 1200,
+  "post_reset_quiet_seconds": 300,
+  "reserve_fraction_by_priority": {
+    "OWNER_FOREGROUND": 0.02,
+    "REQUIRED_REVIEW": 0.15,
+    "PRODUCT_WORK": 0.25,
+    "BACKGROUND": 0.35
+  },
+  "required_windows_by_provider": {
+    "anthropic": ["five-hour", "weekly"],
+    "openai": ["primary"]
+  }
+}

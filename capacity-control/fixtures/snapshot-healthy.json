@@ -1,0 +1,14 @@
+{
+  "schema": "fleet-capacity-snapshot/v1",
+  "provider": "anthropic",
+  "quota_domain": "anthropic:sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "observed_at": "2026-08-18T16:00:00Z",
+  "windows": [
+    {"name": "five-hour", "used_fraction": 0.20, "resets_at": "2026-08-18T20:00:00Z", "window_started_at": "2026-08-18T15:00:00Z"},
+    {"name": "weekly", "used_fraction": 0.30, "resets_at": "2026-08-22T16:00:00Z", "window_started_at": "2026-08-15T16:00:00Z"}
+  ],
+  "source": {
+    "kind": "provider-structured-usage",
+    "artifact_sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+  }
+}

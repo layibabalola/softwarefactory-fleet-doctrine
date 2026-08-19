@@ -1,0 +1,72 @@
+from __future__ import annotations
+
+import datetime as dt
+import contextlib
+import importlib.util
+import io
+import json
+import pathlib
+import sys
+import tempfile
+import unittest
+from unittest import mock
+
+
+ROOT=pathlib.Path(__file__).resolve().parents[1]
+MODULE=ROOT/"reference"/"normalize_capacity.py"
+SPEC=importlib.util.spec_from_file_location("normalize_capacity",MODULE)
+assert SPEC and SPEC.loader
+normalizer=importlib.util.module_from_spec(SPEC); sys.modules[SPEC.name]=normalizer; SPEC.loader.exec_module(normalizer)
+DOMAIN="anthropic:sha256:"+"a"*64
+
+
+class CapacityTests(unittest.TestCase):
+    def test_anthropic_percent_and_window_start(self):
+        raw={"five_hour":{"utilization":43,"resets_at":"2026-08-18T20:20:00Z"},"seven_day":{"utilization":54,"resets_at":"2026-08-22T00:00:00Z"}}
+        result=normalizer.normalize("anthropic",json.dumps(raw),DOMAIN,"2026-08-18T16:00:00Z","1"*64)
+        self.assertEqual(.43,result["windows"][0]["used_fraction"])
+        self.assertEqual("2026-08-18T15:20:00Z",result["windows"][0]["window_started_at"])
+
+    def test_openai_uses_latest_rate_limit_snapshot(self):
+        def row(used,reset): return json.dumps({"payload":{"type":"token_count","rate_limits":{"primary":{"used_percent":used,"window_minutes":300,"resets_at":reset}}}})
+        result=normalizer.normalize("openai",row(10,1000)+"\n"+row(25,2000),"openai:sha256:"+"b"*64,"2026-08-18T16:00:00Z","2"*64)
+        self.assertEqual(.25,result["windows"][0]["used_fraction"])
+        self.assertEqual("primary",result["windows"][0]["name"])
+
+    def test_missing_or_unsupported_capacity_is_unevaluable(self):
+        with self.assertRaises(normalizer.CapacityError): normalizer.normalize("anthropic","{}",DOMAIN,"2026-08-18T16:00:00Z","1"*64)
+        with self.assertRaises(normalizer.CapacityError): normalizer.normalize("moonshot","{}",DOMAIN,"2026-08-18T16:00:00Z","1"*64)
+
+    def test_cli_pre_read_limit_and_no_echo(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            path=pathlib.Path(temporary)/"private-token.json"; path.write_text("{}",encoding="utf-8")
+            stderr=io.StringIO()
+            with mock.patch.object(normalizer,"MAX_INPUT_BYTES",1), contextlib.redirect_stderr(stderr):
+                code=normalizer.main(["--provider","anthropic","--input",str(path),"--quota-domain",DOMAIN,"--observed-at","2026-08-18T16:00:00Z"])
+        self.assertEqual(code,22); self.assertEqual(json.loads(stderr.getvalue()),{"error":"INPUT_REFUSED"}); self.assertNotIn("private",stderr.getvalue())
+
+    def test_hostile_numeric_and_deep_json_are_fixed_no_echo(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            path=pathlib.Path(temporary)/"private-token.jsonl"
+            event={"payload":{"type":"token_count","rate_limits":{"primary":{"used_percent":1,"window_minutes":1,"resets_at":10**400}}}}
+            path.write_text(json.dumps(event),encoding="utf-8"); stderr=io.StringIO()
+            with contextlib.redirect_stderr(stderr):
+                code=normalizer.main(["--provider","openai","--input",str(path),"--quota-domain","openai:sha256:"+"a"*64,"--observed-at","2026-08-18T16:00:00Z"])
+            self.assertEqual(code,22); self.assertEqual(json.loads(stderr.getvalue()),{"error":"INPUT_REFUSED"}); self.assertNotIn("private",stderr.getvalue())
+            path.write_bytes(b"["*(normalizer.MAX_JSON_DEPTH+1)+b"0"+b"]"*(normalizer.MAX_JSON_DEPTH+1)); stderr=io.StringIO()
+            with mock.patch.object(normalizer.json,"loads",side_effect=AssertionError("parser must not run")), contextlib.redirect_stderr(stderr):
+                code=normalizer.main(["--provider","anthropic","--input",str(path),"--quota-domain",DOMAIN,"--observed-at","2026-08-18T16:00:00Z"])
+            self.assertEqual(code,22); self.assertEqual(json.loads(stderr.getvalue()),{"error":"INPUT_REFUSED"})
+
+    def test_nonfinite_and_out_of_range_utilization_are_fixed_refusals(self):
+        for utilization in (float("nan"),float("inf"),-1,101,True,"private"):
+            raw={"five_hour":{"utilization":utilization,"resets_at":"2026-08-18T20:20:00Z"}}
+            with tempfile.TemporaryDirectory() as temporary:
+                path=pathlib.Path(temporary)/"private-token.json"; path.write_text(json.dumps(raw),encoding="utf-8")
+                stderr=io.StringIO()
+                with contextlib.redirect_stderr(stderr):
+                    code=normalizer.main(["--provider","anthropic","--input",str(path),"--quota-domain",DOMAIN,"--observed-at","2026-08-18T16:00:00Z"])
+            self.assertEqual(code,22); self.assertEqual(json.loads(stderr.getvalue()),{"error":"INPUT_REFUSED"}); self.assertNotIn("private",stderr.getvalue())
+
+
+if __name__=="__main__": unittest.main()
