@@ -99,16 +99,20 @@ spawn seam, the complete recursively frozen launcher census has not passed, and 
 shadow, containment, idle, bypass, crash, and canary receipts do not exist. This is an adoption-
 status distinction, not a competing admission or token-saving contract.
 
-The proposed universal runtime amendment has a separate disposition:
+The ratified universal runtime amendment has a separate exact disposition:
 
-**DISTINGUISH(`8eee3e4576778a18f92a3aff922c7574904e3fc3`,
-`R14_CHANGES_REQUIRED_PENDING_CANONICAL_SUCCESSOR`)**
+**DISTINGUISH(`874605e43531c9aa230ee16851f8107a8e0d9cec`,
+`PENDING_LOCAL_CLOSED_INSTALL_COMPLETE_CENSUS_SHADOW_AND_CONTAINMENT`,
+`issue-4-comment-5335816292`)**
 
-Adobe does not claim adoption of the rejected R14 runtime candidate or any dirty/unfrozen successor.
-The project will evaluate the next independently accepted canonical commit through the exact
-`ADOPT(commit, profile hash, review receipt)` contract. Until then its automatic provider gate is
-CLOSED and reset, authentication, or returned capacity has no authority to enable a task, start a
-process, drain work, or advance rollout state.
+Canonical merge `488cf0dc0c2c2ddd1ab024c6377e1fd6d61eef1d` ratifies exact technical subject
+`874605e43531c9aa230ee16851f8107a8e0d9cec`. Adobe accepts its portable invariants without a
+semantic fork, but cannot claim local runtime adoption: the project-owned work-order request exists,
+while the pinned CLOSED supervisor, recursively frozen census, shadow/containment receipts, and
+runtime review do not. Rejected sibling `8eee3e4576778a18f92a3aff922c7574904e3fc3` remains adverse
+history rather than Adobe's controlling subject. Until the local proof exists, the automatic
+provider gate is CLOSED and reset, authentication, or returned capacity has no authority to enable
+a task, start a process, drain work, or advance rollout state.
 
 Adobe's project profile preserves these local quality and functionality boundaries:
 
