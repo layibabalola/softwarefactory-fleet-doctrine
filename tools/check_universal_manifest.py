@@ -86,7 +86,9 @@ def verify_reconciliation(manifest: dict[str, Any], treeish: str = "HEAD") -> No
     )
     r17_names = ("r16Final", "r17Wip", "r17CanonicalMaster", "r17MasterMerge")
     r18_names = ("r17ManifestFreeze", "r17Final", "r18Wip")
-    r19_names = ("r18Final", "r19Wip")
+    r19_names = (
+        "r18Final", "r19Wip", "r19Evidence", "r19CanonicalMaster", "r19MasterMerge",
+    )
     if all(name in reconciliation for name in r19_names):
         names = base_names + r17_names + r18_names + r19_names
     elif all(name in reconciliation for name in r18_names):
@@ -149,12 +151,18 @@ def verify_reconciliation(manifest: dict[str, Any], treeish: str = "HEAD") -> No
     if all(name in reconciliation for name in r19_names):
         r18_final = reconciliation["r18Final"]
         r19_wip = reconciliation["r19Wip"]
+        r19_evidence = reconciliation["r19Evidence"]
+        r19_master = reconciliation["r19CanonicalMaster"]
+        r19_merge = reconciliation["r19MasterMerge"]
         if (
             r18_final["orderedParents"] != [terminal["commit"]]
             or r19_wip["orderedParents"] != [r18_final["commit"]]
+            or r19_evidence["orderedParents"] != [r19_wip["commit"]]
+            or r19_merge["orderedParents"]
+            != [r19_evidence["commit"], r19_master["commit"]]
         ):
             raise ManifestError("RECONCILIATION_ORDER_INVALID")
-        terminal = r19_wip
+        terminal = r19_merge
     if treeish != ":":
         run = subprocess.run(
             ["git", "merge-base", "--is-ancestor", terminal["commit"], treeish],
