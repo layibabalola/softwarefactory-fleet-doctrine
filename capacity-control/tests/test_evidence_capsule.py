@@ -2,10 +2,14 @@ from __future__ import annotations
 
 import hashlib
 import importlib.util
+import contextlib
+import io
+import json
 import pathlib
 import sys
 import tempfile
 import unittest
+from unittest import mock
 
 
 ROOT=pathlib.Path(__file__).resolve().parents[1]
@@ -49,6 +53,20 @@ class CapsuleTests(unittest.TestCase):
         with self.assertRaisesRegex(capsule.CapsuleError,"duplicate"): capsule.build(self.manifest(items=[item,item.copy()]))
         bad=item.copy(); bad["end_line"]=99
         with self.assertRaisesRegex(capsule.CapsuleError,"exceeds file"): capsule.build(self.manifest(items=[bad]))
+
+    def test_pre_read_source_and_item_limits_refuse(self):
+        with mock.patch.object(capsule,"MAX_SOURCE_BYTES",3):
+            with self.assertRaisesRegex(capsule.CapsuleError,"INPUT_TOO_LARGE"): capsule.build(self.manifest())
+        with mock.patch.object(capsule,"MAX_ITEMS",0):
+            with self.assertRaisesRegex(capsule.CapsuleError,"ITEM_COUNT_LIMIT"): capsule.build(self.manifest())
+
+    def test_cli_error_is_fixed_and_does_not_echo_private_path(self):
+        stderr=io.StringIO()
+        with mock.patch.object(capsule,"read_bounded",side_effect=OSError("C:/private/token")), contextlib.redirect_stderr(stderr):
+            code=capsule.main(["--manifest","C:/private/manifest.json"])
+        self.assertEqual(code,22)
+        self.assertEqual(json.loads(stderr.getvalue()),{"error":"INPUT_REFUSED"})
+        self.assertNotIn("private",stderr.getvalue())
 
 
 if __name__=="__main__": unittest.main()

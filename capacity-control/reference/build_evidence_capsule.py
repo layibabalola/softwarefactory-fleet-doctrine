@@ -14,6 +14,11 @@ from typing import Any, Sequence
 
 REQUEST_SCHEMA = "fleet-evidence-capsule-request/v1"
 CAPSULE_SCHEMA = "fleet-evidence-capsule/v1"
+MAX_MANIFEST_BYTES = 1024 * 1024
+MAX_ITEMS = 4096
+MAX_SOURCE_BYTES = 16 * 1024 * 1024
+MAX_AGGREGATE_SOURCE_BYTES = 64 * 1024 * 1024
+MAX_SOURCE_LINES = 200_000
 
 
 class CapsuleError(RuntimeError):
@@ -26,6 +31,18 @@ def canonical_json(value: Any) -> str:
 
 def digest_json(value: Any) -> str:
     return "sha256:" + hashlib.sha256(canonical_json(value).encode("utf-8")).hexdigest()
+
+
+def read_bounded(path: pathlib.Path, maximum: int) -> bytes:
+    if path.is_symlink():
+        raise CapsuleError("SYMLINK_REFUSED")
+    if path.stat().st_size > maximum:
+        raise CapsuleError("INPUT_TOO_LARGE")
+    with path.open("rb") as stream:
+        data = stream.read(maximum + 1)
+    if len(data) > maximum:
+        raise CapsuleError("INPUT_TOO_LARGE")
+    return data
 
 
 def build(manifest: dict[str, Any]) -> dict[str, Any]:
@@ -43,9 +60,12 @@ def build(manifest: dict[str, Any]) -> dict[str, Any]:
     items = manifest.get("items")
     if not isinstance(items, list) or not items:
         raise CapsuleError("items must be a non-empty array")
+    if len(items) > MAX_ITEMS:
+        raise CapsuleError("ITEM_COUNT_LIMIT")
     seen: set[tuple[str, int, int]] = set()
     output_items=[]
     payload_bytes=0
+    aggregate_source_bytes=0
     for item in items:
         if not isinstance(item, dict): raise CapsuleError("capsule item must be an object")
         relative=item.get("relative_path")
@@ -54,7 +74,11 @@ def build(manifest: dict[str, Any]) -> dict[str, Any]:
         try: candidate.relative_to(root)
         except ValueError as exc: raise CapsuleError(f"path escapes workspace: {relative}") from exc
         if not candidate.is_file(): raise CapsuleError(f"item is not a regular file: {relative}")
-        raw=candidate.read_bytes(); actual=hashlib.sha256(raw).hexdigest()
+        raw=read_bounded(candidate,MAX_SOURCE_BYTES)
+        aggregate_source_bytes+=len(raw)
+        if aggregate_source_bytes>MAX_AGGREGATE_SOURCE_BYTES: raise CapsuleError("SOURCE_AGGREGATE_LIMIT")
+        if raw.count(b"\n")+(0 if not raw or raw.endswith(b"\n") else 1)>MAX_SOURCE_LINES: raise CapsuleError("SOURCE_LINE_LIMIT")
+        actual=hashlib.sha256(raw).hexdigest()
         if item.get("sha256") != actual: raise CapsuleError(f"file hash mismatch: {relative}")
         try: text=raw.decode("utf-8")
         except UnicodeDecodeError as exc: raise CapsuleError(f"item is not UTF-8: {relative}") from exc
@@ -88,12 +112,12 @@ def main(argv: Sequence[str] | None=None) -> int:
     parser.add_argument("--output",type=pathlib.Path)
     args=parser.parse_args(argv)
     try:
-        manifest=json.loads(args.manifest.read_text(encoding="utf-8")); result=build(manifest)
+        manifest=json.loads(read_bounded(args.manifest,MAX_MANIFEST_BYTES).decode("utf-8")); result=build(manifest)
         if args.output: write_atomic(args.output,result)
         else: print(json.dumps(result,indent=2,sort_keys=True))
         return 0
-    except (OSError,json.JSONDecodeError,CapsuleError) as exc:
-        print(json.dumps({"error":"UNEVALUABLE","detail":str(exc)},sort_keys=True),file=sys.stderr)
+    except (OSError,UnicodeError,json.JSONDecodeError,CapsuleError):
+        print(json.dumps({"error":"INPUT_REFUSED"},sort_keys=True),file=sys.stderr)
         return 22
 
 
