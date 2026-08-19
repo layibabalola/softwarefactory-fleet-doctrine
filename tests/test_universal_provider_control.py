@@ -5120,9 +5120,24 @@ class UniversalProviderControlTests(unittest.TestCase):
         with mock.patch.object(checker, "_commit_tuple", side_effect=lambda commit: tuples[commit]):
             checker.verify_reconciliation({"reconciliation": reconciliation}, ":")
             forged = copy.deepcopy(reconciliation)
-            forged["r25MasterMerge"]["orderedParents"].reverse()
+            forged["r25LatestMasterMerge"]["orderedParents"].reverse()
             with self.assertRaisesRegex(checker.ManifestError, "RECONCILIATION_COMMIT_MISMATCH"):
                 checker.verify_reconciliation({"reconciliation": forged}, ":")
+        self.assertEqual(
+            reconciliation["r25FinalPreLatestMaster"]["commit"],
+            "70132a8b5b1b35f951a6860783787b0248a09f99",
+        )
+        self.assertEqual(
+            reconciliation["r25LatestCanonicalMaster"]["commit"],
+            "c1529bc3030c6663e0be63c4789b07530b9b2ecc",
+        )
+        self.assertEqual(
+            reconciliation["r25LatestMasterMerge"]["orderedParents"],
+            [
+                "70132a8b5b1b35f951a6860783787b0248a09f99",
+                "c1529bc3030c6663e0be63c4789b07530b9b2ecc",
+            ],
+        )
         self.assertEqual(manifest["status"], "CANDIDATE_ZERO_AUTHORITY")
         self.assertFalse(manifest["authority"]["providerExecution"])
         self.assertFalse(manifest["authority"]["containmentOrCanaryCredit"])

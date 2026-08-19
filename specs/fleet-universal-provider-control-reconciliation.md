@@ -528,6 +528,12 @@ incorrectly returns 2 ms. The test exercises both calculations and proves the fu
 validator rejects a forged 2 ms wall duration. R25 changes no broker mechanics or authority; it is
 evidence-only, zero authority, and CLOSED.
 
+After the first exact R25 freeze, canonical master advanced to
+`c1529bc3030c6663e0be63c4789b07530b9b2ecc`. R25 preserves that frozen candidate
+`70132a8b5b1b35f951a6860783787b0248a09f99` and reconciles the newer master through the
+ordered-parent merge `2ef4c7bbb01e867aeb7addba0ec8f93af686f59a`; no history was rewritten and the
+newer DNG project disposition is retained. This reconciliation changes no execution boundary or authority.
+
 The exact R25 candidate is validated by 181 universal controls, 37 retained governor controls, and
 78 canonical runtime-workbench controls on Python 3.13 and 3.14. Hosted checks remain required and
 unclaimed; validation and publication do not grant authority.

@@ -63,5 +63,8 @@ the human store-and-forward bus.
   from the OS account rather than caller-controlled HOME variables. It also withdraws R17's unsafe
   in-process callback-wrapper claim: the reference executes no provider or observer code and reports
   `CERTIFIED_PROCESS_CHOKE_POINT_NOT_INSTALLED`. R25 preserves that honest zero-authority boundary.
+  The exact R25 candidate was subsequently preserved and additively reconciled with canonical master
+  `c1529bc3030c6663e0be63c4789b07530b9b2ecc`; the reconciliation retains CLOSED status and grants no
+  provider, containment, canary, or adoption authority.
   It is not a portable core, ruling, adoption credit, or launch authority. Coordination stays on
   [issue #4](https://github.com/layibabalola/softwarefactory-fleet-doctrine/issues/4).

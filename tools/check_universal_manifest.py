@@ -99,6 +99,8 @@ def verify_reconciliation(manifest: dict[str, Any], treeish: str = "HEAD") -> No
     r24_names = ("r23Final", "r24Wip", "r24Evidence")
     r25_names = (
         "r24Final", "r25Wip", "r25CanonicalMaster", "r25MasterMerge", "r25Evidence",
+        "r25FinalPreLatestMaster", "r25LatestCanonicalMaster",
+        "r25LatestMasterMerge", "r25LatestEvidence",
     )
     if all(name in reconciliation for name in r25_names):
         names = (
@@ -268,14 +270,22 @@ def verify_reconciliation(manifest: dict[str, Any], treeish: str = "HEAD") -> No
         r25_master = reconciliation["r25CanonicalMaster"]
         r25_merge = reconciliation["r25MasterMerge"]
         r25_evidence = reconciliation["r25Evidence"]
+        r25_final_pre_latest = reconciliation["r25FinalPreLatestMaster"]
+        r25_latest_master = reconciliation["r25LatestCanonicalMaster"]
+        r25_latest_merge = reconciliation["r25LatestMasterMerge"]
+        r25_latest_evidence = reconciliation["r25LatestEvidence"]
         if (
             r24_final["orderedParents"] != [terminal["commit"]]
             or r25_wip["orderedParents"] != [r24_final["commit"]]
             or r25_merge["orderedParents"] != [r25_wip["commit"], r25_master["commit"]]
             or r25_evidence["orderedParents"] != [r25_merge["commit"]]
+            or r25_final_pre_latest["orderedParents"] != [r25_evidence["commit"]]
+            or r25_latest_merge["orderedParents"]
+            != [r25_final_pre_latest["commit"], r25_latest_master["commit"]]
+            or r25_latest_evidence["orderedParents"] != [r25_latest_merge["commit"]]
         ):
             raise ManifestError("RECONCILIATION_ORDER_INVALID")
-        terminal = r25_evidence
+        terminal = r25_latest_evidence
     if treeish != ":":
         run = subprocess.run(
             ["git", "merge-base", "--is-ancestor", terminal["commit"], treeish],
