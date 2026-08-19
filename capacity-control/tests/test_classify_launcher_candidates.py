@@ -78,6 +78,14 @@ class LauncherCandidateClassifierTests(unittest.TestCase):
         self.assertEqual([row["path"] for row in first["candidates"]], ["a.py", "b.py"])
         self.assertEqual(first["root"], ".")
 
+    def test_irrelevant_tree_is_bounded_before_source_filter(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root=Path(temporary)
+            (root/"a.txt").write_text("irrelevant",encoding="utf-8")
+            (root/"b.txt").write_text("irrelevant",encoding="utf-8")
+            with mock.patch.object(MODULE,"MAX_VISITED_PATHS",1), self.assertRaisesRegex(ValueError,"VISITED_PATH_LIMIT"):
+                MODULE.classify_tree(root)
+
     def test_working_tree_refusal_does_not_echo_private_details(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
@@ -204,6 +212,7 @@ class LauncherCandidateClassifierTests(unittest.TestCase):
         self.assertRegex(report["subjectCommit"], r"^[0-9a-f]{40}$")
         self.assertRegex(report["subjectTree"], r"^[0-9a-f]{40}$")
         self.assertEqual(report["classificationCounts"], {"INDIRECT_VARIABLE": 1})
+        self.assertEqual(report["root"], ".")
 
     def test_review_manifest_is_bounded_before_decode(self):
         with tempfile.TemporaryDirectory() as temporary:
@@ -212,6 +221,33 @@ class LauncherCandidateClassifierTests(unittest.TestCase):
                 stream.truncate(MODULE.MAX_REVIEW_BYTES + 1)
             with self.assertRaisesRegex(ValueError, "REVIEW_INPUT_LIMIT"):
                 MODULE._strict_json(path)
+
+    def test_review_manifest_shape_is_bounded_before_parser(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            path=Path(temporary)/"review.json"
+            path.write_bytes(b"["*(MODULE.MAX_REVIEW_DEPTH+1)+b"0"+b"]"*(MODULE.MAX_REVIEW_DEPTH+1))
+            with mock.patch.object(MODULE.json,"loads",side_effect=AssertionError("parser must not run")):
+                with self.assertRaisesRegex(ValueError,"REVIEW_SHAPE_LIMIT"):
+                    MODULE._strict_json(path)
+
+    def test_git_pipe_timeout_terminates_without_echo(self):
+        process=mock.Mock()
+        process.stdout=io.BytesIO(b"")
+        process.stderr=io.BytesIO(b"")
+        process.wait.side_effect=[subprocess.TimeoutExpired("git",30),-9]
+        with mock.patch.object(MODULE.subprocess,"Popen",return_value=process):
+            with self.assertRaisesRegex(ValueError,"GIT_TIMEOUT"):
+                MODULE._git_bounded(Path("."),128,"rev-parse","HEAD")
+        process.kill.assert_called_once()
+
+    def test_git_stderr_is_bounded_and_refused(self):
+        process=mock.Mock()
+        process.stdout=io.BytesIO(b"ok")
+        process.stderr=io.BytesIO(b"x"*(MODULE.MAX_GIT_STDERR_BYTES+1))
+        process.wait.return_value=0
+        with mock.patch.object(MODULE.subprocess,"Popen",return_value=process):
+            with self.assertRaisesRegex(ValueError,"GIT_OUTPUT_LIMIT"):
+                MODULE._git_bounded(Path("."),128,"rev-parse","HEAD")
 
     def test_cli_error_is_stable_and_does_not_echo_git_or_path_details(self):
         stderr = io.StringIO()

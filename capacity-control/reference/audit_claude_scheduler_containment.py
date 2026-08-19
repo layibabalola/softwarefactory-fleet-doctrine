@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import re
 import sys
 from pathlib import Path
 from typing import Any, Iterable
@@ -17,6 +18,7 @@ MAX_TASK_PATHS = 256
 MAX_TASK_OBJECTS = 4096
 MAX_JSON_NODES = 65536
 MAX_JSON_DEPTH = 64
+TASK_ID = re.compile(r"[a-z0-9][a-z0-9._-]{0,127}")
 
 
 def _sha256(data: bytes) -> str:
@@ -113,6 +115,8 @@ def audit(config_path: Path, task_paths: list[Path], project_prefix: str = "conj
     preferences = config["preferences"]
     cowork = preferences.get("coworkScheduledTasksEnabled")
     ccd = preferences.get("ccdScheduledTasksEnabled")
+    if not isinstance(cowork, bool) or not isinstance(ccd, bool):
+        raise ValueError("PREFERENCE_SCHEMA")
     reasons: list[str] = []
     if cowork is not False or ccd is not False:
         reasons.append("GLOBAL_PREFERENCES_NOT_FALSE")
@@ -125,9 +129,8 @@ def audit(config_path: Path, task_paths: list[Path], project_prefix: str = "conj
             digest = _sha256(canonical)
             task_id = task.get("id")
             enabled = task.get("enabled")
-            if not isinstance(task_id, str) or not isinstance(enabled, bool):
-                reasons.append("TASK_SCHEMA")
-                continue
+            if not isinstance(task_id, str) or not TASK_ID.fullmatch(task_id) or not isinstance(enabled, bool):
+                raise ValueError("TASK_SCHEMA")
             unique.setdefault(
                 digest,
                 {

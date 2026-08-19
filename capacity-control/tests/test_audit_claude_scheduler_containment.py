@@ -59,6 +59,19 @@ class ClaudeSchedulerContainmentAuditTests(unittest.TestCase):
         self.assertIn("GLOBAL_TASK_ENABLED", result["reasons"])
         self.assertEqual(result["globallyEnabledTasks"][0]["id"], "cloudvore-warden")
 
+    def test_unpublishable_preference_and_task_values_are_refused_without_echo(self):
+        private = "C:/private/token"
+        with self.assertRaisesRegex(ValueError, "PREFERENCE_SCHEMA"):
+            self._audit(
+                {"coworkScheduledTasksEnabled": {"secret": private}, "ccdScheduledTasksEnabled": False},
+                [],
+            )
+        with self.assertRaisesRegex(ValueError, "TASK_SCHEMA"):
+            self._audit(
+                {"coworkScheduledTasksEnabled": False, "ccdScheduledTasksEnabled": False},
+                [{"id": private, "enabled": True, "filePath": "prompt.md"}],
+            )
+
     def test_duplicate_json_keys_are_refused(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)

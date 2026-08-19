@@ -14,6 +14,7 @@ import os
 import re
 import subprocess
 import sys
+import threading
 from pathlib import Path
 
 
@@ -23,6 +24,11 @@ MAX_AGGREGATE_SOURCE_BYTES = 64 * 1024 * 1024
 MAX_SOURCE_FILES = 16384
 MAX_CANDIDATES = 4096
 MAX_REVIEW_BYTES = 4 * 1024 * 1024
+MAX_VISITED_PATHS = 131072
+MAX_DIRECTORY_ENTRIES = 32768
+MAX_GIT_STDERR_BYTES = 64 * 1024
+MAX_REVIEW_NODES = 65536
+MAX_REVIEW_DEPTH = 64
 MAX_EVIDENCE_LINES_PER_KIND = 64
 SOURCE_SUFFIXES = {".bat", ".cmd", ".js", ".ps1", ".psm1", ".py", ".sh", ".ts"}
 EXCLUDED_PARTS = {".git", "node_modules", "tmp"}
@@ -158,15 +164,27 @@ def classify_tree(root: Path) -> dict[str, object]:
     rows: list[dict[str, object]] = []
     refused: list[dict[str, str]] = []
     sources: list[Path] = []
-    for path in root.rglob("*"):
-        if not path.is_file() or path.suffix.lower() not in SOURCE_SUFFIXES:
-            continue
-        relative = path.relative_to(root)
-        if any(part.casefold() in EXCLUDED_PARTS for part in relative.parts):
-            continue
-        sources.append(path)
-        if len(sources) > MAX_SOURCE_FILES:
-            raise ValueError("SOURCE_COUNT_LIMIT")
+    pending = [root]
+    visited = 0
+    while pending:
+        directory = pending.pop()
+        directory_entries = 0
+        with os.scandir(directory) as entries:
+            for entry in entries:
+                directory_entries += 1
+                visited += 1
+                if directory_entries > MAX_DIRECTORY_ENTRIES:
+                    raise ValueError("DIRECTORY_ENTRY_LIMIT")
+                if visited > MAX_VISITED_PATHS:
+                    raise ValueError("VISITED_PATH_LIMIT")
+                path = Path(entry.path)
+                if entry.is_dir(follow_symlinks=False):
+                    if entry.name.casefold() not in EXCLUDED_PARTS:
+                        pending.append(path)
+                elif (entry.is_file(follow_symlinks=False) or entry.is_symlink()) and path.suffix.lower() in SOURCE_SUFFIXES:
+                    sources.append(path)
+                    if len(sources) > MAX_SOURCE_FILES:
+                        raise ValueError("SOURCE_COUNT_LIMIT")
 
     aggregate = 0
     for path in sorted(sources, key=lambda item: item.relative_to(root).as_posix().casefold()):
@@ -185,45 +203,59 @@ def classify_tree(root: Path) -> dict[str, object]:
     return _report(".", rows, refused, sourceMode="WORKING_TREE")
 
 
-def _git(repo: Path, *arguments: str, text: bool = False) -> subprocess.CompletedProcess:
-    environment = os.environ.copy()
-    environment["GIT_OPTIONAL_LOCKS"] = "0"
-    return subprocess.run(
-        ["git", "--no-optional-locks", "-C", str(repo), *arguments],
-        check=True,
-        capture_output=True,
-        text=text,
-        env=environment,
-    )
-
-
 def _git_bounded(repo: Path, limit: int, *arguments: str) -> bytes:
     environment = os.environ.copy()
     environment["GIT_OPTIONAL_LOCKS"] = "0"
     process = subprocess.Popen(
         ["git", "--no-optional-locks", "-C", str(repo), *arguments],
         stdout=subprocess.PIPE,
-        stderr=subprocess.DEVNULL,
+        stderr=subprocess.PIPE,
         env=environment,
     )
-    assert process.stdout is not None
+    assert process.stdout is not None and process.stderr is not None
+    stdout = bytearray()
+    stderr = bytearray()
+    exceeded = threading.Event()
+
+    def drain(stream, target: bytearray, maximum: int) -> None:
+        while True:
+            chunk = stream.read(65536)
+            if not chunk:
+                return
+            remaining = maximum + 1 - len(target)
+            if remaining > 0:
+                target.extend(chunk[:remaining])
+            if len(target) > maximum:
+                exceeded.set()
+                try: process.kill()
+                except OSError: pass
+                return
+
+    readers = [
+        threading.Thread(target=drain, args=(process.stdout, stdout, limit), daemon=True),
+        threading.Thread(target=drain, args=(process.stderr, stderr, MAX_GIT_STDERR_BYTES), daemon=True),
+    ]
+    for reader in readers: reader.start()
     try:
-        output = process.stdout.read(limit + 1)
-        if len(output) > limit:
-            process.kill()
-            process.wait(timeout=30)
-            raise ValueError("GIT_OUTPUT_LIMIT")
-        if process.wait(timeout=30) != 0:
+        try: return_code = process.wait(timeout=30)
+        except subprocess.TimeoutExpired as exc:
+            process.kill(); process.wait(timeout=30)
+            raise ValueError("GIT_TIMEOUT") from exc
+        for reader in readers: reader.join(timeout=5)
+        if any(reader.is_alive() for reader in readers): raise ValueError("GIT_PIPE_TIMEOUT")
+        if exceeded.is_set(): raise ValueError("GIT_OUTPUT_LIMIT")
+        if return_code != 0:
             raise ValueError("GIT_COMMAND_FAILED")
-        return output
+        return bytes(stdout)
     finally:
         process.stdout.close()
+        process.stderr.close()
 
 
 def classify_git_tree(repo: Path, treeish: str) -> dict[str, object]:
     repo = repo.resolve(strict=True)
-    commit = _git(repo, "rev-parse", f"{treeish}^{{commit}}", text=True).stdout.strip()
-    tree = _git(repo, "rev-parse", f"{commit}^{{tree}}", text=True).stdout.strip()
+    commit = _git_bounded(repo, 128, "rev-parse", f"{treeish}^{{commit}}").decode("ascii").strip()
+    tree = _git_bounded(repo, 128, "rev-parse", f"{commit}^{{tree}}").decode("ascii").strip()
     if not re.fullmatch(r"[0-9a-f]{40}", commit) or not re.fullmatch(r"[0-9a-f]{40}", tree):
         raise ValueError("GIT_SUBJECT_IDENTITY")
     listing = _git_bounded(repo, MAX_LISTING_BYTES, "ls-tree", "-r", "-z", "--long", "--full-tree", commit)
@@ -248,49 +280,18 @@ def classify_git_tree(repo: Path, treeish: str) -> dict[str, object]:
             if aggregate > MAX_AGGREGATE_SOURCE_BYTES:
                 raise ValueError("SOURCE_AGGREGATE_LIMIT")
             sources.append((path, raw_oid.decode("ascii"), size))
-    environment = os.environ.copy()
-    environment["GIT_OPTIONAL_LOCKS"] = "0"
-    process = subprocess.Popen(
-        ["git", "--no-optional-locks", "-C", str(repo), "cat-file", "--batch"],
-        stdin=subprocess.PIPE,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        env=environment,
-    )
-    assert process.stdin is not None and process.stdout is not None
     rows: list[dict[str, object]] = []
-    try:
-        for path, oid, expected_size in sources:
-            process.stdin.write((oid + "\n").encode("ascii"))
-            process.stdin.flush()
-            header = process.stdout.readline().decode("ascii").strip().split()
-            if len(header) != 3 or header[0] != oid or header[1] != "blob":
-                raise ValueError("GIT_BLOB_HEADER")
-            size = int(header[2])
-            if size != expected_size or size > MAX_FILE_BYTES:
-                raise ValueError("GIT_BLOB_SIZE")
-            data = process.stdout.read(size)
-            if len(data) != size or process.stdout.read(1) != b"\n":
-                raise ValueError("GIT_BLOB_TRUNCATED")
-            try:
-                row = _classify_data(path, data)
-            except ValueError as exc:
-                refused.append({"path": path, "reason": _public_refusal_reason(exc)})
-                continue
-            if row["providers"]:
-                rows.append(row)
-                if len(rows) > MAX_CANDIDATES:
-                    raise ValueError("CANDIDATE_COUNT_LIMIT")
-    finally:
-        process.stdin.close()
-        return_code = process.wait(timeout=30)
-        assert process.stderr is not None
-        process.stderr.read()
-        process.stdout.close()
-        process.stderr.close()
-    if return_code != 0:
-        raise ValueError("GIT_CAT_FILE_FAILURE")
-    return _report(str(repo), rows, refused, sourceMode="GIT_COMMIT", subjectCommit=commit, subjectTree=tree)
+    for path, oid, expected_size in sources:
+        data = _git_bounded(repo, expected_size, "cat-file", "blob", oid)
+        if len(data) != expected_size: raise ValueError("GIT_BLOB_SIZE")
+        try: row = _classify_data(path, data)
+        except ValueError as exc:
+            refused.append({"path": path, "reason": _public_refusal_reason(exc)})
+            continue
+        if row["providers"]:
+            rows.append(row)
+            if len(rows) > MAX_CANDIDATES: raise ValueError("CANDIDATE_COUNT_LIMIT")
+    return _report(".", rows, refused, sourceMode="GIT_COMMIT", subjectCommit=commit, subjectTree=tree)
 
 
 def _review_subject(report: dict[str, object]) -> tuple[str, str]:
@@ -388,6 +389,23 @@ def _strict_json(path: Path) -> dict[str, object]:
         data = stream.read(MAX_REVIEW_BYTES + 1)
     if len(data) > MAX_REVIEW_BYTES:
         raise ValueError("REVIEW_INPUT_LIMIT")
+    depth=0; nodes=0; quoted=False; escaped=False
+    for byte in data:
+        if quoted:
+            if escaped: escaped=False
+            elif byte==92: escaped=True
+            elif byte==34: quoted=False
+            continue
+        if byte==34: quoted=True
+        elif byte in (91,123):
+            depth+=1; nodes+=1
+            if depth>MAX_REVIEW_DEPTH or nodes>MAX_REVIEW_NODES: raise ValueError("REVIEW_SHAPE_LIMIT")
+        elif byte in (93,125):
+            depth-=1
+            if depth<0: raise ValueError("REVIEW_SCHEMA")
+        elif byte in (44,58):
+            nodes+=1
+            if nodes>MAX_REVIEW_NODES: raise ValueError("REVIEW_SHAPE_LIMIT")
     value = json.loads(data.decode("utf-8"), object_pairs_hook=pairs, parse_constant=lambda _: (_ for _ in ()).throw(ValueError("NONFINITE_JSON")))
     if not isinstance(value, dict):
         raise ValueError("REVIEW_SCHEMA")
