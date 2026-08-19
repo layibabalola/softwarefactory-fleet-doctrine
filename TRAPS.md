@@ -1937,3 +1937,20 @@ that a script can compare. A model may be admitted only after the preflight emit
 subject and the quota-domain governor grants a bounded lease. Assert repeated unchanged ticks
 produce zero admitted inference turns or requests, zero provider processes where applicable, and at
 most one deduplicated local idle receipt.
+
+## Binary HMAC keys can be mutated by Windows text-mode writes
+## (Agent Bridge, 2026-08-18, current Windows host, first-hand)
+
+A create-once 32-byte HMAC key was opened without binary mode on Windows. The random
+payload contained a newline byte, and the runtime translated it to CRLF, leaving a
+33-byte file. The subsequent exact-length check rejected the key and profile creation
+failed closed, but a test suite that only mocked random payloads without newline bytes
+would not have reproduced the platform-specific corruption.
+
+**Test / remedy:** open opaque secrets with the platform's binary flag, retain
+exclusive create-once semantics, close and read back the exact byte length before
+creating any dependent profile or HMAC, and refuse replacement of an invalid existing
+key. Add a deterministic payload containing `0x0A` so Windows newline translation
+cannot regress silently. Preserve the invalid artifact for diagnosis but never use,
+copy, hash into a public receipt, or auto-repair it; create a separately authorized
+new secret path when recovery is required.
