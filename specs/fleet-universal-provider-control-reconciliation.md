@@ -518,13 +518,19 @@ The exact R23 candidate is validated by 177 universal controls, 37 retained gove
 78 canonical runtime-workbench controls on Python 3.13 and 3.14. Hosted checks remain required and
 unclaimed; validation and publication do not grant authority.
 
-R25 preserves exact frozen R24 `0d20d6158d0ff66d6da9c9e7db8065a9e5c71189`. Its durable
+R25 preserves exact frozen R24 `0d20d6158d0ff66d6da9c9e7db8065a9e5c71189` and additively
+reconciles canonical master `92912d9a8bfdbb944ef040379b3d62b5dc7a985a` through ordered-parent
+merge `9577fecb7b55a18daa6e4bab6939b51ab8a67b84`. Its durable
 regression uses two seven-digit endpoints, `2026-08-19T04:33:55.7504409Z` and
 `2026-08-19T04:33:55.7524401Z`. Exact integer parsing yields 1,999,200 ns and floor 1 ms. The former
 `datetime.microsecond` path truncates the endpoints independently, observes 2,000 microseconds, and
 incorrectly returns 2 ms. The test exercises both calculations and proves the full attended-receipt
 validator rejects a forged 2 ms wall duration. R25 changes no broker mechanics or authority; it is
 evidence-only, zero authority, and CLOSED.
+
+The exact R25 candidate is validated by 181 universal controls, 37 retained governor controls, and
+78 canonical runtime-workbench controls on Python 3.13 and 3.14. Hosted checks remain required and
+unclaimed; validation and publication do not grant authority.
 
 R24 preserves exact frozen R23 `ac2db2152fe23aa989745d36a71c67d33da4c89f`. Canonical receipt
 timestamps use uppercase `T`/`Z`, UTC only, calendar-valid whole seconds, and zero to nine decimal

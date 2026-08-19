@@ -92,7 +92,9 @@ fraction directly to integer epoch nanoseconds and floors the exact completed-mi
 milliseconds; it never routes through `datetime.microsecond`. The four retained rows and aggregate remain
 unchanged. This is evidence-only and grants no runtime/provider authority.
 
-R25 preserves exact frozen R24 `0d20d6158d0ff66d6da9c9e7db8065a9e5c71189` and retains the
+R25 preserves exact frozen R24 `0d20d6158d0ff66d6da9c9e7db8065a9e5c71189`, then additively
+reconciles canonical master `92912d9a8bfdbb944ef040379b3d62b5dc7a985a` through ordered-parent
+merge `9577fecb7b55a18daa6e4bab6939b51ab8a67b84`. It retains the
 durable old-bug witness: `55.7504409Z` to `55.7524401Z` is exactly 1,999,200 ns and floors to 1 ms,
 while independently truncating both endpoints to microseconds produces the incorrect 2 ms. The full
 receipt validator rejects a forged 2 ms wall duration for that pair. R25 changes no implementation or

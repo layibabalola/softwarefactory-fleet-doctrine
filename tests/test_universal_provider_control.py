@@ -5104,6 +5104,30 @@ class UniversalProviderControlTests(unittest.TestCase):
         ):
             upc.validate_contract("attended_rotation_receipt", forged_floor_two)
 
+    def test_r25_02_manifest_binds_truncation_witness_and_master_merge(self) -> None:
+        import check_universal_manifest as checker
+
+        manifest_path = ROOT / "manifests" / "universal-provider-control-reconciliation-r25.json"
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        reconciliation = manifest["reconciliation"]
+        tuples = {
+            record["commit"]: (record["tree"], record["orderedParents"])
+            for record in reconciliation.values()
+        }
+        for record in reconciliation.values():
+            for parent, tree in zip(record["orderedParents"], record["orderedParentTrees"]):
+                tuples.setdefault(parent, (tree, []))
+        with mock.patch.object(checker, "_commit_tuple", side_effect=lambda commit: tuples[commit]):
+            checker.verify_reconciliation({"reconciliation": reconciliation}, ":")
+            forged = copy.deepcopy(reconciliation)
+            forged["r25MasterMerge"]["orderedParents"].reverse()
+            with self.assertRaisesRegex(checker.ManifestError, "RECONCILIATION_COMMIT_MISMATCH"):
+                checker.verify_reconciliation({"reconciliation": forged}, ":")
+        self.assertEqual(manifest["status"], "CANDIDATE_ZERO_AUTHORITY")
+        self.assertFalse(manifest["authority"]["providerExecution"])
+        self.assertFalse(manifest["authority"]["containmentOrCanaryCredit"])
+        self.assertEqual(manifest["authority"]["automaticGateState"], "CLOSED")
+
     def test_r17_07_low_level_request_primitives_are_not_public(self) -> None:
         broker = upc.UniversalProviderBroker(self.root / "r17-no-public-primitives")
         self.assertFalse(hasattr(broker, "begin_provider_request"))
