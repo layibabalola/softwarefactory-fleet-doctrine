@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://softwarefactory.invalid/schemas/universal-stage-proof-v1.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "proofId", "proofType", "issuedAt", "expiresAt", "targetStage", "priorTransitionSha256", "projectProfileSha256", "inventorySha256", "hostedNegativeSuiteSha256", "independentReviewSha256", "canarySuccessReceiptSha256", "oneUse", "proofHmacSha256"],
+  "properties": {
+    "schema": {"const": "fleet-universal-stage-proof/v1"},
+    "proofId": {"type": "string", "pattern": "^stage-[0-9a-f]{32}$"},
+    "proofType": {"enum": ["SAFETY_CLOSE", "SHADOW_VALIDATION", "CONTAINMENT_ENFORCEMENT", "CANARY_READINESS", "CANARY_SUCCESS_ADJUDICATION"]},
+    "issuedAt": {"type": "string", "format": "date-time"},
+    "expiresAt": {"type": "string", "format": "date-time"},
+    "targetStage": {"enum": ["CLOSED", "SHADOW", "CONTAINMENT", "CANARY", "OPEN"]},
+    "priorTransitionSha256": {"oneOf": [{"type": "null"}, {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"}]},
+    "projectProfileSha256": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+    "inventorySha256": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+    "hostedNegativeSuiteSha256": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+    "independentReviewSha256": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+    "canarySuccessReceiptSha256": {"oneOf": [{"type": "null"}, {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"}]},
+    "oneUse": {"const": true},
+    "proofHmacSha256": {"type": "string", "pattern": "^hmac-sha256:[0-9a-f]{64}$"}
+  }
+}

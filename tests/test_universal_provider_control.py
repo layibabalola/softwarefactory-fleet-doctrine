@@ -8,6 +8,7 @@ import json
 import os
 from pathlib import Path
 import sqlite3
+import stat
 import subprocess
 import sys
 import tempfile
@@ -27,55 +28,57 @@ SHA_A = "sha256:" + "a" * 64
 SHA_B = "sha256:" + "b" * 64
 SHA_C = "sha256:" + "c" * 64
 SHA_D = "sha256:" + "d" * 64
-R11_PREDECESSOR = "52ca3452a12656a13e62eba5c6b0641e43440f32"
-R13_PREDECESSOR = "ecc8f076c4f0273f92c8d9f841bceff3684233ca"
-R11_REQUIRED_BLOBS = {
-    "tests/test_universal_provider_control.py",
-    "tools/universal_provider_control.py",
-}
-R13_REQUIRED_BLOBS = {"tools/universal_provider_control.py"}
+R13_DIRECTORY_CLOSE_FIXTURE = "os.close(directory)"
 
 
 def sha_file(path: Path) -> str:
     return "sha256:" + hashlib.sha256(path.read_bytes()).hexdigest()
 
 
-def required_history_blob(commit: str, path: str, allowed: set[str]) -> str:
-    """Read exact predecessor evidence or fail with one stable no-echo history reason."""
-
-    if path not in allowed:
-        raise AssertionError("REQUIRED_HISTORY_PATH_INVALID")
-    run = subprocess.run(
-        ["git", "show", f"{commit}:{path}"],
-        cwd=ROOT,
-        text=True,
-        encoding="utf-8",
-        capture_output=True,
-        check=False,
-    )
-    if run.returncode != 0:
-        raise AssertionError("REQUIRED_HISTORY_OBJECT_UNAVAILABLE") from None
-    return run.stdout
-
-
-def required_predecessor_blob(path: str) -> str:
-    return required_history_blob(R11_PREDECESSOR, path, R11_REQUIRED_BLOBS)
-
-
-def required_r13_blob(path: str) -> str:
-    return required_history_blob(R13_PREDECESSOR, path, R13_REQUIRED_BLOBS)
-
-
 class UniversalProviderControlTests(unittest.TestCase):
     def setUp(self) -> None:
         self.temp = tempfile.TemporaryDirectory()
         self.root = Path(self.temp.name)
+        # Ordinary test discovery must never touch the persistent OS-account quota authority.
+        # Override both module paths before constructing any broker, using a deterministic child of
+        # this test's private temporary root.  The production resolver remains covered separately.
+        self.default_quota_trusted_base = upc._CANONICAL_QUOTA_TRUSTED_BASE
+        self.default_quota_authority_root = upc._CANONICAL_QUOTA_AUTHORITY_ROOT
+        self.default_quota_ledger_root = upc._CANONICAL_QUOTA_LEDGER_ROOT
+        upc._CANONICAL_QUOTA_TRUSTED_BASE = self.root
+        upc._CANONICAL_QUOTA_AUTHORITY_ROOT = self.root / "test-account-authority"
+        upc._CANONICAL_QUOTA_LEDGER_ROOT = (
+            upc._CANONICAL_QUOTA_AUTHORITY_ROOT / "quota-ledger"
+        )
         self.now = dt.datetime(2026, 8, 18, 20, 0, tzinfo=UTC)
+        self.default_clock_patch = mock.patch.object(
+            upc, "_default_broker_clock", side_effect=lambda: self.now
+        )
+        self.default_clock_patch.start()
         self.secret = b"S" * 32
-        self.identity = b"local-account-alias-never-published"
+        self.termination_secret = b"T" * 32
+        self.quality_secret = b"Q" * 32
+        self.receipt_signer_secrets = {
+            "process-tree-observer": self.termination_secret,
+            "output-quality-observer": self.quality_secret,
+        }
+        # The production quota ledger is deliberately canonical across state roots.  Give every
+        # isolated test a distinct synthetic account so intentional active leases cannot leak
+        # authority into a later case.
+        self.identity = b"local-account-" + str(self.root).encode("utf-8")
         self.quota_id = upc.derive_quota_domain_id("claude", self.identity, self.secret)
         self.launcher = self.root / "controlled-launcher.exe"
         self.launcher.write_bytes(b"reference launcher bytes\n")
+        self.provider_executable = self.root / "pinned-provider.exe"
+        self.provider_executable.write_bytes(b"pinned provider adapter bytes\n")
+        self.termination_evidence = self.root / "termination-evidence.json"
+        self.termination_evidence.write_bytes(b'{"rootExited":true,"descendants":0}\n')
+        self.output_artifact = self.root / "retained-output.bin"
+        self.output_artifact.write_bytes(b"candidate output bytes\n")
+        self.reference_output = self.root / "retained-reference.bin"
+        self.reference_output.write_bytes(b"reference output bytes\n")
+        self.output_review = self.root / "retained-output-review.json"
+        self.output_review.write_bytes(b'{"nonInferior":true}\n')
         self.subject = self.root / "frozen-subject.bin"
         self.subject.write_bytes(b"frozen review subject\n")
         self.launcher_config = self.root / "launcher-config.json"
@@ -86,11 +89,44 @@ class UniversalProviderControlTests(unittest.TestCase):
         self.checkpoint.write_bytes(b'{"milestone":"frozen"}\n')
         self.cache_manifest = self.root / "cache-affinity.json"
         self.cache_manifest.write_bytes(b'{"prefix":"stable"}\n')
+        self.addressed_work = self.root / "addressed-work.json"
+        self.addressed_work.write_bytes(b'{"work":["issue-4"]}\n')
+        self.cursor = self.root / "cursor.json"
+        self.cursor.write_bytes(b'{"cursor":"current"}\n')
+        self.prior_idle_work = self.root / "prior-idle-work.json"
+        self.prior_idle_work.write_bytes(b'{"work":[]}\n')
+        self.prior_idle_cursor = self.root / "prior-idle-cursor.json"
+        self.prior_idle_cursor.write_bytes(b'{"cursor":"prior"}\n')
+        self.demand_snapshot = {
+            "schema": "fleet-universal-demand-snapshot/v1", "project": "test-project",
+            "addressedWork": [
+                {"kind": "ISSUE", "id": "issue-4", "state": "READY",
+                 "subjectSha256": sha_file(self.subject)}
+            ],
+            "cursor": {"stream": "issues", "sequence": 4, "checkpointSha256": SHA_C},
+        }
+        self.prior_idle_snapshot = {
+            "schema": "fleet-universal-demand-snapshot/v1", "project": "test-project",
+            "addressedWork": [],
+            "cursor": {"stream": "issues", "sequence": 3, "checkpointSha256": SHA_D},
+        }
+        self.prior_idle_authority = self.root / "broker-observed-prior-idle.json"
+        self.prior_idle_authority.write_bytes(
+            upc.canonical_json(self.prior_idle_snapshot).encode("utf-8")
+        )
+        self.demand_authority = self.root / "broker-observed-demand.json"
+        self.demand_authority.write_bytes(upc.canonical_json(self.demand_snapshot).encode("utf-8"))
+        self.request = self.make_request()
         self.profile = self.make_profile()
         self.inventory = self.make_inventory()
         self.health = self.make_health()
         self.native = self.make_native()
-        self.request = self.make_request()
+        self.permits: dict[str, dict] = {}
+        self.brokers: dict[str, upc.UniversalProviderBroker] = {}
+        self.prior_receipts: dict[tuple[int, str], dict] = {}
+        self.prior_receipt_pools: dict[tuple[int, str], dict[str, dict]] = {}
+        self.prior_receipt_lock = threading.Lock()
+        self.terminal_artifacts: dict[str, dict] = {}
 
     def tearDown(self) -> None:
         # Tests that prove an active claimant remains fenced intentionally cannot use broker.close()
@@ -114,6 +150,14 @@ class UniversalProviderControlTests(unittest.TestCase):
                 runtime.unproven_artifact_handles.clear()
                 upc._BROKER_ARTIFACT_CLEANUP_POISON.pop(key, None)
                 upc._BROKER_ROOT_RUNTIMES.pop(key, None)
+        upc._QUOTA_AUTHORITY_POISON = {
+            key for key in upc._QUOTA_AUTHORITY_POISON
+            if not key.startswith(os.path.normcase(os.path.abspath(str(self.root))))
+        }
+        self.default_clock_patch.stop()
+        upc._CANONICAL_QUOTA_TRUSTED_BASE = self.default_quota_trusted_base
+        upc._CANONICAL_QUOTA_AUTHORITY_ROOT = self.default_quota_authority_root
+        upc._CANONICAL_QUOTA_LEDGER_ROOT = self.default_quota_ledger_root
         self.temp.cleanup()
 
     def make_profile(self) -> dict:
@@ -128,20 +172,70 @@ class UniversalProviderControlTests(unittest.TestCase):
                 "sharedBrokerIdentitySha256": None,
                 "stateRootIdentity": "hmac-sha256:" + "0" * 64,
             },
+            "demandAuthority": {
+                "snapshotPath": str(self.demand_authority.resolve()),
+                "snapshotSha256": sha_file(self.demand_authority),
+                "brokerObserved": True,
+            },
             "efficiency": {
                 "maxTurns": 16,
                 "maxContextTokens": 65536,
+                "maxCumulativeTokenCeilings": {
+                    "inputTokens": 100000,
+                    "cacheReadTokens": 1000000,
+                    "cacheWriteTokens": 100000,
+                    "reasoningTokens": 100000,
+                    "outputTokens": 50000,
+                },
+                "maxReservedTokenCeilings": {
+                    "inputTokens": 100000,
+                    "cacheReadTokens": 1000000,
+                    "cacheWriteTokens": 100000,
+                    "reasoningTokens": 100000,
+                    "outputTokens": 50000,
+                },
                 "milestoneCompactionRequired": True,
                 "cacheAffinityRequired": True,
                 "capsuleRequired": True,
                 "qualityMayBeWeakened": False,
             },
+            "launchAllowlist": [
+                {
+                    "provider": provider,
+                    "adapterVersion": adapter,
+                    "model": "claude-opus-4-1",
+                    "effort": "high",
+                    "role": "IMPLEMENT",
+                    "qualityTier": "FRONTIER_HIGH",
+                    "qualityEquivalenceReceiptSha256": self.request["qualityEquivalenceReceiptSha256"],
+                    "executableSha256": sha_file(self.launcher),
+                    "launcherConfigSha256": sha_file(self.launcher_config),
+                    "argvContractSha256": upc.canonical_argv_contract(
+                        [str(self.launcher.resolve()), "claude-opus-4-1", "high", sha_file(self.subject),
+                         "IMPLEMENT", "8", "32768", "50000", "500000", "50000", "50000", "25000"],
+                        {"modelIndex": 1, "effortIndex": 2, "subjectIndex": 3, "roleIndex": 4,
+                         "maxTurnsIndex": 5, "maxContextTokensIndex": 6, "maxInputTokensIndex": 7,
+                         "maxCacheReadTokensIndex": 8, "maxCacheWriteTokensIndex": 9,
+                         "maxReasoningTokensIndex": 10, "maxOutputTokensIndex": 11},
+                    ),
+                    "requestBoundaryMode": "SINGLE_REQUEST_PROCESS",
+                    "boundaryCertificationSha256": self.request["boundaryCertificationSha256"],
+                    "runtimeWatchdogCertified": True,
+                }
+                for provider, adapter in (
+                    ("claude", "claude-code/1.0"),
+                    ("openai", "openai-responses/1.0"),
+                    ("kimi", "kimi-code/1.0"),
+                    ("grok", "xai-api/1.0"),
+                )
+            ],
             "policy": {
                 "maxObservationAgeSeconds": 120,
                 "maxInventoryAgeSeconds": 120,
                 "maxBrokerHealthAgeSeconds": 120,
                 "maxRequestAgeSeconds": 120,
                 "maxRequestValiditySeconds": 900,
+                "maxPriorIdleAgeSeconds": 60,
                 "leaseMaxSeconds": 600,
                 "postResetQuietSeconds": 60,
                 "maxConcurrentPerQuotaDomain": 1,
@@ -158,6 +252,12 @@ class UniversalProviderControlTests(unittest.TestCase):
                     "openai-responses/1.0": ["primary", "secondary"],
                     "kimi-code/1.0": ["context", "monthly"],
                     "xai-api/1.0": ["requests", "tokens"],
+                },
+                "capacityTokenBudgets": {
+                    "claude-code/1.0": 10000000,
+                    "openai-responses/1.0": 10000000,
+                    "kimi-code/1.0": 10000000,
+                    "xai-api/1.0": 10000000,
                 },
             },
             "invariants": {
@@ -275,6 +375,7 @@ class UniversalProviderControlTests(unittest.TestCase):
         return common
 
     def make_request(self, request_id: str = "request-0001") -> dict:
+        state_root_identity = getattr(self, "current_state_root_identity", "hmac-sha256:" + "0" * 64)
         request = {
             "schema": "fleet-universal-control-request/v1",
             "requestId": request_id,
@@ -288,6 +389,9 @@ class UniversalProviderControlTests(unittest.TestCase):
             "model": "claude-opus-4-1",
             "effort": "high",
             "role": "IMPLEMENT",
+            "qualityTier": "FRONTIER_HIGH",
+            "qualityEquivalenceReceipt": {},
+            "qualityEquivalenceReceiptSha256": SHA_A,
             "seatIdHash": "hmac-sha256:" + "1" * 64,
             "seatEpoch": 7,
             "sessionIdHash": "hmac-sha256:" + "2" * 64,
@@ -295,32 +399,118 @@ class UniversalProviderControlTests(unittest.TestCase):
             "subjectSha256": sha_file(self.subject),
             "executablePath": str(self.launcher.resolve()),
             "executableSha256": sha_file(self.launcher),
-            "argv": [str(self.launcher.resolve()), "claude-opus-4-1", "high", sha_file(self.subject)],
+            "providerExecutablePath": str(self.provider_executable.resolve()),
+            "providerExecutableSha256": sha_file(self.provider_executable),
+            "argv": [
+                str(self.launcher.resolve()), "claude-opus-4-1", "high", sha_file(self.subject),
+                "IMPLEMENT", "8", "32768", "50000", "500000", "50000", "50000", "25000",
+            ],
             "argvSha256": "",
-            "argvBindings": {"modelIndex": 1, "effortIndex": 2, "subjectIndex": 3},
+            "argvBindings": {
+                "modelIndex": 1, "effortIndex": 2, "subjectIndex": 3, "roleIndex": 4,
+                "maxTurnsIndex": 5, "maxContextTokensIndex": 6, "maxInputTokensIndex": 7,
+                "maxCacheReadTokensIndex": 8, "maxCacheWriteTokensIndex": 9,
+                "maxReasoningTokensIndex": 10, "maxOutputTokensIndex": 11,
+            },
             "launcherConfigPath": str(self.launcher_config.resolve()),
             "launcherConfigSha256": sha_file(self.launcher_config),
+            "argvContractSha256": "",
+            "requestBoundaryMode": "SINGLE_REQUEST_PROCESS",
+            "boundaryCertification": {},
+            "boundaryCertificationSha256": SHA_B,
             "actionableWork": True,
-            "demandFingerprint": SHA_B,
-            "priorIdleFingerprint": SHA_C,
+            "demandSnapshot": copy.deepcopy(self.demand_snapshot),
+            "demandFingerprint": "",
+            "priorIdleReceipt": {
+                "schema": "fleet-universal-prior-idle-receipt/v1", "receiptId": "idle-" + "1" * 32,
+                "project": "test-project", "recordedAt": upc.iso(self.now - dt.timedelta(seconds=10)),
+                "expiresAt": upc.iso(self.now + dt.timedelta(seconds=50)), "sequence": 1,
+                "authorityPath": str(self.prior_idle_authority.resolve()),
+                "authoritySha256": sha_file(self.prior_idle_authority),
+                "demandSnapshot": copy.deepcopy(self.prior_idle_snapshot),
+                "demandFingerprint": upc.digest_json(upc.canonical_demand_snapshot(self.prior_idle_snapshot)),
+                "demandAuthorityPinEpoch": 1,
+                "demandAuthorityPinHmacSha256": "hmac-sha256:" + "3" * 64,
+                "stateRootIdentity": state_root_identity,
+                "receiptHmacSha256": "hmac-sha256:" + "0" * 64,
+            },
             "maxWallSeconds": 60,
             "maxTurns": 8,
             "maxContextTokens": 32768,
+            "cumulativeTokenCeilings": {
+                "inputTokens": 50000,
+                "cacheReadTokens": 500000,
+                "cacheWriteTokens": 50000,
+                "reasoningTokens": 50000,
+                "outputTokens": 25000,
+            },
+            "inputEnvelopeTokens": 600000,
+            "generatedEnvelopeTokens": 75000,
+            "terminalReserveTokens": 5000,
             "contextCapsulePath": str(self.capsule.resolve()),
             "contextCapsuleSha256": sha_file(self.capsule),
             "compactionCheckpointPath": str(self.checkpoint.resolve()),
             "compactionCheckpointSha256": sha_file(self.checkpoint),
             "cacheAffinityManifestPath": str(self.cache_manifest.resolve()),
             "cacheAffinityKeySha256": sha_file(self.cache_manifest),
-            "windowEstimates": {"session": 0.05, "weekly": 0.05},
             "canary": False,
             "manualAuthorizationSha256": None,
         }
+        request["demandFingerprint"] = upc.canonical_demand_fingerprint(request["demandSnapshot"])
         request["argvSha256"] = upc.digest_json(request["argv"])
+        request["argvContractSha256"] = upc.canonical_argv_contract(request["argv"], request["argvBindings"])
+        quality = {
+            "schema": "fleet-universal-quality-equivalence-receipt/v1",
+            "receiptId": "quality-" + "1" * 32,
+            "issuedAt": upc.iso(self.now - dt.timedelta(seconds=2)),
+            "expiresAt": upc.iso(self.now + dt.timedelta(minutes=10)),
+            "provider": request["provider"], "model": request["model"],
+            "effort": request["effort"], "role": request["role"],
+            "referenceSubjectSha256": request["subjectSha256"],
+            "candidateSubjectSha256": request["subjectSha256"],
+            "nonInferior": True, "independentReviewSha256": SHA_B,
+            "receiptHmacSha256": "hmac-sha256:" + "0" * 64,
+        }
+        quality["receiptHmacSha256"] = upc.contract_hmac(
+            "quality-equivalence-receipt-v1", quality, self.secret, "receiptHmacSha256"
+        )
+        request["qualityEquivalenceReceipt"] = quality
+        request["qualityEquivalenceReceiptSha256"] = upc.digest_json(quality)
+        boundary = {
+            "schema": "fleet-universal-wrapper-boundary-certification/v1",
+            "certificationId": "boundary-" + "2" * 32,
+            "issuedAt": upc.iso(self.now - dt.timedelta(seconds=2)),
+            "expiresAt": upc.iso(self.now + dt.timedelta(minutes=10)),
+            "wrapperExecutableSha256": request["executableSha256"],
+            "providerExecutableSha256": request["providerExecutableSha256"],
+            "launcherConfigSha256": request["launcherConfigSha256"],
+            "argvContractSha256": request["argvContractSha256"],
+            "requestBoundaryMode": "SINGLE_REQUEST_PROCESS",
+            "brokerPermitCommand": "reference-only-no-execution",
+            "directInvocationImpossible": False,
+            "processTreeTerminationRequired": True,
+            "terminationObserverId": "process-tree-observer",
+            "terminationObserverKeySha256": upc.signer_key_sha256(self.termination_secret),
+            "qualityObserverId": "output-quality-observer",
+            "qualityObserverKeySha256": upc.signer_key_sha256(self.quality_secret),
+            "independentReviewSha256": SHA_C,
+            "certificationHmacSha256": "hmac-sha256:" + "0" * 64,
+        }
+        boundary["certificationHmacSha256"] = upc.contract_hmac(
+            "wrapper-boundary-certification-v1", boundary, self.secret,
+            "certificationHmacSha256",
+        )
+        request["boundaryCertification"] = boundary
+        request["boundaryCertificationSha256"] = upc.digest_json(boundary)
+        if state_root_identity != "hmac-sha256:" + "0" * 64:
+            request["priorIdleReceipt"]["receiptHmacSha256"] = upc.contract_hmac(
+                "prior-idle-receipt-v1", request["priorIdleReceipt"], self.secret, "receiptHmacSha256"
+            )
         return request
 
     def bind_runtime(self, broker: upc.UniversalProviderBroker) -> None:
-        self.profile["coordination"]["stateRootIdentity"] = broker.state_root_identity(self.secret)
+        self.current_state_root_identity = broker.state_root_identity(self.secret)
+        self.profile["coordination"]["stateRootIdentity"] = self.current_state_root_identity
         self.health = self.make_health()
 
     def resign_native(self, value: dict) -> dict:
@@ -401,6 +591,100 @@ class UniversalProviderControlTests(unittest.TestCase):
             "sessionIdHash": result["sessionIdHash"],
             "observerHmacSha256": "hmac-sha256:" + "0" * 64,
         }
+        if phase == "TERMINAL":
+            permit = self.permits.get(result["leaseId"])
+            artifacts = self.terminal_artifacts.get(result["leaseId"])
+            if artifacts is None:
+                termination = {
+                    "schema": "fleet-universal-process-tree-termination-receipt/v1",
+                    "receiptId": "termination-" + "3" * 32,
+                    "leaseId": result["leaseId"], "observedAt": upc.iso(self.now),
+                    "expiresAt": upc.iso(self.now + dt.timedelta(minutes=1)),
+                    "bindingSha256": result["bindingSha256"],
+                    "rootProcessId": result["processId"],
+                    "rootProcessStartTime": result["processStartTime"],
+                    "rootExited": True, "liveDescendantCount": 0,
+                    "observerQualified": True,
+                    "observerId": "process-tree-observer",
+                    "observerKeySha256": upc.signer_key_sha256(self.termination_secret),
+                    "evidencePath": str(self.termination_evidence.resolve()),
+                    "evidenceSha256": sha_file(self.termination_evidence),
+                    "retainedEvidenceBytes": self.termination_evidence.stat().st_size,
+                    "receiptHmacSha256": "hmac-sha256:" + "0" * 64,
+                }
+                termination["receiptHmacSha256"] = upc.contract_hmac(
+                    "process-tree-termination-receipt-v1", termination, self.termination_secret,
+                    "receiptHmacSha256",
+                )
+                usage = {
+                    "inputTokens": 100, "cacheReadTokens": 1000, "cacheWriteTokens": 10,
+                    "reasoningTokens": 100, "outputTokens": 100,
+                } if permit is not None else {
+                    "inputTokens": 0, "cacheReadTokens": 0, "cacheWriteTokens": 0,
+                    "reasoningTokens": 0, "outputTokens": 0,
+                }
+                checkpoint_digest = None
+                terminal_permit_digest = None
+                output_quality = None
+                if permit is not None:
+                    broker = self.brokers[result["leaseId"]]
+                    broker._checkpoint_provider_usage(
+                        lease_id=result["leaseId"], phase="PRE_TURN", turn_count=1,
+                        current_context_tokens=1000, peak_context_tokens=1000,
+                        token_usage=usage, fleet_secret=self.secret, now=self.now,
+                    )
+                    terminal_permit = broker._issue_terminal_request_permit(
+                        lease_id=result["leaseId"], fleet_secret=self.secret, now=self.now
+                    )
+                    checkpoint = broker._checkpoint_provider_usage(
+                        lease_id=result["leaseId"], phase="TERMINAL", turn_count=1,
+                        current_context_tokens=1000, peak_context_tokens=1000,
+                        token_usage=usage, fleet_secret=self.secret, now=self.now,
+                    )
+                    checkpoint_digest = upc.digest_json(checkpoint)
+                    terminal_permit_digest = upc.digest_json(terminal_permit)
+                    output_quality = {
+                        "schema": "fleet-universal-output-quality-receipt/v1",
+                        "receiptId": "output-quality-" + "4" * 32,
+                        "leaseId": result["leaseId"], "requestId": result["requestId"],
+                        "bindingSha256": result["bindingSha256"],
+                        "completedAt": upc.iso(self.now),
+                        "expiresAt": upc.iso(self.now + dt.timedelta(minutes=1)),
+                        "outputPath": str(self.output_artifact.resolve()),
+                        "outputSha256": sha_file(self.output_artifact),
+                        "retainedOutputBytes": self.output_artifact.stat().st_size,
+                        "referenceOutputPath": str(self.reference_output.resolve()),
+                        "referenceOutputSha256": sha_file(self.reference_output),
+                        "retainedReferenceBytes": self.reference_output.stat().st_size,
+                        "qualitySubjectSha256": self.request["subjectSha256"],
+                        "providerUsageCheckpointSha256": checkpoint_digest,
+                        "nonInferior": True,
+                        "observerId": "output-quality-observer",
+                        "observerKeySha256": upc.signer_key_sha256(self.quality_secret),
+                        "independentReviewPath": str(self.output_review.resolve()),
+                        "independentReviewSha256": sha_file(self.output_review),
+                        "retainedIndependentReviewBytes": self.output_review.stat().st_size,
+                        "receiptHmacSha256": "hmac-sha256:" + "0" * 64,
+                    }
+                    output_quality["receiptHmacSha256"] = upc.contract_hmac(
+                        "output-quality-receipt-v1", output_quality, self.quality_secret,
+                        "receiptHmacSha256",
+                    )
+                artifacts = {
+                    "usage": usage, "checkpoint": checkpoint_digest,
+                    "terminalPermit": terminal_permit_digest,
+                    "termination": termination, "outputQuality": output_quality,
+                }
+                self.terminal_artifacts[result["leaseId"]] = copy.deepcopy(artifacts)
+            observation.update(
+                providerRequestCount=1 if permit is not None else 0,
+                providerRequestPermitSha256=upc.digest_json(permit) if permit is not None else None,
+                tokenUsage=copy.deepcopy(artifacts["usage"]),
+                providerUsageCheckpointSha256=artifacts["checkpoint"],
+                terminalRequestPermitSha256=artifacts["terminalPermit"],
+                processTreeTerminationReceipt=copy.deepcopy(artifacts["termination"]),
+                outputQualityReceipt=copy.deepcopy(artifacts["outputQuality"]),
+            )
         observation["observerHmacSha256"] = upc.contract_hmac(
             "process-observation-v1", observation, self.secret, "observerHmacSha256"
         )
@@ -408,34 +692,167 @@ class UniversalProviderControlTests(unittest.TestCase):
 
     def transition(self, broker: upc.UniversalProviderBroker, target: str = "OPEN") -> None:
         self.bind_runtime(broker)
-        transition = {
-            "schema": "fleet-universal-gate-transition/v1",
-            "transitionId": "transition-0001",
-            "transitionEpoch": 1,
+        if target == "OPEN":
+            stages = ["CLOSED", "SHADOW", "CONTAINMENT", "OPEN"]
+        else:
+            stages = ["CLOSED", "SHADOW", "CONTAINMENT", "CANARY"]
+        prior_digest = None
+        for epoch, (source, destination) in enumerate(zip(stages, stages[1:]), start=1):
+            canary_receipt = None
+            if destination == "OPEN":
+                synthetic_receipt = {
+                    "schema": "fleet-universal-canary-success-receipt/v1",
+                    "receiptId": "canary-success-" + "f" * 32,
+                    "leaseId": "lease-" + "e" * 32,
+                    "requestId": "request-test-transition",
+                    "completedAt": upc.iso(self.now - dt.timedelta(seconds=1)),
+                    "expiresAt": upc.iso(self.now + dt.timedelta(minutes=5)),
+                    "gateEpoch": epoch - 1,
+                    "gateTransitionSha256": prior_digest or SHA_A,
+                    "projectProfileSha256": upc.digest_json(self.profile),
+                    "inventorySha256": upc.digest_json(self.inventory),
+                    "providerRequestPermitSha256": SHA_A,
+                    "providerUsageCheckpointSha256": SHA_B,
+                    "outputQualityReceiptSha256": SHA_C,
+                    "tokenUsageSha256": SHA_D,
+                    "success": True,
+                    "receiptHmacSha256": "hmac-sha256:" + "0" * 64,
+                }
+                synthetic_receipt["receiptHmacSha256"] = upc.contract_hmac(
+                    "canary-success-receipt-v1", synthetic_receipt, self.secret,
+                    "receiptHmacSha256",
+                )
+                canary_receipt = upc.digest_json(synthetic_receipt)
+                with broker._connect() as connection:
+                    connection.execute(
+                        """INSERT OR REPLACE INTO canary_success_receipts(
+                            receipt_id, receipt_digest, receipt_bytes, gate_epoch,
+                            profile_digest, inventory_digest, used_at
+                        ) VALUES (?, ?, ?, ?, ?, ?, NULL)""",
+                        (
+                            synthetic_receipt["receiptId"], canary_receipt,
+                            upc.canonical_json(synthetic_receipt).encode("utf-8"), epoch - 1,
+                            upc.digest_json(self.profile), upc.digest_json(self.inventory),
+                        ),
+                    )
+            proof_type = {
+                "SHADOW": "SHADOW_VALIDATION", "CONTAINMENT": "CONTAINMENT_ENFORCEMENT",
+                "CANARY": "CANARY_READINESS", "OPEN": "CANARY_SUCCESS_ADJUDICATION",
+            }[destination]
+            proof = {
+                "schema": "fleet-universal-stage-proof/v1", "proofId": "stage-" + f"{epoch:032x}",
+                "proofType": proof_type, "issuedAt": upc.iso(self.now - dt.timedelta(seconds=1)),
+                "expiresAt": upc.iso(self.now + dt.timedelta(minutes=10)), "targetStage": destination,
+                "priorTransitionSha256": prior_digest,
+                "projectProfileSha256": upc.digest_json(self.profile),
+                "inventorySha256": upc.digest_json(self.inventory),
+                "hostedNegativeSuiteSha256": SHA_C, "independentReviewSha256": SHA_B,
+                "canarySuccessReceiptSha256": canary_receipt, "oneUse": True,
+                "proofHmacSha256": "hmac-sha256:" + "0" * 64,
+            }
+            proof["proofHmacSha256"] = upc.contract_hmac(
+                "stage-proof-v1", proof, self.secret, "proofHmacSha256"
+            )
+            transition = {
+                "schema": "fleet-universal-gate-transition/v1",
+                "transitionId": f"transition-{epoch:04d}",
+                "transitionEpoch": epoch,
+                "issuedAt": upc.iso(self.now - dt.timedelta(seconds=1)),
+                "expiresAt": upc.iso(self.now + dt.timedelta(minutes=10)),
+                "from": source,
+                "to": destination,
+                "cause": "INDEPENDENT_ADJUDICATION",
+                "doctrineCommitSha256": SHA_A,
+                "brokerExecutableSha256": sha_file(Path(upc.__file__).resolve()),
+                "projectProfileSha256": upc.digest_json(self.profile),
+                "inventorySha256": upc.digest_json(self.inventory),
+                "brokerHealthSha256": upc.digest_json(self.health),
+                "reviewReceiptSha256": SHA_B,
+                "testReceiptSha256": SHA_C,
+                "stageProof": proof,
+                "authorizationHmacSha256": "hmac-sha256:" + "0" * 64,
+            }
+            transition["authorizationHmacSha256"] = upc.contract_hmac(
+                "gate-transition-v1", transition, self.secret, "authorizationHmacSha256"
+            )
+            broker.transition_gate(transition, fleet_secret=self.secret, now=self.now)
+            prior_digest = upc.digest_json(transition)
+            if destination == target:
+                return
+        self.fail(f"unknown gate target {target}")
+
+    def stage_proof(self, target: str, *, prior: str | None = None, receipt: str | None = None, serial: int = 99) -> dict:
+        proof = {
+            "schema": "fleet-universal-stage-proof/v1", "proofId": "stage-" + f"{serial:032x}",
+            "proofType": {"CLOSED": "SAFETY_CLOSE", "SHADOW": "SHADOW_VALIDATION",
+                          "CONTAINMENT": "CONTAINMENT_ENFORCEMENT", "CANARY": "CANARY_READINESS",
+                          "OPEN": "CANARY_SUCCESS_ADJUDICATION"}[target],
             "issuedAt": upc.iso(self.now - dt.timedelta(seconds=1)),
-            "expiresAt": upc.iso(self.now + dt.timedelta(minutes=10)),
-            "from": "CLOSED",
-            "to": target,
-            "cause": "INDEPENDENT_ADJUDICATION",
-            "doctrineCommitSha256": SHA_A,
-            "brokerExecutableSha256": sha_file(Path(upc.__file__).resolve()),
-            "projectProfileSha256": upc.digest_json(self.profile),
-            "inventorySha256": upc.digest_json(self.inventory),
-            "brokerHealthSha256": upc.digest_json(self.health),
-            "reviewReceiptSha256": SHA_B,
-            "testReceiptSha256": SHA_C,
-            "authorizationHmacSha256": "hmac-sha256:" + "0" * 64,
+            "expiresAt": upc.iso(self.now + dt.timedelta(minutes=5)), "targetStage": target,
+            "priorTransitionSha256": prior, "projectProfileSha256": upc.digest_json(self.profile),
+            "inventorySha256": upc.digest_json(self.inventory), "hostedNegativeSuiteSha256": SHA_C,
+            "independentReviewSha256": SHA_B, "canarySuccessReceiptSha256": receipt,
+            "oneUse": True, "proofHmacSha256": "hmac-sha256:" + "0" * 64,
         }
-        transition["authorizationHmacSha256"] = upc.contract_hmac(
-            "gate-transition-v1", transition, self.secret, "authorizationHmacSha256"
+        proof["proofHmacSha256"] = upc.contract_hmac(
+            "stage-proof-v1", proof, self.secret, "proofHmacSha256"
         )
-        broker.transition_gate(transition, fleet_secret=self.secret, now=self.now)
+        return proof
 
     def authorize(self, broker: upc.UniversalProviderBroker, request: dict | None = None, **changes) -> dict:
+        broker.install_independent_receipt_signers(self.receipt_signer_secrets)
         confirm = changes.pop("confirm", True)
+        begin_request = changes.pop("begin_request", True)
+        preserve_prior_idle = changes.pop("preserve_prior_idle", False)
         selected_request = request or self.request
         if "profile" not in changes:
             self.bind_runtime(broker)
+            if not preserve_prior_idle and isinstance(selected_request, dict):
+                request_id = selected_request.get("requestId")
+                project = selected_request.get("project")
+                if isinstance(request_id, str) and isinstance(project, str):
+                    key = (id(broker._root_runtime), request_id)
+                    receipt = self.prior_receipts.get(key)
+                    if receipt is None:
+                        with self.prior_receipt_lock:
+                            receipt = self.prior_receipts.get(key)
+                            if receipt is None:
+                                admission_now = changes.get("now", self.now)
+                                pool_key = (id(broker._root_runtime), project)
+                                pool = self.prior_receipt_pools.get(pool_key)
+                                if pool is None:
+                                    broker.pin_demand_authority(
+                                        project=project,
+                                        authority_path=self.prior_idle_authority,
+                                        authority_sha256=sha_file(self.prior_idle_authority),
+                                        fleet_secret=self.secret,
+                                        now=admission_now - dt.timedelta(seconds=11),
+                                    )
+                                    values = [broker.record_prior_idle(
+                                        project=project, fleet_secret=self.secret,
+                                        now=admission_now - dt.timedelta(seconds=10),
+                                        max_age_seconds=self.profile["policy"]["maxPriorIdleAgeSeconds"],
+                                    ) for _ in range(16)]
+                                    pool = {value["receiptId"]: value for value in values}
+                                    self.prior_receipt_pools[pool_key] = pool
+                                    broker.pin_demand_authority(
+                                        project=project,
+                                        authority_path=self.demand_authority,
+                                        authority_sha256=sha_file(self.demand_authority),
+                                        fleet_secret=self.secret,
+                                        now=admission_now - dt.timedelta(seconds=1),
+                                    )
+                                with broker._connect() as pool_connection:
+                                    newest = pool_connection.execute(
+                                        """SELECT receipt_id FROM prior_idle_receipts
+                                        WHERE project=? AND used_at IS NULL
+                                        ORDER BY sequence DESC LIMIT 1""", (project,),
+                                    ).fetchone()
+                                if newest is None or newest["receipt_id"] not in pool:
+                                    raise AssertionError("TEST_PRIOR_IDLE_POOL_EXHAUSTED")
+                                receipt = pool[newest["receipt_id"]]
+                                self.prior_receipts[key] = copy.deepcopy(receipt)
+                    selected_request["priorIdleReceipt"] = copy.deepcopy(receipt)
         supplied_process = changes.pop("process_observation", None)
         if supplied_process is None:
             supplied_process = self.admission_observation(selected_request)
@@ -453,11 +870,19 @@ class UniversalProviderControlTests(unittest.TestCase):
         }
         arguments.update(changes)
         result = broker.authorize_suspended_child(**arguments)
+        if result.get("status") == "PREPARED_SUSPENDED":
+            self.brokers[result["leaseId"]] = broker
         if confirm and result.get("status") == "PREPARED_SUSPENDED":
             resume = self.admission_observation(selected_request, phase="RESUME", lease_id=result["leaseId"])
-            return broker.confirm_resume_boundary(
+            confirmed = broker.confirm_resume_boundary(
                 lease_id=result["leaseId"], process_observation=resume, fleet_secret=self.secret, now=self.now
             )
+            self.brokers[result["leaseId"]] = broker
+            if begin_request:
+                self.permits[result["leaseId"]] = broker._begin_provider_request(
+                    lease_id=result["leaseId"], fleet_secret=self.secret, now=self.now
+                )
+            return confirmed
         return result
 
     # Retained canonical controls and exact runtime-schema enforcement.
@@ -479,7 +904,14 @@ class UniversalProviderControlTests(unittest.TestCase):
 
         malformed = self.root / "malformed-state"
         malformed.mkdir()
-        (malformed / "universal-provider-control-v1.db").write_bytes(b"not sqlite")
+        malformed_database = malformed / "universal-provider-control-v1.db"
+        malformed_database.write_bytes(b"not sqlite")
+        if os.name != "nt":
+            # The production boundary correctly rejects group/world-readable state before
+            # parsing it. Keep this parser fixture private so it reaches the intended
+            # malformed-SQLite fail-closed branch on hosted POSIX runners.
+            malformed_database.chmod(0o600)
+            self.assertEqual(stat.S_IMODE(malformed_database.stat().st_mode), 0o600)
         with self.assertRaisesRegex(upc.ControlError, "STATE_UNEVALUABLE"):
             upc.UniversalProviderBroker(malformed)
 
@@ -564,7 +996,7 @@ class UniversalProviderControlTests(unittest.TestCase):
         terminal = self.process_observation(first, "EXITED", phase="TERMINAL")
         broker.release_child(process_observation=terminal, fleet_secret=self.secret, now=self.now)
         third = self.make_request("request-0004")
-        self.assertEqual(self.authorize(broker, third)["status"], "ALLOW_ATTESTED")
+        self.assertEqual(self.authorize(broker, third)["reason"], "PROCESS_IDENTITY_ALREADY_CLAIMED")
 
     def test_expiry_does_not_silently_release_child_reservation(self) -> None:
         broker = upc.UniversalProviderBroker(self.root / "expiry.db")
@@ -583,16 +1015,23 @@ class UniversalProviderControlTests(unittest.TestCase):
         process["observedAt"] = upc.iso(later_now)
         process["processStartTime"] = upc.iso(later_now - dt.timedelta(seconds=1))
         process["observerHmacSha256"] = upc.contract_hmac("process-observation-v1", process, self.secret, "observerHmacSha256")
+        broker._clock = lambda: later_now
         result = self.authorize(broker, later_request, native_evidence=[native], now=later_now, process_observation=process)
         self.assertEqual(first["status"], "ALLOW_ATTESTED")
-        self.assertEqual(result["reason"], "QUOTA_DOMAIN_LEASE_HELD")
+        self.assertEqual(result["reason"], "PRIOR_IDLE_RECEIPT_INVALID")
+        with broker._connect() as connection:
+            self.assertEqual(connection.execute(
+                "SELECT state FROM leases WHERE lease_id=?", (first["leaseId"],)
+            ).fetchone()[0], "RESUME_ATTESTED")
+        self.assertIn(first["leaseId"], broker._os_locks)
 
     def test_multi_window_dimension_cannot_be_selected_away(self) -> None:
-        request = copy.deepcopy(self.request)
-        del request["windowEstimates"]["weekly"]
+        native = copy.deepcopy(self.native)
+        del native["payload"]["weeklyUtilization"]
+        self.resign_native(native)
         broker = upc.UniversalProviderBroker(self.root / "dimension.db")
         self.transition(broker)
-        self.assertEqual(self.authorize(broker, request)["reason"], "SCHEMA_VALIDATION_FAILED")
+        self.assertEqual(self.authorize(broker, native_evidence=[native])["reason"], "SCHEMA_VALIDATION_FAILED")
 
     def test_priority_reserve_floor_applies_per_window(self) -> None:
         native = copy.deepcopy(self.native)
@@ -612,10 +1051,18 @@ class UniversalProviderControlTests(unittest.TestCase):
 
     def test_deterministic_no_work_fingerprint_blocks(self) -> None:
         request = copy.deepcopy(self.request)
-        request["priorIdleFingerprint"] = request["demandFingerprint"]
         broker = upc.UniversalProviderBroker(self.root / "idle.db")
         self.transition(broker)
-        self.assertEqual(self.authorize(broker, request)["reason"], "NO_ACTIONABLE_WORK")
+        broker.pin_demand_authority(
+            project=request["project"], authority_path=self.demand_authority,
+            authority_sha256=sha_file(self.demand_authority), fleet_secret=self.secret,
+            now=self.now - dt.timedelta(seconds=11),
+        )
+        with self.assertRaisesRegex(upc.ControlError, "PRIOR_IDLE_ACTIONABLE_WORK"):
+            broker.record_prior_idle(
+                project=request["project"], fleet_secret=self.secret,
+                now=self.now - dt.timedelta(seconds=10),
+            )
 
     def test_one_thousand_unchanged_ticks_make_zero_provider_calls_and_processes(self) -> None:
         admission = mock.Mock(side_effect=AssertionError("provider boundary called"))
@@ -748,6 +1195,7 @@ class UniversalProviderControlTests(unittest.TestCase):
             "inventorySha256": upc.digest_json(self.inventory),
             "brokerHealthSha256": upc.digest_json(self.health),
             "reviewReceiptSha256": SHA_B, "testReceiptSha256": SHA_C,
+            "stageProof": self.stage_proof("OPEN", receipt=SHA_D, serial=97),
             "authorizationHmacSha256": "hmac-sha256:" + "0" * 64,
         }
         transition["authorizationHmacSha256"] = upc.contract_hmac(
@@ -767,7 +1215,8 @@ class UniversalProviderControlTests(unittest.TestCase):
             "brokerExecutableSha256": sha_file(Path(upc.__file__).resolve()),
             "projectProfileSha256": upc.digest_json(self.profile), "inventorySha256": upc.digest_json(self.inventory),
             "brokerHealthSha256": upc.digest_json(self.health), "reviewReceiptSha256": SHA_B,
-            "testReceiptSha256": SHA_C, "authorizationHmacSha256": "hmac-sha256:" + "f" * 64,
+            "testReceiptSha256": SHA_C, "stageProof": self.stage_proof("OPEN", receipt=SHA_D, serial=98),
+            "authorizationHmacSha256": "hmac-sha256:" + "f" * 64,
         }
         with self.assertRaisesRegex(upc.ControlError, "CONTRACT_HMAC_INVALID"):
             broker.transition_gate(transition, fleet_secret=self.secret, now=self.now)
@@ -895,7 +1344,7 @@ class UniversalProviderControlTests(unittest.TestCase):
     def test_quota_lock_reparse_directory_or_file_is_rejected(self) -> None:
         original = upc._is_reparse
         for label, predicate in (
-            ("directory", lambda path: path.name.endswith(".quota-locks")),
+            ("directory", lambda path: path.name == "quota-locks"),
             ("file", lambda path: path.suffix == ".lock"),
         ):
             broker = upc.UniversalProviderBroker(self.root / ("lock-reparse-" + label))
@@ -976,10 +1425,9 @@ class UniversalProviderControlTests(unittest.TestCase):
             if changed["subjectSha256"] == SHA_D:
                 self.assertEqual(outcome["reason"], "ARGV_BINDING_DRIFT")
             elif changed["model"] != self.request["model"] or changed["effort"] != self.request["effort"]:
-                self.assertEqual(outcome["reason"], "ARGV_BINDING_DRIFT")
+                self.assertIn(outcome["reason"], {"LAUNCH_PROFILE_NOT_REVIEWED", "UNIVERSAL_QUALITY_FLOOR_VIOLATION", "SCHEMA_VALIDATION_FAILED"})
             else:
-                self.assertEqual(outcome["status"], "ALLOW_ATTESTED")
-                self.assertNotEqual(outcome["bindingSha256"], result["bindingSha256"])
+                self.assertIn(outcome["reason"], {"LAUNCH_PROFILE_NOT_REVIEWED", "UNIVERSAL_QUALITY_FLOOR_VIOLATION"})
 
     def test_canary_requires_manual_authorization(self) -> None:
         broker = upc.UniversalProviderBroker(self.root / "canary.db")
@@ -1250,6 +1698,7 @@ class UniversalProviderControlTests(unittest.TestCase):
         receipt["observerHmacSha256"] = upc.contract_hmac(
             "process-observation-v1", receipt, self.secret, "observerHmacSha256"
         )
+        broker._clock = lambda: later
         with self.assertRaisesRegex(upc.ControlError, "LEASE_EXPIRED_BEFORE_RESUME"):
             broker.confirm_resume_boundary(
                 lease_id=prepared["leaseId"], process_observation=receipt,
@@ -1263,14 +1712,19 @@ class UniversalProviderControlTests(unittest.TestCase):
         finally:
             connection.close()
 
+        broker._clock = lambda: self.now
         canary_broker = upc.UniversalProviderBroker(self.root / "r3-expired-canary")
         self.transition(canary_broker, "CANARY")
         canary_request = self.make_request("request-r3-expired-canary")
+        canary_identity = b"canary-expiry-" + str(self.root).encode("utf-8")
+        canary_request["quotaDomainId"] = upc.derive_quota_domain_id("claude", canary_identity, self.secret)
         canary_request["maxWallSeconds"] = 1
         canary_request["canary"] = True
         authorization = self.make_canary_authorization(canary_request, "canary-r3-expiry")
         canary_prepared = self.authorize(
-            canary_broker, canary_request, manual_authorization=authorization, confirm=False
+            canary_broker, canary_request, manual_authorization=authorization, confirm=False,
+            local_stable_identity=canary_identity,
+            native_evidence=[self.resign_native({**copy.deepcopy(self.native), "quotaDomainId": canary_request["quotaDomainId"]})],
         )
         canary_receipt = self.admission_observation(
             canary_request, phase="RESUME", lease_id=canary_prepared["leaseId"]
@@ -1279,6 +1733,7 @@ class UniversalProviderControlTests(unittest.TestCase):
         canary_receipt["observerHmacSha256"] = upc.contract_hmac(
             "process-observation-v1", canary_receipt, self.secret, "observerHmacSha256"
         )
+        canary_broker._clock = lambda: later
         with self.assertRaisesRegex(upc.ControlError, "LEASE_EXPIRED_BEFORE_RESUME"):
             canary_broker.confirm_resume_boundary(
                 lease_id=canary_prepared["leaseId"], process_observation=canary_receipt,
@@ -1335,18 +1790,22 @@ class UniversalProviderControlTests(unittest.TestCase):
         self.assertFalse(output.exists())
         self.assertEqual(list(self.root.glob("r3-cleanup.out.tmp-*")), [])
 
-    def test_r3_05_window_estimates_value_and_digest_are_attested(self) -> None:
+    def test_r3_05_capacity_estimates_are_broker_derived_not_caller_selected(self) -> None:
         first_broker = upc.UniversalProviderBroker(self.root / "r3-estimates-a")
         self.transition(first_broker)
         first = self.authorize(first_broker)
-        self.assertEqual(first["windowEstimates"], self.request["windowEstimates"])
-        self.assertEqual(first["windowEstimatesSha256"], upc.digest_json(self.request["windowEstimates"]))
+        self.assertNotIn("windowEstimates", first)
+        with first_broker._connect() as connection:
+            derived = json.loads(connection.execute(
+                "SELECT reservations_json FROM leases WHERE lease_id=?", (first["leaseId"],)
+            ).fetchone()[0])
+        self.assertEqual(set(derived), {"session", "weekly"})
+        self.assertEqual(derived["session"], derived["weekly"])
         changed = self.make_request("request-r3-estimates-b")
         changed["windowEstimates"] = {"session": 0.04, "weekly": 0.04}
         second_broker = upc.UniversalProviderBroker(self.root / "r3-estimates-b")
         self.transition(second_broker)
-        second = self.authorize(second_broker, changed)
-        self.assertNotEqual(first["bindingSha256"], second["bindingSha256"])
+        self.assertEqual(self.authorize(second_broker, changed)["reason"], "SCHEMA_VALIDATION_FAILED")
 
     def test_r3_06_ambiguous_canary_recovery_reseals_and_malformed_is_stable(self) -> None:
         broker = upc.UniversalProviderBroker(self.root / "r3-canary-recovery")
@@ -2347,7 +2806,7 @@ class UniversalProviderControlTests(unittest.TestCase):
         prepared = self.authorize(terminal_broker, confirm=False)
         peer = upc.UniversalProviderBroker(root)
         self.assertIs(terminal_broker._root_lock, peer._root_lock)
-        terminal = self.process_observation(prepared, "EXITED", phase="TERMINAL")
+        terminal = self.process_observation(prepared, "FAILED", phase="TERMINAL")
         resume = self.admission_observation(
             self.request, phase="RESUME", lease_id=prepared["leaseId"]
         )
@@ -2430,32 +2889,34 @@ class UniversalProviderControlTests(unittest.TestCase):
         broker = upc.UniversalProviderBroker(self.root / "r11-multi-lease")
         self.transition(broker)
         prepared_leases = [self.authorize(broker, confirm=False)]
-        provider_inputs = (
-            ("openai", "openai-responses/1.0", {"primary": 0.05, "secondary": 0.05}, "3", "4"),
-            ("kimi", "kimi-code/1.0", {"context": 0.05, "monthly": 0.05}, "5", "6"),
-            ("grok", "xai-api/1.0", {"requests": 0.05, "tokens": 0.05}, "7", "8"),
-        )
-        for provider, adapter, estimates, seat_digit, session_digit in provider_inputs:
-            request = self.make_request(f"request-r11-{provider}-lease")
+        provider_inputs = (("3", "4"), ("5", "6"), ("7", "8"))
+        for offset, (seat_digit, session_digit) in enumerate(provider_inputs, start=1):
+            identity = f"independent-account-{offset}-".encode("ascii") + str(self.root).encode("utf-8")
+            request = self.make_request(f"request-r11-claude-{offset}-lease")
             request.update(
-                provider=provider,
-                adapterVersion=adapter,
-                quotaDomainId=upc.derive_quota_domain_id(provider, self.identity, self.secret),
+                quotaDomainId=upc.derive_quota_domain_id("claude", identity, self.secret),
                 seatIdHash="hmac-sha256:" + seat_digit * 64,
                 sessionIdHash="hmac-sha256:" + session_digit * 64,
-                windowEstimates=estimates,
+            )
+            native = self.make_native("claude")
+            native["quotaDomainId"] = request["quotaDomainId"]
+            self.resign_native(native)
+            process = self.admission_observation(request)
+            process["processId"] += offset
+            process["observerHmacSha256"] = upc.contract_hmac(
+                "process-observation-v1", process, self.secret, "observerHmacSha256"
             )
             prepared_leases.append(self.authorize(
                 broker, request, confirm=False,
-                native_evidence=[self.make_native(provider)],
-                process_observation=self.admission_observation(request),
+                native_evidence=[native], local_stable_identity=identity,
+                process_observation=process,
             ))
         self.assertEqual(
             {prepared["status"] for prepared in prepared_leases}, {"PREPARED_SUSPENDED"}
         )
         self.assertEqual(len(broker._artifact_handles), upc.MAX_PREPARED_LEASES_PER_STATE_ROOT)
 
-        fifth_identity = b"second-local-account-alias"
+        fifth_identity = b"second-local-account-" + str(self.root).encode("utf-8")
         fifth = self.make_request("request-r11-root-limit")
         fifth["quotaDomainId"] = upc.derive_quota_domain_id(
             "claude", fifth_identity, self.secret
@@ -2489,7 +2950,7 @@ class UniversalProviderControlTests(unittest.TestCase):
                 ):
                     broker.release_child(
                         process_observation=self.process_observation(
-                            prepared, "EXITED", phase="TERMINAL"
+                            prepared, "FAILED", phase="TERMINAL"
                         ),
                         fleet_secret=self.secret,
                         now=self.now,
@@ -2508,7 +2969,7 @@ class UniversalProviderControlTests(unittest.TestCase):
             ):
                 broker.release_child(
                     process_observation=self.process_observation(
-                        prepared_leases[-1], "EXITED", phase="TERMINAL"
+                        prepared_leases[-1], "FAILED", phase="TERMINAL"
                     ),
                     fleet_secret=self.secret,
                     now=self.now,
@@ -2527,7 +2988,7 @@ class UniversalProviderControlTests(unittest.TestCase):
             with self.assertRaises(upc.ControlError) as unlock_error:
                 broker.release_child(
                     process_observation=self.process_observation(
-                        first, "EXITED", phase="TERMINAL"
+                        first, "FAILED", phase="TERMINAL"
                     ),
                     fleet_secret=self.secret,
                     now=self.now,
@@ -2539,7 +3000,14 @@ class UniversalProviderControlTests(unittest.TestCase):
         self.assertNotIn(first["leaseId"], broker._os_locks)
 
         second_request = self.make_request("request-r11-os-close-refusal")
-        second = self.authorize(broker, second_request, confirm=False)
+        second_process = self.admission_observation(second_request)
+        second_process["processId"] += 1
+        second_process["observerHmacSha256"] = upc.contract_hmac(
+            "process-observation-v1", second_process, self.secret, "observerHmacSha256"
+        )
+        second = self.authorize(
+            broker, second_request, confirm=False, process_observation=second_process
+        )
         os_handle = broker._os_locks[second["leaseId"]]
         real_close = upc._close_file_handle_verified
         private_close = "PRIVATE-OS-CLOSE-OSError"
@@ -2553,7 +3021,7 @@ class UniversalProviderControlTests(unittest.TestCase):
             with self.assertRaises(upc.ControlError) as close_error:
                 broker.release_child(
                     process_observation=self.process_observation(
-                        second, "EXITED", phase="TERMINAL"
+                        second, "FAILED", phase="TERMINAL"
                     ),
                     fleet_secret=self.secret,
                     now=self.now,
@@ -2571,7 +3039,7 @@ class UniversalProviderControlTests(unittest.TestCase):
             with self.assertRaisesRegex(upc.ControlError, "OS_LOCK_CLEANUP_POISONED"):
                 broker.release_child(
                     process_observation=self.process_observation(
-                        second, "EXITED", phase="TERMINAL"
+                        second, "FAILED", phase="TERMINAL"
                     ),
                     fleet_secret=self.secret,
                     now=self.now,
@@ -2619,13 +3087,11 @@ class UniversalProviderControlTests(unittest.TestCase):
         )
         peer.close()
 
-    # Exact 52ca345 R11 hosted RED -> R12 GREEN checkout-EOL and linkat-injection twins.
+    # R12 hosted portability controls. These are self-contained because hosted checkouts are shallow.
 
     def test_r12_01_manifest_self_uses_canonical_git_blob_under_crlf_checkout(self) -> None:
         import check_universal_manifest as checker
 
-        r11_tests = required_predecessor_blob("tests/test_universal_provider_control.py")
-        self.assertIn("raw = (ROOT / checker.MANIFEST).read_bytes()", r11_tests)
         canonical = checker._git(checker._blob_spec(":", checker.MANIFEST))
         self.assertIsInstance(canonical, bytes)
         declared = json.loads(canonical.decode("utf-8"))["manifestSelf"]["canonicalGitBlobSha256"]
@@ -2642,10 +3108,6 @@ class UniversalProviderControlTests(unittest.TestCase):
         )
 
     def test_r12_02_posix_hostile_mutations_patch_actual_publication_syscall(self) -> None:
-        r11_tests = required_predecessor_blob("tests/test_universal_provider_control.py")
-        r11_engine = required_predecessor_blob("tools/universal_provider_control.py")
-        self.assertIn('mock.patch.object(upc.os, "link"', r11_tests)
-        self.assertNotIn("def _publication_syscall(", r11_engine)
         publication = inspect.getsource(upc._publish_owned_temporary)
         syscall = inspect.getsource(upc._publication_syscall)
         current_tests = (
@@ -2656,42 +3118,368 @@ class UniversalProviderControlTests(unittest.TestCase):
         self.assertIn("libc.linkat", syscall)
         self.assertIn('mock.patch.object(upc, "_publication_syscall"', current_tests)
 
-    # Exact 6c821f7 R12 hosted-history RED -> R13 GREEN shallow/full-history twin.
+    def test_r13_01_prepare_before_reset_confirm_after_is_denied_and_fenced(self) -> None:
+        native = copy.deepcopy(self.native)
+        boundary = self.now + dt.timedelta(seconds=1)
+        native["payload"]["sessionResetAt"] = upc.iso(boundary)
+        native["payload"]["weeklyResetAt"] = upc.iso(self.now + dt.timedelta(seconds=5))
+        self.resign_native(native)
 
-    def test_r13_01_required_predecessor_history_is_present_or_stably_fails(self) -> None:
-        for path in sorted(R11_REQUIRED_BLOBS):
-            self.assertTrue(required_predecessor_blob(path))
+        broker = upc.UniversalProviderBroker(self.root / "r12-rollover-resume")
+        self.transition(broker)
+        prepared = self.authorize(broker, native_evidence=[native], confirm=False)
+        self.assertEqual(prepared["status"], "PREPARED_SUSPENDED")
+        self.assertEqual(prepared["capacityValidUntil"], upc.iso(boundary))
+        self.assertIn("capacityValidUntil", prepared)
+        connection = sqlite3.connect(broker.database)
+        try:
+            row = connection.execute(
+                "SELECT capacity_valid_until, state FROM leases WHERE lease_id=?",
+                (prepared["leaseId"],),
+            ).fetchone()
+        finally:
+            connection.close()
+        self.assertEqual(row, (upc.iso(boundary), "ACTIVE"))
 
-        private_stderr = "PRIVATE-SHALLOW-GIT-DETAIL"
-        missing = subprocess.CompletedProcess(
-            args=["git", "show"], returncode=128, stdout="", stderr=private_stderr
+        later = boundary + dt.timedelta(microseconds=1)
+        resume = self.admission_observation(
+            self.request, phase="RESUME", lease_id=prepared["leaseId"]
         )
-        with mock.patch.object(subprocess, "run", return_value=missing):
-            with self.assertRaises(AssertionError) as caught:
-                required_predecessor_blob("tests/test_universal_provider_control.py")
-        self.assertEqual(str(caught.exception), "REQUIRED_HISTORY_OBJECT_UNAVAILABLE")
-        self.assertIsNone(caught.exception.__cause__)
-        self.assertIsNone(caught.exception.__context__)
-        self.assertNotIn(private_stderr, "".join(traceback.format_exception(caught.exception)))
+        resume["observedAt"] = upc.iso(later)
+        resume["observerHmacSha256"] = upc.contract_hmac(
+            "process-observation-v1", resume, self.secret, "observerHmacSha256"
+        )
+        broker._clock = lambda: later
+        with self.assertRaisesRegex(
+            upc.ControlError, "LEASE_EXPIRED_BEFORE_RESUME"
+        ):
+            broker.confirm_resume_boundary(
+                lease_id=prepared["leaseId"], process_observation=resume,
+                fleet_secret=self.secret, now=later,
+            )
+        self.assertIn(prepared["leaseId"], broker._os_locks)
+        self.assertIn(prepared["leaseId"], broker._artifact_handles)
+        connection = sqlite3.connect(broker.database)
+        try:
+            self.assertEqual(
+                connection.execute(
+                    "SELECT state FROM leases WHERE lease_id=?", (prepared["leaseId"],)
+                ).fetchone()[0],
+                "ACTIVE",
+            )
+        finally:
+            connection.close()
 
-        workflow = (ROOT / ".github/workflows/provider-capacity-governor.yml").read_text(
-            encoding="utf-8"
+        broker._clock = lambda: self.now
+        canary = upc.UniversalProviderBroker(self.root / "r12-rollover-canary")
+        self.transition(canary, "CANARY")
+        canary_request = self.make_request("request-r12-rollover-canary")
+        canary_identity = b"rollover-canary-" + str(self.root).encode("utf-8")
+        canary_request["quotaDomainId"] = upc.derive_quota_domain_id("claude", canary_identity, self.secret)
+        canary_request["canary"] = True
+        authorization = self.make_canary_authorization(
+            canary_request, "canary-r12-rollover"
         )
-        self.assertIn("fetch-depth: 0", workflow)
-        self.assertIn("Verify required predecessor history", workflow)
-        self.assertIn(f"{R11_PREDECESSOR}^{{commit}}", workflow)
-        for path in R11_REQUIRED_BLOBS:
-            self.assertIn(f"{R11_PREDECESSOR}:{path}", workflow)
-        self.assertLess(
-            workflow.index("Verify required predecessor history"),
-            workflow.index("Run semantic negative controls"),
+        canary_prepared = self.authorize(
+            canary, canary_request,
+            native_evidence=[self.resign_native({**copy.deepcopy(native), "quotaDomainId": canary_request["quotaDomainId"]})],
+            local_stable_identity=canary_identity,
+            manual_authorization=authorization, confirm=False,
         )
+        canary_resume = self.admission_observation(
+            canary_request, phase="RESUME", lease_id=canary_prepared["leaseId"]
+        )
+        canary_resume["observedAt"] = upc.iso(later)
+        canary_resume["observerHmacSha256"] = upc.contract_hmac(
+            "process-observation-v1", canary_resume, self.secret, "observerHmacSha256"
+        )
+        canary._clock = lambda: later
+        with self.assertRaisesRegex(
+            upc.ControlError, "LEASE_EXPIRED_BEFORE_RESUME"
+        ):
+            canary.confirm_resume_boundary(
+                lease_id=canary_prepared["leaseId"], process_observation=canary_resume,
+                fleet_secret=self.secret, now=later,
+            )
+        self.assertEqual(canary.gate_state(fleet_secret=self.secret, now=later), "CLOSED")
+        self.assertIn(canary_prepared["leaseId"], canary._os_locks)
+        self.assertIn(canary_prepared["leaseId"], canary._artifact_handles)
+
+    def test_r13_02_exact_reviewed_launch_profile_is_required_and_attested(self) -> None:
+        broker = upc.UniversalProviderBroker(self.root / "r12-reviewed-profile")
+        self.transition(broker)
+        allowed = self.authorize(broker)
+        self.assertEqual(
+            (allowed["model"], allowed["effort"], allowed["role"]),
+            (self.request["model"], self.request["effort"], self.request["role"]),
+        )
+
+        economy = self.make_request("request-r12-economy")
+        economy["effort"] = "minimal"
+        economy["argv"][economy["argvBindings"]["effortIndex"]] = "minimal"
+        economy["argvSha256"] = upc.digest_json(economy["argv"])
+        other = upc.UniversalProviderBroker(self.root / "r12-unreviewed-economy")
+        self.transition(other)
+        self.assertEqual(
+            self.authorize(other, economy)["reason"], "SCHEMA_VALIDATION_FAILED"
+        )
+
+    def test_r13_03_turn_context_and_all_token_ceilings_are_argv_bound_and_attested(self) -> None:
+        broker = upc.UniversalProviderBroker(self.root / "r12-token-bounds")
+        self.transition(broker)
+        allowed = self.authorize(broker)
+        self.assertEqual(allowed["maxTurns"], self.request["maxTurns"])
+        self.assertEqual(allowed["maxContextTokens"], self.request["maxContextTokens"])
+        self.assertEqual(
+            allowed["cumulativeTokenCeilings"], self.request["cumulativeTokenCeilings"]
+        )
+
+        over = self.make_request("request-r12-token-over")
+        over["cumulativeTokenCeilings"]["cacheReadTokens"] = (
+            self.profile["efficiency"]["maxCumulativeTokenCeilings"]["cacheReadTokens"] + 1
+        )
+        other = upc.UniversalProviderBroker(self.root / "r12-token-over")
+        self.transition(other)
+        self.assertEqual(
+            self.authorize(other, over)["reason"], "CUMULATIVE_TOKEN_BOUND_EXCEEDED"
+        )
+
+        unbound = self.make_request("request-r12-token-unbound")
+        unbound["cumulativeTokenCeilings"]["outputTokens"] -= 1
+        unbound["generatedEnvelopeTokens"] -= 1
+        third = upc.UniversalProviderBroker(self.root / "r12-token-unbound")
+        self.transition(third)
+        self.assertEqual(self.authorize(third, unbound)["reason"], "ARGV_BINDING_DRIFT")
+
+    def test_r13_04_broker_recomputes_current_and_prior_demand_from_frozen_inputs(self) -> None:
+        forged = self.make_request("request-r12-demand-forged")
+        forged["demandFingerprint"] = SHA_A
+        broker = upc.UniversalProviderBroker(self.root / "r12-demand-forged")
+        self.transition(broker)
+        self.assertEqual(
+            self.authorize(broker, forged)["reason"], "DEMAND_FINGERPRINT_DRIFT"
+        )
+
+        forged_prior = self.make_request("request-r12-prior-forged")
+        second = upc.UniversalProviderBroker(self.root / "r12-prior-forged")
+        self.transition(second)
+        forged_prior["priorIdleReceipt"]["stateRootIdentity"] = second.state_root_identity(self.secret)
+        forged_prior["priorIdleReceipt"]["demandFingerprint"] = SHA_A
+        self.assertEqual(
+            self.authorize(second, forged_prior, preserve_prior_idle=True)["reason"],
+            "CONTRACT_HMAC_INVALID"
+        )
+
+        drifted = self.make_request("request-r12-demand-bytes-drift")
+        drifted["demandSnapshot"]["addressedWork"].append(
+            {"kind": "ISSUE", "id": "foreign", "state": "READY", "subjectSha256": SHA_A}
+        )
+        third = upc.UniversalProviderBroker(self.root / "r12-demand-bytes-drift")
+        self.transition(third)
+        self.assertEqual(self.authorize(third, drifted)["reason"], "DEMAND_AUTHORITY_DRIFT")
+
+    def test_r13_05_rollout_requires_containment_and_forbids_stage_skips(self) -> None:
+        broker = upc.UniversalProviderBroker(self.root / "r12-stage-skip")
+        self.bind_runtime(broker)
+        transition = {
+            "schema": "fleet-universal-gate-transition/v1",
+            "transitionId": "transition-r12-skip",
+            "transitionEpoch": 1,
+            "issuedAt": upc.iso(self.now - dt.timedelta(seconds=1)),
+            "expiresAt": upc.iso(self.now + dt.timedelta(minutes=5)),
+            "from": "CLOSED", "to": "OPEN", "cause": "INDEPENDENT_ADJUDICATION",
+            "doctrineCommitSha256": SHA_A,
+            "brokerExecutableSha256": sha_file(Path(upc.__file__).resolve()),
+            "projectProfileSha256": upc.digest_json(self.profile),
+            "inventorySha256": upc.digest_json(self.inventory),
+            "brokerHealthSha256": upc.digest_json(self.health),
+            "reviewReceiptSha256": SHA_B, "testReceiptSha256": SHA_C,
+            "stageProof": self.stage_proof("OPEN", receipt=SHA_D, serial=96),
+            "authorizationHmacSha256": "hmac-sha256:" + "0" * 64,
+        }
+        transition["authorizationHmacSha256"] = upc.contract_hmac(
+            "gate-transition-v1", transition, self.secret, "authorizationHmacSha256"
+        )
+        with self.assertRaisesRegex(upc.ControlError, "GATE_STAGE_SKIP"):
+            broker.transition_gate(transition, fleet_secret=self.secret, now=self.now)
+
+        containment = upc.UniversalProviderBroker(self.root / "r12-containment")
+        self.transition(containment, "CONTAINMENT")
+        self.assertEqual(
+            containment.gate_state(fleet_secret=self.secret, now=self.now), "CONTAINMENT"
+        )
+        self.assertEqual(
+            self.authorize(containment)["reason"], "AUTOMATIC_LAUNCH_GATE_CLOSED"
+        )
+
+    # R15 certified-boundary and typed-proof hostile controls.
+
+    def test_r15_01_single_request_process_permit_is_persisted_and_one_use(self) -> None:
+        broker = upc.UniversalProviderBroker(self.root / "r15-single-request")
+        self.transition(broker)
+        allowed = self.authorize(broker, begin_request=False)
+        first = broker._begin_provider_request(
+            lease_id=allowed["leaseId"], fleet_secret=self.secret, now=self.now
+        )
+        upc.validate_contract("request_permit", first)
+        with self.assertRaisesRegex(upc.ControlError, "PROVIDER_REQUEST_LIMIT_REACHED"):
+            broker._begin_provider_request(
+                lease_id=allowed["leaseId"], fleet_secret=self.secret, now=self.now
+            )
+        with broker._connect() as connection:
+            row = connection.execute(
+                "SELECT permit_count, permit_digest, state FROM token_reservations WHERE lease_id=?",
+                (allowed["leaseId"],),
+            ).fetchone()
+        self.assertEqual(tuple(row), (1, upc.digest_json(first), "IN_FLIGHT"))
+
+    def test_r15_02_semantic_demand_is_order_independent_and_idle_receipt_is_broker_signed(self) -> None:
+        snapshot = copy.deepcopy(self.request["demandSnapshot"])
+        snapshot["addressedWork"].append(
+            {"kind": "REVIEW", "id": "review-9", "state": "OPEN", "subjectSha256": SHA_A}
+        )
+        reversed_snapshot = copy.deepcopy(snapshot)
+        reversed_snapshot["addressedWork"].reverse()
+        self.assertEqual(
+            upc.canonical_demand_fingerprint(snapshot),
+            upc.canonical_demand_fingerprint(reversed_snapshot),
+        )
+        broker = upc.UniversalProviderBroker(self.root / "r15-idle-receipt")
+        self.prior_idle_authority.write_bytes(
+            upc.canonical_json(self.prior_idle_snapshot).encode("utf-8")
+        )
+        broker.pin_demand_authority(
+            project="test-project", authority_path=self.prior_idle_authority,
+            authority_sha256=sha_file(self.prior_idle_authority), fleet_secret=self.secret,
+            now=self.now - dt.timedelta(seconds=1),
+        )
+        receipt = broker.record_prior_idle(
+            project="test-project", fleet_secret=self.secret, now=self.now,
+        )
+        upc.validate_contract("prior_idle_receipt", receipt)
+        forged = copy.deepcopy(receipt)
+        forged["demandFingerprint"] = SHA_B
+        with self.assertRaisesRegex(upc.ControlError, "CONTRACT_HMAC_INVALID"):
+            upc.verify_contract_hmac(
+                "prior-idle-receipt-v1", forged, self.secret, "receiptHmacSha256"
+            )
+
+    def test_r15_03_mutable_lease_capacity_cannot_extend_immutable_attestation(self) -> None:
+        broker = upc.UniversalProviderBroker(self.root / "r15-binding-drift")
+        self.transition(broker)
+        prepared = self.authorize(broker, confirm=False)
+        with broker._connect() as connection:
+            connection.execute(
+                "UPDATE leases SET capacity_valid_until=? WHERE lease_id=?",
+                (upc.iso(self.now + dt.timedelta(days=1)), prepared["leaseId"]),
+            )
+        resume = self.admission_observation(
+            self.request, phase="RESUME", lease_id=prepared["leaseId"]
+        )
+        with self.assertRaisesRegex(upc.ControlError, "LEASE_BINDING_DRIFT"):
+            broker.confirm_resume_boundary(
+                lease_id=prepared["leaseId"], process_observation=resume,
+                fleet_secret=self.secret, now=self.now,
+            )
+        self.assertIn(prepared["leaseId"], broker._os_locks)
+
+    def test_r15_04_runtime_watchdog_marks_termination_required_at_boundary(self) -> None:
+        broker = upc.UniversalProviderBroker(self.root / "r15-watchdog")
+        self.transition(broker)
+        allowed = self.authorize(broker, begin_request=False)
+        later = self.now + dt.timedelta(seconds=61)
+        broker._clock = lambda: later
+        with self.assertRaisesRegex(upc.ControlError, "RUNTIME_TERMINATION_REQUIRED"):
+            broker.check_runtime_boundary(
+                lease_id=allowed["leaseId"], fleet_secret=self.secret,
+                now=later,
+            )
+        with broker._connect() as connection:
+            state = connection.execute(
+                "SELECT state FROM leases WHERE lease_id=?", (allowed["leaseId"],)
+            ).fetchone()[0]
+        self.assertEqual(state, "TERMINATION_REQUIRED")
+        self.assertIn(allowed["leaseId"], broker._os_locks)
+
+    def test_r15_05_quality_floor_and_exact_argv_contract_reject_weak_or_extra_launches(self) -> None:
+        weak = self.make_request("request-r15-weak")
+        weak["model"] = "tiny-economy-model"
+        weak["argv"][weak["argvBindings"]["modelIndex"]] = weak["model"]
+        weak["argvSha256"] = upc.digest_json(weak["argv"])
+        weak["argvContractSha256"] = upc.canonical_argv_contract(weak["argv"], weak["argvBindings"])
+        broker = upc.UniversalProviderBroker(self.root / "r15-quality")
+        self.transition(broker)
+        self.assertEqual(
+            self.authorize(broker, weak)["reason"], "UNIVERSAL_QUALITY_FLOOR_VIOLATION"
+        )
+        extra = self.make_request("request-r15-extra")
+        extra["argv"].append("--direct-provider-bypass")
+        extra["argvSha256"] = upc.digest_json(extra["argv"])
+        other = upc.UniversalProviderBroker(self.root / "r15-argv-extra")
+        self.transition(other)
+        self.assertEqual(self.authorize(other, extra)["reason"], "ARGV_CONTRACT_DRIFT")
+
+    def test_r15_06_alternate_state_root_cannot_bypass_machine_quota_lock(self) -> None:
+        first = upc.UniversalProviderBroker(self.root / "r15-root-a")
+        self.transition(first)
+        held = self.authorize(first, confirm=False)
+        self.assertEqual(held["status"], "PREPARED_SUSPENDED")
+
+        second = upc.UniversalProviderBroker(self.root / "r15-root-b")
+        self.transition(second)
+        request = self.make_request("request-r15-other-root")
+        process = self.admission_observation(request)
+        process["processId"] += 99
+        process["observerHmacSha256"] = upc.contract_hmac(
+            "process-observation-v1", process, self.secret, "observerHmacSha256"
+        )
+        self.assertEqual(
+            self.authorize(second, request, confirm=False, process_observation=process)["reason"],
+            "QUOTA_DOMAIN_OS_LOCK_HELD",
+        )
+
+    def test_r15_07_successful_canary_returns_to_containment_and_receipt_opens_once(self) -> None:
+        broker = upc.UniversalProviderBroker(self.root / "r15-canary-proof")
+        self.transition(broker, "CANARY")
+        request = self.make_request("request-r15-canary")
+        request["canary"] = True
+        authorization = self.make_canary_authorization(request, "canary-r15-proof")
+        allowed = self.authorize(broker, request, manual_authorization=authorization)
+        released = broker.release_child(
+            process_observation=self.process_observation(allowed, "EXITED", phase="TERMINAL"),
+            fleet_secret=self.secret, now=self.now,
+        )
+        self.assertEqual(broker.gate_state(fleet_secret=self.secret, now=self.now), "CONTAINMENT")
+        receipt_digest = released["canarySuccessReceiptSha256"]
+        proof = self.stage_proof("OPEN", receipt=receipt_digest, serial=150)
+        transition = {
+            "schema": "fleet-universal-gate-transition/v1", "transitionId": "transition-r15-open",
+            "transitionEpoch": 4, "issuedAt": upc.iso(self.now - dt.timedelta(seconds=1)),
+            "expiresAt": upc.iso(self.now + dt.timedelta(minutes=5)), "from": "CONTAINMENT",
+            "to": "OPEN", "cause": "INDEPENDENT_ADJUDICATION", "doctrineCommitSha256": SHA_A,
+            "brokerExecutableSha256": sha_file(Path(upc.__file__).resolve()),
+            "projectProfileSha256": upc.digest_json(self.profile),
+            "inventorySha256": upc.digest_json(self.inventory),
+            "brokerHealthSha256": upc.digest_json(self.health), "reviewReceiptSha256": SHA_B,
+            "testReceiptSha256": SHA_C, "stageProof": proof,
+            "authorizationHmacSha256": "hmac-sha256:" + "0" * 64,
+        }
+        transition["authorizationHmacSha256"] = upc.contract_hmac(
+            "gate-transition-v1", transition, self.secret, "authorizationHmacSha256"
+        )
+        self.assertEqual(broker.transition_gate(transition, fleet_secret=self.secret, now=self.now), "OPEN")
+        with broker._connect() as connection:
+            used = connection.execute(
+                "SELECT used_at FROM canary_success_receipts WHERE receipt_digest=?", (receipt_digest,)
+            ).fetchone()[0]
+        self.assertEqual(used, upc.iso(self.now))
 
     # Exact ecc8f07 R13 RED -> R14 GREEN target-directory owner-lifetime twin.
 
     def test_r14_01_posix_directory_close_refusal_poison_is_attempt_once(self) -> None:
-        r13_publication = required_r13_blob("tools/universal_provider_control.py")
-        self.assertIn("os.close(directory)", r13_publication)
+        # Exact predecessor provenance is checked by the full-history manifest workflow;
+        # keep this behavioral twin self-contained for depth-one test execution.
+        self.assertEqual(R13_DIRECTORY_CLOSE_FIXTURE, "os.close(directory)")
         current_publication = inspect.getsource(upc._publish_owned_temporary)
         self.assertNotIn("os.close(directory)", current_publication)
         self.assertIn("_close_owned_descriptor(directory)", current_publication)
@@ -2779,6 +3567,466 @@ class UniversalProviderControlTests(unittest.TestCase):
             output.with_name(output.name + ".cleanup-blocked").unlink()
             upc.assert_process_cleanup_clear()
 
+    # R16 persistent demand, certified boundary, accounting, and reconciliation controls.
+
+    def test_r16_01_prior_idle_is_persisted_fresh_monotonic_and_one_use(self) -> None:
+        broker = upc.UniversalProviderBroker(self.root / "r16-idle")
+        self.transition(broker)
+        broker.pin_demand_authority(
+            project="test-project", authority_path=self.prior_idle_authority,
+            authority_sha256=sha_file(self.prior_idle_authority), fleet_secret=self.secret,
+            now=self.now - dt.timedelta(seconds=13),
+        )
+        older = broker.record_prior_idle(
+            project="test-project", fleet_secret=self.secret,
+            now=self.now - dt.timedelta(seconds=12),
+        )
+        newest = broker.record_prior_idle(
+            project="test-project", fleet_secret=self.secret,
+            now=self.now - dt.timedelta(seconds=10),
+        )
+        broker.pin_demand_authority(
+            project="test-project", authority_path=self.demand_authority,
+            authority_sha256=sha_file(self.demand_authority), fleet_secret=self.secret,
+            now=self.now - dt.timedelta(seconds=1),
+        )
+        stale_request = self.make_request("request-r16-idle-stale")
+        stale_request["priorIdleReceipt"] = older
+        self.assertEqual(
+            self.authorize(broker, stale_request, preserve_prior_idle=True)["reason"],
+            "PRIOR_IDLE_RECEIPT_REPLAY_OR_STALE",
+        )
+        request = self.make_request("request-r16-idle-current")
+        request["priorIdleReceipt"] = newest
+        allowed = self.authorize(
+            broker, request, preserve_prior_idle=True, confirm=False
+        )
+        self.assertEqual(allowed["status"], "PREPARED_SUSPENDED")
+        replay = self.make_request("request-r16-idle-replay")
+        replay["priorIdleReceipt"] = newest
+        self.assertEqual(
+            self.authorize(broker, replay, preserve_prior_idle=True)["reason"],
+            "PRIOR_IDLE_RECEIPT_REPLAY_OR_STALE",
+        )
+
+    def test_r16_02_broker_pinned_canonical_demand_rejects_fabricated_ready(self) -> None:
+        fabricated = self.make_request("request-r16-fabricated-ready")
+        fabricated["demandSnapshot"]["addressedWork"].append(
+            {"kind": "ISSUE", "id": "fabricated", "state": "READY", "subjectSha256": SHA_A}
+        )
+        fabricated["demandFingerprint"] = upc.canonical_demand_fingerprint(
+            fabricated["demandSnapshot"]
+        )
+        broker = upc.UniversalProviderBroker(self.root / "r16-demand")
+        self.transition(broker)
+        self.assertEqual(
+            self.authorize(broker, fabricated)["reason"], "DEMAND_AUTHORITY_DRIFT"
+        )
+
+    def test_r16_03_usage_checkpoints_reserve_terminal_completion_exactly_once(self) -> None:
+        broker = upc.UniversalProviderBroker(self.root / "r16-accounting")
+        self.transition(broker)
+        allowed = self.authorize(broker, begin_request=False)
+        permit = broker._begin_provider_request(
+            lease_id=allowed["leaseId"], fleet_secret=self.secret, now=self.now
+        )
+        first_usage = {
+            "inputTokens": 1000, "cacheReadTokens": 2000, "cacheWriteTokens": 100,
+            "reasoningTokens": 500, "outputTokens": 20000,
+        }
+        broker._checkpoint_provider_usage(
+            lease_id=allowed["leaseId"], phase="PRE_TURN", turn_count=1,
+            current_context_tokens=4000, peak_context_tokens=4000,
+            token_usage=first_usage, fleet_secret=self.secret, now=self.now,
+        )
+        over_reserve = dict(first_usage, outputTokens=20001)
+        with self.assertRaisesRegex(upc.ControlError, "COMPLETION_RESERVE_VIOLATION"):
+            broker._checkpoint_provider_usage(
+                lease_id=allowed["leaseId"], phase="PRE_TURN", turn_count=2,
+                current_context_tokens=4000, peak_context_tokens=4000,
+                token_usage=over_reserve, fleet_secret=self.secret, now=self.now,
+            )
+        terminal = broker._issue_terminal_request_permit(
+            lease_id=allowed["leaseId"], fleet_secret=self.secret, now=self.now
+        )
+        with self.assertRaisesRegex(upc.ControlError, "TERMINAL_REQUEST_ALREADY_ISSUED"):
+            broker._issue_terminal_request_permit(
+                lease_id=allowed["leaseId"], fleet_secret=self.secret, now=self.now
+            )
+        final_usage = dict(first_usage, outputTokens=25000)
+        checkpoint = broker._checkpoint_provider_usage(
+            lease_id=allowed["leaseId"], phase="TERMINAL", turn_count=1,
+            current_context_tokens=4000, peak_context_tokens=4000,
+            token_usage=final_usage, fleet_secret=self.secret, now=self.now,
+        )
+        self.assertEqual(checkpoint["providerRequestPermitSha256"], upc.digest_json(permit))
+        self.assertEqual(checkpoint["terminalRequestPermitSha256"], upc.digest_json(terminal))
+
+    def test_r16_04_durable_cross_root_claim_survives_owner_loss_until_authenticated_recovery(self) -> None:
+        first = upc.UniversalProviderBroker(self.root / "r16-root-a")
+        self.transition(first)
+        held = self.authorize(first, confirm=False)
+        first._release_terminal_owners(held["leaseId"])
+
+        second = upc.UniversalProviderBroker(self.root / "r16-root-b")
+        self.transition(second)
+        request = self.make_request("request-r16-root-b")
+        process = self.admission_observation(request)
+        process["processId"] += 1
+        process["observerHmacSha256"] = upc.contract_hmac(
+            "process-observation-v1", process, self.secret, "observerHmacSha256"
+        )
+        self.assertEqual(
+            self.authorize(second, request, confirm=False, process_observation=process)["reason"],
+            "QUOTA_DOMAIN_DURABLE_CLAIM_HELD",
+        )
+        recovered = first.recover_orphan(
+            process_observation=self.process_observation(held, "DEAD"),
+            fleet_secret=self.secret, now=self.now,
+        )
+        self.assertEqual(recovered["status"], "RELEASED")
+        fresh = self.make_request("request-r16-root-b-after-reconcile")
+        fresh_process = self.admission_observation(fresh)
+        fresh_process["processId"] += 2
+        fresh_process["observerHmacSha256"] = upc.contract_hmac(
+            "process-observation-v1", fresh_process, self.secret, "observerHmacSha256"
+        )
+        self.assertEqual(
+            self.authorize(second, fresh, confirm=False, process_observation=fresh_process)["status"],
+            "PREPARED_SUSPENDED",
+        )
+
+    def test_r16_05_temporal_binding_drift_closes_canary_and_retains_fences(self) -> None:
+        broker = upc.UniversalProviderBroker(self.root / "r16-canary-deadline")
+        self.transition(broker, "CANARY")
+        request = self.make_request("request-r16-canary-deadline")
+        request["canary"] = True
+        authorization = self.make_canary_authorization(request, "canary-r16-deadline")
+        allowed = self.authorize(
+            broker, request, manual_authorization=authorization, begin_request=False
+        )
+        with broker._connect() as connection:
+            connection.execute(
+                "UPDATE leases SET watchdog_deadline=? WHERE lease_id=?",
+                (upc.iso(self.now + dt.timedelta(minutes=5)), allowed["leaseId"]),
+            )
+        with self.assertRaisesRegex(upc.ControlError, "LEASE_BINDING_DRIFT"):
+            broker.check_runtime_boundary(
+                lease_id=allowed["leaseId"], fleet_secret=self.secret, now=self.now
+            )
+        self.assertEqual(broker.gate_state(fleet_secret=self.secret, now=self.now), "CLOSED")
+        self.assertIn(allowed["leaseId"], broker._os_locks)
+        self.assertIn(allowed["leaseId"], broker._artifact_handles)
+
+    def test_r16_06_typed_quality_and_boundary_certifications_are_hmac_bound_and_stored(self) -> None:
+        forged = self.make_request("request-r16-cert-forged")
+        forged["qualityEquivalenceReceipt"]["independentReviewSha256"] = SHA_D
+        broker = upc.UniversalProviderBroker(self.root / "r16-cert-forged")
+        self.transition(broker)
+        self.assertEqual(self.authorize(broker, forged)["reason"], "CONTRACT_HMAC_INVALID")
+
+        stored_broker = upc.UniversalProviderBroker(self.root / "r16-cert-stored")
+        self.transition(stored_broker)
+        prepared = self.authorize(stored_broker, confirm=False)
+        self.assertEqual(prepared["status"], "PREPARED_SUSPENDED")
+        with stored_broker._connect() as connection:
+            kinds = {row[0] for row in connection.execute(
+                "SELECT artifact_kind FROM certification_artifacts"
+            )}
+        self.assertEqual(kinds, {"QUALITY_EQUIVALENCE", "WRAPPER_BOUNDARY"})
+
+    def test_r16_07_canary_requires_hmac_output_quality_and_usage_reconciliation(self) -> None:
+        broker = upc.UniversalProviderBroker(self.root / "r16-canary-output")
+        self.transition(broker, "CANARY")
+        request = self.make_request("request-r16-canary-output")
+        request["canary"] = True
+        authorization = self.make_canary_authorization(request, "canary-r16-output")
+        allowed = self.authorize(broker, request, manual_authorization=authorization)
+        terminal = self.process_observation(allowed, "EXITED", phase="TERMINAL")
+        terminal["outputQualityReceipt"]["independentReviewSha256"] = SHA_D
+        terminal["observerHmacSha256"] = upc.contract_hmac(
+            "process-observation-v1", terminal, self.secret, "observerHmacSha256"
+        )
+        with self.assertRaisesRegex(upc.ControlError, "CONTRACT_HMAC_INVALID"):
+            broker.release_child(
+                process_observation=terminal, fleet_secret=self.secret, now=self.now
+            )
+        self.assertEqual(broker.gate_state(fleet_secret=self.secret, now=self.now), "CLOSED")
+        self.assertIn(allowed["leaseId"], broker._os_locks)
+
+    def test_r16_08_reusable_permit_cli_is_absent_and_never_reads_secret(self) -> None:
+        import contextlib
+        import io
+
+        broker = upc.UniversalProviderBroker(self.root / "r16-cli")
+        self.transition(broker)
+        allowed = self.authorize(broker, begin_request=False)
+        secret_file = self.root / "fleet-secret.bin"
+        secret_file.write_bytes(self.secret)
+        output = io.StringIO()
+        with mock.patch("pathlib.Path.read_bytes", side_effect=AssertionError("secret read")):
+            with contextlib.redirect_stdout(output):
+                code = upc.main([
+                    "provider-request-permit", str(broker.state_root), allowed["leaseId"],
+                    str(secret_file.resolve()), upc.iso(self.now),
+                ])
+        self.assertEqual(code, 2)
+        result = json.loads(output.getvalue())
+        self.assertEqual(result, {"status": "UNEVALUABLE", "reason": "ARGUMENT_ERROR"})
+
+    def test_r16_09_completed_usage_accumulates_across_terminal_leases(self) -> None:
+        first = upc.UniversalProviderBroker(self.root / "r16-usage-first")
+        self.transition(first)
+        allowed = self.authorize(first)
+        first.release_child(
+            process_observation=self.process_observation(allowed, "EXITED", phase="TERMINAL"),
+            fleet_secret=self.secret, now=self.now,
+        )
+        self.profile["efficiency"]["maxReservedTokenCeilings"] = copy.deepcopy(
+            self.request["cumulativeTokenCeilings"]
+        )
+        second = upc.UniversalProviderBroker(self.root / "r16-usage-second")
+        self.transition(second)
+        request = self.make_request("request-r16-usage-second")
+        process = self.admission_observation(request)
+        process["processId"] += 1
+        process["observerHmacSha256"] = upc.contract_hmac(
+            "process-observation-v1", process, self.secret, "observerHmacSha256"
+        )
+        self.assertEqual(
+            self.authorize(second, request, confirm=False, process_observation=process)["reason"],
+            "COMPLETED_USAGE_CEILING_EXCEEDED",
+        )
+
+    def test_r16_10_termination_required_is_monotonic_and_cannot_mint_canary_success(self) -> None:
+        broker = upc.UniversalProviderBroker(self.root / "r16-terminated-canary")
+        self.transition(broker, "CANARY")
+        request = self.make_request("request-r16-terminated-canary")
+        request["canary"] = True
+        authorization = self.make_canary_authorization(request, "canary-r16-terminated")
+        allowed = self.authorize(broker, request, manual_authorization=authorization)
+        terminal = self.process_observation(allowed, "EXITED", phase="TERMINAL")
+        later = self.now + dt.timedelta(seconds=61)
+        broker._clock = lambda: later
+        with self.assertRaisesRegex(upc.ControlError, "RUNTIME_TERMINATION_REQUIRED"):
+            broker.check_runtime_boundary(
+                lease_id=allowed["leaseId"], fleet_secret=self.secret, now=later
+            )
+        terminal["observedAt"] = upc.iso(later)
+        terminal["observerHmacSha256"] = upc.contract_hmac(
+            "process-observation-v1", terminal, self.secret, "observerHmacSha256"
+        )
+        with self.assertRaisesRegex(upc.ControlError, "TERMINATION_REQUIRED_FENCED"):
+            broker.release_child(
+                process_observation=terminal, fleet_secret=self.secret, now=later
+            )
+        with broker._connect() as connection:
+            state = connection.execute(
+                "SELECT state FROM leases WHERE lease_id=?", (allowed["leaseId"],)
+            ).fetchone()[0]
+            success_count = connection.execute(
+                "SELECT COUNT(*) FROM canary_success_receipts"
+            ).fetchone()[0]
+        self.assertEqual(state, "TERMINATION_REQUIRED")
+        self.assertEqual(success_count, 0)
+        self.assertEqual(broker.gate_state(fleet_secret=self.secret, now=later), "CLOSED")
+
+    def test_r16_11_open_rejects_unparsed_or_forged_canary_receipt_rows(self) -> None:
+        broker = upc.UniversalProviderBroker(self.root / "r16-forged-canary-receipt")
+        self.transition(broker, "CONTAINMENT")
+        with broker._connect() as connection:
+            connection.execute(
+                """INSERT INTO canary_success_receipts(
+                receipt_id, receipt_digest, receipt_bytes, gate_epoch,
+                profile_digest, inventory_digest, used_at
+                ) VALUES (?, ?, ?, 2, ?, ?, NULL)""",
+                ("canary-success-" + "d" * 32, SHA_D, b"{}",
+                 upc.digest_json(self.profile), upc.digest_json(self.inventory)),
+            )
+        proof = self.stage_proof("OPEN", receipt=SHA_D, serial=1611)
+        transition = {
+            "schema": "fleet-universal-gate-transition/v1",
+            "transitionId": "transition-r16-forged-open", "transitionEpoch": 3,
+            "issuedAt": upc.iso(self.now - dt.timedelta(seconds=1)),
+            "expiresAt": upc.iso(self.now + dt.timedelta(minutes=5)),
+            "from": "CONTAINMENT", "to": "OPEN", "cause": "INDEPENDENT_ADJUDICATION",
+            "doctrineCommitSha256": SHA_A,
+            "brokerExecutableSha256": sha_file(Path(upc.__file__).resolve()),
+            "projectProfileSha256": upc.digest_json(self.profile),
+            "inventorySha256": upc.digest_json(self.inventory),
+            "brokerHealthSha256": upc.digest_json(self.health),
+            "reviewReceiptSha256": SHA_B, "testReceiptSha256": SHA_C,
+            "stageProof": proof, "authorizationHmacSha256": "hmac-sha256:" + "0" * 64,
+        }
+        transition["authorizationHmacSha256"] = upc.contract_hmac(
+            "gate-transition-v1", transition, self.secret, "authorizationHmacSha256"
+        )
+        with self.assertRaises(upc.ControlError):
+            broker.transition_gate(transition, fleet_secret=self.secret, now=self.now)
+        self.assertEqual(broker.gate_state(fleet_secret=self.secret, now=self.now), "CONTAINMENT")
+
+    def test_r16_12_provider_permit_token_ceilings_have_exact_keys(self) -> None:
+        broker = upc.UniversalProviderBroker(self.root / "r16-permit-keys")
+        self.transition(broker)
+        allowed = self.authorize(broker, begin_request=False)
+        permit = broker._begin_provider_request(
+            lease_id=allowed["leaseId"], fleet_secret=self.secret, now=self.now
+        )
+        forged = copy.deepcopy(permit)
+        forged["tokenCeilings"]["unreviewedTokens"] = 1
+        with self.assertRaisesRegex(upc.ControlError, "SCHEMA_VALIDATION_FAILED"):
+            upc.validate_contract("request_permit", forged)
+
+    def test_r16_13_manifest_verifies_exact_ordered_reconciliation_and_forged_negatives(self) -> None:
+        import check_universal_manifest as checker
+
+        reconciliation = {
+            "r15Base": {
+                "commit": "30cd9b97eeebd30cb209bdb9798c38b415c9a0b4",
+                "tree": "06aac4b6eb09ba896c98fd402851af09629d5351",
+                "orderedParents": [
+                    "00542530bfebad8ad7646724f64720adda8d1b49",
+                    "874605e43531c9aa230ee16851f8107a8e0d9cec",
+                ],
+                "orderedParentTrees": [
+                    "994b337e8b316cec31adc8bf4d5aaaaded299f7a",
+                    "cafc358fd7b60812070cf9a465d7de38b88487c8",
+                ],
+            },
+            "r16PreMaster": {
+                "commit": "a560c63cbe72736efe4e1d5c3ecfac25d04f68d2",
+                "tree": "36528454016fcaf71e63c75e751864e3305827da",
+                "orderedParents": ["30cd9b97eeebd30cb209bdb9798c38b415c9a0b4"],
+                "orderedParentTrees": ["06aac4b6eb09ba896c98fd402851af09629d5351"],
+            },
+            "r16FrozenBeforeLatestMaster": {
+                "commit": "5956637cf088429364307c6816976d676bbb5092",
+                "tree": "8a1d67957b5e6a8e946d38d68da6d529512191fe",
+                "orderedParents": ["a0786f2eee16770632a2a947f65db64e60dd9820"],
+                "orderedParentTrees": ["88f3caba68a192a159879e5f7dd2092f7cec50bc"],
+            },
+            "canonicalFleetMaster": {
+                "commit": "cd21e5830ccb894af5847ce113af8a7d6570748a",
+                "tree": "df856f1b9548c0a15b989de1539b26bfc2f0db0a",
+                "orderedParents": [
+                    "193b90f9e65450b4317c573f4de2e43d4120c3ff",
+                    "3a06045e882b59fcc9ed508849eceada2d8fce12",
+                ],
+                "orderedParentTrees": [
+                    "fdf2447fe780aaff2587de4e3af4823c63e66cdc",
+                    "73110ee640dbc00ba0a7e4c95af0be7f97eedea6",
+                ],
+            },
+            "r16MasterMerge": {
+                "commit": "c6bc94fe3afcdbc927641164fd2d42c621c0bb67",
+                "tree": "4d93e13f455033b44b6fd1db1269b9f751278360",
+                "orderedParents": [
+                    "5956637cf088429364307c6816976d676bbb5092",
+                    "cd21e5830ccb894af5847ce113af8a7d6570748a",
+                ],
+                "orderedParentTrees": [
+                    "8a1d67957b5e6a8e946d38d68da6d529512191fe",
+                    "df856f1b9548c0a15b989de1539b26bfc2f0db0a",
+                ],
+            },
+        }
+        tuples = {
+            record["commit"]: (record["tree"], record["orderedParents"])
+            for record in reconciliation.values()
+        }
+        for record in reconciliation.values():
+            for parent, tree in zip(record["orderedParents"], record["orderedParentTrees"]):
+                tuples.setdefault(parent, (tree, []))
+        with mock.patch.object(checker, "_commit_tuple", side_effect=lambda commit: tuples[commit]):
+            checker.verify_reconciliation({"reconciliation": reconciliation}, ":")
+            swapped = copy.deepcopy(reconciliation)
+            swapped["r16MasterMerge"]["orderedParents"].reverse()
+            with self.assertRaisesRegex(checker.ManifestError, "RECONCILIATION_COMMIT_MISMATCH"):
+                checker.verify_reconciliation({"reconciliation": swapped}, ":")
+            forged_tree = copy.deepcopy(reconciliation)
+            forged_tree["r15Base"]["orderedParentTrees"][0] = "0" * 40
+            with self.assertRaisesRegex(checker.ManifestError, "RECONCILIATION_PARENT_TREE_MISMATCH"):
+                checker.verify_reconciliation({"reconciliation": forged_tree}, ":")
+
+    def test_r17_09_manifest_verifies_exact_ordered_merge_and_forged_negatives(self) -> None:
+        import check_universal_manifest as checker
+
+        manifest_path = ROOT / "manifests" / "universal-provider-control-reconciliation-r17.json"
+        reconciliation = json.loads(manifest_path.read_text(encoding="utf-8"))["reconciliation"]
+        tuples = {
+            record["commit"]: (record["tree"], record["orderedParents"])
+            for record in reconciliation.values()
+        }
+        for record in reconciliation.values():
+            for parent, tree in zip(record["orderedParents"], record["orderedParentTrees"]):
+                tuples.setdefault(parent, (tree, []))
+        with mock.patch.object(checker, "_commit_tuple", side_effect=lambda commit: tuples[commit]):
+            checker.verify_reconciliation({"reconciliation": reconciliation}, ":")
+            swapped = copy.deepcopy(reconciliation)
+            swapped["r17MasterMerge"]["orderedParents"].reverse()
+            with self.assertRaisesRegex(checker.ManifestError, "RECONCILIATION_COMMIT_MISMATCH"):
+                checker.verify_reconciliation({"reconciliation": swapped}, ":")
+            forged_tree = copy.deepcopy(reconciliation)
+            forged_tree["r17Wip"]["orderedParentTrees"][0] = "0" * 40
+            with self.assertRaisesRegex(checker.ManifestError, "RECONCILIATION_PARENT_TREE_MISMATCH"):
+                checker.verify_reconciliation({"reconciliation": forged_tree}, ":")
+
+    def test_r18_06_manifest_binds_final_lineage_and_grants_zero_gate_authority(self) -> None:
+        import check_universal_manifest as checker
+
+        manifest_path = ROOT / "manifests" / "universal-provider-control-reconciliation-r18.json"
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        reconciliation = manifest["reconciliation"]
+        tuples = {
+            record["commit"]: (record["tree"], record["orderedParents"])
+            for record in reconciliation.values()
+        }
+        for record in reconciliation.values():
+            for parent, tree in zip(record["orderedParents"], record["orderedParentTrees"]):
+                tuples.setdefault(parent, (tree, []))
+        with mock.patch.object(checker, "_commit_tuple", side_effect=lambda commit: tuples[commit]):
+            checker.verify_reconciliation({"reconciliation": reconciliation}, ":")
+            forged = copy.deepcopy(reconciliation)
+            forged["r18Wip"]["orderedParents"] = ["0" * 40]
+            with self.assertRaisesRegex(checker.ManifestError, "RECONCILIATION_COMMIT_MISMATCH"):
+                checker.verify_reconciliation({"reconciliation": forged}, ":")
+        self.assertEqual(manifest["status"], "CANDIDATE_ZERO_AUTHORITY")
+        self.assertFalse(manifest["authority"]["providerExecution"])
+        self.assertFalse(manifest["authority"]["containmentOrCanaryCredit"])
+        self.assertEqual(
+            upc.UniversalProviderBroker(self.root / "r18-manifest-closed").gate_state(),
+            "CLOSED",
+        )
+
+    def test_r19_07_manifest_binds_restart_subject_and_grants_zero_authority(self) -> None:
+        import check_universal_manifest as checker
+
+        manifest_path = ROOT / "manifests" / "universal-provider-control-reconciliation-r19.json"
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        reconciliation = manifest["reconciliation"]
+        tuples = {
+            record["commit"]: (record["tree"], record["orderedParents"])
+            for record in reconciliation.values()
+        }
+        for record in reconciliation.values():
+            for parent, tree in zip(record["orderedParents"], record["orderedParentTrees"]):
+                tuples.setdefault(parent, (tree, []))
+        with mock.patch.object(checker, "_commit_tuple", side_effect=lambda commit: tuples[commit]):
+            checker.verify_reconciliation({"reconciliation": reconciliation}, ":")
+            forged = copy.deepcopy(reconciliation)
+            forged["r19Wip"]["orderedParents"] = ["0" * 40]
+            with self.assertRaisesRegex(checker.ManifestError, "RECONCILIATION_COMMIT_MISMATCH"):
+                checker.verify_reconciliation({"reconciliation": forged}, ":")
+        self.assertEqual(manifest["status"], "CANDIDATE_ZERO_AUTHORITY")
+        self.assertFalse(manifest["authority"]["providerExecution"])
+        self.assertFalse(manifest["authority"]["processSpawnResumeKill"])
+        self.assertFalse(manifest["authority"]["containmentOrCanaryCredit"])
+        self.assertEqual(manifest["authority"]["automaticGateState"], "CLOSED")
+        self.assertEqual(
+            upc.UniversalProviderBroker(self.root / "r19-manifest-closed").gate_state(),
+            "CLOSED",
+        )
+
     # Bounded exact evidence capsule controls.
 
     def capsule_request(self, source: Path, *, lengths: list[int]) -> dict:
@@ -2843,6 +4091,1091 @@ class UniversalProviderControlTests(unittest.TestCase):
         with mock.patch.object(upc.os, "fstat", return_value=bound):
             with self.assertRaisesRegex(upc.ControlError, "CAPSULE_SOURCE_DRIFT"):
                 upc.build_evidence_capsule(request, self.root / "identity-capsule.bin")
+
+    def test_r17_01_terminal_reserve_is_bound_to_frozen_checkpoint(self) -> None:
+        broker = upc.UniversalProviderBroker(self.root / "r17-terminal-baseline")
+        self.transition(broker)
+        allowed = self.authorize(broker, begin_request=False)
+        broker._begin_provider_request(
+            lease_id=allowed["leaseId"], fleet_secret=self.secret, now=self.now
+        )
+        usage = {"inputTokens": 10, "cacheReadTokens": 20, "cacheWriteTokens": 1,
+                 "reasoningTokens": 5, "outputTokens": 100}
+        baseline = broker._checkpoint_provider_usage(
+            lease_id=allowed["leaseId"], phase="PRE_TURN", turn_count=1,
+            current_context_tokens=100, peak_context_tokens=100, token_usage=usage,
+            fleet_secret=self.secret, now=self.now,
+        )
+        terminal = broker._issue_terminal_request_permit(
+            lease_id=allowed["leaseId"], fleet_secret=self.secret, now=self.now
+        )
+        self.assertEqual(terminal["baselineCheckpointSha256"], upc.digest_json(baseline))
+        self.assertEqual(terminal["baselineOutputTokens"], 100)
+        with self.assertRaisesRegex(upc.ControlError, "TERMINAL_REQUEST_ALREADY_ISSUED"):
+            broker._checkpoint_provider_usage(
+                lease_id=allowed["leaseId"], phase="PRE_TURN", turn_count=2,
+                current_context_tokens=100, peak_context_tokens=100, token_usage=usage,
+                fleet_secret=self.secret, now=self.now,
+            )
+        with self.assertRaisesRegex(upc.ControlError, "TERMINAL_RESERVE_DELTA_EXCEEDED"):
+            broker._checkpoint_provider_usage(
+                lease_id=allowed["leaseId"], phase="TERMINAL", turn_count=1,
+                current_context_tokens=100, peak_context_tokens=100,
+                token_usage=dict(usage, outputTokens=5101),
+                fleet_secret=self.secret, now=self.now,
+            )
+
+    def test_r17_02_checkpoint_head_tamper_blocks_terminal_permit(self) -> None:
+        broker = upc.UniversalProviderBroker(self.root / "r17-checkpoint-head")
+        self.transition(broker)
+        allowed = self.authorize(broker, begin_request=False)
+        broker._begin_provider_request(
+            lease_id=allowed["leaseId"], fleet_secret=self.secret, now=self.now
+        )
+        usage = {"inputTokens": 1, "cacheReadTokens": 1, "cacheWriteTokens": 0,
+                 "reasoningTokens": 0, "outputTokens": 1}
+        broker._checkpoint_provider_usage(
+            lease_id=allowed["leaseId"], phase="PRE_TURN", turn_count=1,
+            current_context_tokens=1, peak_context_tokens=1, token_usage=usage,
+            fleet_secret=self.secret, now=self.now,
+        )
+        connection = sqlite3.connect(broker.database)
+        try:
+            connection.execute(
+                "UPDATE token_reservations SET checkpoint_head_hmac=? WHERE lease_id=?",
+                ("hmac-sha256:" + "0" * 64, allowed["leaseId"]),
+            )
+            connection.commit()
+        finally:
+            connection.close()
+        with self.assertRaisesRegex(upc.ControlError, "USAGE_CHECKPOINT_DRIFT"):
+            broker._issue_terminal_request_permit(
+                lease_id=allowed["leaseId"], fleet_secret=self.secret, now=self.now
+            )
+
+    def test_r17_03_quota_release_is_published_before_local_success(self) -> None:
+        broker = upc.UniversalProviderBroker(self.root / "r17-release-2pc")
+        self.transition(broker)
+        allowed = self.authorize(broker)
+        terminal = self.process_observation(allowed, "EXITED", phase="TERMINAL")
+        connection = sqlite3.connect(broker.database)
+        initial_success_count = connection.execute(
+            "SELECT COUNT(*) FROM canary_success_receipts"
+        ).fetchone()[0]
+        connection.close()
+        with mock.patch.object(
+            broker, "_release_quota_claim", side_effect=upc.ControlError("INJECTED_RELEASE_FAILURE")
+        ):
+            with self.assertRaisesRegex(upc.ControlError, "INJECTED_RELEASE_FAILURE"):
+                broker.release_child(
+                    process_observation=terminal, fleet_secret=self.secret, now=self.now
+                )
+        connection = sqlite3.connect(broker.database)
+        try:
+            state = connection.execute(
+                "SELECT state FROM leases WHERE lease_id=?", (allowed["leaseId"],)
+            ).fetchone()[0]
+            success_count = connection.execute(
+                "SELECT COUNT(*) FROM canary_success_receipts"
+            ).fetchone()[0]
+        finally:
+            connection.close()
+        self.assertEqual(state, "RELEASE_PREPARED")
+        self.assertEqual(success_count, initial_success_count)
+        self.assertEqual(
+            broker.release_child(
+                process_observation=terminal, fleet_secret=self.secret, now=self.now
+            )["status"],
+            "RELEASED",
+        )
+
+    def test_r17_04_quota_root_is_not_reselected_from_changed_home(self) -> None:
+        first = upc.UniversalProviderBroker(self.root / "r17-root-first")
+        first_path = first._quota_ledger_path()
+        with mock.patch.object(Path, "home", return_value=self.root / "hostile-home"):
+            second = upc.UniversalProviderBroker(self.root / "r17-root-second")
+            second_path = second._quota_ledger_path()
+        self.assertEqual(first_path, second_path)
+
+    def test_r18_01_reference_candidate_exposes_no_callback_execution_boundary(self) -> None:
+        broker = upc.UniversalProviderBroker(self.root / "r18-no-execution-boundary")
+        self.assertFalse(hasattr(broker, "provision_brokered_single_request"))
+        self.assertFalse(hasattr(broker, "_run_brokered_single_request"))
+        self.assertFalse(hasattr(upc, "CertifiedBrokeredSingleRequest"))
+        self.assertEqual(
+            broker.execution_boundary_status(),
+            {
+                "status": "UNEVALUABLE",
+                "reason": "CERTIFIED_PROCESS_CHOKE_POINT_NOT_INSTALLED",
+                "authority": "ZERO_AUTHORITY_REFERENCE_ONLY",
+            },
+        )
+        self.assertEqual(broker.gate_state(), "CLOSED")
+        source = inspect.getsource(upc)
+        self.assertNotIn("provider_call:", source)
+        self.assertNotIn("quality_observer(", source)
+        self.assertNotIn("termination_observer(", source)
+
+    def test_r17_06_prepared_quota_publication_retries_exactly(self) -> None:
+        broker = upc.UniversalProviderBroker(self.root / "r17-publication-retry")
+        self.transition(broker)
+        request = self.make_request("request-r17-publication-retry")
+        real_activate = broker._activate_quota_claim
+        with mock.patch.object(
+            broker, "_activate_quota_claim",
+            side_effect=upc.ControlError("INJECTED_ACTIVATION_FAILURE"),
+        ):
+            blocked = self.authorize(
+                broker, request, confirm=False, begin_request=False
+            )
+        self.assertEqual(blocked["reason"], "QUOTA_PUBLICATION_INCOMPLETE")
+        recovered = self.authorize(
+            broker, request, confirm=False, begin_request=False
+        )
+        self.assertEqual(recovered["status"], "PREPARED_SUSPENDED")
+        with broker._quota_connect() as connection:
+            state = connection.execute(
+                "SELECT state FROM quota_claims WHERE lease_id=?", (recovered["leaseId"],)
+            ).fetchone()[0]
+        self.assertEqual(state, "ACTIVE")
+
+    def test_r18_02_crash_before_local_publication_reuses_exact_prepared_claim(self) -> None:
+        broker = upc.UniversalProviderBroker(self.root / "r18-pre-local-crash")
+        self.transition(broker)
+        request = self.make_request("request-r18-pre-local-crash")
+        with mock.patch.object(
+            broker, "_before_local_quota_publication",
+            side_effect=upc.ControlError("INJECTED_PRE_LOCAL_CRASH"),
+        ):
+            blocked = self.authorize(
+                broker, request, confirm=False, begin_request=False
+            )
+        self.assertEqual(blocked, {
+            "status": "UNEVALUABLE", "reason": "QUOTA_PUBLICATION_INCOMPLETE"
+        })
+        with broker._quota_connect() as connection:
+            prepared = connection.execute(
+                "SELECT lease_id,state FROM quota_claims WHERE quota_domain_id=?",
+                (self.quota_id,),
+            ).fetchone()
+        self.assertEqual(prepared["state"], "PREPARED")
+        with broker._connect() as connection:
+            self.assertEqual(connection.execute("SELECT COUNT(*) FROM leases").fetchone()[0], 0)
+            self.assertEqual(connection.execute("SELECT COUNT(*) FROM requests").fetchone()[0], 0)
+        recovered = self.authorize(
+            broker, request, confirm=False, begin_request=False
+        )
+        self.assertEqual(recovered["status"], "PREPARED_SUSPENDED")
+        self.assertEqual(recovered["leaseId"], prepared["lease_id"])
+        with broker._quota_connect() as connection:
+            self.assertEqual(connection.execute(
+                "SELECT state FROM quota_claims WHERE quota_domain_id=?",
+                (self.quota_id,),
+            ).fetchone()[0], "ACTIVE")
+
+    def test_r18_03_os_account_authority_ignores_home_in_fresh_processes(self) -> None:
+        command = [
+            sys.executable, "-c",
+            "from tools import universal_provider_control as u; "
+            "print(u._CANONICAL_QUOTA_AUTHORITY_ROOT)",
+        ]
+        roots = []
+        for suffix in ("first", "second"):
+            environment = dict(os.environ)
+            environment["HOME"] = str(self.root / f"hostile-home-{suffix}")
+            environment["USERPROFILE"] = str(self.root / f"hostile-profile-{suffix}")
+            run = subprocess.run(
+                command, cwd=ROOT, env=environment, text=True,
+                capture_output=True, check=False, timeout=15,
+            )
+            self.assertEqual(run.returncode, 0, run.stderr)
+            roots.append(run.stdout.strip())
+        self.assertEqual(roots[0], roots[1])
+        self.assertNotIn(str(self.root), roots[0])
+
+    def test_r18_04_dead_after_zero_checkpoint_charges_full_reservation(self) -> None:
+        broker = upc.UniversalProviderBroker(self.root / "r18-conservative-orphan")
+        self.transition(broker)
+        allowed = self.authorize(broker)
+        zero = {name: 0 for name in self.request["cumulativeTokenCeilings"]}
+        broker._checkpoint_provider_usage(
+            lease_id=allowed["leaseId"], phase="PRE_TURN", turn_count=1,
+            current_context_tokens=0, peak_context_tokens=0, token_usage=zero,
+            fleet_secret=self.secret, now=self.now,
+        )
+        recovered = broker.recover_orphan(
+            process_observation=self.process_observation(allowed, "DEAD"),
+            fleet_secret=self.secret, now=self.now,
+        )
+        self.assertEqual(recovered["status"], "RELEASED")
+        with broker._connect() as connection:
+            actual = json.loads(connection.execute(
+                "SELECT actual_usage_json FROM token_reservations WHERE lease_id=?",
+                (allowed["leaseId"],),
+            ).fetchone()[0])
+        self.assertEqual(actual, self.request["cumulativeTokenCeilings"])
+
+    def test_r18_05_same_observer_or_fleet_key_is_not_independent(self) -> None:
+        broker = upc.UniversalProviderBroker(self.root / "r18-observer-independence")
+        request = self.make_request("request-r18-observer-independence")
+        boundary = request["boundaryCertification"]
+        boundary["qualityObserverId"] = boundary["terminationObserverId"]
+        boundary["qualityObserverKeySha256"] = upc.signer_key_sha256(self.secret)
+        boundary["certificationHmacSha256"] = upc.contract_hmac(
+            "wrapper-boundary-certification-v1", boundary, self.secret,
+            "certificationHmacSha256",
+        )
+        request["boundaryCertificationSha256"] = upc.digest_json(boundary)
+        self.request = request
+        self.profile = self.make_profile()
+        self.inventory = self.make_inventory()
+        self.health = self.make_health()
+        self.transition(broker)
+        blocked = self.authorize(broker, request, confirm=False, begin_request=False)
+        self.assertEqual(blocked["reason"], "OBSERVER_INDEPENDENCE_INVALID")
+
+    def test_r19_01_prepared_retry_survives_restart_with_advancing_time(self) -> None:
+        root = self.root / "r19-restart-convergence"
+        first = upc.UniversalProviderBroker(root, clock=lambda: self.now)
+        self.transition(first)
+        request = self.make_request("request-r19-restart-convergence")
+        original_process = self.admission_observation(request)
+        with mock.patch.object(
+            first, "_before_local_quota_publication",
+            side_effect=upc.ControlError("INJECTED_PRE_LOCAL_CRASH"),
+        ):
+            blocked = self.authorize(
+                first, request, confirm=False, begin_request=False,
+                process_observation=copy.deepcopy(original_process),
+            )
+        self.assertEqual(blocked["reason"], "QUOTA_PUBLICATION_INCOMPLETE")
+        with first._quota_connect() as connection:
+            prepared = connection.execute(
+                "SELECT lease_id,binding_digest,state FROM quota_claims WHERE quota_domain_id=?",
+                (self.quota_id,),
+            ).fetchone()
+        self.assertEqual(prepared["state"], "PREPARED")
+
+        self.now += dt.timedelta(seconds=1)
+        restarted = upc.UniversalProviderBroker(root, clock=lambda: self.now)
+        recovered = self.authorize(
+            restarted, request, confirm=False, begin_request=False,
+            process_observation=copy.deepcopy(original_process), now=self.now,
+            profile=self.profile,
+        )
+        self.assertEqual(recovered["status"], "PREPARED_SUSPENDED", recovered)
+        self.assertEqual(recovered["leaseId"], prepared["lease_id"])
+        self.assertEqual(recovered["bindingSha256"], prepared["binding_digest"])
+        self.assertEqual(
+            recovered["issuedAt"], original_process["observedAt"]
+        )
+        self.assertEqual(
+            upc.parse_time(recovered["expiresAt"]),
+            upc.parse_time(original_process["observedAt"])
+            + dt.timedelta(seconds=request["maxWallSeconds"]),
+        )
+
+    def test_r19_02_nonreproducible_prepared_claimant_stays_fenced(self) -> None:
+        root = self.root / "r19-nonreproducible"
+        first = upc.UniversalProviderBroker(root)
+        self.transition(first)
+        request = self.make_request("request-r19-nonreproducible")
+        original_process = self.admission_observation(request)
+        with mock.patch.object(
+            first, "_before_local_quota_publication",
+            side_effect=upc.ControlError("INJECTED_PRE_LOCAL_CRASH"),
+        ):
+            self.authorize(
+                first, request, confirm=False, begin_request=False,
+                process_observation=copy.deepcopy(original_process),
+            )
+        self.now += dt.timedelta(seconds=1)
+        restarted = upc.UniversalProviderBroker(root)
+        changed_process = self.admission_observation(request)
+        blocked = self.authorize(
+            restarted, request, confirm=False, begin_request=False,
+            process_observation=changed_process, now=self.now, profile=self.profile,
+        )
+        self.assertEqual(blocked["status"], "UNEVALUABLE")
+        self.assertEqual(blocked["reason"], "QUOTA_DOMAIN_DURABLE_CLAIM_HELD")
+        with restarted._quota_connect() as connection:
+            row = connection.execute(
+                "SELECT lease_id,state,publication_digest FROM quota_claims WHERE quota_domain_id=?",
+                (self.quota_id,),
+            ).fetchone()
+        self.assertEqual(row["state"], "PREPARED")
+        self.assertIsNone(row["publication_digest"])
+
+    def test_r19_03_canonical_authority_root_reparse_is_rejected(self) -> None:
+        broker = upc.UniversalProviderBroker(self.root / "r19-authority-root-reparse")
+        authority = upc._CANONICAL_QUOTA_AUTHORITY_ROOT
+        real_is_reparse = upc._is_reparse
+
+        def mark_authority(path: Path) -> bool:
+            if os.path.normcase(os.path.abspath(str(path))) == os.path.normcase(
+                os.path.abspath(str(authority))
+            ):
+                return True
+            return real_is_reparse(path)
+
+        with mock.patch.object(upc, "_is_reparse", side_effect=mark_authority):
+            with self.assertRaisesRegex(upc.ControlError, "QUOTA_LEDGER_BOUNDARY_INVALID"):
+                broker._quota_ledger_path()
+            with self.assertRaisesRegex(upc.ControlError, "QUOTA_LOCK_BOUNDARY_INVALID"):
+                broker._lock_path(self.quota_id)
+
+    def test_r19_04_real_authority_root_symlink_is_rejected_when_supported(self) -> None:
+        target = self.root / "r19-real-authority-target"
+        target.mkdir()
+        link = self.root / "r19-real-authority-link"
+        try:
+            link.symlink_to(target, target_is_directory=True)
+        except (OSError, NotImplementedError):
+            source = inspect.getsource(upc._validated_quota_authority_root)
+            self.assertIn("_is_reparse(authority)", source)
+            return
+        with mock.patch.object(upc, "_CANONICAL_QUOTA_AUTHORITY_ROOT", link), \
+                mock.patch.object(upc, "_CANONICAL_QUOTA_LEDGER_ROOT", link / "quota-ledger"):
+            broker = upc.UniversalProviderBroker(self.root / "r19-real-root-reparse")
+            with self.assertRaisesRegex(upc.ControlError, "QUOTA_LEDGER_BOUNDARY_INVALID"):
+                broker._quota_ledger_path()
+
+    def test_r19_05_observer_keys_cannot_alias_launch_artifact_identities(self) -> None:
+        hostile_keys = (
+            ("terminationObserverKeySha256", "executableSha256"),
+            ("qualityObserverKeySha256", "launcherConfigSha256"),
+            ("terminationObserverKeySha256", "argvContractSha256"),
+        )
+        for serial, (observer_field, request_field) in enumerate(hostile_keys, start=1):
+            with self.subTest(observer=observer_field, artifact=request_field):
+                request = self.make_request(f"request-r19-observer-artifact-{serial}")
+                boundary = request["boundaryCertification"]
+                boundary[observer_field] = request[request_field]
+                boundary["certificationHmacSha256"] = upc.contract_hmac(
+                    "wrapper-boundary-certification-v1", boundary, self.secret,
+                    "certificationHmacSha256",
+                )
+                request["boundaryCertificationSha256"] = upc.digest_json(boundary)
+                self.request = request
+                self.profile = self.make_profile()
+                self.inventory = self.make_inventory()
+                self.health = self.make_health()
+                broker = upc.UniversalProviderBroker(
+                    self.root / f"r19-observer-artifact-{serial}"
+                )
+                self.transition(broker)
+                blocked = self.authorize(
+                    broker, request, confirm=False, begin_request=False
+                )
+                self.assertEqual(blocked["reason"], "OBSERVER_INDEPENDENCE_INVALID")
+
+    def test_r19_06_test_brokers_never_mutate_default_account_ledger(self) -> None:
+        default_database = (
+            self.default_quota_authority_root / "quota-ledger" /
+            "universal-quota-domain-v1.db"
+        )
+
+        def signature() -> tuple[bool, int | None, int | None]:
+            if not default_database.exists():
+                return (False, None, None)
+            value = default_database.stat()
+            return (True, value.st_size, value.st_mtime_ns)
+
+        before = signature()
+        broker = upc.UniversalProviderBroker(self.root / "r19-test-isolation")
+        self.transition(broker)
+        allowed = self.authorize(
+            broker, self.make_request("request-r19-test-isolation"),
+            confirm=False, begin_request=False,
+        )
+        self.assertEqual(allowed["status"], "PREPARED_SUSPENDED")
+        self.assertEqual(before, signature())
+        self.assertTrue(
+            broker._quota_ledger_path().is_relative_to(self.root)
+        )
+
+    def test_r20_01_stale_caller_time_cannot_replay_after_authoritative_expiry(self) -> None:
+        authoritative = [self.now]
+        broker = upc.UniversalProviderBroker(
+            self.root / "r20-stale-caller", clock=lambda: authoritative[0]
+        )
+        self.transition(broker)
+        request = self.make_request("request-r20-stale-caller")
+        prepared = self.authorize(broker, request, confirm=False, begin_request=False)
+        self.assertEqual(prepared["status"], "PREPARED_SUSPENDED")
+        authoritative[0] = self.now + dt.timedelta(seconds=request["maxWallSeconds"] + 1)
+        blocked = self.authorize(
+            broker, request, confirm=False, begin_request=False,
+            now=self.now, profile=self.profile,
+        )
+        self.assertEqual(blocked, {"status": "UNEVALUABLE", "reason": "CALLER_TIME_DIVERGES"})
+        with self.assertRaisesRegex(upc.ControlError, "LEASE_EXPIRED_BEFORE_RESUME"):
+            broker.confirm_resume_boundary(
+                lease_id=prepared["leaseId"],
+                process_observation=self.admission_observation(
+                    request, phase="RESUME", lease_id=prepared["leaseId"]
+                ),
+                fleet_secret=self.secret, now=self.now,
+            )
+
+    def test_r20_02_future_caller_time_cannot_extend_sampled_lease(self) -> None:
+        broker = upc.UniversalProviderBroker(
+            self.root / "r20-future-caller", clock=lambda: self.now
+        )
+        self.transition(broker)
+        request = self.make_request("request-r20-future-caller")
+        prepared = self.authorize(
+            broker, request, confirm=False, begin_request=False,
+            now=self.now + dt.timedelta(seconds=4),
+        )
+        self.assertEqual(prepared["status"], "PREPARED_SUSPENDED")
+        self.assertEqual(upc.parse_time(prepared["issuedAt"]), self.now)
+        self.assertEqual(
+            upc.parse_time(prepared["expiresAt"]),
+            self.now + dt.timedelta(seconds=request["maxWallSeconds"]),
+        )
+
+    def test_r20_03_every_authority_ancestor_component_is_reparse_checked(self) -> None:
+        base = self.root / "r20-mocked-trusted-base"
+        base.mkdir()
+        authority = base / "SoftwareFactory" / "provider-control"
+        marked = base / "SoftwareFactory"
+        real_is_reparse = upc._is_reparse
+
+        def mark_ancestor(path: Path) -> bool:
+            if os.path.normcase(os.path.abspath(str(path))) == os.path.normcase(
+                os.path.abspath(str(marked))
+            ):
+                return True
+            return real_is_reparse(path)
+
+        with mock.patch.object(upc, "_CANONICAL_QUOTA_TRUSTED_BASE", base), \
+                mock.patch.object(upc, "_CANONICAL_QUOTA_AUTHORITY_ROOT", authority), \
+                mock.patch.object(upc, "_CANONICAL_QUOTA_LEDGER_ROOT", authority / "quota-ledger"), \
+                mock.patch.object(upc, "_is_reparse", side_effect=mark_ancestor):
+            broker = upc.UniversalProviderBroker(self.root / "r20-mocked-ancestor")
+            with self.assertRaisesRegex(upc.ControlError, "QUOTA_LEDGER_BOUNDARY_INVALID"):
+                broker._quota_ledger_path()
+            with self.assertRaisesRegex(upc.ControlError, "QUOTA_LOCK_BOUNDARY_INVALID"):
+                broker._lock_path(self.quota_id)
+
+    def test_r20_04_real_ancestor_junction_or_symlink_is_rejected(self) -> None:
+        base = self.root / "r20-real-trusted-base"
+        base.mkdir()
+        target = self.root / "r20-real-target"
+        target.mkdir()
+        ancestor = base / "SoftwareFactory"
+        created = False
+        if os.name == "nt":
+            run = subprocess.run(
+                ["cmd", "/c", "mklink", "/J", str(ancestor), str(target)],
+                capture_output=True, text=True, check=False, timeout=15,
+            )
+            created = run.returncode == 0
+        else:
+            try:
+                ancestor.symlink_to(target, target_is_directory=True)
+                created = True
+            except (OSError, NotImplementedError):
+                created = False
+        if not created:
+            source = inspect.getsource(upc._validated_quota_authority_root)
+            self.assertIn("for component in relative.parts", source)
+            self.assertIn("_is_reparse(current)", source)
+            return
+        authority = ancestor / "provider-control"
+        with mock.patch.object(upc, "_CANONICAL_QUOTA_TRUSTED_BASE", base), \
+                mock.patch.object(upc, "_CANONICAL_QUOTA_AUTHORITY_ROOT", authority), \
+                mock.patch.object(upc, "_CANONICAL_QUOTA_LEDGER_ROOT", authority / "quota-ledger"):
+            broker = upc.UniversalProviderBroker(self.root / "r20-real-ancestor")
+            with self.assertRaisesRegex(upc.ControlError, "QUOTA_LEDGER_BOUNDARY_INVALID"):
+                broker._quota_ledger_path()
+            with self.assertRaisesRegex(upc.ControlError, "QUOTA_LOCK_BOUNDARY_INVALID"):
+                broker._lock_path(self.quota_id)
+
+    def test_r20_05_universal_workflow_runs_exact_workbench_suite(self) -> None:
+        workflow = (
+            ROOT / ".github/workflows/provider-capacity-governor.yml"
+        ).read_text(encoding="utf-8")
+        self.assertIn("pull_request:", workflow)
+        self.assertIn("push:\n    branches: [master]", workflow)
+        self.assertIn(
+            'python -m unittest discover -s capacity-control/tests -p "test_*.py" -v',
+            workflow,
+        )
+
+    def test_r20_06_manifest_binds_clock_path_ci_subject_and_zero_authority(self) -> None:
+        import check_universal_manifest as checker
+
+        manifest_path = ROOT / "manifests" / "universal-provider-control-reconciliation-r20.json"
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        reconciliation = manifest["reconciliation"]
+        tuples = {
+            record["commit"]: (record["tree"], record["orderedParents"])
+            for record in reconciliation.values()
+        }
+        for record in reconciliation.values():
+            for parent, tree in zip(record["orderedParents"], record["orderedParentTrees"]):
+                tuples.setdefault(parent, (tree, []))
+        with mock.patch.object(checker, "_commit_tuple", side_effect=lambda commit: tuples[commit]):
+            checker.verify_reconciliation({"reconciliation": reconciliation}, ":")
+            forged = copy.deepcopy(reconciliation)
+            forged["r20Wip"]["orderedParents"] = ["0" * 40]
+            with self.assertRaisesRegex(checker.ManifestError, "RECONCILIATION_COMMIT_MISMATCH"):
+                checker.verify_reconciliation({"reconciliation": forged}, ":")
+        self.assertEqual(manifest["status"], "CANDIDATE_ZERO_AUTHORITY")
+        self.assertFalse(manifest["authority"]["providerExecution"])
+        self.assertFalse(manifest["authority"]["processSpawnResumeKill"])
+        self.assertFalse(manifest["authority"]["containmentOrCanaryCredit"])
+        self.assertEqual(manifest["authority"]["automaticGateState"], "CLOSED")
+        self.assertEqual(
+            upc.UniversalProviderBroker(self.root / "r20-manifest-closed").gate_state(),
+            "CLOSED",
+        )
+
+    def test_r21_01_root_lock_wait_resamples_and_cannot_prepare_expired_lease(self) -> None:
+        clock = [self.now]
+        broker = upc.UniversalProviderBroker(
+            self.root / "r21-root-lock-clock", clock=lambda: clock[0]
+        )
+        self.transition(broker)
+        request = self.make_request("request-r21-root-lock-clock")
+        request["maxWallSeconds"] = 60
+
+        original_authorize = broker.authorize_suspended_child
+        armed = [False]
+
+        def arm_authorize(**arguments: object) -> dict:
+            armed[0] = True
+            return original_authorize(**arguments)
+
+        class SelectiveAdvancingLock:
+            def __enter__(inner_self):
+                if armed[0]:
+                    clock[0] = self.now + dt.timedelta(seconds=61)
+                return inner_self
+
+            def __exit__(inner_self, *_: object) -> None:
+                return None
+
+        broker._root_lock = SelectiveAdvancingLock()
+        with mock.patch.object(broker, "authorize_suspended_child", side_effect=arm_authorize):
+            result = self.authorize(
+                broker, request, confirm=False, begin_request=False, now=self.now,
+            )
+        self.assertEqual(result["status"], "UNEVALUABLE")
+        self.assertIn(
+            result["reason"],
+            {"LEASE_BOUNDARY_EXPIRED", "REQUEST_TIME_INVALID", "PROCESS_OBSERVATION_STALE"},
+        )
+        with broker._connect() as connection:
+            self.assertEqual(connection.execute("SELECT COUNT(*) FROM leases").fetchone()[0], 0)
+
+    def test_r21_02_quota_lock_wait_resamples_before_durable_publication(self) -> None:
+        clock = [self.now]
+        broker = upc.UniversalProviderBroker(
+            self.root / "r21-quota-lock-clock", clock=lambda: clock[0]
+        )
+        self.transition(broker)
+        request = self.make_request("request-r21-quota-lock-clock")
+        request["maxWallSeconds"] = 60
+        acquire = broker._acquire_os_lock
+
+        def delayed_acquire(lease_id: str, quota_domain_id: str) -> None:
+            acquire(lease_id, quota_domain_id)
+            clock[0] = self.now + dt.timedelta(seconds=61)
+
+        with mock.patch.object(broker, "_acquire_os_lock", side_effect=delayed_acquire):
+            result = self.authorize(
+                broker, request, confirm=False, begin_request=False, now=self.now,
+            )
+        self.assertEqual(
+            result, {"status": "UNEVALUABLE", "reason": "ADMISSION_TIME_ELAPSED"}
+        )
+        with broker._connect() as connection:
+            self.assertEqual(connection.execute("SELECT COUNT(*) FROM leases").fetchone()[0], 0)
+
+    def test_r21_03_posix_missing_account_base_is_created_nofollow(self) -> None:
+        if os.name == "nt":
+            source = inspect.getsource(upc._ensure_posix_account_data_base)
+            self.assertIn('getattr(os, "O_NOFOLLOW", 0)', source)
+            self.assertIn("dir_fd=descriptor", source)
+            self.assertIn("child_stat.st_uid != owner", source)
+            return
+        home = self.root / "fresh-passwd-home"
+        home.mkdir(mode=0o700)
+        base = upc._ensure_posix_account_data_base(home)
+        self.assertEqual(base, home / ".local" / "share")
+        for path in (home / ".local", base):
+            item = path.stat(follow_symlinks=False)
+            self.assertEqual(item.st_uid, os.getuid())
+            self.assertEqual(stat.S_IMODE(item.st_mode), 0o700)
+            self.assertFalse(path.is_symlink())
+
+    def test_r21_04_ledger_component_swap_is_poisoned_before_use(self) -> None:
+        broker = upc.UniversalProviderBroker(self.root / "r21-ledger-swap")
+        authority = upc._CANONICAL_QUOTA_AUTHORITY_ROOT
+        displaced = authority.with_name(authority.name + "-displaced")
+
+        def swap(surface: str) -> None:
+            if surface == "ledger":
+                authority.rename(displaced)
+                authority.mkdir(mode=0o700)
+
+        with mock.patch.object(broker, "_after_authority_snapshot", side_effect=swap):
+            with self.assertRaisesRegex(upc.ControlError, "QUOTA_LEDGER_BOUNDARY_INVALID"):
+                with broker._quota_connect():
+                    pass
+        with self.assertRaisesRegex(upc.ControlError, "QUOTA_LEDGER_BOUNDARY_INVALID"):
+            broker._quota_ledger_path()
+
+    def test_r21_05_lock_component_swap_is_poisoned_before_use(self) -> None:
+        broker = upc.UniversalProviderBroker(self.root / "r21-lock-swap")
+        authority = upc._CANONICAL_QUOTA_AUTHORITY_ROOT
+        displaced = authority.with_name(authority.name + "-displaced")
+
+        def swap(surface: str) -> None:
+            if surface == "lock":
+                authority.rename(displaced)
+                authority.mkdir(mode=0o700)
+
+        with mock.patch.object(broker, "_after_authority_snapshot", side_effect=swap):
+            with self.assertRaisesRegex(upc.ControlError, "QUOTA_LOCK_BOUNDARY_INVALID"):
+                broker._acquire_os_lock("lease-r21-swapped-lock", self.quota_id)
+        with self.assertRaisesRegex(upc.ControlError, "QUOTA_LOCK_BOUNDARY_INVALID"):
+            broker._lock_path(self.quota_id)
+
+    def test_r21_06_provider_budget_law_is_request_scoped_and_zero_authority(self) -> None:
+        doctrine = (
+            ROOT / "specs" / "fleet-universal-provider-control-reconciliation.md"
+        ).read_text(encoding="utf-8")
+        required = {
+            "CACHE_READ_FULL_ENVELOPE_WEIGHT=1.0",
+            "REQUEST_LAYER_RECONCILIATION=REQUIRED",
+            "MODEL_FREE_NO_WORK=BEFORE_SESSION_CREATION",
+            "MAX_ASSEMBLED_PREFIX_TOKENS=REVIEWED_NUMERIC_REQUIRED",
+            "MAX_ADDRESSED_WORK_CAPSULE_TOKENS=REVIEWED_NUMERIC_REQUIRED",
+            "CACHE_AFFINITY_TTL=EXACT_IDENTITY_AND_UNEXPIRED_TTL",
+            "MAX_PROVIDER_RETRIES=REVIEWED_NUMERIC_REQUIRED",
+            "COMPLETION_RESERVE_FLOOR=0.20",
+            "POSITIVE_DIRECT_LAUNCH_ENFORCEMENT=SEPARATELY_CERTIFIED_REQUIRED",
+            "PRE-SHADOW SEALED",
+        }
+        self.assertEqual({marker for marker in required if marker not in doctrine}, set())
+        self.assertIn("Failure, refusal, timeout, and retry attempts", doctrine)
+        self.assertIn("earns no ratification, adoption, containment, or activation", doctrine)
+        parser_source = inspect.getsource(upc._parser)
+        self.assertNotIn('add_parser("provider-request-permit")', parser_source)
+        self.assertNotIn('add_parser("brokered-single-request")', parser_source)
+        self.assertEqual(
+            upc.UniversalProviderBroker(self.root / "r21-budget-law-closed").gate_state(),
+            "CLOSED",
+        )
+
+    def test_r21_07_manifest_binds_postlock_path_subject_and_zero_authority(self) -> None:
+        import check_universal_manifest as checker
+
+        manifest_path = ROOT / "manifests" / "universal-provider-control-reconciliation-r21.json"
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        reconciliation = manifest["reconciliation"]
+        tuples = {
+            record["commit"]: (record["tree"], record["orderedParents"])
+            for record in reconciliation.values()
+        }
+        for record in reconciliation.values():
+            for parent, tree in zip(record["orderedParents"], record["orderedParentTrees"]):
+                tuples.setdefault(parent, (tree, []))
+        with mock.patch.object(checker, "_commit_tuple", side_effect=lambda commit: tuples[commit]):
+            checker.verify_reconciliation({"reconciliation": reconciliation}, ":")
+            forged = copy.deepcopy(reconciliation)
+            forged["r21Wip"]["orderedParents"] = ["0" * 40]
+            with self.assertRaisesRegex(checker.ManifestError, "RECONCILIATION_COMMIT_MISMATCH"):
+                checker.verify_reconciliation({"reconciliation": forged}, ":")
+        self.assertEqual(manifest["status"], "CANDIDATE_ZERO_AUTHORITY")
+        self.assertFalse(manifest["authority"]["providerExecution"])
+        self.assertFalse(manifest["authority"]["processSpawnResumeKill"])
+        self.assertFalse(manifest["authority"]["containmentOrCanaryCredit"])
+        self.assertEqual(manifest["authority"]["automaticGateState"], "CLOSED")
+        self.assertEqual(
+            upc.UniversalProviderBroker(self.root / "r21-manifest-closed").gate_state(),
+            "CLOSED",
+        )
+
+    def test_r22_01_ledger_child_replacement_is_poisoned_before_open(self) -> None:
+        broker = upc.UniversalProviderBroker(self.root / "r22-ledger-child-swap")
+        child = upc._CANONICAL_QUOTA_LEDGER_ROOT
+        displaced = child.with_name(child.name + "-displaced")
+
+        def swap(surface: str) -> None:
+            if surface == "ledger":
+                child.rename(displaced)
+                child.mkdir(mode=0o700)
+
+        with mock.patch.object(broker, "_after_authority_snapshot", side_effect=swap):
+            with self.assertRaisesRegex(upc.ControlError, "QUOTA_LEDGER_BOUNDARY_INVALID"):
+                with broker._quota_connect():
+                    pass
+        with self.assertRaisesRegex(upc.ControlError, "QUOTA_LEDGER_BOUNDARY_INVALID"):
+            broker._quota_ledger_path()
+
+    def test_r22_02_lock_child_replacement_is_poisoned_before_open(self) -> None:
+        broker = upc.UniversalProviderBroker(self.root / "r22-lock-child-swap")
+        child = upc._CANONICAL_QUOTA_AUTHORITY_ROOT / "quota-locks"
+        displaced = child.with_name(child.name + "-displaced")
+
+        def swap(surface: str) -> None:
+            if surface == "lock":
+                child.rename(displaced)
+                child.mkdir(mode=0o700)
+
+        with mock.patch.object(broker, "_after_authority_snapshot", side_effect=swap):
+            with self.assertRaisesRegex(upc.ControlError, "QUOTA_LOCK_BOUNDARY_INVALID"):
+                broker._acquire_os_lock("lease-r22-lock-child", self.quota_id)
+        with self.assertRaisesRegex(upc.ControlError, "QUOTA_LOCK_BOUNDARY_INVALID"):
+            broker._lock_path(self.quota_id)
+
+    def test_r22_03_native_ledger_child_identity_twin_rejects_replacement(self) -> None:
+        broker = upc.UniversalProviderBroker(self.root / "r22-ledger-native")
+        broker._quota_ledger_path()
+        child = upc._CANONICAL_QUOTA_LEDGER_ROOT
+        snapshot = upc._quota_authority_snapshot("QUOTA_LEDGER_BOUNDARY_INVALID", child)
+        child.rename(child.with_name(child.name + "-native-displaced"))
+        child.mkdir(mode=0o700)
+        with self.assertRaisesRegex(upc.ControlError, "QUOTA_LEDGER_BOUNDARY_INVALID"):
+            upc._revalidate_quota_authority_snapshot(
+                snapshot, "QUOTA_LEDGER_BOUNDARY_INVALID"
+            )
+
+    def test_r22_04_native_lock_child_identity_twin_rejects_replacement(self) -> None:
+        broker = upc.UniversalProviderBroker(self.root / "r22-lock-native")
+        child = broker._lock_path(self.quota_id).parent
+        snapshot = upc._quota_authority_snapshot("QUOTA_LOCK_BOUNDARY_INVALID", child)
+        child.rename(child.with_name(child.name + "-native-displaced"))
+        child.mkdir(mode=0o700)
+        with self.assertRaisesRegex(upc.ControlError, "QUOTA_LOCK_BOUNDARY_INVALID"):
+            upc._revalidate_quota_authority_snapshot(snapshot, "QUOTA_LOCK_BOUNDARY_INVALID")
+
+    def test_r22_05_attended_receipt_is_private_strict_and_recomputed(self) -> None:
+        receipt = upc.strict_json_file(
+            ROOT / "receipts" / "attended-provider-rotation-20260819.json"
+        )
+        upc.validate_contract("attended_rotation_receipt", receipt)
+        self.assertEqual(receipt["aggregate"]["cacheCreateTokens"], 59319)
+        self.assertEqual(receipt["aggregate"]["cacheReadTokens"], 10723)
+        self.assertEqual(receipt["aggregate"]["outputTokens"], 7540)
+        self.assertFalse(receipt["providerAuthority"])
+        self.assertFalse(receipt["adoptionCredit"])
+        duplicate = copy.deepcopy(receipt)
+        duplicate["requests"][1]["promptSha256"] = duplicate["requests"][0]["promptSha256"]
+        with self.assertRaisesRegex(upc.ControlError, "ATTENDED_ROTATION_HASH_DUPLICATE"):
+            upc.validate_contract("attended_rotation_receipt", duplicate)
+        wrong_total = copy.deepcopy(receipt)
+        wrong_total["requests"][0]["cacheCreateTokens"] -= 1
+        with self.assertRaisesRegex(upc.ControlError, "ATTENDED_ROTATION_AGGREGATE_MISMATCH"):
+            upc.validate_contract("attended_rotation_receipt", wrong_total)
+        invalid_type = copy.deepcopy(receipt)
+        invalid_type["requests"][0]["inputTokens"] = "1"
+        with self.assertRaisesRegex(upc.ControlError, "SCHEMA_VALIDATION_FAILED"):
+            upc.validate_contract("attended_rotation_receipt", invalid_type)
+        duplicate_key_bytes = (
+            b'{"schema":"fleet-universal-attended-rotation-receipt/v1",'
+            b'"schema":"fleet-universal-attended-rotation-receipt/v1"}'
+        )
+        with self.assertRaisesRegex(upc.ControlError, "JSON_DUPLICATE_KEY"):
+            upc.strict_json_bytes(duplicate_key_bytes)
+
+    def test_r22_06_token_laws_are_strict_structured_policy(self) -> None:
+        policy = upc.strict_json_file(
+            ROOT / "policy" / "universal-provider-token-control-r22.json"
+        )
+        upc.validate_contract("token_control_policy", policy)
+        self.assertEqual(policy["requestAccounting"]["scope"], "PROVIDER_REQUEST")
+        self.assertEqual(policy["requestAccounting"]["cacheReadEnvelopeWeight"], 1.0)
+        self.assertEqual(policy["completionReserve"]["quotaWindowFloor"], 0.2)
+        weakened = copy.deepcopy(policy)
+        weakened["requestAccounting"]["cacheReadEnvelopeWeight"] = 0.5
+        with self.assertRaisesRegex(upc.ControlError, "SCHEMA_VALIDATION_FAILED"):
+            upc.validate_contract("token_control_policy", weakened)
+        reversed_budget = copy.deepcopy(policy)
+        reversed_budget["prefixAndCapsule"]["maxAddressedWorkCapsuleTokens"] = 65536
+        with self.assertRaisesRegex(upc.ControlError, "TOKEN_CONTROL_POLICY_BUDGET_ORDER_INVALID"):
+            upc.validate_contract("token_control_policy", reversed_budget)
+        extra = copy.deepcopy(policy)
+        extra["serializationOverride"] = True
+        with self.assertRaisesRegex(upc.ControlError, "SCHEMA_VALIDATION_FAILED"):
+            upc.validate_contract("token_control_policy", extra)
+
+    def test_r22_07_manifest_binds_child_receipt_policy_and_master_merge(self) -> None:
+        import check_universal_manifest as checker
+
+        manifest_path = ROOT / "manifests" / "universal-provider-control-reconciliation-r22.json"
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        reconciliation = manifest["reconciliation"]
+        tuples = {
+            record["commit"]: (record["tree"], record["orderedParents"])
+            for record in reconciliation.values()
+        }
+        for record in reconciliation.values():
+            for parent, tree in zip(record["orderedParents"], record["orderedParentTrees"]):
+                tuples.setdefault(parent, (tree, []))
+        with mock.patch.object(checker, "_commit_tuple", side_effect=lambda commit: tuples[commit]):
+            checker.verify_reconciliation({"reconciliation": reconciliation}, ":")
+            forged = copy.deepcopy(reconciliation)
+            forged["r22MasterMerge"]["orderedParents"].reverse()
+            with self.assertRaisesRegex(checker.ManifestError, "RECONCILIATION_COMMIT_MISMATCH"):
+                checker.verify_reconciliation({"reconciliation": forged}, ":")
+        subject_paths = {subject["path"] for subject in manifest["subjectFiles"]}
+        self.assertIn("receipts/attended-provider-rotation-20260819.json", subject_paths)
+        self.assertIn("policy/universal-provider-token-control-r22.json", subject_paths)
+        self.assertIn("schemas/universal-attended-rotation-receipt-v1.schema.json", subject_paths)
+        self.assertIn("schemas/universal-provider-token-control-policy-v1.schema.json", subject_paths)
+        self.assertEqual(manifest["status"], "CANDIDATE_ZERO_AUTHORITY")
+        self.assertFalse(manifest["authority"]["providerExecution"])
+        self.assertFalse(manifest["authority"]["containmentOrCanaryCredit"])
+        self.assertEqual(manifest["authority"]["automaticGateState"], "CLOSED")
+
+    def test_r23_01_attended_duration_and_provenance_are_non_authoritative(self) -> None:
+        receipt = upc.strict_json_file(
+            ROOT / "receipts" / "attended-provider-rotation-20260819.json"
+        )
+        upc.validate_contract("attended_rotation_receipt", receipt)
+        self.assertEqual(
+            [entry["wallDurationMs"] for entry in receipt["requests"]],
+            [34299, 59757, 26400, 30577],
+        )
+        self.assertEqual(receipt["aggregate"]["totalWallDurationMs"], 151033)
+        self.assertEqual(
+            receipt["durationSemantics"],
+            {
+                "durationMs": "CLAUDE_CLI_REPORTED_END_TO_END",
+                "durationApiMs": "CLAUDE_CLI_REPORTED_API",
+                "wallDurationMs": "HOST_OBSERVED_WALL",
+                "wallDurationConvention": "FLOOR_COMPLETED_AT_MINUS_STARTED_AT_MILLISECONDS",
+                "maxCliOutsideApiMs": 10000,
+                "maxHostOutsideCliMs": 5000,
+            },
+        )
+        self.assertEqual(
+            receipt["provenance"]["classification"],
+            "AUTHOR_ATTESTED_LOCAL_CLI_MEASUREMENT",
+        )
+        self.assertFalse(receipt["provenance"]["providerAuthenticated"])
+        self.assertFalse(receipt["provenance"]["independentObserver"])
+        self.assertFalse(receipt["provenance"]["rawProviderReceiptCommitted"])
+        self.assertFalse(receipt["provenance"]["authorityCredit"])
+        self.assertEqual(receipt["creditClassification"], "MOTIVATION_AND_MEASUREMENT_ONLY")
+        without_informational_url = copy.deepcopy(receipt)
+        del without_informational_url["issueReceiptUrl"]
+        upc.validate_contract("attended_rotation_receipt", without_informational_url)
+        wrong_wall = copy.deepcopy(receipt)
+        wrong_wall["requests"][0]["wallDurationMs"] += 1
+        with self.assertRaisesRegex(
+            upc.ControlError, "ATTENDED_ROTATION_WALL_DURATION_MISMATCH"
+        ):
+            upc.validate_contract("attended_rotation_receipt", wrong_wall)
+        unbounded_overhead = copy.deepcopy(receipt)
+        unbounded_overhead["requests"][0]["durationApiMs"] = 1
+        with self.assertRaisesRegex(
+            upc.ControlError, "ATTENDED_ROTATION_DURATION_OVERHEAD_INVALID"
+        ):
+            upc.validate_contract("attended_rotation_receipt", unbounded_overhead)
+        forged_authority = copy.deepcopy(receipt)
+        forged_authority["provenance"]["authorityCredit"] = True
+        with self.assertRaisesRegex(upc.ControlError, "SCHEMA_VALIDATION_FAILED"):
+            upc.validate_contract("attended_rotation_receipt", forged_authority)
+
+    def test_r23_02_manifest_binds_semantics_and_zero_authority(self) -> None:
+        import check_universal_manifest as checker
+
+        manifest_path = ROOT / "manifests" / "universal-provider-control-reconciliation-r23.json"
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        reconciliation = manifest["reconciliation"]
+        tuples = {
+            record["commit"]: (record["tree"], record["orderedParents"])
+            for record in reconciliation.values()
+        }
+        for record in reconciliation.values():
+            for parent, tree in zip(record["orderedParents"], record["orderedParentTrees"]):
+                tuples.setdefault(parent, (tree, []))
+        with mock.patch.object(checker, "_commit_tuple", side_effect=lambda commit: tuples[commit]):
+            checker.verify_reconciliation({"reconciliation": reconciliation}, ":")
+            forged = copy.deepcopy(reconciliation)
+            forged["r23Wip"]["orderedParents"] = ["0" * 40]
+            with self.assertRaisesRegex(checker.ManifestError, "RECONCILIATION_COMMIT_MISMATCH"):
+                checker.verify_reconciliation({"reconciliation": forged}, ":")
+        self.assertEqual(manifest["status"], "CANDIDATE_ZERO_AUTHORITY")
+        self.assertFalse(manifest["authority"]["providerExecution"])
+        self.assertFalse(manifest["authority"]["containmentOrCanaryCredit"])
+        self.assertEqual(manifest["authority"]["automaticGateState"], "CLOSED")
+
+    def test_r24_01_rfc3339_nanoseconds_floor_without_microsecond_truncation(self) -> None:
+        start = "2026-08-19T04:00:00.0000000Z"
+
+        def floor_ms(completed: str) -> int:
+            return (
+                upc._canonical_rfc3339_utc_epoch_nanoseconds(completed)
+                - upc._canonical_rfc3339_utc_epoch_nanoseconds(start)
+            ) // 1_000_000
+
+        self.assertEqual(floor_ms("2026-08-19T04:00:00.0009999Z"), 0)
+        self.assertEqual(floor_ms("2026-08-19T04:00:00.0010000Z"), 1)
+        self.assertEqual(floor_ms("2026-08-19T04:00:00.0019992Z"), 1)
+        self.assertEqual(floor_ms("2026-08-19T04:00:00.0020000Z"), 2)
+        self.assertEqual(
+            (
+                upc._canonical_rfc3339_utc_epoch_nanoseconds(
+                    "2026-08-19T04:01:00.0000001Z"
+                )
+                - upc._canonical_rfc3339_utc_epoch_nanoseconds(
+                    "2026-08-19T04:00:59.9999999Z"
+                )
+            ) // 1_000_000,
+            0,
+        )
+        for malformed in (
+            "2026-08-19T04:00:00.1234567890Z",
+            "2026-08-19T04:00:00.1234567+00:00",
+            "2026-08-19T04:00:00.1234567z",
+            "2026-02-30T04:00:00.1234567Z",
+            "2026-08-19 04:00:00.1234567Z",
+        ):
+            with self.subTest(malformed=malformed):
+                with self.assertRaisesRegex(upc.ControlError, "DATE_TIME_INVALID"):
+                    upc._canonical_rfc3339_utc_epoch_nanoseconds(malformed)
+        receipt = upc.strict_json_file(
+            ROOT / "receipts" / "attended-provider-rotation-20260819.json"
+        )
+        upc.validate_contract("attended_rotation_receipt", receipt)
+        offset = copy.deepcopy(receipt)
+        offset["requests"][0]["startedAt"] = "2026-08-19T04:33:55.7504404+00:00"
+        with self.assertRaisesRegex(upc.ControlError, "SCHEMA_VALIDATION_FAILED"):
+            upc.validate_contract("attended_rotation_receipt", offset)
+
+    def test_r24_02_manifest_binds_exact_timestamp_evidence_and_zero_authority(self) -> None:
+        import check_universal_manifest as checker
+
+        manifest_path = ROOT / "manifests" / "universal-provider-control-reconciliation-r24.json"
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        reconciliation = manifest["reconciliation"]
+        tuples = {
+            record["commit"]: (record["tree"], record["orderedParents"])
+            for record in reconciliation.values()
+        }
+        for record in reconciliation.values():
+            for parent, tree in zip(record["orderedParents"], record["orderedParentTrees"]):
+                tuples.setdefault(parent, (tree, []))
+        with mock.patch.object(checker, "_commit_tuple", side_effect=lambda commit: tuples[commit]):
+            checker.verify_reconciliation({"reconciliation": reconciliation}, ":")
+            forged = copy.deepcopy(reconciliation)
+            forged["r24Wip"]["orderedParents"] = ["0" * 40]
+            with self.assertRaisesRegex(checker.ManifestError, "RECONCILIATION_COMMIT_MISMATCH"):
+                checker.verify_reconciliation({"reconciliation": forged}, ":")
+        self.assertEqual(manifest["status"], "CANDIDATE_ZERO_AUTHORITY")
+        self.assertFalse(manifest["authority"]["providerExecution"])
+        self.assertFalse(manifest["authority"]["containmentOrCanaryCredit"])
+        self.assertEqual(manifest["authority"]["automaticGateState"], "CLOSED")
+
+    def test_r25_01_two_endpoint_truncation_regression_stays_floor_one(self) -> None:
+        started = "2026-08-19T04:33:55.7504409Z"
+        completed = "2026-08-19T04:33:55.7524401Z"
+        exact_delta_ns = (
+            upc._canonical_rfc3339_utc_epoch_nanoseconds(completed)
+            - upc._canonical_rfc3339_utc_epoch_nanoseconds(started)
+        )
+        self.assertEqual(exact_delta_ns, 1_999_200)
+        self.assertEqual(exact_delta_ns // 1_000_000, 1)
+        # The old datetime-microsecond path truncates both endpoints independently and
+        # incorrectly observes 2.000 ms, which is the exact regression this fixture retains.
+        old_started = upc.parse_time(started)
+        old_completed = upc.parse_time(completed)
+        old_delta = old_completed - old_started
+        old_floor_ms = (
+            old_delta.days * 86400000
+            + old_delta.seconds * 1000
+            + old_delta.microseconds // 1000
+        )
+        self.assertEqual(old_floor_ms, 2)
+
+        receipt = upc.strict_json_file(
+            ROOT / "receipts" / "attended-provider-rotation-20260819.json"
+        )
+        forged_floor_two = copy.deepcopy(receipt)
+        entry = forged_floor_two["requests"][0]
+        entry["startedAt"] = started
+        entry["completedAt"] = completed
+        entry["wallDurationMs"] = 2
+        entry["durationMs"] = 1
+        entry["durationApiMs"] = 1
+        with self.assertRaisesRegex(
+            upc.ControlError, "ATTENDED_ROTATION_WALL_DURATION_MISMATCH"
+        ):
+            upc.validate_contract("attended_rotation_receipt", forged_floor_two)
+
+    def test_r26_02_manifest_binds_posix_fixture_repair_and_r25_parent(self) -> None:
+        import check_universal_manifest as checker
+
+        manifest_path = ROOT / "manifests" / "universal-provider-control-reconciliation-r26.json"
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        reconciliation = manifest["reconciliation"]
+        tuples = {
+            record["commit"]: (record["tree"], record["orderedParents"])
+            for record in reconciliation.values()
+        }
+        for record in reconciliation.values():
+            for parent, tree in zip(record["orderedParents"], record["orderedParentTrees"]):
+                tuples.setdefault(parent, (tree, []))
+        with mock.patch.object(checker, "_commit_tuple", side_effect=lambda commit: tuples[commit]):
+            checker.verify_reconciliation({"reconciliation": reconciliation}, ":")
+            forged = copy.deepcopy(reconciliation)
+            forged["r26Evidence"]["orderedParents"] = ["0" * 40]
+            with self.assertRaisesRegex(checker.ManifestError, "RECONCILIATION_COMMIT_MISMATCH"):
+                checker.verify_reconciliation({"reconciliation": forged}, ":")
+        self.assertEqual(
+            reconciliation["r25FinalPreLatestMaster"]["commit"],
+            "70132a8b5b1b35f951a6860783787b0248a09f99",
+        )
+        self.assertEqual(
+            reconciliation["r25LatestCanonicalMaster"]["commit"],
+            "c1529bc3030c6663e0be63c4789b07530b9b2ecc",
+        )
+        self.assertEqual(
+            reconciliation["r25LatestMasterMerge"]["orderedParents"],
+            [
+                "70132a8b5b1b35f951a6860783787b0248a09f99",
+                "c1529bc3030c6663e0be63c4789b07530b9b2ecc",
+            ],
+        )
+        self.assertEqual(
+            reconciliation["r25Final"]["commit"],
+            "309b3e69eceb54c3de0879b55b5f3459777a2fe4",
+        )
+        self.assertEqual(manifest["status"], "CANDIDATE_ZERO_AUTHORITY")
+        self.assertFalse(manifest["authority"]["providerExecution"])
+        self.assertFalse(manifest["authority"]["containmentOrCanaryCredit"])
+        self.assertEqual(manifest["authority"]["automaticGateState"], "CLOSED")
+
+    def test_r17_07_low_level_request_primitives_are_not_public(self) -> None:
+        broker = upc.UniversalProviderBroker(self.root / "r17-no-public-primitives")
+        self.assertFalse(hasattr(broker, "begin_provider_request"))
+        self.assertFalse(hasattr(broker, "checkpoint_provider_usage"))
+        self.assertFalse(hasattr(broker, "issue_terminal_request_permit"))
+
+    def test_r17_08_completed_usage_is_partitioned_by_each_capacity_window(self) -> None:
+        broker = upc.UniversalProviderBroker(self.root / "r17-window-ledger")
+        self.transition(broker)
+        allowed = self.authorize(broker)
+        terminal = self.process_observation(allowed, "EXITED", phase="TERMINAL")
+        broker.release_child(
+            process_observation=terminal, fleet_secret=self.secret, now=self.now
+        )
+        with broker._quota_connect() as connection:
+            rows = connection.execute(
+                """SELECT dimension_name,last_reset_at,resets_at,usage_json
+                FROM completed_usage_windows WHERE quota_domain_id=? ORDER BY dimension_name""",
+                (self.quota_id,),
+            ).fetchall()
+        self.assertEqual([row["dimension_name"] for row in rows], ["session", "weekly"])
+        self.assertTrue(all(json.loads(row["usage_json"])["outputTokens"] == 100 for row in rows))
 
 
 if __name__ == "__main__":

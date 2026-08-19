@@ -1,0 +1,84 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://softwarefactory.invalid/schemas/universal-provider-token-control-policy-v1.schema.json",
+  "title": "Universal provider token-control policy v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "policyId", "providerAuthority", "noWork", "requestAccounting", "prefixAndCapsule", "cacheAffinity", "retry", "completionReserve", "directLaunch"],
+  "properties": {
+    "schema": {"const": "fleet-universal-provider-token-control-policy/v1"},
+    "policyId": {"type": "string", "pattern": "^[a-z][a-z0-9-]{1,62}$"},
+    "providerAuthority": {"const": false},
+    "noWork": {
+      "type": "object", "additionalProperties": false,
+      "required": ["decisionMode", "decisionPoint"],
+      "properties": {
+        "decisionMode": {"const": "DETERMINISTIC_MODEL_FREE"},
+        "decisionPoint": {"const": "BEFORE_PROCESS_OR_SESSION_CREATION"}
+      }
+    },
+    "requestAccounting": {
+      "type": "object", "additionalProperties": false,
+      "required": ["scope", "reserveBeforeRequest", "reconcileAfterRequest", "cacheReadEnvelopeWeight", "dimensions"],
+      "properties": {
+        "scope": {"const": "PROVIDER_REQUEST"},
+        "reserveBeforeRequest": {"const": true},
+        "reconcileAfterRequest": {"const": true},
+        "cacheReadEnvelopeWeight": {"const": 1.0},
+        "dimensions": {
+          "const": ["inputTokens", "cacheCreateTokens", "cacheReadTokens", "reasoningTokens", "outputTokens"]
+        }
+      }
+    },
+    "prefixAndCapsule": {
+      "type": "object", "additionalProperties": false,
+      "required": ["maxAssembledPrefixTokens", "maxAddressedWorkCapsuleTokens", "enforcedBeforeSessionCreation"],
+      "properties": {
+        "maxAssembledPrefixTokens": {"type": "integer", "minimum": 1024, "maximum": 1000000},
+        "maxAddressedWorkCapsuleTokens": {"type": "integer", "minimum": 256, "maximum": 262144},
+        "enforcedBeforeSessionCreation": {"const": true}
+      }
+    },
+    "cacheAffinity": {
+      "type": "object", "additionalProperties": false,
+      "required": ["required", "exactIdentityRequired", "ttlSeconds", "coldPrefixReservationAfterExpiry"],
+      "properties": {
+        "required": {"const": true},
+        "exactIdentityRequired": {"const": true},
+        "ttlSeconds": {"type": "integer", "minimum": 1, "maximum": 86400},
+        "coldPrefixReservationAfterExpiry": {"const": true}
+      }
+    },
+    "retry": {
+      "type": "object", "additionalProperties": false,
+      "required": ["maxProviderRetries", "chargeFailure", "chargeRefusal", "chargeTimeout", "chargeEveryAttempt", "unknownUsageChargesReservedEnvelope"],
+      "properties": {
+        "maxProviderRetries": {"type": "integer", "minimum": 0, "maximum": 3},
+        "chargeFailure": {"const": true},
+        "chargeRefusal": {"const": true},
+        "chargeTimeout": {"const": true},
+        "chargeEveryAttempt": {"const": true},
+        "unknownUsageChargesReservedEnvelope": {"const": true}
+      }
+    },
+    "completionReserve": {
+      "type": "object", "additionalProperties": false,
+      "required": ["quotaWindowFloor", "appliesToEveryWindow", "includesActiveCompletedCandidate"],
+      "properties": {
+        "quotaWindowFloor": {"const": 0.2},
+        "appliesToEveryWindow": {"const": true},
+        "includesActiveCompletedCandidate": {"const": true}
+      }
+    },
+    "directLaunch": {
+      "type": "object", "additionalProperties": false,
+      "required": ["positiveEnforcementRequired", "separateCertificationRequired", "serializationSufficient", "referenceImplementationAuthority"],
+      "properties": {
+        "positiveEnforcementRequired": {"const": true},
+        "separateCertificationRequired": {"const": true},
+        "serializationSufficient": {"const": false},
+        "referenceImplementationAuthority": {"const": "NONE"}
+      }
+    }
+  }
+}

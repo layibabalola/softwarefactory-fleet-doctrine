@@ -2,68 +2,8 @@ name: Provider capacity governor contracts
 
 on:
   pull_request:
-    paths:
-      - ".github/workflows/provider-capacity-governor.yml"
-      - "examples/provider-*"
-      - "schemas/provider-*"
-      - "schemas/universal-*"
-      - "specs/fleet-provider-capacity-governor.md"
-      - "specs/fleet-universal-provider-control-reconciliation.md"
-      - "ruling-candidates/fleet-universal-provider-control-reconciliation-r1.md"
-      - "manifests/universal-provider-control-reconciliation-r1.json"
-      - "manifests/universal-provider-control-reconciliation-r2.json"
-      - "manifests/universal-provider-control-reconciliation-r3.json"
-      - "manifests/universal-provider-control-reconciliation-r4.json"
-      - "manifests/universal-provider-control-reconciliation-r5.json"
-      - "manifests/universal-provider-control-reconciliation-r6.json"
-      - "manifests/universal-provider-control-reconciliation-r7.json"
-      - "manifests/universal-provider-control-reconciliation-r8.json"
-      - "manifests/universal-provider-control-reconciliation-r9.json"
-      - "manifests/universal-provider-control-reconciliation-r10.json"
-      - "manifests/universal-provider-control-reconciliation-r11.json"
-      - "manifests/universal-provider-control-reconciliation-r12.json"
-      - "manifests/universal-provider-control-reconciliation-r13.json"
-      - "manifests/universal-provider-control-reconciliation-r14.json"
-      - "RECONCILIATION.md"
-      - "tests/test_provider_capacity_governor.py"
-      - "tests/test_universal_provider_control.py"
-      - "tools/provider_capacity_governor.py"
-      - "tools/universal_provider_control.py"
-      - "tools/check_universal_manifest.py"
-      - "requirements-provider-capacity-governor.txt"
-      - "requirements-provider-capacity-governor.lock.txt"
   push:
     branches: [master]
-    paths:
-      - ".github/workflows/provider-capacity-governor.yml"
-      - "examples/provider-*"
-      - "schemas/provider-*"
-      - "schemas/universal-*"
-      - "specs/fleet-provider-capacity-governor.md"
-      - "specs/fleet-universal-provider-control-reconciliation.md"
-      - "ruling-candidates/fleet-universal-provider-control-reconciliation-r1.md"
-      - "manifests/universal-provider-control-reconciliation-r1.json"
-      - "manifests/universal-provider-control-reconciliation-r2.json"
-      - "manifests/universal-provider-control-reconciliation-r3.json"
-      - "manifests/universal-provider-control-reconciliation-r4.json"
-      - "manifests/universal-provider-control-reconciliation-r5.json"
-      - "manifests/universal-provider-control-reconciliation-r6.json"
-      - "manifests/universal-provider-control-reconciliation-r7.json"
-      - "manifests/universal-provider-control-reconciliation-r8.json"
-      - "manifests/universal-provider-control-reconciliation-r9.json"
-      - "manifests/universal-provider-control-reconciliation-r10.json"
-      - "manifests/universal-provider-control-reconciliation-r11.json"
-      - "manifests/universal-provider-control-reconciliation-r12.json"
-      - "manifests/universal-provider-control-reconciliation-r13.json"
-      - "manifests/universal-provider-control-reconciliation-r14.json"
-      - "RECONCILIATION.md"
-      - "tests/test_provider_capacity_governor.py"
-      - "tests/test_universal_provider_control.py"
-      - "tools/provider_capacity_governor.py"
-      - "tools/universal_provider_control.py"
-      - "tools/check_universal_manifest.py"
-      - "requirements-provider-capacity-governor.txt"
-      - "requirements-provider-capacity-governor.lock.txt"
   workflow_dispatch:
 
 permissions:
@@ -89,13 +29,40 @@ jobs:
           persist-credentials: false
           fetch-depth: 0
 
-      - name: Verify required predecessor history
+      - name: Verify required canonical predecessor history
         shell: pwsh
         run: |
           $requiredSubjects = @(
-            '52ca3452a12656a13e62eba5c6b0641e43440f32^{commit}',
-            '52ca3452a12656a13e62eba5c6b0641e43440f32:tests/test_universal_provider_control.py',
-            '52ca3452a12656a13e62eba5c6b0641e43440f32:tools/universal_provider_control.py'
+            '8eee3e4576778a18f92a3aff922c7574904e3fc3^{commit}',
+            '874605e43531c9aa230ee16851f8107a8e0d9cec^{commit}',
+            '30cd9b97eeebd30cb209bdb9798c38b415c9a0b4^{commit}',
+            'a560c63cbe72736efe4e1d5c3ecfac25d04f68d2^{commit}',
+            '24c9f5d142663940fb1370818982af8662afb001^{commit}',
+            'a0786f2eee16770632a2a947f65db64e60dd9820^{commit}',
+            '0daf7b003932b611a01e5a4b5c50848b96873ca1^{commit}',
+            'c27b4d8ebfa6a0ff8c9a2f346ec441b0155b2f0d^{commit}',
+            '5b7f79acd81f2855e1cc0e80d03ae358b1b643fb^{commit}',
+            'd6e044cfe9fec75737e6a74ff28daa09c1cc4f29^{commit}',
+            '7e378c3700f3c73fb621e8a77451ae5325d69db6^{commit}',
+            '868265b3044c9d59753f9c01b446a4e933a08629^{commit}',
+            '4f2bde6b00bedca6f1369793f09cc64cd1d9a2cd^{commit}',
+            'cfb39bbb1da4476d241cc734a1ce007db168c274^{commit}',
+            '4e59d74e5eacbee5e847dff2847481cd649bc837^{commit}',
+            'be5cbcc8b44647856f2675c56e16c68d09532965^{commit}',
+            'b5ed26cfd145e3ea93cf5e3ad19d35b810afb538^{commit}',
+            '3888da6cf02c1034eab73fa53bfde0b4600e8d32^{commit}',
+            'f62b916eb952d9515a785334b7fcc5f204155a3b^{commit}',
+            '962dc355cf2049309bedbda48e4a1a174776745f^{commit}',
+            '4bca2c36ca69a584cc4c506ad36f1cef66fefab3^{commit}',
+            '91f2d940c39bd15a76074a59deaeee8d13936fad^{commit}',
+            'ac2db2152fe23aa989745d36a71c67d33da4c89f^{commit}',
+            '0d20d6158d0ff66d6da9c9e7db8065a9e5c71189^{commit}',
+            '92912d9a8bfdbb944ef040379b3d62b5dc7a985a^{commit}',
+            '70132a8b5b1b35f951a6860783787b0248a09f99^{commit}',
+            'c1529bc3030c6663e0be63c4789b07530b9b2ecc^{commit}',
+            '309b3e69eceb54c3de0879b55b5f3459777a2fe4^{commit}',
+            '44a33fce7fb0b0f5c17b576397d7d0e0fc9b0c35^{commit}',
+            'ecc8f076c4f0273f92c8d9f841bceff3684233ca:tools/universal_provider_control.py'
           )
           foreach ($subject in $requiredSubjects) {
             git cat-file -e $subject 2>$null
@@ -113,10 +80,12 @@ jobs:
       - name: Install pinned schema validator
         run: python -m pip install --disable-pip-version-check --require-hashes -r requirements-provider-capacity-governor.lock.txt
 
-      - name: Run semantic negative controls
-        run: |
-          python -m unittest discover -s tests -p "test_provider_capacity_governor.py" -v
-          python -m unittest discover -s tests -p "test_universal_provider_control.py" -v
+      - name: Run governor semantic negative controls
+        run: python -m unittest discover -s tests -p "test_provider_capacity_governor.py" -v
+      - name: Run universal broker semantic negative controls
+        run: python -m unittest discover -s tests -p "test_universal_provider_control.py" -v
+      - name: Run canonical runtime-workbench negative controls
+        run: python -m unittest discover -s capacity-control/tests -p "test_*.py" -v
 
       - name: Verify portable Git-blob manifest
         run: python tools/check_universal_manifest.py --treeish HEAD

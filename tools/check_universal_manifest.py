@@ -14,7 +14,7 @@ from typing import Any
 
 
 ROOT = Path(__file__).resolve().parents[1]
-MANIFEST = "manifests/universal-provider-control-reconciliation-r14.json"
+MANIFEST = "manifests/universal-provider-control-reconciliation-r26.json"
 SELF_PATTERN = re.compile(
     rb'("canonicalGitBlobSha256"\s*:\s*"sha256:)([0-9a-f]{64})(")'
 )
@@ -58,6 +58,258 @@ def _oid(treeish: str, path: str) -> str:
     return run.stdout.strip()
 
 
+def _commit_tuple(commit: str) -> tuple[str, list[str]]:
+    run = subprocess.run(
+        ["git", "show", "-s", "--format=%T%n%P", commit], cwd=ROOT,
+        check=False, capture_output=True, text=True, encoding="utf-8",
+    )
+    if run.returncode != 0:
+        raise ManifestError("RECONCILIATION_OBJECT_UNAVAILABLE")
+    lines = run.stdout.splitlines()
+    if len(lines) != 2 or re.fullmatch(r"[0-9a-f]{40,64}", lines[0]) is None:
+        raise ManifestError("RECONCILIATION_OBJECT_INVALID")
+    parents = lines[1].split() if lines[1] else []
+    if any(re.fullmatch(r"[0-9a-f]{40,64}", parent) is None for parent in parents):
+        raise ManifestError("RECONCILIATION_OBJECT_INVALID")
+    return lines[0], parents
+
+
+def verify_reconciliation(manifest: dict[str, Any], treeish: str = "HEAD") -> None:
+    """Verify the exact R15-R26 linear subjects and ordered canonical-master merges."""
+
+    reconciliation = manifest.get("reconciliation")
+    if not isinstance(reconciliation, dict):
+        raise ManifestError("RECONCILIATION_INVALID")
+    base_names = (
+        "r15Base", "r16PreMaster", "r16FrozenBeforeLatestMaster",
+        "canonicalFleetMaster", "r16MasterMerge",
+    )
+    r17_names = ("r16Final", "r17Wip", "r17CanonicalMaster", "r17MasterMerge")
+    r18_names = ("r17ManifestFreeze", "r17Final", "r18Wip")
+    r19_names = (
+        "r18Final", "r19Wip", "r19Evidence", "r19CanonicalMaster", "r19MasterMerge",
+    )
+    r20_names = ("r19Final", "r20Wip", "r20Evidence")
+    r21_names = ("r20Final", "r21Wip", "r21Evidence", "r21Doctrine")
+    r22_names = (
+        "r21Final", "r22Wip", "r22CanonicalMaster", "r22MasterMerge", "r22Evidence",
+        "r22ManifestFreeze", "r22Repair",
+    )
+    r23_names = ("r22Final", "r23Wip", "r23Evidence")
+    r24_names = ("r23Final", "r24Wip", "r24Evidence")
+    r25_names = (
+        "r24Final", "r25Wip", "r25CanonicalMaster", "r25MasterMerge", "r25Evidence",
+        "r25FinalPreLatestMaster", "r25LatestCanonicalMaster",
+        "r25LatestMasterMerge", "r25LatestEvidence",
+    )
+    r26_names = ("r25Final", "r26Evidence")
+    if all(name in reconciliation for name in r26_names):
+        names = (
+            base_names + r17_names + r18_names + r19_names + r20_names
+            + r21_names + r22_names + r23_names + r24_names + r25_names + r26_names
+        )
+    elif all(name in reconciliation for name in r25_names):
+        names = (
+            base_names + r17_names + r18_names + r19_names + r20_names
+            + r21_names + r22_names + r23_names + r24_names + r25_names
+        )
+    elif all(name in reconciliation for name in r24_names):
+        names = (
+            base_names + r17_names + r18_names + r19_names + r20_names
+            + r21_names + r22_names + r23_names + r24_names
+        )
+    elif all(name in reconciliation for name in r23_names):
+        names = (
+            base_names + r17_names + r18_names + r19_names + r20_names
+            + r21_names + r22_names + r23_names
+        )
+    elif all(name in reconciliation for name in r22_names):
+        names = (
+            base_names + r17_names + r18_names + r19_names + r20_names
+            + r21_names + r22_names
+        )
+    elif all(name in reconciliation for name in r21_names):
+        names = base_names + r17_names + r18_names + r19_names + r20_names + r21_names
+    elif all(name in reconciliation for name in r20_names):
+        names = base_names + r17_names + r18_names + r19_names + r20_names
+    elif all(name in reconciliation for name in r19_names):
+        names = base_names + r17_names + r18_names + r19_names
+    elif all(name in reconciliation for name in r18_names):
+        names = base_names + r17_names + r18_names
+    elif all(name in reconciliation for name in r17_names):
+        names = base_names + r17_names
+    else:
+        names = base_names
+    if set(reconciliation) != set(names):
+        raise ManifestError("RECONCILIATION_INVALID")
+    for name in names:
+        record = reconciliation.get(name)
+        if not isinstance(record, dict) or set(record) != {
+            "commit", "tree", "orderedParents", "orderedParentTrees"
+        }:
+            raise ManifestError("RECONCILIATION_INVALID")
+        tree, parents = _commit_tuple(record["commit"])
+        if tree != record["tree"] or parents != record["orderedParents"]:
+            raise ManifestError("RECONCILIATION_COMMIT_MISMATCH")
+        if len(parents) != len(record["orderedParentTrees"]):
+            raise ManifestError("RECONCILIATION_PARENT_TREE_MISMATCH")
+        actual_parent_trees = [_commit_tuple(parent)[0] for parent in parents]
+        if actual_parent_trees != record["orderedParentTrees"]:
+            raise ManifestError("RECONCILIATION_PARENT_TREE_MISMATCH")
+    r15 = reconciliation["r15Base"]
+    pre_master = reconciliation["r16PreMaster"]
+    frozen = reconciliation["r16FrozenBeforeLatestMaster"]
+    canonical = reconciliation["canonicalFleetMaster"]
+    merged = reconciliation["r16MasterMerge"]
+    if (
+        pre_master["orderedParents"] != [r15["commit"]]
+        or frozen["orderedParents"] != ["a0786f2eee16770632a2a947f65db64e60dd9820"]
+        or merged["orderedParents"] != [frozen["commit"], canonical["commit"]]
+    ):
+        raise ManifestError("RECONCILIATION_ORDER_INVALID")
+    terminal = merged
+    if all(name in reconciliation for name in r17_names):
+        r16_final = reconciliation["r16Final"]
+        r17_wip = reconciliation["r17Wip"]
+        r17_master = reconciliation["r17CanonicalMaster"]
+        r17_merge = reconciliation["r17MasterMerge"]
+        if (
+            r16_final["orderedParents"] != [merged["commit"]]
+            or r17_wip["orderedParents"] != [r16_final["commit"]]
+            or r17_merge["orderedParents"] != [r17_wip["commit"], r17_master["commit"]]
+        ):
+            raise ManifestError("RECONCILIATION_ORDER_INVALID")
+        terminal = r17_merge
+    if all(name in reconciliation for name in r18_names):
+        r17_freeze = reconciliation["r17ManifestFreeze"]
+        r17_final = reconciliation["r17Final"]
+        r18_wip = reconciliation["r18Wip"]
+        if (
+            r17_freeze["orderedParents"] != [terminal["commit"]]
+            or r17_final["orderedParents"] != [r17_freeze["commit"]]
+            or r18_wip["orderedParents"] != [r17_final["commit"]]
+        ):
+            raise ManifestError("RECONCILIATION_ORDER_INVALID")
+        terminal = r18_wip
+    if all(name in reconciliation for name in r19_names):
+        r18_final = reconciliation["r18Final"]
+        r19_wip = reconciliation["r19Wip"]
+        r19_evidence = reconciliation["r19Evidence"]
+        r19_master = reconciliation["r19CanonicalMaster"]
+        r19_merge = reconciliation["r19MasterMerge"]
+        if (
+            r18_final["orderedParents"] != [terminal["commit"]]
+            or r19_wip["orderedParents"] != [r18_final["commit"]]
+            or r19_evidence["orderedParents"] != [r19_wip["commit"]]
+            or r19_merge["orderedParents"]
+            != [r19_evidence["commit"], r19_master["commit"]]
+        ):
+            raise ManifestError("RECONCILIATION_ORDER_INVALID")
+        terminal = r19_merge
+    if all(name in reconciliation for name in r20_names):
+        r19_final = reconciliation["r19Final"]
+        r20_wip = reconciliation["r20Wip"]
+        r20_evidence = reconciliation["r20Evidence"]
+        if (
+            r19_final["orderedParents"] != [terminal["commit"]]
+            or r20_wip["orderedParents"] != [r19_final["commit"]]
+            or r20_evidence["orderedParents"] != [r20_wip["commit"]]
+        ):
+            raise ManifestError("RECONCILIATION_ORDER_INVALID")
+        terminal = r20_evidence
+    if all(name in reconciliation for name in r21_names):
+        r20_final = reconciliation["r20Final"]
+        r21_wip = reconciliation["r21Wip"]
+        r21_evidence = reconciliation["r21Evidence"]
+        r21_doctrine = reconciliation["r21Doctrine"]
+        if (
+            r20_final["orderedParents"] != [terminal["commit"]]
+            or r21_wip["orderedParents"] != [r20_final["commit"]]
+            or r21_evidence["orderedParents"] != [r21_wip["commit"]]
+            or r21_doctrine["orderedParents"] != [r21_evidence["commit"]]
+        ):
+            raise ManifestError("RECONCILIATION_ORDER_INVALID")
+        terminal = r21_doctrine
+    if all(name in reconciliation for name in r22_names):
+        r21_final = reconciliation["r21Final"]
+        r22_wip = reconciliation["r22Wip"]
+        r22_master = reconciliation["r22CanonicalMaster"]
+        r22_merge = reconciliation["r22MasterMerge"]
+        r22_evidence = reconciliation["r22Evidence"]
+        r22_manifest_freeze = reconciliation["r22ManifestFreeze"]
+        r22_repair = reconciliation["r22Repair"]
+        if (
+            r21_final["orderedParents"] != [terminal["commit"]]
+            or r22_wip["orderedParents"] != [r21_final["commit"]]
+            or r22_merge["orderedParents"] != [r22_wip["commit"], r22_master["commit"]]
+            or r22_evidence["orderedParents"] != [r22_merge["commit"]]
+            or r22_manifest_freeze["orderedParents"] != [r22_evidence["commit"]]
+            or r22_repair["orderedParents"] != [r22_manifest_freeze["commit"]]
+        ):
+            raise ManifestError("RECONCILIATION_ORDER_INVALID")
+        terminal = r22_repair
+    if all(name in reconciliation for name in r23_names):
+        r22_final = reconciliation["r22Final"]
+        r23_wip = reconciliation["r23Wip"]
+        r23_evidence = reconciliation["r23Evidence"]
+        if (
+            r22_final["orderedParents"] != [terminal["commit"]]
+            or r23_wip["orderedParents"] != [r22_final["commit"]]
+            or r23_evidence["orderedParents"] != [r23_wip["commit"]]
+        ):
+            raise ManifestError("RECONCILIATION_ORDER_INVALID")
+        terminal = r23_evidence
+    if all(name in reconciliation for name in r24_names):
+        r23_final = reconciliation["r23Final"]
+        r24_wip = reconciliation["r24Wip"]
+        r24_evidence = reconciliation["r24Evidence"]
+        if (
+            r23_final["orderedParents"] != [terminal["commit"]]
+            or r24_wip["orderedParents"] != [r23_final["commit"]]
+            or r24_evidence["orderedParents"] != [r24_wip["commit"]]
+        ):
+            raise ManifestError("RECONCILIATION_ORDER_INVALID")
+        terminal = r24_evidence
+    if all(name in reconciliation for name in r25_names):
+        r24_final = reconciliation["r24Final"]
+        r25_wip = reconciliation["r25Wip"]
+        r25_master = reconciliation["r25CanonicalMaster"]
+        r25_merge = reconciliation["r25MasterMerge"]
+        r25_evidence = reconciliation["r25Evidence"]
+        r25_final_pre_latest = reconciliation["r25FinalPreLatestMaster"]
+        r25_latest_master = reconciliation["r25LatestCanonicalMaster"]
+        r25_latest_merge = reconciliation["r25LatestMasterMerge"]
+        r25_latest_evidence = reconciliation["r25LatestEvidence"]
+        if (
+            r24_final["orderedParents"] != [terminal["commit"]]
+            or r25_wip["orderedParents"] != [r24_final["commit"]]
+            or r25_merge["orderedParents"] != [r25_wip["commit"], r25_master["commit"]]
+            or r25_evidence["orderedParents"] != [r25_merge["commit"]]
+            or r25_final_pre_latest["orderedParents"] != [r25_evidence["commit"]]
+            or r25_latest_merge["orderedParents"]
+            != [r25_final_pre_latest["commit"], r25_latest_master["commit"]]
+            or r25_latest_evidence["orderedParents"] != [r25_latest_merge["commit"]]
+        ):
+            raise ManifestError("RECONCILIATION_ORDER_INVALID")
+        terminal = r25_latest_evidence
+    if all(name in reconciliation for name in r26_names):
+        r25_final = reconciliation["r25Final"]
+        r26_evidence = reconciliation["r26Evidence"]
+        if (
+            r25_final["orderedParents"] != [terminal["commit"]]
+            or r26_evidence["orderedParents"] != [r25_final["commit"]]
+        ):
+            raise ManifestError("RECONCILIATION_ORDER_INVALID")
+        terminal = r26_evidence
+    if treeish != ":":
+        run = subprocess.run(
+            ["git", "merge-base", "--is-ancestor", terminal["commit"], treeish],
+            cwd=ROOT, check=False, capture_output=True,
+        )
+        if run.returncode != 0:
+            raise ManifestError("RECONCILIATION_NOT_ANCESTOR")
+
+
 def canonical_self_sha256(raw: bytes) -> str:
     """Return the zeroed-field self digest over canonical Git blob bytes only."""
 
@@ -77,6 +329,7 @@ def check(treeish: str) -> int:
         raise ManifestError("MANIFEST_INVALID") from exc
     if manifest.get("schema") != "fleet-universal-provider-control-candidate-manifest/v2":
         raise ManifestError("MANIFEST_SCHEMA_INVALID")
+    verify_reconciliation(manifest, treeish)
     subjects = manifest.get("subjectFiles")
     if not isinstance(subjects, list) or not subjects:
         raise ManifestError("MANIFEST_SUBJECTS_INVALID")

@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://softwarefactory.invalid/schemas/universal-output-quality-receipt-v1.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "receiptId", "leaseId", "requestId", "bindingSha256", "completedAt", "expiresAt", "outputPath", "outputSha256", "retainedOutputBytes", "referenceOutputPath", "referenceOutputSha256", "retainedReferenceBytes", "qualitySubjectSha256", "providerUsageCheckpointSha256", "nonInferior", "observerId", "observerKeySha256", "independentReviewPath", "independentReviewSha256", "retainedIndependentReviewBytes", "receiptHmacSha256"],
+  "properties": {
+    "schema": {"const": "fleet-universal-output-quality-receipt/v1"},
+    "receiptId": {"type": "string", "pattern": "^output-quality-[0-9a-f]{32}$"},
+    "leaseId": {"type": "string", "pattern": "^lease-[0-9a-f]{32}$"},
+    "requestId": {"type": "string", "minLength": 8, "maxLength": 128},
+    "bindingSha256": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+    "completedAt": {"type": "string", "format": "date-time"},
+    "expiresAt": {"type": "string", "format": "date-time"},
+    "outputPath": {"type": "string", "minLength": 1, "maxLength": 4096},
+    "outputSha256": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+    "retainedOutputBytes": {"type": "integer", "minimum": 1, "maximum": 16777216},
+    "referenceOutputSha256": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+    "referenceOutputPath": {"type": "string", "minLength": 1, "maxLength": 4096},
+    "retainedReferenceBytes": {"type": "integer", "minimum": 1, "maximum": 16777216},
+    "qualitySubjectSha256": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+    "providerUsageCheckpointSha256": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+    "nonInferior": {"const": true},
+    "observerId": {"type": "string", "pattern": "^[a-z][a-z0-9._:-]{2,63}$"},
+    "observerKeySha256": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+    "independentReviewSha256": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+    "independentReviewPath": {"type": "string", "minLength": 1, "maxLength": 4096},
+    "retainedIndependentReviewBytes": {"type": "integer", "minimum": 1, "maximum": 16777216},
+    "receiptHmacSha256": {"type": "string", "pattern": "^hmac-sha256:[0-9a-f]{64}$"}
+  }
+}

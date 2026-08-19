@@ -1,0 +1,107 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://softwarefactory.invalid/schemas/universal-attended-rotation-receipt-v1.schema.json",
+  "title": "Privacy-safe attended provider rotation receipt v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "receiptId", "recordedAt", "disposition", "providerAuthority", "adoptionCredit", "creditClassification", "provenance", "durationSemantics", "privacy", "requests", "aggregate"],
+  "properties": {
+    "schema": {"const": "fleet-universal-attended-rotation-receipt/v1"},
+    "receiptId": {"type": "string", "pattern": "^[a-z][a-z0-9-]{1,127}$"},
+    "recordedAt": {"$ref": "#/$defs/canonicalUtc"},
+    "issueReceiptUrl": {"type": "string", "format": "uri", "pattern": "^https://github\\.com/[^/]+/[^/]+/issues/[0-9]+(?:#issuecomment-[0-9]+)?$"},
+    "disposition": {"const": "PRE_SHADOW_SEALED"},
+    "providerAuthority": {"const": false},
+    "adoptionCredit": {"const": false},
+    "creditClassification": {"const": "MOTIVATION_AND_MEASUREMENT_ONLY"},
+    "provenance": {
+      "type": "object", "additionalProperties": false,
+      "required": ["classification", "providerAuthenticated", "independentObserver", "rawProviderReceiptCommitted", "authorityCredit", "sourceIssueUrlInformational", "sourceIssueUrlRequiredForValidation"],
+      "properties": {
+        "classification": {"const": "AUTHOR_ATTESTED_LOCAL_CLI_MEASUREMENT"},
+        "providerAuthenticated": {"const": false},
+        "independentObserver": {"const": false},
+        "rawProviderReceiptCommitted": {"const": false},
+        "authorityCredit": {"const": false},
+        "sourceIssueUrlInformational": {"const": true},
+        "sourceIssueUrlRequiredForValidation": {"const": false}
+      }
+    },
+    "durationSemantics": {
+      "type": "object", "additionalProperties": false,
+      "required": ["durationMs", "durationApiMs", "wallDurationMs", "wallDurationConvention", "maxCliOutsideApiMs", "maxHostOutsideCliMs"],
+      "properties": {
+        "durationMs": {"const": "CLAUDE_CLI_REPORTED_END_TO_END"},
+        "durationApiMs": {"const": "CLAUDE_CLI_REPORTED_API"},
+        "wallDurationMs": {"const": "HOST_OBSERVED_WALL"},
+        "wallDurationConvention": {"const": "FLOOR_COMPLETED_AT_MINUS_STARTED_AT_MILLISECONDS"},
+        "maxCliOutsideApiMs": {"const": 10000},
+        "maxHostOutsideCliMs": {"const": 5000}
+      }
+    },
+    "privacy": {
+      "type": "object", "additionalProperties": false,
+      "required": ["sessionIdentifiersIncluded", "localPathsIncluded", "promptAndOutputRetained"],
+      "properties": {
+        "sessionIdentifiersIncluded": {"const": false},
+        "localPathsIncluded": {"const": false},
+        "promptAndOutputRetained": {"const": false}
+      }
+    },
+    "requests": {
+      "type": "array", "minItems": 4, "maxItems": 4, "uniqueItems": true,
+      "items": {"$ref": "#/$defs/request"}
+    },
+    "aggregate": {
+      "type": "object", "additionalProperties": false,
+      "required": ["requestCount", "turnCount", "maxConcurrentRequests", "totalWallDurationMs", "totalDurationMs", "totalApiDurationMs", "inputTokens", "cacheCreateTokens", "cacheReadTokens", "outputTokens"],
+      "properties": {
+        "requestCount": {"const": 4},
+        "turnCount": {"const": 4},
+        "maxConcurrentRequests": {"const": 1},
+        "totalWallDurationMs": {"const": 151033},
+        "totalDurationMs": {"const": 141230},
+        "totalApiDurationMs": {"const": 116472},
+        "inputTokens": {"const": 7},
+        "cacheCreateTokens": {"const": 59319},
+        "cacheReadTokens": {"const": 10723},
+        "outputTokens": {"const": 7540}
+      }
+    }
+  },
+  "$defs": {
+    "request": {
+      "type": "object", "additionalProperties": false,
+      "required": ["sequence", "laneRole", "model", "startedAt", "completedAt", "wallDurationMs", "durationMs", "durationApiMs", "maxTurns", "numTurns", "tools", "exitCode", "terminalState", "subtype", "isError", "stderrSha256", "promptSha256", "outputSha256", "inputTokens", "cacheCreateTokens", "cacheReadTokens", "outputTokens"],
+      "properties": {
+        "sequence": {"type": "integer", "minimum": 1, "maximum": 4},
+        "laneRole": {"enum": ["claude-impl", "opus", "claude", "fable"]},
+        "model": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$"},
+        "startedAt": {"$ref": "#/$defs/canonicalUtc"},
+        "completedAt": {"$ref": "#/$defs/canonicalUtc"},
+        "wallDurationMs": {"type": "integer", "minimum": 1, "maximum": 3600000},
+        "durationMs": {"type": "integer", "minimum": 1, "maximum": 3600000},
+        "durationApiMs": {"type": "integer", "minimum": 1, "maximum": 3600000},
+        "maxTurns": {"const": 1},
+        "numTurns": {"const": 1},
+        "tools": {"type": "array", "maxItems": 0},
+        "exitCode": {"const": 0},
+        "terminalState": {"const": "COMPLETED"},
+        "subtype": {"const": "success"},
+        "isError": {"const": false},
+        "stderrSha256": {"const": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"},
+        "promptSha256": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+        "outputSha256": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+        "inputTokens": {"type": "integer", "minimum": 0, "maximum": 1000000000},
+        "cacheCreateTokens": {"type": "integer", "minimum": 0, "maximum": 1000000000},
+        "cacheReadTokens": {"type": "integer", "minimum": 0, "maximum": 1000000000},
+        "outputTokens": {"type": "integer", "minimum": 0, "maximum": 1000000000}
+      }
+    },
+    "canonicalUtc": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])T([01][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9](\\.[0-9]{1,9})?Z$"
+    }
+  }
+}

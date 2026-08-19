@@ -4,7 +4,7 @@
   "title": "Universal provider-control project profile v1",
   "type": "object",
   "additionalProperties": false,
-  "required": ["schema", "project", "profileVersion", "independenceClass", "coordination", "efficiency", "policy", "invariants"],
+  "required": ["schema", "project", "profileVersion", "independenceClass", "coordination", "demandAuthority", "efficiency", "launchAllowlist", "policy", "invariants"],
   "properties": {
     "schema": {"const": "fleet-universal-project-profile/v1"},
     "project": {"type": "string", "pattern": "^[a-z][a-z0-9-]{1,62}$"},
@@ -27,25 +27,58 @@
         "stateRootIdentity": {"type": "string", "pattern": "^hmac-sha256:[0-9a-f]{64}$"}
       }
     },
+    "demandAuthority": {
+      "type": "object", "additionalProperties": false,
+      "required": ["snapshotPath", "snapshotSha256", "brokerObserved"],
+      "properties": {
+        "snapshotPath": {"type": "string", "minLength": 1, "maxLength": 1024},
+        "snapshotSha256": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+        "brokerObserved": {"const": true}
+      }
+    },
     "efficiency": {
       "type": "object", "additionalProperties": false,
-      "required": ["maxTurns", "maxContextTokens", "milestoneCompactionRequired", "cacheAffinityRequired", "capsuleRequired", "qualityMayBeWeakened"],
+      "required": ["maxTurns", "maxContextTokens", "maxCumulativeTokenCeilings", "maxReservedTokenCeilings", "milestoneCompactionRequired", "cacheAffinityRequired", "capsuleRequired", "qualityMayBeWeakened"],
       "properties": {
         "maxTurns": {"type": "integer", "minimum": 1, "maximum": 64},
         "maxContextTokens": {"type": "integer", "minimum": 1024, "maximum": 1000000},
+        "maxCumulativeTokenCeilings": {"$ref": "#/$defs/tokenCeilings"},
+        "maxReservedTokenCeilings": {"$ref": "#/$defs/tokenCeilings"},
         "milestoneCompactionRequired": {"const": true},
         "cacheAffinityRequired": {"const": true},
         "capsuleRequired": {"const": true},
         "qualityMayBeWeakened": {"const": false}
       }
     },
+    "launchAllowlist": {
+      "type": "array", "minItems": 1, "maxItems": 64, "uniqueItems": true,
+      "items": {
+        "type": "object", "additionalProperties": false,
+        "required": ["provider", "adapterVersion", "model", "effort", "role", "qualityTier", "qualityEquivalenceReceiptSha256", "executableSha256", "launcherConfigSha256", "argvContractSha256", "requestBoundaryMode", "boundaryCertificationSha256", "runtimeWatchdogCertified"],
+        "properties": {
+          "provider": {"enum": ["claude", "openai", "kimi", "grok"]},
+          "adapterVersion": {"enum": ["claude-code/1.0", "openai-responses/1.0", "kimi-code/1.0", "xai-api/1.0"]},
+          "model": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$"},
+          "effort": {"const": "high"},
+          "role": {"type": "string", "pattern": "^[A-Z][A-Z0-9_]{1,31}$"},
+          "qualityTier": {"const": "FRONTIER_HIGH"},
+          "qualityEquivalenceReceiptSha256": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+          "executableSha256": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+          "launcherConfigSha256": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+          "argvContractSha256": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+          "requestBoundaryMode": {"const": "SINGLE_REQUEST_PROCESS"},
+          "boundaryCertificationSha256": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+          "runtimeWatchdogCertified": {"const": true}
+        }
+      }
+    },
     "policy": {
       "type": "object",
       "additionalProperties": false,
       "required": [
-        "maxObservationAgeSeconds", "maxInventoryAgeSeconds", "maxBrokerHealthAgeSeconds", "maxRequestAgeSeconds", "maxRequestValiditySeconds",
+        "maxObservationAgeSeconds", "maxInventoryAgeSeconds", "maxBrokerHealthAgeSeconds", "maxRequestAgeSeconds", "maxRequestValiditySeconds", "maxPriorIdleAgeSeconds",
         "leaseMaxSeconds", "postResetQuietSeconds", "maxConcurrentPerQuotaDomain",
-        "evidenceCapsuleMaxBytes", "reserveFloorByPriority", "requiredCapacityDimensions"
+        "evidenceCapsuleMaxBytes", "reserveFloorByPriority", "requiredCapacityDimensions", "capacityTokenBudgets"
       ],
       "properties": {
         "maxObservationAgeSeconds": {"type": "integer", "minimum": 1, "maximum": 300},
@@ -53,6 +86,7 @@
         "maxBrokerHealthAgeSeconds": {"type": "integer", "minimum": 1, "maximum": 120},
         "maxRequestAgeSeconds": {"type": "integer", "minimum": 1, "maximum": 120},
         "maxRequestValiditySeconds": {"type": "integer", "minimum": 1, "maximum": 900},
+        "maxPriorIdleAgeSeconds": {"type": "integer", "minimum": 1, "maximum": 300},
         "leaseMaxSeconds": {"type": "integer", "minimum": 1, "maximum": 3600},
         "postResetQuietSeconds": {"type": "integer", "minimum": 60, "maximum": 86400},
         "maxConcurrentPerQuotaDomain": {"const": 1},
@@ -78,6 +112,16 @@
             "openai-responses/1.0": {"$ref": "#/$defs/dimensions"},
             "kimi-code/1.0": {"$ref": "#/$defs/dimensions"},
             "xai-api/1.0": {"$ref": "#/$defs/dimensions"}
+          }
+        },
+        "capacityTokenBudgets": {
+          "type": "object", "additionalProperties": false,
+          "required": ["claude-code/1.0", "openai-responses/1.0", "kimi-code/1.0", "xai-api/1.0"],
+          "properties": {
+            "claude-code/1.0": {"type": "integer", "minimum": 1000, "maximum": 1000000000000},
+            "openai-responses/1.0": {"type": "integer", "minimum": 1000, "maximum": 1000000000000},
+            "kimi-code/1.0": {"type": "integer", "minimum": 1000, "maximum": 1000000000000},
+            "xai-api/1.0": {"type": "integer", "minimum": 1000, "maximum": 1000000000000}
           }
         }
       }
@@ -105,6 +149,17 @@
     }
   },
   "$defs": {
+    "tokenCeilings": {
+      "type": "object", "additionalProperties": false,
+      "required": ["inputTokens", "cacheReadTokens", "cacheWriteTokens", "reasoningTokens", "outputTokens"],
+      "properties": {
+        "inputTokens": {"type": "integer", "minimum": 1, "maximum": 1000000000},
+        "cacheReadTokens": {"type": "integer", "minimum": 0, "maximum": 10000000000},
+        "cacheWriteTokens": {"type": "integer", "minimum": 0, "maximum": 1000000000},
+        "reasoningTokens": {"type": "integer", "minimum": 0, "maximum": 1000000000},
+        "outputTokens": {"type": "integer", "minimum": 1, "maximum": 1000000000}
+      }
+    },
     "dimensions": {
       "type": "array",
       "minItems": 2,
