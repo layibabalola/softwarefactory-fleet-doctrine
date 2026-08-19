@@ -985,3 +985,64 @@ credential action, raw telemetry publication, model substitution, push, merge, o
 Every project must separately ADOPT(reference) with a local authority map, pinned supervisor/adapter,
 negative controls, and dated receipts, or DISTINGUISH(reason). A capacity reset alone can never
 satisfy or bypass that local adoption boundary.
+
+## Fleet ratification — universal provider-control reconciliation R14, 2026-08-18
+
+The provider-neutral reconciliation in `specs/fleet-universal-provider-control-reconciliation.md`
+and its deployment-inert reference contract are **ACCEPTED as portable fleet doctrine** at
+0 blocker / 0 required / 0 minor / 0 nit. Acceptance is bound to exact candidate commit
+`874605e43531c9aa230ee16851f8107a8e0d9cec`, tree
+`cafc358fd7b60812070cf9a465d7de38b88487c8`, parent
+`ecc8f076c4f0273f92c8d9f841bceff3684233ca`, and manifest blob
+`7c280b1960e158b01483ab9ab77e69589f60f6ac`. The canonical Git-blob manifest is
+`A2B4024F76F526014D174EA8B3BF9315777F26E8314039F8814F79EC1C864382` / 9,082 B and binds
+34 subjects plus its zero-self digest. R1 through R13 remain adverse and repair history; this ruling
+does not erase or repoint them.
+
+Hosted run `32198825066` passed on that exact head in all four Windows/Ubuntu x Python 3.13/3.14
+jobs (`95908162523`, `95908162541`, `95908162524`, and `95908162499`). Both Ubuntu jobs executed
+the native unprivileged POSIX R14 directory-owner discriminator. Three fresh non-author reviews --
+mechanics `/root/universal_r13_mechanics_review`, safety
+`[MSG 20260818-R14-EXACT-REMOTE-SAFETY-PASS]`, and doctrine
+`/root/universal_r14_doctrine_review` -- independently returned PASS at 0/0/0/0. Their exact
+aggregate receipt is PR #10 comment `5335756857`.
+
+The distinct adjudicator reproduced, on Python 3.13 and 3.14, 37/37 governor controls, 110/110
+universal controls, compilation, the telemetry and admission examples, and
+`MANIFEST_PASS subjects=34 self=PASS`. Git-object integrity and diff checks passed. The R13
+mechanics finding is closed: the POSIX `linkat` target-directory descriptor is an explicit
+attempt-once owner; false, exceptional, or ambiguous close retains that exact owner, creates the
+bounded process-wide poison, cannot be laundered to CLEAN by a valid public link, and blocks same or
+rotated output before acquisition or retry. The exact retained-owner ceiling is 259.
+
+The accepted universal law requires a persistent fail-closed gate; deterministic no-work proof
+before provider inference or spawn; one quota-domain owner for the full child lifetime; measured
+capacity with completion and foreground/reviewer reserves; bounded context, turns, capsules,
+compaction, checkpoints, and cache affinity; exact model, effort, role, subject, executable, argv,
+inventory, health, and claimant binding; one host-local supervisor with a complete launcher census;
+strict no-echo evidence; and a separately authorized one-use canary that always returns to CLOSED.
+Reset, authentication success, capacity return, quota refusal, or elapsed time cannot open the gate,
+enable a task, create a process, release a claimant, or drain queued work.
+
+This ruling is doctrine authority only after the exact subject and this ruling reach canonical
+`master`; it is never project adoption or runtime authority. Every fleet project must issue an exact
+`ADOPT(<canonical commit>, <profile hash>, <review receipt>)`,
+`DISTINGUISH(<portable invariants>, <local difference>, <proof>)`, or
+`REJECT(<specific contradiction>, <proof>)`. Adoption additionally requires its pinned local
+supervisor/adapter, complete launcher inventory, fake-provider and concurrency controls, 1,000
+unchanged zero-inference ticks, full-child fencing, rollback proof, and a current CLOSED gate. A
+portable doctrine merge alone is not fleet-wide runtime adoption.
+
+The concurrent-base check was repeated against live `master`
+`0c48324748e0999f66b6061f3f785e41e09e4a38`, which contains DNG disposition
+`d87c2fd279e7a84d5942ebdeb44c87c3ff4161df` and the later Adobe disposition. Candidate-path overlap
+is zero. The canonical merge result must preserve exact DNG blobs
+`d5af1430aa567e1ba8d97759aa96892ea50675ac` (`RECEIPTS.md`) and
+`96c42a536b5c9ef9348d79f0851e5b0455f21456` (`specs/dng-auto-processor.md`) and all later live
+dispositions; any subject-changing rewrite requires fresh hosted evidence, review, and adjudication.
+
+This ruling leaves `automatic_launch_gate=CLOSED`. It grants **no** provider invocation, task or
+launcher enablement, scheduler or lease mutation, gate installation or opening, authentication or
+credential action, canary, queue drain, project adoption, merge, release, billing, network, or
+user-present hardware authority. PR #10 remains the reviewed delivery vehicle; merge and every
+project disposition are distinct controlled acts.

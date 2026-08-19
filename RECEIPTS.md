@@ -990,3 +990,117 @@ proof, so MLV-App remains pending project-local disposition against subject
 `224a6705d81dfbc670313cdcef4d825216f2b380`.
 The action graph must be regenerated immediately before any gate transition. This receipt grants no
 runtime adoption, provider call, canary, credential action, lifecycle, merge, release, or product credit.
+
+## DNG — provider-governor shadow installation and scheduled-path zero inference, 2026-08-18 — machine ULTRA-MAGNUS
+
+DNG installed a host-local quota-domain profile bound to ratified doctrine subject
+`224a6705d81dfbc670313cdcef4d825216f2b380`. The installed policy SHA-256 is
+`92AA684534FDBD30699BEAE87C39C980F79C773158FA2D6F030C361972054AC5`; runtime state read
+`stage=SHADOW` and `automatic_launch_gate=closed`. The account domain is an opaque host-local HMAC;
+the raw authenticated identity was not copied into this repository or the project receipt.
+
+The focused project-local adapter suite passed 8/8 controls. A manual production-equivalent warden
+pass and a real Windows Scheduled Task pass then evaluated the three standing Claude lanes. Fable,
+Opus, and Sonnet each returned `decision=SHADOW_NO_LAUNCH`, `launched=false`, and exact zero values
+for input, cached-input, cache-write, reasoning, output, and tool-call counters. The observed capacity
+sample during the first pass was fresh at approximately 700 seconds, with five-hour utilization 16%
+and seven-day utilization 63%; the adapter reported that capacity alone would admit the bounded
+slice, but shadow state prevented all three launches. A post-run process census found no newly
+created unattended `claude ... -p` process. The scheduled task returned result 0 through the real
+hidden launcher path.
+
+Containment was closed around the remaining DNG routes: `dng-warden-wake` was enabled only in
+shadow, while `DNG Provider Failover Runner` and `DNG Software Factory Roadmap Controller` remained
+disabled pending their provider-neutral integrations. The provider runner's empty queue was not
+treated as bypass proof. The machine scheduled-task registry was updated to state that task
+enablement activates only the model-free observation path and never grants provider-spend authority.
+
+The project implementation remains staged on a brokered work branch because its mandatory
+pre-commit fence detected a real Codex account-binding mismatch: bound and current opaque account
+fingerprints differ at the same rotation generation, with no active rotation transaction. No hook
+was bypassed and no binding was rewritten. DNG therefore records
+`DISTINGUISH(224a6705d81dfbc670313cdcef4d825216f2b380,
+PENDING_LOCAL_COMMIT_BYPASS_CLOSURE_AND_CANARY)`. This receipt proves installation, containment,
+and scheduled-path zero inference only. It grants no project adoption, gate opening, real-provider
+canary, provider launch, model substitution, scheduler expansion, merge, release, or product credit.
+
+## Agent Bridge — provider-capacity governor disposition submitted, 2026-08-18 — current Windows host
+
+Agent Bridge submitted the project-owned disposition
+`DISTINGUISH(224a6705d81dfbc670313cdcef4d825216f2b380, PENDING_P0_LAUNCH_CONTRACTS)`.
+The portable universal invariants are retained, while activation remains HARD_CLOSED pending the
+project-specific atomic-launch, executable-binding, capacity-schema, observer, frozen-subject, complete
+launcher-inventory, bounded-canary, and independent-review gates recorded in the project specification.
+
+At the observation point, the legacy Agent Bridge Warden scheduled task was disabled and a process census
+found no unattended Claude CLI root; attended desktop processes were outside the census target. Separate
+one-turn diagnostic requests reached the exact configured Fable, Sonnet, and Opus models, then terminated
+under deliberately low cost ceilings. This proves provider reachability only, not governed restoration.
+
+The candidate's pre-remediation focused baseline was 64 passing tests. Two independent reviews each returned
+64/100 and NO-GO. Remediation subject `13d697c2b778ed566ebb90147aca77bd28f80824` is committed and backed up;
+71 focused tests and lint pass, and a standalone clone passes 471 legacy tests plus 37 subtests. Fresh
+independent review, complete host launcher inventory, and a governed canary remain pending. This receipt
+records submission, remediation evidence, and containment only: it grants no canary, activation,
+scheduled-task enablement, seat, review, campaign, landing, production, or release authority.
+
+## Agent Bridge — first-level host launcher census, 2026-08-18 — current Windows host
+
+A fresh Scheduled Task action census matched 35 task actions by provider/lane/Agent Bridge terms: 32 were
+disabled and three were enabled. The enabled actions were the AirMyPC model-free lane-heartbeat and two Codex
+process-hygiene observer/cleanup tasks. Direct source inspection found no provider-process creation in the
+heartbeat; the hygiene actions inspect or stop eligible processes rather than launch inference. The Agent Bridge
+Warden and Agent Bridge lane-lifecycle supervisor remained disabled.
+
+A concurrent process census found only the attended Claude Desktop root and its Electron children; no headless
+Claude CLI root was present. This is a first-level scheduled-action and process observation, not a recursively
+frozen source-closure proof: archived/manual scripts and cross-project launcher roots still require a complete
+manifest before a recovery attestation or canary. The census therefore preserves HARD_CLOSED and grants no
+provider call, task enablement, canary, review, campaign, production, or release authority.
+
+## Agent Bridge — pinned governor installation and scheduled SHADOW, 2026-08-18 — current Windows host
+
+Agent Bridge installed local governor subject `13d697c2b778ed566ebb90147aca77bd28f80824` into a
+versioned host-local directory. Policy semantic SHA-256
+`7E3B329544EA167C37B229576CB1787F96A521490DFEF7D5B5CD86AF62761DEE` binds the opaque shared
+Claude quota identity, one unattended root, required five-hour/weekly/reset evidence, exact command/image
+binding, and a mandatory recovery attestation. Claude Code `2.1.220` was resolved past its npm shim to
+native executable SHA-256 `AF5BF1F1B2AADFFC768ECCD787084C6FDF9BA81624CBE96C1C6D9AC1A1550231`.
+Authentication was observed logged in without copying credentials or raw account identity.
+
+The model-free `AgentBridgeClaudeGovernorShadow` Scheduled Task was installed and enabled at a five-minute
+cadence. Twelve observed iterations, including the real scheduled path, returned `HARD_CLOSED`,
+`recovery=MISSING`, no native Claude CLI process, zero provider calls, and zero input, cache-read,
+cache-creation, reasoning, output, and tool counters. The task's first scheduled result was 0. The legacy
+Agent Bridge Warden and lifecycle supervisor remained disabled.
+
+Installation manifest SHA-256 is `E3663B1C554CD5CB6C0C733F17C12B2AF664A8EE9B9204C902349ED9BD124AE6`;
+the explicitly incomplete launcher-inventory SHA-256 is
+`AFC34B6DD4C15FB11AB4D5B8FC8F031E56BAC6154C541A4882D142DD876682B4`; local shadow receipt SHA-256 is
+`61C7DF09F5DA30A411BB6836E4C08E74199CAD8241E2D6F117987EAED259C1B9`.
+The original disabled legacy task XML was preserved, and both task actions were replaced by hash-pinned
+quarantine refusal script `BE23319A57D4752E9A8AA345893FE96DC37E7E6F42B34630F6755AF6EB5011AC`.
+A negative control returned exit 78 with `REFUSED_LEGACY_LAUNCH`, a verified closed shadow gate, and zero
+provider calls/tokens. This advances only SHADOW.
+It grants no recovery attestation, provider call, canary, task enablement for a provider launcher, project
+ADOPT, review credit, campaign, production, landing, or release authority.
+
+## Agent Bridge — reconciled disposition against ratified universal R14, 2026-08-18
+
+Canonical master ratified universal provider-control R14 in commit
+`488cf0dc0c2c2ddd1ab024c6377e1fd6d61eef1d`, bound to exact reviewed subject
+`874605e43531c9aa230ee16851f8107a8e0d9cec`. Agent Bridge therefore supersedes its
+current conformance report with
+`DISTINGUISH(874605e43531c9aa230ee16851f8107a8e0d9cec,
+PENDING_LOCAL_R14_PROFILE_COMPLETE_CENSUS_1000_TICKS_CANARY_AND_REVIEW,
+13d697c2b778ed566ebb90147aca77bd28f80824)`. The prior v1 disposition remains
+historical evidence rather than a competing portable contract.
+
+This reconciliation accepts R14 as the target doctrine but does not claim project
+adoption. The installed Agent Bridge subject and SHADOW/quarantine receipts prove
+containment and zero-inference operation only; they do not yet prove a pinned R14
+project profile, a complete four-surface launcher inventory, 1,000 unchanged shadow
+ticks, full-child claimant fencing, rollback, single-use canary authorization, or
+fresh independent review. The automatic launch gate remains HARD_CLOSED and this
+receipt grants no provider call, canary, provider-launcher enablement, project
+`ADOPT`, production, landing, release, or product credit.

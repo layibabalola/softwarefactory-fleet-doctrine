@@ -1,5 +1,10 @@
 # Fleet provider capacity governor
 
+> Reconciliation candidate: the additive strict runtime/profile amendment is under independent
+> review in [`fleet-universal-provider-control-reconciliation.md`](fleet-universal-provider-control-reconciliation.md).
+> It has zero authority until separately adjudicated and merged; this ratified baseline remains the
+> controlling doctrine meanwhile.
+
 Status: **RATIFIED PORTABLE CORE — NO LIVE ADMISSION, ROUTING, OR AUTHORITY GRANT**
 
 Accepted conformance subject: `224a6705d81dfbc670313cdcef4d825216f2b380`
