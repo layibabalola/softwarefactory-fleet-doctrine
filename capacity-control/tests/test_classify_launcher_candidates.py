@@ -100,6 +100,15 @@ class LauncherCandidateClassifierTests(unittest.TestCase):
         self.assertEqual(result["pendingCount"], 1)
         self.assertEqual(result["status"], "REVIEW_INCOMPLETE_ZERO_AUTHORITY")
 
+    def test_review_template_binds_every_candidate_as_unknown(self):
+        report = self._classify({"b.py": "# claude\n", "a.sh": "exec kimi --print\n"})
+        template = MODULE.review_template(report)
+        self.assertEqual(template["schema"], "conjugal-launcher-review/v1")
+        self.assertEqual([entry["path"] for entry in template["entries"]], ["a.sh", "b.py"])
+        self.assertTrue(all(entry["disposition"] == "UNKNOWN" for entry in template["entries"]))
+        result = MODULE.reconcile_review(report, template)
+        self.assertEqual(result["pendingCount"], 2)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -155,6 +155,19 @@ def reconcile_review(report: dict[str, object], review: dict[str, object]) -> di
     }
 
 
+def review_template(report: dict[str, object]) -> dict[str, object]:
+    candidates = report.get("candidates")
+    if not isinstance(candidates, list):
+        raise ValueError("REPORT_SCHEMA")
+    return {
+        "schema": "conjugal-launcher-review/v1",
+        "entries": [
+            {"path": str(row["path"]), "sha256": str(row["sha256"]), "disposition": "UNKNOWN"}
+            for row in candidates
+        ],
+    }
+
+
 def _strict_json(path: Path) -> dict[str, object]:
     def pairs(values: list[tuple[str, object]]) -> dict[str, object]:
         result: dict[str, object] = {}
@@ -174,9 +187,17 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("root", type=Path)
     parser.add_argument("--review-manifest", type=Path)
+    parser.add_argument("--emit-review-template", action="store_true")
     args = parser.parse_args()
+    if args.review_manifest and args.emit_review_template:
+        parser.error("--review-manifest and --emit-review-template are mutually exclusive")
     report = classify_tree(args.root)
-    output = reconcile_review(report, _strict_json(args.review_manifest)) if args.review_manifest else report
+    if args.review_manifest:
+        output = reconcile_review(report, _strict_json(args.review_manifest))
+    elif args.emit_review_template:
+        output = review_template(report)
+    else:
+        output = report
     print(json.dumps(output, sort_keys=True, separators=(",", ":")))
     return 0
 
