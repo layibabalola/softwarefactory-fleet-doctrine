@@ -44,10 +44,11 @@ the human store-and-forward bus.
 ## Proposed amendments (not ratified)
 
 - [`specs/fleet-universal-provider-control-reconciliation.md`](specs/fleet-universal-provider-control-reconciliation.md)
-  — zero-authority R17 candidate atop preserved R16, retaining every later canonical project
-  disposition. R17 replaces reusable permit exposure with a one-use certified wrapper, chains and
-  authenticates per-call usage, freezes the terminal reserve baseline, orders durable quota release
-  before local/canary success, binds a canonical ledger identity and per-dimension reset windows, and
-  requires independently signed retained quality and process-tree evidence.
+  — zero-authority R18 candidate atop preserved adverse R17, retaining every later canonical project
+  disposition. R18 makes PREPARED publication replay-convergent, binds admission to the newest signed
+  demand-authority chain, charges nonterminal orphaned work conservatively, and resolves quota authority
+  from the OS account rather than caller-controlled HOME variables. It also withdraws R17's unsafe
+  in-process callback-wrapper claim: the reference executes no provider or observer code and reports
+  `CERTIFIED_PROCESS_CHOKE_POINT_NOT_INSTALLED`.
   It is not a portable core, ruling, adoption credit, or launch authority. Coordination stays on
   [issue #4](https://github.com/layibabalola/softwarefactory-fleet-doctrine/issues/4).

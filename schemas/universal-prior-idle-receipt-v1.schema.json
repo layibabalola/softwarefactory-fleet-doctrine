@@ -3,7 +3,7 @@
   "$id": "https://softwarefactory.invalid/schemas/universal-prior-idle-receipt-v1.schema.json",
   "type": "object",
   "additionalProperties": false,
-  "required": ["schema", "receiptId", "project", "recordedAt", "expiresAt", "sequence", "authorityPath", "authoritySha256", "demandSnapshot", "demandFingerprint", "stateRootIdentity", "receiptHmacSha256"],
+  "required": ["schema", "receiptId", "project", "recordedAt", "expiresAt", "sequence", "authorityPath", "authoritySha256", "demandSnapshot", "demandFingerprint", "demandAuthorityPinEpoch", "demandAuthorityPinHmacSha256", "stateRootIdentity", "receiptHmacSha256"],
   "properties": {
     "schema": {"const": "fleet-universal-prior-idle-receipt/v1"},
     "receiptId": {"type": "string", "pattern": "^idle-[0-9a-f]{32}$"},
@@ -24,6 +24,8 @@
       }
     },
     "demandFingerprint": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+    "demandAuthorityPinEpoch": {"type": "integer", "minimum": 1, "maximum": 9223372036854775807},
+    "demandAuthorityPinHmacSha256": {"type": "string", "pattern": "^hmac-sha256:[0-9a-f]{64}$"},
     "stateRootIdentity": {"type": "string", "pattern": "^hmac-sha256:[0-9a-f]{64}$"},
     "receiptHmacSha256": {"type": "string", "pattern": "^hmac-sha256:[0-9a-f]{64}$"}
   }

@@ -183,16 +183,22 @@ post-reset quiet; and add required capacity dimensions. They may never weaken th
     `linkat(AT_SYMLINK_FOLLOW)` route pass through one explicit no-clobber syscall seam. Hostile race,
     foreign-source, replacement, and link-then-raise controls patch that exact seam, so Ubuntu cannot
     silently execute an unmutated production syscall while the test patches only `os.link`.
-22. Provider access is certified `SINGLE_REQUEST_PROCESS`, not a launcher hint. Admission reserves
+22. Production provider access requires a separately installed and reviewed process/service choke
+    point; an in-process callback is never such a boundary. The choke point must invoke the exact
+    pinned provider/adapter executable with the exact argv length, order, and values, keep fleet and
+    observer secrets outside the provider process and its parent-frame reach, and make raw provider
+    entrypoints structurally unavailable. Admission reserves
     the full input/cache-read/cache-write/reasoning/output envelope and a terminal-output reserve in
-    SQLite before resume. The wrapper must obtain exactly one HMAC-bound permit immediately before
+    SQLite before resume. The production boundary must obtain exactly one HMAC-bound permit immediately before
     its sole provider request; a second permit, a terminal count mismatch, missing permit digest, or
     any reported usage above a reserved class is fail-closed. Prepared binding bytes and their fleet-
     secret HMAC are immutable; final confirm and pre-request issuance compare the lease, attestation,
     earliest capacity boundary, exact argv template/count/order, launcher configuration, quality
     cell, and certification digest transactionally.
-23. Runtime authority ends at the earliest request, lease, capacity, or watchdog boundary. The
-    certified wrapper calls the watchdog boundary and must terminate the process tree on
+23. Runtime authority ends at the earliest request, lease, capacity, or watchdog boundary. A
+    broker-owned advancing clock is re-read immediately before each provider call/turn and after
+    every blocking operation; caller-supplied time is not runtime authority. The separately certified
+    process/service boundary must enforce wall time, output limits, process-tree ownership, and terminate on
     `RUNTIME_TERMINATION_REQUIRED`; the broker persists that state without releasing claimant, OS-
     lock, artifact, or token fences. Process-id/start-time pairs are permanently claimed so a serial
     launch cannot reuse a stale observation after release.
@@ -343,10 +349,11 @@ mint canary success; canonical schema/HMAC/digest/epoch validation of stored can
 exact-key request-permit token ceilings. The candidate remains zero authority and makes no provider
 call; the author remains recused from review, adjudication, merge, and activation.
 
-R17 is a linear, zero-authority hardening candidate atop preserved R16 subject
-`0daf7b003932b611a01e5a4b5c50848b96873ca1`. It removes the reusable permit CLI and exposes only an
-opaque, one-use certified wrapper that internally invokes exactly one pinned provider callback without
-passing or returning a permit or fleet secret. Wrapper and provider executable identities are distinct.
+R17 is preserved adverse evidence atop R16 subject
+`0daf7b003932b611a01e5a4b5c50848b96873ca1`. Its in-process callback wrapper was not a certified
+execution boundary: callback frame inspection could reach broker secrets, caller-selected time could
+freeze a lease boundary, and usage could be spent before completion-reserve enforcement. Exact R17
+freeze `868265b3044c9d59753f9c01b446a4e933a08629` therefore grants no containment or canary credit.
 Every usage checkpoint is canonical, HMAC-authenticated, previous-digest chained, and bound to a signed
 mutable head. A terminal permit freezes the checkpoint digest, sequence, and output baseline; later
 ordinary turns are forbidden and terminal output may increase only by the reserved completion allowance.
@@ -355,7 +362,22 @@ Independent termination and quality observers bind fresh retained evidence, cand
 the exact subject, and immutable launch binding. Cross-root quota claims use PREPARED/ACTIVE and
 RELEASE_PREPARED/global-RELEASED/local-RELEASED ordering; local success or canary evidence cannot precede
 durable release, and orphan recovery charges the latest verified use or the full conservative reservation.
-The canonical quota database path is fixed at process installation time, uses a signed instance identity,
+The canonical quota database uses a signed instance identity,
 stable descriptor checks, DELETE journaling, and usage ledgers partitioned by every capacity dimension and
 reset window. The candidate remains deployment-inert until independent review, adjudication, merge, and a
 separate staged activation decision.
+
+R18 advances additively from exact R17. Durable PREPARED claims use deterministic HMAC lease identity,
+so a crash after global reservation but before local publication replays the exact claim and converges
+instead of leaking permanent capacity. Admission consumes the newest unused prior-idle receipt and
+verifies the newest current authority pin, its HMAC, exact retained snapshot, monotonic epoch, and prior
+pin link. Once a provider permit exists, dead/nonterminal recovery charges the full reservation unless
+independent terminal evidence proves the exact final usage. Ledger and lock authority resolve from the
+OS account database/known profile, not HOME or USERPROFILE. Termination and quality observers must be
+distinct from one another, the fleet signer, launch executable, provider executable, launcher config,
+and argv contract. The reference implementation deliberately has no provider callback, wrapper
+capability, provider spawn, resume, watchdog, or kill surface; `directInvocationImpossible=false` and
+`reference-only-no-execution` are schema-bound. A project must supply the separate production choke
+point described by laws 22-23 and independent retained observer evidence before any staged authority.
+Merging, ratifying, or locally adopting R18 leaves every automatic gate CLOSED and grants zero
+containment, canary, or OPEN authority.

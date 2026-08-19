@@ -59,9 +59,51 @@ _BROKER_ARTIFACT_CLEANUP_POISON: dict[str, list[Any]] = {}
 _CAPSULE_PROCESS_LOCK = threading.RLock()
 _BROKER_PROCESS_LOCK = threading.RLock()
 _BROKER_ROOT_RUNTIMES: dict[str, "_BrokerRootRuntime"] = {}
-_CANONICAL_QUOTA_LEDGER_ROOT = (
-    Path.home().resolve() / ".softwarefactory-provider-control.quota-ledger"
+
+
+def _os_account_authority_root() -> Path:
+    """Resolve the OS account data directory without HOME/USERPROFILE selection."""
+
+    try:
+        if os.name == "nt":
+            import ctypes
+            from ctypes import wintypes
+
+            get_process = ctypes.windll.kernel32.GetCurrentProcess
+            get_process.argtypes = []
+            get_process.restype = wintypes.HANDLE
+            open_token = ctypes.windll.advapi32.OpenProcessToken
+            open_token.argtypes = [wintypes.HANDLE, wintypes.DWORD, ctypes.POINTER(wintypes.HANDLE)]
+            open_token.restype = wintypes.BOOL
+            get_profile = ctypes.windll.userenv.GetUserProfileDirectoryW
+            get_profile.argtypes = [
+                wintypes.HANDLE, wintypes.LPWSTR, ctypes.POINTER(wintypes.DWORD)
+            ]
+            get_profile.restype = wintypes.BOOL
+            token = wintypes.HANDLE()
+            if not open_token(get_process(), 0x0008, ctypes.byref(token)):
+                raise OSError("process token unavailable")
+            try:
+                length = wintypes.DWORD(32768)
+                buffer = ctypes.create_unicode_buffer(length.value)
+                if not get_profile(token, buffer, ctypes.byref(length)):
+                    raise OSError("token profile unavailable")
+                return (Path(buffer.value).resolve(strict=True) / "AppData" / "Local").resolve(
+                    strict=True
+                )
+            finally:
+                ctypes.windll.kernel32.CloseHandle(token)
+        import pwd
+
+        return (Path(pwd.getpwuid(os.getuid()).pw_dir).resolve(strict=True) / ".local" / "share")
+    except (OSError, KeyError, RuntimeError) as exc:
+        raise RuntimeError("OS_ACCOUNT_AUTHORITY_UNAVAILABLE") from exc
+
+
+_CANONICAL_QUOTA_AUTHORITY_ROOT = (
+    _os_account_authority_root() / "SoftwareFactory" / "provider-control"
 )
+_CANONICAL_QUOTA_LEDGER_ROOT = _CANONICAL_QUOTA_AUTHORITY_ROOT / "quota-ledger"
 
 
 class _BrokerRootRuntime:
@@ -78,7 +120,6 @@ class _BrokerRootRuntime:
         self.artifact_close_attempted: dict[str, set[int]] = {}
         self.unproven_artifact_handles: dict[str, list[Any]] = {}
         self.independent_receipt_signers: dict[str, bytes] = {}
-        self.wrapper_capabilities: dict[str, tuple[str, bytes]] = {}
 
 
 def _broker_root_runtime(poison_key: str) -> _BrokerRootRuntime:
@@ -1544,7 +1585,6 @@ class UniversalProviderBroker:
         self._artifact_close_attempted = self._root_runtime.artifact_close_attempted
         self._unproven_artifact_handles = self._root_runtime.unproven_artifact_handles
         self._independent_receipt_signers = self._root_runtime.independent_receipt_signers
-        self._wrapper_capabilities = self._root_runtime.wrapper_capabilities
         try:
             with self._connect() as connection:
                 connection.executescript(
@@ -1826,7 +1866,9 @@ class UniversalProviderBroker:
 
         directory = _CANONICAL_QUOTA_LEDGER_ROOT
         try:
-            authority_parent = directory.parent.resolve(strict=True)
+            authority = _CANONICAL_QUOTA_AUTHORITY_ROOT
+            authority.mkdir(mode=0o700, parents=True, exist_ok=True)
+            authority_parent = authority.resolve(strict=True)
             directory.mkdir(mode=0o700, exist_ok=True)
             resolved = directory.resolve(strict=True)
             if _is_reparse(directory) or resolved.parent != authority_parent:
@@ -2000,6 +2042,18 @@ class UniversalProviderBroker:
                         "quota-ledger-record-v1", prior_record, fleet_secret,
                         "recordHmacSha256",
                     )
+                    if prior["state"] == "PREPARED" and all((
+                        prior["lease_id"] == lease_id,
+                        prior["process_id"] == process_id,
+                        prior["process_start_time"] == process_start_time,
+                        prior["state_root_identity"] == self.state_root_identity(fleet_secret),
+                        prior["binding_digest"] == binding_digest,
+                        prior["ledger_instance_id"] == ledger_instance_id,
+                        prior["terminal_digest"] is None,
+                        prior["publication_digest"] is None,
+                    )):
+                        connection.execute("COMMIT")
+                        return
                     if prior["state"] != "RELEASED":
                         raise ControlError("QUOTA_DOMAIN_DURABLE_CLAIM_HELD")
                 record = {
@@ -2035,6 +2089,12 @@ class UniversalProviderBroker:
                 if connection.in_transaction:
                     connection.execute("ROLLBACK")
                 raise
+
+    def _before_local_quota_publication(self, lease_id: str) -> None:
+        """Crash-injection seam after durable PREPARED and before local publication."""
+
+        if not isinstance(lease_id, str):
+            raise ControlError("LEASE_ID_INVALID")
 
     def _activate_quota_claim(
         self, *, quota_domain_id: str, lease_id: str, publication_digest: str,
@@ -2343,11 +2403,10 @@ class UniversalProviderBroker:
                         "authorityHmacSha256",
                     )
                     if (
-                        prior["authority_path"] != canonical_path
-                        or normalized["cursor"]["stream"]
+                        normalized["cursor"]["stream"]
                         != prior_snapshot["cursor"]["stream"]
                         or int(normalized["cursor"]["sequence"])
-                        < int(prior_snapshot["cursor"]["sequence"])
+                        <= int(prior_snapshot["cursor"]["sequence"])
                     ):
                         raise ControlError("DEMAND_AUTHORITY_ROTATION_REQUIRED")
                     epoch = int(prior["pin_epoch"]) + 1
@@ -2441,6 +2500,8 @@ class UniversalProviderBroker:
                     "authoritySha256": authority["authority_sha256"],
                     "demandSnapshot": normalized,
                     "demandFingerprint": digest_json(normalized),
+                    "demandAuthorityPinEpoch": int(authority["pin_epoch"]),
+                    "demandAuthorityPinHmacSha256": authority["authority_hmac"],
                     "stateRootIdentity": self.state_root_identity(fleet_secret),
                     "receiptHmacSha256": "",
                 }
@@ -2483,12 +2544,14 @@ class UniversalProviderBroker:
         name = hashlib.sha256(quota_domain_id.encode("ascii")).hexdigest() + ".lock"
         # A state-root-relative lock lets two malicious/accidental roots spend the same provider
         # quota concurrently.  The lock namespace is therefore canonical per OS account/host.
-        directory = Path.home() / ".softwarefactory-provider-control.quota-locks"
+        directory = _CANONICAL_QUOTA_AUTHORITY_ROOT / "quota-locks"
         try:
-            home = Path.home().resolve(strict=True)
+            authority = _CANONICAL_QUOTA_AUTHORITY_ROOT
+            authority.mkdir(mode=0o700, parents=True, exist_ok=True)
+            authority = authority.resolve(strict=True)
             directory.mkdir(mode=0o700, exist_ok=True)
             resolved_directory = directory.resolve(strict=True)
-            if _is_reparse(directory) or resolved_directory.parent != home:
+            if _is_reparse(directory) or resolved_directory.parent != authority:
                 raise ControlError("QUOTA_LOCK_BOUNDARY_INVALID")
             path = directory / name
             if path.exists() and (_is_reparse(path) or path.stat().st_size > 1):
@@ -3092,6 +3155,9 @@ class UniversalProviderBroker:
                 except ControlError as exc:
                     for leaked_lease in set(self._artifact_handles) - prior_artifact_handles:
                         self._release_terminal_owners(leaked_lease)
+                    if exc.reason == "QUOTA_PUBLICATION_INCOMPLETE":
+                        connection.execute("ROLLBACK")
+                        return {"status": "UNEVALUABLE", "reason": exc.reason}
                     result = {"status": "UNEVALUABLE", "reason": exc.reason}
                 if result.get("status") == "PREPARED_SUSPENDED":
                     held_lease_id = result["leaseId"]
@@ -3388,13 +3454,61 @@ class UniversalProviderBroker:
             or parse_time(boundary_certification["expiresAt"]) <= now
         ):
             raise ControlError("BOUNDARY_CERTIFICATION_BINDING_INVALID")
+        if (
+            boundary_certification["terminationObserverId"]
+            == boundary_certification["qualityObserverId"]
+            or boundary_certification["terminationObserverKeySha256"]
+            == boundary_certification["qualityObserverKeySha256"]
+            or boundary_certification["terminationObserverKeySha256"]
+            == signer_key_sha256(fleet_secret)
+            or boundary_certification["qualityObserverKeySha256"]
+            == signer_key_sha256(fleet_secret)
+            or boundary_certification["independentReviewSha256"] in {
+                executable_digest, provider_executable_digest,
+                request["launcherConfigSha256"], request["argvContractSha256"],
+            }
+        ):
+            raise ControlError("OBSERVER_INDEPENDENCE_INVALID")
 
+        prior_idle = request["priorIdleReceipt"]
+        validate_contract("prior_idle_receipt", prior_idle)
+        verify_contract_hmac(
+            "prior-idle-receipt-v1", prior_idle, fleet_secret, "receiptHmacSha256"
+        )
         authority = profile["demandAuthority"]
         authority_path, authority_value, authority_digest, _ = _stable_json_artifact(
             authority["snapshotPath"], expected_sha256=authority["snapshotSha256"],
             reason="DEMAND_AUTHORITY_DRIFT",
         )
         authoritative_snapshot = canonical_demand_snapshot(authority_value)
+        pinned_authority = connection.execute(
+            "SELECT * FROM demand_authorities WHERE project=?", (request["project"],)
+        ).fetchone()
+        if pinned_authority is None:
+            raise ControlError("DEMAND_AUTHORITY_NOT_PINNED")
+        pinned_snapshot = canonical_demand_snapshot(
+            strict_json_bytes(pinned_authority["snapshot_bytes"])
+        )
+        pinned_record = {
+            "project": request["project"],
+            "authorityPath": pinned_authority["authority_path"],
+            "authoritySha256": pinned_authority["authority_sha256"],
+            "demandSnapshot": pinned_snapshot,
+            "pinEpoch": int(pinned_authority["pin_epoch"]),
+            "priorAuthorityHmacSha256": pinned_authority["prior_authority_hmac"],
+            "pinnedAt": pinned_authority["pinned_at"],
+            "authorityHmacSha256": pinned_authority["authority_hmac"],
+        }
+        verify_contract_hmac(
+            "demand-authority-pin-v1", pinned_record, fleet_secret,
+            "authorityHmacSha256",
+        )
+        if (
+            pinned_authority["authority_path"] != os.path.normcase(str(authority_path))
+            or pinned_authority["authority_sha256"] != authority_digest
+            or pinned_snapshot != authoritative_snapshot
+        ):
+            raise ControlError("DEMAND_AUTHORITY_PIN_DRIFT")
         demand_snapshot = canonical_demand_snapshot(request["demandSnapshot"])
         if authoritative_snapshot != demand_snapshot:
             raise ControlError("DEMAND_AUTHORITY_DRIFT")
@@ -3403,11 +3517,6 @@ class UniversalProviderBroker:
         demand_fingerprint = digest_json(demand_snapshot)
         if request["demandFingerprint"] != demand_fingerprint:
             raise ControlError("DEMAND_FINGERPRINT_DRIFT")
-        prior_idle = request["priorIdleReceipt"]
-        validate_contract("prior_idle_receipt", prior_idle)
-        verify_contract_hmac(
-            "prior-idle-receipt-v1", prior_idle, fleet_secret, "receiptHmacSha256"
-        )
         prior_idle_snapshot = canonical_demand_snapshot(prior_idle["demandSnapshot"])
         prior_idle_fingerprint = prior_idle["demandFingerprint"]
         prior_recorded = parse_time(prior_idle["recordedAt"])
@@ -3425,6 +3534,10 @@ class UniversalProviderBroker:
             prior_idle["project"] != request["project"]
             or prior_idle["stateRootIdentity"] != self.state_root_identity(fleet_secret)
             or digest_json(prior_idle_snapshot) != prior_idle_fingerprint
+            or int(pinned_authority["pin_epoch"])
+            != int(prior_idle["demandAuthorityPinEpoch"]) + 1
+            or pinned_authority["prior_authority_hmac"]
+            != prior_idle["demandAuthorityPinHmacSha256"]
             or any(item["state"] in {"OPEN", "READY"} for item in prior_idle_snapshot["addressedWork"])
             or prior_authority_digest != prior_idle["authoritySha256"]
             or observed_prior_snapshot != prior_idle_snapshot
@@ -3443,7 +3556,8 @@ class UniversalProviderBroker:
             (prior_idle["receiptId"],),
         ).fetchone()
         newest_idle_sequence = connection.execute(
-            "SELECT COALESCE(MAX(sequence), 0) FROM prior_idle_receipts WHERE project=?",
+            """SELECT COALESCE(MAX(sequence), 0) FROM prior_idle_receipts
+            WHERE project=? AND used_at IS NULL""",
             (request["project"],),
         ).fetchone()[0]
         if (
@@ -3638,7 +3752,14 @@ class UniversalProviderBroker:
         )
         binding_record["bindingHmacSha256"] = binding_hmac
         binding_bytes = canonical_json(binding_record).encode("utf-8")
-        lease_id = "lease-" + uuid.uuid4().hex
+        lease_material = (
+            b"fleet-deterministic-prepared-lease-v1\x00"
+            + request["requestId"].encode("utf-8") + b"\x00"
+            + binding_digest.encode("ascii")
+        )
+        lease_id = "lease-" + hmac.new(
+            fleet_secret, lease_material, hashlib.sha256
+        ).hexdigest()[:32]
         artifacts = (
             (executable, request["executableSha256"], MAX_ARTIFACT_BYTES),
             (provider_executable, request["providerExecutableSha256"], MAX_ARTIFACT_BYTES),
@@ -3701,6 +3822,7 @@ class UniversalProviderBroker:
             "artifactHandleSetSha256": artifact_handle_digest,
         }
         validate_contract("attestation", attestation)
+        quota_prepared = False
         try:
             self._acquire_os_lock(lease_id, request["quotaDomainId"])
             self._reserve_quota_claim(
@@ -3708,6 +3830,8 @@ class UniversalProviderBroker:
                 process_id=process_id, process_start_time=iso(start),
                 binding_digest=binding_digest, fleet_secret=fleet_secret, now=now,
             )
+            quota_prepared = True
+            self._before_local_quota_publication(lease_id)
             connection.execute(
                 """INSERT INTO leases(
                     lease_id, request_id, quota_domain_id, process_id, process_start_time,
@@ -3766,6 +3890,8 @@ class UniversalProviderBroker:
                 )
         except BaseException:
             self._release_terminal_owners(lease_id)
+            if quota_prepared:
+                raise ControlError("QUOTA_PUBLICATION_INCOMPLETE") from None
             raise
         return attestation
 
@@ -4731,129 +4857,14 @@ class UniversalProviderBroker:
             result["canarySuccessReceiptSha256"] = canary_success_digest
         return result
 
-    def provision_brokered_single_request(
-        self, *, lease_id: str, fleet_secret: bytes
-    ) -> "CertifiedBrokeredSingleRequest":
-        """Provision an opaque one-use wrapper capability; the wrapper never receives the key."""
+    def execution_boundary_status(self) -> dict[str, str]:
+        """State the deployable boundary honestly; this reference executes no untrusted code."""
 
-        if not isinstance(fleet_secret, bytes) or len(fleet_secret) < 32:
-            raise ControlError("FLEET_SECRET_INVALID")
-        with self._root_lock, self._connect() as connection:
-            lease = connection.execute(
-                "SELECT * FROM leases WHERE lease_id=?", (lease_id,)
-            ).fetchone()
-            if lease is None or lease["state"] != "RESUME_ATTESTED":
-                raise ControlError("LEASE_NOT_ATTESTED")
-            self._verified_immutable_lease_binding(connection, lease, fleet_secret)
-            capability = "wrapper-capability-" + uuid.uuid4().hex
-            self._wrapper_capabilities[capability] = (lease_id, bytes(fleet_secret))
-        return CertifiedBrokeredSingleRequest(self, lease_id, capability)
-
-    def _consume_wrapper_capability(self, capability: str, lease_id: str) -> bytes:
-        with self._root_lock:
-            record = self._wrapper_capabilities.pop(capability, None)
-            if record is None or record[0] != lease_id:
-                raise ControlError("WRAPPER_CAPABILITY_INVALID_OR_USED")
-            return record[1]
-
-    def _run_brokered_single_request(
-        self,
-        *,
-        lease_id: str,
-        capability: str,
-        provider_call: Callable[[dict[str, Any]], Mapping[str, Any]],
-        termination_observer: Callable[[dict[str, Any]], dict[str, Any]],
-        quality_observer: Callable[[dict[str, Any]], dict[str, Any]],
-        now: dt.datetime,
-    ) -> dict[str, Any]:
-        """Consume one capability and internally complete the sole certified provider request."""
-
-        fleet_secret = self._consume_wrapper_capability(capability, lease_id)
-        at = self._authoritative_now(now)
-        permit = self._begin_provider_request(
-            lease_id=lease_id, fleet_secret=fleet_secret, now=at
-        )
-        with self._connect() as connection:
-            lease = connection.execute(
-                "SELECT * FROM leases WHERE lease_id=?", (lease_id,)
-            ).fetchone()
-            reservation = connection.execute(
-                "SELECT * FROM token_reservations WHERE lease_id=?", (lease_id,)
-            ).fetchone()
-            attestation, binding = self._verified_immutable_lease_binding(
-                connection, lease, fleet_secret
-            )
-        zero_usage = {name: 0 for name in strict_json_bytes(
-            reservation["ceilings_json"].encode("utf-8")
-        )}
-        pre_turn = self._checkpoint_provider_usage(
-            lease_id=lease_id, phase="PRE_TURN", turn_count=1,
-            current_context_tokens=0, peak_context_tokens=0,
-            token_usage=zero_usage, fleet_secret=fleet_secret, now=at,
-        )
-        provider_spec = {
-            "providerExecutablePath": attestation["providerExecutablePath"],
-            "providerExecutableSha256": attestation["providerExecutableSha256"],
-            "argv": list(attestation["argv"]),
-            "model": attestation["model"], "effort": attestation["effort"],
-            "role": attestation["role"], "maxTurns": attestation["maxTurns"],
-            "maxContextTokens": attestation["maxContextTokens"],
-            "tokenCeilings": permit["tokenCeilings"],
+        return {
+            "status": "UNEVALUABLE",
+            "reason": "CERTIFIED_PROCESS_CHOKE_POINT_NOT_INSTALLED",
+            "authority": "ZERO_AUTHORITY_REFERENCE_ONLY",
         }
-        supplied = provider_call(provider_spec)
-        if not isinstance(supplied, Mapping) or set(supplied) != {
-            "result", "tokenUsage", "currentContextTokens", "peakContextTokens"
-        }:
-            raise ControlError("BROKERED_PROVIDER_RESULT_INVALID")
-        terminal_permit = self._issue_terminal_request_permit(
-            lease_id=lease_id, fleet_secret=fleet_secret, now=self._authoritative_now(at)
-        )
-        terminal_checkpoint = self._checkpoint_provider_usage(
-            lease_id=lease_id, phase="TERMINAL", turn_count=1,
-            current_context_tokens=int(supplied["currentContextTokens"]),
-            peak_context_tokens=int(supplied["peakContextTokens"]),
-            token_usage=dict(supplied["tokenUsage"]), fleet_secret=fleet_secret,
-            now=self._authoritative_now(at),
-        )
-        observer_context = {
-            "leaseId": lease_id, "requestId": lease["request_id"],
-            "bindingSha256": lease["binding_digest"],
-            "processId": lease["process_id"],
-            "processStartTime": lease["process_start_time"],
-            "subjectSha256": binding["subjectSha256"],
-            "providerUsageCheckpointSha256": digest_json(terminal_checkpoint),
-            "providerResult": supplied["result"], "observedAt": iso(self._authoritative_now(at)),
-        }
-        output_receipt = quality_observer(dict(observer_context))
-        termination_receipt = termination_observer(dict(observer_context))
-        terminal_observation = {
-            "schema": "fleet-universal-process-observation/v1", "phase": "TERMINAL",
-            "requestId": lease["request_id"], "leaseId": lease_id,
-            "observedAt": iso(self._authoritative_now(at)), "status": "EXITED",
-            "processId": lease["process_id"],
-            "processStartTime": lease["process_start_time"],
-            "imagePath": attestation["executablePath"],
-            "imageSha256": attestation["executableSha256"],
-            "actualArgv": attestation["argv"], "actualArgvSha256": attestation["argvSha256"],
-            "seatIdHash": attestation["seatIdHash"], "seatEpoch": attestation["seatEpoch"],
-            "sessionIdHash": attestation["sessionIdHash"], "providerRequestCount": 1,
-            "providerRequestPermitSha256": digest_json(permit),
-            "tokenUsage": dict(supplied["tokenUsage"]),
-            "providerUsageCheckpointSha256": digest_json(terminal_checkpoint),
-            "terminalRequestPermitSha256": digest_json(terminal_permit),
-            "processTreeTerminationReceipt": termination_receipt,
-            "outputQualityReceipt": output_receipt, "observerHmacSha256": "",
-        }
-        terminal_observation["observerHmacSha256"] = contract_hmac(
-            "process-observation-v1", terminal_observation, fleet_secret,
-            "observerHmacSha256",
-        )
-        release = self.release_child(
-            process_observation=terminal_observation, fleet_secret=fleet_secret,
-            now=self._authoritative_now(at),
-        )
-        return {"status": "COMPLETED", "leaseId": lease_id,
-                "providerResult": supplied["result"], "release": release}
 
     def recover_orphan(
         self,
@@ -4921,15 +4932,16 @@ class UniversalProviderBroker:
                         (lease_id,),
                     ).fetchone()
                     if latest is not None:
-                        latest_value = self._validated_checkpoint_row(
+                        self._validated_checkpoint_row(
                             row=latest, reservation=reservation, lease=row,
                             fleet_secret=fleet_secret,
                         )
-                        recovery_usage = dict(latest_value["tokenUsage"])
-                    else:
-                        recovery_usage = strict_json_bytes(
-                            reservation["ceilings_json"].encode("utf-8")
-                        )
+                    # A dead process can spend after its newest nonterminal checkpoint.  Without
+                    # independently retained terminal proof the only safe reconciliation is the
+                    # entire reservation, including when the newest checkpoint reports zero.
+                    recovery_usage = strict_json_bytes(
+                        reservation["ceilings_json"].encode("utf-8")
+                    )
                 terminal_digest = digest_json(process_observation)
                 connection.execute(
                     "UPDATE leases SET state='RELEASE_PREPARED', terminal_digest=? WHERE lease_id=?",
@@ -4967,37 +4979,6 @@ class UniversalProviderBroker:
             connection.execute("COMMIT")
         self._release_terminal_owners(lease_id)
         return {"status": "RELEASED", "leaseId": lease_id}
-
-
-class CertifiedBrokeredSingleRequest:
-    """Opaque one-shot facade. It carries no fleet/observer secret and emits no permit."""
-
-    __slots__ = ("_broker", "_lease_id", "_capability", "_used", "_lock")
-
-    def __init__(self, broker: UniversalProviderBroker, lease_id: str, capability: str):
-        self._broker = broker
-        self._lease_id = lease_id
-        self._capability = capability
-        self._used = False
-        self._lock = threading.Lock()
-
-    def invoke(
-        self,
-        *,
-        provider_call: Callable[[dict[str, Any]], Mapping[str, Any]],
-        termination_observer: Callable[[dict[str, Any]], dict[str, Any]],
-        quality_observer: Callable[[dict[str, Any]], dict[str, Any]],
-        now: dt.datetime,
-    ) -> dict[str, Any]:
-        with self._lock:
-            if self._used:
-                raise ControlError("WRAPPER_CAPABILITY_INVALID_OR_USED")
-            self._used = True
-        return self._broker._run_brokered_single_request(
-            lease_id=self._lease_id, capability=self._capability,
-            provider_call=provider_call, termination_observer=termination_observer,
-            quality_observer=quality_observer, now=now,
-        )
 
 
 def _parser() -> SafeArgumentParser:

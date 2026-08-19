@@ -28,7 +28,12 @@ quality/wrapper/output/termination evidence, monotonic runtime termination, and 
 receipt validation before later OPEN adjudication. It is
 described in
 [`specs/fleet-universal-provider-control-reconciliation.md`](specs/fleet-universal-provider-control-reconciliation.md).
-It is zero authority until independently reviewed, distinctly adjudicated, hosted-green, recorded in
+R18 preserves R17 as adverse evidence, removes its in-process callback execution claim, and adds
+replay-convergent PREPARED publication, signed current/prior demand-pin chaining, conservative orphan
+charging, and OS-account-derived quota authority. The reference remains no-execution and cannot be
+cited as a containment or canary boundary; production requires a separately certified process/service
+choke point with exact executable/argv, advancing broker clock, pre-call budgets, process-tree
+termination, and independent observer trust. It is zero authority until independently reviewed, distinctly adjudicated, hosted-green, recorded in
 `RULINGS.md`, merged to canonical master, and separately adopted by each project.
 
 Standing containment is unchanged: provider capacity, reset, or authentication cannot open an
