@@ -191,6 +191,29 @@ and Lorphic K2 model overview `https://lorphic.com/kimi-k2-models/`.
 
 `DISTINGUISH(874605e43531c9aa230ee16851f8107a8e0d9cec, PENDING_COMPLETE_CENSUS_PERSISTENT_BROKER_1000_TICKS_CANARY_AND_REVIEW, 85ee8077d8edb40abd0f0275ec958e3a0b7283ff)`
 
+`DISTINGUISH(909f769d02e8412e51e28e242cfa8d00dadc9a3d, R26_CANDIDATE_ZERO_AUTHORITY_PENDING_REQUEST_LEVEL_TOKEN_ACCOUNTING_CACHE_WEIGHT_NON_REGRESSION_RECEIPT_COMPLETE_CENSUS_PERSISTENT_BROKER_1000_TICKS_CANARY_AND_REVIEW, ea50e08cee3a42576e4ace18e587a738fe73cf7b)`
+
+The second disposition is controlling for the current R26 candidate
+`e70a044f31dd2f43ab7c716d63a4eb89318c61b6`, merged without tree change at
+`909f769d02e8412e51e28e242cfa8d00dadc9a3d`. Agent Bridge accepts R26's
+no-work-before-session rule, bounded work capsules, conservative capacity and
+retry accounting, cache-affinity expiry, quality floor, and separately certified
+launch-boundary requirements as portable targets. It distinguishes because its
+exact closed candidate `ea50e08cee3a42576e4ace18e587a738fe73cf7b` does not yet
+reserve and reconcile every provider request in token units, apply R26's cache-read
+weighting and failed-attempt accounting, or pin current non-regression receipts for
+model, effort, role, review, quality, and functionality. The complete four-surface
+launcher census, persistent broker, qualified capacity and recovery evidence,
+full-child fencing, rollback, 1,000 unchanged zero-inference ticks, single-use
+canary authorization, bounded canary returning CLOSED, and fresh independent
+exact-subject review also remain open.
+
+R26 remains `CANDIDATE_ZERO_AUTHORITY` and the local `ea50e08` automated-rotation
+candidate is committed, backed up, and uninstalled. Neither candidate is the live
+provider launcher. This current disposition grants no project or fleet adoption,
+runtime authority, provider call, task enablement, gate transition, canary, landing,
+production, or release authority. Doctrine publication alone cannot change it.
+
 Rollout state: **SHADOW**; automatic launch gate: **HARD_CLOSED.** Agent Bridge
 retains the portable invariants of provider-capacity governor v1 and accepts the
 ratified R14 universal contract as its conformance target, but does not claim local
