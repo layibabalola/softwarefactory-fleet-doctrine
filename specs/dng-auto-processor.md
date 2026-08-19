@@ -186,59 +186,121 @@ new dispatch and routes one batched cross-family drain without auto-landing. Ful
 required fail-closed controls are defined in
 `dng-auto-processor/standards/CODEX-OUTAGE-BANK-MODE.md`, byte-anchored in `EXPORTS.md`.
 
-## Provider capacity governor v1 status (2026-08-18)
+## Universal provider-control status and exact DNG proposal (2026-08-18/19)
 
-DNG's formal disposition is:
+DNG's current exact dispositions are:
 
 **DISTINGUISH(224a6705d81dfbc670313cdcef4d825216f2b380,
-PENDING_LOCAL_COMMIT_BYPASS_CLOSURE_AND_CANARY)**
+LOCAL_ADAPTER_LANDED_AND_BOUNDED_FABLE_RESTORATION_BEGUN_WITH_GATE_CLOSED)**
 
-This is a temporary maturity distinction, not a disagreement with the portable core. DNG accepts
-the ratified quota-domain, reset-containment, deterministic-orchestration, completion-reserve,
-exact-role, bounded-context, and zero-credit-on-resource-stop invariants without amendment. It
-cannot yet claim `ADOPT(reference)` because its local adapter is staged rather than committed, two
-other provider-bearing launch roots remain contained by disabled tasks rather than brokered, and no
-real-provider canary has run.
+**DISTINGUISH(874605e43531c9aa230ee16851f8107a8e0d9cec,
+PENDING_PINNED_R14_PROFILE_COMPLETE_FOUR_SURFACE_CENSUS_1000_IDLE_TICKS_SUSPENDED_CHILD_ATTESTATION_AND_REVIEW,
+DNG_MASTER_4c3c80744667dcc4e266e8a54ef2fb3f42b1b350)**
 
-The exact DNG profile currently under local adoption is:
+The first disposition records materially stronger project-local evidence against provider-capacity
+governor v1. The second is controlling for present fleet convergence: DNG accepts ratified universal
+R14 as its additive portable target, but does **not** claim project or fleet adoption. R14's
+deployment-inert reference engine is a contract and hostile-test oracle, not DNG's runtime
+executable. Reset, authentication, capacity return, a green test, a lease claim, or a successful
+provider call cannot change either disposition.
 
-- one host-local HMAC-derived opaque domain for the authenticated Anthropic account; raw account
-  identity is not persisted in doctrine or project telemetry;
-- both five-hour and seven-day capacity dimensions required, with a maximum observation age of 900
-  seconds; absent, malformed, future, stale, or incomplete capacity holds unattended work;
-- 30% completion/foreground reserve and a maximum estimated slice of 5 percentage points;
-- one inference-bearing root per quota domain, enforced by a quota-domain named mutex held across
-  the provider process;
-- exact Fable/Opus/Sonnet model plus `max` effort, no silent fallback, and at most 12 turns;
-- deterministic addressed-work and lane-liveness derivation before admission, with no-work
-  reported as `IDLE_SKIPPED` and all token/tool counters exactly zero;
-- a content-addressed subject fingerprint, 100k automatic compaction, dynamic-system-prompt
-  exclusion for cache reuse, no prompt suggestions, no headless-session persistence, and provider
-  output spilled to a hashed local artifact instead of recirculated through coordination context;
-- rollout state `SHADOW` with `automatic_launch_gate=closed`; reset telemetry has no writer path to
-  the gate and therefore cannot enable a task or launch a process.
+### Exact DNG token-saving profile
 
-The staged project-local implementation is
-`scripts/invoke-fleet-provider-admission.ps1`,
-`scripts/install-fleet-provider-admission.ps1`,
-`scripts/fleet-provider-admission.policy.json`, and
-`scripts/test-fleet-provider-admission.ps1`. Eight focused controls pass: shadow zero-inference,
-no-work zero counters, stale-capacity refusal, completion-reserve refusal, closed-gate refusal,
-bounded fake-provider canary, executable-digest mutation refusal, and max-turn mutation refusal.
+Every unattended Fable, Opus, and Sonnet launch now enters the same DNG admission envelope while
+retaining its exact role, model, `max` effort, review obligations, tests, and product gates:
 
-The production `dng-warden-wake` task is enabled only through this shadow path. Its Fable, Opus,
-and Sonnet decisions have each produced a zero-token `SHADOW_NO_LAUNCH` receipt. The DNG Provider
-Failover Runner and Software Factory Roadmap Controller remain disabled because their model-bearing
-paths have not yet been integrated with the universal admission boundary. The product-repository
-checkpoint is additionally held by a pre-existing Codex account-binding mismatch; that hold is
-preserved rather than bypassed.
+- one host-local HMAC-derived opaque quota domain for the authenticated Anthropic organization;
+  raw organization identity and credentials never enter doctrine;
+- fresh signed five-hour and seven-day capacity dimensions, maximum age 900 seconds, a 30%
+  completion/foreground reserve, and a maximum estimated slice of 5 percentage points;
+- one inference-bearing root for the domain, with the quota mutex held for the full child lifetime;
+- deterministic addressed-work and lane-liveness derivation before admission; no work is
+  `IDLE_SKIPPED` with zero calls, processes, token counters, and tool counters;
+- exact native executable path and SHA-256, Fable/Opus/Sonnet model, `max` effort, role, frozen
+  prompt-and-file subject, at most 12 turns, and a broker-owned 900-second process-tree ceiling;
+- compact addressed boot: read `RESUME.md`, claim the exact lane at M0, read only the lane's inbox,
+  never glob all inboxes or replay the archive during boot, use `--autocompact 100k`, exclude dynamic
+  system-prompt sections from cache identity, and disable prompt suggestions;
+- retain headless session persistence because DNG measured that removing it makes M0 return
+  `CONTEXT-UNKNOWN` and prevents the lease claim; persistence is therefore a correctness control,
+  not expendable token overhead; and
+- spill the provider stream to a content-hashed local artifact rather than inject it into another
+  lane's context. Every CANARY authorization is one-use and reseals the gate before process creation.
 
-Promotion to `ADOPT(reference)` requires a committed local adapter, structural direct-launch
-prohibition for every provider family, final subject/executable revalidation at the launch seam,
-same-domain concurrency and crash-recovery controls, shadow evidence across multiple provider
-windows, one bounded Fable canary, and a dated post-canary receipt. Fleet convergence remains the
-closed set of project-owned `ADOPT(reference)` or `DISTINGUISH(reason)` dispositions coordinated by
-the canonical adoption campaign in issue #3.
+These are one universal envelope plus a project profile, not forced identical lane behavior.
+Codex/OpenAI, Kimi, Grok, different provider accounts, and sibling Claude projects keep separate
+opaque quota domains and provider adapters while retaining the same non-regression, no-work,
+capacity, claimant, exact-subject, bounded-context, and fail-closed gate invariants.
+
+### Candidate-by-candidate reconciliation
+
+- **Doctrine PR #2 / MLV candidate** (`ed232e7e8fe9894bba8358610c2bc726aebe365a`, hardened at
+  `e057b3be685851a3f81e7338cf117438ca66c5d1`): accept its provider-neutral capacity, reset barrier,
+  and project-profile model through the ratified v1 subject. Its read-only engine is not runtime
+  authority and does not by itself prove a project launch path.
+- **Conjugal candidate** (`37f1246543c86300089b77a51a3b8ad2c5292b8d`, tree
+  `35a44265d358aa8ec3544ba2f08e0ef8e4b38216`): retain its opaque account broker,
+  provider-normalization, exact evidence-capsule, and non-regression concepts only through the
+  independently reviewed R14 reconciliation. It is comparative evidence, not a second contract.
+- **AudioMile findings:** accept the explicit `HARD_CLOSED -> INSTALLED_UNVERIFIED -> SHADOW ->
+  CANARY -> CLOSED` rollout and the rule that reset never opens a gate. DNG locally makes reinstall
+  close the gate and makes CANARY consumption reseal it before launch.
+- **Agent Bridge candidate** (`13d697c2b778ed566ebb90147aca77bd28f80824`): accept its adverse
+  review findings. DNG closes launch-time executable path/digest revalidation, mandatory capacity
+  dimensions, frozen-subject revalidation under the quota lock, model-free observation, and a
+  process-tree wall clock locally. It does not infer that these closures satisfy Agent Bridge or
+  R14's complete suspended-child, inventory, retained-owner, and review contract.
+- **Universal R14** (`874605e43531c9aa230ee16851f8107a8e0d9cec`): controlling portable
+  target. It supersedes competing portable semantics where they differ, while project adapters and
+  dispositions remain local and explicit.
+
+DNG additionally rejects three tempting savings as unsafe generalizations: the Claude Desktop
+idle-sensitive cache is not canonical capacity evidence; removing session persistence breaks M0
+and lease ownership; and a turn cap without an independent wall-clock/process-tree boundary does
+not bound a tool-heavy agent.
+
+### Landed implementation and fail-closed restoration evidence
+
+The DNG implementation landed on local `master` commit
+`4c3c80744667dcc4e266e8a54ef2fb3f42b1b350`, tree
+`b3c97a7da6858c9a554aa775920ccab865ba04de`, with durable shipping evidence ref
+`refs/software-factory/evidence/wb-20260818T230436898Z-8267df9a` at
+`afc630e8e47fee5fce1127e8b158d3db4be61904`. The policy SHA-256 is
+`057D8A5C814DF5FD32D8141108809DE7418E1257E04EF609E890F851F6DC81E7`; the broker,
+observer, and gate-transition script SHA-256 values are respectively
+`4B3E9462CDD1432A75A3E1E32ACA2DD49C7E637E400592B30B1A35465A12C641`,
+`67E6905DDBB84711784BC58A4365D0E08AFC0C4930A638B31E07730BC1BBCA4C`, and
+`6BAD61A9BEABCD9F6BEBD8F8AA6A5E5F607A661246A31B9D95F82C7F583759CA`.
+Seven signed observer controls, 24 admission controls, and six transition controls pass (37 total).
+
+The pre-existing Codex account-binding hold was closed through governed rotation transaction
+`7b671953-092d-42a4-9f4c-178ab768a8be`; it was not bypassed. The production wrapper SHA-256 is
+`092269055BF7A396A3CF79C6161A18F84295E0FB9D774077767E3330D767E03B`, pinned to native Claude
+SHA-256 `879F0D7E7EEE606095051C0C00772FC1DE41778F34835A9DE43EA8E1CAAD9AFB`.
+
+The first bounded canary exposed that disabling session persistence prevented M0 and timed out;
+artifact SHA-256
+`38EB3185DCE09AED6E3BBB61F47192BE2A27D867ADB5678031FF7626428C7699` is retained. After restoring
+persistence and tightening the addressed boot, one fresh Fable authorization ran through the real
+hidden scheduled-task path. Fable claimed its exact lease under `claude-fable-5` / `max`; the broker
+then terminated the process tree at 900 seconds and recorded terminal artifact SHA-256
+`897D1036B9A6C2BC73BBD3A0D5584E8F46D0247A327D1BAAA0FAA822E32E58E1`, exit 124. The gate remained
+closed, and Opus plus Sonnet each emitted `AUTOMATIC_LAUNCH_GATE_CLOSED` with exact zero token/tool
+counters. A post-run model-free observation read five-hour 21% and seven-day 4%.
+
+This is honest **restoration begun**, not sustained lane liveness: the Fable lease changed to
+`live-claimed`, but its canary child is terminal. The lease claim proves that the corrected M0 path
+works; it does not prove a currently live coordinator and grants no Opus/Sonnet or sequential-canary
+authority. `dng-warden-wake` remains hourly behind the closed broker, while DNG Provider Failover
+Runner and Software Factory Roadmap Controller remain disabled. No further Claude lane may be
+restored from this receipt alone.
+
+Promotion to R14 `ADOPT` requires a pinned schema-valid R14 project profile, complete four-surface
+launcher inventory and direct-invocation prohibition, 1,000 unchanged zero-inference ticks,
+suspended-child actual-image/argv attestation, full claimant and retained-owner fencing, rollback,
+current CLOSED gate, and fresh independent security and quality review over the exact landed
+subject. Fleet convergence is the closed set of project-owned pinned dispositions and receipts; a
+universal doctrine merge or this DNG canary alone is never fleet-wide adoption.
 
 ## Carve-outs a citing sibling must know
 
