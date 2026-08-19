@@ -191,8 +191,9 @@ and Lorphic K2 model overview `https://lorphic.com/kimi-k2-models/`.
 
 `DISTINGUISH(224a6705d81dfbc670313cdcef4d825216f2b380, PENDING_P0_LAUNCH_CONTRACTS)`
 
-State: **HARD_CLOSED.** Agent Bridge adopts the portable governor's invariants as
-the target universal contract, but does not activate the current project adapter.
+Rollout state: **SHADOW**; automatic launch gate: **HARD_CLOSED.** Agent Bridge
+adopts the portable governor's invariants as the target universal contract, but
+does not activate the current project adapter.
 The project-specific launch seams below remain P0 admission gates. This disposition
 creates no provider call, scheduled-task enablement, routing, review, campaign,
 landing, production, or release authority.
@@ -306,3 +307,28 @@ local tests alone.
 If R14 or a descendant is ratified, Agent Bridge must publish a new exact disposition
 against that canonical commit and profile hash. No branch head, hosted-green run,
 provider recovery, or successful local probe silently updates this disposition.
+
+### Fail-closed restoration progress
+
+Agent Bridge installed its local governor from exact subject
+`13d697c2b778ed566ebb90147aca77bd28f80824` into a versioned host-local directory.
+The policy semantic SHA-256 is
+`7E3B329544EA167C37B229576CB1787F96A521490DFEF7D5B5CD86AF62761DEE`.
+It binds Claude Code `2.1.220` past the npm shim to the native executable SHA-256
+`AF5BF1F1B2AADFFC768ECCD787084C6FDF9BA81624CBE96C1C6D9AC1A1550231`,
+requires five-hour and weekly capacity plus reset time, admits at most one
+unattended root, and requires a recovery attestation that is absent.
+
+The model-free `AgentBridgeClaudeGovernorShadow` Scheduled Task is enabled on a
+five-minute cadence. Twelve observed shadow iterations, including scheduled-path
+execution, returned `HARD_CLOSED`, `recovery=MISSING`, no native Claude CLI root,
+zero provider calls, and zero input/cache/reasoning/output tokens. The legacy
+Warden and lifecycle supervisor remain disabled. The installation manifest,
+incomplete inventory, and local receipt have SHA-256 values
+`00F4025AEF9F35874DDD878DDD31014D3299187B38D9DBC3F0EF06FD219DB98C`,
+`97543548F6DA914781A324A190F08609D2FB4D16B88378A40E5BD900A9739B8E`,
+and `96F591B3CA59E8FA4CC15AFCB4094EA57A1D672E4E574A5E062827F85DA6004E`.
+
+This advances only offline installation and SHADOW evidence. The launcher census
+is explicitly incomplete, no qualified capacity observer or recovery attestation
+exists, and no canary is authorized.
