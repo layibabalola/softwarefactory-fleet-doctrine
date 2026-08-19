@@ -1,4 +1,4 @@
-# Universal provider-control reconciliation R21
+# Universal provider-control reconciliation R22
 
 Status: **CANDIDATE / ZERO AUTHORITY / NO DEPLOYMENT**
 
@@ -468,3 +468,26 @@ It is PRE-SHADOW SEALED evidence only: it earns no ratification, adoption, conta
 credit. R21 retains the universal hosted workflow's exact 168-control universal, 37-control governor,
 and 77-control runtime-workbench matrix on pull requests and master pushes. It adds no provider execution,
 process resume/kill, containment, CANARY, or OPEN authority; adoption remains CLOSED.
+
+R22 preserves exact frozen R21 `4bca2c36ca69a584cc4c506ad36f1cef66fefab3`. The stable authority
+snapshot includes the exact direct child used by each surface: `quota-ledger` for the canonical
+SQLite database and `quota-locks` for the OS-lock namespace. Both child identities are checked along
+with the full trusted ancestor chain immediately before and after open/use under the relevant lock.
+Replacing either child directory through the deterministic publication seam or a native rename/recreate
+twin poisons the process authority and fails closed.
+
+The privacy-safe receipt at `receipts/attended-provider-rotation-20260819.json` binds four serialized,
+one-turn, no-tools successes without session identifiers, local paths, or prompt/output content. It
+retains only role/model, UTC timing, terminal metadata, prompt/output hashes, and token counts. Strict
+schema and semantic validation reject duplicate roles/hashes, ordering overlap, invalid types/ranges,
+and any aggregate drift from 7 input, 59,319 cache-create, 10,723 cache-read, and 7,540 output tokens.
+Its public provenance is issue #4 comment `5337603712`; the disposition is PRE_SHADOW_SEALED,
+`providerAuthority=false`, and `adoptionCredit=false`.
+
+The nine R21 token laws are executable data in `policy/universal-provider-token-control-r22.json`
+under `schemas/universal-provider-token-control-policy-v1.schema.json`. The policy fixes request-level
+reserve/reconcile, full cache-read weight, pre-session model-free no-work, numeric prefix/capsule and
+retry ceilings, exact cache-affinity TTL with cold-prefix fallback, conservative failed/refused/timed-out
+attempt charging, a 20 percent every-window completion reserve, and separately certified positive
+direct-launch enforcement. R22 adds no provider execution, process resume/kill, containment, CANARY,
+or OPEN authority; adoption remains CLOSED.

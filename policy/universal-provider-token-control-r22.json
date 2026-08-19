@@ -1,0 +1,46 @@
+{
+  "schema": "fleet-universal-provider-token-control-policy/v1",
+  "policyId": "universal-provider-token-control-r22",
+  "providerAuthority": false,
+  "noWork": {
+    "decisionMode": "DETERMINISTIC_MODEL_FREE",
+    "decisionPoint": "BEFORE_PROCESS_OR_SESSION_CREATION"
+  },
+  "requestAccounting": {
+    "scope": "PROVIDER_REQUEST",
+    "reserveBeforeRequest": true,
+    "reconcileAfterRequest": true,
+    "cacheReadEnvelopeWeight": 1.0,
+    "dimensions": ["inputTokens", "cacheCreateTokens", "cacheReadTokens", "reasoningTokens", "outputTokens"]
+  },
+  "prefixAndCapsule": {
+    "maxAssembledPrefixTokens": 32768,
+    "maxAddressedWorkCapsuleTokens": 8192,
+    "enforcedBeforeSessionCreation": true
+  },
+  "cacheAffinity": {
+    "required": true,
+    "exactIdentityRequired": true,
+    "ttlSeconds": 300,
+    "coldPrefixReservationAfterExpiry": true
+  },
+  "retry": {
+    "maxProviderRetries": 1,
+    "chargeFailure": true,
+    "chargeRefusal": true,
+    "chargeTimeout": true,
+    "chargeEveryAttempt": true,
+    "unknownUsageChargesReservedEnvelope": true
+  },
+  "completionReserve": {
+    "quotaWindowFloor": 0.2,
+    "appliesToEveryWindow": true,
+    "includesActiveCompletedCandidate": true
+  },
+  "directLaunch": {
+    "positiveEnforcementRequired": true,
+    "separateCertificationRequired": true,
+    "serializationSufficient": false,
+    "referenceImplementationAuthority": "NONE"
+  }
+}

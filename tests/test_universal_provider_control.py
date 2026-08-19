@@ -8,6 +8,7 @@ import json
 import os
 from pathlib import Path
 import sqlite3
+import stat
 import subprocess
 import sys
 import tempfile
@@ -4792,6 +4793,110 @@ class UniversalProviderControlTests(unittest.TestCase):
             upc.UniversalProviderBroker(self.root / "r21-manifest-closed").gate_state(),
             "CLOSED",
         )
+
+    def test_r22_01_ledger_child_replacement_is_poisoned_before_open(self) -> None:
+        broker = upc.UniversalProviderBroker(self.root / "r22-ledger-child-swap")
+        child = upc._CANONICAL_QUOTA_LEDGER_ROOT
+        displaced = child.with_name(child.name + "-displaced")
+
+        def swap(surface: str) -> None:
+            if surface == "ledger":
+                child.rename(displaced)
+                child.mkdir(mode=0o700)
+
+        with mock.patch.object(broker, "_after_authority_snapshot", side_effect=swap):
+            with self.assertRaisesRegex(upc.ControlError, "QUOTA_LEDGER_BOUNDARY_INVALID"):
+                with broker._quota_connect():
+                    pass
+        with self.assertRaisesRegex(upc.ControlError, "QUOTA_LEDGER_BOUNDARY_INVALID"):
+            broker._quota_ledger_path()
+
+    def test_r22_02_lock_child_replacement_is_poisoned_before_open(self) -> None:
+        broker = upc.UniversalProviderBroker(self.root / "r22-lock-child-swap")
+        child = upc._CANONICAL_QUOTA_AUTHORITY_ROOT / "quota-locks"
+        displaced = child.with_name(child.name + "-displaced")
+
+        def swap(surface: str) -> None:
+            if surface == "lock":
+                child.rename(displaced)
+                child.mkdir(mode=0o700)
+
+        with mock.patch.object(broker, "_after_authority_snapshot", side_effect=swap):
+            with self.assertRaisesRegex(upc.ControlError, "QUOTA_LOCK_BOUNDARY_INVALID"):
+                broker._acquire_os_lock("lease-r22-lock-child", self.quota_id)
+        with self.assertRaisesRegex(upc.ControlError, "QUOTA_LOCK_BOUNDARY_INVALID"):
+            broker._lock_path(self.quota_id)
+
+    def test_r22_03_native_ledger_child_identity_twin_rejects_replacement(self) -> None:
+        broker = upc.UniversalProviderBroker(self.root / "r22-ledger-native")
+        broker._quota_ledger_path()
+        child = upc._CANONICAL_QUOTA_LEDGER_ROOT
+        snapshot = upc._quota_authority_snapshot("QUOTA_LEDGER_BOUNDARY_INVALID", child)
+        child.rename(child.with_name(child.name + "-native-displaced"))
+        child.mkdir(mode=0o700)
+        with self.assertRaisesRegex(upc.ControlError, "QUOTA_LEDGER_BOUNDARY_INVALID"):
+            upc._revalidate_quota_authority_snapshot(
+                snapshot, "QUOTA_LEDGER_BOUNDARY_INVALID"
+            )
+
+    def test_r22_04_native_lock_child_identity_twin_rejects_replacement(self) -> None:
+        broker = upc.UniversalProviderBroker(self.root / "r22-lock-native")
+        child = broker._lock_path(self.quota_id).parent
+        snapshot = upc._quota_authority_snapshot("QUOTA_LOCK_BOUNDARY_INVALID", child)
+        child.rename(child.with_name(child.name + "-native-displaced"))
+        child.mkdir(mode=0o700)
+        with self.assertRaisesRegex(upc.ControlError, "QUOTA_LOCK_BOUNDARY_INVALID"):
+            upc._revalidate_quota_authority_snapshot(snapshot, "QUOTA_LOCK_BOUNDARY_INVALID")
+
+    def test_r22_05_attended_receipt_is_private_strict_and_recomputed(self) -> None:
+        receipt = upc.strict_json_file(
+            ROOT / "receipts" / "attended-provider-rotation-20260819.json"
+        )
+        upc.validate_contract("attended_rotation_receipt", receipt)
+        self.assertEqual(receipt["aggregate"]["cacheCreateTokens"], 59319)
+        self.assertEqual(receipt["aggregate"]["cacheReadTokens"], 10723)
+        self.assertEqual(receipt["aggregate"]["outputTokens"], 7540)
+        self.assertFalse(receipt["providerAuthority"])
+        self.assertFalse(receipt["adoptionCredit"])
+        duplicate = copy.deepcopy(receipt)
+        duplicate["requests"][1]["promptSha256"] = duplicate["requests"][0]["promptSha256"]
+        with self.assertRaisesRegex(upc.ControlError, "ATTENDED_ROTATION_HASH_DUPLICATE"):
+            upc.validate_contract("attended_rotation_receipt", duplicate)
+        wrong_total = copy.deepcopy(receipt)
+        wrong_total["requests"][0]["cacheCreateTokens"] -= 1
+        with self.assertRaisesRegex(upc.ControlError, "ATTENDED_ROTATION_AGGREGATE_MISMATCH"):
+            upc.validate_contract("attended_rotation_receipt", wrong_total)
+        invalid_type = copy.deepcopy(receipt)
+        invalid_type["requests"][0]["inputTokens"] = "1"
+        with self.assertRaisesRegex(upc.ControlError, "SCHEMA_VALIDATION_FAILED"):
+            upc.validate_contract("attended_rotation_receipt", invalid_type)
+        duplicate_key_bytes = (
+            b'{"schema":"fleet-universal-attended-rotation-receipt/v1",'
+            b'"schema":"fleet-universal-attended-rotation-receipt/v1"}'
+        )
+        with self.assertRaisesRegex(upc.ControlError, "JSON_DUPLICATE_KEY"):
+            upc.strict_json_bytes(duplicate_key_bytes)
+
+    def test_r22_06_token_laws_are_strict_structured_policy(self) -> None:
+        policy = upc.strict_json_file(
+            ROOT / "policy" / "universal-provider-token-control-r22.json"
+        )
+        upc.validate_contract("token_control_policy", policy)
+        self.assertEqual(policy["requestAccounting"]["scope"], "PROVIDER_REQUEST")
+        self.assertEqual(policy["requestAccounting"]["cacheReadEnvelopeWeight"], 1.0)
+        self.assertEqual(policy["completionReserve"]["quotaWindowFloor"], 0.2)
+        weakened = copy.deepcopy(policy)
+        weakened["requestAccounting"]["cacheReadEnvelopeWeight"] = 0.5
+        with self.assertRaisesRegex(upc.ControlError, "SCHEMA_VALIDATION_FAILED"):
+            upc.validate_contract("token_control_policy", weakened)
+        reversed_budget = copy.deepcopy(policy)
+        reversed_budget["prefixAndCapsule"]["maxAddressedWorkCapsuleTokens"] = 65536
+        with self.assertRaisesRegex(upc.ControlError, "TOKEN_CONTROL_POLICY_BUDGET_ORDER_INVALID"):
+            upc.validate_contract("token_control_policy", reversed_budget)
+        extra = copy.deepcopy(policy)
+        extra["serializationOverride"] = True
+        with self.assertRaisesRegex(upc.ControlError, "SCHEMA_VALIDATION_FAILED"):
+            upc.validate_contract("token_control_policy", extra)
 
     def test_r17_07_low_level_request_primitives_are_not_public(self) -> None:
         broker = upc.UniversalProviderBroker(self.root / "r17-no-public-primitives")

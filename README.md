@@ -44,8 +44,10 @@ the human store-and-forward bus.
 ## Proposed amendments (not ratified)
 
 - [`specs/fleet-universal-provider-control-reconciliation.md`](specs/fleet-universal-provider-control-reconciliation.md)
-  — zero-authority R21 candidate atop exact frozen R20, retaining every later canonical project
-  disposition. R21 re-samples broker time after each blocking admission lock, safely establishes a
+  — zero-authority R22 candidate atop exact frozen R21, retaining every later canonical project
+  disposition. R22 binds the quota-ledger and quota-locks child-directory identities, publishes a
+  privacy-safe attended-rotation receipt, and validates the token laws as a strict structured policy.
+  R21 re-samples broker time after each blocking admission lock, safely establishes a
   missing POSIX account data base through no-follow directory descriptors, and poisons ledger/lock
   authority when any validated directory component is replaced. R20 samples a broker-owned clock before admission serialization, rejects stale or future
   caller time as authority, validates every path component from the trusted OS-account base through the
@@ -56,6 +58,6 @@ the human store-and-forward bus.
   demand-authority chain, charges nonterminal orphaned work conservatively, and resolves quota authority
   from the OS account rather than caller-controlled HOME variables. It also withdraws R17's unsafe
   in-process callback-wrapper claim: the reference executes no provider or observer code and reports
-  `CERTIFIED_PROCESS_CHOKE_POINT_NOT_INSTALLED`. R21 preserves that honest zero-authority boundary.
+  `CERTIFIED_PROCESS_CHOKE_POINT_NOT_INSTALLED`. R22 preserves that honest zero-authority boundary.
   It is not a portable core, ruling, adoption credit, or launch authority. Coordination stays on
   [issue #4](https://github.com/layibabalola/softwarefactory-fleet-doctrine/issues/4).

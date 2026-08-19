@@ -198,8 +198,10 @@ def _validated_quota_authority_root(reason: str) -> Path:
         raise ControlError(reason) from exc
 
 
-def _quota_authority_snapshot(reason: str) -> tuple[tuple[Path, tuple[int, int]], ...]:
-    """Capture every stable authority component identity for later in-lock revalidation."""
+def _quota_authority_snapshot(
+    reason: str, child_directory: Path | None = None
+) -> tuple[tuple[Path, tuple[int, int]], ...]:
+    """Capture authority and an exact ledger/lock child identity for in-lock revalidation."""
 
     _validated_quota_authority_root(reason)
     base = _CANONICAL_QUOTA_TRUSTED_BASE
@@ -211,6 +213,12 @@ def _quota_authority_snapshot(reason: str) -> tuple[tuple[Path, tuple[int, int]]
         for component in relative.parts:
             current = current / component
             paths.append(current)
+        if child_directory is not None:
+            if child_directory.parent != authority or child_directory.name not in {
+                "quota-ledger", "quota-locks"
+            }:
+                raise ControlError(reason)
+            paths.append(child_directory)
         snapshot: list[tuple[Path, tuple[int, int]]] = []
         for path in paths:
             item = path.stat(follow_symlinks=False)
@@ -270,6 +278,8 @@ def _broker_root_runtime(poison_key: str) -> _BrokerRootRuntime:
         return runtime
 
 SCHEMAS = {
+    "attended_rotation_receipt": "universal-attended-rotation-receipt-v1.schema.json",
+    "token_control_policy": "universal-provider-token-control-policy-v1.schema.json",
     "profile": "universal-project-profile-v1.schema.json",
     "native": "provider-native-capacity-evidence-v1.schema.json",
     "observation": "universal-capacity-observation-v1.schema.json",
@@ -1074,6 +1084,49 @@ def _load_schema(name: str) -> dict[str, Any]:
     return schema
 
 
+def _validate_attended_rotation_semantics(value: dict[str, Any]) -> None:
+    requests = value["requests"]
+    if [entry["sequence"] for entry in requests] != [1, 2, 3, 4]:
+        raise ControlError("ATTENDED_ROTATION_SEQUENCE_INVALID")
+    if len({entry["laneRole"] for entry in requests}) != 4:
+        raise ControlError("ATTENDED_ROTATION_ROLE_DUPLICATE")
+    for digest_key in ("promptSha256", "outputSha256"):
+        if len({entry[digest_key] for entry in requests}) != 4:
+            raise ControlError("ATTENDED_ROTATION_HASH_DUPLICATE")
+    previous_completed: dt.datetime | None = None
+    for entry in requests:
+        started = parse_time(entry["startedAt"])
+        completed = parse_time(entry["completedAt"])
+        if completed <= started or (
+            previous_completed is not None and started < previous_completed
+        ):
+            raise ControlError("ATTENDED_ROTATION_OVERLAP_INVALID")
+        if entry["durationApiMs"] > entry["durationMs"]:
+            raise ControlError("ATTENDED_ROTATION_DURATION_INVALID")
+        previous_completed = completed
+    aggregate = value["aggregate"]
+    expected = {
+        "requestCount": len(requests),
+        "turnCount": sum(entry["numTurns"] for entry in requests),
+        "totalDurationMs": sum(entry["durationMs"] for entry in requests),
+        "totalApiDurationMs": sum(entry["durationApiMs"] for entry in requests),
+        "inputTokens": sum(entry["inputTokens"] for entry in requests),
+        "cacheCreateTokens": sum(entry["cacheCreateTokens"] for entry in requests),
+        "cacheReadTokens": sum(entry["cacheReadTokens"] for entry in requests),
+        "outputTokens": sum(entry["outputTokens"] for entry in requests),
+    }
+    if any(aggregate[key] != expected_value for key, expected_value in expected.items()):
+        raise ControlError("ATTENDED_ROTATION_AGGREGATE_MISMATCH")
+
+
+def _validate_token_control_policy_semantics(value: dict[str, Any]) -> None:
+    prefix = value["prefixAndCapsule"]
+    if prefix["maxAddressedWorkCapsuleTokens"] > prefix["maxAssembledPrefixTokens"]:
+        raise ControlError("TOKEN_CONTROL_POLICY_BUDGET_ORDER_INVALID")
+    if value["completionReserve"]["quotaWindowFloor"] < 0.2:
+        raise ControlError("TOKEN_CONTROL_POLICY_RESERVE_INVALID")
+
+
 def validate_contract(name: str, value: Any) -> None:
     if jsonschema is None:
         raise ControlError("SCHEMA_VALIDATOR_UNAVAILABLE")
@@ -1090,6 +1143,10 @@ def validate_contract(name: str, value: Any) -> None:
         raise ControlError("SCHEMA_VALIDATION_FAILED")
     for time_value in _iter_time_values(value):
         parse_time(time_value)
+    if name == "attended_rotation_receipt":
+        _validate_attended_rotation_semantics(value)
+    elif name == "token_control_policy":
+        _validate_token_control_policy_semantics(value)
 
 
 def derive_quota_domain_id(provider: str, local_stable_identity: bytes, fleet_secret: bytes) -> str:
@@ -2039,8 +2096,10 @@ class UniversalProviderBroker:
     @contextmanager
     def _quota_connect(self) -> Iterable[sqlite3.Connection]:
         try:
-            snapshot = _quota_authority_snapshot("QUOTA_LEDGER_BOUNDARY_INVALID")
             database = self._quota_ledger_path()
+            snapshot = _quota_authority_snapshot(
+                "QUOTA_LEDGER_BOUNDARY_INVALID", _CANONICAL_QUOTA_LEDGER_ROOT
+            )
             self._after_authority_snapshot("ledger")
             _revalidate_quota_authority_snapshot(
                 snapshot, "QUOTA_LEDGER_BOUNDARY_INVALID"
@@ -2735,8 +2794,10 @@ class UniversalProviderBroker:
             raise ControlError("QUOTA_LOCK_BOUNDARY_INVALID") from exc
 
     def _acquire_os_lock(self, lease_id: str, quota_domain_id: str) -> None:
-        snapshot = _quota_authority_snapshot("QUOTA_LOCK_BOUNDARY_INVALID")
         path = self._lock_path(quota_domain_id)
+        snapshot = _quota_authority_snapshot(
+            "QUOTA_LOCK_BOUNDARY_INVALID", path.parent
+        )
         handle: Any | None = None
         public_reason: str | None = None
         try:

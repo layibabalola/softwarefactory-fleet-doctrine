@@ -66,5 +66,14 @@ and retry ceilings, exact cache-affinity TTL scheduling, conservative failure/re
 a 20 percent completion reserve in every quota window, and positive separately certified direct-launch
 enforcement. Serialization alone cannot satisfy those controls.
 
+R22 preserves exact frozen R21 `4bca2c36ca69a584cc4c506ad36f1cef66fefab3`. Stable authority
+snapshots now retain the exact `quota-ledger` or `quota-locks` child directory in addition to every
+trusted-base-to-provider-control component, and revalidate that child before and after database or
+lock use. The four successful attended requests are published as a privacy-safe structured receipt
+with prompt/output hashes and recomputed token totals; it is external provenance with
+`PRE_SHADOW_SEALED`, `providerAuthority=false`, and no adoption credit. The nine token laws are also
+enforced by a strict schema plus the numeric R22 policy profile rather than prose markers alone.
+R22 remains reference-only, zero authority, and CLOSED.
+
 Standing containment is unchanged: provider capacity, reset, or authentication cannot open an
 automatic-launch gate or re-enable a launcher.
