@@ -213,3 +213,93 @@ gate, enable a task, launch a provider, or satisfy any R26 adoption proof. Adver
 `DISTINGUISH`, not `ADOPT`; exact model, effort, role, review, quality, and functionality requirements
 remain unchanged.
 
+## DISTINGUISH_UTILIZATION_SHADOW_BOUNDED_FOREGROUND_EXCEPTION
+
+Status: `PROJECT_DOCTRINE_EXCEPTION_NO_CURRENT_AUTHORITY`. Decision: `NO_GO`. AdversarialLLM
+remains `DISTINGUISH`, not `ADOPT`. This project-owned doctrine exception is necessary but never
+sufficient for a provider call. Its canonical merge cannot approve an adjudication, install controls,
+issue or consume a permit, dispatch a job, or change the declared automatic-gate policy `CLOSED` or
+rollout policy `HARD_CLOSED`. Those are declared policies, not proof of observed host containment;
+`hostHardCloseClaimed=false`, `observedHostContainmentState=UNPROVED`, and
+`implementationState=NOT_INSTALLED` remain controlling.
+
+This amendment succeeds canonical fleet commit `5ac7036705338cfe3370f5fddda224e07d5d1bdd`, tree
+`9e53ff055bbf1a4fe796104d06f009f503082ad5`, and project spec Git blob
+`f169a661956830aced574e6c3fa6f4989098e892`, while explicitly resolving only the bounded
+foreground conflict inherited from project-owned predecessor blob
+`33fe9c7fb7cc31b1f172b9216475fef5fe97aaad` (12,264 bytes, SHA-256
+`0d5758fc43094a9029491852faee190c8b34ec28d3fb14c561f82b87137ed99f`). It preserves fleet
+`RULINGS.md` blob `34520b7f75386ab2dba6948bb27d256d3b06c2c9`, R26 merge
+`909f769d02e8412e51e28e242cfa8d00dadc9a3d`, R26 tree
+`e9283a1c297103dd53f0bc7a1310fb1dc86b591e`, and R26 subject
+`e70a044f31dd2f43ab7c716d63a4eb89318c61b6` as zero-authority evidence.
+
+### Exact bounded scope
+
+If every separate prerequisite below later passes, the exception can cover exactly one attended,
+foreground, one-shot Claude `DOCTRINE_EXACT_OBJECT_REVIEW` evidence job. It is not rollout `SHADOW`,
+`CONTAINMENT`, `CANARY`, `OPEN`, `ENABLED`, product adoption, or runtime activation. The child must use
+one exact model and effort with no substitution or fallback, one sanitized read-only exact-hash capsule,
+a pinned launcher with all provider filesystem tools denied, and bounded stdout only. Its output is
+advisory evidence only: no patch, repository mutation, review, correctness, adjudication, merge, release,
+activation, or completion credit.
+
+One permit covers one job, one attempt, one provider turn, and at most one concurrent quota-domain job;
+admission requires observed concurrency exactly zero. Start TTL and runtime are each at most 900 seconds.
+Input is capped at 32,000 estimated tokens and 131,072 bytes; output at 4,000 estimated tokens and 32,768
+bytes; measured provider-window consumption is capped at 1 percent. Fresh capacity plus completion and
+independent-review reserve are mandatory. There is no retry, continuation, second job, provider/model
+fallback, schedule, watcher, persistence, auth mutation, reset, task enable/register/start, Desktop
+mutation, deployment, automatic gate transition, or authority over any process except termination of
+the exact child after a post-spawn mismatch.
+
+### Conflict and precedence map over `33fe9c7f...`
+
+| Boundary | Exact source | Precedence |
+| --- | --- | --- |
+| `DISTINGUISH_SUCCESSOR_AND_HARD_CLOSED_BOUNDARY` | `specs/adversarialllm.md@blob:33fe9c7fb7cc31b1f172b9216475fef5fe97aaad#L65-L82` | `PRESERVE_AND_SATISFY_SUCCESSOR_CONDITION_ONLY_AFTER_CANONICAL_MERGE`: preserve the 874/8eee sibling history, non-`ADOPT` conclusion, `HARD_CLOSED` posture, and no-installed-gate statement; this exact successor grants no provider call. |
+| `UNIVERSAL_PROVIDER_SEMANTICS` | `specs/adversarialllm.md@blob:33fe9c7fb7cc31b1f172b9216475fef5fe97aaad#L85-L112` | `PRESERVE`: provider identity, capacity, admission, terminal, independence, role-quality, and budget-stop semantics remain controlling. |
+| `ROLLOUT_OVERLAY_STATE_MACHINE` | `specs/adversarialllm.md@blob:33fe9c7fb7cc31b1f172b9216475fef5fe97aaad#L119-L127` | `PRESERVE`: the rollout overlay remains `HARD_CLOSED`; `UTILIZATION_SHADOW` creates no second admission or rollout state machine. |
+| `CANARY_AND_ROLLOUT_PREREQUISITES` | `specs/adversarialllm.md@blob:33fe9c7fb7cc31b1f172b9216475fef5fe97aaad#L129-L168` | `PRESERVE_WITH_EXPLICIT_CLASSIFICATION`: every canary and rollout prerequisite remains mandatory; this job is not canary, rollout `SHADOW`, `CONTAINMENT`, `OPEN`, or `ENABLED` and earns none of their evidence or credit. The bounded-job slot at lines 166-168 can be satisfied only by the exact separately adjudicated job after installed controls pass. |
+| `NARROW_PROVIDER_LAUNCH_EXCEPTION` | `specs/adversarialllm.md@blob:33fe9c7fb7cc31b1f172b9216475fef5fe97aaad#L170-L176` | `SUPERSEDE_ONLY_PROVIDER_LAUNCH_PROHIBITION_FOR_EXACT_CHILD_AFTER_ALL_GATES`: only the categorical provider-launch prohibition is narrowed, and only after the separate owner-approved adjudication, installed controls, one-use permit, durable pre-dispatch receipt, and zero-concurrency admission all pass; canary, task, gate, model-substitution, review-credit, release, and rollout prohibitions remain controlling. |
+| `FLEET_RULINGS_NON_ADOPTION_BOUNDARY` | `RULINGS.md@blob:34520b7f75386ab2dba6948bb27d256d3b06c2c9#L982-L987,L1027-L1034` | `PRESERVE`: portable doctrine and a fleet merge are never project adoption or runtime authority; this exception remains `DISTINGUISH`, never `ADOPT`. |
+
+### Required before any provider call
+
+All of the following are mandatory and exact: a separately merged
+`adversarialllm-utilization-shadow-adjudication/v1` record with decision
+`APPROVE_ONE_SHOT_UTILIZATION_SHADOW`; two independent exact-proposal-byte `PASS` reviews; an explicit
+authorized project-owner approval and a distinct authorized adjudicator; authority-registry-bound
+identities and attestations; the proposal, amended-spec, precedence-map, job, capsule, launcher, model,
+effort, existing-auth read-only evidence, capacity, quota-domain lease, zero concurrency, and reserve
+bindings; digest-pinned installed controls and exact negative-control receipts; and create-new,
+no-follow/reparse-rejecting, durably flushed, exact-byte-reread pre-dispatch and terminal receipt paths.
+Paper records, source files, schemas, tests, existing authentication, or this merged amendment cannot
+substitute for installed controls or authorize dispatch.
+
+Content addressing is acyclic and ordered:
+
+1. merge this canonical fleet doctrine amendment and externally resolve its resulting spec blob;
+2. separately merge the owner-approved project adjudication and externally resolve its merge and record
+   blob; the adjudication record must not embed a future permit or receipt digest;
+3. install and digest-pin the adjudicated technical controls and pass the exact negative controls;
+4. issue a later canonical one-use permit blob binding the already-resolved adjudication, exact job,
+   controls, admission evidence, nonce, 900-second limits, and receipt paths, but no future receipt digest;
+5. preflight and durably reserve the create-new terminal-receipt destination through the adjudicated
+   no-follow/reparse-rejecting reservation control; then create, durably flush, and exact-byte reread the
+   pre-dispatch receipt binding the issued permit, and record its digest while atomically consuming the
+   permit before spawn; and
+6. after the child terminates, write, durably flush, and exact-byte reread the terminal receipt at the
+   already-reserved create-new destination without overwrite or authority credit.
+
+Any absent, expired, unknown, changed, replayed, contested, colliding, over-budget, or mismatched fact is
+`NO_GO`; after spawn it is `TERMINATE_EXACT_OWN_CHILD`. The permit remains consumed on failure. Every
+terminal path captures bounded stdout or explicit failure, writes the immutable terminal receipt or an
+explicit `RECEIPT_WRITE_FAILED_NO_AUTHORITY_CREDIT`, releases only the exact ephemeral lease, and retains
+the declared `CLOSED` and `HARD_CLOSED` policies without claiming an observed host hard-close.
+
+This section grants no `ADOPT`, provider lane, runtime activation, rollout stage, canary, containment,
+task, schedule, queue, watcher, persistence, authentication, reset, Desktop, deployment, automatic-gate,
+repository-write, patch, commit, merge, push, release, review, correctness, adjudication, completion,
+model/provider fallback, continuation, retry, second-job, or host-hard-close authority.
+

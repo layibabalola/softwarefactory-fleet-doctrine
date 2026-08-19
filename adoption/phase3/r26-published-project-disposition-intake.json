@@ -12,6 +12,11 @@
     "adversarialSpecBindingTree": "5f383c1475c0168677724fcf155092be7d1010d2",
     "adversarialSpecRepairCommit": "f204b17d4f2be86fe8eb666c6fb1d58ed2633c57",
     "adversarialSpecRepairTree": "02e4214f7f18ca09d1053218e5747ac9e7a53514",
+    "utilizationShadowDoctrineBaseCommit": "5ac7036705338cfe3370f5fddda224e07d5d1bdd",
+    "utilizationShadowDoctrineBaseTree": "9e53ff055bbf1a4fe796104d06f009f503082ad5",
+    "utilizationShadowDoctrineAmendmentCommit": "7bf0cf9943de7c33b14496b73f70c18959816c5c",
+    "utilizationShadowDoctrineAmendmentTree": "ebac9bbd75d8ae70bf2b4a2d0877020a5af83127",
+    "utilizationShadowDoctrineAmendmentSpecBlob": "e964d2b77426ece703f8fb1fd82a9cb068e98632",
     "r26Candidate": "e70a044f31dd2f43ab7c716d63a4eb89318c61b6",
     "r26Merge": "909f769d02e8412e51e28e242cfa8d00dadc9a3d"
   },
@@ -26,8 +31,8 @@
       "projectId": "adversarialllm",
       "specPath": "specs/adversarialllm.md",
       "centralEvidence": {
-        "commit": "f204b17d4f2be86fe8eb666c6fb1d58ed2633c57",
-        "gitBlobOid": "f169a661956830aced574e6c3fa6f4989098e892"
+        "commit": "7bf0cf9943de7c33b14496b73f70c18959816c5c",
+        "gitBlobOid": "e964d2b77426ece703f8fb1fd82a9cb068e98632"
       },
       "projectCandidate": {
         "remote": "https://github.com/layibabalola/AdversarialLLM-ClaudeCode.git",

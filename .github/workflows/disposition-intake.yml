@@ -39,6 +39,9 @@ jobs:
       - name: Run phase-2 blocker controls
         run: python -m unittest discover -s tests -p "test_phase2_disposition_batch.py" -v
 
+      - name: Run AdversarialLLM utilization-shadow doctrine controls
+        run: python -m unittest discover -s tests -p "test_adversarialllm_utilization_shadow_doctrine.py" -v
+
       - name: Verify phase-2 blockers against frozen project evidence
         run: python tools/check_phase2_disposition_batch.py --treeish HEAD
 
