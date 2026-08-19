@@ -34,6 +34,11 @@ PRE_ADVERSARIAL_SPEC_REPAIR_COMMIT = "8b20d13c2c27ab6375872be92982ef4b5ff229d5"
 PRE_ADVERSARIAL_SPEC_REPAIR_TREE = "5f7778baf2e46d64662fdef3074b9b0e6833a7f9"
 ADVERSARIAL_SPEC_REPAIR_COMMIT = "f204b17d4f2be86fe8eb666c6fb1d58ed2633c57"
 ADVERSARIAL_SPEC_REPAIR_TREE = "02e4214f7f18ca09d1053218e5747ac9e7a53514"
+UTILIZATION_SHADOW_DOCTRINE_BASE_COMMIT = "5ac7036705338cfe3370f5fddda224e07d5d1bdd"
+UTILIZATION_SHADOW_DOCTRINE_BASE_TREE = "9e53ff055bbf1a4fe796104d06f009f503082ad5"
+UTILIZATION_SHADOW_DOCTRINE_AMENDMENT_COMMIT = "7bf0cf9943de7c33b14496b73f70c18959816c5c"
+UTILIZATION_SHADOW_DOCTRINE_AMENDMENT_TREE = "ebac9bbd75d8ae70bf2b4a2d0877020a5af83127"
+UTILIZATION_SHADOW_DOCTRINE_AMENDMENT_SPEC_BLOB = "e964d2b77426ece703f8fb1fd82a9cb068e98632"
 R26_CANDIDATE = "e70a044f31dd2f43ab7c716d63a4eb89318c61b6"
 R26_MERGE = "909f769d02e8412e51e28e242cfa8d00dadc9a3d"
 INITIAL_PROJECT_IDS = {"cloudvore", "mlv-app", "salesforce-tools"}
@@ -83,6 +88,7 @@ ALLOWED_PHASE3_PATHS = {
     "tests/test_adoption_ledger.py",
     "tests/test_phase2_disposition_batch.py",
     "tests/test_phase3_disposition_batch.py",
+    "tests/test_adversarialllm_utilization_shadow_doctrine.py",
     "tools/check_adoption_ledger.py",
     "tools/check_phase2_disposition_batch.py",
     "tools/check_phase3_disposition_batch.py",
@@ -221,6 +227,11 @@ def _verify_frozen_base(base: Any, treeish: str) -> None:
         "adversarialSpecBindingTree": ADVERSARIAL_SPEC_BINDING_TREE,
         "adversarialSpecRepairCommit": ADVERSARIAL_SPEC_REPAIR_COMMIT,
         "adversarialSpecRepairTree": ADVERSARIAL_SPEC_REPAIR_TREE,
+        "utilizationShadowDoctrineBaseCommit": UTILIZATION_SHADOW_DOCTRINE_BASE_COMMIT,
+        "utilizationShadowDoctrineBaseTree": UTILIZATION_SHADOW_DOCTRINE_BASE_TREE,
+        "utilizationShadowDoctrineAmendmentCommit": UTILIZATION_SHADOW_DOCTRINE_AMENDMENT_COMMIT,
+        "utilizationShadowDoctrineAmendmentTree": UTILIZATION_SHADOW_DOCTRINE_AMENDMENT_TREE,
+        "utilizationShadowDoctrineAmendmentSpecBlob": UTILIZATION_SHADOW_DOCTRINE_AMENDMENT_SPEC_BLOB,
         "r26Candidate": R26_CANDIDATE,
         "r26Merge": R26_MERGE,
     }
@@ -262,10 +273,29 @@ def _verify_frozen_base(base: Any, treeish: str) -> None:
         "specs/adversarialllm.md"
     }:
         raise Phase3Error("ADVERSARIAL_SPEC_REPAIR_SCOPE_INVALID")
+    if _commit_tuple(UTILIZATION_SHADOW_DOCTRINE_BASE_COMMIT)[0] != UTILIZATION_SHADOW_DOCTRINE_BASE_TREE:
+        raise Phase3Error("UTILIZATION_SHADOW_DOCTRINE_BASE_OBJECT_MISMATCH")
+    if _commit_tuple(UTILIZATION_SHADOW_DOCTRINE_AMENDMENT_COMMIT) != (
+        UTILIZATION_SHADOW_DOCTRINE_AMENDMENT_TREE,
+        [UTILIZATION_SHADOW_DOCTRINE_BASE_COMMIT],
+    ):
+        raise Phase3Error("UTILIZATION_SHADOW_DOCTRINE_AMENDMENT_OBJECT_MISMATCH")
+    if _changed_paths(
+        UTILIZATION_SHADOW_DOCTRINE_BASE_COMMIT,
+        UTILIZATION_SHADOW_DOCTRINE_AMENDMENT_COMMIT,
+    ) != {"specs/adversarialllm.md"}:
+        raise Phase3Error("UTILIZATION_SHADOW_DOCTRINE_AMENDMENT_SCOPE_INVALID")
+    if _oid(
+        UTILIZATION_SHADOW_DOCTRINE_AMENDMENT_COMMIT,
+        "specs/adversarialllm.md",
+    ) != UTILIZATION_SHADOW_DOCTRINE_AMENDMENT_SPEC_BLOB:
+        raise Phase3Error("UTILIZATION_SHADOW_DOCTRINE_AMENDMENT_SPEC_MISMATCH")
     descendant = "HEAD" if treeish == ":" else treeish
-    if not _is_ancestor(ADVERSARIAL_SPEC_REPAIR_COMMIT, descendant):
-        raise Phase3Error("ADVERSARIAL_SPEC_REPAIR_NOT_ANCESTOR")
-    if not _changed_paths(ADVERSARIAL_SPEC_REPAIR_COMMIT, treeish).issubset(ALLOWED_PHASE3_PATHS):
+    if not _is_ancestor(UTILIZATION_SHADOW_DOCTRINE_AMENDMENT_COMMIT, descendant):
+        raise Phase3Error("UTILIZATION_SHADOW_DOCTRINE_AMENDMENT_NOT_ANCESTOR")
+    if not _changed_paths(UTILIZATION_SHADOW_DOCTRINE_AMENDMENT_COMMIT, treeish).issubset(
+        ALLOWED_PHASE3_PATHS
+    ):
         raise Phase3Error("PHASE3_SCOPE_VIOLATION")
 
 
@@ -301,7 +331,7 @@ def _verify_project(
         "CENTRAL_EVIDENCE_INVALID",
     )
     evidence_commit = (
-        ADVERSARIAL_SPEC_REPAIR_COMMIT
+        UTILIZATION_SHADOW_DOCTRINE_AMENDMENT_COMMIT
         if project_id == "adversarialllm"
         else SPEC_BINDING_COMMIT
     )
@@ -359,7 +389,7 @@ def verify_batch(batch: dict[str, Any], treeish: str = "HEAD") -> None:
     census = ledger.get("census")
     if not isinstance(census, dict):
         raise Phase3Error("LEDGER_CENSUS_INVALID")
-    if census.get("baseCommit") != ADVERSARIAL_SPEC_REPAIR_COMMIT:
+    if census.get("baseCommit") != UTILIZATION_SHADOW_DOCTRINE_AMENDMENT_COMMIT:
         raise Phase3Error("LEDGER_CENSUS_BASE_MISMATCH")
     if ledger.get("summary") != {
         "projectCount": 9,

@@ -23,7 +23,7 @@
     }
   },
   "census": {
-    "baseCommit": "f204b17d4f2be86fe8eb666c6fb1d58ed2633c57",
+    "baseCommit": "7bf0cf9943de7c33b14496b73f70c18959816c5c",
     "projectSpecGlob": "specs/*.md",
     "nonProjectSpecs": [
       "specs/fleet-provider-capacity-governor.md",
@@ -76,8 +76,8 @@
       "specPath": "specs/adversarialllm.md",
       "status": "DISTINGUISH",
       "evidence": {
-        "commit": "f204b17d4f2be86fe8eb666c6fb1d58ed2633c57",
-        "gitBlobOid": "f169a661956830aced574e6c3fa6f4989098e892",
+        "commit": "7bf0cf9943de7c33b14496b73f70c18959816c5c",
+        "gitBlobOid": "e964d2b77426ece703f8fb1fd82a9cb068e98632",
         "disposition": {
           "status": "DISTINGUISH",
           "subjectCommit": "909f769d02e8412e51e28e242cfa8d00dadc9a3d"

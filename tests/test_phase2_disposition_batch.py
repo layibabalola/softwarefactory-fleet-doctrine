@@ -147,6 +147,7 @@ class Phase2DispositionBatchTests(unittest.TestCase):
                 "tests/test_phase2_disposition_batch.py",
                 "tools/check_phase2_disposition_batch.py",
                 "tests/test_phase3_disposition_batch.py",
+                "tests/test_adversarialllm_utilization_shadow_doctrine.py",
                 "tools/check_phase3_disposition_batch.py",
             },
         ):

@@ -49,6 +49,7 @@ ALLOWED_PHASE2_PATHS = {
     "specs/salesforce-tools.md",
     "tests/test_phase2_disposition_batch.py",
     "tests/test_phase3_disposition_batch.py",
+    "tests/test_adversarialllm_utilization_shadow_doctrine.py",
     "tests/test_adoption_ledger.py",
     "tools/check_adoption_ledger.py",
     "tools/check_phase2_disposition_batch.py",

@@ -161,12 +161,98 @@ class Phase3DispositionBatchTests(unittest.TestCase):
             "specBindingCommit",
             "adversarialSpecBindingCommit",
             "adversarialSpecRepairCommit",
+            "utilizationShadowDoctrineBaseCommit",
+            "utilizationShadowDoctrineBaseTree",
+            "utilizationShadowDoctrineAmendmentCommit",
+            "utilizationShadowDoctrineAmendmentTree",
+            "utilizationShadowDoctrineAmendmentSpecBlob",
         ):
             with self.subTest(field=field):
                 batch = self._copy()
                 batch["frozenBase"][field] = "0" * 40
                 with self.assertRaisesRegex(MODULE.Phase3Error, "FROZEN_BASE_MISMATCH"):
                     MODULE.verify_batch(batch, "HEAD")
+
+    def test_utilization_shadow_doctrine_base_object_is_exact(self):
+        original = MODULE._commit_tuple
+
+        def commit_tuple(commit):
+            if commit == MODULE.UTILIZATION_SHADOW_DOCTRINE_BASE_COMMIT:
+                return ("0" * 40, [])
+            return original(commit)
+
+        with mock.patch.object(MODULE, "_commit_tuple", side_effect=commit_tuple):
+            with self.assertRaisesRegex(
+                MODULE.Phase3Error,
+                "UTILIZATION_SHADOW_DOCTRINE_BASE_OBJECT_MISMATCH",
+            ):
+                MODULE.verify_batch(self._copy(), "HEAD")
+
+    def test_utilization_shadow_doctrine_amendment_object_and_parent_are_exact(self):
+        original = MODULE._commit_tuple
+
+        def commit_tuple(commit):
+            if commit == MODULE.UTILIZATION_SHADOW_DOCTRINE_AMENDMENT_COMMIT:
+                return (MODULE.UTILIZATION_SHADOW_DOCTRINE_AMENDMENT_TREE, [])
+            return original(commit)
+
+        with mock.patch.object(MODULE, "_commit_tuple", side_effect=commit_tuple):
+            with self.assertRaisesRegex(
+                MODULE.Phase3Error,
+                "UTILIZATION_SHADOW_DOCTRINE_AMENDMENT_OBJECT_MISMATCH",
+            ):
+                MODULE.verify_batch(self._copy(), "HEAD")
+
+    def test_utilization_shadow_doctrine_amendment_scope_is_spec_only(self):
+        original = MODULE._changed_paths
+
+        def changed_paths(base, treeish):
+            if (base, treeish) == (
+                MODULE.UTILIZATION_SHADOW_DOCTRINE_BASE_COMMIT,
+                MODULE.UTILIZATION_SHADOW_DOCTRINE_AMENDMENT_COMMIT,
+            ):
+                return {"specs/adversarialllm.md", "src/runtime.py"}
+            return original(base, treeish)
+
+        with mock.patch.object(MODULE, "_changed_paths", side_effect=changed_paths):
+            with self.assertRaisesRegex(
+                MODULE.Phase3Error,
+                "UTILIZATION_SHADOW_DOCTRINE_AMENDMENT_SCOPE_INVALID",
+            ):
+                MODULE.verify_batch(self._copy(), "HEAD")
+
+    def test_utilization_shadow_doctrine_amended_spec_blob_is_exact(self):
+        original = MODULE._oid
+
+        def oid(treeish, path):
+            if (
+                treeish == MODULE.UTILIZATION_SHADOW_DOCTRINE_AMENDMENT_COMMIT
+                and path == "specs/adversarialllm.md"
+            ):
+                return "0" * 40
+            return original(treeish, path)
+
+        with mock.patch.object(MODULE, "_oid", side_effect=oid):
+            with self.assertRaisesRegex(
+                MODULE.Phase3Error,
+                "UTILIZATION_SHADOW_DOCTRINE_AMENDMENT_SPEC_MISMATCH",
+            ):
+                MODULE.verify_batch(self._copy(), "HEAD")
+
+    def test_utilization_shadow_doctrine_amendment_must_be_ancestor(self):
+        original = MODULE._is_ancestor
+
+        def is_ancestor(ancestor, descendant):
+            if ancestor == MODULE.UTILIZATION_SHADOW_DOCTRINE_AMENDMENT_COMMIT:
+                return False
+            return original(ancestor, descendant)
+
+        with mock.patch.object(MODULE, "_is_ancestor", side_effect=is_ancestor):
+            with self.assertRaisesRegex(
+                MODULE.Phase3Error,
+                "UTILIZATION_SHADOW_DOCTRINE_AMENDMENT_NOT_ANCESTOR",
+            ):
+                MODULE.verify_batch(self._copy(), "HEAD")
 
     def test_exact_four_project_closed_set_is_required(self):
         batch = self._copy()
@@ -512,6 +598,10 @@ class Phase3DispositionBatchTests(unittest.TestCase):
             workflow,
         )
         self.assertIn(
+            'python -m unittest discover -s tests -p "test_adversarialllm_utilization_shadow_doctrine.py" -v',
+            workflow,
+        )
+        self.assertIn(
             "R26_REMOTE_AUTH_CONFIGURED: ${{ secrets.R26_CROSS_REPO_READ_TOKEN != '' }}",
             workflow,
         )
@@ -547,6 +637,11 @@ class Phase3DispositionBatchTests(unittest.TestCase):
             if (base, treeish) == (
                 MODULE.PRE_ADVERSARIAL_SPEC_REPAIR_COMMIT,
                 MODULE.ADVERSARIAL_SPEC_REPAIR_COMMIT,
+            ):
+                return {"specs/adversarialllm.md"}
+            if (base, treeish) == (
+                MODULE.UTILIZATION_SHADOW_DOCTRINE_BASE_COMMIT,
+                MODULE.UTILIZATION_SHADOW_DOCTRINE_AMENDMENT_COMMIT,
             ):
                 return {"specs/adversarialllm.md"}
             return {"src/runtime.py"}
