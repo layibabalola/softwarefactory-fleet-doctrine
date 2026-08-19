@@ -23,6 +23,15 @@ class LauncherCandidateClassifierTests(unittest.TestCase):
                 path.write_text(text, encoding="utf-8")
             return MODULE.classify_tree(root)
 
+    def _frozen(self, report: dict[str, object]) -> dict[str, object]:
+        report = dict(report)
+        report.update(
+            sourceMode="GIT_COMMIT",
+            subjectCommit="1" * 40,
+            subjectTree="2" * 40,
+        )
+        return report
+
     def test_detects_variable_bound_deadman_launch(self):
         result = self._classify(
             {"deadman.ps1": "$cfg = @{ Runner='claude.exe' }\nStart-Process -FilePath $cfg.Runner\n"}
@@ -82,43 +91,78 @@ class LauncherCandidateClassifierTests(unittest.TestCase):
         self.assertEqual(result["status"], "INCOMPLETE_ZERO_AUTHORITY")
 
     def test_review_requires_exact_population_and_hashes(self):
-        report = self._classify({"launch.sh": "exec claude --print\n"})
+        report = self._frozen(self._classify({"launch.sh": "exec claude --print\n"}))
         candidate = report["candidates"][0]
         with self.assertRaisesRegex(ValueError, "REVIEW_MISSING_PATH"):
-            MODULE.reconcile_review(report, {"schema": "conjugal-launcher-review/v1", "entries": []})
+            MODULE.reconcile_review(
+                report,
+                {
+                    "schema": MODULE.REVIEW_SCHEMA,
+                    "subjectCommit": report["subjectCommit"],
+                    "subjectTree": report["subjectTree"],
+                    "entries": [],
+                },
+            )
         with self.assertRaisesRegex(ValueError, "REVIEW_HASH_MISMATCH"):
             MODULE.reconcile_review(
                 report,
                 {
-                    "schema": "conjugal-launcher-review/v1",
+                    "schema": MODULE.REVIEW_SCHEMA,
+                    "subjectCommit": report["subjectCommit"],
+                    "subjectTree": report["subjectTree"],
                     "entries": [{"path": candidate["path"], "sha256": "sha256:" + "0" * 64, "disposition": "LAUNCHER"}],
                 },
             )
 
+    def test_review_requires_exact_frozen_subject(self):
+        working_report = self._classify({"launch.sh": "exec claude --print\n"})
+        with self.assertRaisesRegex(ValueError, "REVIEW_REQUIRES_GIT_SUBJECT"):
+            MODULE.review_template(working_report)
+        report = self._frozen(working_report)
+        review = MODULE.review_template(report)
+        review["subjectTree"] = "3" * 40
+        with self.assertRaisesRegex(ValueError, "REVIEW_SUBJECT_MISMATCH"):
+            MODULE.reconcile_review(report, review)
+
     def test_review_never_grants_runtime_authority(self):
-        report = self._classify({"launch.sh": "exec claude --print\n", "note.py": "# anthropic\n"})
+        report = self._frozen(self._classify({"launch.sh": "exec claude --print\n", "note.py": "# anthropic\n"}))
         entries = [
             {"path": row["path"], "sha256": row["sha256"], "disposition": "LAUNCHER" if row["path"] == "launch.sh" else "NON_LAUNCHER"}
             for row in report["candidates"]
         ]
-        result = MODULE.reconcile_review(report, {"schema": "conjugal-launcher-review/v1", "entries": entries})
+        result = MODULE.reconcile_review(
+            report,
+            {
+                "schema": MODULE.REVIEW_SCHEMA,
+                "subjectCommit": report["subjectCommit"],
+                "subjectTree": report["subjectTree"],
+                "entries": entries,
+            },
+        )
         self.assertEqual(result["pendingCount"], 0)
         self.assertEqual(result["status"], "REVIEWED_CLASSIFICATION_ZERO_AUTHORITY")
 
     def test_unknown_review_remains_incomplete(self):
-        report = self._classify({"launch.sh": "exec claude --print\n"})
+        report = self._frozen(self._classify({"launch.sh": "exec claude --print\n"}))
         row = report["candidates"][0]
         result = MODULE.reconcile_review(
             report,
-            {"schema": "conjugal-launcher-review/v1", "entries": [{"path": row["path"], "sha256": row["sha256"], "disposition": "UNKNOWN"}]},
+            {
+                "schema": MODULE.REVIEW_SCHEMA,
+                "subjectCommit": report["subjectCommit"],
+                "subjectTree": report["subjectTree"],
+                "entries": [{"path": row["path"], "sha256": row["sha256"], "disposition": "UNKNOWN"}],
+            },
         )
         self.assertEqual(result["pendingCount"], 1)
         self.assertEqual(result["status"], "REVIEW_INCOMPLETE_ZERO_AUTHORITY")
 
     def test_review_template_binds_every_candidate_as_unknown(self):
-        report = self._classify({"b.py": "# claude\n", "a.sh": "exec kimi --print\n"})
+        report = self._frozen(self._classify({"b.py": "# claude\n", "a.sh": "exec kimi --print\n"}))
         template = MODULE.review_template(report)
-        self.assertEqual(template["schema"], "conjugal-launcher-review/v1")
+        self.assertEqual(template["schema"], MODULE.REVIEW_SCHEMA)
+        self.assertEqual(template["subjectCommit"], report["subjectCommit"])
+        self.assertEqual(template["subjectTree"], report["subjectTree"])
         self.assertEqual([entry["path"] for entry in template["entries"]], ["a.sh", "b.py"])
         self.assertTrue(all(entry["disposition"] == "UNKNOWN" for entry in template["entries"]))
         result = MODULE.reconcile_review(report, template)

@@ -21,6 +21,7 @@ MAX_EVIDENCE_LINES_PER_KIND = 64
 SOURCE_SUFFIXES = {".bat", ".cmd", ".js", ".ps1", ".psm1", ".py", ".sh", ".ts"}
 EXCLUDED_PARTS = {".git", "node_modules", "tmp"}
 REVIEW_DISPOSITIONS = {"LAUNCHER", "NON_LAUNCHER", "UNKNOWN"}
+REVIEW_SCHEMA = "conjugal-launcher-review/v2"
 
 PROVIDERS = {
     "CLAUDE": re.compile(r"(?i)\b(?:claude(?:\.exe)?|anthropic)\b"),
@@ -223,9 +224,26 @@ def classify_git_tree(repo: Path, treeish: str) -> dict[str, object]:
     return _report(str(repo), rows, refused, sourceMode="GIT_COMMIT", subjectCommit=commit, subjectTree=tree)
 
 
+def _review_subject(report: dict[str, object]) -> tuple[str, str]:
+    commit = report.get("subjectCommit")
+    tree = report.get("subjectTree")
+    if (
+        report.get("sourceMode") != "GIT_COMMIT"
+        or not isinstance(commit, str)
+        or not re.fullmatch(r"[0-9a-f]{40}", commit)
+        or not isinstance(tree, str)
+        or not re.fullmatch(r"[0-9a-f]{40}", tree)
+    ):
+        raise ValueError("REVIEW_REQUIRES_GIT_SUBJECT")
+    return commit, tree
+
+
 def reconcile_review(report: dict[str, object], review: dict[str, object]) -> dict[str, object]:
-    if set(review) != {"schema", "entries"} or review.get("schema") != "conjugal-launcher-review/v1":
+    if set(review) != {"schema", "subjectCommit", "subjectTree", "entries"} or review.get("schema") != REVIEW_SCHEMA:
         raise ValueError("REVIEW_SCHEMA")
+    subject_commit, subject_tree = _review_subject(report)
+    if review.get("subjectCommit") != subject_commit or review.get("subjectTree") != subject_tree:
+        raise ValueError("REVIEW_SUBJECT_MISMATCH")
     entries = review.get("entries")
     if not isinstance(entries, list):
         raise ValueError("REVIEW_SCHEMA")
@@ -271,11 +289,14 @@ def reconcile_review(report: dict[str, object], review: dict[str, object]) -> di
 
 
 def review_template(report: dict[str, object]) -> dict[str, object]:
+    subject_commit, subject_tree = _review_subject(report)
     candidates = report.get("candidates")
     if not isinstance(candidates, list):
         raise ValueError("REPORT_SCHEMA")
     return {
-        "schema": "conjugal-launcher-review/v1",
+        "schema": REVIEW_SCHEMA,
+        "subjectCommit": subject_commit,
+        "subjectTree": subject_tree,
         "entries": [
             {"path": str(row["path"]), "sha256": str(row["sha256"]), "disposition": "UNKNOWN"}
             for row in candidates
