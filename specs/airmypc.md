@@ -284,3 +284,125 @@ gains a claim, provider key, queue right, Git right, review key, release right, 
 Ratified strategy travels through this wholesale spec, AirMyPC append blocks in `FAILOVER.md` and
 `RULINGS.md`, and execution entries in `RECEIPTS.md`/`TRAPS.md`. Raw transcripts, credentials,
 customer data, private reasoning and local ignored session artifacts never travel.
+
+## Universal provider control R14 disposition — HARD_CLOSED
+
+AirMyPC publishes the exact project disposition:
+
+`DISTINGUISH(874605e43531c9aa230ee16851f8107a8e0d9cec, "AirMyPC retains the portable fail-closed and token-saving invariants; its app-scheduler snapshot is UNEVALUABLE, six legacy launchers remain outside the sole supervisor, the profile requires host-secret rebind and dependent repin, the machine runtime gate is absent, and no separately authorized canary receipt exists", sha256:6807A33B63AC4731226C771FF1300BE2968CA48159D72804E3A867B8FD9F300B)`
+
+Canonical authority is merge `488cf0dc0c2c2ddd1ab024c6377e1fd6d61eef1d`, tree
+`372676162c0fca68d116289e8b744fcc7697bcd2`. The technical subject is exact R14 commit
+`874605e43531c9aa230ee16851f8107a8e0d9cec`, tree
+`cafc358fd7b60812070cf9a465d7de38b88487c8`. The immutable project proof above is the SHA-256 of
+the canonical machine-readable disposition packet embedded verbatim below. The original local
+author packet is supplemental only; fleet verification does not depend on its custody.
+
+Independent non-author review passed at 0 blocker / 0 required / 0 minor / 0 nit after reproducing
+19/19 project controls, 22/22 hostile controls, 1,000 unchanged idle ticks with zero provider calls,
+processes, or tokens, and a fresh 13/13 disabled-task census. Distinct local adjudication accepted
+only this `DISTINGUISH` under marker
+`[MSG 20260818-AIRMYPC-UPC-DISTINGUISH-ADJUDICATION-ACCEPT]`; its exact appended ruling is SHA-256
+`0B55D67DCB0A8500BD58C89062A6FB495D63347239D86337EFCE350D8B3E4971` / 5,816 B.
+
+### Canonical project proof
+
+The bytes between the `json` fence and its closing fence, including the final newline, are the exact
+6,384-byte proof whose SHA-256 is
+`6807A33B63AC4731226C771FF1300BE2968CA48159D72804E3A867B8FD9F300B`:
+
+```json
+{
+  "schema": "fleet-universal-project-disposition/v1",
+  "project": "airmypc",
+  "authoredAtUtc": "2026-08-19T00:34:44.6234355Z",
+  "disposition": "DISTINGUISH",
+  "runtimeAuthority": "NONE",
+  "canonicalDoctrineCommit": "488cf0dc0c2c2ddd1ab024c6377e1fd6d61eef1d",
+  "canonicalDoctrineTree": "372676162c0fca68d116289e8b744fcc7697bcd2",
+  "technicalSubjectCommit": "874605e43531c9aa230ee16851f8107a8e0d9cec",
+  "technicalSubjectTree": "cafc358fd7b60812070cf9a465d7de38b88487c8",
+  "technicalManifestSha256": "A2B4024F76F526014D174EA8B3BF9315777F26E8314039F8814F79EC1C864382",
+  "universalSpecSha256": "47D7EEF52D68B2F66A53D911F6A7176D9D6450B8E3BF36FEA16CCAD13DC7640A",
+  "universalSpecGitBlob": "2213e8f9d75f9fcab4689bd2b46c4b13e981b7fc",
+  "canonicalRulingsGitBlob": "34520b7f75386ab2dba6948bb27d256d3b06c2c9",
+  "projectBaseCommit": "052287887d97a72b416fc7078c4f226509bdea97",
+  "projectBaseTree": "b11967a3ec9a248aad9b7398cd123fbfaaf90326",
+  "preservedWipSnapshot": ".claude-state/hub-20260710/preserved-subjects/20260818-1332-automatic-launch-gate-wip-paused",
+  "portableInvariantsRetained": [
+    "persistent-default-CLOSED-gate",
+    "capacity-reset-authentication-quota-refusal-elapsed-time-and-unknown-never-open-or-admit",
+    "one-host-local-quota-domain-and-full-child-lifetime-lock",
+    "deterministic-1000-no-work-zero-provider-proof",
+    "bounded-turn-context-capsule-checkpoint-compaction-and-cache-policy",
+    "exact-model-effort-role-priority-subject-and-artifact-binding",
+    "strict-bounded-runtime-json-and-duplicate-key-rejection",
+    "disabled-task-and-rollback-receipts",
+    "claude-kimi-grok-provider-family-census"
+  ],
+  "candidateFiles": [
+    {"path": "security/automatic-launch-gate-policy.json", "sha256": "A02F3C0F6D0F1C7652DCAA2A6B1B801352605D780116D1639896BE6E34399FA3", "bytes": 1808},
+    {"path": "security/provider-launch-inventory.json", "sha256": "9D0B5101A0D06C9F9171E8C49637CB7A3D5880E1ACF92D4152DA36801664746B", "bytes": 4569},
+    {"path": "security/universal-provider-control-profile-v1.json", "sha256": "19CFC04E5CFE860CA0DF92D6ED26F238AD5B4E7744AA9F044B56D6614565DC15", "bytes": 1718},
+    {"path": "tools/AudioMile.AutomaticLaunchGate.psm1", "sha256": "59C77C55C6E675CB0EC2E68F915E9E5FF0DA939C9397CA2918749A0CEF9CADD1", "bytes": 45709},
+    {"path": "tools/Initialize-AudioMileAutomaticLaunchGate.ps1", "sha256": "1C13F12F661DCFD99798A9F7418B6C92C46722EEA52E28B49D3A052ABD2F990B", "bytes": 6313},
+    {"path": "tools/Invoke-AudioMileAutomaticLaunch.ps1", "sha256": "5848D59B1C8AD8D061128C3DB2270683713E1275910B26A5ABB91F9F9436E4B2", "bytes": 10588},
+    {"path": "tools/Invoke-AudioMileLaneIgnition.ps1", "sha256": "9722EA5244FD3A4A299A1BE08D2CD946963DDCD881AB59E11CEF444F8BAB6510", "bytes": 59526},
+    {"path": "tools/Monitor-AudioMileLaneIgnition.ps1", "sha256": "3F5F8E417199E6D778B5309FE27A707ACC9BD7710F0244D8F8B2F0FF5D006997", "bytes": 22774},
+    {"path": "tools/New-AudioMileAutomaticLaunchEvidence.ps1", "sha256": "FE1FF64382D23CA9FCFECCEB182B17B566A3CCC71401825F46ACCEB7D32B4C16", "bytes": 6071},
+    {"path": "tools/Register-AudioMileIgnitionTask.ps1", "sha256": "5048775158FF04105D894FA033954EB4608C4D85650F78DA373DC0C9196A4BCB", "bytes": 4776},
+    {"path": "tools/Test-AudioMileAutomaticLaunchGate.ps1", "sha256": "6CAF2291773488E5BD4138EEA7EE3DC1A51AAC208B77FB9D9A1B084391F0E6CD", "bytes": 21154}
+  ],
+  "localEvidence": {
+    "focusedTests": {"passed": 19, "failed": 0},
+    "idleProof": {"ticks": 1000, "providerCalls": 0, "providerProcesses": 0, "providerTokens": 0},
+    "scheduledTaskCensus": {"configured": 13, "present": 13, "disabled": 13},
+    "gate": {"state": "closed", "epoch": 0},
+    "inventory": {"complete": false, "tasksDisabled": true, "blockedLaunchers": 6},
+    "brokerHealth": "BLOCKED",
+    "receipts": [
+      {"path": ".scratch/universal-provider-control-airmypc-candidate-20260818/automatic-launch-gate-v2.json", "sha256": "211D0EB5C32777E4CE7D39DFC8CC1A1F60118407AC744604E52B75876EFC2192", "bytes": 1305},
+      {"path": ".scratch/universal-provider-control-airmypc-candidate-20260818/automatic-launch-rollback-v1.json", "sha256": "93EBC12EC4C8057E7371F52A86AE79D910838B07FD06C4B86B70F47951369C74", "bytes": 453},
+      {"path": ".scratch/universal-provider-control-airmypc-candidate-20260818/automatic-launch-task-disabled-v1.json", "sha256": "7CE9C87DD254609B865DADBD66E2F2DADDE8F6DFB81E09DFCD2BB855275C0319", "bytes": 3324},
+      {"path": ".scratch/universal-provider-control-airmypc-candidate-20260818/provider-broker-health-v2.json", "sha256": "80B1751D33F4CDC42719E5FD562BC1BE9A69D4FF3A4E5064D6B5A88E03F822FB", "bytes": 914},
+      {"path": ".scratch/universal-provider-control-airmypc-candidate-20260818/provider-launch-inventory-v2.json", "sha256": "52B8FB04874F875D64DA11F3DDAFD790EB9F85CCE757C9C2D769170F9ACAF2E4", "bytes": 6988}
+    ]
+  },
+  "missingAdoptionConjuncts": [
+    "no-separately-authorized-canary-receipt-exists",
+    "no-independent-airmypc-review-or-adjudication-exists",
+    "app-scheduler-exact-snapshot-is-unavailable-and-therefore-unevaluable",
+    "six-inventoried-legacy-failover-launchers-are-not-yet-routed-through-the-sole-supervisor",
+    "candidate-profile-state-root-uses-a-public-test-key-and-requires-host-secret-rebinding",
+    "machine-runtime-gate-is-absent-and-no-install-authority-was-exercised"
+  ],
+  "closurePlan": [
+    "route-or-retire-each-of-the-six-blocked-launchers-and-freeze-all-four-surface-classes",
+    "obtain-and-pin-an-exact-disabled-app-scheduler-snapshot",
+    "rebind-the-profile-state-root-with-a-host-secret-and-repin-dependent-hashes",
+    "rerun-the-focused-suite-and-independent-review-against-the-exact-repinned-subject",
+    "obtain-independent-adjudication-before-any-install-or-gate-transition",
+    "under-separate-authority-install-only-a-CLOSED-gate-and-verify-disabled-task-and-rollback-receipts",
+    "under-later-explicit-canary-authority-run-one-bounded-canary-and-pin-its-receipt",
+    "claim-ADOPT-only-after-the-fleet-pins-every-required-conjunct"
+  ],
+  "prohibitedActionsPerformed": {
+    "taskEnable": false,
+    "gateOpen": false,
+    "providerInvocation": false,
+    "authentication": false,
+    "networkInference": false,
+    "desktopRestart": false,
+    "userPresentHardware": false,
+    "runtimeInstall": false
+  },
+  "reviewStatus": "AUTHOR_ONLY_RECUSED_FROM_REVIEW_ADJUDICATION_AND_INSTALL"
+}
+```
+
+This is not `ADOPT`. The machine runtime gate is absent; inventory is incomplete with six blocked
+launchers; the Desktop/app scheduler remains unevaluable until a safe reload receipt exists; the
+profile uses a public test binding that requires host-secret repin; no runtime installation or
+separately authorized canary occurred. Automatic provider tasks remain disabled. Reset,
+authentication, capacity return, quota signals, hosted green, or this publication cannot open a
+gate, enable a task, invoke a provider, or create adoption credit.
