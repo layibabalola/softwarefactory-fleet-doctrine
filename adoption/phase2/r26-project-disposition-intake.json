@@ -1,0 +1,721 @@
+{
+  "schema": "fleet-r26-disposition-intake-batch/v1",
+  "status": "EXTERNAL_BLOCKERS_ONLY_ZERO_AUTHORITY",
+  "frozenBase": {
+    "implementationCommit": "490953a4496bab6977d554acb1828d40f4ac92d0",
+    "implementationTree": "c97a7e8a5df36be11180201d93d29b28ea8b17a1",
+    "reviewPacketCommit": "5ab5bf14ac900ddb2410d7e36d265cde1db76461",
+    "reviewPacketTree": "a305aa59cac5d7178679efa1dbc0892383fca382",
+    "censusCommit": "76dd97d3110668b6f1391aabee3e270801be00ad",
+    "r26Candidate": "e70a044f31dd2f43ab7c716d63a4eb89318c61b6",
+    "r26Merge": "909f769d02e8412e51e28e242cfa8d00dadc9a3d"
+  },
+  "capture": {
+    "capturedAt": "2026-08-19T10:41:52.1174354-05:00",
+    "machine": "ULTRA-MAGNUS",
+    "discoveryPolicy": "SPEC_POINTERS_AND_DIRECT_CHILD_MATCHES_ONLY_NO_RECURSIVE_SCAN",
+    "runtimeInspectionPerformed": false,
+    "networkInspectionPerformed": false,
+    "dngMutationPerformed": false,
+    "projectWorktreesCreated": 0
+  },
+  "summary": {
+    "projectCount": 8,
+    "dispositionCandidates": 0,
+    "externalBlockers": 8,
+    "adoptionClaims": 0
+  },
+  "projects": [
+    {
+      "priority": 1,
+      "priorityRationale": "Salesforce is the only active project with no universal disposition at any candidate revision.",
+      "projectId": "salesforce-tools",
+      "ledgerStatus": "MISSING",
+      "sourceEvidence": {
+        "commit": "fb39709785bb833519b3e8010df2efe237a5e1da",
+        "path": "specs/salesforce-tools.md",
+        "gitBlobOid": "302be516c652d3185d299e3b66ed9ba5abc8b3d3"
+      },
+      "publishedLocation": {
+        "host": "Delinea",
+        "repoPath": "C:\\SalesforceSupportTools",
+        "remote": "github.com/layibabalola/SalesforceSupportTools",
+        "anchors": [
+          "Delinea box",
+          "Repo: C:\\SalesforceSupportTools",
+          "github.com/layibabalola/SalesforceSupportTools"
+        ]
+      },
+      "boundedDiscovery": {
+        "kind": "EXACT_PUBLISHED_PATH",
+        "checkedPaths": [
+          "C:\\SalesforceSupportTools"
+        ],
+        "checkedParent": null,
+        "namePattern": null,
+        "matchingPaths": [],
+        "repositoryAccessible": false,
+        "worktreeCreated": false,
+        "result": "PROJECT_REPOSITORY_NOT_ACCESSIBLE"
+      },
+      "nonRegression": {
+        "model": {
+          "state": "SPEC_BOUNDARY_ONLY_NOT_CURRENT_R26_EVIDENCE",
+          "anchors": [
+            "window resolved from model id"
+          ]
+        },
+        "effort": {
+          "state": "MISSING_PROJECT_R26_EVIDENCE",
+          "anchors": []
+        },
+        "role": {
+          "state": "SPEC_BOUNDARY_ONLY_NOT_CURRENT_R26_EVIDENCE",
+          "anchors": [
+            "Single-lane worker pipeline with succession"
+          ]
+        },
+        "review": {
+          "state": "MISSING_PROJECT_R26_EVIDENCE",
+          "anchors": []
+        },
+        "quality": {
+          "state": "SPEC_BOUNDARY_ONLY_NOT_CURRENT_R26_EVIDENCE",
+          "anchors": [
+            "~230-check selftest -> deploy -> relaunch"
+          ]
+        },
+        "functionality": {
+          "state": "SPEC_BOUNDARY_ONLY_NOT_CURRENT_R26_EVIDENCE",
+          "anchors": [
+            "C#/WinForms desktop app (Context Ultra for Salesforce) + KMP Android shared-core scaffold."
+          ]
+        }
+      },
+      "dispositionOutcome": {
+        "kind": "EXTERNAL_BLOCKER",
+        "code": "PROJECT_REPOSITORY_ABSENT_CURRENT_R26_DISPOSITION_MISSING",
+        "candidateProduced": false,
+        "reason": "The project-owned spec publishes C:\\SalesforceSupportTools on the Delinea box, but that exact root is absent on ULTRA-MAGNUS; no project repository or runtime evidence was inspected.",
+        "requiredOwnerEvidence": [
+          "PROJECT_OWNED_COMMIT_AND_GIT_BLOB_BINDING_R26_E70A044_AND_MERGE_909F769",
+          "CURRENT_EXPLICIT_ADOPT_DISTINGUISH_OR_REJECT",
+          "PINNED_NON_REGRESSION_EVIDENCE_MODEL_EFFORT_ROLE_REVIEW_QUALITY_FUNCTIONALITY",
+          "RUNTIME_EVIDENCE_ONLY_IF_PROJECT_OWNED_NO_INFERENCE_FROM_DOCTRINE"
+        ]
+      },
+      "authority": {
+        "projectDisposition": false,
+        "adoption": false,
+        "runtime": false,
+        "mutation": false
+      }
+    },
+    {
+      "priority": 2,
+      "priorityRationale": "Agent Bridge publishes the most advanced closed SHADOW evidence but still lacks a current R26 project disposition.",
+      "projectId": "agent-bridge",
+      "ledgerStatus": "STALE",
+      "sourceEvidence": {
+        "commit": "cb96a50c1b44c47e66450785f3f19c9936d5cc29",
+        "path": "specs/agent-bridge.md",
+        "gitBlobOid": "b2070f78be89aa21cf2e6e6e270b03851bb0d029"
+      },
+      "publishedLocation": {
+        "host": null,
+        "repoPath": null,
+        "remote": null,
+        "anchors": [
+          "<repo>\\.claude-state\\HUB_RUN_WAL.md",
+          "Agent Bridge Warden scheduled task"
+        ]
+      },
+      "boundedDiscovery": {
+        "kind": "DIRECT_CHILD_NAME_MATCH",
+        "checkedPaths": [],
+        "checkedParent": "C:\\code",
+        "namePattern": "Agent.?Bridge",
+        "matchingPaths": [],
+        "repositoryAccessible": false,
+        "worktreeCreated": false,
+        "result": "PROJECT_REPOSITORY_NOT_ACCESSIBLE"
+      },
+      "nonRegression": {
+        "model": {
+          "state": "SPEC_BOUNDARY_ONLY_NOT_CURRENT_R26_EVIDENCE",
+          "anchors": [
+            "The exact role, provider, model, effort, subject, and independence class remain"
+          ]
+        },
+        "effort": {
+          "state": "SPEC_BOUNDARY_ONLY_NOT_CURRENT_R26_EVIDENCE",
+          "anchors": [
+            "The exact role, provider, model, effort, subject, and independence class remain"
+          ]
+        },
+        "role": {
+          "state": "SPEC_BOUNDARY_ONLY_NOT_CURRENT_R26_EVIDENCE",
+          "anchors": [
+            "The exact role, provider, model, effort, subject, and independence class remain"
+          ]
+        },
+        "review": {
+          "state": "SPEC_BOUNDARY_ONLY_NOT_CURRENT_R26_EVIDENCE",
+          "anchors": [
+            "fresh independent security and",
+            "quality reviews over the exact landed subject."
+          ]
+        },
+        "quality": {
+          "state": "SPEC_BOUNDARY_ONLY_NOT_CURRENT_R26_EVIDENCE",
+          "anchors": [
+            "quality reviews over the exact landed subject."
+          ]
+        },
+        "functionality": {
+          "state": "SPEC_BOUNDARY_ONLY_NOT_CURRENT_R26_EVIDENCE",
+          "anchors": [
+            "Protected invariants (drift-checked, never weaken):"
+          ]
+        }
+      },
+      "dispositionOutcome": {
+        "kind": "EXTERNAL_BLOCKER",
+        "code": "PROJECT_REPOSITORY_ROOT_UNPUBLISHED_CURRENT_R26_DISPOSITION_REQUIRED",
+        "candidateProduced": false,
+        "reason": "The spec publishes only a <repo> placeholder; no matching Agent Bridge direct child exists under C:\\code on ULTRA-MAGNUS, so its R14 SHADOW evidence cannot be upgraded to R26 evidence here.",
+        "requiredOwnerEvidence": [
+          "PROJECT_OWNED_COMMIT_AND_GIT_BLOB_BINDING_R26_E70A044_AND_MERGE_909F769",
+          "CURRENT_EXPLICIT_ADOPT_DISTINGUISH_OR_REJECT",
+          "PINNED_NON_REGRESSION_EVIDENCE_MODEL_EFFORT_ROLE_REVIEW_QUALITY_FUNCTIONALITY",
+          "RUNTIME_EVIDENCE_ONLY_IF_PROJECT_OWNED_NO_INFERENCE_FROM_DOCTRINE"
+        ]
+      },
+      "authority": {
+        "projectDisposition": false,
+        "adoption": false,
+        "runtime": false,
+        "mutation": false
+      }
+    },
+    {
+      "priority": 3,
+      "priorityRationale": "AirMyPC already publishes a detailed zero-authority R14 packet and closure plan, making a project-owned R26 refresh narrowly scoped.",
+      "projectId": "airmypc",
+      "ledgerStatus": "STALE",
+      "sourceEvidence": {
+        "commit": "99dcd18bb96e44c632d719735105b7af1c6abaa3",
+        "path": "specs/airmypc.md",
+        "gitBlobOid": "f173f47ca2c045fe24b6ec9383614585d10775d8"
+      },
+      "publishedLocation": {
+        "host": null,
+        "repoPath": "C:\\temp\\AirMyPC",
+        "remote": null,
+        "anchors": [
+          "Local authority is `C:\\temp\\AirMyPC`"
+        ]
+      },
+      "boundedDiscovery": {
+        "kind": "EXACT_PUBLISHED_PATH",
+        "checkedPaths": [
+          "C:\\temp\\AirMyPC"
+        ],
+        "checkedParent": null,
+        "namePattern": null,
+        "matchingPaths": [],
+        "repositoryAccessible": false,
+        "worktreeCreated": false,
+        "result": "PROJECT_REPOSITORY_NOT_ACCESSIBLE"
+      },
+      "nonRegression": {
+        "model": {
+          "state": "SPEC_BOUNDARY_ONLY_NOT_CURRENT_R26_EVIDENCE",
+          "anchors": [
+            "exact-model-effort-role-priority-subject-and-artifact-binding"
+          ]
+        },
+        "effort": {
+          "state": "SPEC_BOUNDARY_ONLY_NOT_CURRENT_R26_EVIDENCE",
+          "anchors": [
+            "exact-model-effort-role-priority-subject-and-artifact-binding"
+          ]
+        },
+        "role": {
+          "state": "SPEC_BOUNDARY_ONLY_NOT_CURRENT_R26_EVIDENCE",
+          "anchors": [
+            "AirMyPC has five functional lanes:"
+          ]
+        },
+        "review": {
+          "state": "SPEC_BOUNDARY_ONLY_NOT_CURRENT_R26_EVIDENCE",
+          "anchors": [
+            "Independent non-author review passed at 0 blocker / 0 required / 0 minor / 0 nit"
+          ]
+        },
+        "quality": {
+          "state": "SPEC_BOUNDARY_ONLY_NOT_CURRENT_R26_EVIDENCE",
+          "anchors": [
+            "production-function negative/positive twins."
+          ]
+        },
+        "functionality": {
+          "state": "SPEC_BOUNDARY_ONLY_NOT_CURRENT_R26_EVIDENCE",
+          "anchors": [
+            "AirMyPC has five functional lanes:"
+          ]
+        }
+      },
+      "dispositionOutcome": {
+        "kind": "EXTERNAL_BLOCKER",
+        "code": "PROJECT_REPOSITORY_ABSENT_CURRENT_R26_DISPOSITION_REQUIRED",
+        "candidateProduced": false,
+        "reason": "The project-owned spec publishes C:\\temp\\AirMyPC, but that exact root is absent on ULTRA-MAGNUS; the embedded R14 packet remains stale and no runtime claims were refreshed.",
+        "requiredOwnerEvidence": [
+          "PROJECT_OWNED_COMMIT_AND_GIT_BLOB_BINDING_R26_E70A044_AND_MERGE_909F769",
+          "CURRENT_EXPLICIT_ADOPT_DISTINGUISH_OR_REJECT",
+          "PINNED_NON_REGRESSION_EVIDENCE_MODEL_EFFORT_ROLE_REVIEW_QUALITY_FUNCTIONALITY",
+          "RUNTIME_EVIDENCE_ONLY_IF_PROJECT_OWNED_NO_INFERENCE_FROM_DOCTRINE"
+        ]
+      },
+      "authority": {
+        "projectDisposition": false,
+        "adoption": false,
+        "runtime": false,
+        "mutation": false
+      }
+    },
+    {
+      "priority": 4,
+      "priorityRationale": "MLV-App publishes a reviewed R2 zero-authority proof whose exact controls can be refreshed by its project owner against R26.",
+      "projectId": "mlv-app",
+      "ledgerStatus": "STALE",
+      "sourceEvidence": {
+        "commit": "699a83e1dab0b3e46b7493da25d665051a096548",
+        "path": "specs/mlv-app.md",
+        "gitBlobOid": "858b513e4e9e17eef1cd6864a351ee4905940f8b"
+      },
+      "publishedLocation": {
+        "host": "VIRTUAL-TEN",
+        "repoPath": null,
+        "remote": null,
+        "anchors": [
+          "same machine (VIRTUAL-TEN)",
+          "MLV-App factory spec"
+        ]
+      },
+      "boundedDiscovery": {
+        "kind": "DIRECT_CHILD_NAME_MATCH",
+        "checkedPaths": [],
+        "checkedParent": "C:\\code",
+        "namePattern": "^MLV|MLV-App",
+        "matchingPaths": [],
+        "repositoryAccessible": false,
+        "worktreeCreated": false,
+        "result": "PROJECT_REPOSITORY_NOT_ACCESSIBLE"
+      },
+      "nonRegression": {
+        "model": {
+          "state": "SPEC_BOUNDARY_ONLY_NOT_CURRENT_R26_EVIDENCE",
+          "anchors": [
+            "\"model\""
+          ]
+        },
+        "effort": {
+          "state": "MISSING_PROJECT_R26_EVIDENCE",
+          "anchors": []
+        },
+        "role": {
+          "state": "SPEC_BOUNDARY_ONLY_NOT_CURRENT_R26_EVIDENCE",
+          "anchors": [
+            "\"role\""
+          ]
+        },
+        "review": {
+          "state": "SPEC_BOUNDARY_ONLY_NOT_CURRENT_R26_EVIDENCE",
+          "anchors": [
+            "fresh non-author review and distinct adjudication"
+          ]
+        },
+        "quality": {
+          "state": "SPEC_BOUNDARY_ONLY_NOT_CURRENT_R26_EVIDENCE",
+          "anchors": [
+            "\"controls\": \"18/18 PASS on Python 3.13 and 3.14\""
+          ]
+        },
+        "functionality": {
+          "state": "SPEC_BOUNDARY_ONLY_NOT_CURRENT_R26_EVIDENCE",
+          "anchors": [
+            "Two-key: an admitted implementer-token handoff"
+          ]
+        }
+      },
+      "dispositionOutcome": {
+        "kind": "EXTERNAL_BLOCKER",
+        "code": "PROJECT_REPOSITORY_ROOT_UNPUBLISHED_CURRENT_R26_DISPOSITION_REQUIRED",
+        "candidateProduced": false,
+        "reason": "The MLV spec identifies VIRTUAL-TEN but no absolute repository root, and no matching direct C:\\code child exists on ULTRA-MAGNUS; its reviewed R2 packet remains R14-bound.",
+        "requiredOwnerEvidence": [
+          "PROJECT_OWNED_COMMIT_AND_GIT_BLOB_BINDING_R26_E70A044_AND_MERGE_909F769",
+          "CURRENT_EXPLICIT_ADOPT_DISTINGUISH_OR_REJECT",
+          "PINNED_NON_REGRESSION_EVIDENCE_MODEL_EFFORT_ROLE_REVIEW_QUALITY_FUNCTIONALITY",
+          "RUNTIME_EVIDENCE_ONLY_IF_PROJECT_OWNED_NO_INFERENCE_FROM_DOCTRINE"
+        ]
+      },
+      "authority": {
+        "projectDisposition": false,
+        "adoption": false,
+        "runtime": false,
+        "mutation": false
+      }
+    },
+    {
+      "priority": 5,
+      "priorityRationale": "Cloudvore publishes a project proposal tuple and explicit non-regression bar but lacks a current R26 disposition.",
+      "projectId": "cloudvore",
+      "ledgerStatus": "STALE",
+      "sourceEvidence": {
+        "commit": "0e1f25d6782f4bba0fb01923a0b4b25260b8f83b",
+        "path": "specs/cloudvore.md",
+        "gitBlobOid": "6b76ddf037f36dc9fb9e513dc139b595c4b8ddd8"
+      },
+      "publishedLocation": {
+        "host": null,
+        "repoPath": "C:\\code\\DropBox Vault",
+        "remote": "github.com/layibabalola/Cloudvore",
+        "anchors": [
+          "Repo: C:\\code\\DropBox Vault",
+          "github.com/layibabalola/Cloudvore"
+        ]
+      },
+      "boundedDiscovery": {
+        "kind": "EXACT_PUBLISHED_PATH",
+        "checkedPaths": [
+          "C:\\code\\DropBox Vault"
+        ],
+        "checkedParent": null,
+        "namePattern": null,
+        "matchingPaths": [],
+        "repositoryAccessible": false,
+        "worktreeCreated": false,
+        "result": "PROJECT_REPOSITORY_NOT_ACCESSIBLE"
+      },
+      "nonRegression": {
+        "model": {
+          "state": "SPEC_BOUNDARY_ONLY_NOT_CURRENT_R26_EVIDENCE",
+          "anchors": [
+            "exact requested/effective model and effort preservation"
+          ]
+        },
+        "effort": {
+          "state": "SPEC_BOUNDARY_ONLY_NOT_CURRENT_R26_EVIDENCE",
+          "anchors": [
+            "exact requested/effective model and effort preservation"
+          ]
+        },
+        "role": {
+          "state": "SPEC_BOUNDARY_ONLY_NOT_CURRENT_R26_EVIDENCE",
+          "anchors": [
+            "Role-keyed lanes (IMPLEMENTER/DESIGNER*/REVIEWER/HUB/HUB_REVIEWER;"
+          ]
+        },
+        "review": {
+          "state": "SPEC_BOUNDARY_ONLY_NOT_CURRENT_R26_EVIDENCE",
+          "anchors": [
+            "Blind dual-model review (never the same prompt to Fable and Opus)."
+          ]
+        },
+        "quality": {
+          "state": "SPEC_BOUNDARY_ONLY_NOT_CURRENT_R26_EVIDENCE",
+          "anchors": [
+            "product-bar, lifecycle, landing, rollback, and release gates;"
+          ]
+        },
+        "functionality": {
+          "state": "SPEC_BOUNDARY_ONLY_NOT_CURRENT_R26_EVIDENCE",
+          "anchors": [
+            "The proof is the product; cardinal rule: no surface says SAFE TO WIPE"
+          ]
+        }
+      },
+      "dispositionOutcome": {
+        "kind": "EXTERNAL_BLOCKER",
+        "code": "PROJECT_REPOSITORY_ABSENT_CURRENT_R26_DISPOSITION_REQUIRED",
+        "candidateProduced": false,
+        "reason": "The project-owned spec publishes C:\\code\\DropBox Vault, but that exact root is absent on ULTRA-MAGNUS; the project proposal tuple was not treated as current runtime or R26 evidence.",
+        "requiredOwnerEvidence": [
+          "PROJECT_OWNED_COMMIT_AND_GIT_BLOB_BINDING_R26_E70A044_AND_MERGE_909F769",
+          "CURRENT_EXPLICIT_ADOPT_DISTINGUISH_OR_REJECT",
+          "PINNED_NON_REGRESSION_EVIDENCE_MODEL_EFFORT_ROLE_REVIEW_QUALITY_FUNCTIONALITY",
+          "RUNTIME_EVIDENCE_ONLY_IF_PROJECT_OWNED_NO_INFERENCE_FROM_DOCTRINE"
+        ]
+      },
+      "authority": {
+        "projectDisposition": false,
+        "adoption": false,
+        "runtime": false,
+        "mutation": false
+      }
+    },
+    {
+      "priority": 6,
+      "priorityRationale": "Conjugal publishes a precise local difference and runtime closure bar, but all current evidence remains R14-bound.",
+      "projectId": "conjugal",
+      "ledgerStatus": "STALE",
+      "sourceEvidence": {
+        "commit": "3a06045e882b59fcc9ed508849eceada2d8fce12",
+        "path": "specs/conjugal.md",
+        "gitBlobOid": "ffca347d90689766a3418a65a0f12e464bfdfe78"
+      },
+      "publishedLocation": {
+        "host": "Bachelor",
+        "repoPath": "C:\\code\\Conjugal",
+        "remote": null,
+        "anchors": [
+          "C:\\code\\Conjugal",
+          "machine: Bachelor"
+        ]
+      },
+      "boundedDiscovery": {
+        "kind": "EXACT_PUBLISHED_PATH",
+        "checkedPaths": [
+          "C:\\code\\Conjugal"
+        ],
+        "checkedParent": null,
+        "namePattern": null,
+        "matchingPaths": [],
+        "repositoryAccessible": false,
+        "worktreeCreated": false,
+        "result": "PROJECT_REPOSITORY_NOT_ACCESSIBLE"
+      },
+      "nonRegression": {
+        "model": {
+          "state": "SPEC_BOUNDARY_ONLY_NOT_CURRENT_R26_EVIDENCE",
+          "anchors": [
+            "required capacity dimensions, exact subject/model/effort, resolved executable path and digest,"
+          ]
+        },
+        "effort": {
+          "state": "SPEC_BOUNDARY_ONLY_NOT_CURRENT_R26_EVIDENCE",
+          "anchors": [
+            "required capacity dimensions, exact subject/model/effort, resolved executable path and digest,"
+          ]
+        },
+        "role": {
+          "state": "SPEC_BOUNDARY_ONLY_NOT_CURRENT_R26_EVIDENCE",
+          "anchors": [
+            "Four-key protocol:"
+          ]
+        },
+        "review": {
+          "state": "SPEC_BOUNDARY_ONLY_NOT_CURRENT_R26_EVIDENCE",
+          "anchors": [
+            "reviewer/verifier independence absolute"
+          ]
+        },
+        "quality": {
+          "state": "SPEC_BOUNDARY_ONLY_NOT_CURRENT_R26_EVIDENCE",
+          "anchors": [
+            "compatible-runner, independent-review, continuity, first-red, rollback, and product bars remain"
+          ]
+        },
+        "functionality": {
+          "state": "SPEC_BOUNDARY_ONLY_NOT_CURRENT_R26_EVIDENCE",
+          "anchors": [
+            "no-semantic-loss review"
+          ]
+        }
+      },
+      "dispositionOutcome": {
+        "kind": "EXTERNAL_BLOCKER",
+        "code": "PROJECT_REPOSITORY_ABSENT_CURRENT_R26_DISPOSITION_REQUIRED",
+        "candidateProduced": false,
+        "reason": "The project-owned spec publishes C:\\code\\Conjugal on Bachelor, but that exact root is absent on ULTRA-MAGNUS; no current supervisor, census, SHADOW, or CONTAINMENT evidence was inferred.",
+        "requiredOwnerEvidence": [
+          "PROJECT_OWNED_COMMIT_AND_GIT_BLOB_BINDING_R26_E70A044_AND_MERGE_909F769",
+          "CURRENT_EXPLICIT_ADOPT_DISTINGUISH_OR_REJECT",
+          "PINNED_NON_REGRESSION_EVIDENCE_MODEL_EFFORT_ROLE_REVIEW_QUALITY_FUNCTIONALITY",
+          "RUNTIME_EVIDENCE_ONLY_IF_PROJECT_OWNED_NO_INFERENCE_FROM_DOCTRINE"
+        ]
+      },
+      "authority": {
+        "projectDisposition": false,
+        "adoption": false,
+        "runtime": false,
+        "mutation": false
+      }
+    },
+    {
+      "priority": 7,
+      "priorityRationale": "AdversarialLLM specifies the R26-shaped token and quality contract but still owes project-owned installation and complete action-graph evidence.",
+      "projectId": "adversarialllm",
+      "ledgerStatus": "STALE",
+      "sourceEvidence": {
+        "commit": "13d0ee65f9e3949918db6e43ad3d41438d073bba",
+        "path": "specs/adversarialllm.md",
+        "gitBlobOid": "33fe9c7fb7cc31b1f172b9216475fef5fe97aaad"
+      },
+      "publishedLocation": {
+        "host": null,
+        "repoPath": null,
+        "remote": null,
+        "anchors": [
+          "adversarialllm/docs/33_FOUR_LANE_HUB.md",
+          "AdvLLM-Lane-{Fable,Opus,Sonnet}"
+        ]
+      },
+      "boundedDiscovery": {
+        "kind": "DIRECT_CHILD_NAME_MATCH",
+        "checkedPaths": [],
+        "checkedParent": "C:\\code",
+        "namePattern": "Adversarial",
+        "matchingPaths": [],
+        "repositoryAccessible": false,
+        "worktreeCreated": false,
+        "result": "PROJECT_REPOSITORY_NOT_ACCESSIBLE"
+      },
+      "nonRegression": {
+        "model": {
+          "state": "SPEC_BOUNDARY_ONLY_NOT_CURRENT_R26_EVIDENCE",
+          "anchors": [
+            "FABLE and OPUS exact-model review requirements remain binding."
+          ]
+        },
+        "effort": {
+          "state": "SPEC_BOUNDARY_ONLY_NOT_CURRENT_R26_EVIDENCE",
+          "anchors": [
+            "selecting model and reasoning effort only from role-cell evidence, never by silent downgrade;"
+          ]
+        },
+        "role": {
+          "state": "SPEC_BOUNDARY_ONLY_NOT_CURRENT_R26_EVIDENCE",
+          "anchors": [
+            "Project-specific role names do not create separate"
+          ]
+        },
+        "review": {
+          "state": "SPEC_BOUNDARY_ONLY_NOT_CURRENT_R26_EVIDENCE",
+          "anchors": [
+            "one independent final review before admitting"
+          ]
+        },
+        "quality": {
+          "state": "SPEC_BOUNDARY_ONLY_NOT_CURRENT_R26_EVIDENCE",
+          "anchors": [
+            "quality, independence, authority, or budget-stop semantics."
+          ]
+        },
+        "functionality": {
+          "state": "SPEC_BOUNDARY_ONLY_NOT_CURRENT_R26_EVIDENCE",
+          "anchors": [
+            "preserving the functional prompt;"
+          ]
+        }
+      },
+      "dispositionOutcome": {
+        "kind": "EXTERNAL_BLOCKER",
+        "code": "PROJECT_REPOSITORY_ROOT_UNPUBLISHED_CURRENT_R26_DISPOSITION_REQUIRED",
+        "candidateProduced": false,
+        "reason": "The spec publishes only project-relative roots, and no matching AdversarialLLM direct child exists under C:\\code on ULTRA-MAGNUS; its prior R14 runtime facts were not refreshed.",
+        "requiredOwnerEvidence": [
+          "PROJECT_OWNED_COMMIT_AND_GIT_BLOB_BINDING_R26_E70A044_AND_MERGE_909F769",
+          "CURRENT_EXPLICIT_ADOPT_DISTINGUISH_OR_REJECT",
+          "PINNED_NON_REGRESSION_EVIDENCE_MODEL_EFFORT_ROLE_REVIEW_QUALITY_FUNCTIONALITY",
+          "RUNTIME_EVIDENCE_ONLY_IF_PROJECT_OWNED_NO_INFERENCE_FROM_DOCTRINE"
+        ]
+      },
+      "authority": {
+        "projectDisposition": false,
+        "adoption": false,
+        "runtime": false,
+        "mutation": false
+      }
+    },
+    {
+      "priority": 8,
+      "priorityRationale": "Adobe already records an explicit authority and reviewer-quorum blocker, so project-owner sequencing must precede any R26 candidate.",
+      "projectId": "adobe-ingester",
+      "ledgerStatus": "STALE",
+      "sourceEvidence": {
+        "commit": "21398d42cd232e121d968a579e20fb20d832a7f7",
+        "path": "specs/adobe-ingester.md",
+        "gitBlobOid": "f91bbd6be126dc1513c299069677b986b90cd716"
+      },
+      "publishedLocation": {
+        "host": "virtual-ten",
+        "repoPath": null,
+        "remote": null,
+        "anchors": [
+          "Machine: virtual-ten",
+          "Adobe Document Cloud Ingester"
+        ]
+      },
+      "boundedDiscovery": {
+        "kind": "DIRECT_CHILD_NAME_MATCH",
+        "checkedPaths": [],
+        "checkedParent": "C:\\code",
+        "namePattern": "Adobe|Ingester",
+        "matchingPaths": [],
+        "repositoryAccessible": false,
+        "worktreeCreated": false,
+        "result": "PROJECT_REPOSITORY_NOT_ACCESSIBLE"
+      },
+      "nonRegression": {
+        "model": {
+          "state": "SPEC_BOUNDARY_ONLY_NOT_CURRENT_R26_EVIDENCE",
+          "anchors": [
+            "may not silently substitute a model, provider, effort, role, independence"
+          ]
+        },
+        "effort": {
+          "state": "SPEC_BOUNDARY_ONLY_NOT_CURRENT_R26_EVIDENCE",
+          "anchors": [
+            "may not silently substitute a model, provider, effort, role, independence"
+          ]
+        },
+        "role": {
+          "state": "SPEC_BOUNDARY_ONLY_NOT_CURRENT_R26_EVIDENCE",
+          "anchors": [
+            "Sol and Luna remain exact Codex role cells; Opus and Sonnet remain separately blinded Claude"
+          ]
+        },
+        "review": {
+          "state": "SPEC_BOUNDARY_ONLY_NOT_CURRENT_R26_EVIDENCE",
+          "anchors": [
+            "Reviewer blindness remains one-way glass."
+          ]
+        },
+        "quality": {
+          "state": "SPEC_BOUNDARY_ONLY_NOT_CURRENT_R26_EVIDENCE",
+          "anchors": [
+            "A ceiling limits runaway work; it does not lower the required quality"
+          ]
+        },
+        "functionality": {
+          "state": "SPEC_BOUNDARY_ONLY_NOT_CURRENT_R26_EVIDENCE",
+          "anchors": [
+            "functionally equivalent and remain hash bound to the reviewed subject."
+          ]
+        }
+      },
+      "dispositionOutcome": {
+        "kind": "EXTERNAL_BLOCKER",
+        "code": "PROJECT_REPOSITORY_ROOT_UNPUBLISHED_OWNER_WORK_ORDER_AND_QUORUM_REQUIRED",
+        "candidateProduced": false,
+        "reason": "The Adobe spec identifies virtual-ten but no absolute repository root, no matching direct C:\\code child exists on ULTRA-MAGNUS, and its pinned R14 evidence says a lawful work order and reviewer-bearing quorum are absent.",
+        "requiredOwnerEvidence": [
+          "PROJECT_OWNED_COMMIT_AND_GIT_BLOB_BINDING_R26_E70A044_AND_MERGE_909F769",
+          "CURRENT_EXPLICIT_ADOPT_DISTINGUISH_OR_REJECT",
+          "PINNED_NON_REGRESSION_EVIDENCE_MODEL_EFFORT_ROLE_REVIEW_QUALITY_FUNCTIONALITY",
+          "RUNTIME_EVIDENCE_ONLY_IF_PROJECT_OWNED_NO_INFERENCE_FROM_DOCTRINE"
+        ]
+      },
+      "authority": {
+        "projectDisposition": false,
+        "adoption": false,
+        "runtime": false,
+        "mutation": false
+      }
+    }
+  ]
+}

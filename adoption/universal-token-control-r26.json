@@ -1,0 +1,191 @@
+{
+  "schema": "fleet-universal-token-adoption-ledger/v1",
+  "candidate": {
+    "candidateCommit": "e70a044f31dd2f43ab7c716d63a4eb89318c61b6",
+    "candidateTree": "e9283a1c297103dd53f0bc7a1310fb1dc86b591e",
+    "mergeCommit": "909f769d02e8412e51e28e242cfa8d00dadc9a3d",
+    "mergeTree": "e9283a1c297103dd53f0bc7a1310fb1dc86b591e",
+    "mergeParents": [
+      "c1529bc3030c6663e0be63c4789b07530b9b2ecc",
+      "e70a044f31dd2f43ab7c716d63a4eb89318c61b6"
+    ],
+    "manifest": {
+      "path": "manifests/universal-provider-control-reconciliation-r26.json",
+      "gitBlobOid": "898385fb82fbbe9946f937f0486142f4733d03fe",
+      "status": "CANDIDATE_ZERO_AUTHORITY"
+    },
+    "authorityClaims": {
+      "doctrinePublicationIsProjectAdoption": false,
+      "doctrinePublicationIsFleetAdoption": false,
+      "runtimeAuthority": false,
+      "activationAuthority": false,
+      "hostedGreenClaimed": false
+    }
+  },
+  "census": {
+    "baseCommit": "76dd97d3110668b6f1391aabee3e270801be00ad",
+    "projectSpecGlob": "specs/*.md",
+    "nonProjectSpecs": [
+      "specs/fleet-provider-capacity-governor.md",
+      "specs/fleet-universal-provider-control-reconciliation.md",
+      "specs/provider-model-benchmarking.md"
+    ]
+  },
+  "nonRegression": {
+    "rule": "TOKEN_SAVINGS_MUST_NOT_REGRESS_EXACT_MODEL_EFFORT_ROLE_REVIEW_QUALITY_OR_FUNCTIONALITY",
+    "requiredDimensions": [
+      "model",
+      "effort",
+      "role",
+      "review",
+      "quality",
+      "functionality"
+    ]
+  },
+  "summary": {
+    "projectCount": 9,
+    "counts": {
+      "ADOPT": 0,
+      "DISTINGUISH": 1,
+      "MISSING": 1,
+      "REJECT": 0,
+      "STALE": 7
+    },
+    "fleetStatus": "NO_FLEET_ADOPTION",
+    "fleetAdoptionClaim": false
+  },
+  "projects": [
+    {
+      "projectId": "adobe-ingester",
+      "specPath": "specs/adobe-ingester.md",
+      "status": "STALE",
+      "evidence": {
+        "commit": "21398d42cd232e121d968a579e20fb20d832a7f7",
+        "gitBlobOid": "f91bbd6be126dc1513c299069677b986b90cd716",
+        "disposition": {
+          "status": "DISTINGUISH",
+          "subjectCommit": "874605e43531c9aa230ee16851f8107a8e0d9cec"
+        }
+      },
+      "nonRegressionEvidence": null,
+      "blocker": "PROJECT_OWNER_CURRENT_CANDIDATE_DISPOSITION_REQUIRED"
+    },
+    {
+      "projectId": "adversarialllm",
+      "specPath": "specs/adversarialllm.md",
+      "status": "STALE",
+      "evidence": {
+        "commit": "13d0ee65f9e3949918db6e43ad3d41438d073bba",
+        "gitBlobOid": "33fe9c7fb7cc31b1f172b9216475fef5fe97aaad",
+        "disposition": {
+          "status": "DISTINGUISH",
+          "subjectCommit": "874605e43531c9aa230ee16851f8107a8e0d9cec"
+        }
+      },
+      "nonRegressionEvidence": null,
+      "blocker": "PROJECT_OWNER_CURRENT_CANDIDATE_DISPOSITION_REQUIRED"
+    },
+    {
+      "projectId": "agent-bridge",
+      "specPath": "specs/agent-bridge.md",
+      "status": "STALE",
+      "evidence": {
+        "commit": "cb96a50c1b44c47e66450785f3f19c9936d5cc29",
+        "gitBlobOid": "b2070f78be89aa21cf2e6e6e270b03851bb0d029",
+        "disposition": {
+          "status": "DISTINGUISH",
+          "subjectCommit": "874605e43531c9aa230ee16851f8107a8e0d9cec"
+        }
+      },
+      "nonRegressionEvidence": null,
+      "blocker": "PROJECT_OWNER_CURRENT_CANDIDATE_DISPOSITION_REQUIRED"
+    },
+    {
+      "projectId": "airmypc",
+      "specPath": "specs/airmypc.md",
+      "status": "STALE",
+      "evidence": {
+        "commit": "99dcd18bb96e44c632d719735105b7af1c6abaa3",
+        "gitBlobOid": "f173f47ca2c045fe24b6ec9383614585d10775d8",
+        "disposition": {
+          "status": "DISTINGUISH",
+          "subjectCommit": "874605e43531c9aa230ee16851f8107a8e0d9cec"
+        }
+      },
+      "nonRegressionEvidence": null,
+      "blocker": "PROJECT_OWNER_CURRENT_CANDIDATE_DISPOSITION_REQUIRED"
+    },
+    {
+      "projectId": "cloudvore",
+      "specPath": "specs/cloudvore.md",
+      "status": "STALE",
+      "evidence": {
+        "commit": "0e1f25d6782f4bba0fb01923a0b4b25260b8f83b",
+        "gitBlobOid": "6b76ddf037f36dc9fb9e513dc139b595c4b8ddd8",
+        "disposition": {
+          "status": "DISTINGUISH",
+          "subjectCommit": "874605e43531c9aa230ee16851f8107a8e0d9cec"
+        }
+      },
+      "nonRegressionEvidence": null,
+      "blocker": "PROJECT_OWNER_CURRENT_CANDIDATE_DISPOSITION_REQUIRED"
+    },
+    {
+      "projectId": "conjugal",
+      "specPath": "specs/conjugal.md",
+      "status": "STALE",
+      "evidence": {
+        "commit": "3a06045e882b59fcc9ed508849eceada2d8fce12",
+        "gitBlobOid": "ffca347d90689766a3418a65a0f12e464bfdfe78",
+        "disposition": {
+          "status": "DISTINGUISH",
+          "subjectCommit": "874605e43531c9aa230ee16851f8107a8e0d9cec"
+        }
+      },
+      "nonRegressionEvidence": null,
+      "blocker": "PROJECT_OWNER_CURRENT_CANDIDATE_DISPOSITION_REQUIRED"
+    },
+    {
+      "projectId": "dng-auto-processor",
+      "specPath": "specs/dng-auto-processor.md",
+      "status": "DISTINGUISH",
+      "evidence": {
+        "commit": "76dd97d3110668b6f1391aabee3e270801be00ad",
+        "gitBlobOid": "489f1fab5c3edbb360de63c54a35e17811d48f4a",
+        "disposition": {
+          "status": "DISTINGUISH",
+          "subjectCommit": "909f769d02e8412e51e28e242cfa8d00dadc9a3d"
+        }
+      },
+      "nonRegressionEvidence": null,
+      "blocker": "PROJECT_OWNER_DISTINCTION_OPEN"
+    },
+    {
+      "projectId": "mlv-app",
+      "specPath": "specs/mlv-app.md",
+      "status": "STALE",
+      "evidence": {
+        "commit": "699a83e1dab0b3e46b7493da25d665051a096548",
+        "gitBlobOid": "858b513e4e9e17eef1cd6864a351ee4905940f8b",
+        "disposition": {
+          "status": "DISTINGUISH",
+          "subjectCommit": "874605e43531c9aa230ee16851f8107a8e0d9cec"
+        }
+      },
+      "nonRegressionEvidence": null,
+      "blocker": "PROJECT_OWNER_CURRENT_CANDIDATE_DISPOSITION_REQUIRED"
+    },
+    {
+      "projectId": "salesforce-tools",
+      "specPath": "specs/salesforce-tools.md",
+      "status": "MISSING",
+      "evidence": {
+        "commit": "fb39709785bb833519b3e8010df2efe237a5e1da",
+        "gitBlobOid": "302be516c652d3185d299e3b66ed9ba5abc8b3d3",
+        "disposition": null
+      },
+      "nonRegressionEvidence": null,
+      "blocker": "PROJECT_OWNER_DISPOSITION_REQUIRED"
+    }
+  ]
+}
