@@ -1,0 +1,229 @@
+{
+  "schema": "fleet-r26-stale-project-reconciliation/v1",
+  "status": "DISCOVERY_ONLY_ZERO_AUTHORITY_FOUR_STALE",
+  "frozenBase": {
+    "publishedMasterCommit": "5ac7036705338cfe3370f5fddda224e07d5d1bdd",
+    "publishedMasterTree": "9e53ff055bbf1a4fe796104d06f009f503082ad5",
+    "ledgerPath": "adoption/universal-token-control-r26.json",
+    "ledgerGitBlobOid": "333cc6d47e99a857b64150a87bd9f834590256e1",
+    "ledgerGitBlobSha256": "a41f68c691159813ee58198ca1286683dcb1d20ea53cbe42f42a232cb2cd95ce",
+    "phase2Path": "adoption/phase2/r26-project-disposition-intake.json",
+    "phase2GitBlobOid": "6e3fe9d429dfd578c43d8ebaf371074a45b662b1",
+    "phase2GitBlobSha256": "792656b33f3234ada7f13d18ec6cf6ed1349a7f5cc1a03713d58eed126bb346d",
+    "r26Candidate": "e70a044f31dd2f43ab7c716d63a4eb89318c61b6",
+    "r26Merge": "909f769d02e8412e51e28e242cfa8d00dadc9a3d"
+  },
+  "capture": {
+    "capturedAt": "2026-08-19T16:06:05-05:00",
+    "machine": "ULTRA-MAGNUS",
+    "discoveryPolicy": "EXACT_PUBLISHED_POINTERS_AND_ALLOWLISTED_REMOTE_REFS_ONLY",
+    "networkInspectionPerformed": true,
+    "providerInvocationPerformed": false,
+    "runtimeMutationPerformed": false,
+    "scheduledTaskMutationPerformed": false,
+    "projectRepositoryMutationPerformed": false
+  },
+  "summary": {
+    "projectCount": 4,
+    "stalePreserved": 4,
+    "reachableRemotes": 1,
+    "currentR26Dispositions": 0,
+    "adoptionClaims": 0,
+    "runtimeAuthorityClaims": 0,
+    "projectMutationClaims": 0
+  },
+  "projects": [
+    {
+      "projectId": "adobe-ingester",
+      "ledgerBinding": {
+        "canonicalSha256": "6e7fa27a699d771c59159f1a9dd325889fb50fcfeaa6578635a05c300bfabf30",
+        "status": "STALE",
+        "blocker": "PROJECT_OWNER_CURRENT_CANDIDATE_DISPOSITION_REQUIRED",
+        "projectCandidatePresent": false
+      },
+      "phase2Binding": {
+        "canonicalSha256": "27f471a40a8a211f79aff5725bbebb79a6143d37dda0d0dc871cab16512bb60c",
+        "outcomeCode": "PROJECT_REPOSITORY_ROOT_UNPUBLISHED_OWNER_WORK_ORDER_AND_QUORUM_REQUIRED"
+      },
+      "discovery": {
+        "classification": "REACHABLE_PROJECT_REMOTE_NO_CURRENT_R26_DISPOSITION",
+        "remote": "https://github.com/layibabalola/adobe-document-cloud-ingester.git",
+        "refs": [
+          {
+            "name": "refs/heads/agent/software-factory-hardening",
+            "commit": "0afc24653369eb6129abf7f5263ee37ed1bed7f8",
+            "tree": "0cc091c0d738f2d4f6b450e5480bc2b0e3a6149b",
+            "parents": [
+              "850a201ebdaca3cb6f4bb7441df6347ce7577cc1"
+            ]
+          },
+          {
+            "name": "refs/heads/main",
+            "commit": "556f6d1b1ebeab26cda6c400a61e12c9d6a69f76",
+            "tree": "2655da443cd7e22e310d432b0aa39ef9e156aa09",
+            "parents": [
+              "93dd4f4dd843e4866e408389f571eb63d3aee8a4"
+            ]
+          }
+        ],
+        "r26MarkerSearch": {
+          "patterns": [
+            "R26",
+            "e70a044f31dd2f43ab7c716d63a4eb89318c61b6",
+            "909f769d02e8412e51e28e242cfa8d00dadc9a3d"
+          ],
+          "performedAgainstRefs": [
+            "refs/heads/agent/software-factory-hardening",
+            "refs/heads/main"
+          ],
+          "matchingPaths": []
+        },
+        "workflowEvidence": {
+          "ref": "refs/heads/agent/software-factory-hardening",
+          "path": ".factory/state.yaml",
+          "gitBlobOid": "797894a2d2988d37efc520f0dd12a79e6bc8d4d1",
+          "bytes": 17085,
+          "sha256": "69bcce7034bf213f64344e2395f1e30b629d804bbb77966bf9638c477d1cb121",
+          "textAnchors": [
+            {
+              "text": "state: IMPLEMENTED",
+              "count": 1
+            },
+            {
+              "text": "active_work_order: WO-G0-A01",
+              "count": 1
+            },
+            {
+              "text": "active_revision: 12",
+              "count": 1
+            },
+            {
+              "text": "status: BLOCKED_REVIEWER_CAPACITY",
+              "count": 2
+            }
+          ]
+        },
+        "caveat": "REMOTE_LOCATION_AND_BLOCKER_EVIDENCE_ONLY_NOT_PROJECT_DISPOSITION"
+      },
+      "outcome": {
+        "status": "STALE",
+        "projectCandidate": null,
+        "r26Disposition": "NOT_PRODUCED",
+        "advanceAuthorized": false
+      },
+      "authority": {
+        "projectDisposition": false,
+        "adoption": false,
+        "runtime": false,
+        "provider": false,
+        "scheduler": false,
+        "mutation": false
+      }
+    },
+    {
+      "projectId": "agent-bridge",
+      "ledgerBinding": {
+        "canonicalSha256": "224b2efc7e149a3dd6e1e2800d1635a0cdbd310c4de9a4996028e334348211f8",
+        "status": "STALE",
+        "blocker": "PROJECT_OWNER_CURRENT_CANDIDATE_DISPOSITION_REQUIRED",
+        "projectCandidatePresent": false
+      },
+      "phase2Binding": {
+        "canonicalSha256": "cf83c957062c8a2338d817e51b5efce6f56ff4509803e1f48a7bc45bd70b9079",
+        "outcomeCode": "PROJECT_REPOSITORY_ROOT_UNPUBLISHED_CURRENT_R26_DISPOSITION_REQUIRED"
+      },
+      "discovery": {
+        "classification": "NO_AUTHORITATIVE_REMOTE_OR_CURRENT_REF_AVAILABLE_TO_RECONCILIATION",
+        "remote": null,
+        "refs": [],
+        "r26MarkerSearch": null,
+        "workflowEvidence": null,
+        "caveat": "BOUNDED_NEGATIVE_DISCOVERY_NOT_GLOBAL_NONEXISTENCE_PROOF"
+      },
+      "outcome": {
+        "status": "STALE",
+        "projectCandidate": null,
+        "r26Disposition": "NOT_PRODUCED",
+        "advanceAuthorized": false
+      },
+      "authority": {
+        "projectDisposition": false,
+        "adoption": false,
+        "runtime": false,
+        "provider": false,
+        "scheduler": false,
+        "mutation": false
+      }
+    },
+    {
+      "projectId": "airmypc",
+      "ledgerBinding": {
+        "canonicalSha256": "70e2cf180ad3a4b5085a72105cfd5ee585e91cecfc525ce7cefc0e83381f6e82",
+        "status": "STALE",
+        "blocker": "PROJECT_OWNER_CURRENT_CANDIDATE_DISPOSITION_REQUIRED",
+        "projectCandidatePresent": false
+      },
+      "phase2Binding": {
+        "canonicalSha256": "579b9a3af669eaab9eb4ed5aa7f28ba87edcc50ab2d8854e8c26a4e2b4af916d",
+        "outcomeCode": "PROJECT_REPOSITORY_ABSENT_CURRENT_R26_DISPOSITION_REQUIRED"
+      },
+      "discovery": {
+        "classification": "NO_AUTHORITATIVE_REMOTE_OR_CURRENT_REF_AVAILABLE_TO_RECONCILIATION",
+        "remote": null,
+        "refs": [],
+        "r26MarkerSearch": null,
+        "workflowEvidence": null,
+        "caveat": "BOUNDED_NEGATIVE_DISCOVERY_NOT_GLOBAL_NONEXISTENCE_PROOF"
+      },
+      "outcome": {
+        "status": "STALE",
+        "projectCandidate": null,
+        "r26Disposition": "NOT_PRODUCED",
+        "advanceAuthorized": false
+      },
+      "authority": {
+        "projectDisposition": false,
+        "adoption": false,
+        "runtime": false,
+        "provider": false,
+        "scheduler": false,
+        "mutation": false
+      }
+    },
+    {
+      "projectId": "conjugal",
+      "ledgerBinding": {
+        "canonicalSha256": "58afb58093e89992115492c8c70beb0b388980ad366dc5e01645b95d6f51aeb4",
+        "status": "STALE",
+        "blocker": "PROJECT_OWNER_CURRENT_CANDIDATE_DISPOSITION_REQUIRED",
+        "projectCandidatePresent": false
+      },
+      "phase2Binding": {
+        "canonicalSha256": "9af2aeea2ca622ac3a34dd7c1b737358852284576894219acc571ba0fe224ecf",
+        "outcomeCode": "PROJECT_REPOSITORY_ABSENT_CURRENT_R26_DISPOSITION_REQUIRED"
+      },
+      "discovery": {
+        "classification": "NO_AUTHORITATIVE_REMOTE_OR_CURRENT_REF_AVAILABLE_TO_RECONCILIATION",
+        "remote": null,
+        "refs": [],
+        "r26MarkerSearch": null,
+        "workflowEvidence": null,
+        "caveat": "BOUNDED_NEGATIVE_DISCOVERY_NOT_GLOBAL_NONEXISTENCE_PROOF"
+      },
+      "outcome": {
+        "status": "STALE",
+        "projectCandidate": null,
+        "r26Disposition": "NOT_PRODUCED",
+        "advanceAuthorized": false
+      },
+      "authority": {
+        "projectDisposition": false,
+        "adoption": false,
+        "runtime": false,
+        "provider": false,
+        "scheduler": false,
+        "mutation": false
+      }
+    }
+  ]
+}

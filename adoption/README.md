@@ -13,6 +13,12 @@ parents, artifact Git blobs, byte counts, SHA-256 values, and statements are fro
 `phase3/r26-published-project-disposition-intake.json` and exact-bound by the production checker.
 All authority and proof-credit members remain false; see `phase3/README.md`.
 
+Phase 5 records the bounded reconciliation of the four remaining `STALE` rows. Adobe's exact
+project remote and two published refs are reachable but contain no current R26 disposition; Agent
+Bridge, AirMyPC, and Conjugal still have no authoritative remote/current ref available to the
+batch. The ledger and all project specs remain unchanged. See
+`phase5/r26-stale-project-reconciliation.json` and `phase5/README.md`.
+
 The checker closes on a changed or omitted project spec, a stale evidence pin, a fabricated
 disposition, any attempt to convert `CANDIDATE_ZERO_AUTHORITY` into runtime/project/fleet adoption,
 or any token-saving claim that drops exact model, effort, role, review, quality, or functionality

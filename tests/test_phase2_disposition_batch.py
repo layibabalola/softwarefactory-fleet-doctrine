@@ -137,6 +137,8 @@ class Phase2DispositionBatchTests(unittest.TestCase):
                 "adoption/README.md",
                 "adoption/phase3/README.md",
                 "adoption/phase3/r26-published-project-disposition-intake.json",
+                "adoption/phase5/README.md",
+                "adoption/phase5/r26-stale-project-reconciliation.json",
                 "adoption/universal-token-control-r26.json",
                 "specs/adversarialllm.md",
                 "specs/cloudvore.md",
@@ -148,6 +150,8 @@ class Phase2DispositionBatchTests(unittest.TestCase):
                 "tools/check_phase2_disposition_batch.py",
                 "tests/test_phase3_disposition_batch.py",
                 "tools/check_phase3_disposition_batch.py",
+                "tests/test_phase5_stale_reconciliation.py",
+                "tools/check_phase5_stale_reconciliation.py",
             },
         ):
             MODULE.verify_batch(batch, "HEAD")

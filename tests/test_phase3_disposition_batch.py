@@ -555,6 +555,38 @@ class Phase3DispositionBatchTests(unittest.TestCase):
             with self.assertRaisesRegex(MODULE.Phase3Error, "PHASE3_SCOPE_VIOLATION"):
                 MODULE.verify_batch(self._copy(), "HEAD")
 
+    def test_phase3_scope_allows_phase5_zero_authority_reconciliation(self):
+        def changed_paths(base, treeish):
+            if (base, treeish) == (MODULE.MASTER_COMMIT, MODULE.INITIAL_FOLD_COMMIT):
+                return set(MODULE.SPEC_PATHS)
+            if (base, treeish) == (MODULE.INITIAL_FOLD_COMMIT, MODULE.SPEC_BINDING_COMMIT):
+                return set(MODULE.SPEC_PATHS)
+            if (base, treeish) == (
+                MODULE.PHASE3_PUBLISHED_COMMIT,
+                MODULE.ADVERSARIAL_SPEC_BINDING_COMMIT,
+            ):
+                return {"specs/adversarialllm.md"}
+            if (base, treeish) == (
+                MODULE.PRE_ADVERSARIAL_SPEC_REPAIR_COMMIT,
+                MODULE.ADVERSARIAL_SPEC_REPAIR_COMMIT,
+            ):
+                return {"specs/adversarialllm.md"}
+            return {
+                ".github/workflows/disposition-intake.yml",
+                "adoption/README.md",
+                "adoption/phase5/README.md",
+                "adoption/phase5/r26-stale-project-reconciliation.json",
+                "tests/test_phase2_disposition_batch.py",
+                "tests/test_phase3_disposition_batch.py",
+                "tests/test_phase5_stale_reconciliation.py",
+                "tools/check_phase2_disposition_batch.py",
+                "tools/check_phase3_disposition_batch.py",
+                "tools/check_phase5_stale_reconciliation.py",
+            }
+
+        with mock.patch.object(MODULE, "_changed_paths", side_effect=changed_paths):
+            MODULE.verify_batch(self._copy(), "HEAD")
+
 
 if __name__ == "__main__":
     unittest.main()

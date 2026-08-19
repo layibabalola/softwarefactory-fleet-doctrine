@@ -48,15 +48,27 @@ jobs:
       - name: Verify exact zero-authority phase-3 distinctions locally
         run: python tools/check_phase3_disposition_batch.py --treeish HEAD
 
-      - name: Verify published project Git objects when cross-repo read authority exists
+      - name: Verify published project and Adobe discovery objects when cross-repo read authority exists
         if: env.R26_REMOTE_AUTH_CONFIGURED == 'true'
         env:
           R26_REMOTE_GITHUB_TOKEN: ${{ secrets.R26_CROSS_REPO_READ_TOKEN }}
-        run: python tools/check_phase3_disposition_batch.py --treeish HEAD --verify-remotes
+        run: |
+          python tools/check_phase3_disposition_batch.py --treeish HEAD --verify-remotes
+          python tools/check_phase5_stale_reconciliation.py --treeish HEAD --verify-remotes
 
       - name: Report unavailable remote verification authority
         if: env.R26_REMOTE_AUTH_CONFIGURED != 'true'
         run: echo "REMOTES NOT VERIFIED - R26_CROSS_REPO_READ_TOKEN is not configured"
+
+      - name: Run phase-5 remaining-STALE reconciliation controls
+        run: python -m unittest discover -s tests -p "test_phase5_stale_reconciliation.py" -v
+
+      - name: Verify phase-5 zero-authority reconciliation locally
+        run: python tools/check_phase5_stale_reconciliation.py --treeish HEAD
+
+      - name: Report unavailable Adobe remote verification authority
+        if: env.R26_REMOTE_AUTH_CONFIGURED != 'true'
+        run: echo "ADOBE REMOTE NOT VERIFIED - R26_CROSS_REPO_READ_TOKEN is not configured"
 
       - name: Reverify the frozen adoption ledger
         run: python tools/check_adoption_ledger.py --treeish HEAD
