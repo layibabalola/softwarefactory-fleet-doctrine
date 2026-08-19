@@ -1,0 +1,120 @@
+{
+  "schema": "fleet-read-only-review-packet/v1",
+  "status": "FROZEN_READ_ONLY_ZERO_AUTHORITY",
+  "subject": {
+    "commit": "490953a4496bab6977d554acb1828d40f4ac92d0",
+    "tree": "c97a7e8a5df36be11180201d93d29b28ea8b17a1",
+    "orderedParents": [
+      "76dd97d3110668b6f1391aabee3e270801be00ad"
+    ],
+    "files": [
+      {
+        "path": ".github/workflows/adoption-ledger.yml",
+        "gitBlobOid": "fcdf50eddb07a7c3206c1ee6ae309da5b0e6d5b0",
+        "sha256": "sha256:8c1b8e83dfa10f56216f39f47d6a5b9967340189d19dc96908b993b6b7626eaf",
+        "bytes": 1110
+      },
+      {
+        "path": "adoption/README.md",
+        "gitBlobOid": "53745864fe975feadb4b73ffd1d3a6792ebfb992",
+        "sha256": "sha256:a8c59108cd4b44918cab95052a2446ad809b1877a7f37a08d7b7e68d562b7241",
+        "bytes": 1277
+      },
+      {
+        "path": "adoption/universal-token-control-r26.json",
+        "gitBlobOid": "64f7462d4a6ff1e4d238e4f6be429fb584a8eb1f",
+        "sha256": "sha256:6f8af205f24386913bfb9455eabc10e18f2ffdc161ad06ee148ea654a4352292",
+        "bytes": 6290
+      },
+      {
+        "path": "tests/test_adoption_ledger.py",
+        "gitBlobOid": "ef5588b56993cdf6e7640a831ea28b9149f23cdf",
+        "sha256": "sha256:cd58c943d0ec15fe3b6bd7ce465c157d83c07cdbbafcdf1a1cdf7ee4e6d52670",
+        "bytes": 6444
+      },
+      {
+        "path": "tools/check_adoption_ledger.py",
+        "gitBlobOid": "822eb534a9dcda69b274a466c30c23dedd268b1b",
+        "sha256": "sha256:c1cfde8588f5962aa802696bf5face3b2733cc3dad69f786dc7cb8504de05895",
+        "bytes": 17174
+      }
+    ]
+  },
+  "r26Anchors": {
+    "candidateCommit": "e70a044f31dd2f43ab7c716d63a4eb89318c61b6",
+    "mergeCommit": "909f769d02e8412e51e28e242cfa8d00dadc9a3d",
+    "manifestStatus": "CANDIDATE_ZERO_AUTHORITY",
+    "censusCommit": "76dd97d3110668b6f1391aabee3e270801be00ad",
+    "dngStatus": "DISTINGUISH",
+    "fleetAdoptionClaim": false
+  },
+  "requiredNonRegressionDimensions": [
+    "model",
+    "effort",
+    "role",
+    "review",
+    "quality",
+    "functionality"
+  ],
+  "reviewAssignments": [
+    {
+      "role": "FABLE",
+      "mode": "READ_ONLY",
+      "scope": "DOCTRINE",
+      "requiredChecks": [
+        "PUBLICATION_IS_NOT_PROJECT_OR_FLEET_ADOPTION",
+        "CLOSED_PROJECT_SET_AND_STATUS_VOCABULARY_ARE_DOCTRINALLY_SOUND",
+        "R26_ZERO_AUTHORITY_AND_DNG_DISTINGUISH_ARE_PRESERVED",
+        "TOKEN_SAVINGS_PRESERVE_ALL_SIX_NON_REGRESSION_DIMENSIONS"
+      ]
+    },
+    {
+      "role": "SONNET",
+      "mode": "READ_ONLY",
+      "scope": "VERIFICATION",
+      "requiredChecks": [
+        "REPRODUCE_GIT_COMMIT_TREE_PARENT_BLOB_SHA256_AND_BYTE_PINS",
+        "RUN_ADOPTION_LEDGER_CHECKER_ON_THE_EXACT_SUBJECT",
+        "RUN_ADVERSARIAL_LEDGER_UNIT_CONTROLS",
+        "CONFIRM_DNG_EVIDENCE_COMMIT_AND_BLOB_ARE_76DD97D_PINNED",
+        "CONFIRM_STANDALONE_HOSTED_WORKFLOW_DOES_NOT_CHANGE_R26_FROZEN_SUBJECTS"
+      ]
+    }
+  ],
+  "authorValidation": {
+    "ledgerChecker": "PASS",
+    "ledgerUnitControls": {
+      "passed": 12,
+      "failed": 0,
+      "python": "3.14.6"
+    },
+    "exactCandidateManifest": "PASS_AT_e70a044f31dd2f43ab7c716d63a4eb89318c61b6",
+    "hosted": "REQUIRED_UNCLAIMED",
+    "broaderLocalSuite": "NO_CREDIT_SCHEMA_VALIDATOR_DEPENDENCY_UNAVAILABLE"
+  },
+  "coordinatorValidation": {
+    "subjectCommit": "490953a4496bab6977d554acb1828d40f4ac92d0",
+    "ledgerChecker": "PASS",
+    "repositoryUnitTests": {
+      "passed": 230,
+      "failed": 0,
+      "durationSeconds": 192.418
+    },
+    "capacityControlUnitTests": {
+      "passed": 78,
+      "failed": 0,
+      "durationSeconds": 1.327
+    },
+    "python": "3.14.6",
+    "schemaValidator": "jsonschema-4.25.1"
+  },
+  "authority": {
+    "mutation": false,
+    "merge": false,
+    "push": false,
+    "projectAdoption": false,
+    "fleetAdoption": false,
+    "runtimeActivation": false,
+    "reviewOutcomePredeclared": false
+  }
+}
