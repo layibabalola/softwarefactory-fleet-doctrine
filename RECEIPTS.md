@@ -1104,3 +1104,34 @@ ticks, full-child claimant fencing, rollback, single-use canary authorization, o
 fresh independent review. The automatic launch gate remains HARD_CLOSED and this
 receipt grants no provider call, canary, provider-launcher enablement, project
 `ADOPT`, production, landing, release, or product credit.
+
+## Agent Bridge — exact R14 profile generated under closed authority, 2026-08-18 — current Windows host
+
+Agent Bridge subject `85ee8077d8edb40abd0f0275ec958e3a0b7283ff`, tree
+`9be9117aedf024b25650850eec2676a7cf8a8614`, pins the ratified R14 validator and
+profile-schema Git blobs and their full SHA-256 values. The standalone candidate
+passed 471 pytest tests plus 37 subtests, 60 focused tests, and Ruff. Its create-once
+host-local profile independently passed the exact canonical validator, with file
+SHA-256 `408404D5F80958313925F6F5964692B7293EE36E8C851F9046CC7B5BBC9BABCD` and
+canonical semantic digest
+`sha256:580b679b1011aa63b1a5c128aebe5d667ea3edf68202d074a7cb21a5ce18dcff`.
+No secret bytes or secret digest are published.
+
+The first Windows secret write produced 33 bytes because text mode expanded a random
+newline. Profile creation failed closed before writing a profile. The repaired path
+uses binary create-once writes and exact-length readback, with a deterministic newline
+regression; the invalid attempt is preserved and never used. The active secret is
+exactly 32 bytes.
+
+At observation time the model-free shadow task was enabled and Ready with result 0;
+both legacy launch tasks remained disabled and hash-pinned to refusal. All 29 shadow
+events remained `SHADOW/CLOSED/HARD_CLOSED` with zero provider calls/processes,
+tool calls, and tokens, and no native Claude CLI root. No persistent universal broker
+database exists. Agent Bridge therefore records
+`DISTINGUISH(874605e43531c9aa230ee16851f8107a8e0d9cec,
+PENDING_COMPLETE_CENSUS_PERSISTENT_BROKER_1000_TICKS_CANARY_AND_REVIEW,
+85ee8077d8edb40abd0f0275ec958e3a0b7283ff)`.
+
+This receipt closes only the pinned-profile prerequisite. It grants no provider call,
+provider-launch task enablement, canary, `ADOPT`, review credit, production, landing,
+release, or product credit.

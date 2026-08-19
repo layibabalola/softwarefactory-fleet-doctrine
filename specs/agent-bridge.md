@@ -189,7 +189,7 @@ and Lorphic K2 model overview `https://lorphic.com/kimi-k2-models/`.
 
 ## Fleet universal provider-control disposition — 2026-08-18
 
-`DISTINGUISH(874605e43531c9aa230ee16851f8107a8e0d9cec, PENDING_LOCAL_R14_PROFILE_COMPLETE_CENSUS_1000_TICKS_CANARY_AND_REVIEW, 13d697c2b778ed566ebb90147aca77bd28f80824)`
+`DISTINGUISH(874605e43531c9aa230ee16851f8107a8e0d9cec, PENDING_COMPLETE_CENSUS_PERSISTENT_BROKER_1000_TICKS_CANARY_AND_REVIEW, 85ee8077d8edb40abd0f0275ec958e3a0b7283ff)`
 
 Rollout state: **SHADOW**; automatic launch gate: **HARD_CLOSED.** Agent Bridge
 retains the portable invariants of provider-capacity governor v1 and accepts the
@@ -292,25 +292,25 @@ The precedence rule is singular and fail-closed:
    It is now the additive portable conformance target. Its doctrine status does not
    create Agent Bridge runtime authority, so this project records the exact
    `DISTINGUISH` above rather than `ADOPT`.
-3. Agent Bridge subject `13d697c2b778ed566ebb90147aca77bd28f80824`
-   is project-local runtime evidence, not a competing universal doctrine. The
+3. Agent Bridge subject `85ee8077d8edb40abd0f0275ec958e3a0b7283ff`
+   is the current project-local closed-state evidence, not a competing universal doctrine. The
    Conjugal runtime-extension draft and every other project adapter have the same
    status: useful comparative evidence only. Project dispositions from Adobe,
    Cloudvore, Conjugal, DNG, and other factories describe local adoption state and
    cannot override the portable core or grant Agent Bridge authority.
 
-Ratified R14 is strictly stronger than the current Agent Bridge candidate in several
-material respects: strict schema/HMAC-qualified capacity and health records;
-persistent claimant/reservation fencing; exact four-surface launcher census;
-single-use canary authorization; 1,000 unchanged zero-inference ticks; and retained
-artifact/publication ownership with cleanup poison. Agent Bridge will consume the
-ratified contract through a pinned local R14 profile rather than fork those
-semantics. Until the profile, complete census, 1,000-tick shadow proof, full-child
-fencing, rollback, canary authorization, and fresh review exist, its local subject
-may advance only closed-state installation, shadow, and containment evidence. It
-cannot reach CANARY from local tests alone. No branch head, hosted-green run,
-provider recovery, capacity reset, or successful local probe silently updates this
-disposition.
+Ratified R14 remains strictly stronger than the Agent Bridge runtime in several
+material respects: strict HMAC-qualified capacity and health records; persistent
+claimant/reservation fencing; exact four-surface launcher census; single-use canary
+authorization; 1,000 unchanged zero-inference ticks; and retained artifact/publication
+ownership with cleanup poison. Agent Bridge now consumes the exact R14 validator and
+schema through a pinned local profile rather than forking those semantics. The profile
+closes only one prerequisite. Until the persistent broker/gate integration, complete
+census, 1,000-tick proof, full-child fencing, rollback, canary authorization, and fresh
+review exist, the local subject may advance only closed-state installation, shadow,
+and containment evidence. It cannot reach CANARY from local tests alone. No branch
+head, hosted-green run, provider recovery, capacity reset, or successful local probe
+silently updates this disposition.
 
 ### Fail-closed restoration progress
 
@@ -344,3 +344,47 @@ action; both task definitions remain disabled.
 This advances only offline installation and SHADOW evidence. The launcher census
 is explicitly incomplete, no qualified capacity observer or recovery attestation
 exists, and no canary is authorized.
+
+### Ratified R14 profile closure — 2026-08-18
+
+Exact Agent Bridge subject `85ee8077d8edb40abd0f0275ec958e3a0b7283ff`, tree
+`9be9117aedf024b25650850eec2676a7cf8a8614`, adds create-once project-profile
+generation through the exact R14 validator and schema bytes. It pins validator blob
+`0e26b15f249f89972e2fc7807ccd0d98a0bd4954`, SHA-256
+`8C6B50810186EC0F153B82EB7F941CA9FF91C7C660AF10406C243AFAB2D6DBC1`, and
+profile-schema blob `40790b64747786c7c6d506cd92618349d852129e`, SHA-256
+`48D58709DAB8A08974CDDF81167D9A562A4E8CF17B71DE436D4FDA63697D00AE`.
+Hash drift, non-local or multi-host coordination, incomplete command/snapshot/recovery
+binding, missing `session` or `weekly` capacity dimensions, and unknown independence
+classes fail closed. Full verification passed 471 pytest tests plus 37 subtests, 60
+focused tests, and Ruff.
+
+The host-local profile is 1,815 bytes, file SHA-256
+`408404D5F80958313925F6F5964692B7293EE36E8C851F9046CC7B5BBC9BABCD`, and
+canonical semantic digest
+`sha256:580b679b1011aa63b1a5c128aebe5d667ea3edf68202d074a7cb21a5ce18dcff`.
+The exact canonical validator independently returned `PASS`. Secret material and its
+digest are deliberately absent from fleet evidence. A first Windows text-mode attempt
+expanded a random newline and produced 33 bytes; profile creation failed closed. The
+repaired path uses binary mode and exact-length readback, and a separate active secret
+is exactly 32 bytes. The invalid attempt remains preserved and unused.
+
+The live policy semantic SHA-256 is
+`BB6E83F4CDBF6A94F0BDDAB12E9F272B7C4B0DAB12368F496EDAFAC517D1DA0A` and the
+hash-pinned model-free shadow script SHA-256 is
+`88C67B921CBA2B4B8D9FFCD7854C410B3EA3AEADBF731D7ED698CD9D0A6978BF`.
+At observation time its Scheduled Task was enabled, Ready, and last result 0; both
+legacy launch tasks remained disabled and refusal-wrapped. All 29 shadow events were
+`SHADOW/CLOSED/HARD_CLOSED`, with zero provider processes, provider calls, tool calls,
+and token counters, and no native Claude CLI root. No persistent universal broker
+database exists. Local versioned manifest and receipt SHA-256 values are
+`8D6528E73B5ECED9C35C415997FF4D8B48E7ECB969249F4D8BF07AB94296B5F6` and
+`B121480B5251D2EE1983A58DC65015A82BB5CAAC502E3AF35E87A02C2809F6BC`.
+
+This closes only the pinned-profile prerequisite and preserves `SHADOW/HARD_CLOSED`.
+The complete four-surface census, persistent universal broker and gate, qualified
+signed capacity/recovery evidence, full-child fencing, rollback, 1,000 unchanged
+ticks, single-use canary authorization, one bounded canary returning CLOSED, and
+fresh independent exact-subject review remain mandatory. This section grants no
+provider call, task enablement for a provider launcher, canary, project `ADOPT`,
+production, landing, or release authority.
