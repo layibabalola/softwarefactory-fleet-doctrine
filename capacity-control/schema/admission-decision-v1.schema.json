@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://softwarefactory.local/fleet/admission-decision-v1.schema.json",
+  "title": "Fleet capacity admission decision v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "status", "reason_codes", "request_id", "request_digest", "snapshot_digest", "policy_digest", "decided_at", "lease"],
+  "properties": {
+    "schema": {"const": "fleet-capacity-admission-decision/v1"},
+    "status": {"enum": ["ADMIT", "HOLD", "REFUSE"]},
+    "reason_codes": {"type": "array", "minItems": 1, "items": {"type": "string", "pattern": "^[A-Z][A-Z0-9_]{1,63}$"}},
+    "request_id": {"type": "string"},
+    "request_digest": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+    "snapshot_digest": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+    "policy_digest": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+    "decided_at": {"type": "string", "format": "date-time"},
+    "lease": {
+      "oneOf": [
+        {"type": "null"},
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["lease_id", "quota_domain", "issued_at", "expires_at", "budget"],
+          "properties": {
+            "lease_id": {"type": "string", "pattern": "^[0-9a-f-]{36}$"},
+            "quota_domain": {"type": "string"},
+            "issued_at": {"type": "string", "format": "date-time"},
+            "expires_at": {"type": "string", "format": "date-time"},
+            "budget": {"type": "object"}
+          }
+        }
+      ]
+    }
+  }
+}

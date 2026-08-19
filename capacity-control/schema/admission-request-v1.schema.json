@@ -1,0 +1,57 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://softwarefactory.local/fleet/admission-request-v1.schema.json",
+  "title": "Fleet capacity admission request v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "request_id", "project", "lane", "subject_digest", "role", "priority", "profile", "issued_at", "expires_at", "budget", "quality_contract", "owner_override"],
+  "properties": {
+    "schema": {"const": "fleet-capacity-admission-request/v1"},
+    "request_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{7,127}$"},
+    "project": {"type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{1,63}$"},
+    "lane": {"type": "string", "minLength": 2, "maxLength": 128},
+    "subject_digest": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+    "role": {"enum": ["IMPLEMENT", "REVIEW", "DESIGN", "NARRATE", "COORDINATE", "PROBE"]},
+    "priority": {"enum": ["OWNER_FOREGROUND", "REQUIRED_REVIEW", "PRODUCT_WORK", "BACKGROUND"]},
+    "profile": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["provider", "quota_domain", "independence_class", "requested_model", "requested_effort", "transport"],
+      "properties": {
+        "provider": {"type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{1,31}$"},
+        "quota_domain": {"type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{1,31}:sha256:[0-9a-f]{64}$"},
+        "independence_class": {"type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{1,63}$"},
+        "requested_model": {"type": "string", "minLength": 1, "maxLength": 128},
+        "requested_effort": {"type": ["string", "null"], "maxLength": 32},
+        "transport": {"type": "string", "minLength": 1, "maxLength": 128}
+      }
+    },
+    "issued_at": {"type": "string", "format": "date-time"},
+    "expires_at": {"type": "string", "format": "date-time"},
+    "budget": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["max_wall_seconds", "max_turns", "max_context_tokens", "window_estimates"],
+      "properties": {
+        "max_wall_seconds": {"type": "integer", "minimum": 1, "maximum": 21600},
+        "max_turns": {"type": "integer", "minimum": 1, "maximum": 512},
+        "max_context_tokens": {"type": "integer", "minimum": 1, "maximum": 2000000},
+        "window_estimates": {
+          "type": "object",
+          "minProperties": 1,
+          "additionalProperties": {"type": "number", "minimum": 0, "maximum": 1}
+        }
+      }
+    },
+    "quality_contract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["requires_exact_profile", "role_cell_evidence"],
+      "properties": {
+        "requires_exact_profile": {"const": true},
+        "role_cell_evidence": {"type": "string", "minLength": 1, "maxLength": 256}
+      }
+    },
+    "owner_override": {"type": "boolean"}
+  }
+}

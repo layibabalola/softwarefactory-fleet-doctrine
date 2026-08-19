@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://softwarefactory.local/fleet/usage-event-v1.schema.json",
+  "title": "Machine-local normalized inference usage event v1",
+  "description": "High-frequency local input. Raw rows and quota-domain fingerprints must not be committed to doctrine.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "ts", "project", "provider", "quota_domain", "session_id", "requested_profile", "effective_profile", "usage", "terminal"],
+  "properties": {
+    "schema": {"const": "fleet-inference-usage-event/v1"},
+    "ts": {"type": "string", "format": "date-time"},
+    "project": {"type": "string"},
+    "provider": {"type": "string"},
+    "quota_domain": {"type": "string"},
+    "session_id": {"type": "string"},
+    "requested_profile": {
+      "type": "object",
+      "required": ["model", "effort"],
+      "properties": {"model": {"type": "string"}, "effort": {"type": ["string", "null"]}},
+      "additionalProperties": false
+    },
+    "effective_profile": {
+      "type": "object",
+      "required": ["model", "effort"],
+      "properties": {"model": {"type": ["string", "null"]}, "effort": {"type": ["string", "null"]}},
+      "additionalProperties": false
+    },
+    "usage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["input_tokens", "cached_input_tokens", "output_tokens", "reasoning_tokens", "peak_context_tokens", "turns", "wall_seconds"],
+      "properties": {
+        "input_tokens": {"type": ["integer", "null"], "minimum": 0},
+        "cached_input_tokens": {"type": ["integer", "null"], "minimum": 0},
+        "output_tokens": {"type": ["integer", "null"], "minimum": 0},
+        "reasoning_tokens": {"type": ["integer", "null"], "minimum": 0},
+        "peak_context_tokens": {"type": ["integer", "null"], "minimum": 0},
+        "turns": {"type": ["integer", "null"], "minimum": 0},
+        "wall_seconds": {"type": ["number", "null"], "minimum": 0}
+      }
+    },
+    "terminal": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["class", "useful", "evidence_digest"],
+      "properties": {
+        "class": {"enum": ["SUCCESS", "PAUSED_BUDGET", "QUOTA_BLOCKED", "REFUSED", "FAILED", "CANCELLED", "UNEVALUABLE"]},
+        "useful": {"type": "boolean"},
+        "evidence_digest": {"type": ["string", "null"], "pattern": "^sha256:[0-9a-f]{64}$"}
+      }
+    }
+  }
+}

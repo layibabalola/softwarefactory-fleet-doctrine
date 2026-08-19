@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://softwarefactory.local/fleet/capacity-snapshot-v1.schema.json",
+  "title": "Fleet capacity snapshot v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "provider", "quota_domain", "observed_at", "windows", "source"],
+  "properties": {
+    "schema": {"const": "fleet-capacity-snapshot/v1"},
+    "provider": {"type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{1,31}$"},
+    "quota_domain": {"type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{1,31}:sha256:[0-9a-f]{64}$"},
+    "observed_at": {"type": "string", "format": "date-time"},
+    "windows": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "used_fraction", "resets_at", "window_started_at"],
+        "properties": {
+          "name": {"type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{1,31}$"},
+          "used_fraction": {"type": ["number", "null"], "minimum": 0, "maximum": 1},
+          "resets_at": {"type": ["string", "null"], "format": "date-time"},
+          "window_started_at": {"type": ["string", "null"], "format": "date-time"}
+        }
+      }
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "artifact_sha256"],
+      "properties": {
+        "kind": {"type": "string", "minLength": 1, "maxLength": 64},
+        "artifact_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+      }
+    }
+  }
+}
