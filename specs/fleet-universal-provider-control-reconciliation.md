@@ -513,3 +513,7 @@ issue URL is informational and optional for schema/semantic validation. Token to
 `MOTIVATION_AND_MEASUREMENT_ONLY` credit and cannot satisfy provider authentication, independent
 review, adoption, containment, CANARY, OPEN, or activation evidence. R23 remains zero authority and
 CLOSED.
+
+The exact R23 candidate is validated by 177 universal controls, 37 retained governor controls, and
+78 canonical runtime-workbench controls on Python 3.13 and 3.14. Hosted checks remain required and
+unclaimed; validation and publication do not grant authority.
