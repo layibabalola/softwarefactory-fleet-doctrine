@@ -328,9 +328,9 @@
     },
     {
       "path": "tests/test_universal_provider_control.py",
-      "gitBlobOid": "23ac93251a91d91c6c9059589f6be3f47b9b9d0f",
-      "sha256": "sha256:0951ec2d7d35df1c339ffc217dd4dd1b8fd94abff72e0dbc55d50871f1e83d2a",
-      "bytes": 219538
+      "gitBlobOid": "991da0f2ad501421f1165bb5269055d69f6b1c78",
+      "sha256": "sha256:288534f35ce9a8bc3c74349ac1a0ea02c92ab8120b7a4a5bcc332b95d2e05250",
+      "bytes": 219982
     },
     {
       "path": "tools/check_universal_manifest.py",
@@ -347,7 +347,7 @@
   ],
   "manifestSelf": {
     "path": "manifests/universal-provider-control-reconciliation-r17.json",
-    "canonicalGitBlobSha256": "sha256:d3f2ae84a5834b94991a2c25dfaecf0784e34417d71df4ed3d8e4d2dbdce3d79",
+    "canonicalGitBlobSha256": "sha256:48ab10899961049a54bfc58420cf9de83d2cfa0a5d7fe032a9d51e4ffea96e28",
     "bytes": 13028,
     "rule": "SHA-256 of this exact Git blob after replacing only the 64 hex digits in canonicalGitBlobSha256 with zeroes"
   }
