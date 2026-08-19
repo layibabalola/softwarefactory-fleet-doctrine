@@ -23,7 +23,7 @@
     }
   },
   "census": {
-    "baseCommit": "76dd97d3110668b6f1391aabee3e270801be00ad",
+    "baseCommit": "e04f9be6e6cc2e63e6755e83bdb422eb72ff2ff0",
     "projectSpecGlob": "specs/*.md",
     "nonProjectSpecs": [
       "specs/fleet-provider-capacity-governor.md",
@@ -46,10 +46,10 @@
     "projectCount": 9,
     "counts": {
       "ADOPT": 0,
-      "DISTINGUISH": 1,
+      "DISTINGUISH": 2,
       "MISSING": 1,
       "REJECT": 0,
-      "STALE": 7
+      "STALE": 6
     },
     "fleetStatus": "NO_FLEET_ADOPTION",
     "fleetAdoptionClaim": false
@@ -88,17 +88,17 @@
     {
       "projectId": "agent-bridge",
       "specPath": "specs/agent-bridge.md",
-      "status": "STALE",
+      "status": "DISTINGUISH",
       "evidence": {
-        "commit": "cb96a50c1b44c47e66450785f3f19c9936d5cc29",
-        "gitBlobOid": "b2070f78be89aa21cf2e6e6e270b03851bb0d029",
+        "commit": "9a77fb450adb8481a511daf57567921682ddcc5a",
+        "gitBlobOid": "68e81ce60b20f04c9267926b40c82f8185b050d9",
         "disposition": {
           "status": "DISTINGUISH",
-          "subjectCommit": "874605e43531c9aa230ee16851f8107a8e0d9cec"
+          "subjectCommit": "909f769d02e8412e51e28e242cfa8d00dadc9a3d"
         }
       },
       "nonRegressionEvidence": null,
-      "blocker": "PROJECT_OWNER_CURRENT_CANDIDATE_DISPOSITION_REQUIRED"
+      "blocker": "PROJECT_OWNER_DISTINCTION_OPEN"
     },
     {
       "projectId": "airmypc",

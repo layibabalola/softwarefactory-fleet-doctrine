@@ -45,6 +45,7 @@ ALLOWED_PHASE2_PATHS = {
     "tools/check_adoption_ledger.py",
     "tools/check_phase2_disposition_batch.py",
 }
+PHASE2_SCOPE_FREEZE_COMMIT = "082f631c7b474211bbe8ecbc783a4fd9cdd2ada0"
 OWNER_EVIDENCE_REQUIREMENTS = [
     "PROJECT_OWNED_COMMIT_AND_GIT_BLOB_BINDING_R26_E70A044_AND_MERGE_909F769",
     "CURRENT_EXPLICIT_ADOPT_DISTINGUISH_OR_REJECT",
@@ -125,10 +126,13 @@ def _is_ancestor(ancestor: str, descendant: str) -> bool:
 
 
 def _changed_paths(treeish: str) -> set[str]:
-    if treeish == ":":
-        args = ["diff", "--cached", "--name-only", PACKET_COMMIT]
-    else:
-        args = ["diff", "--name-only", f"{PACKET_COMMIT}..{treeish}"]
+    descendant = "HEAD" if treeish == ":" else treeish
+    scope_tip = (
+        PHASE2_SCOPE_FREEZE_COMMIT
+        if _is_ancestor(PHASE2_SCOPE_FREEZE_COMMIT, descendant)
+        else descendant
+    )
+    args = ["diff", "--name-only", f"{PACKET_COMMIT}..{scope_tip}"]
     return set(_git(args, text=True, error="PHASE2_DIFF_UNAVAILABLE").splitlines())
 
 

@@ -37,8 +37,8 @@ class AdoptionLedgerTests(unittest.TestCase):
         project = self._project(ledger, "dng-auto-processor")
         project["status"] = "ADOPT"
         project["blocker"] = None
-        ledger["summary"]["counts"]["ADOPT"] = 1
-        ledger["summary"]["counts"]["DISTINGUISH"] = 0
+        ledger["summary"]["counts"]["ADOPT"] += 1
+        ledger["summary"]["counts"]["DISTINGUISH"] -= 1
 
         prefix = "receipts/project-adoption/dng-auto-processor"
         artifacts = {}
