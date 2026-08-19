@@ -52,8 +52,45 @@ NON_REGRESSION_RULE = (
     "TOKEN_SAVINGS_MUST_NOT_REGRESS_EXACT_MODEL_EFFORT_ROLE_REVIEW_QUALITY_OR_FUNCTIONALITY"
 )
 ADOPT_RECEIPT_SCHEMA = "fleet-project-r26-non-regression-receipt/v1"
+ADOPT_PROFILE_SCHEMA = "fleet-project-r26-adoption-profile/v1"
+ADOPT_REVIEW_SCHEMA = "fleet-project-r26-review-receipt/v1"
+ADOPT_PROOF_SCHEMA = "fleet-project-r26-adoption-proof/v1"
 ADOPT_RECEIPT_PREFIX = "receipts/project-adoption"
 MAX_ADOPT_RECEIPT_BYTES = 65_536
+MAX_ADOPT_SUBJECT_BYTES = 1_048_576
+ADOPT_PROOF_KINDS = {
+    "supervisorAdapter",
+    "launcherCensus",
+    "fakeProviderControls",
+    "concurrencyControls",
+    "idleTicks",
+    "fullChildFencing",
+    "rollback",
+    "closedGate",
+}
+ADOPT_REQUIRED_CONTROL_CASES = {
+    "fakeProviderControls": [
+        "fake-provider-no-network",
+        "no-work-zero-inference",
+        "quota-refusal-zero-inference",
+    ],
+    "concurrencyControls": [
+        "concurrent-claim-refused",
+        "full-child-lifetime-held",
+        "single-quota-owner",
+    ],
+    "fullChildFencing": [
+        "descendant-inventory-complete",
+        "kill-entire-tree",
+        "post-termination-zero-live-children",
+    ],
+}
+ADOPT_REQUIRED_ROLLBACK_STEPS = [
+    "close-gate",
+    "terminate-full-child-tree",
+    "restore-prior-profile",
+    "verify-zero-live-children",
+]
 STATUS_BLOCKERS = {
     "ADOPT": None,
     "DISTINGUISH": "PROJECT_OWNER_DISTINCTION_OPEN",
@@ -64,8 +101,11 @@ STATUS_BLOCKERS = {
 SHA_PATTERN = re.compile(r"[0-9a-f]{40,64}")
 SHA256_PATTERN = re.compile(r"sha256:[0-9a-f]{64}")
 DISPOSITION_PATTERN = re.compile(
-    rb"\b(ADOPT|DISTINGUISH|REJECT)\s*\(\s*`?([0-9a-f]{40,64})`?",
+    rb"\b(DISTINGUISH|REJECT)\s*\(\s*`?([0-9a-f]{40,64})`?",
     re.IGNORECASE,
+)
+ADOPT_DISPOSITION_PATTERN = re.compile(
+    rb"ADOPT\(([0-9a-f]{40}), (sha256:[0-9a-f]{64}), (sha256:[0-9a-f]{64})\)"
 )
 
 
@@ -193,10 +233,15 @@ def _require_sha(value: Any, code: str) -> str:
 
 
 def _dispositions(blob: bytes) -> set[tuple[str, str]]:
-    return {
+    dispositions = {
         (match.group(1).decode("ascii").upper(), match.group(2).decode("ascii").lower())
         for match in DISPOSITION_PATTERN.finditer(blob)
     }
+    for line in blob.splitlines():
+        match = ADOPT_DISPOSITION_PATTERN.fullmatch(line)
+        if match is not None:
+            dispositions.add(("ADOPT", match.group(1).decode("ascii")))
+    return dispositions
 
 
 def load_ledger(raw: bytes) -> dict[str, Any]:
@@ -322,31 +367,362 @@ def _adopt_non_regression_anchor(
     )
 
 
-def _bounded_adopt_receipt(treeish: str, path: str) -> bytes:
-    size = _blob_size(treeish, path, error="ADOPT_RECEIPT_UNAVAILABLE")
-    if size <= 0 or size > MAX_ADOPT_RECEIPT_BYTES:
-        raise LedgerError("ADOPT_RECEIPT_SIZE_INVALID")
+def _verified_project_artifact(
+    artifact_ref: Any,
+    *,
+    project_id: str,
+    evidence_commit: str,
+    base_commit: str,
+    treeish: str,
+    cache: dict[str, tuple[bytes, str]],
+    code_prefix: str = "ADOPT_ARTIFACT",
+    json_only: bool = True,
+    max_bytes: int = MAX_ADOPT_RECEIPT_BYTES,
+) -> tuple[bytes, str, str]:
+    artifact_ref = _require_exact_keys(
+        artifact_ref,
+        {"path", "sha256"},
+        f"{code_prefix}_REFERENCE_INVALID",
+    )
+    path = artifact_ref["path"]
+    claimed_sha256 = artifact_ref["sha256"]
+    expected_prefix = f"{ADOPT_RECEIPT_PREFIX}/{project_id}/"
+    suffix_pattern = (
+        r"[a-z0-9][a-z0-9._-]{0,127}\.json"
+        if json_only
+        else r"[a-z0-9][a-z0-9._-]{0,127}"
+    )
+    if (
+        not isinstance(path, str)
+        or len(path) > 220
+        or re.fullmatch(rf"{re.escape(expected_prefix)}{suffix_pattern}", path) is None
+    ):
+        raise LedgerError(f"{code_prefix}_PATH_INVALID")
+    if not isinstance(claimed_sha256, str) or SHA256_PATTERN.fullmatch(claimed_sha256) is None:
+        raise LedgerError(f"{code_prefix}_REFERENCE_INVALID")
+
+    if path not in cache:
+        try:
+            last_commit = _last_path_commit(base_commit, path)
+        except LedgerError as exc:
+            raise LedgerError(f"{code_prefix}_UNAVAILABLE") from exc
+        if last_commit != evidence_commit:
+            raise LedgerError(f"{code_prefix}_COMMIT_MISMATCH")
+        try:
+            size = _blob_size(evidence_commit, path, error=f"{code_prefix}_UNAVAILABLE")
+        except LedgerError as exc:
+            raise LedgerError(f"{code_prefix}_UNAVAILABLE") from exc
+        if size <= 0 or size > max_bytes:
+            raise LedgerError(f"{code_prefix}_SIZE_INVALID")
+        try:
+            artifact_bytes = _blob(evidence_commit, path)
+            base_bytes = _blob(base_commit, path)
+            current_bytes = _blob(treeish, path)
+        except LedgerError as exc:
+            raise LedgerError(f"{code_prefix}_UNAVAILABLE") from exc
+        if (
+            len(artifact_bytes) != size
+            or base_bytes != artifact_bytes
+            or current_bytes != artifact_bytes
+        ):
+            raise LedgerError(f"{code_prefix}_DRIFT")
+        computed_sha256 = f"sha256:{hashlib.sha256(artifact_bytes).hexdigest()}"
+        cache[path] = (artifact_bytes, computed_sha256)
+    artifact_bytes, computed_sha256 = cache[path]
+    if claimed_sha256 != computed_sha256:
+        raise LedgerError(f"{code_prefix}_SHA256_MISMATCH")
+    return artifact_bytes, path, computed_sha256
+
+
+def _load_adopt_json(raw: bytes, code: str) -> dict[str, Any]:
     try:
-        receipt_bytes = _blob(treeish, path)
+        return load_ledger(raw)
     except LedgerError as exc:
-        raise LedgerError("ADOPT_RECEIPT_UNAVAILABLE") from exc
-    if len(receipt_bytes) != size:
-        raise LedgerError("ADOPT_RECEIPT_SIZE_INVALID")
-    return receipt_bytes
+        raise LedgerError(code) from exc
+
+
+def _verify_adopt_profile(
+    profile_bytes: bytes,
+    *,
+    project_id: str,
+) -> None:
+    profile = _require_exact_keys(
+        _load_adopt_json(profile_bytes, "ADOPT_PROFILE_INVALID"),
+        {
+            "schema",
+            "projectId",
+            "candidateCommit",
+            "mergeCommit",
+            "canonicalCommit",
+            "model",
+            "effort",
+            "role",
+            "review",
+            "quality",
+            "functionality",
+        },
+        "ADOPT_PROFILE_INVALID",
+    )
+    if (
+        profile["schema"] != ADOPT_PROFILE_SCHEMA
+        or profile["projectId"] != project_id
+        or profile["candidateCommit"] != EXPECTED_CANDIDATE
+        or profile["mergeCommit"] != EXPECTED_MERGE
+        or profile["canonicalCommit"] != EXPECTED_MERGE
+    ):
+        raise LedgerError("ADOPT_PROFILE_BINDING_INVALID")
+    for field in ("model", "effort", "role", "review", "quality", "functionality"):
+        if not isinstance(profile[field], str) or not profile[field].strip():
+            raise LedgerError("ADOPT_PROFILE_INVALID")
+
+
+def _verify_adopt_review(
+    review_bytes: bytes,
+    *,
+    project_id: str,
+    profile_sha256: str,
+) -> None:
+    review = _require_exact_keys(
+        _load_adopt_json(review_bytes, "ADOPT_REVIEW_INVALID"),
+        {
+            "schema",
+            "projectId",
+            "candidateCommit",
+            "mergeCommit",
+            "canonicalCommit",
+            "profileSha256",
+            "verdict",
+            "reviews",
+        },
+        "ADOPT_REVIEW_INVALID",
+    )
+    if (
+        review["schema"] != ADOPT_REVIEW_SCHEMA
+        or review["projectId"] != project_id
+        or review["candidateCommit"] != EXPECTED_CANDIDATE
+        or review["mergeCommit"] != EXPECTED_MERGE
+        or review["canonicalCommit"] != EXPECTED_MERGE
+        or review["profileSha256"] != profile_sha256
+        or review["verdict"] != "ACCEPT"
+    ):
+        raise LedgerError("ADOPT_REVIEW_BINDING_INVALID")
+    reviews = review["reviews"]
+    if not isinstance(reviews, list) or len(reviews) < 2:
+        raise LedgerError("ADOPT_REVIEW_INVALID")
+    reviewers: list[str] = []
+    for item in reviews:
+        item = _require_exact_keys(
+            item,
+            {"reviewer", "role", "verdict"},
+            "ADOPT_REVIEW_INVALID",
+        )
+        if (
+            not isinstance(item["reviewer"], str)
+            or not item["reviewer"].strip()
+            or not isinstance(item["role"], str)
+            or not item["role"].strip()
+            or item["verdict"] != "ACCEPT"
+        ):
+            raise LedgerError("ADOPT_REVIEW_INVALID")
+        reviewers.append(item["reviewer"])
+    if len(reviewers) != len(set(reviewers)):
+        raise LedgerError("ADOPT_REVIEW_INVALID")
+
+
+def _verify_adopt_proof(
+    proof_bytes: bytes,
+    *,
+    kind: str,
+    project_id: str,
+    profile_sha256: str,
+    review_sha256: str,
+    evidence_commit: str,
+    base_commit: str,
+    treeish: str,
+    cache: dict[str, tuple[bytes, str]],
+) -> None:
+    proof = _require_exact_keys(
+        _load_adopt_json(proof_bytes, "ADOPT_PROOF_INVALID"),
+        {
+            "schema",
+            "kind",
+            "projectId",
+            "candidateCommit",
+            "mergeCommit",
+            "canonicalCommit",
+            "profileSha256",
+            "reviewReceiptSha256",
+            "evidence",
+        },
+        "ADOPT_PROOF_INVALID",
+    )
+    if (
+        proof["schema"] != ADOPT_PROOF_SCHEMA
+        or proof["kind"] != kind
+        or proof["projectId"] != project_id
+        or proof["candidateCommit"] != EXPECTED_CANDIDATE
+        or proof["mergeCommit"] != EXPECTED_MERGE
+        or proof["canonicalCommit"] != EXPECTED_MERGE
+        or proof["profileSha256"] != profile_sha256
+        or proof["reviewReceiptSha256"] != review_sha256
+    ):
+        raise LedgerError("ADOPT_PROOF_BINDING_INVALID")
+    evidence = proof["evidence"]
+
+    if kind == "supervisorAdapter":
+        evidence = _require_exact_keys(
+            evidence,
+            {"supervisor", "adapter"},
+            "ADOPT_PROOF_INVALID",
+        )
+        supervisor_bytes, supervisor_path, _ = _verified_project_artifact(
+            evidence["supervisor"],
+            project_id=project_id,
+            evidence_commit=evidence_commit,
+            base_commit=base_commit,
+            treeish=treeish,
+            cache=cache,
+            json_only=False,
+            max_bytes=MAX_ADOPT_SUBJECT_BYTES,
+        )
+        adapter_bytes, adapter_path, _ = _verified_project_artifact(
+            evidence["adapter"],
+            project_id=project_id,
+            evidence_commit=evidence_commit,
+            base_commit=base_commit,
+            treeish=treeish,
+            cache=cache,
+            json_only=False,
+            max_bytes=MAX_ADOPT_SUBJECT_BYTES,
+        )
+        if supervisor_path == adapter_path or not supervisor_bytes or not adapter_bytes:
+            raise LedgerError("ADOPT_SUPERVISOR_ADAPTER_INVALID")
+        return
+
+    if kind == "launcherCensus":
+        evidence = _require_exact_keys(
+            evidence,
+            {"launchers", "unresolvedLaunchers"},
+            "ADOPT_PROOF_INVALID",
+        )
+        launchers = evidence["launchers"]
+        if not isinstance(launchers, list) or not 1 <= len(launchers) <= 128:
+            raise LedgerError("ADOPT_LAUNCHER_CENSUS_INVALID")
+        launcher_paths: list[str] = []
+        for launcher_ref in launchers:
+            launcher_bytes, launcher_path, _ = _verified_project_artifact(
+                launcher_ref,
+                project_id=project_id,
+                evidence_commit=evidence_commit,
+                base_commit=base_commit,
+                treeish=treeish,
+                cache=cache,
+                json_only=False,
+                max_bytes=MAX_ADOPT_SUBJECT_BYTES,
+            )
+            if not launcher_bytes:
+                raise LedgerError("ADOPT_LAUNCHER_CENSUS_INVALID")
+            launcher_paths.append(launcher_path)
+        if (
+            len(launcher_paths) != len(set(launcher_paths))
+            or evidence["unresolvedLaunchers"] != []
+        ):
+            raise LedgerError("ADOPT_LAUNCHER_CENSUS_INVALID")
+        return
+
+    if kind in {"fakeProviderControls", "concurrencyControls", "fullChildFencing"}:
+        evidence = _require_exact_keys(
+            evidence,
+            {"cases", "passedCases", "failedCases"},
+            "ADOPT_PROOF_INVALID",
+        )
+        if (
+            evidence["cases"] != ADOPT_REQUIRED_CONTROL_CASES[kind]
+            or evidence["passedCases"] != ADOPT_REQUIRED_CONTROL_CASES[kind]
+            or evidence["failedCases"] != []
+        ):
+            raise LedgerError("ADOPT_CONTROL_PROOF_INVALID")
+        return
+
+    if kind == "idleTicks":
+        evidence = _require_exact_keys(
+            evidence,
+            {"ticks", "inferenceCalls", "stateChanges"},
+            "ADOPT_PROOF_INVALID",
+        )
+        if any(type(evidence[field]) is not int for field in evidence):
+            raise LedgerError("ADOPT_IDLE_TICKS_INVALID")
+        if (
+            evidence["ticks"] != 1_000
+            or evidence["inferenceCalls"] != 0
+            or evidence["stateChanges"] != 0
+        ):
+            raise LedgerError("ADOPT_IDLE_TICKS_INVALID")
+        return
+
+    if kind == "rollback":
+        evidence = _require_exact_keys(
+            evidence,
+            {"steps", "beforeGate", "afterGate", "residualProcesses"},
+            "ADOPT_PROOF_INVALID",
+        )
+        if (
+            evidence["steps"] != ADOPT_REQUIRED_ROLLBACK_STEPS
+            or evidence["beforeGate"] != "CLOSED"
+            or evidence["afterGate"] != "CLOSED"
+            or type(evidence["residualProcesses"]) is not int
+            or evidence["residualProcesses"] != 0
+        ):
+            raise LedgerError("ADOPT_ROLLBACK_PROOF_INVALID")
+        return
+
+    if kind == "closedGate":
+        evidence = _require_exact_keys(
+            evidence,
+            {
+                "state",
+                "currentAtEvidenceCommit",
+                "providerInvocationEnabled",
+                "automaticLaunchEnabled",
+            },
+            "ADOPT_PROOF_INVALID",
+        )
+        if (
+            evidence["state"] != "CLOSED"
+            or evidence["currentAtEvidenceCommit"] is not True
+            or evidence["providerInvocationEnabled"] is not False
+            or evidence["automaticLaunchEnabled"] is not False
+        ):
+            raise LedgerError("ADOPT_CLOSED_GATE_INVALID")
+        return
+
+    raise LedgerError("ADOPT_PROOF_KIND_INVALID")
 
 
 def _verify_adopt_receipt(
     receipt_bytes: bytes,
     *,
     project_id: str,
+    profile_ref: dict[str, str],
+    review_ref: dict[str, str],
+    evidence_commit: str,
+    base_commit: str,
+    treeish: str,
+    cache: dict[str, tuple[bytes, str]],
 ) -> None:
-    try:
-        receipt = load_ledger(receipt_bytes)
-    except LedgerError as exc:
-        raise LedgerError("ADOPT_RECEIPT_INVALID") from exc
     receipt = _require_exact_keys(
-        receipt,
-        {"schema", "projectId", "candidateCommit", "mergeCommit", "dimensions"},
+        _load_adopt_json(receipt_bytes, "ADOPT_RECEIPT_INVALID"),
+        {
+            "schema",
+            "projectId",
+            "candidateCommit",
+            "mergeCommit",
+            "canonicalCommit",
+            "profile",
+            "reviewReceipt",
+            "proofs",
+            "dimensions",
+        },
         "ADOPT_RECEIPT_INVALID",
     )
     if (
@@ -354,8 +730,36 @@ def _verify_adopt_receipt(
         or receipt["projectId"] != project_id
         or receipt["candidateCommit"] != EXPECTED_CANDIDATE
         or receipt["mergeCommit"] != EXPECTED_MERGE
+        or receipt["canonicalCommit"] != EXPECTED_MERGE
+        or receipt["profile"] != profile_ref
+        or receipt["reviewReceipt"] != review_ref
     ):
         raise LedgerError("ADOPT_RECEIPT_BINDING_INVALID")
+    proofs = _require_exact_keys(
+        receipt["proofs"],
+        ADOPT_PROOF_KINDS,
+        "ADOPT_RECEIPT_INVALID",
+    )
+    for kind in sorted(ADOPT_PROOF_KINDS):
+        proof_bytes, _, _ = _verified_project_artifact(
+            proofs[kind],
+            project_id=project_id,
+            evidence_commit=evidence_commit,
+            base_commit=base_commit,
+            treeish=treeish,
+            cache=cache,
+        )
+        _verify_adopt_proof(
+            proof_bytes,
+            kind=kind,
+            project_id=project_id,
+            profile_sha256=profile_ref["sha256"],
+            review_sha256=review_ref["sha256"],
+            evidence_commit=evidence_commit,
+            base_commit=base_commit,
+            treeish=treeish,
+            cache=cache,
+        )
     dimensions = _require_exact_keys(
         receipt["dimensions"],
         set(NON_REGRESSION_DIMENSIONS),
@@ -379,6 +783,8 @@ def _verify_adopt_non_regression(
     evidence_commit: str,
     base_commit: str,
     treeish: str,
+    disposition: dict[str, Any],
+    artifact_cache: dict[str, tuple[bytes, str]],
 ) -> None:
     non_regression_evidence = _require_exact_keys(
         non_regression_evidence,
@@ -389,7 +795,15 @@ def _verify_adopt_non_regression(
         evidence_lines = evidence_bytes.decode("utf-8").splitlines()
     except UnicodeDecodeError as exc:
         raise LedgerError("PROJECT_EVIDENCE_UTF8_INVALID") from exc
-    receipt_digests: dict[str, str] = {}
+    profile_ref = {
+        "path": disposition["profilePath"],
+        "sha256": disposition["profileSha256"],
+    }
+    review_ref = {
+        "path": disposition["reviewReceiptPath"],
+        "sha256": disposition["reviewReceiptSha256"],
+    }
+    validated_receipts: set[str] = set()
     for dimension in NON_REGRESSION_DIMENSIONS:
         record = _require_exact_keys(
             non_regression_evidence[dimension],
@@ -402,37 +816,30 @@ def _verify_adopt_non_regression(
         anchor = record["anchor"]
         if claim != NON_REGRESSION_CLAIMS[dimension]:
             raise LedgerError("ADOPT_NON_REGRESSION_EVIDENCE_INVALID")
-        expected_prefix = f"{ADOPT_RECEIPT_PREFIX}/{project_id}/"
-        if (
-            not isinstance(receipt_path, str)
-            or len(receipt_path) > 220
-            or re.fullmatch(
-                rf"{re.escape(expected_prefix)}[a-z0-9][a-z0-9._-]{{0,127}}\.json",
-                receipt_path,
-            )
-            is None
-        ):
-            raise LedgerError("ADOPT_RECEIPT_PATH_INVALID")
         if not isinstance(receipt_sha256, str) or SHA256_PATTERN.fullmatch(receipt_sha256) is None:
             raise LedgerError("ADOPT_NON_REGRESSION_EVIDENCE_INVALID")
 
-        if receipt_path not in receipt_digests:
-            try:
-                receipt_last_commit = _last_path_commit(base_commit, receipt_path)
-            except LedgerError as exc:
-                raise LedgerError("ADOPT_RECEIPT_UNAVAILABLE") from exc
-            if receipt_last_commit != evidence_commit:
-                raise LedgerError("ADOPT_RECEIPT_COMMIT_MISMATCH")
-            receipt_bytes = _bounded_adopt_receipt(evidence_commit, receipt_path)
-            _verify_adopt_receipt(receipt_bytes, project_id=project_id)
-            if _bounded_adopt_receipt(base_commit, receipt_path) != receipt_bytes:
-                raise LedgerError("ADOPT_RECEIPT_DRIFT")
-            if _bounded_adopt_receipt(treeish, receipt_path) != receipt_bytes:
-                raise LedgerError("ADOPT_RECEIPT_DRIFT")
-            receipt_digests[receipt_path] = (
-                f"sha256:{hashlib.sha256(receipt_bytes).hexdigest()}"
+        receipt_bytes, verified_path, computed_sha256 = _verified_project_artifact(
+            {"path": receipt_path, "sha256": receipt_sha256},
+            project_id=project_id,
+            evidence_commit=evidence_commit,
+            base_commit=base_commit,
+            treeish=treeish,
+            cache=artifact_cache,
+            code_prefix="ADOPT_RECEIPT",
+        )
+        if verified_path not in validated_receipts:
+            _verify_adopt_receipt(
+                receipt_bytes,
+                project_id=project_id,
+                profile_ref=profile_ref,
+                review_ref=review_ref,
+                evidence_commit=evidence_commit,
+                base_commit=base_commit,
+                treeish=treeish,
+                cache=artifact_cache,
             )
-        computed_sha256 = receipt_digests[receipt_path]
+            validated_receipts.add(verified_path)
         if receipt_sha256 != computed_sha256:
             raise LedgerError("ADOPT_RECEIPT_SHA256_MISMATCH")
 
@@ -446,6 +853,58 @@ def _verify_adopt_non_regression(
             raise LedgerError("ADOPT_NON_REGRESSION_EVIDENCE_INVALID")
         if evidence_lines.count(expected_anchor) != 1:
             raise LedgerError("ADOPT_NON_REGRESSION_EVIDENCE_MISSING")
+
+
+def _adopt_disposition_line(disposition: dict[str, Any]) -> str:
+    return (
+        f"ADOPT({disposition['subjectCommit']}, {disposition['profileSha256']}, "
+        f"{disposition['reviewReceiptSha256']})"
+    )
+
+
+def _verify_adopt_disposition_artifacts(
+    disposition: dict[str, Any],
+    *,
+    project_id: str,
+    evidence_commit: str,
+    base_commit: str,
+    treeish: str,
+    cache: dict[str, tuple[bytes, str]],
+) -> None:
+    profile_ref = {
+        "path": disposition["profilePath"],
+        "sha256": disposition["profileSha256"],
+    }
+    review_ref = {
+        "path": disposition["reviewReceiptPath"],
+        "sha256": disposition["reviewReceiptSha256"],
+    }
+    profile_bytes, _, profile_sha256 = _verified_project_artifact(
+        profile_ref,
+        project_id=project_id,
+        evidence_commit=evidence_commit,
+        base_commit=base_commit,
+        treeish=treeish,
+        cache=cache,
+    )
+    _verify_adopt_profile(profile_bytes, project_id=project_id)
+    review_bytes, _, review_sha256 = _verified_project_artifact(
+        review_ref,
+        project_id=project_id,
+        evidence_commit=evidence_commit,
+        base_commit=base_commit,
+        treeish=treeish,
+        cache=cache,
+    )
+    if profile_sha256 != disposition["profileSha256"]:
+        raise LedgerError("ADOPT_PROFILE_SHA256_MISMATCH")
+    if review_sha256 != disposition["reviewReceiptSha256"]:
+        raise LedgerError("ADOPT_REVIEW_SHA256_MISMATCH")
+    _verify_adopt_review(
+        review_bytes,
+        project_id=project_id,
+        profile_sha256=profile_sha256,
+    )
 
 
 def _verify_project(
@@ -499,22 +958,53 @@ def _verify_project(
         marker for marker in markers if marker[1] in {EXPECTED_CANDIDATE, EXPECTED_MERGE}
     }
 
+    artifact_cache: dict[str, tuple[bytes, str]] = {}
     disposition = evidence["disposition"]
     if status == "MISSING":
         if disposition is not None or markers:
             raise LedgerError("MISSING_STATUS_HAS_DISPOSITION_EVIDENCE")
     else:
+        if not isinstance(disposition, dict) or "status" not in disposition:
+            raise LedgerError("DISPOSITION_EVIDENCE_INVALID")
+        disposition_status = disposition["status"]
+        disposition_keys = (
+            {
+                "status",
+                "subjectCommit",
+                "profilePath",
+                "profileSha256",
+                "reviewReceiptPath",
+                "reviewReceiptSha256",
+            }
+            if disposition_status == "ADOPT"
+            else {"status", "subjectCommit"}
+        )
         disposition = _require_exact_keys(
             disposition,
-            {"status", "subjectCommit"},
+            disposition_keys,
             "DISPOSITION_EVIDENCE_INVALID",
         )
-        disposition_status = disposition["status"]
         disposition_subject = _require_sha(
             disposition["subjectCommit"], "DISPOSITION_SUBJECT_INVALID"
         )
         if disposition_status not in FINAL_DISPOSITIONS:
             raise LedgerError("DISPOSITION_STATUS_INVALID")
+        if disposition_status == "ADOPT":
+            if disposition_subject != EXPECTED_MERGE:
+                raise LedgerError("ADOPT_CANONICAL_COMMIT_INVALID")
+            if (
+                not isinstance(disposition["profileSha256"], str)
+                or SHA256_PATTERN.fullmatch(disposition["profileSha256"]) is None
+                or not isinstance(disposition["reviewReceiptSha256"], str)
+                or SHA256_PATTERN.fullmatch(disposition["reviewReceiptSha256"]) is None
+            ):
+                raise LedgerError("ADOPT_DISPOSITION_EVIDENCE_INVALID")
+            try:
+                evidence_lines = evidence_bytes.decode("utf-8").splitlines()
+            except UnicodeDecodeError as exc:
+                raise LedgerError("PROJECT_EVIDENCE_UTF8_INVALID") from exc
+            if evidence_lines.count(_adopt_disposition_line(disposition)) != 1:
+                raise LedgerError("ADOPT_DISPOSITION_RECORD_INVALID")
         marker = (disposition_status, disposition_subject)
         if marker not in markers:
             raise LedgerError("DISPOSITION_NOT_IN_PROJECT_EVIDENCE")
@@ -534,6 +1024,15 @@ def _verify_project(
                 raise LedgerError("CURRENT_DISPOSITION_CANDIDATE_BINDING_MISSING")
             if EXPECTED_MERGE.encode("ascii") not in evidence_bytes:
                 raise LedgerError("CURRENT_DISPOSITION_MERGE_BINDING_MISSING")
+            if status == "ADOPT":
+                _verify_adopt_disposition_artifacts(
+                    disposition,
+                    project_id=project_id,
+                    evidence_commit=evidence_commit,
+                    base_commit=base_commit,
+                    treeish=treeish,
+                    cache=artifact_cache,
+                )
 
     non_regression_evidence = project["nonRegressionEvidence"]
     if status != "ADOPT":
@@ -547,6 +1046,8 @@ def _verify_project(
             evidence_commit=evidence_commit,
             base_commit=base_commit,
             treeish=treeish,
+            disposition=disposition,
+            artifact_cache=artifact_cache,
         )
     return path, status
 

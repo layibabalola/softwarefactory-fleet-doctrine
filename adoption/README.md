@@ -20,6 +20,15 @@ candidate and merge, record all six exact claims with strict JSON `true`, and ma
 recomputed SHA-256. A digest-shaped string, a quoted or negated anchor, or doctrine publication
 alone earns no adoption credit.
 
+The disposition itself must be exactly one standalone
+`ADOPT(<canonical commit>, <profile SHA-256>, <review-receipt SHA-256>)` line. Its profile and review
+receipt are recomputed from pinned project artifacts. The adoption receipt must also pin the local
+supervisor and adapter subject bytes, complete launcher census, fake-provider controls, concurrency
+controls, exactly 1,000 unchanged zero-inference ticks, full-child fencing, rollback proof, and the
+current CLOSED gate. Every proof artifact binds the project, exact R26 candidate, merge/canonical
+commit, profile, and review receipt. Missing, forged, prose-embedded, duplicated, or self-asserted
+records fail closed under the ratified law in `RULINGS.md` lines 1027-1034.
+
 Run the fail-closed verification with:
 
 ```console
