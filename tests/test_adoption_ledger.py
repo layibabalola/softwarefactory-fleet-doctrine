@@ -4,6 +4,7 @@ import json
 from pathlib import Path
 import sys
 import unittest
+from unittest import mock
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -27,6 +28,23 @@ class AdoptionLedgerTests(unittest.TestCase):
 
     def _project(self, ledger, project_id):
         return next(project for project in ledger["projects"] if project["projectId"] == project_id)
+
+    def _adopt_non_regression_evidence(self):
+        evidence = {}
+        for index, dimension in enumerate(MODULE.NON_REGRESSION_DIMENSIONS, start=1):
+            claim = MODULE.NON_REGRESSION_CLAIMS[dimension]
+            receipt_sha256 = f"sha256:{index:064x}"
+            evidence[dimension] = {
+                "claim": claim,
+                "receiptSha256": receipt_sha256,
+                "anchor": MODULE._adopt_non_regression_anchor(
+                    dimension, claim, receipt_sha256
+                ),
+            }
+        return evidence
+
+    def _evidence_bytes(self, evidence):
+        return "\n".join(record["anchor"] for record in evidence.values()).encode("ascii")
 
     def test_canonical_ledger_matches_closed_project_owned_evidence(self):
         MODULE.verify_ledger(self._copy(), "HEAD")
@@ -85,6 +103,12 @@ class AdoptionLedgerTests(unittest.TestCase):
         with self.assertRaisesRegex(MODULE.LedgerError, "NON_PROJECT_SPEC_SET_INVALID"):
             MODULE.verify_ledger(ledger, "HEAD")
 
+    def test_census_base_must_be_on_the_merge_to_checked_tree_history(self):
+        ledger = self._copy()
+        ledger["census"]["baseCommit"] = MODULE.EXPECTED_CANDIDATE
+        with self.assertRaisesRegex(MODULE.LedgerError, "CENSUS_BASE_HISTORY_INVALID"):
+            MODULE.verify_ledger(ledger, "HEAD")
+
     def test_project_source_commit_and_blob_are_both_enforced(self):
         ledger = self._copy()
         self._project(ledger, "dng-auto-processor")["evidence"]["gitBlobOid"] = "0" * 40
@@ -109,6 +133,83 @@ class AdoptionLedgerTests(unittest.TestCase):
         ledger["summary"]["counts"]["DISTINGUISH"] = 0
         ledger["summary"]["counts"]["ADOPT"] = 1
         with self.assertRaisesRegex(MODULE.LedgerError, "CURRENT_DISPOSITION_STATUS_MISMATCH"):
+            MODULE.verify_ledger(ledger, "HEAD")
+
+    def test_conflicting_current_dispositions_are_rejected(self):
+        original_dispositions = MODULE._dispositions
+
+        def conflicting_dispositions(blob):
+            markers = original_dispositions(blob)
+            if ("DISTINGUISH", MODULE.EXPECTED_MERGE) in markers:
+                markers.add(("ADOPT", MODULE.EXPECTED_CANDIDATE))
+            return markers
+
+        with mock.patch.object(
+            MODULE, "_dispositions", side_effect=conflicting_dispositions
+        ):
+            with self.assertRaisesRegex(MODULE.LedgerError, "CURRENT_DISPOSITION_CONFLICT"):
+                MODULE.verify_ledger(self._copy(), "HEAD")
+
+    def test_adopt_non_regression_rejects_incidental_dimension_words(self):
+        incidental_words = {
+            dimension: dimension for dimension in MODULE.NON_REGRESSION_DIMENSIONS
+        }
+        with self.assertRaisesRegex(
+            MODULE.LedgerError, "ADOPT_NON_REGRESSION_EVIDENCE_INVALID"
+        ):
+            MODULE._verify_adopt_non_regression(
+                incidental_words,
+                b"model effort role review quality functionality",
+            )
+
+    def test_adopt_non_regression_rejects_invalid_structured_anchors(self):
+        evidence = self._adopt_non_regression_evidence()
+        evidence["model"]["claim"] = "MODEL"
+        with self.assertRaisesRegex(
+            MODULE.LedgerError, "ADOPT_NON_REGRESSION_EVIDENCE_INVALID"
+        ):
+            MODULE._verify_adopt_non_regression(evidence, self._evidence_bytes(evidence))
+
+        evidence = self._adopt_non_regression_evidence()
+        evidence["quality"]["receiptSha256"] = "sha256:not-a-digest"
+        with self.assertRaisesRegex(
+            MODULE.LedgerError, "ADOPT_NON_REGRESSION_EVIDENCE_INVALID"
+        ):
+            MODULE._verify_adopt_non_regression(evidence, self._evidence_bytes(evidence))
+
+        evidence = self._adopt_non_regression_evidence()
+        evidence["functionality"]["anchor"] += "-fabricated"
+        with self.assertRaisesRegex(
+            MODULE.LedgerError, "ADOPT_NON_REGRESSION_EVIDENCE_INVALID"
+        ):
+            MODULE._verify_adopt_non_regression(evidence, self._evidence_bytes(evidence))
+
+    def test_adopt_non_regression_requires_structured_anchors_in_project_evidence(self):
+        evidence = self._adopt_non_regression_evidence()
+        with self.assertRaisesRegex(
+            MODULE.LedgerError, "ADOPT_NON_REGRESSION_EVIDENCE_MISSING"
+        ):
+            MODULE._verify_adopt_non_regression(evidence, b"model")
+
+        MODULE._verify_adopt_non_regression(evidence, self._evidence_bytes(evidence))
+
+    def test_project_rows_must_be_sorted_and_unique(self):
+        ledger = self._copy()
+        ledger["projects"][0], ledger["projects"][1] = (
+            ledger["projects"][1],
+            ledger["projects"][0],
+        )
+        with self.assertRaisesRegex(
+            MODULE.LedgerError, "PROJECT_ORDER_OR_DUPLICATE_INVALID"
+        ):
+            MODULE.verify_ledger(ledger, "HEAD")
+
+    def test_project_blocker_must_match_disposition(self):
+        ledger = self._copy()
+        self._project(ledger, "dng-auto-processor")["blocker"] = (
+            "PROJECT_OWNER_CURRENT_CANDIDATE_DISPOSITION_REQUIRED"
+        )
+        with self.assertRaisesRegex(MODULE.LedgerError, "PROJECT_BLOCKER_INVALID"):
             MODULE.verify_ledger(ledger, "HEAD")
 
     def test_stale_requires_an_exact_prior_project_disposition(self):

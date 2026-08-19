@@ -40,6 +40,8 @@ ALLOWED_PHASE2_PATHS = {
     "adoption/phase2/README.md",
     BATCH_PATH,
     "tests/test_phase2_disposition_batch.py",
+    "tests/test_adoption_ledger.py",
+    "tools/check_adoption_ledger.py",
     "tools/check_phase2_disposition_batch.py",
 }
 OWNER_EVIDENCE_REQUIREMENTS = [

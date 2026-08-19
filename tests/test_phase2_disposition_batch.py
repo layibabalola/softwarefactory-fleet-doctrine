@@ -128,6 +128,20 @@ class Phase2DispositionBatchTests(unittest.TestCase):
             with self.assertRaisesRegex(MODULE.BatchError, "PHASE2_SCOPE_VIOLATION"):
                 MODULE.verify_batch(batch, "HEAD")
 
+    def test_phase2_scope_allows_exact_forward_adoption_checker_hardening(self):
+        batch = self._copy()
+        with mock.patch.object(
+            MODULE,
+            "_changed_paths",
+            return_value={
+                "tests/test_adoption_ledger.py",
+                "tools/check_adoption_ledger.py",
+                "tests/test_phase2_disposition_batch.py",
+                "tools/check_phase2_disposition_batch.py",
+            },
+        ):
+            MODULE.verify_batch(batch, "HEAD")
+
     def test_local_probe_verifier_is_bounded_and_fails_on_drift(self):
         batch = self._copy()
         with (

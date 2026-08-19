@@ -39,6 +39,14 @@ NON_REGRESSION_DIMENSIONS = [
     "quality",
     "functionality",
 ]
+NON_REGRESSION_CLAIMS = {
+    "model": "EXACT_MODEL_PRESERVED",
+    "effort": "EXACT_EFFORT_PRESERVED",
+    "role": "EXACT_ROLE_PRESERVED",
+    "review": "EXACT_REVIEW_PRESERVED",
+    "quality": "QUALITY_NON_INFERIOR",
+    "functionality": "FUNCTIONALITY_EQUIVALENT",
+}
 NON_REGRESSION_RULE = (
     "TOKEN_SAVINGS_MUST_NOT_REGRESS_EXACT_MODEL_EFFORT_ROLE_REVIEW_QUALITY_OR_FUNCTIONALITY"
 )
@@ -50,6 +58,7 @@ STATUS_BLOCKERS = {
     "MISSING": "PROJECT_OWNER_DISPOSITION_REQUIRED",
 }
 SHA_PATTERN = re.compile(r"[0-9a-f]{40,64}")
+SHA256_PATTERN = re.compile(r"sha256:[0-9a-f]{64}")
 DISPOSITION_PATTERN = re.compile(
     rb"\b(ADOPT|DISTINGUISH|REJECT)\s*\(\s*`?([0-9a-f]{40,64})`?",
     re.IGNORECASE,
@@ -274,6 +283,39 @@ def _verify_non_regression(non_regression: Any) -> None:
         raise LedgerError("NON_REGRESSION_DIMENSIONS_MISMATCH")
 
 
+def _adopt_non_regression_anchor(dimension: str, claim: str, receipt_sha256: str) -> str:
+    return (
+        "R26_NON_REGRESSION_EVIDENCE["
+        f"dimension={dimension};claim={claim};receiptSha256={receipt_sha256}]"
+    )
+
+
+def _verify_adopt_non_regression(non_regression_evidence: Any, evidence_bytes: bytes) -> None:
+    non_regression_evidence = _require_exact_keys(
+        non_regression_evidence,
+        set(NON_REGRESSION_DIMENSIONS),
+        "ADOPT_NON_REGRESSION_EVIDENCE_INVALID",
+    )
+    for dimension in NON_REGRESSION_DIMENSIONS:
+        record = _require_exact_keys(
+            non_regression_evidence[dimension],
+            {"claim", "receiptSha256", "anchor"},
+            "ADOPT_NON_REGRESSION_EVIDENCE_INVALID",
+        )
+        claim = record["claim"]
+        receipt_sha256 = record["receiptSha256"]
+        anchor = record["anchor"]
+        if claim != NON_REGRESSION_CLAIMS[dimension]:
+            raise LedgerError("ADOPT_NON_REGRESSION_EVIDENCE_INVALID")
+        if not isinstance(receipt_sha256, str) or SHA256_PATTERN.fullmatch(receipt_sha256) is None:
+            raise LedgerError("ADOPT_NON_REGRESSION_EVIDENCE_INVALID")
+        expected_anchor = _adopt_non_regression_anchor(dimension, claim, receipt_sha256)
+        if anchor != expected_anchor:
+            raise LedgerError("ADOPT_NON_REGRESSION_EVIDENCE_INVALID")
+        if expected_anchor.encode("ascii") not in evidence_bytes:
+            raise LedgerError("ADOPT_NON_REGRESSION_EVIDENCE_MISSING")
+
+
 def _verify_project(
     project: Any,
     *,
@@ -366,15 +408,7 @@ def _verify_project(
         if non_regression_evidence is not None:
             raise LedgerError("NON_ADOPT_HAS_ADOPTION_CREDIT")
     else:
-        non_regression_evidence = _require_exact_keys(
-            non_regression_evidence,
-            set(NON_REGRESSION_DIMENSIONS),
-            "ADOPT_NON_REGRESSION_EVIDENCE_INVALID",
-        )
-        for dimension in NON_REGRESSION_DIMENSIONS:
-            anchor = non_regression_evidence[dimension]
-            if not isinstance(anchor, str) or not anchor or anchor.encode("utf-8") not in evidence_bytes:
-                raise LedgerError("ADOPT_NON_REGRESSION_EVIDENCE_MISSING")
+        _verify_adopt_non_regression(non_regression_evidence, evidence_bytes)
     return path, status
 
 
