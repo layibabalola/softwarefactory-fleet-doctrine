@@ -7,11 +7,23 @@ single-writer spec commit and Git blob. `ADOPT`, `DISTINGUISH`, and `REJECT` mea
 current-candidate project disposition; `STALE` means only the exact prior R14 disposition exists;
 `MISSING` means no explicit disposition exists. Doctrine publication never changes any row by itself.
 
-Phase 3 records independently accepted published candidates from Cloudvore, MLV-App, and
-Salesforce/context-ultra as current `DISTINGUISH` rows. Their exact remote refs, commits, trees,
+Phase 3 records independently accepted published candidates from AdversarialLLM, Cloudvore, MLV-App,
+and Salesforce/context-ultra as current `DISTINGUISH` rows. Their exact remote refs, commits, trees,
 parents, artifact Git blobs, byte counts, SHA-256 values, and statements are frozen in
 `phase3/r26-published-project-disposition-intake.json` and exact-bound by the production checker.
 All authority and proof-credit members remain false; see `phase3/README.md`.
+
+Agent Bridge separately publishes a current project-owner `DISTINGUISH` in this candidate branch.
+Together with DNG and the four phase-3 rows, the composed ledger therefore records six current
+`DISTINGUISH` rows and three `STALE` rows, with zero `ADOPT` and zero runtime authority.
+
+Phase 5 freezes the bounded discovery-only reconciliation of the four rows that were `STALE` at
+canonical commit `5ac7036705338cfe3370f5fddda224e07d5d1bdd`. Adobe's exact
+project remote and two published refs are reachable but contain no current R26 disposition; Agent
+Bridge, AirMyPC, and Conjugal still have no authoritative remote/current ref available to the
+frozen batch. That historical packet grants no authority and does not override the later
+project-owner Agent Bridge candidate. See
+`phase5/r26-stale-project-reconciliation.json` and `phase5/README.md`.
 
 The checker closes on a changed or omitted project spec, a stale evidence pin, a fabricated
 disposition, any attempt to convert `CANDIDATE_ZERO_AUTHORITY` into runtime/project/fleet adoption,

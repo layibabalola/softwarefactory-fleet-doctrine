@@ -26,9 +26,23 @@ INITIAL_FOLD_COMMIT = "c025c1f5b32c71e77142d592107013fbbb677336"
 INITIAL_FOLD_TREE = "5e90a7fb72c1c7bc593f8dbfd7d097be18a9c20f"
 SPEC_BINDING_COMMIT = "928606d0151814e50ed051d8d5819ca4e23c5940"
 SPEC_BINDING_TREE = "402d6818937d4ecb64ac807c77c5792fd121947e"
+PHASE3_PUBLISHED_COMMIT = "0c417d8ccf4b0b2b142766fd4aa00072ae150a30"
+PHASE3_PUBLISHED_TREE = "dbe000aad9c2ee857dbaf8d2b1e311cade720ce1"
+ADVERSARIAL_SPEC_BINDING_COMMIT = "73abc64b92aa96defca08ceab83b75c656dd3357"
+ADVERSARIAL_SPEC_BINDING_TREE = "5f383c1475c0168677724fcf155092be7d1010d2"
+PRE_ADVERSARIAL_SPEC_REPAIR_COMMIT = "8b20d13c2c27ab6375872be92982ef4b5ff229d5"
+PRE_ADVERSARIAL_SPEC_REPAIR_TREE = "5f7778baf2e46d64662fdef3074b9b0e6833a7f9"
+ADVERSARIAL_SPEC_REPAIR_COMMIT = "f204b17d4f2be86fe8eb666c6fb1d58ed2633c57"
+ADVERSARIAL_SPEC_REPAIR_TREE = "02e4214f7f18ca09d1053218e5747ac9e7a53514"
+UTILIZATION_SHADOW_DOCTRINE_BASE_COMMIT = "5ac7036705338cfe3370f5fddda224e07d5d1bdd"
+UTILIZATION_SHADOW_DOCTRINE_BASE_TREE = "9e53ff055bbf1a4fe796104d06f009f503082ad5"
+UTILIZATION_SHADOW_DOCTRINE_AMENDMENT_COMMIT = "7bf0cf9943de7c33b14496b73f70c18959816c5c"
+UTILIZATION_SHADOW_DOCTRINE_AMENDMENT_TREE = "ebac9bbd75d8ae70bf2b4a2d0877020a5af83127"
+UTILIZATION_SHADOW_DOCTRINE_AMENDMENT_SPEC_BLOB = "e964d2b77426ece703f8fb1fd82a9cb068e98632"
 R26_CANDIDATE = "e70a044f31dd2f43ab7c716d63a4eb89318c61b6"
 R26_MERGE = "909f769d02e8412e51e28e242cfa8d00dadc9a3d"
-PROJECT_IDS = {"cloudvore", "mlv-app", "salesforce-tools"}
+INITIAL_PROJECT_IDS = {"cloudvore", "mlv-app", "salesforce-tools"}
+PROJECT_IDS = INITIAL_PROJECT_IDS | {"adversarialllm"}
 LEDGER_PROJECT_IDS = {
     "adobe-ingester",
     "adversarialllm",
@@ -40,8 +54,12 @@ LEDGER_PROJECT_IDS = {
     "mlv-app",
     "salesforce-tools",
 }
-SPEC_PATHS = {f"specs/{project_id}.md" for project_id in PROJECT_IDS}
+SPEC_PATHS = {f"specs/{project_id}.md" for project_id in INITIAL_PROJECT_IDS}
 PUBLISHED_REMOTE_ALLOWLIST = {
+    "adversarialllm": {
+        "remote": "https://github.com/layibabalola/AdversarialLLM-ClaudeCode.git",
+        "publishedRef": "refs/heads/master",
+    },
     "cloudvore": {
         "remote": "https://github.com/layibabalola/Cloudvore.git",
         "publishedRef": "refs/heads/codex/r26-zero-authority-disposition-candidate-20260819",
@@ -56,22 +74,33 @@ PUBLISHED_REMOTE_ALLOWLIST = {
     },
 }
 EXPECTED_PROJECT_CANDIDATE_SHA256 = {
+    "adversarialllm": "07fba4c159ad9250d196945ce6e479c91f7b85040620037b315ce4dd1d0cf47f",
     "cloudvore": "7bbafaa69078bf3464f5e54c6f1e0a689113c54ce7df7f494d017beef58be436",
     "mlv-app": "55544254f982890efa8b2e309b0eeb2be09f85d7f09f7da86083ba2856cbf9ba",
     "salesforce-tools": "b2278e858cf70c0a6eecca6d7842709e9cc6fe4598fa13af6bf64929c05b0f6f",
 }
 ALLOWED_PHASE3_PATHS = {
     ".github/workflows/disposition-intake.yml",
+    "RECEIPTS.md",
     "adoption/README.md",
     "adoption/phase3/README.md",
     INTAKE_PATH,
+    "adoption/phase5/README.md",
+    "adoption/phase5/r26-stale-project-reconciliation.json",
     LEDGER_PATH,
+    "ruling-candidates/automated-bounded-rotation-r1.md",
+    "schemas/automated-rotation-window-v1.schema.json",
+    "specs/agent-bridge.md",
     "tests/test_adoption_ledger.py",
+    "tests/test_automated_rotation_amendment.py",
     "tests/test_phase2_disposition_batch.py",
     "tests/test_phase3_disposition_batch.py",
+    "tests/test_phase5_stale_reconciliation.py",
+    "tests/test_adversarialllm_utilization_shadow_doctrine.py",
     "tools/check_adoption_ledger.py",
     "tools/check_phase2_disposition_batch.py",
     "tools/check_phase3_disposition_batch.py",
+    "tools/check_phase5_stale_reconciliation.py",
 }
 PHASE3_SCOPE_FREEZE_COMMIT = "0c417d8ccf4b0b2b142766fd4aa00072ae150a30"
 SHA_PATTERN = re.compile(r"[0-9a-f]{40,64}")
@@ -209,6 +238,15 @@ def _verify_frozen_base(base: Any, treeish: str) -> None:
         "initialSpecFoldTree": INITIAL_FOLD_TREE,
         "specBindingCommit": SPEC_BINDING_COMMIT,
         "specBindingTree": SPEC_BINDING_TREE,
+        "adversarialSpecBindingCommit": ADVERSARIAL_SPEC_BINDING_COMMIT,
+        "adversarialSpecBindingTree": ADVERSARIAL_SPEC_BINDING_TREE,
+        "adversarialSpecRepairCommit": ADVERSARIAL_SPEC_REPAIR_COMMIT,
+        "adversarialSpecRepairTree": ADVERSARIAL_SPEC_REPAIR_TREE,
+        "utilizationShadowDoctrineBaseCommit": UTILIZATION_SHADOW_DOCTRINE_BASE_COMMIT,
+        "utilizationShadowDoctrineBaseTree": UTILIZATION_SHADOW_DOCTRINE_BASE_TREE,
+        "utilizationShadowDoctrineAmendmentCommit": UTILIZATION_SHADOW_DOCTRINE_AMENDMENT_COMMIT,
+        "utilizationShadowDoctrineAmendmentTree": UTILIZATION_SHADOW_DOCTRINE_AMENDMENT_TREE,
+        "utilizationShadowDoctrineAmendmentSpecBlob": UTILIZATION_SHADOW_DOCTRINE_AMENDMENT_SPEC_BLOB,
         "r26Candidate": R26_CANDIDATE,
         "r26Merge": R26_MERGE,
     }
@@ -220,14 +258,59 @@ def _verify_frozen_base(base: Any, treeish: str) -> None:
         raise Phase3Error("INITIAL_SPEC_FOLD_OBJECT_MISMATCH")
     if _commit_tuple(SPEC_BINDING_COMMIT) != (SPEC_BINDING_TREE, [INITIAL_FOLD_COMMIT]):
         raise Phase3Error("SPEC_BINDING_OBJECT_MISMATCH")
+    if _commit_tuple(PHASE3_PUBLISHED_COMMIT)[0] != PHASE3_PUBLISHED_TREE:
+        raise Phase3Error("PHASE3_PUBLISHED_OBJECT_MISMATCH")
+    if not _is_ancestor(SPEC_BINDING_COMMIT, PHASE3_PUBLISHED_COMMIT):
+        raise Phase3Error("PHASE3_PUBLISHED_LINEAGE_MISMATCH")
+    if _commit_tuple(ADVERSARIAL_SPEC_BINDING_COMMIT) != (
+        ADVERSARIAL_SPEC_BINDING_TREE,
+        [PHASE3_PUBLISHED_COMMIT],
+    ):
+        raise Phase3Error("ADVERSARIAL_SPEC_BINDING_OBJECT_MISMATCH")
     if _changed_paths(MASTER_COMMIT, INITIAL_FOLD_COMMIT) != SPEC_PATHS:
         raise Phase3Error("INITIAL_SPEC_FOLD_SCOPE_INVALID")
     if _changed_paths(INITIAL_FOLD_COMMIT, SPEC_BINDING_COMMIT) != SPEC_PATHS:
         raise Phase3Error("SPEC_BINDING_SCOPE_INVALID")
+    if _changed_paths(PHASE3_PUBLISHED_COMMIT, ADVERSARIAL_SPEC_BINDING_COMMIT) != {
+        "specs/adversarialllm.md"
+    }:
+        raise Phase3Error("ADVERSARIAL_SPEC_BINDING_SCOPE_INVALID")
+    if _commit_tuple(PRE_ADVERSARIAL_SPEC_REPAIR_COMMIT)[0] != PRE_ADVERSARIAL_SPEC_REPAIR_TREE:
+        raise Phase3Error("PRE_ADVERSARIAL_SPEC_REPAIR_OBJECT_MISMATCH")
+    if not _is_ancestor(ADVERSARIAL_SPEC_BINDING_COMMIT, PRE_ADVERSARIAL_SPEC_REPAIR_COMMIT):
+        raise Phase3Error("PRE_ADVERSARIAL_SPEC_REPAIR_LINEAGE_MISMATCH")
+    if _commit_tuple(ADVERSARIAL_SPEC_REPAIR_COMMIT) != (
+        ADVERSARIAL_SPEC_REPAIR_TREE,
+        [PRE_ADVERSARIAL_SPEC_REPAIR_COMMIT],
+    ):
+        raise Phase3Error("ADVERSARIAL_SPEC_REPAIR_OBJECT_MISMATCH")
+    if _changed_paths(PRE_ADVERSARIAL_SPEC_REPAIR_COMMIT, ADVERSARIAL_SPEC_REPAIR_COMMIT) != {
+        "specs/adversarialllm.md"
+    }:
+        raise Phase3Error("ADVERSARIAL_SPEC_REPAIR_SCOPE_INVALID")
+    if _commit_tuple(UTILIZATION_SHADOW_DOCTRINE_BASE_COMMIT)[0] != UTILIZATION_SHADOW_DOCTRINE_BASE_TREE:
+        raise Phase3Error("UTILIZATION_SHADOW_DOCTRINE_BASE_OBJECT_MISMATCH")
+    if _commit_tuple(UTILIZATION_SHADOW_DOCTRINE_AMENDMENT_COMMIT) != (
+        UTILIZATION_SHADOW_DOCTRINE_AMENDMENT_TREE,
+        [UTILIZATION_SHADOW_DOCTRINE_BASE_COMMIT],
+    ):
+        raise Phase3Error("UTILIZATION_SHADOW_DOCTRINE_AMENDMENT_OBJECT_MISMATCH")
+    if _changed_paths(
+        UTILIZATION_SHADOW_DOCTRINE_BASE_COMMIT,
+        UTILIZATION_SHADOW_DOCTRINE_AMENDMENT_COMMIT,
+    ) != {"specs/adversarialllm.md"}:
+        raise Phase3Error("UTILIZATION_SHADOW_DOCTRINE_AMENDMENT_SCOPE_INVALID")
+    if _oid(
+        UTILIZATION_SHADOW_DOCTRINE_AMENDMENT_COMMIT,
+        "specs/adversarialllm.md",
+    ) != UTILIZATION_SHADOW_DOCTRINE_AMENDMENT_SPEC_BLOB:
+        raise Phase3Error("UTILIZATION_SHADOW_DOCTRINE_AMENDMENT_SPEC_MISMATCH")
     descendant = "HEAD" if treeish == ":" else treeish
-    if not _is_ancestor(SPEC_BINDING_COMMIT, descendant):
-        raise Phase3Error("SPEC_BINDING_NOT_ANCESTOR")
-    if not _changed_paths(SPEC_BINDING_COMMIT, treeish).issubset(ALLOWED_PHASE3_PATHS):
+    if not _is_ancestor(UTILIZATION_SHADOW_DOCTRINE_AMENDMENT_COMMIT, descendant):
+        raise Phase3Error("UTILIZATION_SHADOW_DOCTRINE_AMENDMENT_NOT_ANCESTOR")
+    if not _changed_paths(UTILIZATION_SHADOW_DOCTRINE_AMENDMENT_COMMIT, treeish).issubset(
+        ALLOWED_PHASE3_PATHS
+    ):
         raise Phase3Error("PHASE3_SCOPE_VIOLATION")
 
 
@@ -262,9 +345,14 @@ def _verify_project(
         {"commit", "gitBlobOid"},
         "CENTRAL_EVIDENCE_INVALID",
     )
+    evidence_commit = (
+        UTILIZATION_SHADOW_DOCTRINE_AMENDMENT_COMMIT
+        if project_id == "adversarialllm"
+        else SPEC_BINDING_COMMIT
+    )
     if central != {
-        "commit": SPEC_BINDING_COMMIT,
-        "gitBlobOid": _oid(SPEC_BINDING_COMMIT, project["specPath"]),
+        "commit": evidence_commit,
+        "gitBlobOid": _oid(evidence_commit, project["specPath"]),
     }:
         raise Phase3Error("CENTRAL_EVIDENCE_MISMATCH")
     if (
@@ -292,7 +380,7 @@ def _verify_project(
         or disposition.get("kind") != "DISTINGUISH"
         or disposition.get("subjectCommit") != R26_MERGE
         or not isinstance(disposition.get("statement"), str)
-        or _blob(SPEC_BINDING_COMMIT, project["specPath"]).count(
+        or _blob(evidence_commit, project["specPath"]).count(
             disposition["statement"].encode("utf-8")
         )
         != 1
@@ -322,6 +410,7 @@ def verify_batch(batch: dict[str, Any], treeish: str = "HEAD") -> None:
         not isinstance(census_base, str)
         or SHA_PATTERN.fullmatch(census_base) is None
         or not _is_ancestor(SPEC_BINDING_COMMIT, census_base)
+        or not _is_ancestor(UTILIZATION_SHADOW_DOCTRINE_AMENDMENT_COMMIT, census_base)
         or not _is_ancestor(census_base, descendant)
     ):
         raise Phase3Error("LEDGER_CENSUS_BASE_MISMATCH")
@@ -374,8 +463,8 @@ def verify_batch(batch: dict[str, Any], treeish: str = "HEAD") -> None:
     if ids != sorted(PROJECT_IDS) or len(ids) != len(set(ids)):
         raise Phase3Error("PROJECT_SET_INVALID")
     if batch["summary"] != {
-        "projectCount": 3,
-        "distinguishCandidates": 3,
+        "projectCount": 4,
+        "distinguishCandidates": 4,
         "adoptionClaims": 0,
         "runtimeAuthorityClaims": 0,
     }:
@@ -679,6 +768,7 @@ def verify_remotes(batch: dict[str, Any]) -> None:
             project_id
         ]:
             raise Phase3Error(f"PUBLISHED_REMOTE_CANDIDATE_EXACT_BINDING_MISMATCH:{project_id}")
+    for project in projects:
         _verify_remote_project(project)
 
 

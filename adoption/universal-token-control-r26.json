@@ -23,7 +23,7 @@
     }
   },
   "census": {
-    "baseCommit": "68c97f69d283bd54bb7c6a5ce485a7850446d4d7",
+    "baseCommit": "8c7dc4f4339db82a8b3c2efd689bf5f72631ad6e",
     "projectSpecGlob": "specs/*.md",
     "nonProjectSpecs": [
       "specs/fleet-provider-capacity-governor.md",
@@ -46,10 +46,10 @@
     "projectCount": 9,
     "counts": {
       "ADOPT": 0,
-      "DISTINGUISH": 5,
+      "DISTINGUISH": 6,
       "MISSING": 0,
       "REJECT": 0,
-      "STALE": 4
+      "STALE": 3
     },
     "fleetStatus": "NO_FLEET_ADOPTION",
     "fleetAdoptionClaim": false
@@ -74,18 +74,69 @@
     {
       "projectId": "adversarialllm",
       "specPath": "specs/adversarialllm.md",
-      "status": "STALE",
+      "status": "DISTINGUISH",
       "evidence": {
-        "commit": "13d0ee65f9e3949918db6e43ad3d41438d073bba",
-        "gitBlobOid": "33fe9c7fb7cc31b1f172b9216475fef5fe97aaad",
+        "commit": "7bf0cf9943de7c33b14496b73f70c18959816c5c",
+        "gitBlobOid": "e964d2b77426ece703f8fb1fd82a9cb068e98632",
         "disposition": {
           "status": "DISTINGUISH",
-          "subjectCommit": "874605e43531c9aa230ee16851f8107a8e0d9cec"
+          "subjectCommit": "909f769d02e8412e51e28e242cfa8d00dadc9a3d"
         },
-        "projectCandidate": null
+        "projectCandidate": {
+          "remote": "https://github.com/layibabalola/AdversarialLLM-ClaudeCode.git",
+          "publishedRef": "refs/heads/master",
+          "commit": "8f01ea860d22c0e0c0a8c5ac9f7c290b1c050c14",
+          "tree": "4b39858e0421257fc997bb827571b35fb712e15a",
+          "parent": "6c9e54d7962711c7a90828159c172b130ad7d594",
+          "baseCommit": "4ca508a041d589aaaa07f995b34238cd43a9303f",
+          "candidateStatus": "DISTINGUISH_ZERO_AUTHORITY_EVIDENCE_ONLY",
+          "primaryEvidencePath": "adversarialllm/docs/reports/softwarefactory-r26-disposition-20260819.json",
+          "dispositionPath": "adversarialllm/docs/reports/softwarefactory-r26-disposition-20260819.md",
+          "artifacts": [
+            {
+              "path": "adversarialllm/docs/reports/softwarefactory-r26-disposition-20260819.json",
+              "gitBlobOid": "a337a9bea93daf94e619653edb8b5241ee29b6af",
+              "bytes": 3471,
+              "sha256": "33a784a39e9451db68acb96d26b550fd6a8c4aea140b78ac66fde47724e16b7d"
+            },
+            {
+              "path": "adversarialllm/docs/reports/softwarefactory-r26-disposition-20260819.md",
+              "gitBlobOid": "a7baf849dca2dea2f56874b3393afead7bd5e6ba",
+              "bytes": 3488,
+              "sha256": "d0b5f941b93bca18a4c6906900004612daa8da9077daaa6f635fc0f45e10bcd7"
+            },
+            {
+              "path": "scripts/verify-fleet-doctrine-disposition.ps1",
+              "gitBlobOid": "fbc60a92704f8fe9495933953b4ac1a5c332db5d",
+              "bytes": 15183,
+              "sha256": "0155c19228638a02c254d6811c0f7402aa996fbfbb0d2eee22033c5e4aff1c35"
+            },
+            {
+              "path": "scripts/tests/fleet-doctrine-disposition.tests.ps1",
+              "gitBlobOid": "9cb528a7967e11164d8e5378b63a6022e70b077c",
+              "bytes": 6404,
+              "sha256": "cc7649c9a59760406dfe74c7f23d7ec2ec66ace5c9ec22c7ec912ff97e380ee5"
+            }
+          ],
+          "disposition": {
+            "kind": "DISTINGUISH",
+            "subjectCommit": "909f769d02e8412e51e28e242cfa8d00dadc9a3d",
+            "statement": "DISTINGUISH(909f769d02e8412e51e28e242cfa8d00dadc9a3d, ADVERSARIALLLM_R26_ZERO_AUTHORITY_EVIDENCE_ONLY_AUTOMATIC_GATE_CLOSED_NO_PROJECT_OWNED_R26_ADOPTION_RULING, ADVERSARIALLLM_MASTER_8f01ea860d22c0e0c0a8c5ac9f7c290b1c050c14, DISPOSITION_BLOB_a337a9bea93daf94e619653edb8b5241ee29b6af)"
+          },
+          "authorityClaims": {
+            "projectAdoption": false,
+            "fleetAdoption": false,
+            "runtimeActivation": false,
+            "providerInvocation": false,
+            "schedulerMutation": false,
+            "mergePushRelease": false
+          },
+          "adoptionProofCredit": false,
+          "nonRegressionCredit": false
+        }
       },
       "nonRegressionEvidence": null,
-      "blocker": "PROJECT_OWNER_CURRENT_CANDIDATE_DISPOSITION_REQUIRED"
+      "blocker": "PROJECT_OWNER_DISTINCTION_OPEN"
     },
     {
       "projectId": "agent-bridge",

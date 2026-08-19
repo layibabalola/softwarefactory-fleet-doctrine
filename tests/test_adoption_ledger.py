@@ -516,8 +516,8 @@ class AdoptionLedgerTests(unittest.TestCase):
 
         dng["status"] = "ADOPT"
         dng["blocker"] = None
-        ledger["summary"]["counts"]["DISTINGUISH"] = 3
-        ledger["summary"]["counts"]["ADOPT"] = 1
+        ledger["summary"]["counts"]["DISTINGUISH"] -= 1
+        ledger["summary"]["counts"]["ADOPT"] += 1
         with self.assertRaisesRegex(MODULE.LedgerError, "CURRENT_DISPOSITION_STATUS_MISMATCH"):
             MODULE.verify_ledger(ledger, "HEAD")
 
@@ -841,7 +841,7 @@ class AdoptionLedgerTests(unittest.TestCase):
         with self.assertRaisesRegex(MODULE.LedgerError, "STALE_DISPOSITION_SUBJECT_INVALID"):
             MODULE.verify_ledger(ledger, "HEAD")
 
-    def test_published_project_candidate_is_required_only_for_the_exact_three_rows(self):
+    def test_published_project_candidate_is_required_only_for_the_exact_four_rows(self):
         ledger = self._copy()
         self._project(ledger, "salesforce-tools")["evidence"]["projectCandidate"] = None
         with self.assertRaisesRegex(MODULE.LedgerError, "PROJECT_CANDIDATE_REQUIRED"):
