@@ -433,6 +433,38 @@ directory identity is captured and revalidated immediately before and after open
 ledger or quota lock. A deterministic or native directory replacement fails closed and poisons the
 authority for the process rather than falling through to a substituted database or lock namespace.
 
-R21 retains the universal hosted workflow's exact 167-control universal, 37-control governor, and
-77-control runtime-workbench matrix on pull requests and master pushes. It adds no provider execution,
+R21 also makes serialized attended rotation explicitly insufficient for provider containment. Before a
+model process or session is created, a deterministic broker-owned no-work decision must prove that the
+addressed-work capsule is actionable. Every actual provider request, rather than only an agent turn,
+must reserve and reconcile a token-denominated quota envelope. Cache reads count at full input-envelope
+and quota-window weight; cache writes, uncached input, reasoning, and output are separately cumulative.
+Failure, refusal, timeout, and retry attempts consume the same accounting path, and the reviewed policy
+sets a numeric retry cap. Admission must retain at least 20 percent of every applicable provider quota
+window for completion and terminal reporting after active, completed, and candidate reservations.
+
+The assembled prefix and addressed-work capsule each have reviewed numeric token ceilings enforced before
+session creation. Cache-affinity scheduling may reuse a prefix only under an exact affinity identity and
+an unexpired TTL; after expiry, admission budgets a cold prefix instead of assuming a cache hit. Direct
+provider launch is denied only by positive, separately certified production choke-point enforcement;
+serialization, a declaration, or this no-execution reference cannot prove that boundary.
+
+The normative machine-readable admission laws are:
+
+```text
+CACHE_READ_FULL_ENVELOPE_WEIGHT=1.0
+REQUEST_LAYER_RECONCILIATION=REQUIRED
+MODEL_FREE_NO_WORK=BEFORE_SESSION_CREATION
+MAX_ASSEMBLED_PREFIX_TOKENS=REVIEWED_NUMERIC_REQUIRED
+MAX_ADDRESSED_WORK_CAPSULE_TOKENS=REVIEWED_NUMERIC_REQUIRED
+CACHE_AFFINITY_TTL=EXACT_IDENTITY_AND_UNEXPIRED_TTL
+MAX_PROVIDER_RETRIES=REVIEWED_NUMERIC_REQUIRED
+COMPLETION_RESERVE_FLOOR=0.20
+POSITIVE_DIRECT_LAUNCH_ENFORCEMENT=SEPARATELY_CERTIFIED_REQUIRED
+```
+
+The attended four-request rotation that motivated these laws was serialized and no-tools, but still
+created 59,319 cache-prefix tokens and read 10,723 cached tokens across one Sonnet and three Opus calls.
+It is PRE-SHADOW SEALED evidence only: it earns no ratification, adoption, containment, or activation
+credit. R21 retains the universal hosted workflow's exact 168-control universal, 37-control governor,
+and 77-control runtime-workbench matrix on pull requests and master pushes. It adds no provider execution,
 process resume/kill, containment, CANARY, or OPEN authority; adoption remains CLOSED.

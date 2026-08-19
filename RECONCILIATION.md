@@ -59,5 +59,12 @@ and mode validation. Ledger and lock paths retain every trusted-base-to-authorit
 revalidate before and after opening, and poison the authority on replacement ambiguity. Windows account
 selection is unchanged. The candidate remains reference-only, zero authority, and CLOSED.
 
+The attended serialized four-request rotation is PRE-SHADOW SEALED evidence, not adoption credit.
+R21 therefore requires model-free no-work determination before session creation, request-layer token
+reservation and reconciliation with cache reads charged at full envelope weight, numeric prefix/capsule
+and retry ceilings, exact cache-affinity TTL scheduling, conservative failure/refusal/retry charging,
+a 20 percent completion reserve in every quota window, and positive separately certified direct-launch
+enforcement. Serialization alone cannot satisfy those controls.
+
 Standing containment is unchanged: provider capacity, reset, or authentication cannot open an
 automatic-launch gate or re-enable a launcher.

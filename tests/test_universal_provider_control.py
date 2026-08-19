@@ -4737,7 +4737,34 @@ class UniversalProviderControlTests(unittest.TestCase):
         with self.assertRaisesRegex(upc.ControlError, "QUOTA_LOCK_BOUNDARY_INVALID"):
             broker._lock_path(self.quota_id)
 
-    def test_r21_06_manifest_binds_postlock_path_subject_and_zero_authority(self) -> None:
+    def test_r21_06_provider_budget_law_is_request_scoped_and_zero_authority(self) -> None:
+        doctrine = (
+            ROOT / "specs" / "fleet-universal-provider-control-reconciliation.md"
+        ).read_text(encoding="utf-8")
+        required = {
+            "CACHE_READ_FULL_ENVELOPE_WEIGHT=1.0",
+            "REQUEST_LAYER_RECONCILIATION=REQUIRED",
+            "MODEL_FREE_NO_WORK=BEFORE_SESSION_CREATION",
+            "MAX_ASSEMBLED_PREFIX_TOKENS=REVIEWED_NUMERIC_REQUIRED",
+            "MAX_ADDRESSED_WORK_CAPSULE_TOKENS=REVIEWED_NUMERIC_REQUIRED",
+            "CACHE_AFFINITY_TTL=EXACT_IDENTITY_AND_UNEXPIRED_TTL",
+            "MAX_PROVIDER_RETRIES=REVIEWED_NUMERIC_REQUIRED",
+            "COMPLETION_RESERVE_FLOOR=0.20",
+            "POSITIVE_DIRECT_LAUNCH_ENFORCEMENT=SEPARATELY_CERTIFIED_REQUIRED",
+            "PRE-SHADOW SEALED",
+        }
+        self.assertEqual({marker for marker in required if marker not in doctrine}, set())
+        self.assertIn("Failure, refusal, timeout, and retry attempts", doctrine)
+        self.assertIn("earns no ratification, adoption, containment, or activation", doctrine)
+        parser_source = inspect.getsource(upc._parser)
+        self.assertNotIn('add_parser("provider-request-permit")', parser_source)
+        self.assertNotIn('add_parser("brokered-single-request")', parser_source)
+        self.assertEqual(
+            upc.UniversalProviderBroker(self.root / "r21-budget-law-closed").gate_state(),
+            "CLOSED",
+        )
+
+    def test_r21_07_manifest_binds_postlock_path_subject_and_zero_authority(self) -> None:
         import check_universal_manifest as checker
 
         manifest_path = ROOT / "manifests" / "universal-provider-control-reconciliation-r21.json"
