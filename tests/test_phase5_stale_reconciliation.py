@@ -1,5 +1,7 @@
 import copy
+from contextlib import redirect_stderr
 import importlib.util
+import io
 import json
 from pathlib import Path
 import unittest
@@ -26,6 +28,14 @@ class Phase5StaleReconciliationTests(unittest.TestCase):
 
     def _project(self, batch, project_id):
         return next(project for project in batch["projects"] if project["projectId"] == project_id)
+
+    def _event_scope(self, changed, event="pull_request"):
+        with (
+            mock.patch.object(MODULE, "_commit_tuple", return_value=("b" * 40, [])),
+            mock.patch.object(MODULE, "_is_ancestor", return_value=True),
+            mock.patch.object(MODULE, "_event_changed_paths", return_value=set(changed)),
+        ):
+            return MODULE.evaluate_event_scope(event, "a" * 40, "HEAD")
 
     def test_published_batch_passes_local_verification(self):
         MODULE.verify_batch(self._copy(), "HEAD")
@@ -97,23 +107,104 @@ class Phase5StaleReconciliationTests(unittest.TestCase):
                 with self.assertRaisesRegex(MODULE.Phase5Error, "SUMMARY_OVERCLAIM"):
                     MODULE.verify_batch(batch, "HEAD")
 
-    def test_phase5_scope_rejects_product_or_spec_mutation(self):
-        with mock.patch.object(MODULE, "_changed_paths", return_value={"specs/adobe-ingester.md"}):
-            with self.assertRaisesRegex(MODULE.Phase5Error, "PHASE5_SCOPE_VIOLATION"):
-                MODULE.verify_batch(self._copy(), "HEAD")
+    def test_phase5_event_allowlist_is_spec_free_and_distinct_from_history(self):
+        self.assertFalse(any(path.startswith("specs/") for path in MODULE.EVENT_ALLOWED_PHASE5_PATHS))
+        self.assertNotEqual(MODULE.ALLOWED_PHASE5_PATHS, MODULE.EVENT_ALLOWED_PHASE5_PATHS)
+        self.assertEqual(10, len(MODULE.COMMON_PHASE_TRIGGER_PATHS))
+        self.assertEqual(2, len(MODULE.AUXILIARY_EVENT_ALLOWED_PATHS))
+        self.assertTrue(MODULE.AUXILIARY_EVENT_ALLOWED_PATHS.isdisjoint(MODULE.PHASE5_TRIGGER_PATHS))
 
-    def test_phase5_scope_allows_exact_utilization_shadow_doctrine_binding(self):
-        with mock.patch.object(
-            MODULE,
-            "_changed_paths",
-            return_value={
-                "adoption/phase3/r26-published-project-disposition-intake.json",
-                "adoption/universal-token-control-r26.json",
-                "specs/adversarialllm.md",
-                "tests/test_adversarialllm_utilization_shadow_doctrine.py",
-            },
+    def test_phase5_unrelated_r29_provider_delta_is_explicit_na(self):
+        changed = {
+            "README.md", "RECONCILIATION.md",
+            "manifests/universal-provider-control-reconciliation-r29.json",
+            "schemas/universal-provider-review-admission-v1.schema.json",
+            "specs/fleet-universal-provider-control-reconciliation.md",
+            "tests/test_universal_provider_control.py",
+            "tools/check_universal_manifest.py", "tools/universal_provider_control.py",
+        }
+        self.assertEqual(self._event_scope(changed), "N/A_NO_PHASE5_TRIGGER")
+
+    def test_phase5_clean_control_surface_and_owned_data_are_applicable(self):
+        self.assertEqual(self._event_scope(MODULE.COMMON_PHASE_TRIGGER_PATHS), "APPLICABLE")
+        self.assertEqual(
+            self._event_scope(
+                MODULE.COMMON_PHASE_TRIGGER_PATHS | MODULE.AUXILIARY_EVENT_ALLOWED_PATHS
+            ),
+            "APPLICABLE",
+        )
+        self.assertEqual(self._event_scope({MODULE.INTAKE_PATH}), "APPLICABLE")
+
+    def test_phase5_rejects_every_formerly_allowed_spec_when_mixed(self):
+        former_specs = {
+            "specs/adversarialllm.md", "specs/cloudvore.md",
+            "specs/mlv-app.md", "specs/salesforce-tools.md",
+        }
+        self.assertIn("specs/adversarialllm.md", MODULE.ALLOWED_PHASE5_PATHS)
+        for path in sorted(former_specs):
+            with self.subTest(path=path):
+                with self.assertRaisesRegex(MODULE.Phase5Error, "PHASE5_SCOPE_VIOLATION"):
+                    self._event_scope({MODULE.INTAKE_PATH, path})
+
+    def test_phase5_control_deletion_or_change_cannot_hide_foreign_mutation(self):
+        for control in (
+            ".github/workflows/disposition-intake.yml",
+            "tests/test_phase5_stale_reconciliation.py",
+            "tools/check_phase5_stale_reconciliation.py",
         ):
-            MODULE.verify_batch(self._copy(), "HEAD")
+            with self.subTest(control=control):
+                with self.assertRaisesRegex(MODULE.Phase5Error, "PHASE5_SCOPE_VIOLATION"):
+                    self._event_scope({control, "src/runtime.py"})
+
+    def test_phase5_auxiliary_manifest_controls_are_na_unless_phase_triggered(self):
+        controls = set(MODULE.AUXILIARY_EVENT_ALLOWED_PATHS)
+        trigger = {".github/workflows/disposition-intake.yml"}
+        self.assertEqual(self._event_scope(controls), "N/A_NO_PHASE5_TRIGGER")
+        self.assertEqual(self._event_scope(trigger | controls), "APPLICABLE")
+        for foreign in ("tools/universal_provider_control.py", "specs/cloudvore.md"):
+            with self.subTest(foreign=foreign):
+                with self.assertRaisesRegex(MODULE.Phase5Error, "PHASE5_SCOPE_VIOLATION"):
+                    self._event_scope(trigger | controls | {foreign})
+
+    def test_phase5_missing_invalid_or_nonancestor_base_fails_closed(self):
+        with self.assertRaisesRegex(MODULE.Phase5Error, "PHASE5_SCOPE_EVENT_INVALID"):
+            MODULE.evaluate_event_scope("", "", "HEAD")
+        for base in ("", "not-a-sha"):
+            with self.subTest(base=base):
+                with self.assertRaisesRegex(MODULE.Phase5Error, "PHASE5_SCOPE_BASE_INVALID"):
+                    MODULE.evaluate_event_scope("pull_request", base, "HEAD")
+        with (
+            mock.patch.object(MODULE, "_commit_tuple", return_value=("b" * 40, [])),
+            mock.patch.object(MODULE, "_is_ancestor", return_value=False),
+        ):
+            with self.assertRaisesRegex(MODULE.Phase5Error, "PHASE5_SCOPE_BASE_INVALID"):
+                MODULE.evaluate_event_scope("push", "a" * 40, "HEAD")
+
+    def test_phase5_workflow_dispatch_is_explicit_na(self):
+        self.assertEqual(
+            MODULE.evaluate_event_scope("workflow_dispatch", "", "HEAD"),
+            "N/A_WORKFLOW_DISPATCH",
+        )
+
+    def test_phase5_main_verifies_frozen_evidence_before_event_scope(self):
+        with (
+            mock.patch.object(
+                MODULE,
+                "_blob",
+                return_value=(ROOT / MODULE.INTAKE_PATH).read_bytes(),
+            ),
+            mock.patch.object(
+                MODULE,
+                "verify_batch",
+                side_effect=MODULE.Phase5Error("FROZEN_FAIL"),
+            ),
+            mock.patch.object(MODULE, "evaluate_event_scope") as scope,
+        ):
+            stderr = io.StringIO()
+            with redirect_stderr(stderr):
+                self.assertEqual(1, MODULE.main(["--scope-event", "workflow_dispatch"]))
+        scope.assert_not_called()
+        self.assertIn("FROZEN_FAIL", stderr.getvalue())
 
     def test_publishing_workflow_runs_local_and_authorized_remote_checks(self):
         workflow = (ROOT / ".github" / "workflows" / "disposition-intake.yml").read_text(
@@ -129,6 +220,9 @@ class Phase5StaleReconciliationTests(unittest.TestCase):
         )
         self.assertIn("if: env.R26_REMOTE_AUTH_CONFIGURED == 'true'", workflow)
         self.assertIn("ADOBE REMOTE NOT VERIFIED", workflow)
+        self.assertIn("R26_SCOPE_EVENT: ${{ github.event_name }}", workflow)
+        self.assertIn("github.event.pull_request.base.sha", workflow)
+        self.assertIn("github.event.before", workflow)
 
     def test_remote_verifier_rederives_exact_refs_and_commits(self):
         advertised = "".join(

@@ -16,8 +16,8 @@ quorum, mutate a project, invoke a provider, or advance `STALE` to `DISTINGUISH`
 Run the fail-closed controls with:
 
 ```console
-python tools/check_phase5_stale_reconciliation.py --treeish HEAD
-python tools/check_phase5_stale_reconciliation.py --treeish HEAD --verify-remotes
+python tools/check_phase5_stale_reconciliation.py --treeish HEAD --scope-event workflow_dispatch
+python tools/check_phase5_stale_reconciliation.py --treeish HEAD --scope-event workflow_dispatch --verify-remotes
 python -m unittest discover -s tests -p "test_phase5_stale_reconciliation.py" -v
 ```
 

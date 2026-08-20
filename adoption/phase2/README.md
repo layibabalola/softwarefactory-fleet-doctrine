@@ -26,7 +26,7 @@ Priority is owner-action order, not likelihood of adoption:
 Structural verification works on every hosted platform:
 
 ```console
-python tools/check_phase2_disposition_batch.py --treeish HEAD
+python tools/check_phase2_disposition_batch.py --treeish HEAD --scope-event workflow_dispatch
 python -m unittest discover -s tests -p "test_phase2_disposition_batch.py" -v
 ```
 
@@ -35,5 +35,5 @@ CI. If a checkout appears, this command fails with `LOCAL_PROBE_DRIFT` so the pr
 an isolated worktree and produce new project-owned evidence:
 
 ```console
-python tools/check_phase2_disposition_batch.py --treeish HEAD --verify-local-probes
+python tools/check_phase2_disposition_batch.py --treeish HEAD --scope-event workflow_dispatch --verify-local-probes
 ```

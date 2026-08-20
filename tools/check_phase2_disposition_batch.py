@@ -35,6 +35,7 @@ PROJECT_IDS = {
     "mlv-app",
     "salesforce-tools",
 }
+# Historical cumulative evidence surface. Never use it for a prospective event decision.
 ALLOWED_PHASE2_PATHS = {
     ".github/workflows/disposition-intake.yml",
     "adoption/README.md",
@@ -59,6 +60,26 @@ ALLOWED_PHASE2_PATHS = {
     "tools/check_phase3_disposition_batch.py",
     "tools/check_phase5_stale_reconciliation.py",
 }
+COMMON_PHASE_TRIGGER_PATHS = {
+    ".github/workflows/disposition-intake.yml",
+    "adoption/phase2/README.md",
+    "adoption/phase3/README.md",
+    "adoption/phase5/README.md",
+    "tests/test_phase2_disposition_batch.py",
+    "tests/test_phase3_disposition_batch.py",
+    "tests/test_phase5_stale_reconciliation.py",
+    "tools/check_phase2_disposition_batch.py",
+    "tools/check_phase3_disposition_batch.py",
+    "tools/check_phase5_stale_reconciliation.py",
+}
+AUXILIARY_EVENT_ALLOWED_PATHS = {
+    "tests/test_universal_provider_control.py",
+    "tools/check_universal_manifest.py",
+}
+EVENT_ALLOWED_PHASE2_PATHS = (
+    COMMON_PHASE_TRIGGER_PATHS | AUXILIARY_EVENT_ALLOWED_PATHS | {BATCH_PATH}
+)
+PHASE2_TRIGGER_PATHS = COMMON_PHASE_TRIGGER_PATHS | {BATCH_PATH}
 OWNER_EVIDENCE_REQUIREMENTS = [
     "PROJECT_OWNED_COMMIT_AND_GIT_BLOB_BINDING_R26_E70A044_AND_MERGE_909F769",
     "CURRENT_EXPLICIT_ADOPT_DISTINGUISH_OR_REJECT",
@@ -146,6 +167,41 @@ def _changed_paths(treeish: str) -> set[str]:
     return set(_git(args, text=True, error="PHASE2_DIFF_UNAVAILABLE").splitlines())
 
 
+def _event_changed_paths(scope_base: str, treeish: str) -> set[str]:
+    args = (
+        ["diff", "--cached", "--name-only", scope_base]
+        if treeish == ":"
+        else ["diff", "--name-only", f"{scope_base}..{treeish}"]
+    )
+    return set(_git(args, text=True, error="PHASE2_EVENT_DIFF_UNAVAILABLE").splitlines())
+
+
+def evaluate_event_scope(event_name: str, scope_base: str, treeish: str) -> str:
+    """Classify the trusted event delta after frozen evidence verification."""
+
+    if event_name == "workflow_dispatch":
+        return "N/A_WORKFLOW_DISPATCH"
+    if event_name not in {"pull_request", "push"}:
+        raise BatchError("PHASE2_SCOPE_EVENT_INVALID")
+    if not isinstance(scope_base, str) or SHA_PATTERN.fullmatch(scope_base) is None:
+        raise BatchError("PHASE2_SCOPE_BASE_INVALID")
+    if any(path.startswith("specs/") for path in EVENT_ALLOWED_PHASE2_PATHS):
+        raise BatchError("PHASE2_EVENT_ALLOWLIST_INVALID")
+    try:
+        _commit_tuple(scope_base)
+    except BatchError as exc:
+        raise BatchError("PHASE2_SCOPE_BASE_INVALID") from exc
+    descendant = "HEAD" if treeish == ":" else treeish
+    if not _is_ancestor(scope_base, descendant):
+        raise BatchError("PHASE2_SCOPE_BASE_INVALID")
+    changed = _event_changed_paths(scope_base, treeish)
+    if not changed.intersection(PHASE2_TRIGGER_PATHS):
+        return "N/A_NO_PHASE2_TRIGGER"
+    if not changed.issubset(EVENT_ALLOWED_PHASE2_PATHS):
+        raise BatchError("PHASE2_SCOPE_VIOLATION")
+    return "APPLICABLE"
+
+
 def _exact_keys(value: Any, keys: set[str], code: str) -> dict[str, Any]:
     if not isinstance(value, dict) or set(value) != keys:
         raise BatchError(code)
@@ -196,9 +252,6 @@ def _verify_frozen_base(base: Any, treeish: str) -> None:
     descendant = "HEAD" if treeish == ":" else treeish
     if not _is_ancestor(PACKET_COMMIT, descendant):
         raise BatchError("FROZEN_PACKET_NOT_ANCESTOR")
-    changed = _changed_paths(treeish)
-    if not changed.issubset(ALLOWED_PHASE2_PATHS):
-        raise BatchError("PHASE2_SCOPE_VIOLATION")
 
 
 def _verify_capture(capture: Any) -> None:
@@ -406,17 +459,23 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--treeish", default="HEAD")
     parser.add_argument("--verify-local-probes", action="store_true")
+    parser.add_argument("--scope-event", default=os.environ.get("R26_SCOPE_EVENT", ""))
+    parser.add_argument("--scope-base", default=os.environ.get("R26_SCOPE_BASE_SHA", ""))
     args = parser.parse_args(argv)
     try:
         batch = load_json(_blob(args.treeish, BATCH_PATH))
         verify_batch(batch, args.treeish)
+        scope = evaluate_event_scope(args.scope_event, args.scope_base, args.treeish)
         if args.verify_local_probes:
             verify_local_probes(batch)
     except BatchError as exc:
         print(f"FAIL: {exc}", file=sys.stderr)
         return 1
     suffix = " local-probes=PASS" if args.verify_local_probes else ""
-    print(f"PASS: R26 phase-2 intake has 8 exact external blockers and 0 adoption claims{suffix}")
+    print(
+        "PASS: R26 phase-2 intake has 8 exact external blockers and 0 adoption claims"
+        f" scope={scope}{suffix}"
+    )
     return 0
 
 

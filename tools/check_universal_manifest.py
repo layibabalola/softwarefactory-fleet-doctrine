@@ -15,7 +15,11 @@ from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
 MANIFEST = "manifests/universal-provider-control-reconciliation-r29.json"
+R29_MANIFEST = MANIFEST
+R26_MANIFEST = "manifests/universal-provider-control-reconciliation-r26.json"
 REVIEW_SCHEMA = "schemas/universal-provider-review-admission-v1.schema.json"
+FROZEN_CANDIDATE = "e70a044f31dd2f43ab7c716d63a4eb89318c61b6"
+FROZEN_R29 = "fc76bf6d5ab52891d06b7f71eb2e993e413c124c"
 SELF_PATTERN = re.compile(
     rb'("canonicalGitBlobSha256"\s*:\s*"sha256:)([0-9a-f]{64})(")'
 )
@@ -111,6 +115,35 @@ def _oid(treeish: str, path: str) -> str:
     if run.returncode != 0 or re.fullmatch(r"[0-9a-f]{40,64}\n?", run.stdout) is None:
         raise ManifestError("GIT_BLOB_OID_UNAVAILABLE")
     return run.stdout.strip()
+
+
+def _is_ancestor(ancestor: str, descendant: str) -> bool:
+    run = subprocess.run(
+        ["git", "merge-base", "--is-ancestor", ancestor, descendant], cwd=ROOT,
+        check=False, capture_output=True,
+    )
+    if run.returncode not in (0, 1):
+        raise ManifestError("MANIFEST_ANCESTRY_UNAVAILABLE")
+    return run.returncode == 0
+
+
+def _frozen_manifest_bytes(
+    treeish: str,
+    manifest_path: str = R26_MANIFEST,
+    candidate: str = FROZEN_CANDIDATE,
+) -> bytes:
+    """Bind a checked descendant to one literal immutable candidate manifest."""
+
+    descendant = "HEAD" if treeish == ":" else treeish
+    if not _is_ancestor(candidate, descendant):
+        raise ManifestError("MANIFEST_CANDIDATE_NOT_ANCESTOR")
+    frozen = _git(_blob_spec(candidate, manifest_path))
+    current = _git(_blob_spec(treeish, manifest_path))
+    assert isinstance(frozen, bytes)
+    assert isinstance(current, bytes)
+    if current != frozen or _oid(treeish, manifest_path) != _oid(candidate, manifest_path):
+        raise ManifestError("MANIFEST_FROZEN_BLOB_MISMATCH")
+    return frozen
 
 
 def _commit_tuple(commit: str) -> tuple[str, list[str]]:
@@ -567,16 +600,19 @@ def verify_r27(manifest: dict[str, Any], treeish: str) -> None:
         raise ManifestError("R27_VALIDATION_AUTHORITY_INVALID")
 
 
-def check(treeish: str) -> int:
-    raw = _git(_blob_spec(treeish, MANIFEST))
-    assert isinstance(raw, bytes)
+def _parse_manifest(raw: bytes, expected_schema: str) -> dict[str, Any]:
     try:
         manifest = json.loads(raw.decode("utf-8", errors="strict"), object_pairs_hook=_pairs)
     except (UnicodeDecodeError, json.JSONDecodeError, ManifestError) as exc:
         raise ManifestError("MANIFEST_INVALID") from exc
-    if manifest.get("schema") != "fleet-universal-provider-control-candidate-manifest/v3":
+    if manifest.get("schema") != expected_schema:
         raise ManifestError("MANIFEST_SCHEMA_INVALID")
-    verify_r29(manifest, treeish)
+    return manifest
+
+
+def _verify_subjects_and_self(
+    manifest: dict[str, Any], raw: bytes, *, manifest_path: str, candidate: str
+) -> int:
     subjects = manifest.get("subjectFiles")
     if not isinstance(subjects, list) or not subjects:
         raise ManifestError("MANIFEST_SUBJECTS_INVALID")
@@ -585,25 +621,45 @@ def check(treeish: str) -> int:
         if not isinstance(subject, dict) or set(subject) != {"path", "gitBlobOid", "sha256", "bytes"}:
             raise ManifestError("MANIFEST_SUBJECT_INVALID")
         path = subject["path"]
-        if not isinstance(path, str) or path in seen or path == MANIFEST:
+        if not isinstance(path, str) or path in seen or path == manifest_path:
             raise ManifestError("MANIFEST_SUBJECT_INVALID")
         seen.add(path)
-        blob = _git(_blob_spec(treeish, path))
+        blob = _git(_blob_spec(candidate, path))
         assert isinstance(blob, bytes)
         expected_sha = "sha256:" + hashlib.sha256(blob).hexdigest()
         if subject["sha256"] != expected_sha or subject["bytes"] != len(blob):
             raise ManifestError("MANIFEST_SUBJECT_MISMATCH")
-        if subject["gitBlobOid"] != _oid(treeish, path):
+        if subject["gitBlobOid"] != _oid(candidate, path):
             raise ManifestError("MANIFEST_BLOB_OID_MISMATCH")
     self_binding = manifest.get("manifestSelf")
-    if not isinstance(self_binding, dict) or self_binding.get("path") != MANIFEST:
+    if not isinstance(self_binding, dict) or self_binding.get("path") != manifest_path:
         raise ManifestError("MANIFEST_SELF_INVALID")
     if self_binding.get("bytes") != len(raw):
         raise ManifestError("MANIFEST_SELF_SIZE_MISMATCH")
     expected_self = canonical_self_sha256(raw)
     if self_binding.get("canonicalGitBlobSha256") != expected_self:
         raise ManifestError("MANIFEST_SELF_MISMATCH")
-    print(f"MANIFEST_PASS subjects={len(subjects)} self=PASS treeish={treeish}")
+    return len(subjects)
+
+
+def check(treeish: str) -> int:
+    r26_raw = _frozen_manifest_bytes(treeish, R26_MANIFEST, FROZEN_CANDIDATE)
+    r26 = _parse_manifest(r26_raw, "fleet-universal-provider-control-candidate-manifest/v2")
+    verify_reconciliation(r26, FROZEN_CANDIDATE)
+    r26_subjects = _verify_subjects_and_self(
+        r26, r26_raw, manifest_path=R26_MANIFEST, candidate=FROZEN_CANDIDATE
+    )
+
+    r29_raw = _frozen_manifest_bytes(treeish, R29_MANIFEST, FROZEN_R29)
+    r29 = _parse_manifest(r29_raw, "fleet-universal-provider-control-candidate-manifest/v3")
+    verify_r29(r29, FROZEN_R29)
+    r29_subjects = _verify_subjects_and_self(
+        r29, r29_raw, manifest_path=R29_MANIFEST, candidate=FROZEN_R29
+    )
+    print(
+        f"MANIFEST_PASS r26_subjects={r26_subjects} r29_subjects={r29_subjects} "
+        f"self=PASS candidates={FROZEN_CANDIDATE},{FROZEN_R29} checked={treeish}"
+    )
     return 0
 
 
