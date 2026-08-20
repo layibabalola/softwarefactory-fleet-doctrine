@@ -157,3 +157,20 @@ substituted source cannot become the committed instance. The runtime entry point
 before inspection. R15-R26 history remains on issue #4; R27-R29 incident carrying and any future
 adjudication remain on issue #3. `RULINGS.md`, providers, tasks, gates, credentials, runtime installation,
 and the ratified governor remain untouched and CLOSED.
+
+## R33 canonical integration carrier (candidate, zero authority)
+
+R33 preserves the complete R27/R28/R29 incident-carrier ancestry and additively merges canonical
+R31/R32 at exact ordered-parent merge `55afee85ecf720eb857cea1980f511f331b9e86f`. Its first parent is
+R29 `fc76bf6d5ab52891d06b7f71eb2e993e413c124c`; its second parent is canonical master
+`1f96975233bfa794dd039610c072bf67aa1d20ff`. No ancestor is rewritten.
+
+The manifest checker keeps three literal trust layers separate: the immutable R26 candidate at
+`e70a044f31dd2f43ab7c716d63a4eb89318c61b6`, the immutable exact R29 carrier at `fc76bf6`, and the
+current R33 seven-file instance bound to the integration merge. Generic schema cardinality remains
+1-64 and provider identity remains parameterized. Only the exact R33 instance pins Cloudvore's seven
+subjects and Anthropic `claude-fable-5` with max effort, standard service, first-party transport, and
+64,000 native output tokens. The runtime reads no caller input before returning `REFUSE`, zero credit,
+and zero authority. R15-R26 history remains coordinated on issue #4; R27-R33 carrying and later
+adjudication remain coordinated on issue #3. No provider, process, task, gate, credential, runtime,
+ratification, merge, or adoption authority is created.

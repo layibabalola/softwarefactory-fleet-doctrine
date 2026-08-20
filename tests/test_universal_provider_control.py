@@ -5157,7 +5157,7 @@ class UniversalProviderControlTests(unittest.TestCase):
     def test_r26_03_manifest_verifies_frozen_candidate_across_later_doctrine(self) -> None:
         import check_universal_manifest as checker
 
-        self.assertEqual(checker.check("HEAD"), 0)
+        self.assertEqual(checker.check(":"), 0)
 
     def test_r26_04_manifest_requires_frozen_candidate_ancestry(self) -> None:
         import check_universal_manifest as checker
@@ -5713,6 +5713,91 @@ class ReviewResourceAdmissionR29Tests(unittest.TestCase):
         claimed["validation"]["universalProviderControl"]["claimedGreen"] = True
         with self.assertRaisesRegex(checker.ManifestError, "R29_VALIDATION_AUTHORITY_INVALID"):
             checker.verify_r29(claimed, ":", verify_objects=False)
+
+    def test_r33_01_integration_merge_and_exact_policy_are_literal(self) -> None:
+        import check_universal_manifest as checker
+
+        manifest = json.loads((ROOT / checker.R33_MANIFEST).read_text(encoding="utf-8"))
+        checker.verify_r33(manifest, ":")
+        self.assertEqual(checker._commit_tuple(checker.R33_BASE["commit"]), (
+            checker.R33_BASE["tree"], checker.R33_BASE["orderedParents"]
+        ))
+        self.assertEqual(
+            [checker._commit_tuple(parent)[0] for parent in checker.R33_BASE["orderedParents"]],
+            checker.R33_BASE["orderedParentTrees"],
+        )
+        self.assertEqual(manifest["reviewAdmissionPolicyDigest"], checker.R29_POLICY_DIGEST)
+        identity = manifest["reviewAdmissionPolicy"]["identity"]
+        self.assertEqual(
+            (identity["provider"], identity["model"], identity["effort"],
+             identity["serviceTier"], identity["transport"], identity["nativeMaxOutputTokens"]),
+            ("anthropic", "claude-fable-5", "max", "standard", "firstParty", 64000),
+        )
+
+    def test_r33_02_current_manifest_rejects_base_policy_and_carrier_substitution(self) -> None:
+        import check_universal_manifest as checker
+
+        manifest = json.loads((ROOT / checker.R33_MANIFEST).read_text(encoding="utf-8"))
+        mutations = []
+        base = copy.deepcopy(manifest)
+        base["candidateBase"]["orderedParents"].reverse()
+        mutations.append((base, "R33_BASE_INVALID"))
+        policy = copy.deepcopy(manifest)
+        policy["reviewAdmissionPolicy"]["identity"]["model"] = "substitute"
+        policy["reviewAdmissionPolicyDigest"] = checker.canonical_policy_sha256(
+            policy["reviewAdmissionPolicy"]
+        )
+        mutations.append((policy, "R33_EXACT_PROFILE_MISMATCH"))
+        for operation in ("omit", "extra", "reorder", "substitute"):
+            changed = copy.deepcopy(manifest)
+            if operation == "omit":
+                changed["subjectFiles"].pop()
+            elif operation == "extra":
+                changed["subjectFiles"].append(copy.deepcopy(changed["subjectFiles"][-1]))
+                changed["subjectFiles"][-1]["path"] = "foreign"
+            elif operation == "reorder":
+                changed["subjectFiles"][0], changed["subjectFiles"][1] = (
+                    changed["subjectFiles"][1], changed["subjectFiles"][0]
+                )
+            else:
+                changed["subjectFiles"][0]["path"] = "README-substitute.md"
+            mutations.append((changed, "R33_CARRIER_SUBJECT_MISMATCH"))
+        for changed, reason in mutations:
+            with self.subTest(reason=reason):
+                with self.assertRaisesRegex(checker.ManifestError, reason):
+                    checker.verify_r33(changed, ":")
+
+    def test_r33_03_current_manifest_requires_integration_base_ancestry(self) -> None:
+        import check_universal_manifest as checker
+
+        manifest = json.loads((ROOT / checker.R33_MANIFEST).read_text(encoding="utf-8"))
+        with mock.patch.object(checker, "_is_ancestor", return_value=False):
+            with self.assertRaisesRegex(checker.ManifestError, "R33_BASE_NOT_ANCESTOR"):
+                checker.verify_r33(manifest, ":")
+
+    def test_r33_04_frozen_r29_manifest_rejects_drift_and_source_substitution(self) -> None:
+        import check_universal_manifest as checker
+
+        frozen = (ROOT / checker.R29_MANIFEST).read_bytes()
+        substituted = json.loads(frozen)
+        substituted["reviewAdmissionPolicy"]["source"]["subjectFiles"][0]["path"] = "substitute"
+        substituted["reviewAdmissionPolicyDigest"] = checker.canonical_policy_sha256(
+            substituted["reviewAdmissionPolicy"]
+        )
+        substituted_raw = json.dumps(substituted, separators=(",", ":")).encode("utf-8")
+        with (
+            mock.patch.object(checker, "_is_ancestor", return_value=True),
+            mock.patch.object(checker, "_git", side_effect=[frozen, substituted_raw]),
+        ):
+            with self.assertRaisesRegex(checker.ManifestError, "MANIFEST_FROZEN_BLOB_MISMATCH"):
+                checker._frozen_manifest_bytes(
+                    "HEAD", checker.R29_MANIFEST, checker.FROZEN_R29
+                )
+
+    def test_r33_05_checker_validates_all_three_literal_trust_layers(self) -> None:
+        import check_universal_manifest as checker
+
+        self.assertEqual(checker.check(":"), 0)
 
 
 if __name__ == "__main__":

@@ -1,4 +1,4 @@
-# Universal provider-control reconciliation R29
+# Universal provider-control reconciliation R33
 
 Status: **CANDIDATE / ZERO AUTHORITY / NO DEPLOYMENT**
 
@@ -730,3 +730,33 @@ adoption authority and does not modify `RULINGS.md` or the ratified governor. R1
 coordinated on issue #4; R27-R29 incident carrying and any later adjudication remain coordinated on issue
 #3. Stranger review, hosted checks, ruling, canonical merge, installation, project adoption, and provider
 execution are later distinct acts from which the author remains recused.
+
+## R33 history-preserving canonical integration
+
+R33 preserves R27/R28/R29 as immutable incident-carrier history and merges canonical R31/R32 through
+ordered-parent merge `55afee85ecf720eb857cea1980f511f331b9e86f`. The merge has first parent R29
+`fc76bf6d5ab52891d06b7f71eb2e993e413c124c` and second parent canonical master
+`1f96975233bfa794dd039610c072bf67aa1d20ff`; neither line is rebased, squashed, or rewritten.
+
+Three literal, non-caller-selectable trust layers are mandatory. The checker always verifies the
+frozen R26 manifest at `e70a044f31dd2f43ab7c716d63a4eb89318c61b6`, including its reconciliation,
+98 subjects, exact descendant manifest blob, and self digest. It separately verifies the frozen R29
+manifest at `fc76bf6`, including its unchanged blob, exact external source, selected quality profile,
+seven subjects, policy digest, and self digest. Finally it verifies the current R33 manifest against
+the exact integration-merge object and the current seven subject blobs. No API accepts a caller-selected
+manifest path, candidate commit, policy digest, or trust root as authority.
+
+The universal schema remains provider-neutral and accepts a bounded nonempty 1-64 ordered source list.
+Executable validation continues to require sequential zero-based ordinals, unique paths, and an
+all-and-only packet bijection. Only the exact R33 policy instance pins the Cloudvore source at commit
+`46674bf7ba004dd6c4cac69d5a26369ab11106c4`, its seven ordered subjects, Anthropic
+`claude-fable-5`, max effort, standard service tier, first-party transport, the exact independent-review
+role and question, and 64,000 native output tokens. No model, effort, role, output, or functional
+downgrade is permitted without separately accepted non-inferiority evidence.
+
+The production trust root and broker-owned runtime handles remain uninstalled. The public evaluator
+therefore returns `REFUSE`, `REVIEW_RUNTIME_NOT_INSTALLED`, zero credit, and zero authority before
+reading any caller input. Validators and fixtures remain `CONFORMANCE_ONLY_ZERO_AUTHORITY`; they do
+not constitute runtime admission. R15-R26 history remains coordinated on issue #4; R27-R33 incident
+carrying and any later adjudication remain coordinated on issue #3. R33 changes no provider, process,
+credential, task, gate, runtime, ratified governor, `RULINGS.md`, merge state, or project adoption state.

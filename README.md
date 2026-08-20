@@ -80,8 +80,11 @@ the human store-and-forward bus.
   `CONFORMANCE_ONLY_ZERO_AUTHORITY`. R29 preserves R28 as adverse history and repairs the remaining
   universal-schema defect: generic policies accept a bounded nonempty 1-64 ordered subject list, while
   executable validation enforces sequential ordinals, unique paths, and all-and-only packet binding. The
-  exact R29 instance still pins only Cloudvore's seven rows and selected profile. R15-R26 history coordinates on
-  [issue #4](https://github.com/layibabalola/softwarefactory-fleet-doctrine/issues/4); R27-R29 incident
+  exact R29 instance still pins only Cloudvore's seven rows and selected profile. R33 preserves R27-R29
+  and merges canonical R31/R32 without rewriting either history. Its checker verifies the immutable R26
+  snapshot, the exact frozen R29 carrier, and the current R33 seven-file instance as three distinct trust
+  layers; the runtime remains input-blind `REFUSE` with zero authority. R15-R26 history coordinates on
+  [issue #4](https://github.com/layibabalola/softwarefactory-fleet-doctrine/issues/4); R27-R33 incident
   carrying and adjudication coordinate on
   [issue #3](https://github.com/layibabalola/softwarefactory-fleet-doctrine/issues/3). Neither candidate
   changes the ratified governor or `RULINGS.md`, grants adoption credit, or provides launch authority.
