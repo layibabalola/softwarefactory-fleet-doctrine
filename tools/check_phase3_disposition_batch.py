@@ -74,6 +74,10 @@ EXPECTED_PROJECT_CANDIDATE_SHA256 = {
     "mlv-app": "55544254f982890efa8b2e309b0eeb2be09f85d7f09f7da86083ba2856cbf9ba",
     "salesforce-tools": "b2278e858cf70c0a6eecca6d7842709e9cc6fe4598fa13af6bf64929c05b0f6f",
 }
+MANIFEST_BINDING_REPAIR_PATHS = {
+    "manifests/universal-provider-control-reconciliation-r26.json",
+    "tests/test_universal_manifest_spec_bindings.py",
+}
 ALLOWED_PHASE3_PATHS = {
     ".github/workflows/disposition-intake.yml",
     "adoption/README.md",
@@ -90,7 +94,7 @@ ALLOWED_PHASE3_PATHS = {
     "tools/check_phase2_disposition_batch.py",
     "tools/check_phase3_disposition_batch.py",
     "tools/check_phase5_stale_reconciliation.py",
-}
+} | MANIFEST_BINDING_REPAIR_PATHS
 SHA_PATTERN = re.compile(r"[0-9a-f]{40,64}")
 FORMAL_ADOPT_PATTERN = re.compile(r"\bADOPT\s*\(", re.IGNORECASE)
 REMOTE_FETCH_DEPTH = 64

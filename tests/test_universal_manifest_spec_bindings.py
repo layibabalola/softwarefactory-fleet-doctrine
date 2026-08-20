@@ -16,6 +16,9 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "tools"))
 
 import check_universal_manifest as checker  # noqa: E402
+import check_phase2_disposition_batch as phase2  # noqa: E402
+import check_phase3_disposition_batch as phase3  # noqa: E402
+import check_phase5_stale_reconciliation as phase5  # noqa: E402
 
 
 REPAIRED_SPEC_PATHS = (
@@ -126,6 +129,28 @@ class UniversalManifestSpecBindingTests(unittest.TestCase):
         ):
             expected = field == "activationRequiresSeparateAdjudication"
             self.assertIs(self.manifest["authority"][field], expected)
+
+    def test_prior_phase_scopes_allow_only_the_mechanical_forward_paths(self) -> None:
+        repair_paths = {
+            checker.MANIFEST,
+            "tests/test_universal_manifest_spec_bindings.py",
+        }
+        allowed_sets = (
+            (2, phase2.MANIFEST_BINDING_REPAIR_PATHS, phase2.ALLOWED_PHASE2_PATHS),
+            (3, phase3.MANIFEST_BINDING_REPAIR_PATHS, phase3.ALLOWED_PHASE3_PATHS),
+            (5, phase5.MANIFEST_BINDING_REPAIR_PATHS, phase5.ALLOWED_PHASE5_PATHS),
+        )
+        hostile_paths = (
+            "specs/adobe-ingester.md",
+            "src/runtime.py",
+            "tools/check_universal_manifest.py",
+        )
+        for phase, declared_repair_paths, allowed in allowed_sets:
+            with self.subTest(phase=phase):
+                self.assertEqual(repair_paths, declared_repair_paths)
+                self.assertLessEqual(repair_paths, allowed)
+                for hostile in hostile_paths:
+                    self.assertFalse((repair_paths | {hostile}).issubset(allowed))
 
 
 if __name__ == "__main__":
