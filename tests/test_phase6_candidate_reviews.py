@@ -1,6 +1,9 @@
 import copy
 import importlib.util
+import os
 from pathlib import Path
+import subprocess
+import tempfile
 import unittest
 from unittest import mock
 
@@ -23,6 +26,50 @@ class Phase6CandidateReviewTests(unittest.TestCase):
 
     def _review(self, batch, project_id):
         return next(review for review in batch["reviews"] if review["projectId"] == project_id)
+
+    @staticmethod
+    def _fixture_git(root, *args):
+        environment = os.environ.copy()
+        for key in tuple(environment):
+            if key in {
+                "GIT_DIR", "GIT_WORK_TREE", "GIT_COMMON_DIR", "GIT_OBJECT_DIRECTORY",
+                "GIT_ALTERNATE_OBJECT_DIRECTORIES", "GIT_REPLACE_REF_BASE", "GIT_INDEX_FILE",
+                "GIT_NAMESPACE", "GIT_CEILING_DIRECTORIES", "GIT_EXEC_PATH",
+            } or key.startswith("GIT_CONFIG"):
+                environment.pop(key, None)
+        run = subprocess.run(
+            ["git", "-c", "user.name=Phase6 Test", "-c", "user.email=phase6@example.invalid", *args],
+            cwd=root,
+            env=environment,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            check=False,
+        )
+        if run.returncode != 0:
+            raise AssertionError(f"fixture git {' '.join(args)} failed: {run.stderr}")
+        return run.stdout.strip()
+
+    def _local_identity_fixture(self, parent, name, branch="reviewed/subject"):
+        root = Path(parent) / name
+        root.mkdir()
+        self._fixture_git(root, "init", f"--initial-branch={branch}")
+        self._fixture_git(root, "config", "core.autocrlf", "false")
+        (root / "subject.txt").write_text("reviewed subject\n", encoding="utf-8", newline="\n")
+        self._fixture_git(root, "add", "--", "subject.txt")
+        self._fixture_git(root, "commit", "-m", "reviewed subject")
+        commit = self._fixture_git(root, "rev-parse", "HEAD")
+        remote = f"https://example.invalid/{name}.git"
+        self._fixture_git(root, "remote", "add", "origin", remote)
+        subject = {
+            "commit": commit,
+            "headMode": "SYMBOLIC_BRANCH",
+            "localBranch": branch,
+            "remote": remote,
+            "remoteTrackingRefContainsSubject": False,
+            "networkRemoteVerified": False,
+        }
+        return root, subject
 
     def test_published_candidate_passes(self):
         MODULE.verify_batch(self._copy(), "HEAD")
@@ -176,37 +223,142 @@ class Phase6CandidateReviewTests(unittest.TestCase):
         with self.assertRaisesRegex(MODULE.Phase6Error, "CAPTURE_BINDING_INVALID"):
             MODULE.verify_batch(batch, "HEAD")
 
+    def test_capture_false_cannot_alias_integer_zero(self):
+        batch = self._copy()
+        batch["capture"]["networkInspectionPerformed"] = 0
+        with self.assertRaisesRegex(MODULE.Phase6Error, "CAPTURE_BINDING_INVALID"):
+            MODULE.verify_batch(batch, "HEAD")
+
+    def test_summary_zero_cannot_alias_boolean_false(self):
+        batch = self._copy()
+        batch["summary"]["adoptionClaims"] = False
+        with self.assertRaisesRegex(MODULE.Phase6Error, "SUMMARY_INVALID"):
+            MODULE.verify_batch(batch, "HEAD")
+
+    def test_semantic_false_cannot_alias_integer_zero(self):
+        batch = self._copy()
+        self._review(batch, "salesforce-tools")["semanticFindings"][
+            "missingAdoptionProofSetComplete"
+        ] = 0
+        with self.assertRaisesRegex(MODULE.Phase6Error, "SEMANTIC_FINDING_INVALID"):
+            MODULE.verify_batch(batch, "HEAD")
+
+    def test_semantic_true_cannot_alias_integer_one(self):
+        batch = self._copy()
+        self._review(batch, "salesforce-tools")["semanticFindings"][
+            "unobservedLaunchPathsMayExist"
+        ] = 1
+        with self.assertRaisesRegex(MODULE.Phase6Error, "SEMANTIC_FINDING_INVALID"):
+            MODULE.verify_batch(batch, "HEAD")
+
+    def test_execution_zero_cannot_alias_boolean_false(self):
+        batch = self._copy()
+        self._review(batch, "salesforce-tools")["executionEvidence"][0]["exitCode"] = False
+        with self.assertRaisesRegex(MODULE.Phase6Error, "EXECUTION_EVIDENCE_INVALID"):
+            MODULE.verify_batch(batch, "HEAD")
+
+    def test_treatment_false_cannot_alias_integer_zero(self):
+        batch = self._copy()
+        self._review(batch, "salesforce-tools")["dispositionTreatment"]["adoptionCredit"] = 0
+        with self.assertRaisesRegex(MODULE.Phase6Error, "DISPOSITION_TREATMENT_INVALID"):
+            MODULE.verify_batch(batch, "HEAD")
+
+    def test_coordinated_scalar_aliases_still_fail_closed(self):
+        batch = self._copy()
+        batch["capture"]["networkInspectionPerformed"] = 0
+        batch["summary"]["adoptionClaims"] = False
+        batch["summary"]["canonicalLedgerCounts"]["MISSING"] = False
+        salesforce = self._review(batch, "salesforce-tools")
+        salesforce["semanticFindings"]["missingAdoptionProofSetComplete"] = 0
+        salesforce["semanticFindings"]["unobservedLaunchPathsMayExist"] = 1
+        salesforce["executionEvidence"][0]["exitCode"] = False
+        salesforce["dispositionTreatment"]["adoptionCredit"] = 0
+        with self.assertRaisesRegex(MODULE.Phase6Error, "CAPTURE_BINDING_INVALID"):
+            MODULE.verify_batch(batch, "HEAD")
+
     def test_local_identity_rederives_branch_origin_cleanliness_and_remote_refs(self):
         subject = copy.deepcopy(MODULE.EXPECTED["salesforce-tools"]["subject"])
+        full_branch = f"refs/heads/{subject['localBranch']}"
 
         def outputs(overrides=None):
             values = {
-                "symbolic-ref": subject["localBranch"] + "\n",
-                "remote": subject["remote"] + "\n",
-                "status": "",
-                "for-each-ref": "",
+                ("rev-parse", "--show-toplevel"): str(ROOT.resolve()) + "\n",
+                ("rev-parse", "--is-inside-work-tree"): "true\n",
+                ("symbolic-ref", "--quiet", "HEAD"): full_branch + "\n",
+                ("rev-parse", "--verify", "HEAD^{commit}"): subject["commit"] + "\n",
+                ("rev-parse", "--verify", f"{full_branch}^{{commit}}"): subject["commit"] + "\n",
+                ("remote", "get-url", "--all", "origin"): subject["remote"] + "\n",
+                ("remote", "get-url", "--push", "--all", "origin"): subject["remote"] + "\n",
+                ("status", "--porcelain=v1", "--untracked-files=all"): "",
+                (
+                    "for-each-ref",
+                    f"--contains={subject['commit']}",
+                    "--format=%(refname)",
+                    "refs/remotes",
+                ): "",
             }
             values.update(overrides or {})
 
             def fake_git(root, *args, text=False):
                 del root, text
-                return values[args[0]]
+                return values[args]
 
             return fake_git
 
         with mock.patch.object(MODULE, "_git", side_effect=outputs()) as git_call:
             MODULE._verify_local_identity(ROOT, "salesforce-tools", subject)
             self.assertEqual(
-                [call.args[1] for call in git_call.call_args_list],
-                ["symbolic-ref", "remote", "status", "for-each-ref"],
+                [call.args[1:] for call in git_call.call_args_list],
+                [
+                    ("rev-parse", "--show-toplevel"),
+                    ("rev-parse", "--is-inside-work-tree"),
+                    ("symbolic-ref", "--quiet", "HEAD"),
+                    ("rev-parse", "--verify", "HEAD^{commit}"),
+                    ("rev-parse", "--verify", f"{full_branch}^{{commit}}"),
+                    ("remote", "get-url", "--all", "origin"),
+                    ("remote", "get-url", "--push", "--all", "origin"),
+                    ("status", "--porcelain=v1", "--untracked-files=all"),
+                    (
+                        "for-each-ref",
+                        f"--contains={subject['commit']}",
+                        "--format=%(refname)",
+                        "refs/remotes",
+                    ),
+                ],
             )
 
         failures = (
-            ({"symbolic-ref": "substituted/branch\n"}, "LOCAL_BRANCH_MISMATCH"),
-            ({"remote": "https://attacker.invalid/repo.git\n"}, "LOCAL_ORIGIN_MISMATCH"),
-            ({"status": "?? unexpected.txt\n"}, "LOCAL_WORKTREE_NOT_CLEAN"),
             (
-                {"for-each-ref": "refs/remotes/origin/published\n"},
+                {("symbolic-ref", "--quiet", "HEAD"): "refs/heads/substituted/branch\n"},
+                "LOCAL_BRANCH_MISMATCH",
+            ),
+            (
+                {("rev-parse", "--verify", "HEAD^{commit}"): "0" * 40 + "\n"},
+                "LOCAL_HEAD_MISMATCH",
+            ),
+            (
+                {
+                    ("rev-parse", "--verify", f"{full_branch}^{{commit}}"): "1" * 40 + "\n"
+                },
+                "LOCAL_BRANCH_TIP_MISMATCH",
+            ),
+            (
+                {("remote", "get-url", "--all", "origin"): "https://attacker.invalid/repo.git\n"},
+                "LOCAL_ORIGIN_MISMATCH",
+            ),
+            (
+                {("status", "--porcelain=v1", "--untracked-files=all"): "?? unexpected.txt\n"},
+                "LOCAL_WORKTREE_NOT_CLEAN",
+            ),
+            (
+                {
+                    (
+                        "for-each-ref",
+                        f"--contains={subject['commit']}",
+                        "--format=%(refname)",
+                        "refs/remotes",
+                    ): "refs/remotes/origin/published\n"
+                },
                 "LOCAL_REMOTE_TRACKING_CONTAINMENT_MISMATCH",
             ),
         )
@@ -222,6 +374,29 @@ class Phase6CandidateReviewTests(unittest.TestCase):
         with mock.patch.object(MODULE, "_git", side_effect=outputs()):
             with self.assertRaisesRegex(MODULE.Phase6Error, "NETWORK_REMOTE_VERIFICATION_OVERCLAIM"):
                 MODULE._verify_local_identity(ROOT, "salesforce-tools", overclaim)
+
+    def test_local_identity_rejects_same_named_branch_moved_past_subject(self):
+        with tempfile.TemporaryDirectory(prefix="phase6-branch-move-") as temp:
+            root, subject = self._local_identity_fixture(temp, "branch-moved")
+            (root / "subject.txt").write_text("moved branch\n", encoding="utf-8", newline="\n")
+            self._fixture_git(root, "add", "--", "subject.txt")
+            self._fixture_git(root, "commit", "-m", "move branch")
+            with self.assertRaisesRegex(MODULE.Phase6Error, "LOCAL_HEAD_MISMATCH"):
+                MODULE._verify_local_identity(root, "salesforce-tools", subject)
+
+    def test_local_identity_ignores_git_dir_redirection(self):
+        with tempfile.TemporaryDirectory(prefix="phase6-git-dir-") as temp:
+            expected_root, subject = self._local_identity_fixture(temp, "expected")
+            attacker_root, _ = self._local_identity_fixture(temp, "attacker", "attacker/branch")
+            with mock.patch.dict(os.environ, {"GIT_DIR": str(attacker_root / ".git")}):
+                MODULE._verify_local_identity(expected_root, "salesforce-tools", subject)
+
+    def test_local_identity_ignores_git_work_tree_redirection(self):
+        with tempfile.TemporaryDirectory(prefix="phase6-git-work-tree-") as temp:
+            expected_root, subject = self._local_identity_fixture(temp, "expected")
+            attacker_root, _ = self._local_identity_fixture(temp, "attacker", "attacker/branch")
+            with mock.patch.dict(os.environ, {"GIT_WORK_TREE": str(attacker_root)}):
+                MODULE._verify_local_identity(expected_root, "salesforce-tools", subject)
 
     def test_scope_rejects_ledger_or_spec_mutation(self):
         ledger_raw = MODULE._blob(ROOT, "HEAD", MODULE.LEDGER_PATH)

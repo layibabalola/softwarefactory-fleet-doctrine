@@ -49,6 +49,7 @@
       "reviewScope": "ZERO_AUTHORITY_EVIDENCE_CORRECTNESS_ONLY_NOT_ADOPTION_OR_INSTALLATION",
       "subject": {
         "remote": "https://github.com/layibabalola/SalesforceSupportTools.git",
+        "headMode": "SYMBOLIC_BRANCH",
         "localBranch": "codex/salesforce-adoption-gap-37a2070-20260819",
         "commit": "d8542ccfb9dde81dcdd57bf55c7959c3b0d521c4",
         "tree": "4ec6a0433d622f9658789a75403030f8251926b8",
@@ -149,6 +150,7 @@
       "reviewScope": "ZERO_AUTHORITY_BLOCKER_EVIDENCE_ONLY_NOT_A_PROJECT_DISPOSITION",
       "subject": {
         "remote": "https://github.com/layibabalola/Cloudvore.git",
+        "headMode": "SYMBOLIC_BRANCH",
         "localBranch": "codex/r28-install-census-candidate-20260819",
         "commit": "54a7a45c4b223a0d8647bfc61c732dc5325f8d30",
         "tree": "c25cea7b2333be786c8ea693f739ae12b25c19c5",

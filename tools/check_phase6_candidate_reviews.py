@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 from pathlib import Path
 import subprocess
 import sys
@@ -14,9 +15,9 @@ from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
 BATCH_PATH = "adoption/phase6/r26-local-candidate-review-receipts.json"
-BATCH_BLOB = "c3f9c84cc39928801ca517cba8b8506c28c4ea20"
-BATCH_BYTES = 11096
-BATCH_SHA256 = "68dfb623e7ee8b8624a568c8a79cd08b5504e840fcb53252c7a2884597439a0d"
+BATCH_BLOB = "c10b1b7530e0d9695118a02dd21842e4fc1493e0"
+BATCH_BYTES = 11174
+BATCH_SHA256 = "16b1b3c033d2909d3fa0b3d10b845673dca8183607555525f04e9f52ab029623"
 LEDGER_PATH = "adoption/universal-token-control-r26.json"
 SCHEMA = "fleet-r26-local-candidate-review-batch/v1"
 BASE_COMMIT = "e4e7f9363185a5e10bb3a92167c785ef29caf2b7"
@@ -70,6 +71,7 @@ EXPECTED = {
         "reviewScope": "ZERO_AUTHORITY_EVIDENCE_CORRECTNESS_ONLY_NOT_ADOPTION_OR_INSTALLATION",
         "subject": {
             "remote": "https://github.com/layibabalola/SalesforceSupportTools.git",
+            "headMode": "SYMBOLIC_BRANCH",
             "localBranch": "codex/salesforce-adoption-gap-37a2070-20260819",
             "commit": "d8542ccfb9dde81dcdd57bf55c7959c3b0d521c4",
             "tree": "4ec6a0433d622f9658789a75403030f8251926b8",
@@ -168,6 +170,7 @@ EXPECTED = {
         "reviewScope": "ZERO_AUTHORITY_BLOCKER_EVIDENCE_ONLY_NOT_A_PROJECT_DISPOSITION",
         "subject": {
             "remote": "https://github.com/layibabalola/Cloudvore.git",
+            "headMode": "SYMBOLIC_BRANCH",
             "localBranch": "codex/r28-install-census-candidate-20260819",
             "commit": "54a7a45c4b223a0d8647bfc61c732dc5325f8d30",
             "tree": "c25cea7b2333be786c8ea693f739ae12b25c19c5",
@@ -279,12 +282,73 @@ def load_json(raw: bytes) -> dict[str, Any]:
     return value
 
 
+def _type_exact_equal(actual: Any, expected: Any) -> bool:
+    """Compare JSON-compatible values without Python's bool/int aliasing."""
+
+    if type(actual) is not type(expected):
+        return False
+    if isinstance(expected, dict):
+        return set(actual) == set(expected) and all(
+            _type_exact_equal(actual[key], expected[key]) for key in expected
+        )
+    if isinstance(expected, list):
+        return len(actual) == len(expected) and all(
+            _type_exact_equal(actual_item, expected_item)
+            for actual_item, expected_item in zip(actual, expected, strict=True)
+        )
+    return actual == expected
+
+
+def _git_environment() -> dict[str, str]:
+    """Return a noninteractive Git environment that cannot redirect the inspected repository."""
+
+    environment = os.environ.copy()
+    redirected = {
+        "GIT_DIR",
+        "GIT_WORK_TREE",
+        "GIT_COMMON_DIR",
+        "GIT_OBJECT_DIRECTORY",
+        "GIT_ALTERNATE_OBJECT_DIRECTORIES",
+        "GIT_REPLACE_REF_BASE",
+        "GIT_INDEX_FILE",
+        "GIT_NAMESPACE",
+        "GIT_CEILING_DIRECTORIES",
+        "GIT_EXEC_PATH",
+    }
+    for key in tuple(environment):
+        if key in redirected or key.startswith("GIT_CONFIG"):
+            environment.pop(key, None)
+    environment["GIT_NO_REPLACE_OBJECTS"] = "1"
+    environment["GIT_CONFIG_NOSYSTEM"] = "1"
+    environment["GIT_CONFIG_GLOBAL"] = os.devnull
+    environment["GIT_TERMINAL_PROMPT"] = "0"
+    environment["GCM_INTERACTIVE"] = "Never"
+    return environment
+
+
 def _git(root: Path, *args: str, text: bool = False) -> bytes | str:
-    run = subprocess.run(
-        ["git", "-c", "safe.directory=*", "--no-replace-objects", *args],
-        cwd=root, capture_output=True, check=False, text=text,
-        encoding="utf-8" if text else None,
-    )
+    try:
+        resolved_root = root.resolve(strict=True)
+        if not resolved_root.is_dir():
+            raise OSError("not a directory")
+        run = subprocess.run(
+            [
+                "git",
+                "--no-replace-objects",
+                "-c",
+                f"safe.directory={resolved_root.as_posix()}",
+                *args,
+            ],
+            cwd=resolved_root,
+            env=_git_environment(),
+            capture_output=True,
+            check=False,
+            text=text,
+            encoding="utf-8" if text else None,
+            timeout=30,
+        )
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        raise Phase6Error("GIT_COMMAND_FAILED") from exc
     if run.returncode != 0:
         raise Phase6Error("GIT_COMMAND_FAILED")
     return run.stdout
@@ -353,7 +417,7 @@ def _verify_base(batch: dict[str, Any], treeish: str) -> None:
         "r26Candidate": R26_CANDIDATE,
         "r26Merge": R26_MERGE,
     }
-    if batch["frozenBase"] != expected:
+    if not _type_exact_equal(batch["frozenBase"], expected):
         raise Phase6Error("FROZEN_BASE_MISMATCH")
     if _tuple(ROOT, BASE_COMMIT) != (BASE_TREE, [BASE_PARENT]):
         raise Phase6Error("BASE_OBJECT_MISMATCH")
@@ -388,17 +452,17 @@ def _verify_review(review: Any) -> None:
         raise Phase6Error("VERDICT_INVALID")
     if review["reviewScope"] != expected["reviewScope"]:
         raise Phase6Error("REVIEW_SCOPE_INVALID")
-    if review["subject"] != expected["subject"]:
+    if not _type_exact_equal(review["subject"], expected["subject"]):
         raise Phase6Error("SUBJECT_BINDING_INVALID")
-    if review["artifacts"] != expected["artifacts"]:
+    if not _type_exact_equal(review["artifacts"], expected["artifacts"]):
         raise Phase6Error("ARTIFACT_BINDING_INVALID")
-    if review["semanticFindings"] != expected["semanticFindings"]:
+    if not _type_exact_equal(review["semanticFindings"], expected["semanticFindings"]):
         raise Phase6Error("SEMANTIC_FINDING_INVALID")
-    if review["executionEvidence"] != expected["executionEvidence"]:
+    if not _type_exact_equal(review["executionEvidence"], expected["executionEvidence"]):
         raise Phase6Error("EXECUTION_EVIDENCE_INVALID")
-    if review["dispositionTreatment"] != expected["dispositionTreatment"]:
+    if not _type_exact_equal(review["dispositionTreatment"], expected["dispositionTreatment"]):
         raise Phase6Error("DISPOSITION_TREATMENT_INVALID")
-    if review["nextLawfulActions"] != expected["nextLawfulActions"]:
+    if not _type_exact_equal(review["nextLawfulActions"], expected["nextLawfulActions"]):
         raise Phase6Error("NEXT_ACTIONS_INVALID")
     _exact_authority(review["authority"])
 
@@ -409,7 +473,7 @@ def verify_batch(batch: dict[str, Any], treeish: str = "HEAD") -> None:
     if batch["schema"] != SCHEMA or batch["status"] != "TWO_READ_ONLY_ACCEPTS_ZERO_AUTHORITY":
         raise Phase6Error("ROOT_IDENTITY_INVALID")
     _verify_base(batch, treeish)
-    if batch["capture"] != EXPECTED_CAPTURE:
+    if not _type_exact_equal(batch["capture"], EXPECTED_CAPTURE):
         raise Phase6Error("CAPTURE_BINDING_INVALID")
     expected_summary = {
         "reviewCount": 2,
@@ -422,10 +486,10 @@ def verify_batch(batch: dict[str, Any], treeish: str = "HEAD") -> None:
         "runtimeAuthorityClaims": 0,
         "canonicalLedgerCounts": EXPECTED_COUNTS,
     }
-    if batch["summary"] != expected_summary:
+    if not _type_exact_equal(batch["summary"], expected_summary):
         raise Phase6Error("SUMMARY_INVALID")
     ledger = load_json(_blob(ROOT, treeish, LEDGER_PATH))
-    if ledger.get("summary", {}).get("counts") != EXPECTED_COUNTS:
+    if not _type_exact_equal(ledger.get("summary", {}).get("counts"), EXPECTED_COUNTS):
         raise Phase6Error("LEDGER_COUNTS_INVALID")
     reviews = batch["reviews"]
     if (
@@ -440,17 +504,44 @@ def verify_batch(batch: dict[str, Any], treeish: str = "HEAD") -> None:
 
 def _verify_local_identity(root: Path, project_id: str, subject: dict[str, Any]) -> None:
     commit = subject["commit"]
-    if str(_git(root, "symbolic-ref", "--quiet", "--short", "HEAD", text=True)).strip() != subject[
-        "localBranch"
-    ]:
+    try:
+        resolved_root = root.resolve(strict=True)
+    except OSError as exc:
+        raise Phase6Error(f"LOCAL_ROOT_MISMATCH:{project_id}") from exc
+    top_level = Path(
+        str(_git(resolved_root, "rev-parse", "--show-toplevel", text=True)).strip()
+    ).resolve(strict=True)
+    if os.path.normcase(str(top_level)) != os.path.normcase(str(resolved_root)):
+        raise Phase6Error(f"LOCAL_ROOT_MISMATCH:{project_id}")
+    if str(_git(resolved_root, "rev-parse", "--is-inside-work-tree", text=True)).strip() != "true":
+        raise Phase6Error(f"LOCAL_ROOT_MISMATCH:{project_id}")
+    if subject["headMode"] != "SYMBOLIC_BRANCH":
+        raise Phase6Error(f"LOCAL_HEAD_MODE_MISMATCH:{project_id}")
+    branch = subject["localBranch"]
+    full_branch = f"refs/heads/{branch}"
+    if str(_git(resolved_root, "symbolic-ref", "--quiet", "HEAD", text=True)).strip() != full_branch:
         raise Phase6Error(f"LOCAL_BRANCH_MISMATCH:{project_id}")
-    if str(_git(root, "remote", "get-url", "origin", text=True)).strip() != subject["remote"]:
+    if str(
+        _git(resolved_root, "rev-parse", "--verify", "HEAD^{commit}", text=True)
+    ).strip() != commit:
+        raise Phase6Error(f"LOCAL_HEAD_MISMATCH:{project_id}")
+    if str(
+        _git(resolved_root, "rev-parse", "--verify", f"{full_branch}^{{commit}}", text=True)
+    ).strip() != commit:
+        raise Phase6Error(f"LOCAL_BRANCH_TIP_MISMATCH:{project_id}")
+    fetch_urls = str(
+        _git(resolved_root, "remote", "get-url", "--all", "origin", text=True)
+    ).splitlines()
+    push_urls = str(
+        _git(resolved_root, "remote", "get-url", "--push", "--all", "origin", text=True)
+    ).splitlines()
+    if fetch_urls != [subject["remote"]] or push_urls != [subject["remote"]]:
         raise Phase6Error(f"LOCAL_ORIGIN_MISMATCH:{project_id}")
-    if str(_git(root, "status", "--porcelain=v1", "--untracked-files=all", text=True)):
+    if str(_git(resolved_root, "status", "--porcelain=v1", "--untracked-files=all", text=True)):
         raise Phase6Error(f"LOCAL_WORKTREE_NOT_CLEAN:{project_id}")
     remote_refs = str(
         _git(
-            root,
+            resolved_root,
             "for-each-ref",
             f"--contains={commit}",
             "--format=%(refname)",
@@ -458,7 +549,7 @@ def _verify_local_identity(root: Path, project_id: str, subject: dict[str, Any])
             text=True,
         )
     ).splitlines()
-    if bool(remote_refs) is not subject["remoteTrackingRefContainsSubject"]:
+    if subject["remoteTrackingRefContainsSubject"] is not False or remote_refs:
         raise Phase6Error(f"LOCAL_REMOTE_TRACKING_CONTAINMENT_MISMATCH:{project_id}")
     if subject["networkRemoteVerified"] is not False:
         raise Phase6Error(f"NETWORK_REMOTE_VERIFICATION_OVERCLAIM:{project_id}")

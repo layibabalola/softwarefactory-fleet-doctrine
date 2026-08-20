@@ -15,12 +15,17 @@ review engine, command, hostile result, semantic limit, and next lawful action. 
 members are false. The canonical R26 ledger remains byte-identical at `0 ADOPT / 5 DISTINGUISH /
 0 MISSING / 0 REJECT / 4 STALE`.
 
-The receipt itself is frozen as Git blob `c3f9c84cc39928801ca517cba8b8506c28c4ea20`,
-`11,096` bytes, SHA-256
-`68dfb623e7ee8b8624a568c8a79cd08b5504e840fcb53252c7a2884597439a0d`. The checker also
+The receipt itself is frozen as Git blob `c10b1b7530e0d9695118a02dd21842e4fc1493e0`,
+`11,174` bytes, SHA-256
+`16b1b3c033d2909d3fa0b3d10b845673dca8183607555525f04e9f52ab029623`. The checker also
 requires a sole-parent descendant chain from canonical doctrine commit
 `e4e7f9363185a5e10bb3a92167c785ef29caf2b7`; an unrelated tree or merge cannot substitute for
 that history.
+
+All exact-bound JSON values are compared recursively with exact Python types, so JSON booleans and
+integers cannot alias one another. Local inspection removes inherited Git repository/configuration
+redirection, resolves the expected worktree root, and requires symbolic `HEAD`, the declared local
+branch tip, and the reviewed subject commit to be the same exact object.
 
 Run the local fail-closed controls with:
 
@@ -29,8 +34,9 @@ python tools/check_phase6_candidate_reviews.py --treeish HEAD
 python -m unittest discover -s tests -p "test_phase6_candidate_reviews.py" -v
 ```
 
-When the two allowlisted project worktrees are present, rederive their exact Git objects, current
-branch, exact `origin` URL, cleanliness, and local remote-tracking-ref containment with:
+When the two allowlisted project worktrees are present, rederive their exact Git objects, resolved
+worktree root, symbolic `HEAD` and branch tip, sole fetch/push `origin` URL, cleanliness, and absence
+from every local remote-tracking ref with:
 
 ```console
 python tools/check_phase6_candidate_reviews.py --treeish HEAD --verify-local-projects
