@@ -1,0 +1,150 @@
+{
+  "schema": "fleet-r26-owner-publication-request/v1",
+  "requestId": "r26-owner-publication-conjugal-20260820",
+  "projectId": "conjugal",
+  "status": "REQUEST_ONLY_ZERO_AUTHORITY",
+  "frozenDoctrine": {
+    "baseCommit": "e4e7f9363185a5e10bb3a92167c785ef29caf2b7",
+    "baseTree": "5233fa0515fcef7b69e70a007f25e6bb78190c42",
+    "baseParent": "5ac7036705338cfe3370f5fddda224e07d5d1bdd",
+    "r26Candidate": "e70a044f31dd2f43ab7c716d63a4eb89318c61b6",
+    "r26Merge": "909f769d02e8412e51e28e242cfa8d00dadc9a3d",
+    "ledgerPath": "adoption/universal-token-control-r26.json",
+    "ledgerGitBlobOid": "333cc6d47e99a857b64150a87bd9f834590256e1",
+    "ledgerProjectRowCanonicalSha256": "58afb58093e89992115492c8c70beb0b388980ad366dc5e01645b95d6f51aeb4",
+    "ledgerStatus": "STALE",
+    "blockerCode": "PROJECT_REPOSITORY_ABSENT_CURRENT_R26_DISPOSITION_REQUIRED"
+  },
+  "currentEvidence": {
+    "classification": "NO_AUTHORITATIVE_CURRENT_PROJECT_IDENTITY",
+    "auditCapturedAt": "2026-08-20T06:21:30-05:00",
+    "remoteObservedAt": null,
+    "machine": "ULTRA-MAGNUS",
+    "host": "Bachelor",
+    "repositoryRoot": "C:\\code\\Conjugal",
+    "remote": null,
+    "remoteFreshness": "UNPUBLISHED",
+    "observedRefs": [],
+    "historicalObjects": [
+      {
+        "commit": "37f1246543c86300089b77a51a3b8ad2c5292b8d",
+        "evidenceStatus": "DOCTRINE_LINEAGE_ONLY_NOT_CURRENT_PROJECT_HEAD"
+      }
+    ],
+    "caveat": "PUBLISHED_ROOT_IS_ON_BACHELOR_AND_NOT_LOCALLY_ACCESSIBLE_REMOTE_UNPUBLISHED_DOCTRINE_OBJECT_IS_NOT_PROJECT_HEAD_PROOF"
+  },
+  "ownerPublicationContract": {
+    "exactIdentityBinding": {
+      "required": true,
+      "ownerSuppliedFields": [
+        "canonicalRepositoryRoot",
+        "normalizedRemote",
+        "publishedRef",
+        "commit",
+        "tree",
+        "parents",
+        "historicalObjectLineageWitness"
+      ],
+      "freshReadRequired": true,
+      "noInferences": true
+    },
+    "currentDispositionBinding": {
+      "required": true,
+      "allowedValues": [
+        "ADOPT",
+        "DISTINGUISH",
+        "REJECT"
+      ],
+      "ownerSuppliedFields": [
+        "status",
+        "statement",
+        "r26Candidate",
+        "r26Merge",
+        "subjectCommit",
+        "subjectTree",
+        "publishedAt",
+        "ownerIdentity"
+      ],
+      "projectOwnerChosen": true
+    },
+    "artifactManifestBinding": {
+      "required": true,
+      "minimumEntries": 1,
+      "ownerSuppliedFields": [
+        "path",
+        "gitBlobOid",
+        "bytes",
+        "sha256"
+      ],
+      "exactGitBlobRequired": true
+    },
+    "nonRegressionBinding": {
+      "required": true,
+      "axes": [
+        "model",
+        "effort",
+        "role",
+        "review",
+        "quality",
+        "functionality"
+      ],
+      "eachAxisFields": [
+        "state",
+        "subject",
+        "evidenceArtifacts",
+        "verdict"
+      ],
+      "unknownCannotPass": true
+    },
+    "runtimeAndInstallationBinding": {
+      "requiredForAdopt": true,
+      "ownerSuppliedFields": [
+        "completeLauncherCensus",
+        "pinnedSupervisorInstall",
+        "currentClosedGate",
+        "requestLevelTokenAccounting",
+        "idle1000ZeroInferenceTicks",
+        "fullChildLifetimeFencing",
+        "rollbackProof",
+        "qualityEquivalence",
+        "functionalityEquivalence",
+        "independentReview"
+      ],
+      "missingMeansDispositionCannotBeAdopt": true
+    },
+    "projectAuthorityPrerequisites": {
+      "required": false,
+      "ownerSuppliedFields": [],
+      "knownState": null
+    }
+  },
+  "queue": {
+    "state": "AWAITING_PROJECT_OWNER_PUBLICATION",
+    "executable": false,
+    "ownerActionRequired": true,
+    "automaticStatusAdvance": false,
+    "writesAuthorized": false,
+    "providerCallsAuthorized": false,
+    "nextLawfulAction": "BACHELOR_PROJECT_OWNER_PUBLISHES_EXACT_C_CODE_CONJUGAL_IDENTITY_NORMALIZED_REMOTE_CURRENT_REF_OBJECT_LINEAGE_AND_BOUND_R26_DISPOSITION_PACKET"
+  },
+  "authority": {
+    "projectDisposition": false,
+    "adoption": false,
+    "runtime": false,
+    "installation": false,
+    "provider": false,
+    "scheduler": false,
+    "gateTransition": false,
+    "repositoryMutation": false,
+    "remoteMutation": false,
+    "publication": false,
+    "message": false
+  },
+  "prohibitedClaims": [
+    "NO_DISPOSITION_FROM_REQUEST",
+    "NO_CURRENT_PROJECT_HEAD_FROM_DOCTRINE_OBJECT",
+    "NO_REMOTE_IDENTITY_FROM_HOST_OR_PROJECT_NAME",
+    "NO_RUNTIME_OR_INSTALLATION_FROM_R14_EVIDENCE",
+    "NO_ADOPTION_WITHOUT_PROJECT_OWNED_PROOFS"
+  ]
+}

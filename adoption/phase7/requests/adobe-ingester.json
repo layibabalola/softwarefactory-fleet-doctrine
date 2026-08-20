@@ -1,0 +1,183 @@
+{
+  "schema": "fleet-r26-owner-publication-request/v1",
+  "requestId": "r26-owner-publication-adobe-ingester-20260820",
+  "projectId": "adobe-ingester",
+  "status": "REQUEST_ONLY_ZERO_AUTHORITY",
+  "frozenDoctrine": {
+    "baseCommit": "e4e7f9363185a5e10bb3a92167c785ef29caf2b7",
+    "baseTree": "5233fa0515fcef7b69e70a007f25e6bb78190c42",
+    "baseParent": "5ac7036705338cfe3370f5fddda224e07d5d1bdd",
+    "r26Candidate": "e70a044f31dd2f43ab7c716d63a4eb89318c61b6",
+    "r26Merge": "909f769d02e8412e51e28e242cfa8d00dadc9a3d",
+    "ledgerPath": "adoption/universal-token-control-r26.json",
+    "ledgerGitBlobOid": "333cc6d47e99a857b64150a87bd9f834590256e1",
+    "ledgerProjectRowCanonicalSha256": "6e7fa27a699d771c59159f1a9dd325889fb50fcfeaa6578635a05c300bfabf30",
+    "ledgerStatus": "STALE",
+    "blockerCode": "PROJECT_REPOSITORY_ROOT_UNPUBLISHED_OWNER_WORK_ORDER_AND_QUORUM_REQUIRED"
+  },
+  "currentEvidence": {
+    "classification": "KNOWN_REMOTE_STALE_OBSERVATION_REQUEST_ONLY",
+    "auditCapturedAt": "2026-08-20T06:21:30-05:00",
+    "remoteObservedAt": "2026-08-19T16:06:05-05:00",
+    "machine": "ULTRA-MAGNUS",
+    "host": "virtual-ten",
+    "repositoryRoot": null,
+    "remote": "https://github.com/layibabalola/adobe-document-cloud-ingester.git",
+    "remoteFreshness": "LAST_OBSERVED_2026-08-19_REVALIDATION_REQUIRED",
+    "observedRefs": [
+      {
+        "name": "refs/heads/agent/software-factory-hardening",
+        "commit": "0afc24653369eb6129abf7f5263ee37ed1bed7f8",
+        "tree": "0cc091c0d738f2d4f6b450e5480bc2b0e3a6149b",
+        "parents": [
+          "850a201ebdaca3cb6f4bb7441df6347ce7577cc1"
+        ],
+        "evidenceStatus": "LAST_PINNED_REMOTE_OBSERVATION_NOT_CURRENT"
+      },
+      {
+        "name": "refs/heads/main",
+        "commit": "556f6d1b1ebeab26cda6c400a61e12c9d6a69f76",
+        "tree": "2655da443cd7e22e310d432b0aa39ef9e156aa09",
+        "parents": [
+          "93dd4f4dd843e4866e408389f571eb63d3aee8a4"
+        ],
+        "evidenceStatus": "LAST_PINNED_REMOTE_OBSERVATION_NOT_CURRENT"
+      }
+    ],
+    "historicalObjects": [],
+    "caveat": "NETWORK_REF_FRESHNESS_UNVERIFIED_NO_CURRENT_DISPOSITION_OR_AUTHORITY_INFERRED"
+  },
+  "ownerPublicationContract": {
+    "exactIdentityBinding": {
+      "required": true,
+      "ownerSuppliedFields": [
+        "canonicalRepositoryRoot",
+        "normalizedRemote",
+        "publishedRef",
+        "commit",
+        "tree",
+        "parents",
+        "historicalObjectLineageWitness"
+      ],
+      "freshReadRequired": true,
+      "noInferences": true
+    },
+    "currentDispositionBinding": {
+      "required": true,
+      "allowedValues": [
+        "ADOPT",
+        "DISTINGUISH",
+        "REJECT"
+      ],
+      "ownerSuppliedFields": [
+        "status",
+        "statement",
+        "r26Candidate",
+        "r26Merge",
+        "subjectCommit",
+        "subjectTree",
+        "publishedAt",
+        "ownerIdentity"
+      ],
+      "projectOwnerChosen": true
+    },
+    "artifactManifestBinding": {
+      "required": true,
+      "minimumEntries": 1,
+      "ownerSuppliedFields": [
+        "path",
+        "gitBlobOid",
+        "bytes",
+        "sha256"
+      ],
+      "exactGitBlobRequired": true
+    },
+    "nonRegressionBinding": {
+      "required": true,
+      "axes": [
+        "model",
+        "effort",
+        "role",
+        "review",
+        "quality",
+        "functionality"
+      ],
+      "eachAxisFields": [
+        "state",
+        "subject",
+        "evidenceArtifacts",
+        "verdict"
+      ],
+      "unknownCannotPass": true
+    },
+    "runtimeAndInstallationBinding": {
+      "requiredForAdopt": true,
+      "ownerSuppliedFields": [
+        "completeLauncherCensus",
+        "pinnedSupervisorInstall",
+        "currentClosedGate",
+        "requestLevelTokenAccounting",
+        "idle1000ZeroInferenceTicks",
+        "fullChildLifetimeFencing",
+        "rollbackProof",
+        "qualityEquivalence",
+        "functionalityEquivalence",
+        "independentReview"
+      ],
+      "missingMeansDispositionCannotBeAdopt": true
+    },
+    "projectAuthorityPrerequisites": {
+      "required": true,
+      "ownerSuppliedFields": [
+        "activeWorkOrderId",
+        "activeWorkOrderRevision",
+        "workOrderStatus",
+        "reviewQuorumId",
+        "requiredSeats",
+        "filledSeats",
+        "reviewerIdentities",
+        "reviewerIndependence",
+        "frozenSubjectCommit",
+        "frozenSubjectTree"
+      ],
+      "knownState": {
+        "activeWorkOrderId": "WO-G0-A01",
+        "activeWorkOrderRevision": 12,
+        "workOrderStatus": "BLOCKED_REVIEWER_CAPACITY",
+        "reviewQuorumId": "Q-021",
+        "requiredSeats": 4,
+        "filledSeats": 2,
+        "satisfied": false
+      }
+    }
+  },
+  "queue": {
+    "state": "AWAITING_PROJECT_OWNER_PUBLICATION",
+    "executable": false,
+    "ownerActionRequired": true,
+    "automaticStatusAdvance": false,
+    "writesAuthorized": false,
+    "providerCallsAuthorized": false,
+    "nextLawfulAction": "OWNER_MINTS_OR_REPAIRS_ACTIVE_WORK_ORDER_CLOSES_FRESH_REVIEWER_BEARING_Q021_QUORUM_REVALIDATES_EXACT_REMOTE_REF_AND_PUBLISHES_BOUND_PACKET"
+  },
+  "authority": {
+    "projectDisposition": false,
+    "adoption": false,
+    "runtime": false,
+    "installation": false,
+    "provider": false,
+    "scheduler": false,
+    "gateTransition": false,
+    "repositoryMutation": false,
+    "remoteMutation": false,
+    "publication": false,
+    "message": false
+  },
+  "prohibitedClaims": [
+    "NO_DISPOSITION_FROM_REQUEST",
+    "NO_CURRENT_REF_FROM_STALE_OBSERVATION",
+    "NO_RUNTIME_OR_INSTALLATION_FROM_DISCOVERY",
+    "NO_ADOPTION_WITHOUT_PROJECT_OWNED_PROOFS",
+    "NO_WORK_ORDER_OR_QUORUM_FROM_FLEET_REQUEST"
+  ]
+}
