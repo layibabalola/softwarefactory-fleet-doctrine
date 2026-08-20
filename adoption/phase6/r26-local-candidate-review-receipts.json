@@ -1,0 +1,247 @@
+{
+  "schema": "fleet-r26-local-candidate-review-batch/v1",
+  "status": "TWO_READ_ONLY_ACCEPTS_ZERO_AUTHORITY",
+  "frozenBase": {
+    "doctrineCommit": "e4e7f9363185a5e10bb3a92167c785ef29caf2b7",
+    "doctrineTree": "5233fa0515fcef7b69e70a007f25e6bb78190c42",
+    "ledgerPath": "adoption/universal-token-control-r26.json",
+    "ledgerGitBlobOid": "333cc6d47e99a857b64150a87bd9f834590256e1",
+    "ledgerGitBlobSha256": "a41f68c691159813ee58198ca1286683dcb1d20ea53cbe42f42a232cb2cd95ce",
+    "r26Candidate": "e70a044f31dd2f43ab7c716d63a4eb89318c61b6",
+    "r26Merge": "909f769d02e8412e51e28e242cfa8d00dadc9a3d"
+  },
+  "capture": {
+    "reviewedAt": "2026-08-20T11:04:10.3493913Z",
+    "machine": "ULTRA-MAGNUS",
+    "reviewer": "codex-fleet-disposition-census-independent-subagent",
+    "reviewMode": "READ_ONLY_EXACT_OBJECT_AND_SEMANTIC_REVIEW",
+    "networkInspectionPerformed": false,
+    "providerInvocationPerformed": false,
+    "authenticationPerformed": false,
+    "projectMutationPerformed": false,
+    "runtimeMutationPerformed": false,
+    "scheduledTaskMutationPerformed": false,
+    "gateMutationPerformed": false,
+    "pushMergePublishPerformed": false
+  },
+  "summary": {
+    "reviewCount": 2,
+    "acceptedEvidenceScopes": 2,
+    "projectDispositionCandidatesAccepted": 1,
+    "blockerEvidenceCandidatesAccepted": 1,
+    "ledgerStatusChangesAuthorized": 0,
+    "adoptionClaims": 0,
+    "installationClaims": 0,
+    "runtimeAuthorityClaims": 0,
+    "canonicalLedgerCounts": {
+      "ADOPT": 0,
+      "DISTINGUISH": 5,
+      "MISSING": 0,
+      "REJECT": 0,
+      "STALE": 4
+    }
+  },
+  "reviews": [
+    {
+      "projectId": "salesforce-tools",
+      "evidenceKind": "PROJECT_DISTINGUISH_EVIDENCE_CANDIDATE",
+      "verdict": "ACCEPT",
+      "reviewScope": "ZERO_AUTHORITY_EVIDENCE_CORRECTNESS_ONLY_NOT_ADOPTION_OR_INSTALLATION",
+      "subject": {
+        "remote": "https://github.com/layibabalola/SalesforceSupportTools.git",
+        "localBranch": "codex/salesforce-adoption-gap-37a2070-20260819",
+        "commit": "d8542ccfb9dde81dcdd57bf55c7959c3b0d521c4",
+        "tree": "4ec6a0433d622f9658789a75403030f8251926b8",
+        "parent": "1675e513159d3c6a12e70659c9c0fba9807e7b5a",
+        "observedProjectBase": "37a20709d021a7b0c44dbad2e6f2131bd328e4fd",
+        "remoteTrackingRefContainsSubject": false,
+        "networkRemoteVerified": false,
+        "worktreeCleanAtReview": true,
+        "changedPaths": [
+          "docs/provider-control/R26-CURRENT-STATE-EVIDENCE.json",
+          "docs/provider-control/R26-DISPOSITION-CANDIDATE.md",
+          "tools/provider-control/test-r26-disposition-candidate.ps1"
+        ]
+      },
+      "artifacts": [
+        {
+          "path": "docs/provider-control/R26-CURRENT-STATE-EVIDENCE.json",
+          "gitBlobOid": "9c42948bb4c45ab595d62fae1a48e47aa8911102",
+          "bytes": 15365,
+          "sha256": "948d4af9a388bdf1e7a9ffb36a6cd15d875726ef698515e9e9dc0366a00b90f5"
+        },
+        {
+          "path": "docs/provider-control/R26-DISPOSITION-CANDIDATE.md",
+          "gitBlobOid": "43abbd35d47e2e2472fbf57d3fb246404180d59e",
+          "bytes": 7344,
+          "sha256": "4bdaef900c97e9dabfb6ced17891b19d9a1bceaa3a0ab847e8146ac981b8450c"
+        },
+        {
+          "path": "tools/provider-control/test-r26-disposition-candidate.ps1",
+          "gitBlobOid": "be996a114c47ad48ac090b8e66e84e154c815f5a",
+          "bytes": 48080,
+          "sha256": "725b3d0c0b4d1edb777a9c8cb87046dff36baf713d05284bb2fd0ad742a1e804"
+        }
+      ],
+      "executionEvidence": [
+        {
+          "engine": "PowerShell 7.6.3",
+          "command": "pwsh -NoProfile -File .\\tools\\provider-control\\test-r26-disposition-candidate.ps1",
+          "exitCode": 0,
+          "result": "PASS R26 forward zero-authority disposition candidate",
+          "hostileControlsPassed": 41,
+          "hostileControlsTotal": 41
+        },
+        {
+          "engine": "Windows PowerShell 5.1.19041.7663",
+          "command": "powershell -NoProfile -ExecutionPolicy Bypass -File .\\tools\\provider-control\\test-r26-disposition-candidate.ps1",
+          "exitCode": 0,
+          "result": "PASS R26 forward zero-authority disposition candidate",
+          "hostileControlsPassed": 41,
+          "hostileControlsTotal": 41
+        }
+      ],
+      "semanticFindings": {
+        "candidateStatus": "DISTINGUISH_CANDIDATE_ZERO_AUTHORITY",
+        "persistentGateTreatment": "CLOSED_BY_ABSENCE_WITHOUT_PERSISTENT_GATE_CREDIT",
+        "launcherSurfaceCount": 4,
+        "completeLauncherSurfaceCount": 0,
+        "directLauncherClassCount": 5,
+        "completeDirectLauncherClassCount": 0,
+        "knownMissingAdoptionBlockerCount": 25,
+        "missingAdoptionProofSetComplete": false,
+        "llmFailoverUniversalProviderOrSessionChokeClaimed": false,
+        "unobservedLaunchPathsMayExist": true,
+        "allAuthorityMembersFalse": true
+      },
+      "dispositionTreatment": {
+        "currentLedgerStatus": "DISTINGUISH",
+        "candidateDispositionKind": "DISTINGUISH",
+        "candidateDisposition": "DISTINGUISH(909f769d02e8412e51e28e242cfa8d00dadc9a3d, R26_CANDIDATE_ZERO_AUTHORITY_CURRENT_CONTENT_WORK_PROVIDER_TEST_PROVIDER_ADMIN_CHAT_SESSION_SCHEDULED_STANDUP_SCHEDULED_FOLLOWUP_APP_WATCH_AND_REPOSITORY_AGENT_WORKFLOW_LAUNCH_PATHS_REMAIN_OUTSIDE_A_PINNED_FAIL_CLOSED_SUPERVISOR_KNOWN_MISSING_ADOPTION_BLOCKERS_ENUMERATED_PROOF_SET_NOT_COMPLETE_GATE_TREATED_CLOSED_BY_ABSENCE_WITHOUT_PERSISTENT_GATE_CREDIT, SALESFORCE_MAIN_37a20709d021a7b0c44dbad2e6f2131bd328e4fd, EVIDENCE_SHA256_948d4af9a388bdf1e7a9ffb36a6cd15d875726ef698515e9e9dc0366a00b90f5)",
+        "ledgerStatusChangeAuthorized": false,
+        "publicationAuthority": false,
+        "adoptionCredit": false,
+        "installationCredit": false
+      },
+      "nextLawfulActions": [
+        "PROJECT_OWNER_MAY_PUBLISH_THE_EXACT_REVIEWED_COMMIT_ON_A_NEW_IMMUTABLE_PROJECT_REF",
+        "AFTER_EXACT_REF_VERIFICATION_DOCTRINE_MAY_REPIN_THE_EXISTING_DISTINGUISH_ROW_WITHOUT_STATUS_ADVANCE",
+        "BUILD_FAKE_PROVIDER_SEAM_AND_AN_INDEPENDENT_COMPLETE_FOUR_SURFACE_CENSUS_BEFORE_SUPERVISOR_INSTALLATION",
+        "KEEP_GATE_CLOSED_AND_EARN_EVERY_R26_ADOPTION_AND_NON_REGRESSION_PROOF_BEFORE_ANY_ADOPT_CLAIM"
+      ],
+      "authority": {
+        "projectDisposition": false,
+        "projectAdoption": false,
+        "fleetAdoption": false,
+        "runtime": false,
+        "activation": false,
+        "provider": false,
+        "authentication": false,
+        "scheduler": false,
+        "gate": false,
+        "pushMergePublish": false
+      }
+    },
+    {
+      "projectId": "cloudvore",
+      "evidenceKind": "ADOPTION_BLOCKER_OBSERVATIONAL_LOWER_BOUND",
+      "verdict": "ACCEPT",
+      "reviewScope": "ZERO_AUTHORITY_BLOCKER_EVIDENCE_ONLY_NOT_A_PROJECT_DISPOSITION",
+      "subject": {
+        "remote": "https://github.com/layibabalola/Cloudvore.git",
+        "localBranch": "codex/r28-install-census-candidate-20260819",
+        "commit": "54a7a45c4b223a0d8647bfc61c732dc5325f8d30",
+        "tree": "c25cea7b2333be786c8ea693f739ae12b25c19c5",
+        "parent": "1a01c945756f80737199cd6a9383d74763f9f147",
+        "observedProjectBase": "db3e5fd155a6efe41947f5d4aa0bbc4a3d2098a8",
+        "acceptedClosedSupervisorCommit": "ed1119845d43fa1042d69c6f6d3ae9e700b1db5f",
+        "acceptedClosedSupervisorTree": "0001966e4f155f4b3ef2feae2e5d99f3522eb4c6",
+        "remoteTrackingRefContainsSubject": false,
+        "networkRemoteVerified": false,
+        "worktreeCleanAtReview": true,
+        "changedPaths": [
+          "knowledge/universal-token-control-r28-installation-census-blocker-2026-08-19.json",
+          "tools/universal-token-control-r28-installation-census-blocker.tests.py"
+        ]
+      },
+      "artifacts": [
+        {
+          "path": "knowledge/universal-token-control-r28-installation-census-blocker-2026-08-19.json",
+          "gitBlobOid": "e2d109c378086684e6da1910088abe6f866ac75c",
+          "bytes": 18147,
+          "sha256": "952ade087659f24ac3761f6aaeed9eb27a03851f6fa55c30ef5c0491a0f51959"
+        },
+        {
+          "path": "tools/universal-token-control-r28-installation-census-blocker.tests.py",
+          "gitBlobOid": "1f330cf1fa7768c7b5c891ade4c8270a5d705a00",
+          "bytes": 224300,
+          "sha256": "41f31810d601fe27f4b2ef5c3e529a2e14010322d0bc78b85e23a01b2e026974"
+        }
+      ],
+      "executionEvidence": [
+        {
+          "engine": "CPython 3.14.6",
+          "command": "PYTHONDONTWRITEBYTECODE=1 python .\\tools\\universal-token-control-r28-installation-census-blocker.tests.py",
+          "exitCode": 0,
+          "result": "Ran 17 tests in 78.193s - OK",
+          "testCasesPassed": 17,
+          "testCasesTotal": 17,
+          "adverseFamiliesPassed": [
+            "DUPLICATE_JSON",
+            "INSTALLATION_AND_DIRECT_INVOCATION_OVERCLAIM",
+            "LAUNCHER_OMISSION_DUPLICATE_DRIFT_AND_ROUTE_OVERCLAIM",
+            "PROCESS_CAPABILITY_OMISSION_DRIFT_AND_OVERCLAIM",
+            "SCANNER_KNOWN_LIMITATIONS_AND_POSITIVE_CONTROLS",
+            "SURFACE_OMISSION_AND_HOST_COMPLETENESS_OVERCLAIM",
+            "NON_REGRESSION_AND_AUTHORITY_OVERCLAIM"
+          ]
+        }
+      ],
+      "semanticFindings": {
+        "candidateStatus": "PINNED_BLOCKER_ZERO_AUTHORITY",
+        "scannerEvidenceKind": "OBSERVATIONAL_PROCESS_CAPABILITY_LOWER_BOUND",
+        "scannerCoverageComplete": false,
+        "knownProviderSetLowerBound": true,
+        "unresolvedSetLowerBound": true,
+        "unobservedExecutionPathsMayExist": true,
+        "knownScannerLimitationCount": 6,
+        "observedContentInferenceLauncherCount": 3,
+        "allObservedContentLaunchersBypassAcceptedSupervisor": true,
+        "surfaceClassCount": 4,
+        "completeSurfaceClassCount": 0,
+        "hostInstalled": false,
+        "installedManifestPresent": false,
+        "directInvocationImpossible": false,
+        "adoptionGapClosed": false,
+        "allAuthorityMembersFalse": true
+      },
+      "dispositionTreatment": {
+        "currentLedgerStatus": "DISTINGUISH",
+        "candidateDispositionKind": null,
+        "candidateDisposition": null,
+        "ledgerStatusChangeAuthorized": false,
+        "publicationAuthority": false,
+        "adoptionCredit": false,
+        "installationCredit": false
+      },
+      "nextLawfulActions": [
+        "KEEP_THIS_ACCEPTED_SUBJECT_CLASSIFIED_AS_BLOCKER_EVIDENCE_NOT_A_DISPOSITION",
+        "BUILD_EXACT_PREIMAGE_BOUND_GATE_FIRST_INTEGRATION_FOR_THE_THREE_KNOWN_CONTENT_LAUNCHERS",
+        "PRODUCE_AN_INDEPENDENT_COMPLETE_CENSUS_METHOD_AND_CLOSED_ROUTING_FOR_ALL_DISCOVERED_EXECUTION_PATHS",
+        "PRODUCE_A_HOST_LOCAL_CLOSED_INSTALL_MANIFEST_AND_ALL_R26_NON_REGRESSION_AND_ADOPTION_PROOFS_BEFORE_ANY_ADOPT_CLAIM"
+      ],
+      "authority": {
+        "projectDisposition": false,
+        "projectAdoption": false,
+        "fleetAdoption": false,
+        "runtime": false,
+        "activation": false,
+        "provider": false,
+        "authentication": false,
+        "scheduler": false,
+        "gate": false,
+        "pushMergePublish": false
+      }
+    }
+  ]
+}
