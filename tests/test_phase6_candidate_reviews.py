@@ -94,7 +94,15 @@ class Phase6CandidateReviewTests(unittest.TestCase):
             MODULE.verify_batch(batch, "HEAD")
 
     def test_scope_rejects_ledger_or_spec_mutation(self):
-        with mock.patch.object(MODULE, "_git", return_value="specs/cloudvore.md\n"):
+        ledger_raw = MODULE._blob(ROOT, "HEAD", MODULE.LEDGER_PATH)
+        with (
+            mock.patch.object(
+                MODULE, "_tuple", return_value=(MODULE.BASE_TREE, [MODULE.BASE_PARENT])
+            ),
+            mock.patch.object(MODULE, "_oid", return_value=MODULE.LEDGER_BLOB),
+            mock.patch.object(MODULE, "_blob", return_value=ledger_raw),
+            mock.patch.object(MODULE, "_git", return_value="specs/cloudvore.md\n"),
+        ):
             with self.assertRaisesRegex(MODULE.Phase6Error, "PHASE6_SCOPE_VIOLATION"):
                 MODULE._verify_base(self._copy(), "HEAD")
 
