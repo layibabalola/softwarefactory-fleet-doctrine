@@ -24,9 +24,14 @@ LEDGER_SHA256 = "a41f68c691159813ee58198ca1286683dcb1d20ea53cbe42f42a232cb2cd95c
 R26_CANDIDATE = "e70a044f31dd2f43ab7c716d63a4eb89318c61b6"
 R26_MERGE = "909f769d02e8412e51e28e242cfa8d00dadc9a3d"
 ALLOWED_PATHS = {
+    ".github/workflows/disposition-intake.yml",
+    "adoption/README.md",
     "adoption/phase6/README.md",
     BATCH_PATH,
     "tests/test_phase6_candidate_reviews.py",
+    "tools/check_phase2_disposition_batch.py",
+    "tools/check_phase3_disposition_batch.py",
+    "tools/check_phase5_stale_reconciliation.py",
     "tools/check_phase6_candidate_reviews.py",
 }
 AUTHORITY_KEYS = {

@@ -81,15 +81,19 @@ ALLOWED_PHASE3_PATHS = {
     INTAKE_PATH,
     "adoption/phase5/README.md",
     "adoption/phase5/r26-stale-project-reconciliation.json",
+    "adoption/phase6/README.md",
+    "adoption/phase6/r26-local-candidate-review-receipts.json",
     LEDGER_PATH,
     "tests/test_adoption_ledger.py",
     "tests/test_phase2_disposition_batch.py",
     "tests/test_phase3_disposition_batch.py",
     "tests/test_phase5_stale_reconciliation.py",
+    "tests/test_phase6_candidate_reviews.py",
     "tools/check_adoption_ledger.py",
     "tools/check_phase2_disposition_batch.py",
     "tools/check_phase3_disposition_batch.py",
     "tools/check_phase5_stale_reconciliation.py",
+    "tools/check_phase6_candidate_reviews.py",
 }
 SHA_PATTERN = re.compile(r"[0-9a-f]{40,64}")
 FORMAL_ADOPT_PATTERN = re.compile(r"\bADOPT\s*\(", re.IGNORECASE)

@@ -42,6 +42,8 @@ ALLOWED_PHASE2_PATHS = {
     "adoption/phase3/r26-published-project-disposition-intake.json",
     "adoption/phase5/README.md",
     "adoption/phase5/r26-stale-project-reconciliation.json",
+    "adoption/phase6/README.md",
+    "adoption/phase6/r26-local-candidate-review-receipts.json",
     "adoption/phase2/README.md",
     BATCH_PATH,
     LEDGER_PATH,
@@ -52,11 +54,13 @@ ALLOWED_PHASE2_PATHS = {
     "tests/test_phase2_disposition_batch.py",
     "tests/test_phase3_disposition_batch.py",
     "tests/test_phase5_stale_reconciliation.py",
+    "tests/test_phase6_candidate_reviews.py",
     "tests/test_adoption_ledger.py",
     "tools/check_adoption_ledger.py",
     "tools/check_phase2_disposition_batch.py",
     "tools/check_phase3_disposition_batch.py",
     "tools/check_phase5_stale_reconciliation.py",
+    "tools/check_phase6_candidate_reviews.py",
 }
 OWNER_EVIDENCE_REQUIREMENTS = [
     "PROJECT_OWNED_COMMIT_AND_GIT_BLOB_BINDING_R26_E70A044_AND_MERGE_909F769",

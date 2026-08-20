@@ -83,12 +83,16 @@ ALLOWED_PHASE5_PATHS = {
     "adoption/README.md",
     "adoption/phase5/README.md",
     INTAKE_PATH,
+    "adoption/phase6/README.md",
+    "adoption/phase6/r26-local-candidate-review-receipts.json",
     "tests/test_phase2_disposition_batch.py",
     "tests/test_phase3_disposition_batch.py",
     "tests/test_phase5_stale_reconciliation.py",
+    "tests/test_phase6_candidate_reviews.py",
     "tools/check_phase2_disposition_batch.py",
     "tools/check_phase3_disposition_batch.py",
     "tools/check_phase5_stale_reconciliation.py",
+    "tools/check_phase6_candidate_reviews.py",
 }
 SHA_PATTERN = re.compile(r"[0-9a-f]{40,64}")
 REMOTE_TOKEN_ENV = "R26_REMOTE_GITHUB_TOKEN"
