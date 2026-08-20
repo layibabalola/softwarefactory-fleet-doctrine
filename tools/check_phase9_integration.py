@@ -23,6 +23,8 @@ PHASE6_TREE = "e62e063b6a55084431dd8f485f59b74c0b897be5"
 PHASE6_PARENT = "6a33db0902111b823ae202f534fd1d2da554d436"
 PHASE8_COMMIT = "2223647059cb789fd350883597756666357583df"
 PHASE8_TREE = "062ee5311cc56b6ea50c2ce3f4e9d095847069e8"
+PHASE9_COMMIT = "18b95fd82f92920117c8f0f432ae8e9bc5e8ffc8"
+PHASE9_TREE = "fe0ed384bfd9485f4bbc4004225831c6aabe06a4"
 REPAIR_PARENT = "ed8a2f359de8830c5800d1721faf183015eec01f"
 REPAIR_PARENT_TREE = "7592c9e600342724a799d73eb636cf3afd34629a"
 REPAIR_COMMIT = "1f3c3d8808b3d9bbb1db201039e0c3d18441f7f0"
@@ -74,6 +76,22 @@ EXPECTED_INTEGRATION_PATHS = REPAIR_SOURCE_DELTA_PATHS | PHASE9_PROOF_PATHS | {
     "tools/check_phase6_candidate_reviews.py",
     "tools/check_phase7_owner_publication_requests.py",
     "tools/check_phase8_integration.py",
+}
+PHASE10_PROOF_PATHS = {
+    "adoption/phase10/README.md",
+    "adoption/phase10/r26-local-candidate-review-receipts.json",
+    "tests/test_phase10_integration.py",
+    "tools/check_phase10_integration.py",
+}
+PHASE10_FORWARD_PATHS = PHASE10_PROOF_PATHS | {
+    ".github/workflows/disposition-intake.yml",
+    "tools/check_phase2_disposition_batch.py",
+    "tools/check_phase3_disposition_batch.py",
+    "tools/check_phase5_stale_reconciliation.py",
+    "tools/check_phase6_candidate_reviews.py",
+    "tools/check_phase7_owner_publication_requests.py",
+    "tools/check_phase8_integration.py",
+    "tools/check_phase9_integration.py",
 }
 
 REPAIR_SOURCE_BLOBS = {
@@ -248,7 +266,7 @@ def verify_source_objects() -> None:
             raise Phase9Error("PHASE8_REQUEST_MISMATCH")
 
 
-def verify_exact_artifacts(treeish: str) -> None:
+def verify_exact_artifacts(treeish: str, *, phase10_forward: bool = False) -> None:
     if _oid(treeish, MANIFEST_PATH) != MANIFEST_BLOB or _oid(treeish, MANIFEST_TEST_PATH) != MANIFEST_TEST_BLOB:
         raise Phase9Error("MECHANICAL_REPAIR_DRIFT")
     if _oid(treeish, RECEIPT_PATH) != RECEIPT_BLOB:
@@ -256,15 +274,23 @@ def verify_exact_artifacts(treeish: str) -> None:
     for path, expected in REQUEST_BLOBS.items():
         if _oid(treeish, path) != expected:
             raise Phase9Error("REQUEST_DRIFT")
-    for path, expected in {**RECONCILED_CHECKER_BLOBS, **FORWARD_CHECKER_BLOBS}.items():
-        if _oid(treeish, path) != expected:
-            raise Phase9Error("CHECKER_POSTIMAGE_DRIFT")
-    if _oid(treeish, ".github/workflows/disposition-intake.yml") != WORKFLOW_BLOB:
-        raise Phase9Error("WORKFLOW_POSTIMAGE_DRIFT")
+    if not phase10_forward:
+        for path, expected in {**RECONCILED_CHECKER_BLOBS, **FORWARD_CHECKER_BLOBS}.items():
+            if _oid(treeish, path) != expected:
+                raise Phase9Error("CHECKER_POSTIMAGE_DRIFT")
+        if _oid(treeish, ".github/workflows/disposition-intake.yml") != WORKFLOW_BLOB:
+            raise Phase9Error("WORKFLOW_POSTIMAGE_DRIFT")
 
 
-def verify_allowlist_union(treeish: str) -> None:
+def verify_allowlist_union(treeish: str, *, phase10_forward: bool = False) -> None:
     for phase, (path, attribute) in PREDECESSOR_ALLOWLISTS.items():
+        if phase10_forward:
+            source_allowed = _assignment_set(PHASE9_COMMIT, path, attribute)
+            if _assignment_set(treeish, path, "PHASE10_INTEGRATION_PATHS") != PHASE10_PROOF_PATHS:
+                raise Phase9Error(f"{phase.upper()}_PHASE10_SCOPE_DRIFT")
+            if _assignment_set(treeish, path, attribute) != source_allowed | PHASE10_PROOF_PATHS:
+                raise Phase9Error(f"{phase.upper()}_PHASE10_ALLOWLIST_UNION_MISMATCH")
+            continue
         source_allowed = _assignment_set(PHASE8_COMMIT, path, attribute)
         source_repair = _assignment_set(REPAIR_COMMIT, path, "MANIFEST_BINDING_REPAIR_PATHS")
         if source_repair != MANIFEST_REPAIR_PATHS:
@@ -350,16 +376,35 @@ def verify_global_manifest(treeish: str) -> None:
 
 def verify_integration(treeish: str) -> None:
     verify_source_objects()
+    if _commit_tuple(PHASE9_COMMIT) != (PHASE9_TREE, [PHASE8_COMMIT]):
+        raise Phase9Error("PHASE9_SOURCE_MISMATCH")
+    if _changed_paths(PHASE8_COMMIT, PHASE9_COMMIT) != EXPECTED_INTEGRATION_PATHS:
+        raise Phase9Error("PHASE9_SOURCE_SCOPE_MISMATCH")
+    resolved = None if treeish == ":" else str(
+        _git(["rev-parse", f"{treeish}^{{commit}}"], text=True, error="COMMIT_UNAVAILABLE")
+    ).strip()
+    if resolved == PHASE9_COMMIT:
+        if _commit_tuple(treeish) != (PHASE9_TREE, [PHASE8_COMMIT]):
+            raise Phase9Error("INTEGRATION_PARENT_MISMATCH")
+        if _changed_paths(PHASE8_COMMIT, treeish) != EXPECTED_INTEGRATION_PATHS:
+            raise Phase9Error("INTEGRATION_SCOPE_MISMATCH")
+        verify_exact_artifacts(treeish)
+        verify_allowlist_union(treeish)
+        verify_frozen_status_and_authority(treeish)
+        verify_global_manifest(treeish)
+        return
     if treeish == ":":
         head = str(_git(["rev-parse", "HEAD"], text=True, error="HEAD_UNAVAILABLE")).strip()
-        if head != PHASE8_COMMIT:
+        if head != PHASE9_COMMIT:
             raise Phase9Error("STAGED_BASE_MISMATCH")
-    elif _commit_tuple(treeish)[1] != [PHASE8_COMMIT]:
+    elif _commit_tuple(treeish)[1] != [PHASE9_COMMIT]:
         raise Phase9Error("INTEGRATION_PARENT_MISMATCH")
-    if _changed_paths(PHASE8_COMMIT, treeish) != EXPECTED_INTEGRATION_PATHS:
+    if _changed_paths(PHASE8_COMMIT, treeish) != EXPECTED_INTEGRATION_PATHS | PHASE10_FORWARD_PATHS:
         raise Phase9Error("INTEGRATION_SCOPE_MISMATCH")
-    verify_exact_artifacts(treeish)
-    verify_allowlist_union(treeish)
+    if _changed_paths(PHASE9_COMMIT, treeish) != PHASE10_FORWARD_PATHS:
+        raise Phase9Error("INTEGRATION_SCOPE_MISMATCH")
+    verify_exact_artifacts(treeish, phase10_forward=True)
+    verify_allowlist_union(treeish, phase10_forward=True)
     verify_frozen_status_and_authority(treeish)
     verify_global_manifest(treeish)
 
@@ -374,7 +419,7 @@ def main() -> int:
         print(f"FAIL: {exc}", file=sys.stderr)
         return 1
     print(
-        "PASS: Phase 8 is the sole parent; the accepted manifest repair is exact; "
+        "PASS: the accepted Phase 9 manifest repair is exact and is the sole Phase 10 parent; "
         "receipt/request artifacts, ledger/spec statuses, and all authority remain frozen"
     )
     return 0

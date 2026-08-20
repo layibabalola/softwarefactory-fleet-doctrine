@@ -94,6 +94,12 @@ jobs:
       - name: Verify phase-9 accepted manifest integration
         run: python tools/check_phase9_integration.py --treeish HEAD
 
+      - name: Run phase-10 local candidate review integration controls
+        run: python -m unittest discover -s tests -p "test_phase10_integration.py" -v
+
+      - name: Verify phase-10 zero-authority local review integration
+        run: python tools/check_phase10_integration.py --treeish HEAD
+
       - name: Run frozen adoption-ledger controls
         run: python -m unittest discover -s tests -p "test_adoption_ledger.py" -v
 

@@ -54,6 +54,12 @@ PHASE9_INTEGRATION_PATHS = {
     "tests/test_phase9_integration.py",
     "tools/check_phase9_integration.py",
 }
+PHASE10_INTEGRATION_PATHS = {
+    "adoption/phase10/README.md",
+    "adoption/phase10/r26-local-candidate-review-receipts.json",
+    "tests/test_phase10_integration.py",
+    "tools/check_phase10_integration.py",
+}
 ALLOWED_PHASE7_PATHS = REQUEST_PATHS | PHASE6_INTEGRATION_PATHS | PHASE8_INTEGRATION_PATHS | {
     ".github/workflows/disposition-intake.yml",
     "adoption/phase7/README.md",
@@ -62,7 +68,7 @@ ALLOWED_PHASE7_PATHS = REQUEST_PATHS | PHASE6_INTEGRATION_PATHS | PHASE8_INTEGRA
     "tools/check_phase3_disposition_batch.py",
     "tools/check_phase5_stale_reconciliation.py",
     "tools/check_phase7_owner_publication_requests.py",
-} | MANIFEST_BINDING_REPAIR_PATHS | PHASE9_INTEGRATION_PATHS
+} | MANIFEST_BINDING_REPAIR_PATHS | PHASE9_INTEGRATION_PATHS | PHASE10_INTEGRATION_PATHS
 TOP_KEYS = {
     "schema",
     "requestId",

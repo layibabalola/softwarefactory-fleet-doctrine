@@ -24,6 +24,8 @@ PHASE7_COMMIT = "c5b9efd00c47a84488b96734dd9b6a94ecd37999"
 PHASE7_TREE = "2d9f5d82bf1a8acbef5839ac6fcaecc1caf53023"
 PHASE8_COMMIT = "2223647059cb789fd350883597756666357583df"
 PHASE8_TREE = "062ee5311cc56b6ea50c2ce3f4e9d095847069e8"
+PHASE9_COMMIT = "18b95fd82f92920117c8f0f432ae8e9bc5e8ffc8"
+PHASE9_TREE = "fe0ed384bfd9485f4bbc4004225831c6aabe06a4"
 LEDGER_PATH = "adoption/universal-token-control-r26.json"
 LEDGER_BLOB = "333cc6d47e99a857b64150a87bd9f834590256e1"
 GLOBAL_MANIFEST_PATH = "manifests/universal-provider-control-reconciliation-r26.json"
@@ -71,6 +73,20 @@ PHASE9_FORWARD_PATHS = {
     "tools/check_phase7_owner_publication_requests.py",
     "tools/check_phase8_integration.py",
     "tools/check_phase9_integration.py",
+}
+PHASE10_FORWARD_PATHS = {
+    ".github/workflows/disposition-intake.yml",
+    "adoption/phase10/README.md",
+    "adoption/phase10/r26-local-candidate-review-receipts.json",
+    "tests/test_phase10_integration.py",
+    "tools/check_phase2_disposition_batch.py",
+    "tools/check_phase3_disposition_batch.py",
+    "tools/check_phase5_stale_reconciliation.py",
+    "tools/check_phase6_candidate_reviews.py",
+    "tools/check_phase7_owner_publication_requests.py",
+    "tools/check_phase8_integration.py",
+    "tools/check_phase9_integration.py",
+    "tools/check_phase10_integration.py",
 }
 
 # Filled only after the mechanical union is staged. These exact postimage blobs make every conflict
@@ -227,14 +243,17 @@ def verify_frozen_status(treeish: str) -> None:
         raise Phase8Error("LEDGER_AUTHORITY_ADVANCE")
 
 
-def verify_protected_artifacts(treeish: str, *, repaired_manifest: bool = False) -> None:
+def verify_protected_artifacts(
+    treeish: str, *, repaired_manifest: bool = False, phase10_forward: bool = False
+) -> None:
     for path, expected in {**PHASE6_EXACT_TARGET_BLOBS, **PHASE7_EXACT_TARGET_BLOBS}.items():
         if _oid(treeish, path) != expected:
             raise Phase8Error("PRESERVED_ARTIFACT_DRIFT")
-    expected_resolutions = PHASE9_NARROW_RESOLUTION_BLOBS if repaired_manifest else NARROW_RESOLUTION_BLOBS
-    for path, expected in expected_resolutions.items():
-        if SHA40.fullmatch(expected) is None or _oid(treeish, path) != expected:
-            raise Phase8Error("NARROW_RESOLUTION_DRIFT")
+    if not phase10_forward:
+        expected_resolutions = PHASE9_NARROW_RESOLUTION_BLOBS if repaired_manifest else NARROW_RESOLUTION_BLOBS
+        for path, expected in expected_resolutions.items():
+            if SHA40.fullmatch(expected) is None or _oid(treeish, path) != expected:
+                raise Phase8Error("NARROW_RESOLUTION_DRIFT")
     source_specs = _tree_paths(PHASE6_COMMIT, "specs")
     if _tree_paths(treeish, "specs") != source_specs:
         raise Phase8Error("SPEC_SET_DRIFT")
@@ -255,14 +274,30 @@ def verify_integration(treeish: str) -> None:
     verify_zero_authority_packets(PHASE8_COMMIT)
     if treeish == PHASE8_COMMIT:
         return
+    if _commit_tuple(PHASE9_COMMIT) != (PHASE9_TREE, [PHASE8_COMMIT]):
+        raise Phase8Error("PHASE9_SOURCE_MISMATCH")
+    if _changed_paths(PHASE8_COMMIT, PHASE9_COMMIT) != PHASE9_FORWARD_PATHS:
+        raise Phase8Error("PHASE9_SOURCE_SCOPE_MISMATCH")
+    resolved = None if treeish == ":" else str(
+        _git(["rev-parse", f"{treeish}^{{commit}}"], text=True, error="COMMIT_UNAVAILABLE")
+    ).strip()
+    if resolved == PHASE9_COMMIT:
+        if _commit_tuple(treeish) != (PHASE9_TREE, [PHASE8_COMMIT]):
+            raise Phase8Error("INTEGRATION_PARENT_MISMATCH")
+        if _changed_paths(PHASE8_COMMIT, treeish) != PHASE9_FORWARD_PATHS:
+            raise Phase8Error("INTEGRATION_SCOPE_MISMATCH")
+        verify_protected_artifacts(treeish, repaired_manifest=True)
+        verify_frozen_status(treeish)
+        verify_zero_authority_packets(treeish)
+        return
     if treeish == ":":
-        if str(_git(["rev-parse", "HEAD"], text=True, error="HEAD_UNAVAILABLE")).strip() != PHASE8_COMMIT:
+        if str(_git(["rev-parse", "HEAD"], text=True, error="HEAD_UNAVAILABLE")).strip() != PHASE9_COMMIT:
             raise Phase8Error("STAGED_BASE_MISMATCH")
-    elif _commit_tuple(treeish)[1] != [PHASE8_COMMIT]:
+    elif _commit_tuple(treeish)[1] != [PHASE9_COMMIT]:
         raise Phase8Error("INTEGRATION_PARENT_MISMATCH")
-    if _changed_paths(PHASE8_COMMIT, treeish) != PHASE9_FORWARD_PATHS:
+    if _changed_paths(PHASE9_COMMIT, treeish) != PHASE10_FORWARD_PATHS:
         raise Phase8Error("INTEGRATION_SCOPE_MISMATCH")
-    verify_protected_artifacts(treeish, repaired_manifest=True)
+    verify_protected_artifacts(treeish, repaired_manifest=True, phase10_forward=True)
     verify_frozen_status(treeish)
     verify_zero_authority_packets(treeish)
 
@@ -277,8 +312,8 @@ def main() -> int:
         print(f"FAIL: {exc}", file=sys.stderr)
         return 1
     print(
-        "PASS: the accepted Phase 8 object is exact; its bounded Phase 9 descendant preserves "
-        "requests, ledger, specs, status, and zero authority"
+        "PASS: the accepted Phase 8 and Phase 9 objects are exact; the bounded Phase 10 "
+        "descendant preserves requests, ledger, specs, status, and zero authority"
     )
     return 0
 
