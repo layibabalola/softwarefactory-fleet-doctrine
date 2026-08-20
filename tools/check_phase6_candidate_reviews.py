@@ -14,6 +14,9 @@ from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
 BATCH_PATH = "adoption/phase6/r26-local-candidate-review-receipts.json"
+BATCH_BLOB = "c3f9c84cc39928801ca517cba8b8506c28c4ea20"
+BATCH_BYTES = 11096
+BATCH_SHA256 = "68dfb623e7ee8b8624a568c8a79cd08b5504e840fcb53252c7a2884597439a0d"
 LEDGER_PATH = "adoption/universal-token-control-r26.json"
 SCHEMA = "fleet-r26-local-candidate-review-batch/v1"
 BASE_COMMIT = "e4e7f9363185a5e10bb3a92167c785ef29caf2b7"
@@ -39,6 +42,20 @@ AUTHORITY_KEYS = {
     "provider", "authentication", "scheduler", "gate", "pushMergePublish",
 }
 EXPECTED_COUNTS = {"ADOPT": 0, "DISTINGUISH": 5, "MISSING": 0, "REJECT": 0, "STALE": 4}
+EXPECTED_CAPTURE = {
+    "reviewedAt": "2026-08-20T11:04:10.3493913Z",
+    "machine": "ULTRA-MAGNUS",
+    "reviewer": "codex-fleet-disposition-census-independent-subagent",
+    "reviewMode": "READ_ONLY_EXACT_OBJECT_AND_SEMANTIC_REVIEW",
+    "networkInspectionPerformed": False,
+    "providerInvocationPerformed": False,
+    "authenticationPerformed": False,
+    "projectMutationPerformed": False,
+    "runtimeMutationPerformed": False,
+    "scheduledTaskMutationPerformed": False,
+    "gateMutationPerformed": False,
+    "pushMergePublishPerformed": False,
+}
 PROJECT_PATHS = {
     "salesforce-tools": Path(
         r"C:\code\softwarefactory-fleet-doctrine-worktrees\salesforce-adoption-gap-37a2070-20260819"
@@ -51,15 +68,22 @@ EXPECTED = {
     "salesforce-tools": {
         "evidenceKind": "PROJECT_DISTINGUISH_EVIDENCE_CANDIDATE",
         "reviewScope": "ZERO_AUTHORITY_EVIDENCE_CORRECTNESS_ONLY_NOT_ADOPTION_OR_INSTALLATION",
-        "commit": "d8542ccfb9dde81dcdd57bf55c7959c3b0d521c4",
-        "tree": "4ec6a0433d622f9658789a75403030f8251926b8",
-        "parent": "1675e513159d3c6a12e70659c9c0fba9807e7b5a",
-        "base": "37a20709d021a7b0c44dbad2e6f2131bd328e4fd",
-        "changedPaths": [
-            "docs/provider-control/R26-CURRENT-STATE-EVIDENCE.json",
-            "docs/provider-control/R26-DISPOSITION-CANDIDATE.md",
-            "tools/provider-control/test-r26-disposition-candidate.ps1",
-        ],
+        "subject": {
+            "remote": "https://github.com/layibabalola/SalesforceSupportTools.git",
+            "localBranch": "codex/salesforce-adoption-gap-37a2070-20260819",
+            "commit": "d8542ccfb9dde81dcdd57bf55c7959c3b0d521c4",
+            "tree": "4ec6a0433d622f9658789a75403030f8251926b8",
+            "parent": "1675e513159d3c6a12e70659c9c0fba9807e7b5a",
+            "observedProjectBase": "37a20709d021a7b0c44dbad2e6f2131bd328e4fd",
+            "remoteTrackingRefContainsSubject": False,
+            "networkRemoteVerified": False,
+            "worktreeCleanAtReview": True,
+            "changedPaths": [
+                "docs/provider-control/R26-CURRENT-STATE-EVIDENCE.json",
+                "docs/provider-control/R26-DISPOSITION-CANDIDATE.md",
+                "tools/provider-control/test-r26-disposition-candidate.ps1",
+            ],
+        },
         "artifacts": [
             {
                 "path": "docs/provider-control/R26-CURRENT-STATE-EVIDENCE.json",
@@ -93,18 +117,72 @@ EXPECTED = {
             "unobservedLaunchPathsMayExist": True,
             "allAuthorityMembersFalse": True,
         },
+        "executionEvidence": [
+            {
+                "engine": "PowerShell 7.6.3",
+                "command": "pwsh -NoProfile -File .\\tools\\provider-control\\test-r26-disposition-candidate.ps1",
+                "exitCode": 0,
+                "result": "PASS R26 forward zero-authority disposition candidate",
+                "hostileControlsPassed": 41,
+                "hostileControlsTotal": 41,
+            },
+            {
+                "engine": "Windows PowerShell 5.1.19041.7663",
+                "command": (
+                    "powershell -NoProfile -ExecutionPolicy Bypass -File "
+                    ".\\tools\\provider-control\\test-r26-disposition-candidate.ps1"
+                ),
+                "exitCode": 0,
+                "result": "PASS R26 forward zero-authority disposition candidate",
+                "hostileControlsPassed": 41,
+                "hostileControlsTotal": 41,
+            },
+        ],
+        "dispositionTreatment": {
+            "currentLedgerStatus": "DISTINGUISH",
+            "candidateDispositionKind": "DISTINGUISH",
+            "candidateDisposition": (
+                "DISTINGUISH(909f769d02e8412e51e28e242cfa8d00dadc9a3d, "
+                "R26_CANDIDATE_ZERO_AUTHORITY_CURRENT_CONTENT_WORK_PROVIDER_TEST_PROVIDER_ADMIN_"
+                "CHAT_SESSION_SCHEDULED_STANDUP_SCHEDULED_FOLLOWUP_APP_WATCH_AND_REPOSITORY_"
+                "AGENT_WORKFLOW_LAUNCH_PATHS_REMAIN_OUTSIDE_A_PINNED_FAIL_CLOSED_SUPERVISOR_"
+                "KNOWN_MISSING_ADOPTION_BLOCKERS_ENUMERATED_PROOF_SET_NOT_COMPLETE_GATE_TREATED_"
+                "CLOSED_BY_ABSENCE_WITHOUT_PERSISTENT_GATE_CREDIT, "
+                "SALESFORCE_MAIN_37a20709d021a7b0c44dbad2e6f2131bd328e4fd, "
+                "EVIDENCE_SHA256_948d4af9a388bdf1e7a9ffb36a6cd15d875726ef698515e9e9dc0366a00b90f5)"
+            ),
+            "ledgerStatusChangeAuthorized": False,
+            "publicationAuthority": False,
+            "adoptionCredit": False,
+            "installationCredit": False,
+        },
+        "nextLawfulActions": [
+            "PROJECT_OWNER_MAY_PUBLISH_THE_EXACT_REVIEWED_COMMIT_ON_A_NEW_IMMUTABLE_PROJECT_REF",
+            "AFTER_EXACT_REF_VERIFICATION_DOCTRINE_MAY_REPIN_THE_EXISTING_DISTINGUISH_ROW_WITHOUT_STATUS_ADVANCE",
+            "BUILD_FAKE_PROVIDER_SEAM_AND_AN_INDEPENDENT_COMPLETE_FOUR_SURFACE_CENSUS_BEFORE_SUPERVISOR_INSTALLATION",
+            "KEEP_GATE_CLOSED_AND_EARN_EVERY_R26_ADOPTION_AND_NON_REGRESSION_PROOF_BEFORE_ANY_ADOPT_CLAIM",
+        ],
     },
     "cloudvore": {
         "evidenceKind": "ADOPTION_BLOCKER_OBSERVATIONAL_LOWER_BOUND",
         "reviewScope": "ZERO_AUTHORITY_BLOCKER_EVIDENCE_ONLY_NOT_A_PROJECT_DISPOSITION",
-        "commit": "54a7a45c4b223a0d8647bfc61c732dc5325f8d30",
-        "tree": "c25cea7b2333be786c8ea693f739ae12b25c19c5",
-        "parent": "1a01c945756f80737199cd6a9383d74763f9f147",
-        "base": "db3e5fd155a6efe41947f5d4aa0bbc4a3d2098a8",
-        "changedPaths": [
-            "knowledge/universal-token-control-r28-installation-census-blocker-2026-08-19.json",
-            "tools/universal-token-control-r28-installation-census-blocker.tests.py",
-        ],
+        "subject": {
+            "remote": "https://github.com/layibabalola/Cloudvore.git",
+            "localBranch": "codex/r28-install-census-candidate-20260819",
+            "commit": "54a7a45c4b223a0d8647bfc61c732dc5325f8d30",
+            "tree": "c25cea7b2333be786c8ea693f739ae12b25c19c5",
+            "parent": "1a01c945756f80737199cd6a9383d74763f9f147",
+            "observedProjectBase": "db3e5fd155a6efe41947f5d4aa0bbc4a3d2098a8",
+            "acceptedClosedSupervisorCommit": "ed1119845d43fa1042d69c6f6d3ae9e700b1db5f",
+            "acceptedClosedSupervisorTree": "0001966e4f155f4b3ef2feae2e5d99f3522eb4c6",
+            "remoteTrackingRefContainsSubject": False,
+            "networkRemoteVerified": False,
+            "worktreeCleanAtReview": True,
+            "changedPaths": [
+                "knowledge/universal-token-control-r28-installation-census-blocker-2026-08-19.json",
+                "tools/universal-token-control-r28-installation-census-blocker.tests.py",
+            ],
+        },
         "artifacts": [
             {
                 "path": "knowledge/universal-token-control-r28-installation-census-blocker-2026-08-19.json",
@@ -137,6 +215,43 @@ EXPECTED = {
             "adoptionGapClosed": False,
             "allAuthorityMembersFalse": True,
         },
+        "executionEvidence": [
+            {
+                "engine": "CPython 3.14.6",
+                "command": (
+                    "PYTHONDONTWRITEBYTECODE=1 python "
+                    ".\\tools\\universal-token-control-r28-installation-census-blocker.tests.py"
+                ),
+                "exitCode": 0,
+                "result": "Ran 17 tests in 78.193s - OK",
+                "testCasesPassed": 17,
+                "testCasesTotal": 17,
+                "adverseFamiliesPassed": [
+                    "DUPLICATE_JSON",
+                    "INSTALLATION_AND_DIRECT_INVOCATION_OVERCLAIM",
+                    "LAUNCHER_OMISSION_DUPLICATE_DRIFT_AND_ROUTE_OVERCLAIM",
+                    "PROCESS_CAPABILITY_OMISSION_DRIFT_AND_OVERCLAIM",
+                    "SCANNER_KNOWN_LIMITATIONS_AND_POSITIVE_CONTROLS",
+                    "SURFACE_OMISSION_AND_HOST_COMPLETENESS_OVERCLAIM",
+                    "NON_REGRESSION_AND_AUTHORITY_OVERCLAIM",
+                ],
+            }
+        ],
+        "dispositionTreatment": {
+            "currentLedgerStatus": "DISTINGUISH",
+            "candidateDispositionKind": None,
+            "candidateDisposition": None,
+            "ledgerStatusChangeAuthorized": False,
+            "publicationAuthority": False,
+            "adoptionCredit": False,
+            "installationCredit": False,
+        },
+        "nextLawfulActions": [
+            "KEEP_THIS_ACCEPTED_SUBJECT_CLASSIFIED_AS_BLOCKER_EVIDENCE_NOT_A_DISPOSITION",
+            "BUILD_EXACT_PREIMAGE_BOUND_GATE_FIRST_INTEGRATION_FOR_THE_THREE_KNOWN_CONTENT_LAUNCHERS",
+            "PRODUCE_AN_INDEPENDENT_COMPLETE_CENSUS_METHOD_AND_CLOSED_ROUTING_FOR_ALL_DISCOVERED_EXECUTION_PATHS",
+            "PRODUCE_A_HOST_LOCAL_CLOSED_INSTALL_MANIFEST_AND_ALL_R26_NON_REGRESSION_AND_ADOPTION_PROOFS_BEFORE_ANY_ADOPT_CLAIM",
+        ],
     },
 }
 
@@ -197,6 +312,37 @@ def _exact_authority(value: Any) -> None:
         raise Phase6Error("AUTHORITY_OVERCLAIM")
 
 
+def _verify_linear_lineage(treeish: str) -> str:
+    resolved = str(_git(ROOT, "rev-parse", "--verify", f"{treeish}^{{commit}}", text=True)).strip()
+    merge_base = str(_git(ROOT, "merge-base", BASE_COMMIT, resolved, text=True)).strip()
+    if merge_base != BASE_COMMIT:
+        raise Phase6Error("BASE_NOT_ANCESTOR")
+    rows = str(
+        _git(ROOT, "rev-list", "--reverse", "--parents", f"{BASE_COMMIT}..{resolved}", text=True)
+    ).splitlines()
+    if not rows:
+        raise Phase6Error("PHASE6_LINEAGE_EMPTY")
+    prior = BASE_COMMIT
+    for row in rows:
+        fields = row.split()
+        if len(fields) != 2 or fields[1] != prior:
+            raise Phase6Error("PHASE6_LINEAGE_NOT_SOLE_PARENT")
+        prior = fields[0]
+    if prior != resolved:
+        raise Phase6Error("PHASE6_LINEAGE_TIP_MISMATCH")
+    return resolved
+
+
+def _verify_receipt_blob(treeish: str) -> None:
+    if _oid(ROOT, treeish, BATCH_PATH) != BATCH_BLOB:
+        raise Phase6Error("RECEIPT_BLOB_OID_MISMATCH")
+    raw = _blob(ROOT, treeish, BATCH_PATH)
+    if len(raw) != BATCH_BYTES:
+        raise Phase6Error("RECEIPT_BYTES_MISMATCH")
+    if hashlib.sha256(raw).hexdigest() != BATCH_SHA256:
+        raise Phase6Error("RECEIPT_SHA256_MISMATCH")
+
+
 def _verify_base(batch: dict[str, Any], treeish: str) -> None:
     expected = {
         "doctrineCommit": BASE_COMMIT,
@@ -211,6 +357,8 @@ def _verify_base(batch: dict[str, Any], treeish: str) -> None:
         raise Phase6Error("FROZEN_BASE_MISMATCH")
     if _tuple(ROOT, BASE_COMMIT) != (BASE_TREE, [BASE_PARENT]):
         raise Phase6Error("BASE_OBJECT_MISMATCH")
+    _verify_linear_lineage(treeish)
+    _verify_receipt_blob(treeish)
     if _oid(ROOT, treeish, LEDGER_PATH) != LEDGER_BLOB:
         raise Phase6Error("LEDGER_CHANGED")
     if hashlib.sha256(_blob(ROOT, treeish, LEDGER_PATH)).hexdigest() != LEDGER_SHA256:
@@ -240,53 +388,17 @@ def _verify_review(review: Any) -> None:
         raise Phase6Error("VERDICT_INVALID")
     if review["reviewScope"] != expected["reviewScope"]:
         raise Phase6Error("REVIEW_SCOPE_INVALID")
-    subject = review["subject"]
-    if (
-        subject["commit"] != expected["commit"]
-        or subject["tree"] != expected["tree"]
-        or subject["parent"] != expected["parent"]
-        or subject["observedProjectBase"] != expected["base"]
-        or subject["changedPaths"] != expected["changedPaths"]
-        or subject["remoteTrackingRefContainsSubject"] is not False
-        or subject["networkRemoteVerified"] is not False
-        or subject["worktreeCleanAtReview"] is not True
-    ):
+    if review["subject"] != expected["subject"]:
         raise Phase6Error("SUBJECT_BINDING_INVALID")
     if review["artifacts"] != expected["artifacts"]:
         raise Phase6Error("ARTIFACT_BINDING_INVALID")
     if review["semanticFindings"] != expected["semanticFindings"]:
         raise Phase6Error("SEMANTIC_FINDING_INVALID")
-    executions = review["executionEvidence"]
-    if not isinstance(executions, list) or not executions:
+    if review["executionEvidence"] != expected["executionEvidence"]:
         raise Phase6Error("EXECUTION_EVIDENCE_INVALID")
-    for execution in executions:
-        if execution.get("exitCode") != 0:
-            raise Phase6Error("EXECUTION_NOT_PASSING")
-        if "hostileControlsTotal" in execution and (
-            execution["hostileControlsPassed"] != execution["hostileControlsTotal"]
-        ):
-            raise Phase6Error("HOSTILE_CONTROL_FAILURE")
-        if "testCasesTotal" in execution and execution["testCasesPassed"] != execution["testCasesTotal"]:
-            raise Phase6Error("TEST_CASE_FAILURE")
-    treatment = review["dispositionTreatment"]
-    if treatment["currentLedgerStatus"] != "DISTINGUISH":
-        raise Phase6Error("LEDGER_STATUS_INVALID")
-    if any(
-        treatment[field] is not False
-        for field in (
-            "ledgerStatusChangeAuthorized", "publicationAuthority", "adoptionCredit",
-            "installationCredit",
-        )
-    ):
-        raise Phase6Error("TREATMENT_OVERCLAIM")
-    if project_id == "salesforce-tools":
-        if treatment["candidateDispositionKind"] != "DISTINGUISH" or not str(
-            treatment["candidateDisposition"]
-        ).startswith(f"DISTINGUISH({R26_MERGE}, "):
-            raise Phase6Error("SALESFORCE_DISPOSITION_INVALID")
-    elif treatment["candidateDispositionKind"] is not None or treatment["candidateDisposition"] is not None:
-        raise Phase6Error("CLOUDVORE_DISPOSITION_FABRICATED")
-    if not isinstance(review["nextLawfulActions"], list) or len(review["nextLawfulActions"]) != 4:
+    if review["dispositionTreatment"] != expected["dispositionTreatment"]:
+        raise Phase6Error("DISPOSITION_TREATMENT_INVALID")
+    if review["nextLawfulActions"] != expected["nextLawfulActions"]:
         raise Phase6Error("NEXT_ACTIONS_INVALID")
     _exact_authority(review["authority"])
 
@@ -297,16 +409,8 @@ def verify_batch(batch: dict[str, Any], treeish: str = "HEAD") -> None:
     if batch["schema"] != SCHEMA or batch["status"] != "TWO_READ_ONLY_ACCEPTS_ZERO_AUTHORITY":
         raise Phase6Error("ROOT_IDENTITY_INVALID")
     _verify_base(batch, treeish)
-    capture = batch["capture"]
-    if capture["reviewMode"] != "READ_ONLY_EXACT_OBJECT_AND_SEMANTIC_REVIEW":
-        raise Phase6Error("CAPTURE_MODE_INVALID")
-    for field in (
-        "networkInspectionPerformed", "providerInvocationPerformed", "authenticationPerformed",
-        "projectMutationPerformed", "runtimeMutationPerformed", "scheduledTaskMutationPerformed",
-        "gateMutationPerformed", "pushMergePublishPerformed",
-    ):
-        if capture[field] is not False:
-            raise Phase6Error("CAPTURE_AUTHORITY_OVERCLAIM")
+    if batch["capture"] != EXPECTED_CAPTURE:
+        raise Phase6Error("CAPTURE_BINDING_INVALID")
     expected_summary = {
         "reviewCount": 2,
         "acceptedEvidenceScopes": 2,
@@ -324,12 +428,40 @@ def verify_batch(batch: dict[str, Any], treeish: str = "HEAD") -> None:
     if ledger.get("summary", {}).get("counts") != EXPECTED_COUNTS:
         raise Phase6Error("LEDGER_COUNTS_INVALID")
     reviews = batch["reviews"]
-    if not isinstance(reviews, list) or [item.get("projectId") for item in reviews] != [
-        "salesforce-tools", "cloudvore",
-    ]:
+    if (
+        not isinstance(reviews, list)
+        or any(not isinstance(item, dict) for item in reviews)
+        or [item.get("projectId") for item in reviews] != ["salesforce-tools", "cloudvore"]
+    ):
         raise Phase6Error("PROJECT_SET_INVALID")
     for review in reviews:
         _verify_review(review)
+
+
+def _verify_local_identity(root: Path, project_id: str, subject: dict[str, Any]) -> None:
+    commit = subject["commit"]
+    if str(_git(root, "symbolic-ref", "--quiet", "--short", "HEAD", text=True)).strip() != subject[
+        "localBranch"
+    ]:
+        raise Phase6Error(f"LOCAL_BRANCH_MISMATCH:{project_id}")
+    if str(_git(root, "remote", "get-url", "origin", text=True)).strip() != subject["remote"]:
+        raise Phase6Error(f"LOCAL_ORIGIN_MISMATCH:{project_id}")
+    if str(_git(root, "status", "--porcelain=v1", "--untracked-files=all", text=True)):
+        raise Phase6Error(f"LOCAL_WORKTREE_NOT_CLEAN:{project_id}")
+    remote_refs = str(
+        _git(
+            root,
+            "for-each-ref",
+            f"--contains={commit}",
+            "--format=%(refname)",
+            "refs/remotes",
+            text=True,
+        )
+    ).splitlines()
+    if bool(remote_refs) is not subject["remoteTrackingRefContainsSubject"]:
+        raise Phase6Error(f"LOCAL_REMOTE_TRACKING_CONTAINMENT_MISMATCH:{project_id}")
+    if subject["networkRemoteVerified"] is not False:
+        raise Phase6Error(f"NETWORK_REMOTE_VERIFICATION_OVERCLAIM:{project_id}")
 
 
 def verify_local_projects(batch: dict[str, Any]) -> None:
@@ -338,13 +470,15 @@ def verify_local_projects(batch: dict[str, Any]) -> None:
         if not root.is_dir():
             raise Phase6Error(f"LOCAL_PROJECT_MISSING:{project_id}")
         review = reviews[project_id]
-        commit = review["subject"]["commit"]
-        if _tuple(root, commit) != (review["subject"]["tree"], [review["subject"]["parent"]]):
+        subject = review["subject"]
+        commit = subject["commit"]
+        _verify_local_identity(root, project_id, subject)
+        if _tuple(root, commit) != (subject["tree"], [subject["parent"]]):
             raise Phase6Error(f"LOCAL_COMMIT_TUPLE_MISMATCH:{project_id}")
         changed = str(
             _git(root, "diff-tree", "--no-commit-id", "--name-only", "-r", commit, text=True)
         ).splitlines()
-        if changed != review["subject"]["changedPaths"]:
+        if changed != subject["changedPaths"]:
             raise Phase6Error(f"LOCAL_CHANGED_PATHS_MISMATCH:{project_id}")
         for artifact in review["artifacts"]:
             if _oid(root, commit, artifact["path"]) != artifact["gitBlobOid"]:
@@ -367,7 +501,12 @@ def main() -> int:
     except Phase6Error as exc:
         print(f"FAIL: {exc}", file=sys.stderr)
         return 1
-    suffix = "; local project objects rederived" if args.verify_local_projects else ""
+    suffix = (
+        "; local objects, branch/origin, cleanliness, and remote-tracking containment rederived; "
+        "network remotes not queried"
+        if args.verify_local_projects
+        else ""
+    )
     print("PASS: two exact R26 candidate evidence reviews remain zero-authority" + suffix)
     return 0
 
