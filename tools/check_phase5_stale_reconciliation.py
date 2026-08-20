@@ -78,6 +78,14 @@ ADOBE_STATE_ARTIFACT = {
         {"text": "status: BLOCKED_REVIEWER_CAPACITY", "count": 2},
     ],
 }
+MANIFEST_BINDING_REPAIR_PATHS = {
+    "manifests/universal-provider-control-reconciliation-r26.json",
+    "tests/test_universal_manifest_spec_bindings.py",
+}
+PHASE9_INTEGRATION_PATHS = {
+    "tests/test_phase9_integration.py",
+    "tools/check_phase9_integration.py",
+}
 ALLOWED_PHASE5_PATHS = {
     ".github/workflows/disposition-intake.yml",
     "adoption/README.md",
@@ -103,7 +111,7 @@ ALLOWED_PHASE5_PATHS = {
     "tools/check_phase6_candidate_reviews.py",
     "tools/check_phase7_owner_publication_requests.py",
     "tools/check_phase8_integration.py",
-}
+} | MANIFEST_BINDING_REPAIR_PATHS | PHASE9_INTEGRATION_PATHS
 SHA_PATTERN = re.compile(r"[0-9a-f]{40,64}")
 REMOTE_TOKEN_ENV = "R26_REMOTE_GITHUB_TOKEN"
 REMOTE_TIMEOUT_SECONDS = 60

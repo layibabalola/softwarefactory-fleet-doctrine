@@ -22,10 +22,13 @@ PHASE6_TREE = "e62e063b6a55084431dd8f485f59b74c0b897be5"
 PHASE6_PARENT = "6a33db0902111b823ae202f534fd1d2da554d436"
 PHASE7_COMMIT = "c5b9efd00c47a84488b96734dd9b6a94ecd37999"
 PHASE7_TREE = "2d9f5d82bf1a8acbef5839ac6fcaecc1caf53023"
+PHASE8_COMMIT = "2223647059cb789fd350883597756666357583df"
+PHASE8_TREE = "062ee5311cc56b6ea50c2ce3f4e9d095847069e8"
 LEDGER_PATH = "adoption/universal-token-control-r26.json"
 LEDGER_BLOB = "333cc6d47e99a857b64150a87bd9f834590256e1"
 GLOBAL_MANIFEST_PATH = "manifests/universal-provider-control-reconciliation-r26.json"
 GLOBAL_MANIFEST_BLOB = "898385fb82fbbe9946f937f0486142f4733d03fe"
+REPAIRED_GLOBAL_MANIFEST_BLOB = "65901748c5843f05b37e4352c5b469e47804e2f1"
 
 PHASE6_EXACT_TARGET_BLOBS = {
     "adoption/README.md": "13aa1bebfb5e42df28e4c0ec3069c679c547480c",
@@ -56,6 +59,19 @@ EXPECTED_INTEGRATION_PATHS = PHASE7_SOURCE_DELTA_PATHS | {
     "tools/check_phase6_candidate_reviews.py",
     "tools/check_phase8_integration.py",
 }
+PHASE9_FORWARD_PATHS = {
+    ".github/workflows/disposition-intake.yml",
+    GLOBAL_MANIFEST_PATH,
+    "tests/test_phase9_integration.py",
+    "tests/test_universal_manifest_spec_bindings.py",
+    "tools/check_phase2_disposition_batch.py",
+    "tools/check_phase3_disposition_batch.py",
+    "tools/check_phase5_stale_reconciliation.py",
+    "tools/check_phase6_candidate_reviews.py",
+    "tools/check_phase7_owner_publication_requests.py",
+    "tools/check_phase8_integration.py",
+    "tools/check_phase9_integration.py",
+}
 
 # Filled only after the mechanical union is staged. These exact postimage blobs make every conflict
 # resolution reviewable and prevent a broad allowlist or workflow edit from hiding in the replay.
@@ -66,6 +82,14 @@ NARROW_RESOLUTION_BLOBS = {
     "tools/check_phase5_stale_reconciliation.py": "581b5db53dc2a6349dc3a8db7f93c8e637173738",
     "tools/check_phase6_candidate_reviews.py": "11a86d02df7ece734ed68fadd372ad1789511dd0",
     "tools/check_phase7_owner_publication_requests.py": "4f416401e227cc17d48f3cea718f54ec4fc3c7b4",
+}
+PHASE9_NARROW_RESOLUTION_BLOBS = {
+    ".github/workflows/disposition-intake.yml": "6bb4eef0b970e3a15f9e69c46c60f628719289b5",
+    "tools/check_phase2_disposition_batch.py": "58435ac1d117499c40680a3445597ab662dd1cf0",
+    "tools/check_phase3_disposition_batch.py": "d7f2d7456ce062c0669bde249ba06adcf558f7d0",
+    "tools/check_phase5_stale_reconciliation.py": "b4d649db2a49a2e30fa0cef223b69364ab077043",
+    "tools/check_phase6_candidate_reviews.py": "1c62968ee079bcb71d3f4d2d293383ddf986e32e",
+    "tools/check_phase7_owner_publication_requests.py": "3e201141b2758a2f557194d7de4e1a3a625ac415",
 }
 EXPECTED_STATUS_COUNTS = {"ADOPT": 0, "DISTINGUISH": 5, "MISSING": 0, "REJECT": 0, "STALE": 4}
 REQUEST_STATUS = "REQUEST_ONLY_ZERO_AUTHORITY"
@@ -152,6 +176,10 @@ def verify_source_objects() -> None:
         raise Phase8Error("PHASE7_SUBJECT_MISMATCH")
     if _changed_paths(PHASE5_BASE, PHASE7_COMMIT) != PHASE7_SOURCE_DELTA_PATHS:
         raise Phase8Error("PHASE7_SOURCE_SCOPE_MISMATCH")
+    if _commit_tuple(PHASE8_COMMIT) != (PHASE8_TREE, [PHASE6_COMMIT]):
+        raise Phase8Error("PHASE8_SUBJECT_MISMATCH")
+    if _changed_paths(PHASE6_COMMIT, PHASE8_COMMIT) != EXPECTED_INTEGRATION_PATHS:
+        raise Phase8Error("INTEGRATION_SCOPE_MISMATCH")
     for path, expected in PHASE6_EXACT_TARGET_BLOBS.items():
         if _oid(PHASE6_COMMIT, path) != expected:
             raise Phase8Error("PHASE6_SOURCE_ARTIFACT_MISMATCH")
@@ -199,11 +227,12 @@ def verify_frozen_status(treeish: str) -> None:
         raise Phase8Error("LEDGER_AUTHORITY_ADVANCE")
 
 
-def verify_protected_artifacts(treeish: str) -> None:
+def verify_protected_artifacts(treeish: str, *, repaired_manifest: bool = False) -> None:
     for path, expected in {**PHASE6_EXACT_TARGET_BLOBS, **PHASE7_EXACT_TARGET_BLOBS}.items():
         if _oid(treeish, path) != expected:
             raise Phase8Error("PRESERVED_ARTIFACT_DRIFT")
-    for path, expected in NARROW_RESOLUTION_BLOBS.items():
+    expected_resolutions = PHASE9_NARROW_RESOLUTION_BLOBS if repaired_manifest else NARROW_RESOLUTION_BLOBS
+    for path, expected in expected_resolutions.items():
         if SHA40.fullmatch(expected) is None or _oid(treeish, path) != expected:
             raise Phase8Error("NARROW_RESOLUTION_DRIFT")
     source_specs = _tree_paths(PHASE6_COMMIT, "specs")
@@ -214,20 +243,26 @@ def verify_protected_artifacts(treeish: str) -> None:
             raise Phase8Error("SPEC_BLOB_DRIFT")
     if _oid(PHASE6_COMMIT, GLOBAL_MANIFEST_PATH) != GLOBAL_MANIFEST_BLOB:
         raise Phase8Error("SOURCE_GLOBAL_MANIFEST_MISMATCH")
-    if _oid(treeish, GLOBAL_MANIFEST_PATH) != GLOBAL_MANIFEST_BLOB:
+    expected_manifest = REPAIRED_GLOBAL_MANIFEST_BLOB if repaired_manifest else GLOBAL_MANIFEST_BLOB
+    if _oid(treeish, GLOBAL_MANIFEST_PATH) != expected_manifest:
         raise Phase8Error("GLOBAL_MANIFEST_BASELINE_DRIFT")
 
 
 def verify_integration(treeish: str) -> None:
     verify_source_objects()
+    verify_protected_artifacts(PHASE8_COMMIT)
+    verify_frozen_status(PHASE8_COMMIT)
+    verify_zero_authority_packets(PHASE8_COMMIT)
+    if treeish == PHASE8_COMMIT:
+        return
     if treeish == ":":
-        if str(_git(["rev-parse", "HEAD"], text=True, error="HEAD_UNAVAILABLE")).strip() != PHASE6_COMMIT:
+        if str(_git(["rev-parse", "HEAD"], text=True, error="HEAD_UNAVAILABLE")).strip() != PHASE8_COMMIT:
             raise Phase8Error("STAGED_BASE_MISMATCH")
-    elif _commit_tuple(treeish)[1] != [PHASE6_COMMIT]:
+    elif _commit_tuple(treeish)[1] != [PHASE8_COMMIT]:
         raise Phase8Error("INTEGRATION_PARENT_MISMATCH")
-    if _changed_paths(PHASE6_COMMIT, treeish) != EXPECTED_INTEGRATION_PATHS:
+    if _changed_paths(PHASE8_COMMIT, treeish) != PHASE9_FORWARD_PATHS:
         raise Phase8Error("INTEGRATION_SCOPE_MISMATCH")
-    verify_protected_artifacts(treeish)
+    verify_protected_artifacts(treeish, repaired_manifest=True)
     verify_frozen_status(treeish)
     verify_zero_authority_packets(treeish)
 
@@ -242,8 +277,8 @@ def main() -> int:
         print(f"FAIL: {exc}", file=sys.stderr)
         return 1
     print(
-        "PASS: Phase 6 is the sole parent; exact Phase 7 requests are integrated; "
-        "ledger, specs, global-manifest baseline, status, and authority remain frozen"
+        "PASS: the accepted Phase 8 object is exact; its bounded Phase 9 descendant preserves "
+        "requests, ledger, specs, status, and zero authority"
     )
     return 0
 

@@ -35,6 +35,14 @@ PROJECT_IDS = {
     "mlv-app",
     "salesforce-tools",
 }
+MANIFEST_BINDING_REPAIR_PATHS = {
+    "manifests/universal-provider-control-reconciliation-r26.json",
+    "tests/test_universal_manifest_spec_bindings.py",
+}
+PHASE9_INTEGRATION_PATHS = {
+    "tests/test_phase9_integration.py",
+    "tools/check_phase9_integration.py",
+}
 ALLOWED_PHASE2_PATHS = {
     ".github/workflows/disposition-intake.yml",
     "adoption/README.md",
@@ -71,7 +79,7 @@ ALLOWED_PHASE2_PATHS = {
     "tools/check_phase6_candidate_reviews.py",
     "tools/check_phase7_owner_publication_requests.py",
     "tools/check_phase8_integration.py",
-}
+} | MANIFEST_BINDING_REPAIR_PATHS | PHASE9_INTEGRATION_PATHS
 OWNER_EVIDENCE_REQUIREMENTS = [
     "PROJECT_OWNED_COMMIT_AND_GIT_BLOB_BINDING_R26_E70A044_AND_MERGE_909F769",
     "CURRENT_EXPLICIT_ADOPT_DISTINGUISH_OR_REJECT",

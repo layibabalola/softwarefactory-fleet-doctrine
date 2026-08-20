@@ -88,6 +88,12 @@ jobs:
       - name: Verify phase-8 accepted-lineage integration
         run: python tools/check_phase8_integration.py --treeish HEAD
 
+      - name: Run phase-9 manifest integration controls
+        run: python -m unittest discover -s tests -p "test_phase9_integration.py" -v
+
+      - name: Verify phase-9 accepted manifest integration
+        run: python tools/check_phase9_integration.py --treeish HEAD
+
       - name: Run frozen adoption-ledger controls
         run: python -m unittest discover -s tests -p "test_adoption_ledger.py" -v
 

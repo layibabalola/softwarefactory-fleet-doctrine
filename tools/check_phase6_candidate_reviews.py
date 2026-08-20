@@ -27,6 +27,14 @@ LEDGER_BLOB = "333cc6d47e99a857b64150a87bd9f834590256e1"
 LEDGER_SHA256 = "a41f68c691159813ee58198ca1286683dcb1d20ea53cbe42f42a232cb2cd95ce"
 R26_CANDIDATE = "e70a044f31dd2f43ab7c716d63a4eb89318c61b6"
 R26_MERGE = "909f769d02e8412e51e28e242cfa8d00dadc9a3d"
+MANIFEST_BINDING_REPAIR_PATHS = {
+    "manifests/universal-provider-control-reconciliation-r26.json",
+    "tests/test_universal_manifest_spec_bindings.py",
+}
+PHASE9_INTEGRATION_PATHS = {
+    "tests/test_phase9_integration.py",
+    "tools/check_phase9_integration.py",
+}
 ALLOWED_PATHS = {
     ".github/workflows/disposition-intake.yml",
     "adoption/README.md",
@@ -47,7 +55,7 @@ ALLOWED_PATHS = {
     "tools/check_phase6_candidate_reviews.py",
     "tools/check_phase7_owner_publication_requests.py",
     "tools/check_phase8_integration.py",
-}
+} | MANIFEST_BINDING_REPAIR_PATHS | PHASE9_INTEGRATION_PATHS
 AUTHORITY_KEYS = {
     "projectDisposition", "projectAdoption", "fleetAdoption", "runtime", "activation",
     "provider", "authentication", "scheduler", "gate", "pushMergePublish",
