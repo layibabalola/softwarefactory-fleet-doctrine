@@ -120,42 +120,64 @@ class Phase2DispositionBatchTests(unittest.TestCase):
                 with self.assertRaisesRegex(MODULE.BatchError, "SUMMARY_OVERCLAIM"):
                     MODULE.verify_batch(batch, "HEAD")
 
-    def test_phase2_scope_rejects_product_or_spec_mutation(self):
-        batch = self._copy()
-        with mock.patch.object(
-            MODULE, "_changed_paths", return_value={"specs/dng-auto-processor.md"}
+    def _phase2_scope(self, changed):
+        with (
+            mock.patch.object(MODULE, "_commit_tuple", return_value=("b" * 40, [])),
+            mock.patch.object(MODULE, "_is_ancestor", return_value=True),
+            mock.patch.object(MODULE, "_event_changed_paths", return_value=set(changed)),
         ):
-            with self.assertRaisesRegex(MODULE.BatchError, "PHASE2_SCOPE_VIOLATION"):
-                MODULE.verify_batch(batch, "HEAD")
+            return MODULE.evaluate_event_scope("pull_request", "a" * 40, "HEAD")
 
-    def test_phase2_scope_allows_exact_forward_adoption_checker_hardening(self):
-        batch = self._copy()
-        with mock.patch.object(
-            MODULE,
-            "_changed_paths",
-            return_value={
-                "adoption/README.md",
-                "adoption/phase3/README.md",
-                "adoption/phase3/r26-published-project-disposition-intake.json",
-                "adoption/phase5/README.md",
-                "adoption/phase5/r26-stale-project-reconciliation.json",
-                "adoption/universal-token-control-r26.json",
-                "specs/adversarialllm.md",
-                "specs/cloudvore.md",
-                "specs/mlv-app.md",
-                "specs/salesforce-tools.md",
-                "tests/test_adoption_ledger.py",
-                "tools/check_adoption_ledger.py",
-                "tests/test_phase2_disposition_batch.py",
-                "tools/check_phase2_disposition_batch.py",
-                "tests/test_phase3_disposition_batch.py",
-                "tests/test_adversarialllm_utilization_shadow_doctrine.py",
-                "tools/check_phase3_disposition_batch.py",
-                "tests/test_phase5_stale_reconciliation.py",
-                "tools/check_phase5_stale_reconciliation.py",
-            },
+    def test_phase2_scope_unrelated_r29_is_explicit_na(self):
+        changed = {
+            "README.md", "RECONCILIATION.md",
+            "manifests/universal-provider-control-reconciliation-r29.json",
+            "schemas/universal-provider-review-admission-v1.schema.json",
+            "specs/fleet-universal-provider-control-reconciliation.md",
+            "tests/test_universal_provider_control.py",
+            "tools/check_universal_manifest.py", "tools/universal_provider_control.py",
+        }
+        self.assertEqual(self._phase2_scope(changed), "N/A_NO_PHASE2_TRIGGER")
+
+    def test_phase2_scope_allows_phase_only_event(self):
+        self.assertEqual(
+            self._phase2_scope({MODULE.BATCH_PATH, "tests/test_phase2_disposition_batch.py"}),
+            "APPLICABLE",
+        )
+
+    def test_phase2_scope_rejects_mixed_product_or_foreign_event(self):
+        for foreign in ("specs/dng-auto-processor.md", "src/runtime.py"):
+            with self.subTest(foreign=foreign):
+                with self.assertRaisesRegex(MODULE.BatchError, "PHASE2_SCOPE_VIOLATION"):
+                    self._phase2_scope({MODULE.BATCH_PATH, foreign})
+
+    def test_phase2_control_surface_change_plus_foreign_still_rejects(self):
+        for trigger in (
+            ".github/workflows/disposition-intake.yml",
+            "tests/test_phase2_disposition_batch.py",
+            "tools/check_phase2_disposition_batch.py",
         ):
-            MODULE.verify_batch(batch, "HEAD")
+            with self.subTest(trigger=trigger):
+                with self.assertRaisesRegex(MODULE.BatchError, "PHASE2_SCOPE_VIOLATION"):
+                    self._phase2_scope({trigger, "specs/dng-auto-processor.md"})
+
+    def test_phase2_scope_base_is_mandatory_valid_and_ancestor(self):
+        for base in ("", "not-a-sha"):
+            with self.subTest(base=base):
+                with self.assertRaisesRegex(MODULE.BatchError, "PHASE2_SCOPE_BASE_INVALID"):
+                    MODULE.evaluate_event_scope("pull_request", base, "HEAD")
+        with (
+            mock.patch.object(MODULE, "_commit_tuple", return_value=("b" * 40, [])),
+            mock.patch.object(MODULE, "_is_ancestor", return_value=False),
+        ):
+            with self.assertRaisesRegex(MODULE.BatchError, "PHASE2_SCOPE_BASE_INVALID"):
+                MODULE.evaluate_event_scope("push", "a" * 40, "HEAD")
+
+    def test_phase2_workflow_dispatch_scope_is_explicit_na(self):
+        self.assertEqual(
+            MODULE.evaluate_event_scope("workflow_dispatch", "", "HEAD"),
+            "N/A_WORKFLOW_DISPATCH",
+        )
 
     def test_local_probe_verifier_is_bounded_and_fails_on_drift(self):
         batch = self._copy()

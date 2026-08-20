@@ -97,6 +97,14 @@ ALLOWED_PHASE3_PATHS = {
     "tools/check_phase3_disposition_batch.py",
     "tools/check_phase5_stale_reconciliation.py",
 }
+PHASE3_TRIGGER_PATHS = {
+    ".github/workflows/disposition-intake.yml",
+    "adoption/phase3/README.md",
+    INTAKE_PATH,
+    LEDGER_PATH,
+    "tests/test_phase3_disposition_batch.py",
+    "tools/check_phase3_disposition_batch.py",
+}
 SHA_PATTERN = re.compile(r"[0-9a-f]{40,64}")
 FORMAL_ADOPT_PATTERN = re.compile(r"\bADOPT\s*\(", re.IGNORECASE)
 REMOTE_FETCH_DEPTH = 64
@@ -191,6 +199,34 @@ def _changed_paths(base: str, treeish: str) -> set[str]:
         else ["diff", "--name-only", f"{base}..{treeish}"]
     )
     return set(_git(args, text=True, error="PHASE3_DIFF_UNAVAILABLE").splitlines())
+
+
+def _event_changed_paths(scope_base: str, treeish: str) -> set[str]:
+    return _changed_paths(scope_base, treeish)
+
+
+def evaluate_event_scope(event_name: str, scope_base: str, treeish: str) -> str:
+    """Classify only the trusted event delta; frozen evidence is verified separately and always."""
+
+    if event_name == "workflow_dispatch":
+        return "N/A_WORKFLOW_DISPATCH"
+    if event_name not in {"pull_request", "push"}:
+        raise Phase3Error("PHASE3_SCOPE_EVENT_INVALID")
+    if not isinstance(scope_base, str) or SHA_PATTERN.fullmatch(scope_base) is None:
+        raise Phase3Error("PHASE3_SCOPE_BASE_INVALID")
+    try:
+        _commit_tuple(scope_base)
+    except Phase3Error as exc:
+        raise Phase3Error("PHASE3_SCOPE_BASE_INVALID") from exc
+    descendant = "HEAD" if treeish == ":" else treeish
+    if not _is_ancestor(scope_base, descendant):
+        raise Phase3Error("PHASE3_SCOPE_BASE_INVALID")
+    changed = _event_changed_paths(scope_base, treeish)
+    if not changed.intersection(PHASE3_TRIGGER_PATHS):
+        return "N/A_NO_PHASE3_TRIGGER"
+    if not changed.issubset(ALLOWED_PHASE3_PATHS):
+        raise Phase3Error("PHASE3_SCOPE_VIOLATION")
+    return "APPLICABLE"
 
 
 def _exact_keys(value: Any, keys: set[str], code: str) -> dict[str, Any]:
@@ -297,10 +333,6 @@ def _verify_frozen_base(base: Any, treeish: str) -> None:
     descendant = "HEAD" if treeish == ":" else treeish
     if not _is_ancestor(UTILIZATION_SHADOW_DOCTRINE_AMENDMENT_COMMIT, descendant):
         raise Phase3Error("UTILIZATION_SHADOW_DOCTRINE_AMENDMENT_NOT_ANCESTOR")
-    if not _changed_paths(UTILIZATION_SHADOW_DOCTRINE_AMENDMENT_COMMIT, treeish).issubset(
-        ALLOWED_PHASE3_PATHS
-    ):
-        raise Phase3Error("PHASE3_SCOPE_VIOLATION")
 
 
 def _verify_project(
@@ -748,10 +780,13 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--treeish", default="HEAD")
     parser.add_argument("--verify-remotes", action="store_true")
+    parser.add_argument("--scope-event", default=os.environ.get("R26_SCOPE_EVENT", ""))
+    parser.add_argument("--scope-base", default=os.environ.get("R26_SCOPE_BASE_SHA", ""))
     args = parser.parse_args(argv)
     try:
         batch = load_json(_blob(args.treeish, INTAKE_PATH))
         verify_batch(batch, args.treeish)
+        scope = evaluate_event_scope(args.scope_event, args.scope_base, args.treeish)
         if args.verify_remotes:
             verify_remotes(batch)
     except Phase3Error as exc:
@@ -760,12 +795,12 @@ def main(argv: list[str] | None = None) -> int:
     if args.verify_remotes:
         print(
             "PASS: phase-3 published project distinctions are exact, zero-authority, closed-set; "
-            "REMOTES VERIFIED"
+            f"REMOTES VERIFIED scope={scope}"
         )
     else:
         print(
             "PASS LOCAL-ONLY: phase-3 published project distinctions are exact, zero-authority, "
-            "closed-set; REMOTES NOT VERIFIED"
+            f"closed-set; REMOTES NOT VERIFIED scope={scope}"
         )
     return 0
 

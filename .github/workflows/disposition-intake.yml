@@ -17,6 +17,8 @@ jobs:
   evidence:
     env:
       R26_REMOTE_AUTH_CONFIGURED: ${{ secrets.R26_CROSS_REPO_READ_TOKEN != '' }}
+      R26_SCOPE_EVENT: ${{ github.event_name }}
+      R26_SCOPE_BASE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event_name == 'push' && github.event.before || '' }}
     strategy:
       fail-fast: false
       matrix:

@@ -97,23 +97,64 @@ class Phase5StaleReconciliationTests(unittest.TestCase):
                 with self.assertRaisesRegex(MODULE.Phase5Error, "SUMMARY_OVERCLAIM"):
                     MODULE.verify_batch(batch, "HEAD")
 
-    def test_phase5_scope_rejects_product_or_spec_mutation(self):
-        with mock.patch.object(MODULE, "_changed_paths", return_value={"specs/adobe-ingester.md"}):
-            with self.assertRaisesRegex(MODULE.Phase5Error, "PHASE5_SCOPE_VIOLATION"):
-                MODULE.verify_batch(self._copy(), "HEAD")
-
-    def test_phase5_scope_allows_exact_utilization_shadow_doctrine_binding(self):
-        with mock.patch.object(
-            MODULE,
-            "_changed_paths",
-            return_value={
-                "adoption/phase3/r26-published-project-disposition-intake.json",
-                "adoption/universal-token-control-r26.json",
-                "specs/adversarialllm.md",
-                "tests/test_adversarialllm_utilization_shadow_doctrine.py",
-            },
+    def _phase5_scope(self, changed):
+        with (
+            mock.patch.object(MODULE, "_commit_tuple", return_value=("b" * 40, [])),
+            mock.patch.object(MODULE, "_is_ancestor", return_value=True),
+            mock.patch.object(MODULE, "_event_changed_paths", return_value=set(changed)),
         ):
-            MODULE.verify_batch(self._copy(), "HEAD")
+            return MODULE.evaluate_event_scope("pull_request", "a" * 40, "HEAD")
+
+    def test_phase5_scope_unrelated_r29_is_explicit_na(self):
+        changed = {
+            "README.md", "RECONCILIATION.md",
+            "manifests/universal-provider-control-reconciliation-r29.json",
+            "schemas/universal-provider-review-admission-v1.schema.json",
+            "specs/fleet-universal-provider-control-reconciliation.md",
+            "tests/test_universal_provider_control.py",
+            "tools/check_universal_manifest.py", "tools/universal_provider_control.py",
+        }
+        self.assertEqual(self._phase5_scope(changed), "N/A_NO_PHASE5_TRIGGER")
+
+    def test_phase5_scope_allows_phase_only_event(self):
+        self.assertEqual(
+            self._phase5_scope({MODULE.INTAKE_PATH, "tests/test_phase5_stale_reconciliation.py"}),
+            "APPLICABLE",
+        )
+
+    def test_phase5_scope_rejects_mixed_product_or_foreign_event(self):
+        for foreign in ("specs/adobe-ingester.md", "src/runtime.py"):
+            with self.subTest(foreign=foreign):
+                with self.assertRaisesRegex(MODULE.Phase5Error, "PHASE5_SCOPE_VIOLATION"):
+                    self._phase5_scope({MODULE.INTAKE_PATH, foreign})
+
+    def test_phase5_control_surface_change_plus_foreign_still_rejects(self):
+        for trigger in (
+            ".github/workflows/disposition-intake.yml",
+            "tests/test_phase5_stale_reconciliation.py",
+            "tools/check_phase5_stale_reconciliation.py",
+        ):
+            with self.subTest(trigger=trigger):
+                with self.assertRaisesRegex(MODULE.Phase5Error, "PHASE5_SCOPE_VIOLATION"):
+                    self._phase5_scope({trigger, "specs/adobe-ingester.md"})
+
+    def test_phase5_scope_base_is_mandatory_valid_and_ancestor(self):
+        for base in ("", "not-a-sha"):
+            with self.subTest(base=base):
+                with self.assertRaisesRegex(MODULE.Phase5Error, "PHASE5_SCOPE_BASE_INVALID"):
+                    MODULE.evaluate_event_scope("pull_request", base, "HEAD")
+        with (
+            mock.patch.object(MODULE, "_commit_tuple", return_value=("b" * 40, [])),
+            mock.patch.object(MODULE, "_is_ancestor", return_value=False),
+        ):
+            with self.assertRaisesRegex(MODULE.Phase5Error, "PHASE5_SCOPE_BASE_INVALID"):
+                MODULE.evaluate_event_scope("push", "a" * 40, "HEAD")
+
+    def test_phase5_workflow_dispatch_scope_is_explicit_na(self):
+        self.assertEqual(
+            MODULE.evaluate_event_scope("workflow_dispatch", "", "HEAD"),
+            "N/A_WORKFLOW_DISPATCH",
+        )
 
     def test_publishing_workflow_runs_local_and_authorized_remote_checks(self):
         workflow = (ROOT / ".github" / "workflows" / "disposition-intake.yml").read_text(
@@ -129,6 +170,9 @@ class Phase5StaleReconciliationTests(unittest.TestCase):
         )
         self.assertIn("if: env.R26_REMOTE_AUTH_CONFIGURED == 'true'", workflow)
         self.assertIn("ADOBE REMOTE NOT VERIFIED", workflow)
+        self.assertIn("R26_SCOPE_EVENT: ${{ github.event_name }}", workflow)
+        self.assertIn("github.event.pull_request.base.sha", workflow)
+        self.assertIn("github.event.before", workflow)
 
     def test_remote_verifier_rederives_exact_refs_and_commits(self):
         advertised = "".join(

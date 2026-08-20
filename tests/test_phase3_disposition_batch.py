@@ -573,6 +573,9 @@ class Phase3DispositionBatchTests(unittest.TestCase):
         with (
             mock.patch.object(MODULE, "_blob", return_value=batch_bytes),
             mock.patch.object(MODULE, "verify_batch"),
+            mock.patch.object(
+                MODULE, "evaluate_event_scope", return_value="N/A_WORKFLOW_DISPATCH"
+            ),
             mock.patch.object(MODULE, "verify_remotes") as remote_verifier,
         ):
             output = io.StringIO()
@@ -580,6 +583,7 @@ class Phase3DispositionBatchTests(unittest.TestCase):
                 self.assertEqual(0, MODULE.main([]))
             self.assertIn("PASS LOCAL-ONLY", output.getvalue())
             self.assertIn("REMOTES NOT VERIFIED", output.getvalue())
+            self.assertIn("scope=N/A_WORKFLOW_DISPATCH", output.getvalue())
             remote_verifier.assert_not_called()
 
             output = io.StringIO()
@@ -623,69 +627,64 @@ class Phase3DispositionBatchTests(unittest.TestCase):
                 with self.assertRaisesRegex(MODULE.Phase3Error, "SUMMARY_OVERCLAIM"):
                     MODULE.verify_batch(batch, "HEAD")
 
-    def test_phase3_scope_rejects_product_or_unrelated_doctrine_mutation(self):
-        def changed_paths(base, treeish):
-            if (base, treeish) == (MODULE.MASTER_COMMIT, MODULE.INITIAL_FOLD_COMMIT):
-                return set(MODULE.SPEC_PATHS)
-            if (base, treeish) == (MODULE.INITIAL_FOLD_COMMIT, MODULE.SPEC_BINDING_COMMIT):
-                return set(MODULE.SPEC_PATHS)
-            if (base, treeish) == (
-                MODULE.PHASE3_PUBLISHED_COMMIT,
-                MODULE.ADVERSARIAL_SPEC_BINDING_COMMIT,
-            ):
-                return {"specs/adversarialllm.md"}
-            if (base, treeish) == (
-                MODULE.PRE_ADVERSARIAL_SPEC_REPAIR_COMMIT,
-                MODULE.ADVERSARIAL_SPEC_REPAIR_COMMIT,
-            ):
-                return {"specs/adversarialllm.md"}
-            if (base, treeish) == (
-                MODULE.UTILIZATION_SHADOW_DOCTRINE_BASE_COMMIT,
-                MODULE.UTILIZATION_SHADOW_DOCTRINE_AMENDMENT_COMMIT,
-            ):
-                return {"specs/adversarialllm.md"}
-            return {"src/runtime.py"}
+    def _phase3_scope(self, changed):
+        with (
+            mock.patch.object(MODULE, "_commit_tuple", return_value=("b" * 40, [])),
+            mock.patch.object(MODULE, "_is_ancestor", return_value=True),
+            mock.patch.object(MODULE, "_event_changed_paths", return_value=set(changed)),
+        ):
+            return MODULE.evaluate_event_scope("pull_request", "a" * 40, "HEAD")
 
-        with mock.patch.object(MODULE, "_changed_paths", side_effect=changed_paths):
-            with self.assertRaisesRegex(MODULE.Phase3Error, "PHASE3_SCOPE_VIOLATION"):
-                MODULE.verify_batch(self._copy(), "HEAD")
+    def test_phase3_scope_unrelated_r29_is_explicit_na(self):
+        changed = {
+            "README.md", "RECONCILIATION.md",
+            "manifests/universal-provider-control-reconciliation-r29.json",
+            "schemas/universal-provider-review-admission-v1.schema.json",
+            "specs/fleet-universal-provider-control-reconciliation.md",
+            "tests/test_universal_provider_control.py",
+            "tools/check_universal_manifest.py", "tools/universal_provider_control.py",
+        }
+        self.assertEqual(self._phase3_scope(changed), "N/A_NO_PHASE3_TRIGGER")
 
-    def test_phase3_scope_allows_phase5_zero_authority_reconciliation(self):
-        def changed_paths(base, treeish):
-            if (base, treeish) == (MODULE.MASTER_COMMIT, MODULE.INITIAL_FOLD_COMMIT):
-                return set(MODULE.SPEC_PATHS)
-            if (base, treeish) == (MODULE.INITIAL_FOLD_COMMIT, MODULE.SPEC_BINDING_COMMIT):
-                return set(MODULE.SPEC_PATHS)
-            if (base, treeish) == (
-                MODULE.PHASE3_PUBLISHED_COMMIT,
-                MODULE.ADVERSARIAL_SPEC_BINDING_COMMIT,
-            ):
-                return {"specs/adversarialllm.md"}
-            if (base, treeish) == (
-                MODULE.PRE_ADVERSARIAL_SPEC_REPAIR_COMMIT,
-                MODULE.ADVERSARIAL_SPEC_REPAIR_COMMIT,
-            ):
-                return {"specs/adversarialllm.md"}
-            if (base, treeish) == (
-                MODULE.UTILIZATION_SHADOW_DOCTRINE_BASE_COMMIT,
-                MODULE.UTILIZATION_SHADOW_DOCTRINE_AMENDMENT_COMMIT,
-            ):
-                return {"specs/adversarialllm.md"}
-            return {
-                ".github/workflows/disposition-intake.yml",
-                "adoption/README.md",
-                "adoption/phase5/README.md",
-                "adoption/phase5/r26-stale-project-reconciliation.json",
-                "tests/test_phase2_disposition_batch.py",
-                "tests/test_phase3_disposition_batch.py",
-                "tests/test_phase5_stale_reconciliation.py",
-                "tools/check_phase2_disposition_batch.py",
-                "tools/check_phase3_disposition_batch.py",
-                "tools/check_phase5_stale_reconciliation.py",
-            }
+    def test_phase3_scope_allows_phase_only_event(self):
+        self.assertEqual(
+            self._phase3_scope({MODULE.INTAKE_PATH, "tests/test_phase3_disposition_batch.py"}),
+            "APPLICABLE",
+        )
 
-        with mock.patch.object(MODULE, "_changed_paths", side_effect=changed_paths):
-            MODULE.verify_batch(self._copy(), "HEAD")
+    def test_phase3_scope_rejects_mixed_product_or_foreign_event(self):
+        for foreign in ("specs/cloudvore.md", "src/runtime.py"):
+            with self.subTest(foreign=foreign):
+                with self.assertRaisesRegex(MODULE.Phase3Error, "PHASE3_SCOPE_VIOLATION"):
+                    self._phase3_scope({MODULE.INTAKE_PATH, foreign})
+
+    def test_phase3_control_surface_change_plus_foreign_still_rejects(self):
+        for trigger in (
+            ".github/workflows/disposition-intake.yml",
+            "tests/test_phase3_disposition_batch.py",
+            "tools/check_phase3_disposition_batch.py",
+        ):
+            with self.subTest(trigger=trigger):
+                with self.assertRaisesRegex(MODULE.Phase3Error, "PHASE3_SCOPE_VIOLATION"):
+                    self._phase3_scope({trigger, "specs/cloudvore.md"})
+
+    def test_phase3_scope_base_is_mandatory_valid_and_ancestor(self):
+        for base in ("", "not-a-sha"):
+            with self.subTest(base=base):
+                with self.assertRaisesRegex(MODULE.Phase3Error, "PHASE3_SCOPE_BASE_INVALID"):
+                    MODULE.evaluate_event_scope("pull_request", base, "HEAD")
+        with (
+            mock.patch.object(MODULE, "_commit_tuple", return_value=("b" * 40, [])),
+            mock.patch.object(MODULE, "_is_ancestor", return_value=False),
+        ):
+            with self.assertRaisesRegex(MODULE.Phase3Error, "PHASE3_SCOPE_BASE_INVALID"):
+                MODULE.evaluate_event_scope("push", "a" * 40, "HEAD")
+
+    def test_phase3_workflow_dispatch_scope_is_explicit_na(self):
+        self.assertEqual(
+            MODULE.evaluate_event_scope("workflow_dispatch", "", "HEAD"),
+            "N/A_WORKFLOW_DISPATCH",
+        )
 
 
 if __name__ == "__main__":
