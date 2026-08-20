@@ -77,8 +77,11 @@ the human store-and-forward bus.
   be mistaken for universal runtime admission. R28 preserves R27 as adverse history, parameterizes the
   universal profile, binds the exact Cloudvore instance only in the manifest, and makes the sole runtime
   entry point refuse before reading caller input. Pure validators remain
-  `CONFORMANCE_ONLY_ZERO_AUTHORITY`. R15-R26 history coordinates on
-  [issue #4](https://github.com/layibabalola/softwarefactory-fleet-doctrine/issues/4); R27/R28 incident
+  `CONFORMANCE_ONLY_ZERO_AUTHORITY`. R29 preserves R28 as adverse history and repairs the remaining
+  universal-schema defect: generic policies accept a bounded nonempty 1-64 ordered subject list, while
+  executable validation enforces sequential ordinals, unique paths, and all-and-only packet binding. The
+  exact R29 instance still pins only Cloudvore's seven rows and selected profile. R15-R26 history coordinates on
+  [issue #4](https://github.com/layibabalola/softwarefactory-fleet-doctrine/issues/4); R27-R29 incident
   carrying and adjudication coordinate on
   [issue #3](https://github.com/layibabalola/softwarefactory-fleet-doctrine/issues/3). Neither candidate
   changes the ratified governor or `RULINGS.md`, grants adoption credit, or provides launch authority.

@@ -1,4 +1,4 @@
-# Universal provider-control reconciliation R28
+# Universal provider-control reconciliation R29
 
 Status: **CANDIDATE / ZERO AUTHORITY / NO DEPLOYMENT**
 
@@ -703,3 +703,30 @@ R28 changes no provider, process, credential, task, gate, runtime, ratified gove
 R15-R26 history remains coordinated on issue #4; R27/R28 incident carrying and any future adjudication
 remain coordinated on issue #3. Stranger review, hosted checks, adjudication, ruling, merge, installation,
 project adoption, and provider execution remain later distinct acts from which the author is recused.
+
+## R29 generic subject cardinality without instance leakage
+
+R29 preserves review-failed, unpushed R28 `f2f71c2ca93f6c9dec934100dbd760b5643463a2` as immutable adverse
+history. R28 made provider identity generic but incorrectly left the universal source schema fixed to seven
+rows with ordinal prefix items zero through six. Those literals described the Cloudvore policy instance,
+not universal law.
+
+The generic schema now permits a bounded nonempty list of one through 64 strict subject rows, with each
+ordinal bounded from zero through 63. Executable policy validation requires the ordered list's ordinals to
+equal their zero-based positions and rejects duplicate paths. Packet validation independently requires the
+same exact ordered all-and-only source bijection, canonical capsule bytes, content hashes and byte counts,
+and deterministic final prompt/request. A three-row alternate-provider fixture passes the schema, policy,
+packet, and full pure-validator chain and can return only `CONFORMANCE_ONLY_ZERO_AUTHORITY`.
+
+Generic cardinality does not loosen the carried incident instance. The R29 manifest's canonical policy
+digest and checker still pin the exact Cloudvore commit, tree, parent, seven ordered Git blobs, question,
+Anthropic Fable/max/standard/firstParty identity, 64,000 native output, and session plus weekly quota
+windows. Substituting, omitting, adding, or reordering an exact-instance source row fails independently of
+whether the resulting policy is generically schema-valid.
+
+The current runtime entry point remains an unconditional `REFUSE_RUNTIME_NOT_INSTALLED` before caller input
+inspection. R29 grants no provider, process, credential, task, gate, runtime, merge, ratification, or
+adoption authority and does not modify `RULINGS.md` or the ratified governor. R15-R26 history remains
+coordinated on issue #4; R27-R29 incident carrying and any later adjudication remain coordinated on issue
+#3. Stranger review, hosted checks, ruling, canonical merge, installation, project adoption, and provider
+execution are later distinct acts from which the author remains recused.

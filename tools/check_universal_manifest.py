@@ -14,7 +14,7 @@ from typing import Any
 
 
 ROOT = Path(__file__).resolve().parents[1]
-MANIFEST = "manifests/universal-provider-control-reconciliation-r28.json"
+MANIFEST = "manifests/universal-provider-control-reconciliation-r29.json"
 REVIEW_SCHEMA = "schemas/universal-provider-review-admission-v1.schema.json"
 SELF_PATTERN = re.compile(
     rb'("canonicalGitBlobSha256"\s*:\s*"sha256:)([0-9a-f]{64})(")'
@@ -70,6 +70,13 @@ R28_IDENTITY = {
     "nativeMaxOutputTokens": 64000, "substitutionAllowed": False,
     "loweringRequiresAcceptedNonInferiority": True,
 }
+R29_BASE = {
+    "commit": "f2f71c2ca93f6c9dec934100dbd760b5643463a2",
+    "tree": "6b81f2d9e40cfaac3e6b3efa9bdef3fc884e819a",
+    "orderedParents": ["f94cec826f8e3979a028b6e45516077895c44905"],
+    "orderedParentTrees": ["08479b324dfcc1925d0b11794ca86098625c9f48"],
+}
+R29_IDENTITY = R28_IDENTITY
 
 
 def _pairs(values: list[tuple[str, Any]]) -> dict[str, Any]:
@@ -378,6 +385,73 @@ def canonical_policy_sha256(policy: dict[str, Any]) -> str:
     return "sha256:" + hashlib.sha256(raw).hexdigest()
 
 
+def verify_r29(
+    manifest: dict[str, Any], treeish: str, *, verify_objects: bool = True
+) -> None:
+    """Verify R29 base, exact seven-row instance, generic schema, and zero authority."""
+
+    if (
+        manifest.get("status") != "CANDIDATE_ZERO_AUTHORITY"
+        or manifest.get("subjectCoverage")
+        != "R29_GENERIC_SUBJECT_CARDINALITY_REPAIR_ZERO_AUTHORITY"
+    ):
+        raise ManifestError("R29_STATUS_INVALID")
+    if manifest.get("candidateBase") != R29_BASE:
+        raise ManifestError("R29_BASE_INVALID")
+    if verify_objects:
+        tree, parents = _commit_tuple(R29_BASE["commit"])
+        if tree != R29_BASE["tree"] or parents != R29_BASE["orderedParents"]:
+            raise ManifestError("R29_BASE_OBJECT_MISMATCH")
+        if [_commit_tuple(parent)[0] for parent in parents] != R29_BASE["orderedParentTrees"]:
+            raise ManifestError("R29_BASE_PARENT_TREE_MISMATCH")
+        if treeish != ":":
+            run = subprocess.run(
+                ["git", "merge-base", "--is-ancestor", R29_BASE["commit"], treeish],
+                cwd=ROOT, check=False, capture_output=True,
+            )
+            if run.returncode != 0:
+                raise ManifestError("R29_BASE_NOT_ANCESTOR")
+    authority = manifest.get("authority")
+    if authority != {
+        "providerExecution": False, "processSpawnResumeKill": False,
+        "containmentOrCanaryCredit": False, "automaticGateState": "CLOSED",
+        "runtimeImplementation": "NOT_INSTALLED_UNCONDITIONAL_REFUSE",
+        "activationRequiresSeparateAdjudication": True, "authorRecused": True,
+    }:
+        raise ManifestError("R29_AUTHORITY_INVALID")
+    policy = manifest.get("reviewAdmissionPolicy")
+    if not isinstance(policy, dict) or policy.get("source") != R27_SOURCE:
+        raise ManifestError("R29_SOURCE_SUBJECT_MISMATCH")
+    if policy.get("identity") != R29_IDENTITY:
+        raise ManifestError("R29_EXACT_PROFILE_MISMATCH")
+    if policy.get("capacity", {}).get("requiredQuotaWindows") != ["session", "weekly"]:
+        raise ManifestError("R29_QUOTA_WINDOWS_MISMATCH")
+    if manifest.get("reviewAdmissionPolicyDigest") != canonical_policy_sha256(policy):
+        raise ManifestError("R29_POLICY_DIGEST_MISMATCH")
+    try:
+        import jsonschema
+
+        schema_raw = _git(_blob_spec(treeish, REVIEW_SCHEMA))
+        assert isinstance(schema_raw, bytes)
+        schema = json.loads(schema_raw.decode("utf-8"), object_pairs_hook=_pairs)
+        jsonschema.Draft202012Validator.check_schema(schema)
+        if next(jsonschema.Draft202012Validator(schema).iter_errors(policy), None) is not None:
+            raise ManifestError("R29_POLICY_SCHEMA_INVALID")
+    except ManifestError:
+        raise
+    except Exception as exc:
+        raise ManifestError("R29_POLICY_SCHEMA_INVALID") from exc
+    if manifest.get("validation") != {
+        "universalProviderControl": {"required": True, "claimedGreen": False},
+        "providerCapacityGovernor": {"required": True, "claimedGreen": False},
+        "canonicalCapacityControl": {"required": True, "claimedGreen": False},
+        "hosted": {"requiredFresh": True, "claimedGreen": False},
+        "providerInvocation": False,
+        "activation": False,
+    }:
+        raise ManifestError("R29_VALIDATION_AUTHORITY_INVALID")
+
+
 def verify_r28(
     manifest: dict[str, Any], treeish: str, *, verify_objects: bool = True
 ) -> None:
@@ -502,7 +576,7 @@ def check(treeish: str) -> int:
         raise ManifestError("MANIFEST_INVALID") from exc
     if manifest.get("schema") != "fleet-universal-provider-control-candidate-manifest/v3":
         raise ManifestError("MANIFEST_SCHEMA_INVALID")
-    verify_r28(manifest, treeish)
+    verify_r29(manifest, treeish)
     subjects = manifest.get("subjectFiles")
     if not isinstance(subjects, list) or not subjects:
         raise ManifestError("MANIFEST_SUBJECTS_INVALID")

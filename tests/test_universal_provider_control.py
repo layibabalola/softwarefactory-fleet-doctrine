@@ -5178,17 +5178,19 @@ class UniversalProviderControlTests(unittest.TestCase):
         self.assertTrue(all(json.loads(row["usage_json"])["outputTokens"] == 100 for row in rows))
 
 
-class ReviewResourceAdmissionR28Tests(unittest.TestCase):
-    """Provider-neutral R28 conformance fixtures; the runtime entry point always refuses."""
+class ReviewResourceAdmissionR29Tests(unittest.TestCase):
+    """Provider-neutral R29 conformance fixtures; the runtime entry point always refuses."""
 
     @staticmethod
-    def make_packet(subjects: list[dict[str, object]], contents: list[str]) -> dict[str, object]:
+    def make_packet(
+        subjects: list[dict[str, object]], contents: list[str], question: str | None = None
+    ) -> dict[str, object]:
         capsules = []
         rows = []
         cursor = 0
-        for capsule_ordinal, indexes in enumerate((range(0, 4), range(4, 7))):
+        for capsule_ordinal, start in enumerate(range(0, len(subjects), 4)):
             entries = []
-            for index in indexes:
+            for index in range(start, min(start + 4, len(subjects))):
                 subject = subjects[index]
                 entries.append({
                     "ordinal": cursor, "path": subject["path"], "sha256": subject["sha256"],
@@ -5206,11 +5208,12 @@ class ReviewResourceAdmissionR28Tests(unittest.TestCase):
                 "ordinal": entry["ordinal"], "path": entry["path"], "sha256": entry["sha256"],
                 "bytes": entry["bytes"], "capsuleSha256": capsule_sha,
             } for entry in entries)
-        question = (
-            "Review the exact seven-file Cloudvore provider-governor proposal for security, "
-            "doctrine conformance, quality preservation, and fail-closed resource admission; "
-            "return PASS or actionable findings with file and failure scenario."
-        )
+        if question is None:
+            question = (
+                "Review the exact seven-file Cloudvore provider-governor proposal for security, "
+                "doctrine conformance, quality preservation, and fail-closed resource admission; "
+                "return PASS or actionable findings with file and failure scenario."
+            )
         return {
             "promptManifest": rows, "promptUtf8": upc.render_review_prompt(question, rows),
             "capsules": capsules,
@@ -5218,7 +5221,7 @@ class ReviewResourceAdmissionR28Tests(unittest.TestCase):
 
     def setUp(self) -> None:
         manifest = json.loads(
-            (ROOT / "manifests" / "universal-provider-control-reconciliation-r28.json").read_text(
+            (ROOT / "manifests" / "universal-provider-control-reconciliation-r29.json").read_text(
                 encoding="utf-8"
             )
         )
@@ -5417,6 +5420,68 @@ class ReviewResourceAdmissionR28Tests(unittest.TestCase):
         })
         upc.validate_review_capabilities(capabilities, identity)
 
+    def test_r29_01_nonseven_provider_neutral_fixture_is_conformance_only(self) -> None:
+        contents = [f"bounded generic subject {index}\n" for index in range(3)]
+        subjects = []
+        for ordinal, content in enumerate(contents):
+            raw = content.encode("utf-8")
+            subjects.append({
+                "ordinal": ordinal, "path": f"generic/{ordinal}.txt",
+                "gitBlobOid": f"{ordinal + 11:040x}",
+                "sha256": upc._review_sha(raw), "bytes": len(raw),
+            })
+        policy = copy.deepcopy(self.policy)
+        policy["source"]["subjectFiles"] = subjects
+        policy["identity"].update({
+            "provider": "example-provider", "model": "frontier-review-model",
+            "effort": "highest", "serviceTier": "priority", "transport": "api",
+            "role": "SECURITY_REVIEW", "question": "Review this exact bounded subject set.",
+            "nativeMaxOutputTokens": 32000,
+        })
+        packet = self.make_packet(subjects, contents, policy["identity"]["question"])
+        policy_digest = upc._review_sha(upc._review_canonical_bytes(policy))
+        _, execution_raw = upc.build_review_final_request(policy, packet)
+        tokenizer = copy.deepcopy(self.tokenizer)
+        tokenizer.update({
+            "capturedRawRequestSha256": upc._review_sha(execution_raw),
+            "capturedRawRequestBytes": len(execution_raw),
+            "model": policy["identity"]["model"],
+        })
+        tokenizer["rawCaptureHandle"]["requestSha256"] = upc._review_sha(execution_raw)
+        projection = copy.deepcopy(self.projection)
+        projection.update({
+            "provider": policy["identity"]["provider"], "model": policy["identity"]["model"],
+            "nativeOutputTokens": policy["identity"]["nativeMaxOutputTokens"],
+        })
+        projection["dimensions"]["output"]["amount"] = 32000
+        windows = copy.deepcopy(self.windows)
+        for row in windows:
+            if row["dimension"] == "output":
+                row["candidate"] = 32000
+        identity = policy["identity"]
+        argv = [
+            "fleet-fake-review-adapter", "--provider", identity["provider"],
+            "--model", identity["model"], "--effort", identity["effort"],
+            "--service-tier", identity["serviceTier"], "--transport", identity["transport"],
+            "--role", identity["role"], "--max-output-tokens",
+            str(identity["nativeMaxOutputTokens"]), "--tools", "",
+        ]
+        capabilities = copy.deepcopy(self.capabilities)
+        capabilities["providerHardOutput"].update({
+            "provider": identity["provider"], "model": identity["model"],
+            "tokens": identity["nativeMaxOutputTokens"],
+        })
+        result = upc.evaluate_review_conformance_fixture(
+            policy=policy, packet=packet, committed_policy_digest=policy_digest,
+            execution_raw=execution_raw, tokenizer_result=tokenizer, projection=projection,
+            capacity_windows=windows, argv=argv, config=self.config,
+            environment=self.environment, capabilities=capabilities, lease=self.lease,
+            authority_state=self.authority_state, terminal=self.make_terminal(identity),
+        )
+        self.assertEqual(len(policy["source"]["subjectFiles"]), 3)
+        self.assertEqual(result["status"], "CONFORMANCE_ONLY_ZERO_AUTHORITY")
+        self.assertFalse(result["runtimeAdmission"])
+
     def test_r28_04_committed_policy_digest_rejects_source_substitution(self) -> None:
         substituted = copy.deepcopy(self.policy)
         substituted["source"]["subjectFiles"][0]["path"] = "substituted/0.txt"
@@ -5561,38 +5626,51 @@ class ReviewResourceAdmissionR28Tests(unittest.TestCase):
         reordered["source"]["subjectFiles"][0], reordered["source"]["subjectFiles"][1] = (
             reordered["source"]["subjectFiles"][1], reordered["source"]["subjectFiles"][0]
         )
-        with self.assertRaisesRegex(upc.ControlError, "SCHEMA_VALIDATION_FAILED"):
+        with self.assertRaisesRegex(upc.ControlError, "REVIEW_SUBJECT_ORDER_INVALID"):
             upc.validate_contract("review_admission", reordered)
+        duplicate_path = copy.deepcopy(self.policy)
+        duplicate_path["source"]["subjectFiles"][1]["path"] = (
+            duplicate_path["source"]["subjectFiles"][0]["path"]
+        )
+        with self.assertRaisesRegex(upc.ControlError, "REVIEW_SUBJECT_DUPLICATE"):
+            upc.validate_contract("review_admission", duplicate_path)
         import check_universal_manifest as checker
         manifest = json.loads(
-            (ROOT / "manifests" / "universal-provider-control-reconciliation-r28.json").read_text()
+            (ROOT / "manifests" / "universal-provider-control-reconciliation-r29.json").read_text()
         )
         substituted = copy.deepcopy(manifest)
         substituted["reviewAdmissionPolicy"]["source"]["subjectFiles"][0]["path"] = "substitute"
         substituted["reviewAdmissionPolicyDigest"] = checker.canonical_policy_sha256(
             substituted["reviewAdmissionPolicy"]
         )
-        with self.assertRaisesRegex(checker.ManifestError, "R28_SOURCE_SUBJECT_MISMATCH"):
-            checker.verify_r28(substituted, ":", verify_objects=False)
+        with self.assertRaisesRegex(checker.ManifestError, "R29_SOURCE_SUBJECT_MISMATCH"):
+            checker.verify_r29(substituted, ":", verify_objects=False)
+        shortened = copy.deepcopy(manifest)
+        shortened["reviewAdmissionPolicy"]["source"]["subjectFiles"].pop()
+        shortened["reviewAdmissionPolicyDigest"] = checker.canonical_policy_sha256(
+            shortened["reviewAdmissionPolicy"]
+        )
+        with self.assertRaisesRegex(checker.ManifestError, "R29_SOURCE_SUBJECT_MISMATCH"):
+            checker.verify_r29(shortened, ":", verify_objects=False)
         profile = copy.deepcopy(manifest)
         profile["reviewAdmissionPolicy"]["identity"]["model"] = "substitute"
         profile["reviewAdmissionPolicyDigest"] = checker.canonical_policy_sha256(
             profile["reviewAdmissionPolicy"]
         )
-        with self.assertRaisesRegex(checker.ManifestError, "R28_EXACT_PROFILE_MISMATCH"):
-            checker.verify_r28(profile, ":", verify_objects=False)
+        with self.assertRaisesRegex(checker.ManifestError, "R29_EXACT_PROFILE_MISMATCH"):
+            checker.verify_r29(profile, ":", verify_objects=False)
         for field, value, reason in (
-            ("status", "RATIFIED", "R28_STATUS_INVALID"),
-            ("subjectCoverage", "SUBSTITUTED", "R28_STATUS_INVALID"),
+            ("status", "RATIFIED", "R29_STATUS_INVALID"),
+            ("subjectCoverage", "SUBSTITUTED", "R29_STATUS_INVALID"),
         ):
             changed = copy.deepcopy(manifest); changed[field] = value
             with self.subTest(manifest_field=field):
                 with self.assertRaisesRegex(checker.ManifestError, reason):
-                    checker.verify_r28(changed, ":", verify_objects=False)
+                    checker.verify_r29(changed, ":", verify_objects=False)
         claimed = copy.deepcopy(manifest)
         claimed["validation"]["universalProviderControl"]["claimedGreen"] = True
-        with self.assertRaisesRegex(checker.ManifestError, "R28_VALIDATION_AUTHORITY_INVALID"):
-            checker.verify_r28(claimed, ":", verify_objects=False)
+        with self.assertRaisesRegex(checker.ManifestError, "R29_VALIDATION_AUTHORITY_INVALID"):
+            checker.verify_r29(claimed, ":", verify_objects=False)
 
 
 if __name__ == "__main__":

@@ -140,3 +140,20 @@ manifest; no such root exists here.
 R15-R26 historical reconciliation remains coordinated on issue #4. R27/R28 incident carrying and future
 adjudication remain coordinated on issue #3. `RULINGS.md`, the ratified provider-capacity governor, runtime,
 providers, tasks, credentials, and gates remain untouched and CLOSED.
+
+## R29 generic subject-cardinality repair (candidate, zero authority)
+
+Review rejected R28 because the otherwise provider-neutral universal schema still encoded the exact
+Cloudvore instance's seven-subject cardinality and ordinal prefix. R29 preserves unpushed R28
+`f2f71c2ca93f6c9dec934100dbd760b5643463a2` as adverse history. The generic schema now accepts one through
+64 strict subject rows with ordinals bounded from zero through 63. Executable policy and packet validation
+requires ordinals to be sequential from zero, paths to be unique, and packet content to remain an ordered
+all-and-only bijection. A three-subject alternate-provider fixture proves that generic conformance path,
+but reports only `CONFORMANCE_ONLY_ZERO_AUTHORITY`.
+
+The R29 manifest and checker separately retain the exact Cloudvore commit/tree/parent, all seven ordered
+source rows, and the exact Fable/max/standard/firstParty/64,000 profile. A schema-valid shortened or
+substituted source cannot become the committed instance. The runtime entry point still refuses every input
+before inspection. R15-R26 history remains on issue #4; R27-R29 incident carrying and any future
+adjudication remain on issue #3. `RULINGS.md`, providers, tasks, gates, credentials, runtime installation,
+and the ratified governor remain untouched and CLOSED.

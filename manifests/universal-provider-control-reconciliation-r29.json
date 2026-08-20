@@ -1,0 +1,141 @@
+{
+  "schema": "fleet-universal-provider-control-candidate-manifest/v3",
+  "status": "CANDIDATE_ZERO_AUTHORITY",
+  "subjectCoverage": "R29_GENERIC_SUBJECT_CARDINALITY_REPAIR_ZERO_AUTHORITY",
+  "candidateBase": {
+    "commit": "f2f71c2ca93f6c9dec934100dbd760b5643463a2",
+    "tree": "6b81f2d9e40cfaac3e6b3efa9bdef3fc884e819a",
+    "orderedParents": ["f94cec826f8e3979a028b6e45516077895c44905"],
+    "orderedParentTrees": ["08479b324dfcc1925d0b11794ca86098625c9f48"]
+  },
+  "authority": {
+    "providerExecution": false,
+    "processSpawnResumeKill": false,
+    "containmentOrCanaryCredit": false,
+    "automaticGateState": "CLOSED",
+    "runtimeImplementation": "NOT_INSTALLED_UNCONDITIONAL_REFUSE",
+    "activationRequiresSeparateAdjudication": true,
+    "authorRecused": true
+  },
+  "reviewAdmissionPolicyDigest": "sha256:e7e3fde383f43972796b681023ff92d9b35365e275e6fc00d84cc2735de00c60",
+  "reviewAdmissionPolicy": {
+    "schema": "fleet-universal-provider-review-admission/v1",
+    "status": "CANDIDATE_ZERO_AUTHORITY_HARD_CLOSED",
+    "authority": {
+      "providerExecution": false, "processMutation": false, "gateMutation": false,
+      "adoptionCredit": false, "runtimeImplementation": "NOT_INSTALLED_UNCONDITIONAL_REFUSE",
+      "authorRecused": true
+    },
+    "trust": {
+      "brokerOwnedVerifiedPolicyHandleRequired": true,
+      "installManifestDigestRequired": true,
+      "callerPolicyOrDigestAuthority": false,
+      "currentProductionTrustRoot": "NOT_INSTALLED_REFUSE"
+    },
+    "source": {
+      "repository": "https://github.com/layibabalola/Cloudvore.git",
+      "commit": "46674bf7ba004dd6c4cac69d5a26369ab11106c4",
+      "tree": "bef6f545f773157807e81dcf71305cb13a25382e",
+      "orderedParents": ["8dcd3393f5541aa1f7fe181c3869f4262b6e1a00"],
+      "subjectFiles": [
+        {"ordinal": 0, "path": "tools/provider-capacity-governor-shadow/provenance/HUB-DESIGN-provider-capacity-governor-shadow-adoption-0818.md", "gitBlobOid": "b18a478694439efa86d2015ebe13b0c97bc9d5dc", "sha256": "sha256:e2a08fbccee3542449778d12d35c7e446dc56bef1cd898643bda7341842929a7", "bytes": 31133},
+        {"ordinal": 1, "path": "knowledge/provider-capacity-governor-shadow-profile-v1.json", "gitBlobOid": "9bd11a136528cced1fc16430688d089a3f80a36c", "sha256": "sha256:90c45346bc83a145547086434876168e2aad4db7d1e2b1baf95a2c14e443ebf3", "bytes": 21559},
+        {"ordinal": 2, "path": "knowledge/provider-capacity-governor-shadow-profile-v1.schema.json", "gitBlobOid": "330228c8df279a6ab528d30da2bc7db7c88db2bc", "sha256": "sha256:a3239addf3872f8b08ee92bfc052a8274901075d741e718d10ad1b0a066656bd", "bytes": 23483},
+        {"ordinal": 3, "path": "knowledge/provider-capacity-governor-shadow-proposal-manifest-v1.json", "gitBlobOid": "95b3304c46fd13c232781e4d7fff9f533624ade4", "sha256": "sha256:cf7fc691d04fd40388a772947b68504ccfca57c96f13182f0ac6acf25e566d88", "bytes": 2999},
+        {"ordinal": 4, "path": "knowledge/provider-capacity-governor-shadow-proposal-manifest-v1.schema.json", "gitBlobOid": "880f776756eb45c9deef608300ba76e9befbb493", "sha256": "sha256:9e4b546b225a69e31a964a3c5294a806389d6310fadcca60d07281c097b190bf", "bytes": 3857},
+        {"ordinal": 5, "path": "knowledge/provider-capacity-governor-shadow-proposal-receipt-2026-08-18.md", "gitBlobOid": "455415489bc98ae11c77702941a6bf42655b0d60", "sha256": "sha256:8d2d67c984b57243f05453c0897a930d745f7fd07fa600a38f98242922e0034b", "bytes": 11088},
+        {"ordinal": 6, "path": "tools/provider-capacity-governor-shadow.tests.py", "gitBlobOid": "98191265e2e6b1878c0189d3fca8249f728c6543", "sha256": "sha256:d8657641168135afe09bacee8d1f55666890b9da4ecd3ae8281ec1218041c675", "bytes": 45023}
+      ]
+    },
+    "identity": {
+      "provider": "anthropic", "model": "claude-fable-5", "effort": "max",
+      "serviceTier": "standard", "transport": "firstParty",
+      "role": "INDEPENDENT_ADVERSARIAL_REVIEWER",
+      "question": "Review the exact seven-file Cloudvore provider-governor proposal for security, doctrine conformance, quality preservation, and fail-closed resource admission; return PASS or actionable findings with file and failure scenario.",
+      "nativeMaxOutputTokens": 64000, "substitutionAllowed": false,
+      "loweringRequiresAcceptedNonInferiority": true
+    },
+    "packet": {
+      "schema": "fleet-review-capsule/v1", "canonicalEncoding": "UTF8_NO_BOM_SORTED_KEYS_COMPACT_LF",
+      "allAndOnlyOrderedSubjectBijection": true, "gitAndCommittedManifestBinding": true,
+      "metadataInstructionFieldsAllowed": false, "silentTruncationAllowed": false,
+      "maxCapsuleBytes": 65536, "maxCapsules": 4, "maxTotalCapsuleBytes": 262144
+    },
+    "serialization": {
+      "schema": "fleet-provider-final-review-request/v1", "internallyDerivedOnly": true,
+      "callerSerializationAccepted": false, "trustedCapturedRawRequestHandleRequired": true,
+      "countedParts": ["SYSTEM_PREFIX", "PROVIDER_PREFIX", "TRANSPORT_FRAMING", "PROMPT", "CAPSULES", "OUTPUT_PARAMETER", "TOOL_CONFIGURATION"]
+    },
+    "tokenizer": {
+      "trustedVersionAndArtifactRequired": true, "exactCapturedRequestBytesRequired": true,
+      "maxExactSerializedInputTokens": 128000, "heuristicByteFallbackAllowed": false,
+      "callerHiddenPrefixAssertionAccepted": false, "missingCapturedRawHandle": "REFUSE"
+    },
+    "charges": {
+      "trustedProviderNativeFunctionRequired": true,
+      "dimensions": ["input", "cacheRead", "cacheCreationOrWrite", "output", "reasoning", "otherChargedDimensions"],
+      "typedFiniteNonnegative": true, "fullSelectedNativeOutputAllowanceCharged": true,
+      "cacheDisabledOrExactlyBounded": true, "otherUnknownConservativelyCharged": true,
+      "unknownNeverZero": true
+    },
+    "capacity": {
+      "requiredQuotaWindows": ["session", "weekly"], "maxEvidenceAgeSeconds": 300,
+      "allWindowDimensionPairs": true, "completionReserveRequired": true,
+      "foregroundReserveRequired": true, "reviewReserveRequired": true,
+      "providerNativeReserveFloor": 0.2, "unknownOrStale": "REFUSE"
+    },
+    "tools": {
+      "providerDefinitions": [], "effectiveProviderTools": [], "effectiveLocalTools": [],
+      "allowedTools": [], "allowedToolsSemantics": "APPROVAL_ONLY_NOT_CONTAINMENT",
+      "hooks": [], "mcpServers": [], "discoveryAllowed": false,
+      "duplicateOrConflictingFlagsAllowed": false
+    },
+    "capabilities": {
+      "brokerOwnedHandlesRequired": true, "hardOutputEqualsSelectedProfile": true,
+      "fullChildTreeCustodyRequired": true, "handleBoundDeadlineSeconds": 3600,
+      "callerBooleanOrDigestAuthority": false, "missing": "REFUSE"
+    },
+    "lease": {
+      "scope": "ATOMIC_HOST_WIDE_QUOTA_DOMAIN", "brokerOwnedHandleRequired": true,
+      "acquireBeforeCensusAndCapacity": true, "revalidateImmediatelyBeforeSpawn": true,
+      "holdThroughTerminalAccounting": true, "timeOnlyStealAllowed": false,
+      "abaFields": ["ownerPid", "ownerProcessStartTime", "nonce", "generation"]
+    },
+    "request": {
+      "transactionalAuthorityLedgerRequired": true, "requestsPerAuthority": 1,
+      "automaticRetry": false, "unevaluableConsumesAuthority": true,
+      "freshAuthorityAfterUnevaluable": true, "qualityOrFunctionDowngradeAllowed": false
+    },
+    "terminal": {
+      "requestedAndEffectiveIdentityRequired": true, "reconcileAgainstReservation": true,
+      "allNativeUsageRequired": true, "unknownChargesFullReservation": true,
+      "identityMismatch": "UNEVALUABLE_ZERO_CREDIT", "accountBeforeLeaseRelease": true
+    },
+    "conformance": {
+      "adapterLabel": "CONFORMANCE_ONLY_ZERO_AUTHORITY", "productionAuthority": false,
+      "runtimeEntryPointResult": "REFUSE_RUNTIME_NOT_INSTALLED"
+    }
+  },
+  "validation": {
+    "universalProviderControl": {"required": true, "claimedGreen": false},
+    "providerCapacityGovernor": {"required": true, "claimedGreen": false},
+    "canonicalCapacityControl": {"required": true, "claimedGreen": false},
+    "hosted": {"requiredFresh": true, "claimedGreen": false},
+    "providerInvocation": false,
+    "activation": false
+  },
+  "subjectFiles": [
+    {"path": "README.md", "gitBlobOid": "6826fabe17a1b17a1e31b22785ed70658e55dffb", "sha256": "sha256:c0a70ebfe914bbf8940b7907f9fd4c7406d554e6bc245d62a6237dfddc777331", "bytes": 7400},
+    {"path": "RECONCILIATION.md", "gitBlobOid": "86eb9ce43d049757d3143e22387a3656e03e834f", "sha256": "sha256:712c9bff5dfd2555e314fe86c95669bef01a8858c42cdc36950e94830500830d", "bytes": 12778},
+    {"path": "schemas/universal-provider-review-admission-v1.schema.json", "gitBlobOid": "6f36cc84e8f289aa9801077605d3435af5c69497", "sha256": "sha256:6c1f28a05ad2ef459932415f8cb79c3a2b425f4204fcf8d34e4afa9d06d8a342", "bytes": 8026},
+    {"path": "specs/fleet-universal-provider-control-reconciliation.md", "gitBlobOid": "30641b5bd45777e165631f7f0d37548ae6cf610a", "sha256": "sha256:4f0043fe3ac8ffb69fd2cb855135be43cc9abe2d89aab5954b32762357987d84", "bytes": 59137},
+    {"path": "tests/test_universal_provider_control.py", "gitBlobOid": "3d46ab48b86e79799754381fca55e2f0ff8b39af", "sha256": "sha256:00ad9016fda87b7ecdae2f36c7e1db9c12caaee4788c0cffbab00f2ac5045685", "bytes": 300439},
+    {"path": "tools/check_universal_manifest.py", "gitBlobOid": "db55a72abe6646992afa5c62cc67eff683526031", "sha256": "sha256:0eaf2f479ff56566ef1916ee07949308686698550d249639ee82efd8443c78c3", "bytes": 29967},
+    {"path": "tools/universal_provider_control.py", "gitBlobOid": "43b75b2d2705bfd8316ec7a5b788e8bcd8c9e394", "sha256": "sha256:c39aafe385dfc941de689bb2c1aad5ccd76da07b34f7b5b96921c596aa2781de", "bytes": 297360}
+  ],
+  "manifestSelf": {
+    "path": "manifests/universal-provider-control-reconciliation-r29.json",
+    "bytes": 9742,
+    "canonicalGitBlobSha256": "sha256:ba3a8c1394383a75c6133599617bc05be0036c26f68078d983016f614719b62c"
+  }
+}

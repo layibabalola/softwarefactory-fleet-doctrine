@@ -1171,6 +1171,19 @@ def _validate_token_control_policy_semantics(value: dict[str, Any]) -> None:
         raise ControlError("TOKEN_CONTROL_POLICY_RESERVE_INVALID")
 
 
+def _validate_review_admission_semantics(value: dict[str, Any]) -> None:
+    """Enforce generic ordered source identity beyond JSON Schema's bounded item shape."""
+
+    subjects = value["source"]["subjectFiles"]
+    paths: set[str] = set()
+    for ordinal, subject in enumerate(subjects):
+        if subject["ordinal"] != ordinal:
+            raise ControlError("REVIEW_SUBJECT_ORDER_INVALID")
+        if subject["path"] in paths:
+            raise ControlError("REVIEW_SUBJECT_DUPLICATE")
+        paths.add(subject["path"])
+
+
 def validate_contract(name: str, value: Any) -> None:
     if jsonschema is None:
         raise ControlError("SCHEMA_VALIDATOR_UNAVAILABLE")
@@ -1191,6 +1204,8 @@ def validate_contract(name: str, value: Any) -> None:
         _validate_attended_rotation_semantics(value)
     elif name == "token_control_policy":
         _validate_token_control_policy_semantics(value)
+    elif name == "review_admission":
+        _validate_review_admission_semantics(value)
 
 
 def derive_quota_domain_id(provider: str, local_stable_identity: bytes, fleet_secret: bytes) -> str:
