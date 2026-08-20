@@ -15,7 +15,7 @@ Run the fail-closed controls with:
 
 ```console
 python tools/check_adoption_ledger.py --treeish HEAD
-python tools/check_phase3_disposition_batch.py --treeish HEAD
+python tools/check_phase3_disposition_batch.py --treeish HEAD --scope-event workflow_dispatch
 python -m unittest discover -s tests -p "test_phase3_disposition_batch.py" -v
 ```
 
