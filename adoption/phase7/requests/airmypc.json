@@ -1,0 +1,150 @@
+{
+  "schema": "fleet-r26-owner-publication-request/v1",
+  "requestId": "r26-owner-publication-airmypc-20260820",
+  "projectId": "airmypc",
+  "status": "REQUEST_ONLY_ZERO_AUTHORITY",
+  "frozenDoctrine": {
+    "baseCommit": "e4e7f9363185a5e10bb3a92167c785ef29caf2b7",
+    "baseTree": "5233fa0515fcef7b69e70a007f25e6bb78190c42",
+    "baseParent": "5ac7036705338cfe3370f5fddda224e07d5d1bdd",
+    "r26Candidate": "e70a044f31dd2f43ab7c716d63a4eb89318c61b6",
+    "r26Merge": "909f769d02e8412e51e28e242cfa8d00dadc9a3d",
+    "ledgerPath": "adoption/universal-token-control-r26.json",
+    "ledgerGitBlobOid": "333cc6d47e99a857b64150a87bd9f834590256e1",
+    "ledgerProjectRowCanonicalSha256": "70e2cf180ad3a4b5085a72105cfd5ee585e91cecfc525ce7cefc0e83381f6e82",
+    "ledgerStatus": "STALE",
+    "blockerCode": "PROJECT_REPOSITORY_ABSENT_CURRENT_R26_DISPOSITION_REQUIRED"
+  },
+  "currentEvidence": {
+    "classification": "NO_AUTHORITATIVE_CURRENT_PROJECT_IDENTITY",
+    "auditCapturedAt": "2026-08-20T06:21:30-05:00",
+    "remoteObservedAt": null,
+    "machine": "ULTRA-MAGNUS",
+    "host": null,
+    "repositoryRoot": "C:\\temp\\AirMyPC",
+    "remote": null,
+    "remoteFreshness": "UNPUBLISHED",
+    "observedRefs": [],
+    "historicalObjects": [
+      {
+        "commit": "052287887d97a72b416fc7078c4f226509bdea97",
+        "evidenceStatus": "HISTORICAL_PROJECT_BASE_IDENTIFIER_NOT_CURRENT_HEAD"
+      }
+    ],
+    "caveat": "EXACT_PUBLISHED_ROOT_ABSENT_REMOTE_AND_CURRENT_REF_UNPUBLISHED_NO_RELATED_REPOSITORY_SUBSTITUTION"
+  },
+  "ownerPublicationContract": {
+    "exactIdentityBinding": {
+      "required": true,
+      "ownerSuppliedFields": [
+        "canonicalRepositoryRoot",
+        "normalizedRemote",
+        "publishedRef",
+        "commit",
+        "tree",
+        "parents",
+        "historicalObjectLineageWitness"
+      ],
+      "freshReadRequired": true,
+      "noInferences": true
+    },
+    "currentDispositionBinding": {
+      "required": true,
+      "allowedValues": [
+        "ADOPT",
+        "DISTINGUISH",
+        "REJECT"
+      ],
+      "ownerSuppliedFields": [
+        "status",
+        "statement",
+        "r26Candidate",
+        "r26Merge",
+        "subjectCommit",
+        "subjectTree",
+        "publishedAt",
+        "ownerIdentity"
+      ],
+      "projectOwnerChosen": true
+    },
+    "artifactManifestBinding": {
+      "required": true,
+      "minimumEntries": 1,
+      "ownerSuppliedFields": [
+        "path",
+        "gitBlobOid",
+        "bytes",
+        "sha256"
+      ],
+      "exactGitBlobRequired": true
+    },
+    "nonRegressionBinding": {
+      "required": true,
+      "axes": [
+        "model",
+        "effort",
+        "role",
+        "review",
+        "quality",
+        "functionality"
+      ],
+      "eachAxisFields": [
+        "state",
+        "subject",
+        "evidenceArtifacts",
+        "verdict"
+      ],
+      "unknownCannotPass": true
+    },
+    "runtimeAndInstallationBinding": {
+      "requiredForAdopt": true,
+      "ownerSuppliedFields": [
+        "completeLauncherCensus",
+        "pinnedSupervisorInstall",
+        "currentClosedGate",
+        "requestLevelTokenAccounting",
+        "idle1000ZeroInferenceTicks",
+        "fullChildLifetimeFencing",
+        "rollbackProof",
+        "qualityEquivalence",
+        "functionalityEquivalence",
+        "independentReview"
+      ],
+      "missingMeansDispositionCannotBeAdopt": true
+    },
+    "projectAuthorityPrerequisites": {
+      "required": false,
+      "ownerSuppliedFields": [],
+      "knownState": null
+    }
+  },
+  "queue": {
+    "state": "AWAITING_PROJECT_OWNER_PUBLICATION",
+    "executable": false,
+    "ownerActionRequired": true,
+    "automaticStatusAdvance": false,
+    "writesAuthorized": false,
+    "providerCallsAuthorized": false,
+    "nextLawfulAction": "OWNER_RESTORES_EXACT_C_TEMP_AIRMYPC_ROOT_OR_PUBLISHES_NORMALIZED_REMOTE_THEN_PUBLISHES_CURRENT_REF_OBJECT_LINEAGE_AND_BOUND_R26_DISPOSITION_PACKET"
+  },
+  "authority": {
+    "projectDisposition": false,
+    "adoption": false,
+    "runtime": false,
+    "installation": false,
+    "provider": false,
+    "scheduler": false,
+    "gateTransition": false,
+    "repositoryMutation": false,
+    "remoteMutation": false,
+    "publication": false,
+    "message": false
+  },
+  "prohibitedClaims": [
+    "NO_DISPOSITION_FROM_REQUEST",
+    "NO_CURRENT_IDENTITY_FROM_ABSENT_ROOT",
+    "NO_REPOSITORY_SUBSTITUTION_BY_SIMILAR_NAME",
+    "NO_RUNTIME_OR_INSTALLATION_FROM_R14_PACKET",
+    "NO_ADOPTION_WITHOUT_PROJECT_OWNED_PROOFS"
+  ]
+}
