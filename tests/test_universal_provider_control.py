@@ -5261,6 +5261,18 @@ class ReviewResourceAdmissionR29Tests(unittest.TestCase):
             "capsules": capsules,
         }
 
+    @staticmethod
+    def rebind_projection(projection: dict[str, object]) -> None:
+        dimensions = upc.derive_review_conformance_charges(projection["chargeBasis"])
+        projection["dimensions"] = dimensions
+        result_digest = upc.review_conformance_charge_result_digest(
+            projection["chargeBasis"], dimensions
+        )
+        projection["chargeResultSha256"] = result_digest
+        projection["brokerOwnedChargeResultHandle"] = (
+            "CONFORMANCE_ONLY_ZERO_AUTHORITY/" + result_digest
+        )
+
     def setUp(self) -> None:
         manifest = json.loads(
             (ROOT / "manifests" / "universal-provider-control-reconciliation-r29.json").read_text(
@@ -5296,26 +5308,29 @@ class ReviewResourceAdmissionR29Tests(unittest.TestCase):
             "tokenizerArtifactSha256": SHA_A, "countFunctionVersion": "1.0",
             "inputTokens": 4096,
         }
-        self.dimensions = {
-            "input": {"units": "native-units", "amount": 4096},
-            "cacheRead": {"units": "native-units", "amount": 1000},
-            "cacheCreationOrWrite": {"units": "native-units", "amount": 2000},
-            "output": {"units": "native-units", "amount": 64000},
-            "reasoning": {"units": "native-units", "amount": 32000},
-            "otherChargedDimensions": {"units": "native-units", "amount": 1000},
-        }
+        self.charge_basis = upc.derive_review_conformance_charge_basis(
+            input_tokens=4096,
+            native_output_tokens=self.policy["identity"]["nativeMaxOutputTokens"],
+            cache_policy="EXACTLY_BOUNDED_AND_CHARGED",
+        )
+        self.dimensions = upc.derive_review_conformance_charges(self.charge_basis)
         self.projection = {
             "adapterLabel": "CONFORMANCE_ONLY_ZERO_AUTHORITY",
             "provider": self.policy["identity"]["provider"],
             "quotaDomain": "hmac-sha256:" + "1" * 64,
-            "chargeFunctionName": "fake-native-charge", "chargeFunctionVersion": "1.0",
-            "chargeFunctionArtifactSha256": SHA_B,
+            "chargeFunctionName": upc.REVIEW_CHARGE_FUNCTION_DESCRIPTOR["name"],
+            "chargeFunctionVersion": upc.REVIEW_CHARGE_FUNCTION_DESCRIPTOR["version"],
+            "chargeFunctionArtifactSha256": upc.REVIEW_CHARGE_FUNCTION_ARTIFACT_SHA256,
             "model": self.policy["identity"]["model"], "inputTokens": 4096,
             "nativeOutputTokens": self.policy["identity"]["nativeMaxOutputTokens"],
             "cachePolicy": "EXACTLY_BOUNDED_AND_CHARGED",
             "quotaWindows": copy.deepcopy(self.policy["capacity"]["requiredQuotaWindows"]),
+            "chargeBasis": copy.deepcopy(self.charge_basis),
             "dimensions": copy.deepcopy(self.dimensions),
+            "chargeResultSha256": "",
+            "brokerOwnedChargeResultHandle": "",
         }
+        self.rebind_projection(self.projection)
         self.windows = []
         for window in self.policy["capacity"]["requiredQuotaWindows"]:
             for name, value in self.dimensions.items():
@@ -5390,6 +5405,17 @@ class ReviewResourceAdmissionR29Tests(unittest.TestCase):
             suffix = field[0].upper() + field[1:]
             terminal["requested" + suffix] = identity[field]
             terminal["effective" + suffix] = identity[field]
+        actual_basis = {
+            "input": {"nativeUnits": "tokens", "amount": 100},
+            "cacheRead": {"nativeUnits": "tokens", "amount": 10},
+            "cacheCreationOrWrite": {"nativeUnits": "tokens", "amount": 10},
+            "output": {"nativeUnits": "tokens", "amount": 100},
+            "reasoning": {"nativeUnits": "tokens", "amount": 10},
+            "otherChargedDimensions": {
+                "nativeUnits": "provider-native-other-units", "amount": 1,
+            },
+        }
+        actual_charges = upc.derive_review_conformance_charges(actual_basis)
         terminal.update({
             "actualInputTokens": 100, "actualOutputTokens": 100,
             "actualCacheReadTokens": 10, "actualCacheCreationTokens": 10,
@@ -5397,7 +5423,7 @@ class ReviewResourceAdmissionR29Tests(unittest.TestCase):
             "actualOtherChargedDimensions": {"provider-native-other": 1},
             "actualToolCalls": 0, "actualDurationMilliseconds": 1000, "actualCost": 1,
             "actualNativeCharges": {
-                name: min(1, value["amount"]) for name, value in self.dimensions.items()
+                name: value["amount"] for name, value in actual_charges.items()
             },
             "authorityId": self.authority_state["authorityId"],
             "authorityConsumptionState": "CONSUMED_TRANSACTIONALLY", "credit": "ZERO",
@@ -5454,7 +5480,11 @@ class ReviewResourceAdmissionR29Tests(unittest.TestCase):
         upc.validate_review_tool_surface(argv, self.config, self.environment, identity)
         projection = copy.deepcopy(self.projection)
         projection.update({"provider": identity["provider"], "model": identity["model"], "nativeOutputTokens": 32000})
-        projection["dimensions"]["output"]["amount"] = 32000
+        projection["chargeBasis"] = upc.derive_review_conformance_charge_basis(
+            input_tokens=4096, native_output_tokens=32000,
+            cache_policy=projection["cachePolicy"],
+        )
+        self.rebind_projection(projection)
         upc.validate_review_charge_projection(projection, input_tokens=4096, identity=identity)
         capabilities = copy.deepcopy(self.capabilities)
         capabilities["providerHardOutput"].update({
@@ -5495,11 +5525,14 @@ class ReviewResourceAdmissionR29Tests(unittest.TestCase):
             "provider": policy["identity"]["provider"], "model": policy["identity"]["model"],
             "nativeOutputTokens": policy["identity"]["nativeMaxOutputTokens"],
         })
-        projection["dimensions"]["output"]["amount"] = 32000
+        projection["chargeBasis"] = upc.derive_review_conformance_charge_basis(
+            input_tokens=4096, native_output_tokens=32000,
+            cache_policy=projection["cachePolicy"],
+        )
+        self.rebind_projection(projection)
         windows = copy.deepcopy(self.windows)
         for row in windows:
-            if row["dimension"] == "output":
-                row["candidate"] = 32000
+            row["candidate"] = projection["dimensions"][row["dimension"]]["amount"]
         identity = policy["identity"]
         argv = [
             "fleet-fake-review-adapter", "--provider", identity["provider"],
@@ -5570,6 +5603,67 @@ class ReviewResourceAdmissionR29Tests(unittest.TestCase):
             with self.subTest(changed=changed):
                 with self.assertRaises(upc.ControlError):
                     self.evaluate(projection=changed)
+
+    def test_r34_01_code_owned_charge_result_rejects_self_attested_amounts(self) -> None:
+        self.assertEqual(self.projection["chargeBasis"]["output"]["amount"], 64000)
+        self.assertNotEqual(self.dimensions["output"]["amount"], 64000)
+        self.assertNotEqual(self.dimensions["input"]["amount"], 4096)
+        output_one = copy.deepcopy(self.projection)
+        output_one["dimensions"]["output"]["amount"] = 1
+        with self.assertRaisesRegex(upc.ControlError, "REVIEW_CHARGE_RESULT_MISMATCH"):
+            self.evaluate(projection=output_one)
+        input_zero = copy.deepcopy(self.projection)
+        input_zero["dimensions"]["input"]["amount"] = 0
+        with self.assertRaisesRegex(upc.ControlError, "REVIEW_CHARGE_RESULT_MISMATCH"):
+            self.evaluate(projection=input_zero)
+        wrong_basis = copy.deepcopy(self.projection)
+        wrong_basis["chargeBasis"]["input"]["amount"] = 0
+        self.rebind_projection(wrong_basis)
+        with self.assertRaisesRegex(upc.ControlError, "REVIEW_CHARGE_BASIS_BINDING_INVALID"):
+            self.evaluate(projection=wrong_basis)
+        for dimension in (
+            "cacheRead", "cacheCreationOrWrite", "reasoning", "otherChargedDimensions"
+        ):
+            tiny = copy.deepcopy(self.projection)
+            tiny["chargeBasis"][dimension]["amount"] = 1
+            self.rebind_projection(tiny)
+            tiny_windows = copy.deepcopy(self.windows)
+            for row in tiny_windows:
+                row["candidate"] = tiny["dimensions"][row["dimension"]]["amount"]
+            with self.subTest(tiny_basis=dimension):
+                with self.assertRaisesRegex(
+                    upc.ControlError, "REVIEW_CHARGE_BASIS_BINDING_INVALID"
+                ):
+                    self.evaluate(projection=tiny, capacity_windows=tiny_windows)
+        for operation in ("missing", "extra", "unknown_units"):
+            changed = copy.deepcopy(self.projection)
+            if operation == "missing":
+                del changed["chargeBasis"]["reasoning"]
+            elif operation == "extra":
+                changed["chargeBasis"]["foreign"] = {"nativeUnits": "tokens", "amount": 1}
+            else:
+                changed["chargeBasis"]["reasoning"]["nativeUnits"] = "caller-units"
+            with self.subTest(operation=operation):
+                with self.assertRaisesRegex(
+                    upc.ControlError, "REVIEW_CHARGE_BASIS_BINDING_INVALID"
+                ):
+                    self.evaluate(projection=changed)
+
+    def test_r34_02_terminal_native_charges_are_derived_from_actual_usage(self) -> None:
+        for field in ("actualInputTokens", "actualOutputTokens", "actualReasoningTokens"):
+            changed = copy.deepcopy(self.terminal)
+            changed[field] += 1
+            with self.subTest(usage_field=field):
+                with self.assertRaisesRegex(upc.ControlError, "REVIEW_TERMINAL_CHARGE_MISMATCH"):
+                    self.evaluate(terminal=changed)
+        changed_charge = copy.deepcopy(self.terminal)
+        changed_charge["actualNativeCharges"]["input"] += 1
+        with self.assertRaisesRegex(upc.ControlError, "REVIEW_TERMINAL_CHARGE_MISMATCH"):
+            self.evaluate(terminal=changed_charge)
+        changed_other = copy.deepcopy(self.terminal)
+        changed_other["actualOtherChargedDimensions"]["provider-native-other"] += 1
+        with self.assertRaisesRegex(upc.ControlError, "REVIEW_TERMINAL_CHARGE_MISMATCH"):
+            self.evaluate(terminal=changed_other)
 
     def test_r28_08_all_windows_timestamp_order_positive_reserves_and_floor(self) -> None:
         upc.validate_review_capacity_windows(
@@ -5660,7 +5754,7 @@ class ReviewResourceAdmissionR29Tests(unittest.TestCase):
                     self.evaluate(terminal=terminal)
         native = copy.deepcopy(self.terminal)
         native["actualNativeCharges"]["output"] = self.dimensions["output"]["amount"] + 1
-        with self.assertRaisesRegex(upc.ControlError, "REVIEW_TERMINAL_RESERVATION_EXCEEDED"):
+        with self.assertRaisesRegex(upc.ControlError, "REVIEW_TERMINAL_CHARGE_MISMATCH"):
             self.evaluate(terminal=native)
 
     def test_r28_13_schema_ordinals_and_manifest_source_are_independently_bound(self) -> None:

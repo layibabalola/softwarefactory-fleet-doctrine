@@ -760,3 +760,30 @@ reading any caller input. Validators and fixtures remain `CONFORMANCE_ONLY_ZERO_
 not constitute runtime admission. R15-R26 history remains coordinated on issue #4; R27-R33 incident
 carrying and any later adjudication remain coordinated on issue #3. R33 changes no provider, process,
 credential, task, gate, runtime, ratified governor, `RULINGS.md`, merge state, or project adoption state.
+
+### R33 exact-head charge-function binding repair
+
+Exact-head review rejected the first R33 bytes because a conformance fixture could label an arbitrary
+positive number as the provider-native output charge for the full selected output allowance. The same
+defect let terminal native-charge fields vary independently from measured native usage. Positivity and
+reservation comparison do not prove that a trusted charge function produced either value.
+
+The repaired conformance contract contains one code-owned, versioned, explicitly fake and
+provider-neutral charge-function descriptor. Its exact canonical descriptor digest binds every required
+dimension, native basis unit, rational numerator and denominator, output unit, integer-ceiling rule, and
+complete basis formula. The executable adapter derives all six projection bases from the exact captured
+input count, full selected native output allowance, and cache policy: input uses the captured count;
+output and reasoning use the full output allowance; enabled cache read uses input plus full output;
+enabled cache creation uses input; and the conservative other basis is the ceiling of input plus full
+output divided by ten. Disabled cache bases are zero. The projection repeats those internally derived
+bases for exact verification, and the adapter derives every charge result with integer arithmetic. It
+binds the exact descriptor artifact, canonical basis/result digest, and a deterministic
+`CONFORMANCE_ONLY_ZERO_AUTHORITY` result handle. Missing, extra, unknown-unit, reordered, tiny substituted,
+or otherwise self-assigned bases or results refuse.
+
+Terminal accounting builds a fresh basis from actual input, output, cache-read, cache-creation,
+reasoning, and other provider-native usage, runs the same pinned function, and requires exact equality
+with every reported native charge before comparing the derived charges with the reservation. Provider
+charge units are not assumed to equal token counts. These mechanics remain a pure hostile-test oracle:
+the production trust root and broker-owned runtime are still absent, and the only runtime-shaped entry
+point still returns input-blind `REFUSE`, zero credit, and zero authority.

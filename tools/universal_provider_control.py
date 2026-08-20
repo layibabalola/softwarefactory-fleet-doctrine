@@ -5364,6 +5364,112 @@ def _review_sha(raw: bytes) -> str:
     return "sha256:" + hashlib.sha256(raw).hexdigest()
 
 
+REVIEW_CHARGE_FUNCTION_DESCRIPTOR = {
+    "schema": "fleet-review-native-charge-function/v1",
+    "adapterLabel": "CONFORMANCE_ONLY_ZERO_AUTHORITY",
+    "name": "fleet-provider-neutral-fake-native-charge",
+    "version": "1.0.0",
+    "arithmetic": "EXACT_INTEGER_RATIONAL_CEILING",
+    "outputUnits": "fleet-conformance-charge-microunits",
+    "basisFormulas": {
+        "input": "EXACT_CAPTURED_INPUT_TOKENS",
+        "cacheRead": "CACHE_ENABLED_INPUT_PLUS_FULL_OUTPUT_ELSE_ZERO",
+        "cacheCreationOrWrite": "CACHE_ENABLED_EXACT_CAPTURED_INPUT_ELSE_ZERO",
+        "output": "FULL_SELECTED_NATIVE_OUTPUT",
+        "reasoning": "FULL_SELECTED_NATIVE_OUTPUT",
+        "otherChargedDimensions": "CEILING_INPUT_PLUS_FULL_OUTPUT_DIVIDED_BY_TEN",
+    },
+    "dimensions": {
+        "input": {"nativeUnits": "tokens", "numerator": 3, "denominator": 2},
+        "cacheRead": {"nativeUnits": "tokens", "numerator": 1, "denominator": 4},
+        "cacheCreationOrWrite": {
+            "nativeUnits": "tokens", "numerator": 2, "denominator": 1,
+        },
+        "output": {"nativeUnits": "tokens", "numerator": 5, "denominator": 4},
+        "reasoning": {"nativeUnits": "tokens", "numerator": 3, "denominator": 2},
+        "otherChargedDimensions": {
+            "nativeUnits": "provider-native-other-units", "numerator": 2,
+            "denominator": 1,
+        },
+    },
+}
+REVIEW_CHARGE_FUNCTION_ARTIFACT_SHA256 = _review_sha(
+    _review_canonical_bytes(REVIEW_CHARGE_FUNCTION_DESCRIPTOR)
+)
+
+
+def derive_review_conformance_charge_basis(
+    *, input_tokens: int, native_output_tokens: int, cache_policy: str,
+) -> dict[str, dict[str, Any]]:
+    """Derive every fake native basis internally from exact trusted profile inputs."""
+
+    if (
+        isinstance(input_tokens, bool) or not isinstance(input_tokens, int)
+        or not 0 <= input_tokens <= 128000
+        or isinstance(native_output_tokens, bool) or not isinstance(native_output_tokens, int)
+        or not 1 <= native_output_tokens <= 1_000_000
+        or cache_policy not in {"VERIFIED_DISABLED", "EXACTLY_BOUNDED_AND_CHARGED"}
+    ):
+        raise ControlError("REVIEW_CHARGE_BASIS_INPUT_INVALID")
+    cache_enabled = cache_policy == "EXACTLY_BOUNDED_AND_CHARGED"
+    return {
+        "input": {"nativeUnits": "tokens", "amount": input_tokens},
+        "cacheRead": {
+            "nativeUnits": "tokens",
+            "amount": input_tokens + native_output_tokens if cache_enabled else 0,
+        },
+        "cacheCreationOrWrite": {
+            "nativeUnits": "tokens", "amount": input_tokens if cache_enabled else 0,
+        },
+        "output": {"nativeUnits": "tokens", "amount": native_output_tokens},
+        "reasoning": {"nativeUnits": "tokens", "amount": native_output_tokens},
+        "otherChargedDimensions": {
+            "nativeUnits": "provider-native-other-units",
+            "amount": (input_tokens + native_output_tokens + 9) // 10,
+        },
+    }
+
+
+def derive_review_conformance_charges(
+    charge_basis: Mapping[str, Mapping[str, Any]],
+) -> dict[str, dict[str, Any]]:
+    """Run the code-owned fake charge adapter; this result grants no runtime authority."""
+
+    rates = REVIEW_CHARGE_FUNCTION_DESCRIPTOR["dimensions"]
+    if not isinstance(charge_basis, Mapping) or set(charge_basis) != set(rates):
+        raise ControlError("REVIEW_CHARGE_BASIS_INVALID")
+    result: dict[str, dict[str, Any]] = {}
+    for name, rate in rates.items():
+        basis = charge_basis[name]
+        if (
+            not isinstance(basis, Mapping)
+            or set(basis) != {"nativeUnits", "amount"}
+            or basis["nativeUnits"] != rate["nativeUnits"]
+            or isinstance(basis["amount"], bool)
+            or not isinstance(basis["amount"], int)
+            or not 0 <= basis["amount"] <= 1_000_000_000_000
+        ):
+            raise ControlError("REVIEW_CHARGE_BASIS_INVALID")
+        numerator = rate["numerator"]
+        denominator = rate["denominator"]
+        amount = (basis["amount"] * numerator + denominator - 1) // denominator
+        result[name] = {
+            "units": REVIEW_CHARGE_FUNCTION_DESCRIPTOR["outputUnits"], "amount": amount,
+        }
+    return result
+
+
+def review_conformance_charge_result_digest(
+    charge_basis: Mapping[str, Mapping[str, Any]],
+    dimensions: Mapping[str, Mapping[str, Any]],
+) -> str:
+    return _review_sha(_review_canonical_bytes({
+        "adapterArtifactSha256": REVIEW_CHARGE_FUNCTION_ARTIFACT_SHA256,
+        "chargeBasis": charge_basis,
+        "dimensions": dimensions,
+    }))
+
+
 def render_review_prompt(question: str, rows: Sequence[Mapping[str, Any]]) -> str:
     """Render one exact prompt from a validated ordered evidence manifest."""
 
@@ -5590,7 +5696,8 @@ def validate_review_charge_projection(
     required = {
         "adapterLabel", "provider", "quotaDomain", "chargeFunctionName",
         "chargeFunctionVersion", "chargeFunctionArtifactSha256", "model", "inputTokens",
-        "nativeOutputTokens", "cachePolicy", "quotaWindows", "dimensions",
+        "nativeOutputTokens", "cachePolicy", "quotaWindows", "chargeBasis", "dimensions",
+        "chargeResultSha256", "brokerOwnedChargeResultHandle",
     }
     if not isinstance(projection, Mapping) or set(projection) != required:
         raise ControlError("REVIEW_CHARGE_PROJECTION_INVALID")
@@ -5601,13 +5708,14 @@ def validate_review_charge_projection(
         or projection["inputTokens"] != input_tokens
         or projection["nativeOutputTokens"] != identity["nativeMaxOutputTokens"]
         or projection["cachePolicy"] not in {"VERIFIED_DISABLED", "EXACTLY_BOUNDED_AND_CHARGED"}
-        or DIGEST_RE.fullmatch(projection["chargeFunctionArtifactSha256"]) is None
-        or not all(isinstance(projection[name], str) and projection[name] for name in (
-            "provider", "quotaDomain", "chargeFunctionName", "chargeFunctionVersion"
-        ))
+        or projection["chargeFunctionName"] != REVIEW_CHARGE_FUNCTION_DESCRIPTOR["name"]
+        or projection["chargeFunctionVersion"] != REVIEW_CHARGE_FUNCTION_DESCRIPTOR["version"]
+        or projection["chargeFunctionArtifactSha256"]
+        != REVIEW_CHARGE_FUNCTION_ARTIFACT_SHA256
+        or not isinstance(projection["quotaDomain"], str)
+        or not projection["quotaDomain"]
     ):
         raise ControlError("REVIEW_CHARGE_BINDING_INVALID")
-    dimensions = projection["dimensions"]
     quota_windows = projection["quotaWindows"]
     if (
         not isinstance(quota_windows, list) or not quota_windows
@@ -5615,33 +5723,40 @@ def validate_review_charge_projection(
         or len(set(quota_windows)) != len(quota_windows)
     ):
         raise ControlError("REVIEW_QUOTA_WINDOW_BINDING_INVALID")
-    required_dimensions = {
-        "input", "cacheRead", "cacheCreationOrWrite", "output", "reasoning",
-        "otherChargedDimensions",
-    }
-    if not isinstance(dimensions, dict) or set(dimensions) != required_dimensions:
-        raise ControlError("REVIEW_CHARGE_DIMENSION_INVALID")
-    for name, value in dimensions.items():
-        if not isinstance(value, dict) or set(value) != {"units", "amount"}:
-            raise ControlError("REVIEW_CHARGE_DIMENSION_INVALID")
-        amount = value["amount"]
-        if (
-            not isinstance(value["units"], str) or not value["units"]
-            or isinstance(amount, bool) or not isinstance(amount, (int, float))
-            or not math.isfinite(amount) or amount < 0
-        ):
-            raise ControlError("REVIEW_CHARGE_DIMENSION_INVALID")
+    charge_basis = projection["chargeBasis"]
+    expected_basis = derive_review_conformance_charge_basis(
+        input_tokens=input_tokens,
+        native_output_tokens=identity["nativeMaxOutputTokens"],
+        cache_policy=projection["cachePolicy"],
+    )
+    if charge_basis != expected_basis:
+        raise ControlError("REVIEW_CHARGE_BASIS_BINDING_INVALID")
+    expected = derive_review_conformance_charges(charge_basis)
+    dimensions = projection["dimensions"]
+    if dimensions != expected:
+        raise ControlError("REVIEW_CHARGE_RESULT_MISMATCH")
+    result_digest = review_conformance_charge_result_digest(charge_basis, expected)
+    if (
+        projection["chargeResultSha256"] != result_digest
+        or projection["brokerOwnedChargeResultHandle"]
+        != "CONFORMANCE_ONLY_ZERO_AUTHORITY/" + result_digest
+    ):
+        raise ControlError("REVIEW_CHARGE_RESULT_BINDING_INVALID")
     if dimensions["output"]["amount"] <= 0:
         raise ControlError("REVIEW_OUTPUT_CHARGE_INVALID")
     if dimensions["otherChargedDimensions"]["amount"] <= 0:
         raise ControlError("REVIEW_OTHER_CHARGE_NOT_CONSERVATIVE")
     if projection["cachePolicy"] == "EXACTLY_BOUNDED_AND_CHARGED" and (
-        dimensions["cacheRead"]["amount"] <= 0
+        charge_basis["cacheRead"]["amount"] <= 0
+        or charge_basis["cacheCreationOrWrite"]["amount"] <= 0
+        or dimensions["cacheRead"]["amount"] <= 0
         or dimensions["cacheCreationOrWrite"]["amount"] <= 0
     ):
         raise ControlError("REVIEW_CACHE_CHARGE_INVALID")
     if projection["cachePolicy"] == "VERIFIED_DISABLED" and (
-        dimensions["cacheRead"]["amount"] != 0
+        charge_basis["cacheRead"]["amount"] != 0
+        or charge_basis["cacheCreationOrWrite"]["amount"] != 0
+        or dimensions["cacheRead"]["amount"] != 0
         or dimensions["cacheCreationOrWrite"]["amount"] != 0
     ):
         raise ControlError("REVIEW_CACHE_CHARGE_INVALID")
@@ -5893,14 +6008,49 @@ def validate_review_terminal_accounting(
             continue
         if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value) or value < 0:
             raise ControlError("REVIEW_TERMINAL_USAGE_INVALID")
+    token_fields = (
+        "actualInputTokens", "actualOutputTokens", "actualCacheReadTokens",
+        "actualCacheCreationTokens", "actualReasoningTokens",
+    )
+    if any(
+        isinstance(terminal[name], bool) or not isinstance(terminal[name], int)
+        for name in token_fields
+    ) or any(
+        isinstance(amount, bool) or not isinstance(amount, int)
+        for amount in terminal["actualOtherChargedDimensions"].values()
+    ):
+        raise ControlError("REVIEW_TERMINAL_NATIVE_USAGE_INVALID")
     if (
         terminal["actualOutputTokens"] > identity["nativeMaxOutputTokens"]
         or terminal["actualToolCalls"] != 0
         or terminal["actualDurationMilliseconds"] > capabilities["deadline"]["seconds"] * 1000
     ):
         raise ControlError("REVIEW_TERMINAL_RESERVATION_EXCEEDED")
-    reserved = projection["dimensions"]
+    actual_basis = {
+        "input": {"nativeUnits": "tokens", "amount": terminal["actualInputTokens"]},
+        "cacheRead": {
+            "nativeUnits": "tokens", "amount": terminal["actualCacheReadTokens"],
+        },
+        "cacheCreationOrWrite": {
+            "nativeUnits": "tokens", "amount": terminal["actualCacheCreationTokens"],
+        },
+        "output": {"nativeUnits": "tokens", "amount": terminal["actualOutputTokens"]},
+        "reasoning": {
+            "nativeUnits": "tokens", "amount": terminal["actualReasoningTokens"],
+        },
+        "otherChargedDimensions": {
+            "nativeUnits": "provider-native-other-units",
+            "amount": sum(terminal["actualOtherChargedDimensions"].values()),
+        },
+    }
+    expected_actual = derive_review_conformance_charges(actual_basis)
+    expected_actual_amounts = {
+        name: value["amount"] for name, value in expected_actual.items()
+    }
     actual_native = terminal["actualNativeCharges"]
+    if actual_native != expected_actual_amounts:
+        raise ControlError("REVIEW_TERMINAL_CHARGE_MISMATCH")
+    reserved = projection["dimensions"]
     if set(actual_native) != set(reserved) or any(
         actual_native[name] > reserved[name]["amount"] for name in reserved
     ):

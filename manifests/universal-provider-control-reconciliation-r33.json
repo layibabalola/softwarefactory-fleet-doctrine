@@ -134,14 +134,14 @@
     {"path": "README.md", "gitBlobOid": "fa5d74747e9700b993b1f79bcc97fa7e77459ace", "sha256": "sha256:c5d6c86f3786efb6581fadcfa00a8a323b12e71e4a743b6f61d4334f5a8e85e7", "bytes": 7704},
     {"path": "RECONCILIATION.md", "gitBlobOid": "6537b27a10218c792d86d1aa86ab3a64c28c68e1", "sha256": "sha256:e3e90cce03b89a3f97943b4014fa8658a764fd99cc90d8275566874165132a9a", "bytes": 14050},
     {"path": "schemas/universal-provider-review-admission-v1.schema.json", "gitBlobOid": "6f36cc84e8f289aa9801077605d3435af5c69497", "sha256": "sha256:6c1f28a05ad2ef459932415f8cb79c3a2b425f4204fcf8d34e4afa9d06d8a342", "bytes": 8026},
-    {"path": "specs/fleet-universal-provider-control-reconciliation.md", "gitBlobOid": "c6761f14a5c28435daeae0f2f5ec3902e1a23a83", "sha256": "sha256:7a3369b18b35980808cb10cf660c30c245d9e1a192de9a18d049296050aa85b8", "bytes": 61506},
-    {"path": "tests/test_universal_provider_control.py", "gitBlobOid": "026229b271dd1c9baf0bc5e2c8c1b27be32a5f5c", "sha256": "sha256:bae781648b8f8453ad2e4817dea7dd03e552142dfa7091e69a47fa1e3c3c0f70", "bytes": 306693},
+    {"path": "specs/fleet-universal-provider-control-reconciliation.md", "gitBlobOid": "bc8505933ec9bcfe162fea4f69dc19abd232b9da", "sha256": "sha256:fadfa5e77e367e3f7966954d935e1884994db9bc82cbd031c6ed3b73f36c9eed", "bytes": 63697},
+    {"path": "tests/test_universal_provider_control.py", "gitBlobOid": "8c9841a20ed1a180122eb97886889fe4b4188ef6", "sha256": "sha256:603723394e742b6063a4ef1c5fdc71d7822c72d9ceedcfd26df9c52345f3ad7e", "bytes": 311851},
     {"path": "tools/check_universal_manifest.py", "gitBlobOid": "e1703b61bbf7318b810cf9961b8d32ca0cc9b669", "sha256": "sha256:bbe61ed4ab534cbfc0b2935eb4ebf29338d4600468a54b415c0b3f9b72b5419f", "bytes": 36751},
-    {"path": "tools/universal_provider_control.py", "gitBlobOid": "43b75b2d2705bfd8316ec7a5b788e8bcd8c9e394", "sha256": "sha256:c39aafe385dfc941de689bb2c1aad5ccd76da07b34f7b5b96921c596aa2781de", "bytes": 297360}
+    {"path": "tools/universal_provider_control.py", "gitBlobOid": "639608f0e1289e53534e21fcb9e9c76f5050d881", "sha256": "sha256:f5f5962645aee1c14e51054bfe5b01523405137b3e39d4309dd7278a369d6da3", "bytes": 303921}
   ],
   "manifestSelf": {
     "path": "manifests/universal-provider-control-reconciliation-r33.json",
     "bytes": 9861,
-    "canonicalGitBlobSha256": "sha256:30eef0fd921be2a56ffc1edd84be8601fba5a393fdde394f31d1982ffbcaa587"
+    "canonicalGitBlobSha256": "sha256:506cc76260a61642749cb1edcc14d066953bf5fb585d8f54df68a908f510127e"
   }
 }
