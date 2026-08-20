@@ -25,6 +25,8 @@ PHASE8_COMMIT = "2223647059cb789fd350883597756666357583df"
 PHASE8_TREE = "062ee5311cc56b6ea50c2ce3f4e9d095847069e8"
 PHASE9_COMMIT = "18b95fd82f92920117c8f0f432ae8e9bc5e8ffc8"
 PHASE9_TREE = "fe0ed384bfd9485f4bbc4004225831c6aabe06a4"
+PHASE10_COMMIT = "940c790eedd118736ff0207c1b7dc407d5643802"
+PHASE10_TREE = "9fe8b86a9408917a01e08564454e6c2a47b9952f"
 REPAIR_PARENT = "ed8a2f359de8830c5800d1721faf183015eec01f"
 REPAIR_PARENT_TREE = "7592c9e600342724a799d73eb636cf3afd34629a"
 REPAIR_COMMIT = "1f3c3d8808b3d9bbb1db201039e0c3d18441f7f0"
@@ -92,6 +94,23 @@ PHASE10_FORWARD_PATHS = PHASE10_PROOF_PATHS | {
     "tools/check_phase7_owner_publication_requests.py",
     "tools/check_phase8_integration.py",
     "tools/check_phase9_integration.py",
+}
+PHASE11_PROOF_PATHS = {
+    "adoption/phase11/README.md",
+    "adoption/phase11/r26-phase10-review-shape-closure.json",
+    "tests/test_phase11_integration.py",
+    "tools/check_phase11_integration.py",
+}
+PHASE11_FORWARD_PATHS = PHASE11_PROOF_PATHS | {
+    ".github/workflows/disposition-intake.yml",
+    "tools/check_phase2_disposition_batch.py",
+    "tools/check_phase3_disposition_batch.py",
+    "tools/check_phase5_stale_reconciliation.py",
+    "tools/check_phase6_candidate_reviews.py",
+    "tools/check_phase7_owner_publication_requests.py",
+    "tools/check_phase8_integration.py",
+    "tools/check_phase9_integration.py",
+    "tools/check_phase10_integration.py",
 }
 
 REPAIR_SOURCE_BLOBS = {
@@ -282,8 +301,17 @@ def verify_exact_artifacts(treeish: str, *, phase10_forward: bool = False) -> No
             raise Phase9Error("WORKFLOW_POSTIMAGE_DRIFT")
 
 
-def verify_allowlist_union(treeish: str, *, phase10_forward: bool = False) -> None:
+def verify_allowlist_union(
+    treeish: str, *, phase10_forward: bool = False, phase11_forward: bool = False
+) -> None:
     for phase, (path, attribute) in PREDECESSOR_ALLOWLISTS.items():
+        if phase11_forward:
+            source_allowed = _assignment_set(PHASE10_COMMIT, path, attribute)
+            if _assignment_set(treeish, path, "PHASE11_INTEGRATION_PATHS") != PHASE11_PROOF_PATHS:
+                raise Phase9Error(f"{phase.upper()}_PHASE11_SCOPE_DRIFT")
+            if _assignment_set(treeish, path, attribute) != source_allowed | PHASE11_PROOF_PATHS:
+                raise Phase9Error(f"{phase.upper()}_PHASE11_ALLOWLIST_UNION_MISMATCH")
+            continue
         if phase10_forward:
             source_allowed = _assignment_set(PHASE9_COMMIT, path, attribute)
             if _assignment_set(treeish, path, "PHASE10_INTEGRATION_PATHS") != PHASE10_PROOF_PATHS:
@@ -393,18 +421,34 @@ def verify_integration(treeish: str) -> None:
         verify_frozen_status_and_authority(treeish)
         verify_global_manifest(treeish)
         return
+    if _commit_tuple(PHASE10_COMMIT) != (PHASE10_TREE, [PHASE9_COMMIT]):
+        raise Phase9Error("PHASE10_SOURCE_MISMATCH")
+    if _changed_paths(PHASE9_COMMIT, PHASE10_COMMIT) != PHASE10_FORWARD_PATHS:
+        raise Phase9Error("PHASE10_SOURCE_SCOPE_MISMATCH")
+    if resolved == PHASE10_COMMIT:
+        if _commit_tuple(treeish) != (PHASE10_TREE, [PHASE9_COMMIT]):
+            raise Phase9Error("INTEGRATION_PARENT_MISMATCH")
+        if _changed_paths(PHASE8_COMMIT, treeish) != EXPECTED_INTEGRATION_PATHS | PHASE10_FORWARD_PATHS:
+            raise Phase9Error("INTEGRATION_SCOPE_MISMATCH")
+        if _changed_paths(PHASE9_COMMIT, treeish) != PHASE10_FORWARD_PATHS:
+            raise Phase9Error("INTEGRATION_SCOPE_MISMATCH")
+        verify_exact_artifacts(treeish, phase10_forward=True)
+        verify_allowlist_union(treeish, phase10_forward=True)
+        verify_frozen_status_and_authority(treeish)
+        verify_global_manifest(treeish)
+        return
     if treeish == ":":
         head = str(_git(["rev-parse", "HEAD"], text=True, error="HEAD_UNAVAILABLE")).strip()
-        if head != PHASE9_COMMIT:
+        if head != PHASE10_COMMIT:
             raise Phase9Error("STAGED_BASE_MISMATCH")
-    elif _commit_tuple(treeish)[1] != [PHASE9_COMMIT]:
+    elif _commit_tuple(treeish)[1] != [PHASE10_COMMIT]:
         raise Phase9Error("INTEGRATION_PARENT_MISMATCH")
-    if _changed_paths(PHASE8_COMMIT, treeish) != EXPECTED_INTEGRATION_PATHS | PHASE10_FORWARD_PATHS:
+    if _changed_paths(PHASE8_COMMIT, treeish) != EXPECTED_INTEGRATION_PATHS | PHASE10_FORWARD_PATHS | PHASE11_FORWARD_PATHS:
         raise Phase9Error("INTEGRATION_SCOPE_MISMATCH")
-    if _changed_paths(PHASE9_COMMIT, treeish) != PHASE10_FORWARD_PATHS:
+    if _changed_paths(PHASE10_COMMIT, treeish) != PHASE11_FORWARD_PATHS:
         raise Phase9Error("INTEGRATION_SCOPE_MISMATCH")
     verify_exact_artifacts(treeish, phase10_forward=True)
-    verify_allowlist_union(treeish, phase10_forward=True)
+    verify_allowlist_union(treeish, phase11_forward=True)
     verify_frozen_status_and_authority(treeish)
     verify_global_manifest(treeish)
 

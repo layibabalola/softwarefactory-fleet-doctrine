@@ -20,6 +20,8 @@ ROOT = Path(__file__).resolve().parents[1]
 PHASE9_COMMIT = "18b95fd82f92920117c8f0f432ae8e9bc5e8ffc8"
 PHASE9_TREE = "fe0ed384bfd9485f4bbc4004225831c6aabe06a4"
 PHASE9_PARENT = "2223647059cb789fd350883597756666357583df"
+PHASE10_COMMIT = "940c790eedd118736ff0207c1b7dc407d5643802"
+PHASE10_TREE = "9fe8b86a9408917a01e08564454e6c2a47b9952f"
 RECEIPT_PATH = "adoption/phase10/r26-local-candidate-review-receipts.json"
 RECEIPT_BLOB = "2f5d543754d35eb6e2f8143465e3ea2a1d1abffc"
 RECEIPT_BYTES = 18080
@@ -48,6 +50,23 @@ EXPECTED_INTEGRATION_PATHS = PHASE10_PROOF_PATHS | {
     *PREDECESSOR_CHECKERS,
     "tools/check_phase8_integration.py",
     "tools/check_phase9_integration.py",
+}
+PHASE11_PROOF_PATHS = {
+    "adoption/phase11/README.md",
+    "adoption/phase11/r26-phase10-review-shape-closure.json",
+    "tests/test_phase11_integration.py",
+    "tools/check_phase11_integration.py",
+}
+PHASE11_FORWARD_PATHS = PHASE11_PROOF_PATHS | {
+    ".github/workflows/disposition-intake.yml",
+    "tools/check_phase2_disposition_batch.py",
+    "tools/check_phase3_disposition_batch.py",
+    "tools/check_phase5_stale_reconciliation.py",
+    "tools/check_phase6_candidate_reviews.py",
+    "tools/check_phase7_owner_publication_requests.py",
+    "tools/check_phase8_integration.py",
+    "tools/check_phase9_integration.py",
+    "tools/check_phase10_integration.py",
 }
 EXPECTED_COUNTS = {"ADOPT": 0, "DISTINGUISH": 5, "MISSING": 0, "REJECT": 0, "STALE": 4}
 EXPECTED_CAPTURE_FALSE = {
@@ -476,16 +495,30 @@ def verify_frozen_doctrine(treeish: str) -> None:
             raise Phase10Error("SPEC_BLOB_DRIFT")
 
 
-def verify_forward_allowlists(treeish: str) -> None:
+def verify_forward_allowlists(treeish: str, *, phase11_forward: bool = False) -> None:
     for path, attribute in PREDECESSOR_CHECKERS.items():
+        if phase11_forward:
+            source = _assignment_set(PHASE10_COMMIT, path, attribute)
+            if _assignment_set(treeish, path, "PHASE11_INTEGRATION_PATHS") != PHASE11_PROOF_PATHS:
+                raise Phase10Error("PHASE11_ALLOWLIST_SCOPE_DRIFT")
+            if _assignment_set(treeish, path, attribute) != source | PHASE11_PROOF_PATHS:
+                raise Phase10Error("PREDECESSOR_ALLOWLIST_UNION_MISMATCH")
+            continue
         source = _assignment_set(PHASE9_COMMIT, path, attribute)
         if _assignment_set(treeish, path, "PHASE10_INTEGRATION_PATHS") != PHASE10_PROOF_PATHS:
             raise Phase10Error("PHASE10_ALLOWLIST_SCOPE_DRIFT")
         if _assignment_set(treeish, path, attribute) != source | PHASE10_PROOF_PATHS:
             raise Phase10Error("PREDECESSOR_ALLOWLIST_UNION_MISMATCH")
-    for path in ("tools/check_phase8_integration.py", "tools/check_phase9_integration.py"):
-        if _assignment_set(treeish, path, "PHASE10_FORWARD_PATHS") != EXPECTED_INTEGRATION_PATHS:
-            raise Phase10Error("FORWARD_SCOPE_DRIFT")
+    paths = ("tools/check_phase8_integration.py", "tools/check_phase9_integration.py")
+    if phase11_forward:
+        paths = (*paths, "tools/check_phase10_integration.py")
+        for path in paths:
+            if _assignment_set(treeish, path, "PHASE11_FORWARD_PATHS") != PHASE11_FORWARD_PATHS:
+                raise Phase10Error("FORWARD_SCOPE_DRIFT")
+    else:
+        for path in paths:
+            if _assignment_set(treeish, path, "PHASE10_FORWARD_PATHS") != EXPECTED_INTEGRATION_PATHS:
+                raise Phase10Error("FORWARD_SCOPE_DRIFT")
 
 
 def verify_workflow(treeish: str) -> None:
@@ -512,19 +545,38 @@ def verify_receipt_blob(treeish: str) -> dict[str, Any]:
 def verify_integration(treeish: str) -> None:
     if _commit_tuple(PHASE9_COMMIT) != (PHASE9_TREE, [PHASE9_PARENT]):
         raise Phase10Error("PHASE9_BASE_MISMATCH")
+    if _commit_tuple(PHASE10_COMMIT) != (PHASE10_TREE, [PHASE9_COMMIT]):
+        raise Phase10Error("PHASE10_SOURCE_MISMATCH")
+    if _changed_paths(PHASE9_COMMIT, PHASE10_COMMIT) != EXPECTED_INTEGRATION_PATHS:
+        raise Phase10Error("INTEGRATION_SCOPE_MISMATCH")
+    resolved = None if treeish == ":" else str(
+        _git(["rev-parse", f"{treeish}^{{commit}}"], text=True, error="COMMIT_UNAVAILABLE")
+    ).strip()
+    if resolved == PHASE10_COMMIT:
+        if _commit_tuple(treeish) != (PHASE10_TREE, [PHASE9_COMMIT]):
+            raise Phase10Error("INTEGRATION_PARENT_MISMATCH")
+        if _changed_paths(PHASE9_COMMIT, treeish) != EXPECTED_INTEGRATION_PATHS:
+            raise Phase10Error("INTEGRATION_SCOPE_MISMATCH")
+        batch = verify_receipt_blob(treeish)
+        verify_receipt_shape(batch)
+        verify_local_subjects(batch)
+        verify_frozen_doctrine(treeish)
+        verify_forward_allowlists(treeish)
+        verify_workflow(treeish)
+        return
     if treeish == ":":
         head = str(_git(["rev-parse", "HEAD"], text=True, error="HEAD_UNAVAILABLE")).strip()
-        if head != PHASE9_COMMIT:
+        if head != PHASE10_COMMIT:
             raise Phase10Error("STAGED_BASE_MISMATCH")
-    elif _commit_tuple(treeish)[1] != [PHASE9_COMMIT]:
+    elif _commit_tuple(treeish)[1] != [PHASE10_COMMIT]:
         raise Phase10Error("INTEGRATION_PARENT_MISMATCH")
-    if _changed_paths(PHASE9_COMMIT, treeish) != EXPECTED_INTEGRATION_PATHS:
+    if _changed_paths(PHASE10_COMMIT, treeish) != PHASE11_FORWARD_PATHS:
         raise Phase10Error("INTEGRATION_SCOPE_MISMATCH")
     batch = verify_receipt_blob(treeish)
     verify_receipt_shape(batch)
     verify_local_subjects(batch)
     verify_frozen_doctrine(treeish)
-    verify_forward_allowlists(treeish)
+    verify_forward_allowlists(treeish, phase11_forward=True)
     verify_workflow(treeish)
 
 

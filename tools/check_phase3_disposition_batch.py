@@ -88,6 +88,12 @@ PHASE10_INTEGRATION_PATHS = {
     "tests/test_phase10_integration.py",
     "tools/check_phase10_integration.py",
 }
+PHASE11_INTEGRATION_PATHS = {
+    "adoption/phase11/README.md",
+    "adoption/phase11/r26-phase10-review-shape-closure.json",
+    "tests/test_phase11_integration.py",
+    "tools/check_phase11_integration.py",
+}
 ALLOWED_PHASE3_PATHS = {
     ".github/workflows/disposition-intake.yml",
     "adoption/README.md",
@@ -118,7 +124,7 @@ ALLOWED_PHASE3_PATHS = {
     "tools/check_phase6_candidate_reviews.py",
     "tools/check_phase7_owner_publication_requests.py",
     "tools/check_phase8_integration.py",
-} | MANIFEST_BINDING_REPAIR_PATHS | PHASE9_INTEGRATION_PATHS | PHASE10_INTEGRATION_PATHS
+} | MANIFEST_BINDING_REPAIR_PATHS | PHASE9_INTEGRATION_PATHS | PHASE10_INTEGRATION_PATHS | PHASE11_INTEGRATION_PATHS
 SHA_PATTERN = re.compile(r"[0-9a-f]{40,64}")
 FORMAL_ADOPT_PATTERN = re.compile(r"\bADOPT\s*\(", re.IGNORECASE)
 REMOTE_FETCH_DEPTH = 64

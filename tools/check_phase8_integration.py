@@ -26,6 +26,8 @@ PHASE8_COMMIT = "2223647059cb789fd350883597756666357583df"
 PHASE8_TREE = "062ee5311cc56b6ea50c2ce3f4e9d095847069e8"
 PHASE9_COMMIT = "18b95fd82f92920117c8f0f432ae8e9bc5e8ffc8"
 PHASE9_TREE = "fe0ed384bfd9485f4bbc4004225831c6aabe06a4"
+PHASE10_COMMIT = "940c790eedd118736ff0207c1b7dc407d5643802"
+PHASE10_TREE = "9fe8b86a9408917a01e08564454e6c2a47b9952f"
 LEDGER_PATH = "adoption/universal-token-control-r26.json"
 LEDGER_BLOB = "333cc6d47e99a857b64150a87bd9f834590256e1"
 GLOBAL_MANIFEST_PATH = "manifests/universal-provider-control-reconciliation-r26.json"
@@ -87,6 +89,21 @@ PHASE10_FORWARD_PATHS = {
     "tools/check_phase8_integration.py",
     "tools/check_phase9_integration.py",
     "tools/check_phase10_integration.py",
+}
+PHASE11_FORWARD_PATHS = {
+    ".github/workflows/disposition-intake.yml",
+    "adoption/phase11/README.md",
+    "adoption/phase11/r26-phase10-review-shape-closure.json",
+    "tests/test_phase11_integration.py",
+    "tools/check_phase2_disposition_batch.py",
+    "tools/check_phase3_disposition_batch.py",
+    "tools/check_phase5_stale_reconciliation.py",
+    "tools/check_phase6_candidate_reviews.py",
+    "tools/check_phase7_owner_publication_requests.py",
+    "tools/check_phase8_integration.py",
+    "tools/check_phase9_integration.py",
+    "tools/check_phase10_integration.py",
+    "tools/check_phase11_integration.py",
 }
 
 # Filled only after the mechanical union is staged. These exact postimage blobs make every conflict
@@ -290,12 +307,25 @@ def verify_integration(treeish: str) -> None:
         verify_frozen_status(treeish)
         verify_zero_authority_packets(treeish)
         return
+    if _commit_tuple(PHASE10_COMMIT) != (PHASE10_TREE, [PHASE9_COMMIT]):
+        raise Phase8Error("PHASE10_SOURCE_MISMATCH")
+    if _changed_paths(PHASE9_COMMIT, PHASE10_COMMIT) != PHASE10_FORWARD_PATHS:
+        raise Phase8Error("PHASE10_SOURCE_SCOPE_MISMATCH")
+    if resolved == PHASE10_COMMIT:
+        if _commit_tuple(treeish) != (PHASE10_TREE, [PHASE9_COMMIT]):
+            raise Phase8Error("INTEGRATION_PARENT_MISMATCH")
+        if _changed_paths(PHASE9_COMMIT, treeish) != PHASE10_FORWARD_PATHS:
+            raise Phase8Error("INTEGRATION_SCOPE_MISMATCH")
+        verify_protected_artifacts(treeish, repaired_manifest=True, phase10_forward=True)
+        verify_frozen_status(treeish)
+        verify_zero_authority_packets(treeish)
+        return
     if treeish == ":":
-        if str(_git(["rev-parse", "HEAD"], text=True, error="HEAD_UNAVAILABLE")).strip() != PHASE9_COMMIT:
+        if str(_git(["rev-parse", "HEAD"], text=True, error="HEAD_UNAVAILABLE")).strip() != PHASE10_COMMIT:
             raise Phase8Error("STAGED_BASE_MISMATCH")
-    elif _commit_tuple(treeish)[1] != [PHASE9_COMMIT]:
+    elif _commit_tuple(treeish)[1] != [PHASE10_COMMIT]:
         raise Phase8Error("INTEGRATION_PARENT_MISMATCH")
-    if _changed_paths(PHASE9_COMMIT, treeish) != PHASE10_FORWARD_PATHS:
+    if _changed_paths(PHASE10_COMMIT, treeish) != PHASE11_FORWARD_PATHS:
         raise Phase8Error("INTEGRATION_SCOPE_MISMATCH")
     verify_protected_artifacts(treeish, repaired_manifest=True, phase10_forward=True)
     verify_frozen_status(treeish)

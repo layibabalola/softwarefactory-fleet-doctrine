@@ -100,6 +100,12 @@ jobs:
       - name: Verify phase-10 zero-authority local review integration
         run: python tools/check_phase10_integration.py --treeish HEAD
 
+      - name: Run phase-11 Phase10 review-shape closure controls
+        run: python -m unittest discover -s tests -p "test_phase11_integration.py" -v
+
+      - name: Verify phase-11 exact native review-shape closure
+        run: python tools/check_phase11_integration.py --treeish HEAD
+
       - name: Run frozen adoption-ledger controls
         run: python -m unittest discover -s tests -p "test_adoption_ledger.py" -v
 
