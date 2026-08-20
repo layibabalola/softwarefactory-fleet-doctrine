@@ -69,5 +69,11 @@ the human store-and-forward bus.
   R26 preserves pushed R25 and makes the malformed-SQLite test fixture private (0600) on POSIX so
   hosted Linux reaches the intended parser failure after the unchanged production state boundary.
   This is test-only portability evidence; runtime mechanics and zero-authority CLOSED status do not change.
+  R27 additively carries Cloudvore R5's exact provider-review resource-admission laws into the universal
+  candidate: Git-bound tool-free packets, deterministic final serialization, pinned tokenizer and native
+  charge projection, every-window reserves, empty effective tool surfaces, hard-cap/child-custody/deadline
+  capabilities, atomic full-lifetime quota leases, one-request authority, and terminal accounting. The
+  reference evaluator is `CONFORMANCE_ONLY_ZERO_AUTHORITY` and unconditionally refuses because no trusted
+  production runtime is installed. R27 does not alter the ratified governor or `RULINGS.md`.
   It is not a portable core, ruling, adoption credit, or launch authority. Coordination stays on
-  [issue #4](https://github.com/layibabalola/softwarefactory-fleet-doctrine/issues/4).
+  [issue #3](https://github.com/layibabalola/softwarefactory-fleet-doctrine/issues/3).

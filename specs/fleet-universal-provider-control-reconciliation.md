@@ -1,11 +1,11 @@
-# Universal provider-control reconciliation R26
+# Universal provider-control reconciliation R27
 
 Status: **CANDIDATE / ZERO AUTHORITY / NO DEPLOYMENT**
 
-Issue: <https://github.com/layibabalola/softwarefactory-fleet-doctrine/issues/4>
+Issue: <https://github.com/layibabalola/softwarefactory-fleet-doctrine/issues/3>
 
-Reconciliation input comment:
-<https://github.com/layibabalola/softwarefactory-fleet-doctrine/issues/4#issuecomment-5332348238>
+R27 carrier request:
+<https://github.com/layibabalola/softwarefactory-fleet-doctrine/issues/3#issuecomment-5355548763>
 
 Exact immutable parents: certified-boundary WIP `00542530bfebad8ad7646724f64720adda8d1b49`
 and ratified R14 directory-owner subject `874605e43531c9aa230ee16851f8107a8e0d9cec`.
@@ -217,6 +217,19 @@ post-reset quiet; and add required capacity dimensions. They may never weaken th
     CONTAINMENT. Only a later CONTAINMENT-to-OPEN adjudication may consume that receipt once;
     CANARY-to-OPEN and stage skipping are forbidden. Quota-domain OS locks live in one canonical
     per-account host namespace, independent of caller-selected state roots.
+27. Provider review is admitted only from an ordered all-and-only Git and committed-manifest subject
+    bijection compiled into tool-free content-addressed capsules and one deterministic final request.
+    Admission counts that exact serialization with a pinned tokenizer and projects every finite typed
+    provider-native charge dimension, including the full native output allowance, across every quota
+    window while retaining completion, foreground, review, and 20-percent reserves. An atomic host-wide
+    quota lease precedes census and capacity, is revalidated before spawn, and remains through terminal
+    accounting; elapsed time alone cannot steal it. Effective provider and local tool surfaces are empty;
+    `allowedTools` is approval configuration, not containment. Hard output, full-child custody, and
+    handle-bound deadline controls are verified capabilities. One authority permits one request;
+    UNEVALUABLE consumes it, has zero credit, never retries automatically, and needs fresh authority.
+    Model, effort, role, transport, question, and native output allowance cannot be weakened to save
+    capacity. Until all trusted runtime capabilities are separately installed and adjudicated, the only
+    executable result is `REFUSE_RUNTIME_NOT_INSTALLED` with every gate CLOSED.
 
 ## Provider-normalization dimensions
 
@@ -562,3 +575,70 @@ no broker mechanics or authority; it remains evidence-only, zero authority, and 
 The exact R24 candidate is validated by 179 universal controls, 37 retained governor controls, and
 78 canonical runtime-workbench controls on Python 3.13 and 3.14. Hosted checks remain required and
 unclaimed; validation and publication do not grant authority.
+
+## R27 provider-review resource-admission carrier
+
+R27 is an additive, exact-subject carrier requested by the issue owner. It preserves doctrine base
+`8c7dc4f4339db82a8b3c2efd689bf5f72631ad6e` / tree
+`5dcc00a7f9723a00992458ab9dd0d6b0fd373363` and carries the review-resource semantics from Cloudvore
+R5 `46674bf7ba004dd6c4cac69d5a26369ab11106c4` / tree
+`bef6f545f773157807e81dcf71305cb13a25382e`. The ordered seven Cloudvore Git blobs are pinned in
+`manifests/universal-provider-control-reconciliation-r27.json`; substitution followed by rehashing
+cannot redefine the subject. The existing ratified capacity governor and `RULINGS.md` are unchanged.
+
+The review packet is an ordered bijection with all and only those subjects. Each canonical UTF-8,
+LF-terminated capsule contains only ordinal, path, SHA-256, byte count, and exact quoted content.
+Capsules are at most 65,536 bytes each, four in count, and 262,144 bytes aggregate. Duplicates,
+omissions, extras, reorder, silent truncation, metadata instruction fields, or any mismatch against
+both Git bytes and the committed source manifest refuse. The prompt repeats the exact ordered
+ordinal/path/hash/size/capsule-hash rows. A deterministic serializer internally derives the final
+request; callers cannot submit final request bytes. Counting and execution must consume identical
+bytes, including system/provider prefixes, transport framing, prompt, capsules, the output parameter,
+and tool configuration. Hidden or unbounded prefix bytes refuse.
+
+The exact role is Fable (`claude-fable-5`), maximum effort, standard service tier, first-party
+transport, independent adversarial review, the pinned question, and the native 64,000-token output
+allowance. No model, effort, role, question, transport, output, quality, or functional substitution is
+allowed. A lower output limit can be considered only after separate exact-packet replay evidence proves
+non-inferiority and a distinct adjudication accepts it; R27 supplies neither.
+
+An artifact- and version-pinned tokenizer counts only the internally derived final request and must
+return a typed integer no greater than 128,000 input tokens. Heuristic byte conversion, unknown
+tokenizer identity, changed serialization, or prefix mismatch refuses. A separate versioned
+provider-native charge function projects input, cache read, cache creation/write, output, reasoning,
+and every other charged dimension in their native units. Every value is typed, finite, and
+nonnegative; cache is capability-verified disabled or exactly bounded and charged; the full 64,000
+output allowance has a positive charge. Missing, NaN, negative, zero-output, unknown, or incomparable
+values refuse rather than becoming zero.
+
+Every applicable provider quota window uses those same native units. Admission includes completed and
+active usage plus the candidate projection, separately retains completion, foreground, and review
+reserves, and leaves at least 20 percent of native capacity unused. Every required dimension and every
+window must be fresh and extend past the request boundary. Equality at the 20-percent floor is the last
+conforming point; any excess, expiry, omission, or unknown refuses.
+
+Before census or capacity observation, the broker must atomically acquire the one host-wide quota-
+domain lease. Ownership binds PID, immutable process start, nonce, and monotonic generation. It is
+revalidated immediately before spawn and held until complete terminal accounting. Time-only stale
+steal is forbidden; contention, ambiguous death, early release, or PID/generation ABA refuses. The
+provider request definitions, effective provider tools, effective local tools, hooks, MCP servers, and
+discovery surfaces must all be empty. `allowedTools=[]` is retained as approval configuration with
+zero containment credit. Exact executable, argv, config, and allowlisted environment reject duplicate
+or conflicting model, effort, tier, output, or tool flags.
+
+Verified capabilities—not caller booleans—must bind the provider's hard 64,000-token output cap,
+handle-bound custody of the full child tree, and a 3,600-second handle-bound deadline. The broker owns
+those controls from before launch, revalidates immediately before spawn, retains them throughout the
+request, and accounts terminal identity and usage before lease release. Terminal evidence records
+requested and effective identity plus actual input, output, cache-read, cache-creation, reasoning,
+other native charges, tool calls, duration, and cost. Missing native usage is `unknown`, never zero;
+identity mismatch is UNEVALUABLE with zero credit.
+
+One authority permits exactly one request. Any terminal result, including UNEVALUABLE, consumes it.
+There is no automatic retry, and another request requires fresh authority after offline repair. The
+reference fake argv/config/environment and every adapter fixture are explicitly
+`CONFORMANCE_ONLY_ZERO_AUTHORITY`. The R27 evaluator validates hostile conformance inputs and then
+unconditionally returns `REFUSE_RUNTIME_NOT_INSTALLED`; it cannot invoke a provider, spawn or mutate a
+process, change credentials, touch a task, open a gate, grant review/adoption credit, or activate a
+runtime. Installation, stranger review, hosted checks, adjudication, ruling, merge, project adoption,
+and any attended provider request remain distinct later acts. The author is recused from all of them.

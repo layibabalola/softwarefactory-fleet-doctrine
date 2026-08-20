@@ -102,3 +102,18 @@ authority surface; it remains evidence-only, zero authority, and CLOSED.
 
 Standing containment is unchanged: provider capacity, reset, or authentication cannot open an
 automatic-launch gate or re-enable a launcher.
+
+## R27 exact-subject provider-review carrier (candidate, zero authority)
+
+Issue #3 owner comment `5355548763` requested the Cloudvore incident remedy be carried for fleet
+adjudication before another provider lane could spend restored capacity. R27 therefore binds doctrine
+base `8c7dc4f4339db82a8b3c2efd689bf5f72631ad6e` and exact Cloudvore R5
+`46674bf7ba004dd6c4cac69d5a26369ab11106c4`, including its ordered seven-blob subject manifest.
+
+The additive strict schema, manifest, reference conformance evaluator, and hostile tests make the
+packet/final-request/tokenizer/native-charge/reserve/tool/capability/lease/retry/terminal laws
+machine-checkable. They deliberately install no runtime boundary: the only candidate result is
+`REFUSE_RUNTIME_NOT_INSTALLED`, with zero provider authority or adoption credit and every gate CLOSED.
+`RULINGS.md` and the ratified capacity-governor spec remain unchanged. Stranger review, hosted evidence,
+distinct adjudication, ruling, canonical merge, project adoption, and provider execution are later
+separate acts; the carrier author is recused.
