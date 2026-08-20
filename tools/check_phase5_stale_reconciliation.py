@@ -78,6 +78,7 @@ ADOBE_STATE_ARTIFACT = {
         {"text": "status: BLOCKED_REVIEWER_CAPACITY", "count": 2},
     ],
 }
+# Historical cumulative evidence surface. Never use it for a prospective event decision.
 ALLOWED_PHASE5_PATHS = {
     ".github/workflows/disposition-intake.yml",
     "adoption/README.md",
@@ -94,6 +95,26 @@ ALLOWED_PHASE5_PATHS = {
     "tools/check_phase3_disposition_batch.py",
     "tools/check_phase5_stale_reconciliation.py",
 }
+COMMON_PHASE_TRIGGER_PATHS = {
+    ".github/workflows/disposition-intake.yml",
+    "adoption/phase2/README.md",
+    "adoption/phase3/README.md",
+    "adoption/phase5/README.md",
+    "tests/test_phase2_disposition_batch.py",
+    "tests/test_phase3_disposition_batch.py",
+    "tests/test_phase5_stale_reconciliation.py",
+    "tools/check_phase2_disposition_batch.py",
+    "tools/check_phase3_disposition_batch.py",
+    "tools/check_phase5_stale_reconciliation.py",
+}
+AUXILIARY_EVENT_ALLOWED_PATHS = {
+    "tests/test_universal_provider_control.py",
+    "tools/check_universal_manifest.py",
+}
+EVENT_ALLOWED_PHASE5_PATHS = (
+    COMMON_PHASE_TRIGGER_PATHS | AUXILIARY_EVENT_ALLOWED_PATHS | {INTAKE_PATH}
+)
+PHASE5_TRIGGER_PATHS = COMMON_PHASE_TRIGGER_PATHS | {INTAKE_PATH}
 SHA_PATTERN = re.compile(r"[0-9a-f]{40,64}")
 REMOTE_TOKEN_ENV = "R26_REMOTE_GITHUB_TOKEN"
 REMOTE_TIMEOUT_SECONDS = 60
@@ -182,6 +203,41 @@ def _changed_paths(treeish: str) -> set[str]:
     )
 
 
+def _event_changed_paths(scope_base: str, treeish: str) -> set[str]:
+    args = (
+        ["diff", "--cached", "--name-only", scope_base]
+        if treeish == ":"
+        else ["diff", "--name-only", f"{scope_base}..{treeish}"]
+    )
+    return set(_git(args, text=True, error="PHASE5_EVENT_DIFF_UNAVAILABLE").splitlines())
+
+
+def evaluate_event_scope(event_name: str, scope_base: str, treeish: str) -> str:
+    """Classify the trusted event delta after frozen evidence verification."""
+
+    if event_name == "workflow_dispatch":
+        return "N/A_WORKFLOW_DISPATCH"
+    if event_name not in {"pull_request", "push"}:
+        raise Phase5Error("PHASE5_SCOPE_EVENT_INVALID")
+    if not isinstance(scope_base, str) or SHA_PATTERN.fullmatch(scope_base) is None:
+        raise Phase5Error("PHASE5_SCOPE_BASE_INVALID")
+    if any(path.startswith("specs/") for path in EVENT_ALLOWED_PHASE5_PATHS):
+        raise Phase5Error("PHASE5_EVENT_ALLOWLIST_INVALID")
+    try:
+        _commit_tuple(scope_base)
+    except Phase5Error as exc:
+        raise Phase5Error("PHASE5_SCOPE_BASE_INVALID") from exc
+    descendant = "HEAD" if treeish == ":" else treeish
+    if not _is_ancestor(scope_base, descendant):
+        raise Phase5Error("PHASE5_SCOPE_BASE_INVALID")
+    changed = _event_changed_paths(scope_base, treeish)
+    if not changed.intersection(PHASE5_TRIGGER_PATHS):
+        return "N/A_NO_PHASE5_TRIGGER"
+    if not changed.issubset(EVENT_ALLOWED_PHASE5_PATHS):
+        raise Phase5Error("PHASE5_SCOPE_VIOLATION")
+    return "APPLICABLE"
+
+
 def _canonical_sha256(value: Any) -> str:
     raw = json.dumps(
         value, ensure_ascii=False, separators=(",", ":"), sort_keys=True
@@ -217,8 +273,6 @@ def _verify_frozen_base(base: Any, treeish: str) -> None:
     descendant = "HEAD" if treeish == ":" else treeish
     if not _is_ancestor(BASE_COMMIT, descendant):
         raise Phase5Error("PUBLISHED_MASTER_NOT_ANCESTOR")
-    if not _changed_paths(treeish).issubset(ALLOWED_PHASE5_PATHS):
-        raise Phase5Error("PHASE5_SCOPE_VIOLATION")
 
 
 def _verify_capture(capture: Any) -> None:
@@ -626,10 +680,13 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--treeish", default="HEAD")
     parser.add_argument("--verify-remotes", action="store_true")
+    parser.add_argument("--scope-event", default=os.environ.get("R26_SCOPE_EVENT", ""))
+    parser.add_argument("--scope-base", default=os.environ.get("R26_SCOPE_BASE_SHA", ""))
     args = parser.parse_args(argv)
     try:
         batch = load_json(_blob(args.treeish, INTAKE_PATH))
         verify_batch(batch, args.treeish)
+        scope = evaluate_event_scope(args.scope_event, args.scope_base, args.treeish)
         if args.verify_remotes:
             verify_remotes(batch)
     except Phase5Error as exc:
@@ -638,12 +695,12 @@ def main(argv: list[str] | None = None) -> int:
     if args.verify_remotes:
         print(
             "PASS: phase-5 reconciliation preserves 4 STALE rows, grants zero authority; "
-            "ADOBE REMOTE VERIFIED"
+            f"ADOBE REMOTE VERIFIED scope={scope}"
         )
     else:
         print(
             "PASS LOCAL-ONLY: phase-5 reconciliation preserves 4 STALE rows, grants zero authority; "
-            "ADOBE REMOTE NOT VERIFIED"
+            f"ADOBE REMOTE NOT VERIFIED scope={scope}"
         )
     return 0
 

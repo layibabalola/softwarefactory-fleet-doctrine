@@ -79,6 +79,7 @@ EXPECTED_PROJECT_CANDIDATE_SHA256 = {
     "mlv-app": "55544254f982890efa8b2e309b0eeb2be09f85d7f09f7da86083ba2856cbf9ba",
     "salesforce-tools": "b2278e858cf70c0a6eecca6d7842709e9cc6fe4598fa13af6bf64929c05b0f6f",
 }
+# Historical cumulative evidence surface. Never use it for a prospective event decision.
 ALLOWED_PHASE3_PATHS = {
     ".github/workflows/disposition-intake.yml",
     "adoption/README.md",
@@ -97,6 +98,26 @@ ALLOWED_PHASE3_PATHS = {
     "tools/check_phase3_disposition_batch.py",
     "tools/check_phase5_stale_reconciliation.py",
 }
+COMMON_PHASE_TRIGGER_PATHS = {
+    ".github/workflows/disposition-intake.yml",
+    "adoption/phase2/README.md",
+    "adoption/phase3/README.md",
+    "adoption/phase5/README.md",
+    "tests/test_phase2_disposition_batch.py",
+    "tests/test_phase3_disposition_batch.py",
+    "tests/test_phase5_stale_reconciliation.py",
+    "tools/check_phase2_disposition_batch.py",
+    "tools/check_phase3_disposition_batch.py",
+    "tools/check_phase5_stale_reconciliation.py",
+}
+AUXILIARY_EVENT_ALLOWED_PATHS = {
+    "tests/test_universal_provider_control.py",
+    "tools/check_universal_manifest.py",
+}
+EVENT_ALLOWED_PHASE3_PATHS = (
+    COMMON_PHASE_TRIGGER_PATHS | AUXILIARY_EVENT_ALLOWED_PATHS | {INTAKE_PATH, LEDGER_PATH}
+)
+PHASE3_TRIGGER_PATHS = COMMON_PHASE_TRIGGER_PATHS | {INTAKE_PATH, LEDGER_PATH}
 SHA_PATTERN = re.compile(r"[0-9a-f]{40,64}")
 FORMAL_ADOPT_PATTERN = re.compile(r"\bADOPT\s*\(", re.IGNORECASE)
 REMOTE_FETCH_DEPTH = 64
@@ -191,6 +212,41 @@ def _changed_paths(base: str, treeish: str) -> set[str]:
         else ["diff", "--name-only", f"{base}..{treeish}"]
     )
     return set(_git(args, text=True, error="PHASE3_DIFF_UNAVAILABLE").splitlines())
+
+
+def _event_changed_paths(scope_base: str, treeish: str) -> set[str]:
+    args = (
+        ["diff", "--cached", "--name-only", scope_base]
+        if treeish == ":"
+        else ["diff", "--name-only", f"{scope_base}..{treeish}"]
+    )
+    return set(_git(args, text=True, error="PHASE3_EVENT_DIFF_UNAVAILABLE").splitlines())
+
+
+def evaluate_event_scope(event_name: str, scope_base: str, treeish: str) -> str:
+    """Classify the trusted event delta after frozen evidence verification."""
+
+    if event_name == "workflow_dispatch":
+        return "N/A_WORKFLOW_DISPATCH"
+    if event_name not in {"pull_request", "push"}:
+        raise Phase3Error("PHASE3_SCOPE_EVENT_INVALID")
+    if not isinstance(scope_base, str) or SHA_PATTERN.fullmatch(scope_base) is None:
+        raise Phase3Error("PHASE3_SCOPE_BASE_INVALID")
+    if any(path.startswith("specs/") for path in EVENT_ALLOWED_PHASE3_PATHS):
+        raise Phase3Error("PHASE3_EVENT_ALLOWLIST_INVALID")
+    try:
+        _commit_tuple(scope_base)
+    except Phase3Error as exc:
+        raise Phase3Error("PHASE3_SCOPE_BASE_INVALID") from exc
+    descendant = "HEAD" if treeish == ":" else treeish
+    if not _is_ancestor(scope_base, descendant):
+        raise Phase3Error("PHASE3_SCOPE_BASE_INVALID")
+    changed = _event_changed_paths(scope_base, treeish)
+    if not changed.intersection(PHASE3_TRIGGER_PATHS):
+        return "N/A_NO_PHASE3_TRIGGER"
+    if not changed.issubset(EVENT_ALLOWED_PHASE3_PATHS):
+        raise Phase3Error("PHASE3_SCOPE_VIOLATION")
+    return "APPLICABLE"
 
 
 def _exact_keys(value: Any, keys: set[str], code: str) -> dict[str, Any]:
@@ -297,10 +353,6 @@ def _verify_frozen_base(base: Any, treeish: str) -> None:
     descendant = "HEAD" if treeish == ":" else treeish
     if not _is_ancestor(UTILIZATION_SHADOW_DOCTRINE_AMENDMENT_COMMIT, descendant):
         raise Phase3Error("UTILIZATION_SHADOW_DOCTRINE_AMENDMENT_NOT_ANCESTOR")
-    if not _changed_paths(UTILIZATION_SHADOW_DOCTRINE_AMENDMENT_COMMIT, treeish).issubset(
-        ALLOWED_PHASE3_PATHS
-    ):
-        raise Phase3Error("PHASE3_SCOPE_VIOLATION")
 
 
 def _verify_project(
@@ -748,10 +800,13 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--treeish", default="HEAD")
     parser.add_argument("--verify-remotes", action="store_true")
+    parser.add_argument("--scope-event", default=os.environ.get("R26_SCOPE_EVENT", ""))
+    parser.add_argument("--scope-base", default=os.environ.get("R26_SCOPE_BASE_SHA", ""))
     args = parser.parse_args(argv)
     try:
         batch = load_json(_blob(args.treeish, INTAKE_PATH))
         verify_batch(batch, args.treeish)
+        scope = evaluate_event_scope(args.scope_event, args.scope_base, args.treeish)
         if args.verify_remotes:
             verify_remotes(batch)
     except Phase3Error as exc:
@@ -760,12 +815,12 @@ def main(argv: list[str] | None = None) -> int:
     if args.verify_remotes:
         print(
             "PASS: phase-3 published project distinctions are exact, zero-authority, closed-set; "
-            "REMOTES VERIFIED"
+            f"REMOTES VERIFIED scope={scope}"
         )
     else:
         print(
             "PASS LOCAL-ONLY: phase-3 published project distinctions are exact, zero-authority, "
-            "closed-set; REMOTES NOT VERIFIED"
+            f"closed-set; REMOTES NOT VERIFIED scope={scope}"
         )
     return 0
 
