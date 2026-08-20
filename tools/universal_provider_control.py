@@ -5332,7 +5332,7 @@ class UniversalProviderBroker:
 
 
 def _review_canonical_bytes(value: Any) -> bytes:
-    """Canonical UTF-8 bytes used only by the deployment-inert R27 review contract."""
+    """Canonical UTF-8 bytes used only by the deployment-inert review contract."""
 
     try:
         return (
@@ -5350,7 +5350,7 @@ def _review_sha(raw: bytes) -> str:
 
 
 def render_review_prompt(question: str, rows: Sequence[Mapping[str, Any]]) -> str:
-    """Render the only R27 prompt from a validated ordered evidence manifest."""
+    """Render one exact prompt from a validated ordered evidence manifest."""
 
     if not isinstance(question, str) or not question or "\x00" in question:
         raise ControlError("REVIEW_QUESTION_INVALID")
@@ -5481,7 +5481,7 @@ def build_review_final_request(
     request = {
         "schema": "fleet-provider-final-review-request/v1",
         "providerPrefix": "FLEET_INDEPENDENT_REVIEW_V1",
-        "model": identity["model"], "effort": identity["effort"],
+        "provider": identity["provider"], "model": identity["model"], "effort": identity["effort"],
         "serviceTier": identity["serviceTier"], "transport": identity["transport"],
         "role": identity["role"], "maxOutputTokens": identity["nativeMaxOutputTokens"],
         "tools": [], "promptUtf8": fixed["promptUtf8"], "capsules": fixed["capsules"],
@@ -5502,13 +5502,17 @@ def verify_review_execution_request(expected_raw: bytes, execution_raw: bytes) -
 
 
 def validate_review_tool_surface(
-    argv: Sequence[str], config: Mapping[str, Any], environment: Mapping[str, str]
+    argv: Sequence[str], config: Mapping[str, Any], environment: Mapping[str, str],
+    identity: Mapping[str, Any],
 ) -> None:
     """Check the exact fake-only empty-tool inventory without asserting production containment."""
 
     expected = [
-        "fleet-fake-review-adapter", "--model", "claude-fable-5", "--effort", "max",
-        "--service-tier", "standard", "--max-output-tokens", "64000", "--tools", "",
+        "fleet-fake-review-adapter", "--provider", identity["provider"],
+        "--model", identity["model"], "--effort", identity["effort"],
+        "--service-tier", identity["serviceTier"], "--transport", identity["transport"],
+        "--role", identity["role"], "--max-output-tokens",
+        str(identity["nativeMaxOutputTokens"]), "--tools", "",
     ]
     if list(argv) != expected:
         raise ControlError("REVIEW_ARGV_OR_IDENTITY_MISMATCH")
@@ -5531,24 +5535,34 @@ def validate_review_tokenizer_result(
     result: Mapping[str, Any], request_raw: bytes, identity: Mapping[str, Any]
 ) -> int:
     required = {
-        "adapterLabel", "serializedRequestSha256", "model", "tokenizerName",
+        "adapterLabel", "capturedRawRequestSha256", "capturedRawRequestBytes",
+        "rawCaptureHandle", "model", "tokenizerName",
         "tokenizerVersion", "tokenizerArtifactSha256", "countFunctionVersion", "inputTokens",
-        "hiddenPrefixBytes", "hiddenPrefixBounded",
     }
     if not isinstance(result, Mapping) or set(result) != required:
         raise ControlError("REVIEW_TOKENIZER_BINDING_INVALID")
     if (
         result["adapterLabel"] != "CONFORMANCE_ONLY_ZERO_AUTHORITY"
-        or result["serializedRequestSha256"] != _review_sha(request_raw)
+        or result["capturedRawRequestSha256"] != _review_sha(request_raw)
+        or result["capturedRawRequestBytes"] != len(request_raw)
         or result["model"] != identity["model"]
         or DIGEST_RE.fullmatch(result["tokenizerArtifactSha256"]) is None
         or not all(isinstance(result[name], str) and result[name] for name in (
             "tokenizerName", "tokenizerVersion", "countFunctionVersion"
         ))
-        or result["hiddenPrefixBytes"] != 0
-        or result["hiddenPrefixBounded"] is not True
     ):
         raise ControlError("REVIEW_TOKENIZER_OR_PREFIX_MISMATCH")
+    handle = result["rawCaptureHandle"]
+    if (
+        not isinstance(handle, Mapping)
+        or set(handle) != {"adapterLabel", "captureFunctionVersion", "artifactSha256", "requestSha256"}
+        or handle["adapterLabel"] != "CONFORMANCE_ONLY_ZERO_AUTHORITY"
+        or not isinstance(handle["captureFunctionVersion"], str)
+        or not handle["captureFunctionVersion"]
+        or DIGEST_RE.fullmatch(handle["artifactSha256"]) is None
+        or handle["requestSha256"] != _review_sha(request_raw)
+    ):
+        raise ControlError("REVIEW_CAPTURED_RAW_HANDLE_MISSING")
     tokens = result["inputTokens"]
     if isinstance(tokens, bool) or not isinstance(tokens, int) or not 0 <= tokens <= 128000:
         raise ControlError("REVIEW_INPUT_TOKEN_BOUND_INVALID")
@@ -5567,9 +5581,10 @@ def validate_review_charge_projection(
         raise ControlError("REVIEW_CHARGE_PROJECTION_INVALID")
     if (
         projection["adapterLabel"] != "CONFORMANCE_ONLY_ZERO_AUTHORITY"
+        or projection["provider"] != identity["provider"]
         or projection["model"] != identity["model"]
         or projection["inputTokens"] != input_tokens
-        or projection["nativeOutputTokens"] != 64000
+        or projection["nativeOutputTokens"] != identity["nativeMaxOutputTokens"]
         or projection["cachePolicy"] not in {"VERIFIED_DISABLED", "EXACTLY_BOUNDED_AND_CHARGED"}
         or DIGEST_RE.fullmatch(projection["chargeFunctionArtifactSha256"]) is None
         or not all(isinstance(projection[name], str) and projection[name] for name in (
@@ -5603,22 +5618,47 @@ def validate_review_charge_projection(
             raise ControlError("REVIEW_CHARGE_DIMENSION_INVALID")
     if dimensions["output"]["amount"] <= 0:
         raise ControlError("REVIEW_OUTPUT_CHARGE_INVALID")
+    if dimensions["otherChargedDimensions"]["amount"] <= 0:
+        raise ControlError("REVIEW_OTHER_CHARGE_NOT_CONSERVATIVE")
+    if projection["cachePolicy"] == "EXACTLY_BOUNDED_AND_CHARGED" and (
+        dimensions["cacheRead"]["amount"] <= 0
+        or dimensions["cacheCreationOrWrite"]["amount"] <= 0
+    ):
+        raise ControlError("REVIEW_CACHE_CHARGE_INVALID")
+    if projection["cachePolicy"] == "VERIFIED_DISABLED" and (
+        dimensions["cacheRead"]["amount"] != 0
+        or dimensions["cacheCreationOrWrite"]["amount"] != 0
+    ):
+        raise ControlError("REVIEW_CACHE_CHARGE_INVALID")
     return dimensions
 
 
 def validate_review_capacity_windows(
     windows: Sequence[Mapping[str, Any]], dimensions: Mapping[str, Mapping[str, Any]],
-    required_windows: Sequence[str] | None = None,
+    required_windows: Sequence[str], max_evidence_age_seconds: int,
 ) -> None:
     if not isinstance(windows, Sequence) or isinstance(windows, (str, bytes)) or not windows:
         raise ControlError("REVIEW_CAPACITY_WINDOWS_INVALID")
+    if (
+        not isinstance(required_windows, Sequence)
+        or isinstance(required_windows, (str, bytes)) or not required_windows
+        or any(not isinstance(name, str) or not name for name in required_windows)
+        or len(set(required_windows)) != len(required_windows)
+        or isinstance(max_evidence_age_seconds, bool)
+        or not isinstance(max_evidence_age_seconds, int)
+        or max_evidence_age_seconds < 1
+    ):
+        raise ControlError("REVIEW_CAPACITY_POLICY_INVALID")
     required = {
         "window", "dimension", "units", "capacity", "activeAndCompleted", "candidate",
-        "completionReserve", "foregroundReserve", "reviewReserve", "valid", "expiresAfterRequest",
+        "completionReserve", "foregroundReserve", "reviewReserve", "observedAt", "expiresAt",
+        "requestDeadline",
     }
     seen: set[tuple[str, str]] = set()
     covered: set[str] = set()
     covered_windows: set[str] = set()
+    request_deadlines: set[str] = set()
+    window_times: dict[str, tuple[str, str]] = {}
     for row in windows:
         if not isinstance(row, Mapping) or set(row) != required:
             raise ControlError("REVIEW_CAPACITY_WINDOWS_INVALID")
@@ -5628,6 +5668,11 @@ def validate_review_capacity_windows(
         seen.add(key)
         covered.add(row["dimension"])
         covered_windows.add(row["window"])
+        request_deadlines.add(row["requestDeadline"])
+        times = (row["observedAt"], row["expiresAt"])
+        if row["window"] in window_times and window_times[row["window"]] != times:
+            raise ControlError("REVIEW_CAPACITY_TIME_INVALID")
+        window_times[row["window"]] = times
         projected = dimensions[row["dimension"]]
         numbers = [row[name] for name in (
             "capacity", "activeAndCompleted", "candidate", "completionReserve",
@@ -5635,26 +5680,42 @@ def validate_review_capacity_windows(
         )]
         if (
             row["units"] != projected["units"] or row["candidate"] != projected["amount"]
-            or row["valid"] is not True or row["expiresAfterRequest"] is not True
             or any(isinstance(value, bool) or not isinstance(value, (int, float))
                    or not math.isfinite(value) or value < 0 for value in numbers)
             or row["capacity"] <= 0
+            or row["completionReserve"] <= 0
+            or row["foregroundReserve"] <= 0
+            or row["reviewReserve"] <= 0
         ):
             raise ControlError("REVIEW_CAPACITY_WINDOWS_INVALID")
+        try:
+            observed_at = parse_time(row["observedAt"])
+            expires_at = parse_time(row["expiresAt"])
+            request_deadline = parse_time(row["requestDeadline"])
+        except (ControlError, TypeError) as exc:
+            raise ControlError("REVIEW_CAPACITY_TIME_INVALID") from exc
+        if (
+            observed_at > request_deadline or request_deadline >= expires_at
+            or (request_deadline - observed_at).total_seconds() > max_evidence_age_seconds
+        ):
+            raise ControlError("REVIEW_CAPACITY_TIME_INVALID")
         consumed = sum(numbers[1:])
         if consumed > row["capacity"] * 0.8:
             raise ControlError("REVIEW_CAPACITY_RESERVE_INVALID")
     if covered != set(dimensions):
         raise ControlError("REVIEW_CAPACITY_DIMENSION_OMITTED")
-    if required_windows is not None:
-        expected_pairs = {
-            (window, dimension) for window in required_windows for dimension in dimensions
-        }
-        if seen != expected_pairs or covered_windows != set(required_windows):
-            raise ControlError("REVIEW_CAPACITY_WINDOW_OMITTED")
+    if len(request_deadlines) != 1:
+        raise ControlError("REVIEW_CAPACITY_TIME_INVALID")
+    expected_pairs = {
+        (window, dimension) for window in required_windows for dimension in dimensions
+    }
+    if seen != expected_pairs or covered_windows != set(required_windows):
+        raise ControlError("REVIEW_CAPACITY_WINDOW_OMITTED")
 
 
-def validate_review_capabilities(capabilities: Mapping[str, Any]) -> None:
+def validate_review_capabilities(
+    capabilities: Mapping[str, Any], identity: Mapping[str, Any]
+) -> None:
     if not isinstance(capabilities, Mapping) or set(capabilities) != {
         "providerHardOutput", "fullChildCustody", "deadline"
     }:
@@ -5664,37 +5725,46 @@ def validate_review_capabilities(capabilities: Mapping[str, Any]) -> None:
     deadline = capabilities["deadline"]
     if (
         not isinstance(output, Mapping)
-        or set(output) != {"status", "artifactSha256", "model", "tokens"}
+        or set(output) != {"adapterLabel", "brokerOwnedHandle", "artifactSha256", "provider", "model", "tokens"}
         or not isinstance(custody, Mapping)
-        or set(custody) != {"status", "artifactSha256", "fullChildTree", "handleBound"}
+        or set(custody) != {"adapterLabel", "brokerOwnedHandle", "artifactSha256", "custodyScope"}
         or not isinstance(deadline, Mapping)
-        or set(deadline) != {"status", "artifactSha256", "seconds", "handleBoundTermination"}
+        or set(deadline) != {"adapterLabel", "brokerOwnedHandle", "artifactSha256", "seconds", "terminationScope"}
     ):
         raise ControlError("REVIEW_CAPABILITY_BINDING_INVALID")
     for item in (output, custody, deadline):
-        if not isinstance(item, Mapping) or item.get("status") != "CAPABILITY_VERIFIED":
+        if (
+            item.get("adapterLabel") != "CONFORMANCE_ONLY_ZERO_AUTHORITY"
+            or not isinstance(item.get("brokerOwnedHandle"), str)
+            or len(item["brokerOwnedHandle"]) < 16
+        ):
             raise ControlError("REVIEW_CAPABILITY_MISSING")
         if DIGEST_RE.fullmatch(item.get("artifactSha256", "")) is None:
             raise ControlError("REVIEW_CAPABILITY_BINDING_INVALID")
-    if output.get("model") != "claude-fable-5" or output.get("tokens") != 64000:
+    if (
+        output.get("provider") != identity["provider"]
+        or output.get("model") != identity["model"]
+        or output.get("tokens") != identity["nativeMaxOutputTokens"]
+    ):
         raise ControlError("REVIEW_HARD_OUTPUT_CAP_INVALID")
-    if custody.get("fullChildTree") is not True or custody.get("handleBound") is not True:
+    if custody.get("custodyScope") != "HANDLE_BOUND_FULL_CHILD_TREE":
         raise ControlError("REVIEW_CHILD_CUSTODY_INVALID")
-    if deadline.get("seconds") != 3600 or deadline.get("handleBoundTermination") is not True:
+    if deadline.get("seconds") != 3600 or deadline.get("terminationScope") != "HANDLE_BOUND_FULL_CHILD_TREE":
         raise ControlError("REVIEW_DEADLINE_CAPABILITY_INVALID")
 
 
 def validate_review_quota_lease(lease: Mapping[str, Any], projection: Mapping[str, Any]) -> None:
     required = {
         "adapterLabel", "status", "quotaDomain", "ownerPid", "ownerProcessStartTime", "nonce",
-        "generation", "atomicAcquire", "acquiredBeforeCensusAndCapacity", "revalidatedBeforeSpawn",
-        "heldThroughTerminalAccounting", "timeOnlySteal", "terminalAccountingComplete",
+        "generation", "atomicFixture", "acquireSequence", "censusSequence", "capacitySequence",
+        "revalidateSequence", "spawnSequence", "terminalAccountingSequence", "releaseSequence",
+        "stealBasis",
     }
     if not isinstance(lease, Mapping) or set(lease) != required:
         raise ControlError("REVIEW_QUOTA_LEASE_INVALID")
     if (
         lease["adapterLabel"] != "CONFORMANCE_ONLY_ZERO_AUTHORITY"
-        or lease["status"] != "EXCLUSIVE_HELD"
+        or lease["status"] != "RELEASED_AFTER_TERMINAL_ACCOUNTING"
         or lease["quotaDomain"] != projection["quotaDomain"]
         or isinstance(lease["ownerPid"], bool) or not isinstance(lease["ownerPid"], int)
         or lease["ownerPid"] <= 0
@@ -5702,31 +5772,75 @@ def validate_review_quota_lease(lease: Mapping[str, Any], projection: Mapping[st
         or not isinstance(lease["nonce"], str) or len(lease["nonce"]) < 16
         or isinstance(lease["generation"], bool) or not isinstance(lease["generation"], int)
         or lease["generation"] < 1
-        or lease["atomicAcquire"] is not True
-        or lease["acquiredBeforeCensusAndCapacity"] is not True
-        or lease["revalidatedBeforeSpawn"] is not True
-        or lease["heldThroughTerminalAccounting"] is not True
-        or lease["timeOnlySteal"] is not False
-        or lease["terminalAccountingComplete"] is not False
+        or lease["atomicFixture"] != "CREATE_NEW_OR_COMPARE_EXCHANGE_CONFORMANCE_ONLY"
+        or lease["stealBasis"] != "NEVER_TIME_ONLY"
     ):
         raise ControlError("REVIEW_QUOTA_LEASE_INVALID")
+    sequence = [
+        lease[name] for name in (
+            "acquireSequence", "censusSequence", "capacitySequence", "revalidateSequence",
+            "spawnSequence", "terminalAccountingSequence", "releaseSequence",
+        )
+    ]
+    if (
+        any(isinstance(value, bool) or not isinstance(value, int) or value < 1 for value in sequence)
+        or sequence != sorted(set(sequence))
+    ):
+        raise ControlError("REVIEW_QUOTA_LEASE_SEQUENCE_INVALID")
+
+
+def validate_review_authority_fixture(
+    authority_state: Mapping[str, Any], lease: Mapping[str, Any], projection: Mapping[str, Any]
+) -> None:
+    required = {
+        "adapterLabel", "ledgerHandle", "authorityId", "generation", "requestCountBefore",
+        "requestCountAfter", "consumeSequence", "terminalSequence", "postTerminalDisposition",
+        "retryDisposition", "quotaDomain", "leaseGeneration", "leaseNonce",
+    }
+    if not isinstance(authority_state, Mapping) or set(authority_state) != required:
+        raise ControlError("REVIEW_AUTHORITY_LEDGER_INVALID")
+    if (
+        authority_state["adapterLabel"] != "CONFORMANCE_ONLY_ZERO_AUTHORITY"
+        or not isinstance(authority_state["ledgerHandle"], str)
+        or len(authority_state["ledgerHandle"]) < 16
+        or not isinstance(authority_state["authorityId"], str)
+        or len(authority_state["authorityId"]) < 16
+        or isinstance(authority_state["generation"], bool)
+        or not isinstance(authority_state["generation"], int)
+        or authority_state["generation"] < 1
+        or authority_state["quotaDomain"] != projection["quotaDomain"]
+        or authority_state["leaseGeneration"] != lease["generation"]
+        or authority_state["leaseNonce"] != lease["nonce"]
+        or authority_state["requestCountBefore"] != 0
+        or authority_state["requestCountAfter"] != 1
+        or isinstance(authority_state["consumeSequence"], bool)
+        or isinstance(authority_state["terminalSequence"], bool)
+        or not isinstance(authority_state["consumeSequence"], int)
+        or not isinstance(authority_state["terminalSequence"], int)
+        or authority_state["consumeSequence"] >= authority_state["terminalSequence"]
+        or authority_state["postTerminalDisposition"] != "FRESH_AUTHORITY_REQUIRED"
+        or authority_state["retryDisposition"] != "AUTOMATIC_RETRY_FORBIDDEN"
+    ):
+        raise ControlError("REVIEW_AUTHORITY_LEDGER_INVALID")
 
 
 def validate_review_terminal_accounting(
-    terminal: Mapping[str, Any], identity: Mapping[str, Any]
-) -> None:
+    terminal: Mapping[str, Any], identity: Mapping[str, Any],
+    projection: Mapping[str, Any], capabilities: Mapping[str, Any],
+    authority_state: Mapping[str, Any],
+) -> dict[str, Any]:
     identity_fields = (
-        "model", "effort", "serviceTier", "transport", "role"
+        "provider", "model", "effort", "serviceTier", "transport", "role"
     )
     usage_fields = (
         "actualInputTokens", "actualOutputTokens", "actualCacheReadTokens",
         "actualCacheCreationTokens", "actualReasoningTokens", "actualOtherChargedDimensions",
-        "actualToolCalls", "actualDurationMilliseconds", "actualCost",
+        "actualToolCalls", "actualDurationMilliseconds", "actualCost", "actualNativeCharges",
     )
     required = {
         *("requested" + name[0].upper() + name[1:] for name in identity_fields),
         *("effective" + name[0].upper() + name[1:] for name in identity_fields),
-        *usage_fields, "authorityConsumed", "credit",
+        *usage_fields, "authorityId", "authorityConsumptionState", "credit",
     }
     if not isinstance(terminal, Mapping) or set(terminal) != required:
         raise ControlError("REVIEW_TERMINAL_ACCOUNTING_INVALID")
@@ -5735,11 +5849,25 @@ def validate_review_terminal_accounting(
         effective = terminal["effective" + name[0].upper() + name[1:]]
         if requested != identity[name] or effective != requested:
             raise ControlError("REVIEW_TERMINAL_IDENTITY_MISMATCH")
+    if (
+        terminal["authorityConsumptionState"] != "CONSUMED_TRANSACTIONALLY"
+        or terminal["authorityId"] != authority_state["authorityId"]
+        or terminal["credit"] != "ZERO"
+    ):
+        raise ControlError("REVIEW_TERMINAL_AUTHORITY_INVALID")
+    unknown_usage = any(terminal[name] == "unknown" for name in usage_fields)
+    unknown_usage = unknown_usage or any(
+        isinstance(terminal[name], dict) and any(child == "unknown" for child in terminal[name].values())
+        for name in ("actualOtherChargedDimensions", "actualNativeCharges")
+    )
+    if unknown_usage:
+        return {
+            "disposition": "UNEVALUABLE", "credit": "ZERO",
+            "reservationAccounting": "FULL_RESERVATION_BEFORE_RELEASE",
+        }
     for name in usage_fields:
         value = terminal[name]
-        if value == "unknown":
-            continue
-        if name == "actualOtherChargedDimensions" and isinstance(value, dict):
+        if name in {"actualOtherChargedDimensions", "actualNativeCharges"} and isinstance(value, dict):
             if not value or any(
                 not isinstance(key, str) or not key
                 or isinstance(child, bool) or not isinstance(child, (int, float))
@@ -5750,35 +5878,73 @@ def validate_review_terminal_accounting(
             continue
         if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value) or value < 0:
             raise ControlError("REVIEW_TERMINAL_USAGE_INVALID")
-    if terminal["authorityConsumed"] is not True or terminal["credit"] != "ZERO":
-        raise ControlError("REVIEW_TERMINAL_AUTHORITY_INVALID")
+    if (
+        terminal["actualOutputTokens"] > identity["nativeMaxOutputTokens"]
+        or terminal["actualToolCalls"] != 0
+        or terminal["actualDurationMilliseconds"] > capabilities["deadline"]["seconds"] * 1000
+    ):
+        raise ControlError("REVIEW_TERMINAL_RESERVATION_EXCEEDED")
+    reserved = projection["dimensions"]
+    actual_native = terminal["actualNativeCharges"]
+    if set(actual_native) != set(reserved) or any(
+        actual_native[name] > reserved[name]["amount"] for name in reserved
+    ):
+        raise ControlError("REVIEW_TERMINAL_RESERVATION_EXCEEDED")
+    return {
+        "disposition": "COMPLETE_CONFORMANCE_ONLY", "credit": "ZERO",
+        "reservationAccounting": "ACTUAL_RECONCILED_BEFORE_RELEASE",
+    }
 
 
-def evaluate_review_admission_conformance(
+def evaluate_review_admission(*_ignored_args: Any, **_ignored_kwargs: Any) -> dict[str, Any]:
+    """The only runtime-shaped entry point: no production trust root exists, so always refuse."""
+
+    return {
+        "status": "REFUSE", "reason": "REVIEW_RUNTIME_NOT_INSTALLED",
+        "providerAuthority": False, "adoptionCredit": False, "credit": "ZERO",
+        "automaticRetry": False,
+    }
+
+
+def evaluate_review_conformance_fixture(
     *, policy: Mapping[str, Any], packet: Mapping[str, Any], tokenizer_result: Mapping[str, Any],
     projection: Mapping[str, Any], capacity_windows: Sequence[Mapping[str, Any]],
     argv: Sequence[str], config: Mapping[str, Any], environment: Mapping[str, str],
-    capabilities: Mapping[str, Any], lease: Mapping[str, Any], attempt: int = 1,
+    capabilities: Mapping[str, Any], lease: Mapping[str, Any], authority_state: Mapping[str, Any],
+    terminal: Mapping[str, Any], execution_raw: bytes, committed_policy_digest: str,
 ) -> dict[str, Any]:
-    """Exercise every R27 preflight law, then refuse because no trusted runtime is installed."""
+    """Exercise pure hostile fixtures; success is conformance-only and grants zero authority."""
 
+    validate_contract("review_admission", policy)
+    if committed_policy_digest != _review_sha(_review_canonical_bytes(policy)):
+        raise ControlError("REVIEW_COMMITTED_POLICY_INSTANCE_MISMATCH")
     request, raw = build_review_final_request(policy, packet)
-    if attempt != 1:
-        raise ControlError("REVIEW_AUTHORITY_ALREADY_CONSUMED")
-    validate_review_tool_surface(argv, config, environment)
+    verify_review_execution_request(raw, execution_raw)
+    validate_review_tool_surface(argv, config, environment, policy["identity"])
     tokens = validate_review_tokenizer_result(tokenizer_result, raw, policy["identity"])
     dimensions = validate_review_charge_projection(
         projection, input_tokens=tokens, identity=policy["identity"]
     )
-    validate_review_capacity_windows(capacity_windows, dimensions, projection["quotaWindows"])
-    validate_review_capabilities(capabilities)
+    if projection["quotaWindows"] != policy["capacity"]["requiredQuotaWindows"]:
+        raise ControlError("REVIEW_QUOTA_WINDOW_BINDING_INVALID")
+    validate_review_capacity_windows(
+        capacity_windows, dimensions, policy["capacity"]["requiredQuotaWindows"],
+        policy["capacity"]["maxEvidenceAgeSeconds"],
+    )
+    validate_review_capabilities(capabilities, policy["identity"])
     validate_review_quota_lease(lease, projection)
+    validate_review_authority_fixture(authority_state, lease, projection)
+    terminal_result = validate_review_terminal_accounting(
+        terminal, policy["identity"], projection, capabilities, authority_state
+    )
     return {
-        "status": "REFUSE", "reason": "REVIEW_RUNTIME_NOT_INSTALLED",
+        "status": "CONFORMANCE_ONLY_ZERO_AUTHORITY", "runtimeAdmission": False,
         "providerAuthority": False, "adoptionCredit": False, "automaticRetry": False,
         "requestSha256": _review_sha(raw), "effectiveIdentity": {
-            name: request[name] for name in ("model", "effort", "serviceTier", "transport", "role")
-        },
+            name: request[name] for name in (
+                "provider", "model", "effort", "serviceTier", "transport", "role"
+            )
+        }, "terminal": terminal_result,
     }
 
 

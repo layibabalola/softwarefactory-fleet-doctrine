@@ -1,4 +1,4 @@
-# Universal provider-control reconciliation R27
+# Universal provider-control reconciliation R28
 
 Status: **CANDIDATE / ZERO AUTHORITY / NO DEPLOYMENT**
 
@@ -6,6 +6,9 @@ Issue: <https://github.com/layibabalola/softwarefactory-fleet-doctrine/issues/3>
 
 R27 carrier request:
 <https://github.com/layibabalola/softwarefactory-fleet-doctrine/issues/3#issuecomment-5355548763>
+
+R15-R26 historical reconciliation issue:
+<https://github.com/layibabalola/softwarefactory-fleet-doctrine/issues/4>
 
 Exact immutable parents: certified-boundary WIP `00542530bfebad8ad7646724f64720adda8d1b49`
 and ratified R14 directory-owner subject `874605e43531c9aa230ee16851f8107a8e0d9cec`.
@@ -642,3 +645,61 @@ unconditionally returns `REFUSE_RUNTIME_NOT_INSTALLED`; it cannot invoke a provi
 process, change credentials, touch a task, open a gate, grant review/adoption credit, or activate a
 runtime. Installation, stranger review, hosted checks, adjudication, ruling, merge, project adoption,
 and any attended provider request remain distinct later acts. The author is recused from all of them.
+
+## R28 provider-neutral, trust-bound repair
+
+R28 preserves review-failed, unpushed R27 `f94cec826f8e3979a028b6e45516077895c44905` as immutable adverse
+history. R27 correctly identified the resource laws but incorrectly embedded Fable and 64,000-token
+literals in universal validator logic and allowed caller-shaped capability records to reach an
+admission-shaped evaluator result. R28 removes both defects without weakening the exact Cloudvore review
+profile and without installing any runtime authority.
+
+The universal policy schema is strict and provider-neutral. Provider, model, effort, service tier,
+transport, role, question, and a positive native maximum output are required instance fields;
+substitution is always false. Lowering the selected output or otherwise changing quality/function
+requires separately accepted exact-role non-inferiority evidence. Universal code derives argv, tokenizer
+identity, native output projection, and hard-cap checks from that selected profile and contains no Fable
+or 64,000-token mandate. The exact R28 instance alone pins Anthropic, `claude-fable-5`, max effort,
+standard tier, `firstParty`, independent adversarial review, the literal Cloudvore question, 64,000
+output, and the `session` and `weekly` quota windows.
+
+Schema-valid policy is not trusted policy. The R28 manifest binds the canonical sorted compact UTF-8
+policy digest, exact Cloudvore commit/tree/parent, ordered seven-blob source, exact profile, and exact
+quota windows. The checker verifies those bindings against canonical Git bytes. A future reusable runtime
+interface additionally requires a broker-owned verified-policy handle rooted in a separately installed
+manifest; caller policy objects and digests never grant authority. This candidate has no production trust
+root. Therefore `evaluate_review_admission` returns `REFUSE_RUNTIME_NOT_INSTALLED`, zero credit, no retry,
+and no provider/adoption authority before examining any argument.
+
+All remaining helpers are pure `CONFORMANCE_ONLY_ZERO_AUTHORITY` fixture validators. The fixture evaluator
+compares the internally derived request to exact supplied execution bytes, requires an artifact/version-
+bound captured-raw-request handle, and refuses any tokenizer or serialization drift. A pinned native
+charge fixture must match the selected provider/model/output, enumerate input, cache read, cache creation,
+output, reasoning, and conservatively positive other charges, and use finite nonnegative values. Exactly
+bounded cache has positive read/write charge; verified-disabled cache has exact zero charge. The full
+selected output allowance has positive provider-native charge.
+
+The policy supplies the exact quota-window name set. Capacity fixtures contain every window by every
+charge dimension exactly once, match units and candidate charges, retain positive completion, foreground,
+and review reserves, and leave at least 20 percent unused. `observedAt`, request deadline, and expiry are
+parsed timestamps satisfying observation no later than the deadline, deadline strictly before expiry,
+and the instance evidence-age ceiling. Boolean `valid` or `expiresAfterRequest` assertions are not part of
+the contract. Missing, duplicate, expired, stale, nonfinite, unknown, or reserve-crossing rows refuse.
+
+Capability fixtures use profile-bound opaque handles for hard output, full-child-tree custody, and the
+handle-bound deadline. Lease fixtures bind PID/start/nonce/generation and a strictly ordered atomic
+acquire, census, capacity, revalidation, spawn, terminal-accounting, and release sequence; time-only steal,
+ABA, and early release refuse. One-use authority is represented by a distinct transactional ledger fixture,
+not an `attempt` scalar: exactly zero requests precede and one follows consumption, UNEVALUABLE consumes the
+authority, automatic retry is false, and fresh authority is required.
+
+Terminal validation is part of the conformance fixture. Requested/effective identity must match; output,
+tool calls, duration, and every native charge reconcile within the reserved profile/capabilities. Any
+unknown usage makes the terminal UNEVALUABLE with zero credit and charges the full reservation before
+release. Identity drift or reservation overrun refuses. Even complete fixture validation reports only
+`CONFORMANCE_ONLY_ZERO_AUTHORITY`, never runtime admission.
+
+R28 changes no provider, process, credential, task, gate, runtime, ratified governor, or `RULINGS.md` state.
+R15-R26 history remains coordinated on issue #4; R27/R28 incident carrying and any future adjudication
+remain coordinated on issue #3. Stranger review, hosted checks, adjudication, ruling, merge, installation,
+project adoption, and provider execution remain later distinct acts from which the author is recused.

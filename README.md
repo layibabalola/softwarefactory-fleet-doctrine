@@ -38,8 +38,8 @@ the human store-and-forward bus.
   routing, accepted by the 2026-08-18 ruling at exact conformance subject
   `224a6705d81dfbc670313cdcef4d825216f2b380`. The versioned schemas, examples, tests, and
   read-only reference decision engine do not activate a scheduler or grant a provider role.
-  Project adoption and activation remain separate; fleet dispositions are coordinated in
-  [issue #3](https://github.com/layibabalola/softwarefactory-fleet-doctrine/issues/3).
+  Project adoption and activation remain separate; R15-R26 history is coordinated in
+  [issue #4](https://github.com/layibabalola/softwarefactory-fleet-doctrine/issues/4).
 
 ## Proposed amendments (not ratified)
 
@@ -69,11 +69,16 @@ the human store-and-forward bus.
   R26 preserves pushed R25 and makes the malformed-SQLite test fixture private (0600) on POSIX so
   hosted Linux reaches the intended parser failure after the unchanged production state boundary.
   This is test-only portability evidence; runtime mechanics and zero-authority CLOSED status do not change.
-  R27 additively carries Cloudvore R5's exact provider-review resource-admission laws into the universal
+  R27 attempted to carry Cloudvore R5's exact provider-review resource-admission laws into the universal
   candidate: Git-bound tool-free packets, deterministic final serialization, pinned tokenizer and native
   charge projection, every-window reserves, empty effective tool surfaces, hard-cap/child-custody/deadline
   capabilities, atomic full-lifetime quota leases, one-request authority, and terminal accounting. The
-  reference evaluator is `CONFORMANCE_ONLY_ZERO_AUTHORITY` and unconditionally refuses because no trusted
-  production runtime is installed. R27 does not alter the ratified governor or `RULINGS.md`.
-  It is not a portable core, ruling, adoption credit, or launch authority. Coordination stays on
-  [issue #3](https://github.com/layibabalola/softwarefactory-fleet-doctrine/issues/3).
+  reference evaluator was rejected because provider-specific literals and caller-shaped fixtures could
+  be mistaken for universal runtime admission. R28 preserves R27 as adverse history, parameterizes the
+  universal profile, binds the exact Cloudvore instance only in the manifest, and makes the sole runtime
+  entry point refuse before reading caller input. Pure validators remain
+  `CONFORMANCE_ONLY_ZERO_AUTHORITY`. R15-R26 history coordinates on
+  [issue #4](https://github.com/layibabalola/softwarefactory-fleet-doctrine/issues/4); R27/R28 incident
+  carrying and adjudication coordinate on
+  [issue #3](https://github.com/layibabalola/softwarefactory-fleet-doctrine/issues/3). Neither candidate
+  changes the ratified governor or `RULINGS.md`, grants adoption credit, or provides launch authority.

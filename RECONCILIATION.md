@@ -117,3 +117,26 @@ machine-checkable. They deliberately install no runtime boundary: the only candi
 `RULINGS.md` and the ratified capacity-governor spec remain unchanged. Stranger review, hosted evidence,
 distinct adjudication, ruling, canonical merge, project adoption, and provider execution are later
 separate acts; the carrier author is recused.
+
+## R28 provider-neutral trust-bound repair (candidate, zero authority)
+
+Independent review rejected R27 as a universal mechanism because its validator hard-coded one Fable
+profile and its caller-supplied fixture records could resemble an admission result. R28 preserves exact
+R27 `f94cec826f8e3979a028b6e45516077895c44905` as adverse history. The universal schema now parameterizes
+the exact provider/model/effort/tier/transport/role/question/output profile while forbidding substitution
+or lowering without separately accepted non-inferiority evidence. The R28 instance and checker—not the
+generic schema—pin Cloudvore R5, the exact seven source blobs, Fable/max/standard/firstParty, 64,000 output,
+and session plus weekly capacity windows through a canonical policy digest and Git-bound manifest.
+
+Pure packet, serialization, tokenizer, native-charge, capacity, tool, capability, lease, authority, and
+terminal validators test only `CONFORMANCE_ONLY_ZERO_AUTHORITY` fixtures. They require captured exact
+execution bytes, all window/dimension pairs, ordered timestamps, positive completion/foreground/review
+reserves, conservative cache/other charging, profile-bound handles, ordered lease lifecycle, one-use
+transactional authority state, and terminal reservation reconciliation. They cannot admit runtime work.
+The only runtime-shaped entry point returns `REFUSE_RUNTIME_NOT_INSTALLED / ZERO` before reading any caller
+input. A future production interface requires a broker-owned verified-policy handle rooted in an installed
+manifest; no such root exists here.
+
+R15-R26 historical reconciliation remains coordinated on issue #4. R27/R28 incident carrying and future
+adjudication remain coordinated on issue #3. `RULINGS.md`, the ratified provider-capacity governor, runtime,
+providers, tasks, credentials, and gates remain untouched and CLOSED.

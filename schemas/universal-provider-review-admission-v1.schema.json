@@ -4,7 +4,7 @@
   "title": "Universal provider review admission policy v1",
   "type": "object",
   "additionalProperties": false,
-  "required": ["schema", "status", "authority", "source", "identity", "packet", "serialization", "tokenizer", "charges", "capacity", "tools", "capabilities", "lease", "request", "terminal", "conformance"],
+  "required": ["schema", "status", "authority", "trust", "source", "identity", "packet", "serialization", "tokenizer", "charges", "capacity", "tools", "capabilities", "lease", "request", "terminal", "conformance"],
   "properties": {
     "schema": {"const": "fleet-universal-provider-review-admission/v1"},
     "status": {"const": "CANDIDATE_ZERO_AUTHORITY_HARD_CLOSED"},
@@ -18,26 +18,51 @@
         "authorRecused": {"const": true}
       }
     },
+    "trust": {
+      "const": {
+        "brokerOwnedVerifiedPolicyHandleRequired": true,
+        "installManifestDigestRequired": true,
+        "callerPolicyOrDigestAuthority": false,
+        "currentProductionTrustRoot": "NOT_INSTALLED_REFUSE"
+      }
+    },
     "source": {
       "type": "object", "additionalProperties": false,
       "required": ["repository", "commit", "tree", "orderedParents", "subjectFiles"],
       "properties": {
-        "repository": {"const": "https://github.com/layibabalola/Cloudvore.git"},
-        "commit": {"const": "46674bf7ba004dd6c4cac69d5a26369ab11106c4"},
-        "tree": {"const": "bef6f545f773157807e81dcf71305cb13a25382e"},
-        "orderedParents": {"const": ["8dcd3393f5541aa1f7fe181c3869f4262b6e1a00"]},
+        "repository": {"type": "string", "format": "uri", "maxLength": 512},
+        "commit": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+        "tree": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+        "orderedParents": {"type": "array", "minItems": 1, "maxItems": 8, "uniqueItems": true, "items": {"type": "string", "pattern": "^[0-9a-f]{40}$"}},
         "subjectFiles": {
           "type": "array", "minItems": 7, "maxItems": 7,
-          "items": {"$ref": "#/$defs/subject"}
+          "prefixItems": [
+            {"allOf": [{"$ref": "#/$defs/subject"}, {"properties": {"ordinal": {"const": 0}}}]},
+            {"allOf": [{"$ref": "#/$defs/subject"}, {"properties": {"ordinal": {"const": 1}}}]},
+            {"allOf": [{"$ref": "#/$defs/subject"}, {"properties": {"ordinal": {"const": 2}}}]},
+            {"allOf": [{"$ref": "#/$defs/subject"}, {"properties": {"ordinal": {"const": 3}}}]},
+            {"allOf": [{"$ref": "#/$defs/subject"}, {"properties": {"ordinal": {"const": 4}}}]},
+            {"allOf": [{"$ref": "#/$defs/subject"}, {"properties": {"ordinal": {"const": 5}}}]},
+            {"allOf": [{"$ref": "#/$defs/subject"}, {"properties": {"ordinal": {"const": 6}}}]}
+          ],
+          "items": false
         }
       }
     },
     "identity": {
-      "const": {
-        "model": "claude-fable-5", "effort": "max", "serviceTier": "standard",
-        "transport": "firstParty", "role": "INDEPENDENT_ADVERSARIAL_REVIEWER",
-        "question": "Review the exact seven-file Cloudvore provider-governor proposal for security, doctrine conformance, quality preservation, and fail-closed resource admission; return PASS or actionable findings with file and failure scenario.",
-        "nativeMaxOutputTokens": 64000, "substitutionAllowed": false
+      "type": "object", "additionalProperties": false,
+      "required": ["provider", "model", "effort", "serviceTier", "transport", "role", "question", "nativeMaxOutputTokens", "substitutionAllowed", "loweringRequiresAcceptedNonInferiority"],
+      "properties": {
+        "provider": {"type": "string", "pattern": "^[a-z][a-z0-9-]{1,63}$"},
+        "model": {"type": "string", "minLength": 1, "maxLength": 128},
+        "effort": {"type": "string", "minLength": 1, "maxLength": 64},
+        "serviceTier": {"type": "string", "minLength": 1, "maxLength": 64},
+        "transport": {"type": "string", "minLength": 1, "maxLength": 64},
+        "role": {"type": "string", "minLength": 1, "maxLength": 128},
+        "question": {"type": "string", "minLength": 1, "maxLength": 4096},
+        "nativeMaxOutputTokens": {"type": "integer", "minimum": 1, "maximum": 1000000},
+        "substitutionAllowed": {"const": false},
+        "loweringRequiresAcceptedNonInferiority": {"const": true}
       }
     },
     "packet": {
@@ -51,30 +76,36 @@
     "serialization": {
       "const": {
         "schema": "fleet-provider-final-review-request/v1", "internallyDerivedOnly": true,
-        "callerSerializationAccepted": false, "hiddenPrefixAllowed": false,
+        "callerSerializationAccepted": false, "trustedCapturedRawRequestHandleRequired": true,
         "countedParts": ["SYSTEM_PREFIX", "PROVIDER_PREFIX", "TRANSPORT_FRAMING", "PROMPT", "CAPSULES", "OUTPUT_PARAMETER", "TOOL_CONFIGURATION"]
       }
     },
     "tokenizer": {
       "const": {
-        "trustedVersionAndArtifactRequired": true, "exactFinalRequestBytesRequired": true,
+        "trustedVersionAndArtifactRequired": true, "exactCapturedRequestBytesRequired": true,
         "maxExactSerializedInputTokens": 128000, "heuristicByteFallbackAllowed": false,
-        "unknownOrMismatch": "REFUSE"
+        "callerHiddenPrefixAssertionAccepted": false, "missingCapturedRawHandle": "REFUSE"
       }
     },
     "charges": {
       "const": {
         "trustedProviderNativeFunctionRequired": true,
         "dimensions": ["input", "cacheRead", "cacheCreationOrWrite", "output", "reasoning", "otherChargedDimensions"],
-        "typedFiniteNonnegative": true, "nativeOutputAllowanceCharged": 64000,
-        "cacheDisabledOrExactlyBounded": true, "unknownNeverZero": true
+        "typedFiniteNonnegative": true, "fullSelectedNativeOutputAllowanceCharged": true,
+        "cacheDisabledOrExactlyBounded": true, "otherUnknownConservativelyCharged": true,
+        "unknownNeverZero": true
       }
     },
     "capacity": {
-      "const": {
-        "allQuotaWindows": true, "completionReserveRequired": true,
-        "foregroundReserveRequired": true, "reviewReserveRequired": true,
-        "providerNativeReserveFloor": 0.2, "unknownOrStale": "REFUSE"
+      "type": "object", "additionalProperties": false,
+      "required": ["requiredQuotaWindows", "maxEvidenceAgeSeconds", "allWindowDimensionPairs", "completionReserveRequired", "foregroundReserveRequired", "reviewReserveRequired", "providerNativeReserveFloor", "unknownOrStale"],
+      "properties": {
+        "requiredQuotaWindows": {"type": "array", "minItems": 1, "maxItems": 16, "uniqueItems": true, "items": {"type": "string", "pattern": "^[A-Za-z][A-Za-z0-9_-]{0,63}$"}},
+        "maxEvidenceAgeSeconds": {"type": "integer", "minimum": 1, "maximum": 86400},
+        "allWindowDimensionPairs": {"const": true},
+        "completionReserveRequired": {"const": true}, "foregroundReserveRequired": {"const": true},
+        "reviewReserveRequired": {"const": true}, "providerNativeReserveFloor": {"const": 0.2},
+        "unknownOrStale": {"const": "REFUSE"}
       }
     },
     "tools": {
@@ -87,34 +118,37 @@
     },
     "capabilities": {
       "const": {
-        "providerHardOutputCapRequired": 64000, "fullChildTreeCustodyRequired": true,
-        "handleBoundDeadlineSeconds": 3600, "missing": "REFUSE"
+        "brokerOwnedHandlesRequired": true, "hardOutputEqualsSelectedProfile": true,
+        "fullChildTreeCustodyRequired": true, "handleBoundDeadlineSeconds": 3600,
+        "callerBooleanOrDigestAuthority": false, "missing": "REFUSE"
       }
     },
     "lease": {
       "const": {
-        "scope": "ATOMIC_HOST_WIDE_QUOTA_DOMAIN", "acquireBeforeCensusAndCapacity": true,
-        "revalidateImmediatelyBeforeSpawn": true, "holdThroughTerminalAccounting": true,
-        "timeOnlyStealAllowed": false, "abaFields": ["ownerPid", "ownerProcessStartTime", "nonce", "generation"]
+        "scope": "ATOMIC_HOST_WIDE_QUOTA_DOMAIN", "brokerOwnedHandleRequired": true,
+        "acquireBeforeCensusAndCapacity": true, "revalidateImmediatelyBeforeSpawn": true,
+        "holdThroughTerminalAccounting": true, "timeOnlyStealAllowed": false,
+        "abaFields": ["ownerPid", "ownerProcessStartTime", "nonce", "generation"]
       }
     },
     "request": {
       "const": {
-        "requestsPerAuthority": 1, "automaticRetry": false, "unevaluableConsumesAuthority": true,
+        "transactionalAuthorityLedgerRequired": true, "requestsPerAuthority": 1,
+        "automaticRetry": false, "unevaluableConsumesAuthority": true,
         "freshAuthorityAfterUnevaluable": true, "qualityOrFunctionDowngradeAllowed": false
       }
     },
     "terminal": {
       "const": {
-        "requestedAndEffectiveIdentityRequired": true, "allNativeUsageRequired": true,
-        "unknownNeverZero": true, "identityMismatch": "UNEVALUABLE_ZERO_CREDIT",
-        "accountBeforeLeaseRelease": true
+        "requestedAndEffectiveIdentityRequired": true, "reconcileAgainstReservation": true,
+        "allNativeUsageRequired": true, "unknownChargesFullReservation": true,
+        "identityMismatch": "UNEVALUABLE_ZERO_CREDIT", "accountBeforeLeaseRelease": true
       }
     },
     "conformance": {
       "const": {
         "adapterLabel": "CONFORMANCE_ONLY_ZERO_AUTHORITY", "productionAuthority": false,
-        "admissionDecision": "REFUSE_RUNTIME_NOT_INSTALLED"
+        "runtimeEntryPointResult": "REFUSE_RUNTIME_NOT_INSTALLED"
       }
     }
   },
