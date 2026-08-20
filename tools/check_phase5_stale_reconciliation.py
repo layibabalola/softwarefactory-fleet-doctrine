@@ -95,7 +95,7 @@ ALLOWED_PHASE5_PATHS = {
     "tools/check_phase3_disposition_batch.py",
     "tools/check_phase5_stale_reconciliation.py",
 }
-COMMON_EVENT_CONTROL_PATHS = {
+COMMON_PHASE_TRIGGER_PATHS = {
     ".github/workflows/disposition-intake.yml",
     "adoption/phase2/README.md",
     "adoption/phase3/README.md",
@@ -107,8 +107,14 @@ COMMON_EVENT_CONTROL_PATHS = {
     "tools/check_phase3_disposition_batch.py",
     "tools/check_phase5_stale_reconciliation.py",
 }
-EVENT_ALLOWED_PHASE5_PATHS = COMMON_EVENT_CONTROL_PATHS | {INTAKE_PATH}
-PHASE5_TRIGGER_PATHS = EVENT_ALLOWED_PHASE5_PATHS
+AUXILIARY_EVENT_ALLOWED_PATHS = {
+    "tests/test_universal_provider_control.py",
+    "tools/check_universal_manifest.py",
+}
+EVENT_ALLOWED_PHASE5_PATHS = (
+    COMMON_PHASE_TRIGGER_PATHS | AUXILIARY_EVENT_ALLOWED_PATHS | {INTAKE_PATH}
+)
+PHASE5_TRIGGER_PATHS = COMMON_PHASE_TRIGGER_PATHS | {INTAKE_PATH}
 SHA_PATTERN = re.compile(r"[0-9a-f]{40,64}")
 REMOTE_TOKEN_ENV = "R26_REMOTE_GITHUB_TOKEN"
 REMOTE_TIMEOUT_SECONDS = 60
