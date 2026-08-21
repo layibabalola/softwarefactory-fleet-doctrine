@@ -226,9 +226,11 @@ def verify_policy(treeish: str) -> None:
     if not _native(ledger.get("summary", {}).get("counts"), COUNTS) or ledger.get("summary", {}).get("fleetAdoptionClaim") is not False:
         raise Phase15Error("LEDGER_SEMANTICS_DRIFT")
     phase14_specs = str(_git(["ls-tree", "-r", "--name-only", PHASE14, "specs"], text=True)).splitlines()
-    current = PHASE14 if treeish == ":" else treeish
-    current_specs = str(_git(["ls-tree", "-r", "--name-only", current, "specs"], text=True)).splitlines()
-    if phase14_specs != current_specs or any(_oid(current, path) != _oid(PHASE14, path) for path in phase14_specs):
+    if treeish == ":":
+        current_specs = str(_git(["ls-files", "--cached", "--", "specs"], text=True)).splitlines()
+    else:
+        current_specs = str(_git(["ls-tree", "-r", "--name-only", treeish, "specs"], text=True)).splitlines()
+    if phase14_specs != current_specs or any(_oid(treeish, path) != _oid(PHASE14, path) for path in phase14_specs):
         raise Phase15Error("SPEC_DRIFT")
 
 
@@ -239,7 +241,8 @@ def verify_workflow(treeish: str) -> None:
         'test_phase15_integration.py" -v',
         "python tools/check_phase15_integration.py --treeish HEAD",
     )
-    if any(workflow.count(command) != 1 for command in required):
+    positions = [workflow.find(command) for command in required]
+    if any(workflow.count(command) != 1 for command in required) or positions != sorted(positions):
         raise Phase15Error("WORKFLOW_ROUTING_INVALID")
 
 

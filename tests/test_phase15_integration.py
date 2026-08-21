@@ -17,8 +17,7 @@ SPEC.loader.exec_module(MODULE)
 class Phase15IntegrationTests(unittest.TestCase):
     @staticmethod
     def _treeish():
-        head = str(MODULE._git(["rev-parse", "HEAD"], text=True)).strip()
-        return ":" if head == MODULE.PHASE14 else "HEAD"
+        return "488538ca15676823681e241f6be848de1d30a291"
 
     def _doc(self):
         return MODULE.load_json(MODULE._blob(self._treeish(), MODULE.ARTIFACT))
