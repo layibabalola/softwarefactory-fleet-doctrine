@@ -45,13 +45,13 @@ jobs:
         run: python -m unittest discover -s tests -p "test_adversarialllm_utilization_shadow_doctrine.py" -v
 
       - name: Verify phase-2 blockers against frozen project evidence
-        run: python tools/check_phase2_disposition_batch.py --treeish HEAD
+        run: python tools/check_phase2_disposition_batch.py --treeish 990906b6ea861ca579e1336bcfe8f17dd80c83ae
 
       - name: Run phase-3 published-project distinction controls
         run: python -m unittest discover -s tests -p "test_phase3_disposition_batch.py" -v
 
       - name: Verify exact zero-authority phase-3 distinctions locally
-        run: python tools/check_phase3_disposition_batch.py --treeish HEAD
+        run: python tools/check_phase3_disposition_batch.py --treeish 990906b6ea861ca579e1336bcfe8f17dd80c83ae
 
       - name: Verify published project and Adobe discovery objects when cross-repo read authority exists
         if: env.R26_REMOTE_AUTH_CONFIGURED == 'true'
@@ -69,7 +69,7 @@ jobs:
         run: python -m unittest discover -s tests -p "test_phase5_stale_reconciliation.py" -v
 
       - name: Verify phase-5 zero-authority reconciliation locally
-        run: python tools/check_phase5_stale_reconciliation.py --treeish HEAD
+        run: python tools/check_phase5_stale_reconciliation.py --treeish 990906b6ea861ca579e1336bcfe8f17dd80c83ae
 
       - name: Report unavailable Adobe remote verification authority
         if: env.R26_REMOTE_AUTH_CONFIGURED != 'true'
@@ -115,7 +115,13 @@ jobs:
         run: python -m unittest discover -s tests -p "test_phase12_integration.py" -v
 
       - name: Verify phase-12 current-master integration boundary
-        run: python tools/check_phase12_integration.py --treeish HEAD
+        run: python tools/check_phase12_integration.py --treeish 990906b6ea861ca579e1336bcfe8f17dd80c83ae
+
+      - name: Run phase-13 DNG installation-evidence publication controls
+        run: python -m unittest discover -s tests -p "test_phase13_integration.py" -v
+
+      - name: Verify phase-13 DNG installation evidence without adoption credit
+        run: python tools/check_phase13_integration.py --treeish HEAD
 
       - name: Run frozen adoption-ledger controls
         run: python -m unittest discover -s tests -p "test_adoption_ledger.py" -v

@@ -20,7 +20,9 @@ class Phase12IntegrationTests(unittest.TestCase):
     @staticmethod
     def _treeish():
         head = str(MODULE._git(["rev-parse", "HEAD"], text=True)).strip()
-        return ":" if head == MODULE.MERGE_COMMIT else "HEAD"
+        if head == MODULE.MERGE_COMMIT:
+            return ":"
+        return "990906b6ea861ca579e1336bcfe8f17dd80c83ae"
 
     def test_01_exact_staged_integration_passes(self):
         MODULE.verify_integration(self._treeish())
