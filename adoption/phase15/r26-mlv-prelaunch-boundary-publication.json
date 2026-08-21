@@ -1,0 +1,133 @@
+{
+  "schema": "fleet-r26-mlv-prelaunch-boundary-publication/v1",
+  "status": "CANDIDATE_ZERO_AUTHORITY",
+  "phase14": {
+    "commit": "95df488b2e2ec7120e992c0043d54b8e67a65dba",
+    "tree": "ef9184c4503a1e9bacef781a3cdb61b8c4a7badf",
+    "orderedParents": ["eca6e364cf03e388f0416e3f8e80fe4091321aa0"]
+  },
+  "sourceProject": {
+    "projectId": "mlv-app",
+    "canonicalOrigin": "https://github.com/layibabalola/MLV-App.git",
+    "publishedRef": "refs/heads/codex/mlv-r39-supervisor-integration",
+    "commit": "56ed32587388fd6196d9259df381bb004a3c2da0",
+    "tree": "483134ae9a7a701240e42039afff7b656f733615",
+    "orderedParents": ["ad8d7f5f29882774c8eb5ce2df7c3c8689e73158"],
+    "remoteRefVerified": true,
+    "remoteVerifiedCommit": "56ed32587388fd6196d9259df381bb004a3c2da0"
+  },
+  "reviewedCandidate": {
+    "commit": "65bcc9918a0c2bf844607163242caa43577ea713",
+    "tree": "fd2860d35095e86bc161c901036b9bb4d903c6e9",
+    "orderedParents": ["6974cfd868cea2fb60f688d6bacaf087075f55f7"],
+    "source": {
+      "path": "tools/provider_control/mlv_lane_supervisor.py",
+      "gitBlobOid": "c56a8680e7c2e76c1da504043f1d20a2e01c2e35",
+      "bytes": 47181,
+      "sha256": "C807DBF42A20155E8C5B9FA69036B371E4F8C85423188C15430EF2F72AF5E8AB"
+    },
+    "wrapper": {
+      "path": "tools/provider_control/invoke-mlv-lane-supervisor.ps1",
+      "gitBlobOid": "c2bd5b75119303f5a764973fc21028da8f8f9707",
+      "bytes": 837,
+      "sha256": "A63031BFC1AC5073FB0503A59555B833FB284B1AAEDEB6E0A6590F5B591CAC23"
+    },
+    "tests": {
+      "path": "tools/provider_control/tests/test_mlv_prelaunch_boundary.py",
+      "gitBlobOid": "5dd2007d60c9649881e27ac5d82126d9d7dcc28b",
+      "bytes": 5145,
+      "sha256": "68DC63C4AECA301029FCE7C3EF426D73D406BF78659C185D489ED668EE6B4CF5"
+    },
+    "verifiedControls": {
+      "prelaunchBoundary": "PASS 7/7",
+      "legacySupervisor": "PASS 45/45",
+      "reviewerExecutedTests": false
+    }
+  },
+  "independentReview": {
+    "routeId": "fleet-r64-mlv-r40-prelaunch-sonnet",
+    "lane": "sonnet",
+    "model": "claude-sonnet-5",
+    "effort": "max",
+    "role": "verifier",
+    "sessionId": "223c9b6b-1bdb-4e35-8d3a-99884f371150",
+    "authorizationId": "ee33f602-274a-4212-8b05-b4b618c08a0e",
+    "packetBytes": 2185,
+    "packetSha256": "F81EBD20A0CEEB058F364CFD0A2E2BB8646124BB15E1944D6ACC454C37B01594",
+    "artifactBytes": 202492,
+    "artifactSha256": "0B72B7FC4B1FDE6CD993BBC8616358180DE49765B90144AA1BA5C5764CD55F85",
+    "resultLineBytes": 8130,
+    "resultLineSha256": "36EF72027A33F3063F9FD5504AD7A27BCD88E60C6827EB5D1300012E1596B1B0",
+    "receiptBytes": 526,
+    "receiptSha256": "D685E222FA36C577F4F391FBE77E6DDB9B010361513BD9B05F5BE5A74995471F",
+    "providerTools": ["Read", "StructuredOutput"],
+    "verdict": "ACCEPT",
+    "scope": "candidate-only"
+  },
+  "forwardClosure": {
+    "commit": "ad8d7f5f29882774c8eb5ce2df7c3c8689e73158",
+    "tree": "b8b989b5abba708d58cd2287a7c965994e206e22",
+    "orderedParents": ["65bcc9918a0c2bf844607163242caa43577ea713"],
+    "testPath": "tools/provider_control/tests/test_mlv_prelaunch_boundary.py",
+    "testGitBlobOid": "f9ceb4e83b83d43263730e3a088e963857f598cf",
+    "testBytes": 5552,
+    "testSha256": "004C4CA77152B5D0A8849406D1B4DB8485CFDFCDCF18640B2E9AFE5D2C7A5F6A",
+    "openGateHostile": "PASS",
+    "suite": "PASS 8/8"
+  },
+  "durableProjectReceipt": {
+    "path": "docs/universal-token-control-prelaunch-review-receipt-2026-08-21.json",
+    "gitBlobOid": "6233233f13aa406167de7408149722606ccaf5de",
+    "bytes": 4633,
+    "sha256": "3E52376A0680ABB267A5D03ED00FB89EB601DB74CCB8033B7E9D0AE0E08DE057",
+    "verifierPath": "tools/universal_token_control_prelaunch_review_receipt_tests.py",
+    "verifierGitBlobOid": "9d4ba6cf8b4b97b2cd4cff1e1f4fc5a94d2aa7cc",
+    "verifierBytes": 14049,
+    "verifierSha256": "09362A380095A36B042EAB7EFB9B0CAD852DAE95397C2F1087FF5196702DCD8C",
+    "result": "PASS 5/5"
+  },
+  "acceptedBoundary": {
+    "stopOnlyPrelaunchSource": true,
+    "unknownAndAuthorizationShapesFailClosed": true,
+    "nativeZeroCountersRequired": true,
+    "openGateFailsClosed": true,
+    "publishedCandidateBranch": true,
+    "productionLauncherWired": false,
+    "signedInstallation": false,
+    "runtimeInterception": false,
+    "functionalityEquivalence": false,
+    "qualityEquivalence": false,
+    "projectOwnerDisposition": false,
+    "adoption": false
+  },
+  "ledgerTreatment": {
+    "ledgerPath": "adoption/universal-token-control-r26.json",
+    "ledgerGitBlobOid": "2f1808e8df35e6d1bae98f83aab378d93a0c3228",
+    "counts": {"ADOPT": 0, "DISTINGUISH": 5, "MISSING": 0, "REJECT": 0, "STALE": 4},
+    "mlvDispositionRemains": "DISTINGUISH",
+    "ledgerModified": false,
+    "specificationsModified": false
+  },
+  "remainingUncreditedProofs": [
+    "PRODUCTION_LAUNCHER_WIRING",
+    "SIGNED_INSTALLATION",
+    "RUNTIME_INTERCEPTION",
+    "COMPLETE_LAUNCHER_INVENTORY",
+    "COMPLETE_ACTION_GRAPH",
+    "EXACT_MODEL_EFFORT_ROLE_BINDING",
+    "QUALITY_EQUIVALENCE",
+    "FUNCTIONALITY_EQUIVALENCE",
+    "CURRENT_CLOSED_GATE_PROOF",
+    "PROJECT_OWNER_DISPOSITION",
+    "ADOPTION"
+  ],
+  "authority": {
+    "projectDisposition": false,
+    "fleetAdoption": false,
+    "installation": false,
+    "runtime": false,
+    "providerExecution": false,
+    "taskOrGateMutation": false,
+    "pushOrMerge": false
+  }
+}

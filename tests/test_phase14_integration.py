@@ -17,8 +17,7 @@ SPEC.loader.exec_module(MODULE)
 class Phase14IntegrationTests(unittest.TestCase):
     @staticmethod
     def _treeish():
-        head = str(MODULE._git(["rev-parse", "HEAD"], text=True)).strip()
-        return ":" if head == MODULE.PHASE13 else "HEAD"
+        return "95df488b2e2ec7120e992c0043d54b8e67a65dba"
 
     def test_01_exact_integration_passes(self):
         MODULE.verify(self._treeish())
