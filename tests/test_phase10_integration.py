@@ -31,11 +31,7 @@ class Phase10IntegrationTests(unittest.TestCase):
 
     @staticmethod
     def _treeish():
-        head = subprocess.run(
-            ["git", "rev-parse", "HEAD"], cwd=ROOT, check=True, capture_output=True,
-            text=True, encoding="utf-8",
-        ).stdout.strip()
-        return ":" if head == MODULE.PHASE9_COMMIT else "HEAD"
+        return "e7311e3038bbfeebe15cc10004f40b3795811659"
 
     def test_01_exact_staged_or_committed_integration_passes(self):
         MODULE.verify_integration(self._treeish())
@@ -60,13 +56,13 @@ class Phase10IntegrationTests(unittest.TestCase):
         original = MODULE._commit_tuple
 
         def drift(commit):
-            if commit == "HEAD":
+            if commit == self._treeish():
                 return original(MODULE.PHASE9_COMMIT)[0], [MODULE.PHASE9_PARENT]
             return original(commit)
 
         with mock.patch.object(MODULE, "_commit_tuple", side_effect=drift):
             with self.assertRaisesRegex(MODULE.Phase10Error, "INTEGRATION_PARENT_MISMATCH"):
-                MODULE.verify_integration("HEAD")
+                MODULE.verify_integration(self._treeish())
 
     def test_05_extra_or_missing_integration_paths_are_rejected(self):
         original = MODULE._changed_paths

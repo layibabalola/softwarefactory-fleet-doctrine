@@ -1,0 +1,48 @@
+{
+  "schema": "fleet-r26-current-master-review-integration/v1",
+  "status": "CANDIDATE_ZERO_AUTHORITY",
+  "merge": {
+    "commit": "1bf5ad616c6a2c9200ff34e03c749da0997475c2",
+    "tree": "b71faec6fe42881a65d123690d08309cf96a2746",
+    "orderedParents": [
+      "1f96975233bfa794dd039610c072bf67aa1d20ff",
+      "e7311e3038bbfeebe15cc10004f40b3795811659"
+    ]
+  },
+  "currentMaster": {
+    "commit": "1f96975233bfa794dd039610c072bf67aa1d20ff",
+    "tree": "fc54c4f9cb53a3dc272767dd4713b99b662368b5",
+    "orderedParents": [
+      "8c7dc4f4339db82a8b3c2efd689bf5f72631ad6e",
+      "4ce276a542d6d6674956e1b8fe6d5a82b5381c4d"
+    ]
+  },
+  "reviewedPhase11": {
+    "commit": "e7311e3038bbfeebe15cc10004f40b3795811659",
+    "tree": "0d509e980bccdd1f27eecfbde93ec285a6d6ed16",
+    "orderedParents": ["940c790eedd118736ff0207c1b7dc407d5643802"]
+  },
+  "activePolicy": {
+    "manifestPath": "manifests/universal-provider-control-reconciliation-r26.json",
+    "manifestGitBlobOid": "898385fb82fbbe9946f937f0486142f4733d03fe",
+    "manifestBinding": "IMMUTABLE_R26_CANDIDATE_SNAPSHOT",
+    "phase9ManifestRepairTreatment": "HISTORICAL_ACCEPTED_EVIDENCE_NOT_ACTIVE_POLICY",
+    "ledgerPath": "adoption/universal-token-control-r26.json",
+    "ledgerGitBlobOid": "2f1808e8df35e6d1bae98f83aab378d93a0c3228",
+    "counts": {"ADOPT": 0, "DISTINGUISH": 5, "MISSING": 0, "REJECT": 0, "STALE": 4}
+  },
+  "importedEvidence": [
+    {"path": "adoption/phase6/r26-local-candidate-review-receipts.json", "gitBlobOid": "c10b1b7530e0d9695118a02dd21842e4fc1493e0"},
+    {"path": "adoption/phase10/r26-local-candidate-review-receipts.json", "gitBlobOid": "2f5d543754d35eb6e2f8143465e3ea2a1d1abffc"},
+    {"path": "adoption/phase11/r26-phase10-review-shape-closure.json", "gitBlobOid": "02af11ad375c6de6fffc3cc1f88bd1e0d3a477ee"}
+  ],
+  "authority": {
+    "projectDisposition": false,
+    "fleetAdoption": false,
+    "installation": false,
+    "runtime": false,
+    "providerExecution": false,
+    "taskOrGateMutation": false,
+    "pushOrMerge": false
+  }
+}

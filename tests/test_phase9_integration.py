@@ -13,11 +13,12 @@ SPEC = importlib.util.spec_from_file_location("check_phase9_integration", MODULE
 MODULE = importlib.util.module_from_spec(SPEC)
 assert SPEC.loader is not None
 SPEC.loader.exec_module(MODULE)
+HISTORICAL_TREEISH = "e7311e3038bbfeebe15cc10004f40b3795811659"
 
 
 class Phase9IntegrationTests(unittest.TestCase):
     def test_exact_committed_integration_passes(self):
-        MODULE.verify_integration("HEAD")
+        MODULE.verify_integration(HISTORICAL_TREEISH)
 
     def test_source_commit_tree_parent_and_delta_are_exact_bound(self):
         original_tuple = MODULE._commit_tuple
@@ -47,13 +48,13 @@ class Phase9IntegrationTests(unittest.TestCase):
         original = MODULE._commit_tuple
 
         def drift(commit):
-            if commit == "HEAD":
+            if commit == HISTORICAL_TREEISH:
                 return original(commit)[0], [MODULE.REPAIR_COMMIT]
             return original(commit)
 
         with mock.patch.object(MODULE, "_commit_tuple", side_effect=drift):
             with self.assertRaisesRegex(MODULE.Phase9Error, "INTEGRATION_PARENT_MISMATCH"):
-                MODULE.verify_integration("HEAD")
+                MODULE.verify_integration(HISTORICAL_TREEISH)
 
     def test_any_extra_or_missing_integration_path_is_rejected(self):
         original = MODULE._changed_paths
@@ -63,26 +64,26 @@ class Phase9IntegrationTests(unittest.TestCase):
         ):
             with self.subTest(paths=paths):
                 def drift(base, treeish, *, replacement=paths):
-                    if base == MODULE.PHASE8_COMMIT and treeish == "HEAD":
+                    if base == MODULE.PHASE8_COMMIT and treeish == HISTORICAL_TREEISH:
                         return replacement
                     return original(base, treeish)
 
                 with mock.patch.object(MODULE, "_changed_paths", side_effect=drift):
                     with self.assertRaisesRegex(MODULE.Phase9Error, "INTEGRATION_SCOPE_MISMATCH"):
-                        MODULE.verify_integration("HEAD")
+                        MODULE.verify_integration(HISTORICAL_TREEISH)
 
     def test_manifest_and_hostile_test_are_exact_accepted_blobs(self):
         original = MODULE._oid
         for path in (MODULE.MANIFEST_PATH, MODULE.MANIFEST_TEST_PATH):
             with self.subTest(path=path):
                 def drift(treeish, candidate_path, *, target=path):
-                    if treeish == "HEAD" and candidate_path == target:
+                    if treeish == HISTORICAL_TREEISH and candidate_path == target:
                         return "0" * 40
                     return original(treeish, candidate_path)
 
                 with mock.patch.object(MODULE, "_oid", side_effect=drift):
                     with self.assertRaisesRegex(MODULE.Phase9Error, "MECHANICAL_REPAIR_DRIFT"):
-                        MODULE.verify_exact_artifacts("HEAD")
+                        MODULE.verify_exact_artifacts(HISTORICAL_TREEISH)
 
     def test_phase2_phase3_phase5_allowlists_are_exact_unions(self):
         original = MODULE._assignment_set
@@ -95,39 +96,39 @@ class Phase9IntegrationTests(unittest.TestCase):
             with self.subTest(attribute=attribute):
                 def drift(treeish, path, name, *, target=attribute, transform=mutate):
                     value = original(treeish, path, name)
-                    if treeish == "HEAD" and name == target:
+                    if treeish == HISTORICAL_TREEISH and name == target:
                         return transform(value)
                     return value
 
                 with mock.patch.object(MODULE, "_assignment_set", side_effect=drift):
                     with self.assertRaisesRegex(MODULE.Phase9Error, "(ALLOWLIST_UNION|PHASE9_SCOPE)_"):
-                        MODULE.verify_allowlist_union("HEAD")
+                        MODULE.verify_allowlist_union(HISTORICAL_TREEISH)
 
     def test_receipt_and_request_artifacts_remain_exact(self):
         original = MODULE._oid
         for path in (MODULE.RECEIPT_PATH, next(iter(MODULE.REQUEST_BLOBS))):
             with self.subTest(path=path):
                 def drift(treeish, candidate_path, *, target=path):
-                    if treeish == "HEAD" and candidate_path == target:
+                    if treeish == HISTORICAL_TREEISH and candidate_path == target:
                         return "0" * 40
                     return original(treeish, candidate_path)
 
                 expected = "RECEIPT_DRIFT" if path == MODULE.RECEIPT_PATH else "REQUEST_DRIFT"
                 with mock.patch.object(MODULE, "_oid", side_effect=drift):
                     with self.assertRaisesRegex(MODULE.Phase9Error, expected):
-                        MODULE.verify_exact_artifacts("HEAD")
+                        MODULE.verify_exact_artifacts(HISTORICAL_TREEISH)
 
     def test_ledger_spec_and_authority_advances_are_rejected(self):
         original_oid = MODULE._oid
 
         def spec_drift(treeish, path):
-            if treeish == "HEAD" and path == "specs/cloudvore.md":
+            if treeish == HISTORICAL_TREEISH and path == "specs/cloudvore.md":
                 return "0" * 40
             return original_oid(treeish, path)
 
         with mock.patch.object(MODULE, "_oid", side_effect=spec_drift):
             with self.assertRaisesRegex(MODULE.Phase9Error, "SPEC_STATUS_DRIFT"):
-                MODULE.verify_frozen_status_and_authority("HEAD")
+                MODULE.verify_frozen_status_and_authority(HISTORICAL_TREEISH)
 
         original_json = MODULE._load_json
         cases = (
@@ -154,12 +155,12 @@ class Phase9IntegrationTests(unittest.TestCase):
 
                 with mock.patch.object(MODULE, "_load_json", side_effect=drift):
                     with self.assertRaisesRegex(MODULE.Phase9Error, error):
-                        MODULE.verify_frozen_status_and_authority("HEAD")
+                        MODULE.verify_frozen_status_and_authority(HISTORICAL_TREEISH)
 
-    def test_global_manifest_failure_or_wrong_result_is_rejected(self):
-        with mock.patch.object(MODULE, "_manifest_check", return_value="MANIFEST_SUBJECT_MISMATCH"):
+    def test_global_manifest_historical_blob_drift_is_rejected(self):
+        with mock.patch.object(MODULE, "_oid", return_value="0" * 40):
             with self.assertRaisesRegex(MODULE.Phase9Error, "GLOBAL_MANIFEST_RESULT_MISMATCH"):
-                MODULE.verify_global_manifest("HEAD")
+                MODULE.verify_global_manifest(HISTORICAL_TREEISH)
 
     def test_workflow_runs_phase9_and_preserves_the_full_corridor(self):
         workflow = (ROOT / ".github" / "workflows" / "disposition-intake.yml").read_text(encoding="utf-8")

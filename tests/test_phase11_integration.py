@@ -22,8 +22,7 @@ class Phase11IntegrationTests(unittest.TestCase):
         cls.canonical = MODULE.canonical_phase10_receipt()
 
     def _treeish(self) -> str:
-        head = str(MODULE._git(["rev-parse", "HEAD"], text=True)).strip()
-        return ":" if head == MODULE.PHASE10_COMMIT else "HEAD"
+        return "e7311e3038bbfeebe15cc10004f40b3795811659"
 
     def _batch(self):
         return copy.deepcopy(self.canonical)

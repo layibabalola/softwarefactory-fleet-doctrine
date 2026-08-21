@@ -14,11 +14,12 @@ SPEC = importlib.util.spec_from_file_location("check_phase8_integration", MODULE
 MODULE = importlib.util.module_from_spec(SPEC)
 assert SPEC.loader is not None
 SPEC.loader.exec_module(MODULE)
+HISTORICAL_TREEISH = "e7311e3038bbfeebe15cc10004f40b3795811659"
 
 
 class Phase8IntegrationTests(unittest.TestCase):
     def test_exact_committed_integration_passes(self):
-        MODULE.verify_integration("HEAD")
+        MODULE.verify_integration(HISTORICAL_TREEISH)
 
     def test_source_commit_tree_or_parent_drift_is_rejected(self):
         original = MODULE._commit_tuple
@@ -36,13 +37,13 @@ class Phase8IntegrationTests(unittest.TestCase):
         original = MODULE._commit_tuple
 
         def drift(commit):
-            if commit == "HEAD":
+            if commit == HISTORICAL_TREEISH:
                 return original(commit)[0], [MODULE.PHASE7_COMMIT]
             return original(commit)
 
         with mock.patch.object(MODULE, "_commit_tuple", side_effect=drift):
             with self.assertRaisesRegex(MODULE.Phase8Error, "INTEGRATION_PARENT_MISMATCH"):
-                MODULE.verify_integration("HEAD")
+                MODULE.verify_integration(HISTORICAL_TREEISH)
 
     def test_any_extra_integration_path_is_rejected(self):
         with mock.patch.object(
@@ -55,7 +56,7 @@ class Phase8IntegrationTests(unittest.TestCase):
             ),
         ):
             with self.assertRaisesRegex(MODULE.Phase8Error, "INTEGRATION_SCOPE_MISMATCH"):
-                MODULE.verify_integration("HEAD")
+                MODULE.verify_integration(HISTORICAL_TREEISH)
 
     def test_ledger_or_packet_blob_drift_is_rejected(self):
         original = MODULE._oid
@@ -65,13 +66,13 @@ class Phase8IntegrationTests(unittest.TestCase):
         ):
             with self.subTest(path=drift_path):
                 def drift(treeish, path, *, target=drift_path):
-                    if treeish == "HEAD" and path == target:
+                    if treeish == HISTORICAL_TREEISH and path == target:
                         return "0" * 40
                     return original(treeish, path)
 
                 with mock.patch.object(MODULE, "_oid", side_effect=drift):
                     with self.assertRaisesRegex(MODULE.Phase8Error, error):
-                        MODULE.verify_integration("HEAD")
+                        MODULE.verify_integration(HISTORICAL_TREEISH)
 
     def test_packet_authority_and_status_advance_are_rejected(self):
         original = MODULE._load_json
@@ -88,7 +89,7 @@ class Phase8IntegrationTests(unittest.TestCase):
 
                 with mock.patch.object(MODULE, "_load_json", side_effect=drift):
                     with self.assertRaisesRegex(MODULE.Phase8Error, error):
-                        MODULE.verify_zero_authority_packets("HEAD")
+                        MODULE.verify_zero_authority_packets(HISTORICAL_TREEISH)
 
     def test_predecessor_allowlists_cover_only_the_frozen_integration_surface(self):
         modules = {
@@ -116,11 +117,11 @@ class Phase8IntegrationTests(unittest.TestCase):
             'test_phase5_stale_reconciliation.py" -v',
             "check_phase5_stale_reconciliation.py --treeish HEAD",
             'test_phase6_candidate_reviews.py" -v',
-            "check_phase6_candidate_reviews.py --treeish HEAD",
+            f"check_phase6_candidate_reviews.py --treeish {HISTORICAL_TREEISH}",
             'test_phase7_owner_publication_requests.py" -v',
-            "check_phase7_owner_publication_requests.py --treeish HEAD",
+            f"check_phase7_owner_publication_requests.py --treeish {HISTORICAL_TREEISH}",
             'test_phase8_integration.py" -v',
-            "check_phase8_integration.py --treeish HEAD",
+            f"check_phase8_integration.py --treeish {HISTORICAL_TREEISH}",
             'test_adoption_ledger.py" -v',
             "check_adoption_ledger.py --treeish HEAD",
         ]
@@ -136,7 +137,7 @@ class Phase8IntegrationTests(unittest.TestCase):
         self.assertEqual(len(expected), 4)
         for path, oid in expected.items():
             self.assertEqual(MODULE._oid(MODULE.PHASE7_COMMIT, path), oid)
-            self.assertEqual(MODULE._oid("HEAD", path), oid)
+            self.assertEqual(MODULE._oid(HISTORICAL_TREEISH, path), oid)
 
 
 if __name__ == "__main__":

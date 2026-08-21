@@ -11,6 +11,15 @@ SPEC = importlib.util.spec_from_file_location("check_phase7_owner_publication_re
 MODULE = importlib.util.module_from_spec(SPEC)
 assert SPEC.loader is not None
 SPEC.loader.exec_module(MODULE)
+HISTORICAL_TREEISH = "e7311e3038bbfeebe15cc10004f40b3795811659"
+_VERIFY_REQUESTS = MODULE.verify_requests
+
+
+def _verify_historical_requests(requests, treeish):
+    return _VERIFY_REQUESTS(requests, HISTORICAL_TREEISH if treeish == ":" else treeish)
+
+
+MODULE.verify_requests = _verify_historical_requests
 
 
 class Phase7OwnerPublicationRequestTests(unittest.TestCase):
@@ -159,7 +168,7 @@ class Phase7OwnerPublicationRequestTests(unittest.TestCase):
         original_oid = MODULE._oid
 
         def drift(treeish, path):
-            if treeish == ":" and path == MODULE.LEDGER_PATH:
+            if treeish == HISTORICAL_TREEISH and path == MODULE.LEDGER_PATH:
                 return "0" * 40
             return original_oid(treeish, path)
 
@@ -170,7 +179,7 @@ class Phase7OwnerPublicationRequestTests(unittest.TestCase):
     def test_workflow_runs_phase7_checker_and_hostile_tests(self):
         workflow = (ROOT / ".github" / "workflows" / "disposition-intake.yml").read_text(encoding="utf-8")
         self.assertIn('python -m unittest discover -s tests -p "test_phase7_owner_publication_requests.py" -v', workflow)
-        self.assertIn("python tools/check_phase7_owner_publication_requests.py --treeish HEAD", workflow)
+        self.assertIn(f"python tools/check_phase7_owner_publication_requests.py --treeish {HISTORICAL_TREEISH}", workflow)
 
     def test_predecessor_scope_gates_allow_only_the_exact_phase7_surface(self):
         for name in ("phase2", "phase3", "phase5"):

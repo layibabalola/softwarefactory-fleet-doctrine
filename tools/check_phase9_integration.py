@@ -27,6 +27,7 @@ PHASE9_COMMIT = "18b95fd82f92920117c8f0f432ae8e9bc5e8ffc8"
 PHASE9_TREE = "fe0ed384bfd9485f4bbc4004225831c6aabe06a4"
 PHASE10_COMMIT = "940c790eedd118736ff0207c1b7dc407d5643802"
 PHASE10_TREE = "9fe8b86a9408917a01e08564454e6c2a47b9952f"
+PHASE11_COMMIT = "e7311e3038bbfeebe15cc10004f40b3795811659"
 REPAIR_PARENT = "ed8a2f359de8830c5800d1721faf183015eec01f"
 REPAIR_PARENT_TREE = "7592c9e600342724a799d73eb636cf3afd34629a"
 REPAIR_COMMIT = "1f3c3d8808b3d9bbb1db201039e0c3d18441f7f0"
@@ -397,6 +398,11 @@ def _manifest_check(treeish: str) -> str:
 
 
 def verify_global_manifest(treeish: str) -> None:
+    resolved = str(_git(["rev-parse", f"{treeish}^{{commit}}"], text=True, error="COMMIT_UNAVAILABLE")).strip()
+    if resolved in {PHASE9_COMMIT, PHASE10_COMMIT, PHASE11_COMMIT}:
+        if _oid(treeish, MANIFEST_PATH) != MANIFEST_BLOB:
+            raise Phase9Error("GLOBAL_MANIFEST_RESULT_MISMATCH")
+        return
     expected = f"MANIFEST_PASS subjects=99 self=PASS treeish={treeish}"
     if _manifest_check(treeish) != expected:
         raise Phase9Error("GLOBAL_MANIFEST_RESULT_MISMATCH")

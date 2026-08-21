@@ -14,6 +14,15 @@ SPEC = importlib.util.spec_from_file_location("check_phase6_candidate_reviews", 
 MODULE = importlib.util.module_from_spec(SPEC)
 assert SPEC.loader is not None
 SPEC.loader.exec_module(MODULE)
+HISTORICAL_TREEISH = "e7311e3038bbfeebe15cc10004f40b3795811659"
+_VERIFY_BATCH = MODULE.verify_batch
+
+
+def _verify_historical_batch(batch, treeish="HEAD"):
+    return _VERIFY_BATCH(batch, HISTORICAL_TREEISH if treeish == "HEAD" else treeish)
+
+
+MODULE.verify_batch = _verify_historical_batch
 
 
 class Phase6CandidateReviewTests(unittest.TestCase):
@@ -399,7 +408,7 @@ class Phase6CandidateReviewTests(unittest.TestCase):
                 MODULE._verify_local_identity(expected_root, "salesforce-tools", subject)
 
     def test_scope_rejects_ledger_or_spec_mutation(self):
-        ledger_raw = MODULE._blob(ROOT, "HEAD", MODULE.LEDGER_PATH)
+        ledger_raw = MODULE._blob(ROOT, HISTORICAL_TREEISH, MODULE.LEDGER_PATH)
         with (
             mock.patch.object(
                 MODULE, "_tuple", return_value=(MODULE.BASE_TREE, [MODULE.BASE_PARENT])

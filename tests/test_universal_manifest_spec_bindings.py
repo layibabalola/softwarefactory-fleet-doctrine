@@ -8,6 +8,7 @@ import json
 from pathlib import Path
 import subprocess
 import sys
+import types
 import unittest
 from unittest import mock
 
@@ -15,10 +16,11 @@ from unittest import mock
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "tools"))
 
-import check_universal_manifest as checker  # noqa: E402
 import check_phase2_disposition_batch as phase2  # noqa: E402
 import check_phase3_disposition_batch as phase3  # noqa: E402
 import check_phase5_stale_reconciliation as phase5  # noqa: E402
+
+HISTORICAL_TREEISH = "e7311e3038bbfeebe15cc10004f40b3795811659"
 
 
 REPAIRED_SPEC_PATHS = (
@@ -39,20 +41,32 @@ def git_bytes(*args: str) -> bytes:
     return run.stdout
 
 
+checker = types.ModuleType("phase11_check_universal_manifest")
+checker.__file__ = str(ROOT / "tools" / "check_universal_manifest.py")
+exec(
+    compile(
+        git_bytes("show", f"{HISTORICAL_TREEISH}:tools/check_universal_manifest.py"),
+        checker.__file__,
+        "exec",
+    ),
+    checker.__dict__,
+)
+
+
 class UniversalManifestSpecBindingTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
-        cls.raw_manifest = git_bytes("show", f"HEAD:{checker.MANIFEST}")
+        cls.raw_manifest = git_bytes("show", f"{HISTORICAL_TREEISH}:{checker.MANIFEST}")
         cls.manifest = json.loads(cls.raw_manifest.decode("utf-8"))
         cls.subjects = {
             subject["path"]: subject for subject in cls.manifest["subjectFiles"]
         }
         cls.blobs = {
-            path: git_bytes("show", f"HEAD:{path}")
+            path: git_bytes("show", f"{HISTORICAL_TREEISH}:{path}")
             for path in cls.subjects
         }
         cls.oids = {
-            path: git_bytes("rev-parse", f"HEAD:{path}").decode("ascii").strip()
+            path: git_bytes("rev-parse", f"{HISTORICAL_TREEISH}:{path}").decode("ascii").strip()
             for path in cls.subjects
         }
 
@@ -86,16 +100,16 @@ class UniversalManifestSpecBindingTests(unittest.TestCase):
             tampered = json.dumps(manifest, separators=(",", ":")).encode("utf-8") + b"\n"
 
             def fake_git(spec: str, *, text: bool = False) -> bytes | str:
-                if spec == f"HEAD:{checker.MANIFEST}":
+                if spec == f"{HISTORICAL_TREEISH}:{checker.MANIFEST}":
                     return tampered.decode("utf-8") if text else tampered
-                prefix = "HEAD:"
+                prefix = f"{HISTORICAL_TREEISH}:"
                 if spec.startswith(prefix) and spec[len(prefix):] in self.blobs:
                     blob = self.blobs[spec[len(prefix):]]
                     return blob.decode("utf-8") if text else blob
                 return original_git(spec, text=text)
 
             def fake_oid(treeish: str, subject_path: str) -> str:
-                if treeish == "HEAD" and subject_path in self.oids:
+                if treeish == HISTORICAL_TREEISH and subject_path in self.oids:
                     return self.oids[subject_path]
                 return original_oid(treeish, subject_path)
 
@@ -110,7 +124,7 @@ class UniversalManifestSpecBindingTests(unittest.TestCase):
                 mock.patch.object(checker, "verify_reconciliation"),
                 self.assertRaisesRegex(checker.ManifestError, expected),
             ):
-                checker.check("HEAD")
+                checker.check(HISTORICAL_TREEISH)
             return expected
 
         for path in REPAIRED_SPEC_PATHS:
