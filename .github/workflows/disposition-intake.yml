@@ -121,7 +121,13 @@ jobs:
         run: python -m unittest discover -s tests -p "test_phase13_integration.py" -v
 
       - name: Verify phase-13 DNG installation evidence without adoption credit
-        run: python tools/check_phase13_integration.py --treeish HEAD
+        run: python tools/check_phase13_integration.py --treeish eca6e364cf03e388f0416e3f8e80fe4091321aa0
+
+      - name: Run phase-14 MLV task-definition publication controls
+        run: python -m unittest discover -s tests -p "test_phase14_integration.py" -v
+
+      - name: Verify phase-14 MLV task-definition evidence without adoption credit
+        run: python tools/check_phase14_integration.py --treeish HEAD
 
       - name: Run frozen adoption-ledger controls
         run: python -m unittest discover -s tests -p "test_adoption_ledger.py" -v

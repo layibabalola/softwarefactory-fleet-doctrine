@@ -322,7 +322,12 @@ def verify_integration(treeish: str) -> None:
     batch = load_json(_blob(treeish, PHASE10_RECEIPT_PATH))
     verify_phase10_receipt_closed(batch)
     P10.verify_receipt_shape(copy.deepcopy(batch))
-    P10.verify_local_subjects(copy.deepcopy(batch))
+    # The Phase 10 publication state is point-in-time receipt evidence.  Later
+    # phases rederive the immutable commit/tree/parent/artifact objects without
+    # requiring that the reviewed branch remain unpublished forever.
+    P10.verify_local_subjects(
+        copy.deepcopy(batch), rederive_mutable_worktree_state=False
+    )
     verify_closure_artifact(treeish)
     verify_frozen_doctrine(treeish)
     verify_forward_allowlists(treeish)

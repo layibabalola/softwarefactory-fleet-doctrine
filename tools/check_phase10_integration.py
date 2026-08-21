@@ -371,7 +371,12 @@ def verify_receipt_shape(batch: dict[str, Any]) -> None:
     _verify_authority(r8, r8=True)
 
 
-def _verify_local_git_subject(review: dict[str, Any], error_prefix: str) -> None:
+def _verify_local_git_subject(
+    review: dict[str, Any],
+    error_prefix: str,
+    *,
+    rederive_mutable_worktree_state: bool = True,
+) -> None:
     subject = review.get("subject")
     artifacts = review.get("artifacts")
     if not isinstance(subject, dict) or not isinstance(artifacts, list):
@@ -382,18 +387,26 @@ def _verify_local_git_subject(review: dict[str, Any], error_prefix: str) -> None
     top = str(_git(["rev-parse", "--show-toplevel"], root=root, text=True, error=f"{error_prefix}_ROOT_UNAVAILABLE")).strip()
     if Path(top).resolve() != root.resolve():
         raise Phase10Error(f"{error_prefix}_ROOT_MISMATCH")
-    head = str(_git(["rev-parse", "--verify", "HEAD^{commit}"], root=root, text=True)).strip()
+    commit = subject.get("commit")
+    try:
+        head = str(_git(["rev-parse", "--verify", f"{commit}^{{commit}}"], root=root, text=True)).strip()
+    except Phase10Error as exc:
+        raise Phase10Error(f"{error_prefix}_SUBJECT_MISMATCH") from exc
     tree = str(_git(["show", "-s", "--format=%T", head], root=root, text=True)).strip()
     parents = str(_git(["show", "-s", "--format=%P", head], root=root, text=True)).strip().split()
-    branch = str(_git(["branch", "--show-current"], root=root, text=True)).strip()
     remote = str(_git(["remote", "get-url", "origin"], root=root, text=True)).strip()
-    status = str(_git(["status", "--porcelain=v1", "--untracked-files=all"], root=root, text=True))
     changed = str(_git(["diff-tree", "--no-commit-id", "--name-only", "-r", head], root=root, text=True)).splitlines()
-    if head != subject.get("commit") or tree != subject.get("tree") or parents != [subject.get("parent")] or branch != subject.get("localBranch") or remote != subject.get("remote") or status != "" or changed != subject.get("changedPaths"):
+    if head != commit or tree != subject.get("tree") or parents != [subject.get("parent")] or remote != subject.get("remote") or changed != subject.get("changedPaths"):
         raise Phase10Error(f"{error_prefix}_SUBJECT_MISMATCH")
-    remote_refs = str(_git(["for-each-ref", f"--contains={head}", "--format=%(refname)", "refs/remotes"], root=root, text=True)).splitlines()
-    if subject.get("networkRemoteVerified") is not False or subject.get("remoteTrackingRefContainsSubject") is not False or remote_refs:
+    if subject.get("networkRemoteVerified") is not False or subject.get("remoteTrackingRefContainsSubject") is not False:
         raise Phase10Error(f"{error_prefix}_NETWORK_BINDING_INVALID")
+    if rederive_mutable_worktree_state:
+        current_head = str(_git(["rev-parse", "--verify", "HEAD^{commit}"], root=root, text=True)).strip()
+        branch = str(_git(["branch", "--show-current"], root=root, text=True)).strip()
+        status = str(_git(["status", "--porcelain=v1", "--untracked-files=all"], root=root, text=True))
+        remote_refs = str(_git(["for-each-ref", f"--contains={head}", "--format=%(refname)", "refs/remotes"], root=root, text=True)).splitlines()
+        if current_head != head or branch != subject.get("localBranch") or status != "" or remote_refs:
+            raise Phase10Error(f"{error_prefix}_NETWORK_BINDING_INVALID")
     for artifact in artifacts:
         if not isinstance(artifact, dict) or list(artifact) != ["path", "gitBlobOid", "bytes", "sha256"]:
             raise Phase10Error(f"{error_prefix}_ARTIFACT_SHAPE_INVALID")
@@ -470,9 +483,17 @@ def _verify_r8_local(review: dict[str, Any]) -> None:
             raise Phase10Error("R8_CRITICAL_ARTIFACT_MISMATCH")
 
 
-def verify_local_subjects(batch: dict[str, Any]) -> None:
-    _verify_local_git_subject(_review(batch, "mlv-app"), "MLV")
-    _verify_local_git_subject(_review(batch, "cloudvore"), "CLOUDVORE")
+def verify_local_subjects(
+    batch: dict[str, Any], *, rederive_mutable_worktree_state: bool = True
+) -> None:
+    _verify_local_git_subject(
+        _review(batch, "mlv-app"), "MLV",
+        rederive_mutable_worktree_state=rederive_mutable_worktree_state,
+    )
+    _verify_local_git_subject(
+        _review(batch, "cloudvore"), "CLOUDVORE",
+        rederive_mutable_worktree_state=rederive_mutable_worktree_state,
+    )
     _verify_r8_local(_review(batch, "dng-auto-processor"))
 
 
@@ -574,7 +595,7 @@ def verify_integration(treeish: str) -> None:
         raise Phase10Error("INTEGRATION_SCOPE_MISMATCH")
     batch = verify_receipt_blob(treeish)
     verify_receipt_shape(batch)
-    verify_local_subjects(batch)
+    verify_local_subjects(batch, rederive_mutable_worktree_state=False)
     verify_frozen_doctrine(treeish)
     verify_forward_allowlists(treeish, phase11_forward=True)
     verify_workflow(treeish)

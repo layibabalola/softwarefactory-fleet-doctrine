@@ -1,0 +1,118 @@
+{
+  "schema": "fleet-r26-mlv-task-definition-publication/v1",
+  "status": "CANDIDATE_ZERO_AUTHORITY",
+  "phase13": {
+    "commit": "eca6e364cf03e388f0416e3f8e80fe4091321aa0",
+    "tree": "20f47e3e9430aaa79d05551b932ca1a8edd7ff4f",
+    "orderedParents": ["990906b6ea861ca579e1336bcfe8f17dd80c83ae"]
+  },
+  "sourceProject": {
+    "projectId": "mlv-app",
+    "canonicalOrigin": "https://github.com/layibabalola/MLV-App.git",
+    "publishedRef": "refs/heads/codex/mlv-r37-task-definition-enumeration",
+    "commit": "a4bb0d7a2833e760ba1d0d6cfb53133d69f09c24",
+    "tree": "fd6de9b74a0a2ed48fa751048ad5e215849bf9c8",
+    "orderedParents": ["2ef9690649519d91197199d401d46fe3bb6d8dbb"],
+    "remoteRefVerified": true,
+    "remoteVerifiedCommit": "a4bb0d7a2833e760ba1d0d6cfb53133d69f09c24"
+  },
+  "r37Candidate": {
+    "commit": "2ef9690649519d91197199d401d46fe3bb6d8dbb",
+    "tree": "fbe7b8666bc31ca3b7495f7be71c717a7692d4dd",
+    "orderedParents": ["06ea3ea5eb1329f59d2e9fdf474485c30b0cc651"],
+    "artifact": {
+      "path": "docs/universal-token-control-task-definition-enumeration-candidate-2026-08-21.json",
+      "gitBlobOid": "780e5fe5c7444b38974d00061cc6629353254833",
+      "bytes": 15298,
+      "sha256": "F9E6F450461509BBF9F05200CFA73D499FF569C0CD8389261F0D4BE402D6E159"
+    },
+    "verifier": {
+      "path": "tools/verify_universal_token_control_task_definition_enumeration_candidate.py",
+      "gitBlobOid": "1ac5ee2823cfcabb3530201b08c2d75bc6bb1dce",
+      "bytes": 19696,
+      "sha256": "457F4152D8AB0F4F087938396B3ED659838CADFD765F4228A7CF56EBE11FC64F"
+    },
+    "hostileTests": {
+      "path": "tools/universal_token_control_task_definition_enumeration_candidate_hostile_tests.py",
+      "gitBlobOid": "835b841f761286da1a4d5973fb6de95492ad4f3b",
+      "bytes": 6461,
+      "sha256": "570342491B2F7B2601951CE7F02E77B9C47719ECD8E42F62D0A913988B8A4D84"
+    },
+    "verifiedControls": {
+      "documentAndGitEnvelope": "PASS x3",
+      "providerFreeHostiles": "PASS 40 x3",
+      "liveTaskDefinitionRederivation": "PASS",
+      "definitionCount": 41,
+      "unreadableDefinitionCount": 0,
+      "relevantDefinitionCount": 6
+    }
+  },
+  "durableReviewReceipt": {
+    "path": "docs/universal-token-control-task-definition-enumeration-review-receipt-2026-08-21.json",
+    "gitBlobOid": "aef2c3715ced701bcaf64d6df2bcc2a4b5b112bf",
+    "bytes": 4419,
+    "sha256": "40893F70E26A6137E45A1426547ACD1904752B6A3E2F44A76E9D9FF40A53C52C",
+    "status": "ACCEPT_CANDIDATE_ONLY_ZERO_AUTHORITY"
+  },
+  "independentReview": {
+    "routeId": "fleet-r62-mlv-r37-task-definitions-fable",
+    "lane": "fable",
+    "model": "claude-fable-5",
+    "effort": "max",
+    "role": "coordinator",
+    "packetBytes": 2123,
+    "packetSha256": "DD56FDC80C75EC8776174379CC555B5C55767F6DD2C9555D23079FE4A83FE8E1",
+    "artifactBytes": 131991,
+    "artifactSha256": "55A8A414B90B06212D33656A94BB11201CE57976C68038E8D545F6F696476FE3",
+    "resultLineBytes": 9385,
+    "resultLineSha256": "36C9085A5D0E118803D5178011D54405037B55BAAFBE86D775C35D8359B409B3",
+    "structuredOutputBytes": 3809,
+    "structuredOutputSha256": "9E713B7865293025ABE1E9838BC46776B17D24E01297FEB731A82863E0757EC2",
+    "receiptBytes": 531,
+    "receiptSha256": "E1E84C9E9138411C72DCBEBC4E2850BCE08DAA291E4411B1C123E5AE5928FCBE",
+    "verdict": "ACCEPT",
+    "scope": "candidate-only"
+  },
+  "acceptedBoundary": {
+    "currentWindowsTaskDefinitionsCompleteForExactQuery": true,
+    "currentRelevantBoundedHistoryCompleteForExactQuery": true,
+    "allSixRelevantTasksClassifiedAsSeparateGpuBenchFamily": true,
+    "mlvUniversalControlInstalled": false,
+    "currentClosedGateProof": false,
+    "launcherInventoryComplete": false,
+    "actionGraphComplete": false,
+    "semanticCompletenessClaimed": false,
+    "projectOwnerDisposition": false,
+    "adoption": false
+  },
+  "ledgerTreatment": {
+    "ledgerPath": "adoption/universal-token-control-r26.json",
+    "ledgerGitBlobOid": "2f1808e8df35e6d1bae98f83aab378d93a0c3228",
+    "counts": {"ADOPT": 0, "DISTINGUISH": 5, "MISSING": 0, "REJECT": 0, "STALE": 4},
+    "mlvDispositionRemains": "DISTINGUISH",
+    "ledgerModified": false,
+    "specificationsModified": false
+  },
+  "remainingUncreditedProofs": [
+    "FUNCTIONAL_CLOSED_SUPERVISOR_AND_REQUEST_ENVELOPE",
+    "COMPLETE_LAUNCHER_INVENTORY",
+    "COMPLETE_ACTION_GRAPH",
+    "EXACT_MODEL_EFFORT_ROLE_BINDING",
+    "QUALITY_EQUIVALENCE",
+    "FUNCTIONALITY_EQUIVALENCE",
+    "CURRENT_CLOSED_GATE_PROOF",
+    "INSTALLATION",
+    "RUNTIME_ACTIVATION",
+    "PROJECT_OWNER_DISPOSITION",
+    "ADOPTION"
+  ],
+  "authority": {
+    "projectDisposition": false,
+    "fleetAdoption": false,
+    "installation": false,
+    "runtime": false,
+    "providerExecution": false,
+    "taskOrGateMutation": false,
+    "pushOrMerge": false
+  }
+}

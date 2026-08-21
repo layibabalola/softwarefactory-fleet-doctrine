@@ -111,11 +111,11 @@ class Phase8IntegrationTests(unittest.TestCase):
         workflow = (ROOT / ".github" / "workflows" / "disposition-intake.yml").read_text(encoding="utf-8")
         expected = [
             'test_phase2_disposition_batch.py" -v',
-            "check_phase2_disposition_batch.py --treeish HEAD",
+            "check_phase2_disposition_batch.py --treeish 990906b6ea861ca579e1336bcfe8f17dd80c83ae",
             'test_phase3_disposition_batch.py" -v',
-            "check_phase3_disposition_batch.py --treeish HEAD",
+            "check_phase3_disposition_batch.py --treeish 990906b6ea861ca579e1336bcfe8f17dd80c83ae",
             'test_phase5_stale_reconciliation.py" -v',
-            "check_phase5_stale_reconciliation.py --treeish HEAD",
+            "check_phase5_stale_reconciliation.py --treeish 990906b6ea861ca579e1336bcfe8f17dd80c83ae",
             'test_phase6_candidate_reviews.py" -v',
             f"check_phase6_candidate_reviews.py --treeish {HISTORICAL_TREEISH}",
             'test_phase7_owner_publication_requests.py" -v',

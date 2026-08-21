@@ -90,7 +90,9 @@ class Phase10IntegrationTests(unittest.TestCase):
             review = self._review(batch, "mlv-app")
             mutate(review)
             with self.subTest(error=error), self.assertRaisesRegex(MODULE.Phase10Error, error):
-                MODULE._verify_local_git_subject(review, "MLV")
+                MODULE._verify_local_git_subject(
+                    review, "MLV", rederive_mutable_worktree_state=False
+                )
 
     def test_07_mlv_network_and_authority_overclaims_are_rejected(self):
         for mutate, error in (
