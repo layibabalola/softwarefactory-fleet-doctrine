@@ -75,5 +75,44 @@ jobs:
         if: env.R26_REMOTE_AUTH_CONFIGURED != 'true'
         run: echo "ADOBE REMOTE NOT VERIFIED - R26_CROSS_REPO_READ_TOKEN is not configured"
 
+      - name: Run phase-6 local candidate review receipt controls
+        run: python -m unittest discover -s tests -p "test_phase6_candidate_reviews.py" -v
+
+      - name: Verify phase-6 zero-authority review receipts
+        run: python tools/check_phase6_candidate_reviews.py --treeish HEAD
+
+      - name: Run phase-7 owner-publication request controls
+        run: python -m unittest discover -s tests -p "test_phase7_owner_publication_requests.py" -v
+
+      - name: Verify phase-7 request-only zero-authority packets
+        run: python tools/check_phase7_owner_publication_requests.py --treeish HEAD
+
+      - name: Run phase-8 linear integration controls
+        run: python -m unittest discover -s tests -p "test_phase8_integration.py" -v
+
+      - name: Verify phase-8 accepted-lineage integration
+        run: python tools/check_phase8_integration.py --treeish HEAD
+
+      - name: Run phase-9 manifest integration controls
+        run: python -m unittest discover -s tests -p "test_phase9_integration.py" -v
+
+      - name: Verify phase-9 accepted manifest integration
+        run: python tools/check_phase9_integration.py --treeish HEAD
+
+      - name: Run phase-10 local candidate review integration controls
+        run: python -m unittest discover -s tests -p "test_phase10_integration.py" -v
+
+      - name: Verify phase-10 zero-authority local review integration
+        run: python tools/check_phase10_integration.py --treeish HEAD
+
+      - name: Run phase-11 Phase10 review-shape closure controls
+        run: python -m unittest discover -s tests -p "test_phase11_integration.py" -v
+
+      - name: Verify phase-11 exact native review-shape closure
+        run: python tools/check_phase11_integration.py --treeish HEAD
+
+      - name: Run frozen adoption-ledger controls
+        run: python -m unittest discover -s tests -p "test_adoption_ledger.py" -v
+
       - name: Reverify the frozen adoption ledger
         run: python tools/check_adoption_ledger.py --treeish HEAD
