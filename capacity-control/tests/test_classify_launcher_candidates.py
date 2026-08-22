@@ -67,6 +67,19 @@ class LauncherCandidateClassifierTests(unittest.TestCase):
         self.assertEqual(result["reviewPendingCount"], 3)
         self.assertEqual(result["unresolvedCount"], 3)
 
+    def test_detects_node_launchers_in_mjs_and_cjs(self):
+        result = self._classify(
+            {
+                "launch.mjs": 'import { spawn } from "node:child_process";\nconst provider = "claude";\nspawn(provider, ["-p"]);\n',
+                "bridge.cjs": 'const { execFile } = require("child_process");\nexecFile("codex", ["exec", "-"]);\n',
+            }
+        )
+        self.assertEqual(result["candidateCount"], 2)
+        self.assertEqual(result["classificationCounts"], {"DIRECT_STATIC": 1, "UNRESOLVED_FLOW": 1})
+        for candidate in result["candidates"]:
+            self.assertIn("NODE_CHILD_PROCESS", candidate["launchPrimitives"])
+        self.assertEqual(result["reviewPendingCount"], 2)
+
     def test_output_is_deterministic_and_excludes_tmp(self):
         files = {"b.py": "# claude\n", "a.py": "# kimi\n", "tmp/ignored.py": "exec grok --run\n"}
         first = self._classify(files)

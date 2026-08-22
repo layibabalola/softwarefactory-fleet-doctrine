@@ -30,7 +30,7 @@ MAX_GIT_STDERR_BYTES = 64 * 1024
 MAX_REVIEW_NODES = 65536
 MAX_REVIEW_DEPTH = 64
 MAX_EVIDENCE_LINES_PER_KIND = 64
-SOURCE_SUFFIXES = {".bat", ".cmd", ".js", ".ps1", ".psm1", ".py", ".sh", ".ts"}
+SOURCE_SUFFIXES = {".bat", ".cjs", ".cmd", ".js", ".mjs", ".ps1", ".psm1", ".py", ".sh", ".ts"}
 EXCLUDED_PARTS = {".git", "node_modules", "tmp"}
 REVIEW_DISPOSITIONS = {"LAUNCHER", "NON_LAUNCHER", "UNKNOWN"}
 REVIEW_SCHEMA = "conjugal-launcher-review/v2"
@@ -49,6 +49,9 @@ PRIMITIVES = {
     "POWERSHELL_START_PROCESS": re.compile(r"(?i)\bStart-Process\b"),
     "PYTHON_SUBPROCESS": re.compile(r"(?i)\bsubprocess\.(?:run|Popen|call|check_call|check_output)\b"),
     "DOTNET_PROCESS": re.compile(r"(?i)\b(?:ProcessStartInfo|System\.Diagnostics\.Process)\b"),
+    "NODE_CHILD_PROCESS": re.compile(
+        r"(?i)(?:\b(?:node:)?child_process\b|\b(?:spawn|spawnSync|execFile|execFileSync|exec|execSync)\s*\()"
+    ),
     "SHELL_EXEC": re.compile(r"(?im)(?:^|[;&|]\s*|\bexec\s+)(?:[\"'][^\"']*[/\\])?(?:claude|codex|kimi|grok)(?:\.exe)?(?:\s|[\"'])"),
 }
 VARIABLE_LAUNCH = re.compile(
