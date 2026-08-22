@@ -143,6 +143,12 @@ jobs:
       - name: Verify frozen Phase 12-16 publications before descendant event scope
         run: python tools/check_phase12_phase16_descendant_scope.py
 
+      - name: Run phase-17 DNG post-R60 publication controls
+        run: python -m unittest discover -s tests -p "test_phase17_dng_r60_publication.py" -v
+
+      - name: Verify phase-17 DNG post-R60 evidence without adoption credit
+        run: python tools/check_phase17_dng_r60_publication.py --treeish HEAD
+
       - name: Run frozen adoption-ledger controls
         run: python -m unittest discover -s tests -p "test_adoption_ledger.py" -v
 
