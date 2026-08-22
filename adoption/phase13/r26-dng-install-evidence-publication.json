@@ -1,0 +1,68 @@
+{
+  "schema": "fleet-r26-dng-install-evidence-publication/v1",
+  "status": "CANDIDATE_ZERO_AUTHORITY",
+  "phase12": {
+    "commit": "990906b6ea861ca579e1336bcfe8f17dd80c83ae",
+    "tree": "78cde12c2108e257823c183037bc4d05a72f3649",
+    "orderedParents": ["1bf5ad616c6a2c9200ff34e03c749da0997475c2"],
+    "artifactGitBlobOid": "c674030d27db28313588745b879e665162e31948"
+  },
+  "sourceProject": {
+    "projectId": "dng-auto-processor",
+    "repositoryPath": "C:\\code\\DngAutoProcessor - Claude\\DngAutoProcessor",
+    "branch": "master",
+    "commit": "1876f1c379d4d7f755031924322e6cc29132a610",
+    "tree": "83a8ec09a9a771a868007833e0ebe4751cc2dca6",
+    "orderedParents": ["343607e886f9c95dfc8ba6071dda8e668c617461"],
+    "localOnly": true,
+    "remoteFreshnessVerified": false
+  },
+  "trackedDisposition": {
+    "path": "docs/evidence/universal-token-control-r26/current-disposition.json",
+    "gitBlobOid": "a2802975f7f6fea207d132ab541190c36d39b009",
+    "bytes": 5914,
+    "sha256": "EDFAC5FADA9D15F83F9CDFFB484A7CD738880842036B3D462C3D3BADCC3F65B9",
+    "disposition": "DISTINGUISH"
+  },
+  "installation": {
+    "r21Receipt": {"path": "coordination/candidates/dng-r26-usage-reconciliation-r21-install/INSTALL-RECEIPT.json", "bytes": 4758, "sha256": "E7DD99A1084DD34FF097AB4C705978E37CD8DDE797422D5F7AD769248264CC78", "status": "INSTALLED_VERIFIED_ADOPTION_CREDIT_FALSE"},
+    "liveWarden": {"bytes": 36954, "sha256": "0B007FBB1661CEA502C6CDFDD987ADE9ED3D1BEE3FF3913517C92D78B39BF181"},
+    "taskDefinition": {"preimageBytes": 1859, "preimageSha256": "2DE058B9315CD62E6E7FF66F6A1681B490CF638B1B6F7E57A759A0F67DA3294A", "postimageBytes": 1859, "postimageSha256": "2DE058B9315CD62E6E7FF66F6A1681B490CF638B1B6F7E57A759A0F67DA3294A", "definitionChanged": false, "operationalStateMutated": true},
+    "initialQualifyingTicks": {"rows": 2, "derivedIntervalSeconds": 297, "controlFingerprint": "87E53537CA228F0207AB84CBF2D9810BD9D8FB2BADCC656AFAB615192C88F3D8", "providerLaunches": 0, "launchEvidence": "PROVEN", "executionMode": "PRODUCTION", "required": 1000, "complete": false}
+  },
+  "forwardEvidence": {
+    "r22Manifest": {"bytes": 3291, "sha256": "12E4C2001E881C947F3C6ACE17056729E61A6B0319606BC601F5377B227523B3"},
+    "r23Manifest": {"bytes": 2122, "sha256": "C4AC92849F2E9308B4CD01C6552022734DDF536DF5AEC6958E6AA2FB2AEB961E"},
+    "r23Evidence": {"bytes": 3531, "sha256": "F2C62660C8ACD9791688C4C27476D085216C407676CA8CAAB2353CDE76F4F67C"},
+    "r23Verifier": {"bytes": 7939, "sha256": "CB4E4B6D68E97F2159D81D777C9AAAD31BB6B2BE77FA7FF173A25A6A23C10F69"},
+    "r23TickSnapshot": {"bytes": 372, "sha256": "771E298376110FAFDB7C1C0EB02342F41C71CA1B2BC58F942CB8F50FDE792439"}
+  },
+  "independentReviews": [
+    {"routeId": "fleet-r59-dng-r22-install-evidence-opus", "lane": "opus", "packetBytes": 2335, "packetSha256": "AA266BF73A3AE540C76F3E9843BC9B3EB4E5AFB932D8A67EC684799F692578A5", "artifactBytes": 159930, "artifactSha256": "B31404F5E7683BFF98133EBE12F258DCF7AD6F33271B857CCC8EC4D34020D187", "receiptBytes": 529, "receiptSha256": "C5BFCAFA5D3A065A2295F8754C82C0D71C2377C749848893272FC7A63F9C9A8F", "verdict": "ACCEPT", "scope": "candidate-only"},
+    {"routeId": "fleet-r60-dng-r23-install-evidence-sonnet", "lane": "sonnet", "packetBytes": 2117, "packetSha256": "FD4A1103B98E604E172B8A69EACB5BF87629EDFEE82F4A63DCCFE2BB18756D0D", "artifactBytes": 222210, "artifactSha256": "18378F72D8D512B429B3C8FC20E40E5DBA2F301F117D2AEADF18439801BE5622", "receiptBytes": 533, "receiptSha256": "CCC87EDEFD0004504894B05AFB503916F2371BA8C0EF6BB50CD9054CE3439998", "verdict": "ACCEPT", "scope": "candidate-only"}
+  ],
+  "ledgerTreatment": {
+    "ledgerPath": "adoption/universal-token-control-r26.json",
+    "ledgerGitBlobOid": "2f1808e8df35e6d1bae98f83aab378d93a0c3228",
+    "counts": {"ADOPT": 0, "DISTINGUISH": 5, "MISSING": 0, "REJECT": 0, "STALE": 4},
+    "dngDispositionRemains": "DISTINGUISH",
+    "ledgerModified": false,
+    "specificationsModified": false
+  },
+  "remainingUncreditedProofs": [
+    "ONE_THOUSAND_UNINTERRUPTED_IDLE_TICKS",
+    "ROLLBACK_DRILL",
+    "QUALITY_EQUIVALENCE",
+    "FUNCTIONALITY_EQUIVALENCE",
+    "REMAINING_PROJECT_OWNED_ADOPT_PROOFS"
+  ],
+  "authority": {
+    "projectDisposition": false,
+    "fleetAdoption": false,
+    "installation": false,
+    "runtime": false,
+    "providerExecution": false,
+    "taskOrGateMutation": false,
+    "pushOrMerge": false
+  }
+}

@@ -1,0 +1,103 @@
+{
+  "schema": "fleet-r26-phase15-review-publication/v1",
+  "status": "CANDIDATE_ZERO_AUTHORITY",
+  "reviewedPhase15": {
+    "commit": "488538ca15676823681e241f6be848de1d30a291",
+    "tree": "8a6ebfb6b1e1ff540006ac3c3c42c0a787fecb98",
+    "orderedParents": ["95df488b2e2ec7120e992c0043d54b8e67a65dba"],
+    "publicationPath": "adoption/phase15/r26-mlv-prelaunch-boundary-publication.json",
+    "publicationGitBlobOid": "417353eb69d0d10c3f72677c352fab63f8f54b00",
+    "publicationBytes": 5318,
+    "publicationSha256": "45B44C1F598AF29C046FCA44A5C3862742012FD61D276D48549D27082DDDFC4B"
+  },
+  "independentReview": {
+    "routeId": "fleet-r65-doctrine-phase15-mlv-fable",
+    "lane": "fable",
+    "model": "claude-fable-5",
+    "effort": "max",
+    "role": "coordinator",
+    "sessionId": "ed735398-54bb-4e3b-b7a7-a338c0c716c5",
+    "authorizationId": "3a491c42-4abf-4c01-b206-1f7664a36ca5",
+    "packet": {
+      "path": "adoption/phase16/phase15-review-packet.json",
+      "bytes": 2280,
+      "sha256": "F43F30374DFA4C2262A7DF1997D35D9B03418B6DBB8877CEECC90F6FA29B3E93"
+    },
+    "artifact": {
+      "externalPath": "C:\\Users\\obabalola\\.claude\\machine\\fleet-provider-capacity\\artifacts\\7bf6dd7d5b7548bfa0a164b5f12adf64.stdout.txt",
+      "bytes": 142563,
+      "sha256": "16CE28964B5FE23ACAE478769FF92D1C5EFA89EB53621FDF53491AD6A6662AC3"
+    },
+    "result": {
+      "path": "adoption/phase16/phase15-review-result.jsonl",
+      "fileBytes": 8530,
+      "fileSha256": "4A58EA05B25B821A4A22C56BDD1952188A3E54E4834692B6CCE79E18BAFBE6AC",
+      "rawLineBytes": 8529,
+      "rawLineSha256": "77EEED9DAC1AC2A1E1A28D0C8E0EA62157034CC77381555B3B4DE7F84CD9F402",
+      "structuredCanonicalBytes": 3388,
+      "structuredCanonicalSha256": "6BC99A216084F6874FB59F4B5850C05065D7CE161784677F4AC15D8DEC50BC0B",
+      "subtype": "success",
+      "isError": false,
+      "verdict": "ACCEPT"
+    },
+    "consumption": {
+      "path": "adoption/phase16/phase15-review-consumption.json",
+      "fileBytes": 528,
+      "fileSha256": "7C48D4205521FDD8110E70F0BD2A2375489D22DFA69CD9BDCBC9DE3BD50DD98A",
+      "rawReceiptBytes": 527,
+      "rawReceiptSha256": "AF67ACDF2F395952D677ABE8999BA0A4C50FCB2BEB839EEAFCAD20CDA11F095A"
+    },
+    "providerTools": ["Read", "StructuredOutput"],
+    "permissionDenials": 0,
+    "verdict": "ACCEPT_CANDIDATE_ONLY",
+    "doneConsumedReleasedAtUtc": "2026-08-21T13:34:19.4771490+00:00"
+  },
+  "findingClosure": {
+    "workflowOrder": {
+      "severity": "LOW",
+      "status": "CLOSED_FORWARD_ONLY",
+      "checkerPath": "tools/check_phase15_integration.py",
+      "checkerGitBlobOid": "82d41c1d049276a0b759b4b71643616d072da218",
+      "checkerBytes": 14002,
+      "checkerSha256": "80D3547CA8DD12DE4F3B8D6E75A5E965785B9783BBDCFE82E9C02C0442723EB4",
+      "law": "required workflow commands occur exactly once and their byte offsets are strictly ordered"
+    },
+    "stagedSpecRederivation": {
+      "severity": "LOW",
+      "status": "CLOSED_FORWARD_ONLY",
+      "checkerPath": "tools/check_phase15_integration.py",
+      "checkerGitBlobOid": "82d41c1d049276a0b759b4b71643616d072da218",
+      "checkerBytes": 14002,
+      "checkerSha256": "80D3547CA8DD12DE4F3B8D6E75A5E965785B9783BBDCFE82E9C02C0442723EB4",
+      "law": "staged mode enumerates index specs and compares every index blob to immutable Phase 14"
+    }
+  },
+  "ledgerTreatment": {
+    "counts": {"ADOPT": 0, "DISTINGUISH": 5, "MISSING": 0, "REJECT": 0, "STALE": 4},
+    "mlvDispositionRemains": "DISTINGUISH",
+    "ledgerModified": false,
+    "specificationsModified": false
+  },
+  "remainingUncreditedProofs": [
+    "PRODUCTION_LAUNCHER_WIRING",
+    "SIGNED_INSTALLATION",
+    "RUNTIME_INTERCEPTION",
+    "COMPLETE_LAUNCHER_INVENTORY",
+    "COMPLETE_ACTION_GRAPH",
+    "EXACT_MODEL_EFFORT_ROLE_BINDING",
+    "QUALITY_EQUIVALENCE",
+    "FUNCTIONALITY_EQUIVALENCE",
+    "CURRENT_CLOSED_GATE_PROOF",
+    "PROJECT_OWNER_DISPOSITION",
+    "ADOPTION"
+  ],
+  "authority": {
+    "projectDisposition": false,
+    "fleetAdoption": false,
+    "installation": false,
+    "runtime": false,
+    "providerExecution": false,
+    "taskOrGateMutation": false,
+    "pushOrMerge": false
+  }
+}

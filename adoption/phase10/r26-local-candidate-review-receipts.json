@@ -1,0 +1,343 @@
+{
+  "schema": "fleet-r26-phase10-local-candidate-review-batch/v1",
+  "status": "AUTHOR_CONFLICTED_INDEPENDENT_REVIEW_REQUIRED",
+  "frozenBase": {
+    "phase9Commit": "18b95fd82f92920117c8f0f432ae8e9bc5e8ffc8",
+    "phase9Tree": "fe0ed384bfd9485f4bbc4004225831c6aabe06a4",
+    "phase9Parent": "2223647059cb789fd350883597756666357583df",
+    "ledgerPath": "adoption/universal-token-control-r26.json",
+    "ledgerGitBlobOid": "333cc6d47e99a857b64150a87bd9f834590256e1",
+    "manifestPath": "manifests/universal-provider-control-reconciliation-r26.json",
+    "manifestGitBlobOid": "65901748c5843f05b37e4352c5b469e47804e2f1",
+    "phase6ReceiptPath": "adoption/phase6/r26-local-candidate-review-receipts.json",
+    "phase6ReceiptGitBlobOid": "c10b1b7530e0d9695118a02dd21842e4fc1493e0"
+  },
+  "capture": {
+    "reviewedAt": "2026-08-20T16:05:00Z",
+    "machine": "ULTRA-MAGNUS",
+    "reviewer": "codex-phase10-independent-integration",
+    "reviewMode": "READ_ONLY_EXACT_LOCAL_OBJECT_AND_SEMANTIC_REVIEW",
+    "networkInspectionPerformed": false,
+    "providerInvocationPerformed": false,
+    "authenticationPerformed": false,
+    "projectMutationPerformed": false,
+    "runtimeMutationPerformed": false,
+    "scheduledTaskMutationPerformed": false,
+    "gateMutationPerformed": false,
+    "leaseMutationPerformed": false,
+    "packetMutationPerformed": false,
+    "pushMergePublishPerformed": false
+  },
+  "summary": {
+    "reviewCount": 3,
+    "acceptedCandidateEvidenceScopes": 3,
+    "candidateOnlyCensusAccepts": 1,
+    "nonInstallableClosedStopAccepts": 1,
+    "privilegedPreviewCandidateAccepts": 1,
+    "ledgerStatusChangesAuthorized": 0,
+    "adoptionClaims": 0,
+    "installationClaims": 0,
+    "runtimeAuthorityClaims": 0,
+    "canonicalLedgerCounts": {
+      "ADOPT": 0,
+      "DISTINGUISH": 5,
+      "MISSING": 0,
+      "REJECT": 0,
+      "STALE": 4
+    }
+  },
+  "reviews": [
+    {
+      "projectId": "mlv-app",
+      "evidenceKind": "LAUNCHER_ACTION_GRAPH_CENSUS_CANDIDATE_ONLY",
+      "verdict": "ACCEPT_CANDIDATE_ONLY_CENSUS",
+      "reviewScope": "ZERO_AUTHORITY_STATIC_CENSUS_EVIDENCE_ONLY_NOT_DISPOSITION_ADOPTION_OR_INSTALLATION",
+      "subject": {
+        "localRoot": "C:\\code\\DngAutoProcessor - Claude\\.codex-tmp\\mlv-app-r35-launcher-census",
+        "remote": "https://github.com/layibabalola/MLV-App.git",
+        "headMode": "SYMBOLIC_BRANCH",
+        "localBranch": "codex/mlv-r35-launcher-census",
+        "commit": "38ed4bbf9068cac80140297c74facdf522577704",
+        "tree": "e3a20b1227fe40a1550664ea92343f76c760baae",
+        "parent": "30889f77e2000190b94d59f80f6a03b12ce3e0d3",
+        "remoteTrackingRefContainsSubject": false,
+        "networkRemoteVerified": false,
+        "worktreeCleanAtReview": true,
+        "changedPaths": [
+          "docs/universal-token-control-launcher-action-graph-census-candidate-2026-08-20.json",
+          "tools/universal-token-control-launcher-action-graph-census-candidate.tests.py"
+        ]
+      },
+      "artifacts": [
+        {
+          "path": "docs/universal-token-control-launcher-action-graph-census-candidate-2026-08-20.json",
+          "gitBlobOid": "ba0e476429dbf0aad33ea2b96b76986f394673de",
+          "bytes": 21007,
+          "sha256": "52aef218ac9657f381f9166675722a2083fe525d1b09f4ffb03fdf96f5d4a506"
+        },
+        {
+          "path": "tools/universal-token-control-launcher-action-graph-census-candidate.tests.py",
+          "gitBlobOid": "eed34fdc8fdf77d54b0254d57d65b4600d895c90",
+          "bytes": 35554,
+          "sha256": "4dad6dc48e94061e7aa379dba0c475ac00ab6defa3f3a83a36124c95aad4a353"
+        }
+      ],
+      "executionEvidence": [
+        {
+          "engine": "CPython 3.14.6",
+          "command": "PYTHONDONTWRITEBYTECODE=1 python .\\tools\\universal-token-control-launcher-action-graph-census-candidate.tests.py",
+          "exitCode": 0,
+          "result": "PASS: MLV-App launcher/action-graph census candidate is master-bound, incomplete, zero-authority, and hostile-closed (53/53)",
+          "hostileControlsPassed": 53,
+          "hostileControlsTotal": 53
+        }
+      ],
+      "unpersistedIndependentReviewDiagnostic": {
+        "reportedResult": "15/15 PASS",
+        "artifactPersisted": false,
+        "artifactCredit": false,
+        "evidenceTreatment": "UNPERSISTED_REVIEW_DIAGNOSTIC_NO_ARTIFACT_CREDIT",
+        "replacement": "EQUIVALENT_SUBSTITUTION_HOSTILES_ARE_COMMITTED_IN_TEST_PHASE10_INTEGRATION"
+      },
+      "semanticFindings": {
+        "candidateStatus": "CANDIDATE_ZERO_AUTHORITY",
+        "inventoryComplete": false,
+        "actionGraphComplete": false,
+        "networkVerified": false,
+        "currentMachineStateObserved": false,
+        "providerOrAuthInvoked": false,
+        "currentClosedGateProofCredited": false,
+        "dispositionCredit": false,
+        "allAuthorityMembersFalse": true
+      },
+      "dispositionTreatment": {
+        "currentLedgerStatus": "DISTINGUISH",
+        "candidateDispositionKind": null,
+        "candidateDisposition": null,
+        "ledgerStatusChangeAuthorized": false,
+        "publicationAuthority": false,
+        "adoptionCredit": false,
+        "installationCredit": false
+      },
+      "nextLawfulAction": "SEPARATELY_AUTHORIZE_READ_ONLY_CURRENT_MACHINE_LAUNCHER_AND_ACTION_GRAPH_CLOSURE",
+      "authority": {
+        "projectDisposition": false,
+        "projectAdoption": false,
+        "fleetAdoption": false,
+        "runtime": false,
+        "activation": false,
+        "provider": false,
+        "authentication": false,
+        "scheduler": false,
+        "gate": false,
+        "installation": false,
+        "pushMergePublish": false
+      }
+    },
+    {
+      "projectId": "cloudvore",
+      "evidenceKind": "NON_INSTALLABLE_CLOSED_STOP_SOURCE_CANDIDATE",
+      "verdict": "ACCEPT_NON_INSTALLABLE_CLOSED_STOP_CANDIDATE",
+      "reviewScope": "ZERO_AUTHORITY_SOURCE_CANDIDATE_EVIDENCE_ONLY_NOT_INSTALLATION_RUNTIME_OR_ADOPTION",
+      "subject": {
+        "localRoot": "C:\\code\\DngAutoProcessor - Claude\\.codex-tmp\\cloudvore-gate-first-slice-20260820",
+        "remote": "C:\\code\\softwarefactory-fleet-doctrine-worktrees\\cloudvore-r28-install-census-candidate-20260819",
+        "headMode": "SYMBOLIC_BRANCH",
+        "localBranch": "codex/cloudvore-gate-first-slice-r1",
+        "commit": "e43ed25190b5dee7d1596681349a8df6b9493f97",
+        "tree": "4bc8bd46f4fab5309d0561d57e666007b508beb7",
+        "parent": "842e6c7c25cb35a7bcd497f502753b3786203962",
+        "remoteTrackingRefContainsSubject": false,
+        "networkRemoteVerified": false,
+        "worktreeCleanAtReview": true,
+        "changedPaths": [
+          ".gitattributes",
+          "knowledge/universal-token-control-r26-closed-gate-first-design-2026-08-20.json",
+          "tools/provider-adapters/Invoke-GrokLane.ps1",
+          "tools/provider-adapters/Invoke-GrokWslBoundary.ps1",
+          "tools/provider-adapters/Invoke-KimiLane.ps1",
+          "tools/provider-adapters/R26ClosedLauncherGate.ps1",
+          "tools/provider-adapters/r26_closed_gate_first_candidate.tests.py"
+        ]
+      },
+      "artifacts": [
+        {"path": ".gitattributes", "gitBlobOid": "2b80f560e58d95a5a2d05895dd8744c328325422", "bytes": 56, "sha256": "a8041a640d4ed2f3659575b545d13dfb2b7feaa6ec0722b39b6e0dce75ad7529"},
+        {"path": "knowledge/universal-token-control-r26-closed-gate-first-design-2026-08-20.json", "gitBlobOid": "0560726e1fcbd1f4f8cac4f0b96df2f38d9740bb", "bytes": 8219, "sha256": "599f2548b7ca85d0581ec6793e524d3d95d54393c160eb87cade57c163ade967"},
+        {"path": "tools/provider-adapters/Invoke-GrokLane.ps1", "gitBlobOid": "fcf222d7ed977faaf25dfbc2438390e6c9f92551", "bytes": 69650, "sha256": "3ae8b3d784fa90224b870ae8f12de47b982be3dde1eb1b65e1d882c6abffaa7c"},
+        {"path": "tools/provider-adapters/Invoke-GrokWslBoundary.ps1", "gitBlobOid": "b16d30fcefa826993ca5fb9dd27b45451676ea89", "bytes": 5618, "sha256": "295c0ce8d5e3b7bb761ffb36ebf3b5cef496d7ebc94b128b7dcf864c0a7a2180"},
+        {"path": "tools/provider-adapters/Invoke-KimiLane.ps1", "gitBlobOid": "1ba50a55bfd9528c2b1aaa679424bda47561009e", "bytes": 71475, "sha256": "ae9e73235bebe0ac4b1f69d8519f6a1b92fd79cc018a28c5838138e80dc93df3"},
+        {"path": "tools/provider-adapters/R26ClosedLauncherGate.ps1", "gitBlobOid": "a7eedbbc981341c490f85d6fc460c39c1716cc8c", "bytes": 22429, "sha256": "544cba7d207c5147a0fcc3083c8268fbb4b41934b3948440ce4ea19c6a097582"},
+        {"path": "tools/provider-adapters/r26_closed_gate_first_candidate.tests.py", "gitBlobOid": "0643fdd37e6ada134b2805a385610ed1e5f5d093", "bytes": 27754, "sha256": "01a06822b66c24393a5f6e4207fc637cf8bf39666c56840b909080c4872c2344"},
+        {"path": "tools/provider-adapters/r26_closed_supervisor_candidate.py", "gitBlobOid": "d0954ec0f38a4545cda0ab89bd350df812591fc8", "bytes": 13482, "sha256": "f1cf66584c2b0bc24ca659a18d9560be96f63fda01c61d4d00f6ecbc61fc5117"},
+        {"path": "tools/provider-adapters/r26_closed_supervisor_candidate.tests.py", "gitBlobOid": "6a6508aa9c34183d95ba26e7612f0a56a9dd68ba", "bytes": 30517, "sha256": "7ae87210974d5ad5ce033c09e168bdb13e687dcb5d9a27521eaa60293eb1c52c"},
+        {"path": "knowledge/universal-token-control-r26-closed-supervisor-candidate-2026-08-19.json", "gitBlobOid": "ba22bbb40b7b282bb6ba8699a02fc0813a7bef5e", "bytes": 3508, "sha256": "c207a33294cd70ed73efa0facbd0051bff8de9f635e01dd38b5cbe2ed56475c3"}
+      ],
+      "keyBindings": {
+        "acceptedClosedSupervisorCommit": "ed1119845d43fa1042d69c6f6d3ae9e700b1db5f",
+        "acceptedClosedSupervisorTree": "0001966e4f155f4b3ef2feae2e5d99f3522eb4c6",
+        "doctrineCandidateCommit": "e70a044f31dd2f43ab7c716d63a4eb89318c61b6",
+        "doctrineCanonicalMerge": "909f769d02e8412e51e28e242cfa8d00dadc9a3d",
+        "gateState": "CLOSED",
+        "providerProcessCanStart": false,
+        "candidateInstallable": false,
+        "trackedArtifactIsInstalledManifest": false
+      },
+      "executionEvidence": [
+        {
+          "engine": "CPython 3.14.6",
+          "command": "PYTHONDONTWRITEBYTECODE=1 python .\\tools\\provider-adapters\\r26_closed_gate_first_candidate.tests.py",
+          "exitCode": 0,
+          "result": "Ran 17 tests - OK",
+          "testCasesPassed": 17,
+          "testCasesTotal": 17
+        },
+        {
+          "engine": "CPython 3.14.6",
+          "command": "PYTHONDONTWRITEBYTECODE=1 python .\\tools\\provider-adapters\\r26_closed_supervisor_candidate.tests.py",
+          "exitCode": 0,
+          "result": "Ran 21 tests - OK",
+          "testCasesPassed": 21,
+          "testCasesTotal": 21
+        }
+      ],
+      "semanticFindings": {
+        "candidateStatus": "SOURCE_CANDIDATE_CLOSED_STOP_BOUNDARY_NOT_INSTALLABLE",
+        "gateState": "CLOSED",
+        "decisionOnly": true,
+        "providerProcessCanStart": false,
+        "executableInstallerPresent": false,
+        "transactionImplemented": false,
+        "rollbackImplemented": false,
+        "scannerCoverageComplete": false,
+        "directInvocationImpossible": false,
+        "adoptionGapClosed": false,
+        "allAuthorityMembersFalse": true
+      },
+      "dispositionTreatment": {
+        "currentLedgerStatus": "DISTINGUISH",
+        "candidateDispositionKind": null,
+        "candidateDisposition": null,
+        "ledgerStatusChangeAuthorized": false,
+        "publicationAuthority": false,
+        "adoptionCredit": false,
+        "installationCredit": false
+      },
+      "nextLawfulAction": "DESIGN_AND_SEPARATELY_REVIEW_AN_EXACT_PREIMAGE_BOUND_INSTALL_TRANSACTION_WITH_ROLLBACK",
+      "authority": {
+        "projectDisposition": false,
+        "projectAdoption": false,
+        "fleetAdoption": false,
+        "runtime": false,
+        "activation": false,
+        "provider": false,
+        "authentication": false,
+        "scheduler": false,
+        "gate": false,
+        "installation": false,
+        "pushMergePublish": false
+      }
+    },
+    {
+      "projectId": "dng-auto-processor",
+      "evidenceKind": "DURABLE_CAMPAIGN_HOLD_R8_INSTALL_CANDIDATE_REVIEW",
+      "verdict": "ACCEPT_INSTALL_CANDIDATE_FOR_SEPARATE_PRIVILEGED_PREVIEW",
+      "reviewScope": "ZERO_AUTHORITY_FROZEN_CANDIDATE_REVIEW_ONLY_NOT_APPLY_INSTALL_ADOPTION_OR_LIVE_MUTATION",
+      "subject": {
+        "localRoot": "C:\\code\\DngAutoProcessor - Claude\\coordination\\candidates\\durable-campaign-hold-latch-r8",
+        "candidate": "durable-campaign-hold-latch-r8",
+        "status": "FROZEN_AUTHOR_CONFLICTED",
+        "manifestPath": "candidate-manifest.json",
+        "manifestBytes": 11616,
+        "manifestSha256": "fd81969894233ede9ef625771f115b9b0581808ad511d5b9b0dbb3563c2b9b8f",
+        "treeFileCount": 24,
+        "treeSha256": "75a856c2c425a1aa98fc5de61ea977913159d40e1a6bc1fe9eddbeb67ceb6c38",
+        "treeAlgorithm": "TOP_LEVEL_FILES_CASE_INSENSITIVE_NAME_PIPE_BYTES_PIPE_UPPER_SHA256_UTF8_LF_JOIN_NO_TRAILING_LF",
+        "r7TreeSha256": "fb6f3811d876bd9538695530caeeee275618f90574db3437796f8f9020ed9629",
+        "subjectCount": 22,
+        "metadataCount": 1,
+        "staticReviewBundleCount": 15,
+        "subjectMaxBytes": 24576,
+        "bundleMaxBytes": 32768,
+        "largestSubjectBytes": 23754,
+        "largestBundleBytes": 31401
+      },
+      "criticalArtifacts": [
+        {"path": "install-durable-campaign-hold-r8.ps1", "bytes": 23754, "sha256": "b2e4ee8ec7a9991366c7c74dd066becb05f7cbbb38b0b8a5cc5637cb84ca746a"},
+        {"path": "durable-campaign-hold-installer-r8-lib.ps1", "bytes": 19396, "sha256": "2f7496193aa6575c8fc558c63ba585ca3fe689283b7bf111223b5e4cfd0fc21f"},
+        {"path": "durable-campaign-hold-installer-r8-journal.ps1", "bytes": 20131, "sha256": "002db4db4fef7b66e5c4fa0f1a309bc04a7cea0e4f7425967b46341355baaee6"},
+        {"path": "durable-campaign-hold-installer-r8-invariants.ps1", "bytes": 19240, "sha256": "2488eab846625109a10075691077a692204f41d97533ca1af4086d2aa1342b5c"},
+        {"path": "durable-campaign-hold-installer-r8-flow.ps1", "bytes": 17880, "sha256": "c2ad85f020bf5de80e1b57a2a0dde08755acc488ec2384b5181ac198799bab4c"},
+        {"path": "durable-campaign-hold-installer-r8-recovery.ps1", "bytes": 2417, "sha256": "857d9d5d075b99846a95d947d5cd754d25f2988788d800cff9e42283d56268b4"},
+        {"path": "test-installer-r8-transaction-hostiles.ps1", "bytes": 23206, "sha256": "dbc1265e61acfc416a60748f13e6f26476173bfda8d0a02252096d232f11f1bc"},
+        {"path": "test-installer-r8-latch-inventory.ps1", "bytes": 5500, "sha256": "8526d11836676fdec034b43e60aaa28fb4b22cb6aec3bf2f4c8b24db66c12f29"},
+        {"path": "test-installer-r8-absence-provenance.ps1", "bytes": 6154, "sha256": "380325c6b2c4b8d31acf9924d70c66d1909cb823f0be6787f48ad8a415155f1f"}
+      ],
+      "independentExecutionEvidence": [
+        {"path": "test-installer-r8-transaction-hostiles.ps1", "runs": 1, "assertionsPerRun": 121, "result": "PASS"},
+        {"path": "test-installer-r8-absence-provenance.ps1", "runs": 1, "assertionsPerRun": 21, "result": "PASS"},
+        {"path": "test-installer-r8-latch-inventory.ps1", "runs": 1, "assertionsPerRun": 12, "result": "PASS"},
+        {"path": "test-static-bundle-sums.ps1", "runs": 1, "assertionsPerRun": 13, "result": "PASS"},
+        {"path": "test-latch-and-clear.ps1", "runs": 1, "assertionsPerRun": 20, "result": "PASS"},
+        {"path": "test-warden-campaign-hold-integration-r3.ps1", "runs": 1, "assertionsPerRun": 21, "result": "PASS"},
+        {"path": "test-frozen-preimage-binding.ps1", "runs": 1, "assertionsPerRun": 11, "result": "PASS"}
+      ],
+      "absenceDefectClosure": {
+        "library": {"Present": false, "Bytes": 0, "Hash": null, "preimagePresent": false},
+        "clear": {"Present": false, "Bytes": 0, "Hash": null, "preimagePresent": false},
+        "receiptFrozenPriorAbsence": {"library": true, "clear": true},
+        "restartValidationCarriesLaw": true,
+        "sameInstallReceiptReboundHostilesPassed": 5,
+        "nativeTypeAliasHostilePassed": true,
+        "refusalBeforeTaskOrTargetMutation": true,
+        "blockedTaskState": "Disabled",
+        "blockedReceiptState": "ROLLBACK_BLOCKED_DISABLED"
+      },
+      "productionPreview": {
+        "mode": "DEFAULT_PREVIEW_ONLY",
+        "result": "BLOCKED_CURRENT_TOKEN_SCHEDULED_TASK_READ_ACCESS_DENIED",
+        "exitCode": 1,
+        "failureBoundary": "Get-ScheduledTask",
+        "beforeFingerprintSha256": "4214f82ddb938561278f5353c3522d702f81c4081b71e727025a2f9a8d73097f",
+        "afterFingerprintSha256": "4214f82ddb938561278f5353c3522d702f81c4081b71e727025a2f9a8d73097f",
+        "liveWarden": {"Present": true, "Bytes": 29871, "Hash": "513301c0ad16321788d0e3b144a6c96c2bdb67a2703402bfd96bcabb0e8336e6"},
+        "liveRegistry": {"Present": true, "Bytes": 26289, "Hash": "340534b7632cdc0245cd9ed63878b6fb5c91a942bd57183dbbe3321385c112a2"},
+        "liveLibraryPresent": false,
+        "liveClearPresent": false,
+        "receiptPresent": false,
+        "backupPresent": false,
+        "scratchDirectoryCountBefore": 0,
+        "scratchDirectoryCountAfter": 0,
+        "persistentTargetWrites": 0,
+        "scheduledTaskChanges": 0,
+        "successfulPrivilegedPreviewClaimed": false
+      },
+      "dispositionTreatment": {
+        "currentLedgerStatus": "DISTINGUISH",
+        "candidateDispositionKind": null,
+        "candidateDisposition": null,
+        "ledgerStatusChangeAuthorized": false,
+        "publicationAuthority": false,
+        "adoptionCredit": false,
+        "installationCredit": false,
+        "applyAuthorized": false,
+        "privilegedPreviewAuthorizedByReceipt": false
+      },
+      "nextLawfulAction": "SEPARATE_PRIVILEGED_PREVIEW_REQUEST_AND_AUTHORIZATION_BOUND_TO_THIS_EXACT_REVIEW_RECEIPT",
+      "authority": {
+        "projectDisposition": false,
+        "projectAdoption": false,
+        "fleetAdoption": false,
+        "runtime": false,
+        "activation": false,
+        "provider": false,
+        "authentication": false,
+        "scheduler": false,
+        "gate": false,
+        "installation": false,
+        "apply": false,
+        "privilegedPreview": false,
+        "pushMergePublish": false
+      }
+    }
+  ]
+}
