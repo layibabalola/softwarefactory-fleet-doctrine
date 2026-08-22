@@ -26,6 +26,12 @@ disposition. Neither local commit is credited as published by this phase, neithe
 row, and both authorize nothing. See `phase6/r26-local-candidate-review-receipts.json` and
 `phase6/README.md`.
 
+Phase 17 records DNG project commit `43507aa20dfaaf198267cda0058689493d43d70a` and the exact
+R102/R60 acceptance, preview, live apply, rollback, reinstall, and two-fresh-cadence chain. DNG
+remains an honest `DISTINGUISH` at 2 of 13 requirements, and the changed warden tuple resets its
+idle baseline to 0 of 1,000. The fleet ledger and every project specification remain unchanged;
+see `phase17/r26-dng-post-r60-evidence-publication.json` and `phase17/README.md`.
+
 The checker closes on a changed or omitted project spec, a stale evidence pin, a fabricated
 disposition, any attempt to convert `CANDIDATE_ZERO_AUTHORITY` into runtime/project/fleet adoption,
 or any token-saving claim that drops exact model, effort, role, review, quality, or functionality
@@ -51,6 +57,8 @@ records fail closed under the ratified law in `RULINGS.md` lines 1027-1034.
 Run the fail-closed verification with:
 
 ```console
+python -m unittest discover -s tests -p "test_phase17_dng_r60_publication.py" -v
+python tools/check_phase17_dng_r60_publication.py --treeish HEAD
 python tools/check_adoption_ledger.py --treeish HEAD
 ```
 
