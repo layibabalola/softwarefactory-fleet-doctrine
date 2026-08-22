@@ -43,6 +43,11 @@ the human store-and-forward bus.
 
 ## Proposed amendments (not ratified)
 
+- [`ruling-candidates/fleet-provider-lease-self-healing-r1.md`](ruling-candidates/fleet-provider-lease-self-healing-r1.md)
+  — a zero-authority proposal for receipt-driven recovery of valid orphaned preclaims and authenticated
+  corrupt/missing leases. It permits only terminal release, never live ownership; process absence alone
+  is explicitly insufficient, and ambiguous evidence remains fail-closed.
+
 - [`specs/fleet-universal-provider-control-reconciliation.md`](specs/fleet-universal-provider-control-reconciliation.md)
   — zero-authority R25 candidate atop exact frozen R24, retaining every later canonical project
   disposition. R25 retains the two-endpoint truncation regression that proves the former microsecond
