@@ -853,3 +853,24 @@ independent-reviewer profile, 64,000 native output allowance,
 `EXACTLY_BOUNDED_AND_CHARGED` cache mode and capability, charge function, and generic 1-64 schema.
 It installs no trust root and grants no provider, process, runtime, gate, task, adoption, merge, or
 ratification authority. The runtime entry remains input-blind `REFUSE_RUNTIME_NOT_INSTALLED / ZERO`.
+
+## R37 frozen R36 layer and frozen-subject test semantics
+
+R37 MUST freeze the complete adverse R36 layer at exact commit
+`d67b0781e1e926e1baebdb0ea9b7a0ef5c447d85`, tree
+`53d91a85bcd0a09ef7b349bed477f5aac1be93cc`, and parent
+`64e6895c332a696af238007225148fd70582424f`. Its current manifest MUST bind all seven current
+subjects and its own canonical Git bytes. Tuple, ancestry, subject, or self drift MUST fail closed.
+
+A frozen layer's subject and self tests MUST read the manifest at that literal frozen commit and
+verify subjects at the same literal commit. A frozen R35 manifest checked against a later current
+index MUST refuse with `MANIFEST_SUBJECT_MISMATCH`; that expected cross-layer refusal MUST NOT be
+misclassified as an R35 self-digest failure. The checker MUST verify seven literal layers with
+subject counts 98/7/7/7/7/7/7 before accepting this zero-authority carrier as conforming evidence.
+
+R37 preserves the exact R36 runtime and schema bytes, policy digest, Cloudvore source,
+Fable/max/standard/first-party independent-reviewer profile, 64,000 native output allowance,
+`EXACTLY_BOUNDED_AND_CHARGED` cache mode and capability, charge function, exact capacity and duration
+arithmetic, and generic 1-64 mechanism. It installs no trust root and grants no provider, process,
+runtime, gate, task, adoption, merge, or ratification authority. The runtime entry remains
+input-blind `REFUSE_RUNTIME_NOT_INSTALLED / ZERO`.

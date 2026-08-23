@@ -220,3 +220,18 @@ integer unit refuses. Evidence age is compared as an exact duration against the 
 equality conforms and one microsecond beyond refuses even across wide spans. No float-derived reserve
 or evidence-age boundary participates. The runtime remains input-blind `REFUSE`, zero credit, and zero
 authority; R36 grants no provider, process, task, gate, adoption, ratification, or merge authority.
+
+## R37 frozen-layer test repair (candidate, zero authority)
+
+R37 freezes exact adverse R36 `d67b0781e1e926e1baebdb0ea9b7a0ef5c447d85`, tree
+`53d91a85bcd0a09ef7b349bed477f5aac1be93cc`, its seven subjects, and manifest self digest. The
+current seven-subject layer is bound to that literal commit, tree, and parent. R35 subject and self
+drift tests read the frozen R35 manifest and compare it to literal R35; comparing that frozen
+manifest to the changed current index is an explicit `MANIFEST_SUBJECT_MISMATCH` hostile, never a
+route to self validation.
+
+The R36 exact integer cross-multiplication and exact-duration runtime bytes, generic 1-64 schema,
+policy digest, Cloudvore/Fable quality profile, `EXACTLY_BOUNDED_AND_CHARGED` cache mode and
+capability, and provider-neutral charge function are unchanged. No production trust root is
+installed. The runtime remains input-blind `REFUSE`, zero credit, and zero authority; R37 grants no
+provider, process, task, gate, adoption, ratification, or merge authority.

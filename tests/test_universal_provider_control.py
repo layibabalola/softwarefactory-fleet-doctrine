@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 import copy
+import contextlib
 import datetime as dt
 import hashlib
+import io
 import inspect
 import json
 import os
@@ -6205,22 +6207,33 @@ class ReviewResourceAdmissionR29Tests(unittest.TestCase):
                     "HEAD", checker.R34_MANIFEST, checker.FROZEN_R34
                 )
 
-    def test_r35_04_current_subject_and_self_drift_fail_closed(self) -> None:
+    def test_r35_04_frozen_subject_and_self_drift_fail_closed(self) -> None:
         import check_universal_manifest as checker
 
-        raw = (ROOT / checker.R35_MANIFEST).read_bytes()
+        raw = checker._git(f"{checker.FROZEN_R35}:{checker.R35_MANIFEST}")
+        self.assertIsInstance(raw, bytes)
         manifest = json.loads(raw)
         changed = copy.deepcopy(manifest)
         changed["subjectFiles"][0]["sha256"] = "sha256:" + "0" * 64
         with self.assertRaisesRegex(checker.ManifestError, "MANIFEST_SUBJECT_MISMATCH"):
             checker._verify_subjects_and_self(
-                changed, raw, manifest_path=checker.R35_MANIFEST, candidate=":"
+                changed,
+                raw,
+                manifest_path=checker.R35_MANIFEST,
+                candidate=checker.FROZEN_R35,
             )
         changed = copy.deepcopy(manifest)
         changed["manifestSelf"]["canonicalGitBlobSha256"] = "sha256:" + "0" * 64
         with self.assertRaisesRegex(checker.ManifestError, "MANIFEST_SELF_MISMATCH"):
             checker._verify_subjects_and_self(
-                changed, raw, manifest_path=checker.R35_MANIFEST, candidate=":"
+                changed,
+                raw,
+                manifest_path=checker.R35_MANIFEST,
+                candidate=checker.FROZEN_R35,
+            )
+        with self.assertRaisesRegex(checker.ManifestError, "MANIFEST_SUBJECT_MISMATCH"):
+            checker._verify_subjects_and_self(
+                manifest, raw, manifest_path=checker.R35_MANIFEST, candidate=":"
             )
 
     def test_r35_05_checker_has_five_literal_layers_and_runtime_stays_refused(self) -> None:
@@ -6382,6 +6395,93 @@ class ReviewResourceAdmissionR29Tests(unittest.TestCase):
         import check_universal_manifest as checker
 
         self.assertEqual(checker.check(":"), 0)
+
+        class Exploding:
+            def __getattribute__(self, name: str) -> object:
+                raise AssertionError("caller input was read")
+
+        result = upc.evaluate_review_admission(
+            Exploding(), policy=Exploding(), capability=Exploding()
+        )
+        self.assertEqual(result["status"], "REFUSE")
+        self.assertEqual(result["reason"], "REVIEW_RUNTIME_NOT_INSTALLED")
+        self.assertEqual(result["credit"], "ZERO")
+        self.assertFalse(result["providerAuthority"])
+
+    def test_r37_01_current_layer_pins_adverse_r36_and_unchanged_policy(self) -> None:
+        import check_universal_manifest as checker
+
+        manifest = json.loads((ROOT / checker.R37_MANIFEST).read_text(encoding="utf-8"))
+        checker.verify_r37(manifest, ":")
+        self.assertEqual(
+            checker._commit_tuple(checker.R37_BASE["commit"]),
+            (checker.R37_BASE["tree"], checker.R37_BASE["orderedParents"]),
+        )
+        self.assertEqual(manifest["reviewAdmissionPolicyDigest"], checker.R37_POLICY_DIGEST)
+        self.assertEqual(manifest["reviewAdmissionPolicy"]["identity"], checker.R29_IDENTITY)
+        self.assertEqual(
+            manifest["reviewAdmissionPolicy"]["cacheAdmissionMode"],
+            "EXACTLY_BOUNDED_AND_CHARGED",
+        )
+        for path in (checker.REVIEW_SCHEMA, "tools/universal_provider_control.py"):
+            with self.subTest(path=path):
+                self.assertEqual(checker._oid(checker.FROZEN_R36, path), checker._oid(":", path))
+
+    def test_r37_02_frozen_r36_and_current_tuple_subject_self_drift_fail(self) -> None:
+        import check_universal_manifest as checker
+
+        frozen = checker._git(f"{checker.FROZEN_R36}:{checker.R36_MANIFEST}")
+        self.assertIsInstance(frozen, bytes)
+        changed_frozen = json.loads(frozen)
+        changed_frozen["reviewAdmissionPolicy"]["identity"]["model"] = "substitute"
+        changed_raw = json.dumps(changed_frozen, separators=(",", ":")).encode("utf-8")
+        with (
+            mock.patch.object(checker, "_is_ancestor", return_value=True),
+            mock.patch.object(checker, "_git", side_effect=[frozen, changed_raw]),
+        ):
+            with self.assertRaisesRegex(
+                checker.ManifestError, "MANIFEST_FROZEN_BLOB_MISMATCH"
+            ):
+                checker._frozen_manifest_bytes(
+                    "HEAD", checker.R36_MANIFEST, checker.FROZEN_R36
+                )
+
+        raw = (ROOT / checker.R37_MANIFEST).read_bytes()
+        manifest = json.loads(raw)
+        for field in ("commit", "tree"):
+            changed = copy.deepcopy(manifest)
+            changed["candidateBase"][field] = "0" * 40
+            with self.subTest(field=field):
+                with self.assertRaisesRegex(checker.ManifestError, "R37_BASE_INVALID"):
+                    checker.verify_r37(changed, ":")
+        changed = copy.deepcopy(manifest)
+        changed["candidateBase"]["orderedParents"] = ["0" * 40]
+        with self.assertRaisesRegex(checker.ManifestError, "R37_BASE_INVALID"):
+            checker.verify_r37(changed, ":")
+        changed = copy.deepcopy(manifest)
+        changed["subjectFiles"][0]["sha256"] = "sha256:" + "0" * 64
+        with self.assertRaisesRegex(checker.ManifestError, "MANIFEST_SUBJECT_MISMATCH"):
+            checker._verify_subjects_and_self(
+                changed, raw, manifest_path=checker.R37_MANIFEST, candidate=":"
+            )
+        changed = copy.deepcopy(manifest)
+        changed["manifestSelf"]["canonicalGitBlobSha256"] = "sha256:" + "0" * 64
+        with self.assertRaisesRegex(checker.ManifestError, "MANIFEST_SELF_MISMATCH"):
+            checker._verify_subjects_and_self(
+                changed, raw, manifest_path=checker.R37_MANIFEST, candidate=":"
+            )
+
+    def test_r37_03_checker_has_seven_literal_layers_and_runtime_stays_refused(self) -> None:
+        import check_universal_manifest as checker
+
+        output = io.StringIO()
+        with contextlib.redirect_stdout(output):
+            self.assertEqual(checker.check(":"), 0)
+        self.assertIn(
+            "r26_subjects=98 r29_subjects=7 r33_subjects=7 r34_subjects=7 "
+            "r35_subjects=7 r36_subjects=7 r37_subjects=7 self=PASS",
+            output.getvalue(),
+        )
 
         class Exploding:
             def __getattribute__(self, name: str) -> object:

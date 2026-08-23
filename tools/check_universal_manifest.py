@@ -21,12 +21,14 @@ R33_MANIFEST = "manifests/universal-provider-control-reconciliation-r33.json"
 R34_MANIFEST = "manifests/universal-provider-control-reconciliation-r34.json"
 R35_MANIFEST = "manifests/universal-provider-control-reconciliation-r35.json"
 R36_MANIFEST = "manifests/universal-provider-control-reconciliation-r36.json"
+R37_MANIFEST = "manifests/universal-provider-control-reconciliation-r37.json"
 REVIEW_SCHEMA = "schemas/universal-provider-review-admission-v1.schema.json"
 FROZEN_CANDIDATE = "e70a044f31dd2f43ab7c716d63a4eb89318c61b6"
 FROZEN_R29 = "fc76bf6d5ab52891d06b7f71eb2e993e413c124c"
 FROZEN_R33 = "8e20b4a1652931af178e792eb62ab892a7d309fd"
 FROZEN_R34 = "6a3803fd1543c1bd0944ec0013987f053852e3c4"
 FROZEN_R35 = "64e6895c332a696af238007225148fd70582424f"
+FROZEN_R36 = "d67b0781e1e926e1baebdb0ea9b7a0ef5c447d85"
 SELF_PATTERN = re.compile(
     rb'("canonicalGitBlobSha256"\s*:\s*"sha256:)([0-9a-f]{64})(")'
 )
@@ -92,6 +94,7 @@ R29_POLICY_DIGEST = "sha256:e7e3fde383f43972796b681023ff92d9b35365e275e6fc00d84c
 R34_POLICY_DIGEST = "sha256:ebec57daeca11108b2ba2771471b92d7bedfac64f58f321c7c1752a6f8339b5f"
 R35_POLICY_DIGEST = R34_POLICY_DIGEST
 R36_POLICY_DIGEST = R35_POLICY_DIGEST
+R37_POLICY_DIGEST = R36_POLICY_DIGEST
 R33_BASE = {
     "commit": "55afee85ecf720eb857cea1980f511f331b9e86f",
     "tree": "6e58f77467320d53ced12906bf2be62b4fca3d56",
@@ -146,6 +149,13 @@ R36_BASE = {
     "orderedParentTrees": ["750b031a6793cec63d7eeaaf05eeb6a6c52a80d7"],
 }
 R36_SUBJECT_PATHS = R35_SUBJECT_PATHS
+R37_BASE = {
+    "commit": "d67b0781e1e926e1baebdb0ea9b7a0ef5c447d85",
+    "tree": "53d91a85bcd0a09ef7b349bed477f5aac1be93cc",
+    "orderedParents": ["64e6895c332a696af238007225148fd70582424f"],
+    "orderedParentTrees": ["4a0baf72d925349a30aeae785b10391e10102000"],
+}
+R37_SUBJECT_PATHS = R36_SUBJECT_PATHS
 
 
 def _pairs(values: list[tuple[str, Any]]) -> dict[str, Any]:
@@ -765,6 +775,77 @@ def verify_r36(manifest: dict[str, Any], treeish: str) -> None:
         raise ManifestError("R36_VALIDATION_AUTHORITY_INVALID")
 
 
+def verify_r37(manifest: dict[str, Any], treeish: str) -> None:
+    """Verify exact adverse R36 base and the current frozen-layer R37 rebind."""
+
+    if (
+        manifest.get("status") != "CANDIDATE_ZERO_AUTHORITY"
+        or manifest.get("subjectCoverage")
+        != "R37_FROZEN_R36_FULL_MATRIX_REBIND_ZERO_AUTHORITY"
+    ):
+        raise ManifestError("R37_STATUS_INVALID")
+    if manifest.get("candidateBase") != R37_BASE:
+        raise ManifestError("R37_BASE_INVALID")
+    tree, parents = _commit_tuple(R37_BASE["commit"])
+    if tree != R37_BASE["tree"] or parents != R37_BASE["orderedParents"]:
+        raise ManifestError("R37_BASE_OBJECT_MISMATCH")
+    if [_commit_tuple(parent)[0] for parent in parents] != R37_BASE["orderedParentTrees"]:
+        raise ManifestError("R37_BASE_PARENT_TREE_MISMATCH")
+    descendant = "HEAD" if treeish == ":" else treeish
+    if not _is_ancestor(R37_BASE["commit"], descendant):
+        raise ManifestError("R37_BASE_NOT_ANCESTOR")
+    if manifest.get("authority") != {
+        "providerExecution": False, "processSpawnResumeKill": False,
+        "containmentOrCanaryCredit": False, "automaticGateState": "CLOSED",
+        "runtimeImplementation": "NOT_INSTALLED_UNCONDITIONAL_REFUSE",
+        "activationRequiresSeparateAdjudication": True, "authorRecused": True,
+    }:
+        raise ManifestError("R37_AUTHORITY_INVALID")
+    policy = manifest.get("reviewAdmissionPolicy")
+    if not isinstance(policy, dict) or policy.get("source") != R27_SOURCE:
+        raise ManifestError("R37_SOURCE_SUBJECT_MISMATCH")
+    if policy.get("identity") != R29_IDENTITY:
+        raise ManifestError("R37_EXACT_PROFILE_MISMATCH")
+    if policy.get("cacheAdmissionMode") != "EXACTLY_BOUNDED_AND_CHARGED":
+        raise ManifestError("R37_CACHE_ADMISSION_MODE_MISMATCH")
+    if policy.get("capacity", {}).get("requiredQuotaWindows") != ["session", "weekly"]:
+        raise ManifestError("R37_QUOTA_WINDOWS_MISMATCH")
+    if (
+        manifest.get("reviewAdmissionPolicyDigest") != R37_POLICY_DIGEST
+        or canonical_policy_sha256(policy) != R37_POLICY_DIGEST
+    ):
+        raise ManifestError("R37_POLICY_DIGEST_MISMATCH")
+    subjects = manifest.get("subjectFiles")
+    if (
+        not isinstance(subjects, list)
+        or [subject.get("path") for subject in subjects if isinstance(subject, dict)]
+        != R37_SUBJECT_PATHS
+    ):
+        raise ManifestError("R37_CARRIER_SUBJECT_MISMATCH")
+    try:
+        import jsonschema
+
+        schema_raw = _git(_blob_spec(treeish, REVIEW_SCHEMA))
+        assert isinstance(schema_raw, bytes)
+        schema = json.loads(schema_raw.decode("utf-8"), object_pairs_hook=_pairs)
+        jsonschema.Draft202012Validator.check_schema(schema)
+        if next(jsonschema.Draft202012Validator(schema).iter_errors(policy), None) is not None:
+            raise ManifestError("R37_POLICY_SCHEMA_INVALID")
+    except ManifestError:
+        raise
+    except Exception as exc:
+        raise ManifestError("R37_POLICY_SCHEMA_INVALID") from exc
+    if manifest.get("validation") != {
+        "universalProviderControl": {"required": True, "claimedGreen": False},
+        "providerCapacityGovernor": {"required": True, "claimedGreen": False},
+        "canonicalCapacityControl": {"required": True, "claimedGreen": False},
+        "hosted": {"requiredFresh": True, "claimedGreen": False},
+        "providerInvocation": False,
+        "activation": False,
+    }:
+        raise ManifestError("R37_VALIDATION_AUTHORITY_INVALID")
+
+
 def verify_r29(
     manifest: dict[str, Any], treeish: str, *, verify_objects: bool = True
 ) -> None:
@@ -1025,19 +1106,28 @@ def check(treeish: str) -> int:
         r35, r35_raw, manifest_path=R35_MANIFEST, candidate=FROZEN_R35
     )
 
-    r36_raw = _git(_blob_spec(treeish, R36_MANIFEST))
+    r36_raw = _frozen_manifest_bytes(treeish, R36_MANIFEST, FROZEN_R36)
     assert isinstance(r36_raw, bytes)
     r36 = _parse_manifest(r36_raw, "fleet-universal-provider-control-candidate-manifest/v3")
-    verify_r36(r36, treeish)
+    verify_r36(r36, FROZEN_R36)
     r36_subjects = _verify_subjects_and_self(
-        r36, r36_raw, manifest_path=R36_MANIFEST, candidate=treeish
+        r36, r36_raw, manifest_path=R36_MANIFEST, candidate=FROZEN_R36
+    )
+
+    r37_raw = _git(_blob_spec(treeish, R37_MANIFEST))
+    assert isinstance(r37_raw, bytes)
+    r37 = _parse_manifest(r37_raw, "fleet-universal-provider-control-candidate-manifest/v3")
+    verify_r37(r37, treeish)
+    r37_subjects = _verify_subjects_and_self(
+        r37, r37_raw, manifest_path=R37_MANIFEST, candidate=treeish
     )
     print(
         f"MANIFEST_PASS r26_subjects={r26_subjects} r29_subjects={r29_subjects} "
         f"r33_subjects={r33_subjects} r34_subjects={r34_subjects} "
-        f"r35_subjects={r35_subjects} r36_subjects={r36_subjects} self=PASS "
+        f"r35_subjects={r35_subjects} r36_subjects={r36_subjects} "
+        f"r37_subjects={r37_subjects} self=PASS "
         f"candidates={FROZEN_CANDIDATE},{FROZEN_R29},{FROZEN_R33},"
-        f"{FROZEN_R34},{FROZEN_R35},{R36_BASE['commit']} checked={treeish}"
+        f"{FROZEN_R34},{FROZEN_R35},{FROZEN_R36},{R37_BASE['commit']} checked={treeish}"
     )
     return 0
 

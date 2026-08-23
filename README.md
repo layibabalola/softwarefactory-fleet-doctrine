@@ -95,5 +95,9 @@ the human store-and-forward bus.
   provider profile, cache mode, policy digest, generic 1-64 mechanism, and zero-authority refusal are
   unchanged. R36 freezes R35 and replaces review-capacity float boundary calculations with exact
   integer cross-multiplication and exact duration comparison: 80% equality is the last conforming
-  point and one additional provider-native unit refuses. Neither candidate
+  point and one additional provider-native unit refuses. R37 freezes the exact R36 carrier as
+  adverse full-matrix evidence, repairs the frozen-R35 test so it verifies R35 subjects at literal
+  R35 rather than the changed current index, and adds a seventh exact manifest layer. The policy,
+  profile, cache and charge semantics, generic 1-64 mechanism, and input-blind zero-authority runtime
+  refusal remain byte-identical. Neither candidate
   changes the ratified governor or `RULINGS.md`, grants adoption credit, or provides launch authority.
