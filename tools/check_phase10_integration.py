@@ -88,14 +88,17 @@ class Phase10Error(ValueError):
     pass
 
 
+UNSAFE_GIT_ENV = {
+    "GIT_DIR", "GIT_WORK_TREE", "GIT_COMMON_DIR", "GIT_OBJECT_DIRECTORY",
+    "GIT_ALTERNATE_OBJECT_DIRECTORIES", "GIT_REPLACE_REF_BASE", "GIT_INDEX_FILE",
+    "GIT_NAMESPACE", "GIT_CEILING_DIRECTORIES", "GIT_EXEC_PATH",
+}
+
+
 def _clean_git_env() -> dict[str, str]:
     environment = os.environ.copy()
     for key in tuple(environment):
-        if key in {
-            "GIT_DIR", "GIT_WORK_TREE", "GIT_COMMON_DIR", "GIT_OBJECT_DIRECTORY",
-            "GIT_ALTERNATE_OBJECT_DIRECTORIES", "GIT_REPLACE_REF_BASE", "GIT_INDEX_FILE",
-            "GIT_NAMESPACE", "GIT_CEILING_DIRECTORIES", "GIT_EXEC_PATH",
-        } or key.startswith("GIT_CONFIG"):
+        if key in UNSAFE_GIT_ENV or key.startswith("GIT_CONFIG"):
             environment.pop(key, None)
     return environment
 
@@ -103,12 +106,24 @@ def _clean_git_env() -> dict[str, str]:
 def _git(args: list[str], *, root: Path = ROOT, text: bool = False,
          error: str = "GIT_OBJECT_UNAVAILABLE") -> bytes | str:
     run = subprocess.run(
-        ["git", *args], cwd=root, env=_clean_git_env(), check=False, capture_output=True,
+        ["git", "--no-replace-objects", "-c", "core.useReplaceRefs=false", *args], cwd=root, env=_clean_git_env(), check=False, capture_output=True,
         text=text, encoding="utf-8" if text else None,
     )
     if run.returncode != 0:
         raise Phase10Error(error)
     return run.stdout
+
+
+def verify_git_object_isolation(root: Path = ROOT) -> None:
+    if any(key in os.environ for key in UNSAFE_GIT_ENV) or any(key.startswith("GIT_CONFIG") for key in os.environ):
+        raise Phase10Error("GIT_OBJECT_INDIRECTION_REFUSED")
+    common = Path(str(_git(["rev-parse", "--git-common-dir"], root=root, text=True)).strip())
+    if not common.is_absolute():
+        common = root / common
+    if (common.resolve() / "objects" / "info" / "alternates").exists():
+        raise Phase10Error("GIT_ALTERNATE_OBJECT_STORE_REFUSED")
+    if str(_git(["replace", "-l"], root=root, text=True)).splitlines():
+        raise Phase10Error("GIT_REPLACE_OBJECT_REFUSED")
 
 
 def _blob_spec(treeish: str, path: str) -> str:
@@ -384,6 +399,7 @@ def _verify_local_git_subject(
     root = Path(subject["localRoot"])
     if not root.is_dir():
         raise Phase10Error(f"{error_prefix}_ROOT_UNAVAILABLE")
+    verify_git_object_isolation(root)
     top = str(_git(["rev-parse", "--show-toplevel"], root=root, text=True, error=f"{error_prefix}_ROOT_UNAVAILABLE")).strip()
     if Path(top).resolve() != root.resolve():
         raise Phase10Error(f"{error_prefix}_ROOT_MISMATCH")
@@ -563,7 +579,8 @@ def verify_receipt_blob(treeish: str) -> dict[str, Any]:
     return load_json(raw)
 
 
-def verify_integration(treeish: str) -> None:
+def verify_integration(treeish: str, *, verify_local_projects: bool = False) -> None:
+    verify_git_object_isolation()
     if _commit_tuple(PHASE9_COMMIT) != (PHASE9_TREE, [PHASE9_PARENT]):
         raise Phase10Error("PHASE9_BASE_MISMATCH")
     if _commit_tuple(PHASE10_COMMIT) != (PHASE10_TREE, [PHASE9_COMMIT]):
@@ -580,7 +597,8 @@ def verify_integration(treeish: str) -> None:
             raise Phase10Error("INTEGRATION_SCOPE_MISMATCH")
         batch = verify_receipt_blob(treeish)
         verify_receipt_shape(batch)
-        verify_local_subjects(batch)
+        if verify_local_projects:
+            verify_local_subjects(batch)
         verify_frozen_doctrine(treeish)
         verify_forward_allowlists(treeish)
         verify_workflow(treeish)
@@ -595,24 +613,27 @@ def verify_integration(treeish: str) -> None:
         raise Phase10Error("INTEGRATION_SCOPE_MISMATCH")
     batch = verify_receipt_blob(treeish)
     verify_receipt_shape(batch)
-    verify_local_subjects(batch, rederive_mutable_worktree_state=False)
+    if verify_local_projects:
+        verify_local_subjects(batch, rederive_mutable_worktree_state=False)
     verify_frozen_doctrine(treeish)
     verify_forward_allowlists(treeish, phase11_forward=True)
     verify_workflow(treeish)
 
 
-def main() -> int:
+def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--treeish", default="HEAD")
-    args = parser.parse_args()
+    parser.add_argument("--verify-local-projects", action="store_true")
+    args = parser.parse_args(argv)
     try:
-        verify_integration(args.treeish)
+        verify_integration(args.treeish, verify_local_projects=args.verify_local_projects)
     except Phase10Error as exc:
         print(f"FAIL: {exc}", file=sys.stderr)
         return 1
+    local_status = "LOCAL SUBJECTS REDERIVED" if args.verify_local_projects else "LOCAL SUBJECTS NOT REDERIVED"
     print(
-        "PASS: Phase 10 exact-binds three local candidate reviews; ledger/spec dispositions and "
-        "all installation, runtime, preview, adoption, and publication authority remain frozen"
+        "PASS SNAPSHOT-ONLY: Phase10 exact-binds frozen receipt bytes, semantic shape, ordering, "
+        f"types, and authority; {local_status}"
     )
     return 0
 

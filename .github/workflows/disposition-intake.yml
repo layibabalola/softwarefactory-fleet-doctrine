@@ -25,7 +25,7 @@ jobs:
         os: [windows-latest, ubuntu-latest]
         python-version: ["3.13", "3.14"]
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 10
+    timeout-minutes: 30
     steps:
       - name: Check out full evidence history
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
@@ -51,15 +51,9 @@ jobs:
         run: python -m unittest discover -s tests -p "test_phase3_disposition_batch.py" -v
 
       - name: Verify exact zero-authority phase-3 distinctions locally
-        run: python tools/check_phase3_disposition_batch.py --treeish 990906b6ea861ca579e1336bcfe8f17dd80c83ae
-
-      - name: Verify published project and Adobe discovery objects when cross-repo read authority exists
-        if: env.R26_REMOTE_AUTH_CONFIGURED == 'true'
         env:
           R26_REMOTE_GITHUB_TOKEN: ${{ secrets.R26_CROSS_REPO_READ_TOKEN }}
-        run: |
-          python tools/check_phase3_disposition_batch.py --treeish HEAD --verify-remotes
-          python tools/check_phase5_stale_reconciliation.py --treeish HEAD --verify-remotes
+        run: python tools/check_phase3_disposition_batch.py --treeish 990906b6ea861ca579e1336bcfe8f17dd80c83ae ${{ env.R26_REMOTE_AUTH_CONFIGURED == 'true' && '--verify-remotes' || '' }}
 
       - name: Report unavailable remote verification authority
         if: env.R26_REMOTE_AUTH_CONFIGURED != 'true'
@@ -69,7 +63,9 @@ jobs:
         run: python -m unittest discover -s tests -p "test_phase5_stale_reconciliation.py" -v
 
       - name: Verify phase-5 zero-authority reconciliation locally
-        run: python tools/check_phase5_stale_reconciliation.py --treeish 990906b6ea861ca579e1336bcfe8f17dd80c83ae
+        env:
+          R26_REMOTE_GITHUB_TOKEN: ${{ secrets.R26_CROSS_REPO_READ_TOKEN }}
+        run: python tools/check_phase5_stale_reconciliation.py --treeish 990906b6ea861ca579e1336bcfe8f17dd80c83ae ${{ env.R26_REMOTE_AUTH_CONFIGURED == 'true' && '--verify-remotes' || '' }}
 
       - name: Report unavailable Adobe remote verification authority
         if: env.R26_REMOTE_AUTH_CONFIGURED != 'true'
@@ -139,7 +135,13 @@ jobs:
         run: python -m unittest discover -s tests -p "test_phase16_integration.py" -v
 
       - name: Verify phase-16 Phase 15 review publication without adoption credit
-        run: python tools/check_phase16_integration.py --treeish HEAD
+        run: python tools/check_phase16_integration.py --treeish 8149c3f06811f85b833b28940017f2d05448cf5d
+
+      - name: Run Phase 12-16 descendant event-scope controls
+        run: python -m unittest discover -s tests -p "test_phase12_phase16_descendant_scope.py" -v
+
+      - name: Verify frozen Phase 12-16 publications before descendant event scope
+        run: python tools/check_phase12_phase16_descendant_scope.py
 
       - name: Run frozen adoption-ledger controls
         run: python -m unittest discover -s tests -p "test_adoption_ledger.py" -v

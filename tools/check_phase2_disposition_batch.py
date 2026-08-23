@@ -24,6 +24,7 @@ PACKET_TREE = "a305aa59cac5d7178679efa1dbc0892383fca382"
 CENSUS_COMMIT = "76dd97d3110668b6f1391aabee3e270801be00ad"
 R26_CANDIDATE = "e70a044f31dd2f43ab7c716d63a4eb89318c61b6"
 R26_MERGE = "909f769d02e8412e51e28e242cfa8d00dadc9a3d"
+FROZEN_PUBLICATION = "990906b6ea861ca579e1336bcfe8f17dd80c83ae"
 DIMENSIONS = {"model", "effort", "role", "review", "quality", "functionality"}
 PROJECT_IDS = {
     "adobe-ingester",
@@ -94,7 +95,7 @@ ALLOWED_PHASE2_PATHS = {
     "tools/check_phase7_owner_publication_requests.py",
     "tools/check_phase8_integration.py",
 } | MANIFEST_BINDING_REPAIR_PATHS | PHASE9_INTEGRATION_PATHS | PHASE10_INTEGRATION_PATHS | PHASE11_INTEGRATION_PATHS
-COMMON_PHASE_TRIGGER_PATHS = {
+ORIGINAL_COMMON_PHASE_TRIGGER_PATHS = {
     ".github/workflows/disposition-intake.yml",
     "adoption/phase2/README.md",
     "adoption/phase3/README.md",
@@ -106,13 +107,34 @@ COMMON_PHASE_TRIGGER_PATHS = {
     "tools/check_phase3_disposition_batch.py",
     "tools/check_phase5_stale_reconciliation.py",
 }
+BOOTSTRAP_CONTROL_PATHS = {
+    ".github/workflows/disposition-intake.yml",
+    "adoption/phase8/README.md",
+    "tests/test_phase2_disposition_batch.py",
+    "tests/test_phase3_disposition_batch.py",
+    "tests/test_phase5_stale_reconciliation.py",
+    "tests/test_phase8_integration.py",
+    "tests/test_phase9_integration.py",
+    "tests/test_phase10_integration.py",
+    "tests/test_phase11_integration.py",
+    "tests/test_phase12_integration.py",
+    "tests/test_phase16_integration.py",
+    "tests/test_phase12_phase16_descendant_scope.py",
+    "tools/check_phase2_disposition_batch.py",
+    "tools/check_phase3_disposition_batch.py",
+    "tools/check_phase5_stale_reconciliation.py",
+    "tools/check_phase8_integration.py",
+    "tools/check_phase9_integration.py",
+    "tools/check_phase10_integration.py",
+    "tools/check_phase11_integration.py",
+    "tools/check_phase12_phase16_descendant_scope.py",
+}
+COMMON_PHASE_TRIGGER_PATHS = ORIGINAL_COMMON_PHASE_TRIGGER_PATHS | BOOTSTRAP_CONTROL_PATHS
 AUXILIARY_EVENT_ALLOWED_PATHS = {
     "tests/test_universal_provider_control.py",
     "tools/check_universal_manifest.py",
 }
-EVENT_ALLOWED_PHASE2_PATHS = (
-    COMMON_PHASE_TRIGGER_PATHS | AUXILIARY_EVENT_ALLOWED_PATHS | {BATCH_PATH}
-)
+EVENT_ALLOWED_PHASE2_PATHS = COMMON_PHASE_TRIGGER_PATHS | AUXILIARY_EVENT_ALLOWED_PATHS | {BATCH_PATH}
 PHASE2_TRIGGER_PATHS = COMMON_PHASE_TRIGGER_PATHS | {BATCH_PATH}
 OWNER_EVIDENCE_REQUIREMENTS = [
     "PROJECT_OWNED_COMMIT_AND_GIT_BLOB_BINDING_R26_E70A044_AND_MERGE_909F769",
@@ -202,11 +224,10 @@ def _changed_paths(treeish: str) -> set[str]:
 
 
 def _event_changed_paths(scope_base: str, treeish: str) -> set[str]:
-    args = (
-        ["diff", "--cached", "--name-only", scope_base]
-        if treeish == ":"
-        else ["diff", "--name-only", f"{scope_base}..{treeish}"]
-    )
+    # Event scope is deliberately not caller-selectable.  The workflow checkout
+    # target is HEAD; treeish exists only for compatibility with pure tests.
+    del treeish
+    args = ["diff", "--name-only", f"{scope_base}..HEAD"]
     return set(_git(args, text=True, error="PHASE2_EVENT_DIFF_UNAVAILABLE").splitlines())
 
 
@@ -225,7 +246,7 @@ def evaluate_event_scope(event_name: str, scope_base: str, treeish: str) -> str:
         _commit_tuple(scope_base)
     except BatchError as exc:
         raise BatchError("PHASE2_SCOPE_BASE_INVALID") from exc
-    descendant = "HEAD" if treeish == ":" else treeish
+    descendant = "HEAD"
     if not _is_ancestor(scope_base, descendant):
         raise BatchError("PHASE2_SCOPE_BASE_INVALID")
     changed = _event_changed_paths(scope_base, treeish)
@@ -493,13 +514,13 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--treeish", default="HEAD")
     parser.add_argument("--verify-local-probes", action="store_true")
-    parser.add_argument("--scope-event", default=os.environ.get("R26_SCOPE_EVENT", ""))
-    parser.add_argument("--scope-base", default=os.environ.get("R26_SCOPE_BASE_SHA", ""))
     args = parser.parse_args(argv)
     try:
+        if args.treeish != FROZEN_PUBLICATION:
+            raise BatchError("PHASE2_FROZEN_TREEISH_REQUIRED")
         batch = load_json(_blob(args.treeish, BATCH_PATH))
         verify_batch(batch, args.treeish)
-        scope = evaluate_event_scope(args.scope_event, args.scope_base, args.treeish)
+        scope = evaluate_event_scope(os.environ.get("R26_SCOPE_EVENT", ""), os.environ.get("R26_SCOPE_BASE_SHA", ""), args.treeish)
         if args.verify_local_probes:
             verify_local_probes(batch)
     except BatchError as exc:
