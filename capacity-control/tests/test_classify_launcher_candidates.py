@@ -7,6 +7,7 @@ import os
 import subprocess
 import sys
 import tempfile
+import threading
 import unittest
 from pathlib import Path
 from unittest import mock
@@ -20,6 +21,12 @@ SPEC.loader.exec_module(MODULE)
 
 
 class LauncherCandidateClassifierTests(unittest.TestCase):
+    def test_production_scale_bounds_are_finite_and_explicit(self):
+        self.assertEqual(MODULE.MAX_LISTING_BYTES, 32 * 1024 * 1024)
+        self.assertEqual(MODULE.MAX_CANDIDATES, 8192)
+        self.assertLess(MODULE.MAX_LISTING_BYTES, MODULE.MAX_AGGREGATE_SOURCE_BYTES)
+        self.assertLess(MODULE.MAX_CANDIDATES, MODULE.MAX_VISITED_PATHS)
+
     def _classify(self, files: dict[str, str]) -> dict[str, object]:
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
@@ -286,6 +293,43 @@ class LauncherCandidateClassifierTests(unittest.TestCase):
         with mock.patch.object(MODULE.subprocess,"Popen",return_value=process):
             with self.assertRaisesRegex(ValueError,"GIT_OUTPUT_LIMIT"):
                 MODULE._git_bounded(Path("."),128,"rev-parse","HEAD")
+
+    def test_git_pipe_uses_nonfilling_read1(self):
+        class Read1Only(io.BytesIO):
+            def read(self, *_args, **_kwargs):
+                raise AssertionError("bounded pipe reader must use read1")
+
+        process=mock.Mock()
+        process.stdout=Read1Only(b"ok")
+        process.stderr=Read1Only(b"")
+        process.wait.return_value=0
+        with mock.patch.object(MODULE.subprocess,"Popen",return_value=process):
+            self.assertEqual(MODULE._git_bounded(Path("."),128,"rev-parse","HEAD"),b"ok")
+
+    def test_git_pipe_timeout_closes_reader_without_thread_exception(self):
+        class BlockingReader:
+            def __init__(self):
+                self.closed=False
+                self.released=threading.Event()
+            def read1(self, _size):
+                self.released.wait(1)
+                if self.closed: raise ValueError("I/O operation on closed file")
+                return b""
+            def read(self, _size):
+                raise AssertionError("bounded pipe reader must use read1")
+            def close(self):
+                self.closed=True
+                self.released.set()
+
+        process=mock.Mock()
+        process.stdout=BlockingReader()
+        process.stderr=io.BytesIO(b"")
+        process.wait.return_value=0
+        with mock.patch.object(MODULE.subprocess,"Popen",return_value=process), \
+             mock.patch.object(MODULE,"GIT_READER_DRAIN_TIMEOUT_SECONDS",0.01):
+            with self.assertRaisesRegex(ValueError,"GIT_PIPE_TIMEOUT"):
+                MODULE._git_bounded(Path("."),128,"rev-parse","HEAD")
+        process.stdout.released.wait(1)
 
     def test_cli_error_is_stable_and_does_not_echo_git_or_path_details(self):
         stderr = io.StringIO()
