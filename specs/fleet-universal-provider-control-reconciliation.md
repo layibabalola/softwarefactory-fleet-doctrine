@@ -874,3 +874,16 @@ Fable/max/standard/first-party independent-reviewer profile, 64,000 native outpu
 arithmetic, and generic 1-64 mechanism. It installs no trust root and grants no provider, process,
 runtime, gate, task, adoption, merge, or ratification authority. The runtime entry remains
 input-blind `REFUSE_RUNTIME_NOT_INSTALLED / ZERO`.
+
+## R38 manifest-layer lifecycle invariant
+
+R38 MUST freeze adverse R37 at exact commit `6568230545e473c6fac64bcd30166a284e712704`,
+tree `aa7338aad75cf4bb12481439a776c5c174fe1a94`, and parent
+`d67b0781e1e926e1baebdb0ea9b7a0ef5c447d85`. Frozen-layer metadata MUST load every frozen manifest
+and verify subject/self mutations at its literal commit. A frozen manifest checked against current
+subjects MUST refuse with `MANIFEST_SUBJECT_MISMATCH`; exactly one metadata row, current R38, may use
+the index. The checker MUST report subject counts 98/7/7/7/7/7/7/7.
+
+R38 preserves byte-identical runtime and schema, policy digest, provider-neutral mechanism, exact
+Cloudvore/Fable profile, cache and charge semantics, exact capacity/duration arithmetic, and
+input-blind `REFUSE_RUNTIME_NOT_INSTALLED / ZERO`. It grants no authority or adoption credit.

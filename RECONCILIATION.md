@@ -235,3 +235,15 @@ policy digest, Cloudvore/Fable quality profile, `EXACTLY_BOUNDED_AND_CHARGED` ca
 capability, and provider-neutral charge function are unchanged. No production trust root is
 installed. The runtime remains input-blind `REFUSE`, zero credit, and zero authority; R37 grants no
 provider, process, task, gate, adoption, ratification, or merge authority.
+
+## R38 table-driven frozen-layer lifecycle (candidate, zero authority)
+
+R38 freezes adverse R37 `6568230545e473c6fac64bcd30166a284e712704`, tree
+`aa7338aad75cf4bb12481439a776c5c174fe1a94`. Checker-owned frozen-layer metadata verifies every
+historical manifest, subject mutation, and self mutation at its literal commit; only current R38 uses
+the index. Each frozen manifest checked against current subjects refuses with
+`MANIFEST_SUBJECT_MISMATCH`. The eight layer counts are 98/7/7/7/7/7/7/7.
+
+Runtime and schema bytes, policy digest, Fable quality profile, cache and charge semantics, exact
+capacity arithmetic, and input-blind `REFUSE`/zero authority remain unchanged. R38 grants no provider,
+process, task, gate, adoption, ratification, or merge authority.

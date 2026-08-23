@@ -101,3 +101,6 @@ the human store-and-forward bus.
   profile, cache and charge semantics, generic 1-64 mechanism, and input-blind zero-authority runtime
   refusal remain byte-identical. Neither candidate
   changes the ratified governor or `RULINGS.md`, grants adoption credit, or provides launch authority.
+  R38 freezes adverse R37 and makes frozen/current manifest lifecycle metadata table-driven so every
+  historical subject/self mutation is verified at its literal commit and only the current layer uses
+  the index. Runtime, schema, policy, quality profile, and zero-authority refusal remain unchanged.
