@@ -150,6 +150,21 @@
         }
       ]
     },
+    "substantiveProviderDiagnostic": {
+      "unevaluatedProperties": false,
+      "allOf": [
+        {"$ref": "#/$defs/exactBytes"},
+        {
+          "type": "object",
+          "required": ["kind", "immutable", "classification"],
+          "properties": {
+            "kind": {"const": "provider_status"},
+            "immutable": {"const": true},
+            "classification": {"const": "PROVIDER_STATUS_NON_AUTHORITATIVE"}
+          }
+        }
+      ]
+    },
     "claim": {
       "type": "object",
       "additionalProperties": false,
@@ -218,7 +233,10 @@
             "consumerSession": {"type": "string", "minLength": 1},
             "outcome": {"enum": ["EXECUTION_READY", "HOLD"]},
             "authenticatedIdentity": {"$ref": "#/$defs/authenticatedIdentity"},
-            "providerDiagnostics": {"type": "array", "items": {"$ref": "#/$defs/providerDiagnostic"}},
+            "providerDiagnostics": {
+              "type": "array",
+              "items": {"$ref": "#/$defs/substantiveProviderDiagnostic"}
+            },
             "substantiveVerdict": {"enum": ["EXECUTION_READY", "HOLD"]},
             "finalOpinion": {"$ref": "#/$defs/opinionTerminal"}
           }

@@ -434,6 +434,11 @@ def evaluate_audit_evidence(contract_value: Mapping[str, Any], evidence_value: M
                 ),
             )
 
+        if any(item == "RESOURCE_LIMIT_NO_VERDICT" for item in diagnostics):
+            raise EvidenceError(
+                "RESOURCE_LIMIT_TERMINAL_CONFLICT",
+                "resource-limit diagnostics preclude a substantive terminal outcome",
+            )
         if postflight.get("opinionCreateNewRejoined") is not True:
             raise EvidenceError("POSTFLIGHT", "postflight did not rejoin exact CreateNew opinion")
 

@@ -83,6 +83,11 @@ never suppress wrapper runtime errors, tool errors, nonzero commands, malformed 
 gaps, or failed postflight. A transport can be rate-limited and the wrapper can also be broken; the
 runtime/tool failure remains a governed failure.
 
+Any authenticated `RESOURCE_LIMIT_NO_VERDICT` diagnostic precludes a substantive `EXECUTION_READY`
+or `HOLD` terminal and its opinion. Such a diagnostic belongs only to the spent `NO_VERDICT` branch;
+mutable outcome or opinion metadata cannot convert it into substantive evidence. A substantive
+terminal may retain only `PROVIDER_STATUS_NON_AUTHORITATIVE` diagnostics.
+
 ### 6. Quota and rate limit are spent no-verdict lineage
 
 A quota/rate-limit terminal is `NO_VERDICT` only when its provider identity is terminal-authenticated

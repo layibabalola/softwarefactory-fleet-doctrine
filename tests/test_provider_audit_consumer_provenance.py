@@ -292,6 +292,33 @@ class ProviderAuditConsumerProvenanceTests(unittest.TestCase):
         )
         self.assert_hold(value, "DIAGNOSTIC_CLASS")
 
+    def test_rate_limit_diagnostic_precludes_ready_opinion_with_schema_runtime_parity(self) -> None:
+        value = evidence()
+        value["terminal"]["providerDiagnostics"] = [provider_diagnostic("rate_limit", "request_limit")]
+        self.assert_hold(value, "RESOURCE_LIMIT_TERMINAL_CONFLICT")
+        schema = json.loads(
+            (Path(__file__).parents[1] / "schemas/provider-audit-consumer-provenance-v1.schema.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        with self.assertRaises(jsonschema.ValidationError):
+            jsonschema.validate(value, schema)
+
+    def test_quota_diagnostic_precludes_hold_opinion_with_schema_runtime_parity(self) -> None:
+        value = evidence()
+        value["terminal"]["outcome"] = "HOLD"
+        value["terminal"]["substantiveVerdict"] = "HOLD"
+        replace_final_opinion_content(value, "HOLD")
+        value["terminal"]["providerDiagnostics"] = [provider_diagnostic("quota", "weekly_limit")]
+        self.assert_hold(value, "RESOURCE_LIMIT_TERMINAL_CONFLICT")
+        schema = json.loads(
+            (Path(__file__).parents[1] / "schemas/provider-audit-consumer-provenance-v1.schema.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        with self.assertRaises(jsonschema.ValidationError):
+            jsonschema.validate(value, schema)
+
     def test_provider_diagnostic_cannot_suppress_runtime_error(self) -> None:
         value = evidence()
         value["postflight"]["runtimeErrors"] = ["wrapper parse failure"]
