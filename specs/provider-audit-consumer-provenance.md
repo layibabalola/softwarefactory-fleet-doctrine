@@ -31,8 +31,10 @@ cannot infer identity from a successful exit or substantive answer.
 Before any provider claim, the claim binds one opinion path and proves it absent. Publication uses
 an exclusive CreateNew operation, succeeds exactly once, and records the exact content bytes,
 byte-count, and SHA-256. Postflight physically reopens the path and must reproduce the same count and
-digest. Append, overwrite, rename-as-retry, pre-existing content, two writes, a digest without the
-bytes, or text reconstructed from a transcript refuses.
+digest. Every exact-byte envelope uses the single standard Base64 spelling whose re-encoding exactly
+reproduces `contentBase64`; alternate nonzero pad-bit spellings refuse. Append, overwrite,
+rename-as-retry, pre-existing content, two writes, a digest without the bytes, or text reconstructed
+from a transcript refuses.
 
 The retained bytes are a canonical, versioned final-opinion descriptor binding the verdict,
 consumer session, and authenticated provider session. The validator derives the substantive verdict
@@ -93,7 +95,9 @@ terminal may retain only `PROVIDER_STATUS_NON_AUTHORITATIVE` diagnostics.
 A quota/rate-limit terminal is `NO_VERDICT` only when its provider identity is terminal-authenticated
 and matches the requested tuple, inference did not occur, no opinion exists, the consumer session is
 permanently spent, and retry is false. The versioned complete canonical contract-plus-evidence
-package receives a lineage SHA-256. It grants no execution or opinion authority.
+package receives a lineage SHA-256. The portable schema admits only `rate_limit` or `quota`
+diagnostics classified `RESOURCE_LIMIT_NO_VERDICT` on this branch; provider-status-only or mixed
+diagnostics refuse before lineage. The lineage grants no execution or opinion authority.
 
 Resume, retry, renamed retry, or reuse of the consumer session is prohibited. A later consumer is a
 provider substitution even when it selects the same vendor after reset.

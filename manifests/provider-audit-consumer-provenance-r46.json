@@ -45,21 +45,21 @@
   "subjectFiles": [
     {
       "path": "schemas/provider-audit-consumer-provenance-v1.schema.json",
-      "gitBlobOid": "d5633d30dbad50414f42c4084c634f72ee1dd22c",
-      "sha256": "sha256:8e577194e7d87a38bbcc7bef2aefbee2e2cdfb4c69bb516ee7759c9dc432debd",
-      "bytes": 9688
+      "gitBlobOid": "9b488c18d4d596ace1c0330fc433614a841afd55",
+      "sha256": "sha256:117c7d302876c875ff4773f5112bd429a406c3396cee6e115e774e6078435e63",
+      "bytes": 10167
     },
     {
       "path": "specs/provider-audit-consumer-provenance.md",
-      "gitBlobOid": "e836a92bb2645248de61b5889baf5004686178cc",
-      "sha256": "sha256:be52e7b6d6428cc95383fe3ca105cd78c20940db8f55587666ef8d89c4a69720",
-      "bytes": 9149
+      "gitBlobOid": "059707b8c2594498826b305849124ed867d46825",
+      "sha256": "sha256:5a7092da3cf19f33fae5e5f704471f99113afef5ebb9cc0c1db56ddb2454a530",
+      "bytes": 9511
     },
     {
       "path": "tests/test_provider_audit_consumer_provenance.py",
-      "gitBlobOid": "8f3dd2afa38b6c418cfa18f1a6a332f8371e09a2",
-      "sha256": "sha256:761e451bad418c70df63994f959827af21ad52bad6e915fe0cd0e6770d5c927b",
-      "bytes": 23044
+      "gitBlobOid": "58b7020cf2a47428c8b93dbb3f76d3c1273f8504",
+      "sha256": "sha256:cc3650af068cb685ca7d3cf15d948253d03e0477823a7450d3ef65753ea9da7c",
+      "bytes": 27138
     },
     {
       "path": "tools/check_provider_audit_consumer_manifest.py",
@@ -69,13 +69,13 @@
     },
     {
       "path": "tools/provider_audit_consumer_provenance.py",
-      "gitBlobOid": "ef35677c1d29d5e9102341e199279acb3e432fb1",
-      "sha256": "sha256:0b3db107e550df62b04f90ddd93a723a1bca1f6182d04340926b5b517007939d",
-      "bytes": 26316
+      "gitBlobOid": "017a4df46e72b3c17700242772f918c2c9720ef3",
+      "sha256": "sha256:a77868d24a2cb09dcc2f1099567ab2dbd5c8fd4c72cffc2ea023f5048e77b33e",
+      "bytes": 26495
     }
   ],
   "manifestSelf": {
     "path": "manifests/provider-audit-consumer-provenance-r46.json",
-    "canonicalSha256": "sha256:636d28d3751d6c277751de640a804df9517224dc6db24f06d1da54a687e70fc6"
+    "canonicalSha256": "sha256:88952ae36f419e1746f3947bdd2ddea9c661570a7794312d300d6e20fd4f6fda"
   }
 }

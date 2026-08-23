@@ -107,10 +107,13 @@ def _integer(value: Any, name: str) -> int:
 
 
 def _exact_bytes(record: Mapping[str, Any], name: str) -> bytes:
+    content_base64 = _nonempty(record.get("contentBase64"), f"{name}.contentBase64")
     try:
-        raw = base64.b64decode(_nonempty(record.get("contentBase64"), f"{name}.contentBase64"), validate=True)
+        raw = base64.b64decode(content_base64, validate=True)
     except (ValueError, base64.binascii.Error) as exc:
         raise EvidenceError("BYTE_CUSTODY", f"{name} is not canonical base64") from exc
+    if base64.b64encode(raw).decode("ascii") != content_base64:
+        raise EvidenceError("BYTE_CUSTODY", f"{name} is not canonical base64")
     byte_count = _integer(record.get("bytes"), f"{name}.bytes")
     sha256 = _digest(record.get("sha256"), f"{name}.sha256")
     if byte_count != len(raw) or sha256 != SHA256_PREFIX + hashlib.sha256(raw).hexdigest():

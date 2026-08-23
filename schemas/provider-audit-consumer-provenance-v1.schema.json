@@ -150,6 +150,21 @@
         }
       ]
     },
+    "resourceLimitProviderDiagnostic": {
+      "unevaluatedProperties": false,
+      "allOf": [
+        {"$ref": "#/$defs/exactBytes"},
+        {
+          "type": "object",
+          "required": ["kind", "immutable", "classification"],
+          "properties": {
+            "kind": {"enum": ["rate_limit", "quota"]},
+            "immutable": {"const": true},
+            "classification": {"const": "RESOURCE_LIMIT_NO_VERDICT"}
+          }
+        }
+      ]
+    },
     "substantiveProviderDiagnostic": {
       "unevaluatedProperties": false,
       "allOf": [
@@ -255,7 +270,7 @@
             "providerDiagnostics": {
               "type": "array",
               "minItems": 1,
-              "items": {"$ref": "#/$defs/providerDiagnostic"}
+              "items": {"$ref": "#/$defs/resourceLimitProviderDiagnostic"}
             },
             "inferenceOccurred": {"const": false},
             "opinionPresent": {"const": false},

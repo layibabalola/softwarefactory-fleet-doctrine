@@ -24,6 +24,23 @@ def exact_bytes(content: bytes) -> dict[str, object]:
     }
 
 
+def noncanonical_base64_variant(content_base64: str) -> str:
+    alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
+    if content_base64.endswith("=="):
+        index = alphabet.index(content_base64[-3])
+        replacement = alphabet[(index & 0b110000) | 0b000001]
+        result = content_base64[:-3] + replacement + "=="
+    elif content_base64.endswith("="):
+        index = alphabet.index(content_base64[-2])
+        replacement = alphabet[(index & 0b111100) | 0b000001]
+        result = content_base64[:-2] + replacement + "="
+    else:
+        raise AssertionError("fixture must have Base64 padding")
+    assert result != content_base64
+    assert base64.b64decode(result, validate=True) == base64.b64decode(content_base64, validate=True)
+    return result
+
+
 def canonical_descriptor(value: dict[str, object]) -> bytes:
     return json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode("utf-8") + b"\n"
 
@@ -229,6 +246,12 @@ class ProviderAuditConsumerProvenanceTests(unittest.TestCase):
         value["terminal"]["finalOpinion"]["rejoinedSha256"] = "sha256:" + "0" * 64
         self.assert_hold(value, "OPINION_CUSTODY")
 
+    def test_final_opinion_refuses_noncanonical_base64_pad_bits(self) -> None:
+        value = evidence()
+        opinion = value["terminal"]["finalOpinion"]
+        opinion["contentBase64"] = noncanonical_base64_variant(opinion["contentBase64"])
+        self.assert_hold(value, "BYTE_CUSTODY")
+
     def test_substantive_verdict_is_derived_from_exact_opinion_bytes(self) -> None:
         value = evidence()
         replace_final_opinion_content(value, "HOLD")
@@ -272,6 +295,12 @@ class ProviderAuditConsumerProvenanceTests(unittest.TestCase):
     def test_provider_diagnostic_bytes_are_immutable(self) -> None:
         value = evidence()
         value["terminal"]["providerDiagnostics"][0]["bytes"] += 1
+        self.assert_hold(value, "BYTE_CUSTODY")
+
+    def test_provider_diagnostic_refuses_noncanonical_base64_pad_bits(self) -> None:
+        value = evidence()
+        diagnostic = value["terminal"]["providerDiagnostics"][0]
+        diagnostic["contentBase64"] = noncanonical_base64_variant(diagnostic["contentBase64"])
         self.assert_hold(value, "BYTE_CUSTODY")
 
     def test_provider_diagnostic_classification_is_deterministic(self) -> None:
@@ -344,6 +373,41 @@ class ProviderAuditConsumerProvenanceTests(unittest.TestCase):
         self.assertEqual(AuditDisposition.NO_VERDICT_RESOURCE_LIMIT, result.disposition)
         self.assertEqual("consumer-1", result.spent_session)
         self.assertTrue(result.lineage_sha256.startswith("sha256:"))
+        self.assertFalse(result.execution_authorized)
+
+    def test_no_verdict_schema_rejects_provider_status_only_diagnostic(self) -> None:
+        value = no_verdict_evidence()
+        value["terminal"]["providerDiagnostics"] = [provider_diagnostic("provider_status", "healthy")]
+        self.assert_hold(value, "NO_VERDICT_LINEAGE")
+        schema = json.loads(
+            (Path(__file__).parents[1] / "schemas/provider-audit-consumer-provenance-v1.schema.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        with self.assertRaises(jsonschema.ValidationError):
+            jsonschema.validate(value, schema)
+
+    def test_no_verdict_schema_rejects_mixed_provider_diagnostics(self) -> None:
+        value = no_verdict_evidence()
+        value["terminal"]["providerDiagnostics"].append(provider_diagnostic("provider_status", "degraded"))
+        self.assert_hold(value, "NO_VERDICT_LINEAGE")
+        schema = json.loads(
+            (Path(__file__).parents[1] / "schemas/provider-audit-consumer-provenance-v1.schema.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        with self.assertRaises(jsonschema.ValidationError):
+            jsonschema.validate(value, schema)
+
+    def test_no_verdict_lineage_refuses_noncanonical_diagnostic_base64(self) -> None:
+        value = no_verdict_evidence()
+        diagnostic = provider_diagnostic("rate_limit", "request_limits")
+        diagnostic["contentBase64"] = noncanonical_base64_variant(diagnostic["contentBase64"])
+        value["terminal"]["providerDiagnostics"] = [diagnostic]
+        result = evaluate_audit_evidence(contract(), value)
+        self.assertEqual(AuditDisposition.HOLD, result.disposition)
+        self.assertEqual("BYTE_CUSTODY", result.reason)
+        self.assertIsNone(result.lineage_sha256)
         self.assertFalse(result.execution_authorized)
 
     def test_no_verdict_requires_terminal_authenticated_identity(self) -> None:
@@ -487,6 +551,19 @@ class ProviderAuditConsumerProvenanceTests(unittest.TestCase):
         authority["artifact"] = exact_bytes(b"explicit substitution\n")
         result = evaluate_provider_substitution(prior, authority, next_claim)
         self.assertEqual("SUBSTITUTION_AUTHORITY", result.reason)
+
+    def test_substitution_artifact_refuses_noncanonical_base64_pad_bits(self) -> None:
+        prior, authority, next_claim = self.substitution_inputs()
+        descriptor = json.loads(base64.b64decode(authority["artifact"]["contentBase64"]).decode("utf-8"))
+        descriptor["selectedIdentity"]["model"] = "claude-opus-xxx"
+        next_claim["requestedIdentity"]["model"] = "claude-opus-xxx"
+        authority["artifact"] = exact_bytes(canonical_descriptor(descriptor))
+        artifact = authority["artifact"]
+        artifact["contentBase64"] = noncanonical_base64_variant(artifact["contentBase64"])
+        result = evaluate_provider_substitution(prior, authority, next_claim)
+        self.assertEqual(AuditDisposition.HOLD, result.disposition)
+        self.assertEqual("BYTE_CUSTODY", result.reason)
+        self.assertFalse(result.execution_authorized)
 
     def test_malformed_prior_substitution_lineage_fails_closed(self) -> None:
         result = evaluate_provider_substitution({}, {}, {})
