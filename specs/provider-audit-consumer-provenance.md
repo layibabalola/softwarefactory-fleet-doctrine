@@ -65,20 +65,23 @@ each allowlist identity.
 ### 5. Provider diagnostics are immutable and non-suppressing
 
 Provider diagnostics retain their original bytes, byte-count, SHA-256, immutable marker, and a
-deterministic classification:
+canonical versioned JSON descriptor. The authenticated bytes bind the diagnostic kind, code, and
+terminal provider session; sibling metadata is accepted only when it exactly matches that descriptor.
+Classification is derived from those authenticated bytes:
 
 - `rate_limit` and `quota` become `RESOURCE_LIMIT_NO_VERDICT`;
 - `provider_status` becomes `PROVIDER_STATUS_NON_AUTHORITATIVE`.
 
-Unknown or reclassified diagnostics refuse. Provider diagnostics never suppress wrapper runtime
-errors, tool errors, nonzero commands, malformed output, identity gaps, or failed postflight. A
-transport can be rate-limited and the wrapper can also be broken; the runtime/tool failure remains a
-governed failure.
+Unknown, noncanonical, session-detached, or reclassified diagnostics refuse. Provider diagnostics
+never suppress wrapper runtime errors, tool errors, nonzero commands, malformed output, identity
+gaps, or failed postflight. A transport can be rate-limited and the wrapper can also be broken; the
+runtime/tool failure remains a governed failure.
 
 ### 6. Quota and rate limit are spent no-verdict lineage
 
-A quota/rate-limit terminal is `NO_VERDICT` only when inference did not occur, no opinion exists,
-the consumer session is permanently spent, and retry is false. The complete canonical evidence
+A quota/rate-limit terminal is `NO_VERDICT` only when its provider identity is terminal-authenticated
+and matches the requested tuple, inference did not occur, no opinion exists, the consumer session is
+permanently spent, and retry is false. The versioned complete canonical contract-plus-evidence
 package receives a lineage SHA-256. It grants no execution or opinion authority.
 
 Resume, retry, renamed retry, or reuse of the consumer session is prohibited. A later consumer is a
@@ -86,20 +89,24 @@ provider substitution even when it selects the same vendor after reset.
 
 ### 7. Provider substitution is a separate explicit authority
 
-Substitution requires an exact-byte authority artifact that binds:
+Substitution requires a canonical, versioned, exact-byte authority artifact. Every governing field
+is parsed from those authenticated bytes rather than trusted from mutable sibling metadata. It binds:
 
 - the spent session and exact no-verdict lineage digest;
 - `EXPLICIT_PROVIDER_SUBSTITUTION_ONLY`;
 - a fresh consumer session;
 - the exact newly selected provider/model/transport/account tuple.
 
-The new claim must match that selected tuple. An automatic fallback, model downgrade, stale
-checkpoint, unbound provider choice, or spent session refuses. Substitution authorizes only a fresh
+The new claim's exact fresh session and identity must match the artifact. Reusing the artifact for a
+different session, an automatic fallback, model downgrade, stale checkpoint, unbound provider
+choice, or spent session refuses. Substitution authorizes only a fresh
 audit consumer; it does not authorize the governed workload.
 
 ### 8. Governed postflight dominates substantive text
 
-Postflight must prove all of the following before final opinion content is admitted:
+The reference validator enforces the portable evidence shape at runtime, including exact object
+fields, exact lowercase SHA-256 grammar, and nonempty custody paths. Postflight must prove all of the
+following before final opinion content is admitted:
 
 - all frozen inputs physically rejoined;
 - claim physically rejoined;

@@ -24,6 +24,32 @@ def exact_bytes(content: bytes) -> dict[str, object]:
     }
 
 
+def canonical_descriptor(value: dict[str, object]) -> bytes:
+    return json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode("utf-8") + b"\n"
+
+
+def provider_diagnostic(kind: str, code: str, provider_session: str = "provider-thread-1") -> dict[str, object]:
+    descriptor = {
+        "schema": "fleet-provider-terminal-diagnostic/v1",
+        "kind": kind,
+        "code": code,
+        "providerSession": provider_session,
+    }
+    value = exact_bytes(canonical_descriptor(descriptor))
+    value.update(
+        {
+            "kind": kind,
+            "immutable": True,
+            "classification": (
+                "RESOURCE_LIMIT_NO_VERDICT"
+                if kind in ("rate_limit", "quota")
+                else "PROVIDER_STATUS_NON_AUTHORITATIVE"
+            ),
+        }
+    )
+    return value
+
+
 def identity(provider: str = "openai", model: str = "gpt-sol") -> dict[str, object]:
     return {
         "provider": provider,
@@ -52,14 +78,7 @@ def evidence() -> dict[str, object]:
             "rejoinedSha256": opinion["sha256"],
         }
     )
-    diagnostic = exact_bytes(b'{"status":"healthy"}\n')
-    diagnostic.update(
-        {
-            "kind": "provider_status",
-            "immutable": True,
-            "classification": "PROVIDER_STATUS_NON_AUTHORITATIVE",
-        }
-    )
+    diagnostic = provider_diagnostic("provider_status", "healthy")
     requested = identity()
     authenticated = identity()
     authenticated.update(
@@ -70,6 +89,7 @@ def evidence() -> dict[str, object]:
         }
     )
     return {
+        "schema": "fleet-provider-audit-consumer-provenance/v1",
         "claim": {
             "consumerSession": "consumer-1",
             "requestedIdentity": requested,
@@ -135,23 +155,18 @@ def evidence() -> dict[str, object]:
 
 def no_verdict_evidence() -> dict[str, object]:
     value = evidence()
-    diagnostic = exact_bytes(b'{"error":"rate_limit"}\n')
-    diagnostic.update(
-        {
-            "kind": "rate_limit",
-            "immutable": True,
-            "classification": "RESOURCE_LIMIT_NO_VERDICT",
-        }
-    )
+    diagnostic = provider_diagnostic("rate_limit", "request_limit")
     value["terminal"] = {
         "consumerSession": "consumer-1",
         "outcome": "NO_VERDICT",
+        "authenticatedIdentity": value["terminal"]["authenticatedIdentity"],
         "providerDiagnostics": [diagnostic],
         "inferenceOccurred": False,
         "opinionPresent": False,
         "spent": True,
         "retryAuthorized": False,
     }
+    value["postflight"]["opinionCreateNewRejoined"] = False
     return value
 
 
@@ -231,6 +246,19 @@ class ProviderAuditConsumerProvenanceTests(unittest.TestCase):
         value["terminal"]["providerDiagnostics"][0]["classification"] = "RESOURCE_LIMIT_NO_VERDICT"
         self.assert_hold(value, "DIAGNOSTIC_CLASS")
 
+    def test_provider_diagnostic_kind_cannot_be_relabelled_outside_retained_bytes(self) -> None:
+        value = evidence()
+        value["terminal"]["providerDiagnostics"][0]["kind"] = "rate_limit"
+        value["terminal"]["providerDiagnostics"][0]["classification"] = "RESOURCE_LIMIT_NO_VERDICT"
+        self.assert_hold(value, "DIAGNOSTIC_CLASS")
+
+    def test_provider_diagnostic_binds_authenticated_provider_session(self) -> None:
+        value = no_verdict_evidence()
+        value["terminal"]["providerDiagnostics"][0] = provider_diagnostic(
+            "rate_limit", "request_limit", "different-provider-session"
+        )
+        self.assert_hold(value, "DIAGNOSTIC_CLASS")
+
     def test_provider_diagnostic_cannot_suppress_runtime_error(self) -> None:
         value = evidence()
         value["postflight"]["runtimeErrors"] = ["wrapper parse failure"]
@@ -258,6 +286,30 @@ class ProviderAuditConsumerProvenanceTests(unittest.TestCase):
         self.assertTrue(result.lineage_sha256.startswith("sha256:"))
         self.assertFalse(result.execution_authorized)
 
+    def test_no_verdict_requires_terminal_authenticated_identity(self) -> None:
+        value = no_verdict_evidence()
+        del value["terminal"]["authenticatedIdentity"]
+        self.assert_hold(value, "MALFORMED")
+
+    def test_no_verdict_terminal_identity_must_match_requested_tuple(self) -> None:
+        value = no_verdict_evidence()
+        value["terminal"]["authenticatedIdentity"]["model"] = "unrequested-model"
+        self.assert_hold(value, "TERMINAL_IDENTITY")
+
+    def test_no_verdict_lineage_binds_contract_and_evidence_schema(self) -> None:
+        value = no_verdict_evidence()
+        first_contract = contract()
+        first = evaluate_audit_evidence(first_contract, value)
+        second_contract = contract()
+        second_contract["readCommandAllowlist"] = ["read-file", "hash-file", "read-tree"]
+        value["claim"]["readCommandAllowlist"] = ["read-file", "hash-file", "read-tree"]
+        value["postflight"]["commands"].append(
+            {"commandId": "read-tree", "readOnly": True, "exitCode": 0, "status": "completed"}
+        )
+        second = evaluate_audit_evidence(second_contract, value)
+        self.assertEqual(AuditDisposition.NO_VERDICT_RESOURCE_LIMIT, second.disposition)
+        self.assertNotEqual(first.lineage_sha256, second.lineage_sha256)
+
     def test_no_verdict_cannot_hide_inference(self) -> None:
         value = no_verdict_evidence()
         value["terminal"]["inferenceOccurred"] = True
@@ -280,22 +332,47 @@ class ProviderAuditConsumerProvenanceTests(unittest.TestCase):
         value["terminal"]["finalOpinion"]["writeCount"] = 2
         self.assert_hold(value, "OPINION_CUSTODY")
 
+    def test_missing_opinion_paths_refuse_in_runtime_validator(self) -> None:
+        value = evidence()
+        del value["claim"]["finalOpinionCustody"]["path"]
+        del value["terminal"]["finalOpinion"]["path"]
+        self.assert_hold(value, "MALFORMED")
+
+    def test_malformed_shell_digest_refuses_in_runtime_validator(self) -> None:
+        value = evidence()
+        value["claim"]["actualShell"]["sha256"] = "sha256:x"
+        value["claim"]["preclaimSelfTest"]["shellSha256"] = "sha256:x"
+        self.assert_hold(value, "MALFORMED")
+
+    def test_unknown_evidence_field_refuses_in_runtime_validator(self) -> None:
+        value = evidence()
+        value["unbound"] = True
+        self.assert_hold(value, "MALFORMED")
+
     def substitution_inputs(self) -> tuple[dict[str, object], dict[str, object], dict[str, object]]:
         prior = {"contract": contract(), "evidence": no_verdict_evidence()}
         lineage = evaluate_audit_evidence(prior["contract"], prior["evidence"]).lineage_sha256
-        authority = {
+        descriptor = {
+            "schema": "fleet-provider-substitution-authority/v1",
             "decision": "EXPLICIT_PROVIDER_SUBSTITUTION_ONLY",
             "priorLineageSha256": lineage,
             "priorSession": "consumer-1",
+            "newConsumerSession": "consumer-2",
             "authorized": True,
             "selectedIdentity": identity("anthropic", "claude-opus"),
-            "artifact": exact_bytes(b"explicit substitution\n"),
         }
+        authority = {"artifact": exact_bytes(canonical_descriptor(descriptor))}
         next_claim = {
             "consumerSession": "consumer-2",
             "requestedIdentity": identity("anthropic", "claude-opus"),
         }
         return prior, authority, next_claim
+
+    def mutate_substitution_artifact(self, authority: dict[str, object], field: str, value: object) -> None:
+        record = authority["artifact"]
+        descriptor = json.loads(base64.b64decode(record["contentBase64"]).decode("utf-8"))
+        descriptor[field] = value
+        authority["artifact"] = exact_bytes(canonical_descriptor(descriptor))
 
     def test_explicit_substitution_uses_fresh_session_and_selected_provider(self) -> None:
         prior, authority, next_claim = self.substitution_inputs()
@@ -312,13 +389,25 @@ class ProviderAuditConsumerProvenanceTests(unittest.TestCase):
 
     def test_substitution_requires_explicit_authority(self) -> None:
         prior, authority, next_claim = self.substitution_inputs()
-        authority["authorized"] = False
+        self.mutate_substitution_artifact(authority, "authorized", False)
         result = evaluate_provider_substitution(prior, authority, next_claim)
         self.assertEqual("SUBSTITUTION_AUTHORITY", result.reason)
 
     def test_substitution_cannot_change_selected_identity(self) -> None:
         prior, authority, next_claim = self.substitution_inputs()
         next_claim["requestedIdentity"]["model"] = "lower-model"
+        result = evaluate_provider_substitution(prior, authority, next_claim)
+        self.assertEqual("SUBSTITUTION_AUTHORITY", result.reason)
+
+    def test_substitution_artifact_binds_exact_fresh_consumer_session(self) -> None:
+        prior, authority, next_claim = self.substitution_inputs()
+        next_claim["consumerSession"] = "consumer-3"
+        result = evaluate_provider_substitution(prior, authority, next_claim)
+        self.assertEqual("SUBSTITUTION_AUTHORITY", result.reason)
+
+    def test_substitution_artifact_cannot_be_arbitrary_authenticated_text(self) -> None:
+        prior, authority, next_claim = self.substitution_inputs()
+        authority["artifact"] = exact_bytes(b"explicit substitution\n")
         result = evaluate_provider_substitution(prior, authority, next_claim)
         self.assertEqual("SUBSTITUTION_AUTHORITY", result.reason)
 
