@@ -945,3 +945,23 @@ checker MUST report eleven layers with counts 98/7/7/7/7/7/7/7/7/7/7.
 R41 preserves byte-identical runtime/schema, policy digest, provider-neutral mechanism, exact
 Cloudvore/Fable profile, cache/charge semantics, exact capacity/duration arithmetic, and input-blind
 `REFUSE_RUNTIME_NOT_INSTALLED / ZERO`. It grants no authority or adoption credit.
+
+## R42 successor-safe test-lifecycle invariant
+
+R42 MUST freeze adverse R41 at exact commit `e6d7dbd297a470cf97c7f9fefbb854dc3527b719`, tree
+`c422aa60fe0d50bd0072b58fb1846adf04ee3ecd`, and parent
+`9924be835e6edd768f82cd6c50d97b83c747a265`. The R41 descriptor and anchor become literal frozen
+rows and R42 alone becomes current. The checker MUST report twelve layers with counts
+98/7/7/7/7/7/7/7/7/7/7/7.
+
+Every numbered carrier test earlier than the descriptor-derived current round MUST verify only its
+literal frozen carrier manifest, verifier, tuple, subjects, self digest, and unchanged subject OIDs.
+Such a test MUST NOT invoke the current checker, executor, or validator; use the current sentinel; or
+select the current descriptor. A dynamic AST guard MUST discover the numbered range rather than
+hardcode it, and a direct sentinel MUST prove that invoking every discovered historical numbered test
+cannot reach the current executor. Current-pipeline execution, validation, reporting, descriptor
+hostiles, and current-manifest mutation ownership MUST reside only in generic non-round-numbered tests.
+
+R42 preserves byte-identical runtime/schema, policy digest, provider-neutral mechanism, exact
+Cloudvore/Fable profile, cache/charge semantics, exact capacity/duration arithmetic, and input-blind
+`REFUSE_RUNTIME_NOT_INSTALLED / ZERO`. It grants no authority or adoption credit.

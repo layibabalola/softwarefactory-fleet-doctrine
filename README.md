@@ -118,3 +118,8 @@ the human store-and-forward bus.
   must equal its anchor before bytes are loaded, and the current reconciliation path sequence must be
   exactly frozen R40 plus R41. Runtime, schema, policy, quality, and input-blind zero-authority refusal
   remain byte-identical.
+  R42 freezes adverse R41 and makes successor ownership generic: every numbered historical carrier
+  test verifies only its literal frozen manifest, tuple, subjects, self digest, and unchanged OIDs.
+  Dynamic AST and executor-sentinel hostiles prevent any earlier numbered test from reaching the
+  current descriptor pipeline; only non-round-numbered tests may exercise current R42. Runtime,
+  schema, policy, quality, and input-blind zero-authority refusal remain byte-identical.

@@ -289,3 +289,18 @@ zero-padded spellings, duplicates, or ordering drift refuse. The eleven layer co
 98/7/7/7/7/7/7/7/7/7/7. Runtime/schema bytes, policy digest, Fable quality profile, cache/charge
 semantics, exact arithmetic, and input-blind `REFUSE`/zero authority are unchanged. R41 grants no
 authority or credit.
+
+## R42 successor-safe test ownership (candidate, zero authority)
+
+R42 freezes adverse R41 `e6d7dbd297a470cf97c7f9fefbb854dc3527b719`, tree
+`c422aa60fe0d50bd0072b58fb1846adf04ee3ecd`. R40 and R41 numbered tests now load and verify only
+their exact frozen manifests, tuples, subjects, self digests, and unchanged runtime/schema OIDs.
+They never select, validate, execute, or report the current descriptor pipeline.
+
+Generic tests derive the current round from the final descriptor. A dynamic AST guard inspects every
+earlier `test_rN_*` without a hardcoded range and rejects current checker/executor/validator calls,
+the current sentinel, and current-descriptor selection. A direct executor sentinel is installed while
+every dynamically discovered historical numbered test is invoked; none may reach it. Only a generic
+current owner observes R42 manifest mutation errors. The twelve counts are 98/7/7/7/7/7/7/7/7/7/7/7.
+Runtime/schema bytes, policy, profile, cache/charge behavior, and input-blind `REFUSE`/zero authority
+remain unchanged. R42 grants no authority or credit.

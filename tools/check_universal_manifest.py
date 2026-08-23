@@ -28,6 +28,7 @@ R38_MANIFEST = "manifests/universal-provider-control-reconciliation-r38.json"
 R39_MANIFEST = "manifests/universal-provider-control-reconciliation-r39.json"
 R40_MANIFEST = "manifests/universal-provider-control-reconciliation-r40.json"
 R41_MANIFEST = "manifests/universal-provider-control-reconciliation-r41.json"
+R42_MANIFEST = "manifests/universal-provider-control-reconciliation-r42.json"
 REVIEW_SCHEMA = "schemas/universal-provider-review-admission-v1.schema.json"
 FROZEN_CANDIDATE = "e70a044f31dd2f43ab7c716d63a4eb89318c61b6"
 FROZEN_R29 = "fc76bf6d5ab52891d06b7f71eb2e993e413c124c"
@@ -39,6 +40,7 @@ FROZEN_R37 = "6568230545e473c6fac64bcd30166a284e712704"
 FROZEN_R38 = "d897c304b1dd8e3b6dcbac71002c1eb2f7db519c"
 FROZEN_R39 = "3bea531c2b3abbc4be4b506255d344d8ec6e712f"
 FROZEN_R40 = "9924be835e6edd768f82cd6c50d97b83c747a265"
+FROZEN_R41 = "e6d7dbd297a470cf97c7f9fefbb854dc3527b719"
 SELF_PATTERN = re.compile(
     rb'("canonicalGitBlobSha256"\s*:\s*"sha256:)([0-9a-f]{64})(")'
 )
@@ -109,6 +111,7 @@ R38_POLICY_DIGEST = R37_POLICY_DIGEST
 R39_POLICY_DIGEST = R38_POLICY_DIGEST
 R40_POLICY_DIGEST = R39_POLICY_DIGEST
 R41_POLICY_DIGEST = R40_POLICY_DIGEST
+R42_POLICY_DIGEST = R41_POLICY_DIGEST
 R33_BASE = {
     "commit": "55afee85ecf720eb857cea1980f511f331b9e86f",
     "tree": "6e58f77467320d53ced12906bf2be62b4fca3d56",
@@ -198,7 +201,14 @@ R41_BASE = {
     "orderedParentTrees": ["9a77aa147120666bfd620ecc400507933aef0ef0"],
 }
 R41_SUBJECT_PATHS = R40_SUBJECT_PATHS
-EXPECTED_LAYER_ROUNDS = (26, 29, 33, 34, 35, 36, 37, 38, 39, 40, 41)
+R42_BASE = {
+    "commit": FROZEN_R41,
+    "tree": "c422aa60fe0d50bd0072b58fb1846adf04ee3ecd",
+    "orderedParents": [FROZEN_R40],
+    "orderedParentTrees": ["431b94081fe0f4fd8b29fb4f540ddf69ce47601f"],
+}
+R42_SUBJECT_PATHS = R41_SUBJECT_PATHS
+EXPECTED_LAYER_ROUNDS = (26, 29, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42)
 CURRENT_CANDIDATE = ":"
 LAYER_PATH_PATTERN = re.compile(
     r"^manifests/universal-provider-control-reconciliation-r([0-9]+)\.json$"
@@ -1178,6 +1188,64 @@ def verify_r41(manifest: dict[str, Any], treeish: str) -> None:
         raise ManifestError("R41_VALIDATION_AUTHORITY_INVALID")
 
 
+def verify_r42(manifest: dict[str, Any], treeish: str) -> None:
+    """Verify exact adverse R41 base and successor-safe R42 test ownership."""
+
+    if manifest.get("status") != "CANDIDATE_ZERO_AUTHORITY" or manifest.get(
+        "subjectCoverage"
+    ) != "R42_SUCCESSOR_SAFE_TEST_OWNERSHIP_ZERO_AUTHORITY":
+        raise ManifestError("R42_STATUS_INVALID")
+    if manifest.get("candidateBase") != R42_BASE:
+        raise ManifestError("R42_BASE_INVALID")
+    tree, parents = _commit_tuple(R42_BASE["commit"])
+    if tree != R42_BASE["tree"] or parents != R42_BASE["orderedParents"]:
+        raise ManifestError("R42_BASE_OBJECT_MISMATCH")
+    if [_commit_tuple(parent)[0] for parent in parents] != R42_BASE["orderedParentTrees"]:
+        raise ManifestError("R42_BASE_PARENT_TREE_MISMATCH")
+    descendant = "HEAD" if treeish == ":" else treeish
+    if not _is_ancestor(R42_BASE["commit"], descendant):
+        raise ManifestError("R42_BASE_NOT_ANCESTOR")
+    if manifest.get("authority") != {
+        "providerExecution": False, "processSpawnResumeKill": False,
+        "containmentOrCanaryCredit": False, "automaticGateState": "CLOSED",
+        "runtimeImplementation": "NOT_INSTALLED_UNCONDITIONAL_REFUSE",
+        "activationRequiresSeparateAdjudication": True, "authorRecused": True,
+    }:
+        raise ManifestError("R42_AUTHORITY_INVALID")
+    policy = manifest.get("reviewAdmissionPolicy")
+    if not isinstance(policy, dict) or policy.get("source") != R27_SOURCE:
+        raise ManifestError("R42_SOURCE_SUBJECT_MISMATCH")
+    if policy.get("identity") != R29_IDENTITY:
+        raise ManifestError("R42_EXACT_PROFILE_MISMATCH")
+    if policy.get("cacheAdmissionMode") != "EXACTLY_BOUNDED_AND_CHARGED":
+        raise ManifestError("R42_CACHE_ADMISSION_MODE_MISMATCH")
+    if policy.get("capacity", {}).get("requiredQuotaWindows") != ["session", "weekly"]:
+        raise ManifestError("R42_QUOTA_WINDOWS_MISMATCH")
+    if manifest.get("reviewAdmissionPolicyDigest") != R42_POLICY_DIGEST or canonical_policy_sha256(policy) != R42_POLICY_DIGEST:
+        raise ManifestError("R42_POLICY_DIGEST_MISMATCH")
+    subjects = manifest.get("subjectFiles")
+    if not isinstance(subjects, list) or [subject.get("path") for subject in subjects if isinstance(subject, dict)] != R42_SUBJECT_PATHS:
+        raise ManifestError("R42_CARRIER_SUBJECT_MISMATCH")
+    try:
+        import jsonschema
+        schema_raw = _git(_blob_spec(treeish, REVIEW_SCHEMA))
+        assert isinstance(schema_raw, bytes)
+        schema = json.loads(schema_raw.decode("utf-8"), object_pairs_hook=_pairs)
+        jsonschema.Draft202012Validator.check_schema(schema)
+        if next(jsonschema.Draft202012Validator(schema).iter_errors(policy), None) is not None:
+            raise ManifestError("R42_POLICY_SCHEMA_INVALID")
+    except ManifestError:
+        raise
+    except Exception as exc:
+        raise ManifestError("R42_POLICY_SCHEMA_INVALID") from exc
+    if manifest.get("validation") != {
+        "universalProviderControl": {"required": True, "claimedGreen": False},
+        "providerCapacityGovernor": {"required": True, "claimedGreen": False},
+        "canonicalCapacityControl": {"required": True, "claimedGreen": False},
+        "hosted": {"requiredFresh": True, "claimedGreen": False},
+        "providerInvocation": False, "activation": False,
+    }:
+        raise ManifestError("R42_VALIDATION_AUTHORITY_INVALID")
 
 
 def verify_r29(
@@ -1419,7 +1487,8 @@ LAYER_DESCRIPTORS = (
     ManifestLayerDescriptor(R38_MANIFEST, FROZEN_R38, "fleet-universal-provider-control-candidate-manifest/v3", verify_r38, FROZEN_R38),
     ManifestLayerDescriptor(R39_MANIFEST, FROZEN_R39, "fleet-universal-provider-control-candidate-manifest/v3", verify_r39, FROZEN_R39),
     ManifestLayerDescriptor(R40_MANIFEST, FROZEN_R40, "fleet-universal-provider-control-candidate-manifest/v3", verify_r40, FROZEN_R40),
-    ManifestLayerDescriptor(R41_MANIFEST, CURRENT_CANDIDATE, "fleet-universal-provider-control-candidate-manifest/v3", verify_r41, R41_BASE["commit"]),
+    ManifestLayerDescriptor(R41_MANIFEST, FROZEN_R41, "fleet-universal-provider-control-candidate-manifest/v3", verify_r41, FROZEN_R41),
+    ManifestLayerDescriptor(R42_MANIFEST, CURRENT_CANDIDATE, "fleet-universal-provider-control-candidate-manifest/v3", verify_r42, R42_BASE["commit"]),
 )
 
 
@@ -1435,7 +1504,8 @@ LAYER_TRUST_ANCHORS: Mapping[str, ManifestLayerTrustAnchor] = MappingProxyType(
         R38_MANIFEST: ManifestLayerTrustAnchor(38, R38_MANIFEST, FROZEN_R38, "fleet-universal-provider-control-candidate-manifest/v3", verify_r38, FROZEN_R38),
         R39_MANIFEST: ManifestLayerTrustAnchor(39, R39_MANIFEST, FROZEN_R39, "fleet-universal-provider-control-candidate-manifest/v3", verify_r39, FROZEN_R39),
         R40_MANIFEST: ManifestLayerTrustAnchor(40, R40_MANIFEST, FROZEN_R40, "fleet-universal-provider-control-candidate-manifest/v3", verify_r40, FROZEN_R40),
-        R41_MANIFEST: ManifestLayerTrustAnchor(41, R41_MANIFEST, CURRENT_CANDIDATE, "fleet-universal-provider-control-candidate-manifest/v3", verify_r41, R41_BASE["commit"]),
+        R41_MANIFEST: ManifestLayerTrustAnchor(41, R41_MANIFEST, FROZEN_R41, "fleet-universal-provider-control-candidate-manifest/v3", verify_r41, FROZEN_R41),
+        R42_MANIFEST: ManifestLayerTrustAnchor(42, R42_MANIFEST, CURRENT_CANDIDATE, "fleet-universal-provider-control-candidate-manifest/v3", verify_r42, R42_BASE["commit"]),
     }
 )
 
@@ -1459,9 +1529,9 @@ def _tracked_reconciliation_paths(treeish: str) -> tuple[str, ...]:
     return paths
 
 
-FROZEN_R40_RECONCILIATION_PATHS = _tracked_reconciliation_paths(FROZEN_R40)
+FROZEN_R41_RECONCILIATION_PATHS = _tracked_reconciliation_paths(FROZEN_R41)
 EXPECTED_CURRENT_RECONCILIATION_PATHS = tuple(
-    sorted(FROZEN_R40_RECONCILIATION_PATHS + (R41_MANIFEST,))
+    sorted(FROZEN_R41_RECONCILIATION_PATHS + (R42_MANIFEST,))
 )
 
 
@@ -1514,7 +1584,7 @@ def _diagnose_layer_configuration(
         if descriptor.schema != expected_schema:
             raise ManifestError("MANIFEST_DESCRIPTOR_SCHEMA_INVALID")
         if descriptor.candidate == CURRENT_CANDIDATE:
-            if descriptor.report_candidate != R41_BASE["commit"]:
+            if descriptor.report_candidate != R42_BASE["commit"]:
                 raise ManifestError("MANIFEST_DESCRIPTOR_REPORT_INVALID")
         elif (
             re.fullmatch(r"[0-9a-f]{40}", descriptor.candidate) is None
@@ -1525,8 +1595,8 @@ def _diagnose_layer_configuration(
 
 def _validate_layer_descriptors(treeish: str) -> None:
     _diagnose_layer_configuration(LAYER_DESCRIPTORS, LAYER_TRUST_ANCHORS)
-    frozen_paths = _tracked_reconciliation_paths(FROZEN_R40)
-    if frozen_paths != FROZEN_R40_RECONCILIATION_PATHS:
+    frozen_paths = _tracked_reconciliation_paths(FROZEN_R41)
+    if frozen_paths != FROZEN_R41_RECONCILIATION_PATHS:
         raise ManifestError("MANIFEST_DESCRIPTOR_TRACKING_INVALID")
     tracked_paths = _tracked_reconciliation_paths(treeish)
     if tracked_paths != EXPECTED_CURRENT_RECONCILIATION_PATHS:
