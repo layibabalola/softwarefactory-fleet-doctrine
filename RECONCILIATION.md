@@ -304,3 +304,23 @@ every dynamically discovered historical numbered test is invoked; none may reach
 current owner observes R42 manifest mutation errors. The twelve counts are 98/7/7/7/7/7/7/7/7/7/7/7.
 Runtime/schema bytes, policy, profile, cache/charge behavior, and input-blind `REFUSE`/zero authority
 remain unchanged. R42 grants no authority or credit.
+
+## R43 complete historical-test quarantine (candidate, zero authority)
+
+R43 freezes adverse R42 `5b1abb9d01226e35721d14b9c525d87287722c8c`, tree
+`3e4867c2efe777f25d64676ce8d7989ae50fe903`, parent
+`e6d7dbd297a470cf97c7f9fefbb854dc3527b719`. The prior single-class syntax blacklist is not a
+future-proof control: it omitted 133 historical methods in `UniversalProviderControlTests`, including
+mutable R2/R12 and R16-R26 manifest selectors. R43 replaces that claim with an exact checked-in
+inventory of all 184 historical methods across both `unittest.TestCase` classes and a normalized AST
+body digest for each. The manifest subject binding independently anchors the complete test blob.
+
+Historical manifest reads and reconciliation verification use literal retained commits and paths.
+Each discovered historical method runs as a fresh test case with setup, teardown, cleanups, and
+semantic sentinels around descriptors, anchors, the current candidate/path, verifier, reporter,
+executor, validator, current Git/index selection, and tracked reconciliation worktree reads.
+Equivalent `len`, reverse, `max`, anchor-value, and computed-attribute selectors therefore refuse by
+behavior, not spelling. Generic current-owner tests retain every descriptor, anchor, tracking,
+profile, cache-mode, policy-digest, and authority hostile and prove refusal before a receipt or PASS.
+The thirteen layer counts are 98/7/7/7/7/7/7/7/7/7/7/7/7. Runtime/schema bytes, policy, exact Fable
+quality profile, cache/charge behavior, and input-blind `REFUSE`/zero authority remain unchanged.

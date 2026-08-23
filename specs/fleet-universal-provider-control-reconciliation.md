@@ -965,3 +965,37 @@ hostiles, and current-manifest mutation ownership MUST reside only in generic no
 R42 preserves byte-identical runtime/schema, policy digest, provider-neutral mechanism, exact
 Cloudvore/Fable profile, cache/charge semantics, exact capacity/duration arithmetic, and input-blind
 `REFUSE_RUNTIME_NOT_INSTALLED / ZERO`. It grants no authority or adoption credit.
+
+## R43 semantic quarantine and exact historical ownership
+
+R43 MUST freeze adverse R42 at exact commit `5b1abb9d01226e35721d14b9c525d87287722c8c`, tree
+`3e4867c2efe777f25d64676ce8d7989ae50fe903`, and parent
+`e6d7dbd297a470cf97c7f9fefbb854dc3527b719`. R42's syntax blacklist and incomplete class scan MUST
+NOT be treated as future-proof evidence. The R42 descriptor and independent anchor MUST become an
+exact frozen row; R43 alone is current. The checker MUST report thirteen layers with counts
+98/7/7/7/7/7/7/7/7/7/7/7/7.
+
+The test carrier MUST discover every `unittest.TestCase` class in the module and every `test_rN_*`
+method where `N` is below the descriptor-derived current round. A checked-in literal inventory MUST
+bind every fully qualified historical method name to a normalized AST body digest. The observed set
+and every digest MUST match exactly, so addition, deletion, rename, renumbering, body drift, or an
+omitted class refuses. The current manifest's ordered subject rows and self binding MUST independently
+bind the exact test blob containing that inventory.
+
+Every historical manifest/blob/reconciliation read MUST use its literal retained commit and path;
+no historical method may select `:`, `HEAD`, a current manifest alias, or a tracked reconciliation
+file from the worktree. Every discovered historical method MUST be executed as a fresh TestCase with
+setup, teardown, registered cleanups, and semantic sentinels protecting current descriptors, trust
+anchors, candidate/path, verifier, reporter, validator, executor, Git/index blob access, and tracked
+manifest worktree access. Equivalent selection by length arithmetic, reverse iteration, maximum
+round, anchor values, or computed attribute names MUST refuse. This behavioral quarantine, not a
+blacklist of syntax forms, owns successor isolation.
+
+Only generic non-round-numbered tests MAY execute the current pipeline. They MUST retain descriptor
+and anchor field/missing-entry hostiles, frozen candidate/report substitutions, missing/extra/alias/
+reordered tracked manifests, and fully self-rebound authority, model/profile, cache-mode, and policy
+digest mutations. The real verifier MUST refuse each current mutation before subject/self receipts
+or PASS reporting. R43 preserves byte-identical runtime/schema and policy, the provider-neutral
+mechanism, exact Cloudvore/Fable max/standard/firstParty independent-reviewer 64K profile,
+EXACTLY_BOUNDED_AND_CHARGED cache/charge semantics, and input-blind
+`REFUSE_RUNTIME_NOT_INSTALLED / ZERO`. It grants no authority or adoption credit.

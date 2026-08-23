@@ -29,6 +29,7 @@ R39_MANIFEST = "manifests/universal-provider-control-reconciliation-r39.json"
 R40_MANIFEST = "manifests/universal-provider-control-reconciliation-r40.json"
 R41_MANIFEST = "manifests/universal-provider-control-reconciliation-r41.json"
 R42_MANIFEST = "manifests/universal-provider-control-reconciliation-r42.json"
+R43_MANIFEST = "manifests/universal-provider-control-reconciliation-r43.json"
 REVIEW_SCHEMA = "schemas/universal-provider-review-admission-v1.schema.json"
 FROZEN_CANDIDATE = "e70a044f31dd2f43ab7c716d63a4eb89318c61b6"
 FROZEN_R29 = "fc76bf6d5ab52891d06b7f71eb2e993e413c124c"
@@ -41,6 +42,7 @@ FROZEN_R38 = "d897c304b1dd8e3b6dcbac71002c1eb2f7db519c"
 FROZEN_R39 = "3bea531c2b3abbc4be4b506255d344d8ec6e712f"
 FROZEN_R40 = "9924be835e6edd768f82cd6c50d97b83c747a265"
 FROZEN_R41 = "e6d7dbd297a470cf97c7f9fefbb854dc3527b719"
+FROZEN_R42 = "5b1abb9d01226e35721d14b9c525d87287722c8c"
 SELF_PATTERN = re.compile(
     rb'("canonicalGitBlobSha256"\s*:\s*"sha256:)([0-9a-f]{64})(")'
 )
@@ -112,6 +114,7 @@ R39_POLICY_DIGEST = R38_POLICY_DIGEST
 R40_POLICY_DIGEST = R39_POLICY_DIGEST
 R41_POLICY_DIGEST = R40_POLICY_DIGEST
 R42_POLICY_DIGEST = R41_POLICY_DIGEST
+R43_POLICY_DIGEST = R42_POLICY_DIGEST
 R33_BASE = {
     "commit": "55afee85ecf720eb857cea1980f511f331b9e86f",
     "tree": "6e58f77467320d53ced12906bf2be62b4fca3d56",
@@ -208,8 +211,201 @@ R42_BASE = {
     "orderedParentTrees": ["431b94081fe0f4fd8b29fb4f540ddf69ce47601f"],
 }
 R42_SUBJECT_PATHS = R41_SUBJECT_PATHS
-EXPECTED_LAYER_ROUNDS = (26, 29, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42)
+R43_BASE = {
+    "commit": FROZEN_R42,
+    "tree": "3e4867c2efe777f25d64676ce8d7989ae50fe903",
+    "orderedParents": [FROZEN_R41],
+    "orderedParentTrees": ["c422aa60fe0d50bd0072b58fb1846adf04ee3ecd"],
+}
+R43_SUBJECT_PATHS = R42_SUBJECT_PATHS
+EXPECTED_LAYER_ROUNDS = (26, 29, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43)
 CURRENT_CANDIDATE = ":"
+HISTORICAL_TEST_BODY_SHA256: Mapping[str, str] = MappingProxyType({
+    'ReviewResourceAdmissionR29Tests.test_r28_01_runtime_refuses_before_reading_any_caller_input': '51808e5b02757ce0ff6a1e92b07c87041d7ba6f6970c161e80c45f167d2c9537',
+    'ReviewResourceAdmissionR29Tests.test_r28_02_complete_fixture_is_conformance_only_never_runtime_admission': 'd037f0c5505f08895295fc80b423485ad78903a9122ec37809a796488d0caf2d',
+    'ReviewResourceAdmissionR29Tests.test_r28_03_universal_mechanism_is_provider_neutral_and_profile_exact': '420cdf1cbb6f78cc8ca430165d077a8b7dcfe4e30e524b1068c6ef53803beb54',
+    'ReviewResourceAdmissionR29Tests.test_r28_04_committed_policy_digest_rejects_source_substitution': '46ac6bde828e29d8953da959bc287be4cbab00f052a4306453b54bb33455c5db',
+    'ReviewResourceAdmissionR29Tests.test_r28_05_packet_rehash_duplicate_and_execution_drift_refuse': '08cbae10f7c37fe8fb9a63b69d5434e7a5250bb8ad680953a3a729bb2b21a3fc',
+    'ReviewResourceAdmissionR29Tests.test_r28_06_captured_raw_handle_and_tokenizer_binding_are_mandatory': 'bc3ea493fa827df76630b858548f3ee25d6b5435eec7d8b281d6fe6ca65b1d5b',
+    'ReviewResourceAdmissionR29Tests.test_r28_07_native_charge_unknown_cache_other_and_output_fail_closed': '77badfd0bbf031ef3731ebd09735dabb763e1618a994dfdbd9113522025aab3f',
+    'ReviewResourceAdmissionR29Tests.test_r28_08_all_windows_timestamp_order_positive_reserves_and_floor': '0515203ca3b3aca8d26405d5d00a0633b02c2b6c3ccc1f052bf048a0e69a0eb7',
+    'ReviewResourceAdmissionR29Tests.test_r28_09_tools_argv_hooks_and_allowedtools_never_imply_containment': '3326b46baebb040b0b8294954b9a728fd704102bb17db4e1fc1bfb7818b2ed5a',
+    'ReviewResourceAdmissionR29Tests.test_r28_10_capability_handles_are_profile_bound_and_conformance_only': '4c7395431ac55aa998476a9af96dfd3526a51ee6535b5d4c4049757ae16f3ecb',
+    'ReviewResourceAdmissionR29Tests.test_r28_11_lease_and_authority_repetition_aba_and_early_release_refuse': '306929c190cfbb050ac61baae2bf79b77c128ef6e8c1e33c384ec6b2d1baef09',
+    'ReviewResourceAdmissionR29Tests.test_r28_12_terminal_unknown_is_unevaluable_and_overruns_refuse': 'b54315e6e991e33135d631c914cdbbd9f82f40d989b9c66c86f26508973519fd',
+    'ReviewResourceAdmissionR29Tests.test_r28_13_schema_ordinals_and_manifest_source_are_independently_bound': 'fa91ab9d0fd9db39bef3b655b40edcd7fa7acdeb51f14951c858f3995bbc29ae',
+    'ReviewResourceAdmissionR29Tests.test_r29_01_nonseven_provider_neutral_fixture_is_conformance_only': '21694fac937dfadedabaeb4603614d59f6e67cc41dba9b16d762588be8bf85cd',
+    'ReviewResourceAdmissionR29Tests.test_r33_01_integration_merge_and_exact_policy_are_literal': 'a5bdb44ef14ba1b46f5c7404109d99554b9a60b0d80e034e846c2d5c827e0e3f',
+    'ReviewResourceAdmissionR29Tests.test_r33_02_current_manifest_rejects_base_policy_and_carrier_substitution': 'f3da517fd01fcd8ff5974dfc711333b900d6e0c2690a1abf1542e9d4223c9953',
+    'ReviewResourceAdmissionR29Tests.test_r33_03_current_manifest_requires_integration_base_ancestry': 'ff39b98d9c2866249cde3468c0abbd4945ebbd98326b6fbc6a58bb0c7bb7eaf9',
+    'ReviewResourceAdmissionR29Tests.test_r33_04_frozen_r29_manifest_rejects_drift_and_source_substitution': '399f4899d83a7f95e8b6ddd3b9355e780ef09be00674f166d97fb8ac739a1ebe',
+    'ReviewResourceAdmissionR29Tests.test_r33_05_checker_validates_all_three_literal_trust_layers': '87797a0c5190a296bf27250a41c45738b9f69232e4e67ab7cf75c1d5039d5508',
+    'ReviewResourceAdmissionR29Tests.test_r34_01_code_owned_charge_result_rejects_self_attested_amounts': '6d66d7dbbe73d26ac616aea6bbb66d8d94ab2dc2876106addfc44385e253e974',
+    'ReviewResourceAdmissionR29Tests.test_r34_02_terminal_native_charges_are_derived_from_actual_usage': '611493779fbee5130ea3ed05c30f2b529017d0e89d929cdf6aeea64033e62d88',
+    'ReviewResourceAdmissionR29Tests.test_r34_03_policy_mode_defeats_fully_rebound_projection_selection': '541960c4423538e7a5d07140978a89a403feca38cdfbcebdc7aabd03792446f2',
+    'ReviewResourceAdmissionR29Tests.test_r34_04_cache_capability_is_exactly_request_profile_domain_and_mode_bound': '3acfdc4cd3aa17cd35778655175c9afcd89a3f38eae39c7dbca0471c94f0958e',
+    'ReviewResourceAdmissionR29Tests.test_r34_05_native_charge_integer_representation_is_exact': '04fc7ba3986c9cbb16fbf048b8cea38008d58e0ea111320b91775b6ac7424c50',
+    'ReviewResourceAdmissionR29Tests.test_r34_06_bounded_mode_allows_zero_actual_cache_but_keeps_reservation': 'c8e9019c01af72bad0d40014108b54ecb9c824733a59e650b719b1082ba6f8cc',
+    'ReviewResourceAdmissionR29Tests.test_r34_07_generic_schema_accepts_1_and_64_but_rejects_65_subjects': 'afdb02c5df7df809a0d6abbb7cfa1445ca725586362b7c8c27950a6316180157',
+    'ReviewResourceAdmissionR29Tests.test_r34_08_manifest_pins_integration_mode_profile_and_policy_digest': '92ae8c909b3256b3bacb20783f53965e809a1988fa82859d468e4baa6ad358cd',
+    'ReviewResourceAdmissionR29Tests.test_r34_09_manifest_rejects_recomputed_policy_and_instance_substitution': '8e00edfbdcb38c7a91b51dec00f7b9abb316c674c2afe7e4ae66d7d7e962a4e1',
+    'ReviewResourceAdmissionR29Tests.test_r34_10_frozen_r33_layer_rejects_drift': '9d4dbcea7fc6afce821b4719729d7152d3af97c480f0ba195f3f5ebd80b2c9d4',
+    'ReviewResourceAdmissionR29Tests.test_r35_01_current_layer_pins_exact_integration_tuple_and_quality': '1b33177f986cc39e1b74d18f92ae065222d3e8b4e9093d87c84e5d5634db6b59',
+    'ReviewResourceAdmissionR29Tests.test_r35_02_base_tree_parent_policy_and_subject_drift_fail_closed': '95e66e14aa1fca3be7d993e60e021ad0e95dae32be0c05de47b64489026160e0',
+    'ReviewResourceAdmissionR29Tests.test_r35_03_frozen_r34_layer_rejects_manifest_drift': 'daab402eb6b333072a7c2f5f96f4cd057f1dcfb86952c92d3e2930f73fb45b16',
+    'ReviewResourceAdmissionR29Tests.test_r35_04_frozen_subject_and_self_drift_fail_closed': 'd7d08e429afbc5264b8072aff81cb5e1489c0e002854ad32fcd555d8edad8b85',
+    'ReviewResourceAdmissionR29Tests.test_r35_05_checker_has_five_literal_layers_and_runtime_stays_refused': '670e7ae2d5683b5568f13780f8fec5349506c4c8c74c77acd06d8ab5445e1543',
+    'ReviewResourceAdmissionR29Tests.test_r36_01_exact_integer_reserve_boundaries_use_full_fixture': '32b2e746aa04d2c335faa39f7528641253db044a5e4b3b46c3d94882714f9a53',
+    'ReviewResourceAdmissionR29Tests.test_r36_02_evidence_age_equality_and_microsecond_overage_are_exact': '67f7b021bf04544cf919278a74b22967e48761ce8317bb003305c9e81dd13db7',
+    'ReviewResourceAdmissionR29Tests.test_r36_03_capacity_boundary_implementation_has_no_float_derivation': 'd5b3af083be618137799b044a6aed0feb4ad2293cad0e24a7206bef053cb3c69',
+    'ReviewResourceAdmissionR29Tests.test_r36_04_current_layer_pins_r35_base_and_unchanged_policy': '367daa0298f444d913eb457547a58d2e3e5dddd9d2d6f4db22f384f656210091',
+    'ReviewResourceAdmissionR29Tests.test_r36_05_r35_frozen_layer_and_r36_tuple_subject_self_drift_fail': '7cdbad682adde5f16f68d9c7c6c76e54624082398a68eec698aceefc7dec2d77',
+    'ReviewResourceAdmissionR29Tests.test_r36_06_checker_has_six_literal_layers_and_runtime_stays_refused': '670e7ae2d5683b5568f13780f8fec5349506c4c8c74c77acd06d8ab5445e1543',
+    'ReviewResourceAdmissionR29Tests.test_r37_01_current_layer_pins_adverse_r36_and_unchanged_policy': 'eb0d88ce22782e56bb3b1d8c81662c0d8c037a6169e67305cd7622e9920a87af',
+    'ReviewResourceAdmissionR29Tests.test_r37_02_frozen_r36_and_current_tuple_subject_self_drift_fail': 'c7e4d7f5628f678577c5bc498f181b6935bd3d83786a28e6f86e64bbb9552123',
+    'ReviewResourceAdmissionR29Tests.test_r37_03_checker_has_seven_literal_layers_and_runtime_stays_refused': '670e7ae2d5683b5568f13780f8fec5349506c4c8c74c77acd06d8ab5445e1543',
+    'ReviewResourceAdmissionR29Tests.test_r38_02_current_tuple_subject_self_and_policy_are_exact': '13184d2828ab7a57fb43685c14fa484f512092fbff6e245ccf94e5fdbe67a636',
+    'ReviewResourceAdmissionR29Tests.test_r38_03_checker_has_eight_layers_and_runtime_stays_refused': '1029db5a637bc546c03cba0d0de25c16fc0e8d8b3d5b7db6ebcf8279fb161e5f',
+    'ReviewResourceAdmissionR29Tests.test_r40_01_frozen_carrier_tuple_is_literal': '568aaee318fe65434d93b6cfbc6fb95afcd38a046b23d5e74c719fb719266441',
+    'ReviewResourceAdmissionR29Tests.test_r40_02_frozen_subject_and_self_are_literal': '6f4f598fab2650b85c835582a0f54715560d6663f65a6ddaf63cd5caebc361cc',
+    'ReviewResourceAdmissionR29Tests.test_r40_03_frozen_policy_and_unchanged_runtime_oids': 'd83ac79c39a0824f4f3d27ad7bc9d9296a8f4e3d5ef1bf80a5cf0d712002d0f9',
+    'ReviewResourceAdmissionR29Tests.test_r41_01_frozen_carrier_tuple_is_literal': 'b290e836c8b78b0675774cfd55a39a7df5ddde200ebbe295cc985898e0028840',
+    'ReviewResourceAdmissionR29Tests.test_r41_02_frozen_subject_and_self_are_literal': '4174020ceba4924a1446d06ca3f80de4805f6d7f0fd3597cdd20b890780a94f4',
+    'ReviewResourceAdmissionR29Tests.test_r41_03_frozen_policy_and_unchanged_runtime_oids': '15985d967715130fa398d53121aca6f1cddb82ed9ee85f959e38a121e6a149d4',
+    'UniversalProviderControlTests.test_r10_01_capsule_poison_blocks_distinct_output_before_acquisition': '6a77fb4220d527db60bdc58926b5dbc35f7d1c855d2c72670e67d2af2c37f327',
+    'UniversalProviderControlTests.test_r10_02_broker_artifact_poison_blocks_fresh_lease_and_close': '050d2e93d4a93e4cad742ac6e5903b2563e9deee6beab0fba0849a7a53c1b1cd',
+    'UniversalProviderControlTests.test_r10_03_posix_runtimeerror_close_poison_blocks_output_rotation': '754e9f0aad3a60dda4947d8f45147e6271912494ca3e8a8e0219674f61fbf473',
+    'UniversalProviderControlTests.test_r11_01_root_lock_linearizes_terminal_authorize_confirm_and_close': '52e2d938def8f6fba77165455e4e57c4f85d1c4e88c365711e8633f6c405b038',
+    'UniversalProviderControlTests.test_r11_02_all_prepared_lease_owners_fit_exact_poison_bound': '0d2a07943265f813f6731c14b31335452b5a81e01fbdad27ca1231e6ebc2b38f',
+    'UniversalProviderControlTests.test_r11_03_os_lock_unlock_and_close_failures_are_attempt_once_no_echo': 'df4d4d0f5d403629a591c4768934208aeb232e2cf5a91dfca03cf7e892b6790c',
+    'UniversalProviderControlTests.test_r11_04_close_and_del_are_assertions_not_child_release': 'b90a2801f880170e594e23700ac15d3e063a4af2082533b22d9dfba8f6505132',
+    'UniversalProviderControlTests.test_r12_01_manifest_self_uses_canonical_git_blob_under_crlf_checkout': '773e7f39a2cb1934e87f1d9521e02e4eb88fe0a0ef3819ca651ec4240649318b',
+    'UniversalProviderControlTests.test_r12_02_posix_hostile_mutations_patch_actual_publication_syscall': 'c74bfec0fbc2ae2b23be84f9f5ca07312556042bca8f549f4edbd256ac635f3f',
+    'UniversalProviderControlTests.test_r13_01_prepare_before_reset_confirm_after_is_denied_and_fenced': 'c4041622ee4fabba761028b48be5a4908cfc951d81e2b787217b2ccf99153268',
+    'UniversalProviderControlTests.test_r13_02_exact_reviewed_launch_profile_is_required_and_attested': 'b6e0c177e1524bebddbeee93366b221467270134091303d3a6e60a5593d925e0',
+    'UniversalProviderControlTests.test_r13_03_turn_context_and_all_token_ceilings_are_argv_bound_and_attested': 'eca3b6d136fee25b494418b4b9e3291d7f2a809922f1a2aa2ba7e641d6995298',
+    'UniversalProviderControlTests.test_r13_04_broker_recomputes_current_and_prior_demand_from_frozen_inputs': 'be3a0f11d015e9657110bb3382443e45142d467f62d677e2057d572169bdee97',
+    'UniversalProviderControlTests.test_r13_05_rollout_requires_containment_and_forbids_stage_skips': '15d5ec6ab71233ea513764bf1c7bbf29d023e89501906ecfd42887ebaeee6119',
+    'UniversalProviderControlTests.test_r14_01_posix_directory_close_refusal_poison_is_attempt_once': 'c194cd91f2d90756e84741ecdab02ecd02689db9f6beef90472488e3041d816b',
+    'UniversalProviderControlTests.test_r15_01_single_request_process_permit_is_persisted_and_one_use': '68472ab10e9c5ccbc082a871cb4c6b6824da7a03b96c5ff6ff8e382878d77d0e',
+    'UniversalProviderControlTests.test_r15_02_semantic_demand_is_order_independent_and_idle_receipt_is_broker_signed': '10edf0fe57a1af2cf8b543d3a95f0894d24bbe56e4e021b3bd4e6e15de9e4e1a',
+    'UniversalProviderControlTests.test_r15_03_mutable_lease_capacity_cannot_extend_immutable_attestation': 'c8724c3f5f23fd8eb5a321160755bb8b017c2dc23543834e6c5df98f33be5e63',
+    'UniversalProviderControlTests.test_r15_04_runtime_watchdog_marks_termination_required_at_boundary': 'a7f7594dedc01e4229833f33c6dbfa828691b1ebc0bfd6d7b0e4dfee3b2fe7f2',
+    'UniversalProviderControlTests.test_r15_05_quality_floor_and_exact_argv_contract_reject_weak_or_extra_launches': 'd2adc04d9a3db561224b00ff0652e8cabe1f74bcc37599f87613c8d457618826',
+    'UniversalProviderControlTests.test_r15_06_alternate_state_root_cannot_bypass_machine_quota_lock': 'ceb0f0c5a76b1491c9414135595d40d4e1216eb9c9813c526122099411d30d4f',
+    'UniversalProviderControlTests.test_r15_07_successful_canary_returns_to_containment_and_receipt_opens_once': '00cd76faabe3eb3013d43dfdb51d78ebd43eb78cd944f52dbd45618148b5f7ec',
+    'UniversalProviderControlTests.test_r16_01_prior_idle_is_persisted_fresh_monotonic_and_one_use': '80fb6ada1d9c09392ca4ed0d44e7f8c53862b6b6e8d4f062c1bb6f5e0e75c6a9',
+    'UniversalProviderControlTests.test_r16_02_broker_pinned_canonical_demand_rejects_fabricated_ready': 'a94c9565916c335cb660cf71dc5504b25038379badd458012e2cd20bb8cce2e3',
+    'UniversalProviderControlTests.test_r16_03_usage_checkpoints_reserve_terminal_completion_exactly_once': '75633e944b24792e8234a81fed9dbe89fcdfecd9b86333e34a3ed16c2fa78ad2',
+    'UniversalProviderControlTests.test_r16_04_durable_cross_root_claim_survives_owner_loss_until_authenticated_recovery': '8eeed4be1d673edf54a808d63bcf5123ceb2a2c22cca38c5d1fb0241015fbfe9',
+    'UniversalProviderControlTests.test_r16_05_temporal_binding_drift_closes_canary_and_retains_fences': '16caa60f6ac1371c17e70319df3e95df8f76670bf39b2a5707473c13e6ac40a2',
+    'UniversalProviderControlTests.test_r16_06_typed_quality_and_boundary_certifications_are_hmac_bound_and_stored': '981fa054d4a8f9e053f5b73b0f023d51966c13f9326951fc1e978a0c304411ef',
+    'UniversalProviderControlTests.test_r16_07_canary_requires_hmac_output_quality_and_usage_reconciliation': 'b593135c1226b511db26fef368bcc1680932bb1b3a2ac84c4500960782e6c506',
+    'UniversalProviderControlTests.test_r16_08_reusable_permit_cli_is_absent_and_never_reads_secret': 'efe54f651a1ef4fa8856e5aff8e9d7a75830046a0f4574427f76ef80722c4554',
+    'UniversalProviderControlTests.test_r16_09_completed_usage_accumulates_across_terminal_leases': 'c4017f62bda94b6faba2960f141c4388e3bdcf2fe6c4e85e6a53c161c9cd42f5',
+    'UniversalProviderControlTests.test_r16_10_termination_required_is_monotonic_and_cannot_mint_canary_success': 'c8e34722d177f44eb97d633cd27821c2fa16f380086d960f4ee9d71c31c23b0e',
+    'UniversalProviderControlTests.test_r16_11_open_rejects_unparsed_or_forged_canary_receipt_rows': 'a79d7cd5c293ca3baacb3ae666beb6ad34d5388ba8a1039f7d9eaf89531e5305',
+    'UniversalProviderControlTests.test_r16_12_provider_permit_token_ceilings_have_exact_keys': 'b1564c350e75f40eca2ee9494f90df78cb0743cb5f2b13e156d8747b8ca47819',
+    'UniversalProviderControlTests.test_r16_13_manifest_verifies_exact_ordered_reconciliation_and_forged_negatives': 'cb9f55d4458ec6864e97cfe0a4d2c074c5dcd532d53b3e8531ebb88662e8b7d4',
+    'UniversalProviderControlTests.test_r17_01_terminal_reserve_is_bound_to_frozen_checkpoint': '1f51c9928b06d415d81c3e6dde5147c3c7b4595c68f0bdfc54eb605ef28b2ee0',
+    'UniversalProviderControlTests.test_r17_02_checkpoint_head_tamper_blocks_terminal_permit': 'ec73c0f11224b67805cc75179effa3974854cda9ab7b0fd940ad64e908fedd28',
+    'UniversalProviderControlTests.test_r17_03_quota_release_is_published_before_local_success': '6bd7d450891c9a09fcb29e50f4bfcd29263066093fd8fe810e67f494b047e9ac',
+    'UniversalProviderControlTests.test_r17_04_quota_root_is_not_reselected_from_changed_home': '0607e5d1739836a5d986f30f2891ba6aedfdd96fc822c3a18d5d45c528948479',
+    'UniversalProviderControlTests.test_r17_06_prepared_quota_publication_retries_exactly': '9917b721f20b28acfeee8c3f775b8f85ab8ae5f65a01053db5faa04950c4ef96',
+    'UniversalProviderControlTests.test_r17_07_low_level_request_primitives_are_not_public': 'bf7f13222f99aa35ff96cad3197fa02e441a08924380cb58ab31a0958178763b',
+    'UniversalProviderControlTests.test_r17_08_completed_usage_is_partitioned_by_each_capacity_window': 'd14fd5aa6a286ed4f128930ddfea497f2a837885991eab4aa3a5cc76c34fde28',
+    'UniversalProviderControlTests.test_r17_09_manifest_verifies_exact_ordered_merge_and_forged_negatives': '239ff2e8eae21f33f9e4580ccec9ba85b099030a7dd29c628d346a25a3e4814c',
+    'UniversalProviderControlTests.test_r18_01_reference_candidate_exposes_no_callback_execution_boundary': 'd87005bc7172c48c7a7801eed6d89ca3498cdabaee397eae4ff24e880ded8022',
+    'UniversalProviderControlTests.test_r18_02_crash_before_local_publication_reuses_exact_prepared_claim': '8eacccb46fdbd557ac17d688a3cc21e72f5a954c72fd05f3c509260c626dec83',
+    'UniversalProviderControlTests.test_r18_03_os_account_authority_ignores_home_in_fresh_processes': '4cf7f95de2d36a6fcf93b4ebdf0609f019caa93698aea5089aa5c7b8e6ea2eb6',
+    'UniversalProviderControlTests.test_r18_04_dead_after_zero_checkpoint_charges_full_reservation': '792fbffe000f4c5c64369d0f0d9106e2317f0cabb4559fed019a06b25d1a0a73',
+    'UniversalProviderControlTests.test_r18_05_same_observer_or_fleet_key_is_not_independent': '771e22d3f158569ee5bb854ba3d084ddde42cc2a959be3c0652773127e017321',
+    'UniversalProviderControlTests.test_r18_06_manifest_binds_final_lineage_and_grants_zero_gate_authority': '3d409517e61ca8c749b1e203a9db4abed53a7e90b6d0275a918c407f4be57b3b',
+    'UniversalProviderControlTests.test_r19_01_prepared_retry_survives_restart_with_advancing_time': '6869a4ba676576b737f70f0199a43b84708e2c9a2028b02acab6826c6f0df071',
+    'UniversalProviderControlTests.test_r19_02_nonreproducible_prepared_claimant_stays_fenced': '5dc2909716db860fd71326a4bdebd61976e8b42696ff39f10442691af20f6b84',
+    'UniversalProviderControlTests.test_r19_03_canonical_authority_root_reparse_is_rejected': 'db4ef02387188b0d2ba66e57ebbe4d7ba78d4d8678ad1b360c7d92116121335d',
+    'UniversalProviderControlTests.test_r19_04_real_authority_root_symlink_is_rejected_when_supported': '5a0edc003a4c3d207f66ace2c1859bfaca94b495bf9a281d6c2e93abf3ac085c',
+    'UniversalProviderControlTests.test_r19_05_observer_keys_cannot_alias_launch_artifact_identities': 'f9d7bc786c8f90421a40bdd98717dd9140451b0c406d53dc09e71dcbd69613f0',
+    'UniversalProviderControlTests.test_r19_06_test_brokers_never_mutate_default_account_ledger': '55c77b754ec2fdd0bf9ab5e8932e814f88c5e6bd2d01a7392ab44260fbebcd48',
+    'UniversalProviderControlTests.test_r19_07_manifest_binds_restart_subject_and_grants_zero_authority': '6ea833cb72dafe13a445a7cb147224f03413a27f6894dc827b1c5142f4565639',
+    'UniversalProviderControlTests.test_r20_01_stale_caller_time_cannot_replay_after_authoritative_expiry': '175fe4bd2b0ad4156135c39b47ed25faf392d25b950e02ff21c574476e190007',
+    'UniversalProviderControlTests.test_r20_02_future_caller_time_cannot_extend_sampled_lease': '5ed819618451cca778996d5f96ac694a4bc48a8e7f93d15962f81734253f5344',
+    'UniversalProviderControlTests.test_r20_03_every_authority_ancestor_component_is_reparse_checked': 'a29503bed784e209237d42113edcae3445cd39d51dd4490a64f6dbf8eabee38e',
+    'UniversalProviderControlTests.test_r20_04_real_ancestor_junction_or_symlink_is_rejected': '271f28dd28aefb87d98bc4eb3996b52fe777a1a1aa40a972f6bdbeb862e4fdc1',
+    'UniversalProviderControlTests.test_r20_05_universal_workflow_runs_exact_workbench_suite': '2f81f499365cb04491b72d7d12e0c6fb25416d7160e22022f43d859a8382dba1',
+    'UniversalProviderControlTests.test_r20_06_manifest_binds_clock_path_ci_subject_and_zero_authority': 'b92f322dda66ef27763d3c057224608940c7688a1c91e3d314952f0e5c4bf759',
+    'UniversalProviderControlTests.test_r21_01_root_lock_wait_resamples_and_cannot_prepare_expired_lease': 'c04c77b7eacd8833f9534f433982588749a0965f4f5f72972e895fb002ea6b3b',
+    'UniversalProviderControlTests.test_r21_02_quota_lock_wait_resamples_before_durable_publication': 'a17162bbc98d40c97798314c79b4c947f72896328db64af44be71ec14f42428d',
+    'UniversalProviderControlTests.test_r21_03_posix_missing_account_base_is_created_nofollow': '7a617198b0a41e94653a76b3bc94ce04d177fb83c5750c0343f7ca0f290e7bd1',
+    'UniversalProviderControlTests.test_r21_04_ledger_component_swap_is_poisoned_before_use': 'bd90fa578c5489da3b30eb696dc8dc5d19f088bb080dfc0432d330063a9f78cf',
+    'UniversalProviderControlTests.test_r21_05_lock_component_swap_is_poisoned_before_use': 'aac0c6a7d7075a92b15e644dba5f7f7269233a30337abc0bad59b672c88bbe7c',
+    'UniversalProviderControlTests.test_r21_06_provider_budget_law_is_request_scoped_and_zero_authority': '23cb6ed2cb85fc2f42e85c3796c18849cadee0685451828cd563859aee064b90',
+    'UniversalProviderControlTests.test_r21_07_manifest_binds_postlock_path_subject_and_zero_authority': '37295314976e46d77c7d62f0af280587ac2d2a9cb22a0cfcb04273d8a9ddbce7',
+    'UniversalProviderControlTests.test_r22_01_ledger_child_replacement_is_poisoned_before_open': '4fecfb65459fc40ff6710a65986a3f83366587b6f29870bd26398c99e8c152dc',
+    'UniversalProviderControlTests.test_r22_02_lock_child_replacement_is_poisoned_before_open': 'eee102753a1e0e01eaface0dcefb6e8f973695e4d710fb0295853c0f547f883f',
+    'UniversalProviderControlTests.test_r22_03_native_ledger_child_identity_twin_rejects_replacement': 'd5bc802ff0cfe2a9eb3d91ca80c4ff74ce9ffdc47c06ba5e7562b68da4e59047',
+    'UniversalProviderControlTests.test_r22_04_native_lock_child_identity_twin_rejects_replacement': '4648511382ca79b8d62975defbb74c8cf2e01298b872c8a298a9002a4cf784db',
+    'UniversalProviderControlTests.test_r22_05_attended_receipt_is_private_strict_and_recomputed': '9118b618760f823c9fe6d25173d72cb0cc66f9b78809034067c4025d2b27a985',
+    'UniversalProviderControlTests.test_r22_06_token_laws_are_strict_structured_policy': '13f9ca5b38e38c065e6c0b107c414302ccf22843bd6b0caf4b6d19a53263d41c',
+    'UniversalProviderControlTests.test_r22_07_manifest_binds_child_receipt_policy_and_master_merge': '00d99ca6c59e6bb8ee76267a89e36901a36c45eb7c27ac316de74cc6d4410519',
+    'UniversalProviderControlTests.test_r23_01_attended_duration_and_provenance_are_non_authoritative': 'fb13eff99ecbf7bb634546d499e15a21251e099fd0e225fe3528fea9a10ee42f',
+    'UniversalProviderControlTests.test_r23_02_manifest_binds_semantics_and_zero_authority': 'dd90818b19861aaf9bb4619993b136d3891ff333aaa5b894c17cd93f9b825eb4',
+    'UniversalProviderControlTests.test_r24_01_rfc3339_nanoseconds_floor_without_microsecond_truncation': 'ddc8711acad6ad504fbf4e4b44292feab238491819e42cde9aa8af61fb6d1469',
+    'UniversalProviderControlTests.test_r24_02_manifest_binds_exact_timestamp_evidence_and_zero_authority': '425e96c2f24a0e50a7c1a9db6f0d157ba120d5bb5e8010eeb30431ebb5d3c2b3',
+    'UniversalProviderControlTests.test_r25_01_two_endpoint_truncation_regression_stays_floor_one': '8c136f6d32938e0911daaf5e450e580000b7ef3c8aaa586e0b1a08c2c90c9348',
+    'UniversalProviderControlTests.test_r26_02_manifest_binds_posix_fixture_repair_and_r25_parent': '4b0fb3481d342900425b461bd78eb5899ca7828df5cb47553ee118197fce1470',
+    'UniversalProviderControlTests.test_r26_03_manifest_verifies_frozen_candidate_across_later_doctrine': '8e5970c50294871a8b83661f7782b02bdf90548c50501a48141ed6fde27a96b7',
+    'UniversalProviderControlTests.test_r26_04_manifest_requires_frozen_candidate_ancestry': 'c8cfb4d8497149a3ac75ca3c23b8c7c189f08487e52daddb73f803180920e569',
+    'UniversalProviderControlTests.test_r26_05_manifest_rejects_post_candidate_manifest_drift': 'de3bd26dbb4d7847393bca58b5cf08a3b2cede1fc221c151ef5a35bcbdf7665c',
+    'UniversalProviderControlTests.test_r26_06_manifest_rejects_current_subject_substitution': 'c53055e734d9807a608f6ab9c58eda04616406d47e8fa7579f128f5b860df5f2',
+    'UniversalProviderControlTests.test_r2_01_signed_gate_record_r1_red_r2_green': 'dd7079bf795851b3d26137b742d02d8c726ca165a1ac48a77fb2f0f57ddb99a5',
+    'UniversalProviderControlTests.test_r2_02_multihost_declaration_r1_red_r2_green': '15a6485fa0fa2d840531af2fc1d13bf4b4bbd07f0e29500045c088fb584a983c',
+    'UniversalProviderControlTests.test_r2_03_process_receipts_r1_red_r2_green': 'b74376375ec9960f1a036dd44f2f54181b57234271ea65d12c08337569c715ae',
+    'UniversalProviderControlTests.test_r2_04_replay_restart_authority_r1_red_r2_green': 'dbc04782e1324a9075a077996ae660b8e258af61b830d6ad97effea590fe1d7c',
+    'UniversalProviderControlTests.test_r2_05_canary_epoch_and_reseal_r1_red_r2_green': 'fe232643c6da5f0dc00851c204864ff36a0341e28dfb46ff1609d44d326555ae',
+    'UniversalProviderControlTests.test_r2_06_complete_inventory_bytes_r1_red_r2_green': 'ef0cd39bc73f66ee0d0fda1286f2124b926162c8149d71e34078b91817c57228',
+    'UniversalProviderControlTests.test_r2_07_two_phase_retained_handles_r1_red_r2_green': '66819bf6b4b865023aec1e60a86cae1264e85f296e9173ab657c24019b624c9e',
+    'UniversalProviderControlTests.test_r2_08_portable_git_blob_manifest_r1_red_r2_green': '40b98aab7e4d13026fc4b1be8958321b66a7764809ca13e3b9d5be3122b7d264',
+    'UniversalProviderControlTests.test_r2_09_digest_grammar_r1_red_r2_green': '43da81ca1616fcf64e439f850323b06cf85149504e65fa1634449d5272f8413d',
+    'UniversalProviderControlTests.test_r2_10_capacity_and_request_timeline_r1_red_r2_green': 'b7fbe344ca8b3b1ff9ef39e7c7ba11edc2b1fa94c2763b711f01a3c0898d08be',
+    'UniversalProviderControlTests.test_r2_11_bounded_hashing_and_amplification_r1_red_r2_green': '74ec2c875df54ce8b6029152b536d9940ee536eb8c39e294082c3843885e05a3',
+    'UniversalProviderControlTests.test_r2_12_dual_platform_hash_locked_workflow_r1_red_r2_green': '3d72d271bdcde3e94d690ea9915daa78e194bf3285ca85e8d6b0a536f291938c',
+    'UniversalProviderControlTests.test_r2_13_candidate_not_ratified_r1_red_r2_green': '669b3138d9ee702a009639320f692299b09e1d0f4892802e382fce7aa7a942e9',
+    'UniversalProviderControlTests.test_r2_14_lock_and_rollback_controls_remain_r1_red_r2_green': 'ffa993586e14ff11280afa770ba19eff9b2196a14873e268d66fd835d20d6495',
+    'UniversalProviderControlTests.test_r3_01_expired_prepared_lease_never_allows_and_remains_fenced': 'd46ce1a1412f5f447c6fdf7398de91e045323cd02f8fc5edfdd0aa012662ed2e',
+    'UniversalProviderControlTests.test_r3_02_capacity_rollover_blocks_pre_reset_evidence': '6cefed2d7f898df139c46908ccec2cef152ed800c530ced388a1e4644e6c94f0',
+    'UniversalProviderControlTests.test_r3_03_capsule_unique_open_and_actual_handle_limits': 'fe05c09bd8169a20275f505f4bab03888d28f7fe82f3c73d5b464242c56356a6',
+    'UniversalProviderControlTests.test_r3_04_capsule_unexpected_pre_publish_failure_cleans_all': '8e1282aaf5528d29df74aa9b4055719f980a0b474ddf2e1227b5ca77d878047e',
+    'UniversalProviderControlTests.test_r3_05_capacity_estimates_are_broker_derived_not_caller_selected': '5266411ca57480807e49fc37c23eb27e8ac13826cc26a021ba741c2bc71e4ac4',
+    'UniversalProviderControlTests.test_r3_06_ambiguous_canary_recovery_reseals_and_malformed_is_stable': '5d1dca87653389284ec5c9fbfb4288a43b83cbb71f1884a6d05d6446afbd5374',
+    'UniversalProviderControlTests.test_r4_01_single_pass_mutation_bytes_match_bound_source_hash': '3c3cfd03332feab62fdb84a93ef6f0cff045d895f6821374aa93db091d1d29d6',
+    'UniversalProviderControlTests.test_r4_02_growing_source_reads_fixed_budget_plus_one_probe': '0aeeea9b792bf8c7f6888f5c4b33fae0be979f6476efdca29cf33741c86ccd98',
+    'UniversalProviderControlTests.test_r4_03_no_clobber_publication_preserves_foreign_races': 'd79cb1561d158278412ad8fc08659208288a367280976e40732d89df3df19ef8',
+    'UniversalProviderControlTests.test_r5_01_publication_binds_retained_temp_identity_and_exact_bytes': '8bc3a6710f6dee195da8c1866019a7424990579917d7f24007728b27cc8325da',
+    'UniversalProviderControlTests.test_r5_02_temp_collision_preserves_foreign_temp_and_reason': 'e480764cfb78037d1c655715364b5a918da7d01190b8a82593be386fc4683dbd',
+    'UniversalProviderControlTests.test_r5_03_retained_artifact_resume_reads_expected_plus_one_only': 'e87fcacc0f5518f08c157007c61d3351b2b5ce50bab69565eae2b2933bc5ed4f',
+    'UniversalProviderControlTests.test_r5_04_sixty_four_hardlink_aliases_use_one_open_hash_pass': '03a62a47217eaabb56ff5a63aca426df44cfe7baa8a2cb09e5ed6acb4eea2619',
+    'UniversalProviderControlTests.test_r5_05_link_raise_after_real_link_is_verified_success': 'eb362d263e200c26e9ab3f88a2d05a9d6d10ed1401d0614d6adf0d91d764365b',
+    'UniversalProviderControlTests.test_r6_01_private_temp_replacement_survives_handle_bound_cleanup': 'bfa1254b481dfe7148b4e60002e4a679072529eb7bf68b5ef2c03fa815bfc623',
+    'UniversalProviderControlTests.test_r6_02_public_replacement_survives_and_no_path_cleanup_exists': 'c837a49898be4ef3f4bd2d1df6211dd8aa9b3a141f2366b127d9a5bcfc6fad1c',
+    'UniversalProviderControlTests.test_r6_03_cleanup_refusal_is_surfaced_and_bounds_repetition': '81e2bef5ba8a7e793171997cda13770cada389bdcca9e02f3aae967d419e7faf',
+    'UniversalProviderControlTests.test_r7_01_unprivileged_linux_proc_fd_publication': '068ce3de80d31017c4e26eb90b182155b6e46f671fc873d04f7829685fe94419',
+    'UniversalProviderControlTests.test_r7_02_temporary_cleanup_is_required_runtime_evidence': '555e8d5835e36c0b92f29e9952fe354d021f271aee3b2233062cdf5b10d6459c',
+    'UniversalProviderControlTests.test_r7_03_cleanup_helper_exception_is_contained_after_publication': '398983649d904d3a63d55667a044ef14f2c0eaff8eaf98f41f2475ed8b8717f9',
+    'UniversalProviderControlTests.test_r7_04_cleanup_helper_exception_failure_and_success_are_stable': '629afb01333edb69c7519a898d9741876cf14464958e2cb996f2f4598a7366b8',
+    'UniversalProviderControlTests.test_r8_01_primary_failure_has_no_private_exception_topology': '3784a0a5ac4fd3151a533d9fc6ba905c04a5d25d005764aff8e366aeda3e9142',
+    'UniversalProviderControlTests.test_r8_02_cleanup_failure_has_no_private_exception_topology': '908c5450a19174a3a35ef76117e9032b1da5b0ffdb5f5e6bdd4e4c77fe70cf84',
+    'UniversalProviderControlTests.test_r8_03_open_osfhandle_failure_closes_native_owner_once': '0131e1dde7a05854d0d8ed9631c32232386a758e5fb5db48c48e6ff9f413fd40',
+    'UniversalProviderControlTests.test_r8_04_fdopen_failure_closes_descriptor_owner_once': 'd2f120805b687fb7e83ff8de1c48d2a009249083af706f16e9d06a4381863757',
+    'UniversalProviderControlTests.test_r8_05_posix_fdopen_transfer_closes_exact_owner_once': 'b23840cf0cd21439cfac80255d3bbbd87f95aaf4d3c14f28ab01f791581ec845',
+    'UniversalProviderControlTests.test_r9_01_preflight_failure_is_fully_sanitized': '5ef3454f361a14aa433a3d7be876edccfadddfddc1dd702409311f2e19c47c27',
+    'UniversalProviderControlTests.test_r9_02_unproven_publication_closes_never_report_clean': '896e1fd07c2587ec035641ded4a30b243ae98cb0095bc334bc1cedd0d6480162',
+    'UniversalProviderControlTests.test_r9_03_finalizer_exception_class_is_sanitized_and_retained': '3e1fc6f4d36a187430781f90dc17595cf5e8d5fcd28ed9a8fc95cba54907b64a',
+    'UniversalProviderControlTests.test_r9_04_false_disposition_blocks_native_and_descriptor_failures': 'bb8bb40fc556ff82f88389ef258989fe15edf3057021a1ba2e34b8f491ac4f79',
+    'UniversalProviderControlTests.test_r9_05_false_closehandle_is_unproven_and_fenced': '193d8506fce4ef631cf954e24100add835e79a381a99249391849a37b2a43369',
+    'UniversalProviderControlTests.test_r9_06_posix_close_refusal_fences_repetition': '1d25fe069edd4e8225ee2ae5bfbffe4360a58dfccbe4f53899f427bb5e1aa64c',
+    'UniversalProviderControlTests.test_r9_07_source_and_artifact_close_refusals_retain_exact_owners': '705e781f11b3da87ceadb967b43151c475fec89f0346e13b8ac47729526cf65a',
+})
 LAYER_PATH_PATTERN = re.compile(
     r"^manifests/universal-provider-control-reconciliation-r([0-9]+)\.json$"
 )
@@ -1248,6 +1444,66 @@ def verify_r42(manifest: dict[str, Any], treeish: str) -> None:
         raise ManifestError("R42_VALIDATION_AUTHORITY_INVALID")
 
 
+def verify_r43(manifest: dict[str, Any], treeish: str) -> None:
+    """Verify exact adverse R42 base and complete historical-test quarantine."""
+
+    if manifest.get("status") != "CANDIDATE_ZERO_AUTHORITY" or manifest.get(
+        "subjectCoverage"
+    ) != "R43_HISTORICAL_TEST_QUARANTINE_ZERO_AUTHORITY":
+        raise ManifestError("R43_STATUS_INVALID")
+    if manifest.get("candidateBase") != R43_BASE:
+        raise ManifestError("R43_BASE_INVALID")
+    tree, parents = _commit_tuple(R43_BASE["commit"])
+    if tree != R43_BASE["tree"] or parents != R43_BASE["orderedParents"]:
+        raise ManifestError("R43_BASE_OBJECT_MISMATCH")
+    if [_commit_tuple(parent)[0] for parent in parents] != R43_BASE["orderedParentTrees"]:
+        raise ManifestError("R43_BASE_PARENT_TREE_MISMATCH")
+    descendant = "HEAD" if treeish == ":" else treeish
+    if not _is_ancestor(R43_BASE["commit"], descendant):
+        raise ManifestError("R43_BASE_NOT_ANCESTOR")
+    if manifest.get("authority") != {
+        "providerExecution": False, "processSpawnResumeKill": False,
+        "containmentOrCanaryCredit": False, "automaticGateState": "CLOSED",
+        "runtimeImplementation": "NOT_INSTALLED_UNCONDITIONAL_REFUSE",
+        "activationRequiresSeparateAdjudication": True, "authorRecused": True,
+    }:
+        raise ManifestError("R43_AUTHORITY_INVALID")
+    policy = manifest.get("reviewAdmissionPolicy")
+    if not isinstance(policy, dict) or policy.get("source") != R27_SOURCE:
+        raise ManifestError("R43_SOURCE_SUBJECT_MISMATCH")
+    if policy.get("identity") != R29_IDENTITY:
+        raise ManifestError("R43_EXACT_PROFILE_MISMATCH")
+    if policy.get("cacheAdmissionMode") != "EXACTLY_BOUNDED_AND_CHARGED":
+        raise ManifestError("R43_CACHE_ADMISSION_MODE_MISMATCH")
+    if policy.get("capacity", {}).get("requiredQuotaWindows") != ["session", "weekly"]:
+        raise ManifestError("R43_QUOTA_WINDOWS_MISMATCH")
+    if manifest.get("reviewAdmissionPolicyDigest") != R43_POLICY_DIGEST or canonical_policy_sha256(policy) != R43_POLICY_DIGEST:
+        raise ManifestError("R43_POLICY_DIGEST_MISMATCH")
+    subjects = manifest.get("subjectFiles")
+    if not isinstance(subjects, list) or [subject.get("path") for subject in subjects if isinstance(subject, dict)] != R43_SUBJECT_PATHS:
+        raise ManifestError("R43_CARRIER_SUBJECT_MISMATCH")
+    try:
+        import jsonschema
+        schema_raw = _git(_blob_spec(treeish, REVIEW_SCHEMA))
+        assert isinstance(schema_raw, bytes)
+        schema = json.loads(schema_raw.decode("utf-8"), object_pairs_hook=_pairs)
+        jsonschema.Draft202012Validator.check_schema(schema)
+        if next(jsonschema.Draft202012Validator(schema).iter_errors(policy), None) is not None:
+            raise ManifestError("R43_POLICY_SCHEMA_INVALID")
+    except ManifestError:
+        raise
+    except Exception as exc:
+        raise ManifestError("R43_POLICY_SCHEMA_INVALID") from exc
+    if manifest.get("validation") != {
+        "universalProviderControl": {"required": True, "claimedGreen": False},
+        "providerCapacityGovernor": {"required": True, "claimedGreen": False},
+        "canonicalCapacityControl": {"required": True, "claimedGreen": False},
+        "hosted": {"requiredFresh": True, "claimedGreen": False},
+        "providerInvocation": False, "activation": False,
+    }:
+        raise ManifestError("R43_VALIDATION_AUTHORITY_INVALID")
+
+
 def verify_r29(
     manifest: dict[str, Any], treeish: str, *, verify_objects: bool = True
 ) -> None:
@@ -1488,7 +1744,8 @@ LAYER_DESCRIPTORS = (
     ManifestLayerDescriptor(R39_MANIFEST, FROZEN_R39, "fleet-universal-provider-control-candidate-manifest/v3", verify_r39, FROZEN_R39),
     ManifestLayerDescriptor(R40_MANIFEST, FROZEN_R40, "fleet-universal-provider-control-candidate-manifest/v3", verify_r40, FROZEN_R40),
     ManifestLayerDescriptor(R41_MANIFEST, FROZEN_R41, "fleet-universal-provider-control-candidate-manifest/v3", verify_r41, FROZEN_R41),
-    ManifestLayerDescriptor(R42_MANIFEST, CURRENT_CANDIDATE, "fleet-universal-provider-control-candidate-manifest/v3", verify_r42, R42_BASE["commit"]),
+    ManifestLayerDescriptor(R42_MANIFEST, FROZEN_R42, "fleet-universal-provider-control-candidate-manifest/v3", verify_r42, FROZEN_R42),
+    ManifestLayerDescriptor(R43_MANIFEST, CURRENT_CANDIDATE, "fleet-universal-provider-control-candidate-manifest/v3", verify_r43, R43_BASE["commit"]),
 )
 
 
@@ -1505,7 +1762,8 @@ LAYER_TRUST_ANCHORS: Mapping[str, ManifestLayerTrustAnchor] = MappingProxyType(
         R39_MANIFEST: ManifestLayerTrustAnchor(39, R39_MANIFEST, FROZEN_R39, "fleet-universal-provider-control-candidate-manifest/v3", verify_r39, FROZEN_R39),
         R40_MANIFEST: ManifestLayerTrustAnchor(40, R40_MANIFEST, FROZEN_R40, "fleet-universal-provider-control-candidate-manifest/v3", verify_r40, FROZEN_R40),
         R41_MANIFEST: ManifestLayerTrustAnchor(41, R41_MANIFEST, FROZEN_R41, "fleet-universal-provider-control-candidate-manifest/v3", verify_r41, FROZEN_R41),
-        R42_MANIFEST: ManifestLayerTrustAnchor(42, R42_MANIFEST, CURRENT_CANDIDATE, "fleet-universal-provider-control-candidate-manifest/v3", verify_r42, R42_BASE["commit"]),
+        R42_MANIFEST: ManifestLayerTrustAnchor(42, R42_MANIFEST, FROZEN_R42, "fleet-universal-provider-control-candidate-manifest/v3", verify_r42, FROZEN_R42),
+        R43_MANIFEST: ManifestLayerTrustAnchor(43, R43_MANIFEST, CURRENT_CANDIDATE, "fleet-universal-provider-control-candidate-manifest/v3", verify_r43, R43_BASE["commit"]),
     }
 )
 
@@ -1529,9 +1787,9 @@ def _tracked_reconciliation_paths(treeish: str) -> tuple[str, ...]:
     return paths
 
 
-FROZEN_R41_RECONCILIATION_PATHS = _tracked_reconciliation_paths(FROZEN_R41)
+FROZEN_R42_RECONCILIATION_PATHS = _tracked_reconciliation_paths(FROZEN_R42)
 EXPECTED_CURRENT_RECONCILIATION_PATHS = tuple(
-    sorted(FROZEN_R41_RECONCILIATION_PATHS + (R42_MANIFEST,))
+    sorted(FROZEN_R42_RECONCILIATION_PATHS + (R43_MANIFEST,))
 )
 
 
@@ -1584,7 +1842,7 @@ def _diagnose_layer_configuration(
         if descriptor.schema != expected_schema:
             raise ManifestError("MANIFEST_DESCRIPTOR_SCHEMA_INVALID")
         if descriptor.candidate == CURRENT_CANDIDATE:
-            if descriptor.report_candidate != R42_BASE["commit"]:
+            if descriptor.report_candidate != R43_BASE["commit"]:
                 raise ManifestError("MANIFEST_DESCRIPTOR_REPORT_INVALID")
         elif (
             re.fullmatch(r"[0-9a-f]{40}", descriptor.candidate) is None
@@ -1595,8 +1853,8 @@ def _diagnose_layer_configuration(
 
 def _validate_layer_descriptors(treeish: str) -> None:
     _diagnose_layer_configuration(LAYER_DESCRIPTORS, LAYER_TRUST_ANCHORS)
-    frozen_paths = _tracked_reconciliation_paths(FROZEN_R41)
-    if frozen_paths != FROZEN_R41_RECONCILIATION_PATHS:
+    frozen_paths = _tracked_reconciliation_paths(FROZEN_R42)
+    if frozen_paths != FROZEN_R42_RECONCILIATION_PATHS:
         raise ManifestError("MANIFEST_DESCRIPTOR_TRACKING_INVALID")
     tracked_paths = _tracked_reconciliation_paths(treeish)
     if tracked_paths != EXPECTED_CURRENT_RECONCILIATION_PATHS:

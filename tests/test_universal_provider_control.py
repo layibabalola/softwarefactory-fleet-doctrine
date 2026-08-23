@@ -11,6 +11,7 @@ import inspect
 import json
 import os
 from pathlib import Path
+import re
 import sqlite3
 import stat
 import subprocess
@@ -39,6 +40,182 @@ R13_DIRECTORY_CLOSE_FIXTURE = "os.close(directory)"
 
 def sha_file(path: Path) -> str:
     return "sha256:" + hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+class _HistoricalCurrentStateAccess(AssertionError):
+    pass
+
+
+class _ExplodingCurrentState:
+    def _raise(self, *_args: object, **_kwargs: object) -> object:
+        raise _HistoricalCurrentStateAccess("historical test reached current manifest state")
+
+    __getattribute__ = _raise
+    __call__ = _raise
+    __iter__ = _raise
+    __len__ = _raise
+    __getitem__ = _raise
+    __bool__ = _raise
+    __eq__ = _raise
+    __str__ = _raise
+    __fspath__ = _raise
+
+
+def _historical_runtime_methods(
+    current_round: int,
+) -> tuple[tuple[type[unittest.TestCase], str], ...]:
+    discovered = []
+    for candidate in vars(sys.modules[__name__]).values():
+        if not (
+            inspect.isclass(candidate)
+            and candidate.__module__ == __name__
+            and issubclass(candidate, unittest.TestCase)
+        ):
+            continue
+        for name in candidate.__dict__:
+            match = re.fullmatch(r"test_r(\d+)_.*", name)
+            if match is not None and int(match.group(1)) < current_round:
+                discovered.append((candidate, name))
+    return tuple(sorted(discovered, key=lambda row: f"{row[0].__name__}.{row[1]}"))
+
+
+def _historical_ast_inventory(current_round: int) -> dict[str, str]:
+    module = ast.parse(Path(__file__).read_text(encoding="utf-8"))
+    runtime_names = {
+        f"{case_type.__name__}.{name}"
+        for case_type, name in _historical_runtime_methods(current_round)
+    }
+    inventory: dict[str, str] = {}
+    for class_node in (node for node in module.body if isinstance(node, ast.ClassDef)):
+        for method in (
+            node for node in class_node.body if isinstance(node, ast.FunctionDef)
+        ):
+            qualified = f"{class_node.name}.{method.name}"
+            if qualified not in runtime_names:
+                continue
+            normalized = ast.dump(
+                ast.Module(body=method.body, type_ignores=[]),
+                annotate_fields=True,
+                include_attributes=False,
+            )
+            inventory[qualified] = hashlib.sha256(
+                normalized.encode("utf-8")
+            ).hexdigest()
+    if set(inventory) != runtime_names:
+        raise AssertionError("HISTORICAL_TEST_INVENTORY_CLASS_MISMATCH")
+    return inventory
+
+
+def _assert_historical_inventory(
+    expected: dict[str, str] | MappingProxyType,
+    current_round: int,
+) -> None:
+    actual = _historical_ast_inventory(current_round)
+    if set(actual) != set(expected):
+        raise AssertionError("HISTORICAL_TEST_INVENTORY_SET_MISMATCH")
+    if actual != dict(expected):
+        raise AssertionError("HISTORICAL_TEST_BODY_DIGEST_MISMATCH")
+
+
+def _run_historical_case_under_quarantine(
+    case_type: type[unittest.TestCase], method_name: str
+) -> None:
+    import check_universal_manifest as checker
+
+    current_state = _ExplodingCurrentState()
+    real_git = checker._git
+    real_blob_spec = checker._blob_spec
+    real_oid = checker._oid
+    real_frozen = checker._frozen_manifest_bytes
+    real_subjects = checker._verify_subjects_and_self
+    real_read_bytes = Path.read_bytes
+    real_read_text = Path.read_text
+
+    def reject_candidate(candidate: object) -> None:
+        if candidate in (":", "HEAD"):
+            raise _HistoricalCurrentStateAccess(
+                "historical test selected current Git/index state"
+            )
+
+    def guarded_git(spec: str, *, text: bool = False) -> bytes | str:
+        if spec in (":", "HEAD") or spec.startswith(":") or spec.startswith("HEAD:"):
+            raise _HistoricalCurrentStateAccess(
+                "historical test selected current Git/index blob"
+            )
+        return real_git(spec, text=text)
+
+    def guarded_blob_spec(treeish: str, path: str) -> str:
+        reject_candidate(treeish)
+        return real_blob_spec(treeish, path)
+
+    def guarded_oid(treeish: str, path: str) -> str:
+        reject_candidate(treeish)
+        return real_oid(treeish, path)
+
+    def guarded_frozen(treeish: str, *args: object, **kwargs: object) -> bytes:
+        reject_candidate(treeish)
+        return real_frozen(treeish, *args, **kwargs)
+
+    def guarded_subjects(*args: object, **kwargs: object) -> int:
+        reject_candidate(kwargs.get("candidate"))
+        return real_subjects(*args, **kwargs)
+
+    def guarded_reconciliation_read(path: Path, *args: object, **kwargs: object) -> object:
+        try:
+            relative = path.resolve().relative_to(ROOT.resolve()).as_posix()
+        except ValueError:
+            relative = ""
+        if re.fullmatch(
+            r"manifests/universal-provider-control-reconciliation-r[0-9]+\.json",
+            relative,
+        ):
+            raise _HistoricalCurrentStateAccess(
+                "historical test read a reconciliation manifest from the worktree"
+            )
+        reader = real_read_bytes if kwargs.pop("_bytes", False) else real_read_text
+        return reader(path, *args, **kwargs)
+
+    def guarded_read_bytes(path: Path, *args: object, **kwargs: object) -> bytes:
+        return guarded_reconciliation_read(path, *args, _bytes=True, **kwargs)  # type: ignore[return-value]
+
+    def guarded_read_text(path: Path, *args: object, **kwargs: object) -> str:
+        return guarded_reconciliation_read(path, *args, **kwargs)  # type: ignore[return-value]
+
+    def forbidden(*_args: object, **_kwargs: object) -> object:
+        raise _HistoricalCurrentStateAccess(
+            "historical test reached the current manifest pipeline"
+        )
+
+    patches = (
+        mock.patch.object(checker, "LAYER_DESCRIPTORS", current_state),
+        mock.patch.object(checker, "LAYER_TRUST_ANCHORS", current_state),
+        mock.patch.object(checker, "CURRENT_CANDIDATE", current_state),
+        mock.patch.object(checker, "MANIFEST", current_state),
+        mock.patch.object(checker, "R43_MANIFEST", current_state),
+        mock.patch.object(checker, "R43_BASE", current_state),
+        mock.patch.object(checker, "check", side_effect=forbidden),
+        mock.patch.object(checker, "_validate_layer_descriptors", side_effect=forbidden),
+        mock.patch.object(checker, "_execute_manifest_layers", side_effect=forbidden),
+        mock.patch.object(checker, "verify_r43", side_effect=forbidden),
+        mock.patch.object(checker, "_tracked_reconciliation_paths", side_effect=forbidden),
+        mock.patch.object(checker, "_git", side_effect=guarded_git),
+        mock.patch.object(checker, "_blob_spec", side_effect=guarded_blob_spec),
+        mock.patch.object(checker, "_oid", side_effect=guarded_oid),
+        mock.patch.object(checker, "_frozen_manifest_bytes", side_effect=guarded_frozen),
+        mock.patch.object(checker, "_verify_subjects_and_self", side_effect=guarded_subjects),
+        mock.patch.object(Path, "read_bytes", guarded_read_bytes),
+        mock.patch.object(Path, "read_text", guarded_read_text),
+    )
+    result = unittest.TestResult()
+    with contextlib.ExitStack() as stack:
+        for patch in patches:
+            stack.enter_context(patch)
+        case_type(method_name).run(result)
+    if result.errors or result.failures:
+        detail = "\n".join(text for _, text in (*result.errors, *result.failures))
+        if "historical test reached" in detail:
+            raise _HistoricalCurrentStateAccess(detail)
+        raise AssertionError(f"HISTORICAL_TEST_QUARANTINE_FAILURE\n{detail}")
 
 
 class UniversalProviderControlTests(unittest.TestCase):
@@ -1641,7 +1818,10 @@ class UniversalProviderControlTests(unittest.TestCase):
     def test_r2_08_portable_git_blob_manifest_r1_red_r2_green(self) -> None:
         import check_universal_manifest as checker
 
-        raw = checker._git(checker._blob_spec(":", checker.MANIFEST))
+        raw = checker._git(checker._blob_spec(
+            checker.FROZEN_CANDIDATE,
+            "manifests/universal-provider-control-reconciliation-r2.json",
+        ))
         self.assertIsInstance(raw, bytes)
         matches = list(checker.SELF_PATTERN.finditer(raw))
         self.assertEqual(len(matches), 1)
@@ -3098,7 +3278,10 @@ class UniversalProviderControlTests(unittest.TestCase):
     def test_r12_01_manifest_self_uses_canonical_git_blob_under_crlf_checkout(self) -> None:
         import check_universal_manifest as checker
 
-        canonical = checker._git(checker._blob_spec(":", checker.MANIFEST))
+        canonical = checker._git(checker._blob_spec(
+            checker.FROZEN_CANDIDATE,
+            "manifests/universal-provider-control-reconciliation-r12.json",
+        ))
         self.assertIsInstance(canonical, bytes)
         declared = json.loads(canonical.decode("utf-8"))["manifestSelf"]["canonicalGitBlobSha256"]
         self.assertEqual(declared, checker.canonical_self_sha256(canonical))
@@ -3944,44 +4127,32 @@ class UniversalProviderControlTests(unittest.TestCase):
             for parent, tree in zip(record["orderedParents"], record["orderedParentTrees"]):
                 tuples.setdefault(parent, (tree, []))
         with mock.patch.object(checker, "_commit_tuple", side_effect=lambda commit: tuples[commit]):
-            checker.verify_reconciliation({"reconciliation": reconciliation}, ":")
+            checker.verify_reconciliation(
+                {"reconciliation": reconciliation},
+                checker.FROZEN_CANDIDATE,
+            )
             swapped = copy.deepcopy(reconciliation)
             swapped["r16MasterMerge"]["orderedParents"].reverse()
             with self.assertRaisesRegex(checker.ManifestError, "RECONCILIATION_COMMIT_MISMATCH"):
-                checker.verify_reconciliation({"reconciliation": swapped}, ":")
+                checker.verify_reconciliation(
+                    {"reconciliation": swapped},
+                    checker.FROZEN_CANDIDATE,
+                )
             forged_tree = copy.deepcopy(reconciliation)
             forged_tree["r15Base"]["orderedParentTrees"][0] = "0" * 40
             with self.assertRaisesRegex(checker.ManifestError, "RECONCILIATION_PARENT_TREE_MISMATCH"):
-                checker.verify_reconciliation({"reconciliation": forged_tree}, ":")
+                checker.verify_reconciliation(
+                    {"reconciliation": forged_tree},
+                    checker.FROZEN_CANDIDATE,
+                )
 
     def test_r17_09_manifest_verifies_exact_ordered_merge_and_forged_negatives(self) -> None:
         import check_universal_manifest as checker
 
-        manifest_path = ROOT / "manifests" / "universal-provider-control-reconciliation-r17.json"
-        reconciliation = json.loads(manifest_path.read_text(encoding="utf-8"))["reconciliation"]
-        tuples = {
-            record["commit"]: (record["tree"], record["orderedParents"])
-            for record in reconciliation.values()
-        }
-        for record in reconciliation.values():
-            for parent, tree in zip(record["orderedParents"], record["orderedParentTrees"]):
-                tuples.setdefault(parent, (tree, []))
-        with mock.patch.object(checker, "_commit_tuple", side_effect=lambda commit: tuples[commit]):
-            checker.verify_reconciliation({"reconciliation": reconciliation}, ":")
-            swapped = copy.deepcopy(reconciliation)
-            swapped["r17MasterMerge"]["orderedParents"].reverse()
-            with self.assertRaisesRegex(checker.ManifestError, "RECONCILIATION_COMMIT_MISMATCH"):
-                checker.verify_reconciliation({"reconciliation": swapped}, ":")
-            forged_tree = copy.deepcopy(reconciliation)
-            forged_tree["r17Wip"]["orderedParentTrees"][0] = "0" * 40
-            with self.assertRaisesRegex(checker.ManifestError, "RECONCILIATION_PARENT_TREE_MISMATCH"):
-                checker.verify_reconciliation({"reconciliation": forged_tree}, ":")
-
-    def test_r18_06_manifest_binds_final_lineage_and_grants_zero_gate_authority(self) -> None:
-        import check_universal_manifest as checker
-
-        manifest_path = ROOT / "manifests" / "universal-provider-control-reconciliation-r18.json"
-        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        manifest = json.loads(checker._git(checker._blob_spec(
+            checker.FROZEN_CANDIDATE,
+            "manifests/universal-provider-control-reconciliation-r17.json",
+        )))
         reconciliation = manifest["reconciliation"]
         tuples = {
             record["commit"]: (record["tree"], record["orderedParents"])
@@ -3991,11 +4162,52 @@ class UniversalProviderControlTests(unittest.TestCase):
             for parent, tree in zip(record["orderedParents"], record["orderedParentTrees"]):
                 tuples.setdefault(parent, (tree, []))
         with mock.patch.object(checker, "_commit_tuple", side_effect=lambda commit: tuples[commit]):
-            checker.verify_reconciliation({"reconciliation": reconciliation}, ":")
+            checker.verify_reconciliation(
+                {"reconciliation": reconciliation},
+                checker.FROZEN_CANDIDATE,
+            )
+            swapped = copy.deepcopy(reconciliation)
+            swapped["r17MasterMerge"]["orderedParents"].reverse()
+            with self.assertRaisesRegex(checker.ManifestError, "RECONCILIATION_COMMIT_MISMATCH"):
+                checker.verify_reconciliation(
+                    {"reconciliation": swapped},
+                    checker.FROZEN_CANDIDATE,
+                )
+            forged_tree = copy.deepcopy(reconciliation)
+            forged_tree["r17Wip"]["orderedParentTrees"][0] = "0" * 40
+            with self.assertRaisesRegex(checker.ManifestError, "RECONCILIATION_PARENT_TREE_MISMATCH"):
+                checker.verify_reconciliation(
+                    {"reconciliation": forged_tree},
+                    checker.FROZEN_CANDIDATE,
+                )
+
+    def test_r18_06_manifest_binds_final_lineage_and_grants_zero_gate_authority(self) -> None:
+        import check_universal_manifest as checker
+
+        manifest = json.loads(checker._git(checker._blob_spec(
+            checker.FROZEN_CANDIDATE,
+            "manifests/universal-provider-control-reconciliation-r18.json",
+        )))
+        reconciliation = manifest["reconciliation"]
+        tuples = {
+            record["commit"]: (record["tree"], record["orderedParents"])
+            for record in reconciliation.values()
+        }
+        for record in reconciliation.values():
+            for parent, tree in zip(record["orderedParents"], record["orderedParentTrees"]):
+                tuples.setdefault(parent, (tree, []))
+        with mock.patch.object(checker, "_commit_tuple", side_effect=lambda commit: tuples[commit]):
+            checker.verify_reconciliation(
+                {"reconciliation": reconciliation},
+                checker.FROZEN_CANDIDATE,
+            )
             forged = copy.deepcopy(reconciliation)
             forged["r18Wip"]["orderedParents"] = ["0" * 40]
             with self.assertRaisesRegex(checker.ManifestError, "RECONCILIATION_COMMIT_MISMATCH"):
-                checker.verify_reconciliation({"reconciliation": forged}, ":")
+                checker.verify_reconciliation(
+                    {"reconciliation": forged},
+                    checker.FROZEN_CANDIDATE,
+                )
         self.assertEqual(manifest["status"], "CANDIDATE_ZERO_AUTHORITY")
         self.assertFalse(manifest["authority"]["providerExecution"])
         self.assertFalse(manifest["authority"]["containmentOrCanaryCredit"])
@@ -4007,8 +4219,10 @@ class UniversalProviderControlTests(unittest.TestCase):
     def test_r19_07_manifest_binds_restart_subject_and_grants_zero_authority(self) -> None:
         import check_universal_manifest as checker
 
-        manifest_path = ROOT / "manifests" / "universal-provider-control-reconciliation-r19.json"
-        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        manifest = json.loads(checker._git(checker._blob_spec(
+            checker.FROZEN_CANDIDATE,
+            "manifests/universal-provider-control-reconciliation-r19.json",
+        )))
         reconciliation = manifest["reconciliation"]
         tuples = {
             record["commit"]: (record["tree"], record["orderedParents"])
@@ -4018,11 +4232,17 @@ class UniversalProviderControlTests(unittest.TestCase):
             for parent, tree in zip(record["orderedParents"], record["orderedParentTrees"]):
                 tuples.setdefault(parent, (tree, []))
         with mock.patch.object(checker, "_commit_tuple", side_effect=lambda commit: tuples[commit]):
-            checker.verify_reconciliation({"reconciliation": reconciliation}, ":")
+            checker.verify_reconciliation(
+                {"reconciliation": reconciliation},
+                checker.FROZEN_CANDIDATE,
+            )
             forged = copy.deepcopy(reconciliation)
             forged["r19Wip"]["orderedParents"] = ["0" * 40]
             with self.assertRaisesRegex(checker.ManifestError, "RECONCILIATION_COMMIT_MISMATCH"):
-                checker.verify_reconciliation({"reconciliation": forged}, ":")
+                checker.verify_reconciliation(
+                    {"reconciliation": forged},
+                    checker.FROZEN_CANDIDATE,
+                )
         self.assertEqual(manifest["status"], "CANDIDATE_ZERO_AUTHORITY")
         self.assertFalse(manifest["authority"]["providerExecution"])
         self.assertFalse(manifest["authority"]["processSpawnResumeKill"])
@@ -4613,8 +4833,10 @@ class UniversalProviderControlTests(unittest.TestCase):
     def test_r20_06_manifest_binds_clock_path_ci_subject_and_zero_authority(self) -> None:
         import check_universal_manifest as checker
 
-        manifest_path = ROOT / "manifests" / "universal-provider-control-reconciliation-r20.json"
-        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        manifest = json.loads(checker._git(checker._blob_spec(
+            checker.FROZEN_CANDIDATE,
+            "manifests/universal-provider-control-reconciliation-r20.json",
+        )))
         reconciliation = manifest["reconciliation"]
         tuples = {
             record["commit"]: (record["tree"], record["orderedParents"])
@@ -4624,11 +4846,17 @@ class UniversalProviderControlTests(unittest.TestCase):
             for parent, tree in zip(record["orderedParents"], record["orderedParentTrees"]):
                 tuples.setdefault(parent, (tree, []))
         with mock.patch.object(checker, "_commit_tuple", side_effect=lambda commit: tuples[commit]):
-            checker.verify_reconciliation({"reconciliation": reconciliation}, ":")
+            checker.verify_reconciliation(
+                {"reconciliation": reconciliation},
+                checker.FROZEN_CANDIDATE,
+            )
             forged = copy.deepcopy(reconciliation)
             forged["r20Wip"]["orderedParents"] = ["0" * 40]
             with self.assertRaisesRegex(checker.ManifestError, "RECONCILIATION_COMMIT_MISMATCH"):
-                checker.verify_reconciliation({"reconciliation": forged}, ":")
+                checker.verify_reconciliation(
+                    {"reconciliation": forged},
+                    checker.FROZEN_CANDIDATE,
+                )
         self.assertEqual(manifest["status"], "CANDIDATE_ZERO_AUTHORITY")
         self.assertFalse(manifest["authority"]["providerExecution"])
         self.assertFalse(manifest["authority"]["processSpawnResumeKill"])
@@ -4781,8 +5009,10 @@ class UniversalProviderControlTests(unittest.TestCase):
     def test_r21_07_manifest_binds_postlock_path_subject_and_zero_authority(self) -> None:
         import check_universal_manifest as checker
 
-        manifest_path = ROOT / "manifests" / "universal-provider-control-reconciliation-r21.json"
-        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        manifest = json.loads(checker._git(checker._blob_spec(
+            checker.FROZEN_CANDIDATE,
+            "manifests/universal-provider-control-reconciliation-r21.json",
+        )))
         reconciliation = manifest["reconciliation"]
         tuples = {
             record["commit"]: (record["tree"], record["orderedParents"])
@@ -4792,11 +5022,17 @@ class UniversalProviderControlTests(unittest.TestCase):
             for parent, tree in zip(record["orderedParents"], record["orderedParentTrees"]):
                 tuples.setdefault(parent, (tree, []))
         with mock.patch.object(checker, "_commit_tuple", side_effect=lambda commit: tuples[commit]):
-            checker.verify_reconciliation({"reconciliation": reconciliation}, ":")
+            checker.verify_reconciliation(
+                {"reconciliation": reconciliation},
+                checker.FROZEN_CANDIDATE,
+            )
             forged = copy.deepcopy(reconciliation)
             forged["r21Wip"]["orderedParents"] = ["0" * 40]
             with self.assertRaisesRegex(checker.ManifestError, "RECONCILIATION_COMMIT_MISMATCH"):
-                checker.verify_reconciliation({"reconciliation": forged}, ":")
+                checker.verify_reconciliation(
+                    {"reconciliation": forged},
+                    checker.FROZEN_CANDIDATE,
+                )
         self.assertEqual(manifest["status"], "CANDIDATE_ZERO_AUTHORITY")
         self.assertFalse(manifest["authority"]["providerExecution"])
         self.assertFalse(manifest["authority"]["processSpawnResumeKill"])
@@ -4914,8 +5150,10 @@ class UniversalProviderControlTests(unittest.TestCase):
     def test_r22_07_manifest_binds_child_receipt_policy_and_master_merge(self) -> None:
         import check_universal_manifest as checker
 
-        manifest_path = ROOT / "manifests" / "universal-provider-control-reconciliation-r22.json"
-        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        manifest = json.loads(checker._git(checker._blob_spec(
+            checker.FROZEN_CANDIDATE,
+            "manifests/universal-provider-control-reconciliation-r22.json",
+        )))
         reconciliation = manifest["reconciliation"]
         tuples = {
             record["commit"]: (record["tree"], record["orderedParents"])
@@ -4925,11 +5163,17 @@ class UniversalProviderControlTests(unittest.TestCase):
             for parent, tree in zip(record["orderedParents"], record["orderedParentTrees"]):
                 tuples.setdefault(parent, (tree, []))
         with mock.patch.object(checker, "_commit_tuple", side_effect=lambda commit: tuples[commit]):
-            checker.verify_reconciliation({"reconciliation": reconciliation}, ":")
+            checker.verify_reconciliation(
+                {"reconciliation": reconciliation},
+                checker.FROZEN_CANDIDATE,
+            )
             forged = copy.deepcopy(reconciliation)
             forged["r22MasterMerge"]["orderedParents"].reverse()
             with self.assertRaisesRegex(checker.ManifestError, "RECONCILIATION_COMMIT_MISMATCH"):
-                checker.verify_reconciliation({"reconciliation": forged}, ":")
+                checker.verify_reconciliation(
+                    {"reconciliation": forged},
+                    checker.FROZEN_CANDIDATE,
+                )
         subject_paths = {subject["path"] for subject in manifest["subjectFiles"]}
         self.assertIn("receipts/attended-provider-rotation-20260819.json", subject_paths)
         self.assertIn("policy/universal-provider-token-control-r22.json", subject_paths)
@@ -4993,8 +5237,10 @@ class UniversalProviderControlTests(unittest.TestCase):
     def test_r23_02_manifest_binds_semantics_and_zero_authority(self) -> None:
         import check_universal_manifest as checker
 
-        manifest_path = ROOT / "manifests" / "universal-provider-control-reconciliation-r23.json"
-        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        manifest = json.loads(checker._git(checker._blob_spec(
+            checker.FROZEN_CANDIDATE,
+            "manifests/universal-provider-control-reconciliation-r23.json",
+        )))
         reconciliation = manifest["reconciliation"]
         tuples = {
             record["commit"]: (record["tree"], record["orderedParents"])
@@ -5004,11 +5250,17 @@ class UniversalProviderControlTests(unittest.TestCase):
             for parent, tree in zip(record["orderedParents"], record["orderedParentTrees"]):
                 tuples.setdefault(parent, (tree, []))
         with mock.patch.object(checker, "_commit_tuple", side_effect=lambda commit: tuples[commit]):
-            checker.verify_reconciliation({"reconciliation": reconciliation}, ":")
+            checker.verify_reconciliation(
+                {"reconciliation": reconciliation},
+                checker.FROZEN_CANDIDATE,
+            )
             forged = copy.deepcopy(reconciliation)
             forged["r23Wip"]["orderedParents"] = ["0" * 40]
             with self.assertRaisesRegex(checker.ManifestError, "RECONCILIATION_COMMIT_MISMATCH"):
-                checker.verify_reconciliation({"reconciliation": forged}, ":")
+                checker.verify_reconciliation(
+                    {"reconciliation": forged},
+                    checker.FROZEN_CANDIDATE,
+                )
         self.assertEqual(manifest["status"], "CANDIDATE_ZERO_AUTHORITY")
         self.assertFalse(manifest["authority"]["providerExecution"])
         self.assertFalse(manifest["authority"]["containmentOrCanaryCredit"])
@@ -5060,8 +5312,10 @@ class UniversalProviderControlTests(unittest.TestCase):
     def test_r24_02_manifest_binds_exact_timestamp_evidence_and_zero_authority(self) -> None:
         import check_universal_manifest as checker
 
-        manifest_path = ROOT / "manifests" / "universal-provider-control-reconciliation-r24.json"
-        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        manifest = json.loads(checker._git(checker._blob_spec(
+            checker.FROZEN_CANDIDATE,
+            "manifests/universal-provider-control-reconciliation-r24.json",
+        )))
         reconciliation = manifest["reconciliation"]
         tuples = {
             record["commit"]: (record["tree"], record["orderedParents"])
@@ -5071,11 +5325,17 @@ class UniversalProviderControlTests(unittest.TestCase):
             for parent, tree in zip(record["orderedParents"], record["orderedParentTrees"]):
                 tuples.setdefault(parent, (tree, []))
         with mock.patch.object(checker, "_commit_tuple", side_effect=lambda commit: tuples[commit]):
-            checker.verify_reconciliation({"reconciliation": reconciliation}, ":")
+            checker.verify_reconciliation(
+                {"reconciliation": reconciliation},
+                checker.FROZEN_CANDIDATE,
+            )
             forged = copy.deepcopy(reconciliation)
             forged["r24Wip"]["orderedParents"] = ["0" * 40]
             with self.assertRaisesRegex(checker.ManifestError, "RECONCILIATION_COMMIT_MISMATCH"):
-                checker.verify_reconciliation({"reconciliation": forged}, ":")
+                checker.verify_reconciliation(
+                    {"reconciliation": forged},
+                    checker.FROZEN_CANDIDATE,
+                )
         self.assertEqual(manifest["status"], "CANDIDATE_ZERO_AUTHORITY")
         self.assertFalse(manifest["authority"]["providerExecution"])
         self.assertFalse(manifest["authority"]["containmentOrCanaryCredit"])
@@ -5120,8 +5380,9 @@ class UniversalProviderControlTests(unittest.TestCase):
     def test_r26_02_manifest_binds_posix_fixture_repair_and_r25_parent(self) -> None:
         import check_universal_manifest as checker
 
-        manifest_path = ROOT / "manifests" / "universal-provider-control-reconciliation-r26.json"
-        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        manifest = json.loads(checker._git(checker._blob_spec(
+            checker.FROZEN_CANDIDATE, checker.R26_MANIFEST
+        )))
         reconciliation = manifest["reconciliation"]
         tuples = {
             record["commit"]: (record["tree"], record["orderedParents"])
@@ -5131,11 +5392,15 @@ class UniversalProviderControlTests(unittest.TestCase):
             for parent, tree in zip(record["orderedParents"], record["orderedParentTrees"]):
                 tuples.setdefault(parent, (tree, []))
         with mock.patch.object(checker, "_commit_tuple", side_effect=lambda commit: tuples[commit]):
-            checker.verify_reconciliation({"reconciliation": reconciliation}, ":")
+            checker.verify_reconciliation(
+                {"reconciliation": reconciliation}, checker.FROZEN_CANDIDATE
+            )
             forged = copy.deepcopy(reconciliation)
             forged["r26Evidence"]["orderedParents"] = ["0" * 40]
             with self.assertRaisesRegex(checker.ManifestError, "RECONCILIATION_COMMIT_MISMATCH"):
-                checker.verify_reconciliation({"reconciliation": forged}, ":")
+                checker.verify_reconciliation(
+                    {"reconciliation": forged}, checker.FROZEN_CANDIDATE
+                )
         self.assertEqual(
             reconciliation["r25FinalPreLatestMaster"]["commit"],
             "70132a8b5b1b35f951a6860783787b0248a09f99",
@@ -5175,7 +5440,7 @@ class UniversalProviderControlTests(unittest.TestCase):
             with self.assertRaisesRegex(
                 checker.ManifestError, "MANIFEST_CANDIDATE_NOT_ANCESTOR"
             ):
-                checker._frozen_manifest_bytes("HEAD")
+                checker._frozen_manifest_bytes(checker.FROZEN_CANDIDATE)
 
     def test_r26_05_manifest_rejects_post_candidate_manifest_drift(self) -> None:
         import check_universal_manifest as checker
@@ -5187,12 +5452,14 @@ class UniversalProviderControlTests(unittest.TestCase):
             with self.assertRaisesRegex(
                 checker.ManifestError, "MANIFEST_FROZEN_BLOB_MISMATCH"
             ):
-                checker._frozen_manifest_bytes("HEAD")
+                checker._frozen_manifest_bytes(checker.FROZEN_CANDIDATE)
 
     def test_r26_06_manifest_rejects_current_subject_substitution(self) -> None:
         import check_universal_manifest as checker
 
-        frozen = (ROOT / checker.MANIFEST).read_bytes()
+        frozen = checker._git(checker._blob_spec(
+            checker.FROZEN_CANDIDATE, checker.R26_MANIFEST
+        ))
         substituted = json.loads(frozen)
         substituted["subjectFiles"][0]["path"] = "specs/substituted.md"
         substituted_raw = json.dumps(substituted, separators=(",", ":")).encode("utf-8")
@@ -5203,7 +5470,7 @@ class UniversalProviderControlTests(unittest.TestCase):
             with self.assertRaisesRegex(
                 checker.ManifestError, "MANIFEST_FROZEN_BLOB_MISMATCH"
             ):
-                checker._frozen_manifest_bytes("HEAD")
+                checker._frozen_manifest_bytes(checker.FROZEN_CANDIDATE)
 
     def test_r17_07_low_level_request_primitives_are_not_public(self) -> None:
         broker = upc.UniversalProviderBroker(self.root / "r17-no-public-primitives")
@@ -5283,11 +5550,11 @@ class ReviewResourceAdmissionR29Tests(unittest.TestCase):
         )
 
     def setUp(self) -> None:
-        manifest = json.loads(
-            (ROOT / "manifests" / "universal-provider-control-reconciliation-r29.json").read_text(
-                encoding="utf-8"
-            )
-        )
+        import check_universal_manifest as checker
+
+        manifest = json.loads(checker._git(checker._blob_spec(
+            checker.FROZEN_R29, checker.R29_MANIFEST
+        )))
         self.policy = copy.deepcopy(manifest["reviewAdmissionPolicy"])
         self.policy["cacheAdmissionMode"] = "EXACTLY_BOUNDED_AND_CHARGED"
         self.contents = [f"exact review subject {index}\n" for index in range(7)]
@@ -5959,9 +6226,9 @@ class ReviewResourceAdmissionR29Tests(unittest.TestCase):
         with self.assertRaisesRegex(upc.ControlError, "REVIEW_SUBJECT_DUPLICATE"):
             upc.validate_contract("review_admission", duplicate_path)
         import check_universal_manifest as checker
-        manifest = json.loads(
-            (ROOT / "manifests" / "universal-provider-control-reconciliation-r29.json").read_text()
-        )
+        manifest = json.loads(checker._git(checker._blob_spec(
+            checker.FROZEN_R29, checker.R29_MANIFEST
+        )))
         substituted = copy.deepcopy(manifest)
         substituted["reviewAdmissionPolicy"]["source"]["subjectFiles"][0]["path"] = "substitute"
         substituted["reviewAdmissionPolicyDigest"] = checker.canonical_policy_sha256(
@@ -6073,7 +6340,7 @@ class ReviewResourceAdmissionR29Tests(unittest.TestCase):
         ):
             with self.assertRaisesRegex(checker.ManifestError, "MANIFEST_FROZEN_BLOB_MISMATCH"):
                 checker._frozen_manifest_bytes(
-                    "HEAD", checker.R29_MANIFEST, checker.FROZEN_R29
+                    checker.FROZEN_R29, checker.R29_MANIFEST, checker.FROZEN_R29
                 )
 
     def test_r33_05_checker_validates_all_three_literal_trust_layers(self) -> None:
@@ -6148,7 +6415,7 @@ class ReviewResourceAdmissionR29Tests(unittest.TestCase):
                 checker.ManifestError, "MANIFEST_FROZEN_BLOB_MISMATCH"
             ):
                 checker._frozen_manifest_bytes(
-                    "HEAD", checker.R33_MANIFEST, checker.FROZEN_R33
+                    checker.FROZEN_R33, checker.R33_MANIFEST, checker.FROZEN_R33
                 )
 
     def test_r35_01_current_layer_pins_exact_integration_tuple_and_quality(self) -> None:
@@ -6214,7 +6481,7 @@ class ReviewResourceAdmissionR29Tests(unittest.TestCase):
                 checker.ManifestError, "MANIFEST_FROZEN_BLOB_MISMATCH"
             ):
                 checker._frozen_manifest_bytes(
-                    "HEAD", checker.R34_MANIFEST, checker.FROZEN_R34
+                    checker.FROZEN_R34, checker.R34_MANIFEST, checker.FROZEN_R34
                 )
 
     def test_r35_04_frozen_subject_and_self_drift_fail_closed(self) -> None:
@@ -6366,7 +6633,7 @@ class ReviewResourceAdmissionR29Tests(unittest.TestCase):
                 checker.ManifestError, "MANIFEST_FROZEN_BLOB_MISMATCH"
             ):
                 checker._frozen_manifest_bytes(
-                    "HEAD", checker.R35_MANIFEST, checker.FROZEN_R35
+                    checker.FROZEN_R35, checker.R35_MANIFEST, checker.FROZEN_R35
                 )
 
         raw = checker._git(f"{checker.FROZEN_R36}:{checker.R36_MANIFEST}")
@@ -6448,7 +6715,7 @@ class ReviewResourceAdmissionR29Tests(unittest.TestCase):
                 checker.ManifestError, "MANIFEST_FROZEN_BLOB_MISMATCH"
             ):
                 checker._frozen_manifest_bytes(
-                    "HEAD", checker.R36_MANIFEST, checker.FROZEN_R36
+                    checker.FROZEN_R36, checker.R36_MANIFEST, checker.FROZEN_R36
                 )
 
         raw = checker._git(f"{checker.FROZEN_R37}:{checker.R37_MANIFEST}")
@@ -6713,43 +6980,121 @@ class ReviewResourceAdmissionR29Tests(unittest.TestCase):
                     checker._oid(checker.FROZEN_R41, path),
                 )
 
-    def test_historical_numbered_tests_are_successor_isolated_by_dynamic_ast(self) -> None:
+    def test_historical_structural_inventory_is_exact_across_all_test_cases(self) -> None:
         import check_universal_manifest as checker
 
         current_round = checker.LAYER_DESCRIPTORS[-1].round
-        self.assertEqual(current_round, 42)
-        source = inspect.getsource(type(self))
-        syntax = ast.parse(textwrap.dedent(source))
-        violations: list[tuple[str, str]] = []
-        for method in (node for node in syntax.body[0].body if isinstance(node, ast.FunctionDef)):
-            match = __import__("re").match(r"test_r([0-9]+)_", method.name)
-            if match is None or int(match.group(1)) >= current_round:
-                continue
-            for node in ast.walk(method):
-                if isinstance(node, ast.Attribute) and node.attr in {
-                    "check", "_execute_manifest_layers", "_validate_layer_descriptors",
-                    "CURRENT_CANDIDATE",
-                }:
-                    violations.append((method.name, node.attr))
-                if isinstance(node, ast.Call) and any(
-                    isinstance(value, ast.Constant) and value.value == ":"
+        self.assertEqual(current_round, 43)
+        runtime = _historical_runtime_methods(current_round)
+        self.assertEqual(len(runtime), 184)
+        self.assertEqual(
+            {
+                case_type.__name__
+                for case_type, _method_name in runtime
+            },
+            {"UniversalProviderControlTests", "ReviewResourceAdmissionR29Tests"},
+        )
+        _assert_historical_inventory(
+            checker.HISTORICAL_TEST_BODY_SHA256, current_round
+        )
+
+        altered = dict(checker.HISTORICAL_TEST_BODY_SHA256)
+        first = next(iter(altered))
+        altered[first] = "0" * 64
+        with self.assertRaisesRegex(
+            AssertionError, "HISTORICAL_TEST_BODY_DIGEST_MISMATCH"
+        ):
+            _assert_historical_inventory(altered, current_round)
+
+        module = ast.parse(Path(__file__).read_text(encoding="utf-8"))
+        mutable: list[tuple[str, int, str]] = []
+        historical_names = {
+            f"{case_type.__name__}.{method_name}"
+            for case_type, method_name in runtime
+        }
+        for class_node in (
+            node for node in module.body if isinstance(node, ast.ClassDef)
+        ):
+            for method in (
+                node for node in class_node.body if isinstance(node, ast.FunctionDef)
+            ):
+                qualified = f"{class_node.name}.{method.name}"
+                if qualified not in historical_names:
+                    continue
+                for call in (
+                    node for node in ast.walk(method) if isinstance(node, ast.Call)
+                ):
                     for value in (
-                        list(node.args)
-                        + [keyword.value for keyword in node.keywords]
+                        *call.args,
+                        *(keyword.value for keyword in call.keywords),
+                    ):
+                        if (
+                            isinstance(value, ast.Constant)
+                            and value.value in (":", "HEAD")
+                        ):
+                            mutable.append((qualified, value.lineno, value.value))
+                for node in ast.walk(method):
+                    if (
+                        isinstance(node, ast.Attribute)
+                        and isinstance(node.value, ast.Name)
+                        and node.value.id == "checker"
+                        and node.attr == "MANIFEST"
+                    ):
+                        mutable.append((qualified, node.lineno, "checker.MANIFEST"))
+        self.assertEqual(mutable, [])
+
+    def test_historical_numbered_tests_are_semantically_quarantined(self) -> None:
+        import check_universal_manifest as checker
+
+        current_round = checker.LAYER_DESCRIPTORS[-1].round
+        historical = _historical_runtime_methods(current_round)
+        self.assertEqual(len(historical), 184)
+        for case_type, method_name in historical:
+            with self.subTest(
+                historical_test=f"{case_type.__name__}.{method_name}"
+            ):
+                _run_historical_case_under_quarantine(case_type, method_name)
+
+    def test_semantic_quarantine_catches_equivalent_current_selectors(self) -> None:
+        import check_universal_manifest as checker
+
+        selectors = {
+            "len-index": lambda: checker.LAYER_DESCRIPTORS[
+                len(checker.LAYER_DESCRIPTORS) - 1
+            ],
+            "reversed": lambda: next(iter(reversed(checker.LAYER_DESCRIPTORS))),
+            "max": lambda: max(
+                checker.LAYER_DESCRIPTORS, key=lambda descriptor: descriptor.round
+            ),
+            "anchor-values": lambda: tuple(
+                checker.LAYER_TRUST_ANCHORS.values()
+            )[-1],
+            "getattr-chr": lambda: getattr(
+                checker,
+                "".join(chr(value) for value in (
+                    76, 65, 89, 69, 82, 95, 68, 69, 83, 67, 82, 73, 80, 84,
+                    79, 82, 83,
+                )),
+            ),
+        }
+
+        for label, selector in selectors.items():
+            def historical_probe(_self: unittest.TestCase) -> None:
+                selected = selector()
+                getattr(selected, "verifier")({}, ":")
+
+            synthetic = type(
+                f"SyntheticHistorical{label.replace('-', '')}",
+                (unittest.TestCase,),
+                {"__module__": __name__, "test_r42_equivalent": historical_probe},
+            )
+            with self.subTest(selector=label):
+                with self.assertRaisesRegex(
+                    _HistoricalCurrentStateAccess, "historical test reached"
+                ):
+                    _run_historical_case_under_quarantine(
+                        synthetic, "test_r42_equivalent"
                     )
-                ):
-                    violations.append((method.name, "current-sentinel-literal"))
-                if (
-                    isinstance(node, ast.Subscript)
-                    and isinstance(node.value, ast.Attribute)
-                    and node.value.attr == "LAYER_DESCRIPTORS"
-                    and isinstance(node.slice, ast.UnaryOp)
-                    and isinstance(node.slice.op, ast.USub)
-                    and isinstance(node.slice.operand, ast.Constant)
-                    and node.slice.operand.value == 1
-                ):
-                    violations.append((method.name, "current-descriptor-selection"))
-        self.assertEqual(violations, [])
 
     def test_current_descriptor_pipeline_is_closed_anchored_and_exact(self) -> None:
         import check_universal_manifest as checker
@@ -6778,12 +7123,12 @@ class ReviewResourceAdmissionR29Tests(unittest.TestCase):
         self.assertEqual(
             tuple((receipt["round"], receipt["subjects"]) for receipt in receipts),
             ((26, 98), (29, 7), (33, 7), (34, 7), (35, 7), (36, 7),
-             (37, 7), (38, 7), (39, 7), (40, 7), (41, 7), (42, 7)),
+             (37, 7), (38, 7), (39, 7), (40, 7), (41, 7), (42, 7), (43, 7)),
         )
-        frozen = checker._tracked_reconciliation_paths(checker.FROZEN_R41)
+        frozen = checker._tracked_reconciliation_paths(checker.FROZEN_R42)
         self.assertEqual(
             checker.EXPECTED_CURRENT_RECONCILIATION_PATHS,
-            tuple(sorted(frozen + (checker.R42_MANIFEST,))),
+            tuple(sorted(frozen + (checker.R43_MANIFEST,))),
         )
         self.assertEqual(checker._tracked_reconciliation_paths(":"), checker.EXPECTED_CURRENT_RECONCILIATION_PATHS)
 
@@ -6806,39 +7151,199 @@ class ReviewResourceAdmissionR29Tests(unittest.TestCase):
     def test_current_manifest_mutation_is_observed_only_by_generic_owner(self) -> None:
         import check_universal_manifest as checker
 
-        raw = (ROOT / checker.R42_MANIFEST).read_bytes()
+        raw = (ROOT / checker.R43_MANIFEST).read_bytes()
         manifest = json.loads(raw)
         manifest["authority"]["providerExecution"] = True
         changed_raw = json.dumps(manifest, indent=2).encode("utf-8") + b"\n"
         real_git = checker._git
 
         def rebound_git(spec: str, *, text: bool = False) -> bytes | str:
-            if spec == checker._blob_spec(":", checker.R42_MANIFEST):
+            if spec == checker._blob_spec(":", checker.R43_MANIFEST):
                 return changed_raw.decode("utf-8") if text else changed_raw
             return real_git(spec, text=text)
 
         with mock.patch.object(checker, "_git", side_effect=rebound_git):
-            with self.assertRaisesRegex(checker.ManifestError, "R42_AUTHORITY_INVALID"):
+            with self.assertRaisesRegex(checker.ManifestError, "R43_AUTHORITY_INVALID"):
                 checker._execute_manifest_layers(":")
 
-    def test_every_historical_numbered_test_ignores_current_executor_sentinel(self) -> None:
+    def test_generic_current_pipeline_hostile_inventory_is_complete(self) -> None:
         import check_universal_manifest as checker
 
-        current_round = checker.LAYER_DESCRIPTORS[-1].round
-        historical = []
-        for name in dir(type(self)):
-            match = __import__("re").match(r"test_r([0-9]+)_", name)
-            if match is not None and int(match.group(1)) < current_round:
-                historical.append(name)
-        self.assertTrue(historical)
+        required = {
+            "test_current_descriptor_pipeline_is_closed_anchored_and_exact",
+            "test_current_descriptor_pipeline_rejects_all_coordinated_frozen_substitutions",
+            "test_current_manifest_mutation_is_observed_only_by_generic_owner",
+            "test_current_real_verifier_rejects_fully_rebound_quality_and_authority",
+            "test_historical_structural_inventory_is_exact_across_all_test_cases",
+            "test_historical_numbered_tests_are_semantically_quarantined",
+            "test_semantic_quarantine_catches_equivalent_current_selectors",
+        }
+        self.assertLessEqual(required, set(dir(type(self))))
 
-        def sentinel(*_args: object, **_kwargs: object) -> tuple[dict[str, object], ...]:
-            raise AssertionError("historical numbered test reached current executor")
+        descriptors = checker.LAYER_DESCRIPTORS
+        anchors = checker.LAYER_TRUST_ANCHORS
+        current = descriptors[-1]
+        descriptor_mutations = (
+            dataclasses.replace(
+                current,
+                manifest_path="manifests/universal-provider-control-reconciliation-r99.json",
+            ),
+            dataclasses.replace(current, candidate=checker.FROZEN_R42),
+            dataclasses.replace(current, schema="wrong-schema"),
+            dataclasses.replace(current, verifier=lambda _manifest, _candidate: None),
+            dataclasses.replace(current, report_candidate=checker.FROZEN_R41),
+        )
+        for changed in descriptor_mutations:
+            layers = descriptors[:-1] + (changed,)
+            loader = mock.Mock(side_effect=AssertionError("loaded before refusal"))
+            with self.subTest(descriptor_field=changed):
+                with (
+                    mock.patch.object(checker, "LAYER_DESCRIPTORS", layers),
+                    mock.patch.object(checker, "_git", loader),
+                ):
+                    with self.assertRaises(checker.ManifestError):
+                        checker._execute_manifest_layers(":")
+                loader.assert_not_called()
 
-        with mock.patch.object(checker, "_execute_manifest_layers", side_effect=sentinel):
-            for name in historical:
-                with self.subTest(historical_test=name):
-                    getattr(self, name)()
+        current_anchor = anchors[current.manifest_path]
+        anchor_mutations = (
+            dataclasses.replace(current_anchor, round=44),
+            dataclasses.replace(current_anchor, manifest_path="wrong-path"),
+            dataclasses.replace(current_anchor, candidate=checker.FROZEN_R42),
+            dataclasses.replace(current_anchor, schema="wrong-schema"),
+            dataclasses.replace(
+                current_anchor, verifier=lambda _manifest, _candidate: None
+            ),
+            dataclasses.replace(
+                current_anchor, report_candidate=checker.FROZEN_R41
+            ),
+            None,
+        )
+        for changed in anchor_mutations:
+            changed_anchors = dict(anchors)
+            if changed is None:
+                changed_anchors.pop(current.manifest_path)
+            else:
+                changed_anchors[current.manifest_path] = changed
+            loader = mock.Mock(side_effect=AssertionError("loaded before refusal"))
+            with self.subTest(anchor_field=changed):
+                with (
+                    mock.patch.object(
+                        checker,
+                        "LAYER_TRUST_ANCHORS",
+                        MappingProxyType(changed_anchors),
+                    ),
+                    mock.patch.object(checker, "_git", loader),
+                ):
+                    with self.assertRaises(checker.ManifestError):
+                        checker._execute_manifest_layers(":")
+                loader.assert_not_called()
+
+        expected = checker.EXPECTED_CURRENT_RECONCILIATION_PATHS
+        tracked_mutations = (
+            expected[:-1],
+            tuple(sorted(expected + (
+                "manifests/universal-provider-control-reconciliation-r1.json",
+            ))),
+            tuple(sorted(expected + (
+                "manifests/universal-provider-control-reconciliation-r041.json",
+            ))),
+            tuple(sorted(expected + (
+                "manifests/universal-provider-control-reconciliation-r0041.json",
+            ))),
+            tuple(sorted(expected + (
+                "manifests/universal-provider-control-reconciliation-r44.json",
+            ))),
+            tuple(reversed(expected)),
+        )
+        for changed in tracked_mutations:
+            def tracked(treeish: str) -> tuple[str, ...]:
+                return (
+                    checker.FROZEN_R42_RECONCILIATION_PATHS
+                    if treeish == checker.FROZEN_R42
+                    else changed
+                )
+
+            loader = mock.Mock(side_effect=AssertionError("loaded before refusal"))
+            with self.subTest(tracked=changed):
+                with (
+                    mock.patch.object(
+                        checker, "_tracked_reconciliation_paths", side_effect=tracked
+                    ),
+                    mock.patch.object(checker, "_git", loader),
+                ):
+                    with self.assertRaisesRegex(
+                        checker.ManifestError,
+                        "MANIFEST_DESCRIPTOR_TRACKING_INVALID",
+                    ):
+                        checker._execute_manifest_layers(":")
+                loader.assert_not_called()
+
+    def test_current_real_verifier_rejects_fully_rebound_quality_and_authority(self) -> None:
+        import check_universal_manifest as checker
+
+        raw = (ROOT / checker.R43_MANIFEST).read_bytes()
+        original = json.loads(raw)
+
+        def rebound(manifest: dict[str, object]) -> bytes:
+            for _attempt in range(8):
+                encoded = json.dumps(manifest, indent=2).encode("utf-8") + b"\n"
+                manifest["manifestSelf"]["bytes"] = len(encoded)  # type: ignore[index]
+                manifest["manifestSelf"]["canonicalGitBlobSha256"] = (  # type: ignore[index]
+                    checker.canonical_self_sha256(encoded)
+                )
+            return json.dumps(manifest, indent=2).encode("utf-8") + b"\n"
+
+        mutations: list[tuple[str, dict[str, object], str]] = []
+        authority = copy.deepcopy(original)
+        authority["authority"]["providerExecution"] = True
+        mutations.append(("authority", authority, "R43_AUTHORITY_INVALID"))
+        profile = copy.deepcopy(original)
+        profile["reviewAdmissionPolicy"]["identity"]["model"] = "claude-fable-4"
+        profile["reviewAdmissionPolicyDigest"] = checker.canonical_policy_sha256(
+            profile["reviewAdmissionPolicy"]
+        )
+        mutations.append(("profile", profile, "R43_EXACT_PROFILE_MISMATCH"))
+        cache = copy.deepcopy(original)
+        cache["reviewAdmissionPolicy"]["cacheAdmissionMode"] = "VERIFIED_DISABLED"
+        cache["reviewAdmissionPolicyDigest"] = checker.canonical_policy_sha256(
+            cache["reviewAdmissionPolicy"]
+        )
+        mutations.append(("cache", cache, "R43_CACHE_ADMISSION_MODE_MISMATCH"))
+        digest = copy.deepcopy(original)
+        digest["reviewAdmissionPolicyDigest"] = "sha256:" + "0" * 64
+        mutations.append(("policy-digest", digest, "R43_POLICY_DIGEST_MISMATCH"))
+
+        real_git = checker._git
+        real_receipt = checker._verify_subjects_and_self
+        current_spec = checker._blob_spec(":", checker.R43_MANIFEST)
+        for label, changed, reason in mutations:
+            changed_raw = rebound(changed)
+
+            def rebound_git(spec: str, *, text: bool = False) -> bytes | str:
+                if spec == current_spec:
+                    return changed_raw.decode("utf-8") if text else changed_raw
+                return real_git(spec, text=text)
+
+            current_receipt = mock.Mock(
+                side_effect=AssertionError("current receipt reached before refusal")
+            )
+
+            def guarded_receipt(*args: object, **kwargs: object) -> int:
+                if kwargs.get("manifest_path") == checker.R43_MANIFEST:
+                    return current_receipt(*args, **kwargs)  # type: ignore[no-any-return]
+                return real_receipt(*args, **kwargs)
+
+            with self.subTest(mutation=label):
+                with (
+                    mock.patch.object(checker, "_git", side_effect=rebound_git),
+                    mock.patch.object(
+                        checker, "_verify_subjects_and_self", side_effect=guarded_receipt
+                    ),
+                ):
+                    with self.assertRaisesRegex(checker.ManifestError, reason):
+                        checker._execute_manifest_layers(":")
+                current_receipt.assert_not_called()
 
 
 if __name__ == "__main__":
