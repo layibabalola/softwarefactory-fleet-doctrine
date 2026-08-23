@@ -128,7 +128,15 @@ the human store-and-forward bus.
   literal R43 Git blobs. Exact blob OIDs, byte counts, raw SHA-256 values, two owned class definitions,
   and all 184 decorated UTF-8 FunctionDef spans are attested before isolated module execution. On
   Windows all 184 execute; elsewhere exactly 180 execute and the four literal Windows-only cases are
-  accounted as expected skips. This is source-selection and module-graph isolation, not a Python
-  sandbox; it still trusts the interpreter, standard library/import machinery, Git object database,
-  repository root, and filesystem. Runtime/schema/policy and input-blind zero-authority refusal remain
-  unchanged.
+  accounted as expected skips. R44 is held adverse: it gave the frozen modules the live repository path
+  as their origin while their bodies ran, so frozen `SCHEMA_ROOT`/`ROOT` came from the current worktree,
+  and one retained case started a fresh interpreter in the live repository that imported the current
+  runtime, leaving frozen outcomes exposed to live drift.
+  R45 freezes adverse R44 and repairs that boundary. A closed thirty-seven member frozen R43 dependency
+  graph, covering the three modules, the R43 manifest, the whole frozen `schemas/` tree, and every other
+  frozen file retained history reads, is authenticated by exact path, Git blob OID, byte count, and raw
+  SHA-256, then materialized and re-verified for missing, extra, or substituted members. Frozen modules
+  execute with truthful materialized origins, so frozen roots never resolve at the live worktree, and
+  historical child interpreters are terminally probed against the anchored graph runtime with no
+  live-root fallback. Execution and skip accounting, descriptor anchors, current-layer ownership, and
+  input-blind zero-authority refusal remain unchanged.

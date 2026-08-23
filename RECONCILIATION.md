@@ -344,3 +344,46 @@ machinery, Git binary and object database, the real repository root, and tempora
 Enumerated current-state sentinels remain defense in depth only. The fourteen layer counts are
 98/7/7/7/7/7/7/7/7/7/7/7/7/7. Runtime/schema, policy/profile/cache/charge/quality, and input-blind
 `REFUSE`/zero authority remain byte-identical; R44 grants no authority or credit.
+
+R44 is held as adverse evidence. Its literal-frozen claim was overstated: frozen modules were given
+the live repository path as their origin while their bodies executed, so the frozen runtime resolved
+`SCHEMA_ROOT` and the frozen test module resolved `ROOT` from the current worktree, and one retained
+historical case started a fresh interpreter in the live repository that imported the current
+`tools/universal_provider_control`. Later clean or dirty live drift could therefore change allegedly
+frozen R43 outcomes. R45 repairs exactly that; the R44 manifest is unchanged.
+
+## R45 authenticated frozen-graph history execution (candidate, zero authority)
+
+R45 freezes adverse R44 `86483feef86c14d644b684cd6e1f5e3665475fbe`, tree
+`49955d2408ee367272fe8c60038ab6b2ef338241`, parent
+`78218e277a4f03a7830058ab7c3cf04683066b9b`. Historical execution now authenticates a closed
+thirty-seven member frozen R43 dependency graph before anything loads: the three frozen modules, the
+frozen R43 manifest, the complete frozen `schemas/` tree, the capacity-governor workflow, `README.md`,
+the reconciliation spec, the R22 token-control policy, and the attended rotation receipt. Each member
+is bound by exact path, Git blob OID, byte count, and raw SHA-256; the anchored `schemas/` set must
+equal the frozen tree listing, and the module anchors must equal the independent execution-blob
+anchors. Missing, extra, substituted, or unsorted anchors refuse.
+
+The graph is materialized into a private temporary root and re-verified for missing, extra, and
+substituted members. Frozen modules compile and execute with their materialized paths as their
+truthful origin, so the frozen `SCHEMA_ROOT`, frozen test `ROOT`, and frozen checker `ROOT` all resolve
+inside the graph and never at the live worktree. Origins and graph digests are re-checked before and
+after every case. Git object reads from the graph resolve through one explicit object-store binding at
+the graph root, the only permitted non-anchored member.
+
+Historical child processes are bound to that graph. Exactly two child-bearing historical cases and
+their interpreter or non-interpreter mode are pinned by source scan; any other spawning historical
+case refuses as unsupported. Before the interpreter child case may count, a probe child under the same
+interpreter and working directory must report the materialized graph runtime with anchored byte count
+and raw SHA-256, itself bound to the frozen blob OID. Mismatch, unreadable output, or an unavailable
+child refuses, and there is no live-root fallback. Bytecode writing is disabled for the interval so no
+child can deposit an artifact inside the graph.
+
+Closed accounting is unchanged: Windows reports 184 executed with no skips, other platforms 180 plus
+exactly four named and reason-bound Windows-only skips. Hostile evidence proves live runtime, schema,
+workflow, README, spec, policy, and receipt drift cannot reach frozen R43 execution, and that anchor,
+member, origin, root, object-store, child-case, and child-origin substitution all refuse. This is
+authentication and provenance isolation, not containment; it still trusts the interpreter, standard
+library, Git binary and object database, and temporary filesystem. The fifteen layer counts are
+98/7/7/7/7/7/7/7/7/7/7/7/7/7/7. Runtime/schema, policy/profile/cache/charge/quality, and input-blind
+`REFUSE`/zero authority remain byte-identical; R45 grants no authority or credit.

@@ -195,11 +195,14 @@ def _run_historical_case_under_quarantine(
         mock.patch.object(checker, "R43_BASE", current_state),
         mock.patch.object(checker, "R44_MANIFEST", current_state),
         mock.patch.object(checker, "R44_BASE", current_state),
+        mock.patch.object(checker, "R45_MANIFEST", current_state),
+        mock.patch.object(checker, "R45_BASE", current_state),
         mock.patch.object(checker, "check", side_effect=forbidden),
         mock.patch.object(checker, "_validate_layer_descriptors", side_effect=forbidden),
         mock.patch.object(checker, "_execute_manifest_layers", side_effect=forbidden),
         mock.patch.object(checker, "verify_r43", side_effect=forbidden),
         mock.patch.object(checker, "verify_r44", side_effect=forbidden),
+        mock.patch.object(checker, "verify_r45", side_effect=forbidden),
         mock.patch.object(checker, "_tracked_reconciliation_paths", side_effect=forbidden),
         mock.patch.object(checker, "_git", side_effect=guarded_git),
         mock.patch.object(checker, "_blob_spec", side_effect=guarded_blob_spec),
@@ -6987,7 +6990,7 @@ class ReviewResourceAdmissionR29Tests(unittest.TestCase):
         import check_universal_manifest as checker
 
         current_round = checker.LAYER_DESCRIPTORS[-1].round
-        self.assertEqual(current_round, 44)
+        self.assertEqual(current_round, 45)
         runtime = _historical_runtime_methods(current_round)
         self.assertEqual(len(runtime), 184)
         self.assertEqual(
@@ -7047,7 +7050,7 @@ class ReviewResourceAdmissionR29Tests(unittest.TestCase):
         self.assertEqual(mutable, [])
 
     def test_frozen_r43_authoritative_source_and_outcomes_are_closed(self) -> None:
-        """R44 RED: history must execute only from literal frozen R43 modules."""
+        """R45 gate: history executes only from the authenticated frozen R43 graph."""
         import check_universal_manifest as checker
 
         self.assertEqual(
@@ -7167,6 +7170,307 @@ class ReviewResourceAdmissionR29Tests(unittest.TestCase):
                 else:
                     sys.modules["check_universal_manifest"] = prior_checker
 
+    def test_frozen_r43_history_is_closed_over_the_materialized_graph(self) -> None:
+        """R45 RED: live runtime/schema drift must not reach frozen R43 execution."""
+        import check_universal_manifest as checker
+
+        live_dependent = (
+            ("UniversalProviderControlTests",
+             "test_r2_12_dual_platform_hash_locked_workflow_r1_red_r2_green"),
+            ("UniversalProviderControlTests",
+             "test_r2_13_candidate_not_ratified_r1_red_r2_green"),
+            ("UniversalProviderControlTests",
+             "test_r18_03_os_account_authority_ignores_home_in_fresh_processes"),
+            ("UniversalProviderControlTests",
+             "test_r20_05_universal_workflow_runs_exact_workbench_suite"),
+            ("UniversalProviderControlTests",
+             "test_r21_06_provider_budget_law_is_request_scoped_and_zero_authority"),
+            ("UniversalProviderControlTests",
+             "test_r22_05_attended_receipt_is_private_strict_and_recomputed"),
+            ("UniversalProviderControlTests",
+             "test_r22_06_token_laws_are_strict_structured_policy"),
+        )
+        live_root = Path(checker.ROOT).resolve()
+        with checker._open_frozen_r43_historical_modules() as frozen:
+            graph_root = frozen.graph_root
+            self.assertNotEqual(graph_root, live_root)
+            self.assertEqual(
+                Path(frozen.runtime_module.__file__),
+                graph_root / checker.FROZEN_R43_RUNTIME_PATH,
+            )
+            self.assertEqual(
+                Path(frozen.checker_module.__file__),
+                graph_root / "tools/check_universal_manifest.py",
+            )
+            self.assertEqual(
+                Path(frozen.test_module.__file__),
+                graph_root / "tests/test_universal_provider_control.py",
+            )
+            self.assertEqual(
+                Path(frozen.runtime_module.SCHEMA_ROOT), graph_root / "schemas"
+            )
+            self.assertEqual(Path(frozen.test_module.ROOT), graph_root)
+            self.assertEqual(Path(frozen.checker_module.ROOT), graph_root)
+            self.assertEqual(
+                tuple(sorted(frozen.blobs)),
+                tuple(checker.FROZEN_R43_EXECUTION_GRAPH_ANCHORS),
+            )
+            self.assertEqual(len(checker.FROZEN_R43_EXECUTION_GRAPH_ANCHORS), 37)
+            for path, anchor in checker.FROZEN_R43_EXECUTION_GRAPH_ANCHORS.items():
+                with self.subTest(member=path):
+                    member = (graph_root / path).read_bytes()
+                    self.assertEqual(len(member), anchor.bytes)
+                    self.assertEqual(
+                        "sha256:" + hashlib.sha256(member).hexdigest(), anchor.sha256
+                    )
+                    self.assertEqual(
+                        checker._oid(checker.FROZEN_R43, path), anchor.oid
+                    )
+
+            live_reads: list[str] = []
+            real_open = io.open
+
+            def record(target: object) -> None:
+                if not isinstance(target, (str, bytes, os.PathLike)):
+                    return
+                try:
+                    resolved = Path(os.fsdecode(target)).resolve()
+                    live_reads.append(resolved.relative_to(live_root).as_posix())
+                except (ValueError, OSError, TypeError):
+                    return
+
+            def guarded_open(file: object, *args: object, **kwargs: object) -> object:
+                record(file)
+                return real_open(file, *args, **kwargs)  # type: ignore[arg-type]
+
+            with (
+                mock.patch("builtins.open", guarded_open),
+                mock.patch.object(io, "open", guarded_open),
+            ):
+                for class_name, method_name in live_dependent:
+                    frozen.test_module._run_historical_case_under_quarantine(
+                        getattr(frozen.test_module, class_name), method_name
+                    )
+            self.assertEqual(sorted(set(live_reads)), [])
+
+    def test_frozen_r43_graph_substitution_and_origin_rebinding_refuse(self) -> None:
+        import check_universal_manifest as checker
+
+        anchors = dict(checker.FROZEN_R43_EXECUTION_GRAPH_ANCHORS)
+        schema = "schemas/universal-control-request-v1.schema.json"
+        substituted = dict(anchors)
+        substituted[schema] = dataclasses.replace(
+            anchors[schema], sha256="sha256:" + "0" * 64
+        )
+        rebound_oid = dict(anchors)
+        rebound_oid[schema] = dataclasses.replace(anchors[schema], oid="0" * 40)
+        missing = {path: anchor for path, anchor in anchors.items() if path != schema}
+        extra_tree = dict(anchors)
+        extra_tree["schemas/universal-intruder-v1.schema.json"] = dataclasses.replace(
+            anchors[schema], path="schemas/universal-intruder-v1.schema.json"
+        )
+        extra_foreign = dict(anchors)
+        extra_foreign["policy/universal-intruder.json"] = dataclasses.replace(
+            anchors[schema], path="policy/universal-intruder.json"
+        )
+        rebound_module = dict(anchors)
+        rebound_module[checker.FROZEN_R43_RUNTIME_PATH] = dataclasses.replace(
+            anchors[checker.FROZEN_R43_RUNTIME_PATH], bytes=1
+        )
+        unsorted = {
+            path: anchors[path] for path in reversed(list(anchors))
+        }
+        for label, changed, reason in (
+            ("substituted-digest", substituted, "R43_HISTORICAL_GRAPH_DIGEST_MISMATCH"),
+            ("substituted-oid", rebound_oid, "R43_HISTORICAL_GRAPH_OID_MISMATCH"),
+            ("missing-member", missing, "R43_HISTORICAL_GRAPH_TREE_MISMATCH"),
+            ("extra-tree-member", extra_tree, "R43_HISTORICAL_GRAPH_TREE_MISMATCH"),
+            ("extra-foreign-member", extra_foreign, "GIT_BLOB_OID_UNAVAILABLE"),
+            ("module-anchor-drift", rebound_module,
+             "R43_HISTORICAL_GRAPH_ANCHOR_SET_INVALID"),
+            ("unsorted-anchors", unsorted, "R43_HISTORICAL_GRAPH_ANCHOR_SET_INVALID"),
+        ):
+            ordered = (
+                changed if label == "unsorted-anchors"
+                else dict(sorted(changed.items()))
+            )
+            with self.subTest(graph=label):
+                with mock.patch.object(
+                    checker,
+                    "FROZEN_R43_EXECUTION_GRAPH_ANCHORS",
+                    MappingProxyType(ordered),
+                ):
+                    with self.assertRaisesRegex(checker.ManifestError, reason):
+                        with checker._open_frozen_r43_historical_modules():
+                            pass
+
+        real_loader = checker._load_exact_source_module
+
+        def live_origin_loader(
+            name: str, raw: bytes, *, origin: Path
+        ) -> object:
+            if name == "_fleet_frozen_r43_runtime":
+                origin = Path(checker.ROOT) / checker.FROZEN_R43_RUNTIME_PATH
+            return real_loader(name, raw, origin=origin)
+
+        with mock.patch.object(
+            checker, "_load_exact_source_module", side_effect=live_origin_loader
+        ):
+            with self.assertRaisesRegex(
+                checker.ManifestError, "R43_HISTORICAL_MODULE_ORIGIN_INVALID"
+            ):
+                with checker._open_frozen_r43_historical_modules():
+                    pass
+
+        with checker._open_frozen_r43_historical_modules() as frozen:
+            member = frozen.graph_root / schema
+            original = member.read_bytes()
+            try:
+                member.write_bytes(original + b"\n")
+                with self.assertRaisesRegex(
+                    checker.ManifestError, "R43_HISTORICAL_GRAPH_MEMBER_SUBSTITUTED"
+                ):
+                    frozen._assert_graph()
+            finally:
+                member.write_bytes(original)
+            frozen._assert_graph()
+
+            intruder = frozen.graph_root / "schemas" / "universal-intruder.schema.json"
+            try:
+                intruder.write_bytes(b"{}")
+                with self.assertRaisesRegex(
+                    checker.ManifestError, "R43_HISTORICAL_GRAPH_MEMBER_SET_INVALID"
+                ):
+                    frozen._assert_graph()
+            finally:
+                intruder.unlink()
+            frozen._assert_graph()
+
+            removed = frozen.graph_root / "README.md"
+            kept = removed.read_bytes()
+            try:
+                removed.unlink()
+                with self.assertRaisesRegex(
+                    checker.ManifestError, "R43_HISTORICAL_GRAPH_MEMBER_SET_INVALID"
+                ):
+                    frozen._assert_graph()
+            finally:
+                removed.write_bytes(kept)
+            frozen._assert_graph()
+
+            binding = (
+                frozen.graph_root / checker.FROZEN_R43_GRAPH_OBJECT_STORE_BINDING
+            )
+            bound = binding.read_text(encoding="utf-8")
+            try:
+                binding.write_text("gitdir: nowhere\n", encoding="utf-8")
+                with self.assertRaisesRegex(
+                    checker.ManifestError, "R43_HISTORICAL_GRAPH_OBJECT_STORE_INVALID"
+                ):
+                    frozen._assert_graph()
+            finally:
+                binding.write_text(bound, encoding="utf-8")
+            frozen._assert_graph()
+
+            with mock.patch.object(
+                frozen.runtime_module, "SCHEMA_ROOT", Path(checker.ROOT) / "schemas"
+            ):
+                with self.assertRaisesRegex(
+                    checker.ManifestError, "R43_HISTORICAL_MODULE_ROOT_INVALID"
+                ):
+                    frozen._assert_graph()
+            with mock.patch.object(
+                frozen.test_module, "ROOT", Path(checker.ROOT)
+            ):
+                with self.assertRaisesRegex(
+                    checker.ManifestError, "R43_HISTORICAL_MODULE_ROOT_INVALID"
+                ):
+                    frozen._assert_graph()
+            with mock.patch.object(
+                frozen.runtime_module,
+                "__file__",
+                str(Path(checker.ROOT) / checker.FROZEN_R43_RUNTIME_PATH),
+            ):
+                with self.assertRaisesRegex(
+                    checker.ManifestError, "R43_HISTORICAL_MODULE_ORIGIN_INVALID"
+                ):
+                    frozen._assert_graph()
+            frozen._assert_graph()
+
+    def test_frozen_r43_child_execution_is_bound_to_the_authenticated_graph(self) -> None:
+        import check_universal_manifest as checker
+
+        self.assertEqual(
+            dict(checker.FROZEN_R43_CHILD_EXECUTION_CASES),
+            {
+                "UniversalProviderControlTests."
+                "test_r18_03_os_account_authority_ignores_home_in_fresh_processes":
+                    checker.FROZEN_R43_CHILD_INTERPRETER_MODE,
+                "UniversalProviderControlTests."
+                "test_r20_04_real_ancestor_junction_or_symlink_is_rejected":
+                    checker.FROZEN_R43_CHILD_FOREIGN_MODE,
+            },
+        )
+        raw = checker._git(
+            f"{checker.FROZEN_R43}:tests/test_universal_provider_control.py"
+        )
+        self.assertIsInstance(raw, bytes)
+        self.assertIsNone(checker._diagnose_frozen_r43_child_cases(raw))
+        smuggled = raw.replace(
+            b"        result = upc.evaluate_review_admission("
+            b"Exploding(), policy=Exploding(), capability=Exploding())",
+            b"        subprocess.run([sys.executable, '-c', 'pass'], check=False)\n"
+            b"        result = upc.evaluate_review_admission("
+            b"Exploding(), policy=Exploding(), capability=Exploding())",
+            1,
+        )
+        self.assertNotEqual(smuggled, raw)
+        with self.assertRaisesRegex(
+            checker.ManifestError, "R43_HISTORICAL_CHILD_CASE_SET_INVALID"
+        ):
+            checker._diagnose_frozen_r43_child_cases(smuggled)
+        with mock.patch.object(
+            checker, "FROZEN_R43_CHILD_EXECUTION_CASES", MappingProxyType({})
+        ):
+            with self.assertRaisesRegex(
+                checker.ManifestError, "R43_HISTORICAL_CHILD_CASE_SET_INVALID"
+            ):
+                checker._diagnose_frozen_r43_child_cases(raw)
+
+        anchor = checker.FROZEN_R43_EXECUTION_GRAPH_ANCHORS[
+            checker.FROZEN_R43_RUNTIME_PATH
+        ]
+        with checker._open_frozen_r43_historical_modules() as frozen:
+            self.assertIsNone(
+                checker._assert_frozen_r43_child_graph_origin(frozen.graph_root)
+            )
+            rebound = dict(checker.FROZEN_R43_EXECUTION_GRAPH_ANCHORS)
+            rebound[checker.FROZEN_R43_RUNTIME_PATH] = dataclasses.replace(
+                anchor, sha256="sha256:" + "0" * 64
+            )
+            with mock.patch.object(
+                checker,
+                "FROZEN_R43_EXECUTION_GRAPH_ANCHORS",
+                MappingProxyType(rebound),
+            ):
+                with self.assertRaisesRegex(
+                    checker.ManifestError, "R43_HISTORICAL_CHILD_ORIGIN_INVALID"
+                ):
+                    checker._assert_frozen_r43_child_graph_origin(frozen.graph_root)
+
+        with tempfile.TemporaryDirectory(prefix="fleet-r45-decoy-") as decoy_name:
+            decoy = Path(decoy_name).resolve()
+            (decoy / "tools").mkdir()
+            (decoy / "tools" / "universal_provider_control.py").write_text(
+                "from pathlib import Path\n"
+                "SCHEMA_ROOT = Path(__file__).resolve().parents[1] / 'schemas'\n",
+                encoding="utf-8",
+            )
+            with self.assertRaisesRegex(
+                checker.ManifestError, "R43_HISTORICAL_CHILD_ORIGIN_INVALID"
+            ):
+                checker._assert_frozen_r43_child_graph_origin(decoy)
+
     def test_historical_numbered_tests_are_semantically_quarantined(self) -> None:
         import check_universal_manifest as checker
 
@@ -7247,12 +7551,13 @@ class ReviewResourceAdmissionR29Tests(unittest.TestCase):
         self.assertEqual(
             tuple((receipt["round"], receipt["subjects"]) for receipt in receipts),
             ((26, 98), (29, 7), (33, 7), (34, 7), (35, 7), (36, 7),
-             (37, 7), (38, 7), (39, 7), (40, 7), (41, 7), (42, 7), (43, 7), (44, 7)),
+             (37, 7), (38, 7), (39, 7), (40, 7), (41, 7), (42, 7), (43, 7), (44, 7),
+             (45, 7)),
         )
-        frozen = checker._tracked_reconciliation_paths(checker.FROZEN_R43)
+        frozen = checker._tracked_reconciliation_paths(checker.FROZEN_R44)
         self.assertEqual(
             checker.EXPECTED_CURRENT_RECONCILIATION_PATHS,
-            tuple(sorted(frozen + (checker.R44_MANIFEST,))),
+            tuple(sorted(frozen + (checker.R45_MANIFEST,))),
         )
         self.assertEqual(checker._tracked_reconciliation_paths(":"), checker.EXPECTED_CURRENT_RECONCILIATION_PATHS)
 
@@ -7275,19 +7580,19 @@ class ReviewResourceAdmissionR29Tests(unittest.TestCase):
     def test_current_manifest_mutation_is_observed_only_by_generic_owner(self) -> None:
         import check_universal_manifest as checker
 
-        raw = (ROOT / checker.R44_MANIFEST).read_bytes()
+        raw = (ROOT / checker.R45_MANIFEST).read_bytes()
         manifest = json.loads(raw)
         manifest["authority"]["providerExecution"] = True
         changed_raw = json.dumps(manifest, indent=2).encode("utf-8") + b"\n"
         real_git = checker._git
 
         def rebound_git(spec: str, *, text: bool = False) -> bytes | str:
-            if spec == checker._blob_spec(":", checker.R44_MANIFEST):
+            if spec == checker._blob_spec(":", checker.R45_MANIFEST):
                 return changed_raw.decode("utf-8") if text else changed_raw
             return real_git(spec, text=text)
 
         with mock.patch.object(checker, "_git", side_effect=rebound_git):
-            with self.assertRaisesRegex(checker.ManifestError, "R44_AUTHORITY_INVALID"):
+            with self.assertRaisesRegex(checker.ManifestError, "R45_AUTHORITY_INVALID"):
                 checker._execute_manifest_layers(":")
 
     def test_generic_current_pipeline_hostile_inventory_is_complete(self) -> None:
@@ -7301,6 +7606,9 @@ class ReviewResourceAdmissionR29Tests(unittest.TestCase):
             "test_historical_structural_inventory_is_exact_across_all_test_cases",
             "test_historical_numbered_tests_are_semantically_quarantined",
             "test_semantic_quarantine_catches_equivalent_current_selectors",
+            "test_frozen_r43_history_is_closed_over_the_materialized_graph",
+            "test_frozen_r43_graph_substitution_and_origin_rebinding_refuse",
+            "test_frozen_r43_child_execution_is_bound_to_the_authenticated_graph",
         }
         self.assertLessEqual(required, set(dir(type(self))))
 
@@ -7331,7 +7639,7 @@ class ReviewResourceAdmissionR29Tests(unittest.TestCase):
 
         current_anchor = anchors[current.manifest_path]
         anchor_mutations = (
-            dataclasses.replace(current_anchor, round=45),
+            dataclasses.replace(current_anchor, round=46),
             dataclasses.replace(current_anchor, manifest_path="wrong-path"),
             dataclasses.replace(current_anchor, candidate=checker.FROZEN_R43),
             dataclasses.replace(current_anchor, schema="wrong-schema"),
@@ -7376,15 +7684,15 @@ class ReviewResourceAdmissionR29Tests(unittest.TestCase):
                 "manifests/universal-provider-control-reconciliation-r0041.json",
             ))),
             tuple(sorted(expected + (
-                "manifests/universal-provider-control-reconciliation-r44.json",
+                "manifests/universal-provider-control-reconciliation-r45.json",
             ))),
             tuple(reversed(expected)),
         )
         for changed in tracked_mutations:
             def tracked(treeish: str) -> tuple[str, ...]:
                 return (
-                    checker.FROZEN_R43_RECONCILIATION_PATHS
-                    if treeish == checker.FROZEN_R43
+                    checker.FROZEN_R44_RECONCILIATION_PATHS
+                    if treeish == checker.FROZEN_R44
                     else changed
                 )
 
@@ -7406,7 +7714,7 @@ class ReviewResourceAdmissionR29Tests(unittest.TestCase):
     def test_current_real_verifier_rejects_fully_rebound_quality_and_authority(self) -> None:
         import check_universal_manifest as checker
 
-        raw = (ROOT / checker.R44_MANIFEST).read_bytes()
+        raw = (ROOT / checker.R45_MANIFEST).read_bytes()
         original = json.loads(raw)
 
         def rebound(manifest: dict[str, object]) -> bytes:
@@ -7421,26 +7729,26 @@ class ReviewResourceAdmissionR29Tests(unittest.TestCase):
         mutations: list[tuple[str, dict[str, object], str]] = []
         authority = copy.deepcopy(original)
         authority["authority"]["providerExecution"] = True
-        mutations.append(("authority", authority, "R44_AUTHORITY_INVALID"))
+        mutations.append(("authority", authority, "R45_AUTHORITY_INVALID"))
         profile = copy.deepcopy(original)
         profile["reviewAdmissionPolicy"]["identity"]["model"] = "claude-fable-4"
         profile["reviewAdmissionPolicyDigest"] = checker.canonical_policy_sha256(
             profile["reviewAdmissionPolicy"]
         )
-        mutations.append(("profile", profile, "R44_EXACT_PROFILE_MISMATCH"))
+        mutations.append(("profile", profile, "R45_EXACT_PROFILE_MISMATCH"))
         cache = copy.deepcopy(original)
         cache["reviewAdmissionPolicy"]["cacheAdmissionMode"] = "VERIFIED_DISABLED"
         cache["reviewAdmissionPolicyDigest"] = checker.canonical_policy_sha256(
             cache["reviewAdmissionPolicy"]
         )
-        mutations.append(("cache", cache, "R44_CACHE_ADMISSION_MODE_MISMATCH"))
+        mutations.append(("cache", cache, "R45_CACHE_ADMISSION_MODE_MISMATCH"))
         digest = copy.deepcopy(original)
         digest["reviewAdmissionPolicyDigest"] = "sha256:" + "0" * 64
-        mutations.append(("policy-digest", digest, "R44_POLICY_DIGEST_MISMATCH"))
+        mutations.append(("policy-digest", digest, "R45_POLICY_DIGEST_MISMATCH"))
 
         real_git = checker._git
         real_receipt = checker._verify_subjects_and_self
-        current_spec = checker._blob_spec(":", checker.R44_MANIFEST)
+        current_spec = checker._blob_spec(":", checker.R45_MANIFEST)
         for label, changed, reason in mutations:
             changed_raw = rebound(changed)
 
@@ -7454,7 +7762,7 @@ class ReviewResourceAdmissionR29Tests(unittest.TestCase):
             )
 
             def guarded_receipt(*args: object, **kwargs: object) -> int:
-                if kwargs.get("manifest_path") == checker.R44_MANIFEST:
+                if kwargs.get("manifest_path") == checker.R45_MANIFEST:
                     return current_receipt(*args, **kwargs)  # type: ignore[no-any-return]
                 return real_receipt(*args, **kwargs)
 

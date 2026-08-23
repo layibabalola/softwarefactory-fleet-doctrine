@@ -40,6 +40,7 @@ R41_MANIFEST = "manifests/universal-provider-control-reconciliation-r41.json"
 R42_MANIFEST = "manifests/universal-provider-control-reconciliation-r42.json"
 R43_MANIFEST = "manifests/universal-provider-control-reconciliation-r43.json"
 R44_MANIFEST = "manifests/universal-provider-control-reconciliation-r44.json"
+R45_MANIFEST = "manifests/universal-provider-control-reconciliation-r45.json"
 REVIEW_SCHEMA = "schemas/universal-provider-review-admission-v1.schema.json"
 FROZEN_CANDIDATE = "e70a044f31dd2f43ab7c716d63a4eb89318c61b6"
 FROZEN_R29 = "fc76bf6d5ab52891d06b7f71eb2e993e413c124c"
@@ -54,6 +55,7 @@ FROZEN_R40 = "9924be835e6edd768f82cd6c50d97b83c747a265"
 FROZEN_R41 = "e6d7dbd297a470cf97c7f9fefbb854dc3527b719"
 FROZEN_R42 = "5b1abb9d01226e35721d14b9c525d87287722c8c"
 FROZEN_R43 = "78218e277a4f03a7830058ab7c3cf04683066b9b"
+FROZEN_R44 = "86483feef86c14d644b684cd6e1f5e3665475fbe"
 SELF_PATTERN = re.compile(
     rb'("canonicalGitBlobSha256"\s*:\s*"sha256:)([0-9a-f]{64})(")'
 )
@@ -127,6 +129,7 @@ R41_POLICY_DIGEST = R40_POLICY_DIGEST
 R42_POLICY_DIGEST = R41_POLICY_DIGEST
 R43_POLICY_DIGEST = R42_POLICY_DIGEST
 R44_POLICY_DIGEST = R43_POLICY_DIGEST
+R45_POLICY_DIGEST = R44_POLICY_DIGEST
 R33_BASE = {
     "commit": "55afee85ecf720eb857cea1980f511f331b9e86f",
     "tree": "6e58f77467320d53ced12906bf2be62b4fca3d56",
@@ -237,7 +240,14 @@ R44_BASE = {
     "orderedParentTrees": ["3e4867c2efe777f25d64676ce8d7989ae50fe903"],
 }
 R44_SUBJECT_PATHS = R43_SUBJECT_PATHS
-EXPECTED_LAYER_ROUNDS = (26, 29, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44)
+R45_BASE = {
+    "commit": FROZEN_R44,
+    "tree": "49955d2408ee367272fe8c60038ab6b2ef338241",
+    "orderedParents": [FROZEN_R43],
+    "orderedParentTrees": ["d31cda26840f019dbc2f9b445d0b8e1a9cdeb607"],
+}
+R45_SUBJECT_PATHS = R44_SUBJECT_PATHS
+EXPECTED_LAYER_ROUNDS = (26, 29, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45)
 CURRENT_CANDIDATE = ":"
 HISTORICAL_TEST_BODY_SHA256: Mapping[str, str] = MappingProxyType({
     'ReviewResourceAdmissionR29Tests.test_r28_01_runtime_refuses_before_reading_any_caller_input': '51808e5b02757ce0ff6a1e92b07c87041d7ba6f6970c161e80c45f167d2c9537',
@@ -699,6 +709,264 @@ FROZEN_R43_EXECUTION_BLOB_ANCHORS: Mapping[str, FrozenExecutionBlobAnchor] = (
         }
     )
 )
+FROZEN_R43_RUNTIME_PATH = "tools/universal_provider_control.py"
+FROZEN_R43_EXECUTION_MODULE_PATHS = (
+    FROZEN_R43_RUNTIME_PATH,
+    "tools/check_universal_manifest.py",
+    "tests/test_universal_provider_control.py",
+)
+FROZEN_R43_EXECUTION_GRAPH_TREES = ("schemas",)
+FROZEN_R43_GRAPH_OBJECT_STORE_BINDING = ".git"
+FROZEN_R43_EXECUTION_GRAPH_ANCHORS: Mapping[str, FrozenExecutionBlobAnchor] = (
+    MappingProxyType(
+        {
+            ".github/workflows/provider-capacity-governor.yml": FrozenExecutionBlobAnchor(
+                ".github/workflows/provider-capacity-governor.yml",
+                "59eb60643575e3644f8749941d4e8c9fe4426fba",
+                "sha256:a0bdfab997400c1304a4720b9c4168315037bde31dd842d7fb3f5b4df210246d",
+                4292,
+            ),
+            "README.md": FrozenExecutionBlobAnchor(
+                "README.md",
+                "57cec923b6ca3d856a85a9a97c08997adfd76c2c",
+                "sha256:b1b40f3617ec24e6e65603192d1e246d76bf13177cc19630e8d73bbc6cb1bc26",
+                11135,
+            ),
+            "manifests/universal-provider-control-reconciliation-r43.json": FrozenExecutionBlobAnchor(
+                "manifests/universal-provider-control-reconciliation-r43.json",
+                "04eb2bb92de8ec5bcf5a268f429aa294e8a87128",
+                "sha256:40f929ceac009af6b5154765775f59410f2a3133c313e9b8180d0bd76c75ee02",
+                10966,
+            ),
+            "policy/universal-provider-token-control-r22.json": FrozenExecutionBlobAnchor(
+                "policy/universal-provider-token-control-r22.json",
+                "33b75cfb61b8c8934009ff987f2ea90ef5f74eb5",
+                "sha256:b5eca2ef60a86d87e2ca96d34569035aef510387de7ea204ab7cbf98ce5f5192",
+                1397,
+            ),
+            "receipts/attended-provider-rotation-20260819.json": FrozenExecutionBlobAnchor(
+                "receipts/attended-provider-rotation-20260819.json",
+                "41d7b4c6ae56f8efb880a1f36f4c3225f3112251",
+                "sha256:b3c69cdd972b694bd37e914b6c8f11ec452ac3c8c14ed230c2a23215e1e01307",
+                4981,
+            ),
+            "schemas/provider-admission-snapshot-v1.schema.json": FrozenExecutionBlobAnchor(
+                "schemas/provider-admission-snapshot-v1.schema.json",
+                "4c29309a29f60736d294ceee143d837c744faa2b",
+                "sha256:2a88c79365e7de29e109712d67f770990f73109845b3a61131f28e9db63eb8a9",
+                6680,
+            ),
+            "schemas/provider-native-capacity-evidence-v1.schema.json": FrozenExecutionBlobAnchor(
+                "schemas/provider-native-capacity-evidence-v1.schema.json",
+                "9c80864627b60c4d217eed2a907fe51f37d28a30",
+                "sha256:bf09454ce88e3c6d6131ffc009a8601c1ef149726f2e8b2f35e55be91276a96f",
+                4562,
+            ),
+            "schemas/provider-usage-event-v1.schema.json": FrozenExecutionBlobAnchor(
+                "schemas/provider-usage-event-v1.schema.json",
+                "5c90f178d904568136ee3bbb7feca6c5da2f6d25",
+                "sha256:2c3c68d7b288cce18dbf46fa5a1ed37e57eb21a1e1beb9b9ffcf85cccf29271f",
+                6183,
+            ),
+            "schemas/universal-attended-rotation-receipt-v1.schema.json": FrozenExecutionBlobAnchor(
+                "schemas/universal-attended-rotation-receipt-v1.schema.json",
+                "59497da571db15599c2bec5083fd38abff7833f9",
+                "sha256:ca725d196280b12e6134fc0c26f167622f3e2cfc16b7873974e11431e2de02b4",
+                5818,
+            ),
+            "schemas/universal-broker-health-v1.schema.json": FrozenExecutionBlobAnchor(
+                "schemas/universal-broker-health-v1.schema.json",
+                "98ad95fd6fb26f9b384b5c8c0f1ff205815e5426",
+                "sha256:4e0475f4c24b78a1095b2e00efa516609e4278b214279217a4e6527b72a5002e",
+                928,
+            ),
+            "schemas/universal-canary-success-receipt-v1.schema.json": FrozenExecutionBlobAnchor(
+                "schemas/universal-canary-success-receipt-v1.schema.json",
+                "f6de362e1a062353ef0496be950325a1d5fac375",
+                "sha256:6daa9bc402c859a492027cf483eaf7f35018a19f1ef824c66aaf6d91ee291d6d",
+                1789,
+            ),
+            "schemas/universal-capacity-observation-v1.schema.json": FrozenExecutionBlobAnchor(
+                "schemas/universal-capacity-observation-v1.schema.json",
+                "9039f80de643b521c32d08565d645f244545f740",
+                "sha256:f8c2506c8654c0f7b143ca74fa68ddfdc7244cd5f74ddea4d39fa332ffc04fec",
+                1461,
+            ),
+            "schemas/universal-control-request-v1.schema.json": FrozenExecutionBlobAnchor(
+                "schemas/universal-control-request-v1.schema.json",
+                "5226358fda674796b10341c703f9be55a180c00c",
+                "sha256:207105080ce89a295b7e92b92956985e9099d99564d0813a2f01e6f0f219bde3",
+                7583,
+            ),
+            "schemas/universal-demand-snapshot-v1.schema.json": FrozenExecutionBlobAnchor(
+                "schemas/universal-demand-snapshot-v1.schema.json",
+                "7382385f0ba455710e5b0ab6a839418a6864b5f5",
+                "sha256:91f7bd4f3a9b477702d5d0b5e3a62e83b8ba280d712388e6d04995fc187a4bea",
+                1432,
+            ),
+            "schemas/universal-evidence-capsule-request-v1.schema.json": FrozenExecutionBlobAnchor(
+                "schemas/universal-evidence-capsule-request-v1.schema.json",
+                "baa7b26b05744542ecfbe1c3ea60010b90bff91d",
+                "sha256:9051d46a65cc7d52f35891c4ae50aa208427607dbd045cb3f54498556a5b162a",
+                1337,
+            ),
+            "schemas/universal-evidence-capsule-v1.schema.json": FrozenExecutionBlobAnchor(
+                "schemas/universal-evidence-capsule-v1.schema.json",
+                "c6dd7dab540388f1ca8ebd774b2a188c02789ecb",
+                "sha256:aa81a146014908f73dfa173d620b20f6baf94d6f18068a49a38f470aa9e61a41",
+                1297,
+            ),
+            "schemas/universal-gate-transition-v1.schema.json": FrozenExecutionBlobAnchor(
+                "schemas/universal-gate-transition-v1.schema.json",
+                "79fd254926bf1ff118ba97b9863e1ce2e8269acd",
+                "sha256:26188edfe7f9f4edfa3345178a4db194d31da2b9ebc313f71908c836bb949405",
+                3390,
+            ),
+            "schemas/universal-launch-attestation-v1.schema.json": FrozenExecutionBlobAnchor(
+                "schemas/universal-launch-attestation-v1.schema.json",
+                "299b893e6984664aaa3012d16e8784ab2e7432fd",
+                "sha256:2d0df106d2d76954d22a1e09ed4f330c27a775d0625991cee1a81f3f2ebecc7b",
+                5734,
+            ),
+            "schemas/universal-launcher-inventory-v1.schema.json": FrozenExecutionBlobAnchor(
+                "schemas/universal-launcher-inventory-v1.schema.json",
+                "a4e123b578bdcd9e747a0ef900776a76d07bed45",
+                "sha256:308d59f2c9f4ddb1d9c53d2a11d9a04abcab2b1e2cfffa3014039c9eb67a4dde",
+                2613,
+            ),
+            "schemas/universal-manual-canary-authorization-v1.schema.json": FrozenExecutionBlobAnchor(
+                "schemas/universal-manual-canary-authorization-v1.schema.json",
+                "706cb96fc133624b160bd63a653356baf390d6db",
+                "sha256:da469a6c3720503afd8259e4b4cbabb70d77f0604c57d65e85bb0d826bf61d2c",
+                1207,
+            ),
+            "schemas/universal-output-quality-receipt-v1.schema.json": FrozenExecutionBlobAnchor(
+                "schemas/universal-output-quality-receipt-v1.schema.json",
+                "ba8cd7ca5a8e7bcfde184c8f0d4740ec269bd066",
+                "sha256:d1a2a414ce9f36ef8ddcb6e33ff10676f248ec23cafb28057257dbda91f0c793",
+                2387,
+            ),
+            "schemas/universal-prior-idle-receipt-v1.schema.json": FrozenExecutionBlobAnchor(
+                "schemas/universal-prior-idle-receipt-v1.schema.json",
+                "ec13e6a331755a29e8161ce0d3460b093fa92510",
+                "sha256:a738a171b01b5e96a1eb3f0c4ebe54fe21ec2965d4a0bb964e15c27f49ee53c2",
+                1991,
+            ),
+            "schemas/universal-process-observation-v1.schema.json": FrozenExecutionBlobAnchor(
+                "schemas/universal-process-observation-v1.schema.json",
+                "cfcae139fdbbc994a4200dbbabfc5761f9c9b1b9",
+                "sha256:e1aa92c433eaf745052108d124e45cf23c333c17246fc3fc9709a2a48ff170a7",
+                3905,
+            ),
+            "schemas/universal-process-tree-termination-receipt-v1.schema.json": FrozenExecutionBlobAnchor(
+                "schemas/universal-process-tree-termination-receipt-v1.schema.json",
+                "958db0e260ee675efad9e2369b42b60d13f3815a",
+                "sha256:7a97112d2a95c045f690c70f6c34da6f8b9421ab291688eca70ce860ca3a0e46",
+                1711,
+            ),
+            "schemas/universal-project-profile-v1.schema.json": FrozenExecutionBlobAnchor(
+                "schemas/universal-project-profile-v1.schema.json",
+                "85d4fef6c72f71c6bee8befc4bb83cd37ec39a0e",
+                "sha256:1d66976aa6abdf509078ab4ed53298606973660b4175b9ae4abfc82b79c1077b",
+                9079,
+            ),
+            "schemas/universal-provider-request-permit-v1.schema.json": FrozenExecutionBlobAnchor(
+                "schemas/universal-provider-request-permit-v1.schema.json",
+                "9c5ddc90f04cabdbd4a855e4ed9eefe45573e1a7",
+                "sha256:078a3418bccda41ae8566b61f66ae319e4855992cf6c964c9453d7851635d9e0",
+                1963,
+            ),
+            "schemas/universal-provider-review-admission-v1.schema.json": FrozenExecutionBlobAnchor(
+                "schemas/universal-provider-review-admission-v1.schema.json",
+                "995426015dac17ca58e831e9e691affc12a36f8c",
+                "sha256:c8cd9cf9c62827e1ffd1c3fa9213e91b16d70fe33f73646f2633baca9663b42e",
+                8150,
+            ),
+            "schemas/universal-provider-token-control-policy-v1.schema.json": FrozenExecutionBlobAnchor(
+                "schemas/universal-provider-token-control-policy-v1.schema.json",
+                "44884e1b1a42cee7867803f99f80a8e456d42a43",
+                "sha256:3531c5a11667ac8d4aefa3da24c2537dbeaa481e8739fe83ea5c9dcbdceeeb9b",
+                3908,
+            ),
+            "schemas/universal-provider-usage-checkpoint-v1.schema.json": FrozenExecutionBlobAnchor(
+                "schemas/universal-provider-usage-checkpoint-v1.schema.json",
+                "625075a51682184ac437844003b5a573a8bc7153",
+                "sha256:a9ab5a812b4f790dd72bf2c9e8304aae681cc879c8bdbf8281df59477f8d5fbc",
+                2252,
+            ),
+            "schemas/universal-quality-equivalence-receipt-v1.schema.json": FrozenExecutionBlobAnchor(
+                "schemas/universal-quality-equivalence-receipt-v1.schema.json",
+                "833634bb9e2f2e71e28c3af8d22ad246af878a02",
+                "sha256:d97a87476ca992d19f0b04ea53200d31ba3c4fbbb93206001ce96a99650049cf",
+                1344,
+            ),
+            "schemas/universal-stage-proof-v1.schema.json": FrozenExecutionBlobAnchor(
+                "schemas/universal-stage-proof-v1.schema.json",
+                "e6e214ba10f9f9f86342d4355bb639b1941a9b4e",
+                "sha256:67d690150aede09fd64e9e9f3ee135a570dd305ac4b0e1a423be4434d5cf7eca",
+                1668,
+            ),
+            "schemas/universal-terminal-request-permit-v1.schema.json": FrozenExecutionBlobAnchor(
+                "schemas/universal-terminal-request-permit-v1.schema.json",
+                "72a1f8c09331b1d98d66147a5a409a5d4d299d49",
+                "sha256:ee2090d30466626fb692e93739aed0131e8067575cf576b23a8b56dc63245a49",
+                1477,
+            ),
+            "schemas/universal-wrapper-boundary-certification-v1.schema.json": FrozenExecutionBlobAnchor(
+                "schemas/universal-wrapper-boundary-certification-v1.schema.json",
+                "aa649a50c3a189be802cf9373f8b35267cab7989",
+                "sha256:16504d84f328c798b31d68ffdc8da0767f01831b49dab7a787f294af56fb6045",
+                2080,
+            ),
+            "specs/fleet-universal-provider-control-reconciliation.md": FrozenExecutionBlobAnchor(
+                "specs/fleet-universal-provider-control-reconciliation.md",
+                "d86a22fbcb8764dac006de61171ed1712269b47a",
+                "sha256:29cef3617e0810cce0e3bd59a99d8a776e0bc7e73e18fa3bac0dee16c8a55868",
+                78521,
+            ),
+            "tests/test_universal_provider_control.py": FrozenExecutionBlobAnchor(
+                "tests/test_universal_provider_control.py",
+                "aa1d1974d9470ad7d554db057807a645730b77be",
+                "sha256:2379a4d8931980915e74f0f70db449543d4d528b5f161296eb4792a1ba2b2e22",
+                380414,
+            ),
+            "tools/check_universal_manifest.py": FrozenExecutionBlobAnchor(
+                "tools/check_universal_manifest.py",
+                "23d3918728c814a82289f5ab171cb5f412461fe1",
+                "sha256:cb0e1a89b10b667cf6ddb86aa0de7ddf72d2230290ddd03cef68d0dfa3ab3450",
+                117263,
+            ),
+            "tools/universal_provider_control.py": FrozenExecutionBlobAnchor(
+                "tools/universal_provider_control.py",
+                "4c9afea1833c6f62820daa893d2125e9beb48ed4",
+                "sha256:c24eadc90ba14592d355252c753f8d81a14371d4cd52011657d17d09caea4418",
+                308014,
+            ),
+        }
+    )
+)
+FROZEN_R43_CHILD_INTERPRETER_MODE = "FROZEN_GRAPH_INTERPRETER_CHILD"
+FROZEN_R43_CHILD_FOREIGN_MODE = "NON_INTERPRETER_PLATFORM_CHILD"
+FROZEN_R43_CHILD_EXECUTION_CASES: Mapping[str, str] = MappingProxyType(
+    {
+        "UniversalProviderControlTests.test_r18_03_os_account_authority_ignores_home_in_fresh_processes":
+            FROZEN_R43_CHILD_INTERPRETER_MODE,
+        "UniversalProviderControlTests.test_r20_04_real_ancestor_junction_or_symlink_is_rejected":
+            FROZEN_R43_CHILD_FOREIGN_MODE,
+    }
+)
+FROZEN_R43_CHILD_IMPORT_PROBE = (
+    "import hashlib, json, sys\n"
+    "from tools import universal_provider_control as u\n"
+    "with open(u.__file__, 'rb') as handle:\n"
+    "    raw = handle.read()\n"
+    "sys.stdout.write(json.dumps({\n"
+    "    'file': u.__file__,\n"
+    "    'bytes': len(raw),\n"
+    "    'sha256': 'sha256:' + hashlib.sha256(raw).hexdigest(),\n"
+    "    'schemaRoot': str(u.SCHEMA_ROOT),\n"
+    "}))\n"
+)
 FROZEN_R43_OWNED_TEST_CLASSES = (
     "UniversalProviderControlTests",
     "ReviewResourceAdmissionR29Tests",
@@ -841,18 +1109,91 @@ def _diagnose_frozen_r43_test_source(raw: bytes) -> None:
     _frozen_r43_source_inventory(raw, require_exact_classes=True)
 
 
-def _load_frozen_r43_execution_blobs() -> Mapping[str, bytes]:
+def _diagnose_frozen_r43_child_cases(raw: bytes) -> None:
+    """Bind exactly which historical cases may start a child, and in which mode."""
+
+    try:
+        module = ast.parse(raw.decode("utf-8", errors="strict"))
+    except (UnicodeDecodeError, SyntaxError) as exc:
+        raise ManifestError("R43_HISTORICAL_SOURCE_INVALID") from exc
+    observed: dict[str, str] = {}
+    for class_node in (
+        node
+        for node in module.body
+        if isinstance(node, ast.ClassDef) and node.name in FROZEN_R43_OWNED_TEST_CLASSES
+    ):
+        for method in class_node.body:
+            if not isinstance(method, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                continue
+            qualified = f"{class_node.name}.{method.name}"
+            if qualified not in FROZEN_R43_HISTORICAL_FUNCTION_SPANS:
+                continue
+            spawns = False
+            interpreter = False
+            for node in ast.walk(method):
+                if not isinstance(node, ast.Attribute) or not isinstance(
+                    node.value, ast.Name
+                ):
+                    continue
+                if node.value.id == "subprocess" and node.attr in (
+                    "run", "Popen", "call", "check_call", "check_output"
+                ):
+                    spawns = True
+                elif node.value.id == "sys" and node.attr == "executable":
+                    interpreter = True
+            if spawns or interpreter:
+                observed[qualified] = (
+                    FROZEN_R43_CHILD_INTERPRETER_MODE
+                    if interpreter
+                    else FROZEN_R43_CHILD_FOREIGN_MODE
+                )
+    if observed != dict(FROZEN_R43_CHILD_EXECUTION_CASES):
+        raise ManifestError("R43_HISTORICAL_CHILD_CASE_SET_INVALID")
+
+
+def _frozen_tree_member_paths(treeish: str, prefix: str) -> tuple[str, ...]:
+    run = subprocess.run(
+        ["git", "ls-tree", "-r", "--name-only", treeish, "--", prefix],
+        cwd=ROOT, check=False, capture_output=True, text=True, encoding="utf-8",
+    )
+    if run.returncode != 0:
+        raise ManifestError("R43_HISTORICAL_GRAPH_TREE_UNAVAILABLE")
+    paths = tuple(line for line in run.stdout.splitlines() if line)
+    if not paths or len(set(paths)) != len(paths):
+        raise ManifestError("R43_HISTORICAL_GRAPH_TREE_UNAVAILABLE")
+    return tuple(sorted(paths))
+
+
+def _load_frozen_r43_execution_graph() -> Mapping[str, bytes]:
+    """Authenticate the complete closed frozen R43 dependency graph before any load."""
+
+    anchored = tuple(FROZEN_R43_EXECUTION_GRAPH_ANCHORS)
+    if anchored != tuple(sorted(set(anchored))):
+        raise ManifestError("R43_HISTORICAL_GRAPH_ANCHOR_SET_INVALID")
+    if any(
+        FROZEN_R43_EXECUTION_GRAPH_ANCHORS.get(path) != anchor
+        for path, anchor in FROZEN_R43_EXECUTION_BLOB_ANCHORS.items()
+    ) or any(
+        path not in FROZEN_R43_EXECUTION_GRAPH_ANCHORS
+        for path in (*FROZEN_R43_EXECUTION_MODULE_PATHS, R43_MANIFEST)
+    ):
+        raise ManifestError("R43_HISTORICAL_GRAPH_ANCHOR_SET_INVALID")
+    for prefix in FROZEN_R43_EXECUTION_GRAPH_TREES:
+        if _frozen_tree_member_paths(FROZEN_R43, prefix) != tuple(
+            path for path in anchored if path.startswith(prefix + "/")
+        ):
+            raise ManifestError("R43_HISTORICAL_GRAPH_TREE_MISMATCH")
     blobs: dict[str, bytes] = {}
-    for path, anchor in FROZEN_R43_EXECUTION_BLOB_ANCHORS.items():
+    for path, anchor in FROZEN_R43_EXECUTION_GRAPH_ANCHORS.items():
         if anchor.path != path or _oid(FROZEN_R43, path) != anchor.oid:
-            raise ManifestError("R43_HISTORICAL_BLOB_OID_MISMATCH")
+            raise ManifestError("R43_HISTORICAL_GRAPH_OID_MISMATCH")
         raw = _git(_blob_spec(FROZEN_R43, path))
         assert isinstance(raw, bytes)
         if (
             len(raw) != anchor.bytes
             or "sha256:" + hashlib.sha256(raw).hexdigest() != anchor.sha256
         ):
-            raise ManifestError("R43_HISTORICAL_BLOB_DIGEST_MISMATCH")
+            raise ManifestError("R43_HISTORICAL_GRAPH_DIGEST_MISMATCH")
         blobs[path] = raw
     manifest_raw = blobs[R43_MANIFEST]
     manifest = _parse_manifest(
@@ -867,23 +1208,128 @@ def _load_frozen_r43_execution_blobs() -> Mapping[str, bytes]:
     ) != 7:
         raise ManifestError("R43_HISTORICAL_MANIFEST_SUBJECT_COUNT_INVALID")
     _diagnose_frozen_r43_test_source(blobs["tests/test_universal_provider_control.py"])
+    _diagnose_frozen_r43_child_cases(blobs["tests/test_universal_provider_control.py"])
     return MappingProxyType(blobs)
 
 
-def _load_exact_source_module(
-    name: str, raw: bytes, *, compile_path: Path, initial_file: Path
-) -> ModuleType:
+def _assert_materialized_frozen_r43_graph(
+    graph_root: Path, blobs: Mapping[str, bytes]
+) -> None:
+    """Refuse missing, extra, or substituted members of the materialized frozen graph."""
+
+    binding = graph_root / FROZEN_R43_GRAPH_OBJECT_STORE_BINDING
+    if (
+        binding.is_symlink()
+        or not binding.is_file()
+        or binding.read_text(encoding="utf-8") != f"gitdir: {_absolute_git_dir()}\n"
+    ):
+        raise ManifestError("R43_HISTORICAL_GRAPH_OBJECT_STORE_INVALID")
+    present: list[str] = []
+    for directory, _subdirectories, files in os.walk(graph_root):
+        for name in files:
+            member = Path(directory, name)
+            try:
+                relative = member.relative_to(graph_root).as_posix()
+            except ValueError:
+                raise ManifestError("R43_HISTORICAL_GRAPH_MEMBER_INVALID") from None
+            if relative != FROZEN_R43_GRAPH_OBJECT_STORE_BINDING:
+                present.append(relative)
+    if tuple(sorted(present)) != tuple(FROZEN_R43_EXECUTION_GRAPH_ANCHORS) or tuple(
+        sorted(blobs)
+    ) != tuple(FROZEN_R43_EXECUTION_GRAPH_ANCHORS):
+        raise ManifestError("R43_HISTORICAL_GRAPH_MEMBER_SET_INVALID")
+    for path, anchor in FROZEN_R43_EXECUTION_GRAPH_ANCHORS.items():
+        member = graph_root / path
+        if member.is_symlink() or not member.is_file():
+            raise ManifestError("R43_HISTORICAL_GRAPH_MEMBER_INVALID")
+        observed = member.read_bytes()
+        if (
+            observed != blobs[path]
+            or len(observed) != anchor.bytes
+            or "sha256:" + hashlib.sha256(observed).hexdigest() != anchor.sha256
+        ):
+            raise ManifestError("R43_HISTORICAL_GRAPH_MEMBER_SUBSTITUTED")
+
+
+def _materialize_frozen_r43_graph(graph_root: Path, blobs: Mapping[str, bytes]) -> None:
+    for path, raw in blobs.items():
+        member = graph_root / path
+        member.parent.mkdir(parents=True, exist_ok=True)
+        member.write_bytes(raw)
+    _assert_materialized_frozen_r43_graph(graph_root, blobs)
+
+
+def _absolute_git_dir() -> Path:
+    run = subprocess.run(
+        ["git", "rev-parse", "--absolute-git-dir"], cwd=ROOT, check=False,
+        capture_output=True, text=True, encoding="utf-8",
+    )
+    if run.returncode != 0 or not run.stdout.strip():
+        raise ManifestError("R43_HISTORICAL_GRAPH_OBJECT_STORE_UNAVAILABLE")
+    git_dir = Path(run.stdout.strip())
+    if not git_dir.is_dir():
+        raise ManifestError("R43_HISTORICAL_GRAPH_OBJECT_STORE_UNAVAILABLE")
+    return git_dir
+
+
+def _assert_frozen_r43_graph_object_store(graph_root: Path) -> None:
+    """Frozen graph Git access reads immutable objects, never the live working tree."""
+
+    run = subprocess.run(
+        ["git", "rev-parse", "--absolute-git-dir"], cwd=graph_root, check=False,
+        capture_output=True, text=True, encoding="utf-8",
+    )
+    if run.returncode != 0 or Path(run.stdout.strip()) != _absolute_git_dir():
+        raise ManifestError("R43_HISTORICAL_GRAPH_OBJECT_STORE_INVALID")
+
+
+def _assert_frozen_r43_child_graph_origin(graph_root: Path) -> None:
+    """Terminally bind historical child interpreters to the authenticated frozen graph."""
+
+    anchor = FROZEN_R43_EXECUTION_GRAPH_ANCHORS[FROZEN_R43_RUNTIME_PATH]
+    expected = (graph_root / FROZEN_R43_RUNTIME_PATH).resolve()
+    try:
+        run = subprocess.run(
+            [sys.executable, "-c", FROZEN_R43_CHILD_IMPORT_PROBE],
+            cwd=graph_root, env=dict(os.environ), text=True,
+            capture_output=True, check=False, timeout=120,
+        )
+    except (OSError, subprocess.SubprocessError) as exc:
+        raise ManifestError("R43_HISTORICAL_CHILD_PROBE_UNAVAILABLE") from exc
+    if run.returncode != 0:
+        raise ManifestError("R43_HISTORICAL_CHILD_PROBE_UNAVAILABLE")
+    try:
+        observed = json.loads(run.stdout)
+    except json.JSONDecodeError as exc:
+        raise ManifestError("R43_HISTORICAL_CHILD_PROBE_UNAVAILABLE") from exc
+    if not isinstance(observed, dict) or set(observed) != {
+        "file", "bytes", "sha256", "schemaRoot"
+    }:
+        raise ManifestError("R43_HISTORICAL_CHILD_PROBE_UNAVAILABLE")
+    if (
+        Path(str(observed["file"])).resolve() != expected
+        or observed["bytes"] != anchor.bytes
+        or observed["sha256"] != anchor.sha256
+        or _oid(FROZEN_R43, anchor.path) != anchor.oid
+        or Path(str(observed["schemaRoot"])).resolve()
+        != (graph_root / "schemas").resolve()
+    ):
+        raise ManifestError("R43_HISTORICAL_CHILD_ORIGIN_INVALID")
+
+
+def _load_exact_source_module(name: str, raw: bytes, *, origin: Path) -> ModuleType:
     module = ModuleType(name)
-    module.__file__ = str(initial_file)
+    module.__file__ = str(origin)
     module.__package__ = ""
     module.__loader__ = None
     sys.modules[name] = module
     try:
-        code = compile(raw, str(compile_path), "exec", dont_inherit=True)
+        code = compile(raw, str(origin), "exec", dont_inherit=True)
         exec(code, module.__dict__)
     except Exception as exc:
         raise ManifestError("R43_HISTORICAL_MODULE_LOAD_FAILED") from exc
-    module.__file__ = str(compile_path)
+    if getattr(module, "__file__", None) != str(origin):
+        raise ManifestError("R43_HISTORICAL_MODULE_ORIGIN_INVALID")
     return module
 
 
@@ -895,12 +1341,16 @@ class _FrozenR43HistoricalModules:
         runtime_module: ModuleType,
         test_path: Path,
         locations: Mapping[str, tuple[int, int]],
+        graph_root: Path,
+        blobs: Mapping[str, bytes],
     ) -> None:
         self.test_module = test_module
         self.checker_module = checker_module
         self.runtime_module = runtime_module
         self.test_path = test_path
         self.locations = locations
+        self.graph_root = graph_root
+        self.blobs = blobs
         self.historical_names = tuple(FROZEN_R43_HISTORICAL_FUNCTION_SPANS)
         self._bound_methods = {
             qualified: getattr(
@@ -918,7 +1368,32 @@ class _FrozenR43HistoricalModules:
             for qualified, bound in self._bound_methods.items()
         }
 
+    def _assert_origins(self) -> None:
+        """Frozen modules must report their materialized frozen origin, never the live root."""
+
+        graph_root = self.graph_root
+        if graph_root == ROOT or ROOT in graph_root.parents or graph_root in ROOT.parents:
+            raise ManifestError("R43_HISTORICAL_GRAPH_ROOT_INVALID")
+        origins = (
+            (self.runtime_module, graph_root / FROZEN_R43_RUNTIME_PATH),
+            (self.checker_module, graph_root / "tools/check_universal_manifest.py"),
+            (self.test_module, self.test_path),
+        )
+        for module, origin in origins:
+            if Path(getattr(module, "__file__", "")) != origin:
+                raise ManifestError("R43_HISTORICAL_MODULE_ORIGIN_INVALID")
+        if self.test_path != graph_root / "tests/test_universal_provider_control.py":
+            raise ManifestError("R43_HISTORICAL_MODULE_ORIGIN_INVALID")
+        if (
+            Path(self.runtime_module.SCHEMA_ROOT) != graph_root / "schemas"
+            or Path(self.test_module.ROOT) != graph_root
+            or Path(self.checker_module.ROOT) != graph_root
+        ):
+            raise ManifestError("R43_HISTORICAL_MODULE_ROOT_INVALID")
+
     def _assert_graph(self) -> None:
+        self._assert_origins()
+        _assert_materialized_frozen_r43_graph(self.graph_root, self.blobs)
         module = self.test_module
         bound_test_cases: dict[str, type[unittest.TestCase]] = {}
         for name, value in vars(module).items():
@@ -997,6 +1472,11 @@ class _FrozenR43HistoricalModules:
                     results.append(result)
                     return result
 
+            if (
+                FROZEN_R43_CHILD_EXECUTION_CASES.get(qualified)
+                == FROZEN_R43_CHILD_INTERPRETER_MODE
+            ):
+                _assert_frozen_r43_child_graph_origin(self.graph_root)
             self.test_module.unittest = ResultCapturingUnittest()
             try:
                 self.test_module._run_historical_case_under_quarantine(
@@ -1044,10 +1524,11 @@ class _FrozenR43HistoricalModules:
 
 @contextlib.contextmanager
 def _open_frozen_r43_historical_modules() -> Any:
-    """Select and isolate exact R43 provenance; this is not a Python sandbox."""
+    """Execute R43 history only from an authenticated frozen graph; not a Python sandbox."""
 
     with _FROZEN_R43_MODULE_LOCK:
-        blobs = _load_frozen_r43_execution_blobs()
+        blobs = _load_frozen_r43_execution_graph()
+        git_dir = _absolute_git_dir()
         _names = (
             "universal_provider_control",
             "check_universal_manifest",
@@ -1060,38 +1541,38 @@ def _open_frozen_r43_historical_modules() -> Any:
         saved_modules = {name: sys.modules.get(name) for name in _names}
         saved_path = list(sys.path)
         saved_dont_write = sys.dont_write_bytecode
+        saved_bytecode_env = os.environ.get("PYTHONDONTWRITEBYTECODE")
         saved_linecache = dict(linecache.cache)
         with tempfile.TemporaryDirectory(prefix="fleet-r43-history-") as temp_name:
-            temp = Path(temp_name)
-            runtime_path = temp / "tools" / "universal_provider_control.py"
-            checker_path = temp / "tools" / "check_universal_manifest.py"
-            test_path = temp / "tests" / "test_universal_provider_control.py"
-            runtime_path.parent.mkdir(parents=True)
-            test_path.parent.mkdir(parents=True)
-            runtime_path.write_bytes(blobs["tools/universal_provider_control.py"])
-            checker_path.write_bytes(blobs["tools/check_universal_manifest.py"])
-            test_path.write_bytes(blobs["tests/test_universal_provider_control.py"])
+            graph_root = Path(temp_name).resolve() / "frozen-r43"
+            graph_root.mkdir()
+            (graph_root / FROZEN_R43_GRAPH_OBJECT_STORE_BINDING).write_text(
+                f"gitdir: {git_dir}\n", encoding="utf-8"
+            )
+            _materialize_frozen_r43_graph(graph_root, blobs)
+            _assert_frozen_r43_graph_object_store(graph_root)
+            runtime_path = graph_root / FROZEN_R43_RUNTIME_PATH
+            checker_path = graph_root / "tools/check_universal_manifest.py"
+            test_path = graph_root / "tests/test_universal_provider_control.py"
             try:
                 sys.dont_write_bytecode = True
+                os.environ["PYTHONDONTWRITEBYTECODE"] = "1"
                 runtime_module = _load_exact_source_module(
                     "_fleet_frozen_r43_runtime",
-                    blobs["tools/universal_provider_control.py"],
-                    compile_path=runtime_path,
-                    initial_file=ROOT / "tools" / "universal_provider_control.py",
+                    blobs[FROZEN_R43_RUNTIME_PATH],
+                    origin=runtime_path,
                 )
                 sys.modules["universal_provider_control"] = runtime_module
                 checker_module = _load_exact_source_module(
                     "_fleet_frozen_r43_checker",
                     blobs["tools/check_universal_manifest.py"],
-                    compile_path=checker_path,
-                    initial_file=ROOT / "tools" / "check_universal_manifest.py",
+                    origin=checker_path,
                 )
                 sys.modules["check_universal_manifest"] = checker_module
                 test_module = _load_exact_source_module(
                     "_fleet_frozen_r43_tests",
                     blobs["tests/test_universal_provider_control.py"],
-                    compile_path=test_path,
-                    initial_file=ROOT / "tests" / "test_universal_provider_control.py",
+                    origin=test_path,
                 )
                 sys.modules["test_universal_provider_control"] = test_module
                 sys.modules["tests.test_universal_provider_control"] = test_module
@@ -1099,8 +1580,10 @@ def _open_frozen_r43_historical_modules() -> Any:
                     blobs["tests/test_universal_provider_control.py"],
                     require_exact_classes=True,
                 )
+                _assert_frozen_r43_child_graph_origin(graph_root)
                 opened = _FrozenR43HistoricalModules(
-                    test_module, checker_module, runtime_module, test_path, locations
+                    test_module, checker_module, runtime_module, test_path, locations,
+                    graph_root, blobs,
                 )
                 if opened.historical_names != historical_names:
                     raise ManifestError("R43_HISTORICAL_FUNCTION_ORDER_INVALID")
@@ -1110,6 +1593,10 @@ def _open_frozen_r43_historical_modules() -> Any:
             finally:
                 sys.path[:] = saved_path
                 sys.dont_write_bytecode = saved_dont_write
+                if saved_bytecode_env is None:
+                    os.environ.pop("PYTHONDONTWRITEBYTECODE", None)
+                else:
+                    os.environ["PYTHONDONTWRITEBYTECODE"] = saved_bytecode_env
                 linecache.cache.clear()
                 linecache.cache.update(saved_linecache)
                 for name, previous in saved_modules.items():
@@ -2217,6 +2704,67 @@ def verify_r44(manifest: dict[str, Any], treeish: str) -> None:
         raise ManifestError("R44_VALIDATION_AUTHORITY_INVALID")
 
 
+def verify_r45(manifest: dict[str, Any], treeish: str) -> None:
+    """Verify exact adverse R44 base and authenticated frozen-graph history execution."""
+
+    if manifest.get("status") != "CANDIDATE_ZERO_AUTHORITY" or manifest.get(
+        "subjectCoverage"
+    ) != "R45_AUTHENTICATED_FROZEN_GRAPH_HISTORY_ZERO_AUTHORITY":
+        raise ManifestError("R45_STATUS_INVALID")
+    if manifest.get("candidateBase") != R45_BASE:
+        raise ManifestError("R45_BASE_INVALID")
+    tree, parents = _commit_tuple(R45_BASE["commit"])
+    if tree != R45_BASE["tree"] or parents != R45_BASE["orderedParents"]:
+        raise ManifestError("R45_BASE_OBJECT_MISMATCH")
+    if [_commit_tuple(parent)[0] for parent in parents] != R45_BASE["orderedParentTrees"]:
+        raise ManifestError("R45_BASE_PARENT_TREE_MISMATCH")
+    descendant = "HEAD" if treeish == ":" else treeish
+    if not _is_ancestor(R45_BASE["commit"], descendant):
+        raise ManifestError("R45_BASE_NOT_ANCESTOR")
+    if manifest.get("authority") != {
+        "providerExecution": False, "processSpawnResumeKill": False,
+        "containmentOrCanaryCredit": False, "automaticGateState": "CLOSED",
+        "runtimeImplementation": "NOT_INSTALLED_UNCONDITIONAL_REFUSE",
+        "activationRequiresSeparateAdjudication": True, "authorRecused": True,
+    }:
+        raise ManifestError("R45_AUTHORITY_INVALID")
+    policy = manifest.get("reviewAdmissionPolicy")
+    if not isinstance(policy, dict) or policy.get("source") != R27_SOURCE:
+        raise ManifestError("R45_SOURCE_SUBJECT_MISMATCH")
+    if policy.get("identity") != R29_IDENTITY:
+        raise ManifestError("R45_EXACT_PROFILE_MISMATCH")
+    if policy.get("cacheAdmissionMode") != "EXACTLY_BOUNDED_AND_CHARGED":
+        raise ManifestError("R45_CACHE_ADMISSION_MODE_MISMATCH")
+    if policy.get("capacity", {}).get("requiredQuotaWindows") != ["session", "weekly"]:
+        raise ManifestError("R45_QUOTA_WINDOWS_MISMATCH")
+    if manifest.get("reviewAdmissionPolicyDigest") != R45_POLICY_DIGEST or canonical_policy_sha256(policy) != R45_POLICY_DIGEST:
+        raise ManifestError("R45_POLICY_DIGEST_MISMATCH")
+    subjects = manifest.get("subjectFiles")
+    if not isinstance(subjects, list) or [subject.get("path") for subject in subjects if isinstance(subject, dict)] != R45_SUBJECT_PATHS:
+        raise ManifestError("R45_CARRIER_SUBJECT_MISMATCH")
+    _verify_current_historical_source_spans(treeish)
+    try:
+        import jsonschema
+        schema_raw = _git(_blob_spec(treeish, REVIEW_SCHEMA))
+        assert isinstance(schema_raw, bytes)
+        schema = json.loads(schema_raw.decode("utf-8"), object_pairs_hook=_pairs)
+        jsonschema.Draft202012Validator.check_schema(schema)
+        if next(jsonschema.Draft202012Validator(schema).iter_errors(policy), None) is not None:
+            raise ManifestError("R45_POLICY_SCHEMA_INVALID")
+    except ManifestError:
+        raise
+    except Exception as exc:
+        raise ManifestError("R45_POLICY_SCHEMA_INVALID") from exc
+    if manifest.get("validation") != {
+        "universalProviderControl": {"required": True, "claimedGreen": False},
+        "providerCapacityGovernor": {"required": True, "claimedGreen": False},
+        "canonicalCapacityControl": {"required": True, "claimedGreen": False},
+        "hosted": {"requiredFresh": True, "claimedGreen": False},
+        "providerInvocation": False, "activation": False,
+    }:
+        raise ManifestError("R45_VALIDATION_AUTHORITY_INVALID")
+
+
 def verify_r29(
     manifest: dict[str, Any], treeish: str, *, verify_objects: bool = True
 ) -> None:
@@ -2459,7 +3007,8 @@ LAYER_DESCRIPTORS = (
     ManifestLayerDescriptor(R41_MANIFEST, FROZEN_R41, "fleet-universal-provider-control-candidate-manifest/v3", verify_r41, FROZEN_R41),
     ManifestLayerDescriptor(R42_MANIFEST, FROZEN_R42, "fleet-universal-provider-control-candidate-manifest/v3", verify_r42, FROZEN_R42),
     ManifestLayerDescriptor(R43_MANIFEST, FROZEN_R43, "fleet-universal-provider-control-candidate-manifest/v3", verify_r43, FROZEN_R43),
-    ManifestLayerDescriptor(R44_MANIFEST, CURRENT_CANDIDATE, "fleet-universal-provider-control-candidate-manifest/v3", verify_r44, R44_BASE["commit"]),
+    ManifestLayerDescriptor(R44_MANIFEST, FROZEN_R44, "fleet-universal-provider-control-candidate-manifest/v3", verify_r44, FROZEN_R44),
+    ManifestLayerDescriptor(R45_MANIFEST, CURRENT_CANDIDATE, "fleet-universal-provider-control-candidate-manifest/v3", verify_r45, R45_BASE["commit"]),
 )
 
 
@@ -2478,7 +3027,8 @@ LAYER_TRUST_ANCHORS: Mapping[str, ManifestLayerTrustAnchor] = MappingProxyType(
         R41_MANIFEST: ManifestLayerTrustAnchor(41, R41_MANIFEST, FROZEN_R41, "fleet-universal-provider-control-candidate-manifest/v3", verify_r41, FROZEN_R41),
         R42_MANIFEST: ManifestLayerTrustAnchor(42, R42_MANIFEST, FROZEN_R42, "fleet-universal-provider-control-candidate-manifest/v3", verify_r42, FROZEN_R42),
         R43_MANIFEST: ManifestLayerTrustAnchor(43, R43_MANIFEST, FROZEN_R43, "fleet-universal-provider-control-candidate-manifest/v3", verify_r43, FROZEN_R43),
-        R44_MANIFEST: ManifestLayerTrustAnchor(44, R44_MANIFEST, CURRENT_CANDIDATE, "fleet-universal-provider-control-candidate-manifest/v3", verify_r44, R44_BASE["commit"]),
+        R44_MANIFEST: ManifestLayerTrustAnchor(44, R44_MANIFEST, FROZEN_R44, "fleet-universal-provider-control-candidate-manifest/v3", verify_r44, FROZEN_R44),
+        R45_MANIFEST: ManifestLayerTrustAnchor(45, R45_MANIFEST, CURRENT_CANDIDATE, "fleet-universal-provider-control-candidate-manifest/v3", verify_r45, R45_BASE["commit"]),
     }
 )
 
@@ -2502,9 +3052,9 @@ def _tracked_reconciliation_paths(treeish: str) -> tuple[str, ...]:
     return paths
 
 
-FROZEN_R43_RECONCILIATION_PATHS = _tracked_reconciliation_paths(FROZEN_R43)
+FROZEN_R44_RECONCILIATION_PATHS = _tracked_reconciliation_paths(FROZEN_R44)
 EXPECTED_CURRENT_RECONCILIATION_PATHS = tuple(
-    sorted(FROZEN_R43_RECONCILIATION_PATHS + (R44_MANIFEST,))
+    sorted(FROZEN_R44_RECONCILIATION_PATHS + (R45_MANIFEST,))
 )
 
 
@@ -2557,7 +3107,7 @@ def _diagnose_layer_configuration(
         if descriptor.schema != expected_schema:
             raise ManifestError("MANIFEST_DESCRIPTOR_SCHEMA_INVALID")
         if descriptor.candidate == CURRENT_CANDIDATE:
-            if descriptor.report_candidate != R44_BASE["commit"]:
+            if descriptor.report_candidate != R45_BASE["commit"]:
                 raise ManifestError("MANIFEST_DESCRIPTOR_REPORT_INVALID")
         elif (
             re.fullmatch(r"[0-9a-f]{40}", descriptor.candidate) is None
@@ -2568,8 +3118,8 @@ def _diagnose_layer_configuration(
 
 def _validate_layer_descriptors(treeish: str) -> None:
     _diagnose_layer_configuration(LAYER_DESCRIPTORS, LAYER_TRUST_ANCHORS)
-    frozen_paths = _tracked_reconciliation_paths(FROZEN_R43)
-    if frozen_paths != FROZEN_R43_RECONCILIATION_PATHS:
+    frozen_paths = _tracked_reconciliation_paths(FROZEN_R44)
+    if frozen_paths != FROZEN_R44_RECONCILIATION_PATHS:
         raise ManifestError("MANIFEST_DESCRIPTOR_TRACKING_INVALID")
     tracked_paths = _tracked_reconciliation_paths(treeish)
     if tracked_paths != EXPECTED_CURRENT_RECONCILIATION_PATHS:

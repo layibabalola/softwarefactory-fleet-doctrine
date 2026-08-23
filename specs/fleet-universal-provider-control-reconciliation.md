@@ -935,6 +935,15 @@ object database, repository ROOT, and filesystem/temporary storage; it provides 
 source-selection isolation, not containment against compromised same-process Python, native code,
 or filesystem/Git infrastructure.
 
+R44's realized boundary was narrower than the invariant above claimed, and R44 is held as adverse
+evidence for that reason. R44 executed frozen module bytes but gave those modules the live repository
+path as their origin while module bodies ran, so the frozen runtime derived `SCHEMA_ROOT` and the
+frozen test module derived `ROOT` from the current worktree. A retained historical case also started
+a fresh interpreter with the live repository as its working directory and imported
+`tools/universal_provider_control` from it. Live schema, workflow, README, spec, policy, receipt, or
+runtime drift could therefore change allegedly frozen R43 outcomes. R44 MUST NOT be read as evidence
+that frozen execution was closed over frozen inputs; R45 owns that repair.
+
 R44 preserves byte-identical runtime/schema and policy, the provider-neutral mechanism, exact
 Cloudvore/Fable max/standard/firstParty independent-reviewer 64K profile,
 EXACTLY_BOUNDED_AND_CHARGED cache/charge semantics, and input-blind
@@ -1035,5 +1044,64 @@ reordered tracked manifests, and fully self-rebound authority, model/profile, ca
 digest mutations. The real verifier MUST refuse each current mutation before subject/self receipts
 or PASS reporting. R43 preserves byte-identical runtime/schema and policy, the provider-neutral
 mechanism, exact Cloudvore/Fable max/standard/firstParty independent-reviewer 64K profile,
+EXACTLY_BOUNDED_AND_CHARGED cache/charge semantics, and input-blind
+`REFUSE_RUNTIME_NOT_INSTALLED / ZERO`. It grants no authority or adoption credit.
+
+## R45 authenticated frozen-graph history execution invariant
+
+R45 MUST freeze adverse R44 at exact commit `86483feef86c14d644b684cd6e1f5e3665475fbe`,
+tree `49955d2408ee367272fe8c60038ab6b2ef338241`, and parent
+`78218e277a4f03a7830058ab7c3cf04683066b9b`. The R44 layer MUST become literal and R45 alone MUST be
+current. The checker MUST report fifteen layers with counts 98/7/7/7/7/7/7/7/7/7/7/7/7/7/7.
+
+Authoritative historical execution MUST first authenticate a closed frozen R43 dependency graph, not
+only the three module blobs. The graph MUST bind an exact ordered path set with per-path Git blob
+object ID, raw byte count, and raw SHA-256. It MUST cover the frozen runtime, checker, and test
+modules, the frozen R43 manifest, the complete frozen `schemas/` tree, and every other frozen repository
+file that retained historical cases read: the capacity-governor workflow, `README.md`, the
+reconciliation spec, the R22 token-control policy, and the attended rotation receipt. The anchored
+`schemas/` members MUST equal the frozen `schemas/` tree listing exactly, so a missing, extra, or
+substituted schema refuses before any load. The three module anchors MUST equal their independent
+execution-blob anchors.
+
+The authenticated graph MUST be materialized into a private temporary root, and that materialization
+MUST be re-verified for missing, extra, and substituted members. Frozen modules MUST be compiled and
+executed with their materialized graph paths as their truthful origin for the whole of module body
+execution, never the live repository path. The frozen runtime `SCHEMA_ROOT`, the frozen test `ROOT`,
+and the frozen checker `ROOT` MUST resolve inside the materialized graph, and MUST be re-checked
+before and after every historical case together with the graph digests. Git object access from the
+graph MUST resolve to the same repository object database by an explicit object-store binding at the
+graph root, which is the only permitted non-anchored graph member; every other file under the graph
+root refuses.
+
+Historical child processes MUST import only the authenticated graph. The frozen test source MUST be
+scanned so that exactly the two known child-bearing historical cases, and their interpreter or
+non-interpreter mode, are bound; any other historical case that spawns a child refuses as unsupported.
+Before an interpreter child case may count, a probe child MUST be started under the same interpreter
+and working directory and MUST report a runtime module whose file is the materialized graph runtime and
+whose byte count and raw SHA-256 equal the anchored frozen values, with the anchored value in turn
+equal to the frozen R43 blob object ID. Any mismatch, unreadable probe, or unavailable child refuses.
+There is no live-root fallback. Bytecode caching MUST be disabled for the execution interval so no
+child can deposit a compiled artifact inside the authenticated graph.
+
+Closed execution and skip accounting is unchanged: Windows MUST execute 184 bodies with no skips, and
+other platforms MUST execute 180 and permit only the four exact named and reason-bound Windows-only
+skips. Any other skip, error, failure, expected failure, or unexpected success MUST refuse. Current
+carried historical spans MUST still equal the frozen inventory before the R45 layer may produce a
+receipt, and only generic non-round-numbered tests may own the current layer.
+
+Hostile evidence MUST prove that live runtime, schema, workflow, README, spec, policy, and receipt
+drift is irrelevant to frozen R43 execution, and that anchor digest/OID substitution, missing or extra
+graph members, unsorted anchors, materialized member substitution/addition/removal, object-store
+binding tampering, frozen module origin or root rebinding, smuggled child cases, and child origin
+substitution all refuse.
+
+R45 is still provenance, authentication, and source-selection isolation, not containment. It trusts a
+clean Python interpreter/process, the standard library and import machinery, the Git binary and object
+database, and filesystem/temporary storage; it does not defend against compromised same-process Python,
+native code, or a compromised Git object database.
+
+R45 preserves byte-identical runtime/schema and policy, the provider-neutral mechanism, exact
+Cloudvore/Fable max/standard/firstParty independent-reviewer 64K profile,
 EXACTLY_BOUNDED_AND_CHARGED cache/charge semantics, and input-blind
 `REFUSE_RUNTIME_NOT_INSTALLED / ZERO`. It grants no authority or adoption credit.
