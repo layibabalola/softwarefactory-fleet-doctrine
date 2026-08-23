@@ -15,18 +15,20 @@ import re
 import subprocess
 import sys
 import threading
+import time
 from pathlib import Path
 
 
 MAX_FILE_BYTES = 2 * 1024 * 1024
-MAX_LISTING_BYTES = 16 * 1024 * 1024
+MAX_LISTING_BYTES = 32 * 1024 * 1024
 MAX_AGGREGATE_SOURCE_BYTES = 64 * 1024 * 1024
 MAX_SOURCE_FILES = 16384
-MAX_CANDIDATES = 4096
+MAX_CANDIDATES = 8192
 MAX_REVIEW_BYTES = 4 * 1024 * 1024
 MAX_VISITED_PATHS = 131072
 MAX_DIRECTORY_ENTRIES = 32768
 MAX_GIT_STDERR_BYTES = 64 * 1024
+GIT_READER_DRAIN_TIMEOUT_SECONDS = 30.0
 MAX_REVIEW_NODES = 65536
 MAX_REVIEW_DEPTH = 64
 MAX_EVIDENCE_LINES_PER_KIND = 64
@@ -219,20 +221,29 @@ def _git_bounded(repo: Path, limit: int, *arguments: str) -> bytes:
     stdout = bytearray()
     stderr = bytearray()
     exceeded = threading.Event()
+    reader_fault = threading.Event()
+    closing = threading.Event()
 
     def drain(stream, target: bytearray, maximum: int) -> None:
-        while True:
-            chunk = stream.read(65536)
-            if not chunk:
-                return
-            remaining = maximum + 1 - len(target)
-            if remaining > 0:
-                target.extend(chunk[:remaining])
-            if len(target) > maximum:
-                exceeded.set()
-                try: process.kill()
-                except OSError: pass
-                return
+        try:
+            read_chunk = getattr(stream, "read1", stream.read)
+            while True:
+                chunk = read_chunk(65536)
+                if not chunk:
+                    return
+                remaining = maximum + 1 - len(target)
+                if remaining > 0:
+                    target.extend(chunk[:remaining])
+                if len(target) > maximum:
+                    exceeded.set()
+                    try: process.kill()
+                    except OSError: pass
+                    try: stream.close()
+                    except (OSError, ValueError): pass
+                    return
+        except (OSError, ValueError):
+            if not closing.is_set():
+                reader_fault.set()
 
     readers = [
         threading.Thread(target=drain, args=(process.stdout, stdout, limit), daemon=True),
@@ -244,15 +255,23 @@ def _git_bounded(repo: Path, limit: int, *arguments: str) -> bytes:
         except subprocess.TimeoutExpired as exc:
             process.kill(); process.wait(timeout=30)
             raise ValueError("GIT_TIMEOUT") from exc
-        for reader in readers: reader.join(timeout=5)
-        if any(reader.is_alive() for reader in readers): raise ValueError("GIT_PIPE_TIMEOUT")
+        deadline = time.monotonic() + GIT_READER_DRAIN_TIMEOUT_SECONDS
+        for reader in readers:
+            reader.join(timeout=max(0.0, deadline - time.monotonic()))
+        if any(reader.is_alive() for reader in readers):
+            try: process.kill()
+            except OSError: pass
+            raise ValueError("GIT_PIPE_TIMEOUT")
+        if reader_fault.is_set(): raise ValueError("GIT_PIPE_READ")
         if exceeded.is_set(): raise ValueError("GIT_OUTPUT_LIMIT")
         if return_code != 0:
             raise ValueError("GIT_COMMAND_FAILED")
         return bytes(stdout)
     finally:
+        closing.set()
         process.stdout.close()
         process.stderr.close()
+        for reader in readers: reader.join(timeout=1)
 
 
 def classify_git_tree(repo: Path, treeish: str) -> dict[str, object]:
