@@ -46,5 +46,8 @@ jobs:
       - name: Verify the closed zero-reserve project request queue
         run: python tools/check_zero_reserve_disposition_requests.py
 
+      - name: Verify the frozen fleet reserve census
+        run: python tools/check_fleet_zero_reserve_census.py
+
       - name: Compile runtime-extension references
         run: python -m compileall -q capacity-control/reference

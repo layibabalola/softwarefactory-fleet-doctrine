@@ -23,3 +23,9 @@ python tools/check_zero_reserve_disposition_requests.py
 
 The checker re-derives the closed project set, ledger counts/statuses, all bound file identities,
 response syntax, and the zero-authority boundary.
+
+The companion [`fleet-zero-reserve-census-r1.json`](fleet-zero-reserve-census-r1.json) separates
+proven source/runtime reserve values from unmounted or otherwise unproven projects. In particular,
+it records DNG's exact zero-reserve source plus closed live gate, AdversarialLLM's exact 25% remote
+source policy, three remote trees with no declared reserve token under the frozen scan, and four
+unmounted runtimes. Absence of a token is never promoted to zero-reserve or adoption evidence.

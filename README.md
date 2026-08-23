@@ -51,6 +51,8 @@ the human store-and-forward bus.
   honest ADOPT, DISTINGUISH, or REJECT; this proposal alone grants no runtime or adoption authority.
   The hash-bound [nine-project disposition request queue](capacity-control/ZERO-RESERVE-DISPOSITION-REQUESTS.md)
   is the common notification surface and preserves every row as pending until its sole writer responds.
+  The [frozen reserve census](capacity-control/fleet-zero-reserve-census-r1.json) records which
+  reserve values are actually evidenced and leaves unmounted or token-absent runtimes unproven.
 
 - [`specs/fleet-universal-provider-control-reconciliation.md`](specs/fleet-universal-provider-control-reconciliation.md)
   — zero-authority R25 candidate atop exact frozen R24, retaining every later canonical project

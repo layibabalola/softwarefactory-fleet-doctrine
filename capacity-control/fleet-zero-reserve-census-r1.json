@@ -1,0 +1,146 @@
+{
+  "schema": "softwarefactory.fleet-zero-reserve-census.v1",
+  "census_id": "fleet-zero-reserve-census-r1",
+  "captured_at_utc": "2026-08-23T23:13:43.5922799Z",
+  "status": "ZERO_AUTHORITY_EVIDENCE_SNAPSHOT",
+  "doctrine_base": {
+    "commit": "e43a6b1f07be67da88b7681dc98fd54ba05bd5fc",
+    "tree": "a1fdb70ee7898e6c7084abf0dd89843424625c89"
+  },
+  "subject": {
+    "candidate_id": "ZERO_DISCRETIONARY_CAPACITY_RESERVE_R2",
+    "disposition_request_queue_sha256": "6D01438857DA14C9A366817D126E2636E541BC7FD5401E8AA7CA92E89B111522"
+  },
+  "scan_contract": {
+    "remote_scope": "default-branch Git tree at the exact captured HEAD",
+    "case_insensitive_extended_regex": "(reservePercent|reserve_fraction|reserve_pct|completion_reserve|completionReserve|minimumRemaining|minimum_remaining|headroomPercent|headroom_percent|capacityFloor|capacity_floor|[0-9]+% (completion )?reserve|zero[- ]reserve)",
+    "absence_meaning": "NO_DECLARED_RESERVE_TOKEN_FOUND_IN_CAPTURED_REMOTE_TREE; not runtime zero-reserve proof",
+    "runtime_rule": "Only exact mounted policy bytes plus installed/runtime evidence can prove an active reserve value."
+  },
+  "shared_hub_policy": {
+    "path": "capacity-control/policy/default-v1.json",
+    "git_blob_oid": "665ae3d3413ccc8949a268fe482f8152a82d37e8",
+    "bytes": 496,
+    "sha256": "8B1F102057A5439BFD26E3E01E07FA23A5C1EADA8CFF33C45F6D41BE883F329F",
+    "reserve_fraction_by_priority": {
+      "OWNER_FOREGROUND": 0.02,
+      "REQUIRED_REVIEW": 0.15,
+      "PRODUCT_WORK": 0.25,
+      "BACKGROUND": 0.35
+    },
+    "classification": "EXPLICIT_NONZERO_SHARED_DEFAULT_NOT_PROJECT_ADOPTION"
+  },
+  "projects": [
+    {
+      "project_id": "adobe-ingester",
+      "evidence_surface": "doctrine request queue only",
+      "classification": "UNMOUNTED_RUNTIME_UNPROVEN",
+      "declared_reserve_percent": null,
+      "requested_disposition": "PENDING_PROJECT_OWNER"
+    },
+    {
+      "project_id": "adversarialllm",
+      "evidence_surface": "remote default branch",
+      "remote": "https://github.com/layibabalola/AdversarialLLM-ClaudeCode.git",
+      "commit": "5fa67b464d47f63a7b6d903169fc02b6e67a79df",
+      "tree": "528b38e78dbda0cc1b69e67db319764850f80af0",
+      "policy_path": "scripts/provider-capacity/automated-lane-rotation.policy.json",
+      "policy_git_blob_oid": "f8fe4f425913ebdd4a5ba5c88e416c23e8f6a04a",
+      "policy_bytes": 726,
+      "declared_reserve_token_hits": 8,
+      "classification": "EXPLICIT_NONZERO_RESERVE_IN_REMOTE_SOURCE",
+      "declared_reserve_percent": 25,
+      "runtime_status": "UNPROVEN",
+      "requested_disposition": "PENDING_PROJECT_OWNER"
+    },
+    {
+      "project_id": "agent-bridge",
+      "evidence_surface": "doctrine request queue only",
+      "classification": "UNMOUNTED_RUNTIME_UNPROVEN",
+      "declared_reserve_percent": null,
+      "requested_disposition": "PENDING_PROJECT_OWNER"
+    },
+    {
+      "project_id": "airmypc",
+      "evidence_surface": "documented local path C:\\temp\\AirMyPC is absent",
+      "classification": "UNMOUNTED_RUNTIME_UNPROVEN",
+      "declared_reserve_percent": null,
+      "requested_disposition": "PENDING_PROJECT_OWNER"
+    },
+    {
+      "project_id": "cloudvore",
+      "evidence_surface": "remote default branch",
+      "remote": "https://github.com/layibabalola/Cloudvore.git",
+      "commit": "95230a3cfd8a46d5df960fcb02645c8653c50682",
+      "tree": "b369c2563c4c8b65caadc61b8e4dcab8bcf8ab70",
+      "declared_reserve_token_hits": 0,
+      "classification": "NO_DECLARED_RESERVE_TOKEN_FOUND_REMOTE_SOURCE_RUNTIME_UNPROVEN",
+      "declared_reserve_percent": null,
+      "requested_disposition": "PENDING_PROJECT_OWNER"
+    },
+    {
+      "project_id": "conjugal",
+      "evidence_surface": "doctrine request queue only",
+      "classification": "UNMOUNTED_RUNTIME_UNPROVEN",
+      "declared_reserve_percent": null,
+      "requested_disposition": "PENDING_PROJECT_OWNER"
+    },
+    {
+      "project_id": "dng-auto-processor",
+      "evidence_surface": "mounted clean repository plus closed live machine gate",
+      "commit": "fcd06dfded6039293d23446960604895e7d10553",
+      "tree": "2035e4edb60597dbb775f70c5555a7cb68bd87d7",
+      "policy_path": "scripts/fleet-provider-admission.policy.json",
+      "policy_git_blob_oid": "97b52f545e893b214e820a7140ada9e88a91ff2a",
+      "policy_bytes": 2492,
+      "policy_sha256": "5FD2B4B7E9DF16ADDA646C6AB62782EEAD2701F464FDC705A3F23808CB7B4C06",
+      "live_gate_bytes": 1329,
+      "live_gate_sha256": "5C72E4A0ED1ED81A60011D0C8B347B7392F3FF864AFC22F542D4ABA79DACC726",
+      "live_gate_policy_sha256": "3AB44FD070B35E9B0BE97841F37FE26EB27DA10180A4A3BDC87E3AF4D68DC6D8",
+      "live_gate_state": "closed",
+      "classification": "EXPLICIT_ZERO_RESERVE_SOURCE_WITH_CLOSED_LIVE_GATE",
+      "declared_reserve_percent": 0,
+      "requested_disposition": "PENDING_PROJECT_OWNER"
+    },
+    {
+      "project_id": "mlv-app",
+      "evidence_surface": "remote default branch",
+      "remote": "https://github.com/layibabalola/MLV-App.git",
+      "commit": "417f84a32a60ba1d15c17661746ef9f6f5551016",
+      "tree": "a432cddc08b9ccc50fa2619ec5668d6eeae58bf2",
+      "declared_reserve_token_hits": 0,
+      "classification": "NO_DECLARED_RESERVE_TOKEN_FOUND_REMOTE_SOURCE_RUNTIME_UNPROVEN",
+      "declared_reserve_percent": null,
+      "requested_disposition": "PENDING_PROJECT_OWNER"
+    },
+    {
+      "project_id": "salesforce-tools",
+      "evidence_surface": "remote default branch",
+      "remote": "https://github.com/layibabalola/SalesforceSupportTools.git",
+      "commit": "24ee47c985aaad6c49d6bd5a690ab3a4b299c25f",
+      "tree": "a9e86be9879a7a0e7ffe50f3da64ec47470cf779",
+      "declared_reserve_token_hits": 0,
+      "classification": "NO_DECLARED_RESERVE_TOKEN_FOUND_REMOTE_SOURCE_RUNTIME_UNPROVEN",
+      "declared_reserve_percent": null,
+      "requested_disposition": "PENDING_PROJECT_OWNER"
+    }
+  ],
+  "summary": {
+    "project_count": 9,
+    "explicit_zero_source_with_live_gate": 1,
+    "explicit_nonzero_remote_source": 1,
+    "no_declared_reserve_token_remote_runtime_unproven": 3,
+    "unmounted_runtime_unproven": 4,
+    "zero_reserve_project_dispositions": 0,
+    "fleetwide_zero_reserve_proven": false
+  },
+  "authority": {
+    "provider_launches": 0,
+    "project_mutations": 0,
+    "runtime_mutations": 0,
+    "project_dispositions": 0,
+    "project_adoptions": 0,
+    "doctrine_ratification": false,
+    "fleet_adoption": false
+  }
+}
