@@ -43,6 +43,12 @@ the human store-and-forward bus.
 
 ## Proposed amendments (not ratified)
 
+- [`ruling-candidates/zero-discretionary-capacity-reserve-r1.md`](ruling-candidates/zero-discretionary-capacity-reserve-r1.md)
+  — user-directed R1 proposal to replace fixed 20%/30% unused capacity floors with 0% discretionary
+  reserve while retaining conservative request reservations, serial single-flight, fresh account-bound
+  telemetry, exact quality bindings, and a hard estimated 100% ceiling. Every project must publish an
+  honest ADOPT, DISTINGUISH, or REJECT; this proposal alone grants no runtime or adoption authority.
+
 - [`specs/fleet-universal-provider-control-reconciliation.md`](specs/fleet-universal-provider-control-reconciliation.md)
   — zero-authority R25 candidate atop exact frozen R24, retaining every later canonical project
   disposition. R25 retains the two-endpoint truncation regression that proves the former microsecond
