@@ -15,3 +15,16 @@ quality bars. Each project publishes its result through its sole `specs/<project
 Projects on hosts not mounted here receive no fabricated integration claim. Their portable seam is
 defined above; only their own runtime evidence can change `pending` to `ADOPT`, `DISTINGUISH`, or
 `REJECT`.
+
+## Zero-discretionary-reserve migration request (2026-08-23)
+
+The owner has proposed a 0% discretionary capacity reserve so useful bounded work can naturally drain
+Claude quota before account rotation. This does not grant a bulk edit or adoption credit. Each row
+above must separately evaluate
+[`zero-discretionary-capacity-reserve-r1`](../ruling-candidates/zero-discretionary-capacity-reserve-r1.md)
+and publish `ADOPT`, `DISTINGUISH`, or `REJECT` through its project-owned spec.
+
+Migration preserves the hard 100% estimated ceiling, fresh account-bound telemetry, conservative
+request/terminal reservations, serial single-flight, exact model/effort/role/review/quality/functionality,
+and every existing rollback and proof obligation. A fixed 20% or 30% capacity floor is the only policy
+dimension proposed for replacement.
