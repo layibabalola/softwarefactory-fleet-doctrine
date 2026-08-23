@@ -887,3 +887,17 @@ the index. The checker MUST report subject counts 98/7/7/7/7/7/7/7.
 R38 preserves byte-identical runtime and schema, policy digest, provider-neutral mechanism, exact
 Cloudvore/Fable profile, cache and charge semantics, exact capacity/duration arithmetic, and
 input-blind `REFUSE_RUNTIME_NOT_INSTALLED / ZERO`. It grants no authority or adoption credit.
+
+## R39 current-checker lifecycle invariant
+
+R39 MUST freeze adverse R38 at exact commit `d897c304b1dd8e3b6dcbac71002c1eb2f7db519c`,
+tree `8a7344e0fbea8b43719ca44f89b1af354c5dd5fb`, and parent
+`6568230545e473c6fac64bcd30166a284e712704`. Historical numbered tests MUST load manifests, verify
+tuples, and compare OIDs only at their literal frozen candidates; they MUST NOT invoke the current
+checker. Exactly one metadata-selected current row MAY use the index. Current labels, counts,
+candidates, and checker reporting MUST derive from checker-owned metadata, with subject counts
+98/7/7/7/7/7/7/7/7.
+
+R39 preserves byte-identical runtime/schema, policy digest, provider-neutral mechanism, exact
+Cloudvore/Fable profile, cache/charge semantics, exact capacity/duration arithmetic, and input-blind
+`REFUSE_RUNTIME_NOT_INSTALLED / ZERO`. It grants no authority or adoption credit.

@@ -104,3 +104,7 @@ the human store-and-forward bus.
   R38 freezes adverse R37 and makes frozen/current manifest lifecycle metadata table-driven so every
   historical subject/self mutation is verified at its literal commit and only the current layer uses
   the index. Runtime, schema, policy, quality profile, and zero-authority refusal remain unchanged.
+  R39 freezes adverse R38 and makes the current-checker lifecycle successor-safe: all numbered
+  historical tests use literal frozen commits, while one metadata-selected current test derives the
+  active layer label, counts, candidate, and report. Runtime, schema, policy, cache/charge behavior,
+  quality, and input-blind zero-authority refusal remain byte-identical.

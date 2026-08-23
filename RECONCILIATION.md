@@ -247,3 +247,14 @@ the index. Each frozen manifest checked against current subjects refuses with
 Runtime and schema bytes, policy digest, Fable quality profile, cache and charge semantics, exact
 capacity arithmetic, and input-blind `REFUSE`/zero authority remain unchanged. R38 grants no provider,
 process, task, gate, adoption, ratification, or merge authority.
+
+## R39 metadata-selected current checker (candidate, zero authority)
+
+R39 freezes adverse R38 `d897c304b1dd8e3b6dcbac71002c1eb2f7db519c`, tree
+`8a7344e0fbea8b43719ca44f89b1af354c5dd5fb`. Every numbered historical R29-R38 test reads and
+verifies its literal frozen commit; none invokes the current checker or uses the current candidate.
+One generic metadata-selected test owns current verification and derives labels, counts, candidate,
+and output. The nine layer counts are 98/7/7/7/7/7/7/7/7.
+
+Runtime/schema bytes, policy digest, Fable quality profile, cache/charge semantics, exact capacity
+arithmetic, and input-blind `REFUSE`/zero authority are unchanged. R39 grants no authority or credit.

@@ -23,6 +23,7 @@ R35_MANIFEST = "manifests/universal-provider-control-reconciliation-r35.json"
 R36_MANIFEST = "manifests/universal-provider-control-reconciliation-r36.json"
 R37_MANIFEST = "manifests/universal-provider-control-reconciliation-r37.json"
 R38_MANIFEST = "manifests/universal-provider-control-reconciliation-r38.json"
+R39_MANIFEST = "manifests/universal-provider-control-reconciliation-r39.json"
 REVIEW_SCHEMA = "schemas/universal-provider-review-admission-v1.schema.json"
 FROZEN_CANDIDATE = "e70a044f31dd2f43ab7c716d63a4eb89318c61b6"
 FROZEN_R29 = "fc76bf6d5ab52891d06b7f71eb2e993e413c124c"
@@ -31,6 +32,7 @@ FROZEN_R34 = "6a3803fd1543c1bd0944ec0013987f053852e3c4"
 FROZEN_R35 = "64e6895c332a696af238007225148fd70582424f"
 FROZEN_R36 = "d67b0781e1e926e1baebdb0ea9b7a0ef5c447d85"
 FROZEN_R37 = "6568230545e473c6fac64bcd30166a284e712704"
+FROZEN_R38 = "d897c304b1dd8e3b6dcbac71002c1eb2f7db519c"
 SELF_PATTERN = re.compile(
     rb'("canonicalGitBlobSha256"\s*:\s*"sha256:)([0-9a-f]{64})(")'
 )
@@ -98,6 +100,7 @@ R35_POLICY_DIGEST = R34_POLICY_DIGEST
 R36_POLICY_DIGEST = R35_POLICY_DIGEST
 R37_POLICY_DIGEST = R36_POLICY_DIGEST
 R38_POLICY_DIGEST = R37_POLICY_DIGEST
+R39_POLICY_DIGEST = R38_POLICY_DIGEST
 R33_BASE = {
     "commit": "55afee85ecf720eb857cea1980f511f331b9e86f",
     "tree": "6e58f77467320d53ced12906bf2be62b4fca3d56",
@@ -166,6 +169,13 @@ R38_BASE = {
     "orderedParentTrees": ["53d91a85bcd0a09ef7b349bed477f5aac1be93cc"],
 }
 R38_SUBJECT_PATHS = R37_SUBJECT_PATHS
+R39_BASE = {
+    "commit": FROZEN_R38,
+    "tree": "8a7344e0fbea8b43719ca44f89b1af354c5dd5fb",
+    "orderedParents": [FROZEN_R37],
+    "orderedParentTrees": ["aa7338aad75cf4bb12481439a776c5c174fe1a94"],
+}
+R39_SUBJECT_PATHS = R38_SUBJECT_PATHS
 FROZEN_MANIFEST_LAYERS = (
     (R26_MANIFEST, FROZEN_CANDIDATE),
     (R29_MANIFEST, FROZEN_R29),
@@ -174,8 +184,11 @@ FROZEN_MANIFEST_LAYERS = (
     (R35_MANIFEST, FROZEN_R35),
     (R36_MANIFEST, FROZEN_R36),
     (R37_MANIFEST, FROZEN_R37),
+    (R38_MANIFEST, FROZEN_R38),
 )
-CURRENT_MANIFEST = R38_MANIFEST
+CURRENT_MANIFEST = R39_MANIFEST
+CURRENT_MANIFEST_ROW = (CURRENT_MANIFEST, ":")
+MANIFEST_LAYER_ROWS = FROZEN_MANIFEST_LAYERS + (CURRENT_MANIFEST_ROW,)
 
 
 def _pairs(values: list[tuple[str, Any]]) -> dict[str, Any]:
@@ -930,6 +943,71 @@ def verify_r38(manifest: dict[str, Any], treeish: str) -> None:
         raise ManifestError("R38_VALIDATION_AUTHORITY_INVALID")
 
 
+def verify_r39(manifest: dict[str, Any], treeish: str) -> None:
+    """Verify exact adverse R38 base and the lifecycle-safe R39 rebind."""
+
+    if manifest.get("status") != "CANDIDATE_ZERO_AUTHORITY" or manifest.get(
+        "subjectCoverage"
+    ) != "R39_CURRENT_CHECKER_LIFECYCLE_REBIND_ZERO_AUTHORITY":
+        raise ManifestError("R39_STATUS_INVALID")
+    if manifest.get("candidateBase") != R39_BASE:
+        raise ManifestError("R39_BASE_INVALID")
+    tree, parents = _commit_tuple(R39_BASE["commit"])
+    if tree != R39_BASE["tree"] or parents != R39_BASE["orderedParents"]:
+        raise ManifestError("R39_BASE_OBJECT_MISMATCH")
+    if [_commit_tuple(parent)[0] for parent in parents] != R39_BASE["orderedParentTrees"]:
+        raise ManifestError("R39_BASE_PARENT_TREE_MISMATCH")
+    descendant = "HEAD" if treeish == ":" else treeish
+    if not _is_ancestor(R39_BASE["commit"], descendant):
+        raise ManifestError("R39_BASE_NOT_ANCESTOR")
+    if manifest.get("authority") != {
+        "providerExecution": False, "processSpawnResumeKill": False,
+        "containmentOrCanaryCredit": False, "automaticGateState": "CLOSED",
+        "runtimeImplementation": "NOT_INSTALLED_UNCONDITIONAL_REFUSE",
+        "activationRequiresSeparateAdjudication": True, "authorRecused": True,
+    }:
+        raise ManifestError("R39_AUTHORITY_INVALID")
+    policy = manifest.get("reviewAdmissionPolicy")
+    if not isinstance(policy, dict) or policy.get("source") != R27_SOURCE:
+        raise ManifestError("R39_SOURCE_SUBJECT_MISMATCH")
+    if policy.get("identity") != R29_IDENTITY:
+        raise ManifestError("R39_EXACT_PROFILE_MISMATCH")
+    if policy.get("cacheAdmissionMode") != "EXACTLY_BOUNDED_AND_CHARGED":
+        raise ManifestError("R39_CACHE_ADMISSION_MODE_MISMATCH")
+    if policy.get("capacity", {}).get("requiredQuotaWindows") != ["session", "weekly"]:
+        raise ManifestError("R39_QUOTA_WINDOWS_MISMATCH")
+    if manifest.get("reviewAdmissionPolicyDigest") != R39_POLICY_DIGEST or canonical_policy_sha256(
+        policy
+    ) != R39_POLICY_DIGEST:
+        raise ManifestError("R39_POLICY_DIGEST_MISMATCH")
+    subjects = manifest.get("subjectFiles")
+    if not isinstance(subjects, list) or [
+        subject.get("path") for subject in subjects if isinstance(subject, dict)
+    ] != R39_SUBJECT_PATHS:
+        raise ManifestError("R39_CARRIER_SUBJECT_MISMATCH")
+    try:
+        import jsonschema
+        schema_raw = _git(_blob_spec(treeish, REVIEW_SCHEMA))
+        assert isinstance(schema_raw, bytes)
+        schema = json.loads(schema_raw.decode("utf-8"), object_pairs_hook=_pairs)
+        jsonschema.Draft202012Validator.check_schema(schema)
+        if next(jsonschema.Draft202012Validator(schema).iter_errors(policy), None) is not None:
+            raise ManifestError("R39_POLICY_SCHEMA_INVALID")
+    except ManifestError:
+        raise
+    except Exception as exc:
+        raise ManifestError("R39_POLICY_SCHEMA_INVALID") from exc
+    if manifest.get("validation") != {
+        "universalProviderControl": {"required": True, "claimedGreen": False},
+        "providerCapacityGovernor": {"required": True, "claimedGreen": False},
+        "canonicalCapacityControl": {"required": True, "claimedGreen": False},
+        "hosted": {"requiredFresh": True, "claimedGreen": False},
+        "providerInvocation": False, "activation": False,
+    }:
+        raise ManifestError("R39_VALIDATION_AUTHORITY_INVALID")
+
+
+
 def verify_r29(
     manifest: dict[str, Any], treeish: str, *, verify_objects: bool = True
 ) -> None:
@@ -1206,21 +1284,33 @@ def check(treeish: str) -> int:
         r37, r37_raw, manifest_path=R37_MANIFEST, candidate=FROZEN_R37
     )
 
-    r38_raw = _git(_blob_spec(treeish, R38_MANIFEST))
+    r38_raw = _frozen_manifest_bytes(treeish, R38_MANIFEST, FROZEN_R38)
     assert isinstance(r38_raw, bytes)
     r38 = _parse_manifest(r38_raw, "fleet-universal-provider-control-candidate-manifest/v3")
-    verify_r38(r38, treeish)
+    verify_r38(r38, FROZEN_R38)
     r38_subjects = _verify_subjects_and_self(
-        r38, r38_raw, manifest_path=R38_MANIFEST, candidate=treeish
+        r38, r38_raw, manifest_path=R38_MANIFEST, candidate=FROZEN_R38
     )
+
+    r39_raw = _git(_blob_spec(treeish, R39_MANIFEST))
+    assert isinstance(r39_raw, bytes)
+    r39 = _parse_manifest(r39_raw, "fleet-universal-provider-control-candidate-manifest/v3")
+    verify_r39(r39, treeish)
+    r39_subjects = _verify_subjects_and_self(
+        r39, r39_raw, manifest_path=R39_MANIFEST, candidate=treeish
+    )
+    subject_counts = (
+        r26_subjects, r29_subjects, r33_subjects, r34_subjects, r35_subjects,
+        r36_subjects, r37_subjects, r38_subjects, r39_subjects,
+    )
+    labels = [re.search(r"-r([0-9]+)\.json$", path).group(1) for path, _ in MANIFEST_LAYER_ROWS]
+    count_report = " ".join(
+        f"r{label}_subjects={count}" for label, count in zip(labels, subject_counts, strict=True)
+    )
+    candidates = [candidate for _, candidate in FROZEN_MANIFEST_LAYERS] + [R39_BASE["commit"]]
     print(
-        f"MANIFEST_PASS r26_subjects={r26_subjects} r29_subjects={r29_subjects} "
-        f"r33_subjects={r33_subjects} r34_subjects={r34_subjects} "
-        f"r35_subjects={r35_subjects} r36_subjects={r36_subjects} "
-        f"r37_subjects={r37_subjects} r38_subjects={r38_subjects} self=PASS "
-        f"candidates={FROZEN_CANDIDATE},{FROZEN_R29},{FROZEN_R33},"
-        f"{FROZEN_R34},{FROZEN_R35},{FROZEN_R36},{FROZEN_R37},"
-        f"{R38_BASE['commit']} checked={treeish}"
+        f"MANIFEST_PASS {count_report} self=PASS "
+        f"candidates={','.join(candidates)} checked={treeish}"
     )
     return 0
 
