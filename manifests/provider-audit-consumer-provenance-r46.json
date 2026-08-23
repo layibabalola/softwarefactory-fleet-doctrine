@@ -1,0 +1,81 @@
+{
+  "schema": "fleet-provider-audit-consumer-provenance-candidate/v1",
+  "round": "R46",
+  "status": "CANDIDATE_ZERO_AUTHORITY",
+  "createdUtc": "2026-08-23T19:00:00Z",
+  "parent": {
+    "round": "R45",
+    "commit": "0da4a20f9e62a47414f42a8780c695865f1633a0",
+    "tree": "058fc80c346840701eb7fdb5b551f8ee0d68ed54",
+    "ratified": true,
+    "preserved": true
+  },
+  "authority": {
+    "providerExecution": false,
+    "processSpawnResumeKill": false,
+    "workloadExecution": false,
+    "adoption": false,
+    "score": false,
+    "merge": false,
+    "push": false,
+    "automaticSubstitution": false,
+    "activationRequiresSeparateAdjudication": true
+  },
+  "reference": {
+    "schema": "schemas/provider-audit-consumer-provenance-v1.schema.json",
+    "validator": "tools/provider_audit_consumer_provenance.py",
+    "test": "tests/test_provider_audit_consumer_provenance.py",
+    "acceptedDisposition": "ACCEPTED_NO_EXECUTION_AUTHORITY",
+    "resourceLimitDisposition": "NO_VERDICT_RESOURCE_LIMIT",
+    "substitutionDisposition": "SUBSTITUTION_AUDIT_ELIGIBLE",
+    "executionAuthorized": false
+  },
+  "laws": [
+    "terminal-authenticated-provider-identity",
+    "exact-byte-create-new-final-opinion",
+    "actual-shell-preclaim-wrapper-self-test",
+    "explicit-read-command-allowlist-zero-failures",
+    "immutable-non-suppressing-provider-diagnostics",
+    "resource-limit-spent-no-verdict-lineage",
+    "explicit-provider-substitution",
+    "postflight-dominates-substantive-text",
+    "classification-is-not-execution-authority",
+    "r45-remains-immutable"
+  ],
+  "subjectFiles": [
+    {
+      "path": "schemas/provider-audit-consumer-provenance-v1.schema.json",
+      "gitBlobOid": "a59701eb143a4add2ab92dd4f42279d774718324",
+      "sha256": "sha256:5f7fbb60f0aaaba9b64b0295602f97cf7d84b0fcf7df3919c087fa1c173b8d27",
+      "bytes": 9063
+    },
+    {
+      "path": "specs/provider-audit-consumer-provenance.md",
+      "gitBlobOid": "fbe8d06eadf51a0044539eddf2570ba02e75973d",
+      "sha256": "sha256:16e9e62b2a7910a44ca453f7bd6bbbeec5f9b8897b2d23a77a15ed6b336b2caa",
+      "bytes": 7306
+    },
+    {
+      "path": "tests/test_provider_audit_consumer_provenance.py",
+      "gitBlobOid": "42073df23e91712946cc363e4c0e072231f2ad39",
+      "sha256": "sha256:dc07f680fc54a0680a4d08c3ad9ecb5b289afe20a4b27ade88455b2fd0d8740a",
+      "bytes": 14363
+    },
+    {
+      "path": "tools/check_provider_audit_consumer_manifest.py",
+      "gitBlobOid": "a19247bbc99b4892965964795646b09a0b655f59",
+      "sha256": "sha256:e9318b8bca43c4ab9836314053e476c882c28856de8bb77e3b6f7349d90afdfc",
+      "bytes": 6425
+    },
+    {
+      "path": "tools/provider_audit_consumer_provenance.py",
+      "gitBlobOid": "d8749aa4b117cd057aafabbe4f8479b35b891b21",
+      "sha256": "sha256:840572ac2a1d1664a6233df2501f165c1426ac39b7e30095bd1bf5a67eb8c8f6",
+      "bytes": 16582
+    }
+  ],
+  "manifestSelf": {
+    "path": "manifests/provider-audit-consumer-provenance-r46.json",
+    "canonicalSha256": "sha256:cd12c589fb5de6725a3a8fc429e300e803de2e54b2c5dccd66835d1a71be3048"
+  }
+}

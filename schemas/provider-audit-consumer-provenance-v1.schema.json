@@ -1,0 +1,250 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://softwarefactory.example/schemas/provider-audit-consumer-provenance-v1.schema.json",
+  "title": "Provider audit-consumer provenance evidence",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "claim", "terminal", "postflight"],
+  "properties": {
+    "schema": {"const": "fleet-provider-audit-consumer-provenance/v1"},
+    "claim": {"$ref": "#/$defs/claim"},
+    "terminal": {"$ref": "#/$defs/terminal"},
+    "postflight": {"$ref": "#/$defs/postflight"}
+  },
+  "$defs": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "exactBytes": {
+      "type": "object",
+      "required": ["contentBase64", "bytes", "sha256"],
+      "properties": {
+        "contentBase64": {"type": "string", "minLength": 1, "contentEncoding": "base64"},
+        "bytes": {"type": "integer", "minimum": 0},
+        "sha256": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "identity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["provider", "model", "transport", "accountScope"],
+      "properties": {
+        "provider": {"type": "string", "minLength": 1},
+        "model": {"type": "string", "minLength": 1},
+        "transport": {"type": "string", "minLength": 1},
+        "accountScope": {"type": "string", "minLength": 1}
+      }
+    },
+    "authenticatedIdentity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "provider", "model", "transport", "accountScope",
+        "authenticated", "source", "providerSession"
+      ],
+      "properties": {
+        "provider": {"type": "string", "minLength": 1},
+        "model": {"type": "string", "minLength": 1},
+        "transport": {"type": "string", "minLength": 1},
+        "accountScope": {"type": "string", "minLength": 1},
+        "authenticated": {"const": true},
+        "source": {"const": "provider_terminal"},
+        "providerSession": {"type": "string", "minLength": 1}
+      }
+    },
+    "shell": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "version", "sha256"],
+      "properties": {
+        "path": {"type": "string", "minLength": 1},
+        "version": {"type": "string", "minLength": 1},
+        "sha256": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "wrapper": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "bytes", "sha256"],
+      "properties": {
+        "path": {"type": "string", "minLength": 1},
+        "bytes": {"type": "integer", "minimum": 1},
+        "sha256": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "preclaimSelfTest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "beforeClaim", "outcome", "shellPath", "shellVersion", "shellSha256",
+        "wrapperPath", "wrapperBytes", "wrapperSha256", "checks"
+      ],
+      "properties": {
+        "beforeClaim": {"const": true},
+        "outcome": {"const": "PASS"},
+        "shellPath": {"type": "string", "minLength": 1},
+        "shellVersion": {"type": "string", "minLength": 1},
+        "shellSha256": {"$ref": "#/$defs/sha256"},
+        "wrapperPath": {"type": "string", "minLength": 1},
+        "wrapperBytes": {"type": "integer", "minimum": 1},
+        "wrapperSha256": {"$ref": "#/$defs/sha256"},
+        "checks": {
+          "prefixItems": [
+            {"const": "wrapper-syntax"},
+            {"const": "create-new-probe"},
+            {"const": "jsonl-terminal-parse"},
+            {"const": "postflight-fail-closed"}
+          ],
+          "items": false,
+          "minItems": 4,
+          "maxItems": 4
+        }
+      }
+    },
+    "opinionClaim": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "pathAbsentBeforeClaim", "createDisposition"],
+      "properties": {
+        "path": {"type": "string", "minLength": 1},
+        "pathAbsentBeforeClaim": {"const": true},
+        "createDisposition": {"const": "CreateNew"}
+      }
+    },
+    "opinionTerminal": {
+      "unevaluatedProperties": false,
+      "allOf": [
+        {"$ref": "#/$defs/exactBytes"},
+        {
+          "type": "object",
+          "required": [
+            "path", "createDisposition", "createSucceeded", "writeCount",
+            "rejoinedBytes", "rejoinedSha256"
+          ],
+          "properties": {
+            "path": {"type": "string", "minLength": 1},
+            "createDisposition": {"const": "CreateNew"},
+            "createSucceeded": {"const": true},
+            "writeCount": {"const": 1},
+            "rejoinedBytes": {"type": "integer", "minimum": 0},
+            "rejoinedSha256": {"$ref": "#/$defs/sha256"}
+          }
+        }
+      ]
+    },
+    "providerDiagnostic": {
+      "unevaluatedProperties": false,
+      "allOf": [
+        {"$ref": "#/$defs/exactBytes"},
+        {
+          "type": "object",
+          "required": ["kind", "immutable", "classification"],
+          "properties": {
+            "kind": {"enum": ["rate_limit", "quota", "provider_status"]},
+            "immutable": {"const": true},
+            "classification": {
+              "enum": ["RESOURCE_LIMIT_NO_VERDICT", "PROVIDER_STATUS_NON_AUTHORITATIVE"]
+            }
+          }
+        }
+      ]
+    },
+    "claim": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "consumerSession", "requestedIdentity", "actualShell", "wrapper",
+        "preclaimSelfTest", "readCommandAllowlist", "finalOpinionCustody"
+      ],
+      "properties": {
+        "consumerSession": {"type": "string", "minLength": 1},
+        "requestedIdentity": {"$ref": "#/$defs/identity"},
+        "actualShell": {"$ref": "#/$defs/shell"},
+        "wrapper": {"$ref": "#/$defs/wrapper"},
+        "preclaimSelfTest": {"$ref": "#/$defs/preclaimSelfTest"},
+        "readCommandAllowlist": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {"type": "string", "minLength": 1}
+        },
+        "finalOpinionCustody": {"$ref": "#/$defs/opinionClaim"}
+      }
+    },
+    "command": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["commandId", "readOnly", "exitCode", "status"],
+      "properties": {
+        "commandId": {"type": "string", "minLength": 1},
+        "readOnly": {"const": true},
+        "exitCode": {"const": 0},
+        "status": {"const": "completed"}
+      }
+    },
+    "postflight": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "passed", "commands", "failedCommandCount", "deniedCommandCount",
+        "runtimeErrors", "toolErrors", "frozenInputsRejoined", "claimRejoined",
+        "terminalIdentityAuthenticated", "opinionCreateNewRejoined", "zeroUnauthorizedWrites"
+      ],
+      "properties": {
+        "passed": {"type": "boolean"},
+        "commands": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/command"}},
+        "failedCommandCount": {"const": 0},
+        "deniedCommandCount": {"const": 0},
+        "runtimeErrors": {"type": "array", "maxItems": 0},
+        "toolErrors": {"type": "array", "maxItems": 0},
+        "frozenInputsRejoined": {"type": "boolean"},
+        "claimRejoined": {"type": "boolean"},
+        "terminalIdentityAuthenticated": {"type": "boolean"},
+        "opinionCreateNewRejoined": {"type": "boolean"},
+        "zeroUnauthorizedWrites": {"type": "boolean"}
+      }
+    },
+    "terminal": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "consumerSession", "outcome", "authenticatedIdentity", "providerDiagnostics",
+            "substantiveVerdict", "finalOpinion"
+          ],
+          "properties": {
+            "consumerSession": {"type": "string", "minLength": 1},
+            "outcome": {"enum": ["EXECUTION_READY", "HOLD"]},
+            "authenticatedIdentity": {"$ref": "#/$defs/authenticatedIdentity"},
+            "providerDiagnostics": {"type": "array", "items": {"$ref": "#/$defs/providerDiagnostic"}},
+            "substantiveVerdict": {"enum": ["EXECUTION_READY", "HOLD"]},
+            "finalOpinion": {"$ref": "#/$defs/opinionTerminal"}
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "consumerSession", "outcome", "providerDiagnostics", "inferenceOccurred",
+            "opinionPresent", "spent", "retryAuthorized"
+          ],
+          "properties": {
+            "consumerSession": {"type": "string", "minLength": 1},
+            "outcome": {"const": "NO_VERDICT"},
+            "providerDiagnostics": {
+              "type": "array",
+              "minItems": 1,
+              "items": {"$ref": "#/$defs/providerDiagnostic"}
+            },
+            "inferenceOccurred": {"const": false},
+            "opinionPresent": {"const": false},
+            "spent": {"const": true},
+            "retryAuthorized": {"const": false}
+          }
+        }
+      ]
+    }
+  }
+}
