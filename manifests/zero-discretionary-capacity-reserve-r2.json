@@ -88,7 +88,7 @@
   },
   "manifestSelf": {
     "path": "manifests/zero-discretionary-capacity-reserve-r2.json",
-    "canonicalGitBlobSha256": "sha256:21d3bc02f9a9a838f443b66877afec2f7f41b0e700eb252b50143eb0e660b56e",
+    "canonicalGitBlobSha256": "sha256:f2d7ab9ce388e060f2e38830b00ce57abb3f905a0a15e0fe237be85a9a5488ce",
     "rule": "SHA-256 of these exact UTF-8 bytes after replacing only the 64 hex digits in canonicalGitBlobSha256 with zeroes"
   }
 }
