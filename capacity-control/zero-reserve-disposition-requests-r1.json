@@ -1,0 +1,166 @@
+{
+  "schema": "softwarefactory.zero-reserve-disposition-requests.v1",
+  "status": "REQUESTED_PENDING_PROJECT_OWNER_PUBLICATION",
+  "candidate": {
+    "path": "ruling-candidates/zero-discretionary-capacity-reserve-r2.md",
+    "bytes": 4451,
+    "sha256": "F8480E08BC6DD7C7B4BF03063779E86032FE50F127539D2542CED70703A4EA10"
+  },
+  "matrix": {
+    "path": "capacity-control/PROJECT-ADOPTION-MATRIX.md",
+    "bytes": 5201,
+    "sha256": "D6ABA349761C1E0926248FF43B2812CDFE566D7718AE33CFA51CDDA477D6875D"
+  },
+  "ledger": {
+    "path": "adoption/universal-token-control-r26.json",
+    "bytes": 16976,
+    "sha256": "5964EEAFC9AE216B9ED9A779093EA6B7E57501B6F9BA600FD50910A786A8781A",
+    "counts": {
+      "ADOPT": 0,
+      "DISTINGUISH": 5,
+      "MISSING": 0,
+      "REJECT": 0,
+      "STALE": 4
+    }
+  },
+  "response_contract": {
+    "candidate_id": "ZERO_DISCRETIONARY_CAPACITY_RESERVE_R2",
+    "allowed_dispositions": [
+      "ADOPT",
+      "DISTINGUISH",
+      "REJECT"
+    ],
+    "adopt_template": "ADOPT(ZERO_DISCRETIONARY_CAPACITY_RESERVE_R2, <policy SHA-256>, <review receipt SHA-256>)",
+    "distinguish_template": "DISTINGUISH(ZERO_DISCRETIONARY_CAPACITY_RESERVE_R2, <local difference>, <proof>)",
+    "reject_template": "REJECT(ZERO_DISCRETIONARY_CAPACITY_RESERVE_R2, <specific contradiction>, <proof>)",
+    "publication_rule": "Each project owner writes exactly one current standalone disposition line through its sole specs/<project>.md writer.",
+    "adopt_minimum_evidence": [
+      "exact local policy and admission/gate byte identities",
+      "fresh account-bound utilization and active reservation accounting",
+      "estimated exactly-100-percent boundary admitted",
+      "estimated above-100-percent boundary refused",
+      "stale, malformed, cross-account, overlap, and identity-drift negatives",
+      "exact provider, model, effort, role, review, output, quality, and functionality preservation",
+      "independently accepted transactional preview, apply, rollback, and reinstall",
+      "fresh natural production evidence"
+    ]
+  },
+  "projects": [
+    {
+      "project_id": "adobe-ingester",
+      "current_ledger_status": "STALE",
+      "spec": {
+        "path": "specs/adobe-ingester.md",
+        "bytes": 12145,
+        "sha256": "941E6C62020DCD5F88654D804594C1B6ECC22CEFAEDD026405AEFA670C08AAD6"
+      },
+      "integration_seam": "Put account-domain admission in front of every retained scheduled Fable/Opus launch while preserving the append-only ingress and sole adjudication path.",
+      "non_regression": "Exact Fable/Opus model and max-effort roles, hash-chained ingress, Sol adjudication, exact artifact review, and image-ingest quality/functionality remain unchanged.",
+      "requested_disposition": "PENDING_PROJECT_OWNER"
+    },
+    {
+      "project_id": "adversarialllm",
+      "current_ledger_status": "DISTINGUISH",
+      "spec": {
+        "path": "specs/adversarialllm.md",
+        "bytes": 23621,
+        "sha256": "388D859EF746E5F7ADE87970EE26DE39130E2AF01833BE55A43FA2414EA3514A"
+      },
+      "integration_seam": "Replace only the discretionary quota-window floor inside the separately adjudicated utilization-shadow boundary; keep the automatic gate closed until its owner and distinct adjudicator approve the exact job.",
+      "non_regression": "Exact provider/model/effort/role, one-shot authorization, author recusal, full-child fencing, rollback, independent review, and every existing canary/activation prohibition remain unchanged.",
+      "requested_disposition": "PENDING_PROJECT_OWNER"
+    },
+    {
+      "project_id": "agent-bridge",
+      "current_ledger_status": "STALE",
+      "spec": {
+        "path": "specs/agent-bridge.md",
+        "bytes": 25799,
+        "sha256": "8FFBE2B08FEAE05E95C39D35067FC640739C446EB748D2077C18D10EF4A11663"
+      },
+      "integration_seam": "Put account-domain admission in front of warden ignition. Generate addressed lane capsules from board/lease/WAL state; polling and health remain model-free.",
+      "non_regression": "Same seat/stand-down/dispatch decisions on frozen replay; every first-bracket dispatch retained; protected invariants unchanged; independent Opus raw-evidence review survives capsule use.",
+      "requested_disposition": "PENDING_PROJECT_OWNER"
+    },
+    {
+      "project_id": "airmypc",
+      "current_ledger_status": "STALE",
+      "spec": {
+        "path": "specs/airmypc.md",
+        "bytes": 28398,
+        "sha256": "65845210B3189419902E6A41385E367F4EBA8D2A39695BF19BF495A7432D4856"
+      },
+      "integration_seam": "Add the shared Anthropic quota-domain lease above per-seat caps. Require frozen subject packets for OPUS and bounded turns for headless work. Keep role/profile qualification separate from capacity.",
+      "non_regression": "Exact-byte subject, author recusal, two-key distinct-family review, live-hardware, ARMED-6, and RUN_GO remain unchanged. No Sonnet/Kimi/Grok result receives Opus credit.",
+      "requested_disposition": "PENDING_PROJECT_OWNER"
+    },
+    {
+      "project_id": "cloudvore",
+      "current_ledger_status": "DISTINGUISH",
+      "spec": {
+        "path": "specs/cloudvore.md",
+        "bytes": 26187,
+        "sha256": "E5EB06206009856E76370D95E06F0476973D0161E84C0237CA5D8B35CE4A5F8B"
+      },
+      "integration_seam": "Put the external broker in front of every retained Claude/Kimi/Grok/Codex launcher; frozen resume custody remains unchanged. Require an exact OPUS dispatch before review inference and structurally reject direct provider invocation outside the pinned supervisor.",
+      "non_regression": "Existing exact-model credit, one-writer worktrees, mutation-first review, inbox delivery, and 3x identical product bar remain unchanged. Pilot context boundaries before enforcing them.",
+      "requested_disposition": "PENDING_PROJECT_OWNER"
+    },
+    {
+      "project_id": "conjugal",
+      "current_ledger_status": "STALE",
+      "spec": {
+        "path": "specs/conjugal.md",
+        "bytes": 17824,
+        "sha256": "9834B17D9BBB6F5646D37420CC88A24B21676C5B3644402BF8074FC4AD2BC316"
+      },
+      "integration_seam": "Add the account-domain lease above the repo-local dead-man mutex. Run a deterministic route/mail/cursor reducer before provider admission; classify session-limit responses into the shared capacity latch and clear event-caused backoff at reset.",
+      "non_regression": "claude-opus-5/max and claude-fable-5/max mappings, compatible-runner law, exact route, independent review, continuity, first-red, and dead-man suites remain unchanged. IDLE performs zero inference.",
+      "requested_disposition": "PENDING_PROJECT_OWNER"
+    },
+    {
+      "project_id": "dng-auto-processor",
+      "current_ledger_status": "DISTINGUISH",
+      "spec": {
+        "path": "specs/dng-auto-processor.md",
+        "bytes": 33449,
+        "sha256": "A68D74801AD9FBA766261080FCEB5195036EBB54E4681CDF0DD420319A198044"
+      },
+      "integration_seam": "Keep the installed zero-reserve admission bootstrap in front of every provider-bearing launcher and migrate only through exact reviewed postimages and the transactional installer.",
+      "non_regression": "Exact Fable/Opus/Sonnet models, max effort, coordinator/executor/verifier roles, strict serial review, frozen subject packets, output validation, functionality, rollback/reinstall, two cadences, and the 1,000-tick proof remain mandatory.",
+      "requested_disposition": "PENDING_PROJECT_OWNER"
+    },
+    {
+      "project_id": "mlv-app",
+      "current_ledger_status": "DISTINGUISH",
+      "spec": {
+        "path": "specs/mlv-app.md",
+        "bytes": 22666,
+        "sha256": "3002F4AB5009A632DB9E4B46D61AB46D0732E79B3D2F5BFEB9E585CB4B33B0C0"
+      },
+      "integration_seam": "Bind liveness to PID, process start, transcript session, and epoch; single-flight each lane; make registrar/watchers deterministic and terminate orphan heartbeats. Broker every provider-bearing ignition.",
+      "non_regression": "Dead process plus fresh lease becomes dark; no duplicate claimant; Fable failure cannot block an unambiguous successor; 1,000 synthetic sweeps perform zero model calls. Existing approval and evidence gates remain unchanged.",
+      "requested_disposition": "PENDING_PROJECT_OWNER"
+    },
+    {
+      "project_id": "salesforce-tools",
+      "current_ledger_status": "DISTINGUISH",
+      "spec": {
+        "path": "specs/salesforce-tools.md",
+        "bytes": 4933,
+        "sha256": "246A74A86125543C13D88603685862D12613027A36145795B922458CBD8C44C2"
+      },
+      "integration_seam": "Put the shared admission boundary in front of direct provider subprocesses and every opt-in scheduled standup path before changing the capacity floor.",
+      "non_regression": "Manual opt-in semantics, exact launcher census, exact model/effort/role/review bindings, request accounting, quality/functionality, closed-gate proof, rollback, and owner publication remain unchanged.",
+      "requested_disposition": "PENDING_PROJECT_OWNER"
+    }
+  ],
+  "authority": {
+    "project_mutations": 0,
+    "project_dispositions": 0,
+    "project_adoptions": 0,
+    "installations": 0,
+    "provider_launches": 0,
+    "ratification": false
+  }
+}

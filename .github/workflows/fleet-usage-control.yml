@@ -43,5 +43,8 @@ jobs:
       - name: Run runtime-extension negative controls
         run: python -m unittest discover -s capacity-control/tests -p "test_*.py" -v
 
+      - name: Verify the closed zero-reserve project request queue
+        run: python tools/check_zero_reserve_disposition_requests.py
+
       - name: Compile runtime-extension references
         run: python -m compileall -q capacity-control/reference

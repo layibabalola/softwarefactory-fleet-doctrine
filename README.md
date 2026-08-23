@@ -49,6 +49,8 @@ the human store-and-forward bus.
   telemetry, exact quality bindings, and a hard estimated 100% ceiling. R2 repairs R1's incomplete
   five-row response census by naming all nine canonical R26 projects. Every project must publish an
   honest ADOPT, DISTINGUISH, or REJECT; this proposal alone grants no runtime or adoption authority.
+  The hash-bound [nine-project disposition request queue](capacity-control/ZERO-RESERVE-DISPOSITION-REQUESTS.md)
+  is the common notification surface and preserves every row as pending until its sole writer responds.
 
 - [`specs/fleet-universal-provider-control-reconciliation.md`](specs/fleet-universal-provider-control-reconciliation.md)
   — zero-authority R25 candidate atop exact frozen R24, retaining every later canonical project
