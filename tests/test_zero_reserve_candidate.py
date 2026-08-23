@@ -46,6 +46,18 @@ class ZeroReserveCandidateTests(unittest.TestCase):
         self.assertEqual(0, run.returncode, run.stderr)
         self.assertIn("9/9 projects", run.stdout)
 
+    def test_default_verification_ignores_checkout_line_endings(self) -> None:
+        original = MANIFEST.read_bytes()
+        try:
+            MANIFEST.write_bytes(original.replace(b"\n", b"\r\n"))
+            run = subprocess.run(
+                ["python", str(CHECKER)], cwd=ROOT, check=False,
+                capture_output=True, text=True, encoding="utf-8",
+            )
+            self.assertEqual(0, run.returncode, run.stderr)
+        finally:
+            MANIFEST.write_bytes(original)
+
     def test_unsealed_manifest_change_is_refused(self) -> None:
         data = MANIFEST.read_bytes().replace(b'"count": 9', b'"count": 8', 1)
         run = self.run_checker(data)
