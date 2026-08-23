@@ -16,13 +16,13 @@ BASE = MODULE.PHASE16
 
 
 class DescendantScopeTests(unittest.TestCase):
-    def _classify(self, event: str, paths: set[str], *, ancestor: bool = True) -> str:
+    def _classify(self, event: str, paths: set[str], *, ancestor: bool = True, base: str = BASE) -> str:
         with (
             mock.patch.object(MODULE, "_git", return_value=b""),
             mock.patch.object(MODULE, "_is_ancestor", return_value=ancestor),
             mock.patch.object(MODULE, "_changed_paths", return_value=paths),
         ):
-            return MODULE.classify_event(event, BASE)
+            return MODULE.classify_event(event, base)
 
     def test_exact_bootstrap_is_applicable_for_pr_and_push(self):
         self.assertEqual(20, len(MODULE.MUTABLE_BOOTSTRAP_ALLOWLIST))
@@ -43,6 +43,17 @@ class DescendantScopeTests(unittest.TestCase):
         }
         self.assertEqual("N/A_NO_PHASE12_PHASE16_TRIGGER", self._classify("pull_request", carrier))
         self.assertEqual("N/A_NO_PHASE12_PHASE16_TRIGGER", self._classify("push", {"README.md"}))
+        self.assertEqual("N/A_NO_PHASE12_PHASE16_TRIGGER", self._classify("pull_request", carrier, base="a" * 40))
+
+    def test_bootstrap_is_one_time_exact_base_and_exact_delta(self):
+        trigger = {"tools/check_phase12_phase16_descendant_scope.py"}
+        with self.assertRaisesRegex(MODULE.DescendantScopeError, "DESCENDANT_SCOPE_VIOLATION"):
+            self._classify("pull_request", trigger)
+        for base in ("a" * 40, MODULE.PHASE15):
+            with self.subTest(base=base), self.assertRaisesRegex(MODULE.DescendantScopeError, "BOOTSTRAP_SCOPE_CLOSED"):
+                self._classify("pull_request", set(MODULE.MUTABLE_BOOTSTRAP_ALLOWLIST), base=base)
+        with self.assertRaisesRegex(MODULE.DescendantScopeError, "DESCENDANT_SCOPE_VIOLATION"):
+            self._classify("push", set(MODULE.MUTABLE_BOOTSTRAP_ALLOWLIST) | {"README.md"})
 
     def test_protected_immutable_change_and_trigger_mixing_refuse(self):
         trigger = {"tools/check_phase12_phase16_descendant_scope.py"}
@@ -121,21 +132,21 @@ class DescendantScopeTests(unittest.TestCase):
                     MODULE.verify_frozen_publications()
 
     def test_workflow_routes_once_in_order_and_restores_literal_subjects(self):
-        raw = (ROOT / ".github" / "workflows" / "disposition-intake.yml").read_bytes()
+        raw = MODULE._blob("HEAD", ".github/workflows/disposition-intake.yml")
         with mock.patch.object(MODULE, "_blob", return_value=raw):
             MODULE.verify_current_workflow()
         final = next(line for line in MODULE.WORKFLOW_ROUTE_LINES if line.endswith(b"python tools/check_phase12_phase16_descendant_scope.py"))
         for hostile, code in (
-            (raw.replace(final, b"", 1), "WORKFLOW_ROUTE_COUNT_INVALID"),
-            (raw + b"\n" + final, "WORKFLOW_ROUTE_COUNT_INVALID"),
-            (raw.replace(b"--treeish 990906b6ea861ca579e1336bcfe8f17dd80c83ae", b"--treeish HEAD", 1), "WORKFLOW_ROUTE_COUNT_INVALID"),
+            (raw.replace(final, b"", 1), "WORKFLOW_"),
+            (raw + b"\n" + final, "WORKFLOW_"),
+            (raw.replace(b"--treeish 990906b6ea861ca579e1336bcfe8f17dd80c83ae", b"--treeish HEAD", 1), "WORKFLOW_"),
         ):
             with self.subTest(code=code), mock.patch.object(MODULE, "_blob", return_value=hostile):
                 with self.assertRaisesRegex(MODULE.DescendantScopeError, code):
                     MODULE.verify_current_workflow()
 
     def test_complete_workflow_route_env_and_timeout_hostiles_refuse(self):
-        raw = (ROOT / ".github" / "workflows" / "disposition-intake.yml").read_bytes()
+        raw = MODULE._blob("HEAD", ".github/workflows/disposition-intake.yml")
         first = MODULE.WORKFLOW_ROUTE_LINES[0]
         second = MODULE.WORKFLOW_ROUTE_LINES[1]
         swapped = raw.replace(first, b"__FIRST__", 1).replace(second, first, 1).replace(b"__FIRST__", second, 1)
@@ -154,6 +165,24 @@ class DescendantScopeTests(unittest.TestCase):
             with self.subTest(hostile=hostile[:80]), mock.patch.object(MODULE, "_blob", return_value=hostile):
                 with self.assertRaisesRegex(MODULE.DescendantScopeError, "WORKFLOW_"):
                     MODULE.verify_current_workflow()
+
+    def test_workflow_trusted_controls_are_structurally_bound(self):
+        raw = MODULE._blob("HEAD", ".github/workflows/disposition-intake.yml")
+        blocks = (
+            MODULE.WORKFLOW_EVIDENCE_HEADER_BLOCK,
+            MODULE.WORKFLOW_PHASE3_REMOTE_BLOCK,
+            MODULE.WORKFLOW_PHASE5_REMOTE_BLOCK,
+        )
+        with mock.patch.object(MODULE, "_blob", return_value=raw):
+            MODULE.verify_current_workflow()
+        for block in blocks:
+            relocated = raw.replace(block, b"", 1) + b"\n  irrelevant:\n" + block
+            duplicated = raw + b"\n" + block
+            spoofed = raw.replace(block, b"# relocated\n" + block.replace(b"\n", b"\n# "), 1)
+            for hostile in (relocated, duplicated, spoofed):
+                with self.subTest(block=block[:60], hostile=hostile[-80:]), mock.patch.object(MODULE, "_blob", return_value=hostile):
+                    with self.assertRaisesRegex(MODULE.DescendantScopeError, "WORKFLOW_"):
+                        MODULE.verify_current_workflow()
 
     def test_scope_inputs_are_environment_only(self):
         for option in ("--scope-event", "--scope-base"):

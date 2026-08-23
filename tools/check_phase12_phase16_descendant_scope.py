@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import importlib.util
 import os
 from pathlib import Path
@@ -111,6 +112,32 @@ WORKFLOW_ENV_LINES = (
 )
 WORKFLOW_TOKEN_LINE = b"          R26_REMOTE_GITHUB_TOKEN: ${{ secrets.R26_CROSS_REPO_READ_TOKEN }}"
 WORKFLOW_TIMEOUT_LINE = b"    timeout-minutes: 30"
+WORKFLOW_EVIDENCE_HEADER_BLOCK = b"\n".join((
+    b"  evidence:",
+    b"    env:",
+    *WORKFLOW_ENV_LINES,
+    b"    strategy:",
+    b"      fail-fast: false",
+    b"      matrix:",
+    b"        os: [windows-latest, ubuntu-latest]",
+    b'        python-version: ["3.13", "3.14"]',
+    b"    runs-on: ${{ matrix.os }}",
+    WORKFLOW_TIMEOUT_LINE,
+))
+WORKFLOW_PHASE3_REMOTE_BLOCK = b"\n".join((
+    b"      - name: Verify exact zero-authority phase-3 distinctions locally",
+    b"        env:",
+    WORKFLOW_TOKEN_LINE,
+    WORKFLOW_ROUTE_LINES[4],
+))
+WORKFLOW_PHASE5_REMOTE_BLOCK = b"\n".join((
+    b"      - name: Verify phase-5 zero-authority reconciliation locally",
+    b"        env:",
+    WORKFLOW_TOKEN_LINE,
+    WORKFLOW_ROUTE_LINES[6],
+))
+WORKFLOW_BYTES = 7304
+WORKFLOW_SHA256 = "b51e56b8391c3d4cd6a854a38dcf81379c305d3c41b150d397ea57f781371e01"
 UNSAFE_GIT_ENV = {
     "GIT_DIR", "GIT_WORK_TREE", "GIT_COMMON_DIR", "GIT_OBJECT_DIRECTORY",
     "GIT_ALTERNATE_OBJECT_DIRECTORIES", "GIT_REPLACE_REF_BASE", "GIT_INDEX_FILE",
@@ -191,6 +218,11 @@ def verify_frozen_publications() -> None:
 
 def verify_current_workflow() -> None:
     workflow = _blob("HEAD", ".github/workflows/disposition-intake.yml")
+    if len(workflow) != WORKFLOW_BYTES or hashlib.sha256(workflow).hexdigest() != WORKFLOW_SHA256:
+        raise DescendantScopeError("WORKFLOW_BYTES_INVALID")
+    for block in (WORKFLOW_EVIDENCE_HEADER_BLOCK, WORKFLOW_PHASE3_REMOTE_BLOCK, WORKFLOW_PHASE5_REMOTE_BLOCK):
+        if workflow.count(block) != 1:
+            raise DescendantScopeError("WORKFLOW_STRUCTURAL_BINDING_INVALID")
     lines = workflow.splitlines()
     if any(lines.count(route) != 1 for route in WORKFLOW_ROUTE_LINES):
         raise DescendantScopeError("WORKFLOW_ROUTE_COUNT_INVALID")
@@ -236,7 +268,9 @@ def classify_event(event_name: str, scope_base: str) -> str:
     changed = _changed_paths(scope_base)
     if not changed.intersection(PROTECTED_TRIGGER_PATHS):
         return "N/A_NO_PHASE12_PHASE16_TRIGGER"
-    if not changed.issubset(MUTABLE_BOOTSTRAP_ALLOWLIST):
+    if scope_base != PHASE16:
+        raise DescendantScopeError("BOOTSTRAP_SCOPE_CLOSED")
+    if changed != MUTABLE_BOOTSTRAP_ALLOWLIST:
         raise DescendantScopeError("DESCENDANT_SCOPE_VIOLATION")
     return "APPLICABLE"
 
