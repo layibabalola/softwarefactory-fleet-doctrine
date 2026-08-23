@@ -814,3 +814,20 @@ R34 freezes R33 at `8e20b4a1652931af178e792eb62ab892a7d309fd` and binds its curr
 the ordered-parent phase6-16 integration merge `edcbf5084e1c9cbb3b7654c683b91185cef1494b`.
 It grants no provider, process, gate, task, adoption, ratification, or runtime authority. The only
 runtime-shaped entry point remains input-blind `REFUSE_RUNTIME_NOT_INSTALLED / ZERO`.
+
+## R35 repaired-canonical integration binding
+
+R35 MUST retain R34 as a frozen trust layer at exact carrier
+`6a3803fd1543c1bd0944ec0013987f053852e3c4`, including its manifest, seven subjects, and self
+digest. The current layer MUST bind exact integration merge
+`fbf53f59c18b6dc8d1cc404730b0d42a38496a07`, tree
+`750b031a6793cec63d7eeaaf05eeb6a6c52a80d7`, and ordered parents R34 then repaired canonical
+master `7ae14db4506fb2869f0e84647785865e504c9af8`. Parent order, parent trees, ancestry, subject
+bytes, and manifest self bytes MUST fail closed on drift.
+
+The rebind MUST NOT change the exact policy digest, Cloudvore source, Fable/max/standard/first-party
+independent-reviewer profile, 64,000 native output allowance, or
+`EXACTLY_BOUNDED_AND_CHARGED` cache-admission semantics. Generic schema cardinality remains 1-64.
+It installs no broker or provider-native trust root and grants no provider, runtime, process, gate,
+task, adoption, merge, or ratification authority. The runtime entry remains input-blind
+`REFUSE_RUNTIME_NOT_INSTALLED / ZERO`.

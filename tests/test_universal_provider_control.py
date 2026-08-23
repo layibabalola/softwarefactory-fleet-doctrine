@@ -6139,6 +6139,107 @@ class ReviewResourceAdmissionR29Tests(unittest.TestCase):
                     "HEAD", checker.R33_MANIFEST, checker.FROZEN_R33
                 )
 
+    def test_r35_01_current_layer_pins_exact_integration_tuple_and_quality(self) -> None:
+        import check_universal_manifest as checker
+
+        manifest = json.loads((ROOT / checker.R35_MANIFEST).read_text(encoding="utf-8"))
+        checker.verify_r35(manifest, ":")
+        self.assertEqual(
+            checker._commit_tuple(checker.R35_BASE["commit"]),
+            (checker.R35_BASE["tree"], checker.R35_BASE["orderedParents"]),
+        )
+        self.assertEqual(
+            [checker._commit_tuple(parent)[0] for parent in checker.R35_BASE["orderedParents"]],
+            checker.R35_BASE["orderedParentTrees"],
+        )
+        policy = manifest["reviewAdmissionPolicy"]
+        self.assertEqual(policy["identity"], checker.R29_IDENTITY)
+        self.assertEqual(policy["cacheAdmissionMode"], "EXACTLY_BOUNDED_AND_CHARGED")
+        self.assertEqual(manifest["reviewAdmissionPolicyDigest"], checker.R35_POLICY_DIGEST)
+
+    def test_r35_02_base_tree_parent_policy_and_subject_drift_fail_closed(self) -> None:
+        import check_universal_manifest as checker
+
+        manifest = json.loads((ROOT / checker.R35_MANIFEST).read_text(encoding="utf-8"))
+        mutations: list[tuple[dict[str, object], str]] = []
+        for field in ("commit", "tree"):
+            changed = copy.deepcopy(manifest)
+            changed["candidateBase"][field] = "0" * 40
+            mutations.append((changed, "R35_BASE_INVALID"))
+        changed = copy.deepcopy(manifest)
+        changed["candidateBase"]["orderedParents"].reverse()
+        mutations.append((changed, "R35_BASE_INVALID"))
+        changed = copy.deepcopy(manifest)
+        changed["reviewAdmissionPolicy"]["identity"]["model"] = "substitute"
+        changed["reviewAdmissionPolicyDigest"] = checker.canonical_policy_sha256(
+            changed["reviewAdmissionPolicy"]
+        )
+        mutations.append((changed, "R35_EXACT_PROFILE_MISMATCH"))
+        changed = copy.deepcopy(manifest)
+        changed["reviewAdmissionPolicy"]["source"]["subjectFiles"][0]["path"] = "substitute"
+        changed["reviewAdmissionPolicyDigest"] = checker.canonical_policy_sha256(
+            changed["reviewAdmissionPolicy"]
+        )
+        mutations.append((changed, "R35_SOURCE_SUBJECT_MISMATCH"))
+        for changed, reason in mutations:
+            with self.subTest(reason=reason):
+                with self.assertRaisesRegex(checker.ManifestError, reason):
+                    checker.verify_r35(changed, ":")
+
+    def test_r35_03_frozen_r34_layer_rejects_manifest_drift(self) -> None:
+        import check_universal_manifest as checker
+
+        frozen = checker._git(f"{checker.FROZEN_R34}:{checker.R34_MANIFEST}")
+        self.assertIsInstance(frozen, bytes)
+        changed = json.loads(frozen)
+        changed["reviewAdmissionPolicy"]["identity"]["model"] = "substitute"
+        changed_raw = json.dumps(changed, separators=(",", ":")).encode("utf-8")
+        with (
+            mock.patch.object(checker, "_is_ancestor", return_value=True),
+            mock.patch.object(checker, "_git", side_effect=[frozen, changed_raw]),
+        ):
+            with self.assertRaisesRegex(
+                checker.ManifestError, "MANIFEST_FROZEN_BLOB_MISMATCH"
+            ):
+                checker._frozen_manifest_bytes(
+                    "HEAD", checker.R34_MANIFEST, checker.FROZEN_R34
+                )
+
+    def test_r35_04_current_subject_and_self_drift_fail_closed(self) -> None:
+        import check_universal_manifest as checker
+
+        raw = (ROOT / checker.R35_MANIFEST).read_bytes()
+        manifest = json.loads(raw)
+        changed = copy.deepcopy(manifest)
+        changed["subjectFiles"][0]["sha256"] = "sha256:" + "0" * 64
+        with self.assertRaisesRegex(checker.ManifestError, "MANIFEST_SUBJECT_MISMATCH"):
+            checker._verify_subjects_and_self(
+                changed, raw, manifest_path=checker.R35_MANIFEST, candidate=":"
+            )
+        changed = copy.deepcopy(manifest)
+        changed["manifestSelf"]["canonicalGitBlobSha256"] = "sha256:" + "0" * 64
+        with self.assertRaisesRegex(checker.ManifestError, "MANIFEST_SELF_MISMATCH"):
+            checker._verify_subjects_and_self(
+                changed, raw, manifest_path=checker.R35_MANIFEST, candidate=":"
+            )
+
+    def test_r35_05_checker_has_five_literal_layers_and_runtime_stays_refused(self) -> None:
+        import check_universal_manifest as checker
+
+        self.assertEqual(checker.check(":"), 0)
+
+        class Exploding:
+            def __getattribute__(self, name: str) -> object:
+                raise AssertionError("caller input was read")
+
+        result = upc.evaluate_review_admission(
+            Exploding(), policy=Exploding(), capability=Exploding()
+        )
+        self.assertEqual(result["status"], "REFUSE")
+        self.assertEqual(result["reason"], "REVIEW_RUNTIME_NOT_INSTALLED")
+        self.assertEqual(result["credit"], "ZERO")
+        self.assertFalse(result["providerAuthority"])
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

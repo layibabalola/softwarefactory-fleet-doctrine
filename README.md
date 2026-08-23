@@ -90,5 +90,8 @@ the human store-and-forward bus.
   frozen R33 and canonical phase6-16 history, then makes cache admission a policy-pinned mode backed by
   deterministic request/profile/domain-bound conformance evidence. It also rejects integer-equivalent
   floating-point native charge records. The fake adapter remains zero-authority and the runtime remains
-  input-blind `REFUSE`. Neither candidate
+  input-blind `REFUSE`. R35 freezes the exact R34 carrier and rebinds the unchanged seven-file policy
+  instance to the ordered-parent merge of R34 with the repaired canonical CI/evidence bootstrap. The
+  provider profile, cache mode, policy digest, generic 1-64 mechanism, and zero-authority refusal are
+  unchanged. Neither candidate
   changes the ratified governor or `RULINGS.md`, grants adoption credit, or provides launch authority.

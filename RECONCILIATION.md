@@ -191,3 +191,18 @@ native charge uses an exact built-in integer representation. These fixtures inst
 provider-native trust root: the runtime entry point still reads no input before returning `REFUSE`,
 zero credit, and zero authority. `RULINGS.md`, workflows, adoption evidence, providers, tasks, and gates
 remain unchanged.
+
+## R35 repaired-canonical integration rebind (candidate, zero authority)
+
+R35 freezes the exact R34 carrier `6a3803fd1543c1bd0944ec0013987f053852e3c4` and its seven
+subjects, then binds the current layer to ordered-parent merge
+`fbf53f59c18b6dc8d1cc404730b0d42a38496a07`: R34 first and repaired canonical master
+`7ae14db4506fb2869f0e84647785865e504c9af8` second. The canonical repair changes only retained
+CI/evidence verification and does not alter the universal policy instance.
+
+The exact Cloudvore identity remains Anthropic `claude-fable-5`, max effort, standard service,
+first-party transport, independent-adversarial-reviewer role, and 64,000 native output tokens. The
+policy digest and `EXACTLY_BOUNDED_AND_CHARGED` cache mode remain unchanged; generic policies still
+accept 1-64 ordered subjects. No production trust root is installed. The runtime continues to return
+input-blind `REFUSE`, zero credit, and zero authority, and this rebind grants no provider, process,
+task, gate, adoption, ratification, or merge authority.
