@@ -19,9 +19,6 @@ SPEC.loader.exec_module(MODULE)
 class Phase12IntegrationTests(unittest.TestCase):
     @staticmethod
     def _treeish():
-        head = str(MODULE._git(["rev-parse", "HEAD"], text=True)).strip()
-        if head == MODULE.MERGE_COMMIT:
-            return ":"
         return "990906b6ea861ca579e1336bcfe8f17dd80c83ae"
 
     def test_01_exact_staged_integration_passes(self):
@@ -65,52 +62,64 @@ class Phase12IntegrationTests(unittest.TestCase):
         original = MODULE._oid
 
         def drift(treeish, path):
-            if treeish == ":" and path == MODULE.MANIFEST:
+            if treeish == self._treeish() and path == MODULE.MANIFEST:
                 return "65901748c5843f05b37e4352c5b469e47804e2f1"
             return original(treeish, path)
 
         with mock.patch.object(MODULE, "_oid", side_effect=drift):
             with self.assertRaisesRegex(MODULE.Phase12Error, "ACTIVE_MANIFEST_POLICY_DRIFT"):
-                MODULE.verify_current_policy(":")
+                MODULE.verify_current_policy(self._treeish())
 
-    def test_08_ledger_drift_is_rejected(self):
+    def test_08_frozen_manifest_checker_oid_drift_is_rejected(self):
         original = MODULE._oid
 
         def drift(treeish, path):
-            if treeish == ":" and path == MODULE.LEDGER:
+            if treeish == self._treeish() and path == MODULE.MANIFEST_CHECKER:
+                return "0" * 40
+            return original(treeish, path)
+
+        with mock.patch.object(MODULE, "_oid", side_effect=drift):
+            with self.assertRaisesRegex(MODULE.Phase12Error, "ACTIVE_MANIFEST_POLICY_DRIFT"):
+                MODULE.verify_current_policy(self._treeish())
+
+    def test_09_ledger_drift_is_rejected(self):
+        original = MODULE._oid
+
+        def drift(treeish, path):
+            if treeish == self._treeish() and path == MODULE.LEDGER:
                 return "0" * 40
             return original(treeish, path)
 
         with mock.patch.object(MODULE, "_oid", side_effect=drift):
             with self.assertRaisesRegex(MODULE.Phase12Error, "LEDGER_DRIFT"):
-                MODULE.verify_current_policy(":")
+                MODULE.verify_current_policy(self._treeish())
 
-    def test_09_current_master_spec_drift_is_rejected(self):
+    def test_10_current_master_spec_drift_is_rejected(self):
         original = MODULE._oid
 
         def drift(treeish, path):
-            if treeish == ":" and path == "specs/cloudvore.md":
+            if treeish == self._treeish() and path == "specs/cloudvore.md":
                 return "0" * 40
             return original(treeish, path)
 
         with mock.patch.object(MODULE, "_oid", side_effect=drift):
             with self.assertRaisesRegex(MODULE.Phase12Error, "SPEC_BLOB_DRIFT"):
-                MODULE.verify_current_policy(":")
+                MODULE.verify_current_policy(self._treeish())
 
-    def test_10_imported_evidence_drift_is_rejected(self):
+    def test_11_imported_evidence_drift_is_rejected(self):
         target = next(iter(MODULE.EVIDENCE))
         original = MODULE._oid
 
         def drift(treeish, path):
-            if treeish == ":" and path == target:
+            if treeish == self._treeish() and path == target:
                 return "0" * 40
             return original(treeish, path)
 
         with mock.patch.object(MODULE, "_oid", side_effect=drift):
             with self.assertRaisesRegex(MODULE.Phase12Error, "IMPORTED_EVIDENCE_DRIFT"):
-                MODULE.verify_evidence(":")
+                MODULE.verify_evidence(self._treeish())
 
-    def test_11_workflow_must_route_historical_and_current_checkers(self):
+    def test_12_workflow_must_route_historical_and_current_checkers(self):
         original = MODULE._blob
 
         def drift(treeish, path):
@@ -121,9 +130,9 @@ class Phase12IntegrationTests(unittest.TestCase):
 
         with mock.patch.object(MODULE, "_blob", side_effect=drift):
             with self.assertRaisesRegex(MODULE.Phase12Error, "HISTORICAL_CHECKER_ROUTING_INVALID"):
-                MODULE.verify_workflow(":")
+                MODULE.verify_workflow(self._treeish())
 
-    def test_12_artifact_closed_shape_is_exact(self):
+    def test_13_artifact_closed_shape_is_exact(self):
         expected = MODULE._expected_artifact()
         for mutate in (
             lambda value: value.update({"extra": False}),

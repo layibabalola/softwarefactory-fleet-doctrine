@@ -7,6 +7,7 @@ import unittest
 from unittest import mock
 
 ROOT = Path(__file__).resolve().parents[1]
+PUBLICATION = "8149c3f06811f85b833b28940017f2d05448cf5d"
 MODULE_PATH = ROOT / "tools" / "check_phase16_integration.py"
 SPEC = importlib.util.spec_from_file_location("check_phase16_integration", MODULE_PATH)
 assert SPEC is not None and SPEC.loader is not None
@@ -17,8 +18,7 @@ SPEC.loader.exec_module(MODULE)
 class Phase16IntegrationTests(unittest.TestCase):
     @staticmethod
     def _treeish():
-        head = str(MODULE._git(["rev-parse", "HEAD"], text=True)).strip()
-        return ":" if head == MODULE.PHASE15 else "HEAD"
+        return PUBLICATION
 
     def _doc(self):
         return MODULE.load_json(MODULE._blob(self._treeish(), MODULE.ARTIFACT))
@@ -135,6 +135,11 @@ class Phase16IntegrationTests(unittest.TestCase):
         hostile["extra"] = False
         with self.assertRaisesRegex(MODULE.Phase16Error, "ROOT_SHAPE_INVALID"):
             MODULE.verify_document(hostile)
+
+    def test_15_later_head_is_refused_by_historical_verifier(self):
+        with mock.patch.object(MODULE, "_changed_paths", return_value={"tools/foreign.py"}):
+            with self.assertRaisesRegex(MODULE.Phase16Error, "PHASE16_PARENT_MISMATCH"):
+                MODULE.verify("HEAD")
 
 
 if __name__ == "__main__":

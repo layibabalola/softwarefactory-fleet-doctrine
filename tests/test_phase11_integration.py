@@ -1,8 +1,11 @@
 from __future__ import annotations
 
 import copy
+from contextlib import redirect_stdout
+import io
 import importlib.util
 import json
+import os
 from pathlib import Path
 import unittest
 from unittest import mock
@@ -184,6 +187,30 @@ class Phase11IntegrationTests(unittest.TestCase):
         with mock.patch.object(MODULE, "_oid", side_effect=drift_oid):
             with self.assertRaisesRegex(MODULE.Phase11Error, "FROZEN_DOCTRINE_ARTIFACT_DRIFT"):
                 MODULE.verify_frozen_doctrine(treeish)
+
+    def test_19_local_projects_are_explicit_and_output_is_truthful(self):
+        MODULE.verify_integration(self._treeish(), verify_local_projects=False)
+        with mock.patch.object(MODULE.P10, "verify_local_subjects", side_effect=MODULE.P10.Phase10Error("MLV_ROOT_UNAVAILABLE")):
+            self.assertEqual(1, MODULE.main(["--treeish", self._treeish(), "--verify-local-projects"]))
+        for enabled, marker in ((False, "LOCAL SUBJECTS NOT REDERIVED"), (True, "LOCAL SUBJECTS REDERIVED")):
+            output = io.StringIO()
+            with mock.patch.object(MODULE, "verify_integration"), redirect_stdout(output):
+                argv = ["--treeish", self._treeish()] + (["--verify-local-projects"] if enabled else [])
+                self.assertEqual(0, MODULE.main(argv))
+            self.assertIn(marker, output.getvalue())
+
+    def test_20_git_object_indirection_alternates_and_replacements_refuse(self):
+        for key in ("GIT_OBJECT_DIRECTORY", "GIT_ALTERNATE_OBJECT_DIRECTORIES", "GIT_REPLACE_REF_BASE", "GIT_CONFIG_COUNT"):
+            with self.subTest(key=key), mock.patch.dict(os.environ, {key: "forged"}, clear=False):
+                with self.assertRaisesRegex(MODULE.Phase11Error, "GIT_OBJECT_INDIRECTION_REFUSED"):
+                    MODULE.verify_git_object_isolation()
+        with mock.patch.object(Path, "exists", return_value=True):
+            with self.assertRaisesRegex(MODULE.Phase11Error, "GIT_ALTERNATE_OBJECT_STORE_REFUSED"):
+                MODULE.verify_git_object_isolation()
+        original = MODULE._git
+        with mock.patch.object(MODULE, "_git", side_effect=lambda args, **kwargs: "0" * 40 + "\n" if args == ["replace", "-l"] else original(args, **kwargs)):
+            with self.assertRaisesRegex(MODULE.Phase11Error, "GIT_REPLACE_OBJECT_REFUSED"):
+                MODULE.verify_git_object_isolation()
 
 
 if __name__ == "__main__":
