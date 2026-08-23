@@ -2,11 +2,10 @@ from __future__ import annotations
 
 import copy
 import importlib.util
-import json
+import os
 from pathlib import Path
 from unittest import mock
 import unittest
-
 
 ROOT = Path(__file__).resolve().parents[1]
 MODULE_PATH = ROOT / "tools" / "check_phase8_integration.py"
@@ -14,130 +13,87 @@ SPEC = importlib.util.spec_from_file_location("check_phase8_integration", MODULE
 MODULE = importlib.util.module_from_spec(SPEC)
 assert SPEC.loader is not None
 SPEC.loader.exec_module(MODULE)
-HISTORICAL_TREEISH = "e7311e3038bbfeebe15cc10004f40b3795811659"
+SNAPSHOT = MODULE.RETAINED_SNAPSHOT
 
 
 class Phase8IntegrationTests(unittest.TestCase):
-    def test_exact_committed_integration_passes(self):
-        MODULE.verify_integration(HISTORICAL_TREEISH)
+    def test_retained_snapshot_passes_without_unavailable_sources(self):
+        MODULE.verify_integration(SNAPSHOT)
+        self.assertEqual(set(MODULE.UNAVAILABLE_SOURCE_OBJECTS.values()), {
+            "c5b9efd00c47a84488b96734dd9b6a94ecd37999",
+            "ed8a2f359de8830c5800d1721faf183015eec01f",
+            "1f3c3d8808b3d9bbb1db201039e0c3d18441f7f0",
+        })
 
-    def test_source_commit_tree_or_parent_drift_is_rejected(self):
-        original = MODULE._commit_tuple
+    def test_optional_source_rederive_fails_closed_while_objects_are_absent(self):
+        with self.assertRaisesRegex(MODULE.Phase8Error, "SOURCE_OBJECTS_UNAVAILABLE_NOT_REVERIFIED"):
+            MODULE.verify_integration(SNAPSHOT, rederive_source_objects=True)
 
-        def drift(commit):
-            if commit == MODULE.PHASE7_COMMIT:
-                return "0" * 40, [MODULE.PHASE5_BASE]
-            return original(commit)
+    def test_retained_snapshot_tuple_and_scope_are_exact(self):
+        original_tuple = MODULE._commit_tuple
+        with mock.patch.object(MODULE, "_commit_tuple", side_effect=lambda commit: (
+            ("0" * 40, [MODULE.PHASE10_COMMIT]) if commit == SNAPSHOT else original_tuple(commit)
+        )):
+            with self.assertRaisesRegex(MODULE.Phase8Error, "RETAINED_SNAPSHOT_TUPLE_MISMATCH"):
+                MODULE.verify_integration(SNAPSHOT)
+        original_paths = MODULE._changed_paths
+        with mock.patch.object(MODULE, "_changed_paths", side_effect=lambda base, tip: (
+            original_paths(base, tip) | {"specs/cloudvore.md"}
+            if (base, tip) == (MODULE.PHASE10_COMMIT, SNAPSHOT) else original_paths(base, tip)
+        )):
+            with self.assertRaisesRegex(MODULE.Phase8Error, "PHASE11_SOURCE_SCOPE_MISMATCH"):
+                MODULE.verify_integration(SNAPSHOT)
 
-        with mock.patch.object(MODULE, "_commit_tuple", side_effect=drift):
-            with self.assertRaisesRegex(MODULE.Phase8Error, "PHASE7_SUBJECT_MISMATCH"):
-                MODULE.verify_source_objects()
-
-    def test_non_phase6_parent_is_rejected(self):
-        original = MODULE._commit_tuple
-
-        def drift(commit):
-            if commit == HISTORICAL_TREEISH:
-                return original(commit)[0], [MODULE.PHASE7_COMMIT]
-            return original(commit)
-
-        with mock.patch.object(MODULE, "_commit_tuple", side_effect=drift):
-            with self.assertRaisesRegex(MODULE.Phase8Error, "INTEGRATION_PARENT_MISMATCH"):
-                MODULE.verify_integration(HISTORICAL_TREEISH)
-
-    def test_any_extra_integration_path_is_rejected(self):
-        with mock.patch.object(
-            MODULE,
-            "_changed_paths",
-            side_effect=lambda base, treeish: (
-                MODULE.PHASE7_SOURCE_DELTA_PATHS
-                if base == MODULE.PHASE5_BASE
-                else MODULE.EXPECTED_INTEGRATION_PATHS | {"specs/cloudvore.md"}
-            ),
-        ):
-            with self.assertRaisesRegex(MODULE.Phase8Error, "INTEGRATION_SCOPE_MISMATCH"):
-                MODULE.verify_integration(HISTORICAL_TREEISH)
-
-    def test_ledger_or_packet_blob_drift_is_rejected(self):
+    def test_ledger_packet_manifest_and_spec_drift_refuse(self):
         original = MODULE._oid
-        for drift_path, error in (
+        for path, error in (
             (MODULE.LEDGER_PATH, "LEDGER_STATUS_ADVANCE"),
             ("adoption/phase7/requests/airmypc.json", "PRESERVED_ARTIFACT_DRIFT"),
+            (MODULE.GLOBAL_MANIFEST_PATH, "GLOBAL_MANIFEST_BASELINE_DRIFT"),
+            ("specs/cloudvore.md", "SPEC_BLOB_DRIFT"),
         ):
-            with self.subTest(path=drift_path):
-                def drift(treeish, path, *, target=drift_path):
-                    if treeish == HISTORICAL_TREEISH and path == target:
-                        return "0" * 40
-                    return original(treeish, path)
+            with self.subTest(path=path), mock.patch.object(MODULE, "_oid", side_effect=lambda treeish, candidate, target=path: (
+                "0" * 40 if treeish == SNAPSHOT and candidate == target else original(treeish, candidate)
+            )):
+                with self.assertRaisesRegex(MODULE.Phase8Error, error):
+                    MODULE.verify_integration(SNAPSHOT)
 
-                with mock.patch.object(MODULE, "_oid", side_effect=drift):
-                    with self.assertRaisesRegex(MODULE.Phase8Error, error):
-                        MODULE.verify_integration(HISTORICAL_TREEISH)
-
-    def test_packet_authority_and_status_advance_are_rejected(self):
+    def test_packet_semantics_and_authority_are_closed(self):
         original = MODULE._load_json
         for field, error in (("authority", "REQUEST_AUTHORITY_ADVANCE"), ("status", "REQUEST_STATUS_ADVANCE")):
-            with self.subTest(field=field):
-                def drift(treeish, path, *, target=field):
-                    value = copy.deepcopy(original(treeish, path))
-                    if path.endswith("adobe-ingester.json"):
-                        if target == "authority":
-                            value["authority"]["publication"] = True
-                        else:
-                            value["status"] = "ADOPT"
-                    return value
+            def drift(treeish, path, target=field):
+                value = copy.deepcopy(original(treeish, path))
+                if path.endswith("adobe-ingester.json"):
+                    if target == "authority":
+                        value["authority"]["publication"] = True
+                    else:
+                        value["status"] = "ADOPT"
+                return value
+            with self.subTest(field=field), mock.patch.object(MODULE, "_load_json", side_effect=drift):
+                with self.assertRaisesRegex(MODULE.Phase8Error, error):
+                    MODULE.verify_zero_authority_packets(SNAPSHOT)
 
-                with mock.patch.object(MODULE, "_load_json", side_effect=drift):
-                    with self.assertRaisesRegex(MODULE.Phase8Error, error):
-                        MODULE.verify_zero_authority_packets(HISTORICAL_TREEISH)
+    def test_git_environment_indirection_is_refused(self):
+        for key in ("GIT_OBJECT_DIRECTORY", "GIT_ALTERNATE_OBJECT_DIRECTORIES", "GIT_REPLACE_REF_BASE", "GIT_CONFIG_COUNT"):
+            with self.subTest(key=key), mock.patch.dict(os.environ, {key: "forged"}, clear=False):
+                with self.assertRaisesRegex(MODULE.Phase8Error, "GIT_OBJECT_INDIRECTION_REFUSED"):
+                    MODULE.verify_git_object_isolation()
 
-    def test_predecessor_allowlists_cover_only_the_frozen_integration_surface(self):
-        modules = {
-            "phase2": ("tools/check_phase2_disposition_batch.py", "ALLOWED_PHASE2_PATHS"),
-            "phase3": ("tools/check_phase3_disposition_batch.py", "ALLOWED_PHASE3_PATHS"),
-            "phase5": ("tools/check_phase5_stale_reconciliation.py", "ALLOWED_PHASE5_PATHS"),
-            "phase6": ("tools/check_phase6_candidate_reviews.py", "ALLOWED_PATHS"),
-            "phase7": ("tools/check_phase7_owner_publication_requests.py", "ALLOWED_PHASE7_PATHS"),
-        }
-        for name, (relative, attribute) in modules.items():
-            spec = importlib.util.spec_from_file_location(f"phase8_{name}", ROOT / relative)
-            module = importlib.util.module_from_spec(spec)
-            assert spec.loader is not None
-            spec.loader.exec_module(module)
-            allowed = getattr(module, attribute)
-            self.assertTrue(MODULE.EXPECTED_INTEGRATION_PATHS.issubset(allowed), name)
+    def test_alternate_store_and_replace_refs_are_refused(self):
+        with mock.patch.object(Path, "exists", return_value=True):
+            with self.assertRaisesRegex(MODULE.Phase8Error, "GIT_ALTERNATE_OBJECT_STORE_REFUSED"):
+                MODULE.verify_git_object_isolation()
+        original = MODULE._git
+        def replacement(args, **kwargs):
+            return "0" * 40 + "\n" if args == ["replace", "-l"] else original(args, **kwargs)
+        with mock.patch.object(MODULE, "_git", side_effect=replacement):
+            with self.assertRaisesRegex(MODULE.Phase8Error, "GIT_REPLACE_OBJECT_REFUSED"):
+                MODULE.verify_git_object_isolation()
 
-    def test_workflow_runs_every_phase_and_ledger_corridor(self):
-        workflow = (ROOT / ".github" / "workflows" / "disposition-intake.yml").read_text(encoding="utf-8")
-        expected = [
-            'test_phase2_disposition_batch.py" -v',
-            "check_phase2_disposition_batch.py --treeish 990906b6ea861ca579e1336bcfe8f17dd80c83ae",
-            'test_phase3_disposition_batch.py" -v',
-            "check_phase3_disposition_batch.py --treeish 990906b6ea861ca579e1336bcfe8f17dd80c83ae",
-            'test_phase5_stale_reconciliation.py" -v',
-            "check_phase5_stale_reconciliation.py --treeish 990906b6ea861ca579e1336bcfe8f17dd80c83ae",
-            'test_phase6_candidate_reviews.py" -v',
-            f"check_phase6_candidate_reviews.py --treeish {HISTORICAL_TREEISH}",
-            'test_phase7_owner_publication_requests.py" -v',
-            f"check_phase7_owner_publication_requests.py --treeish {HISTORICAL_TREEISH}",
-            'test_phase8_integration.py" -v',
-            f"check_phase8_integration.py --treeish {HISTORICAL_TREEISH}",
-            'test_adoption_ledger.py" -v',
-            "check_adoption_ledger.py --treeish HEAD",
-        ]
-        for command in expected:
-            self.assertIn(command, workflow)
-
-    def test_request_packet_blobs_are_the_accepted_phase7_objects(self):
-        expected = {
-            path: oid
-            for path, oid in MODULE.PHASE7_EXACT_TARGET_BLOBS.items()
-            if path.startswith(f"{MODULE.REQUEST_DIR}/")
-        }
-        self.assertEqual(len(expected), 4)
-        for path, oid in expected.items():
-            self.assertEqual(MODULE._oid(MODULE.PHASE7_COMMIT, path), oid)
-            self.assertEqual(MODULE._oid(HISTORICAL_TREEISH, path), oid)
+    def test_snapshot_is_the_only_default_subject(self):
+        for treeish in ("HEAD", MODULE.PHASE8_COMMIT, ":"):
+            with self.subTest(treeish=treeish), self.assertRaisesRegex(MODULE.Phase8Error, "RETAINED_SNAPSHOT_REQUIRED"):
+                MODULE.verify_integration(treeish)
 
 
 if __name__ == "__main__":

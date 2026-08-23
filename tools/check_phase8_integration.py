@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 from collections import Counter
 import json
+import os
 from pathlib import Path
 import re
 import subprocess
@@ -28,6 +29,13 @@ PHASE9_COMMIT = "18b95fd82f92920117c8f0f432ae8e9bc5e8ffc8"
 PHASE9_TREE = "fe0ed384bfd9485f4bbc4004225831c6aabe06a4"
 PHASE10_COMMIT = "940c790eedd118736ff0207c1b7dc407d5643802"
 PHASE10_TREE = "9fe8b86a9408917a01e08564454e6c2a47b9952f"
+RETAINED_SNAPSHOT = "e7311e3038bbfeebe15cc10004f40b3795811659"
+RETAINED_SNAPSHOT_TREE = "0d509e980bccdd1f27eecfbde93ec285a6d6ed16"
+UNAVAILABLE_SOURCE_OBJECTS = {
+    "phase7": "c5b9efd00c47a84488b96734dd9b6a94ecd37999",
+    "manifestRepairParent": "ed8a2f359de8830c5800d1721faf183015eec01f",
+    "manifestRepair": "1f3c3d8808b3d9bbb1db201039e0c3d18441f7f0",
+}
 LEDGER_PATH = "adoption/universal-token-control-r26.json"
 LEDGER_BLOB = "333cc6d47e99a857b64150a87bd9f834590256e1"
 GLOBAL_MANIFEST_PATH = "manifests/universal-provider-control-reconciliation-r26.json"
@@ -135,14 +143,45 @@ class Phase8Error(ValueError):
     pass
 
 
+UNSAFE_GIT_ENV = {
+    "GIT_DIR", "GIT_WORK_TREE", "GIT_COMMON_DIR", "GIT_OBJECT_DIRECTORY",
+    "GIT_ALTERNATE_OBJECT_DIRECTORIES", "GIT_REPLACE_REF_BASE", "GIT_INDEX_FILE",
+    "GIT_NAMESPACE",
+}
+
+
+def _clean_git_env() -> dict[str, str]:
+    environment = os.environ.copy()
+    for key in tuple(environment):
+        if key in UNSAFE_GIT_ENV or key.startswith("GIT_CONFIG"):
+            environment.pop(key, None)
+    return environment
+
+
 def _git(args: list[str], *, text: bool = False, error: str = "GIT_OBJECT_UNAVAILABLE") -> bytes | str:
     run = subprocess.run(
-        ["git", *args], cwd=ROOT, check=False, capture_output=True,
+        ["git", "--no-replace-objects", "-c", "core.useReplaceRefs=false", *args],
+        cwd=ROOT, env=_clean_git_env(), check=False, capture_output=True,
         text=text, encoding="utf-8" if text else None,
     )
     if run.returncode != 0:
         raise Phase8Error(error)
     return run.stdout
+
+
+def verify_git_object_isolation() -> None:
+    if any(key in os.environ for key in UNSAFE_GIT_ENV) or any(
+        key.startswith("GIT_CONFIG") for key in os.environ
+    ):
+        raise Phase8Error("GIT_OBJECT_INDIRECTION_REFUSED")
+    common = Path(str(_git(["rev-parse", "--git-common-dir"], text=True)).strip())
+    if not common.is_absolute():
+        common = ROOT / common
+    if (common.resolve() / "objects" / "info" / "alternates").exists():
+        raise Phase8Error("GIT_ALTERNATE_OBJECT_STORE_REFUSED")
+    replacements = str(_git(["replace", "-l"], text=True)).splitlines()
+    if replacements:
+        raise Phase8Error("GIT_REPLACE_OBJECT_REFUSED")
 
 
 def _blob_spec(treeish: str, path: str) -> str:
@@ -241,7 +280,7 @@ def verify_zero_authority_packets(treeish: str) -> None:
 
 
 def verify_frozen_status(treeish: str) -> None:
-    if _oid(PHASE6_COMMIT, LEDGER_PATH) != LEDGER_BLOB or _oid(PHASE7_COMMIT, LEDGER_PATH) != LEDGER_BLOB:
+    if _oid(PHASE6_COMMIT, LEDGER_PATH) != LEDGER_BLOB:
         raise Phase8Error("SOURCE_LEDGER_MISMATCH")
     if _oid(treeish, LEDGER_PATH) != LEDGER_BLOB:
         raise Phase8Error("LEDGER_STATUS_ADVANCE")
@@ -284,66 +323,55 @@ def verify_protected_artifacts(
         raise Phase8Error("GLOBAL_MANIFEST_BASELINE_DRIFT")
 
 
-def verify_integration(treeish: str) -> None:
-    verify_source_objects()
-    verify_protected_artifacts(PHASE8_COMMIT)
-    verify_frozen_status(PHASE8_COMMIT)
-    verify_zero_authority_packets(PHASE8_COMMIT)
-    if treeish == PHASE8_COMMIT:
-        return
+def verify_retained_snapshot(treeish: str) -> None:
+    verify_git_object_isolation()
+    if treeish != RETAINED_SNAPSHOT:
+        raise Phase8Error("RETAINED_SNAPSHOT_REQUIRED")
+    if _commit_tuple(PHASE6_COMMIT) != (PHASE6_TREE, [PHASE6_PARENT]):
+        raise Phase8Error("PHASE6_SUBJECT_MISMATCH")
+    if _commit_tuple(PHASE8_COMMIT) != (PHASE8_TREE, [PHASE6_COMMIT]):
+        raise Phase8Error("PHASE8_SUBJECT_MISMATCH")
     if _commit_tuple(PHASE9_COMMIT) != (PHASE9_TREE, [PHASE8_COMMIT]):
         raise Phase8Error("PHASE9_SOURCE_MISMATCH")
-    if _changed_paths(PHASE8_COMMIT, PHASE9_COMMIT) != PHASE9_FORWARD_PATHS:
-        raise Phase8Error("PHASE9_SOURCE_SCOPE_MISMATCH")
-    resolved = None if treeish == ":" else str(
-        _git(["rev-parse", f"{treeish}^{{commit}}"], text=True, error="COMMIT_UNAVAILABLE")
-    ).strip()
-    if resolved == PHASE9_COMMIT:
-        if _commit_tuple(treeish) != (PHASE9_TREE, [PHASE8_COMMIT]):
-            raise Phase8Error("INTEGRATION_PARENT_MISMATCH")
-        if _changed_paths(PHASE8_COMMIT, treeish) != PHASE9_FORWARD_PATHS:
-            raise Phase8Error("INTEGRATION_SCOPE_MISMATCH")
-        verify_protected_artifacts(treeish, repaired_manifest=True)
-        verify_frozen_status(treeish)
-        verify_zero_authority_packets(treeish)
-        return
     if _commit_tuple(PHASE10_COMMIT) != (PHASE10_TREE, [PHASE9_COMMIT]):
         raise Phase8Error("PHASE10_SOURCE_MISMATCH")
+    if _commit_tuple(RETAINED_SNAPSHOT) != (RETAINED_SNAPSHOT_TREE, [PHASE10_COMMIT]):
+        raise Phase8Error("RETAINED_SNAPSHOT_TUPLE_MISMATCH")
+    if _changed_paths(PHASE6_COMMIT, PHASE8_COMMIT) != EXPECTED_INTEGRATION_PATHS:
+        raise Phase8Error("INTEGRATION_SCOPE_MISMATCH")
+    if _changed_paths(PHASE8_COMMIT, PHASE9_COMMIT) != PHASE9_FORWARD_PATHS:
+        raise Phase8Error("PHASE9_SOURCE_SCOPE_MISMATCH")
     if _changed_paths(PHASE9_COMMIT, PHASE10_COMMIT) != PHASE10_FORWARD_PATHS:
         raise Phase8Error("PHASE10_SOURCE_SCOPE_MISMATCH")
-    if resolved == PHASE10_COMMIT:
-        if _commit_tuple(treeish) != (PHASE10_TREE, [PHASE9_COMMIT]):
-            raise Phase8Error("INTEGRATION_PARENT_MISMATCH")
-        if _changed_paths(PHASE9_COMMIT, treeish) != PHASE10_FORWARD_PATHS:
-            raise Phase8Error("INTEGRATION_SCOPE_MISMATCH")
-        verify_protected_artifacts(treeish, repaired_manifest=True, phase10_forward=True)
-        verify_frozen_status(treeish)
-        verify_zero_authority_packets(treeish)
-        return
-    if treeish == ":":
-        if str(_git(["rev-parse", "HEAD"], text=True, error="HEAD_UNAVAILABLE")).strip() != PHASE10_COMMIT:
-            raise Phase8Error("STAGED_BASE_MISMATCH")
-    elif _commit_tuple(treeish)[1] != [PHASE10_COMMIT]:
-        raise Phase8Error("INTEGRATION_PARENT_MISMATCH")
-    if _changed_paths(PHASE10_COMMIT, treeish) != PHASE11_FORWARD_PATHS:
-        raise Phase8Error("INTEGRATION_SCOPE_MISMATCH")
+    if _changed_paths(PHASE10_COMMIT, RETAINED_SNAPSHOT) != PHASE11_FORWARD_PATHS:
+        raise Phase8Error("PHASE11_SOURCE_SCOPE_MISMATCH")
     verify_protected_artifacts(treeish, repaired_manifest=True, phase10_forward=True)
     verify_frozen_status(treeish)
     verify_zero_authority_packets(treeish)
 
 
+def verify_integration(treeish: str, *, rederive_source_objects: bool = False) -> None:
+    verify_retained_snapshot(treeish)
+    if rederive_source_objects:
+        try:
+            verify_source_objects()
+        except Phase8Error as exc:
+            raise Phase8Error("SOURCE_OBJECTS_UNAVAILABLE_NOT_REVERIFIED") from exc
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--treeish", default="HEAD")
+    parser.add_argument("--rederive-source-objects", action="store_true")
     args = parser.parse_args()
     try:
-        verify_integration(args.treeish)
+        verify_integration(args.treeish, rederive_source_objects=args.rederive_source_objects)
     except Phase8Error as exc:
         print(f"FAIL: {exc}", file=sys.stderr)
         return 1
     print(
-        "PASS: the accepted Phase 8 and Phase 9 objects are exact; the bounded Phase 10 "
-        "descendant preserves requests, ledger, specs, status, and zero authority"
+        "PASS RETAINED-SNAPSHOT: Phase8 retained bytes, packets, receipts, ledger, manifest, "
+        "and authority are exact; SOURCE OBJECTS NOT REVERIFIED"
     )
     return 0
 

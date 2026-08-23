@@ -1,12 +1,14 @@
 # R26 accepted-evidence integration — Phase 8
 
-Phase 8 is a forward-only integration candidate. Its sole parent is the independently accepted
-Phase 6 tip `8d97c399692e678eb4c975127c8ae1189d8dcb20` (tree
-`e62e063b6a55084431dd8f485f59b74c0b897be5`). It mechanically replays the exact delta from the
-independently accepted Phase 7 commit `c5b9efd00c47a84488b96734dd9b6a94ecd37999` (tree
-`2d9f5d82bf1a8acbef5839ac6fcaecc1caf53023`) and resolves only their overlapping workflow and
-predecessor-scope allowlists. It does not merge either branch and does not change the frozen ledger,
-any project specification, any disposition, or any authority state.
+Phase 8 is retained point-in-time evidence. Canonical history still contains the integrated Phase 8
+publication `2223647059cb789fd350883597756666357583df` and its later bounded publications through
+`e7311e3038bbfeebe15cc10004f40b3795811659`. The originally declared Phase 7 source
+`c5b9efd00c47a84488b96734dd9b6a94ecd37999` and the manifest-repair source objects
+`ed8a2f359de8830c5800d1721faf183015eec01f` / `1f3c3d8808b3d9bbb1db201039e0c3d18441f7f0`
+are `UNAVAILABLE_NOT_REVERIFIED` in the retained canonical object store. Default verification
+therefore exact-binds the reachable retained commits, diffs, packets, receipts, ledger, manifest,
+specifications, and zero-authority semantics; it does not claim to rederive the unavailable source
+objects.
 
 The four Phase 7 request packets remain byte-exact Git objects:
 
@@ -24,17 +26,17 @@ Run the complete local evidence corridor with:
 
 ```console
 python -m unittest discover -s tests -p "test_phase2_disposition_batch.py" -v
-python tools/check_phase2_disposition_batch.py --treeish HEAD
+python tools/check_phase2_disposition_batch.py --treeish 990906b6ea861ca579e1336bcfe8f17dd80c83ae --scope-event workflow_dispatch
 python -m unittest discover -s tests -p "test_phase3_disposition_batch.py" -v
-python tools/check_phase3_disposition_batch.py --treeish HEAD
+python tools/check_phase3_disposition_batch.py --treeish 990906b6ea861ca579e1336bcfe8f17dd80c83ae --scope-event workflow_dispatch
 python -m unittest discover -s tests -p "test_phase5_stale_reconciliation.py" -v
-python tools/check_phase5_stale_reconciliation.py --treeish HEAD
+python tools/check_phase5_stale_reconciliation.py --treeish 990906b6ea861ca579e1336bcfe8f17dd80c83ae --scope-event workflow_dispatch
 python -m unittest discover -s tests -p "test_phase6_candidate_reviews.py" -v
 python tools/check_phase6_candidate_reviews.py --treeish HEAD
 python -m unittest discover -s tests -p "test_phase7_owner_publication_requests.py" -v
 python tools/check_phase7_owner_publication_requests.py --treeish HEAD
 python -m unittest discover -s tests -p "test_phase8_integration.py" -v
-python tools/check_phase8_integration.py --treeish HEAD
+python tools/check_phase8_integration.py --treeish e7311e3038bbfeebe15cc10004f40b3795811659
 python -m unittest discover -s tests -p "test_adoption_ledger.py" -v
 python tools/check_adoption_ledger.py --treeish HEAD
 ```
@@ -51,3 +53,11 @@ Local checks do not verify current remote refs. The candidate is author-conflict
 independent reviewer accepts its exact commit/tree and artifacts. It carries no push, merge,
 publication, message, provider, runtime, scheduler, task, gate-transition, installation,
 disposition, or adoption authority.
+
+Source-object rederivation is an explicit diagnostic and must fail nonzero while the declared
+objects remain absent:
+
+```console
+python tools/check_phase8_integration.py --treeish e7311e3038bbfeebe15cc10004f40b3795811659 --rederive-source-objects
+python tools/check_phase9_integration.py --treeish e7311e3038bbfeebe15cc10004f40b3795811659 --rederive-source-objects
+```

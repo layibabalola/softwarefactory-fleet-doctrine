@@ -307,7 +307,7 @@ def verify_workflow(treeish: str) -> None:
         raise Phase11Error("WORKFLOW_PHASE11_MISSING")
 
 
-def verify_integration(treeish: str) -> None:
+def verify_integration(treeish: str, *, verify_local_projects: bool = False) -> None:
     verify_phase10_source()
     if treeish == ":":
         head = str(_git(["rev-parse", "HEAD"], text=True, error="HEAD_UNAVAILABLE")).strip()
@@ -325,27 +325,29 @@ def verify_integration(treeish: str) -> None:
     # The Phase 10 publication state is point-in-time receipt evidence.  Later
     # phases rederive the immutable commit/tree/parent/artifact objects without
     # requiring that the reviewed branch remain unpublished forever.
-    P10.verify_local_subjects(
-        copy.deepcopy(batch), rederive_mutable_worktree_state=False
-    )
+    if verify_local_projects:
+        P10.verify_local_subjects(
+            copy.deepcopy(batch), rederive_mutable_worktree_state=False
+        )
     verify_closure_artifact(treeish)
     verify_frozen_doctrine(treeish)
     verify_forward_allowlists(treeish)
     verify_workflow(treeish)
 
 
-def main() -> int:
+def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--treeish", default="HEAD")
-    args = parser.parse_args()
+    parser.add_argument("--verify-local-projects", action="store_true")
+    args = parser.parse_args(argv)
     try:
-        verify_integration(args.treeish)
+        verify_integration(args.treeish, verify_local_projects=args.verify_local_projects)
     except (Phase11Error, P10.Phase10Error) as exc:
         print(f"FAIL: {exc}", file=sys.stderr)
         return 1
     print(
-        "PASS: Phase 11 closes the frozen Phase10 receipt recursively over exact keys, native "
-        "types, ordered sets, and values; all dispositions, specs, and authority remain frozen"
+        "PASS SNAPSHOT-ONLY: Phase11 closes the frozen Phase10 receipt over exact bytes, keys, "
+        "native types, order, values, and authority; LOCAL SUBJECTS NOT REDERIVED"
     )
     return 0
 

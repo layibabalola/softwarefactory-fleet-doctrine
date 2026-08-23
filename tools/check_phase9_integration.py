@@ -7,6 +7,7 @@ import argparse
 import ast
 from collections import Counter
 import json
+import os
 from pathlib import Path
 import re
 import subprocess
@@ -28,10 +29,16 @@ PHASE9_TREE = "fe0ed384bfd9485f4bbc4004225831c6aabe06a4"
 PHASE10_COMMIT = "940c790eedd118736ff0207c1b7dc407d5643802"
 PHASE10_TREE = "9fe8b86a9408917a01e08564454e6c2a47b9952f"
 PHASE11_COMMIT = "e7311e3038bbfeebe15cc10004f40b3795811659"
+PHASE11_TREE = "0d509e980bccdd1f27eecfbde93ec285a6d6ed16"
 REPAIR_PARENT = "ed8a2f359de8830c5800d1721faf183015eec01f"
 REPAIR_PARENT_TREE = "7592c9e600342724a799d73eb636cf3afd34629a"
 REPAIR_COMMIT = "1f3c3d8808b3d9bbb1db201039e0c3d18441f7f0"
 REPAIR_TREE = "e5686f805dce19a724a94a0e76b9f0ad0f27fe23"
+UNAVAILABLE_SOURCE_OBJECTS = {
+    "phase7": "c5b9efd00c47a84488b96734dd9b6a94ecd37999",
+    "manifestRepairParent": REPAIR_PARENT,
+    "manifestRepair": REPAIR_COMMIT,
+}
 
 LEDGER_PATH = "adoption/universal-token-control-r26.json"
 LEDGER_BLOB = "333cc6d47e99a857b64150a87bd9f834590256e1"
@@ -156,14 +163,44 @@ class Phase9Error(ValueError):
     pass
 
 
+UNSAFE_GIT_ENV = {
+    "GIT_DIR", "GIT_WORK_TREE", "GIT_COMMON_DIR", "GIT_OBJECT_DIRECTORY",
+    "GIT_ALTERNATE_OBJECT_DIRECTORIES", "GIT_REPLACE_REF_BASE", "GIT_INDEX_FILE",
+    "GIT_NAMESPACE",
+}
+
+
+def _clean_git_env() -> dict[str, str]:
+    environment = os.environ.copy()
+    for key in tuple(environment):
+        if key in UNSAFE_GIT_ENV or key.startswith("GIT_CONFIG"):
+            environment.pop(key, None)
+    return environment
+
+
 def _git(args: list[str], *, text: bool = False, error: str = "GIT_OBJECT_UNAVAILABLE") -> bytes | str:
     run = subprocess.run(
-        ["git", *args], cwd=ROOT, check=False, capture_output=True,
+        ["git", "--no-replace-objects", "-c", "core.useReplaceRefs=false", *args],
+        cwd=ROOT, env=_clean_git_env(), check=False, capture_output=True,
         text=text, encoding="utf-8" if text else None,
     )
     if run.returncode != 0:
         raise Phase9Error(error)
     return run.stdout
+
+
+def verify_git_object_isolation() -> None:
+    if any(key in os.environ for key in UNSAFE_GIT_ENV) or any(
+        key.startswith("GIT_CONFIG") for key in os.environ
+    ):
+        raise Phase9Error("GIT_OBJECT_INDIRECTION_REFUSED")
+    common = Path(str(_git(["rev-parse", "--git-common-dir"], text=True)).strip())
+    if not common.is_absolute():
+        common = ROOT / common
+    if (common.resolve() / "objects" / "info" / "alternates").exists():
+        raise Phase9Error("GIT_ALTERNATE_OBJECT_STORE_REFUSED")
+    if str(_git(["replace", "-l"], text=True)).splitlines():
+        raise Phase9Error("GIT_REPLACE_OBJECT_REFUSED")
 
 
 def _blob_spec(treeish: str, path: str) -> str:
@@ -408,69 +445,52 @@ def verify_global_manifest(treeish: str) -> None:
         raise Phase9Error("GLOBAL_MANIFEST_RESULT_MISMATCH")
 
 
-def verify_integration(treeish: str) -> None:
-    verify_source_objects()
+def verify_retained_snapshot(treeish: str) -> None:
+    verify_git_object_isolation()
+    if treeish != PHASE11_COMMIT:
+        raise Phase9Error("RETAINED_SNAPSHOT_REQUIRED")
+    if _commit_tuple(PHASE8_COMMIT) != (PHASE8_TREE, [PHASE6_COMMIT]):
+        raise Phase9Error("PHASE8_SOURCE_MISMATCH")
     if _commit_tuple(PHASE9_COMMIT) != (PHASE9_TREE, [PHASE8_COMMIT]):
         raise Phase9Error("PHASE9_SOURCE_MISMATCH")
-    if _changed_paths(PHASE8_COMMIT, PHASE9_COMMIT) != EXPECTED_INTEGRATION_PATHS:
-        raise Phase9Error("PHASE9_SOURCE_SCOPE_MISMATCH")
-    resolved = None if treeish == ":" else str(
-        _git(["rev-parse", f"{treeish}^{{commit}}"], text=True, error="COMMIT_UNAVAILABLE")
-    ).strip()
-    if resolved == PHASE9_COMMIT:
-        if _commit_tuple(treeish) != (PHASE9_TREE, [PHASE8_COMMIT]):
-            raise Phase9Error("INTEGRATION_PARENT_MISMATCH")
-        if _changed_paths(PHASE8_COMMIT, treeish) != EXPECTED_INTEGRATION_PATHS:
-            raise Phase9Error("INTEGRATION_SCOPE_MISMATCH")
-        verify_exact_artifacts(treeish)
-        verify_allowlist_union(treeish)
-        verify_frozen_status_and_authority(treeish)
-        verify_global_manifest(treeish)
-        return
     if _commit_tuple(PHASE10_COMMIT) != (PHASE10_TREE, [PHASE9_COMMIT]):
         raise Phase9Error("PHASE10_SOURCE_MISMATCH")
+    if _commit_tuple(PHASE11_COMMIT) != (PHASE11_TREE, [PHASE10_COMMIT]):
+        raise Phase9Error("RETAINED_SNAPSHOT_TUPLE_MISMATCH")
+    if _changed_paths(PHASE8_COMMIT, PHASE9_COMMIT) != EXPECTED_INTEGRATION_PATHS:
+        raise Phase9Error("PHASE9_SOURCE_SCOPE_MISMATCH")
     if _changed_paths(PHASE9_COMMIT, PHASE10_COMMIT) != PHASE10_FORWARD_PATHS:
         raise Phase9Error("PHASE10_SOURCE_SCOPE_MISMATCH")
-    if resolved == PHASE10_COMMIT:
-        if _commit_tuple(treeish) != (PHASE10_TREE, [PHASE9_COMMIT]):
-            raise Phase9Error("INTEGRATION_PARENT_MISMATCH")
-        if _changed_paths(PHASE8_COMMIT, treeish) != EXPECTED_INTEGRATION_PATHS | PHASE10_FORWARD_PATHS:
-            raise Phase9Error("INTEGRATION_SCOPE_MISMATCH")
-        if _changed_paths(PHASE9_COMMIT, treeish) != PHASE10_FORWARD_PATHS:
-            raise Phase9Error("INTEGRATION_SCOPE_MISMATCH")
-        verify_exact_artifacts(treeish, phase10_forward=True)
-        verify_allowlist_union(treeish, phase10_forward=True)
-        verify_frozen_status_and_authority(treeish)
-        verify_global_manifest(treeish)
-        return
-    if treeish == ":":
-        head = str(_git(["rev-parse", "HEAD"], text=True, error="HEAD_UNAVAILABLE")).strip()
-        if head != PHASE10_COMMIT:
-            raise Phase9Error("STAGED_BASE_MISMATCH")
-    elif _commit_tuple(treeish)[1] != [PHASE10_COMMIT]:
-        raise Phase9Error("INTEGRATION_PARENT_MISMATCH")
-    if _changed_paths(PHASE8_COMMIT, treeish) != EXPECTED_INTEGRATION_PATHS | PHASE10_FORWARD_PATHS | PHASE11_FORWARD_PATHS:
-        raise Phase9Error("INTEGRATION_SCOPE_MISMATCH")
-    if _changed_paths(PHASE10_COMMIT, treeish) != PHASE11_FORWARD_PATHS:
-        raise Phase9Error("INTEGRATION_SCOPE_MISMATCH")
+    if _changed_paths(PHASE10_COMMIT, PHASE11_COMMIT) != PHASE11_FORWARD_PATHS:
+        raise Phase9Error("PHASE11_SOURCE_SCOPE_MISMATCH")
     verify_exact_artifacts(treeish, phase10_forward=True)
     verify_allowlist_union(treeish, phase11_forward=True)
     verify_frozen_status_and_authority(treeish)
     verify_global_manifest(treeish)
 
 
+def verify_integration(treeish: str, *, rederive_source_objects: bool = False) -> None:
+    verify_retained_snapshot(treeish)
+    if rederive_source_objects:
+        try:
+            verify_source_objects()
+        except Phase9Error as exc:
+            raise Phase9Error("SOURCE_OBJECTS_UNAVAILABLE_NOT_REVERIFIED") from exc
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--treeish", default="HEAD")
+    parser.add_argument("--rederive-source-objects", action="store_true")
     args = parser.parse_args()
     try:
-        verify_integration(args.treeish)
+        verify_integration(args.treeish, rederive_source_objects=args.rederive_source_objects)
     except Phase9Error as exc:
         print(f"FAIL: {exc}", file=sys.stderr)
         return 1
     print(
-        "PASS: the accepted Phase 9 manifest repair is exact and is the sole Phase 10 parent; "
-        "receipt/request artifacts, ledger/spec statuses, and all authority remain frozen"
+        "PASS RETAINED-SNAPSHOT: Phase9 retained manifest, receipt/request bytes, ledger/spec "
+        "status, and authority are exact; SOURCE OBJECTS NOT REVERIFIED"
     )
     return 0
 

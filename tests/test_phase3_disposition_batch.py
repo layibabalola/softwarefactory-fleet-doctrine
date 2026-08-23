@@ -585,7 +585,7 @@ class Phase3DispositionBatchTests(unittest.TestCase):
         ):
             output = io.StringIO()
             with redirect_stdout(output):
-                self.assertEqual(0, MODULE.main(["--scope-event", "workflow_dispatch"]))
+                self.assertEqual(0, MODULE.main(["--treeish", MODULE.FROZEN_PUBLICATION, "--scope-event", "workflow_dispatch"]))
             self.assertIn("PASS LOCAL-ONLY", output.getvalue())
             self.assertIn("REMOTES NOT VERIFIED", output.getvalue())
             remote_verifier.assert_not_called()
@@ -594,7 +594,7 @@ class Phase3DispositionBatchTests(unittest.TestCase):
             with redirect_stdout(output):
                 self.assertEqual(
                     0,
-                    MODULE.main(["--scope-event", "workflow_dispatch", "--verify-remotes"]),
+                    MODULE.main(["--treeish", MODULE.FROZEN_PUBLICATION, "--scope-event", "workflow_dispatch", "--verify-remotes"]),
                 )
             self.assertIn("REMOTES VERIFIED", output.getvalue())
             self.assertNotIn("REMOTES NOT VERIFIED", output.getvalue())
@@ -605,9 +605,10 @@ class Phase3DispositionBatchTests(unittest.TestCase):
             encoding="utf-8"
         )
         self.assertIn(
-            "python tools/check_phase3_disposition_batch.py --treeish HEAD --verify-remotes",
+            f"python tools/check_phase3_disposition_batch.py --treeish {MODULE.FROZEN_PUBLICATION}",
             workflow,
         )
+        self.assertIn("'--verify-remotes'", workflow)
         self.assertIn(
             'python -m unittest discover -s tests -p "test_adversarialllm_utilization_shadow_doctrine.py" -v',
             workflow,
@@ -617,12 +618,12 @@ class Phase3DispositionBatchTests(unittest.TestCase):
             workflow,
         )
         self.assertEqual(
-            1,
+            2,
             workflow.count(
                 "R26_REMOTE_GITHUB_TOKEN: ${{ secrets.R26_CROSS_REPO_READ_TOKEN }}"
             ),
         )
-        self.assertIn("if: env.R26_REMOTE_AUTH_CONFIGURED == 'true'", workflow)
+        self.assertIn("env.R26_REMOTE_AUTH_CONFIGURED == 'true'", workflow)
         self.assertIn("if: env.R26_REMOTE_AUTH_CONFIGURED != 'true'", workflow)
         self.assertIn("REMOTES NOT VERIFIED - R26_CROSS_REPO_READ_TOKEN is not configured", workflow)
         self.assertIn("R26_SCOPE_EVENT: ${{ github.event_name }}", workflow)
@@ -640,9 +641,10 @@ class Phase3DispositionBatchTests(unittest.TestCase):
     def test_phase3_event_allowlist_is_spec_free_and_distinct_from_history(self):
         self.assertFalse(any(path.startswith("specs/") for path in MODULE.EVENT_ALLOWED_PHASE3_PATHS))
         self.assertNotEqual(MODULE.ALLOWED_PHASE3_PATHS, MODULE.EVENT_ALLOWED_PHASE3_PATHS)
-        self.assertEqual(10, len(MODULE.COMMON_PHASE_TRIGGER_PATHS))
-        self.assertEqual(2, len(MODULE.AUXILIARY_EVENT_ALLOWED_PATHS))
-        self.assertTrue(MODULE.AUXILIARY_EVENT_ALLOWED_PATHS.isdisjoint(MODULE.PHASE3_TRIGGER_PATHS))
+        self.assertEqual(20, len(MODULE.COMMON_PHASE_TRIGGER_PATHS))
+        self.assertEqual(set(), MODULE.AUXILIARY_EVENT_ALLOWED_PATHS)
+        self.assertEqual(MODULE.BOOTSTRAP_CONTROL_PATHS, MODULE.PHASE3_TRIGGER_PATHS)
+        self.assertEqual(MODULE.BOOTSTRAP_CONTROL_PATHS, MODULE.EVENT_ALLOWED_PHASE3_PATHS)
 
     def test_phase3_unrelated_r29_provider_delta_is_explicit_na(self):
         changed = {
@@ -663,7 +665,7 @@ class Phase3DispositionBatchTests(unittest.TestCase):
             ),
             "APPLICABLE",
         )
-        self.assertEqual(self._event_scope({MODULE.INTAKE_PATH, MODULE.LEDGER_PATH}), "APPLICABLE")
+        self.assertEqual(self._event_scope({MODULE.INTAKE_PATH, MODULE.LEDGER_PATH}), "N/A_NO_PHASE3_TRIGGER")
 
     def test_phase3_rejects_every_formerly_allowed_spec_when_mixed(self):
         former_specs = {
@@ -673,7 +675,7 @@ class Phase3DispositionBatchTests(unittest.TestCase):
         for path in sorted(former_specs):
             with self.subTest(path=path):
                 with self.assertRaisesRegex(MODULE.Phase3Error, "PHASE3_SCOPE_VIOLATION"):
-                    self._event_scope({MODULE.INTAKE_PATH, path})
+                    self._event_scope({"tools/check_phase3_disposition_batch.py", path})
 
     def test_phase3_control_deletion_or_change_cannot_hide_foreign_mutation(self):
         for control in (
@@ -685,11 +687,12 @@ class Phase3DispositionBatchTests(unittest.TestCase):
                 with self.assertRaisesRegex(MODULE.Phase3Error, "PHASE3_SCOPE_VIOLATION"):
                     self._event_scope({control, "src/runtime.py"})
 
-    def test_phase3_auxiliary_manifest_controls_are_na_unless_phase_triggered(self):
-        controls = set(MODULE.AUXILIARY_EVENT_ALLOWED_PATHS)
+    def test_phase3_carrier_controls_are_na_and_mixing_is_refused(self):
+        controls = {"tools/check_universal_manifest.py", "tests/test_universal_provider_control.py"}
         trigger = {".github/workflows/disposition-intake.yml"}
         self.assertEqual(self._event_scope(controls), "N/A_NO_PHASE3_TRIGGER")
-        self.assertEqual(self._event_scope(trigger | controls), "APPLICABLE")
+        with self.assertRaisesRegex(MODULE.Phase3Error, "PHASE3_SCOPE_VIOLATION"):
+            self._event_scope(trigger | controls)
         for foreign in ("tools/universal_provider_control.py", "specs/cloudvore.md"):
             with self.subTest(foreign=foreign):
                 with self.assertRaisesRegex(MODULE.Phase3Error, "PHASE3_SCOPE_VIOLATION"):
@@ -731,9 +734,17 @@ class Phase3DispositionBatchTests(unittest.TestCase):
         ):
             stderr = io.StringIO()
             with redirect_stderr(stderr):
-                self.assertEqual(1, MODULE.main(["--scope-event", "workflow_dispatch"]))
+                self.assertEqual(1, MODULE.main(["--treeish", MODULE.FROZEN_PUBLICATION, "--scope-event", "workflow_dispatch"]))
         scope.assert_not_called()
         self.assertIn("FROZEN_FAIL", stderr.getvalue())
+
+    def test_phase3_historical_treeish_cannot_redirect_event_target(self):
+        with mock.patch.object(MODULE, "_git", return_value="tools/check_phase3_disposition_batch.py\n") as git:
+            self.assertEqual(
+                {"tools/check_phase3_disposition_batch.py"},
+                MODULE._event_changed_paths("a" * 40, MODULE.FROZEN_PUBLICATION),
+            )
+        self.assertIn("a" * 40 + "..HEAD", git.call_args.args[0])
 
 
 if __name__ == "__main__":

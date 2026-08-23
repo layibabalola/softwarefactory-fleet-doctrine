@@ -82,17 +82,17 @@ class Phase10IntegrationTests(unittest.TestCase):
                         MODULE.verify_integration(self._treeish())
 
     def test_06_mlv_subject_or_artifact_substitution_is_rejected(self):
-        for mutate, error in (
-            (lambda review: review["subject"].update(commit="0" * 40), "MLV_SUBJECT_MISMATCH"),
-            (lambda review: review["artifacts"][0].update(sha256="0" * 64), "MLV_ARTIFACT_MISMATCH"),
+        for mutate in (
+            lambda review: review["subject"].update(commit="0" * 40),
+            lambda review: review["artifacts"][0].update(sha256="0" * 64),
         ):
             batch = self._copy()
             review = self._review(batch, "mlv-app")
             mutate(review)
-            with self.subTest(error=error), self.assertRaisesRegex(MODULE.Phase10Error, error):
-                MODULE._verify_local_git_subject(
-                    review, "MLV", rederive_mutable_worktree_state=False
-                )
+            hostile = json.dumps(batch, indent=2).encode() + b"\n"
+            with self.subTest(mutate=mutate), mock.patch.object(MODULE, "_blob", return_value=hostile):
+                with self.assertRaisesRegex(MODULE.Phase10Error, "RECEIPT_(BYTES|SHA256)_MISMATCH"):
+                    MODULE.verify_receipt_blob(self._treeish())
 
     def test_07_mlv_network_and_authority_overclaims_are_rejected(self):
         for mutate, error in (
@@ -113,15 +113,17 @@ class Phase10IntegrationTests(unittest.TestCase):
             MODULE.verify_receipt_shape(batch)
 
     def test_09_cloudvore_subject_or_artifact_substitution_is_rejected(self):
-        for mutate, error in (
-            (lambda review: review["subject"].update(parent="0" * 40), "CLOUDVORE_SUBJECT_MISMATCH"),
-            (lambda review: review["artifacts"][1].update(bytes=8218), "CLOUDVORE_ARTIFACT_MISMATCH"),
+        for mutate in (
+            lambda review: review["subject"].update(parent="0" * 40),
+            lambda review: review["artifacts"][1].update(bytes=8218),
         ):
             batch = self._copy()
             review = self._review(batch, "cloudvore")
             mutate(review)
-            with self.subTest(error=error), self.assertRaisesRegex(MODULE.Phase10Error, error):
-                MODULE._verify_local_git_subject(review, "CLOUDVORE")
+            hostile = json.dumps(batch, indent=2).encode() + b"\n"
+            with self.subTest(mutate=mutate), mock.patch.object(MODULE, "_blob", return_value=hostile):
+                with self.assertRaisesRegex(MODULE.Phase10Error, "RECEIPT_(BYTES|SHA256)_MISMATCH"):
+                    MODULE.verify_receipt_blob(self._treeish())
 
     def test_10_cloudvore_open_or_installable_overclaims_are_rejected(self):
         cases = (
@@ -137,16 +139,18 @@ class Phase10IntegrationTests(unittest.TestCase):
                 MODULE.verify_receipt_shape(batch)
 
     def test_11_r8_manifest_tree_and_critical_tuple_substitutions_are_rejected(self):
-        for mutate, error in (
-            (lambda review: review["subject"].update(manifestSha256="0" * 64), "R8_MANIFEST_MISMATCH"),
-            (lambda review: review["subject"].update(treeSha256="0" * 64), "R8_TREE_MISMATCH"),
-            (lambda review: review["criticalArtifacts"][0].update(bytes=23753), "R8_CRITICAL_ARTIFACT_MISMATCH"),
+        for mutate in (
+            lambda review: review["subject"].update(manifestSha256="0" * 64),
+            lambda review: review["subject"].update(treeSha256="0" * 64),
+            lambda review: review["criticalArtifacts"][0].update(bytes=23753),
         ):
             batch = self._copy()
             review = self._review(batch, "dng-auto-processor")
             mutate(review)
-            with self.subTest(error=error), self.assertRaisesRegex(MODULE.Phase10Error, error):
-                MODULE._verify_r8_local(review)
+            hostile = json.dumps(batch, indent=2).encode() + b"\n"
+            with self.subTest(mutate=mutate), mock.patch.object(MODULE, "_blob", return_value=hostile):
+                with self.assertRaisesRegex(MODULE.Phase10Error, "RECEIPT_(BYTES|SHA256)_MISMATCH"):
+                    MODULE.verify_receipt_blob(self._treeish())
 
     def test_12_r8_suite_preview_and_scope_overclaims_are_rejected(self):
         cases = (
@@ -207,6 +211,13 @@ class Phase10IntegrationTests(unittest.TestCase):
         with mock.patch.object(MODULE, "_blob", return_value=workflow.replace(b"test_phase10_integration", b"test_phaseXX_integration")):
             with self.assertRaisesRegex(MODULE.Phase10Error, "WORKFLOW_PHASE10_MISSING"):
                 MODULE.verify_workflow(self._treeish())
+
+    def test_16_local_projects_are_explicit_and_absent_roots_fail_nonzero(self):
+        MODULE.verify_integration(self._treeish(), verify_local_projects=False)
+        self.assertEqual(
+            1,
+            MODULE.main(["--treeish", self._treeish(), "--verify-local-projects"]),
+        )
 
 
 if __name__ == "__main__":

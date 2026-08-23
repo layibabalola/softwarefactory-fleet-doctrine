@@ -30,6 +30,7 @@ PHASE2_BLOB_OID = "6e3fe9d429dfd578c43d8ebaf371074a45b662b1"
 PHASE2_BLOB_SHA256 = "792656b33f3234ada7f13d18ec6cf6ed1349a7f5cc1a03713d58eed126bb346d"
 R26_CANDIDATE = "e70a044f31dd2f43ab7c716d63a4eb89318c61b6"
 R26_MERGE = "909f769d02e8412e51e28e242cfa8d00dadc9a3d"
+FROZEN_PUBLICATION = "990906b6ea861ca579e1336bcfe8f17dd80c83ae"
 PROJECT_IDS = {"adobe-ingester", "agent-bridge", "airmypc", "conjugal"}
 EXPECTED_LEDGER_ROW_SHA256 = {
     "adobe-ingester": "6e7fa27a699d771c59159f1a9dd325889fb50fcfeaa6578635a05c300bfabf30",
@@ -129,26 +130,32 @@ ALLOWED_PHASE5_PATHS = {
     "tools/check_phase7_owner_publication_requests.py",
     "tools/check_phase8_integration.py",
 } | MANIFEST_BINDING_REPAIR_PATHS | PHASE9_INTEGRATION_PATHS | PHASE10_INTEGRATION_PATHS | PHASE11_INTEGRATION_PATHS
-COMMON_PHASE_TRIGGER_PATHS = {
+BOOTSTRAP_CONTROL_PATHS = {
     ".github/workflows/disposition-intake.yml",
-    "adoption/phase2/README.md",
-    "adoption/phase3/README.md",
-    "adoption/phase5/README.md",
+    "adoption/phase8/README.md",
     "tests/test_phase2_disposition_batch.py",
     "tests/test_phase3_disposition_batch.py",
     "tests/test_phase5_stale_reconciliation.py",
+    "tests/test_phase8_integration.py",
+    "tests/test_phase9_integration.py",
+    "tests/test_phase10_integration.py",
+    "tests/test_phase11_integration.py",
+    "tests/test_phase12_integration.py",
+    "tests/test_phase16_integration.py",
+    "tests/test_phase12_phase16_descendant_scope.py",
     "tools/check_phase2_disposition_batch.py",
     "tools/check_phase3_disposition_batch.py",
     "tools/check_phase5_stale_reconciliation.py",
+    "tools/check_phase8_integration.py",
+    "tools/check_phase9_integration.py",
+    "tools/check_phase10_integration.py",
+    "tools/check_phase11_integration.py",
+    "tools/check_phase12_phase16_descendant_scope.py",
 }
-AUXILIARY_EVENT_ALLOWED_PATHS = {
-    "tests/test_universal_provider_control.py",
-    "tools/check_universal_manifest.py",
-}
-EVENT_ALLOWED_PHASE5_PATHS = (
-    COMMON_PHASE_TRIGGER_PATHS | AUXILIARY_EVENT_ALLOWED_PATHS | {INTAKE_PATH}
-)
-PHASE5_TRIGGER_PATHS = COMMON_PHASE_TRIGGER_PATHS | {INTAKE_PATH}
+COMMON_PHASE_TRIGGER_PATHS = BOOTSTRAP_CONTROL_PATHS
+AUXILIARY_EVENT_ALLOWED_PATHS: set[str] = set()
+EVENT_ALLOWED_PHASE5_PATHS = BOOTSTRAP_CONTROL_PATHS
+PHASE5_TRIGGER_PATHS = BOOTSTRAP_CONTROL_PATHS
 SHA_PATTERN = re.compile(r"[0-9a-f]{40,64}")
 REMOTE_TOKEN_ENV = "R26_REMOTE_GITHUB_TOKEN"
 REMOTE_TIMEOUT_SECONDS = 60
@@ -238,11 +245,8 @@ def _changed_paths(treeish: str) -> set[str]:
 
 
 def _event_changed_paths(scope_base: str, treeish: str) -> set[str]:
-    args = (
-        ["diff", "--cached", "--name-only", scope_base]
-        if treeish == ":"
-        else ["diff", "--name-only", f"{scope_base}..{treeish}"]
-    )
+    del treeish
+    args = ["diff", "--name-only", f"{scope_base}..HEAD"]
     return set(_git(args, text=True, error="PHASE5_EVENT_DIFF_UNAVAILABLE").splitlines())
 
 
@@ -261,7 +265,7 @@ def evaluate_event_scope(event_name: str, scope_base: str, treeish: str) -> str:
         _commit_tuple(scope_base)
     except Phase5Error as exc:
         raise Phase5Error("PHASE5_SCOPE_BASE_INVALID") from exc
-    descendant = "HEAD" if treeish == ":" else treeish
+    descendant = "HEAD"
     if not _is_ancestor(scope_base, descendant):
         raise Phase5Error("PHASE5_SCOPE_BASE_INVALID")
     changed = _event_changed_paths(scope_base, treeish)
@@ -718,6 +722,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--scope-base", default=os.environ.get("R26_SCOPE_BASE_SHA", ""))
     args = parser.parse_args(argv)
     try:
+        if args.treeish != FROZEN_PUBLICATION:
+            raise Phase5Error("PHASE5_FROZEN_TREEISH_REQUIRED")
         batch = load_json(_blob(args.treeish, INTAKE_PATH))
         verify_batch(batch, args.treeish)
         scope = evaluate_event_scope(args.scope_event, args.scope_base, args.treeish)

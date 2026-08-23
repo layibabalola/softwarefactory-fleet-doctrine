@@ -563,7 +563,7 @@ def verify_receipt_blob(treeish: str) -> dict[str, Any]:
     return load_json(raw)
 
 
-def verify_integration(treeish: str) -> None:
+def verify_integration(treeish: str, *, verify_local_projects: bool = False) -> None:
     if _commit_tuple(PHASE9_COMMIT) != (PHASE9_TREE, [PHASE9_PARENT]):
         raise Phase10Error("PHASE9_BASE_MISMATCH")
     if _commit_tuple(PHASE10_COMMIT) != (PHASE10_TREE, [PHASE9_COMMIT]):
@@ -580,7 +580,8 @@ def verify_integration(treeish: str) -> None:
             raise Phase10Error("INTEGRATION_SCOPE_MISMATCH")
         batch = verify_receipt_blob(treeish)
         verify_receipt_shape(batch)
-        verify_local_subjects(batch)
+        if verify_local_projects:
+            verify_local_subjects(batch)
         verify_frozen_doctrine(treeish)
         verify_forward_allowlists(treeish)
         verify_workflow(treeish)
@@ -595,24 +596,26 @@ def verify_integration(treeish: str) -> None:
         raise Phase10Error("INTEGRATION_SCOPE_MISMATCH")
     batch = verify_receipt_blob(treeish)
     verify_receipt_shape(batch)
-    verify_local_subjects(batch, rederive_mutable_worktree_state=False)
+    if verify_local_projects:
+        verify_local_subjects(batch, rederive_mutable_worktree_state=False)
     verify_frozen_doctrine(treeish)
     verify_forward_allowlists(treeish, phase11_forward=True)
     verify_workflow(treeish)
 
 
-def main() -> int:
+def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--treeish", default="HEAD")
-    args = parser.parse_args()
+    parser.add_argument("--verify-local-projects", action="store_true")
+    args = parser.parse_args(argv)
     try:
-        verify_integration(args.treeish)
+        verify_integration(args.treeish, verify_local_projects=args.verify_local_projects)
     except Phase10Error as exc:
         print(f"FAIL: {exc}", file=sys.stderr)
         return 1
     print(
-        "PASS: Phase 10 exact-binds three local candidate reviews; ledger/spec dispositions and "
-        "all installation, runtime, preview, adoption, and publication authority remain frozen"
+        "PASS SNAPSHOT-ONLY: Phase10 exact-binds frozen receipt bytes, semantic shape, ordering, "
+        "types, and authority; LOCAL SUBJECTS NOT REDERIVED"
     )
     return 0
 

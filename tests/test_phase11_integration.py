@@ -185,6 +185,13 @@ class Phase11IntegrationTests(unittest.TestCase):
             with self.assertRaisesRegex(MODULE.Phase11Error, "FROZEN_DOCTRINE_ARTIFACT_DRIFT"):
                 MODULE.verify_frozen_doctrine(treeish)
 
+    def test_19_local_projects_are_explicit_and_absent_roots_fail_nonzero(self):
+        MODULE.verify_integration(self._treeish(), verify_local_projects=False)
+        self.assertEqual(
+            1,
+            MODULE.main(["--treeish", self._treeish(), "--verify-local-projects"]),
+        )
+
 
 if __name__ == "__main__":
     unittest.main()
