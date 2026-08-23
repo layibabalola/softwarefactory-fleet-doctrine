@@ -1,0 +1,59 @@
+{
+  "schema": "fleet-r26-phase11-phase10-review-shape-closure/v1",
+  "status": "AUTHOR_CONFLICTED_INDEPENDENT_REVIEW_REQUIRED",
+  "frozenPhase10": {
+    "commit": "940c790eedd118736ff0207c1b7dc407d5643802",
+    "tree": "9fe8b86a9408917a01e08564454e6c2a47b9952f",
+    "parent": "18b95fd82f92920117c8f0f432ae8e9bc5e8ffc8",
+    "receiptPath": "adoption/phase10/r26-local-candidate-review-receipts.json",
+    "receiptGitBlobOid": "2f5d543754d35eb6e2f8143465e3ea2a1d1abffc",
+    "receiptBytes": 18080,
+    "receiptSha256": "6c9225317356d2975d97c75d3b4732cfd0f0a8bf14e78485110fd88bacecfcda",
+    "receiptCanonicalSemanticBytes": 14830,
+    "receiptCanonicalSemanticSha256": "220ba2939dfebbec9e9145cde442c8f83346a84d7b19541e42005617d2816386"
+  },
+  "closure": {
+    "method": "RECURSIVE_EXACT_NATIVE_VALUE_AND_CLOSED_KEY_SET_MATCH_PLUS_CANONICAL_SHA256",
+    "objectKeySetsClosed": true,
+    "arrayMembershipAndOrderClosed": true,
+    "nativeJsonTypesExact": true,
+    "scalarValuesExact": true,
+    "forbiddenMutationCount": 11,
+    "forbiddenMutations": [
+      {"id": "EXTRA_REVIEW_KEY", "target": "reviews[*]", "expectedResult": "REJECT"},
+      {"id": "EXTRA_EXECUTION_EVIDENCE_KEY", "target": "reviews[*].executionEvidence[*]", "expectedResult": "REJECT"},
+      {"id": "FORGED_MLV_RESULT", "target": "reviews[mlv-app].executionEvidence[0].result", "expectedResult": "REJECT"},
+      {"id": "FORGED_CLOUDVORE_RESULT", "target": "reviews[cloudvore].executionEvidence[*].result", "expectedResult": "REJECT"},
+      {"id": "FORGED_R8_SUITE_PATH", "target": "reviews[dng-auto-processor].independentExecutionEvidence[*].path", "expectedResult": "REJECT"},
+      {"id": "WIDENED_REVIEW_SCOPE", "target": "reviews[*].reviewScope", "expectedResult": "REJECT"},
+      {"id": "MLV_INVENTORY_COMPLETE_TRUE", "target": "reviews[mlv-app].semanticFindings.inventoryComplete", "expectedResult": "REJECT"},
+      {"id": "MLV_DISPOSITION_CREDIT_TRUE", "target": "reviews[mlv-app].semanticFindings.dispositionCredit", "expectedResult": "REJECT"},
+      {"id": "OMITTED_MLV_ARTIFACT_ROW", "target": "reviews[mlv-app].artifacts", "expectedResult": "REJECT"},
+      {"id": "OMITTED_R8_CRITICAL_ARTIFACT_ROW", "target": "reviews[dng-auto-processor].criticalArtifacts", "expectedResult": "REJECT"},
+      {"id": "INJECTED_SUPERSEDED_PHASE10_PROVENANCE", "target": "reviews[*]", "forbiddenCommit": "4d8482034c8ebc5eb6b7fdd5611de1b6d282d4c5", "expectedResult": "REJECT"}
+    ],
+    "coordinatedMutationPolicy": "ANY_ONE_OR_MORE_MUTATIONS_REJECT_BEFORE_LOCAL_SUBJECT_OR_AUTHORITY_CREDIT",
+    "priorAcceptedMutationCredit": false
+  },
+  "frozenDisposition": {
+    "canonicalLedgerCounts": {"ADOPT": 0, "DISTINGUISH": 5, "MISSING": 0, "REJECT": 0, "STALE": 4},
+    "ledgerStatusChangeAuthorized": false,
+    "specificationChangeAuthorized": false,
+    "candidateEvidenceCreditChanged": false
+  },
+  "authority": {
+    "projectDisposition": false,
+    "projectAdoption": false,
+    "fleetAdoption": false,
+    "runtime": false,
+    "activation": false,
+    "provider": false,
+    "authentication": false,
+    "scheduler": false,
+    "gate": false,
+    "installation": false,
+    "apply": false,
+    "privilegedPreview": false,
+    "pushMergePublish": false
+  }
+}

@@ -211,7 +211,7 @@ class Phase5StaleReconciliationTests(unittest.TestCase):
             encoding="utf-8"
         )
         self.assertIn(
-            "python tools/check_phase5_stale_reconciliation.py --treeish HEAD\n",
+            "python tools/check_phase5_stale_reconciliation.py --treeish 990906b6ea861ca579e1336bcfe8f17dd80c83ae\n",
             workflow,
         )
         self.assertIn(

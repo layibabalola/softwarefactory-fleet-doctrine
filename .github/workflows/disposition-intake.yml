@@ -45,13 +45,13 @@ jobs:
         run: python -m unittest discover -s tests -p "test_adversarialllm_utilization_shadow_doctrine.py" -v
 
       - name: Verify phase-2 blockers against frozen project evidence
-        run: python tools/check_phase2_disposition_batch.py --treeish HEAD
+        run: python tools/check_phase2_disposition_batch.py --treeish 990906b6ea861ca579e1336bcfe8f17dd80c83ae
 
       - name: Run phase-3 published-project distinction controls
         run: python -m unittest discover -s tests -p "test_phase3_disposition_batch.py" -v
 
       - name: Verify exact zero-authority phase-3 distinctions locally
-        run: python tools/check_phase3_disposition_batch.py --treeish HEAD
+        run: python tools/check_phase3_disposition_batch.py --treeish 990906b6ea861ca579e1336bcfe8f17dd80c83ae
 
       - name: Verify published project and Adobe discovery objects when cross-repo read authority exists
         if: env.R26_REMOTE_AUTH_CONFIGURED == 'true'
@@ -69,11 +69,80 @@ jobs:
         run: python -m unittest discover -s tests -p "test_phase5_stale_reconciliation.py" -v
 
       - name: Verify phase-5 zero-authority reconciliation locally
-        run: python tools/check_phase5_stale_reconciliation.py --treeish HEAD
+        run: python tools/check_phase5_stale_reconciliation.py --treeish 990906b6ea861ca579e1336bcfe8f17dd80c83ae
 
       - name: Report unavailable Adobe remote verification authority
         if: env.R26_REMOTE_AUTH_CONFIGURED != 'true'
         run: echo "ADOBE REMOTE NOT VERIFIED - R26_CROSS_REPO_READ_TOKEN is not configured"
+
+      - name: Run phase-6 local candidate review receipt controls
+        run: python -m unittest discover -s tests -p "test_phase6_candidate_reviews.py" -v
+
+      - name: Verify phase-6 zero-authority review receipts
+        run: python tools/check_phase6_candidate_reviews.py --treeish e7311e3038bbfeebe15cc10004f40b3795811659
+
+      - name: Run phase-7 owner-publication request controls
+        run: python -m unittest discover -s tests -p "test_phase7_owner_publication_requests.py" -v
+
+      - name: Verify phase-7 request-only zero-authority packets
+        run: python tools/check_phase7_owner_publication_requests.py --treeish e7311e3038bbfeebe15cc10004f40b3795811659
+
+      - name: Run phase-8 linear integration controls
+        run: python -m unittest discover -s tests -p "test_phase8_integration.py" -v
+
+      - name: Verify phase-8 accepted-lineage integration
+        run: python tools/check_phase8_integration.py --treeish e7311e3038bbfeebe15cc10004f40b3795811659
+
+      - name: Run phase-9 manifest integration controls
+        run: python -m unittest discover -s tests -p "test_phase9_integration.py" -v
+
+      - name: Verify phase-9 accepted manifest integration
+        run: python tools/check_phase9_integration.py --treeish e7311e3038bbfeebe15cc10004f40b3795811659
+
+      - name: Run phase-10 local candidate review integration controls
+        run: python -m unittest discover -s tests -p "test_phase10_integration.py" -v
+
+      - name: Verify phase-10 zero-authority local review integration
+        run: python tools/check_phase10_integration.py --treeish e7311e3038bbfeebe15cc10004f40b3795811659
+
+      - name: Run phase-11 Phase10 review-shape closure controls
+        run: python -m unittest discover -s tests -p "test_phase11_integration.py" -v
+
+      - name: Verify phase-11 exact native review-shape closure
+        run: python tools/check_phase11_integration.py --treeish e7311e3038bbfeebe15cc10004f40b3795811659
+
+      - name: Run phase-12 current-master integration controls
+        run: python -m unittest discover -s tests -p "test_phase12_integration.py" -v
+
+      - name: Verify phase-12 current-master integration boundary
+        run: python tools/check_phase12_integration.py --treeish 990906b6ea861ca579e1336bcfe8f17dd80c83ae
+
+      - name: Run phase-13 DNG installation-evidence publication controls
+        run: python -m unittest discover -s tests -p "test_phase13_integration.py" -v
+
+      - name: Verify phase-13 DNG installation evidence without adoption credit
+        run: python tools/check_phase13_integration.py --treeish eca6e364cf03e388f0416e3f8e80fe4091321aa0
+
+      - name: Run phase-14 MLV task-definition publication controls
+        run: python -m unittest discover -s tests -p "test_phase14_integration.py" -v
+
+      - name: Verify phase-14 MLV task-definition evidence without adoption credit
+        run: python tools/check_phase14_integration.py --treeish 95df488b2e2ec7120e992c0043d54b8e67a65dba
+
+      - name: Run phase-15 MLV prelaunch-boundary publication controls
+        run: python -m unittest discover -s tests -p "test_phase15_integration.py" -v
+
+      - name: Verify phase-15 MLV prelaunch evidence without adoption credit
+        run: python tools/check_phase15_integration.py --treeish 488538ca15676823681e241f6be848de1d30a291
+
+      - name: Run phase-16 Phase 15 review-publication controls
+        run: python -m unittest discover -s tests -p "test_phase16_integration.py" -v
+
+      - name: Verify phase-16 Phase 15 review publication without adoption credit
+        run: python tools/check_phase16_integration.py --treeish HEAD
+
+      - name: Run frozen adoption-ledger controls
+        run: python -m unittest discover -s tests -p "test_adoption_ledger.py" -v
 
       - name: Reverify the frozen adoption ledger
         run: python tools/check_adoption_ledger.py --treeish HEAD

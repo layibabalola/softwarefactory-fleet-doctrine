@@ -19,6 +19,13 @@ Bridge, AirMyPC, and Conjugal still have no authoritative remote/current ref ava
 batch. The ledger and all project specs remain unchanged. See
 `phase5/r26-stale-project-reconciliation.json` and `phase5/README.md`.
 
+Phase 6 records independent, read-only review receipts for two newer local project candidates.
+Salesforce `d8542ccf` is accepted only as an honest zero-authority `DISTINGUISH` evidence repair;
+Cloudvore `54a7a45c` is accepted only as observational lower-bound blocker evidence and is not a
+disposition. Neither local commit is credited as published by this phase, neither changes a ledger
+row, and both authorize nothing. See `phase6/r26-local-candidate-review-receipts.json` and
+`phase6/README.md`.
+
 The checker closes on a changed or omitted project spec, a stale evidence pin, a fabricated
 disposition, any attempt to convert `CANDIDATE_ZERO_AUTHORITY` into runtime/project/fleet adoption,
 or any token-saving claim that drops exact model, effort, role, review, quality, or functionality

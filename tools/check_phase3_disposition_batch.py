@@ -80,6 +80,26 @@ EXPECTED_PROJECT_CANDIDATE_SHA256 = {
     "salesforce-tools": "b2278e858cf70c0a6eecca6d7842709e9cc6fe4598fa13af6bf64929c05b0f6f",
 }
 # Historical cumulative evidence surface. Never use it for a prospective event decision.
+MANIFEST_BINDING_REPAIR_PATHS = {
+    "manifests/universal-provider-control-reconciliation-r26.json",
+    "tests/test_universal_manifest_spec_bindings.py",
+}
+PHASE9_INTEGRATION_PATHS = {
+    "tests/test_phase9_integration.py",
+    "tools/check_phase9_integration.py",
+}
+PHASE10_INTEGRATION_PATHS = {
+    "adoption/phase10/README.md",
+    "adoption/phase10/r26-local-candidate-review-receipts.json",
+    "tests/test_phase10_integration.py",
+    "tools/check_phase10_integration.py",
+}
+PHASE11_INTEGRATION_PATHS = {
+    "adoption/phase11/README.md",
+    "adoption/phase11/r26-phase10-review-shape-closure.json",
+    "tests/test_phase11_integration.py",
+    "tools/check_phase11_integration.py",
+}
 ALLOWED_PHASE3_PATHS = {
     ".github/workflows/disposition-intake.yml",
     "adoption/README.md",
@@ -87,17 +107,31 @@ ALLOWED_PHASE3_PATHS = {
     INTAKE_PATH,
     "adoption/phase5/README.md",
     "adoption/phase5/r26-stale-project-reconciliation.json",
+    "adoption/phase6/README.md",
+    "adoption/phase6/r26-local-candidate-review-receipts.json",
+    "adoption/phase7/README.md",
+    "adoption/phase7/requests/adobe-ingester.json",
+    "adoption/phase7/requests/agent-bridge.json",
+    "adoption/phase7/requests/airmypc.json",
+    "adoption/phase7/requests/conjugal.json",
+    "adoption/phase8/README.md",
     LEDGER_PATH,
     "tests/test_adoption_ledger.py",
     "tests/test_phase2_disposition_batch.py",
     "tests/test_phase3_disposition_batch.py",
     "tests/test_phase5_stale_reconciliation.py",
     "tests/test_adversarialllm_utilization_shadow_doctrine.py",
+    "tests/test_phase6_candidate_reviews.py",
+    "tests/test_phase7_owner_publication_requests.py",
+    "tests/test_phase8_integration.py",
     "tools/check_adoption_ledger.py",
     "tools/check_phase2_disposition_batch.py",
     "tools/check_phase3_disposition_batch.py",
     "tools/check_phase5_stale_reconciliation.py",
-}
+    "tools/check_phase6_candidate_reviews.py",
+    "tools/check_phase7_owner_publication_requests.py",
+    "tools/check_phase8_integration.py",
+} | MANIFEST_BINDING_REPAIR_PATHS | PHASE9_INTEGRATION_PATHS | PHASE10_INTEGRATION_PATHS | PHASE11_INTEGRATION_PATHS
 COMMON_PHASE_TRIGGER_PATHS = {
     ".github/workflows/disposition-intake.yml",
     "adoption/phase2/README.md",

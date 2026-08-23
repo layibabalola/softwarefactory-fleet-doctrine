@@ -1,0 +1,31 @@
+{
+  "schema": "dng-headless-route.v1",
+  "route_id": "fleet-r65-doctrine-phase15-mlv-fable",
+  "lane": "fable",
+  "role": "coordinator",
+  "authority": "read-only-review",
+  "objective": "Independently review the exact fleet-doctrine Phase 15 candidate at commit 488538ca15676823681e241f6be848de1d30a291, tree 8a6ebfb6b1e1ff540006ac3c3c42c0a787fecb98, sole parent Phase 14 95df488b2e2ec7120e992c0043d54b8e67a65dba. Verify it durably publishes only the independently accepted MLV source-level prelaunch stop boundary, the forward OPEN-gate hostile closure, and the project receipt; source/project/review/blob/hash tuples and native closed shapes are exact. Confirm the production launcher remains unwired, installation/runtime/interception/quality/functionality/disposition/adoption authority remain false, specifications and ledger stay frozen at 0 ADOPT, 5 DISTINGUISH, 4 STALE, and the workflow freezes Phase 14 before Phase 15. Treat supplied test results as evidence only. Return ACCEPT candidate-only or exact REVISE. Use Read only; do not execute tests/processes/auth, edit/publish, mutate tasks/gates/leases/packets/runtime, install, push, merge, or claim disposition/adoption authority.",
+  "issued_at_utc": "2026-08-21T13:29:01.4803515+00:00",
+  "expires_at_utc": "2026-08-21T14:24:01.4865167+00:00",
+  "actionable_work": true,
+  "no_subagents": true,
+  "no_lane_reopen": true,
+  "subjects": [
+    {
+      "path": "C:\\code\\softwarefactory-fleet-doctrine-worktrees\\phase15-mlv-prelaunch-publication-20260821\\adoption\\phase15\\r26-mlv-prelaunch-boundary-publication.json",
+      "bytes": 5318,
+      "sha256": "45B44C1F598AF29C046FCA44A5C3862742012FD61D276D48549D27082DDDFC4B"
+    },
+    {
+      "path": "C:\\code\\softwarefactory-fleet-doctrine-worktrees\\phase15-mlv-prelaunch-publication-20260821\\tools\\check_phase15_integration.py",
+      "bytes": 13820,
+      "sha256": "FFAFF4AAE435B5FAF519DF6519BB3D70F609F98A643D278F37C9CA198F820A67"
+    },
+    {
+      "path": "C:\\code\\softwarefactory-fleet-doctrine-worktrees\\phase15-mlv-prelaunch-publication-20260821\\tests\\test_phase15_integration.py",
+      "bytes": 5790,
+      "sha256": "E585326424F010790B2C7B1DF0DF948924DEEB5EAE4A7B3ACABDF9A370CBC1B8"
+    }
+  ],
+  "result_contract": "route-review-result.v1"
+}
