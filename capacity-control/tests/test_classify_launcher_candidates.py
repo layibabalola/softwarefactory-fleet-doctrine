@@ -306,6 +306,24 @@ class LauncherCandidateClassifierTests(unittest.TestCase):
         with mock.patch.object(MODULE.subprocess,"Popen",return_value=process):
             self.assertEqual(MODULE._git_bounded(Path("."),128,"rev-parse","HEAD"),b"ok")
 
+    def test_git_blob_batch_parses_exact_records(self):
+        sources = [("a.ps1", "a" * 40, 3), ("b.mjs", "b" * 40, 2)]
+        output = (b"a" * 40 + b" blob 3\none\n" + b"b" * 40 + b" blob 2\nxy\n")
+        with mock.patch.object(MODULE, "_git_bounded", return_value=output) as bounded:
+            self.assertEqual(MODULE._git_blob_batch(Path("."), sources), [b"one", b"xy"])
+        self.assertEqual(bounded.call_args.kwargs["stdin_bytes"], (b"a" * 40 + b"\n" + b"b" * 40 + b"\n"))
+
+    def test_git_blob_batch_refuses_identity_and_trailing_output(self):
+        sources = [("a.ps1", "a" * 40, 3)]
+        wrong = b"b" * 40 + b" blob 3\none\n"
+        with mock.patch.object(MODULE, "_git_bounded", return_value=wrong):
+            with self.assertRaisesRegex(ValueError, "GIT_BATCH_IDENTITY"):
+                MODULE._git_blob_batch(Path("."), sources)
+        trailing = b"a" * 40 + b" blob 3\none\nextra"
+        with mock.patch.object(MODULE, "_git_bounded", return_value=trailing):
+            with self.assertRaisesRegex(ValueError, "GIT_BATCH_TRAILING"):
+                MODULE._git_blob_batch(Path("."), sources)
+
     def test_git_pipe_timeout_closes_reader_without_thread_exception(self):
         class BlockingReader:
             def __init__(self):

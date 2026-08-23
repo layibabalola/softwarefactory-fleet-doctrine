@@ -29,6 +29,7 @@ MAX_VISITED_PATHS = 131072
 MAX_DIRECTORY_ENTRIES = 32768
 MAX_GIT_STDERR_BYTES = 64 * 1024
 GIT_READER_DRAIN_TIMEOUT_SECONDS = 30.0
+MAX_GIT_BATCH_RECORD_OVERHEAD = 96
 MAX_REVIEW_NODES = 65536
 MAX_REVIEW_DEPTH = 64
 MAX_EVIDENCE_LINES_PER_KIND = 64
@@ -208,11 +209,12 @@ def classify_tree(root: Path) -> dict[str, object]:
     return _report(".", rows, refused, sourceMode="WORKING_TREE")
 
 
-def _git_bounded(repo: Path, limit: int, *arguments: str) -> bytes:
+def _git_bounded(repo: Path, limit: int, *arguments: str, stdin_bytes: bytes | None = None) -> bytes:
     environment = os.environ.copy()
     environment["GIT_OPTIONAL_LOCKS"] = "0"
     process = subprocess.Popen(
         ["git", "--no-optional-locks", "-C", str(repo), *arguments],
+        stdin=subprocess.PIPE if stdin_bytes is not None else subprocess.DEVNULL,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         env=environment,
@@ -250,7 +252,16 @@ def _git_bounded(repo: Path, limit: int, *arguments: str) -> bytes:
         threading.Thread(target=drain, args=(process.stderr, stderr, MAX_GIT_STDERR_BYTES), daemon=True),
     ]
     for reader in readers: reader.start()
+    stdin_fault = False
     try:
+        if stdin_bytes is not None:
+            assert process.stdin is not None
+            try: process.stdin.write(stdin_bytes)
+            except (BrokenPipeError, OSError):
+                stdin_fault = True
+                try: process.kill()
+                except OSError: pass
+            finally: process.stdin.close()
         try: return_code = process.wait(timeout=30)
         except subprocess.TimeoutExpired as exc:
             process.kill(); process.wait(timeout=30)
@@ -264,6 +275,7 @@ def _git_bounded(repo: Path, limit: int, *arguments: str) -> bytes:
             raise ValueError("GIT_PIPE_TIMEOUT")
         if reader_fault.is_set(): raise ValueError("GIT_PIPE_READ")
         if exceeded.is_set(): raise ValueError("GIT_OUTPUT_LIMIT")
+        if stdin_fault: raise ValueError("GIT_COMMAND_FAILED")
         if return_code != 0:
             raise ValueError("GIT_COMMAND_FAILED")
         return bytes(stdout)
@@ -272,6 +284,31 @@ def _git_bounded(repo: Path, limit: int, *arguments: str) -> bytes:
         process.stdout.close()
         process.stderr.close()
         for reader in readers: reader.join(timeout=1)
+
+
+def _git_blob_batch(repo: Path, sources: list[tuple[str, str, int]]) -> list[bytes]:
+    request = b"".join(oid.encode("ascii") + b"\n" for _path, oid, _size in sources)
+    output_limit = sum(size for _path, _oid, size in sources) + len(sources) * MAX_GIT_BATCH_RECORD_OVERHEAD
+    output = _git_bounded(repo, output_limit, "cat-file", "--batch", stdin_bytes=request)
+    blobs: list[bytes] = []
+    offset = 0
+    for _path, expected_oid, expected_size in sources:
+        header_end = output.find(b"\n", offset)
+        if header_end < 0: raise ValueError("GIT_BATCH_HEADER")
+        fields = output[offset:header_end].split()
+        if len(fields) != 3: raise ValueError("GIT_BATCH_HEADER")
+        raw_oid, kind, raw_size = fields
+        if raw_oid.decode("ascii") != expected_oid or kind != b"blob": raise ValueError("GIT_BATCH_IDENTITY")
+        try: size = int(raw_size)
+        except ValueError as exc: raise ValueError("GIT_BATCH_SIZE") from exc
+        if size != expected_size: raise ValueError("GIT_BLOB_SIZE")
+        start = header_end + 1
+        end = start + size
+        if end >= len(output) or output[end:end + 1] != b"\n": raise ValueError("GIT_BATCH_RECORD")
+        blobs.append(output[start:end])
+        offset = end + 1
+    if offset != len(output): raise ValueError("GIT_BATCH_TRAILING")
+    return blobs
 
 
 def classify_git_tree(repo: Path, treeish: str) -> dict[str, object]:
@@ -303,8 +340,7 @@ def classify_git_tree(repo: Path, treeish: str) -> dict[str, object]:
                 raise ValueError("SOURCE_AGGREGATE_LIMIT")
             sources.append((path, raw_oid.decode("ascii"), size))
     rows: list[dict[str, object]] = []
-    for path, oid, expected_size in sources:
-        data = _git_bounded(repo, expected_size, "cat-file", "blob", oid)
+    for (path, _oid, expected_size), data in zip(sources, _git_blob_batch(repo, sources), strict=True):
         if len(data) != expected_size: raise ValueError("GIT_BLOB_SIZE")
         try: row = _classify_data(path, data)
         except ValueError as exc:
