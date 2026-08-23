@@ -138,7 +138,7 @@ class Phase16IntegrationTests(unittest.TestCase):
 
     def test_15_later_head_is_refused_by_historical_verifier(self):
         with mock.patch.object(MODULE, "_changed_paths", return_value={"tools/foreign.py"}):
-            with self.assertRaisesRegex(MODULE.Phase16Error, "INTEGRATION_SCOPE_MISMATCH"):
+            with self.assertRaisesRegex(MODULE.Phase16Error, "PHASE16_PARENT_MISMATCH"):
                 MODULE.verify("HEAD")
 
 
