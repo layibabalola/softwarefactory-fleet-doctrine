@@ -901,3 +901,23 @@ candidates, and checker reporting MUST derive from checker-owned metadata, with 
 R39 preserves byte-identical runtime/schema, policy digest, provider-neutral mechanism, exact
 Cloudvore/Fable profile, cache/charge semantics, exact capacity/duration arithmetic, and input-blind
 `REFUSE_RUNTIME_NOT_INSTALLED / ZERO`. It grants no authority or adoption credit.
+
+## R40 closed descriptor execution invariant
+
+R40 MUST freeze adverse R39 at exact commit `3bea531c2b3abbc4be4b506255d344d8ec6e712f`,
+tree `9a77aa147120666bfd620ecc400507933aef0ef0`, and parent
+`d897c304b1dd8e3b6dcbac71002c1eb2f7db519c`. Every checked trust layer MUST have one immutable
+descriptor binding manifest path, frozen/current candidate sentinel, manifest schema, trusted
+verifier function object, and report candidate/base. The identical ordered descriptor tuple MUST
+drive byte loading, frozen-blob verification, parsing, verifier dispatch, subject/self verification,
+counts, labels, candidates, and reporting. Parallel per-round execution state is forbidden.
+
+Descriptor paths and rounds MUST be unique, numeric rounds MUST equal the exact ordered sequence
+26/29/33/34/35/36/37/38/39/40, and exactly one current descriptor MUST be last. Frozen descriptors
+MUST NOT use the current sentinel. Schema, report, candidate, callable identity, or ordering drift
+MUST refuse. The current descriptor round MUST equal the highest tracked reconciliation carrier
+round in HEAD or the index; an added but unmodeled higher manifest MUST refuse.
+
+R40 preserves byte-identical runtime/schema, policy digest, provider-neutral mechanism, exact
+Cloudvore/Fable profile, cache/charge semantics, exact capacity/duration arithmetic, and input-blind
+`REFUSE_RUNTIME_NOT_INSTALLED / ZERO`. It grants no authority or adoption credit.

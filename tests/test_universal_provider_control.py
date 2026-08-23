@@ -3,6 +3,7 @@ from __future__ import annotations
 import ast
 import copy
 import contextlib
+import dataclasses
 import datetime as dt
 import hashlib
 import io
@@ -6498,31 +6499,40 @@ class ReviewResourceAdmissionR29Tests(unittest.TestCase):
     def test_manifest_layer_lifecycle_is_table_driven(self) -> None:
         import check_universal_manifest as checker
 
-        layers = list(checker.MANIFEST_LAYER_ROWS)
-        self.assertEqual([candidate for _, candidate in layers].count(":"), 1)
-        self.assertEqual(layers[-1], checker.CURRENT_MANIFEST_ROW)
-        for manifest_path, candidate in checker.FROZEN_MANIFEST_LAYERS:
-            with self.subTest(manifest=manifest_path, mutation="subject"):
-                raw = checker._git(f"{candidate}:{manifest_path}")
+        layers = checker.LAYER_DESCRIPTORS
+        self.assertEqual([descriptor.candidate for descriptor in layers].count(":"), 1)
+        self.assertEqual(layers[-1].candidate, checker.CURRENT_CANDIDATE)
+        for descriptor in layers[:-1]:
+            with self.subTest(manifest=descriptor.manifest_path, mutation="subject"):
+                raw = checker._git(f"{descriptor.candidate}:{descriptor.manifest_path}")
                 self.assertIsInstance(raw, bytes)
                 manifest = json.loads(raw)
                 changed = copy.deepcopy(manifest)
                 changed["subjectFiles"][0]["sha256"] = "sha256:" + "0" * 64
                 with self.assertRaisesRegex(checker.ManifestError, "MANIFEST_SUBJECT_MISMATCH"):
                     checker._verify_subjects_and_self(
-                        changed, raw, manifest_path=manifest_path, candidate=candidate
+                        changed,
+                        raw,
+                        manifest_path=descriptor.manifest_path,
+                        candidate=descriptor.candidate,
                     )
-            with self.subTest(manifest=manifest_path, mutation="self"):
+            with self.subTest(manifest=descriptor.manifest_path, mutation="self"):
                 changed = copy.deepcopy(manifest)
                 changed["manifestSelf"]["canonicalGitBlobSha256"] = "sha256:" + "0" * 64
                 with self.assertRaisesRegex(checker.ManifestError, "MANIFEST_SELF_MISMATCH"):
                     checker._verify_subjects_and_self(
-                        changed, raw, manifest_path=manifest_path, candidate=candidate
+                        changed,
+                        raw,
+                        manifest_path=descriptor.manifest_path,
+                        candidate=descriptor.candidate,
                     )
-            with self.subTest(manifest=manifest_path, mutation="cross_current"):
+            with self.subTest(manifest=descriptor.manifest_path, mutation="cross_current"):
                 with self.assertRaisesRegex(checker.ManifestError, "MANIFEST_SUBJECT_MISMATCH"):
                     checker._verify_subjects_and_self(
-                        manifest, raw, manifest_path=manifest_path, candidate=":"
+                        manifest,
+                        raw,
+                        manifest_path=descriptor.manifest_path,
+                        candidate=checker.CURRENT_CANDIDATE,
                     )
 
     def test_r38_02_current_tuple_subject_self_and_policy_are_exact(self) -> None:
@@ -6565,31 +6575,29 @@ class ReviewResourceAdmissionR29Tests(unittest.TestCase):
     def test_current_manifest_checker_is_metadata_derived_and_successor_safe(self) -> None:
         import check_universal_manifest as checker
 
-        raw = (ROOT / checker.CURRENT_MANIFEST).read_bytes()
+        current = checker.LAYER_DESCRIPTORS[-1]
+        raw = (ROOT / current.manifest_path).read_bytes()
         manifest = json.loads(raw)
-        label = checker.re.search(r"-r([0-9]+)\.json$", checker.CURRENT_MANIFEST).group(1)
-        verifier = getattr(checker, f"verify_r{label}")
-        verifier(manifest, checker.CURRENT_MANIFEST_ROW[1])
+        current.verifier(manifest, current.candidate)
         output = io.StringIO()
         with contextlib.redirect_stdout(output):
             self.assertEqual(checker.check(":"), 0)
         expected_counts = " ".join(
-            f"r{checker.re.search(r'-r([0-9]+)\.json$', path).group(1)}_subjects="
-            f"{98 if path == checker.R26_MANIFEST else 7}"
-            for path, _ in checker.MANIFEST_LAYER_ROWS
+            f"r{descriptor.round}_subjects={98 if descriptor.round == 26 else 7}"
+            for descriptor in checker.LAYER_DESCRIPTORS
         )
         self.assertIn(f"MANIFEST_PASS {expected_counts} self=PASS", output.getvalue())
         changed = copy.deepcopy(manifest)
         changed["subjectFiles"][0]["sha256"] = "sha256:" + "0" * 64
         with self.assertRaisesRegex(checker.ManifestError, "MANIFEST_SUBJECT_MISMATCH"):
             checker._verify_subjects_and_self(
-                changed, raw, manifest_path=checker.CURRENT_MANIFEST, candidate=":"
+                changed, raw, manifest_path=current.manifest_path, candidate=current.candidate
             )
         changed = copy.deepcopy(manifest)
         changed["manifestSelf"]["canonicalGitBlobSha256"] = "sha256:" + "0" * 64
         with self.assertRaisesRegex(checker.ManifestError, "MANIFEST_SELF_MISMATCH"):
             checker._verify_subjects_and_self(
-                changed, raw, manifest_path=checker.CURRENT_MANIFEST, candidate=":"
+                changed, raw, manifest_path=current.manifest_path, candidate=current.candidate
             )
         source = inspect.getsource(type(self))
         syntax = ast.parse(textwrap.dedent(source))
@@ -6619,6 +6627,79 @@ class ReviewResourceAdmissionR29Tests(unittest.TestCase):
                                     for arg in call.args
                                 )
                             )
+
+    def test_r40_01_descriptor_validation_rejects_all_lifecycle_drift(self) -> None:
+        import check_universal_manifest as checker
+
+        layers = checker.LAYER_DESCRIPTORS
+        current = layers[-1]
+        mutations = [
+            layers[:-1],
+            layers + (layers[-1],),
+            layers[:-2] + (layers[-1], layers[-2]),
+            layers[:-1] + (dataclasses.replace(current, candidate=checker.FROZEN_R39),),
+            layers[:-2]
+            + (dataclasses.replace(layers[-2], candidate=":"), current),
+            layers[:-1] + (dataclasses.replace(current, schema="wrong/v1"),),
+            layers[:-1] + (dataclasses.replace(current, report_candidate="0" * 40),),
+            layers[:-1] + (dataclasses.replace(current, verifier=None),),
+            layers[:-1] + (dataclasses.replace(current, verifier=lambda *_: None),),
+            layers[:-1]
+            + (
+                dataclasses.replace(
+                    current,
+                    manifest_path="manifests/universal-provider-control-reconciliation-r41.json",
+                ),
+            ),
+        ]
+        for ordinal, changed in enumerate(mutations):
+            with self.subTest(ordinal=ordinal):
+                with self.assertRaisesRegex(checker.ManifestError, "MANIFEST_DESCRIPTOR_"):
+                    checker._validate_layer_descriptors(":", tuple(changed))
+        with mock.patch.object(
+            checker,
+            "_tracked_reconciliation_rounds",
+            return_value=checker.EXPECTED_LAYER_ROUNDS + (41,),
+        ):
+            with self.assertRaisesRegex(checker.ManifestError, "MANIFEST_DESCRIPTOR_TRACKING_INVALID"):
+                checker._validate_layer_descriptors(":", layers)
+
+    def test_r40_02_descriptor_execution_is_complete_and_dispatches_current_verifier(self) -> None:
+        import check_universal_manifest as checker
+
+        called = []
+
+        def sentinel(manifest: dict[str, object], treeish: str) -> None:
+            called.append((manifest["subjectCoverage"], treeish))
+
+        current = dataclasses.replace(checker.LAYER_DESCRIPTORS[-1], verifier=sentinel)
+        layers = checker.LAYER_DESCRIPTORS[:-1] + (current,)
+        trusted = dict(checker.TRUSTED_LAYER_VERIFIERS)
+        trusted[current.manifest_path] = sentinel
+        receipts = checker._execute_manifest_layers(":", layers, trusted_verifiers=trusted)
+        self.assertEqual(len(called), 1)
+        self.assertEqual(called[0][1], ":")
+        self.assertEqual(len(receipts), len(layers))
+        for descriptor, receipt in zip(layers, receipts, strict=True):
+            with self.subTest(manifest=descriptor.manifest_path):
+                self.assertEqual(receipt["path"], descriptor.manifest_path)
+                self.assertEqual(receipt["candidate"], descriptor.candidate)
+                self.assertEqual(receipt["verifier"], descriptor.verifier)
+                self.assertEqual(receipt["subjectCandidate"], descriptor.candidate)
+                self.assertEqual(receipt["reportCandidate"], descriptor.report_candidate)
+                self.assertEqual(receipt["round"], descriptor.round)
+                self.assertEqual(receipt["subjects"], 98 if descriptor.round == 26 else 7)
+
+    def test_r40_03_ten_descriptor_receipts_have_exact_counts(self) -> None:
+        import check_universal_manifest as checker
+
+        self.assertEqual(checker.EXPECTED_LAYER_ROUNDS, (26, 29, 33, 34, 35, 36, 37, 38, 39, 40))
+        receipts = checker._execute_manifest_layers(":")
+        self.assertEqual(
+            tuple((receipt["round"], receipt["subjects"]) for receipt in receipts),
+            ((26, 98), (29, 7), (33, 7), (34, 7), (35, 7), (36, 7),
+             (37, 7), (38, 7), (39, 7), (40, 7)),
+        )
 
 
 if __name__ == "__main__":

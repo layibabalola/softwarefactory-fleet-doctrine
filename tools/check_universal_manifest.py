@@ -4,13 +4,15 @@
 from __future__ import annotations
 
 import argparse
+from dataclasses import dataclass
 import hashlib
 import json
 from pathlib import Path
 import re
 import subprocess
 import sys
-from typing import Any
+from types import MappingProxyType
+from typing import Any, Callable, Mapping
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -24,6 +26,7 @@ R36_MANIFEST = "manifests/universal-provider-control-reconciliation-r36.json"
 R37_MANIFEST = "manifests/universal-provider-control-reconciliation-r37.json"
 R38_MANIFEST = "manifests/universal-provider-control-reconciliation-r38.json"
 R39_MANIFEST = "manifests/universal-provider-control-reconciliation-r39.json"
+R40_MANIFEST = "manifests/universal-provider-control-reconciliation-r40.json"
 REVIEW_SCHEMA = "schemas/universal-provider-review-admission-v1.schema.json"
 FROZEN_CANDIDATE = "e70a044f31dd2f43ab7c716d63a4eb89318c61b6"
 FROZEN_R29 = "fc76bf6d5ab52891d06b7f71eb2e993e413c124c"
@@ -33,6 +36,7 @@ FROZEN_R35 = "64e6895c332a696af238007225148fd70582424f"
 FROZEN_R36 = "d67b0781e1e926e1baebdb0ea9b7a0ef5c447d85"
 FROZEN_R37 = "6568230545e473c6fac64bcd30166a284e712704"
 FROZEN_R38 = "d897c304b1dd8e3b6dcbac71002c1eb2f7db519c"
+FROZEN_R39 = "3bea531c2b3abbc4be4b506255d344d8ec6e712f"
 SELF_PATTERN = re.compile(
     rb'("canonicalGitBlobSha256"\s*:\s*"sha256:)([0-9a-f]{64})(")'
 )
@@ -101,6 +105,7 @@ R36_POLICY_DIGEST = R35_POLICY_DIGEST
 R37_POLICY_DIGEST = R36_POLICY_DIGEST
 R38_POLICY_DIGEST = R37_POLICY_DIGEST
 R39_POLICY_DIGEST = R38_POLICY_DIGEST
+R40_POLICY_DIGEST = R39_POLICY_DIGEST
 R33_BASE = {
     "commit": "55afee85ecf720eb857cea1980f511f331b9e86f",
     "tree": "6e58f77467320d53ced12906bf2be62b4fca3d56",
@@ -176,19 +181,34 @@ R39_BASE = {
     "orderedParentTrees": ["aa7338aad75cf4bb12481439a776c5c174fe1a94"],
 }
 R39_SUBJECT_PATHS = R38_SUBJECT_PATHS
-FROZEN_MANIFEST_LAYERS = (
-    (R26_MANIFEST, FROZEN_CANDIDATE),
-    (R29_MANIFEST, FROZEN_R29),
-    (R33_MANIFEST, FROZEN_R33),
-    (R34_MANIFEST, FROZEN_R34),
-    (R35_MANIFEST, FROZEN_R35),
-    (R36_MANIFEST, FROZEN_R36),
-    (R37_MANIFEST, FROZEN_R37),
-    (R38_MANIFEST, FROZEN_R38),
+R40_BASE = {
+    "commit": FROZEN_R39,
+    "tree": "9a77aa147120666bfd620ecc400507933aef0ef0",
+    "orderedParents": [FROZEN_R38],
+    "orderedParentTrees": ["8a7344e0fbea8b43719ca44f89b1af354c5dd5fb"],
+}
+R40_SUBJECT_PATHS = R39_SUBJECT_PATHS
+EXPECTED_LAYER_ROUNDS = (26, 29, 33, 34, 35, 36, 37, 38, 39, 40)
+CURRENT_CANDIDATE = ":"
+LAYER_PATH_PATTERN = re.compile(
+    r"^manifests/universal-provider-control-reconciliation-r([0-9]+)\.json$"
 )
-CURRENT_MANIFEST = R39_MANIFEST
-CURRENT_MANIFEST_ROW = (CURRENT_MANIFEST, ":")
-MANIFEST_LAYER_ROWS = FROZEN_MANIFEST_LAYERS + (CURRENT_MANIFEST_ROW,)
+
+
+@dataclass(frozen=True, slots=True)
+class ManifestLayerDescriptor:
+    manifest_path: str
+    candidate: str
+    schema: str
+    verifier: Callable[[dict[str, Any], str], None]
+    report_candidate: str
+
+    @property
+    def round(self) -> int:
+        match = LAYER_PATH_PATTERN.fullmatch(self.manifest_path)
+        if match is None:
+            raise ManifestError("MANIFEST_DESCRIPTOR_PATH_INVALID")
+        return int(match.group(1))
 
 
 def _pairs(values: list[tuple[str, Any]]) -> dict[str, Any]:
@@ -1008,6 +1028,72 @@ def verify_r39(manifest: dict[str, Any], treeish: str) -> None:
 
 
 
+def verify_r40(manifest: dict[str, Any], treeish: str) -> None:
+    """Verify exact adverse R39 base and the closed-descriptor R40 rebind."""
+
+    if manifest.get("status") != "CANDIDATE_ZERO_AUTHORITY" or manifest.get(
+        "subjectCoverage"
+    ) != "R40_CLOSED_LAYER_DESCRIPTOR_REBIND_ZERO_AUTHORITY":
+        raise ManifestError("R40_STATUS_INVALID")
+    if manifest.get("candidateBase") != R40_BASE:
+        raise ManifestError("R40_BASE_INVALID")
+    tree, parents = _commit_tuple(R40_BASE["commit"])
+    if tree != R40_BASE["tree"] or parents != R40_BASE["orderedParents"]:
+        raise ManifestError("R40_BASE_OBJECT_MISMATCH")
+    if [_commit_tuple(parent)[0] for parent in parents] != R40_BASE["orderedParentTrees"]:
+        raise ManifestError("R40_BASE_PARENT_TREE_MISMATCH")
+    descendant = "HEAD" if treeish == ":" else treeish
+    if not _is_ancestor(R40_BASE["commit"], descendant):
+        raise ManifestError("R40_BASE_NOT_ANCESTOR")
+    if manifest.get("authority") != {
+        "providerExecution": False, "processSpawnResumeKill": False,
+        "containmentOrCanaryCredit": False, "automaticGateState": "CLOSED",
+        "runtimeImplementation": "NOT_INSTALLED_UNCONDITIONAL_REFUSE",
+        "activationRequiresSeparateAdjudication": True, "authorRecused": True,
+    }:
+        raise ManifestError("R40_AUTHORITY_INVALID")
+    policy = manifest.get("reviewAdmissionPolicy")
+    if not isinstance(policy, dict) or policy.get("source") != R27_SOURCE:
+        raise ManifestError("R40_SOURCE_SUBJECT_MISMATCH")
+    if policy.get("identity") != R29_IDENTITY:
+        raise ManifestError("R40_EXACT_PROFILE_MISMATCH")
+    if policy.get("cacheAdmissionMode") != "EXACTLY_BOUNDED_AND_CHARGED":
+        raise ManifestError("R40_CACHE_ADMISSION_MODE_MISMATCH")
+    if policy.get("capacity", {}).get("requiredQuotaWindows") != ["session", "weekly"]:
+        raise ManifestError("R40_QUOTA_WINDOWS_MISMATCH")
+    if manifest.get("reviewAdmissionPolicyDigest") != R40_POLICY_DIGEST or canonical_policy_sha256(
+        policy
+    ) != R40_POLICY_DIGEST:
+        raise ManifestError("R40_POLICY_DIGEST_MISMATCH")
+    subjects = manifest.get("subjectFiles")
+    if not isinstance(subjects, list) or [
+        subject.get("path") for subject in subjects if isinstance(subject, dict)
+    ] != R40_SUBJECT_PATHS:
+        raise ManifestError("R40_CARRIER_SUBJECT_MISMATCH")
+    try:
+        import jsonschema
+        schema_raw = _git(_blob_spec(treeish, REVIEW_SCHEMA))
+        assert isinstance(schema_raw, bytes)
+        schema = json.loads(schema_raw.decode("utf-8"), object_pairs_hook=_pairs)
+        jsonschema.Draft202012Validator.check_schema(schema)
+        if next(jsonschema.Draft202012Validator(schema).iter_errors(policy), None) is not None:
+            raise ManifestError("R40_POLICY_SCHEMA_INVALID")
+    except ManifestError:
+        raise
+    except Exception as exc:
+        raise ManifestError("R40_POLICY_SCHEMA_INVALID") from exc
+    if manifest.get("validation") != {
+        "universalProviderControl": {"required": True, "claimedGreen": False},
+        "providerCapacityGovernor": {"required": True, "claimedGreen": False},
+        "canonicalCapacityControl": {"required": True, "claimedGreen": False},
+        "hosted": {"requiredFresh": True, "claimedGreen": False},
+        "providerInvocation": False, "activation": False,
+    }:
+        raise ManifestError("R40_VALIDATION_AUTHORITY_INVALID")
+
+
+
+
 def verify_r29(
     manifest: dict[str, Any], treeish: str, *, verify_objects: bool = True
 ) -> None:
@@ -1232,86 +1318,154 @@ def _verify_subjects_and_self(
     return len(subjects)
 
 
+TRUSTED_LAYER_VERIFIERS: Mapping[str, Callable[[dict[str, Any], str], None]] = (
+    MappingProxyType(
+        {
+            R26_MANIFEST: verify_reconciliation,
+            R29_MANIFEST: verify_r29,
+            R33_MANIFEST: verify_r33,
+            R34_MANIFEST: verify_r34,
+            R35_MANIFEST: verify_r35,
+            R36_MANIFEST: verify_r36,
+            R37_MANIFEST: verify_r37,
+            R38_MANIFEST: verify_r38,
+            R39_MANIFEST: verify_r39,
+            R40_MANIFEST: verify_r40,
+        }
+    )
+)
+
+LAYER_DESCRIPTORS = (
+    ManifestLayerDescriptor(
+        R26_MANIFEST, FROZEN_CANDIDATE,
+        "fleet-universal-provider-control-candidate-manifest/v2",
+        verify_reconciliation, FROZEN_CANDIDATE,
+    ),
+    ManifestLayerDescriptor(R29_MANIFEST, FROZEN_R29, "fleet-universal-provider-control-candidate-manifest/v3", verify_r29, FROZEN_R29),
+    ManifestLayerDescriptor(R33_MANIFEST, FROZEN_R33, "fleet-universal-provider-control-candidate-manifest/v3", verify_r33, FROZEN_R33),
+    ManifestLayerDescriptor(R34_MANIFEST, FROZEN_R34, "fleet-universal-provider-control-candidate-manifest/v3", verify_r34, FROZEN_R34),
+    ManifestLayerDescriptor(R35_MANIFEST, FROZEN_R35, "fleet-universal-provider-control-candidate-manifest/v3", verify_r35, FROZEN_R35),
+    ManifestLayerDescriptor(R36_MANIFEST, FROZEN_R36, "fleet-universal-provider-control-candidate-manifest/v3", verify_r36, FROZEN_R36),
+    ManifestLayerDescriptor(R37_MANIFEST, FROZEN_R37, "fleet-universal-provider-control-candidate-manifest/v3", verify_r37, FROZEN_R37),
+    ManifestLayerDescriptor(R38_MANIFEST, FROZEN_R38, "fleet-universal-provider-control-candidate-manifest/v3", verify_r38, FROZEN_R38),
+    ManifestLayerDescriptor(R39_MANIFEST, FROZEN_R39, "fleet-universal-provider-control-candidate-manifest/v3", verify_r39, FROZEN_R39),
+    ManifestLayerDescriptor(R40_MANIFEST, CURRENT_CANDIDATE, "fleet-universal-provider-control-candidate-manifest/v3", verify_r40, R40_BASE["commit"]),
+)
+
+
+def _tracked_reconciliation_rounds(treeish: str) -> tuple[int, ...]:
+    if treeish == CURRENT_CANDIDATE:
+        args = ["git", "ls-files", "--", "manifests"]
+    else:
+        args = ["git", "ls-tree", "-r", "--name-only", treeish, "--", "manifests"]
+    run = subprocess.run(args, cwd=ROOT, check=False, capture_output=True, text=True, encoding="utf-8")
+    if run.returncode != 0:
+        raise ManifestError("MANIFEST_DESCRIPTOR_TRACKING_INVALID")
+    rounds = {
+        int(match.group(1))
+        for line in run.stdout.splitlines()
+        if (match := LAYER_PATH_PATTERN.fullmatch(line)) is not None
+    }
+    if not rounds:
+        raise ManifestError("MANIFEST_DESCRIPTOR_TRACKING_INVALID")
+    return tuple(sorted(rounds))
+
+
+def _validate_layer_descriptors(
+    treeish: str,
+    descriptors: tuple[ManifestLayerDescriptor, ...] = LAYER_DESCRIPTORS,
+    *,
+    trusted_verifiers: Mapping[str, Callable[[dict[str, Any], str], None]] = TRUSTED_LAYER_VERIFIERS,
+) -> None:
+    if type(descriptors) is not tuple or not descriptors:
+        raise ManifestError("MANIFEST_DESCRIPTOR_SET_INVALID")
+    if any(type(descriptor) is not ManifestLayerDescriptor for descriptor in descriptors):
+        raise ManifestError("MANIFEST_DESCRIPTOR_SET_INVALID")
+    try:
+        rounds = tuple(descriptor.round for descriptor in descriptors)
+    except ManifestError:
+        raise
+    if rounds != EXPECTED_LAYER_ROUNDS:
+        raise ManifestError("MANIFEST_DESCRIPTOR_SEQUENCE_INVALID")
+    paths = tuple(descriptor.manifest_path for descriptor in descriptors)
+    if len(set(paths)) != len(paths):
+        raise ManifestError("MANIFEST_DESCRIPTOR_PATH_INVALID")
+    current = tuple(
+        index for index, descriptor in enumerate(descriptors)
+        if descriptor.candidate == CURRENT_CANDIDATE
+    )
+    if current != (len(descriptors) - 1,):
+        raise ManifestError("MANIFEST_DESCRIPTOR_CURRENT_INVALID")
+    for descriptor in descriptors:
+        expected_schema = (
+            "fleet-universal-provider-control-candidate-manifest/v2"
+            if descriptor.round == 26
+            else "fleet-universal-provider-control-candidate-manifest/v3"
+        )
+        if descriptor.schema != expected_schema:
+            raise ManifestError("MANIFEST_DESCRIPTOR_SCHEMA_INVALID")
+        trusted = trusted_verifiers.get(descriptor.manifest_path)
+        if not callable(descriptor.verifier) or descriptor.verifier is not trusted:
+            raise ManifestError("MANIFEST_DESCRIPTOR_VERIFIER_INVALID")
+        if descriptor.candidate == CURRENT_CANDIDATE:
+            if descriptor.report_candidate != R40_BASE["commit"]:
+                raise ManifestError("MANIFEST_DESCRIPTOR_REPORT_INVALID")
+        elif (
+            re.fullmatch(r"[0-9a-f]{40}", descriptor.candidate) is None
+            or descriptor.report_candidate != descriptor.candidate
+        ):
+            raise ManifestError("MANIFEST_DESCRIPTOR_CANDIDATE_INVALID")
+    tracked = _tracked_reconciliation_rounds(treeish)
+    if tracked[-1] != descriptors[-1].round:
+        raise ManifestError("MANIFEST_DESCRIPTOR_TRACKING_INVALID")
+
+
+def _execute_manifest_layers(
+    treeish: str,
+    descriptors: tuple[ManifestLayerDescriptor, ...] = LAYER_DESCRIPTORS,
+    *,
+    trusted_verifiers: Mapping[str, Callable[[dict[str, Any], str], None]] = TRUSTED_LAYER_VERIFIERS,
+) -> tuple[dict[str, Any], ...]:
+    _validate_layer_descriptors(treeish, descriptors, trusted_verifiers=trusted_verifiers)
+    receipts: list[dict[str, Any]] = []
+    for descriptor in descriptors:
+        subject_candidate = (
+            treeish if descriptor.candidate == CURRENT_CANDIDATE else descriptor.candidate
+        )
+        if descriptor.candidate == CURRENT_CANDIDATE:
+            raw = _git(_blob_spec(treeish, descriptor.manifest_path))
+        else:
+            raw = _frozen_manifest_bytes(treeish, descriptor.manifest_path, descriptor.candidate)
+        assert isinstance(raw, bytes)
+        manifest = _parse_manifest(raw, descriptor.schema)
+        descriptor.verifier(manifest, subject_candidate)
+        subjects = _verify_subjects_and_self(
+            manifest,
+            raw,
+            manifest_path=descriptor.manifest_path,
+            candidate=subject_candidate,
+        )
+        receipts.append(
+            {
+                "path": descriptor.manifest_path,
+                "round": descriptor.round,
+                "candidate": descriptor.candidate,
+                "subjectCandidate": subject_candidate,
+                "verifier": descriptor.verifier,
+                "subjects": subjects,
+                "reportCandidate": descriptor.report_candidate,
+            }
+        )
+    return tuple(receipts)
+
+
 def check(treeish: str) -> int:
-    r26_raw = _frozen_manifest_bytes(treeish, R26_MANIFEST, FROZEN_CANDIDATE)
-    r26 = _parse_manifest(r26_raw, "fleet-universal-provider-control-candidate-manifest/v2")
-    verify_reconciliation(r26, FROZEN_CANDIDATE)
-    r26_subjects = _verify_subjects_and_self(
-        r26, r26_raw, manifest_path=R26_MANIFEST, candidate=FROZEN_CANDIDATE
-    )
-
-    r29_raw = _frozen_manifest_bytes(treeish, R29_MANIFEST, FROZEN_R29)
-    r29 = _parse_manifest(r29_raw, "fleet-universal-provider-control-candidate-manifest/v3")
-    verify_r29(r29, FROZEN_R29)
-    r29_subjects = _verify_subjects_and_self(
-        r29, r29_raw, manifest_path=R29_MANIFEST, candidate=FROZEN_R29
-    )
-
-    r33_raw = _frozen_manifest_bytes(treeish, R33_MANIFEST, FROZEN_R33)
-    r33 = _parse_manifest(r33_raw, "fleet-universal-provider-control-candidate-manifest/v3")
-    verify_r33(r33, FROZEN_R33)
-    r33_subjects = _verify_subjects_and_self(
-        r33, r33_raw, manifest_path=R33_MANIFEST, candidate=FROZEN_R33
-    )
-
-    r34_raw = _frozen_manifest_bytes(treeish, R34_MANIFEST, FROZEN_R34)
-    r34 = _parse_manifest(r34_raw, "fleet-universal-provider-control-candidate-manifest/v3")
-    verify_r34(r34, FROZEN_R34)
-    r34_subjects = _verify_subjects_and_self(
-        r34, r34_raw, manifest_path=R34_MANIFEST, candidate=FROZEN_R34
-    )
-
-    r35_raw = _frozen_manifest_bytes(treeish, R35_MANIFEST, FROZEN_R35)
-    r35 = _parse_manifest(r35_raw, "fleet-universal-provider-control-candidate-manifest/v3")
-    verify_r35(r35, FROZEN_R35)
-    r35_subjects = _verify_subjects_and_self(
-        r35, r35_raw, manifest_path=R35_MANIFEST, candidate=FROZEN_R35
-    )
-
-    r36_raw = _frozen_manifest_bytes(treeish, R36_MANIFEST, FROZEN_R36)
-    assert isinstance(r36_raw, bytes)
-    r36 = _parse_manifest(r36_raw, "fleet-universal-provider-control-candidate-manifest/v3")
-    verify_r36(r36, FROZEN_R36)
-    r36_subjects = _verify_subjects_and_self(
-        r36, r36_raw, manifest_path=R36_MANIFEST, candidate=FROZEN_R36
-    )
-
-    r37_raw = _frozen_manifest_bytes(treeish, R37_MANIFEST, FROZEN_R37)
-    assert isinstance(r37_raw, bytes)
-    r37 = _parse_manifest(r37_raw, "fleet-universal-provider-control-candidate-manifest/v3")
-    verify_r37(r37, FROZEN_R37)
-    r37_subjects = _verify_subjects_and_self(
-        r37, r37_raw, manifest_path=R37_MANIFEST, candidate=FROZEN_R37
-    )
-
-    r38_raw = _frozen_manifest_bytes(treeish, R38_MANIFEST, FROZEN_R38)
-    assert isinstance(r38_raw, bytes)
-    r38 = _parse_manifest(r38_raw, "fleet-universal-provider-control-candidate-manifest/v3")
-    verify_r38(r38, FROZEN_R38)
-    r38_subjects = _verify_subjects_and_self(
-        r38, r38_raw, manifest_path=R38_MANIFEST, candidate=FROZEN_R38
-    )
-
-    r39_raw = _git(_blob_spec(treeish, R39_MANIFEST))
-    assert isinstance(r39_raw, bytes)
-    r39 = _parse_manifest(r39_raw, "fleet-universal-provider-control-candidate-manifest/v3")
-    verify_r39(r39, treeish)
-    r39_subjects = _verify_subjects_and_self(
-        r39, r39_raw, manifest_path=R39_MANIFEST, candidate=treeish
-    )
-    subject_counts = (
-        r26_subjects, r29_subjects, r33_subjects, r34_subjects, r35_subjects,
-        r36_subjects, r37_subjects, r38_subjects, r39_subjects,
-    )
-    labels = [re.search(r"-r([0-9]+)\.json$", path).group(1) for path, _ in MANIFEST_LAYER_ROWS]
+    receipts = _execute_manifest_layers(treeish)
     count_report = " ".join(
-        f"r{label}_subjects={count}" for label, count in zip(labels, subject_counts, strict=True)
+        f"r{receipt['round']}_subjects={receipt['subjects']}" for receipt in receipts
     )
-    candidates = [candidate for _, candidate in FROZEN_MANIFEST_LAYERS] + [R39_BASE["commit"]]
-    print(
-        f"MANIFEST_PASS {count_report} self=PASS "
-        f"candidates={','.join(candidates)} checked={treeish}"
-    )
+    candidates = ",".join(receipt["reportCandidate"] for receipt in receipts)
+    print(f"MANIFEST_PASS {count_report} self=PASS candidates={candidates} checked={treeish}")
     return 0
 
 

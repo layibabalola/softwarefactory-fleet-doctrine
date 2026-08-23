@@ -108,3 +108,7 @@ the human store-and-forward bus.
   historical tests use literal frozen commits, while one metadata-selected current test derives the
   active layer label, counts, candidate, and report. Runtime, schema, policy, cache/charge behavior,
   quality, and input-blind zero-authority refusal remain byte-identical.
+  R40 freezes adverse R39 and replaces the checker pipeline with one immutable descriptor per trust
+  layer. Those same closed descriptors control loading, parsing, trusted verifier dispatch,
+  subject/self verification, counts, labels, candidates, and reporting; an unmodeled higher carrier
+  fails closed. Runtime, schema, policy, quality, and zero-authority refusal remain unchanged.

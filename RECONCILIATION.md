@@ -258,3 +258,17 @@ and output. The nine layer counts are 98/7/7/7/7/7/7/7/7.
 
 Runtime/schema bytes, policy digest, Fable quality profile, cache/charge semantics, exact capacity
 arithmetic, and input-blind `REFUSE`/zero authority are unchanged. R39 grants no authority or credit.
+
+## R40 closed manifest-layer descriptors (candidate, zero authority)
+
+R40 freezes adverse R39 `3bea531c2b3abbc4be4b506255d344d8ec6e712f`, tree
+`9a77aa147120666bfd620ecc400507933aef0ef0`. One frozen immutable descriptor per layer binds its
+manifest path, frozen/current candidate sentinel, schema, trusted verifier function object, and
+report candidate/base. The same descriptor sequence exclusively drives load and frozen-byte checks,
+parse, verifier dispatch, subject/self candidate, counts, labels, and report output.
+
+Descriptors have unique paths and rounds, exact numeric order 26/29/33/34/35/36/37/38/39/40, and
+exactly one current descriptor in the last position. The current round must equal the highest tracked
+carrier manifest in HEAD or the index, so an added but unmodeled successor refuses. Runtime/schema
+bytes, policy digest, Fable profile, cache/charge behavior, exact arithmetic, and input-blind
+`REFUSE`/zero authority remain unchanged. R40 grants no authority or credit.
