@@ -90,6 +90,12 @@ jobs:
       - name: Verify portable Git-blob manifest
         run: python tools/check_universal_manifest.py --treeish HEAD
 
+      - name: Verify zero-reserve R2 candidate capsule
+        run: python tools/check_zero_reserve_candidate.py
+
+      - name: Run zero-reserve R2 hostile controls
+        run: python -m unittest tests.test_zero_reserve_candidate -v
+
       - name: Validate example telemetry shard
         run: python tools/provider_capacity_governor.py validate-events examples/provider-usage-events-v1.jsonl
 
