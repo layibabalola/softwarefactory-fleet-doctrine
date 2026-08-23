@@ -21,6 +21,7 @@ SHA256_PATTERN = re.compile(r"^sha256:[0-9a-f]{64}$")
 EVIDENCE_SCHEMA = "fleet-provider-audit-consumer-provenance/v1"
 CONTRACT_SCHEMA = "fleet-provider-audit-consumer-contract/v1"
 DIAGNOSTIC_SCHEMA = "fleet-provider-terminal-diagnostic/v1"
+FINAL_OPINION_SCHEMA = "fleet-provider-final-opinion/v1"
 LINEAGE_SCHEMA = "fleet-provider-audit-consumer-lineage/v1"
 SUBSTITUTION_SCHEMA = "fleet-provider-substitution-authority/v1"
 REQUIRED_SELF_TEST_CHECKS = (
@@ -263,10 +264,23 @@ def classify_provider_diagnostic(record: Mapping[str, Any], expected_provider_se
     return expected
 
 
-def _validate_opinion_custody(claim: Mapping[str, Any], terminal: Mapping[str, Any]) -> None:
+def _validate_opinion_claim(claim: Mapping[str, Any]) -> str:
     custody = _mapping(claim.get("finalOpinionCustody"), "claim.finalOpinionCustody")
-    opinion = _mapping(terminal.get("finalOpinion"), "terminal.finalOpinion")
     _exact_keys(custody, "claim.finalOpinionCustody", {"path", "pathAbsentBeforeClaim", "createDisposition"})
+    custody_path = _nonempty(custody.get("path"), "claim.finalOpinionCustody.path")
+    if custody.get("pathAbsentBeforeClaim") is not True or custody.get("createDisposition") != "CreateNew":
+        raise EvidenceError("OPINION_CUSTODY", "final opinion claim lacks preclaim CreateNew custody")
+    return custody_path
+
+
+def _validate_opinion_custody(
+    claim: Mapping[str, Any],
+    terminal: Mapping[str, Any],
+    consumer_session: str,
+    provider_session: str,
+) -> str:
+    custody_path = _validate_opinion_claim(claim)
+    opinion = _mapping(terminal.get("finalOpinion"), "terminal.finalOpinion")
     _exact_keys(
         opinion,
         "terminal.finalOpinion",
@@ -275,12 +289,9 @@ def _validate_opinion_custody(claim: Mapping[str, Any], terminal: Mapping[str, A
             "writeCount", "rejoinedBytes", "rejoinedSha256",
         },
     )
-    custody_path = _nonempty(custody.get("path"), "claim.finalOpinionCustody.path")
     opinion_path = _nonempty(opinion.get("path"), "terminal.finalOpinion.path")
     if (
         custody_path != opinion_path
-        or custody.get("pathAbsentBeforeClaim") is not True
-        or custody.get("createDisposition") != "CreateNew"
         or opinion.get("createDisposition") != "CreateNew"
         or opinion.get("createSucceeded") is not True
         or _integer(opinion.get("writeCount"), "terminal.finalOpinion.writeCount") != 1
@@ -293,6 +304,27 @@ def _validate_opinion_custody(claim: Mapping[str, Any], terminal: Mapping[str, A
         != SHA256_PREFIX + hashlib.sha256(raw).hexdigest()
     ):
         raise EvidenceError("OPINION_CUSTODY", "final opinion did not physically rejoin exact bytes")
+    try:
+        descriptor = _mapping(json.loads(raw.decode("utf-8")), "terminal.finalOpinion.content")
+    except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+        raise EvidenceError("SUBSTANTIVE_TEXT", "final opinion content is not canonical JSON") from exc
+    _exact_keys(
+        descriptor,
+        "terminal.finalOpinion.content",
+        {"schema", "verdict", "consumerSession", "providerSession"},
+    )
+    if raw != _canonical_descriptor_bytes(descriptor) or descriptor.get("schema") != FINAL_OPINION_SCHEMA:
+        raise EvidenceError("SUBSTANTIVE_TEXT", "final opinion descriptor is not canonical or versioned")
+    verdict = _nonempty(descriptor.get("verdict"), "terminal.finalOpinion.content.verdict")
+    if verdict not in ("EXECUTION_READY", "HOLD"):
+        raise EvidenceError("SUBSTANTIVE_TEXT", "final opinion descriptor verdict is unsupported")
+    if (
+        descriptor.get("consumerSession") != consumer_session
+        or descriptor.get("providerSession") != provider_session
+        or terminal.get("substantiveVerdict") != verdict
+    ):
+        raise EvidenceError("SUBSTANTIVE_TEXT", "mutable terminal metadata does not match exact final-opinion bytes")
+    return verdict
 
 
 def _hold(code: str) -> AuditDecision:
@@ -332,6 +364,7 @@ def evaluate_audit_evidence(contract_value: Mapping[str, Any], evidence_value: M
         consumer_session = _nonempty(claim.get("consumerSession"), "claim.consumerSession")
         if terminal.get("consumerSession") != consumer_session:
             raise EvidenceError("SESSION_CUSTODY", "terminal does not bind the claimed consumer session")
+        _validate_opinion_claim(claim)
         _validate_shell_and_wrapper(claim)
         _validate_command_accounting(contract, claim, postflight)
 
@@ -404,11 +437,11 @@ def evaluate_audit_evidence(contract_value: Mapping[str, Any], evidence_value: M
         if postflight.get("opinionCreateNewRejoined") is not True:
             raise EvidenceError("POSTFLIGHT", "postflight did not rejoin exact CreateNew opinion")
 
-        _validate_opinion_custody(claim, terminal)
+        opinion_verdict = _validate_opinion_custody(claim, terminal, consumer_session, provider_session)
+        if opinion_verdict != outcome:
+            raise EvidenceError("SUBSTANTIVE_TEXT", "exact final-opinion verdict does not match terminal outcome")
         if outcome == "HOLD":
             return _hold("PROVIDER_HOLD")
-        if terminal.get("substantiveVerdict") != "EXECUTION_READY":
-            raise EvidenceError("SUBSTANTIVE_TEXT", "exact final opinion lacks the required substantive verdict")
         return AuditDecision(
             AuditDisposition.ACCEPTED_NO_EXECUTION_AUTHORITY,
             "AUDIT_EVIDENCE_ACCEPTED",
@@ -420,16 +453,17 @@ def evaluate_audit_evidence(contract_value: Mapping[str, Any], evidence_value: M
 
 
 def evaluate_provider_substitution(
-    prior_evidence: Mapping[str, Any],
+    prior_evidence: Any,
     authority_value: Mapping[str, Any],
     next_claim_value: Mapping[str, Any],
 ) -> AuditDecision:
     """Verify explicit provider substitution after a spent resource-limit no-verdict."""
 
     try:
-        prior_contract = _mapping(prior_evidence.get("contract"), "priorEvidence.contract")
-        prior_package = _mapping(prior_evidence.get("evidence"), "priorEvidence.evidence")
-        _exact_keys(prior_evidence, "priorEvidence", {"contract", "evidence"})
+        prior_root = _mapping(prior_evidence, "priorEvidence")
+        _exact_keys(prior_root, "priorEvidence", {"contract", "evidence"})
+        prior_contract = _mapping(prior_root.get("contract"), "priorEvidence.contract")
+        prior_package = _mapping(prior_root.get("evidence"), "priorEvidence.evidence")
         prior = evaluate_audit_evidence(prior_contract, prior_package)
         if prior.disposition is not AuditDisposition.NO_VERDICT_RESOURCE_LIMIT:
             return _hold("SUBSTITUTION_PRIOR_NOT_SPENT")

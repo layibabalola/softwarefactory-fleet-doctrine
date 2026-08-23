@@ -50,6 +50,25 @@ def provider_diagnostic(kind: str, code: str, provider_session: str = "provider-
     return value
 
 
+def final_opinion_bytes(verdict: str, consumer_session: str = "consumer-1") -> bytes:
+    return canonical_descriptor(
+        {
+            "schema": "fleet-provider-final-opinion/v1",
+            "verdict": verdict,
+            "consumerSession": consumer_session,
+            "providerSession": "provider-thread-1",
+        }
+    )
+
+
+def replace_final_opinion_content(value: dict[str, object], verdict: str) -> None:
+    replacement = exact_bytes(final_opinion_bytes(verdict))
+    opinion = value["terminal"]["finalOpinion"]
+    opinion.update(replacement)
+    opinion["rejoinedBytes"] = replacement["bytes"]
+    opinion["rejoinedSha256"] = replacement["sha256"]
+
+
 def identity(provider: str = "openai", model: str = "gpt-sol") -> dict[str, object]:
     return {
         "provider": provider,
@@ -67,7 +86,7 @@ def contract() -> dict[str, object]:
 
 
 def evidence() -> dict[str, object]:
-    opinion = exact_bytes(b"VERDICT=EXECUTION_READY\n")
+    opinion = exact_bytes(final_opinion_bytes("EXECUTION_READY"))
     opinion.update(
         {
             "path": "review/final.md",
@@ -210,6 +229,20 @@ class ProviderAuditConsumerProvenanceTests(unittest.TestCase):
         value["terminal"]["finalOpinion"]["rejoinedSha256"] = "sha256:" + "0" * 64
         self.assert_hold(value, "OPINION_CUSTODY")
 
+    def test_substantive_verdict_is_derived_from_exact_opinion_bytes(self) -> None:
+        value = evidence()
+        replace_final_opinion_content(value, "HOLD")
+        self.assertEqual("EXECUTION_READY", value["terminal"]["substantiveVerdict"])
+        self.assert_hold(value, "SUBSTANTIVE_TEXT")
+
+    def test_final_opinion_descriptor_binds_consumer_session(self) -> None:
+        value = evidence()
+        replacement = exact_bytes(final_opinion_bytes("EXECUTION_READY", "different-consumer"))
+        value["terminal"]["finalOpinion"].update(replacement)
+        value["terminal"]["finalOpinion"]["rejoinedBytes"] = replacement["bytes"]
+        value["terminal"]["finalOpinion"]["rejoinedSha256"] = replacement["sha256"]
+        self.assert_hold(value, "SUBSTANTIVE_TEXT")
+
     def test_wrapper_self_test_must_use_actual_shell_version(self) -> None:
         value = evidence()
         value["claim"]["preclaimSelfTest"]["shellVersion"] = "7.4.0"
@@ -320,6 +353,23 @@ class ProviderAuditConsumerProvenanceTests(unittest.TestCase):
         value["terminal"]["opinionPresent"] = True
         self.assert_hold(value, "NO_VERDICT_LINEAGE")
 
+    def test_no_verdict_still_validates_preclaim_opinion_custody(self) -> None:
+        value = no_verdict_evidence()
+        value["claim"]["finalOpinionCustody"]["createDisposition"] = "Overwrite"
+        self.assert_hold(value, "OPINION_CUSTODY")
+
+    def test_no_verdict_custody_runtime_matches_schema_refusal(self) -> None:
+        value = no_verdict_evidence()
+        value["claim"]["finalOpinionCustody"]["pathAbsentBeforeClaim"] = False
+        self.assert_hold(value, "OPINION_CUSTODY")
+        schema = json.loads(
+            (Path(__file__).parents[1] / "schemas/provider-audit-consumer-provenance-v1.schema.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        with self.assertRaises(jsonschema.ValidationError):
+            jsonschema.validate(value, schema)
+
     def test_rate_limit_diagnostic_cannot_suppress_failed_postflight(self) -> None:
         value = no_verdict_evidence()
         value["postflight"]["passed"] = False
@@ -415,6 +465,13 @@ class ProviderAuditConsumerProvenanceTests(unittest.TestCase):
         result = evaluate_provider_substitution({}, {}, {})
         self.assertEqual(AuditDisposition.HOLD, result.disposition)
         self.assertEqual("MALFORMED", result.reason)
+
+    def test_nonmapping_prior_substitution_packages_fail_deterministically(self) -> None:
+        for malformed in (None, [], "not-a-package"):
+            with self.subTest(malformed=malformed):
+                result = evaluate_provider_substitution(malformed, {}, {})
+                self.assertEqual(AuditDisposition.HOLD, result.disposition)
+                self.assertEqual("MALFORMED", result.reason)
 
     def test_decision_object_rejects_execution_authority(self) -> None:
         with self.assertRaises(ValueError):

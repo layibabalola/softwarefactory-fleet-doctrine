@@ -34,6 +34,12 @@ byte-count, and SHA-256. Postflight physically reopens the path and must reprodu
 digest. Append, overwrite, rename-as-retry, pre-existing content, two writes, a digest without the
 bytes, or text reconstructed from a transcript refuses.
 
+The retained bytes are a canonical, versioned final-opinion descriptor binding the verdict,
+consumer session, and authenticated provider session. The validator derives the substantive verdict
+from those bytes; a mutable sibling verdict or terminal outcome must match and cannot upgrade them.
+The complete preclaim custody object is validated for every terminal branch, including resource-limit
+`NO_VERDICT`, even though that branch correctly contains no opinion.
+
 The final opinion remains substantive evidence. It is never execution authority by itself.
 
 ### 3. The wrapper proves itself under the actual shell before claim
@@ -101,6 +107,10 @@ The new claim's exact fresh session and identity must match the artifact. Reusin
 different session, an automatic fallback, model downgrade, stale checkpoint, unbound provider
 choice, or spent session refuses. Substitution authorizes only a fresh
 audit consumer; it does not authorize the governed workload.
+
+Before reading any nested field, the substitution evaluator validates that the complete prior
+package is an object with exactly `contract` and `evidence`. Null, array, string, or extra-field roots
+produce deterministic `HOLD`, never an uncaught host-language exception.
 
 ### 8. Governed postflight dominates substantive text
 

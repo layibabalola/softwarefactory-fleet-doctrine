@@ -51,15 +51,15 @@
     },
     {
       "path": "specs/provider-audit-consumer-provenance.md",
-      "gitBlobOid": "579b7261bd526e300f5572efab5b30239b9a8d73",
-      "sha256": "sha256:4fc2f531fc26501a0f6fb4f1d5d4dee92b54298ee2ec43e5256896019e62b7ba",
-      "bytes": 8044
+      "gitBlobOid": "7f9565482f4c4efc576a2e870a0b0eb665e11398",
+      "sha256": "sha256:691a75418f78242df69d938f2d11a2943ee1857e8a1961d5284aa2fa1ab12c52",
+      "bytes": 8779
     },
     {
       "path": "tests/test_provider_audit_consumer_provenance.py",
-      "gitBlobOid": "3aff56117a418476e48d50e15eb7f345df0f06a3",
-      "sha256": "sha256:de8dbab6412bb4ef6149039f7acedcaba3ecf4a019edf447a65ff05ff4145889",
-      "bytes": 19013
+      "gitBlobOid": "b4a9874d3c0c110a7d9c744505bf03e774ee010a",
+      "sha256": "sha256:8c29b2f73ab9ce1fd56e3f23568d633c62353115785c334bf403dbc6ee4ad074",
+      "bytes": 21686
     },
     {
       "path": "tools/check_provider_audit_consumer_manifest.py",
@@ -69,13 +69,13 @@
     },
     {
       "path": "tools/provider_audit_consumer_provenance.py",
-      "gitBlobOid": "ec3ebe0d075137ca9266be7612b26ad26f03ac27",
-      "sha256": "sha256:254d6eb3a7d5fb164f588ac586e5e6755cdc88487e9e372243cce21a6e6a8559",
-      "bytes": 24385
+      "gitBlobOid": "7d572093ed5c82b11ee12cd453fca223054eb315",
+      "sha256": "sha256:225eb87965dbf8a6403a66ebcf9436b2007492ead251bed6209276caf51304d9",
+      "bytes": 26054
     }
   ],
   "manifestSelf": {
     "path": "manifests/provider-audit-consumer-provenance-r46.json",
-    "canonicalSha256": "sha256:3aaa72310a2d1c4e5ff1fa87b807fb005cc02e75ff295440d83c3ca19742f9b5"
+    "canonicalSha256": "sha256:a916a667fc6150164c9930bf0def1c9c0587613917322abab4dd4c940bad7f66"
   }
 }
