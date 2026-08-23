@@ -15,6 +15,28 @@ SPEC.loader.exec_module(MODULE)
 BASE = MODULE.PHASE16
 
 
+def _load_checker(name: str):
+    path = ROOT / "tools" / f"check_{name}.py"
+    spec = importlib.util.spec_from_file_location(f"forward_scope_{name}", path)
+    checker = importlib.util.module_from_spec(spec)
+    assert spec.loader is not None
+    spec.loader.exec_module(checker)
+    return checker
+
+
+P2 = _load_checker("phase2_disposition_batch")
+P3 = _load_checker("phase3_disposition_batch")
+P5 = _load_checker("phase5_stale_reconciliation")
+HISTORICAL_OWNED_EVIDENCE_PATHS = {
+    "adoption/phase2/README.md",
+    P2.BATCH_PATH,
+    "adoption/phase3/README.md",
+    P3.INTAKE_PATH,
+    "adoption/phase5/README.md",
+    P5.INTAKE_PATH,
+}
+
+
 class DescendantScopeTests(unittest.TestCase):
     def _classify(self, event: str, paths: set[str], *, ancestor: bool = True, base: str = BASE) -> str:
         with (
@@ -30,6 +52,28 @@ class DescendantScopeTests(unittest.TestCase):
         for event in ("pull_request", "push"):
             with self.subTest(event=event):
                 self.assertEqual("APPLICABLE", self._classify(event, MODULE.MUTABLE_BOOTSTRAP_ALLOWLIST))
+
+    def test_all_historical_phase2_phase3_phase5_triggers_are_forward_protected(self):
+        historical_triggers = P2.PHASE2_TRIGGER_PATHS | P3.PHASE3_TRIGGER_PATHS | P5.PHASE5_TRIGGER_PATHS
+        self.assertLessEqual(historical_triggers, MODULE.PROTECTED_TRIGGER_PATHS)
+        self.assertIn(P3.LEDGER_PATH, MODULE.PROTECTED_TRIGGER_PATHS)
+        for path in sorted(HISTORICAL_OWNED_EVIDENCE_PATHS):
+            with self.subTest(path=path, base=BASE), self.assertRaisesRegex(
+                MODULE.DescendantScopeError, "DESCENDANT_SCOPE_VIOLATION"
+            ):
+                self._classify("pull_request", {path})
+            with self.subTest(path=path, base="later"), self.assertRaisesRegex(
+                MODULE.DescendantScopeError, "BOOTSTRAP_SCOPE_CLOSED"
+            ):
+                self._classify("push", {path}, base="a" * 40)
+
+        auxiliary = (
+            P2.AUXILIARY_EVENT_ALLOWED_PATHS
+            | P3.AUXILIARY_EVENT_ALLOWED_PATHS
+            | P5.AUXILIARY_EVENT_ALLOWED_PATHS
+        )
+        self.assertTrue(auxiliary.isdisjoint(MODULE.PROTECTED_TRIGGER_PATHS))
+        self.assertEqual("N/A_NO_PHASE12_PHASE16_TRIGGER", self._classify("pull_request", auxiliary))
 
     def test_carrier_and_unrelated_events_are_na(self):
         carrier = {

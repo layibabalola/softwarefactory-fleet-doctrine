@@ -45,6 +45,12 @@ MUTABLE_BOOTSTRAP_ALLOWLIST = {
 }
 BOOTSTRAP_CONTROL_PATHS = MUTABLE_BOOTSTRAP_ALLOWLIST
 PROTECTED_TRIGGER_PATHS = MUTABLE_BOOTSTRAP_ALLOWLIST | {
+    "adoption/phase2/README.md",
+    "adoption/phase2/r26-project-disposition-intake.json",
+    "adoption/phase3/README.md",
+    "adoption/phase3/r26-published-project-disposition-intake.json",
+    "adoption/phase5/README.md",
+    "adoption/phase5/r26-stale-project-reconciliation.json",
     "adoption/phase12/README.md",
     "adoption/phase12/r26-current-master-review-integration.json",
     "adoption/phase13/README.md",
