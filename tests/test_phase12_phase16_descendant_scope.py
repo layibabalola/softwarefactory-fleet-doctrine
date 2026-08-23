@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import importlib.util
+import os
 from pathlib import Path
 from unittest import mock
 import unittest
@@ -24,10 +25,11 @@ class DescendantScopeTests(unittest.TestCase):
             return MODULE.classify_event(event, BASE)
 
     def test_exact_bootstrap_is_applicable_for_pr_and_push(self):
-        self.assertEqual(20, len(MODULE.BOOTSTRAP_CONTROL_PATHS))
+        self.assertEqual(20, len(MODULE.MUTABLE_BOOTSTRAP_ALLOWLIST))
+        self.assertTrue(MODULE.MUTABLE_BOOTSTRAP_ALLOWLIST < MODULE.PROTECTED_TRIGGER_PATHS)
         for event in ("pull_request", "push"):
             with self.subTest(event=event):
-                self.assertEqual("APPLICABLE", self._classify(event, MODULE.BOOTSTRAP_CONTROL_PATHS))
+                self.assertEqual("APPLICABLE", self._classify(event, MODULE.MUTABLE_BOOTSTRAP_ALLOWLIST))
 
     def test_carrier_and_unrelated_events_are_na(self):
         carrier = {
@@ -42,8 +44,18 @@ class DescendantScopeTests(unittest.TestCase):
         self.assertEqual("N/A_NO_PHASE12_PHASE16_TRIGGER", self._classify("pull_request", carrier))
         self.assertEqual("N/A_NO_PHASE12_PHASE16_TRIGGER", self._classify("push", {"README.md"}))
 
-    def test_trigger_mixed_with_forbidden_or_foreign_refuses(self):
+    def test_protected_immutable_change_and_trigger_mixing_refuse(self):
         trigger = {"tools/check_phase12_phase16_descendant_scope.py"}
+        for protected in (
+            "adoption/phase12/r26-current-master-review-integration.json",
+            "adoption/phase16/phase15-review-packet.json",
+            "tests/test_phase13_integration.py", "tools/check_phase15_integration.py",
+            "tests/test_phase6_candidate_reviews.py", "tools/check_adoption_ledger.py",
+            "adoption/universal-token-control-r26.json",
+            "manifests/universal-provider-control-reconciliation-r26.json",
+        ):
+            with self.subTest(protected=protected), self.assertRaisesRegex(MODULE.DescendantScopeError, "DESCENDANT_SCOPE_VIOLATION"):
+                self._classify("pull_request", {protected})
         for path in (
             "specs/cloudvore.md", "manifests/forged.json",
             "adoption/universal-token-control-r26.json", "snapshots/forged.json",
@@ -63,7 +75,7 @@ class DescendantScopeTests(unittest.TestCase):
                     with self.assertRaisesRegex(MODULE.DescendantScopeError, "SCOPE_BASE_INVALID"):
                         MODULE.classify_event("pull_request", base)
         with self.assertRaisesRegex(MODULE.DescendantScopeError, "SCOPE_BASE_INVALID"):
-            self._classify("push", set(MODULE.BOOTSTRAP_CONTROL_PATHS), ancestor=False)
+            self._classify("push", set(MODULE.MUTABLE_BOOTSTRAP_ALLOWLIST), ancestor=False)
 
     def test_manual_is_explicit_na_and_unknown_event_refuses(self):
         self.assertEqual("N/A_WORKFLOW_DISPATCH", MODULE.classify_event("workflow_dispatch", ""))
@@ -89,7 +101,8 @@ class DescendantScopeTests(unittest.TestCase):
             mock.patch.object(MODULE, "verify_current_workflow") as workflow,
             mock.patch.object(MODULE, "classify_event") as scope,
         ):
-            self.assertEqual(1, MODULE.main(["--scope-event", "workflow_dispatch"]))
+            with mock.patch.dict(os.environ, {"R26_SCOPE_EVENT": "workflow_dispatch", "R26_SCOPE_BASE_SHA": ""}, clear=False):
+                self.assertEqual(1, MODULE.main([]))
             frozen.assert_called_once()
             workflow.assert_not_called()
             scope.assert_not_called()
@@ -111,15 +124,62 @@ class DescendantScopeTests(unittest.TestCase):
         raw = (ROOT / ".github" / "workflows" / "disposition-intake.yml").read_bytes()
         with mock.patch.object(MODULE, "_blob", return_value=raw):
             MODULE.verify_current_workflow()
-        final = b"python tools/check_phase12_phase16_descendant_scope.py"
+        final = next(line for line in MODULE.WORKFLOW_ROUTE_LINES if line.endswith(b"python tools/check_phase12_phase16_descendant_scope.py"))
         for hostile, code in (
             (raw.replace(final, b"", 1), "WORKFLOW_ROUTE_COUNT_INVALID"),
             (raw + b"\n" + final, "WORKFLOW_ROUTE_COUNT_INVALID"),
-            (raw.replace(b"--treeish 990906b6ea861ca579e1336bcfe8f17dd80c83ae", b"--treeish HEAD", 1), "WORKFLOW_FROZEN_DISPOSITION_ROUTE_INVALID"),
+            (raw.replace(b"--treeish 990906b6ea861ca579e1336bcfe8f17dd80c83ae", b"--treeish HEAD", 1), "WORKFLOW_ROUTE_COUNT_INVALID"),
         ):
             with self.subTest(code=code), mock.patch.object(MODULE, "_blob", return_value=hostile):
                 with self.assertRaisesRegex(MODULE.DescendantScopeError, code):
                     MODULE.verify_current_workflow()
+
+    def test_complete_workflow_route_env_and_timeout_hostiles_refuse(self):
+        raw = (ROOT / ".github" / "workflows" / "disposition-intake.yml").read_bytes()
+        first = MODULE.WORKFLOW_ROUTE_LINES[0]
+        second = MODULE.WORKFLOW_ROUTE_LINES[1]
+        swapped = raw.replace(first, b"__FIRST__", 1).replace(second, first, 1).replace(b"__FIRST__", second, 1)
+        hostiles = (
+            raw.replace(first, b"", 1),
+            raw + b"\n" + first,
+            swapped,
+            raw.replace(first, b"        # " + first.strip(), 1),
+            raw.replace(MODULE.WORKFLOW_ENV_LINES[0], b"      R26_REMOTE_AUTH_CONFIGURED: true", 1),
+            raw.replace(b"github.event.before", b"github.sha", 1),
+            raw.replace(MODULE.WORKFLOW_TIMEOUT_LINE, b"", 1),
+            raw + b"\n" + MODULE.WORKFLOW_TIMEOUT_LINE,
+            raw.replace(MODULE.WORKFLOW_TIMEOUT_LINE, b"    timeout-minutes: 10", 1),
+        )
+        for hostile in hostiles:
+            with self.subTest(hostile=hostile[:80]), mock.patch.object(MODULE, "_blob", return_value=hostile):
+                with self.assertRaisesRegex(MODULE.DescendantScopeError, "WORKFLOW_"):
+                    MODULE.verify_current_workflow()
+
+    def test_scope_inputs_are_environment_only(self):
+        for option in ("--scope-event", "--scope-base"):
+            with self.subTest(option=option), self.assertRaises(SystemExit):
+                MODULE.main([option, "workflow_dispatch"])
+
+    def test_forward_checker_refuses_git_object_indirection_before_frozen_verifiers(self):
+        for key in ("GIT_OBJECT_DIRECTORY", "GIT_ALTERNATE_OBJECT_DIRECTORIES", "GIT_REPLACE_REF_BASE", "GIT_CONFIG_COUNT"):
+            with self.subTest(key=key), mock.patch.dict(os.environ, {key: "forged"}, clear=False):
+                with self.assertRaisesRegex(MODULE.DescendantScopeError, "GIT_OBJECT_INDIRECTION_REFUSED"):
+                    MODULE.verify_git_object_isolation()
+        with mock.patch.object(Path, "exists", return_value=True):
+            with self.assertRaisesRegex(MODULE.DescendantScopeError, "GIT_ALTERNATE_OBJECT_STORE_REFUSED"):
+                MODULE.verify_git_object_isolation()
+        original = MODULE._git
+        with mock.patch.object(MODULE, "_git", side_effect=lambda args, **kwargs: "0" * 40 + "\n" if args == ["replace", "-l"] else original(args, **kwargs)):
+            with self.assertRaisesRegex(MODULE.DescendantScopeError, "GIT_REPLACE_OBJECT_REFUSED"):
+                MODULE.verify_git_object_isolation()
+        with (
+            mock.patch.object(MODULE, "verify_git_object_isolation", side_effect=MODULE.DescendantScopeError("GIT_OBJECT_INDIRECTION_REFUSED")) as isolation,
+            mock.patch.object(MODULE, "verify_frozen_publications") as frozen,
+        ):
+            with mock.patch.dict(os.environ, {"R26_SCOPE_EVENT": "workflow_dispatch", "R26_SCOPE_BASE_SHA": ""}, clear=False):
+                self.assertEqual(1, MODULE.main([]))
+            isolation.assert_called_once()
+            frozen.assert_not_called()
 
     def test_historical_treeish_cannot_redirect_event_target(self):
         self.assertNotIn("treeish", MODULE.classify_event.__code__.co_varnames)

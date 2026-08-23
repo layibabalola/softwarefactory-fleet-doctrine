@@ -83,6 +83,13 @@ class Phase11Error(ValueError):
     pass
 
 
+UNSAFE_GIT_ENV = {
+    "GIT_DIR", "GIT_WORK_TREE", "GIT_COMMON_DIR", "GIT_OBJECT_DIRECTORY",
+    "GIT_ALTERNATE_OBJECT_DIRECTORIES", "GIT_REPLACE_REF_BASE", "GIT_INDEX_FILE",
+    "GIT_NAMESPACE", "GIT_CEILING_DIRECTORIES", "GIT_EXEC_PATH",
+}
+
+
 def _load_phase10_module() -> Any:
     path = ROOT / "tools" / "check_phase10_integration.py"
     spec = importlib.util.spec_from_file_location("phase10_for_phase11", path)
@@ -99,23 +106,31 @@ P10 = _load_phase10_module()
 def _clean_git_env() -> dict[str, str]:
     environment = os.environ.copy()
     for key in tuple(environment):
-        if key in {
-            "GIT_DIR", "GIT_WORK_TREE", "GIT_COMMON_DIR", "GIT_OBJECT_DIRECTORY",
-            "GIT_ALTERNATE_OBJECT_DIRECTORIES", "GIT_REPLACE_REF_BASE", "GIT_INDEX_FILE",
-            "GIT_NAMESPACE", "GIT_CEILING_DIRECTORIES", "GIT_EXEC_PATH",
-        } or key.startswith("GIT_CONFIG"):
+        if key in UNSAFE_GIT_ENV or key.startswith("GIT_CONFIG"):
             environment.pop(key, None)
     return environment
 
 
 def _git(args: list[str], *, text: bool = False, error: str = "GIT_OBJECT_UNAVAILABLE") -> bytes | str:
     run = subprocess.run(
-        ["git", *args], cwd=ROOT, env=_clean_git_env(), check=False, capture_output=True,
+        ["git", "--no-replace-objects", "-c", "core.useReplaceRefs=false", *args], cwd=ROOT, env=_clean_git_env(), check=False, capture_output=True,
         text=text, encoding="utf-8" if text else None,
     )
     if run.returncode != 0:
         raise Phase11Error(error)
     return run.stdout
+
+
+def verify_git_object_isolation() -> None:
+    if any(key in os.environ for key in UNSAFE_GIT_ENV) or any(key.startswith("GIT_CONFIG") for key in os.environ):
+        raise Phase11Error("GIT_OBJECT_INDIRECTION_REFUSED")
+    common = Path(str(_git(["rev-parse", "--git-common-dir"], text=True)).strip())
+    if not common.is_absolute():
+        common = ROOT / common
+    if (common.resolve() / "objects" / "info" / "alternates").exists():
+        raise Phase11Error("GIT_ALTERNATE_OBJECT_STORE_REFUSED")
+    if str(_git(["replace", "-l"], text=True)).splitlines():
+        raise Phase11Error("GIT_REPLACE_OBJECT_REFUSED")
 
 
 def _blob_spec(treeish: str, path: str) -> str:
@@ -308,6 +323,7 @@ def verify_workflow(treeish: str) -> None:
 
 
 def verify_integration(treeish: str, *, verify_local_projects: bool = False) -> None:
+    verify_git_object_isolation()
     verify_phase10_source()
     if treeish == ":":
         head = str(_git(["rev-parse", "HEAD"], text=True, error="HEAD_UNAVAILABLE")).strip()
@@ -345,9 +361,10 @@ def main(argv: list[str] | None = None) -> int:
     except (Phase11Error, P10.Phase10Error) as exc:
         print(f"FAIL: {exc}", file=sys.stderr)
         return 1
+    local_status = "LOCAL SUBJECTS REDERIVED" if args.verify_local_projects else "LOCAL SUBJECTS NOT REDERIVED"
     print(
         "PASS SNAPSHOT-ONLY: Phase11 closes the frozen Phase10 receipt over exact bytes, keys, "
-        "native types, order, values, and authority; LOCAL SUBJECTS NOT REDERIVED"
+        f"native types, order, values, and authority; {local_status}"
     )
     return 0
 

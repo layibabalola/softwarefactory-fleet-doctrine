@@ -1,11 +1,13 @@
 from __future__ import annotations
 
 import copy
+import io
 import importlib.util
 import os
 from pathlib import Path
 from unittest import mock
 import unittest
+from contextlib import redirect_stdout
 
 ROOT = Path(__file__).resolve().parents[1]
 MODULE_PATH = ROOT / "tools" / "check_phase9_integration.py"
@@ -28,6 +30,22 @@ class Phase9IntegrationTests(unittest.TestCase):
     def test_optional_source_rederive_fails_closed_while_objects_are_absent(self):
         with self.assertRaisesRegex(MODULE.Phase9Error, "SOURCE_OBJECTS_UNAVAILABLE_NOT_REVERIFIED"):
             MODULE.verify_integration(SNAPSHOT, rederive_source_objects=True)
+
+    def test_present_source_mismatch_is_not_relabeled_unavailable(self):
+        with (
+            mock.patch.object(MODULE, "missing_source_objects", return_value=set()),
+            mock.patch.object(MODULE, "verify_source_objects", side_effect=MODULE.Phase9Error("REPAIR_SOURCE_MISMATCH")),
+        ):
+            with self.assertRaisesRegex(MODULE.Phase9Error, "REPAIR_SOURCE_MISMATCH"):
+                MODULE.verify_integration(SNAPSHOT, rederive_source_objects=True)
+
+    def test_success_output_distinguishes_rederived_from_not_reverified(self):
+        for enabled, marker in ((False, "SOURCE OBJECTS NOT REVERIFIED"), (True, "SOURCE OBJECTS REDERIVED")):
+            output = io.StringIO()
+            with mock.patch.object(MODULE, "verify_integration"), redirect_stdout(output):
+                argv = ["--treeish", SNAPSHOT] + (["--rederive-source-objects"] if enabled else [])
+                self.assertEqual(0, MODULE.main(argv))
+            self.assertIn(marker, output.getvalue())
 
     def test_retained_tuple_and_reachable_diffs_are_exact(self):
         original_tuple = MODULE._commit_tuple

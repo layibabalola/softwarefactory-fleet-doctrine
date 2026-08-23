@@ -231,8 +231,8 @@ def _commit_tuple(commit: str) -> tuple[str, list[str]]:
 
 def _is_ancestor(ancestor: str, descendant: str) -> bool:
     return subprocess.run(
-        ["git", "merge-base", "--is-ancestor", ancestor, descendant],
-        cwd=ROOT, check=False, capture_output=True,
+        ["git", "--no-replace-objects", "-c", "core.useReplaceRefs=false", "merge-base", "--is-ancestor", ancestor, descendant],
+        cwd=ROOT, env=_clean_git_env(), check=False, capture_output=True,
     ).returncode == 0
 
 
@@ -321,6 +321,23 @@ def verify_source_objects() -> None:
     for path, expected in REQUEST_BLOBS.items():
         if _oid(PHASE8_COMMIT, path) != expected:
             raise Phase9Error("PHASE8_REQUEST_MISMATCH")
+
+
+def missing_source_objects() -> set[str]:
+    missing: set[str] = set()
+    for label, oid in UNAVAILABLE_SOURCE_OBJECTS.items():
+        run = subprocess.run(
+            ["git", "--no-replace-objects", "-c", "core.useReplaceRefs=false", "cat-file", "-e", f"{oid}^{{commit}}"],
+            cwd=ROOT, env=_clean_git_env(), check=False, capture_output=True, text=True, encoding="utf-8",
+        )
+        if run.returncode == 0:
+            continue
+        stderr = run.stderr.lower()
+        if "not a valid object name" in stderr or "could not get object info" in stderr or "bad object" in stderr:
+            missing.add(label)
+            continue
+        raise Phase9Error(f"SOURCE_OBJECT_PREFLIGHT_FAILED:{label}")
+    return missing
 
 
 def verify_exact_artifacts(treeish: str, *, phase10_forward: bool = False) -> None:
@@ -472,25 +489,26 @@ def verify_retained_snapshot(treeish: str) -> None:
 def verify_integration(treeish: str, *, rederive_source_objects: bool = False) -> None:
     verify_retained_snapshot(treeish)
     if rederive_source_objects:
-        try:
-            verify_source_objects()
-        except Phase9Error as exc:
-            raise Phase9Error("SOURCE_OBJECTS_UNAVAILABLE_NOT_REVERIFIED") from exc
+        missing = missing_source_objects()
+        if missing:
+            raise Phase9Error("SOURCE_OBJECTS_UNAVAILABLE_NOT_REVERIFIED:" + ",".join(sorted(missing)))
+        verify_source_objects()
 
 
-def main() -> int:
+def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--treeish", default="HEAD")
     parser.add_argument("--rederive-source-objects", action="store_true")
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
     try:
         verify_integration(args.treeish, rederive_source_objects=args.rederive_source_objects)
     except Phase9Error as exc:
         print(f"FAIL: {exc}", file=sys.stderr)
         return 1
+    source_status = "SOURCE OBJECTS REDERIVED" if args.rederive_source_objects else "SOURCE OBJECTS NOT REVERIFIED"
     print(
         "PASS RETAINED-SNAPSHOT: Phase9 retained manifest, receipt/request bytes, ledger/spec "
-        "status, and authority are exact; SOURCE OBJECTS NOT REVERIFIED"
+        f"status, and authority are exact; {source_status}"
     )
     return 0
 

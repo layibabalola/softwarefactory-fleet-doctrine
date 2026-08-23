@@ -133,10 +133,21 @@ class Phase2DispositionBatchTests(unittest.TestCase):
     def test_phase2_event_allowlist_is_spec_free_and_distinct_from_history(self):
         self.assertFalse(any(path.startswith("specs/") for path in MODULE.EVENT_ALLOWED_PHASE2_PATHS))
         self.assertNotEqual(MODULE.ALLOWED_PHASE2_PATHS, MODULE.EVENT_ALLOWED_PHASE2_PATHS)
-        self.assertEqual(20, len(MODULE.COMMON_PHASE_TRIGGER_PATHS))
-        self.assertEqual(set(), MODULE.AUXILIARY_EVENT_ALLOWED_PATHS)
-        self.assertEqual(MODULE.BOOTSTRAP_CONTROL_PATHS, MODULE.PHASE2_TRIGGER_PATHS)
-        self.assertEqual(MODULE.BOOTSTRAP_CONTROL_PATHS, MODULE.EVENT_ALLOWED_PHASE2_PATHS)
+        self.assertTrue(MODULE.ORIGINAL_COMMON_PHASE_TRIGGER_PATHS < MODULE.COMMON_PHASE_TRIGGER_PATHS)
+        self.assertTrue(MODULE.BOOTSTRAP_CONTROL_PATHS < MODULE.COMMON_PHASE_TRIGGER_PATHS)
+        self.assertEqual(
+            MODULE.ORIGINAL_COMMON_PHASE_TRIGGER_PATHS | MODULE.BOOTSTRAP_CONTROL_PATHS,
+            MODULE.COMMON_PHASE_TRIGGER_PATHS,
+        )
+        self.assertEqual(
+            {"tests/test_universal_provider_control.py", "tools/check_universal_manifest.py"},
+            MODULE.AUXILIARY_EVENT_ALLOWED_PATHS,
+        )
+        self.assertEqual(MODULE.COMMON_PHASE_TRIGGER_PATHS | {MODULE.BATCH_PATH}, MODULE.PHASE2_TRIGGER_PATHS)
+        self.assertEqual(
+            MODULE.PHASE2_TRIGGER_PATHS | MODULE.AUXILIARY_EVENT_ALLOWED_PATHS,
+            MODULE.EVENT_ALLOWED_PHASE2_PATHS,
+        )
 
     def test_phase2_unrelated_r29_provider_delta_is_explicit_na(self):
         changed = {
@@ -157,7 +168,7 @@ class Phase2DispositionBatchTests(unittest.TestCase):
             ),
             "APPLICABLE",
         )
-        self.assertEqual(self._event_scope({MODULE.BATCH_PATH}), "N/A_NO_PHASE2_TRIGGER")
+        self.assertEqual(self._event_scope({MODULE.BATCH_PATH}), "APPLICABLE")
 
     def test_phase2_rejects_every_formerly_allowed_spec_when_mixed(self):
         former_specs = {
@@ -180,12 +191,11 @@ class Phase2DispositionBatchTests(unittest.TestCase):
                 with self.assertRaisesRegex(MODULE.BatchError, "PHASE2_SCOPE_VIOLATION"):
                     self._event_scope({control, "src/runtime.py"})
 
-    def test_phase2_carrier_controls_are_na_and_mixing_is_refused(self):
+    def test_phase2_carrier_controls_are_na_and_trigger_union_is_bounded(self):
         controls = {"tools/check_universal_manifest.py", "tests/test_universal_provider_control.py"}
         trigger = {".github/workflows/disposition-intake.yml"}
         self.assertEqual(self._event_scope(controls), "N/A_NO_PHASE2_TRIGGER")
-        with self.assertRaisesRegex(MODULE.BatchError, "PHASE2_SCOPE_VIOLATION"):
-            self._event_scope(trigger | controls)
+        self.assertEqual(self._event_scope(trigger | controls), "APPLICABLE")
         for foreign in ("tools/universal_provider_control.py", "specs/cloudvore.md"):
             with self.subTest(foreign=foreign):
                 with self.assertRaisesRegex(MODULE.BatchError, "PHASE2_SCOPE_VIOLATION"):
@@ -220,13 +230,11 @@ class Phase2DispositionBatchTests(unittest.TestCase):
             ),
             mock.patch.object(MODULE, "verify_batch", side_effect=MODULE.BatchError("FROZEN_FAIL")),
             mock.patch.object(MODULE, "evaluate_event_scope") as scope,
+            mock.patch.dict(os.environ, {"R26_SCOPE_EVENT": "workflow_dispatch", "R26_SCOPE_BASE_SHA": ""}, clear=False),
         ):
             stderr = io.StringIO()
             with redirect_stderr(stderr):
-                self.assertEqual(1, MODULE.main([
-                    "--treeish", MODULE.FROZEN_PUBLICATION,
-                    "--scope-event", "workflow_dispatch",
-                ]))
+                self.assertEqual(1, MODULE.main(["--treeish", MODULE.FROZEN_PUBLICATION]))
         scope.assert_not_called()
         self.assertIn("FROZEN_FAIL", stderr.getvalue())
 
@@ -238,6 +246,11 @@ class Phase2DispositionBatchTests(unittest.TestCase):
                 original("a" * 40, MODULE.FROZEN_PUBLICATION),
             )
         self.assertIn("a" * 40 + "..HEAD", git.call_args.args[0])
+
+    def test_phase2_scope_inputs_are_environment_only(self):
+        for option in ("--scope-event", "--scope-base"):
+            with self.subTest(option=option), self.assertRaises(SystemExit):
+                MODULE.main([option, "workflow_dispatch"])
 
     def test_local_probe_verifier_is_bounded_and_fails_on_drift(self):
         batch = self._copy()

@@ -1,10 +1,15 @@
 from __future__ import annotations
 
 import copy
+from contextlib import redirect_stdout
+import hashlib
+import io
 import importlib.util
 import json
+import os
 from pathlib import Path
 import subprocess
+import tempfile
 from unittest import mock
 import unittest
 
@@ -32,6 +37,48 @@ class Phase10IntegrationTests(unittest.TestCase):
     @staticmethod
     def _treeish():
         return "e7311e3038bbfeebe15cc10004f40b3795811659"
+
+    @staticmethod
+    def _synthetic_git_review():
+        data = b"exact artifact\n"
+        return {
+            "subject": {
+                "localRoot": "C:/hermetic-review-subject", "commit": "a" * 40,
+                "tree": "b" * 40, "parent": "c" * 40,
+                "remote": "https://example.invalid/subject.git", "changedPaths": ["artifact.txt"],
+                "networkRemoteVerified": False, "remoteTrackingRefContainsSubject": False,
+                "localBranch": "review",
+            },
+            "artifacts": [{
+                "path": "artifact.txt", "gitBlobOid": "d" * 40,
+                "bytes": len(data), "sha256": hashlib.sha256(data).hexdigest(),
+            }],
+        }, data
+
+    def _run_synthetic_git_review(self, review, data):
+        expected = self._synthetic_git_review()[0]
+        subject = expected["subject"]
+        artifact = expected["artifacts"][0]
+        def fake_git(args, **kwargs):
+            if args[:2] == ["rev-parse", "--verify"]:
+                return subject["commit"]
+            key = tuple(args)
+            values = {
+                ("rev-parse", "--show-toplevel"): subject["localRoot"],
+                ("show", "-s", "--format=%T", subject["commit"]): subject["tree"],
+                ("show", "-s", "--format=%P", subject["commit"]): subject["parent"],
+                ("remote", "get-url", "origin"): subject["remote"],
+                ("diff-tree", "--no-commit-id", "--name-only", "-r", subject["commit"]): "artifact.txt\n",
+                ("show", f'{subject["commit"]}:artifact.txt'): data,
+                ("rev-parse", f'{subject["commit"]}:artifact.txt'): artifact["gitBlobOid"],
+            }
+            return values[key]
+        with (
+            mock.patch.object(Path, "is_dir", return_value=True),
+            mock.patch.object(MODULE, "verify_git_object_isolation"),
+            mock.patch.object(MODULE, "_git", side_effect=fake_git),
+        ):
+            MODULE._verify_local_git_subject(review, "HERMETIC", rederive_mutable_worktree_state=False)
 
     def test_01_exact_staged_or_committed_integration_passes(self):
         MODULE.verify_integration(self._treeish())
@@ -82,17 +129,21 @@ class Phase10IntegrationTests(unittest.TestCase):
                         MODULE.verify_integration(self._treeish())
 
     def test_06_mlv_subject_or_artifact_substitution_is_rejected(self):
-        for mutate in (
-            lambda review: review["subject"].update(commit="0" * 40),
-            lambda review: review["artifacts"][0].update(sha256="0" * 64),
+        review, data = self._synthetic_git_review()
+        self._run_synthetic_git_review(copy.deepcopy(review), data)
+        for mutate, error in (
+            (lambda value: value["subject"].update(commit="0" * 40), "HERMETIC_SUBJECT_MISMATCH"),
+            (lambda value: value["subject"].update(tree="0" * 40), "HERMETIC_SUBJECT_MISMATCH"),
+            (lambda value: value["subject"].update(parent="0" * 40), "HERMETIC_SUBJECT_MISMATCH"),
+            (lambda value: value["subject"].update(remote="https://forged.invalid/repo.git"), "HERMETIC_SUBJECT_MISMATCH"),
+            (lambda value: value["artifacts"][0].update(gitBlobOid="0" * 40), "HERMETIC_ARTIFACT_MISMATCH"),
+            (lambda value: value["artifacts"][0].update(bytes=1), "HERMETIC_ARTIFACT_MISMATCH"),
+            (lambda value: value["artifacts"][0].update(sha256="0" * 64), "HERMETIC_ARTIFACT_MISMATCH"),
         ):
-            batch = self._copy()
-            review = self._review(batch, "mlv-app")
-            mutate(review)
-            hostile = json.dumps(batch, indent=2).encode() + b"\n"
-            with self.subTest(mutate=mutate), mock.patch.object(MODULE, "_blob", return_value=hostile):
-                with self.assertRaisesRegex(MODULE.Phase10Error, "RECEIPT_(BYTES|SHA256)_MISMATCH"):
-                    MODULE.verify_receipt_blob(self._treeish())
+            hostile = copy.deepcopy(review)
+            mutate(hostile)
+            with self.subTest(error=error), self.assertRaisesRegex(MODULE.Phase10Error, error):
+                self._run_synthetic_git_review(hostile, data)
 
     def test_07_mlv_network_and_authority_overclaims_are_rejected(self):
         for mutate, error in (
@@ -113,17 +164,15 @@ class Phase10IntegrationTests(unittest.TestCase):
             MODULE.verify_receipt_shape(batch)
 
     def test_09_cloudvore_subject_or_artifact_substitution_is_rejected(self):
-        for mutate in (
-            lambda review: review["subject"].update(parent="0" * 40),
-            lambda review: review["artifacts"][1].update(bytes=8218),
+        review, data = self._synthetic_git_review()
+        for mutate, error in (
+            (lambda value: value["subject"].update(parent="0" * 40), "HERMETIC_SUBJECT_MISMATCH"),
+            (lambda value: value["artifacts"][0].update(bytes=2), "HERMETIC_ARTIFACT_MISMATCH"),
         ):
-            batch = self._copy()
-            review = self._review(batch, "cloudvore")
-            mutate(review)
-            hostile = json.dumps(batch, indent=2).encode() + b"\n"
-            with self.subTest(mutate=mutate), mock.patch.object(MODULE, "_blob", return_value=hostile):
-                with self.assertRaisesRegex(MODULE.Phase10Error, "RECEIPT_(BYTES|SHA256)_MISMATCH"):
-                    MODULE.verify_receipt_blob(self._treeish())
+            hostile = copy.deepcopy(review)
+            mutate(hostile)
+            with self.subTest(error=error), self.assertRaisesRegex(MODULE.Phase10Error, error):
+                self._run_synthetic_git_review(hostile, data)
 
     def test_10_cloudvore_open_or_installable_overclaims_are_rejected(self):
         cases = (
@@ -139,18 +188,40 @@ class Phase10IntegrationTests(unittest.TestCase):
                 MODULE.verify_receipt_shape(batch)
 
     def test_11_r8_manifest_tree_and_critical_tuple_substitutions_are_rejected(self):
-        for mutate in (
-            lambda review: review["subject"].update(manifestSha256="0" * 64),
-            lambda review: review["subject"].update(treeSha256="0" * 64),
-            lambda review: review["criticalArtifacts"][0].update(bytes=23753),
-        ):
-            batch = self._copy()
-            review = self._review(batch, "dng-auto-processor")
-            mutate(review)
-            hostile = json.dumps(batch, indent=2).encode() + b"\n"
-            with self.subTest(mutate=mutate), mock.patch.object(MODULE, "_blob", return_value=hostile):
-                with self.assertRaisesRegex(MODULE.Phase10Error, "RECEIPT_(BYTES|SHA256)_MISMATCH"):
-                    MODULE.verify_receipt_blob(self._treeish())
+        with tempfile.TemporaryDirectory(prefix="phase10-r8-hostile-") as directory:
+            root = Path(directory)
+            payload = b"x"
+            payload_hash = hashlib.sha256(payload).hexdigest().upper()
+            (root / "subject.txt").write_bytes(payload)
+            manifest = {
+                "schema": "dng-candidate-manifest.v7", "candidate": "durable-campaign-hold-latch-r8",
+                "status": "FROZEN_AUTHOR_CONFLICTED", "authority": {"apply": False},
+                "subjects": [{"path": "subject.txt", "bytes": 1, "sha256": payload_hash}],
+                "metadata": [], "static_review_bundles": [{"paths": ["subject.txt"], "bytes": 1}],
+                "static_limits": {"subject_max_bytes": 24576, "bundle_max_bytes": 32768, "exact_sum_verifier": "test-static-bundle-sums.ps1"},
+            }
+            raw = json.dumps(manifest, separators=(",", ":")).encode()
+            (root / "manifest.json").write_bytes(raw)
+            count, tree_hash = MODULE._r8_tree_hash(root)
+            review = {
+                "subject": {
+                    "localRoot": str(root), "manifestPath": "manifest.json", "manifestBytes": len(raw),
+                    "manifestSha256": hashlib.sha256(raw).hexdigest(), "subjectCount": 1,
+                    "metadataCount": 0, "staticReviewBundleCount": 1, "largestSubjectBytes": 1,
+                    "largestBundleBytes": 1, "treeFileCount": count, "treeSha256": tree_hash,
+                },
+                "criticalArtifacts": [{"path": "subject.txt", "bytes": 1, "sha256": payload_hash.lower()}],
+            }
+            MODULE._verify_r8_local(copy.deepcopy(review))
+            for mutate, error in (
+                (lambda value: value["subject"].update(manifestSha256="0" * 64), "R8_MANIFEST_MISMATCH"),
+                (lambda value: value["subject"].update(treeSha256="0" * 64), "R8_TREE_MISMATCH"),
+                (lambda value: value["criticalArtifacts"][0].update(bytes=2), "R8_CRITICAL_ARTIFACT_MISMATCH"),
+            ):
+                hostile = copy.deepcopy(review)
+                mutate(hostile)
+                with self.subTest(error=error), self.assertRaisesRegex(MODULE.Phase10Error, error):
+                    MODULE._verify_r8_local(hostile)
 
     def test_12_r8_suite_preview_and_scope_overclaims_are_rejected(self):
         cases = (
@@ -212,12 +283,29 @@ class Phase10IntegrationTests(unittest.TestCase):
             with self.assertRaisesRegex(MODULE.Phase10Error, "WORKFLOW_PHASE10_MISSING"):
                 MODULE.verify_workflow(self._treeish())
 
-    def test_16_local_projects_are_explicit_and_absent_roots_fail_nonzero(self):
+    def test_16_local_projects_are_explicit_and_output_is_truthful(self):
         MODULE.verify_integration(self._treeish(), verify_local_projects=False)
-        self.assertEqual(
-            1,
-            MODULE.main(["--treeish", self._treeish(), "--verify-local-projects"]),
-        )
+        with mock.patch.object(MODULE, "verify_local_subjects", side_effect=MODULE.Phase10Error("MLV_ROOT_UNAVAILABLE")):
+            self.assertEqual(1, MODULE.main(["--treeish", self._treeish(), "--verify-local-projects"]))
+        for enabled, marker in ((False, "LOCAL SUBJECTS NOT REDERIVED"), (True, "LOCAL SUBJECTS REDERIVED")):
+            output = io.StringIO()
+            with mock.patch.object(MODULE, "verify_integration"), redirect_stdout(output):
+                argv = ["--treeish", self._treeish()] + (["--verify-local-projects"] if enabled else [])
+                self.assertEqual(0, MODULE.main(argv))
+            self.assertIn(marker, output.getvalue())
+
+    def test_17_git_object_indirection_alternates_and_replacements_refuse(self):
+        for key in ("GIT_OBJECT_DIRECTORY", "GIT_ALTERNATE_OBJECT_DIRECTORIES", "GIT_REPLACE_REF_BASE", "GIT_CONFIG_COUNT"):
+            with self.subTest(key=key), mock.patch.dict(os.environ, {key: "forged"}, clear=False):
+                with self.assertRaisesRegex(MODULE.Phase10Error, "GIT_OBJECT_INDIRECTION_REFUSED"):
+                    MODULE.verify_git_object_isolation()
+        with mock.patch.object(Path, "exists", return_value=True):
+            with self.assertRaisesRegex(MODULE.Phase10Error, "GIT_ALTERNATE_OBJECT_STORE_REFUSED"):
+                MODULE.verify_git_object_isolation()
+        original = MODULE._git
+        with mock.patch.object(MODULE, "_git", side_effect=lambda args, **kwargs: "0" * 40 + "\n" if args == ["replace", "-l"] else original(args, **kwargs)):
+            with self.assertRaisesRegex(MODULE.Phase10Error, "GIT_REPLACE_OBJECT_REFUSED"):
+                MODULE.verify_git_object_isolation()
 
 
 if __name__ == "__main__":

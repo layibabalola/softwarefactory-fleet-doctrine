@@ -130,6 +130,18 @@ ALLOWED_PHASE5_PATHS = {
     "tools/check_phase7_owner_publication_requests.py",
     "tools/check_phase8_integration.py",
 } | MANIFEST_BINDING_REPAIR_PATHS | PHASE9_INTEGRATION_PATHS | PHASE10_INTEGRATION_PATHS | PHASE11_INTEGRATION_PATHS
+ORIGINAL_COMMON_PHASE_TRIGGER_PATHS = {
+    ".github/workflows/disposition-intake.yml",
+    "adoption/phase2/README.md",
+    "adoption/phase3/README.md",
+    "adoption/phase5/README.md",
+    "tests/test_phase2_disposition_batch.py",
+    "tests/test_phase3_disposition_batch.py",
+    "tests/test_phase5_stale_reconciliation.py",
+    "tools/check_phase2_disposition_batch.py",
+    "tools/check_phase3_disposition_batch.py",
+    "tools/check_phase5_stale_reconciliation.py",
+}
 BOOTSTRAP_CONTROL_PATHS = {
     ".github/workflows/disposition-intake.yml",
     "adoption/phase8/README.md",
@@ -152,10 +164,13 @@ BOOTSTRAP_CONTROL_PATHS = {
     "tools/check_phase11_integration.py",
     "tools/check_phase12_phase16_descendant_scope.py",
 }
-COMMON_PHASE_TRIGGER_PATHS = BOOTSTRAP_CONTROL_PATHS
-AUXILIARY_EVENT_ALLOWED_PATHS: set[str] = set()
-EVENT_ALLOWED_PHASE5_PATHS = BOOTSTRAP_CONTROL_PATHS
-PHASE5_TRIGGER_PATHS = BOOTSTRAP_CONTROL_PATHS
+COMMON_PHASE_TRIGGER_PATHS = ORIGINAL_COMMON_PHASE_TRIGGER_PATHS | BOOTSTRAP_CONTROL_PATHS
+AUXILIARY_EVENT_ALLOWED_PATHS = {
+    "tests/test_universal_provider_control.py",
+    "tools/check_universal_manifest.py",
+}
+EVENT_ALLOWED_PHASE5_PATHS = COMMON_PHASE_TRIGGER_PATHS | AUXILIARY_EVENT_ALLOWED_PATHS | {INTAKE_PATH}
+PHASE5_TRIGGER_PATHS = COMMON_PHASE_TRIGGER_PATHS | {INTAKE_PATH}
 SHA_PATTERN = re.compile(r"[0-9a-f]{40,64}")
 REMOTE_TOKEN_ENV = "R26_REMOTE_GITHUB_TOKEN"
 REMOTE_TIMEOUT_SECONDS = 60
@@ -718,15 +733,13 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--treeish", default="HEAD")
     parser.add_argument("--verify-remotes", action="store_true")
-    parser.add_argument("--scope-event", default=os.environ.get("R26_SCOPE_EVENT", ""))
-    parser.add_argument("--scope-base", default=os.environ.get("R26_SCOPE_BASE_SHA", ""))
     args = parser.parse_args(argv)
     try:
         if args.treeish != FROZEN_PUBLICATION:
             raise Phase5Error("PHASE5_FROZEN_TREEISH_REQUIRED")
         batch = load_json(_blob(args.treeish, INTAKE_PATH))
         verify_batch(batch, args.treeish)
-        scope = evaluate_event_scope(args.scope_event, args.scope_base, args.treeish)
+        scope = evaluate_event_scope(os.environ.get("R26_SCOPE_EVENT", ""), os.environ.get("R26_SCOPE_BASE_SHA", ""), args.treeish)
         if args.verify_remotes:
             verify_remotes(batch)
     except Phase5Error as exc:

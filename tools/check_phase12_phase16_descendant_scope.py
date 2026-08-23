@@ -20,7 +20,7 @@ PHASE15 = "488538ca15676823681e241f6be848de1d30a291"
 PHASE16 = "8149c3f06811f85b833b28940017f2d05448cf5d"
 SHA40 = re.compile(r"[0-9a-f]{40}")
 
-BOOTSTRAP_CONTROL_PATHS = {
+MUTABLE_BOOTSTRAP_ALLOWLIST = {
     ".github/workflows/disposition-intake.yml",
     "adoption/phase8/README.md",
     "tests/test_phase2_disposition_batch.py",
@@ -42,11 +42,79 @@ BOOTSTRAP_CONTROL_PATHS = {
     "tools/check_phase11_integration.py",
     "tools/check_phase12_phase16_descendant_scope.py",
 }
-FORBIDDEN_PREFIXES = ("specs/", "manifests/", "snapshots/")
-FORBIDDEN_EXACT = {
+BOOTSTRAP_CONTROL_PATHS = MUTABLE_BOOTSTRAP_ALLOWLIST
+PROTECTED_TRIGGER_PATHS = MUTABLE_BOOTSTRAP_ALLOWLIST | {
+    "adoption/phase12/README.md",
+    "adoption/phase12/r26-current-master-review-integration.json",
+    "adoption/phase13/README.md",
+    "adoption/phase13/r26-dng-install-evidence-publication.json",
+    "adoption/phase14/README.md",
+    "adoption/phase14/r26-mlv-task-definition-publication.json",
+    "adoption/phase15/README.md",
+    "adoption/phase15/r26-mlv-prelaunch-boundary-publication.json",
+    "adoption/phase16/README.md",
+    "adoption/phase16/phase15-review-consumption.json",
+    "adoption/phase16/phase15-review-packet.json",
+    "adoption/phase16/phase15-review-result.jsonl",
+    "adoption/phase16/r26-phase15-review-publication.json",
     "adoption/universal-token-control-r26.json",
-    "tools/universal_provider_control.py",
-    "RULINGS.md",
+    "manifests/universal-provider-control-reconciliation-r26.json",
+    "tests/test_phase6_candidate_reviews.py",
+    "tests/test_phase7_owner_publication_requests.py",
+    "tests/test_adoption_ledger.py",
+    "tools/check_phase6_candidate_reviews.py",
+    "tools/check_phase7_owner_publication_requests.py",
+    "tools/check_adoption_ledger.py",
+    *{f"tests/test_phase{phase}_integration.py" for phase in range(12, 17)},
+    *{f"tools/check_phase{phase}_integration.py" for phase in range(12, 17)},
+}
+
+WORKFLOW_ROUTE_LINES = (
+    b'        run: python -m unittest discover -s tests -p "test_phase2_disposition_batch.py" -v',
+    b'        run: python -m unittest discover -s tests -p "test_adversarialllm_utilization_shadow_doctrine.py" -v',
+    f"        run: python tools/check_phase2_disposition_batch.py --treeish {PHASE12}".encode(),
+    b'        run: python -m unittest discover -s tests -p "test_phase3_disposition_batch.py" -v',
+    f"        run: python tools/check_phase3_disposition_batch.py --treeish {PHASE12} ${{{{ env.R26_REMOTE_AUTH_CONFIGURED == 'true' && '--verify-remotes' || '' }}}}".encode(),
+    b'        run: python -m unittest discover -s tests -p "test_phase5_stale_reconciliation.py" -v',
+    f"        run: python tools/check_phase5_stale_reconciliation.py --treeish {PHASE12} ${{{{ env.R26_REMOTE_AUTH_CONFIGURED == 'true' && '--verify-remotes' || '' }}}}".encode(),
+    b'        run: python -m unittest discover -s tests -p "test_phase6_candidate_reviews.py" -v',
+    b"        run: python tools/check_phase6_candidate_reviews.py --treeish e7311e3038bbfeebe15cc10004f40b3795811659",
+    b'        run: python -m unittest discover -s tests -p "test_phase7_owner_publication_requests.py" -v',
+    b"        run: python tools/check_phase7_owner_publication_requests.py --treeish e7311e3038bbfeebe15cc10004f40b3795811659",
+    b'        run: python -m unittest discover -s tests -p "test_phase8_integration.py" -v',
+    b"        run: python tools/check_phase8_integration.py --treeish e7311e3038bbfeebe15cc10004f40b3795811659",
+    b'        run: python -m unittest discover -s tests -p "test_phase9_integration.py" -v',
+    b"        run: python tools/check_phase9_integration.py --treeish e7311e3038bbfeebe15cc10004f40b3795811659",
+    b'        run: python -m unittest discover -s tests -p "test_phase10_integration.py" -v',
+    b"        run: python tools/check_phase10_integration.py --treeish e7311e3038bbfeebe15cc10004f40b3795811659",
+    b'        run: python -m unittest discover -s tests -p "test_phase11_integration.py" -v',
+    b"        run: python tools/check_phase11_integration.py --treeish e7311e3038bbfeebe15cc10004f40b3795811659",
+    b'        run: python -m unittest discover -s tests -p "test_phase12_integration.py" -v',
+    f"        run: python tools/check_phase12_integration.py --treeish {PHASE12}".encode(),
+    b'        run: python -m unittest discover -s tests -p "test_phase13_integration.py" -v',
+    f"        run: python tools/check_phase13_integration.py --treeish {PHASE13}".encode(),
+    b'        run: python -m unittest discover -s tests -p "test_phase14_integration.py" -v',
+    f"        run: python tools/check_phase14_integration.py --treeish {PHASE14}".encode(),
+    b'        run: python -m unittest discover -s tests -p "test_phase15_integration.py" -v',
+    f"        run: python tools/check_phase15_integration.py --treeish {PHASE15}".encode(),
+    b'        run: python -m unittest discover -s tests -p "test_phase16_integration.py" -v',
+    f"        run: python tools/check_phase16_integration.py --treeish {PHASE16}".encode(),
+    b'        run: python -m unittest discover -s tests -p "test_phase12_phase16_descendant_scope.py" -v',
+    b"        run: python tools/check_phase12_phase16_descendant_scope.py",
+    b'        run: python -m unittest discover -s tests -p "test_adoption_ledger.py" -v',
+    b"        run: python tools/check_adoption_ledger.py --treeish HEAD",
+)
+WORKFLOW_ENV_LINES = (
+    b"      R26_REMOTE_AUTH_CONFIGURED: ${{ secrets.R26_CROSS_REPO_READ_TOKEN != '' }}",
+    b"      R26_SCOPE_EVENT: ${{ github.event_name }}",
+    b"      R26_SCOPE_BASE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event_name == 'push' && github.event.before || '' }}",
+)
+WORKFLOW_TOKEN_LINE = b"          R26_REMOTE_GITHUB_TOKEN: ${{ secrets.R26_CROSS_REPO_READ_TOKEN }}"
+WORKFLOW_TIMEOUT_LINE = b"    timeout-minutes: 30"
+UNSAFE_GIT_ENV = {
+    "GIT_DIR", "GIT_WORK_TREE", "GIT_COMMON_DIR", "GIT_OBJECT_DIRECTORY",
+    "GIT_ALTERNATE_OBJECT_DIRECTORIES", "GIT_REPLACE_REF_BASE", "GIT_INDEX_FILE",
+    "GIT_NAMESPACE",
 }
 
 
@@ -74,11 +142,7 @@ P16 = _load("phase16")
 def _clean_git_env() -> dict[str, str]:
     environment = os.environ.copy()
     for key in tuple(environment):
-        if key in {
-            "GIT_DIR", "GIT_WORK_TREE", "GIT_COMMON_DIR", "GIT_OBJECT_DIRECTORY",
-            "GIT_ALTERNATE_OBJECT_DIRECTORIES", "GIT_REPLACE_REF_BASE", "GIT_INDEX_FILE",
-            "GIT_NAMESPACE",
-        } or key.startswith("GIT_CONFIG"):
+        if key in UNSAFE_GIT_ENV or key.startswith("GIT_CONFIG"):
             environment.pop(key, None)
     return environment
 
@@ -98,6 +162,18 @@ def _blob(treeish: str, path: str) -> bytes:
     return _git(["show", f"{treeish}:{path}"], error="WORKFLOW_BLOB_UNAVAILABLE")  # type: ignore[return-value]
 
 
+def verify_git_object_isolation() -> None:
+    if any(key in os.environ for key in UNSAFE_GIT_ENV) or any(key.startswith("GIT_CONFIG") for key in os.environ):
+        raise DescendantScopeError("GIT_OBJECT_INDIRECTION_REFUSED")
+    common = Path(str(_git(["rev-parse", "--git-common-dir"], text=True)).strip())
+    if not common.is_absolute():
+        common = ROOT / common
+    if (common.resolve() / "objects" / "info" / "alternates").exists():
+        raise DescendantScopeError("GIT_ALTERNATE_OBJECT_STORE_REFUSED")
+    if str(_git(["replace", "-l"], text=True)).splitlines():
+        raise DescendantScopeError("GIT_REPLACE_OBJECT_REFUSED")
+
+
 def verify_frozen_publications() -> None:
     checks = (
         ("PHASE12", lambda: P12.verify_integration(PHASE12)),
@@ -114,28 +190,21 @@ def verify_frozen_publications() -> None:
 
 
 def verify_current_workflow() -> None:
-    workflow = _blob("HEAD", ".github/workflows/disposition-intake.yml").decode("utf-8", errors="strict")
-    required = (
-        f"python tools/check_phase12_integration.py --treeish {PHASE12}",
-        f"python tools/check_phase13_integration.py --treeish {PHASE13}",
-        f"python tools/check_phase14_integration.py --treeish {PHASE14}",
-        f"python tools/check_phase15_integration.py --treeish {PHASE15}",
-        'test_phase16_integration.py" -v',
-        f"python tools/check_phase16_integration.py --treeish {PHASE16}",
-        'test_phase12_phase16_descendant_scope.py" -v',
-        "python tools/check_phase12_phase16_descendant_scope.py",
-    )
-    positions = [workflow.find(command) for command in required]
-    if any(workflow.count(command) != 1 for command in required):
+    workflow = _blob("HEAD", ".github/workflows/disposition-intake.yml")
+    lines = workflow.splitlines()
+    if any(lines.count(route) != 1 for route in WORKFLOW_ROUTE_LINES):
         raise DescendantScopeError("WORKFLOW_ROUTE_COUNT_INVALID")
+    positions = [lines.index(route) for route in WORKFLOW_ROUTE_LINES]
     if positions != sorted(positions):
         raise DescendantScopeError("WORKFLOW_ROUTE_ORDER_INVALID")
-    frozen = "990906b6ea861ca579e1336bcfe8f17dd80c83ae"
-    for phase in (2, 3, 5):
-        command = f"python tools/check_phase{phase}_"
-        rows = [line.strip() for line in workflow.splitlines() if command in line]
-        if len(rows) != 1 or f"--treeish {frozen}" not in rows[0] or "--treeish HEAD" in rows[0]:
-            raise DescendantScopeError("WORKFLOW_FROZEN_DISPOSITION_ROUTE_INVALID")
+    if any(lines.count(line) != 1 for line in WORKFLOW_ENV_LINES):
+        raise DescendantScopeError("WORKFLOW_ENV_BINDING_INVALID")
+    if lines.count(WORKFLOW_TOKEN_LINE) != 2:
+        raise DescendantScopeError("WORKFLOW_REMOTE_TOKEN_BINDING_INVALID")
+    if lines.count(WORKFLOW_TIMEOUT_LINE) != 1:
+        raise DescendantScopeError("WORKFLOW_TIMEOUT_INVALID")
+    if b"--scope-event" in workflow or b"--scope-base" in workflow:
+        raise DescendantScopeError("WORKFLOW_SCOPE_CLI_OVERRIDE")
 
 
 def _changed_paths(base: str) -> set[str]:
@@ -164,25 +233,22 @@ def classify_event(event_name: str, scope_base: str) -> str:
         raise DescendantScopeError("SCOPE_BASE_INVALID") from exc
     if not _is_ancestor(scope_base):
         raise DescendantScopeError("SCOPE_BASE_INVALID")
-    if any(path.startswith(FORBIDDEN_PREFIXES) for path in BOOTSTRAP_CONTROL_PATHS) or BOOTSTRAP_CONTROL_PATHS & FORBIDDEN_EXACT:
-        raise DescendantScopeError("BOOTSTRAP_ALLOWLIST_INVALID")
     changed = _changed_paths(scope_base)
-    if not changed.intersection(BOOTSTRAP_CONTROL_PATHS):
+    if not changed.intersection(PROTECTED_TRIGGER_PATHS):
         return "N/A_NO_PHASE12_PHASE16_TRIGGER"
-    if not changed.issubset(BOOTSTRAP_CONTROL_PATHS):
+    if not changed.issubset(MUTABLE_BOOTSTRAP_ALLOWLIST):
         raise DescendantScopeError("DESCENDANT_SCOPE_VIOLATION")
     return "APPLICABLE"
 
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--scope-event", default=os.environ.get("R26_SCOPE_EVENT", ""))
-    parser.add_argument("--scope-base", default=os.environ.get("R26_SCOPE_BASE_SHA", ""))
-    args = parser.parse_args(argv)
+    parser.parse_args(argv)
     try:
+        verify_git_object_isolation()
         verify_frozen_publications()
         verify_current_workflow()
-        scope = classify_event(args.scope_event, args.scope_base)
+        scope = classify_event(os.environ.get("R26_SCOPE_EVENT", ""), os.environ.get("R26_SCOPE_BASE_SHA", ""))
     except DescendantScopeError as exc:
         print(f"FAIL: {exc}", file=sys.stderr)
         return 1
