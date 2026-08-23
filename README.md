@@ -124,3 +124,11 @@ the human store-and-forward bus.
   184-method cross-class inventory plus normalized body digests. Every historical case runs fresh
   under semantic current-state sentinels; only generic non-round-numbered tests own current R43.
   Runtime, schema, policy, quality, and input-blind zero-authority refusal remain byte-identical.
+  R44 freezes adverse R43 and replaces current-module historical execution with provenance-selected
+  literal R43 Git blobs. Exact blob OIDs, byte counts, raw SHA-256 values, two owned class definitions,
+  and all 184 decorated UTF-8 FunctionDef spans are attested before isolated module execution. On
+  Windows all 184 execute; elsewhere exactly 180 execute and the four literal Windows-only cases are
+  accounted as expected skips. This is source-selection and module-graph isolation, not a Python
+  sandbox; it still trusts the interpreter, standard library/import machinery, Git object database,
+  repository root, and filesystem. Runtime/schema/policy and input-blind zero-authority refusal remain
+  unchanged.

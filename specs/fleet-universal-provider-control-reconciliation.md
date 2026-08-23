@@ -902,6 +902,44 @@ R39 preserves byte-identical runtime/schema, policy digest, provider-neutral mec
 Cloudvore/Fable profile, cache/charge semantics, exact capacity/duration arithmetic, and input-blind
 `REFUSE_RUNTIME_NOT_INSTALLED / ZERO`. It grants no authority or adoption credit.
 
+## R44 literal frozen-history execution invariant
+
+R44 MUST freeze adverse R43 at exact commit `78218e277a4f03a7830058ab7c3cf04683066b9b`,
+tree `d31cda26840f019dbc2f9b445d0b8e1a9cdeb607`, and parent
+`5b1abb9d01226e35721d14b9c525d87287722c8c`. The R43 layer MUST become literal and R44 alone MUST
+be current. The checker MUST report fourteen layers with counts 98/7/7/7/7/7/7/7/7/7/7/7/7/7.
+
+Authoritative historical execution MUST select the literal frozen R43 manifest, test, checker, and
+runtime Git blobs and verify their exact object IDs, raw byte counts, and SHA-256 values before
+compilation. The test source MUST define exactly the two owned direct `unittest.TestCase` classes with
+their exact headers. A checked-in inventory MUST bind the exact UTF-8 source span from the first
+decorator, when present, through each FunctionDef end for all 184 historical names. That span includes
+decorators, annotations, defaults, signature, body, comments, and formatting. Current carried
+historical spans MUST equal the frozen inventory before the R44 layer may produce a receipt.
+
+Frozen runtime, checker, and test modules MUST be loaded under unique identities with canonical import
+aliases installed only for the closed execution interval and restored afterward. Module bindings,
+direct class bases, owned historical methods, function module/globals/qualname/code filename and
+line identity, and unittest skip/expected-failure marks MUST be checked before and after every case.
+Every case MUST run as a fresh TestCase with closed result accounting. Windows evidence MUST execute
+184 bodies with no skips. Other platforms MUST execute 180 and permit only the four exact named and
+reason-bound Windows-only skips; any other skip, error, failure, expected failure, or unexpected
+success MUST refuse.
+
+Default arguments, closures, module aliases, direct or Path opens, subprocess or Git index/HEAD
+selection, inherited or imported TestCase ownership, and skip/expected-failure rebinding MUST NOT
+substitute for the attested frozen functions. Current-module rebinding is irrelevant because it is
+not the execution source. Existing sentinels are defense in depth, not a Python sandbox. This control
+trusts a clean Python interpreter/process, standard library and import machinery, Git binary and
+object database, repository ROOT, and filesystem/temporary storage; it provides provenance and
+source-selection isolation, not containment against compromised same-process Python, native code,
+or filesystem/Git infrastructure.
+
+R44 preserves byte-identical runtime/schema and policy, the provider-neutral mechanism, exact
+Cloudvore/Fable max/standard/firstParty independent-reviewer 64K profile,
+EXACTLY_BOUNDED_AND_CHARGED cache/charge semantics, and input-blind
+`REFUSE_RUNTIME_NOT_INSTALLED / ZERO`. It grants no authority or adoption credit.
+
 ## R40 closed descriptor execution invariant
 
 R40 MUST freeze adverse R39 at exact commit `3bea531c2b3abbc4be4b506255d344d8ec6e712f`,

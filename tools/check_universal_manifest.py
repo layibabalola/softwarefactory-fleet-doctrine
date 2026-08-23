@@ -4,15 +4,24 @@
 from __future__ import annotations
 
 import argparse
+import ast
+import contextlib
 from dataclasses import dataclass
 import hashlib
+import inspect
 import json
+import linecache
+import os
 from pathlib import Path
 import re
 import subprocess
 import sys
+import tempfile
+import threading
+from types import ModuleType
 from types import MappingProxyType
 from typing import Any, Callable, Mapping
+import unittest
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -30,6 +39,7 @@ R40_MANIFEST = "manifests/universal-provider-control-reconciliation-r40.json"
 R41_MANIFEST = "manifests/universal-provider-control-reconciliation-r41.json"
 R42_MANIFEST = "manifests/universal-provider-control-reconciliation-r42.json"
 R43_MANIFEST = "manifests/universal-provider-control-reconciliation-r43.json"
+R44_MANIFEST = "manifests/universal-provider-control-reconciliation-r44.json"
 REVIEW_SCHEMA = "schemas/universal-provider-review-admission-v1.schema.json"
 FROZEN_CANDIDATE = "e70a044f31dd2f43ab7c716d63a4eb89318c61b6"
 FROZEN_R29 = "fc76bf6d5ab52891d06b7f71eb2e993e413c124c"
@@ -43,6 +53,7 @@ FROZEN_R39 = "3bea531c2b3abbc4be4b506255d344d8ec6e712f"
 FROZEN_R40 = "9924be835e6edd768f82cd6c50d97b83c747a265"
 FROZEN_R41 = "e6d7dbd297a470cf97c7f9fefbb854dc3527b719"
 FROZEN_R42 = "5b1abb9d01226e35721d14b9c525d87287722c8c"
+FROZEN_R43 = "78218e277a4f03a7830058ab7c3cf04683066b9b"
 SELF_PATTERN = re.compile(
     rb'("canonicalGitBlobSha256"\s*:\s*"sha256:)([0-9a-f]{64})(")'
 )
@@ -115,6 +126,7 @@ R40_POLICY_DIGEST = R39_POLICY_DIGEST
 R41_POLICY_DIGEST = R40_POLICY_DIGEST
 R42_POLICY_DIGEST = R41_POLICY_DIGEST
 R43_POLICY_DIGEST = R42_POLICY_DIGEST
+R44_POLICY_DIGEST = R43_POLICY_DIGEST
 R33_BASE = {
     "commit": "55afee85ecf720eb857cea1980f511f331b9e86f",
     "tree": "6e58f77467320d53ced12906bf2be62b4fca3d56",
@@ -218,7 +230,14 @@ R43_BASE = {
     "orderedParentTrees": ["c422aa60fe0d50bd0072b58fb1846adf04ee3ecd"],
 }
 R43_SUBJECT_PATHS = R42_SUBJECT_PATHS
-EXPECTED_LAYER_ROUNDS = (26, 29, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43)
+R44_BASE = {
+    "commit": FROZEN_R43,
+    "tree": "d31cda26840f019dbc2f9b445d0b8e1a9cdeb607",
+    "orderedParents": [FROZEN_R42],
+    "orderedParentTrees": ["3e4867c2efe777f25d64676ce8d7989ae50fe903"],
+}
+R44_SUBJECT_PATHS = R43_SUBJECT_PATHS
+EXPECTED_LAYER_ROUNDS = (26, 29, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44)
 CURRENT_CANDIDATE = ":"
 HISTORICAL_TEST_BODY_SHA256: Mapping[str, str] = MappingProxyType({
     'ReviewResourceAdmissionR29Tests.test_r28_01_runtime_refuses_before_reading_any_caller_input': '51808e5b02757ce0ff6a1e92b07c87041d7ba6f6970c161e80c45f167d2c9537',
@@ -406,6 +425,198 @@ HISTORICAL_TEST_BODY_SHA256: Mapping[str, str] = MappingProxyType({
     'UniversalProviderControlTests.test_r9_06_posix_close_refusal_fences_repetition': '1d25fe069edd4e8225ee2ae5bfbffe4360a58dfccbe4f53899f427bb5e1aa64c',
     'UniversalProviderControlTests.test_r9_07_source_and_artifact_close_refusals_retain_exact_owners': '705e781f11b3da87ceadb967b43151c475fec89f0346e13b8ac47729526cf65a',
 })
+FROZEN_R43_HISTORICAL_FUNCTION_SPANS: Mapping[str, str] = MappingProxyType({
+    'ReviewResourceAdmissionR29Tests.test_r28_01_runtime_refuses_before_reading_any_caller_input': 'c1b552d5daf58093cfe7e3d4435639086d9003133c91a7872a5f0cb56278b76a',
+    'ReviewResourceAdmissionR29Tests.test_r28_02_complete_fixture_is_conformance_only_never_runtime_admission': '38ed1a8c626ac6c29234bcf496d76c86c6b5dbf55d68c454837b0c6fa2e4946d',
+    'ReviewResourceAdmissionR29Tests.test_r28_03_universal_mechanism_is_provider_neutral_and_profile_exact': '99caa046e57cfdc52883deabaafc16a9c2ad34fc8a70b22d955e0a2644cbc791',
+    'ReviewResourceAdmissionR29Tests.test_r28_04_committed_policy_digest_rejects_source_substitution': '0eabe1932bc3e2191a15150d6f01b80b31360c2f9318466e4db8b2ce8394b62a',
+    'ReviewResourceAdmissionR29Tests.test_r28_05_packet_rehash_duplicate_and_execution_drift_refuse': '90a1fbfc5c0e0ab059a12205f732302a5682ce31e4b28283b0be2bb7985c830a',
+    'ReviewResourceAdmissionR29Tests.test_r28_06_captured_raw_handle_and_tokenizer_binding_are_mandatory': 'dd36b8244226e0d9a5e091f6b9e6ed02e2f4a48feaf7e5a49cc1edbb568b4be3',
+    'ReviewResourceAdmissionR29Tests.test_r28_07_native_charge_unknown_cache_other_and_output_fail_closed': 'bbebcfad106c67cd471cf0621a895ec75bedd35bc8acf315bb00c029627cc0a8',
+    'ReviewResourceAdmissionR29Tests.test_r28_08_all_windows_timestamp_order_positive_reserves_and_floor': 'f45399cd530293c7847275abdb399c484bf2da5c300af8626a1cb4dbe3535206',
+    'ReviewResourceAdmissionR29Tests.test_r28_09_tools_argv_hooks_and_allowedtools_never_imply_containment': '51c689f3ef46ad3bb3f6315c9950313f1417a01b9b51d795fbe3684532439347',
+    'ReviewResourceAdmissionR29Tests.test_r28_10_capability_handles_are_profile_bound_and_conformance_only': 'fb5567cbb1ab81da5801859fbd7328728948a9acf1c9be39058408c4227dec6c',
+    'ReviewResourceAdmissionR29Tests.test_r28_11_lease_and_authority_repetition_aba_and_early_release_refuse': 'c54b93a56011025919ef52737baa581ea058c2af7702e1138f2b38f509debf4a',
+    'ReviewResourceAdmissionR29Tests.test_r28_12_terminal_unknown_is_unevaluable_and_overruns_refuse': '383805bb9dee163494eba0f3748aa35dc1ca3a8dd94013c9b35b8fe4cf82d1b9',
+    'ReviewResourceAdmissionR29Tests.test_r28_13_schema_ordinals_and_manifest_source_are_independently_bound': 'ab8ab2f45aaad12b7a5a70e53639f443338c5aa5ea0aef89298421d96db29981',
+    'ReviewResourceAdmissionR29Tests.test_r29_01_nonseven_provider_neutral_fixture_is_conformance_only': '6f1ac254bd0dee8bf7020d341bfe8a7cb6cbfb697b22cbe9035464c8cbb9f093',
+    'ReviewResourceAdmissionR29Tests.test_r33_01_integration_merge_and_exact_policy_are_literal': '953970d0939e9fbe666db3548ddc47219faa7951067f46b2301074548077fa7d',
+    'ReviewResourceAdmissionR29Tests.test_r33_02_current_manifest_rejects_base_policy_and_carrier_substitution': '982930ea216d764997bed9e20247d2a32ddff235b2cd0a5281be5f1263641bc0',
+    'ReviewResourceAdmissionR29Tests.test_r33_03_current_manifest_requires_integration_base_ancestry': '2e566b7d13417a728a3efac459e24942eb754e393028f3f17bd7e12149fbef24',
+    'ReviewResourceAdmissionR29Tests.test_r33_04_frozen_r29_manifest_rejects_drift_and_source_substitution': 'f949e33ec9eb39c3f3ca99f7ec6089c49d0edf1354d06319736e2b51ec6405a8',
+    'ReviewResourceAdmissionR29Tests.test_r33_05_checker_validates_all_three_literal_trust_layers': '4f5261abd1b2d1d396374176c5b5396ea734cd8a8c32bdec1f2fb29d8d77718e',
+    'ReviewResourceAdmissionR29Tests.test_r34_01_code_owned_charge_result_rejects_self_attested_amounts': '996afcd920d0b03179add8dad7aad3eddb0d6303fc13c70ad8282b760844d3f3',
+    'ReviewResourceAdmissionR29Tests.test_r34_02_terminal_native_charges_are_derived_from_actual_usage': 'e80647735ba8586624ed4b6615a2196c6b3c283a9012037a335c70a468a2089c',
+    'ReviewResourceAdmissionR29Tests.test_r34_03_policy_mode_defeats_fully_rebound_projection_selection': '1f17c23bba178befb9cae1ed0d8691d1f5849114c4bcc7f757cf701e56a51c05',
+    'ReviewResourceAdmissionR29Tests.test_r34_04_cache_capability_is_exactly_request_profile_domain_and_mode_bound': '599c7d1e7e765fffdb902d8e6a18ef981c4dfd0bfc9763228ade9e7369e0a32a',
+    'ReviewResourceAdmissionR29Tests.test_r34_05_native_charge_integer_representation_is_exact': '3c9429a28cb80ea737e3af188ede731849e0f08cfd4a622911692f4f7e780e60',
+    'ReviewResourceAdmissionR29Tests.test_r34_06_bounded_mode_allows_zero_actual_cache_but_keeps_reservation': '973be56fe07f8ed41584ef7cedd67e2998e7441ee78a7e58a8e61ee880f1243e',
+    'ReviewResourceAdmissionR29Tests.test_r34_07_generic_schema_accepts_1_and_64_but_rejects_65_subjects': '5c6b85456b146d71573428421dce3057d97167c9aa133f6711c4169b9f551a95',
+    'ReviewResourceAdmissionR29Tests.test_r34_08_manifest_pins_integration_mode_profile_and_policy_digest': '7fa3bcd9a175da03abdb9cc305996cb665ffbc44bcb15b5f973ab22bce3cc811',
+    'ReviewResourceAdmissionR29Tests.test_r34_09_manifest_rejects_recomputed_policy_and_instance_substitution': '612e48a69f34a26ffeca5eea0630c59ed6375b5d758cda5fd5aa54bc9c6856e7',
+    'ReviewResourceAdmissionR29Tests.test_r34_10_frozen_r33_layer_rejects_drift': '551560d4ce71a8fab4bf51b1e3a179a09285ba0b819b8a72b927aa02bb249e1d',
+    'ReviewResourceAdmissionR29Tests.test_r35_01_current_layer_pins_exact_integration_tuple_and_quality': 'f3e7db1d1cfe25b09076ba1dd960d3b6b107868575d3ec9898088746183299c7',
+    'ReviewResourceAdmissionR29Tests.test_r35_02_base_tree_parent_policy_and_subject_drift_fail_closed': '22e4d61230f570ce939fbf91d30bcdb1a1a9606a5febaef67f8194a2a80379fa',
+    'ReviewResourceAdmissionR29Tests.test_r35_03_frozen_r34_layer_rejects_manifest_drift': 'a61af6c7b95d4406a59f5aa12360f17d514d8024dc81dd1186ad4bebe381d57f',
+    'ReviewResourceAdmissionR29Tests.test_r35_04_frozen_subject_and_self_drift_fail_closed': 'b4bc0e1838b26bcbf4254e4b6048cc7708313e58b7b95970d8c56f2b318f9ca9',
+    'ReviewResourceAdmissionR29Tests.test_r35_05_checker_has_five_literal_layers_and_runtime_stays_refused': 'f0947336e5d5601d3b601c523b6e12935d48e54c1b798656f3d150c6d8e74a58',
+    'ReviewResourceAdmissionR29Tests.test_r36_01_exact_integer_reserve_boundaries_use_full_fixture': '68c7c01cb804ab17067983462678bfc3483625ee630280277b1faa2f1d86a8f2',
+    'ReviewResourceAdmissionR29Tests.test_r36_02_evidence_age_equality_and_microsecond_overage_are_exact': '8b1f86f7dc7477c47696a4b845aa41dbafd113edd1953d83f469844b91205dad',
+    'ReviewResourceAdmissionR29Tests.test_r36_03_capacity_boundary_implementation_has_no_float_derivation': '82d95d637f2ec4924f4c92a64892036c7defd531116558f02cf7ba2237d7934c',
+    'ReviewResourceAdmissionR29Tests.test_r36_04_current_layer_pins_r35_base_and_unchanged_policy': '72f2414af5383cac82fc5501412837590fde8dc2548c43372c91852da2025e8a',
+    'ReviewResourceAdmissionR29Tests.test_r36_05_r35_frozen_layer_and_r36_tuple_subject_self_drift_fail': '3888d948c41fc2d4e20c9b876ff5757f1d1dcdfc2fd751c7b294b1774ac64232',
+    'ReviewResourceAdmissionR29Tests.test_r36_06_checker_has_six_literal_layers_and_runtime_stays_refused': '68f7178d44f7a08e49893f681e7e2ff02c695285e265b31353ef4dc6f91db2c5',
+    'ReviewResourceAdmissionR29Tests.test_r37_01_current_layer_pins_adverse_r36_and_unchanged_policy': '68be5bc1464d738ec1b691ac33d8376b259413aca028bad40b36ada57f1fc127',
+    'ReviewResourceAdmissionR29Tests.test_r37_02_frozen_r36_and_current_tuple_subject_self_drift_fail': 'ce5203f5d90d35a6cdb56fe25fff506522281126622c43f60f55a9df38ad0a31',
+    'ReviewResourceAdmissionR29Tests.test_r37_03_checker_has_seven_literal_layers_and_runtime_stays_refused': '217b7462dbe1c66d7a0e54a4911e9b03b34886746a90245a50ee15174081934d',
+    'ReviewResourceAdmissionR29Tests.test_r38_02_current_tuple_subject_self_and_policy_are_exact': '2c56b3c57cd356bffd9e613ea90d5180dac856355e729ac34509f74e27e89bcb',
+    'ReviewResourceAdmissionR29Tests.test_r38_03_checker_has_eight_layers_and_runtime_stays_refused': '8a6d8e1b451de41f200e9c13eb0ea06a645bc9c878954a6ff18ea241d3736daa',
+    'ReviewResourceAdmissionR29Tests.test_r40_01_frozen_carrier_tuple_is_literal': 'b261b8b21d040a0f2a76249401f0692efab825edf887cfeb56d48bb48df47605',
+    'ReviewResourceAdmissionR29Tests.test_r40_02_frozen_subject_and_self_are_literal': '0de3cf120d0c7862ed4ac0dfe485f7570c7e21f9c2e764a6e404d5452c4c0d7c',
+    'ReviewResourceAdmissionR29Tests.test_r40_03_frozen_policy_and_unchanged_runtime_oids': '3b48ab1881bb480215b22548db2f751d0e7b411f09166d4a4d7de73d6c316c40',
+    'ReviewResourceAdmissionR29Tests.test_r41_01_frozen_carrier_tuple_is_literal': 'c6daebab62fbece267dd82f7e1119ab28aad8ff08baa46d0f27711419e57b044',
+    'ReviewResourceAdmissionR29Tests.test_r41_02_frozen_subject_and_self_are_literal': 'e1a3f10fda72e2dc900b6411038af8da5e7b5d6199d96f704d8518269faebbe4',
+    'ReviewResourceAdmissionR29Tests.test_r41_03_frozen_policy_and_unchanged_runtime_oids': '9aa83561f81a2f3da427601c6a54431cc52e6287843e6b43bbd2f089570f4179',
+    'UniversalProviderControlTests.test_r10_01_capsule_poison_blocks_distinct_output_before_acquisition': '42550cae9f0e9497128ae94ada98f64dbec5b0ca0975c1e7f92c4e7402f82aa8',
+    'UniversalProviderControlTests.test_r10_02_broker_artifact_poison_blocks_fresh_lease_and_close': 'e186152a0c6eb58586725da5e0096ed0334db78eee2864f4f6841501714c58e6',
+    'UniversalProviderControlTests.test_r10_03_posix_runtimeerror_close_poison_blocks_output_rotation': '0024156ea79d0adb3efe9c6bdd4c70375f5354888f3e17eb2cfcd4466969e3e1',
+    'UniversalProviderControlTests.test_r11_01_root_lock_linearizes_terminal_authorize_confirm_and_close': '4b68e4f36504b49276bf275308a5f3126883bc651bfaf68ae2f837b33e9e54aa',
+    'UniversalProviderControlTests.test_r11_02_all_prepared_lease_owners_fit_exact_poison_bound': '7da00395e65f438961f03fed4ab81f8fe2e738a433b486a228359b546a2784da',
+    'UniversalProviderControlTests.test_r11_03_os_lock_unlock_and_close_failures_are_attempt_once_no_echo': '3862f54f3c37a30f8a0f42555c7966ff44329aad792c2eeab0b1c55fce0f39c9',
+    'UniversalProviderControlTests.test_r11_04_close_and_del_are_assertions_not_child_release': '93faeb0834927357f18dae5dee3659199f21d79b95368b8a2e727d8ac0c7d384',
+    'UniversalProviderControlTests.test_r12_01_manifest_self_uses_canonical_git_blob_under_crlf_checkout': 'b5714fa45b5189b52be9310681c74eac90ecca6820dcf4130b7185dab15e20db',
+    'UniversalProviderControlTests.test_r12_02_posix_hostile_mutations_patch_actual_publication_syscall': 'e2993464727bb9231323ee858d9a74965730cdf62a3187466e18853eaf2959ea',
+    'UniversalProviderControlTests.test_r13_01_prepare_before_reset_confirm_after_is_denied_and_fenced': '4bf85d7bb8db68d70bc7ddaa7844d4f6ec744b5b18411ac96c24a043786dbc14',
+    'UniversalProviderControlTests.test_r13_02_exact_reviewed_launch_profile_is_required_and_attested': '8a872999e684fdcd4339e2a9e37489e2328a41aac03d3032cf4cec5e966d42f9',
+    'UniversalProviderControlTests.test_r13_03_turn_context_and_all_token_ceilings_are_argv_bound_and_attested': 'e8e0fff6500c82c01341a20bf7b9dad1255fd36d646580e5b73bf31a9a969c32',
+    'UniversalProviderControlTests.test_r13_04_broker_recomputes_current_and_prior_demand_from_frozen_inputs': 'c6cec2d50d31f8e77ec4ca1c1445f34d8d25de353e589e5b97cd45bb252bf95e',
+    'UniversalProviderControlTests.test_r13_05_rollout_requires_containment_and_forbids_stage_skips': '89c14f993fda77192fb3614e2ecd2a43c2ebbb7f4f31484dd7632ab15211375d',
+    'UniversalProviderControlTests.test_r14_01_posix_directory_close_refusal_poison_is_attempt_once': '04faa783cf184ec1118d484891b79466c231717df623dd4578465d6503663e34',
+    'UniversalProviderControlTests.test_r15_01_single_request_process_permit_is_persisted_and_one_use': '6d0309b0a79a5f6ad176917172e097ccf12a4f6a0ceccd27720c5f629c6e2196',
+    'UniversalProviderControlTests.test_r15_02_semantic_demand_is_order_independent_and_idle_receipt_is_broker_signed': '8ee0d7b6327d66aa3b0b4ce1ec593cc806ea4c6856d984d743dfeee5a4669888',
+    'UniversalProviderControlTests.test_r15_03_mutable_lease_capacity_cannot_extend_immutable_attestation': 'bb6ff1cd43279c19e31ed03511184a1bd038a487dfbb145244ee34d9eebc2b8b',
+    'UniversalProviderControlTests.test_r15_04_runtime_watchdog_marks_termination_required_at_boundary': 'aa1c38caeb0862f847fa7c98300c9fa0210ddcaab9ae3e8d5577d281a7e62c13',
+    'UniversalProviderControlTests.test_r15_05_quality_floor_and_exact_argv_contract_reject_weak_or_extra_launches': 'd3bb57e52096e9409917d743a9c974fad6a6f94d0cf1ab4bd97aaa49b4e3c96a',
+    'UniversalProviderControlTests.test_r15_06_alternate_state_root_cannot_bypass_machine_quota_lock': '2a19e6d72ed89a7985bfa07f25218d4ffe97911e68abb81e1cecafca736f6a8e',
+    'UniversalProviderControlTests.test_r15_07_successful_canary_returns_to_containment_and_receipt_opens_once': 'fdfd37bd31ae84a693e539edf59c2ca24f76259c7afded4200c0635f7f18c1c6',
+    'UniversalProviderControlTests.test_r16_01_prior_idle_is_persisted_fresh_monotonic_and_one_use': 'ef42e0071e9709547deb51b9bf3d1a3aab277e199f2f288561ae102c51b267b3',
+    'UniversalProviderControlTests.test_r16_02_broker_pinned_canonical_demand_rejects_fabricated_ready': '2c7d14349e8ce184b6e54c09abc822ad5e5acc2abb75050ec4c06a92abfbae58',
+    'UniversalProviderControlTests.test_r16_03_usage_checkpoints_reserve_terminal_completion_exactly_once': '95f5c83cc63405afabe904f56fe16a59602350152d7be6de356f185fbf3a9aa9',
+    'UniversalProviderControlTests.test_r16_04_durable_cross_root_claim_survives_owner_loss_until_authenticated_recovery': 'd7771069c4bcc8eb9b6bcd44748c69210b7362379440edfd568e24ec2467ac27',
+    'UniversalProviderControlTests.test_r16_05_temporal_binding_drift_closes_canary_and_retains_fences': 'fb2ffcd1bcaec79e7a672d7385dfa1a69ede05bbaec4a37d7ccb6d54f4602b9b',
+    'UniversalProviderControlTests.test_r16_06_typed_quality_and_boundary_certifications_are_hmac_bound_and_stored': '0fc22216cab9f3ffd16f53febb7af687d48d7d11f7dd175e5fc8bffa895b3a97',
+    'UniversalProviderControlTests.test_r16_07_canary_requires_hmac_output_quality_and_usage_reconciliation': '6ff0b57bf7dd24f4d15ae2c7c6cea8fa6e00c2e2e6f24534a6b18118f970d961',
+    'UniversalProviderControlTests.test_r16_08_reusable_permit_cli_is_absent_and_never_reads_secret': '863a9e08a88edb58f3225954da33542da836ffa17b96a449088d6f3156367870',
+    'UniversalProviderControlTests.test_r16_09_completed_usage_accumulates_across_terminal_leases': '7351724bc7aca423eccb96b9796ef9fe9910591ad7b72fbb0710aa55015d8b0d',
+    'UniversalProviderControlTests.test_r16_10_termination_required_is_monotonic_and_cannot_mint_canary_success': '6aeda5002d7a9a3938b2ae698c79b216273f48c3cac439a3bb86cafc0cdba26f',
+    'UniversalProviderControlTests.test_r16_11_open_rejects_unparsed_or_forged_canary_receipt_rows': '7643cc14130acc4a88dcb75c94ca6099d96c7738a5b30464240e192b75a7f463',
+    'UniversalProviderControlTests.test_r16_12_provider_permit_token_ceilings_have_exact_keys': '45e717db864ea2ce35167a2aa8f74b89ddc7b3fe026aad0dba351ea2c6136ad7',
+    'UniversalProviderControlTests.test_r16_13_manifest_verifies_exact_ordered_reconciliation_and_forged_negatives': '388e912b7ffa31ea6633c1a9a077be3d481f3618623c0fdcf8ba7a7a20e19aa8',
+    'UniversalProviderControlTests.test_r17_01_terminal_reserve_is_bound_to_frozen_checkpoint': 'fb2a37c244e776ddb0ceb5ee27bd6195e982ca0d0d241c8b59bbfc448c51700d',
+    'UniversalProviderControlTests.test_r17_02_checkpoint_head_tamper_blocks_terminal_permit': 'c5d80d99092bd3029af6e8e66324460baa60264be0536925a7eb9bdd7357038a',
+    'UniversalProviderControlTests.test_r17_03_quota_release_is_published_before_local_success': 'fecfa6c0df4fe35652bceb8366221576629f8d909f0e8ef3334d5052f13f4d04',
+    'UniversalProviderControlTests.test_r17_04_quota_root_is_not_reselected_from_changed_home': '892a173f27a637cac7f19a13100d26a78c389e236944634b6650108b29269d54',
+    'UniversalProviderControlTests.test_r17_06_prepared_quota_publication_retries_exactly': '28133fe4d3edd31c666af83cb6c5785b9d14ce36fc59f27bd3331a41cfb5c097',
+    'UniversalProviderControlTests.test_r17_07_low_level_request_primitives_are_not_public': 'fbb5de031b28676fb3552d1666d35bca3283a432bbd675ea469386827c2a8274',
+    'UniversalProviderControlTests.test_r17_08_completed_usage_is_partitioned_by_each_capacity_window': '668de6f086a4e793ae7acfe639417f8bd78c37007de58e98c870a146b5c0c133',
+    'UniversalProviderControlTests.test_r17_09_manifest_verifies_exact_ordered_merge_and_forged_negatives': 'b5b03a57ff67e7b2c964d5dc4d4ddc67393192ef5d42c3711efa2b72c9507eba',
+    'UniversalProviderControlTests.test_r18_01_reference_candidate_exposes_no_callback_execution_boundary': 'c5a6ecf9db1504bd028d47b3c1816070be34927a4a15795b32d64477dbac7103',
+    'UniversalProviderControlTests.test_r18_02_crash_before_local_publication_reuses_exact_prepared_claim': '8904c909fd8336b5bc36e19c487b023d4a17d5188f2722990c2eaf167109d1a6',
+    'UniversalProviderControlTests.test_r18_03_os_account_authority_ignores_home_in_fresh_processes': '6bfd273e912d02657ed0abc67a9f0af9e7feae5eebaa78fbae666baea3d74714',
+    'UniversalProviderControlTests.test_r18_04_dead_after_zero_checkpoint_charges_full_reservation': '4c92379aa5cc3e9ed24213a7e9201fb058ba70adacfd05a7996bfa81525b65e4',
+    'UniversalProviderControlTests.test_r18_05_same_observer_or_fleet_key_is_not_independent': '8434fc885b37daf0301fe5edf9de2c14d22608d86d57121010ec7ea98b3f3d5a',
+    'UniversalProviderControlTests.test_r18_06_manifest_binds_final_lineage_and_grants_zero_gate_authority': 'daa4cde61fa822e8509fe4c209a8fe38ed44c800d3f498caa759be7a8e9a2202',
+    'UniversalProviderControlTests.test_r19_01_prepared_retry_survives_restart_with_advancing_time': '4295d951d6f6d2ee80c476a1a553eb4a24549eed62194be51533c83d88854970',
+    'UniversalProviderControlTests.test_r19_02_nonreproducible_prepared_claimant_stays_fenced': 'b3128a20a86e15acfc2ea794ace3732dd8a09aa8547df4fb8a6521d40ed02e26',
+    'UniversalProviderControlTests.test_r19_03_canonical_authority_root_reparse_is_rejected': '9d60825d3c006439310a2a51d3769c2ccd08bc6bc98d459967e51e081e8176fa',
+    'UniversalProviderControlTests.test_r19_04_real_authority_root_symlink_is_rejected_when_supported': 'f95cb184f51065ce0fe9a745f3a25f6592a72b5d9bc63f619b4a6ab51667e580',
+    'UniversalProviderControlTests.test_r19_05_observer_keys_cannot_alias_launch_artifact_identities': '52aa568409cfc08390da8aa82f315f9d724ff8b66ff95cb86bf01fe1c4fdaae8',
+    'UniversalProviderControlTests.test_r19_06_test_brokers_never_mutate_default_account_ledger': '2c5dfc56955254ca29e36cb87ea16f61e1f10c168baa84e9ab398fcf197c3be4',
+    'UniversalProviderControlTests.test_r19_07_manifest_binds_restart_subject_and_grants_zero_authority': '8e3cbe375d40fef3b06935fef519e6e32ab1cf1aa2327a2a9401533e4fcd4101',
+    'UniversalProviderControlTests.test_r20_01_stale_caller_time_cannot_replay_after_authoritative_expiry': '7005d74dcf589d62b5f86f274965c9cf23cbfff0fbe1c74065dd103ee27e8140',
+    'UniversalProviderControlTests.test_r20_02_future_caller_time_cannot_extend_sampled_lease': 'ab233c33567a2cec6d049bfe13bded4839744542d800d3f84d6e16a229464779',
+    'UniversalProviderControlTests.test_r20_03_every_authority_ancestor_component_is_reparse_checked': '8cf6289b81244521ae352d1f5a0d546069578ffbfa35fe207f081c31be1a8923',
+    'UniversalProviderControlTests.test_r20_04_real_ancestor_junction_or_symlink_is_rejected': 'fd2497a9c7455f78376c18fc9c3621d2739bb51d6f6b07bf1e1fd0648f2abb98',
+    'UniversalProviderControlTests.test_r20_05_universal_workflow_runs_exact_workbench_suite': 'd174ba77122304a11a4fb8e06eab907448ca8e5d2c6e167eb64c74b5342ccf33',
+    'UniversalProviderControlTests.test_r20_06_manifest_binds_clock_path_ci_subject_and_zero_authority': 'fc5115a36beb5384ee6595609450072cb1618883e4debff16e30c51e49b43c50',
+    'UniversalProviderControlTests.test_r21_01_root_lock_wait_resamples_and_cannot_prepare_expired_lease': '8e284160a2d3f2c6d91fb04ca0f5f26c691922d017b91e31f679d564a2bf9f69',
+    'UniversalProviderControlTests.test_r21_02_quota_lock_wait_resamples_before_durable_publication': '6be377088a10b01aa692dd3dfaa8a1cc71a8faae552eb6e2d4b50e204d3363c4',
+    'UniversalProviderControlTests.test_r21_03_posix_missing_account_base_is_created_nofollow': '5f834e41de59e2fe673892a7281d1ce6b8d196a4a35a2a512f509b2dbda006b9',
+    'UniversalProviderControlTests.test_r21_04_ledger_component_swap_is_poisoned_before_use': '558dfbd765bb5332f2fff1fccddf78d521fe90351c87033a04b5ac48ab00adfa',
+    'UniversalProviderControlTests.test_r21_05_lock_component_swap_is_poisoned_before_use': '184db3db875fee0ad410127dec2434088088fca0a982e434c7863271a91975e2',
+    'UniversalProviderControlTests.test_r21_06_provider_budget_law_is_request_scoped_and_zero_authority': 'ccbbc6112563e2e78d6da24041f0abcc407996f21831b24ecff2106e63ac195c',
+    'UniversalProviderControlTests.test_r21_07_manifest_binds_postlock_path_subject_and_zero_authority': 'e2a309dda330348bf4b3c618c140380bf64db3a81b427038175f9a243ac48cd0',
+    'UniversalProviderControlTests.test_r22_01_ledger_child_replacement_is_poisoned_before_open': '997ffb866d5daa3dbddee2d461cc5c60b7a1a889e2a535439686022199e4c044',
+    'UniversalProviderControlTests.test_r22_02_lock_child_replacement_is_poisoned_before_open': 'a896e330e67044a1aa95fea9491c9772b0df0e685233801004fafa6dcb16a317',
+    'UniversalProviderControlTests.test_r22_03_native_ledger_child_identity_twin_rejects_replacement': '3338e117711a7cdc211a2e4dabb9ddce6a1c407029a30b7192621937570fa4cd',
+    'UniversalProviderControlTests.test_r22_04_native_lock_child_identity_twin_rejects_replacement': '1c4fbafccf5ca75ad588e39be13d79d39aca0f3678408bb84b7388c5e089fd00',
+    'UniversalProviderControlTests.test_r22_05_attended_receipt_is_private_strict_and_recomputed': '6fc0868b4ead222310ac78548b46fc3d03ab742b5dc3c311d7c74778686461dc',
+    'UniversalProviderControlTests.test_r22_06_token_laws_are_strict_structured_policy': '931de6b375e78d6f24f4b43373eab4df8d6abf45c86bbfafb224208aea796ebd',
+    'UniversalProviderControlTests.test_r22_07_manifest_binds_child_receipt_policy_and_master_merge': '2bd89b5b7f30da4cd9b085b5595ce6585925b20dc0c68dc1e38389b042d16cf8',
+    'UniversalProviderControlTests.test_r23_01_attended_duration_and_provenance_are_non_authoritative': '5c4ea7fb9accdf1608c92abc90b4011fb9f203ff60eaa1e47d76473c4032102a',
+    'UniversalProviderControlTests.test_r23_02_manifest_binds_semantics_and_zero_authority': '4317e06dfd541e885396cbf73c5cab81e6eea27376a21eecfdc6901c18721757',
+    'UniversalProviderControlTests.test_r24_01_rfc3339_nanoseconds_floor_without_microsecond_truncation': 'd5560f5e5db992be2e9e09336220d521a68a242f767f181536f900043901d461',
+    'UniversalProviderControlTests.test_r24_02_manifest_binds_exact_timestamp_evidence_and_zero_authority': 'c675c328632f80118abafbc4a2a98d4200e9a4dde1fb0f40d3dc2486b132bdef',
+    'UniversalProviderControlTests.test_r25_01_two_endpoint_truncation_regression_stays_floor_one': '186d9d04d3fe2dd7e08657b6c40692fb03e6102debc842cb0c28997ceed036bc',
+    'UniversalProviderControlTests.test_r26_02_manifest_binds_posix_fixture_repair_and_r25_parent': '6a73dc6ec95132bcfbc5e81a06fbc94c13c8de603f68b994d9c26512bf49d9ed',
+    'UniversalProviderControlTests.test_r26_03_manifest_verifies_frozen_candidate_across_later_doctrine': 'ecbc83de0af8206fafff26ac30cc13a3539caa94009e5e7084beef5851790eec',
+    'UniversalProviderControlTests.test_r26_04_manifest_requires_frozen_candidate_ancestry': 'dd9d5678685b0867c38be02dd0275bc1f00ea3bf4ca894f3a4fb22de493966d8',
+    'UniversalProviderControlTests.test_r26_05_manifest_rejects_post_candidate_manifest_drift': 'cf3982996af286018516058109924c27124fc1b09c12a9c1d31c314315966e82',
+    'UniversalProviderControlTests.test_r26_06_manifest_rejects_current_subject_substitution': 'b673f160fa421deedc1ef27e568924a9789ed5e68020ba60cca390ea07f77e92',
+    'UniversalProviderControlTests.test_r2_01_signed_gate_record_r1_red_r2_green': 'da2566941d04d123bf224d846ccd584974f2b5af9a45b7a92794ace9b81d1595',
+    'UniversalProviderControlTests.test_r2_02_multihost_declaration_r1_red_r2_green': '9a34ad7674e96d6a13a65c35ded48f50443cacd8e9940f04e820ffe8fb6f7edb',
+    'UniversalProviderControlTests.test_r2_03_process_receipts_r1_red_r2_green': 'f1b1e459d4cdf07b04f7ca4e368d14d3be87022264a409a0b23963387014afd6',
+    'UniversalProviderControlTests.test_r2_04_replay_restart_authority_r1_red_r2_green': 'aeac9852653305ef0c4c1921147b7914768b85275406b6284296c44d26a0ff66',
+    'UniversalProviderControlTests.test_r2_05_canary_epoch_and_reseal_r1_red_r2_green': 'c13a2a03e7df89f0ecfeea950abb0d17e3ff0c493e14bf469bcdc4f9c73f76a8',
+    'UniversalProviderControlTests.test_r2_06_complete_inventory_bytes_r1_red_r2_green': '03c6703f21d17674a56dbd8ccfaa1299aa1024ba9b5f8ce5a96deb350677f373',
+    'UniversalProviderControlTests.test_r2_07_two_phase_retained_handles_r1_red_r2_green': 'a63b656dedbc5c4befe93322226a9f0ce4baddd47ef855a0faba3eeb313b1e70',
+    'UniversalProviderControlTests.test_r2_08_portable_git_blob_manifest_r1_red_r2_green': 'f0609c63f51f8ba79b9b2e67905ec43415918f59644ce43e08aea7a8e518e013',
+    'UniversalProviderControlTests.test_r2_09_digest_grammar_r1_red_r2_green': '1900086f0abbb955992dccd9846428a325f77c2deaf81240a1d5919dfe4c9c57',
+    'UniversalProviderControlTests.test_r2_10_capacity_and_request_timeline_r1_red_r2_green': '6819ff5d002c2d05dbb0e1ba24e31be80427e510018ecdee886c2c8f6d6d2401',
+    'UniversalProviderControlTests.test_r2_11_bounded_hashing_and_amplification_r1_red_r2_green': '5d9cc65597e80e99a718829c5b43b024fea0c1c78ac7e7f2e36d94944a77d79a',
+    'UniversalProviderControlTests.test_r2_12_dual_platform_hash_locked_workflow_r1_red_r2_green': 'fc4e5b0ca0bfc67bae5a910f56cad1bf11f1dc0cf63debdbe8dc7865969d538f',
+    'UniversalProviderControlTests.test_r2_13_candidate_not_ratified_r1_red_r2_green': '8b2533a9f10f3209d3050d8ac877e13caf4858f8bd6f06f925e413c6523d7ce0',
+    'UniversalProviderControlTests.test_r2_14_lock_and_rollback_controls_remain_r1_red_r2_green': '52e8c0f862033af826e522d2268bcaee25a06b7a0dc6f6c457a6a32fc76a1c26',
+    'UniversalProviderControlTests.test_r3_01_expired_prepared_lease_never_allows_and_remains_fenced': '5630caa0ad2ee9d5c7d4d9c0fb78f3552d8b59a1d0641130e6a2ba8f5ea0935f',
+    'UniversalProviderControlTests.test_r3_02_capacity_rollover_blocks_pre_reset_evidence': 'aa15a84c97492632c436310ab3590d00eded2ad3e8c96cad69e2c12a20ea1f61',
+    'UniversalProviderControlTests.test_r3_03_capsule_unique_open_and_actual_handle_limits': 'f1bfb0de432ecfcb459a82ef49551bf26ea6a0318753c501ff61f246a38a5d35',
+    'UniversalProviderControlTests.test_r3_04_capsule_unexpected_pre_publish_failure_cleans_all': 'be3de10320d5de86c6b39bdac34e3798698021ab54b00d318a3e992ec054cd14',
+    'UniversalProviderControlTests.test_r3_05_capacity_estimates_are_broker_derived_not_caller_selected': 'd91152a1214e63d2909bd06bb944c66898ed7bb8dc1eb001fde4a76ae8c911c9',
+    'UniversalProviderControlTests.test_r3_06_ambiguous_canary_recovery_reseals_and_malformed_is_stable': '5a158d85141a1a70dbef639b8339832b87692ccb004f86910fbded58946d3fc4',
+    'UniversalProviderControlTests.test_r4_01_single_pass_mutation_bytes_match_bound_source_hash': 'db5283c38e04e888fa0cf1ac9a2047c06c0f65446ad7a85e04e4adf7f9aa02e2',
+    'UniversalProviderControlTests.test_r4_02_growing_source_reads_fixed_budget_plus_one_probe': 'b15cd8e1989447e8ac2142cb4197766fef44faad971c67bbb35a5862d93d5721',
+    'UniversalProviderControlTests.test_r4_03_no_clobber_publication_preserves_foreign_races': 'f6352a5bd3abea89a71958383987194d587a53b73a02309eaeca26ffc5410d29',
+    'UniversalProviderControlTests.test_r5_01_publication_binds_retained_temp_identity_and_exact_bytes': 'cd8c27d12832d5f9d663cfefbb02762d956824351b404fb48f94dd01a4b8b6e1',
+    'UniversalProviderControlTests.test_r5_02_temp_collision_preserves_foreign_temp_and_reason': 'b773918a52298f48366bedd5cf901ee739434d701a2bd3760c5361161e081f20',
+    'UniversalProviderControlTests.test_r5_03_retained_artifact_resume_reads_expected_plus_one_only': 'a4a3d32942ea3c08040bb67e1c6fce8346aeb74a44172a9d15b549c3411b3e01',
+    'UniversalProviderControlTests.test_r5_04_sixty_four_hardlink_aliases_use_one_open_hash_pass': 'b275096e55e0b1d490ca2ac9a9d8b521d182d230389293978463dbcec39e92ee',
+    'UniversalProviderControlTests.test_r5_05_link_raise_after_real_link_is_verified_success': '1217ede95af9749ef1a0183bc1cbfe72fb2b8250552340305046294e722a0190',
+    'UniversalProviderControlTests.test_r6_01_private_temp_replacement_survives_handle_bound_cleanup': 'e03f2bc9380091a70d595f8870e7b856239a32b0921e6f5a73c649dfb4cb1fac',
+    'UniversalProviderControlTests.test_r6_02_public_replacement_survives_and_no_path_cleanup_exists': '80665275cfce72c379ae08dd7361ee9b120aa5855d34218788ac075e1157ae2a',
+    'UniversalProviderControlTests.test_r6_03_cleanup_refusal_is_surfaced_and_bounds_repetition': '1ee9c03df1ee3fa4ae8aea735e53aa7a8c9ff5bbcbd1d0218b046298f060cabf',
+    'UniversalProviderControlTests.test_r7_01_unprivileged_linux_proc_fd_publication': '22dd287ad7c0d22c42ebaa48a0cbdafb463dcedb2b95f1502246d52841936571',
+    'UniversalProviderControlTests.test_r7_02_temporary_cleanup_is_required_runtime_evidence': 'a82c5f0bbb7ae1b7ea115cfdafc6a345e14f2b4adac93b0ba4047a4ed56104c6',
+    'UniversalProviderControlTests.test_r7_03_cleanup_helper_exception_is_contained_after_publication': '5f63b4fec2588460f3aee08e866f89c7f0acf5be51754c81bf4084b0811bff8f',
+    'UniversalProviderControlTests.test_r7_04_cleanup_helper_exception_failure_and_success_are_stable': '7ece26324c48c5accbe0af8d0c035a560b9399293e61f8427726d483ff492406',
+    'UniversalProviderControlTests.test_r8_01_primary_failure_has_no_private_exception_topology': 'bdfd922235ffb1d56e41b0d9b22db0d6b890751a8f6fd00a6fca04c311c9f7e2',
+    'UniversalProviderControlTests.test_r8_02_cleanup_failure_has_no_private_exception_topology': '37292aaa711e21ed155f90d080769cb88d78524609c84e78e98987e677651bf4',
+    'UniversalProviderControlTests.test_r8_03_open_osfhandle_failure_closes_native_owner_once': 'f5ab67f5cb1370fd937c7e73266c45110d705febddd8279af0cc59dcbe60fd54',
+    'UniversalProviderControlTests.test_r8_04_fdopen_failure_closes_descriptor_owner_once': '42255f24c9e3158dcbf433e96fef3f5f6a89ac25a5de87abd7aeb3dddf0d95bd',
+    'UniversalProviderControlTests.test_r8_05_posix_fdopen_transfer_closes_exact_owner_once': '85a4b171536b39e220a249dcddaeaddc97994a8d8a6483d0725bddfcb998fc85',
+    'UniversalProviderControlTests.test_r9_01_preflight_failure_is_fully_sanitized': 'f9a9f246de262ce6b79122669aa87174637a13df961ffc3b9e5cdf486f732591',
+    'UniversalProviderControlTests.test_r9_02_unproven_publication_closes_never_report_clean': '7640fd38e6c1d7635b1876fee626b18cc28e6e6d7b56fdf4601fde7497f9e9ce',
+    'UniversalProviderControlTests.test_r9_03_finalizer_exception_class_is_sanitized_and_retained': '7e89ff6bf584d9c95d2c09d2cb5f9ed90ed07fc16b3b84734be2556b0e2f69c0',
+    'UniversalProviderControlTests.test_r9_04_false_disposition_blocks_native_and_descriptor_failures': '4c38312b768e22c4b23a903a25121803bbf27bca39adbc068078754bd0af32af',
+    'UniversalProviderControlTests.test_r9_05_false_closehandle_is_unproven_and_fenced': 'a58e71897cfde243c8e266fc2041440ded264db92c1e9ae4aa7777d73f93745e',
+    'UniversalProviderControlTests.test_r9_06_posix_close_refusal_fences_repetition': 'c424a4202053380045bdde53133b8045153f99b47af2145747ea9724b8ae061a',
+    'UniversalProviderControlTests.test_r9_07_source_and_artifact_close_refusals_retain_exact_owners': 'f0e6168275393aea2e952f1ec417be031e299635c2a054cbafca7bc728e70975',
+})
+
+FROZEN_R43_HISTORICAL_CLASS_SPANS: Mapping[str, str] = MappingProxyType({
+    'UniversalProviderControlTests': 'ac8369f4bcd969fd5feb84c55fc1b478dca436efaeae1bbc366e666a7a427764',
+    'ReviewResourceAdmissionR29Tests': 'cb216fc94aec1907156513884b795e7695fc4ba266530d750c225086a3371b1a',
+})
+
 LAYER_PATH_PATTERN = re.compile(
     r"^manifests/universal-provider-control-reconciliation-r([0-9]+)\.json$"
 )
@@ -437,6 +648,74 @@ class ManifestLayerTrustAnchor:
     schema: str
     verifier: Callable[[dict[str, Any], str], None]
     report_candidate: str
+
+
+@dataclass(frozen=True, slots=True)
+class FrozenExecutionBlobAnchor:
+    path: str
+    oid: str
+    sha256: str
+    bytes: int
+
+
+@dataclass(frozen=True, slots=True)
+class FrozenHistoricalExecutionReport:
+    executed: int
+    expected_windows_skips: int
+    errors: int
+    failures: int
+    unexpected_skips: int
+    expected_failures: int
+    unexpected_successes: int
+
+
+FROZEN_R43_EXECUTION_BLOB_ANCHORS: Mapping[str, FrozenExecutionBlobAnchor] = (
+    MappingProxyType(
+        {
+            R43_MANIFEST: FrozenExecutionBlobAnchor(
+                R43_MANIFEST,
+                "04eb2bb92de8ec5bcf5a268f429aa294e8a87128",
+                "sha256:40f929ceac009af6b5154765775f59410f2a3133c313e9b8180d0bd76c75ee02",
+                10966,
+            ),
+            "tests/test_universal_provider_control.py": FrozenExecutionBlobAnchor(
+                "tests/test_universal_provider_control.py",
+                "aa1d1974d9470ad7d554db057807a645730b77be",
+                "sha256:2379a4d8931980915e74f0f70db449543d4d528b5f161296eb4792a1ba2b2e22",
+                380414,
+            ),
+            "tools/check_universal_manifest.py": FrozenExecutionBlobAnchor(
+                "tools/check_universal_manifest.py",
+                "23d3918728c814a82289f5ab171cb5f412461fe1",
+                "sha256:cb0e1a89b10b667cf6ddb86aa0de7ddf72d2230290ddd03cef68d0dfa3ab3450",
+                117263,
+            ),
+            "tools/universal_provider_control.py": FrozenExecutionBlobAnchor(
+                "tools/universal_provider_control.py",
+                "4c9afea1833c6f62820daa893d2125e9beb48ed4",
+                "sha256:c24eadc90ba14592d355252c753f8d81a14371d4cd52011657d17d09caea4418",
+                308014,
+            ),
+        }
+    )
+)
+FROZEN_R43_OWNED_TEST_CLASSES = (
+    "UniversalProviderControlTests",
+    "ReviewResourceAdmissionR29Tests",
+)
+FROZEN_R43_WINDOWS_SKIPS: Mapping[str, str] = MappingProxyType(
+    {
+        "UniversalProviderControlTests.test_r8_03_open_osfhandle_failure_closes_native_owner_once":
+            "Windows native-handle ownership control",
+        "UniversalProviderControlTests.test_r8_04_fdopen_failure_closes_descriptor_owner_once":
+            "Windows CRT-descriptor ownership control",
+        "UniversalProviderControlTests.test_r9_04_false_disposition_blocks_native_and_descriptor_failures":
+            "Windows false-disposition ownership controls",
+        "UniversalProviderControlTests.test_r9_05_false_closehandle_is_unproven_and_fenced":
+            "Windows false-CloseHandle ownership control",
+    }
+)
+_FROZEN_R43_MODULE_LOCK = threading.RLock()
 
 
 def _pairs(values: list[tuple[str, Any]]) -> dict[str, Any]:
@@ -471,6 +750,379 @@ def _oid(treeish: str, path: str) -> str:
     if run.returncode != 0 or re.fullmatch(r"[0-9a-f]{40,64}\n?", run.stdout) is None:
         raise ManifestError("GIT_BLOB_OID_UNAVAILABLE")
     return run.stdout.strip()
+
+
+def _utf8_source_span(raw: bytes, node: ast.AST) -> bytes:
+    """Return the exact decorated definition span using UTF-8 byte column offsets."""
+
+    if not isinstance(node, (ast.ClassDef, ast.FunctionDef, ast.AsyncFunctionDef)):
+        raise ManifestError("R43_HISTORICAL_SOURCE_NODE_INVALID")
+    if node.end_lineno is None or node.end_col_offset is None:
+        raise ManifestError("R43_HISTORICAL_SOURCE_LOCATION_INVALID")
+    lines = raw.splitlines(keepends=True)
+    start_line = min(
+        (node.lineno, *(decorator.lineno for decorator in node.decorator_list))
+    )
+    start = sum(len(line) for line in lines[: start_line - 1]) + node.col_offset
+    end = sum(len(line) for line in lines[: node.end_lineno - 1]) + node.end_col_offset
+    if not (0 <= start < end <= len(raw)):
+        raise ManifestError("R43_HISTORICAL_SOURCE_LOCATION_INVALID")
+    return raw[start:end]
+
+
+def _frozen_r43_source_inventory(
+    raw: bytes, *, require_exact_classes: bool
+) -> tuple[tuple[str, ...], Mapping[str, tuple[int, int]]]:
+    """Attest exact historical source spans; this diagnostic never executes input bytes."""
+
+    try:
+        source = raw.decode("utf-8", errors="strict")
+        module = ast.parse(source)
+    except (UnicodeDecodeError, SyntaxError) as exc:
+        raise ManifestError("R43_HISTORICAL_SOURCE_INVALID") from exc
+    owned_nodes = {
+        node.name: node
+        for node in module.body
+        if isinstance(node, ast.ClassDef) and node.name in FROZEN_R43_OWNED_TEST_CLASSES
+    }
+    if tuple(name for name in FROZEN_R43_OWNED_TEST_CLASSES if name in owned_nodes) != (
+        FROZEN_R43_OWNED_TEST_CLASSES
+    ) or len(owned_nodes) != 2:
+        raise ManifestError("R43_HISTORICAL_TEST_CLASS_INVALID")
+    for class_name, class_node in owned_nodes.items():
+        if (
+            class_node.decorator_list
+            or class_node.keywords
+            or len(class_node.bases) != 1
+            or not isinstance(class_node.bases[0], ast.Attribute)
+            or not isinstance(class_node.bases[0].value, ast.Name)
+            or class_node.bases[0].value.id != "unittest"
+            or class_node.bases[0].attr != "TestCase"
+        ):
+            raise ManifestError("R43_HISTORICAL_TEST_CLASS_INVALID")
+        if require_exact_classes:
+            digest = hashlib.sha256(_utf8_source_span(raw, class_node)).hexdigest()
+            if FROZEN_R43_HISTORICAL_CLASS_SPANS.get(class_name) != digest:
+                raise ManifestError("R43_HISTORICAL_CLASS_SPAN_MISMATCH")
+    spans: dict[str, str] = {}
+    locations: dict[str, tuple[int, int]] = {}
+    for class_name in FROZEN_R43_OWNED_TEST_CLASSES:
+        for node in owned_nodes[class_name].body:
+            if not isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                continue
+            match = re.fullmatch(r"test_r([0-9]+)_.*", node.name)
+            if match is None or int(match.group(1)) >= 43:
+                continue
+            qualified = f"{class_name}.{node.name}"
+            spans[qualified] = hashlib.sha256(_utf8_source_span(raw, node)).hexdigest()
+            locations[qualified] = (
+                min((node.lineno, *(item.lineno for item in node.decorator_list))),
+                node.end_lineno or 0,
+            )
+    if spans != dict(FROZEN_R43_HISTORICAL_FUNCTION_SPANS):
+        if set(spans) != set(FROZEN_R43_HISTORICAL_FUNCTION_SPANS):
+            raise ManifestError("R43_HISTORICAL_FUNCTION_SET_MISMATCH")
+        raise ManifestError("R43_HISTORICAL_FUNCTION_SPAN_MISMATCH")
+    if require_exact_classes:
+        anchor = FROZEN_R43_EXECUTION_BLOB_ANCHORS[
+            "tests/test_universal_provider_control.py"
+        ]
+        if (
+            len(raw) != anchor.bytes
+            or "sha256:" + hashlib.sha256(raw).hexdigest() != anchor.sha256
+        ):
+            raise ManifestError("R43_HISTORICAL_MODULE_BLOB_MISMATCH")
+    return tuple(sorted(spans)), MappingProxyType(locations)
+
+
+def _diagnose_frozen_r43_test_source(raw: bytes) -> None:
+    """Non-authoritative mutation diagnostic; it cannot load or execute modules."""
+
+    _frozen_r43_source_inventory(raw, require_exact_classes=True)
+
+
+def _load_frozen_r43_execution_blobs() -> Mapping[str, bytes]:
+    blobs: dict[str, bytes] = {}
+    for path, anchor in FROZEN_R43_EXECUTION_BLOB_ANCHORS.items():
+        if anchor.path != path or _oid(FROZEN_R43, path) != anchor.oid:
+            raise ManifestError("R43_HISTORICAL_BLOB_OID_MISMATCH")
+        raw = _git(_blob_spec(FROZEN_R43, path))
+        assert isinstance(raw, bytes)
+        if (
+            len(raw) != anchor.bytes
+            or "sha256:" + hashlib.sha256(raw).hexdigest() != anchor.sha256
+        ):
+            raise ManifestError("R43_HISTORICAL_BLOB_DIGEST_MISMATCH")
+        blobs[path] = raw
+    manifest_raw = blobs[R43_MANIFEST]
+    manifest = _parse_manifest(
+        manifest_raw, "fleet-universal-provider-control-candidate-manifest/v3"
+    )
+    verify_r43(manifest, FROZEN_R43)
+    if _verify_subjects_and_self(
+        manifest,
+        manifest_raw,
+        manifest_path=R43_MANIFEST,
+        candidate=FROZEN_R43,
+    ) != 7:
+        raise ManifestError("R43_HISTORICAL_MANIFEST_SUBJECT_COUNT_INVALID")
+    _diagnose_frozen_r43_test_source(blobs["tests/test_universal_provider_control.py"])
+    return MappingProxyType(blobs)
+
+
+def _load_exact_source_module(
+    name: str, raw: bytes, *, compile_path: Path, initial_file: Path
+) -> ModuleType:
+    module = ModuleType(name)
+    module.__file__ = str(initial_file)
+    module.__package__ = ""
+    module.__loader__ = None
+    sys.modules[name] = module
+    try:
+        code = compile(raw, str(compile_path), "exec", dont_inherit=True)
+        exec(code, module.__dict__)
+    except Exception as exc:
+        raise ManifestError("R43_HISTORICAL_MODULE_LOAD_FAILED") from exc
+    module.__file__ = str(compile_path)
+    return module
+
+
+class _FrozenR43HistoricalModules:
+    def __init__(
+        self,
+        test_module: ModuleType,
+        checker_module: ModuleType,
+        runtime_module: ModuleType,
+        test_path: Path,
+        locations: Mapping[str, tuple[int, int]],
+    ) -> None:
+        self.test_module = test_module
+        self.checker_module = checker_module
+        self.runtime_module = runtime_module
+        self.test_path = test_path
+        self.locations = locations
+        self.historical_names = tuple(FROZEN_R43_HISTORICAL_FUNCTION_SPANS)
+        self._bound_methods = {
+            qualified: getattr(
+                getattr(test_module, qualified.split(".", 1)[0]),
+                qualified.split(".", 1)[1],
+            )
+            for qualified in self.historical_names
+        }
+        self._unittest_marks = {
+            qualified: (
+                getattr(bound, "__unittest_skip__", False),
+                getattr(bound, "__unittest_skip_why__", None),
+                getattr(bound, "__unittest_expecting_failure__", False),
+            )
+            for qualified, bound in self._bound_methods.items()
+        }
+
+    def _assert_graph(self) -> None:
+        module = self.test_module
+        bound_test_cases: dict[str, type[unittest.TestCase]] = {}
+        for name, value in vars(module).items():
+            if not inspect.isclass(value) or value is unittest.TestCase:
+                continue
+            try:
+                is_case = issubclass(value, unittest.TestCase)
+            except TypeError:
+                is_case = False
+            if is_case:
+                bound_test_cases[name] = value
+        if tuple(bound_test_cases) != FROZEN_R43_OWNED_TEST_CLASSES:
+            raise ManifestError("R43_HISTORICAL_RUNTIME_CLASS_SET_INVALID")
+        if sys.modules.get("universal_provider_control") is not self.runtime_module:
+            raise ManifestError("R43_HISTORICAL_RUNTIME_ALIAS_INVALID")
+        if sys.modules.get("check_universal_manifest") is not self.checker_module:
+            raise ManifestError("R43_HISTORICAL_CHECKER_ALIAS_INVALID")
+        for class_name in FROZEN_R43_OWNED_TEST_CLASSES:
+            case_type = bound_test_cases[class_name]
+            if (
+                case_type.__bases__ != (unittest.TestCase,)
+                or case_type.__module__ != module.__name__
+            ):
+                raise ManifestError("R43_HISTORICAL_RUNTIME_CLASS_INVALID")
+            direct = {
+                name
+                for name in case_type.__dict__
+                if (match := re.fullmatch(r"test_r([0-9]+)_.*", name)) is not None
+                and int(match.group(1)) < 43
+            }
+            expected = {
+                name.split(".", 1)[1]
+                for name in self.historical_names
+                if name.startswith(class_name + ".")
+            }
+            if direct != expected:
+                raise ManifestError("R43_HISTORICAL_RUNTIME_FUNCTION_SET_INVALID")
+            for method_name in expected:
+                qualified = f"{class_name}.{method_name}"
+                bound = case_type.__dict__[method_name]
+                function = inspect.unwrap(bound)
+                if (
+                    bound is not self._bound_methods[qualified]
+                    or (
+                        getattr(bound, "__unittest_skip__", False),
+                        getattr(bound, "__unittest_skip_why__", None),
+                        getattr(bound, "__unittest_expecting_failure__", False),
+                    ) != self._unittest_marks[qualified]
+                    or
+                    not inspect.isfunction(function)
+                    or function.__module__ != module.__name__
+                    or function.__globals__ is not module.__dict__
+                    or function.__qualname__ != qualified
+                    or Path(function.__code__.co_filename) != self.test_path
+                    or function.__code__.co_firstlineno != self.locations[qualified][0]
+                ):
+                    raise ManifestError("R43_HISTORICAL_RUNTIME_FUNCTION_INVALID")
+
+    def execute_all(self) -> FrozenHistoricalExecutionReport:
+        self._assert_graph()
+        executed = 0
+        expected_windows_skips = 0
+        for qualified in self.historical_names:
+            class_name, method_name = qualified.split(".", 1)
+            self._assert_graph()
+            results: list[unittest.TestResult] = []
+            real_unittest = self.test_module.unittest
+
+            class ResultCapturingUnittest:
+                def __getattr__(_self, name: str) -> Any:
+                    return getattr(real_unittest, name)
+
+                @staticmethod
+                def TestResult() -> unittest.TestResult:
+                    result = unittest.TestResult()
+                    results.append(result)
+                    return result
+
+            self.test_module.unittest = ResultCapturingUnittest()
+            try:
+                self.test_module._run_historical_case_under_quarantine(
+                    getattr(self.test_module, class_name), method_name
+                )
+            except Exception as exc:
+                raise ManifestError(
+                    f"R43_HISTORICAL_EXECUTION_FAILED:{qualified}:{type(exc).__name__}"
+                ) from exc
+            finally:
+                self.test_module.unittest = real_unittest
+            if len(results) != 1 or results[0].testsRun != 1:
+                raise ManifestError("R43_HISTORICAL_RESULT_ACCOUNTING_INVALID")
+            result = results[0]
+            if result.errors or result.failures:
+                raise ManifestError("R43_HISTORICAL_RESULT_FAILURE")
+            if result.expectedFailures or result.unexpectedSuccesses:
+                raise ManifestError("R43_HISTORICAL_RESULT_EXPECTATION_INVALID")
+            if result.skipped:
+                if len(result.skipped) != 1:
+                    raise ManifestError("R43_HISTORICAL_RESULT_SKIP_INVALID")
+                reason = result.skipped[0][1]
+                if (
+                    os.name == "nt"
+                    or FROZEN_R43_WINDOWS_SKIPS.get(qualified) != reason
+                ):
+                    raise ManifestError("R43_HISTORICAL_RESULT_SKIP_INVALID")
+                expected_windows_skips += 1
+            else:
+                executed += 1
+            self._assert_graph()
+        expected = (184, 0) if os.name == "nt" else (180, 4)
+        if (executed, expected_windows_skips) != expected:
+            raise ManifestError("R43_HISTORICAL_RESULT_TOTAL_INVALID")
+        return FrozenHistoricalExecutionReport(
+            executed=executed,
+            expected_windows_skips=expected_windows_skips,
+            errors=0,
+            failures=0,
+            unexpected_skips=0,
+            expected_failures=0,
+            unexpected_successes=0,
+        )
+
+
+@contextlib.contextmanager
+def _open_frozen_r43_historical_modules() -> Any:
+    """Select and isolate exact R43 provenance; this is not a Python sandbox."""
+
+    with _FROZEN_R43_MODULE_LOCK:
+        blobs = _load_frozen_r43_execution_blobs()
+        _names = (
+            "universal_provider_control",
+            "check_universal_manifest",
+            "test_universal_provider_control",
+            "tests.test_universal_provider_control",
+            "_fleet_frozen_r43_runtime",
+            "_fleet_frozen_r43_checker",
+            "_fleet_frozen_r43_tests",
+        )
+        saved_modules = {name: sys.modules.get(name) for name in _names}
+        saved_path = list(sys.path)
+        saved_dont_write = sys.dont_write_bytecode
+        saved_linecache = dict(linecache.cache)
+        with tempfile.TemporaryDirectory(prefix="fleet-r43-history-") as temp_name:
+            temp = Path(temp_name)
+            runtime_path = temp / "tools" / "universal_provider_control.py"
+            checker_path = temp / "tools" / "check_universal_manifest.py"
+            test_path = temp / "tests" / "test_universal_provider_control.py"
+            runtime_path.parent.mkdir(parents=True)
+            test_path.parent.mkdir(parents=True)
+            runtime_path.write_bytes(blobs["tools/universal_provider_control.py"])
+            checker_path.write_bytes(blobs["tools/check_universal_manifest.py"])
+            test_path.write_bytes(blobs["tests/test_universal_provider_control.py"])
+            try:
+                sys.dont_write_bytecode = True
+                runtime_module = _load_exact_source_module(
+                    "_fleet_frozen_r43_runtime",
+                    blobs["tools/universal_provider_control.py"],
+                    compile_path=runtime_path,
+                    initial_file=ROOT / "tools" / "universal_provider_control.py",
+                )
+                sys.modules["universal_provider_control"] = runtime_module
+                checker_module = _load_exact_source_module(
+                    "_fleet_frozen_r43_checker",
+                    blobs["tools/check_universal_manifest.py"],
+                    compile_path=checker_path,
+                    initial_file=ROOT / "tools" / "check_universal_manifest.py",
+                )
+                sys.modules["check_universal_manifest"] = checker_module
+                test_module = _load_exact_source_module(
+                    "_fleet_frozen_r43_tests",
+                    blobs["tests/test_universal_provider_control.py"],
+                    compile_path=test_path,
+                    initial_file=ROOT / "tests" / "test_universal_provider_control.py",
+                )
+                sys.modules["test_universal_provider_control"] = test_module
+                sys.modules["tests.test_universal_provider_control"] = test_module
+                historical_names, locations = _frozen_r43_source_inventory(
+                    blobs["tests/test_universal_provider_control.py"],
+                    require_exact_classes=True,
+                )
+                opened = _FrozenR43HistoricalModules(
+                    test_module, checker_module, runtime_module, test_path, locations
+                )
+                if opened.historical_names != historical_names:
+                    raise ManifestError("R43_HISTORICAL_FUNCTION_ORDER_INVALID")
+                opened._assert_graph()
+                yield opened
+                opened._assert_graph()
+            finally:
+                sys.path[:] = saved_path
+                sys.dont_write_bytecode = saved_dont_write
+                linecache.cache.clear()
+                linecache.cache.update(saved_linecache)
+                for name, previous in saved_modules.items():
+                    if previous is None:
+                        sys.modules.pop(name, None)
+                    else:
+                        sys.modules[name] = previous
+
+
+def _verify_current_historical_source_spans(treeish: str) -> None:
+    raw = _git(_blob_spec(treeish, "tests/test_universal_provider_control.py"))
+    assert isinstance(raw, bytes)
+    _frozen_r43_source_inventory(raw, require_exact_classes=False)
 
 
 def _is_ancestor(ancestor: str, descendant: str) -> bool:
@@ -1504,6 +2156,67 @@ def verify_r43(manifest: dict[str, Any], treeish: str) -> None:
         raise ManifestError("R43_VALIDATION_AUTHORITY_INVALID")
 
 
+def verify_r44(manifest: dict[str, Any], treeish: str) -> None:
+    """Verify exact adverse R43 base and literal-source historical execution binding."""
+
+    if manifest.get("status") != "CANDIDATE_ZERO_AUTHORITY" or manifest.get(
+        "subjectCoverage"
+    ) != "R44_LITERAL_FROZEN_HISTORY_EXECUTION_ZERO_AUTHORITY":
+        raise ManifestError("R44_STATUS_INVALID")
+    if manifest.get("candidateBase") != R44_BASE:
+        raise ManifestError("R44_BASE_INVALID")
+    tree, parents = _commit_tuple(R44_BASE["commit"])
+    if tree != R44_BASE["tree"] or parents != R44_BASE["orderedParents"]:
+        raise ManifestError("R44_BASE_OBJECT_MISMATCH")
+    if [_commit_tuple(parent)[0] for parent in parents] != R44_BASE["orderedParentTrees"]:
+        raise ManifestError("R44_BASE_PARENT_TREE_MISMATCH")
+    descendant = "HEAD" if treeish == ":" else treeish
+    if not _is_ancestor(R44_BASE["commit"], descendant):
+        raise ManifestError("R44_BASE_NOT_ANCESTOR")
+    if manifest.get("authority") != {
+        "providerExecution": False, "processSpawnResumeKill": False,
+        "containmentOrCanaryCredit": False, "automaticGateState": "CLOSED",
+        "runtimeImplementation": "NOT_INSTALLED_UNCONDITIONAL_REFUSE",
+        "activationRequiresSeparateAdjudication": True, "authorRecused": True,
+    }:
+        raise ManifestError("R44_AUTHORITY_INVALID")
+    policy = manifest.get("reviewAdmissionPolicy")
+    if not isinstance(policy, dict) or policy.get("source") != R27_SOURCE:
+        raise ManifestError("R44_SOURCE_SUBJECT_MISMATCH")
+    if policy.get("identity") != R29_IDENTITY:
+        raise ManifestError("R44_EXACT_PROFILE_MISMATCH")
+    if policy.get("cacheAdmissionMode") != "EXACTLY_BOUNDED_AND_CHARGED":
+        raise ManifestError("R44_CACHE_ADMISSION_MODE_MISMATCH")
+    if policy.get("capacity", {}).get("requiredQuotaWindows") != ["session", "weekly"]:
+        raise ManifestError("R44_QUOTA_WINDOWS_MISMATCH")
+    if manifest.get("reviewAdmissionPolicyDigest") != R44_POLICY_DIGEST or canonical_policy_sha256(policy) != R44_POLICY_DIGEST:
+        raise ManifestError("R44_POLICY_DIGEST_MISMATCH")
+    subjects = manifest.get("subjectFiles")
+    if not isinstance(subjects, list) or [subject.get("path") for subject in subjects if isinstance(subject, dict)] != R44_SUBJECT_PATHS:
+        raise ManifestError("R44_CARRIER_SUBJECT_MISMATCH")
+    _verify_current_historical_source_spans(treeish)
+    try:
+        import jsonschema
+        schema_raw = _git(_blob_spec(treeish, REVIEW_SCHEMA))
+        assert isinstance(schema_raw, bytes)
+        schema = json.loads(schema_raw.decode("utf-8"), object_pairs_hook=_pairs)
+        jsonschema.Draft202012Validator.check_schema(schema)
+        if next(jsonschema.Draft202012Validator(schema).iter_errors(policy), None) is not None:
+            raise ManifestError("R44_POLICY_SCHEMA_INVALID")
+    except ManifestError:
+        raise
+    except Exception as exc:
+        raise ManifestError("R44_POLICY_SCHEMA_INVALID") from exc
+    if manifest.get("validation") != {
+        "universalProviderControl": {"required": True, "claimedGreen": False},
+        "providerCapacityGovernor": {"required": True, "claimedGreen": False},
+        "canonicalCapacityControl": {"required": True, "claimedGreen": False},
+        "hosted": {"requiredFresh": True, "claimedGreen": False},
+        "providerInvocation": False, "activation": False,
+    }:
+        raise ManifestError("R44_VALIDATION_AUTHORITY_INVALID")
+
+
 def verify_r29(
     manifest: dict[str, Any], treeish: str, *, verify_objects: bool = True
 ) -> None:
@@ -1745,7 +2458,8 @@ LAYER_DESCRIPTORS = (
     ManifestLayerDescriptor(R40_MANIFEST, FROZEN_R40, "fleet-universal-provider-control-candidate-manifest/v3", verify_r40, FROZEN_R40),
     ManifestLayerDescriptor(R41_MANIFEST, FROZEN_R41, "fleet-universal-provider-control-candidate-manifest/v3", verify_r41, FROZEN_R41),
     ManifestLayerDescriptor(R42_MANIFEST, FROZEN_R42, "fleet-universal-provider-control-candidate-manifest/v3", verify_r42, FROZEN_R42),
-    ManifestLayerDescriptor(R43_MANIFEST, CURRENT_CANDIDATE, "fleet-universal-provider-control-candidate-manifest/v3", verify_r43, R43_BASE["commit"]),
+    ManifestLayerDescriptor(R43_MANIFEST, FROZEN_R43, "fleet-universal-provider-control-candidate-manifest/v3", verify_r43, FROZEN_R43),
+    ManifestLayerDescriptor(R44_MANIFEST, CURRENT_CANDIDATE, "fleet-universal-provider-control-candidate-manifest/v3", verify_r44, R44_BASE["commit"]),
 )
 
 
@@ -1763,7 +2477,8 @@ LAYER_TRUST_ANCHORS: Mapping[str, ManifestLayerTrustAnchor] = MappingProxyType(
         R40_MANIFEST: ManifestLayerTrustAnchor(40, R40_MANIFEST, FROZEN_R40, "fleet-universal-provider-control-candidate-manifest/v3", verify_r40, FROZEN_R40),
         R41_MANIFEST: ManifestLayerTrustAnchor(41, R41_MANIFEST, FROZEN_R41, "fleet-universal-provider-control-candidate-manifest/v3", verify_r41, FROZEN_R41),
         R42_MANIFEST: ManifestLayerTrustAnchor(42, R42_MANIFEST, FROZEN_R42, "fleet-universal-provider-control-candidate-manifest/v3", verify_r42, FROZEN_R42),
-        R43_MANIFEST: ManifestLayerTrustAnchor(43, R43_MANIFEST, CURRENT_CANDIDATE, "fleet-universal-provider-control-candidate-manifest/v3", verify_r43, R43_BASE["commit"]),
+        R43_MANIFEST: ManifestLayerTrustAnchor(43, R43_MANIFEST, FROZEN_R43, "fleet-universal-provider-control-candidate-manifest/v3", verify_r43, FROZEN_R43),
+        R44_MANIFEST: ManifestLayerTrustAnchor(44, R44_MANIFEST, CURRENT_CANDIDATE, "fleet-universal-provider-control-candidate-manifest/v3", verify_r44, R44_BASE["commit"]),
     }
 )
 
@@ -1787,9 +2502,9 @@ def _tracked_reconciliation_paths(treeish: str) -> tuple[str, ...]:
     return paths
 
 
-FROZEN_R42_RECONCILIATION_PATHS = _tracked_reconciliation_paths(FROZEN_R42)
+FROZEN_R43_RECONCILIATION_PATHS = _tracked_reconciliation_paths(FROZEN_R43)
 EXPECTED_CURRENT_RECONCILIATION_PATHS = tuple(
-    sorted(FROZEN_R42_RECONCILIATION_PATHS + (R43_MANIFEST,))
+    sorted(FROZEN_R43_RECONCILIATION_PATHS + (R44_MANIFEST,))
 )
 
 
@@ -1842,7 +2557,7 @@ def _diagnose_layer_configuration(
         if descriptor.schema != expected_schema:
             raise ManifestError("MANIFEST_DESCRIPTOR_SCHEMA_INVALID")
         if descriptor.candidate == CURRENT_CANDIDATE:
-            if descriptor.report_candidate != R43_BASE["commit"]:
+            if descriptor.report_candidate != R44_BASE["commit"]:
                 raise ManifestError("MANIFEST_DESCRIPTOR_REPORT_INVALID")
         elif (
             re.fullmatch(r"[0-9a-f]{40}", descriptor.candidate) is None
@@ -1853,8 +2568,8 @@ def _diagnose_layer_configuration(
 
 def _validate_layer_descriptors(treeish: str) -> None:
     _diagnose_layer_configuration(LAYER_DESCRIPTORS, LAYER_TRUST_ANCHORS)
-    frozen_paths = _tracked_reconciliation_paths(FROZEN_R42)
-    if frozen_paths != FROZEN_R42_RECONCILIATION_PATHS:
+    frozen_paths = _tracked_reconciliation_paths(FROZEN_R43)
+    if frozen_paths != FROZEN_R43_RECONCILIATION_PATHS:
         raise ManifestError("MANIFEST_DESCRIPTOR_TRACKING_INVALID")
     tracked_paths = _tracked_reconciliation_paths(treeish)
     if tracked_paths != EXPECTED_CURRENT_RECONCILIATION_PATHS:

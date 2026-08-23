@@ -324,3 +324,23 @@ behavior, not spelling. Generic current-owner tests retain every descriptor, anc
 profile, cache-mode, policy-digest, and authority hostile and prove refusal before a receipt or PASS.
 The thirteen layer counts are 98/7/7/7/7/7/7/7/7/7/7/7/7. Runtime/schema bytes, policy, exact Fable
 quality profile, cache/charge behavior, and input-blind `REFUSE`/zero authority remain unchanged.
+
+## R44 literal frozen-history execution (candidate, zero authority)
+
+R44 freezes adverse R43 `78218e277a4f03a7830058ab7c3cf04683066b9b`, tree
+`d31cda26840f019dbc2f9b445d0b8e1a9cdeb607`, parent
+`5b1abb9d01226e35721d14b9c525d87287722c8c`. Authoritative historical evidence is loaded only from
+literal R43 manifest, test, checker, and runtime Git blobs after exact OID, byte-count, and raw-SHA
+attestation. Exactly two direct `unittest.TestCase` classes and all 184 historical decorated UTF-8
+FunctionDef spans are bound. Frozen modules execute under restored canonical aliases and closed
+result accounting: Windows reports 184 executed and no skips; other platforms report 180 executed
+plus exactly four named and reason-bound Windows-only skips. Errors, failures, unexpected skips,
+expected failures, or unexpected successes refuse.
+
+Current R44 historical spans must still equal the frozen spans; generic R44 owner tests remain
+current. The loader isolates provenance selection and module identity but is not arbitrary Python or
+filesystem containment. It trusts a clean interpreter/process, standard library and import
+machinery, Git binary and object database, the real repository root, and temporary filesystem.
+Enumerated current-state sentinels remain defense in depth only. The fourteen layer counts are
+98/7/7/7/7/7/7/7/7/7/7/7/7/7. Runtime/schema, policy/profile/cache/charge/quality, and input-blind
+`REFUSE`/zero authority remain byte-identical; R44 grants no authority or credit.

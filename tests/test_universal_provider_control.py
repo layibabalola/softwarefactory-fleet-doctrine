@@ -193,10 +193,13 @@ def _run_historical_case_under_quarantine(
         mock.patch.object(checker, "MANIFEST", current_state),
         mock.patch.object(checker, "R43_MANIFEST", current_state),
         mock.patch.object(checker, "R43_BASE", current_state),
+        mock.patch.object(checker, "R44_MANIFEST", current_state),
+        mock.patch.object(checker, "R44_BASE", current_state),
         mock.patch.object(checker, "check", side_effect=forbidden),
         mock.patch.object(checker, "_validate_layer_descriptors", side_effect=forbidden),
         mock.patch.object(checker, "_execute_manifest_layers", side_effect=forbidden),
         mock.patch.object(checker, "verify_r43", side_effect=forbidden),
+        mock.patch.object(checker, "verify_r44", side_effect=forbidden),
         mock.patch.object(checker, "_tracked_reconciliation_paths", side_effect=forbidden),
         mock.patch.object(checker, "_git", side_effect=guarded_git),
         mock.patch.object(checker, "_blob_spec", side_effect=guarded_blob_spec),
@@ -6984,7 +6987,7 @@ class ReviewResourceAdmissionR29Tests(unittest.TestCase):
         import check_universal_manifest as checker
 
         current_round = checker.LAYER_DESCRIPTORS[-1].round
-        self.assertEqual(current_round, 43)
+        self.assertEqual(current_round, 44)
         runtime = _historical_runtime_methods(current_round)
         self.assertEqual(len(runtime), 184)
         self.assertEqual(
@@ -7042,6 +7045,127 @@ class ReviewResourceAdmissionR29Tests(unittest.TestCase):
                     ):
                         mutable.append((qualified, node.lineno, "checker.MANIFEST"))
         self.assertEqual(mutable, [])
+
+    def test_frozen_r43_authoritative_source_and_outcomes_are_closed(self) -> None:
+        """R44 RED: history must execute only from literal frozen R43 modules."""
+        import check_universal_manifest as checker
+
+        self.assertEqual(
+            tuple(inspect.signature(checker._open_frozen_r43_historical_modules).parameters),
+            (),
+        )
+        self.assertEqual(len(checker.FROZEN_R43_HISTORICAL_FUNCTION_SPANS), 184)
+        with checker._open_frozen_r43_historical_modules() as frozen:
+            self.assertEqual(frozen.historical_names, tuple(
+                checker.FROZEN_R43_HISTORICAL_FUNCTION_SPANS
+            ))
+            report = frozen.execute_all()
+        expected = (184, 0) if os.name == "nt" else (180, 4)
+        self.assertEqual((report.executed, report.expected_windows_skips), expected)
+        self.assertEqual((report.errors, report.failures, report.unexpected_skips), (0, 0, 0))
+
+    def test_frozen_r43_source_selection_rejects_all_mutable_execution_forms(self) -> None:
+        import check_universal_manifest as checker
+
+        raw = checker._git(
+            f"{checker.FROZEN_R43}:tests/test_universal_provider_control.py"
+        )
+        self.assertIsInstance(raw, bytes)
+        variants = {
+            "default": raw.replace(
+                b"def test_r28_01_runtime_refuses_before_reading_any_caller_input(self)",
+                b"def test_r28_01_runtime_refuses_before_reading_any_caller_input(self, captured=open)",
+                1,
+            ),
+            "annotation": raw.replace(
+                b"def test_r28_01_runtime_refuses_before_reading_any_caller_input(self)",
+                b"def test_r28_01_runtime_refuses_before_reading_any_caller_input(self: object)",
+                1,
+            ),
+            "decorator": raw.replace(
+                b"    def test_r28_01_runtime_refuses_before_reading_any_caller_input(self)",
+                b"    @unittest.expectedFailure\n    def test_r28_01_runtime_refuses_before_reading_any_caller_input(self)",
+                1,
+            ),
+            "closure-body": raw.replace(
+                b"        result = upc.evaluate_review_admission(Exploding(), policy=Exploding(), capability=Exploding())",
+                b"        captured = lambda: open\n        result = upc.evaluate_review_admission(Exploding(), policy=Exploding(), capability=Exploding())",
+                1,
+            ),
+            "direct-open": raw.replace(
+                b"        result = upc.evaluate_review_admission(Exploding(), policy=Exploding(), capability=Exploding())",
+                b"        open(__file__)\n        result = upc.evaluate_review_admission(Exploding(), policy=Exploding(), capability=Exploding())",
+                1,
+            ),
+            "path-open": raw.replace(
+                b"        result = upc.evaluate_review_admission(Exploding(), policy=Exploding(), capability=Exploding())",
+                b"        Path(__file__).open()\n        result = upc.evaluate_review_admission(Exploding(), policy=Exploding(), capability=Exploding())",
+                1,
+            ),
+            "subprocess": raw.replace(
+                b"        result = upc.evaluate_review_admission(Exploding(), policy=Exploding(), capability=Exploding())",
+                b"        subprocess.run(['git', 'show', ':tests/test_universal_provider_control.py'])\n        result = upc.evaluate_review_admission(Exploding(), policy=Exploding(), capability=Exploding())",
+                1,
+            ),
+            "git-head": raw.replace(
+                b"        result = upc.evaluate_review_admission(Exploding(), policy=Exploding(), capability=Exploding())",
+                b"        subprocess.run(['git', 'show', 'HEAD:tests/test_universal_provider_control.py'])\n        result = upc.evaluate_review_admission(Exploding(), policy=Exploding(), capability=Exploding())",
+                1,
+            ),
+            "inherited-class": raw + b"\nclass ImportedHistory(UniversalProviderControlTests):\n    pass\n",
+            "imported-testcase": raw + b"\nclass ImportedHistory(unittest.TestCase):\n    pass\n",
+        }
+        for label, changed in variants.items():
+            self.assertNotEqual(changed, raw, label)
+            with self.subTest(mutation=label):
+                with self.assertRaises(checker.ManifestError):
+                    checker._diagnose_frozen_r43_test_source(changed)
+
+    def test_frozen_r43_current_rebinding_is_irrelevant_and_runtime_graph_is_closed(self) -> None:
+        import check_universal_manifest as checker
+
+        fake = type("FakeCurrent", (unittest.TestCase,), {})
+        prior_runtime = sys.modules.get("universal_provider_control")
+        prior_checker = sys.modules.get("check_universal_manifest")
+        with mock.patch.object(
+            type(self), "test_r41_01_frozen_carrier_tuple_is_literal", lambda _self: None
+        ):
+            sys.modules["universal_provider_control"] = object()  # type: ignore[assignment]
+            sys.modules["check_universal_manifest"] = object()  # type: ignore[assignment]
+            try:
+                with checker._open_frozen_r43_historical_modules() as frozen:
+                    self.assertIsNot(
+                        frozen.test_module.UniversalProviderControlTests,
+                        type(self),
+                    )
+                    frozen._assert_graph()
+                    frozen.test_module.ImportedHistory = fake
+                    with self.assertRaisesRegex(
+                        checker.ManifestError,
+                        "R43_HISTORICAL_RUNTIME_CLASS_SET_INVALID",
+                    ):
+                        frozen._assert_graph()
+                    del frozen.test_module.ImportedHistory
+                    case_type = frozen.test_module.UniversalProviderControlTests
+                    original = case_type.test_r8_03_open_osfhandle_failure_closes_native_owner_once
+                    try:
+                        case_type.test_r8_03_open_osfhandle_failure_closes_native_owner_once = lambda _self: None
+                        with self.assertRaisesRegex(
+                            checker.ManifestError,
+                            "R43_HISTORICAL_RUNTIME_FUNCTION_INVALID",
+                        ):
+                            frozen._assert_graph()
+                    finally:
+                        case_type.test_r8_03_open_osfhandle_failure_closes_native_owner_once = original
+            finally:
+                if prior_runtime is None:
+                    sys.modules.pop("universal_provider_control", None)
+                else:
+                    sys.modules["universal_provider_control"] = prior_runtime
+                if prior_checker is None:
+                    sys.modules.pop("check_universal_manifest", None)
+                else:
+                    sys.modules["check_universal_manifest"] = prior_checker
 
     def test_historical_numbered_tests_are_semantically_quarantined(self) -> None:
         import check_universal_manifest as checker
@@ -7123,12 +7247,12 @@ class ReviewResourceAdmissionR29Tests(unittest.TestCase):
         self.assertEqual(
             tuple((receipt["round"], receipt["subjects"]) for receipt in receipts),
             ((26, 98), (29, 7), (33, 7), (34, 7), (35, 7), (36, 7),
-             (37, 7), (38, 7), (39, 7), (40, 7), (41, 7), (42, 7), (43, 7)),
+             (37, 7), (38, 7), (39, 7), (40, 7), (41, 7), (42, 7), (43, 7), (44, 7)),
         )
-        frozen = checker._tracked_reconciliation_paths(checker.FROZEN_R42)
+        frozen = checker._tracked_reconciliation_paths(checker.FROZEN_R43)
         self.assertEqual(
             checker.EXPECTED_CURRENT_RECONCILIATION_PATHS,
-            tuple(sorted(frozen + (checker.R43_MANIFEST,))),
+            tuple(sorted(frozen + (checker.R44_MANIFEST,))),
         )
         self.assertEqual(checker._tracked_reconciliation_paths(":"), checker.EXPECTED_CURRENT_RECONCILIATION_PATHS)
 
@@ -7151,19 +7275,19 @@ class ReviewResourceAdmissionR29Tests(unittest.TestCase):
     def test_current_manifest_mutation_is_observed_only_by_generic_owner(self) -> None:
         import check_universal_manifest as checker
 
-        raw = (ROOT / checker.R43_MANIFEST).read_bytes()
+        raw = (ROOT / checker.R44_MANIFEST).read_bytes()
         manifest = json.loads(raw)
         manifest["authority"]["providerExecution"] = True
         changed_raw = json.dumps(manifest, indent=2).encode("utf-8") + b"\n"
         real_git = checker._git
 
         def rebound_git(spec: str, *, text: bool = False) -> bytes | str:
-            if spec == checker._blob_spec(":", checker.R43_MANIFEST):
+            if spec == checker._blob_spec(":", checker.R44_MANIFEST):
                 return changed_raw.decode("utf-8") if text else changed_raw
             return real_git(spec, text=text)
 
         with mock.patch.object(checker, "_git", side_effect=rebound_git):
-            with self.assertRaisesRegex(checker.ManifestError, "R43_AUTHORITY_INVALID"):
+            with self.assertRaisesRegex(checker.ManifestError, "R44_AUTHORITY_INVALID"):
                 checker._execute_manifest_layers(":")
 
     def test_generic_current_pipeline_hostile_inventory_is_complete(self) -> None:
@@ -7188,7 +7312,7 @@ class ReviewResourceAdmissionR29Tests(unittest.TestCase):
                 current,
                 manifest_path="manifests/universal-provider-control-reconciliation-r99.json",
             ),
-            dataclasses.replace(current, candidate=checker.FROZEN_R42),
+            dataclasses.replace(current, candidate=checker.FROZEN_R43),
             dataclasses.replace(current, schema="wrong-schema"),
             dataclasses.replace(current, verifier=lambda _manifest, _candidate: None),
             dataclasses.replace(current, report_candidate=checker.FROZEN_R41),
@@ -7207,9 +7331,9 @@ class ReviewResourceAdmissionR29Tests(unittest.TestCase):
 
         current_anchor = anchors[current.manifest_path]
         anchor_mutations = (
-            dataclasses.replace(current_anchor, round=44),
+            dataclasses.replace(current_anchor, round=45),
             dataclasses.replace(current_anchor, manifest_path="wrong-path"),
-            dataclasses.replace(current_anchor, candidate=checker.FROZEN_R42),
+            dataclasses.replace(current_anchor, candidate=checker.FROZEN_R43),
             dataclasses.replace(current_anchor, schema="wrong-schema"),
             dataclasses.replace(
                 current_anchor, verifier=lambda _manifest, _candidate: None
@@ -7259,8 +7383,8 @@ class ReviewResourceAdmissionR29Tests(unittest.TestCase):
         for changed in tracked_mutations:
             def tracked(treeish: str) -> tuple[str, ...]:
                 return (
-                    checker.FROZEN_R42_RECONCILIATION_PATHS
-                    if treeish == checker.FROZEN_R42
+                    checker.FROZEN_R43_RECONCILIATION_PATHS
+                    if treeish == checker.FROZEN_R43
                     else changed
                 )
 
@@ -7282,7 +7406,7 @@ class ReviewResourceAdmissionR29Tests(unittest.TestCase):
     def test_current_real_verifier_rejects_fully_rebound_quality_and_authority(self) -> None:
         import check_universal_manifest as checker
 
-        raw = (ROOT / checker.R43_MANIFEST).read_bytes()
+        raw = (ROOT / checker.R44_MANIFEST).read_bytes()
         original = json.loads(raw)
 
         def rebound(manifest: dict[str, object]) -> bytes:
@@ -7297,26 +7421,26 @@ class ReviewResourceAdmissionR29Tests(unittest.TestCase):
         mutations: list[tuple[str, dict[str, object], str]] = []
         authority = copy.deepcopy(original)
         authority["authority"]["providerExecution"] = True
-        mutations.append(("authority", authority, "R43_AUTHORITY_INVALID"))
+        mutations.append(("authority", authority, "R44_AUTHORITY_INVALID"))
         profile = copy.deepcopy(original)
         profile["reviewAdmissionPolicy"]["identity"]["model"] = "claude-fable-4"
         profile["reviewAdmissionPolicyDigest"] = checker.canonical_policy_sha256(
             profile["reviewAdmissionPolicy"]
         )
-        mutations.append(("profile", profile, "R43_EXACT_PROFILE_MISMATCH"))
+        mutations.append(("profile", profile, "R44_EXACT_PROFILE_MISMATCH"))
         cache = copy.deepcopy(original)
         cache["reviewAdmissionPolicy"]["cacheAdmissionMode"] = "VERIFIED_DISABLED"
         cache["reviewAdmissionPolicyDigest"] = checker.canonical_policy_sha256(
             cache["reviewAdmissionPolicy"]
         )
-        mutations.append(("cache", cache, "R43_CACHE_ADMISSION_MODE_MISMATCH"))
+        mutations.append(("cache", cache, "R44_CACHE_ADMISSION_MODE_MISMATCH"))
         digest = copy.deepcopy(original)
         digest["reviewAdmissionPolicyDigest"] = "sha256:" + "0" * 64
-        mutations.append(("policy-digest", digest, "R43_POLICY_DIGEST_MISMATCH"))
+        mutations.append(("policy-digest", digest, "R44_POLICY_DIGEST_MISMATCH"))
 
         real_git = checker._git
         real_receipt = checker._verify_subjects_and_self
-        current_spec = checker._blob_spec(":", checker.R43_MANIFEST)
+        current_spec = checker._blob_spec(":", checker.R44_MANIFEST)
         for label, changed, reason in mutations:
             changed_raw = rebound(changed)
 
@@ -7330,7 +7454,7 @@ class ReviewResourceAdmissionR29Tests(unittest.TestCase):
             )
 
             def guarded_receipt(*args: object, **kwargs: object) -> int:
-                if kwargs.get("manifest_path") == checker.R43_MANIFEST:
+                if kwargs.get("manifest_path") == checker.R44_MANIFEST:
                     return current_receipt(*args, **kwargs)  # type: ignore[no-any-return]
                 return real_receipt(*args, **kwargs)
 
