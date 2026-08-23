@@ -137,8 +137,9 @@ def _manifest_self(manifest_bytes: bytes, declared: str) -> None:
         raise CandidateError("MANIFEST_SELF_MISMATCH")
 
 
-def verify(root: Path, manifest_path: Path) -> str:
-    manifest_bytes = manifest_path.read_bytes()
+def verify(root: Path, manifest_path: Path, manifest_bytes: bytes | None = None) -> str:
+    if manifest_bytes is None:
+        manifest_bytes = manifest_path.read_bytes()
     manifest = _strict_json(manifest_bytes, "MANIFEST_JSON_INVALID")
     _exact_keys(
         manifest,
@@ -304,10 +305,18 @@ def verify(root: Path, manifest_path: Path) -> str:
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--root", type=Path, default=ROOT)
-    parser.add_argument("--manifest", type=Path, default=DEFAULT_MANIFEST)
+    parser.add_argument("--manifest", type=Path)
+    parser.add_argument("--treeish", default="HEAD")
     args = parser.parse_args()
     try:
-        print(verify(args.root.resolve(), args.manifest.resolve()))
+        root = args.root.resolve()
+        if args.manifest is None:
+            manifest_path = root / "manifests/zero-discretionary-capacity-reserve-r2.json"
+            manifest_bytes = _git(root, ["show", f"{args.treeish}:manifests/zero-discretionary-capacity-reserve-r2.json"])
+        else:
+            manifest_path = args.manifest.resolve()
+            manifest_bytes = manifest_path.read_bytes()
+        print(verify(root, manifest_path, manifest_bytes))  # type: ignore[arg-type]
         return 0
     except (CandidateError, OSError, KeyError, TypeError) as exc:
         print(f"ZERO_RESERVE_CANDIDATE_INVALID: {exc}", file=sys.stderr)
