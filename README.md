@@ -86,5 +86,9 @@ the human store-and-forward bus.
   layers; the runtime remains input-blind `REFUSE` with zero authority. R15-R26 history coordinates on
   [issue #4](https://github.com/layibabalola/softwarefactory-fleet-doctrine/issues/4); R27-R33 incident
   carrying and adjudication coordinate on
-  [issue #3](https://github.com/layibabalola/softwarefactory-fleet-doctrine/issues/3). Neither candidate
+  [issue #3](https://github.com/layibabalola/softwarefactory-fleet-doctrine/issues/3). R34 preserves
+  frozen R33 and canonical phase6-16 history, then makes cache admission a policy-pinned mode backed by
+  deterministic request/profile/domain-bound conformance evidence. It also rejects integer-equivalent
+  floating-point native charge records. The fake adapter remains zero-authority and the runtime remains
+  input-blind `REFUSE`. Neither candidate
   changes the ratified governor or `RULINGS.md`, grants adoption credit, or provides launch authority.

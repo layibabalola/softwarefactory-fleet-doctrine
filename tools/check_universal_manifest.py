@@ -18,9 +18,11 @@ MANIFEST = "manifests/universal-provider-control-reconciliation-r29.json"
 R29_MANIFEST = MANIFEST
 R26_MANIFEST = "manifests/universal-provider-control-reconciliation-r26.json"
 R33_MANIFEST = "manifests/universal-provider-control-reconciliation-r33.json"
+R34_MANIFEST = "manifests/universal-provider-control-reconciliation-r34.json"
 REVIEW_SCHEMA = "schemas/universal-provider-review-admission-v1.schema.json"
 FROZEN_CANDIDATE = "e70a044f31dd2f43ab7c716d63a4eb89318c61b6"
 FROZEN_R29 = "fc76bf6d5ab52891d06b7f71eb2e993e413c124c"
+FROZEN_R33 = "8e20b4a1652931af178e792eb62ab892a7d309fd"
 SELF_PATTERN = re.compile(
     rb'("canonicalGitBlobSha256"\s*:\s*"sha256:)([0-9a-f]{64})(")'
 )
@@ -83,6 +85,7 @@ R29_BASE = {
 }
 R29_IDENTITY = R28_IDENTITY
 R29_POLICY_DIGEST = "sha256:e7e3fde383f43972796b681023ff92d9b35365e275e6fc00d84cc2735de00c60"
+R34_POLICY_DIGEST = "sha256:ebec57daeca11108b2ba2771471b92d7bedfac64f58f321c7c1752a6f8339b5f"
 R33_BASE = {
     "commit": "55afee85ecf720eb857cea1980f511f331b9e86f",
     "tree": "6e58f77467320d53ced12906bf2be62b4fca3d56",
@@ -104,6 +107,19 @@ R33_SUBJECT_PATHS = [
     "tools/check_universal_manifest.py",
     "tools/universal_provider_control.py",
 ]
+R34_BASE = {
+    "commit": "edcbf5084e1c9cbb3b7654c683b91185cef1494b",
+    "tree": "5b84b927f214c8f4834a4f665d1f2beebc9176ee",
+    "orderedParents": [
+        "8e20b4a1652931af178e792eb62ab892a7d309fd",
+        "8149c3f06811f85b833b28940017f2d05448cf5d",
+    ],
+    "orderedParentTrees": [
+        "bb740bd9434b417cd66a568b762f13a047a11abc",
+        "1a8193ae7f8c9982bfe499d039e5c85ae74ea907",
+    ],
+}
+R34_SUBJECT_PATHS = R33_SUBJECT_PATHS
 
 
 def _pairs(values: list[tuple[str, Any]]) -> dict[str, Any]:
@@ -489,7 +505,7 @@ def verify_r33(manifest: dict[str, Any], treeish: str) -> None:
     try:
         import jsonschema
 
-        schema_raw = _git(_blob_spec(treeish, REVIEW_SCHEMA))
+        schema_raw = _git(_blob_spec(FROZEN_R33, REVIEW_SCHEMA))
         assert isinstance(schema_raw, bytes)
         schema = json.loads(schema_raw.decode("utf-8"), object_pairs_hook=_pairs)
         jsonschema.Draft202012Validator.check_schema(schema)
@@ -508,6 +524,77 @@ def verify_r33(manifest: dict[str, Any], treeish: str) -> None:
         "activation": False,
     }:
         raise ManifestError("R33_VALIDATION_AUTHORITY_INVALID")
+
+
+def verify_r34(manifest: dict[str, Any], treeish: str) -> None:
+    """Verify the literal phase6-16 integration base and exact current R34 instance."""
+
+    if (
+        manifest.get("status") != "CANDIDATE_ZERO_AUTHORITY"
+        or manifest.get("subjectCoverage")
+        != "R34_CACHE_ADMISSION_CAPABILITY_REPAIR_ZERO_AUTHORITY"
+    ):
+        raise ManifestError("R34_STATUS_INVALID")
+    if manifest.get("candidateBase") != R34_BASE:
+        raise ManifestError("R34_BASE_INVALID")
+    tree, parents = _commit_tuple(R34_BASE["commit"])
+    if tree != R34_BASE["tree"] or parents != R34_BASE["orderedParents"]:
+        raise ManifestError("R34_BASE_OBJECT_MISMATCH")
+    if [_commit_tuple(parent)[0] for parent in parents] != R34_BASE["orderedParentTrees"]:
+        raise ManifestError("R34_BASE_PARENT_TREE_MISMATCH")
+    descendant = "HEAD" if treeish == ":" else treeish
+    if not _is_ancestor(R34_BASE["commit"], descendant):
+        raise ManifestError("R34_BASE_NOT_ANCESTOR")
+    if manifest.get("authority") != {
+        "providerExecution": False, "processSpawnResumeKill": False,
+        "containmentOrCanaryCredit": False, "automaticGateState": "CLOSED",
+        "runtimeImplementation": "NOT_INSTALLED_UNCONDITIONAL_REFUSE",
+        "activationRequiresSeparateAdjudication": True, "authorRecused": True,
+    }:
+        raise ManifestError("R34_AUTHORITY_INVALID")
+    policy = manifest.get("reviewAdmissionPolicy")
+    if not isinstance(policy, dict) or policy.get("source") != R27_SOURCE:
+        raise ManifestError("R34_SOURCE_SUBJECT_MISMATCH")
+    if policy.get("identity") != R29_IDENTITY:
+        raise ManifestError("R34_EXACT_PROFILE_MISMATCH")
+    if policy.get("cacheAdmissionMode") != "EXACTLY_BOUNDED_AND_CHARGED":
+        raise ManifestError("R34_CACHE_ADMISSION_MODE_MISMATCH")
+    if policy.get("capacity", {}).get("requiredQuotaWindows") != ["session", "weekly"]:
+        raise ManifestError("R34_QUOTA_WINDOWS_MISMATCH")
+    if (
+        manifest.get("reviewAdmissionPolicyDigest") != R34_POLICY_DIGEST
+        or canonical_policy_sha256(policy) != R34_POLICY_DIGEST
+    ):
+        raise ManifestError("R34_POLICY_DIGEST_MISMATCH")
+    subjects = manifest.get("subjectFiles")
+    if (
+        not isinstance(subjects, list)
+        or [subject.get("path") for subject in subjects if isinstance(subject, dict)]
+        != R34_SUBJECT_PATHS
+    ):
+        raise ManifestError("R34_CARRIER_SUBJECT_MISMATCH")
+    try:
+        import jsonschema
+
+        schema_raw = _git(_blob_spec(treeish, REVIEW_SCHEMA))
+        assert isinstance(schema_raw, bytes)
+        schema = json.loads(schema_raw.decode("utf-8"), object_pairs_hook=_pairs)
+        jsonschema.Draft202012Validator.check_schema(schema)
+        if next(jsonschema.Draft202012Validator(schema).iter_errors(policy), None) is not None:
+            raise ManifestError("R34_POLICY_SCHEMA_INVALID")
+    except ManifestError:
+        raise
+    except Exception as exc:
+        raise ManifestError("R34_POLICY_SCHEMA_INVALID") from exc
+    if manifest.get("validation") != {
+        "universalProviderControl": {"required": True, "claimedGreen": False},
+        "providerCapacityGovernor": {"required": True, "claimedGreen": False},
+        "canonicalCapacityControl": {"required": True, "claimedGreen": False},
+        "hosted": {"requiredFresh": True, "claimedGreen": False},
+        "providerInvocation": False,
+        "activation": False,
+    }:
+        raise ManifestError("R34_VALIDATION_AUTHORITY_INVALID")
 
 
 def verify_r29(
@@ -556,7 +643,7 @@ def verify_r29(
     try:
         import jsonschema
 
-        schema_raw = _git(_blob_spec(treeish, REVIEW_SCHEMA))
+        schema_raw = _git(_blob_spec(FROZEN_R29, REVIEW_SCHEMA))
         assert isinstance(schema_raw, bytes)
         schema = json.loads(schema_raw.decode("utf-8"), object_pairs_hook=_pairs)
         jsonschema.Draft202012Validator.check_schema(schema)
@@ -749,17 +836,25 @@ def check(treeish: str) -> int:
         r29, r29_raw, manifest_path=R29_MANIFEST, candidate=FROZEN_R29
     )
 
-    r33_raw = _git(_blob_spec(treeish, R33_MANIFEST))
-    assert isinstance(r33_raw, bytes)
+    r33_raw = _frozen_manifest_bytes(treeish, R33_MANIFEST, FROZEN_R33)
     r33 = _parse_manifest(r33_raw, "fleet-universal-provider-control-candidate-manifest/v3")
-    verify_r33(r33, treeish)
+    verify_r33(r33, FROZEN_R33)
     r33_subjects = _verify_subjects_and_self(
-        r33, r33_raw, manifest_path=R33_MANIFEST, candidate=treeish
+        r33, r33_raw, manifest_path=R33_MANIFEST, candidate=FROZEN_R33
+    )
+
+    r34_raw = _git(_blob_spec(treeish, R34_MANIFEST))
+    assert isinstance(r34_raw, bytes)
+    r34 = _parse_manifest(r34_raw, "fleet-universal-provider-control-candidate-manifest/v3")
+    verify_r34(r34, treeish)
+    r34_subjects = _verify_subjects_and_self(
+        r34, r34_raw, manifest_path=R34_MANIFEST, candidate=treeish
     )
     print(
         f"MANIFEST_PASS r26_subjects={r26_subjects} r29_subjects={r29_subjects} "
-        f"r33_subjects={r33_subjects} self=PASS "
-        f"candidates={FROZEN_CANDIDATE},{FROZEN_R29},{R33_BASE['commit']} checked={treeish}"
+        f"r33_subjects={r33_subjects} r34_subjects={r34_subjects} self=PASS "
+        f"candidates={FROZEN_CANDIDATE},{FROZEN_R29},{FROZEN_R33},"
+        f"{R34_BASE['commit']} checked={treeish}"
     )
     return 0
 

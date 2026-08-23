@@ -5280,6 +5280,7 @@ class ReviewResourceAdmissionR29Tests(unittest.TestCase):
             )
         )
         self.policy = copy.deepcopy(manifest["reviewAdmissionPolicy"])
+        self.policy["cacheAdmissionMode"] = "EXACTLY_BOUNDED_AND_CHARGED"
         self.contents = [f"exact review subject {index}\n" for index in range(7)]
         self.subjects = []
         for ordinal, content in enumerate(self.contents):
@@ -5311,7 +5312,7 @@ class ReviewResourceAdmissionR29Tests(unittest.TestCase):
         self.charge_basis = upc.derive_review_conformance_charge_basis(
             input_tokens=4096,
             native_output_tokens=self.policy["identity"]["nativeMaxOutputTokens"],
-            cache_policy="EXACTLY_BOUNDED_AND_CHARGED",
+            cache_admission_mode=self.policy["cacheAdmissionMode"],
         )
         self.dimensions = upc.derive_review_conformance_charges(self.charge_basis)
         self.projection = {
@@ -5323,7 +5324,14 @@ class ReviewResourceAdmissionR29Tests(unittest.TestCase):
             "chargeFunctionArtifactSha256": upc.REVIEW_CHARGE_FUNCTION_ARTIFACT_SHA256,
             "model": self.policy["identity"]["model"], "inputTokens": 4096,
             "nativeOutputTokens": self.policy["identity"]["nativeMaxOutputTokens"],
-            "cachePolicy": "EXACTLY_BOUNDED_AND_CHARGED",
+            "cacheModeCapability": upc.derive_review_cache_mode_capability(
+                policy_digest=self.policy_digest,
+                final_request_sha256=upc._review_sha(self.execution_raw),
+                provider=self.policy["identity"]["provider"],
+                model=self.policy["identity"]["model"],
+                quota_domain="hmac-sha256:" + "1" * 64,
+                cache_admission_mode=self.policy["cacheAdmissionMode"],
+            ),
             "quotaWindows": copy.deepcopy(self.policy["capacity"]["requiredQuotaWindows"]),
             "chargeBasis": copy.deepcopy(self.charge_basis),
             "dimensions": copy.deepcopy(self.dimensions),
@@ -5359,6 +5367,7 @@ class ReviewResourceAdmissionR29Tests(unittest.TestCase):
             "FLEET_CONFORMANCE_ONLY": "1", "FLEET_PROVIDER_CREDENTIALS_PRESENT": "0"
         }
         self.capabilities = {
+            "cacheModeCapability": copy.deepcopy(self.projection["cacheModeCapability"]),
             "providerHardOutput": {
                 "adapterLabel": "CONFORMANCE_ONLY_ZERO_AUTHORITY",
                 "brokerOwnedHandle": "fake-output-handle-01", "artifactSha256": SHA_A,
@@ -5399,16 +5408,20 @@ class ReviewResourceAdmissionR29Tests(unittest.TestCase):
         }
         self.terminal = self.make_terminal(identity)
 
-    def make_terminal(self, identity: dict[str, object]) -> dict[str, object]:
+    def make_terminal(
+        self, identity: dict[str, object],
+        cache_admission_mode: str = "EXACTLY_BOUNDED_AND_CHARGED",
+    ) -> dict[str, object]:
         terminal: dict[str, object] = {}
         for field in ("provider", "model", "effort", "serviceTier", "transport", "role"):
             suffix = field[0].upper() + field[1:]
             terminal["requested" + suffix] = identity[field]
             terminal["effective" + suffix] = identity[field]
+        cache_amount = 0 if cache_admission_mode == "VERIFIED_DISABLED" else 10
         actual_basis = {
             "input": {"nativeUnits": "tokens", "amount": 100},
-            "cacheRead": {"nativeUnits": "tokens", "amount": 10},
-            "cacheCreationOrWrite": {"nativeUnits": "tokens", "amount": 10},
+            "cacheRead": {"nativeUnits": "tokens", "amount": cache_amount},
+            "cacheCreationOrWrite": {"nativeUnits": "tokens", "amount": cache_amount},
             "output": {"nativeUnits": "tokens", "amount": 100},
             "reasoning": {"nativeUnits": "tokens", "amount": 10},
             "otherChargedDimensions": {
@@ -5418,7 +5431,8 @@ class ReviewResourceAdmissionR29Tests(unittest.TestCase):
         actual_charges = upc.derive_review_conformance_charges(actual_basis)
         terminal.update({
             "actualInputTokens": 100, "actualOutputTokens": 100,
-            "actualCacheReadTokens": 10, "actualCacheCreationTokens": 10,
+            "actualCacheReadTokens": cache_amount,
+            "actualCacheCreationTokens": cache_amount,
             "actualReasoningTokens": 10,
             "actualOtherChargedDimensions": {"provider-native-other": 1},
             "actualToolCalls": 0, "actualDurationMilliseconds": 1000, "actualCost": 1,
@@ -5480,17 +5494,33 @@ class ReviewResourceAdmissionR29Tests(unittest.TestCase):
         upc.validate_review_tool_surface(argv, self.config, self.environment, identity)
         projection = copy.deepcopy(self.projection)
         projection.update({"provider": identity["provider"], "model": identity["model"], "nativeOutputTokens": 32000})
+        alternate_digest = upc._review_sha(upc._review_canonical_bytes(alternate))
+        projection["cacheModeCapability"] = upc.derive_review_cache_mode_capability(
+            policy_digest=alternate_digest, final_request_sha256=SHA_A,
+            provider=identity["provider"], model=identity["model"],
+            quota_domain=projection["quotaDomain"],
+            cache_admission_mode=alternate["cacheAdmissionMode"],
+        )
         projection["chargeBasis"] = upc.derive_review_conformance_charge_basis(
             input_tokens=4096, native_output_tokens=32000,
-            cache_policy=projection["cachePolicy"],
+            cache_admission_mode=alternate["cacheAdmissionMode"],
         )
         self.rebind_projection(projection)
-        upc.validate_review_charge_projection(projection, input_tokens=4096, identity=identity)
+        upc.validate_review_charge_projection(
+            projection, input_tokens=4096, identity=identity,
+            policy_digest=alternate_digest, final_request_sha256=SHA_A,
+            cache_admission_mode=alternate["cacheAdmissionMode"],
+        )
         capabilities = copy.deepcopy(self.capabilities)
+        capabilities["cacheModeCapability"] = copy.deepcopy(
+            projection["cacheModeCapability"]
+        )
         capabilities["providerHardOutput"].update({
             "provider": identity["provider"], "model": identity["model"], "tokens": 32000
         })
-        upc.validate_review_capabilities(capabilities, identity)
+        upc.validate_review_capabilities(
+            capabilities, identity, projection["cacheModeCapability"]
+        )
 
     def test_r29_01_nonseven_provider_neutral_fixture_is_conformance_only(self) -> None:
         contents = [f"bounded generic subject {index}\n" for index in range(3)]
@@ -5504,6 +5534,7 @@ class ReviewResourceAdmissionR29Tests(unittest.TestCase):
             })
         policy = copy.deepcopy(self.policy)
         policy["source"]["subjectFiles"] = subjects
+        policy["cacheAdmissionMode"] = "VERIFIED_DISABLED"
         policy["identity"].update({
             "provider": "example-provider", "model": "frontier-review-model",
             "effort": "highest", "serviceTier": "priority", "transport": "api",
@@ -5525,9 +5556,15 @@ class ReviewResourceAdmissionR29Tests(unittest.TestCase):
             "provider": policy["identity"]["provider"], "model": policy["identity"]["model"],
             "nativeOutputTokens": policy["identity"]["nativeMaxOutputTokens"],
         })
+        projection["cacheModeCapability"] = upc.derive_review_cache_mode_capability(
+            policy_digest=policy_digest, final_request_sha256=upc._review_sha(execution_raw),
+            provider=policy["identity"]["provider"], model=policy["identity"]["model"],
+            quota_domain=projection["quotaDomain"],
+            cache_admission_mode=policy["cacheAdmissionMode"],
+        )
         projection["chargeBasis"] = upc.derive_review_conformance_charge_basis(
             input_tokens=4096, native_output_tokens=32000,
-            cache_policy=projection["cachePolicy"],
+            cache_admission_mode=policy["cacheAdmissionMode"],
         )
         self.rebind_projection(projection)
         windows = copy.deepcopy(self.windows)
@@ -5542,6 +5579,9 @@ class ReviewResourceAdmissionR29Tests(unittest.TestCase):
             str(identity["nativeMaxOutputTokens"]), "--tools", "",
         ]
         capabilities = copy.deepcopy(self.capabilities)
+        capabilities["cacheModeCapability"] = copy.deepcopy(
+            projection["cacheModeCapability"]
+        )
         capabilities["providerHardOutput"].update({
             "provider": identity["provider"], "model": identity["model"],
             "tokens": identity["nativeMaxOutputTokens"],
@@ -5551,7 +5591,8 @@ class ReviewResourceAdmissionR29Tests(unittest.TestCase):
             execution_raw=execution_raw, tokenizer_result=tokenizer, projection=projection,
             capacity_windows=windows, argv=argv, config=self.config,
             environment=self.environment, capabilities=capabilities, lease=self.lease,
-            authority_state=self.authority_state, terminal=self.make_terminal(identity),
+            authority_state=self.authority_state,
+            terminal=self.make_terminal(identity, policy["cacheAdmissionMode"]),
         )
         self.assertEqual(len(policy["source"]["subjectFiles"]), 3)
         self.assertEqual(result["status"], "CONFORMANCE_ONLY_ZERO_AUTHORITY")
@@ -5665,13 +5706,151 @@ class ReviewResourceAdmissionR29Tests(unittest.TestCase):
         with self.assertRaisesRegex(upc.ControlError, "REVIEW_TERMINAL_CHARGE_MISMATCH"):
             self.evaluate(terminal=changed_other)
 
+    def test_r34_03_policy_mode_defeats_fully_rebound_projection_selection(self) -> None:
+        projection = copy.deepcopy(self.projection)
+        projection["cacheModeCapability"] = upc.derive_review_cache_mode_capability(
+            policy_digest=self.policy_digest,
+            final_request_sha256=upc._review_sha(self.execution_raw),
+            provider=self.policy["identity"]["provider"],
+            model=self.policy["identity"]["model"],
+            quota_domain=projection["quotaDomain"],
+            cache_admission_mode="VERIFIED_DISABLED",
+        )
+        projection["chargeBasis"] = upc.derive_review_conformance_charge_basis(
+            input_tokens=self.tokenizer["inputTokens"],
+            native_output_tokens=self.policy["identity"]["nativeMaxOutputTokens"],
+            cache_admission_mode="VERIFIED_DISABLED",
+        )
+        self.rebind_projection(projection)
+        windows = copy.deepcopy(self.windows)
+        for row in windows:
+            row["candidate"] = projection["dimensions"][row["dimension"]]["amount"]
+        capabilities = copy.deepcopy(self.capabilities)
+        capabilities["cacheModeCapability"] = copy.deepcopy(
+            projection["cacheModeCapability"]
+        )
+        terminal = self.make_terminal(self.policy["identity"], "VERIFIED_DISABLED")
+        with self.assertRaisesRegex(
+            upc.ControlError, "REVIEW_CACHE_MODE_CAPABILITY_INVALID"
+        ):
+            self.evaluate(
+                projection=projection, capacity_windows=windows,
+                capabilities=capabilities, terminal=terminal,
+            )
+
+    def test_r34_04_cache_capability_is_exactly_request_profile_domain_and_mode_bound(self) -> None:
+        mutations = {
+            "policyDigest": SHA_A,
+            "finalRequestSha256": SHA_B,
+            "provider": "substitute-provider",
+            "model": "substitute-model",
+            "quotaDomain": "hmac-sha256:" + "2" * 64,
+            "mode": "VERIFIED_DISABLED",
+            "capabilityArtifactSha256": SHA_C,
+            "enforcementScope": "CALLER_ASSERTED",
+            "measurementScope": "NONE",
+        }
+        for field, value in mutations.items():
+            changed = copy.deepcopy(self.projection)
+            changed["cacheModeCapability"][field] = value
+            with self.subTest(field=field):
+                with self.assertRaisesRegex(
+                    upc.ControlError, "REVIEW_CACHE_MODE_CAPABILITY_INVALID"
+                ):
+                    self.evaluate(projection=changed)
+        missing = copy.deepcopy(self.capabilities)
+        del missing["cacheModeCapability"]
+        with self.assertRaisesRegex(upc.ControlError, "REVIEW_CAPABILITY_MISSING"):
+            self.evaluate(capabilities=missing)
+        drift = copy.deepcopy(self.capabilities)
+        drift["cacheModeCapability"]["resultSha256"] = SHA_D
+        with self.assertRaisesRegex(
+            upc.ControlError, "REVIEW_CACHE_MODE_CAPABILITY_INVALID"
+        ):
+            self.evaluate(capabilities=drift)
+
+    def test_r34_05_native_charge_integer_representation_is_exact(self) -> None:
+        basis = copy.deepcopy(self.projection)
+        basis["chargeBasis"]["input"]["amount"] = 4096.0
+        with self.assertRaises(upc.ControlError):
+            self.evaluate(projection=basis)
+        projection = copy.deepcopy(self.projection)
+        self.assertEqual(projection["dimensions"]["input"]["amount"], 6144)
+        projection["dimensions"]["input"]["amount"] = 6144.0
+        with self.assertRaisesRegex(upc.ControlError, "REVIEW_CHARGE_RESULT_MISMATCH"):
+            self.evaluate(projection=projection)
+        windows = copy.deepcopy(self.windows)
+        input_row = next(row for row in windows if row["dimension"] == "input")
+        input_row["candidate"] = float(input_row["candidate"])
+        with self.assertRaisesRegex(upc.ControlError, "REVIEW_CAPACITY_WINDOWS_INVALID"):
+            self.evaluate(capacity_windows=windows)
+        for field in (
+            "capacity", "activeAndCompleted", "completionReserve",
+            "foregroundReserve", "reviewReserve",
+        ):
+            rows = copy.deepcopy(self.windows)
+            rows[0][field] = float(rows[0][field])
+            with self.subTest(capacity_field=field):
+                with self.assertRaisesRegex(
+                    upc.ControlError, "REVIEW_CAPACITY_WINDOWS_INVALID"
+                ):
+                    self.evaluate(capacity_windows=rows)
+        terminal = copy.deepcopy(self.terminal)
+        self.assertEqual(terminal["actualNativeCharges"]["input"], 150)
+        terminal["actualNativeCharges"]["input"] = 150.0
+        with self.assertRaisesRegex(upc.ControlError, "REVIEW_TERMINAL_USAGE_INVALID"):
+            self.evaluate(terminal=terminal)
+        for field in ("actualToolCalls", "actualDurationMilliseconds"):
+            changed_terminal = copy.deepcopy(self.terminal)
+            changed_terminal[field] = float(changed_terminal[field])
+            with self.subTest(terminal_integer_field=field):
+                with self.assertRaisesRegex(
+                    upc.ControlError, "REVIEW_TERMINAL_NATIVE_USAGE_INVALID"
+                ):
+                    self.evaluate(terminal=changed_terminal)
+
+    def test_r34_06_bounded_mode_allows_zero_actual_cache_but_keeps_reservation(self) -> None:
+        terminal = self.make_terminal(self.policy["identity"], "VERIFIED_DISABLED")
+        result = self.evaluate(terminal=terminal)
+        self.assertEqual(result["terminal"]["disposition"], "COMPLETE_CONFORMANCE_ONLY")
+        self.assertGreater(self.projection["dimensions"]["cacheRead"]["amount"], 0)
+        self.assertGreater(
+            self.projection["dimensions"]["cacheCreationOrWrite"]["amount"], 0
+        )
+        self.assertEqual(terminal["actualNativeCharges"]["cacheRead"], 0)
+        self.assertEqual(terminal["actualNativeCharges"]["cacheCreationOrWrite"], 0)
+
+    def test_r34_07_generic_schema_accepts_1_and_64_but_rejects_65_subjects(self) -> None:
+        for count in (1, 64):
+            policy = copy.deepcopy(self.policy)
+            policy["source"]["subjectFiles"] = [
+                {
+                    "ordinal": ordinal, "path": f"bounded/{ordinal}.txt",
+                    "gitBlobOid": f"{ordinal + 1:040x}", "sha256": SHA_A,
+                    "bytes": 1,
+                }
+                for ordinal in range(count)
+            ]
+            with self.subTest(count=count):
+                upc.validate_contract("review_admission", policy)
+        too_many = copy.deepcopy(self.policy)
+        too_many["source"]["subjectFiles"] = [
+            {
+                "ordinal": ordinal, "path": f"too-many/{ordinal}.txt",
+                "gitBlobOid": f"{ordinal + 1:040x}", "sha256": SHA_A, "bytes": 1,
+            }
+            for ordinal in range(65)
+        ]
+        with self.assertRaises(upc.ControlError):
+            upc.validate_contract("review_admission", too_many)
+
     def test_r28_08_all_windows_timestamp_order_positive_reserves_and_floor(self) -> None:
         upc.validate_review_capacity_windows(
             self.windows, self.dimensions, ["session", "weekly"], 300
         )
         boundary = copy.deepcopy(self.windows)
         row = boundary[0]
-        row["activeAndCompleted"] = (
+        row["activeAndCompleted"] = int(
             row["capacity"] * 0.8 - row["candidate"] - row["completionReserve"]
             - row["foregroundReserve"] - row["reviewReserve"]
         )
@@ -5892,6 +6071,73 @@ class ReviewResourceAdmissionR29Tests(unittest.TestCase):
         import check_universal_manifest as checker
 
         self.assertEqual(checker.check(":"), 0)
+
+    def test_r34_08_manifest_pins_integration_mode_profile_and_policy_digest(self) -> None:
+        import check_universal_manifest as checker
+
+        manifest = json.loads((ROOT / checker.R34_MANIFEST).read_text(encoding="utf-8"))
+        checker.verify_r34(manifest, ":")
+        self.assertEqual(
+            checker._commit_tuple(checker.R34_BASE["commit"]),
+            (checker.R34_BASE["tree"], checker.R34_BASE["orderedParents"]),
+        )
+        self.assertEqual(
+            manifest["reviewAdmissionPolicy"]["cacheAdmissionMode"],
+            "EXACTLY_BOUNDED_AND_CHARGED",
+        )
+        self.assertEqual(
+            manifest["reviewAdmissionPolicyDigest"], checker.R34_POLICY_DIGEST
+        )
+
+    def test_r34_09_manifest_rejects_recomputed_policy_and_instance_substitution(self) -> None:
+        import check_universal_manifest as checker
+
+        manifest = json.loads((ROOT / checker.R34_MANIFEST).read_text(encoding="utf-8"))
+        mutations = []
+        mode = copy.deepcopy(manifest)
+        mode["reviewAdmissionPolicy"]["cacheAdmissionMode"] = "VERIFIED_DISABLED"
+        mode["reviewAdmissionPolicyDigest"] = checker.canonical_policy_sha256(
+            mode["reviewAdmissionPolicy"]
+        )
+        mutations.append((mode, "R34_CACHE_ADMISSION_MODE_MISMATCH"))
+        source = copy.deepcopy(manifest)
+        source["reviewAdmissionPolicy"]["source"]["subjectFiles"][0]["path"] = "substitute"
+        source["reviewAdmissionPolicyDigest"] = checker.canonical_policy_sha256(
+            source["reviewAdmissionPolicy"]
+        )
+        mutations.append((source, "R34_SOURCE_SUBJECT_MISMATCH"))
+        profile = copy.deepcopy(manifest)
+        profile["reviewAdmissionPolicy"]["identity"]["model"] = "substitute"
+        profile["reviewAdmissionPolicyDigest"] = checker.canonical_policy_sha256(
+            profile["reviewAdmissionPolicy"]
+        )
+        mutations.append((profile, "R34_EXACT_PROFILE_MISMATCH"))
+        base = copy.deepcopy(manifest)
+        base["candidateBase"]["orderedParents"].reverse()
+        mutations.append((base, "R34_BASE_INVALID"))
+        for changed, reason in mutations:
+            with self.subTest(reason=reason):
+                with self.assertRaisesRegex(checker.ManifestError, reason):
+                    checker.verify_r34(changed, ":")
+
+    def test_r34_10_frozen_r33_layer_rejects_drift(self) -> None:
+        import check_universal_manifest as checker
+
+        frozen = checker._git(f"{checker.FROZEN_R33}:{checker.R33_MANIFEST}")
+        self.assertIsInstance(frozen, bytes)
+        changed = json.loads(frozen)
+        changed["reviewAdmissionPolicy"]["identity"]["model"] = "substitute"
+        changed_raw = json.dumps(changed, separators=(",", ":")).encode("utf-8")
+        with (
+            mock.patch.object(checker, "_is_ancestor", return_value=True),
+            mock.patch.object(checker, "_git", side_effect=[frozen, changed_raw]),
+        ):
+            with self.assertRaisesRegex(
+                checker.ManifestError, "MANIFEST_FROZEN_BLOB_MISMATCH"
+            ):
+                checker._frozen_manifest_bytes(
+                    "HEAD", checker.R33_MANIFEST, checker.FROZEN_R33
+                )
 
 
 if __name__ == "__main__":

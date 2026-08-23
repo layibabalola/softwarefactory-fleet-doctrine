@@ -5397,21 +5397,71 @@ REVIEW_CHARGE_FUNCTION_ARTIFACT_SHA256 = _review_sha(
     _review_canonical_bytes(REVIEW_CHARGE_FUNCTION_DESCRIPTOR)
 )
 
+CACHE_MODE_CAPABILITY_DESCRIPTOR = {
+    "schema": "fleet-review-cache-mode-capability/v1",
+    "adapterLabel": "CONFORMANCE_ONLY_ZERO_AUTHORITY",
+    "name": "fleet-provider-neutral-fake-cache-mode-capability",
+    "version": "1.0.0",
+    "enforcementScope": "EXACT_FINAL_REQUEST_AND_PROVIDER_PROFILE",
+    "measurementScope": "TERMINAL_PROVIDER_NATIVE_CACHE_USAGE",
+    "modes": ["VERIFIED_DISABLED", "EXACTLY_BOUNDED_AND_CHARGED"],
+}
+CACHE_MODE_CAPABILITY_ARTIFACT_SHA256 = _review_sha(
+    _review_canonical_bytes(CACHE_MODE_CAPABILITY_DESCRIPTOR)
+)
+
+
+def derive_review_cache_mode_capability(
+    *, policy_digest: str, final_request_sha256: str, provider: str, model: str,
+    quota_domain: str, cache_admission_mode: str,
+) -> dict[str, Any]:
+    """Derive code-owned fake cache evidence; callers cannot choose a policy mode."""
+
+    if (
+        DIGEST_RE.fullmatch(policy_digest) is None
+        or DIGEST_RE.fullmatch(final_request_sha256) is None
+        or not isinstance(provider, str) or not provider
+        or not isinstance(model, str) or not model
+        or not isinstance(quota_domain, str) or not quota_domain
+        or cache_admission_mode not in CACHE_MODE_CAPABILITY_DESCRIPTOR["modes"]
+    ):
+        raise ControlError("REVIEW_CACHE_MODE_CAPABILITY_INPUT_INVALID")
+    result = {
+        "adapterLabel": "CONFORMANCE_ONLY_ZERO_AUTHORITY",
+        "capabilityName": CACHE_MODE_CAPABILITY_DESCRIPTOR["name"],
+        "capabilityVersion": CACHE_MODE_CAPABILITY_DESCRIPTOR["version"],
+        "capabilityArtifactSha256": CACHE_MODE_CAPABILITY_ARTIFACT_SHA256,
+        "policyDigest": policy_digest,
+        "finalRequestSha256": final_request_sha256,
+        "provider": provider,
+        "model": model,
+        "quotaDomain": quota_domain,
+        "mode": cache_admission_mode,
+        "enforcementScope": CACHE_MODE_CAPABILITY_DESCRIPTOR["enforcementScope"],
+        "measurementScope": CACHE_MODE_CAPABILITY_DESCRIPTOR["measurementScope"],
+    }
+    result_digest = _review_sha(_review_canonical_bytes(result))
+    result["resultSha256"] = result_digest
+    result["brokerOwnedCapabilityHandle"] = (
+        "CONFORMANCE_ONLY_ZERO_AUTHORITY/" + result_digest
+    )
+    return result
+
 
 def derive_review_conformance_charge_basis(
-    *, input_tokens: int, native_output_tokens: int, cache_policy: str,
+    *, input_tokens: int, native_output_tokens: int, cache_admission_mode: str,
 ) -> dict[str, dict[str, Any]]:
     """Derive every fake native basis internally from exact trusted profile inputs."""
 
     if (
-        isinstance(input_tokens, bool) or not isinstance(input_tokens, int)
+        type(input_tokens) is not int
         or not 0 <= input_tokens <= 128000
-        or isinstance(native_output_tokens, bool) or not isinstance(native_output_tokens, int)
+        or type(native_output_tokens) is not int
         or not 1 <= native_output_tokens <= 1_000_000
-        or cache_policy not in {"VERIFIED_DISABLED", "EXACTLY_BOUNDED_AND_CHARGED"}
+        or cache_admission_mode not in CACHE_MODE_CAPABILITY_DESCRIPTOR["modes"]
     ):
         raise ControlError("REVIEW_CHARGE_BASIS_INPUT_INVALID")
-    cache_enabled = cache_policy == "EXACTLY_BOUNDED_AND_CHARGED"
+    cache_enabled = cache_admission_mode == "EXACTLY_BOUNDED_AND_CHARGED"
     return {
         "input": {"nativeUnits": "tokens", "amount": input_tokens},
         "cacheRead": {
@@ -5445,8 +5495,7 @@ def derive_review_conformance_charges(
             not isinstance(basis, Mapping)
             or set(basis) != {"nativeUnits", "amount"}
             or basis["nativeUnits"] != rate["nativeUnits"]
-            or isinstance(basis["amount"], bool)
-            or not isinstance(basis["amount"], int)
+            or type(basis["amount"]) is not int
             or not 0 <= basis["amount"] <= 1_000_000_000_000
         ):
             raise ControlError("REVIEW_CHARGE_BASIS_INVALID")
@@ -5691,12 +5740,13 @@ def validate_review_tokenizer_result(
 
 
 def validate_review_charge_projection(
-    projection: Mapping[str, Any], *, input_tokens: int, identity: Mapping[str, Any]
+    projection: Mapping[str, Any], *, input_tokens: int, identity: Mapping[str, Any],
+    policy_digest: str, final_request_sha256: str, cache_admission_mode: str,
 ) -> dict[str, dict[str, Any]]:
     required = {
         "adapterLabel", "provider", "quotaDomain", "chargeFunctionName",
         "chargeFunctionVersion", "chargeFunctionArtifactSha256", "model", "inputTokens",
-        "nativeOutputTokens", "cachePolicy", "quotaWindows", "chargeBasis", "dimensions",
+        "nativeOutputTokens", "cacheModeCapability", "quotaWindows", "chargeBasis", "dimensions",
         "chargeResultSha256", "brokerOwnedChargeResultHandle",
     }
     if not isinstance(projection, Mapping) or set(projection) != required:
@@ -5705,9 +5755,10 @@ def validate_review_charge_projection(
         projection["adapterLabel"] != "CONFORMANCE_ONLY_ZERO_AUTHORITY"
         or projection["provider"] != identity["provider"]
         or projection["model"] != identity["model"]
+        or type(projection["inputTokens"]) is not int
         or projection["inputTokens"] != input_tokens
+        or type(projection["nativeOutputTokens"]) is not int
         or projection["nativeOutputTokens"] != identity["nativeMaxOutputTokens"]
-        or projection["cachePolicy"] not in {"VERIFIED_DISABLED", "EXACTLY_BOUNDED_AND_CHARGED"}
         or projection["chargeFunctionName"] != REVIEW_CHARGE_FUNCTION_DESCRIPTOR["name"]
         or projection["chargeFunctionVersion"] != REVIEW_CHARGE_FUNCTION_DESCRIPTOR["version"]
         or projection["chargeFunctionArtifactSha256"]
@@ -5716,6 +5767,16 @@ def validate_review_charge_projection(
         or not projection["quotaDomain"]
     ):
         raise ControlError("REVIEW_CHARGE_BINDING_INVALID")
+    expected_cache_capability = derive_review_cache_mode_capability(
+        policy_digest=policy_digest,
+        final_request_sha256=final_request_sha256,
+        provider=identity["provider"],
+        model=identity["model"],
+        quota_domain=projection["quotaDomain"],
+        cache_admission_mode=cache_admission_mode,
+    )
+    if projection["cacheModeCapability"] != expected_cache_capability:
+        raise ControlError("REVIEW_CACHE_MODE_CAPABILITY_INVALID")
     quota_windows = projection["quotaWindows"]
     if (
         not isinstance(quota_windows, list) or not quota_windows
@@ -5727,12 +5788,23 @@ def validate_review_charge_projection(
     expected_basis = derive_review_conformance_charge_basis(
         input_tokens=input_tokens,
         native_output_tokens=identity["nativeMaxOutputTokens"],
-        cache_policy=projection["cachePolicy"],
+        cache_admission_mode=cache_admission_mode,
     )
     if charge_basis != expected_basis:
         raise ControlError("REVIEW_CHARGE_BASIS_BINDING_INVALID")
     expected = derive_review_conformance_charges(charge_basis)
     dimensions = projection["dimensions"]
+    if (
+        not isinstance(dimensions, Mapping)
+        or set(dimensions) != set(expected)
+        or any(
+            not isinstance(value, Mapping)
+            or set(value) != {"units", "amount"}
+            or type(value["amount"]) is not int
+            for value in dimensions.values()
+        )
+    ):
+        raise ControlError("REVIEW_CHARGE_RESULT_MISMATCH")
     if dimensions != expected:
         raise ControlError("REVIEW_CHARGE_RESULT_MISMATCH")
     result_digest = review_conformance_charge_result_digest(charge_basis, expected)
@@ -5746,14 +5818,14 @@ def validate_review_charge_projection(
         raise ControlError("REVIEW_OUTPUT_CHARGE_INVALID")
     if dimensions["otherChargedDimensions"]["amount"] <= 0:
         raise ControlError("REVIEW_OTHER_CHARGE_NOT_CONSERVATIVE")
-    if projection["cachePolicy"] == "EXACTLY_BOUNDED_AND_CHARGED" and (
+    if cache_admission_mode == "EXACTLY_BOUNDED_AND_CHARGED" and (
         charge_basis["cacheRead"]["amount"] <= 0
         or charge_basis["cacheCreationOrWrite"]["amount"] <= 0
         or dimensions["cacheRead"]["amount"] <= 0
         or dimensions["cacheCreationOrWrite"]["amount"] <= 0
     ):
         raise ControlError("REVIEW_CACHE_CHARGE_INVALID")
-    if projection["cachePolicy"] == "VERIFIED_DISABLED" and (
+    if cache_admission_mode == "VERIFIED_DISABLED" and (
         charge_basis["cacheRead"]["amount"] != 0
         or charge_basis["cacheCreationOrWrite"]["amount"] != 0
         or dimensions["cacheRead"]["amount"] != 0
@@ -5810,8 +5882,7 @@ def validate_review_capacity_windows(
         )]
         if (
             row["units"] != projected["units"] or row["candidate"] != projected["amount"]
-            or any(isinstance(value, bool) or not isinstance(value, (int, float))
-                   or not math.isfinite(value) or value < 0 for value in numbers)
+            or any(type(value) is not int or value < 0 for value in numbers)
             or row["capacity"] <= 0
             or row["completionReserve"] <= 0
             or row["foregroundReserve"] <= 0
@@ -5844,15 +5915,19 @@ def validate_review_capacity_windows(
 
 
 def validate_review_capabilities(
-    capabilities: Mapping[str, Any], identity: Mapping[str, Any]
+    capabilities: Mapping[str, Any], identity: Mapping[str, Any],
+    expected_cache_capability: Mapping[str, Any],
 ) -> None:
     if not isinstance(capabilities, Mapping) or set(capabilities) != {
-        "providerHardOutput", "fullChildCustody", "deadline"
+        "providerHardOutput", "fullChildCustody", "deadline", "cacheModeCapability"
     }:
         raise ControlError("REVIEW_CAPABILITY_MISSING")
     output = capabilities["providerHardOutput"]
     custody = capabilities["fullChildCustody"]
     deadline = capabilities["deadline"]
+    cache_mode = capabilities["cacheModeCapability"]
+    if cache_mode != expected_cache_capability:
+        raise ControlError("REVIEW_CACHE_MODE_CAPABILITY_INVALID")
     if (
         not isinstance(output, Mapping)
         or set(output) != {"adapterLabel", "brokerOwnedHandle", "artifactSha256", "provider", "model", "tokens"}
@@ -5957,7 +6032,7 @@ def validate_review_authority_fixture(
 def validate_review_terminal_accounting(
     terminal: Mapping[str, Any], identity: Mapping[str, Any],
     projection: Mapping[str, Any], capabilities: Mapping[str, Any],
-    authority_state: Mapping[str, Any],
+    authority_state: Mapping[str, Any], cache_admission_mode: str,
 ) -> dict[str, Any]:
     identity_fields = (
         "provider", "model", "effort", "serviceTier", "transport", "role"
@@ -6000,26 +6075,31 @@ def validate_review_terminal_accounting(
         if name in {"actualOtherChargedDimensions", "actualNativeCharges"} and isinstance(value, dict):
             if not value or any(
                 not isinstance(key, str) or not key
-                or isinstance(child, bool) or not isinstance(child, (int, float))
-                or not math.isfinite(child) or child < 0
+                or type(child) is not int or child < 0
                 for key, child in value.items()
             ):
                 raise ControlError("REVIEW_TERMINAL_USAGE_INVALID")
             continue
         if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value) or value < 0:
             raise ControlError("REVIEW_TERMINAL_USAGE_INVALID")
-    token_fields = (
+    exact_integer_fields = (
         "actualInputTokens", "actualOutputTokens", "actualCacheReadTokens",
-        "actualCacheCreationTokens", "actualReasoningTokens",
+        "actualCacheCreationTokens", "actualReasoningTokens", "actualToolCalls",
+        "actualDurationMilliseconds",
     )
     if any(
         isinstance(terminal[name], bool) or not isinstance(terminal[name], int)
-        for name in token_fields
+        for name in exact_integer_fields
     ) or any(
         isinstance(amount, bool) or not isinstance(amount, int)
         for amount in terminal["actualOtherChargedDimensions"].values()
     ):
         raise ControlError("REVIEW_TERMINAL_NATIVE_USAGE_INVALID")
+    if cache_admission_mode == "VERIFIED_DISABLED" and (
+        terminal["actualCacheReadTokens"] != 0
+        or terminal["actualCacheCreationTokens"] != 0
+    ):
+        raise ControlError("REVIEW_TERMINAL_CACHE_MODE_MISMATCH")
     if (
         terminal["actualOutputTokens"] > identity["nativeMaxOutputTokens"]
         or terminal["actualToolCalls"] != 0
@@ -6081,14 +6161,18 @@ def evaluate_review_conformance_fixture(
     """Exercise pure hostile fixtures; success is conformance-only and grants zero authority."""
 
     validate_contract("review_admission", policy)
-    if committed_policy_digest != _review_sha(_review_canonical_bytes(policy)):
+    policy_digest = _review_sha(_review_canonical_bytes(policy))
+    if committed_policy_digest != policy_digest:
         raise ControlError("REVIEW_COMMITTED_POLICY_INSTANCE_MISMATCH")
     request, raw = build_review_final_request(policy, packet)
+    request_digest = _review_sha(raw)
     verify_review_execution_request(raw, execution_raw)
     validate_review_tool_surface(argv, config, environment, policy["identity"])
     tokens = validate_review_tokenizer_result(tokenizer_result, raw, policy["identity"])
     dimensions = validate_review_charge_projection(
-        projection, input_tokens=tokens, identity=policy["identity"]
+        projection, input_tokens=tokens, identity=policy["identity"],
+        policy_digest=policy_digest, final_request_sha256=request_digest,
+        cache_admission_mode=policy["cacheAdmissionMode"],
     )
     if projection["quotaWindows"] != policy["capacity"]["requiredQuotaWindows"]:
         raise ControlError("REVIEW_QUOTA_WINDOW_BINDING_INVALID")
@@ -6096,16 +6180,25 @@ def evaluate_review_conformance_fixture(
         capacity_windows, dimensions, policy["capacity"]["requiredQuotaWindows"],
         policy["capacity"]["maxEvidenceAgeSeconds"],
     )
-    validate_review_capabilities(capabilities, policy["identity"])
+    expected_cache_capability = derive_review_cache_mode_capability(
+        policy_digest=policy_digest, final_request_sha256=request_digest,
+        provider=policy["identity"]["provider"], model=policy["identity"]["model"],
+        quota_domain=projection["quotaDomain"],
+        cache_admission_mode=policy["cacheAdmissionMode"],
+    )
+    validate_review_capabilities(
+        capabilities, policy["identity"], expected_cache_capability
+    )
     validate_review_quota_lease(lease, projection)
     validate_review_authority_fixture(authority_state, lease, projection)
     terminal_result = validate_review_terminal_accounting(
-        terminal, policy["identity"], projection, capabilities, authority_state
+        terminal, policy["identity"], projection, capabilities, authority_state,
+        policy["cacheAdmissionMode"],
     )
     return {
         "status": "CONFORMANCE_ONLY_ZERO_AUTHORITY", "runtimeAdmission": False,
         "providerAuthority": False, "adoptionCredit": False, "automaticRetry": False,
-        "requestSha256": _review_sha(raw), "effectiveIdentity": {
+        "requestSha256": request_digest, "effectiveIdentity": {
             name: request[name] for name in (
                 "provider", "model", "effort", "serviceTier", "transport", "role"
             )

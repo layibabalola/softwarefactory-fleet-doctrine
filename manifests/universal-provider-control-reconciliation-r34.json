@@ -1,0 +1,303 @@
+{
+  "schema": "fleet-universal-provider-control-candidate-manifest/v3",
+  "status": "CANDIDATE_ZERO_AUTHORITY",
+  "subjectCoverage": "R34_CACHE_ADMISSION_CAPABILITY_REPAIR_ZERO_AUTHORITY",
+  "candidateBase": {
+    "commit": "edcbf5084e1c9cbb3b7654c683b91185cef1494b",
+    "tree": "5b84b927f214c8f4834a4f665d1f2beebc9176ee",
+    "orderedParents": [
+      "8e20b4a1652931af178e792eb62ab892a7d309fd",
+      "8149c3f06811f85b833b28940017f2d05448cf5d"
+    ],
+    "orderedParentTrees": [
+      "bb740bd9434b417cd66a568b762f13a047a11abc",
+      "1a8193ae7f8c9982bfe499d039e5c85ae74ea907"
+    ]
+  },
+  "authority": {
+    "providerExecution": false,
+    "processSpawnResumeKill": false,
+    "containmentOrCanaryCredit": false,
+    "automaticGateState": "CLOSED",
+    "runtimeImplementation": "NOT_INSTALLED_UNCONDITIONAL_REFUSE",
+    "activationRequiresSeparateAdjudication": true,
+    "authorRecused": true
+  },
+  "reviewAdmissionPolicyDigest": "sha256:ebec57daeca11108b2ba2771471b92d7bedfac64f58f321c7c1752a6f8339b5f",
+  "reviewAdmissionPolicy": {
+    "schema": "fleet-universal-provider-review-admission/v1",
+    "status": "CANDIDATE_ZERO_AUTHORITY_HARD_CLOSED",
+    "authority": {
+      "providerExecution": false,
+      "processMutation": false,
+      "gateMutation": false,
+      "adoptionCredit": false,
+      "runtimeImplementation": "NOT_INSTALLED_UNCONDITIONAL_REFUSE",
+      "authorRecused": true
+    },
+    "trust": {
+      "brokerOwnedVerifiedPolicyHandleRequired": true,
+      "installManifestDigestRequired": true,
+      "callerPolicyOrDigestAuthority": false,
+      "currentProductionTrustRoot": "NOT_INSTALLED_REFUSE"
+    },
+    "source": {
+      "repository": "https://github.com/layibabalola/Cloudvore.git",
+      "commit": "46674bf7ba004dd6c4cac69d5a26369ab11106c4",
+      "tree": "bef6f545f773157807e81dcf71305cb13a25382e",
+      "orderedParents": [
+        "8dcd3393f5541aa1f7fe181c3869f4262b6e1a00"
+      ],
+      "subjectFiles": [
+        {
+          "ordinal": 0,
+          "path": "tools/provider-capacity-governor-shadow/provenance/HUB-DESIGN-provider-capacity-governor-shadow-adoption-0818.md",
+          "gitBlobOid": "b18a478694439efa86d2015ebe13b0c97bc9d5dc",
+          "sha256": "sha256:e2a08fbccee3542449778d12d35c7e446dc56bef1cd898643bda7341842929a7",
+          "bytes": 31133
+        },
+        {
+          "ordinal": 1,
+          "path": "knowledge/provider-capacity-governor-shadow-profile-v1.json",
+          "gitBlobOid": "9bd11a136528cced1fc16430688d089a3f80a36c",
+          "sha256": "sha256:90c45346bc83a145547086434876168e2aad4db7d1e2b1baf95a2c14e443ebf3",
+          "bytes": 21559
+        },
+        {
+          "ordinal": 2,
+          "path": "knowledge/provider-capacity-governor-shadow-profile-v1.schema.json",
+          "gitBlobOid": "330228c8df279a6ab528d30da2bc7db7c88db2bc",
+          "sha256": "sha256:a3239addf3872f8b08ee92bfc052a8274901075d741e718d10ad1b0a066656bd",
+          "bytes": 23483
+        },
+        {
+          "ordinal": 3,
+          "path": "knowledge/provider-capacity-governor-shadow-proposal-manifest-v1.json",
+          "gitBlobOid": "95b3304c46fd13c232781e4d7fff9f533624ade4",
+          "sha256": "sha256:cf7fc691d04fd40388a772947b68504ccfca57c96f13182f0ac6acf25e566d88",
+          "bytes": 2999
+        },
+        {
+          "ordinal": 4,
+          "path": "knowledge/provider-capacity-governor-shadow-proposal-manifest-v1.schema.json",
+          "gitBlobOid": "880f776756eb45c9deef608300ba76e9befbb493",
+          "sha256": "sha256:9e4b546b225a69e31a964a3c5294a806389d6310fadcca60d07281c097b190bf",
+          "bytes": 3857
+        },
+        {
+          "ordinal": 5,
+          "path": "knowledge/provider-capacity-governor-shadow-proposal-receipt-2026-08-18.md",
+          "gitBlobOid": "455415489bc98ae11c77702941a6bf42655b0d60",
+          "sha256": "sha256:8d2d67c984b57243f05453c0897a930d745f7fd07fa600a38f98242922e0034b",
+          "bytes": 11088
+        },
+        {
+          "ordinal": 6,
+          "path": "tools/provider-capacity-governor-shadow.tests.py",
+          "gitBlobOid": "98191265e2e6b1878c0189d3fca8249f728c6543",
+          "sha256": "sha256:d8657641168135afe09bacee8d1f55666890b9da4ecd3ae8281ec1218041c675",
+          "bytes": 45023
+        }
+      ]
+    },
+    "identity": {
+      "provider": "anthropic",
+      "model": "claude-fable-5",
+      "effort": "max",
+      "serviceTier": "standard",
+      "transport": "firstParty",
+      "role": "INDEPENDENT_ADVERSARIAL_REVIEWER",
+      "question": "Review the exact seven-file Cloudvore provider-governor proposal for security, doctrine conformance, quality preservation, and fail-closed resource admission; return PASS or actionable findings with file and failure scenario.",
+      "nativeMaxOutputTokens": 64000,
+      "substitutionAllowed": false,
+      "loweringRequiresAcceptedNonInferiority": true
+    },
+    "packet": {
+      "schema": "fleet-review-capsule/v1",
+      "canonicalEncoding": "UTF8_NO_BOM_SORTED_KEYS_COMPACT_LF",
+      "allAndOnlyOrderedSubjectBijection": true,
+      "gitAndCommittedManifestBinding": true,
+      "metadataInstructionFieldsAllowed": false,
+      "silentTruncationAllowed": false,
+      "maxCapsuleBytes": 65536,
+      "maxCapsules": 4,
+      "maxTotalCapsuleBytes": 262144
+    },
+    "serialization": {
+      "schema": "fleet-provider-final-review-request/v1",
+      "internallyDerivedOnly": true,
+      "callerSerializationAccepted": false,
+      "trustedCapturedRawRequestHandleRequired": true,
+      "countedParts": [
+        "SYSTEM_PREFIX",
+        "PROVIDER_PREFIX",
+        "TRANSPORT_FRAMING",
+        "PROMPT",
+        "CAPSULES",
+        "OUTPUT_PARAMETER",
+        "TOOL_CONFIGURATION"
+      ]
+    },
+    "tokenizer": {
+      "trustedVersionAndArtifactRequired": true,
+      "exactCapturedRequestBytesRequired": true,
+      "maxExactSerializedInputTokens": 128000,
+      "heuristicByteFallbackAllowed": false,
+      "callerHiddenPrefixAssertionAccepted": false,
+      "missingCapturedRawHandle": "REFUSE"
+    },
+    "charges": {
+      "trustedProviderNativeFunctionRequired": true,
+      "dimensions": [
+        "input",
+        "cacheRead",
+        "cacheCreationOrWrite",
+        "output",
+        "reasoning",
+        "otherChargedDimensions"
+      ],
+      "typedFiniteNonnegative": true,
+      "fullSelectedNativeOutputAllowanceCharged": true,
+      "cacheDisabledOrExactlyBounded": true,
+      "otherUnknownConservativelyCharged": true,
+      "unknownNeverZero": true
+    },
+    "capacity": {
+      "requiredQuotaWindows": [
+        "session",
+        "weekly"
+      ],
+      "maxEvidenceAgeSeconds": 300,
+      "allWindowDimensionPairs": true,
+      "completionReserveRequired": true,
+      "foregroundReserveRequired": true,
+      "reviewReserveRequired": true,
+      "providerNativeReserveFloor": 0.2,
+      "unknownOrStale": "REFUSE"
+    },
+    "tools": {
+      "providerDefinitions": [],
+      "effectiveProviderTools": [],
+      "effectiveLocalTools": [],
+      "allowedTools": [],
+      "allowedToolsSemantics": "APPROVAL_ONLY_NOT_CONTAINMENT",
+      "hooks": [],
+      "mcpServers": [],
+      "discoveryAllowed": false,
+      "duplicateOrConflictingFlagsAllowed": false
+    },
+    "capabilities": {
+      "brokerOwnedHandlesRequired": true,
+      "hardOutputEqualsSelectedProfile": true,
+      "fullChildTreeCustodyRequired": true,
+      "handleBoundDeadlineSeconds": 3600,
+      "callerBooleanOrDigestAuthority": false,
+      "missing": "REFUSE"
+    },
+    "lease": {
+      "scope": "ATOMIC_HOST_WIDE_QUOTA_DOMAIN",
+      "brokerOwnedHandleRequired": true,
+      "acquireBeforeCensusAndCapacity": true,
+      "revalidateImmediatelyBeforeSpawn": true,
+      "holdThroughTerminalAccounting": true,
+      "timeOnlyStealAllowed": false,
+      "abaFields": [
+        "ownerPid",
+        "ownerProcessStartTime",
+        "nonce",
+        "generation"
+      ]
+    },
+    "request": {
+      "transactionalAuthorityLedgerRequired": true,
+      "requestsPerAuthority": 1,
+      "automaticRetry": false,
+      "unevaluableConsumesAuthority": true,
+      "freshAuthorityAfterUnevaluable": true,
+      "qualityOrFunctionDowngradeAllowed": false
+    },
+    "terminal": {
+      "requestedAndEffectiveIdentityRequired": true,
+      "reconcileAgainstReservation": true,
+      "allNativeUsageRequired": true,
+      "unknownChargesFullReservation": true,
+      "identityMismatch": "UNEVALUABLE_ZERO_CREDIT",
+      "accountBeforeLeaseRelease": true
+    },
+    "conformance": {
+      "adapterLabel": "CONFORMANCE_ONLY_ZERO_AUTHORITY",
+      "productionAuthority": false,
+      "runtimeEntryPointResult": "REFUSE_RUNTIME_NOT_INSTALLED"
+    },
+    "cacheAdmissionMode": "EXACTLY_BOUNDED_AND_CHARGED"
+  },
+  "validation": {
+    "universalProviderControl": {
+      "required": true,
+      "claimedGreen": false
+    },
+    "providerCapacityGovernor": {
+      "required": true,
+      "claimedGreen": false
+    },
+    "canonicalCapacityControl": {
+      "required": true,
+      "claimedGreen": false
+    },
+    "hosted": {
+      "requiredFresh": true,
+      "claimedGreen": false
+    },
+    "providerInvocation": false,
+    "activation": false
+  },
+  "subjectFiles": [
+    {
+      "path": "README.md",
+      "gitBlobOid": "d4eabd337a52e4aa50fa0607d6606c392300938e",
+      "sha256": "sha256:3f205390f369c50445ec0daae8f1b7f76910fddca2d8eb78120e2443600b5f60",
+      "bytes": 8052
+    },
+    {
+      "path": "RECONCILIATION.md",
+      "gitBlobOid": "c4fcd176bcc1b1bc79e81c9f65b5780f1bd2b882",
+      "sha256": "sha256:3bda32ea10d01717921b981b9380049f3523344629e44f50bc97fd71db8fc9ac",
+      "bytes": 15215
+    },
+    {
+      "path": "schemas/universal-provider-review-admission-v1.schema.json",
+      "gitBlobOid": "995426015dac17ca58e831e9e691affc12a36f8c",
+      "sha256": "sha256:c8cd9cf9c62827e1ffd1c3fa9213e91b16d70fe33f73646f2633baca9663b42e",
+      "bytes": 8150
+    },
+    {
+      "path": "specs/fleet-universal-provider-control-reconciliation.md",
+      "gitBlobOid": "5bdc2e72cce88aaa982e87cc450eb24b8367a1c7",
+      "sha256": "sha256:ddda6ea7861420f1fe87ebbe9e0570ae2326917008d3251a89657688f0a783eb",
+      "bytes": 65644
+    },
+    {
+      "path": "tests/test_universal_provider_control.py",
+      "gitBlobOid": "ff03ed5b537ebda0eed2fe6c15db2159c52dd163",
+      "sha256": "sha256:83ab2d49ddf0989b094aab44009a71949bf28627196f0356486f175338817152",
+      "bytes": 324202
+    },
+    {
+      "path": "tools/check_universal_manifest.py",
+      "gitBlobOid": "24b84bc5ea93e03f599f7b8f0709db3248b7a574",
+      "sha256": "sha256:7a7a89058dd49a6e05bea279819b55dd774a0989e457613d6220c1da3d36f88e",
+      "bytes": 41300
+    },
+    {
+      "path": "tools/universal_provider_control.py",
+      "gitBlobOid": "1007a87daa440cf91e5ef75e46b990ed8beaa88a",
+      "sha256": "sha256:da97bfc663550665d7f19b0821ceba553cb7995435c40660503408ceb9444b0a",
+      "bytes": 307978
+    }
+  ],
+  "manifestSelf": {
+    "path": "manifests/universal-provider-control-reconciliation-r34.json",
+    "bytes": 11071,
+    "canonicalGitBlobSha256": "sha256:d12728677b9304001753f69112801154f511a83558965975848d2598475a047d"
+  }
+}

@@ -174,3 +174,20 @@ subjects and Anthropic `claude-fable-5` with max effort, standard service, first
 and zero authority. R15-R26 history remains coordinated on issue #4; R27-R33 carrying and later
 adjudication remain coordinated on issue #3. No provider, process, task, gate, credential, runtime,
 ratification, merge, or adoption authority is created.
+
+## R34 cache-admission capability repair (candidate, zero authority)
+
+R34 freezes exact R33 `8e20b4a1652931af178e792eb62ab892a7d309fd` as adverse evidence and
+preserves canonical phase6-16 through ordered-parent merge
+`edcbf5084e1c9cbb3b7654c683b91185cef1494b`. The generic policy now requires one literal cache
+admission mode. The exact Cloudvore instance pins `EXACTLY_BOUNDED_AND_CHARGED`; a projection cannot
+select or weaken that mode.
+
+The conformance-only adapter derives cache capability evidence from the canonical policy digest,
+exact final-request digest, provider/model, quota domain, mode, adapter artifact, and fixed enforcement
+and measurement scopes. Projection and capability records must both equal that derived object. Charge
+bases and terminal cache usage then follow the policy mode, and every projected/candidate/terminal
+native charge uses an exact built-in integer representation. These fixtures install no broker or
+provider-native trust root: the runtime entry point still reads no input before returning `REFUSE`,
+zero credit, and zero authority. `RULINGS.md`, workflows, adoption evidence, providers, tasks, and gates
+remain unchanged.

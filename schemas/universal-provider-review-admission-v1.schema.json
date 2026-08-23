@@ -4,7 +4,7 @@
   "title": "Universal provider review admission policy v1",
   "type": "object",
   "additionalProperties": false,
-  "required": ["schema", "status", "authority", "trust", "source", "identity", "packet", "serialization", "tokenizer", "charges", "capacity", "tools", "capabilities", "lease", "request", "terminal", "conformance"],
+  "required": ["schema", "status", "authority", "trust", "source", "identity", "cacheAdmissionMode", "packet", "serialization", "tokenizer", "charges", "capacity", "tools", "capabilities", "lease", "request", "terminal", "conformance"],
   "properties": {
     "schema": {"const": "fleet-universal-provider-review-admission/v1"},
     "status": {"const": "CANDIDATE_ZERO_AUTHORITY_HARD_CLOSED"},
@@ -55,6 +55,9 @@
         "substitutionAllowed": {"const": false},
         "loweringRequiresAcceptedNonInferiority": {"const": true}
       }
+    },
+    "cacheAdmissionMode": {
+      "enum": ["VERIFIED_DISABLED", "EXACTLY_BOUNDED_AND_CHARGED"]
     },
     "packet": {
       "const": {

@@ -787,3 +787,30 @@ with every reported native charge before comparing the derived charges with the 
 charge units are not assumed to equal token counts. These mechanics remain a pure hostile-test oracle:
 the production trust root and broker-owned runtime are still absent, and the only runtime-shaped entry
 point still returns input-blind `REFUSE`, zero credit, and zero authority.
+
+## R34 policy-pinned cache admission and integer-native evidence
+
+The policy MUST contain exactly one `cacheAdmissionMode`: `VERIFIED_DISABLED` or
+`EXACTLY_BOUNDED_AND_CHARGED`. The exact Cloudvore carrier selects the latter. No request projection,
+caller record, or recomputed charge result may select or change the policy mode.
+
+A future runtime MUST obtain cache-mode capability evidence from its broker/provider trust boundary.
+The reference conformance adapter instead derives a deterministic
+`CONFORMANCE_ONLY_ZERO_AUTHORITY` object from the canonical policy digest, exact captured final-request
+digest, provider, model, quota domain, literal mode, versioned adapter artifact, and fixed enforcement
+and terminal-measurement scopes. Both the projection and capability set MUST equal that internally
+derived object. Missing, unknown, substituted, or internally inconsistent evidence is a refusal.
+
+`VERIFIED_DISABLED` requires zero measured cache reads and writes. Under
+`EXACTLY_BOUNDED_AND_CHARGED`, cache basis is derived from the exact captured input and full selected
+native output allowance, and terminal cache usage is measured and charged through the same pinned
+function. Legitimate zero actual cache use remains valid in bounded-and-charged mode, but it does not
+erase or reduce the nonzero prelaunch cache reservation. Every basis
+amount, projected native charge, capacity candidate, and terminal native charge MUST be a built-in,
+non-boolean integer. Numerically equivalent floats are different evidence and MUST be refused before
+canonical digest comparison.
+
+R34 freezes R33 at `8e20b4a1652931af178e792eb62ab892a7d309fd` and binds its current layer to
+the ordered-parent phase6-16 integration merge `edcbf5084e1c9cbb3b7654c683b91185cef1494b`.
+It grants no provider, process, gate, task, adoption, ratification, or runtime authority. The only
+runtime-shaped entry point remains input-blind `REFUSE_RUNTIME_NOT_INSTALLED / ZERO`.
