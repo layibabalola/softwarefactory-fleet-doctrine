@@ -272,3 +272,20 @@ exactly one current descriptor in the last position. The current round must equa
 carrier manifest in HEAD or the index, so an added but unmodeled successor refuses. Runtime/schema
 bytes, policy digest, Fable profile, cache/charge behavior, exact arithmetic, and input-blind
 `REFUSE`/zero authority remain unchanged. R40 grants no authority or credit.
+
+## R41 independently anchored closed execution (candidate, zero authority)
+
+R41 freezes adverse R40 `9924be835e6edd768f82cd6c50d97b83c747a265`, tree
+`431b94081fe0f4fd8b29fb4f540ddf69ce47601f`. Authoritative descriptor validation and execution accept
+only a treeish; caller-supplied descriptor tuples or trusted-verifier maps cannot drive loads,
+receipts, or PASS output. The module-owned immutable descriptor tuple remains the sole execution and
+report pipeline, while a separate immutable per-path trust-anchor mapping independently binds each
+round, path, literal frozen candidate or current sentinel, schema, exact verifier function object,
+and report candidate. Every field must match before any manifest byte is loaded.
+
+The tracked reconciliation paths in HEAD or the index must equal the exact path sequence retained at
+R40 plus only the canonical R41 manifest path. Missing paths, extra lower or higher rounds, alternate
+zero-padded spellings, duplicates, or ordering drift refuse. The eleven layer counts are
+98/7/7/7/7/7/7/7/7/7/7. Runtime/schema bytes, policy digest, Fable quality profile, cache/charge
+semantics, exact arithmetic, and input-blind `REFUSE`/zero authority are unchanged. R41 grants no
+authority or credit.

@@ -19,6 +19,7 @@ import tempfile
 import textwrap
 import threading
 import traceback
+from types import MappingProxyType
 import unittest
 from unittest import mock
 
@@ -6648,39 +6649,38 @@ class ReviewResourceAdmissionR29Tests(unittest.TestCase):
             + (
                 dataclasses.replace(
                     current,
-                    manifest_path="manifests/universal-provider-control-reconciliation-r41.json",
+                    manifest_path="manifests/universal-provider-control-reconciliation-r42.json",
                 ),
             ),
         ]
         for ordinal, changed in enumerate(mutations):
             with self.subTest(ordinal=ordinal):
                 with self.assertRaisesRegex(checker.ManifestError, "MANIFEST_DESCRIPTOR_"):
-                    checker._validate_layer_descriptors(":", tuple(changed))
+                    checker._diagnose_layer_configuration(
+                        tuple(changed), checker.LAYER_TRUST_ANCHORS
+                    )
+        frozen = checker.FROZEN_R40_RECONCILIATION_PATHS
         with mock.patch.object(
             checker,
-            "_tracked_reconciliation_rounds",
-            return_value=checker.EXPECTED_LAYER_ROUNDS + (41,),
+            "_tracked_reconciliation_paths",
+            side_effect=(frozen, frozen),
         ):
             with self.assertRaisesRegex(checker.ManifestError, "MANIFEST_DESCRIPTOR_TRACKING_INVALID"):
-                checker._validate_layer_descriptors(":", layers)
+                checker._validate_layer_descriptors(":")
 
     def test_r40_02_descriptor_execution_is_complete_and_dispatches_current_verifier(self) -> None:
         import check_universal_manifest as checker
 
-        called = []
-
-        def sentinel(manifest: dict[str, object], treeish: str) -> None:
-            called.append((manifest["subjectCoverage"], treeish))
-
-        current = dataclasses.replace(checker.LAYER_DESCRIPTORS[-1], verifier=sentinel)
-        layers = checker.LAYER_DESCRIPTORS[:-1] + (current,)
-        trusted = dict(checker.TRUSTED_LAYER_VERIFIERS)
-        trusted[current.manifest_path] = sentinel
-        receipts = checker._execute_manifest_layers(":", layers, trusted_verifiers=trusted)
-        self.assertEqual(len(called), 1)
-        self.assertEqual(called[0][1], ":")
-        self.assertEqual(len(receipts), len(layers))
-        for descriptor, receipt in zip(layers, receipts, strict=True):
+        current = checker.LAYER_DESCRIPTORS[-1]
+        rebound = dataclasses.replace(current, verifier=lambda *_: None)
+        layers = checker.LAYER_DESCRIPTORS[:-1] + (rebound,)
+        with self.assertRaises(TypeError):
+            checker._execute_manifest_layers(
+                ":", layers, trusted_verifiers={rebound.manifest_path: rebound.verifier}
+            )
+        receipts = checker._execute_manifest_layers(":")
+        self.assertEqual(len(receipts), len(checker.LAYER_DESCRIPTORS))
+        for descriptor, receipt in zip(checker.LAYER_DESCRIPTORS, receipts, strict=True):
             with self.subTest(manifest=descriptor.manifest_path):
                 self.assertEqual(receipt["path"], descriptor.manifest_path)
                 self.assertEqual(receipt["candidate"], descriptor.candidate)
@@ -6693,13 +6693,211 @@ class ReviewResourceAdmissionR29Tests(unittest.TestCase):
     def test_r40_03_ten_descriptor_receipts_have_exact_counts(self) -> None:
         import check_universal_manifest as checker
 
-        self.assertEqual(checker.EXPECTED_LAYER_ROUNDS, (26, 29, 33, 34, 35, 36, 37, 38, 39, 40))
+        receipts = checker._execute_manifest_layers(":")
+        self.assertEqual(
+            tuple((receipt["round"], receipt["subjects"]) for receipt in receipts[:10]),
+            ((26, 98), (29, 7), (33, 7), (34, 7), (35, 7), (36, 7),
+             (37, 7), (38, 7), (39, 7), (40, 7)),
+        )
+
+    def test_r41_01_authoritative_pipeline_has_no_configuration_override(self) -> None:
+        import check_universal_manifest as checker
+
+        self.assertEqual(
+            tuple(inspect.signature(checker._validate_layer_descriptors).parameters),
+            ("treeish",),
+        )
+        self.assertEqual(
+            tuple(inspect.signature(checker._execute_manifest_layers).parameters),
+            ("treeish",),
+        )
+        with self.assertRaises(TypeError):
+            checker._validate_layer_descriptors(":", checker.LAYER_DESCRIPTORS)
+        with self.assertRaises(TypeError):
+            checker._execute_manifest_layers(
+                ":", checker.LAYER_DESCRIPTORS,
+                trusted_verifiers={path: (lambda *_: None) for path in checker.LAYER_TRUST_ANCHORS},
+            )
+
+    def test_r41_02_descriptors_equal_separate_immutable_trust_anchors(self) -> None:
+        import check_universal_manifest as checker
+
+        self.assertEqual(type(checker.LAYER_TRUST_ANCHORS).__name__, "mappingproxy")
+        self.assertIsNone(
+            checker._diagnose_layer_configuration(
+                checker.LAYER_DESCRIPTORS, checker.LAYER_TRUST_ANCHORS
+            )
+        )
+        for descriptor in checker.LAYER_DESCRIPTORS:
+            anchor = checker.LAYER_TRUST_ANCHORS[descriptor.manifest_path]
+            with self.subTest(path=descriptor.manifest_path):
+                self.assertEqual(anchor.round, descriptor.round)
+                self.assertEqual(anchor.manifest_path, descriptor.manifest_path)
+                self.assertEqual(anchor.candidate, descriptor.candidate)
+                self.assertEqual(anchor.schema, descriptor.schema)
+                self.assertIs(anchor.verifier, descriptor.verifier)
+                self.assertEqual(anchor.report_candidate, descriptor.report_candidate)
+
+        current = checker.LAYER_DESCRIPTORS[-1]
+        drift_cases = (
+            dataclasses.replace(current, candidate=checker.FROZEN_R40),
+            dataclasses.replace(current, schema="wrong/v1"),
+            dataclasses.replace(current, verifier=lambda *_: None),
+            dataclasses.replace(current, report_candidate="0" * 40),
+        )
+        for changed in drift_cases:
+            descriptors = checker.LAYER_DESCRIPTORS[:-1] + (changed,)
+            with self.subTest(field=changed):
+                with self.assertRaisesRegex(checker.ManifestError, "MANIFEST_DESCRIPTOR_"):
+                    checker._diagnose_layer_configuration(
+                        descriptors, checker.LAYER_TRUST_ANCHORS
+                    )
+        current_anchor = checker.LAYER_TRUST_ANCHORS[current.manifest_path]
+        anchor_mutations = (
+            dataclasses.replace(current_anchor, round=40),
+            dataclasses.replace(current_anchor, manifest_path=checker.R40_MANIFEST),
+            dataclasses.replace(current_anchor, candidate=checker.FROZEN_R40),
+            dataclasses.replace(current_anchor, schema="wrong/v1"),
+            dataclasses.replace(current_anchor, verifier=lambda *_: None),
+            dataclasses.replace(current_anchor, report_candidate="0" * 40),
+        )
+        for changed_anchor in anchor_mutations:
+            anchors = dict(checker.LAYER_TRUST_ANCHORS)
+            anchors[current.manifest_path] = changed_anchor
+            with self.subTest(anchor=changed_anchor):
+                with self.assertRaisesRegex(checker.ManifestError, "MANIFEST_DESCRIPTOR_"):
+                    checker._diagnose_layer_configuration(
+                        checker.LAYER_DESCRIPTORS, MappingProxyType(anchors)
+                    )
+        missing = dict(checker.LAYER_TRUST_ANCHORS)
+        missing.pop(current.manifest_path)
+        with self.assertRaisesRegex(checker.ManifestError, "MANIFEST_DESCRIPTOR_PATH_INVALID"):
+            checker._diagnose_layer_configuration(
+                checker.LAYER_DESCRIPTORS, MappingProxyType(missing)
+            )
+
+    def test_r41_03_frozen_candidate_and_report_joint_substitution_refuses_before_load(self) -> None:
+        import check_universal_manifest as checker
+
+        real_commits = tuple(
+            descriptor.candidate for descriptor in checker.LAYER_DESCRIPTORS[:-1]
+        )
+        for index, descriptor in enumerate(checker.LAYER_DESCRIPTORS[:-1]):
+            substitute = real_commits[(index + 1) % len(real_commits)]
+            if substitute == descriptor.candidate:
+                substitute = checker.FROZEN_R40
+            changed = dataclasses.replace(
+                descriptor, candidate=substitute, report_candidate=substitute
+            )
+            layers = (
+                checker.LAYER_DESCRIPTORS[:index]
+                + (changed,)
+                + checker.LAYER_DESCRIPTORS[index + 1:]
+            )
+            with self.subTest(path=descriptor.manifest_path, substitute=substitute):
+                with (
+                    mock.patch.object(checker, "LAYER_DESCRIPTORS", layers),
+                    mock.patch.object(
+                        checker, "_git", side_effect=AssertionError("loaded before trust refusal")
+                    ),
+                ):
+                    with self.assertRaisesRegex(
+                        checker.ManifestError, "MANIFEST_DESCRIPTOR_CANDIDATE_INVALID"
+                    ):
+                        checker._execute_manifest_layers(":")
+
+        r34_index = next(
+            index for index, descriptor in enumerate(checker.LAYER_DESCRIPTORS)
+            if descriptor.round == 34
+        )
+        r34 = checker.LAYER_DESCRIPTORS[r34_index]
+        changed = dataclasses.replace(
+            r34,
+            candidate="fbf53f59c18b6dc8d1cc404730b0d42a38496a07",
+            report_candidate="fbf53f59c18b6dc8d1cc404730b0d42a38496a07",
+        )
+        layers = (
+            checker.LAYER_DESCRIPTORS[:r34_index]
+            + (changed,)
+            + checker.LAYER_DESCRIPTORS[r34_index + 1:]
+        )
+        with mock.patch.object(checker, "LAYER_DESCRIPTORS", layers):
+            with self.assertRaisesRegex(
+                checker.ManifestError, "MANIFEST_DESCRIPTOR_CANDIDATE_INVALID"
+            ):
+                checker._validate_layer_descriptors(":")
+
+    def test_r41_04_tracking_is_exact_successor_of_frozen_r40(self) -> None:
+        import check_universal_manifest as checker
+
+        frozen = checker._tracked_reconciliation_paths(checker.FROZEN_R40)
+        expected = tuple(sorted(frozen + (checker.R41_MANIFEST,)))
+        self.assertEqual(checker.EXPECTED_CURRENT_RECONCILIATION_PATHS, expected)
+        current = checker._tracked_reconciliation_paths(":")
+        self.assertEqual(current, expected)
+
+        mutations = (
+            expected[1:],
+            expected + ("manifests/universal-provider-control-reconciliation-r30.json",),
+            expected + ("manifests/universal-provider-control-reconciliation-r040.json",),
+            expected + ("manifests/universal-provider-control-reconciliation-r041.json",),
+            expected + ("manifests/universal-provider-control-reconciliation-r42.json",),
+            tuple(reversed(expected)),
+        )
+        for changed in mutations:
+            with self.subTest(changed=changed):
+                with mock.patch.object(
+                    checker,
+                    "_tracked_reconciliation_paths",
+                    side_effect=(frozen, changed),
+                ):
+                    with self.assertRaisesRegex(
+                        checker.ManifestError, "MANIFEST_DESCRIPTOR_TRACKING_INVALID"
+                    ):
+                        checker._validate_layer_descriptors(":")
+
+    def test_r41_05_real_authoritative_execution_has_eleven_exact_receipts(self) -> None:
+        import check_universal_manifest as checker
+
         receipts = checker._execute_manifest_layers(":")
         self.assertEqual(
             tuple((receipt["round"], receipt["subjects"]) for receipt in receipts),
             ((26, 98), (29, 7), (33, 7), (34, 7), (35, 7), (36, 7),
-             (37, 7), (38, 7), (39, 7), (40, 7)),
+             (37, 7), (38, 7), (39, 7), (40, 7), (41, 7)),
         )
+
+    def test_r41_06_self_rebound_policy_mutations_hit_real_verifier_before_receipt(self) -> None:
+        import check_universal_manifest as checker
+
+        raw = (ROOT / checker.R41_MANIFEST).read_bytes()
+        original = json.loads(raw)
+        mutations = []
+        changed = copy.deepcopy(original)
+        changed["authority"]["providerExecution"] = True
+        mutations.append(("R41_AUTHORITY_INVALID", changed))
+        changed = copy.deepcopy(original)
+        changed["reviewAdmissionPolicy"]["identity"]["model"] = "substitute"
+        mutations.append(("R41_EXACT_PROFILE_MISMATCH", changed))
+        changed = copy.deepcopy(original)
+        changed["reviewAdmissionPolicy"]["cacheAdmissionMode"] = "VERIFIED_DISABLED"
+        mutations.append(("R41_CACHE_ADMISSION_MODE_MISMATCH", changed))
+        changed = copy.deepcopy(original)
+        changed["reviewAdmissionPolicyDigest"] = "sha256:" + "0" * 64
+        mutations.append(("R41_POLICY_DIGEST_MISMATCH", changed))
+
+        real_git = checker._git
+        for error, manifest in mutations:
+            changed_raw = json.dumps(manifest, indent=2).encode("utf-8") + b"\n"
+
+            def rebound_git(spec: str, *, text: bool = False) -> bytes | str:
+                if spec == checker._blob_spec(":", checker.R41_MANIFEST):
+                    return changed_raw.decode("utf-8") if text else changed_raw
+                return real_git(spec, text=text)
+
+            with self.subTest(error=error):
+                with mock.patch.object(checker, "_git", side_effect=rebound_git):
+                    with self.assertRaisesRegex(checker.ManifestError, error):
+                        checker._execute_manifest_layers(":")
 
 
 if __name__ == "__main__":

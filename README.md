@@ -112,3 +112,9 @@ the human store-and-forward bus.
   layer. Those same closed descriptors control loading, parsing, trusted verifier dispatch,
   subject/self verification, counts, labels, candidates, and reporting; an unmodeled higher carrier
   fails closed. Runtime, schema, policy, quality, and zero-authority refusal remain unchanged.
+  R41 freezes adverse R40 and removes the descriptor and verifier-map override parameters that could
+  manufacture receipts. Authoritative validation and execution accept only a treeish and close over
+  module-owned descriptors plus independent immutable per-path trust anchors. Every descriptor field
+  must equal its anchor before bytes are loaded, and the current reconciliation path sequence must be
+  exactly frozen R40 plus R41. Runtime, schema, policy, quality, and input-blind zero-authority refusal
+  remain byte-identical.

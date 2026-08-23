@@ -921,3 +921,27 @@ round in HEAD or the index; an added but unmodeled higher manifest MUST refuse.
 R40 preserves byte-identical runtime/schema, policy digest, provider-neutral mechanism, exact
 Cloudvore/Fable profile, cache/charge semantics, exact capacity/duration arithmetic, and input-blind
 `REFUSE_RUNTIME_NOT_INSTALLED / ZERO`. It grants no authority or adoption credit.
+
+## R41 independent descriptor trust-anchor invariant
+
+R41 MUST freeze adverse R40 at exact commit `9924be835e6edd768f82cd6c50d97b83c747a265`, tree
+`431b94081fe0f4fd8b29fb4f540ddf69ce47601f`, and parent
+`3bea531c2b3abbc4be4b506255d344d8ec6e712f`. The authoritative descriptor validator and executor
+MUST accept only the candidate treeish and MUST close over the module-owned immutable descriptor
+tuple and a distinct immutable per-path trust-anchor mapping. No caller-provided descriptor,
+verifier mapping, or diagnostic value may load or verify bytes, return receipts, or produce PASS.
+
+Before loading any layer, every descriptor's round, manifest path, exact literal frozen candidate or
+current sentinel, schema, bound verifier function object, and report candidate MUST equal the
+independent anchor for that path. The descriptors alone MUST continue to drive load, parse, verifier
+dispatch, subject/self verification, receipt counts, labels, candidates, and reports; anchors only
+validate. Frozen candidate and report values are exact literals, so coordinated substitution to a
+different real commit MUST refuse before load. The exact current reconciliation path sequence MUST
+equal the paths retained by frozen R40 plus only
+`manifests/universal-provider-control-reconciliation-r41.json`. Missing, extra lower or higher,
+duplicate-number or zero-padded alias spellings, duplicate paths, and ordering drift MUST refuse. The
+checker MUST report eleven layers with counts 98/7/7/7/7/7/7/7/7/7/7.
+
+R41 preserves byte-identical runtime/schema, policy digest, provider-neutral mechanism, exact
+Cloudvore/Fable profile, cache/charge semantics, exact capacity/duration arithmetic, and input-blind
+`REFUSE_RUNTIME_NOT_INSTALLED / ZERO`. It grants no authority or adoption credit.
