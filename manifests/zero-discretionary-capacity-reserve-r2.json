@@ -1,0 +1,94 @@
+{
+  "schema": "fleet-zero-discretionary-capacity-reserve-candidate-manifest/v1",
+  "status": "CANDIDATE_ZERO_AUTHORITY",
+  "candidateId": "ZERO_DISCRETIONARY_CAPACITY_RESERVE_R2",
+  "source": {
+    "commit": "f417e1b74cb575b5a7147a5ffd8fe4b697ff9d2f",
+    "tree": "490e05ae8adf97cbeea1b1735e83c0d2eff806a8",
+    "orderedParents": ["c46198383abb46ba95c72d08664c826e545fc50f"],
+    "changedPaths": [
+      "README.md",
+      "capacity-control/PROJECT-ADOPTION-MATRIX.md",
+      "ruling-candidates/zero-discretionary-capacity-reserve-r2.md"
+    ]
+  },
+  "predecessor": {
+    "commit": "c46198383abb46ba95c72d08664c826e545fc50f",
+    "tree": "f3931a8dd52f64bbf4dc0dd342cb8440320aaf45",
+    "candidatePath": "ruling-candidates/zero-discretionary-capacity-reserve-r1.md",
+    "disposition": "SUPERSEDED_FOR_REVIEW_BY_COMPLETE_NINE_PROJECT_CENSUS_ZERO_AUTHORITY"
+  },
+  "closedProjectSet": {
+    "ledgerPath": "adoption/universal-token-control-r26.json",
+    "count": 9,
+    "projectIds": [
+      "adobe-ingester",
+      "adversarialllm",
+      "agent-bridge",
+      "airmypc",
+      "cloudvore",
+      "conjugal",
+      "dng-auto-processor",
+      "mlv-app",
+      "salesforce-tools"
+    ]
+  },
+  "migrationSurface": {
+    "ratifiedGovernorExample": {
+      "path": "examples/provider-admission-snapshot-v1.json",
+      "jsonPointer": "/policy/interactive_reserve_pct",
+      "expectedValue": 30
+    },
+    "r22CandidatePolicy": {
+      "path": "policy/universal-provider-token-control-r22.json",
+      "jsonPointer": "/completionReserve/quotaWindowFloor",
+      "expectedValue": 0.2
+    },
+    "replacementValuePct": 0,
+    "hardEstimatedCeilingPct": 100
+  },
+  "validation": {
+    "sourceDiffIsDocumentationOnly": true,
+    "canonicalAdoptionLedger": "PASS_0_ADOPT_5_DISTINGUISH_4_STALE",
+    "completeProjectResponseCensus": "PASS_9_OF_9",
+    "requestReservationsRetained": true,
+    "terminalReservationsRetained": true,
+    "strictSingleFlightRetained": true,
+    "exactModelEffortRoleReviewQualityFunctionalityRetained": true,
+    "providerInvocation": false,
+    "deployment": false,
+    "runtimeMutation": false,
+    "hostedWorkflow": "REQUIRED_BEFORE_ADJUDICATION",
+    "independentReview": "REQUIRED",
+    "distinctAdjudication": "REQUIRED"
+  },
+  "authorRecusal": {
+    "review": true,
+    "adjudication": true,
+    "merge": true,
+    "activation": true
+  },
+  "subjectFiles": [
+    {"path":"README.md","gitBlobOid":"43ae6254c210f6ea84958c05bb89a5739d143c2f","bytes":6642,"sha256":"sha256:dc6a770943e336e9c64f8de817b480c758c7c8df7b9533a4c177e827a885f502"},
+    {"path":"capacity-control/PROJECT-ADOPTION-MATRIX.md","gitBlobOid":"28ec3e612dd0ce1c48f0354059998903672f7ad9","bytes":5167,"sha256":"sha256:3125e78f42922e74c699d70ba402917c0b19efa24471a698598f4f0fbba8a881"},
+    {"path":"ruling-candidates/zero-discretionary-capacity-reserve-r2.md","gitBlobOid":"779fc0a7000f08b824dd351758ad0d82c52500cc","bytes":4366,"sha256":"sha256:b3588955650730d8c0138036b25641305327a723eac83f9ef774a8fc9bb059c4"},
+    {"path":"adoption/universal-token-control-r26.json","gitBlobOid":"2f1808e8df35e6d1bae98f83aab378d93a0c3228","bytes":16599,"sha256":"sha256:77bb2dc10d5289c5fde102dc93d8b976511ddadca8115640b5880202f936fcb3"},
+    {"path":"examples/provider-admission-snapshot-v1.json","gitBlobOid":"e52f458b0624fabe41c94929cf722f1b6a8d3047","bytes":1469,"sha256":"sha256:e6b1d902d6ac8101a64c3a98abbca16c45c93d667df79de2f974becb95a58141"},
+    {"path":"policy/universal-provider-token-control-r22.json","gitBlobOid":"33b75cfb61b8c8934009ff987f2ea90ef5f74eb5","bytes":1397,"sha256":"sha256:b5eca2ef60a86d87e2ca96d34569035aef510387de7ea204ab7cbf98ce5f5192"}
+  ],
+  "authority": {
+    "portableDoctrine": false,
+    "projectDisposition": false,
+    "fleetAdoption": false,
+    "providerExecution": false,
+    "installation": false,
+    "runtime": false,
+    "taskOrGateMutation": false,
+    "pushOrMerge": false
+  },
+  "manifestSelf": {
+    "path": "manifests/zero-discretionary-capacity-reserve-r2.json",
+    "canonicalGitBlobSha256": "sha256:8412edfe24cb2138830d65a50cf8ac9085461e47ae340c7bb3d66b7635ca1a3e",
+    "rule": "SHA-256 of these exact UTF-8 bytes after replacing only the 64 hex digits in canonicalGitBlobSha256 with zeroes"
+  }
+}
