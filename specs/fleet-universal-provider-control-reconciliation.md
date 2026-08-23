@@ -831,3 +831,25 @@ independent-reviewer profile, 64,000 native output allowance, or
 It installs no broker or provider-native trust root and grants no provider, runtime, process, gate,
 task, adoption, merge, or ratification authority. The runtime entry remains input-blind
 `REFUSE_RUNTIME_NOT_INSTALLED / ZERO`.
+
+## R36 exact capacity and evidence-age boundaries
+
+R36 MUST freeze the complete R35 layer at exact commit
+`64e6895c332a696af238007225148fd70582424f`, tree
+`4a0baf72d925349a30aeae785b10391e10102000`, and parent
+`fbf53f59c18b6dc8d1cc404730b0d42a38496a07`. Its current manifest MUST bind all seven current
+subjects and its own canonical Git bytes. Tuple, ancestry, subject, or self drift MUST fail closed.
+
+For every required quota-window and provider-native charge dimension, let `consumed` be the exact
+integer sum of active-and-completed use, candidate charge, and completion, foreground, and review
+reserves. The row conforms exactly when `consumed * 5 <= capacity * 4`. Equality is the last
+conforming point; adding one integer unit MUST refuse. Implementations MUST NOT derive this boundary
+through floating-point multiplication, division, or conversion. Evidence age MUST be compared as an
+exact duration; equality with the maximum age conforms and a one-microsecond overage MUST refuse,
+including spans where floating-point seconds cannot represent that microsecond.
+
+R36 preserves the exact R35 policy digest, Cloudvore source, Fable/max/standard/first-party
+independent-reviewer profile, 64,000 native output allowance,
+`EXACTLY_BOUNDED_AND_CHARGED` cache mode and capability, charge function, and generic 1-64 schema.
+It installs no trust root and grants no provider, process, runtime, gate, task, adoption, merge, or
+ratification authority. The runtime entry remains input-blind `REFUSE_RUNTIME_NOT_INSTALLED / ZERO`.

@@ -93,5 +93,7 @@ the human store-and-forward bus.
   input-blind `REFUSE`. R35 freezes the exact R34 carrier and rebinds the unchanged seven-file policy
   instance to the ordered-parent merge of R34 with the repaired canonical CI/evidence bootstrap. The
   provider profile, cache mode, policy digest, generic 1-64 mechanism, and zero-authority refusal are
-  unchanged. Neither candidate
+  unchanged. R36 freezes R35 and replaces review-capacity float boundary calculations with exact
+  integer cross-multiplication and exact duration comparison: 80% equality is the last conforming
+  point and one additional provider-native unit refuses. Neither candidate
   changes the ratified governor or `RULINGS.md`, grants adoption credit, or provides launch authority.

@@ -206,3 +206,17 @@ policy digest and `EXACTLY_BOUNDED_AND_CHARGED` cache mode remain unchanged; gen
 accept 1-64 ordered subjects. No production trust root is installed. The runtime continues to return
 input-blind `REFUSE`, zero credit, and zero authority, and this rebind grants no provider, process,
 task, gate, adoption, ratification, or merge authority.
+
+## R36 exact review-capacity arithmetic (candidate, zero authority)
+
+R36 freezes exact R35 `64e6895c332a696af238007225148fd70582424f`, its seven subjects, and
+manifest self digest. The current seven-file layer is bound to that literal commit, tree, and parent;
+the policy, source, Fable profile, 64,000-token native output allowance, cache capability and mode,
+charge function, and generic 1-64 schema remain unchanged.
+
+For each provider-native capacity row, reserve conformance is decided only by exact integer
+cross-multiplication: `consumed * 5 <= capacity * 4`. Equality is the last conforming point; one more
+integer unit refuses. Evidence age is compared as an exact duration against the policy duration, so
+equality conforms and one microsecond beyond refuses even across wide spans. No float-derived reserve
+or evidence-age boundary participates. The runtime remains input-blind `REFUSE`, zero credit, and zero
+authority; R36 grants no provider, process, task, gate, adoption, ratification, or merge authority.

@@ -5850,8 +5850,8 @@ class ReviewResourceAdmissionR29Tests(unittest.TestCase):
         )
         boundary = copy.deepcopy(self.windows)
         row = boundary[0]
-        row["activeAndCompleted"] = int(
-            row["capacity"] * 0.8 - row["candidate"] - row["completionReserve"]
+        row["activeAndCompleted"] = (
+            (row["capacity"] * 4) // 5 - row["candidate"] - row["completionReserve"]
             - row["foregroundReserve"] - row["reviewReserve"]
         )
         upc.validate_review_capacity_windows(boundary, self.dimensions, ["session", "weekly"], 300)
@@ -5861,7 +5861,7 @@ class ReviewResourceAdmissionR29Tests(unittest.TestCase):
         stale = copy.deepcopy(self.windows); stale[0]["observedAt"] = "2026-08-20T11:00:00Z"; mutations.append(stale)
         split_deadline = copy.deepcopy(self.windows); split_deadline[0]["requestDeadline"] = "2026-08-20T12:03:00Z"; mutations.append(split_deadline)
         zero_reserve = copy.deepcopy(self.windows); zero_reserve[0]["reviewReserve"] = 0; mutations.append(zero_reserve)
-        over = copy.deepcopy(boundary); over[0]["activeAndCompleted"] += 0.001; mutations.append(over)
+        over = copy.deepcopy(boundary); over[0]["activeAndCompleted"] += 1; mutations.append(over)
         for changed in mutations:
             with self.subTest(changed=changed[0]):
                 with self.assertRaises(upc.ControlError):
@@ -6224,6 +6224,161 @@ class ReviewResourceAdmissionR29Tests(unittest.TestCase):
             )
 
     def test_r35_05_checker_has_five_literal_layers_and_runtime_stays_refused(self) -> None:
+        import check_universal_manifest as checker
+
+        self.assertEqual(checker.check(":"), 0)
+
+        class Exploding:
+            def __getattribute__(self, name: str) -> object:
+                raise AssertionError("caller input was read")
+
+        result = upc.evaluate_review_admission(
+            Exploding(), policy=Exploding(), capability=Exploding()
+        )
+        self.assertEqual(result["status"], "REFUSE")
+        self.assertEqual(result["reason"], "REVIEW_RUNTIME_NOT_INSTALLED")
+        self.assertEqual(result["credit"], "ZERO")
+        self.assertFalse(result["providerAuthority"])
+
+    def test_r36_01_exact_integer_reserve_boundaries_use_full_fixture(self) -> None:
+        capacities = {
+            "ordinary": 1_000_000,
+            "above_binary64_exact_integer": 2**53 + 2,
+            "non_divisible_by_five": 1_000_003,
+            "large_divisible_by_five": 5 * 2**53,
+        }
+
+        def at_boundary(capacity: int) -> list[dict[str, object]]:
+            windows = copy.deepcopy(self.windows)
+            for row in windows:
+                row["capacity"] = capacity
+                row["completionReserve"] = 1
+                row["foregroundReserve"] = 1
+                row["reviewReserve"] = 1
+                fixed = row["candidate"] + 3
+                row["activeAndCompleted"] = (capacity * 4) // 5 - fixed
+                self.assertGreaterEqual(row["activeAndCompleted"], 0)
+            return windows
+
+        for label, capacity in capacities.items():
+            with self.subTest(label=label, disposition="equality"):
+                result = self.evaluate(capacity_windows=at_boundary(capacity))
+                self.assertEqual(result["status"], "CONFORMANCE_ONLY_ZERO_AUTHORITY")
+            for window in ("session", "weekly"):
+                over = at_boundary(capacity)
+                row = next(
+                    item for item in over
+                    if item["window"] == window and item["dimension"] == "input"
+                )
+                row["activeAndCompleted"] += 1
+                with self.subTest(label=label, window=window, disposition="plus_one"):
+                    with self.assertRaisesRegex(
+                        upc.ControlError, "REVIEW_CAPACITY_RESERVE_INVALID"
+                    ):
+                        self.evaluate(capacity_windows=over)
+
+    def test_r36_02_evidence_age_equality_and_microsecond_overage_are_exact(self) -> None:
+        equality = copy.deepcopy(self.windows)
+        for row in equality:
+            row["observedAt"] = "2026-08-20T12:00:00Z"
+            row["requestDeadline"] = "2026-08-20T12:05:00Z"
+            row["expiresAt"] = "2026-08-20T13:00:00Z"
+        self.assertEqual(
+            self.evaluate(capacity_windows=equality)["status"],
+            "CONFORMANCE_ONLY_ZERO_AUTHORITY",
+        )
+        ordinary_over = copy.deepcopy(equality)
+        for row in ordinary_over:
+            row["requestDeadline"] = "2026-08-20T12:05:00.000001Z"
+        with self.assertRaisesRegex(upc.ControlError, "REVIEW_CAPACITY_TIME_INVALID"):
+            self.evaluate(capacity_windows=ordinary_over)
+
+        wide = copy.deepcopy(self.windows)
+        observed = dt.datetime(1600, 1, 1, tzinfo=UTC)
+        deadline = dt.datetime(2400, 1, 1, tzinfo=UTC)
+        span = deadline - observed
+        max_seconds = span.days * 86400 + span.seconds
+        for row in wide:
+            row["observedAt"] = "1600-01-01T00:00:00Z"
+            row["requestDeadline"] = "2400-01-01T00:00:00Z"
+            row["expiresAt"] = "2400-01-01T01:00:00Z"
+        upc.validate_review_capacity_windows(
+            wide, self.dimensions, ["session", "weekly"], max_seconds
+        )
+        wide_over = copy.deepcopy(wide)
+        for row in wide_over:
+            row["requestDeadline"] = "2400-01-01T00:00:00.000001Z"
+        with self.assertRaisesRegex(upc.ControlError, "REVIEW_CAPACITY_TIME_INVALID"):
+            upc.validate_review_capacity_windows(
+                wide_over, self.dimensions, ["session", "weekly"], max_seconds
+            )
+
+    def test_r36_03_capacity_boundary_implementation_has_no_float_derivation(self) -> None:
+        implementation = inspect.getsource(upc.validate_review_capacity_windows)
+        self.assertNotIn("* 0.8", implementation)
+        self.assertNotIn("total_seconds", implementation)
+
+    def test_r36_04_current_layer_pins_r35_base_and_unchanged_policy(self) -> None:
+        import check_universal_manifest as checker
+
+        manifest = json.loads((ROOT / checker.R36_MANIFEST).read_text(encoding="utf-8"))
+        checker.verify_r36(manifest, ":")
+        self.assertEqual(
+            checker._commit_tuple(checker.R36_BASE["commit"]),
+            (checker.R36_BASE["tree"], checker.R36_BASE["orderedParents"]),
+        )
+        self.assertEqual(manifest["reviewAdmissionPolicyDigest"], checker.R36_POLICY_DIGEST)
+        self.assertEqual(
+            manifest["reviewAdmissionPolicy"]["cacheAdmissionMode"],
+            "EXACTLY_BOUNDED_AND_CHARGED",
+        )
+        self.assertEqual(manifest["reviewAdmissionPolicy"]["identity"], checker.R29_IDENTITY)
+
+    def test_r36_05_r35_frozen_layer_and_r36_tuple_subject_self_drift_fail(self) -> None:
+        import check_universal_manifest as checker
+
+        frozen = checker._git(f"{checker.FROZEN_R35}:{checker.R35_MANIFEST}")
+        self.assertIsInstance(frozen, bytes)
+        changed_frozen = json.loads(frozen)
+        changed_frozen["reviewAdmissionPolicy"]["identity"]["model"] = "substitute"
+        changed_raw = json.dumps(changed_frozen, separators=(",", ":")).encode("utf-8")
+        with (
+            mock.patch.object(checker, "_is_ancestor", return_value=True),
+            mock.patch.object(checker, "_git", side_effect=[frozen, changed_raw]),
+        ):
+            with self.assertRaisesRegex(
+                checker.ManifestError, "MANIFEST_FROZEN_BLOB_MISMATCH"
+            ):
+                checker._frozen_manifest_bytes(
+                    "HEAD", checker.R35_MANIFEST, checker.FROZEN_R35
+                )
+
+        raw = (ROOT / checker.R36_MANIFEST).read_bytes()
+        manifest = json.loads(raw)
+        for field in ("commit", "tree"):
+            changed = copy.deepcopy(manifest)
+            changed["candidateBase"][field] = "0" * 40
+            with self.subTest(field=field):
+                with self.assertRaisesRegex(checker.ManifestError, "R36_BASE_INVALID"):
+                    checker.verify_r36(changed, ":")
+        changed = copy.deepcopy(manifest)
+        changed["candidateBase"]["orderedParents"] = ["0" * 40]
+        with self.assertRaisesRegex(checker.ManifestError, "R36_BASE_INVALID"):
+            checker.verify_r36(changed, ":")
+        changed = copy.deepcopy(manifest)
+        changed["subjectFiles"][0]["sha256"] = "sha256:" + "0" * 64
+        with self.assertRaisesRegex(checker.ManifestError, "MANIFEST_SUBJECT_MISMATCH"):
+            checker._verify_subjects_and_self(
+                changed, raw, manifest_path=checker.R36_MANIFEST, candidate=":"
+            )
+        changed = copy.deepcopy(manifest)
+        changed["manifestSelf"]["canonicalGitBlobSha256"] = "sha256:" + "0" * 64
+        with self.assertRaisesRegex(checker.ManifestError, "MANIFEST_SELF_MISMATCH"):
+            checker._verify_subjects_and_self(
+                changed, raw, manifest_path=checker.R36_MANIFEST, candidate=":"
+            )
+
+    def test_r36_06_checker_has_six_literal_layers_and_runtime_stays_refused(self) -> None:
         import check_universal_manifest as checker
 
         self.assertEqual(checker.check(":"), 0)

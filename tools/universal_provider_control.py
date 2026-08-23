@@ -5897,11 +5897,13 @@ def validate_review_capacity_windows(
             raise ControlError("REVIEW_CAPACITY_TIME_INVALID") from exc
         if (
             observed_at > request_deadline or request_deadline >= expires_at
-            or (request_deadline - observed_at).total_seconds() > max_evidence_age_seconds
+            or request_deadline - observed_at > dt.timedelta(
+                seconds=max_evidence_age_seconds
+            )
         ):
             raise ControlError("REVIEW_CAPACITY_TIME_INVALID")
         consumed = sum(numbers[1:])
-        if consumed > row["capacity"] * 0.8:
+        if consumed * 5 > row["capacity"] * 4:
             raise ControlError("REVIEW_CAPACITY_RESERVE_INVALID")
     if covered != set(dimensions):
         raise ControlError("REVIEW_CAPACITY_DIMENSION_OMITTED")
