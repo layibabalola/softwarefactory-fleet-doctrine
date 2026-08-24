@@ -177,3 +177,9 @@ five interruption boundaries, exact rollback, and exact reinstall passed 78 fixt
 90 verification assertions. This is local zero-authority evidence, not independent
 acceptance, a privileged preview, or installation credit; see
 [`receipts/dng-mu3-controller-transaction-integration-20260824.json`](../receipts/dng-mu3-controller-transaction-integration-20260824.json).
+
+A subsequent live-clock check found that author-attested generation timestamps in that
+integration chain were ahead of UTC. Those embedded times grant no provenance credit;
+the immutable subject hashes remain evidence only and must be re-executed by a correctly
+timed forward checkpoint. The repair preserves zero authority and is recorded in
+[`receipts/dng-mu3-controller-transaction-provenance-time-repair-20260824.json`](../receipts/dng-mu3-controller-transaction-provenance-time-repair-20260824.json).

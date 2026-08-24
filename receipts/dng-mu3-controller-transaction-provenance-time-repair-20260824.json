@@ -1,0 +1,33 @@
+{
+  "schema": "fleet-dng-mu3-controller-transaction-provenance-time-repair/v1",
+  "receiptId": "dng-mu3-controller-transaction-provenance-time-repair-20260824",
+  "recordedAt": "2026-08-24T04:06:30Z",
+  "status": "FORWARD_PROVENANCE_REPAIR_ZERO_AUTHORITY",
+  "project": "dng-auto-processor",
+  "finding": "AUTHOR_ATTESTED_GENERATION_TIMES_AHEAD_OF_LIVE_UTC",
+  "supersedesForProvenance": ["dng-mu3-controller-transaction-integration-20260824"],
+  "invalidEmbeddedTimes": [
+    "2026-08-24T04:20:00Z",
+    "2026-08-24T04:45:00Z",
+    "2026-08-24T04:55:00Z",
+    "2026-08-24T05:08:00Z",
+    "2026-08-24T05:12:00Z"
+  ],
+  "preservedImmutableEvidence": {
+    "reviewContinuationR2ManifestSha256": "sha256:3d75be75c785c5ff2299912fa1a6f8b171fb366b4e9922ac6ce7d2a08ade316f",
+    "controllerR2ManifestSha256": "sha256:fdb9a50129180df26da66d4f16f466d258e76d6b0d3933d76c7acca7a9a339c0",
+    "transactionR2ManifestSha256": "sha256:a1039451312d364796c4559c227ed4bce2f43948bd7273401a552346a4088fe3",
+    "fixtureAssertions": 78,
+    "verificationAssertions": 90
+  },
+  "disposition": {
+    "embeddedTimesGrantCredit": false,
+    "subjectHashesRemainEvidence": true,
+    "testsMustBeReexecutedByForwardCheckpoint": true,
+    "productionMutations": 0,
+    "scheduledTaskMutations": 0,
+    "providerLaunches": 0,
+    "independentAcceptance": false,
+    "adoptionCredit": false
+  }
+}
