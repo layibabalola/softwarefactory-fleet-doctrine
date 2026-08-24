@@ -1,0 +1,14 @@
+{
+  "schema":"fleet-dng-mu3-broker-request-compiler-native-roles-repair/v1",
+  "receiptId":"dng-mu3-broker-request-compiler-native-roles-repair-20260824",
+  "recordedAt":"2026-08-24T08:18:00Z",
+  "status":"BROKER_REQUEST_COMPILER_NATIVE_ROLES_REPAIRED_PROVIDER_FREE_ZERO_AUTHORITY",
+  "project":"dng-auto-processor",
+  "finding":{"code":"R1_IMPLEMENT_ONLY_CANNOT_PRESERVE_NATIVE_REVIEW_ROLES","actionable":true,"repairLaw":"FORWARD_ONLY","supersededManifestSha256":"sha256:57093a5e8a983a63c0af8157f294c6964d8507a4456aa179cb009dd72735d1b3"},
+  "candidate":{"manifestPath":"C:/code/DngAutoProcessor - Claude/coordination/candidates/dng-r27-mu3-broker-request-compiler-r2/candidate-manifest.json","manifestBytes":3264,"manifestSha256":"sha256:fce5e01a498b827187a2d2ad979d8adff1222623d0fa92f79b92ddedcd0597a1"},
+  "exactRoute":{"provider":"openai","adapter":"openai-codex-exec/1.0","model":"gpt-5.6-sol","effort":"xhigh","brokerRoles":["IMPLEMENT","PRIMARY_REVIEW","STRANGER_REVIEW"],"controllerRoleMap":{"implementation":"IMPLEMENT","primary":"PRIMARY_REVIEW","stranger-1":"STRANGER_REVIEW","stranger-2":"STRANGER_REVIEW"},"discretionaryReserve":0.0,"hardCapacityCeiling":1.0},
+  "verification":{"behavioralAssertions":27,"candidateVerifierAssertions":54,"implementationPreparedSuspendedThroughFullBroker":true,"primaryReviewCompiledExact":true,"strangerReviewCompiledExact":true,"signedRoleQualityMismatchRefused":true,"stalePriorIdleRefusedByBroker":true,"realProviderLaunches":0,"networkCalls":0,"productionMutations":0,"scheduledTaskMutations":0},
+  "limitations":{"executorContractR1HasCompleteCompilerInputs":false,"installableExecutorPostimage":false,"controllerTaskTransactionComposition":false,"transactionalInstaller":false,"independentAcceptance":false,"privilegedPreview":false,"productionInstallation":false,"productionCadence":false},
+  "authority":{"workCreation":false,"capacityAdmission":false,"lease":false,"providerPermit":false,"productionProviderExecution":false,"installation":false,"productionMutation":false,"scheduledTaskMutation":false,"adoptionCredit":false},
+  "requiredNext":["derive executor-contract r2 with every immutable compiler input and certification binding","compose compiler r2 with the acyclic native executor lifecycle","prove the composed postimage transaction before independent acceptance"]
+}
