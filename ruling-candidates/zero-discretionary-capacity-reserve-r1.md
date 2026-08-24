@@ -66,3 +66,12 @@ and terminal reserve semantics remain intact; obtain independent review; append 
 
 Until then, project-local user authority may change a local reserve policy, but every fleet row remains
 honestly pending this amendment's independent doctrine acceptance and project-specific disposition.
+
+## First combined executable candidate
+
+DNG's first provider-free descendant composes the 0% floor with the distinct
+`openai-codex-exec/1.0` adapter. A real broker authorization fixture admits fresh proven utilization
+plus the conservative request estimate at exactly 100%, and refuses a projection one millionth over
+100% as `HARD_CAP_FORECAST`. Old profiles remain fail-closed until explicit adoption. The candidate
+and its zero-authority limits are pinned in
+[`receipts/dng-openai-codex-zero-reserve-amendment-candidate-20260824.json`](../receipts/dng-openai-codex-zero-reserve-amendment-candidate-20260824.json).
