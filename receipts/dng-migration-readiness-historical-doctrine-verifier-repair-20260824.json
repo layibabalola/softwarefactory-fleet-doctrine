@@ -1,0 +1,56 @@
+{
+  "schema":"fleet-dng-migration-readiness-historical-doctrine-verifier-repair/v1",
+  "receiptId":"dng-migration-readiness-historical-doctrine-verifier-repair-20260824",
+  "recordedAt":"2026-08-24T08:30:00Z",
+  "status":"MUTABLE_HEAD_PROVENANCE_BUG_REPAIRED_FORWARD_ONLY_ZERO_AUTHORITY",
+  "project":"dng-auto-processor",
+  "finding":{
+    "code":"HISTORICAL_READINESS_VERIFIER_REQUIRED_MUTABLE_DOCTRINE_HEAD_EQUALITY",
+    "actionable":true,
+    "observedFailure":"FAIL:doctrine commit",
+    "repairLaw":"FORWARD_ONLY",
+    "originalCheckpointSha256":"sha256:9116ef134da6f8af46a4c43e1070aa7e904adecc901237401a6b6756479c10ee",
+    "originalVerifierSha256":"sha256:1f1013389676e08e0e9d1d3483a6e81a273f93589fd503e7e53f04fd0f4e396c",
+    "failedDescendantCheckpointSha256":"sha256:b8daaafa75fa81fee43152a9c904307bd6b312555d08b13aee33cd71f5ad1eaf",
+    "failedDescendantVerifierSha256":"sha256:04411a250de99cf1b54f5a20b179b17a063e113fc8a213cc14118ac9556f47f0"
+  },
+  "repair":{
+    "verifierPath":"C:/code/DngAutoProcessor - Claude/coordination/review-packets/verify-dng-r27-migration-readiness-r23-historical-r1.ps1",
+    "verifierBytes":4977,
+    "verifierSha256":"sha256:bafc9cf971fd28e2ed0a92ae1c9a5892fbaf2f2cb1eae4a59e2eeaae34fd1f71",
+    "historicalEvidenceLaw":["commit object must be retained","commit tree must equal the checkpoint tree","commit must remain an ancestor of current HEAD"],
+    "forbiddenDependency":"current doctrine HEAD equality to a historical commit"
+  },
+  "verification":{
+    "historicalAssertions":31,
+    "result":"PASS",
+    "failedGenerationPreserved":true,
+    "originalGenerationOverwritten":false,
+    "realProviderLaunches":0,
+    "networkCalls":0,
+    "productionMutations":0,
+    "scheduledTaskMutations":0
+  },
+  "limitations":{
+    "providerAcceptance":false,
+    "migrationReadiness":false,
+    "transactionalInstaller":false,
+    "independentAcceptance":false,
+    "privilegedPreview":false,
+    "productionInstallation":false,
+    "productionCadence":false,
+    "adoptionCredit":false
+  },
+  "authority":{
+    "workCreation":false,
+    "capacityAdmission":false,
+    "lease":false,
+    "providerPermit":false,
+    "productionProviderExecution":false,
+    "installation":false,
+    "productionMutation":false,
+    "scheduledTaskMutation":false,
+    "adoptionCredit":false
+  },
+  "requiredNext":["create a new readiness generation that invokes the historical verifier","continue the exact installable MU-3 executor and postimage transaction"]
+}
