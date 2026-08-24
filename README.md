@@ -43,6 +43,10 @@ the human store-and-forward bus.
 
 ## Proposed amendments (not ratified)
 
+- [`ruling-candidates/airmypc-cross-stream-improvement-control-r1.md`](ruling-candidates/airmypc-cross-stream-improvement-control-r1.md)
+  — factory-of-the-factory control proposal measured by AirMyPC. It separates delivery, evidence,
+  durable authority, and execution capacity; this proposal alone grants no operational authority.
+
 - [`ruling-candidates/zero-discretionary-capacity-reserve-r1.md`](ruling-candidates/zero-discretionary-capacity-reserve-r1.md)
   — user-directed R1 proposal to replace fixed 20%/30% unused capacity floors with 0% discretionary
   reserve while retaining conservative request reservations, serial single-flight, fresh account-bound
