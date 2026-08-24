@@ -88,17 +88,18 @@ parallel activity are not reported as advancement unless a durable gate changes.
 While a long proof or repair is active, Cloudvore uses the following project profile. Other projects
 must select bounded local cadences and notification thresholds through their own authority maps:
 
-- **continuity loop, no later than every 10 minutes:** rejoin liveness or terminal evidence,
-  checkpoint the authoritative ledger before the handoff, and publish only phase,
-  elapsed/liveness or outcome, score/authority movement, and next gate;
+- **continuity loop, no later than every 10 minutes:** rejoin liveness and terminal evidence. Only
+  an authenticated content-addressed transition may checkpoint the authoritative ledger and then
+  publish phase, outcome, score/authority movement, and next gate;
 - **strategy loop, no later than every 30 minutes:** ask what exact customer or score terminal is
   next, which path is critical, whether safe capacity is idle, what false serialization or adoption
   debt can be removed, whether work is producing terminals or successors, and what observed evidence
   says about ETA; then execute the highest-value safe authorized action in each proven-disjoint
   workstream or ownership domain.
 
-An unchanged wake emits one short liveness line. It must not manufacture progress from the passage
-of time. A terminal condition such as “continue” persists across wakes without widening authority.
+An unchanged wake writes and publishes nothing. Identical transition identities are suppressed
+before ledger or notification mutation, so replayed observations cannot produce duplicate notices.
+A terminal condition such as “continue” persists across wakes without widening authority.
 
 #### Ingress, inference, and publication invariants
 
@@ -116,9 +117,8 @@ The control loop is also bound by these normative invariants:
   authority, blocker, liveness, or next-gate transitions. The passage of a cadence interval alone
   is not an event and cannot create a ledger mutation, duplicate action, or repeated notification.
 - **An unchanged cycle is inert.** When all rejoined inputs and terminals are unchanged, the cycle
-  performs zero state-changing work and emits at most the single bounded liveness notice selected
-  by the project profile. It creates no successor, authority, claim, retry, provider call, workload,
-  or notification flood.
+  performs zero state-changing work and emits no notice. It creates no successor, authority, claim,
+  retry, provider call, workload, duplicate publication, or notification flood.
 - **Serialization follows shared ownership.** At most one state-changing action may occur per
   proven shared contention or ownership domain in a cycle. Actions in domains proven disjoint by
   immutable authority maps may proceed concurrently; absence of such proof fails closed to one
