@@ -1,0 +1,13 @@
+{
+  "schema":"fleet-dng-mu3-native-executor-composition-candidate/v1",
+  "receiptId":"dng-mu3-native-executor-composition-candidate-20260824",
+  "recordedAt":"2026-08-24T06:05:00Z",
+  "status":"REAL_NATIVE_EXECUTOR_COMPOSITION_PROVEN_PROVIDER_FREE_ZERO_AUTHORITY",
+  "project":"dng-auto-processor",
+  "candidate":{"manifestPath":"C:/code/DngAutoProcessor - Claude/coordination/candidates/dng-r27-mu3-native-executor-composition-r1/candidate-manifest.json","manifestBytes":4149,"manifestSha256":"sha256:4473a9761c2951126890ce8d29f25f78fddbdb71c258a6e64941ce362cbd51f5"},
+  "exactRoute":{"provider":"openai","adapter":"openai-codex-exec/1.0","model":"gpt-5.6-sol","effort":"xhigh","role":"IMPLEMENT","discretionaryReserve":0.0,"hardCapacityCeiling":1.0},
+  "verification":{"behavioralAssertions":36,"repeatRuns":3,"candidateVerifierAssertions":62,"realCreateSuspended":true,"realPebArgvMatchesCompiledRequest":true,"brokerPreparedSuspended":true,"brokerResumeAttested":true,"singleResumeEdge":true,"preTurnBeforeLocalFake":true,"terminalPermitAndCheckpoint":true,"terminationObserver":true,"independentQualityObserver":true,"sameClaimantThroughRelease":true,"terminalJobEmpty":true,"realProviderLaunches":0,"localFakeProviderLaunches":1,"networkCalls":0,"productionMutations":0,"scheduledTaskMutations":0},
+  "limitations":{"disposableLauncherShim":true,"localFakeProvider":true,"exactInstalledPostimage":false,"independentAcceptance":false,"privilegedPreview":false,"productionInstallation":false,"productionCadence":false},
+  "authority":{"workCreation":false,"capacityAdmission":false,"providerPermit":false,"productionProviderExecution":false,"installation":false,"adoptionCredit":false},
+  "requiredNext":["derive exact immutable MU-3 launcher/postimage and transactional installer bytes from this composition","obtain strict-serial independent acceptance of the exact bytes","prove privileged preview, apply, interruption recovery, rollback, reinstall, two cadences, final natural ticks, and project disposition"]
+}

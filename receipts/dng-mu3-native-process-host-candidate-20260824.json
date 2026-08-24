@@ -1,0 +1,12 @@
+{
+  "schema":"fleet-dng-mu3-native-process-host-candidate/v1",
+  "receiptId":"dng-mu3-native-process-host-candidate-20260824",
+  "recordedAt":"2026-08-24T06:05:00Z",
+  "status":"REAL_NATIVE_PROCESS_HOST_PROVEN_PROVIDER_FREE_ZERO_AUTHORITY",
+  "project":"dng-auto-processor",
+  "candidate":{"manifestPath":"C:/code/DngAutoProcessor - Claude/coordination/candidates/dng-r27-mu3-native-process-host-r1/candidate-manifest.json","manifestBytes":2925,"manifestSha256":"sha256:3d7d8763c001a044b0bc1d4c007f957869031e01597c6467e1265a9773423bf6"},
+  "verification":{"behavioralAssertions":26,"candidateVerifierAssertions":51,"createSuspended":true,"realPebArgv":true,"jobOwnership":true,"singleResumeEdge":true,"terminalEmptyJob":true,"realProviderLaunches":0,"networkCalls":0,"productionMutations":0,"scheduledTaskMutations":0},
+  "limitations":{"standaloneProcessHostOnly":true,"exactInstalledPostimage":false,"independentAcceptance":false,"privilegedPreview":false,"productionInstallation":false},
+  "authority":{"workCreation":false,"capacityAdmission":false,"providerPermit":false,"productionProviderExecution":false,"installation":false,"adoptionCredit":false},
+  "requiredNext":["compose the real process identity through the exact broker-wrapper lifecycle","derive exact immutable launcher/postimage and transactional installer bytes","obtain independent acceptance and production proof"]
+}

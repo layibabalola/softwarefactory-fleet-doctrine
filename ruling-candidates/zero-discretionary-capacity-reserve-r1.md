@@ -96,3 +96,16 @@ makes no network or production mutation. Its native process observation remains 
 does not yet prove the Windows suspended-process executor, real PID/start-time/job binding, or any
 installation/adoption authority. Evidence and the explicit remaining gap are pinned in
 [`receipts/dng-mu3-broker-wrapper-protocol-composition-candidate-20260824.json`](../receipts/dng-mu3-broker-wrapper-protocol-composition-candidate-20260824.json).
+
+The synthetic native-observation gap is now closed locally in two zero-authority descendants. The
+first owns real Windows process, thread, and job handles from `CREATE_SUSPENDED` through one attested
+resume and a terminal empty job. The second carries that same real PID/start/image/PEB-argv/job
+identity through the exact compiler, broker, wrapper gates, local fake execution, parsers, observers,
+terminal checkpoint, release, and shutdown. Three repeated provider-free runs pass. No real provider,
+network, production, task, installation, or adoption authority was exercised. The remaining gate is
+to derive and independently accept the exact immutable installed launcher/postimage and its
+transactional installer, then prove preview, apply, interruption recovery, rollback/reinstall, and
+natural production operation. Evidence is pinned in
+[`receipts/dng-mu3-native-process-host-candidate-20260824.json`](../receipts/dng-mu3-native-process-host-candidate-20260824.json)
+and
+[`receipts/dng-mu3-native-executor-composition-candidate-20260824.json`](../receipts/dng-mu3-native-executor-composition-candidate-20260824.json).
