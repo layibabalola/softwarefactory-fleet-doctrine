@@ -117,3 +117,8 @@ independent acceptance or adoption credit. A second zero-authority prototype app
 the proposed receipt separation to terminal release, next-route closure, and promotion:
 29 hostile cases plus 41 manifest/dependency checks passed. Its privacy-safe evidence is
 [`receipts/dng-acyclic-release-policy-prototype-20260824.json`](../receipts/dng-acyclic-release-policy-prototype-20260824.json).
+Pre-seam falsification then found that the r1 decision omitted its context and artifact
+bindings. The immutable r2 descendant returns the exact context, request, provider binding,
+output, and receipt identities; it passed 41 hostile assertions and 45 verification checks.
+The r1 prototype remains historical zero-authority evidence and is superseded for acceptance
+by [`receipts/dng-acyclic-release-policy-replay-repair-20260824.json`](../receipts/dng-acyclic-release-policy-replay-repair-20260824.json).
