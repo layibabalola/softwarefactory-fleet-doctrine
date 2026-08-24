@@ -80,3 +80,11 @@ A forward descendant also repairs the broker's prior `high`-only effort schemas.
 persistent-broker fixture authorizes and attests the exact `gpt-5.6-sol` / `xhigh` / `IMPLEMENT`
 Codex route without weakening the 100% ceiling. Evidence and zero-authority limits are pinned in
 [`receipts/dng-openai-codex-xhigh-full-broker-authorization-20260824.json`](../receipts/dng-openai-codex-xhigh-full-broker-authorization-20260824.json).
+
+The next forward descendant compiles one exact hash-bound MU-3 request and proves that the full
+persistent broker reaches `PREPARED_SUSPENDED` with the Codex/xhigh/IMPLEMENT/zero-reserve route.
+It has no work-creation, admission, lease, permit, process, or provider authority. A correctly
+signed but stale prior-idle receipt is deliberately left for the broker to reject before launch;
+hostile controls also refuse model, effort, role, signer, profile, subject, boundary, and output
+identity drift. Evidence and zero-authority limits are pinned in
+[`receipts/dng-mu3-broker-request-compiler-candidate-20260824.json`](../receipts/dng-mu3-broker-request-compiler-candidate-20260824.json).

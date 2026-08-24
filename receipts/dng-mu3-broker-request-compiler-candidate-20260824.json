@@ -1,0 +1,13 @@
+{
+  "schema":"fleet-dng-mu3-broker-request-compiler-candidate/v1",
+  "receiptId":"dng-mu3-broker-request-compiler-candidate-20260824",
+  "recordedAt":"2026-08-24T05:13:17Z",
+  "status":"FULL_BROKER_REQUEST_COMPILER_PROVEN_ZERO_AUTHORITY",
+  "project":"dng-auto-processor",
+  "candidate":{"manifestPath":"C:/code/DngAutoProcessor - Claude/coordination/candidates/dng-r27-mu3-broker-request-compiler-r1/candidate-manifest.json","manifestBytes":2273,"manifestSha256":"sha256:57093a5e8a983a63c0af8157f294c6964d8507a4456aa179cb009dd72735d1b3"},
+  "exactRoute":{"provider":"openai","adapter":"openai-codex-exec/1.0","model":"gpt-5.6-sol","effort":"xhigh","role":"IMPLEMENT","discretionaryReserve":0.0,"hardCapacityCeiling":1.0},
+  "verification":{"behavioralAssertions":22,"candidateVerifierAssertions":43,"persistentBrokerResult":"PREPARED_SUSPENDED","staleSignedPriorIdleRefusedBeforeLaunch":true,"hostileIdentityControls":13,"realProviderLaunches":0,"networkCalls":0,"productionMutations":0,"scheduledTaskMutations":0},
+  "authority":{"independentAcceptance":false,"doctrineInstallation":false,"productionProviderExecution":false,"adoptionCredit":false},
+  "requiredNext":["broker-wrapper-parser-observer executor composition","independent review of exact compiler and executor bytes","transactional installation and production proof"]
+}
+
