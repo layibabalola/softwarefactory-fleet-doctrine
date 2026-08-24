@@ -244,3 +244,13 @@ The legacy semantic release remains inherited unchanged. Its 17 behavioral asser
 repeat runs, and 46 manifest/dependency assertions are provider-free, uninstalled, zero-authority
 evidence pinned in
 [`receipts/dng-mu3-acyclic-broker-release-candidate-20260824.json`](../receipts/dng-mu3-acyclic-broker-release-candidate-20260824.json).
+
+Real native-lifecycle composition then exposed a schema mismatch in that broker candidate: the
+output-contract schema permits empty stdout and stderr, but r1 reused a generic retained-artifact
+helper whose minimum was one byte. A successful provider with empty stderr would be stranded at
+terminal release. The immutable r2 descendant applies schema-specific minima—two bytes for
+structured output and zero bytes for stdout/stderr—while retaining every release, signer, policy,
+closure-ordering, replay, and zero-semantic-authority control. R2 passed 18 behavioral assertions
+across three runs and 49 verification assertions with an actual empty stderr fixture. R1 remains
+historical evidence and is superseded for acceptance by
+[`receipts/dng-mu3-acyclic-broker-release-empty-stream-repair-20260824.json`](../receipts/dng-mu3-acyclic-broker-release-empty-stream-repair-20260824.json).
