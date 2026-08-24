@@ -1,0 +1,55 @@
+{
+  "schema":"fleet-dng-mu3-acyclic-broker-release-candidate/v1",
+  "receiptId":"dng-mu3-acyclic-broker-release-candidate-20260824",
+  "recordedAt":"2026-08-24T07:07:00Z",
+  "status":"BROKER_NATIVE_DETERMINISTIC_TERMINAL_RELEASE_PROVEN_PROVIDER_FREE_ZERO_AUTHORITY",
+  "project":"dng-auto-processor",
+  "candidate":{
+    "manifestPath":"C:/code/DngAutoProcessor - Claude/coordination/candidates/dng-r27-mu3-acyclic-broker-release-r1/candidate-manifest.json",
+    "manifestBytes":4324,
+    "manifestSha256":"sha256:73642a096c10da72758025646c039881305592b4f0529b61e6ea3640e7b7446e"
+  },
+  "verification":{
+    "behavioralAssertions":17,
+    "repeatRuns":3,
+    "candidateVerifierAssertions":46,
+    "terminalAndUsageReverified":true,
+    "independentOutputObserverRequired":true,
+    "acyclicPolicyRecomputed":true,
+    "separateReleaseCertificationRequired":true,
+    "gateClosedBeforeQuotaRelease":true,
+    "signedDurableRouteClosure":true,
+    "semanticQualityInferred":false,
+    "policySubstitutionRefused":true,
+    "failedReleaseRetainsLease":true,
+    "staleExactReplayReturnsOriginalClosure":true,
+    "legacyReleaseInheritedUnchanged":true,
+    "realProviderLaunches":0,
+    "networkCalls":0,
+    "productionMutations":0,
+    "scheduledTaskMutations":0
+  },
+  "limitations":{
+    "exactComposedMu3Postimage":false,
+    "transactionalInstaller":false,
+    "independentAcceptance":false,
+    "privilegedPreview":false,
+    "productionInstallation":false,
+    "rollbackReinstall":false,
+    "productionCadence":false,
+    "adoptionCredit":false
+  },
+  "authority":{
+    "workCreation":false,
+    "capacityAdmission":false,
+    "providerPermit":false,
+    "productionProviderExecution":false,
+    "installation":false,
+    "adoptionCredit":false
+  },
+  "requiredNext":[
+    "compose the exact immutable MU-3 session-plus-broker postimage and transactional installer",
+    "prove disposable interruption recovery, rollback, and exact reinstall",
+    "obtain strict-serial independent acceptance before privileged preview or production mutation"
+  ]
+}

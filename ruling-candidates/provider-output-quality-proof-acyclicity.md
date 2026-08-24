@@ -234,3 +234,13 @@ acyclic semantic evidence. The session refuses if the broker-side verifier is ab
 cannot release authority by itself. Its 18 behavioral and 26 manifest/dependency assertions are
 pinned in
 [`receipts/dng-mu3-acyclic-broker-session-candidate-20260824.json`](../receipts/dng-mu3-acyclic-broker-session-candidate-20260824.json).
+
+The broker-side forward descendant now verifies the same deterministic terminal evidence against
+the exact terminal process tree and usage, an independently signed output contract, the hash-pinned
+acyclic policy, and a separately signed release certification. It seals production continuation
+closed before quota release, persists a signed route closure, refuses semantic claims and policy
+substitution, and returns the original closure for an exact stale replay without reopening capacity.
+The legacy semantic release remains inherited unchanged. Its 17 behavioral assertions, three
+repeat runs, and 46 manifest/dependency assertions are provider-free, uninstalled, zero-authority
+evidence pinned in
+[`receipts/dng-mu3-acyclic-broker-release-candidate-20260824.json`](../receipts/dng-mu3-acyclic-broker-release-candidate-20260824.json).
