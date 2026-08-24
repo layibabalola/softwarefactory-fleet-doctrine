@@ -1,0 +1,14 @@
+{
+  "schema":"fleet-dng-mu3-contract-r6-broker-input-materializer/v1",
+  "receiptId":"dng-mu3-contract-r6-broker-input-materializer-20260824",
+  "recordedAt":"2026-08-24T11:21:00Z",
+  "status":"CONTRACT_R6_MATERIALIZER_PROVEN_PROVIDER_FREE_ZERO_AUTHORITY",
+  "project":"dng-auto-processor",
+  "candidate":{"manifestPath":"C:/code/DngAutoProcessor - Claude/coordination/candidates/dng-r27-mu3-broker-input-materializer-r6/candidate-manifest.json","manifestBytes":3996,"manifestSha256":"sha256:7fecf6686ab327d7ca73f16dbd8bfd04622a363c8a5538e2c9107a3839bae58a"},
+  "supersedes":{"manifestPath":"C:/code/DngAutoProcessor - Claude/coordination/candidates/dng-r27-mu3-broker-input-materializer-r5/candidate-manifest.json","manifestBytes":3984,"manifestSha256":"sha256:daed8e552ac1386d5f245156d5c639cebb84a273814929c44f266f0469ffb0ed","reason":"R5_ACCEPTED_ONLY_EXECUTOR_CONTRACT_R5_AND_COULD_NOT_CONSUME_THE_PREDECLARED_EXECUTOR_ARTIFACT_MAP_BOUND_BY_R6"},
+  "properties":{"fullContractR6Replay":true,"supersededContractR5Refused":true,"executorArtifactMapPreserved":true,"allNativeRolesExact":true,"exclusiveCanonicalOutput":true,"zeroDiscretionaryReserve":true,"hardCapacityCeilingPreserved":true,"noProcessPrimitive":true,"noNetworkPrimitive":true},
+  "verification":{"behavioralAssertions":51,"hostileCases":11,"repeatRuns":3,"candidateVerifierAssertions":47,"realProviderLaunches":0,"localFakeProviderLaunches":0,"networkCalls":0,"productionMutations":0,"scheduledTaskMutations":0},
+  "limitations":{"installableExecutor":false,"composedPostimage":false,"transactionalInstaller":false,"independentAcceptance":false,"privilegedPreview":false,"productionInstallation":false,"rollbackReinstall":false,"productionCadences":false,"adoptionCredit":false},
+  "authority":{"workCreation":false,"capacityAdmission":false,"lease":false,"providerPermit":false,"productionProviderExecution":false,"installation":false,"productionMutation":false,"scheduledTaskMutation":false,"adoptionCredit":false},
+  "requiredNext":["compose materializer r6 and all bound components into the exact journaled acyclic executor","prove every terminal and recovery path in the disposable transaction","obtain independent acceptance before preview or production mutation"]
+}
