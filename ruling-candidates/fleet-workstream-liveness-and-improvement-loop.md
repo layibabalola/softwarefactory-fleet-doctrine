@@ -117,6 +117,50 @@ update when health changes, a new blocker appears, an action is taken, authority
 needed, or a deadline is at risk. The loop never converts repeated blockage into
 permission.
 
+### 4.1. Falsification comes before repetition
+
+At least once per 30-minute window, and immediately after a material blocker or
+provider result, the root asks a second-order question before repeating the prior
+disposition:
+
+> Which belief, blocker, or procedure may now be stale or incomplete; what
+> independent evidence could falsify it; and what safe improvement can be made now?
+
+The review must correlate independent surfaces rather than promote one observation
+into a system-wide conclusion. Relevant surfaces include account identity and plan
+entitlement, endpoint or session availability, authentication method and credential
+source, active process ancestry and concurrency, launcher and bridge versions,
+watcher/Monitor binding, proposal-bound process receipts, governance state, and the
+actual workstream owner turn. Sensitive raw identities remain project-local; fleet
+doctrine carries only typed outcomes and opaque failure-domain references.
+
+Conflicting signals are useful evidence, not permission to choose the most
+convenient story. For example, an interactive plan meter showing allowance plus a
+noninteractive process returning a session error is
+`PLAN_ALLOWANCE_PRESENT_SESSION_PATH_UNAVAILABLE_OR_UNKNOWN`. It is not proof of
+global quota exhaustion, account mismatch, or provider health. Likewise, a missing
+or misbound bridge Monitor is a reachability defect, not evidence that the account
+lacks capacity. The root narrows the cause only as far as retained evidence permits.
+
+Every material observation records its source, observation time, account/failure-
+domain binding where safe, and freshness window. Before declaring an unchanged
+blocker, the loop refreshes the cheapest independent facts that could invalidate it.
+`DONT_NOTIFY` or an equivalent quiet result is lawful only after that falsification
+check finds no changed evidence, no newly satisfiable gate, and no higher-value safe
+action.
+
+Read-only diagnostics, reversible local repairs, and actions already covered by
+current authority should proceed without owner relay. A genuinely new policy choice,
+irreversible effect, external spend, credential mutation, quorum substitution, or
+authority expansion still stops for the proper grant. The periodic review removes
+avoidable owner dependency; it does not manufacture permission.
+
+The heartbeat prompt is operational control material. It must preserve singleton
+identity, distinguish routine wakes from the deeper review interval, name the
+evidence surfaces above, and prohibit duplicate owners or probe attempts that consume
+formal authority. Projects test prompt changes and verify the persisted scheduler
+target, cadence, status, and content after every update.
+
 The privacy-safe DNG field trial in
 [`receipts/dng-workstream-liveness-field-trial-20260824.json`](../receipts/dng-workstream-liveness-field-trial-20260824.json)
 demonstrates the intended boundary: an unchanged campaign `HOLD` remained unbypassed
@@ -164,9 +208,22 @@ A project may claim adoption only after production-path tests prove:
    `HOLD`, verifier result, score delta, and next candidate, and cannot claim progress
    by changing only a timestamp;
 10. two consecutive identical `HOLD` records trigger root-cause analysis or one
-    independently safe backlog action without creating new authority; and
+    independently safe backlog action without creating new authority;
 11. every health claim identifies the next named action and the axes required for that
-    action, so "healthy" cannot mean merely "some process is alive."
+    action, so "healthy" cannot mean merely "some process is alive;"
+12. interactive plan allowance plus a noninteractive session failure produces a
+    split-signal diagnosis, not an unsupported claim of global quota exhaustion,
+    account mismatch, or provider health;
+13. Desktop and CLI account identities are compared locally before their usage or
+    failure receipts are attributed to one failure domain, without publishing raw
+    identity to the fleet bus;
+14. a missing or misbound bridge Monitor is classified as a reachability defect and
+    cannot populate provider-capacity fields;
+15. a quiet cycle proves that falsification-relevant facts were refreshed inside
+    their freshness windows, rather than relying only on an unchanged state hash; and
+16. updating the improvement loop preserves one scheduler singleton and verifies its
+    persisted target, cadence, status, and prompt without consuming provider or
+    governance attempt authority.
 
 Project-local scheduler names, task ids, intervals, queue schemas, provider names,
 models, paths, credentials, capacity thresholds, and release mechanisms do not
