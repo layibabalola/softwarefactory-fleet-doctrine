@@ -113,4 +113,7 @@ The privacy-safe DNG falsification receipt at
 motivates this candidate. The same field trial includes a provider-free deterministic
 observer prototype that passed 23 hostile fixture assertions and 46 manifest/schema/
 dependency checks while setting `semanticNoninferiorityClaimed=false`. It grants no
-independent acceptance or adoption credit.
+independent acceptance or adoption credit. A second zero-authority prototype applies
+the proposed receipt separation to terminal release, next-route closure, and promotion:
+29 hostile cases plus 41 manifest/dependency checks passed. Its privacy-safe evidence is
+[`receipts/dng-acyclic-release-policy-prototype-20260824.json`](../receipts/dng-acyclic-release-policy-prototype-20260824.json).
