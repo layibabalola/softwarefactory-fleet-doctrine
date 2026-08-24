@@ -1,0 +1,58 @@
+{
+  "schema": "fleet-provider-production-route-scope-repair/v1",
+  "receiptId": "dng-production-route-scope-repair-20260824",
+  "recordedAt": "2026-08-24T04:06:00Z",
+  "status": "LOCAL_FORWARD_REPAIR_ZERO_AUTHORITY",
+  "project": "dng-auto-processor",
+  "finding": "GENERIC_ROUTE_SCOPE_AUTHORITY_AMBIGUITY",
+  "supersedesForAcceptance": [
+    "dng-acyclic-release-policy-r2",
+    "dng-mu3-release-finalizer-r1"
+  ],
+  "provenance": {
+    "classification": "AUTHOR_ATTESTED_LOCAL_VERIFICATION",
+    "independentAcceptance": false,
+    "providerAuthenticated": false,
+    "providerLaunches": 0,
+    "networkCalls": 0,
+    "productionMutations": 0,
+    "activeHoldChanged": false,
+    "adoptionCredit": false
+  },
+  "privacy": {
+    "localPathsIncluded": false,
+    "accountIdentifiersIncluded": false,
+    "sessionIdentifiersIncluded": false,
+    "promptsOrOutputsIncluded": false,
+    "secretMaterialIncluded": false
+  },
+  "authoritativeInputs": {
+    "policyR2ManifestSha256": "sha256:69f4b07f9dea1d6ec0dc15251ac8ed96ac67332e3856a644154494760080082d",
+    "policyR3ManifestSha256": "sha256:e930b1654c2d99e7f3b80044c43576bff3beaeacd1e98b3dfc31530578029ea9",
+    "policyR3EvaluatorSha256": "sha256:e08eee46bf7730c32c24a404ed6e657c373a6cde9b009acf464773c3f5700550",
+    "policyR3HostileSuiteSha256": "sha256:71c45f828549e1c3dbb7cd0f91571aaeac097a75896da5b2a620efb2d23ec58a",
+    "policyR3VerifierSha256": "sha256:02267965b5e7a65ad216559b69b5555193d88f3a1bad6a0d71e1b9fd2bdd88fe",
+    "finalizerR1ManifestSha256": "sha256:7079936fd24845b81df166aebb92d56cf46f80681971c7ca936c206637e39767",
+    "finalizerR2ManifestSha256": "sha256:ba1f2da1ff05696ff5b138607f4d2a05fd2bf23c1524ecdd1c9d3868f7b76b75",
+    "finalizerR2Sha256": "sha256:30c66c183a43305db6fc301885b5e4df1ed1ecb8b0926368b0075d6738425f74",
+    "finalizerR2HostileSuiteSha256": "sha256:f7cfbe706fdf67efa28d19994971a7909d3c88d545c5d68ea0a3a951bf89c5f9",
+    "finalizerR2VerifierSha256": "sha256:90ae1d4903f44ecbd6d7a23ee3ddbaf517abc16128ff5d2845f784b30b5b3404"
+  },
+  "verifiedResult": {
+    "policyHostileAssertions": 42,
+    "policyVerificationAssertions": 43,
+    "finalizerHostileAssertions": 36,
+    "finalizerVerificationAssertions": 48,
+    "productionRouteScopeExplicit": true,
+    "genericRouteFieldRemoved": true,
+    "reviewContinuationAuthorityClaimed": false,
+    "terminalReleaseSemanticSeparationPreserved": true
+  },
+  "credit": {
+    "implementation": false,
+    "independentAcceptance": false,
+    "installation": false,
+    "productionCadence": false,
+    "adoption": false
+  }
+}

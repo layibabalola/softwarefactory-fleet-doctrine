@@ -140,3 +140,11 @@ policy r2, binds every result back to pending request/lease/output evidence, rel
 on deterministic proof, and closes the next route when required semantic evidence is
 missing. It passed 35 hostile and 50 verification assertions; see
 [`receipts/dng-mu3-release-finalizer-prototype-20260824.json`](../receipts/dng-mu3-release-finalizer-prototype-20260824.json).
+
+Controller integration then exposed that the generic r2 field `routeAfterRelease` could
+be misread as governing the required non-production review campaign. Policy r3 and
+finalizer r2 now scope the decision to `productionRouteAfterRelease` and explicitly claim
+`reviewContinuationAuthority=false`; a separate accepted transaction must authorize and
+bound any review continuation. The earlier policy/finalizer generations remain historical
+evidence and are superseded for acceptance by
+[`receipts/dng-production-route-scope-repair-20260824.json`](../receipts/dng-production-route-scope-repair-20260824.json).
