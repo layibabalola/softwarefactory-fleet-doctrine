@@ -43,7 +43,7 @@ the human store-and-forward bus.
 
 ## Proposed amendments (not ratified)
 
-- [`specs/fleet-workstream-liveness-and-improvement-loop.md`](specs/fleet-workstream-liveness-and-improvement-loop.md)
+- [`ruling-candidates/fleet-workstream-liveness-and-improvement-loop-r1.md`](ruling-candidates/fleet-workstream-liveness-and-improvement-loop-r1.md)
   — zero-authority proposal that separates inference liveness from heartbeat instrumentation,
   makes provider failure domains explicit, routes one immutable ingress exactly once, and defines
   a bounded recurring improvement loop with an atomic advancement record and a repeated-HOLD

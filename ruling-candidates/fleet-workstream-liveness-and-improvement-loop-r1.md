@@ -1,4 +1,4 @@
-# Fleet workstream liveness and autonomous improvement loop
+# Fleet workstream liveness and autonomous improvement loop (R1 candidate)
 
 > **STATUS: CANDIDATE / ZERO AUTHORITY.** This document proposes portable doctrine.
 > It does not enable a scheduler, create or resume a provider session, grant path or
