@@ -194,3 +194,14 @@ command, emits the signed pre-turn report first, and accepts the terminal permit
 fresh signed resume gate after checkpointing. Exact subject hashes and provider-free hostile-test
 evidence are recorded in
 [`receipts/dng-openai-wrapper-terminal-permit-order-repair-20260824.json`](../receipts/dng-openai-wrapper-terminal-permit-order-repair-20260824.json).
+
+## Honest Codex adapter identity
+
+The repaired wrapper identifies the real provider boundary as `openai-codex-exec/1.0`, but current
+canonical broker schemas and normalization tables accept only `openai-responses/1.0` for OpenAI.
+Those are not interchangeable execution surfaces. A compiler must not relabel the Codex CLI as the
+Responses API merely to pass schema validation. The doctrine amendment therefore needs a
+first-class Codex-exec adapter across request, project-profile, native-evidence, and normalized
+observation contracts, with hostile cross-adapter refusal tests. The exact incompatibility is
+recorded in
+[`receipts/dng-openai-codex-adapter-identity-gap-20260824.json`](../receipts/dng-openai-codex-adapter-identity-gap-20260824.json).
