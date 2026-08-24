@@ -148,3 +148,13 @@ finalizer r2 now scope the decision to `productionRouteAfterRelease` and explici
 bound any review continuation. The earlier policy/finalizer generations remain historical
 evidence and are superseded for acceptance by
 [`receipts/dng-production-route-scope-repair-20260824.json`](../receipts/dng-production-route-scope-repair-20260824.json).
+
+The separate non-production review transaction now has a provider-free bounded
+continuation prototype. It admits only the fixed serial chain `implementation ->
+primary -> stranger-1 -> stranger-2`, caps the chain at four calls, requires a
+hash-bound finalized terminal-release result for each step, HMAC-binds every receipt
+to its transaction, step, role, predecessor, and finalization artifact, and closes
+continuation after the final role. Every receipt explicitly denies production and
+promotion authority. The candidate passed 61 hostile assertions and 51 manifest/
+dependency checks without launching a provider or changing the active hold; see
+[`receipts/dng-bounded-review-continuation-prototype-20260824.json`](../receipts/dng-bounded-review-continuation-prototype-20260824.json).

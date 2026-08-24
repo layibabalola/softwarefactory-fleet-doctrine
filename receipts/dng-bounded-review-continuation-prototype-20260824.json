@@ -1,0 +1,53 @@
+{
+  "schema": "fleet-provider-bounded-review-continuation-prototype/v1",
+  "receiptId": "dng-bounded-review-continuation-prototype-20260824",
+  "recordedAt": "2026-08-24T03:26:00Z",
+  "status": "LOCAL_ZERO_AUTHORITY_CANDIDATE",
+  "project": "dng-auto-processor",
+  "finding": "NON_PRODUCTION_REVIEW_CONTINUATION_REQUIRED_SEPARATE_BOUNDED_AUTHORITY",
+  "provenance": {
+    "classification": "AUTHOR_ATTESTED_LOCAL_VERIFICATION",
+    "independentAcceptance": false,
+    "providerAuthenticated": false,
+    "providerLaunches": 0,
+    "networkCalls": 0,
+    "productionMutations": 0,
+    "activeHoldChanged": false,
+    "adoptionCredit": false
+  },
+  "privacy": {
+    "localPathsIncluded": false,
+    "accountIdentifiersIncluded": false,
+    "sessionIdentifiersIncluded": false,
+    "promptsOrOutputsIncluded": false,
+    "secretMaterialIncluded": false
+  },
+  "authoritativeInputs": {
+    "candidateManifestSha256": "sha256:be5406b940ed668a83ee5ef02423d23b8e430a6bec454f04b5617f0a6be15d53",
+    "boundedPlanSha256": "sha256:b0e23aefe373fe5cf599b649c5c19dfbe10f7ea7f6e4ae9f88b12b38ce8a86f1",
+    "evaluatorSha256": "sha256:e10af69b390be868f24d5438660de6ecee6168c3f0d3b8b251cc037488b1c64c",
+    "hostileSuiteSha256": "sha256:e493697f91e179bff2744b085a80c14e9ad044620c7d6435bf973131efd554bf",
+    "verifierSha256": "sha256:a4f4c0f01e8b60f36f3462cfc97ea0ba67452abf90d0969b5a334601fcce6b9f",
+    "releaseFinalizerR2ManifestSha256": "sha256:ba1f2da1ff05696ff5b138607f4d2a05fd2bf23c1524ecdd1c9d3868f7b76b75"
+  },
+  "verifiedResult": {
+    "hostileAssertions": 61,
+    "verificationAssertions": 51,
+    "fixedRoleChain": ["implementation", "primary", "stranger-1", "stranger-2"],
+    "maxProviderCalls": 4,
+    "serialSingleFlight": true,
+    "finalizedTerminalReleaseRequired": true,
+    "hmacReplayBoundReceipts": true,
+    "lastRoleClosesContinuation": true,
+    "productionAuthority": false,
+    "promotionAuthority": false,
+    "providerInvocationImplemented": false
+  },
+  "credit": {
+    "implementation": false,
+    "independentAcceptance": false,
+    "installation": false,
+    "productionCadence": false,
+    "adoption": false
+  }
+}
