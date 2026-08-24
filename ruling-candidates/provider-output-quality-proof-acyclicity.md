@@ -128,3 +128,15 @@ terminal usage and process-tree termination retained. It refuses both the legacy
 quality artifact and premature success status. The provider-free seam passed 20 fixture
 assertions and 45 verification checks; see
 [`receipts/dng-mu3-pending-execution-phase-split-20260824.json`](../receipts/dng-mu3-pending-execution-phase-split-20260824.json).
+
+Finalizer integration exposed a Windows byte-integrity defect in the r1 deterministic
+observer: it hashed LF bytes before an exclusive text-mode descriptor wrote CRLF bytes.
+Observer r2 uses an exclusive binary descriptor and proves the returned hash equals the
+retained receipt. R1 remains historical evidence and is superseded for acceptance by
+[`receipts/dng-output-contract-windows-hash-repair-20260824.json`](../receipts/dng-output-contract-windows-hash-repair-20260824.json).
+
+The provider-free finalization phase now invokes the exact observer r2 and replay-bound
+policy r2, binds every result back to pending request/lease/output evidence, releases only
+on deterministic proof, and closes the next route when required semantic evidence is
+missing. It passed 35 hostile and 50 verification assertions; see
+[`receipts/dng-mu3-release-finalizer-prototype-20260824.json`](../receipts/dng-mu3-release-finalizer-prototype-20260824.json).

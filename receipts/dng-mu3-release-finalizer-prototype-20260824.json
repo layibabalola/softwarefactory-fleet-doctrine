@@ -1,0 +1,51 @@
+{
+  "schema": "fleet-provider-release-finalizer-prototype/v1",
+  "receiptId": "dng-mu3-release-finalizer-prototype-20260824",
+  "recordedAt": "2026-08-24T03:35:00Z",
+  "status": "LOCAL_INTEGRATION_PROTOTYPE_ZERO_AUTHORITY",
+  "project": "dng-auto-processor",
+  "provenance": {
+    "classification": "AUTHOR_ATTESTED_LOCAL_VERIFICATION",
+    "independentAcceptance": false,
+    "providerAuthenticated": false,
+    "providerLaunches": 0,
+    "networkCalls": 0,
+    "productionMutations": 0,
+    "activeHoldChanged": false,
+    "adoptionCredit": false
+  },
+  "privacy": {
+    "localPathsIncluded": false,
+    "accountIdentifiersIncluded": false,
+    "sessionIdentifiersIncluded": false,
+    "promptsOrOutputsIncluded": false,
+    "secretMaterialIncluded": false
+  },
+  "authoritativeInputs": {
+    "pendingExecutionManifestSha256": "sha256:4c844da926b5917c8a321dd7f57ea26acefefd6d454bca5a0de0c9cc3283a00e",
+    "outputContractObserverR2ManifestSha256": "sha256:ce7204389cda15331c5364c0b109cdfe8fb13dc4d6dd5857a97a23f3e477410d",
+    "acyclicReleasePolicyR2ManifestSha256": "sha256:69f4b07f9dea1d6ec0dc15251ac8ed96ac67332e3856a644154494760080082d",
+    "finalizerSha256": "sha256:255bbb5c721b1a473eaeace5789bea67ff284ccd3b49636672daa8c7a9839eb3",
+    "hostileSuiteSha256": "sha256:20442297066efb321a9f2cfcf1e2ebb6a869df7f862d672e2cc5871eb2f9bed7",
+    "verifierSha256": "sha256:35d9f4623f895c3e0d9a11b0dca49c077a3d5c0edf5c398d1d13a7ddf27719b0",
+    "candidateManifestSha256": "sha256:7079936fd24845b81df166aebb92d56cf46f80681971c7ca936c206637e39767"
+  },
+  "verifiedResult": {
+    "hostileAssertions": 35,
+    "verificationAssertions": 50,
+    "exactObserverInvoked": true,
+    "exactPolicyInvoked": true,
+    "requestLeaseBindingExact": true,
+    "semanticReceiptUsedForTerminalRelease": false,
+    "missingSemanticClosesNextRouteWithoutStranding": true,
+    "canaryPromotionRequiresSemanticReceipt": true,
+    "binaryHashEqualityPreserved": true
+  },
+  "credit": {
+    "implementation": false,
+    "independentAcceptance": false,
+    "installation": false,
+    "productionCadence": false,
+    "adoption": false
+  }
+}

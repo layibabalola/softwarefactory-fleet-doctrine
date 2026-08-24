@@ -1,0 +1,47 @@
+{
+  "schema": "fleet-output-contract-windows-hash-repair/v1",
+  "receiptId": "dng-output-contract-windows-hash-repair-20260824",
+  "recordedAt": "2026-08-24T03:34:00Z",
+  "status": "LOCAL_FORWARD_REPAIR_ZERO_AUTHORITY",
+  "project": "dng-auto-processor",
+  "supersedesForAcceptance": "dng-output-contract-observer-r1",
+  "finding": "WINDOWS_TEXT_MODE_RECEIPT_HASH_DRIFT",
+  "provenance": {
+    "classification": "AUTHOR_ATTESTED_LOCAL_VERIFICATION",
+    "independentAcceptance": false,
+    "providerAuthenticated": false,
+    "providerLaunches": 0,
+    "networkCalls": 0,
+    "productionMutations": 0,
+    "activeHoldChanged": false,
+    "adoptionCredit": false
+  },
+  "privacy": {
+    "localPathsIncluded": false,
+    "accountIdentifiersIncluded": false,
+    "sessionIdentifiersIncluded": false,
+    "promptsOrOutputsIncluded": false,
+    "secretMaterialIncluded": false
+  },
+  "authoritativeInputs": {
+    "r1ManifestSha256": "sha256:df8e0c56166ac31702ee16a83616a0560ba025c758570ebe6bfe0cf1387c44fa",
+    "r2ObserverSha256": "sha256:877f48b23e58950b8a2dd42fc4bb1e6044e8993fb328a23466702c496d064877",
+    "r2HostileSuiteSha256": "sha256:7ea1f7c077d2f2e595c1a98042e564800aa8c665cdea0173515b9523c3a52a85",
+    "r2VerifierSha256": "sha256:ccebe2d30ed6301ceb620d900e48b585a97a44dd69fc611d6de966545792bfd2",
+    "r2ManifestSha256": "sha256:ce7204389cda15331c5364c0b109cdfe8fb13dc4d6dd5857a97a23f3e477410d"
+  },
+  "verifiedResult": {
+    "hostileAssertions": 24,
+    "verificationAssertions": 51,
+    "binaryExclusiveWrite": true,
+    "reportedHashMatchesRetainedBytes": true,
+    "semanticNoninferiorityClaimed": false
+  },
+  "credit": {
+    "implementation": false,
+    "independentAcceptance": false,
+    "installation": false,
+    "productionCadence": false,
+    "adoption": false
+  }
+}
