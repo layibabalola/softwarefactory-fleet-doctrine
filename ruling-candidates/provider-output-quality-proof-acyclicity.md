@@ -158,3 +158,12 @@ continuation after the final role. Every receipt explicitly denies production an
 promotion authority. The candidate passed 61 hostile assertions and 51 manifest/
 dependency checks without launching a provider or changing the active hold; see
 [`receipts/dng-bounded-review-continuation-prototype-20260824.json`](../receipts/dng-bounded-review-continuation-prototype-20260824.json).
+
+Controller integration falsified the prototype’s 60-second predecessor-receipt
+lifetime: the next decision would reject an honestly admitted review after a normal
+45-minute bounded run. The immutable r2 descendant uses a one-hour receipt lifetime
+while retaining a 60-second decision-context freshness check, the existing per-call
+timeout, exact role chain, serial single-flight, and four-call ceiling. A simulated
+45-minute completion remains admissible and an expired one-hour receipt is refused.
+R1 remains historical evidence and is superseded for acceptance by
+[`receipts/dng-bounded-review-continuation-ttl-repair-20260824.json`](../receipts/dng-bounded-review-continuation-ttl-repair-20260824.json).
