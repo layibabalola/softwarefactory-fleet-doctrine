@@ -254,3 +254,14 @@ closure-ordering, replay, and zero-semantic-authority control. R2 passed 18 beha
 across three runs and 49 verification assertions with an actual empty stderr fixture. R1 remains
 historical evidence and is superseded for acceptance by
 [`receipts/dng-mu3-acyclic-broker-release-empty-stream-repair-20260824.json`](../receipts/dng-mu3-acyclic-broker-release-empty-stream-repair-20260824.json).
+
+The repaired acyclic session and broker r2 now compose through one real Windows suspended-process
+lifecycle. The exact Codex/xhigh/IMPLEMENT/zero-reserve identity survives compilation, broker
+authorization, one resume edge, pre-turn and terminal gates, local fake execution, terminal usage,
+an independently observed empty process tree, and deterministic release. The independently signed
+output contract includes a real zero-byte stderr artifact; no semantic receipt exists or is used.
+The broker persists a signed closed-route record before releasing quota and native owners. The
+composition passed 38 behavioral assertions across three runs and 73 verification assertions with
+zero real provider or production mutations. The former semantic-release composition is historical
+and superseded for acceptance by
+[`receipts/dng-mu3-native-executor-acyclic-composition-20260824.json`](../receipts/dng-mu3-native-executor-acyclic-composition-20260824.json).

@@ -1,0 +1,14 @@
+{
+  "schema":"fleet-dng-mu3-native-executor-acyclic-composition/v1",
+  "receiptId":"dng-mu3-native-executor-acyclic-composition-20260824",
+  "recordedAt":"2026-08-24T07:31:00Z",
+  "status":"REAL_NATIVE_ACYCLIC_EXECUTOR_COMPOSITION_PROVEN_PROVIDER_FREE_ZERO_AUTHORITY",
+  "project":"dng-auto-processor",
+  "supersedesForAcceptance":["dng-mu3-native-executor-composition-candidate-20260824"],
+  "candidate":{"manifestPath":"C:/code/DngAutoProcessor - Claude/coordination/candidates/dng-r27-mu3-native-executor-acyclic-composition-r2/candidate-manifest.json","manifestBytes":5181,"manifestSha256":"sha256:d6f825ec430634f98b4274494556debc8c51450890a3dce08515d68851c82876"},
+  "exactRoute":{"provider":"openai","adapter":"openai-codex-exec/1.0","model":"gpt-5.6-sol","effort":"xhigh","role":"IMPLEMENT","discretionaryReserve":0.0,"hardCapacityCeiling":1.0},
+  "verification":{"behavioralAssertions":38,"repeatRuns":3,"candidateVerifierAssertions":73,"realCreateSuspended":true,"realPebArgvMatchesCompiledRequest":true,"singleResumeEdge":true,"preTurnAndTerminalGates":true,"terminalUsageAndProcessTree":true,"independentDeterministicOutputContract":true,"zeroByteStderr":true,"semanticQualityReceiptUsed":false,"productionRouteAfterRelease":"CLOSED_SEMANTIC_EVIDENCE_REQUIRED","durableSignedRouteClosure":true,"promotionAuthority":false,"reviewContinuationAuthority":false,"realProviderLaunches":0,"localFakeProviderLaunches":1,"networkCalls":0,"productionMutations":0,"scheduledTaskMutations":0},
+  "limitations":{"disposableLauncherShim":true,"localFakeProvider":true,"exactInstalledPostimage":false,"transactionalInstaller":false,"independentAcceptance":false,"privilegedPreview":false,"productionInstallation":false,"productionCadence":false},
+  "authority":{"workCreation":false,"capacityAdmission":false,"providerPermit":false,"productionProviderExecution":false,"installation":false,"adoptionCredit":false},
+  "requiredNext":["derive the exact installable MU-3 executor/runtime postimage from this composition","prove disposable interruption recovery, rollback, and exact reinstall","obtain strict-serial independent acceptance before production mutation"]
+}
