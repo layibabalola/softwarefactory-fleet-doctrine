@@ -122,3 +122,9 @@ bindings. The immutable r2 descendant returns the exact context, request, provid
 output, and receipt identities; it passed 41 hostile assertions and 45 verification checks.
 The r1 prototype remains historical zero-authority evidence and is superseded for acceptance
 by [`receipts/dng-acyclic-release-policy-replay-repair-20260824.json`](../receipts/dng-acyclic-release-policy-replay-repair-20260824.json).
+The first project integration descendant now also separates execution from release:
+provider execution may emit only a hash-bound `PENDING_RELEASE` evidence object, with
+terminal usage and process-tree termination retained. It refuses both the legacy generic
+quality artifact and premature success status. The provider-free seam passed 20 fixture
+assertions and 45 verification checks; see
+[`receipts/dng-mu3-pending-execution-phase-split-20260824.json`](../receipts/dng-mu3-pending-execution-phase-split-20260824.json).

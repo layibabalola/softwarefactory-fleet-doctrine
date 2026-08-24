@@ -1,0 +1,49 @@
+{
+  "schema": "fleet-provider-pending-execution-phase-split/v1",
+  "receiptId": "dng-mu3-pending-execution-phase-split-20260824",
+  "recordedAt": "2026-08-24T03:05:00Z",
+  "status": "LOCAL_INTEGRATION_PROTOTYPE_ZERO_AUTHORITY",
+  "project": "dng-auto-processor",
+  "provenance": {
+    "classification": "AUTHOR_ATTESTED_LOCAL_VERIFICATION",
+    "independentAcceptance": false,
+    "providerAuthenticated": false,
+    "providerLaunches": 0,
+    "networkCalls": 0,
+    "productionMutations": 0,
+    "activeHoldChanged": false,
+    "adoptionCredit": false
+  },
+  "privacy": {
+    "localPathsIncluded": false,
+    "accountIdentifiersIncluded": false,
+    "sessionIdentifiersIncluded": false,
+    "promptsOrOutputsIncluded": false,
+    "secretMaterialIncluded": false
+  },
+  "authoritativeInputs": {
+    "sourceCommit": "fcd06dfded6039293d23446960604895e7d10553",
+    "supersededSeamManifestSha256": "sha256:e6650ae7adec3099f72b2cf78f2c56e644de43fa5a366c5f6b3cfb95e0f446d4",
+    "pendingSeamSha256": "sha256:f2de46ba128548c7e6460ce128f5dd3790cb85e842e98833c420f946c2626b2f",
+    "fixtureSuiteSha256": "sha256:ae81e3c6ac1f88cc5a26c5e16e817c2cc6f5de443167f9b9229fd53318af2b6c",
+    "verifierSha256": "sha256:3febd55dd8af2f95ac490755e5a4214b1eeedb03763edb2e4540e9531e49e2f0",
+    "candidateManifestSha256": "sha256:4c844da926b5917c8a321dd7f57ea26acefefd6d454bca5a0de0c9cc3283a00e"
+  },
+  "verifiedResult": {
+    "fixtureAssertions": 20,
+    "verificationAssertions": 45,
+    "executionReleasePhasesSeparated": true,
+    "pendingResultClosedKey": true,
+    "terminationArtifactRetained": true,
+    "legacyQualityReceiptRefused": true,
+    "prematureSuccessStatusRefused": true,
+    "providerIdentityPreserved": true
+  },
+  "credit": {
+    "implementation": false,
+    "independentAcceptance": false,
+    "installation": false,
+    "productionCadence": false,
+    "adoption": false
+  }
+}
