@@ -100,13 +100,39 @@ must select bounded local cadences and notification thresholds through their own
 An unchanged wake emits one short liveness line. It must not manufacture progress from the passage
 of time. A terminal condition such as “continue” persists across wakes without widening authority.
 
+#### Ingress, inference, and publication invariants
+
+The control loop is also bound by these normative invariants:
+
+- **Instrument liveness never proves inference liveness.** A running scheduler, watcher, process,
+  transport, or provider client proves only that instrument's observed state. Useful inference
+  requires its own authenticated result terminal; an absent or stale inference terminal remains
+  absent or stale even when every instrument is healthy.
+- **Ingress is immutable and singly adjudicated.** Each accepted observation has one stable
+  content-addressed identity, one declared authority and ownership domain, and exactly one durable
+  adjudication. A changed, duplicate, ambiguous, or identity-less ingress is HOLD; repeated wakes
+  may rejoin it but may not reinterpret it as a new observation or issue another adjudication.
+- **Publication is event-driven.** State and user-facing notices publish on authenticated terminal,
+  authority, blocker, liveness, or next-gate transitions. The passage of a cadence interval alone
+  is not an event and cannot create a ledger mutation, duplicate action, or repeated notification.
+- **An unchanged cycle is inert.** When all rejoined inputs and terminals are unchanged, the cycle
+  performs zero state-changing work and emits at most the single bounded liveness notice selected
+  by the project profile. It creates no successor, authority, claim, retry, provider call, workload,
+  or notification flood.
+- **Serialization follows shared ownership.** At most one state-changing action may occur per
+  proven shared contention or ownership domain in a cycle. Actions in domains proven disjoint by
+  immutable authority maps may proceed concurrently; absence of such proof fails closed to one
+  writer, not to an assumption of disjointness.
+
 This proposal folds the overlapping intent of pull request #30, "Fleet workstream liveness and
 autonomous improvement loop," into a production-proof strategy rather than establishing a second,
 contradictory loop. It preserves #30's separation of inference and instrument liveness, immutable
 ingress, event-driven publication, and project-local cadence/notification settings. It narrows the
 "one action per cycle" rule to one state-changing action per shared contention or ownership domain,
 so proven-disjoint work can proceed concurrently. If this candidate advances, #30 should be closed
-or revised against the accepted text before either proposal is ratified.
+as superseded only after its unrelated evidence and candidates have exact scoped successor
+references, or revised against the accepted text before either proposal is ratified. The mixed-scope
+#30 branch must not be merged as an alternate route to this ruling.
 
 ### 6. Reset-aware provider continuity
 
