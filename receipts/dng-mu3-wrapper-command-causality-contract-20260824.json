@@ -1,0 +1,14 @@
+{
+  "schema":"fleet-dng-mu3-wrapper-command-causality-contract/v1",
+  "receiptId":"dng-mu3-wrapper-command-causality-contract-20260824",
+  "recordedAt":"2026-08-24T10:15:59.9285294Z",
+  "status":"WRAPPER_COMMAND_CAUSALITY_CONTRACT_PROVEN_PROVIDER_FREE_ZERO_AUTHORITY",
+  "project":"dng-auto-processor",
+  "candidate":{"manifestPath":"C:/code/DngAutoProcessor - Claude/coordination/candidates/dng-r27-mu3-acyclic-executor-contract-r4/candidate-manifest.json","manifestBytes":5239,"manifestSha256":"sha256:683f17c06a3263b3aec8ee7e707d33f13f925796717969a3126de01f0563da44"},
+  "supersedes":{"manifestPath":"C:/code/DngAutoProcessor - Claude/coordination/candidates/dng-r27-mu3-acyclic-executor-contract-r3/candidate-manifest.json","manifestBytes":5133,"manifestSha256":"sha256:13d8db57d7e49acbb435e12e8054eb6f37fb9f17830b333f9cc927d99d995855","reason":"R3_REQUIRED_FINAL_WRAPPER_COMMAND_PREAUTHORIZATION_EVEN_THOUGH_LEASE_BINDING_AND_PERMIT_ARE_CREATED_POSTAUTHORIZATION"},
+  "properties":{"immutableWrapperCommandTemplateBound":true,"absentWrapperCommandOutputBoundInCompilerArgv":true,"wrapperCommandOutputDirectChildOfAbsentExecutionState":true,"validatedInputsNeverRequireMutation":true,"allNativeRolesExact":true,"zeroDiscretionaryReserve":true,"hardCapacityCeilingPreserved":true,"serialSingleFlight":true},
+  "verification":{"behavioralAssertions":115,"hostileCases":54,"repeatRuns":3,"candidateVerifierAssertions":145,"realProviderLaunches":0,"localFakeProviderLaunches":0,"networkCalls":0,"productionMutations":0,"scheduledTaskMutations":0},
+  "limitations":{"contractR4Materializer":false,"executorRequestV5OutputObserver":false,"installableExecutor":false,"composedPostimage":false,"transactionalInstaller":false,"independentAcceptance":false,"privilegedPreview":false,"productionInstallation":false,"rollbackReinstall":false,"productionCadences":false,"adoptionCredit":false},
+  "authority":{"workCreation":false,"capacityAdmission":false,"lease":false,"providerPermit":false,"productionProviderExecution":false,"installation":false,"productionMutation":false,"scheduledTaskMutation":false,"adoptionCredit":false},
+  "requiredNext":["derive contract-r4 materializer and executor-request-v5 output observer descendants","implement the exact acyclic executor without mutating validated inputs","prove every terminal and deterministic-release path in the disposable transaction"]
+}
