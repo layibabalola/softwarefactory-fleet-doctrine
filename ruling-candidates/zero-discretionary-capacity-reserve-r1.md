@@ -75,3 +75,8 @@ plus the conservative request estimate at exactly 100%, and refuses a projection
 100% as `HARD_CAP_FORECAST`. Old profiles remain fail-closed until explicit adoption. The candidate
 and its zero-authority limits are pinned in
 [`receipts/dng-openai-codex-zero-reserve-amendment-candidate-20260824.json`](../receipts/dng-openai-codex-zero-reserve-amendment-candidate-20260824.json).
+
+A forward descendant also repairs the broker's prior `high`-only effort schemas. Its full signed
+persistent-broker fixture authorizes and attests the exact `gpt-5.6-sol` / `xhigh` / `IMPLEMENT`
+Codex route without weakening the 100% ceiling. Evidence and zero-authority limits are pinned in
+[`receipts/dng-openai-codex-xhigh-full-broker-authorization-20260824.json`](../receipts/dng-openai-codex-xhigh-full-broker-authorization-20260824.json).
