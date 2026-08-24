@@ -1,0 +1,70 @@
+{
+  "schema": "fleet-workstream-liveness-field-trial-receipt/v1",
+  "receiptId": "dng-workstream-liveness-field-trial-20260824",
+  "recordedAt": "2026-08-24T01:33:32.2264659Z",
+  "status": "LOCAL_VERIFICATION_ZERO_AUTHORITY",
+  "project": "dng-auto-processor",
+  "provenance": {
+    "classification": "AUTHOR_ATTESTED_LOCAL_VERIFICATION",
+    "independentAcceptance": false,
+    "providerAuthenticated": false,
+    "providerLaunches": 0,
+    "networkCalls": 0,
+    "productionMutations": 0,
+    "adoptionCredit": false
+  },
+  "privacy": {
+    "localPathsIncluded": false,
+    "accountIdentifiersIncluded": false,
+    "sessionIdentifiersIncluded": false,
+    "promptAndOutputRetained": false
+  },
+  "authoritativeInputs": {
+    "sourceCommit": "fcd06dfded6039293d23446960604895e7d10553",
+    "sourceTree": "2035e4edb60597dbb775f70c5555a7cb68bd87d7",
+    "automationSha256": "sha256:2164016a80d883fa82c711e55de1f0ec5ab3133afed2533770f4b0fdc45ab925",
+    "improvementRecordSha256": "sha256:7fe41eefa7dc8607e25c664fbaa5f3d45ba109a5d45f98e10c4f08d12b86986f",
+    "campaignHoldSha256": "sha256:4e87fb499ceab3440f7cc00ca6c81e5ac6200126b0222098038c246ccf954dad"
+  },
+  "baseline": {
+    "largestFailure": "A safety census could repeatedly prove the same HOLD without selecting, executing, and scoring an independent safe advancement action.",
+    "campaignState": "HOLD",
+    "campaignHoldReason": "CONSUMPTION_RECEIPT_NOT_PROVEN",
+    "campaignHoldBypassed": false,
+    "mutatingUnitsReady": "0/5",
+    "independentAcceptance": 0,
+    "privilegedPreview": 0,
+    "liveInstallation": 0,
+    "rollbackReinstall": 0,
+    "naturalProductionCadences": "0/2",
+    "finalNaturalTickChain": "0/1000",
+    "fleetwideAdopt": 0
+  },
+  "selectedAction": {
+    "kind": "INDEPENDENT_SAFE_BACKLOG_ADVANCEMENT",
+    "summary": "Build and verify a provider-free, zero-authority MU-3 roadmap-controller postimage while preserving the active campaign hold.",
+    "newAuthorityCreated": false
+  },
+  "verifiedResult": {
+    "hostileFixtureAssertions": 19,
+    "postimageVerificationAssertions": 53,
+    "migrationTransactionReadinessAssertions": 264,
+    "readinessCheckpointAssertions": 55,
+    "postimageManifestSha256": "sha256:8c81853864268530c2162909e6865304aa356fbfbedbd9d63eafffa6bf212ae9",
+    "migrationManifestSha256": "sha256:9295468a97ebee19a3f41021776d0bd05598716ff35461a024ca39b1d3ec76d9",
+    "readinessCheckpointSha256": "sha256:bed9ad17aebcf9b99a5b8867ae36f4bdf61ddc202a9680720fd9b38405a47620",
+    "authority": "NONE",
+    "providerFree": true,
+    "campaignHoldStillActive": true,
+    "campaignHoldBypassed": false
+  },
+  "scoreDelta": {
+    "durableAdvancementRecord": "0/1 -> 1/1",
+    "repeatedHoldRootCauseTrigger": "0/1 -> 1/1",
+    "mu3CyclePostimage": "MISSING -> VERIFIED_PROVIDER_FREE_ZERO_AUTHORITY",
+    "mutatingUnitsReady": "0/5 -> 0/5",
+    "adoptionCredit": "0 -> 0"
+  },
+  "nextCandidate": "Bind exact MU-3 task-contract and installer postimages into a disposable three-surface interruption-recovery, rollback, and exact-reinstall transaction.",
+  "portableClaim": "A recurring assessment can improve a safely held factory by selecting independently authorized backlog work, while HOLD remains a non-progress safety verdict and grants no additional authority."
+}

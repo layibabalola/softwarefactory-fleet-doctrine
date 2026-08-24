@@ -92,10 +92,37 @@ bounded diagnostic, or retiring a proven duplicate. Repeating an unchanged audit
 renaming a lane, or writing another request for the same work does not count as
 progress.
 
+Every due cycle atomically persists one closed-key advancement record before it can
+claim progress. The record binds the authoritative input identities, baseline,
+largest observed failure, selected action or `HOLD`, verifier/evaluation result,
+before/after score delta, and next candidate. A timestamp change, heartbeat, packet
+refresh, repeated census, or unchanged successful test has zero score value unless
+it changes one of those bound facts. `HOLD` is a safety verdict, not progress.
+
+Two consecutive due records with the same largest failure and the same `HOLD`
+reason trigger a bounded root-cause pass. That pass must either repair the control
+loop forward-only, select one independently safe backlog action, or persist why no
+such action is authorized. Projects may choose another small bounded threshold only
+with a dated rationale and a negative test proving that the threshold cannot turn
+repeated blockage into authority. The trigger never permits a provider launch,
+ownership transfer, review bypass, production mutation, or release.
+
+The assessment cadence and the operational heartbeat cadence are separate controls.
+A fast heartbeat may preserve instruments and still fail advancement liveness; a due
+assessment may therefore be required even when every watcher is fresh. Exact cadence,
+storage, scoring, and notification thresholds remain project-local.
+
 The loop is quiet when authoritative state is unchanged. It emits a user-facing
 update when health changes, a new blocker appears, an action is taken, authority is
 needed, or a deadline is at risk. The loop never converts repeated blockage into
 permission.
+
+The privacy-safe DNG field trial in
+[`receipts/dng-workstream-liveness-field-trial-20260824.json`](../receipts/dng-workstream-liveness-field-trial-20260824.json)
+demonstrates the intended boundary: an unchanged campaign `HOLD` remained unbypassed
+while the loop selected and verified one provider-free, zero-authority migration
+candidate. The receipt is motivation and local verification evidence only; it is not
+independent acceptance or adoption credit.
 
 ### 5. Three workstream roles stay explicit
 
@@ -132,9 +159,14 @@ A project may claim adoption only after production-path tests prove:
    no false progress, while a newly satisfiable gate selects and executes one bounded
    action;
 8. the improvement loop cannot bypass admission, ownership, review, path, release,
-   deletion, credential, or policy gates even after repeated blocked cycles; and
-9. every health claim identifies the next named action and the axes required for that
-   action, so "healthy" cannot mean merely "some process is alive."
+   deletion, credential, or policy gates even after repeated blocked cycles;
+9. every due cycle atomically binds baseline, largest failure, selected action or
+   `HOLD`, verifier result, score delta, and next candidate, and cannot claim progress
+   by changing only a timestamp;
+10. two consecutive identical `HOLD` records trigger root-cause analysis or one
+    independently safe backlog action without creating new authority; and
+11. every health claim identifies the next named action and the axes required for that
+    action, so "healthy" cannot mean merely "some process is alive."
 
 Project-local scheduler names, task ids, intervals, queue schemas, provider names,
 models, paths, credentials, capacity thresholds, and release mechanisms do not

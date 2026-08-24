@@ -46,8 +46,10 @@ the human store-and-forward bus.
 - [`specs/fleet-workstream-liveness-and-improvement-loop.md`](specs/fleet-workstream-liveness-and-improvement-loop.md)
   — zero-authority proposal that separates inference liveness from heartbeat instrumentation,
   makes provider failure domains explicit, routes one immutable ingress exactly once, and defines
-  a bounded recurring improvement loop. It does not activate a scheduler, resume a session, or
-  grant project authority.
+  a bounded recurring improvement loop with an atomic advancement record and a repeated-HOLD
+  root-cause trigger. A privacy-safe DNG field-trial receipt demonstrates safe backlog advancement
+  without bypassing a campaign hold. It does not activate a scheduler, resume a session, or grant
+  project authority.
 
 - [`ruling-candidates/zero-discretionary-capacity-reserve-r1.md`](ruling-candidates/zero-discretionary-capacity-reserve-r1.md)
   — user-directed R1 proposal to replace fixed 20%/30% unused capacity floors with 0% discretionary
