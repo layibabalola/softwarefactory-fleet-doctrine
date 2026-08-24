@@ -1,0 +1,14 @@
+{
+  "schema":"fleet-dng-mu3-acyclic-executor-runtime-contract/v1",
+  "receiptId":"dng-mu3-acyclic-executor-runtime-contract-20260824",
+  "recordedAt":"2026-08-24T07:58:00Z",
+  "status":"EXACT_EXECUTOR_RUNTIME_CONTRACT_PROVEN_PROVIDER_FREE_ZERO_AUTHORITY",
+  "project":"dng-auto-processor",
+  "candidate":{"manifestPath":"C:/code/DngAutoProcessor - Claude/coordination/candidates/dng-r27-mu3-acyclic-executor-contract-r1/candidate-manifest.json","manifestBytes":4460,"manifestSha256":"sha256:d7bc91ffce01d92e5687d10ac4de049e9afc390b3b97303df9ae2e0a9fc5801d"},
+  "ancestors":{"nativeAcyclicCompositionManifestSha256":"sha256:d6f825ec430634f98b4274494556debc8c51450890a3dce08515d68851c82876","acyclicBrokerReleaseManifestSha256":"sha256:26a5f0eaff8d6cbfba4a0f14068ce53dbe1288f46bb34d6bdfbb38c57b082445","codeTaskTransactionManifestSha256":"sha256:a1039451312d364796c4559c227ed4bce2f43948bd7273401a552346a4088fe3","migrationReadinessR22Sha256":"sha256:fbe68d3ccd64283a6bcdc8c91dafdaf4bf7f948d76aef0419593e8cbd5fbf2ad"},
+  "exactRoute":{"provider":"openai","adapter":"openai-codex-exec/1.0","model":"gpt-5.6-sol","effort":"xhigh","roles":{"implementation":"IMPLEMENT","primary":"PRIMARY_REVIEW","stranger-1":"STRANGER_REVIEW","stranger-2":"STRANGER_REVIEW"},"discretionaryReserve":0.0,"hardCapacityCeiling":1.0,"maxProviderCalls":4,"serialSingleFlight":true},
+  "verification":{"behavioralAssertions":79,"hostileCases":36,"repeatRuns":3,"candidateVerifierAssertions":101,"strictClosedKeyJson":true,"duplicateKeysRefused":true,"validatorAndSchemasSelfBound":true,"stableHashBoundFiles":true,"completeDependencyManifest":true,"exactLengthHashBoundSecrets":true,"reparseAndAliasRefused":true,"freshHmacBoundRuntime":true,"outputMustBeAbsent":true,"realProviderLaunches":0,"localFakeProviderLaunches":0,"networkCalls":0,"productionMutations":0,"scheduledTaskMutations":0},
+  "limitations":{"installableExecutorPostimage":false,"controllerTaskTransactionComposition":false,"transactionalInstaller":false,"interruptionRecovery":false,"rollbackReinstall":false,"independentAcceptance":false,"privilegedPreview":false,"productionInstallation":false,"productionCadence":false},
+  "authority":{"workCreation":false,"capacityAdmission":false,"providerPermit":false,"productionProviderExecution":false,"installation":false,"productionMutation":false,"scheduledTaskMutation":false,"adoptionCredit":false},
+  "requiredNext":["extract the proven native lifecycle into an executor that consumes only this contract","compose exact executor/runtime bytes through the disposable controller and five-surface task transaction","prove interruption recovery, rollback, and exact reinstall before independent acceptance"]
+}
