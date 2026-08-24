@@ -1,0 +1,14 @@
+{
+  "schema":"fleet-dng-mu3-full-static-wrapper-command-contract/v1",
+  "receiptId":"dng-mu3-full-static-wrapper-command-contract-20260824",
+  "recordedAt":"2026-08-24T10:47:00Z",
+  "status":"FULL_STATIC_WRAPPER_COMMAND_CONTRACT_PROVEN_PROVIDER_FREE_ZERO_AUTHORITY",
+  "project":"dng-auto-processor",
+  "candidate":{"manifestPath":"C:/code/DngAutoProcessor - Claude/coordination/candidates/dng-r27-mu3-acyclic-executor-contract-r5/candidate-manifest.json","manifestBytes":5642,"manifestSha256":"sha256:3e3286f2710de46a83c56e8bf4a6452bf2146e3d3ed834723d22ec984af2548a"},
+  "supersedes":{"manifestPath":"C:/code/DngAutoProcessor - Claude/coordination/candidates/dng-r27-mu3-acyclic-executor-contract-r4/candidate-manifest.json","manifestBytes":5239,"manifestSha256":"sha256:683f17c06a3263b3aec8ee7e707d33f13f925796717969a3126de01f0563da44","reason":"R4_SEPARATED_STATIC_AND_DYNAMIC_COMMAND_STATE_BUT_DID_NOT_BIND_PROVIDER_EXECUTABLE_ARGV_STDIN_OUTPUT_LIMITS_REPORTS_GATE_OR_SIGNER"},
+  "properties":{"fullStaticWrapperCommandTemplateBound":true,"providerExecutableAndLiveHashBound":true,"providerArgvAndCanonicalDigestBound":true,"providerStdinAndOutputSchemaBound":true,"outputMessageAndLimitsBound":true,"runtimeStreamsReportsGateAndSignerBound":true,"runtimeArtifactsAbsentUniqueDirectChildren":true,"allNativeRolesExact":true,"zeroDiscretionaryReserve":true,"hardCapacityCeilingPreserved":true,"serialSingleFlight":true},
+  "verification":{"behavioralAssertions":121,"hostileCases":57,"repeatRuns":3,"candidateVerifierAssertions":180,"realProviderLaunches":0,"localFakeProviderLaunches":0,"networkCalls":0,"productionMutations":0,"scheduledTaskMutations":0},
+  "limitations":{"contractR5Materializer":false,"installableExecutor":false,"composedPostimage":false,"transactionalInstaller":false,"independentAcceptance":false,"privilegedPreview":false,"productionInstallation":false,"rollbackReinstall":false,"productionCadences":false,"adoptionCredit":false},
+  "authority":{"workCreation":false,"capacityAdmission":false,"lease":false,"providerPermit":false,"productionProviderExecution":false,"installation":false,"productionMutation":false,"scheduledTaskMutation":false,"adoptionCredit":false},
+  "requiredNext":["derive the contract-r5 materializer descendant","implement the exact acyclic executor using only validated static template bytes and post-authorization broker values","prove every terminal and deterministic-release path in the disposable transaction"]
+}
