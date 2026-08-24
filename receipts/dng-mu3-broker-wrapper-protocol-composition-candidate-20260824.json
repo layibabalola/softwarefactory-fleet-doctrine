@@ -1,0 +1,14 @@
+{
+  "schema":"fleet-dng-mu3-broker-wrapper-protocol-composition-candidate/v1",
+  "receiptId":"dng-mu3-broker-wrapper-protocol-composition-candidate-20260824",
+  "recordedAt":"2026-08-24T05:36:00Z",
+  "status":"BROKER_WRAPPER_PROTOCOL_COMPOSITION_PROVEN_ZERO_AUTHORITY",
+  "project":"dng-auto-processor",
+  "candidate":{"manifestPath":"C:/code/DngAutoProcessor - Claude/coordination/candidates/dng-r27-mu3-broker-wrapper-protocol-composition-r1/candidate-manifest.json","manifestBytes":3765,"manifestSha256":"sha256:c00384d4661ebfbbbca2f3430f30aa134f83757a86af5495a44777d8f1e41b4e"},
+  "exactRoute":{"provider":"openai","adapter":"openai-codex-exec/1.0","model":"gpt-5.6-sol","effort":"xhigh","role":"IMPLEMENT","discretionaryReserve":0.0,"hardCapacityCeiling":1.0},
+  "verification":{"behavioralAssertions":29,"candidateVerifierAssertions":56,"requestCompiler":true,"persistentBroker":true,"preTurnGateAndCheckpoint":true,"terminalPermitAndCheckpoint":true,"terminationObserver":true,"independentQualityObserver":true,"exactReleaseAndShutdown":true,"realProviderLaunches":0,"networkCalls":0,"productionMutations":0,"scheduledTaskMutations":0},
+  "limitations":{"syntheticNativeProcessObservation":true,"realSuspendedWrapperCreation":false,"realPidAndJobBinding":false,"productionExecutorComposition":false},
+  "authority":{"independentAcceptance":false,"doctrineInstallation":false,"productionProviderExecution":false,"adoptionCredit":false},
+  "requiredNext":["compose the exact Windows suspended-process executor with the same protocol","independent review of exact installer and postimage bytes","transactional installation and production proof"]
+}
+

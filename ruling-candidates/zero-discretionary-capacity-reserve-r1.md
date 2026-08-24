@@ -88,3 +88,11 @@ signed but stale prior-idle receipt is deliberately left for the broker to rejec
 hostile controls also refuse model, effort, role, signer, profile, subject, boundary, and output
 identity drift. Evidence and zero-authority limits are pinned in
 [`receipts/dng-mu3-broker-request-compiler-candidate-20260824.json`](../receipts/dng-mu3-broker-request-compiler-candidate-20260824.json).
+
+The compiler is now joined provider-free to the real persistent-broker protocol, pre-turn wrapper
+gate, usage parser, terminal permit, termination observer, independent quality observer, terminal
+checkpoint, exact release, and clean shutdown. The fixture launches only a local fake provider and
+makes no network or production mutation. Its native process observation remains synthetic, so this
+does not yet prove the Windows suspended-process executor, real PID/start-time/job binding, or any
+installation/adoption authority. Evidence and the explicit remaining gap are pinned in
+[`receipts/dng-mu3-broker-wrapper-protocol-composition-candidate-20260824.json`](../receipts/dng-mu3-broker-wrapper-protocol-composition-candidate-20260824.json).
