@@ -1,0 +1,46 @@
+{
+  "schema": "fleet-dng-openai-codex-adapter-amendment-candidate/v1",
+  "receiptId": "dng-openai-codex-adapter-amendment-candidate-20260824",
+  "recordedAt": "2026-08-24T04:40:41Z",
+  "status": "FORWARD_ADAPTER_AMENDMENT_CANDIDATE_ZERO_AUTHORITY",
+  "project": "dng-auto-processor",
+  "repairsFinding": "CANONICAL_BROKER_DOCTRINE_DOES_NOT_RECOGNIZE_OPENAI_CODEX_EXEC_ADAPTER",
+  "candidate": {
+    "manifestPath": "C:/code/DngAutoProcessor - Claude/coordination/candidates/dng-r27-openai-codex-adapter-amendment-r1/candidate-manifest.json",
+    "manifestBytes": 3227,
+    "manifestSha256": "sha256:e0b92abce218fc80cc85381f314f3a67b60f56353317565951fe21c8e59f0102",
+    "adapter": "openai-codex-exec/1.0",
+    "capacityDimensions": ["primary", "secondary"],
+    "responsesAdapterPreserved": true,
+    "explicitProjectAdoptionRequired": true
+  },
+  "coverage": [
+    "broker adapter mapping",
+    "universal control request schema",
+    "universal project profile schema",
+    "native provider capacity evidence schema",
+    "normalized capacity observation schema"
+  ],
+  "verification": {
+    "semanticAssertions": 21,
+    "candidateVerifierAssertions": 57,
+    "oldProfilesFailClosed": true,
+    "crossProviderEvidenceRefused": true,
+    "unknownAdapterRefused": true,
+    "realProviderLaunches": 0,
+    "networkCalls": 0,
+    "productionMutations": 0
+  },
+  "authority": {
+    "independentAcceptance": false,
+    "doctrineInstallation": false,
+    "productionProviderExecution": false,
+    "adoptionCredit": false
+  },
+  "requiredNext": [
+    "full broker authorization tests with fresh signed Codex capacity evidence",
+    "zero-reserve amendment composition while retaining the hard 100% ceiling",
+    "new immutable doctrine generation and independent acceptance",
+    "production request compiler and executor lifecycle composition"
+  ]
+}

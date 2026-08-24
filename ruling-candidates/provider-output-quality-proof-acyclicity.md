@@ -205,3 +205,9 @@ first-class Codex-exec adapter across request, project-profile, native-evidence,
 observation contracts, with hostile cross-adapter refusal tests. The exact incompatibility is
 recorded in
 [`receipts/dng-openai-codex-adapter-identity-gap-20260824.json`](../receipts/dng-openai-codex-adapter-identity-gap-20260824.json).
+
+The first forward amendment candidate now carries the distinct adapter through broker mapping and
+all four affected schemas. It preserves Responses, shares only the independently observed account
+quota dimensions, and requires explicit project-profile adoption; old profiles fail closed. Its
+provider-free semantic and manifest verification is recorded in
+[`receipts/dng-openai-codex-adapter-amendment-candidate-20260824.json`](../receipts/dng-openai-codex-adapter-amendment-candidate-20260824.json).
