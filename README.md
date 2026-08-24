@@ -43,6 +43,12 @@ the human store-and-forward bus.
 
 ## Proposed amendments (not ratified)
 
+- [`ruling-candidates/conjugal-three-stream-parity-and-neutral-quiescence-r1.md`](ruling-candidates/conjugal-three-stream-parity-and-neutral-quiescence-r1.md)
+  — Conjugal-measured candidate for independent Product, Factory, and Provider/Operations progress;
+  live-writer serialization; neutral stable-absence evidence; and nine portable negative controls.
+  It complements open workstream-loop proposals without activating a scheduler, provider, route, key,
+  project adoption, or fleet ruling.
+
 - [`ruling-candidates/zero-discretionary-capacity-reserve-r1.md`](ruling-candidates/zero-discretionary-capacity-reserve-r1.md)
   — user-directed R1 proposal to replace fixed 20%/30% unused capacity floors with 0% discretionary
   reserve while retaining conservative request reservations, serial single-flight, fresh account-bound
