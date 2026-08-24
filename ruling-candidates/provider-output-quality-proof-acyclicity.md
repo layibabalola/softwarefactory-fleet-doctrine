@@ -167,3 +167,13 @@ timeout, exact role chain, serial single-flight, and four-call ceiling. A simula
 45-minute completion remains admissible and an expired one-hour receipt is refused.
 R1 remains historical evidence and is superseded for acceptance by
 [`receipts/dng-bounded-review-continuation-ttl-repair-20260824.json`](../receipts/dng-bounded-review-continuation-ttl-repair-20260824.json).
+
+The repaired finalization and review-continuation controls are now integrated into a
+fixture-only five-surface task transaction: task contract, installer, closed-key release
+contract, controller, and disabled task XML. The release contract is installed before the
+controller, and both its absolute path and SHA-256 are pinned through the installer, task
+plan, controller, and scheduled-task action. Preview remained at zero writes/launches;
+five interruption boundaries, exact rollback, and exact reinstall passed 78 fixture and
+90 verification assertions. This is local zero-authority evidence, not independent
+acceptance, a privileged preview, or installation credit; see
+[`receipts/dng-mu3-controller-transaction-integration-20260824.json`](../receipts/dng-mu3-controller-transaction-integration-20260824.json).
