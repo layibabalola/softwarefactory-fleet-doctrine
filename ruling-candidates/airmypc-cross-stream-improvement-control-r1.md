@@ -101,6 +101,25 @@ non-reversible identifiers or digests and MUST NOT be echoed into evidence. A mi
 malformed, ambiguous, or unretrievable binding makes the affected health dimension `UNKNOWN`; it
 cannot be counted as green.
 
+Every path-valued field in a receipt, manifest, claim, journal, or terminal record MUST be either a
+normalized project-relative slash path or an opaque identifier whose immutable mapping and digest
+are independently retrievable inside the project's evidence boundary. Before serialization or any
+write, the project MUST reject absolute POSIX paths, Windows drive-qualified or drive-relative
+paths, UNC or device paths, home-relative paths, traversal (including traversal revealed by decoding
+or normalization), and values containing user-profile material. Refusal uses a fixed reason code and
+MUST NOT echo, log, quote, or otherwise include the rejected host-local value in any publishable
+string. A physical path may be rejoined only inside the project-owned executor after exact root
+resolution plus containment and reparse checks; that resolved host-local path remains unpublishable.
+
+Before creating a receipt, the project MUST authenticate a transition identity from the normalized
+project, loop and event identities, canonical input digests, prior terminal, and proposed terminal.
+Only a new authenticated transition may create exactly one immutable receipt through a create-once
+or compare-and-swap boundary. If inputs and terminal are unchanged, or the transition identity is a
+duplicate, the evaluation MUST bind the existing immutable receipt by exact digest and reference,
+return `DONT_NOTIFY`, and perform no create, rewrite, append, notification, or other state-changing
+work. Duplicate suppression occurs before any write. A missing, ambiguous, or conflicting existing
+binding yields `UNKNOWN` or `REFUSED` with zero write; it never licenses a replacement receipt.
+
 ### 5. Select one safe systemic improvement
 
 At each evaluation, the loop MAY propose or prepare at most one improvement that is all of:
