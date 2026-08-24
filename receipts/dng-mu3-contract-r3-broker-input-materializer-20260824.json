@@ -1,0 +1,14 @@
+{
+  "schema":"fleet-dng-mu3-contract-r3-broker-input-materializer/v1",
+  "receiptId":"dng-mu3-contract-r3-broker-input-materializer-20260824",
+  "recordedAt":"2026-08-24T09:44:11.3473535Z",
+  "status":"CONTRACT_R3_MATERIALIZER_PROVEN_PROVIDER_FREE_ZERO_AUTHORITY",
+  "project":"dng-auto-processor",
+  "candidate":{"manifestPath":"C:/code/DngAutoProcessor - Claude/coordination/candidates/dng-r27-mu3-broker-input-materializer-r3/candidate-manifest.json","manifestBytes":4398,"manifestSha256":"sha256:72d64a856640b802efc0f8447fb0f8e45e9bc58e97bb19a6c40e6167d6c11dba"},
+  "failedAncestor":{"manifestPath":"C:/code/DngAutoProcessor - Claude/coordination/candidates/dng-r27-mu3-broker-input-materializer-r2/candidate-manifest.json","manifestBytes":3632,"manifestSha256":"sha256:2a2cc3dbf90579265217735ff6739bcdab5d5a49c9dc3b2b980b1bb4eaf6f8fd","exactFailure":"MU3_BROKER_INPUT_MATERIALIZER_INVALID:properties","readinessCredit":false},
+  "properties":{"fullContractR3Replay":true,"contractManifestAndValidatorPinned":true,"supersededContractR2Refused":true,"allNativeRolesExact":true,"exclusiveCanonicalOutput":true,"sourceCompilerInputUnchanged":true,"zeroDiscretionaryReserve":true,"hardCapacityCeilingPreserved":true,"noProcessPrimitive":true,"noNetworkPrimitive":true},
+  "verification":{"behavioralAssertions":51,"hostileCases":11,"repeatRuns":3,"candidateVerifierAssertions":47,"realProviderLaunches":0,"localFakeProviderLaunches":0,"networkCalls":0,"productionMutations":0,"scheduledTaskMutations":0},
+  "limitations":{"installableExecutor":false,"composedPostimage":false,"transactionalInstaller":false,"independentAcceptance":false,"privilegedPreview":false,"productionInstallation":false,"rollbackReinstall":false,"productionCadences":false,"adoptionCredit":false},
+  "authority":{"workCreation":false,"capacityAdmission":false,"lease":false,"providerPermit":false,"productionProviderExecution":false,"installation":false,"productionMutation":false,"scheduledTaskMutation":false,"adoptionCredit":false},
+  "requiredNext":["repair the output-contract observer interface to bind executor request v4 directly","implement the exact acyclic executor lifecycle consuming contract r3 and materializer r3","prove every terminal and deterministic-release path in the disposable transaction"]
+}
