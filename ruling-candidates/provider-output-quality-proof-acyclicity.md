@@ -1,0 +1,113 @@
+# Provider output-quality proof must be acyclic (R1 candidate)
+
+> **STATUS: CANDIDATE / ZERO AUTHORITY.** This document proposes portable doctrine.
+> It does not relax output quality, admit a provider request, release a lease, approve
+> an installation, or grant adoption credit.
+
+## Problem
+
+A governed provider call cannot honestly certify its own semantic quality. The same
+is true when its reviewer is another governed provider call whose release requires a
+semantic-quality receipt first. That design creates a recursive authority cycle:
+
+1. call A cannot release without an independent semantic noninferiority receipt;
+2. reviewer call B is expected to justify A;
+3. B cannot return its verdict because B also cannot release without an independent
+   semantic noninferiority receipt;
+4. any further reviewer repeats the cycle.
+
+Implementations often mask this by checking only that a file named “quality receipt”
+exists and has a hash, by comparing an output to itself, or by letting the governed
+launcher hold the reviewer signing key. Those are integrity checks or self-attestation,
+not independent quality proof.
+
+## Proposed contract
+
+### 1. Separate per-call output-contract proof from semantic quality proof
+
+Every provider call still fails closed unless a distinct, independently accepted
+output-contract evaluator proves:
+
+- exact provider, model, effort, role, sandbox, approval, request, and artifact
+  identities;
+- output-schema validity and role-specific deterministic invariants;
+- retained stdout, stderr, output, usage envelope, and process-tree termination;
+- bounded turns, wall clock, context, token use, and complete descendant cleanup;
+- no missing, stale, malformed, self-referential, or drifted evidence.
+
+This receipt may authorize terminal lease release because it makes only deterministic
+claims. It must not call itself semantic noninferiority, and its signer must not be the
+provider process or mutable launcher under evaluation.
+
+### 2. Semantic quality requires an acyclic root of trust
+
+Semantic noninferiority remains mandatory for:
+
+- adoption canaries and promotion of an installed fingerprint;
+- both required production cadences;
+- material model, effort, role, prompt, schema, wrapper, parser, or policy changes;
+- continuing risk-based samples after adoption; and
+- any due sample after a quality regression, unexplained drift, or evidence gap.
+
+The semantic verdict must originate from an independently accepted evaluator whose
+authority does not depend on the governed call it certifies. Lawful roots include a
+human adjudicator, an offline deterministic domain oracle, a separately governed
+evaluation service with already-proven nonrecursive authority, or a frozen blind
+baseline/corpus with an independently reviewed rubric. A second model call is not
+independent merely because its role or session id differs.
+
+### 3. No vacuous reference or signer collapse
+
+A candidate output cannot serve as its own reference. A generated reference is valid
+only when its generation predates and is independent of the candidate route. The
+output-contract evaluator, semantic reviewer, provider launcher, usage parser, and
+lease releaser expose distinct identities and signing keys where their claims differ.
+One component may not silently mint another component’s receipt.
+
+### 4. Sampling never weakens fail-closed quality preservation
+
+After a stable installed fingerprint has passed canary and cadence proof, ordinary
+calls may release on deterministic output-contract proof while semantic comparison is
+performed on the accepted risk-based schedule. A due, failed, stale, or ambiguous
+semantic sample closes promotion and the affected production route until adjudicated.
+Sampling frequency is project-local and evidence-based; “not every call” is not
+permission to skip required canary, cadence, change-triggered, or due checks.
+
+### 5. Receipt classes are explicit
+
+Schemas and launch seams name receipt classes precisely. `outputContractReceipt` and
+`semanticQualityReceipt` are not interchangeable. A path-plus-hash check cannot prove
+either schema, signer, freshness, independence, or claim. Every consumer validates the
+closed-key object, signer, subject, request, installed fingerprint, freshness window,
+and applicable release policy before granting its narrow authority.
+
+## Minimum portable proof
+
+A project may adopt this ruling only after negative and positive controls prove:
+
+1. an arbitrary hash-bound `{}` file cannot satisfy either receipt class;
+2. a provider call cannot sign or select its own semantic-quality verdict;
+3. a reviewer call recursively governed by the same semantic pre-release rule is
+   detected as an authority cycle, not treated as independent;
+4. candidate-equals-reference and post-candidate reference generation are refused;
+5. deterministic output-contract failure prevents terminal release;
+6. a valid output-contract receipt cannot grant canary, cadence, promotion, or
+   semantic-quality credit;
+7. canary promotion fails without a fresh acyclic semantic noninferiority receipt;
+8. both production cadences bind the accepted installed fingerprint and semantic
+   quality evidence;
+9. a due, stale, failed, or ambiguous continuing sample closes the affected route;
+10. signer collapse, schema substitution, replay, cross-request reuse, and receipt
+    class substitution are refused;
+11. changing provider, model, effort, role, prompt, schema, wrapper, parser, evaluator,
+    or policy resets the applicable semantic proof; and
+12. terminal release, adoption credit, and promotion each consume only the receipt
+    class explicitly authorized for that decision.
+
+Project-local evaluator implementations, sampling intervals, prompts, corpora, keys,
+paths, providers, and rollout mechanisms do not travel. Sibling projects adopt through
+their authority map and production-path proof or publish `DISTINGUISH(reason)`.
+
+The privacy-safe DNG falsification receipt at
+[`receipts/dng-quality-release-acyclicity-finding-20260824.json`](../receipts/dng-quality-release-acyclicity-finding-20260824.json)
+motivates this candidate. It grants no independent acceptance or adoption credit.
