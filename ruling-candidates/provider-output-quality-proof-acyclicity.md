@@ -211,3 +211,26 @@ all four affected schemas. It preserves Responses, shares only the independently
 quota dimensions, and requires explicit project-profile adoption; old profiles fail closed. Its
 provider-free semantic and manifest verification is recorded in
 [`receipts/dng-openai-codex-adapter-amendment-candidate-20260824.json`](../receipts/dng-openai-codex-adapter-amendment-candidate-20260824.json).
+
+## Deterministic terminal-release authority repair
+
+Real native-executor composition exposed a later integration deadlock that the isolated policy,
+finalizer, controller, and transaction checks did not detect. The synchronous executor must return
+before the controller can finalize deterministic output-contract evidence, but the current broker's
+one-request release operation accepts only semantic-quality evidence. The controller has no broker
+release callback, while the finalizer and acyclic policy deliberately have evidence-only authority.
+Installing those bytes would therefore strand broker authority or require a forbidden semantic
+claim. The provider-free RED passed 29 behavioral and 34 manifest/dependency assertions and is
+pinned in
+[`receipts/dng-mu3-acyclic-release-deadlock-red-20260824.json`](../receipts/dng-mu3-acyclic-release-deadlock-red-20260824.json).
+
+The selected forward contract is a broker-native deterministic terminal release. The session-side
+candidate adds one closed-key operation available only from `TERMINAL_CHECKPOINTED`, binds the exact
+PID/start/image/argv/job, usage, termination, deterministic output-contract, and acyclic-policy
+evidence, explicitly carries no semantic-quality receipt, and removes tracked authority only after
+the broker returns `RELEASED_DETERMINISTIC_PRODUCTION_CLOSED`. The production route remains durably
+`CLOSED_SEMANTIC_EVIDENCE_REQUIRED`, so later canary, cadence, and promotion still require separate
+acyclic semantic evidence. The session refuses if the broker-side verifier is absent or holds; it
+cannot release authority by itself. Its 18 behavioral and 26 manifest/dependency assertions are
+pinned in
+[`receipts/dng-mu3-acyclic-broker-session-candidate-20260824.json`](../receipts/dng-mu3-acyclic-broker-session-candidate-20260824.json).

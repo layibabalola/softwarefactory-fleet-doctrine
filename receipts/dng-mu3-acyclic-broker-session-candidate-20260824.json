@@ -1,0 +1,13 @@
+{
+  "schema":"fleet-dng-mu3-acyclic-broker-session-candidate/v1",
+  "receiptId":"dng-mu3-acyclic-broker-session-candidate-20260824",
+  "recordedAt":"2026-08-24T06:38:00Z",
+  "status":"SESSION_PROTOCOL_REPAIR_PROVEN_PROVIDER_FREE_ZERO_AUTHORITY",
+  "project":"dng-auto-processor",
+  "candidate":{"manifestPath":"C:/code/DngAutoProcessor - Claude/coordination/candidates/dng-r27-mu3-acyclic-broker-session-r1/candidate-manifest.json","manifestBytes":3261,"manifestSha256":"sha256:6cbc29917c0bf9d836ca06db3f6d144ee2eca19b1fe447ec884d5326516ad1cd"},
+  "contract":{"operation":"RELEASE_CHILD_DETERMINISTIC","eligibleState":"TERMINAL_CHECKPOINTED","success":"RELEASED_DETERMINISTIC_PRODUCTION_CLOSED","semanticQualityReceipt":null,"semanticReceiptUsedForTerminalRelease":false,"productionRouteAfterRelease":"CLOSED_SEMANTIC_EVIDENCE_REQUIRED","legacyOperationsDelegatedUnchanged":true},
+  "verification":{"behavioralAssertions":18,"candidateVerifierAssertions":26,"exactNativeProcessBinding":true,"closedKeyPayload":true,"brokerSupportMandatory":true,"brokerHoldPreservesTrackedAuthority":true,"semanticReleaseAliasRefused":true,"realProviderLaunches":0,"networkCalls":0,"productionMutations":0,"scheduledTaskMutations":0},
+  "limitations":{"brokerSideReleaseImplementation":false,"exactInstalledPostimage":false,"independentAcceptance":false,"privilegedPreview":false,"productionInstallation":false},
+  "authority":{"workCreation":false,"capacityAdmission":false,"providerPermit":false,"productionProviderExecution":false,"installation":false,"adoptionCredit":false},
+  "requiredNext":["implement and verify broker-side deterministic terminal release and durable route closure","compose the repaired broker into the native executor and exact code/task transaction","obtain strict-serial independent acceptance before production mutation"]
+}
