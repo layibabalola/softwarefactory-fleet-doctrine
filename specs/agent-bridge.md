@@ -105,6 +105,15 @@ The loop follows this contract:
    owner decision, and otherwise stay quiet. A safe refusal is evidence, not completion;
    the loop must escalate the smallest missing decision instead of treating containment
    as operational health.
+6. **Escalate repeated safe failures into simplification.** Keep unattended recovery RED
+   while the guarded capability remains disabled or cannot complete an ordinary scheduled
+   cycle. Two generations failing on the same blocker class, two successive candidates
+   failing before their intended boundary, or two supervisory wakes without a sealed
+   candidate or material owner receipt require one bounded architecture/root-decision
+   action. Prefer removing caller-controlled degrees of freedom and binding structured
+   evidence at the producer boundary over adding another wrapper, matcher, receipt, or
+   review layer. A locally proven strategy that lacks a doctrine proposal is explicit
+   adoption debt; submitting that proposal remains non-authorizing.
 
 The first measured local benefit was continuity repair: the loop detected a Fleet
 heartbeat still bound to a retiring source, retargeted that exact singleton to the one
