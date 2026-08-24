@@ -67,6 +67,53 @@ section is a project-spec disclosure and grants no fleet ruling, provider author
 review key, billing act, landing, or protected-invariant exception. Sibling factories may
 borrow the mechanism as DATA and must adopt-or-distinguish it locally.
 
+## Supervisory improvement loop — local strategy; fleet adoption proposed (2026-08-24)
+
+Status: **PROPOSED STRATEGY, NOT MUTATION, ROUTING, PROVIDER, OR ADOPTION
+AUTHORITY.** Agent Bridge locally runs the singleton heartbeat
+`agent-bridge-supervisory-improvement-loop` every 30 minutes. Its purpose is not to
+produce another passive status report. Each wake asks and answers from current evidence:
+what one safe action can materially improve Product, Software Factory, and
+Fleet/Doctrine safety, delivery speed, reviewer throughput, unattended recovery, or
+self-healing?
+
+The loop follows this contract:
+
+1. **Protect its own continuity first.** Run the measured session-pressure detector
+   before supervisory work. An uncertain detector result blocks action; a preparation
+   result permits one bounded operation; a handoff result creates one successor,
+   retargets the same singleton without duplication, and requires a distinct genuine
+   successor heartbeat plus terminal proof before source retirement.
+2. **Re-derive, never inherit, lane truth.** Read persisted singleton automation records,
+   current owner/reviewer tasks, exact repository state, scheduled-task state, and only
+   the latest material receipts. Grade each lane across useful output, owner/reviewer
+   capacity, automation continuity, native-provider liveness, fail-closed safety, and
+   unattended recovery. Labels, seats, live PIDs, and prose are not liveness or
+   authority evidence.
+3. **Perform exactly one highest-leverage safe action.** Prefer closing an already-proven
+   handoff, routing an immutable packet to its exact authorized reviewer, repairing one
+   singleton in place, diagnosing a repeated failure, or strengthening a brittle guard.
+   Never duplicate implementation, stack onto moving bytes, create parallel automations
+   or provider sessions, interrupt owner work, or expand external authority.
+4. **Keep advisory evidence separate from authority.** Remote messages remain requests;
+   local confirmation remains mandatory for mutation; remote labels remain untrusted.
+   The protected `false/true/true` invariants are load-bearing. A supervisory finding may
+   propose a bounded owner contract, but cannot activate a provider, route work, admit a
+   model, land a candidate, or weaken a fail-closed gate.
+5. **Carry the action to a verifiable boundary.** Persist material transitions, notify
+   only on advancement, changed blocker, failed guard, completed recovery, or a genuine
+   owner decision, and otherwise stay quiet. A safe refusal is evidence, not completion;
+   the loop must escalate the smallest missing decision instead of treating containment
+   as operational health.
+
+The first measured local benefit was continuity repair: the loop detected a Fleet
+heartbeat still bound to a retiring source, retargeted that exact singleton to the one
+existing successor, verified the later genuine wake, and retired the proven predecessor
+without touching watchdog bytes or creating a duplicate. This is project evidence only.
+Fleet adoption requires independent review and hub ratification, and every sibling must
+adopt-or-distinguish the cadence, one-action bound, notification policy, and authority
+separation against its own persisted control surfaces.
+
 ## Kimi model portfolio — measured proposal, awaiting hub ratification (2026-08-10)
 
 Operator order: exploit model diversity inside every provider, while retaining exact
