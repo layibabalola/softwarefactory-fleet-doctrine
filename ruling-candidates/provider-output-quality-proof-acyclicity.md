@@ -110,4 +110,7 @@ their authority map and production-path proof or publish `DISTINGUISH(reason)`.
 
 The privacy-safe DNG falsification receipt at
 [`receipts/dng-quality-release-acyclicity-finding-20260824.json`](../receipts/dng-quality-release-acyclicity-finding-20260824.json)
-motivates this candidate. It grants no independent acceptance or adoption credit.
+motivates this candidate. The same field trial includes a provider-free deterministic
+observer prototype that passed 23 hostile fixture assertions and 46 manifest/schema/
+dependency checks while setting `semanticNoninferiorityClaimed=false`. It grants no
+independent acceptance or adoption credit.
