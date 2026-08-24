@@ -1,0 +1,44 @@
+{
+  "schema": "fleet-dng-openai-wrapper-terminal-permit-order-repair/v1",
+  "receiptId": "dng-openai-wrapper-terminal-permit-order-repair-20260824",
+  "recordedAt": "2026-08-24T04:27:34Z",
+  "status": "FORWARD_PROTOCOL_REPAIR_ZERO_AUTHORITY",
+  "project": "dng-auto-processor",
+  "finding": "INITIAL_WRAPPER_COMMAND_REQUIRED_TERMINAL_PERMIT_BEFORE_BROKER_PRETURN_CHECKPOINT",
+  "findingDetails": {
+    "brokerLaw": "ISSUE_TERMINAL_REQUEST is lawful only after CHECKPOINT_USAGE(PRE_TURN) transitions the lease to IN_FLIGHT.",
+    "wrapperR1Behavior": "The v1 command required terminalRequestPermitSha256 before the wrapper could publish its PRE_TURN report.",
+    "compositionResult": "The independently tested broker and wrapper candidates could not participate in one lawful lifecycle."
+  },
+  "repair": {
+    "candidateManifestPath": "C:/code/DngAutoProcessor - Claude/coordination/candidates/dng-r27-universal-production-wrapper-openai-r2/candidate-manifest.json",
+    "candidateManifestBytes": 4030,
+    "candidateManifestSha256": "sha256:1cc3bd5afce0653ac8fa008e3fd20bc76fc4ff642cd9bae6e1d839dca2e8ea20",
+    "commandSchema": "dng-universal-production-wrapper-command.v2",
+    "resumeGateSchema": "dng-universal-production-wrapper-resume-gate.v2",
+    "initialCommandTerminalPermitAbsent": true,
+    "preturnTerminalPermitAbsent": true,
+    "terminalPermitDeliveredOnlyBySignedGate": true,
+    "terminalReportBindsGatePermit": true
+  },
+  "verification": {
+    "disposableAssertions": 58,
+    "candidateVerifierAssertions": 90,
+    "realProviderLaunches": 0,
+    "fixtureProviderProcesses": 6,
+    "networkCalls": 0,
+    "productionMutations": 0,
+    "scheduledTaskMutations": 0
+  },
+  "authority": {
+    "independentAcceptance": false,
+    "productionProviderExecution": false,
+    "installation": false,
+    "adoptionCredit": false
+  },
+  "requiredNext": [
+    "independent review of the exact v2 wrapper subject bytes",
+    "production request compiler and executor lifecycle composition",
+    "transactional privileged preview, installation, rollback, reinstall, and production cadences"
+  ]
+}

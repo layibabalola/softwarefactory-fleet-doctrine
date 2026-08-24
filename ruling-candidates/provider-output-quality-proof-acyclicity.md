@@ -183,3 +183,14 @@ integration chain were ahead of UTC. Those embedded times grant no provenance cr
 the immutable subject hashes remain evidence only and must be re-executed by a correctly
 timed forward checkpoint. The repair preserves zero authority and is recorded in
 [`receipts/dng-mu3-controller-transaction-provenance-time-repair-20260824.json`](../receipts/dng-mu3-controller-transaction-provenance-time-repair-20260824.json).
+
+## Broker/wrapper terminal-permit ordering repair
+
+Composition analysis found that the OpenAI wrapper v1 required a terminal-request permit in its
+initial signed command, while the broker correctly issues that permit only after the independently
+validated `PRE_TURN` usage checkpoint. Both candidates could pass isolated tests yet could not form
+one lawful lifecycle. The forward-only wrapper v2 removes the terminal permit from the initial
+command, emits the signed pre-turn report first, and accepts the terminal permit only through the
+fresh signed resume gate after checkpointing. Exact subject hashes and provider-free hostile-test
+evidence are recorded in
+[`receipts/dng-openai-wrapper-terminal-permit-order-repair-20260824.json`](../receipts/dng-openai-wrapper-terminal-permit-order-repair-20260824.json).
