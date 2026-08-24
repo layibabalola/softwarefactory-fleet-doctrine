@@ -1,0 +1,14 @@
+{
+  "schema":"fleet-dng-output-contract-observer-v5-binding/v1",
+  "receiptId":"dng-output-contract-observer-v5-binding-20260824",
+  "recordedAt":"2026-08-24T10:21:29.6828073Z",
+  "status":"EXECUTOR_REQUEST_V5_OUTPUT_OBSERVER_PROVEN_PROVIDER_FREE_ZERO_AUTHORITY",
+  "project":"dng-auto-processor",
+  "candidate":{"manifestPath":"C:/code/DngAutoProcessor - Claude/coordination/candidates/dng-r27-output-contract-observer-r4/candidate-manifest.json","manifestBytes":3485,"manifestSha256":"sha256:ca12b5109199621d9abd55d2ac47b0885cabbee818432c5833943b7271bc5798"},
+  "supersedes":{"manifestPath":"C:/code/DngAutoProcessor - Claude/coordination/candidates/dng-r27-output-contract-observer-r3/candidate-manifest.json","manifestBytes":3510,"manifestSha256":"sha256:8c1de1956410765bf632c1d0c80f56baccf6c330096530225ca26d81e7e85f12","reason":"R3_ACCEPTED_ONLY_EXECUTOR_REQUEST_V4_AND_COULD_NOT_BIND_CAUSALITY_SAFE_REQUEST_V5"},
+  "properties":{"executorRequestV5SchemaValidated":true,"supersededExecutorRequestRefused":true,"roleBrokerRoleSandboxMappingValidated":true,"binaryExclusiveWrite":true,"reportedHashMatchesRetainedBytes":true,"semanticNoninferiorityClaimed":false},
+  "verification":{"behavioralAssertions":26,"candidateVerifierAssertions":56,"realProviderLaunches":0,"localFakeProviderLaunches":0,"networkCalls":0,"productionMutations":0,"scheduledTaskMutations":0},
+  "limitations":{"integratedExecutor":false,"composedPostimage":false,"transactionalInstaller":false,"independentAcceptance":false,"privilegedPreview":false,"productionInstallation":false,"rollbackReinstall":false,"productionCadences":false,"adoptionCredit":false},
+  "authority":{"workCreation":false,"capacityAdmission":false,"lease":false,"providerPermit":false,"productionProviderExecution":false,"installation":false,"productionMutation":false,"scheduledTaskMutation":false,"adoptionCredit":false},
+  "requiredNext":["integrate observer r4 into the exact MU-3 acyclic executor consuming request v5 directly","prove every terminal and deterministic-release path in the disposable transaction","obtain independent acceptance before preview or production mutation"]
+}
