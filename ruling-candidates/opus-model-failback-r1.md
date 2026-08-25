@@ -1,4 +1,4 @@
-# Ruling candidate: exhausted-model failback to Opus R17
+# Ruling candidate: exhausted-model failback to Opus R18
 
 Status: **PROPOSED ONLY — NOT RATIFIED DOCTRINE OR RUNTIME AUTHORITY**
 
@@ -48,6 +48,12 @@ The immutable contract is:
 
 Packet hash, preclaim, argv receipt, and admission policy must prove the exact applicable values.
 Any drift is `HOLD`.
+
+The installed route packet is also part of the immutable execution contract. Its `authority` is the
+native JSON string `read-only-review`, its `result_contract` is the native JSON string
+`route-review-result.v1`, its three control flags are native booleans, and every subject `bytes`
+value is a native integer. Stringified booleans or integers, object-shaped result contracts,
+alternate authority labels, extra keys, or any other type drift are `HOLD` with zero launches.
 
 ## Reviewable verification capsule
 
@@ -100,30 +106,17 @@ cadence, tick, disposition, and adoption gates remain separate.
 
 ## Evidence and acceptance
 
-DNG proved natural terminal Fable zero credit, exact Opus failback, signed capacity, persisted
-consumption, and deterministic release. Published R14 binds the complete ordered adverse history.
-The R15 packet carries that bundle hash, the exact R14 Fable/Opus/Sonnet terminal rows, and the
-current-master integration identity; the verifier asserts those values without reopening history.
-
-R9-R13 repaired capsule, hidden-read, Git, capacity, core, execution, history, and terminal-binding
-defects forward-only; their evidence bundle preserves the ordered adverse record. R14 then proved
-exact one-turn Fable zero-credit exhaustion followed by exact Opus and Sonnet ACCEPT. Its immutable
-commit is published at `refs/heads/codex/opus-model-failback-r1`.
-
-R15 integrated the published lineage on current master but failed its 35,380-byte carrier check.
-R16 preserved the law and compacted prior history to its bundle hash plus exact R14 terminal rows,
-but Opus held it after 18,246 output tokens: capacity age was not bound to the actual packet time,
-the current Fable zero-credit extract and domain comparand were not packet-readable, and the local
-count was not exact-enforced. R17 repairs those evidence relationships without weakening portable
-law. Fable remains the completeness front door; exact model-scoped exhaustion with zero tokens and
-no verdict is not acceptance and does not block ratification. Before ratification, Fable must end
-on the R17 core as ACCEPT or exact zero-credit model exhaustion; exact Opus and Sonnet must then
-ACCEPT that unchanged core. R15, R16, and every rejected or exhausted generation retain zero
-acceptance credit.
-The lanes must reproduce the matrix, ceiling cases, classifier variants,
-domain/freshness states, row permutation, replay prevention, execution drift, Git objects, capsule
-hashes, publication ancestry, and terminal evidence.
-Ratification must be appended to `RULINGS.md` and reach canonical `master`.
+Published R14 binds the adverse history and natural Fable zero credit followed by exact Opus and
+Sonnet ACCEPT at `refs/heads/codex/opus-model-failback-r1`. R15 failed carrier size. R16 compacted
+history, then Opus held after 18,246 output tokens on packet-time, readable-extract, domain, and
+exact-count defects. R17 repaired those findings, but the installed scheduler held its carrier on
+three five-minute ticks with `PACKET-TYPE` and zero calls, processes, tokens, or tools; its staged
+repair still used a noncanonical authority. R18 binds the installed native contract and restarts
+at Fable. Fable remains the completeness front door; exhaustion is not acceptance. Before
+ratification, Fable must ACCEPT R18 or prove exact zero-credit exhaustion, and exact Opus and
+Sonnet must ACCEPT the unchanged core. Rejected and exhausted generations retain zero credit.
+The lanes must reproduce the matrix, capacity, replay, execution, Git, capsule, ancestry, and
+terminal evidence. Ratification must be appended to `RULINGS.md` on canonical `master`.
 
 Every project must then publish honest `ADOPT`, `DISTINGUISH`, or `REJECT` with its own authority,
 policy, scheduler, transaction, tests, rollback, and natural production proof. This proposal grants
