@@ -1,41 +1,35 @@
-# Ruling candidate: exhausted-model failback to Opus R13
+# Ruling candidate: exhausted-model failback to Opus R14
 
 Status: **PROPOSED ONLY — NOT RATIFIED DOCTRINE OR RUNTIME AUTHORITY**
 
-Owner direction (2026-08-24): do not idle useful Claude capacity solely because exact Fable has
-exhausted its model allowance. Continue unchanged eligible work on exact Opus while preserving the
-hard capacity ceiling, seriality, exact contract, review quality, and every acceptance gate.
+Owner direction (2026-08-24): after exact Fable model exhaustion, continue unchanged eligible work
+on exact Opus without weakening capacity, seriality, contract, quality, or acceptance gates.
 
 ## Decision
 
-Model exhaustion and provider/account exhaustion are different states. An exact terminal Fable
-exhaustion attempt earns zero work, review, acceptance, or drain credit. If the same immutable work
-remains authorized, publish an exact Opus successor through the natural scheduler and ordinary
-one-shot admission path. Preserve ordered core subjects and digest, objective, lane role, effort,
-tools, turn/wall bounds, output contract, and independent-acceptance requirements. Failback grants
-no manual invocation, capacity inference, gate-opening, or quality exception.
+Model exhaustion differs from provider/account exhaustion and earns zero credit. If unchanged work
+remains authorized, the natural scheduler may publish an exact Opus successor through ordinary
+one-shot admission. Preserve ordered core/digest, objective, role, effort, tools, bounds, output
+contract, and acceptance requirements; failback grants no manual invocation or quality exception.
 
-Immediately before Opus admission, refresh signed model-free capacity for the same opaque quota
-domain. Evidence may be at most 300 seconds old (a project may require less). For every required
-window prove `utilization + active reservations + conservative Opus estimate <= 100`. Stale,
-malformed, cross-domain, ambiguous, missing, overlapping, live-lease, closed-authority, or surplus
-evidence is `HOLD`; authentication is not capacity evidence.
+Immediately before Opus, refresh signed same-domain model-free capacity, at most 300 seconds old.
+Every window must prove `utilization + active reservations + conservative estimate <= 100`.
+Otherwise—including stale, cross-domain, ambiguous, overlapping, live-lease, or closed-gate
+evidence—`HOLD`. Authentication is not capacity evidence.
 
 ## Exact terminal-exhaustion discriminator
 
-One immutable artifact plus durable zero-credit receipt must conjunctively bind the admitted
-route/session and exact `claude-fable-5`; terminal `api_error`/429 after exactly one attempted turn;
-assistant `error=rate_limit`; no verdict or acceptance; zero review input/output tokens; and the
-exact text `You've reached your Fable 5 limit. Run /usage-credits to continue or switch models with
-/model.` The receipt also binds packet, authorization, artifact path/hash, unchanged core digest,
-closed assertion-name array, and exact assertion count. Wrapper probes earn no drain credit.
+One artifact plus zero-credit receipt binds admitted route/session, exact `claude-fable-5`, terminal
+`api_error`/429 after one turn, assistant `error=rate_limit`, no verdict, zero review tokens, and
+`You've reached your Fable 5 limit. Run /usage-credits to continue or switch models with /model.`
+It also binds packet, authorization, artifact/hash, unchanged core, assertion names/count. Wrapper
+probes earn no credit.
 
-Every rate-limit event must be enumerated. Rejected base-window, signed 100%, or explicit account
-exhaustion is `HOLD`. Rejected `seven_day_overage_included` with overage disabled is an entitlement
-rejection only when the base event is allowed or omitted and fresh same-domain base utilization is
-below 100; omitted base additionally requires the exact one-turn zero-token evidence and no
-contradiction. Fresh capacity must publish utilization, reservations, estimate, sum, and named
-`<=100` assertion for every window.
+Enumerate every rate-limit event. Base-window rejection, signed 100%, or account exhaustion is
+`HOLD`. Disabled `seven_day_overage_included` is only entitlement rejection when base is allowed or
+omitted and fresh same-domain base usage is below 100; omission also requires exact one-turn
+zero-token evidence and no contradiction. Publish every window's usage, reservation, estimate,
+sum, and named `<=100` assertion.
 
 ## Immutable subjects and execution contract
 
@@ -77,6 +71,7 @@ A terminal model-exhaustion event is a transition, not a global freeze. Before c
 campaign hold, the controller must atomically replace the consumed actionable carrier with a strict
 closed-key terminal no-work packet (`authority=read-only-review`, `actionable_work=false`, empty
 subjects), bind old/new hashes and the terminal receipt, then publish the unchanged successor.
+The terminal consumed-packet hash must equal the bound ancestry packet.
 If replacement fails, keep the hold closed and launch nothing. A consumed route id, matching
 terminal receipt, or terminal lease can never be revived by timestamp refresh.
 
@@ -110,11 +105,12 @@ R10 repaired them but revealed a stale current-transition pin. R11 repaired that
 Opus consumed 27,594 output tokens and returned REVISE(4). R12 repaired digest recomputation,
 per-lane predecessor pinning, packet-readable prior extracts, per-row size enforcement, and
 issuance-derived capacity age; its Fable attempt was exact one-turn zero-credit exhaustion and its
-Opus run consumed 32,182 output tokens before REVISE(3). R13 completes and asserts the review
-history and adds generator-bound packet-readable R12 Fable and Opus extracts. All rejected or
-exhausted generations retain zero acceptance credit.
+Opus run consumed 32,182 output tokens before REVISE(3). R13 completed and asserted the review
+history and added generator-bound packet-readable R12 extracts, but its local verifier rejected the
+missing literal terminal relationship before provider publication. R14 preserves those repairs and
+states that relationship exactly. All rejected or exhausted generations retain zero acceptance credit.
 
-Before ratification, distinct natural Fable, Opus, and Sonnet lanes must accept the same R13 core.
+Before ratification, distinct natural Fable, Opus, and Sonnet lanes must accept the same R14 core.
 They must reproduce the matrix, ceiling cases, classifier variants, domain/freshness states, row
 permutation, replay prevention, execution drift, Git objects, capsule hashes, and terminal evidence.
 Ratification must be appended to `RULINGS.md` and reach canonical `master`.
