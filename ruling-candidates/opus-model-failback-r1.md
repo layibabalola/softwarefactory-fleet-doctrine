@@ -37,8 +37,6 @@ below 100; omitted base additionally requires the exact one-turn zero-token evid
 contradiction. Fresh capacity must publish utilization, reservations, estimate, sum, and named
 `<=100` assertion for every window.
 
-Generic 429 text or partial classification is insufficient.
-
 ## Immutable subjects and execution contract
 
 Every packet row binds normalized relative path, bytes, and SHA-256. `core_subjects_sha256` is
