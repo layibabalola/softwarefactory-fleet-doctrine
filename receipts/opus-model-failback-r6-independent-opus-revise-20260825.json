@@ -1,0 +1,38 @@
+{
+  "schema":"fleet-doctrine-independent-review-receipt.v1",
+  "reviewed_at_utc":"2026-08-25T06:40:44.407Z",
+  "route_id":"fleet-opus-model-failback-r6-opus-after-fable-exhaustion",
+  "lane":"opus",
+  "exact_model":"claude-opus-5",
+  "effort":"max",
+  "max_turns":12,
+  "role":"executor",
+  "candidate_commit":"b7d34beab8d2aea6b81db731dde501119c5b5a47",
+  "candidate_tree":"45651064672e3b2b0859998ae7cb5f6867670318",
+  "core_subjects_sha256":"42044859B00BFF0D2FCDB314AF3E9AB63E9838671F45F8E5216BC2D0A67C9C11",
+  "packet_sha256":"172F91CAD6EC9841DBC1C6719BC5F7FF5E9C56AB83D5C04E888A978E29A710CD",
+  "fable_exhaustion_receipt_sha256":"25B691CDAE5961FD4B1C351625C98129C070077ECE050DFB86BBE78487D39EFF",
+  "output_path":"C:\\Users\\obabalola\\.claude\\machine\\fleet-provider-capacity\\artifacts\\b9af0fe36e5046b59ab67034b6fa1e6f.stdout.txt",
+  "output_bytes":206721,
+  "output_sha256":"62A9A7A4691A75EAC5FB935AC1A736C85029C7F2A93483FB50520E1EBFAFBF3E",
+  "consumption_receipt_sha256":"8D5007099DF3C6A49846BAD9BBFF8D5CFA24FA31B78DAE587E5D3F2B210DC980",
+  "provider_cost_usd":0.7760315,
+  "provider_output_tokens":23734,
+  "verdict":"REVISE",
+  "actionable_findings":[
+    {"severity":"HIGH","id":"REVIEW_HISTORY_COUNTS_CONTRADICT","repair":"Bind and distinguish the initial 9-finding production-path review, R1 3-finding review, R2 6-finding review, and this R6 5-finding review."},
+    {"severity":"HIGH","id":"SAME_DOMAIN_AND_MALFORMED_OUTPUT_CASES_ABSENT","repair":"Add explicit executed same-domain successor and malformed structured-output controls."},
+    {"severity":"MEDIUM","id":"CAPACITY_SUM_TERMS_UNPUBLISHED","repair":"Publish utilization, active reservations, conservative estimate, per-window sums, and the <=100 assertion."},
+    {"severity":"MEDIUM","id":"OPUS_CONTINUATION_EVIDENCE_UNBOUND","repair":"Bind Fable receipt, hold disposition, terminal lease, fresh same-domain capacity, reservations, estimate, and no-overlap proof in one continuation ancestry subject."},
+    {"severity":"MEDIUM","id":"CORE_DIGEST_NOT_ASSERTED_AND_MUTATIONS_NOT_EXECUTED","repair":"Require an external expected core digest, compare it exactly, and execute every matrix mutation plus a real changed-row digest control."}
+  ],
+  "notes":[
+    "Four of the six R2 findings were fully repaired; assertion-map and ceiling repairs were partial.",
+    "Read-only structural core preservation was possible, but the reviewer had no hashing tool.",
+    "Packet TTL and provider wall-clock are distinct controls; the admission policy owns the 900-second process wall."
+  ],
+  "review_credit":"VALID_ADVERSE_REVIEW",
+  "acceptance_credit":"ZERO",
+  "next_action":"FORWARD_ONLY_R7_REPAIR_THEN_RESTART_AT_FABLE",
+  "authority":"NO_PUBLICATION_RATIFICATION_PROVIDER_OWNER_INSTALLATION_OR_ADOPTION_AUTHORITY"
+}

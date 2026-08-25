@@ -1,4 +1,4 @@
-# Ruling candidate: exhausted-model failback to Opus R6
+# Ruling candidate: exhausted-model failback to Opus R7
 
 Status: **PROPOSED ONLY — NOT YET RATIFIED DOCTRINE OR PROJECT RUNTIME AUTHORITY**
 
@@ -51,9 +51,10 @@ prove all of the following without conflict:
    one-turn zero-token terminal evidence, and no contradictory or unenumerated classifier event.
    Missing signed corroboration, a rejected base event, or any contradictory or unenumerated event
    is `HOLD`;
-6. a separately signed, model-free, same-domain observation no more than 300 seconds old proves that
-   utilization plus active reservations plus the conservative Opus estimate is less than or equal
-   to 100% in every required window;
+6. a separately signed, model-free, same-domain observation no more than 300 seconds old publishes
+   utilization, active reservations, the conservative Opus estimate, and their sum for every
+   required window. One named assertion must prove each exact sum is less than or equal to 100%; a
+   receipt that merely says the base windows are below 100% is incomplete;
 7. packet, authorization, session, exact model, artifact path, artifact SHA-256, terminal fields,
    zero-credit disposition, and the unchanged ordered core-subject digest are bound by one durable
    receipt; and
@@ -70,8 +71,14 @@ model text; neither can substitute for the other.
 The Fable and Opus packets may differ only in lane envelope and ancestry attachment. Each packet
 must carry the same ordered core subjects, and each row binds normalized relative path, byte length,
 and SHA-256. `core_subjects_sha256` is SHA-256 over the canonical closed-key JSON array of those rows.
-The Fable exhaustion receipt is a lane-specific ancestry attachment: it is required in the Opus
-packet but excluded from the core digest. It may not replace, reorder, or alter a core subject.
+The Opus packet has one lane-specific continuation-ancestry attachment, excluded from the core
+digest. To fit the bounded carrier without dropping evidence, that single closed-key subject binds
+the exact Fable exhaustion receipt, zero-credit campaign-hold disposition, terminal Fable lease,
+fresh same-domain capacity observation, utilization/reservation/estimate/sum rows, hard ceiling, and
+no-overlap proof. It may not replace, reorder, or alter a core subject. Missing, stale, cross-domain,
+unreleased, overlapping, incomplete-sum, or hash-mismatched ancestry is `HOLD`. The scheduler still
+refreshes signed capacity immediately before admission; the attachment is evidence for independent
+review, never reusable capacity authority.
 
 One core subject must bind this exact execution contract:
 
@@ -147,11 +154,12 @@ rotation, observed 5-hour utilization 4% and 7-day utilization 83%, preclaimed t
 session, attested a read-only argv, issued a one-shot Opus permit, and launched exact
 `claude-opus-5` at maximum effort. Opus completed with exit 0, its exact output and consumption
 receipt were persisted, and the canonical writer retired its exact terminal session by directive.
-That receipt proves terminal retirement, not a separately deterministic release mechanism. The review verdict was
-`REVISE` with nine actionable findings, so the reviewed subject earned zero acceptance and must be
-repaired in a forward descendant. That adverse verdict is positive evidence for the failback path's
-quality preservation: the mechanism spent Opus capacity without laundering Fable failure or
-weakening review.
+That receipt proves terminal retirement, not a separately deterministic release mechanism. This
+initial production-path review returned `REVISE` with nine actionable findings. Later immutable
+candidate reviews were distinct subjects: R1 returned 3, R2 returned 6, and R6 returned 5 actionable
+findings. Each exact count and receipt hash is bound in the R7 evidence bundle; none is acceptance
+credit. The adverse verdicts are positive evidence for quality preservation: the mechanism spent
+Opus capacity without laundering Fable failure or weakening review.
 
 Exact local evidence identities are published separately in
 `receipts/dng-opus-model-failback-20260824.json`. That receipt proves only the named DNG transition;
@@ -160,15 +168,17 @@ it is neither portable acceptance nor another project's adoption.
 ## Required acceptance and project response
 
 Before ratification, a distinct adjudicator must bind the exact candidate commit/tree and reproduce
-the exact embedded R6 matrix and execution contract in `test-opus-model-failback-r3-controls.ps1`.
+the exact embedded R7 matrix and execution contract in `test-opus-model-failback-r3-controls.ps1`.
 Required controls include positive failback, each missing/conflicting discriminator field, complete
 classifier enumeration, base-window rejection, overage-only rejection, rollback, open gate, stale
-capacity, same domain, concurrent transaction, malformed output, the exact sum-at-100 boundary,
-sum-above-100 refusal, live lease, core-subject reorder/replacement, execution-contract drift, an
-unconsumed canary that refuses with zero writes/launches, and an exact already-consumed canary that
-permits evaluation of later gates without itself granting admission. The adjudicator must
-independently verify the terminal Opus receipt. Ratification must be appended to `RULINGS.md` and
-reach canonical `master`.
+capacity, an explicit same-domain successor, concurrent transaction, malformed structured output,
+missing/stale continuation ancestry, the exact sum-at-100 boundary, sum-above-100 refusal, live
+lease, core-subject reorder/replacement, execution-contract drift, an unconsumed canary that refuses
+with zero writes/launches, and an exact already-consumed canary that permits evaluation of later
+gates without itself granting admission. Every mutation must be executed, not merely listed. The
+suite must compare the recomputed core digest with an externally supplied expected digest and prove
+a changed-row negative. The adjudicator must independently verify the terminal Opus receipt.
+Ratification must be appended to `RULINGS.md` and reach canonical `master`.
 
 Each project then publishes one current `ADOPT`, `DISTINGUISH`, or `REJECT` disposition with its own
 policy, scheduler, account-domain transaction, tests, rollback, natural production proof, and owner
