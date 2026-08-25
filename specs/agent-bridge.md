@@ -123,6 +123,38 @@ Fleet adoption requires independent review and hub ratification, and every sibli
 adopt-or-distinguish the cadence, one-action bound, notification policy, and authority
 separation against its own persisted control surfaces.
 
+### Checkpoint amplification control — local strategy; fleet adoption proposed (2026-08-25)
+
+Status: **PROPOSAL ONLY; NON-AUTHORIZING.** This control does not grant Fleet
+adoption, activation, mutation, routing, merge, publication, or policy authority. It
+narrows checkpoint ownership for recurring supervisory wakes:
+
+1. **Checkpoint material transitions first.** A wake that changes the verified state,
+   blocker, guard result, owner decision, continuity target, or other material evidence
+   must write the first complete checkpoint carrying that transition. This first
+   post-transition checkpoint is mandatory and mints a new exact identity.
+2. **Retain exact identity on an unchanged `PREPARE`.** After re-verifying the bounded
+   evidence and the existing checkpoint bytes, an unchanged `PREPARE` wake retains the
+   same checkpoint byte length and digest. It does not rewrite equivalent prose or mint
+   a fresh identity merely because another cadence fired.
+3. **Acquire no write claim and append nothing for the unchanged case.** The wake takes
+   no Factory write claim, appends no checkpoint or ledger row, and returns quiet status.
+   A missing checkpoint, hash mismatch, changed guard, or unverified comparison is not
+   the unchanged case and must fail closed.
+4. **Resume ordinary checkpointing at the next transition.** The first material change
+   after any retained interval must produce a fresh complete checkpoint before later
+   unchanged wakes may retain its identity. Retention is therefore bounded by verified
+   state equality, never by time, labels, or a presumed idle owner.
+
+The local scheduled-cycle evidence is one ACTIVE q15m singleton whose 6,356-byte record
+hashed `5C8FE29B73982D392C5C6DE77D45C1B9CA3BC5CA84D2DE24A1367DFD38C7CA1B`,
+plus a 74,465-byte material checkpoint hashed
+`61EE28B2440D00EE86A857C392A94823BF83324AEDF3A01A5DEE448E2592D081`.
+A distinct ordinary scheduled cycle rehashed and retained that checkpoint, acquired no
+Factory claim, appended nothing, and returned quiet status. This proves the local
+mechanism, not Fleet adoption. Independent review and explicit hub ratification remain
+required before any sibling may treat it as doctrine.
+
 ## Kimi model portfolio — measured proposal, awaiting hub ratification (2026-08-10)
 
 Operator order: exploit model diversity inside every provider, while retaining exact
