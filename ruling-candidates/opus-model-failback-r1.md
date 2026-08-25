@@ -1,4 +1,4 @@
-# Ruling candidate: exhausted-model failback to Opus R5
+# Ruling candidate: exhausted-model failback to Opus R6
 
 Status: **PROPOSED ONLY — NOT YET RATIFIED DOCTRINE OR PROJECT RUNTIME AUTHORITY**
 
@@ -160,7 +160,7 @@ it is neither portable acceptance nor another project's adoption.
 ## Required acceptance and project response
 
 Before ratification, a distinct adjudicator must bind the exact candidate commit/tree and reproduce
-the exact embedded R5 matrix and execution contract in `test-opus-model-failback-r3-controls.ps1`.
+the exact embedded R6 matrix and execution contract in `test-opus-model-failback-r3-controls.ps1`.
 Required controls include positive failback, each missing/conflicting discriminator field, complete
 classifier enumeration, base-window rejection, overage-only rejection, rollback, open gate, stale
 capacity, same domain, concurrent transaction, malformed output, the exact sum-at-100 boundary,
