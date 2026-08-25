@@ -124,9 +124,10 @@ WORKFLOW_EVIDENCE_HEADER_BLOCK = b"\n".join((
     *WORKFLOW_ENV_LINES,
     b"    strategy:",
     b"      fail-fast: false",
-    b"      matrix:",
-    b"        os: [windows-latest, ubuntu-latest]",
-    b'        python-version: ["3.13", "3.14"]',
+    b"      # The historical disposition chain is expensive. One Ubuntu/Python 3.14",
+    b"      # PR job catches candidate drift; the four-way matrix remains a landing",
+    b"      # seam requirement on master and workflow_dispatch.",
+    b"      matrix: ${{ fromJSON(github.event_name == 'pull_request' && '{\"os\":[\"ubuntu-latest\"],\"python-version\":[\"3.14\"]}' || '{\"os\":[\"windows-latest\",\"ubuntu-latest\"],\"python-version\":[\"3.13\",\"3.14\"]}') }}",
     b"    runs-on: ${{ matrix.os }}",
     WORKFLOW_TIMEOUT_LINE,
 ))
@@ -142,8 +143,8 @@ WORKFLOW_PHASE5_REMOTE_BLOCK = b"\n".join((
     WORKFLOW_TOKEN_LINE,
     WORKFLOW_ROUTE_LINES[6],
 ))
-WORKFLOW_BYTES = 7304
-WORKFLOW_SHA256 = "b51e56b8391c3d4cd6a854a38dcf81379c305d3c41b150d397ea57f781371e01"
+WORKFLOW_BYTES = 8364
+WORKFLOW_SHA256 = "3f0c36e6a7bcdf46aca7a963adf0822a3ff8bce9657c5f907d0bbe80b2020a1a"
 UNSAFE_GIT_ENV = {
     "GIT_DIR", "GIT_WORK_TREE", "GIT_COMMON_DIR", "GIT_OBJECT_DIRECTORY",
     "GIT_ALTERNATE_OBJECT_DIRECTORIES", "GIT_REPLACE_REF_BASE", "GIT_INDEX_FILE",
