@@ -21,11 +21,14 @@ intermediate publication, not storage, was the dominant avoidable cost.
 
 ## Canonical operating rule
 
-1. Pull requests run one representative `ubuntu-latest` / Python 3.14 job per relevant workflow.
+1. Eligible pull-request workflows run one representative `ubuntu-latest` / Python 3.14 job.
+   The Phase12-16 disposition workflow is an explicit exception: its bytes are sealed after a
+   one-time bootstrap, so it retains the complete four-job matrix until a separately reviewed
+   doctrine epoch lawfully supersedes that seal. Public hosted runners make this exception free.
 2. Canonical `master` pushes and deliberate `workflow_dispatch` runs retain the complete
    Windows/Linux x Python 3.13/3.14 evidence matrix.
-3. Native path filters prevent unrelated changes from launching adoption, disposition, provider,
-   or runtime-extension suites.
+3. Native path filters prevent unrelated changes from launching adoption, provider, or
+   runtime-extension suites. The sealed disposition workflow remains an unfiltered integrity gate.
 4. `cancel-in-progress` remains mandatory, and agents batch evidence refinements into one landing
    publication instead of pushing every intermediate draft.
 5. Public standard hosted runners or separately controlled self-hosted runners may provide the
