@@ -1,4 +1,4 @@
-# Ruling candidate: exhausted-model failback to Opus R9
+# Ruling candidate: exhausted-model failback to Opus R10
 
 Status: **PROPOSED ONLY — NOT RATIFIED DOCTRINE OR RUNTIME AUTHORITY**
 
@@ -65,23 +65,32 @@ Any drift is `HOLD`.
 ## Reviewable verification capsule
 
 The single lane attachment is a closed-key, hash-bound verification capsule generated outside the
-provider lane. It must make evidence reproducible without broadening provider tools. It contains:
+provider lane. It must make evidence reproducible without broadening provider tools. The core
+verifier may read only the three core subjects and that capsule; it may not reopen cited receipts,
+provider outputs, mutable capacity ledgers, or Git metadata. The capsule contains:
 
 - candidate commit/tree plus literal results of `git cat-file -t`, `git show --format=%T`, branch,
   and clean-status checks, and the independent generator path/hash;
 - the exact local-control command, executable identity, externally supplied core digest, repeat
   count, assertion/case counts, exact PASS outputs and output hashes;
+- exact ancestry packet hash, route id, session id, model, and normalized ancestry-core digest;
 - the continuation ancestry: Fable exhaustion receipt, hold disposition, terminal lease, both
-  opaque domains, observed/created instants and derived age, utilization/reservation/estimate/sum
-  rows, ceiling, and no-overlap;
+  opaque domains, observed/created instants (age is derived, never rounded or self-published),
+  utilization/reservation/estimate/sum rows, ceiling, and no-overlap;
+- signed-capacity source/signer, signature/proof, immutable ledger snapshot hash, and same-domain
+  attestation; and
+- the consumed carrier hash, terminal no-work carrier hash, terminal receipt, lease, and exact
+  close-before-clear receipt;
 - for prior completed lanes, exact packet/consumption/terminal-lease objects or closed-key validated
   extracts, their whole-file hashes/bytes, and the exact structured result copied from the raw output
   with raw-output path/hash/bytes.
 
-Large raw provider output need not fit the carrier: its capsule extract is eligible only when the
-independent generator hashes the raw bytes, parses the terminal result, proves the copied structured
-result exact, validates every cited compact object against its source bytes, and receipts the
-generator itself. A self-asserted hash without these checks is `HOLD`. Capsule evidence grants no
+Large raw provider output need not fit the carrier: its compact extract is eligible only when the
+evidence-bundle generator hashes the raw bytes, parses the terminal result, proves the copied
+structured result exact, validates every cited compact object against its source bytes, and binds
+the generator identity. The packet-readable evidence bundle then carries those closed extracts and
+source hashes; the capsule binds the exact bundle hash and copies only the lane facts needed for the
+current transition. A self-asserted hash without these checks is `HOLD`. Capsule evidence grants no
 capacity, provider, acceptance, publication, ratification, installation, or adoption authority.
 
 ## Transactional terminalization and replay prevention
@@ -101,13 +110,12 @@ is not repair.
 
 ## Account-domain self-heal
 
-On authenticated-account/installed-domain mismatch, fail closed and attempt at most one bounded
-hash-pinned transaction for the freshly observed mismatch. Require closed gate, no unconsumed
-canary or concurrency, exact opaque-domain/gate/capacity rollback preimages, no raw identity or
-credentials, a different successor opaque domain, fresh signed successor capacity, accepted hostile
-controls, and atomic `COMMITTED` or `ROLLED_BACK` receipt. Only after commit may the ordinary
-scheduler retry Opus. The actor has zero work-creation, acceptance, release, credential-mutation,
-account-selection, or provider-inference authority.
+An authenticated-account/installed-domain mismatch is fail-closed. At most one bounded hash-pinned
+transaction may run for a fresh mismatch, with closed gate, no concurrency or unconsumed canary,
+exact opaque rollback preimages, no raw identity or credentials, different successor domain, fresh
+signed successor capacity, hostile controls, and atomic `COMMITTED` or `ROLLED_BACK` receipt. Only
+commit permits a later ordinary retry; the actor has no work, acceptance, release, credential,
+account-selection, or inference authority.
 
 ## Preserved invariants
 
@@ -122,17 +130,20 @@ account-selection, or provider-inference authority.
 
 ## Evidence and acceptance
 
-DNG's production path proved terminal Fable zero credit, exact Opus continuation, committed opaque
-domain rotation, fresh signed capacity, exact Opus/max launch, persisted output/consumption, and
-terminal lease retirement; its first review returned REVISE(9). Later immutable subjects returned
-R1 REVISE(3), R2 REVISE(6), R6 REVISE(5), R7 REVISE(6). R5 was carrier-rejected with zero launch.
-R8 then passed 200 local assertions/33 executed cases, naturally produced Fable zero credit and Opus
-ACCEPT(0 actionable), but Sonnet returned REVISE(3): Git objects were not reconciled inside readable
-subjects, cited lane artifacts were outside the subject set, and local execution lacked a readable
-attestation. R8 has zero serial acceptance. Its duplicate Fable replay is also zero credit. Exact
-receipt hashes and R9 repairs are bound in the evidence bundle and verification capsule.
+DNG proved terminal Fable zero credit, exact Opus failback, signed capacity, persisted consumption,
+and terminal release. Review history is carried in the packet-readable evidence bundle: production
+REVISE(9); R1 REVISE(3); R2 REVISE(6); R5 carrier rejection; R6 REVISE(5); R7 REVISE(6); and R8
+Fable zero credit, Opus ACCEPT(0), then Sonnet REVISE(3), leaving serial acceptance zero.
 
-Before ratification, distinct natural Fable, Opus, and Sonnet lanes must accept the same R9 core.
+R9 naturally reached exact Fable model exhaustion and then exact Opus/max. Opus returned
+REVISE(11): the fourth subject was bare ancestry rather than the required capsule; hidden receipt
+reads prevented reproduction; Git/local-run evidence was unreadable; the published age was one
+millisecond inconsistent; and route, core, signature, and terminal-carrier hashes were unbound.
+R10 repairs all eleven findings by using one route-bound capsule, a packet-readable validated
+evidence bundle, exact timestamp derivation, explicit signed-capacity proof, and exact old/new
+carrier transition hashes. The R9 adverse verdict remains zero acceptance credit.
+
+Before ratification, distinct natural Fable, Opus, and Sonnet lanes must accept the same R10 core.
 The adjudicators must reproduce the executed matrix, exact/surplus ceiling, classifier variants,
 stale/cross/same-domain states, real row permutation, ancestry freshness, replay prevention,
 execution drift, Git objects, capsule source hashes, and terminal artifacts. Ratification must be
