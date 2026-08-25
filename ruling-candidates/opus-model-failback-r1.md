@@ -1,4 +1,4 @@
-# Ruling candidate: exhausted-model failback to Opus R19
+# Ruling candidate: exhausted-model failback to Opus R20
 
 Status: **PROPOSED ONLY — NOT RATIFIED DOCTRINE OR RUNTIME AUTHORITY**
 
@@ -58,6 +58,10 @@ alternate authority labels, extra keys, or any other type drift are `HOLD` with 
 ## Reviewable verification capsule
 
 The single lane attachment is a closed-key, hash-bound capsule generated outside the provider lane.
+Its ancestry, current-Fable, and terminal records are closed objects with named fields, never
+positional arrays. On every lane the verifier cross-binds the exact consumed packet, exhaustion
+receipt, route, recorded provider session, exact model and core; exact 429 result text; and every
+terminal packet, lease, hold-clear, artifact, and close-before-clear field.
 The verifier reads only the three core subjects and capsule—never cited receipts, raw provider
 outputs, mutable ledgers, or Git metadata. It binds clean commit/tree/type/branch evidence; exact
 control executable/command/core/repeat/PASS evidence; ancestry packet/route/session/model/core;
@@ -65,16 +69,12 @@ signed-capacity signer/proof/ledger snapshot and age derived at the packet issua
 validated prior-lane
 extracts; and consumed/terminal carrier, terminal receipt/lease, and close-before-clear hashes.
 
-Large outputs may be represented only by packet-readable closed extracts whose generator hashes
-and parses the raw bytes and binds its identity through the capsule's exact executable hash. The
-capsule timestamp must equal the immutable issuing packet's `issued_at_utc`; the verifier must
-compare both values and derive capacity age from that packet timestamp, never from capsule fields
-alone. The current Fable extract must be packet-readable and bind exact model, route, packet,
-session, one turn, 429, result text, zero input/output tokens, absent verdict, zero credit, and its
-capacity account domain. Opus capacity must prove the same opaque domain against that extract.
-Self-asserted hashes, timestamps, or domains are `HOLD`. Per-lane local assertion counts are exact,
-not merely positive. The capsule grants no capacity, provider, acceptance, publication,
-ratification, installation, or adoption authority.
+Large outputs use only packet-readable closed extracts whose generator hashes/parses the raw bytes
+and is bound by exact executable hash. Capsule time must equal packet `issued_at_utc`; derive
+capacity age from the packet. The Fable extract binds exact model, route, packet, session, turn,
+429 text, tokens, verdict absence, credit, and domain; Opus capacity proves that same opaque domain.
+Self-asserted evidence is `HOLD`. Per-lane assertion counts are exact. The capsule grants no
+capacity, provider, acceptance, publication, ratification, installation, or adoption authority.
 
 ## Transactional terminalization and replay prevention
 
@@ -86,8 +86,9 @@ The terminal consumed-packet hash must equal the bound ancestry packet.
 If replacement fails, keep the hold closed and launch nothing. A consumed route id, matching
 terminal receipt, or terminal lease can never be revived by timestamp refresh.
 
-The executed matrix requires hostile `terminal_fable_carrier_replay` and close-before-clear proof;
-documenting a duplicate is not repair.
+The executed matrix requires hostile `terminal_fable_carrier_replay` and close-before-clear proof.
+Each case mutates independently evaluated state and derives its result; comparing adjacent expected
+literals or documenting a duplicate is not repair.
 
 ## Account-domain self-heal
 
@@ -106,17 +107,13 @@ cadence, tick, disposition, and adoption gates remain separate.
 
 ## Evidence and acceptance
 
-Published R14 binds the adverse history and natural Fable zero credit followed by exact Opus and
-Sonnet ACCEPT at `refs/heads/codex/opus-model-failback-r1`. R15 failed carrier size. R16 compacted
-history, then Opus held after 18,246 output tokens on packet-time, readable-extract, domain, and
-exact-count defects. R17 repaired those findings, but the installed scheduler held its carrier on
-three five-minute ticks with `PACKET-TYPE` and zero calls, processes, tokens, or tools; its staged
-repair still used a noncanonical authority. R18 bound the installed native contract and naturally
-proved exact Fable exhaustion, but its future-Opus verifier named a logical route rather than the
-exact consumed `-r5` route. R19 repairs that ancestry binding forward-only and restarts at Fable.
-Fable remains the completeness front door; exhaustion is not acceptance. Before ratification,
-Fable must ACCEPT R19 or prove exact zero-credit exhaustion, and exact Opus and
-Sonnet must ACCEPT the unchanged core. Rejected and exhausted generations retain zero credit.
+Published R14 and immutable prior bundles preserve the full adverse history. R19 naturally proved
+exact Fable exhaustion; exact Opus then consumed 35,771 output tokens and returned REVISE on five
+defects: Fable packet/session/text, ancestry session, hostile replay, consumed-packet equality, and
+terminal-hash cross-binding. R20 repairs them forward-only with named objects, the recorded session,
+operative equality assertions on every lane, and an independently evaluated replay mutation.
+Fable remains the completeness front door: it must ACCEPT R20 or prove exact zero-credit exhaustion,
+then exact Opus and Sonnet must ACCEPT the unchanged core. Adverse generations retain zero credit.
 The lanes must reproduce the matrix, capacity, replay, execution, Git, capsule, ancestry, and
 terminal evidence. Ratification must be appended to `RULINGS.md` on canonical `master`.
 
