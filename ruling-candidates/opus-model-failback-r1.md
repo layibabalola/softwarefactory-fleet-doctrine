@@ -1,4 +1,4 @@
-# Ruling candidate: exhausted-model failback to Opus R7
+# Ruling candidate: exhausted-model failback to Opus R8
 
 Status: **PROPOSED ONLY — NOT YET RATIFIED DOCTRINE OR PROJECT RUNTIME AUTHORITY**
 
@@ -61,10 +61,9 @@ prove all of the following without conflict:
 8. the receipt publishes a closed, ordered assertion-name array and an exact matching assertion
    count so another adjudicator can reproduce every predicate without inferring a field mapping.
 
-The provider's generic rate-limit classification is never sufficient by itself. Missing, stale,
-malformed, cross-domain, contradictory, unenumerated, or account-ceiling evidence is `HOLD`, not
-failback. The classifier adjudication and signed base-window evidence are conjunctive with the exact
-model text; neither can substitute for the other.
+Generic rate-limit classification is insufficient. Missing, stale, malformed, cross-domain,
+contradictory, unenumerated, or ceiling evidence is `HOLD`. Classifier adjudication, signed base
+windows, and exact model text are conjunctive.
 
 ## Immutable core subjects and execution contract
 
@@ -74,11 +73,13 @@ and SHA-256. `core_subjects_sha256` is SHA-256 over the canonical closed-key JSO
 The Opus packet has one lane-specific continuation-ancestry attachment, excluded from the core
 digest. To fit the bounded carrier without dropping evidence, that single closed-key subject binds
 the exact Fable exhaustion receipt, zero-credit campaign-hold disposition, terminal Fable lease,
-fresh same-domain capacity observation, utilization/reservation/estimate/sum rows, hard ceiling, and
-no-overlap proof. It may not replace, reorder, or alter a core subject. Missing, stale, cross-domain,
-unreleased, overlapping, incomplete-sum, or hash-mismatched ancestry is `HOLD`. The scheduler still
-refreshes signed capacity immediately before admission; the attachment is evidence for independent
-review, never reusable capacity authority.
+the Fable and capacity opaque domains, capacity-observation and attachment-creation instants,
+their reproducible age, utilization/reservation/estimate/sum rows, hard ceiling, and no-overlap
+proof. It may not replace, reorder, or alter a core subject. Staleness and domain mismatch are
+distinct `HOLD` predicates. Missing, unreleased, overlapping, incomplete-sum, or hash-mismatched
+ancestry is also `HOLD`. Because packet publication precedes natural admission, the attachment is
+review evidence rather than reusable capacity authority: the scheduler must refresh capacity at
+admission and bind the actual observation/preclaim instants in its durable admission receipt.
 
 One core subject must bind this exact execution contract:
 
@@ -98,21 +99,13 @@ Opus continuation. A capacity observer that detects an authenticated account dif
 installed opaque quota domain must fail closed, then invoke one bounded account-domain transaction
 instead of repeating an indefinite HOLD.
 
-That transaction must:
-
-1. require a closed gate and refuse an unconsumed canary;
-2. prove there is no concurrent provider/admission transaction through the scheduler's existing
-   single-flight boundary;
-3. preserve exact opaque domain, gate, and signed-capacity preimages without copying credentials or
-   raw account identity into doctrine;
-4. rerun the independently accepted installer against the currently authenticated first-party
-   account, keeping the gate closed;
-5. require the successor opaque domain to differ from the predecessor;
-6. obtain a fresh signed, model-free capacity observation bound to the successor domain;
-7. rerun the accepted hostile/negative controls and return to closed `SHADOW`;
-8. atomically commit a receipt binding actor, policy, predecessor, successor, observation, and
-   verification identities; and
-9. restore all exact preimages and record `ROLLED_BACK` on any incomplete or failed step.
+The transaction requires a closed gate, refuses an unconsumed canary, and proves scheduler
+single-flight. It preserves exact opaque-domain, gate, and signed-capacity preimages without raw
+identity or credentials; reruns the independently accepted installer against the authenticated
+first-party account while closed; requires a different successor opaque domain and a fresh signed
+model-free successor observation; reruns accepted hostile controls and returns to closed `SHADOW`;
+then atomically receipts actor, policy, predecessor, successor, observation, and verification
+identities. Any incomplete or failed step restores every exact preimage and records `ROLLED_BACK`.
 
 Only after commit may the ordinary scheduler retry Opus capacity, preclaim, argv attestation,
 one-shot permit, and admission. The self-heal actor has no work-creation, acceptance, release,
@@ -145,39 +138,34 @@ blocker. It must never silently refresh timestamps while leaving the causal mism
 
 ## DNG production evidence (non-portable, no fleet adoption credit)
 
-On 2026-08-24 DNG observed exact Fable terminal exhaustion with no acceptance receipt, disposed the
-campaign hold as zero credit, and published the unchanged four-subject continuation as an Opus
-packet. The first natural Opus wake correctly refused because the authenticated Claude account did
-not match the installed quota domain. A forward self-heal actor then passed 8 controlled assertions,
-including exact rollback and open-gate refusal. The next natural wake committed an account-domain
-rotation, observed 5-hour utilization 4% and 7-day utilization 83%, preclaimed the exact Opus
-session, attested a read-only argv, issued a one-shot Opus permit, and launched exact
-`claude-opus-5` at maximum effort. Opus completed with exit 0, its exact output and consumption
-receipt were persisted, and the canonical writer retired its exact terminal session by directive.
-That receipt proves terminal retirement, not a separately deterministic release mechanism. This
+On 2026-08-24 DNG proved exact Fable exhaustion and zero-credit hold disposition, then published the
+unchanged four-subject Opus continuation. Its first natural wake refused an authenticated-account /
+installed-domain mismatch. A forward self-heal passed 8 controls, including exact rollback and
+open-gate refusal; the next natural wake committed rotation, observed signed 4% five-hour and 83%
+seven-day utilization, preclaimed and attested exact Opus, and launched exact `claude-opus-5` at
+maximum effort. Exact output and consumption were persisted and the canonical writer retired the
+terminal session by directive (terminal retirement, not deterministic-release proof). This
 initial production-path review returned `REVISE` with nine actionable findings. Later immutable
-candidate reviews were distinct subjects: R1 returned 3, R2 returned 6, and R6 returned 5 actionable
-findings. Each exact count and receipt hash is bound in the R7 evidence bundle; none is acceptance
-credit. The adverse verdicts are positive evidence for quality preservation: the mechanism spent
-Opus capacity without laundering Fable failure or weakening review.
+candidate reviews were distinct subjects: R1 returned 3, R2 returned 6, R6 returned 5, and R7
+returned 6 actionable findings. R5 was carrier-rejected before admission with zero provider launch,
+so it was not an independent Opus review. Each exact count and receipt hash is bound in the R8
+evidence bundle; none is acceptance credit. Adverse verdicts prove quality preservation: Opus
+capacity was spent without laundering Fable failure or weakening review.
 
-Exact local evidence identities are published separately in
-`receipts/dng-opus-model-failback-20260824.json`. That receipt proves only the named DNG transition;
-it is neither portable acceptance nor another project's adoption.
+The bound `receipts/dng-opus-model-failback-20260824.json` proves only that DNG transition, never
+portable acceptance or another project's adoption.
 
 ## Required acceptance and project response
 
-Before ratification, a distinct adjudicator must bind the exact candidate commit/tree and reproduce
-the exact embedded R7 matrix and execution contract in `test-opus-model-failback-r3-controls.ps1`.
-Required controls include positive failback, each missing/conflicting discriminator field, complete
-classifier enumeration, base-window rejection, overage-only rejection, rollback, open gate, stale
-capacity, an explicit same-domain successor, concurrent transaction, malformed structured output,
-missing/stale continuation ancestry, the exact sum-at-100 boundary, sum-above-100 refusal, live
-lease, core-subject reorder/replacement, execution-contract drift, an unconsumed canary that refuses
-with zero writes/launches, and an exact already-consumed canary that permits evaluation of later
-gates without itself granting admission. Every mutation must be executed, not merely listed. The
-suite must compare the recomputed core digest with an externally supplied expected digest and prove
-a changed-row negative. The adjudicator must independently verify the terminal Opus receipt.
+Before ratification, a distinct adjudicator must bind the candidate commit/tree and reproduce the R8
+matrix and execution contract in `test-opus-model-failback-r3-controls.ps1`. Controls cover positive
+failback; every missing/conflicting discriminator; classifier enumeration; base and overage
+rejections; rollback/open gate; isolated stale, cross-domain, overlap, live-lease, malformed-output,
+and ancestry failures; same-domain successor; exact/surplus ceiling; core order/replacement;
+execution drift; and unconsumed versus consumed canaries with zero authority. Every mutation must be
+executed. The suite compares an externally supplied core digest, proves changed-row and actual
+permuted-row negatives, and validates shipped ancestry freshness, both opaque domains, and
+no-overlap. The adjudicator also verifies the terminal Opus receipt.
 Ratification must be appended to `RULINGS.md` and reach canonical `master`.
 
 Each project then publishes one current `ADOPT`, `DISTINGUISH`, or `REJECT` disposition with its own

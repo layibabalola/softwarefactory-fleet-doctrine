@@ -1,0 +1,39 @@
+{
+  "schema":"fleet-doctrine-independent-review-receipt.v1",
+  "reviewed_at_utc":"2026-08-25T07:15:45.485Z",
+  "route_id":"fleet-opus-model-failback-r7-opus-after-fable-exhaustion",
+  "lane":"opus",
+  "exact_model":"claude-opus-5",
+  "effort":"max",
+  "max_turns":12,
+  "role":"executor",
+  "candidate_commit":"1fc43b330db1be76907cb899044e515a4937c13b",
+  "candidate_tree":"d7740e1c358ae2a66f6508bbf1ae44191657b827",
+  "core_subjects_sha256":"A30186B4B00E722E1F53626B080C38655DE75DE29AC2611B8E3228A20A61D987",
+  "packet_sha256":"8210FC1BC4C7F64183AA744605F0AD794D66E8E364327085E9413AF4EECCE20C",
+  "fable_exhaustion_receipt_sha256":"552E0FE76ADA1DEBFDD3E4C918590A83452601993A183EE12779016DCBC32AE2",
+  "output_path":"C:\\Users\\obabalola\\.claude\\machine\\fleet-provider-capacity\\artifacts\\073a7068035d4554bc4b441349b33625.stdout.txt",
+  "output_bytes":213734,
+  "output_sha256":"C3D4F9358DB0E72AAF45984400142B59E2BF447474118388CEF13295AC2DB36C",
+  "consumption_receipt_sha256":"BE1A6B769BDF88D0BE86AFF31EEE4E64963252FA90B3C14D83373582AA50F8FC",
+  "provider_cost_usd":0.830542,
+  "provider_output_tokens":25988,
+  "verdict":"REVISE",
+  "actionable_findings":[
+    {"severity":"MEDIUM","id":"SAME_DOMAIN_STATE_NOT_EXECUTED","repair":"Make the successor case change both opaque domains and derive eligibility from exact state equality, never the mutation name."},
+    {"severity":"MEDIUM","id":"CROSS_DOMAIN_ISOLATION_NOT_EXECUTED","repair":"Execute stale-only and cross-domain-only failures as distinct cases."},
+    {"severity":"MEDIUM","id":"CORE_ORDER_NEGATIVE_NOT_PERMUTED","repair":"Serialize a genuinely permuted row array and prove its digest differs from the ordered core."},
+    {"severity":"MEDIUM","id":"ANCESTRY_FRESHNESS_NOT_REPRODUCIBLE","repair":"Bind attachment creation time and recompute capacity age from the observation and attachment timestamps."},
+    {"severity":"LOW","id":"DOMAIN_IDENTITY_NOT_COMPARABLE","repair":"Bind distinct Fable and capacity opaque-domain fields and compare them exactly."},
+    {"severity":"LOW","id":"SHIPPED_ANCESTRY_AND_NO_OVERLAP_NOT_ASSERTED","repair":"Validate the exact shipped ancestry attachment and assert its no-overlap predicate."}
+  ],
+  "notes":[
+    "The reviewer structurally traced all 32 matrix cases and counted all 181 local assertions.",
+    "R5 was carrier-rejected with zero provider launch and was not an independent Opus review.",
+    "The reviewer had Read-only tools; exact local source hashes remain independently recomputable from the bound bundle."
+  ],
+  "review_credit":"VALID_ADVERSE_REVIEW",
+  "acceptance_credit":"ZERO",
+  "next_action":"FORWARD_ONLY_R8_REPAIR_THEN_RESTART_AT_FABLE",
+  "authority":"NO_PUBLICATION_RATIFICATION_PROVIDER_OWNER_INSTALLATION_OR_ADOPTION_AUTHORITY"
+}
