@@ -1,0 +1,59 @@
+{
+  "schema": "fleet-doctrine-independent-review-receipt.v1",
+  "observed_at_utc": "2026-08-25T05:27:15.8822044Z",
+  "candidate_commit": "3e6c99a3ef88a57596186c495507943d46e6f047",
+  "candidate_tree": "28bc5af6abddb66ece5a074ed80d8880339935b8",
+  "fable_front_door": {
+    "route_id": "fleet-opus-model-failback-r1-fable",
+    "packet_sha256": "9CE7191EC319BD73DEBBA387F7990B7013E350001277E3292B78ACAA8607F326",
+    "terminal_output_sha256": "1CAD15968CF872D3073BA85F698BDC42EA45869F8349B33991775715F9816F3E",
+    "terminal_exhaustion_receipt_sha256": "DACC95D23B82A675246E6F7C9C31249507447FD96112C73C8A50D1C710044688",
+    "disposition": "TERMINAL_MODEL_SPECIFIC_EXHAUSTION_ZERO_CREDIT",
+    "review_credit": "ZERO",
+    "acceptance_credit": "ZERO"
+  },
+  "opus_review": {
+    "route_id": "fleet-opus-model-failback-r1-opus-after-fable-exhaustion",
+    "packet_sha256": "B8030AE295D8058ECC1F3E408825FF8B92E0D7D134B2B7C7E22F27D71399EA9E",
+    "model": "claude-opus-5",
+    "effort": "max",
+    "subject_count": 4,
+    "signed_capacity_five_hour_pct": 9,
+    "signed_capacity_seven_day_pct": 87,
+    "terminal_output_sha256": "D10EDF4234FCC5545B8B1B2DCCB42C73E5F99D2E259FDAFF3F30CBB2159D6372",
+    "consumption_receipt_sha256": "21AEED884A098134724745319C770A3D6E9A772B1B4A9E644D08BF2B80C151AA",
+    "terminal_lease_state": "retired-by-directive",
+    "verdict": "REVISE",
+    "actionable_findings": 3,
+    "review_credit": "VALID_ADVERSE_REVIEW",
+    "acceptance_credit": "ZERO"
+  },
+  "actionable_findings": [
+    {
+      "severity": "HIGH",
+      "id": "LEASE_RELEASE_CLAIM_EXCEEDS_RECEIPT",
+      "repair": "Describe retired-by-directive as exact terminal retirement, not as a stronger deterministic-release mechanism."
+    },
+    {
+      "severity": "MEDIUM",
+      "id": "TERMINAL_EXHAUSTION_DISCRIMINATOR_UNDEFINED",
+      "repair": "Bind exact model, terminal fields, model-scoped result text, zero review tokens, fresh same-domain headroom, and immutable receipt identity."
+    },
+    {
+      "severity": "LOW",
+      "id": "UNCONSUMED_CANARY_CONTROL_MISSING",
+      "repair": "Add explicit consumed and unconsumed canary cases with zero-write and zero-launch expectations."
+    }
+  ],
+  "terminal_fable_release_repair": {
+    "prior_lease_sha256": "5F8BD37AFA2F220CCE6EB6A550815E26790D403D48E9375C13762A34859416BC",
+    "terminal_lease_sha256": "9E4A274648138F675F85D83624166BC870EAA3BCE94CC092A544F3F0EF7FE384",
+    "session_id": "1d7e1025-840a-4d13-a00e-b6db85e25add",
+    "authorization_id": "395e24ef-0b78-444e-949a-60d326b7efd0",
+    "state": "retired-by-directive"
+  },
+  "next_action": "FORWARD_ONLY_R2_DESCENDANT_THEN_RESTART_AT_FABLE",
+  "publication_authority": false,
+  "ratification_authority": false,
+  "adoption_authority": false
+}
