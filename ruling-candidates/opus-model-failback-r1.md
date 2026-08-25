@@ -1,4 +1,4 @@
-# Ruling candidate: exhausted-model failback to Opus R14
+# Ruling candidate: exhausted-model failback to Opus R15
 
 Status: **PROPOSED ONLY — NOT RATIFIED DOCTRINE OR RUNTIME AUTHORITY**
 
@@ -107,12 +107,20 @@ per-lane predecessor pinning, packet-readable prior extracts, per-row size enfor
 issuance-derived capacity age; its Fable attempt was exact one-turn zero-credit exhaustion and its
 Opus run consumed 32,182 output tokens before REVISE(3). R13 completed and asserted the review
 history and added generator-bound packet-readable R12 extracts, but its local verifier rejected the
-missing literal terminal relationship before provider publication. R14 preserves those repairs and
-states that relationship exactly. All rejected or exhausted generations retain zero acceptance credit.
+missing literal terminal relationship before provider publication. R14 preserved those repairs,
+stated that relationship exactly, then completed the natural completeness front door with exact
+one-turn Fable model exhaustion and zero credit before exact Opus and Sonnet both returned ACCEPT.
+The exact accepted R14 commit is published at `refs/heads/codex/opus-model-failback-r1`.
 
-Before ratification, distinct natural Fable, Opus, and Sonnet lanes must accept the same R14 core.
-They must reproduce the matrix, ceiling cases, classifier variants, domain/freshness states, row
-permutation, replay prevention, execution drift, Git objects, capsule hashes, and terminal evidence.
+R15 integrates that published immutable repair lineage onto current canonical master and closes an
+acceptance-wording conflict: Fable is the mandatory completeness front door, but exact
+model-scoped Fable exhaustion with zero tokens and zero verdict is not acceptance and does not make
+ratification impossible. Before ratification, the natural Fable lane must terminalize on the R15
+core as either ACCEPT or exact model-scoped exhaustion with zero credit; exact Opus and Sonnet must
+then ACCEPT that unchanged core. All rejected or exhausted generations retain zero acceptance
+credit. The lanes must reproduce the matrix, ceiling cases, classifier variants,
+domain/freshness states, row permutation, replay prevention, execution drift, Git objects, capsule
+hashes, publication ancestry, and terminal evidence.
 Ratification must be appended to `RULINGS.md` and reach canonical `master`.
 
 Every project must then publish honest `ADOPT`, `DISTINGUISH`, or `REJECT` with its own authority,
