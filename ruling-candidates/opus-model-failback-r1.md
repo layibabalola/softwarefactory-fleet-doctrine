@@ -1,4 +1,4 @@
-# Ruling candidate: exhausted-model failback to Opus R15
+# Ruling candidate: exhausted-model failback to Opus R16
 
 Status: **PROPOSED ONLY — NOT RATIFIED DOCTRINE OR RUNTIME AUTHORITY**
 
@@ -96,9 +96,9 @@ cadence, tick, disposition, and adoption gates remain separate.
 ## Evidence and acceptance
 
 DNG proved natural terminal Fable zero credit, exact Opus failback, signed capacity, persisted
-consumption, and deterministic release. The packet-readable bundle carries the ordered history,
-including R5 carrier rejection, R8/R9/R10/R11/R12 Fable zero-credit attempts, every Opus verdict,
-and R8 Sonnet REVISE(3). The verifier asserts that exact sequence and values.
+consumption, and deterministic release. Published R14 binds the complete ordered adverse history.
+The R15 packet carries that bundle hash, the exact R14 Fable/Opus/Sonnet terminal rows, and the
+current-master integration identity; the verifier asserts those values without reopening history.
 
 R9 exposed capsule, hidden-read, Git, timestamp, route, core, signature, and terminal-binding gaps.
 R10 repaired them but revealed a stale current-transition pin. R11 repaired that relationship, then
@@ -112,13 +112,13 @@ stated that relationship exactly, then completed the natural completeness front 
 one-turn Fable model exhaustion and zero credit before exact Opus and Sonnet both returned ACCEPT.
 The exact accepted R14 commit is published at `refs/heads/codex/opus-model-failback-r1`.
 
-R15 integrates that published immutable repair lineage onto current canonical master and closes an
-acceptance-wording conflict: Fable is the mandatory completeness front door, but exact
-model-scoped Fable exhaustion with zero tokens and zero verdict is not acceptance and does not make
-ratification impossible. Before ratification, the natural Fable lane must terminalize on the R15
-core as either ACCEPT or exact model-scoped exhaustion with zero credit; exact Opus and Sonnet must
-then ACCEPT that unchanged core. All rejected or exhausted generations retain zero acceptance
-credit. The lanes must reproduce the matrix, ceiling cases, classifier variants,
+R15 integrated the published lineage on current master but failed its 35,380-byte carrier check.
+R16 preserves the law and compacts prior history to its bundle hash plus exact R14 terminal rows.
+Fable remains the completeness front door; exact model-scoped exhaustion with zero tokens and no
+verdict is not acceptance and does not block ratification. Before ratification, Fable must end on
+the R16 core as ACCEPT or exact zero-credit model exhaustion; exact Opus and Sonnet must then ACCEPT
+that unchanged core. R15 and every rejected or exhausted generation retain zero acceptance credit.
+The lanes must reproduce the matrix, ceiling cases, classifier variants,
 domain/freshness states, row permutation, replay prevention, execution drift, Git objects, capsule
 hashes, publication ancestry, and terminal evidence.
 Ratification must be appended to `RULINGS.md` and reach canonical `master`.
