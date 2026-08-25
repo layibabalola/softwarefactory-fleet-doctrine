@@ -1,4 +1,4 @@
-# Ruling candidate: exhausted-model failback to Opus R11
+# Ruling candidate: exhausted-model failback to Opus R12
 
 Status: **PROPOSED ONLY — NOT RATIFIED DOCTRINE OR RUNTIME AUTHORITY**
 
@@ -61,11 +61,14 @@ The single lane attachment is a closed-key, hash-bound capsule generated outside
 The verifier reads only the three core subjects and capsule—never cited receipts, raw provider
 outputs, mutable ledgers, or Git metadata. It binds clean commit/tree/type/branch evidence; exact
 control executable/command/core/repeat/PASS evidence; ancestry packet/route/session/model/core;
-signed-capacity signer/proof/ledger snapshot and derived timestamp age; validated prior-lane
+signed-capacity signer/proof/ledger snapshot and age derived at the packet issuance timestamp;
+validated prior-lane
 extracts; and consumed/terminal carrier, terminal receipt/lease, and close-before-clear hashes.
 
 Large outputs may be represented only by packet-readable closed extracts whose generator hashes
-and parses the raw bytes and binds its identity. Self-asserted hashes are `HOLD`. The capsule grants
+and parses the raw bytes and binds its identity through the capsule's exact executable hash. The
+capsule must bind its packet issuance timestamp and derive capacity age from that timestamp, not a
+self-asserted capsule creation time. Self-asserted hashes or timestamps are `HOLD`. The capsule grants
 no capacity, provider, acceptance, publication, ratification, installation, or adoption authority.
 
 ## Transactional terminalization and replay prevention
@@ -77,30 +80,23 @@ subjects), bind old/new hashes and the terminal receipt, then publish the unchan
 If replacement fails, keep the hold closed and launch nothing. A consumed route id, matching
 terminal receipt, or terminal lease can never be revived by timestamp refresh.
 
-R8 exposed the reason: hold clearance raced carrier replacement and the next natural cadence
-replayed the same exact Fable packet. The duplicate also ended in exact one-turn zero-token Fable
-exhaustion and earned zero credit, but it is a control defect. R9 requires a hostile
-`terminal_fable_carrier_replay` case and close-before-clear receipt; merely documenting the duplicate
-is not repair.
+The executed matrix requires hostile `terminal_fable_carrier_replay` and close-before-clear proof;
+documenting a duplicate is not repair.
 
 ## Account-domain self-heal
 
 An authenticated-account/installed-domain mismatch is fail-closed. At most one bounded hash-pinned
-transaction may run for a fresh mismatch, with closed gate, no concurrency or unconsumed canary,
-exact opaque rollback preimages, no raw identity or credentials, different successor domain, fresh
-signed successor capacity, hostile controls, and atomic `COMMITTED` or `ROLLED_BACK` receipt. Only
-commit permits a later ordinary retry; the actor has no work, acceptance, release, credential,
-account-selection, or inference authority.
+transaction may run with closed gate, no concurrency or unconsumed canary, exact opaque rollback
+preimages, different successor domain, fresh signed successor capacity, hostile controls, and an
+atomic outcome. Persist no identity or credentials; only commit permits a later ordinary retry.
 
 ## Preserved invariants
 
-Preserve exact successor model and subjects, strict serial order, one quota-domain owner, zero
-discretionary reserve, hard 100% ceiling, conservative reservation, closed gate, one-use canary,
-bounded execution, validated output, and truthful terminal lease. Cross-account telemetry, overlap,
-live lease, stale carrier, and failed-output laundering remain `HOLD`. Fable is the completeness
-front door, not acceptance or owner authority. Findings restart at Fable on a forward immutable
-subject. Installer, preview, rollback/reinstall, cadences, ticks, project disposition, and adoption
-remain separate gates.
+Preserve exact model/subjects, serial order, one quota-domain owner, zero reserve, hard 100% ceiling,
+conservative reservation, closed gate, bounded execution, validated output, and truthful release.
+Cross-domain telemetry, overlap, live lease, stale carrier, and failed-output laundering remain
+`HOLD`. Fable is completeness only. Findings restart at Fable on a forward subject; installation,
+cadence, tick, disposition, and adoption gates remain separate.
 
 ## Evidence and acceptance
 
@@ -119,9 +115,15 @@ carrier transition hashes. Its exact Fable turn then terminalized zero-credit, b
 continuation verifier correctly exposed a new defect before Opus: terminal validation was pinned to
 R9 hashes and could not validate the current R10 transition. R11 replaces that stale pin with a
 closed relationship: the terminal consumed-packet hash must equal the bound ancestry packet, while
-Fable entry is also checked against R10's validated extract. R9/R10 retain zero acceptance credit.
+Fable entry is also checked against R10's validated extract. R11 exact Fable then terminalized with
+one turn, 429, zero tokens, no verdict, and zero credit before exact Opus consumed 27,594 output
+tokens and returned REVISE(4). R12 repairs those findings: every successor ancestry digest must equal
+the recomputed current core; route ancestry is pinned to the exact predecessor generation for each
+lane; the bundle carries generator-bound packet-readable R11 Fable and Opus extracts; every core row
+and the capsule independently satisfy the 24 KiB bound; and capacity age is computed at the bound
+packet issuance timestamp. R9/R10/R11 retain zero acceptance credit.
 
-Before ratification, distinct natural Fable, Opus, and Sonnet lanes must accept the same R11 core.
+Before ratification, distinct natural Fable, Opus, and Sonnet lanes must accept the same R12 core.
 The adjudicators must reproduce the executed matrix, exact/surplus ceiling, classifier variants,
 stale/cross/same-domain states, real row permutation, ancestry freshness, replay prevention,
 execution drift, Git objects, capsule source hashes, and terminal artifacts. Ratification must be
