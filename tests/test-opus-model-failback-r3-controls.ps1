@@ -12,8 +12,8 @@ function Assert-True([bool]$Condition, [string]$Message) {
 
 $specJson = @'
 {
-  "schema":"fleet-exhausted-model-failback-controls.v3",
-  "candidate":"opus-model-failback-r4",
+  "schema":"fleet-exhausted-model-failback-controls.v4",
+  "candidate":"opus-model-failback-r5",
   "authority":"ZERO_AUTHORITY_REPRODUCTION_MATRIX",
   "capacity_observation_max_age_seconds":300,
   "hard_ceiling_rule":"UTILIZATION_PLUS_ACTIVE_RESERVATIONS_PLUS_CONSERVATIVE_ESTIMATE_LTE_100_IN_EVERY_WINDOW",
@@ -86,18 +86,17 @@ $specJson = @'
 
 $repo = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
 $candidatePath = Join-Path $repo 'ruling-candidates\opus-model-failback-r1.md'
-$adjudicationPath = Join-Path $repo 'receipts\fable-model-exhaustion-adjudication-r3-20260825.json'
-$variantPath = Join-Path $repo 'receipts\fable-classifier-variant-r4-20260825.json'
-$opusReviewPath = Join-Path $repo 'receipts\opus-model-failback-r2-independent-opus-revise-20260825.json'
+$bundlePath = Join-Path $repo 'receipts\opus-model-failback-r5-evidence-bundle-20260825.json'
 $candidate = [IO.File]::ReadAllText($candidatePath)
 $candidateFlat = $candidate -replace '\s+', ' '
 $spec = $specJson | ConvertFrom-Json -Depth 20 -ErrorAction Stop
-$adjudication = [IO.File]::ReadAllText($adjudicationPath) | ConvertFrom-Json -Depth 20 -ErrorAction Stop
-$variant = [IO.File]::ReadAllText($variantPath) | ConvertFrom-Json -Depth 20 -ErrorAction Stop
-$opusReview = [IO.File]::ReadAllText($opusReviewPath) | ConvertFrom-Json -Depth 20 -ErrorAction Stop
+$bundle = [IO.File]::ReadAllText($bundlePath) | ConvertFrom-Json -Depth 20 -ErrorAction Stop
+$adjudication = $bundle.allowed_base_variant
+$variant = $bundle.omitted_base_variant
+$opusReview = $bundle.prior_opus_revise
 
-Assert-True ($spec.schema -ceq 'fleet-exhausted-model-failback-controls.v3') 'schema'
-Assert-True ($spec.candidate -ceq 'opus-model-failback-r4') 'candidate identity'
+Assert-True ($spec.schema -ceq 'fleet-exhausted-model-failback-controls.v4') 'schema'
+Assert-True ($spec.candidate -ceq 'opus-model-failback-r5') 'candidate identity'
 Assert-True ($spec.authority -ceq 'ZERO_AUTHORITY_REPRODUCTION_MATRIX') 'zero authority'
 Assert-True ($spec.capacity_observation_max_age_seconds -eq 300) '300-second maximum age'
 Assert-True ($spec.hard_ceiling_rule -ceq 'UTILIZATION_PLUS_ACTIVE_RESERVATIONS_PLUS_CONSERVATIVE_ESTIMATE_LTE_100_IN_EVERY_WINDOW') 'exact hard ceiling rule'
@@ -155,6 +154,9 @@ Assert-True ($noBaseCorroborated.expected -ceq 'CONTINUE_TO_OTHER_GATES') 'obser
 Assert-True ($noBaseUncorroborated.expected -ceq 'HOLD_CLASSIFIER_AMBIGUOUS') 'uncorroborated no-base variant holds'
 Assert-True ($unknownClassifier.expected -ceq 'HOLD_CLASSIFIER_AMBIGUOUS') 'contradictory or unknown classifier holds'
 
+Assert-True ($bundle.schema -ceq 'fleet-opus-model-failback-evidence-bundle.v1') 'bundle schema'
+Assert-True ($bundle.closed_keys -eq $true) 'bundle closed keys'
+Assert-True ($bundle.source_receipts.Count -eq 4) 'bundle binds four source receipts'
 Assert-True ($adjudication.schema -ceq 'fleet-fable-model-exhaustion-adjudication.v1') 'adjudication schema'
 Assert-True ($adjudication.assistant_error -ceq 'rate_limit') 'assistant error bound'
 Assert-True ($adjudication.rate_limit_events.Count -eq 2) 'all measured classifier events bound'
@@ -179,7 +181,7 @@ Assert-True ($opusReview.verdict -ceq 'REVISE') 'prior Opus verdict preserved'
 Assert-True ($opusReview.actionable_findings.Count -eq 6) 'six prior Opus findings bound'
 Assert-True ($opusReview.acceptance_credit -ceq 'ZERO') 'prior Opus acceptance zero'
 
-Assert-True ($candidate.StartsWith('# Ruling candidate: exhausted-model failback to Opus R4')) 'R4 title'
+Assert-True ($candidate.StartsWith('# Ruling candidate: exhausted-model failback to Opus R5')) 'R5 title'
 Assert-True ($candidate.Contains('## Immutable core subjects and execution contract')) 'core contract section'
 Assert-True ($candidate.Contains('seven_day_overage_included')) 'overage classifier rule'
 Assert-True ($candidate.Contains('assistant event''s exact `error` field')) 'assistant error evidence rule'
@@ -190,8 +192,7 @@ Assert-True ($candidate.Contains('core_subjects_sha256')) 'core digest binding'
 $coreRelative = @(
     'ruling-candidates/opus-model-failback-r1.md',
     'tests/test-opus-model-failback-r3-controls.ps1',
-    'receipts/fable-model-exhaustion-adjudication-r3-20260825.json',
-    'receipts/fable-classifier-variant-r4-20260825.json'
+    'receipts/opus-model-failback-r5-evidence-bundle-20260825.json'
 )
 $rows = [Collections.Generic.List[object]]::new()
 foreach ($relative in $coreRelative) {

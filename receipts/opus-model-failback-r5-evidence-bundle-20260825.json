@@ -1,0 +1,75 @@
+{
+  "schema": "fleet-opus-model-failback-evidence-bundle.v1",
+  "closed_keys": true,
+  "created_at_utc": "2026-08-25T06:05:30Z",
+  "source_receipts": [
+    {"id":"r2_allowed_base_adjudication","sha256":"4FD68AC31C621237B3F872C854FB2CDB96E6ADBD843C40136FD4A88E3B9C3A5A"},
+    {"id":"r4_omitted_base_variant","sha256":"B221C11283CF11A48D1C19D8847739C3CC95BB00C2B18D2B74AC678AAD2DFD9A"},
+    {"id":"r2_opus_revise","sha256":"68130F8FA37462A189F9064E5D1F67504E5F57D983605DFB60632DC8E8E44FCC"},
+    {"id":"r3_classifier_hold","sha256":"1D411CECBF878A04F518CF511AE6BDD1580AE667C9BAF6C2CC3A63006EA94A47"}
+  ],
+  "allowed_base_variant": {
+    "schema": "fleet-fable-model-exhaustion-adjudication.v1",
+    "artifact_sha256": "6863096F6E6ABE281A427A54D7AF734366A62BB4D7755CDBE660096C9F5B7152",
+    "assistant_error": "rate_limit",
+    "rate_limit_events": [
+      {"status":"allowed_warning","rate_limit_type":"seven_day","utilization":0.87,"is_using_overage":false},
+      {"status":"rejected","rate_limit_type":"seven_day_overage_included","overage_status":"rejected","overage_disabled_reason":"org_level_disabled","is_using_overage":false}
+    ],
+    "classifier_adjudication": {"base_window_exhausted":false,"overage_entitlement_rejected":true,"model_specific_exhaustion_proven":true},
+    "assertion_count": 12,
+    "assertions": ["INIT_MODEL_EXACT","ROUTE_AND_SESSION_EXACT","TERMINAL_REASON_API_ERROR","HTTP_STATUS_429","EXACTLY_ONE_TURN","EXACT_MODEL_SCOPED_RESULT_TEXT","ASSISTANT_ERROR_RATE_LIMIT","ZERO_REVIEW_INPUT_TOKENS","ZERO_REVIEW_OUTPUT_TOKENS","NO_REVIEW_VERDICT_OR_ACCEPTANCE","RATE_LIMIT_EVENTS_COMPLETE_AND_ADJUDICATED","SAME_DOMAIN_CAPACITY_FRESH_AND_BASE_WINDOWS_BELOW_100"],
+    "review_credit": "ZERO",
+    "acceptance_credit": "ZERO"
+  },
+  "omitted_base_variant": {
+    "schema": "fleet-fable-classifier-variant.v1",
+    "artifact_sha256": "79F40B949E8CC841398D0D6E6A497695EE63C94B3A35C680F1BEF988C6B0A914",
+    "exact_model": "claude-fable-5",
+    "assistant_error": "rate_limit",
+    "terminal_reason": "api_error",
+    "api_error_status": 429,
+    "num_turns": 1,
+    "input_tokens": 0,
+    "output_tokens": 0,
+    "observed_rate_limit_events": [
+      {"ordinal":1,"status":"rejected","rate_limit_type":"seven_day_overage_included","overage_status":"rejected","overage_disabled_reason":"org_level_disabled","is_using_overage":false}
+    ],
+    "base_seven_day_event_present": false,
+    "signed_capacity": {"observed_at_utc":"2026-08-25T05:55:07.8070000Z","age_seconds_at_provider_admission":32,"maximum_age_seconds":300,"same_opaque_domain":true,"five_hour_utilization_pct":13,"seven_day_utilization_pct":88,"source":"anthropic-oauth-usage-v1","proof":"hmac-sha256:00ae95d9b08e2ef431a37d5bfc84646a74a776877e540229e86fda9f3f1992e4"},
+    "r3_disposition": "HOLD_CLASSIFIER_AMBIGUOUS_ZERO_CREDIT",
+    "r4_expected_disposition": "MAY_CONTINUE_ONLY_TO_ORDINARY_OPUS_ADMISSION_GATES",
+    "review_credit": "ZERO",
+    "acceptance_credit": "ZERO"
+  },
+  "prior_opus_revise": {
+    "schema": "fleet-doctrine-independent-review-receipt.v1",
+    "exact_model": "claude-opus-5",
+    "effort": "max",
+    "max_turns": 12,
+    "role": "executor",
+    "output_sha256": "7464DE1567047802F3D0B47FFA609C267EF02200513727D2031FC386478D964F",
+    "consumption_receipt_sha256": "2AAE85DC1E652E279348AFACE2ADCAA534918BDE285B0ED2778B211CB304AD93",
+    "verdict": "REVISE",
+    "actionable_findings": [
+      {"severity":"HIGH","id":"ACCOUNT_WINDOW_CLASSIFIERS_UNADJUDICATED"},
+      {"severity":"MEDIUM","id":"ASSISTANT_ERROR_FIELD_NOT_BOUND"},
+      {"severity":"MEDIUM","id":"SUCCESSOR_CORE_SUBJECT_MANIFEST_UNDEFINED"},
+      {"severity":"LOW","id":"DISCRIMINATOR_ASSERTION_MAP_NOT_REPRODUCIBLE"},
+      {"severity":"LOW","id":"HARD_CEILING_BOUNDARY_INCONSISTENT"},
+      {"severity":"LOW","id":"EFFORT_AND_BOUNDED_TURN_CONTRACT_UNBOUND"}
+    ],
+    "review_credit": "ZERO_UNTIL_FORWARD_REPAIR_ACCEPTED",
+    "acceptance_credit": "ZERO"
+  },
+  "r3_classifier_hold": {
+    "schema": "dng-headless-model-exhaustion-adjudication-hold.v1",
+    "artifact_sha256": "79F40B949E8CC841398D0D6E6A497695EE63C94B3A35C680F1BEF988C6B0A914",
+    "classifier_verdict": "HOLD_CLASSIFIER_AMBIGUOUS",
+    "disposition": "TERMINAL_ATTEMPT_HOLD_CLASSIFIER_AMBIGUOUS_ZERO_CREDIT",
+    "opus_continuation_authority": "NONE",
+    "review_credit": "ZERO",
+    "acceptance_credit": "ZERO"
+  },
+  "authority": "ZERO_PROVIDER_ZERO_PUBLICATION_ZERO_RATIFICATION_ZERO_INSTALLATION_ZERO_ADOPTION"
+}
