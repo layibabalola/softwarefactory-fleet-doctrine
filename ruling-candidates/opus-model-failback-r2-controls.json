@@ -1,0 +1,115 @@
+{
+  "schema": "fleet-exhausted-model-failback-controls.v1",
+  "candidate": "opus-model-failback-r2",
+  "authority": "ZERO_AUTHORITY_REPRODUCTION_MATRIX",
+  "capacity_observation_max_age_seconds": 300,
+  "hard_capacity_ceiling_pct": 100,
+  "cases": [
+    {
+      "id": "positive_exact_fable_exhaustion",
+      "mutation": "none",
+      "expected": "ELIGIBLE_FOR_ORDINARY_OPUS_ADMISSION_EVALUATION",
+      "writes": 0,
+      "provider_launches": 0
+    },
+    {
+      "id": "wrong_or_alias_fable_model",
+      "mutation": "init.model is not exact claude-fable-5",
+      "expected": "HOLD_MODEL_IDENTITY",
+      "writes": 0,
+      "provider_launches": 0
+    },
+    {
+      "id": "generic_429_without_exact_fable_text",
+      "mutation": "api_error_status=429 but exact model-scoped result text is absent",
+      "expected": "HOLD_EXHAUSTION_AMBIGUOUS",
+      "writes": 0,
+      "provider_launches": 0
+    },
+    {
+      "id": "nonterminal_or_multiturn_result",
+      "mutation": "terminal_reason differs or num_turns is not exactly one",
+      "expected": "HOLD_TERMINAL_IDENTITY",
+      "writes": 0,
+      "provider_launches": 0
+    },
+    {
+      "id": "verdict_or_acceptance_present",
+      "mutation": "Fable artifact contains route-review-result.v1 or an acceptance artifact",
+      "expected": "HOLD_CREDIT_CONFLICT",
+      "writes": 0,
+      "provider_launches": 0
+    },
+    {
+      "id": "nonzero_fable_review_tokens",
+      "mutation": "terminal Fable review input_tokens or output_tokens is nonzero",
+      "expected": "HOLD_NOT_ZERO_CREDIT_EXHAUSTION",
+      "writes": 0,
+      "provider_launches": 0
+    },
+    {
+      "id": "stale_or_cross_domain_capacity",
+      "mutation": "signed observation is older than 300 seconds or bound to another quota domain",
+      "expected": "HOLD_CAPACITY_EVIDENCE",
+      "writes": 0,
+      "provider_launches": 0
+    },
+    {
+      "id": "hard_ceiling_or_conservative_estimate_exceeded",
+      "mutation": "utilization plus active reservations plus Opus estimate exceeds 100 in any required window",
+      "expected": "HOLD_HARD_CEILING",
+      "writes": 0,
+      "provider_launches": 0
+    },
+    {
+      "id": "packet_session_artifact_or_subject_mismatch",
+      "mutation": "any zero-credit receipt binding differs from the immutable packet, session, artifact, or subject manifest",
+      "expected": "HOLD_BINDING_MISMATCH",
+      "writes": 0,
+      "provider_launches": 0
+    },
+    {
+      "id": "open_gate",
+      "mutation": "automatic launch gate is not closed before evaluation",
+      "expected": "HOLD_OPEN_GATE",
+      "writes": 0,
+      "provider_launches": 0
+    },
+    {
+      "id": "live_provider_lease_or_concurrent_transaction",
+      "mutation": "a provider lease is live or a provider/admission/domain transaction is concurrent",
+      "expected": "HOLD_OVERLAP",
+      "writes": 0,
+      "provider_launches": 0
+    },
+    {
+      "id": "unconsumed_canary",
+      "mutation": "closed gate contains a fresh authorization without matching consumed authorization evidence",
+      "expected": "HOLD_UNCONSUMED_CANARY",
+      "writes": 0,
+      "provider_launches": 0
+    },
+    {
+      "id": "consumed_canary_not_authority",
+      "mutation": "closed gate contains exact matching consumed canary evidence",
+      "expected": "CONTINUE_TO_LATER_GATES_WITH_ZERO_ADMISSION_AUTHORITY",
+      "writes": 0,
+      "provider_launches": 0
+    },
+    {
+      "id": "account_domain_rotation_failure",
+      "mutation": "successor domain repeats predecessor or any transaction step/control is incomplete",
+      "expected": "ROLLED_BACK_AND_HOLD",
+      "writes": 0,
+      "provider_launches": 0
+    },
+    {
+      "id": "terminal_retirement_overclaim",
+      "mutation": "retired-by-directive evidence is described as a stronger deterministic-release mechanism",
+      "expected": "REVISE_EVIDENCE_CLAIM",
+      "writes": 0,
+      "provider_launches": 0
+    }
+  ],
+  "credit_boundary": "A passing case permits only the next ordinary gate evaluation. No case grants provider, publication, ratification, installation, owner, or adoption authority."
+}

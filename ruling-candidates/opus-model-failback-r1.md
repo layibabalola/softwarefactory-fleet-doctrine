@@ -1,4 +1,4 @@
-# Ruling candidate: exhausted-model failback to Opus R1
+# Ruling candidate: exhausted-model failback to Opus R2
 
 Status: **PROPOSED ONLY — NOT YET RATIFIED DOCTRINE OR PROJECT RUNTIME AUTHORITY**
 
@@ -11,20 +11,43 @@ single-flight, quality, and acceptance controls.
 
 Treat model exhaustion and provider/account exhaustion as different states.
 
-- An exact, terminal, machine-readable Fable exhaustion result grants **zero work, review, or
-  acceptance credit** for that attempt.
+- A Fable attempt that satisfies every field of the terminal-exhaustion discriminator below grants
+  **zero work, review, or acceptance credit** for that attempt. A generic 429, wrapper text, or
+  account-wide capacity rejection is not model-exhaustion evidence.
 - If the same immutable work remains authorized, route it forward to an exact Opus packet. Preserve
   subject bytes, objective, role, effort, tool boundary, bounded turns/wall clock, output contract,
   and required independent acceptance. The new route id must make the failed Fable ancestry
   explicit.
-- Refresh signed model-free capacity immediately before Opus admission. Admit only when fresh
-  utilization plus active reservations plus the conservative Opus slice estimate is at or below
-  the project's hard ceiling in every applicable window.
+- Refresh signed model-free capacity immediately before Opus admission. The observation may be at
+  most 300 seconds old (projects may require a smaller bound, never a larger one). Admit only when
+  fresh utilization plus active reservations plus the conservative Opus slice estimate is at or
+  below the project's hard ceiling in every applicable window.
 - Never infer that Fable exhaustion implies Opus exhaustion, or that authentication implies
   capacity. Conversely, never use model failback to bypass stale telemetry, cross-account
   ambiguity, overlap, a live lease, a closed authority gate, or the hard provider ceiling.
 - Use the natural scheduler and ordinary one-shot admission path. Model failback grants no manual
   provider-invocation exception.
+
+## Terminal-exhaustion discriminator
+
+Failback is eligible only when one immutable terminal artifact and its durable zero-credit receipt
+prove all of the following without conflict:
+
+1. the provider init event names exact `claude-fable-5` for the admitted Fable route and session;
+2. the terminal result has `api_error_status=429`, `terminal_reason=api_error`, and exactly one
+   attempted turn, with no `route-review-result.v1` verdict or acceptance artifact;
+3. the terminal result text is exactly `You've reached your Fable 5 limit. Run /usage-credits to
+   continue or switch models with /model.` and the assistant error is `rate_limit`;
+4. the terminal result reports zero Fable review input and output tokens; wrapper or meter-probe
+   overhead earns no work, review, acceptance, or drain credit;
+5. a separately signed, model-free, same-domain observation no more than 300 seconds old remains
+   below 100% in every required window and leaves room for the conservative Opus estimate; and
+6. packet, authorization, session, exact model, artifact path, artifact SHA-256, terminal fields,
+   zero-credit disposition, and unchanged subject manifest are bound by one durable receipt.
+
+The provider's generic rate-limit classification is never sufficient by itself. Missing, stale,
+malformed, cross-domain, contradictory, or account-ceiling evidence is `HOLD`, not failback. This
+predicate distinguishes a model-scoped Fable limit from short-window or provider/account exhaustion.
 
 ## Account-domain self-heal
 
@@ -72,8 +95,9 @@ blocker. It must never silently refresh timestamps while leaving the causal mism
 - zero discretionary reserve where locally authorized, while retaining the hard 100% ceiling and
   conservative request reservation;
 - fresh account-bound capacity, no cross-account telemetry reuse, and no raw identity persistence;
-- closed-by-default gate, one-use canary, bounded execution, validated terminal output, deterministic
-  lease release, and fail-closed ambiguity;
+- closed-by-default gate, one-use canary, bounded execution, validated terminal output, and exact
+  terminal lease disposition through the canonical writer; a `retired-by-directive` receipt proves
+  terminal retirement but must not be described as a stronger deterministic-release mechanism;
 - independent acceptance, installer, preview, rollback/reinstall, cadence, and adoption gates remain
   separate and fully required.
 
@@ -87,7 +111,8 @@ including exact rollback and open-gate refusal. The next natural wake committed 
 rotation, observed 5-hour utilization 4% and 7-day utilization 83%, preclaimed the exact Opus
 session, attested a read-only argv, issued a one-shot Opus permit, and launched exact
 `claude-opus-5` at maximum effort. Opus completed with exit 0, its exact output and consumption
-receipt were persisted, and its lease was deterministically released. The review verdict was
+receipt were persisted, and the canonical writer retired its exact terminal session by directive.
+That receipt proves terminal retirement, not a separately deterministic release mechanism. The review verdict was
 `REVISE` with nine actionable findings, so the reviewed subject earned zero acceptance and must be
 repaired in a forward descendant. That adverse verdict is positive evidence for the failback path's
 quality preservation: the mechanism spent Opus capacity without laundering Fable failure or
@@ -99,10 +124,13 @@ it is neither portable acceptance nor another project's adoption.
 
 ## Required acceptance and project response
 
-Before ratification, a distinct adjudicator must bind the exact candidate commit/tree, reproduce
-positive, rollback, open-gate, stale-capacity, same-domain, concurrent-transaction, malformed-output,
-and hard-ceiling controls, and independently verify the terminal Opus receipt. Ratification must be
-appended to `RULINGS.md` and reach canonical `master`.
+Before ratification, a distinct adjudicator must bind the exact candidate commit/tree and reproduce
+the exact machine-readable matrix in `opus-model-failback-r2-controls.json`. Required controls include
+positive failback, each missing/conflicting discriminator field, rollback, open gate, stale capacity,
+same domain, concurrent transaction, malformed output, hard ceiling, live lease, an unconsumed canary
+that refuses with zero writes/launches, and an exact already-consumed canary that permits evaluation
+of later gates without itself granting admission. The adjudicator must independently verify the
+terminal Opus receipt. Ratification must be appended to `RULINGS.md` and reach canonical `master`.
 
 Each project then publishes one current `ADOPT`, `DISTINGUISH`, or `REJECT` disposition with its own
 policy, scheduler, account-domain transaction, tests, rollback, natural production proof, and owner
