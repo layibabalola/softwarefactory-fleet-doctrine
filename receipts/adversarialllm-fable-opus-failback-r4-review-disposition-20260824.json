@@ -1,0 +1,85 @@
+{
+  "schemaVersion": "fable-opus-failback-strategy-review-disposition.v1",
+  "recordedAt": "2026-08-24T21:43:22-05:00",
+  "status": "APPROVED_STRATEGY_ONLY_PROPOSED_NOT_RATIFIED",
+  "subject": {
+    "path": "ruling-candidates/fable-to-opus-usage-limit-failback-r4.md",
+    "sha256": "342C2726449B665ED862222C6E996051D7C86F4F0218D75DF459F8CC8C0CBC89",
+    "hashComputedIndependentlyBySubmitter": true
+  },
+  "runner": {
+    "path": "C:\\Users\\obabalola\\AppData\\Roaming\\Claude\\claude-code\\2.1.237\\claude.exe",
+    "sha256": "406167231B3636E55A01D0CE93567256C61E7973489E645883302F14808AE668",
+    "requestedModel": "claude-opus-5",
+    "nativeFallbackEnabled": false
+  },
+  "reviews": [
+    {
+      "role": "independent-security-doctrine-stranger",
+      "sessionId": "b564bd4c-0acc-45bc-9201-8d422ae1e2c2",
+      "observedPrimaryModel": "claude-opus-5",
+      "observedAuxiliaryModels": [
+        "claude-haiku-4-5-20251001"
+      ],
+      "blockerCount": 0,
+      "requiredChangeCount": 0,
+      "materialMinorCount": 5,
+      "scores": {
+        "internalSafety": 9,
+        "evidenceHonesty": 10,
+        "usefulness": 9,
+        "nonAuthorizing": 10,
+        "submissionCompleteness": 9
+      },
+      "verdict": "APPROVED_FOR_SUBMISSION_AS_PROPOSAL_ONLY",
+      "providerReportedCostUsd": 0.3227455,
+      "nonGatingFindings": [
+        "Clarify retention precedence between CANARY_PROGRAM_HOLD and BLOCKED_RECOVERY_HOLD in future ratification text.",
+        "Bind the pre-canary installed-hash approver explicitly to group 3 or a separately enumerated identity.",
+        "State author/certifier splits for role eligibility and the model-free demand predicate.",
+        "Include the fixed three-positive plus three-negative fundingSampleMinimum in the installed schedule.",
+        "Add an explicit hostile attendance-oracle fixture to the future implementation proof set."
+      ]
+    },
+    {
+      "role": "independent-operations-economics-recovery-stranger",
+      "sessionId": "a141aa4f-a6ae-41a3-b73a-79a99fd5f989",
+      "observedPrimaryModel": "claude-opus-5",
+      "observedAuxiliaryModels": [
+        "claude-haiku-4-5-20251001"
+      ],
+      "blockerCount": 0,
+      "requiredChangeCount": 0,
+      "materialMinorCount": 8,
+      "scores": {
+        "operationalSafety": 9,
+        "economicDiscipline": 9,
+        "recoveryCompleteness": 9,
+        "usefulness": 8,
+        "submissionCompleteness": 9
+      },
+      "verdict": "APPROVE_FOR_SUBMISSION_WITH_MINOR_FINDINGS",
+      "providerReportedCostUsd": 0.4048245,
+      "nonGatingFindings": [
+        "Charge an unproved-terminated orphan at the full installed ceiling in future ratification text.",
+        "Bound capture-only cohort criticality and volume share.",
+        "Require fallback-restoration proof in the capture-epoch terminal receipt.",
+        "Define the funding projection as a lower-confidence-bound calculation.",
+        "Set or explicitly derive shadow and containment TTLs.",
+        "Add a group-5 downstream recusal rule for evidence derived from labels it adjudicated.",
+        "Consider tightening the 13-minute displacement bound.",
+        "Treat economic abandonment as the expected default unless capture proves otherwise."
+      ]
+    }
+  ],
+  "rawReviewTranscriptsPublished": false,
+  "runtimeAuthority": false,
+  "providerAuthority": false,
+  "ratificationAuthority": false,
+  "mergeAuthority": false,
+  "limitations": [
+    "Each reviewer echoed the supplied subject hash; neither had tool authority to recompute it.",
+    "Observed auxiliary model usage is disclosed and receives no independent reviewer identity or credit.",
+    "Approval covers proposal submission only; implementation, canary, provider launch, ratification, and adoption remain separate gates."
+  ]
+}
