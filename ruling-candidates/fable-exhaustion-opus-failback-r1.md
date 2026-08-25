@@ -11,6 +11,36 @@ default is therefore **Fable first, Opus failback second** for useful, otherwise
 independent-review or advisory demand. This is model-pool routing inside the existing Anthropic quota
 domain; it does not create a second acceptance key or weaken role separation.
 
+## Utilization objective
+
+When useful provider-eligible backlog exists, the controller targets an increase of **at least five
+percentage points of Claude included-plan utilization per rolling hour**. This is a minimum useful-
+work throughput objective, not permission to manufacture work, inflate prompts, repeat unchanged
+reviews, or spend metered credits. Measurements must compare fresh samples from the same opaque
+account, quota domain, usage window, and provider counter; a reset, missing sample, identity change,
+or non-comparable counter yields `UTILIZATION_RATE_UNKNOWN`, never an invented rate.
+
+The controller samples at least every 15 minutes and records the rolling slope. If the observed
+useful-work slope is below five percentage points per hour, it must immediately prepare and dispatch
+the next lawful bounded job rather than wait for another general review cycle. Fable remains first
+choice while usable. Once typed Fable exhaustion or unavailability is established, the next eligible
+job is assigned to Opus without an additional idle interval. While the rate remains below target,
+Opus stays preferred for subsequent eligible jobs until the combined Claude included-plan slope
+recovers or the allowance is exhausted.
+
+Where trustworthy reset timing exists, the pacing target is the greater of five percentage points
+per hour and the rate needed to consume otherwise-discretionary allowance before reset, after
+reserving only the observed capacity needed to finish admitted work and publish receipts. The target
+is not a hard spend command: foreground priority, single-flight quota leases, exact-model identity,
+job-specific authority, custody, and completion reserve remain mandatory.
+
+If the target cannot be met, the controller emits `UTILIZATION_TARGET_BLOCKED` with the measured
+rate and exact typed blocker, such as `NO_ELIGIBLE_USEFUL_WORK`, `FABLE_STATE_UNKNOWN`,
+`OPUS_START_AUTHORITY_MISSING`, `ENDPOINT_UNAVAILABLE`, `QUOTA_LEASE_HELD`, or
+`COMPLETION_RESERVE_ONLY`. It then prepares the smallest fresh useful eligible subject it is already
+authorized to prepare. A blocked receipt is not successful utilization and must remain visible until
+the blocker changes.
+
 ## Typed failback trigger
 
 The router may enter `FABLE_EXHAUSTED` only from one of these retained observations:
