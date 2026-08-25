@@ -2,8 +2,58 @@ name: Provider capacity governor contracts
 
 on:
   pull_request:
+    paths:
+      - ".github/workflows/provider-capacity-governor.yml"
+      - "README.md"
+      - "CI-COST-CONTROL.md"
+      - "RECEIPTS.md"
+      - "RECONCILIATION.md"
+      - "RULINGS.md"
+      - "TRAPS.md"
+      - "capacity-control/**"
+      - "examples/**"
+      - "manifests/universal-provider-control-reconciliation-*.json"
+      - "policy/**"
+      - "receipts/**"
+      - "requirements-provider-capacity-governor.txt"
+      - "requirements-provider-capacity-governor.lock.txt"
+      - "schemas/**"
+      - "specs/fleet-provider-capacity-governor.md"
+      - "specs/fleet-universal-provider-control-reconciliation.md"
+      - "specs/mlv-app.md"
+      - "tests/test_provider_capacity_governor.py"
+      - "tests/test_universal_manifest_spec_bindings.py"
+      - "tests/test_universal_provider_control.py"
+      - "tools/check_universal_manifest.py"
+      - "tools/provider_capacity_governor.py"
+      - "tools/universal_provider_control.py"
   push:
     branches: [master]
+    paths:
+      - ".github/workflows/provider-capacity-governor.yml"
+      - "README.md"
+      - "CI-COST-CONTROL.md"
+      - "RECEIPTS.md"
+      - "RECONCILIATION.md"
+      - "RULINGS.md"
+      - "TRAPS.md"
+      - "capacity-control/**"
+      - "examples/**"
+      - "manifests/universal-provider-control-reconciliation-*.json"
+      - "policy/**"
+      - "receipts/**"
+      - "requirements-provider-capacity-governor.txt"
+      - "requirements-provider-capacity-governor.lock.txt"
+      - "schemas/**"
+      - "specs/fleet-provider-capacity-governor.md"
+      - "specs/fleet-universal-provider-control-reconciliation.md"
+      - "specs/mlv-app.md"
+      - "tests/test_provider_capacity_governor.py"
+      - "tests/test_universal_manifest_spec_bindings.py"
+      - "tests/test_universal_provider_control.py"
+      - "tools/check_universal_manifest.py"
+      - "tools/provider_capacity_governor.py"
+      - "tools/universal_provider_control.py"
   workflow_dispatch:
 
 permissions:
@@ -17,9 +67,10 @@ jobs:
   contracts:
     strategy:
       fail-fast: false
-      matrix:
-        os: [windows-latest, ubuntu-latest]
-        python-version: ["3.13", "3.14"]
+      # One representative PR gate prevents every refinement push from fanning
+      # out into four expensive jobs. Master and manual runs retain the full
+      # Windows/Linux x Python 3.13/3.14 evidence matrix.
+      matrix: ${{ fromJSON(github.event_name == 'pull_request' && '{"os":["ubuntu-latest"],"python-version":["3.14"]}' || '{"os":["windows-latest","ubuntu-latest"],"python-version":["3.13","3.14"]}') }}
     runs-on: ${{ matrix.os }}
     timeout-minutes: 15
     steps:
