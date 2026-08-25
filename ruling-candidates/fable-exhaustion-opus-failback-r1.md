@@ -1,9 +1,10 @@
-# Fable-exhaustion to Opus failback R2
+# Fable-exhaustion to Opus failback R3
 
-Status: **OWNER-DIRECTED FLEET DOCTRINE PROPOSAL — ROUTING/PREPARATION AUTHORITY ONLY; NO PROVIDER
-CALL, TASK ENABLEMENT, REVIEW CREDIT, VOTE, RATIFICATION, OR PROJECT ADOPTION GRANT.** Projects
-consume this proposal as data under the fleet adopt-or-distinguish law. A project must separately
-adopt and activate the resulting control before it can launch work.
+Status: **OWNER-DIRECTED FLEET DOCTRINE PROPOSAL. PUBLICATION ALONE GRANTS NO PROVIDER CALL, TASK
+ENABLEMENT, REVIEW CREDIT, VOTE, RATIFICATION, OR PROJECT ADOPTION.** Projects consume this proposal
+as data under the fleet adopt-or-distinguish law. `OWNER_DRAIN_MODE` activates only from a separate,
+explicit owner instruction for a named quota domain and manifest. That activation waives only the
+need for a new owner message per manifest job; it waives no project-local admission or custody gate.
 
 The owner identified unused Claude included-plan allowance as an economic defect: useful paid
 capacity must not be preserved until expiry merely because Fable is unavailable or a usage dashboard
@@ -14,14 +15,16 @@ quota domain; it does not create a second acceptance key or weaken role separati
 
 ## Utilization objective
 
-When useful provider-eligible backlog exists, the controller targets an increase of **at least five
-percentage points of Claude included-plan utilization per rolling hour** and, in owner-activated
-drain mode, complete consumption of the remaining included allowance before account transition or
-reset. This is a minimum useful-work throughput objective, not permission to manufacture work,
+When useful provider-eligible backlog exists, the controller targets accepted project-local work and
+records **at least five percentage points of Claude included-plan utilization per rolling hour** as a
+secondary pacing diagnostic. In owner-activated drain mode it executes the finite approved manifest
+until the manifest completes or included allowance is exhausted. This is not permission to
+manufacture work,
 inflate prompts, repeat unchanged reviews, or spend metered credits. Measurements must compare fresh
 samples from the same opaque account, quota domain, usage window, and provider counter; a reset,
 missing sample, identity change, or non-comparable counter yields `UTILIZATION_RATE_UNKNOWN`, never an
-invented rate. `UTILIZATION_RATE_UNKNOWN` is an observability defect, not a dispatch veto.
+invented rate. `UTILIZATION_RATE_UNKNOWN` is an observability defect, not a dispatch veto. A
+utilization percentage never earns project-local credit and never substitutes for useful output.
 
 The controller samples at least every 15 minutes when a comparable counter is available. If the
 observed useful-work slope is below five percentage points per hour, or if drain mode is active and
@@ -47,11 +50,13 @@ until the blocker changes.
 ## Owner-activated productive drain mode
 
 An explicit owner instruction to exhaust the remaining included Claude allowance activates
-`OWNER_DRAIN_MODE` for the named quota domain. While active:
+`OWNER_DRAIN_MODE` for the named quota domain and a finite owner-approved manifest. Activation first
+proves included-plan-only billing: no overage, metered fallback, attached API key, or token
+environment variable. Absence of that proof refuses activation. While active:
 
-1. the instruction is reusable routing and start authority for changed, useful, bounded read-only
-   advisory work already within the project's scope, including independent review, defect
-   localization, architecture analysis, documentation, and test design;
+1. the manifest enumerates each changed, useful, bounded read-only advisory subject by fingerprint,
+   independent value rationale, role, accepting project, and maximum token ceiling. The instruction
+   is reusable routing and start authority for those manifest jobs only;
 2. each job still binds an exact subject fingerprint, role, model request, deliverable, and terminal
    receipt, but does not require a new owner message merely because the previous bounded job ended;
 3. the broker continuously selects the next highest-value eligible job with no general-review idle
@@ -59,10 +64,19 @@ An explicit owner instruction to exhaust the remaining included Claude allowance
    Fable refusal, exhaustion response, model unavailability, or when the job's role requires Opus;
 4. missing or signed-out usage telemetry does not pause dispatch; the provider's actual terminal
    quota response is the authoritative exhaustion boundary;
-5. the mode stops on typed included-plan exhaustion, empty useful backlog, custody or safety failure,
-   or owner revocation, and emits `ACCOUNT_SWITCH_READY` only after typed exhaustion; and
+5. the mode deactivates, never pauses, on `PLAN_ALLOWANCE_EXHAUSTED`, manifest completion, three
+   consecutive zero-credit terminals, custody or safety failure, quota-domain identity change, owner
+   revocation, or expiry at the earlier of the exposed reset boundary and 12 hours from activation.
+   It never survives a reset, account transition, controller restart, or quota-domain identity
+   change and never re-arms automatically. `ACCOUNT_SWITCH_READY` is emitted only after
+   `PLAN_ALLOWANCE_EXHAUSTED` and deactivation; and
 6. the mode grants no mutation, vote, acceptance, Product start, release, deployment, credential,
    metered/API-key purchase, or automated account-switch authority.
+
+Manifest exhaustion is `DRAIN_MANIFEST_COMPLETE`, an honest successful terminal. The ordinary
+fresh-subject preparation clause is suspended while drain mode is active; adding manifest items
+requires a fresh owner instruction. Three consecutive terminals with zero project-local credit emit
+`DRAIN_WASTE_TRIPPED` and deactivate the mode.
 
 ## Typed failback trigger
 
@@ -80,6 +94,16 @@ identity, Desktop interactivity, or a successful authentication check is not exh
 state is `CAPACITY_UNKNOWN`, never an invented zero. The trigger receipt records the evidence class,
 observation time, reset boundary when exposed, opaque quota-domain identity, and raw-evidence hash;
 it stores no credentials, account identifiers, or raw transcript.
+
+### Typed included-plan exhaustion
+
+Every quota terminal is classified into exactly one of `RATE_LIMITED`, `WINDOW_EXHAUSTED`, or
+`PLAN_ALLOWANCE_EXHAUSTED`. `RATE_LIMITED` carries retry-after or a sub-window boundary, triggers
+bounded backoff, and never emits `ACCOUNT_SWITCH_READY`. `WINDOW_EXHAUSTED` suspends dispatch to the
+exposed window boundary and never emits `ACCOUNT_SWITCH_READY`. Only
+`PLAN_ALLOWANCE_EXHAUSTED` proves no further included capacity before the plan boundary and permits
+`ACCOUNT_SWITCH_READY`. A response not classifiable into exactly one class is `CAPACITY_UNKNOWN` and
+stops new admission without inventing exhaustion.
 
 ## Eligible Opus failback work
 
@@ -106,20 +130,28 @@ custody, independence, and admission checks.
 2. Acquire the single full-child-lifetime lease for the Anthropic quota domain. Fable, Opus, and
    Sonnet do not overlap on the shared account unless separately proven quota domains and a reviewed
    concurrency policy exist.
+   Bind the lease to the opaque quota-domain identity observed at acquisition. Any identity change
+   emits `QUOTA_DOMAIN_IDENTITY_CHANGED`, invalidates the lease, deactivates drain mode, and vetoes
+   new admission. The telemetry-nonblocking rule never overrides identity drift.
 3. Recheck demand, authority, identity, capacity, completion reserve, foreground priority, and all
    project-specific holds in the final launch transaction. The economic directive does not bypass a
    closed task, consumed attempt, quorum requirement, reviewer blindness, or candidate custody.
+   Each job runs in a fresh process. A per-subject role ledger refuses an executing identity a second
+   role on the same fingerprint or a reviewer role after observing peer material.
 4. Admit one bounded Opus job with exact subject hash, role, effort, launcher digest, maximum turns,
    and cumulative token ceilings. Drain mode may admit the next distinct useful job after terminal
    completion without a new owner message, but never retries or continues the same consumed attempt.
    There is no API-key fallback, metered-credit purchase, automated account switch, UI automation, or
    lower-model fallback.
-5. Preserve enough observed allowance to finish the admitted job and publish its terminal receipt;
+5. Before admission compute `reserve = cumulative_token_ceiling + RECEIPT_ALLOTMENT`, where receipt
+   publication is provider-free. Admit only when observed remaining allowance is at least the reserve;
    do not reserve discretionary capacity merely to keep the meter nonzero. A budget stop produces
    `CHECKPOINTED/WIP`, never `PASS`, `APPROVE`, or review credit.
 6. On terminal completion, capacity refusal, ambiguity, or custody drift, release the lease, record
    the typed outcome, and stop. When Fable later has fresh capacity, new demand returns to Fable-first
    routing; an already admitted Opus job is not preempted mid-write.
+7. Consecutive non-`OK` launch terminals use exponential backoff (30 seconds, doubling to 15 minutes)
+   and a configured hard ceiling per rolling hour. "Immediate" dispatch never means a hot retry loop.
 
 ## Required utilization evidence
 
@@ -132,6 +164,9 @@ strategy worked.
 
 Acceptance evidence for this strategy is: one deterministic trigger fixture, one missing-telemetry
 non-blocking dispatch fixture, one no-demand `IDLE_SKIPPED`, one wrong-model refusal, one Fable/Opus
-concurrency denial, one owner-drain activation fixture, and one bounded Opus job that completes with
-exact identity and a useful project-local artifact. Outside explicit `OWNER_DRAIN_MODE`, projects
-still require ordinary job-specific start authority.
+concurrency denial, one owner-drain activation fixture, one bounded Opus job that completes with exact
+identity and a useful project-local artifact, plus deterministic fixtures for rate-limit versus plan
+exhaustion, identity drift, manifest completion, three zero-credit terminals, included-only proof
+absence, completion reserve, backoff ceiling, role exclusivity, reset/restart non-rearm, and account
+transition. Outside explicit `OWNER_DRAIN_MODE`, projects still require ordinary job-specific start
+authority.
