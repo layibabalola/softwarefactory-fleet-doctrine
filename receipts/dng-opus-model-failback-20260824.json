@@ -1,0 +1,48 @@
+{
+  "schema": "fleet-doctrine-candidate-evidence.v1",
+  "candidate": "OPUS_MODEL_FAILBACK_R1",
+  "project": "dng-auto-processor",
+  "observed_at_utc": "2026-08-25T00:31:32Z",
+  "authority": "USER 2026-08-24: use Opus when Fable usage is exhausted and submit the finalized strategy to fleet doctrine",
+  "failed_fable_attempt": {
+    "credit": "ZERO",
+    "terminal_artifact_sha256": "6303AC88EC685C899F5A005B559DE306A3833D861A5CF5A1184A58845F28DE84",
+    "reason": "exact terminal Fable usage exhaustion; no acceptance receipt"
+  },
+  "opus_continuation": {
+    "route_id": "dng-r27-reservation-anchor-r2-race-opus-capacity-continuation",
+    "packet_sha256": "ABF122CF39FACB6D01C53E7EDD75526953CDCB327DCE23B5922A37133B97BE27",
+    "model": "claude-opus-5",
+    "effort": "max",
+    "subject_count": 4,
+    "provider_invocation": "natural scheduled warden only"
+  },
+  "self_heal": {
+    "actor_sha256": "FFA7B91C2A6707B0F76D6C3C8AA6ECC141666453585540E97E51015C6F1A1003",
+    "actor_test_sha256": "7786AE630C8928BA9A1960B9561B8C55F4C667A3541DB01B6685E08382BACADB",
+    "controlled_assertions": 8,
+    "warden_sha256": "8C09B1A8D6D2FA439FB113BE1C772908A9B0FB4E1DB35FE6269B5A1C30D0D27C",
+    "transaction_id": "3fb76e364dd24122ae04a97169c69f75",
+    "transaction_receipt_sha256": "9A9C123A256BDF7575884B92912FDCEF76B438A1CADB42382FDEB6E9FCDA2C35",
+    "transaction_state": "COMMITTED",
+    "policy_sha256": "3AB44FD070B35E9B0BE97841F37FE26EB27DA10180A4A3BDC87E3AF4D68DC6D8",
+    "raw_identity_persisted": false,
+    "rollback_preimages_preserved": true
+  },
+  "natural_opus_launch": {
+    "capacity_five_hour_pct": 4,
+    "capacity_seven_day_pct": 83,
+    "preclaim_session": "746117c7-d423-4cf1-ad53-8057d6f6cc96",
+    "preclaim_transaction": "ea78bb30-dc67-4812-9673-933ab5ea77ba",
+    "provider_argv_sha256": "56EE300CA5B8ABA24C7014A2B8373D0B3DC03CEBFBCADC2A0C4A0DADEA1C91B4",
+    "permit_authorization": "fcb44e814525463dbb8d15e0ce79ef4a",
+    "terminal_output_sha256": "050D3EE8F2A504216B3788DA93E9731EB665003C1D6A593109077EEBE3CBBC01",
+    "consumption_receipt_sha256": "F1F4C2159BC270202AB3E5B5F68C7CD7BC9971FE6EC8BD8E7409DE39F78D8B18",
+    "exit_code": 0,
+    "verdict": "REVISE",
+    "actionable_findings": 9,
+    "lease_release": "retired-by-directive",
+    "credit": "TERMINAL_FAILBACK_PATH_PROVEN; SUBJECT_ACCEPTANCE_ZERO"
+  },
+  "credit_boundary": "Project-local transition evidence only; no fleet ratification or adoption credit."
+}
