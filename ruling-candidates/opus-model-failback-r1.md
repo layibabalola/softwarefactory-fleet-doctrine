@@ -1,4 +1,4 @@
-# Ruling candidate: exhausted-model failback to Opus R16
+# Ruling candidate: exhausted-model failback to Opus R17
 
 Status: **PROPOSED ONLY — NOT RATIFIED DOCTRINE OR RUNTIME AUTHORITY**
 
@@ -61,9 +61,14 @@ extracts; and consumed/terminal carrier, terminal receipt/lease, and close-befor
 
 Large outputs may be represented only by packet-readable closed extracts whose generator hashes
 and parses the raw bytes and binds its identity through the capsule's exact executable hash. The
-capsule must bind its packet issuance timestamp and derive capacity age from that timestamp, not a
-self-asserted capsule creation time. Self-asserted hashes or timestamps are `HOLD`. The capsule grants
-no capacity, provider, acceptance, publication, ratification, installation, or adoption authority.
+capsule timestamp must equal the immutable issuing packet's `issued_at_utc`; the verifier must
+compare both values and derive capacity age from that packet timestamp, never from capsule fields
+alone. The current Fable extract must be packet-readable and bind exact model, route, packet,
+session, one turn, 429, result text, zero input/output tokens, absent verdict, zero credit, and its
+capacity account domain. Opus capacity must prove the same opaque domain against that extract.
+Self-asserted hashes, timestamps, or domains are `HOLD`. Per-lane local assertion counts are exact,
+not merely positive. The capsule grants no capacity, provider, acceptance, publication,
+ratification, installation, or adoption authority.
 
 ## Transactional terminalization and replay prevention
 
@@ -100,24 +105,21 @@ consumption, and deterministic release. Published R14 binds the complete ordered
 The R15 packet carries that bundle hash, the exact R14 Fable/Opus/Sonnet terminal rows, and the
 current-master integration identity; the verifier asserts those values without reopening history.
 
-R9 exposed capsule, hidden-read, Git, timestamp, route, core, signature, and terminal-binding gaps.
-R10 repaired them but revealed a stale current-transition pin. R11 repaired that relationship, then
-Opus consumed 27,594 output tokens and returned REVISE(4). R12 repaired digest recomputation,
-per-lane predecessor pinning, packet-readable prior extracts, per-row size enforcement, and
-issuance-derived capacity age; its Fable attempt was exact one-turn zero-credit exhaustion and its
-Opus run consumed 32,182 output tokens before REVISE(3). R13 completed and asserted the review
-history and added generator-bound packet-readable R12 extracts, but its local verifier rejected the
-missing literal terminal relationship before provider publication. R14 preserved those repairs,
-stated that relationship exactly, then completed the natural completeness front door with exact
-one-turn Fable model exhaustion and zero credit before exact Opus and Sonnet both returned ACCEPT.
-The exact accepted R14 commit is published at `refs/heads/codex/opus-model-failback-r1`.
+R9-R13 repaired capsule, hidden-read, Git, capacity, core, execution, history, and terminal-binding
+defects forward-only; their evidence bundle preserves the ordered adverse record. R14 then proved
+exact one-turn Fable zero-credit exhaustion followed by exact Opus and Sonnet ACCEPT. Its immutable
+commit is published at `refs/heads/codex/opus-model-failback-r1`.
 
 R15 integrated the published lineage on current master but failed its 35,380-byte carrier check.
-R16 preserves the law and compacts prior history to its bundle hash plus exact R14 terminal rows.
-Fable remains the completeness front door; exact model-scoped exhaustion with zero tokens and no
-verdict is not acceptance and does not block ratification. Before ratification, Fable must end on
-the R16 core as ACCEPT or exact zero-credit model exhaustion; exact Opus and Sonnet must then ACCEPT
-that unchanged core. R15 and every rejected or exhausted generation retain zero acceptance credit.
+R16 preserved the law and compacted prior history to its bundle hash plus exact R14 terminal rows,
+but Opus held it after 18,246 output tokens: capacity age was not bound to the actual packet time,
+the current Fable zero-credit extract and domain comparand were not packet-readable, and the local
+count was not exact-enforced. R17 repairs those evidence relationships without weakening portable
+law. Fable remains the completeness front door; exact model-scoped exhaustion with zero tokens and
+no verdict is not acceptance and does not block ratification. Before ratification, Fable must end
+on the R17 core as ACCEPT or exact zero-credit model exhaustion; exact Opus and Sonnet must then
+ACCEPT that unchanged core. R15, R16, and every rejected or exhausted generation retain zero
+acceptance credit.
 The lanes must reproduce the matrix, ceiling cases, classifier variants,
 domain/freshness states, row permutation, replay prevention, execution drift, Git objects, capsule
 hashes, publication ancestry, and terminal evidence.
