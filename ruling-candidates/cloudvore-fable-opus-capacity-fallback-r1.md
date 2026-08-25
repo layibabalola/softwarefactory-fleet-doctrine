@@ -29,6 +29,34 @@ No score, source, execution, product, permit, release, or independent-review aut
 because capacity was used or an audit returned READY. The exact downstream durable terminal remains
 the authority.
 
+## Utilization floor
+
+While Fable is unavailable and lawfully usable exact Opus capacity exists, Cloudvore SHALL target a
+rolling minimum drain of **five account-reported usage percentage points per hour**. This is an
+operating throughput objective, not evidence authority and not permission to invent work.
+
+The scheduler must maintain a ready queue of independently audited, non-overlapping, critical-path
+Opus packages so local source preparation does not leave paid capacity idle. On every wake it must
+derive the rolling drain and remaining hourly gap from authoritative usage observations obtained as
+part of useful work; it must never invoke merely to sample quota. When the observed rate is below
+five points per hour and useful admitted packages exist, it immediately advances enough of the
+highest-value packages to recover the target. Parallel Opus work is allowed only across disjoint
+custody and output namespaces; serializing unrelated read-only audits behind one writer is a defect.
+
+Priority order for recovering a utilization shortfall is:
+
+1. critical-path independent falsification or design/source review;
+2. immutable evidence authentication and terminal diagnosis;
+3. independently scoped recovery review;
+4. preparation or review of the next lawful package that removes foreseeable serialization; and
+5. lower-priority admitted backlog with a concrete delivery or score gate.
+
+If capacity is unavailable, a reset forbids use, no audited package exists, work would collide, or
+no useful admitted work exists, the scheduler records the exact shortfall and the package-preparation
+action that will close it. It never reports target compliance from elapsed time, reserves Opus quota
+speculatively, or manufactures quota-burning work. A shortfall caused by an empty ready queue while
+useful backlog exists is a scheduler defect and must be corrected at the next wake.
+
 ## Admission and one-shot custody
 
 Before invoking the provider:
@@ -70,8 +98,9 @@ review obligation open.
 
 ## Automation rule
 
-Evaluate fallback on every wake and record the decision at least every thirty minutes while a
-critical path is open. If Opus remains idle despite Fable unavailability, record the exact reason:
+Evaluate fallback and the rolling five-point-per-hour utilization floor on every wake, and record
+the decision at least every thirty minutes while a critical path is open. If Opus remains idle
+despite Fable unavailability, record the exact reason:
 no lawful useful task, provider unavailable, active one-shot, writer collision, missing immutable
 package, or independent review pending. "Saving quota" is not a reason when useful safe work exists.
 
