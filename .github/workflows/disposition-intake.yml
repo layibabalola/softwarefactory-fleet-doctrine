@@ -2,8 +2,28 @@ name: R26 project disposition intake
 
 on:
   pull_request:
+    paths:
+      - ".github/workflows/disposition-intake.yml"
+      - "capacity-control/PROJECT-ADOPTION-MATRIX.md"
+      - "manifests/**"
+      - "specs/**"
+      - "tests/test_adoption_ledger.py"
+      - "tests/test_adversarialllm_utilization_shadow_doctrine.py"
+      - "tests/test_phase*_*.py"
+      - "tools/check_adoption_ledger.py"
+      - "tools/check_phase*.py"
   push:
     branches: [master]
+    paths:
+      - ".github/workflows/disposition-intake.yml"
+      - "capacity-control/PROJECT-ADOPTION-MATRIX.md"
+      - "manifests/**"
+      - "specs/**"
+      - "tests/test_adoption_ledger.py"
+      - "tests/test_adversarialllm_utilization_shadow_doctrine.py"
+      - "tests/test_phase*_*.py"
+      - "tools/check_adoption_ledger.py"
+      - "tools/check_phase*.py"
   workflow_dispatch:
 
 permissions:
@@ -21,9 +41,10 @@ jobs:
       R26_SCOPE_BASE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event_name == 'push' && github.event.before || '' }}
     strategy:
       fail-fast: false
-      matrix:
-        os: [windows-latest, ubuntu-latest]
-        python-version: ["3.13", "3.14"]
+      # The historical disposition chain is expensive. One Ubuntu/Python 3.14
+      # PR job catches candidate drift; the four-way matrix remains a landing
+      # seam requirement on master and workflow_dispatch.
+      matrix: ${{ fromJSON(github.event_name == 'pull_request' && '{"os":["ubuntu-latest"],"python-version":["3.14"]}' || '{"os":["windows-latest","ubuntu-latest"],"python-version":["3.13","3.14"]}') }}
     runs-on: ${{ matrix.os }}
     timeout-minutes: 30
     steps:
