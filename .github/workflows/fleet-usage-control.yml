@@ -7,6 +7,15 @@ on:
       - "capacity-control/**"
       - "requirements-provider-capacity-governor.txt"
       - "requirements-provider-capacity-governor.lock.txt"
+      - "tests/test_ci_cost_containment.py"
+  push:
+    branches: [master]
+    paths:
+      - ".github/workflows/fleet-usage-control.yml"
+      - "capacity-control/**"
+      - "requirements-provider-capacity-governor.txt"
+      - "requirements-provider-capacity-governor.lock.txt"
+      - "tests/test_ci_cost_containment.py"
   workflow_dispatch:
 
 permissions:
@@ -20,9 +29,9 @@ jobs:
   contracts:
     strategy:
       fail-fast: false
-      matrix:
-        os: [windows-latest, ubuntu-latest]
-        python-version: ["3.13", "3.14"]
+      # Pull requests get one fast representative gate. The complete cross-platform
+      # matrix remains mandatory on master and deliberate workflow_dispatch checks.
+      matrix: ${{ fromJSON(github.event_name == 'pull_request' && '{"os":["ubuntu-latest"],"python-version":["3.14"]}' || '{"os":["windows-latest","ubuntu-latest"],"python-version":["3.13","3.14"]}') }}
     runs-on: ${{ matrix.os }}
     timeout-minutes: 15
     steps:
@@ -42,6 +51,9 @@ jobs:
 
       - name: Run runtime-extension negative controls
         run: python -m unittest discover -s capacity-control/tests -p "test_*.py" -v
+
+      - name: Verify bounded CI fan-out policy
+        run: python -m unittest discover -s tests -p "test_ci_cost_containment.py" -v
 
       - name: Compile runtime-extension references
         run: python -m compileall -q capacity-control/reference
