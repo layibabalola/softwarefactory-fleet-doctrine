@@ -2,8 +2,20 @@ name: R26 adoption ledger
 
 on:
   pull_request:
+    paths:
+      - ".github/workflows/adoption-ledger.yml"
+      - "capacity-control/PROJECT-ADOPTION-MATRIX.md"
+      - "specs/**"
+      - "tests/test_adoption_ledger.py"
+      - "tools/check_adoption_ledger.py"
   push:
     branches: [master]
+    paths:
+      - ".github/workflows/adoption-ledger.yml"
+      - "capacity-control/PROJECT-ADOPTION-MATRIX.md"
+      - "specs/**"
+      - "tests/test_adoption_ledger.py"
+      - "tools/check_adoption_ledger.py"
   workflow_dispatch:
 
 permissions:
@@ -17,9 +29,9 @@ jobs:
   evidence:
     strategy:
       fail-fast: false
-      matrix:
-        os: [windows-latest, ubuntu-latest]
-        python-version: ["3.13", "3.14"]
+      # Exact project/spec drift is checked once on each PR. The complete matrix
+      # runs only on canonical master and explicit landing verification.
+      matrix: ${{ fromJSON(github.event_name == 'pull_request' && '{"os":["ubuntu-latest"],"python-version":["3.14"]}' || '{"os":["windows-latest","ubuntu-latest"],"python-version":["3.13","3.14"]}') }}
     runs-on: ${{ matrix.os }}
     timeout-minutes: 10
     steps:
