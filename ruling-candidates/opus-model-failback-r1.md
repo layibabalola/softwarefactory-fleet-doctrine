@@ -23,24 +23,19 @@ evidence is `HOLD`; authentication is not capacity evidence.
 
 ## Exact terminal-exhaustion discriminator
 
-One immutable artifact and durable zero-credit receipt must conjunctively prove:
+One immutable artifact plus durable zero-credit receipt must conjunctively bind the admitted
+route/session and exact `claude-fable-5`; terminal `api_error`/429 after exactly one attempted turn;
+assistant `error=rate_limit`; no verdict or acceptance; zero review input/output tokens; and the
+exact text `You've reached your Fable 5 limit. Run /usage-credits to continue or switch models with
+/model.` The receipt also binds packet, authorization, artifact path/hash, unchanged core digest,
+closed assertion-name array, and exact assertion count. Wrapper probes earn no drain credit.
 
-1. admitted route/session and provider init name exact `claude-fable-5`;
-2. terminal reason `api_error`, status 429, exactly one attempted turn, and no review verdict or
-   acceptance artifact;
-3. result text exactly `You've reached your Fable 5 limit. Run /usage-credits to continue or switch
-   models with /model.` and assistant `error` exactly `rate_limit`, both copied into the receipt;
-4. zero Fable review input/output tokens (wrapper probes receive no drain credit);
-5. every classifier event is bound and enumerated. Rejected base-window, signed 100%, or explicit
-   provider/account exhaustion is `HOLD`. Rejected `seven_day_overage_included` with overage disabled
-   is only an entitlement rejection when the base event is allowed or omitted and separate fresh
-   same-domain base utilization is below 100. Omitted base is eligible only with the exact
-   model-scoped 429, one-turn zero-token evidence, and no contradictory event;
-6. separate fresh same-domain capacity publishes utilization, reservations, estimate, exact sum,
-   and named `<=100` assertion for each window;
-7. receipt binds packet, authorization, session, model, artifact path/hash, terminal fields,
-   zero-credit disposition, and unchanged core digest; and
-8. receipt publishes a closed ordered assertion-name array and exact matching count.
+Every rate-limit event must be enumerated. Rejected base-window, signed 100%, or explicit account
+exhaustion is `HOLD`. Rejected `seven_day_overage_included` with overage disabled is an entitlement
+rejection only when the base event is allowed or omitted and fresh same-domain base utilization is
+below 100; omitted base additionally requires the exact one-turn zero-token evidence and no
+contradiction. Fresh capacity must publish utilization, reservations, estimate, sum, and named
+`<=100` assertion for every window.
 
 Generic 429 text or partial classification is insufficient.
 
@@ -119,14 +114,13 @@ account-selection, or inference authority.
 
 ## Preserved invariants
 
-- exact successor model, immutable subjects, strict serial order, and one quota-domain owner;
-- zero discretionary reserve where authorized, with hard 100% ceiling and conservative reservation;
-- no cross-account telemetry, overlap, live lease, stale carrier, or failed-output laundering;
-- closed gate, one-use canary, bounded execution, validated output, and truthful terminal lease;
-- Fable is completeness front door, not automatic acceptance or owner authority;
-- every actionable finding creates a forward immutable subject and restarts at Fable;
-- installer, preview, rollback/reinstall, cadences, ticks, project disposition, and adoption remain
-  separate gates.
+Preserve exact successor model and subjects, strict serial order, one quota-domain owner, zero
+discretionary reserve, hard 100% ceiling, conservative reservation, closed gate, one-use canary,
+bounded execution, validated output, and truthful terminal lease. Cross-account telemetry, overlap,
+live lease, stale carrier, and failed-output laundering remain `HOLD`. Fable is the completeness
+front door, not acceptance or owner authority. Findings restart at Fable on a forward immutable
+subject. Installer, preview, rollback/reinstall, cadences, ticks, project disposition, and adoption
+remain separate gates.
 
 ## Evidence and acceptance
 
