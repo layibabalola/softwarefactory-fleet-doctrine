@@ -1,206 +1,52 @@
-[CmdletBinding()]
-param()
-
-$ErrorActionPreference = 'Stop'
-Set-StrictMode -Version Latest
-$script:assertions = 0
-
-function Assert-True([bool]$Condition, [string]$Message) {
-    if (-not $Condition) { throw "ASSERTION FAILED: $Message" }
-    $script:assertions++
-}
-
-$specJson = @'
-{
-  "schema":"fleet-exhausted-model-failback-controls.v4",
-  "candidate":"opus-model-failback-r5",
-  "authority":"ZERO_AUTHORITY_REPRODUCTION_MATRIX",
-  "capacity_observation_max_age_seconds":300,
-  "hard_ceiling_rule":"UTILIZATION_PLUS_ACTIVE_RESERVATIONS_PLUS_CONSERVATIVE_ESTIMATE_LTE_100_IN_EVERY_WINDOW",
-  "core_subject_contract":{
-    "digest_algorithm":"SHA256_CANONICAL_CLOSED_KEY_ORDERED_ROWS_V1",
-    "row_keys":["path","bytes","sha256"],
-    "order_is_binding":true,
-    "lane_ancestry_attachment_excluded":true
-  },
-  "execution_contract":{
-    "common":{"effort":"max","max_turns":12,"max_wall_clock_seconds":900,"provider_tools":["Read","StructuredOutput"],"result_contract":"route-review-result.v1"},
-    "fable":{"model":"claude-fable-5","role":"coordinator"},
-    "opus":{"model":"claude-opus-5","role":"executor"}
-  },
-  "discriminator_assertions":[
-    "INIT_MODEL_EXACT",
-    "ROUTE_AND_SESSION_EXACT",
-    "TERMINAL_REASON_API_ERROR",
-    "HTTP_STATUS_429",
-    "EXACTLY_ONE_TURN",
-    "EXACT_MODEL_SCOPED_RESULT_TEXT",
-    "ASSISTANT_ERROR_RATE_LIMIT",
-    "ZERO_REVIEW_INPUT_TOKENS",
-    "ZERO_REVIEW_OUTPUT_TOKENS",
-    "NO_REVIEW_VERDICT_OR_ACCEPTANCE",
-    "RATE_LIMIT_EVENTS_COMPLETE_AND_ADJUDICATED",
-    "SAME_DOMAIN_CAPACITY_FRESH_AND_BASE_WINDOWS_BELOW_100"
-  ],
-  "classifier_rules":{
-    "bind_every_rate_limit_event":true,
-    "base_window_rejected":"HOLD_ACCOUNT_OR_WINDOW_EXHAUSTION",
-    "overage_only_rejected_with_allowed_base_below_100":"MODEL_CLASSIFIER_MAY_CONTINUE_TO_OTHER_GATES",
-    "overage_only_rejected_without_base_event_with_exact_model_evidence_and_signed_base_below_100":"MODEL_CLASSIFIER_MAY_CONTINUE_TO_OTHER_GATES",
-    "overage_only_rejected_without_base_event_or_fresh_signed_corroboration":"HOLD_CLASSIFIER_AMBIGUOUS",
-    "contradictory_or_unenumerated_event":"HOLD_CLASSIFIER_AMBIGUOUS"
-  },
-  "cases":[
-    {"id":"positive_exact_fable_exhaustion","mutation":"none","expected":"ELIGIBLE_FOR_ORDINARY_OPUS_ADMISSION_EVALUATION","writes":0,"provider_launches":0},
-    {"id":"wrong_or_alias_fable_model","mutation":"init model differs from exact claude-fable-5","expected":"HOLD_MODEL_IDENTITY","writes":0,"provider_launches":0},
-    {"id":"generic_429_without_exact_fable_text","mutation":"429 exists without exact model-scoped result","expected":"HOLD_EXHAUSTION_AMBIGUOUS","writes":0,"provider_launches":0},
-    {"id":"assistant_error_missing_or_different","mutation":"assistant event error is absent or differs from rate_limit","expected":"HOLD_TERMINAL_EVIDENCE","writes":0,"provider_launches":0},
-    {"id":"nonterminal_or_multiturn_result","mutation":"terminal reason differs or turns are not exactly one","expected":"HOLD_TERMINAL_IDENTITY","writes":0,"provider_launches":0},
-    {"id":"verdict_or_acceptance_present","mutation":"Fable artifact contains review verdict or acceptance","expected":"HOLD_CREDIT_CONFLICT","writes":0,"provider_launches":0},
-    {"id":"nonzero_fable_review_tokens","mutation":"review input or output tokens are nonzero","expected":"HOLD_NOT_ZERO_CREDIT_EXHAUSTION","writes":0,"provider_launches":0},
-    {"id":"rate_limit_event_omitted","mutation":"receipt omits any artifact rate-limit event","expected":"HOLD_CLASSIFIER_INCOMPLETE","writes":0,"provider_launches":0},
-    {"id":"base_window_rejected","mutation":"a bound base-window classifier is rejected","expected":"HOLD_ACCOUNT_OR_WINDOW_EXHAUSTION","writes":0,"provider_launches":0},
-    {"id":"overage_only_rejected_with_allowed_base_below_100","mutation":"overage entitlement rejected while base window remains allowed and signed below 100","expected":"CONTINUE_TO_OTHER_GATES","writes":0,"provider_launches":0},
-    {"id":"overage_only_rejected_without_base_event_with_exact_model_evidence_and_signed_base_below_100","mutation":"base event omitted while exact model evidence and fresh signed same-domain base utilization below 100 remain present","expected":"CONTINUE_TO_OTHER_GATES","writes":0,"provider_launches":0},
-    {"id":"overage_only_rejected_without_base_event_or_fresh_signed_corroboration","mutation":"base event omitted and exact model evidence or fresh signed same-domain base corroboration is absent","expected":"HOLD_CLASSIFIER_AMBIGUOUS","writes":0,"provider_launches":0},
-    {"id":"contradictory_or_unenumerated_rate_limit_event","mutation":"artifact contains a contradictory or unenumerated rate-limit event","expected":"HOLD_CLASSIFIER_AMBIGUOUS","writes":0,"provider_launches":0},
-    {"id":"stale_or_cross_domain_capacity","mutation":"signed observation older than 300 seconds or on another domain","expected":"HOLD_CAPACITY_EVIDENCE","writes":0,"provider_launches":0},
-    {"id":"hard_ceiling_sum_exactly_100","mutation":"utilization plus reservations plus estimate equals 100 in every window","expected":"CONTINUE_TO_LATER_GATES","writes":0,"provider_launches":0},
-    {"id":"hard_ceiling_sum_above_100","mutation":"utilization plus reservations plus estimate exceeds 100 in any window","expected":"HOLD_HARD_CEILING","writes":0,"provider_launches":0},
-    {"id":"core_subject_reordered","mutation":"successor changes ordered core-subject rows","expected":"HOLD_CORE_SUBJECT_DIGEST","writes":0,"provider_launches":0},
-    {"id":"core_subject_replaced","mutation":"ancestry attachment replaces a core subject","expected":"HOLD_CORE_SUBJECT_DIGEST","writes":0,"provider_launches":0},
-    {"id":"execution_contract_effort_drift","mutation":"effort differs from max","expected":"HOLD_EXECUTION_CONTRACT","writes":0,"provider_launches":0},
-    {"id":"execution_contract_turn_or_wall_drift","mutation":"turns exceed 12 or wall clock exceeds 900 seconds","expected":"HOLD_EXECUTION_CONTRACT","writes":0,"provider_launches":0},
-    {"id":"execution_contract_model_role_or_tools_drift","mutation":"lane model role tools or result contract differs","expected":"HOLD_EXECUTION_CONTRACT","writes":0,"provider_launches":0},
-    {"id":"assertion_map_count_mismatch","mutation":"named discriminator array count differs from receipt assertion_count","expected":"HOLD_ASSERTION_MAP","writes":0,"provider_launches":0},
-    {"id":"open_gate","mutation":"automatic launch gate is not closed","expected":"HOLD_OPEN_GATE","writes":0,"provider_launches":0},
-    {"id":"live_provider_lease_or_concurrent_transaction","mutation":"provider lease live or provider transaction concurrent","expected":"HOLD_OVERLAP","writes":0,"provider_launches":0},
-    {"id":"unconsumed_canary","mutation":"fresh authorization lacks matching consumption evidence","expected":"HOLD_UNCONSUMED_CANARY","writes":0,"provider_launches":0},
-    {"id":"consumed_canary_not_authority","mutation":"exact canary consumption evidence exists","expected":"CONTINUE_TO_LATER_GATES_WITH_ZERO_ADMISSION_AUTHORITY","writes":0,"provider_launches":0},
-    {"id":"account_domain_rotation_failure","mutation":"successor domain repeats predecessor or transaction incomplete","expected":"ROLLED_BACK_AND_HOLD","writes":0,"provider_launches":0},
-    {"id":"terminal_retirement_overclaim","mutation":"retired-by-directive described as stronger deterministic release","expected":"REVISE_EVIDENCE_CLAIM","writes":0,"provider_launches":0}
-  ],
-  "credit_boundary":"A passing control permits only the next ordinary gate evaluation and grants no provider, publication, ratification, installation, owner, or adoption authority."
-}
+[CmdletBinding()]param()
+$ErrorActionPreference='Stop';Set-StrictMode -Version Latest;$script:n=0
+function A([bool]$ok,[string]$m){if(-not$ok){throw "ASSERTION FAILED: $m"};$script:n++}
+$j=@'
+{"schema":"fleet-exhausted-model-failback-controls.v5","candidate":"opus-model-failback-r6","authority":"ZERO_AUTHORITY_REPRODUCTION_MATRIX","capacity_max_age_seconds":300,"hard_ceiling":"UTILIZATION_PLUS_ACTIVE_RESERVATIONS_PLUS_CONSERVATIVE_ESTIMATE_LTE_100_IN_EVERY_WINDOW","core":{"algorithm":"SHA256_CANONICAL_CLOSED_KEY_ORDERED_ROWS_V1","keys":["path","bytes","sha256"],"order_binding":true,"ancestry_excluded":true},"execution":{"common":{"effort":"max","turns":12,"wall_seconds":900,"tools":["Read","StructuredOutput"],"result":"route-review-result.v1"},"fable":{"model":"claude-fable-5","role":"coordinator"},"opus":{"model":"claude-opus-5","role":"executor"}},"assertions":["INIT_MODEL_EXACT","ROUTE_AND_SESSION_EXACT","TERMINAL_REASON_API_ERROR","HTTP_STATUS_429","EXACTLY_ONE_TURN","EXACT_MODEL_SCOPED_RESULT_TEXT","ASSISTANT_ERROR_RATE_LIMIT","ZERO_REVIEW_INPUT_TOKENS","ZERO_REVIEW_OUTPUT_TOKENS","NO_REVIEW_VERDICT_OR_ACCEPTANCE","RATE_LIMIT_EVENTS_COMPLETE_AND_ADJUDICATED","SAME_DOMAIN_CAPACITY_FRESH_AND_BASE_WINDOWS_BELOW_100"],"classifier":{"bind_all":true,"base_rejected":"HOLD_ACCOUNT_OR_WINDOW_EXHAUSTION","overage_allowed_base":"CONTINUE","overage_omitted_base_exact_signed":"CONTINUE","overage_uncorroborated":"HOLD_CLASSIFIER_AMBIGUOUS","unknown":"HOLD_CLASSIFIER_AMBIGUOUS"},"cases":[
+{"id":"positive_exact_fable_exhaustion","mutation":"none","expected":"ELIGIBLE_FOR_ORDINARY_OPUS_ADMISSION_EVALUATION","writes":0,"provider_launches":0},
+{"id":"wrong_or_alias_fable_model","mutation":"model","expected":"HOLD_MODEL_IDENTITY","writes":0,"provider_launches":0},
+{"id":"generic_429_without_exact_fable_text","mutation":"text","expected":"HOLD_EXHAUSTION_AMBIGUOUS","writes":0,"provider_launches":0},
+{"id":"assistant_error_missing_or_different","mutation":"error","expected":"HOLD_TERMINAL_EVIDENCE","writes":0,"provider_launches":0},
+{"id":"nonterminal_or_multiturn_result","mutation":"terminal","expected":"HOLD_TERMINAL_IDENTITY","writes":0,"provider_launches":0},
+{"id":"verdict_or_acceptance_present","mutation":"credit","expected":"HOLD_CREDIT_CONFLICT","writes":0,"provider_launches":0},
+{"id":"nonzero_fable_review_tokens","mutation":"tokens","expected":"HOLD_NOT_ZERO_CREDIT_EXHAUSTION","writes":0,"provider_launches":0},
+{"id":"rate_limit_event_omitted","mutation":"event","expected":"HOLD_CLASSIFIER_INCOMPLETE","writes":0,"provider_launches":0},
+{"id":"base_window_rejected","mutation":"base","expected":"HOLD_ACCOUNT_OR_WINDOW_EXHAUSTION","writes":0,"provider_launches":0},
+{"id":"overage_only_rejected_with_allowed_base_below_100","mutation":"allowed","expected":"CONTINUE_TO_OTHER_GATES","writes":0,"provider_launches":0},
+{"id":"overage_only_rejected_without_base_event_with_exact_model_evidence_and_signed_base_below_100","mutation":"omitted","expected":"CONTINUE_TO_OTHER_GATES","writes":0,"provider_launches":0},
+{"id":"overage_only_rejected_without_base_event_or_fresh_signed_corroboration","mutation":"unsigned","expected":"HOLD_CLASSIFIER_AMBIGUOUS","writes":0,"provider_launches":0},
+{"id":"contradictory_or_unenumerated_rate_limit_event","mutation":"unknown","expected":"HOLD_CLASSIFIER_AMBIGUOUS","writes":0,"provider_launches":0},
+{"id":"stale_or_cross_domain_capacity","mutation":"capacity","expected":"HOLD_CAPACITY_EVIDENCE","writes":0,"provider_launches":0},
+{"id":"hard_ceiling_sum_exactly_100","mutation":"eq100","expected":"CONTINUE_TO_LATER_GATES","writes":0,"provider_launches":0},
+{"id":"hard_ceiling_sum_above_100","mutation":"gt100","expected":"HOLD_HARD_CEILING","writes":0,"provider_launches":0},
+{"id":"core_subject_reordered","mutation":"order","expected":"HOLD_CORE_SUBJECT_DIGEST","writes":0,"provider_launches":0},
+{"id":"core_subject_replaced","mutation":"replace","expected":"HOLD_CORE_SUBJECT_DIGEST","writes":0,"provider_launches":0},
+{"id":"execution_contract_effort_drift","mutation":"effort","expected":"HOLD_EXECUTION_CONTRACT","writes":0,"provider_launches":0},
+{"id":"execution_contract_turn_or_wall_drift","mutation":"bounds","expected":"HOLD_EXECUTION_CONTRACT","writes":0,"provider_launches":0},
+{"id":"execution_contract_model_role_or_tools_drift","mutation":"identity","expected":"HOLD_EXECUTION_CONTRACT","writes":0,"provider_launches":0},
+{"id":"assertion_map_count_mismatch","mutation":"map","expected":"HOLD_ASSERTION_MAP","writes":0,"provider_launches":0},
+{"id":"open_gate","mutation":"gate","expected":"HOLD_OPEN_GATE","writes":0,"provider_launches":0},
+{"id":"live_provider_lease_or_concurrent_transaction","mutation":"overlap","expected":"HOLD_OVERLAP","writes":0,"provider_launches":0},
+{"id":"unconsumed_canary","mutation":"unconsumed","expected":"HOLD_UNCONSUMED_CANARY","writes":0,"provider_launches":0},
+{"id":"consumed_canary_not_authority","mutation":"consumed","expected":"CONTINUE_TO_LATER_GATES_WITH_ZERO_ADMISSION_AUTHORITY","writes":0,"provider_launches":0},
+{"id":"account_domain_rotation_failure","mutation":"rotation","expected":"ROLLED_BACK_AND_HOLD","writes":0,"provider_launches":0},
+{"id":"terminal_retirement_overclaim","mutation":"lease","expected":"REVISE_EVIDENCE_CLAIM","writes":0,"provider_launches":0}],"credit":"NEXT_GATE_ONLY_ZERO_AUTHORITY"}
 '@
-
-$repo = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
-$candidatePath = Join-Path $repo 'ruling-candidates\opus-model-failback-r1.md'
-$bundlePath = Join-Path $repo 'receipts\opus-model-failback-r5-evidence-bundle-20260825.json'
-$candidate = [IO.File]::ReadAllText($candidatePath)
-$candidateFlat = $candidate -replace '\s+', ' '
-$spec = $specJson | ConvertFrom-Json -Depth 20 -ErrorAction Stop
-$bundle = [IO.File]::ReadAllText($bundlePath) | ConvertFrom-Json -Depth 20 -ErrorAction Stop
-$adjudication = $bundle.allowed_base_variant
-$variant = $bundle.omitted_base_variant
-$opusReview = $bundle.prior_opus_revise
-
-Assert-True ($spec.schema -ceq 'fleet-exhausted-model-failback-controls.v4') 'schema'
-Assert-True ($spec.candidate -ceq 'opus-model-failback-r5') 'candidate identity'
-Assert-True ($spec.authority -ceq 'ZERO_AUTHORITY_REPRODUCTION_MATRIX') 'zero authority'
-Assert-True ($spec.capacity_observation_max_age_seconds -eq 300) '300-second maximum age'
-Assert-True ($spec.hard_ceiling_rule -ceq 'UTILIZATION_PLUS_ACTIVE_RESERVATIONS_PLUS_CONSERVATIVE_ESTIMATE_LTE_100_IN_EVERY_WINDOW') 'exact hard ceiling rule'
-Assert-True ($spec.discriminator_assertions.Count -eq 12) 'exact discriminator assertion count'
-Assert-True ((@($spec.discriminator_assertions | Sort-Object -Unique)).Count -eq 12) 'unique discriminator assertions'
-Assert-True ($spec.classifier_rules.bind_every_rate_limit_event -eq $true) 'all classifier events bound'
-Assert-True ($spec.execution_contract.common.effort -ceq 'max') 'max effort'
-Assert-True ($spec.execution_contract.common.max_turns -eq 12) '12 turn bound'
-Assert-True ($spec.execution_contract.common.max_wall_clock_seconds -eq 900) '900 second wall bound'
-Assert-True ((@($spec.execution_contract.common.provider_tools) -join ',') -ceq 'Read,StructuredOutput') 'exact provider tools'
-Assert-True ($spec.execution_contract.fable.model -ceq 'claude-fable-5') 'exact Fable model'
-Assert-True ($spec.execution_contract.fable.role -ceq 'coordinator') 'exact Fable role'
-Assert-True ($spec.execution_contract.opus.model -ceq 'claude-opus-5') 'exact Opus model'
-Assert-True ($spec.execution_contract.opus.role -ceq 'executor') 'exact Opus role'
-Assert-True ($spec.cases.Count -eq 28) 'exact control count'
-
-$ids = @($spec.cases | ForEach-Object { [string]$_.id })
-Assert-True ((@($ids | Sort-Object -Unique)).Count -eq $ids.Count) 'unique control ids'
-foreach ($required in @(
-    'assistant_error_missing_or_different',
-    'rate_limit_event_omitted',
-    'base_window_rejected',
-    'overage_only_rejected_with_allowed_base_below_100',
-    'overage_only_rejected_without_base_event_with_exact_model_evidence_and_signed_base_below_100',
-    'overage_only_rejected_without_base_event_or_fresh_signed_corroboration',
-    'contradictory_or_unenumerated_rate_limit_event',
-    'hard_ceiling_sum_exactly_100',
-    'hard_ceiling_sum_above_100',
-    'core_subject_reordered',
-    'core_subject_replaced',
-    'execution_contract_effort_drift',
-    'execution_contract_turn_or_wall_drift',
-    'assertion_map_count_mismatch',
-    'unconsumed_canary',
-    'consumed_canary_not_authority'
-)) {
-    Assert-True ($required -cin $ids) "required control $required"
-}
-
-foreach ($case in $spec.cases) {
-    $names = @($case.PSObject.Properties.Name | Sort-Object)
-    Assert-True (($names -join ',') -ceq 'expected,id,mutation,provider_launches,writes') "closed keys $($case.id)"
-    Assert-True ($case.writes -eq 0) "zero writes $($case.id)"
-    Assert-True ($case.provider_launches -eq 0) "zero launches $($case.id)"
-}
-
-$at100 = $spec.cases | Where-Object id -CEQ 'hard_ceiling_sum_exactly_100'
-$above100 = $spec.cases | Where-Object id -CEQ 'hard_ceiling_sum_above_100'
-$noBaseCorroborated = $spec.cases | Where-Object id -CEQ 'overage_only_rejected_without_base_event_with_exact_model_evidence_and_signed_base_below_100'
-$noBaseUncorroborated = $spec.cases | Where-Object id -CEQ 'overage_only_rejected_without_base_event_or_fresh_signed_corroboration'
-$unknownClassifier = $spec.cases | Where-Object id -CEQ 'contradictory_or_unenumerated_rate_limit_event'
-Assert-True ($at100.expected -ceq 'CONTINUE_TO_LATER_GATES') 'sum exactly 100 is within the hard ceiling'
-Assert-True ($above100.expected -ceq 'HOLD_HARD_CEILING') 'sum above 100 is refused'
-Assert-True ($noBaseCorroborated.expected -ceq 'CONTINUE_TO_OTHER_GATES') 'observed no-base variant continues only with exact and signed corroboration'
-Assert-True ($noBaseUncorroborated.expected -ceq 'HOLD_CLASSIFIER_AMBIGUOUS') 'uncorroborated no-base variant holds'
-Assert-True ($unknownClassifier.expected -ceq 'HOLD_CLASSIFIER_AMBIGUOUS') 'contradictory or unknown classifier holds'
-
-Assert-True ($bundle.schema -ceq 'fleet-opus-model-failback-evidence-bundle.v1') 'bundle schema'
-Assert-True ($bundle.closed_keys -eq $true) 'bundle closed keys'
-Assert-True ($bundle.source_receipts.Count -eq 4) 'bundle binds four source receipts'
-Assert-True ($adjudication.schema -ceq 'fleet-fable-model-exhaustion-adjudication.v1') 'adjudication schema'
-Assert-True ($adjudication.assistant_error -ceq 'rate_limit') 'assistant error bound'
-Assert-True ($adjudication.rate_limit_events.Count -eq 2) 'all measured classifier events bound'
-Assert-True ($adjudication.classifier_adjudication.base_window_exhausted -eq $false) 'base window not exhausted'
-Assert-True ($adjudication.classifier_adjudication.overage_entitlement_rejected -eq $true) 'overage entitlement rejection disclosed'
-Assert-True ($adjudication.assertion_count -eq $adjudication.assertions.Count) 'adjudication assertion map exact'
-Assert-True ((@($adjudication.assertions) -join ',') -ceq (@($spec.discriminator_assertions) -join ',')) 'adjudication assertion names exact'
-Assert-True ($adjudication.review_credit -ceq 'ZERO') 'Fable review credit zero'
-Assert-True ($adjudication.acceptance_credit -ceq 'ZERO') 'Fable acceptance credit zero'
-
-Assert-True ($variant.schema -ceq 'fleet-fable-classifier-variant.v1') 'variant schema'
-Assert-True ($variant.observed_rate_limit_events.Count -eq 1) 'variant binds every observed classifier event'
-Assert-True ($variant.base_seven_day_event_present -eq $false) 'variant proves base event omission'
-Assert-True ($variant.signed_capacity.five_hour_utilization_pct -lt 100) 'variant signed five-hour below 100'
-Assert-True ($variant.signed_capacity.seven_day_utilization_pct -lt 100) 'variant signed seven-day below 100'
-Assert-True ($variant.r3_disposition -ceq 'HOLD_CLASSIFIER_AMBIGUOUS_ZERO_CREDIT') 'R3 hold preserved'
-Assert-True ($variant.r4_expected_disposition -ceq 'MAY_CONTINUE_ONLY_TO_ORDINARY_OPUS_ADMISSION_GATES') 'R4 narrow repair exact'
-Assert-True ($variant.review_credit -ceq 'ZERO') 'variant review credit zero'
-Assert-True ($variant.acceptance_credit -ceq 'ZERO') 'variant acceptance credit zero'
-
-Assert-True ($opusReview.verdict -ceq 'REVISE') 'prior Opus verdict preserved'
-Assert-True ($opusReview.actionable_findings.Count -eq 6) 'six prior Opus findings bound'
-Assert-True ($opusReview.acceptance_credit -ceq 'ZERO') 'prior Opus acceptance zero'
-
-Assert-True ($candidate.StartsWith('# Ruling candidate: exhausted-model failback to Opus R5')) 'R5 title'
-Assert-True ($candidate.Contains('## Immutable core subjects and execution contract')) 'core contract section'
-Assert-True ($candidate.Contains('seven_day_overage_included')) 'overage classifier rule'
-Assert-True ($candidate.Contains('assistant event''s exact `error` field')) 'assistant error evidence rule'
-Assert-True ($candidateFlat.Contains('less than or equal to 100% in every required window')) 'hard ceiling boundary'
-Assert-True ($candidateFlat.Contains('at most 12 turns, at most 900 seconds wall clock')) 'execution bounds'
-Assert-True ($candidate.Contains('core_subjects_sha256')) 'core digest binding'
-
-$coreRelative = @(
-    'ruling-candidates/opus-model-failback-r1.md',
-    'tests/test-opus-model-failback-r3-controls.ps1',
-    'receipts/opus-model-failback-r5-evidence-bundle-20260825.json'
-)
-$rows = [Collections.Generic.List[object]]::new()
-foreach ($relative in $coreRelative) {
-    $path = Join-Path $repo ($relative -replace '/', [IO.Path]::DirectorySeparatorChar)
-    $item = Get-Item -LiteralPath $path -ErrorAction Stop
-    $rows.Add([ordered]@{path=$relative;bytes=[int64]$item.Length;sha256=(Get-FileHash -Algorithm SHA256 -LiteralPath $path).Hash})
-}
-$canonical = $rows | ConvertTo-Json -Compress -Depth 5
-$coreSha = [Convert]::ToHexString([Security.Cryptography.SHA256]::HashData([Text.UTF8Encoding]::new($false).GetBytes($canonical)))
-
-[Console]::Out.WriteLine("PASS SUITE - $script:assertions assertions; ZERO_PROVIDER; ZERO_WRITES; CORE=$coreSha")
+$repo=[IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'));$candidate=[IO.File]::ReadAllText((Join-Path $repo 'ruling-candidates\opus-model-failback-r1.md'));$flat=$candidate-replace'\s+',' '
+$s=$j|ConvertFrom-Json -Depth 20;$b=[IO.File]::ReadAllText((Join-Path $repo 'receipts\opus-model-failback-r5-evidence-bundle-20260825.json'))|ConvertFrom-Json -Depth 20
+A ($s.schema-ceq'fleet-exhausted-model-failback-controls.v5') 'schema';A ($s.candidate-ceq'opus-model-failback-r6') 'candidate';A ($s.authority-ceq'ZERO_AUTHORITY_REPRODUCTION_MATRIX') 'authority';A ($s.capacity_max_age_seconds-eq300) 'age';A ($s.hard_ceiling-ceq'UTILIZATION_PLUS_ACTIVE_RESERVATIONS_PLUS_CONSERVATIVE_ESTIMATE_LTE_100_IN_EVERY_WINDOW') 'ceiling';A ($s.assertions.Count-eq12) 'assertion count';A ((@($s.assertions|Sort-Object -Unique)).Count-eq12) 'assertion unique';A $s.classifier.bind_all 'bind all'
+A ($s.execution.common.effort-ceq'max') 'effort';A ($s.execution.common.turns-eq12) 'turns';A ($s.execution.common.wall_seconds-eq900) 'wall';A ((@($s.execution.common.tools)-join',')-ceq'Read,StructuredOutput') 'tools';A ($s.execution.fable.model-ceq'claude-fable-5'-and$s.execution.fable.role-ceq'coordinator') 'fable';A ($s.execution.opus.model-ceq'claude-opus-5'-and$s.execution.opus.role-ceq'executor') 'opus';A ($s.cases.Count-eq28) 'case count'
+$ids=@($s.cases.id);A ((@($ids|Sort-Object -Unique)).Count-eq28) 'case unique'
+$required=@('assistant_error_missing_or_different','rate_limit_event_omitted','base_window_rejected','overage_only_rejected_with_allowed_base_below_100','overage_only_rejected_without_base_event_with_exact_model_evidence_and_signed_base_below_100','overage_only_rejected_without_base_event_or_fresh_signed_corroboration','contradictory_or_unenumerated_rate_limit_event','hard_ceiling_sum_exactly_100','hard_ceiling_sum_above_100','core_subject_reordered','core_subject_replaced','execution_contract_effort_drift','unconsumed_canary','consumed_canary_not_authority');foreach($x in $required){A ($x-cin$ids) "required $x"}
+A ($s.classifier.base_rejected-ceq'HOLD_ACCOUNT_OR_WINDOW_EXHAUSTION') 'base rule';A ($s.classifier.overage_allowed_base-ceq'CONTINUE') 'allowed rule';A ($s.classifier.overage_omitted_base_exact_signed-ceq'CONTINUE') 'omitted rule';A ($s.classifier.overage_uncorroborated-ceq'HOLD_CLASSIFIER_AMBIGUOUS') 'uncorroborated rule';A ($s.classifier.unknown-ceq'HOLD_CLASSIFIER_AMBIGUOUS') 'unknown rule'
+A ($s.core.algorithm-ceq'SHA256_CANONICAL_CLOSED_KEY_ORDERED_ROWS_V1') 'core algorithm';A ((@($s.core.keys)-join',')-ceq'path,bytes,sha256') 'core keys';A $s.core.order_binding 'core order';A $s.core.ancestry_excluded 'ancestry boundary';A ($s.execution.common.result-ceq'route-review-result.v1') 'result contract';A ($s.credit-ceq'NEXT_GATE_ONLY_ZERO_AUTHORITY') 'credit boundary'
+foreach($c in $s.cases){A ((@($c.PSObject.Properties.Name|Sort-Object)-join',')-ceq'expected,id,mutation,provider_launches,writes') "keys $($c.id)";A ($c.writes-eq0) "writes $($c.id)";A ($c.provider_launches-eq0) "launches $($c.id)"}
+$expect=@{hard_ceiling_sum_exactly_100='CONTINUE_TO_LATER_GATES';hard_ceiling_sum_above_100='HOLD_HARD_CEILING';overage_only_rejected_without_base_event_with_exact_model_evidence_and_signed_base_below_100='CONTINUE_TO_OTHER_GATES';overage_only_rejected_without_base_event_or_fresh_signed_corroboration='HOLD_CLASSIFIER_AMBIGUOUS';contradictory_or_unenumerated_rate_limit_event='HOLD_CLASSIFIER_AMBIGUOUS';unconsumed_canary='HOLD_UNCONSUMED_CANARY';consumed_canary_not_authority='CONTINUE_TO_LATER_GATES_WITH_ZERO_ADMISSION_AUTHORITY'}
+foreach($k in $expect.Keys){$c=$s.cases|Where-Object id -CEQ $k;A ($c.expected-ceq$expect[$k]) "expected $k"}
+A ($b.schema-ceq'fleet-opus-model-failback-evidence-bundle.v1'-and$b.closed_keys) 'bundle';A ($b.source_receipts.Count-eq4) 'sources';foreach($src in $b.source_receipts){A ($src.sha256-cmatch'^[A-F0-9]{64}$') "source $($src.id)"};A ($b.authority-ceq'ZERO_PROVIDER_ZERO_PUBLICATION_ZERO_RATIFICATION_ZERO_INSTALLATION_ZERO_ADOPTION') 'bundle authority';$a=$b.allowed_base_variant;$v=$b.omitted_base_variant;$o=$b.prior_opus_revise;$h=$b.r3_classifier_hold
+A ($a.rate_limit_events.Count-eq2-and-not$a.classifier_adjudication.base_window_exhausted-and$a.classifier_adjudication.overage_entitlement_rejected) 'allowed variant';A ($a.assertion_count-eq$a.assertions.Count-and(@($a.assertions)-join',')-ceq(@($s.assertions)-join',')) 'map';A ($a.review_credit-ceq'ZERO'-and$a.acceptance_credit-ceq'ZERO') 'allowed credit'
+A ($v.observed_rate_limit_events.Count-eq1-and-not$v.base_seven_day_event_present) 'omitted variant';A ($v.signed_capacity.five_hour_utilization_pct-lt100-and$v.signed_capacity.seven_day_utilization_pct-lt100) 'signed';A ($v.r3_disposition-ceq'HOLD_CLASSIFIER_AMBIGUOUS_ZERO_CREDIT'-and$v.r4_expected_disposition-ceq'MAY_CONTINUE_ONLY_TO_ORDINARY_OPUS_ADMISSION_GATES') 'forward repair';A ($v.review_credit-ceq'ZERO'-and$v.acceptance_credit-ceq'ZERO') 'variant credit'
+A ($o.verdict-ceq'REVISE'-and$o.actionable_findings.Count-eq6-and$o.acceptance_credit-ceq'ZERO') 'opus ancestry';A ($h.classifier_verdict-ceq'HOLD_CLASSIFIER_AMBIGUOUS'-and$h.opus_continuation_authority-ceq'NONE') 'hold ancestry'
+A ($candidate.StartsWith('# Ruling candidate: exhausted-model failback to Opus R6')) 'title';A ($candidate.Contains('seven_day_overage_included')) 'classifier';A ($candidate.Contains('assistant event''s exact `error` field')) 'error';A ($flat.Contains('less than or equal to 100% in every required window')) 'boundary';A ($flat.Contains('at most 12 turns, at most 900 seconds wall clock')) 'bounds';A ($candidate.Contains('core_subjects_sha256')) 'digest'
+$rels=@('ruling-candidates/opus-model-failback-r1.md','tests/test-opus-model-failback-r3-controls.ps1','receipts/opus-model-failback-r5-evidence-bundle-20260825.json');$rows=[Collections.Generic.List[object]]::new();foreach($r in $rels){$p=Join-Path $repo ($r-replace'/',[IO.Path]::DirectorySeparatorChar);$i=Get-Item -LiteralPath $p;$rows.Add([ordered]@{path=$r;bytes=[int64]$i.Length;sha256=(Get-FileHash -LiteralPath $p -Algorithm SHA256).Hash})};$raw=$rows|ConvertTo-Json -Compress -Depth 5;$core=[Convert]::ToHexString([Security.Cryptography.SHA256]::HashData([Text.UTF8Encoding]::new($false).GetBytes($raw)))
+"PASS SUITE - $script:n assertions; ZERO_PROVIDER; ZERO_WRITES; CORE=$core"
