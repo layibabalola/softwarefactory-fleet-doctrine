@@ -1,4 +1,4 @@
-# Ruling candidate: exhausted-model failback to Opus R12
+# Ruling candidate: exhausted-model failback to Opus R13
 
 Status: **PROPOSED ONLY — NOT RATIFIED DOCTRINE OR RUNTIME AUTHORITY**
 
@@ -100,34 +100,24 @@ cadence, tick, disposition, and adoption gates remain separate.
 
 ## Evidence and acceptance
 
-DNG proved terminal Fable zero credit, exact Opus failback, signed capacity, persisted consumption,
-and terminal release. Review history is carried in the packet-readable evidence bundle: production
-REVISE(9); R1 REVISE(3); R2 REVISE(6); R5 carrier rejection; R6 REVISE(5); R7 REVISE(6); and R8
-Fable zero credit, Opus ACCEPT(0), then Sonnet REVISE(3), leaving serial acceptance zero.
+DNG proved natural terminal Fable zero credit, exact Opus failback, signed capacity, persisted
+consumption, and deterministic release. The packet-readable bundle carries the ordered history,
+including R5 carrier rejection, R8/R9/R10/R11/R12 Fable zero-credit attempts, every Opus verdict,
+and R8 Sonnet REVISE(3). The verifier asserts that exact sequence and values.
 
-R9 naturally reached exact Fable model exhaustion and then exact Opus/max. Opus returned
-REVISE(11): the fourth subject was bare ancestry rather than the required capsule; hidden receipt
-reads prevented reproduction; Git/local-run evidence was unreadable; the published age was one
-millisecond inconsistent; and route, core, signature, and terminal-carrier hashes were unbound.
-R10 repaired all eleven findings by using one route-bound capsule, a packet-readable validated
-evidence bundle, exact timestamp derivation, explicit signed-capacity proof, and exact old/new
-carrier transition hashes. Its exact Fable turn then terminalized zero-credit, but the local
-continuation verifier correctly exposed a new defect before Opus: terminal validation was pinned to
-R9 hashes and could not validate the current R10 transition. R11 replaces that stale pin with a
-closed relationship: the terminal consumed-packet hash must equal the bound ancestry packet, while
-Fable entry is also checked against R10's validated extract. R11 exact Fable then terminalized with
-one turn, 429, zero tokens, no verdict, and zero credit before exact Opus consumed 27,594 output
-tokens and returned REVISE(4). R12 repairs those findings: every successor ancestry digest must equal
-the recomputed current core; route ancestry is pinned to the exact predecessor generation for each
-lane; the bundle carries generator-bound packet-readable R11 Fable and Opus extracts; every core row
-and the capsule independently satisfy the 24 KiB bound; and capacity age is computed at the bound
-packet issuance timestamp. R9/R10/R11 retain zero acceptance credit.
+R9 exposed capsule, hidden-read, Git, timestamp, route, core, signature, and terminal-binding gaps.
+R10 repaired them but revealed a stale current-transition pin. R11 repaired that relationship, then
+Opus consumed 27,594 output tokens and returned REVISE(4). R12 repaired digest recomputation,
+per-lane predecessor pinning, packet-readable prior extracts, per-row size enforcement, and
+issuance-derived capacity age; its Fable attempt was exact one-turn zero-credit exhaustion and its
+Opus run consumed 32,182 output tokens before REVISE(3). R13 completes and asserts the review
+history and adds generator-bound packet-readable R12 Fable and Opus extracts. All rejected or
+exhausted generations retain zero acceptance credit.
 
-Before ratification, distinct natural Fable, Opus, and Sonnet lanes must accept the same R12 core.
-The adjudicators must reproduce the executed matrix, exact/surplus ceiling, classifier variants,
-stale/cross/same-domain states, real row permutation, ancestry freshness, replay prevention,
-execution drift, Git objects, capsule source hashes, and terminal artifacts. Ratification must be
-appended to `RULINGS.md` and reach canonical `master`.
+Before ratification, distinct natural Fable, Opus, and Sonnet lanes must accept the same R13 core.
+They must reproduce the matrix, ceiling cases, classifier variants, domain/freshness states, row
+permutation, replay prevention, execution drift, Git objects, capsule hashes, and terminal evidence.
+Ratification must be appended to `RULINGS.md` and reach canonical `master`.
 
 Every project must then publish honest `ADOPT`, `DISTINGUISH`, or `REJECT` with its own authority,
 policy, scheduler, transaction, tests, rollback, and natural production proof. This proposal grants
