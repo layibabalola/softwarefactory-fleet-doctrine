@@ -1,0 +1,46 @@
+{
+  "schema": "fleet-fable-classifier-variant.v1",
+  "observed_at_utc": "2026-08-25T05:55:44.091Z",
+  "route_id": "fleet-opus-model-failback-r3-fable",
+  "packet_sha256": "21BB4BD9AB2EBB629F4F6949D0B0F912FBC983B1ACE2E6E401E9861064630A6E",
+  "artifact_path": "C:\\Users\\obabalola\\.claude\\machine\\fleet-provider-capacity\\artifacts\\324c5ce627e84b0d83ba218d83d796a5.stdout.txt",
+  "artifact_bytes": 2829,
+  "artifact_sha256": "79F40B949E8CC841398D0D6E6A497695EE63C94B3A35C680F1BEF988C6B0A914",
+  "exact_model": "claude-fable-5",
+  "assistant_error": "rate_limit",
+  "terminal_reason": "api_error",
+  "api_error_status": 429,
+  "exact_result": "You've reached your Fable 5 limit. Run /usage-credits to continue or switch models with /model.",
+  "num_turns": 1,
+  "input_tokens": 0,
+  "output_tokens": 0,
+  "observed_rate_limit_events": [
+    {
+      "ordinal": 1,
+      "status": "rejected",
+      "rate_limit_type": "seven_day_overage_included",
+      "overage_status": "rejected",
+      "overage_disabled_reason": "org_level_disabled",
+      "is_using_overage": false
+    }
+  ],
+  "base_seven_day_event_present": false,
+  "signed_capacity": {
+    "observed_at_utc": "2026-08-25T05:55:07.8070000Z",
+    "age_seconds_at_provider_admission": 32,
+    "maximum_age_seconds": 300,
+    "same_opaque_domain": true,
+    "five_hour_utilization_pct": 13,
+    "seven_day_utilization_pct": 88,
+    "source": "anthropic-oauth-usage-v1",
+    "account_domain": "anthropic-org/hmac-sha256:1966954112c32fa13c72970a67156fdc32324fba5c5f825f5a6e8836ebd03812",
+    "proof": "hmac-sha256:00ae95d9b08e2ef431a37d5bfc84646a74a776877e540229e86fda9f3f1992e4"
+  },
+  "r3_classifier_hold_receipt_sha256": "1D411CECBF878A04F518CF511AE6BDD1580AE667C9BAF6C2CC3A63006EA94A47",
+  "r3_disposition": "HOLD_CLASSIFIER_AMBIGUOUS_ZERO_CREDIT",
+  "r4_expected_disposition": "MAY_CONTINUE_ONLY_TO_ORDINARY_OPUS_ADMISSION_GATES",
+  "safety_boundary": "ABSENT_BASE_EVENT_IS_NOT_POSITIVE_EVIDENCE; EXACT_MODEL_TERMINAL_EVIDENCE_AND_FRESH_SIGNED_SAME_DOMAIN_BASE_CAPACITY_ARE_BOTH_REQUIRED; CONTRADICTIONS_HOLD",
+  "review_credit": "ZERO",
+  "acceptance_credit": "ZERO",
+  "authority": "ZERO_PROVIDER_ZERO_PUBLICATION_ZERO_RATIFICATION_ZERO_INSTALLATION_ZERO_ADOPTION"
+}

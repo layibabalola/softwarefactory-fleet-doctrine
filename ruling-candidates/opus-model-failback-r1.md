@@ -1,4 +1,4 @@
-# Ruling candidate: exhausted-model failback to Opus R3
+# Ruling candidate: exhausted-model failback to Opus R4
 
 Status: **PROPOSED ONLY — NOT YET RATIFIED DOCTRINE OR PROJECT RUNTIME AUTHORITY**
 
@@ -45,9 +45,12 @@ prove all of the following without conflict:
 5. every rate-limit event in the terminal artifact is bound and adjudicated. A rejected base-window
    classifier, signed utilization at 100%, or an explicit provider/account exhaustion classifier is
    `HOLD`. A rejected `seven_day_overage_included` event with overage disabled is an overage-
-   entitlement rejection, not base-window exhaustion, only when the base `seven_day` event is still
-   allowed and the separately signed base-window utilization is below 100%; all other combinations
-   are `HOLD`;
+   entitlement rejection, not base-window exhaustion, when the base `seven_day` event is allowed
+   or omitted and the separately signed same-domain base-window utilization is fresh and below
+   100%. Omission is eligible only with the exact model-scoped 429, assistant `error=rate_limit`,
+   one-turn zero-token terminal evidence, and no contradictory or unenumerated classifier event.
+   Missing signed corroboration, a rejected base event, or any contradictory or unenumerated event
+   is `HOLD`;
 6. a separately signed, model-free, same-domain observation no more than 300 seconds old proves that
    utilization plus active reservations plus the conservative Opus estimate is less than or equal
    to 100% in every required window;
@@ -157,7 +160,7 @@ it is neither portable acceptance nor another project's adoption.
 ## Required acceptance and project response
 
 Before ratification, a distinct adjudicator must bind the exact candidate commit/tree and reproduce
-the exact embedded matrix and execution contract in `test-opus-model-failback-r3-controls.ps1`.
+the exact embedded R4 matrix and execution contract in `test-opus-model-failback-r3-controls.ps1`.
 Required controls include positive failback, each missing/conflicting discriminator field, complete
 classifier enumeration, base-window rejection, overage-only rejection, rollback, open gate, stale
 capacity, same domain, concurrent transaction, malformed output, the exact sum-at-100 boundary,
