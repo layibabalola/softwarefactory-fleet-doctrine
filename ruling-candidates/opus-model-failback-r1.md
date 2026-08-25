@@ -1,4 +1,4 @@
-# Ruling candidate: exhausted-model failback to Opus R10
+# Ruling candidate: exhausted-model failback to Opus R11
 
 Status: **PROPOSED ONLY — NOT RATIFIED DOCTRINE OR RUNTIME AUTHORITY**
 
@@ -57,34 +57,16 @@ Any drift is `HOLD`.
 
 ## Reviewable verification capsule
 
-The single lane attachment is a closed-key, hash-bound verification capsule generated outside the
-provider lane. It must make evidence reproducible without broadening provider tools. The core
-verifier may read only the three core subjects and that capsule; it may not reopen cited receipts,
-provider outputs, mutable capacity ledgers, or Git metadata. The capsule contains:
+The single lane attachment is a closed-key, hash-bound capsule generated outside the provider lane.
+The verifier reads only the three core subjects and capsule—never cited receipts, raw provider
+outputs, mutable ledgers, or Git metadata. It binds clean commit/tree/type/branch evidence; exact
+control executable/command/core/repeat/PASS evidence; ancestry packet/route/session/model/core;
+signed-capacity signer/proof/ledger snapshot and derived timestamp age; validated prior-lane
+extracts; and consumed/terminal carrier, terminal receipt/lease, and close-before-clear hashes.
 
-- candidate commit/tree plus literal results of `git cat-file -t`, `git show --format=%T`, branch,
-  and clean-status checks, and the independent generator path/hash;
-- the exact local-control command, executable identity, externally supplied core digest, repeat
-  count, assertion/case counts, exact PASS outputs and output hashes;
-- exact ancestry packet hash, route id, session id, model, and normalized ancestry-core digest;
-- the continuation ancestry: Fable exhaustion receipt, hold disposition, terminal lease, both
-  opaque domains, observed/created instants (age is derived, never rounded or self-published),
-  utilization/reservation/estimate/sum rows, ceiling, and no-overlap;
-- signed-capacity source/signer, signature/proof, immutable ledger snapshot hash, and same-domain
-  attestation; and
-- the consumed carrier hash, terminal no-work carrier hash, terminal receipt, lease, and exact
-  close-before-clear receipt;
-- for prior completed lanes, exact packet/consumption/terminal-lease objects or closed-key validated
-  extracts, their whole-file hashes/bytes, and the exact structured result copied from the raw output
-  with raw-output path/hash/bytes.
-
-Large raw provider output need not fit the carrier: its compact extract is eligible only when the
-evidence-bundle generator hashes the raw bytes, parses the terminal result, proves the copied
-structured result exact, validates every cited compact object against its source bytes, and binds
-the generator identity. The packet-readable evidence bundle then carries those closed extracts and
-source hashes; the capsule binds the exact bundle hash and copies only the lane facts needed for the
-current transition. A self-asserted hash without these checks is `HOLD`. Capsule evidence grants no
-capacity, provider, acceptance, publication, ratification, installation, or adoption authority.
+Large outputs may be represented only by packet-readable closed extracts whose generator hashes
+and parses the raw bytes and binds its identity. Self-asserted hashes are `HOLD`. The capsule grants
+no capacity, provider, acceptance, publication, ratification, installation, or adoption authority.
 
 ## Transactional terminalization and replay prevention
 
@@ -131,11 +113,15 @@ R9 naturally reached exact Fable model exhaustion and then exact Opus/max. Opus 
 REVISE(11): the fourth subject was bare ancestry rather than the required capsule; hidden receipt
 reads prevented reproduction; Git/local-run evidence was unreadable; the published age was one
 millisecond inconsistent; and route, core, signature, and terminal-carrier hashes were unbound.
-R10 repairs all eleven findings by using one route-bound capsule, a packet-readable validated
+R10 repaired all eleven findings by using one route-bound capsule, a packet-readable validated
 evidence bundle, exact timestamp derivation, explicit signed-capacity proof, and exact old/new
-carrier transition hashes. The R9 adverse verdict remains zero acceptance credit.
+carrier transition hashes. Its exact Fable turn then terminalized zero-credit, but the local
+continuation verifier correctly exposed a new defect before Opus: terminal validation was pinned to
+R9 hashes and could not validate the current R10 transition. R11 replaces that stale pin with a
+closed relationship: the terminal consumed-packet hash must equal the bound ancestry packet, while
+Fable entry is also checked against R10's validated extract. R9/R10 retain zero acceptance credit.
 
-Before ratification, distinct natural Fable, Opus, and Sonnet lanes must accept the same R10 core.
+Before ratification, distinct natural Fable, Opus, and Sonnet lanes must accept the same R11 core.
 The adjudicators must reproduce the executed matrix, exact/surplus ceiling, classifier variants,
 stale/cross/same-domain states, real row permutation, ancestry freshness, replay prevention,
 execution drift, Git objects, capsule source hashes, and terminal artifacts. Ratification must be
