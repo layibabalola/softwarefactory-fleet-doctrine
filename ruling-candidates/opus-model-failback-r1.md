@@ -1,4 +1,4 @@
-# Ruling candidate: exhausted-model failback to Opus R18
+# Ruling candidate: exhausted-model failback to Opus R19
 
 Status: **PROPOSED ONLY — NOT RATIFIED DOCTRINE OR RUNTIME AUTHORITY**
 
@@ -111,9 +111,11 @@ Sonnet ACCEPT at `refs/heads/codex/opus-model-failback-r1`. R15 failed carrier s
 history, then Opus held after 18,246 output tokens on packet-time, readable-extract, domain, and
 exact-count defects. R17 repaired those findings, but the installed scheduler held its carrier on
 three five-minute ticks with `PACKET-TYPE` and zero calls, processes, tokens, or tools; its staged
-repair still used a noncanonical authority. R18 binds the installed native contract and restarts
-at Fable. Fable remains the completeness front door; exhaustion is not acceptance. Before
-ratification, Fable must ACCEPT R18 or prove exact zero-credit exhaustion, and exact Opus and
+repair still used a noncanonical authority. R18 bound the installed native contract and naturally
+proved exact Fable exhaustion, but its future-Opus verifier named a logical route rather than the
+exact consumed `-r5` route. R19 repairs that ancestry binding forward-only and restarts at Fable.
+Fable remains the completeness front door; exhaustion is not acceptance. Before ratification,
+Fable must ACCEPT R19 or prove exact zero-credit exhaustion, and exact Opus and
 Sonnet must ACCEPT the unchanged core. Rejected and exhausted generations retain zero credit.
 The lanes must reproduce the matrix, capacity, replay, execution, Git, capsule, ancestry, and
 terminal evidence. Ratification must be appended to `RULINGS.md` on canonical `master`.
