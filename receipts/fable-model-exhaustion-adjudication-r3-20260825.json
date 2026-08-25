@@ -1,0 +1,71 @@
+{
+  "schema": "fleet-fable-model-exhaustion-adjudication.v1",
+  "adjudicated_at_utc": "2026-08-25T05:47:00Z",
+  "route_id": "fleet-opus-model-failback-r2-fable",
+  "session_id": "c3a4ad9c-fa44-4c56-8b01-67131f35fbb9",
+  "authorization_id": "95db3eae-e0b5-4c3a-b576-a71443a00eaa",
+  "exact_model": "claude-fable-5",
+  "artifact_path": "C:\\Users\\obabalola\\.claude\\machine\\fleet-provider-capacity\\artifacts\\1ff6c012f2a5410d94dcddff43c3f89a.stdout.txt",
+  "artifact_bytes": 3398,
+  "artifact_sha256": "6863096F6E6ABE281A427A54D7AF734366A62BB4D7755CDBE660096C9F5B7152",
+  "predecessor_receipt_sha256": "A6A1C28EB57958202C0BA8F04A16BD29E740F1AD250EAEB9631A8E19C1F16E62",
+  "assistant_error": "rate_limit",
+  "terminal_result": {
+    "terminal_reason": "api_error",
+    "api_error_status": 429,
+    "num_turns": 1,
+    "input_tokens": 0,
+    "output_tokens": 0,
+    "exact_result": "You've reached your Fable 5 limit. Run /usage-credits to continue or switch models with /model."
+  },
+  "rate_limit_events": [
+    {
+      "status": "allowed_warning",
+      "rate_limit_type": "seven_day",
+      "utilization": 0.87,
+      "is_using_overage": false
+    },
+    {
+      "status": "rejected",
+      "rate_limit_type": "seven_day_overage_included",
+      "overage_status": "rejected",
+      "overage_disabled_reason": "org_level_disabled",
+      "is_using_overage": false
+    }
+  ],
+  "classifier_adjudication": {
+    "base_window_exhausted": false,
+    "overage_entitlement_rejected": true,
+    "model_specific_exhaustion_proven": true,
+    "reason": "The base seven-day classifier is an allowed warning at 87%. The rejected event is specifically the overage-included entitlement with organization overage disabled; it does not prove that the base account window is exhausted. Exact Fable model text, exact init model, and the fresh signed base-window observation jointly prove the model-scoped terminal condition."
+  },
+  "capacity_evidence": {
+    "observed_at_utc": "2026-08-25T05:35:12.1900000Z",
+    "age_seconds_at_terminal_receipt": 167.81,
+    "maximum_age_seconds": 300,
+    "same_opaque_domain": true,
+    "five_hour_utilization_pct": 10,
+    "seven_day_utilization_pct": 87,
+    "account_domain": "anthropic-org/hmac-sha256:1966954112c32fa13c72970a67156fdc32324fba5c5f825f5a6e8836ebd03812",
+    "proof": "hmac-sha256:f1479baf25fb61f77ad5db3e9116a69b10db5d68136f21c74dee434c0a1df315"
+  },
+  "assertion_count": 12,
+  "assertions": [
+    "INIT_MODEL_EXACT",
+    "ROUTE_AND_SESSION_EXACT",
+    "TERMINAL_REASON_API_ERROR",
+    "HTTP_STATUS_429",
+    "EXACTLY_ONE_TURN",
+    "EXACT_MODEL_SCOPED_RESULT_TEXT",
+    "ASSISTANT_ERROR_RATE_LIMIT",
+    "ZERO_REVIEW_INPUT_TOKENS",
+    "ZERO_REVIEW_OUTPUT_TOKENS",
+    "NO_REVIEW_VERDICT_OR_ACCEPTANCE",
+    "RATE_LIMIT_EVENTS_COMPLETE_AND_ADJUDICATED",
+    "SAME_DOMAIN_CAPACITY_FRESH_AND_BASE_WINDOWS_BELOW_100"
+  ],
+  "disposition": "TERMINAL_MODEL_SPECIFIC_EXHAUSTION_ZERO_CREDIT",
+  "review_credit": "ZERO",
+  "acceptance_credit": "ZERO",
+  "authority": "EVIDENCE_ADJUDICATION_ONLY_NO_PROVIDER_OR_FAILBACK_AUTHORITY"
+}

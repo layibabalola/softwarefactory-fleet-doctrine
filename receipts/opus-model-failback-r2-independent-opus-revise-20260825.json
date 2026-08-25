@@ -1,0 +1,61 @@
+{
+  "schema": "fleet-doctrine-independent-review-receipt.v1",
+  "reviewed_at_utc": "2026-08-25T05:45:24.6269614Z",
+  "route_id": "fleet-opus-model-failback-r2-opus-after-fable-exhaustion",
+  "lane": "opus",
+  "exact_model": "claude-opus-5",
+  "effort": "max",
+  "max_turns": 12,
+  "role": "executor",
+  "candidate_commit": "02548e3e0b089842008a5c289540a11f3d205ffa",
+  "candidate_tree": "81b93b273cd6545c865d94443e42364bc50c30f8",
+  "packet_sha256": "B3B88EC76B3B4D594BCED9452EF4959E9C7321732DB27AFA2523C56E0A4B8420",
+  "fable_exhaustion_receipt_sha256": "A6A1C28EB57958202C0BA8F04A16BD29E740F1AD250EAEB9631A8E19C1F16E62",
+  "output_path": "C:\\Users\\obabalola\\.claude\\machine\\fleet-provider-capacity\\artifacts\\f221a71ff3d24dd98f817aa606540695.stdout.txt",
+  "output_bytes": 171244,
+  "output_sha256": "7464DE1567047802F3D0B47FFA609C267EF02200513727D2031FC386478D964F",
+  "consumption_receipt_sha256": "2AAE85DC1E652E279348AFACE2ADCAA534918BDE285B0ED2778B211CB304AD93",
+  "provider_cost_usd": 0.6474225,
+  "provider_output_tokens": 21463,
+  "verdict": "REVISE",
+  "actionable_findings": [
+    {
+      "severity": "HIGH",
+      "id": "ACCOUNT_WINDOW_CLASSIFIERS_UNADJUDICATED",
+      "statement": "The discriminator did not adjudicate account/window-scoped rate-limit classifiers, leaving model-vs-account exhaustion dependent on human-readable text."
+    },
+    {
+      "severity": "MEDIUM",
+      "id": "ASSISTANT_ERROR_FIELD_NOT_BOUND",
+      "statement": "The doctrine requires assistant error rate_limit, but the offered terminal receipt omitted that field."
+    },
+    {
+      "severity": "MEDIUM",
+      "id": "SUCCESSOR_CORE_SUBJECT_MANIFEST_UNDEFINED",
+      "statement": "The successor manifest referent was undefined and the successor packet did not preserve the predecessor's exact core subject set."
+    },
+    {
+      "severity": "LOW",
+      "id": "DISCRIMINATOR_ASSERTION_MAP_NOT_REPRODUCIBLE",
+      "statement": "The receipt claimed 11 assertions without an exact named mapping."
+    },
+    {
+      "severity": "LOW",
+      "id": "HARD_CEILING_BOUNDARY_INCONSISTENT",
+      "statement": "The candidate mixed strictly-below-100 language with the controlling utilization-plus-reservations-plus-estimate less-than-or-equal-to-100 rule."
+    },
+    {
+      "severity": "LOW",
+      "id": "EFFORT_AND_BOUNDED_TURN_CONTRACT_UNBOUND",
+      "statement": "The successor packet did not bind the exact effort and bounded-turn/wall-clock execution contract."
+    }
+  ],
+  "closed_findings": [
+    "TRUTHFUL_RETIRED_BY_DIRECTIVE_SEMANTICS",
+    "CONSUMED_AND_UNCONSUMED_CANARY_CONTROLS"
+  ],
+  "review_credit": "ZERO_UNTIL_FORWARD_REPAIR_ACCEPTED",
+  "acceptance_credit": "ZERO",
+  "next_action": "FORWARD_ONLY_R3_REPAIR_THEN_RESTART_AT_FABLE",
+  "authority": "NO_PUBLICATION_RATIFICATION_PROVIDER_OWNER_INSTALLATION_OR_ADOPTION_AUTHORITY"
+}
