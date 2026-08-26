@@ -1,0 +1,15 @@
+# Ruling candidate: exhausted-model failback to Opus R26
+
+Status: **PROPOSED — ZERO AUTHORITY**
+
+Exact model-specific Fable exhaustion earns zero credit but may continue unchanged work through the natural scheduler to exact Opus. A real Fable `ACCEPT` advances only to Opus; an Opus `ACCEPT` advances only to Sonnet. Every downstream capsule must bind the immediately preceding lane's exact packet, session, consumption receipt, artifact, structured result, model, role, effort, turns, verdict, released lease, and unchanged core.
+
+Signed same-domain capacity no older than 300 seconds must prove utilization plus reservations plus estimate is at most 100 in every window. Reserve is zero. Stale, unsigned, cross-domain, ambiguous, overlapping, leased, closed-gate, or over-ceiling states are `HOLD`.
+
+Exhaustion requires exact route/session/model, one turn, `terminal_reason=api_error`, 429, `assistant_error=rate_limit`, model-scoped text, zero tokens, no verdict, zero credit, and cross-bound hashes. Before clearing its hold, install and hash an exact no-work terminal carrier; bind exact terminal carrier bytes and never replay it. Acceptance requires an exact structured `ACCEPT`, consumption receipt, artifact, review-result hash, released lease, and unchanged core.
+
+Canonical path/bytes/SHA rows define the core. Fable and Opus carry all three on-lane core rows plus one capsule: at most four subjects, 24 KiB each, 32 KiB total. Exact Fable/coordinator, Opus/executor, and Sonnet/verifier use max effort, 12 turns, 900 seconds, Read plus StructuredOutput, and the exact result contract. Packet, preclaim, argv, and admission bind those identities.
+
+The capsule binds clean Git ancestry, prior lane dispositions, local triple PASS, core rows, receipts, terminal state, and the post-route/preclaim capacity-materialization boundary. It must not freeze a live capacity sample. Every bundle object is closed-key and the verifier asserts `subject_max=24576` and `aggregate_max=32768`. The matrix has independent core mutations and independent execution mutations plus fail-closed domain, gate, overlap, replay, capacity, output, and terminal controls.
+
+R20 recorded zero-credit Fable and an Opus review consuming 34,814 output tokens with four findings. R21–R25 repaired those findings, fit/count defects, and accepted-Fable continuation. R25 then received exact Fable and Opus `ACCEPT`. R26 closes bundle-contract keys and binds the exact preceding Opus evidence before Sonnet. Fable must ACCEPT R26; then Opus and Sonnet must ACCEPT the unchanged R26 core. Any actionable finding restarts Fable. Publication requires canonical `master` ratification and every project must publish `ADOPT`, `DISTINGUISH`, or `REJECT`. No review grants installation or adoption authority.
