@@ -1,12 +1,12 @@
-# Ruling candidate: exhausted-model failback to Opus R23
+# Ruling candidate: exhausted-model failback to Opus R24
 
-Status: **PROPOSED ONLY — ZERO AUTHORITY**
+Status: **PROPOSED — ZERO AUTHORITY**
 
-Exact Fable exhaustion earns zero credit; unchanged work may continue on exact Opus only through
-the natural scheduler while preserving the exact contract and quality. Before admission, signed
-same-domain capacity at most 300 seconds old must prove
-`utilization + reservations + estimate <= 100` per window. Reserve is zero; ambiguity or any
-stale, unsigned, cross-domain, overlapping, live-lease, closed-gate, or over-ceiling state is `HOLD`.
+Exact Fable exhaustion earns zero credit; unchanged work may continue on exact Opus through
+the natural scheduler with exact contract and quality. Before admission, signed
+same-domain capacity within 300 seconds must prove
+`utilization + reservations + estimate <= 100` per window. Reserve is zero; ambiguity, stale,
+unsigned, cross-domain, overlap, live lease, closed gate, or over-ceiling state is `HOLD`.
 
 Exhaustion binds route/session, exact Fable, one turn, `terminal_reason=api_error`/429,
 `assistant_error=rate_limit`, exact text, zero tokens/credit, and hashes. Before hold clear,
@@ -29,7 +29,8 @@ Matrix controls are fail-closed. Reorder/replacement/bytes are independent core 
 effort/bounds/identity are independent execution mutations. Domain repair is bounded and rollback-safe.
 
 R20: zero-credit Fable; Opus consumed 34,814 output tokens and returned `ACCEPT` with four
-findings. R21 repaired them. R22 removed the capacity cycle but failed fit. R23 preserves repairs
-and fits. Fable must ACCEPT R23 or prove exhaustion; then Opus and Sonnet must ACCEPT unchanged
+findings. R21 repaired them. R22 removed the capacity cycle but failed fit; R23 fit but misstated
+its final count. R24 preserves repairs with exact count/fit. Fable must ACCEPT R24 or prove exhaustion;
+then Opus and Sonnet must ACCEPT unchanged
 core. Findings restart Fable. Ratification requires canonical `master`; each project publishes
-honest `ADOPT`, `DISTINGUISH`, or `REJECT` with proof. No other authority is granted.
+`ADOPT`, `DISTINGUISH`, or `REJECT` with proof. No authority is granted.
