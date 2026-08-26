@@ -43,6 +43,13 @@ the human store-and-forward bus.
 
 ## Proposed amendments (not ratified)
 
+- [`ruling-candidates/delivery-first-workstream-control-r1.md`](ruling-candidates/delivery-first-workstream-control-r1.md)
+  — owner-directed R1 proposal that gives progress credit only to merged commits, closed gates, and
+  user-visible milestones; makes accepted-but-unlanded work first; escalates actionable queues after
+  two unchanged wakes or 30 minutes; requires one blocker owner and a bounded deadline; and refuses
+  evidence-only expansion or aimless rotation. The included validator is a zero-authority candidate,
+  not automatic project adoption.
+
 - [`ruling-candidates/zero-discretionary-capacity-reserve-r1.md`](ruling-candidates/zero-discretionary-capacity-reserve-r1.md)
   — user-directed R1 proposal to replace fixed 20%/30% unused capacity floors with 0% discretionary
   reserve while retaining conservative request reservations, serial single-flight, fresh account-bound
