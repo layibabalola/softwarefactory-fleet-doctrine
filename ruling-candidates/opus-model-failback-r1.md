@@ -1,4 +1,4 @@
-# Ruling candidate: exhausted-model failback to Opus R20
+# Ruling candidate: exhausted-model failback to Opus R21
 
 Status: **PROPOSED ONLY — NOT RATIFIED DOCTRINE OR RUNTIME AUTHORITY**
 
@@ -68,6 +68,12 @@ control executable/command/core/repeat/PASS evidence; ancestry packet/route/sess
 signed-capacity signer/proof/ledger snapshot and age derived at the packet issuance timestamp;
 validated prior-lane
 extracts; and consumed/terminal carrier, terminal receipt/lease, and close-before-clear hashes.
+It also compares all three on-lane core rows, in order, to the exact normalized paths, byte lengths,
+and SHA-256 values independently derived from the committed subjects. The capsule exposes the named
+`terminal_reason=api_error` and `assistant_error=rate_limit` discriminators. It carries the exact
+terminal carrier bytes and hash; the verifier parses those bytes and derives native
+`authority=read-only-review`, `actionable_work=false`, and an empty subject array instead of trusting
+attested summary fields.
 
 Large outputs use only packet-readable closed extracts whose generator hashes/parses the raw bytes
 and is bound by exact executable hash. Capsule time must equal packet `issued_at_utc`; derive
@@ -88,7 +94,9 @@ terminal receipt, or terminal lease can never be revived by timestamp refresh.
 
 The executed matrix requires hostile `terminal_fable_carrier_replay` and close-before-clear proof.
 Each case mutates independently evaluated state and derives its result; comparing adjacent expected
-literals or documenting a duplicate is not repair.
+literals or documenting a duplicate is not repair. Core reorder, path replacement, and byte/hash
+mutation use three independent core mutations. Effort, bounds, and route identity use three
+independent execution mutations. No family-level boolean can make those six cases collapse.
 
 ## Account-domain self-heal
 
@@ -107,12 +115,12 @@ cadence, tick, disposition, and adoption gates remain separate.
 
 ## Evidence and acceptance
 
-Published R14 and immutable prior bundles preserve the full adverse history. R19 naturally proved
-exact Fable exhaustion; exact Opus then consumed 35,771 output tokens and returned REVISE on five
-defects: Fable packet/session/text, ancestry session, hostile replay, consumed-packet equality, and
-terminal-hash cross-binding. R20 repairs them forward-only with named objects, the recorded session,
-operative equality assertions on every lane, and an independently evaluated replay mutation.
-Fable remains the completeness front door: it must ACCEPT R20 or prove exact zero-credit exhaustion,
+Published R14 and immutable prior bundles preserve the full adverse history. R20 naturally proved
+exact Fable exhaustion; exact Opus then consumed 34,814 output tokens and returned raw ACCEPT with
+four actionable hardening findings. R21 repairs those findings forward-only by binding every core
+packet row, exposing both terminal discriminators, deriving terminal semantics from exact carrier
+bytes, and separating all six core/execution hostile mutations.
+Fable remains the completeness front door: it must ACCEPT R21 or prove exact zero-credit exhaustion,
 then exact Opus and Sonnet must ACCEPT the unchanged core. Adverse generations retain zero credit.
 The lanes must reproduce the matrix, capacity, replay, execution, Git, capsule, ancestry, and
 terminal evidence. Ratification must be appended to `RULINGS.md` on canonical `master`.
