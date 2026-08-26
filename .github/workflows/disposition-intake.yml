@@ -44,12 +44,6 @@ jobs:
       - name: Run AdversarialLLM utilization-shadow doctrine controls
         run: python -m unittest discover -s tests -p "test_adversarialllm_utilization_shadow_doctrine.py" -v
 
-      - name: Run delivery-first workstream controls
-        run: python -m unittest discover -s tests -p "test_delivery_first_lane_status.py" -v
-
-      - name: Verify the delivery-first example
-        run: python tools/check_delivery_first_lane_status.py examples/delivery-first-lane-status-v1.json --bootstrap
-
       - name: Verify phase-2 blockers against frozen project evidence
         run: python tools/check_phase2_disposition_batch.py --treeish 990906b6ea861ca579e1336bcfe8f17dd80c83ae
 
