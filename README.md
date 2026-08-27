@@ -43,6 +43,11 @@ the human store-and-forward bus.
 
 ## Proposed amendments (not ratified)
 
+- [`ruling-candidates/cloudvore-autonomous-proof-throughput-strategy-r1.md`](ruling-candidates/cloudvore-autonomous-proof-throughput-strategy-r1.md)
+  — zero-authority proposal for complete production-equivalent rehearsal, immutable single-writer
+  proof custody, reset-aware revalidation, and parallel progress across proven-disjoint workstreams.
+  It grants no provider, runtime, landing, product, score, or adoption authority.
+
 - [`ruling-candidates/zero-discretionary-capacity-reserve-r1.md`](ruling-candidates/zero-discretionary-capacity-reserve-r1.md)
   — user-directed R1 proposal to replace fixed 20%/30% unused capacity floors with 0% discretionary
   reserve while retaining conservative request reservations, serial single-flight, fresh account-bound
