@@ -53,6 +53,26 @@ class DescendantScopeTests(unittest.TestCase):
             with self.subTest(event=event):
                 self.assertEqual("APPLICABLE", self._classify(event, MODULE.MUTABLE_BOOTSTRAP_ALLOWLIST))
 
+    def test_exact_phase17_repair_is_applicable_only_at_exact_base_and_delta(self):
+        self.assertEqual(4, len(MODULE.PHASE17_REPAIR_ALLOWLIST))
+        self.assertLessEqual(MODULE.PHASE17_REPAIR_ALLOWLIST, MODULE.PROTECTED_TRIGGER_PATHS)
+        for event in ("pull_request", "push"):
+            with self.subTest(event=event):
+                self.assertEqual(
+                    "APPLICABLE_PHASE17_REPAIR",
+                    self._classify(
+                        event,
+                        MODULE.PHASE17_REPAIR_ALLOWLIST,
+                        base=MODULE.PHASE17_REPAIR_BASE,
+                    ),
+                )
+        with self.assertRaisesRegex(MODULE.DescendantScopeError, "DESCENDANT_SCOPE_VIOLATION"):
+            self._classify(
+                "pull_request",
+                MODULE.PHASE17_REPAIR_ALLOWLIST | {"README.md"},
+                base=MODULE.PHASE17_REPAIR_BASE,
+            )
+
     def test_all_historical_phase2_phase3_phase5_triggers_are_forward_protected(self):
         historical_triggers = P2.PHASE2_TRIGGER_PATHS | P3.PHASE3_TRIGGER_PATHS | P5.PHASE5_TRIGGER_PATHS
         self.assertLessEqual(historical_triggers, MODULE.PROTECTED_TRIGGER_PATHS)

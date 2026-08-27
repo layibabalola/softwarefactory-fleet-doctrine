@@ -39,6 +39,7 @@ UTILIZATION_SHADOW_DOCTRINE_BASE_TREE = "9e53ff055bbf1a4fe796104d06f009f503082ad
 UTILIZATION_SHADOW_DOCTRINE_AMENDMENT_COMMIT = "7bf0cf9943de7c33b14496b73f70c18959816c5c"
 UTILIZATION_SHADOW_DOCTRINE_AMENDMENT_TREE = "ebac9bbd75d8ae70bf2b4a2d0877020a5af83127"
 UTILIZATION_SHADOW_DOCTRINE_AMENDMENT_SPEC_BLOB = "e964d2b77426ece703f8fb1fd82a9cb068e98632"
+LEDGER_CENSUS_BASE_COMMIT = "4ce494c1cf796c1896ed4a6775b8dea42e68ff66"
 R26_CANDIDATE = "e70a044f31dd2f43ab7c716d63a4eb89318c61b6"
 R26_MERGE = "909f769d02e8412e51e28e242cfa8d00dadc9a3d"
 FROZEN_PUBLICATION = "990906b6ea861ca579e1336bcfe8f17dd80c83ae"
@@ -498,8 +499,19 @@ def verify_batch(batch: dict[str, Any], treeish: str = "HEAD") -> None:
     census = ledger.get("census")
     if not isinstance(census, dict):
         raise Phase3Error("LEDGER_CENSUS_INVALID")
-    if census.get("baseCommit") != UTILIZATION_SHADOW_DOCTRINE_AMENDMENT_COMMIT:
+    expected_census_base = (
+        UTILIZATION_SHADOW_DOCTRINE_AMENDMENT_COMMIT
+        if treeish == FROZEN_PUBLICATION
+        else LEDGER_CENSUS_BASE_COMMIT
+    )
+    if census.get("baseCommit") != expected_census_base:
         raise Phase3Error("LEDGER_CENSUS_BASE_MISMATCH")
+    descendant = "HEAD" if treeish == ":" else treeish
+    if (
+        not _is_ancestor(UTILIZATION_SHADOW_DOCTRINE_AMENDMENT_COMMIT, expected_census_base)
+        or not _is_ancestor(expected_census_base, descendant)
+    ):
+        raise Phase3Error("LEDGER_CENSUS_BASE_HISTORY_INVALID")
     if ledger.get("summary") != {
         "projectCount": 9,
         "counts": {"ADOPT": 0, "DISTINGUISH": 5, "MISSING": 0, "REJECT": 0, "STALE": 4},
