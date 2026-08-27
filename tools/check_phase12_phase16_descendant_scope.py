@@ -19,6 +19,7 @@ PHASE13 = "eca6e364cf03e388f0416e3f8e80fe4091321aa0"
 PHASE14 = "95df488b2e2ec7120e992c0043d54b8e67a65dba"
 PHASE15 = "488538ca15676823681e241f6be848de1d30a291"
 PHASE16 = "8149c3f06811f85b833b28940017f2d05448cf5d"
+PHASE17_REPAIR_BASE = "054b2569344fc3ed8da0cffc329c02f06b10c3da"
 SHA40 = re.compile(r"[0-9a-f]{40}")
 
 MUTABLE_BOOTSTRAP_ALLOWLIST = {
@@ -44,6 +45,12 @@ MUTABLE_BOOTSTRAP_ALLOWLIST = {
     "tools/check_phase12_phase16_descendant_scope.py",
 }
 BOOTSTRAP_CONTROL_PATHS = MUTABLE_BOOTSTRAP_ALLOWLIST
+PHASE17_REPAIR_ALLOWLIST = {
+    "tests/test_phase3_disposition_batch.py",
+    "tests/test_phase12_phase16_descendant_scope.py",
+    "tools/check_phase3_disposition_batch.py",
+    "tools/check_phase12_phase16_descendant_scope.py",
+}
 PROTECTED_TRIGGER_PATHS = MUTABLE_BOOTSTRAP_ALLOWLIST | {
     "adoption/phase2/README.md",
     "adoption/phase2/r26-project-disposition-intake.json",
@@ -274,11 +281,15 @@ def classify_event(event_name: str, scope_base: str) -> str:
     changed = _changed_paths(scope_base)
     if not changed.intersection(PROTECTED_TRIGGER_PATHS):
         return "N/A_NO_PHASE12_PHASE16_TRIGGER"
-    if scope_base != PHASE16:
-        raise DescendantScopeError("BOOTSTRAP_SCOPE_CLOSED")
-    if changed != MUTABLE_BOOTSTRAP_ALLOWLIST:
-        raise DescendantScopeError("DESCENDANT_SCOPE_VIOLATION")
-    return "APPLICABLE"
+    if scope_base == PHASE16:
+        if changed != MUTABLE_BOOTSTRAP_ALLOWLIST:
+            raise DescendantScopeError("DESCENDANT_SCOPE_VIOLATION")
+        return "APPLICABLE"
+    if scope_base == PHASE17_REPAIR_BASE:
+        if changed != PHASE17_REPAIR_ALLOWLIST:
+            raise DescendantScopeError("DESCENDANT_SCOPE_VIOLATION")
+        return "APPLICABLE_PHASE17_REPAIR"
+    raise DescendantScopeError("BOOTSTRAP_SCOPE_CLOSED")
 
 
 def main(argv: list[str] | None = None) -> int:

@@ -307,6 +307,12 @@ class Phase3DispositionBatchTests(unittest.TestCase):
         with self.assertRaisesRegex(MODULE.Phase3Error, "LEDGER_CENSUS_INVALID"):
             self._verify_with_ledger(ledger)
 
+    def test_ledger_census_must_match_current_exact_census_commit(self):
+        ledger = copy.deepcopy(self.ledger)
+        ledger["census"]["baseCommit"] = MODULE.UTILIZATION_SHADOW_DOCTRINE_AMENDMENT_COMMIT
+        with self.assertRaisesRegex(MODULE.Phase3Error, "LEDGER_CENSUS_BASE_MISMATCH"):
+            self._verify_with_ledger(ledger)
+
     def test_central_spec_commit_and_blob_are_exact(self):
         batch = self._copy()
         self._project(batch, "cloudvore")["centralEvidence"]["gitBlobOid"] = "0" * 40
