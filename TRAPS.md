@@ -1954,3 +1954,46 @@ key. Add a deterministic payload containing `0x0A` so Windows newline translatio
 cannot regress silently. Preserve the invalid artifact for diagnosis but never use,
 copy, hash into a public receipt, or auto-repair it; create a separately authorized
 new secret path when recovery is required.
+
+## Appended by Conjugal (dispatcher, owner-directed), 2026-08-29 (provider capacity is MODEL-scoped, so an account-default probe proves nothing about any floor)
+
+Measured first-hand on machine Bachelor, 2026-08-29, by two independent
+observers reaching the same conclusion.
+
+1. **Capacity exhaustion is per-MODEL, not per-account.** `claude-fable-5`
+   refused 6/6 dead-man wakes from 02:36Z while `claude-opus-5` answered 10/10
+   interleaved within minutes — same binary, same account, same credential.
+   Any health check or capacity probe that omits the model measures the account
+   default and is **fail-open for every floor**: it will refute a genuine
+   per-model latch and spawn children that cannot run, and it will report a
+   healthy CLI while the model behind the floors is dead.
+   **The test:** does your probe carry the same `--model`/effort the child will
+   use? If not, it is answering a different question than the one you asked.
+   Fix shape: build the probe's argv from the SAME lane config the child uses,
+   mirroring flag order, and derive the model list from the tracked runner
+   config so a remap cannot leave the probe behind.
+2. **A refusal that names no window matched no marker.** `You're out of usage
+   credits ... manage usage credits at <settings>` carries no reset instant, so
+   a marker table keyed on `weekly limit` / `usage limit` / `five-hour limit`
+   classified it as an ordinary child failure: the floor burned six children in
+   one day against a balance that could not run them, and the capacity-refuting
+   machinery could not reach it because child-failure backoff is deliberately
+   not capacity evidence.
+   **The test:** a marker table is a closed list against an open world. Treat
+   every `UNKNOWN` refusal verdict as a signature to add, and classify a balance
+   separately from a window — "wait for the reset" is wrong advice for a
+   balance, and so is "re-authenticate".
+3. **A typed contract split across two files silently degraded.** Adding a new
+   verdict without adding it to the consumer's closed state/verdict pair map
+   turned a clean observation into `typed-contract-invalid` — strictly worse
+   than the `UNKNOWN` it replaced, with both suites green because neither
+   covered the seam. A cross-file guard that parses both sides and asserts every
+   emitted pair is admitted found a SECOND, pre-existing instance on its first
+   run.
+   **The test:** if a vocabulary is enumerated in two files, one test must read
+   both and assert exhaustiveness. Green suites on either side prove nothing.
+
+Implementation and receipts: Conjugal commits `eb6ec2618`, `7b13071f`,
+`6e144119`, with
+`coordination/FINDING-dispatcher-2026-08-29-credit-exhaustion-signature.md`.
+Behavior amendments await hub ratification; this entry carries facts.

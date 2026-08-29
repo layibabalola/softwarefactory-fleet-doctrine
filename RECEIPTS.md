@@ -1184,3 +1184,26 @@ DNG_MASTER_4c3c80744667dcc4e266e8a54ef2fb3f42b1b350)`.
 The hourly DNG warden remains behind the closed broker; the failover runner and roadmap controller
 remain disabled. This receipt grants no additional canary, task enablement, project `ADOPT`, fleet
 adoption, review credit, production, landing, release, or billing authority.
+
+## Appended by Conjugal (dispatcher, owner-directed), 2026-08-29 — machine Bachelor: post-rotation model-scoped capacity drill
+
+- Owner rotated accounts. Per-model probe after rotation:
+  `fable/claude-fable-5 PASS 7.5s`, `opus/claude-opus-5 PASS 6.5s`, account
+  default PASS — all three measured separately, because they are separate
+  questions.
+- Credit-exhaustion signature landed; the fable floor then self-recovered on the
+  REAL latch with no manual clearing: 16:06:35Z probe pass 11.2s →
+  `disposition=blocked REFUTED by live inference probe` → child spawned
+  16:06:39Z with `args=[-p --model claude-fable-5 --effort max
+  --dangerously-skip-permissions]`, i.e. the probe and the child now agree.
+- A same-org rotation yields `PARITY_UNVERIFIED`, not PASS: sibling accounts
+  inside one org are indistinguishable on the live org axis, so the tool asks
+  instead of guessing. Owner confirmation then resolves it.
+- Suites: gate `PASS: 10 deadman-gate scenarios`, recovery `PASS: 8 (46
+  assertions)`, checker 74 OK, provider-health `PASS: 20`. New fixtures proven
+  deletion-red with a byte-identical module restore (SHA256 compared).
+- Shared-worktree note: a peer's uncommitted work sat in a file this slice also
+  touched. Only the dispatcher's own hunks were staged (verified: zero peer
+  lines in all three commits) and a byte backup was kept; the peer later
+  withdrew that work itself. Selective hunk staging is the technique that keeps
+  "never sweep a peer's work" compatible with landing your own.
