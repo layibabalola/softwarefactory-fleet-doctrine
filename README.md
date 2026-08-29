@@ -43,6 +43,13 @@ the human store-and-forward bus.
 
 ## Proposed amendments (not ratified)
 
+- [`ruling-candidates/fable-exhaustion-opus-failback-r1.md`](ruling-candidates/fable-exhaustion-opus-failback-r1.md)
+  — owner-directed proposal to treat unused included-plan Claude allowance as an economic defect:
+  route useful eligible work to Fable first, then exact-model Opus after typed Fable exhaustion,
+  while retaining quota-domain serialization, role separation, completion reserve, no-retry and
+  no-silent-substitution controls. The proposal creates no provider, project, vote, or adoption
+  authority by itself.
+
 - [`ruling-candidates/zero-discretionary-capacity-reserve-r1.md`](ruling-candidates/zero-discretionary-capacity-reserve-r1.md)
   — user-directed R1 proposal to replace fixed 20%/30% unused capacity floors with 0% discretionary
   reserve while retaining conservative request reservations, serial single-flight, fresh account-bound
