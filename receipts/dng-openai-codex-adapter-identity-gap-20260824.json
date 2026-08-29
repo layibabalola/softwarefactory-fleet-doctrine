@@ -1,0 +1,40 @@
+{
+  "schema": "fleet-dng-openai-codex-adapter-identity-gap/v1",
+  "receiptId": "dng-openai-codex-adapter-identity-gap-20260824",
+  "recordedAt": "2026-08-24T04:35:36Z",
+  "status": "COMPOSITION_GAP_PROVEN_ZERO_AUTHORITY",
+  "project": "dng-auto-processor",
+  "finding": "CANONICAL_BROKER_DOCTRINE_DOES_NOT_RECOGNIZE_OPENAI_CODEX_EXEC_ADAPTER",
+  "requiredIdentity": {
+    "provider": "openai",
+    "adapterVersion": "openai-codex-exec/1.0",
+    "reason": "The actual execution boundary is the noninteractive Codex CLI, not the OpenAI Responses API."
+  },
+  "currentDoctrine": {
+    "tool": {"path": "tools/universal_provider_control.py", "bytes": 271453, "sha256": "sha256:20d18b936f0d4a21385bb5d8b14475ba942f6a985cda0fc70c2746af6b2f9009"},
+    "requestSchema": {"path": "schemas/universal-control-request-v1.schema.json", "bytes": 7701, "sha256": "sha256:02909a94047b065ac4d932bed7ca0dbb9d3bd7def595d2f3317a622158a9cdb2"},
+    "profileSchema": {"path": "schemas/universal-project-profile-v1.schema.json", "bytes": 9250, "sha256": "sha256:b9eba10ef5d32876bc349b37af1985f126100317c1c86a38e18f341a7b9c40a4"},
+    "nativeEvidenceSchema": {"path": "schemas/provider-native-capacity-evidence-v1.schema.json", "bytes": 4661, "sha256": "sha256:d9d0e91a134163a99031192bd14106dd4554bcb3a731616a0c571c8219f07a5f"},
+    "observationSchema": {"path": "schemas/universal-capacity-observation-v1.schema.json", "bytes": 1490, "sha256": "sha256:e3aa97bf501e55e127f1a8dc022086713f73bb8db501ee665f5c86629c2fefb8"},
+    "onlyAcceptedOpenAIAdapter": "openai-responses/1.0"
+  },
+  "compositionImpact": {
+    "requestCompilerCanBeHonest": false,
+    "relabelCodexCliAsResponsesPermitted": false,
+    "productionExecutorCanComposeWithCanonicalBroker": false,
+    "providerLaunches": 0,
+    "productionMutations": 0
+  },
+  "requiredRepair": [
+    "add openai-codex-exec/1.0 as a first-class adapter across request, profile, native-evidence, and normalized-observation contracts",
+    "bind its capacity dimensions to independently observed Codex account windows without pretending the transport is Responses",
+    "add hostile tests proving adapter mismatch and cross-adapter evidence are refused",
+    "derive a new immutable doctrine generation and obtain independent acceptance before installation"
+  ],
+  "authority": {
+    "doctrineAmendmentAccepted": false,
+    "productionProviderExecution": false,
+    "installation": false,
+    "adoptionCredit": false
+  }
+}

@@ -1,0 +1,52 @@
+{
+  "schema": "fleet-provider-acyclic-release-policy-prototype/v1",
+  "receiptId": "dng-acyclic-release-policy-prototype-20260824",
+  "recordedAt": "2026-08-24T02:40:00Z",
+  "status": "LOCAL_PROTOTYPE_ZERO_AUTHORITY",
+  "project": "dng-auto-processor",
+  "provenance": {
+    "classification": "AUTHOR_ATTESTED_LOCAL_VERIFICATION",
+    "independentAcceptance": false,
+    "providerAuthenticated": false,
+    "providerLaunches": 0,
+    "networkCalls": 0,
+    "productionMutations": 0,
+    "activeHoldChanged": false,
+    "adoptionCredit": false
+  },
+  "privacy": {
+    "localPathsIncluded": false,
+    "accountIdentifiersIncluded": false,
+    "sessionIdentifiersIncluded": false,
+    "promptsOrOutputsIncluded": false,
+    "secretMaterialIncluded": false
+  },
+  "authoritativeInputs": {
+    "sourceCommit": "fcd06dfded6039293d23446960604895e7d10553",
+    "universalProviderControlSha256": "sha256:20d18b936f0d4a21385bb5d8b14475ba942f6a985cda0fc70c2746af6b2f9009",
+    "outputContractSchemaSha256": "sha256:02045587b66a6f186d3468120ed034733028731c0eb7beb0122c02b1c1b384a7",
+    "policyEvaluatorSha256": "sha256:2055a64485dd7eeeb53d0d1d966f1fb03ff8410f8da8d0f7a3672b4a2f845ce2",
+    "hostileSuiteSha256": "sha256:07a423b5aeb652a07243dfd7c2fa5bdf597852293da9dc3be05514d7a4d233f4",
+    "policyVerifierSha256": "sha256:cc7c6e4bdb1e3f2a454d27082895e9f342c45d4cb3ed2e2876b372ac61ccc646",
+    "candidateManifestSha256": "sha256:a304373318d09ba332966e013d204ada75f8665cb9b13c582622a91a01a54cfc"
+  },
+  "verifiedResult": {
+    "hostileAssertions": 29,
+    "verificationAssertions": 41,
+    "terminalReleaseRequiresDeterministicReceipt": true,
+    "semanticReceiptUsedForTerminalRelease": false,
+    "missingDueSemanticProofClosesNextRoute": true,
+    "missingDueSemanticProofStrandsCompletedRelease": false,
+    "promotionRequiresDeterministicAndSemanticReceipts": true,
+    "receiptClassesInterchangeable": false,
+    "zeroRequestReceiptRefused": true,
+    "forgedOrCrossRequestReceiptRefused": true
+  },
+  "credit": {
+    "implementation": false,
+    "independentAcceptance": false,
+    "installation": false,
+    "productionCadence": false,
+    "adoption": false
+  }
+}

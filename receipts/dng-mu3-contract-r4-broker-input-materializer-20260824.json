@@ -1,0 +1,14 @@
+{
+  "schema":"fleet-dng-mu3-contract-r4-broker-input-materializer/v1",
+  "receiptId":"dng-mu3-contract-r4-broker-input-materializer-20260824",
+  "recordedAt":"2026-08-24T10:21:29.6828073Z",
+  "status":"CONTRACT_R4_MATERIALIZER_PROVEN_PROVIDER_FREE_ZERO_AUTHORITY",
+  "project":"dng-auto-processor",
+  "candidate":{"manifestPath":"C:/code/DngAutoProcessor - Claude/coordination/candidates/dng-r27-mu3-broker-input-materializer-r4/candidate-manifest.json","manifestBytes":3833,"manifestSha256":"sha256:fabf772631794030c6df6a5f600a30bc502e1b23616e37b03da5abfb00d3decb"},
+  "supersedes":{"manifestPath":"C:/code/DngAutoProcessor - Claude/coordination/candidates/dng-r27-mu3-broker-input-materializer-r3/candidate-manifest.json","manifestBytes":4398,"manifestSha256":"sha256:72d64a856640b802efc0f8447fb0f8e45e9bc58e97bb19a6c40e6167d6c11dba","reason":"R3_ACCEPTED_ONLY_EXECUTOR_CONTRACT_R3_AND_COULD_NOT_CONSUME_CAUSALITY_SAFE_R4"},
+  "properties":{"fullContractR4Replay":true,"supersededContractR3Refused":true,"wrapperCommandTemplateAndAbsentOutputPreserved":true,"allNativeRolesExact":true,"exclusiveCanonicalOutput":true,"zeroDiscretionaryReserve":true,"hardCapacityCeilingPreserved":true,"noProcessPrimitive":true,"noNetworkPrimitive":true},
+  "verification":{"behavioralAssertions":51,"hostileCases":11,"repeatRuns":3,"candidateVerifierAssertions":47,"realProviderLaunches":0,"localFakeProviderLaunches":0,"networkCalls":0,"productionMutations":0,"scheduledTaskMutations":0},
+  "limitations":{"installableExecutor":false,"composedPostimage":false,"transactionalInstaller":false,"independentAcceptance":false,"privilegedPreview":false,"productionInstallation":false,"rollbackReinstall":false,"productionCadences":false,"adoptionCredit":false},
+  "authority":{"workCreation":false,"capacityAdmission":false,"lease":false,"providerPermit":false,"productionProviderExecution":false,"installation":false,"productionMutation":false,"scheduledTaskMutation":false,"adoptionCredit":false},
+  "requiredNext":["compose materializer r4 and compiler r2 into the exact acyclic executor","prove every terminal and deterministic-release path in the disposable transaction","obtain independent acceptance before preview or production mutation"]
+}

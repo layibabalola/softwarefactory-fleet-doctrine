@@ -1,0 +1,13 @@
+{
+  "schema":"fleet-dng-mu3-broker-input-materializer/v1",
+  "receiptId":"dng-mu3-broker-input-materializer-20260824",
+  "recordedAt":"2026-08-24T09:06:21.3657597Z",
+  "status":"BROKER_INPUT_MATERIALIZER_PROVEN_PROVIDER_FREE_ZERO_AUTHORITY",
+  "project":"dng-auto-processor",
+  "candidate":{"manifestPath":"C:/code/DngAutoProcessor - Claude/coordination/candidates/dng-r27-mu3-broker-input-materializer-r1/candidate-manifest.json","manifestBytes":3097,"manifestSha256":"sha256:587963df3a81288e1c42b94e722a802692eae427332d13bd5526420d2428dbd0"},
+  "properties":{"fullExecutorContractR2Replay":true,"contractManifestAndValidatorPinned":true,"allNativeRolesExact":true,"exclusiveCanonicalOutput":true,"outputAliasRefused":true,"providerProcessPrimitive":false,"networkPrimitive":false},
+  "verification":{"behavioralAssertions":48,"hostileCases":10,"repeatRuns":3,"candidateVerifierAssertions":44,"realProviderLaunches":0,"localFakeProviderLaunches":0,"networkCalls":0,"productionMutations":0,"scheduledTaskMutations":0},
+  "limitations":{"installableExecutor":false,"composedPostimage":false,"transactionalInstaller":false,"independentAcceptance":false,"privilegedPreview":false,"productionInstallation":false,"productionCadence":false,"adoptionCredit":false},
+  "authority":{"workCreation":false,"capacityAdmission":false,"lease":false,"providerPermit":false,"productionProviderExecution":false,"installation":false,"productionMutation":false,"scheduledTaskMutation":false,"adoptionCredit":false},
+  "requiredNext":["compose materializer and compiler r2 into the exact acyclic executor lifecycle","prove deterministic terminal release on every executor outcome","obtain independent acceptance before privileged preview or production mutation"]
+}

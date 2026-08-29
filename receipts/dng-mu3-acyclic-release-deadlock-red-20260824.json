@@ -1,0 +1,13 @@
+{
+  "schema":"fleet-dng-mu3-acyclic-release-deadlock-red/v1",
+  "receiptId":"dng-mu3-acyclic-release-deadlock-red-20260824",
+  "recordedAt":"2026-08-24T06:38:00Z",
+  "status":"CURRENT_POSTIMAGE_TERMINAL_RELEASE_DEADLOCK_PROVEN_PROVIDER_FREE_ZERO_AUTHORITY",
+  "project":"dng-auto-processor",
+  "candidate":{"manifestPath":"C:/code/DngAutoProcessor - Claude/coordination/candidates/dng-r27-mu3-acyclic-release-deadlock-red-r1/candidate-manifest.json","manifestBytes":3648,"manifestSha256":"sha256:b4355bd4296ef3dc0dc60f9be3c2a9d664e20ff91edb976a0f8b0504fec2a281"},
+  "finding":"The synchronous executor returns before deterministic finalization, but the current broker release accepts only semantic quality evidence; the controller has no release callback and the finalizer has evidence-only authority. The composed postimage therefore cannot lawfully release its broker lease.",
+  "selectedRepair":{"kind":"BROKER_NATIVE_DETERMINISTIC_TERMINAL_RELEASE","semanticReceiptUsedForTerminalRelease":false,"productionRouteAfterRelease":"CLOSED_SEMANTIC_EVIDENCE_REQUIRED","laterSemanticEvidenceRequiredForPromotionAndCadence":true},
+  "verification":{"behavioralAssertions":29,"candidateVerifierAssertions":34,"currentReleasePayloadRefusal":"RELEASE_PAYLOAD_INVALID","currentControllerReleaseCallback":false,"deterministicReceiptClaimsSemanticNoninferiority":false,"realProviderLaunches":0,"networkCalls":0,"productionMutations":0,"scheduledTaskMutations":0},
+  "credit":{"technicalFinding":true,"implementation":false,"independentAcceptance":false,"installation":false,"productionCadence":false,"adoption":false},
+  "requiredNext":["implement broker/session deterministic terminal release with in-boundary policy recomputation","durably close the production route after deterministic-only release","compose and independently accept the exact postimage and installer transaction"]
+}

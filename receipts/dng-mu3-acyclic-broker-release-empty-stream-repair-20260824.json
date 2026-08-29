@@ -1,0 +1,14 @@
+{
+  "schema":"fleet-dng-mu3-acyclic-broker-release-empty-stream-repair/v1",
+  "receiptId":"dng-mu3-acyclic-broker-release-empty-stream-repair-20260824",
+  "recordedAt":"2026-08-24T07:23:00Z",
+  "status":"SCHEMA_VALID_EMPTY_STREAM_RELEASE_REPAIRED_PROVIDER_FREE_ZERO_AUTHORITY",
+  "project":"dng-auto-processor",
+  "supersedesForAcceptance":["dng-mu3-acyclic-broker-release-candidate-20260824"],
+  "finding":"The output-contract schema permits zero-byte stdout and stderr, while broker r1 reused a retained-artifact helper whose minimum was one byte. A successful provider with empty stderr would be refused at terminal release.",
+  "candidate":{"manifestPath":"C:/code/DngAutoProcessor - Claude/coordination/candidates/dng-r27-mu3-acyclic-broker-release-r2/candidate-manifest.json","manifestBytes":4311,"manifestSha256":"sha256:26a5f0eaff8d6cbfba4a0f14068ce53dbe1288f46bb34d6bdfbb38c57b082445"},
+  "verification":{"behavioralAssertions":18,"repeatRuns":3,"candidateVerifierAssertions":49,"structuredOutputMinimumBytes":2,"stdoutMinimumBytes":0,"stderrMinimumBytes":0,"emptyStderrReleaseProven":true,"priorHostileControlsPreserved":true,"realProviderLaunches":0,"networkCalls":0,"productionMutations":0,"scheduledTaskMutations":0},
+  "limitations":{"exactComposedMu3Postimage":false,"transactionalInstaller":false,"independentAcceptance":false,"privilegedPreview":false,"productionInstallation":false,"rollbackReinstall":false,"productionCadence":false,"adoptionCredit":false},
+  "authority":{"workCreation":false,"capacityAdmission":false,"providerPermit":false,"productionProviderExecution":false,"installation":false,"adoptionCredit":false},
+  "requiredNext":["restart the real native-executor composition against broker r2","compose the exact immutable MU-3 postimage and transaction","obtain strict-serial independent acceptance before production mutation"]
+}

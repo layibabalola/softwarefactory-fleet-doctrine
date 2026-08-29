@@ -1,0 +1,12 @@
+{
+  "schema":"fleet-dng-openai-codex-xhigh-full-broker-authorization/v1",
+  "receiptId":"dng-openai-codex-xhigh-full-broker-authorization-20260824",
+  "recordedAt":"2026-08-24T04:54:29Z",
+  "status":"FULL_BROKER_AUTHORIZATION_FIXTURE_PROVEN_ZERO_AUTHORITY",
+  "project":"dng-auto-processor",
+  "candidate":{"manifestPath":"C:/code/DngAutoProcessor - Claude/coordination/candidates/dng-r27-openai-codex-xhigh-zero-reserve-amendment-r3/candidate-manifest.json","manifestBytes":3112,"manifestSha256":"sha256:6b21d83233a1e6239a58a34a7d716320efdc0a5ab8ba0a580a90d4f1a5db1c0a"},
+  "exactRoute":{"provider":"openai","adapter":"openai-codex-exec/1.0","model":"gpt-5.6-sol","effort":"xhigh","role":"IMPLEMENT","discretionaryReserve":0.0,"hardCapacityCeiling":1.0},
+  "verification":{"behavioralAssertions":28,"candidateVerifierAssertions":67,"signedCodexCapacityEvidence":true,"persistentBrokerAuthorization":"PREPARED_SUSPENDED","attestationPreservedModelEffortRole":true,"exact100PercentAdmitted":true,"above100PercentRefused":true,"realProviderLaunches":0,"networkCalls":0,"productionMutations":0},
+  "authority":{"independentAcceptance":false,"doctrineInstallation":false,"productionProviderExecution":false,"adoptionCredit":false},
+  "requiredNext":["production request compiler","broker-wrapper-parser-observer composition","independent review and immutable doctrine generation","transactional installation and production proof"]
+}

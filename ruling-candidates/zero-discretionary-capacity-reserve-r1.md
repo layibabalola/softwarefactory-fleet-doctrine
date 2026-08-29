@@ -66,3 +66,46 @@ and terminal reserve semantics remain intact; obtain independent review; append 
 
 Until then, project-local user authority may change a local reserve policy, but every fleet row remains
 honestly pending this amendment's independent doctrine acceptance and project-specific disposition.
+
+## First combined executable candidate
+
+DNG's first provider-free descendant composes the 0% floor with the distinct
+`openai-codex-exec/1.0` adapter. A real broker authorization fixture admits fresh proven utilization
+plus the conservative request estimate at exactly 100%, and refuses a projection one millionth over
+100% as `HARD_CAP_FORECAST`. Old profiles remain fail-closed until explicit adoption. The candidate
+and its zero-authority limits are pinned in
+[`receipts/dng-openai-codex-zero-reserve-amendment-candidate-20260824.json`](../receipts/dng-openai-codex-zero-reserve-amendment-candidate-20260824.json).
+
+A forward descendant also repairs the broker's prior `high`-only effort schemas. Its full signed
+persistent-broker fixture authorizes and attests the exact `gpt-5.6-sol` / `xhigh` / `IMPLEMENT`
+Codex route without weakening the 100% ceiling. Evidence and zero-authority limits are pinned in
+[`receipts/dng-openai-codex-xhigh-full-broker-authorization-20260824.json`](../receipts/dng-openai-codex-xhigh-full-broker-authorization-20260824.json).
+
+The next forward descendant compiles one exact hash-bound MU-3 request and proves that the full
+persistent broker reaches `PREPARED_SUSPENDED` with the Codex/xhigh/IMPLEMENT/zero-reserve route.
+It has no work-creation, admission, lease, permit, process, or provider authority. A correctly
+signed but stale prior-idle receipt is deliberately left for the broker to reject before launch;
+hostile controls also refuse model, effort, role, signer, profile, subject, boundary, and output
+identity drift. Evidence and zero-authority limits are pinned in
+[`receipts/dng-mu3-broker-request-compiler-candidate-20260824.json`](../receipts/dng-mu3-broker-request-compiler-candidate-20260824.json).
+
+The compiler is now joined provider-free to the real persistent-broker protocol, pre-turn wrapper
+gate, usage parser, terminal permit, termination observer, independent quality observer, terminal
+checkpoint, exact release, and clean shutdown. The fixture launches only a local fake provider and
+makes no network or production mutation. Its native process observation remains synthetic, so this
+does not yet prove the Windows suspended-process executor, real PID/start-time/job binding, or any
+installation/adoption authority. Evidence and the explicit remaining gap are pinned in
+[`receipts/dng-mu3-broker-wrapper-protocol-composition-candidate-20260824.json`](../receipts/dng-mu3-broker-wrapper-protocol-composition-candidate-20260824.json).
+
+The synthetic native-observation gap is now closed locally in two zero-authority descendants. The
+first owns real Windows process, thread, and job handles from `CREATE_SUSPENDED` through one attested
+resume and a terminal empty job. The second carries that same real PID/start/image/PEB-argv/job
+identity through the exact compiler, broker, wrapper gates, local fake execution, parsers, observers,
+terminal checkpoint, release, and shutdown. Three repeated provider-free runs pass. No real provider,
+network, production, task, installation, or adoption authority was exercised. The remaining gate is
+to derive and independently accept the exact immutable installed launcher/postimage and its
+transactional installer, then prove preview, apply, interruption recovery, rollback/reinstall, and
+natural production operation. Evidence is pinned in
+[`receipts/dng-mu3-native-process-host-candidate-20260824.json`](../receipts/dng-mu3-native-process-host-candidate-20260824.json)
+and
+[`receipts/dng-mu3-native-executor-composition-candidate-20260824.json`](../receipts/dng-mu3-native-executor-composition-candidate-20260824.json).

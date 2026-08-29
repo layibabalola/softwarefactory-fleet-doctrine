@@ -1,0 +1,52 @@
+{
+  "schema": "fleet-provider-bounded-review-continuation-ttl-repair/v1",
+  "receiptId": "dng-bounded-review-continuation-ttl-repair-20260824",
+  "recordedAt": "2026-08-24T04:21:00Z",
+  "status": "LOCAL_FORWARD_REPAIR_ZERO_AUTHORITY",
+  "project": "dng-auto-processor",
+  "finding": "CONTINUATION_RECEIPT_TTL_SHORTER_THAN_BOUNDED_REVIEW_RUNTIME",
+  "supersedesForAcceptance": ["dng-mu3-bounded-review-continuation-r1"],
+  "provenance": {
+    "classification": "AUTHOR_ATTESTED_LOCAL_VERIFICATION",
+    "independentAcceptance": false,
+    "providerAuthenticated": false,
+    "providerLaunches": 0,
+    "networkCalls": 0,
+    "productionMutations": 0,
+    "activeHoldChanged": false,
+    "adoptionCredit": false
+  },
+  "privacy": {
+    "localPathsIncluded": false,
+    "accountIdentifiersIncluded": false,
+    "sessionIdentifiersIncluded": false,
+    "promptsOrOutputsIncluded": false,
+    "secretMaterialIncluded": false
+  },
+  "authoritativeInputs": {
+    "r1ManifestSha256": "sha256:be5406b940ed668a83ee5ef02423d23b8e430a6bec454f04b5617f0a6be15d53",
+    "r2ManifestSha256": "sha256:3d75be75c785c5ff2299912fa1a6f8b171fb366b4e9922ac6ce7d2a08ade316f",
+    "r2PlanSha256": "sha256:000862391813d0aa97aa942549b62090d5d321c900755821a85b15f159890291",
+    "r2EvaluatorSha256": "sha256:ff0b135df02dd1787ef768ded3ef9e1561c77c25adbc81765eef6869107883ab",
+    "r2HostileSuiteSha256": "sha256:64430fab18847eaea183707e7535e11deaac854a56c16177922ce42089955a8d",
+    "r2VerifierSha256": "sha256:3a081a3f622a7e00ef21d8ef4cb4728e386dbcde1e14cfeab3bc5aa1adcce738"
+  },
+  "verifiedResult": {
+    "hostileAssertions": 67,
+    "verificationAssertions": 38,
+    "receiptTtlSeconds": 3600,
+    "contextFreshnessSeconds": 60,
+    "boundedReviewTimeoutMinutes": 45,
+    "fortyFiveMinuteCompletionAccepted": true,
+    "oneHourExpiryRefused": true,
+    "productionAuthority": false,
+    "promotionAuthority": false
+  },
+  "credit": {
+    "implementation": false,
+    "independentAcceptance": false,
+    "installation": false,
+    "productionCadence": false,
+    "adoption": false
+  }
+}

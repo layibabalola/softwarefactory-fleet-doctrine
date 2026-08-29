@@ -1,0 +1,59 @@
+{
+  "schema": "fleet-provider-quality-acyclicity-field-finding/v1",
+  "receiptId": "dng-quality-release-acyclicity-finding-20260824",
+  "recordedAt": "2026-08-24T02:11:00Z",
+  "status": "LOCAL_FALSIFICATION_ZERO_AUTHORITY",
+  "project": "dng-auto-processor",
+  "provenance": {
+    "classification": "AUTHOR_ATTESTED_LOCAL_VERIFICATION",
+    "independentAcceptance": false,
+    "providerAuthenticated": false,
+    "providerLaunches": 0,
+    "networkCalls": 0,
+    "productionMutations": 0,
+    "adoptionCredit": false
+  },
+  "privacy": {
+    "localPathsIncluded": false,
+    "accountIdentifiersIncluded": false,
+    "sessionIdentifiersIncluded": false,
+    "promptsOrOutputsIncluded": false,
+    "secretMaterialIncluded": false
+  },
+  "authoritativeInputs": {
+    "sourceCommit": "fcd06dfded6039293d23446960604895e7d10553",
+    "mu3ExecutorSeamSha256": "sha256:d6f3ea8c3acc68a298253e9cce5a168602fec10332b81a49bae3ce18845ccfcc",
+    "mu3ControllerPostimageSha256": "sha256:54f8e9e6d8a7af081d36f20429248cdfe5646648bf26319e4c7e76122e2abae4",
+    "qualityObserverSha256": "sha256:1ab315071f708450b6fdecc6da49e4e1a988ddd9801ea10789279ead99743f67",
+    "universalProviderControlSha256": "sha256:20d18b936f0d4a21385bb5d8b14475ba942f6a985cda0fc70c2746af6b2f9009",
+    "localFindingSha256": "sha256:9911522dcf498b625a643bb8a10b94dbd467d084b1f990f86561a1f7782f6142",
+    "localVerifierSha256": "sha256:3dec908c3c5e8fe172e92c6523180b3fa2ef3599a07e0ac9c121037f503b6d7d",
+    "outputContractObserverCandidateManifestSha256": "sha256:df8e0c56166ac31702ee16a83616a0560ba025c758570ebe6bfe0cf1387c44fa"
+  },
+  "verifiedResult": {
+    "assertions": 54,
+    "brokerRequiresSemanticQualityForEveryNonzeroProviderRelease": true,
+    "controllerRequiresQualityArtifactBeforeIndependentReview": true,
+    "reviewCallsRecursivelyRequireQualityArtifact": true,
+    "seamValidatesOnlyQualityPathAndHash": true,
+    "fixtureUsesEmptyJsonAsQualityArtifact": true,
+    "honestProductionExecutorDerivableFromCurrentInputs": false,
+    "finding": "CYCLIC_OUTPUT_QUALITY_AUTHORITY",
+    "deterministicOutputContractObserverFixtureAssertions": 23,
+    "deterministicOutputContractObserverVerificationAssertions": 46,
+    "deterministicReceiptSemanticNoninferiorityClaimed": false
+  },
+  "forwardRepair": {
+    "perCall": "independently accepted deterministic output-contract receipt",
+    "semantic": "acyclic noninferiority authority at canary, cadence, change, and risk-based sample gates",
+    "failurePolicy": "due, stale, failed, or ambiguous quality evidence remains fail-closed",
+    "receiptClassesInterchangeable": false
+  },
+  "credit": {
+    "implementation": false,
+    "independentAcceptance": false,
+    "installation": false,
+    "productionCadence": false,
+    "adoption": false
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "schema":"fleet-dng-mu3-acyclic-executor-session-contract/v1",
+  "receiptId":"dng-mu3-acyclic-executor-session-contract-20260824",
+  "recordedAt":"2026-08-24T09:31:38.8288798Z",
+  "status":"EXECUTOR_SESSION_CONTRACT_PROVEN_PROVIDER_FREE_ZERO_AUTHORITY",
+  "project":"dng-auto-processor",
+  "candidate":{"manifestPath":"C:/code/DngAutoProcessor - Claude/coordination/candidates/dng-r27-mu3-acyclic-executor-contract-r3/candidate-manifest.json","manifestBytes":5133,"manifestSha256":"sha256:13d8db57d7e49acbb435e12e8054eb6f37fb9f17830b333f9cc927d99d995855"},
+  "properties":{"completeCompilerInputsBound":true,"executionStateBound":true,"executionStateAbsentAndDirectChild":true,"wrapperCommandBoundInCompilerArgv":true,"nativeAndTerminationEvidenceBound":true,"manualAuthorizationPairClosed":true,"releasePolicyAndLifecycleSchemasBound":true,"deterministicReleaseAndOutputSchemasBound":true,"zeroDiscretionaryReserve":true,"hardCapacityCeilingPreserved":true,"serialSingleFlight":true},
+  "verification":{"behavioralAssertions":111,"hostileCases":52,"repeatRuns":3,"candidateVerifierAssertions":139,"realProviderLaunches":0,"localFakeProviderLaunches":0,"networkCalls":0,"productionMutations":0,"scheduledTaskMutations":0},
+  "supersedes":{"manifestPath":"C:/code/DngAutoProcessor - Claude/coordination/candidates/dng-r27-mu3-acyclic-executor-contract-r2/candidate-manifest.json","manifestBytes":5007,"manifestSha256":"sha256:84f5567bf4b4558398158735ce91b9eafaab5bda7d40664de417dc5ed5889d48","reason":"R2_DID_NOT_BIND_EXECUTION_STATE_WRAPPER_COMMAND_NATIVE_EVIDENCE_TERMINATION_EVIDENCE_OR_MANUAL_AUTHORIZATION_PAIR"},
+  "limitations":{"installableExecutor":false,"composedPostimage":false,"controllerTaskTransactionComposition":false,"transactionalInstaller":false,"independentAcceptance":false,"privilegedPreview":false,"productionInstallation":false,"rollbackReinstall":false,"productionCadences":false,"adoptionCredit":false},
+  "authority":{"workCreation":false,"capacityAdmission":false,"lease":false,"providerPermit":false,"productionProviderExecution":false,"installation":false,"productionMutation":false,"scheduledTaskMutation":false,"adoptionCredit":false},
+  "requiredNext":["implement the exact acyclic executor lifecycle consuming only contract r3","compose the executor/runtime postimage into the disposable five-surface controller/task transaction","prove terminal release, interruption recovery, rollback, and exact reinstall before independent acceptance"]
+}

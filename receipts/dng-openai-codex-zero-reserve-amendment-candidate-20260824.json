@@ -1,0 +1,12 @@
+{
+  "schema":"fleet-dng-openai-codex-zero-reserve-amendment-candidate/v1",
+  "receiptId":"dng-openai-codex-zero-reserve-amendment-candidate-20260824",
+  "recordedAt":"2026-08-24T04:49:58Z",
+  "status":"FORWARD_COMBINED_AMENDMENT_CANDIDATE_ZERO_AUTHORITY",
+  "project":"dng-auto-processor",
+  "candidate":{"manifestPath":"C:/code/DngAutoProcessor - Claude/coordination/candidates/dng-r27-openai-codex-zero-reserve-amendment-r2/candidate-manifest.json","manifestBytes":2873,"manifestSha256":"sha256:ae40c8afd6e400e0a86f8ff8748ea1be0b9c9829c0a34acbad1ba39b6da687f4","adapter":"openai-codex-exec/1.0","discretionaryReserve":0.0,"hardCapacityCeiling":1.0},
+  "verification":{"behavioralAssertions":26,"candidateVerifierAssertions":60,"exact100PercentAdmitted":true,"above100PercentRefused":true,"aboveCeilingReason":"HARD_CAP_FORECAST","oldProfilesFailClosed":true,"realProviderLaunches":0,"networkCalls":0,"productionMutations":0},
+  "preservedControls":["fresh account-bound signed capacity","strict serial single-flight","request reservation before launch","terminal reserve tokens","exact provider/model/effort/role/subject/executable/argv bindings","independent quality and termination receipts"],
+  "authority":{"independentAcceptance":false,"doctrineInstallation":false,"productionProviderExecution":false,"adoptionCredit":false},
+  "requiredNext":["full broker authorization with signed Codex capacity evidence","independent review and immutable doctrine generation","production request compiler and executor composition","transactional installation and production proof"]
+}

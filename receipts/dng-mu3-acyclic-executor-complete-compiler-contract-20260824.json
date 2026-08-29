@@ -1,0 +1,20 @@
+{
+  "schema":"fleet-dng-mu3-acyclic-executor-complete-compiler-contract/v1",
+  "receiptId":"dng-mu3-acyclic-executor-complete-compiler-contract-20260824",
+  "recordedAt":"2026-08-24T08:51:39.6333520Z",
+  "status":"COMPLETE_EXECUTOR_COMPILER_INPUT_CONTRACT_PROVEN_PROVIDER_FREE_ZERO_AUTHORITY",
+  "project":"dng-auto-processor",
+  "finding":{"code":"EXECUTOR_CONTRACT_R1_MISSING_COMPLETE_COMPILER_INPUTS","actionable":true,"repairLaw":"FORWARD_ONLY","supersededManifestSha256":"sha256:d7bc91ffce01d92e5687d10ac4de049e9afc390b3b97303df9ae2e0a9fc5801d"},
+  "candidate":{"manifestPath":"C:/code/DngAutoProcessor - Claude/coordination/candidates/dng-r27-mu3-acyclic-executor-contract-r2/candidate-manifest.json","manifestBytes":5007,"manifestSha256":"sha256:84f5567bf4b4558398158735ce91b9eafaab5bda7d40664de417dc5ed5889d48"},
+  "contract":{
+    "provider":"openai","adapter":"openai-codex-exec/1.0","model":"gpt-5.6-sol","effort":"xhigh",
+    "controllerRoleMap":{"implementation":"IMPLEMENT","primary":"PRIMARY_REVIEW","stranger-1":"STRANGER_REVIEW","stranger-2":"STRANGER_REVIEW"},
+    "discretionaryReserve":0.0,"hardCapacityCeiling":1.0,"serialSingleFlight":true,"maxProviderCalls":4,
+    "boundCompilerInputs":["broker input template","compiler input","project profile","quality receipt","boundary certification","launcher config","context capsule","compaction checkpoint","cache-affinity manifest"],
+    "separateAbsentOutputs":["compiled broker request","provider result"]
+  },
+  "verification":{"behavioralAssertions":95,"hostileCases":44,"repeatRuns":3,"candidateVerifierAssertions":127,"templateCompilerCrossBinding":true,"realProviderLaunches":0,"localFakeProviderLaunches":0,"networkCalls":0,"productionMutations":0,"scheduledTaskMutations":0},
+  "limitations":{"brokerInputBuilderImplemented":false,"installableExecutorPostimage":false,"controllerTaskTransactionComposition":false,"transactionalInstaller":false,"independentAcceptance":false,"privilegedPreview":false,"productionInstallation":false,"productionCadence":false,"adoptionCredit":false},
+  "authority":{"workCreation":false,"capacityAdmission":false,"lease":false,"providerPermit":false,"productionProviderExecution":false,"installation":false,"productionMutation":false,"scheduledTaskMutation":false,"adoptionCredit":false},
+  "requiredNext":["implement the exact broker-input builder and acyclic executor consuming contract r2","compose the immutable executor/runtime postimage through the disposable controller/task transaction","obtain independent acceptance before privileged preview or production mutation"]
+}

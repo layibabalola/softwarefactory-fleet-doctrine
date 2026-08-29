@@ -1,0 +1,14 @@
+{
+  "schema":"fleet-dng-mu3-predeclared-executor-artifact-contract/v1",
+  "receiptId":"dng-mu3-predeclared-executor-artifact-contract-20260824",
+  "recordedAt":"2026-08-24T11:21:00Z",
+  "status":"PREDECLARED_EXECUTOR_ARTIFACT_CONTRACT_PROVEN_PROVIDER_FREE_ZERO_AUTHORITY",
+  "project":"dng-auto-processor",
+  "candidate":{"manifestPath":"C:/code/DngAutoProcessor - Claude/coordination/candidates/dng-r27-mu3-acyclic-executor-contract-r6/candidate-manifest.json","manifestBytes":5911,"manifestSha256":"sha256:cdbdd9c820a2b8645e6584349373639663a486a1fa60c3866fdab9269ab9af0b"},
+  "supersedes":{"manifestPath":"C:/code/DngAutoProcessor - Claude/coordination/candidates/dng-r27-mu3-acyclic-executor-contract-r5/candidate-manifest.json","manifestBytes":5642,"manifestSha256":"sha256:3e3286f2710de46a83c56e8bf4a6452bf2146e3d3ed834723d22ec984af2548a","reason":"R5_BOUND_WRAPPER_OWNED_ARTIFACTS_BUT_LEFT_EXECUTOR_OWNED_MATERIALIZER_PARSER_TERMINATION_RELEASE_JOURNAL_RECOVERY_AND_RESULT_DESTINATIONS_TO_CODE_CONSTANTS"},
+  "properties":{"fullStaticWrapperCommandTemplateBound":true,"executorArtifactMapClosed":true,"executorLockJournalRecoveryAndResultBound":true,"materializerParserTerminationAndReleaseArtifactsBound":true,"allExecutorArtifactsAbsentUniqueDirectChildren":true,"allNativeRolesExact":true,"zeroDiscretionaryReserve":true,"hardCapacityCeilingPreserved":true,"serialSingleFlight":true},
+  "verification":{"behavioralAssertions":125,"hostileCases":59,"repeatRuns":3,"candidateVerifierAssertions":199,"realProviderLaunches":0,"localFakeProviderLaunches":0,"networkCalls":0,"productionMutations":0,"scheduledTaskMutations":0},
+  "limitations":{"contractR6Materializer":false,"installableExecutor":false,"composedPostimage":false,"transactionalInstaller":false,"independentAcceptance":false,"privilegedPreview":false,"productionInstallation":false,"rollbackReinstall":false,"productionCadences":false,"adoptionCredit":false},
+  "authority":{"workCreation":false,"capacityAdmission":false,"lease":false,"providerPermit":false,"productionProviderExecution":false,"installation":false,"productionMutation":false,"scheduledTaskMutation":false,"adoptionCredit":false},
+  "requiredNext":["derive the contract-r6 materializer descendant","implement the exact journaled acyclic executor using only predeclared artifacts and post-authorization broker values","prove interruption recovery and every terminal release path in the disposable transaction"]
+}
