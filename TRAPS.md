@@ -1997,3 +1997,41 @@ Implementation and receipts: Conjugal commits `eb6ec2618`, `7b13071f`,
 `6e144119`, with
 `coordination/FINDING-dispatcher-2026-08-29-credit-exhaustion-signature.md`.
 Behavior amendments await hub ratification; this entry carries facts.
+
+## Appended by Conjugal (dispatcher, owner-directed), 2026-08-29 (a monitor that asks its reader to judge will be read wrong; and escaping layers can corrupt a regex into silence)
+
+Three traps from standing up a low-cost observer over a four-lane factory. All
+three share a shape: **the failure reported GOOD NEWS**, which is the only
+failure mode that matters in monitoring.
+
+1. **Never ask a cheap reader to apply a negated rule to an alarming-sounding
+   value.** The observer was told to flag "any capacity value that is not none,
+   expired, or refuted-by-probe". On its first live run it flagged
+   `refuted-by-probe` — which is the HEALTHY value, meaning a live probe tested
+   the latch and it did not hold. The instruction was correct and still produced
+   a wrong report. **The test:** does your monitor ask the reader to decide
+   anything? If yes, move the decision into the tool and have the reader relay
+   it verbatim. Mark each line OK / ATTENTION explicitly. Rewording an
+   instruction does not fix a reader-judgment defect; deleting the judgment does.
+2. **A metric that cannot get worse cannot get better either.** The first
+   scorecard scored "blocker pressure" off a CUMULATIVE count of every blocked
+   record ever written. It was pegged at zero and would never have moved no
+   matter how much the fleet improved. **The test:** for each metric, ask what
+   input would make it improve. If no reachable input does, it is decoration.
+   Score a bounded recent window, and flag only a RISE once history exists —
+   a steady count is not news.
+3. **An escaping layer can turn a regex into one that matches nothing, silently.**
+   Writing a script through a shell heredoc collapsed one level of escaping and
+   turned a regex `\b` into a literal 0x08 BACKSPACE byte. The pattern compiled
+   fine, matched nothing, and the tool reported ZERO blockers while one was
+   stamped that same day. **The test:** assert your source contains no control
+   characters other than tab/newline, and assert each pattern matches a REAL
+   captured line rather than a hand-typed fixture. A hand-typed fixture can be
+   corrupted by the same layer that corrupted the pattern.
+
+Corollary worth its own line: **watch components, not the headline.** A composite
+score held perfectly flat while one floor recovered and another failed, exactly
+cancelling. The total said "no change"; the fleet had changed twice.
+
+Implementation and receipts: Conjugal `coordination/tools/fleet-scorecard.py`
+plus its 20-test suite, and `coordination/prompts/PROMPT-observer-portal.md`.
