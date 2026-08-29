@@ -1,0 +1,31 @@
+{
+  "schemaVersion": "stranger-review-disposition.v1",
+  "status": "CHANGES_REQUIRED_R3_SUPERSEDED",
+  "subject": "ruling-candidates/fable-to-opus-usage-limit-failback-r3.md",
+  "schemaSubject": "schemas/fable-opus-failback-receipt-v2.schema.json",
+  "reviewDate": "2026-08-24",
+  "reviews": [
+    {
+      "role": "security-governance",
+      "requestedModel": "opus",
+      "blockers": 6,
+      "required": 11,
+      "minor": 8,
+      "nits": 6,
+      "scores": { "correctness": 6, "safety": 7, "regressionCoverage": 6, "operationalReadiness": 4, "closeoutHygiene": 7 }
+    },
+    {
+      "role": "operations-recovery",
+      "requestedModel": "opus",
+      "critical": 13,
+      "high": 10,
+      "medium": 12,
+      "low": 5,
+      "scores": { "routeConditionalSoundness": 4, "duplicateSpawnContainment": 3, "crashRecoveryExitability": 3, "clockBudgetKillSwitchIntegrity": 2, "rolloutAdoptionClarity": 4 }
+    }
+  ],
+  "controllingDecision": "PRESERVE_SCHEMA_DRAFTS_AS_ADVERSE_AND_SUBMIT_PROSE_ONLY_R4_STRATEGY_PENDING_SEPARATE_IMPLEMENTATION_CONTRACT",
+  "rawReviewTranscriptPublished": false,
+  "ratificationAuthority": false,
+  "runtimeAuthority": false
+}

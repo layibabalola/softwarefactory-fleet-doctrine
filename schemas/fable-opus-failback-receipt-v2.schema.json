@@ -1,0 +1,98 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/layibabalola/softwarefactory-fleet-doctrine/schemas/fable-opus-failback-receipt-v2.schema.json",
+  "title": "Fable-to-Opus failback state receipt v2",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "receiptIdHmac", "producedAt", "host", "routeMode", "status", "rollout", "workItem", "runner", "quota", "dormancy", "primaryAttempt", "opusIntent", "opusAttempt", "settlement", "observedActions", "integrity", "authority"],
+  "properties": {
+    "schemaVersion": { "const": "fable-opus-failback-receipt.v2" },
+    "receiptIdHmac": { "$ref": "#/$defs/opaque" },
+    "producedAt": { "$ref": "#/$defs/timestamp" },
+    "host": { "$ref": "#/$defs/host" },
+    "routeMode": { "enum": ["FABLE_PRIMARY", "FABLE_TO_OPUS", "DIRECT_OPUS_DORMANCY"] },
+    "status": { "enum": ["PRIMARY_TERMINAL_NO_FAILBACK", "FABLE_DORMANT", "FABLE_LIMIT_AFTER_PARTIAL_OUTPUT", "OPUS_INTENT_DURABLE", "OPUS_RUNNING", "OPUS_TERMINAL_UNSETTLED", "SETTLED_SUCCESS", "SETTLED_NON_SUCCESS", "RECOVERY_REQUIRED", "BLOCKED_AMBIGUOUS", "KILL_SWITCH_CLOSED"] },
+    "rollout": { "$ref": "#/$defs/rollout" },
+    "workItem": { "$ref": "#/$defs/workItem" },
+    "runner": { "$ref": "#/$defs/runner" },
+    "quota": { "$ref": "#/$defs/quota" },
+    "dormancy": { "oneOf": [{ "$ref": "#/$defs/dormancy" }, { "type": "null" }] },
+    "primaryAttempt": { "oneOf": [{ "$ref": "#/$defs/attempt" }, { "type": "null" }] },
+    "opusIntent": { "oneOf": [{ "$ref": "#/$defs/opusIntent" }, { "type": "null" }] },
+    "opusAttempt": { "oneOf": [{ "$ref": "#/$defs/attempt" }, { "type": "null" }] },
+    "settlement": { "oneOf": [{ "$ref": "#/$defs/settlement" }, { "type": "null" }] },
+    "observedActions": { "$ref": "#/$defs/observedActions" },
+    "integrity": { "$ref": "#/$defs/integrity" },
+    "authority": { "$ref": "#/$defs/authority" }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "routeMode": { "const": "FABLE_PRIMARY" } } },
+      "then": { "properties": { "dormancy": { "type": "null" }, "opusIntent": { "type": "null" }, "opusAttempt": { "type": "null" } }, "required": ["primaryAttempt"] }
+    },
+    {
+      "if": { "properties": { "routeMode": { "const": "FABLE_TO_OPUS" } } },
+      "then": { "properties": { "primaryAttempt": { "$ref": "#/$defs/fableTerminalAttempt" }, "dormancy": { "$ref": "#/$defs/dormancy" }, "opusIntent": { "$ref": "#/$defs/opusIntentOrdinal1" } } }
+    },
+    {
+      "if": { "properties": { "routeMode": { "const": "DIRECT_OPUS_DORMANCY" } } },
+      "then": { "properties": { "primaryAttempt": { "type": "null" }, "dormancy": { "$ref": "#/$defs/dormancy" }, "opusIntent": { "$ref": "#/$defs/opusIntentOrdinal0" } } }
+    },
+    {
+      "if": { "properties": { "status": { "enum": ["OPUS_INTENT_DURABLE", "OPUS_RUNNING", "OPUS_TERMINAL_UNSETTLED", "RECOVERY_REQUIRED", "BLOCKED_AMBIGUOUS"] } } },
+      "then": { "properties": { "settlement": { "type": "null" } } }
+    },
+    {
+      "if": { "properties": { "status": { "const": "OPUS_INTENT_DURABLE" } } },
+      "then": { "properties": { "opusIntent": { "$ref": "#/$defs/opusIntentUnspawned" }, "opusAttempt": { "$ref": "#/$defs/plannedOpusAttempt" } } }
+    },
+    {
+      "if": { "properties": { "status": { "const": "OPUS_RUNNING" } } },
+      "then": { "properties": { "opusIntent": { "$ref": "#/$defs/opusIntentSpawned" }, "opusAttempt": { "$ref": "#/$defs/runningOpusAttempt" } } }
+    },
+    {
+      "if": { "properties": { "status": { "const": "OPUS_TERMINAL_UNSETTLED" } } },
+      "then": { "properties": { "opusIntent": { "$ref": "#/$defs/opusIntentSpawned" }, "opusAttempt": { "$ref": "#/$defs/terminalOpusAttempt" }, "settlement": { "type": "null" } } }
+    },
+    {
+      "if": { "properties": { "status": { "enum": ["SETTLED_SUCCESS", "SETTLED_NON_SUCCESS"] } } },
+      "then": { "properties": { "settlement": { "$ref": "#/$defs/settlement" } } }
+    },
+    {
+      "if": { "properties": { "status": { "const": "FABLE_LIMIT_AFTER_PARTIAL_OUTPUT" } } },
+      "then": { "properties": { "primaryAttempt": { "$ref": "#/$defs/partialFableTerminalAttempt" }, "opusIntent": { "type": "null" }, "opusAttempt": { "type": "null" } } }
+    }
+  ],
+  "$defs": {
+    "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "opaque": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{7,127}$" },
+    "timestamp": { "type": "string", "format": "date-time" },
+    "host": { "type": "object", "additionalProperties": false, "required": ["hostIdHmac", "bootIdHmac", "processGenerationHmac", "monotonicObservedMs"], "properties": { "hostIdHmac": { "$ref": "#/$defs/opaque" }, "bootIdHmac": { "$ref": "#/$defs/opaque" }, "processGenerationHmac": { "$ref": "#/$defs/opaque" }, "monotonicObservedMs": { "type": "integer", "minimum": 0 } } },
+    "rollout": { "type": "object", "additionalProperties": false, "required": ["stage", "killSwitch", "stageAuthoritySha256"], "properties": { "stage": { "enum": ["DISABLED", "SHADOW_CLASSIFIER", "CONTAINMENT_FAKE", "ONE_AUTHORIZED_CANARY", "CLOSED"] }, "killSwitch": { "enum": ["OPEN", "CLOSED"] }, "stageAuthoritySha256": { "$ref": "#/$defs/sha256" } } },
+    "workItem": { "type": "object", "additionalProperties": false, "required": ["idHmac", "digest", "subjectSha256", "promptSha256", "role", "effort", "toolPolicySha256", "outputContractSha256", "authorityRefSha256", "usefulEvaluatorSha256"], "properties": { "idHmac": { "$ref": "#/$defs/opaque" }, "digest": { "$ref": "#/$defs/sha256" }, "subjectSha256": { "$ref": "#/$defs/sha256" }, "promptSha256": { "$ref": "#/$defs/sha256" }, "role": { "$ref": "#/$defs/opaque" }, "effort": { "enum": ["low", "medium", "high", "xhigh", "max"] }, "toolPolicySha256": { "$ref": "#/$defs/sha256" }, "outputContractSha256": { "$ref": "#/$defs/sha256" }, "authorityRefSha256": { "$ref": "#/$defs/sha256" }, "usefulEvaluatorSha256": { "$ref": "#/$defs/sha256" } } },
+    "runner": { "type": "object", "additionalProperties": false, "required": ["version", "executableSha256", "packageSha256", "wrapperSha256", "argvPolicySha256", "schemaSha256", "classifierPolicySha256", "modelAllowlistSha256", "installedPolicySha256"], "properties": { "version": { "type": "string", "minLength": 1, "maxLength": 64 }, "executableSha256": { "$ref": "#/$defs/sha256" }, "packageSha256": { "$ref": "#/$defs/sha256" }, "wrapperSha256": { "$ref": "#/$defs/sha256" }, "argvPolicySha256": { "$ref": "#/$defs/sha256" }, "schemaSha256": { "$ref": "#/$defs/sha256" }, "classifierPolicySha256": { "$ref": "#/$defs/sha256" }, "modelAllowlistSha256": { "$ref": "#/$defs/sha256" }, "installedPolicySha256": { "$ref": "#/$defs/sha256" } } },
+    "quota": { "type": "object", "additionalProperties": false, "required": ["accountDomainHmac", "providerIndependenceClass", "fableAvailabilityCell", "opusAvailabilityCell", "fencingToken", "lockScope", "multiHostAllowed"], "properties": { "accountDomainHmac": { "$ref": "#/$defs/opaque" }, "providerIndependenceClass": { "const": "anthropic" }, "fableAvailabilityCell": { "$ref": "#/$defs/opaque" }, "opusAvailabilityCell": { "$ref": "#/$defs/opaque" }, "fencingToken": { "type": "integer", "minimum": 1 }, "lockScope": { "const": "HOST_LOCAL" }, "multiHostAllowed": { "const": false } } },
+    "dormancy": { "type": "object", "additionalProperties": false, "required": ["sourceReceiptDigest", "scope", "observedAt", "observedMonotonicMs", "freshUntil", "freshUntilMonotonicMs", "probeAfter", "maxDormancySeconds", "antiFlapCount", "resetAt"], "properties": { "sourceReceiptDigest": { "$ref": "#/$defs/sha256" }, "scope": { "enum": ["FABLE_CELL_ONLY", "ACCOUNT_WIDE", "AMBIGUOUS"] }, "observedAt": { "$ref": "#/$defs/timestamp" }, "observedMonotonicMs": { "type": "integer", "minimum": 0 }, "freshUntil": { "$ref": "#/$defs/timestamp" }, "freshUntilMonotonicMs": { "type": "integer", "minimum": 0 }, "probeAfter": { "$ref": "#/$defs/timestamp" }, "maxDormancySeconds": { "type": "integer", "minimum": 1, "maximum": 604800 }, "antiFlapCount": { "type": "integer", "minimum": 0 }, "resetAt": { "oneOf": [{ "$ref": "#/$defs/timestamp" }, { "type": "null" }] } } },
+    "usageField": { "type": "object", "additionalProperties": false, "required": ["state", "value"], "properties": { "state": { "enum": ["measured", "estimated", "unknown"] }, "value": { "oneOf": [{ "type": "number", "minimum": 0 }, { "type": "null" }] } }, "allOf": [{ "if": { "properties": { "state": { "const": "unknown" } } }, "then": { "properties": { "value": { "type": "null" } } } }, { "if": { "properties": { "state": { "enum": ["measured", "estimated"] } } }, "then": { "properties": { "value": { "type": "number", "minimum": 0 } } } }] },
+    "usage": { "type": "object", "additionalProperties": false, "required": ["inputTokens", "cacheCreationInputTokens", "cacheReadInputTokens", "reasoningTokens", "outputTokens", "costUsd"], "properties": { "inputTokens": { "$ref": "#/$defs/usageField" }, "cacheCreationInputTokens": { "$ref": "#/$defs/usageField" }, "cacheReadInputTokens": { "$ref": "#/$defs/usageField" }, "reasoningTokens": { "$ref": "#/$defs/usageField" }, "outputTokens": { "$ref": "#/$defs/usageField" }, "costUsd": { "$ref": "#/$defs/usageField" } } },
+    "classifier": { "type": "object", "additionalProperties": false, "required": ["code", "policySha256", "ruleVersion", "inputDigest", "partialTaskOutput", "apiStatus", "scope", "resetAt"], "properties": { "code": { "enum": ["FABLE_QUOTA_DORMANT", "FABLE_LIMIT_AFTER_PARTIAL_OUTPUT", "GENERIC_429", "ACCOUNT_WIDE_LIMIT", "AUTH_ERROR", "PAYMENT_ERROR", "TIMEOUT", "MALFORMED_TERMINAL", "LOST_TERMINAL", "AMBIGUOUS_PROCESS", "RUNNER_DRIFT", "OTHER_NON_SUCCESS"] }, "policySha256": { "$ref": "#/$defs/sha256" }, "ruleVersion": { "$ref": "#/$defs/opaque" }, "inputDigest": { "$ref": "#/$defs/sha256" }, "partialTaskOutput": { "type": "boolean" }, "apiStatus": { "oneOf": [{ "type": "integer", "minimum": 100, "maximum": 599 }, { "type": "null" }] }, "scope": { "enum": ["FABLE_CELL_ONLY", "ACCOUNT_WIDE", "AMBIGUOUS", "NOT_APPLICABLE"] }, "resetAt": { "oneOf": [{ "$ref": "#/$defs/timestamp" }, { "type": "null" }] } } },
+    "modelUsage": { "type": "object", "additionalProperties": false, "required": ["modelId", "provider", "taskModel", "usage"], "properties": { "modelId": { "type": "string", "minLength": 1, "maxLength": 128 }, "provider": { "type": "string", "minLength": 1, "maxLength": 64 }, "taskModel": { "type": "boolean" }, "usage": { "$ref": "#/$defs/usage" } } },
+    "attempt": { "type": "object", "additionalProperties": false, "required": ["attemptIdHmac", "ordinal", "requestedModelId", "sessionIdHmac", "state", "startedAt", "startedMonotonicMs", "endedAt", "endedMonotonicMs", "terminalDigest", "terminalClass", "classifier", "modelUsage"], "properties": { "attemptIdHmac": { "$ref": "#/$defs/opaque" }, "ordinal": { "type": "integer", "minimum": 0, "maximum": 1 }, "requestedModelId": { "type": "string", "minLength": 1, "maxLength": 128 }, "sessionIdHmac": { "$ref": "#/$defs/opaque" }, "state": { "enum": ["PLANNED", "RUNNING", "TERMINAL"] }, "startedAt": { "oneOf": [{ "$ref": "#/$defs/timestamp" }, { "type": "null" }] }, "startedMonotonicMs": { "oneOf": [{ "type": "integer", "minimum": 0 }, { "type": "null" }] }, "endedAt": { "oneOf": [{ "$ref": "#/$defs/timestamp" }, { "type": "null" }] }, "endedMonotonicMs": { "oneOf": [{ "type": "integer", "minimum": 0 }, { "type": "null" }] }, "terminalDigest": { "oneOf": [{ "$ref": "#/$defs/sha256" }, { "type": "null" }] }, "terminalClass": { "oneOf": [{ "enum": ["SUCCESS", "FABLE_QUOTA_DORMANT", "FABLE_LIMIT_AFTER_PARTIAL_OUTPUT", "BUDGET_STOP", "REFUSED", "TIMEOUT", "CANCELLED", "AMBIGUOUS", "OTHER_NON_SUCCESS"] }, { "type": "null" }] }, "classifier": { "oneOf": [{ "$ref": "#/$defs/classifier" }, { "type": "null" }] }, "modelUsage": { "type": "array", "maxItems": 16, "items": { "$ref": "#/$defs/modelUsage" } } }, "allOf": [{ "if": { "properties": { "state": { "const": "PLANNED" } } }, "then": { "properties": { "startedAt": { "type": "null" }, "startedMonotonicMs": { "type": "null" }, "endedAt": { "type": "null" }, "endedMonotonicMs": { "type": "null" }, "terminalDigest": { "type": "null" }, "terminalClass": { "type": "null" } } } }, { "if": { "properties": { "state": { "const": "RUNNING" } } }, "then": { "properties": { "startedAt": { "$ref": "#/$defs/timestamp" }, "startedMonotonicMs": { "type": "integer", "minimum": 0 }, "endedAt": { "type": "null" }, "endedMonotonicMs": { "type": "null" }, "terminalDigest": { "type": "null" }, "terminalClass": { "type": "null" } } } }, { "if": { "properties": { "state": { "const": "TERMINAL" } } }, "then": { "properties": { "startedAt": { "$ref": "#/$defs/timestamp" }, "startedMonotonicMs": { "type": "integer", "minimum": 0 }, "endedAt": { "$ref": "#/$defs/timestamp" }, "endedMonotonicMs": { "type": "integer", "minimum": 0 }, "terminalDigest": { "$ref": "#/$defs/sha256" }, "terminalClass": { "type": "string" } } } }] },
+    "fableTerminalAttempt": { "allOf": [{ "$ref": "#/$defs/attempt" }, { "properties": { "ordinal": { "const": 0 }, "requestedModelId": { "const": "claude-fable-5" }, "state": { "const": "TERMINAL" }, "terminalClass": { "const": "FABLE_QUOTA_DORMANT" }, "classifier": { "allOf": [{ "$ref": "#/$defs/classifier" }, { "properties": { "code": { "const": "FABLE_QUOTA_DORMANT" }, "partialTaskOutput": { "const": false }, "scope": { "const": "FABLE_CELL_ONLY" } } }] } } }] },
+    "partialFableTerminalAttempt": { "allOf": [{ "$ref": "#/$defs/attempt" }, { "properties": { "ordinal": { "const": 0 }, "requestedModelId": { "const": "claude-fable-5" }, "state": { "const": "TERMINAL" }, "terminalClass": { "const": "FABLE_LIMIT_AFTER_PARTIAL_OUTPUT" }, "classifier": { "allOf": [{ "$ref": "#/$defs/classifier" }, { "properties": { "code": { "const": "FABLE_LIMIT_AFTER_PARTIAL_OUTPUT" }, "partialTaskOutput": { "const": true } } }] } } }] },
+    "plannedOpusAttempt": { "allOf": [{ "$ref": "#/$defs/attempt" }, { "properties": { "requestedModelId": { "const": "claude-opus-5" }, "state": { "const": "PLANNED" } } }] },
+    "runningOpusAttempt": { "allOf": [{ "$ref": "#/$defs/attempt" }, { "properties": { "requestedModelId": { "const": "claude-opus-5" }, "state": { "const": "RUNNING" } } }] },
+    "terminalOpusAttempt": { "allOf": [{ "$ref": "#/$defs/attempt" }, { "properties": { "requestedModelId": { "const": "claude-opus-5" }, "state": { "const": "TERMINAL" } } }] },
+    "budget": { "type": "object", "additionalProperties": false, "required": ["maxWallSeconds", "maxTurns", "maxInputTokens", "maxCacheCreationInputTokens", "maxCacheReadInputTokens", "maxReasoningTokens", "maxOutputTokens", "maxCostUsd"], "properties": { "maxWallSeconds": { "type": "integer", "minimum": 1, "maximum": 86400 }, "maxTurns": { "type": "integer", "minimum": 1, "maximum": 100 }, "maxInputTokens": { "type": "integer", "minimum": 1 }, "maxCacheCreationInputTokens": { "type": "integer", "minimum": 0 }, "maxCacheReadInputTokens": { "type": "integer", "minimum": 0 }, "maxReasoningTokens": { "type": "integer", "minimum": 0 }, "maxOutputTokens": { "type": "integer", "minimum": 1 }, "maxCostUsd": { "type": "number", "exclusiveMinimum": 0 } } },
+    "opusIntent": { "type": "object", "additionalProperties": false, "required": ["attemptIdHmac", "ordinal", "sessionIdHmac", "workItemDigest", "parentTerminalOrDormancyDigest", "fencingToken", "intentWrittenAt", "intentMonotonicMs", "intentDigest", "spawnCount", "spawnRecordedAt", "spawnRecordedMonotonicMs", "budget"], "properties": { "attemptIdHmac": { "$ref": "#/$defs/opaque" }, "ordinal": { "type": "integer", "minimum": 0, "maximum": 1 }, "sessionIdHmac": { "$ref": "#/$defs/opaque" }, "workItemDigest": { "$ref": "#/$defs/sha256" }, "parentTerminalOrDormancyDigest": { "$ref": "#/$defs/sha256" }, "fencingToken": { "type": "integer", "minimum": 1 }, "intentWrittenAt": { "$ref": "#/$defs/timestamp" }, "intentMonotonicMs": { "type": "integer", "minimum": 0 }, "intentDigest": { "$ref": "#/$defs/sha256" }, "spawnCount": { "type": "integer", "minimum": 0, "maximum": 1 }, "spawnRecordedAt": { "oneOf": [{ "$ref": "#/$defs/timestamp" }, { "type": "null" }] }, "spawnRecordedMonotonicMs": { "oneOf": [{ "type": "integer", "minimum": 0 }, { "type": "null" }] }, "budget": { "$ref": "#/$defs/budget" } }, "allOf": [{ "if": { "properties": { "spawnCount": { "const": 0 } } }, "then": { "properties": { "spawnRecordedAt": { "type": "null" }, "spawnRecordedMonotonicMs": { "type": "null" } } } }, { "if": { "properties": { "spawnCount": { "const": 1 } } }, "then": { "properties": { "spawnRecordedAt": { "$ref": "#/$defs/timestamp" }, "spawnRecordedMonotonicMs": { "type": "integer", "minimum": 0 } } } }] },
+    "opusIntentOrdinal0": { "allOf": [{ "$ref": "#/$defs/opusIntent" }, { "properties": { "ordinal": { "const": 0 } } }] },
+    "opusIntentOrdinal1": { "allOf": [{ "$ref": "#/$defs/opusIntent" }, { "properties": { "ordinal": { "const": 1 } } }] },
+    "opusIntentUnspawned": { "allOf": [{ "$ref": "#/$defs/opusIntent" }, { "properties": { "spawnCount": { "const": 0 } } }] },
+    "opusIntentSpawned": { "allOf": [{ "$ref": "#/$defs/opusIntent" }, { "properties": { "spawnCount": { "const": 1 } } }] },
+    "usefulOutcome": { "type": "object", "additionalProperties": false, "required": ["classification", "evaluatorSha256", "projectCreditGranted"], "properties": { "classification": { "enum": ["USEFUL", "NOT_USEFUL", "UNKNOWN"] }, "evaluatorSha256": { "$ref": "#/$defs/sha256" }, "projectCreditGranted": { "type": "boolean" } } },
+    "settlement": { "type": "object", "additionalProperties": false, "required": ["parentTerminalCount", "settledAt", "settledMonotonicMs", "outcome", "effectiveResultModel", "failbackDerived", "usefulOutcome"], "properties": { "parentTerminalCount": { "const": 1 }, "settledAt": { "$ref": "#/$defs/timestamp" }, "settledMonotonicMs": { "type": "integer", "minimum": 0 }, "outcome": { "enum": ["SUCCESS", "NON_SUCCESS"] }, "effectiveResultModel": { "oneOf": [{ "type": "string", "minLength": 1, "maxLength": 128 }, { "type": "null" }] }, "failbackDerived": { "type": "boolean" }, "usefulOutcome": { "$ref": "#/$defs/usefulOutcome" } } },
+    "observedActions": { "type": "object", "additionalProperties": false, "required": ["providerLaunchCount", "authMutationCount", "accountRotationCount", "taskMutationCount", "gateOpenCount"], "properties": { "providerLaunchCount": { "type": "integer", "minimum": 0, "maximum": 2 }, "authMutationCount": { "const": 0 }, "accountRotationCount": { "const": 0 }, "taskMutationCount": { "const": 0 }, "gateOpenCount": { "const": 0 } } },
+    "integrity": { "type": "object", "additionalProperties": false, "required": ["previousRecordDigest", "recordPayloadDigest", "journalHeadDigest"], "properties": { "previousRecordDigest": { "oneOf": [{ "$ref": "#/$defs/sha256" }, { "type": "null" }] }, "recordPayloadDigest": { "$ref": "#/$defs/sha256" }, "journalHeadDigest": { "$ref": "#/$defs/sha256" } } },
+    "authority": { "type": "object", "additionalProperties": false, "required": ["providerLaunch", "independentReviewCredit", "adjudication", "merge", "release", "authMutation"], "properties": { "providerLaunch": { "const": false }, "independentReviewCredit": { "const": false }, "adjudication": { "const": false }, "merge": { "const": false }, "release": { "const": false }, "authMutation": { "const": false } } }
+  }
+}

@@ -1,0 +1,46 @@
+{
+  "schema": "fleet-delivery-first-lane-status/v1",
+  "laneId": "example-product",
+  "observedAtUtc": "2026-08-26T21:00:00Z",
+  "queue": {
+    "fingerprintSha256": "sha256:486e396ee5c98af5ac9885c717e73525ff0d5138d7b03817a6728905068dcba4",
+    "unchangedWakeCount": 2,
+    "unchangedMinutes": 30,
+    "actionable": true
+  },
+  "outcomes": {
+    "mergedCommits": [],
+    "closedGates": [],
+    "userVisibleMilestones": [],
+    "receiptArtifacts": 12
+  },
+  "acceptedUnlanded": [],
+  "nextExecutableDeliverable": {
+    "id": "INDEPENDENT_REVIEWER_AUTHORITY",
+    "action": "CLOSE_GATE",
+    "owner": "owner:product-review-dri",
+    "deadlineUtc": "2026-08-26T21:45:00Z",
+    "authority": "BLOCKER_CLOSURE_ONLY"
+  },
+  "primaryBlocker": {
+    "id": "INDEPENDENT_REVIEWER_AUTHORITY",
+    "owner": "owner:product-review-dri",
+    "deadlineUtc": "2026-08-26T21:45:00Z",
+    "status": "OPEN"
+  },
+  "laneAction": "ESCALATE_STALLED_QUEUE",
+  "rotation": {
+    "requested": false,
+    "reason": "NONE"
+  },
+  "evidenceAuthoring": {
+    "requested": true,
+    "closesGateId": "INDEPENDENT_REVIEWER_AUTHORITY"
+  },
+  "stalledEscalation": {
+    "id": "sha256:e22be2047473c7f7566f4bf2f26b6b0ac7f9b116eb5ebaf25eefdcd1459f0cb8",
+    "queueFingerprintSha256": "sha256:486e396ee5c98af5ac9885c717e73525ff0d5138d7b03817a6728905068dcba4",
+    "settled": false
+  },
+  "progressCredit": 0
+}

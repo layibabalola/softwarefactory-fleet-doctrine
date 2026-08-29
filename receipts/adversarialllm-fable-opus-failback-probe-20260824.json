@@ -1,0 +1,63 @@
+{
+  "schemaVersion": "fable-opus-failback-probe.v1",
+  "status": "MEASURED_CANDIDATE_EVIDENCE_ZERO_RUNTIME_AUTHORITY",
+  "observedDate": "2026-08-24",
+  "observationCount": 1,
+  "project": "adversarialllm",
+  "runner": {
+    "product": "Claude Code",
+    "version": "2.1.237",
+    "sha256": "406167231B3636E55A01D0CE93567256C61E7973489E645883302F14808AE668"
+  },
+  "primaryAttempt": {
+    "requestedModel": "fable",
+    "configuredFallbackModel": "opus",
+    "sessionId": "5e1d21cf-6cd4-4188-865b-0af8157ddf33",
+    "terminalReason": "api_error",
+    "apiErrorStatus": 429,
+    "classifier": "FABLE_QUOTA_DORMANT_NATIVE_LIMIT",
+    "builtInFallbackObserved": false,
+    "isError": true,
+    "totalCostUsd": 0,
+    "inputTokens": 0,
+    "outputTokens": 0,
+    "modelUsageKeys": []
+  },
+  "explicitFailbackAttempt": {
+    "requestedModel": "opus",
+    "sessionId": "8c5af22b-d411-4305-94cb-2a7dd4b8b368",
+    "terminalReason": "completed",
+    "apiErrorStatus": null,
+    "isError": false,
+    "effectiveModelUsageKey": "claude-opus-5",
+    "canonicalModel": "claude-opus-5",
+    "provider": "firstParty",
+    "inputTokens": 2,
+    "cacheCreationInputTokens": 17387,
+    "cacheReadInputTokens": 0,
+    "outputTokens": 12598,
+    "thinkingTokens": 6623,
+    "totalCostUsd": 0.48883,
+    "durationApiMs": 174714,
+    "durationMs": 234491,
+    "permissionDenialCount": 0
+  },
+  "conclusion": {
+    "builtInFallbackCoversObservedFableLimit": false,
+    "singleObservationConsistentWithExplicitOpusFailback": true,
+    "explicitOneAttemptOpusFailbackProven": false,
+    "independentReviewCredit": false,
+    "providerLaunchAuthority": false,
+    "runtimeActivationAuthority": false,
+    "ratificationAuthority": false,
+    "evidenceGaps": [
+      "NO_PREASSIGNED_WORK_ITEM_OR_SUBJECT_DIGEST",
+      "NO_PROMPT_OR_ARGV_POLICY_DIGEST",
+      "NO_RAW_TERMINAL_DIGEST_OR_CLASSIFIER_INPUT_DIGEST",
+      "NO_PER_ATTEMPT_TIMESTAMP_OR_DURABLE_ORDERING_PROOF",
+      "NO_BUILT_IN_FALLBACK_ATTEMPT_INDICATOR",
+      "NO_RESET_BOUNDARY",
+      "NO_REPRODUCTION"
+    ]
+  }
+}

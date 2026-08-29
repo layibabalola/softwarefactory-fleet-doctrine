@@ -1,0 +1,35 @@
+{
+  "schemaVersion": "stranger-review-disposition.v1",
+  "status": "CHANGES_REQUIRED_R2_SUPERSEDED",
+  "subject": "ruling-candidates/fable-to-opus-usage-limit-failback-r2.md",
+  "schemaSubject": "schemas/fable-opus-failback-receipt-v1.schema.json",
+  "reviewDate": "2026-08-24",
+  "reviews": [
+    {
+      "role": "security-governance",
+      "requestedModel": "opus",
+      "observedCanonicalTaskModel": "claude-opus-5",
+      "observedAuxiliaryModel": "claude-haiku-4-5",
+      "blockers": 3,
+      "required": 9,
+      "minor": 7,
+      "nits": 5,
+      "scores": { "correctness": 6, "safety": 8, "regressionCoverage": 7, "operationalReadiness": 4, "closeoutHygiene": 9 }
+    },
+    {
+      "role": "operations-recovery",
+      "requestedModel": "opus",
+      "observedCanonicalTaskModel": "claude-opus-5",
+      "observedAuxiliaryModel": "claude-haiku-4-5",
+      "blockers": 6,
+      "required": 11,
+      "minor": 8,
+      "nits": 5,
+      "scores": { "correctness": 4, "safety": 6, "regressionCoverage": 5, "operationalReadiness": 3, "closeoutHygiene": 5 }
+    }
+  ],
+  "controllingDecision": "REPLACE_SCHEMA_V1_WITH_CONDITIONAL_V2_AND_SCOPE_SERIALIZATION_TO_ONE_HOST",
+  "rawReviewTranscriptPublished": false,
+  "ratificationAuthority": false,
+  "runtimeAuthority": false
+}

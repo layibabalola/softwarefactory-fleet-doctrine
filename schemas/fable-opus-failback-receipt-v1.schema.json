@@ -1,0 +1,192 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://softwarefactory.example/schemas/fable-opus-failback-receipt-v1.schema.json",
+  "title": "Fable-to-Opus failback receipt v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "status",
+    "workItem",
+    "runner",
+    "quota",
+    "primaryAttempt",
+    "opusChild",
+    "settlement",
+    "authority"
+  ],
+  "properties": {
+    "schemaVersion": { "const": "fable-opus-failback-receipt.v1" },
+    "status": {
+      "enum": [
+        "PRIMARY_TERMINAL_NO_FAILBACK",
+        "OPUS_INTENT_DURABLE",
+        "OPUS_RUNNING",
+        "SETTLED_SUCCESS",
+        "SETTLED_NON_SUCCESS",
+        "RECOVERY_REQUIRED",
+        "BLOCKED_AMBIGUOUS"
+      ]
+    },
+    "workItem": { "$ref": "#/$defs/workItem" },
+    "runner": { "$ref": "#/$defs/runner" },
+    "quota": { "$ref": "#/$defs/quota" },
+    "primaryAttempt": { "$ref": "#/$defs/attempt" },
+    "opusChild": { "$ref": "#/$defs/opusChild" },
+    "settlement": { "$ref": "#/$defs/settlement" },
+    "authority": { "$ref": "#/$defs/authority" }
+  },
+  "$defs": {
+    "sha256": { "type": "string", "pattern": "^[A-F0-9]{64}$" },
+    "opaque": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{7,127}$" },
+    "timestamp": { "type": "string", "format": "date-time" },
+    "usageValue": {
+      "oneOf": [
+        { "type": "integer", "minimum": 0 },
+        { "type": "null" }
+      ]
+    },
+    "workItem": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "idHmac",
+        "subjectSha256",
+        "promptSha256",
+        "role",
+        "effort",
+        "toolPolicySha256",
+        "outputContractSha256",
+        "authorityRefSha256"
+      ],
+      "properties": {
+        "idHmac": { "$ref": "#/$defs/opaque" },
+        "subjectSha256": { "$ref": "#/$defs/sha256" },
+        "promptSha256": { "$ref": "#/$defs/sha256" },
+        "role": { "$ref": "#/$defs/opaque" },
+        "effort": { "enum": ["low", "medium", "high", "xhigh", "max"] },
+        "toolPolicySha256": { "$ref": "#/$defs/sha256" },
+        "outputContractSha256": { "$ref": "#/$defs/sha256" },
+        "authorityRefSha256": { "$ref": "#/$defs/sha256" }
+      }
+    },
+    "runner": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["version", "executableSha256", "packageSha256", "wrapperSha256", "argvPolicySha256"],
+      "properties": {
+        "version": { "type": "string", "minLength": 1, "maxLength": 64 },
+        "executableSha256": { "$ref": "#/$defs/sha256" },
+        "packageSha256": { "$ref": "#/$defs/sha256" },
+        "wrapperSha256": { "$ref": "#/$defs/sha256" },
+        "argvPolicySha256": { "$ref": "#/$defs/sha256" }
+      }
+    },
+    "quota": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["accountDomainHmac", "providerIndependenceClass", "fableAvailabilityCell", "opusAvailabilityCell", "fencingToken"],
+      "properties": {
+        "accountDomainHmac": { "$ref": "#/$defs/opaque" },
+        "providerIndependenceClass": { "const": "anthropic" },
+        "fableAvailabilityCell": { "$ref": "#/$defs/opaque" },
+        "opusAvailabilityCell": { "$ref": "#/$defs/opaque" },
+        "fencingToken": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "usage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["measurement", "inputTokens", "cacheCreationInputTokens", "cacheReadInputTokens", "reasoningTokens", "outputTokens", "costUsd"],
+      "properties": {
+        "measurement": { "enum": ["measured", "estimated", "unknown"] },
+        "inputTokens": { "$ref": "#/$defs/usageValue" },
+        "cacheCreationInputTokens": { "$ref": "#/$defs/usageValue" },
+        "cacheReadInputTokens": { "$ref": "#/$defs/usageValue" },
+        "reasoningTokens": { "$ref": "#/$defs/usageValue" },
+        "outputTokens": { "$ref": "#/$defs/usageValue" },
+        "costUsd": { "oneOf": [{ "type": "number", "minimum": 0 }, { "type": "null" }] }
+      }
+    },
+    "attempt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["attemptIdHmac", "ordinal", "requestedModel", "sessionIdHmac", "startedAt", "endedAt", "terminalDigest", "terminalClass", "classifier", "usage"],
+      "properties": {
+        "attemptIdHmac": { "$ref": "#/$defs/opaque" },
+        "ordinal": { "type": "integer", "minimum": 0, "maximum": 1 },
+        "requestedModel": { "enum": ["fable", "opus"] },
+        "sessionIdHmac": { "$ref": "#/$defs/opaque" },
+        "startedAt": { "$ref": "#/$defs/timestamp" },
+        "endedAt": { "$ref": "#/$defs/timestamp" },
+        "terminalDigest": { "$ref": "#/$defs/sha256" },
+        "terminalClass": { "$ref": "#/$defs/opaque" },
+        "classifier": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["code", "ruleVersion", "inputDigest", "partialTaskOutput"],
+          "properties": {
+            "code": { "$ref": "#/$defs/opaque" },
+            "ruleVersion": { "$ref": "#/$defs/opaque" },
+            "inputDigest": { "$ref": "#/$defs/sha256" },
+            "partialTaskOutput": { "type": "boolean" },
+            "resetAt": { "oneOf": [{ "$ref": "#/$defs/timestamp" }, { "type": "null" }] }
+          }
+        },
+        "usage": { "$ref": "#/$defs/usage" }
+      }
+    },
+    "opusChild": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["intentDurable", "spawnCount", "attempt", "primaryTaskModel", "auxiliaryModels", "budget"],
+      "properties": {
+        "intentDurable": { "type": "boolean" },
+        "spawnCount": { "type": "integer", "minimum": 0, "maximum": 1 },
+        "attempt": { "oneOf": [{ "$ref": "#/$defs/attempt" }, { "type": "null" }] },
+        "primaryTaskModel": { "oneOf": [{ "type": "string", "minLength": 1, "maxLength": 128 }, { "type": "null" }] },
+        "auxiliaryModels": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "type": "string", "minLength": 1, "maxLength": 128 }
+        },
+        "budget": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["maxWallSeconds", "maxTurns", "maxOutputTokens", "maxCostUsd"],
+          "properties": {
+            "maxWallSeconds": { "type": "integer", "minimum": 1 },
+            "maxTurns": { "type": "integer", "minimum": 1 },
+            "maxOutputTokens": { "type": "integer", "minimum": 1 },
+            "maxCostUsd": { "type": "number", "exclusiveMinimum": 0 }
+          }
+        }
+      }
+    },
+    "settlement": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["parentTerminalCount", "effectiveResultModel", "failbackDerived", "usefulOutput", "settledAt"],
+      "properties": {
+        "parentTerminalCount": { "const": 1 },
+        "effectiveResultModel": { "oneOf": [{ "type": "string", "minLength": 1, "maxLength": 128 }, { "type": "null" }] },
+        "failbackDerived": { "type": "boolean" },
+        "usefulOutput": { "type": "boolean" },
+        "settledAt": { "$ref": "#/$defs/timestamp" }
+      }
+    },
+    "authority": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["providerLaunch", "independentReviewCredit", "adjudication", "merge", "release", "authMutation"],
+      "properties": {
+        "providerLaunch": { "type": "boolean" },
+        "independentReviewCredit": { "const": false },
+        "adjudication": { "const": false },
+        "merge": { "const": false },
+        "release": { "const": false },
+        "authMutation": { "const": false }
+      }
+    }
+  }
+}
