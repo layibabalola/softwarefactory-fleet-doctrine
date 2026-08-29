@@ -1954,3 +1954,37 @@ key. Add a deterministic payload containing `0x0A` so Windows newline translatio
 cannot regress silently. Preserve the invalid artifact for diagnosis but never use,
 copy, hash into a public receipt, or auto-repair it; create a separately authorized
 new secret path when recovery is required.
+
+## Checkout-hash allowlists can reject an exact pinned Git blob
+## (Agent Bridge, 2026-08-19, Windows linked worktrees, first-hand)
+
+Two clean worktrees at the same exact Git blob rendered its text differently: one
+used CRLF throughout, while another contained a deterministic mixture of CRLF and LF.
+Their checkout SHA-256 values differed even though normalizing CRLF to LF reproduced
+the same canonical Git-blob SHA-256 and Git object id. A validator that admitted only
+the canonical hash plus one published Windows checkout hash therefore rejected exact
+doctrine bytes in the second clean worktree.
+
+**Test / remedy:** treat checkout hashes as attributable observations, not the sole
+portable identity. For pinned text, reject any carriage return that is not part of
+CRLF; normalize only CRLF to LF; then verify both the canonical Git-blob SHA-256 and
+the Git blob object id. Test LF, all-CRLF, mixed LF/CRLF, content mutation, and lone-
+CR inputs. This exception is for exact text rendering only and must not normalize
+arbitrary binary data or ignore content drift.
+
+## A reusable candidate recovery attestation can survive a stricter ratified gate
+## (Agent Bridge, 2026-08-19, first-hand code audit)
+
+A project candidate issued a short-lived but reusable repository-only `CANARY`
+attestation after checking one launcher manifest. Ratified R14 later required a
+persistent universal broker, complete four-surface inventory, full-child fencing,
+single-use authorization, and fresh review, but the older issuer and verifier still
+existed. A previously valid candidate file could therefore retain a path to CANARY
+that the ratified contract no longer recognized.
+
+**Test / remedy:** when a ratified gate strictly supersedes an authority artifact,
+retire both issuance and acceptance in the same subject. Negative-test a formerly
+valid file and new issuance, require that neither writes a key/receipt/artifact or
+starts a process, and leave the compatibility command as an explicit refusal seam.
+Do not grandfather authority merely because its signature and expiry still validate;
+restore issuance only inside the new persistent broker's one-use transaction.
