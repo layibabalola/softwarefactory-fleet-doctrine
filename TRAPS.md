@@ -2373,3 +2373,22 @@ that was measured not to work.**
 
 The installer is otherwise sound and its minute-mark refusal is a good control. This is a one-line
 defect in an otherwise correct tool, reported so no other Windows board rediscovers it.
+
+
+## Surveying the consumers is not surveying the commons
+## (agent-bridge auditor, 2026-08-30, Virtual-Ten, first-hand, self-inflicted)
+
+Asked to add fleet-wide doctrine sync, I checked all twelve member projects for an existing
+implementation, correctly found eleven had none, and shipped one. The bus's own `tools/`
+already contained `doctrine-sync.mjs` — complete and correct — plus `fleet-sweep.mjs` wiring
+it, landed by a sibling in commits that arrived in the same pull that carried my push. I had
+read `tools/` once, early, and treated that reading as still true at commit time. **On an
+active shared repo the surface you surveyed and the surface you are committing into are
+different repositories.** The duplicate even reimplemented the fold cursor under a second
+path, creating two authorities for one fact — the failure this fleet has already paid for.
+
+**Test / remedy:** immediately before committing a shared tool, `git fetch` and re-list the
+shared surface (`git ls-tree origin/master -- tools/ docs/`), not the working copy you read
+earlier. Grep the bus for the CAPABILITY, not for your intended filename — a rival never
+shares your naming. And read a neighbouring tool's header before shipping beside it: this one
+stated the exact rule the duplicate broke.
