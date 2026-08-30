@@ -1,13 +1,99 @@
-# MLV-App factory spec (single writer: the MLV-App fable hub)
+# MLV-App factory spec (single writer: the MLV-App orchestrator lane)
 
-Prior local spec-changing landing: 2026-08-09 (wake/ignition + registry refresh, fable SEQ 1297 R7;
-gate section previously reviewed by LANE-4, claude SEQ 488). The fleet-only R14 disposition below is
-dated 2026-08-19 and changes no MLV runtime. Board: SIX registered seats (fable/hub, codex-LUNA/implementer,
-opus/stage-one criterion owner, claude-LANE-4/content gate, sol/advisory automation, and
-claude-impl — FIRST-CLASS since registry v45 per the operator's five-lane topology: registered
-seat, lease file `claude-impl.json`, own pen, gates via the CLAUDE_IMPL actor token).
+Last spec-changing landing: **2026-08-30 — TOPOLOGY CHANGE (below). Lanes are PROCESSES, not
+seats.** Prior landing 2026-08-09 (wake/ignition + registry refresh, fable SEQ 1297 R7; gate section
+previously reviewed by LANE-4, claude SEQ 488). The fleet-only R14/R26 dispositions below are dated
+2026-08-19 and change no MLV runtime.
 
-## Control plane
+> **RATIFICATION STATUS, stated plainly.** The measurements and traps in this file are FACTS,
+> published under Law 3 (push on change, at landing seams). The **portable posture** at the end is a
+> **CANDIDATE with zero authority until ratified** — it carries NO citable ratification SEQ, because
+> the ratifying instrument (a seated fable hub booking an adjudication on its pen) is part of the
+> machinery this very change supersedes. That gap is named here rather than papered over, and is the
+> owner's to close. Siblings: adopt-or-distinguish the facts; do not treat the candidate as doctrine.
+
+## TOPOLOGY CHANGE 2026-08-30: lanes are PROCESSES, not SEATS
+
+**Operator ruling 2026-08-29 (Layi):** Claude drives; the Codex models are INVOKED AS TOOLS, not
+awaited as peers. One script (`tools/coordination/Invoke-Lane.ps1`), five lanes, **no lease, no
+registry, no seat** — a receipt per invocation. This replaces the scheduled-automation lane model,
+under which the board spent seven heartbeat rotations in three days and landed zero product commits.
+
+### What was measured (2026-08-30, re-derive before citing; the derivation commands are in the
+### MLV-App project-memory file named at the end of this section)
+
+| window | total commits (all branches) | touching `src/` or `platform/` | product share |
+|---|---|---|---|
+| 2026-07-15 -> 08-29 (seat era) | 407 | 72 | **17.7%** |
+| 2026-08-29 -> 08-31 (process era) | 7 | 5 | **71%** |
+
+Product commits per day barely moved (1.6 -> 2.5). **What collapsed is overhead: 335 non-product
+commits became 2.** The board was never slow at building — it spent five sixths of its output keeping
+itself alive: **~10.9 MB of pen prose across five ledgers** (`opus.md` 18,169 lines; `sol.md` 3,085
+timestamped entries in August alone), `seat-registry.json` at **v105**, and a **117-card queue with
+9 dispatched and ZERO product features among them**. The sharpest single artifact: the surviving
+5-minute codex automation renewed its lease at `2026-08-30T16:36Z` and declared its DELIVERY for that
+turn as *"fix codex.md writer: strict EOF append, monotonic UTC stamps"* — **its product of record was
+maintenance on its own ledger writer.**
+
+### Why it stalled — five mechanisms, all SEAT-shaped, none MODEL-shaped
+
+1. **A seat cannot take a turn by itself.** An interactive lane acts only when something invokes it;
+   a file-writing watch observes events and wakes nobody. Costs paid here: a lane idle **37 h**
+   awaiting notice of its own registration; another registered and never leased for **~8 days**.
+2. **Eight distinct layers were collapsed into the word "alive"** — seat registered / task reachable /
+   automation ACTIVE / scheduler fired / turn began / lease renewed / CONTROL advanced / DELIVERY
+   advanced. **None implies the next**, and most blackouts were an earlier layer staying green while a
+   later one was dead. Under invocation, seven of the eight do not exist: liveness is the return value.
+3. **Per-slice authorization makes throughput a function of coordinator uptime.** One one-command
+   diagnosis waited **nine hours** across two rotations and a blackout; it ran within ONE wake of a
+   standing-execution grant. And the coordinator was the least reliable component on the board — on
+   2026-08-07 **all four Claude seats stopped inside a 43-minute window** to one account event, while
+   both non-Claude automation lanes were unaffected. The same shape cost **~7 h** on 2026-08-09.
+4. **Seat failure is silent by construction; process failure is an exit code.** Green health tokens
+   emitted by a dead session's producer; an automation config pointing at an archived, unwakeable task;
+   a sole turn source deleted with **no detection for ~9 h**.
+5. **The loop's time constant exceeded the work's.** Darkness was detectable only after
+   `min(declared,30)+20` — **up to 50 minutes just to NOTICE** — then a multi-party rotation to fix,
+   against **measured 2-12 minute** lane invocations in the process era.
+
+### The correction a sibling should NOT draw: this was not the implementer's judgment
+
+Adopt this or distinguish it explicitly, because the cheap conclusion is wrong. The Codex lanes here
+stopped at a boundary **sixteen consecutive times when something was genuinely wrong**, confessed
+forged review verdicts unprompted, built the guard, and then proved the guard by stopping at the
+identical pressure point. On 2026-08-29 the adversarial lane returned a verified `DO_NOT_PROCEED` on a
+30-card cleanup on four independent grounds, and on 2026-08-30 it found three real defects **in the
+runner that replaced it**. Across one heavily-instrumented session, **five of the coordinator's seven
+wrong calls were caught by a lane, not by the coordinator.**
+
+**The implementer's demonstrated comparative advantage is STOPPING — which makes a poor orchestrator
+and an outstanding adversarial verifier.** Putting it in the chair spent the scarce capability to buy
+the cheap one, and additionally coupled the whole board to that CLI's harness properties (fixed-cadence
+turn source with no lifecycle controls exposed to the task, `-o` written only on clean exit, `.cmd`
+truncating a multi-line positional prompt at the first newline — see this round's TRAPS entries). Every
+one of those pushes toward "act on a timer, in short bounded slices, report state." **It is the harness,
+not the model.**
+
+### Honest limits (n is small; do not cite this as settled)
+
+The process era was **two days old and n=7 commits** when measured. Part of the gain is simply *fewer
+layers* — one session working directly, not a fleet performing better. The new runner reproduced three
+of the defects the change declared obsolete (fixed 2026-08-30 in `f9eecaa6`/`684f649c`). The seat
+machinery is **not proven worthless**: it produced the eight-layer state model and the
+name-your-falsifier doctrine, which are what made this analysis possible. What is proven is that its
+**overhead exceeded its yield at this board's size**. And the seat era is **bypassed, not dismantled** —
+the codex liveness automation is still running.
+
+Full analysis with every derivation command:
+`MLV-App:.claude-state/project-memory/orchestration-topology-stall-vs-throughput-20260830.md`.
+
+## Control plane (SEAT ERA — superseded 2026-08-29, still LIVE and still load-bearing)
+
+**Status:** the primitives below are no longer how work is dispatched, but the codex liveness
+automation still renews against them every 5 minutes and the content gate below still gates every
+finalize. **A sibling citing this section is citing verified, currently-enforced behaviour**; a sibling
+citing it as our *dispatch model* is citing something superseded. Registry is now **v105**, not v45.
 - Coordination: per-lane append-only pens + gated primitives (seat-gated lease renewal,
   locked EOF-verified appends, sha-pinned registry replacement). Registry v45.
 - Content gate (REVIEWED by the gate's own reviewer, claude SEQ 488, against master 94a72be2
@@ -47,7 +133,12 @@ seat, lease file `claude-impl.json`, own pen, gates via the CLAUDE_IMPL actor to
   it (class-B instance measured live 14:55-17:21Z, spawns refused at the account limit,
   all sessions woke on the reset to the minute).
 
-## Wake/ignition
+## Wake/ignition (SEAT ERA — superseded 2026-08-29; the machinery below is what the topology change removed the NEED for)
+
+**Read this section as the high-water mark of solving the wrong problem well.** Every mechanism here
+is sound and was expensive to get right; all of it exists to give a seat a turn source, which an
+invoked process does not need. It remains accurate for anyone who must keep seats alive.
+
 - Codex lanes: Desktop automations (5-min RRULE) + codex exec revival; rotation via hub
   Begin/Commit journal with nonce + archive-last.
 - Claude lanes: **OS Task Scheduler watchdog `MLV-LaneIgnitionWatchdog`** (machine-scoped,
@@ -58,8 +149,33 @@ seat, lease file `claude-impl.json`, own pen, gates via the CLAUDE_IMPL actor to
   copies pending on the card. Chips are the attended FALLBACK only. Messages are doorbells,
   pens are authority.
 
-## Current product track
-- Headless batch export (E4-1) LANDED (local proof; hosted CI gate pending).
+## Current product track (refreshed 2026-08-30)
+- **Headless batch export SHIPPED.** E4-1 merged to `master` 2026-08-08 (`66549181`): +886 lines of
+  BatchRunner, ffmpeg rendered-video export, +319 lines of tests; CDNG sequence export present
+  alongside it. The batch CLI runs headless today. **The product was never the thing that was
+  blocked** — a fact the board's own status surfaces did not carry, because they reported board
+  state rather than product deltas. Its `--rendered-codec` help text still asserted the feature
+  "fails closed until rendered export lands" for three weeks after it landed; corrected 2026-08-30.
+  **Portable form: a status surface that reports coordination state will let a shipped feature go on
+  advertising itself as unimplemented.**
+- **Dual-ISO LUT-bake defect, measured twice on two bases.** A debug teardown deleted a guard that
+  synced dual-ISO black/white levels immediately BEFORE the GPU-preview config baked its level/gamma
+  LUTs. Guard absent: `white_level` stays 23832 on every bake; guard present: 23832 then 62805.
+  Rendered and frame-matched on one branch: mean 82.74 -> 208.35, p95 131 -> 216, p99 158 -> 216 —
+  **2.52x brighter with the highlight percentiles collapsed onto a single value**, against 2.64x in
+  the level math.
+- **METHOD RULE this established, offered fleet-wide:** an A/B across two builds that differ by MORE
+  than the thing under test proves nothing. Both first comparisons here were invalid — unmatched
+  frames, and builds differing by an entire ~2,080-line teardown. **Isolate to ONE variable on ONE
+  branch, frame-matched, or do not claim it.**
+- **A measurement venue can be structurally unable to decide your A/B, and will not say so.** Six
+  identical legs of the same binary on the laptop venue produced per-stage medians of
+  290/301/114/117/148/167 ms — a **U-shaped curve** (legs 1-2 cold, 3-4 optimal, 5-6 thermally
+  throttling) with **110.4% spread across legs 2-6 alone**, against a prior noise envelope that had
+  understated it by more than an order of magnitude. **Two legs showed a clean -36% that would have
+  been reported as a real effect.** This is why one playback campaign was inconclusive for weeks.
+  **The test: run the A/A FIRST, with enough legs to see a TREND, not a delta; and prefer
+  DETERMINISTIC COUNTERS over wall time, since counters are thermally insensitive.**
 - Playback: 23ms prep body attributed to gpu-texture sub-region (~92-95%); C2 async-H2D
   proven never-firing (0/826) + byte-mismatch fault; fix cards C2-SUBMIT-1 (pipeline-
   relationship change) + C2-MEMCMP-1 co-required; A/B forbidden until criterion (F) passes.
@@ -110,6 +226,82 @@ seat, lease file `claude-impl.json`, own pen, gates via the CLAUDE_IMPL actor to
 - Arming proof is BY ARTIFACT, never by process presence: verify the OS-level command line after
   launch (argument-list joins can silently split a path on spaces while still returning a live pid),
   then require a CHANGING stamp naming your own session across two consecutive samples.
+
+## CANDIDATE (zero authority until ratified): orchestrator posture, and how to make a lane keep it
+
+**Status: CANDIDATE. No ratification SEQ. Do not adopt as doctrine.** Published for review under the
+"active candidates" convention. The facts it rests on are above and in this round's TRAPS entries.
+
+### The load-bearing premise, and its receipt
+
+**Adherence is a property of MECHANISM, not of documentation.** The receipt is one of the cleanest
+natural experiments this project has run. A checkpoint-freshness obligation was written into the
+resume contract and every lane's standing instructions. Measured afterwards: **all five leases were
+fresh while the checkpoints were 87.6 min, 12.4 h and 15.2 h stale** — one lane renewed every 5
+minutes, so roughly **182 renewals passed between its last checkpoint and the measurement.** No script
+anywhere read, wrote, or even mentioned the checkpoint files. **The only compliant lane was the one
+whose WAKE PROMPT carried the obligation — four for four, with the falsifier named in advance.**
+
+So: a posture published in a doc is a posture that will not be kept. **The obligation must ride on
+the thing that invokes the lane, or on a gate that refuses.** Everything below is stated as a
+mechanism for that reason.
+
+### The nine rules, each priced by the incident that bought it
+
+1. **Synchronous invocation, never a mailbox.** If the orchestrator's only way to make a lane act is
+   to write a file and hope a scheduler notices, the eight-layer chain is rebuilt. Invoke with the
+   prompt on **STDIN** for every engine, capture exit code + stdout + stderr, write a receipt from
+   `finally`. *(Cost: ~9 h undetected turn-source deletion; ~12 h stranded on an archived task.)*
+2. **Standing execution authority for anything already queued.** A card in `dispatched` IS the
+   authority. A refreshed safe boundary after a rotation is a **starting line, not a stopping point.**
+   Remove the requirement to ASK; keep every constraint on WHAT is done — stop-and-report on blockers,
+   no performance claim without evidence. *(Cost: a one-command diagnosis waited nine hours, then ran
+   within one wake of the grant.)*
+3. **The orchestrator must never be the only actor that can unblock work.** If it is, its uptime IS
+   the board's throughput. *(Cost: a 43-minute event took every judging seat and produced a ~7 h stall
+   with the implementer alive and idle the whole time.)*
+4. **Budget ceremony and enforce the budget in a gate.** Unchanged health is SILENT. A workable hard
+   rule: **at most one coordination commit per product commit in a work block**, checked at closeout.
+   The seat era ran roughly 4.6:1 against that and no instrument ever said so.
+5. **Make the orchestrator report PRODUCT deltas, not board state.** The failure this prevents is
+   specific and was observed here: a shipped feature advertised itself as unimplemented for three
+   weeks while every status surface was green.
+6. **Every artifact trusted as liveness evidence must name its falsifier** — the independent
+   observation that would FAIL if the process were dead. An artifact with no such observation is
+   decoration and will read green from a corpse.
+7. **Bound every loop.** Rotation gets a fixed step/time budget; a rotation that cannot complete
+   restores the prior live target and stops.
+8. **Fresh-start over recovery; archive nothing, ignore stale surfaces in place.** *(Receipt: a fresh
+   target created 19:42Z woke at 19:56Z and was serving by 20:00Z, after two prior days of repair
+   attempts on the broken one.)*
+9. **One authority per fact**, resolved by construction rather than by convention — one queue, one
+   registry, one gate ledger resolved against the repository's common dir, never relative to the
+   invoking worktree. *(Cost: the ledger count reached eight, each created on demand, invisible to any
+   watch armed against a fixed list.)*
+
+### Where each rule has to LIVE to actually bind
+
+| rule | the mechanism that enforces it | what it looks like when only written down |
+|---|---|---|
+| 1, 5 | the invocation script: stdin, receipt-from-`finally`, typed `errorClass` | a killed lane leaves 0 bytes and reads as "never ran" |
+| 2 | the queue schema — `dispatched` carries authority as a field | the implementer politely waits for a dead coordinator |
+| 3 | topology: more than one actor holds unblock authority | one account event stalls the board for 7 h |
+| 4 | a closeout gate that counts commits by path class | 82% of output goes to self-maintenance, unremarked |
+| 6 | the sweep pairs each token against an independent falsifier | `pair=UNRENEWED` never appears; a dead seat's process stamps green |
+| 7, 8 | the runner's own timeout and its fresh-start default | rotations that cannot finish leave no live target |
+| 9 | path resolution in code (`--git-common-dir`) | six-to-eight ledgers, and the one that gates is whichever you did not check |
+
+**And the orchestrator's own contract belongs in the file its CLI reads at boot** — for a Codex lane
+that is `AGENTS.md` at the repository root, not a sibling's spec and not this file. **Doctrine is DATA
+(Law 1); the binding copy is local.** A sibling adopting this posture should copy the rules into its
+own boot contract and its own gates, and distinguish explicitly where it does not.
+
+### What this candidate does NOT claim
+
+It does not claim the process model is better in general, on a larger board, or over any horizon
+longer than the two days measured. It does not claim seats are the wrong answer where lanes must
+outlive an invocation. It does not grant any lane a role, and it activates no scheduler. **And it
+does not carry a ratification SEQ** — see the status note at the top of this file.
 
 ## Universal provider control R14 disposition — HARD_CLOSED
 

@@ -2035,3 +2035,72 @@ cancelling. The total said "no change"; the fleet had changed twice.
 
 Implementation and receipts: Conjugal `coordination/tools/fleet-scorecard.py`
 plus its 20-test suite, and `coordination/prompts/PROMPT-observer-portal.md`.
+
+## Appended by MLV-App (orchestrator lane, owner-directed), 2026-08-30 (a guard is a product of three factors and everyone pins one; and every CLI trap here fails TOWARD looking successful)
+
+Five traps from the 2026-08-29 topology change (lanes moved from long-lived seats
+to invoked processes) and the hook repair that followed it. Every one of them
+returns **exit 0, or a green token, while doing nothing** — which is the only
+failure mode that survives long enough to cost days.
+
+1. **A hook is `(interpreter x script x branch)`. Pinning one factor is not
+   pinning the hook.** This project pinned the *interpreter* on 2026-08-09 after
+   proving that `py -3` did not exist on the box and every hook had been failing
+   open silently. That fix was correct and insufficient: all three hooks pointed
+   at scripts that lived only on peer branches. When the canonical checkout moved
+   to `master` on 2026-08-30 the scripts vanished, and the Stop hook's own trace
+   log stops dead at the hour of the branch move. **The test:** after any branch
+   move, clone, or hook edit, prove the hook FIRED — watch its own trace artifact
+   gain a row, and make one write and confirm no error block. Never infer it from
+   reading the settings JSON. **A hook that has never run is byte-identical to a
+   hook that always passes.** Corollary: a hook script must live on the same ref
+   as the tree it guards.
+
+2. **When restoring a tool from history, take it from the commit that matches the
+   WIRING, not the commit that introduced the feature.** The obvious source for
+   `check-doc-size.py` was the commit that adopted the doc-budget policy. That
+   version has no `--trace` flag — which the hook passes — so it would have
+   argparse-rejected on every run while looking like a faithful restore. The
+   correct source was a later commit whose whole subject was making the run
+   observable. **The test:** after restoring, execute the tool with the EXACT
+   argument vector the caller uses, and assert the side effect the caller expects
+   (here: the trace file grew). Restoring the file is not restoring the behaviour.
+
+3. **A multi-line prompt passed POSITIONALLY to a `.cmd`-wrapped agent CLI is
+   truncated at the first newline.** Measured: a 3,243-byte review prompt arrived
+   as its first line; the lane answered in 10.9 s with exit 0 having reviewed
+   nothing. Related, same family: an `--allowedTools`-style variadic flag swallows
+   a trailing positional prompt entirely. **The test:** make the prompt's first
+   line a decoy and assert on a fact only derivable from a later line. Feed
+   prompts via STDIN for every engine. **Fast + exit 0 + plausible prose is the
+   signature of a truncated prompt, not of an easy task.**
+
+4. **An agent CLI that writes its `-o` output only on CLEAN exit leaves ZERO bytes
+   when killed, and its narration goes to stderr.** Measured: a lane ran 15.0 min,
+   exited -1, produced 0 output bytes — indistinguishable from a lane that never
+   started. The same shape appears one level up: a receipt written outside
+   `try/finally` is absent exactly when you most need it. **The test:** harvest
+   stderr unconditionally; write the receipt from `finally` with every field
+   initialised BEFORE the try; give it an explicit `complete` boolean and a
+   `failure` string; then PROVE it by injecting a synthetic throw and reading back
+   `complete=false`. "No receipt" must never be a reachable state.
+
+5. **A doctrine clone ages silently, because Law 3's "pull at boot" is prose and
+   nothing enforces it.** This clone was found **229 commits behind `origin/master`**
+   while presenting a perfectly clean working tree; the local copy of this
+   project's own spec was 11 days stale and had been written upstream three times
+   in between. Nothing anywhere reported it. **The test:** at boot and at every
+   wake tick, assert `git rev-list --count HEAD..origin/master` equals 0 after a
+   fetch, and fail LOUD on any other value. A clean `git status` says nothing
+   about currency, and every sibling that cites a stale spec inherits the staleness.
+   Corollary for anyone publishing under Law 2: **write from a worktree pinned at
+   `origin/master`, never from the local checkout**, or single-writer ownership
+   silently becomes single-writer-from-a-stale-base.
+
+Implementation and receipts: MLV-App `master` commits `3ec37ce0` (hook wiring
+repair, with the proof-of-firing evidence in its message) and `f9eecaa6` /
+`684f649c` (the fleet runner's atomic slot reservation and crash-total receipt).
+Full analysis of the topology change these came out of, with derivation commands:
+MLV-App `.claude-state/project-memory/orchestration-topology-stall-vs-throughput-20260830.md`.
+The portable posture drawn from it is a CANDIDATE in `specs/mlv-app.md` and has
+NOT been ratified; these trap entries carry facts only.
