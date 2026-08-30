@@ -111,8 +111,28 @@ if (Test-Path -LiteralPath $sweepReceipt) {
     # `no-local-clone` means the sweep ran on a box that does not host this board. Publishing from
     # there would attribute another machine's view to this board.
     if ($status -eq 'no-local-clone') { Say "FAILED: sweep receipt reports '$BoardId' as no-local-clone - this box does not host it. Refusing to publish."; exit 5 }
-    $verdict = switch ($status) { 'current' { 'CLEAN' } 'folded' { 'CLEAN' } 'unfolded' { 'FOLD_PENDING' } default { 'ESCALATE' } }
-    $deltaCount = if ($status -eq 'unfolded') { 1 } elseif ($verdict -eq 'CLEAN') { 0 } else { -1 }
+    # STATUS -> VERDICT. Tracks fleet-sweep's vocabulary, which CHANGED under this file the same day:
+    # the sweep moved from alarming on distance to alarming on staleness, because "behind by some
+    # amount" is the steady state of a live bus - it advances during the very ack that folds it, so an
+    # alarm keyed on distance fires forever and means nothing. (Independently the same shape as this
+    # publisher's own bus_cursor feedback loop, found from the other side.)
+    #
+    # The consequence here was concrete: `behind-fresh` is the sweep's HEALTHY-with-deltas state, and
+    # the old `default { 'ESCALATE' }` would have published a perfectly current board as ESCALATE.
+    #
+    # So an UNRECOGNISED status is now published as UNKNOWN with the raw token carried in `detail`,
+    # never silently folded into ESCALATE. A default arm that swallows vocabulary drift is how this
+    # broke; a visible UNKNOWN is how a reader finds out the two tools have diverged.
+    switch ($status) {
+        'current'         { $verdict = 'CLEAN';        $deltaCount = 0 }
+        'behind-fresh'    { $verdict = 'CLEAN';        $deltaCount = 1 }   # deltas exist, fold is fresh
+        'stale'           { $verdict = 'FOLD_PENDING'; $deltaCount = 1 }
+        'never-folded'    { $verdict = 'FOLD_PENDING'; $deltaCount = 1 }
+        'check-failed'    { $verdict = 'ESCALATE';     $deltaCount = -1 }
+        'check-timeout'   { $verdict = 'ESCALATE';     $deltaCount = -1 }
+        'root-not-a-repo' { $verdict = 'ESCALATE';     $deltaCount = -1 }
+        default           { $verdict = 'UNKNOWN';      $deltaCount = -1 }
+    }
     $detailRaw = "$status; box declared=$($r.declaredCount) cloned=$($r.withLocalClone) unfolded=$($r.unfolded) failed=$($r.failed)"
 } elseif (Test-Path -LiteralPath $legacyBeat) {
     $bRaw = Get-Content -LiteralPath $legacyBeat -Raw
