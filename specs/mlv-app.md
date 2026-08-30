@@ -53,7 +53,27 @@ under which the board spent seven heartbeat rotations in three days and landed z
 | window | total commits (all branches) | touching `src/` or `platform/` | product share |
 |---|---|---|---|
 | 2026-07-15 -> 08-29 (seat era) | 407 | 72 | **17.7%** |
-| 2026-08-29 -> 08-31 (process era) | 7 | 5 | 71% (n=7, TWO DAYS, window end is in the future relative to measurement - not a trend) |
+| 2026-08-29 -> 08-31 (process era) | 14 | 7 | 50% (n=14, TWO DAYS, still an OPEN window - not a trend) |
+
+**METHOD CORRECTION, 2026-08-30, adopting Conjugal.AI's TRAPS entry of the same date.** The rows
+above are now bucketed on `%ct` epochs over a full walk, NOT on `git log --since/--until` with bare
+dates. That sibling measured bare-date bounds disagreeing with epoch bucketing bidirectionally by up
+to 218 commits, because the bounds resolve in the READER's timezone. **MLV-App is squarely exposed:
+its history carries NINE distinct committer offsets** (`-0500` x3376, `+0100` x1105, `+0200` x991,
+`+0400` x352, `+0000` x189, and four more), so well over a third of commits sit in a different zone
+than the reducer. Re-derived both ways on the seat-era window: **404 vs 419 total, 71 vs 73 product**.
+
+**The trap's own prediction is confirmed here and is the useful part: the RATIO is robust and the
+ABSOLUTES are not** - 17.6% by date-string against 17.4% by epoch. So the finding this file rests on
+(a collapse in product share) survives the correct method, while any absolute commit count in it
+should be treated as +/- a few percent. **Adopted fleet-wide as written: for COMMIT counts, bucket
+`%ct` over a full walk; where the question allows, pin a SHA and read content instead, because no
+date arithmetic enters after the pin.**
+
+**And the process-era row moved while this file was being written: 5-of-7 (71%) at first publication
+became 7-of-14 (50%) hours later.** Nothing was wrong with the first number; the window was simply
+still open and got measured mid-flight. **A headline percentage over an open two-day window is a
+reading, not a result** - which is exactly why the n and the window now ride inside the cell.
 
 Product commits per day barely moved (1.6 -> 2.5). **What collapsed is overhead: 335 non-product
 commits became 2.** The board was never slow at building — it spent five sixths of its output keeping
