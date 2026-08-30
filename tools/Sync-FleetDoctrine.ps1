@@ -104,12 +104,37 @@ $script:Verdict = 'PRECONDITION'
 $script:Detail  = 'not started'
 $script:Deltas  = @()
 
+# Several projects on one host share ONE bus clone, so two syncs can collide on
+# .git/index.lock. Deferral is a distinct outcome from failure: it must not count as a
+# failure, and it must not count as a success either. last_success_utc does not advance,
+# so a bus that is permanently locked still escalates on the quiet-hours arm rather than
+# looking healthy forever.
+$lockHandle = $null
+function Get-BusLock {
+    param([Parameter(Mandatory)][string]$Root, [int]$AttemptCount = 20)
+    $lockFile = Join-Path $Root (Join-Path '.git' 'fleet-doctrine-sync.lock')
+    for ($i = 0; $i -lt $AttemptCount; $i++) {
+        try {
+            return [IO.File]::Open($lockFile, [IO.FileMode]::OpenOrCreate,
+                [IO.FileAccess]::ReadWrite, [IO.FileShare]::None)
+        } catch { Start-Sleep -Milliseconds 500 }
+    }
+    return $null
+}
+
 try {
     $BusRoot = Resolve-HardPath $BusRoot
     foreach ($pair in @(@{n = 'ProjectRoot'; p = $ProjectRoot }, @{n = 'BusRoot'; p = $BusRoot })) {
         if (-not (Test-Path -LiteralPath (Join-Path $pair.p '.git'))) {
             throw "$($pair.n) is not a git checkout: $($pair.p)"
         }
+    }
+
+    $lockHandle = Get-BusLock -Root $BusRoot
+    if ($null -eq $lockHandle) {
+        $script:Verdict = 'DEFERRED_LOCKED'
+        $script:Detail = 'another project sync holds the bus clone; deferred without failing'
+        throw [System.OperationCanceledException]::new('bus-locked')
     }
 
     # ---- Preflight: distinguish a REAL peer edit from a PHANTOM stat-cache entry. ----
@@ -227,6 +252,9 @@ try {
     $syncState = [pscustomobject]@{ consecutive_failures = 0; last_success_utc = $Stamp }
     if (Test-Path -LiteralPath $alarmPath) { Remove-Item -LiteralPath $alarmPath -Force }
 }
+catch [System.OperationCanceledException] {
+    # Deferral only. Failure counters and last_success_utc are both left untouched.
+}
 catch {
     $script:Verdict = 'FAILED'
     $script:Detail = $_.Exception.Message
@@ -235,6 +263,8 @@ catch {
         last_success_utc     = $syncState.last_success_utc
     }
 }
+
+if ($null -ne $lockHandle) { $lockHandle.Dispose() }
 
 # ---- Escalation. A sync that has been blocked long enough is an INCIDENT, not a log line. ----
 $quietHours = [double]::PositiveInfinity
@@ -282,8 +312,9 @@ Add-Content -LiteralPath $logPath -Value "$Stamp`t$($script:Verdict)`t$($script:
 
 Write-Output "$($script:Verdict): $($script:Detail)"
 switch ($script:Verdict) {
-    'CLEAN'        { exit 0 }
-    'FOLD_PENDING' { exit 3 }
+    'CLEAN'           { exit 0 }
+    'DEFERRED_LOCKED' { exit 0 }
+    'FOLD_PENDING'    { exit 3 }
     'ESCALATE'     { exit 4 }
     default        { exit 5 }
 }
