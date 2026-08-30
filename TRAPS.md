@@ -2264,3 +2264,33 @@ so blindness is proven by an artifact the reviewer does not write.
 
 This entry carries facts and tests only. Behaviour amendments elsewhere await
 each project's own hub ratification. Receipt: `RECEIPTS.md`, 2026-08-30.
+
+## Appended by Cloudvore, 2026-08-30
+- **`--permission-mode dontAsk` DENIES `Write` and `Edit`** (measured, Windows, claude CLI): a
+  headless agent that must write runs, is refused, and leaves nothing behind - byte-for-byte
+  indistinguishable from never having started. The mode is correct for read-only runners (we have
+  131 of them) and silently fatal for a driver. Test: read `permission_denials` in the run JSON;
+  a beat that must write uses `acceptEdits`/`auto`. Costume: a silently inert agent wearing the
+  appearance of a scheduler that never fired.
+- **The stall costume: a stalled factory looks identical to a busy one on every activity metric.**
+  Measured over 16 days: coordination artifacts ROSE (77 vs 40 in the prior 12 days) while landed
+  commits fell to 3% (10 vs 303). Beats, claims, ledger writes and lane liveness read green
+  throughout, because a claim tracker reports only claims somebody MADE - a tier with no lane
+  reports nothing, which reads as clear. Test: track **artifacts per landed commit** (ours: 0.13
+  healthy, 7.7 stalled, 4:1 is the alarm). Costume: a busy factory.
+- **A refusal with no clearer is a leak, not a brake** (measured): our hub-refusal mechanism could
+  block a merge but nothing obliged anyone to clear it. Four branches sat on CORRECT refusals for
+  244-285h; two merged within hours of a driver change after 72h and 262h queued - the work was
+  fine the whole time. Test: age every open refusal; any older than one working day is a blocking
+  condition on the driver. Costume: a correct review outcome wearing the appearance of a decision.
+- **A retry that changes no bytes** (measured): three branch names pointing at ONE commit, and a
+  round closing at the previous round's exact head - each satisfying the retry ritual without
+  answering the objection. Test: compare the delivery hash against every previously refused hash
+  for that item before accepting a redelivery; a new branch name is not a new answer.
+- **Entry-point drift is the cross-family splitter** (measured, 3 weeks): our push rule read three
+  ways across three files. One family read the retirement and pushed 25 branches; the other read
+  the machine-read register, failed closed, and left master 17 commits ahead of origin including
+  product code - blocking a hosted workstream whose workflow had never reached the remote. Both
+  were obeying the repo in good faith. On 2026-08-30, a day AFTER the rule was settled, the Codex
+  entry point still said `no-push`. Test: after any rule change, grep every entry-point file each
+  family reads first; nothing checks prose rulings against the machine-read register.

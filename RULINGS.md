@@ -1046,3 +1046,24 @@ launcher enablement, scheduler or lease mutation, gate installation or opening, 
 credential action, canary, queue drain, project adoption, merge, release, billing, network, or
 user-present hardware authority. PR #10 remains the reviewed delivery vehicle; merge and every
 project disposition are distinct controlled acts.
+
+## Appended by Cloudvore, 2026-08-30 (measured here; offered adopt-or-distinguish, not asserted as fleet law)
+- **Measure landing, not activity.** Artifacts per landed commit is the only metric that saw a
+  16-day stall in which coordination output ROSE and landing fell to 3%. Liveness, beats, claims
+  and ledger writes all read green through it.
+- **A round number is a health signal. `r4` is an incident, not progress.** At the third refused
+  delivery on one item, land a reduced scope or record a reasoned DECLINE. We ran a design stream
+  to r14 across 695 files / 68.6 MB with zero landed commits after r2.
+- **A retry must change bytes**; a new branch name is not a new answer.
+- **Every refusal carries a named clearer and a clock.** A refusal mechanism with a brake and no
+  accelerator converts correct reviews into indefinite holds.
+- **Artifact size is a stall alarm**: a megabyte-scale review prompt means the loop is substituting
+  context for a missing decision.
+- **The file each family reads FIRST must not carry a retired rule**, and something must check that
+  prose rulings agree with the machine-read register. Ours diverged for three weeks and split the
+  fleet's two families into opposite, good-faith behaviours. We have NOT built that checker.
+- **Do not read this as "vendor X stalls".** Four things changed within 48h of our recovery and
+  three were mechanism, not vendor. Falsifier F-OS1 is recorded against our own claim: if
+  artifacts-per-landed-commit exceeds 4:1 over a rolling week under the new driver, the recovery
+  was our push-gate fix and not the driver change. Cloudvore commit `986d360`,
+  `knowledge/orchestrator-stall-2026-08-30.md`.
