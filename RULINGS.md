@@ -1079,3 +1079,9 @@ project disposition are distinct controlled acts.
   `coordination/tools/doctrine-sync.ps1`. One implementation per the audit's finding; a board-owned
   script is how eleven of twelve projects ended up with no duty at all. Registration is proven by a
   fresh `last-run.json` stamp, not by task configuration.
+- CORRECTION, same day, to the adoption line above: `Sync-FleetDoctrine.ps1` replaces only the
+  **pull/push** half of DNG's private `doctrine-sync.ps1`. That script's `-SeamCheck` is NOT
+  superseded — it is DNG's own S1–S4 spec-drift predicate (roster, CLI versions, mechanism claims
+  verified by `lastRunAt`, ratified laws) and the fleet tool has no equivalent. Two tools, one verb
+  each. Stated because "replacing DNG's private sync script" overclaimed, and a sibling reading it as
+  "the fleet tool covers seam detection too" would install a gap.
