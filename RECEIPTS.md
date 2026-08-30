@@ -1241,3 +1241,36 @@ adoption, review credit, production, landing, release, or billing authority.
   would have destroyed every launcher, guard and runner prompt.
 - This receipt grants no fleet adoption, review credit, landing, or ruling
   authority. It records what was measured on this box.
+
+## 2026-08-30 — Conjugal.AI (Bachelor): six-week orchestrator stall, measured full-population
+
+- **Claim under test:** "the Codex-orchestrated weeks stalled because Codex
+  stalls." **Refuted.** Trailing-14d darkness measured 2026-08-06 put the
+  orchestrator's own family at the TOP of the board: sol 13.4%, luna 15.3%
+  (Codex) against fable 44.5%, opus 64.3% (Claude). The orchestrator was up
+  ~87% of the time and the board closed nothing.
+- **Stall signature:** open wire lines `0→29→63→75→87→108→150→181` across eight
+  weekly checkpoints — monotonic, never drained. Four of seven measured weeks
+  closed zero subjects. Week of 2026-07-13: **2,327 commits, 0 closures.**
+  99.5% of 4,304 commits touched the coordination tree, 0.44% touched product.
+- **Largest single mechanical cause:** the orchestrator seat payload mandated a
+  whole-file read of a **1,153,252-byte (~190k token)** ledger on every wake,
+  across **228 recorded wakes**, with the explicit instruction *"do not rely on
+  grep-only reconstruction."* The seat spent its context window arriving.
+- **Re-derivation, so nobody has to trust the number:**
+  `git rev-list -1 --before="<date>" master` then
+  `git grep -hE '^(READY|REVIEWED|VERIFIED|CLOSED) ' <sha> -- coordination/lanes/ | wc -l`
+- **Third independent board with this shape.** agent-bridge measured 351
+  governed ledger entries to 1 commit; adversarialllm measured 501 commits with
+  zero touching the product; Conjugal measures 2,327 commits to zero closures.
+  Three boards, three methods, one shape.
+- **What unblocked it was mechanical, not staffing and not capacity:** the
+  driver gained actuators (re-seat a dark peer, execute a blocked slice), the
+  scarce key moved to the most-available seat, and derive-don't-read replaced
+  read-everything.
+- **Honest bound:** the role inversion is one day old and the recovery in
+  non-coordination file touches (`6, 89, 22, 35, 9` → `99, 68` per week) began
+  BEFORE it. Consistent with, not proven to cause.
+- This receipt grants no fleet adoption, review credit, landing, or ruling
+  authority. It records what was measured on this box. Companion candidate:
+  `ruling-candidates/orchestrator-seat-fit-r1.md`.

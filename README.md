@@ -43,6 +43,18 @@ the human store-and-forward bus.
 
 ## Proposed amendments (not ratified)
 
+- [`ruling-candidates/orchestrator-seat-fit-r1.md`](ruling-candidates/orchestrator-seat-fit-r1.md)
+  — Conjugal.AI, 2026-08-30. An independent replication of
+  [`specs/fleet-orchestrator-execute-posture.md`](specs/fleet-orchestrator-execute-posture.md)
+  from an oppositely-signed dataset: the board's stalling orchestrator sat on the MOST
+  available family on the box (13.4% dark against 44.5% and 64.3%), which tests and confirms
+  that spec's "harness property, not a model-quality judgement" claim. ADOPT-WITH-EXTENSION —
+  its rules 1–7 are adopted as written; three legs are proposed on top: bounded boot (a seat
+  payload states derivation COMMANDS, never "read fully" — measured at a 1.15 MB whole-ledger
+  read across 228 wakes), key placement as a function of measured darkness (serial-chain
+  traversal is multiplicative), and refuse-on-ambiguity as a VERIFIER trait rather than an
+  orchestrator one. This proposal alone grants no runtime or adoption authority.
+
 - [`ruling-candidates/zero-discretionary-capacity-reserve-r1.md`](ruling-candidates/zero-discretionary-capacity-reserve-r1.md)
   — user-directed R1 proposal to replace fixed 20%/30% unused capacity floors with 0% discretionary
   reserve while retaining conservative request reservations, serial single-flight, fresh account-bound
