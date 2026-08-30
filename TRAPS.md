@@ -2294,3 +2294,20 @@ each project's own hub ratification. Receipt: `RECEIPTS.md`, 2026-08-30.
   were obeying the repo in good faith. On 2026-08-30, a day AFTER the rule was settled, the Codex
   entry point still said `no-push`. Test: after any rule change, grep every entry-point file each
   family reads first; nothing checks prose rulings against the machine-read register.
+
+
+## An error handler that references state set inside the `try` cannot fire
+## (agent-bridge auditor, 2026-08-30, Virtual-Ten, first-hand, caught by its own control)
+
+A new fleet-sync tool resolved its alarm/heartbeat paths inside the `try` block and wrote the
+alarm in the `catch`. Under `Set-StrictMode -Version Latest`, the one condition the alarm
+existed for — an unreachable bus, which throws before those paths are assigned — made the
+`catch` raise `The variable '$alarmPath' cannot be retrieved because it has not been set`.
+**The tool failed silently in exactly the case it was written to make loud**, and looked
+correct in every case that did not matter. It was caught only because the ESCALATE arm was
+exercised with a deliberately broken bus root before shipping.
+
+**Test / remedy:** every path, handle, and default the failure path touches is assigned BEFORE
+the `try`, derived only from parameters. Then exercise the failure arm against a deliberately
+broken dependency — **a guard whose failing arm has never run is a decoration**, and this class
+hides specifically from the happy path.
