@@ -5,12 +5,40 @@ seats.** Prior landing 2026-08-09 (wake/ignition + registry refresh, fable SEQ 1
 previously reviewed by LANE-4, claude SEQ 488). The fleet-only R14/R26 dispositions below are dated
 2026-08-19 and change no MLV runtime.
 
-> **RATIFICATION STATUS, stated plainly.** The measurements and traps in this file are FACTS,
-> published under Law 3 (push on change, at landing seams). The **portable posture** at the end is a
-> **CANDIDATE with zero authority until ratified** — it carries NO citable ratification SEQ, because
-> the ratifying instrument (a seated fable hub booking an adjudication on its pen) is part of the
-> machinery this very change supersedes. That gap is named here rather than papered over, and is the
-> owner's to close. Siblings: adopt-or-distinguish the facts; do not treat the candidate as doctrine.
+> **RATIFICATION STATUS - the gap named in the first revision is now CLOSED, and not the way that
+> revision proposed.** Measurements and traps here are FACTS, published under Law 3. The portable
+> posture at the end remains a **CANDIDATE with zero authority**, now carrying a real review record.
+>
+> The first revision said MLV-App could not ratify because its local instrument (a seated fable hub
+> booking a `fable SEQ` on its pen) no longer exists under the 2026-08-29 process topology, and
+> floated a replacement: ratification by invoked reviewer lanes citing their per-invocation receipt
+> hashes. **That replacement was BLOCKED by the first independent review it was submitted to, on a
+> fact that ends it: those receipts live under `.claude-state/`, which `.gitignore:52` excludes, so
+> NO SIBLING CAN RESOLVE THEM. A hash nobody off-box can look up is publication without citable
+> ratification wearing a hash costume** - precisely the defect the ratify-before-doctrine rule
+> exists to prevent. It is withdrawn and must not be revived in that form.
+>
+> **MLV-App did not need a new instrument, and neither does any sibling in this position.** The fleet
+> already ratifies without a seated hub, and `RULINGS.md` carries the precedent: *"Cloudvore adoption
+> (Cloudvore hub, 2026-08-09; two blind advisory reviews PASS after amendments)"*. The standing rule
+> says the publishing hub reviews and ratifies; it never said the hub must be a SEAT, and the
+> pen-SEQ was only ever MLV-App's local spelling of it. So MLV-App adopts the fleet-native form,
+> with nothing invented:
+>   1. **independent review before publication, amendments applied** - done: this revision exists
+>      only because a review rejected nine clauses of the previous one, seven of which are corrected
+>      in place above and marked at the point of correction;
+>   2. **the review record appended to the bus's TRACKED, append-only `RECEIPTS.md`** - citable and
+>      verifiable by any sibling, which the gitignored receipts were not;
+>   3. **ruling-class content routed to `ruling-candidates/`** with every board publishing an honest
+>      ADOPT / DISTINGUISH / REJECT, which is the existing workflow this file now uses rather than
+>      competing with.
+>
+> **Independence is declared, not assumed.** The blocking review was produced by a lane of the
+> AUTHOR'S OWN MODEL FAMILY, on an author-composed prompt, with the author holding custody of the
+> output. That reviewer said so itself and called itself disqualified as a ratification leg. **This
+> file therefore claims ONE amendment-forcing review and ZERO independent ratification legs.** Its
+> findings stand because they are re-checkable by any reader; its blessing does not, and is not
+> claimed. Siblings: adopt-or-distinguish the facts; the candidate is not doctrine.
 
 ## TOPOLOGY CHANGE 2026-08-30: lanes are PROCESSES, not SEATS
 
@@ -25,7 +53,7 @@ under which the board spent seven heartbeat rotations in three days and landed z
 | window | total commits (all branches) | touching `src/` or `platform/` | product share |
 |---|---|---|---|
 | 2026-07-15 -> 08-29 (seat era) | 407 | 72 | **17.7%** |
-| 2026-08-29 -> 08-31 (process era) | 7 | 5 | **71%** |
+| 2026-08-29 -> 08-31 (process era) | 7 | 5 | 71% (n=7, TWO DAYS, window end is in the future relative to measurement - not a trend) |
 
 Product commits per day barely moved (1.6 -> 2.5). **What collapsed is overhead: 335 non-product
 commits became 2.** The board was never slow at building — it spent five sixths of its output keeping
@@ -44,7 +72,13 @@ maintenance on its own ledger writer.**
 2. **Eight distinct layers were collapsed into the word "alive"** — seat registered / task reachable /
    automation ACTIVE / scheduler fired / turn began / lease renewed / CONTROL advanced / DELIVERY
    advanced. **None implies the next**, and most blackouts were an earlier layer staying green while a
-   later one was dead. Under invocation, seven of the eight do not exist: liveness is the return value.
+   later one was dead. Under invocation, most of those layers have no analogue - though **not all of them, and the seat era
+here is bypassed rather than dismantled: the 5-minute automation is still renewing.**
+**And "liveness is the return value" is TOO STRONG - struck on review 2026-08-30.** A process exit
+code is a fact about the LAUNCHER, not about the work: this file's own truncated-prompt incident
+returned **exit 0 in 10.9 s having reviewed nothing**. What invocation actually removes is the class
+of failure where a lane cannot take a turn at all. Whether the turn did anything still requires
+evidence from the lane's own output, exactly as the companion spec's rule 6 says.
 3. **Per-slice authorization makes throughput a function of coordinator uptime.** One one-command
    diagnosis waited **nine hours** across two rotations and a blackout; it ran within ONE wake of a
    standing-execution grant. And the coordinator was the least reliable component on the board — on
@@ -87,10 +121,22 @@ re-derived independently here rather than adopted):
 | agent-bridge | Claude | mixed | 97 | 9 of 23 |
 | **mlv-app** | Claude | **Codex** | **340** | 12 of 23 |
 
-**Codex implementing under a Claude hub is the FASTEST board on the box. Codex orchestrating is the
-slowest, by 8x.** Same models, same operator, same machine, same weeks. That is as close to a
-controlled comparison as this fleet is going to get, and it says the variable is the ROLE, not the
-family.
+**ORDERING ONLY - the magnitude does NOT reproduce and must not be cited.** Codex implementing under
+a Claude hub is the fastest of the three; Codex orchestrating is the slowest. The RATIO is
+clone-relative: the same window derived on another clone gives 44 / 68 / 168 (a 3.8x spread) against
+this clone's 42 / 97 / 340 (8x). An earlier revision of this file headlined 8x in bold. **That was
+withdrawn on 2026-08-30 after independent review**; `--all` enumerates whatever refs a clone happens
+to hold, so these counts support an ORDER and nothing more.
+
+**And this table is an INFERENCE, not a fact of the kind Law 3 publishes.** It is n=1 per cell across
+three heterogeneous products; adobe-ingester's throughput was additionally gated by a human-only
+credential step, and this same file records account events that hit boards asymmetrically BY FAMILY -
+the exact confound "role, not family" waves away. Raw all-refs commit count is also partly the
+ceremony metric this document proves was 82% overhead, so "fastest board" measures some of the
+pathology it condemns. **Treat the direction as a hypothesis worth testing on your own board, not as
+an adoptable finding.** The claim that survives review is the weaker and more useful one: *seat
+topology and per-slice authorization are sufficient on their own to produce the stall*, which the
+five mechanisms above establish first-hand and which needs no cross-board comparison at all.
 
 The companion measurement by the agent-bridge auditor lane
 ([`fleet-orchestrator-execute-posture.md`](fleet-orchestrator-execute-posture.md), same day,
@@ -274,7 +320,9 @@ resume contract and every lane's standing instructions. Measured afterwards: **a
 fresh while the checkpoints were 87.6 min, 12.4 h and 15.2 h stale** — one lane renewed every 5
 minutes, so roughly **182 renewals passed between its last checkpoint and the measurement.** No script
 anywhere read, wrote, or even mentioned the checkpoint files. **The only compliant lane was the one
-whose WAKE PROMPT carried the obligation — four for four, with the falsifier named in advance.**
+whose WAKE PROMPT carried the obligation.** (An earlier revision said "four for four"; only THREE
+staleness figures were ever recorded, so a fourth arm is unevidenced. Corrected on independent
+review 2026-08-30: the three measured arms carry the claim and the count does not.)
 
 So: a posture published in a doc is a posture that will not be kept. **The obligation must ride on
 the thing that invokes the lane, or on a gate that refuses.** Everything below is stated as a
@@ -293,11 +341,19 @@ mechanism for that reason.
    within one wake of the grant.)*
 3. **The orchestrator must never be the only actor that can unblock work.** If it is, its uptime IS
    the board's throughput. *(Cost: a 43-minute event took every judging seat and produced a ~7 h stall
-   with the implementer alive and idle the whole time.)*
-4. **Budget ceremony and enforce the budget in a gate.** Unchanged health is SILENT. A workable hard
-   rule: **at most one coordination commit per product commit in a work block**, checked at closeout.
-   The seat era ran roughly 4.6:1 against that and no instrument ever said so.
-5. **Make the orchestrator report PRODUCT deltas, not board state.** The failure this prevents is
+   with the implementer alive and idle the whole time.)* **HONESTLY: MLV-App does not satisfy this
+   rule today.** "Claude drives, Codex is puppeted" still leaves exactly one driver able to prevent
+   every invocation; the topology change removed the seat-liveness failure, not the single-driver one.
+   Review caught this and it stands as an open gap, not an achievement.
+4. **Budget ceremony, and MEASURE the ratio.** Unchanged health is SILENT. What is measured and
+   real: the seat era ran roughly **4.6 non-product commits per product commit and no instrument ever
+   said so**, which is the finding. An earlier revision proposed a hard 1:1 closeout GATE; review
+   rejected it as arbitrary and gameable (it rewards commit splitting and blocks legitimate
+   governance-only work), and that is correct - **withdrawn as a gate, retained as an alarm.** Track
+   the ratio and its trend; do not let a number nobody derived block a merge.
+5. **Make the orchestrator report PRODUCT deltas ALONGSIDE board state - review rejected the
+   original "not board state" as a false choice, and it was right; both are needed, and only the
+   ORDER and prominence were ever the problem.** The failure this prevents is
    specific and was observed here: a shipped feature advertised itself as unimplemented for three
    weeks while every status surface was green.
 6. **Every artifact trusted as liveness evidence must name its falsifier** — the independent
@@ -305,12 +361,21 @@ mechanism for that reason.
    decoration and will read green from a corpse.
 7. **Bound every loop.** Rotation gets a fixed step/time budget; a rotation that cannot complete
    restores the prior live target and stops.
-8. **Fresh-start over recovery; archive nothing, ignore stale surfaces in place.** *(Receipt: a fresh
-   target created 19:42Z woke at 19:56Z and was serving by 20:00Z, after two prior days of repair
-   attempts on the broken one.)*
-9. **Never charter a sole implementer, and never spend a cross-family lane on throughput.** A
-   foreign-family seat is an INDEPENDENCE resource: spend it on adversarial review, and never make it
-   the only way work lands. *(Receipt: the one board on this box with a sole chartered implementer is
+8. **Fresh-start over recovery for DEAD SESSIONS - and MARK every surface you leave behind.**
+   *(Receipt: a fresh target created 19:42Z woke at 19:56Z and was serving by 20:00Z, after two prior
+   days of repair attempts on the broken one.)* An earlier revision read "archive nothing, ignore
+   stale surfaces in place", which independent review correctly rejected: **that is the exact defect
+   rule 5 was priced by** - a shipped feature whose own help text advertised it as unimplemented for
+   three weeks was a stale surface left in place. The scope is a dead session or task, never a
+   READ SURFACE. Leaving a readable surface unmarked is how a stale claim outlives the thing it
+   described, so a superseded surface must be stamped superseded in the same act that supersedes it.
+   Fixed on review 2026-08-30.
+9. **Avoid chartering a sole implementer; treat a cross-family lane as an INDEPENDENCE resource
+   first.** Spend it on adversarial review, and try not to make it the only way work lands.
+   **The original wording said "never" twice; review rejected both as unsupported by three confounded
+   repositories, and that is right** - a correlation on one board does not establish that sole
+   implementership CAUSED the outcome, nor that cross-family capacity may never serve throughput.
+   This is a prior to argue against, not a law. *(Receipt: the one board on this box with a sole chartered implementer is
    the one that produced 42 commits with 17 of 23 days at zero. Convergent with
    `fleet-orchestrator-execute-posture.md` §3 rule 5, measured independently the same day.)*
 10. **One authority per fact**, resolved by construction rather than by convention — one queue, one
@@ -318,7 +383,15 @@ mechanism for that reason.
    invoking worktree. *(Cost: the ledger count reached eight, each created on demand, invisible to any
    watch armed against a fixed list.)*
 
-### Where each rule has to LIVE to actually bind
+### Where each rule WOULD have to live to bind - ASPIRATIONAL, none of this is implemented
+
+**Read this table as a design target, not as a description of anything that exists.** Independent
+review checked it against `Invoke-Lane.ps1` and found the runner has no typed `errorClass`, no
+product-delta validation, no queue-authority check, no fresh-target creation, no rollback, no
+surrogate routing, and no `--git-common-dir` resolution (it defaults evidence to
+`$WorkDir\.claude-state`). **A table that reads as enforcement while nothing enforces it is the
+same "prose outruns code" defect this file catalogues elsewhere**, so it is labelled rather than
+deleted - the design is still the point, and the gap is now visible.
 
 | rule | the mechanism that enforces it | what it looks like when only written down |
 |---|---|---|
