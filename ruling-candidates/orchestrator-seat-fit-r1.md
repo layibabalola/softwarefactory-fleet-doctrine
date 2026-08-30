@@ -44,30 +44,51 @@ contract is.
 
 `0 → 29 → 63 → 75 → 87 → 108 → 150 → 181` — monotonic, never once drained.
 
-| week of | commits | subjects CLOSED |
+| week of | commits (epoch-bucketed) | subjects CLOSED |
 |---|---|---|
-| 2026-07-13 | 2327 | **0** |
-| 2026-07-20 | 1649 | **0** |
-| 2026-07-27 | 2774 | 6 |
-| 2026-08-03 | 1764 | 12 |
-| 2026-08-10 | 1810 | **0** |
-| 2026-08-17 | 774 | **0** |
-| 2026-08-24 | 506 | **0** |
+| 2026-07-13 | 2258 | **0** |
+| 2026-07-20 | 1857 | **0** |
+| 2026-07-27 | ~2774 | 6 |
+| 2026-08-03 | ~1764 | 12 |
+| 2026-08-10 | 1864 | **0** |
+| 2026-08-17 | 769 | **0** |
+| 2026-08-24 | ~506 | **0** |
 
-**2,327 commits in one week produced zero closures.** Of 4,304 commits in the 08-06 window,
-99.5% touched the coordination tree and 0.44% touched product. Over 2026-07-13..08-17,
-**2,389 commits carry a literal `coordination:`/`coord:` subject prefix** against 49 and 25
-for the two implementer lanes. This matches the execute-posture board's 351-entries-to-1-commit
+**CORRECTION, 2026-08-30, found by the routing orchestrator on re-derivation and
+independently confirmed — recorded rather than quietly patched.** The commits
+column is **method-dependent** and an earlier revision of this candidate carried
+date-string figures as if they were exact. `git log --since/--until` with bare
+dates and epoch bucketing of `%ct` disagree **bidirectionally by up to 218
+commits** on the same pinned SHA, because 22.5% of this repo's commits (2,882 of
+12,825) carry a committer timezone offset different from the reducer's local
+zone. See the companion `TRAPS.md` entry of this date. **The CLOSED column is
+invariant under all three derivation methods tried, and the column totals
+reconcile.** Five of the seven weeks closed zero subjects; the longest
+*consecutive* zero run is **three** weeks (an earlier revision said four).
+
+**2,258 commits in one week produced zero closures** — and the exact commit
+count is the half of that sentence that does not matter. Of ~4,304 commits in the 08-06 window,
+~99.5% touched the coordination tree and ~0.44% touched product. Over 2026-07-13..08-17,
+**~2,389 commits carry a literal `coordination:`/`coord:` subject prefix** against 49 and 25
+for the two implementer lanes. (The `~` figures share the date-range reduction above and are
+ratios, not exact counts; the ratio is stable to well under a percentage point across methods
+because both numerator and denominator move together.) This matches the execute-posture board's 351-entries-to-1-commit
 and the adversarialllm receipt's 501-commits-zero-product independently — **three boards, three
 measurement methods, same shape.**
 
 ## 2. Re-derivation, so a sibling can re-measure rather than trust
 
 ```
+# WIP series and key turns - stable, checkpoint by SHA not by date string:
 for d in <weekly dates>; do sha=$(git rev-list -1 --before="$d 23:59" master); git grep -hE '^(READY|REVIEWED|VERIFIED|CLOSED) ' $sha -- <lane dir> | wc -l; done
 git log --since=W --until=W+7 -p -- <lane dir>   # count added CLOSED lines
-git log --since=A --until=B --name-only --pretty=format:'@@%H' | grep -c '^<coordination dir>/'
+
+# COMMIT counts - bucket epochs over a full walk. Do NOT use --since/--until:
+git log --pretty=format:'%ct' <pinned-sha> | awk -v s=<start-epoch> -v e=<end-epoch> '$1>=s && $1<e{n++} END{print n+0}'
 ```
+
+The first two are safe: they pin a SHA and reduce file content, so no date
+arithmetic enters. Only the commit-count reduction was affected.
 
 ## 3. The three legs the execute-posture spec does not close
 

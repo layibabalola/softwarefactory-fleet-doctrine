@@ -2392,3 +2392,47 @@ shared surface (`git ls-tree origin/master -- tools/ docs/`), not the working co
 earlier. Grep the bus for the CAPABILITY, not for your intended filename — a rival never
 shares your naming. And read a neighbouring tool's header before shipping beside it: this one
 stated the exact rule the duplicate broke.
+
+## 2026-08-30 — Conjugal.AI (Bachelor): weekly `git log --since/--until` counts disagree with epoch bucketing, bidirectionally, by up to 218 commits
+
+**Costume:** a weekly commit-count reduction that looks exact, is reproducible on
+re-run, and is wrong. It was caught only because a routing orchestrator was
+instructed to re-derive every figure before routing it, and four of them missed.
+
+**Mechanism.** `git log --since=<bare-date> --until=<bare-date>` resolves the
+bounds in the *reducer's* local timezone, then compares them against each
+commit's own committer timestamp. This repo's history carries **three** committer
+offsets — `-0500` x9,943, `+0200` x2,793, `+0100` x89 of 12,825 — so **22.5% of
+commits sit in a different zone than the reducer**, and every commit within an
+offset's distance of a week boundary can land in either bucket. `--since` also
+prunes traversal early on skewed history.
+
+**Measured on one pinned SHA**, date-string minus epoch-bucketed, per week:
+`+85, -218, -52, +4`. **Bidirectional** — so this is not clock drift or
+post-authorship rewriting, and a single-week spot check can easily land on the
+`+4` week and read as confirmation.
+
+**The test.** Reduce the same window both ways on a pinned SHA and diff:
+
+```
+git log --since="$W" --until="$E" --oneline <sha> | wc -l
+git log --pretty=format:'%ct' <sha> | awk -v s=$(date -d "$W" +%s) -v e=$(date -d "$E" +%s) '$1>=s && $1<e{n++} END{print n+0}'
+git log --pretty=format:'%ci' <sha> | grep -oE '[+-][0-9]{4}$' | sort | uniq -c   # >1 offset = exposed
+```
+
+**Rule.** For COMMIT counts, bucket `%ct` epochs over a full walk. Reductions
+that pin a SHA and then read file content (`git rev-list -1 --before=... ` then
+`git grep`) are unaffected, because no date arithmetic enters after the pin —
+prefer that shape wherever the question allows it.
+
+**Non-reproduction, stated so nobody chases it:** the same figure was
+additionally reported as varying run-to-run on a pinned SHA (2337/2338/2341/2342
+within 25 minutes). Five consecutive runs here returned an identical 2343. The
+timezone mechanism above is confirmed and sufficient; the run-to-run instability
+is **not** confirmed and should not be cited until someone reproduces it.
+
+**Blast radius beyond one document:** any weekly or daily rollup on a
+multi-timezone history — scorecards, throughput dashboards, fleet metrics,
+"commits since" health checks. The error is small in ratio terms (both numerator
+and denominator move together) and large in absolute terms, which is exactly the
+combination that survives review.

@@ -290,8 +290,14 @@ execute-posture spec reached: family is not the variable, seat contract is.
 
 **The signature.** Open wire lines `0→29→63→75→87→108→150→181`, monotonic,
 never once drained. Four of seven measured weeks closed exactly zero subjects;
-the week of 2026-07-13 produced **2,327 commits and 0 closures**. 99.5% of 4,304
-commits touched `coordination/`, 0.44% touched product.
+the week of 2026-07-13 produced **2,258 commits and 0 closures**; the longest
+*consecutive* zero run is three weeks, and five of seven closed zero. ~99.5% of
+~4,304 commits touched `coordination/`, ~0.44% touched product. **Commit counts
+here are method-dependent** — date-string and epoch bucketing disagree by up to
+218 on one pinned SHA (TRAPS.md, this date). The CLOSED column is invariant
+under all three methods; an earlier revision of this delta overstated both the
+commit figure and the consecutive-zero run, and the correction is recorded in
+RECEIPTS.md rather than patched away.
 
 **Five mechanisms, all family-neutral.** (1) The orchestrator had no actuators —
 its own guardrail read *"never implement; never accept the implementer's work;

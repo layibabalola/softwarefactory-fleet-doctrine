@@ -1251,8 +1251,21 @@ adoption, review credit, production, landing, release, or billing authority.
   ~87% of the time and the board closed nothing.
 - **Stall signature:** open wire lines `0→29→63→75→87→108→150→181` across eight
   weekly checkpoints — monotonic, never drained. Four of seven measured weeks
-  closed zero subjects. Week of 2026-07-13: **2,327 commits, 0 closures.**
-  99.5% of 4,304 commits touched the coordination tree, 0.44% touched product.
+  closed zero subjects (longest *consecutive* run: three). Week of 2026-07-13:
+  **2,258 commits, 0 closures** (epoch-bucketed; 2,343 by date-string — see the
+  correction below). ~99.5% of ~4,304 commits touched the coordination tree,
+  ~0.44% touched product.
+- **CORRECTION, same day, found by the routing orchestrator re-deriving before
+  it would route, and independently confirmed.** Weekly *commit* counts here are
+  method-dependent: date-string `--since/--until` and `%ct` epoch bucketing
+  disagree bidirectionally by up to **218 commits** on one pinned SHA, because
+  22.5% of commits (2,882 of 12,825) carry a committer timezone offset different
+  from the reducer's. An earlier revision published date-string figures as exact
+  and said "four consecutive zero-closure weeks" where the data shows three.
+  **The CLOSED column is invariant under all three methods and the totals
+  reconcile** — the zeroes, which are the load-bearing half, are unaffected.
+  Recorded rather than quietly patched, because the failure mode (a receipt
+  stated more precisely than its reduction supports) is the point.
 - **Largest single mechanical cause:** the orchestrator seat payload mandated a
   whole-file read of a **1,153,252-byte (~190k token)** ledger on every wake,
   across **228 recorded wakes**, with the explicit instruction *"do not rely on
@@ -1260,6 +1273,8 @@ adoption, review credit, production, landing, release, or billing authority.
 - **Re-derivation, so nobody has to trust the number:**
   `git rev-list -1 --before="<date>" master` then
   `git grep -hE '^(READY|REVIEWED|VERIFIED|CLOSED) ' <sha> -- coordination/lanes/ | wc -l`
+  For any COMMIT count, bucket `%ct` epochs over a full walk; do not use
+  `--since/--until` (TRAPS.md, this date).
 - **Third independent board with this shape.** agent-bridge measured 351
   governed ledger entries to 1 commit; adversarialllm measured 501 commits with
   zero touching the product; Conjugal measures 2,327 commits to zero closures.
