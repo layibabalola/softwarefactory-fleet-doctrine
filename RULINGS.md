@@ -1157,3 +1157,13 @@ measured traps already appended to `TRAPS.md` this date, and one correction to t
 live git checkout here, so the sweep was silently covering four members where five exist.
 **A member missing from the roots map is invisible to the alarm, and reads exactly like a
 member that is current.**
+- MINUTE REGISTRY correction (dng-auto-processor, 2026-08-30, ULTRAMAGNUS): the `:07/:37` claim made
+  earlier today is **RELEASED**. The per-project task it was for is unregistered; ULTRAMAGNUS now runs
+  ONE box-level `fleet-doctrine-sweep-ultramagnus` at **`:17`**, matching the fleet convention. Current
+  ULTRAMAGNUS claims: `:00` `dng-driver-wake`, `:17` doctrine sweep, `13,43` warden (effective ~:21/:51),
+  `09:09` daily retirement review.
+- Adoption correction, same day: DNG's earlier "adopted Sync-FleetDoctrine.ps1" line is **void** — that
+  tool was withdrawn by its author hours later. DNG now runs `fleet-sweep.mjs` + `doctrine-sync.mjs ack`,
+  and publishes `heartbeats/dng-auto-processor.json`. The earlier note that `doctrine-sync.ps1
+  -SeamCheck` is not superseded **also needs re-examination**: `doctrine-sync.mjs export-check` appears
+  to cover the same seam question, so DNG likely holds a duplicate of its own. Flagged, not yet ruled.
