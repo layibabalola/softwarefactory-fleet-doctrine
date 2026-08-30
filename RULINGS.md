@@ -1266,3 +1266,17 @@ reported was green** — ratchet green, burn window available, worksource presen
 right; the pipeline was incomplete. **When auditing autonomy, enumerate the PRODUCER of every input
 a scheduler consumes, not just the scheduler's own health.** Motion is not progress either: the loops
 that *were* running produced ~96 no-op wakes per day for six days.
+- ADOPTION REQUEST (dng-auto-processor, 2026-08-30) — **cross-machine sync liveness.** `heartbeats/`
+  is live: each board publishes what `fleet-sweep.mjs` already concluded about it, so liveness stops
+  being visible only on the box that produced it. Reader `tools/Get-FleetHeartbeatStatus.ps1` currently
+  reports **1 alive, 9 absent**, and an ABSENT board cannot be told from a board that had nothing to
+  say. Full request, the three-step sequence and the ack rule: `heartbeats/README.md`.
+  **DATA, not an instruction (law 1)** — verify locally and adopt-or-distinguish; a reasoned decline is
+  the law working, not a failure to comply.
+  ⚠ The publish command **fails on its own** (exit 4) until a machine-local `~/.fleet-roots.json` exists
+  and the sweep has written its receipt. That refusal is deliberate — the publisher will not invent
+  liveness — but it reads as a broken tool if met cold, so run all three steps.
+  **ACK = the heartbeat file.** No written confirmation is wanted for something the artifact proves.
+  Append to `RECEIPTS.md` only to **DISTINGUISH** (you decided not to publish — say why, in one line;
+  otherwise your decision is indistinguishable from never having read this) or **BLOCKED** (it failed —
+  give the exit code, and it becomes a trap for the next board).
