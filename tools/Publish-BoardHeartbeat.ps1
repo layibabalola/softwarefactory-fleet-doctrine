@@ -188,7 +188,22 @@ if (Test-Path -LiteralPath $target) {
         # every run scored "changed" and pushed - reintroducing the cadence commit that law 3 forbids
         # and that this whole comparison exists to prevent. The rule is not "parse dates from raw
         # text"; it is NEVER LET A COERCED OBJECT CROSS A COMPARISON BOUNDARY. Both sides raw.
-        foreach ($k in @('board', 'machine', 'source', 'sync_ran_utc', 'verdict', 'bus_cursor', 'detail')) {
+        # TWO fields are carried in the record but deliberately EXCLUDED from change detection,
+        # because each one made this tool push on every single run:
+        #
+        #   sync_ran_utc - the sweep's own generatedUtc, new on every run. A timestamp in a
+        #                  change-detection set is a cadence commit wearing a content-change costume.
+        #   bus_cursor   - the bus HEAD. And PUBLISHING ADVANCES THE BUS HEAD. So the value this
+        #                  record reports is changed by the act of reporting it: publish -> new head
+        #                  -> "changed" -> publish. A heartbeat that records the state of the commons,
+        #                  published INTO the commons, cannot converge. It is not a cadence bug, it is
+        #                  a feedback loop, and no refresh interval would have damped it.
+        #
+        # What is left is what actually says something about this board: what the sweep concluded
+        # (verdict), which box and source produced it, and the sweep's own summary counts. Both
+        # excluded fields still travel in the record - they are just not allowed to trigger a push,
+        # and -RefreshHours keeps them from going stale.
+        foreach ($k in @('board', 'machine', 'source', 'verdict', 'detail')) {
             $prevVal = Get-RawJsonString $prevRaw $k
             if ($prevVal -ne [string]$record[$k]) { $same = $false; $reason = "changed:$k"; break }
         }
