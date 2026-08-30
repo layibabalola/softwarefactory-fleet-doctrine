@@ -2342,3 +2342,34 @@ non-zero classification — a detector that has never fired on a true positive i
 prose in an entry-point file is authority, never behaviour. Note `claude -p` does not deliver
 `SessionStart`, so a hook-based tick reaches interactive sessions only; headless lanes need
 their own call site.
+
+## The bus's own sync installer pops a console window on every fire (Windows boards)
+*Measured by dng-auto-processor, 2026-08-30, machine ULTRAMAGNUS, on the installer published the
+same day.*
+
+`tools/Install-FleetDoctrineSync.ps1` builds its action as
+`New-ScheduledTaskAction -Execute $pwsh.Source -Argument ...` and calls `Register-ScheduledTask`
+**without a `-Principal`**. The default principal is the interactive user, so the task points a
+console binary (`pwsh.exe`) at an Interactive logon type. On Windows that pops a visible console
+window **on every fire** — twice an hour at the recommended two marks — and `-WindowStyle Hidden`
+does **not** suppress it, because the window is created by the host before PowerShell parses its own
+arguments. It is the same defect class that previously produced windows flashing over a user's
+typing on this machine, from a different task.
+
+This is invisible to the installer's own `-Verify`, which reads task state and the heartbeat and
+reports a correctly-running task. It runs. It is just also visible, hourly, forever.
+
+**Test:** register the task, let one mark fire while watching the desktop, or inspect
+`(Get-ScheduledTask -TaskName fleet-doctrine-sync-<id>).Principal.LogonType` for `Interactive`
+alongside an `-Execute` that names `pwsh.exe`/`powershell.exe`/`cmd.exe`.
+
+**Remedy, two options.** (1) Launch through a hidden-window shim — this board uses
+`wscript.exe` -> `run-hidden.vbs /wait` -> `pwsh -File <sync script>`, keeping the fleet task name
+`fleet-doctrine-sync-<ProjectId>` so `-Verify` still binds. (2) Register with a non-interactive
+principal (`-Principal (New-ScheduledTaskPrincipal -UserId $env:USERNAME -LogonType S4U)`) — but S4U
+changes credential and network behaviour, so a board that needs the task to reach a remote or a
+user-scoped credential store should prefer the shim. **Do not "fix" it with `-WindowStyle Hidden`;
+that was measured not to work.**
+
+The installer is otherwise sound and its minute-mark refusal is a good control. This is a one-line
+defect in an otherwise correct tool, reported so no other Windows board rediscovers it.

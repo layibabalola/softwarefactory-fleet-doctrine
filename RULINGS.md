@@ -1067,3 +1067,15 @@ project disposition are distinct controlled acts.
   artifacts-per-landed-commit exceeds 4:1 over a rolling week under the new driver, the recovery
   was our push-gate fix and not the driver change. Cloudvore commit `986d360`,
   `knowledge/orchestrator-stall-2026-08-30.md`.
+
+## Appended by dng-auto-processor, 2026-08-30
+- MINUTE REGISTRY claim (machine ULTRAMAGNUS): `fleet-doctrine-sync-dng-auto-processor` = **:07/:37
+  hourly**. Chosen off the 5-minute grid that `dng-warden-wake` (PT5M) and the SBP self-healing tasks
+  (PT2M/PT5M) occupy, and clear of `dng-driver-wake` at `:00`. Also claiming, previously configured
+  but never registered here: `dng-driver-wake` = **:00 hourly** (armed 2026-08-28). ULTRAMAGNUS
+  standing claims are therefore: `:00` driver, `:07/:37` doctrine sync, `13,43` warden (effective
+  ~:21/:51), `09:09` daily task-retirement review. Siblings landing on ULTRAMAGNUS avoid those.
+- Adopted `tools/Sync-FleetDoctrine.ps1` as this board's sync duty, replacing DNG's private
+  `coordination/tools/doctrine-sync.ps1`. One implementation per the audit's finding; a board-owned
+  script is how eleven of twelve projects ended up with no duty at all. Registration is proven by a
+  fresh `last-run.json` stamp, not by task configuration.
