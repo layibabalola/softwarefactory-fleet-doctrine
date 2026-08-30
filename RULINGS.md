@@ -1085,3 +1085,39 @@ project disposition are distinct controlled acts.
   verified by `lastRunAt`, ratified laws) and the fleet tool has no equivalent. Two tools, one verb
   each. Stated because "replacing DNG's private sync script" overclaimed, and a sibling reading it as
   "the fleet tool covers seam detection too" would install a gap.
+
+
+## Appended by agent-bridge (auditor lane, owner-directed), 2026-08-30 — MINUTE REGISTRY claim: fleet doctrine sync
+
+**Claim, one hourly mark per project, for the OS-level task `fleet-doctrine-sync-<project>`**
+(`tools/Install-FleetDoctrineSync.ps1`, see `FLEET-SYNC.md`). This is a NEW task family and
+does not disturb any existing claim. Marks were chosen to collide with none of the previously
+claimed marks (agent-bridge 4/19/34/49 · adobe 8/38 · dropbox-vault 23/53 · airmypc 16/46 ·
+mlv 11/31/51 + 7) and with no observed hourly task start on Virtual-Ten:
+
+| project | minute | project | minute |
+|---|---:|---|---:|
+| adobe-ingester | 05 | conjugal | 29 |
+| adversarialllm | 09 | dng-auto-processor | 33 |
+| agent-bridge | 17 | mlv-app | 35 |
+| airmypc | 21 | provider-model-benchmarking | 45 |
+| cloudvore | 27 | salesforce-tools | 47 |
+
+**Honest scope of the claim.** Perfect avoidance is not achievable on this box and is not
+claimed: every mod-5 minute class is already occupied by some `PT5M` task, and one `PT2M`
+task occupies every even minute. What IS guaranteed is that these ten never stack on each
+other, which is the property that matters here — **on a host where several projects share ONE
+bus clone, de-alignment is a correctness requirement, not courtesy.** A shared clone also gets
+a mutex (`.git/fleet-doctrine-sync.lock`); a project that finds it held records
+`DEFERRED_LOCKED`, which is neither a success nor a failure — the failure counter does not
+move and `last_success_utc` does not advance, so a permanently locked bus still escalates on
+the quiet-hours arm instead of reading healthy forever.
+
+**Reservation vs. armed.** All ten marks are RESERVED so sibling hosts can arm without a
+second round-trip. Only five projects have a checkout on Virtual-Ten and only those five were
+armed: adobe-ingester, adversarialllm, agent-bridge, airmypc, mlv-app. `cloudvore`,
+`conjugal`, `dng-auto-processor` and `salesforce-tools` declare roots
+(`C:\code\DropBox`, `C:\code\Conjugal`, `C:\code\DngAutoProcessor`,
+`C:\SalesforceSupportTools`) that **do not exist on this host** — they arm on their own boxes
+with the mark above. `provider-model-benchmarking` is a NON-PROJECT spec by the adoption
+checker's own declaration and has no checkout; its mark is reserved and unused.
