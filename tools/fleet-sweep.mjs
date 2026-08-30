@@ -9,10 +9,10 @@
 // Meanwhile this box's clone had drifted 229 commits behind with a clean `git status`.
 //
 // That is the same defect one level up from the one doctrine-sync fixes, and it is the defect
-// this fleet keeps paying for: **a mechanism that exists but that nothing invokes is
-// indistinguishable from a mechanism that always passes.** A hook registered under a
-// misspelled event, a guard whose script is on another branch, a "pull at boot" duty written
-// in prose — same shape, three times this month.
+// this fleet keeps paying for: a mechanism that exists but that nothing invokes is
+// indistinguishable from a mechanism that always passes. A hook registered under a misspelled
+// event, a guard whose script lives on another branch, a "pull at boot" duty written in prose
+// — same shape, three times this month.
 //
 // So this file adds NO new opinion about currency. It is pure wiring: enumerate the members,
 // call the one implementation for each, aggregate, and FAIL LOUD. If it ever starts deciding
@@ -22,13 +22,18 @@
 // The bus layout is already the authority: `specs/<project>.md`, one per project, single
 // writer (law 2). Members = those files on origin/master, minus `specs/fleet-*.md`, which are
 // cross-cutting candidates with no owning project and no clone to keep current. A separate
-// registry file would be a second authority for one fact, and the fleet has paid for that
-// too (six-to-eight gate ledgers, and the one that gated was whichever you had not checked).
+// registry file would be a second authority for one fact, and this fleet has paid for that
+// (six-to-eight gate ledgers, and the one that gated was whichever you had not checked).
 //
-// LOCAL ROOTS ARE MACHINE-SCOPED and live outside every repo (default:
-// ~/.fleet-roots.json). The fleet spans machines: a member with no clone here reports
-// `no-local-clone`, which is information, not an error. Absence of a row for a member that
-// DOES have a spec is the interesting signal, and it is printed either way.
+// LOCAL ROOTS ARE MACHINE-SCOPED and live outside every repo (default: ~/.fleet-roots.json).
+// The fleet spans machines: a member with no clone here reports `no-local-clone`, which is
+// information, not an error.
+//
+// EVERY CHILD IS BOUNDED. Measured on this file's own first run: a single `git fetch origin`
+// against a busy remote hung for over ten minutes while sibling lanes were pushing, and the
+// sweep waited on it forever. An unbounded watcher becomes the thing that needs watching.
+// Children also run with terminal prompts disabled, because a credential prompt in a
+// scheduled task is an infinite hang wearing the costume of a slow network.
 //
 // Usage
 //   node tools/fleet-sweep.mjs                       # sweep, human output
@@ -38,7 +43,7 @@
 // Exit codes
 //   0  every member with a local clone is current and folded
 //   1  at least one member is behind or has never folded          <- the alarm
-//   2  the sweep itself could not run (missing bus, unreadable roots, broken doctrine-sync)
+//   2  the sweep itself could not answer (bad bus, unreadable roots, timed-out child)
 
 import { execFileSync } from 'node:child_process';
 import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'node:fs';
@@ -47,9 +52,15 @@ import { fileURLToPath } from 'node:url';
 import { homedir } from 'node:os';
 
 const EXIT_OK = 0, EXIT_ACTION = 1, EXIT_FAIL = 2;
+const GIT_TIMEOUT_MS = 90_000;
+const MEMBER_TIMEOUT_MS = 120_000;
+
 const HERE = dirname(fileURLToPath(import.meta.url));
 const BUS = resolve(HERE, '..');
 const SYNC = join(HERE, 'doctrine-sync.mjs');
+
+// Never let a child wait on a human who is not there.
+const CHILD_ENV = { ...process.env, GIT_TERMINAL_PROMPT: '0', GCM_INTERACTIVE: 'never' };
 
 function parseArgs(argv) {
   const out = {};
@@ -60,46 +71,54 @@ function parseArgs(argv) {
   return out;
 }
 
-function git(args, { allowFail = false } = {}) {
+function git(args) {
   try {
-    return execFileSync('git', ['-C', BUS, ...args], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
+    return execFileSync('git', ['-C', BUS, ...args], {
+      encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'],
+      timeout: GIT_TIMEOUT_MS, env: CHILD_ENV,
+    }).trim();
   } catch (err) {
-    if (allowFail) return null;
-    throw new Error(`git ${args.join(' ')} failed in ${BUS}: ${(err.stderr || err.message).toString().trim()}`);
+    const why = (err.killed || err.signal) ? `timed out after ${GIT_TIMEOUT_MS} ms` : (err.stderr || err.message).toString().trim();
+    throw new Error(`git ${args.join(' ')} failed in ${BUS}: ${why}`);
   }
 }
 
 function declaredMembers() {
-  const listing = git(['ls-tree', '--name-only', 'origin/master', 'specs/']);
-  return listing.split('\n')
+  return git(['ls-tree', '--name-only', 'origin/master', 'specs/'])
+    .split('\n')
     .map((s) => s.trim())
     .filter((s) => s.endsWith('.md') && !s.startsWith('specs/fleet-'))
     .map((s) => ({ project: s.slice('specs/'.length, -'.md'.length), specFile: s }));
 }
 
 function runCheck(project, consumer) {
-  // doctrine-sync owns the verdict. We only relay it. Its exit code IS the answer:
-  // 0 current, 1 deltas to fold, 2 its own failure.
-  const r = execFileSync(process.execPath, [SYNC, 'check', '--project', project, '--consumer', consumer],
-    { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] , maxBuffer: 8 * 1024 * 1024 });
-  return { code: 0, out: r };
+  // doctrine-sync owns the verdict; this only relays it.
+  // Its exit code: 0 current, 1 deltas to fold, 2 its own failure.
+  execFileSync(process.execPath, [SYNC, 'check', '--project', project, '--consumer', consumer], {
+    encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'],
+    maxBuffer: 8 * 1024 * 1024, timeout: MEMBER_TIMEOUT_MS, env: CHILD_ENV,
+  });
+}
+
+function lastLines(err, n) {
+  return ((err.stdout || '') + (err.stderr || '')).toString().trim().split('\n').slice(-n).join(' | ');
 }
 
 function main() {
   const a = parseArgs(process.argv.slice(2));
   const rootsPath = a.roots || join(homedir(), '.fleet-roots.json');
 
-  let roots = {};
-  if (existsSync(rootsPath)) {
-    try {
-      roots = JSON.parse(readFileSync(rootsPath, 'utf8')).roots || {};
-    } catch (err) {
-      console.error(`[fleet-sweep] FAIL: ${rootsPath} is unreadable: ${err.message}`);
-      return EXIT_FAIL;   // fail closed: an unreadable map must never read as "no members".
-    }
-  } else {
+  let roots;
+  if (!existsSync(rootsPath)) {
     console.error(`[fleet-sweep] FAIL: no machine-local roots map at ${rootsPath}.`);
-    console.error(`[fleet-sweep] Create it: {"schema":"fleet-roots.v1","roots":{"<project>":"<abs path>"}}`);
+    console.error('[fleet-sweep] Create it: {"schema":"fleet-roots.v1","roots":{"<project>":"<abs path>"}}');
+    return EXIT_FAIL;
+  }
+  try {
+    roots = JSON.parse(readFileSync(rootsPath, 'utf8')).roots || {};
+  } catch (err) {
+    // Fail closed: an unreadable map must never read as "no members, all clear".
+    console.error(`[fleet-sweep] FAIL: ${rootsPath} is unreadable: ${err.message}`);
     return EXIT_FAIL;
   }
 
@@ -107,8 +126,9 @@ function main() {
   const busHead = git(['rev-parse', 'origin/master']);
   const members = declaredMembers();
   if (members.length === 0) {
+    // An empty enumeration is a broken instrument, never a healthy fleet.
     console.error('[fleet-sweep] FAIL: zero members derived from specs/ - refusing to report all-clear.');
-    return EXIT_FAIL;   // an empty enumeration is a broken instrument, never a healthy fleet.
+    return EXIT_FAIL;
   }
 
   const rows = [];
@@ -124,10 +144,15 @@ function main() {
       runCheck(m.project, consumer);
       status = 'current';
     } catch (err) {
-      const code = typeof err.status === 'number' ? err.status : 2;
-      detail = ((err.stdout || '') + (err.stderr || '')).trim().split('\n').slice(-2).join(' | ');
-      if (code === 1) { status = 'unfolded'; action++; }
-      else { status = 'check-failed'; failed++; }
+      if (err.killed || err.signal) {
+        // "The check did not finish" and "the member is current" are different facts.
+        // Collapsing them is how a watcher reports health it never observed.
+        status = 'check-timeout'; detail = `timed out after ${MEMBER_TIMEOUT_MS} ms`; failed++;
+      } else if (err.status === 1) {
+        status = 'unfolded'; detail = lastLines(err, 2); action++;
+      } else {
+        status = 'check-failed'; detail = lastLines(err, 2); failed++;
+      }
     }
     rows.push({ ...m, localRoot: consumer, status, detail });
   }
@@ -138,16 +163,16 @@ function main() {
     bus: BUS, busHead,
     declaredCount: members.length,
     withLocalClone: rows.filter((r) => r.localRoot).length,
-    unfolded: action, failed,
-    members: rows,
+    unfolded: action, failed, members: rows,
   };
 
-  console.log(`[fleet-sweep] bus ${busHead.slice(0, 12)} | ${members.length} declared members | ` +
-              `${receipt.withLocalClone} cloned here`);
+  console.log(`[fleet-sweep] bus ${busHead.slice(0, 12)} | ${members.length} declared members | ${receipt.withLocalClone} cloned here`);
+  const MARK = {
+    current: '  ok  ', unfolded: ' FOLD ', 'no-local-clone': '  --  ',
+    'root-not-a-repo': ' FAIL ', 'check-failed': ' FAIL ', 'check-timeout': ' TMOUT',
+  };
   for (const r of rows) {
-    const mark = { current: '  ok  ', unfolded: ' FOLD ', 'no-local-clone': '  --  ',
-                   'root-not-a-repo': ' FAIL ', 'check-failed': ' FAIL ' }[r.status] || ' ???? ';
-    console.log(`  [${mark}] ${r.project.padEnd(28)} ${r.status}${r.detail ? '  ' + r.detail : ''}`);
+    console.log(`  [${MARK[r.status] || ' ???? '}] ${r.project.padEnd(28)} ${r.status}${r.detail ? '  ' + r.detail : ''}`);
   }
 
   if (a['json-out']) {
