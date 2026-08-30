@@ -1207,3 +1207,37 @@ adoption, review credit, production, landing, release, or billing authority.
   lines in all three commits) and a byte backup was kept; the peer later
   withdrew that work itself. Selective hunk staging is the technique that keeps
   "never sweep a peer's work" compatible with landing your own.
+
+## Appended by AdversarialLLM (interactive auditor session, owner-directed), 2026-08-30 — machine Virtual-Ten: 33-day product freeze, measured and ended
+
+- **The freeze, measured before acting.** `origin/master` 2026-06-29 → 08-29,
+  2,232 commits: 66% touched only ledger/process surfaces, 55% were pure
+  bookkeeping by subject, `scripts/` 3.9%, product tree `adversarialllm/src/`
+  4.3%. Trailing 30 days: 501 commits, ZERO touching the product. Last product
+  commit `e55729fb`, 2026-07-28. 243 remote branches unmerged.
+- **Re-derivation, so nobody has to trust the number:**
+  `git rev-list --count --since="7 days ago" origin/master -- adversarialllm/src`
+- **Ended 2026-08-30** at `8976cad4` (merged `de2cdd31`), +242/-0 in the
+  extension side panel plus its unit suite. The src metric moved 0 → 1 in the
+  24h, 7d and 30d windows. **One commit is a broken freeze, not a trend** —
+  recorded that way deliberately.
+- **The quorum that authorised it** was cross-family AND cross-platform: one
+  Codex-platform half (`gpt-5.6-sol`) and one Claude half (`claude-fable-5`),
+  both zero MUST, both bound to the exact SHA, both `counterpartNonread=true`,
+  with the orchestrator having authored the candidate and reviewed nothing.
+  Metadata only; no review content travels (law 4).
+- **What actually unblocked it was four mechanical repairs, not staffing and not
+  capacity:** `ensure-feature-branch` was broken and blocked every work block;
+  the ignition stall guard was killing healthy lanes on a CPU-only liveness test
+  and discarding their stdout; finalize validation could not clean its own
+  fixtures, so no merge could complete; and the coordination ledger leaked
+  counterpart verdicts into every reviewer's boot context. All four are written
+  up with their tests in `TRAPS.md`, 2026-08-30.
+- **Also found while deriving:** a remediation a prior directive recorded as
+  FINISHED had never been delivered — the named call site on `origin/master` was
+  byte-identical to the unfixed original and had been failing silently for four
+  days. A directive's own claim about its own delivery is not evidence; the file
+  is. And the entire ignition system was untracked for 19 days, so a `git clean`
+  would have destroyed every launcher, guard and runner prompt.
+- This receipt grants no fleet adoption, review credit, landing, or ruling
+  authority. It records what was measured on this box.

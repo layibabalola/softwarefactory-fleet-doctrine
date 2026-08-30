@@ -8,22 +8,32 @@
 ## What this project is
 Chrome extension (WXT) for multi-LLM adversarial evaluation across 7 provider
 harnesses (ChatGPT, Claude, Gemini, Grok, Kimi, Perplexity, DeepSeek), governed by a
-five-lane software factory hub in `adversarialllm/docs/33_FOUR_LANE_HUB.md` (§5/§6
+software factory hub in `adversarialllm/docs/33_FOUR_LANE_HUB.md` (§5/§6
 append-only tail is authoritative).
 
-## Lane topology (operator directive 2026-08-09, five lanes)
-- SOL — Codex, orchestrator/integrator. Ignition: `codex exec` scheduled task (minutes 13/43).
-- LUNA — Codex, implementer. Ignition: `codex exec` scheduled task (minutes 13/43).
-- FABLE — Claude reviewer half A (`claude-fable-5`; cover-labels itself on model downgrade).
-- OPUS — Claude reviewer half B (`claude-opus-5`), owner of the living report.
-- SONNET — Claude warden + overflow reviewer (`claude-sonnet-5`), liveness + drain audits, log `docs/33_SONNET_WARDEN_LOG.md`.
+## Lane topology (operator directive 2026-08-29 — the Claude-driven inversion)
+SUPERSEDES the 2026-08-09 five-lane topology on roles, ignition and queue priority. Single-writer,
+blind review, family diversity and append-only history are unchanged.
+- OPUS — Claude `claude-opus-5`, ORCHESTRATOR/INTEGRATOR. Sole authority to disposition, integrate,
+  close and sequence. Inherits every authority SOL held. Scheduled, 60 min.
+- SONNET — Claude `claude-sonnet-5`, IMPLEMENTER. Inherits LUNA's execution role. Scheduled, 60 min,
+  armed only after one clean OPUS tick is observed.
+- FABLE — Claude `claude-fable-5`, review/guidance/planning ON DEMAND. Not scheduled.
+- SOL / LUNA — Codex `gpt-5.6-sol` / `gpt-5.6-luna`, **CLI-INVOKED RESOURCE, NOT LANES.** No scheduled
+  tasks, no standing tick, no self-ignition. Demoted in authority and PROMOTED in necessity: with every
+  Claude seat conflicted or same-family, Codex is the only source of a valid independent review half.
+  No candidate integrates on two Claude halves.
+- The standing warden lane is retired; its receipts/liveness/drain audits fold into the OPUS tick.
 
-## Ignition (adopted from adobe-ingester pattern, 2026-08-09)
-Windows Scheduled Tasks `AdvLLM-Lane-{Fable,Opus,Sonnet}` → `scripts/ignition/invoke-claude-lane.ps1`
-→ newest installed Claude Code CLI headless with lane runner prompt
-(`scripts/ignition/prompts/<lane>-runner.md`). Per-lane lockfile + live-PID check
-enforces no-double-staffing. 30-minute repetition; live lane makes the tick a no-op.
-Minute-marks claimed in RULINGS.md: **26/56**. spawn_task chips are fallback only.
+## Ignition (2026-08-29)
+Claude lanes: Windows Scheduled Tasks -> `scripts/ignition/invoke-claude-lane.ps1` -> Claude Code CLI
+headless with the lane's runner prompt. Codex seats: `scripts/ignition/invoke-codex-lane.ps1` shells
+`codex exec` on demand — **family follows the RUNNER**, so a Claude session shelling `codex exec` seats a
+genuine Codex child. Per-lane lockfile + live-PID check enforces no-double-staffing; per-lane model and
+effort are declared in the launcher rather than inherited silently from `config.toml`.
+Two ignition-path facts measured here and published as traps 2026-08-30: the whole ignition system was
+UNTRACKED from 2026-08-10 until `0626e705` (a `git clean` would have destroyed it), and the stall guard
+was killing healthy lanes.
 
 ## CLI versions on this box (drift is derived state)
 - Claude Code CLI: 2.1.222 (`%APPDATA%\Claude\claude-code\2.1.222\claude.exe`)
@@ -35,7 +45,7 @@ Every lane's wake checklist carries pull-diff-fold on boot and EXPORT-IF-SEAM at
 (3-question seam test + class routing in `adversarialllm/.claude-state/rules/rule-doctrine-seam.md`);
 bus updates are checklist-mechanical, not judgment. Rulings still require hub ratification first.
 
-## Open doctrine-relevant state (2026-08-09)
+## Open doctrine-relevant state (2026-08-09) — SUPERSEDED 2026-08-30, kept as the record of what the Codex-orchestrated period believed
 - Plans 1/2/5 (exact-SHA semantic integration gate; lease-authoritative broker release
   K42; boot-snapshot integrity SNAP-01) are P0 prerequisites before production
   integrations; O-5 operator-override + O-7 debt semantics in force.
@@ -45,6 +55,47 @@ bus updates are checklist-mechanical, not judgment. Rulings still require hub ra
 - Stale registry note: `adversarialllm-fable-wake-watch` (minutes 19/49) observed in the
   06:37Z collision report no longer exists in this box's task store — collision moot,
   recorded here as data.
+
+## 2026-08-30 doctrine seam — what the Codex-orchestrated period actually measured
+
+Published as DATA for adopt-or-distinguish. Nothing here is a fleet ruling; behaviour amendments in
+other projects await their own hub ratification. The four traps behind it are in `TRAPS.md`
+(appended 2026-08-30) and the drill result is in `RECEIPTS.md`.
+
+**The measurement.** `origin/master`, 2026-06-29 -> 2026-08-29, 2,232 commits: 66% touched only the
+ledger/process surfaces, 55% were pure bookkeeping by subject, `scripts/` 3.9%, and the product tree
+`adversarialllm/src/` **4.3%**. The trailing 30 days: 501 commits, **zero** touching the product. Last
+product commit `e55729fb`, 2026-07-28. 243 remote branches unmerged. The board was measuring process
+compliance and calling it progress.
+
+**The attribution, stated carefully.** None of the four causes was model quality. The same Codex seat
+that "stalled" root-caused a provider-selector defect a Claude lane had mis-diagnosed, and produced a
+clean cross-family review half on 2026-08-30. What failed was the SEAT, not the reasoner:
+1. Sole orchestration authority sat on a runtime with no headless entry point, so lane death was
+   permanent until a human pasted a payload. The orchestrator died 2026-08-01; the hub doc did not
+   change for 8 days; both reviewer lanes idled CORRECTLY, because a reviewer may not self-assign.
+2. The pre-push gate required an artifact only a Claude-side script produced, so a Codex lane could not
+   publish at all. Same night: the Claude lane pushed, the Codex lane's deterministic-green candidate
+   sat at zero remote refs.
+3. The stall guard used process-tree CPU as liveness and culled healthy lanes, then discarded their
+   stdout, so its own kills were unfalsifiable.
+4. Nothing in the tick template made the product number visible, so a fully-compliant board could emit
+   500 commits and ship nothing without any row saying so.
+
+**The delivery-first constraint now in force (project-local).** Every order names a product outcome; an
+order whose whole deliverable is process/ledger/governance may be opened only as the proven blocker of a
+named product item, and must name it. Every orchestrator tick reports `src/` commits on `origin/master`
+in the trailing 24h and 7d FIRST; a tick emitting governance rows while that number is zero must say so
+in its own row. Bookkeeping commits may never be cited as drain. A lane with nothing addressed to it
+writes one `alive-idle` row and EXITS. If process overhead exceeds product commits over any trailing 7d
+window, the orchestrator opens a remediation to CUT ceremony rather than add more.
+
+**Pre-flight for re-seating a demoted runtime as orchestrator** (project-local checklist, offered to the
+fleet as data): headless entry point exists AND one unattended tick has been observed end to end; that
+seat has PUSHED one commit through the real gate (demonstrated, not reasoned); authority is not sole —
+a named fallback may open delivery work when the seat goes silent for N ticks; the tick template leads
+with the product number; nothing-addressed means one `alive-idle` row and exit; and any stall guard that
+can kill the seat preserves the killed session's output.
 
 ## 2026-08-18 disposition — one universal provider-capacity contract
 
