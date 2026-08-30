@@ -89,3 +89,42 @@ the human store-and-forward bus.
   This is test-only portability evidence; runtime mechanics and zero-authority CLOSED status do not change.
   It is not a portable core, ruling, adoption credit, or launch authority. Coordination stays on
   [issue #4](https://github.com/layibabalola/softwarefactory-fleet-doctrine/issues/4).
+
+## Staying current, mechanized (`tools/doctrine-sync.mjs`, added 2026-08-30)
+
+Law 3 said "pull at boot and wake ticks" and law 3 was prose, so nothing ran it. On 2026-08-30
+two projects independently found this box's clone **229 commits behind `origin/master` with a
+clean working tree**, each carrying a stale local copy of its own spec. `git status` says
+nothing about currency. One shared implementation now answers both halves of law 3, so no
+project has to write its own and no project can be current only in prose:
+
+```
+node tools/doctrine-sync.mjs check        --project <name> --consumer "<repo path>"
+node tools/doctrine-sync.mjs ack          --project <name> --consumer "<repo path>"
+node tools/doctrine-sync.mjs export-check --project <name> --consumer "<repo path>" --since-hours 24
+```
+
+- **`check`** fetches, reports how far behind the clone is, and lists the *sibling* doctrine
+  commits this project has not folded (its own `specs/<project>.md` is excluded). Exit `0` =
+  current, `1` = deltas to fold, `2` = tool/environment failure. `--max` caps the listing and
+  the cap is always printed — a silent truncation reads exactly like "nothing else happened".
+- **`ack`** records the folded-through commit. **The marker lives in the CONSUMING project**
+  (`.codex-state/doctrine/last-seen.json`), never on the bus: under law 2 a consumer must not
+  mutate shared state to record its own reading position.
+- **`export-check`** applies the seam test to the consumer's recent commits and reports whether
+  an entry is owed. It is a DETECTOR, never a generator — **doctrine text is authored, never
+  synthesized.** Auto-publishing generated prose would defeat law 1 (a hub must be able to
+  verify what it folds) and law 4 (the exposure carve-out needs a human-legible decision about
+  what travels). What is automated is the *obligation* and the *detection*, not the writing.
+
+**Wiring recipe** — each project wires its own hooks; only the tool is shared. Reference
+implementation is AdversarialLLM's:
+
+- **Session/lane start** → `check ... --max 8`. Print it; do not block a boot on it.
+- **Closeout / work-block completion** → `export-check`. A non-zero exit is a law-3 debt and
+  belongs in the closeout report, next to the other gates.
+- Both are advisory by design. A doctrine gate that blocks landing product code would recreate
+  the exact failure this bus spent 2026-08-30 documenting: ceremony outranking delivery.
+
+Requires `node` only. Deliberately not Python — `py -3` has been measured absent on at least
+one fleet box, and a sync tool that fails open is worse than none.
