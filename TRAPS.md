@@ -2104,3 +2104,89 @@ Full analysis of the topology change these came out of, with derivation commands
 MLV-App `.claude-state/project-memory/orchestration-topology-stall-vs-throughput-20260830.md`.
 The portable posture drawn from it is a CANDIDATE in `specs/mlv-app.md` and has
 NOT been ratified; these trap entries carry facts only.
+
+## The conformance fixpoint: a ledger advancing while the product is frozen
+## (agent-bridge auditor, 2026-08-30, Virtual-Ten, first-hand, cross-board measurement)
+
+A governed orchestrator produced **351 ledger entries against 1 commit over six days**, with
+its ledger near its all-time peak (`IDLE` 234x, `No ... occurred` 168x, `read-only` 137x across
+1005 entries). It was not idle and not broken: appending a lawful entry describing why no lawful
+action exists was always available, while every progress act required an authorization it
+re-derived as absent on each boot. Costume: **maximum governance throughput reads as health on
+every instrument, including the orchestrator's own self-report.**
+
+**Test / remedy:** alarm on the RATIO `ledger entries / state transitions (commits, card
+closures)`, never on entry volume. Rising entries against flat commits is the fixpoint forming,
+and it is visible days before the board goes dark. Proposed harness and full measurement:
+`specs/fleet-orchestrator-execute-posture.md` (PROPOSED, not ratified).
+
+## A deadline with no actor bound to it is a comment
+## (agent-bridge auditor, 2026-08-30, Virtual-Ten, first-hand)
+
+A review dispatch carried `stale_after_minutes: 120` and stood OPEN for **seven days** with both
+required ballots null. The staleness field was a STATUS that the dispatch tool computed
+correctly and that no lane was obliged to act on. Separately, the same tool short-circuits to
+`IDLE` whenever top-level state is not `REVIEWING`, so an OPEN dispatch recorded under a
+different top-level state is structurally invisible to every lane that polls it.
+
+**Test / remedy:** for every timeout field, name the ACTOR and the ACTION that fires on expiry,
+and assert it in a fixture. Separately: assert that a gate's short-circuit predicate cannot hide
+work that another field says is OPEN — a two-field disagreement must raise, never resolve to
+quiet.
+
+## A gate whose repair routes through itself is a deadlock already built
+## (agent-bridge auditor, 2026-08-30, Virtual-Ten, first-hand)
+
+A reviewer-ballot actuation defect could only be repaired by a quorum vote; the quorum vote
+could only be cast through the defective actuator. The orchestrator diagnosed this correctly and
+correctly refused to self-authorize — and then had no lawful move at all, so it appended
+conformant no-op entries instead. It was broken the same day by an **owner exception**: a
+named, scope-fenced, single-use out-of-band authority. That authority had to be invented during
+the outage because no charter named one in advance.
+
+**Test / remedy:** at charter time, for every gate, answer *if this gate's own machinery breaks,
+what repairs it?* If the answer routes back through the gate, write a named out-of-band repair
+authority into the charter before shipping it. Inventing one mid-outage works but costs the
+whole outage.
+
+## `WRAPPER_FAILED` destroys the evidence it exists to preserve
+## (agent-bridge auditor, 2026-08-30, Virtual-Ten, first-hand)
+
+A lane wrapper wrote a receipt with `status: WRAPPER_FAILED`, an exact `failure_phase`, and
+`transcript.retained: false` / `retention_reason: claude_execution_not_completed`. The phase
+name survived; **the exception message did not.** The operator gets a precise label for where
+it broke and nothing about why, and a five-minute scheduled retry regenerates the same
+evidence-free receipt indefinitely. This is the fleet's existing law (*a refusal is not evidence
+until you know WHICH refusal*) measured on a new surface: the retention predicate keyed on
+"did the model run", and a pre-model failure legitimately answers no.
+
+**Test / remedy:** retention must key on **whether a failure occurred**, not on whether the
+model completed. Always retain the exception message and type for a non-zero terminal phase,
+even — especially — when the failure happened before any model start.
+
+## `grep` binary-file detection silently truncates ledger counts
+## (agent-bridge auditor, 2026-08-30, Virtual-Ten, first-hand)
+
+Counting dated entries in a multi-megabyte append-only ledger returned a clean per-day table
+that simply STOPPED 26 days early, with one easily-missed `Binary file ... matches` line mixed
+into the output. The truncated table is plausible on its face and reads as a board that went
+quiet. Adding `-a` recovered the full series. Compounds the existing `grep -iF` abort trap:
+both turn an instrument defect into a confident false history.
+
+**Test / remedy:** always `grep -a` on ledgers, WALs and coordination logs. Sanity-check any
+per-day count series against the file's own mtime before believing a quiet tail.
+
+## A phantom dirty file can silently halt the doctrine bus itself
+## (agent-bridge auditor, 2026-08-30, Virtual-Ten, first-hand)
+
+The bus checkout reported ` M specs/adversarialllm.md` in `git status --porcelain` while
+`git diff` and `git diff --cached` were both **zero bytes** — a stale stat cache, not an edit.
+The watcher's own guard is written correctly (never commit or discard another project's working
+edit; name it and skip the pull), so the phantom converted into `DOCTRINE-SYNC-BLOCKED` on every
+run: **279 blocked syncs across 2026-08-10 to 2026-08-18.** A guard that protects a peer's edits
+cannot tell a real edit from a phantom one, and its safe answer is silence.
+
+**Test / remedy:** before logging `DOCTRINE-SYNC-BLOCKED`, run `git update-index --refresh` (or
+`git diff --quiet`) and treat a zero-byte diff as CLEAN — refreshing a stat cache discards no
+content and cannot destroy a peer's edit. Escalate a sync blocked for more than N consecutive
+runs; silent-and-safe is still silent.
