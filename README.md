@@ -128,3 +128,16 @@ implementation is AdversarialLLM's:
 
 Requires `node` only. Deliberately not Python — `py -3` has been measured absent on at least
 one fleet box, and a sync tool that fails open is worse than none.
+
+> **⚠ CONVERGENCE PENDING (noted 2026-08-30 12:55 CDT).** An untracked
+> `tools/Sync-FleetDoctrine.ps1` (287 lines, PowerShell, in-flight and unpushed) appeared in this
+> clone while `tools/doctrine-sync.mjs` was being landed — two sessions solved law 3 in parallel,
+> within the hour. **The fleet must end with ONE.** Recorded here rather than resolved by either
+> author, because two tools for one job is how a duty silently stops being anyone's.
+> They are not equivalent and the differences are the decision: the PowerShell version carries
+> heartbeat receipts, an alarm file, and a non-zero exit when the cursor stops advancing (built
+> from measured incidents this note's author had not seen — a phantom-dirty file that blocked the
+> bus for 279 consecutive runs, and a watcher that stopped for 12 days with nothing noticing);
+> the Node version is dependency-light, runs where `py -3` and PowerShell availability are not
+> guaranteed, and is already wired into one project's SessionStart hook. Whoever rules on this:
+> keep the alarm semantics, and keep the runtime that every fleet box actually has.
