@@ -266,3 +266,79 @@ launcher census, 1,000-tick deterministic idle proof, exact installed-byte profi
 observer/health chain, full-child containment receipt, rollback receipt, or independently reviewed
 SHADOW/CONTAINMENT packet exists. Those missing local proofs, rather than provider availability,
 block a canary and project adoption.
+
+## 2026-08-24 delta — Fable-to-Opus model-pool failback strategy
+
+**Rung: owner-directed dispatcher. Status:**
+`SUBMITTED / ZERO-RUNTIME-AUTHORITY / FIRST-SUCCESSOR-SERIALIZED-BEFORE-ROUTE`.
+This delta contributes a project-measured routing strategy for review; doctrine
+publication alone does not open Conjugal's automatic gate, enable a launcher,
+admit Claude, create a route, or turn a review or verification key.
+
+Conjugal measured a named Fable 5 usage-limit terminal on `sol-0866` before a
+claim. The former controller then reduced the whole Anthropic adapter to
+`UNEVALUABLE/WAIT`, even though no Opus transaction had established that the
+Opus model pool was exhausted. This conflated a model-pool observation with a
+provider-wide outage and could leave paid compatible capacity unused.
+
+The forward strategy is `FABLE-TO-OPUS-ECONOMIC-UTILIZATION-v1`:
+
+1. **Scope the refusal no wider than its evidence.** A limit naming Fable closes
+   the Fable capacity dimension. It closes Opus only when current provider-native
+   evidence proves both models share the exhausted window. Account, organization,
+   or transport identity alone does not prove that two named model pools share a
+   limit, and a Fable terminal never becomes an Opus terminal by inference.
+2. **Fail back only to useful, compatible work.** When Fable is exhausted and a
+   distinct exact-subject task is eligible for Opus, request the exact qualified
+   Opus model and maximum required effort through the native Claude runner. Never
+   substitute Opus inside the exhausted Fable transaction, inherit its claim, or
+   manufacture Fable credit from the Opus result.
+3. **The work is the capacity outcome.** Do not spend a separate inference call
+   merely to ask whether Opus can run when eligible bounded Opus work already
+   exists. The exactly-once work transaction either returns its exact-subject
+   verdict or produces a typed provider refusal. Both are durable outcomes; a red
+   is terminal for that attempt and is never retried as a capacity probe.
+4. **Retain account-level serialization.** Model-pool independence does not imply
+   safe concurrency. Before launch, prove no incompatible inference-bearing
+   transaction owns the shared quota domain. A desktop or CLI transport is not
+   active work by process identity or age alone; correlate immutable process
+   generation with its registered session, advancing output, descendants, and
+   repository/task identity. Active or genuinely ambiguous work serializes the
+   Opus successor without killing, attaching to, or taking over that process.
+5. **Use one route and one terminal chain.** Require zero duplicate atoms before
+   publication, then exactly one route, claimant, claimed ACK, exact-subject
+   verdict, and owning answered ACK. Preserve the Fable limit and every
+   serialization first red. A limit, refusal, timeout, or adverse verdict releases
+   no retry, fallback alias, automatic gate, scheduler, or acceptance transition.
+6. **Credit only the exact released role.** A successful Opus review or
+   verification turns only the separately authorized key for its frozen subject.
+   It is not general Claude admission, Fable recovery, provider health, product
+   acceptance, or permission to drain other queued work.
+7. **Return without preemption.** Fresh positive Fable capacity evidence restores
+   Fable eligibility only for a new guarded transaction. It never interrupts a
+   live Opus slice, relabels an Opus verdict, reopens the exhausted Fable attempt,
+   or bypasses exact-model, independence, recusal, single-writer, and first-red
+   rules.
+
+The first authorized successor applied these rules to the independent review
+needed at Conjugal product boundary `phub-0064`. It correctly stopped before
+route creation when a concurrently advancing, non-Conjugal Claude transaction
+had an ambiguous Git descendant. Thus invocation, route, claim, and provider
+probe counts remained zero; the strategy preserved paid-capacity intent without
+weakening single-flight containment. The next quiescent wake must rederive every
+guard rather than reinterpret this serialization receipt as capacity.
+
+Local evidence is privacy-safe and repo-relative:
+
+- `coordination/user-directive-2026-08-24-opus-economic-utilization-successor.md`,
+  SHA-256 `9b279aaccb0d3f7806c44712852b5119e4609759c8d93748c9035c94624364dc`;
+- `coordination/receipts/opus-economic-utilization-phub-0064-serialization-first-red.json`,
+  SHA-256 `a6b435189071a2feb9b0d7199a0983fb7a34cab68512270647b32bc5077222be`.
+
+Fleet adoption should add negative controls for: a Fable-only refusal with
+eligible Opus work; a proved shared-window refusal that blocks both; a
+long-lived idle transport; active unrelated work; ambiguous repository
+identity; duplicate route atoms; Opus refusal with zero retry; and Fable
+capacity return while Opus is live. Every control must preserve the existing
+quota-domain lease, exact-profile routing, deterministic no-work, and
+quality/authority bars from the accepted provider-capacity governor.
