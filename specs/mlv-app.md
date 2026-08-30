@@ -68,12 +68,46 @@ runner that replaced it**. Across one heavily-instrumented session, **five of th
 wrong calls were caught by a lane, not by the coordinator.**
 
 **The implementer's demonstrated comparative advantage is STOPPING — which makes a poor orchestrator
-and an outstanding adversarial verifier.** Putting it in the chair spent the scarce capability to buy
-the cheap one, and additionally coupled the whole board to that CLI's harness properties (fixed-cadence
-turn source with no lifecycle controls exposed to the task, `-o` written only on clean exit, `.cmd`
-truncating a multi-line positional prompt at the first newline — see this round's TRAPS entries). Every
-one of those pushes toward "act on a timer, in short bounded slices, report state." **It is the harness,
-not the model.**
+and an outstanding adversarial verifier.**
+
+### CORRECTION, same day, and it is the load-bearing one
+
+**Codex never orchestrated THIS board.** The first draft of this section implied it did. On MLV-App
+the orchestrator was the Claude fable hub throughout, with Codex implementing — so the 17.7% stall
+measured above is a SEAT-TOPOLOGY result, not a verdict on any orchestrator family. The claim was
+corrected before it could propagate, against the natural experiment that actually exists on this box.
+
+Three boards, one operator, one machine, identical bounds
+(`git -C <root> log --all --since=2026-08-06 --until=2026-08-29 --oneline | wc -l`,
+re-derived independently here rather than adopted):
+
+| board | orchestrator | implementer | commits | days at zero |
+|---|---|---|---|---|
+| adobe-ingester | **Codex** | Codex only (sole chartered implementer) | **42** | **17 of 23** |
+| agent-bridge | Claude | mixed | 97 | 9 of 23 |
+| **mlv-app** | Claude | **Codex** | **340** | 12 of 23 |
+
+**Codex implementing under a Claude hub is the FASTEST board on the box. Codex orchestrating is the
+slowest, by 8x.** Same models, same operator, same machine, same weeks. That is as close to a
+controlled comparison as this fleet is going to get, and it says the variable is the ROLE, not the
+family.
+
+The companion measurement by the agent-bridge auditor lane
+([`fleet-orchestrator-execute-posture.md`](fleet-orchestrator-execute-posture.md), same day,
+independently derived, figures differing from these because per-clone `--all` ref sets differ — the
+DIRECTION is identical and reproduced) names the mechanism better than the first draft of this file
+did: a **conformance fixpoint**. An orchestrator whose cheapest conformant act is to append a lawful
+entry explaining why no lawful action exists will do exactly that indefinitely, because compliance is
+always available while progress needs an authorization it re-derives as absent on every boot. Its
+signature there was **351 governed ledger entries against 1 commit** over six days, with the ledger
+near its all-time peak and every instrument green. **Adopt that document's §3 rules 1-3 and 7 with
+this file's rules; they close legs of the same loop from the other side.**
+
+What survives unchanged from the first draft: **it is the harness, not the model.** The Codex CLI's
+properties (fixed-cadence turn source with no lifecycle controls exposed to the task, `-o` written
+only on clean exit, `.cmd` truncating a multi-line positional prompt at the first newline — see this
+round's TRAPS entries) all push toward "act on a timer, in short bounded slices, report state," which
+is a fine implementer posture and a fatal orchestrator one.
 
 ### Honest limits (n is small; do not cite this as settled)
 
@@ -246,7 +280,7 @@ So: a posture published in a doc is a posture that will not be kept. **The oblig
 the thing that invokes the lane, or on a gate that refuses.** Everything below is stated as a
 mechanism for that reason.
 
-### The nine rules, each priced by the incident that bought it
+### The ten rules, each priced by the incident that bought it
 
 1. **Synchronous invocation, never a mailbox.** If the orchestrator's only way to make a lane act is
    to write a file and hope a scheduler notices, the eight-layer chain is rebuilt. Invoke with the
@@ -274,7 +308,12 @@ mechanism for that reason.
 8. **Fresh-start over recovery; archive nothing, ignore stale surfaces in place.** *(Receipt: a fresh
    target created 19:42Z woke at 19:56Z and was serving by 20:00Z, after two prior days of repair
    attempts on the broken one.)*
-9. **One authority per fact**, resolved by construction rather than by convention — one queue, one
+9. **Never charter a sole implementer, and never spend a cross-family lane on throughput.** A
+   foreign-family seat is an INDEPENDENCE resource: spend it on adversarial review, and never make it
+   the only way work lands. *(Receipt: the one board on this box with a sole chartered implementer is
+   the one that produced 42 commits with 17 of 23 days at zero. Convergent with
+   `fleet-orchestrator-execute-posture.md` §3 rule 5, measured independently the same day.)*
+10. **One authority per fact**, resolved by construction rather than by convention — one queue, one
    registry, one gate ledger resolved against the repository's common dir, never relative to the
    invoking worktree. *(Cost: the ledger count reached eight, each created on demand, invisible to any
    watch armed against a fixed list.)*
@@ -289,7 +328,8 @@ mechanism for that reason.
 | 4 | a closeout gate that counts commits by path class | 82% of output goes to self-maintenance, unremarked |
 | 6 | the sweep pairs each token against an independent falsifier | `pair=UNRENEWED` never appears; a dead seat's process stamps green |
 | 7, 8 | the runner's own timeout and its fresh-start default | rotations that cannot finish leave no live target |
-| 9 | path resolution in code (`--git-common-dir`) | six-to-eight ledgers, and the one that gates is whichever you did not check |
+| 9 | the charter: a pre-authorized surrogate path for every critical-path role | one lane's outage is the board's outage |
+| 10 | path resolution in code (`--git-common-dir`) | six-to-eight ledgers, and the one that gates is whichever you did not check |
 
 **And the orchestrator's own contract belongs in the file its CLI reads at boot** — for a Codex lane
 that is `AGENTS.md` at the repository root, not a sibling's spec and not this file. **Doctrine is DATA
