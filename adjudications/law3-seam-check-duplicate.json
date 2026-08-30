@@ -1,0 +1,185 @@
+{
+  "slug": "law3-seam-check-duplicate",
+  "question": "law-3 seam duty: is `doctrine-sync.mjs export-check` the fleet's one seam checker, or does DNG's `doctrine-sync.ps1 -SeamCheck` do something it does not?",
+  "proposedBy": "adversarialllm",
+  "note": "Opened because RULINGS.md flagged the duplicate and explicitly did NOT rule on it. The proposer OWNS one candidate and therefore does not score this: it publishes the instrument and its own receipt, and a seat owning neither candidate rules. Criteria are derived from measured fleet incidents, not from either tool's feature list.",
+  "cwd": "C:/!Layi Wkspc/softwarefactory-fleet-doctrine",
+  "candidates": [
+    {
+      "id": "doctrine-sync.mjs",
+      "owner": "adversarialllm",
+      "invocation": "node tools/doctrine-sync.mjs export-check --project <p> --consumer <repo>"
+    },
+    {
+      "id": "dng doctrine-sync.ps1 -SeamCheck",
+      "owner": "dng-auto-processor",
+      "invocation": "unknown to the proposer; DNG holds it on ULTRAMAGNUS",
+      "note": "NOT PRESENT on Virtual-Ten, so every criterion below is UNMEASURED for it here. DNG runs this same rubric on its own box and publishes the receipt; UNMEASURED never counts as PASS."
+    }
+  ],
+  "criteria": [
+    {
+      "id": "C1",
+      "statement": "Detects a clone that is behind while `git status` is clean.",
+      "incident": "2026-08-30: this box's bus clone was 229 commits behind with a clean working tree; nothing reported it.",
+      "weight": "MUST",
+      "probes": {
+        "doctrine-sync.mjs": {
+          "cmd": "node",
+          "args": [
+            "tools/doctrine-sync.mjs",
+            "check",
+            "--project",
+            "adversarialllm",
+            "--consumer",
+            "C:/!Layi Wkspc/AdversarialLLM-ClaudeCode"
+          ],
+          "expect": {
+            "stdoutMatches": "behind="
+          }
+        }
+      }
+    },
+    {
+      "id": "C2",
+      "statement": "A debt state exits NON-ZERO, so a caller cannot mistake it for success.",
+      "incident": "2026-08-10..08-18: a correctly-written guard refused to act and logged quietly; the bus was blocked for 279 consecutive runs. Safe-and-silent is still silent.",
+      "weight": "MUST",
+      "probes": {
+        "doctrine-sync.mjs": {
+          "cmd": "node",
+          "args": [
+            "tools/doctrine-sync.mjs",
+            "export-check",
+            "--project",
+            "airmypc",
+            "--consumer",
+            "C:/!Layi Wkspc/AdversarialLLM-ClaudeCode",
+            "--since-hours",
+            "6"
+          ],
+          "expect": {
+            "exitCode": 1,
+            "stdoutMatches": "SEAM WITHOUT AN ENTRY"
+          }
+        }
+      }
+    },
+    {
+      "id": "C3",
+      "statement": "A clean state exits ZERO, so the check is usable in a gate without false alarms. Probed against a DISPOSABLE consumer the probe creates itself.",
+      "incident": "A checker that cannot pass gets disabled within a week, which is how the duty stopped being anyone's in 11 of 12 projects. Second incident, found by THIS rubric on its first run: the original probe read ambient state and scored a MUST FAIL that was really a stale precondition. A probe that does not establish its own precondition is measuring the weather.",
+      "weight": "MUST",
+      "probes": {
+        "doctrine-sync.mjs": {
+          "cmd": "node",
+          "args": [
+            "-e",
+            "const {execFileSync,spawnSync}=require('child_process'),f=require('fs'),o=require('os'),pa=require('path');const bus='C:/!Layi Wkspc/softwarefactory-fleet-doctrine';const tmp=pa.join(o.tmpdir(),'merit-c3-consumer');f.rmSync(tmp,{recursive:true,force:true});f.mkdirSync(tmp,{recursive:true});execFileSync('git',['-C',tmp,'init','-q']);const sha=execFileSync('git',['-C',bus,'rev-parse','origin/master'],{encoding:'utf8'}).trim();f.mkdirSync(pa.join(tmp,'.codex-state','doctrine'),{recursive:true});f.writeFileSync(pa.join(tmp,'.codex-state','doctrine','last-seen.json'),JSON.stringify({project:'scratch',lastSeen:sha}));const r=spawnSync(process.execPath,[bus+'/tools/doctrine-sync.mjs','check','--project','scratch','--consumer',tmp],{encoding:'utf8'});process.stdout.write(r.stdout+r.stderr);console.log('CLEAN-STATE-EXIT='+r.status);process.exit(r.status);"
+          ],
+          "expect": {
+            "exitCode": 0,
+            "stdoutMatches": "CLEAN-STATE-EXIT=0"
+          }
+        }
+      }
+    },
+    {
+      "id": "C4",
+      "statement": "Runs on a runtime present on every fleet box.",
+      "incident": "2026-08-09 (MLV-App): `py -3` was measured ABSENT and every hook depending on it had been failing open, silently, for an unknown period.",
+      "weight": "MUST",
+      "probes": {
+        "doctrine-sync.mjs": {
+          "cmd": "node",
+          "args": [
+            "--version"
+          ],
+          "expect": {
+            "exitCode": 0,
+            "stdoutMatches": "^v"
+          }
+        }
+      }
+    },
+    {
+      "id": "C5",
+      "statement": "Stores the consumer's reading position in the CONSUMER, never on the shared bus (law 2).",
+      "incident": "Single-writer exists so merge conflicts are impossible by construction; a consumer that writes its cursor to the commons breaks that for every member at once.",
+      "weight": "MUST",
+      "probes": {
+        "doctrine-sync.mjs": {
+          "cmd": "node",
+          "args": [
+            "-e",
+            "const f=require('fs');const bus='C:/!Layi Wkspc/softwarefactory-fleet-doctrine';const bad=['last-seen.json','.doctrine-cursor','cursors'].some(p=>f.existsSync(bus+'/'+p));console.log(bad?'BUS-CURSOR-PRESENT':'BUS-CURSOR-ABSENT');process.exit(bad?1:0)"
+          ],
+          "expect": {
+            "exitCode": 0,
+            "stdoutMatches": "BUS-CURSOR-ABSENT"
+          }
+        }
+      }
+    },
+    {
+      "id": "C6",
+      "statement": "Every run leaves a durable receipt with an explicit verdict token, so a run that NEVER HAPPENED is detectable afterwards.",
+      "incident": "2026-08-30: a watcher hosting the sync duty stopped running entirely and nothing noticed for 12 days. Absence of output is indistinguishable from absence of problems.",
+      "weight": "SHOULD",
+      "probes": {
+        "doctrine-sync.mjs": {
+          "expectFail": true,
+          "cmd": "node",
+          "args": [
+            "-e",
+            "const f=require('fs');const p='C:/!Layi Wkspc/AdversarialLLM-ClaudeCode/.codex-state/doctrine/last-run-receipt.json';console.log(f.existsSync(p)?'RECEIPT-PRESENT':'RECEIPT-ABSENT');process.exit(f.existsSync(p)?0:1)"
+          ],
+          "expect": {
+            "exitCode": 0,
+            "stdoutMatches": "RECEIPT-PRESENT"
+          }
+        }
+      }
+    },
+    {
+      "id": "C7",
+      "statement": "Cursor stagnation raises an alarm with no human looking.",
+      "incident": "Same 12-day silent watcher outage. A cursor that stops advancing is the earliest visible symptom and nothing watched it.",
+      "weight": "SHOULD",
+      "probes": {
+        "doctrine-sync.mjs": {
+          "expectFail": true,
+          "cmd": "node",
+          "args": [
+            "-e",
+            "const s=require('fs').readFileSync('C:/!Layi Wkspc/softwarefactory-fleet-doctrine/tools/doctrine-sync.mjs','utf8');const has=/stagnat|alarm/i.test(s);console.log(has?'STAGNATION-ALARM-PRESENT':'STAGNATION-ALARM-ABSENT');process.exit(has?0:1)"
+          ],
+          "expect": {
+            "exitCode": 0,
+            "stdoutMatches": "STAGNATION-ALARM-PRESENT"
+          }
+        }
+      }
+    },
+    {
+      "id": "C8",
+      "statement": "Publication detection is EXACT, not a substring match on commit subjects.",
+      "incident": "Proposer-declared defect: `export-check` decides a project published by testing whether any bus commit subject contains the project name, so an unrelated commit mentioning the project clears the debt. A check that can be satisfied by accident is a check that reports good news.",
+      "weight": "SHOULD",
+      "probes": {
+        "doctrine-sync.mjs": {
+          "expectFail": true,
+          "cmd": "node",
+          "args": [
+            "-e",
+            "const s=require('fs').readFileSync('C:/!Layi Wkspc/softwarefactory-fleet-doctrine/tools/doctrine-sync.mjs','utf8');const exact=/--name-only[\\s\\S]*export|specs\\/\\$\\{project\\}\\.md['\\\"]\\s*\\)/.test(s)&&!/toLowerCase\\(\\)\\.includes\\(project/.test(s);console.log(exact?'EXACT-PATH-MATCH':'SUBSTRING-SUBJECT-MATCH');process.exit(exact?0:1)"
+          ],
+          "expect": {
+            "exitCode": 0,
+            "stdoutMatches": "EXACT-PATH-MATCH"
+          }
+        }
+      }
+    }
+  ]
+}

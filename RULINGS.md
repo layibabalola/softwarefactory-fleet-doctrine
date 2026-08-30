@@ -1167,3 +1167,67 @@ member that is current.**
   and publishes `heartbeats/dng-auto-processor.json`. The earlier note that `doctrine-sync.ps1
   -SeamCheck` is not superseded **also needs re-examination**: `doctrine-sync.mjs export-check` appears
   to cover the same seam question, so DNG likely holds a duplicate of its own. Flagged, not yet ruled.
+
+## RULE ON MEASURED MERIT, ALWAYS (operator-ruled, Layi, 2026-08-30; instrument by AdversarialLLM)
+
+**Owner ruling, verbatim: *"Lets rule based on merit ALWAYS! That should be a fleet doctrine
+rule."*** Issued on the same day two members shipped rival implementations of one duty within an
+hour of each other. This is ratified as fleet doctrine by the owner, the same authority that
+ruled the canonical bus name; it is not a project's adopt-or-distinguish proposal.
+
+**The rule.** A rival claim — two tools for one duty, two designs for one gate, two answers to one
+question — is settled by an instrument both candidates run, never by discussion, seniority,
+authorship, incumbency, who shipped first, or who argued last. **A ruling with no re-runnable
+evidence is an opinion with a timestamp.**
+
+**The tests, because a rule that stops at the slogan changes nothing:**
+
+1. **The rubric is written from INCIDENTS, not from feature lists.** Every criterion names the
+   failure that bought it. A criterion nobody was hurt by is a preference wearing a lab coat.
+2. **Anti-gerrymandering, and it is mechanical.** If the proposing party's own candidate is
+   expected to pass every criterion, the rubric is REFUSED before anything runs. A rubric written
+   backwards from what you already built is the normal way an author wins on merit without merit.
+   Declare at least one criterion your own candidate fails, or hand the rubric to a party that
+   owns neither.
+3. **Authors do not score their own candidate.** They may run the instrument on it and publish the
+   receipt; the ruling belongs to a seat that owns none of them. The instrument is what gets
+   trusted, and it is re-runnable by anyone who doubts the result.
+4. **UNMEASURED is never PASS.** A candidate with no probe scores UNMEASURED and stays visible in
+   the table. A criterion nobody measured is a criterion nobody met, and silence has been read as
+   health too many times on this bus already.
+5. **A probe must establish its own precondition.** Found by this rubric on its first run: a probe
+   that read ambient state scored a MUST FAIL that was really a stale precondition. A probe that
+   does not set up its own world is measuring the weather.
+6. **Merit is per-PROPERTY, not per-artifact.** When a candidate loses, record what SURVIVES from
+   it. The 2026-08-30 law-3 collision resolved correctly this way: the losing author withdrew the
+   artifact, and its alarm semantics — heartbeat receipts, stagnation alarms — came back as
+   separate tools rather than dying with it.
+7. **A tie on MUST is broken by what every box actually has** — runtime availability,
+   installability, blast radius — never by which candidate is more featureful. `py -3` was
+   measured absent on a fleet box while every hook depending on it failed open, silently.
+8. **A withdrawal by the losing author is the cheapest good outcome, and is to be recorded as a
+   merit result rather than a defeat.** It costs the fleet one commit instead of a week.
+9. **No candidate clean on MUST means a remediation order, not a winner.** Picking the least-bad
+   artifact and calling it ratified is how a MUST becomes decorative.
+
+**The instrument:** `tools/merit-adjudicate.mjs` — declarative rubric, one probe per candidate per
+criterion, scorecard plus JSON receipt, with tests 2, 4 and 5 enforced in code rather than asked
+for in prose. `adjudications/law3-seam-check-duplicate.json` is the worked example. Any member can
+run it and any member can re-run someone else's.
+
+**First application, and the proposer's recusal.** The RULINGS entry earlier this date flagged a
+duplicate — `doctrine-sync.mjs export-check` vs DNG's `doctrine-sync.ps1 -SeamCheck` — and
+explicitly did not rule. AdversarialLLM **authored one of those candidates and therefore does not
+score it.** It publishes the instrument and its own receipt only:
+
+| Candidate | MUST pass | MUST fail | SHOULD pass | SHOULD fail | UNMEASURED |
+|---|---:|---:|---:|---:|---:|
+| `doctrine-sync.mjs` | 5 | 0 | 0 | **3** | 0 |
+| `dng doctrine-sync.ps1 -SeamCheck` | 0 | 0 | 0 | 0 | **8** |
+
+The three SHOULD failures are the proposer's own, declared before the run: no durable per-run
+receipt (C6), no cursor-stagnation alarm (C7), and publication detection that substring-matches
+commit subjects so an unrelated commit naming the project clears the debt (C8). **C8 is a
+report-good-news defect and is the strongest thing in this table.** DNG's eight UNMEASURED cells
+are not a verdict on DNG's tool — it is not present on Virtual-Ten. **DNG runs the same rubric on
+ULTRAMAGNUS and publishes the receipt; a seat owning neither candidate then rules.**

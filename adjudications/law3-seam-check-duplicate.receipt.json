@@ -1,0 +1,167 @@
+{
+  "rubric": "law3-seam-check-duplicate",
+  "question": "law-3 seam duty: is `doctrine-sync.mjs export-check` the fleet's one seam checker, or does DNG's `doctrine-sync.ps1 -SeamCheck` do something it does not?",
+  "ranUtc": "2026-08-30T20:52:03.233Z",
+  "guard": {
+    "checked": true,
+    "selfDeclaredFailures": [
+      "C6",
+      "C7",
+      "C8"
+    ]
+  },
+  "rows": [
+    {
+      "id": "C1",
+      "statement": "Detects a clone that is behind while `git status` is clean.",
+      "weight": "MUST",
+      "incident": "2026-08-30: this box's bus clone was 229 commits behind with a clean working tree; nothing reported it.",
+      "results": {
+        "doctrine-sync.mjs": {
+          "verdict": "PASS",
+          "why": "output ~ /behind=/ => matched",
+          "expectedFail": false,
+          "exitCode": 1,
+          "evidence": "[doctrine-sync] bus=C:\\!Layi Wkspc\\softwarefactory-fleet-doctrine\n[doctrine-sync] local HEAD=8e0b98e origin/master=8e0b98e behind=0 WORKING-TREE-DIRTY\n\n[doctrine-sync] 11 unfolded sibling doctrine commit(s) since ef951da:\n  2026-08-30  8e0b98e  dng: release :07/:37, claim :17 box-level; void the withdrawn-tool adoption\n      RULINGS.md"
+        },
+        "dng doctrine-sync.ps1 -SeamCheck": {
+          "verdict": "UNMEASURED",
+          "why": "no probe declared for this candidate"
+        }
+      }
+    },
+    {
+      "id": "C2",
+      "statement": "A debt state exits NON-ZERO, so a caller cannot mistake it for success.",
+      "weight": "MUST",
+      "incident": "2026-08-10..08-18: a correctly-written guard refused to act and logged quietly; the bus was blocked for 279 consecutive runs. Safe-and-silent is still silent.",
+      "results": {
+        "doctrine-sync.mjs": {
+          "verdict": "PASS",
+          "why": "exit 1 => exit 1; output ~ /SEAM WITHOUT AN ENTRY/ => matched",
+          "expectedFail": false,
+          "exitCode": 1,
+          "evidence": "[doctrine-sync] SEAM WITHOUT AN ENTRY. Classes touched in the last 6h: trap/incident, operator-directive, gate/process-law.\n[doctrine-sync] No bus commit naming 'airmypc' in that window.\n[doctrine-sync] Law 3: a fix is not complete until its portable result and exact evidence are on the bus.\n[doctrine-sync] Author the entry yourself — this tool detects the debt and never writes doctrine for you.\n[doctrine-sync]   specs/airmypc.md   your surface, single writer, rewrite at a seam\n[doctrine-sync]   TRAPS.md              append-only: the failure AND the test that catches it"
+        },
+        "dng doctrine-sync.ps1 -SeamCheck": {
+          "verdict": "UNMEASURED",
+          "why": "no probe declared for this candidate"
+        }
+      }
+    },
+    {
+      "id": "C3",
+      "statement": "A clean state exits ZERO, so the check is usable in a gate without false alarms. Probed against a DISPOSABLE consumer the probe creates itself.",
+      "weight": "MUST",
+      "incident": "A checker that cannot pass gets disabled within a week, which is how the duty stopped being anyone's in 11 of 12 projects. Second incident, found by THIS rubric on its first run: the original probe read ambient state and scored a MUST FAIL that was really a stale precondition. A probe that does not establish its own precondition is measuring the weather.",
+      "results": {
+        "doctrine-sync.mjs": {
+          "verdict": "PASS",
+          "why": "exit 0 => exit 0; output ~ /CLEAN-STATE-EXIT=0/ => matched",
+          "expectedFail": false,
+          "exitCode": 0,
+          "evidence": "[doctrine-sync] bus=C:\\!Layi Wkspc\\softwarefactory-fleet-doctrine\n[doctrine-sync] local HEAD=8e0b98e origin/master=8e0b98e behind=0 WORKING-TREE-DIRTY\n[doctrine-sync] current: no sibling doctrine changes since 8e0b98e.\nCLEAN-STATE-EXIT=0\n"
+        },
+        "dng doctrine-sync.ps1 -SeamCheck": {
+          "verdict": "UNMEASURED",
+          "why": "no probe declared for this candidate"
+        }
+      }
+    },
+    {
+      "id": "C4",
+      "statement": "Runs on a runtime present on every fleet box.",
+      "weight": "MUST",
+      "incident": "2026-08-09 (MLV-App): `py -3` was measured ABSENT and every hook depending on it had been failing open, silently, for an unknown period.",
+      "results": {
+        "doctrine-sync.mjs": {
+          "verdict": "PASS",
+          "why": "exit 0 => exit 0; output ~ /^v/ => matched",
+          "expectedFail": false,
+          "exitCode": 0,
+          "evidence": "v24.14.0\r\n"
+        },
+        "dng doctrine-sync.ps1 -SeamCheck": {
+          "verdict": "UNMEASURED",
+          "why": "no probe declared for this candidate"
+        }
+      }
+    },
+    {
+      "id": "C5",
+      "statement": "Stores the consumer's reading position in the CONSUMER, never on the shared bus (law 2).",
+      "weight": "MUST",
+      "incident": "Single-writer exists so merge conflicts are impossible by construction; a consumer that writes its cursor to the commons breaks that for every member at once.",
+      "results": {
+        "doctrine-sync.mjs": {
+          "verdict": "PASS",
+          "why": "exit 0 => exit 0; output ~ /BUS-CURSOR-ABSENT/ => matched",
+          "expectedFail": false,
+          "exitCode": 0,
+          "evidence": "BUS-CURSOR-ABSENT\n"
+        },
+        "dng doctrine-sync.ps1 -SeamCheck": {
+          "verdict": "UNMEASURED",
+          "why": "no probe declared for this candidate"
+        }
+      }
+    },
+    {
+      "id": "C6",
+      "statement": "Every run leaves a durable receipt with an explicit verdict token, so a run that NEVER HAPPENED is detectable afterwards.",
+      "weight": "SHOULD",
+      "incident": "2026-08-30: a watcher hosting the sync duty stopped running entirely and nothing noticed for 12 days. Absence of output is indistinguishable from absence of problems.",
+      "results": {
+        "doctrine-sync.mjs": {
+          "verdict": "FAIL",
+          "why": "exit 0 => exit 1; output ~ /RECEIPT-PRESENT/ => no match",
+          "expectedFail": true,
+          "exitCode": 1,
+          "evidence": "RECEIPT-ABSENT\n"
+        },
+        "dng doctrine-sync.ps1 -SeamCheck": {
+          "verdict": "UNMEASURED",
+          "why": "no probe declared for this candidate"
+        }
+      }
+    },
+    {
+      "id": "C7",
+      "statement": "Cursor stagnation raises an alarm with no human looking.",
+      "weight": "SHOULD",
+      "incident": "Same 12-day silent watcher outage. A cursor that stops advancing is the earliest visible symptom and nothing watched it.",
+      "results": {
+        "doctrine-sync.mjs": {
+          "verdict": "FAIL",
+          "why": "exit 0 => exit 1; output ~ /STAGNATION-ALARM-PRESENT/ => no match",
+          "expectedFail": true,
+          "exitCode": 1,
+          "evidence": "STAGNATION-ALARM-ABSENT\n"
+        },
+        "dng doctrine-sync.ps1 -SeamCheck": {
+          "verdict": "UNMEASURED",
+          "why": "no probe declared for this candidate"
+        }
+      }
+    },
+    {
+      "id": "C8",
+      "statement": "Publication detection is EXACT, not a substring match on commit subjects.",
+      "weight": "SHOULD",
+      "incident": "Proposer-declared defect: `export-check` decides a project published by testing whether any bus commit subject contains the project name, so an unrelated commit mentioning the project clears the debt. A check that can be satisfied by accident is a check that reports good news.",
+      "results": {
+        "doctrine-sync.mjs": {
+          "verdict": "FAIL",
+          "why": "exit 0 => exit 1; output ~ /EXACT-PATH-MATCH/ => no match",
+          "expectedFail": true,
+          "exitCode": 1,
+          "evidence": "SUBSTRING-SUBJECT-MATCH\n"
+        },
+        "dng doctrine-sync.ps1 -SeamCheck": {
+          "verdict": "UNMEASURED",
+          "why": "no probe declared for this candidate"
+        }
+      }
+    }
+  ]
+}
