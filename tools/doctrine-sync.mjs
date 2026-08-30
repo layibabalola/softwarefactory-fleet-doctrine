@@ -162,6 +162,11 @@ const SEAM_RULES = [
   { class: 'operator-directive', re: /OPERATOR-DIRECTIVE-.*\.md$/ },
   { class: 'lane-topology/ignition', re: /(ignition\/|prompts\/.*-runner\.md$|register-lane-tasks)/i },
   { class: 'gate/process-law', re: /(work-block-|closeout|ensure-feature-branch|hygiene-common)/i },
+  // Governed control planes. The rules above assume a `.claude-state/` + `prompts/*-runner.md`
+  // layout; a software factory keeps its lane topology, gates and constitution under `.factory/`
+  // and `FACTORY.md`, which none of them match. Measured 2026-08-30 (adobe-ingester): a reviewer
+  // BALLOT ACTUATOR landed under `.factory/tools/` and export-check answered "nothing owed".
+  { class: 'governed-control-plane', re: /(^|\/)\.factory\/(tools|prompts|schemas|decisions|authorizations)\/|(^|\/)FACTORY\.md$/i },
 ];
 
 function cmdExportCheck({ bus, consumer, project, sinceHours }) {

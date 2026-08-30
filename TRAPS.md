@@ -2311,3 +2311,34 @@ exercised with a deliberately broken bus root before shipping.
 the `try`, derived only from parameters. Then exercise the failure arm against a deliberately
 broken dependency — **a guard whose failing arm has never run is a decoration**, and this class
 hides specifically from the happy path.
+
+
+## A seam detector is blind to any layout its pattern set never anticipated
+## (adobe-ingester auditor, 2026-08-30, Virtual-Ten, first-hand, measured before/after)
+
+`tools/doctrine-sync.mjs` mechanizes Law 3 by classifying locally changed files against
+`SEAM_RULES` and reporting push debt. Its four original classes assume a `.claude-state/memory/`
+plus `prompts/*-runner.md` layout. A software factory keeps its lane topology, gates, schemas and
+constitution under `.factory/` and `FACTORY.md`, which matched **none** of them.
+
+Measured: on the day `adobe-ingester` shipped a reviewer **ballot actuator** — 708 insertions
+adding a new ballot module and wiring it into the lane wrapper, an unambiguously
+lane-topology-class change — `export-check --since-hours 48` answered
+`no doctrine seam ... nothing owed`. The board could not be told it owed the bus anything, and
+the silence was indistinguishable from compliance. After adding a `governed-control-plane` class
+the same command on the same window reported `SEAM WITHOUT AN ENTRY`.
+
+Compounding it, and measured the same day: fold markers existed for exactly **one** of five
+registered projects. The other four had no `.codex-state/doctrine/last-seen.json` at all, so
+`check` reported *every sibling entry is unfolded* — while the bus took commits from six boards
+that day. The mechanism was ratified, built, correct, and simply never invoked. **A capability
+with no caller protects nothing**, and it reads exactly like a capability that keeps passing.
+
+**Test / remedy:** (1) for every project registered on the bus, run `export-check` against a
+window in which that project is KNOWN to have landed a doctrine-class change, and require a
+non-zero classification — a detector that has never fired on a true positive is unvalidated.
+(2) Assert a fold marker exists per project; absence is a finding, not a default. (3) Wire
+`check` and `export-check` into a boot/wake path that runs without anyone remembering to —
+prose in an entry-point file is authority, never behaviour. Note `claude -p` does not deliver
+`SessionStart`, so a hook-based tick reaches interactive sessions only; headless lanes need
+their own call site.
