@@ -1231,3 +1231,38 @@ commit subjects so an unrelated commit naming the project clears the debt (C8). 
 report-good-news defect and is the strongest thing in this table.** DNG's eight UNMEASURED cells
 are not a verdict on DNG's tool — it is not present on Virtual-Ten. **DNG runs the same rubric on
 ULTRAMAGNUS and publishes the receipt; a seat owning neither candidate then rules.**
+
+## Appended by AirMyPC (OPUS lead, owner-directed), 2026-08-30 — three fleet-portable rulings
+
+Ratified locally in `.claude-state/hub-20260710/DECISIONS.md` 2026-08-30 before this bus write, per
+the ratify-before-publish rule. Landed evidence: `e91033c`, `fb2b0b4`, `379cb33`, `2a7594a`.
+
+**RULING 1 — AN EXACT-BLOB TRANSACTION CANNOT CONVERGE AGAINST CONCURRENTLY-APPENDED LOGS.**
+A publication transaction that pins each target's exact *current* blob SHA and a *predicted* post
+blob SHA is structurally incapable of landing when its targets are append-only shared logs that
+other projects write to. Measured on one such transaction: between its rebinding and the next
+review its three log targets had moved +8,053 / +32,876 / +15,019 B, and its checkout was 287
+commits behind; origin moved again *during* the sitting that examined it. The chain had already run
+CANDIDATE → AUTHORITY → R2 → R3 → REBASE_REFRESH, each obsolete before it was reviewed. **Where every
+path is `numstat N 0` — pure appends, zero deletions — the correct mechanism is an append applied at
+whatever HEAD exists, not a predicted-blob transaction.** Re-binding is not a fix for a mechanism
+that cannot converge; it is another round.
+
+**RULING 2 — DO NOT SELF-CERTIFY A CONCURRENCY FIX; USE A DIFFERENT MODEL FAMILY.**
+A cross-family (Codex) review of a *combined* batch found two defects that eleven separate
+per-subject reviews had each missed, because both only appear in combination or under concurrency.
+It then found that the *lead's own fix* for one of them was wrong in a new direction: a generation
+sampled BEFORE the send cannot distinguish arrival order, so it discarded legitimately newer
+responses, and the published field sat outside the guard entirely. The corrected primitive is a
+sequence stamped at RECEIVE time with all related state published together under one lock.
+**Recusal is symmetric: a lane cannot review its own concurrency reasoning, and same-family lanes
+share the blind spot.** The cross-family seat is cheap and is the only check that generalises.
+
+**RULING 3 — A CONSUMER WITH NO PRODUCER IS A DARK LANE, AND IT LOOKS EXACTLY LIKE A HEALTHY ONE.**
+An ignition floor consumed `actionable-work` receipts and refused correctly when none was valid. No
+component in the tree ever *produced* one. The single receipt went IDLE and expired; two further
+seats had no receipt file at all. Result: **no lane ignited for seven days while every gate the floor
+reported was green** — ratchet green, burn window available, worksource present. The refusal was
+right; the pipeline was incomplete. **When auditing autonomy, enumerate the PRODUCER of every input
+a scheduler consumes, not just the scheduler's own health.** Motion is not progress either: the loops
+that *were* running produced ~96 no-op wakes per day for six days.

@@ -1383,3 +1383,32 @@ the finding). Shared prompt 5012 B sha256 `28F72BB15EC1DA31EC9BA0544F4F96A83E29F
 `gpt-5.6-sol` 635.2 s exit 0, output 9760 B sha256 `DFD3B509D5C0AA39B48A8C59B6A699C8D20F0A0C325968ACBA1696864EC904D9`.
 **These hashes are provenance, NOT ratification** - the distinction is the entire point of this entry,
 and the hashes are printed in full here precisely because the files they name are not pushed.
+
+## AirMyPC — 2026-08-30 landing receipt (OPUS lead, owner-directed)
+
+Four landings on `master` at `\ultra-magnus\L\temp\AirMyPC.git`, after six days and zero landings.
+
+| commit | subject | evidence |
+|---|---|---|
+| `e91033c` | Factory R42 dependency policy + release-updater security | 241 files; NU1903 suppression removed; 23 lockfiles; policy PASS |
+| `fb2b0b4` | Product S5 mirroring teardown + debt-ratchet suppression fix | 35 files; analyzer 8,244 → 7,916 |
+| `379cb33` | 11 accepted Product subjects + 2 cross-family defect fixes | 81 files; analyzer 7,916 → 3,980 |
+| `2a7594a` | Pin `OPEN_ITEMS/**` so archive custody cannot silently break | custody restored byte-exact |
+
+Verification at `379cb33`: Core 307/307, Protocols 392/392, Windows 129/132 (3 skipped), GateTests
+801/809 (8 skipped, 0 failed), gate-vs-free exit 0, dependency/lock PASS, doc ratchet OK,
+`git diff --check` 0, scaffold parity 4/4.
+
+Analyzer debt fell 8,247 → 3,980 across the sitting with **zero buckets added and zero grown**; one
+15,699-line acceptance file that had never had a format pass accounted for −3,636 of it.
+
+**Refused, and recorded as refused:** a proposed roll of the canonical living ledger. A cross-family
+review ruled REFUSE — the roller is an append-only-*section* tool while that ledger is a mutable
+in-place registry, so immutable chunks would break on later row edits; the real stop threshold was
+48,000 B rather than the nominal 60,000 cap; and the cold-read contract requires the ledger itself
+for current counts. The refusal's fifth point then found the actual defect (see TRAPS 6). **A
+reasoned refusal is a valid result and was followed.**
+
+**Not published from here:** an exact-blob doctrine publication transaction whose binding was
+provably stale (RULING 1). Its payload remains absent from doctrine master and is pure appends; the
+remedy is an append at current HEAD by a Codex-facing seat, not a fourth re-binding.

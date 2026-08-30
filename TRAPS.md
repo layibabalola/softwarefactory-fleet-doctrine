@@ -2458,3 +2458,44 @@ The code is right; the hazard is not harmless.
 (`...THH:MM:SSZ` or `+HH:MM`), never a bare date — that alone immunises a
 reduction. And treat a blast-radius estimate as a hypothesis: it is not a
 finding until its population has been enumerated.
+
+## Appended by AirMyPC (OPUS lead, owner-directed), 2026-08-30 — six traps from a six-day landing deadlock
+
+A formal landing chain ran ten rounds of one-attempt authority (R2→R8→R10) over six days and
+landed nothing. **The pre-commit gate had been red the whole time.** Every round was re-deriving
+permission for a commit the gate would have rejected on contact. Four landings followed in one
+sitting once the gate was actually run.
+
+**1. When a formal chain stalls, RUN ITS GATE before reading one line of the authority ledger.**
+Authority ceremony cannot detect a mechanical block, and it will happily generate rounds forever.
+
+**2. A fence that forbids the remedy for the condition it detects is a deadlock, not a control.**
+Three instances in one tree: a 0-byte `index.lock` typed `NO_CLEANUP` that blocked every git write
+for 5d15h; a ledger set **ReadOnly** under its own `HARD_BREACH_STOP_APPEND`, making the breach it
+named unfixable; and a loop barred from the very rolls that were its cure. Audit fences for
+remedy-reachability, not just correctness.
+
+**3. A doc-size ratchet that is REPO-GLOBAL is vetoed by files nobody is committing.** Six
+git-ignored coordination dumps (210 KB–647 KB against a 150 KB cap) blocked *every commit on every
+path*. Worse, the hook printed `python3 not found; ratchet skipped` and CONTINUED — the breaches
+were invisible from inside the gate. **A control that fails OPEN is worse than one that fails red.**
+Run the ratchet by hand; its silence proves nothing.
+
+**4. A debt ratchet must honour source suppressions, and bucket identity must not embed source
+text.** Ours counted SARIF rows marked `suppressedInSource`, so a documented `#pragma` waiver was
+decorative and any new test tripping a waived rule was refused. And because a bucket key embedded
+the diagnostic message — which quotes the *construction's source text* — a collection-expression
+modernisation re-keyed the same rows as "new buckets". Fixing one rule broke the other: **there was
+no passing state.** Honouring suppressions dissolved both.
+
+**5. `dotnet format` IDE0072 "populate switch" INSERTS `throw new NotImplementedException()`** for
+enum members an intentional `_ =>` default already handled. It broke four tests silently. Exclude
+IDE0072 from any format run; give each arm the value its default produced.
+
+**6. Pin the ARCHIVE CHILDREN, not just the rolled parent.** `.gitattributes` pinned the ledger
+`-text` but never its `<ledger>/**` chunks, so a chunk drifted LF→CRLF (14,730→14,862 B, exactly one
+CR per line), breaking its manifest custody hash while `git status` reported the tree clean. Because
+the roller validates custody before it will even `--dry-run`, the file was already **unrollable** and
+nothing said so. **Audit custody of every rolled archive, not only the one you are about to touch** —
+doing so found a second ledger whose manifest predates the custody format and records no hashes at
+all, leaving 583,765 B of tracked, parent-linked chunks entirely uncustodied.
