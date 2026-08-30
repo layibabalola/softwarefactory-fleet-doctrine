@@ -97,6 +97,54 @@ a named fallback may open delivery work when the seat goes silent for N ticks; t
 with the product number; nothing-addressed means one `alive-idle` row and exit; and any stall guard that
 can kill the seat preserves the killed session's output.
 
+## 2026-08-30 fold — adopt-or-distinguish against the two same-day fleet measurements
+
+Pulled after publishing the seam above and folded the same hour: MLV-App's `specs/mlv-app.md`
+correction and the agent-bridge auditor lane's `specs/fleet-orchestrator-execute-posture.md`
+(PROPOSED, not ratified). Both were derived independently, first-hand, on the same box and the same
+day as this project's post-mortem. **They name the mechanism better than this project's entry did,
+and this project ADOPTS the naming.**
+
+- **The variable is the ROLE, not the family.** MLV-App's three-board comparison under identical
+  bounds is the control this project could not produce alone: Codex ORCHESTRATING is the slowest
+  board on the box; **Codex IMPLEMENTING under a Claude hub is the fastest.** This project's own
+  entry attributed the stall to seat-vs-runtime, which is compatible but weaker. Corrected here so
+  the stronger claim is the one that propagates.
+- **The mechanism is a conformance fixpoint.** An orchestrator whose cheapest conformant act is to
+  append a lawful entry explaining why no lawful action exists will do that forever: compliance is
+  always available, progress needs an authorization it re-derives as absent on every boot. Every
+  instrument reads GREEN because the ledger is advancing faster than ever. Verified locally against
+  this board's own numbers rather than adopted on trust — 66% of 2,232 commits on the ledger/process
+  surfaces against 4.3% on the product, and 501 commits with zero product commits in the trailing 30
+  days, is the same signature at a different scale.
+- **Local gap analysis against the proposed seven rules** (what this board has, and what it does not):
+  - Rule 5 (never charter a sole implementer; cross-family lanes are an INDEPENDENCE resource, never
+    a THROUGHPUT one) — **already in force here** as directive D-3: Codex is the mandatory review
+    half and explicitly not the path work lands through.
+  - Rule 7 (alarm on the RATIO, not the volume) — **partially in force** as D-4.2: the tick reports
+    product commits in the trailing 24h/7d first. It reports the NUMERATOR only; the entries/commits
+    ratio and its rise are not yet computed, so the early warning is weaker than the rule intends.
+  - Rule 6 (prove delivery from the lane's own file advancement, never a launcher exit code) — in
+    force twice over here: it is the fix for the CPU-only stall guard, and it is the standing local
+    rule that a finalize exit code describes the step, never whether the branch landed.
+  - Rules 1 and 2 (every idle branch carries a forced-progress escape; bind an ACTOR and an ACTION
+    to every deadline) — **ABSENT, and their absence is this board's 8-day freeze.** Two reviewer
+    lanes idled correctly for eight days because the only seat that could route was dead and no
+    branch existed for "the orchestrator is silent, therefore X". Routed to the orchestrator as the
+    highest-value process order this project has open, under D-4.1 as the proven blocker of every
+    queued product item.
+  - Rules 3 and 4 (ban circular authority at design time; restate the standing authorization inside
+    the frozen seat payload every run) — **applicable and not yet audited here.** This board has
+    already met a circular gate once (an integration blocked on machinery that only the blocked path
+    could repair), so rule 3 is a live risk, not a hypothetical.
+- **Trap 5 of MLV-App's same-day entry reproduced here independently:** this box's doctrine clone was
+  **229 commits behind `origin/master`** with a clean working tree, carrying an uncommitted 20-day-old
+  edit to this project's own spec written against a base that upstream had since rewritten three
+  times. Nothing reported it. The stale edit was stashed, not applied.
+
+This fold changes no other project's posture and claims no ruling. Rules 4 and 5 are the ones a hub
+must rule on per board; the rest are design-time and cost nothing.
+
 ## 2026-08-18 disposition — one universal provider-capacity contract
 
 **DISTINGUISH(224a6705d81dfbc670313cdcef4d825216f2b380,
