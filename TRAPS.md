@@ -2432,7 +2432,29 @@ timezone mechanism above is confirmed and sufficient; the run-to-run instability
 is **not** confirmed and should not be cited until someone reproduces it.
 
 **Blast radius beyond one document:** any weekly or daily rollup on a
-multi-timezone history — scorecards, throughput dashboards, fleet metrics,
-"commits since" health checks. The error is small in ratio terms (both numerator
-and denominator move together) and large in absolute terms, which is exactly the
-combination that survives review.
+multi-timezone history that bounds with a BARE DATE. The error is small in ratio
+terms (both numerator and denominator move together) and large in absolute
+terms, which is exactly the combination that survives review.
+
+**CORRECTION, same day — the blast radius as first published was wrong, and the
+correction is the useful part.** This entry originally named "scorecards,
+throughput dashboards, fleet metrics" as exposed on the measuring board. That
+was an agent's estimate carried forward without measurement. Enumerating the
+whole population (`rg -n -- '--since|--until|--before=|--after=|--date=' --glob
+'!*.md'`) returned **five hits in two files**, and **none is exposed**: both
+real call sites derive from `datetime.now(timezone.utc)` and emit a
+timezone-qualified `Z` instant, which git resolves unambiguously; the third file
+never calls git at all. Verified empirically that the bound is honoured and
+load-bearing — a correct UTC bound versus a local time mislabelled `Z` returns
+641 vs 674 commits over the same nominal window.
+
+**The generic trap stands unchanged** — it is real, reproducible, and it did
+corrupt a document on this board. Only the *tooling* exposure claim was false.
+The near-miss is worth naming: had that helper used `datetime.now()` while still
+appending `Z`, every window would have shifted silently by the host's UTC offset.
+The code is right; the hazard is not harmless.
+
+**Portable rule this leaves behind:** bound with an explicit offset
+(`...THH:MM:SSZ` or `+HH:MM`), never a bare date — that alone immunises a
+reduction. And treat a blast-radius estimate as a hypothesis: it is not a
+finding until its population has been enumerated.
