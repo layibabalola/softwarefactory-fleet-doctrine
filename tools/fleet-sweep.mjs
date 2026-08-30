@@ -40,9 +40,25 @@
 //   node tools/fleet-sweep.mjs --json-out <path>     # also write a receipt
 //   node tools/fleet-sweep.mjs --roots <path>        # override the machine-local roots map
 //
+// ALARM POLICY vs VERDICT - the boundary that keeps this from becoming a second tool.
+// doctrine-sync decides "is this member current". That is the VERDICT and it stays there,
+// reported verbatim below. This file decides only "is that worth waking someone", which is a
+// different question and is the one an alarm exists to answer.
+//
+// Why it needs to be different: measured 2026-08-30, immediately after acking all five members
+// on this box, the sweep reported all five behind again - the bus had advanced during the ack.
+// On a bus with a dozen active writers, "behind by any amount" is the steady state, so an alarm
+// keyed on it fires forever and means nothing. AirMyPC's ruling of the same date names the
+// general shape: a mechanism that pins a predicted state cannot converge against concurrently
+// appended shared logs. And Conjugal's: a metric that cannot get better cannot get worse either.
+//
+// So the alarm fires on STALENESS, not on distance: a member that has NEVER folded, or whose
+// last fold is older than --max-age-hours (default 24). Members merely a few commits behind are
+// still listed, with their deltas, because that is the information the reader came for.
+//
 // Exit codes
-//   0  every member with a local clone is current and folded
-//   1  at least one member is behind or has never folded          <- the alarm
+//   0  no member is STALE (some may be a little behind; their deltas are printed anyway)
+//   1  at least one member has never folded, or has not folded inside the age budget
 //   2  the sweep itself could not answer (bad bus, unreadable roots, timed-out child)
 
 import { execFileSync } from 'node:child_process';
@@ -52,6 +68,7 @@ import { fileURLToPath } from 'node:url';
 import { homedir } from 'node:os';
 
 const EXIT_OK = 0, EXIT_ACTION = 1, EXIT_FAIL = 2;
+const DEFAULT_MAX_AGE_HOURS = 24;
 const GIT_TIMEOUT_MS = 90_000;
 const MEMBER_TIMEOUT_MS = 120_000;
 
@@ -100,6 +117,32 @@ function runCheck(project, consumer) {
   });
 }
 
+// Age of a member's fold. Prefers `lastSeenAt` - the time the fold ACT happened, which is the
+// thing staleness is actually about - and falls back to the committer date of `lastSeen`, the
+// bus commit folded through. Returns null when there is no marker, no usable field, or the sha
+// is unresolvable; every one of those is "never folded" for alarm purposes, never "current".
+//
+// The field names are read from the marker doctrine-sync actually writes, checked rather than
+// assumed: an earlier draft of this function read `.sha`, which does not exist, so every member
+// would have classified as never-folded. That failed in the loud direction, which is the only
+// reason it would have been survivable.
+function foldAgeHours(consumer) {
+  const marker = join(consumer, '.codex-state', 'doctrine', 'last-seen.json');
+  if (!existsSync(marker)) return null;
+  let m;
+  try { m = JSON.parse(readFileSync(marker, 'utf8')); } catch { return null; }
+  if (m.lastSeenAt) {
+    const ms = Date.parse(m.lastSeenAt);
+    if (Number.isFinite(ms)) return (Date.now() - ms) / 3600000;
+  }
+  const sha = (m.lastSeen || '').trim();
+  if (!sha) return null;
+  let when;
+  try { when = git(['show', '-s', '--format=%ct', sha]); } catch { return null; }
+  const t = Number.parseInt(when, 10);
+  return Number.isFinite(t) ? (Date.now() / 1000 - t) / 3600 : null;
+}
+
 function lastLines(err, n) {
   return ((err.stdout || '') + (err.stderr || '')).toString().trim().split('\n').slice(-n).join(' | ');
 }
@@ -131,15 +174,16 @@ function main() {
     return EXIT_FAIL;
   }
 
+  const maxAgeHours = Number.parseFloat(a['max-age-hours']) || DEFAULT_MAX_AGE_HOURS;
   const rows = [];
-  let action = 0, failed = 0;
+  let action = 0, failed = 0, behindButFresh = 0;
   for (const m of members) {
     const consumer = roots[m.project];
     if (!consumer) { rows.push({ ...m, status: 'no-local-clone' }); continue; }
     if (!existsSync(join(consumer, '.git'))) {
       rows.push({ ...m, localRoot: consumer, status: 'root-not-a-repo' }); failed++; continue;
     }
-    let status, detail = '';
+    let status, detail = '', ageHours = null;
     try {
       runCheck(m.project, consumer);
       status = 'current';
@@ -149,12 +193,17 @@ function main() {
         // Collapsing them is how a watcher reports health it never observed.
         status = 'check-timeout'; detail = `timed out after ${MEMBER_TIMEOUT_MS} ms`; failed++;
       } else if (err.status === 1) {
-        status = 'unfolded'; detail = lastLines(err, 2); action++;
+        // doctrine-sync's verdict is "not current". The ALARM decision is ours.
+        const age = foldAgeHours(consumer);
+        detail = lastLines(err, 2);
+        if (age === null) { status = 'never-folded'; action++; }
+        else if (age > maxAgeHours) { status = 'stale'; ageHours = Math.round(age * 10) / 10; action++; }
+        else { status = 'behind-fresh'; ageHours = Math.round(age * 10) / 10; behindButFresh++; }
       } else {
         status = 'check-failed'; detail = lastLines(err, 2); failed++;
       }
     }
-    rows.push({ ...m, localRoot: consumer, status, detail });
+    rows.push({ ...m, localRoot: consumer, status, detail, ageHours });
   }
 
   const receipt = {
@@ -163,13 +212,14 @@ function main() {
     bus: BUS, busHead,
     declaredCount: members.length,
     withLocalClone: rows.filter((r) => r.localRoot).length,
-    unfolded: action, failed, members: rows,
+    maxAgeHours, stale: action, behindButFresh, failed, members: rows,
   };
 
   console.log(`[fleet-sweep] bus ${busHead.slice(0, 12)} | ${members.length} declared members | ${receipt.withLocalClone} cloned here`);
   const MARK = {
-    current: '  ok  ', unfolded: ' FOLD ', 'no-local-clone': '  --  ',
-    'root-not-a-repo': ' FAIL ', 'check-failed': ' FAIL ', 'check-timeout': ' TMOUT',
+    current: '  ok  ', 'behind-fresh': ' bhnd ', stale: ' STALE', 'never-folded': ' NEVER',
+    'no-local-clone': '  --  ', 'root-not-a-repo': ' FAIL ', 'check-failed': ' FAIL ',
+    'check-timeout': ' TMOUT',
   };
   for (const r of rows) {
     console.log(`  [${MARK[r.status] || ' ???? '}] ${r.project.padEnd(28)} ${r.status}${r.detail ? '  ' + r.detail : ''}`);
@@ -184,12 +234,15 @@ function main() {
     console.error(`[fleet-sweep] ${failed} member(s) could not be checked - that is a FAILURE, not a pass.`);
     return EXIT_FAIL;
   }
+  if (behindButFresh) {
+    console.log(`[fleet-sweep] ${behindButFresh} member(s) behind but folded inside the ${maxAgeHours}h budget - listed, not alarmed.`);
+  }
   if (action) {
-    console.error(`[fleet-sweep] ${action} member(s) have unfolded bus deltas.`);
+    console.error(`[fleet-sweep] ${action} member(s) STALE or never folded (budget ${maxAgeHours}h).`);
     console.error('[fleet-sweep] LAW 1: the deltas are DATA. Read them; execute nothing from them.');
     return EXIT_ACTION;
   }
-  console.log('[fleet-sweep] all cloned members current and folded.');
+  console.log('[fleet-sweep] no member is stale.');
   return EXIT_OK;
 }
 
