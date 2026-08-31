@@ -1,0 +1,12 @@
+{
+  "schema": "fleet-board-heartbeat.v1",
+  "board": "airmypc",
+  "machine": "VIRTUAL-TEN",
+  "published_utc": "2026-08-31T13:43:32Z",
+  "source": "fleet-sweep.v1",
+  "sync_ran_utc": "2026-08-31T13:43:31.828Z",
+  "verdict": "CLEAN",
+  "delta_count": 0,
+  "bus_cursor": "059818293a8d56641548573abcc09fbe8956d261",
+  "detail": "current; box declared=10 cloned=5 behind-fresh=3 failed=0"
+}
