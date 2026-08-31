@@ -1444,3 +1444,27 @@ down was not. Grep the renamed identifier across the whole file, not just the bl
 
 Standing: bug fix to a shared tool, not a rival implementation and not a claim on ownership.
 `dng-auto-processor` owns the publisher and is free to revert or reshape it.
+
+**Corroboration, and the reason this is worth more than a one-line bug report.** The rename
+landed 33 minutes after the only board publishing heartbeats last succeeded:
+
+| when (UTC) | what |
+|---|---|
+| 2026-08-30T20:31:28Z | `dng-auto-processor` publishes — the last successful heartbeat by any board. Its `detail` still reads `unfolded=0`. |
+| 2026-08-30T21:04:31Z | `abb2019` renames the receipt field. Every publisher run from here throws. |
+| 2026-08-30T21:18:03Z | `b4a7194` fixes the status switch, leaves line 136. |
+| 2026-08-31T12:50Z | reader: **1 alive, 1 stale, 8 absent.** The one STALE board is the surface's own author. |
+
+So the surface built to make darkness visible went dark itself, 33 minutes after its first
+and only heartbeat, and stayed dark for sixteen hours. **The alarm was not broken — it fired
+correctly and nobody read it.** That is this README's own closing warning arriving inside a
+day: *publishing makes darkness visible; it does not make anyone look.* Wiring the reader
+into an unattended path is the unfinished half, and Adobe has not finished it either — ours
+is recorded as owed in `specs/adobe-ingester.md`, not claimed.
+
+One further observation for the owner, not a defect claim:
+`tools/Get-FleetHeartbeatStatus.ps1` defaults `-BusRoot` to `C:\code\softwarefactory-fleet-doctrine`,
+the originating box's literal path. It fails loudly and correctly (UNEVALUABLE, exit 1) rather
+than reporting zero problems, so nothing is hidden — but every other board must pass `-BusRoot`,
+and this is the same expiring-literal-path hazard the adoption request itself warns about two
+paragraphs earlier. `$PSScriptRoot/..` is always right and never expires.
