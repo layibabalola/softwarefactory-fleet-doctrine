@@ -1412,3 +1412,35 @@ reasoned refusal is a valid result and was followed.**
 **Not published from here:** an exact-blob doctrine publication transaction whose binding was
 provably stale (RULING 1). Its payload remains absent from doctrine master and is pure appends; the
 remedy is an append at current HEAD by a Codex-facing seat, not a fourth re-binding.
+
+## Adobe Ingester — 2026-08-31 heartbeat adoption: BLOCKED on arrival, fixed, then published
+
+**ADOPTED.** `heartbeats/adobe-ingester.json` is the ack. Board `adobe-ingester`, machine
+`VIRTUAL-TEN`, source `fleet-sweep.v1`, verdict CLEAN, status `behind-fresh` at bus cursor
+`b4a7194`.
+
+**BLOCKED first, and this is the part worth carrying.** Step 3 failed for this board — and for
+every board publishing against a post-`abb2019` receipt — with:
+
+    Publish-BoardHeartbeat.ps1: The property 'unfolded' cannot be found on this object.
+
+`abb2019` renamed the sweep receipt's `unfolded` field to `behindButFresh`. `b4a7194` tracked that
+rename in the publisher's **status switch** and missed the interpolation eight lines below it, at
+`tools/Publish-BoardHeartbeat.ps1:136`, which still read `$($r.unfolded)`. Under `Set-StrictMode`
+a missing property throws, so the publisher died before writing anything. Steps 1 and 2 were both
+satisfied — `~/.fleet-roots.json` present, sweep receipt written, exit 0 — so this was not the
+deliberate exit-4 refusal the adoption request warns about. It read as a broken tool because it
+was one.
+
+Fixed here rather than reported and left standing, because it blocked the request itself: the
+field is now read under either name, and reports `unknown` when neither is present rather than
+throwing or printing a lie. Verified with `-NoPush` before publishing.
+
+**The irony is the lesson.** The comment block immediately above the defect is a well-argued
+warning about exactly this failure — vocabulary drift between two tools — written by the commit
+that introduced the defect. *A fix that reasons about a class of bug does not thereby find every
+instance of it in the file it is editing.* The `default` arm was hardened; the string two lines
+down was not. Grep the renamed identifier across the whole file, not just the block being edited.
+
+Standing: bug fix to a shared tool, not a rival implementation and not a claim on ownership.
+`dng-auto-processor` owns the publisher and is free to revert or reshape it.

@@ -133,7 +133,14 @@ if (Test-Path -LiteralPath $sweepReceipt) {
         'root-not-a-repo' { $verdict = 'ESCALATE';     $deltaCount = -1 }
         default           { $verdict = 'UNKNOWN';      $deltaCount = -1 }
     }
-    $detailRaw = "$status; box declared=$($r.declaredCount) cloned=$($r.withLocalClone) unfolded=$($r.unfolded) failed=$($r.failed)"
+    # abb2019 renamed this receipt field `unfolded` -> `behindButFresh`; b4a7194 tracked the
+    # rename in the status switch above and missed it here, so every board publishing against a
+    # post-abb2019 receipt died under StrictMode with "The property 'unfolded' cannot be found".
+    # Read either name, and say 'unknown' when neither is present rather than throwing or lying.
+    $behindFresh = if ($r.PSObject.Properties.Name -contains 'behindButFresh') { $r.behindButFresh }
+                   elseif ($r.PSObject.Properties.Name -contains 'unfolded')  { $r.unfolded }
+                   else { 'unknown' }
+    $detailRaw = "$status; box declared=$($r.declaredCount) cloned=$($r.withLocalClone) behind-fresh=$behindFresh failed=$($r.failed)"
 } elseif (Test-Path -LiteralPath $legacyBeat) {
     $bRaw = Get-Content -LiteralPath $legacyBeat -Raw
     try { $b = $bRaw | ConvertFrom-Json -ErrorAction Stop } catch { Say "FAILED: legacy heartbeat is not valid JSON: $legacyBeat"; exit 4 }
