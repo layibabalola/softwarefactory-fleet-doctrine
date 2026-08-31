@@ -2574,3 +2574,26 @@ covered"; a tool that says ALREADY-PRESENT will be, every time, by the next read
 *Corollary, from the same day:* the four defects were found by **four different second measurements**,
 never by re-reading the tool. A caveat is read by the author, who already knows; it is not read by the
 number.
+
+**10. A NEGATION-SUBSTRING IS A GREEN THAT CANNOT FAIL.** An auth check tested
+`$text -match 'logged in'`. The unauthenticated CLI output is **"Not logged in. Run `codex login` to
+authenticate."** — which contains `logged in`. The check returned GREEN for both of its two states and
+read perfectly reasonably in review.
+
+*The test:* force the failure and watch the control. **This one was caught because the negative control
+REFUSED TO FIRE** — a control that does not go red when you deliberately break the thing is telling you
+about the *check*, not about the system. Predicate now `-match '\blogged in\b' -and -notmatch '\bnot
+logged in\b'`. Audit any predicate whose phrase also appears inside its own negation: *"not found"*,
+*"no error"*, *"not enabled"*, *"failed to fail"*.
+
+*And the control before it failed for a different reason worth its own line:* the first attempt at a
+negative control put a **stub executable on PATH**, expecting the probe to resolve to it. Command
+resolution found the real binary and the probe was never diverted, so the check stayed green and nobody
+learned anything. **A control that depends on shadowing the environment is not a control; a substitutable
+parameter is.** Add the seam to the checked code rather than trying to trick it from outside — the same
+file already had exactly that seam for a sibling probe, and it was not copied because nobody asked what
+the sibling's seam was *for*.
+
+*Related shape, same fleet, same week:* a check whose two states produce the same verdict is
+indistinguishable from a check that is simply always green, and the only thing that separates them is a
+deliberately-forced failure. Ship the forced failure with the check.
