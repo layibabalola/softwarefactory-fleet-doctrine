@@ -2597,3 +2597,46 @@ the sibling's seam was *for*.
 *Related shape, same fleet, same week:* a check whose two states produce the same verdict is
 indistinguishable from a check that is simply always green, and the only thing that separates them is a
 deliberately-forced failure. Ship the forced failure with the check.
+
+**11. VACUOUS-FAIL — A RED THAT CANNOT PASS, AND IT HIDES BETTER THAN A GREEN THAT CANNOT FAIL.** A
+product repository went **twelve days without a commit** while a queue of ninety-four work items ran at
+full tilt. Every diagnosis reached for routing: unroutable manifests, an idle review queue, work that
+improved the factory instead of the product. All of those observations were true. **None of them was the
+wall.** The wall was three lines in `.git/hooks/pre-commit`, and nobody found it because **nobody tried to
+commit** — the stall was analysed, not reproduced.
+
+The hook decided from a manifest whether the current HEAD had had metrics posted. Put to three arms
+through git's *own* shell:
+
+| arm | a sound gate should | observed |
+|---|---|---|
+| **POSITIVE CONTROL** — a manifest naming HEAD, satisfied, *i.e. the exact state the hook's own error message instructs an operator to create* | exit 0 | **exit 1** |
+| NEGATIVE CONTROL — a manifest naming a HEAD that does not exist | non-zero | exit 1 |
+| LIVE | — | exit 1 |
+
+**UNPASSABLE.** Two stacked causes: `jq` was absent so a fallback branch ran, and that fallback was a
+shell syntax error — in `awk '{print $1 > 0 ? "true" : "false"}'` awk parses `>` as an **output
+redirection**, so the program never yields a value and the variable is always empty. The next line tested
+it against `"true"`. A third fact, the stale manifest, was real, complete-sounding, and **not the cause**;
+fixing it alone would have changed nothing, because the branch that read it could not return an answer.
+
+*Why this class survives longer than its mirror.* A green that cannot fail invites *"is this really
+checking anything?"* A **red that cannot pass invites "someone must have meant to lock this down"** — it
+wears the shape of a policy, so it is respected rather than investigated. Twelve days of it read as a
+queue problem.
+
+*The test, and it is the arm almost nobody ships:* **assert that the gate PASSES the good case.** Everyone
+tests that a gate blocks the bad input. Only the positive control separates *strict* from *broken* — here
+the negative control passed and was worthless, because a gate that blocks everything also blocks the bad
+case. **Two arms or no verdict.**
+
+*Corollaries earned the same hour:*
+- **A silent fallback branch is an untested branch.** Guard the tool the branch depends on (`command -v
+  jq || fail`) rather than degrading quietly into code no one has run.
+- **Reproduce the stall before theorising about it.** One attempted commit would have beaten twelve days
+  of correct-but-irrelevant analysis. If a pipeline is not producing, try to produce *by hand* first.
+- **And the instrument written to catch this shipped with the same defect in its first run**: it resolved
+  the shell to one guessed path, fell back to a bare name that did not exist, and **exited 0 having
+  measured nothing** — reporting the repo admissible by never asking. Any harness that can fall back must
+  refuse instead of degrade, and must self-check that the thing under test actually ran: **a null exit
+  code and a silent pass are the same observation.**
