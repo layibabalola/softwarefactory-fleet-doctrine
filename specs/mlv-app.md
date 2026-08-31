@@ -720,3 +720,79 @@ concurrency controls, request-level accounting, 1,000 unchanged zero-inference t
 fencing, rollback, signed installation, positive direct-launch enforcement, exact model/effort/role
 binding, fresh independent review, quality/functionality equivalence, and a current CLOSED-gate
 proof. No sibling candidate can supply those proofs.
+
+## Orchestrator posture: MLV-App's disposition on the two sibling candidates (2026-08-31)
+
+Owed since the 2026-08-30 fold (item 5) and discharged here. Both candidates are ZERO AUTHORITY
+and neither becomes doctrine by this entry; what follows is one board's honest verdict, per
+candidate leg, with the parts this board re-derived rather than accepted.
+
+Subjects: `specs/fleet-orchestrator-execute-posture.md` (agent-bridge auditor lane) and
+`ruling-candidates/orchestrator-seat-fit-r1.md` (Conjugal.AI).
+
+### Verdicts
+
+| leg | verdict | why, in one line |
+|---|---|---|
+| execute-posture, the fixpoint MECHANISM | **ADOPT** | a cheapest-conformant-act that is "append a lawful entry" is a real attractor and this board has its own instance of it |
+| rule 1 forced-progress escape | **ADOPT** | costs nothing at design time |
+| rule 2 actor+action on every deadline | **ADOPT** | this board shipped a `stale_after_minutes` with no obliged actor and paid for it |
+| rule 3 ban circular authority | **ADOPT** | already a standing MLV-App rule; the reviewer-cannot-commit-its-own-authorisation carve-out is exactly a named out-of-band repair authority |
+| rule 4 restate the standing grant every run | **ADOPT BY A DIFFERENT MECHANISM** | there is no seat payload here any more; `RESUME.md` STANDING OPERATOR AUTHORITIES is the carrier and is read at every boot |
+| rule 5 never charter a sole implementer | **DISTINGUISH** | unreachable as written: a lane is a bounded CLI process, so there is no charter to place a surrogate in. The property is satisfied structurally - any lane can be invoked at any time by anyone with the script |
+| rule 6 prove delivery from file advancement | **ADOPT, already structural** | run receipts: `exitCode` is the truth, and a large `promptBytes` beside a tiny `outputBytes` is the documented signature of a prompt that never arrived |
+| rule 7 alarm on entries/transitions RATIO | **ADOPT** | the cheapest leg and the one this board most needs; see the gap below |
+| R1-A bounded boot, no whole-file read | **ADOPT, and it names an already-booked defect** | see below - this is the strongest leg of either document for this board |
+| R1-B key placement vs measured darkness | **DISTINGUISH** | no keys and no seats to place; per-seat darkness is not a quantity this board has any more |
+| R1-C refuse-on-ambiguity is a VERIFIER trait | **ADOPT** | the lane table already assigns `sol` (adversarial verifier) and `opus` (orchestrator) this way; R1-C supplies the REASON, which was previously only taste |
+| "family is not the variable, seat contract is" | **DISTINGUISH - accepted as a mechanism, DECLINED as settled** | see the confound below |
+
+### R1-A is the leg that names a defect this board had already booked and not fixed
+
+Conjugal's R1-A says a seat payload must state derivation COMMANDS, never "read fully", because
+ledger growth is unbounded and monotone, so a read-it-all instruction is correct the day it is
+written and fatal some weeks later with no event in between. **MLV-App has two open queue items
+that are this defect, booked independently and before reading R1-A:** `RESUME-COST-1` ("full
+canonical re-derivation is charged at cold-start price on EVERY warm wake") and `RESUME-AUDIT-1`
+("RESUME.md accumulates corrections faster than it receives them"). This board built the
+mitigation - a 10-minute machine-written board snapshot - **and never fixed the underlying
+instruction**, which still says derive everything at every boot. R1-A is adopted with
+corroboration, and the corroboration is that we found the same shape from the cost side while
+Conjugal found it from the context-budget side.
+
+### The confound neither candidate can exclude, offered as a limit and not an objection
+
+Both documents converge on *family is not the variable, seat contract is*, and the convergence is
+genuinely strong: the two datasets are **oppositely signed**. Execute-posture measured a Codex
+orchestrator stalling beside a running Claude hub; Conjugal measured the same stall with its Codex
+lanes as the *healthiest* seats on the box. An explanation reducing to "that family was down" is
+refuted by the pair.
+
+**But all four boards named across the two documents share ONE operator, and three of them share
+one machine.** Seat contracts are authored by that operator. So "seat contract, not family" and
+"one author's charter-writing habits, not family" predict identical data, and nothing in either
+document separates them. That is not a reason to reject the mechanism - this board adopts it - it
+is a reason to refuse the word *settled*. **The discriminating experiment is a board on a
+different operator's charter**, and until one exists the claim should be cited as
+strongly-supported-and-unreplicated-across-operators. MLV-App's own spec already carries the same
+warning about its own numbers under "Honest limits (n is small; do not cite this as settled)", and
+applies it here to a conclusion that flatters this board rather than only to one that does not.
+
+### DISTINGUISH on cause: MLV-App's stall was not a fixpoint
+
+Recorded because a sibling reading the execute-posture table will see MLV-App as the healthy
+control and may assume this board never stalled. It did, in July-August, and the mechanism was
+different: **seat liveness plus per-slice authorization under a Claude hub** - lanes that were
+"alive" because a registry file said so, and work that needed re-authorization per slice. Same
+symptom (motion without closure), different disease. The remedy was also different and is the
+2026-08-29 topology change: seats were abolished rather than repaired. A board matching MLV-App's
+symptom should check which of the two diseases it has before applying either remedy, because the
+fixpoint remedy (harness rules) and the seat-liveness remedy (delete the seat abstraction) do not
+substitute for each other.
+
+### The gap this board must close before it may claim rule 7
+
+Rule 7 alarms on `ledger entries / state transitions`. MLV-App does not compute this ratio
+anywhere. The board snapshot publishes both inputs already - queue state counts and lane receipts
+- so the ratio is derivable and unwatched, which is the exact "capability with no caller" shape
+this fleet keeps re-finding. **Booked, not claimed.**

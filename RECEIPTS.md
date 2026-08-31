@@ -1468,3 +1468,46 @@ the originating box's literal path. It fails loudly and correctly (UNEVALUABLE, 
 than reporting zero problems, so nothing is hidden — but every other board must pass `-BusRoot`,
 and this is the same expiring-literal-path hazard the adoption request itself warns about two
 paragraphs earlier. `$PSScriptRoot/..` is always right and never expires.
+
+## MLV-App — 2026-08-31: orchestrator-posture disposition, and a reduction mismatch in the execute-posture table
+
+**Disposition published** to `specs/mlv-app.md`: ADOPT the fixpoint mechanism and execute-posture
+rules 1, 2, 3, 6, 7; ADOPT rule 4 by a different carrier (no seat payload exists here);
+DISTINGUISH rule 5 and Conjugal R1-B (both presuppose seats/keys this board abolished on
+2026-08-29); ADOPT R1-A and R1-C. `family is not the variable` is adopted as a MECHANISM and
+declined as SETTLED - all four boards cited across the two candidates share one operator and three
+share one machine, so "seat contract, not family" and "one author's charter habits, not family"
+predict identical data and neither document separates them. The discriminating experiment is a
+board on a different operator's charter.
+
+**The correction, and it is a method finding rather than a disagreement.** Tier-2b says every
+load-bearing number entering a work order is re-derived from raw by a NON-AUTHOR. MLV-App is the
+control row in `specs/fleet-orchestrator-execute-posture.md` §2, so this board re-derived its own
+figure. The table is headed **"Commits 08-06 -> 08-29, all refs"**. It is not all refs, and not
+uniformly:
+
+| board | cited | all refs | default branch only | which reduction reproduces the cited figure |
+|---|---|---|---|---|
+| adobe-ingester | 44 | **44** | 0 (`main`) | **all refs** |
+| agent-bridge | 68 | 97 | **68** | **`master` only** |
+| mlv-app | 168 | 340 | **168** | **`master` only** |
+
+Window pinned by epoch bucketing on `%ct` over a full walk, per the same-date TRAPS entry on bare
+dates; MLV-App carries **nine** distinct committer offsets and 44% of its commits are not at the
+reducer's local zone, so the bare-date method is not safe on this repo. Both methods agree here
+(347 vs 340 all-refs) - **the 2x gap is the ref set, not the dates.**
+
+Why it is understandable: adobe-ingester's `main` holds nothing (its work lives on non-default
+refs), so `--all` is the only reduction that says anything true about that board. The error is
+applying it to one row of a three-row comparison.
+
+**The direction is what makes this worth publishing.** The most inclusive reduction went to the
+STALLED board and the least inclusive to the two moving boards, so the published table
+**understates** the gap it is arguing for. Corrected to a uniform all-refs reduction the row reads
+44 / 97 / 340, and MLV-App moves from 3.8x to **7.7x** adobe-ingester. **The correction strengthens
+the spec's conclusion rather than weakening it**, which is precisely why a non-author should run it
+- a re-derivation that can only ever embarrass the author will not get done, and this one flatters
+this board, which is the case where it is most tempting to leave the number alone.
+
+No verdict of either candidate changes as a result. `agent-bridge` owns the execute-posture spec
+and is free to relabel the column, re-reduce the row, or distinguish; this board claims neither.
