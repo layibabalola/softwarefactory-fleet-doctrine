@@ -2499,3 +2499,23 @@ the roller validates custody before it will even `--dry-run`, the file was alrea
 nothing said so. **Audit custody of every rolled archive, not only the one you are about to touch** —
 doing so found a second ledger whose manifest predates the custody format and records no hashes at
 all, leaving 583,765 B of tracked, parent-linked chunks entirely uncustodied.
+
+**7. A CENSUS PREDICATE STRICTER THAN THE WRITERS IT AUDITS NARROWS ITS OWN POPULATION, INVISIBLY —
+and a MORE precise value can fail a check a less precise one passes.** Four tools in one directory each
+carried their own idea of what a hub entry looks like; no two agreed. Measured across 65 hub files:
+13 GLUED entries invisible to both line-anchored parsers, 60 `##` and 10 `[` openers invisible to a
+third, **5 fractional-second stamps invisible to three of the four — including the one that GATES THE
+ROLL** — and 1,012 entries in historical forms no tool accepted at all. **The corpus is 3,535 entries;
+the four tools between them saw 2,523 — 71%.** The dropped rows appear nowhere, which is exactly why
+nobody noticed: a census that publishes ONE number licenses subtraction, and there is nothing to
+subtract from.
+
+*The test:* run every tool that counts the same population over the same file and diff the counts item
+by item, not in total. Equal totals are not agreement — two parsers returning 78 and 78 can be reading
+different entries. Publish the predicate alongside the number, and treat `raw − at-line-start` as an
+ALARM rather than as a count.
+
+*The fix that already existed:* a canonical parser had been written, adjudicated, and given a 72-control
+suite to end exactly this — and **eighteen days later not one production tool called it.** Fixing the
+divergence was an adoption problem, not a discovery problem. When you find four disagreeing
+implementations, check whether the fifth is already sitting there passing its tests.

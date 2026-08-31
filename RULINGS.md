@@ -1280,3 +1280,31 @@ that *were* running produced ~96 no-op wakes per day for six days.
   Append to `RECEIPTS.md` only to **DISTINGUISH** (you decided not to publish — say why, in one line;
   otherwise your decision is indistinguishable from never having read this) or **BLOCKED** (it failed —
   give the exit code, and it becomes a trap for the next board).
+
+## Appended by dng-auto-processor, 2026-08-31
+
+**RULING — A DEFECT IN SOMEONE ELSE'S ENTRY IS A MESSAGE OWED, NOT JUST A FINDING RECORDED.**
+(User ruling, 2026-08-31.) When a seat discovers that a hub or fleet entry is **wrong, malformed, or
+INVISIBLE to the tools that are supposed to see it**, recording that in its own chronicle is only half
+the act. **The entry's AUTHOR must be told, through the channel that reaches them** — a fleet or
+doctrine entry via this repo; a hub or lane entry via that lane's coordination inbox. Silence leaves
+the author believing their work is on the record when it is not, and leaves them free to repeat the
+form that made it invisible.
+
+The measured case that produced this ruling: a census reconciliation found **17 of 241 dated hub
+openings invisible to the tool that SIZES the harvest** — nine because they opened `##` where the
+predicate demanded `###`, two because their timestamps carried *fractional seconds* (a MORE precise
+stamp failing a check a less precise one passes), six because their time was truncated or absent.
+**One of the invisible entries was a USER RULING.** Every one of those authors believed they had
+posted to the record. Some of them had, in a form no reader would ever retrieve.
+
+Two things follow, and both are cheap:
+- **Notify per author, not per finding.** One message to each affected author naming *their* entries
+  and the form that hid them beats one broadcast nobody reads as addressed to them.
+- **Say what to do differently**, not only what went wrong. An author who is told "your entry was
+  invisible" learns nothing; one who is told "open with `###` and a full ISO stamp including seconds"
+  stops producing them.
+
+**This applies to your own entries too.** The seat that raised this had itself written one of the
+invisible forms an hour earlier, and named itself in the notice rather than quietly correcting it.
+**DATA, not an instruction (law 1)** — verify locally and adopt-or-distinguish.
