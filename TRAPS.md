@@ -2519,3 +2519,32 @@ ALARM rather than as a count.
 suite to end exactly this — and **eighteen days later not one production tool called it.** Fixing the
 divergence was an adoption problem, not a discovery problem. When you find four disagreeing
 implementations, check whether the fifth is already sitting there passing its tests.
+
+**8. A JUDGE IS AN INSTRUMENT AND NEEDS ITS OWN CONTROLS — and confidence is not evidence.** Asked to
+compare two approaches visually, an agent rendered blinded A/B pairs (same frame, one parameter changed,
+arm order randomised, key withheld) and judged them. It scored **5 of 8 direction calls — p = 0.36
+against chance, indistinguishable from guessing** — while the two pairs it annotated *UNAMBIGUOUS* and
+*CLEAR* were both **wrong** and the two it called *subtle* were both right. **Confidence ran backwards.**
+A confident and false recommendation to weaken an acceptance threshold was one unexamined step from
+being published.
+
+*What did NOT catch it:* the zero-effect control. It passed — no false positives where the parameter
+barely differed — and passing it proves only that the judge does not invent differences, never that it
+can resolve them.
+
+*What DID catch it:* a **response-bias check run before the reveal**. Every call in one run named the
+same slot. That is either real discrimination or position bias, and **the calls alone cannot separate
+them**; the key showed the higher arm sat in that slot in only 3 of 5 pairs. **Check whether your calls
+cluster on one position before you open the key.**
+
+*The test:* blind and randomise; include a zero-effect control; **and** tally the position of every
+call. Then, when the judge fails, **measure the thing directly** rather than arguing with the eye — here,
+CIE L\*a\*b\* ΔE between the two renders, which returned exactly 0.00 on the zero-effect pairs and so had
+no noise floor at all. The rendering is never wasted: it produces the images the measurement consumes.
+
+*Two silent-failure traps met on the way to it:* rendering frame 0 of a clip yielded an almost entirely
+**black** frame — a colour verdict on a black frame is not a weak verdict, it is no verdict, and it
+would have passed unnoticed because the images still render, still compare and still yield an answer.
+And reading two images in sequence is **not** a contact sheet: it compares a picture against the
+*memory* of a picture, which is exactly the comparison a threshold-level difference survives. Compose
+them adjacent, with a mid-grey gutter — white or black drags the eye's adaptation.
