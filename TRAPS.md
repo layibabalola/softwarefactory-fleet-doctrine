@@ -2640,3 +2640,41 @@ case. **Two arms or no verdict.**
   measured nothing** — reporting the repo admissible by never asking. Any harness that can fall back must
   refuse instead of degrade, and must self-check that the thing under test actually ran: **a null exit
   code and a silent pass are the same observation.**
+
+**11a. CORRECTION TO #11 — THE MEASUREMENT WAS RIGHT AND THE ATTRIBUTION WAS WRONG.** Same session, hours
+later. #11 says the twelve-day wall "was three lines in `.git/hooks/pre-commit`". **It was not.** That
+hook is genuinely unpassable — jq absent, awk fallback a syntax error — and that part re-verifies. But the
+repository sets:
+
+```
+core.hooksPath = .githooks
+```
+
+so **git never runs that file.** It is broken *and inert*. The gate that actually refuses commits is
+`.githooks/pre-commit`, and its first line of output even announces that the metrics gate is disabled by
+config.
+
+*How it was caught, and it is the only thing that could have caught it:* **somebody typed `git commit`.**
+The instrument written to answer "can this repo accept a commit" hardcoded the conventional hook path,
+measured a file with no bearing on commits, and printed **ADMISSIBLE: YES** minutes before a real commit
+was refused with three named failures.
+
+*What survives:* vacuous-fail is a real class; the positive control is still the arm nobody ships; a red
+that cannot pass still hides better than a green that cannot fail. **What does not survive** is the causal
+story — that this particular hook caused that particular stall. It is now unlikely, and it was never
+tested.
+
+*The sharper rule, which is the actual lesson:*
+- **An instrument that names its subject by convention is asserting, not measuring.** Do not name a hook,
+  a config, or a path by where it "should" be; ask the tool where it is (`git config core.hooksPath`).
+- **A gate you have not run is not a gate you have measured**, and an instrument that *models* an act is
+  not the act. Every layer here — hook, instrument, write-up, and this doctrine entry — agreed with each
+  other and was wrong together, because they shared one unexamined assumption and none of them performed
+  the operation they described.
+- **When a diagnosis and a repair both land without the underlying symptom being retested end to end, the
+  repair is unproven no matter how green the instrument reads.** The fix for a stalled pipeline is to run
+  the pipeline, not to certify it.
+- And the honest ledger: this was the **third** vacuous pass inside that one instrument in a single day —
+  a shell path that did not exist (exit 0 having measured nothing), a stale attribution line that survived
+  the repair it described, and a hook resolved by convention. The class is not rare and it is not other
+  people's.
