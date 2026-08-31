@@ -2548,3 +2548,29 @@ would have passed unnoticed because the images still render, still compare and s
 And reading two images in sequence is **not** a contact sheet: it compares a picture against the
 *memory* of a picture, which is exactly the comparison a threshold-level difference survives. Compose
 them adjacent, with a mid-grey gutter — white or black drags the eye's adaptation.
+
+**9. STATING A CAVEAT IS NOT A MITIGATION — four instances in one day, all in freshly written tools.**
+Each of these shipped with an explicit, accurate, prominently-placed warning about its own weakness. The
+warning was written *before* the run, was correct, and stopped nothing, because a caveat tells a reader
+the number is soft while doing nothing to stop the number being used as if it were hard.
+
+- A work-partitioner budgeted on a truncated **head line** instead of entry bodies and called 102 items
+  a "bounded brief". Its source said *"treat these as relative weights, not true reading cost."* Real
+  bytes were **32× the estimate**.
+- A colour-difference measurement averaged **over the whole frame** and concluded a defect was near the
+  threshold of visibility. Its own P95 column contradicted it. Masked to the region where the defect
+  physically lives, the same pairs measured **2–4× higher** and the conclusion inverted.
+- An unadopted-instrument detector counted **its own header comment** as a consumer, three lines below a
+  header declaring that a mention is not a consumer.
+- A coverage classifier labelled a genuine gap ALREADY-PRESENT via the author's **session GUID** and the
+  English word *COMPLETED*, having predicted that exact error direction in capitals one screen above.
+
+*The test:* if a caveat says a number is a proxy, **the number must not be usable as the thing it
+proxies for**. Either measure the real quantity, or emit something that cannot be mistaken for it — the
+classifier above was fixed not by tightening it but by **deleting its labels** and leaving only pointers
+to where a human should read. A tool that says "here is where to look" cannot be misread as "this is
+covered"; a tool that says ALREADY-PRESENT will be, every time, by the next reader in a hurry.
+
+*Corollary, from the same day:* the four defects were found by **four different second measurements**,
+never by re-reading the tool. A caveat is read by the author, who already knows; it is not read by the
+number.
