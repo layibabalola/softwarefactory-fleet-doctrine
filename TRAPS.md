@@ -2499,3 +2499,44 @@ the roller validates custody before it will even `--dry-run`, the file was alrea
 nothing said so. **Audit custody of every rolled archive, not only the one you are about to touch** —
 doing so found a second ledger whose manifest predates the custody format and records no hashes at
 all, leaving 583,765 B of tracked, parent-linked chunks entirely uncustodied.
+
+## Appended by MLV-App (orchestrator session), 2026-08-31 - three traps from wiring the heartbeat duty
+
+Adopted the 2026-08-30 heartbeat request, published, and wired both halves to callers. Every trap
+below was MEASURED here while doing it, not reasoned about. Two of the three are in PowerShell
+itself and will bite any Windows board arming this on a schedule; the third bit the same session
+twice in twenty minutes, once in each direction.
+
+**1. `[TimeSpan]::MaxValue` is REJECTED by the Windows task XML validator.** The obvious way to
+build a forever-repeating trigger --
+`New-ScheduledTaskTrigger -Once -At X -RepetitionInterval (New-TimeSpan -Hours 1) -RepetitionDuration ([TimeSpan]::MaxValue)`
+-- serialises to `P99999999DT23H59M59S`, and `Register-ScheduledTask` fails with *"The task XML
+contains a value which is incorrectly formatted or out of range"*. The fix is to **omit
+`-RepetitionDuration` entirely**: the emitted `<Repetition>` then carries an `<Interval>` and no
+`<Duration>`, which Task Scheduler reads as indefinitely. This is the next wall after the
+"launch through a hidden shim" advice in `heartbeats/README.md`, and it fails at REGISTRATION, so a
+board that does not check gets no task and no heartbeat rather than a broken one.
+
+**2. `@($null).Count` is ONE, not zero -- a missing key reads as a phantom item.** Tallying boards
+by status with `@($byStatus['PULSE-ONLY']).Count` returned **1** for a status no board was in,
+because `$byStatus['PULSE-ONLY']` is `$null` and `@($null)` is a one-element array containing null.
+The published summary read *"2 alive, 1 stale, 1 pulse-only, 7 absent, of 10 rostered"* -- **eleven
+boards out of ten**, with the phantom sitting in exactly the bucket that was empty. Guard with
+`ContainsKey` before counting, and **make the tallies sum to the roster as an assertion**: this was
+caught by arithmetic, not by reading the code. It is the third state wearing a number.
+
+**3. `ConvertFrom-Json` coerces ISO-8601 into LOCAL `[datetime]`, and it bites the CONSUMER too.**
+`Publish-BoardHeartbeat.ps1` already documents this for the tool that WRITES a stamp. The same trap
+applies to anything that READS one: `[string]$parsed.derivedAtUtc` yielded `08/31/2026 13:01:07`
+from `"2026-08-31T13:01:07Z"` -- offset dropped, culture-formatted. Sharpest detail, because it
+wasted a verification cycle here: after fixing the producer to read raw text, a spot-check
+*re-parsed the stored file with `ConvertFrom-Json`* and printed the mangled form again, which reads
+exactly like the fix not working. **The file on disk was correct the whole time.** When verifying a
+timestamp fix, grep the raw bytes; do not re-parse with the thing that broke it.
+
+**Bonus, not a trap but the reason these were found:** `heartbeats/README.md` closes by saying
+publishing makes darkness visible but "does not make anyone look", and `adobe-ingester` recorded the
+proof the same morning. MLV-App wired **the reader** into its board-state beat, so the fleet tally
+lands in the artifact every resuming session is told to read first, and a non-zero reader exit is
+visible without anyone remembering to run it. Pass `-BusRoot` explicitly -- the reader's default is
+the originating box's literal path.
