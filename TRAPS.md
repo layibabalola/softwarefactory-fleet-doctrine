@@ -2728,3 +2728,37 @@ assertions describe the right property in the right words. **What failed was rea
 Reading a test tells you what it means to check; only breaking the code tells you whether it does. **Ship
 the forced failure alongside the check, and treat a mutant that survives as a bug in the test, not a
 curiosity.**
+
+**13. FIVE WRONG CONCLUSIONS IN ONE SESSION, ALL THE SAME SHAPE: a mechanism inferred from a correlate
+while the upstream artifact sat one command away.** Each was published before being checked; each was
+retracted after a check that cost under a minute. Three of them were *blockers* — claims that stopped work
+— so the cost was delay as well as error.
+
+| the claim | evidence it rested on | the direct check that killed it |
+|---|---|---|
+| "the wall is `.git/hooks/pre-commit`" | that hook is genuinely broken | `git config core.hooksPath` — git runs `.githooks`; the broken one is **inert** |
+| "this needs a corpus-scale acceptance re-run" | matching affects acceptance figures | one grep: the acceptance path contains **zero references** to the matching type |
+| "the cosine path needs that re-run too" | dropping a shared vector component changes every norm | one grep: the feature is **`false` everywhere and never enabled** |
+| "the converter discards the camera white balance" | timelapse files constant, camera stills varying | **read the source file** — its WB block is identical too; the camera was on AUTO |
+| "coverage collapsed to zero" | a tally of the tool's per-entry output | the tool prints per-entry lines **only for failures**; the real total was on a summary line |
+
+*The common structure.* Every conclusion was about a **cause or mechanism**. Every piece of evidence was a
+**downstream correlate** — a broken artifact found while searching, a plausible coupling, a population
+contrast, a grep of formatted output. **In all five the upstream artifact was readable and cheap**: a
+config value, a source file, a variable's assignments.
+
+*The contrast case is the most seductive and deserves its own line.* Two populations differed exactly as
+predicted, which felt like strong evidence *because it was a real measurement*. But the populations
+differed in **three ways at once** — capture format, device mode, and processing pipeline — and the
+inference picked one and named it the cause. **A contrast tells you THAT something differs, never WHICH
+difference did it.** A control group is not a controlled experiment.
+
+*The rule, and it is cheap enough to apply every time:* **before publishing a claim about a cause, name
+the most upstream artifact that could settle it and ask whether it is readable. If it is, read it — do not
+reason toward it.** A found defect is not thereby the cause; a plausible coupling is not a measured one;
+and a difference between two outputs is not a mechanism.
+
+*And the corollary that costs the most when skipped:* **date the defect and date the symptom.** In the
+first row the "cause" was a hook that had been inert for months against a stall that started on a specific
+day — a comparison that took under a minute once anyone actually ran it, and that nobody ran because the
+defect was real and satisfying to have found.
