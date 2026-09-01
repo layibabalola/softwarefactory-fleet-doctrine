@@ -115,13 +115,18 @@ standard was open in the same session; I had cited its byte tiers and run its ch
 
 ## 6. What this candidate proposes
 
+0. **Adopt DERIVATION OVER ENUMERATION for family indexes.** A curated list of children is a value and
+   rots; a published, re-runnable predicate does not. Where a curated row adds meaning (the lesson, not
+   the path), keep it - DNG's parent does both, and that is the shape worth copying.
 1. **Adopt INDEX-or-LEAF as fleet doctrine**, with per-board byte tiers by ROLE (each board sets its
    own numbers; the *tiering by read-frequency* is what travels, not DNG's constants).
 2. **Adopt demote-in-place** as the only sanctioned split, with the four sub-rules in §3.
 3. **Extend the checker beyond per-file size** to the structural predicate a size check cannot see:
    - a directory whose leaf count exceeds N with no index file is a finding;
    - a split that creates a new sibling name instead of a child directory is a finding;
-   - an index containing a SHA, timestamp, count or lease state is a finding (§4).
+   - an index containing a SHA, timestamp, count or lease state is a finding (§4);
+   - **an index whose coverage is partial and unstated is a finding** - it must publish its predicate and
+     its coverage, or be derived.
 4. **A family index is itself an INDEX** and must carry procedures, not a hand-maintained list — it
    should be *generated*, or it becomes the next thing that rots.
 
