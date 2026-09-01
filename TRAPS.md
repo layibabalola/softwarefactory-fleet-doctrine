@@ -2678,3 +2678,53 @@ tested.
   a shell path that did not exist (exit 0 having measured nothing), a stale attribution line that survived
   the repair it described, and a hook resolved by convention. The class is not rare and it is not other
   people's.
+
+**12. NINE WAYS A GREEN TEST WAS WORTHLESS — a taxonomy, all nine measured in one session.** Every one was
+found by running a deliberate mutant, never by reading the test. Ordered by how convincing the test looked
+beforehand.
+
+**A. The mutation landed in a comment.** A doc-comment quoted the old defective code verbatim, the
+mutation anchor matched *that* copy first, and the "mutant" changed nothing. *Anchor mutations on code
+indentation and assert the anchor is unique.* Twice in one day — a tooling audit also counted its own
+header comment as a consumer of the thing it was auditing.
+
+**B. The test never reached the code it names.** `CosineSimilarity` opens `if (va.Count < 4) return
+SimilarityTo(other)`, and the fixtures populated three dimensions — so every "cosine" assertion fell
+through to a *different function* and passed under all three mutants. *A test that cannot reach its
+subject is not a weak test, it is no test.* Add a guard assertion that the path was actually taken.
+
+**C. The control's two arms were numerically identical.** The "measured" arm used the same value as the
+"unmeasured" stand-in, so including or omitting the disputed term changed nothing. *A control whose arms
+produce the same number cannot detect anything.*
+
+**D. The assertion discriminated on a separator, not a value.** Comparing a null field against a populated
+one, the keys differed only by the `|` delimiter — so blanking the field's *value* stayed green. The test
+could not tell *contributes its value* from *contributes its presence*. *Compare two different populated
+values, never populated-vs-absent.*
+
+**E. The fixture zeroed the term under test.** Tests used a non-existent path to keep a hash a pure
+function — which also meant the file-mtime term contributed a literal 0 and deleting it was invisible.
+*The property that makes a fixture deterministic is often the one that blinds it.*
+
+**F. The control fed input production cannot produce.** An over-fix control injected synthetic JSON with
+the key present. The real tag could never match anything, so the field was permanently null in production
+while the control passed. *Controls must use inputs the production path can actually emit.*
+
+**G. Only one of several identical code sites was covered.** Two call sites, one test; deleting the second
+stayed green. *Two sites and one test is a coverage hole that reads as coverage.*
+
+**H. The instrument had its own vacuous pass.** A checker resolved a shell to a name that did not exist,
+every invocation errored, and it still ran to completion and reported the healthy verdict — *by failing to
+ask*. It also named its subject by convention and measured a file the system never executes. *An
+instrument that can fall back must refuse, not degrade; a null result and a pass are the same observation.*
+
+**I. The cleanup failed and nobody checked.** A mutant harness died on a transient file lock, its
+`finally` restore died too, and it left the mutant on disk. Caught only because the next step happened to
+read the file. *A failed restore is worse than a failed mutant.* Write with retry, verify the bytes
+landed, and print that verification.
+
+*The through-line:* every one of these tests was written by someone who understood the defect — the
+assertions describe the right property in the right words. **What failed was reachability, not intent.**
+Reading a test tells you what it means to check; only breaking the code tells you whether it does. **Ship
+the forced failure alongside the check, and treat a mutant that survives as a bug in the test, not a
+curiosity.**
