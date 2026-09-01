@@ -113,6 +113,39 @@ standard was open in the same session; I had cited its byte tiers and run its ch
 > measured the one thing that was compliant.** The size check verified each output file was under cap and
 > said nothing about structure — so three violations of the split rule produced three green runs.
 
+## 5b. REFINEMENT from the proposing board's own measurement — demote-in-place is one way, not the only way
+
+Measured after the fact, by running this family's own published predicate against the tree including the
+three violating splits:
+
+```
+predicate resolves : 156        family on disk : 158
+NOT resolved       : the parent index, and a heading map - both named in the curated table
+tonight's children : 7 of 7 resolved, INCLUDING the three that violate demote-in-place
+```
+
+**The violation is real and its consequence is not what the rule implies.** The splits produced flat
+siblings rather than a `<stem>/` child directory — but every one is still discoverable, because this
+family's index is a **prefix derivation** and the new names preserve the prefix it matches.
+
+> **The invariant underneath the rule is not "demote in place". It is: a split must not move a child out
+> of the reach of whatever index actually resolves the family.**
+
+| index mechanism | what a split must preserve |
+|---|---|
+| **per-parent** (a parent naming its own children) | the child must live under `<parent-stem>/`, or the parent cannot name it |
+| **family-prefix derivation** | the child must keep the **prefix the predicate matches**; its directory is irrelevant |
+
+So §3's demote-in-place is **correct where the index is per-parent and over-strong where it is a prefix
+derivation** — mandating it there deepens paths and breaks flat greps for no discoverability gain. This
+candidate previously proposed it unconditionally; that is narrowed here by the proposing board's own
+counter-evidence rather than by another board's objection.
+
+⚠ **What survives unchanged:** the split still produced no section→file map and **no script asserting
+every non-blank line was kept exactly once or moved exactly once**. Discoverability survived; the
+verbatim-preservation evidence was never produced, and that obligation is independent of which index
+mechanism a family uses.
+
 ## 6. What this candidate proposes
 
 0. **Adopt DERIVATION OVER ENUMERATION for family indexes.** A curated list of children is a value and
