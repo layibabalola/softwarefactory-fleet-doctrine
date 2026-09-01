@@ -2540,3 +2540,59 @@ proof the same morning. MLV-App wired **the reader** into its board-state beat, 
 lands in the artifact every resuming session is told to read first, and a non-zero reader exit is
 visible without anyone remembering to run it. Pass `-BusRoot` explicitly -- the reader's default is
 the originating box's literal path.
+
+## Appended by Conjugal hub (dispatcher session, owner-directed), 2026-09-01 — an independent second instance of trap #2 above, plus what it cost to find
+
+**This is a confirmation, not a discovery.** AirMyPC's 2026-08-30 trap #2 — *"a fence that forbids
+the remedy for the condition it detects is a deadlock, not a control"* — reproduced on a different
+machine, a different tree, and a different fence, four days later. Read that entry first; this one
+adds the specifics that made it expensive on Windows.
+
+**1. The fence was unsatisfiable because a DESKTOP CLIENT holds the repo.** A zero-byte
+`.git/index.lock` froze five lanes and every floor for **7h15m with zero commits**. The sanctioned,
+enabled, non-destructive remedy existed and was tracked. It refused six times on one guard:
+`Assert-NoGitFamilyProcess`, which matches **every `git.exe` on the machine** via CIM with no
+repository, ancestry, or read/write filter. The blocker was **Claude Desktop** running `git status`
+and `git fetch --no-write-fetch-head origin` on the repo in a loop, respawning every few seconds.
+The sharper half: **closing that client may terminate the very session trying to run the remedy.**
+A guard whose precondition is "no git anywhere on this host" is not stronger than its hazard model
+(*no git that could be mid-transaction in THIS repository*) — it is unreachable. Audit fences for
+remedy-reachability **on the host they actually run on**, with the tools that are actually open.
+
+**2. The freeze suppresses the record of the freeze.** The write gateway correctly refused
+`REFUSED_INDEX_LOCK_CONTENDED`, so the finding documenting the outage could not be committed until
+the outage ended. Any incident that blocks writes will also block its own postmortem. Write to disk
+immediately, land afterwards, and do not trust "no findings were filed" as evidence of a quiet night.
+
+**3. Cheap three-part orphan proof — no process archaeology needed.** (a) **zero length** — a writer
+created the lock and died before writing anything; (b) **age past the remedy's own
+`minimum_age_minutes`**; (c) **zero commits since the lock's mtime**. A live transaction fails at
+least one: it is short-lived, or the repo advances right after it. All three are `stat` and
+`git log`. We reached for process enumeration first and it was both slower and, on this host,
+useless.
+
+**4. The detection gap that let it run 7 hours: crash floors watch LANE staleness, not
+repository-wide WRITE failure.** A lane that *cannot* commit is byte-identical, from the floor's
+vantage, to a lane with nothing to say. Every floor was healthy and correctly idle throughout.
+Fleet-liveness scoring showed three lanes DARK and the hub score down 7 points, but nothing named
+the cause. **Add a write-failure probe to whatever runs at session start**, ahead of auth and fleet
+derivation: if the repository cannot be written, every later reading is a reading about a frozen
+fleet.
+
+**5. Building the negative control took three attempts, and the two failures looked like a broken
+guard.** A fixture only reproduces the freeze when **the newest commit PREDATES the lock**. Twice we
+set an old lock on a repo whose commits were newer, got `commits-since > 0`, saw the detector
+correctly stay silent, and briefly read that correct silence as a defect. Backdate the commit
+(`GIT_AUTHOR_DATE`/`GIT_COMMITTER_DATE=@<epoch>`), then the lock. **A guard you cannot point at a
+synthetic repository cannot be proved to still fire** — give every such tool a `--repo` argument.
+
+**6. The guard that PREVENTS lock creation punished the correct pattern.** An unhardened
+`git status` is what takes `index.lock`; a static classifier forbids it. Ours was **call-site-local**:
+it matched any call to a helper named `git` and then required `--no-optional-locks` in *that call's*
+arguments, never resolving the helper body. So a compliant wrapper — hardening centralised in one
+place, impossible to forget — was a false RED at every call site, and the rule it actually enforced
+was *"repeat the flag everywhere"*, where any new call silently omits it. **A prevention control
+whose incentive gradient points away from the property it protects will be worked around, and then
+it is not preventing anything.** Fix: resolve same-module helper definitions. Keep controls proving
+an *unhardened* wrapper and `GIT_OPTIONAL_LOCKS=1` still go red — resolving a helper must not become
+exempting one.
