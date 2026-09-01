@@ -2596,3 +2596,266 @@ whose incentive gradient points away from the property it protects will be worke
 it is not preventing anything.** Fix: resolve same-module helper definitions. Keep controls proving
 an *unhardened* wrapper and `GIT_OPTIONAL_LOCKS=1` still go red — resolving a helper must not become
 exempting one.
+
+**7. A CENSUS PREDICATE STRICTER THAN THE WRITERS IT AUDITS NARROWS ITS OWN POPULATION, INVISIBLY —
+and a MORE precise value can fail a check a less precise one passes.** Four tools in one directory each
+carried their own idea of what a hub entry looks like; no two agreed. Measured across 65 hub files:
+13 GLUED entries invisible to both line-anchored parsers, 60 `##` and 10 `[` openers invisible to a
+third, **5 fractional-second stamps invisible to three of the four — including the one that GATES THE
+ROLL** — and 1,012 entries in historical forms no tool accepted at all. **The corpus is 3,535 entries;
+the four tools between them saw 2,523 — 71%.** The dropped rows appear nowhere, which is exactly why
+nobody noticed: a census that publishes ONE number licenses subtraction, and there is nothing to
+subtract from.
+
+*The test:* run every tool that counts the same population over the same file and diff the counts item
+by item, not in total. Equal totals are not agreement — two parsers returning 78 and 78 can be reading
+different entries. Publish the predicate alongside the number, and treat `raw − at-line-start` as an
+ALARM rather than as a count.
+
+*The fix that already existed:* a canonical parser had been written, adjudicated, and given a 72-control
+suite to end exactly this — and **eighteen days later not one production tool called it.** Fixing the
+divergence was an adoption problem, not a discovery problem. When you find four disagreeing
+implementations, check whether the fifth is already sitting there passing its tests.
+
+**8. A JUDGE IS AN INSTRUMENT AND NEEDS ITS OWN CONTROLS — and confidence is not evidence.** Asked to
+compare two approaches visually, an agent rendered blinded A/B pairs (same frame, one parameter changed,
+arm order randomised, key withheld) and judged them. It scored **5 of 8 direction calls — p = 0.36
+against chance, indistinguishable from guessing** — while the two pairs it annotated *UNAMBIGUOUS* and
+*CLEAR* were both **wrong** and the two it called *subtle* were both right. **Confidence ran backwards.**
+A confident and false recommendation to weaken an acceptance threshold was one unexamined step from
+being published.
+
+*What did NOT catch it:* the zero-effect control. It passed — no false positives where the parameter
+barely differed — and passing it proves only that the judge does not invent differences, never that it
+can resolve them.
+
+*What DID catch it:* a **response-bias check run before the reveal**. Every call in one run named the
+same slot. That is either real discrimination or position bias, and **the calls alone cannot separate
+them**; the key showed the higher arm sat in that slot in only 3 of 5 pairs. **Check whether your calls
+cluster on one position before you open the key.**
+
+*The test:* blind and randomise; include a zero-effect control; **and** tally the position of every
+call. Then, when the judge fails, **measure the thing directly** rather than arguing with the eye — here,
+CIE L\*a\*b\* ΔE between the two renders, which returned exactly 0.00 on the zero-effect pairs and so had
+no noise floor at all. The rendering is never wasted: it produces the images the measurement consumes.
+
+*Two silent-failure traps met on the way to it:* rendering frame 0 of a clip yielded an almost entirely
+**black** frame — a colour verdict on a black frame is not a weak verdict, it is no verdict, and it
+would have passed unnoticed because the images still render, still compare and still yield an answer.
+And reading two images in sequence is **not** a contact sheet: it compares a picture against the
+*memory* of a picture, which is exactly the comparison a threshold-level difference survives. Compose
+them adjacent, with a mid-grey gutter — white or black drags the eye's adaptation.
+
+**9. STATING A CAVEAT IS NOT A MITIGATION — four instances in one day, all in freshly written tools.**
+Each of these shipped with an explicit, accurate, prominently-placed warning about its own weakness. The
+warning was written *before* the run, was correct, and stopped nothing, because a caveat tells a reader
+the number is soft while doing nothing to stop the number being used as if it were hard.
+
+- A work-partitioner budgeted on a truncated **head line** instead of entry bodies and called 102 items
+  a "bounded brief". Its source said *"treat these as relative weights, not true reading cost."* Real
+  bytes were **32× the estimate**.
+- A colour-difference measurement averaged **over the whole frame** and concluded a defect was near the
+  threshold of visibility. Its own P95 column contradicted it. Masked to the region where the defect
+  physically lives, the same pairs measured **2–4× higher** and the conclusion inverted.
+- An unadopted-instrument detector counted **its own header comment** as a consumer, three lines below a
+  header declaring that a mention is not a consumer.
+- A coverage classifier labelled a genuine gap ALREADY-PRESENT via the author's **session GUID** and the
+  English word *COMPLETED*, having predicted that exact error direction in capitals one screen above.
+
+*The test:* if a caveat says a number is a proxy, **the number must not be usable as the thing it
+proxies for**. Either measure the real quantity, or emit something that cannot be mistaken for it — the
+classifier above was fixed not by tightening it but by **deleting its labels** and leaving only pointers
+to where a human should read. A tool that says "here is where to look" cannot be misread as "this is
+covered"; a tool that says ALREADY-PRESENT will be, every time, by the next reader in a hurry.
+
+*Corollary, from the same day:* the four defects were found by **four different second measurements**,
+never by re-reading the tool. A caveat is read by the author, who already knows; it is not read by the
+number.
+
+**10. A NEGATION-SUBSTRING IS A GREEN THAT CANNOT FAIL.** An auth check tested
+`$text -match 'logged in'`. The unauthenticated CLI output is **"Not logged in. Run `codex login` to
+authenticate."** — which contains `logged in`. The check returned GREEN for both of its two states and
+read perfectly reasonably in review.
+
+*The test:* force the failure and watch the control. **This one was caught because the negative control
+REFUSED TO FIRE** — a control that does not go red when you deliberately break the thing is telling you
+about the *check*, not about the system. Predicate now `-match '\blogged in\b' -and -notmatch '\bnot
+logged in\b'`. Audit any predicate whose phrase also appears inside its own negation: *"not found"*,
+*"no error"*, *"not enabled"*, *"failed to fail"*.
+
+*And the control before it failed for a different reason worth its own line:* the first attempt at a
+negative control put a **stub executable on PATH**, expecting the probe to resolve to it. Command
+resolution found the real binary and the probe was never diverted, so the check stayed green and nobody
+learned anything. **A control that depends on shadowing the environment is not a control; a substitutable
+parameter is.** Add the seam to the checked code rather than trying to trick it from outside — the same
+file already had exactly that seam for a sibling probe, and it was not copied because nobody asked what
+the sibling's seam was *for*.
+
+*Related shape, same fleet, same week:* a check whose two states produce the same verdict is
+indistinguishable from a check that is simply always green, and the only thing that separates them is a
+deliberately-forced failure. Ship the forced failure with the check.
+
+**11. VACUOUS-FAIL — A RED THAT CANNOT PASS, AND IT HIDES BETTER THAN A GREEN THAT CANNOT FAIL.** A
+product repository went **twelve days without a commit** while a queue of ninety-four work items ran at
+full tilt. Every diagnosis reached for routing: unroutable manifests, an idle review queue, work that
+improved the factory instead of the product. All of those observations were true. **None of them was the
+wall.** The wall was three lines in `.git/hooks/pre-commit`, and nobody found it because **nobody tried to
+commit** — the stall was analysed, not reproduced.
+
+The hook decided from a manifest whether the current HEAD had had metrics posted. Put to three arms
+through git's *own* shell:
+
+| arm | a sound gate should | observed |
+|---|---|---|
+| **POSITIVE CONTROL** — a manifest naming HEAD, satisfied, *i.e. the exact state the hook's own error message instructs an operator to create* | exit 0 | **exit 1** |
+| NEGATIVE CONTROL — a manifest naming a HEAD that does not exist | non-zero | exit 1 |
+| LIVE | — | exit 1 |
+
+**UNPASSABLE.** Two stacked causes: `jq` was absent so a fallback branch ran, and that fallback was a
+shell syntax error — in `awk '{print $1 > 0 ? "true" : "false"}'` awk parses `>` as an **output
+redirection**, so the program never yields a value and the variable is always empty. The next line tested
+it against `"true"`. A third fact, the stale manifest, was real, complete-sounding, and **not the cause**;
+fixing it alone would have changed nothing, because the branch that read it could not return an answer.
+
+*Why this class survives longer than its mirror.* A green that cannot fail invites *"is this really
+checking anything?"* A **red that cannot pass invites "someone must have meant to lock this down"** — it
+wears the shape of a policy, so it is respected rather than investigated. Twelve days of it read as a
+queue problem.
+
+*The test, and it is the arm almost nobody ships:* **assert that the gate PASSES the good case.** Everyone
+tests that a gate blocks the bad input. Only the positive control separates *strict* from *broken* — here
+the negative control passed and was worthless, because a gate that blocks everything also blocks the bad
+case. **Two arms or no verdict.**
+
+*Corollaries earned the same hour:*
+- **A silent fallback branch is an untested branch.** Guard the tool the branch depends on (`command -v
+  jq || fail`) rather than degrading quietly into code no one has run.
+- **Reproduce the stall before theorising about it.** One attempted commit would have beaten twelve days
+  of correct-but-irrelevant analysis. If a pipeline is not producing, try to produce *by hand* first.
+- **And the instrument written to catch this shipped with the same defect in its first run**: it resolved
+  the shell to one guessed path, fell back to a bare name that did not exist, and **exited 0 having
+  measured nothing** — reporting the repo admissible by never asking. Any harness that can fall back must
+  refuse instead of degrade, and must self-check that the thing under test actually ran: **a null exit
+  code and a silent pass are the same observation.**
+
+**11a. CORRECTION TO #11 — THE MEASUREMENT WAS RIGHT AND THE ATTRIBUTION WAS WRONG.** Same session, hours
+later. #11 says the twelve-day wall "was three lines in `.git/hooks/pre-commit`". **It was not.** That
+hook is genuinely unpassable — jq absent, awk fallback a syntax error — and that part re-verifies. But the
+repository sets:
+
+```
+core.hooksPath = .githooks
+```
+
+so **git never runs that file.** It is broken *and inert*. The gate that actually refuses commits is
+`.githooks/pre-commit`, and its first line of output even announces that the metrics gate is disabled by
+config.
+
+*How it was caught, and it is the only thing that could have caught it:* **somebody typed `git commit`.**
+The instrument written to answer "can this repo accept a commit" hardcoded the conventional hook path,
+measured a file with no bearing on commits, and printed **ADMISSIBLE: YES** minutes before a real commit
+was refused with three named failures.
+
+*What survives:* vacuous-fail is a real class; the positive control is still the arm nobody ships; a red
+that cannot pass still hides better than a green that cannot fail. **What does not survive** is the causal
+story — that this particular hook caused that particular stall. It is now unlikely, and it was never
+tested.
+
+*The sharper rule, which is the actual lesson:*
+- **An instrument that names its subject by convention is asserting, not measuring.** Do not name a hook,
+  a config, or a path by where it "should" be; ask the tool where it is (`git config core.hooksPath`).
+- **A gate you have not run is not a gate you have measured**, and an instrument that *models* an act is
+  not the act. Every layer here — hook, instrument, write-up, and this doctrine entry — agreed with each
+  other and was wrong together, because they shared one unexamined assumption and none of them performed
+  the operation they described.
+- **When a diagnosis and a repair both land without the underlying symptom being retested end to end, the
+  repair is unproven no matter how green the instrument reads.** The fix for a stalled pipeline is to run
+  the pipeline, not to certify it.
+- And the honest ledger: this was the **third** vacuous pass inside that one instrument in a single day —
+  a shell path that did not exist (exit 0 having measured nothing), a stale attribution line that survived
+  the repair it described, and a hook resolved by convention. The class is not rare and it is not other
+  people's.
+
+**12. NINE WAYS A GREEN TEST WAS WORTHLESS — a taxonomy, all nine measured in one session.** Every one was
+found by running a deliberate mutant, never by reading the test. Ordered by how convincing the test looked
+beforehand.
+
+**A. The mutation landed in a comment.** A doc-comment quoted the old defective code verbatim, the
+mutation anchor matched *that* copy first, and the "mutant" changed nothing. *Anchor mutations on code
+indentation and assert the anchor is unique.* Twice in one day — a tooling audit also counted its own
+header comment as a consumer of the thing it was auditing.
+
+**B. The test never reached the code it names.** `CosineSimilarity` opens `if (va.Count < 4) return
+SimilarityTo(other)`, and the fixtures populated three dimensions — so every "cosine" assertion fell
+through to a *different function* and passed under all three mutants. *A test that cannot reach its
+subject is not a weak test, it is no test.* Add a guard assertion that the path was actually taken.
+
+**C. The control's two arms were numerically identical.** The "measured" arm used the same value as the
+"unmeasured" stand-in, so including or omitting the disputed term changed nothing. *A control whose arms
+produce the same number cannot detect anything.*
+
+**D. The assertion discriminated on a separator, not a value.** Comparing a null field against a populated
+one, the keys differed only by the `|` delimiter — so blanking the field's *value* stayed green. The test
+could not tell *contributes its value* from *contributes its presence*. *Compare two different populated
+values, never populated-vs-absent.*
+
+**E. The fixture zeroed the term under test.** Tests used a non-existent path to keep a hash a pure
+function — which also meant the file-mtime term contributed a literal 0 and deleting it was invisible.
+*The property that makes a fixture deterministic is often the one that blinds it.*
+
+**F. The control fed input production cannot produce.** An over-fix control injected synthetic JSON with
+the key present. The real tag could never match anything, so the field was permanently null in production
+while the control passed. *Controls must use inputs the production path can actually emit.*
+
+**G. Only one of several identical code sites was covered.** Two call sites, one test; deleting the second
+stayed green. *Two sites and one test is a coverage hole that reads as coverage.*
+
+**H. The instrument had its own vacuous pass.** A checker resolved a shell to a name that did not exist,
+every invocation errored, and it still ran to completion and reported the healthy verdict — *by failing to
+ask*. It also named its subject by convention and measured a file the system never executes. *An
+instrument that can fall back must refuse, not degrade; a null result and a pass are the same observation.*
+
+**I. The cleanup failed and nobody checked.** A mutant harness died on a transient file lock, its
+`finally` restore died too, and it left the mutant on disk. Caught only because the next step happened to
+read the file. *A failed restore is worse than a failed mutant.* Write with retry, verify the bytes
+landed, and print that verification.
+
+*The through-line:* every one of these tests was written by someone who understood the defect — the
+assertions describe the right property in the right words. **What failed was reachability, not intent.**
+Reading a test tells you what it means to check; only breaking the code tells you whether it does. **Ship
+the forced failure alongside the check, and treat a mutant that survives as a bug in the test, not a
+curiosity.**
+
+**13. FIVE WRONG CONCLUSIONS IN ONE SESSION, ALL THE SAME SHAPE: a mechanism inferred from a correlate
+while the upstream artifact sat one command away.** Each was published before being checked; each was
+retracted after a check that cost under a minute. Three of them were *blockers* — claims that stopped work
+— so the cost was delay as well as error.
+
+| the claim | evidence it rested on | the direct check that killed it |
+|---|---|---|
+| "the wall is `.git/hooks/pre-commit`" | that hook is genuinely broken | `git config core.hooksPath` — git runs `.githooks`; the broken one is **inert** |
+| "this needs a corpus-scale acceptance re-run" | matching affects acceptance figures | one grep: the acceptance path contains **zero references** to the matching type |
+| "the cosine path needs that re-run too" | dropping a shared vector component changes every norm | one grep: the feature is **`false` everywhere and never enabled** |
+| "the converter discards the camera white balance" | timelapse files constant, camera stills varying | **read the source file** — its WB block is identical too; the camera was on AUTO |
+| "coverage collapsed to zero" | a tally of the tool's per-entry output | the tool prints per-entry lines **only for failures**; the real total was on a summary line |
+
+*The common structure.* Every conclusion was about a **cause or mechanism**. Every piece of evidence was a
+**downstream correlate** — a broken artifact found while searching, a plausible coupling, a population
+contrast, a grep of formatted output. **In all five the upstream artifact was readable and cheap**: a
+config value, a source file, a variable's assignments.
+
+*The contrast case is the most seductive and deserves its own line.* Two populations differed exactly as
+predicted, which felt like strong evidence *because it was a real measurement*. But the populations
+differed in **three ways at once** — capture format, device mode, and processing pipeline — and the
+inference picked one and named it the cause. **A contrast tells you THAT something differs, never WHICH
+difference did it.** A control group is not a controlled experiment.
+
+*The rule, and it is cheap enough to apply every time:* **before publishing a claim about a cause, name
+the most upstream artifact that could settle it and ask whether it is readable. If it is, read it — do not
+reason toward it.** A found defect is not thereby the cause; a plausible coupling is not a measured one;
+and a difference between two outputs is not a mechanism.
+
+*And the corollary that costs the most when skipped:* **date the defect and date the symptom.** In the
+first row the "cause" was a hook that had been inert for months against a stall that started on a specific
+day — a comparison that took under a minute once anyone actually ran it, and that nobody ran because the
+defect was real and satisfying to have found.
