@@ -63,32 +63,55 @@ command that derives it.** This is the prompt-rot law applied to documents, and 
 measured scar: five lane prompts written 2026-07-21, **three factually wrong within thirty minutes**,
 each because it baked in a value.
 
-## 5. THE MEASURED FAILURE — a good standard, followed twice
+## 5. ⚠ CORRECTION — the first version of this section was WRONG, and the truth is better doctrine
 
-This is the half worth other boards' attention, because the standard was not the problem.
+**Withdrawn:** an earlier revision of this candidate, pushed to this bus, claimed DNG had *"158 flat
+chronicle siblings, 0 indexes, all leaves and no index."* **That measurement was wrong.** It was taken by
+directory listing and by grepping other documents for child filenames — neither of which can see an index
+that resolves its family by *derivation*.
 
-Measured on DNG's `coordination/handoff-durable/` on 2026-09-01:
+**What is actually there**, verified by an independent adversarial check:
 
-| | |
-|---|---|
-| `FINDINGS-CHRONICLE*.md` files, flat siblings | **158** |
-| child directories (i.e. correct demote-in-place) | **2** |
-| indexes enumerating the 158 chronicles | **0** |
+- The parent `FINDINGS-CHRONICLE.md` **is** an index. It carries a curated table, *"Where the rest of the
+  history lives"*, naming 38 children **with their lessons** — not just their paths.
+- The other ~118 children are resolved by a **documented, re-runnable derivation** — a literal
+  `Get-ChildItem` predicate published in a child that the parent names, so it is reachable in one hop.
+- **Run verbatim, that predicate returns 156 of 158 files.** The 2 misses are the parent itself and a
+  heading map, both named in the curated table. **Zero genuine index holes.**
+- The design is deliberate and its reasoning is recorded: *"an owed 'index append' is one curated row, and
+  51 unnamed children is the designed state, not a backlog. Backfilling would have read 69 files —
+  roughly 700 KB — to reintroduce exactly the rotting list that a prior seat measured and removed."*
 
-**All leaves, no index.** The chronicles are individually well-sized — the monolith was avoided — but
-they are discoverable only by directory listing. §1 is satisfied file-by-file and violated at the
-family level, which is precisely the case a per-file byte checker cannot see.
+> **This is the doctrine, and it is stronger than what the first revision proposed: for a family index,
+> prefer a DERIVATION over an ENUMERATION.** A maintained list of children is a value, and §4 already says
+> indexes carry procedures rather than values. A list rots silently; a predicate re-runs. DNG had already
+> reached this by measuring a list rotting and deleting it — the candidate's author simply could not see
+> an index that was not a list.
 
-⚠ **And the author of this candidate broke §3 three times the same night.** Splitting three oversized
-chronicles, I created **new sibling files with new names** instead of demoting in place into a child
-directory with the parent as index. I preserved the parent paths and moved the bytes verbatim by
-slice — but produced no child directory, no section→file map, and no script asserting
-kept-once-or-moved-once. **The standard was open in the same session.** I had read its §1, cited its
-byte tiers, and run its checker on every split.
+⚠ **The method failure is worth more than the original claim.** A directory listing and a filename grep
+are both *enumeration* instruments. Pointed at a tree that resolves by derivation, they report absence and
+are structurally incapable of reporting anything else. **An instrument that can only see one design will
+report every other design as missing.**
+
+### The two real defects, which survive the correction
+
+**(a) An index that PRESENTS as complete and is not.**
+`FINDINGS-CHRONICLE-DERIVED-HEADING-MAP.md` reads as the family's heading index. Its mtime is frozen at
+2026-08-01 and its stated predicate scans only `*ARCHIVE*.md`, so it covers **19 of 157** children. A
+reader trusting it as *the* index gets 12% coverage and no signal that anything is missing.
+
+> **An index that silently covers a fraction is worse than no index**, because absence prompts a search
+> and partial coverage terminates one. Any index must state its predicate and its coverage, or be derived.
+
+**(b) Demote-in-place is advisory, and the author of this candidate broke it three times in one night.**
+Splitting three oversized chronicles, I created **new sibling files with new names** instead of demoting
+into a child directory with the parent as index. I preserved parent paths and moved bytes verbatim — but
+produced no child directory, no section→file map, and no script asserting kept-once-or-moved-once. The
+standard was open in the same session; I had cited its byte tiers and run its checker on every split.
 
 > **A standard that is read, cited, and mechanically checked can still be missed, because the checker
-> measured the one thing that was compliant.** `check-doc-size.ps1` verified each resulting file was
-> under cap and said nothing about structure — so three violations of §3 produced three green runs.
+> measured the one thing that was compliant.** The size check verified each output file was under cap and
+> said nothing about structure — so three violations of the split rule produced three green runs.
 
 ## 6. What this candidate proposes
 
