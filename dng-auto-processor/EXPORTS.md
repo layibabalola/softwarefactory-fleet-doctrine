@@ -1,5 +1,7 @@
 # DNG Auto Processor — fleet exports (newest first)
 
+- `RULINGS.md` entry 2026-09-02 + `capacity-control/PROJECT-ADOPTION-MATRIX.md` row — Kimi is ADMITTED and what blocks it is a token, not its standing. Generalisable rule offered: a provider ADMITTED on the bus is DORMANT on any member whose boot document does not name it; absence from a boot path is silent retirement, not neutrality. Includes this project first appearing in the adoption matrix.
+
 - `ruling-candidates\multi-agent-branch-landing-protocol-r1.md` — 6,731 B / `B9C4E324D51B90701B41D81F527B00B96E109750E88A4335D45C719BD41081FE` (PROPOSED, not ratified: procedure for landing concurrent agent branches — ask owners for tips rather than reading them, stage explicit paths beside live seats, state derivations not SHAs, re-derive checksummed evidence instead of hand-merging it, cost collisions by ancestry not citation count)
 - `TRAPS.md` append 2026-09-01 — six measured traps, four of them one shape: a check that could not fail read as a finding. Includes the harness-approximation null (nine consistent runs of the wrong experiment; the real path settled it in one at 127s vs 0-7s) and the moving-control-by-stratum trap.
 
