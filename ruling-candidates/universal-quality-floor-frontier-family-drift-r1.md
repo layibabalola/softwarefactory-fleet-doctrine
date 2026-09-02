@@ -10,10 +10,18 @@ gate remains CLOSED.
 
 ## Bound subject
 
-- checkout HEAD `12b0a56e6352dc4d5e74e388669abe151141f4e8`
+Pinned **as measured**, at commit `12b0a56e6352dc4d5e74e388669abe151141f4e8`. These are the bytes the
+findings below were taken from; they are not a claim about the current tree.
+
 - `tools/universal_provider_control.py` — 271,453 B, `sha256:20d18b936f0d4a21385bb5d8b14475ba942f6a985cda0fc70c2746af6b2f9009`
 - `tests/test_universal_provider_control.py` — 279,107 B, `sha256:9cce1ec73c60ebeea1c507dc19e44b731366ca385a750245fc45e88b92a1335b`
 - `specs/agent-bridge.md` — 32,110 B, `sha256:2cf23d97141a87fe823a94502c64f66cf8fd4e5f890f1cc48ad9ecd289726050`
+
+The broker file is unchanged from that pin and an adjudicator should verify it still is:
+`git log --oneline 12b0a56..HEAD -- tools/universal_provider_control.py` must be **empty**. The test
+file has since gained the closed-set controls described in finding 4; derive its current state from
+`git log --oneline -- tests/test_universal_provider_control.py` rather than from a SHA restated
+here, which would rot.
 
 ## Measured finding 1 — the Kimi pattern accepts the complement of the doctrine's Kimi set
 
@@ -109,9 +117,84 @@ Claude. That coverage gap is a finding in its own right and would have caught fi
 returning `PORT_VERDICT: BLOCK` with exact output bytes and SHA), and which
 `capacity-control/PROJECT-ADOPTION-MATRIX.md:10` names alongside `claude-opus-5/max` as a fleet
 mapping. `ruling-candidates/opus-model-failback-r4.md:5,11` makes an exact Fable coordinator seat
-part of a proposed failback chain. The `openai` and `grok` patterns are currently consistent with the
-identities this repository names (`gpt-5.6-sol`, `grok-4.5` both match). The defect is therefore a
-two-of-four systemic drift in one table, not a Kimi-specific typo.
+part of a proposed failback chain.
+
+## ⚠ CORRECTION to finding 5 — this candidate undercounted the drift, and the correction is the better doctrine
+
+**Withdrawn:** the first revision of this section claimed *"the `openai` and `grok` patterns are
+currently consistent with the identities this repository names (`gpt-5.6-sol`, `grok-4.5` both
+match)"* and concluded the defect was **two-of-four**. That was wrong, and it was wrong by exactly
+the method failure this candidate elsewhere accuses the table of. It tested only the **accept-side**
+— do the doctrine-named frontier identities pass? — and never the **refuse-side**: does the pattern
+wrongly admit a doctrine-named *sub-frontier* identity? A closed set owes both directions. This one
+was published with half of it.
+
+**What a refuse-side sweep actually finds:**
+
+- `^(?:gpt-5|o[3-9])` **admits `gpt-5.4-mini`**, which `FAILOVER.md:169` names as the cheapest
+  low-effort **narrator**, `FAILOVER.md:222` states *"Narrators have zero authority"*, `RULINGS.md:168`
+  says to *never route the derivative digest into a reviewer seat*, and `FAILOVER.md:223-224` plus
+  `specs/conjugal.md:101` record as **scheduled to retire on 2026-08-31** — a date already past. It
+  also admits `gpt-5.6-luna`, named a zero-authority narrator at `FAILOVER.md:222` and `RULINGS.md:206`
+  (with dual standing as adobe-ingester's sole implementer at `specs/adobe-ingester.md:13`, so that
+  cell is ambiguous rather than plainly wrong).
+- The floor gates a cell whose `role` may be `REVIEW` (`PRIORITY_ROLE`, `:334-340`). So a model
+  doctrine forbids from a reviewer seat currently satisfies the frontier-family half of the floor.
+
+**THE ROOT CAUSE, which the corrected count exposes and the original framing hid.** The four patterns
+are not four instances of one rule — they are two different *kinds* of rule:
+
+| branch | keyed on | can it express a tier boundary? | consequence |
+|---|---|---|---|
+| `claude` | **family names** `opus\|sonnet` | **yes** — Haiku-class is outside the alternation | correctly refuses its own narrator; its defect is *omission* (`fable` missing), not breadth |
+| `openai` | generation number `gpt-5`, `o[3-9]` | **no** | admits `gpt-5.4-mini`, `gpt-5.6-luna` |
+| `kimi` | generation number `k2` | **no** | admits `kimi-k2.5`, the *lowest-cost listed tier* |
+| `grok` | generation number `4\|5` | **no** | admits any `grok-4.x`/`grok-5.x` tier |
+
+> **A generation-number prefix cannot express a quality floor, because the cheap tiers live INSIDE
+> the generation.** `gpt-5.4-mini` is a `gpt-5`. `kimi-k2.5` is a `k2`. Only the branch that keys on
+> family names can say *opus but not haiku* — and it is the only branch that gets the tier boundary
+> right. The Kimi inversion is not a transcription slip in one row; it is the predictable output of a
+> matcher shape that has no way to say "not the cheap one."
+
+The corrected count is therefore: **all four branches carry a defect. Three of four wrongly ADMIT an
+identity; two of four wrongly REFUSE one.** The `grok` branch is the mildest — it wrongly refuses
+nothing, and pre-authorizes `grok-4`/`grok-5` generation ranges that `RECEIPTS.md:366` records as
+unmeasured (only `grok-4.5` appears in the measured catalog), which is the same
+pre-authorization the Kimi branch performs with `kimi-next`.
+
+**Why this correction strengthens rather than weakens the candidate.** The original proposition
+asked for a curated accept-set per provider — which, applied to a generation-number matcher, would
+have to be re-curated on every point release and would silently readmit the next `-mini`. The root
+cause says the repair is *structural*: prefer family/tier-bearing identities over generation numbers,
+so the pattern can state the boundary it is supposed to enforce. A count that had stayed at
+two-of-four would have licensed patching two rows and leaving the shape intact.
+
+## Measured finding 6 — the floor uses PREFIX matching, so no branch can enforce a tier boundary
+
+Found while mutation-testing the controls, and it is the deepest layer of the same defect. Line 3555
+calls `.match()`, not `.fullmatch()`. `re.match` anchors only the start, so every pattern in the
+table is a prefix test. Every branch — **including `claude`** — admits an arbitrary cheaper variant
+that shares a prefix with an admitted family:
+
+| provider | probe | verdict |
+|---|---|---|
+| `claude` | `claude-opus-nano-9`, `claude-sonnet-lite-1` | **ADMIT** |
+| `openai` | `gpt-5-nano` | **ADMIT** |
+| `kimi` | `kimi-k2-ultracheap` | **ADMIT** |
+| `grok` | `grok-4-mini-fast` | **ADMIT** |
+
+None of those identities exists; that is what makes the point. **The Claude branch is correct only by
+accident of naming** — Anthropic puts the tier in the family-name slot, so `haiku` falls outside
+`opus|sonnet`. Nothing in the pattern enforces that, and a vendor who ships an `opus-mini` would land
+inside the floor on day one.
+
+This also makes the repair easy to get wrong in exactly the same way. While mutation-testing, an
+attempt to narrow the OpenAI branch to `^(?:gpt-5(?:\.\d+-(?:sol|codex))?|o[3-9])` — which reads as
+though it admits only `sol`/`codex` variants — was a **no-op**: with prefix semantics the leading
+`gpt-5` still matches `gpt-5.4-mini`, and the controls correctly stayed green because nothing had
+changed. Substituting a genuinely exclusive pattern turned them red. Any repair that does not anchor
+the end will look like a fix in review and enforce nothing.
 
 ## Severity, stated honestly
 
@@ -120,7 +203,8 @@ two-of-four systemic drift in one table, not a Kimi-specific typo.
 resume, terminate, authenticate, schedule, or contact a provider. **No live launch is blocked today
 and no outage is claimed.** The defect is latent and propagating: this is the reference contract
 projects are asked to ADOPT, so an adopter that installs it as written inherits a floor that refuses
-its frontier models and admits its cheapest. `specs/mlv-app.md:665` records a vendored copy
+its frontier models and admits its cheapest — including, on the OpenAI branch, a model doctrine
+forbids from a reviewer seat and which was scheduled to retire on 2026-08-31. `specs/mlv-app.md:665` records a vendored copy
 (`tools/provider_control/vendor/universal_provider_control.py`, 119,196 B,
 `sha256:9a15dd34bc35a77e7f7aaba7952bc3712a25504ee52a213cfc64e4fc27f0e5c2`) whose bytes are not
 present in this checkout; whether it carries this table is **UNEVALUATED** and must not be assumed
@@ -131,9 +215,21 @@ either way.
 Adopt, as a reviewed amendment to the universal quality floor, the position that
 `FRONTIER_HIGH_MODEL` is a **frontier-family predicate over locally measured identities**, and:
 
+0a. **the predicate is end-anchored** — `fullmatch`, or an explicit `$` — so that a pattern excludes
+   what it appears to exclude. Without this, every other clause in this proposition is decorative:
+   a prefix test cannot refuse a cheaper variant of an admitted family, on any branch (finding 6);
+0b. **it keys on tier-bearing identity, never on a bare generation number.** This is the structural
+   repair the ⚠ correction above exposes: `gpt-5.4-mini` is a `gpt-5` and `kimi-k2.5` is a `k2`, so a
+   generation prefix cannot state the boundary the floor exists to enforce. Only the `claude` branch,
+   which keys on `opus|sonnet`, can currently say *this family but not the cheap one* — and it is the
+   only branch whose tier boundary is right. Curating the accept-set without changing the matcher
+   shape would have to be re-curated at every point release and would silently readmit the next
+   `-mini`;
 1. its accept-set is derived from the measured local catalog and the selectable profile table, never
    from a relayed external API ladder;
-2. it may not name an identity that appears in no local measurement (`kimi-next` is removed);
+2. it may not name an identity, or pre-authorize a generation range, that appears in no local
+   measurement (`kimi-next` is removed; `o[3-9]` and `grok-(?:4|5)` stop pre-authorizing unmeasured
+   generations);
 3. it never encodes onboarding or candidacy status — that control stays solely in the exact reviewed
    cell and the launch allowlist, so a family match still admits nothing on its own;
 4. every provider branch owes a positive and a negative test cell using an identity that provider
@@ -141,7 +237,8 @@ Adopt, as a reviewed amendment to the universal quality floor, the position that
 5. a new provider generation entering `specs/` retro-obligates a sweep of this table in the same
    pass, since the table is the only place where a generation name must be restated.
 
-Under 1-3 the Kimi branch would accept the `kimi-code/k3`, `kimi-code/k3-256k`, and
+Under 0-3 the OpenAI branch would stop admitting the zero-authority narrators `gpt-5.4-mini` and
+`gpt-5.6-luna` into a cell whose role may be `REVIEW`; the Kimi branch would accept the `kimi-code/k3`, `kimi-code/k3-256k`, and
 `kimi-code/kimi-for-coding` identities and the `kimi-k3` API identity, and would stop accepting
 `kimi-k2.5`, `kimi-k2.6`, `kimi-k2.7-code`, and `kimi-next` until each is locally measured; the
 Claude branch would accept `claude-fable-5`. **This candidate proposes those values; it does not

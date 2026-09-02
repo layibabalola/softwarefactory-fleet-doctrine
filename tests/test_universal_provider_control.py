@@ -5251,8 +5251,11 @@ class UniversalProviderControlTests(unittest.TestCase):
             ),
             "openai": (
                 ("gpt-5", True, "frontier family"),
-                ("gpt-5.6-sol", True, "RECEIPTS.md:1225,1302 measured lane"),
-                ("o3", True, "frontier reasoning family"),
+                ("gpt-5.6-sol", True, "RECEIPTS.md:1225,1302 measured verifier lane"),
+                ("gpt-5.4-mini", True, "INVERSION FAILOVER.md:169 narrator, retired 2026-08-31"),
+                ("gpt-5.6-luna", True, "INVERSION FAILOVER.md:222 zero-authority narrator"),
+                ("o3", True, "PREAUTH generation range, named nowhere in this repository"),
+                ("o9", True, "PREAUTH generation range, named nowhere in this repository"),
                 ("gpt-4o", False, "below family, correctly refused"),
             ),
             "kimi": (
@@ -5266,10 +5269,10 @@ class UniversalProviderControlTests(unittest.TestCase):
                 ("kimi-next", True, "PHANTOM named nowhere in this repository"),
             ),
             "grok": (
-                ("grok-4", True, "frontier family"),
+                ("grok-4", True, "PREAUTH generation range; only grok-4.5 is measured"),
                 ("grok-4.5", True, "provider-model-benchmarking.md:56 measured catalog"),
                 ("grok-4.5-build", True, "observed backend"),
-                ("grok-5", True, "frontier family"),
+                ("grok-5", True, "PREAUTH generation range, named nowhere"),
                 ("grok-2", False, "below family, correctly refused"),
             ),
         }
@@ -5324,6 +5327,61 @@ class UniversalProviderControlTests(unittest.TestCase):
                     admitted,
                     f"{identity} changed verdict; adjudicate {candidate.name} before moving the table",
                 )
+
+    def test_narrator_tier_admission_is_asymmetric_across_provider_branches(self) -> None:
+        # The root cause, pinned. Two branches key on a FAMILY NAME and can therefore express a
+        # tier boundary; two key on a GENERATION NUMBER and cannot, because the cheap tiers live
+        # INSIDE the generation. `claude` matches `opus|sonnet`, so its narrator counterpart
+        # (Haiku-class, FAILOVER.md:169) is excluded. `openai` matches the bare generation `gpt-5`,
+        # so it admits `gpt-5.4-mini` and `gpt-5.6-luna` -- both named zero-authority narrators
+        # (FAILOVER.md:222, RULINGS.md:168 "never route the derivative digest into a reviewer
+        # seat") -- into a FRONTIER_HIGH cell whose role may be REVIEW. `kimi` k2 and `grok` 4|5
+        # have the same shape, which is how `kimi-k2.5`, the lowest-cost listed tier, is admitted.
+        #
+        # Recorded, not repaired: see the drift candidate. This control fails if the asymmetry
+        # moves in either direction.
+        narrators = {
+            "claude": (("claude-haiku-4-5-20251001", False),),
+            "openai": (("gpt-5.4-mini", True), ("gpt-5.6-luna", True)),
+        }
+        for provider, cells in narrators.items():
+            for identity, admitted in cells:
+                with self.subTest(provider=provider, model=identity):
+                    self.assertEqual(
+                        upc.FRONTIER_HIGH_MODEL[provider].match(identity) is not None, admitted
+                    )
+        keyed_by_family_name = ("claude",)
+        keyed_by_generation_number = ("openai", "kimi", "grok")
+        self.assertEqual(
+            sorted(keyed_by_family_name + keyed_by_generation_number),
+            sorted(upc.FRONTIER_HIGH_MODEL),
+        )
+
+    def test_floor_uses_prefix_semantics_so_no_branch_can_exclude_a_cheaper_variant(self) -> None:
+        # The deepest layer of the same defect. The floor calls `.match()`, which is PREFIX
+        # matching, not `.fullmatch()`. So every branch -- including `claude`, the one branch whose
+        # tier boundary is otherwise right -- admits any cheaper variant that shares a prefix with
+        # an admitted family. The Claude branch is correct only by accident of naming: Anthropic
+        # puts the tier in the family-name slot, so `haiku` falls outside `opus|sonnet`. Nothing in
+        # the pattern enforces that.
+        #
+        # None of these identities exists. That is the point: the floor cannot refuse them, so it
+        # cannot be said to enforce a tier boundary on any branch.
+        unenforceable = {
+            "claude": ("claude-opus-nano-9", "claude-sonnet-lite-1"),
+            "openai": ("gpt-5-nano",),
+            "kimi": ("kimi-k2-ultracheap",),
+            "grok": ("grok-4-mini-fast",),
+        }
+        self.assertEqual(sorted(unenforceable), sorted(upc.FRONTIER_HIGH_MODEL))
+        for provider, identities in unenforceable.items():
+            for identity in identities:
+                with self.subTest(provider=provider, model=identity):
+                    self.assertIsNotNone(
+                        upc.FRONTIER_HIGH_MODEL[provider].match(identity),
+                        "if this now refuses, the floor gained end-anchoring; adjudicate the "
+                        "drift candidate and update its structural proposition",
+                    )
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

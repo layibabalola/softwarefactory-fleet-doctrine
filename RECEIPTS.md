@@ -1593,3 +1593,84 @@ mechanical statement that the repair requires adjudication first.
   not in this checkout and no claim is made about whether it carries this table.
 - Nothing here adjudicates the candidate, and nothing admits any Kimi or Claude profile to any
   fleet role. The K3 onboarding freeze and its empty role cells are untouched.
+
+## Universal provider control — 2026-09-02 ⚠ CORRECTION: the drift candidate undercounted its own finding, and the correction found the root cause
+
+Recorded because the error is the useful part. A repo-wide sweep for other instances of the
+model-identity drift class was run against the same tree that produced
+`ruling-candidates/universal-quality-floor-frontier-family-drift-r1.md`. It came back with a
+contradiction of that candidate, which has been verified independently and corrected in place.
+
+### What the candidate got wrong
+
+It claimed *"the `openai` and `grok` patterns are currently consistent with the identities this
+repository names (`gpt-5.6-sol`, `grok-4.5` both match)"* and concluded **two-of-four**.
+
+**The method failure:** it tested only the ACCEPT side — do the doctrine-named frontier identities
+pass? — and never the REFUSE side: does the pattern wrongly admit a doctrine-named *sub-frontier*
+identity? A closed set owes both directions, and this one was published with half of it. That is
+precisely the discipline the candidate spends a section demanding of the test suite. Writing the
+demand did not make its author run it.
+
+### What the refuse-side sweep found, verified against doctrine before acceptance
+
+`^(?:gpt-5|o[3-9])` **admits `gpt-5.4-mini`** — `FAILOVER.md:169` names it the cheapest low-effort
+**narrator**; `FAILOVER.md:222` states *"Narrators have zero authority"*; `RULINGS.md:168` says never
+to route the derivative digest into a reviewer seat; `FAILOVER.md:223-224` and `specs/conjugal.md:101`
+record it **scheduled to retire on 2026-08-31**, a date already past. It also admits `gpt-5.6-luna`,
+a zero-authority narrator at `FAILOVER.md:222` and `RULINGS.md:206` — though that identity carries
+dual standing as adobe-ingester's sole implementer (`specs/adobe-ingester.md:13`), so its cell is
+ambiguous rather than plainly wrong. The floor gates a cell whose `role` may be `REVIEW`.
+
+### The root cause, which the corrected count exposed and the original framing hid
+
+The four patterns are two different kinds of rule. `claude` keys on **family names**
+(`opus|sonnet`), so it can express a tier boundary and correctly excludes its own narrator
+counterpart — its defect is omission (`fable`), not breadth. `openai`, `kimi` and `grok` key on a
+**generation number** (`gpt-5`, `k2`, `4|5`), which cannot express a tier boundary at all, because
+the cheap tiers live INSIDE the generation. `gpt-5.4-mini` is a `gpt-5`. `kimi-k2.5` is a `k2`.
+
+**The Kimi inversion is therefore not a transcription slip in one row. It is the predictable output
+of a matcher shape with no way to say "not the cheap one."** Corrected count: all four branches
+carry a defect; three wrongly ADMIT an identity, two wrongly REFUSE one.
+
+**The correction strengthens the candidate rather than weakening it.** The original proposition asked
+for a curated accept-set per provider — which, applied to a generation-number matcher, would need
+re-curating at every point release and would silently readmit the next `-mini`. A count left at
+two-of-four would have licensed patching two rows and leaving the shape intact.
+
+### A sixth finding, produced BY the mutation drill rather than by reading
+
+One mutation returned 0 RED and the first reading was "coverage gap". It was not. The mutation
+`^(?:gpt-5(?:\.\d+-(?:sol|codex))?|o[3-9])` — which reads as admitting only sol/codex variants —
+is a **no-op**, because line 3555 calls `.match()`, which anchors only the START. The leading
+`gpt-5` still matches `gpt-5.4-mini`. The controls were right to stay green; nothing had changed.
+
+Following that through: **every branch, including `claude`, admits an arbitrary cheaper variant
+sharing a prefix.** `claude-opus-nano-9`, `gpt-5-nano`, `kimi-k2-ultracheap`, `grok-4-mini-fast` are
+all ADMITTED. None exists, which is the point — the floor cannot refuse them, so it does not enforce
+a tier boundary on any branch. **The Claude branch is correct only by accident of naming:** Anthropic
+puts the tier in the family-name slot, so `haiku` falls outside `opus|sonnet`. A vendor shipping an
+`opus-mini` would land inside the floor on day one.
+
+This also makes the repair easy to get wrong in the same way it was got wrong originally. A narrowing
+that is not end-anchored will read as a fix in review and enforce nothing. The candidate's
+proposition now leads with end-anchoring, because without it every other clause is decorative.
+
+**A drill that only confirms what you already believe is not a drill.** This one paid for itself by
+returning a result that looked like a gap in the controls and was actually a defect in the subject.
+
+### Controls added, and honest limits
+
+The closed set grew from 23 cells to **26** — derived, not asserted: 6 drifted, 5 inverted, 5
+phantom or generation-pre-authorized, 10 consistent — and a fifth control now pins the asymmetry
+directly: Claude's
+narrator counterpart refused, OpenAI's two admitted, with the family-name/generation-number split
+asserted against the table's key set. As before these pin what the table DOES; the repair remains
+unadjudicated and no byte of `tools/universal_provider_control.py` has moved — verifiable as
+`git log --oneline 12b0a56..HEAD -- tools/universal_provider_control.py`, which must stay empty.
+
+Not accepted from the sweep without more evidence: it also reported `capacity-control/PROVIDER-ADAPTERS.md:12`
+pinning `Grok Build 1.0.3` against `1.0.0` everywhere else. That is `.md`-to-`.md`, outside this
+defect class, and is relayed here as an observation for whoever owns that file rather than as a
+finding of this receipt. The vendored MLV copy remains **UNEVALUATED**.
