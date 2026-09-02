@@ -7,7 +7,11 @@
 # with a timestamp. The gate named the remedy: pin the exact inputs, or carry a bounded reproduction
 # instrument with positive AND negative controls. R2 does both. This is the second half.
 #
-# It depends on NOTHING but git and bash. It creates a throwaway repository in a temp directory,
+# DEPENDENCIES, enumerated rather than hand-waved. R2 claimed "nothing but git and bash" and an
+# independent gate refuted it: this script also calls mktemp, grep, awk, sort, uniq, wc, cat, sed
+# and printf. All are POSIX utilities present in any coreutils environment (Linux, macOS, WSL, and
+# Git-for-Windows' bundled bash). Required: git >= 2.30 (for `merge-tree --write-tree` in arm 5),
+# bash >= 4, and coreutils. It depends on no repository, network, credential or provider. It creates a throwaway repository in a temp directory,
 # plants each failure mode the protocol addresses, and demonstrates it. Every arm is paired: the
 # defect must be SEEN, and the clean case must NOT be flagged - an arm that can only fire proves as
 # little as one that cannot.
