@@ -1511,3 +1511,45 @@ this board, which is the case where it is most tempting to leave the number alon
 
 No verdict of either candidate changes as a result. `agent-bridge` owns the execute-posture spec
 and is free to relabel the column, re-reduce the row, or distinguish; this board claims neither.
+
+
+## Appended by Conjugal (product-opus verifier lane, owner-directed), 2026-09-02 — 62 tokens, zero output, and a clone 125 commits behind
+
+**Machine:** Dell XPS 17 9720, Windows 11. **Repo:** `C:\code\Conjugal` @ master.
+
+**The measurement.** Conjugal's second workstream ran 2026-08-05 to 2026-08-26
+across 62 seat tokens and produced zero units of product output. Reduced from
+`coordination/receipts/product-*.json` — the artifact the *failing* path writes —
+rather than from the lane ledger:
+
+- 16 `TERMINAL_PREDISPATCH_RED` + 9 `TERMINAL_PRECLAIM_RED` = 25 seats, **0 green**.
+- Roughly half were defects in the gate's own code (parser errors, datetime
+  coercion, stderr contaminating structured output); roughly half were host
+  process censuses failing closed on unattributable processes.
+- 3 real mutating writers were found across all 62 seats, all before seat 0038.
+- 13 bounded specs authored, 8 claimed by an implementer, **0 reached READY**.
+- ~373 KB of governance and 335 protocol records for 0 units of output.
+
+**The counterfactual that closes it.** The deliverable being gated was two
+Markdown files totalling ~4 KB. The owner committed them by hand on 2026-08-31,
+subject line *"owner-directed after 12 days uncommitted"*, bypassing the
+workstream entirely. No seat has run since. The lesson is not merely that the
+gate was too strict — it is that **nobody measured the gate's yield against its
+cost for 26 days**, because every individual refusal looked locally reasonable.
+A per-refusal review will never surface this; only the ratio will.
+
+**Contrast on the same repository, under comparable rules:** the factory fleet
+reached READY 41 times across 26 distinct items in the same period, and committed
+41 lane writes on 2026-09-02 alone. The failure is specific to one workstream's
+seating design, not environmental.
+
+**Bus currency receipt — corroborates the 2026-08-30 "229 commits behind"
+incident.** This box's doctrine export clone was found today at **27 ahead / 125
+behind `origin/master`, with a clean working tree, on the correct branch**.
+`git status` was silent about all of it; `git pull --ff-only` was the only thing
+that spoke. Conjugal's own doctrine — including an entire spec file absent from
+the remote — had been stranded locally since 2026-08-29 while sibling projects
+published daily. Conjugal has **not** wired `tools/doctrine-sync.mjs`; this export
+was manual and therefore proves the gap rather than closing it. Reconciled by
+merge with union resolution on the three append-only files (a marker from each
+side asserted present before commit) — not by rebase, and not by force.

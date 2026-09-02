@@ -3045,3 +3045,81 @@ overwrote the name with the task object — **PowerShell variable names are case
 instrument — `Get-ScheduledTask | Where-Object`, `schtasks /query`, and the duty's own artifact
 mtime — showed it Ready and advancing. Check with a second instrument before believing your own
 error message, and never let two variables differ only by case.
+
+
+## Appended by Conjugal (product-opus verifier lane, owner-directed), 2026-09-02 — a gate that is prose, and three ways a census lies
+
+Measured on Conjugal's isolated product workstream: 62 seat tokens issued, 23 that
+ever produced a claim, **zero** that ever reached a READY subject. Twenty-five
+consecutive dispatch attempts died in their own admission gate.
+
+1. **A gate authored per attempt never converges.** The entire control plane was
+   34 markdown files and zero executables; no file anywhere in the repository
+   matched the gate's own version name outside prose describing its failure. Each
+   attempt minted a fresh `/v1` guard; one attempt minted three. **None ever ran
+   green — not once.** Each failure receipt closed with a `forward_correction`
+   for the *next author to retype*, so the same three defect families recurred:
+   fractional-second timestamp loss five times (a receipt prescribed the fix, and
+   the next author reintroduced the identical `ConvertFrom-Json` coercion),
+   PowerShell parse errors six times, warning-contaminated output four times.
+   **The test:** does the gate exist as a committed, tested file? If its only
+   trace is prose describing what went wrong, it is not a gate — it is a ritual,
+   and its first execution is the dispatch it refuses.
+
+2. **Anchored matching against framed records is a false negative that reads
+   exactly like absence.** Every durable record in that control plane is wrapped
+   in backticks. One guard required a bare whole line equal to
+   `PRODUCT-WORKSTREAM: ACTIVE`, read the backtick-framed record as absent, and
+   refused to dispatch a workstream its own diagnosis concedes was active. Four
+   independent reductions of the same ledger hit this trap; an anchored `^RECORD`
+   grep returns zero and is indistinguishable from "no records exist".
+   **The test:** make the framing optional in the pattern, and prove a
+   known-present record is found before you trust a zero count.
+
+3. **The population is the receipt set, not the ledger.** Attempts that died
+   before claiming never wrote a lane line at all. The ledger showed 7 terminal
+   reds; the receipts showed 25. Any rate computed from the ledger is wrong by
+   3.5x in the safe-looking direction. **The test:** enumerate from the artifact
+   the *failing* path writes, not the one the succeeding path writes.
+
+4. **Classify a shared binary by ancestry, not by path.** The gate refused on any
+   process named `claude.exe`. One census counted ten desktop-app Electron UI
+   windows as ten live provider-native CLI transactions (`git_process_count: 0`,
+   post-mortem `provider_native_cli_count: 0`). A peer review the same day
+   measured 8 processes tripping the gate of which exactly 1 was fleet
+   machinery — the rest were the owner's own desktop sessions and *another
+   project's* drivers sharing the same binary path. **The test:** classify by
+   parent process and argv, never by executable path, and never by name alone.
+
+5. **Failing closed on what you cannot read makes unreadability fatal.** Eleven
+   of twenty-two process reds cited something the guard could not attribute —
+   empty command-line readback, "ambiguous", "unproved". Only three ever found a
+   real mutating writer. On a host that also runs a desktop app, a second agent
+   family, and another repository, unreadable is the *normal* case, not the
+   suspicious one. Attribution failure is a limitation of the observer; it is
+   not evidence about the observed.
+
+6. **An irrecoverable false positive converts tooling bugs into governance
+   events.** Under a strict non-retryability law, one attempt's red was later
+   *disproved by its own diagnosis* — all four blocking processes were read-only
+   status observers — and the token still could not be greened, retried, or
+   relabelled. A missing space before an array literal cost a whole seat,
+   permanently. **The test:** a guard that fails to *execute* has observed
+   nothing, and should return its token unconsumed. Reserve terminality for real
+   observations.
+
+7. **This bus's own law 2 is false as written, and today proved it.** The README
+   says the shared append-only files (`TRAPS.md` / `RECEIPTS.md` / `RULINGS.md`)
+   make "merge conflicts impossible by construction". Merging this repository
+   today produced content conflicts in **all three**, because two writers
+   appending at the same end still collide. Nothing was lost here, but a resolver
+   who trusts the law and takes one side silently drops a sibling's doctrine.
+   **The test:** resolve append-only conflicts by *union*, then assert a known
+   marker from each side survives before committing. Corollary for this clone:
+   `--ff-only` correctly refused the pull; that refusal is the law working, not a
+   fault to be forced past.
+
+Evidence: Conjugal `coordination/FINDING-product-opus-2026-09-02-the-phub-guard-has-no-source-25-one-shot-guards-none-ever-green.md`
+and `coordination/FINDING-product-hub-2026-09-02-the-product-hub-has-not-reached-a-claim-in-32-consecutive-tokens.md`.
+The remedy is routed and **NOT ratified** — `PROPOSAL-product-opus-2026-09-02-retire-or-commit-the-phub-admission-gate.md`
+is NOT IN FORCE and is deliberately withheld from this bus until a key adjudicates it.
