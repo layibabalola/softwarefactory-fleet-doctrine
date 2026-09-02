@@ -3386,3 +3386,80 @@ named in that ruling.
   PROHIBITION must cite the ruling that imposed it, because retired rules come back by sounding
   prudent ("never push without me" was reintroduced TWICE after being retired, diverging lanes both
   times). Costume: a true observation, aged into a false standing condition by being quoted forward.
+
+## Appended by adversarialllm, 2026-09-02 (all measured on a five-seat Claude+Codex hub)
+
+- **The ledger that outgrew the instruction for reading it** (measured, cost the board its P0 for
+  15 hours). Our hub ledger reached **10,284 lines / ~65,600 words (~85K tokens)**. Section 5
+  (ORDERS) spans lines **77–4102**, so it *ends* **6,181 lines from EOF**. Every lane runner prompt
+  says *"read the §5 tail on origin/master"* — an instruction naming a boundary six thousand lines
+  from the end of the file. On its first invocation in the program's history, our Codex implementer
+  booted, ran, and emitted `no Codex-addressed order` — while a row reading
+  `lane=LUNA | priority=P0-BOARD-BLOCKING` sat on master **addressed to it by name**. Counts: 162
+  order rows + 234 disposition rows, **37 candidate-open**. So ~90% of what every lane reads on
+  every boot is closed history, and the 10% that matters is not where the prompt points.
+  **Costume — and this is the dangerous part: a lane that boots clean, works, exits clean, and
+  correctly reports no work is byte-identical to a genuinely idle board.** There is no error, no
+  receipt anomaly, no stall. We had `exit-clean errorClass=none` and a frozen product.
+  **Test:** for each seat, count the rows addressed to it that the *prompt's own instruction* would
+  actually surface, and compare against the ledger's true open count for that seat. If those differ,
+  every idle receipt on that board is uninterpretable.
+  **Antidote we shipped:** derive a per-lane brief instead of exhorting lanes to read better —
+  **108 lines instead of 10,284 (95×)** for the starved lane, and it finds the exact row that lane
+  missed. Two construction rules we consider load-bearing: (1) the brief **fails closed** — a
+  missing section marker refuses to emit, because a parsing regression and a genuinely idle board
+  produce identical empty output; (2) it emits **"candidate-open"**, never "open" — our §5 is
+  append-only so a later §6 disposition can close a row without editing it, so the brief lists every
+  disposition naming the same subject and makes the lane confirm. Collapsing that into a verdict
+  would just relocate the trap.
+  **This extends `RULINGS.md`'s 2026-09-01 dng-auto-processor finding rather than repeating it.**
+  That entry ruled *"a seat cannot derive work from a surface that does not name it."* True, and
+  ours is the harder half: **the surface DID name it.** Being named is not the same as being
+  findable. Size alone silenced the seat.
+
+- **An unproven seat read as an unusable seat** (self-indictment; cost ~15 hours). Our Codex
+  implementer had **no receipts file at all** — zero invocations in the program's history. Across
+  several sessions that absence was reasoned into "the seat may not work", and it was written into
+  a governance doc as an open risk. We then **addressed the board's single `P0-BOARD-BLOCKING` order
+  to that seat without invoking it.** One manual invocation settled it in four minutes:
+  `outcome=exit-clean errorClass=none`. The seat had always worked.
+  **Costume:** "never been invoked" wearing the costume of "cannot be invoked" — an absence of
+  evidence rendered as evidence of absence, in a governance document, by a lane whose whole job is
+  to distinguish those.
+  **Test:** before any row asserts a capability is missing, run the one command that would exercise
+  it. If nothing in the tree has ever exercised it, the honest status is **UNKNOWN**, never
+  "unavailable" — and UNKNOWN is a reason to invoke, not to route around.
+
+- **CPU as liveness on an I/O-bound child kills healthy work, and it eats its own evidence**
+  (three separate premature reaps in one session, by the seat that had diagnosed this exact defect
+  in its own stall guard the day before). Our finalize runs a long git sweep: flat CPU, high I/O.
+  Judged on CPU it looks hung at ~60s. **It was emitting `[closeout-heartbeat] ... elapsed=…s;
+  capturedBytes=…` to its log the entire time — 22 such lines in one of the runs we killed.**
+  **Costume:** a process at 0.0% CPU that is working perfectly, adjacent to a log line that says so.
+  **Test / ruling we now enforce:** *read the heartbeat, never the CPU.* A bounded runner must
+  publish a liveness signal, and the supervisor must consume **that signal**, not a proxy for it. If
+  a child emits no heartbeat, fix the child — do not infer liveness from resource counters.
+
+- **A trailing shell command laundering a failed exit code into success** (measured twice in one
+  session). We ran `pwsh -File closeout.ps1 -Finalize > log 2>&1; echo "exit=$?"` and the harness
+  reported **exit code 0** with a green completion notification. The `;` meant `$?` came from
+  `echo`. The script had aborted at its gate. We believed a success notification for a run that
+  failed, and only caught it by independently checking whether the change had actually landed.
+  **Costume:** a green background-task completion for a script that refused to do the work.
+  **Test:** capture the real exit code before any other command runs, and — always — **verify the
+  outcome by its effect** (did the bytes reach the remote?), never by the runner's status. This is
+  the same class as the fleet's existing *"configured != running"* trap, one layer down: *"reported
+  success != succeeded."*
+
+- **A gate that asks the wrong question is invisible until a merge carries the change in.** Our
+  pre-push gate required a handoff file touched within the last N commits. It asked *"is the newest
+  commit touching this path within the last N?"* using `git log --format=%H -n 1 -- <path>` under
+  git's **default history simplification, which discards merge-carried changes.** Measured on a real
+  branch head: simplified history returned a commit from two days earlier (outside the window),
+  `--full-history` returned the branch's own merge at **position 4 of 5 — inside it.** The handoff
+  was fresh; the gate said stale, and blocked every rebase-onto-master the board performs.
+  **Costume:** a correct-looking freshness check that is exactly wrong for the one workflow the
+  board uses most.
+  **Test:** ask *"does ANY of the last N commits touch it?"* — iterate, or pass `--full-history`.
+  Any path-scoped `git log` used as a gate needs an explicit ruling on merge simplification, or it
+  is asserting something it did not measure.
