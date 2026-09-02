@@ -2859,3 +2859,72 @@ and a difference between two outputs is not a mechanism.
 first row the "cause" was a hook that had been inert for months against a stall that started on a specific
 day — a comparison that took under a minute once anyone actually ran it, and that nobody ran because the
 defect was real and satisfying to have found.
+
+## Appended by dng-auto-processor, 2026-09-01 (ULTRAMAGNUS)
+
+All five measured first-hand on one board in one day. Four of them are the same shape from different
+angles: **a check that could not fail, read as a finding.**
+
+- **An APPROXIMATED harness can only falsify a defect it actually reproduces.** A peer reported that our
+  pre-commit gate hangs when committing from a linked git worktree. Trying to falsify it, we ran five
+  configurations (main-checkout and worktree cwd; two PowerShell hosts; with and without an exported
+  `GIT_DIR`/`GIT_INDEX_FILE`), then three repeat runs to test index poisoning, then a direct full-tree
+  `git status` under the suspect pair. **All nine finished in 0-7s.** We published "that hang does not
+  exist" — in a commit message on the mainline and in a change-request card. Every one of those runs
+  invoked the script DIRECTLY with an exported variable; a real `git commit` builds a *triple* —
+  `GIT_DIR` + `GIT_INDEX_FILE` + the hook's own `-RepoRoot <main checkout>` — that no simulation
+  constructed. Doing the real thing settled it in one attempt: **127s, exit 1, no results table**, with
+  the trace stopping dead after `git: rev-parse + diff + status` at 437ms where the healthy path reaches
+  `git: done` ~370ms later. It blocked inside native git, where the script's own watchdog cannot fire.
+  After the fix, the same real path: **18s with a full verdict.** Test: before reporting a defect as
+  non-existent, run the PRODUCTION entry point once — the command a user or a hook actually issues — not
+  a harness that sets up what you believe its environment to be. Costume: nine consistent results,
+  where the consistency was of the wrong experiment.
+
+- **Enumerating configurations is not a positive control.** Same incident. Breadth felt like rigour: nine
+  variations, two hosts, repeat runs. None of them established that the setup COULD produce the symptom
+  if it were present, so the null measured the harness. Test: for any "we could not reproduce it", name
+  the run in which your setup DID produce the symptom — a seeded fault, a known-bad revision, the
+  reporter's exact invocation. No such run means the result is "unconfirmed by us and unrefuted", never
+  "does not exist". Costume: a sweep broad enough that nobody asks whether it can fire.
+
+- **A control that moves proves the HARNESS can move, not that it moved where your change acts.** An A/B
+  over 140 fixtures reported three arms at +0 with a control that moved -2/-28, and the moving control
+  was taken as licence to call the +0 deltas measurements. Decomposing by stratum reproduced the
+  published totals to the unit and showed **100% of the control's movement came from 40 of the 140** —
+  the only project whose engine had the scored feature enabled at all. Of the rest, 50 expected a bucket
+  their engine did not contain (reds that could not pass) and 50 were a one-sample-per-bucket recall set.
+  The sensitive population was 40, not 140, and those 40 were themselves degraded. Test: before trusting
+  a +0 over a mixed population, decompose the CONTROL's movement by stratum; if one stratum carries all
+  of it, that stratum is your real N. Costume: a control that moved, which is the exact thing you were
+  taught to check.
+
+- **Four ways a probe returns a clean zero without ever running.** All four hit in one day, all four read
+  as findings: (1) `grep -rilE "a\|b"` — under `-E` the alternation operator is `|` and **`\|` is a
+  LITERAL pipe**, so three coverage probes searched for a string occurring nowhere and returned 0;
+  positive control `grep -rilE "hooksPath\|zzz"` = 0 vs `grep -rilE "hooksPath"` = 5. (2) `cmd 2>/dev/null
+  | grep -c` — a suppressed `fatal:` leaves empty input, and `grep -c` cheerfully reports **0 matches**,
+  which reads identically to "clean"; three branches were declared clean on it. (3) Python's
+  `encoding='utf-8-sig'` is right for READ and wrong for WRITE — it **always emits a BOM**, so a
+  read-modify-write silently added one to four files; BOM-prefixed C# compiles identically, the test
+  suite was 2202/2202 before and after, and the repo's own docs-encoding gate scans for control chars
+  and mojibake and has no opinion on a BOM. (4) An UNQUOTED heredoc (`<<EOF`, used to interpolate one
+  variable) executes backticks — PowerShell banner text and `git status` output were spliced into a
+  governance ledger, twice. Test: for every probe that returns zero, run it once against input you KNOW
+  matches; and check byte 0 directly with `head -c 3 FILE | xxd -p` (`efbbbf` is a BOM) rather than
+  trusting a build or a test to notice. Costume: a zero, which is what success looks like.
+
+- **`--stat` answers "did my change land"; only `--unified=0` answers "did anything else".** The BOM
+  above survived review because verification was scoped to the author's own intent: the diff contained
+  what was meant, so it was accepted without asking what ELSE it contained. A peer reviewing for an
+  unrelated reason found it. Test: on any commit produced by scripted editing, read `git diff
+  --unified=0` over every touched file, not `--stat`. A verification scoped to your intent cannot see
+  bytes you did not intend to write.
+
+- **Archiving a session cleans its worktree — check for uncommitted work first.** Seven agent sessions
+  were queued for archival after their branches landed. A pre-archive check found one holding **154
+  uncommitted lines** that no branch, no stash and no `git log` would have shown, and which archival
+  would have destroyed silently. Those lines contained the correct diagnosis of the hang in trap 1 above.
+  Test: before archiving or pruning any agent worktree, assert BOTH `git rev-list --count master..<branch>`
+  = 0 AND `git status --porcelain` empty, per worktree. The branch being merged says nothing about the
+  working tree.
