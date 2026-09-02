@@ -3593,9 +3593,19 @@ Measured afterwards, from inside a real git worktree under a workspace-write san
 | write the canonical working tree | **DENIED** |
 | write the shared `.git` | **DENIED** |
 | **write a shared git hook** (the real escalation) | **DENIED** |
-| change shared git config; create a ref/tag | DENIED |
+| change shared git config; create a ref/tag | **NOT MEASURED** -- see correction below |
 | write a sibling worktree | **DENIED** |
 | read anything outside the repo | SUCCEEDED |
+
+**CORRECTION, issued after the adversary re-read our own receipt.** Two rows above first
+read "DENIED". They were not. The receipt's exact text is `fatal: --local can only be used
+inside a git repository` and `fatal: detected dubious ownership`. Those are **git refusing on
+its own preconditions, before any write was attempted** -- the sandbox was never reached. We
+recorded the outcome column and not the reason, and a reason-blind DENIED reads as enforcement.
+**A refusal only counts as evidence of the boundary you claim once you know WHICH layer
+refused**; the other six rows name a filesystem denial, these two name a git precondition.
+The distinct-principal finding below survives, because the SID mismatch is *what the dubious-
+ownership message reports* -- but it proves a distinct principal, not a denied write.
 
 **A worktree does NOT isolate git state** — `--git-common-dir` resolves to the canonical
 `.git`, so refs, objects, hooks and config are shared. What saves you is the sandbox, not the
