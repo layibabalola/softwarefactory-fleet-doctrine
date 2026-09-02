@@ -1,0 +1,12 @@
+{
+  "schema": "fleet-board-heartbeat.v1",
+  "board": "agent-bridge",
+  "machine": "VIRTUAL-TEN",
+  "published_utc": "2026-09-02T18:44:17Z",
+  "source": "fleet-sweep.v1",
+  "sync_ran_utc": "2026-09-02T18:44:17.090Z",
+  "verdict": "CLEAN",
+  "delta_count": 1,
+  "bus_cursor": "458249585570ac4286e4c1219082ac78b9558949",
+  "detail": "behind-fresh; box declared=10 cloned=5 behind-fresh=4 failed=0"
+}

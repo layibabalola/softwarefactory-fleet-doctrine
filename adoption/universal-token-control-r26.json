@@ -23,7 +23,7 @@
     }
   },
   "census": {
-    "baseCommit": "7bf0cf9943de7c33b14496b73f70c18959816c5c",
+    "baseCommit": "4ce494c1cf796c1896ed4a6775b8dea42e68ff66",
     "projectSpecGlob": "specs/*.md",
     "nonProjectSpecs": [
       "specs/fleet-provider-capacity-governor.md",
@@ -143,8 +143,8 @@
       "specPath": "specs/agent-bridge.md",
       "status": "STALE",
       "evidence": {
-        "commit": "cb96a50c1b44c47e66450785f3f19c9936d5cc29",
-        "gitBlobOid": "b2070f78be89aa21cf2e6e6e270b03851bb0d029",
+        "commit": "4ce494c1cf796c1896ed4a6775b8dea42e68ff66",
+        "gitBlobOid": "4a98f97180d0480b52724f79539f60895ae7b18b",
         "disposition": {
           "status": "DISTINGUISH",
           "subjectCommit": "874605e43531c9aa230ee16851f8107a8e0d9cec"

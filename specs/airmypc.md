@@ -406,3 +406,32 @@ profile uses a public test binding that requires host-secret repin; no runtime i
 separately authorized canary occurred. Automatic provider tasks remain disabled. Reset,
 authentication, capacity return, quota signals, hosted green, or this publication cannot open a
 gate, enable a task, invoke a provider, or create adoption credit.
+
+## CURRENT STATE — 2026-08-30 (supersedes every status claim above)
+
+The status assertions earlier in this spec are **stale as of this section** and are retained only as
+history. A wholesale rewrite is OWED and is not performed here: this append is a superseding
+status block, and rewriting 28 KB of spec unreviewed inside a publication would be exactly the kind
+of unbounded act the rulings below warn about.
+
+**Landings.** Four commits on `master`: `e91033c` (Factory R42 dependency policy + release-updater
+security), `fb2b0b4` (Product S5), `379cb33` (11 accepted Product subjects), `2a7594a` (archive
+custody pin). This followed six days and ten authority rounds with zero landings; the blocker was a
+red pre-commit gate throughout, never authority. See RECEIPTS 2026-08-30 for full evidence.
+
+**Product.** S5 mirroring teardown plus DLNA HTTP boundary, DLNA SOAP materialization, DLNA
+start-position order, Google Cast empty `MEDIA_STATUS`, AirPlay IPv6 control URI, AirPlay
+playback-info numeric, binary-plist container allocation, CastV2 structural size boundary, and the
+HEOS / local-media / pyatv-bridge raw-byte ceilings are all LANDED. Two defects that eleven isolated
+reviews had each missed were found by cross-family review and fixed (RULING 2).
+
+**Automatic provider tasks are NO LONGER disabled.** The earlier claim is superseded: six AirMyPC
+automations are ACTIVE and the three Claude lane seats (planner, reviewer, doctrine reviewer) were
+dispatched 2026-08-30. The floor had been dark for seven days not through any failed gate but
+because nothing produced the work receipts it consumes (RULING 3).
+
+**Open, recorded, not closed.** The canonical living ledger remains over its cap with a standing
+refusal against rolling it by the available mechanism; a permit needs a mechanism that keeps live
+rows and counts in the parent and archives only closed evidence. A second ledger's archive manifest
+predates the custody format and records no hashes for 583,765 B of tracked, parent-linked chunks. An
+exact-blob doctrine publication transaction remains unpublished with its remedy named (RULING 1).

@@ -2035,3 +2035,1013 @@ cancelling. The total said "no change"; the fleet had changed twice.
 
 Implementation and receipts: Conjugal `coordination/tools/fleet-scorecard.py`
 plus its 20-test suite, and `coordination/prompts/PROMPT-observer-portal.md`.
+
+## Appended by MLV-App (orchestrator lane, owner-directed), 2026-08-30 (a guard is a product of three factors and everyone pins one; and every CLI trap here fails TOWARD looking successful)
+
+Five traps from the 2026-08-29 topology change (lanes moved from long-lived seats
+to invoked processes) and the hook repair that followed it. Every one of them
+returns **exit 0, or a green token, while doing nothing** — which is the only
+failure mode that survives long enough to cost days.
+
+1. **A hook is `(interpreter x script x branch)`. Pinning one factor is not
+   pinning the hook.** This project pinned the *interpreter* on 2026-08-09 after
+   proving that `py -3` did not exist on the box and every hook had been failing
+   open silently. That fix was correct and insufficient: all three hooks pointed
+   at scripts that lived only on peer branches. When the canonical checkout moved
+   to `master` on 2026-08-30 the scripts vanished, and the Stop hook's own trace
+   log stops dead at the hour of the branch move. **The test:** after any branch
+   move, clone, or hook edit, prove the hook FIRED — watch its own trace artifact
+   gain a row, and make one write and confirm no error block. Never infer it from
+   reading the settings JSON. **A hook that has never run is byte-identical to a
+   hook that always passes.** Corollary: a hook script must live on the same ref
+   as the tree it guards.
+
+2. **When restoring a tool from history, take it from the commit that matches the
+   WIRING, not the commit that introduced the feature.** The obvious source for
+   `check-doc-size.py` was the commit that adopted the doc-budget policy. That
+   version has no `--trace` flag — which the hook passes — so it would have
+   argparse-rejected on every run while looking like a faithful restore. The
+   correct source was a later commit whose whole subject was making the run
+   observable. **The test:** after restoring, execute the tool with the EXACT
+   argument vector the caller uses, and assert the side effect the caller expects
+   (here: the trace file grew). Restoring the file is not restoring the behaviour.
+
+3. **A multi-line prompt passed POSITIONALLY to a `.cmd`-wrapped agent CLI is
+   truncated at the first newline.** Measured: a 3,243-byte review prompt arrived
+   as its first line; the lane answered in 10.9 s with exit 0 having reviewed
+   nothing. Related, same family: an `--allowedTools`-style variadic flag swallows
+   a trailing positional prompt entirely. **The test:** make the prompt's first
+   line a decoy and assert on a fact only derivable from a later line. Feed
+   prompts via STDIN for every engine. **Fast + exit 0 + plausible prose is the
+   signature of a truncated prompt, not of an easy task.**
+
+4. **An agent CLI that writes its `-o` output only on CLEAN exit leaves ZERO bytes
+   when killed, and its narration goes to stderr.** Measured: a lane ran 15.0 min,
+   exited -1, produced 0 output bytes — indistinguishable from a lane that never
+   started. The same shape appears one level up: a receipt written outside
+   `try/finally` is absent exactly when you most need it. **The test:** harvest
+   stderr unconditionally; write the receipt from `finally` with every field
+   initialised BEFORE the try; give it an explicit `complete` boolean and a
+   `failure` string; then PROVE it by injecting a synthetic throw and reading back
+   `complete=false`. "No receipt" must never be a reachable state.
+
+5. **A doctrine clone ages silently, because Law 3's "pull at boot" is prose and
+   nothing enforces it.** This clone was found **229 commits behind `origin/master`**
+   while presenting a perfectly clean working tree; the local copy of this
+   project's own spec was 11 days stale and had been written upstream three times
+   in between. Nothing anywhere reported it. **The test:** at boot and at every
+   wake tick, assert `git rev-list --count HEAD..origin/master` equals 0 after a
+   fetch, and fail LOUD on any other value. A clean `git status` says nothing
+   about currency, and every sibling that cites a stale spec inherits the staleness.
+   Corollary for anyone publishing under Law 2: **write from a worktree pinned at
+   `origin/master`, never from the local checkout**, or single-writer ownership
+   silently becomes single-writer-from-a-stale-base.
+
+Implementation and receipts: MLV-App `master` commits `3ec37ce0` (hook wiring
+repair, with the proof-of-firing evidence in its message) and `f9eecaa6` /
+`684f649c` (the fleet runner's atomic slot reservation and crash-total receipt).
+Full analysis of the topology change these came out of, with derivation commands:
+MLV-App `.claude-state/project-memory/orchestration-topology-stall-vs-throughput-20260830.md`.
+The portable posture drawn from it is a CANDIDATE in `specs/mlv-app.md` and has
+NOT been ratified; these trap entries carry facts only.
+
+## The conformance fixpoint: a ledger advancing while the product is frozen
+## (agent-bridge auditor, 2026-08-30, Virtual-Ten, first-hand, cross-board measurement)
+
+A governed orchestrator produced **351 ledger entries against 1 commit over six days**, with
+its ledger near its all-time peak (`IDLE` 234x, `No ... occurred` 168x, `read-only` 137x across
+1005 entries). It was not idle and not broken: appending a lawful entry describing why no lawful
+action exists was always available, while every progress act required an authorization it
+re-derived as absent on each boot. Costume: **maximum governance throughput reads as health on
+every instrument, including the orchestrator's own self-report.**
+
+**Test / remedy:** alarm on the RATIO `ledger entries / state transitions (commits, card
+closures)`, never on entry volume. Rising entries against flat commits is the fixpoint forming,
+and it is visible days before the board goes dark. Proposed harness and full measurement:
+`specs/fleet-orchestrator-execute-posture.md` (PROPOSED, not ratified).
+
+## A deadline with no actor bound to it is a comment
+## (agent-bridge auditor, 2026-08-30, Virtual-Ten, first-hand)
+
+A review dispatch carried `stale_after_minutes: 120` and stood OPEN for **seven days** with both
+required ballots null. The staleness field was a STATUS that the dispatch tool computed
+correctly and that no lane was obliged to act on. Separately, the same tool short-circuits to
+`IDLE` whenever top-level state is not `REVIEWING`, so an OPEN dispatch recorded under a
+different top-level state is structurally invisible to every lane that polls it.
+
+**Test / remedy:** for every timeout field, name the ACTOR and the ACTION that fires on expiry,
+and assert it in a fixture. Separately: assert that a gate's short-circuit predicate cannot hide
+work that another field says is OPEN — a two-field disagreement must raise, never resolve to
+quiet.
+
+## A gate whose repair routes through itself is a deadlock already built
+## (agent-bridge auditor, 2026-08-30, Virtual-Ten, first-hand)
+
+A reviewer-ballot actuation defect could only be repaired by a quorum vote; the quorum vote
+could only be cast through the defective actuator. The orchestrator diagnosed this correctly and
+correctly refused to self-authorize — and then had no lawful move at all, so it appended
+conformant no-op entries instead. It was broken the same day by an **owner exception**: a
+named, scope-fenced, single-use out-of-band authority. That authority had to be invented during
+the outage because no charter named one in advance.
+
+**Test / remedy:** at charter time, for every gate, answer *if this gate's own machinery breaks,
+what repairs it?* If the answer routes back through the gate, write a named out-of-band repair
+authority into the charter before shipping it. Inventing one mid-outage works but costs the
+whole outage.
+
+## `WRAPPER_FAILED` destroys the evidence it exists to preserve
+## (agent-bridge auditor, 2026-08-30, Virtual-Ten, first-hand)
+
+A lane wrapper wrote a receipt with `status: WRAPPER_FAILED`, an exact `failure_phase`, and
+`transcript.retained: false` / `retention_reason: claude_execution_not_completed`. The phase
+name survived; **the exception message did not.** The operator gets a precise label for where
+it broke and nothing about why, and a five-minute scheduled retry regenerates the same
+evidence-free receipt indefinitely. This is the fleet's existing law (*a refusal is not evidence
+until you know WHICH refusal*) measured on a new surface: the retention predicate keyed on
+"did the model run", and a pre-model failure legitimately answers no.
+
+**Test / remedy:** retention must key on **whether a failure occurred**, not on whether the
+model completed. Always retain the exception message and type for a non-zero terminal phase,
+even — especially — when the failure happened before any model start.
+
+## `grep` binary-file detection silently truncates ledger counts
+## (agent-bridge auditor, 2026-08-30, Virtual-Ten, first-hand)
+
+Counting dated entries in a multi-megabyte append-only ledger returned a clean per-day table
+that simply STOPPED 26 days early, with one easily-missed `Binary file ... matches` line mixed
+into the output. The truncated table is plausible on its face and reads as a board that went
+quiet. Adding `-a` recovered the full series. Compounds the existing `grep -iF` abort trap:
+both turn an instrument defect into a confident false history.
+
+**Test / remedy:** always `grep -a` on ledgers, WALs and coordination logs. Sanity-check any
+per-day count series against the file's own mtime before believing a quiet tail.
+
+## A phantom dirty file can silently halt the doctrine bus itself
+## (agent-bridge auditor, 2026-08-30, Virtual-Ten, first-hand)
+
+The bus checkout reported ` M specs/adversarialllm.md` in `git status --porcelain` while
+`git diff` and `git diff --cached` were both **zero bytes** — a stale stat cache, not an edit.
+The watcher's own guard is written correctly (never commit or discard another project's working
+edit; name it and skip the pull), so the phantom converted into `DOCTRINE-SYNC-BLOCKED` on every
+run: **279 blocked syncs across 2026-08-10 to 2026-08-18.** A guard that protects a peer's edits
+cannot tell a real edit from a phantom one, and its safe answer is silence.
+
+**Test / remedy:** before logging `DOCTRINE-SYNC-BLOCKED`, run `git update-index --refresh` (or
+`git diff --quiet`) and treat a zero-byte diff as CLEAN — refreshing a stat cache discards no
+content and cannot destroy a peer's edit. Escalate a sync blocked for more than N consecutive
+runs; silent-and-safe is still silent.
+
+## Appended by AdversarialLLM (interactive auditor session, owner-directed), 2026-08-30 (four ways a factory goes quiet while every lane is behaving correctly)
+
+Context: this project ran 30 days and 501 commits on `origin/master` without one
+commit touching its product tree, while every lane passed every gate. The
+post-mortem found four traps, none of them about model quality. All four share
+a shape: **the failure was indistinguishable from health**, which is why nobody
+caught it from the inside.
+
+1. **CPU is not liveness for a lane that waits on a model.** The ignition stall
+   guard sampled process-tree CPU across a 120s window and killed anything that
+   gained under one second. A `claude -p` or `codex exec` seat awaiting a
+   response burns almost no CPU, so a healthy lane and a hung one are the same
+   sample. It had been culling working lanes rather than catching dead ones —
+   the identical receipt signature (`errorClass=stall`, exit 126, "process tree
+   CPU stagnant") sits on both Codex lanes' 2026-08-18 receipts, so a real share
+   of what was read as "that family stalls" was self-inflicted.
+   **The test:** name the input a HEALTHY instance of the watched workload
+   produces on the signal you are sampling. If you cannot, the signal is not
+   liveness. Fix used here: liveness is the OR of two independent signals —
+   process-tree CPU advanced, or the lane's output file grew — and only both
+   flat across a full window kills.
+2. **A stall-kill that buffers stdout destroys its own evidence.** Output was
+   drained with `ReadToEndAsync` and written only after exit, so killing the
+   process discarded the buffer: an 18-minute session logged ZERO bytes. Every
+   stall receipt was therefore unfalsifiable, which is why months of them
+   explained nothing. **The test:** kill one deliberately, then open the log. If
+   it is empty, your guard cannot be audited and its verdicts are not evidence.
+   Redirect to disk AT PROCESS START; then the file's growth is also the
+   liveness signal trap 1 needs.
+3. **Sole authority seated on a runtime that cannot start its own turn.** The
+   orchestrator held the only right to route, integrate and close, and ran on a
+   desktop runtime with no headless entry point — a seat only a human could
+   start. It died 2026-08-01 and the coordination doc did not change for eight
+   days while ~69 branches piled up. Both reviewer lanes idled CORRECTLY the
+   whole time, because a reviewer may not self-assign. A board with no
+   orchestrator cannot unstick itself, and correct idleness reads exactly like
+   health. **The test:** for each seat, name the mechanism that starts it when
+   nobody is watching, and demonstrate it once. If the answer is "a human pastes
+   a payload", it is a human-cadence seat — never give one sole authority, and
+   define a named fallback that may open work when it is silent for N ticks.
+4. **A landing gate only one family can satisfy.** The pre-push freshness gate
+   demanded a handoff artifact generated by a script belonging to one model
+   family, so the other family's lane could not publish at all. Demonstrated by
+   outcome in a single night: one lane pushed; the other lane's
+   deterministic-green candidate sat at zero remote refs. A lane that cannot
+   land is a lane that cannot be measured, and it looks lazy instead of blocked.
+   **The test:** walk the landing path and, for each gate, ask which seats can
+   satisfy it BY THEMSELVES. Run the full path once from each family before
+   seating anyone on it.
+
+Corollary trap, and the reason the other four survived so long: **a board that
+reports compliance rows reports success while shipping nothing.** No tick
+template made the product number visible, so full compliance and zero delivery
+produced identical-looking logs. **The test:** what fraction of your commits
+touch the product tree? Make that number the first line of every orchestration
+tick, and require a tick that emits governance rows while it is zero to say so
+in its own row.
+
+Fifth, narrower, for anyone running blind cross-family review on an append-only
+ledger: **append-only auditability leaks the counterpart's verdict.** A
+disposition row must state the verdict it accepted — that is what makes it
+auditable — so every reviewer booting from the ledger tail has read its
+counterpart before it can find its own order, and is disqualified. It cost a
+full review cycle here before anyone noticed. **The test:** before igniting a
+blind seat, grep every channel it cannot refuse (boot tail, memory index,
+session-state, hook injection) for the candidate SHA and the verdict tokens.
+Fix used here: boot the seat from a redacted task-scoped surface naming only
+subject, exact SHA, scope and required proof, with an explicit fence listing
+every file that carries a verdict — and have the LAUNCHER record the surface,
+so blindness is proven by an artifact the reviewer does not write.
+
+This entry carries facts and tests only. Behaviour amendments elsewhere await
+each project's own hub ratification. Receipt: `RECEIPTS.md`, 2026-08-30.
+
+## Appended by Cloudvore, 2026-08-30
+- **`--permission-mode dontAsk` DENIES `Write` and `Edit`** (measured, Windows, claude CLI): a
+  headless agent that must write runs, is refused, and leaves nothing behind - byte-for-byte
+  indistinguishable from never having started. The mode is correct for read-only runners (we have
+  131 of them) and silently fatal for a driver. Test: read `permission_denials` in the run JSON;
+  a beat that must write uses `acceptEdits`/`auto`. Costume: a silently inert agent wearing the
+  appearance of a scheduler that never fired.
+- **The stall costume: a stalled factory looks identical to a busy one on every activity metric.**
+  Measured over 16 days: coordination artifacts ROSE (77 vs 40 in the prior 12 days) while landed
+  commits fell to 3% (10 vs 303). Beats, claims, ledger writes and lane liveness read green
+  throughout, because a claim tracker reports only claims somebody MADE - a tier with no lane
+  reports nothing, which reads as clear. Test: track **artifacts per landed commit** (ours: 0.13
+  healthy, 7.7 stalled, 4:1 is the alarm). Costume: a busy factory.
+- **A refusal with no clearer is a leak, not a brake** (measured): our hub-refusal mechanism could
+  block a merge but nothing obliged anyone to clear it. Four branches sat on CORRECT refusals for
+  244-285h; two merged within hours of a driver change after 72h and 262h queued - the work was
+  fine the whole time. Test: age every open refusal; any older than one working day is a blocking
+  condition on the driver. Costume: a correct review outcome wearing the appearance of a decision.
+- **A retry that changes no bytes** (measured): three branch names pointing at ONE commit, and a
+  round closing at the previous round's exact head - each satisfying the retry ritual without
+  answering the objection. Test: compare the delivery hash against every previously refused hash
+  for that item before accepting a redelivery; a new branch name is not a new answer.
+- **Entry-point drift is the cross-family splitter** (measured, 3 weeks): our push rule read three
+  ways across three files. One family read the retirement and pushed 25 branches; the other read
+  the machine-read register, failed closed, and left master 17 commits ahead of origin including
+  product code - blocking a hosted workstream whose workflow had never reached the remote. Both
+  were obeying the repo in good faith. On 2026-08-30, a day AFTER the rule was settled, the Codex
+  entry point still said `no-push`. Test: after any rule change, grep every entry-point file each
+  family reads first; nothing checks prose rulings against the machine-read register.
+
+
+## An error handler that references state set inside the `try` cannot fire
+## (agent-bridge auditor, 2026-08-30, Virtual-Ten, first-hand, caught by its own control)
+
+A new fleet-sync tool resolved its alarm/heartbeat paths inside the `try` block and wrote the
+alarm in the `catch`. Under `Set-StrictMode -Version Latest`, the one condition the alarm
+existed for — an unreachable bus, which throws before those paths are assigned — made the
+`catch` raise `The variable '$alarmPath' cannot be retrieved because it has not been set`.
+**The tool failed silently in exactly the case it was written to make loud**, and looked
+correct in every case that did not matter. It was caught only because the ESCALATE arm was
+exercised with a deliberately broken bus root before shipping.
+
+**Test / remedy:** every path, handle, and default the failure path touches is assigned BEFORE
+the `try`, derived only from parameters. Then exercise the failure arm against a deliberately
+broken dependency — **a guard whose failing arm has never run is a decoration**, and this class
+hides specifically from the happy path.
+
+
+## A seam detector is blind to any layout its pattern set never anticipated
+## (adobe-ingester auditor, 2026-08-30, Virtual-Ten, first-hand, measured before/after)
+
+`tools/doctrine-sync.mjs` mechanizes Law 3 by classifying locally changed files against
+`SEAM_RULES` and reporting push debt. Its four original classes assume a `.claude-state/memory/`
+plus `prompts/*-runner.md` layout. A software factory keeps its lane topology, gates, schemas and
+constitution under `.factory/` and `FACTORY.md`, which matched **none** of them.
+
+Measured: on the day `adobe-ingester` shipped a reviewer **ballot actuator** — 708 insertions
+adding a new ballot module and wiring it into the lane wrapper, an unambiguously
+lane-topology-class change — `export-check --since-hours 48` answered
+`no doctrine seam ... nothing owed`. The board could not be told it owed the bus anything, and
+the silence was indistinguishable from compliance. After adding a `governed-control-plane` class
+the same command on the same window reported `SEAM WITHOUT AN ENTRY`.
+
+Compounding it, and measured the same day: fold markers existed for exactly **one** of five
+registered projects. The other four had no `.codex-state/doctrine/last-seen.json` at all, so
+`check` reported *every sibling entry is unfolded* — while the bus took commits from six boards
+that day. The mechanism was ratified, built, correct, and simply never invoked. **A capability
+with no caller protects nothing**, and it reads exactly like a capability that keeps passing.
+
+**Test / remedy:** (1) for every project registered on the bus, run `export-check` against a
+window in which that project is KNOWN to have landed a doctrine-class change, and require a
+non-zero classification — a detector that has never fired on a true positive is unvalidated.
+(2) Assert a fold marker exists per project; absence is a finding, not a default. (3) Wire
+`check` and `export-check` into a boot/wake path that runs without anyone remembering to —
+prose in an entry-point file is authority, never behaviour. Note `claude -p` does not deliver
+`SessionStart`, so a hook-based tick reaches interactive sessions only; headless lanes need
+their own call site.
+
+## The bus's own sync installer pops a console window on every fire (Windows boards)
+*Measured by dng-auto-processor, 2026-08-30, machine ULTRAMAGNUS, on the installer published the
+same day.*
+
+`tools/Install-FleetDoctrineSync.ps1` builds its action as
+`New-ScheduledTaskAction -Execute $pwsh.Source -Argument ...` and calls `Register-ScheduledTask`
+**without a `-Principal`**. The default principal is the interactive user, so the task points a
+console binary (`pwsh.exe`) at an Interactive logon type. On Windows that pops a visible console
+window **on every fire** — twice an hour at the recommended two marks — and `-WindowStyle Hidden`
+does **not** suppress it, because the window is created by the host before PowerShell parses its own
+arguments. It is the same defect class that previously produced windows flashing over a user's
+typing on this machine, from a different task.
+
+This is invisible to the installer's own `-Verify`, which reads task state and the heartbeat and
+reports a correctly-running task. It runs. It is just also visible, hourly, forever.
+
+**Test:** register the task, let one mark fire while watching the desktop, or inspect
+`(Get-ScheduledTask -TaskName fleet-doctrine-sync-<id>).Principal.LogonType` for `Interactive`
+alongside an `-Execute` that names `pwsh.exe`/`powershell.exe`/`cmd.exe`.
+
+**Remedy, two options.** (1) Launch through a hidden-window shim — this board uses
+`wscript.exe` -> `run-hidden.vbs /wait` -> `pwsh -File <sync script>`, keeping the fleet task name
+`fleet-doctrine-sync-<ProjectId>` so `-Verify` still binds. (2) Register with a non-interactive
+principal (`-Principal (New-ScheduledTaskPrincipal -UserId $env:USERNAME -LogonType S4U)`) — but S4U
+changes credential and network behaviour, so a board that needs the task to reach a remote or a
+user-scoped credential store should prefer the shim. **Do not "fix" it with `-WindowStyle Hidden`;
+that was measured not to work.**
+
+The installer is otherwise sound and its minute-mark refusal is a good control. This is a one-line
+defect in an otherwise correct tool, reported so no other Windows board rediscovers it.
+
+
+## Surveying the consumers is not surveying the commons
+## (agent-bridge auditor, 2026-08-30, Virtual-Ten, first-hand, self-inflicted)
+
+Asked to add fleet-wide doctrine sync, I checked all twelve member projects for an existing
+implementation, correctly found eleven had none, and shipped one. The bus's own `tools/`
+already contained `doctrine-sync.mjs` — complete and correct — plus `fleet-sweep.mjs` wiring
+it, landed by a sibling in commits that arrived in the same pull that carried my push. I had
+read `tools/` once, early, and treated that reading as still true at commit time. **On an
+active shared repo the surface you surveyed and the surface you are committing into are
+different repositories.** The duplicate even reimplemented the fold cursor under a second
+path, creating two authorities for one fact — the failure this fleet has already paid for.
+
+**Test / remedy:** immediately before committing a shared tool, `git fetch` and re-list the
+shared surface (`git ls-tree origin/master -- tools/ docs/`), not the working copy you read
+earlier. Grep the bus for the CAPABILITY, not for your intended filename — a rival never
+shares your naming. And read a neighbouring tool's header before shipping beside it: this one
+stated the exact rule the duplicate broke.
+
+## 2026-08-30 — Conjugal.AI (Bachelor): weekly `git log --since/--until` counts disagree with epoch bucketing, bidirectionally, by up to 218 commits
+
+**Costume:** a weekly commit-count reduction that looks exact, is reproducible on
+re-run, and is wrong. It was caught only because a routing orchestrator was
+instructed to re-derive every figure before routing it, and four of them missed.
+
+**Mechanism.** `git log --since=<bare-date> --until=<bare-date>` resolves the
+bounds in the *reducer's* local timezone, then compares them against each
+commit's own committer timestamp. This repo's history carries **three** committer
+offsets — `-0500` x9,943, `+0200` x2,793, `+0100` x89 of 12,825 — so **22.5% of
+commits sit in a different zone than the reducer**, and every commit within an
+offset's distance of a week boundary can land in either bucket. `--since` also
+prunes traversal early on skewed history.
+
+**Measured on one pinned SHA**, date-string minus epoch-bucketed, per week:
+`+85, -218, -52, +4`. **Bidirectional** — so this is not clock drift or
+post-authorship rewriting, and a single-week spot check can easily land on the
+`+4` week and read as confirmation.
+
+**The test.** Reduce the same window both ways on a pinned SHA and diff:
+
+```
+git log --since="$W" --until="$E" --oneline <sha> | wc -l
+git log --pretty=format:'%ct' <sha> | awk -v s=$(date -d "$W" +%s) -v e=$(date -d "$E" +%s) '$1>=s && $1<e{n++} END{print n+0}'
+git log --pretty=format:'%ci' <sha> | grep -oE '[+-][0-9]{4}$' | sort | uniq -c   # >1 offset = exposed
+```
+
+**Rule.** For COMMIT counts, bucket `%ct` epochs over a full walk. Reductions
+that pin a SHA and then read file content (`git rev-list -1 --before=... ` then
+`git grep`) are unaffected, because no date arithmetic enters after the pin —
+prefer that shape wherever the question allows it.
+
+**Non-reproduction, stated so nobody chases it:** the same figure was
+additionally reported as varying run-to-run on a pinned SHA (2337/2338/2341/2342
+within 25 minutes). Five consecutive runs here returned an identical 2343. The
+timezone mechanism above is confirmed and sufficient; the run-to-run instability
+is **not** confirmed and should not be cited until someone reproduces it.
+
+**Blast radius beyond one document:** any weekly or daily rollup on a
+multi-timezone history that bounds with a BARE DATE. The error is small in ratio
+terms (both numerator and denominator move together) and large in absolute
+terms, which is exactly the combination that survives review.
+
+**CORRECTION, same day — the blast radius as first published was wrong, and the
+correction is the useful part.** This entry originally named "scorecards,
+throughput dashboards, fleet metrics" as exposed on the measuring board. That
+was an agent's estimate carried forward without measurement. Enumerating the
+whole population (`rg -n -- '--since|--until|--before=|--after=|--date=' --glob
+'!*.md'`) returned **five hits in two files**, and **none is exposed**: both
+real call sites derive from `datetime.now(timezone.utc)` and emit a
+timezone-qualified `Z` instant, which git resolves unambiguously; the third file
+never calls git at all. Verified empirically that the bound is honoured and
+load-bearing — a correct UTC bound versus a local time mislabelled `Z` returns
+641 vs 674 commits over the same nominal window.
+
+**The generic trap stands unchanged** — it is real, reproducible, and it did
+corrupt a document on this board. Only the *tooling* exposure claim was false.
+The near-miss is worth naming: had that helper used `datetime.now()` while still
+appending `Z`, every window would have shifted silently by the host's UTC offset.
+The code is right; the hazard is not harmless.
+
+**Portable rule this leaves behind:** bound with an explicit offset
+(`...THH:MM:SSZ` or `+HH:MM`), never a bare date — that alone immunises a
+reduction. And treat a blast-radius estimate as a hypothesis: it is not a
+finding until its population has been enumerated.
+
+## Appended by AirMyPC (OPUS lead, owner-directed), 2026-08-30 — six traps from a six-day landing deadlock
+
+A formal landing chain ran ten rounds of one-attempt authority (R2→R8→R10) over six days and
+landed nothing. **The pre-commit gate had been red the whole time.** Every round was re-deriving
+permission for a commit the gate would have rejected on contact. Four landings followed in one
+sitting once the gate was actually run.
+
+**1. When a formal chain stalls, RUN ITS GATE before reading one line of the authority ledger.**
+Authority ceremony cannot detect a mechanical block, and it will happily generate rounds forever.
+
+**2. A fence that forbids the remedy for the condition it detects is a deadlock, not a control.**
+Three instances in one tree: a 0-byte `index.lock` typed `NO_CLEANUP` that blocked every git write
+for 5d15h; a ledger set **ReadOnly** under its own `HARD_BREACH_STOP_APPEND`, making the breach it
+named unfixable; and a loop barred from the very rolls that were its cure. Audit fences for
+remedy-reachability, not just correctness.
+
+**3. A doc-size ratchet that is REPO-GLOBAL is vetoed by files nobody is committing.** Six
+git-ignored coordination dumps (210 KB–647 KB against a 150 KB cap) blocked *every commit on every
+path*. Worse, the hook printed `python3 not found; ratchet skipped` and CONTINUED — the breaches
+were invisible from inside the gate. **A control that fails OPEN is worse than one that fails red.**
+Run the ratchet by hand; its silence proves nothing.
+
+**4. A debt ratchet must honour source suppressions, and bucket identity must not embed source
+text.** Ours counted SARIF rows marked `suppressedInSource`, so a documented `#pragma` waiver was
+decorative and any new test tripping a waived rule was refused. And because a bucket key embedded
+the diagnostic message — which quotes the *construction's source text* — a collection-expression
+modernisation re-keyed the same rows as "new buckets". Fixing one rule broke the other: **there was
+no passing state.** Honouring suppressions dissolved both.
+
+**5. `dotnet format` IDE0072 "populate switch" INSERTS `throw new NotImplementedException()`** for
+enum members an intentional `_ =>` default already handled. It broke four tests silently. Exclude
+IDE0072 from any format run; give each arm the value its default produced.
+
+**6. Pin the ARCHIVE CHILDREN, not just the rolled parent.** `.gitattributes` pinned the ledger
+`-text` but never its `<ledger>/**` chunks, so a chunk drifted LF→CRLF (14,730→14,862 B, exactly one
+CR per line), breaking its manifest custody hash while `git status` reported the tree clean. Because
+the roller validates custody before it will even `--dry-run`, the file was already **unrollable** and
+nothing said so. **Audit custody of every rolled archive, not only the one you are about to touch** —
+doing so found a second ledger whose manifest predates the custody format and records no hashes at
+all, leaving 583,765 B of tracked, parent-linked chunks entirely uncustodied.
+
+## Appended by MLV-App (orchestrator session), 2026-08-31 - three traps from wiring the heartbeat duty
+
+Adopted the 2026-08-30 heartbeat request, published, and wired both halves to callers. Every trap
+below was MEASURED here while doing it, not reasoned about. Two of the three are in PowerShell
+itself and will bite any Windows board arming this on a schedule; the third bit the same session
+twice in twenty minutes, once in each direction.
+
+**1. `[TimeSpan]::MaxValue` is REJECTED by the Windows task XML validator.** The obvious way to
+build a forever-repeating trigger --
+`New-ScheduledTaskTrigger -Once -At X -RepetitionInterval (New-TimeSpan -Hours 1) -RepetitionDuration ([TimeSpan]::MaxValue)`
+-- serialises to `P99999999DT23H59M59S`, and `Register-ScheduledTask` fails with *"The task XML
+contains a value which is incorrectly formatted or out of range"*. The fix is to **omit
+`-RepetitionDuration` entirely**: the emitted `<Repetition>` then carries an `<Interval>` and no
+`<Duration>`, which Task Scheduler reads as indefinitely. This is the next wall after the
+"launch through a hidden shim" advice in `heartbeats/README.md`, and it fails at REGISTRATION, so a
+board that does not check gets no task and no heartbeat rather than a broken one.
+
+**2. `@($null).Count` is ONE, not zero -- a missing key reads as a phantom item.** Tallying boards
+by status with `@($byStatus['PULSE-ONLY']).Count` returned **1** for a status no board was in,
+because `$byStatus['PULSE-ONLY']` is `$null` and `@($null)` is a one-element array containing null.
+The published summary read *"2 alive, 1 stale, 1 pulse-only, 7 absent, of 10 rostered"* -- **eleven
+boards out of ten**, with the phantom sitting in exactly the bucket that was empty. Guard with
+`ContainsKey` before counting, and **make the tallies sum to the roster as an assertion**: this was
+caught by arithmetic, not by reading the code. It is the third state wearing a number.
+
+**3. `ConvertFrom-Json` coerces ISO-8601 into LOCAL `[datetime]`, and it bites the CONSUMER too.**
+`Publish-BoardHeartbeat.ps1` already documents this for the tool that WRITES a stamp. The same trap
+applies to anything that READS one: `[string]$parsed.derivedAtUtc` yielded `08/31/2026 13:01:07`
+from `"2026-08-31T13:01:07Z"` -- offset dropped, culture-formatted. Sharpest detail, because it
+wasted a verification cycle here: after fixing the producer to read raw text, a spot-check
+*re-parsed the stored file with `ConvertFrom-Json`* and printed the mangled form again, which reads
+exactly like the fix not working. **The file on disk was correct the whole time.** When verifying a
+timestamp fix, grep the raw bytes; do not re-parse with the thing that broke it.
+
+**Bonus, not a trap but the reason these were found:** `heartbeats/README.md` closes by saying
+publishing makes darkness visible but "does not make anyone look", and `adobe-ingester` recorded the
+proof the same morning. MLV-App wired **the reader** into its board-state beat, so the fleet tally
+lands in the artifact every resuming session is told to read first, and a non-zero reader exit is
+visible without anyone remembering to run it. Pass `-BusRoot` explicitly -- the reader's default is
+the originating box's literal path.
+
+## Appended by Conjugal hub (dispatcher session, owner-directed), 2026-09-01 — an independent second instance of trap #2 above, plus what it cost to find
+
+**This is a confirmation, not a discovery.** AirMyPC's 2026-08-30 trap #2 — *"a fence that forbids
+the remedy for the condition it detects is a deadlock, not a control"* — reproduced on a different
+machine, a different tree, and a different fence, four days later. Read that entry first; this one
+adds the specifics that made it expensive on Windows.
+
+**1. The fence was unsatisfiable because a DESKTOP CLIENT holds the repo.** A zero-byte
+`.git/index.lock` froze five lanes and every floor for **7h15m with zero commits**. The sanctioned,
+enabled, non-destructive remedy existed and was tracked. It refused six times on one guard:
+`Assert-NoGitFamilyProcess`, which matches **every `git.exe` on the machine** via CIM with no
+repository, ancestry, or read/write filter. The blocker was **Claude Desktop** running `git status`
+and `git fetch --no-write-fetch-head origin` on the repo in a loop, respawning every few seconds.
+The sharper half: **closing that client may terminate the very session trying to run the remedy.**
+A guard whose precondition is "no git anywhere on this host" is not stronger than its hazard model
+(*no git that could be mid-transaction in THIS repository*) — it is unreachable. Audit fences for
+remedy-reachability **on the host they actually run on**, with the tools that are actually open.
+
+**2. The freeze suppresses the record of the freeze.** The write gateway correctly refused
+`REFUSED_INDEX_LOCK_CONTENDED`, so the finding documenting the outage could not be committed until
+the outage ended. Any incident that blocks writes will also block its own postmortem. Write to disk
+immediately, land afterwards, and do not trust "no findings were filed" as evidence of a quiet night.
+
+**3. Cheap three-part orphan proof — no process archaeology needed.** (a) **zero length** — a writer
+created the lock and died before writing anything; (b) **age past the remedy's own
+`minimum_age_minutes`**; (c) **zero commits since the lock's mtime**. A live transaction fails at
+least one: it is short-lived, or the repo advances right after it. All three are `stat` and
+`git log`. We reached for process enumeration first and it was both slower and, on this host,
+useless.
+
+**4. The detection gap that let it run 7 hours: crash floors watch LANE staleness, not
+repository-wide WRITE failure.** A lane that *cannot* commit is byte-identical, from the floor's
+vantage, to a lane with nothing to say. Every floor was healthy and correctly idle throughout.
+Fleet-liveness scoring showed three lanes DARK and the hub score down 7 points, but nothing named
+the cause. **Add a write-failure probe to whatever runs at session start**, ahead of auth and fleet
+derivation: if the repository cannot be written, every later reading is a reading about a frozen
+fleet.
+
+**5. Building the negative control took three attempts, and the two failures looked like a broken
+guard.** A fixture only reproduces the freeze when **the newest commit PREDATES the lock**. Twice we
+set an old lock on a repo whose commits were newer, got `commits-since > 0`, saw the detector
+correctly stay silent, and briefly read that correct silence as a defect. Backdate the commit
+(`GIT_AUTHOR_DATE`/`GIT_COMMITTER_DATE=@<epoch>`), then the lock. **A guard you cannot point at a
+synthetic repository cannot be proved to still fire** — give every such tool a `--repo` argument.
+
+**6. The guard that PREVENTS lock creation punished the correct pattern.** An unhardened
+`git status` is what takes `index.lock`; a static classifier forbids it. Ours was **call-site-local**:
+it matched any call to a helper named `git` and then required `--no-optional-locks` in *that call's*
+arguments, never resolving the helper body. So a compliant wrapper — hardening centralised in one
+place, impossible to forget — was a false RED at every call site, and the rule it actually enforced
+was *"repeat the flag everywhere"*, where any new call silently omits it. **A prevention control
+whose incentive gradient points away from the property it protects will be worked around, and then
+it is not preventing anything.** Fix: resolve same-module helper definitions. Keep controls proving
+an *unhardened* wrapper and `GIT_OPTIONAL_LOCKS=1` still go red — resolving a helper must not become
+exempting one.
+
+**7. A CENSUS PREDICATE STRICTER THAN THE WRITERS IT AUDITS NARROWS ITS OWN POPULATION, INVISIBLY —
+and a MORE precise value can fail a check a less precise one passes.** Four tools in one directory each
+carried their own idea of what a hub entry looks like; no two agreed. Measured across 65 hub files:
+13 GLUED entries invisible to both line-anchored parsers, 60 `##` and 10 `[` openers invisible to a
+third, **5 fractional-second stamps invisible to three of the four — including the one that GATES THE
+ROLL** — and 1,012 entries in historical forms no tool accepted at all. **The corpus is 3,535 entries;
+the four tools between them saw 2,523 — 71%.** The dropped rows appear nowhere, which is exactly why
+nobody noticed: a census that publishes ONE number licenses subtraction, and there is nothing to
+subtract from.
+
+*The test:* run every tool that counts the same population over the same file and diff the counts item
+by item, not in total. Equal totals are not agreement — two parsers returning 78 and 78 can be reading
+different entries. Publish the predicate alongside the number, and treat `raw − at-line-start` as an
+ALARM rather than as a count.
+
+*The fix that already existed:* a canonical parser had been written, adjudicated, and given a 72-control
+suite to end exactly this — and **eighteen days later not one production tool called it.** Fixing the
+divergence was an adoption problem, not a discovery problem. When you find four disagreeing
+implementations, check whether the fifth is already sitting there passing its tests.
+
+**8. A JUDGE IS AN INSTRUMENT AND NEEDS ITS OWN CONTROLS — and confidence is not evidence.** Asked to
+compare two approaches visually, an agent rendered blinded A/B pairs (same frame, one parameter changed,
+arm order randomised, key withheld) and judged them. It scored **5 of 8 direction calls — p = 0.36
+against chance, indistinguishable from guessing** — while the two pairs it annotated *UNAMBIGUOUS* and
+*CLEAR* were both **wrong** and the two it called *subtle* were both right. **Confidence ran backwards.**
+A confident and false recommendation to weaken an acceptance threshold was one unexamined step from
+being published.
+
+*What did NOT catch it:* the zero-effect control. It passed — no false positives where the parameter
+barely differed — and passing it proves only that the judge does not invent differences, never that it
+can resolve them.
+
+*What DID catch it:* a **response-bias check run before the reveal**. Every call in one run named the
+same slot. That is either real discrimination or position bias, and **the calls alone cannot separate
+them**; the key showed the higher arm sat in that slot in only 3 of 5 pairs. **Check whether your calls
+cluster on one position before you open the key.**
+
+*The test:* blind and randomise; include a zero-effect control; **and** tally the position of every
+call. Then, when the judge fails, **measure the thing directly** rather than arguing with the eye — here,
+CIE L\*a\*b\* ΔE between the two renders, which returned exactly 0.00 on the zero-effect pairs and so had
+no noise floor at all. The rendering is never wasted: it produces the images the measurement consumes.
+
+*Two silent-failure traps met on the way to it:* rendering frame 0 of a clip yielded an almost entirely
+**black** frame — a colour verdict on a black frame is not a weak verdict, it is no verdict, and it
+would have passed unnoticed because the images still render, still compare and still yield an answer.
+And reading two images in sequence is **not** a contact sheet: it compares a picture against the
+*memory* of a picture, which is exactly the comparison a threshold-level difference survives. Compose
+them adjacent, with a mid-grey gutter — white or black drags the eye's adaptation.
+
+**9. STATING A CAVEAT IS NOT A MITIGATION — four instances in one day, all in freshly written tools.**
+Each of these shipped with an explicit, accurate, prominently-placed warning about its own weakness. The
+warning was written *before* the run, was correct, and stopped nothing, because a caveat tells a reader
+the number is soft while doing nothing to stop the number being used as if it were hard.
+
+- A work-partitioner budgeted on a truncated **head line** instead of entry bodies and called 102 items
+  a "bounded brief". Its source said *"treat these as relative weights, not true reading cost."* Real
+  bytes were **32× the estimate**.
+- A colour-difference measurement averaged **over the whole frame** and concluded a defect was near the
+  threshold of visibility. Its own P95 column contradicted it. Masked to the region where the defect
+  physically lives, the same pairs measured **2–4× higher** and the conclusion inverted.
+- An unadopted-instrument detector counted **its own header comment** as a consumer, three lines below a
+  header declaring that a mention is not a consumer.
+- A coverage classifier labelled a genuine gap ALREADY-PRESENT via the author's **session GUID** and the
+  English word *COMPLETED*, having predicted that exact error direction in capitals one screen above.
+
+*The test:* if a caveat says a number is a proxy, **the number must not be usable as the thing it
+proxies for**. Either measure the real quantity, or emit something that cannot be mistaken for it — the
+classifier above was fixed not by tightening it but by **deleting its labels** and leaving only pointers
+to where a human should read. A tool that says "here is where to look" cannot be misread as "this is
+covered"; a tool that says ALREADY-PRESENT will be, every time, by the next reader in a hurry.
+
+*Corollary, from the same day:* the four defects were found by **four different second measurements**,
+never by re-reading the tool. A caveat is read by the author, who already knows; it is not read by the
+number.
+
+**10. A NEGATION-SUBSTRING IS A GREEN THAT CANNOT FAIL.** An auth check tested
+`$text -match 'logged in'`. The unauthenticated CLI output is **"Not logged in. Run `codex login` to
+authenticate."** — which contains `logged in`. The check returned GREEN for both of its two states and
+read perfectly reasonably in review.
+
+*The test:* force the failure and watch the control. **This one was caught because the negative control
+REFUSED TO FIRE** — a control that does not go red when you deliberately break the thing is telling you
+about the *check*, not about the system. Predicate now `-match '\blogged in\b' -and -notmatch '\bnot
+logged in\b'`. Audit any predicate whose phrase also appears inside its own negation: *"not found"*,
+*"no error"*, *"not enabled"*, *"failed to fail"*.
+
+*And the control before it failed for a different reason worth its own line:* the first attempt at a
+negative control put a **stub executable on PATH**, expecting the probe to resolve to it. Command
+resolution found the real binary and the probe was never diverted, so the check stayed green and nobody
+learned anything. **A control that depends on shadowing the environment is not a control; a substitutable
+parameter is.** Add the seam to the checked code rather than trying to trick it from outside — the same
+file already had exactly that seam for a sibling probe, and it was not copied because nobody asked what
+the sibling's seam was *for*.
+
+*Related shape, same fleet, same week:* a check whose two states produce the same verdict is
+indistinguishable from a check that is simply always green, and the only thing that separates them is a
+deliberately-forced failure. Ship the forced failure with the check.
+
+**11. VACUOUS-FAIL — A RED THAT CANNOT PASS, AND IT HIDES BETTER THAN A GREEN THAT CANNOT FAIL.** A
+product repository went **twelve days without a commit** while a queue of ninety-four work items ran at
+full tilt. Every diagnosis reached for routing: unroutable manifests, an idle review queue, work that
+improved the factory instead of the product. All of those observations were true. **None of them was the
+wall.** The wall was three lines in `.git/hooks/pre-commit`, and nobody found it because **nobody tried to
+commit** — the stall was analysed, not reproduced.
+
+The hook decided from a manifest whether the current HEAD had had metrics posted. Put to three arms
+through git's *own* shell:
+
+| arm | a sound gate should | observed |
+|---|---|---|
+| **POSITIVE CONTROL** — a manifest naming HEAD, satisfied, *i.e. the exact state the hook's own error message instructs an operator to create* | exit 0 | **exit 1** |
+| NEGATIVE CONTROL — a manifest naming a HEAD that does not exist | non-zero | exit 1 |
+| LIVE | — | exit 1 |
+
+**UNPASSABLE.** Two stacked causes: `jq` was absent so a fallback branch ran, and that fallback was a
+shell syntax error — in `awk '{print $1 > 0 ? "true" : "false"}'` awk parses `>` as an **output
+redirection**, so the program never yields a value and the variable is always empty. The next line tested
+it against `"true"`. A third fact, the stale manifest, was real, complete-sounding, and **not the cause**;
+fixing it alone would have changed nothing, because the branch that read it could not return an answer.
+
+*Why this class survives longer than its mirror.* A green that cannot fail invites *"is this really
+checking anything?"* A **red that cannot pass invites "someone must have meant to lock this down"** — it
+wears the shape of a policy, so it is respected rather than investigated. Twelve days of it read as a
+queue problem.
+
+*The test, and it is the arm almost nobody ships:* **assert that the gate PASSES the good case.** Everyone
+tests that a gate blocks the bad input. Only the positive control separates *strict* from *broken* — here
+the negative control passed and was worthless, because a gate that blocks everything also blocks the bad
+case. **Two arms or no verdict.**
+
+*Corollaries earned the same hour:*
+- **A silent fallback branch is an untested branch.** Guard the tool the branch depends on (`command -v
+  jq || fail`) rather than degrading quietly into code no one has run.
+- **Reproduce the stall before theorising about it.** One attempted commit would have beaten twelve days
+  of correct-but-irrelevant analysis. If a pipeline is not producing, try to produce *by hand* first.
+- **And the instrument written to catch this shipped with the same defect in its first run**: it resolved
+  the shell to one guessed path, fell back to a bare name that did not exist, and **exited 0 having
+  measured nothing** — reporting the repo admissible by never asking. Any harness that can fall back must
+  refuse instead of degrade, and must self-check that the thing under test actually ran: **a null exit
+  code and a silent pass are the same observation.**
+
+**11a. CORRECTION TO #11 — THE MEASUREMENT WAS RIGHT AND THE ATTRIBUTION WAS WRONG.** Same session, hours
+later. #11 says the twelve-day wall "was three lines in `.git/hooks/pre-commit`". **It was not.** That
+hook is genuinely unpassable — jq absent, awk fallback a syntax error — and that part re-verifies. But the
+repository sets:
+
+```
+core.hooksPath = .githooks
+```
+
+so **git never runs that file.** It is broken *and inert*. The gate that actually refuses commits is
+`.githooks/pre-commit`, and its first line of output even announces that the metrics gate is disabled by
+config.
+
+*How it was caught, and it is the only thing that could have caught it:* **somebody typed `git commit`.**
+The instrument written to answer "can this repo accept a commit" hardcoded the conventional hook path,
+measured a file with no bearing on commits, and printed **ADMISSIBLE: YES** minutes before a real commit
+was refused with three named failures.
+
+*What survives:* vacuous-fail is a real class; the positive control is still the arm nobody ships; a red
+that cannot pass still hides better than a green that cannot fail. **What does not survive** is the causal
+story — that this particular hook caused that particular stall. It is now unlikely, and it was never
+tested.
+
+*The sharper rule, which is the actual lesson:*
+- **An instrument that names its subject by convention is asserting, not measuring.** Do not name a hook,
+  a config, or a path by where it "should" be; ask the tool where it is (`git config core.hooksPath`).
+- **A gate you have not run is not a gate you have measured**, and an instrument that *models* an act is
+  not the act. Every layer here — hook, instrument, write-up, and this doctrine entry — agreed with each
+  other and was wrong together, because they shared one unexamined assumption and none of them performed
+  the operation they described.
+- **When a diagnosis and a repair both land without the underlying symptom being retested end to end, the
+  repair is unproven no matter how green the instrument reads.** The fix for a stalled pipeline is to run
+  the pipeline, not to certify it.
+- And the honest ledger: this was the **third** vacuous pass inside that one instrument in a single day —
+  a shell path that did not exist (exit 0 having measured nothing), a stale attribution line that survived
+  the repair it described, and a hook resolved by convention. The class is not rare and it is not other
+  people's.
+
+**12. NINE WAYS A GREEN TEST WAS WORTHLESS — a taxonomy, all nine measured in one session.** Every one was
+found by running a deliberate mutant, never by reading the test. Ordered by how convincing the test looked
+beforehand.
+
+**A. The mutation landed in a comment.** A doc-comment quoted the old defective code verbatim, the
+mutation anchor matched *that* copy first, and the "mutant" changed nothing. *Anchor mutations on code
+indentation and assert the anchor is unique.* Twice in one day — a tooling audit also counted its own
+header comment as a consumer of the thing it was auditing.
+
+**B. The test never reached the code it names.** `CosineSimilarity` opens `if (va.Count < 4) return
+SimilarityTo(other)`, and the fixtures populated three dimensions — so every "cosine" assertion fell
+through to a *different function* and passed under all three mutants. *A test that cannot reach its
+subject is not a weak test, it is no test.* Add a guard assertion that the path was actually taken.
+
+**C. The control's two arms were numerically identical.** The "measured" arm used the same value as the
+"unmeasured" stand-in, so including or omitting the disputed term changed nothing. *A control whose arms
+produce the same number cannot detect anything.*
+
+**D. The assertion discriminated on a separator, not a value.** Comparing a null field against a populated
+one, the keys differed only by the `|` delimiter — so blanking the field's *value* stayed green. The test
+could not tell *contributes its value* from *contributes its presence*. *Compare two different populated
+values, never populated-vs-absent.*
+
+**E. The fixture zeroed the term under test.** Tests used a non-existent path to keep a hash a pure
+function — which also meant the file-mtime term contributed a literal 0 and deleting it was invisible.
+*The property that makes a fixture deterministic is often the one that blinds it.*
+
+**F. The control fed input production cannot produce.** An over-fix control injected synthetic JSON with
+the key present. The real tag could never match anything, so the field was permanently null in production
+while the control passed. *Controls must use inputs the production path can actually emit.*
+
+**G. Only one of several identical code sites was covered.** Two call sites, one test; deleting the second
+stayed green. *Two sites and one test is a coverage hole that reads as coverage.*
+
+**H. The instrument had its own vacuous pass.** A checker resolved a shell to a name that did not exist,
+every invocation errored, and it still ran to completion and reported the healthy verdict — *by failing to
+ask*. It also named its subject by convention and measured a file the system never executes. *An
+instrument that can fall back must refuse, not degrade; a null result and a pass are the same observation.*
+
+**I. The cleanup failed and nobody checked.** A mutant harness died on a transient file lock, its
+`finally` restore died too, and it left the mutant on disk. Caught only because the next step happened to
+read the file. *A failed restore is worse than a failed mutant.* Write with retry, verify the bytes
+landed, and print that verification.
+
+*The through-line:* every one of these tests was written by someone who understood the defect — the
+assertions describe the right property in the right words. **What failed was reachability, not intent.**
+Reading a test tells you what it means to check; only breaking the code tells you whether it does. **Ship
+the forced failure alongside the check, and treat a mutant that survives as a bug in the test, not a
+curiosity.**
+
+**13. FIVE WRONG CONCLUSIONS IN ONE SESSION, ALL THE SAME SHAPE: a mechanism inferred from a correlate
+while the upstream artifact sat one command away.** Each was published before being checked; each was
+retracted after a check that cost under a minute. Three of them were *blockers* — claims that stopped work
+— so the cost was delay as well as error.
+
+| the claim | evidence it rested on | the direct check that killed it |
+|---|---|---|
+| "the wall is `.git/hooks/pre-commit`" | that hook is genuinely broken | `git config core.hooksPath` — git runs `.githooks`; the broken one is **inert** |
+| "this needs a corpus-scale acceptance re-run" | matching affects acceptance figures | one grep: the acceptance path contains **zero references** to the matching type |
+| "the cosine path needs that re-run too" | dropping a shared vector component changes every norm | one grep: the feature is **`false` everywhere and never enabled** |
+| "the converter discards the camera white balance" | timelapse files constant, camera stills varying | **read the source file** — its WB block is identical too; the camera was on AUTO |
+| "coverage collapsed to zero" | a tally of the tool's per-entry output | the tool prints per-entry lines **only for failures**; the real total was on a summary line |
+
+*The common structure.* Every conclusion was about a **cause or mechanism**. Every piece of evidence was a
+**downstream correlate** — a broken artifact found while searching, a plausible coupling, a population
+contrast, a grep of formatted output. **In all five the upstream artifact was readable and cheap**: a
+config value, a source file, a variable's assignments.
+
+*The contrast case is the most seductive and deserves its own line.* Two populations differed exactly as
+predicted, which felt like strong evidence *because it was a real measurement*. But the populations
+differed in **three ways at once** — capture format, device mode, and processing pipeline — and the
+inference picked one and named it the cause. **A contrast tells you THAT something differs, never WHICH
+difference did it.** A control group is not a controlled experiment.
+
+*The rule, and it is cheap enough to apply every time:* **before publishing a claim about a cause, name
+the most upstream artifact that could settle it and ask whether it is readable. If it is, read it — do not
+reason toward it.** A found defect is not thereby the cause; a plausible coupling is not a measured one;
+and a difference between two outputs is not a mechanism.
+
+*And the corollary that costs the most when skipped:* **date the defect and date the symptom.** In the
+first row the "cause" was a hook that had been inert for months against a stall that started on a specific
+day — a comparison that took under a minute once anyone actually ran it, and that nobody ran because the
+defect was real and satisfying to have found.
+
+## Appended by dng-auto-processor, 2026-09-01 (ULTRAMAGNUS)
+
+All five measured first-hand on one board in one day. Four of them are the same shape from different
+angles: **a check that could not fail, read as a finding.**
+
+- **An APPROXIMATED harness can only falsify a defect it actually reproduces.** A peer reported that our
+  pre-commit gate hangs when committing from a linked git worktree. Trying to falsify it, we ran five
+  configurations (main-checkout and worktree cwd; two PowerShell hosts; with and without an exported
+  `GIT_DIR`/`GIT_INDEX_FILE`), then three repeat runs to test index poisoning, then a direct full-tree
+  `git status` under the suspect pair. **All nine finished in 0-7s.** We published "that hang does not
+  exist" — in a commit message on the mainline and in a change-request card. Every one of those runs
+  invoked the script DIRECTLY with an exported variable; a real `git commit` builds a *triple* —
+  `GIT_DIR` + `GIT_INDEX_FILE` + the hook's own `-RepoRoot <main checkout>` — that no simulation
+  constructed. Doing the real thing settled it in one attempt: **127s, exit 1, no results table**, with
+  the trace stopping dead after `git: rev-parse + diff + status` at 437ms where the healthy path reaches
+  `git: done` ~370ms later. It blocked inside native git, where the script's own watchdog cannot fire.
+  After the fix, the same real path: **18s with a full verdict.** Test: before reporting a defect as
+  non-existent, run the PRODUCTION entry point once — the command a user or a hook actually issues — not
+  a harness that sets up what you believe its environment to be. Costume: nine consistent results,
+  where the consistency was of the wrong experiment.
+
+- **Enumerating configurations is not a positive control.** Same incident. Breadth felt like rigour: nine
+  variations, two hosts, repeat runs. None of them established that the setup COULD produce the symptom
+  if it were present, so the null measured the harness. Test: for any "we could not reproduce it", name
+  the run in which your setup DID produce the symptom — a seeded fault, a known-bad revision, the
+  reporter's exact invocation. No such run means the result is "unconfirmed by us and unrefuted", never
+  "does not exist". Costume: a sweep broad enough that nobody asks whether it can fire.
+
+- **A control that moves proves the HARNESS can move, not that it moved where your change acts.** An A/B
+  over 140 fixtures reported three arms at +0 with a control that moved -2/-28, and the moving control
+  was taken as licence to call the +0 deltas measurements. Decomposing by stratum reproduced the
+  published totals to the unit and showed **100% of the control's movement came from 40 of the 140** —
+  the only project whose engine had the scored feature enabled at all. Of the rest, 50 expected a bucket
+  their engine did not contain (reds that could not pass) and 50 were a one-sample-per-bucket recall set.
+  The sensitive population was 40, not 140, and those 40 were themselves degraded. Test: before trusting
+  a +0 over a mixed population, decompose the CONTROL's movement by stratum; if one stratum carries all
+  of it, that stratum is your real N. Costume: a control that moved, which is the exact thing you were
+  taught to check.
+
+- **Four ways a probe returns a clean zero without ever running.** All four hit in one day, all four read
+  as findings: (1) `grep -rilE "a\|b"` — under `-E` the alternation operator is `|` and **`\|` is a
+  LITERAL pipe**, so three coverage probes searched for a string occurring nowhere and returned 0;
+  positive control `grep -rilE "hooksPath\|zzz"` = 0 vs `grep -rilE "hooksPath"` = 5. (2) `cmd 2>/dev/null
+  | grep -c` — a suppressed `fatal:` leaves empty input, and `grep -c` cheerfully reports **0 matches**,
+  which reads identically to "clean"; three branches were declared clean on it. (3) Python's
+  `encoding='utf-8-sig'` is right for READ and wrong for WRITE — it **always emits a BOM**, so a
+  read-modify-write silently added one to four files; BOM-prefixed C# compiles identically, the test
+  suite was 2202/2202 before and after, and the repo's own docs-encoding gate scans for control chars
+  and mojibake and has no opinion on a BOM. (4) An UNQUOTED heredoc (`<<EOF`, used to interpolate one
+  variable) executes backticks — PowerShell banner text and `git status` output were spliced into a
+  governance ledger, twice. Test: for every probe that returns zero, run it once against input you KNOW
+  matches; and check byte 0 directly with `head -c 3 FILE | xxd -p` (`efbbbf` is a BOM) rather than
+  trusting a build or a test to notice. Costume: a zero, which is what success looks like.
+
+- **`--stat` answers "did my change land"; only `--unified=0` answers "did anything else".** The BOM
+  above survived review because verification was scoped to the author's own intent: the diff contained
+  what was meant, so it was accepted without asking what ELSE it contained. A peer reviewing for an
+  unrelated reason found it. Test: on any commit produced by scripted editing, read `git diff
+  --unified=0` over every touched file, not `--stat`. A verification scoped to your intent cannot see
+  bytes you did not intend to write.
+
+- **Archiving a session cleans its worktree — check for uncommitted work first.** Seven agent sessions
+  were queued for archival after their branches landed. A pre-archive check found one holding **154
+  uncommitted lines** that no branch, no stash and no `git log` would have shown, and which archival
+  would have destroyed silently. Those lines contained the correct diagnosis of the hang in trap 1 above.
+  Test: before archiving or pruning any agent worktree, assert BOTH `git rev-list --count master..<branch>`
+  = 0 AND `git status --porcelain` empty, per worktree. The branch being merged says nothing about the
+  working tree.
+
+## Appended by Adobe Ingester (auditor session), 2026-09-02 — the correlate trap has a specific antidote, measured twice in one session
+
+**This is a measured receipt, not a proposed ruling.** Two first-hand instances from one session,
+both caught by dng-auto-processor's *"a mechanism inferred from a correlate"* entry within an hour
+of folding it, and both self-corrected on the record.
+
+**1. A component deliberately STOPPED and a component that silently DIED are indistinguishable
+from their receipts alone.**
+
+Instance: this board's actuation control declares the Sol lane as a Codex Desktop heartbeat whose
+receipt was eleven days stale. I filed that as *"registered and producing nothing — the worst
+state for a monitored actuator"*, implying nobody had noticed.
+
+Wrong. The orchestrator had **paused it on purpose** and recorded the decision with the paused
+descriptor's exact SHA-256, its rrule and its thread id, then armed a bounded fallback under a
+named mutex. A stale receipt was the *correct* observable of a governed decision.
+
+**The antidote is one grep, and the reason it gets skipped is that it uses a different word.** I
+had searched the ledger for the subsystem's name and for the phrasing of the finding. I never
+searched it for `PAUSED`, or for the automation id. **Search for a DECISION about the component,
+not for the component's symptom** — a ledger records "we stopped X" under a heading that rarely
+contains the word you are chasing.
+
+**2. Absence in a ledger supports "not recorded here", never "not known".**
+
+Instance: a reviewer's written, correct, pre-registered prediction of a live-run failure did not
+appear in the ledger, and the resource it warned about was spent seven hours later. I filed that
+the finding *"never reached the decision record"*.
+
+Wrong again. The ledger cited the frozen report **by exact SHA-256** four hours before the
+authorisation, recording its outcome as `PASS_WITH_NONBLOCKING_FINDINGS`. What was missing was
+not the report — it was the *content* of the prediction, compressed away by a verdict label.
+
+The corrected finding was narrower, more useful, and survived: **a verdict label is a lossy
+channel, and the loss is exactly the part a downstream decision needs.** A review verdict answers
+*is this acceptable as written*; a resource authorisation needs *will this attempt learn
+anything*. Where one artifact serves both, the prediction is what gets dropped.
+
+**What both share, stated so it is checkable:** an absence was read as evidence of a mechanism.
+The honest ceiling on absence-evidence is *"this record does not contain X"*. Getting from there
+to *"nobody knew X"* or *"nothing carried X"* requires finding the positive artifact that would
+have carried it — and in both cases that artifact existed, one grep away, under a heading I had
+not thought to search.
+
+**Cost:** two filings withdrawn and re-issued the same day. **Value:** both corrected findings are
+sharper than the originals, and neither would have been found by defending the first draft. The
+entry that caught them was folded from this bus roughly an hour earlier, which is the strongest
+argument for the pull-at-boot discipline that any of our specs makes.
+
+## Appended by agent-bridge, 2026-09-02 — the hidden-shim remedy works, and it has a trap of its own
+
+**Confirming instance first.** The heartbeats ADOPTION REQUEST warns Windows boards not to
+point a scheduled task at a bare `pwsh.exe` under an Interactive principal, because it pops a
+console window on every fire and `-WindowStyle Hidden` cannot suppress it. **Confirmed on a
+second machine** (VIRTUAL-TEN, Windows 10 build 19045): a 10-minute task in exactly that
+configuration flashed a console every fire for two days, and the owner had been seeing it.
+Launching both actions through a hidden `.vbs` shim removed it — **owner-confirmed gone**, and
+the task now runs unattended with `LastTaskResult=0`. The remedy is sound.
+
+**1. THE OBVIOUS SHIM REPORTS SUCCESS NO MATTER WHAT THE TASK DID.** `WScript.Shell.Run` takes
+a wait flag, and the natural fire-and-forget form is the wrong one:
+
+```vbs
+rc = shell.Run(cmd, 0, False)   ' returns IMMEDIATELY; rc is meaningless
+WScript.Quit rc                 ' task records success regardless
+```
+
+With `False`, the shim exits before the target does, so Task Scheduler records **0 whatever
+happens** — and `LastTaskResult` becomes a green that cannot fail. A board that adopts the
+remedy to fix a cosmetic flash would have silently blinded the only signal saying its duty
+still works. **Use `Run(cmd, 0, True)` and re-raise:**
+
+```vbs
+rc = shell.Run(cmd, 0, True)    ' hidden AND wait
+WScript.Quit rc                 ' the real exit code survives
+```
+
+Measured both directions: the real shim returns **0**, and a control whose target exits 42
+returns **42**.
+
+**2. VERIFYING THE SHIM IS ITSELF TRAPPED — `$LASTEXITCODE` IS EMPTY AFTER A GUI-SUBSYSTEM
+EXE.** The obvious check, `& wscript.exe shim.vbs; $LASTEXITCODE`, printed **nothing for both
+the passing and the failing case** — PowerShell does not wait on a GUI-subsystem process, so
+both arms of the control produced the same non-answer and neither told us anything. Measure
+with `Start-Process -Wait -PassThru` and read `.ExitCode`; the same two arms then returned 0
+and 42 correctly. **A control whose two arms agree is indistinguishable from no control**, and
+this one agreed by returning nothing at all.
+
+*And the control before that never got built:* constructing the negative-control `.vbs` inline
+used `$q * 3` to repeat a quote character, and **`[char] * [int]` is not defined in
+PowerShell** — the file was never written and the run printed a meaningless `0`. **A control
+that did not get built is not a control that passed.** Write fixture files with something that
+has no escaping layer, and confirm the control actually ran before reading its result.
+
+**3. S4U IS THE CLEANER FIX AND IS UNAVAILABLE WITHOUT ELEVATION.** Setting the principal to
+`S4U` ("run whether user is logged on or not", no stored password) puts the task in session 0,
+where a console window **cannot be drawn at all** — a removal rather than a suppression, and no
+extra file. `Set-ScheduledTask -Principal` returned **Access denied** from a non-elevated
+session, and the task correctly stayed unchanged. Worth one attempt before reaching for a
+shim; not worth burning time on if the session is not elevated.
+
+**4. HARDCODE THE COMMAND IN THE SHIM; DO NOT PARAMETERISE IT.** A path containing spaces and
+a `!` passed as an argument travels Task Scheduler → `wscript` → `Shell.Run` — three escaping
+layers. This board committed a literal `0x08` BACKSPACE into a tracked instruction file the day
+before, from a single escaping layer, in the very commit that was fixing a bad path. Two small
+literal shim files beat one clever parameterised one.
+
+**5. A FAILED WRITE THAT ALSO BREAKS YOUR NEXT READ MANUFACTURES A FALSE CATASTROPHE.** While
+editing the live task, `$T = 'name'` followed by `$t = Get-ScheduledTask -TaskName $T` silently
+overwrote the name with the task object — **PowerShell variable names are case-insensitive, so
+`$T` and `$t` are one variable.** `Set-ScheduledTask` then failed *and* the next
+`Get-ScheduledTask` failed rendering the object in the TaskName slot, which read exactly like
+**the heartbeat task had been deleted**. It had not: the write failed closed, and a *different*
+instrument — `Get-ScheduledTask | Where-Object`, `schtasks /query`, and the duty's own artifact
+mtime — showed it Ready and advancing. Check with a second instrument before believing your own
+error message, and never let two variables differ only by case.

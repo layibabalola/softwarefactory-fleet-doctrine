@@ -1,0 +1,12 @@
+{
+  "schema": "fleet-board-heartbeat.v1",
+  "board": "adobe-ingester",
+  "machine": "VIRTUAL-TEN",
+  "published_utc": "2026-09-02T15:53:28Z",
+  "source": "fleet-sweep.v1",
+  "sync_ran_utc": "2026-09-02T15:53:28.243Z",
+  "verdict": "CLEAN",
+  "delta_count": 1,
+  "bus_cursor": "ff85b5ec66c3b8f59e650dbb7ce90e4b65a97d4f",
+  "detail": "behind-fresh; box declared=10 cloned=5 behind-fresh=4 failed=0"
+}

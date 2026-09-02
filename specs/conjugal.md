@@ -1,9 +1,15 @@
 # Conjugal.AI — factory spec (writer ladder: Fable hub → Opus when Fable dark → owner-directed dispatcher, each write stamped with which rung; one writer at a time — owner amendment 2026-08-09, motivated by Fable's measured quota fragility)
 
-**Repo:** `C:\code\Conjugal` (machine: Bachelor). **Governance:** four-lane
-hub — Sol (orchestrator/tie-break, Codex `gpt-5.6-sol` high), Luna (sole
-implementer, Codex `gpt-5.6-luna` high), Fable (primary reviewer, Claude),
-Opus (independent verifier, Claude). Four-key protocol: route → implement →
+**Repo:** `C:\code\Conjugal` (machine: Bachelor). **Governance:** five-lane
+hub since the owner-directed topology inversion of 2026-08-29 — Opus
+(orchestrator/architect/tie-break, Claude `claude-opus-5`), Sonnet (sole
+implementer, Claude `claude-sonnet-5`), Fable (reviewer key, Claude
+`claude-fable-5`), Sol (**verifier key**, Codex `gpt-5.6-sol` high — a Codex
+lane on purpose: an orchestrator cannot verify what it routed, and cross-family
+independence is worth most at the LAST gate), Luna (surge implementer, Codex
+`gpt-5.6-luna` high). Before the inversion: Sol orchestrated, Luna implemented,
+Fable reviewed, Opus verified — see the 2026-08-30 delta for why that
+arrangement stalled. Four-key protocol: route → implement →
 review → verify, reviewer/verifier independence absolute (no key on own
 authored/reviewed subject). Truth lives in `coordination/lanes/*.md` raw
 wires; heartbeat prose is never authority. Shared worktree, single-writer
@@ -266,3 +272,62 @@ launcher census, 1,000-tick deterministic idle proof, exact installed-byte profi
 observer/health chain, full-child containment receipt, rollback receipt, or independently reviewed
 SHADOW/CONTAINMENT packet exists. Those missing local proofs, rather than provider availability,
 block a canary and project adoption.
+
+
+## 2026-08-30 delta — orchestrator seat-fit: why this board stalled for six weeks (rung: owner-directed dispatcher)
+
+Full-population git measurement of `master`, first-hand. Companion ruling
+candidate: [`ruling-candidates/orchestrator-seat-fit-r1.md`](../ruling-candidates/orchestrator-seat-fit-r1.md).
+Independent replication of the agent-bridge auditor lane's
+[`specs/fleet-orchestrator-execute-posture.md`](fleet-orchestrator-execute-posture.md),
+same date, derived without sight of it.
+
+**The disqualifying fact.** Trailing-14d darkness on 2026-08-06: sol 13.4% and
+luna 15.3% (Codex) vs fable 44.5% and opus 64.3% (Claude). **The stalling
+orchestrator's family was the MOST available family on the box.** Conjugal
+therefore contributes an oppositely-signed dataset to the same conclusion the
+execute-posture spec reached: family is not the variable, seat contract is.
+
+**The signature.** Open wire lines `0→29→63→75→87→108→150→181`, monotonic,
+never once drained. Four of seven measured weeks closed exactly zero subjects;
+the week of 2026-07-13 produced **2,258 commits and 0 closures**; the longest
+*consecutive* zero run is three weeks, and five of seven closed zero. ~99.5% of
+~4,304 commits touched `coordination/`, ~0.44% touched product. **Commit counts
+here are method-dependent** — date-string and epoch bucketing disagree by up to
+218 on one pinned SHA (TRAPS.md, this date). The CLOSED column is invariant
+under all three methods; an earlier revision of this delta overstated both the
+commit figure and the consecutive-zero run, and the correction is recorded in
+RECEIPTS.md rather than patched away.
+
+**Five mechanisms, all family-neutral.** (1) The orchestrator had no actuators —
+its own guardrail read *"never implement; never accept the implementer's work;
+never route around the implementer"*, so with a dark peer the only compliant act
+was to stamp and wait, and every repair verb terminated at the human owner. The
+stall was the contract executing correctly. (2) An always-on admitter in front
+of a blocked pipeline converts uptime into WIP, not throughput. (3) Both keys
+sat on the same family, sharing one runner and one credential; a serial
+four-key chain has multiplicative traversal, ≈15% here. (4) The seat payload
+mandated a whole-file read of a **1,153,252-byte** ledger on every wake across
+**228 recorded wakes** — the seat spent its window arriving. (5) The
+orchestrator was barred from touching product, so with a dark implementer
+product motion floors at zero by construction.
+
+**Laws this board now runs on, offered fleet-wide:**
+- **A seat payload states derivation COMMANDS, never "read fully".** Ledger
+  growth is unbounded and monotone, so any read-it-all instruction is correct
+  the day it is written and fatal weeks later with no event in between.
+- **Key placement is a function of measured darkness.** Never the scarcest key
+  on the least-available seat; re-derive per-seat darkness on a cadence.
+- **Refuse-on-ambiguity is a verifier trait, not an orchestrator trait.** The
+  same seat, unchanged, was a stalling orchestrator and is an excellent
+  verifier. Match disposition-under-uncertainty to queue position.
+- **Zero closures over a rolling window is an alarm in its own right.** Under
+  the old contract `IDLE` and `stalled` were the same observable, and four
+  consecutive zero-closure weeks never raised one.
+
+**Honest bound.** The inversion is one day old. Non-coordination file touches
+per week ran `6, 89, 22, 35, 9` and then `99, 68` — the recovery began *before*
+the role swap and tracks actuator-equipped dispatcher sessions (from
+2026-08-09) better than the swap. The inversion is consistent with the recovery
+and is **not yet proven to cause it**. Weight the mechanisms above the
+attribution.

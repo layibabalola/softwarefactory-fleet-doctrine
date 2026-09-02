@@ -1,0 +1,12 @@
+{
+  "schema": "fleet-board-heartbeat.v1",
+  "board": "mlv-app",
+  "machine": "VIRTUAL-TEN",
+  "published_utc": "2026-08-31T16:23:09Z",
+  "source": "fleet-sweep.v1",
+  "sync_ran_utc": "2026-08-31T16:23:08.228Z",
+  "verdict": "CLEAN",
+  "delta_count": 0,
+  "bus_cursor": "da07cfeaaf3263d4a6ac4b46e1b07edb26929695",
+  "detail": "current; box declared=10 cloned=5 behind-fresh=3 failed=0"
+}

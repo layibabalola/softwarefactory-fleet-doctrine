@@ -197,7 +197,10 @@ post-reset quiet; and add required capacity dimensions. They may never weaken th
     any reported usage above a reserved class is fail-closed. Prepared binding bytes and their fleet-
     secret HMAC are immutable; final confirm and pre-request issuance compare the lease, attestation,
     earliest capacity boundary, exact argv template/count/order, launcher configuration, quality
-    cell, and certification digest transactionally.
+    cell, and certification digest transactionally. A production certification uses
+    `schemas/universal-production-wrapper-boundary-certification-v1.schema.json`; the older
+    `universal-wrapper-boundary-certification-v1` remains the deliberately negative, reference-only
+    contract and cannot grant production boundary credit.
 23. Runtime authority ends at the earliest request, lease, capacity, or watchdog boundary. A
     broker-owned advancing clock is re-read immediately before each provider call/turn and after
     every blocking operation; caller-supplied time is not runtime authority. The separately certified
@@ -392,7 +395,8 @@ OS account database/known profile, not HOME or USERPROFILE. The reference implem
 has no provider callback, wrapper
 capability, provider spawn, resume, watchdog, or kill surface; `directInvocationImpossible=false` and
 `reference-only-no-execution` are schema-bound. A project must supply the separate production choke
-point described by laws 22-23 and independent retained observer evidence before any staged authority.
+point described by laws 22-23, a schema-valid production boundary certification, and independent
+retained observer evidence before any staged authority.
 Merging, ratifying, or locally adopting R18 leaves every automatic gate CLOSED and grants zero
 containment, canary, or OPEN authority.
 

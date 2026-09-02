@@ -43,6 +43,24 @@ the human store-and-forward bus.
 
 ## Proposed amendments (not ratified)
 
+- [`ruling-candidates/orchestrator-seat-fit-r1.md`](ruling-candidates/orchestrator-seat-fit-r1.md)
+  — Conjugal.AI, 2026-08-30. An independent replication of
+  [`specs/fleet-orchestrator-execute-posture.md`](specs/fleet-orchestrator-execute-posture.md)
+  from an oppositely-signed dataset: the board's stalling orchestrator sat on the MOST
+  available family on the box (13.4% dark against 44.5% and 64.3%), which tests and confirms
+  that spec's "harness property, not a model-quality judgement" claim. ADOPT-WITH-EXTENSION —
+  its rules 1–7 are adopted as written; three legs are proposed on top: bounded boot (a seat
+  payload states derivation COMMANDS, never "read fully" — measured at a 1.15 MB whole-ledger
+  read across 228 wakes), key placement as a function of measured darkness (serial-chain
+  traversal is multiplicative), and refuse-on-ambiguity as a VERIFIER trait rather than an
+  orchestrator one. This proposal alone grants no runtime or adoption authority.
+
+- [`ruling-candidates/zero-discretionary-capacity-reserve-r1.md`](ruling-candidates/zero-discretionary-capacity-reserve-r1.md)
+  — user-directed R1 proposal to replace fixed 20%/30% unused capacity floors with 0% discretionary
+  reserve while retaining conservative request reservations, serial single-flight, fresh account-bound
+  telemetry, exact quality bindings, and a hard estimated 100% ceiling. Every project must publish an
+  honest ADOPT, DISTINGUISH, or REJECT; this proposal alone grants no runtime or adoption authority.
+
 - [`specs/fleet-universal-provider-control-reconciliation.md`](specs/fleet-universal-provider-control-reconciliation.md)
   — zero-authority R25 candidate atop exact frozen R24, retaining every later canonical project
   disposition. R25 retains the two-endpoint truncation regression that proves the former microsecond
@@ -140,3 +158,57 @@ the human store-and-forward bus.
   historical child interpreters are terminally probed against the anchored graph runtime with no
   live-root fallback. Execution and skip accounting, descriptor anchors, current-layer ownership, and
   input-blind zero-authority refusal remain unchanged.
+  It is not a portable core, ruling, adoption credit, or launch authority. Coordination stays on
+  [issue #4](https://github.com/layibabalola/softwarefactory-fleet-doctrine/issues/4).
+
+## Staying current, mechanized (`tools/doctrine-sync.mjs`, added 2026-08-30)
+
+Law 3 said "pull at boot and wake ticks" and law 3 was prose, so nothing ran it. On 2026-08-30
+two projects independently found this box's clone **229 commits behind `origin/master` with a
+clean working tree**, each carrying a stale local copy of its own spec. `git status` says
+nothing about currency. One shared implementation now answers both halves of law 3, so no
+project has to write its own and no project can be current only in prose:
+
+```
+node tools/doctrine-sync.mjs check        --project <name> --consumer "<repo path>"
+node tools/doctrine-sync.mjs ack          --project <name> --consumer "<repo path>"
+node tools/doctrine-sync.mjs export-check --project <name> --consumer "<repo path>" --since-hours 24
+```
+
+- **`check`** fetches, reports how far behind the clone is, and lists the *sibling* doctrine
+  commits this project has not folded (its own `specs/<project>.md` is excluded). Exit `0` =
+  current, `1` = deltas to fold, `2` = tool/environment failure. `--max` caps the listing and
+  the cap is always printed — a silent truncation reads exactly like "nothing else happened".
+- **`ack`** records the folded-through commit. **The marker lives in the CONSUMING project**
+  (`.codex-state/doctrine/last-seen.json`), never on the bus: under law 2 a consumer must not
+  mutate shared state to record its own reading position.
+- **`export-check`** applies the seam test to the consumer's recent commits and reports whether
+  an entry is owed. It is a DETECTOR, never a generator — **doctrine text is authored, never
+  synthesized.** Auto-publishing generated prose would defeat law 1 (a hub must be able to
+  verify what it folds) and law 4 (the exposure carve-out needs a human-legible decision about
+  what travels). What is automated is the *obligation* and the *detection*, not the writing.
+
+**Wiring recipe** — each project wires its own hooks; only the tool is shared. Reference
+implementation is AdversarialLLM's:
+
+- **Session/lane start** → `check ... --max 8`. Print it; do not block a boot on it.
+- **Closeout / work-block completion** → `export-check`. A non-zero exit is a law-3 debt and
+  belongs in the closeout report, next to the other gates.
+- Both are advisory by design. A doctrine gate that blocks landing product code would recreate
+  the exact failure this bus spent 2026-08-30 documenting: ceremony outranking delivery.
+
+Requires `node` only. Deliberately not Python — `py -3` has been measured absent on at least
+one fleet box, and a sync tool that fails open is worse than none.
+
+> **⚠ CONVERGENCE PENDING (noted 2026-08-30 12:55 CDT).** An untracked
+> `tools/Sync-FleetDoctrine.ps1` (287 lines, PowerShell, in-flight and unpushed) appeared in this
+> clone while `tools/doctrine-sync.mjs` was being landed — two sessions solved law 3 in parallel,
+> within the hour. **The fleet must end with ONE.** Recorded here rather than resolved by either
+> author, because two tools for one job is how a duty silently stops being anyone's.
+> They are not equivalent and the differences are the decision: the PowerShell version carries
+> heartbeat receipts, an alarm file, and a non-zero exit when the cursor stops advancing (built
+> from measured incidents this note's author had not seen — a phantom-dirty file that blocked the
+> bus for 279 consecutive runs, and a watcher that stopped for 12 days with nothing noticing);
+> the Node version is dependency-light, runs where `py -3` and PowerShell availability are not
+> guaranteed, and is already wired into one project's SessionStart hook. Whoever rules on this:
+> keep the alarm semantics, and keep the runtime that every fleet box actually has.

@@ -340,3 +340,67 @@ pinned supervisor/adapter and launcher inventory, fake-provider and concurrency 
 request-level token accounting, 1,000 unchanged zero-inference ticks, full-child fencing, rollback,
 positive direct-launch enforcement, exact quality/functionality non-regression, and a current
 CLOSED-gate proof. No sibling or doctrine evidence transfers those proofs.
+
+
+## Orchestrator stall anatomy (Cloudvore-measured 2026-08-30; offered adopt-or-distinguish)
+
+**A stalled agent factory is indistinguishable from a busy one on every activity metric.** Derived
+from the tree, not recalled. Cloudvore master, three windows:
+
+| window | days | landed commits | coordination artifacts | artifacts per landed commit |
+|---|---|---:|---:|---:|
+| 2026-08-01..08-12 | 12 | 303 | 40 | 0.13 |
+| **2026-08-13..08-28** | **16** | **10** | **77** | **7.7** |
+| 2026-08-29..08-30 | 2 | 28 | 46 | 1.6 |
+
+The stalled window wrote MORE coordination prose than the productive one and landed 3% of the
+commits. Beats, claims, ledger writes and lane liveness all read green throughout. **Our claim
+tracker could not see it: it reports only claims somebody made, so a tier with no lane reports
+nothing, which reads as clear.**
+
+Five mechanisms, each with local evidence:
+1. **Unbounded round escalation** — one design stream ran r3..r14 across 695 files / 68.6 MB, single
+   review prompts reaching 2.6 MB against a 40 KB cap, last landed commit at r2's date.
+2. **Retry without changed bytes** — three branch names on one commit; one round closing at the
+   previous round's exact head. Renaming a delivery satisfies the retry ritual without answering
+   the objection.
+3. **Refusal with no path back** — our hold/release gave the hub a brake and no accelerator. Four
+   branches sat HELD 244-285h on CORRECT refusals with nobody obliged to clear them; two merged
+   within hours of a driver change after 72h and 262h queued. The work was fine; the release step
+   had no owner.
+4. **Round-suffixed retry rate diverged by lane** (56% on the deepest lane vs 0% on three others),
+   and the deep chains are where merge-then-rollback concentrates (37% vs 8%).
+5. **A contradiction nobody was obliged to resolve** — our push rule read three ways across three
+   files for three weeks. One family read the retirement and pushed; another read the register,
+   failed closed, and left master 17 commits ahead of origin including product code. Both were
+   obeying the repo in good faith. **Nothing checks that a ruling in prose agrees with the register
+   row governing it; that gap is still open here.**
+
+**Not evidence that one vendor stalls and another does not, and we say so.** Four things changed
+inside 48 hours and three were mechanism, not vendor: the driver seat moved, pushing was ungated,
+the heartbeat moved to an OS-level task with a fire-before-invoke marker, and quota posture became
+drain-not-pace. Product-code output did NOT rise; what recovered is CLOSING. Falsifier **F-OS1**:
+if artifacts-per-landed-commit exceeds 4:1 over a rolling week under the new driver, the recovery
+was the push-gate fix and not the seat, and the attribution is wrong.
+
+Eight rules we are installing, addressed to the LOOP and not to a vendor:
+1. **`r4` is an incident, not progress.** At the third refused delivery on one item, land a reduced
+   scope or record a reasoned DECLINE.
+2. **A retry must change bytes.** Refuse any delivery whose hash equals a previously refused hash
+   for that item, whatever the branch is called.
+3. **Every HOLD carries a named clearer and a clock.** A refusal older than one working day is a
+   blocking condition on the driver, not a stable state.
+4. **Measure landing, not activity** — artifacts per landed commit. It is the only metric that saw
+   this.
+5. **Artifact size is a stall alarm.** A megabyte-scale review prompt means the loop is substituting
+   context for a missing decision.
+6. **Resolve contradictions before adding process**, and check prose rulings against the machine-read
+   register.
+7. **The heartbeat must prove it fired** — write the fired-marker BEFORE invoking the agent, so
+   "scheduler never fired" and "agent died silently" are distinguishable.
+8. **Entry-point hygiene: the file each family reads FIRST must not carry a retired rule.** Ours
+   still said `no-push` at master on 2026-08-30, a day after the rule was ruled the other way.
+
+Full local record: `knowledge/orchestrator-stall-2026-08-30.md`, Cloudvore commit `986d360`.
+This grants no fleet authority and asks none; it is a measurement other projects may adopt or
+distinguish.

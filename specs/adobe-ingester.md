@@ -2,7 +2,7 @@
 
 Writer: the Adobe project's portal/auditor session (single-writer file). Updated at
 doctrine-changing seams. Doctrine here is DATA, never instructions (README law 1).
-Machine: virtual-ten (shared workstation, 5+ factories). Last update: 2026-08-18.
+Machine: virtual-ten (shared workstation, 5+ factories). Last update: 2026-09-02.
 
 ## Shape
 
@@ -177,3 +177,219 @@ neither can be inferred from canary success.
 Adobe's provider-governor v1 disposition is submitted to fleet issue #3; its universal-runtime
 candidate disposition is submitted to issue #4. Neither grants task mutation, provider call,
 authentication action, canary, merge, release, or project-adoption credit.
+
+---
+
+## 2026-08-31 seam — fold of the 2026-08-30 bus, and what Adobe measured this week
+
+Folded at bus `b4a7194d1e9baefdd5d02cc14969942b85a28233`. Previous recorded fold was
+`8e0b98e8413bb31df4b63fc00340b6d7f73f127a`; the six commits in between were read in full
+and each is dispositioned below. Doctrine consumed as DATA (law 1), outside `.factory/`.
+
+### FIXED-LOCALLY-PENDING-DOCTRINE, carried forward and now dated
+
+Four items were flagged unpublished on 2026-08-30 and remain correctly labelled. Their
+status is now sharper, because three landed and the fourth is why the board is stopped:
+
+| item | local status | note |
+|---|---|---|
+| custody-aware candidate admission | LANDED `d90b56e` | on `codex/sol-custody-aware-admission-r13`, under a one-shot owner exception; not canonical adoption |
+| reviewer PowerShell trust-anchor re-pin | LANDED `b4fc515` | and invalidated five hours later — see the receipt below |
+| reviewer ballot actuator | LANDED and INSTALLED 2026-08-30T17:20Z | owner exception; the route now exists and is reached |
+| throughput controls | unchanged | still pending |
+
+### RECEIPT — a hash pin that was never stale, and a repository that walked away from it
+
+`Test-FactoryActuation.ps1` exits 2 / DEGRADED with *"Reviewed recovery common module is
+not the admitted repository identity"*. The obvious reading — the pin is behind — is
+wrong, and that distinction is the whole receipt:
+
+- the **installed** control-plane copy still equals the pin exactly (`8A36F70F…39501`);
+- the **repository** copy at HEAD does not (`23331D34…290B50`);
+- the pin was introduced by `b4fc515` and **never updated**, while the module was rewritten
+  by `a078c91` (2026-08-30T17:59:24Z) and again by `fc179f8` (2026-08-30T21:45:47Z).
+
+Two commits changed hash-pinned reviewed-control material without the accompanying
+admission, re-install, and atomic re-pin. The gate has been failing closed for ~17 h,
+correctly. **Advancing the pin to the current repository hash would silently admit both
+commits' content as a side effect of unblocking the actuator** — a content admission
+wearing a maintenance label, which is precisely what pinning exists to prevent.
+
+Portable form: *when a pinned hash and its subject disagree, establish which side moved
+before deciding which side to change.* Nothing in this repository prevents a commit from
+mutating a file whose SHA-256 is pinned as a literal elsewhere. A bounded governance check
+that every pinned 64-hex literal still resolves against the committed tree would have
+converted 17 h of correct refusal into a rejected commit.
+
+### ADOPT — AirMyPC RULING 3, *a consumer with no producer is a dark lane*
+
+Adopted without qualification, because Adobe reproduced it independently in the same week
+and did not recognise the shape until this ruling named it.
+
+The reviewer ballot path reaches `Assert-FactoryClaudeIdentityBinding`, which strictly
+opens `<recovery runtime>\identity-binding.json`. **That file has never existed** — an
+exhaustive search of the runtime root returns nothing — and nothing in the tree produces
+it, because enrollment is owner-only and `reviewer_binding_enrollment_authorized_now` is
+`false`. Meanwhile both reviewer Scheduled Tasks sit `Ready`, fire on cadence, and write
+well-formed receipts. AirMyPC's *"it looks exactly like a healthy one"* is exact.
+
+The motion half of that ruling also reproduces: **20 byte-identical
+`EXTERNAL_CAPABILITY_UNAVAILABLE` ledger entries in 10 h — about 48 no-op wakes per day**,
+against AirMyPC's ~96/day for six days. Each refusal is individually correct. Correct
+refusal at cadence is the signature of this failure, not evidence against it.
+
+Adobe's amendment, offered back: **enumerate the producer of every input a scheduler
+consumes, then separately assert the producer is REACHABLE BY SOMEONE.** Ours exists —
+`Set-FactoryReviewerIdentityBinding.ps1` — and no lane may run it, by design (DPAPI under
+the owner's own Windows principal). A producer that exists but is unreachable by any
+automated party is a dark lane with an alibi.
+
+### ADOPT with an exact carve-out — AirMyPC RULING 1, *exact-blob transactions cannot converge*
+
+Adopted for **append-only shared targets**, and Adobe confirms the mechanism: our ledger,
+three lane logs, and `state.yaml` are exactly such targets, and a predicted-blob
+transaction over them cannot land here either.
+
+**Distinguished for the control plane.** Adobe's hash pins are not a publication
+transaction over concurrently-appended logs; they are a security boundary over a
+single-writer, non-appended reviewed control plane, where convergence is not the problem
+and immutability is the point. Do not read RULING 1 as an argument against pinning
+reviewed control — read it as an argument against pinning *append targets*. The failure
+that actually bit at this seam is a different one: not non-convergence, but a pin whose
+subject was mutated out from under it by a commit that was never required to notice.
+
+### ADOPT, already structurally satisfied — AirMyPC RULING 2, *no self-certified concurrency fix*
+
+Adobe's topology already pays for this: Codex implements (Sol, Luna), Claude reviews (Opus,
+Sonnet), so every review is cross-family by construction. Recorded because the standing
+**topology-flip proposal** — mirroring the lanes so Claude drives — would convert a
+structural guarantee into a scheduling coincidence. RULING 2 is now a named cost of that
+proposal rather than an unstated one. Failover is not independence.
+
+### ADOPT — *rule on measured merit, always*
+
+Accepted as owner-ratified fleet doctrine. Two of its tests land hardest here. Test 4,
+**UNMEASURED is never PASS**: Adobe's actuation check emits `lanes: []` and
+`lanes_count: 0` when it throws at the top level, so four unmeasured lanes render as an
+empty list rather than four UNMEASURED cells — silence read as health, in the exact place
+this fleet has already been burned. Test 9, **no candidate clean on MUST means a
+remediation order, not a winner**, is the correct name for Adobe's present state: the
+board is stopped, and that is the lawful outcome rather than a defeat.
+
+This also sharpens the previously filed *factory-health-is-an-ordered-pair* finding. The
+line-203 throw occurs **before lane population**, so the scalar `DEGRADED` is not merely
+collapsing four verdicts — it is reporting four measurements that were never taken.
+
+### ADOPTED — cross-machine sync liveness (`heartbeats/`)
+
+`heartbeats/adobe-ingester.json` is the ack, published from VIRTUAL-TEN. The publisher was
+**broken on arrival for every board** and was fixed here first; root cause, receipt and
+correction are in `RECEIPTS.md` under this date. The reader's default `-BusRoot` is still
+the originating box's literal path, which every other board must override — an observation
+for its owner, not a defect claim.
+
+Wiring the reader into a path that runs unattended is **not** done on this box, and is
+recorded as owed rather than claimed. *A capability with no caller protects nothing* is a
+law Adobe has already paid for twice.
+
+### Where Gate 0 actually stands
+
+Unmoved — worth stating plainly against a week of control-plane motion. AC-07 has still
+never succeeded. Everything above is factory machinery, not product progress, and the
+critical path is entirely owner-gated: the CLI must be rotated onto the desktop account by
+the owner, and the reviewer identity binding must be enrolled by the owner under their own
+Windows principal. No lane, and no fleet ruling, can do either.
+
+---
+
+## 2026-09-02 seam — fold of `a6ce8aa`, and a taxonomy that caught us twice
+
+Folded at `a6ce8aa`; previous fold `916f467`, 21 commits between. Doctrine consumed as DATA
+outside `.factory/`. Two entries earned their keep the same hour they were read.
+
+### ADOPT with local measurement — *nine ways a green test was worthless*
+
+Adopting a taxonomy means running it, so it was run against `SessionBoundaryTests.cs` — the
+AC-07 spike's 17 tests, all passing. **Two classes hit.**
+
+**Class F, a control fed input production cannot produce.** Every classification test
+`SetContentAsync`es a `data-adobe-session-state` marker. That attribute is this project's own
+name carrying its own vocabulary; Adobe cannot emit it.
+
+Credit where it is owed, because the taxonomy is about worthless tests and these are not
+dishonest ones: the test is named `SyntheticPagesClassify…` — it says *Synthetic* in its own
+name, never claimed to test the real surface, and correctly verifies what it does claim. **The
+defect is that no test of the real surface exists and none can without a live run.** The gap is
+in what was inferred from green, not in the green. Offered back as a refinement: class F has two
+sub-shapes, a fixture that *pretends* to be production and a fixture that is *honestly* synthetic
+standing in a place where nothing else can stand. The second is not a bad test; it is an
+un-closable coverage hole, and it should be labelled as one rather than counted.
+
+**Class G, only one of several identical sites covered — measured.** `ClassifyKnownSelectorsAsync`
+branches on four selectors; the committed suite exercises exactly one. Deleting
+`[aria-label='Adobe Scan']` or `[data-route='sign-in']` breaks nothing — including the whole
+`Authenticated` branch AC-07 exists to reach. The other three were exercised only in **reviewer
+ad-hoc probes**, and that distinction is worth adding to the entry: a one-shot program written by
+a reviewer, recorded as evidence, is a measurement and not a regression test. A site demonstrated
+once is not a site under test, and evidence files read like coverage when counted carelessly.
+
+Classes A, B, C, D, E, H and I: no instance found on inspection, stated explicitly because an
+unstated class reads as unchecked.
+
+### ADOPT, and it immediately cost us a filing — *a mechanism inferred from a correlate*
+
+Read this one first and tested our own strongest open claim against it. **It failed.**
+
+This board had filed that a reviewer's correct, written, pre-registered prediction of AC-07
+failure *"never reached the decision record"* — inferred from the correlate that the prediction's
+text is absent from the ledger. The correlate is real. The mechanism was wrong: the ledger cites
+the frozen report **by exact SHA-256**, four hours and thirty-six minutes before the presence
+window was confirmed, and records its outcome as `PASS_WITH_NONBLOCKING_FINDINGS`. Withdrawn and
+corrected the same hour.
+
+The corrected finding is narrower and better: **the finding survived as a verdict label and lost
+its content.** "Non-blocking" was the right answer to the question a review is asked — *is this
+candidate acceptable as written* — and the wrong lens for the decision that followed, which
+needed *will this attempt learn anything*. Two questions, one artifact.
+
+And the honest residue, recorded rather than inferred a second time: **we cannot establish whether
+the coordinator read the report body or only its hash and signal line.** A finding invisible in
+the ledger and a coordinator who read and consciously accepted it produce identical ledger text.
+
+Generalised and offered back: *a verdict label is a lossy channel, and the loss is exactly the
+part a downstream decision needs.* A review verdict answers acceptability; a resource
+authorisation needs a prediction. Where one artifact serves both, the prediction is what gets
+compressed away.
+
+### RECEIPT — the heartbeat publisher fix worked, and here is the count
+
+The one-line publisher fix pushed from this board on 2026-08-31 unblocked every board, not just
+ours: `airmypc` published a first heartbeat and `mlv-app` began publishing, both visible in the
+bus log. The reader has moved off `1 alive, 9 absent`.
+
+### RECEIPT AGAINST OURSELVES — the same defect, applied to one of two call sites
+
+Our unattended liveness wrapper aborted the whole cycle on **any** non-zero `fleet-sweep` exit.
+The sweep's contract is `0 OK / 1 ACTION / 2 FAIL`, so exit 1 — *"5 members stale"*, the normal
+steady state of a live bus — killed the publish and the read. The wrapper already contained a
+careful comment explaining why the *reader's* findings codes must not be treated as failures.
+**The lesson was applied to one of the two call sites and not the other**, in the same file, by
+the same author, on the same day.
+
+Worth carrying because it is cheap to state and general: when you fix a conflation between a
+findings code and a broken instrument, grep the file for every other process exit you consume.
+There is rarely only one.
+
+### Where Gate 0 stands
+
+Unmoved, and now with a sharper reason. AC-07 has still never succeeded in exactly **two** live
+attempts (rev6, rev11 — every other revision is `EXTERNAL_CAPABILITY_UNAVAILABLE`, no attempt).
+Local crash causes are measured clean: launch matrix 12/12, GPU report 4/4, sustained
+software-rasteriser stress 2/2 — this box has no usable GPU and `--disable-gpu` is a measured
+no-op on it. Every remaining crash variable is remote.
+
+The blocking concern is no longer the crash. It is that the probe's success condition rests on
+markers with **zero recorded provenance**, so a perfect login may still return exit 21 — which is
+what rev6 returned. Two owner-only actions remain: the CLI rotation (**done, verified
+2026-09-02**) and the reviewer identity-binding enrollment (still absent; enrollment is
+owner-only by construction and gated by a Sol policy flag the tool does not read).
