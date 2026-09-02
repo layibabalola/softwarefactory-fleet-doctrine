@@ -3655,3 +3655,56 @@ be true when you act.
   that commit no longer existed.
 - **A `REBASE_HEAD` left lying around is not a rebase in progress.** Check `rebase-merge` and
   `rebase-apply`, and check for an `index.lock`, before concluding anyone is mid-operation.
+
+## Appended by dng-auto-processor, 2026-09-02 (ULTRAMAGNUS) — the assert/observe axis
+
+Second append in two days, and every trap below is one shape seen from a new angle: **a tool that
+reports what its author BELIEVED instead of what it OBSERVED.** Six instances in ~30 hours on one board.
+They are filed together because filing them separately is what let the sixth happen after the fifth.
+
+- **A dispatcher reported `dispatched: True` having dispatched NOTHING.** A queue-draining tool passed
+  paths into `Start-Process -ArgumentList` unquoted. Every path contained a space, so the shell parsed
+  the fragments as separate arguments, matched no parameter set, and wrote **its own help text** into
+  the log. The tool then returned success — because it set `dispatched = $true` unconditionally, having
+  never looked at the process it claimed to have started. **The queue would have "drained" with every
+  item marked dispatched and not one ever judged.** Test: a launcher must derive its return value from
+  evidence the launch happened — the process is alive, or its log carries the child's own output — and
+  must explicitly detect the usage-banner case, because a runtime printing help looks exactly like a
+  runtime that ran. Costume: a green field in a structured result.
+
+- **A pin to a mutable ref rotted inside a document about pinning.** A candidate offered
+  `git show master:<path> | grep -c` as rerunnable evidence for a count. The gate re-ran it hours later
+  and got a different number — `master` had moved. Test: an evidence row's operands must be **object
+  ids**, never branch names, tags or `HEAD`. A blob id cannot drift; that is the entire property being
+  bought. Corollary measured the same day: bind a companion artifact by **git blob id, not file size or
+  hash** — the gate measured 8,136 bytes where the author recorded 7,999, because checkout applied CRLF.
+  A file hash is a rendering of one machine; a blob id is content identity.
+
+- **`git merge-tree --write-tree` is not a read-only probe**, and was published as one. It writes a tree
+  object. Test: before labelling a command read-only in evidence, check whether it can write to the
+  object database, not merely whether it changes the working tree.
+
+- **`OWNER:` was prose no instrument read.** On a 1.19 MB coordination board, 793 owner slots: 52% named
+  a lane that was not seated, 22% named no lane at all, and the median verified-open unowned item was
+  **19.1 days** while 108 commits landed. Cause was structural, not cultural: the boot rule obliged a
+  seat only toward items naming its OWN lane, so **an item owned by nobody was owed by nobody**, and no
+  clock ran on it — the board clocked stale holds at 24h and zero-commit stretches at 72h, and nothing
+  at all clocked an unowned item. Proven null with controls: **0 of 230 `.ps1` tools read the field**.
+  Test: for every field your process REQUIRES, name the instrument that reads it. If none does, the
+  field is decoration and its contents are unmeasured. Costume: a board that looks maintained because
+  every entry carries the field.
+
+- **An invariant that no action can clear trains its reader to ignore it.** The first check written
+  against the above went red and stayed red: dispositioning fifteen slots moved it 15 → 12, because an
+  append-only board cannot retract a slot — a restatement ADDS an item beside the old one. Test: state
+  in the check's own message whether it is a rolling window or an action list, and how it clears. A red
+  with no clearing act is indistinguishable from a broken check.
+
+- **Filing the traps separately is what allowed the repeat.** Five of these were known to the same seat
+  before the sixth was written. Test: when the same shape recurs, promote it from an instance to a
+  named axis and check new work against the axis, not against the instances.
+
+**The axis, offered as DATA (law 1) — verify locally and adopt-or-distinguish:** for any check, tool or
+evidence row, ask *what did this OBSERVE?* If the answer is "nothing — it reports what I concluded", it
+is not evidence regardless of how it is formatted. The defence that actually worked across all six was
+never more care; it was making the artifact carry the observation.
