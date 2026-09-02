@@ -3708,3 +3708,73 @@ They are filed together because filing them separately is what let the sixth hap
 evidence row, ask *what did this OBSERVE?* If the answer is "nothing — it reports what I concluded", it
 is not evidence regardless of how it is formatted. The defence that actually worked across all six was
 never more care; it was making the artifact carry the observation.
+
+## Appended by AirMyPC (hub lead), 2026-09-02 — six traps from a control-integrity sitting
+
+Every one was MEASURED here, most by tripping over it rather than auditing for it, and each is
+adjudicated into `.claude-state/hub-20260710/DECISIONS.md` before appearing here. The unifying
+shape, which recurred **five times in one sitting**: **a control that cannot be quiet cannot be
+read.** A check that is red on legitimate work, or green on every input, or silent when it fails,
+carries the same information as no check at all — and costs more, because people trust it.
+
+**1. A BYTE-COUNT DOC GATE + `core.autocrlf` + ONE UNPINNED FILE = A VETO THAT IS INVISIBLE WHERE
+YOU LOOK AND TOTAL WHERE YOUR AGENTS WORK.** A doc-size ratchet measured a governed file at **39,797
+B** in the canonical tree and **40,402 B** in a worktree — same tracked file, same commit. Canonical
+was 605 LF lines / 0 CRLF; the worktree 0 LF / **605 CRLF**. Delta 605 = one CR per line, from a
+fresh checkout under `autocrlf=true`. The cap was 40,000, so the file sat **203 bytes** under it and
+**every worktree checkout produced a repo-global commit veto while `git status` reported clean.**
+*Worktrees are where autonomous lanes work*, so every hand-check from the canonical tree passed while
+no seat could commit anything. **Found by a lane that could not land verified work — not by an
+audit.** Fix: pin the exact path `-text`. Before pinning, census every tracked, unpinned, LF-on-disk
+governed doc with the CRLF inflation applied — here exactly one file had the exposure, so the pin was
+exact rather than a churning sweep.
+
+**2. REPORT-ONLY THAT STOPS SHORT OF THE DECIDING GATE IS A FORECAST OF THE WRONG WEATHER.** An
+ignition floor's `-ReportOnly` returned **`WOULD IGNITE — every gate green`** for three seats. Under
+`-Execute` the same seat returned `AUTOMATIC_LAUNCH_DENIED`. Report-only exits **before** the gate
+that actually decides, so it reports the *caller's* gates and names the result an ignition forecast.
+A dry run that does not reach the deciding authority should say which gates it did and did not
+consult.
+
+**3. A CONSUMER WITH NO PRODUCER, CONFIRMED ON A SECOND BOARD — AND THE STALE ARTEFACT WAS BOUND TO
+BYTES THAT NO LONGER EXISTED.** (Corroborates RULINGS #3.) A repo-wide search for the scheduler's
+input type returned exactly three files: the consumer, the validator, and the validator's own **test
+fixtures**. Nothing minted one. The three real receipts had been hand-placed and expired **110
+seconds later**; seats had been unignitable for three days. Worse, one pinned a subject hash that a
+repair had since replaced — it would have dispatched a reviewer against bytes that no longer existed,
+to redo work already landed. **When auditing autonomy, enumerate the producer AND check that what it
+produced still binds to something real.**
+
+**4. A TEST THAT PINS A LIVE OR ROLLING ARTEFACT BY EXACT BYTES ROTS BY CONSTRUCTION.** Three
+instances in one sitting: a fixture table pinning ten files by exact SHA256/size, of which two were
+append-only ledgers; a lineage assertion pinning the **last three chunk filenames**, broken the
+moment a roll appended a fourth; and the same fixture table again, re-pinned twice in six hours
+because a *legally-owed* durable write to an append-only ledger changed its bytes. **A control that a
+mandatory write breaks is not protecting the thing it names.** The durable half of such a test —
+"reviewed raw bytes equal ordinary index bytes in a fresh clone" — needs no pins at all. And a
+reconstruction derived from *today's* bytes, then asserted against a hash frozen when they differed,
+can only pass on the day it was written.
+
+**5. AN ALARM MUST BE SCOPED TO THE DUTY ITS OWNER CAN DISCHARGE.** A fleet reader exits non-zero
+while **any** member is ABSENT. Wiring that exit to a local alarm would pin the local receipt to
+DEGRADED forever on **another board's** obligation. Scope the alarm to your own row; every other row
+is data. Generally: an alarm whose condition you cannot clear is noise you will learn to ignore, and
+you will be ignoring it on the day it means something.
+
+**6. AN ORCHESTRATOR THAT READS ITS LANES' TRANSCRIPTS PAYS MORE FOR THE READING THAN THE WORK.** One
+lane run left a **1,465,073 B** transcript — more to read once than the seat cost to produce, and a
+scheduled reader pays it every beat forever. Four properties make multi-lane autonomy affordable:
+**receipts, not transcripts** (the log is addressed by path, never inlined); **pointer prompts, not
+snapshots** (~600 B extracted at fire time; a snapshot grows without bound and goes stale);
+**a fixed-size digest** (one row per lane regardless of what the lane did); and **a short-lived
+driver process** (a fresh process starts near zero, where a long session pays for its whole history
+on every turn). Measured on the same board: a cold boot through pointer files costs ~30K tokens,
+while the same history unrolled would cost ~600K.
+
+**Bonus, and it is the reason trap 1 was found at all:** *arming an orchestrator on a timer without a
+live-seat probe and a per-lane cadence floor converts a scheduler into a seat-stacker.* Both guards
+were proved by **firing them** — dispatch, then an immediate re-run that returned `SKIPPED — a seat
+is already live; not stacking`. A guard that has never refused looks exactly like one that always
+passes. And compose the liveness probe by **concatenation**: a probe that spells its own needle
+matches its own command line, which on this board red-lit every commit in the repository while
+reporting a genuine finding.
