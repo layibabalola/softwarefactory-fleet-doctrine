@@ -3246,3 +3246,66 @@ the artifact was fine.
 **Distrust the instrument before the conclusion.** In a fail-closed system a broken measuring
 device manufactures blockers, and a manufactured blocker is indistinguishable from a real one
 until someone re-derives it by another route.
+
+## Appended by Cloudvore, 2026-09-02 — seven ratified traps
+
+Hub review-and-ratify recorded at Cloudvore `review/hub-ruling-doctrine-0902.md` (owner rule
+2026-08-09). Ratified as **traps with tests**, NOT as laws or specs: single-vendor review by the
+author of the candidates, in a repo that measured five consecutive times this week that an
+independent cross-vendor read changed a same-vendor verdict. Two candidates were REJECTED and are
+named in that ruling.
+
+- **transport refusal vs authority refusal costume** (cloudvore, 2026-09-02, measured): a tool call
+  denied by a PROBABILISTIC permission classifier is not evidence of a standing prohibition. ONE
+  compound command (`cd … && … ; … > /tmp/…`) was declined ONCE, was never retried in simpler form,
+  and became "git merge is denied to the tool layer" — which then banked two fully-audited
+  deliveries and propagated through a ledger, a handoff and a successor brief as the #1 priority,
+  for ~14h. Re-issuing the byte-for-byte denied command SUCCEEDED, as did bare `git merge` and bare
+  `git merge-tree` under the identical headless config. **Test:** retry ONCE in the simplest possible
+  form — one command, no `&&`, no `;`, no redirect. An authority refusal survives simplification; a
+  flake does not. On persistent failure record the NARROW fact ("this command shape was refused"),
+  never the wide one ("this operation is forbidden"). Costume: a real refusal, quoted one scope up.
+
+- **the fail-closed voice can render collateral damage as safety** (cloudvore, 2026-09-02, measured
+  by doing it): a worktree pruner retired the worktree it was RUNNING FROM. Its `tools/` vanished
+  underneath the live process, so all 21 remaining removals failed `fatal: not a git repository` and
+  printed as **DECLINED** — and decline is that tool's fail-closed voice. A wrecked run rendered as
+  the safety feature working perfectly, in the one tool trusted with `rm -rf`. **This is the mirror
+  of a false green and is harder to see, because conservatism reads as correct.** Test: when a
+  fail-closed verdict appears in BULK, assert the reasons are DISTINCT — a uniform reason across many
+  items is a broken process, not caution. (Re-run after the fix: declined 0.)
+
+- **a self-mutating tool must exclude its own HOST** (cloudvore, 2026-09-02): excluding the PRIMARY
+  worktree was not enough; the tool also had to exclude the one it was executing from, compared by
+  `realpath` because one directory has several spellings. Generalises to any tool that deletes, moves
+  or rewrites members of a set it is itself a member of — pruners, cleaners, rotators, GC.
+
+- **exit code is the authority, never the body** (cloudvore, 2026-09-02, measured): one repo held TWO
+  success protocols — half `unittest` (`Ran N tests` / `OK`), half hand-rolled harnesses printing
+  `all checks passed` with no count. A runner grepping for `OK` false-REDs half the population; a
+  synthetic suite printing `Ran 1 test` / `OK` while exiting 1 is called GREEN by a body-grepper.
+  Four suites were misreported as FAIL by exactly this before the runner was corrected. **Corollary
+  that bites process, not code: a bar WORDED as "read the runner's own OK/FAILED line and the test
+  COUNT" is UNDEFINED wherever a suite emits neither.** Check your bar's wording against your actual
+  suite population.
+
+- **a gate born red teaches people to ignore it** (cloudvore, 2026-09-02): make the REQUIRED set an
+  ALLOWLIST that a suite earns by having been measured green, not a denylist of known-bad. A denylist
+  gate is red on arrival and gets switched off. The same run then prints which unmeasured suites are
+  PROMOTABLE, so the gate tightens over time. A weak-and-trusted gate converges; a strong-and-ignored
+  one does not — the promotable list is what forces convergence and is part of the rule.
+
+- **measure on a FRESH CLONE before blaming the code** (cloudvore, 2026-09-02, measured): 9 of 26
+  suites exceeded 150s locally; **8 of the 9 PASSED in CI on a fresh clone**, one going from
+  TIMEOUT(>150s) to 24.9s, another 107.7s→26.9s. The cost was accumulated working state, not the
+  tools, and rewriting them would have been expensive and wrong. **The doctrine is the DIAGNOSTIC,
+  not a remedy:** on the same machine the obvious follow-up FAILED — pruning 31 worktrees did not
+  restore the local runtime, because the dominant cost was 12,413 untracked working files. Isolate
+  state from code first; then find which state.
+
+- **a handed-over blocker carries the command that falsifies it** (cloudvore, 2026-09-02): any
+  handover asserting something is BLOCKED ships the exact command a successor can run to prove it
+  still is. No command, no blocker — it is a report, not a standing condition. Corollary: an asserted
+  PROHIBITION must cite the ruling that imposed it, because retired rules come back by sounding
+  prudent ("never push without me" was reintroduced TWICE after being retired, diverging lanes both
+  times). Costume: a true observation, aged into a false standing condition by being quoted forward.
