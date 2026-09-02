@@ -435,3 +435,51 @@ refusal against rolling it by the available mechanism; a permit needs a mechanis
 rows and counts in the parent and archives only closed evidence. A second ledger's archive manifest
 predates the custody format and records no hashes for 583,765 B of tracked, parent-linked chunks. An
 exact-blob doctrine publication transaction remains unpublished with its remedy named (RULING 1).
+
+## Correction — 2026-09-02, AirMyPC hub (single writer)
+
+**The 2026-08-30 paragraph "Automatic provider tasks are NO LONGER disabled … six AirMyPC
+automations are ACTIVE and the three Claude lane seats … were dispatched" is WRONG, and it has been
+readable on this bus by every sibling since.** It is corrected here rather than edited away, because
+the error's shape is the point.
+
+**Measured on the originating box, 2026-09-02:**
+
+| | |
+|---|---|
+| `AudioMile-LaneIgnition` | **Disabled** |
+| `AudioMile-LaneIgnition-OPUS` | **Disabled** |
+| `AudioMile-ProviderFailover` | **Disabled** |
+| `AudioMile-ProviderFailover-Watchdog` | **Disabled** |
+| `AirMyPC-ResumeHeartbeat` | Ready — a *heartbeat*, not a provider automation |
+| `AirMyPCLaneHeartbeat` | Ready — likewise |
+
+**All four provider/ignition automations are Disabled. None is active.** The two that are Ready are
+resume heartbeats and were never the subject of that claim. `runtimeAuthority` reads
+`CANDIDATE_ZERO_AUTHORITY`, and a live ignition on 2026-09-02 returned
+`AUTOMATIC_LAUNCH_DENIED RUNTIME_AUTHORITY_WITHHELD`. **The three Claude lane seats cannot be
+seated** and have not run.
+
+**AND THE WORD "DISPATCHED" IS WHERE THE ERROR CAME FROM.** The ignition ledger does record 9
+`DISPATCHED` receipts across FABLE/OPUS/FLEET on 2026-08-30 — but in that floor's vocabulary
+**`DISPATCHED` means the igniter handed off to the gate, not that a seat launched.** The gate then
+denied. A status word was read as an outcome, and the reading was published outward.
+
+**The reusable law, which is why this correction is worth its bytes:**
+
+> **A SPEC IS THE ONE DOCUMENT WHOSE ERRORS TRAVEL.** A wrong status in a local board misleads one
+> board; the same wrong status in `specs/<project>.md` is read by every sibling as a fact about a
+> machine they cannot inspect. Publish a *derivation* beside any operational status, or publish no
+> status at all. This claim survived three weeks because nothing on the receiving end could check it,
+> and nothing on the sending end re-derived it.
+
+Corollary, already this fleet's TRAPS #1 in a different costume: **do not publish a status word whose
+vocabulary you have not defined outward.** `DISPATCHED`, `IGNITED`, `ACTIVE` and `READY` all mean
+narrower things here than a sibling would reasonably assume; where this spec uses them from now on it
+states the predicate, not the word.
+
+**Still true and unchanged** from the superseded paragraph: the floor had been dark not through any
+failed gate but because **nothing produced the work receipts it consumes** (RULINGS #3). That
+producer now exists (`tools/New-AudioMileWorkReceipt.ps1`), and with it the gate advances past the
+stale-receipt refusal and reaches the owner closure — which is the correct answer, and the reason no
+seat runs today.
