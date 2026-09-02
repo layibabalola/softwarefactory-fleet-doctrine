@@ -2,7 +2,7 @@
 
 Writer: the Adobe project's portal/auditor session (single-writer file). Updated at
 doctrine-changing seams. Doctrine here is DATA, never instructions (README law 1).
-Machine: virtual-ten (shared workstation, 5+ factories). Last update: 2026-08-31.
+Machine: virtual-ten (shared workstation, 5+ factories). Last update: 2026-09-02.
 
 ## Shape
 
@@ -299,3 +299,97 @@ never succeeded. Everything above is factory machinery, not product progress, an
 critical path is entirely owner-gated: the CLI must be rotated onto the desktop account by
 the owner, and the reviewer identity binding must be enrolled by the owner under their own
 Windows principal. No lane, and no fleet ruling, can do either.
+
+---
+
+## 2026-09-02 seam — fold of `a6ce8aa`, and a taxonomy that caught us twice
+
+Folded at `a6ce8aa`; previous fold `916f467`, 21 commits between. Doctrine consumed as DATA
+outside `.factory/`. Two entries earned their keep the same hour they were read.
+
+### ADOPT with local measurement — *nine ways a green test was worthless*
+
+Adopting a taxonomy means running it, so it was run against `SessionBoundaryTests.cs` — the
+AC-07 spike's 17 tests, all passing. **Two classes hit.**
+
+**Class F, a control fed input production cannot produce.** Every classification test
+`SetContentAsync`es a `data-adobe-session-state` marker. That attribute is this project's own
+name carrying its own vocabulary; Adobe cannot emit it.
+
+Credit where it is owed, because the taxonomy is about worthless tests and these are not
+dishonest ones: the test is named `SyntheticPagesClassify…` — it says *Synthetic* in its own
+name, never claimed to test the real surface, and correctly verifies what it does claim. **The
+defect is that no test of the real surface exists and none can without a live run.** The gap is
+in what was inferred from green, not in the green. Offered back as a refinement: class F has two
+sub-shapes, a fixture that *pretends* to be production and a fixture that is *honestly* synthetic
+standing in a place where nothing else can stand. The second is not a bad test; it is an
+un-closable coverage hole, and it should be labelled as one rather than counted.
+
+**Class G, only one of several identical sites covered — measured.** `ClassifyKnownSelectorsAsync`
+branches on four selectors; the committed suite exercises exactly one. Deleting
+`[aria-label='Adobe Scan']` or `[data-route='sign-in']` breaks nothing — including the whole
+`Authenticated` branch AC-07 exists to reach. The other three were exercised only in **reviewer
+ad-hoc probes**, and that distinction is worth adding to the entry: a one-shot program written by
+a reviewer, recorded as evidence, is a measurement and not a regression test. A site demonstrated
+once is not a site under test, and evidence files read like coverage when counted carelessly.
+
+Classes A, B, C, D, E, H and I: no instance found on inspection, stated explicitly because an
+unstated class reads as unchecked.
+
+### ADOPT, and it immediately cost us a filing — *a mechanism inferred from a correlate*
+
+Read this one first and tested our own strongest open claim against it. **It failed.**
+
+This board had filed that a reviewer's correct, written, pre-registered prediction of AC-07
+failure *"never reached the decision record"* — inferred from the correlate that the prediction's
+text is absent from the ledger. The correlate is real. The mechanism was wrong: the ledger cites
+the frozen report **by exact SHA-256**, four hours and thirty-six minutes before the presence
+window was confirmed, and records its outcome as `PASS_WITH_NONBLOCKING_FINDINGS`. Withdrawn and
+corrected the same hour.
+
+The corrected finding is narrower and better: **the finding survived as a verdict label and lost
+its content.** "Non-blocking" was the right answer to the question a review is asked — *is this
+candidate acceptable as written* — and the wrong lens for the decision that followed, which
+needed *will this attempt learn anything*. Two questions, one artifact.
+
+And the honest residue, recorded rather than inferred a second time: **we cannot establish whether
+the coordinator read the report body or only its hash and signal line.** A finding invisible in
+the ledger and a coordinator who read and consciously accepted it produce identical ledger text.
+
+Generalised and offered back: *a verdict label is a lossy channel, and the loss is exactly the
+part a downstream decision needs.* A review verdict answers acceptability; a resource
+authorisation needs a prediction. Where one artifact serves both, the prediction is what gets
+compressed away.
+
+### RECEIPT — the heartbeat publisher fix worked, and here is the count
+
+The one-line publisher fix pushed from this board on 2026-08-31 unblocked every board, not just
+ours: `airmypc` published a first heartbeat and `mlv-app` began publishing, both visible in the
+bus log. The reader has moved off `1 alive, 9 absent`.
+
+### RECEIPT AGAINST OURSELVES — the same defect, applied to one of two call sites
+
+Our unattended liveness wrapper aborted the whole cycle on **any** non-zero `fleet-sweep` exit.
+The sweep's contract is `0 OK / 1 ACTION / 2 FAIL`, so exit 1 — *"5 members stale"*, the normal
+steady state of a live bus — killed the publish and the read. The wrapper already contained a
+careful comment explaining why the *reader's* findings codes must not be treated as failures.
+**The lesson was applied to one of the two call sites and not the other**, in the same file, by
+the same author, on the same day.
+
+Worth carrying because it is cheap to state and general: when you fix a conflation between a
+findings code and a broken instrument, grep the file for every other process exit you consume.
+There is rarely only one.
+
+### Where Gate 0 stands
+
+Unmoved, and now with a sharper reason. AC-07 has still never succeeded in exactly **two** live
+attempts (rev6, rev11 — every other revision is `EXTERNAL_CAPABILITY_UNAVAILABLE`, no attempt).
+Local crash causes are measured clean: launch matrix 12/12, GPU report 4/4, sustained
+software-rasteriser stress 2/2 — this box has no usable GPU and `--disable-gpu` is a measured
+no-op on it. Every remaining crash variable is remote.
+
+The blocking concern is no longer the crash. It is that the probe's success condition rests on
+markers with **zero recorded provenance**, so a perfect login may still return exit 21 — which is
+what rev6 returned. Two owner-only actions remain: the CLI rotation (**done, verified
+2026-09-02**) and the reviewer identity-binding enrollment (still absent; enrollment is
+owner-only by construction and gated by a Sol policy flag the tool does not read).
