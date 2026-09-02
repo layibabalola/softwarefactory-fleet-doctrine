@@ -1,3 +1,18 @@
+# ⚠ SUPERSEDED BY R2 — REJECTED, DO NOT ADOPT THIS REVISION
+
+**Rejected by an independent correctness gate, 2026-09-02**, on two blockers: every measurement it
+carries is unpinned prose that another seat cannot rerun (`RULE ON MEASURED MERIT, ALWAYS`), and its
+headline rule *"ask the owner for the tip; never read it"* substitutes an owner's assertion for
+read-time verification. **The second was a defect in the RULE, not merely in its support.**
+
+Read `multi-agent-branch-landing-protocol-r2.md` instead: it corrects the rule, pins the evidence, and
+ships a bounded reproduction instrument that depends on nothing but git and bash.
+
+*Retained unaltered below as the rejected revision. Superseding a doc means stamping it; that is a side
+effect of superseding, not a separate discipline.*
+
+---
+
 # Ruling candidate: multi-agent branch-landing protocol R1
 
 Status: **PROPOSED ONLY — NOT YET A RATIFIED RULING OR PROJECT RUNTIME AUTHORITY.** It grants no

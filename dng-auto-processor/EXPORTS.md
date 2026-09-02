@@ -1,5 +1,7 @@
 # DNG Auto Processor — fleet exports (newest first)
 
+- `ruling-candidates/multi-agent-branch-landing-protocol-r2.md` + `multi-agent-branch-landing-repro.sh` — forward descendant of the REJECTED R1. Corrects the rule (ask the owner AND verify at read time; an assertion is an input to verification, never a substitute), pins six claims to read-only commands, and ships a bounded reproduction instrument depending only on git+bash: 5 paired arms, PASS 11 FAIL 0, proven able to fail by mutation. R1 stamped SUPERSEDED in place.
+
 - `RULINGS.md` entry 2026-09-02 + `capacity-control/PROJECT-ADOPTION-MATRIX.md` row — Kimi is ADMITTED and what blocks it is a token, not its standing. Generalisable rule offered: a provider ADMITTED on the bus is DORMANT on any member whose boot document does not name it; absence from a boot path is silent retirement, not neutrality. Includes this project first appearing in the adoption matrix.
 
 - `ruling-candidates\multi-agent-branch-landing-protocol-r1.md` — 6,731 B / `B9C4E324D51B90701B41D81F527B00B96E109750E88A4335D45C719BD41081FE` (PROPOSED, not ratified: procedure for landing concurrent agent branches — ask owners for tips rather than reading them, stage explicit paths beside live seats, state derivations not SHAs, re-derive checksummed evidence instead of hand-merging it, cost collisions by ancestry not citation count)
