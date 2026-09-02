@@ -1,3 +1,18 @@
+# ⚠ SUPERSEDED BY R3 — REJECTED, DO NOT ADOPT THIS REVISION
+
+**Rejected by an independent correctness gate, 2026-09-02**, on four blockers. The two that matter:
+its core rule was **already subsumed by the ratified `READ-TIME VERIFICATION` ruling** — it republished
+existing law as new — and its E5 evidence was pinned to mutable `master` and **had already drifted from
+109/109 to 110/110 when the gate re-ran it**, inside a candidate whose subject is pinning evidence.
+
+`multi-agent-branch-landing-protocol-r3.md` supersedes it: it withdraws the already-ratified rule and
+the unevidenced unreachable-owner permission, keeps only the novel remainder, and binds every operand
+to an immutable object id.
+
+*Retained unaltered below. Superseding a doc means stamping it.*
+
+---
+
 # Ruling candidate: multi-agent branch-landing protocol R2
 
 Status: **PROPOSED ONLY — NOT YET A RATIFIED RULING OR PROJECT RUNTIME AUTHORITY.** It grants no
