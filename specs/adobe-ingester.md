@@ -393,3 +393,58 @@ markers with **zero recorded provenance**, so a perfect login may still return e
 what rev6 returned. Two owner-only actions remain: the CLI rotation (**done, verified
 2026-09-02**) and the reviewer identity-binding enrollment (still absent; enrollment is
 owner-only by construction and gated by a Sol policy flag the tool does not read).
+
+---
+
+## 2026-09-02 disposition — one gate, five things behind it
+
+Recorded because the board's *shape* changed today even though its state did not. Detail and the
+portable lessons are in `TRAPS.md` under this date; this is the disposition only.
+
+**The board is in lawful paralysis, not failure.** Every lane behaves correctly. `IMPLEMENTING` at
+WO-G0-A01 rev13, Q-021 rev6 at TWO_OF_FOUR with execution authority false, and 67 consecutive
+correct `EXTERNAL_CAPABILITY_UNAVAILABLE` refusals. Nothing is broken; nothing can move.
+
+**One edge holds five items.** Reviewer identity enrollment is unadmitted
+(`reviewer_binding_enrollment_authorized_now: false`), so no ballot exists, so no quorum exists,
+so none of these are reachable:
+
+    enrollment → ballot → quorum → { rev13 four-path closed-inventory admission → promotion,
+                                     RECOVERY-PIN-001 repository/pin adjudication,
+                                     RUNNER-CUSTODY-001 P0 launcher custody + actuation model,
+                                     LEDGER-RENDERING-PREFLIGHT-001 emitter revision,
+                                     Luna actuator restoration }
+
+Enrollment is **owner-only by construction** — DPAPI under the owner's own Windows principal — so
+no lane, and no advisory, can produce it. A ruling is drafted and awaiting owner signature.
+
+**Open, orchestrator-sustained findings** (all independently verified by Sol against the live
+repository, not accepted on advisory authority):
+
+| id | sev | one line |
+|---|---|---|
+| `RUNNER-CUSTODY-001` | P0 | the live orchestrator launcher is untracked, unpinned, referenced by no control, and sits in the auditor's writable area; the actuation model still describes the mechanism it replaced |
+| `RECOVERY-PIN-001` | — | a pinned module hash and its repository subject disagree; the *installed* copy is the admitted identity and the repository moved away from it under two unadmitted commits |
+| `ESCALATION-EXIT-GAP-001` | P1 | no budgeted declaration record exists for a blocked circularity |
+| `LUNA-ACTUATOR-ABSENCE-001` | P1 | a lane actuator the ledger records as ACTIVE and hash-bound is absent from the registry with no recorded removal |
+| `LEDGER-RENDERING-PREFLIGHT-001` | P2 | five interpolation modes in one emitter in one day; preventive ratified for a future governed revision |
+
+**Two dispositions changed today and both are worth carrying:**
+
+- The Option-B isolated commit is **no longer quarantined**. A patch-ID "mismatch" was a
+  full-commit comparison exceeding the authorization's named *tracked-diff* identity. Status is now
+  `AUTHORIZED_ISOLATED_COMMIT_COMPLETE_ATTEMPT_CONSUMED_NO_CANONICAL_ADOPTION`. The advisory that
+  triggered the reconstruction was itself **wrong** and is withdrawn — being wrong in public,
+  cheaply and correctably, is what produced the correction.
+- **AC-07 is fenced by ruling**, not merely stalled: *"No further user-presence window is to be
+  issued until the success condition and falsifiable prediction disposition are explicitly
+  evidenced in a governed work-order revision."* Gate 0 has not moved; two live attempts, both
+  failed, neither repeatable at present.
+
+**Machinery that now runs without a session attached** — offered as a pattern, since the durable
+half of this session's output was moving work off the chat turn entirely: a 10-minute credential-free
+resume checkpoint that now surfaces blocked-cadence counts at every boot; a 2-hourly fleet liveness
+cycle (sweep → publish-on-change → read) that fails loudly rather than silently; an ingress
+read-liveness probe that measures whether anyone is *reading* the advisory channel, not merely that
+it is written to. All are outside `.factory/`, spend no model capacity, and survive account
+rotation by construction.
