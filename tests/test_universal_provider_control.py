@@ -5219,6 +5219,111 @@ class UniversalProviderControlTests(unittest.TestCase):
         self.assertEqual([row["dimension_name"] for row in rows], ["session", "weekly"])
         self.assertTrue(all(json.loads(row["usage_json"])["outputTokens"] == 100 for row in rows))
 
+    # Universal quality-floor frontier-family closed set.
+    #
+    # `FRONTIER_HIGH_MODEL` has four provider branches; before these controls the suite exercised
+    # exactly one of them (`claude`, one negative, `tiny-economy-model`), so the `openai`, `kimi`
+    # and `grok` patterns were never executed in either direction.  These controls supply the
+    # closed set: every model identity this repository names, per provider, with its verdict.
+    #
+    # They pin what the table DOES, not what it arguably SHOULD do.  The measured drift they
+    # record -- `kimi-code/k3` refused while `kimi-k2.5` is admitted, and `claude-fable-5`
+    # refused -- is the subject of `ruling-candidates/universal-quality-floor-frontier-family
+    # -drift-r1.md`, which is PROPOSED ONLY.  No byte of the table may move before a distinct
+    # adjudicator rules, so these controls fail closed in BOTH directions: they break if the
+    # drift is silently "fixed" just as they break if the consistent cells silently rot.
+
+    def doctrine_named_identities(self) -> dict:
+        """Every model identity named in this repository, with its current floor verdict.
+
+        Each row is (identity, currently_admitted, where the identity is named).  `DRIFT` marks a
+        verdict that contradicts the identity's standing in doctrine.
+        """
+
+        return {
+            "claude": (
+                ("claude-opus-5", True, "RECEIPTS.md:1191 measured lane"),
+                ("claude-opus-4-1", True, "tests profile launchAllowlist"),
+                ("claude-sonnet-5", True, "opus-model-failback-r4.md:5 verifier seat"),
+                ("claude-fable-5", False, "DRIFT RECEIPTS.md:1191,1197,1382 measured lane"),
+                ("claude-fable-5-1", False, "DRIFT current Fable generation"),
+                ("claude-haiku-4-5-20251001", False, "below family, correctly refused"),
+            ),
+            "openai": (
+                ("gpt-5", True, "frontier family"),
+                ("gpt-5.6-sol", True, "RECEIPTS.md:1225,1302 measured lane"),
+                ("o3", True, "frontier reasoning family"),
+                ("gpt-4o", False, "below family, correctly refused"),
+            ),
+            "kimi": (
+                ("kimi-code/k3", False, "DRIFT specs/agent-bridge.md:228 onboarding subject"),
+                ("kimi-k3", False, "DRIFT specs/agent-bridge.md:209 flagship"),
+                ("kimi-code/k3-256k", False, "DRIFT provider-model-benchmarking.md:55"),
+                ("kimi-code/kimi-for-coding", False, "DRIFT provider-model-benchmarking.md:52"),
+                ("kimi-k2.7-code", True, "INVERSION specs/agent-bridge.md:231 not yet a candidate"),
+                ("kimi-k2.6", True, "INVERSION specs/agent-bridge.md:226 unverified locally"),
+                ("kimi-k2.5", True, "INVERSION specs/agent-bridge.md:212 lowest-cost tier"),
+                ("kimi-next", True, "PHANTOM named nowhere in this repository"),
+            ),
+            "grok": (
+                ("grok-4", True, "frontier family"),
+                ("grok-4.5", True, "provider-model-benchmarking.md:56 measured catalog"),
+                ("grok-4.5-build", True, "observed backend"),
+                ("grok-5", True, "frontier family"),
+                ("grok-2", False, "below family, correctly refused"),
+            ),
+        }
+
+    def test_frontier_family_closed_set_over_every_doctrine_named_identity(self) -> None:
+        for provider, rows in self.doctrine_named_identities().items():
+            pattern = upc.FRONTIER_HIGH_MODEL[provider]
+            for identity, admitted, provenance in rows:
+                with self.subTest(provider=provider, model=identity, why=provenance):
+                    self.assertEqual(pattern.match(identity) is not None, admitted)
+
+    def test_frontier_family_refuses_a_below_family_identity_for_every_provider(self) -> None:
+        # The negative dimension the suite previously carried for `claude` alone.  A floor that
+        # admits a small or prior-generation model on any branch is a floor in name only.
+        below_family = {
+            "claude": ("claude-haiku-4-5-20251001", "claude-instant-1", "tiny-economy-model"),
+            "openai": ("gpt-4o", "gpt-3.5-turbo", "tiny-economy-model"),
+            "kimi": ("kimi-lite", "moonshot-v1-8k", "tiny-economy-model"),
+            "grok": ("grok-2", "grok-3-mini", "tiny-economy-model"),
+        }
+        self.assertEqual(sorted(below_family), sorted(upc.FRONTIER_HIGH_MODEL))
+        for provider, identities in below_family.items():
+            for identity in identities:
+                with self.subTest(provider=provider, model=identity):
+                    self.assertIsNone(upc.FRONTIER_HIGH_MODEL[provider].match(identity))
+
+    def test_frontier_family_table_covers_exactly_the_request_schema_provider_enum(self) -> None:
+        # `FRONTIER_HIGH_MODEL[request["provider"]]` is an unguarded subscript.  A provider added
+        # to the schema enum without a floor pattern would raise KeyError out of the admission
+        # path instead of a stable, value-redacted ControlError, so the two sets must stay equal.
+        enum = upc._load_schema("request")["properties"]["provider"]["enum"]
+        self.assertEqual(sorted(enum), sorted(upc.FRONTIER_HIGH_MODEL))
+        for provider in enum:
+            self.assertIn(provider, upc.FRONTIER_HIGH_MODEL)
+
+    def test_known_frontier_family_drift_is_pinned_until_the_candidate_is_adjudicated(self) -> None:
+        # A tripwire, not an endorsement.  It states the four drifted verdicts in one place so a
+        # silent change to the table -- in either direction -- fails loudly and names the file
+        # that must be adjudicated first.
+        candidate = ROOT / "ruling-candidates" / "universal-quality-floor-frontier-family-drift-r1.md"
+        self.assertTrue(candidate.is_file(), "the drift candidate must accompany these controls")
+        drifted = (
+            ("kimi", "kimi-code/k3", False),
+            ("kimi", "kimi-k3", False),
+            ("kimi", "kimi-k2.5", True),
+            ("claude", "claude-fable-5", False),
+        )
+        for provider, identity, admitted in drifted:
+            with self.subTest(provider=provider, model=identity):
+                self.assertEqual(
+                    upc.FRONTIER_HIGH_MODEL[provider].match(identity) is not None,
+                    admitted,
+                    f"{identity} changed verdict; adjudicate {candidate.name} before moving the table",
+                )
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

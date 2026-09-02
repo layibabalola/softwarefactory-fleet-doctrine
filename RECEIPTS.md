@@ -1511,3 +1511,85 @@ this board, which is the case where it is most tempting to leave the number alon
 
 No verdict of either candidate changes as a result. `agent-bridge` owns the execute-posture spec
 and is free to relabel the column, re-reduce the row, or distinguish; this board claims neither.
+
+## Universal provider control — 2026-09-02: the quality floor had four provider branches and one tested; a closed set, and a mutation drill proving the controls are live
+
+Subject: `tools/universal_provider_control.py` `FRONTIER_HIGH_MODEL` (lines 341-346), consumed at
+line 3555 where a non-match raises `UNIVERSAL_QUALITY_FLOOR_VIOLATION`. Candidate:
+`ruling-candidates/universal-quality-floor-frontier-family-drift-r1.md` (PROPOSED ONLY).
+
+**No byte of `tools/universal_provider_control.py` changed in this work.** The table is the subject
+of an unadjudicated candidate; these controls pin what it DOES so that it cannot move — in either
+direction — without a ruling. The code diff is 105 added lines in
+`tests/test_universal_provider_control.py`, zero deletions; no file under `tools/` or `schemas/` is
+touched, and this receipt is the only other file changed.
+
+### What was missing
+
+The floor has four provider branches. The suite exercised **one**: `claude`, one negative,
+`tiny-economy-model` (`test_r15_05`). The `openai`, `kimi` and `grok` patterns had never been
+executed in either direction, positive or negative. The Kimi lines that look like coverage —
+`:228`, `:253`, `:259`, `:351-354`, `:1082` — all bind the *adapter* (`kimi-code/1.0`) and its
+capacity dimensions, never `request["model"]`. The profile fixture loops all four providers and
+hardcodes `claude-opus-4-1` for every row (`:206`), so the allowlist asserts that `kimi` /
+`kimi-code/1.0` is reviewed for a Claude model, and every request is built `provider: "claude"`.
+
+One other control reaches the floor and cannot see it either:
+`test_attestation_binds_path_hash_model_effort_role_and_subject` (`:1408`) mutates `model` to
+`other-model`, but asserts membership in a **set** of three reasons — `LAUNCH_PROFILE_NOT_REVIEWED`,
+`UNIVERSAL_QUALITY_FLOOR_VIOLATION`, `SCHEMA_VALIDATION_FAILED` — so it passes whichever control
+fires and can distinguish none of them. It is a binding test, not a floor test, and is correct as
+written; it is recorded here only because it looks like floor coverage and is not.
+
+That is why a table which refuses `kimi-code/k3` and admits `kimi-k2.5` sat under a green suite.
+
+### The closed set, including its negatives
+
+23 model identities across 4 providers, each with the file:line where the identity is named and its
+current verdict, derived rather than hand-counted: **6 drifted** (refused though doctrine names them
+frontier), **4 inverted or phantom** (admitted though doctrine calls them unverified, not-yet-candidate,
+lowest-cost, or does not name them at all), **13 consistent**.
+
+| provider | admitted | refused | drifted cells |
+|---|---|---|---|
+| `claude` | `claude-opus-5`, `claude-opus-4-1`, `claude-sonnet-5` | `claude-fable-5`, `claude-fable-5-1`, `claude-haiku-4-5-20251001` | **2** (both Fable; haiku is correctly below-family) |
+| `openai` | `gpt-5`, `gpt-5.6-sol`, `o3` | `gpt-4o` | 0 |
+| `kimi` | `kimi-k2.7-code`, `kimi-k2.6`, `kimi-k2.5`, `kimi-next` | `kimi-code/k3`, `kimi-k3`, `kimi-code/k3-256k`, `kimi-code/kimi-for-coding` | **8** — every cell is wrong in one direction or the other |
+| `grok` | `grok-4`, `grok-4.5`, `grok-4.5-build`, `grok-5` | `grok-2` | 0 |
+
+A fourth control pins a structural invariant the suite did not carry:
+`FRONTIER_HIGH_MODEL[request["provider"]]` is an **unguarded subscript**, so a provider added to the
+request schema's enum without a floor pattern would raise `KeyError` out of the admission path
+rather than a stable value-redacted `ControlError`. The table's key set and the schema enum are now
+asserted equal.
+
+### The mutation drill — because a control that cannot fail is not a control
+
+Four mutations applied in memory only, nothing written to disk, each run against the four new
+controls:
+
+| mutation | RED |
+|---|---|
+| `kimi` repaired to the doctrine set (what the candidate proposes) | **11** |
+| `claude` widened to admit `fable` | **3** |
+| `grok` branch deleted from the table | **3** (incl. the schema-enum invariant) |
+| `kimi` loosened to `^kimi` (match everything) | **7** (incl. the below-family negative catching `kimi-lite`) |
+| unmutated control | **0** |
+
+The controls fail closed in both directions: they break if the drift is silently repaired, and they
+break if the consistent cells silently rot. The proposed repair going red is the point — it is the
+mechanical statement that the repair requires adjudication first.
+
+### Honest limits
+
+- These controls test the table directly, not through the full broker admission path. Driving eight
+  cells through admission would require per-provider `launchAllowlist` rows the shared fixture does
+  not have; building them was judged a larger change to a reviewed fixture than the coverage gain
+  justified, and is left as a named follow-up rather than done quietly.
+- The shared profile fixture still asserts `claude-opus-4-1` for the `kimi`, `openai` and `grok`
+  rows. It is **not** corrected here: it is load-bearing for the existing 185 controls, and changing
+  it is a fixture migration, not a coverage addition.
+- The MLV vendored copy (`specs/mlv-app.md:665`, 119,196 B) remains **UNEVALUATED**; its bytes are
+  not in this checkout and no claim is made about whether it carries this table.
+- Nothing here adjudicates the candidate, and nothing admits any Kimi or Claude profile to any
+  fleet role. The K3 onboarding freeze and its empty role cells are untouched.
