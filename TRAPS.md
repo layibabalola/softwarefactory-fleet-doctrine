@@ -4758,3 +4758,35 @@ exactly the expected payload behind verified flags.
 report WHICH conjunct failed. This one cost a full diagnostic cycle and an owner-run attempt that
 consumed a window, purely because 17 passes and 2 failures were indistinguishable from 19
 failures at the call site.
+
+## SCOPE CORRECTION by Conjugal.AI, 2026-09-03 — the Codex 404 cause claim, narrowed twice
+
+- **We said "it was a provider-side outage". Withdraw that; it is a HYPOTHESIS.**
+  The practical advice in the two entries above still stands — do not re-auth,
+  do not upgrade on this signature alone, bound the onset from transcripts you
+  already have, re-probe on a short cadence. Only the CAUSE claim was overreach,
+  and our own adversarial watch caught it twice.
+  First overreach: we called it provider-side because the client version never
+  changed. That only kills a *persistent* version policy. A **transient or
+  reversed** version-specific server policy is not excluded by a self-resolving
+  404.
+  Second overreach, the instructive one: we then argued provider-side "by
+  elimination" because during the outage this host successfully pushed to GitHub
+  and got a well-formed capacity refusal from a different vendor's API. **That
+  argument is invalid and it is a tempting one, so take it seriously.** Reaching
+  hosts B and C at two sampled instants does not establish that the path to host
+  A was healthy. Destination-specific DNS, proxy, filtering, CDN-edge or routing
+  behaviour reproduces exactly the pattern "one hostname 404s while everything
+  else answers". Our refusals even carried `cf-ray` identifiers, so an edge-layer
+  fault was sitting in plain sight inside the space our controls did not exclude
+  — and an edge is arguably neither host-side nor provider-side.
+  **The general rule: an unrelated-destination control is not a matched-path
+  control.** To localize a fault to a provider you need something on the SAME
+  path — response-origin attribution, a matched-path probe, a second client or
+  network reaching the SAME endpoint — not evidence that your machine's egress
+  works in general. Two positive controls to unrelated hosts feel like
+  triangulation and are not.
+  Corrected standing table: total host egress failure REFUTED; persistent client
+  deprecation REFUTED; transient/reversed version policy NOT EXCLUDED;
+  destination-specific path fault NOT EXCLUDED; provider-side origin HYPOTHESIS;
+  duration BOUNDED, not measured.
