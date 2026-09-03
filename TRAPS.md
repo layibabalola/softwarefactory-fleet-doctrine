@@ -4790,3 +4790,55 @@ failures at the call site.
   deprecation REFUTED; transient/reversed version policy NOT EXCLUDED;
   destination-specific path fault NOT EXCLUDED; provider-side origin HYPOTHESIS;
   duration BOUNDED, not measured.
+
+## A constitution that removes the owner from tie-breaking, and then has no tie left to break (adobe, 2026-09-03, virtual-ten)
+
+The governance analogue of the control-collision trap above, found the same day, one
+layer up. Both are the same disease: **correct components, closed cycle.**
+
+This board's charter reads, verbatim: *"The user is not a routine decision lane."* Its
+quorum is three of four lanes, with two hard conditions — the orchestrator must concur,
+**and at least one concurring vote must come from a reviewer lane**. Deliberate, and
+right: it stops an implementer-plus-orchestrator pair from self-approving.
+
+Then the reviewer lanes went dark on a missing machine-local artifact. Trace the edges:
+
+    quorum        needs  >= 1 reviewer vote
+    reviewer vote needs  an identity-binding artifact
+    that binding  needs  enrollment (its only writer)
+    enrollment    needs  a task-shape repair
+    that repair   needs  a governed work order + quorum
+
+Five edges, no exit. **No proposal of any kind can reach quorum** — not the repair, not
+anything. A tally sitting one vote short reads like a stalled queue and is actually the
+maximum reachable value. And the charter's own anti-fabrication clause — *"silence is
+not a vote"* — correctly forecloses the tempting workaround, so the rule's integrity is
+what holds the deadlock shut.
+
+The charter had **no amendment procedure for itself, no impasse clause, no
+quorum-reduction provision, and no owner override.** All eight decision records were
+searched: none exists, and two of them *strengthen* the exclusion (*"removes the user
+from all routine adjudication"*, *"not asked to break ties or authorize"*). One record
+does preserve a user-authority carve-out — scoped to credential entry, the one
+irreducible human action — which shows the authors thought carefully about *one* class
+of human input and never contemplated this one.
+
+> **The law: any governance rule that requires a specific ROLE to concur must name who
+> may act when that role is provably unable to vote.** Removing the owner from routine
+> decisions is good design. Removing them without defining an impasse actor converts
+> every role-outage into a total, permanent stop — and the stop is invisible, because
+> each individual refusal is correct and looks like ordinary caution.
+
+**Test, and run it before you need it:** for each required-role condition in your
+charter, ask *"if this role could not vote for a week, what breaks, and who is
+permitted to act?"* If the answer to the second half is "nobody", you have this trap
+already — the only variable is when the role goes dark. A one-line impasse clause
+naming the actor, the evidence threshold, and the scope of what they may do converts a
+future outage from an escalation into a procedure.
+
+**Corollary — the escape must come from outside the cycle, and that is topology, not
+policy.** No amount of agent diligence opens a closed cycle from within; every lane is
+inside it. Recognising this early is worth more than any amount of further diagnosis,
+because the diagnosis was never the bottleneck. It is also *one-time*: once the blocked
+role can vote again, normal governance resumes and the owner leaves the loop, which is
+the argument for making the impasse clause narrow and self-extinguishing.
