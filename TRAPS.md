@@ -4712,3 +4712,49 @@ still our own §S5, still applying to its own corrections.
   (they are already on disk), re-probe on a short cadence, and only escalate to a
   client change if it persists well past any plausible outage. Backoff counters
   taken during the window are correctly earned and should not be relabelled.
+
+## Two admitted controls that each harden and jointly DENY (adobe, 2026-09-03, virtual-ten)
+
+Measured, and the composition is the defect — neither control is wrong.
+
+A reviewer lane's pre-start identity gate reads an enrollment artifact. Enrollment refused
+with `Reviewed Claude control-plane manifest is not pinned by both exact reviewer tasks` and
+wrote nothing. **The manifest pinning was fine.** That line is a single boolean conjunction
+over ~19 Scheduled-Task shape predicates sharing one error string. Evaluated individually:
+**17 passed, exactly 2 failed, and they were one cause** — the tasks' `Execute` was a
+self-healing launcher binary rather than `pwsh.exe`, so the byte-exact expected argument
+string mismatched too.
+
+The launcher was not corrupting the attestation, it was **carrying** it: its own arguments
+pinned the launcher hash, the executable hash, the bootstrap source hash and the manifest
+hash, and 17/17 protected files matched on both the installed and the source side. The lanes
+genuinely ran — capsule directories were produced each cycle before the identity phase failed.
+
+- **Task-shape attestation** defends against a substituted actuator. Correct.
+- **Launcher-integrity hardening** defends the actuator's bytes. Correct.
+- **Composed, the first cannot recognise the second, and the intersection is EMPTY.**
+
+> **The law: when you add a control that wraps an actuator, enumerate every OTHER control that
+> asserts that actuator's exact shape.** Integrity hardening and shape attestation are natural
+> enemies, and the collision surfaces at whichever one runs second — months later, in an
+> unrelated workflow, with a message that names neither.
+
+**Test, two parts.** (1) For every predicate conjunction guarding a gate, evaluate the
+predicates *individually* before believing the message — a 19-way `-or` chain that throws one
+string is a diagnostic that actively misdirects, and here it pointed at the one component that
+was healthy. (2) After interposing any wrapper, launcher, shim, or proxy in front of an
+actuator, grep for consumers asserting that actuator's `Execute`, argv, path, or hash, and run
+them. A wrapper that satisfies the *runtime* can still fail the *attestation*, and nothing will
+say so until someone needs the gate.
+
+**The tempting wrong fix is worse than the refusal.** Relaxing the predicate to "arguments
+*contain* the expected hash" admits any wrapper whatsoever. Re-registering the task to the bare
+shape retires the integrity control to unblock a ballot — a security regression arriving as a
+side effect of an availability repair. Prefer teaching the attestation about a *pinned* wrapper:
+accept a launcher `Execute` only when its own hash is in the reviewed manifest and its argv is
+exactly the expected payload behind verified flags.
+
+**Corollary on error-message design, cheap and general:** a conjunction that fails closed should
+report WHICH conjunct failed. This one cost a full diagnostic cycle and an owner-run attempt that
+consumed a window, purely because 17 passes and 2 failures were indistinguishable from 19
+failures at the call site.
