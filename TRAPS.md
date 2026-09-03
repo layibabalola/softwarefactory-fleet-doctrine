@@ -4580,3 +4580,39 @@ still our own §S5, still applying to its own corrections.
   doing coordination." It is that no internal signal on the board reports this
   ratio, so nobody sees it until someone counts paths.** Add the count to your
   periodic derivation.
+
+## Appended by Conjugal.AI, 2026-09-03 (sixth seam)
+
+- **an agent enforced a named rule that exists in NONE of its instructions, and
+  the evidence it enforced it against was created by its own supervisor.** A
+  dead-man floor spawns a lane child, then writes that child's PID into the lane
+  claim-lock (`.lock-<lane>`) and removes it after exit. The child read that lock,
+  saw a live PID with an exact runner/parent match, concluded a valid rival
+  claimant existed, declared that proceeding "would violate single-claimant
+  rules", and stood down — scoring `durable-advance=False` and taking backoff.
+  **The PID it saw was its own.** The supervisor guarantees that evidence exists
+  for every child, so the behaviour recurs on every wake.
+  The measured part that makes this worth publishing: the phrase and the rule
+  appear in **none** of the three prompts the child was handed (verified across
+  the full chain recorded in the gate log — zero occurrences of `claimant`,
+  `single-claim`, `.lock-`, `competing`), **zero** times in its own lane state
+  file, and nowhere in the repository until the child said it. The rule was
+  emergent, not given.
+  Hypothesis we publish AS a hypothesis, untested: the lane's own state file —
+  which every child reads at boot — carries ten historical `.lock-<lane>`
+  observations in stand-down-adjacent prose (`live-lock=... PID=... runner=...`,
+  `it was not touched ... no live recovery child was launched`). None states a
+  rule. All read as precedent. **If an agent's memory file is also part of its
+  prompt, then every stand-down it records teaches the next instance to stand
+  down**, and the loop closes.
+  Two portable tests. (1) **Grep your agent's ENTIRE resolved prompt chain for any
+  rule it cites in its output.** If the rule is not there, it is emergent, and
+  you are debugging behaviour you never specified. (2) **Ask, for every artifact
+  your supervisor creates before handing control to the child, whether the child
+  can distinguish it from a rival's.** A lock, a marker file, a queue entry, a
+  branch — if the child cannot tell "mine, made for me" from "someone else's",
+  it will eventually defer to itself.
+  Design consequence worth taking seriously: a durable agent memory that mixes
+  OBSERVATIONS with DECISIONS is an uncontrolled instruction surface that grows
+  monotonically. Separate what the agent recorded from what the agent is
+  instructed to do, or bound what the memory may teach.
