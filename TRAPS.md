@@ -3883,3 +3883,58 @@ board whose reviewer lanes were dark.
 > **The law: a provider closure is a ROLE closure.** Before withholding authority from a provider,
 > enumerate which *roles* go dark, not which lanes. If the answer includes "review", you have not
 > paused the factory — you have removed its brakes and left the engine running.
+## Appended by adversarialllm, 2026-09-02 (second sitting) — Claude-lane continuity traps
+
+- **The continuity mechanism that survives everything except a `git checkout`** (measured; would
+  have broken an account rotation called the same hour). Our resume-state writer, heartbeat
+  registrar, config file, and the `resume-state-status` module that the `UserPromptSubmit` hook
+  **imports** lived only on a long-lived feature branch, never on `master`. Everything looked
+  healthy for weeks: the heartbeat fired every 10 minutes, the freshness banner printed FRESH at
+  session start, resume worked. **All of that was true only because the main worktree happened to be
+  checked out on that branch.** On `master` the prompt hook was an older revision emitting no
+  canonical-state pointer at all — "resume our work" fired the trigger and produced nothing.
+  **Costume: a continuity system that passes every test you would think to run, because you run them
+  from the one checkout where it exists.**
+  **Test:** `git cat-file -e origin/<authoritative-branch>:<path>` for **every** file in the chain,
+  including transitive imports of your hooks. Verifying from the working tree answers a different
+  question than the one you asked.
+
+- **"Committed" and "live" are two claims, and fixing the first can leave the second false.** Having
+  landed the above on `master`, we measured immediately after: the working checkout sat on a branch
+  **157 commits behind master and 88 ahead**, so the new probe was ABSENT from the tree and the Stop
+  hook chain had **5 entries where master had 6**. The mechanism was correct, landed, tested — and
+  not running. **Costume: a green landing verification standing in for a liveness check.**
+  **Test:** after landing, diff the *working tree's* effective config against the authoritative
+  branch's, not the branch you just pushed.
+
+- **A resume surface that hands a lane a STALE IDENTITY** (measured; live for ~4 days). Ours carried
+  five verbatim lane-boot prompt bodies. Each was correct when written. By the time we read them:
+  one declared a lane "the ONLY lane that may integrate" **after an operator directive had moved
+  every orchestration authority to a different seat**; three cited long-closed work items as the
+  lane's highest-priority inheritance; and the set **omitted entirely the one lane that actually
+  ships product**. **A lane handed a stale identity acts on it** — it does not cross-check its own
+  authority against the ledger, because the boot surface is where authority is supposed to come
+  from. **Costume: a resume path that is complete, confident, and describes a board that stopped
+  existing a week ago.**
+  **Test:** for every authority claim in a boot surface, name the row that grants it and check that
+  row is still open. If the surface cannot cite one, it is prose, not authority. Better: delete the
+  baked bodies and name the command that derives the manifest at read time.
+
+- **A stale LOW reading is the failure mode a usage probe reports as SAFE.** Any threshold probe
+  over a sampled file has to decide what a too-old sample means. `sd=3%` from two hours ago is not
+  evidence that usage is low; it is no evidence at all. A naive implementation returns "below
+  threshold" and stops refreshing state — **precisely when the reason the samples went stale may be
+  that the thing sampling them died.** Same for a future-dated sample (clock skew, or the
+  mixed-representation timestamp trap already on this bus).
+  **Test:** assert your probe reports PRESSURE for a stale-and-low fixture and for a future-dated
+  one. Both went RED before our fix; both are now named cases in the self-test.
+
+- **PowerShell: an untyped parameter binds `-600` as a STRING, and `$x * 60000` then does string
+  repetition** (measured while writing the test for the trap above). `function S { param($sd,$fh,$agoMin) ... ($agoMin * 60000) }`
+  called as `S 3 3 -600` produced a **469 KB** value — `"-600"` repeated 60,000 times — and the
+  failure surfaced as an unrelated-looking type conversion error hundreds of lines long, not as a
+  binding error at the call site. **Costume: a test-harness bug wearing the costume of a defect in
+  the code under test.**
+  **Test:** type every parameter in test helpers (`[int]$agoMin`), and parenthesise negative
+  literals at call sites: `S 3 3 (-600)`. If a PowerShell error message is absurdly large, suspect
+  string repetition before suspecting your data.

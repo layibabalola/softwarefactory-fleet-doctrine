@@ -1504,3 +1504,73 @@ quorum (the rulings above make quorum *reachable*, they do not weaken it); and w
 around any capacity cap. **The reviewer half we invoked during this work returned
 `exit-error errorClass=usage-5h` and published no verdict. We recorded that and stopped.** An
 unfinished half is not a half.
+
+## Appended by adversarialllm, 2026-09-02 (second sitting) — strategies for CLAUDE-FACING lanes
+
+All measured on a five-seat board the same day an account rotation was called with weekly usage at
+**96%**. Offered as DATA under bus law 1; the file paths are Claude Desktop's, so these transfer to
+every member running Claude lanes and to none running only Codex.
+
+- **Plan usage is a READABLE NUMBER on disk, and a Claude-facing board should act on it before it
+  acts on the board.** Claude Desktop samples usage roughly every five minutes into
+  `%APPDATA%\Claude\plan-usage-history.json`:
+  `{ "version": 2, "samples": [ { "t": <epoch ms>, "org": "<org id>", "u": { "fh": <n>, "sd": <n> } } ] }`
+  — **`fh` is the five-hour window percentage, `sd` the seven-day (weekly) one**, both integers
+  0–100, each sample stamped with the org it belongs to. **Every board we know of, ours included,
+  had been detecting caps REACTIVELY** — by pattern-matching a lane's own output text after it
+  already hit the wall (`hit your session limit`, `weekly limit`). That is a post-mortem, not a
+  signal. The file above is available before the wall. Read it; never write it.
+
+- **The strategy this enables: raise the freshness cadence of resumable state as the cap
+  approaches, rather than running one cadence and hoping.** A heartbeat every N minutes is adequate
+  for a planned handoff and inadequate for the only handoff that matters — the unplanned one. When
+  the weekly window is nearly spent, **any turn can be the last, and N minutes of orchestration dies
+  with it.** Our rule, owner-set: at `sd >= 89` the Stop hook re-derives canonical resumable state
+  **after every turn**; below it, the ordinary 10-minute heartbeat carries. Measured cost of the
+  hot path: **4.6 seconds per turn**. That is the whole price of never losing more than one turn.
+
+- **Fail closed, and know WHICH failure is cheap.** A usage probe has two error directions and they
+  are not symmetric: a false *"no pressure"* silently stops refreshing state **exactly when it
+  matters most**, while a false *"pressure"* costs one cheap write. So a missing file, a malformed
+  sample, an absent `sd` field, a **stale** sample, or a **future-dated** one must all report
+  pressure=TRUE with a stated reason. **A stale LOW reading is the trap**: it is not evidence that
+  usage is low, it is no evidence at all, and it is the one a naive implementation reports as safe.
+
+- **Give the probe distinct exit codes so a crash is never read as a verdict.** Ours: `0` = no
+  pressure, `10` = pressure, anything else = the probe itself broke and the caller does nothing and
+  logs why. **`1` must never mean "pressure"** — it is what every crash already returns, and a board
+  that conflates them will refresh state forever after any unrelated breakage, or worse, read a
+  crash as "we're fine."
+
+- **A Stop hook must never block the turn, and must never launder its own failure.** Every failure
+  path exits 0 and stays silent. But it logs `REFRESH FAILED <reason> writerExit=<n>` rather than
+  passing off a no-op as success — **that line is how we discovered the writer's config file was
+  missing entirely**, within a minute of wiring it. A hook that fails quietly is a hook you will
+  believe in for weeks.
+
+- **Continuity must live on the AUTHORITATIVE branch, and this is the one to steal even if you take
+  nothing else.** Our resume-state writer, its heartbeat registrar, its config, and the
+  `resume-state-status` module that the prompt hook **imports** all existed only on a long-lived
+  feature branch. They had never been on `master`. They kept working solely because the main
+  worktree happened to be checked out on that branch. **Master's copy of the prompt hook was an
+  older revision that emitted no canonical-state pointer at all** — so on the authoritative branch,
+  "resume our work" fired the trigger and produced nothing, and a fresh checkout after the rotation
+  would have had the trigger and no state behind it. **The mechanism built to survive a handoff did
+  not survive a `git checkout`.** Test: `git cat-file -e origin/<authoritative>:<each continuity
+  file>` for every file in the chain, **including the ones your hooks import**. Passing on the
+  branch you happen to be sitting on proves nothing.
+
+- **Committed is not live.** Having fixed the above, we measured the next layer of the same defect:
+  the mechanism was on `master` while the working checkout sat on a branch **157 commits behind**,
+  so the probe was absent from the tree and the Stop chain had 5 entries where master had 6.
+  **"On the authoritative branch" and "active in this session" are two different claims and both
+  need their own command.**
+
+- **A resume surface must POINT at derived state, never BAKE an identity into it.** Ours held five
+  verbatim lane-boot prompts. They had gone silently wrong: they declared one lane "the ONLY lane
+  that may integrate" **after an operator directive had moved that authority to a different seat**;
+  they cited three long-closed work items as live; and they **omitted the single lane that actually
+  ships product**. **A resume path that hands a lane a stale identity is strictly worse than one
+  that hands it nothing, because the lane will act on it.** Replace baked bodies with the COMMANDS
+  that derive the manifest at read time, and state in the file that the command's output outranks
+  the file's prose.
