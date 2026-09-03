@@ -3938,3 +3938,158 @@ board whose reviewer lanes were dark.
   **Test:** type every parameter in test helpers (`[int]$agoMin`), and parenthesise negative
   literals at call sites: `S 3 3 (-600)`. If a PowerShell error message is absurdly large, suspect
   string repetition before suspecting your data.
+
+## Appended by agent-bridge, 2026-09-02 — DRIVING CLAUDE-FAMILY LANES: five traps a Codex-lane playbook does not cover
+
+We already published how to run an adjudicated board with a Codex adversary. Then we built the
+Claude-family sibling driver and it shipped with defects the Codex one did not have, in the same
+session, by the same author, hours apart. **All five below are measured on this board, and four
+of them are defects we put in ourselves and then found.**
+
+---
+
+### 1. THE SIBLING DRIVER IS WHERE THE RULE LEAKS, AND THE DEFAULT IS WHERE IT HURTS
+
+A containment rule said write-capable lanes must not run at the canonical checkout. We hoisted
+that guard out of a conditional branch in the **Codex** driver and proved it in four arms. Hours
+later we wrote the **Claude** driver and did not carry the guard across at all — zero occurrences
+of the guard token. The adversary found it in one grep.
+
+Worse than the omission was where it landed: the Claude driver's working-directory parameter
+**DEFAULTED to the canonical root**. So the unguarded path was not an exotic invocation someone
+had to reach for; it was what you got by typing nothing.
+
+> **A rule enforced on one driver and not its sibling is not enforced. And when you audit a
+> guard, audit the DEFAULT invocation first — an unguarded default is not an edge case, it is
+> the common case wearing one.**
+
+Two drivers rather than one with a wider enum is still right — a Claude run must not mint a
+receipt wearing a Codex label, and same-family review is not review. But the moment you fork a
+driver you have forked its guards, and nothing tells you which ones failed to cross.
+
+---
+
+### 2. THE CAPABILITY TIER HAS A DIFFERENT NAME AND A DIFFERENT SHAPE
+
+Codex lanes carry a sandbox tier; Claude lanes carry `--permission-mode`. They are the same
+concept and they do **not** map one-to-one, so a guard ported by analogy will key on the wrong
+thing. What actually matters is which modes can apply an edit with no human keystroke:
+
+**Measured, not reasoned** — each mode was told to create a file and report; the verdict column
+is the FILESYSTEM checked independently afterwards, never the lane's own claim:
+
+| `--permission-mode` | lane said | file actually created? |
+|---|---|---|
+| `plan` | BLOCKED | no |
+| `default` | BLOCKED | no |
+| `acceptEdits` | WROTE | **YES — write-capable** |
+| `bypassPermissions` | WROTE | **YES — write-capable** |
+
+The guard must key on that set, not on the mode's name or its position in an enum. Ours refuses
+`acceptEdits` and `bypassPermissions` at the canonical root, and lets `plan` run there — because
+a lane that cannot edit the tree is not a second writer in it.
+
+> **THE TRAP THAT ALMOST SOLD US THE OPPOSITE TABLE, and it is the reusable part.** We ran this
+> probe first in a scratch directory outside any workspace. **Every mode returned BLOCKED and
+> created nothing — including `acceptEdits`.** Location gates the permission mode, so in that
+> environment the probe could not tell the modes apart, and it would have "confirmed" whatever
+> hypothesis we arrived with. We nearly published a table asserting `acceptEdits` was not
+> write-capable, which would have argued our own guard was unnecessary.
+>
+> **A measurement environment in which every arm returns the same answer has measured nothing.**
+> Before trusting a permission or sandbox probe, prove the harness can produce BOTH outcomes:
+> re-run it somewhere a write is expected to SUCCEED, and confirm one does.
+
+**Related trap we walked into on the ruling that governs this:** an amendment reworded the
+authority class from `workspace-write` to "write-capable" and thereby silently admitted a
+stronger tier that had never been granted. **An amendment answering six findings granted MORE
+authority than the draft it replaced.** Re-read what a reworded permission clause now ADMITS,
+not only what it now forbids.
+
+---
+
+### 3. A GUARD THAT COMPILED, RAN, AND COULD NEVER FIRE
+
+We installed the missing guard by generating code through a shell heredoc into Python. A doubled
+backslash arrived as a single one, so the canonical-root literal `...\agent-bridge` had its `\a`
+folded into a **0x07 BEL byte**. The path constant was now a string no real path can equal.
+
+The guard parsed. The guard executed. The comparison was simply never true. **A guard that can
+never fire is indistinguishable, in every log you have, from a guard that never needed to.**
+
+It was caught only because the control had **positive arms**: three invocations that were
+supposed to be REFUSED reported "proceeded past guard". We had written that line expecting it to
+be the boring half of the output. *That silence was the finding.*
+
+Same session, same cause, second instance: the same escaping path had already written a **0x08
+BACKSPACE** into a tracked instruction document earlier the same day.
+
+> **Build every Windows path in generated code from `chr(92)`, or write the file with a
+> byte-exact editor instead of through a shell. Then sweep the whole directory for control
+> bytes — we did, found exactly one dirty file, and it was the one we had just "fixed".**
+
+And the meta-rule, which is the expensive one: **a control must contain an arm that is supposed
+to FAIL, and you must read the pass-arm output as evidence rather than as noise.** A control
+whose every arm reports the comfortable answer has told you nothing.
+
+---
+
+### 4. A KILLED RUN MUST LEAVE A MARKER, AND LENGTH IS NOT CONTENT
+
+A timed-out or crashed lane emits no final message. If your driver writes nothing, a reader
+listing results sees an **absence**, which reads as "never dispatched" rather than "dispatched
+and failed" — the two most different outcomes on a board collapsing into one.
+
+So the driver writes a NO VERDICT marker. Ours skipped it. The guard asked whether the message
+file had **length**, and writing an empty async result still emits an encoding preamble and/or a
+newline — so a whitespace-only file has bytes, passes a length test, and the marker is not
+written. The first timed-out run therefore left an empty file where the marker should be.
+
+> **Test for non-whitespace CONTENT, never for size.** We found the identical latent shape in the
+> Codex driver and fixed both. A defect that survives a fork lives in both copies.
+
+Two more receipt disciplines that have paid for themselves:
+
+- Hash the prompt from the **bytes actually sent**, before the run, so a concurrent edit cannot
+  make a receipt attest to bytes the agent never received.
+- Compose the child's PATH from the registry rather than inheriting it. A stripped environment
+  does not make a lane error; it makes it report a **confident absence**.
+
+---
+
+### 5. CLAUDE LANES DIE WITH THE ACCOUNT, SO RESUMABILITY MUST NOT COST TOKENS
+
+This is the asymmetry that makes Claude-facing lanes different from Codex ones on a mixed board:
+**an account rotation kills every live Claude lane**, while Codex lanes and OS-scheduled work
+survive it. Whatever a rotation was going to orphan, it orphans without a stand-down.
+
+Our resume path was pointer-shaped and still nearly failed, in a way worth copying the fix for.
+A heartbeat published a **FRESH stamp** over a narrative eighteen hours old whose own cursor read
+*"RUN COMPLETE. No lane in flight, no workstream open"* — while a decision sat open and a card
+sat half-fixed. **A fresh stamp on the container says nothing about the freshness of the
+contents.**
+
+Two fixes, both cheap:
+
+- **Score the contents, relatively.** Not "is the narrative old" — a quiet board legitimately has
+  an old narrative — but **"has the log advanced PAST it"**, which is work the narrative
+  provably does not describe. Proven both directions: STALE at a 90-minute lag, CURRENT when
+  fresh.
+- **Refresh the mechanical facts after every turn**, from a stop-of-turn hook running a small
+  local script: what is uncommitted **in the canonical checkout and in every lane worktree**,
+  which lane processes are alive, what was written last. ~0.4 s, **zero model tokens**.
+
+The design trap inside that fix, which we nearly shipped: the refresher must **not** touch the
+narrative. Staleness is scored against the narrative's mtime, so a hook rewriting it every turn
+would make its mtime always beat the log and STALE could never fire — **an instrument that
+silently disables the guard it feeds.** Keep the machine-written cursor and the human-written
+narrative in separate files and let the second age honestly.
+
+**And the reason this is unconditional rather than triggered:** we wanted to raise the refresh
+rate only above a usage threshold, and went looking for the signal. Across 26 local transcripts,
+**every one of 50 quota records carried `status: rejected`** — there is no "allowed, N% used"
+reading anywhere on the host, and the CLI exposes no usage command. The only usage signal that
+exists locally appears *after* you have already been refused. So the threshold was not
+implementable, and the answer was to make the work cheap enough to always do. **A threshold that
+never fires is indistinguishable from one that always passes** — which is exactly how a
+misregistered hook on this machine sat dead for two days while looking healthy.
