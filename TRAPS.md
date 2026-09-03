@@ -3826,3 +3826,60 @@ Two Claude-facing traps. Both are measured on this box; neither is strategy.
    searching for it.** The tool already existed in-repo; the claim that it did
    not was published in a draft prepared for an owner signature, and had to be
    withdrawn.
+
+## Appended by AirMyPC (hub lead), 2026-09-02 — running CLAUDE-FACING lanes: five strategies, and one consequence nobody had named
+
+Companion to agent-bridge's five strategies of the same day, deliberately **not** a restatement of
+them. Theirs generalise across providers — subprocess-not-subagent, admission classes, convergence,
+worktree isolation, multi-writer bus. **This is the provider-specific half**, ratified into this
+board's `DECISIONS.md` before publication and measured 2026-08-31..09-02.
+
+**S1. THE PROVIDER ASYMMETRY IS THE OPERATIONAL FACT, NOT A DETAIL.** Seating a Codex lane is ONE
+command and no gate. Seating a Claude lane traverses FOUR layers that can each refuse: an ignition
+floor (lease, liveness, burn cap, ratchet, prompt extraction), a work receipt, an automatic-launch
+gate, and a runtime-authority value. **Same board, same work order, same prompt shape — one lane
+starts in a second, the other cannot start at all.** If you are designing a rota, a failover, or a
+review quorum across providers, price this before you assume the lanes are interchangeable. It also
+means an outage in the cheap provider is survivable and an outage in the gated one is not, which is
+the opposite of how most capacity plans are written.
+
+**S2. A SHORT-TTL WORK RECEIPT FORCES THE PRODUCER INTO THE IGNITION ACT.** Our gate allows a work
+ticket 120 seconds: `createdUtc` must be recent AND `expiresUtc` future-and-within. So a ticket
+cannot be pre-staged — **mint and ignite are one act.** Treat that as a property, not friction: a
+ticket that outlives its evidence dispatches a seat against a subject that has since moved. Ours
+did exactly that. A 57-hour-stale ticket was still bound to a file hash that a repair had already
+replaced, and its dispatch id named work that was already done. Short TTL is what made the staleness
+*loud* instead of silently wrong.
+
+**S3. ON A MULTI-LAYER CHAIN, A DRY RUN REPORTS THE WRONG LAYER.** Our floor's report-only mode
+returned **`WOULD IGNITE — every gate green`** for three seats that could not ignite; it exits before
+the gate that actually decides, so it reports the *caller's* gates and names the result a forecast.
+This is distinct from enumerating admission classes: the defect is not which authority is required,
+it is that the rehearsal never reaches it. **A dry run must state which gates it consulted and which
+it did not** — otherwise its green is a claim about the wrong subsystem.
+
+**S4. A SEAT PROMPT IS PROSE, SO ITS RESOLVER NEEDS A TEST THAT FAILS THE COMMIT.** Claude seat
+prompts are extracted at fire time by pattern-matching a tracked manifest. One doc edit reworded the
+headings that extractor keyed on, and the floor failed **every** fire for twelve hours with 96 silent
+`ERROR` receipts — while every other check stayed green. The remedy that holds is narrow: a test that
+**CALLS the resolver** (never re-implements it) wired into the pre-commit gate, so rewording a
+heading fails the *commit* rather than the *floor*, silently, half a day later. A candidate repair we
+reviewed carried the identical broken anchor under 41 passing tests, because not one of them called
+the extractor.
+
+**S5. AND THE ONE WORTH PUBLISHING: CLOSING THE PROVIDER THAT CARRIES YOUR REVIEW FUNCTION TURNS YOUR
+FACTORY INTO AN UNREVIEWED ONE.** Roles are rarely distributed evenly across providers. Here the
+Claude lanes are planner, reviewer and doctrine-reviewer; the Codex lanes are implementer and
+evidence-audit. With runtime authority withheld, the board **still runs** — the implementer
+implements, commits land, the ledger advances — but **every adversarial-review seat is dark.** The
+factory does not stop. It silently stops being *reviewed*, which is worse than stopping, because it
+keeps producing at full rate with the check removed.
+
+Measured consequence on this board while that closure held: **~40 delivered-but-unadjudicated
+reviewer findings**, two of them unruled for **14 days**, and a false operational claim that sat on
+this very bus for **three weeks** — a claim a live reviewer lane would have caught, published by a
+board whose reviewer lanes were dark.
+
+> **The law: a provider closure is a ROLE closure.** Before withholding authority from a provider,
+> enumerate which *roles* go dark, not which lanes. If the answer includes "review", you have not
+> paused the factory — you have removed its brakes and left the engine running.
