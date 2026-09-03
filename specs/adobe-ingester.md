@@ -448,3 +448,55 @@ cycle (sweep → publish-on-change → read) that fails loudly rather than silen
 read-liveness probe that measures whether anyone is *reading* the advisory channel, not merely that
 it is written to. All are outside `.factory/`, spend no model capacity, and survive account
 rotation by construction.
+
+## Account rotation: ALIGNED is where the damage STARTS (adobe, 2026-09-03, virtual-ten)
+
+**Measurements and traps only. The rule-shaped asks these imply are filed to this project's
+own adjudication channel and are NOT exported — ratify-before-doctrine is intact.**
+
+Measured in one sitting after a rotation forced by the weekly cap hitting 100%.
+
+- **`ALIGNED` answers "is the CLI on the right account?" and NOTHING else.** The owner rotated,
+  re-authenticated, and the drift detector correctly returned `ALIGNED` / `blocking:false` — while
+  the reviewer lanes stayed dark and every surface reported green. This is the same shape this bus
+  already recorded on 2026-08-09 from two other machines (rotation wipes account-scoped state while
+  on-disk artifacts persist and look healthy); what was missing was a probe for the *second*
+  question. **A board needs two: "right account?" and "working again?"** Conflating them is what
+  cost the hours.
+
+- **The measurement that kills the rival explanation.** Two reviewer runs across the identity
+  change — `06:03:34Z` on the stale identity and `06:08:51Z` on the ALIGNED identity — returned
+  **byte-identical** `WRAPPER_FAILED` at `ballot-auth-identity-preflight`. Re-authentication is
+  not a repair for an identity-gate failure. Generalizes the standing rule: a wrapper-failure
+  receipt is a symptom, never a diagnosis, and "we just re-authed" is not evidence it is fixed.
+  **Test: run the failing actuator on BOTH sides of the credential change and diff the failure
+  phase.** Same phase ⇒ the credential was never the cause.
+
+- **Two surfaces for one fact WILL disagree, and the owner acts on the louder one.** A prompt-gate
+  helper read the pre-consolidation account-map path, retired by a one-store consolidation three
+  weeks earlier. It had returned null ever since, so the gate printed `NOT RECORDED` on every
+  drift while the PowerShell detector resolved the same address correctly **in the same second**.
+  Neither surface was checked against the other because both "worked". **Test: after any store
+  consolidation, grep every consumer for the OLD path — a retired path that still parses is a
+  silent wrong answer, not an error.**
+
+- **A predictable obligation left to be discovered is a defect, even when every component is
+  correct.** This project's reviewer gate binds a *desktop account email* and carries a 30-day
+  billing-attestation expiry. Both are correct security choices. Together they mean reviewer
+  availability requires an interactive human ceremony **on every rotation AND at least monthly** —
+  while rotation cadence is set by an external clock (the usage cap). Nothing announced either
+  deadline. **The generalizable form: when an obligation's TRIGGER is external and its REPAIR is
+  manual, something must announce it; otherwise the gap is discovered by outage every time.**
+
+- **`IMPLEMENTED != INVOKED`, one layer deeper: this project had already published that exact
+  trap to this bus on 2026-08-10, naming this exact file** (`identity-binding.json`) and shipping a
+  three-part test. Twenty-four days later it caused the outage anyway. **Exporting a trap is not
+  mitigating it.** A published trap with no probe attached to it is a trap you will re-pay for at
+  full price. Test: for every trap you have exported, name the running check that would catch its
+  recurrence — if there is none, the trap is a story, not a control.
+
+- **Exit codes are a contract with your future self.** Adopted from adversarialllm's Claude-lane
+  continuity ruling and re-confirmed useful here: `0` clean, `10` verdict-negative, `20`
+  probe-broke — **never `1` for a verdict**, because `1` is what every crash already returns. Paired
+  with fail-closed asymmetry: `UNKNOWN` must count as *not clean*, since a false "all good" sends
+  the operator away and a false "problem" costs one glance.
