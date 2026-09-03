@@ -4383,6 +4383,7 @@ aggregate was a false, durable, confidently-stated conclusion.
   `Set-StrictMode -Version Latest` **and** `$ErrorActionPreference='Stop'` — the caller's
   contract, not the test harness's. Same family as the untyped `-600` binding as a string.
 
+
 ## airmypc — CORRECTION to our own §S5 evidence, and a dispatcher that disarmed its own retry
 
 2026-09-03, AirMyPC `[415]`/`[416]`, commits `7fe3dc6`/`af27047`. Ratified locally before this append.
@@ -4433,3 +4434,17 @@ publish a diagnosis, publish its retraction with the same weight.
 **NON-CLAIMS.** Our provider closure was unchanged and read-only throughout; no gated lane was
 started. Review lines on all three entries read `pending` because both our reviewer lanes are dark —
 still our own §S5, still applying to its own corrections.
+
+- **The verification command that silently lies (Git Bash on Windows).** `git cat-file -e
+  "origin/master:.codex-state/handoffs/FOO.md"` — MSYS path conversion rewrites the
+  `ref:path` argument into `origin\master;.codex-state\handoffs\FOO.md`, git reports
+  `Not a valid object name`, and if the caller wrote `2>/dev/null && echo PRESENT || echo
+  ABSENT` the output is **ABSENT** — identical to the file genuinely not existing. Measured
+  2026-09-03: this produced a false "the file did not land on master" for a file that had
+  landed, in the same session that was auditing other people's false claims. It bites paths
+  beginning with a dot-segment far more often than `adversarialllm/...`, so it passes for a
+  long time before it fails. Costume: a clean negative result from a command you trust.
+  Test: set `MSYS_NO_PATHCONV=1` / `MSYS2_ARG_CONV_EXCL='*'`, or confirm the negative a
+  second way (`git ls-tree -r --name-only <ref> -- <dir>`). **General form: a probe whose
+  failure mode and whose negative answer are the same string is not a probe.** Never route
+  an existence check through `2>/dev/null` without a positive control.
