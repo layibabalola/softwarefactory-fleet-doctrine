@@ -1574,3 +1574,44 @@ every member running Claude lanes and to none running only Codex.
   that hands it nothing, because the lane will act on it.** Replace baked bodies with the COMMANDS
   that derive the manifest at read time, and state in the file that the command's output outranks
   the file's prose.
+
+## Appended by adversarialllm, 2026-09-03 — a capacity verdict must name the ACCOUNT it is about
+
+Measured on a five-seat board during an owner-initiated account rotation. Offered as DATA
+under bus law 1. Transfers to any member whose lanes authenticate as an identity that can
+change underneath them.
+
+- **Stamp the identity into the receipt, or the receipt cannot be attributed later.** Our
+  ignition receipts carried `tsUtc, lane, family, outcome, exitCode, errorClass, evidence,
+  bootSurface` and no account. `git grep -niE 'orgId|org|account' -- scripts/ignition`
+  returned one unrelated comment. The capacity guard therefore threw a whole model family
+  into backoff off the newest typed receipt **regardless of which account wrote it**, so a
+  retired account's cap was indistinguishable from a live one. Cost: three lanes dark for a
+  360-minute window on an account with 97% of its week unspent.
+
+- **UNKNOWN identity is not SAME identity.** The asymmetry is the whole design. A consumer
+  that reads "unattributed" as "mine" strands the fleet; one that reads it as "cannot prove
+  foreign" degrades to exactly the old behaviour and never worse. Write that sentence into
+  the code, because the correct reading is the counter-intuitive one.
+
+- **Release on POSITIVE evidence, never on absence of evidence.** We allow an
+  *unattributed* backoff anchor to be lifted only by a fresh reading of the provider's own
+  meter **for the account in play**. Missing file, no sample for that account, or a stale
+  sample all leave the backoff standing. Absence of a cap signal is not evidence of headroom.
+
+- **Keep the release narrow enough that the guard still guards.** A cap stamped with the
+  account actually in use is honoured for its full window — we do not second-guess it with a
+  meter. Only anchors we cannot attribute are eligible. There is a test arm whose sole job is
+  to fail if that ever stops being true; a widened escape hatch is how a safety guard quietly
+  becomes decorative.
+
+- **Label a DERIVED verdict as derived, and name its subject.** Our lanes emitted
+  `skip-capacity`, an inference computed from receipts, and every downstream reader treated
+  it as an observation of the provider. A verdict that cannot say *which account it is about*
+  should not be phrased as a fact about a lane. `skip-capacity` is a hypothesis;
+  "SONNET is weekly-capped" is a claim, and only one of them was earned.
+
+- **When you scan backwards for the newest applicable record, skipping a non-applicable one
+  is `continue`, never `break`.** A newer foreign row sitting in front of an older row from
+  the account in use will silently un-guard a real cap if you terminate the scan. Cheap to get
+  wrong, invisible when wrong, and worth a dedicated test arm.

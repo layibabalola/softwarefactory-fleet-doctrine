@@ -4331,3 +4331,54 @@ our reviewer lanes are dark — which is our own published §S5 applying to its 
   what happens when it refuses and the authority it defers to is unavailable.
   The number of guards answering "the owner is paged" is your unattended
   ceiling.
+
+## Appended by adversarialllm, 2026-09-03 — the retired account's cap, and four costumes it wears
+
+All measured the night of an account rotation. Sibling to the "correct-refusal deadlock"
+entry above: same shape, different guard — every component behaved as written, and the
+aggregate was a false, durable, confidently-stated conclusion.
+
+- **The cap that belongs to an account you no longer use.** Owner rotated from org A
+  (weekly meter **100%**) to org B (weekly meter **3%**). Two `usage-weekly` receipts written
+  ~3.7 hours *before* the rotation held all three Claude lanes for the full 360-minute window
+  *after* it. Costume: this presents as "the new account is also capped" — every lane returns
+  `skip-capacity` on schedule, the board looks provider-limited, and re-authenticating does
+  not help, which makes the capacity story *more* convincing. Test: compare the anchoring
+  receipt's timestamp against the rotation instant, and read the provider's per-account meter
+  for the account actually in use. **Corollary: a re-auth that correctly fixes identity drift
+  does not clear identity-blind state written before it. Fixing the account is not the same as
+  fixing what the account's predecessor wrote.**
+
+- **The board that laundered a stale receipt into its own resume surface.** Our orchestrator
+  read the (correct) `skip-capacity` receipts and wrote *"SONNET and FABLE are weekly-capped.
+  Orders addressed to either are inert"* into the canonical session state on master. A
+  reasonable inference from a broken mechanism becomes a **durable false claim that outlives
+  the condition**: the backoff expired on a clock; the sentence did not. Costume: it reads as
+  a status report, in the file you are told to trust. Test: for any capacity claim in a resume
+  surface, ask what would have to be re-observed to re-derive it — and whether anything ever
+  will. **The disproof was already in the same evidence store: the very lane that wrote the
+  sentence had itself run to completion on that account, `exit-clean`, inside the window it
+  declared capped.**
+
+- **The probe that documented a field it never read.** Our usage probe's header comment
+  described the per-sample `org` field, and its own test fixtures set `org='x'` — and the code
+  took `$Samples[-1]`, the newest sample from *any* account. Measured: **92 of the 96 samples
+  written in the preceding 24 hours belonged to a not-current account.** Costume: it returns
+  the right answer whenever you happen to check shortly after the current account has been
+  sampled, which is exactly when someone is watching. Test: filter by the subject you claim to
+  be reporting on, and assert the *unfiltered* path is wrong in a test arm.
+
+- **The stale HIGH reading — the documented stale-LOW trap wearing the opposite costume.**
+  "A stale low reading is not evidence usage is low" was already in our doctrine. Its mirror
+  was not: a stale **high** reading from a **retired** account is equally worthless, and it
+  fails in the *expensive* direction — it stops work that could proceed, indefinitely, while a
+  stale-low merely wastes a cheap write. Fail-closed is not one direction; enumerate both.
+
+- **`$home` is a read-only PowerShell automatic variable.** Assigning to it raises a
+  WriteError that is *harmless* where errors are non-terminating — and **fatal** under
+  `$ErrorActionPreference = 'Stop'`, which is what our ignition launcher runs. The identity
+  resolver written to *protect* lane launches would have killed every one of them. It surfaced
+  only on the first real invocation, because the unit path never set that preference. Costume:
+  a helper that tests clean and dies in production. Test: exercise new helpers under
+  `Set-StrictMode -Version Latest` **and** `$ErrorActionPreference='Stop'` — the caller's
+  contract, not the test harness's. Same family as the untyped `-600` binding as a string.
