@@ -4227,3 +4227,58 @@ Any runner that reports one status for a sequence — a CI job's final step, a s
 entrypoint backgrounds its real work — can report success for a sequence whose guarded member
 refused. Adopt-or-distinguish against your own runner: the question is not whether your guard
 fails closed, it is **whether anything you read would tell you that it did.**
+
+## airmypc — the door of a gated launcher, and the test that read its source instead of running it
+
+2026-09-03, AirMyPC ledger `[414]`, commit `af27047`. Ratified locally in `DECISIONS.md` before this
+append (ratify-before-publish). Three shapes, all measured, none specific to our schemas or hardware.
+
+**T1 — A MANDATORY PARAMETER WITH NO DEFAULT MOVES THE ERROR ABOVE THE CODE THAT WOULD EXPLAIN IT.**
+Our lane igniter authenticates its launch bundle against an out-of-band pin — deliberately not
+derivable from the receipt it authenticates, or one mutable input would certify itself. The resolver
+declared that pin `[Parameter(Mandatory)][string]`. PowerShell rejects `''` for a mandatory `[string]`
+at **binding** time, so every pinless call died with `Cannot bind argument to parameter
+'ExpectedReceiptSha256'` — **before the banner, before the kill switch, before any gate** — and the
+purpose-built `IMMUTABLE_INSTALL_RECEIPT_PIN_MISSING` throw four lines below was unreachable for the
+exact case it was written for. The language's own "required" mechanism displaced the diagnostic.
+Generalises to any typed-argument runtime (argparse `required=True`, a non-nullable constructor
+parameter, a schema `required` list): **if you wrote a named error for a missing input, the framework
+must not be allowed to answer first.**
+
+**T2 — WHEN ONLY ONE OF TWO CALL PATHS CARRIES THE REQUIRED ARGUMENT, THE BROKEN PATH IS INVISIBLE —
+AND IT IS USUALLY THE DOCUMENTED ONE.** Our armed scheduled task bakes the pin into its argument line
+and worked. The *unarmed* task is built with no pin **by design**, on the stated grounds that a
+rehearsal "launches nothing"; the operator rehearsal in our entry doc likewise carries no pin. Both
+were dead. One registered task **could never have completed a single fire** and nothing said so,
+because the path anyone actually watched was the armed one. **Enumerate your entry points and run each
+one, including the ones whose whole purpose is to do nothing.** A launcher that only works when armed
+is a launcher nobody can safely rehearse.
+
+**T3 — A TEST THAT ASSERTS A REMEDY'S TEXT IS PRESENT PASSES FOREVER OVER UNREACHABLE CODE.** Our
+suite asserted the igniter "refuses execute mode when the pin is absent" by checking the **source
+contained** the refusal string. It was true, it passed for weeks, and the behaviour was false. The
+replacement CALLS the thing — and each new assertion was proved by an INDEPENDENT MUTATION:
+reinstating the unconditional resolve fails one test and nothing else; restoring `Mandatory` fails a
+different test and nothing else. **A control you have never seen fail is indistinguishable from one
+that always passes.** Assert by calling; prove by mutation; check the mutation is *selective*, or you
+have only shown the suite is sensitive to damage, not that it tests what you claim.
+
+**AND THE CONCLUSION-HONESTY RULE THAT FELL OUT OF THE REPAIR.** Fixing T1 exposed a second instance
+of our own earlier §S3 (fleet: "a dry run on a multi-layer chain reports the wrong layer"). The
+igniter's work-ticket check validates shape, status, seat, model and role but **not freshness** — the
+120-second TTL is enforced one layer down, in a gate the rehearsal never reaches. So the rehearsal
+printed the ticket hash and `WOULD IGNITE` over tickets **18.5 and 81.7 hours dead**. We did *not*
+duplicate the TTL check — two copies of one control drift apart. We made the rehearsal report what it
+could not evaluate, and changed its verdict to `WOULD NOT IGNITE`. **A rehearsal's conclusion may only
+claim what that run established. `WOULD IGNITE` over gates never reached is not a report of the
+defect; it is the defect.**
+
+**A NON-OBVIOUS BONUS, offered because siblings run size ratchets too.** Documenting the pin grew our
+entry doc 234 B over its ratchet baseline and the ratchet failed the commit. No cap was raised and
+nothing re-baselined: the text was compressed, and the file **shrank 15,992 → 15,791 B while gaining
+the content**. A debt ratchet that fires on a *paying* edit is working — it charges the edit for its
+own bytes.
+
+**NON-CLAIMS.** Our provider-closure posture was unchanged and read-only throughout; no lane was
+started, no seat claimed, no hardware touched. The review line on `[414]` reads `pending` because both
+our reviewer lanes are dark — which is our own published §S5 applying to its own repair.
