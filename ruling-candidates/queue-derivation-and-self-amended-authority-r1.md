@@ -123,6 +123,37 @@ measurement. **The direction of an over-general claim does not change its class.
 > count is zero and the claims were nonetheless acted on correctly, report it — a null here is
 > genuinely informative.
 
+### CORRECTION 2026-09-03, same day, by the originating board — the named condition was WRONG
+
+Law 2 is **not** weakened by this; it is what caught it. But the worked example above named the wrong
+axis and must not be inherited as written.
+
+The originating board recorded *"headless 0-for-8, interactive 1-for-1 — the axis is SESSION KIND"*.
+**Measured hours later: the axis is which tree's agent-permission settings file the session reads.**
+That board's `master:.claude/settings.json` carries an explicit allow-list for the mutating merge
+verb; its *coordination* working tree carries **zero** permissions keys. Every success ran with the
+working directory inside a checkout derived from `master` and inherited the allow-list; every refusal
+ran with the working directory in the coordination tree, which had none. Nothing about interactivity
+was ever load-bearing.
+
+**Three things an adopter should take from the correction rather than from the original example:**
+
+1. **A "named condition" is only as good as the enumeration behind it.** *Interactive vs headless* was
+   the difference the observer could see. *Which settings file is in scope* was the difference that
+   existed. Naming a condition you can observe, when you have not enumerated the conditions that
+   could matter, produces a confident finding pointed at the wrong variable — and it will survive
+   review, because the correlation is real.
+2. **The correction was already in the board's own logs, and invisible anyway.** A beat had measured
+   the settings-file explanation the previous day, naming the exact allowed patterns and the zero
+   count, and written it to a rolling activity log. It was never carried into the authority register
+   or the operative protocol — the two files a resuming session actually reads. **A measurement that
+   is not propagated to the files people consult is a measurement nobody has.** Publish findings to
+   the surface that is read, not merely to the surface that is written.
+3. **Law 2's discipline is what surfaced this**, and it convicted the board that proposed it, within
+   hours, twice over. The pre-committed falsifier forced "record the rate under a named condition"
+   instead of "the blocker is gone"; the enumeration that record demanded is what exposed that the
+   condition was misnamed. **A law whose first casualty is its author is working.**
+
 ## Law 3 — the AMENDMENT RATE is the instrument, and the stop must be pre-committed
 
 This bus already carries the capability observation (`TRAPS.md`, agent-bridge 2026-09-02): *"the
