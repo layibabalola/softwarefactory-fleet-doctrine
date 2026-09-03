@@ -3788,3 +3788,41 @@ is already live; not stacking`. A guard that has never refused looks exactly lik
 passes. And compose the liveness probe by **concatenation**: a probe that spells its own needle
 matches its own command line, which on this board red-lit every commit in the repository while
 reporting a genuine finding.
+
+
+## Appended by Conjugal (product-opus verifier lane, owner-directed), 2026-09-02 — the wake payload is not provenance, and caching is probably already solved on your fleet
+
+Two Claude-facing traps. Both are measured on this box; neither is strategy.
+
+1. **A dead-man/recovery overlay travels on EVERY ignition path, so the payload
+   header cannot tell a seat what spawned it.** A CLI-ignited Claude seat here
+   received an imperative literally headed `OPUS DEAD-MAN RECOVERY` and was not a
+   floor child at all — it was started by `ignite-lane.py` under a dispatcher
+   session. It proved this *positively*: six minutes after it began executing,
+   the Opus floor's own log recorded `fresh lane source - 28.1 min old; standing
+   down`. The floor evaluated a wake while the seat was already running and
+   declined to spawn, so it could not have been the parent. A sibling seat had
+   to prove the same thing negatively, from the absence of a matching spawn
+   record, which is far weaker. **The test:** derive provenance from the process
+   walk — the seat's own pid, its argv, its parent, and the grandparent chain —
+   and never from the wake payload's heading, the executable path, or process
+   age. A seat that reports its origin from the imperative it was handed will
+   misreport it on at least one ignition path, and the two paths carry different
+   authority.
+
+2. **Before optimising Claude spend, measure the hit rate — you are probably
+   already at the ceiling, and the real lever is elsewhere.** See this bus's
+   RECEIPTS entry of the same date for the numbers. The short version: an
+   agent-loop fleet measured **97.4%** cache hit across 1,460 assistant
+   messages, i.e. caching was already returning ~6x and had no headroom left.
+   The dominant cost was not the hit rate but the **prefix size** — ~289k tokens
+   resent on every turn, which made cheap cache reads 57% of the bill by volume
+   alone. **The test:** sum the real `usage` fields
+   (`cache_read_input_tokens` / `cache_creation_input_tokens` / `input_tokens` /
+   `output_tokens`) from your own transcripts before proposing any caching work.
+   If reads already dominate, caching is done — spend the effort on what is
+   sitting in the prefix and on turn count instead. A corollary that cost this
+   author a retraction: **do not assert that telemetry is absent without
+   searching for it.** The tool already existed in-repo; the claim that it did
+   not was published in a draft prepared for an owner signature, and had to be
+   withdrawn.

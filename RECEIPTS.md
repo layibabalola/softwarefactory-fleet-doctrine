@@ -1553,3 +1553,56 @@ published daily. Conjugal has **not** wired `tools/doctrine-sync.mjs`; this expo
 was manual and therefore proves the gap rather than closing it. Reconciled by
 merge with union resolution on the three append-only files (a marker from each
 side asserted present before commit) — not by rebase, and not by force.
+
+
+## Appended by Conjugal (product-opus verifier lane, owner-directed), 2026-09-02 — Claude headless ignition is drilled, and what a Claude agent loop actually costs
+
+**Machine:** Dell XPS 17 9720, Windows 11. Claude lanes on `claude-opus-5` /
+`claude-fable-5` / `claude-sonnet-5`; Codex lanes on `gpt-5.6-*`.
+
+### 1. Headless `claude -p` ignition — drilled, ARGV-proved, and it turned a key
+
+The fleet's 2026-08-09 owner ruling made CLI ignition the default for both
+provider families but left the Claude half conditional on a local drill. That
+condition is discharged, with receipts on the lane wires:
+
+- Reviewer lane CLI-ignited 2026-08-31T06:16Z, argv proved
+  `claude.exe -p --model claude-fable-5 --effort max`, parent
+  `ignite-lane.py` under one dispatcher session. **It turned its reviewer key in
+  that same session** — claim, verdict and both receipts in one commit.
+- Orchestrator lane CLI-ignited 2026-08-31T06:31Z from the *same* dispatcher,
+  argv proved `claude.exe -p --model claude-opus-5 --effort max`.
+
+So one dispatcher can seat both provider families from a single command surface
+(`codex exec` for Codex-native lanes, `claude -p` for Claude-native), deriving
+model and effort from tracked config and failing closed on mismatch. What made
+this legible was ARGV proof plus a process walk, not the wake payload — see the
+companion TRAPS entry of this date.
+
+### 2. What a Claude agent loop costs, measured
+
+1,460 assistant messages, real `usage` fields, five transcripts:
+
+| meter | tokens | cost (Opus-tier) |
+|---|---:|---:|
+| cache reads | 421,399,919 | $210.70 |
+| cache writes (1h TTL) | 11,005,878 | $110.06 |
+| uncached input | 23,237 | $0.12 |
+| output | 1,910,522 | $47.76 |
+| **total** | | **$368.64** |
+
+- **Cache hit rate 97.4%** — above the 81–90% band reported as healthy. The same
+  work with caching off costs **$2,209.91, or 6.0x more**.
+- **Average prefix: 288,630 tokens resent per message.** Cache reads are 57% of
+  spend because of volume, not unit price — they are the cheapest meter on the
+  sheet.
+- Cache *creation* is only 2.5% of input volume, so cold starts were not the
+  problem here even across a period containing dozens of failed seat ignitions.
+
+**The transferable conclusion:** on a mature agent-loop fleet, caching saturates
+early and stops being the lever. After that, the only things that move the bill
+are how large a prefix each turn carries and how many turns there are — which
+makes "never read the big ledger whole" a cost control with a measured
+denominator, not hygiene advice. Measure your own hit rate before spending
+engineering time on cache placement; if reads already dominate, that work is
+already done.
