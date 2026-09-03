@@ -1,6 +1,6 @@
 # Cloudvore (DropBox Vault) — factory spec. Writer: Cloudvore hub/warden ONLY.
 
-Updated 2026-08-10 (seeded by seat 5 at owner instruction). Repo: C:\code\DropBox Vault (private remote github.com/layibabalola/Cloudvore; never-push rule RETIRED by owner 2026-08-09 02:04 CDT — pushes now routine; release go/no-go stays owner-only). Product: WPF .NET app that pushes camera footage to cloud storage and
+Updated 2026-09-03 against Cloudvore master `13c87cf`. Seeded 2026-08-10 by seat 5 at owner instruction. Repo: C:\code\DropBox Vault (private remote github.com/layibabalola/Cloudvore; never-push rule RETIRED by owner 2026-08-09 02:04 CDT — pushes now routine; release go/no-go stays owner-only). Product: WPF .NET app that pushes camera footage to cloud storage and
 PROVES the copy intact. The proof is the product; cardinal rule: no surface says SAFE TO WIPE
 unless the persisted IsSafeToWipe gate licenses it — a false tamper alarm is equally harmful.
 
@@ -11,6 +11,24 @@ per file. Blind dual-model review (never the same prompt to Fable and Opus). Opt
 never on the critical path. Coordination via untracked review/ (working memory) + tracked
 knowledge/ (durable); byte-budgeted docs with a mechanical size checker + split-never-summarize.
 State is DERIVED, never recited (scope-carrying-assertions law; roadmap status from the tree).
+
+## Landing authority
+A **bounded, revocable standing owner merge grant** has been in force since 2026-08-31: a hub may
+merge into local master without asking when all of a fixed set of criteria hold, two of which demand
+**non-author** evidence (an independent 3x green and an independent mutation that bites narrowly).
+`src/`, tagging, release go/no-go and accepted deferrals stay owner-only. The criteria themselves are
+Cloudvore-local; the exportable shape is: *bounded, revocable, non-author evidence required, and the
+disjointness criterion cannot be delegated to the queue tool* -- that tool proves collisions pairwise
+by diff with no identity and no ancestry check, and on the day of the grant reported eight collision
+rows of which four were impossible.
+
+Two properties a sibling board should copy deliberately. First, the disjointness criterion took **two
+amendments in a single day, both written by the hub it constrains, both widening it**, and is
+therefore recorded as **UNSETTLED pending owner ratification** rather than as settled law. Second, it
+carries a **pre-committed stop** -- *"no third amendment without the owner ... whatever its merits"* --
+which **fired on 2026-09-03** against a fourteen-line comment-only delivery whose other criteria were
+all clear, and was honoured: the delivery was escalated unlanded. See
+`ruling-candidates/queue-derivation-and-self-amended-authority-r1.md` Law 3.
 
 ## Measured laws exported
 - An exec is not a seat; the CLAIM row is (generalizes "a chip is not a seat").
@@ -64,7 +82,7 @@ State is DERIVED, never recited (scope-carrying-assertions law; roadmap status f
   one-heartbeat confirmation still owed as due diligence.
 
 ## CLI versions last validated here
-codex-cli 0.144.6 (ignition-proven); claude 2.1.214; Kimi Code CLI 0.34.0; Grok Build 1.0.0
+codex-cli 0.144.6 (ignition-proven, re-measured 2026-09-03); claude **2.1.259** (re-measured 2026-09-03; this line read 2.1.214 until then, 45 versions of drift invisible in the very diff law 5 uses to surface it); Kimi Code CLI 0.34.0 and Grok Build 1.0.0 NOT re-verified 2026-09-03 -- do not read as validated
 (binary/PATH/doctor/authenticated inference plus bounded adapter and live terminal drills proven).
 Single-version-per-machine
 ruling applies per CLI.
