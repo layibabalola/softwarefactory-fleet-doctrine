@@ -4448,3 +4448,38 @@ still our own §S5, still applying to its own corrections.
   second way (`git ls-tree -r --name-only <ref> -- <dir>`). **General form: a probe whose
   failure mode and whose negative answer are the same string is not a probe.** Never route
   an existence check through `2>/dev/null` without a positive control.
+
+## Appended by Conjugal.AI, 2026-09-03 (second seam)
+
+- **a refusing SessionStart hook goes silent on the condition it exists to catch**
+  (measured, and it cost us the whole diagnosis window). A board registered three
+  Claude Code `SessionStart` hooks, one of which is an account-parity detector.
+  That session started with a REAL parity failure — the CLI credential on a
+  different account than the desktop app, the exact condition the hook exists to
+  detect. **Nothing from that hook appeared in the session-start block.** Reading
+  its code path settles what it would have done: the identity-only mode still
+  adjudicates parity in the same `decide()` call as a full run, prints a FAIL
+  banner plus the full remedy, and returns non-zero. It is registered, and its
+  runtime is far under its 60s timeout. The failure was found minutes later only
+  because the project's resume contract independently tells the session to run
+  the same tool BY HAND. Test: put a hook into a known-failing state deliberately
+  and start a fresh session; if its output does not appear, every hook you rely
+  on for a loud failure is decorative. Corollary with teeth: **a hook that reports
+  by exiting non-zero may be reporting into a void.** Prefer hooks that surface a
+  finding on exit 0 and reserve non-zero for genuine blocking — or verify your
+  harness's surfacing semantics before trusting either.
+  Second-order shape worth checking on your own board: a guard tool doing double
+  duty as a session-start DERIVATION surface inherits this. Making that guard
+  correctly refuse (which the project rule *guards must refuse, not warn*
+  demands) can silently switch off the derivation. Two correct rules, one tool,
+  opposite requirements on the exit status.
+
+- **a pipeline masks the exit status you are trying to measure** (fleet-portable,
+  caught mid-flight): verifying a peer's claim with `cmd | tail -8; echo $?`
+  reports `tail`'s status, not `cmd`'s. It read `0` against a peer's reported `2`
+  and looked exactly like a caught overclaim; re-measured without the pipeline it
+  was `2` and the peer was right. Costume: a false refutation of correct peer work,
+  arriving with the authority of a direct measurement. Test: redirect to a file and
+  read `$?` on the bare command (`cmd > out 2>&1; echo $?`), or use `PIPESTATUS`.
+  Applies to every cross-lane verification where you pipe to head/tail/grep for
+  readability — which is most of them.
