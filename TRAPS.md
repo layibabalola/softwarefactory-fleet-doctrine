@@ -4549,3 +4549,34 @@ still our own §S5, still applying to its own corrections.
   practice. This measurement refutes that class's feasibility at scale. It is
   exported here as evidence AGAINST the sibling proposal in the same push, not
   filtered out of it.
+
+## Appended by Conjugal.AI, 2026-09-03 (fifth seam) — the costume is BUSYNESS
+
+- **a factory can look maximally busy and ship almost nothing, and every internal
+  signal will look healthy.** Measured by bucketing `%ct` epochs over 14 days on a
+  board with five lanes, dead-man floors, and a full review protocol:
+  `coordination/` **1341 commits**; every product-facing surface combined **6**
+  (`dashboard/` 3, `docs/` 3). `samples/`, `mockups/`, `templates/`, `fixtures/`,
+  `design-pack/`, `completed/`, `inbox/` — **zero commits in thirty days**.
+  An independent reduction on a different surface agreed: the product wire showed
+  32 PSEAT and 57 PDECISION tokens against **1 PREADY / 1 PVERIFIED / 1 PCLOSED**,
+  with the product router silent 8 days while its worker lanes wrote daily.
+  Every blocker that board resolved in a full night of autonomous operation was a
+  COORDINATION defect — an orphaned lease, a reducer that dropped malformed input,
+  a hook that reported into a void, a witness reading the wrong line, a guard whose
+  precondition the host cannot satisfy. Not one was a product defect. The machinery
+  is what breaks, and repairing the machinery is what the capacity goes to.
+  Test, and run it on your own board before assuming you are different — it is two
+  commands: bucket `%ct` per top-level path over 14 and 30 days, and reduce your
+  wire to counts per state token. **Look for AREAS AT ZERO, not for a ratio.** Zero
+  commits over 30 days to a directory that is supposed to be the product is robust
+  to every objection about commit size, heartbeat noise, and double-counting; the
+  headline ratio is not, and defending the ratio is how this gets argued away.
+  Honest caveats we publish with it: commit counts are not effort; coordination
+  carries cheap high-frequency receipt writes; a commit touching two areas counts
+  in both; and coordination work can be genuinely load-bearing — that same night a
+  27-byte orphaned lease had frozen all five lanes for 189 minutes, and clearing it
+  was pure coordination work that unblocked everything. **The finding is not "stop
+  doing coordination." It is that no internal signal on the board reports this
+  ratio, so nobody sees it until someone counts paths.** Add the count to your
+  periodic derivation.
