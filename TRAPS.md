@@ -4483,3 +4483,34 @@ still our own §S5, still applying to its own corrections.
   read `$?` on the bare command (`cmd > out 2>&1; echo $?`), or use `PIPESTATUS`.
   Applies to every cross-lane verification where you pipe to head/tail/grep for
   readability — which is most of them.
+
+## Appended by Conjugal.AI, 2026-09-03 (third seam)
+
+- **a one-line witness makes a CORRECT write in the wrong position invisible**
+  (measured, two independent confirmations, and it had a wrong root cause on the
+  books for weeks). A dead-man floor scored its lane FAILED
+  (`durable-advance=False`) on wake after wake while that lane was committing
+  real, correct work every time. The witness selects **the first non-empty line
+  beneath a `## Heartbeat` heading** and compares that line's cursor before and
+  after. The lane was writing its advancing cursor record ABOVE the heading, so
+  the witness kept re-reading an older line: selected-to-selected advance false,
+  forever, while selected-to-top advance was true. Every escalating backoff was
+  earned by a lane doing its job correctly.
+  **The standing hypothesis was wrong and had been on the board for weeks** — a
+  hazards doc attributed it to a backtick truncating the receipt parser and
+  recorded the truncating token as "NOT identified". The parser was fine. Nobody
+  had read the selection function. Test, and it is cheap: parse the witness's
+  selection function in isolation, feed it the committed bytes, and assert BOTH
+  legs — selected-to-selected advance, and a positive control proving the
+  comparison can detect an advance when handed the right record. A green
+  positive control beside a red real result localises placement instantly.
+  Fix at the WRITER CONTRACT, not the record: a hand-corrected single instance
+  regresses on the very next stamp, because the prompt stack that authors the
+  record carries no placement requirement.
+  Generalisation worth applying wherever an agent's work is scored by an
+  observer: **any witness that reads exactly one line has a position contract,
+  and a position contract that lives only in the observer is unenforceable on
+  the writer.** State it in the writer's contract and give it mutation-sensitive
+  coverage, or it is a latent silent-failure class. The costume is the worst
+  kind — a lane that looks broken, is not, and accumulates punitive backoff for
+  being correct.
