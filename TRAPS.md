@@ -5168,3 +5168,57 @@ the cycle rather than an incident to be diagnosed each time.
   index stat cache; then require raw size/hash equality only when the installed/runtime contract or
   the path's filter policy proves an identity transform. `git status` alone remains insufficient,
   but raw-size inequality alone is not stale-code evidence.
+
+## `ConvertFrom-Json` silently retypes your timestamp, and the second bug hides behind the first (adobe, 2026-09-04, virtual-ten)
+
+Two independent derivations reached this the same minute — the project's orchestrator and
+its auditor session, separately — so it is corroborated, not asserted.
+
+**PowerShell's `ConvertFrom-Json` coerces ISO-8601 strings to `[DateTime]` unless you pass
+`-DateKind String`.** A reviewer runner did:
+
+    $clockStart = (& Get-FactoryTrustedUtc.ps1 -AsJson) | ConvertFrom-Json   # no -DateKind
+    $attemptUtc = $clockStart.trusted_utc
+
+`$attemptUtc` is now an object. Passed to a parameter typed `[string]`, it renders in
+**current culture** — `09/04/2026 04:06:44`: no `T`, no fractional seconds, no `Z`. The
+consumer's `[datetimeoffset]::ParseExact(..., "yyyy-MM-dd'T'HH:mm:ss.fff'Z'", Invariant)`
+cannot parse it and **throws**. Measured, with the control:
+
+    type after ConvertFrom-Json : System.DateTime
+    coerced to [string]         : '09/04/2026 04:06:44'
+    ParseExact                  : MethodInvocationException / inner FormatException
+    -- same bytes with -DateKind String --
+    type=String value='2026-09-04T04:06:44.746Z'   PARSED OK
+
+**Why it survived so long: a lenient parser downstream laundered it.** A
+`[DateTimeOffset]::Parse` on the same value succeeds (Parse is permissive where ParseExact
+is not), so the derived run id and the receipt's `attempt_utc` still rendered as correct
+ISO strings. **The artifact that would have exposed the bug displayed a plausible value.**
+
+> **The law: a language default that silently changes a TYPE is a defect factory, and a
+> permissive parser downstream is what keeps it invisible.** Audit every `ConvertFrom-Json`
+> whose result crosses a typed boundary or a format-exact parse. Test: assert
+> `.GetType().Name -eq 'String'` at the seam, not the rendered value — the rendered value is
+> the thing that lies.
+
+**The second, sharper half — bug-masking order.** This defect was UNREACHABLE for weeks
+because an earlier check in the same function threw first (a missing artifact). When the
+operator finally provisioned that artifact, execution advanced one line and hit this. The
+receipts' `error_type` changed `RuntimeException` → `MethodInvocationException` at exactly
+that moment.
+
+> **A fail-closed sequence hides every defect after the first.** Clearing a blocker does not
+> reveal a regression — it reveals what was always there. Treat a CHANGED exception type
+> after a repair as *progress plus a newly exposed defect*, not as "the fix broke something".
+> Corollary for estimation: in a long fail-closed chain you cannot know how many blockers
+> remain, because only the first is observable. Budget for n, not 1.
+
+**Third: the receipt discarded the one datum that would have ended this in minutes.** The
+run receipt recorded `transcript.retained: false`, `stderr: null`, reason
+`claude_execution_not_completed` — i.e. it withholds the error precisely when the failure
+happened *before* the provider ran, which is the case where there is no provider output to
+leak. Diagnosis took hours of inference that one retained exception message would have
+closed. **Retention policy written for the success path silently governs the failure path.**
+Test: for each redaction rule, ask which failure it blinds you to, and whether that failure
+can even contain the thing being redacted.
