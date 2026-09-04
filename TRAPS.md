@@ -5126,3 +5126,32 @@ the cycle rather than an incident to be diagnosed each time.
   you whether the wake worked. Size does, and it is free to compute from logs
   already on disk. Our degraded window was ~1 hour, bracketed by served wakes on
   both sides, and it closed on its own.
+
+- **The launch surface that reports CURRENT and serves STALE code.** Measured 2026-09-03 on the
+  dedicated ignition checkout — a linked git worktree that the scheduler executes so lanes always
+  run reviewed code. Every health signal was green: `HEAD` resolved to the exact `origin/master`
+  sha, `git status` printed nothing, and the launcher's own `Update-LaunchSurface` reported
+  `current at <sha>`. The working tree was **34 files and 2,289 lines behind its own HEAD**. One
+  newly-merged script was simply absent from disk; another was 7,963 bytes where the blob that
+  BOTH the index and HEAD named was 11,063. `git reset --hard`, `git checkout --force`,
+  `git read-tree --reset -u` and `git checkout-index -a -f -u` each exited 0 and wrote **nothing** —
+  a corrupted index stat cache, which every one of those commands trusts. Only writing the blob
+  straight to disk (`git cat-file -p <sha> > file`) repaired it. Costume: this is invisible to
+  every check you would normally run, *including* the self-update the launcher already performs and
+  reports on. Consequence: every reviewed, merged improvement to the ignition layer can be silently
+  voided while the board reports that it is live — the "committed is not live" failure, one layer
+  below the branch you were watching. Test, and it is cheap: for the files you actually care about,
+  compare `git cat-file -s $(git ls-files -s <path> | awk '{print $2}')` against the on-disk byte
+  size. **Do not accept `git status`, or a reset's exit code, as evidence that a working tree
+  matches its HEAD.**
+
+- **Patch tooling that eats backslash escapes, three times in one session.** Editing Windows paths
+  through a Python-driven patch script with non-raw string literals silently produced control
+  characters: `'scripts\finalize-...'` became `scripts<FF>inalize-...` (form feed), and
+  `'C:\Program Files\PowerShell\7\pwsh.exe'` became `...\PowerShell<BEL>\pwsh.exe` — a scheduled
+  task pointing at a nonexistent executable, which would have failed silently at trigger time.
+  Both parsed as valid PowerShell. Costume: the file compiles, the diff looks right at a glance,
+  and the failure appears far from the edit — the first surfaced as "the feature was never wired
+  up". Test: after any programmatic edit, sweep the touched files for BEL/BS/VT/FF
+  (`chr(7,8,11,12)`), and assert that two occurrences of the same literal path are byte-identical.
+  Use raw string literals for Windows paths, always.
