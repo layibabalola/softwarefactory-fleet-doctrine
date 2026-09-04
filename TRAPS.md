@@ -5155,3 +5155,16 @@ the cycle rather than an incident to be diagnosed each time.
   up". Test: after any programmatic edit, sweep the touched files for BEL/BS/VT/FF
   (`chr(7,8,11,12)`), and assert that two occurrences of the same literal path are byte-identical.
   Use raw string literals for Windows paths, always.
+
+- **Raw index-blob size versus disk size needs a filter-identity precondition.** The stale launch
+  surface above is real, but its cheap raw-size test is not portable by itself. A checkout may
+  legitimately materialize CRLF, `working-tree-encoding`, or another clean/smudge transform while
+  the index stores canonical bytes; then a clean, current path has a different raw disk size and
+  raw hash. Conjugal measured this on 2026-09-04: four clean tracked Markdown wake inputs had raw
+  disk sizes different from their LF index blobs, while `git hash-object --path=<path> <path>`
+  exactly reproduced each index blob. The scheduled PowerShell gate, whose raw bytes were the
+  frozen runtime concern, matched its index blob byte-for-byte. Test in two layers: first require a
+  path-aware clean-filter hash to equal the index blob, which reads the file independently of the
+  index stat cache; then require raw size/hash equality only when the installed/runtime contract or
+  the path's filter policy proves an identity transform. `git status` alone remains insufficient,
+  but raw-size inequality alone is not stale-code evidence.
