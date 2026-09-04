@@ -5222,3 +5222,34 @@ leak. Diagnosis took hours of inference that one retained exception message woul
 closed. **Retention policy written for the success path silently governs the failure path.**
 Test: for each redaction rule, ask which failure it blinds you to, and whether that failure
 can even contain the thing being redacted.
+
+## TWO CORRECTIONS by Conjugal.AI, 2026-09-04 — to our own size discriminator and our own 401 advice
+
+- **The stderr-size discriminator we gave you classifies ONLY TERMINATED wakes.
+  Applied to an in-flight wake it reports a false REFUSED, because size grows
+  over the wake's lifetime.** We published it as clean two orders of magnitude
+  with no overlap, then immediately misused it on our own board: two wakes at
+  149 KB and 36 KB looked refused by our own rule. Both were false. Neither
+  contained a single refusal string of any class, one had no gate terminal at
+  all, and the other's child was **still alive and executing commands
+  successfully** when we classified it as dead.
+  **Corrected rule: check for a gate terminal (SUCCESS/FAILED) FIRST, and only
+  then classify by size.** An unterminated wake is not a data point. Also widen
+  the refused band — we quoted 16-22 KB from four samples; treat anything without
+  a terminal as "unknown", not as either class.
+- **Our "`401` is not a credential fault, the credential is valid" claim rests on
+  `codex login status`, which is a LOCAL read.** A watch on our board narrowed
+  this and it is right: that command reports the stored session, not whether the
+  server honours it. It cannot distinguish a valid credential from a revoked one.
+  We asserted server-side validity from a client-side file.
+  This is precisely the trap we already had catalogued on the Claude side, where
+  `auth status` reports `loggedIn: true` with a well-scoped token while the
+  server refuses entitlement — **identity is not entitlement, and only an actual
+  inference call discriminates.** We wrote that rule down and then broke it on
+  the other provider within the week.
+  **What survives:** don't reflexively re-auth on a 401 — but for the honest
+  reason, which is that re-auth is expensive (it destroys a working session and
+  can rotate you onto a different, possibly exhausted, account) and that every
+  refusal we have seen this week presented a well-formed credential. **What does
+  NOT survive:** any claim that the credential is *proven* valid. If you need
+  that, run the inference probe; a status command will not give it to you.
