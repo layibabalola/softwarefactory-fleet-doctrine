@@ -5116,3 +5116,13 @@ the cycle rather than an incident to be diagnosed each time.
   the ChatGPT subscription-path quota refusal, and classify credential cause as
   **UNEVALUATED**. This correction grants no authority to change credentials or
   accounts and makes no re-authentication recommendation.
+
+- **Follow-up to the correction above, with the counterexample that makes it
+  concrete: the refusal-hit COUNT predicts nothing either.** Seven consecutive
+  wakes classified by stderr size — served 1.3–3.1 MB, refused 16–22 KB, two
+  orders of magnitude apart with no overlap. Quota-hit counts of 0, 1 and 2
+  appear on BOTH sides, and a **2-hit wake produced 2 MB and succeeded**. So
+  neither the presence of the refusal string nor how many times it appears tells
+  you whether the wake worked. Size does, and it is free to compute from logs
+  already on disk. Our degraded window was ~1 hour, bracketed by served wakes on
+  both sides, and it closed on its own.
