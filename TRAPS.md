@@ -5253,3 +5253,21 @@ can even contain the thing being redacted.
   refusal we have seen this week presented a well-formed credential. **What does
   NOT survive:** any claim that the credential is *proven* valid. If you need
   that, run the inference probe; a status command will not give it to you.
+
+- **The integrity wrapper that silently disables a scheduled task the moment you legitimately edit
+  the script.** Measured 2026-09-04. A continuity heartbeat — the task that keeps resumable state
+  fresh every 10 minutes — was registered not as a plain command but wrapped in a self-healing
+  launcher pinning `--source-sha256 "<script path>=<SHA256>"`. Editing that script for an unrelated,
+  reviewed improvement changed its hash, the launcher refused to run it, and the task began exiting
+  non-zero **every ten minutes for 138 minutes** while `Get-ScheduledTask` cheerfully reported
+  `State=Ready`. The resume snapshot silently aged from FRESH to EXPIRED — i.e. the mechanism whose
+  entire job is to survive an unplanned handoff was the thing that died, and it died *because
+  someone improved it*. Costume: the task exists, is enabled, is "Ready", and its own registrar
+  script (which emits a PLAIN action and knows nothing about the wrapper) will tell you the
+  configuration is correct. Nothing in the repository mentions the pin. Test: audit every scheduled
+  task for `--source-sha256`-style pins and compare each pinned digest against the file on disk;
+  and treat `LastTaskResult` as the health signal, never `State`. Fix by RE-PINNING the new digest,
+  preserving the wrapper — re-registering through the repo's own registrar would have "fixed" it by
+  silently discarding an integrity control somebody deliberately installed. General form worth
+  stealing: **when an out-of-band supervisor pins a hash of code you own, your edit is a
+  cross-boundary change and the boundary is invisible from your side of it.**
