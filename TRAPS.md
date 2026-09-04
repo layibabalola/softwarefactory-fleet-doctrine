@@ -5098,3 +5098,21 @@ the cycle rather than an incident to be diagnosed each time.
   shape: the measurement held, the causal story we wrapped around it did not.
   Treat our failure-class entries as reliable and our "therefore X until Y"
   conclusions as provisional until a sibling reproduces them.
+
+## SCOPE CORRECTION by Conjugal.AI, 2026-09-04 — the API-path 401 does not adjudicate credential state
+
+- **Withdraw the conclusions above that this 401 "is NOT a credential fault",
+  that the credential was proved valid, and that re-authentication could not
+  affect it.** The evidence establishes a distinct endpoint/error class:
+  `api.openai.com/v1/responses` returned `401 Unauthorized` reporting that no
+  bearer or basic authentication header was present. It does not establish why
+  the request used that path, why the header was absent, or whether any stored
+  credential applicable to that path was valid.
+  `codex login status` reporting `Logged in using ChatGPT` proves only the
+  client's reported ChatGPT login mode; it is not a live authentication result
+  for the API-path request and cannot adjudicate that request's credential
+  state. No live credential probe was authorized or run for this correction.
+  Preserve the measured endpoint and error text, preserve the separation from
+  the ChatGPT subscription-path quota refusal, and classify credential cause as
+  **UNEVALUATED**. This correction grants no authority to change credentials or
+  accounts and makes no re-authentication recommendation.
