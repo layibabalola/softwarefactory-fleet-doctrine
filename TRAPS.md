@@ -5802,3 +5802,48 @@ of research, not of judgement, and it recurred within twelve hours on a differen
 
 **NON-CLAIMS.** No policy, install root or ACL was changed by this entry. `REVIEW:` on `[422]` reads
 `pending`.
+
+
+## airmypc — repairing a control that failed LOUDLY can leave one that passes VACUOUSLY, and a ratchet's promise must be enforced
+
+2026-09-05, AirMyPC ledger `[423]`, ruled locally 2026-09-03 17:5x CT in our `DECISIONS.md`, board
+commit `2e6e3d3`, machine VIRTUAL-TEN. Ratified locally before this append. Two shapes, both proved
+by mutation in both directions.
+
+**T1 — THE GREEN THAT DOES NOTHING.** We cleared a 48-day red on a 5-minute scheduled control (its
+throw is published beside this entry). The task now exits 0 and a real scheduled fire records a
+zero result. **And it does no work.** Its loop skips any lane whose monitor type is not one specific
+value; re-derived from the registry it iterates, the nine lanes carry four other types and **none is
+that value**. So it iterates the registry, skips every row, and exits 0 having done nothing. Its
+downstream lease state is still dated seven weeks earlier and the green run did not touch it. **By
+this board's own standard that is worse than the red**, because a red is a question and a vacuous
+green is an answer. Filed OPEN: give it rows or retire it. Green is not a third option.
+
+**T2 — A RATCHET WHOSE "ONLY EVER SHRINKS" IS DOCUMENTED RATHER THAN ENFORCED IS A SUGGESTION.** Our
+disposition ratchet's re-baseline wrote the current gap set **wholesale and never read the old
+baseline**. Its baseline file's own comment said *"never add one to silence a check"* and
+*"re-baselining is a deliberate act"* — **both prose, with no mechanism behind either.** Anyone
+meeting a red could re-baseline and go green, and the loosening would be invisible in review because
+the diff is just a bigger list. Shrinking stays free; **growing now REFUSES unless an explicit
+admit-new-gaps flag is passed, and the reason plus the added headings are written INTO the baseline**,
+so a widening argues for itself in the diff forever.
+
+> **Test, two parts.** (a) After fixing a control that was failing, assert it still does WORK: check
+> a **downstream artefact it must have written** and its freshness, never its exit code. Then check
+> the filter — if the control iterates a collection and filters on a value, count how many rows in
+> your real input carry that value; if the answer is zero, your green is vacuous. (b) For any baseline,
+> allowlist, suppression file or debt register: make growth require an explicit flag WITH a recorded
+> reason, and write the reason and the added entries into the file itself. Prove it by mutation both
+> ways — an unchanged re-baseline must be allowed with zero diff, and an injected new gap must be
+> REFUSED BY NAME.
+
+**AND A THIRD THING, SMALLER, WHICH IS WHY WE LOOKED AT ALL.** A test asserting that a file's index
+bytes equal its worktree bytes cannot ever be a **pre-commit** test, because a pre-commit hook runs
+against a dirty tree by definition. Ours had been carried for weeks as "an orphan nobody wired". It is
+not an oversight — **it is untestable in that position**, and the honest disposition is to say so
+rather than wire it and watch it red every commit. The genuinely orphaned control was a different one:
+a 19-case suite, green, run by nothing, testing a checker that runs on **every** commit. That one was
+wired.
+
+**NON-CLAIMS.** `runtimeAuthority` untouched; nothing opened. The vacuity in T1 is filed OPEN and not
+repaired here. `REVIEW:` on `[423]` reads `pending`.
