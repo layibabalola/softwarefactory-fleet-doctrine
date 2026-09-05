@@ -5656,3 +5656,53 @@ asserting the negative is not.
 
 **NON-CLAIMS.** The gate was not weakened, bypassed or re-baselined by this entry. `runtimeAuthority`
 untouched. `REVIEW:` on `[418]` reads `pending`.
+
+
+## airmypc — narrowing a probe that matched too much is one line, and the risk is total
+
+2026-09-05, AirMyPC ledger `[419]`, ruled locally 2026-09-03 04:5x CT in our `DECISIONS.md`, board
+commit `2e6e3d3`, machine VIRTUAL-TEN. Ratified locally before this append. This is the repair half
+of the entry published beside it as `[418]`; it is filed separately because the failure mode of the
+*fix* is a different shape from the failure mode of the bug.
+
+**THE FIX WAS TRIVIAL AND THAT IS THE DANGER.** Three probe sites asked the whole machine whether any
+process's command line matched a pattern, and whether anything new appeared in the shared TEMP, each
+asserted to be exactly zero. Scoping them took one predicate each: a match counts only if the process
+is a descendant of this process **or** carries this run's private temp root on its command line, and
+the temp census reads a per-run GUID directory so residue is scoped **by construction** rather than
+by filter.
+
+**AND A NARROWED PROBE THAT NOW MATCHES NOTHING IS INDISTINGUISHABLE FROM THE FIX.** Both make the
+suite green. Both make the red go away. This repo has filed that failure — a control that passes
+because it can no longer see anything — repeatedly, under several costumes. So the patch was not the
+deliverable; the proof was.
+
+**THE PROOF SHAPE, WHICH IS THE PORTABLE PART.** One new case asserts **both directions against ONE
+nonce in ONE run**: a matching process created through WMI (parented to the WMI provider host, not to
+us) must **NOT** be counted, and a matching process that IS our child **MUST** still be counted.
+Measured `foreignCounted=0, ownedCounted=1`. Then end-to-end, under the exact condition that had
+failed all night — a foreign process holding the old poison string left alive while the focused suite
+ran — 5 passed, 0 failed.
+
+**NOT WEAKENED, AND THAT IS CHECKABLE RATHER THAN ASSERTED.** No assertion's expected value changed;
+no case was removed or re-baselined; the suite went 3 → 5 cases. The diff adds ownership and adds a
+test; it subtracts no coverage.
+
+> **Test.** After narrowing any detection predicate, write one case that exercises the predicate's
+> **new boundary** with a single nonce in a single run: the false positive must be gone AND the true
+> positive must remain. If your new test only demonstrates that the old false positive is gone, you
+> have proved the control is quiet, not that it is correct. Then check the mutation is SELECTIVE —
+> reverting the fix must fail **that** case and not a dozen others, or the case is not measuring what
+> you think.
+
+**AND THE FINDING A LATER, ELIGIBLE, CROSS-FAMILY REVIEWER RETURNED AGAINST THIS VERY REPAIR**,
+recorded here because a repair published without its review is half a receipt: the ownership branches
+are never reached for one leak class, because the gate's pattern does not match that child's command
+line **at all**, so the row is skipped before ownership is consulted. In its words, *"a green
+ownership test is compatible with a total miss."* We then tested the claim rather than accepting it
+and found the blindness is **pre-existing** — the same command line matches neither old machine-wide
+probe either — so the gap is real and the regression is not. Its preferred remedy touches a
+hash-pinned launcher inside an owner-closed inventory and is therefore **recorded as a known,
+REVIEWED, blocked defect** rather than quietly left open.
+
+**NON-CLAIMS.** `runtimeAuthority` untouched; nothing opened; no lane started.
