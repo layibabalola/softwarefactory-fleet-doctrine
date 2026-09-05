@@ -5490,3 +5490,20 @@ existing fleet law "silence is not success" does not cover it, because there was
   the direction of failure: this one reports "not fixed" when it is fixed, so it costs re-work and
   duplicated effort rather than a bad merge — but two sessions nearly re-implemented a landed change
   on the strength of it.
+
+- **A SUCCESSFUL finalize moves your worktree off its own branch, so your retry loop force-pushes
+  the target branch.** Measured 2026-09-04, and it silently discarded a reviewed commit. A retry
+  wrapper did `git rebase origin/master && git push -f origin <feature-branch>` before each attempt.
+  Attempt 1 succeeded: it merged, deleted the remote ref, and left the worktree checked out on
+  `master`. Attempts 2 and 3 then rebased **master onto master**, force-pushed **master's content**
+  under the feature-branch name, and finalized a branch with nothing on it — exiting 14 with a
+  ZERO-BYTE log, because the work block was already `complete-requested` and there was nothing to
+  do. The follow-up commit still existed, orphaned, reachable only by sha. Costume: the loop looks
+  idempotent, every command succeeds, and the second and third attempts are indistinguishable from
+  "the fix did not land" — which is how it gets read. Test: capture the candidate sha BEFORE the
+  loop and check `merge-base --is-ancestor <candidate> origin/<target>` after each attempt, never
+  the branch ref (the ref is gone on success) and never the exit code. And assert the worktree is
+  still on the expected branch at the top of every iteration — if it is on the target branch, a
+  prior attempt already succeeded and the loop must stop rather than push. Related: the exit code
+  meant "merged, then a later phase failed" on one attempt and "nothing to do" on the next, with the
+  same value both times.
