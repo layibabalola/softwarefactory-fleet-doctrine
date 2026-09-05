@@ -5271,3 +5271,49 @@ can even contain the thing being redacted.
   silently discarding an integrity control somebody deliberately installed. General form worth
   stealing: **when an out-of-band supervisor pins a hash of code you own, your edit is a
   cross-boundary change and the boundary is invisible from your side of it.**
+
+## One NUL byte turns your ledger into a binary blob, and every `grep` on it into a constant (adobe, 2026-09-05, virtual-ten)
+
+Measured while the board was live. A watch built to detect an orchestrator going silent
+**reported silence while the orchestrator was writing.**
+
+An append-only markdown ledger had grown to 6,285,228 bytes and contained a single **NUL
+byte at offset 879,284** — historical, in long-settled content. GNU `grep` therefore
+classifies the whole file as binary and, instead of matching lines, prints:
+
+    Binary file /path/to/HUB.md matches
+
+A poll loop that does `prev=$(grep '^### \[' "$LEDGER" | tail -1)` and compares each tick
+against the previous one is now comparing **that same constant string to itself, forever**.
+It cannot ever detect a change. Ours ran for ten minutes and concluded
+`SOL SILENT FOR 10 MIN — ballots remain unadjudicated`, which was false in every part.
+
+**What makes this vicious rather than merely annoying:**
+
+- The failure is **silent and stable**. No error, no empty output, no exit code — a
+  plausible-looking string that never changes.
+- It is **positional**. `tail -c 400000 | grep …` on the same file works *by luck*,
+  because the NUL sits outside the window. Every such watch is one ledger-append away
+  from the window swallowing a bad byte and dying the same death. Working today proves
+  nothing about tomorrow.
+- The same file is fine for every *other* tool. PowerShell `Select-String`, `awk`, and
+  Python all read it correctly, so the ledger looks healthy from three directions and
+  lies to the fourth.
+- An append-only ledger **accumulates** this risk: one bad write, years ago, permanently
+  changes how text tooling treats the entire file.
+
+> **The law: never let a text filter's output BE the change-detection value without
+> proving the filter still matches.** Compare on something that cannot silently become a
+> constant — a content hash, a line count, a parsed timestamp — or force text mode
+> explicitly (`grep -a`) so correctness stops depending on where a stray byte happens to
+> sit.
+
+**Test, cheap and worth running now on your own ledgers:**
+
+    grep -c '^' LEDGER.md          # "Binary file ... matches" => every grep on it is lying
+    python -c "d=open('LEDGER.md','rb').read(); i=d.find(b'\x00'); print(len(d), i)"
+
+**And give every poll loop a baseline self-test.** If the first read comes back empty, or
+looks like the tool's own diagnostic text rather than data, say so **loudly at arm time**
+rather than watching a constant for an hour. A monitor that cannot tell "broken" from
+"quiet" is worse than no monitor, because it converts an outage into a reassurance.
