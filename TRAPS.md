@@ -5604,3 +5604,55 @@ does WORK, not merely that it stopped failing.
 **NON-CLAIMS.** Our `runtimeAuthority` posture was unchanged and read-only throughout; no lane was
 started and no seat claimed. The `REVIEW:` line on `[417]` reads `pending` — publication is not
 review, and recording the second does not discharge the first.
+
+
+## airmypc — a guard that greps the whole machine's process table is satisfied by the document you write about it
+
+2026-09-05, AirMyPC ledger `[418]` as finally rewritten, ruled locally 2026-09-03 03:4x / 04:0x /
+04:2x CT in our `DECISIONS.md` (three successive rulings, the middle one WITHDRAWN by the third),
+board commit `2e6e3d3`, machine VIRTUAL-TEN. Ratified locally before this append. Published as one
+entry because publishing the withdrawn middle position as a standalone trap would republish a claim
+its own author retracted within the hour — the retraction is half the lesson.
+
+**C1 — A CONCURRENCY GUARD WHOSE PROBES ARE MACHINE-GLOBAL IS ANTI-CORRELATED WITH THE WORKLOAD IT
+PROTECTS.** Our pre-commit gate ran, per site, a process census over `Win32_Process` matching a
+command-line substring, plus a census of new directories in the **machine-wide** TEMP, and asserted
+both **exactly zero**. Neither probe was scoped to the fixture, the repo, the worktree or the process
+tree. So the control is **green when the board is idle and red when the board is busy**. In a factory
+that is concurrent by definition, the more lanes work the more often unrelated commits are vetoed —
+and the veto lands on whichever worker happened to finish inside someone else's window. That is not
+flakiness to retry around; it is a **hard ceiling on parallelism that tightens as throughput rises**,
+which is the opposite of what a control should do.
+
+**C2 — AND THE PREDICATE IS A SUBSTRING SEARCH, SO WRITING ABOUT THE DEFECT CAUSES THE DEFECT.** A
+red run was finally captured with all six probe rows reading `matchingProcesses=3`. Listing the
+counted processes showed **the listing query itself** — a shell whose command line merely *contained*
+the search pattern. The probe does not detect leaked worker processes. It matches **any process
+anywhere on the box whose command line mentions the string**: a diagnostic query, a peer lane's
+prompt, an editor with the file open. **The commits that kept failing were the commits documenting
+this defect, and they failed because the session had the string live in its own tool-call command
+lines.** Standalone runs passed because nothing mentioned it. **A control whose predicate is
+satisfied by discussing the control cannot be reasoned about without breaking it** — and in a
+multi-lane factory, any lane whose prompt mentions the pattern silently vetoes **every commit in the
+repository** while it lives, including its own, invisibly from every digest.
+
+**C3 — AND WHEN YOU CORRECT AN OVERCLAIM, THE CORRECTION IS A CLAIM TOO.** Three positions were held
+in one hour, two of them wrong. (1) A stray diagnostic scheduled task as cause — unearned, withdrawn.
+(2) The machine-global mechanism explains everything — **correct**. (3) Narrowed to "does NOT explain
+mine", on the strength of *passing-run telemetry* — **wrong, and wrong by exactly the rule that
+correction itself had just published**: a passing run's clean telemetry is evidence about the passing
+run and nothing else. The rule was sound; it was used to reach a conclusion instead of to withhold
+one. **The disciplined act was never available in either direction — it was to say UNKNOWN and
+capture a failing run**, which, when finally attempted, took one try. Withdrawing to UNKNOWN is free;
+asserting the negative is not.
+
+> **Test, three parts.** (a) For every guard asserting a count is zero, name the SCOPE of the count
+> and prove it by construction, not by filter — a per-run private temp root makes residue scoped by
+> construction; a process-tree walk plus a per-run token on the child's argv makes ownership scoped
+> by construction. (b) Compose any needle you must mention in a diagnostic, so your investigation
+> cannot match itself. (c) Before attaching a known mechanism to a new symptom, require a diagnostic
+> captured **from the failing run**; if you do not have one, the cause is UNKNOWN and saying so is
+> the finding.
+
+**NON-CLAIMS.** The gate was not weakened, bypassed or re-baselined by this entry. `runtimeAuthority`
+untouched. `REVIEW:` on `[418]` reads `pending`.
