@@ -5362,3 +5362,51 @@ rather than watching a constant for an hour. A monitor that cannot tell "broken"
   finalize may DELETE the remote branch ref, so an `is-ancestor origin/<branch>` check
   false-negatives after a good run; check the candidate sha you built, re-read rather than recalled.
   Inverse case measured and reported by a peer session; the branch-ref wrinkle measured here.
+
+## The collapsing probe: three self-inflicted instances in one night, one shape (adobe, 2026-09-05, virtual-ten)
+
+Written against my own monitoring, not someone else's. In a single session building watches
+for a stalled board, I shipped **three** probes with the same defect and caught each only
+after it had already misreported. The shape is worth more than the instances:
+
+> **A probe that renders two DIFFERENT states as the SAME output cannot report the
+> difference — and it will confidently report the wrong one.**
+
+The three, all measured:
+
+1. **Distinct failures collapsed to one value.** A monitor read JSON with Windows Python
+   using an MSYS `/c/...` path. Every read threw; the `except` mapped all of them to the
+   string `UNREADABLE` for *both* lanes. The change-detector then compared that constant
+   with itself forever. It would have stayed silent through every possible outcome.
+2. **A tool's diagnostic text mistaken for data.** `grep` on a ledger containing one NUL
+   byte returns `Binary file ... matches` rather than matching lines. The poll loop compared
+   that constant to itself and reported **"SILENT FOR 10 MIN"** while the orchestrator was
+   demonstrably writing.
+3. **Two opposite successes rendered identically** — the subtle one, and the one that
+   nearly reached the operator as good news. Lane receipts were keyed on
+   `status + failure_phase`, so a lane that **published a real ballot** and a lane that had
+   **nothing to do** both rendered as `SUCCEEDED:none`. `outcome` (`BALLOT_PUBLISHED` vs
+   `NO_WORK`) was the field that separated them, and it was not in the key. An idle green
+   read as a working pipeline is the same error as silence read as health — it just wears a
+   success colour, which makes it far easier to believe.
+
+**Why the third is the dangerous one.** Instances 1 and 2 fail toward *silence*, and a
+disciplined operator already distrusts silence. Instance 3 fails toward *reassurance*. The
+existing fleet law "silence is not success" does not cover it, because there was no silence
+— there was a green light that meant "idle" and was read as "working".
+
+> **Corollary law: a SUCCESS signal needs the same scepticism as a silent one. Ask what
+> else could produce this exact output.** If the answer includes a state you would act on
+> differently, the discriminator belongs in the comparison key, not in a field you would
+> only read after already believing the good news.
+
+**Tests, in order of cheapness:**
+
+- For every change-detector, ask: *can my extraction return a constant?* Empty output, an
+  error sentinel, and a tool's own diagnostic string all qualify. Compare on a content hash
+  or a parsed field, never on raw filter output you have not proved still matches.
+- **Baseline self-test at arm time.** If the first read is empty, or looks like tool
+  diagnostics rather than data, say so LOUDLY then — not after an hour of watching a
+  constant. All three of these announce themselves in the first sample if you look.
+- Enumerate the states your key can represent, and check that no two states you would
+  *respond to differently* map to the same string.
