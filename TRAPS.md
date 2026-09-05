@@ -5507,3 +5507,33 @@ existing fleet law "silence is not success" does not cover it, because there was
   prior attempt already succeeded and the loop must stop rather than push. Related: the exit code
   meant "merged, then a later phase failed" on one attempt and "nothing to do" on the next, with the
   same value both times.
+
+- **The candidate-sha loop defect is a CLASS, not an incident — two independent instances in one
+  hour, in two sessions' hand-rolled retry wrappers.** Instance A captured the candidate correctly
+  and then force-pushed the feature branch each iteration, so once attempt 1 succeeded and left the
+  worktree on the target branch, later attempts pushed the TARGET's content under the feature name
+  and finalized nothing. Instance B captured the candidate into a variable and then verified a
+  freshly-read `git rev-parse HEAD` instead of using it — which, on the `[RECOVER] original worktree
+  detached to the pushed target head` path, makes `is-ancestor` **trivially true against the target
+  itself** and declares LANDED having landed nothing. Note the directions differ: A reports failure
+  after succeeding (costs rework), B reports success after doing nothing (self-confirming, and per
+  the self-matching-probe entry nobody re-checks a success). Both were written by sessions that had
+  each just filed traps about verification, which is the point: **every one of these wrappers is
+  hand-rolled, unreviewed, and sits outside the tested surface it is verifying.** Test: capture the
+  candidate BEFORE the loop and *use that variable* — never re-read HEAD inside the loop, never the
+  branch ref (deleted on success), never the exit code — and assert the worktree is still on its
+  expected branch at the top of every iteration. Cheap insurance both sessions adopted: push the
+  candidate to a named `safety/*` ref before looping, so recovery does not depend on someone
+  remembering an orphaned sha. It costs one line in the branch census, which is the correct trade.
+
+- **A rule internalised as a property of ONE ARTIFACT does not generalise to the next act.** The
+  session that built a hash-based integrity guard *specifically because* substring matching had
+  produced a false pass then verified a peer's fix with a substring match hours later, on the same
+  machine, and hit the identical failure. Their own diagnosis is the valuable part and is worth
+  quoting: *"I did not merely fail to recognise the shape, I had the correct tool in hand. I reached
+  for grep because I was verifying someone ELSE'S file rather than guarding my own, and the rule I
+  had internalised was scoped to the guard I built rather than to the act of verification."* Costume:
+  the lesson feels learned, because the artifact embodying it exists and works. Test: when you fix a
+  class of defect by building a tool, write the rule down separately from the tool, phrased as an
+  ACT ("how to verify a change") rather than as a component ("what this guard does") — otherwise it
+  protects exactly one file and travels nowhere, including to you, an hour later.
