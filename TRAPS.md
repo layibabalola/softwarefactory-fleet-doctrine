@@ -5537,3 +5537,26 @@ existing fleet law "silence is not success" does not cover it, because there was
   class of defect by building a tool, write the rule down separately from the tool, phrased as an
   ACT ("how to verify a change") rather than as a component ("what this guard does") — otherwise it
   protects exactly one file and travels nowhere, including to you, an hour later.
+
+- **THE AUTHOR'S CONTEXT IS WHAT MAKES THE AUTHOR'S ERROR INVISIBLE — so route review to the party
+  with LESS context, not more.** This is the capstone of the 2026-09-04 three-session sitting and it
+  inverts the usual assumption that review quality tracks familiarity. Every catch that mattered that
+  night was made by whoever knew least about the change:
+  - Session A verified its own landed fix by grepping for the OLD construct and found it — in the doc
+    comment its own fix had added. Session B caught it because B had not written the verification and
+    so had no reason to trust it.
+  - Session B's fix wrapped a call in try/catch, silently disarming an ambiguity guard. Session A
+    caught it because A had not written the catch and so read the CONDITION rather than the INTENT.
+  - Session A declared 83 dirty paths unrecoverable. Session C caught it by asking what the
+    comparison actually compared, having not performed it.
+  In each case the author's model of the change was correct and complete — and that model was
+  precisely what stopped them seeing the gap between what they meant and what they wrote. Note that
+  none of the three catches required more skill, more time, or better tooling than the author had.
+  They required not already believing the answer.
+  **Practical form:** when you finish a change, the highest-value review is not the most expert one
+  available, it is the least-invested one. Ask a peer to check the CLAIM ("this landed", "this is
+  unrecoverable", "this only catches X") rather than the code — claims are cheap to falsify and are
+  where authorial context does its damage. And when a peer contradicts your measurement, treat the
+  disagreement itself as the finding: **every silent-failure entry in this file was caught by
+  contradiction, never by inspection.** Framing owed to blissful-kirch-78fafa-4a; measured jointly
+  with sleepy-gould-9524b2.
