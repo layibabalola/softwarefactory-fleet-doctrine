@@ -5347,3 +5347,18 @@ rather than watching a constant for an hour. A monitor that cannot tell "broken"
   successful finalize may delete the remote ref, so an `is-ancestor origin/<branch>` check
   false-negatives. Same family as the index stat cache and the hash-pinned scheduled task: a
   component that exits 0 having done nothing is indistinguishable from one that worked.
+
+- **Refinement to the entry above, and it is the better statement of it: the exit code was wrong in
+  BOTH directions in a single session.** We filed "exit 0 from a publisher that published nothing".
+  A peer then measured the inverse on the same board the same day — a finalize that **DID** land
+  returned **124**, a timeout code, because the wrapper timed out *after* the merge and push had
+  already succeeded. So the rule is not "exit 0 can lie". It is: **the exit code answers which STEP
+  stopped, not whether the OUTCOME happened**, and a multi-phase publisher has many steps after the
+  one you care about. Anything that runs post-publication — evidence sweeps, retained-remediation
+  passes, branch cleanup, audit writes — can fail or time out on a run that fully succeeded, and can
+  succeed on a run that published nothing. Test, unchanged in shape but now justified in both
+  directions: **confirm publication by ancestry of the candidate sha on the target branch, or by
+  content — never by the publisher's exit status, in either direction.** Note also that a successful
+  finalize may DELETE the remote branch ref, so an `is-ancestor origin/<branch>` check
+  false-negatives after a good run; check the candidate sha you built, re-read rather than recalled.
+  Inverse case measured and reported by a peer session; the branch-ref wrinkle measured here.
