@@ -5706,3 +5706,51 @@ hash-pinned launcher inside an owner-closed inventory and is therefore **recorde
 REVIEWED, blocked defect** rather than quietly left open.
 
 **NON-CLAIMS.** `runtimeAuthority` untouched; nothing opened; no lane started.
+
+
+## airmypc — every dashboard reads the reviewable copy of a policy and only the installed copy decides
+
+2026-09-05, AirMyPC ledger `[421]`, ruled locally 2026-09-03 12:5x CT in our `DECISIONS.md`, board
+commit `2e6e3d3`, machine VIRTUAL-TEN. Ratified locally before this append. Measured by executing an
+ignition to the point of wrapper denial, then diffing the two copies.
+
+**THE SHAPE.** A policy file exists twice: a **reviewed** copy in the repository, and an **enforcing**
+copy under an ACL-governed install root. The launcher resolves its policy path relative to *its own*
+script directory, and it runs from the install root — so it reads the installed copy. Every
+instrument we own — the orchestrator, the resume brief, the igniter's own gate report — reads the
+repository copy, because that is the copy a human reviews.
+
+**WHAT THAT PRODUCES IS A FULLY GREEN BOARD THAT CANNOT START ANYTHING.** With the reviewed copy
+opened on an owner ruling: orchestrator reported open, resume brief reported open, the igniter
+cleared every gate it consults, dispatched the wrapper, and the ignition ledger recorded a hand-off
+row. The wrapper then answered **`AUTOMATIC_LAUNCH_DENIED` / authority withheld**, milliseconds later.
+The two files were byte-identical apart from that one field. **Net effect of the ruling on what could
+launch: none** — and no instrument said so.
+
+**THE SEPARATION IS THE CONTROL, AND IT MUST NOT BE RECONCILED BY THE AGENT.** Our sanctioned
+installer refuses to install any policy that is not the closed zero-authority candidate, so the
+supported path **cannot** write an opened policy: opening is an owner act at the security boundary, out
+of band, by construction. An agent quietly editing an ACL-governed install root to satisfy its own
+instruction is precisely what that boundary exists to prevent. The install root and every ACL were
+left untouched. **Do not publish "make the two copies agree automatically" as the remedy.**
+
+**THE DEFECT WAS THE SILENCE, AND THAT IS WHAT WE REPAIRED.** The predicate that reports "is this lane
+permitted to launch" read one copy. It now resolves the installed copy **the way the enforcer resolves
+it**, compares, and on disagreement **REFUSES while naming both values and both paths** — failing
+closed. A lane is never reported open on the strength of a file that enforces nothing.
+
+> **Test.** For every policy, allowlist, feature flag or gate value that exists in more than one
+> place, ask which copy the ENFORCER reads, resolve it the same way the enforcer does, compare, and
+> fail closed on disagreement — naming both values and both paths in the refusal. Then ask the second
+> question: can any sanctioned tool make the enforcing copy diverge from the reviewed one? If yes,
+> your review surface is decorative. If no, your reconciliation is an owner act and must be named as
+> one rather than automated away.
+
+**A SECOND FINDING FELL OUT OF THE SAME RUN, AND IT CONFIRMED A PAPER FINDING IN PRODUCTION**: the
+ignition ledger row for the *denied* attempt read as a successful hand-off, and the lane's rate-limit
+cadence was stamped beside it — for a run the wrapper refused milliseconds later. Filed that morning
+from source; observed that afternoon in the live ledger. A status word read as an outcome, again.
+
+**NON-CLAIMS.** Installed policy CLOSED and never touched; the reviewed copy was subsequently reverted
+byte-identical to its original when a later investigation showed the change was a no-op that also
+disabled the initializer. `REVIEW:` on `[421]` reads `pending`.
