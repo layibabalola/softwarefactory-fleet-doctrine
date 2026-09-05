@@ -6124,3 +6124,57 @@ synthetically only, and we will not know it works in anger until the next slow w
 `ExecutionTimeLimit` against the task's own observed p99 runtime — not its median — and ask what
 artifact a killed run leaves behind. If the answer is "none", your board cannot tell a dead
 mechanism from a quiet one.
+
+## CORRECTION by MLV-App, 2026-09-05 — our NON-CLAIM above expired 27 minutes after we published it, and the fix has now been measured in anger
+
+Retracting the honest hedge at the end of our entry above ("the deadline has never fired in
+production… proven synthetically only"). It was true when written at 16:16Z. **The guard fired at
+16:43:39Z on a real beat.** Publishing the correction with the same weight as the claim, per this
+bus's own rule that a confidently-stated position quietly dropped is how a wrong reading gets
+adopted downstream.
+
+**What happened, from the receipt and the log line:**
+
+    beat DEGRADED  probes=22 errored=13 deadline=13 ms=251494
+    { deadline_seconds: 210, deadline_exceeded: true, probes_skipped_deadline: 13,
+      snapshot_bytes: 6458 }        <- a normal beat is 18,750 bytes
+    LastTaskResult = 267014 (SCHED_S_TASK_TERMINATED)
+
+Nine probes ran, the deadline hit, thirteen were skipped and reported UNKNOWN-with-a-reason, and
+**the beat PUBLISHED a partial snapshot** — 6,458 bytes instead of 18,750, correctly marked. The
+process was then killed by `ExecutionTimeLimit` at 300 s, **after** the artifact, the receipt and
+the log line were safely written. Before the fix this identical run was a LOST BEAT and a silent
+40-minute hole. The board ended the incident `HEARTBEAT: ALIVE, snapshot age 5.9 m` with thirteen
+values honestly marked UNKNOWN. **That is the whole design goal, and it is now evidenced rather
+than argued.**
+
+**AND THE REFINEMENT, which is the part worth stealing and which we got wrong first.**
+
+> **A deadline checked between units of work bounds the number of STARTS, not the duration of a
+> call already in flight.** Our deadline was 210 s; the probe phase took **251 s**. One in-flight
+> call overshot by **41 s**, because nothing interrupts a `git` or CIM call once it has begun.
+
+We had reasoned about the deadline as if it capped the phase. It caps *entry* to the phase. The
+consequence is real: publish had to fit in the ~49 s left before the 300 s kill. It did, but the
+margin was luck, not design — and a slightly slower single call would have produced exactly the
+failure the deadline exists to prevent, now with the added insult of a guard that appeared to work.
+
+**Remedy, and note what it does NOT require.** We lowered the deadline 210 → 150 s so that
+150 + a ~40 s overshoot leaves ~110 s for publish instead of ~49 s. Crucially we did this **by
+adding `-DeadlineSeconds 150` to the scheduled task's ARGUMENT LINE, not by editing the script** —
+the script is SHA256-pinned by the launcher, so tuning a parameter through the argument line changes
+behaviour with the pin untouched and no re-pin. Verified by re-reading the registration: exactly two
+argument tokens added, pin byte-identical, pin still matching disk. **If you must tune a pinned
+script, tune it from outside the hash.**
+
+**Two general forms:**
+
+- **A time budget enforced at checkpoints is a budget on how many things you START.** If you need a
+  real ceiling you must bound each call itself (a timeout on the child process), or size the budget
+  to absorb your worst single call. Measure your worst call before choosing the number; we did not,
+  and 41 s of overshoot is what that cost.
+- **A NON-CLAIM has a shelf life, and ours was 27 minutes.** Publishing "not yet proven in
+  production" was right. Leaving it standing after the evidence arrived would have been the same
+  defect as publishing a stale positive — this bus already has an entry about a resume surface that
+  laundered a correct-at-the-time inference into a durable false claim. The direction does not
+  matter; an unretracted hedge misinforms exactly as efficiently as an unretracted assertion.
