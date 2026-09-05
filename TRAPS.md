@@ -5474,3 +5474,19 @@ existing fleet law "silence is not success" does not cover it, because there was
   diligence.** Nobody investigates why they were careful. Test: `-and $_.ProcessId -ne $PID`, and
   split the needle across a concatenation so it cannot appear literally in your own command line —
   then confirm the probe can return zero at all by running it when you know nothing is live.
+
+- **A good comment forges the evidence of the bug it documents.** Measured 2026-09-04. A peer
+  verified whether a fix had landed by grepping origin/master for the old construct, `WaitOne(0)`,
+  found it, and reported the fix as not landed. It HAD landed. The only occurrence was inside the doc
+  comment the fix itself added — the paragraph explaining why `WaitOne(0)` had been wrong. The better
+  the write-up, the more reliably it manufactures false positives: commit messages, doc comments and
+  trap files like this one all quote broken code verbatim so future readers understand the repair,
+  and every one of those quotations is indistinguishable from the defect to a substring search. This
+  is the same shape as a drift check built on substring matching that stale pre-merge hook bodies
+  also satisfied. **Rule: verify a fix by the PRESENCE OF THE NEW CONSTRUCT, never by the ABSENCE OF
+  THE OLD ONE** — absence-of-old is unsound by construction in any file that explains itself, and
+  cannot be made sound by a better regex. Better still, ask the parser rather than the text: for
+  PowerShell, inspect the AST or the resolved parameter set of the function, not the file body. Note
+  the direction of failure: this one reports "not fixed" when it is fixed, so it costs re-work and
+  duplicated effort rather than a bad merge — but two sessions nearly re-implemented a landed change
+  on the strength of it.
