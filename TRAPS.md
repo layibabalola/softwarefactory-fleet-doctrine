@@ -5754,3 +5754,51 @@ from source; observed that afternoon in the live ledger. A status word read as a
 **NON-CLAIMS.** Installed policy CLOSED and never touched; the reviewed copy was subsequently reverted
 byte-identical to its original when a later investigation showed the change was a no-op that also
 disabled the initializer. `REVIEW:` on `[421]` reads `pending`.
+
+
+## airmypc — a field whose NAME is in a required list and whose VALUE nothing reads is a comment with a schema
+
+2026-09-05, AirMyPC ledger `[422]`, ruled locally 2026-09-03 13:4x CT in our `DECISIONS.md`, board
+commit `2e6e3d3`, machine VIRTUAL-TEN. Ratified locally before this append. Both claims re-derived
+from source; the decisive one proved by exhaustive grep for a consumer.
+
+**THE SETUP.** A security gate carried a standing caveat: one policy field advertised a binding to a
+host secret but held a public test value, and a written remediation proposal existed — "rebind it to
+a host secret, and ship a check that asserts the rebinding". It reads like ordinary, bounded
+hardening.
+
+**WHAT THE SOURCE ACTUALLY SAID.** The field's **name** appears in the gate's required-field-name
+array, so its **presence** is asserted and its **content is never read**. A sibling identity field is
+validated format-only — a regex for 64 hex characters. That identity string occurs **exactly once in
+the whole gate module**: in that regex. No keyed hash, no key, no derivation, no comparison anywhere.
+**The gate never computes or verifies the value it advertises; any 64 hex characters pass.**
+
+**SO THE REMEDIATION AS WRITTEN WOULD HAVE SWAPPED ONE INERT STRING FOR ANOTHER**, and its paired
+check would have asserted a field that governs nothing — shipping a green control over an absent
+mechanism, which is strictly worse than the caveat it replaced.
+
+**THE DEFECT IS AN ABSENT BINDING, NOT A WEAK ONE — AND THAT IS A DIFFERENT SIZE OF WORK.** Building
+the binding is real engineering. Rebinding a decorative string is an afternoon. A remediation sized
+against the caveat's wording rather than against the mechanism's behaviour will always pick the
+afternoon.
+
+**RISK RESIZED HONESTLY IN BOTH DIRECTIONS, BECAUSE ONLY ONE DIRECTION IS THE COMFORTABLE ONE.** The
+published test value has no consumer, so the exposure it implies is about zero and the practical
+delta of the proposed fix is about zero. **But the advertised control does not exist**, which is
+tolerable only while the deployment is a single host. The caveat is not a reason to keep the gate
+shut; the missing control is a reason not to grow past one host without building it.
+
+> **Test.** Before performing the remediation a caveat asks for, grep for a **CONSUMER of the value**
+> — not for the field name, for a read of its content: a comparison, a derivation, a hash, a branch.
+> If there is none, you have found a missing control, not a weak one; say so, resize the work, and do
+> not ship a test that asserts a field nobody reads. The one-line generalisation: **required-fields
+> lists validate presence, and presence is not enforcement.**
+
+**AND ONE ERROR OF RESEARCH, RECORDED BECAUSE IT IS THE CHEAPEST TRAP HERE.** The recommendation this
+entry overturns was made earlier the same day by the same seat, which was already quoting the very
+policy field that an owner-requested proposal document had analysed the day before — a document it
+had not found. **A partial reading of a question somebody has already answered.** Recorded as an error
+of research, not of judgement, and it recurred within twelve hours on a different subject.
+
+**NON-CLAIMS.** No policy, install root or ACL was changed by this entry. `REVIEW:` on `[422]` reads
+`pending`.
