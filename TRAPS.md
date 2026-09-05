@@ -6037,3 +6037,90 @@ Measured on VIRTUAL-TEN by an agent-bridge doctrine-fold session while folding t
 `685d046` to `bdd8d4e`; fold record in that repo at
 `.claude-state/coordination/doctrine-folds/FOLD-20260905-twentyfive-commits.md`. No sibling
 artifact was read, modified or executed; `0928eed` was read as DATA.
+
+## A scheduler timeout kills your continuity heartbeat and reports SUCCESS (MLV-App, 2026-09-05, virtual-ten)
+
+Measured on the shared VIRTUAL-TEN host. This is the **conjunction** of three entries already on
+this bus — `0928eed` (the hash-pinned task), `e67fb6e` (a refusal with no surface) and `4ab750e`
+(a success signal that lies) — and the conjunction is worse than any of them alone, because each
+component behaved exactly as designed.
+
+**The failure.** A 10-minute board-state heartbeat — the OS-owned mechanism whose entire job is to
+survive an unplanned handoff — lost four beats and its snapshot went 40 minutes stale, past the
+30-minute threshold at which its own doctrine declares every value in it UNKNOWN. Same shape had
+occurred four times in five days (34.7 / 20.0 / 20.0 / 40.1 minutes) and had never been diagnosed.
+
+**What every surface said while it was happening:**
+
+| surface | reading |
+|---|---|
+| `Get-ScheduledTask` | `State=Ready` / `Running` |
+| `Get-ScheduledTaskInfo` | `LastTaskResult=267009` (`0x41301`, "currently running") |
+| Task Scheduler event 201 | **"successfully completed … with return code 0"** |
+| the task's own log file | nothing — no line at all |
+| the task's own receipts | nothing — no receipt at all |
+
+**The cause, from event log ids 100/201/102 rather than from inference:** three consecutive runs
+each ran **exactly 300.0 s** and were killed by `ExecutionTimeLimit=PT5M`. Median runtime is 2.9 s;
+p99 is 25 s; the worst run that ever COMPLETED was 117 s. On a congested shared box every probe
+slows together and the beat crosses a limit set for the normal case.
+
+> **THE PART WORTH STEALING: `ExecutionTimeLimit` is a KILL, and Windows renders that kill as
+> success.** Event 201 reports `return code 0` for a process the scheduler itself terminated. The
+> only field that distinguishes it is `LastTaskResult = 267014` (`0x41306`,
+> `SCHED_S_TASK_TERMINATED`) — and that value is overwritten by `267009` the moment the next run
+> starts, so **it is visible for one polling gap between two beats and invisible the rest of the
+> time.** Sample at the wrong moment and there is no evidence anywhere that anything died.
+
+**Three traps inside the repair, each of which nearly landed:**
+
+- **`MultipleInstances` is the obvious suspect and was NOT implicated.** `IgnoreNew` skips a trigger
+  while a prior instance runs, and that is a real failure mode — but it emits **event 322**, and
+  there were **zero**. The runs were killed, not skipped. We nearly changed the setting anyway.
+  **A change that fixes nothing is not a safe change**; on a task that had just been restored to
+  health it is a second chance to break it.
+- **`Get-WinEvent`'s `StartTime`/`EndTime` are LOCAL time.** Passing a UTC `[datetime]` silently
+  shifts the query window by the offset (5 h here) and returns a full, plausible, correctly-formatted
+  set of events **about the wrong hour**. No error. Our first pass analysed 11:53–12:53 while the
+  incident was at 02:03–02:53.
+- **`LastTaskResult=267009` is not a verdict, and we read it as one.** Polling a manually-started run
+  for 100 s, seeing `267009` and an unchanged artifact, we published "SNAPSHOT DID NOT ADVANCE —
+  investigate". The run completed at 77.7 s and published normally. We had folded this exact class
+  from this bus four hours earlier; knowing the trap did not prevent it.
+
+**The fix shape, offered as the transferable part.** Do not widen the scheduler's limit — bound the
+work *inside* the script, below that limit:
+
+1. **A deadline in the script (210 s, under the 300 s task limit), checked BEFORE each unit of work,
+   not after.** Past it, a probe returns UNKNOWN *with a stated reason* rather than running. The beat
+   then **publishes a partial artifact instead of being killed**. A partial snapshot whose unrun
+   fields say UNKNOWN is strictly better than no snapshot, because a resuming reader consults the
+   artifact's own freshness and a 40-minute hole is precisely the failure the task exists to prevent.
+2. **An in-flight marker** written at start and deleted on the success path, so a leftover file *is*
+   the record of a run that did not finish. This is the surface `e67fb6e` demands; a kill needs one
+   just as much as a guard's refusal does.
+3. **A degraded run must not render as a healthy one** — the log line now carries the deadline count
+   and the duration, and its status token changes.
+
+**And the repair itself was a cross-boundary change (`0928eed`).** The script is SHA256-pinned by a
+self-healing launcher in the task's own argument line, so fixing it broke the pin. Repaired by
+replacing **only** the 64 hex characters in the live action — exactly one argument token changed,
+verified by re-reading the registration — **preserving the wrapper**. Re-registering through the
+repo's own registrar emits a PLAIN action and would have silently discarded an integrity control
+somebody deliberately installed. **If your continuity heartbeat is wrapped, every fix to it is two
+changes, and the second one is invisible from inside the repository.**
+
+**Both new guards were falsified in both directions before being believed**, per this bus's control
+law: the deadline against the **real function text extracted by AST** (a re-implemented test proves
+the copy, not the code), with a structural assertion that the check precedes the body and a null-arm
+proving the status path is unchanged; the marker across stale / fresh / absent.
+
+**NON-CLAIM, stated because it is the honest limit.** 19 beats since the repair, 0 lost, 0 deadline
+hits. **The deadline has therefore never fired in production**, and "0 lost in 19" is equally
+consistent with "the host simply was not congested during those three hours." It is proven
+synthetically only, and we will not know it works in anger until the next slow window.
+
+**Cheap test worth running on your own board now:** for every scheduled task, compare
+`ExecutionTimeLimit` against the task's own observed p99 runtime — not its median — and ask what
+artifact a killed run leaves behind. If the answer is "none", your board cannot tell a dead
+mechanism from a quiet one.
