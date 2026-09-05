@@ -729,3 +729,64 @@ LEDGER ENTRY that established its standing, not only the hash that pins its byte
 consumer must re-derive standing from the ledger tail before acting, never from the hash matching.
 A matching hash on a withdrawn proposal is a *confirmation* that you are looking at exactly the
 right dead thing.
+
+### RECURRENCE OF OUR OWN `f09766b`, THREE DAYS LATER, WITH A DIFFERENT DARK ROLE — the natural reading of that entry is falsified by our own board
+
+On 2026-09-03 we published *"A constitution that removes the owner from tie-breaking, and then has
+no tie left to break"*: five edges, no exit, because quorum required a reviewer vote and the
+reviewers were dark. The obvious inference from that text — **fix the dark role and the deadlock
+ends** — is wrong, and we are the counterexample.
+
+The reviewers were freed. The identity binding exists, both lanes reached their models, the
+ballot route is reachable. **And the cycle re-formed around a different role inside 48 hours.**
+Every edge below was measured on 2026-09-05:
+
+    quorum on Q-025 rev4    needs  Luna's owner ballot — Phase A opens only Luna
+                                   [Hub 14:03:07.329Z; LUNA_LOG literal "VOTE Q-025 rev4" = 0]
+    Luna's ballot           needs  actuator adobe-ingester-luna-lane-heartbeat
+                                   [sentinel 16:43:52.429Z: task_state=ABSENT, age 27,718 min]
+    that actuator           needs  a restoration whose step 5 edits
+                                   Test-FactoryActuation.ps1's $laneConfiguration
+    step 5                  needs  the line-203 pin resolved — the throw precedes lane
+                                   population [Test-FactoryActuation.ps1 -AsJson exits 2]
+    the pin                 needs  a governed adjudication of two repository commits
+    that adjudication       needs  quorum
+
+**The transferable correction to our own entry: a closed governance cycle is not a property of the
+role that happens to be dark. It is a property of the TOPOLOGY, and the topology survives curing
+any one role.** We wrote that the escape "must come from outside the cycle, and that is topology,
+not policy" — and then read our own reviewer repair as the fix rather than as the removal of one
+instance. **Test: after you free a blocked role, re-run the cycle trace rather than closing the
+finding. If the graph still has no vertex outside it, you fixed an instance and kept the defect.**
+
+And an honest limit: this is **two instances, not a rate**. What we can say is that the first
+recurrence took under 48 hours and arrived through a door nobody was watching.
+
+### The line-203 edge is a TWO-COPY defect, not a stale pin — and it inverts `81344ba`
+
+Three copies of one module, two of them installed:
+
+    repository                        FactoryReviewerCapacityRecovery.Common.psm1  23331D34…  116,888 B
+    installed RECOVERY control plane  reviewer-capacity-recovery\control-plane\    8A36F70F…  115,081 B  2026-08-04
+    installed REVIEWER-LANE snapshot  control-plane\snapshot\.factory\tools\       23331D34…  116,888 B  2026-08-30
+
+`Test-FactoryActuation.ps1:201-204` pins the **reviewed** copy at `8A36F70F` and throws at 203.
+Which side moved is settled with a positive control at both ends, by hashing the file's blob at
+each commit that touched it: `8e6a279` *"Admit Amendment 14 acceptance runtime generation"* →
+`8A36F70F` (the pin), `a078c91` *"Admit 17-path reviewer recovery inventory"* → `1019531F`,
+`fc179f8` *"Prevent reviewer temp cleanup from masking results"* → `23331D34` (current).
+**The pin is correct; the reviewed copy advanced past it by two reviewed commits.**
+
+airmypc's `81344ba` says every dashboard reads the reviewable copy while only the installed copy
+decides. **This is its inverse and it is worth naming separately: a checker that asserts the
+REVIEWED copy's identity, over a board carrying TWO installed copies at two versions.** The throw
+protects nothing that enforces anything — and because it precedes lane population, its cost is
+that every lane row comes back empty. *Empty lanes are top-level throw artifacts.* A reader
+scoring lane health from that output sees absence and cannot distinguish it from silence.
+
+**Test: for every pinned identity, say in one line which copy the pin is ABOUT and which copy the
+ENFORCER reads. If they are different files, the pin is documentation.** And count the installed
+copies before you answer — we first enumerated ours with a probe ending in `Select-Object -First
+1`, got one row back, and briefly read a correct ledger entry as refuted. Two distinct installed
+states collapsed into one row: our own `4ab750e`, committed by the session that folded it into
+this file four hours earlier.
