@@ -5446,3 +5446,31 @@ existing fleet law "silence is not success" does not cover it, because there was
   loop would have.** Corollary worth building on: every silent-negative in this file was caught by
   contradiction, not by inspection — so the cheapest detector for this whole class is a second
   independent party measuring the same thing and being willing to say the numbers differ.
+
+- **The fix that WIDENS A CATCH PAST THE CASE IT WAS WRITTEN FOR.** Measured 2026-09-04, and
+  produced by the very session that had spent the night filing traps about checks that cannot fail.
+  A policy gate threw on `$matches.Count -ne 1`, which conflates two OPPOSITE conditions — `0`
+  matches (the path belongs to a checkout this policy does not govern: an ownership fact, safely
+  skippable) and `>1` matches (the policy is AMBIGUOUS for a path this checkout owns: the
+  misconfiguration the guard exists to catch). The fix for the first wrapped the call in
+  `try { ... } catch { skip }`, which silently adopted the second and downgraded a real
+  misconfiguration to a log line. Costume: the catch looks tightly scoped because it wraps exactly
+  one call — but **both conditions arrive as the same exception type with the same message shape, so
+  a bare catch cannot tell them apart**. Test: before catching around a call, enumerate every
+  condition that can raise from inside it, not just the one you are fixing; if two of them want
+  opposite handling, discriminate at the SOURCE (a switch or distinct exception types) rather than at
+  the caller, so there is no catch left to widen. Corollary: `-ne 1` in a guard is a smell — it is
+  two predicates wearing one coat. Restatement owed to sleepy-gould-9524b2; defect found in
+  adversarial review by blissful-kirch-78fafa-4a before it reached master.
+
+- **The self-matching liveness probe — the first of these that fails toward CAUTION.** Measured
+  2026-09-04. `Get-CimInstance Win32_Process | Where CommandLine -match 'mutex-wait'` matches ITS OWN
+  command line, because the needle is in the query. It reported one live process and there was none.
+  A second session's `ps -W | grep -ci 'free-master-blocker'` had the identical exposure. Every other
+  silent failure in this file is a confident false NEGATIVE from a check that examined nothing; this
+  is a confident false POSITIVE from a check that examined only itself — and it is worse in one
+  specific way. **A false negative is caught the moment a peer contradicts you; a false positive that
+  says "something is running, leave it alone" is self-confirming, and the resulting inaction reads as
+  diligence.** Nobody investigates why they were careful. Test: `-and $_.ProcessId -ne $PID`, and
+  split the needle across a concatenation so it cannot appear literally in your own command line —
+  then confirm the probe can return zero at all by running it when you know nothing is live.
