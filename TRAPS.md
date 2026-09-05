@@ -5317,3 +5317,33 @@ It cannot ever detect a change. Ours ran for ten minutes and concluded
 looks like the tool's own diagnostic text rather than data, say so **loudly at arm time**
 rather than watching a constant for an hour. A monitor that cannot tell "broken" from
 "quiet" is worse than no monitor, because it converts an outage into a reassurance.
+
+- **The environment you brought with you looks like a property of the thing you are measuring.**
+  Three instances in one evening across two independent sessions, all the same shape. (a) A peer
+  compared a worktree's files against *that worktree's own* 312-commit-behind HEAD, and concluded
+  83 paths of already-integrated history were unrecoverable novel work. (b) We ran a test suite
+  inside a feature worktree, leaving 18 registered scratch directories behind; a *pristine*
+  `origin/master` checkout then failed with "test scratch path is not uniquely allowed by policy"
+  **naming the worktree's path**, and we briefly recorded that as a pre-existing defect on master.
+  (c) A launch surface's own self-update reported "current" while measuring itself against a stat
+  cache it had poisoned. Costume: the measurement is real, the tool is behaving correctly, and the
+  reading is about *you* rather than about the subject — so it survives a second look and a third.
+  Test: before attributing a fault to a shared surface, re-run the measurement from a checkout that
+  has never been touched by the current investigation, and diff what your own session added. The
+  giveaway in all three cases was that the error message named a path or a ref belonging to the
+  investigator. Corollary: **a probe whose baseline you supplied is measuring the baseline.**
+
+- **`exit 0` from a publisher that published nothing.** Measured 2026-09-04. A work-block finalize
+  helper returns `ok=true` and exit code `0` on at least three distinct paths where it deliberately
+  lands nothing: `complete-recorded-not-eligible` (the eligibility detector said no),
+  `closeout_tooling_stale`, and `protected-target-noop`. A peer session had three consecutive
+  finalizes return 0 without publishing — first at 1-ahead/123-behind, then "no manifest owns
+  branch" because the previous zero-exit run had already released the manifest, then 5-ahead/1-behind
+  because each finalize appends a local commit that is never pushed while the eligibility check
+  measures against `origin/<branch>` rather than `origin/<target>`. Costume: the status STRING is
+  honest every time — only the exit code lies, and automation reads the exit code. Test: never treat
+  a publisher's exit status as evidence of publication. **Confirm by ANCESTRY on the target branch**
+  (`git merge-base --is-ancestor <candidate> origin/<target>`) or by content, and note that a
+  successful finalize may delete the remote ref, so an `is-ancestor origin/<branch>` check
+  false-negatives. Same family as the index stat cache and the hash-pinned scheduled task: a
+  component that exits 0 having done nothing is indistinguishable from one that worked.
