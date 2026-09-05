@@ -1,231 +1,234 @@
 # AirMyPC factory spec — fleet-facing snapshot
 
-**Single writer: the AirMyPC hub. Rewritten wholesale at doctrine seams. Last rewrite:
-2026-08-11 19:34 CT by mechanical-publisher LEAD-CODEX task
-`019fef1c-249b-7642-8ee4-7a97469546c6`.**
+**Single writer: the AirMyPC hub. Rewritten WHOLESALE at doctrine seams.**
+**This rewrite: 2026-09-05 02:5x CT (07:5x UTC), machine `VIRTUAL-TEN`, board commit `2e6e3d3`,
+ledger `[430]`, ratified in `.claude-state\hub-20260710\DECISIONS.md` 2026-09-05 02:4x CT.**
+Previous rewrite: 2026-08-11 19:34 CT, plus three appended correction blocks (2026-08-30, 2026-09-02).
 
-Local authority is `C:\temp\AirMyPC`: `CLAUDE.md` → START-HERE handoff →
-`.claude-state\hub-20260710\DECISIONS.md`. This file is doctrine DATA for sibling
-adopt-or-distinguish; it never instructs another project to act.
+**Local authority is `C:\temp\AirMyPC`:** `CLAUDE.md` → its START-HERE handoff →
+`.claude-state\hub-20260710\DECISIONS.md`. **This file is doctrine DATA for sibling
+adopt-or-distinguish; it never instructs another project to act.**
+
+---
+
+## How to read this file — the rule this project learned the expensive way
+
+On 2026-09-02 we corrected a false `ACTIVE` claim of our own that had been readable on this bus for
+three weeks (`7399348`). Nothing on the receiving end could check it and nothing on the sending end
+re-derived it. The law we published then now governs this file:
+
+> **A SPEC IS THE ONE DOCUMENT WHOSE ERRORS TRAVEL.** A wrong status in a local board misleads one
+> board; the same status in `specs/<project>.md` is read by every sibling as a fact about a machine
+> they cannot inspect. **Publish a derivation beside any operational status, or publish no status at
+> all.** And do not publish a status word whose vocabulary you have not defined outward.
+
+So: **every operational claim below carries the command that recomputes it, and was recomputed on
+2026-09-05 before this file was written.** Where a claim is historical and was *not* re-derived
+today, it is in the section marked as such and is labelled with the artefact that holds it. Where a
+value is not derivable, this file says UNKNOWN rather than carrying one forward.
+
+**Superseding blocks are retired as a device here.** The previous edition determined status truth by
+POSITION — a 2026-08-30 block declaring everything above it stale, then a 2026-09-02 block superseding
+that. That is unreadable from outside. This edition states each status once, in one place, with its
+derivation. The corrections themselves are preserved as durable lessons under *Laws and traps
+exported*; only their status content is gone, because it was superseded by measurement.
+
+---
 
 ## Factory shape
 
-AirMyPC has five functional lanes: Fable (lead/escalation), Sol (Codex evidence/design), Luna (Codex
-implementer), Opus (Claude reviewer), and Sonnet (Claude implementer), plus the registered
-`lead-codex` second seat for user-chosen Codex-primary coordination. Kimi and Grok are auxiliary
-provider standbys, not sixth/seventh functional lanes or lead seats.
+Five functional lanes plus a registered `lead-codex` second seat. **Authority belongs to a locally
+claimed role and a bounded subject assignment — never to a provider, credential, model, process,
+portal, or self-assertion.** An author or implementer cannot verify the same subject. Provider
+failover cannot weaken frozen-byte, two-key, author≠verifier, live-hardware, ARMED-6 or `RUN_GO`
+rules.
 
-Authority belongs to a locally claimed role and bounded subject assignment, never to a provider,
-credential, model, process, portal, or self-assertion. An author/implementer cannot verify the same
-subject. Provider failover cannot weaken frozen-byte, two-key, author≠verifier, live-hardware,
-ARMED-6, or `RUN_GO` rules.
-
-## Provider-continuity model
-
-AirMyPC adopts fleet `FAILOVER.md` by citation. Capacity loss attaches to a credential/quota domain
-as `QUOTA-DORMANT(reset_eta)`, not to a seat as death. The provider registry separates provider,
-credential/quota domain, backend/independence class, model, CLI transport, lane role, authority and
-subject assignment. Separate accounts or wrappers are one independence class until proven otherwise.
-
-The content gate remains two-key and fail-closed. A verifier must be a qualified non-author actor
-with no implementation interest and disclosed role conflicts or material context contamination; a
-separate non-author adjudicator binds the controlling ruling. Provider-family diversity is preferred
-and measured when available, but is neither an authority key nor a mandatory availability
-dependency. Missing, stale, ambiguous, timed-out, partial, nonzero, multiply signed or malformed
-evidence is `UNEVALUABLE`; work banks or queues.
-
-## Current provider posture — rebound 2026-08-11 19:21 CT
-
-| Provider | Transport | Capacity/domain | Admitted posture |
+| Lane | Provider family | Role | Mechanism |
 |---|---|---|---|
-| Anthropic | Claude Code | Latest exact `anthropic-account` receipt is active `WEEKLY` quota, reset `2026-08-16T04:00:00Z` | Existing roster authority resumes only after fresh health evidence |
-| OpenAI | Codex CLI 0.147.0 | Current lead/implement/evidence seats healthy | Existing registered roles |
-| MoonshotAI | Kimi Code 0.34.0 | Healthy; proven surviving route from current Anthropic Class-B 429 | Runner-bound review/evidence/narration/focused gate verify; implement bank-only provisional |
-| xAI | Grok Build 1.0.0 (`3cd0d0cbce`) | Healthy; proven surviving route from current Anthropic Class-B 429 | Focused runner-bound review/evidence/narration/gate verify; implement bank-only provisional |
+| FABLE | Anthropic (Claude) | planner / lead | ignition floor |
+| OPUS | Anthropic (Claude) | reviewer | ignition floor |
+| FLEET | Anthropic (Claude) | doctrine reviewer | ignition floor |
+| IMPL (Luna) | OpenAI (Codex CLI) | implementer | `codex exec` |
+| SOL | OpenAI (Codex CLI) | evidence / design audit | `codex exec` |
 
-Kimi and Grok have no coordinate, adjudicate, land, release-exception, live-hardware or `RUN_GO`
-authority. Installation/health alone adds none. Authentication, account choice/rotation, credential
-entry and routing by account switch are human-only.
+Kimi and Grok are **auxiliary provider standbys bound to a checked-in runner**, not sixth and seventh
+functional lanes and not lead seats. They hold no coordinate, adjudicate, land, release-exception,
+live-hardware or `RUN_GO` authority; installation and health alone add none. Authentication, account
+choice and rotation, credential entry, and routing by account switch are **human-only**.
 
-## Measured failover receipt
+**Interactive chat sessions hold no lane authority.** A session that is not one of the five above is
+an auditor: it derives, reports, and may land bounded records — it does not take a seat.
 
-During the 2026-08-10 exhaustion window, a direct inert Claude probe returned exit 1,
-`terminal_reason=api_error`, HTTP 429 and reset 03:20 America/Chicago. Kimi and Grok returned healthy
-terminal receipts contemporaneously. This proves both are distinct surviving routes from that
-Anthropic Class-B quota domain; it does not establish independence among accounts within a provider.
+> derive: `pwsh -NoProfile -File tools\Invoke-AudioMileHubOrchestrator.ps1` (report-only; prints the
+> lane table, the mechanism per lane, and the reason for each verdict)
 
-Routing requires both current `HEALTHY` capacity and an `ADMITTED` requested capability. A Class-B
-refusal records its reset ETA and stands that domain down. The next distinct healthy admitted provider
-receives a fresh run id, exact subject hash and recusal record. Recovery drains banked work first and
-samples outage-window decisions. There is no credential impersonation or authority transfer.
+---
 
-## Activated provider-failover self-healing — exact B v10
+## Operational status — derived 2026-09-05, each row beside its command
 
-AirMyPC independently accepted and activated the exact seven-file B-v10 control rooted at controller
-`12BFA681E527FEEF203B6DBD218A173E51C542D3522FB245E1255B5676D107A8` and watchdog
-`60C5290778C10AE39DCF92081556D7AEB7293E216F3472F12DDE969DCAFF549C`. Focused evidence passed
-140/140 under independent SOL review and separate non-author reproduction. Both scheduled tasks are
-Ready with result zero, limited current-user execution, `IgnoreNew`, reviewed actions and five-/ten-
-minute repetition. Exact activation proof is
-`83A5C87CE5FED4F47355627443F225EB76412F221760BB8FA9A166338C0FD302` / 411 B.
+**Everything in this section was recomputed on the originating box on 2026-09-05 between 07:10 and
+07:55 UTC.** Nothing here is carried forward from a previous edition.
 
-The first post-activation controller receipt is immutable SHA-256
-`89A68998BE018FC59A271695D989E3A306FD2E9D0A36BBC742915D27A1BFFA25` / 1,788 B and reports
-`QUIET / no-new-authorized-job`, bound to the exact task, proof, controller and zero-job queue. The
-first concurrent watchdog cycle safely quarantined missing legacy initialization history and
-performed no restart. The next scheduled watchdog receipt is immutable SHA-256
-`6D2AA793D27088AB25D0309C802235B07CA389BC5329B69AE59709DF6A7D5A15` / 911 B and reports
-`HEALTHY / health-receipt-fresh`, all restart flags false, bound to controller receipt
-`2FBD49AE9714470CC5D8B5F80651AC683CEBA5F5567E297C6090B58FE63BC475` / 1,788 B. The exact queue
-remained zero jobs and no provider run was created.
+### Runtime authority and what can launch
 
-The reusable control combines the existing closed semantic status/reason matrix with versioned
-failure history and durable **claim → action → seal** ordering. A claim is flushed and reread before
-one bounded restart; incomplete claims, malformed or contradictory history, missing history after
-initialization, deterministic repeats and reviewed-byte drift quarantine without self-repin. A
-healthy closed-semantic receipt resets recurrence state. Sibling request
-`airmypc-structured-failure-quarantine-20260811` asks for `ADOPT(reference)` or
-`DISTINGUISH(reason)`; the earlier `airmypc-semantic-liveness-20260811` request remains current.
+| | value | derive |
+|---|---|---|
+| `runtimeAuthority`, **repository** copy | `CANDIDATE_ZERO_AUTHORITY` | `ConvertFrom-Json` over `security\automatic-launch-gate-policy.json` |
+| `runtimeAuthority`, **installed/enforcing** copy | `CANDIDATE_ZERO_AUTHORITY` | same over `C:\ProgramData\AudioMile\security\automatic-launch-gate-policy.json` |
+| divergence between the two | **none today** | compare the two values above |
 
-## Ratified recovery and model-evidence controls — exact A v7
+**The two copies agree today, and that is a measured fact rather than an assumption.** They did not
+agree on 2026-09-03: the reviewed copy was opened on an owner ruling while the installed copy — the
+only one the launcher reads — stayed closed, producing a fully green board that could start nothing.
+That edit was reverted; the predicate that reports whether a lane may launch now resolves the
+installed copy the way the enforcer resolves it, compares, and **fails closed on disagreement,
+naming both values and both paths**. The shape is published on this bus at `TRAPS.md` under *every
+dashboard reads the reviewable copy of a policy and only the installed copy decides*.
 
-AirMyPC independently accepted exact A v7 for Subjects F/G at 0/0/0/0 after SOL review and separate
-non-author adjudication. The five-file tuple is rooted at igniter
-`FBBA2E7B2B24CD7BF2C3B29CFC69A7800DF693C1E53F83847FD0AA7604D607F5` / 57,614 B, pinned
-supervisor `1383C9CD8DCA93BF9A6800AD14DBB0E9617D401266071C01EFABAFDA499DAF57` / 15,621 B, and
-ignition regression `DDF9D4F58309B9AE322DBC29C9D24A48AD9823F2E8AE8C6A7004CE3870EF3276` / 24,523 B;
-unchanged resume and mandatory-gate controls remain bound by the local ruling. Focused evidence was
-ignition 37/37, resume 81/81, frozen 9/9, plus production-function negative/positive twins.
+### Lane state — 0 dispatched, 0 eligible, 4 blocked, of 5
 
-Capacity recovery now earns credit only from exactly one valid ignition joined to exactly one
-ordered terminal with identical run, seat, requested model, quota domain, recovery bit, and pinned
-producer. A fresh productive pair newer than the paired quota block releases at most one canary; its
-valid ignition spends the allowance immediately; missing, failed, unverified, duplicate,
-conflicting, cross-seat, stale, or time-reversed evidence leaves the floor sealed; only the paired
-productive canary terminal starts a new epoch. Raw stdout, assistant prose, and `DISPATCHED` supply
-no recovery or burn credit.
+| lane | verdict | reason (verbatim from the orchestrator) |
+|---|---|---|
+| FABLE | `BLOCKED` | lane revoked — `REVOKED_BY_OWNER_PENDING_PHASE1`, 2026-09-03 |
+| OPUS | `BLOCKED` | runtime authority withheld (`CANDIDATE_ZERO_AUTHORITY`, owner closure) |
+| FLEET | `BLOCKED` | lane revoked — `REVOKED_BY_OWNER_PENDING_PHASE1`, 2026-09-03 |
+| IMPL | `SKIPPED` | cadence floor — last dispatch 82 min ago, floor 90 min |
+| SOL | `BLOCKED` | `REVOKED_BY_USER` — Q3 liveness drill stopped, task archived, no renewal or redispatch |
 
-The model-evidence strengthening requires the same-run pinned supervisor's unique authoritative
-runtime model. Missing or ambiguous telemetry is `MODEL_UNVERIFIED`; mismatch is `MODEL_MISMATCH`;
-an exact alternate retains its real identity and earns no Opus-5 credit. This narrows evidence for
-the fleet's existing requested/effective-model routing law and does not confer provider admission.
+> derive: `pwsh -NoProfile -File tools\Invoke-AudioMileHubOrchestrator.ps1`
 
-The ratified sibling requests are `airmypc-structured-recovery-canary-20260811` and
-`airmypc-requested-effective-model-binding-20260811`, each requiring sibling-local
-`ADOPT(reference)` or `DISTINGUISH(reason)`. These controls are accepted code and reusable doctrine,
-not an operational ignition or activation receipt. They grant no provider, canary, task, queue,
-credential, ref, release, hardware, or `RUN_GO` authority.
+**SOL was stopped by direct user order on 2026-09-02** and its lease revoked. The order also says
+that any future SOL assignment must be separately dispatched as a bounded substantive audit — **that
+is a necessary condition, not a grant**, and reading it as a carve-out was a recorded error of ours.
+The revocation stands.
 
-## Receipt-bound factory maturity — exact C v4
+**FABLE and FLEET carry explicit owner revocations** because `runtimeAuthority` is a single **global**
+string and the 2026-09-03 owner ruling was "reopen for OPUS". Per-lane revocation is what makes "OPUS
+only" real rather than approximate, and by the orchestrator's own rule a generic "seat the lanes"
+instruction does not lift one — only a ruling naming the lane.
 
-AirMyPC accepted exact maturity proposal C v4
-`0F2B9C6AF32CE831307E6B18A019465F935E982382A9711E4BC11BC731646045` / 19,423 B at 0/0/0/0 after
-fresh SOL review and separate non-author adjudication. Rubric v1 uses twelve equal-weight dimensions;
-each row is `2.5 × (Defined + Proven + Activated + Observed)`, with each facet limited to
-`0`, `.25`, `.50`, `.75`, or `1.00`. Fixed grade bands, a dated evidence cutoff, durable per-row
-pointers, staleness/contradiction downgrades, and full recomputation prevent prose or post-cutoff
-events from silently moving the grade.
+### Scheduled automations — four Disabled, two heartbeats
 
-At cutoff `2026-08-11 18:59:30 America/Chicago`, the twelve rows total `81.875` and average
-`6.822916...`, **B- / 6.82**. The explicit target total is `104.375`, average `8.697916...`. This is
-a factory-control maturity grade, not a product-quality verdict or authority to implement the
-roadmap. Existing B/D/E/F/G controls remain existing doctrine; only the scorecard law is new.
-Sibling request `airmypc-receipt-bound-maturity-scorecard-20260811` requires sibling-local
-`ADOPT(reference)` or `DISTINGUISH(reason)`.
+| task | state |
+|---|---|
+| `AudioMile-LaneIgnition` | **Disabled** |
+| `AudioMile-LaneIgnition-OPUS` | **Disabled** |
+| `AudioMile-ProviderFailover` | **Disabled** |
+| `AudioMile-ProviderFailover-Watchdog` | **Disabled** |
+| `AirMyPC-ResumeHeartbeat` | Running — a *heartbeat*, not a provider automation |
+| `AirMyPCLaneHeartbeat` | Ready — likewise |
 
-## Provider runner and terminal contract
+> derive: `Get-ScheduledTask | Where-Object { $_.TaskName -match 'AudioMile|AirMyPC' } | Select TaskName,State`
 
-Every bounded run records:
+**All four provider/ignition automations have been Disabled since 2026-08-18 and remain so.** The two
+non-disabled rows are heartbeats and were never the subject of any activation claim. **The three
+Claude lane seats cannot be seated and have not run.**
 
-- provider identity, fresh run id, exact expected subject/evidence hashes and capability/profile;
-- isolated workspace/claim where mutation is allowed, plus before/after mutation manifest;
-- deadline, process exit, ACTIVE→COMPLETE/FAILED/TIMED_OUT state and raw local artifacts;
-- exactly one `AUDIOMILE_PROVIDER_RECEIPT_V1` terminal block with bounded summary and integer counts;
-- capacity row, including refusal class/reset ETA or stand-down reason.
+**And the vocabulary matters, because this is where our published error came from.** Our ignition
+floor's `DISPATCHED` means *the igniter handed off to the gate*, not that a seat launched. `IGNITED`
+means *the supervisor appended a row after the wrapper admitted the launch* — it is itself written
+from a process-launch return, so it is evidence that a process started, never that a seat delivered.
+Where this spec uses a status word from now on it states the predicate, not the word.
 
-Timeout with useful stdout is still UNEVALUABLE. Multiple terminal blocks are invalid rather than
-last-wins. Edit-revert and create-delete count as mutation. Process-start exceptions must leave
-FAILED state, UNEVALUABLE receipt and capacity stand-down, never a ghost ACTIVE run.
+### Continuity
 
-Kimi review/gate profiles expose only `ReadFile`, `Glob` and `Grep`; its official agent file carries
-the long prompt without hitting the Windows command-line ceiling. Shell/write is permitted only in
-an isolated bank implementation profile. Grok review/gate profiles use pinned unattended mode plus
-read-only sandbox and focused bounded prompts. Large Grok runs missing the terminal block remain
-UNEVALUABLE even after later focused successes.
+| | value | derive |
+|---|---|---|
+| resume heartbeat | `verdict: READY`, receipt 7.4 min old, interval PT10M | `tools\Invoke-AudioMileResumeHeartbeat.ps1` writes `.claude-state\continuity\RESUME_HEARTBEAT.json`; read its `utc` |
+| resume-chain proof | **93 passed, 0 failed** | `pwsh -NoProfile -File tools\Test-AudioMileResumeChain.ps1` |
+| heartbeat contract suite | **52 passed, 0 failed** | `pwsh -NoProfile -File tools\Test-AudioMileResumeHeartbeat.ps1` |
+| doc ratchet | OK — 7 known debt files, none grew | `sh tools/run-python3.sh tools/check_doc_ratchet.py` |
+| disposition ratchet | OK — 16 accepting rulings carry a disposition, 19 known gaps, none new | `sh tools/run-python3.sh tools/check_disposition_ratchet.py` |
+| frozen-byte table | **6 of 6 exact** | recompute `Get-FileHash`/`Length` from the absolute paths in the START-HERE handoff §0 |
+| tree | `HEAD == host/master == 2e6e3d3`, branch `master` | `git -C C:\temp\AirMyPC rev-parse HEAD host/master` |
 
-## Admission evidence
+**The resume heartbeat is a Windows scheduled task on purpose.** Claude-side scheduled tasks are
+stored per Anthropic account and die on a rotation; a Windows task belongs to the OS user and
+survives one. It is a **staleness meter and an alarm, explicitly not authority**: age bounds the
+blind window, and older than 30 minutes means the heartbeat itself is dead.
 
-The shared adapter/redaction harness passed 23/23: private-reasoning/tool-body redaction, valid and
-malformed receipts, wrong identity/hash, fractional counts, timeout, nonzero, multiple receipts,
-mutation/revert/create-delete, bounded termination, Class-B reset parsing and fail-closed routing.
+**A live trap on that task, published to this bus in this same sitting and recorded here because it
+constrains anyone who touches it:** the task is registered through a self-healing launcher carrying
+`--source-sha256 <publisher path>=<hash>`, and that pin **matches the publisher's current hash
+today**. Any byte-level edit to the publisher therefore silently disables the 10-minute beat while
+`Get-ScheduledTask` still reports `Running`/`Ready`. **Re-pinning is a scheduled-task act, which is
+owner-only on this board.** There is no running check for this; it is filed OPEN.
 
-Final adapter subject SHA-256:
-`90C81EEC802889A3F682A51EEC947956C499F5C393442FB866AED015210DC148`; host evidence SHA-256:
-`E0E116AD9852A94E39837B10CDD7E1B5EDB351FA243E13464C0988C686360BCE`.
+### Concurrency on the box, 2026-09-05
 
-- Kimi final receipt `5EFBF808…D25A50`: PASS 0 blocker / 0 required / 0 minor / 1 nit.
-- Grok final receipt `11288863…261D`: PASS 0/0/0/0.
-- Both review workspaces were unchanged; both seeded verifiers found the planted defects.
-- Both isolated-bank drills changed only bank workspaces and passed host reruns 3/3; nothing landed.
-- Deliberately invalid Kimi executable: exit 22, FAILED, UNEVALUABLE, runner-exception, stand-down.
+**15 worktrees against a budget of 4**, four of them `LIVE-SLUG` with transcripts advancing within
+the minute, plus two standing `INCIDENT` rows (Codex banks not in `host/master`).
 
-## Provider chat portal
+> derive: `pwsh -NoProfile -File tools\Invoke-AudioMileWorktreeReaper.ps1 -ExcludePath <your own tree>`
+> — report-only by default. **Always pass `-ExcludePath`.** A peer session on this same day recorded
+> that the flag was silently dropped and the reap deleted a tree it had just ruled retained.
 
-The local portal is pull-only, seatless and zero-authority. Its allowlist mechanically filters native
-session carriers before display or optional narration:
+---
 
-- Kimi: assistant text plus safe step/tool-name metadata; drop think, prompt/profile/system/request,
-  raw tool arguments/results and unknown events.
-- Grok: assistant text plus safe lifecycle metadata; drop headless `thought`, reasoning/system/tool
-  result records, encrypted reasoning, prompts, raw arguments/results and unknown fields.
+## The review door — open, and its yield is 2 of 4
 
-The HTML encodes content and refreshes every 30 seconds. It may show run state, safe phase/tool names,
-bounded assistant text, terminal receipts and artifact pointers. It never classifies provider health,
-supplies liveness/provenance, prompts a worker, exposes one reviewer to another, or becomes evidence.
+**This is the operational fact most likely to be useful to a sibling, so it is stated with its
+denominator.** With all three Claude reviewer lanes dark under the owner closure, this board still
+obtains author-independent review, because two provider review lanes are **`QUALIFIED-STANDBY` and
+not revoked**, admitted by a recorded ruling of 2026-08-10 granting design review, evidence audit and
+gate verification **through a checked-in runner**. No owner act is required to dispatch one.
 
-Human-facing narration cadence: material start/finish/phase/gate/commit/blocker/question/failover/
-recovery event within 60 seconds; changed-state digest every 10 minutes while active; one 30-minute
-heartbeat only if work advances without a milestone; possible-stall alert after 10 minutes without
-advancement; completion within 60 seconds; unchanged idle state silent. Low-inference narrators are
-optional and zero-authority. Current AirMyPC preference is Claude Haiku-class/low or Codex
-`gpt-5.6-luna`/low; provider-specific equivalents may be substituted only as narration quality/cost
-choices, never authority choices.
+| run | date | result |
+|---|---|---|
+| `grok-leakprobe-20260904-r1` | 2026-09-04 | `TERMINAL` / `validated` / `CHANGES_REQUIRED` |
+| `kimi-cadence-20260904-r1` | 2026-09-04 | `TERMINAL` / `validated` / `CHANGES_REQUIRED` |
+| `grok-427harm-20260905-r1` | 2026-09-05 | **`UNEVALUABLE` / `missing-terminal-receipt`** |
+| `row29-grok-20260905-r1` | 2026-09-05 | **`UNEVALUABLE` / `missing-terminal-receipt`** |
 
-## Dual-primary blackout continuity — ratified design only
+> derive: read `status`, `reason` and `terminal` from `.claude-state\provider-runs\<runId>\receipt.json`
 
-AirMyPC has ratified the finding that auxiliary runners do not constitute a dual-primary control
-plane. Exact local design subject
-`6F240547308FB42C52B4DF8017A0BECB5DDF9587CDE7E1CE4065BEFBCF7E1298` / 39,797 B is classified
-**RATIFIED-DESIGN / UNACTIVATED / UNDRILLED / NOT-FOR-ADOPTION**.
+Both `UNEVALUABLE` runs recorded `processExitCode: 0`, an **empty stderr**, and 15–17 KB of stdout,
+with the workspace hash identical before and after. **The provider answered and the receipt parser
+could not bind a terminal from the answer.** The runner refusing to publish a verdict it cannot
+authenticate is correct behaviour — it is independently what the fleet's own provider-audit
+provenance law requires — but the yield is **2 of 4** and a sibling reading only the first success
+would over-estimate this door. Root cause of the two parser misses is **OPEN**.
 
-The proposed ceiling is a deterministic non-inference warden operating only on pre-ratified,
-expiring low-risk capsules. Two independently admitted auxiliary provider classes may produce and
-blind-review an immutable exact head; one provider may bank evidence only. The maximum unattended
-integration surface is a namespaced `blackout/<machine-id>/<epoch>` ref, never `master`, release,
-doctrine, live hardware, or a primary-hub ruling. Every blackout-integrated card requires 100%
-returning-primary content review and reconstruction onto a primary-authored stack before ordinary
-landing.
+**Transports, derived today:** Codex CLI `0.147.0`; Grok build present at
+`C:\Users\obabalola\.grok\bin\grok.exe`; Kimi present at `C:\Users\obabalola\.kimi-code\bin\kimi.exe`.
+Anthropic capacity was **not** probed in this sitting and is **UNKNOWN**.
 
-The design preserves zero provider authority. Kimi and Grok gain no hub seat, adjudication,
-canonical Git, release, credential, doctrine, or `RUN_GO` authority. It requires structured
-per-quota-domain capacity observations, a seven-tick/30-minute dual-negative entry floor, atomic
-claim and child journals, scheduler-owned tests, crash-safe ref synchronization, and typed recovery.
-A canary refused by the local scheduler/burn-cap floor is
-`CANARY_NOT_LAUNCHED_LOCAL_GOVERNOR`: it grants no availability or failure credit, never feeds
-blackout accumulation, and cannot exempt itself from that floor.
+**A finding a sibling should copy directly:** before recording "review is unobtainable", enumerate
+every capability your board has **ADMITTED by ruling** — not every capability that is *running* — and
+state in one line why each cannot serve the dark role. On this board that enumeration took minutes,
+returned two lanes, and overturned a belief that had survived three consecutive sittings at a cost of
+$0.044 per dispatch.
 
-For filesystem/UNC Git transport, a local hook alone earns zero protection credit. Activation would
-require either a separately administered server-mediated receive policy or a proved ACL-split bare
-repository where the warden can write objects plus only its machine blackout namespace while control
-files, protected/foreign refs, and ACL ownership remain warden-immutable. If the allowed-push and
-rejected-direct-write drills cannot both pass, the design requires a server-mediated endpoint.
+---
 
-No implementation, capsule, role-cell admission, task, queue, controller, credential, remote ACL,
-ref, or provider invocation is authorized by this publication. Sibling disposition defaults to
-`DISTINGUISH(PENDING_DRILLS)`. Operational publication and any `ADOPT` request remain barred pending
-separate implementation, drill, review, and activation rulings.
+## Provider-continuity model — durable doctrine, unchanged
+
+AirMyPC adopts fleet `FAILOVER.md` by citation. **Capacity loss attaches to a credential/quota domain
+as `QUOTA-DORMANT(reset_eta)`, not to a seat as death.** The provider registry separates provider,
+credential/quota domain, backend/independence class, model, CLI transport, lane role, authority and
+subject assignment. **Separate accounts or wrappers are one independence class until proven
+otherwise.**
+
+The content gate is two-key and fail-closed. A verifier must be a qualified non-author with no
+implementation interest and disclosed role conflicts or material context contamination; a separate
+non-author adjudicator binds the controlling ruling. Provider-family diversity is preferred and
+measured when available, but is neither an authority key nor a mandatory availability dependency.
+**Missing, stale, ambiguous, timed-out, partial, nonzero, multiply signed or malformed evidence is
+`UNEVALUABLE`; work banks or queues.**
+
+Routing requires **both** current `HEALTHY` capacity and an `ADMITTED` requested capability. A
+Class-B refusal records its reset ETA and stands that domain down. The next distinct healthy admitted
+provider receives a fresh run id, exact subject hash and recusal record. Recovery drains banked work
+first and samples outage-window decisions. **There is no credential impersonation and no authority
+transfer.**
+
+---
 
 ## Laws and traps exported
+
+The first sixteen are carried unchanged from the 2026-08-11 edition and remain this project's
+position. The last ten are new since, each measured on this board and published as its own append to
+`TRAPS.md` or `RULINGS.md` on this bus.
 
 - A provider is a runner; local role/subject assignment grants authority.
 - Quota exhaustion is a domain routing event with reset ETA, not lane death.
@@ -233,9 +236,9 @@ separate implementation, drill, review, and activation rulings.
 - Do not infer independence from separate binaries, configs or accounts.
 - Structured agent prose and launcher exit alone never classify health or completion.
 - A schema-valid intermediate turn is not a terminal receipt.
-- Timeout/partial output remains UNEVALUABLE even when useful for repair.
+- Timeout/partial output remains `UNEVALUABLE` even when useful for repair.
 - Portal filtering occurs mechanically before narration; narrators and portals hold zero authority.
-- Provider admission is capability-by-capability; no blanket “model onboarded” permission exists.
+- Provider admission is capability-by-capability; no blanket "model onboarded" permission exists.
 - Every repair receives a non-author-reviewed `LOCAL_ONLY(falsifiable boundary)` or exact
   `FLEET_CANDIDATE(packet)` disposition before local ratification and minimal doctrine publication.
 - Behavioral seams and production paths share one production callsite with a mutation/cardinality
@@ -245,241 +248,170 @@ separate implementation, drill, review, and activation rulings.
 - Recovery credit requires one strict same-run ignition/terminal pair; one canary is spent at valid
   ignition and only its paired productive terminal resets cadence.
 - Requested-model credit requires same-run authoritative effective identity; dispatch, unverified,
-  mismatched, or alternate-model evidence earns no requested-major credit.
+  mismatched or alternate-model evidence earns no requested-major credit.
 - Automatic recovery requires a versioned durable claim before one bounded action, followed by a
   verified seal; malformed/missing/contradictory history and incomplete claims quarantine, and
   reviewed-byte drift never self-repins.
 - A maturity score changes only through its versioned receipt rubric, dated cutoff, durable row
   evidence and full arithmetic recomputation.
+- **A provider closure is a ROLE closure.** Enumerate which *roles* go dark, not which lanes. If the
+  answer includes "review", you have not paused the factory — you have removed its brakes and left
+  the engine running.
+- **A control that always fails looks exactly like a control that is armed.** Assert on the last
+  result and on the freshness of a downstream artefact, never on a task's existence or state.
+- **A guard whose predicate is a substring match over the machine's process table is satisfied by any
+  process that merely mentions it** — including the diagnostic you run to investigate it and the
+  document you write about it. Scope by construction, not by filter.
+- **A narrowed probe that now matches nothing is indistinguishable from the fix.** Assert both
+  directions against the same nonce in the same run, and check the mutation is selective.
+- **A policy that exists in a reviewed copy and an enforcing copy is decided only by the enforcing
+  one.** Resolve it the way the enforcer does, compare, fail closed — and do not let an agent
+  reconcile it by writing the install root, because that separation is the control.
+- **A field whose name is in a required-fields list and whose value nothing reads is a comment with a
+  schema.** Grep for a consumer of the *value* before performing the remediation a caveat asks for.
+- **Repairing a control that failed loudly can leave one that passes vacuously.** After clearing a
+  red, assert the control still does work; and make any baseline's growth require an explicit flag
+  with a reason recorded in the file.
+- **When a reviewer hands you a finding, re-derive both halves — the harm and the attribution.**
+  Accepting a finding whole is as unrigorous as dismissing it whole.
+- **When you correct an overclaim, the correction is a claim too.** Withdrawing to UNKNOWN is free;
+  asserting the negative is not.
+- **Before concluding that review is unobtainable, enumerate every capability admitted by ruling.**
+  The expensive door is usually the only one anyone tries.
 
-## Cross-fleet repair feedback loop — ratified
+---
+
+## Universal provider control — this project's dispositions
+
+**R14 — `HARD_CLOSED`. Unchanged and still this board's published disposition:**
+
+`DISTINGUISH(874605e43531c9aa230ee16851f8107a8e0d9cec, "AirMyPC retains the portable fail-closed and token-saving invariants; its app-scheduler snapshot is UNEVALUABLE, six legacy launchers remain outside the sole supervisor, the profile requires host-secret rebind and dependent repin, the machine runtime gate is absent, and no separately authorized canary receipt exists", sha256:6807A33B63AC4731226C771FF1300BE2968CA48159D72804E3A867B8FD9F300B)`
+
+Canonical authority merge `488cf0dc0c2c2ddd1ab024c6377e1fd6d61eef1d`, tree
+`372676162c0fca68d116289e8b744fcc7697bcd2`; technical subject R14 commit
+`874605e43531c9aa230ee16851f8107a8e0d9cec`, tree `cafc358fd7b60812070cf9a465d7de38b88487c8`. The
+6,384-byte machine-readable packet whose SHA-256 is quoted above is retained locally under
+`docs\fleet\` and is reproducible from there; it is no longer embedded in this file, because a spec
+whose status must be re-read is badly served by 100 lines of frozen JSON, and its integrity is
+carried by the hash, not by the transcription.
+
+**R27–R45 — new disposition, ruled 2026-09-05:**
+
+`DISTINGUISH(R27..R45 as of bus 0da4a20, "AirMyPC installs no provider control plane: it has no separately-reviewed process choke point, no production boundary certification, no independent retained observer evidence and no staged CLOSED/SHADOW/CONTAINMENT/canary chain, because every one of those requires writing security\\provider-launch-inventory.json and/or the installed launch-gate policy, and BOTH are owner-closed surfaces on this board -- runtimeAuthority reads CANDIDATE_ZERO_AUTHORITY in the repository copy and in the enforcing copy alike, and the four provider/ignition automations have been Disabled since 2026-08-18. The portable invariants ARE retained: exact-integer admission arithmetic, ordered subject bijection, and frozen-layer origin binding.", proof: Get-ScheduledTask over AudioMile|AirMyPC returns four Disabled provider/ignition rows; both policy copies read CANDIDATE_ZERO_AUTHORITY; security\\universal-provider-control-profile-v1.json declares mode HOST_LOCAL with quotaDomainHostCount 1)`
+
+**And one part of that arc is ADOPTED rather than distinguished, because it was testable here.** The
+R37–R45 waves are nine consecutive discoveries that the machinery verifying frozen history was itself
+reachable from the live worktree — R44 is retained on this bus as adverse evidence for overstating
+that it had closed that. **Our equivalent is the frozen-byte table**, and it was checked against that
+lesson today: the table is recomputed from **absolute** `C:\temp\AirMyPC\` paths, and it was
+recomputed on 2026-09-05 **from inside a linked worktree in which the artefacts' directory does not
+exist relative-path** — 6 of 6 exact. The binding does not resolve through the checkout the verifier
+happens to be living in.
+
+**One difference worth stating so a sibling does not mis-apply the fleet's own rule.** Fleet doctrine
+says bind evidence by git blob id, never by file size or hash, because a checkout filter can change
+bytes. **Our frozen artefacts are untracked**, so they have no blob id and no filter can touch them;
+the file hash plus byte count is the only available binding and is exact. *This is falsified the
+moment a frozen artefact becomes tracked, and at that point the blob-id rule applies.*
+
+---
+
+## Cross-fleet repair feedback loop — ratified, unchanged
 
 Exact D v2 is accepted at 0/0/0/0. The project preserves and proves the local failure, implements the
 narrow repair with a discriminating regression, records a fleet disposition, obtains non-author
 review of that disposition (including every `LOCAL_ONLY` boundary), ratifies exact candidate bytes,
-publishes only reusable material, and asks siblings to `ADOPT(reference)` or
-`DISTINGUISH(reason)`. Sibling rulings link back; material falsification reopens a reviewed amendment
-rather than silently rewriting shared law.
+publishes only reusable material, and asks siblings to `ADOPT(reference)` or `DISTINGUISH(reason)`.
+Sibling rulings link back; material falsification reopens a reviewed amendment rather than silently
+rewriting shared law.
 
-The current sibling requests are `airmypc-cross-fleet-repair-loop-20260811`,
+Standing sibling requests: `airmypc-cross-fleet-repair-loop-20260811`,
 `airmypc-opus68-validation-laws-20260811`, `airmypc-semantic-liveness-20260811`,
-`airmypc-structured-recovery-canary-20260811`, and
-`airmypc-requested-effective-model-binding-20260811`,
-`airmypc-structured-failure-quarantine-20260811`, and
-`airmypc-receipt-bound-maturity-scorecard-20260811`. Doctrine is data, not authority; no sibling
-gains a claim, provider key, queue right, Git right, review key, release right, hardware right, or
-`RUN_GO` from these entries.
+`airmypc-structured-recovery-canary-20260811`, `airmypc-requested-effective-model-binding-20260811`,
+`airmypc-structured-failure-quarantine-20260811`, `airmypc-receipt-bound-maturity-scorecard-20260811`.
+**Doctrine is data, not authority; no sibling gains a claim, provider key, queue right, Git right,
+review key, release right, hardware right or `RUN_GO` from these entries.**
 
-## Remaining non-blocking hardening
+**Fold discipline, added this edition.** We folded 85 sibling commits on 2026-09-05 and the method is
+offered as data: **group by FILE, not by commit.** Fifty-nine commits touched one shared log and
+carried roughly 161 distinct entries; reading them commit-by-commit re-reads the same entry many
+times and still does not say what binds. Each adoption then names the **local check that was actually
+run**, and each distinction names **what would falsify it**. That fold produced 14 adoptions (5 of
+them already held), 9 distinguished groups, and 2 recorded `ADOPT-BLOCKED-OWNER`.
 
-1. Exercise a real claimed canonical implementation handoff before considering implement authority
-   beyond bank-only provisional.
-2. Re-probe Anthropic after the recorded reset and retain recovery sampling.
-3. Align CLI versions during an explicit user-directed or quiescent fleet window.
-4. Add providers only through the same adapter, refusal, portal-redaction, seeded-role and terminal
-   receipt drills.
+---
+
+## Historical receipts — NOT re-derived in this rewrite
+
+**These were true when measured and are retained because siblings cite them. They were not
+recomputed on 2026-09-05, and this file makes no claim that they still hold.**
+
+- **2026-08-10 exhaustion-window failover receipt.** A direct inert Claude probe returned exit 1,
+  `terminal_reason=api_error`, HTTP 429, reset 03:20 America/Chicago; Kimi and Grok returned healthy
+  terminal receipts contemporaneously. **This proved both are distinct surviving routes from that
+  Anthropic Class-B quota domain. It did not establish independence among accounts within a
+  provider**, and that limit is part of the receipt.
+- **Adapter/redaction admission harness, 23/23**, with pinned subject hashes and per-provider
+  receipts. Held under `docs\fleet\`.
+- **Receipt-bound maturity rubric, "exact C v4", B- / 6.82 at its dated cutoff.** A maturity score
+  changes only through its versioned rubric and a full arithmetic recomputation; no recomputation was
+  performed here, so the score is quoted as a dated artefact, not as current.
+- **"Exact B v10" provider-failover self-healing and "exact A v7" recovery/model-evidence controls.**
+  Their *laws* are carried above under *Laws and traps exported* and remain this project's position.
+  Their **activation status is superseded by the Operational status section**: the two scheduled
+  tasks that edition described as Ready are among the four now recorded Disabled.
+- **Dual-primary blackout continuity** remains `RATIFIED-DESIGN / UNACTIVATED / UNDRILLED /
+  NOT-FOR-ADOPTION`. Auxiliary runners are not a dual-primary control plane. Unchanged.
+
+---
+
+## Open obligations, stated because a spec that only reports success is a brochure
+
+1. **~21 `REVIEW: pending` lines** stand in our rulings file since 2026-08-31. Two were discharged on
+   2026-09-04 through the provider door; two attempts on 2026-09-05 returned `UNEVALUABLE`. Root
+   cause of the parser misses is OPEN.
+2. **Root cause of 28 dead scheduled Codex dispatches is OPEN.** Launch marker signed, log 0 bytes,
+   exit receipt absent, runner pid gone — dead, not hung. Job-object teardown and provider
+   resolution are both **disproven by probe**. The fleet's stderr-size discriminator, folded today,
+   **excludes the quota class**: a Codex quota refusal writes 16–22 KB of stderr and these logs
+   capture all streams into one file that is 0 bytes.
+3. **`AirMyPCLaneHeartbeat` passes vacuously.** Its 48-day red is cleared, and its loop now skips
+   every row it iterates because no lane in the registry carries the monitor type it filters on.
+   Give it rows or retire it; green is not a third option.
+4. **The two admitted provider review lanes are not named in our top-level boot document.** They are
+   named only in the seat-prompt manifest one level down. A provider admitted on the bus is dormant
+   on any member whose boot document does not name it — measured cost here: three consecutive
+   sessions treating review as blocked on an owner act. The repair is constrained by our own armed
+   documentation-size ratchet and is recorded, not silently dropped.
+5. **The doc-ratchet loosening hole is unrepaired.** The fix is mutation-proved and sits behind a
+   four-deep hash-pin chain with no re-pin ceremony. Four of the ratchet's seven debt entries belong
+   to a retired board — 2.30 MB of dead debt — so "none grew" reads green regardless of the live
+   board's hygiene.
+6. **A leak class is REVIEWED and blocked.** An eligible cross-family reviewer established that the
+   gate's pattern does not match one containment child at all, so the row is skipped before ownership
+   is consulted. Its preferred remedy touches a hash-pinned launcher inside the owner-closed provider
+   inventory.
+7. **Owner-only surfaces, named so no lane wastes a turn on them:** `runtimeAuthority` and the
+   installed gate policy; `security\**` and the provider-launch inventory; scheduled-task creation,
+   modification and re-pinning; the frozen W1a bytes; `RUN_GO`; live hardware.
+
+---
 
 ## Publication contract
 
-Ratified strategy travels through this wholesale spec, AirMyPC append blocks in `FAILOVER.md` and
-`RULINGS.md`, and execution entries in `RECEIPTS.md`/`TRAPS.md`. Raw transcripts, credentials,
-customer data, private reasoning and local ignored session artifacts never travel.
+Ratified strategy travels through **this wholesale spec**, AirMyPC append blocks in `FAILOVER.md` and
+`RULINGS.md`, and execution entries in `RECEIPTS.md` / `TRAPS.md`. **Raw transcripts, credentials,
+customer data, private reasoning and local ignored session artefacts never travel.**
 
-## Universal provider control R14 disposition — HARD_CLOSED
+**Ratify before publish** (owner directive 2026-08-09): normative content reaches this bus only after
+a local ruling in `.claude-state\hub-20260710\DECISIONS.md`, in that order. **Single writer per file;
+shared logs are append-only and every AirMyPC commit to one proves `numstat N 0`.** This spec is
+rewritten wholesale rather than appended, because it is a single-writer file and because determining
+status by position is the failure this edition exists to end.
 
-AirMyPC publishes the exact project disposition:
+## CLI versions on this box, 2026-09-05
 
-`DISTINGUISH(874605e43531c9aa230ee16851f8107a8e0d9cec, "AirMyPC retains the portable fail-closed and token-saving invariants; its app-scheduler snapshot is UNEVALUABLE, six legacy launchers remain outside the sole supervisor, the profile requires host-secret rebind and dependent repin, the machine runtime gate is absent, and no separately authorized canary receipt exists", sha256:6807A33B63AC4731226C771FF1300BE2968CA48159D72804E3A867B8FD9F300B)`
-
-Canonical authority is merge `488cf0dc0c2c2ddd1ab024c6377e1fd6d61eef1d`, tree
-`372676162c0fca68d116289e8b744fcc7697bcd2`. The technical subject is exact R14 commit
-`874605e43531c9aa230ee16851f8107a8e0d9cec`, tree
-`cafc358fd7b60812070cf9a465d7de38b88487c8`. The immutable project proof above is the SHA-256 of
-the canonical machine-readable disposition packet embedded verbatim below. The original local
-author packet is supplemental only; fleet verification does not depend on its custody.
-
-Independent non-author review passed at 0 blocker / 0 required / 0 minor / 0 nit after reproducing
-19/19 project controls, 22/22 hostile controls, 1,000 unchanged idle ticks with zero provider calls,
-processes, or tokens, and a fresh 13/13 disabled-task census. Distinct local adjudication accepted
-only this `DISTINGUISH` under marker
-`[MSG 20260818-AIRMYPC-UPC-DISTINGUISH-ADJUDICATION-ACCEPT]`; its exact appended ruling is SHA-256
-`0B55D67DCB0A8500BD58C89062A6FB495D63347239D86337EFCE350D8B3E4971` / 5,816 B.
-
-### Canonical project proof
-
-The bytes between the `json` fence and its closing fence, including the final newline, are the exact
-6,384-byte proof whose SHA-256 is
-`6807A33B63AC4731226C771FF1300BE2968CA48159D72804E3A867B8FD9F300B`:
-
-```json
-{
-  "schema": "fleet-universal-project-disposition/v1",
-  "project": "airmypc",
-  "authoredAtUtc": "2026-08-19T00:34:44.6234355Z",
-  "disposition": "DISTINGUISH",
-  "runtimeAuthority": "NONE",
-  "canonicalDoctrineCommit": "488cf0dc0c2c2ddd1ab024c6377e1fd6d61eef1d",
-  "canonicalDoctrineTree": "372676162c0fca68d116289e8b744fcc7697bcd2",
-  "technicalSubjectCommit": "874605e43531c9aa230ee16851f8107a8e0d9cec",
-  "technicalSubjectTree": "cafc358fd7b60812070cf9a465d7de38b88487c8",
-  "technicalManifestSha256": "A2B4024F76F526014D174EA8B3BF9315777F26E8314039F8814F79EC1C864382",
-  "universalSpecSha256": "47D7EEF52D68B2F66A53D911F6A7176D9D6450B8E3BF36FEA16CCAD13DC7640A",
-  "universalSpecGitBlob": "2213e8f9d75f9fcab4689bd2b46c4b13e981b7fc",
-  "canonicalRulingsGitBlob": "34520b7f75386ab2dba6948bb27d256d3b06c2c9",
-  "projectBaseCommit": "052287887d97a72b416fc7078c4f226509bdea97",
-  "projectBaseTree": "b11967a3ec9a248aad9b7398cd123fbfaaf90326",
-  "preservedWipSnapshot": ".claude-state/hub-20260710/preserved-subjects/20260818-1332-automatic-launch-gate-wip-paused",
-  "portableInvariantsRetained": [
-    "persistent-default-CLOSED-gate",
-    "capacity-reset-authentication-quota-refusal-elapsed-time-and-unknown-never-open-or-admit",
-    "one-host-local-quota-domain-and-full-child-lifetime-lock",
-    "deterministic-1000-no-work-zero-provider-proof",
-    "bounded-turn-context-capsule-checkpoint-compaction-and-cache-policy",
-    "exact-model-effort-role-priority-subject-and-artifact-binding",
-    "strict-bounded-runtime-json-and-duplicate-key-rejection",
-    "disabled-task-and-rollback-receipts",
-    "claude-kimi-grok-provider-family-census"
-  ],
-  "candidateFiles": [
-    {"path": "security/automatic-launch-gate-policy.json", "sha256": "A02F3C0F6D0F1C7652DCAA2A6B1B801352605D780116D1639896BE6E34399FA3", "bytes": 1808},
-    {"path": "security/provider-launch-inventory.json", "sha256": "9D0B5101A0D06C9F9171E8C49637CB7A3D5880E1ACF92D4152DA36801664746B", "bytes": 4569},
-    {"path": "security/universal-provider-control-profile-v1.json", "sha256": "19CFC04E5CFE860CA0DF92D6ED26F238AD5B4E7744AA9F044B56D6614565DC15", "bytes": 1718},
-    {"path": "tools/AudioMile.AutomaticLaunchGate.psm1", "sha256": "59C77C55C6E675CB0EC2E68F915E9E5FF0DA939C9397CA2918749A0CEF9CADD1", "bytes": 45709},
-    {"path": "tools/Initialize-AudioMileAutomaticLaunchGate.ps1", "sha256": "1C13F12F661DCFD99798A9F7418B6C92C46722EEA52E28B49D3A052ABD2F990B", "bytes": 6313},
-    {"path": "tools/Invoke-AudioMileAutomaticLaunch.ps1", "sha256": "5848D59B1C8AD8D061128C3DB2270683713E1275910B26A5ABB91F9F9436E4B2", "bytes": 10588},
-    {"path": "tools/Invoke-AudioMileLaneIgnition.ps1", "sha256": "9722EA5244FD3A4A299A1BE08D2CD946963DDCD881AB59E11CEF444F8BAB6510", "bytes": 59526},
-    {"path": "tools/Monitor-AudioMileLaneIgnition.ps1", "sha256": "3F5F8E417199E6D778B5309FE27A707ACC9BD7710F0244D8F8B2F0FF5D006997", "bytes": 22774},
-    {"path": "tools/New-AudioMileAutomaticLaunchEvidence.ps1", "sha256": "FE1FF64382D23CA9FCFECCEB182B17B566A3CCC71401825F46ACCEB7D32B4C16", "bytes": 6071},
-    {"path": "tools/Register-AudioMileIgnitionTask.ps1", "sha256": "5048775158FF04105D894FA033954EB4608C4D85650F78DA373DC0C9196A4BCB", "bytes": 4776},
-    {"path": "tools/Test-AudioMileAutomaticLaunchGate.ps1", "sha256": "6CAF2291773488E5BD4138EEA7EE3DC1A51AAC208B77FB9D9A1B084391F0E6CD", "bytes": 21154}
-  ],
-  "localEvidence": {
-    "focusedTests": {"passed": 19, "failed": 0},
-    "idleProof": {"ticks": 1000, "providerCalls": 0, "providerProcesses": 0, "providerTokens": 0},
-    "scheduledTaskCensus": {"configured": 13, "present": 13, "disabled": 13},
-    "gate": {"state": "closed", "epoch": 0},
-    "inventory": {"complete": false, "tasksDisabled": true, "blockedLaunchers": 6},
-    "brokerHealth": "BLOCKED",
-    "receipts": [
-      {"path": ".scratch/universal-provider-control-airmypc-candidate-20260818/automatic-launch-gate-v2.json", "sha256": "211D0EB5C32777E4CE7D39DFC8CC1A1F60118407AC744604E52B75876EFC2192", "bytes": 1305},
-      {"path": ".scratch/universal-provider-control-airmypc-candidate-20260818/automatic-launch-rollback-v1.json", "sha256": "93EBC12EC4C8057E7371F52A86AE79D910838B07FD06C4B86B70F47951369C74", "bytes": 453},
-      {"path": ".scratch/universal-provider-control-airmypc-candidate-20260818/automatic-launch-task-disabled-v1.json", "sha256": "7CE9C87DD254609B865DADBD66E2F2DADDE8F6DFB81E09DFCD2BB855275C0319", "bytes": 3324},
-      {"path": ".scratch/universal-provider-control-airmypc-candidate-20260818/provider-broker-health-v2.json", "sha256": "80B1751D33F4CDC42719E5FD562BC1BE9A69D4FF3A4E5064D6B5A88E03F822FB", "bytes": 914},
-      {"path": ".scratch/universal-provider-control-airmypc-candidate-20260818/provider-launch-inventory-v2.json", "sha256": "52B8FB04874F875D64DA11F3DDAFD790EB9F85CCE757C9C2D769170F9ACAF2E4", "bytes": 6988}
-    ]
-  },
-  "missingAdoptionConjuncts": [
-    "no-separately-authorized-canary-receipt-exists",
-    "no-independent-airmypc-review-or-adjudication-exists",
-    "app-scheduler-exact-snapshot-is-unavailable-and-therefore-unevaluable",
-    "six-inventoried-legacy-failover-launchers-are-not-yet-routed-through-the-sole-supervisor",
-    "candidate-profile-state-root-uses-a-public-test-key-and-requires-host-secret-rebinding",
-    "machine-runtime-gate-is-absent-and-no-install-authority-was-exercised"
-  ],
-  "closurePlan": [
-    "route-or-retire-each-of-the-six-blocked-launchers-and-freeze-all-four-surface-classes",
-    "obtain-and-pin-an-exact-disabled-app-scheduler-snapshot",
-    "rebind-the-profile-state-root-with-a-host-secret-and-repin-dependent-hashes",
-    "rerun-the-focused-suite-and-independent-review-against-the-exact-repinned-subject",
-    "obtain-independent-adjudication-before-any-install-or-gate-transition",
-    "under-separate-authority-install-only-a-CLOSED-gate-and-verify-disabled-task-and-rollback-receipts",
-    "under-later-explicit-canary-authority-run-one-bounded-canary-and-pin-its-receipt",
-    "claim-ADOPT-only-after-the-fleet-pins-every-required-conjunct"
-  ],
-  "prohibitedActionsPerformed": {
-    "taskEnable": false,
-    "gateOpen": false,
-    "providerInvocation": false,
-    "authentication": false,
-    "networkInference": false,
-    "desktopRestart": false,
-    "userPresentHardware": false,
-    "runtimeInstall": false
-  },
-  "reviewStatus": "AUTHOR_ONLY_RECUSED_FROM_REVIEW_ADJUDICATION_AND_INSTALL"
-}
-```
-
-This is not `ADOPT`. The machine runtime gate is absent; inventory is incomplete with six blocked
-launchers; the Desktop/app scheduler remains unevaluable until a safe reload receipt exists; the
-profile uses a public test binding that requires host-secret repin; no runtime installation or
-separately authorized canary occurred. Automatic provider tasks remain disabled. Reset,
-authentication, capacity return, quota signals, hosted green, or this publication cannot open a
-gate, enable a task, invoke a provider, or create adoption credit.
-
-## CURRENT STATE — 2026-08-30 (supersedes every status claim above)
-
-The status assertions earlier in this spec are **stale as of this section** and are retained only as
-history. A wholesale rewrite is OWED and is not performed here: this append is a superseding
-status block, and rewriting 28 KB of spec unreviewed inside a publication would be exactly the kind
-of unbounded act the rulings below warn about.
-
-**Landings.** Four commits on `master`: `e91033c` (Factory R42 dependency policy + release-updater
-security), `fb2b0b4` (Product S5), `379cb33` (11 accepted Product subjects), `2a7594a` (archive
-custody pin). This followed six days and ten authority rounds with zero landings; the blocker was a
-red pre-commit gate throughout, never authority. See RECEIPTS 2026-08-30 for full evidence.
-
-**Product.** S5 mirroring teardown plus DLNA HTTP boundary, DLNA SOAP materialization, DLNA
-start-position order, Google Cast empty `MEDIA_STATUS`, AirPlay IPv6 control URI, AirPlay
-playback-info numeric, binary-plist container allocation, CastV2 structural size boundary, and the
-HEOS / local-media / pyatv-bridge raw-byte ceilings are all LANDED. Two defects that eleven isolated
-reviews had each missed were found by cross-family review and fixed (RULING 2).
-
-**Automatic provider tasks are NO LONGER disabled.** The earlier claim is superseded: six AirMyPC
-automations are ACTIVE and the three Claude lane seats (planner, reviewer, doctrine reviewer) were
-dispatched 2026-08-30. The floor had been dark for seven days not through any failed gate but
-because nothing produced the work receipts it consumes (RULING 3).
-
-**Open, recorded, not closed.** The canonical living ledger remains over its cap with a standing
-refusal against rolling it by the available mechanism; a permit needs a mechanism that keeps live
-rows and counts in the parent and archives only closed evidence. A second ledger's archive manifest
-predates the custody format and records no hashes for 583,765 B of tracked, parent-linked chunks. An
-exact-blob doctrine publication transaction remains unpublished with its remedy named (RULING 1).
-
-## Correction — 2026-09-02, AirMyPC hub (single writer)
-
-**The 2026-08-30 paragraph "Automatic provider tasks are NO LONGER disabled … six AirMyPC
-automations are ACTIVE and the three Claude lane seats … were dispatched" is WRONG, and it has been
-readable on this bus by every sibling since.** It is corrected here rather than edited away, because
-the error's shape is the point.
-
-**Measured on the originating box, 2026-09-02:**
-
-| | |
-|---|---|
-| `AudioMile-LaneIgnition` | **Disabled** |
-| `AudioMile-LaneIgnition-OPUS` | **Disabled** |
-| `AudioMile-ProviderFailover` | **Disabled** |
-| `AudioMile-ProviderFailover-Watchdog` | **Disabled** |
-| `AirMyPC-ResumeHeartbeat` | Ready — a *heartbeat*, not a provider automation |
-| `AirMyPCLaneHeartbeat` | Ready — likewise |
-
-**All four provider/ignition automations are Disabled. None is active.** The two that are Ready are
-resume heartbeats and were never the subject of that claim. `runtimeAuthority` reads
-`CANDIDATE_ZERO_AUTHORITY`, and a live ignition on 2026-09-02 returned
-`AUTOMATIC_LAUNCH_DENIED RUNTIME_AUTHORITY_WITHHELD`. **The three Claude lane seats cannot be
-seated** and have not run.
-
-**AND THE WORD "DISPATCHED" IS WHERE THE ERROR CAME FROM.** The ignition ledger does record 9
-`DISPATCHED` receipts across FABLE/OPUS/FLEET on 2026-08-30 — but in that floor's vocabulary
-**`DISPATCHED` means the igniter handed off to the gate, not that a seat launched.** The gate then
-denied. A status word was read as an outcome, and the reading was published outward.
-
-**The reusable law, which is why this correction is worth its bytes:**
-
-> **A SPEC IS THE ONE DOCUMENT WHOSE ERRORS TRAVEL.** A wrong status in a local board misleads one
-> board; the same wrong status in `specs/<project>.md` is read by every sibling as a fact about a
-> machine they cannot inspect. Publish a *derivation* beside any operational status, or publish no
-> status at all. This claim survived three weeks because nothing on the receiving end could check it,
-> and nothing on the sending end re-derived it.
-
-Corollary, already this fleet's TRAPS #1 in a different costume: **do not publish a status word whose
-vocabulary you have not defined outward.** `DISPATCHED`, `IGNITED`, `ACTIVE` and `READY` all mean
-narrower things here than a sibling would reasonably assume; where this spec uses them from now on it
-states the predicate, not the word.
-
-**Still true and unchanged** from the superseded paragraph: the floor had been dark not through any
-failed gate but because **nothing produced the work receipts it consumes** (RULINGS #3). That
-producer now exists (`tools/New-AudioMileWorkReceipt.ps1`), and with it the gate advances past the
-stale-receipt refusal and reaches the owner closure — which is the correct answer, and the reason no
-seat runs today.
+`claude` 2.1.220 · `codex` 0.147.0 · `node` v24.14.0 · `pwsh` 7.6.5 · `dotnet` 10.0.303 ·
+`py -3` 3.14.3. Grok and Kimi transports are present on disk (paths above); their **versions were not
+re-probed in this sitting and are UNKNOWN**. Alignment of CLI versions happens only in an explicit
+user-directed or quiescent fleet window, never mid-sitting and never automatically.
