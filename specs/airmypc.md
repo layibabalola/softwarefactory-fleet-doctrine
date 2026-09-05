@@ -165,29 +165,55 @@ the minute, plus two standing `INCIDENT` rows (Codex banks not in `host/master`)
 
 ---
 
-## The review door — open, and its yield is 2 of 4
+## The review door — open, and its yield is 9 of 12 (corrected at 16:5x UTC, from 2 of 4 at 07:5x)
 
 **This is the operational fact most likely to be useful to a sibling, so it is stated with its
-denominator.** With all three Claude reviewer lanes dark under the owner closure, this board still
-obtains author-independent review, because two provider review lanes are **`QUALIFIED-STANDBY` and
-not revoked**, admitted by a recorded ruling of 2026-08-10 granting design review, evidence audit and
-gate verification **through a checked-in runner**. No owner act is required to dispatch one.
+denominator AND its failure taxonomy — because the first version of this section, published this
+morning, had neither and understated the door by more than half.** With all three Claude reviewer
+lanes dark under the owner closure, this board still obtains author-independent review: two provider
+review lanes are **`QUALIFIED-STANDBY` and not revoked**, admitted by a recorded ruling of 2026-08-10
+granting design review, evidence audit and gate verification **through a checked-in runner**. **No
+owner act is required to dispatch one.**
 
-| run | date | result |
-|---|---|---|
-| `grok-leakprobe-20260904-r1` | 2026-09-04 | `TERMINAL` / `validated` / `CHANGES_REQUIRED` |
-| `kimi-cadence-20260904-r1` | 2026-09-04 | `TERMINAL` / `validated` / `CHANGES_REQUIRED` |
-| `grok-427harm-20260905-r1` | 2026-09-05 | **`UNEVALUABLE` / `missing-terminal-receipt`** |
-| `row29-grok-20260905-r1` | 2026-09-05 | **`UNEVALUABLE` / `missing-terminal-receipt`** |
+| | count |
+|---|---|
+| named dispatches | **12** |
+| `TERMINAL` / `validated` | **9** (8 `CHANGES_REQUIRED`, 1 `PASS`) |
+| `UNEVALUABLE` / `missing-terminal-receipt` | **3** |
+| subjects reviewed | **9 of 10** |
 
-> derive: read `status`, `reason` and `terminal` from `.claude-state\provider-runs\<runId>\receipt.json`
+> derive: read `status`, `reason` and `terminal` from `.claude-state\provider-runs\<runId>eceipt.json`
+> for every run directory whose name is not a bare GUID — the GUID directories are the runner's own
+> test fixtures and counting them silently inflates the denominator.
 
-Both `UNEVALUABLE` runs recorded `processExitCode: 0`, an **empty stderr**, and 15–17 KB of stdout,
-with the workspace hash identical before and after. **The provider answered and the receipt parser
-could not bind a terminal from the answer.** The runner refusing to publish a verdict it cannot
-authenticate is correct behaviour — it is independently what the fleet's own provider-audit
-provenance law requires — but the yield is **2 of 4** and a sibling reading only the first success
-would over-estimate this door. Root cause of the two parser misses is **OPEN**.
+**THE THREE FAILURES ARE A SIZE BOUNDARY, NOT A FLAKE — AND NOT ON THE QUANTITY YOU WOULD CHECK.**
+Sorting every run by the byte size of its persisted portal-safe stream: **largest success 8,286 B,
+smallest failure 8,416 B, a clean 130 B gap** holding across 30 runs when a second session widened the
+census. **The provider's raw answer size does not discriminate at all** — one run succeeded on
+**42,920 B** of stdout while another failed on 16,916 B. Our portal limiter caps assistant text at
+8,000 *characters* and the persisted line adds JSON framing on top, so the usable budget is neither
+8,000 nor constant; the terminal receipt sits at the END of an answer, so truncation deletes exactly
+the bytes that would prove the run valid, and the run reports `missing-terminal-receipt` rather than
+`truncated`.
+
+> derive: `wc -c` each run's `portal.safe.jsonl` and sort against its receipt `status`
+
+**Two corrections to our own claims, kept visible rather than fixed away.** (1) Stated as *"every
+failure ≥ 8,416"* the rule is **false** — a run at portal 6,976 B is `UNEVALUABLE` for
+`review-workspace-mutated`. Portal size predicts the **truncation reason**, not the verdict; the
+runner has at least four other ways to reach `UNEVALUABLE`. **Reason first, size second.** (2) Both
+retried failures succeeded, which we first read as transient. **It is not** — one cleared by coming in
+at 5,716 B, the other **by 130 bytes**. A retry is a coin flip on reviewer verbosity; the remedy that
+works is a stated answer-length budget in the prompt, and **it costs review depth**.
+
+**The truncation remedy is `ADOPT-BLOCKED-OWNER`**: the module is hash-pinned inside the owner-closed
+provider inventory. Recorded as a known, blocked defect with its fix specified, not left open.
+
+**A finding a sibling should copy directly:** before recording "review is unobtainable", enumerate
+every capability your board has **ADMITTED by ruling** — not every capability that is *running* — and
+state in one line why each cannot serve the dark role. On this board that enumeration took minutes,
+returned two lanes, and overturned a belief that had survived three consecutive sittings at $0.044
+per dispatch.
 
 **Transports, derived today:** Codex CLI `0.147.0`; Grok build present at
 `C:\Users\obabalola\.grok\bin\grok.exe`; Kimi present at `C:\Users\obabalola\.kimi-code\bin\kimi.exe`.
@@ -367,9 +393,11 @@ recomputed on 2026-09-05, and this file makes no claim that they still hold.**
 
 ## Open obligations, stated because a spec that only reports success is a brochure
 
-1. **~21 `REVIEW: pending` lines** stand in our rulings file since 2026-08-31. Two were discharged on
-   2026-09-04 through the provider door; two attempts on 2026-09-05 returned `UNEVALUABLE`. Root
-   cause of the parser misses is OPEN.
+1. **Review debt, re-derived 2026-09-05 16:5x UTC: 7 `REVIEW: pending` against 6 `REVIEW: obtained`
+   in the live rulings file** (`grep -c '^REVIEW: pending'` / `'^REVIEW: obtained'`, plus the rolled
+   archive children). Eight reviews were obtained through the provider door on 2026-09-04/05 at about
+   $0.05 each and no owner act. **Root cause of the three truncation failures is no longer OPEN** —
+   it is the portal size boundary documented above, and its remedy is `ADOPT-BLOCKED-OWNER`.
 2. **Root cause of 28 dead scheduled Codex dispatches is OPEN.** Launch marker signed, log 0 bytes,
    exit receipt absent, runner pid gone — dead, not hung. Job-object teardown and provider
    resolution are both **disproven by probe**. The fleet's stderr-size discriminator, folded today,
