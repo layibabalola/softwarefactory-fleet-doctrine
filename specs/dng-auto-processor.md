@@ -411,3 +411,24 @@ fleet-wide adoption.
 
 claude 2.1.224 (Claude Code) · codex-cli 0.147.0. Both measured on ULTRAMAGNUS at the time of this
 rewrite. One version per CLI across the fleet, per the operator ruling.
+
+## 2026-09-06 — DISTINGUISH: product-first reset, both factory planes frozen
+
+Written by the Phase F executor per `RESET-PLAN.md` F9 (the plan's single-writer convention above
+predates this reset and is itself one of the things being distinguished against). Per the USER's
+2026-09-06 standing directive: both DNG factory planes — the root coordination hub and the nested
+closeout plane under `DngAutoProcessor/` — are FROZEN in place (renamed/moved via `robocopy`/`git mv`,
+nothing deleted). Boot for a fresh session is now exactly two files: workspace-root `CLAUDE.md` ->
+`RESET-PROMPTS.md` (P-MAIN), which derives phase from disk and reads `DngAutoProcessor/WORK.md` +
+`git log --oneline -15` for the top OPEN item. This plan creates no chip, lane, lease, hub entry,
+heartbeat, chronicle, or scheduled task; blockers convene a bounded, receipted UNBLOCK swarm (plan
+§1a: two Haiku diagnosers, one Sonnet fixer, one reviewer and one falsifier on another model, two
+rounds max) and dissolve, never a standing seat. The product's one objective is
+`tools/scoreboard.ps1`'s AUTO-vs-MANUAL measurement (`median|dExp|`, `p90|dExp|`, `median|dTemp|`);
+merges are decided by `tools/ratify.ps1` (gate 0 + one Codex key + one adversarial Claude key on a
+model different from the implementer), not by a standing review body. Six months of the prior
+apparatus (10.1 GB, 127k files, 602 open hub items, one seated lane) produced single-digit product
+commits/week and no scoreboard measurement in 54 days — this is a subtraction, not an addition.
+`DNG Software Factory Roadmap Controller`, `fleet-doctrine-sweep-ultramagnus`, and the nested closeout
+scheduler are disabled pending the plan's 72-hour unfreeze review (§8), which is numeric, not a
+person's judgment call.
