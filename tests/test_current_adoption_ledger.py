@@ -57,16 +57,121 @@ class CurrentAdoptionLedgerTests(unittest.TestCase):
 
     def test_current_mode_cannot_manufacture_adopt(self):
         ledger = copy.deepcopy(self.ledger)
-        row = next(row for row in ledger["projects"] if row["projectId"] == "conjugal")
+        row = next(row for row in ledger["projects"] if row["projectId"] == "cloudvore")
         row["status"] = "ADOPT"
         row["blocker"] = None
         row["evidence"]["disposition"] = {
             "status": "ADOPT", "subjectCommit": MODULE.EXPECTED_MERGE,
-            "profilePath": "receipts/missing-profile.json", "profileSha256": "a" * 64,
-            "reviewReceiptPath": "receipts/missing-review.json", "reviewReceiptSha256": "b" * 64,
+            "profilePath": "receipts/missing-profile.json", "profileSha256": "sha256:" + "a" * 64,
+            "reviewReceiptPath": "receipts/missing-review.json", "reviewReceiptSha256": "sha256:" + "b" * 64,
         }
         with self.assertRaisesRegex(MODULE.LedgerError, "ADOPT_"):
             self.verify(ledger)
+
+    def test_current_canonical_negative_declaration_has_no_adoption_credit(self):
+        ledger = copy.deepcopy(self.ledger)
+        row = next(row for row in ledger["projects"] if row["projectId"] == "cloudvore")
+        row["status"] = "DISTINGUISH"
+        row["blocker"] = "PROJECT_OWNER_DISTINCTION_OPEN"
+        row["evidence"]["projectCandidate"] = None
+        row["nonRegressionEvidence"] = None
+        row["evidence"]["disposition"]["subjectCommit"] = MODULE.EXPECTED_MERGE
+        original = MODULE._blob
+
+        def canonical_only(treeish, path):
+            if (treeish, path) == (row["evidence"]["commit"], row["specPath"]):
+                return f"DISTINGUISH({MODULE.EXPECTED_MERGE}, pending_local_proof)\n".encode()
+            return original(treeish, path)
+
+        with mock.patch.object(MODULE, "_blob", side_effect=canonical_only):
+            self.verify(ledger)
+        self.assertIsNone(row["evidence"]["projectCandidate"])
+        self.assertIsNone(row["nonRegressionEvidence"])
+
+    def test_historical_profile_still_requires_candidate_evidence(self):
+        row = copy.deepcopy(next(row for row in self.ledger["projects"] if row["projectId"] == "cloudvore"))
+        row["evidence"]["projectCandidate"] = None
+        with self.assertRaisesRegex(MODULE.LedgerError, "PROJECT_CANDIDATE_REQUIRED"):
+            MODULE._verify_project(row, base_commit=self.ledger["census"]["baseCommit"], treeish="HEAD")
+
+    def test_current_present_malformed_candidate_is_still_refused(self):
+        ledger = copy.deepcopy(self.ledger)
+        row = next(row for row in ledger["projects"] if row["projectId"] == "adversarialllm")
+        row["evidence"]["projectCandidate"] = {}
+        with self.assertRaisesRegex(MODULE.LedgerError, "PROJECT_CANDIDATE_INVALID"):
+            self.verify(ledger)
+
+    def test_current_candidate_requires_each_exact_historical_artifact_row(self):
+        ledger = copy.deepcopy(self.ledger)
+        row = next(row for row in ledger["projects"] if row["projectId"] == "adversarialllm")
+        candidate = row["evidence"]["projectCandidate"]
+        artifact = candidate["artifacts"][0]
+        original = MODULE._blob
+
+        def missing_artifact(treeish, path):
+            value = original(treeish, path)
+            if treeish == row["evidence"]["commit"] and path == row["specPath"]:
+                needle = (
+                    f"| `{artifact['path']}` | `{artifact['gitBlobOid']}` | "
+                    f"{artifact['bytes']:,} | `{artifact['sha256']}` |"
+                ).encode("utf-8")
+                return value.replace(needle, b"", 1)
+            return value
+
+        with mock.patch.object(MODULE, "_blob", side_effect=missing_artifact):
+            with self.assertRaisesRegex(MODULE.LedgerError, "PROJECT_CANDIDATE_ARTIFACT_NOT_IN_SPEC"):
+                self.verify(ledger)
+
+    def test_current_adopt_attempt_without_real_profile_refuses(self):
+        ledger = copy.deepcopy(self.ledger)
+        row = next(row for row in ledger["projects"] if row["projectId"] == "adversarialllm")
+        row["status"] = "ADOPT"
+        row["blocker"] = None
+        row["evidence"]["projectCandidate"] = None
+        row["evidence"]["disposition"] = {
+            "status": "ADOPT", "subjectCommit": MODULE.EXPECTED_MERGE,
+            "profilePath": "receipts/missing-profile.json", "profileSha256": "sha256:" + "a" * 64,
+            "reviewReceiptPath": "receipts/missing-review.json", "reviewReceiptSha256": "sha256:" + "b" * 64,
+        }
+        original = MODULE._blob
+
+        def unsupported_adopt(treeish, path):
+            if (treeish, path) == (row["evidence"]["commit"], row["specPath"]):
+                return (MODULE._adopt_disposition_line(row["evidence"]["disposition"]) + "\n" + MODULE.EXPECTED_CANDIDATE).encode()
+            return original(treeish, path)
+
+        with (
+            mock.patch.object(MODULE, "_blob", side_effect=unsupported_adopt),
+            mock.patch.object(MODULE, "_verify_adopt_disposition_artifacts", wraps=MODULE._verify_adopt_disposition_artifacts) as artifacts,
+        ):
+            with self.assertRaisesRegex(MODULE.LedgerError, "ADOPT_"):
+                self.verify(ledger)
+            artifacts.assert_called_once()
+
+    def test_current_wrong_subject_and_conflicting_marker_are_refused(self):
+        ledger = copy.deepcopy(self.ledger)
+        row = next(row for row in ledger["projects"] if row["projectId"] == "conjugal")
+        row["evidence"]["disposition"]["subjectCommit"] = "0" * 40
+        with self.assertRaisesRegex(MODULE.LedgerError, "DISPOSITION_NOT_IN_PROJECT_EVIDENCE"):
+            self.verify(ledger)
+
+        ledger = copy.deepcopy(self.ledger)
+        row = next(row for row in ledger["projects"] if row["projectId"] == "cloudvore")
+        row["status"] = "DISTINGUISH"
+        row["blocker"] = "PROJECT_OWNER_DISTINCTION_OPEN"
+        row["evidence"]["projectCandidate"] = None
+        row["evidence"]["disposition"]["subjectCommit"] = MODULE.EXPECTED_MERGE
+        original = MODULE._blob
+
+        def conflicting(treeish, path):
+            value = original(treeish, path)
+            if (treeish, path) == (row["evidence"]["commit"], row["specPath"]):
+                return value + f"\nDISTINGUISH({MODULE.EXPECTED_CANDIDATE}, conflicting)\n".encode()
+            return value
+
+        with mock.patch.object(MODULE, "_blob", side_effect=conflicting):
+            with self.assertRaisesRegex(MODULE.LedgerError, "CURRENT_DISPOSITION_CONFLICT"):
+                self.verify(ledger)
 
     def test_cli_current_flag_reads_only_the_current_ledger(self):
         with (

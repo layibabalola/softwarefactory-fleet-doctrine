@@ -23,16 +23,16 @@
     }
   },
   "census": {
-    "baseCommit": "fa31fbee4b921f0acd51d11619fdef953d9bbffd",
+    "baseCommit": "e454dd6521664fc64e6418efdcfd7b4413bb8b6a",
     "projectSpecGlob": "specs/*.md",
     "nonProjectSpecs": [
-      "specs/continuity-autonomous-resumption.md",
+      "specs/fleet-continuity-autonomous-resumption.md",
       "specs/fleet-orchestrator-execute-posture.md",
       "specs/fleet-provider-capacity-governor.md",
+      "specs/fleet-resumption-parallel-launch-0906.md",
       "specs/fleet-universal-provider-control-reconciliation.md",
       "specs/provider-audit-consumer-provenance.md",
-      "specs/provider-model-benchmarking.md",
-      "specs/resumption-parallel-launch-0906.md"
+      "specs/provider-model-benchmarking.md"
     ]
   },
   "nonRegression": {
@@ -179,52 +179,13 @@
       "specPath": "specs/cloudvore.md",
       "status": "DISTINGUISH",
       "evidence": {
-        "commit": "fc553da1362bbfb0a6ea5aa10dd566bcb988ab06",
-        "gitBlobOid": "b26291d212e013e6d466536c1e1782fff2890953",
+        "commit": "5b03ebdee9fc2d6a6e5686bc894ba04b3ee5503a",
+        "gitBlobOid": "f283a96268dd9b104fdbd13d1b52d1cc8c9a0899",
         "disposition": {
           "status": "DISTINGUISH",
           "subjectCommit": "909f769d02e8412e51e28e242cfa8d00dadc9a3d"
         },
-        "projectCandidate": {
-          "remote": "https://github.com/layibabalola/Cloudvore.git",
-          "publishedRef": "refs/heads/codex/r26-zero-authority-disposition-candidate-20260819",
-          "commit": "3ea3a09230aff318caef30980bfa76d48f189874",
-          "tree": "713c1c0aeef3405c7e6b0674b4217db4be83612a",
-          "parent": "ad2c1918d6358071e4e61d676a407dede8970c00",
-          "baseCommit": "db3e5fd155a6efe41947f5d4aa0bbc4a3d2098a8",
-          "candidateStatus": "CANDIDATE_ZERO_AUTHORITY",
-          "primaryEvidencePath": "knowledge/universal-token-control-r26-disposition-candidate-2026-08-19.json",
-          "dispositionPath": "knowledge/universal-token-control-r26-disposition-candidate-2026-08-19.json",
-          "artifacts": [
-            {
-              "path": "knowledge/universal-token-control-r26-disposition-candidate-2026-08-19.json",
-              "gitBlobOid": "54221d2cca9e6160975ec2c4a3a416021b499546",
-              "bytes": 12168,
-              "sha256": "922bcd510f1bbf6d7dfbf68a2d602abe967e0c5069e3a48c70edb0e3fcc1abff"
-            },
-            {
-              "path": "tools/universal-token-control-r26-disposition-candidate.tests.py",
-              "gitBlobOid": "92fdec7729616fc35daaf73f72ffaef6e91843d8",
-              "bytes": 26754,
-              "sha256": "153d99adbc57a31a88d95c1fe7d9e261206f6592e4226903cead11e699759c21"
-            }
-          ],
-          "disposition": {
-            "kind": "DISTINGUISH",
-            "subjectCommit": "909f769d02e8412e51e28e242cfa8d00dadc9a3d",
-            "statement": "DISTINGUISH(909f769d02e8412e51e28e242cfa8d00dadc9a3d, CLOUDVORE_R26_CANDIDATE_ZERO_AUTHORITY_PENDING_PINNED_LOCAL_SUPERVISOR_COMPLETE_LAUNCHER_CENSUS_REQUEST_LEVEL_TOKEN_ACCOUNTING_1000_IDLE_TICKS_FULL_CHILD_FENCING_ROLLBACK_AND_CURRENT_CLOSED_GATE_PROOF, CLOUDVORE_BASE_db3e5fd155a6efe41947f5d4aa0bbc4a3d2098a8)"
-          },
-          "authorityClaims": {
-            "projectAdoption": false,
-            "fleetAdoption": false,
-            "runtimeActivation": false,
-            "providerInvocation": false,
-            "schedulerMutation": false,
-            "mergePushRelease": false
-          },
-          "adoptionProofCredit": false,
-          "nonRegressionCredit": false
-        }
+        "projectCandidate": null
       },
       "nonRegressionEvidence": null,
       "blocker": "PROJECT_OWNER_DISTINCTION_OPEN"

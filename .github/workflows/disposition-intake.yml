@@ -44,32 +44,11 @@ jobs:
       - name: Run AdversarialLLM utilization-shadow doctrine controls
         run: python -m unittest discover -s tests -p "test_adversarialllm_utilization_shadow_doctrine.py" -v
 
-      - name: Verify phase-2 blockers against frozen project evidence
-        run: python tools/check_phase2_disposition_batch.py --treeish 990906b6ea861ca579e1336bcfe8f17dd80c83ae
-
       - name: Run phase-3 published-project distinction controls
         run: python -m unittest discover -s tests -p "test_phase3_disposition_batch.py" -v
 
-      - name: Verify exact zero-authority phase-3 distinctions locally
-        env:
-          R26_REMOTE_GITHUB_TOKEN: ${{ secrets.R26_CROSS_REPO_READ_TOKEN }}
-        run: python tools/check_phase3_disposition_batch.py --treeish 990906b6ea861ca579e1336bcfe8f17dd80c83ae ${{ env.R26_REMOTE_AUTH_CONFIGURED == 'true' && '--verify-remotes' || '' }}
-
-      - name: Report unavailable remote verification authority
-        if: env.R26_REMOTE_AUTH_CONFIGURED != 'true'
-        run: echo "REMOTES NOT VERIFIED - R26_CROSS_REPO_READ_TOKEN is not configured"
-
       - name: Run phase-5 remaining-STALE reconciliation controls
         run: python -m unittest discover -s tests -p "test_phase5_stale_reconciliation.py" -v
-
-      - name: Verify phase-5 zero-authority reconciliation locally
-        env:
-          R26_REMOTE_GITHUB_TOKEN: ${{ secrets.R26_CROSS_REPO_READ_TOKEN }}
-        run: python tools/check_phase5_stale_reconciliation.py --treeish 990906b6ea861ca579e1336bcfe8f17dd80c83ae ${{ env.R26_REMOTE_AUTH_CONFIGURED == 'true' && '--verify-remotes' || '' }}
-
-      - name: Report unavailable Adobe remote verification authority
-        if: env.R26_REMOTE_AUTH_CONFIGURED != 'true'
-        run: echo "ADOBE REMOTE NOT VERIFIED - R26_CROSS_REPO_READ_TOKEN is not configured"
 
       - name: Run phase-6 local candidate review receipt controls
         run: python -m unittest discover -s tests -p "test_phase6_candidate_reviews.py" -v
@@ -140,17 +119,19 @@ jobs:
       - name: Run Phase 12-16 descendant event-scope controls
         run: python -m unittest discover -s tests -p "test_phase12_phase16_descendant_scope.py" -v
 
-      - name: Verify frozen Phase 12-16 publications before descendant event scope
-        run: python tools/check_phase12_phase16_descendant_scope.py
-
       - name: Run phase-17 DNG post-R60 publication controls
         run: python -m unittest discover -s tests -p "test_phase17_dng_r60_publication.py" -v
-
-      - name: Verify phase-17 DNG post-R60 evidence without adoption credit
-        run: python tools/check_phase17_dng_r60_publication.py --treeish HEAD
 
       - name: Run frozen adoption-ledger controls
         run: python -m unittest discover -s tests -p "test_adoption_ledger.py" -v
 
-      - name: Reverify the frozen adoption ledger
-        run: python tools/check_adoption_ledger.py --treeish HEAD
+      - name: Run current project census controls
+        run: python -m unittest discover -s tests -p "test_current_adoption_ledger.py" -v
+
+      - name: Run successor epoch event and control-seal tests
+        run: python -m unittest discover -s tests -p "test_current_intake_epoch.py" -v
+
+      - name: Verify immutable history and separately sealed current intake
+        env:
+          R26_REMOTE_GITHUB_TOKEN: ${{ secrets.R26_CROSS_REPO_READ_TOKEN }}
+        run: python tools/check_current_intake_epoch.py ${{ env.R26_REMOTE_AUTH_CONFIGURED == 'true' && '--verify-remotes' || '' }}

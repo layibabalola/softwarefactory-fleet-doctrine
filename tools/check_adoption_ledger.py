@@ -34,10 +34,10 @@ NON_PROJECT_SPECS = {
 # Current portable doctrine documents are explicitly classified. Historical
 # verification keeps its original closed set; no caller-supplied exclusions.
 CURRENT_NON_PROJECT_SPECS = NON_PROJECT_SPECS | {
-    "specs/continuity-autonomous-resumption.md",
+    "specs/fleet-continuity-autonomous-resumption.md",
     "specs/fleet-orchestrator-execute-posture.md",
     "specs/provider-audit-consumer-provenance.md",
-    "specs/resumption-parallel-launch-0906.md",
+    "specs/fleet-resumption-parallel-launch-0906.md",
 }
 PROJECT_CANDIDATE_IDS = {"adversarialllm", "cloudvore", "mlv-app", "salesforce-tools"}
 PROJECT_CANDIDATE_STATUSES = {
@@ -1087,6 +1087,7 @@ def _verify_project(
     *,
     base_commit: str,
     treeish: str,
+    current: bool = False,
 ) -> tuple[str, str]:
     project = _require_exact_keys(
         project,
@@ -1129,7 +1130,7 @@ def _verify_project(
         raise LedgerError("PROJECT_SPEC_DRIFT")
     evidence_bytes = _blob(evidence_commit, path)
     project_candidate = evidence["projectCandidate"]
-    if project_id in PROJECT_CANDIDATE_IDS:
+    if project_id in PROJECT_CANDIDATE_IDS and (not current or project_candidate is not None):
         if status != "DISTINGUISH" or project_candidate is None:
             raise LedgerError("PROJECT_CANDIDATE_REQUIRED")
         _verify_project_candidate(
@@ -1206,7 +1207,17 @@ def _verify_project(
                 raise LedgerError("CURRENT_DISPOSITION_SUBJECT_MISMATCH")
             if current_markers != {marker}:
                 raise LedgerError("CURRENT_DISPOSITION_CONFLICT")
-            if EXPECTED_CANDIDATE.encode("ascii") not in evidence_bytes:
+            # A current negative declaration may name the canonical merge alone:
+            # _verify_candidate already verifies its exact candidate, tree and
+            # parents. This grants no historical candidate or adoption proof.
+            # Candidate-subject declarations and every ADOPT retain both text
+            # bindings and all existing artifact/non-regression checks.
+            canonical_negative = (
+                current
+                and status in {"DISTINGUISH", "REJECT"}
+                and disposition_subject == EXPECTED_MERGE
+            )
+            if not canonical_negative and EXPECTED_CANDIDATE.encode("ascii") not in evidence_bytes:
                 raise LedgerError("CURRENT_DISPOSITION_CANDIDATE_BINDING_MISSING")
             if EXPECTED_MERGE.encode("ascii") not in evidence_bytes:
                 raise LedgerError("CURRENT_DISPOSITION_MERGE_BINDING_MISSING")
@@ -1271,7 +1282,7 @@ def verify_ledger(ledger: dict[str, Any], treeish: str = "HEAD", *, current: boo
     statuses: list[str] = []
     ids: list[str] = []
     for project in projects:
-        path, status = _verify_project(project, base_commit=base_commit, treeish=treeish)
+        path, status = _verify_project(project, base_commit=base_commit, treeish=treeish, current=current)
         paths.append(path)
         statuses.append(status)
         ids.append(project["projectId"])

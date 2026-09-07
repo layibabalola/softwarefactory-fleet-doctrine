@@ -6,7 +6,11 @@ on:
       - ".github/workflows/adoption-ledger.yml"
       - "capacity-control/PROJECT-ADOPTION-MATRIX.md"
       - "specs/**"
-      - "tests/test_adoption_ledger.py"
+      - "adoption/**"
+      - "tests/test_current_adoption_ledger.py"
+      - "tests/test_current_intake_epoch.py"
+      - "tools/check_current_intake_epoch.py"
+      - "ruling-candidates/current-intake-epoch-r1.md"
       - "tools/check_adoption_ledger.py"
   push:
     branches: [master]
@@ -14,7 +18,11 @@ on:
       - ".github/workflows/adoption-ledger.yml"
       - "capacity-control/PROJECT-ADOPTION-MATRIX.md"
       - "specs/**"
-      - "tests/test_adoption_ledger.py"
+      - "adoption/**"
+      - "tests/test_current_adoption_ledger.py"
+      - "tests/test_current_intake_epoch.py"
+      - "tools/check_current_intake_epoch.py"
+      - "ruling-candidates/current-intake-epoch-r1.md"
       - "tools/check_adoption_ledger.py"
   workflow_dispatch:
 
@@ -27,6 +35,9 @@ concurrency:
 
 jobs:
   evidence:
+    env:
+      R26_SCOPE_EVENT: ${{ github.event_name }}
+      R26_SCOPE_BASE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event_name == 'push' && github.event.before || '' }}
     strategy:
       fail-fast: false
       # Exact project/spec drift is checked once on each PR. The complete matrix
@@ -46,8 +57,9 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: Run fail-closed ledger controls
-        run: python -m unittest discover -s tests -p "test_adoption_ledger.py" -v
+      # Historical suites run in all four cells of the always-on intake workflow.
+      - name: Run current ledger controls
+        run: python -m unittest discover -s tests -p "test_current_adoption_ledger.py" -v
 
-      - name: Verify the ledger against project-owned Git evidence
-        run: python tools/check_adoption_ledger.py --treeish HEAD
+      - name: Verify history, controls and current project-owned Git evidence
+        run: python tools/check_current_intake_epoch.py
