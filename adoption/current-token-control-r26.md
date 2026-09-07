@@ -2,7 +2,7 @@
 
 Status: proposed current-intake implementation; not active Doctrine, not a ratified descendant-control amendment, and not runtime activation.
 
-`current-token-control-r26.json` is separate from the frozen `universal-token-control-r26.json`. Its current evidence references are recomputed from each project's actual latest spec commit and blob at its census base. It retains the same nine projects and dispositions, with no new ADOPT or other proof credit. Conjugal remains STALE here until its own publisher supplies an accepted current declaration.
+`current-token-control-r26.json` is separate from the frozen `universal-token-control-r26.json`. Its current evidence references are recomputed from each project's actual latest spec commit and blob at its census base. It retains the same nine projects, with no new ADOPT or other proof credit. The Conjugal candidate now explicitly distinguishes the current R26 subject; the proposed census is 0 ADOPT / 6 DISTINGUISH / 3 STALE. This is a candidate disposition, pending the current-intake control and publication review.
 
 The current verifier explicitly classifies the four later portable doctrine documents. That fixed classification cannot be expanded by ledger input to hide a project. It applies the existing subject, disposition, adoption-proof and authority checks unchanged. Historical verification keeps its original project/non-project population.
 

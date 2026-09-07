@@ -23,7 +23,7 @@
     }
   },
   "census": {
-    "baseCommit": "a7d801c10dd2de4b4f9979afcdcdcf35a87e908f",
+    "baseCommit": "fa31fbee4b921f0acd51d11619fdef953d9bbffd",
     "projectSpecGlob": "specs/*.md",
     "nonProjectSpecs": [
       "specs/continuity-autonomous-resumption.md",
@@ -50,10 +50,10 @@
     "projectCount": 9,
     "counts": {
       "ADOPT": 0,
-      "DISTINGUISH": 5,
+      "DISTINGUISH": 6,
       "MISSING": 0,
       "REJECT": 0,
-      "STALE": 4
+      "STALE": 3
     },
     "fleetStatus": "NO_FLEET_ADOPTION",
     "fleetAdoptionClaim": false
@@ -232,18 +232,18 @@
     {
       "projectId": "conjugal",
       "specPath": "specs/conjugal.md",
-      "status": "STALE",
+      "status": "DISTINGUISH",
       "evidence": {
-        "commit": "1ca40f4bea5ab60b192d7d948cb626da2ecee024",
-        "gitBlobOid": "8e59e48c2907c5d58b1fcdf6e5dff1671de23d42",
+        "commit": "fa31fbee4b921f0acd51d11619fdef953d9bbffd",
+        "gitBlobOid": "0719e8856610053fdd594245248fc8577c9440e6",
         "disposition": {
           "status": "DISTINGUISH",
-          "subjectCommit": "874605e43531c9aa230ee16851f8107a8e0d9cec"
+          "subjectCommit": "e70a044f31dd2f43ab7c716d63a4eb89318c61b6"
         },
         "projectCandidate": null
       },
       "nonRegressionEvidence": null,
-      "blocker": "PROJECT_OWNER_CURRENT_CANDIDATE_DISPOSITION_REQUIRED"
+      "blocker": "PROJECT_OWNER_DISTINCTION_OPEN"
     },
     {
       "projectId": "dng-auto-processor",
