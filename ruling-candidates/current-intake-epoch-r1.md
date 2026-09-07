@@ -62,6 +62,16 @@ non-regression receipts and controls. No missing profile becomes adoption. The
 default historical profile retains its original mandatory candidate rules.
 The current census remains 0 ADOPT, 6 DISTINGUISH and 3 STALE.
 
+`python tools/refresh_current_adoption_census.py` prints a freshly validated JSON
+census from committed HEAD without writing any file. It updates only the census
+base and each existing project's Git commit/blob references. It preserves every
+status, blocker, disposition, artifact/proof claim and population entry, and
+refuses if their evidence no longer validates or HEAD moves during the read.
+Capture output to a temporary candidate, require exit0, review the data-only diff,
+then commit the current JSON through the existing project publication route.
+A peer publication can invalidate a running PR; merge the peer change normally
+and refresh again. Do not rebuild or relax historical controls for that drift.
+
 ## Control boundary and bootstrap review
 
 `adoption/current-intake-epoch-r1.json` seals the exact current workflow, checker,
@@ -71,7 +81,7 @@ endings are refused. Git object indirection, alternate stores and replacement
 refs are refused. Original adoption artifacts and the original R26 manifest
 cannot change relative to the bootstrap base.
 
-The first PR/push from a base without this epoch must contain exactly the 18
+The first PR/push from a base without this epoch must contain exactly the 20
 paths enumerated in `BOOTSTRAP_CHANGED` in the proposed controller, relative to
 its trusted event base. That base must descend from
 `c57997bac73c7f1d3fe3ef386d23cdb9c5b0251d` and be an ancestor of HEAD. It returns

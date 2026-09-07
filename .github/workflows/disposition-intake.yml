@@ -131,6 +131,9 @@ jobs:
       - name: Run successor epoch event and control-seal tests
         run: python -m unittest discover -s tests -p "test_current_intake_epoch.py" -v
 
+      - name: Run deterministic current census refresh controls
+        run: python -m unittest discover -s tests -p "test_current_adoption_refresh.py" -v
+
       - name: Verify immutable history and separately sealed current intake
         env:
           R26_REMOTE_GITHUB_TOKEN: ${{ secrets.R26_CROSS_REPO_READ_TOKEN }}

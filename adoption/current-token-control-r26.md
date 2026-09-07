@@ -6,6 +6,12 @@ Status: proposed current-intake implementation; not active Doctrine, not a ratif
 
 The current verifier explicitly classifies the four later portable doctrine documents. That fixed classification cannot be expanded by ledger input to hide a project. Historical verification keeps its original project/non-project population and mandatory candidate rules. The current profile accepts an exact canonical negative declaration without repeating the candidate SHA in project prose, while the global verifier still checks the exact merge/candidate/tree/parents. Old project-candidate metadata is optional in the current profile and grants no credit when absent; supplied metadata remains fully checked. Every ADOPT retains the existing subject bindings, profile/review artifacts and non-regression proof gates. Cloudvore carries no old candidate credit because its current project-owned spec removed that table.
 
+For a routine spec update with unchanged dispositions and proof claims, run
+`python tools/refresh_current_adoption_census.py` and capture its stdout to a
+temporary candidate. It writes no files and produces JSON only after full
+validation. Require exit0 before adopting the candidate JSON; a failure requires
+review of the changed project evidence, not automatic status or proof changes.
+
 After committing a current census, verify it with:
 
 ```console

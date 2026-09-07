@@ -39,10 +39,10 @@ UNIT_MODULES = (
     "phase11_integration", "phase12_integration", "phase13_integration",
     "phase14_integration", "phase15_integration", "phase16_integration",
     "phase12_phase16_descendant_scope", "phase17_dng_r60_publication",
-    "adoption_ledger", "current_adoption_ledger", "current_intake_epoch",
+    "adoption_ledger", "current_adoption_ledger", "current_intake_epoch", "current_adoption_refresh",
 )
 CHECKER_MODULES = tuple(x for x in UNIT_MODULES if x not in {
-    "adversarialllm_utilization_shadow_doctrine", "current_adoption_ledger",
+    "adversarialllm_utilization_shadow_doctrine", "current_adoption_ledger", "current_adoption_refresh",
 })
 WORKFLOWS = {".github/workflows/disposition-intake.yml", ".github/workflows/adoption-ledger.yml"}
 CONTROL_PATHS = WORKFLOWS | {
@@ -50,6 +50,7 @@ CONTROL_PATHS = WORKFLOWS | {
     *(f"tests/test_{name}.py" for name in UNIT_MODULES),
     "adoption/current-token-control-r26.md",
     "ruling-candidates/current-intake-epoch-r1.md",
+    "tools/refresh_current_adoption_census.py",
 }
 # The first publication admits this exact bounded repair, not accumulated master
 # drift. Later normal intake cannot modify these sealed controls or the manifest.
@@ -65,6 +66,7 @@ BOOTSTRAP_CHANGED = {
     "tests/test_adversarialllm_utilization_shadow_doctrine.py",
     "tests/test_phase12_phase16_descendant_scope.py",
     "tests/test_phase17_dng_r60_publication.py",
+    "tools/refresh_current_adoption_census.py", "tests/test_current_adoption_refresh.py",
 }
 CURRENT_ADOPTION_PATHS = {EPOCH_PATH, CURRENT_LEDGER, "adoption/current-token-control-r26.md"}
 

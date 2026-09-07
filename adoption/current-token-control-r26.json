@@ -23,7 +23,7 @@
     }
   },
   "census": {
-    "baseCommit": "e454dd6521664fc64e6418efdcfd7b4413bb8b6a",
+    "baseCommit": "3db340e6f8c371d0256de7d6cb82d95fc505848c",
     "projectSpecGlob": "specs/*.md",
     "nonProjectSpecs": [
       "specs/fleet-continuity-autonomous-resumption.md",
@@ -179,8 +179,8 @@
       "specPath": "specs/cloudvore.md",
       "status": "DISTINGUISH",
       "evidence": {
-        "commit": "5b03ebdee9fc2d6a6e5686bc894ba04b3ee5503a",
-        "gitBlobOid": "f283a96268dd9b104fdbd13d1b52d1cc8c9a0899",
+        "commit": "41b3f6ad1cdb2256ce6d21a1c945ab9a71f3f98d",
+        "gitBlobOid": "9ccafc9b7db1c39960a0110fbde6ade218c6b825",
         "disposition": {
           "status": "DISTINGUISH",
           "subjectCommit": "909f769d02e8412e51e28e242cfa8d00dadc9a3d"
