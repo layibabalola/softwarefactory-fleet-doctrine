@@ -3,6 +3,9 @@ import importlib.util
 import io
 import json
 from pathlib import Path
+import subprocess
+import sys
+import tempfile
 from contextlib import redirect_stdout
 import unittest
 from unittest import mock
@@ -14,6 +17,23 @@ spec.loader.exec_module(R)
 
 
 class RefreshTests(unittest.TestCase):
+    def test_changed_control_refuses_before_loading_checker_or_emitting_json(self):
+        with tempfile.TemporaryDirectory(prefix='r26-refresh-control-') as tmp:
+            repo = Path(tmp) / 'repo'
+            def git(*args):
+                return subprocess.run(['git', '--no-optional-locks', *args], cwd=repo if repo.exists() else ROOT,
+                                      check=True, capture_output=True)
+            git('clone', '--local', '--no-checkout', str(ROOT), str(repo))
+            git('config', 'core.autocrlf', 'false')
+            git('checkout', '--detach', R.E.git('rev-parse', 'HEAD').decode().strip())
+            checker = repo / 'tools/check_adoption_ledger.py'
+            checker.write_bytes(checker.read_bytes() + b'\n# unreviewed control mutation\n')
+            result = subprocess.run([sys.executable, 'tools/refresh_current_adoption_census.py'],
+                                    cwd=repo, capture_output=True, text=True, timeout=120)
+            self.assertEqual(result.returncode, 1, result.stderr)
+            self.assertIn('CONTROL_WORKTREE_DRIFT', result.stderr)
+            self.assertEqual(result.stdout, '', 'refused controls must never emit candidate JSON')
+
     def test_actual_refresh_verifies_current_evidence_without_writing(self):
         path = ROOT / R.E.CURRENT_LEDGER
         before = path.read_bytes()

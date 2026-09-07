@@ -222,9 +222,9 @@
       "sha256": "8859899acb0c38807e04518a34b8d4dfa28a713748c9edf8c142e2dbdf4a15c0"
     },
     "tests/test_current_adoption_refresh.py": {
-      "gitBlobOid": "b21bb63ce2f36dbadbaf39be85b7812c6208f1e2",
-      "bytes": 2282,
-      "sha256": "e06e47677f5dec0c84ecf64890271973362b05ec86f59071e8209ff3a1e33d01"
+      "gitBlobOid": "06347699e9ce22502143ddf7bab6f0d82fdccb4c",
+      "bytes": 3533,
+      "sha256": "27e90a906c97cc60b355a366ffa2008058183285b5e6fc4786020c115cfe3706"
     },
     "tools/refresh_current_adoption_census.py": {
       "gitBlobOid": "0d2c1891478a5d29b274650f89a372525435a5cc",
