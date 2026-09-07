@@ -61,6 +61,7 @@ BOOTSTRAP_CHANGED = {
     "tools/check_phase12_phase16_descendant_scope.py",
     "tests/test_adoption_ledger.py", "tests/test_current_adoption_ledger.py",
     "tests/test_current_intake_epoch.py", "tests/test_phase3_disposition_batch.py",
+    "tests/test_phase5_stale_reconciliation.py",
     "tests/test_adversarialllm_utilization_shadow_doctrine.py",
     "tests/test_phase12_phase16_descendant_scope.py",
     "tests/test_phase17_dng_r60_publication.py",

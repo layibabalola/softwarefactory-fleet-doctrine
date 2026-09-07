@@ -71,7 +71,7 @@ endings are refused. Git object indirection, alternate stores and replacement
 refs are refused. Original adoption artifacts and the original R26 manifest
 cannot change relative to the bootstrap base.
 
-The first PR/push from a base without this epoch must contain exactly the 17
+The first PR/push from a base without this epoch must contain exactly the 18
 paths enumerated in `BOOTSTRAP_CHANGED` in the proposed controller, relative to
 its trusted event base. That base must descend from
 `c57997bac73c7f1d3fe3ef386d23cdb9c5b0251d` and be an ancestor of HEAD. It returns

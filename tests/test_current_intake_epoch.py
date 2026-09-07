@@ -7,6 +7,7 @@ import os
 from pathlib import Path
 import subprocess
 import tempfile
+from types import SimpleNamespace
 import unittest
 from unittest import mock
 
@@ -25,6 +26,34 @@ def manifest():
     }
 
 class ManifestTests(unittest.TestCase):
+    def test_successor_workflow_retains_all_suites_and_authorized_remote_call(self):
+        workflow = (ROOT / '.github/workflows/disposition-intake.yml').read_text(encoding='utf-8')
+        for name in E.UNIT_MODULES:
+            self.assertEqual(workflow.count(f'run: python -m unittest discover -s tests -p "test_{name}.py" -v'), 1, name)
+        step = next(part for part in workflow.split('      - name: ') if part.startswith('Verify immutable history and separately sealed current intake'))
+        self.assertIn('R26_REMOTE_GITHUB_TOKEN: ${{ secrets.R26_CROSS_REPO_READ_TOKEN }}', step)
+        self.assertIn("run: python tools/check_current_intake_epoch.py ${{ env.R26_REMOTE_AUTH_CONFIGURED == 'true' && '--verify-remotes' || '' }}", step)
+        for token in ('fetch-depth: 0', 'persist-credentials: false', 'R26_SCOPE_EVENT: ${{ github.event_name }}', 'github.event.pull_request.base.sha', 'github.event.before'):
+            self.assertIn(token, workflow)
+
+    def test_remote_flag_reaches_both_retained_verifiers_and_failures_propagate(self):
+        modules = {}
+        for name in ('phase2_disposition_batch', 'phase3_disposition_batch', 'phase5_stale_reconciliation'):
+            modules[name] = SimpleNamespace(FROZEN_PUBLICATION='frozen', BATCH_PATH='batch', INTAKE_PATH='intake', _blob=mock.Mock(return_value=b'{}'), load_json=mock.Mock(return_value={}), verify_batch=mock.Mock(), verify_remotes=mock.Mock())
+        modules['phase12_phase16_descendant_scope'] = SimpleNamespace(verify_frozen_publications=mock.Mock(), verify_current_workflow=mock.Mock())
+        class OriginalFailure(ValueError):
+            pass
+        modules['phase17_dng_r60_publication'] = SimpleNamespace(ALLOWED={'proof'}, CheckFailure=OriginalFailure, verify=mock.Mock(side_effect=[None, OriginalFailure('unexpected Phase 17 paths')]))
+        modules['adoption_ledger'] = SimpleNamespace(LEDGER_PATH='ledger', _blob=mock.Mock(return_value=b'{}'), load_ledger=mock.Mock(return_value={}), verify_ledger=mock.Mock())
+        with mock.patch.object(E, 'load', side_effect=lambda name: modules[name]), mock.patch.object(E, 'blob', return_value=b'identical original proof'):
+            E.verify_history(verify_remotes=True)
+            for name in ('phase3_disposition_batch', 'phase5_stale_reconciliation'):
+                modules[name].verify_remotes.assert_called_once_with({})
+            modules['phase2_disposition_batch'].verify_remotes.assert_not_called()
+            modules['phase3_disposition_batch'].verify_remotes.side_effect = E.IntakeError('REMOTE_RED')
+            with self.assertRaisesRegex(E.IntakeError, 'REMOTE_RED'):
+                E.verify_history(verify_remotes=True)
+
     def test_valid_and_adverse_manifest(self):
         good = manifest()
         self.assertEqual(E.parse_manifest(json.dumps(good).encode()), good)

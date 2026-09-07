@@ -27,9 +27,9 @@
       "sha256": "3c3caa8e8a032b149af899f2dcc6bb8bcb548abd43fe4a7d5a734995363dab21"
     },
     "ruling-candidates/current-intake-epoch-r1.md": {
-      "gitBlobOid": "0a1796dc74dd13f49418ab83f127c9851caa9c00",
+      "gitBlobOid": "65ee052437c8a6b17b70806770153e1b3f75be79",
       "bytes": 5821,
-      "sha256": "1429ebb48f2738200a153a45a864564a17871e26a18ef3d4258c135dabb31207"
+      "sha256": "42cacd7ff975529f4dd267a9706301e6a0f550b11ded198717c6d7bafbc6c796"
     },
     "tests/test_adoption_ledger.py": {
       "gitBlobOid": "687b9586d1dd1e6a360cb24a2ee630817cfb1419",
@@ -47,9 +47,9 @@
       "sha256": "7439ce044a7d01db53930126531bd3fd854bd3c2f82a71666c9d77604f7ca6d1"
     },
     "tests/test_current_intake_epoch.py": {
-      "gitBlobOid": "96d18250e9c181e2633f30e3f7fc1f4061aa37d0",
-      "bytes": 9091,
-      "sha256": "c6f35c22babc8cc6ad5f45ca05b356724de79b9526682f81012450058f5a35f2"
+      "gitBlobOid": "6a8bc215f290ada83716f96a7b785d30db7300fe",
+      "bytes": 11817,
+      "sha256": "425d6a52d249e98e5c045cae1ee99423a62e06736df92a929a890c4ca452eb3a"
     },
     "tests/test_phase10_integration.py": {
       "gitBlobOid": "42bbe2334fac8e6a802f76d419f4502a3fb3b85c",
@@ -102,14 +102,14 @@
       "sha256": "dfa92d14c7c58bf4b3b77f6e8be4b2f6b600fe2171bd981a54ffe21237cd73b2"
     },
     "tests/test_phase3_disposition_batch.py": {
-      "gitBlobOid": "ecc4b03ed3165f04ba1b873f63217c77acc152eb",
-      "bytes": 36101,
-      "sha256": "8f347660f8d6aa9772b8407e937245ae2ee1913daec0b4892e1e8001732f6b7f"
+      "gitBlobOid": "a6df1561cef25ebb172734bb5ca1937489d9d6cd",
+      "bytes": 36227,
+      "sha256": "e0413db470ef979781ff4339b60e31096f4f490749d93a6964bb26686cdee671"
     },
     "tests/test_phase5_stale_reconciliation.py": {
-      "gitBlobOid": "66df38e9ada96098660b0f3f09c42b696e264d32",
-      "bytes": 14234,
-      "sha256": "3110c6d04f6a3aa7f30d65751e03c7b091ed2cc83fa76321f08a613371a1047e"
+      "gitBlobOid": "e3a589b1519a12d48da507c21e1da1db3116282d",
+      "bytes": 14360,
+      "sha256": "a97af84a195be987e7331d4f85c52237419631ea5fc646c2deca81e3c5f85539"
     },
     "tests/test_phase6_candidate_reviews.py": {
       "gitBlobOid": "c42001ba1da3d1ff13c8dd94434698702fb7c5f1",
@@ -137,9 +137,9 @@
       "sha256": "b056c593fa3a82edf0bf51c6c4fc9d48bcb253a27df008088dd81d0ff7aa8163"
     },
     "tools/check_current_intake_epoch.py": {
-      "gitBlobOid": "7c08ed434b0f0f229b990a9b6d752965e29c9721",
-      "bytes": 12772,
-      "sha256": "952d54459f48fd9551fa99be5a8c18ebb1c3a97f96deca037608e3e4c0ac8231"
+      "gitBlobOid": "ca2897c5ef1a48cc2168e4537b26e055e6704888",
+      "bytes": 12821,
+      "sha256": "7f87698c6c2920cf69dcac7541ab303933f729e1b3981ff06f9c8a12ebf05dae"
     },
     "tools/check_phase10_integration.py": {
       "gitBlobOid": "da714a05e367697100c67cb4200d4e83a7adb4d1",

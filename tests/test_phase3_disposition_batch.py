@@ -610,9 +610,11 @@ class Phase3DispositionBatchTests(unittest.TestCase):
             remote_verifier.assert_called_once()
 
     def test_publishing_workflow_requires_remote_object_verification(self):
-        workflow = (ROOT / ".github" / "workflows" / "disposition-intake.yml").read_text(
-            encoding="utf-8"
-        )
+        # This asserts the original publication contract, not the successor caller.
+        workflow = MODULE._blob(
+            "6ab0955b94ba3c2698bf9917e7718c4daf1cdc50",
+            ".github/workflows/disposition-intake.yml",
+        ).decode("utf-8")
         self.assertIn(
             f"python tools/check_phase3_disposition_batch.py --treeish {MODULE.FROZEN_PUBLICATION}",
             workflow,
