@@ -1,0 +1,136 @@
+{
+  "schema": "fleet-r26-dng-post-r60-evidence-publication/v1",
+  "status": "EVIDENCE_PUBLICATION_NO_LEDGER_CHANGE",
+  "doctrineBase": {
+    "commit": "8149c3f06811f85b833b28940017f2d05448cf5d",
+    "tree": "1a8193ae7f8c9982bfe499d039e5c85ae74ea907",
+    "orderedParents": ["488538ca15676823681e241f6be848de1d30a291"]
+  },
+  "sourceProject": {
+    "projectId": "dng-auto-processor",
+    "repositoryPath": "C:\\code\\DngAutoProcessor - Claude\\DngAutoProcessor",
+    "branch": "master",
+    "commit": "43507aa20dfaaf198267cda0058689493d43d70a",
+    "tree": "c6a2a33f68a5cedcbb26de2fb78befdc2738f323",
+    "orderedParents": ["1876f1c379d4d7f755031924322e6cc29132a610"],
+    "localOnly": true,
+    "remoteFreshnessVerified": false
+  },
+  "projectArtifacts": [
+    {
+      "path": "docs/evidence/universal-token-control-r26/current-disposition.json",
+      "gitBlobOid": "f0a0c6aeee557a2ed24afb30ec8e05947c7a1a0d",
+      "bytes": 6481,
+      "sha256": "7758870808F9E52F78B258BDB26F2E91C55D3D85E15A0E4E5BA1D945046E9D92"
+    },
+    {
+      "path": "docs/evidence/universal-token-control-r26/post-r60-closed-gate-attestation.json",
+      "gitBlobOid": "9404b13990bde43a5477fee9fbcebcbd7a1c9fd4",
+      "bytes": 1053,
+      "sha256": "06A1AE024695DCBA06E42979B4AA02B7CC768406707AB1E309525AE58AAB036F"
+    },
+    {
+      "path": "docs/evidence/universal-token-control-r26/post-r60-idle-baseline.json",
+      "gitBlobOid": "5306b5f37582d940e6a8dea66b137fdfc2e0a2b4",
+      "bytes": 2914,
+      "sha256": "2FD103904D86C91BB5EA22EE9B92D735CFE7722F72281FC08ACF4631C6DD6682"
+    },
+    {
+      "path": "scripts/verify-universal-token-control-disposition.ps1",
+      "gitBlobOid": "bc9a0e64373a425dbea4b0a00a2975ec22b4584c",
+      "bytes": 15386,
+      "sha256": "71A9AFE1F9C4CE5746ED9E6F0498208F3BF8929E220F9A79C2F728C7268881B8"
+    },
+    {
+      "path": "scripts/test-universal-token-control-disposition.ps1",
+      "gitBlobOid": "eaa6fa407c8100011147f81e7c736af3979a8402",
+      "bytes": 5067,
+      "sha256": "833E8E785766CD67E8E06628BF2DA1791F1451B6D7FCF055167ED86A59A223B4"
+    }
+  ],
+  "r60Candidate": {
+    "path": "coordination/candidates/durable-campaign-hold-installer-r60-r59-opus-proof-closure",
+    "files": 134,
+    "subjects": 132,
+    "subjectTreeSha256": "5F4791D65B990522418372628142113E5F6DC505A1DF4380B89852B2A28765ED",
+    "fullTreeSha256": "0DCA4FB5C559163D1F03EFC5F552660DB909073EB8483ADC5B440E2F8832E1A7",
+    "manifestBytes": 65517,
+    "manifestSha256": "199BB6D8117145948FAA41685797FA3BBE687AADC2760651A43880B9CFDA1714"
+  },
+  "r102Acceptance": {
+    "strictSerial": true,
+    "naturalRegisteredCadenceOnly": true,
+    "providerLaunches": 3,
+    "verdicts": {"fable": "ACCEPT", "opus": "ACCEPT", "sonnet": "ACCEPT"},
+    "actionableFindings": 0,
+    "checkpoint": {
+      "path": "coordination/review-packets/r102-unanimous-acceptance-20260822T1600.json",
+      "bytes": 1504,
+      "sha256": "7A2F2A90F0B405B8EEB23B470DB4371618D94DEA911FA9C225E4C25CD768AE5C"
+    }
+  },
+  "runtimeProof": {
+    "preview": "WOULD_APPLY_NONMUTATING_MEASURED_EXACT",
+    "firstApply": "COMMITTED_ENABLED_TWO_CADENCES",
+    "rollback": "ROLLED_BACK_ENABLED_EXACT_PREIMAGES_AND_ABSENCE",
+    "finalReinstall": "COMMITTED_ENABLED_TWO_FRESH_CADENCES",
+    "taskState": "Ready",
+    "lastTaskResult": 0,
+    "latchState": "ABSENT",
+    "installedTupleSha256": "4C58027BB045C7E781969627A2E25881BC06F17E4F8AF2D874AC5A32592632BF",
+    "previewCheckpoint": {
+      "path": "coordination/review-packets/r102-r60-production-preview-20260822T1600.json",
+      "bytes": 1683,
+      "sha256": "2A9DF2E5023B8070FCCB292C4CA9EDF5487039EDA759556075D553A1EF608576"
+    },
+    "firstApplyCheckpoint": {
+      "path": "coordination/review-packets/r102-r60-first-live-apply-20260822T1610.json",
+      "bytes": 2560,
+      "sha256": "FFA1FCC75045D517B3EF68D797618FA9E4DDC30F4EFD6CB84ABDF29E9B687604"
+    },
+    "rollbackCheckpoint": {
+      "path": "coordination/review-packets/r102-r60-live-rollback-proof-20260822T1611.json",
+      "bytes": 1852,
+      "sha256": "0B69BF24151A753618BED1B3CE1D0CC20B778175DE40589EEB4A8FA456FD778C"
+    },
+    "finalReinstallCheckpoint": {
+      "path": "coordination/review-packets/r102-r60-final-reinstall-20260822T1620.json",
+      "bytes": 3240,
+      "sha256": "0BF832B2C23DF6A8A64B54DB1A831C56515497B3C99098B9599E41B23814DB28"
+    }
+  },
+  "currentDisposition": {
+    "kind": "DISTINGUISH",
+    "requirementsMet": 2,
+    "requirementsTotal": 13,
+    "installationProven": true,
+    "adoptionCredit": false,
+    "fleetDispositionCredit": false,
+    "idleTicks": 0,
+    "requiredIdleTicks": 1000,
+    "notBeforeUtc": "2026-08-22T21:20:50.0689024Z",
+    "controlFingerprint": "20A9EE1618FE3A48041436896FEDB17CA38AFB539BD5C3D1DE5D44E839FA48B8",
+    "automaticLaunchGate": "closed",
+    "fullAdoptionRollbackProven": false,
+    "qualityEquivalenceProven": false,
+    "functionalityEquivalenceProven": false
+  },
+  "ledgerTreatment": {
+    "path": "adoption/universal-token-control-r26.json",
+    "gitBlobOid": "2f1808e8df35e6d1bae98f83aab378d93a0c3228",
+    "bytes": 16599,
+    "sha256": "77BB2DC10D5289C5FDE102DC93D8B976511DDADCA8115640B5880202F936FCB3",
+    "counts": {"ADOPT": 0, "DISTINGUISH": 5, "MISSING": 0, "REJECT": 0, "STALE": 4},
+    "modified": false,
+    "reason": "The project remains an honest current DISTINGUISH. Runtime evidence advances installation confidence but cannot create ADOPT or fleet disposition credit."
+  },
+  "authority": {
+    "projectDispositionMutation": false,
+    "fleetAdoption": false,
+    "providerExecution": false,
+    "taskOrGateMutation": false,
+    "installation": false,
+    "repositoryMutation": false,
+    "remotePublication": false
+  }
+}
