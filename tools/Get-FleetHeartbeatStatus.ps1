@@ -55,6 +55,48 @@ $ErrorActionPreference = 'Stop'
 
 function Fail([string]$m) { if (-not $Json) { Write-Output "UNEVALUABLE: $m" } else { @{ status = 'UNEVALUABLE'; reason = $m } | ConvertTo-Json }; exit 1 }
 
+$membershipHelper = Join-Path $BusRoot 'tools/fleet-membership.mjs'
+if (-not (Test-Path -LiteralPath $membershipHelper)) { Fail "membership helper absent: $membershipHelper" }
+try {
+    $nodeCommand = Get-Command node -ErrorAction Stop
+    $proc = New-Object System.Diagnostics.Process
+    $proc.StartInfo = New-Object System.Diagnostics.ProcessStartInfo
+    $proc.StartInfo.FileName = $nodeCommand.Source
+    $proc.StartInfo.Arguments = ('"{0}" --directory "{1}"' -f $membershipHelper, (Join-Path $BusRoot 'specs'))
+    $proc.StartInfo.UseShellExecute = $false
+    $proc.StartInfo.CreateNoWindow = $true
+    $proc.StartInfo.RedirectStandardOutput = $true
+    $proc.StartInfo.RedirectStandardError = $true
+    if (-not $proc.Start()) { throw 'could not start membership helper' }
+    $outTask = $proc.StandardOutput.ReadToEndAsync()
+    $errTask = $proc.StandardError.ReadToEndAsync()
+    if (-not $proc.WaitForExit(10000)) {
+        $proc.Kill()
+        $proc.Dispose()
+        throw 'membership helper timed out after 10 seconds'
+    }
+    if (-not $outTask.Wait(1000) -or -not $errTask.Wait(1000)) {
+        $proc.Dispose()
+        throw 'membership helper output did not close after process exit'
+    }
+    $membershipRaw = $outTask.Result
+    $membershipErr = $errTask.Result
+    $exitCode = $proc.ExitCode
+    $proc.Dispose()
+    if ($exitCode -ne 0) { throw ('membership helper exit {0}: {1}' -f $exitCode, $membershipErr) }
+    $membership = ConvertFrom-Json -InputObject $membershipRaw -ErrorAction Stop
+    if ($null -eq $membership.members -or $membership.members -is [string] -or $membership.members -isnot [array]) { throw 'members must be an array' }
+    $memberValues = @($membership.members)
+    if ($memberValues.Count -eq 0) { throw 'members must be non-empty' }
+    $seen = @{}
+    foreach ($member in $memberValues) {
+        if ($member -isnot [string] -or $member -notmatch '^[a-z0-9][a-z0-9-]{1,63}$' -or $seen.ContainsKey($member)) { throw 'members contains invalid or duplicate project id' }
+        $seen[$member] = $true
+    }
+    $roster = @($memberValues)
+    if ($roster.Count -eq 0) { Fail "derived zero members from specs/" }
+} catch { Fail "membership helper unavailable or invalid: $($_.Exception.Message)" }
+
 # TRAP (fleet-documented, re-measured 2026-08-30): ConvertFrom-Json coerces an ISO-8601 string into a
 # LOCAL [datetime], dropping the offset. Reading `published_utc` off the parsed object skews every
 # age by the machine's UTC offset - here 5 hours, enough to call a stale board alive or the reverse.
@@ -70,22 +112,15 @@ $hbDir = Join-Path $BusRoot 'heartbeats'
 # MEMBERSHIP IS DERIVED, NOT DECLARED IN A SECOND PLACE.
 # The first draft of this tool shipped a `heartbeats/ROSTER.md` and argued that absence was
 # underivable without one. That was wrong, and `tools/fleet-sweep.mjs` had already published the
-# correct rule: the bus layout is the authority — members are `specs/<project>.md` minus
-# `specs/fleet-*.md`, which are cross-cutting candidates with no owning project. A registry file
+# rule: the bus layout is the authority. fleet-membership.mjs owns the fleet-* exclusion and
+# pinned legacy protocol exceptions shared with fleet-sweep.mjs. A registry file
 # would be a second authority for one fact, and this fleet has already paid for that (six-to-eight
 # gate ledgers, and the one that gated was whichever you had not checked). The roster was withdrawn
 # and this derivation matches the sweep's exactly, so the two tools can never disagree about who
 # exists.
 $specDir = Join-Path $BusRoot 'specs'
 if (-not (Test-Path -LiteralPath $specDir)) { Fail "specs/ absent: $specDir - membership is derived from it" }
-$roster = @()
-foreach ($f in (Get-ChildItem -LiteralPath $specDir -Filter '*.md' -File)) {
-    $id = $f.BaseName
-    if ($id -like 'fleet-*') { continue }
-    if ($id -notmatch '^[a-z0-9][a-z0-9-]{1,63}$') { continue }
-    $roster += [pscustomobject]@{ board = $id }
-}
-if ($roster.Count -eq 0) { Fail "derived zero members from $specDir" }
+$roster = @($roster | ForEach-Object { [pscustomobject]@{ board = [string]$_ } })
 
 $nowUtc = [datetimeoffset]::UtcNow
 $rows = foreach ($r in $roster) {

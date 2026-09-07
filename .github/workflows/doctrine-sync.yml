@@ -5,7 +5,7 @@ on:
     paths:
       - 'tools/doctrine-sync*'
       - 'tools/fleet-sweep.mjs'
-      - 'tools/fleet-membership.tests.mjs'
+      - 'tools/fleet-membership*.mjs'
       - 'tools/Get-FleetHeartbeatStatus.ps1'
       - 'specs/*continuity*'
       - 'specs/*resumption*'
@@ -14,7 +14,7 @@ on:
     paths:
       - 'tools/doctrine-sync*'
       - 'tools/fleet-sweep.mjs'
-      - 'tools/fleet-membership.tests.mjs'
+      - 'tools/fleet-membership*.mjs'
       - 'tools/Get-FleetHeartbeatStatus.ps1'
       - 'specs/*continuity*'
       - 'specs/*resumption*'

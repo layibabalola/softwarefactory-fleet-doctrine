@@ -207,6 +207,11 @@ implementation is AdversarialLLM's:
   the exact failure this bus spent 2026-08-30 documenting: ceremony outranking delivery.
 
 Requires `node` and `git`. Git children have a 30-second deadline and interactive prompts disabled.
+`tools/fleet-membership.mjs` is the shared member classifier used by the sweep and heartbeat
+reader. It excludes `fleet-*` and the two legacy protocol specs whose names are pinned:
+`provider-model-benchmarking.md` and `provider-audit-consumer-provenance.md`. Other `provider-*`
+names remain eligible projects. The heartbeat reader also requires Node and refuses unreadable
+or malformed membership instead of reporting a healthy empty fleet.
 Regression commands: `node tools/doctrine-sync.tests.mjs` and `node tools/fleet-membership.tests.mjs`.
 Deliberately not Python — `py -3` has been measured absent on at least
 one fleet box, and a sync tool that fails open is worse than none.
