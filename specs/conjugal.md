@@ -1,7 +1,8 @@
 # Conjugal.AI — factory spec (writer ladder: Fable hub → Opus when Fable dark → owner-directed dispatcher, each write stamped with which rung; one writer at a time — owner amendment 2026-08-09, motivated by Fable's measured quota fragility)
 
-**Repo:** `C:\code\Conjugal` (machine: Bachelor). **Governance:** five-lane
-hub since the owner-directed topology inversion of 2026-08-29 — Opus
+**Repo:** `C:\code\Conjugal` (machine: Bachelor). **Current direction:** the owner-authorized September 5 delivery reset is being implemented and ratified by phase. It targets one queue, item worktrees, independent cross-provider review and a deterministic single worker. Phase acceptance, actual installation and the required delivery/recovery drill are separate from migration intent; replacement completion is not claimed. See the September 7 declaration below.
+
+**Historical topology:** the following roster records the five-lane hub after the owner-directed topology inversion of 2026-08-29 — Opus
 (orchestrator/architect/tie-break, Claude `claude-opus-5`), Sonnet (sole
 implementer, Claude `claude-sonnet-5`), Fable (reviewer key, Claude
 `claude-fable-5`), Sol (**verifier key**, Codex `gpt-5.6-sol` high — a Codex
@@ -331,3 +332,16 @@ the role swap and tracks actuator-equipped dispatcher sessions (from
 2026-08-09) better than the swap. The inversion is consistent with the recovery
 and is **not yet proven to cause it**. Weight the mechanisms above the
 attribution.
+
+
+## 2026-09-07 delta — current migration declaration (rung: owner-directed dispatcher)
+
+The current owner execution task directs autonomous audit remediation with bounded inexpensive assistants. These assistants are task workers, not substitute identities for the named provider-native lanes. The existing Phase 1 reset writer retains its item; this declaration neither dispatches a duplicate worker nor retires legacy execution surfaces. Those surfaces retire only after the reset's required acceptance, real delivery and recovery proofs.
+
+DISTINGUISH(e70a044f31dd2f43ab7c716d63a4eb89318c61b6, RESET_IN_PROGRESS_RUNTIME_ADOPTION_UNPROVED)
+
+The exact R26 canonical merge is `909f769d02e8412e51e28e242cfa8d00dadc9a3d`. This is a current project distinction, not ADOPT or a claim of installation. For the R26 adoption tuple only: `authority=NONE`, `automatic_launch_gate=CLOSED`, `enabled=false`, `production_shadow=false`, `production_containment=false`, `canary=false`. These values do not assert that every legacy Conjugal process or scheduled task is disabled. Earlier root-state and CLI-version entries are dated observations, not current machine evidence.
+
+The missing adoption proofs remain explicit: an installed supervisor/adapter profile, complete launcher census, exact model/effort/role/review/quality/functionality bindings, request accounting, 1,000 unchanged zero-inference ticks, full-child fencing, rollback, the current CLOSED gate, and independent exact-subject review. Cheap routing is being evaluated on actual verified outcomes and correction cost; no measured subscription saving or complete quality equivalence is claimed here.
+
+Local source custody: the September 5 directive is at Conjugal commit `90c3b51bbc1b2bf668ec658ca0bbb669d7cecba7`, blob `689470542a1d18b7b718d4483e33a2070c6ed703`; the reset plan was last changed at `2294c1cda89b76b03de8234566221143d09e6fb7`, blob `d2259f10b1a1d98656927121e82442a4a547fd21`. These are local custody references, with no external containment or completed runtime proof asserted. The original frozen census remains historical; only an independently accepted current-intake record may consume this declaration as current disposition evidence.
