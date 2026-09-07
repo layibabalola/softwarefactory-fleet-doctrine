@@ -1,6 +1,6 @@
 # Cloudvore (DropBox Vault): current factory spec
 
-source_commit: 3b7d5323fce52bc2ca512b04d0650d4ce830b4b4
+source_commit: 19fcda817d4d6b0b213cda9e5a101b9131e14fa9
 
 Updated 2026-09-07. Source repository: https://github.com/layibabalola/Cloudvore. This spec is published only after the source commit reaches that repository's master. The former September 3 snapshot remains available in Git history; its hub/lanes/landing descriptions are historical, not the current entry route.
 
@@ -8,7 +8,7 @@ Updated 2026-09-07. Source repository: https://github.com/layibabalola/Cloudvore
 
 Cloudvore is a Windows WPF application for backing up footage and verifying existing copies. The proof is the product. No surface may say SAFE TO WIPE unless the persisted IsSafeToWipe verdict permits it; false tamper alarms are also defects. Never kill rclone by name or in bulk. Probes use throwaway configuration, never live rclone.conf, provider authentication endpoints, or browser launches.
 
-The completed kernel review has been consumed: S1-S4 are source-supported remediation items, with an additional quarantine finding S5. They remain reproduce-first defects, not fixes or new acceptance credit. Product release, tagging, and accepted product-safety deferral remain final owner decisions.
+The completed kernel review has been consumed. P01/S2 canary ownership and P02/S1 cache provenance repairs are accepted with reproduced failures, exact-candidate independent reviews and three identical green product runs. P03/S3 archive-only wipe authorization, P04/S4 empty transfer scope and P05/S5 quarantine recovery remain reproduce-first remediation items. Product release, tagging, and accepted product-safety deferral remain final owner decisions.
 
 ## Current execution route
 
@@ -16,9 +16,11 @@ Both AGENTS.md and CLAUDE.md point to docs/operating-contract.md. BACKLOG.md has
 
 The owner authorized autonomous execution of the recovery using cheap, bounded delegates on September 7. This execution uses Luna at low effort for narrow implementation and review tasks, one writer per file, one integration owner, no persistent hub seats, and no recursive delegation. Tests and independent review decide acceptance. This does not constitute a fleet-wide model-role qualification or universal-controller adoption.
 
-At entry and closeout, `python tools/gate.py --json --doctrine-check` checks the real entry route, active queue, execution checkout, and local prerequisites. Its doctrine result is separate and advisory for unrelated product work. Claude has one SessionStart command hook to the same implementation; its configured Bash command was invoked successfully on this host. The checker starts no model and never acknowledges doctrine. Repeated checks do not create new work. No new scheduled model loop or heartbeat was installed.
+At entry and closeout, `python tools/gate.py --json --doctrine-check` checks the real entry route, active queue, execution checkout, and local prerequisites. Its doctrine result is separate and advisory for unrelated product work. Claude has one SessionStart command hook to the same implementation; its configured Bash command was invoked successfully on this host. The checker starts no model and never acknowledges doctrine. Repeated checks do not create new work. Git fetch may refresh remote refs; the checker does not change the checkout/index.
 
-The existing 60-minute maximum run duration is preserved as a mandatory constraint. The previously malformed Cloudvore Run/Stall Enforcer tasks have not been repaired by this fleet slice; this spec does not claim that they enforce the limit. A successful worker exit without retained patch/review evidence is not completion.
+The owner explicitly extended execution to continuously drain the whole TODO/roadmap across hours or days. The existing Codex local automation cloudvore-sol-caretaker is now Cloudvore roadmap drain, ACTIVE on the same task every 15 minutes. Its previous observer prompt has been replaced with execution continuation: consume completed results, drain eligible packets, preserve exact evidence, and notify only on meaningful progress, failures or required decisions. The app and host must remain running. This task schedule is separate from fleet-health heartbeat publication.
+
+Each wake targets at most 50 minutes and checkpoints for the next wake. The existing 60-minute maximum run duration is preserved as a mandatory constraint. The previously malformed Cloudvore Run/Stall Enforcer tasks have not been repaired by this fleet slice; this spec does not claim that they enforce the limit. A successful worker exit without retained patch/review evidence is not completion.
 
 Product behavior changes require three identical green runs at one candidate SHA, with a hosted Windows route when local thermal admission refuses. Review is tied to the product bytes; missing review is not approval. Push after commits, preserve unrelated dirty state, and integrate only within the granted scope.
 
@@ -29,7 +31,7 @@ Product behavior changes require three identical green runs at one candidate SHA
 | Canonical bus laws: data, local verification, single-writer custody, reviewed publication | ADOPT for this recovery. Implemented entry contract and exact publication checker; no bus text executes as authority by itself. |
 | CIAA / parallel-launch resumption | DISTINGUISH for this finite loop. Bounded disjoint tasks can be delegated when useful; a boot does not launch all historical lanes. The prior field-test account is historical, not current installation evidence. |
 | Autonomous checkpoint staging/cherry-picking | DISTINGUISH. Current boot derives Git state without checkout/add/cherry-pick. The old continuity spec's Cloudvore adoption claim is superseded by this explicit disposition; other projects decide separately. |
-| Scheduled heartbeat adoption | DISTINGUISH for this recovery. Entry/closeout checks expose actual pending/unavailable state. Cloudvore has no published heartbeat; ABSENT must remain visible and must not be manufactured into healthy status. |
+| Fleet-health heartbeat publication | DISTINGUISH for this recovery. Entry/closeout checks expose actual pending/unavailable state. Cloudvore has no published heartbeat; ABSENT must remain visible and must not be manufactured into healthy status. |
 | R26 universal token controller | DISTINGUISH / CANDIDATE_ZERO_AUTHORITY remains unchanged. Publication is not runtime installation, provider authorization, or adoption proof. |
 | Other historical proposals and sibling implementation details | Not adopted by this recovery. They remain source material for a separately scoped need; inspecting a catalog or moving a cursor is not blanket adoption. |
 
@@ -46,9 +48,10 @@ A portable result remains FIXED-LOCALLY-PENDING-DOCTRINE until its review and ex
 ## Verification and limits
 
 - Cloudvore entry-route suite: 13 passing tests; bootstrap: 10 passing tests, including invalid dependencies, misleading entry links, dirty primary preservation, separate worktree execution, and advisory timeout/error behavior.
-- [Product bar at parent 2252219](https://github.com/layibabalola/Cloudvore/actions/runs/34147321023): 900 Core passed, 2 skipped; 1,150 App passed; five Integration files excluded. The source commit has identical src/ and product-workflow bytes. This is the automatic product floor, not a new three-pass product-change claim.
-- [Corrected Cloudvore tools bar](https://github.com/layibabalola/Cloudvore/actions/runs/34149432914): 18/18 required suites passed at source 3b7d532, including 10 gate tests, 13 entry-route tests and 51 state tests; 218 seconds. The initial run exposed a Windows path fixture mismatch and multiline status rendering error; both remain required and have focused repairs. Automatic runs execute every required suite; manual tier=all retains informational diagnostics. The nine failing/timed-out informational suites in the initial run are not acceptance credit.
+- [Product acceptance at19fcda8](https://github.com/layibabalola/Cloudvore/actions/runs/34154047973): three identical passes, each 919 Core passed /2 skipped and 1,150 App passed /0 skipped, zero failures. Both test projects still exclude Category=Integration (five files); live providers are unqualified. P02 safety review is bound to the same immutable SHA. P01 had its own accepted three-pass run at49ba6b0.
+- One product workflow now covers master, PRs and manual runs; manual passes=3 binds all passes to one full SHA. The validator checks both named assemblies, actual test outcome rows, count consistency and identical per-assembly counts across passes; VSTest skip rows are retained even when its summary skip counter is zero. Isolated build output, logs and TRX/result.json artifacts are retained; 11 required fixtures reject failing, missing, vacuous and drifting results.
+- [Cloudvore tools acceptance](https://github.com/layibabalola/Cloudvore/actions/runs/34154050632): 19/19 required suites passed at19fcda8 in290 seconds, including the product validator fixtures. Automatic runs execute every required suite; manual tier=all retains informational diagnostics. Earlier informational failures are not acceptance credit.
 - [Doctrine sync CI](https://github.com/layibabalola/softwarefactory-fleet-doctrine/actions/runs/34148872025): passed at 179e527. Local sync fixtures also passed 20 cases, including the latest-head mutation and simulated child-timeout boundary. The membership fixture exercises both actual readers and excludes pinned protocol documents without moving their historical paths.
 - Installed host versions observed September 7: codex-cli 0.144.6; Claude Code 2.1.259; Node v24.14.0. These are observations, not a claim that every fleet machine is aligned. No CLI upgrade was performed.
 
-This fleet slice does not fix the product integrity findings, deploy thermal changes, enable new providers, release a package, or activate a universal governor. Those responsibilities remain explicit in Cloudvore's recovery plan.
+P03-P05 safety repairs, F02/F04 process/scheduler enforcement, thermal deployment reconciliation, provider qualification and release preparation remain explicit in Cloudvore's active queue. This publication grants no release, provider or universal-governor authority.
