@@ -102,13 +102,14 @@ class RemoteGitStub:
 
 
 class Phase3DispositionBatchTests(unittest.TestCase):
+    FIXTURE_TREEISH = MODULE.FROZEN_PUBLICATION
     @classmethod
     def setUpClass(cls):
         cls.batch = MODULE.load_json(
-            (ROOT / "adoption" / "phase3" / "r26-published-project-disposition-intake.json").read_bytes()
+            MODULE._blob(cls.FIXTURE_TREEISH, MODULE.INTAKE_PATH)
         )
         cls.ledger = MODULE.load_json(
-            (ROOT / "adoption" / "universal-token-control-r26.json").read_bytes()
+            MODULE._blob(cls.FIXTURE_TREEISH, MODULE.LEDGER_PATH)
         )
 
     def setUp(self):
@@ -149,15 +150,15 @@ class Phase3DispositionBatchTests(unittest.TestCase):
         ledger_bytes = json.dumps(ledger, separators=(",", ":")).encode("utf-8")
 
         def blob_override(treeish, path):
-            if treeish == "HEAD" and path == MODULE.LEDGER_PATH:
+            if treeish == self.FIXTURE_TREEISH and path == MODULE.LEDGER_PATH:
                 return ledger_bytes
             return original_blob(treeish, path)
 
         with mock.patch.object(MODULE, "_blob", side_effect=blob_override):
-            MODULE.verify_batch(self._copy(), "HEAD")
+            MODULE.verify_batch(self._copy(), self.FIXTURE_TREEISH)
 
     def test_batch_matches_exact_specs_ledger_and_published_candidate_pins(self):
-        MODULE.verify_batch(self._copy(), "HEAD")
+        MODULE.verify_batch(self._copy(), self.FIXTURE_TREEISH)
 
     def test_duplicate_json_key_is_rejected(self):
         with self.assertRaisesRegex(MODULE.Phase3Error, "DUPLICATE_KEY"):
@@ -180,7 +181,7 @@ class Phase3DispositionBatchTests(unittest.TestCase):
                 batch = self._copy()
                 batch["frozenBase"][field] = "0" * 40
                 with self.assertRaisesRegex(MODULE.Phase3Error, "FROZEN_BASE_MISMATCH"):
-                    MODULE.verify_batch(batch, "HEAD")
+                    MODULE.verify_batch(batch, self.FIXTURE_TREEISH)
 
     def test_utilization_shadow_doctrine_base_object_is_exact(self):
         original = MODULE._commit_tuple
@@ -195,7 +196,7 @@ class Phase3DispositionBatchTests(unittest.TestCase):
                 MODULE.Phase3Error,
                 "UTILIZATION_SHADOW_DOCTRINE_BASE_OBJECT_MISMATCH",
             ):
-                MODULE.verify_batch(self._copy(), "HEAD")
+                MODULE.verify_batch(self._copy(), self.FIXTURE_TREEISH)
 
     def test_utilization_shadow_doctrine_amendment_object_and_parent_are_exact(self):
         original = MODULE._commit_tuple
@@ -210,7 +211,7 @@ class Phase3DispositionBatchTests(unittest.TestCase):
                 MODULE.Phase3Error,
                 "UTILIZATION_SHADOW_DOCTRINE_AMENDMENT_OBJECT_MISMATCH",
             ):
-                MODULE.verify_batch(self._copy(), "HEAD")
+                MODULE.verify_batch(self._copy(), self.FIXTURE_TREEISH)
 
     def test_utilization_shadow_doctrine_amendment_scope_is_spec_only(self):
         original = MODULE._changed_paths
@@ -228,7 +229,7 @@ class Phase3DispositionBatchTests(unittest.TestCase):
                 MODULE.Phase3Error,
                 "UTILIZATION_SHADOW_DOCTRINE_AMENDMENT_SCOPE_INVALID",
             ):
-                MODULE.verify_batch(self._copy(), "HEAD")
+                MODULE.verify_batch(self._copy(), self.FIXTURE_TREEISH)
 
     def test_utilization_shadow_doctrine_amended_spec_blob_is_exact(self):
         original = MODULE._oid
@@ -246,7 +247,7 @@ class Phase3DispositionBatchTests(unittest.TestCase):
                 MODULE.Phase3Error,
                 "UTILIZATION_SHADOW_DOCTRINE_AMENDMENT_SPEC_MISMATCH",
             ):
-                MODULE.verify_batch(self._copy(), "HEAD")
+                MODULE.verify_batch(self._copy(), self.FIXTURE_TREEISH)
 
     def test_utilization_shadow_doctrine_amendment_must_be_ancestor(self):
         original = MODULE._is_ancestor
@@ -261,18 +262,18 @@ class Phase3DispositionBatchTests(unittest.TestCase):
                 MODULE.Phase3Error,
                 "UTILIZATION_SHADOW_DOCTRINE_AMENDMENT_NOT_ANCESTOR",
             ):
-                MODULE.verify_batch(self._copy(), "HEAD")
+                MODULE.verify_batch(self._copy(), self.FIXTURE_TREEISH)
 
     def test_exact_four_project_closed_set_is_required(self):
         batch = self._copy()
         batch["projects"].pop()
         with self.assertRaisesRegex(MODULE.Phase3Error, "PROJECT_SET_INVALID"):
-            MODULE.verify_batch(batch, "HEAD")
+            MODULE.verify_batch(batch, self.FIXTURE_TREEISH)
 
         batch = self._copy()
         batch["projects"].append(copy.deepcopy(batch["projects"][0]))
         with self.assertRaisesRegex(MODULE.Phase3Error, "PROJECT_SET_INVALID"):
-            MODULE.verify_batch(batch, "HEAD")
+            MODULE.verify_batch(batch, self.FIXTURE_TREEISH)
 
     def test_ledger_rows_are_unique_closed_set_and_all_nine_migrated(self):
         self.assertEqual(9, len(self.ledger["projects"]))
@@ -309,7 +310,7 @@ class Phase3DispositionBatchTests(unittest.TestCase):
 
     def test_ledger_census_must_match_current_exact_census_commit(self):
         ledger = copy.deepcopy(self.ledger)
-        ledger["census"]["baseCommit"] = MODULE.UTILIZATION_SHADOW_DOCTRINE_AMENDMENT_COMMIT
+        ledger["census"]["baseCommit"] = "0" * 40
         with self.assertRaisesRegex(MODULE.Phase3Error, "LEDGER_CENSUS_BASE_MISMATCH"):
             self._verify_with_ledger(ledger)
 
@@ -317,13 +318,13 @@ class Phase3DispositionBatchTests(unittest.TestCase):
         batch = self._copy()
         self._project(batch, "cloudvore")["centralEvidence"]["gitBlobOid"] = "0" * 40
         with self.assertRaisesRegex(MODULE.Phase3Error, "CENTRAL_EVIDENCE_MISMATCH"):
-            MODULE.verify_batch(batch, "HEAD")
+            MODULE.verify_batch(batch, self.FIXTURE_TREEISH)
 
     def test_intake_only_candidate_substitution_cannot_diverge_from_ledger(self):
         batch = self._copy()
         self._project(batch, "mlv-app")["projectCandidate"]["commit"] = "0" * 40
         with self.assertRaisesRegex(MODULE.Phase3Error, "INTAKE_LEDGER_CANDIDATE_MISMATCH"):
-            MODULE.verify_batch(batch, "HEAD")
+            MODULE.verify_batch(batch, self.FIXTURE_TREEISH)
 
     def test_coordinated_intake_and_ledger_commit_tree_or_artifact_substitution_fails(self):
         cases = (
@@ -345,7 +346,7 @@ class Phase3DispositionBatchTests(unittest.TestCase):
                 ledger_bytes = self._ledger_with_candidate("salesforce-tools", candidate)
 
                 def blob_override(treeish, path):
-                    if treeish == "HEAD" and path == MODULE.LEDGER_PATH:
+                    if treeish == self.FIXTURE_TREEISH and path == MODULE.LEDGER_PATH:
                         return ledger_bytes
                     return original_blob(treeish, path)
 
@@ -353,7 +354,7 @@ class Phase3DispositionBatchTests(unittest.TestCase):
                     with self.assertRaisesRegex(
                         MODULE.Phase3Error, "PROJECT_CANDIDATE_EXACT_BINDING_MISMATCH"
                     ):
-                        MODULE.verify_batch(batch, "HEAD")
+                        MODULE.verify_batch(batch, self.FIXTURE_TREEISH)
 
     def test_coordinated_disposition_statement_substitution_fails_frozen_digest(self):
         batch = self._copy()
@@ -370,7 +371,7 @@ class Phase3DispositionBatchTests(unittest.TestCase):
         )
 
         def blob_override(treeish, path):
-            if treeish == "HEAD" and path == MODULE.LEDGER_PATH:
+            if treeish == self.FIXTURE_TREEISH and path == MODULE.LEDGER_PATH:
                 return ledger_bytes
             if treeish == MODULE.SPEC_BINDING_COMMIT and path == project["specPath"]:
                 return coordinated_spec
@@ -380,7 +381,7 @@ class Phase3DispositionBatchTests(unittest.TestCase):
             with self.assertRaisesRegex(
                 MODULE.Phase3Error, "PROJECT_CANDIDATE_EXACT_BINDING_MISMATCH"
             ):
-                MODULE.verify_batch(batch, "HEAD")
+                MODULE.verify_batch(batch, self.FIXTURE_TREEISH)
 
     def test_recursive_adoption_and_authority_overclaims_are_rejected(self):
         project = copy.deepcopy(self._project(self.batch, "mlv-app"))
@@ -391,7 +392,7 @@ class Phase3DispositionBatchTests(unittest.TestCase):
         }
         ledger_rows["mlv-app"]["evidence"]["projectCandidate"] = copy.deepcopy(candidate)
         with self.assertRaisesRegex(MODULE.Phase3Error, "PROJECT_CANDIDATE_ADOPTION_OVERCLAIM"):
-            MODULE._verify_project(project, ledger_rows=ledger_rows, treeish="HEAD")
+            MODULE._verify_project(project, ledger_rows=ledger_rows, treeish=self.FIXTURE_TREEISH)
 
         project = copy.deepcopy(self._project(self.batch, "mlv-app"))
         candidate = project["projectCandidate"]
@@ -401,7 +402,7 @@ class Phase3DispositionBatchTests(unittest.TestCase):
         }
         ledger_rows["mlv-app"]["evidence"]["projectCandidate"] = copy.deepcopy(candidate)
         with self.assertRaisesRegex(MODULE.Phase3Error, "PROJECT_CANDIDATE_AUTHORITY_OVERCLAIM"):
-            MODULE._verify_project(project, ledger_rows=ledger_rows, treeish="HEAD")
+            MODULE._verify_project(project, ledger_rows=ledger_rows, treeish=self.FIXTURE_TREEISH)
 
     def test_remote_verifier_uses_bounded_noninteractive_temp_repo_and_cleans_it(self):
         project, stub = self._remote_fixture()
@@ -644,7 +645,7 @@ class Phase3DispositionBatchTests(unittest.TestCase):
                 batch = self._copy()
                 batch["summary"][field] = 1
                 with self.assertRaisesRegex(MODULE.Phase3Error, "SUMMARY_OVERCLAIM"):
-                    MODULE.verify_batch(batch, "HEAD")
+                    MODULE.verify_batch(batch, self.FIXTURE_TREEISH)
 
     def test_phase3_event_allowlist_is_spec_free_and_distinct_from_history(self):
         self.assertFalse(any(path.startswith("specs/") for path in MODULE.EVENT_ALLOWED_PHASE3_PATHS))

@@ -18,12 +18,14 @@ assert SPEC and SPEC.loader
 sys.modules[SPEC.name] = MODULE
 SPEC.loader.exec_module(MODULE)
 
+HISTORICAL_PUBLICATION = "53a48a6a0be5eade253ce1a508872d6874fd474a"
+
 
 class AdoptionLedgerTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.ledger = MODULE.load_ledger(
-            (ROOT / "adoption" / "universal-token-control-r26.json").read_bytes()
+            MODULE._blob(HISTORICAL_PUBLICATION, MODULE.LEDGER_PATH)
         )
 
     def _copy(self):
@@ -304,7 +306,7 @@ class AdoptionLedgerTests(unittest.TestCase):
                     "-C",
                     str(ROOT),
                     "rev-parse",
-                    "HEAD",
+                    HISTORICAL_PUBLICATION,
                 ],
                 check=False,
                 capture_output=True,
@@ -323,6 +325,7 @@ class AdoptionLedgerTests(unittest.TestCase):
                     "safe.directory=*",
                     "clone",
                     "--quiet",
+                    "--no-checkout",
                     "--no-hardlinks",
                     str(ROOT),
                     str(repo),
@@ -408,7 +411,7 @@ class AdoptionLedgerTests(unittest.TestCase):
                 MODULE.ROOT = original_root
 
     def test_canonical_ledger_matches_closed_project_owned_evidence(self):
-        MODULE.verify_ledger(self._copy(), "HEAD")
+        MODULE.verify_ledger(self._copy(), HISTORICAL_PUBLICATION)
 
     def test_duplicate_json_key_is_rejected(self):
         with self.assertRaisesRegex(MODULE.LedgerError, "DUPLICATE_KEY"):
@@ -418,23 +421,23 @@ class AdoptionLedgerTests(unittest.TestCase):
         ledger = self._copy()
         ledger["candidate"]["candidateCommit"] = "0" * 40
         with self.assertRaisesRegex(MODULE.LedgerError, "CANDIDATE_COMMIT_MISMATCH"):
-            MODULE.verify_ledger(ledger, "HEAD")
+            MODULE.verify_ledger(ledger, HISTORICAL_PUBLICATION)
 
         ledger = self._copy()
         ledger["candidate"]["mergeParents"].reverse()
         with self.assertRaisesRegex(MODULE.LedgerError, "MERGE_PARENT_CLAIM_MISMATCH"):
-            MODULE.verify_ledger(ledger, "HEAD")
+            MODULE.verify_ledger(ledger, HISTORICAL_PUBLICATION)
 
     def test_candidate_zero_authority_cannot_be_upgraded_by_ledger_claim(self):
         ledger = self._copy()
         ledger["candidate"]["authorityClaims"]["doctrinePublicationIsFleetAdoption"] = True
         with self.assertRaisesRegex(MODULE.LedgerError, "ZERO_AUTHORITY_OVERCLAIM"):
-            MODULE.verify_ledger(ledger, "HEAD")
+            MODULE.verify_ledger(ledger, HISTORICAL_PUBLICATION)
 
         ledger = self._copy()
         ledger["candidate"]["manifest"]["status"] = "RATIFIED"
         with self.assertRaisesRegex(MODULE.LedgerError, "MANIFEST_STATUS_CLAIM_MISMATCH"):
-            MODULE.verify_ledger(ledger, "HEAD")
+            MODULE.verify_ledger(ledger, HISTORICAL_PUBLICATION)
 
     def test_manifest_zero_authority_requires_strict_json_booleans(self):
         original_blob = MODULE._blob
@@ -459,18 +462,18 @@ class AdoptionLedgerTests(unittest.TestCase):
                     with self.assertRaisesRegex(
                         MODULE.LedgerError, "MANIFEST_AUTHORITY_DRIFT"
                     ):
-                        MODULE.verify_ledger(self._copy(), "HEAD")
+                        MODULE.verify_ledger(self._copy(), HISTORICAL_PUBLICATION)
 
     def test_all_six_non_regression_dimensions_are_mandatory_and_ordered(self):
         ledger = self._copy()
         ledger["nonRegression"]["requiredDimensions"].remove("quality")
         with self.assertRaisesRegex(MODULE.LedgerError, "NON_REGRESSION_DIMENSIONS_MISMATCH"):
-            MODULE.verify_ledger(ledger, "HEAD")
+            MODULE.verify_ledger(ledger, HISTORICAL_PUBLICATION)
 
         ledger = self._copy()
         ledger["nonRegression"]["requiredDimensions"].reverse()
         with self.assertRaisesRegex(MODULE.LedgerError, "NON_REGRESSION_DIMENSIONS_MISMATCH"):
-            MODULE.verify_ledger(ledger, "HEAD")
+            MODULE.verify_ledger(ledger, HISTORICAL_PUBLICATION)
 
     def test_project_cannot_disappear_from_the_closed_set(self):
         ledger = self._copy()
@@ -480,33 +483,33 @@ class AdoptionLedgerTests(unittest.TestCase):
         ledger["summary"]["projectCount"] = 8
         ledger["summary"]["counts"]["MISSING"] = 0
         with self.assertRaisesRegex(MODULE.LedgerError, "PROJECT_CLOSED_SET_MISMATCH"):
-            MODULE.verify_ledger(ledger, "HEAD")
+            MODULE.verify_ledger(ledger, HISTORICAL_PUBLICATION)
 
     def test_non_project_exclusion_set_cannot_hide_a_project(self):
         ledger = self._copy()
         ledger["census"]["nonProjectSpecs"].append("specs/salesforce-tools.md")
         ledger["census"]["nonProjectSpecs"].sort()
         with self.assertRaisesRegex(MODULE.LedgerError, "NON_PROJECT_SPEC_SET_INVALID"):
-            MODULE.verify_ledger(ledger, "HEAD")
+            MODULE.verify_ledger(ledger, HISTORICAL_PUBLICATION)
 
     def test_census_base_must_be_on_the_merge_to_checked_tree_history(self):
         ledger = self._copy()
         ledger["census"]["baseCommit"] = MODULE.EXPECTED_CANDIDATE
         with self.assertRaisesRegex(MODULE.LedgerError, "CENSUS_BASE_HISTORY_INVALID"):
-            MODULE.verify_ledger(ledger, "HEAD")
+            MODULE.verify_ledger(ledger, HISTORICAL_PUBLICATION)
 
     def test_project_source_commit_and_blob_are_both_enforced(self):
         ledger = self._copy()
         self._project(ledger, "dng-auto-processor")["evidence"]["gitBlobOid"] = "0" * 40
         with self.assertRaisesRegex(MODULE.LedgerError, "PROJECT_EVIDENCE_COMMIT_BLOB_MISMATCH"):
-            MODULE.verify_ledger(ledger, "HEAD")
+            MODULE.verify_ledger(ledger, HISTORICAL_PUBLICATION)
 
         ledger = self._copy()
         self._project(ledger, "dng-auto-processor")["evidence"]["commit"] = ledger["candidate"][
             "mergeCommit"
         ]
         with self.assertRaisesRegex(MODULE.LedgerError, "PROJECT_EVIDENCE_NOT_LATEST_AT_CENSUS"):
-            MODULE.verify_ledger(ledger, "HEAD")
+            MODULE.verify_ledger(ledger, HISTORICAL_PUBLICATION)
 
     def test_dng_is_distinguish_at_project_commit_not_adopt(self):
         ledger = self._copy()
@@ -519,7 +522,7 @@ class AdoptionLedgerTests(unittest.TestCase):
         ledger["summary"]["counts"]["DISTINGUISH"] = 4
         ledger["summary"]["counts"]["ADOPT"] = 1
         with self.assertRaisesRegex(MODULE.LedgerError, "CURRENT_DISPOSITION_STATUS_MISMATCH"):
-            MODULE.verify_ledger(ledger, "HEAD")
+            MODULE.verify_ledger(ledger, HISTORICAL_PUBLICATION)
 
     def test_conflicting_current_dispositions_are_rejected(self):
         original_dispositions = MODULE._dispositions
@@ -534,7 +537,7 @@ class AdoptionLedgerTests(unittest.TestCase):
             MODULE, "_dispositions", side_effect=conflicting_dispositions
         ):
             with self.assertRaisesRegex(MODULE.LedgerError, "CURRENT_DISPOSITION_CONFLICT"):
-                MODULE.verify_ledger(self._copy(), "HEAD")
+                MODULE.verify_ledger(self._copy(), HISTORICAL_PUBLICATION)
 
     def test_synthetic_adopt_row_passes_end_to_end_with_recomputed_receipt(self):
         ledger, spec_bytes, receipt_blobs = self._synthetic_adopt()
@@ -822,7 +825,7 @@ class AdoptionLedgerTests(unittest.TestCase):
         with self.assertRaisesRegex(
             MODULE.LedgerError, "PROJECT_ORDER_OR_DUPLICATE_INVALID"
         ):
-            MODULE.verify_ledger(ledger, "HEAD")
+            MODULE.verify_ledger(ledger, HISTORICAL_PUBLICATION)
 
     def test_project_blocker_must_match_disposition(self):
         ledger = self._copy()
@@ -830,7 +833,7 @@ class AdoptionLedgerTests(unittest.TestCase):
             "PROJECT_OWNER_CURRENT_CANDIDATE_DISPOSITION_REQUIRED"
         )
         with self.assertRaisesRegex(MODULE.LedgerError, "PROJECT_BLOCKER_INVALID"):
-            MODULE.verify_ledger(ledger, "HEAD")
+            MODULE.verify_ledger(ledger, HISTORICAL_PUBLICATION)
 
     def test_stale_requires_an_exact_prior_project_disposition(self):
         ledger = self._copy()
@@ -839,20 +842,20 @@ class AdoptionLedgerTests(unittest.TestCase):
             "subjectCommit"
         ] = "224a6705d81dfbc670313cdcef4d825216f2b380"
         with self.assertRaisesRegex(MODULE.LedgerError, "STALE_DISPOSITION_SUBJECT_INVALID"):
-            MODULE.verify_ledger(ledger, "HEAD")
+            MODULE.verify_ledger(ledger, HISTORICAL_PUBLICATION)
 
     def test_published_project_candidate_is_required_only_for_the_exact_four_rows(self):
         ledger = self._copy()
         self._project(ledger, "salesforce-tools")["evidence"]["projectCandidate"] = None
         with self.assertRaisesRegex(MODULE.LedgerError, "PROJECT_CANDIDATE_REQUIRED"):
-            MODULE.verify_ledger(ledger, "HEAD")
+            MODULE.verify_ledger(ledger, HISTORICAL_PUBLICATION)
 
         ledger = self._copy()
         self._project(ledger, "adobe-ingester")["evidence"]["projectCandidate"] = copy.deepcopy(
             self._project(ledger, "cloudvore")["evidence"]["projectCandidate"]
         )
         with self.assertRaisesRegex(MODULE.LedgerError, "PROJECT_CANDIDATE_UNEXPECTED"):
-            MODULE.verify_ledger(ledger, "HEAD")
+            MODULE.verify_ledger(ledger, HISTORICAL_PUBLICATION)
 
     def test_published_project_candidate_entire_object_is_exact_bound(self):
         for project_id in sorted(MODULE.PROJECT_CANDIDATE_IDS):
@@ -949,13 +952,13 @@ class AdoptionLedgerTests(unittest.TestCase):
         ledger = self._copy()
         ledger["summary"]["counts"]["ADOPT"] = 9
         with self.assertRaisesRegex(MODULE.LedgerError, "SUMMARY_COUNT_MISMATCH"):
-            MODULE.verify_ledger(ledger, "HEAD")
+            MODULE.verify_ledger(ledger, HISTORICAL_PUBLICATION)
 
         ledger = self._copy()
         ledger["summary"]["fleetStatus"] = "FLEET_ADOPTED"
         ledger["summary"]["fleetAdoptionClaim"] = True
         with self.assertRaisesRegex(MODULE.LedgerError, "FLEET_ADOPTION_OVERCLAIM"):
-            MODULE.verify_ledger(ledger, "HEAD")
+            MODULE.verify_ledger(ledger, HISTORICAL_PUBLICATION)
 
 
 if __name__ == "__main__":
