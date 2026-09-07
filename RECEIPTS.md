@@ -1606,3 +1606,13 @@ makes "never read the big ledger whole" a cost control with a measured
 denominator, not hygiene advice. Measure your own hit rate before spending
 engineering time on cache placement; if reads already dominate, that work is
 already done.
+
+## 2026-09-07 — Cloudvore: pinned consumption and exact publication repair
+
+Scope: bounded D02/D03 mechanics, requested by the Cloudvore owner for autonomous execution on September 7. The integrating Codex session accepted this patch after independent Luna inspection returned no material findings. This records review of the concrete tool repair; it creates no universal-controller adoption or new fleet law.
+
+Candidate branch: codex/cloudvore-doctrine-repair-20260907, based on 7ebe429e3de100be5cb02faf8f35627586a17624. Changes: explicit reviewed-SHA acknowledgement; bounded, noninteractive Git children; exact source/publication reachability and source_commit field checking; advisory-only heuristic export detection; two cross-cutting specs renamed under the existing fleet-* convention. No legacy spec bodies were rewritten by the rename.
+
+Verification on Windows: `node tools/doctrine-sync.tests.mjs` exited 0, 20 cases passed. The suite executes an old-latest-head mutation in a temporary tool copy and confirms the A/B regression assertion fails; a separately injected ETIMEDOUT checks marker preservation and finite child options. `node tools/fleet-membership.tests.mjs` exited 0 and exercised both actual readers against temporary local remotes: old document names create phantom boards, fleet-* names do not, and Cloudvore remains ABSENT without a heartbeat. No real consumer cursor or heartbeat was written by these tests. The new Doctrine sync workflow runs both suites on Windows.
+
+Existing limitation, reproduced before these changes: `python tools/check_adoption_ledger.py --treeish HEAD` at baseline 7ebe429 exits 1 with PROJECT_SPEC_DRIFT. The frozen R26 ledger and checker were not weakened or updated; this repair makes no claim that the entire bus is green or that R26 is adopted. Current factual project-spec publication and its exact Cloudvore source commit follow separately.
