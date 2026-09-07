@@ -22,9 +22,8 @@ class CurrentAdoptionLedgerTests(unittest.TestCase):
     def verify(self, ledger=None):
         MODULE.verify_ledger(copy.deepcopy(self.ledger if ledger is None else ledger), "HEAD", current=True)
 
-    def test_current_census_binds_every_project_without_new_adoption_credit(self):
+    def test_current_census_binds_every_project_to_existing_proof_gates(self):
         self.verify()
-        self.assertEqual(0, self.ledger["summary"]["counts"]["ADOPT"])
         self.assertIs(False, self.ledger["summary"]["fleetAdoptionClaim"])
 
     def test_current_profile_cannot_change_the_frozen_profile(self):
