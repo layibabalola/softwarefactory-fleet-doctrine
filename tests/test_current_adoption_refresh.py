@@ -21,9 +21,13 @@ class RefreshTests(unittest.TestCase):
         with tempfile.TemporaryDirectory(prefix='r26-refresh-control-') as tmp:
             repo = Path(tmp) / 'repo'
             def git(*args):
-                return subprocess.run(['git', '--no-optional-locks', *args], cwd=repo if repo.exists() else ROOT,
-                                      check=True, capture_output=True)
-            git('clone', '--local', '--no-checkout', str(ROOT), str(repo))
+                result = subprocess.run(['git', '--no-optional-locks', *args], cwd=repo if repo.exists() else ROOT,
+                                        capture_output=True)
+                self.assertEqual(result.returncode, 0, result.stderr.decode(errors='replace'))
+                return result
+            # Hosted Windows checkout and TEMP can be on different volumes.
+            # Copy objects instead of requiring cross-volume hard links.
+            git('clone', '--local', '--no-hardlinks', '--no-checkout', str(ROOT), str(repo))
             git('config', 'core.autocrlf', 'false')
             git('checkout', '--detach', R.E.git('rev-parse', 'HEAD').decode().strip())
             checker = repo / 'tools/check_adoption_ledger.py'
