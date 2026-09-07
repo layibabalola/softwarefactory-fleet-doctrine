@@ -34,6 +34,18 @@ class RefreshTests(unittest.TestCase):
             self.assertIn('CONTROL_WORKTREE_DRIFT', result.stderr)
             self.assertEqual(result.stdout, '', 'refused controls must never emit candidate JSON')
 
+            git('checkout', '--', 'tools/check_adoption_ledger.py')
+            frozen = repo / 'adoption/universal-token-control-r26.json'
+            frozen.write_bytes(frozen.read_bytes() + b'\n')
+            git('add', '--', 'adoption/universal-token-control-r26.json')
+            git('-c', 'user.name=Refresh fixture', '-c', 'user.email=fixture@example.invalid',
+                '-c', 'core.hooksPath=/dev/null', 'commit', '-m', 'Fixture historical artifact mutation')
+            result = subprocess.run([sys.executable, 'tools/refresh_current_adoption_census.py'],
+                                    cwd=repo, capture_output=True, text=True, timeout=120)
+            self.assertEqual(result.returncode, 1, result.stderr)
+            self.assertIn('HISTORICAL_ARTIFACT_CHANGED', result.stderr)
+            self.assertEqual(result.stdout, '', 'refused frozen artifacts must never emit candidate JSON')
+
     def test_actual_refresh_verifies_current_evidence_without_writing(self):
         path = ROOT / R.E.CURRENT_LEDGER
         before = path.read_bytes()
@@ -49,7 +61,7 @@ class RefreshTests(unittest.TestCase):
 
     def test_claim_failure_emits_no_candidate_json(self):
         module = R.E.load('adoption_ledger')
-        with mock.patch.object(module, 'verify_ledger', side_effect=ValueError('DISPOSITION_CHANGED')), mock.patch.object(R.E, 'load', return_value=module), redirect_stdout(io.StringIO()) as output:
+        with mock.patch.object(module, 'verify_ledger', side_effect=ValueError('DISPOSITION_CHANGED')), mock.patch.object(R.E, 'load', return_value=module), mock.patch.object(R.E, 'verify_history'), redirect_stdout(io.StringIO()) as output:
             with self.assertRaisesRegex(ValueError, 'DISPOSITION_CHANGED'):
                 R.refreshed_census()
         self.assertEqual(output.getvalue(), '')

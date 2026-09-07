@@ -67,6 +67,9 @@ census from committed HEAD without writing any file. It updates only the census
 base and each existing project's Git commit/blob references. It preserves every
 status, blocker, disposition, artifact/proof claim and population entry, and
 refuses if their evidence no longer validates or HEAD moves during the read.
+It verifies the local control seal and retained history before importing the
+census checker. It does not claim optional remote verification or event admission;
+those remain separate controller/CI gates on the committed candidate.
 Capture output to a temporary candidate, require exit0, review the data-only diff,
 then commit the current JSON through the existing project publication route.
 A peer publication can invalidate a running PR; merge the peer change normally

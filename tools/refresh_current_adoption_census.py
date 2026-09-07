@@ -20,6 +20,13 @@ _spec.loader.exec_module(E)
 def refreshed_census():
     E.verify_git_object_isolation()
     head = E.git("rev-parse", "HEAD").decode().strip()
+    # Check the local control and historical integrity boundaries before any
+    # checker import or candidate output. The existing census may be stale;
+    # validate its refreshed copy below, not the old committed census.
+    E.verify_control_seal(E.parse_manifest(E.blob(head, E.EPOCH_PATH)))
+    E.verify_retained_current_artifacts()
+    with redirect_stdout(io.StringIO()):
+        E.verify_history()
     ledger_module = E.load("adoption_ledger")
     ledger = ledger_module.load_ledger(E.blob(head, E.CURRENT_LEDGER))
     ledger["census"]["baseCommit"] = head

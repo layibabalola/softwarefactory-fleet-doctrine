@@ -22,14 +22,14 @@
       "sha256": "883a75fb96472acec18bab99a47caee40ad8dfee7737d6f29529891d68030d79"
     },
     "adoption/current-token-control-r26.md": {
-      "gitBlobOid": "d553114c9149ce7766e187ce6cc927ff956f94f2",
-      "bytes": 3269,
-      "sha256": "f0e86c19fa6c82f2ec857f0c4f71d7754f6d7b069f4af7924fa24c68e72faee9"
+      "gitBlobOid": "28c69b62c9e3e5f7534a0cc1b77ab9f8c10f05be",
+      "bytes": 3460,
+      "sha256": "39cb18ff66e2e0bdb60ec3cbc46c77e0673df06e58547342d85de44f05062538"
     },
     "ruling-candidates/current-intake-epoch-r1.md": {
-      "gitBlobOid": "ea6dced230ce45f23606f9f9df178c5a66fc3a76",
-      "bytes": 6536,
-      "sha256": "5e7d4849d3d0f64dbf6b925eadb72337f361f862c8680a857c0203224d6564d1"
+      "gitBlobOid": "8cec32c028a2a10125d61c86c7f6643d5dbba811",
+      "bytes": 6766,
+      "sha256": "ad2943d8b645525f3aa7b63902ed300d36a3a8ee7e2aa37068ece169f7d0ece1"
     },
     "tests/test_adoption_ledger.py": {
       "gitBlobOid": "687b9586d1dd1e6a360cb24a2ee630817cfb1419",
@@ -222,14 +222,14 @@
       "sha256": "8859899acb0c38807e04518a34b8d4dfa28a713748c9edf8c142e2dbdf4a15c0"
     },
     "tests/test_current_adoption_refresh.py": {
-      "gitBlobOid": "06347699e9ce22502143ddf7bab6f0d82fdccb4c",
-      "bytes": 3533,
-      "sha256": "27e90a906c97cc60b355a366ffa2008058183285b5e6fc4786020c115cfe3706"
+      "gitBlobOid": "22fc602dfe96953b13fb67784d417ba75c47b4a0",
+      "bytes": 4485,
+      "sha256": "413fe19a6697220da8980513beaf7a8adf8a835e3e387e8b705b629c164b1321"
     },
     "tools/refresh_current_adoption_census.py": {
-      "gitBlobOid": "0d2c1891478a5d29b274650f89a372525435a5cc",
-      "bytes": 2095,
-      "sha256": "d0f0b7e2caf70ba16ea57950c8abec0ee98544bb84ab5f779c737a8f5bc2e466"
+      "gitBlobOid": "a8328ca1d47cdbd22228851de8f3c2818bc562c3",
+      "bytes": 2501,
+      "sha256": "79a7f02a7c76465edd09b58664526f6351c9d6517282a8ca7d9e089fcdfc9886"
     }
   }
 }

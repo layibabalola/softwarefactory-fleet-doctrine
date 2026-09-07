@@ -8,8 +8,10 @@ The current verifier explicitly classifies the four later portable doctrine docu
 
 For a routine spec update with unchanged dispositions and proof claims, run
 `python tools/refresh_current_adoption_census.py` and capture its stdout to a
-temporary candidate. It writes no files and produces JSON only after full
-validation. Require exit0 before adopting the candidate JSON; a failure requires
+temporary candidate. It checks the local control seal and retained historical
+proofs before importing the census checker, then validates the refreshed claims.
+It writes no files. Optional remote verification and current event admission
+remain the separate controller/CI gates. Require exit0 before adopting the candidate JSON; a failure requires
 review of the changed project evidence, not automatic status or proof changes.
 
 After committing a current census, verify it with:
