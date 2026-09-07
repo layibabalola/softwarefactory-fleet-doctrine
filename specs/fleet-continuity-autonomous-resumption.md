@@ -1,7 +1,9 @@
 # Fleet Continuity: Autonomous Session Resumption After Rotation
 
-**Status**: Ratified across adobe-ingester, agent-bridge, mlv-app, cloudvore  
-**Adopted**: 2026-09-06  
+**Cloudvore disposition, 2026-09-07:** The historical Cloudvore adoption claim below is superseded by the explicit DISTINGUISH in [Cloudvore current spec](cloudvore.md). Its current entry route derives Git state without automatic staging or cherry-picking. This correction makes no adoption claim for another project.
+
+**Historical status (2026-09-06)**: Ratified across adobe-ingester, agent-bridge, mlv-app, cloudvore; Cloudvore's current disposition is the September 7 DISTINGUISH above.  
+**Historical adoption date**: 2026-09-06  
 **Author**: Layi (layibabalola)  
 **License**: Shared fleet doctrine (no execution authority until project adoption)
 

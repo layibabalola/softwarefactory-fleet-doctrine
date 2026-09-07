@@ -171,19 +171,28 @@ project has to write its own and no project can be current only in prose:
 
 ```
 node tools/doctrine-sync.mjs check        --project <name> --consumer "<repo path>"
-node tools/doctrine-sync.mjs ack          --project <name> --consumer "<repo path>"
+node tools/doctrine-sync.mjs ack          --project <name> --consumer "<repo path>" --commit <reviewedSHA>
 node tools/doctrine-sync.mjs export-check --project <name> --consumer "<repo path>" --since-hours 24
+node tools/doctrine-sync.mjs export-check --project <name> --consumer "<repo path>" --source-commit <sourceSHA> --publication-commit <busSHA>
 ```
 
 - **`check`** fetches, reports how far behind the clone is, and lists the *sibling* doctrine
   commits this project has not folded (its own `specs/<project>.md` is excluded). Exit `0` =
   current, `1` = deltas to fold, `2` = tool/environment failure. `--max` caps the listing and
   the cap is always printed — a silent truncation reads exactly like "nothing else happened".
-- **`ack`** records the folded-through commit. **The marker lives in the CONSUMING project**
+- **`ack`** requires an explicit reviewed commit reachable from fetched `origin/master` and
+  records that commit even when newer changes exist. Missing or invalid revisions fail without
+  moving the cursor. **The marker lives in the CONSUMING project**
   (`.codex-state/doctrine/last-seen.json`), never on the bus: under law 2 a consumer must not
   mutate shared state to record its own reading position.
 - **`export-check`** applies the seam test to the consumer's recent commits and reports whether
-  an entry is owed. It is a DETECTOR, never a generator — **doctrine text is authored, never
+  an entry may be owed. Without exact commit arguments it is advisory detection only: no heuristic
+  hit is not completion proof, and a recent commit mentioning the project cannot clear debt.
+  With both exact arguments, it verifies source and publication reachability from their fetched
+  `origin/master` branches and requires exactly one matching `source_commit: <full source SHA>`
+  line in `specs/<project>.md` at the publication commit. This proves provenance and publication,
+  not review, ratification, or runtime adoption; those remain separate recorded obligations.
+  It is never a generator — **doctrine text is authored, never
   synthesized.** Auto-publishing generated prose would defeat law 1 (a hub must be able to
   verify what it folds) and law 4 (the exposure carve-out needs a human-legible decision about
   what travels). What is automated is the *obligation* and the *detection*, not the writing.
@@ -197,7 +206,14 @@ implementation is AdversarialLLM's:
 - Both are advisory by design. A doctrine gate that blocks landing product code would recreate
   the exact failure this bus spent 2026-08-30 documenting: ceremony outranking delivery.
 
-Requires `node` only. Deliberately not Python — `py -3` has been measured absent on at least
+Requires `node` and `git`. Git children have a 30-second deadline and interactive prompts disabled.
+`tools/fleet-membership.mjs` is the shared member classifier used by the sweep and heartbeat
+reader. It excludes `fleet-*` and the two legacy protocol specs whose names are pinned:
+`provider-model-benchmarking.md` and `provider-audit-consumer-provenance.md`. Other `provider-*`
+names remain eligible projects. The heartbeat reader also requires Node and refuses unreadable
+or malformed membership instead of reporting a healthy empty fleet.
+Regression commands: `node tools/doctrine-sync.tests.mjs` and `node tools/fleet-membership.tests.mjs`.
+Deliberately not Python — `py -3` has been measured absent on at least
 one fleet box, and a sync tool that fails open is worse than none.
 
 > **⚠ CONVERGENCE PENDING (noted 2026-08-30 12:55 CDT).** An untracked

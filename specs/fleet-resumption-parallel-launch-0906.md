@@ -1,8 +1,10 @@
 # Doctrine: Checkpoint-Ignite-Assess-Adjudicate (CIAA) Pattern
 
+**Cloudvore disposition, 2026-09-07:** The Phase 1 account below is historical. Cloudvore now explicitly distinguishes blanket parallel-launch resumption in [its current spec](cloudvore.md); bounded delegation in a finite task does not reinstate the old standing lanes.
+
 **Date:** 2026-09-06  
 **Origin:** Cloudvore factory (DropBox Vault)  
-**Status:** VALIDATED in Phase 1 field test  
+**Historical field-test status:** VALIDATED in Phase 1 field test  
 **Applies to:** Multi-lane factories with quota rotation and concurrent writers
 
 ---

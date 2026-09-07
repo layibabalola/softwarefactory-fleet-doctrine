@@ -17,7 +17,7 @@ tool and should be deleted.
 | | |
 |---|---|
 | **One file per board** | `heartbeats/<board-id>.json`. Single writer (law 2), enforced against the source artifact, not against a CLI argument. |
-| **Membership** | **Derived**, never declared twice: `specs/<project>.md` minus `specs/fleet-*.md`, the same rule `fleet-sweep.mjs` uses, so the two can never disagree about who exists. |
+| **Membership** | **Derived** through the shared `tools/fleet-membership.mjs` classifier: project specs minus fleet-* and the two pinned legacy protocol specs. Both readers call the same rule; there is no separate roster. |
 | **Publisher** | `tools/Publish-BoardHeartbeat.ps1 -BoardId <id> -ProjectRoot <root> -BusRoot <bus>` |
 | **Reader** | `tools/Get-FleetHeartbeatStatus.ps1 [-StaleHours 12] [-Json]` |
 | **Source** | `<root>/.claude-state/doctrine/fleet-sweep-receipt.json` — written by `node tools/fleet-sweep.mjs --json-out <path>`. A legacy `last-run.json` is accepted as a fallback. |

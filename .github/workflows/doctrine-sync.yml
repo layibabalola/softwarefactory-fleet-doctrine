@@ -1,0 +1,37 @@
+name: Doctrine sync
+on:
+  push:
+    branches: [master]
+    paths:
+      - 'tools/doctrine-sync*'
+      - 'tools/fleet-sweep.mjs'
+      - 'tools/fleet-membership*.mjs'
+      - 'tools/Get-FleetHeartbeatStatus.ps1'
+      - 'specs/*continuity*'
+      - 'specs/*resumption*'
+      - '.github/workflows/doctrine-sync.yml'
+  pull_request:
+    paths:
+      - 'tools/doctrine-sync*'
+      - 'tools/fleet-sweep.mjs'
+      - 'tools/fleet-membership*.mjs'
+      - 'tools/Get-FleetHeartbeatStatus.ps1'
+      - 'specs/*continuity*'
+      - 'specs/*resumption*'
+      - '.github/workflows/doctrine-sync.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  offline-regressions:
+    runs-on: windows-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Pinned acknowledgement and exact publication
+        run: node tools/doctrine-sync.tests.mjs
+      - name: Real member discovery and absent Cloudvore heartbeat
+        run: node tools/fleet-membership.tests.mjs

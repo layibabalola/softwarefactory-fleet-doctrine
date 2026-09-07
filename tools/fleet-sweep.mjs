@@ -66,6 +66,7 @@ import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { homedir } from 'node:os';
+import { fleetMembers } from './fleet-membership.mjs';
 
 const EXIT_OK = 0, EXIT_ACTION = 1, EXIT_FAIL = 2;
 const DEFAULT_MAX_AGE_HOURS = 24;
@@ -101,11 +102,9 @@ function git(args) {
 }
 
 function declaredMembers() {
-  return git(['ls-tree', '--name-only', 'origin/master', 'specs/'])
-    .split('\n')
-    .map((s) => s.trim())
-    .filter((s) => s.endsWith('.md') && !s.startsWith('specs/fleet-'))
-    .map((s) => ({ project: s.slice('specs/'.length, -'.md'.length), specFile: s }));
+  const paths = git(['ls-tree', '--name-only', 'origin/master', 'specs/'])
+    .split('\n').map((s) => s.trim()).filter(Boolean);
+  return fleetMembers(paths).map((project) => ({ project, specFile: `specs/${project}.md` }));
 }
 
 function runCheck(project, consumer) {

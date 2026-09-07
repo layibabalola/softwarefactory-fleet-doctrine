@@ -1606,3 +1606,27 @@ makes "never read the big ledger whole" a cost control with a measured
 denominator, not hygiene advice. Measure your own hit rate before spending
 engineering time on cache placement; if reads already dominate, that work is
 already done.
+
+## 2026-09-07 — Cloudvore: pinned consumption and exact publication repair
+
+Scope: bounded D02/D03 mechanics, requested by the Cloudvore owner for autonomous execution on September 7. The integrating Codex session accepted this patch after independent Luna inspection returned no material findings. This records review of the concrete tool repair; it creates no universal-controller adoption or new fleet law.
+
+Candidate branch: codex/cloudvore-doctrine-repair-20260907, based on 7ebe429e3de100be5cb02faf8f35627586a17624. Changes: explicit reviewed-SHA acknowledgement; bounded, noninteractive Git children; exact source/publication reachability and source_commit field checking; advisory-only heuristic export detection; two cross-cutting specs renamed under the existing fleet-* convention. No legacy spec bodies were rewritten by the rename.
+
+Verification on Windows: `node tools/doctrine-sync.tests.mjs` exited 0, 20 cases passed. The suite executes an old-latest-head mutation in a temporary tool copy and confirms the A/B regression assertion fails; a separately injected ETIMEDOUT checks marker preservation and finite child options. `node tools/fleet-membership.tests.mjs` exited 0 and exercised both actual readers against temporary local remotes: old document names create phantom boards, fleet-* names do not, and Cloudvore remains ABSENT without a heartbeat. No real consumer cursor or heartbeat was written by these tests. The new Doctrine sync workflow runs both suites on Windows.
+
+Existing limitation, reproduced before these changes: `python tools/check_adoption_ledger.py --treeish HEAD` at baseline 7ebe429 exits 1 with PROJECT_SPEC_DRIFT. The frozen R26 ledger and checker were not weakened or updated; this repair makes no claim that the entire bus is green or that R26 is adopted. Current factual project-spec publication and its exact Cloudvore source commit follow separately.
+
+## 2026-09-07 — Cloudvore: complete membership classification without moving pinned protocols
+
+The first D02 repair removed two newly named phantom boards. Follow-up enumeration exposed two older protocol documents with pinned paths: provider-model-benchmarking.md and provider-audit-consumer-provenance.md. They are cross-cutting protocols, not projects. The shared fleet-membership.mjs now supplies one classifier to both sweep and heartbeat reader; it excludes those exact names and fleet-*, while a legitimate provider-foo remains a member. Current enumeration gives nine project IDs, including Cloudvore.
+
+The PowerShell reader requires Node, bounds its owned helper and output drain, and rejects missing helpers, malformed/scalar/empty/duplicate memberships. `node tools/fleet-membership.tests.mjs` passed with the actual sweep and reader in temporary local fixtures; malformed helper output exits 1 and Cloudvore without a heartbeat stays ABSENT. Independent Luna inspection returned no material findings. The integrating session accepted this finite correctness repair; there is no new membership roster or runtime adoption grant.
+
+## 2026-09-07 — Cloudvore: publish the installed finite recovery contract
+
+Cloudvore source 3b7d5323fce52bc2ca512b04d0650d4ce830b4b4 reached remote master and the primary checkout after hosted Tools run 34149432914 passed all 18 required suites (218 seconds). Its gate/entry/state suites report 10/13/51 tests respectively. Product run 34147321023 passed 2,050 tests with two skips and five Integration files excluded at parent 2252219; source/product-workflow bytes are unchanged in 3b7d532. The two required failures from the initial tools run were repaired, not waived. The default required-only workflow leaves all informational diagnostics available by manual tier=all; nine initial informational failures/timeouts remain visible as non-assurance.
+
+The installed entry command returned valid with doctrine pending, correctly reflecting the absent consumption marker. This publication replaces the stale Cloudvore spec with installed facts and qualifies only Cloudvore's historical adoption claims in the two continuity documents. It preserves zero runtime authority for R26 and the known pre-existing PROJECT_SPEC_DRIFT checker failure. Exact source/publication verification and the reviewed cursor are recorded in Cloudvore's existing BACKLOG at closeout; publication alone is not acknowledgement or fleet ratification.
+
+Independent Luna review accepted the factual Cloudvore spec and identified one ambiguity in the continuity document's old status/adoption fields. Those fields now explicitly say historical, retaining the original account while preventing it from presenting current Cloudvore adoption. The integrating session verified the correction before publication.
