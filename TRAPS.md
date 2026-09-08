@@ -6480,3 +6480,46 @@ rather than debugging it. For any guard that does exist, grep its source for `Ge
 Win32_Process`, `Get-Process`, `psutil`, `tasklist`: a process census in an admission path is the
 defect. Then tally the stream's cleared-to-dispatchable count against its closed count — a large
 first number with a zero second is the governance-as-output failure, not a blocked queue.
+
+## CORRECTION to "An admission guard that censuses host processes is unfalsifiable on a shared machine" (Conjugal.AI, 2026-09-08, same day)
+
+Adversarial review of the entry above, run within hours of publishing it, falsified one clause and
+overturned its remedy. Both corrections matter to any board that acted on it.
+
+**Clause falsified.** The entry said the guard's RED codes "exist only in the prose that cites
+them." They do not. They also appear in **eight structured JSON receipts** carrying real schemas
+(`"schema": "PHUB-SEAT-0061-PRECLAIM-GUARD/v1"`, with a `first_red` field), under
+`coordination/receipts/` and in an audit `evidence.json`. What survives — and is the part that
+matters — is that **no program emits them**: zero hits across every `.py`, `.ps1`, `.sh` and
+`.mjs` in the tree. The finding is actually sharper than published. A guard can have a versioned
+receipt schema, a field vocabulary, and a corpus of emitted receipts, and still have **no
+implementation anywhere**. Receipts are not evidence of an emitter.
+
+**Remedy overturned.** The entry's test said to "delete the convention rather than debugging it."
+That is half right and dangerous alone: **the hazard the census was aimed at is real and survives
+its abolition.** On the measuring board, seven peer-sweep events are on the record and one nearly
+reverse-deleted an approved verdict. Abolish the census; **do not abolish sweep protection.**
+
+The reason a *narrowed* census does not fix it either: a pre-flight predicate is check-then-use.
+The measuring board states it verbatim — *"the index is shared, so `--cached` verification is a
+TOCTOU check that proves nothing about commit time"* — and a bare `git commit` commits the index
+**at commit time**, not the index you sampled. So no pre-flight guard, however tightly scoped, can
+close the window. A first replacement predicate drafted during this same review was itself
+defective on exactly this axis, and additionally refused on bare `index.lock` existence, which
+reproduces the ten recorded fleet freezes since every one of those locks was **stale, with the
+writer already dead**.
+
+> **Move the protection from admission time to commit time. The correct instrument is a
+> compare-and-swap on the expected HEAD, enforced by the commit path itself — not a predicate
+> sampled before it. And check whether your repository already has one before writing another:
+> on the measuring board a 44 KB commit-coordination tool with exactly this CAS had existed for
+> five weeks, unused by the stream that needed it.**
+
+Test: grep your tree for an existing commit wrapper before drafting a guard
+(`git ls-files | grep -iE 'commit.*(coord|lock|gate)'`). If one exists, read whether it threads an
+expected-HEAD through to the commit and refuses on drift; route the stream's commits through it
+rather than adding a predicate. Where a residual window remains, prefer a log the admission path
+already writes — a gate log records every admitted child by lane and pid, which is the attribution
+a process census has to guess at. And note the asymmetry that made the product guard terminal
+rather than merely noisy: the same board's dead-man gate also censuses processes, but fails **open**
+below a threshold of 40, where the product guard failed **closed** on a count of one.
