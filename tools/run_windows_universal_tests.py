@@ -25,7 +25,7 @@ RESERVE_SECONDS = 90
 MODULE = "test_universal_provider_control"
 CENSUS_SHA256 = "fac79a2f8f40534a3dc7aef5698c5f1c6c6f5bf0cf3fc2eacf060c9be3fb8e4b"
 HEAVY = (
-    "test_frozen_r43_child_execution_is_bound_to_the_authenticated_graph",
+    "test_frozen_r43_authoritative_source_and_outcomes_are_closed",
     "test_historical_numbered_tests_are_semantically_quarantined",
 )
 
@@ -102,8 +102,8 @@ def partition(ids):
         raise Refused("INVALID_CENSUS")
     shards = [[], [], [], []]
     remaining = ids.copy()
-    # Retained cancelled Windows logs show the frozen child execution alone
-    # taking 424 s, and quarantine still running after 203 s. Isolate both;
+    # Retained Windows logs show frozen authoritative execution alone taking
+    # 418 s, and quarantine still running after 203 s. Isolate both;
     # split the other 250 tests deterministically. Receipts measure actual balance.
     for index, name in enumerate(HEAVY):
         matches = [item for item in remaining if item.endswith("." + name)]
@@ -118,6 +118,7 @@ def partition(ids):
 
 def plan_for(cases, source, run_id):
     ids = sorted(cases)
+    verify_census(ids)
     return {"version": 1, "run_id": run_id, "source": source,
             "census": ids, "census_sha256": digest(ids), "shards": partition(ids)}
 
@@ -175,9 +176,14 @@ def atomic_json(path, value):
         handle.write("\n")
         handle.flush()
         os.fsync(handle.fileno())
-    if path.exists():
-        raise Refused("RECEIPT_ALREADY_EXISTS")
-    temporary.replace(path)
+    try:
+        # A hard link publishes complete bytes atomically and cannot replace an
+        # existing receipt, including one created concurrently after writing.
+        os.link(temporary, path)
+    except FileExistsError as error:
+        raise Refused("RECEIPT_ALREADY_EXISTS") from error
+    finally:
+        temporary.unlink()
 
 
 class RecordingResult(unittest.TextTestResult):
@@ -308,6 +314,10 @@ class WindowsJob:
         try:
             self.check(self.api.TerminateJobObject(self.handle, 1))
             for process in processes:
+                # Also retain directly owned children whose job assignment
+                # failed. They are still waiting for GO and have no descendants.
+                if process.poll() is None:
+                    process.kill()
                 process.wait(timeout=max(0.01, deadline - time.monotonic()))
             while self.active():
                 if time.monotonic() >= deadline:
@@ -323,6 +333,8 @@ class WindowsJob:
                 errors.append(error)
             for process in processes:
                 try:
+                    if process.poll() is None:
+                        process.kill()
                     process.wait(timeout=5)
                 except BaseException as error:
                     errors.append(error)
@@ -366,6 +378,7 @@ def run(output):
                 [sys.executable, "-u", str(Path(__file__).resolve()), "--output-dir", str(output),
                  "--worker", str(index)], cwd=ROOT, stdin=subprocess.PIPE,
                 stdout=log, stderr=subprocess.STDOUT)
+            processes.append(process)
             try:
                 job.attach(process)
             except BaseException:
@@ -376,7 +389,6 @@ def run(output):
                 finally:
                     process.stdin.close()
                 raise
-            processes.append(process)
             process.stdin.write(b"GO\n")
             process.stdin.close()
         wait_workers(processes, started + budget)
@@ -390,7 +402,10 @@ def run(output):
                 log.close()
             for index in range(len(logs)):
                 print(f"--- worker {index} log ---", flush=True)
-                print((output / f"worker-{index}.log").read_text(encoding="utf-8", errors="replace"), flush=True)
+                try:
+                    print((output / f"worker-{index}.log").read_text(encoding="utf-8", errors="replace"), flush=True)
+                except OSError as error:
+                    print(f"DIAGNOSTIC_LOG_UNAVAILABLE worker={index}: {error}", flush=True)
             print(f"Preserved receipts and logs: {output}", flush=True)
     if snapshot() != source:
         raise Refused("PARENT_SOURCE_CHANGED")

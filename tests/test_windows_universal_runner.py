@@ -42,8 +42,7 @@ class ReceiptTests(unittest.TestCase):
                 runner.worker_budget()
 
     def setUp(self):
-        ids = [f"suite.C.test_{index:03}" for index in range(250)]
-        ids += ["suite.C." + name for name in runner.HEAVY]
+        ids = runner.source_census()
         self.plan = runner.plan_for(ids, {"head": "a" * 40, "tree": "b" * 40}, "fresh")
         self.receipts = []
         for index, assigned in enumerate(self.plan["shards"]):
@@ -125,6 +124,20 @@ class ReceiptTests(unittest.TestCase):
             with self.assertRaises(runner.Refused):
                 runner.atomic_json(path, {"second": True})
             self.assertEqual(runner.read_json(path), {"first": True})
+            self.assertFalse(path.with_suffix(".partial").exists())
+
+    def test_receipt_created_during_publication_is_never_overwritten(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "receipt.json"
+            real_link = os.link
+            def racing_link(source, target):
+                target.write_bytes(b"concurrent original")
+                real_link(source, target)
+            with mock.patch.object(runner.os, "link", side_effect=racing_link):
+                with self.assertRaisesRegex(runner.Refused, "RECEIPT_ALREADY_EXISTS"):
+                    runner.atomic_json(path, {"replacement": True})
+            self.assertEqual(path.read_bytes(), b"concurrent original")
+            self.assertFalse(path.with_suffix(".partial").exists())
 
     def test_recording_result_detects_fixture_failure_without_execution(self):
         class Broken(unittest.TestCase):
@@ -162,8 +175,7 @@ class ReceiptTests(unittest.TestCase):
 @unittest.skipUnless(os.name == "nt", "Windows Job Object lifecycle controls")
 class WindowsContainmentTests(unittest.TestCase):
     def test_parent_interrupt_and_child_failure_always_clean_every_started_worker(self):
-        ids = [f"suite.C.test_{index:03}" for index in range(250)]
-        ids += ["suite.C." + name for name in runner.HEAVY]
+        ids = runner.source_census()
         for error in (KeyboardInterrupt(), runner.Refused("CHILD_FAILED"),
                       runner.Refused("WORKER_DEADLINE_EXCEEDED")):
             with self.subTest(error=type(error).__name__), tempfile.TemporaryDirectory() as directory:
@@ -181,8 +193,7 @@ class WindowsContainmentTests(unittest.TestCase):
                 self.assertEqual(job.attach.call_count, 4)
 
     def test_assignment_failure_kills_handshake_child_without_starting_tests(self):
-        ids = [f"suite.C.test_{index:03}" for index in range(250)]
-        ids += ["suite.C." + name for name in runner.HEAVY]
+        ids = runner.source_census()
         with tempfile.TemporaryDirectory() as directory:
             job, process = mock.Mock(), mock.Mock()
             job.attach.side_effect = OSError("assignment refused")
@@ -197,7 +208,37 @@ class WindowsContainmentTests(unittest.TestCase):
             process.wait.assert_called_once_with(timeout=10)
             process.stdin.write.assert_not_called()
             process.stdin.close.assert_called_once()
-            job.cleanup.assert_called_once_with([])
+            job.cleanup.assert_called_once_with([process])
+
+    def test_failed_assignment_and_failed_initial_kill_retain_child_ownership(self):
+        with tempfile.TemporaryDirectory() as directory:
+            job, process = mock.Mock(), mock.Mock()
+            job.attach.side_effect = OSError("assignment refused")
+            process.kill.side_effect = OSError("first kill failed")
+            with mock.patch.object(runner, "snapshot", return_value={"head": "a" * 40}), \
+                 mock.patch.object(runner, "WindowsJob", return_value=job), \
+                 mock.patch.object(runner.subprocess, "Popen", return_value=process), \
+                 mock.patch("builtins.print"):
+                with self.assertRaisesRegex(OSError, "first kill failed"):
+                    runner.run(Path(directory) / "new-run")
+            job.cleanup.assert_called_once_with([process])
+            process.stdin.write.assert_not_called()
+
+    def test_unreadable_log_does_not_mask_primary_child_failure(self):
+        with tempfile.TemporaryDirectory() as directory:
+            original_read = Path.read_text
+            def read(path, *args, **kwargs):
+                if path.suffix == ".log":
+                    raise OSError("diagnostic unavailable")
+                return original_read(path, *args, **kwargs)
+            with mock.patch.object(runner, "snapshot", return_value={"head": "a" * 40}), \
+                 mock.patch.object(runner, "WindowsJob"), \
+                 mock.patch.object(runner.subprocess, "Popen"), \
+                 mock.patch.object(runner, "wait_workers", side_effect=runner.Refused("CHILD_FAILED")), \
+                 mock.patch.object(Path, "read_text", read), mock.patch("builtins.print") as output:
+                with self.assertRaisesRegex(runner.Refused, "CHILD_FAILED"):
+                    runner.run(Path(directory) / "new-run")
+                self.assertEqual(sum("DIAGNOSTIC_LOG_UNAVAILABLE" in str(call) for call in output.call_args_list), 4)
 
     def test_win64_layout_matches_windows_sdk(self):
         if ctypes.sizeof(ctypes.c_void_p) == 8:
