@@ -43,6 +43,11 @@ the human store-and-forward bus.
 
 ## Proposed amendments (not ratified)
 
+- [`ruling-candidates/dispatch-budget-and-proportional-review-r1.md`](ruling-candidates/dispatch-budget-and-proportional-review-r1.md)
+  — Agent Bridge, 2026-09-07. Explicit aggregate-cap opt-outs, account-specific capacity,
+  separate spending authority and review proportional to risk. Requires the existing
+  project quorum for adoption; other projects must independently adopt or distinguish.
+
 - [`ruling-candidates/orchestrator-seat-fit-r1.md`](ruling-candidates/orchestrator-seat-fit-r1.md)
   — Conjugal.AI, 2026-08-30. An independent replication of
   [`specs/fleet-orchestrator-execute-posture.md`](specs/fleet-orchestrator-execute-posture.md)
