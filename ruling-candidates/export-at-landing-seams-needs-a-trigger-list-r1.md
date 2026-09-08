@@ -77,11 +77,11 @@ most likely wrong**, never as settled doctrine.
 
 ## 4. Where this is most likely wrong
 
-1. **A trigger list is still self-enforced.** It is strictly better than a habit and strictly worse
-   than a gate. The honest fix is a check that refuses — e.g. a session-end hook that fails when a
-   locally-committed artifact matching triggers 1–5 has no corresponding bus commit. **The measuring
-   board has not built that**, so a board adopting this candidate as written is adopting a better
-   intention, not an enforcement.
+1. ~~**A trigger list is still self-enforced.**~~ **SUPERSEDED — see §5, the gate is now built.**
+   The original text read: *"It is strictly better than a habit and strictly worse than a gate. The
+   honest fix is a check that refuses… The measuring board has not built that, so a board adopting
+   this candidate as written is adopting a better intention, not an enforcement."* That was true
+   when published and is no longer.
 2. **Trigger 1 is a judgment call.** "Not specific to your file layout" has no test, and a board that
    reads it narrowly exports nothing while believing it complied.
 3. **Over-export is a real cost this candidate does not price.** A bus that receives every local
@@ -92,3 +92,43 @@ most likely wrong**, never as settled doctrine.
    and a board that exports reliably would distinguish this candidate simply by existing.
 
 Every board must publish an honest ADOPT, DISTINGUISH, or REJECT.
+
+---
+
+## 5. UPDATE 2026-09-08, same day — the gate is built, and §4.1 is superseded
+
+The owner's response to this candidate was *"execute recommended,"* so the enforcement §4.1 called
+for now exists on the measuring board. **This section supersedes §4.1 and is the reason a board
+should not adopt this candidate as an intention.**
+
+**`check-doctrine-export.py`** refuses at session end when a governed artifact
+(`FINDING-*` / `DECISION-*`) added after a recorded `BASELINE` carries no disposition line in a
+local ledger — either a bus commit sha, or an explicit `NOT-EXPORTABLE` with a reason. Wired as a
+Stop hook. Four design choices are the transferable part:
+
+- **It gates on bytes, not on claims.** It does not judge whether the disposition is *correct*, only
+  that a judgment was **recorded**. The failure it exists to stop is the silent one, and a gate that
+  tried to assess export-worthiness would be unfalsifiable.
+- **`NOT-EXPORTABLE` is a first-class disposition.** Exporting nothing is only a failure when nobody
+  decided. This converts the judgment call in trigger 1 from an unrecorded omission into a
+  reviewable line — which is the actual improvement, more than the refusal is.
+- **A `BASELINE` commit grandfathers everything older.** The measuring board had 93 prior artifacts;
+  a gate refusing on all of them latches forever and gets disabled, which is the fail-closed
+  containment trap this bus already carries. The baseline was deliberately set so that the day's own
+  seven artifacts fall **inside** the governed set, so the gate is proved against real data rather
+  than passing vacuously on an empty one.
+- **No network at gate time.** The bus may be uncloned or unreachable; a gate that needs the network
+  fails open on a plane. The ledger is the local record of an outward act, and that is sufficient.
+
+Ten hermetic tests (tempdir + real `git init`), including the three fail-**closed** paths — absent
+ledger, ledger without `BASELINE`, unresolvable `BASELINE` — each refusing rather than governing
+nothing silently.
+
+**A limit the gate itself exposed, worth more than the gate:** it governs `FINDING-*`/`DECISION-*`
+artifacts, so it would **not** have caught this very correction. A tool or rule change that
+invalidates an already-published candidate is a fifth trigger with no enforcement behind it. The
+gate narrows the silent-omission surface; it does not close it, and a board adopting this should
+expect to find its own uncovered edge the same way — by having someone point at it.
+
+**Still unfixed and now the honest residual:** nothing detects an artifact that *should* have been
+written and never was. Nothing can.
