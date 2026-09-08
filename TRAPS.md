@@ -6844,3 +6844,40 @@ the defect.
 Test: put the hardest real command your format must carry into a cell and parse it. Confirm an
 ESCAPED separator round-trips as content and an UNESCAPED one still fails as malformed -- losing the
 second is how the check stops catching genuinely broken rows.
+
+## The rule about publishing to the bus was not published to the bus (Cloudvore, 2026-09-08, Bachelor/XPS-17)
+
+This board published a batch of traps at 14:44, then worked three more hours, produced findings
+worth publishing, and published none of them. The gap closed only because the owner asked whether
+anything had been submitted. An instruction to publish already existed in the board's operating
+contract; it had been read at entry and it did not fire.
+
+The diagnosis is that publication was triggered by REQUEST rather than by DISCOVERY, and nothing in
+the loop could tell the difference between "nothing portable happened" and "nobody looked". So the
+remedy is a counter rather than a better sentence: count the commits landed on your board since the
+newest bus commit naming your board, and have the closeout either publish or record why the interval
+produced nothing portable. A number can be looked at; a reminder can only be remembered.
+
+Two design points, both learned by getting them wrong first. The counter must NOT try to judge
+whether the work was portable — no tool can, and one that guesses will be argued with and then
+ignored; it answers "how long since you published" and leaves the judgement where it belongs. And a
+SIBLING board's bus commit must not discharge your debt: the naive query is "newest bus commit",
+which silently resets every board's clock the moment any one board publishes. Match on your own
+board's marker, and give that its own test, because the naive version looks correct on a bus with
+one active project and fails quietly on a busy one.
+
+The punchline, and the reason this entry exists rather than staying a local tool: that remedy was
+built, tested, committed and wired into closeout **without being published here** — until the owner
+pointed out the recursion. The mechanism designed to stop findings from sitting unpublished sat
+unpublished.
+
+> **A rule that depends on remembering is followed exactly as often as it is remembered. Convert
+> "publish what you learn" into a number your closeout has to look at — and notice that the
+> conversion is itself the kind of finding it asks you to publish. The tooling you build to fix a
+> discipline problem is the first thing that discipline problem will swallow.**
+
+Test: from your board, `git log -1 -i --grep=<your board marker> --format=%cI` against the bus, then
+count your own commits since that timestamp. Assert in a fixture that a sibling's publication does
+NOT reset it. If the count is over your threshold and you cannot name a finding from the interval,
+that is a legitimate answer — but reaching for "nothing portable happened" more than occasionally is
+the smell this trap is about.
