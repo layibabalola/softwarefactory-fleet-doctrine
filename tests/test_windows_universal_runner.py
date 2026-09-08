@@ -17,6 +17,30 @@ import run_windows_universal_tests as runner
 
 
 class ReceiptTests(unittest.TestCase):
+    def test_same_count_census_substitution_is_refused(self):
+        ids = runner.source_census()
+        runner.verify_census(ids)
+        ids[0] += "_substituted"
+        with self.assertRaisesRegex(runner.Refused, "CENSUS_CHANGED_REQUIRES_REVIEW"):
+            runner.verify_census(ids)
+
+    def test_parent_census_never_imports_project_tests(self):
+        with mock.patch.object(unittest.TestLoader, "discover", side_effect=AssertionError("import")):
+            self.assertEqual(len(runner.source_census()), 252)
+
+    def test_job_budget_reserves_cleanup_and_downstream_time(self):
+        with mock.patch.dict(os.environ, {"UNIVERSAL_JOB_STARTED_UNIX": "1000"}), \
+             mock.patch.object(runner.time, "time", return_value=1200):
+            self.assertEqual(runner.worker_budget(), 610)
+        for start in ("NaN", "Infinity", "3000", "100"):
+            with mock.patch.dict(os.environ, {"UNIVERSAL_JOB_STARTED_UNIX": start}), \
+                 mock.patch.object(runner.time, "time", return_value=1200), \
+                 self.subTest(start=start), self.assertRaises(runner.Refused):
+                runner.worker_budget()
+        with mock.patch.dict(os.environ, {"GITHUB_ACTIONS": "true"}, clear=True):
+            with self.assertRaisesRegex(runner.Refused, "CI_JOB_CLOCK_REQUIRED"):
+                runner.worker_budget()
+
     def setUp(self):
         ids = [f"suite.C.test_{index:03}" for index in range(250)]
         ids += ["suite.C." + name for name in runner.HEAVY]
@@ -146,7 +170,7 @@ class WindowsContainmentTests(unittest.TestCase):
                 job = mock.Mock()
                 processes = [mock.Mock() for _ in range(4)]
                 with mock.patch.object(runner, "snapshot", return_value={"head": "a" * 40}), \
-                     mock.patch.object(runner, "discover", return_value=dict.fromkeys(ids)), \
+                     mock.patch.object(runner, "source_census", return_value=ids), \
                      mock.patch.object(runner, "WindowsJob", return_value=job), \
                      mock.patch.object(runner.subprocess, "Popen", side_effect=processes), \
                      mock.patch.object(runner, "wait_workers", side_effect=error), \
@@ -163,7 +187,7 @@ class WindowsContainmentTests(unittest.TestCase):
             job, process = mock.Mock(), mock.Mock()
             job.attach.side_effect = OSError("assignment refused")
             with mock.patch.object(runner, "snapshot", return_value={"head": "a" * 40}), \
-                 mock.patch.object(runner, "discover", return_value=dict.fromkeys(ids)), \
+                 mock.patch.object(runner, "source_census", return_value=ids), \
                  mock.patch.object(runner, "WindowsJob", return_value=job), \
                  mock.patch.object(runner.subprocess, "Popen", return_value=process), \
                  mock.patch("builtins.print"):

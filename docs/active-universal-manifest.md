@@ -38,9 +38,12 @@ the existing discovery command and its established platform skip rules.
 
 The Windows runner requires a clean committed checkout and a new output directory
 outside it. Its plan binds the commit, tree, census and unique run identifier;
-atomic receipts must account for every selected test exactly once, with no skips,
+the reviewed census digest also rejects a same-count test substitution. The parent
+parses declarations without importing project code, and each contained worker
+verifies actual unittest discovery. Atomic receipts account for every selected test exactly once, with no skips,
 failures or errors. It refuses missing, duplicate, partial or mismatched receipts.
 Each worker waits for attachment to a Windows Job Object before importing project
-tests. A 720-second deadline leaves room within the unchanged 15-minute CI job;
+tests. A deadline of at most 720 seconds also subtracts elapsed job time and a
+90-second cleanup/downstream reserve from the unchanged 15-minute CI job;
 failure or interruption terminates and reaps workers and their descendants.
 Logs retain the plan, receipts and per-test durations for subsequent balancing.

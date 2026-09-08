@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import ast
 import ctypes
 import hashlib
 import json
@@ -19,7 +20,10 @@ ROOT = Path(__file__).resolve().parents[1]
 EXPECTED = 252
 WORKERS = 4
 DEADLINE_SECONDS = 720
+JOB_SECONDS = 900
+RESERVE_SECONDS = 90
 MODULE = "test_universal_provider_control"
+CENSUS_SHA256 = "fac79a2f8f40534a3dc7aef5698c5f1c6c6f5bf0cf3fc2eacf060c9be3fb8e4b"
 HEAVY = (
     "test_frozen_r43_child_execution_is_bound_to_the_authenticated_graph",
     "test_historical_numbered_tests_are_semantically_quarantined",
@@ -55,9 +59,41 @@ def discover():
     cases = list(flatten(unittest.TestLoader().discover(
         str(ROOT / "tests"), pattern=MODULE + ".py")))
     ids = [case.id() for case in cases]
-    if len(ids) != EXPECTED or len(set(ids)) != EXPECTED:
-        raise Refused("CENSUS_CHANGED_REQUIRES_REVIEW")
+    verify_census(ids)
     return {case.id(): case for case in cases}
+
+
+def verify_census(ids):
+    if (len(ids) != EXPECTED or len(set(ids)) != EXPECTED
+            or digest(sorted(ids)) != CENSUS_SHA256):
+        raise Refused("CENSUS_CHANGED_REQUIRES_REVIEW")
+
+
+def source_census():
+    # Parse declarations without executing any project code in the parent.
+    # Each contained worker independently verifies real unittest discovery.
+    module = ast.parse((ROOT / "tests" / (MODULE + ".py")).read_text(encoding="utf-8"))
+    ids = sorted(f"{MODULE}.{case.name}.{method.name}"
+                 for case in module.body if isinstance(case, ast.ClassDef)
+                 for method in case.body if isinstance(method, (ast.FunctionDef, ast.AsyncFunctionDef))
+                 and method.name.startswith("test_"))
+    verify_census(ids)
+    return ids
+
+
+def worker_budget():
+    raw = os.environ.get("UNIVERSAL_JOB_STARTED_UNIX")
+    if raw is None:
+        if os.environ.get("GITHUB_ACTIONS") == "true":
+            raise Refused("CI_JOB_CLOCK_REQUIRED")
+        return DEADLINE_SECONDS
+    elapsed = time.time() - float(raw)
+    if not math.isfinite(elapsed) or elapsed < 0:
+        raise Refused("INVALID_JOB_CLOCK")
+    remaining = min(DEADLINE_SECONDS, JOB_SECONDS - elapsed - RESERVE_SECONDS)
+    if remaining <= 0:
+        raise Refused("INSUFFICIENT_JOB_CLEANUP_RESERVE")
+    return remaining
 
 
 def partition(ids):
@@ -313,7 +349,7 @@ def run(output):
     if output == ROOT or ROOT in output.parents:
         raise Refused("RECEIPTS_MUST_BE_OUTSIDE_SOURCE_CHECKOUT")
     source = snapshot()
-    cases = discover()
+    cases = source_census()
     plan = plan_for(cases, source, uuid.uuid4().hex)
     output.mkdir(parents=True, exist_ok=False)
     atomic_json(output / "plan.json", plan)
@@ -322,6 +358,7 @@ def run(output):
     job = WindowsJob()
     started = time.monotonic()
     try:
+        budget = worker_budget()
         for index in range(WORKERS):
             log = (output / f"worker-{index}.log").open("xb")
             logs.append(log)
@@ -342,7 +379,7 @@ def run(output):
             processes.append(process)
             process.stdin.write(b"GO\n")
             process.stdin.close()
-        wait_workers(processes, started + DEADLINE_SECONDS)
+        wait_workers(processes, started + budget)
         if job.active() != 0:
             raise Refused("WORKER_LEFT_LIVE_DESCENDANTS")
     finally:
