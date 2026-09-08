@@ -25,6 +25,8 @@ on:
       - "tests/test_universal_manifest_spec_bindings.py"
       - "tests/test_universal_provider_control.py"
       - "tools/check_universal_manifest.py"
+      - "tools/refresh_current_universal_manifest.py"
+      - "tests/test_refresh_current_universal_manifest.py"
       - "tools/provider_capacity_governor.py"
       - "tools/universal_provider_control.py"
   push:
@@ -52,6 +54,8 @@ on:
       - "tests/test_universal_manifest_spec_bindings.py"
       - "tests/test_universal_provider_control.py"
       - "tools/check_universal_manifest.py"
+      - "tools/refresh_current_universal_manifest.py"
+      - "tests/test_refresh_current_universal_manifest.py"
       - "tools/provider_capacity_governor.py"
       - "tools/universal_provider_control.py"
   workflow_dispatch:
@@ -133,6 +137,8 @@ jobs:
 
       - name: Run governor semantic negative controls
         run: python -m unittest discover -s tests -p "test_provider_capacity_governor.py" -v
+      - name: Run guarded active-manifest refresh controls
+        run: python -m unittest discover -s tests -p "test_refresh_current_universal_manifest.py" -v
       - name: Run universal broker semantic negative controls
         run: python -m unittest discover -s tests -p "test_universal_provider_control.py" -v
       - name: Run canonical runtime-workbench negative controls
