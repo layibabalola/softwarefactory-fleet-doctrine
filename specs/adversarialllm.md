@@ -1,316 +1,116 @@
 # adversarialllm (AdversarialLLM-ClaudeCode) — living spec
 
-> Single writer: the AdversarialLLM project. Wholesale rewrite at doctrine seams.
-> Seeded 2026-08-09 by operator-directed session — this project joined the bus LATE;
-> its 2026-08-09 four-hour stall is partly attributable to never having folded the
-> fleet's ignition doctrine (scheduled-task headless lanes, configured!=running).
+> Single writer: the AdversarialLLM project. Wholesale rewrite at doctrine seams (unchanged bus
+> convention). This entry supersedes the prior 2026-08-09 -> 2026-08-31 content in full, landed by this
+> project's 2026-09-06 factory reset (`factory/RESET-PLAN.md`, decision D12). Nothing in the superseded
+> text is retracted — it is preserved in this bus's own git history for `specs/adversarialllm.md` before
+> this landing, and its exact provenance commits are cited below where they carry a still-binding
+> posture — this entry is simply the new live copy.
 
 ## What this project is
-Chrome extension (WXT) for multi-LLM adversarial evaluation across 7 provider
-harnesses (ChatGPT, Claude, Gemini, Grok, Kimi, Perplexity, DeepSeek), governed by a
-software factory hub in `adversarialllm/docs/33_FOUR_LANE_HUB.md` (§5/§6
-append-only tail is authoritative).
 
-## Lane topology (operator directive 2026-08-29 — the Claude-driven inversion)
-SUPERSEDES the 2026-08-09 five-lane topology on roles, ignition and queue priority. Single-writer,
-blind review, family diversity and append-only history are unchanged.
-- OPUS — Claude `claude-opus-5`, ORCHESTRATOR/INTEGRATOR. Sole authority to disposition, integrate,
-  close and sequence. Inherits every authority SOL held. Scheduled, 60 min.
-- SONNET — Claude `claude-sonnet-5`, IMPLEMENTER. Inherits LUNA's execution role. Scheduled, 60 min,
-  armed only after one clean OPUS tick is observed.
-- FABLE — Claude `claude-fable-5`, review/guidance/planning ON DEMAND. Not scheduled.
-- SOL / LUNA — Codex `gpt-5.6-sol` / `gpt-5.6-luna`, **CLI-INVOKED RESOURCE, NOT LANES.** No scheduled
-  tasks, no standing tick, no self-ignition. Demoted in authority and PROMOTED in necessity: with every
-  Claude seat conflicted or same-family, Codex is the only source of a valid independent review half.
-  No candidate integrates on two Claude halves.
-- The standing warden lane is retired; its receipts/liveness/drain audits fold into the OPUS tick.
+A Chrome MV3 extension (WXT + React + TypeScript) that sends one prompt to seven AI chat UIs (ChatGPT,
+Claude, Gemini, Grok, Kimi, Perplexity, DeepSeek — DeepSeek is beta/opt-in) and refines the answers
+adversarially. Repo: `https://github.com/layibabalola/AdversarialLLM-ClaudeCode.git`. Product status
+lives in exactly one document — `adversarialllm/docs/28_IMPLEMENTATION_PROGRESS.md` — GitHub PRs and
+issues are the whole ledger; nothing else carries status authority.
 
-## Ignition (2026-08-29)
-Claude lanes: Windows Scheduled Tasks -> `scripts/ignition/invoke-claude-lane.ps1` -> Claude Code CLI
-headless with the lane's runner prompt. Codex seats: `scripts/ignition/invoke-codex-lane.ps1` shells
-`codex exec` on demand — **family follows the RUNNER**, so a Claude session shelling `codex exec` seats a
-genuine Codex child. Per-lane lockfile + live-PID check enforces no-double-staffing; per-lane model and
-effort are declared in the launcher rather than inherited silently from `config.toml`.
-Two ignition-path facts measured here and published as traps 2026-08-30: the whole ignition system was
-UNTRACKED from 2026-08-10 until `0626e705` (a `git clean` would have destroyed it), and the stall guard
-was killing healthy lanes.
+## The reset (2026-09-06) — a law worth the fleet's attention
 
-## CLI versions on this box (drift is derived state)
-- Claude Code CLI: 2.1.222 (`%APPDATA%\Claude\claude-code\2.1.222\claude.exe`)
-- Codex Desktop: 26.803.5235.0 (no headless CLI on PATH)
-- PowerShell 7 (`pwsh`) + Windows PowerShell 5.1 both present
+Measured before the reset (`factory/RESET-PLAN.md` §0; commands in
+`factory/adjudications/evidence-20260906.md`): 904 commits touching this repo in the trailing 30 days,
+of which **3** touched `adversarialllm/src` or `adversarialllm/tests` (7-day window: 571 / 2); 339
+subjects were bare "Collect metrics" or idle-tick commits; 465 remote branches, 376 unmerged; 652
+worktrees; a hub ledger plus per-lane logs totalling 46,435 lines for 29 orders spawned by one feature;
+five scheduled lane tasks firing hourly with no queue behind them; and master CI **red on every push**,
+because the real merge path was a Stop-hook that never looked at CI at all.
 
-## Bus sync mechanization (2026-08-09)
-Every lane's wake checklist carries pull-diff-fold on boot and EXPORT-IF-SEAM at closeout
-(3-question seam test + class routing in `adversarialllm/.claude-state/rules/rule-doctrine-seam.md`);
-bus updates are checklist-mechanical, not judgment. Rulings still require hub ratification first.
+**Root cause, stated once so a sibling doesn't have to re-derive it:** the process rewarded process
+artifacts — a 3-of-3 blind >=9/10 zero-MUST review quorum before any product byte could land — over
+product delivery, so every candidate looped REJECT -> REMEDIATE -> SLICE while the schedulers kept
+producing commits whether or not there was work to do. This is the same conformance-fixpoint shape two
+sibling bus specs name from their own boards — `specs/fleet-orchestrator-execute-posture.md:15-19`
+("An orchestrator whose cheapest conformant act is *append a lawful entry describing why no lawful
+action exists* will do exactly that indefinitely... The board reaches a fixpoint of perfect governance
+and zero motion") and `specs/mlv-app.md:737` ("a cheapest-conformant-act that is 'append a lawful entry'
+is a real attractor and this board has its own instance of it") — and this project's own numbers (99.7%
+of 30-day commits touching neither `src` nor `tests`) are a further independent instance of it, not a
+rebuttal or a ranking against those boards' figures.
 
-## Open doctrine-relevant state (2026-08-09) — SUPERSEDED 2026-08-30, kept as the record of what the Codex-orchestrated period believed
-- Plans 1/2/5 (exact-SHA semantic integration gate; lease-authoritative broker release
-  K42; boot-snapshot integrity SNAP-01) are P0 prerequisites before production
-  integrations; O-5 operator-override + O-7 debt semantics in force.
-- Plan 4 (system-TEMP delete-denied wrapper defect) EXECUTED on the commit/push
-  critical path; ~60 residual `GetTempFileName` call sites queued for a LUNA sweep.
-- Fresh blind FABLE + OPUS halves owed on exact `695d7219`.
-- Stale registry note: `adversarialllm-fable-wake-watch` (minutes 19/49) observed in the
-  06:37Z collision report no longer exists in this box's task store — collision moot,
-  recorded here as data.
+**Current operation (2026-09-08):** the authorized Codex desktop recovery controller executes the
+reviewed queue; the parent owns mutations and bounded read-only Luna shards investigate. Native
+conductor WORK returns `WORK-SAFETY-BLOCKED` pending a reviewed restricted controller. The six legacy
+`AdvLLM-*` scheduled tasks remain disabled; configured hourly behavior is not proof of an active worker.
+Roles run on demand in their own worktrees, with no standing lanes or seats.
 
-## 2026-08-30 doctrine seam — what the Codex-orchestrated period actually measured
+The only path onto `master` is D2: exact-head full local CI and all three named GitHub checks green,
+validated native Claude and Codex receipts pinned to an immutable head/base, zero MUST/BLOCKER and
+literal APPROVE from the family that did not implement. A tracked `pre-push` hook and diagnostic
+tripwire supplement that gate; historical diagnostic debt does not hold independent product work.
+Two evaluable rejections close the attempt `adj-close`, but its requirement stays unfinished. A
+closed attempt is never silently retried or counted delivered; replacement requirements need an
+explicit reviewed queue change. Infrastructure failures consume no evaluable round and stop after
+three attempts per head/family until observed recovery or an explicit correction. Merged work, including
+every named replacement, satisfies dependencies. The historical lane/hub ledgers (`docs/30_*`-`33_*`,
+`34_RUNTIME_AUTHORITY_ADMISSION.md`, `35_*`) are archived, not deleted, at
+`adversarialllm/docs/archives/factory-2026-09/`. Full contract: `adversarialllm/docs/00_WORKFLOW.md`
+(one page) and `factory/RESET-PLAN.md` (the decisions, D1-R through D12).
 
-Published as DATA for adopt-or-distinguish. Nothing here is a fleet ruling; behaviour amendments in
-other projects await their own hub ratification. The four traps behind it are in `TRAPS.md`
-(appended 2026-08-30) and the drill result is in `RECEIPTS.md`.
+## Live-provider posture — HARD_CLOSED except one read-only sweep
 
-**The measurement.** `origin/master`, 2026-06-29 -> 2026-08-29, 2,232 commits: 66% touched only the
-ledger/process surfaces, 55% were pure bookkeeping by subject, `scripts/` 3.9%, and the product tree
-`adversarialllm/src/` **4.3%**. The trailing 30 days: 501 commits, **zero** touching the product. Last
-product commit `e55729fb`, 2026-07-28. 243 remote branches unmerged. The board was measuring process
-compliance and calling it progress.
+Per `factory/RESET-PLAN.md` decision D10, the only live-provider action this project runs unattended is
+the read-only A19 model-discovery sweep (`adversarialllm/scripts/a19-model-discovery-sweep.mjs` —
+readiness plus model options, no prompt transmission, no model selection), bounded at 3 attempts per
+row. **No live campaign (`scripts/observe-campaign.ps1`) is authorized by the current plan.** The
+harness's own self-gate — failing closed before any browser action unless `factory/live-authority.json`
+exists on `origin/master`, matches the working tree byte for byte, and its referenced record carries a
+Codex `ADOPT` for the exact parameters — is scheduled for row `H1` (`factory/RESET-PLAN.md` §3, order
+100) and is **not present at this HEAD**: `observe-campaign.ps1` carries no reference to
+`live-authority.json` today, so until `H1` merges the PreToolUse guard (row F1.2) is the only mechanical
+control blocking a browser-driving invocation. F1.2-GUARD merged in PR #32 (`f7fcea55`) and is registered
+in both repository roots; it is defense in depth and does not establish shell isolation. Native WORK is
+blocked pending a reviewed restricted controller, while the authorized Codex desktop recovery controller remains
+available. `factory/live-authority.json` does not exist anywhere in
+this repository — row `R-LIVE`, a second ratification wave dispatched only after `H1` merges, is the
+only path to it. This project's prior universal-provider-control disposition of fleet doctrine R26
+(`adversarialllm/docs/reports/softwarefactory-r26-disposition-20260819.md`, this project's own record)
+found `DISTINGUISH`, zero authority, `automaticLaunchGate=CLOSED` against canonical merge
+`909f769d02e8412e51e28e242cfa8d00dadc9a3d` — an object of the `softwarefactory-fleet-doctrine` repository
+that resolves only there, not in this repository. That disposition is superseded in form by this simpler
+statement but not in substance: the posture — no automated provider call without a separately reviewed,
+byte-pinned authorization — is unchanged. The disposition record itself remains citable in this
+project's own git history for a sibling that needs the receipt; this entry does not restate its bytes.
 
-**The attribution, stated carefully.** None of the four causes was model quality. The same Codex seat
-that "stalled" root-caused a provider-selector defect a Claude lane had mis-diagnosed, and produced a
-clean cross-family review half on 2026-08-30. What failed was the SEAT, not the reasoner:
-1. Sole orchestration authority sat on a runtime with no headless entry point, so lane death was
-   permanent until a human pasted a payload. The orchestrator died 2026-08-01; the hub doc did not
-   change for 8 days; both reviewer lanes idled CORRECTLY, because a reviewer may not self-assign.
-2. The pre-push gate required an artifact only a Claude-side script produced, so a Codex lane could not
-   publish at all. Same night: the Claude lane pushed, the Codex lane's deterministic-green candidate
-   sat at zero remote refs.
-3. The stall guard used process-tree CPU as liveness and culled healthy lanes, then discarded their
-   stdout, so its own kills were unfalsifiable.
-4. Nothing in the tick template made the product number visible, so a fully-compliant board could emit
-   500 commits and ship nothing without any row saying so.
+## Never authorized (binding, `factory/RESET-PLAN.md` §1.3 — the complete list)
 
-**The delivery-first constraint now in force (project-local).** Every order names a product outcome; an
-order whose whole deliverable is process/ledger/governance may be opened only as the proven blocker of a
-named product item, and must name it. Every orchestrator tick reports `src/` commits on `origin/master`
-in the trailing 24h and 7d FIRST; a tick emitting governance rows while that number is zero must say so
-in its own row. Bookkeeping commits may never be cited as drain. A lane with nothing addressed to it
-writes one `alive-idle` row and EXITS. If process overhead exceeds product commits over any trailing 7d
-window, the orchestrator opens a remediation to CUT ceremony rather than add more.
+`git push` to `master` by any route, `--force`/`--force-with-lease` on any ref, history rewrite
+(`filter-branch`, `filter-repo`, `update-ref -d`, deleting `master`), assigning
+`FACTORY_ALLOW_MASTER_PUSH`; `claude|codex|gh auth login|logout|switch`; assigning any `ANTHROPIC_*`,
+`CLAUDE_CODE_OAUTH_TOKEN`, `OPENAI_API_KEY`; enabling metered billing or any spend; weakening, skipping
+or deleting tests or CI steps; editing or deleting the guard, `tripwire.ps1`, `ci.ps1`, `conductor.ps1`,
+`factory/hooks/*` or `ci.yml` except through a reviewed PR; deleting or moving out `archive/` or
+`adversarialllm/evidence/`; Chrome Web Store submission; entering provider credentials or logging into
+any provider; account rotation; scheduled tasks not named `AdvLLM-*`; writes to any path outside an
+`AdversarialLLM*` tree except this doctrine bus's own destination, `specs/adversarialllm.md`; any
+`observe-campaign.ps1` invocation without `factory/live-authority.json`; more than one live campaign per
+tick once authorized; a second `RATIFY:` proposal requesting any exception to D2's review-round cap (the
+R-SEED exception for PR #2's head 5 is the only one the wave may ever grant).
 
-**Pre-flight for re-seating a demoted runtime as orchestrator** (project-local checklist, offered to the
-fleet as data): headless entry point exists AND one unattended tick has been observed end to end; that
-seat has PUSHED one commit through the real gate (demonstrated, not reasoned); authority is not sole —
-a named fallback may open delivery work when the seat goes silent for N ticks; the tick template leads
-with the product number; nothing-addressed means one `alive-idle` row and exit; and any stall guard that
-can kill the seat preserves the killed session's output.
+## Status pointer
 
-## 2026-08-30 fold — adopt-or-distinguish against the two same-day fleet measurements
+`adversarialllm/docs/28_IMPLEMENTATION_PROGRESS.md` contains the P5 inventory delivered by PR #25
+and subsequent integration evidence: production callers, UI mounts, flags and tests are distinguished
+from live proof. The older phase scorecard is historical. M1 and bundle-packager flags remain default
+OFF; current queue/PR evidence determines delivery, and H1/R-LIVE still govern live campaigns. This
+entry points to those records rather than duplicating the product status ledger.
 
-Pulled after publishing the seam above and folded the same hour: MLV-App's `specs/mlv-app.md`
-correction and the agent-bridge auditor lane's `specs/fleet-orchestrator-execute-posture.md`
-(PROPOSED, not ratified). Both were derived independently, first-hand, on the same box and the same
-day as this project's post-mortem. **They name the mechanism better than this project's entry did,
-and this project ADOPTS the naming.**
+## Preserved NO_GO disposition
 
-- **The variable is the ROLE, not the family.** MLV-App's three-board comparison under identical
-  bounds is the control this project could not produce alone: Codex ORCHESTRATING is the slowest
-  board on the box; **Codex IMPLEMENTING under a Claude hub is the fastest.** This project's own
-  entry attributed the stall to seat-vs-runtime, which is compatible but weaker. Corrected here so
-  the stronger claim is the one that propagates.
-- **The mechanism is a conformance fixpoint.** An orchestrator whose cheapest conformant act is to
-  append a lawful entry explaining why no lawful action exists will do that forever: compliance is
-  always available, progress needs an authorization it re-derives as absent on every boot. Every
-  instrument reads GREEN because the ledger is advancing faster than ever. Verified locally against
-  this board's own numbers rather than adopted on trust — 66% of 2,232 commits on the ledger/process
-  surfaces against 4.3% on the product, and 501 commits with zero product commits in the trailing 30
-  days, is the same signature at a different scale.
-- **Local gap analysis against the proposed seven rules** (what this board has, and what it does not):
-  - Rule 5 (never charter a sole implementer; cross-family lanes are an INDEPENDENCE resource, never
-    a THROUGHPUT one) — **already in force here** as directive D-3: Codex is the mandatory review
-    half and explicitly not the path work lands through.
-  - Rule 7 (alarm on the RATIO, not the volume) — **partially in force** as D-4.2: the tick reports
-    product commits in the trailing 24h/7d first. It reports the NUMERATOR only; the entries/commits
-    ratio and its rise are not yet computed, so the early warning is weaker than the rule intends.
-  - Rule 6 (prove delivery from the lane's own file advancement, never a launcher exit code) — in
-    force twice over here: it is the fix for the CPU-only stall guard, and it is the standing local
-    rule that a finalize exit code describes the step, never whether the branch landed.
-  - Rules 1 and 2 (every idle branch carries a forced-progress escape; bind an ACTOR and an ACTION
-    to every deadline) — **ABSENT, and their absence is this board's 8-day freeze.** Two reviewer
-    lanes idled correctly for eight days because the only seat that could route was dead and no
-    branch existed for "the orchestrator is silent, therefore X". Routed to the orchestrator as the
-    highest-value process order this project has open, under D-4.1 as the proven blocker of every
-    queued product item.
-  - Rules 3 and 4 (ban circular authority at design time; restate the standing authorization inside
-    the frozen seat payload every run) — **applicable and not yet audited here.** This board has
-    already met a circular gate once (an integration blocked on machinery that only the blocked path
-    could repair), so rule 3 is a live risk, not a hypothetical.
-- **Trap 5 of MLV-App's same-day entry reproduced here independently:** this box's doctrine clone was
-  **229 commits behind `origin/master`** with a clean working tree, carrying an uncommitted 20-day-old
-  edit to this project's own spec written against a base that upstream had since rewritten three
-  times. Nothing reported it. The stale edit was stashed, not applied.
-
-This fold changes no other project's posture and claims no ruling. Rules 4 and 5 are the ones a hub
-must rule on per board; the rest are design-time and cost nothing.
-
-## 2026-08-18 disposition — one universal provider-capacity contract
-
-**DISTINGUISH(224a6705d81dfbc670313cdcef4d825216f2b380,
-PENDING_LOCAL_SUPERVISOR_AND_COMPLETE_ACTION_GRAPH)**
-
-**DISTINGUISH(874605e43531c9aa230ee16851f8107a8e0d9cec,
-PENDING_LOCAL_R14_PROFILE_SUPERVISOR_COMPLETE_CENSUS_AND_SHADOW,
-RECEIPTS.md@blob:d5af1430aa567e1ba8d97759aa96892ea50675ac#2026-08-18-12:54-CDT-AdversarialLLM)**
-
-AdversarialLLM accepts the ratified portable semantics in
-`specs/fleet-provider-capacity-governor.md` and the R14 universal runtime reconciliation in
-`specs/fleet-universal-provider-control-reconciliation.md`. These distinctions are activation-status
-boundaries, not competing token-saving specifications. Provider adapters may translate native
-identity, capacity, cache, reset, and terminal fields, but they may not weaken admission, exact-role
-quality, independence, authority, or budget-stop semantics.
-
-The ratified `874605e43531c9aa230ee16851f8107a8e0d9cec` and rejected launch-envelope candidate
-`8eee3e4576778a18f92a3aff922c7574904e3fc3` are sibling commits, not a linear authority chain.
-Uncommitted or later R15 reconciliation work has zero authority here until an exact successor is
-independently reviewed, adjudicated, and merged; it cannot silently replace either accepted subject
-or this project disposition.
-
-The project cannot honestly claim `ADOPT` yet. The point-in-time receipt in `RECEIPTS.md` proves
-that `AdvLLM-Lane-{Fable,Opus,Sonnet}` were disabled at 2026-08-18 12:54 CDT after typed
-`usage-5h` failures. It does not prove a complete launcher action graph or a production governor.
-The current scheduled lane launch paths resolve and start provider executables directly behind
-per-lane PID locks. The separate observe/browser-provider send seams remain unclassified until the
-recursive inventory closes. There is no pinned host-local supervisor at every provider-spawn seam,
-no account-wide
-quota-domain lease, no fresh required-capacity observation, no atomic final pre-spawn revalidation,
-no deterministic changed-work proof, and no automatic reseal receipt. The three enumerated Claude
-scheduled lane tasks remain disabled. Their effective policy posture is `HARD_CLOSED`; every future
-or shadow admission snapshot must encode `automatic_launch_gate=closed`. No installed runtime gate
-is claimed. Other inference-bearing seams remain unclassified and receive no launch authority until
-inventory and containment prove them.
-
-### Universal lane behavior
-
-All SOL, LUNA, FABLE, OPUS, SONNET, browser-provider, and future-provider automation will consume
-the accepted admission-snapshot and usage-event contracts plus R14's exact request, gate-transition,
-launch-attestation, inventory, process-observation, project-profile, native-capacity, broker-health,
-manual-canary, and evidence-capsule contracts. Any later schema change becomes binding here only at
-an exact reviewed and merged doctrine amendment. Project-specific role names do not create separate
-quota semantics.
-
-AdversarialLLM saves provider capacity by:
-
-1. deriving unchanged/no-addressed-work ticks deterministically and spending zero inference on them;
-2. serializing all same-host roots that share one opaque provider/account quota domain, across
-   repositories; a quota domain shared across hosts remains `HARD_CLOSED`/`SHADOW` until a separately
-   reviewed distributed lease/broker amendment is proven;
-3. performing polling, liveness, hashing, joins, test selection, and receipt packaging without a
-   model turn;
-4. replacing broad ledger and transcript loading with bounded, hash-bound evidence capsules and
-   digest-addressed expansion;
-5. bounding turns, context, wall time, and retry count, with budget exhaustion producing the
-   canonical `CHECKPOINTED/WIP` status plus a typed budget reason, never false completion;
-6. using stable provider cache prefixes and milestone compaction when the transport exposes them,
-   while still counting cached traffic and preserving the functional prompt;
-7. selecting model and reasoning effort only from role-cell evidence, never by silent downgrade;
-8. reserving capacity for owner foreground work and one independent final review before admitting
-   background implementation or maintenance.
-
-FABLE and OPUS exact-model review requirements remain binding. A cheaper or available profile may
-perform deterministic preparation or separately qualified bounded implementation, but it cannot
-inherit an unavailable reviewer's credit. Required work queues when its accepted role cell is not
-available.
-
-### Restoration path
-
-The project deployment overlay is:
-
-`HARD_CLOSED -> INSTALLED_UNVERIFIED -> SHADOW -> CONTAINMENT -> CANARY -> ENABLED`
-
-`HARD_CLOSED` is the required effective posture: every installed/shadow admission snapshot encodes
-`automatic_launch_gate=closed`, and the exact inventoried inference task set is disabled. This is a
-normative deployment requirement, not a claim that a runtime gate is already installed. Later
-overlay stages require exact R14-bound gate, profile, inventory, health, capacity, claimant, and
-terminal receipts; the overlay creates no second admission state machine.
-
-A provider reset, successful authentication, fresh usage window, or task-registration success may
-update evidence only; none may advance the stage or open the automatic launch gate. Before the first
-Claude canary, AdversarialLLM must:
-
-- freeze a complete recursive inventory of scheduled tasks, watchers, heartbeats, recovery paths,
-  scripts, CLIs, and app-session wakes that can reach provider inference;
-- pin the accepted doctrine bytes plus one reviewed host-local supervisor and provider adapters;
-- route every provider-spawn seam through that supervisor and structurally reject direct invocation;
-- hold an OS-enforced quota-domain lock/lease for the full child-process lifetime; create the child
-  suspended while the canonical claimant remains `STARTING`; after final identity/lease validation,
-  atomically record `CLAIMED`, then resume the child and record `RUNNING`;
-- immediately before resume, bind an HMAC pre-resume receipt to PID and immutable process-start time,
-  requested session constraints and seat epoch, canonical resolved executable path plus digest/platform image identity,
-  exact launcher/config path plus digest, canonical argv plus digest, cwd, security-relevant
-  environment digest, frozen subject/capsule path plus digest held against TOCTOU, broker health, and
-  account-domain fingerprint plus requested provider/model/effort/transport/session constraints;
-- capture observed provider/model/effort/transport/session/account-domain/effective-backend identity
-  at the earliest authoritative runtime/provider boundary, before completion or review credit and
-  before any follow-on turn; a mismatch immediately stops and reseals with no credit. An adapter that
-  cannot prove identity before its first inference when the role cell requires that proof remains
-  `HARD_CLOSED`, except for an explicitly authorized evidence-only canary that earns no review or
-  completion credit;
-- require an HMAC-bound, one-use, expiring canary authorization tied to the exact task, subject,
-  profile, supervisor build, adapter, capacity snapshot, and gate epoch;
-- pass unchanged-tick zero-call, same-domain cross-process exclusion, distinct-account parallelism,
-  required-capacity-dimension omission, reset/rollover, replay, direct-launch bypass, frozen-subject
-  TOCTOU, stale/partial telemetry, ambiguous identity, orphan, rollback, broker/observer loss,
-  actual-image mismatch, and all-terminal reseal controls;
-- publish dated zero-inference `SHADOW` and enforced `CONTAINMENT` receipts;
-- compare context/capsule and routing changes against an exact frozen manifest binding source
-  commit/tree, dependency lock and built-bundle hash, test commands and versions, fixture/capsule
-  hashes, provider/model/effort/account-role cells, and accepted results; require the project unit/build
-  suite plus three consecutive clean aggregate live campaigns, each exactly five iterations across
-  all seven signed-in providers on strongest-live-selectable models, exact model/effort proof, `5/5`
-  completion for every provider, rubric and validator `PASS`, zero disqualifying severe/warning carry
-  counters, wrong-model fail-fast, and the blind exact-model FABLE and OPUS halves required by the
-  then-current hub ruling; and
-- run one bounded, explicitly authorized Claude job with completion reserve; every terminal path,
-  including success, unconditionally reseals the automatic launch gate to `closed` and the
-  deployment overlay to `HARD_CLOSED`.
-
-A successful canary on the exact installed tuple is evidence only. Sequential lane restoration also
-requires fresh authenticated evidence, fresh independent review, a project-owned `ADOPT`/activation
-ruling, distinct adjudication, and an exact gate-transition receipt before any later move to
-`CONTAINMENT`, `OPEN`, or `ENABLED`; each newly admitted lane remains separately reversible. No bulk task
-re-enable and no reset-driven queue drain is allowed. This section grants no runtime install, task
-enablement, provider launch, canary, gate opening, model substitution, review credit, or release
-authority.
-
-## 2026-08-19 R26 project-published disposition binding
-
-**DISTINGUISH(909f769d02e8412e51e28e242cfa8d00dadc9a3d, ADVERSARIALLLM_R26_ZERO_AUTHORITY_EVIDENCE_ONLY_AUTOMATIC_GATE_CLOSED_NO_PROJECT_OWNED_R26_ADOPTION_RULING, ADVERSARIALLLM_MASTER_8f01ea860d22c0e0c0a8c5ac9f7c290b1c050c14, DISPOSITION_BLOB_a337a9bea93daf94e619653edb8b5241ee29b6af)**
-
-This project disposition addresses exact R26 candidate
-`e70a044f31dd2f43ab7c716d63a4eb89318c61b6` and exact canonical merge
-`909f769d02e8412e51e28e242cfa8d00dadc9a3d`.
-
-This distinction binds the project-published default ref
-`https://github.com/layibabalola/AdversarialLLM-ClaudeCode.git` `refs/heads/master` at commit
-`8f01ea860d22c0e0c0a8c5ac9f7c290b1c050c14`, tree
-`4b39858e0421257fc997bb827571b35fb712e15a`, sole parent
-`6c9e54d7962711c7a90828159c172b130ad7d594`. The project-owned machine-readable receipt at
-`adversarialllm/docs/reports/softwarefactory-r26-disposition-20260819.json` is exact Git blob
-`a337a9bea93daf94e619653edb8b5241ee29b6af`, 3,471 bytes, SHA-256
-`33a784a39e9451db68acb96d26b550fd6a8c4aea140b78ac66fde47724e16b7d`. It records
-`DISTINGUISH`, `adopted=false`, `automaticLaunchGate=CLOSED`, and zero provider, process,
-scheduler, authentication, gate-opening, activation, adoption, or host-hard-close authority.
-
-The exact project-candidate binding uses base commit
-`4ca508a041d589aaaa07f995b34238cd43a9303f`, candidate status
-`DISTINGUISH_ZERO_AUTHORITY_EVIDENCE_ONLY`, primary evidence path
-`adversarialllm/docs/reports/softwarefactory-r26-disposition-20260819.json`, and disposition path
-`adversarialllm/docs/reports/softwarefactory-r26-disposition-20260819.md`.
-
-| Artifact | Git blob | Bytes | SHA-256 |
-| --- | --- | ---: | --- |
-| `adversarialllm/docs/reports/softwarefactory-r26-disposition-20260819.json` | `a337a9bea93daf94e619653edb8b5241ee29b6af` | 3,471 | `33a784a39e9451db68acb96d26b550fd6a8c4aea140b78ac66fde47724e16b7d` |
-| `adversarialllm/docs/reports/softwarefactory-r26-disposition-20260819.md` | `a7baf849dca2dea2f56874b3393afead7bd5e6ba` | 3,488 | `d0b5f941b93bca18a4c6906900004612daa8da9077daaa6f635fc0f45e10bcd7` |
-| `scripts/verify-fleet-doctrine-disposition.ps1` | `fbc60a92704f8fe9495933953b4ac1a5c332db5d` | 15,183 | `0155c19228638a02c254d6811c0f7402aa996fbfbb0d2eee22033c5e4aff1c35` |
-| `scripts/tests/fleet-doctrine-disposition.tests.ps1` | `9cb528a7967e11164d8e5378b63a6022e70b077c` | 6,404 | `cc7649c9a59760406dfe74c7f23d7ec2ec66ace5c9ec22c7ec912ff97e380ee5` |
-
-The companion report, read-only exact-object verifier, and its hostile controls remain project-owned
-evidence. Their publication does not transfer proof from another project, install a supervisor, open a
-gate, enable a task, launch a provider, or satisfy any R26 adoption proof. AdversarialLLM remains
-`DISTINGUISH`, not `ADOPT`; exact model, effort, role, review, quality, and functionality requirements
-remain unchanged.
+The exact project disposition below remains non-authorizing. It is retained from bus publication
+7bf0cf9943de7c33b14496b73f70c18959816c5c because the bus regression gate pins that complete section.
+It grants no live-provider call, lane, schedule, account change, review credit or activation.
+The current recovery protocol above governs this project; historical references below are evidence,
+not executable instructions or an exception to the operative D10/D2 requirements.
 
 ## DISTINGUISH_UTILIZATION_SHADOW_BOUNDED_FOREGROUND_EXCEPTION
 
@@ -401,4 +201,3 @@ This section grants no `ADOPT`, provider lane, runtime activation, rollout stage
 task, schedule, queue, watcher, persistence, authentication, reset, Desktop, deployment, automatic-gate,
 repository-write, patch, commit, merge, push, release, review, correctness, adjudication, completion,
 model/provider fallback, continuation, retry, second-job, or host-hard-close authority.
-
