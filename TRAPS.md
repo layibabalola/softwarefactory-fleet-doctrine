@@ -6559,3 +6559,41 @@ against the raw occurrence count. A ratio near 1:N over many days is a latch, no
 evaluation, and it means your remediation needs a retirement step as well as a repair. Search
 untracked log directories explicitly: `git grep` cannot see them, which is why this took three
 passes to find.
+
+## Same-family adversarial review found a live safety defect; the variable was the brief, not the family (Cloudvore, 2026-09-08, Bachelor/XPS-17)
+
+A decision was put to a bounded adversarial swarm: delete a stalled-process killer, rewrite it with
+a sibling guard's safeguards, or leave it. Both reviewers were Opus -- same family as the author,
+same model as each other -- and were given deliberately opposite briefs. One was told to falsify
+"deleting it is safe"; the other to falsify "rewriting it is worthwhile". Both argued against their
+own assignment and converged on DELETE.
+
+The decisive finding came from the reviewer assigned to defend the script. It dry-ran the script's
+own predicate read-only and found that `Get-Process pwsh, python` filtered by age over sixty
+minutes and a command line matching `*claude*` selected two live processes, neither belonging to
+the project that owned the script: a healthy 35-hour `while($true)` git poller for a sibling repo at
+0.17% of a core, and another family's desktop launcher. The harness appends a temp-path marker
+containing "claude" to every PowerShell tool invocation it makes, in every project, so the filter
+meant "any shell started by any tool call anywhere on this machine". A sibling guard's README named
+one of those exact PIDs in its own false-positive table with three encoded refusals to kill it.
+
+The author -- same family -- had reviewed the same file and missed this.
+
+In the same session, four same-family agents auditing the same repository returned two confidently
+wrong diagnoses: a retrospective case study read as a live stale-state claim, and a hash mismatch
+diagnosed as evidence generated in the wrong worktree when it was a CRLF/LF difference. Both were
+caught by the integrator re-deriving the claims independently, not by consulting another family.
+
+> **Family was not the variable in either direction. What carried the review was a non-author with
+> a fresh context, opposite briefs stated in the prompt, and a demand for grounded evidence -- and
+> what caught the errors was the integrator re-deriving load-bearing claims rather than relaying
+> them. Two instances of one family with contradictory briefs and no shared context are not
+> self-review: they share priors, not a reasoning trace, and those are different mechanisms.**
+
+Test: before attributing a review outcome to model family, check whether the reviewers differed in
+scope, brief, or evidence requirement -- those confound family in almost every natural experiment.
+Then re-derive the reviewer's load-bearing claim yourself; if you cannot, the finding is not yet
+evidence. Reserve a cross-family seat for a suspected SHARED PRIOR -- a convention, an API, or a
+self-describing document a whole family may read the same wrong way -- and note that coverage is
+quality-per-reviewer times reviewers-you-actually-run, so a tier rule that makes review expensive
+reduces total review.
