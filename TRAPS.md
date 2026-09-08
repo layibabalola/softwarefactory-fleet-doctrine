@@ -6741,3 +6741,106 @@ Test: after turning any key, positive-search for a route to the next rung anchor
 subject — `grep -n "<SUBJECT>@<sha>" <router surface>` — and treat its absence as an unfinished act
 rather than a later step. Reduce each subject to its full rung vector (ready/reviewed/verified/closed)
 rather than checking only the rung you just turned.
+
+## A commit's diff is not the tree at that commit, and an agent that confuses them will report a correct ledger as wrong (Cloudvore, 2026-09-08, Bachelor/XPS-17)
+
+A scoping agent reported that a queue row citing "Accepted 49ba6b0" for a canary-overwrites-user-data
+fix was a copy-paste error, because `git show --stat 49ba6b0` touches only a backlog file and two
+scripts and never the file holding the fix. The reasoning is sound and the conclusion is false. The
+real fix landed at an earlier commit that is an ANCESTOR of 49ba6b0: the tree at 49ba6b0 contains it
+(three occurrences of the fix's marker method; its pre-fix parent has zero). An accepted SHA names a
+STATE, and the row was right.
+
+Cost of believing it: one step from "correcting" a correct audit trail, which would have introduced
+the very defect the correction claimed to fix.
+
+> **A commit's own diff answers "what changed here", never "what is true here". Acceptance,
+> provenance and release claims are all statements about a TREE. Verify them with `git show
+> <sha>:<path>` or `merge-base --is-ancestor`, never with `show --stat`.**
+
+Test: before contradicting a cited SHA, run `git merge-base --is-ancestor <claimed-fix> <cited-sha>`
+and grep the fix's marker in `git show <cited-sha>:<path>`. If the marker is present at the cited
+SHA and absent at its parent, the citation is correct however unrelated the cited commit's own diff
+looks.
+
+## Accept on the terms the evidence supports, and cut the residue rather than absorb it (Cloudvore, 2026-09-08, Bachelor/XPS-17)
+
+Two acceptance packets ran the same shape -- existing tests, three identical green runs, no new
+production code -- and deserved different verdicts. One had two `[SkippableFact]` pins needing a real
+second fixed drive; the host had one, they RAN, and zero skips is what proved the OS-level bridge
+rather than a fixture. The other had zero skippable pins: every identity was faked and the volume
+list injected. Both were green three times; only one had touched the world.
+
+Writing "accepted end to end" for the second would have been true of the state machine and false of
+the device event -- and no number in the run output would have contradicted it.
+
+> **A green proves what ran, and a row that says more than that is a false claim with three passing
+> runs behind it. Where the gap needs a hand on hardware, an owner, or a credential, cut it as its
+> own row with a wall-clock check. A residue named inside a DONE row is a residue nobody will read.**
+
+Test: for each acceptance packet, count `Skip`-guarded pins and ask what a skip would have hidden.
+Then state the claim as "X was exercised" rather than "X works", and diff that sentence against the
+filter that actually ran. Anything the filter did not cover becomes a new row, not a clause.
+
+## Take the reviewer's argument, not the reviewer's remedy (Cloudvore, 2026-09-08, Bachelor/XPS-17)
+
+Two non-author reviewers on deliberately opposite briefs both returned NEEDS-CHANGE on the same
+candidate. Both were right that something was wrong. Neither proposed fix was right: one wanted a new
+control built whose behaviour the surrounding system already collapsed into an existing one, and the
+other proposed a replacement assertion carrying the identical hole one keyword over. The landed change
+took both findings and neither remedy.
+
+Separately, three of six agents in the same session returned a confidently wrong load-bearing claim --
+a retrospective case study read as live state, a CRLF hash mismatch read as fabricated evidence, and
+the tree/diff confusion above. Every one was caught by the integrator re-deriving the claim. None was
+caught by model diversity: all six were the same family, as was the integrator.
+
+> **A reviewer's verdict is evidence, not instruction. Adopting a finding and adopting its proposed
+> remedy are different acts, and the second needs its own justification. The check that generalises is
+> the integrator re-deriving every load-bearing claim before acting on it.**
+
+Test: for each finding, write the defect and the proposed remedy on separate lines and justify them
+separately. Re-derive the finding's central fact from the tree yourself; if you cannot, it is not yet
+evidence. Record which remedies were declined and why, so a later reader can tell a rejected remedy
+from an unnoticed one.
+
+## An unattended loop needs a narrow trigger for when it may not decide alone (Cloudvore, 2026-09-08, Bachelor/XPS-17)
+
+Both failure modes are real and cost differently. A loop that always decides alone eventually decides
+wrong quietly. A loop that convenes a review for every choice spends its budget on questions that were
+never in doubt, and the reviews stop being read. The useful thing is not "always review" but a cheap
+deterministic ranking plus a deliberately narrow trigger for scrutiny.
+
+Implemented and measured: rank by DEFECT first -- a shipped defect is active harm while an unaccepted
+capability is only absent proof -- then by transitive dependants, then stably by id so two runs never
+disagree. Convene a swarm on exactly three triggers: a tie at the top, where the ordering genuinely
+does not know; anything touching product bytes; anything touching a guard, merge or ratify path. On the
+live queue the tool refused to guess across seven tied packets, which is the behaviour wanted.
+
+> **Rank cheaply and deterministically; escalate narrowly and for a stated reason. A tie is the
+> honest signal that ordering cannot decide, and it is worth more than any heuristic invented to
+> break it.**
+
+Test: give the ranker two candidates that differ only in dependants and confirm the order; give it two
+identical ones and confirm it demands adjudication rather than picking. Mutate the trigger to always
+return "no" and confirm tests fail -- a tool that never escalates is the failure mode it exists to
+prevent.
+
+## A machine-read table must be able to hold the command it is asking for (Cloudvore, 2026-09-08, Bachelor/XPS-17)
+
+A queue file carried one acceptance test per row and a checker parsed the rows by splitting on the
+column separator. Writing a genuine acceptance command into a cell -- `dotnet test --filter "A|B"`,
+where the pipe means OR -- shredded the row into the wrong number of fields, and the checker reported
+the entire queue as malformed rather than that one cell as unparseable. The pressure this creates is
+to weaken the acceptance test until it fits the parser.
+
+Markdown already answers it: a backslash-escaped pipe is content, not a boundary. The naive split was
+the defect.
+
+> **When a format asks for executable evidence, the parser must accept the characters real commands
+> contain. A checker that quietly forces weaker evidence to fit its own parsing is worse than no
+> checker.**
+
+Test: put the hardest real command your format must carry into a cell and parse it. Confirm an
+ESCAPED separator round-trips as content and an UNESCAPED one still fails as malformed -- losing the
+second is how the check stops catching genuinely broken rows.
