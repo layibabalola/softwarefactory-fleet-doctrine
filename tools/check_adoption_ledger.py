@@ -15,6 +15,7 @@ from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
 LEDGER_PATH = "adoption/universal-token-control-r26.json"
+CURRENT_LEDGER_PATH = "adoption/current-token-control-r26.json"
 SCHEMA = "fleet-universal-token-adoption-ledger/v1"
 EXPECTED_CANDIDATE = "e70a044f31dd2f43ab7c716d63a4eb89318c61b6"
 EXPECTED_MERGE = "909f769d02e8412e51e28e242cfa8d00dadc9a3d"
@@ -29,6 +30,14 @@ NON_PROJECT_SPECS = {
     "specs/fleet-provider-capacity-governor.md",
     "specs/fleet-universal-provider-control-reconciliation.md",
     "specs/provider-model-benchmarking.md",
+}
+# Current portable doctrine documents are explicitly classified. Historical
+# verification keeps its original closed set; no caller-supplied exclusions.
+CURRENT_NON_PROJECT_SPECS = NON_PROJECT_SPECS | {
+    "specs/fleet-continuity-autonomous-resumption.md",
+    "specs/fleet-orchestrator-execute-posture.md",
+    "specs/provider-audit-consumer-provenance.md",
+    "specs/fleet-resumption-parallel-launch-0906.md",
 }
 PROJECT_CANDIDATE_IDS = {"adversarialllm", "cloudvore", "mlv-app", "salesforce-tools"}
 PROJECT_CANDIDATE_STATUSES = {
@@ -1078,6 +1087,7 @@ def _verify_project(
     *,
     base_commit: str,
     treeish: str,
+    current: bool = False,
 ) -> tuple[str, str]:
     project = _require_exact_keys(
         project,
@@ -1120,7 +1130,7 @@ def _verify_project(
         raise LedgerError("PROJECT_SPEC_DRIFT")
     evidence_bytes = _blob(evidence_commit, path)
     project_candidate = evidence["projectCandidate"]
-    if project_id in PROJECT_CANDIDATE_IDS:
+    if project_id in PROJECT_CANDIDATE_IDS and (not current or project_candidate is not None):
         if status != "DISTINGUISH" or project_candidate is None:
             raise LedgerError("PROJECT_CANDIDATE_REQUIRED")
         _verify_project_candidate(
@@ -1197,7 +1207,17 @@ def _verify_project(
                 raise LedgerError("CURRENT_DISPOSITION_SUBJECT_MISMATCH")
             if current_markers != {marker}:
                 raise LedgerError("CURRENT_DISPOSITION_CONFLICT")
-            if EXPECTED_CANDIDATE.encode("ascii") not in evidence_bytes:
+            # A current negative declaration may name the canonical merge alone:
+            # _verify_candidate already verifies its exact candidate, tree and
+            # parents. This grants no historical candidate or adoption proof.
+            # Candidate-subject declarations and every ADOPT retain both text
+            # bindings and all existing artifact/non-regression checks.
+            canonical_negative = (
+                current
+                and status in {"DISTINGUISH", "REJECT"}
+                and disposition_subject == EXPECTED_MERGE
+            )
+            if not canonical_negative and EXPECTED_CANDIDATE.encode("ascii") not in evidence_bytes:
                 raise LedgerError("CURRENT_DISPOSITION_CANDIDATE_BINDING_MISSING")
             if EXPECTED_MERGE.encode("ascii") not in evidence_bytes:
                 raise LedgerError("CURRENT_DISPOSITION_MERGE_BINDING_MISSING")
@@ -1229,7 +1249,8 @@ def _verify_project(
     return path, status
 
 
-def verify_ledger(ledger: dict[str, Any], treeish: str = "HEAD") -> None:
+def verify_ledger(ledger: dict[str, Any], treeish: str = "HEAD", *, current: bool = False) -> None:
+    non_project_specs = CURRENT_NON_PROJECT_SPECS if current else NON_PROJECT_SPECS
     ledger = _require_exact_keys(
         ledger,
         {"schema", "candidate", "census", "nonRegression", "summary", "projects"},
@@ -1248,7 +1269,7 @@ def verify_ledger(ledger: dict[str, Any], treeish: str = "HEAD") -> None:
     base_commit = _require_sha(census["baseCommit"], "CENSUS_BASE_INVALID")
     if census["projectSpecGlob"] != "specs/*.md":
         raise LedgerError("CENSUS_GLOB_INVALID")
-    if census["nonProjectSpecs"] != sorted(NON_PROJECT_SPECS):
+    if census["nonProjectSpecs"] != sorted(non_project_specs):
         raise LedgerError("NON_PROJECT_SPEC_SET_INVALID")
     descendant = "HEAD" if treeish == ":" else treeish
     if not _is_ancestor(EXPECTED_MERGE, base_commit) or not _is_ancestor(base_commit, descendant):
@@ -1261,7 +1282,7 @@ def verify_ledger(ledger: dict[str, Any], treeish: str = "HEAD") -> None:
     statuses: list[str] = []
     ids: list[str] = []
     for project in projects:
-        path, status = _verify_project(project, base_commit=base_commit, treeish=treeish)
+        path, status = _verify_project(project, base_commit=base_commit, treeish=treeish, current=current)
         paths.append(path)
         statuses.append(status)
         ids.append(project["projectId"])
@@ -1269,9 +1290,9 @@ def verify_ledger(ledger: dict[str, Any], treeish: str = "HEAD") -> None:
         raise LedgerError("PROJECT_ORDER_OR_DUPLICATE_INVALID")
 
     tracked_specs = _tracked_specs(treeish)
-    if not NON_PROJECT_SPECS.issubset(tracked_specs):
+    if not non_project_specs.issubset(tracked_specs):
         raise LedgerError("REQUIRED_NON_PROJECT_SPEC_MISSING")
-    if set(paths) != tracked_specs - NON_PROJECT_SPECS:
+    if set(paths) != tracked_specs - non_project_specs:
         raise LedgerError("PROJECT_CLOSED_SET_MISMATCH")
 
     counts = {status: statuses.count(status) for status in sorted(LEDGER_STATUSES)}
@@ -1291,10 +1312,12 @@ def verify_ledger(ledger: dict[str, Any], treeish: str = "HEAD") -> None:
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--treeish", default="HEAD")
+    parser.add_argument("--current", action="store_true", help="Verify the separate current census; historical evidence is unchanged")
     args = parser.parse_args(argv)
     try:
-        ledger = load_ledger(_blob(args.treeish, LEDGER_PATH))
-        verify_ledger(ledger, args.treeish)
+        ledger_path = CURRENT_LEDGER_PATH if args.current else LEDGER_PATH
+        ledger = load_ledger(_blob(args.treeish, ledger_path))
+        verify_ledger(ledger, args.treeish, current=args.current)
     except LedgerError as exc:
         print(f"FAIL: {exc}", file=sys.stderr)
         return 1

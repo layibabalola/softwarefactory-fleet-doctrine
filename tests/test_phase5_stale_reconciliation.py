@@ -221,9 +221,11 @@ class Phase5StaleReconciliationTests(unittest.TestCase):
         self.assertIn("FROZEN_FAIL", stderr.getvalue())
 
     def test_publishing_workflow_runs_local_and_authorized_remote_checks(self):
-        workflow = (ROOT / ".github" / "workflows" / "disposition-intake.yml").read_text(
-            encoding="utf-8"
-        )
+        # This asserts the original publication contract, not the successor caller.
+        workflow = MODULE._blob(
+            "6ab0955b94ba3c2698bf9917e7718c4daf1cdc50",
+            ".github/workflows/disposition-intake.yml",
+        ).decode("utf-8")
         self.assertIn(
             "python tools/check_phase5_stale_reconciliation.py --treeish 990906b6ea861ca579e1336bcfe8f17dd80c83ae",
             workflow,

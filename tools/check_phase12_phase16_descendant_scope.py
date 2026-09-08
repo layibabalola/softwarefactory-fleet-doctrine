@@ -229,8 +229,11 @@ def verify_frozen_publications() -> None:
             raise DescendantScopeError(f"{name}_FROZEN_PUBLICATION_INVALID") from exc
 
 
-def verify_current_workflow() -> None:
-    workflow = _blob("HEAD", ".github/workflows/disposition-intake.yml")
+def verify_current_workflow(treeish: str = "HEAD") -> None:
+    # The original CLI still checks HEAD. A successor may separately verify the
+    # sealed historical workflow at its immutable publication without redirecting
+    # this module's current-event target or relaxing any byte/structure check.
+    workflow = _blob(treeish, ".github/workflows/disposition-intake.yml")
     if len(workflow) != WORKFLOW_BYTES or hashlib.sha256(workflow).hexdigest() != WORKFLOW_SHA256:
         raise DescendantScopeError("WORKFLOW_BYTES_INVALID")
     for block in (WORKFLOW_EVIDENCE_HEADER_BLOCK, WORKFLOW_PHASE3_REMOTE_BLOCK, WORKFLOW_PHASE5_REMOTE_BLOCK):

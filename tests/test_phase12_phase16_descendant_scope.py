@@ -13,6 +13,7 @@ MODULE = importlib.util.module_from_spec(SPEC)
 assert SPEC.loader is not None
 SPEC.loader.exec_module(MODULE)
 BASE = MODULE.PHASE16
+SEALED_WORKFLOW = "6ab0955b94ba3c2698bf9917e7718c4daf1cdc50"
 
 
 def _load_checker(name: str):
@@ -196,7 +197,7 @@ class DescendantScopeTests(unittest.TestCase):
                     MODULE.verify_frozen_publications()
 
     def test_workflow_routes_once_in_order_and_restores_literal_subjects(self):
-        raw = MODULE._blob("HEAD", ".github/workflows/disposition-intake.yml")
+        raw = MODULE._blob(SEALED_WORKFLOW, ".github/workflows/disposition-intake.yml")
         with mock.patch.object(MODULE, "_blob", return_value=raw):
             MODULE.verify_current_workflow()
         final = next(line for line in MODULE.WORKFLOW_ROUTE_LINES if line.endswith(b"python tools/check_phase12_phase16_descendant_scope.py"))
@@ -210,7 +211,7 @@ class DescendantScopeTests(unittest.TestCase):
                     MODULE.verify_current_workflow()
 
     def test_complete_workflow_route_env_and_timeout_hostiles_refuse(self):
-        raw = MODULE._blob("HEAD", ".github/workflows/disposition-intake.yml")
+        raw = MODULE._blob(SEALED_WORKFLOW, ".github/workflows/disposition-intake.yml")
         first = MODULE.WORKFLOW_ROUTE_LINES[0]
         second = MODULE.WORKFLOW_ROUTE_LINES[1]
         swapped = raw.replace(first, b"__FIRST__", 1).replace(second, first, 1).replace(b"__FIRST__", second, 1)
@@ -231,7 +232,7 @@ class DescendantScopeTests(unittest.TestCase):
                     MODULE.verify_current_workflow()
 
     def test_workflow_trusted_controls_are_structurally_bound(self):
-        raw = MODULE._blob("HEAD", ".github/workflows/disposition-intake.yml")
+        raw = MODULE._blob(SEALED_WORKFLOW, ".github/workflows/disposition-intake.yml")
         blocks = (
             MODULE.WORKFLOW_EVIDENCE_HEADER_BLOCK,
             MODULE.WORKFLOW_PHASE3_REMOTE_BLOCK,

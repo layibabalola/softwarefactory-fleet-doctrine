@@ -1,4 +1,5 @@
 import hashlib
+import os
 from pathlib import Path
 import subprocess
 import unittest
@@ -21,6 +22,7 @@ EXPECTED_R26_SUBJECT = "e70a044f31dd2f43ab7c716d63a4eb89318c61b6"
 EXPECTED_R26_TREE = "e9283a1c297103dd53f0bc7a1310fb1dc86b591e"
 EXPECTED_R26_FIRST_PARENT = "c1529bc3030c6663e0be63c4789b07530b9b2ecc"
 EXPECTED_R26_SUBJECT_PARENT = "387b4e13c4a8eeccf414d527b2d6a04dcd4e3ed8"
+EXPECTED_PUBLICATION_COMMIT = "7bf0cf9943de7c33b14496b73f70c18959816c5c"
 
 
 def extract_section(text: str) -> str:
@@ -37,6 +39,7 @@ def git(*args: str) -> str:
         check=True,
         capture_output=True,
         text=True,
+        env={**os.environ, "GIT_OPTIONAL_LOCKS": "0"},
     ).stdout.strip()
 
 
@@ -46,7 +49,19 @@ def git_bytes(*args: str) -> bytes:
         cwd=ROOT,
         check=True,
         capture_output=True,
+        env={**os.environ, "GIT_OPTIONAL_LOCKS": "0"},
     ).stdout
+
+
+def assert_historical_append_only(testcase, current: bytes, pinned: bytes):
+    canonical = current.replace(b"\r\n", b"\n")
+    testcase.assertNotIn(b"\r", canonical)
+    testcase.assertTrue(canonical.startswith(pinned))
+
+
+def assert_current_subject_is_unique_and_exact(testcase, text: str, expected: str):
+    testcase.assertEqual(1, text.count(HEADING))
+    testcase.assertEqual(expected.rstrip("\n"), extract_section(text).rstrip("\n"))
 
 
 class AdversarialLlmUtilizationShadowDoctrineTests(unittest.TestCase):
@@ -122,23 +137,22 @@ class AdversarialLlmUtilizationShadowDoctrineTests(unittest.TestCase):
             git("rev-parse", f"{EXPECTED_R26_MERGE}:RULINGS.md"),
         )
 
-    def test_complete_candidate_bytes_are_exact_base_plus_sole_amendment(self):
-        working = SPEC_PATH.read_bytes()
-        self.assertNotIn(b"\r", working.replace(b"\r\n", b""))
-        canonical = working.replace(b"\r\n", b"\n")
-        self.assertEqual(EXPECTED_CANDIDATE_SPEC_BYTES, len(canonical))
-        self.assertEqual(
-            EXPECTED_CANDIDATE_SPEC_SHA256,
-            hashlib.sha256(canonical).hexdigest(),
-        )
+    def test_complete_candidate_bytes_are_exact_pinned_publication(self):
+        git("merge-base", "--is-ancestor", EXPECTED_PUBLICATION_COMMIT, "HEAD")
+        pinned = git_bytes("show", f"{EXPECTED_PUBLICATION_COMMIT}:specs/adversarialllm.md")
+        self.assertNotIn(b"\r", SPEC_PATH.read_bytes().replace(b"\r\n", b""))
         self.assertEqual(
             EXPECTED_CANDIDATE_SPEC_BLOB,
-            git("hash-object", "--path=specs/adversarialllm.md", "specs/adversarialllm.md"),
+            git("rev-parse", f"{EXPECTED_PUBLICATION_COMMIT}:specs/adversarialllm.md"),
         )
-
+        self.assertEqual(EXPECTED_CANDIDATE_SPEC_BYTES, len(pinned))
+        self.assertEqual(
+            EXPECTED_CANDIDATE_SPEC_SHA256,
+            hashlib.sha256(pinned).hexdigest(),
+        )
         base = git_bytes("cat-file", "blob", EXPECTED_AMENDMENT_BASE_SPEC_BLOB)
-        self.assertEqual(base, canonical[: len(base)])
-        suffix = canonical[len(base) :]
+        self.assertEqual(base, pinned[: len(base)])
+        suffix = pinned[len(base) :]
         self.assertTrue(suffix.startswith(f"{HEADING}\n".encode("utf-8")))
         self.assertEqual(1, suffix.count(f"{HEADING}\n".encode("utf-8")))
 
@@ -150,14 +164,16 @@ class AdversarialLlmUtilizationShadowDoctrineTests(unittest.TestCase):
         )
 
     def test_rulings_are_unchanged_and_not_adjudicated_here(self):
-        oid = subprocess.run(
-            ["git", "hash-object", "--path=RULINGS.md", "RULINGS.md"],
-            cwd=ROOT,
-            check=True,
-            capture_output=True,
-            text=True,
-        ).stdout.strip()
-        self.assertEqual(EXPECTED_RULINGS_BLOB, oid)
+        self.assertEqual(
+            EXPECTED_RULINGS_BLOB,
+            git("rev-parse", f"{EXPECTED_PUBLICATION_COMMIT}:RULINGS.md"),
+        )
+        # Shared rulings are append-only; later ratifications must not invalidate
+        # the historical no-adjudication result or rewrite its original bytes.
+        assert_historical_append_only(
+            self, RULINGS_PATH.read_bytes(),
+            git_bytes("show", f"{EXPECTED_PUBLICATION_COMMIT}:RULINGS.md"),
+        )
         unchanged = subprocess.run(
             ["git", "diff", "--quiet", "HEAD", "--", "RULINGS.md"],
             cwd=ROOT,
@@ -166,6 +182,36 @@ class AdversarialLlmUtilizationShadowDoctrineTests(unittest.TestCase):
         self.assertEqual(0, unchanged.returncode)
         self.assertNotIn("APPROVED_BY_OWNER", self.section)
         self.assertNotIn("ADJUDICATED_PASS", self.section)
+
+    def test_historical_and_subject_regressions(self):
+        frozen_rulings = git_bytes("cat-file", "blob", EXPECTED_RULINGS_BLOB)
+        appended = frozen_rulings + b"\n## LEGITIMATE_LATER_RULING\n"
+        for current in (appended, appended.replace(b"\n", b"\r\n")):
+            assert_historical_append_only(self, current, frozen_rulings)
+        for current in (
+            b"changed" + appended, appended[1:],
+            appended + b"orphan\rcarriage return",
+        ):
+            with self.subTest(current_length=len(current)):
+                with self.assertRaises(AssertionError):
+                    assert_historical_append_only(self, current, frozen_rulings)
+
+        pinned_text = git_bytes(
+            "show", f"{EXPECTED_PUBLICATION_COMMIT}:specs/adversarialllm.md"
+        ).decode("utf-8")
+        expected = extract_section(pinned_text)
+        assert_current_subject_is_unique_and_exact(self, self.spec, expected)
+        assert_current_subject_is_unique_and_exact(
+            self, pinned_text + "## LEGITIMATE_LATER_SECTION\n", expected,
+        )
+        for current in (
+            self.spec + "\n" + self.section,
+            self.spec.replace(HEADING, HEADING + " REVISED", 1),
+            self.spec.replace("Decision: `NO_GO`.", "Decision: `GO`.", 1),
+        ):
+            with self.subTest(current_length=len(current)):
+                with self.assertRaises(AssertionError):
+                    assert_current_subject_is_unique_and_exact(self, current, expected)
 
     def test_exact_six_entry_precedence_map_is_complete(self):
         expected = {

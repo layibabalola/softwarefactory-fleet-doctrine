@@ -3,6 +3,7 @@ import importlib.util
 import json
 import unittest
 from pathlib import Path
+from unittest import mock
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -11,12 +12,14 @@ SPEC = importlib.util.spec_from_file_location("check_phase17_dng_r60_publication
 MODULE = importlib.util.module_from_spec(SPEC)
 assert SPEC.loader is not None
 SPEC.loader.exec_module(MODULE)
+NEW_PUBLICATION = "e48a538919d339dc46e9fa239d918c3762eae635"
+ORIGINAL_FAILED_PUBLICATION = "b346dc9b20a5c624e8aa5db4278758d5fe956b6b"
 
 
 class Phase17PublicationTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.baseline = json.loads((ROOT / MODULE.ARTIFACT).read_text(encoding="utf-8"))
+        cls.baseline = json.loads(MODULE._blob(NEW_PUBLICATION, MODULE.ARTIFACT))
 
     def assert_refused(self, mutate):
         candidate = copy.deepcopy(self.baseline)
@@ -27,8 +30,22 @@ class Phase17PublicationTests(unittest.TestCase):
     def test_baseline_document_passes(self):
         MODULE.validate_document(copy.deepcopy(self.baseline))
 
-    def test_worktree_integration_passes(self):
-        MODULE.verify("WORKTREE")
+    def test_new_isolated_publication_passes(self):
+        MODULE.verify(NEW_PUBLICATION)
+
+    def test_original_failed_publication_remains_refused(self):
+        with self.assertRaisesRegex(MODULE.CheckFailure, "unexpected Phase 17 paths"):
+            MODULE.verify(ORIGINAL_FAILED_PUBLICATION)
+
+    def test_wrong_original_parent_is_independently_refused(self):
+        with mock.patch.object(MODULE, "_changed", return_value=MODULE.ALLOWED):
+            with self.assertRaisesRegex(MODULE.CheckFailure, "exact Phase 16 parent"):
+                MODULE.verify(ORIGINAL_FAILED_PUBLICATION)
+
+    def test_new_proof_does_not_change_original_publication_blobs(self):
+        for path in sorted(MODULE.ALLOWED):
+            with self.subTest(path=path):
+                self.assertEqual(MODULE._blob(ORIGINAL_FAILED_PUBLICATION, path), MODULE._blob(NEW_PUBLICATION, path))
 
     def test_status_overclaim_refused(self):
         self.assert_refused(lambda value: value.__setitem__("status", "ADOPTED"))
