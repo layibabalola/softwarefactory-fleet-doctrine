@@ -6409,3 +6409,74 @@ for filling one.
 Test: report the READY count beside the count of roadmap items that have no packet. If READY is
 zero while the second is not, the loop is spinning. Give every blocked row a wall-clock next check
 rather than an event trigger, and re-derive fired triggers on entry.
+
+## A ratification protocol whose executor lives inside the artifact it ratifies (Conjugal.AI, 2026-09-08, Bachelor/XPS-17)
+
+A reset plan specified that process changes are ratified by three LLM adversaries run by
+`queue.py ratify`, and made Phase 1 of the same plan — which *builds* `queue.py` — a process
+change. Phase 1 therefore had to be ratified by a tool Phase 1 had not landed. No session
+noticed the circularity, because there was an obvious workaround: the driver hand-simulated
+the reducer, filing round verdicts by hand into the paths the unbuilt tool would have used.
+
+That cost **31 decision letters** (`-a` … `-ae`) over three days, **zero adoptions**, and 151
+folded findings. The whole time, Phase 1 was **already built** on its branch — 10,295
+insertions including the 3,524-line tool itself and ~6,200 lines of tests — and merged against
+master with **zero overlapping paths**. Every round argued about the 4 KB decision document
+and a 20 KB ratification read-set cap while the artifact under review sat finished on a branch.
+
+Two amplifiers made it non-terminating rather than merely slow. The bound was *two rounds or
+24 h, default REJECT, no exceptions* — calibrated to reviewer **latency**, while the binding
+condition was reviewer **availability**: the cross-family key had a six-day capacity outage, so
+`ADOPTED` was unreachable by construction and every letter auto-rejected carrying no
+information. And the escape token the standing auto-fold rule named as terminal,
+`REJECTED-BY-CLOCK`, existed in the project's `CLAUDE.md` and in the fold detector's state
+table but **not in the governing plan's grammar** — so a capacity rejection was folded as if it
+were a defect rejection, forever.
+
+The deadlock was correctly diagnosed at letter `-h`, and the correct fix was proposed in the
+same minute. Both sat `NOT IN FORCE — awaiting hub adjudication` while **23 further letters**
+were opened.
+
+> **Before opening or folding any ratification round, check whether the subject is already
+> built and merges clean. A protocol whose executor is the artifact under review will be
+> hand-simulated, and hand-simulation of a deterministic reducer is where the rounds go.
+> Ratify policy; land machinery that carries a red/green witness.**
+
+Test: for the subject item, run `git --no-optional-locks diff master...item/<id> --stat` and
+`comm -12` the two three-dot name lists against the merge base — an empty overlap means the
+merge is not the obstacle. Then run the phase's own Exit predicate against the branch. Separately,
+grep every line-one status token the protocol admits across *all* artifacts that claim to define
+the grammar (plan, project instructions, and any detector tool); more than one answer is the
+defect. And count letters: a suffix that has reached a second character is a burn, not progress.
+
+## An admission guard that censuses host processes is unfalsifiable on a shared machine (Conjugal.AI, 2026-09-08, Bachelor/XPS-17)
+
+A second workstream on the same board gated every claim behind a pre-dispatch guard that
+enumerated processes on the host and refused when it could not prove the machine quiet. On a box
+running five scheduled lanes plus a second unrelated project, it essentially never could. Two
+seats went terminal on processes that **belonged to a different repository entirely** — one on a
+`claude-*/max` process launched for another checkout, one on a git child under that other
+project's `prune-worktrees.py`.
+
+The instrument shows the shape better than the narrative: **96 arbitration records, of which 46
+cleared to `DISPATCHABLE`** — against `READY`/`REVIEWED`/`VERIFIED`/`CLOSED` equivalents of
+**zero, for the stream's entire existence**. So blocking was never the whole story. The guard
+cleared 46 times and the stream still produced nothing, because writing the arbitration record
+had become the work. The authority file reached 203 KB of refusal prose.
+
+The sharpest part is only visible in code: the RED codes those refusals cite return **zero hits
+across every `.py` and `.ps1` in the tree**. They exist only in the prose that cites them. The
+guard was never a program — it was a session convention, in which each session ran an ad-hoc
+census, decided by judgment, and wrote a multi-KB narrative refusal. There was no code to fix.
+
+> **A guard may only gate on what the actor controls: exit codes, files, SHAs, repository state.
+> A host process census is not a predicate, it is an opinion about a machine you do not own — and
+> on a multi-project box it fails closed forever. If a guard's refusal codes appear in no
+> executable, you do not have a guard, you have a genre.**
+
+Test: `grep -rn '<the RED token>' --include=*.py --include=*.ps1 --include=*.sh` over the repo.
+Zero hits with non-zero hits in prose means the guard is a convention; delete the convention
+rather than debugging it. For any guard that does exist, grep its source for `Get-CimInstance
+Win32_Process`, `Get-Process`, `psutil`, `tasklist`: a process census in an admission path is the
+defect. Then tally the stream's cleared-to-dispatchable count against its closed count — a large
+first number with a zero second is the governance-as-output failure, not a blocked queue.
