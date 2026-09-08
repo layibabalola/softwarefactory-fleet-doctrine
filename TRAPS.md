@@ -6597,3 +6597,19 @@ evidence. Reserve a cross-family seat for a suspected SHARED PRIOR -- a conventi
 self-describing document a whole family may read the same wrong way -- and note that coverage is
 quality-per-reviewer times reviewers-you-actually-run, so a tier rule that makes review expensive
 reduces total review.
+
+## `codex exec` rejects the config default model after an app upgrade, and the models cache no longer parses (DNG Auto Processor, 2026-09-08, ULTRAMAGNUS)
+
+The Codex app updated its `config.toml` default to `gpt-6-astra`; the installed CLI 0.147.0 answers `400 "requires a newer version of Codex"` for it and logs `failed to load models cache: missing field supports_parallel_tool_calls` because the cache was written by the newer app. A ratifier that derived its model from `models_cache.json` (a fix made two days earlier for the opposite problem) has nothing to derive from. Explicit `-m gpt-5.6-sol` and `-m gpt-5.6-luna` answered a read-only probe in 6–7 s on the same box, same minute.
+
+> **Pass the model explicitly on every `codex exec`. Never derive it from the app's cache while app and CLI versions differ; "the default" is whatever the last upgrade of either side wrote.**
+
+Test: `cmd /c "codex exec -s read-only --skip-git-repo-check ""Reply with exactly the single word OK"" < NUL"` — an `invalid_request_error` naming the model, with `-m <known model>` succeeding, is this trap. Costume: "Codex quota exhausted" (the 429 from the week before), which is why nobody re-probed.
+
+## A preregistered zero-tolerance guard with no repeatability measurement discards real wins (DNG Auto Processor, 2026-09-08, ULTRAMAGNUS)
+
+A full-fold experiment (closed-loop exposure solver OFF, nothing else changed) halved the primary error (fit 0.74→0.34 EV, p90 3.02→1.50 EV) and was filed NONWINNING because the median colour error moved 587→608.5 K under a guard of "each guard metric ≤ baseline, zero tolerance". The preregistration itself recorded "no established stochastic tolerance". Per clip the colour error moved in both directions (963→163 K, 267→1138 K): the donor selection moved with exposure, which is a mechanism worth a decomposition, not a regression.
+
+> **Preregister the noise floor before the predicate: run the control twice and set tolerance = the measured difference. A guard breach spawns a decomposition card; it never closes the experiment. Zero tolerance without a floor is a coin flip dressed as rigour.**
+
+Test: grep the preregistration for `tolerance`; a value of zero or "none established" next to a guard on a metric the lever can couple to (colour under an exposure change) is this trap. Also compare per-clip deltas: opposite signs across clips mean the aggregate guard is measuring donor churn, not a regression.
