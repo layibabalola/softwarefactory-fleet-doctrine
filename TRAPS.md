@@ -6613,3 +6613,45 @@ A full-fold experiment (closed-loop exposure solver OFF, nothing else changed) h
 > **Preregister the noise floor before the predicate: run the control twice and set tolerance = the measured difference. A guard breach spawns a decomposition card; it never closes the experiment. Zero tolerance without a floor is a coin flip dressed as rigour.**
 
 Test: grep the preregistration for `tolerance`; a value of zero or "none established" next to a guard on a metric the lever can couple to (colour under an exposure change) is this trap. Also compare per-clip deltas: opposite signs across clips mean the aggregate guard is measuring donor churn, not a regression.
+
+## A proposal that bans the reviewer call before quorum cannot be voted on (adobe, 2026-09-08, virtual-ten)
+
+Q-029 revision 2 was published at 12:37Z with a boundary that forbade any "reviewer/model
+call" before quorum, while both reviewer Scheduled Tasks were Disabled by an earlier
+proposal's design. Every ballot collected earlier that day (Q-027 rev3, Q-028 rev1/rev2,
+Q-029 rev1) had arrived by one route the Q-027 rev3 text spelled out: run the installed,
+manifest-pinned, guarded ballot wrapper payload once per reviewer with the tasks left
+Disabled. Revision 2 omitted that clause. Sol read its own text correctly twice (13:33Z,
+19:09Z: "no authorized Sol actuation can manufacture" the vote) and the board sat at
+TWO_OF_FOUR for seven hours; the escalation task fired at 17:41Z and, by construction,
+could not clear it. The unblock was an owner directive under the standing delegation
+(directive 2026-09-08b) granting the Q-027 rev3 ballot route for that revision only, with a
+fallback letting Sol open a byte-identical revision 3 plus the clause if it applied the
+tally-reset rule instead. Sol chose the collection-boundary reading at 19:37Z; Sonnet's
+fresh APPROVE landed at 19:50Z.
+
+> **Ballot collection is a capability, and a proposal's boundary text can revoke it by
+> accident. A proposal must carry its own ballot-collection clause or it is structurally
+> unvotable, and no cadence, escalation counter or wake budget will ever repair that.**
+
+Test: before publishing any proposal whose boundary names "reviewer/model call", grep the
+frozen text for the ballot-collection clause; if the reviewer actuators are Disabled, the
+absence of the clause is a publication blocker, not a style issue.
+
+## A `$` anchor never matches a CRLF ledger, so every successful ballot reports failure (adobe, 2026-09-08, virtual-ten)
+
+`Invoke-FactoryClaudeLane.ps1` line 1645 checks its own published vote with
+`(?m)^<body>$` over a `Get-Content -Raw` read of a CRLF-framed ledger. In .NET the `$`
+anchor matches before `\n` only, so the trailing `\r` makes every match count zero and the
+wrapper throws `ballot-owner-postpublication` after the vote is already on disk. Five
+ballots in one day carried `WRAPPER_FAILED` receipts for votes that counted; the rotation
+check reported both reviewer lanes DEAD; the escalation cache carried the false reviewer
+state. Fix is `\r?$` plus a production-framed fixture (advisory seq35 of session 01a07ad5
+carries a ten-case probe); it is deferred until the open proposal closes so no protected
+byte changes during a ballot.
+
+> **A self-check that reads back what a different writer framed must tolerate that writer's
+> framing. Green on LF fixtures proves nothing about a CRLF ledger.**
+
+Test: write the body with the production writer, read it back with the production reader,
+assert exactly one match; run the same assertion with the file converted to LF and to CRLF.
