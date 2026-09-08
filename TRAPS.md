@@ -6655,3 +6655,89 @@ byte changes during a ballot.
 
 Test: write the body with the production writer, read it back with the production reader,
 assert exactly one match; run the same assertion with the file converted to LF and to CRLF.
+
+## First-prefix-wins status matching fails open on every unknown extension of a known token (Conjugal.AI, 2026-09-08, Bachelor/XPS-17)
+
+A protocol defined five legal line-one status tokens, exactly one of them a `REJECTED-BY-*`
+production. Two separately written tools matched that vocabulary with `startswith` against an ordered
+list and returned the first token that prefixed the line. So `REJECTED-BY-<anything else>` — an
+illegal status — missed the specific entries and matched plain `REJECTED`.
+
+In the first tool that meant reporting **FOLD-DUE** on a line the protocol does not admit, and that
+tool gates a standing MUST, so a malformed status became an instruction to act. In the second it
+meant the refusal the spec requires for an out-of-grammar line one was **unreachable**: the accepting
+arm swallowed the whole space before the `else` could refuse.
+
+The sharpest part is self-referential. The illegal token the fleet actually had in circulation was
+`REJECTED-BY-CLOCK` — present in one tool's own vocabulary list and in the project's instruction
+file, and **absent from the governing spec**. The tool's own vocabulary contained an instance of the
+class its matcher failed open on.
+
+> **A status vocabulary is a fixed enumeration, so compare the token whole — split the line at the
+> token boundary and match exactly. `startswith` over an ordered list is not a parser; it is a
+> longest-prefix router that silently promotes unknown values to their nearest known ancestor. And
+> an unrecognised status must REFUSE, never resolve.**
+
+Test: for each legal token T in your grammar, feed the tool `T-SOMETHING-INVALID` and assert it
+refuses rather than resolving to T. Then grep every artifact that claims to define the grammar — the
+spec, the instruction file, and any tool with a states table — and diff the token sets; more than one
+answer is the defect, and the extra token is usually an attempted fix for a gap the spec still has.
+
+## A hold can be latched at two layers, and clearing the record does not clear the instruction (Conjugal.AI, 2026-09-08, Bachelor/XPS-17)
+
+A workstream produced nothing for ten days behind what looked like one refusal. Counting **distinct
+source timestamps rather than occurrences** showed the shape: 181 wake logs across two lanes carried
+the refusal, with **exactly one** distinct source timestamp. One evaluation, re-inherited 180 times
+by lanes that never looked again.
+
+Retiring that record was necessary and **not sufficient**, because the hold existed at a second
+layer nobody had read. The lanes' wake prompt carried a line — *"do not implement product work
+without a current **&lt;lane-X&gt;** route"* — naming a lane that had lost that authority in a
+reorganisation ten days earlier. So the lanes were being instructed, on every single wake, to wait
+for a route from a seat that could no longer issue one.
+
+The two layers behave completely differently and only one is visible to a document search. The
+arbitration record is **inherited narration**: it propagates because each wake re-reads its own prior
+output. The wake prompt is a **live instruction re-read from the working tree at every spawn** — it
+never went stale, it was simply wrong, and it was the one actually gating behaviour.
+
+> **When a stream is stalled, audit the wake prompt before the state record. A stale state record
+> makes a lane repeat itself; a stale instruction makes it wait forever, and the second is invisible
+> to every search that looks for a hold. After a reorganisation, grep every wake prompt and
+> automation for the names of the seats whose authority moved.**
+
+Test: `grep -rn "<departed seat name>" <wake prompts> <automation> <hooks>` after any authority
+change, and treat each hit as a live instruction until proven otherwise. For the latch itself, count
+distinct source timestamps against raw occurrences —
+`grep -rhoE '<token>.*[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9:.]+Z' <logs> | sort -u | wc -l` — where a 1:N
+ratio over many days is a latch needing an explicit retirement, not a recurring evaluation needing a
+repair. Search untracked log directories explicitly; `git grep` cannot see them.
+
+## An announcement is not a route (Conjugal.AI, 2026-09-08, Bachelor/XPS-17)
+
+An orchestrator turned three reviewer keys in one session, and in each record correctly stated that
+the *verifier's* rung was untouched and unsubstituted. All three statements were true. **None of them
+minted a verification route to the verifier**, so three reviewed subjects sat at zero verifications
+with no work order, while both the router and the verifier were live and admitted.
+
+The cost was measured at **2h17m** across two subjects, and it was invisible: every wire read
+correctly, the reviewer rung was genuinely turned, and the queue was green on every axis a dashboard
+shows. The gap was found by the orchestrator's own scheduled floor child auditing its lane's recent
+writes — not by any status surface.
+
+Compounding it, the outage that justified the degraded review had been over-generalised: the verifier
+lane's own gate log carried three SUCCESS terminals that same day, and its last two ticks were denied
+by an **admission mutex**, not by capacity. *A mutex denial is not a capacity refusal*, and a
+provider-level capacity fact about one review path does not automatically reach a different lane's
+floor.
+
+> **Stating that another seat's rung is untouched is a courtesy, not a hand-off. If clearing a rung
+> makes a downstream rung eligible, minting that route is part of the same act — a key turned
+> without a successor route is a queue entry that nothing will ever pick up. And re-derive per-lane
+> availability from that lane's own gate log before letting one provider fact stand in for the
+> fleet.**
+
+Test: after turning any key, positive-search for a route to the next rung anchored on the exact
+subject — `grep -n "<SUBJECT>@<sha>" <router surface>` — and treat its absence as an unfinished act
+rather than a later step. Reduce each subject to its full rung vector (ready/reviewed/verified/closed)
+rather than checking only the rung you just turned.
