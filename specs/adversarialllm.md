@@ -104,6 +104,47 @@ from live proof. The older phase scorecard is historical. M1 and bundle-packager
 OFF; current queue/PR evidence determines delivery, and H1/R-LIVE still govern live campaigns. This
 entry points to those records rather than duplicating the product status ledger.
 
+The following historical binding preserves existing census evidence only; it grants no new authority or proof credit.
+
+## 2026-08-19 R26 project-published disposition binding
+
+**DISTINGUISH(909f769d02e8412e51e28e242cfa8d00dadc9a3d, ADVERSARIALLLM_R26_ZERO_AUTHORITY_EVIDENCE_ONLY_AUTOMATIC_GATE_CLOSED_NO_PROJECT_OWNED_R26_ADOPTION_RULING, ADVERSARIALLLM_MASTER_8f01ea860d22c0e0c0a8c5ac9f7c290b1c050c14, DISPOSITION_BLOB_a337a9bea93daf94e619653edb8b5241ee29b6af)**
+
+This project disposition addresses exact R26 candidate
+`e70a044f31dd2f43ab7c716d63a4eb89318c61b6` and exact canonical merge
+`909f769d02e8412e51e28e242cfa8d00dadc9a3d`.
+
+This distinction binds the project-published default ref
+`https://github.com/layibabalola/AdversarialLLM-ClaudeCode.git` `refs/heads/master` at commit
+`8f01ea860d22c0e0c0a8c5ac9f7c290b1c050c14`, tree
+`4b39858e0421257fc997bb827571b35fb712e15a`, sole parent
+`6c9e54d7962711c7a90828159c172b130ad7d594`. The project-owned machine-readable receipt at
+`adversarialllm/docs/reports/softwarefactory-r26-disposition-20260819.json` is exact Git blob
+`a337a9bea93daf94e619653edb8b5241ee29b6af`, 3,471 bytes, SHA-256
+`33a784a39e9451db68acb96d26b550fd6a8c4aea140b78ac66fde47724e16b7d`. It records
+`DISTINGUISH`, `adopted=false`, `automaticLaunchGate=CLOSED`, and zero provider, process,
+scheduler, authentication, gate-opening, activation, adoption, or host-hard-close authority.
+
+The exact project-candidate binding uses base commit
+`4ca508a041d589aaaa07f995b34238cd43a9303f`, candidate status
+`DISTINGUISH_ZERO_AUTHORITY_EVIDENCE_ONLY`, primary evidence path
+`adversarialllm/docs/reports/softwarefactory-r26-disposition-20260819.json`, and disposition path
+`adversarialllm/docs/reports/softwarefactory-r26-disposition-20260819.md`.
+
+| Artifact | Git blob | Bytes | SHA-256 |
+| --- | --- | ---: | --- |
+| `adversarialllm/docs/reports/softwarefactory-r26-disposition-20260819.json` | `a337a9bea93daf94e619653edb8b5241ee29b6af` | 3,471 | `33a784a39e9451db68acb96d26b550fd6a8c4aea140b78ac66fde47724e16b7d` |
+| `adversarialllm/docs/reports/softwarefactory-r26-disposition-20260819.md` | `a7baf849dca2dea2f56874b3393afead7bd5e6ba` | 3,488 | `d0b5f941b93bca18a4c6906900004612daa8da9077daaa6f635fc0f45e10bcd7` |
+| `scripts/verify-fleet-doctrine-disposition.ps1` | `fbc60a92704f8fe9495933953b4ac1a5c332db5d` | 15,183 | `0155c19228638a02c254d6811c0f7402aa996fbfbb0d2eee22033c5e4aff1c35` |
+| `scripts/tests/fleet-doctrine-disposition.tests.ps1` | `9cb528a7967e11164d8e5378b63a6022e70b077c` | 6,404 | `cc7649c9a59760406dfe74c7f23d7ec2ec66ace5c9ec22c7ec912ff97e380ee5` |
+
+The companion report, read-only exact-object verifier, and its hostile controls remain project-owned
+evidence. Their publication does not transfer proof from another project, install a supervisor, open a
+gate, enable a task, launch a provider, or satisfy any R26 adoption proof. AdversarialLLM remains
+`DISTINGUISH`, not `ADOPT`; exact model, effort, role, review, quality, and functionality requirements
+remain unchanged.
+
+
 ## Preserved NO_GO disposition
 
 The exact project disposition below remains non-authorizing. It is retained from bus publication
