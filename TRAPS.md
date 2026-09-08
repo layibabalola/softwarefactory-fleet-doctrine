@@ -6301,3 +6301,111 @@ whole lifetime is a churn source, whatever its history says.
 
 > **Each of these produced a symptom that pointed at the network, git, or the harness. The
 > first suspect for a strange failure inside your own tooling is your own tooling.**
+
+## A ledger row can say DONE while the code sits on a branch nobody merged (Cloudvore, 2026-09-08, Bachelor/XPS-17)
+
+Three "Accept <ID>" commits each changed one line of the queue file and nothing else. The rows
+cited candidate SHAs ca33a8e, 47994a2 and 8fb0d62; none was an ancestor of master, and 235 lines
+across five files lived only in sibling worktrees for ten hours while the entry gate reported a
+valid bootstrap on every session start. The recorded blocker was honest in isolation -- an
+untracked file already occupied the target path, so the merge was held rather than overwrite user
+bytes -- but "held" was written into three DONE rows instead of one BLOCKED row, so no surface
+disagreed with itself. The held file turned out to be a dead launcher from a superseded plan, last
+fired the previous morning; git merge-tree against master was clean the whole time.
+
+Five further rows cited worktree commits whose content had been re-applied to master under
+different SHAs. That work shipped; the audit trail pointed at commits nobody could reach.
+
+> **Acceptance is a claim about reachability, and no amount of test evidence substitutes for it.
+> A gate that validates row shape, dependencies and cycles but never asks "is this commit on the
+> branch?" will certify a queue whose deliverables are not there.**
+
+Test: for every DONE row, resolve the commits its acceptance text cites and require
+`git merge-base --is-ancestor <sha> <landed-ref>` for each. Two implementation notes, both learned
+by getting them wrong. Acceptance prose loses the spaces around SHAs ("Accepted6c9aa16",
+"Slice A48010df"), so probe maximal hex runs for an embedded commit rather than matching on word
+boundaries. And treat only commits cited OUTSIDE parentheses as claims: red baselines, review
+subjects and superseded candidates legitimately live off the branch, and demanding those be
+reachable makes the check noisy enough to ignore.
+
+## The prescribed cure for an oversized queue file needs a quiescence a drained queue never has (Cloudvore, 2026-09-08, Bachelor/XPS-17)
+
+The single active queue file stood at 32,772 bytes against a 40,960-byte hard cap, growing about
+1.3 KB/hour because every packet appended its evidence narrative to the same file a tool parses
+for a 41-line table. Roughly six hours of headroom remained. The size rule's remedy is to split
+the file, and the split rule refuses to run when the tree is not quiescent -- but the operating
+mode is continuous drain, where completing a packet is explicitly not a stop condition. The remedy
+was scheduled to become unavailable at exactly the moment it became necessary.
+
+Sixty-four percent of the file was narrative wrapped around the eight kilobytes of table that
+carried the machine-read contract.
+
+> **When one file is both the machine-read contract and the append-only log, its growth rate is
+> set by the log and its cap by the contract. Check whether a remedy's precondition is negatively
+> correlated with the condition that triggers it.**
+
+Test: divide remaining headroom by measured bytes/hour taken from git blob sizes, and compare with
+the mean time the tree is actually quiescent. If the second number is larger, the remedy is
+unreachable; separate the log from the contract before the cap, not after.
+
+## Evidence hashed from the working tree cannot be verified from the commit it names (Cloudvore, 2026-09-08, Bachelor/XPS-17)
+
+A release-candidate manifest described itself as reproducible and deterministic, recorded a
+sourceSha, and listed SHA-256 hashes for four project files. All four failed verification by
+`git show <sourceSha>:<path> | sha256sum`. The content was never wrong and nothing was fabricated:
+the generator hashed working-copy bytes while stamping `git rev-parse HEAD`, and Git stores LF
+where Windows checks out CRLF. Every hash was correct for one checkout and reproducible by nobody
+else. A first reviewer read the mismatch as evidence generated in the wrong worktree, which would
+have been a far more serious finding; re-normalising the blob to CRLF reproduced all four claimed
+hashes exactly and disproved it.
+
+> **A manifest that binds hashes to a commit must hash what the commit contains, not what the
+> checkout produced. Nothing in the artifact records which one was hashed, so the error stays
+> invisible until someone outside that checkout verifies -- and a line-ending mismatch reads
+> exactly like fabrication.**
+
+Test: regenerate from `git ls-tree` and `git show <sha>:<path>` so the artifact depends on the SHA
+alone, verify independently, and confirm a second run is byte-identical. Before escalating any
+hash mismatch as fabrication, re-hash the blob both with CRLF and with LF.
+
+## A scheduled task registered with an unquoted spaced path never runs, and the obvious fix arms whatever it points at (Cloudvore, 2026-09-08, Bachelor/XPS-17)
+
+Two tasks had fired on schedule since creation and failed identically every time with 2147942405
+(0x80070005, ACCESS_DENIED). The raw XML registration read
+`<Command>C:\code\DropBox</Command><Arguments>Vault\tools\run-wrapper.bat</Arguments>`: the path
+was split at the space, so the scheduler was trying to execute a directory. ACCESS_DENIED named a
+permissions cause for a quoting defect, and the Get-ScheduledTask object view hid the split that
+`schtasks /xml` showed plainly.
+
+The trap is what the fix does. One of those tasks drove a payload that calls `Stop-Process -Force`
+on any pwsh or python process older than sixty minutes matching a command-line pattern, with no
+observe mode, no kill budget and no protected-pattern list -- unlike a sibling guard on the same
+machine that has all three. The payload was inert only because its task was broken, and two
+ready-made one-line "fix the quoting" scripts sat beside it in the tree.
+
+> **A scheduled task that has never succeeded is not dormant, it is unexercised. Read what it
+> would do before making it run: "the task is broken" can be the only thing standing between a
+> machine and an unsafeguarded killer.**
+
+Test: `schtasks /query /tn "<name>" /xml` and read Command and Arguments literally rather than
+through an object view; check LastTaskResult across several fires, since a task that has never
+returned 0 has never proven its payload. Then read the payload end to end before correcting the
+registration.
+
+## A queue drained to zero keeps every activity metric healthy (Cloudvore, 2026-09-08, Bachelor/XPS-17)
+
+An automation resumed the same task every five minutes against a queue of 25 DONE and 5 WAITING
+rows, with nothing READY and nothing in progress. Four of the five waiting rows were genuinely
+owner-gated; three named event triggers -- "when V01 is delivered", "on R01 acceptance", "after
+ten accepted deliveries" -- that had already fired without the row being revisited, because an
+event trigger carries no clock. Meanwhile the product roadmap listed seven capability areas, all
+built and none accepted. The machine for draining a queue was excellent and there was no machine
+for filling one.
+
+> **A drain loop with an empty queue is indistinguishable from a busy one on wake count, commit
+> cadence and CPU. Only READY-count against roadmap-remaining separates them. Reaching
+> no-eligible-work is a trigger to cut packets, not a resting state.**
+
+Test: report the READY count beside the count of roadmap items that have no packet. If READY is
+zero while the second is not, the loop is spinning. Give every blocked row a wall-clock next check
+rather than an event trigger, and re-derive fired triggers on entry.
