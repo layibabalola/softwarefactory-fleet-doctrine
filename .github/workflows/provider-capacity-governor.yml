@@ -27,6 +27,8 @@ on:
       - "tools/check_universal_manifest.py"
       - "tools/refresh_current_universal_manifest.py"
       - "tests/test_refresh_current_universal_manifest.py"
+      - "tools/run_windows_universal_tests.py"
+      - "tests/test_windows_universal_runner.py"
       - "tools/provider_capacity_governor.py"
       - "tools/universal_provider_control.py"
   push:
@@ -56,6 +58,8 @@ on:
       - "tools/check_universal_manifest.py"
       - "tools/refresh_current_universal_manifest.py"
       - "tests/test_refresh_current_universal_manifest.py"
+      - "tools/run_windows_universal_tests.py"
+      - "tests/test_windows_universal_runner.py"
       - "tools/provider_capacity_governor.py"
       - "tools/universal_provider_control.py"
   workflow_dispatch:
@@ -78,6 +82,9 @@ jobs:
     runs-on: ${{ matrix.os }}
     timeout-minutes: 15
     steps:
+      - name: Record job clock for bounded worker cleanup
+        shell: pwsh
+        run: '"UNIVERSAL_JOB_STARTED_UNIX=$([DateTimeOffset]::UtcNow.ToUnixTimeSeconds())" >> $env:GITHUB_ENV'
       - name: Check out candidate
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
@@ -140,7 +147,16 @@ jobs:
       - name: Run guarded active-manifest refresh controls
         run: python -m unittest discover -s tests -p "test_refresh_current_universal_manifest.py" -v
       - name: Run universal broker semantic negative controls
-        run: python -m unittest discover -s tests -p "test_universal_provider_control.py" -v
+        shell: pwsh
+        run: |
+          if ($IsWindows) {
+            python tools/run_windows_universal_tests.py --output-dir "$env:RUNNER_TEMP/universal-$env:GITHUB_RUN_ID-$env:GITHUB_RUN_ATTEMPT-${{ matrix.python-version }}"
+          } else {
+            python -m unittest discover -s tests -p "test_universal_provider_control.py" -v
+          }
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Run Windows census and containment controls
+        run: python -m unittest discover -s tests -p "test_windows_universal_runner.py" -v
       - name: Run canonical runtime-workbench negative controls
         run: python -m unittest discover -s capacity-control/tests -p "test_*.py" -v
 

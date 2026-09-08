@@ -6845,7 +6845,9 @@ class ReviewResourceAdmissionR29Tests(unittest.TestCase):
         import check_universal_manifest as checker
 
         current = checker.LAYER_DESCRIPTORS[-1]
-        raw = (ROOT / current.manifest_path).read_bytes()
+        # Self-bindings describe canonical Git bytes, not checkout line endings.
+        raw = checker._git(checker._blob_spec(":", current.manifest_path))
+        assert isinstance(raw, bytes)
         manifest = json.loads(raw)
         current.verifier(manifest, current.candidate)
         output = io.StringIO()
