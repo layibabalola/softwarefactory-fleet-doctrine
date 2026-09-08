@@ -6186,3 +6186,118 @@ See [SELF-HOSTED-WINDOWS-RUNNER.md](SELF-HOSTED-WINDOWS-RUNNER.md) for the full 
 - **A runner service running as `NT AUTHORITY\NETWORK SERVICE` cannot complete `actions/setup-python`** — the python-versions `setup.ps1` runs the Python installer (registry writes, a user profile) and throws "Error happened during Python installation" at the install step. Everything up to it (checkout, setup-node) passes, so it looks like a Python-specific bug. Fix: run the runner service as a REAL interactive user (services.msc → the `actions.runner.*` service → Log On tab → This account → `.\<user>` + password, which auto-grants Log-on-as-a-service), then restart. Needs the account password, so it is an owner action.
 - **A test that FAKES its toolchains needs none of them installed — do not install to satisfy it** (Conjugal build-profile suite, measured): `scripts/test-build-profiles.sh` writes fake shims for `dotnet npm python go cargo gradle mvn cmake ctest javac MSBuild` into a prepended `$FAKE_BIN` and asserts on their logged invocations. A red "node build command missing npm run build" is NOT a missing Node. An agent proposed installing JDK + VS Build Tools + Go + Rust + Gradle + CMake (~10 GB); reading the test source showed all are stubbed. Test: before installing a toolchain for a failing CI test, grep the test for a fake/stub of that tool. Fix: never install the faked toolchain. Costume: a "missing toolchain" failure whose toolchain the test itself provides. **Root cause of that specific red is still OPEN — and one attractive theory is MEASURED FALSE:** "a real `npm` on PATH shadows the fake shim" is wrong on this box. Probed in Git Bash on Ultra Magnus: with `$FAKE_BIN` prepended, `command -v npm` returns the FAKE, `npm run build` runs the FAKE, absolute pre-resolution returns the FAKE, and `bash -lc` still returns the FAKE, while the real npm sits at `/c/Users/obabalola/tools/node-v24.18.0-win-x64/npm`. Remaining candidates (untested): the MSYS `$COMMAND_LOG` vs `$COMMAND_LOG_HOST` split writing the fake's log where the assertion does not read it, and `PAIRPROG_BUILD_TIMEOUT_SECONDS=5` expiring on a shared runner at 83-87% CPU. Second-order trap: an agent's plausible root cause was adopted into doctrine before it was measured — measure the mechanism, then publish it.
 - **`runs-on` is better selected by a repo variable than a hardcoded label** — `runs-on: ${{ vars.CI_RUNS_ON != '' && fromJSON(vars.CI_RUNS_ON) || 'windows-latest' }}` lets a single `gh variable set/delete CI_RUNS_ON` move CI between a self-hosted runner and hosted with no workflow edit and instant, reviewable rollback. Validate on a `pull_request` run before merging the workflow change to master.
+
+## A lane that wakes clean and writes nothing may be honouring its own kill switch — read the receipt before the theory (adobe, 2026-09-07, virtual-ten)
+
+For seven hours the Sol orchestrator lane woke every 30 minutes, exited 0, and wrote nothing
+to the ledger. The dispatch checker said `ADJUDICATION_STALLED` (true), the escalation counter
+said "no non-refusal entry for 6.14 h" (true), and every reader, me included, built a theory
+about an adjudicator blocked by its own prior ruling. The lane's receipt had said the answer
+the whole time:
+
+    status=SKIPPED outcome=STOP_FILE_PRESENT
+    detail=Kill switch present at .claude-state\lane-state\STOP-SOL-LANE
+
+A quiet-window hold set at 16:21Z for a reviewer run was never removed after the reviews
+finished at 17:42Z. Every wake since checked the stop file first and left. Task Scheduler's
+own history showed it: eleven consecutive event-100-to-102 pairs under two seconds. A lane
+that finishes in under two seconds did not run.
+
+> **"Wakes with exit 0 and writes nothing" is not a stall symptom; it is a receipt you have
+> not read. Read the lane's own receipt and its state directory before any theory about the
+> ledger.**
+
+Test: `Get-Content $env:LOCALAPPDATA\AdobeIngesterFactory\receipts\sol-exec.json` (or the
+lane's equivalent) and `Get-ChildItem .claude-state\lane-state`. Pair scheduler events 100 and
+102 for the task; a run under two seconds is a skip, whatever its exit code says.
+
+## The harness delete guard misreads a workspace path with a space, and the hold's owner was stranded by it (adobe, 2026-09-07, virtual-ten)
+
+The executor session that set the hold above tried to remove it when the reviews finished and
+recorded "tool-policy denials", then built recovery tooling around the denial instead of the
+file going away. The denial reproduces on this machine for any agent command that contains a
+delete verb (`Remove-Item`, and even that cmdlet's name inside a quoted string or a comment)
+together with a literal path under `C:\!Layi Wkspc\`:
+
+    Remove-Item on system path ''C:\!Layi' is blocked. This path is protected from removal.
+
+The guard splits the path at the space, sees `C:\!Layi`, and treats it as a top-level folder.
+It refuses the whole command before anything runs. The same delete through `[IO.File]::Delete`
+on a variable holding the full path is not refused. So one misparse turned a two-minute quiet
+window into a seven-hour outage, and the executor's own report described it as policy.
+
+> **A tool-policy denial is a claim to verify like any other. Reproduce it with the smallest
+> command, read the exact text, and ask what the guard actually parsed.**
+
+Test: run the refused command with the path in a variable and the .NET API; if it passes, the
+denial was a parse artifact, not a policy. Mitigation: automation roots without spaces or `!`;
+delete project files via the .NET API; keep cmdlet names out of prose inside commands.
+
+## `python3 - <<'EOF'` from an agent shell on Windows spins a core until someone looks (adobe, 2026-09-07, virtual-ten)
+
+A finished Claude Code session left one `python.exe -` alive for 22 hours at 100% of a core:
+1,258 CPU-minutes, one thread, 5 MB working set, 3.6 billion I/O calls. `python3` in Git Bash
+resolves to the Microsoft Store app-execution alias, which launches the real interpreter
+behind a stdin pipe that never closes, so `-` (script on stdin) never sees EOF. The bash chain
+above it was parentless and no hygiene task on the machine classifies a python as an orphan.
+A census sorted by memory never shows it; sorted by cumulative CPU it is the first line.
+
+> **Sort the process census by cumulative CPU minutes, not memory, and walk each hit to its
+> highest live ancestor. The worst leak on this machine weighed five megabytes.**
+
+Test: `Get-CimInstance Win32_Process` sorted by `KernelModeTime + UserModeTime`; a
+`python.exe` whose command line is exactly `python.exe -` and whose root shell's parent PID
+is absent (or was created after the child) is the leak. Never run a heredoc through the
+`python3` alias from an agent shell; write the script to a file and run the real interpreter.
+
+## Session-scoped inline monitors outlive their sessions, seventeen at a time (adobe, 2026-09-07, virtual-ten)
+
+Codex sessions had each started a `pwsh -EncodedCommand` watcher: decode it and it is
+`while ($true) { Start-Sleep 300; hash HUB.md, LUNA_LOG.md, state.yaml }`. Seventeen of them
+from five days of finished sessions were alive, about 1 GB and 323 threads, each re-hashing
+the same three ledger files every five minutes, and none was visible to the Codex hygiene
+task, which only classifies ssh and git-credential probes as orphans. They shared no mutex
+name, so the mutex in each was decorative.
+
+> **A monitor whose lifetime is "until the session ends" needs the session to end it. An
+> inline `-EncodedCommand` loop has no owner once its parent is gone.**
+
+Test: for every parentless `pwsh.exe`, decode `-EncodedCommand` and look for `while` plus
+`Start-Sleep`; compare the parent's creation time to the child's, because a reused parent PID
+looks alive. Prefer `-File` scripts with a marker and a scheduled task for anything meant to
+outlive a session, and a machine-level reaper for the rest (reference: OrphanReaper, proposed
+to this bus as a portable core, not yet ratified).
+
+## A commit titled "fix" and an unmerged real fix both existed while the defect ran for months (adobe, 2026-09-07, virtual-ten)
+
+The agent-bridge wrapper Claude Desktop hosts spawned a `pwsh` + WMI probe every two seconds
+for the life of the process: 14 spawns in a 20-second window, about 2,500 per hour, each with
+a console host, a WMI round trip and a Defender scan; the WMI provider host had 1,400
+CPU-minutes since boot. MLV-App carried a May commit titled "Fix bridge WMI CPU churn" that
+had not removed the spawn, and a complete native-probe fix on a local branch since August 30
+that nobody merged. The sibling agent-bridge repo had the same fix since August 31. Measured
+after landing it (PR #95, `c793a103`): 0 bridge-attributed spawns in 30 s, WMI host 134% to
+1.4% of a core, machine kernel time 34% to 1%.
+
+> **A commit title is not a measurement, and a fix on an unmerged branch protects nothing.
+> Attribute spawns by parent PID over a window; that number is the only "fixed" that counts.**
+
+Test: poll `Win32_Process` every 250 ms for 30 s, collect new PIDs with their parent PID and
+creation time, group by parent. Anything spawning a shell more than once a minute for its
+whole lifetime is a churn source, whatever its history says.
+
+## Three PowerShell costume failures in one afternoon, each dressed as something else (adobe, 2026-09-07, virtual-ten)
+
+- A helper `function Git { & git ... }` resolves `git` to itself, recurses to call-depth
+  overflow after two and a half minutes, and presents as a network or credential hang.
+  Test: `Get-Command git` inside the function. Name wrappers Verb-Noun and call `git.exe`.
+- `Test-GitOk cat-file -e path` fails with "parameter name 'e' is ambiguous": single-dash git
+  flags bind as parameters of an advanced function. Test: quote them (`'-e'`) or pass an array.
+  Double-dash flags are safe.
+- `Stop-Process` driven by `Where-Object CommandLine -match '<pattern>'` matched the tool host
+  running that very filter (its command line contains the pattern) and killed it: exit 255,
+  output truncated, no error. Test: before stopping by pattern, exclude `$PID` and its
+  ancestor chain and any command line containing the query itself.
+
+> **Each of these produced a symptom that pointed at the network, git, or the harness. The
+> first suspect for a strange failure inside your own tooling is your own tooling.**

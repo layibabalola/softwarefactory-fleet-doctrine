@@ -1630,3 +1630,57 @@ Cloudvore source 3b7d5323fce52bc2ca512b04d0650d4ce830b4b4 reached remote master 
 The installed entry command returned valid with doctrine pending, correctly reflecting the absent consumption marker. This publication replaces the stale Cloudvore spec with installed facts and qualifies only Cloudvore's historical adoption claims in the two continuity documents. It preserves zero runtime authority for R26 and the known pre-existing PROJECT_SPEC_DRIFT checker failure. Exact source/publication verification and the reviewed cursor are recorded in Cloudvore's existing BACKLOG at closeout; publication alone is not acknowledgement or fleet ratification.
 
 Independent Luna review accepted the factual Cloudvore spec and identified one ambiguity in the continuity document's old status/adoption fields. Those fields now explicitly say historical, retaining the original account while preventing it from presenting current Cloudvore adoption. The integrating session verified the correction before publication.
+
+## 2026-09-07 — adobe-ingester: workstation pressure audit, bridge probe fix, machine reaper, and the stop-file stall (virtual-ten)
+
+Measured on the shared workstation (16 logical cores, 32 GB) that hosts adobe-ingester,
+mlv-app, agent-bridge and adversarialllm. All numbers were derived read-only with CIM and the
+Task Scheduler operational log; no transcript or credential material is carried here.
+
+**Before (12:35 CDT).** 32.1 GB committed by processes against 32 GB physical; page file
+5.2 GB in use, 15.6 GB peak since boot; 3,172 hard page faults/s; kernel time 34% of CPU;
+189 scheduled-task launches per hour with about 3.8 task-hours of wall time per hour; 438 new
+processes in one 30-second window (git 228, python 77, conhost 49, pwsh 47); Defender
+2,202 CPU-minutes and the WMI provider host 1,400 since boot. Leaks with no living parent: one
+`python.exe -` at 1,258 CPU-minutes (a full core for 22 h), seventeen `pwsh -EncodedCommand`
+poll loops (about 1 GB, 323 threads), one Roslyn compiler server (1.1 GB), three idle Claude
+bash shells. Standing churn source: the MLV-App agent-bridge wrapper under Claude Desktop,
+14 `pwsh` + WMI spawns per 20 s.
+
+**Actions.** Killed the python chain, the seventeen loops and the compiler server by hand
+(verified start times before each stop). Landed the native in-process probe in MLV-App as
+PR #95 (`c793a103`, Sol-approved, five required checks green) and moved Claude Desktop's
+bridge onto a locked worktree updated only by an explicit fast-forward. Built OrphanReaper
+(reference implementation on this machine, v1.0.0, dry run by default, receipts, self-test)
+for the leak classes above; not installed pending review; proposed to this bus as a portable
+core through the adobe-ingester Fable ingress (session cbef5017, seq 3) for ratification, so it
+carries no doctrine authority yet.
+
+**After (14:21 CDT, same method).** WMI provider host 134% of a core to 1.4%; Defender about
+32% of a core to 10.6%; machine CPU 29% to 6% and kernel share 34% to 1%; new pwsh spawns per
+30 s from 47 to 7; bridge-attributed spawns 0 per 30 s; free RAM 9.6 GB to 13.1 GB. After the
+Desktop restart, every Desktop-hosted bridge process reports the runtime worktree.
+
+**The stall that was not a stall.** The r8 review dispatch showed `ADJUDICATION_STALLED` for
+seven hours after both reviews completed at 17:42Z. Cause: a `STOP-SOL-LANE` quiet-window hold
+set at 16:21Z and never removed, because the executor's removal was refused by the harness
+delete guard (see TRAPS, same date). Eleven Sol wakes each exited in under two seconds with
+`STOP_FILE_PRESENT`. Released at 00:43Z on 2026-09-08 under the sol.md delegation clause (2)
+after verifying the hold's own condition (reviewer tasks terminal, r8 reports and receipts
+inspected), logged in the owner-directives delivery ledger and ingress NOTICE seq 5, Sol woken.
+Outcome of that wake was pending when this entry was written; derive it, do not assume it.
+
+**Re-derive.**
+
+    # census sorted by cumulative CPU, with parent liveness
+    Get-CimInstance Win32_Process | Sort-Object { $_.KernelModeTime + $_.UserModeTime } -Descending | Select-Object -First 15 ProcessId, ParentProcessId, Name, CreationDate
+    # 30-second spawn census attributed by parent
+    $s=@{}; $t0=Get-Date; while(((Get-Date)-$t0).TotalSeconds -lt 30){ Get-CimInstance Win32_Process | % { $k="$($_.ProcessId)|$($_.CreationDate.Ticks)"; if(-not $s[$k]){ $s[$k]=$_ } }; Start-Sleep -Milliseconds 250 }; $s.Values | ? { $_.CreationDate -gt $t0 } | Group-Object ParentProcessId | Sort-Object Count -Descending | Select-Object -First 8
+    # task-scheduler launches per hour and 100->102 durations
+    Get-WinEvent -FilterHashtable @{LogName='Microsoft-Windows-TaskScheduler/Operational'; Id=@(100,102); StartTime=(Get-Date).AddHours(-1)}
+    # bridge runtime tree per process (MLV-App)
+    pwsh -NoProfile -File 'C:\!Layi Wkspc\MLV-App\.claude-state\tools\Invoke-BridgeRuntimeLanding.ps1' -Phase Preflight
+    # Sol lane receipt and hold state (adobe-ingester)
+    Get-Content $env:LOCALAPPDATA\AdobeIngesterFactory\receipts\sol-exec.json; Get-ChildItem 'C:\!Layi Wkspc\Adobe Document Cloud Ingester\.claude-state\lane-state'
+    # reaper dry run and self-test (stops nothing / stops only its own marked processes)
+    pwsh -NoProfile -File 'C:\!Layi Wkspc\OrphanReaper\Invoke-OrphanReaper.ps1'; pwsh -NoProfile -File 'C:\!Layi Wkspc\OrphanReaper\Test-OrphanReaper.ps1'
