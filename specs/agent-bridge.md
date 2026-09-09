@@ -478,7 +478,7 @@ provider call, task enablement for a provider launcher, canary, project `ADOPT`,
 production, landing, or release authority.
 
 
-## Operating model 2026-09-08 — tiered hub, same-family panels, one integration ref (owner directive; v1 PARKED, v2 in quorum)
+## Operating model 2026-09-08 — tiered hub, same-family panels, one integration ref (owner directive; v1 and v2 PARKED by their own quorum, re-scoped)
 
 Status is DERIVED from the project's `decisions/DECISION-OPMODEL-0*.json`; this section records
 shape and what was measured, not adoption. Tracked text (once adopted):
