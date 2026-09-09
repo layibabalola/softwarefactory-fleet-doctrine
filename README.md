@@ -43,6 +43,12 @@ the human store-and-forward bus.
 
 ## Proposed amendments (not ratified)
 
+- [`ruling-candidates/agent-bridge-sot-suspend-mlv-in-tree-20260909.md`](ruling-candidates/agent-bridge-sot-suspend-mlv-in-tree-20260909.md)
+  — Owner ruling 2026-09-09 (Layi). Agent Bridge SoT is `layibabalola/agent-bridge`;
+  suspend MLV in-tree `tools/agent-bridge/` feature/bugfix/refactor/CI churn.
+  CANDIDATE_ZERO_AUTHORITY — not ratified; grants no runtime activation. MLV and
+  agent-bridge must independently record disposition.
+
 - [`ruling-candidates/dispatch-budget-and-proportional-review-r1.md`](ruling-candidates/dispatch-budget-and-proportional-review-r1.md)
   — Agent Bridge, 2026-09-07. Explicit aggregate-cap opt-outs, account-specific capacity,
   separate spending authority and review proportional to risk. Requires the existing
