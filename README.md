@@ -30,6 +30,8 @@ the human store-and-forward bus.
 - `TRAPS.md` - append-only: costume failures and environment traps, with the test for each
 - `RECEIPTS.md` - append-only: drill results with date + machine
 - `RULINGS.md` - append-only: ratified fleet doctrine with the measuring project cited
+- `docs/` - portable templates and operator notes (not living project specs; not R26 carriers)
+- `ruling-candidates/` - proposed amendments; **CANDIDATE_ZERO_AUTHORITY** until ADOPT
 
 ## Ratified portable cores (zero runtime authority until project adoption)
 
@@ -42,6 +44,14 @@ the human store-and-forward bus.
   [issue #4](https://github.com/layibabalola/softwarefactory-fleet-doctrine/issues/4).
 
 ## Proposed amendments (not ratified)
+
+- [`ruling-candidates/fleet-doctrine-consumer-required-20260909.md`](ruling-candidates/fleet-doctrine-consumer-required-20260909.md)
+  — Owner-directed, 2026-09-09. Every software-factory fleet project with agent lanes MUST adopt
+  a fail-closed doctrine-consumer brief injection modeled on MLV-App #107 (read-only `gh api`
+  Contents brief; lanes never browse/write the bus; hubs may PULL-DIFF-FOLD via
+  `tools/doctrine-sync.mjs`). Portable template:
+  [`docs/doctrine-consumer-template.md`](docs/doctrine-consumer-template.md).
+  **CANDIDATE_ZERO_AUTHORITY** until each board ADOPTs; does not amend sealed R26 living specs.
 
 - [`ruling-candidates/dispatch-budget-and-proportional-review-r1.md`](ruling-candidates/dispatch-budget-and-proportional-review-r1.md)
   — Agent Bridge, 2026-09-07. Explicit aggregate-cap opt-outs, account-specific capacity,
@@ -166,6 +176,13 @@ the human store-and-forward bus.
   It is not a portable core, ruling, adoption credit, or launch authority. Coordination stays on
   [issue #4](https://github.com/layibabalola/softwarefactory-fleet-doctrine/issues/4).
 
+## Docs (portable templates)
+
+- [`docs/doctrine-consumer-template.md`](docs/doctrine-consumer-template.md) — portable consumer
+  pattern: Law 1, fail-closed brief injection, `gh api` Contents fetch contract, hub vs lane
+  duties, adoption checklist, and how consumers should call `tools/doctrine-sync.mjs`
+  (check/ack only; not lane browse). Reference implementation: MLV-App #107.
+
 ## Staying current, mechanized (`tools/doctrine-sync.mjs`, added 2026-08-30)
 
 Law 3 said "pull at boot and wake ticks" and law 3 was prose, so nothing ran it. On 2026-08-30
@@ -203,7 +220,8 @@ node tools/doctrine-sync.mjs export-check --project <name> --consumer "<repo pat
   what travels). What is automated is the *obligation* and the *detection*, not the writing.
 
 **Wiring recipe** — each project wires its own hooks; only the tool is shared. Reference
-implementation is AdversarialLLM's:
+implementation is AdversarialLLM's. For **lane brief injection** (separate from sync check/ack),
+see [`docs/doctrine-consumer-template.md`](docs/doctrine-consumer-template.md) and MLV-App #107:
 
 - **Session/lane start** → `check ... --max 8`. Print it; do not block a boot on it.
 - **Closeout / work-block completion** → `export-check`. A non-zero exit is a law-3 debt and
