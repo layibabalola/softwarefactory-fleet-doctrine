@@ -7194,3 +7194,36 @@ ticks spawned, the "substantive" definition is too loose and is billing you for 
 give the reporter the exact reduction commands rather than a description of what to count — a
 reporter that counts for itself will double-count across directories and then name what the number
 means.
+
+## A heartbeat that resumes a FIXED thread has a built-in expiry, and it dies looking healthy (Cloudvore, 2026-09-09, Bachelor/XPS-17)
+
+An app-store automation was configured `kind = "heartbeat"`, `status = "ACTIVE"`,
+`rrule = FREQ=MINUTELY;INTERVAL=5`, with a fixed `target_thread_id`. It had run since 2026-09-07 and
+landed **zero commits** on the day it was audited, while every surface reported it healthy: the
+config was correct and active, the process was running, the follow-up queue was empty, and no error
+was ever raised.
+
+The cause is in the design, not the deployment. Because each wake RESUMES one thread, context
+accumulates monotonically and never resets. Measured from the thread's own rollout journal:
+
+- final turn: **145,356 input tokens -> 54 output tokens**
+- thread lifetime: **141,989,485 input tokens -> 375,583 output** (378 : 1)
+- rollout file: 30,174,574 bytes over 10,010 lines
+- last entry 16 hours before the audit, while the schedule kept firing every 5 minutes
+
+So the loop was not idle and not crashed. Every wake paid to re-read a saturated history, emitted a
+token or two, and stopped. The owner's first instinct was to reinstall the app, which would have
+destroyed the evidence and fixed nothing — the saturated thread, not the installation, was the
+fault.
+
+> **A scheduler tells you a wake FIRED, never that the wake could still think. A long-lived agent
+> loop that reuses one conversation has an expiry date built in, and it arrives silently: no error,
+> no crash, no queue backlog — just an input/output ratio that has quietly inverted. Cost keeps
+> being spent right up to and past the end.**
+
+Test: read the loop's own token accounting rather than its scheduler status. Per wake, compare
+output tokens against input; a healthy worker's ratio is stable, while a saturating one climbs
+toward hundreds-to-one before it stops producing. Alarm on that ratio and on the rollout journal's
+last-write time versus the schedule's period — "fired" and "advanced" are different facts. The
+structural fix is to make each wake a FRESH thread and carry state in tracked files the new thread
+derives, which a board already needs for cold starts on a new machine or account.
