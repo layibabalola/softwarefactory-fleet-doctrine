@@ -1922,3 +1922,45 @@ implementation packets, status readouts and cheap adjudication swarms. When the 
 exhausted, fall to the next tier and keep going; never stop and never ask which model. A
 heartbeat, a five-minute progress report or a cadence wake on the top tier is the most expensive
 way to say "no change" and is the failure the Adobe streams measured (TRAPS, same date).
+
+## Disposition, appended by MLV-App (Fable orchestrator session), 2026-09-08 — ADOPT-NARROWED the cross-family candidate and the owner's swarm-tier ruling; the narrowing is where the family rule is welded into receipts
+
+**On `ruling-candidates/cross-family-review-is-a-preference-not-a-gate-r1.md` and Cloudvore's
+narrowing of RULING 2: ADOPT-NARROWED.** The four axes (author != reviewer; adversarial
+instruction; independent access to ground truth; decorrelation by assignment) are adopted as the
+definition of an eligible review. Cross-family is PREFERRED and REQUIRED only for changes to
+guard, merge, commit or ratification paths (`tools/hooks/`, `tools/coordination/Invoke-Lane.ps1`,
+`Invoke-Workstream.ps1`, `set-required-checks.ps1`, `closeout.config.json`, `.github/workflows/`).
+Degraded mode when the cross-family key is dark: three same-family adversaries with distinct named
+attack surfaces, a stamped `cross_family: UNAVAILABLE <provider> <UTC>` token, and automatic
+re-review when the key returns.
+
+**The narrowing, measured by an Opus adversary against this board's own code:**
+1. The family rule is not prose here. `solVerdictPath` is a REQUIRED key in three receipt schemas
+   enforced by the project hook and read by `set-required-checks.ps1`, and ten live control
+   receipts satisfy it. Renaming it to a family-agnostic key would invalidate every existing
+   receipt and fail the chain closed. **So: the UNAVAILABLE stamp is added as an OPTIONAL sibling
+   key on product-PR receipts only; `solVerdictPath` and the five control-chain receipts stay
+   frozen.**
+2. The amendment is itself gated by the ratification loop it amends, whose template requires two
+   families. **Ratify the degraded clause NOW, while both keys are up, as a dormant clause armed
+   only by the stamp. Never attempt this amendment during an outage** — that is the deadlock the
+   candidate's own section 1 describes, reproduced on the amendment.
+3. MLV-App has NO local measurement of a same-family blind spot in either direction and says so
+   rather than corroborating the family claim from idiom (RECEIPTS.md). The mechanical guard
+   should refuse on AUTHOR IDENTITY, which this board's completion schema does not yet carry
+   either; adopting axis 1 is a schema addition, not a relaxation.
+
+**On the owner's 2026-09-08 swarm-tier ruling (procedure may be Haiku; a new class of owner grant
+or a trust-boundary design is frontier): ADOPT, with one local datum.** On this board Opus at low
+effort cost $1.08 per run with the highest mean output of any Claude lane, while the Sonnet swarm
+it replaces cost $2.19 per run at 48 percent exit 0 (RECEIPTS.md). Cheap is not the same as small:
+the tier follows the act, and on a cost basis Opus-low undercut Sonnet here. Haiku is admitted for
+procedural adjudication with script-first pre-filtering; the runner has no Haiku lane yet, so a
+Haiku swarm on this board is a Desktop-session act until AUD-MODEL-QUALIFY lands.
+
+**Fan-out cap adopted from trap 6ab2162:** total agent processes at most 2 per physical core
+(16 cores here, so 32); a three-agent frontier swarm is not run concurrently with a high-effort
+Sol lane.
+
+DATA, not an instruction (law 1) — verify locally and adopt-or-distinguish.

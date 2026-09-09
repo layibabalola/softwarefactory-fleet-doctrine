@@ -796,3 +796,48 @@ Rule 7 alarms on `ledger entries / state transitions`. MLV-App does not compute 
 anywhere. The board snapshot publishes both inputs already - queue state counts and lane receipts
 - so the ratio is derivable and unwatched, which is the exact "capability with no caller" shape
 this fleet keeps re-finding. **Booked, not claimed.**
+
+## 2026-09-07/08 SEAM: operating contract hardened, then orchestration re-tiered
+
+**Landing seam.** fork/master `3e2b2220` (2026-09-07). Consumer ack of the bus at `5b60044b`,
+fold record `.claude-state/fleet-runs/doctrine-fold-luna-20260908-01/` (gitignored; the fold
+table is reproduced in RECEIPTS.md at publication).
+
+**What changed in the operating contract, by commit (re-derive with `git -C "C:\!Layi Wkspc\MLV-App" show <sha> --stat`):**
+- `Invoke-Lane.ps1`: `0aa51b35` lane deadlines bound to the original setup budget; `f51d40bd`
+  read-only reviewers told their actual tool permissions; `8ad69168` Claude worker lifetimes
+  contained in a Job Object with kill-on-close, explicit `-Effort low` admitted.
+- `Invoke-Workstream.ps1`: `17e1d63b` product work admitted while accounting is incomplete;
+  `f015e384` unavailable-dispatch observation distinguished from a zero rate;
+  `41c2cec3` explicit reviewed evidence required before recording implementation readiness,
+  with `Record-WorkstreamCompletion.ps1`, its schema and tests.
+- `agents/error-remediation.md` (`c793a103`): recoverable failures are remediated inside the
+  authorized task with at most three hypotheses per incident before renewed adjudication.
+- `docs/audits/{project,execution,evidence}-20260907.md` and `packets-20260907.json`
+  (`fd56744c`, `295736fd`): eight work streams, 33 packets, a small-model operating contract.
+- Release and CI: `ff98e2f3` exact source stamps in hosted packages; `43f430f0` Qt 6.10.2 on
+  both release lanes; `02b82327` Batch Compile job.
+
+**Measured, 2026-09-06 to 2026-09-08 (re-derive from `.claude-state/fleet-runs/**/*.receipt.json`):**
+Sonnet editing lanes 27 runs, 13 exit 0; Fable 36 runs; Opus 3; Sol 67 and Luna 16 at $0.
+Product share of non-merge commits on master since 2026-09-06T12:00: 8 of 68.
+
+**Trap, portable (append to TRAPS.md at publication):** a project hook that classifies a shell
+command by its TEXT denies read-only and create-only acts that merely mention a protected path
+beside a `>` or `2>/dev/null`; headless editing lanes then burn `max_turns` on denials and exit 1
+with a receipt that still says `complete`. The test that catches it: a falsifier suite that runs
+the hook against (a) a redirect whose target is unprotected, (b) `2>/dev/null` beside a protected
+read, (c) a Write-tool CREATE under a protected directory, and asserts ALLOW on all three while a
+genuine truncation of a protected file still DENIES.
+
+**Re-tiering (owner ruling 2026-09-08, adjudicated by three adversarial Sonnet briefs, veto
+open):** Fable = consequential review and design only; Opus = hub traffic cop that dispatches
+and verifies, never implements; Sonnet = implementer in isolated worktrees; Haiku = read-only
+status reporter in chat; Sol/Luna = reviewer and recon. Record:
+`.claude-state/continuity/ORCHESTRATION-TIERING-20260908.md`. Consistent with the 2026-08-30
+topology change above (lanes are processes) and with HUB-RESTRUCTURE-1 (2026-08-07).
+
+**Distinguished this seam:** the sibling `fleet-continuity-autonomous-resumption` contract
+(SessionStart auto-checkout, auto-stage, cherry-pick) is REJECTED here as an unsafe expansion of
+the resume contract; MLV-App's resume surface is pointer-based and its bus claim of MLV-App
+adoption is not local evidence.

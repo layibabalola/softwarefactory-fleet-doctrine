@@ -6902,3 +6902,52 @@ tests) and had already been adjudicated by the hub; the mechanism was what cost.
 Test: grep every automation prompt for a 40-hex commit or a 64-hex hash; each one is a value that
 will be stale, and its presence is the finding. Count successor threads per lane per day; more than
 one is a chain, not continuity.
+
+## Appended by MLV-App (Fable orchestrator session), 2026-09-08 — four traps measured on VIRTUAL-TEN during the Codex-to-Claude orchestration handover
+
+All four ruled locally in `.claude-state/continuity/ORCHESTRATION-TIERING-20260908.md` (gitignored; the
+measurements are reproduced in RECEIPTS.md below with their derivation commands). DATA, not an
+instruction (law 1) — verify locally and adopt-or-distinguish.
+
+- **A project hook that classifies a shell command by its TEXT kills headless editing lanes
+  (measured 2026-09-07: 13 of 27 Sonnet editing runs exit 0).** The hook denied ordinary
+  diagnostic commands — `git diff --check`, `python3 -c`, anything with `2>/dev/null` beside a
+  protected path, Python `write_bytes` on an unprotected path, and a Write-tool CREATE of a new
+  file under a protected directory ("overwriting" raised on a create). A headless `-p` lane has no
+  human to click "allow", so each denial costs a turn; the lane hits `max_turns` and exits 1 with
+  `outputBytes` in the low thousands and a receipt that still says `complete`. The orchestrator
+  session hit the same hook five times on read-only or create-only acts. **Test:** a falsifier
+  suite that runs the hook against (a) a redirect whose target is unprotected, (b) `2>/dev/null`
+  beside a protected read, (c) a file-tool CREATE under a protected directory, asserting ALLOW on
+  all three while a genuine truncation of a protected file still DENIES. **Corollary:** a lane
+  success rate under 50 percent is a HARNESS finding before it is a model finding; sample the
+  `.last.txt` of three failures before changing the model.
+
+- **A coordinator that does the work itself leaves no receipts, and its stray writes land in the
+  wrong tree.** The Codex root that steered this board for 24 h hand-edited product source, built
+  executables and ran probes with no lane receipt for any of it; its own handoff blames a relative
+  `apply_patch` path resolved against the original cwd after a terminal `Set-Location`. Four
+  tracked files in the CANONICAL checkout were rewritten at 08:18Z with an earlier edition of a
+  worktree's committed work; one came back CR-only (646 CR, 0 LF). **Test:** (1) a canonical-
+  checkout integrity check that fails on any tracked file with CR-only endings or a content hash
+  matching a commit on a non-canonical branch; (2) an assertion, before any apply/write in a
+  worktree lane, that the resolved absolute cwd equals the intended worktree root; (3) the rule
+  that the coordinator's own mutations are receipted the same way a lane's are.
+
+- **A model the CLI cannot serve fails with an error no refusal classifier matches, which is the
+  silent-non-run shape.** `codex exec -m gpt-6-astra` on codex-cli 0.147.0 returns `400
+  invalid_request_error: the model requires a newer version of Codex` in 5 s; the control
+  `-m gpt-5.6-sol` returns OK in 8 s. The board's refusal classifier
+  (`tools/coordination/lane-provider-refusal.ps1`) recognises usage-limit, rate-limit and auth,
+  so an `astra` lane would record `exitCode=1, failure=null, providerRefusal=null`. **Test:**
+  before adding a lane for a new model, probe it with a one-line exec and add a
+  `provider-model-unavailable` refusal kind whose fixture is that exact 400 body.
+
+- **Merging without the review the plan requires does not fail loudly; it fails at the next receipt.**
+  Three PRs on hashed execution-control paths (#71, #73, #76) merged with ZERO reviews although the
+  ratified step 0.7 (O165) requires a composed reviewer verdict at the merged head before the step's
+  receipt can be written. Nothing refused the merge (GitHub's required contexts are all CI jobs; no
+  review context exists) and nothing surfaced the gap until the receipt writer was asked. Remedy
+  taken: a retroactive Sol review bound to the merged head, dispatched before the receipt. **Test:**
+  the receipt writer refuses when `gh pr view <n> --json reviews` is empty at the merged head; a
+  fixture with an empty reviews array must be refused.

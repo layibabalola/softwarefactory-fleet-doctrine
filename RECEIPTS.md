@@ -1711,3 +1711,29 @@ when this entry was written; derive it, do not assume it.
     # the directive, its ledger, and Sol's disposition
     Get-Content 'C:\!Layi Wkspc\Adobe Document Cloud Ingester\.claude-state\coordination\owner-directives\DELIVERY-LEDGER.jsonl' -Tail 3
     Select-String -Path 'C:\!Layi Wkspc\Adobe Document Cloud Ingester\.factory\coordination\HUB.md' -Pattern '^### \[2026-09-08T19:3' 
+
+## MLV-App, 2026-09-08 — orchestration handover measurements (VIRTUAL-TEN; Fable orchestrator session)
+
+Re-derive every row before citing. Board root `C:\!Layi Wkspc\MLV-App`; receipts under
+`.claude-state\fleet-runs\**\*.receipt.json` (schema `mlv-app/fleet-lane-receipt/v1`).
+
+| measurement | value | derivation |
+|---|---|---|
+| lane runs since 2026-09-06 | 155 | Python: glob receipts, keep `startedUtc >= 2026-09-06` |
+| Sonnet editing lanes | 27 runs, 13 exit 0, $59.18, mean 621 s | group by lane=sonnet, effort='' |
+| Fable effort low | 28 runs, 28 exit 0, $28.59 ($1.02/run), mean 66 s | lane=fable, effort=low |
+| Fable effort default | 8 runs, 7 exit 0, $15.55 ($1.94/run), mean 158 s | lane=fable, effort='' |
+| Opus effort low | 3 runs, 3 exit 0, $3.25 ($1.08/run), mean 126 s, highest mean outputBytes of any Claude lane | lane=opus |
+| Sol high / low | 50 runs 47 exit 0 mean 679 s / 17 runs 17 exit 0 mean 179 s; costUsd null on every Codex receipt | lane=sol |
+| product share of non-merge commits since 2026-09-06T12:00 on fork/master | 8 of 68 | `git log --no-merges --since=2026-09-06T12:00 --format=%h master -- src platform` vs all |
+| open PRs with zero reviews | 72, 101, 102 (all hosted checks green) plus merged #71, #73, #76 | `gh pr view <n> -R layibabalola/MLV-App --json reviews` |
+| Astra reachability from codex-cli 0.147.0 | 400 `requires a newer version of Codex`, 5.3 s; control gpt-5.6-sol OK 7.7 s | `codex exec --sandbox read-only -m gpt-6-astra "Reply OK"` |
+| host fan-out | 16 physical cores, 32 GB, 20 agent processes = 1.25 per core (trap 6ab2162 ceiling about 32) | `Get-CimInstance Win32_Processor`, process table |
+| stray canonical writes | 4 tracked files, 2026-09-08T08:18-08:19Z, one CR-only, all an earlier edition of PR72 branch commits | manifest `.claude-state\continuity\archive\stray-canonical-writes-20260908T0818Z\manifest.json` |
+
+Cross-family review candidate `ruling-candidates/cross-family-review-is-a-preference-not-a-gate-r1.md`:
+MLV-App disposition ADOPT-NARROWED, with NO local measurement of a same-family blind spot in
+either direction (13 project-memory hits are idiomatic uses of "family"; the Fable-versus-Opus
+brief-split memory is a mode effect measured under identical prompts, not a vendor effect).
+Adjudicated by three Opus adversarial briefs (against / what-outranks / evidence-binding), same
+family as the author, opposite briefs, independent access to the tree. See RULINGS.md disposition.
