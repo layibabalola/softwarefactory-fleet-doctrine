@@ -8014,3 +8014,64 @@ Test: build a fixture containing two near-duplicate occurrences that differ ONLY
 matcher normalises (newlines, whitespace, case, unicode form), and assert the matcher selects the
 intended one by OFFSET, not merely that it found one. Run the rejected implementation against the same
 fixture and record what it selects — a differential proof is what converts a reviewer's claim into a fact.
+## A repair judged by backend traffic fixed nothing, and the symptom was re-investigated three times because nobody measured the screen (Conjugal.AI, 2026-09-09, Bachelor/XPS-17)
+The Codex/ChatGPT desktop app (Store package `OpenAI.Codex`, Electron shell 26.901.6511.0) that hosts
+this board's automations opened to a blank window from 2026-09-08 10:52 until 2026-09-09 15:10. A first
+session removed a persisted state key (`selected-remote-host-id`) and declared the window "back up"
+because the app-server request log showed 25 `thread/items/list` calls where the blank instance had
+shown none. Measured afterwards: that call profile is IDENTICAL in every blank launch and in the working
+9/7 launch (56 thread calls, 7 account reads, in the same order), and the removed key had been present
+since 2026-07-09 while the app worked for two months. The "fix" changed nothing, was recorded as success,
+and the blank host ran twelve more hours with automations firing into a UI nobody could see. Store Repair
+and a reboot were tried next; both re-register the package and neither touches the state that mattered.
+The discriminator that was never measured: the rendered content. UI Automation on the main document
+reports 4 descendants when blank and 376-401 when rendered; a PrintWindow capture shows 1 colour bucket
+versus 33-37; over the DevTools port, `document.querySelectorAll('*').length` reads 186 versus 1,200+.
+One caveat, also measured: a page covered by another window reports `visibilityState: hidden`, stops
+painting and stops updating its accessibility tree, so both cheap probes read "blank" on a healthy app
+until it is foregrounded. Foreground first, then measure.
+> **Judge a UI by what it rendered, never by the traffic behind it: backend liveness, RPC counts and
+> "the process is responding" read the same in a blank window and a working one. Before declaring a
+> repair, re-measure the exact observable the user reported, in the state the user saw it (window in
+> front), and check that the cause you removed did not already exist while the thing worked.**
+Test: evaluate your health criterion against one known-good and one known-bad instance. If it reads the
+same in both, it is not a discriminator and any repair judged by it is unproven. For a window, foreground
+it and count accessibility descendants of the document; a blank page has single digits.
+## A child's stderr warning became a connection error at the wrong instant, and every request in flight at that instant was orphaned while the transport stayed healthy (Conjugal.AI, 2026-09-09, Bachelor/XPS-17)
+Mechanism, proven live over the Chrome DevTools Protocol on the blank Codex desktop app (shell
+26.901.6511.0 spawning app-server codex-cli 0.153.4). The renderer syncs Statsig-gated feature keys to
+the app-server with `experimentalFeature/enablement/set`; app-server 0.153.4 has REMOVED
+`apps_mcp_path_override` and does not know `local_thread_store_compression`, so it prints one WARN line
+on stderr. The shell turns ANY app-server stderr line that is not a version marker into
+`{code: "connection-failed", message: <the line>}` and applies it as the host connection's error while
+the state still reads `connected`. Every renderer query in flight at that moment (Windows-sandbox
+readiness, experimental-features list, config requirements, models list, collaboration modes) stays
+`fetching` with zero failures forever, although the main process logs `response_routed` for each. The
+onboarding gate waits on the readiness query through its "final step" provider (`isLoading: true`), so
+its target is null and it renders an empty fragment: a complete, empty page over a working backend. The
+same WARN was present in the working 9/7 session, two minutes AFTER boot; in every blank launch it
+landed 2-3 seconds after routes mounted, while the startup queries were open. What moved it was an
+in-app account switch (different Statsig gates fire the sync earlier), not the account itself.
+Repair, no restart: over `--remote-debugging-port`, find the TanStack query client from the React fiber
+tree (`document.getElementById('root')['__reactContainer$...']`, walk to a hook holding `.queryClient`)
+and for every query with `fetchStatus === 'fetching'` call its `queryFn` directly (it resolves in
+6-80 ms), then `cancelQueries` + `setQueryData`. The gate resolves and the UI mounts within three
+seconds. `refetchQueries` does NOT work; the re-run freezes again. Kit on Bachelor:
+`~/.claude/ops/codex-unstick/` (`Start-Codex.ps1`, `cdp.mjs`, `unstick.js`). Launch with package
+identity via `Invoke-CommandInDesktopPackage -PackageFamilyName OpenAI.Codex_2p2nqsd0c76g0 -AppId App
+-Command "<InstallLocation>\app\ChatGPT.exe" -Args "--remote-debugging-port=9222" -PreventBreakaway`;
+running the exe from `WindowsApps` directly drops package identity and reads a different profile. Shell
+26.903.8094.0 rendered on its first launch but still spawns 0.153.4 with the same WARN at the same
+instant, so one launch is not proof: in that very launch the UI rendered but no prompt could be
+sent until an in-app logout and login (owner-reported, not instrumented), which is the weaker form of
+the same orphaning. Two queries (`config/user`, `user-saved-config`) hang even when called fresh
+although the app-server answers `config/read` in under 20 ms; they are not on the gate but they are
+the likely reason a rendered composer cannot submit.
+> **When a client shows requests "in flight" with zero failures for minutes while the server logs the
+> responses as delivered, the loss is in the delivery layer, not the server: call the same function
+> fresh and time it. A process that promotes its child's stderr to an error state must not let that
+> transition orphan in-flight work, and a shell whose renderer sends keys its own bundled backend has
+> removed will trip this on every boot where the timing lines up.**
+Test: with the app blank, call one stuck query's function directly; if it resolves in milliseconds the
+transport is healthy and the fix is re-delivery, not restart. Then diff the stderr-to-error transition
+timestamp against "app routes mounted": inside three seconds is the race window.
