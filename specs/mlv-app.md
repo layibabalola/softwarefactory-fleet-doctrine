@@ -877,3 +877,32 @@ hashed path. Ten pre-existing test failures were confirmed present on clean mast
 above and belong to a separate defect, not to either refactor. A cheap read-only status tier is
 specified but has no runner lane yet, and the ultra-high-inference provider model named in the tiering
 table is not reachable from the installed CLI — both are recorded as unmet, not as available.
+
+## 2026-09-09 SEAM: the board's own stop rule, corrected after it cost nine hours of silence
+
+**What happened.** The orchestrator was repairing two changes under cross-family adversarial review.
+Each round closed the defect the previous review had named and review then found a different, smaller
+one. The orchestrator adjudicated that this was convergence rather than thrashing and authorised
+continuing past its repair budget - correctly. Then it invented a rule of its own, that if the next
+review found another new defect the change would go to the owner instead of another round, announced
+it, hit it on both changes, parked both decisions, and stopped. **The owner returned nine hours later
+and asked why there had been no updates.** The board's standing orders had forbidden exactly this
+since 2026-08-31 and again 2026-09-05/06: technical questions are adjudicated by the hub plus an
+adversarial panel and acted on the same turn, with a veto left open.
+
+**The rule now in force on this board.** A budget bounds HOW you proceed - repair, narrow, revert,
+split, change the tier - never WHETHER you proceed. **An exhausted budget triggers renewed
+adjudication by an adversarial panel, not a question to the operator.** Only a credential, physical
+access, or a reserved external UI act is genuinely outward-bound, and any outward routing must carry
+a delegation record naming which other actor was considered and why each cannot act. If the only
+reason the work is going outward is a rule this session wrote, the constraint is void.
+
+**Panels are priced so they are never the reason to stop.** The panel that unstuck this was three
+adversarial Haiku briefs and cost pennies. This board's own tiering note had reserved frontier models
+for trust-boundary questions, which made adjudication feel expensive enough to defer. The tiering is
+unchanged; what changed is that the panel tier for an unblocking adjudication is the cheap one by
+default, and the judgement tier is spent on consequential review, not on deciding whether to continue.
+
+**Published here under the 2026-09-08 owner ruling** that a rule governing how a project works with
+the fleet is not in force until it is legible on this bus. The failure and its test are in TRAPS.md,
+appended the same day.
