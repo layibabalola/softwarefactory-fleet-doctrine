@@ -8075,3 +8075,67 @@ the likely reason a rendered composer cannot submit.
 Test: with the app blank, call one stuck query's function directly; if it resolves in milliseconds the
 transport is healthy and the fix is re-delivery, not restart. Then diff the stderr-to-error transition
 timestamp against "app routes mounted": inside three seconds is the race window.
+
+## A hash is an authority envelope, so anything that silently rewrites bytes destroys authority (adobe, 2026-09-09, virtual-ten)
+
+An owner directive is authorised by announcing the SHA-256 of a staged file; the orchestrator lane
+appends its raw bytes verbatim to a pinned prompt and re-pins that prompt through a single-use
+generation. One directive was authored through a Python text-mode `open(path,"w")` on Windows,
+which silently translated every `\n` to `\r\n`. The lane appended the bytes exactly as required,
+giving a 96,030-byte worktree prompt with 112 CRLF pairs, while `.gitattributes` (`* text=auto
+eol=lf`, `core.autocrlf=true`) normalised the staged index blob to 95,918 bytes with a different
+hash. The generation validator hashes the index blob and the raw worktree separately and requires
+both to equal one declared `staged_sha256`. Unsatisfiable by construction. The lane exhausted
+three routes, refused to normalise hash-authorised bytes on its own authority, rolled back before
+any commit, and asked for an LF-only reissue. Two earlier directives had worked only because they
+happened to be LF-only, so normalisation was a no-op — the defect was latent, not new.
+
+> **Verify the byte shape of anything whose hash is its authority, at the moment you hash it. On
+> Windows the commonest silent rewrite is line-ending translation, and it is invisible in every
+> editor and most diffs.**
+
+Test: `tr -dc '\r' < <file> | wc -c` must print 0 before hashing. Do not use `grep -c $'\r'` from a
+Bash tool whose shell may not expand the escape — an empty pattern matches every line and reports a
+confident false positive. In Python, open with `newline=""` and normalise explicitly.
+
+## A pre-commit hook cannot see what kind of commit it is gating (adobe, 2026-09-09, virtual-ten)
+
+A ratified repair required a hostile fixture proving `git commit --amend` is rejected before the
+ref moves. A disposable probe exercised ordinary commit, `-a`, pathspec, `-i` and `--amend`: every
+pre-commit invocation received **zero arguments**, and with identical HEAD/index/worktree an
+ordinary commit and `--amend --reset-author` present identical pre-hook inputs. The mode is simply
+not observable there, so the fixture could not be implemented without also rejecting the commit it
+was meant to allow — and the requirement, written by the owner-directive author, was itself what
+made the ratified scope unsatisfiable. The guarantee belongs where the resulting parent exists, so
+it moves post-commit. But `post-commit` cannot veto its own commit and git discards its exit
+status, so a stored verdict is self-certification: the same actor computes and records its own
+pass. The enforceable form is that the NEXT gate re-derives the facts from the repository — current
+HEAD tree against the validated tree, first parent against the recorded pre-commit HEAD — and a
+marker is inadmissible unless it carries the 40-hex HEAD it refers to and is recomputed rather than
+trusted. Note also that `post-commit` does not run for rebase, cherry-pick or filter-branch, so a
+forbidden-operations list that names only `--amend` and `--no-verify` has three holes.
+
+> **Put a guarantee where its evidence exists, not where the check is convenient. And a check whose
+> verdict is READ rather than RECOMPUTED is a note, not a gate.**
+
+Test: assert the hook receives no arguments; then assert a killed postflight blocks the dependent
+step exactly as a failing one does. If it does not, the postflight is advisory.
+
+## The first instance of a governed transition is unexercised by construction (adobe, 2026-09-09, virtual-ten)
+
+A factory that had never accepted a work order had never run its own acceptance path. When the
+first disposition finally reached `ACCEPTED` with zero open findings, the commit gate turned out to
+be unsatisfiable in both directions: while the state said REVIEWING the new acceptance artifacts
+were unreviewed material, and if the state was projected to ACCEPTED the closure resolved the old
+HEAD, whose tree by construction cannot contain what is being admitted. Every parser had passed;
+only the transaction had never been attempted. Three separate repair cycles were then consumed by
+predicates that had never met a second control generation, a co-resident consumption edge, or a
+first acceptance.
+
+> **A gate that has never been crossed is not a gate that works; it is an untested branch with a
+> confident name. Exercise every terminal transition against a disposable repository before the
+> first real one arrives, or the first real one becomes the test.**
+
+Test: for each state transition your constitution names, run it end to end in a throwaway clone at
+build time. Count how many transitions have a passing fixture; the ones that do not are your next
+outage.
