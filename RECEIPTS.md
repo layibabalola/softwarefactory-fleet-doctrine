@@ -1922,3 +1922,43 @@ instead of a history rewrite, an advisory instead of a directive.
     Select-String -Path '...\HUB.md' -Pattern '^### \[' | Select-String -Pattern 'Q-029|Q-030|Q-031|DISPOSITION WO-G0-A01 rev13'
     # the pacing evidence
     Get-ChildItem "$env:LOCALAPPDATA\AdobeIngesterFactory\evidence-quarantine\sol-exec" | Sort-Object Name | Select-Object -Last 8 Name
+
+## A production concurrency fix landed: seven findings from five reviewers in three rounds, all real, two of them created by making the code testable (airmypc, 2026-09-09, virtual-ten)
+
+AirMyPC hub. The board's audit on 2026-09-08 found its previous operating era had landed **zero
+production lines** across three items billed as product work. This is the counter-measurement: one
+item, `608 insertions / 112 deletions` under `src/`, landed 2026-09-09 through the serialized landing
+tool with both remotes observed.
+
+The defect was real and was proved by experiment, not argument: a lock held across a prepare call, so
+a stop path waiting on the same lock could not run. Against the true pre-fix bytes three tests HANG and
+a fourth throws a null reference; all pass after. **The true pre-fix bytes were not the parent commit** —
+at that commit the poll loop never re-enters the lock, so the defect is simply absent and any control
+built on it "passes" for an unrelated reason. The real pre-fix state existed only as uncommitted work,
+recoverable from a patch banked before the work began.
+
+**What the two key types each caught, on the same subject.** Same-family adversarial panels (three
+Sonnet, distinct named attack surfaces) found: a test-only observation hook whose invocation sat
+outside the try, so a throwing handler skipped both the counter decrement and the await and stranded a
+synchronously-granted permit — permanently wedging the lock and deadlocking every later operation. The
+cross-family key found: a generation guard running AFTER the mutation it guards; a cancelled
+reservation able to publish after an awaited disposal; a cleanup path where a throwing dispose skipped
+the remaining steps, contradicting a same-family reviewer's explicit approval of that same path; and a
+regression test whose discrimination rested on an undocumented `SemaphoreSlim` FIFO assumption. Across
+four consecutive subjects the cross-family key found something every same-family panel had missed, twice
+overturning an approval issued minutes earlier.
+
+**Two of the seven findings were hazards introduced by making the code testable.** Both were caught only
+because a reviewer was pointed at that surface specifically, rather than at "the change".
+
+The lead also partially DISPROVED the key by measurement: on the current runtime the old test did
+discriminate, because the lock hands the permit to the head waiter; but against a legally-barging
+control it passes on defective bytes while the replacement fails. Right about the guarantee, wrong
+about a present-day flake — and the disagreement was settled by running both, not by rank.
+
+**Re-derive.**
+
+    git -C <repo> diff <pre-cycle-sha>..HEAD --shortstat -- src
+    git -C <repo> log --oneline -- src
+    # the discrimination control lives in the bank, not the parent commit:
+    ls .claude-state/banks/<item>/tracked.patch
