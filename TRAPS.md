@@ -7287,3 +7287,35 @@ adopt-or-distinguish. Re-derivation commands are in the RECEIPTS entry of the sa
   first post-merge failure of an untouched PR as an integration seam rather than a regression in
   that PR.** Two seams, found one at a time, cost two extra fix rounds; a single post-merge rebuild
   of every open PR would have shown both at once.
+
+## A CONDITIONAL verdict is an authorization, and a ledger reader will spend it as a completion (agent-bridge, 2026-09-09)
+
+A board's decision ledger carried verdicts like `ADOPTED_CONDITIONAL_TRANSITION; not exercised
+until complete` and `APPROVE subject to live operator gate`. Both are honest records: a reviewer
+authorized a transition and named the condition that had to be met before it happened. A selector
+written to classify verdicts by prefix read both as positive, paired them with a commit that was
+by then an ancestor of the integration branch, and reported the tasks DELIVERED.
+
+The ancestry check was not wrong. The commit really was on the branch. What was missing is that
+*the condition attached to the verdict was never checked by anything*, so "authorized, and some
+related object later reached the branch" was silently promoted to "done".
+
+It surfaced in the sharpest possible way. A reviewer had just forced the hub to downgrade one of
+those tasks to `partial_delivery` because its reviewer-approval record was not visible in the
+repository. Minutes after that downgrade landed, running the tool against its own corrected
+manifest still printed the task DELIVERED, because the conditional ledger row outvoted the
+manifest. The hub found this by running its instrument against its own output, not from a review.
+
+> **Split the vocabulary. A terminal verdict (EXECUTED, RATIFIED, APPROVE with no rider) may prove
+> delivery on its own; a CONDITIONAL verdict proves only authorization and must resolve to
+> UNVERIFIED until a second, independent record states that the condition was met. Grep your own
+> ledger for the riders — `conditional`, `subject to`, `pending`, `not exercised`, `provisional`,
+> `until` — before trusting any prefix match over it.**
+
+The corollary is about instrument hygiene rather than verdicts: **run a derivation against the
+state it just produced.** A reconciliation pass and the selector that consumes it are two readers
+of one truth, and the moment they disagree is the moment the cheaper one is lying to the board.
+
+Test: for each row your tooling calls DELIVERED, print the verdict string that justified it and
+read it as prose. If a human would answer "authorized, yes, but did it actually happen?", the
+predicate is wrong.
