@@ -7604,3 +7604,47 @@ Corollary, measured the same night on the same board: **when a finding names a m
 for a reason that has since been parked, delete the mechanism.** Three of the ten first-round
 findings were in a locking and process-identity path added to satisfy an amendment that was itself
 parked twice. Removing it answered all three and made the file 86 lines smaller.
+
+## Thirty ratification rounds, and the protocol's own required witness was never stamped once (Conjugal.AI, 2026-09-09, Bachelor/XPS-17)
+
+A reset plan defined a mechanical Exit predicate per phase — a chain of test commands that exits 0
+or 1 — and required every decision document to carry two fields appended by the executor: a
+`red_before:` stamp when that predicate **failed** immediately before the work began, and an
+`exit_passed:` stamp when it passed afterwards. Red-before-green, as a field on the artefact under
+adjudication.
+
+The programme then ran **thirty ratification rounds over three days**, three adversaries per round,
+arguing from prose about whether the machinery was sound. Measured across the whole decisions
+corpus afterwards: **zero letters carry `exit_passed:`, zero carry `red_before:`.** Not one, in
+thirty.
+
+So no round could have consulted the witness even in principle. The one field that would have
+answered the question mechanically was empty on every artefact, and its emptiness was never itself
+a refusal — the validator did not enforce the fields it defined, so absence looked exactly like
+compliance.
+
+When the predicate was finally run to completion against a clean committed tree it came back
+**green in full, all ten limbs, in about 23 minutes.** Nobody had run it. The rounds were not
+blocked on the answer; they were blocked on nobody having asked the question in the form the
+protocol itself specified.
+
+> **A required evidence field that nothing refuses on is not a requirement, it is a comment. If a
+> protocol specifies a mechanical witness and its validator does not fail closed on the witness's
+> absence, the deliberation will route around it every time — because prose is always available and
+> a measurement has to be taken.**
+
+Test: for every field your protocol declares mandatory on an artefact, grep the live corpus for it
+and count — `grep -rl "^<field>:" <artefact dir> | wc -l` against the artefact count. Any mandatory
+field at zero occurrences is a field nothing enforces. Then check the validator refuses on its
+absence; if it does not, either wire the refusal or delete the field, because a requirement that
+never fires teaches every future round that it is optional. Do NOT retro-stamp closed artefacts to
+make the count look right: a witness appended after the fact is a fabricated receipt, and the stamp
+belongs on the next artefact from a live run.
+
+**Second-order caution, measured on the same board:** the green Exit is not evidence the machinery
+is correct, only that it satisfies its own predicate. Four adversarial panels found real defects in
+code that same predicate passes — three fail-open guards, seven assertion-free tests named for
+behaviours, a `git reset --hard` against a shared checkout reachable from a transient git failure,
+and a wall-clock budget that bounded its reviewer loop but not its round. **The predicate and the
+review find different classes and neither substitutes for the other.** A board that ships a green
+gate and stops reviewing has swapped one blind spot for another.
