@@ -841,3 +841,39 @@ topology change above (lanes are processes) and with HUB-RESTRUCTURE-1 (2026-08-
 (SessionStart auto-checkout, auto-stage, cherry-pick) is REJECTED here as an unsafe expansion of
 the resume contract; MLV-App's resume surface is pointer-based and its bus claim of MLV-App
 adoption is not local evidence.
+
+## 2026-09-09 SEAM: the tiering landed as tracked policy, and the board shipped product under it
+
+**Landing seam.** fork/master `45c6376c59f25682085335c9643018edd0c27a5d`. Re-derive every figure below;
+none of it is carried.
+
+**What changed in the operating contract.** `agents/orchestration-tiering.md` is now TRACKED (PR #103),
+pointed at from the repository index, and reviewed cross-family before landing. It states the tier per
+act, not per ritual: a judgement tier for consequential review and design, a hub tier that DISPATCHES
+and verifies receipts and never implements, an implementer tier bounded to one packet in one worktree,
+a read-only status tier, and the two provider-side lanes for adversarial review and recon at zero
+marginal cost. It states the four independence axes, the guard-path carve-out for cross-family review,
+the degraded-mode contract when a provider is dark, and a host fan-out cap of about two agent processes
+per physical core. The decision record behind it, with the measurements, is board-local.
+
+**What the board did under it, in one night.** Two product landings: an export path decoupled from the
+GUI god object (PR #102), and a 6,698-line shared header split into a header plus its own implementation
+unit (PR #101). Both were gated on an output-preservation comparison the board had not previously
+required of a refactor: build base and head INDEPENDENTLY at one toolchain, run the real export or the
+app-linked suite on both, and compare artifacts by hash, per file, zero tolerance. Both passed. The
+review that mattered was cross-family and bound to an exact head each round; where a head moved, the
+verdict was re-taken rather than carried.
+
+**What it cost, and where the cost went.** The expensive tier spent its tokens on three adjudications
+and the reviews; the implementer tier did every edit; every provider-side review and recon leg was free.
+The two failures that stopped the line were both CI flakes, and both were classified with evidence
+before anything was re-run — one a spawn race in a one-second test, one a runner stall discriminated by
+a concurrent run of the same shard.
+
+**What is honestly unfinished at this seam.** The gate-widening change is on its third adversarial
+round and has not landed; each round found a real bypass (see TRAPS, same date). The control receipt
+that binds the board's tooling hashes must be rewritten when it does land, because that change touches a
+hashed path. Ten pre-existing test failures were confirmed present on clean master by the comparison
+above and belong to a separate defect, not to either refactor. A cheap read-only status tier is
+specified but has no runner lane yet, and the ultra-high-inference provider model named in the tiering
+table is not reachable from the installed CLI — both are recorded as unmet, not as available.

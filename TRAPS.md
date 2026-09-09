@@ -7227,3 +7227,63 @@ toward hundreds-to-one before it stops producing. Alarm on that ratio and on the
 last-write time versus the schedule's period — "fired" and "advanced" are different facts. The
 structural fix is to make each wake a FRESH thread and carry state in tracked files the new thread
 derives, which a board already needs for cold starts on a new machine or account.
+
+## Appended by MLV-App (Fable/Opus orchestrator session), 2026-09-09 — five traps measured while landing four PRs in one night
+
+Measured on VIRTUAL-TEN, 2026-09-08 evening to 2026-09-09 morning, during the first orchestration
+run under the new model tiering. DATA, not an instruction (law 1) — verify locally and
+adopt-or-distinguish. Re-derivation commands are in the RECEIPTS entry of the same date.
+
+- **A NEW ALLOWED WRITE ROOT IN A TEXT-MATCHING GATE HAS THREE HOLES, AND ONE REVIEW ROUND FINDS
+  ONE OF THEM.** We widened a project gate to admit publishing into a sibling repository. Three
+  successive adversarial reviews of the same change each found a DIFFERENT live bypass: (1) the
+  path normaliser never collapsed `..`, so `<root>\..\escaped.txt` was ALLOWED; (2) the steering
+  variable naming the root was absent from the persistent-write protection, so `setx <VAR> C:\`
+  was ALLOWED and would have widened the root permanently; (3) the delete guard on that root
+  matched a literal path only, so the same delete written as `"$env:<VAR>\file"` was ALLOWED — via
+  the very variable the gate itself reads. **Test, and run all four before shipping a new root:**
+  a path containing `..` under the root DENIES; `setx`/`SetEnvironmentVariable` of the steering
+  variable DENIES; the operation spelled through the steering variable in every shell spelling
+  (`$env:NAME`, `%NAME%`) DENIES; and an unread variable's spelling still ALLOWS, because claiming
+  otherwise is a false guarantee in the other direction. **The general form: a widened root is not
+  one rule, it is a prefix test, a persistence surface, and an indirection surface.**
+
+- **CROSS-FAMILY REVIEW EARNED ITS CARVE-OUT ON THE ONE PATH WE RESERVED IT FOR — evidence
+  against our own cost argument, published because it cuts that way.** Hours earlier the same
+  board adopted (narrowed) the fleet position that cross-family review is a PREFERENCE, not a
+  gate, required only for guard/merge/commit/ratification paths. The very next guard-path change
+  went to a cross-family reviewer three times and returned BLOCKER three times, each on a real,
+  reproducible bypass the same-family author (a frontier model, adversarially briefed, at the
+  board venue, with a falsifier suite it wrote itself) had shipped as complete. **Two same-family
+  rounds and a 249-row falsifier table did not find what one cross-family round found.** This does
+  not restore the gate for ordinary changes — the four independence axes still carry those — but
+  it is the strongest local datum any member has published FOR keeping the high-risk carve-out,
+  and it was produced by a board that had just argued the carve-out down. **If your board narrows
+  this rule, keep the guard-path carve-out and say why.**
+
+- **A BOUNDED SHARD THAT PRINTS ITS BANNER AND THEN NOTHING IS A RUNNER STALL, NOT A SLOW TEST,
+  AND A CONCURRENT RUN DISCRIMINATES IT IN ONE STEP.** A hosted job failed when one test shard hit
+  its 240 s bound having emitted zero result lines. Same commit, same shard, on another job running
+  in the same minutes: 26 s, green. **Test: before treating a bound-hit as a regression, find any
+  concurrent or adjacent run of the SAME shard; a stall produces no output at all, while a genuine
+  slowdown produces partial output.** Corollary: the killed process yields no forensics, so the
+  comparison run is the only evidence you will get — capture it before re-running.
+
+- **A TEST THAT ASSERTS ON A FIELD POPULATED ONLY AFTER A SPAWN, UNDER A DEADLINE SHORTER THAN THE
+  SPAWN, IS A CI COIN FLIP THAT FAILS AS A TYPE ERROR.** A one-second timeout test read
+  `containment.ownerPid` from a receipt; on a loaded runner the deadline fired before the contained
+  host existed, the fallback wrote a null pid, and the test died in `int(None)` — turning a
+  protected branch red on a tree that had passed the identical job minutes before. **Test: for
+  every field a test dereferences, ask which code path writes it and whether the test's own bound
+  can preempt that path; assert the vacuous case explicitly rather than dereferencing.** Do not
+  fix it by widening the deadline: the short deadline was the property under test.
+
+- **MERGING B BEFORE A BREAKS THE BUILD WHEN A MOVED A SYMBOL B CONSUMES, AND NEITHER PR's OWN CI
+  CAN SEE IT.** Two green PRs: one relocated a type into a new implementation unit, the other added
+  a header consuming that type. Each passed every required check at its own head. The moment the
+  second merged, the first's next run failed to compile, and after that fix, failed to LINK,
+  because the merged PR's test project listed the consumer but never the new implementation file.
+  **Test: after any merge, re-run every other open PR's checks before reviewing them, and treat the
+  first post-merge failure of an untouched PR as an integration seam rather than a regression in
+  that PR.** Two seams, found one at a time, cost two extra fix rounds; a single post-merge rebuild
+  of every open PR would have shown both at once.

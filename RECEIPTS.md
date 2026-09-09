@@ -1793,3 +1793,31 @@ fixed it.
 
     Get-Content C:\temp\AirMyPC\.claude-state\codex-runs\ratify-20260908-lane-roster-r2\receipt.json | ConvertFrom-Json | Select elapsedSeconds,usage
     Select-String -Path C:\temp\AirMyPC\.claude-state\codex-runs\ratify-20260908-lane-roster-r2\stderr.txt -Pattern 'Access is denied' | Measure-Object
+
+## MLV-App, 2026-09-09 — one orchestration night: four PRs, two product landings, three guard-path blockers
+
+Machine VIRTUAL-TEN. Board root `C:\!Layi Wkspc\MLV-App`; receipts under `.claude-state\fleet-runs\`
+(gitignored, so the derivation commands are given rather than the paths alone).
+
+| measurement | value | derivation |
+|---|---|---|
+| PRs merged this session | #102 (CDNG decoupled from the main window), #103 (tiering pointer), #101 (shared batch header split) | `gh pr list -R layibabalola/MLV-App --state merged --limit 10 --json number,mergeCommit,mergedAt` |
+| PRs still open at hand-off | #104 (gate widening, 3 blocker rounds), #105 (CI race fix) | `gh pr list -R layibabalola/MLV-App --state open` |
+| cross-family review rounds needed to clear the gate change | 3 (BLOCKER, BLOCKER, pending), each on a distinct real bypass | the three verdict files under `fleet-runs\pr104-hook-sol-*\sol-001.last.txt` |
+| falsifier rows in the gate's own suite | 234 before the change, 249 after round 1, 264 after round 2 | `python -m unittest tools.repo_hygiene.test_mlv_never_authorized` |
+| new rows RED against the parent gate (falsifier strength, measured not asserted) | 6 of the round-2 additions | run the same rows against `git show <parent>:tools/hooks/mlv-never-authorized.py` |
+| output-preservation evidence, refactor A | 18 of 18 exported frames byte-identical between independently built base and head binaries, one toolchain | `tools/build-release.ps1` per side, then `--batch` export per tracked fixture, then SHA-256 per file |
+| output-preservation evidence, refactor B | 34 of 34 tests identical outcome per side (24 pass, 10 fail, zero flips); 9 of 10 shared failures byte-identical text | independently built app + test binaries per side, app-linked test run per side |
+| the tenth failure | a counter read 4 vs 5 once, then 5 on all 9 repeats per side, with 4 also seen on BOTH binaries | the counted flag is set only when a background prefetch thread beats the requester |
+| lane cost, this session | Sonnet implementer runs $0.40-$2.04 each; frontier adjudication swarm $1.08/run; every Codex review and recon $0 marginal | sum `spend.costUsd` over the session's receipts |
+| CI reds classified | 2, both FLAKE with evidence (a one-second spawn race; a runner stall) | see the TRAPS entry of the same date |
+
+**Two corrections we owe the record.** (1) The cross-family reviewer's second report claimed the
+hosted-evidence export was bound to the wrong head; it had read a stale sibling run directory, and
+the export in its own run directory was correctly bound before and after. A reviewer's finding is
+two claims — the harm and the attribution — and this one's attribution was wrong while three of its
+four other findings were exactly right. (2) A base-versus-head build stamps its provenance from the
+enclosing repository when the base tree is an archive without its own `.git`; the label is wrong
+while the compiled content is right. Prove the content (we counted 146 versus 0 inline functions in
+the moved header), and never let a wrong label void a correct comparison — or a right label bless a
+wrong one.
