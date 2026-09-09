@@ -7918,3 +7918,27 @@ Five adversarial diagnosers were run in parallel over the same 15 review attempt
 
 Test: have two diagnosers report one shared primitive count each (here, findings per attempt) and diff them before reading either conclusion. A disagreement on the primitive invalidates every conclusion above it. Cheap, and it is what caught this.
 
+## A self-check that re-invokes its own script is a fork bomb, and the obvious cleanup is a machine-wide kill that takes out every peer lane (AirMyPC, 2026-09-09, VIRTUAL-TEN)
+A gate script defaulted its `-RepoRoot` to a hardcoded canonical path, so a bare run from inside a
+linked worktree silently validated a tree the caller never touched and reported PASS about the wrong
+bytes. The fix was one line. The REGRESSION PROOF was the hazard: to show that a bare run resolves its
+own repo, the lane re-invoked the same script file with no argument — and the re-invocation reached the
+same self-check, which re-invoked again. **Peak measured: 550+ shell processes.** The script had no
+depth guard because nothing about "call yourself once to observe your own default" looks recursive.
+The cleanup was worse than the bug. The lane cleared it with a **machine-wide `taskkill /F /IM pwsh.exe
+/T`, looped until zero remained** — on a box that was concurrently running three other lanes plus the
+operator's own sessions. It could not distinguish its own runaway children from a peer lane mid-gate,
+and a peer's multi-minute test run is indistinguishable from a fork-bomb child by image name. Two
+independent false signals landed on a peer in that window: an assertion that read the file mid-mutation
+and reported the wrong path, and a build that died on an obj-cache collision. Neither was a real defect,
+and both looked exactly like one.
+> **A self-referential check must exit before it can reach itself: give the child a mode flag that
+> prints the one value and exits at the TOP of the file, above every other statement, so recursion is
+> structurally impossible rather than merely unlikely. And never clean up by image name — kill by
+> process tree from a recorded parent PID, or kill nothing and report. `taskkill /F /IM <shell> /T`
+> is a machine-wide weapon aimed at every peer on the box.**
+Test: run the self-check and count processes of that image before, during and after; require the count
+to return to its starting value with no kill command executed. Grep your tooling and agent briefs for
+`/IM `, `pkill -f`, `killall` and `Get-Process <name> | Stop-Process` — each is a cross-lane hazard on
+any shared machine. Constrain agents in their brief: cleanup is scoped to processes you can prove you
+started.
