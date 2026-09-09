@@ -7727,3 +7727,62 @@ taken before the work began. Reasoning against the parent commit would have "con
 Test: keep the pre-fix bytes (commit, patch or bank) addressable for the life of the item; run the named
 test against them and require FAILURE; restore and verify byte-identity by hash before trusting the green.
 Record both results in the item's evidence — a discrimination claim with only the green half is half a proof.
+
+## Summarising a record can delete the thing a checker reads, and the checker then passes (Cloudvore, 2026-09-09, Bachelor/XPS-17)
+
+A queue file had regrown into its size cap because acceptance evidence was being written into the
+rows. The fix looked obvious: keep each row's FIRST SENTENCE as a summary and move the narrative to
+a ledger. First sentences are where verdicts live — "Accepted 828056b", "Accepted at 9beaf71".
+
+Except most of them were not. Five DONE rows opened with the bare string `Accepted 2026-09-09.`
+The commit SHA sat in the middle of the paragraph, not the first sentence.
+
+A separate check, added that same morning, parses each DONE row for the commits it cites and asserts
+they are reachable from the mainline — the guard against a packet being marked done while its code
+sits unmerged. It reads the row. The proposed summary would have removed every SHA from those five
+rows, and the guard would have gone on reporting green: **no citations found means nothing failed
+the ancestry test.** The measure of coverage and the trigger for alarm were the same field, and
+emptying it satisfied both.
+
+> **A guard that reads a field can be disabled by rewriting that field, and it will not complain —
+> an empty input and a clean input are indistinguishable to a check that only reports violations.
+> Before summarising, deleting or reformatting any record, ask which automated reader consumes it,
+> and make the rewrite prove it preserved what that reader sees.**
+
+Test: the rewrite must use the CHECKER'S OWN PARSER, not a second implementation, and assert
+equality of the parsed result before and after, per record. Here the transformation imported the
+gate's `cited_commits` and asserted `set(after) == set(before)` for each row, which turned a silent
+five-row loss into an assertion failure at authoring time. The general form: a check that counts
+violations needs a companion that counts INPUTS, so "nothing wrong" and "nothing examined" stop
+looking alike. This one reports its citation count beside its verdict for exactly that reason.
+
+Corollary from the same hour: moving the evidence out then breached the ledger's own hard cap, so
+the problem had been relocated rather than solved. The tier already had a prescribed remedy — roll
+the closed set to a dated archive — and following the existing rule beat inventing an arrangement.
+Check whether the destination has a cap before treating it as somewhere to put things.
+
+## "Verify the gap before writing, and close unwritten if it is covered" belongs in the acceptance text (Cloudvore, 2026-09-09, Bachelor/XPS-17)
+
+Twice in one day a packet was cut for a coverage gap that did not exist, and the cost differed by an
+order of magnitude depending on when that was discovered.
+
+The first was found late. A composition test was designed, written, compiled, run green, and only
+then mutation-tested — at which point it survived every mutation aimed at it while PRE-EXISTING
+tests caught those same mutations. It proved nothing, and it was deleted rather than landed. Its
+name had also claimed more than its assertion showed, so it would have read as coverage of a seam it
+never touched.
+
+The second was found early, because the lesson had been written into the next packet's acceptance
+criteria as a literal instruction: *verify the gap before writing, and if an existing test already
+reddens under a mutation of the guard, close the packet unwritten.* Following it took three reads.
+The packet's premise turned out false — the guard it proposed driving past applied only to a
+different operation — and it closed with no test written and nothing to mutate.
+
+> **A packet's acceptance text is the cheapest place to put a lesson, because it is read by whoever
+> does the work at the moment they would otherwise repeat the mistake. "Prove the gap exists" costs
+> one sentence there and saves a designed, written, green, mutation-tested, deleted test.**
+
+Test: for any packet whose deliverable is "add coverage", require the acceptance to name the
+mutation that would redden the NEW test and not the existing suite. If that mutation cannot be
+named before writing, the gap has not been demonstrated — and the packet should be closed unwritten
+or re-scoped, not started.
