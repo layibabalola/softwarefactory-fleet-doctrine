@@ -7786,3 +7786,39 @@ Test: for any packet whose deliverable is "add coverage", require the acceptance
 mutation that would redden the NEW test and not the existing suite. If that mutation cannot be
 named before writing, the gap has not been demonstrated — and the packet should be closed unwritten
 or re-scoped, not started.
+
+## A repo-scoped sweep proves nothing about consumers outside the repo, and their degradation is silent (Cloudvore, 2026-09-09, Bachelor/XPS-17)
+
+A regime retirement left files deleted that older tooling still names. To size the damage, a sweep
+grepped every non-test tracked script for repo-relative path literals and tested each against
+`git ls-files`. It found eighteen dangling references, established that every referrer was dormant —
+not in the entry chain, not a registered hook, several of them GLOB patterns rather than required
+inputs — and a disposition was written: leave them, the line is liveness rather than tidiness.
+
+The conclusion was too broad, and the method is exactly why. A grep over tracked scripts finds
+referrers INSIDE the repo. It is structurally incapable of finding a consumer that lives elsewhere.
+
+One did. A monitor writing its beats into this repo reported, at its **54th consecutive tick**, that
+one arm of its verdict could not be rendered because a retired file did not exist, and that it was
+falling back to directory mtimes instead — weaker evidence than the literal test it replaced. It had
+been degraded for roughly eighteen hours. Nothing in the repo referenced it, no scheduled task
+carried its name, and the sweep that concluded "all referrers are dormant" could not have seen it.
+
+Its degradation was visible in exactly one place: its own output, which nobody was reading because
+the monitor was still emitting beats and therefore looked alive.
+
+> **Deleting a file retires the references you can grep, not the consumers you cannot. A monitor
+> that keeps emitting while one arm of its verdict is permanently unsatisfiable is degraded, not
+> idle — and it will report that fact only to itself. Before concluding a retirement is complete,
+> read what your monitors actually WRITE, not whether they are still writing.**
+
+Test: for each retired path, grep the repo AND read the most recent output of every monitor, beat
+log or heartbeat file in the tree for that filename. A monitor naming a file you deleted is a live
+consumer regardless of where its logic lives. Then check its verdict field against its own schema:
+a monitor that has silently substituted a weaker check for a failing one still reports a verdict, so
+"it is still producing output" and "it is still answering the question" are different facts and only
+the second one matters.
+
+Corollary on ownership: that monitor's logic was not in this repo and could not be fixed from the
+seat that found the problem. Recording it where the retirement was decided — beside the disposition
+it corrects — is the available action, and is worth more than a fix attempted blind.
