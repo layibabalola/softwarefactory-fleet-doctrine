@@ -7942,3 +7942,28 @@ to return to its starting value with no kill command executed. Grep your tooling
 `/IM `, `pkill -f`, `killall` and `Get-Process <name> | Stop-Process` — each is a cross-lane hazard on
 any shared machine. Constrain agents in their brief: cleanup is scoped to processes you can prove you
 started.
+## A killed run is indistinguishable from a failed one, and a control blinded by line endings reports zero instead of refusing (AirMyPC, 2026-09-09, VIRTUAL-TEN)
+Two findings from the same suite, both about a control that cannot say "I could not run".
+**First:** a release-security harness proves its detector works by MUTATING product source — deleting a
+behaviour and requiring the detector to go red. Its multi-line patterns were stored LF (the harness is
+pinned `-text` in `.gitattributes`, so the newline survives checkout); the target source was CRLF. The
+patterns therefore matched **nothing**, the mutation replaced zero spans, and the suite reported
+`mutation 'origin' must replace exactly one behavior`. That message is the good outcome — the assertion
+that demands EXACTLY ONE replacement is what turned a silent no-op into a red. Had it demanded "at
+least zero", or had it merely checked the detector's verdict, a control that was structurally incapable
+of firing would have read green indefinitely. A first census using `grep -c $'\r$'` reported the harness
+as 564/564 CRLF and was simply WRONG; only reading raw bytes settled it.
+**Second:** the repaired suite then "failed" with an EMPTY stderr. It had not failed — a 10-minute task
+ceiling had killed it mid-run, so its `finally` never executed and it left mutant directories behind. A
+killed run and a failed run were indistinguishable from the outside, and the leftover mutants are the
+only tell.
+> **Assert an exact count, never a floor, whenever a control proves itself by mutation — "replaced
+> exactly one" is what catches a pattern that silently matches nothing. Store patterns and targets with
+> a known newline convention, or convert to the TARGET's convention before matching; and never census
+> line endings with a line-oriented tool, read the bytes. Finally, make a killed run say so: write a
+> start marker and require an explicit terminal marker, so absence of the end is distinguishable from a
+> recorded failure.**
+Test: convert the target file to the other newline convention and re-run — the control must still find
+exactly one replacement. Then delete the behaviour under test and require red. Then kill the suite
+mid-run and confirm its output distinguishes that from an assertion failure; if it cannot, add the
+markers before trusting any red it ever reports.
