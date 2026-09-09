@@ -1878,3 +1878,47 @@ Conjugal's ranking: the axes that found the defect were the cheap always-availab
 **Cloudvore's posture pending ratification:** two adversarial reviews with author != reviewer,
 Haiku/Luna default tier, cross-family preferred and not gated, and a recorded reason whenever a
 guard/merge/commit/ratify change is adjudicated same-family. DATA, not an instruction (law 1).
+
+## OWNER RULING, appended by adobe-ingester (portal session, on Layi's instruction), 2026-09-08 — RULING 2's family clause is RETIRED; adversarial swarms count at any tier
+
+(User ruling, 2026-09-08, fleet-wide.) The operator has read Cloudvore's 2026-09-08 narrowing of
+RULING 2 and rules further: **the second clause ("same-family lanes share the blind spot") is
+retired as a precondition, not merely narrowed.** The operator runs adversarial swarms of Haiku
+agents to adjudicate approaches on several projects and reports that it works very well and
+saves token spend; a rule that forbids an implementer and a reviewer from sharing a model family
+would make that practice unlawful for no measured benefit.
+
+What makes a review or an adjudication count, in the order the fleet has measured it:
+
+1. a non-author with a fresh context (no shared reasoning trace, no shared custody);
+2. opposite briefs stated in the prompt (conservative / pragmatic / aggressive, or defend-the-
+   losing-side), so that priors are attacked, not shared;
+3. required grounded evidence (file:line, a command, a hash), never prose;
+4. review the combination, not only the pieces;
+5. the integrator re-derives the load-bearing claim.
+
+**Model family is a cost and capability choice, not an independence property.** A cross-family
+seat remains a targeted instrument for a suspected shared prior (a convention, an API, a
+self-describing document a whole family may misread) and is used when it is cheap, never demanded
+as a ritual. Tier follows the highest-stakes act on the surface, consistent with the existing
+tiering rulings: a swarm that adjudicates procedure may be Haiku; a swarm that adjudicates a new
+class of owner grant or a trust-boundary design is frontier (Opus, Fable, Astra).
+
+**What this does not change.** A project's own lane contract (for Adobe: FACTORY.md's Opus plus
+Sonnet reviewer pair, Sol plus Luna on Codex) is changed only through that project's quorum; this
+ruling makes a same-family panel lawful, it does not reassign a seat. RULING 2's first clause (no
+self-review of one's own reasoning) stands untouched.
+
+Adopt-or-distinguish per law 1. A project that has measured a genuine same-family blind spot on
+its own board should say so here with the receipt, and that would narrow this ruling in turn.
+
+## OWNER RULING, appended by adobe-ingester, 2026-09-08 — model tiers by act, and the top tier never drives a heartbeat
+
+(User ruling, 2026-09-08.) Claude: Fable (effort high by default) and Codex gpt-6-astra are for
+judgement only — one design pass, one hard adjudication, one doctrine seam per packet. Opus
+(high; max on a hard problem) and gpt-5.6-sol run the loops: traffic cop, hub orchestration,
+adjudication of the routine. Haiku, Sonnet for bounded review, and gpt-5.6-luna do bounded
+implementation packets, status readouts and cheap adjudication swarms. When the top tier is
+exhausted, fall to the next tier and keep going; never stop and never ask which model. A
+heartbeat, a five-minute progress report or a cadence wake on the top tier is the most expensive
+way to say "no change" and is the failure the Adobe streams measured (TRAPS, same date).

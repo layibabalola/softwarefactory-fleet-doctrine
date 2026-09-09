@@ -790,3 +790,40 @@ copies before you answer — we first enumerated ours with a probe ending in `Se
 1`, got one row back, and briefly read a correct ledger entry as refuted. Two distinct installed
 states collapsed into one row: our own `4ab750e`, committed by the session that folded it into
 this file four hours earlier.
+
+## 2026-09-08 seam — Claude takes the orchestrator seat back from Codex Astra; two unvotable-by-construction stalls in one day (adobe, virtual-ten)
+
+**Shape change.** The five Codex Desktop automations that ran the "streams" (software factory,
+product, delivery progress, fleet doctrine, coordination monitor; all gpt-6-astra) are PAUSED
+since 2026-09-08 ~17:00Z. Orchestration is a Claude chat session under the owner's standing
+delegation (sol.md, OWNER DIRECTIVE 2026-09-06): it stages owner directives, files them to the
+advisory ingress with a SHA-256, and wakes Sol; Sol appends, re-pins and executes. The tiering
+is in RULINGS (same date): Fable for judgement, Opus as traffic cop, Haiku for status. Prompts:
+`.claude-state/plans/OPUS-ORCHESTRATOR-PROMPT-20260908.md`, `HAIKU-STATUS-PROMPT-20260908.md`
+(pointer-only by construction).
+
+**Measured today (UTC).** Q-029 rev2 unvotable 12:37 to 20:16 because its boundary forbade the
+reviewer call and omitted the Q-027 rev3 ballot-collection clause; directive 2026-09-08b granted
+the route; Sonnet voted 46 min after filing; repair committed c4a587c and 3961bd7. Then two
+deterministic acceptance-preflight defects in the reviewed-control chain predicate: (1) every
+generation compared to the accepted head instead of to its successor (Q-030; Sol self-adjudicated
+and included the ballot clause unprompted; quorum in 23 min); (2) Q-030's own hostile fixture
+found that 67216ba's consumption rode inside the Q-029 generation commit, which the constitution
+forbids and history cannot undo; Sol stopped by its own kill criterion and asked the owner
+(directive 2026-09-08c delivered 02:17Z Sep 9: successor-bound "carrier-only" interpretation for
+quorum, or a fresh review head). Sol wake budget raised 1500 to 2400 s after seven budget kills.
+
+**Laws we would generalise from today.** A proposal must carry its own ballot-collection clause
+or it is structurally unvotable (TRAPS). Every owner directive append is a reviewed-control
+generation; two between review and acceptance is enough to trip a head-comparison predicate, so
+directive text should live outside the reviewed-control map (sol.md delegation clause (c) already
+anticipates it). A self-check regex must tolerate the writer's framing (a CR before the newline).
+A process census that filters on a model name matches its own query.
+
+**Open on this board.** WO-G0-A01 rev13 REVIEWING; both r8 reviews PASS_WITH_NONBLOCKING_FINDINGS,
+zero P0/P1; acceptance blocked on the chain predicate decision above. Product stream blocked on
+Gate 0 plus an unavailable .NET SDK 10.0.302; MCP interop and document-intelligence streams have
+no implementation yet (audit bundle WS-01..WS-09, 36 packets, unadopted). AC-07 fenced.
+
+Re-derive: `pwsh -NoProfile -File .factory/tools/Test-FactoryDispatch.ps1`; newest HUB heading;
+`Get-Content .claude-state/coordination/owner-directives/DELIVERY-LEDGER.jsonl -Tail 4`.

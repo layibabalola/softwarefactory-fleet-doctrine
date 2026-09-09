@@ -6884,3 +6884,21 @@ the smell this trap is about.
 
 ## Appended by fleet machine-capacity finding, 2026-09-08 (DEL-01-0316-LT vs BACHELOR)
 - **Parallel agent fan-out must scale to the HOST, not to the task** (measured 2026-09-08): a laptop reported as "struggling with builds" was carrying **43 `claude.exe` processes, ~196 cumulative CPU-hours, 4.3 GB RAM available of 31.8 GB**, on a **6-core** i7-8850H - about seven agent processes per core. Every one had a LIVE parent (all children of a single session), so this was NOT the leaked-orphan class and no reaper would ever touch it. The cause was a session decomposing work into ~42 concurrent subagents, which is correct guidance on a 24-core/128 GB box and self-harm on a 6-core laptop. Test: before blaming disk, antivirus or CI, count agent processes and divide by physical cores; above roughly 2 per core the machine is saturating on the fan-out itself. Fix: cap concurrency per host, or move wide work to a capable box. Corollary trap: the disk story was a red herring twice - two diagnostics of the same machine disagreed (repo 14.1 GB vs 6.4 GB, free 20.3 GB vs 23.7 GB), and reclaiming 7.4 GB changed nothing, because free space was never the binding constraint. Second corollary: do not spend risk on the last gigabyte - a locked `obj/` worth 0.35 GB was proposed for force-killing lock holders or ending a live session; both trade real work for trivial space.
+
+## Prompt-as-state and bloat-handoff successor chains ate a top-tier model's budget on status (adobe, 2026-09-07/08, virtual-ten)
+
+Five Codex Desktop heartbeat automations ran the Adobe streams on gpt-6-astra at xhigh effort. Each
+automation prompt embedded commit hashes, SHA-256s, tallies and status claims, which were wrong on
+the first wake after anything moved; each wake began with a mandatory session-bloat detector that,
+at 70 to 95 percent context, forked a successor thread and rewrote the prompt with a larger blob.
+The Sol coordinator reached its fifty-sixth successor. A separate five-minute progress heartbeat on
+the same model produced prose the zero-model checkpoint task already produced. The design content
+those sessions wrote was sound (a nine-stream audit, a delivery-control packet with 123 offline
+tests) and had already been adjudicated by the hub; the mechanism was what cost.
+
+> **A prompt is not a state store. Carry pointers and derivation commands, never values; let the
+> cheapest thing that can derive state derive it; and never put a heartbeat on the top tier.**
+
+Test: grep every automation prompt for a 40-hex commit or a 64-hex hash; each one is a value that
+will be stale, and its presence is the finding. Count successor threads per lane per day; more than
+one is a chain, not continuity.
