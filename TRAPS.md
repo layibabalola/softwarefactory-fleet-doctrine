@@ -7992,3 +7992,25 @@ which is why any runtime `Skip` guard now demotes a test out of tier 1.
 Test: reconcile your census against the runner's own discovery and require zero symmetric difference —
 attribute-grep alone will undercount. Then, for each tier, flip its claimed gate off and assert the
 tier does not execute; if flipping the gate changes nothing, the gate is not the gate.
+## Two reviewers can both be right and still miss the defect, because "can it match MORE" and "does it match the RIGHT ONE" are different questions (AirMyPC, 2026-09-09, VIRTUAL-TEN)
+A control that mutates product source to prove a detector fires had been repaired for line-ending
+blindness by converting its search pattern to the target file's MAJORITY newline convention. Two
+same-family reviewers examined the repair independently and both returned APPROVE, each with sound
+reasoning and empirical probes: the conversion cannot WIDEN a match, because matching stays a literal
+escaped comparison whose length is the pattern's own, so a bad conversion can only UNDER-match and
+under-matching throws loudly. Both statements are true.
+The cross-family reviewer asked a different question and found the defect: on a target containing the
+behaviour once with LF separators and a near-duplicate with CRLF separators, converting the pattern to
+the majority convention makes it match the OTHER occurrence — index 16 instead of the intended index 6 —
+and the uniqueness count still reads exactly **1**. The control then deletes the wrong behaviour and the
+exact-count assertion, the very check that had caught the original bug, sees nothing wrong. Not wider:
+different. Proved by construction afterwards, with a differential fixture — the rejected mechanism
+reports Count=1 and selects index 17, while the replacement reports Count=2 and correctly goes red.
+> **When reviewers disagree, first check whether they answered the SAME question. An approval that
+> refutes a claim the finder never made is not a rebuttal. For any matcher, ask three separate
+> questions — can it match MORE, can it match FEWER, and can it match a DIFFERENT occurrence — because
+> only the third fails silently while every count-based assertion still reads correct.**
+Test: build a fixture containing two near-duplicate occurrences that differ ONLY in the dimension your
+matcher normalises (newlines, whitespace, case, unicode form), and assert the matcher selects the
+intended one by OFFSET, not merely that it found one. Run the rejected implementation against the same
+fixture and record what it selects — a differential proof is what converts a reviewer's claim into a fact.
