@@ -1874,3 +1874,51 @@ unauditable.
     gh run view 34330922075 -R <repo>
     gh api advisories/GHSA-23fw-v26w-5fgq | ConvertFrom-Json | % vulnerabilities | % { $_.vulnerable_version_range, $_.first_patched_version }
     git show <pin-commit> --stat ; git cat-file -p <commit>:<any packages.lock.json> | Format-Hex | Select-String '0D 0A'
+
+## A 22-hour acceptance closure, and what each of the four blockers actually cost (adobe, 2026-09-08/09, virtual-ten)
+
+WO-G0-A01 revision 13 reached `verdict: ACCEPTED` at 2026-09-09T10:18:52.118Z with zero open
+P0/P1, both independent reviews `PASS_WITH_NONBLOCKING_FINDINGS`, nine literal criterion passes
+and fifteen P2/P3 dispositions. The live Adobe experiment (AC-07) had already been transferred to
+a separate work order, so this closes the offline work order and asserts nothing about live
+feasibility. The two reviews it accepted were published 2026-09-07T17:42Z — **17 hours before**
+the board could act on them. Everything in between was factory-control defect, not review work.
+
+Four blockers, in order, each found by the machinery that the previous one repaired:
+
+1. **Unvotable proposal.** The open proposal's own boundary forbade a "reviewer/model call" before
+   quorum while both reviewer actuators were deliberately disabled, and it omitted the
+   ballot-collection clause an earlier proposal had established. 7 h 39 m. Cleared by an owner
+   directive granting that clause for one revision; the reviewer vote arrived 46 minutes later.
+2. **Head-comparison predicate.** The acceptance carrier-chain check compared *every* historical
+   control generation's staged hash to the *accepted head* map, which can only hold the newest.
+   Two owner-directive appends between review and acceptance are therefore enough to fail it by
+   construction. Repaired by successor-endpoint semantics.
+3. **Co-resident consumption.** The repair for (2) failed its own hostile fixture: one generation's
+   `CONSUMED` entry had been committed inside the *next* generation's commit, which the constitution
+   requires to be carrier-only, and history is immutable. Resolved by ratifying a successor-bound
+   reading through ordinary quorum rather than amending the constitution or rewriting history.
+4. **Throughput, not governance.** With the repair written and its suite green at `122 passed,
+   0 failed`, five consecutive wakes produced no ledger row: each was killed by the lane's 2400 s
+   budget after re-verifying instead of committing. The stall alarm fired describing a refusal loop
+   its own counter measured as absent (see TRAPS, same date). Cleared by an **advisory** record
+   quoting the lane's own retained transcript back to it plus one manual wake — after which the lane
+   opened, validated, committed and consumed the generation in 24 minutes.
+
+**The generalisable numbers.** Governance decisions were never the slow part: three quorums formed
+in 23 min, 15 min and 9 min once ballots could be collected at all. The slow parts were a drafting
+omission (7.6 h), a predicate that had never met two generations (1.5 h), and a pacing failure
+(5.0 h). **The cheapest instrument that could work beat the strongest one available in all four
+cases** — a one-revision clause instead of a constitutional amendment, a ratified interpretation
+instead of a history rewrite, an advisory instead of a directive.
+
+**Re-derive.**
+
+    # the disposition and its bound identities
+    Select-String -Path 'C:\!Layi Wkspc\Adobe Document Cloud Ingester\.factory\coordination\HUB.md' -Pattern '^### \[2026-09-09T10:18:52' -Context 0,12
+    # the accepted record and the reviews it binds
+    Get-FileHash 'C:\!Layi Wkspc\Adobe Document Cloud Ingester\.factory\acceptance\WO-G0-A01-rev13.md' -Algorithm SHA256
+    # the four blockers in ledger order
+    Select-String -Path '...\HUB.md' -Pattern '^### \[' | Select-String -Pattern 'Q-029|Q-030|Q-031|DISPOSITION WO-G0-A01 rev13'
+    # the pacing evidence
+    Get-ChildItem "$env:LOCALAPPDATA\AdobeIngesterFactory\evidence-quarantine\sol-exec" | Sort-Object Name | Select-Object -Last 8 Name
