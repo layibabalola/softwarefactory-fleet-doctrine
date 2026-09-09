@@ -6885,6 +6885,7 @@ the smell this trap is about.
 ## Appended by fleet machine-capacity finding, 2026-09-08 (DEL-01-0316-LT vs BACHELOR)
 - **Parallel agent fan-out must scale to the HOST, not to the task** (measured 2026-09-08): a laptop reported as "struggling with builds" was carrying **43 `claude.exe` processes, ~196 cumulative CPU-hours, 4.3 GB RAM available of 31.8 GB**, on a **6-core** i7-8850H - about seven agent processes per core. Every one had a LIVE parent (all children of a single session), so this was NOT the leaked-orphan class and no reaper would ever touch it. The cause was a session decomposing work into ~42 concurrent subagents, which is correct guidance on a 24-core/128 GB box and self-harm on a 6-core laptop. Test: before blaming disk, antivirus or CI, count agent processes and divide by physical cores; above roughly 2 per core the machine is saturating on the fan-out itself. Fix: cap concurrency per host, or move wide work to a capable box. Corollary trap: the disk story was a red herring twice - two diagnostics of the same machine disagreed (repo 14.1 GB vs 6.4 GB, free 20.3 GB vs 23.7 GB), and reclaiming 7.4 GB changed nothing, because free space was never the binding constraint. Second corollary: do not spend risk on the last gigabyte - a locked `obj/` worth 0.35 GB was proposed for force-killing lock holders or ending a live session; both trade real work for trivial space.
 
+<<<<<<< HEAD
 ## Prompt-as-state and bloat-handoff successor chains ate a top-tier model's budget on status (adobe, 2026-09-07/08, virtual-ten)
 
 Five Codex Desktop heartbeat automations ran the Adobe streams on gpt-6-astra at xhigh effort. Each
@@ -7011,3 +7012,98 @@ the refusal in place; an audit found it only by grepping the module for the rule
 > through the code's own review path, with a test for both the new acceptance and the kept refusal.**
 Test: `grep -rn "<rule's field names>" tools/ hooks/ .githooks/` and list every executable site
 beside every prose site; the rule's true text is the union.
+=======
+## Two integration lines, and every instrument measuring the one nothing lands on (agent-bridge, 2026-09-08, 16-core workstation)
+
+A recovery program worked for ten days on a long-lived canonical branch while a second session
+delivered four PRs to the actual GitHub default branch from throwaway `codex/*` branches. By the
+time anyone looked, canonical was **115 ahead and 49 behind** `github/master`. Not one board
+instrument said so: the board derivation, the ten-minute pulse and the per-turn cursor all
+computed `ahead`/`behind` against a **local `master`** that had not moved in nine days and that
+nothing integrated to, and each printed `behind=0`.
+
+The instruments were correct about the ref they were given. The ref was the defect.
+
+> **Ahead/behind is meaningless against a ref nothing integrates to. Every board instrument must
+> name its integration ref as a remote-tracking ref (`github/master`), fetch it before measuring,
+> and print the ref it measured against beside the number.** A local branch named `master` is a
+> cache of a claim about the remote, and a stale cache with a reassuring name is worse than none.
+
+Test: `git rev-list --count <remote>/master..HEAD` and `HEAD..<remote>/master` after `git fetch`;
+then grep every instrument for a bare `master` and ask which one it means.
+
+## A model gated on the CLI version fails as a 400 after five seconds, wearing a bad-model-name face (agent-bridge, 2026-09-08)
+
+A probe of a newly released model through the Codex lane driver exited 1 in 5 s with an empty
+stderr and a receipt reading `NO VERDICT ... process exited 1`. Only the events log carried the
+cause: `Model metadata for 'gpt-6-astra' not found` followed by a 400 `"requires a newer version of
+Codex. Please upgrade"`. The installed CLI was 0.147.0; npm latest was 0.153.4. The same surface
+shape — fast exit, empty stderr — is what a typo in the model slug produces.
+
+> **A five-second nonzero exit from a lane driver is UNKNOWN until the events log is read. Classify
+> by the refusal text, never by the exit code or duration; and record the CLI version beside every
+> model-availability claim, because availability is a property of the (model, CLI) pair.**
+
+Test: `codex --version` (from PowerShell on this host; the Git Bash shim is broken) and `npm view
+@openai/codex version`, side by side, in the receipt.
+
+## Decision files in five schemas, and a selector that read one (agent-bridge, 2026-09-08)
+
+Fifty-one decision files carried a positive verdict under any of five keys — `decision`,
+`outcome`, `verdict`, `hub_decision`, `reviewVerdict` — and the integrated commit under any of
+four — `integration_sha`, `candidate_sha`, `subject`, `expected_remote_head`. A first-draft
+selector read `decision` and `subject` and reported **two** tasks delivered; the ledger held
+**five**, three of which the board would have re-dispatched.
+
+> **Before a script consumes a ledger, enumerate the ledger's key vocabulary against a declared
+> count** (this bus already rules: enumerate any container against a declared count before
+> consuming it). **A positive verdict with no commit-like sha is UNVERIFIED, printed as such, never
+> silently DELIVERED and never silently READY.**
+
+Test: `python - <<EOF` over the decision directory printing the set of top-level keys per file;
+more than one vocabulary is the finding, and the selector must read all of them until a migration
+lands.
+
+## An amendment that removes a review gate was blocked by that gate, and the same-family panel found 25 majors first (agent-bridge, 2026-09-08)
+
+A hub drafted an operating-model amendment whose headline change was to drop the rule that an
+implementer's reviewer must come from the other model family. It convened three same-family
+(Opus) adversaries on distinct surfaces plus the cross-family key it proposed to demote.
+
+The three same-family seats returned **25 MAJOR findings** — a selector that fails open on
+no-sha verdicts, a writer lock that read a missing file as "no writers", a fan-out cap on a probe
+the board had already rejected, five READY rows that were in fact already merged, four unnamed
+supersessions of fail-closed clauses, a fallback that made the router its own adjudicator. The
+cross-family key returned BLOCKER and, under the rule still in force, parked the subject with no
+second round.
+
+Both halves are the finding. The same-family panel was *not* toothless: given authorship
+independence and a named surface each, it out-found the key on volume and caught the defects
+that would have hurt first. And the key still caught something the panel did not price: that
+the amendment's own supersession of "a missing key parks the decision" was the clause under
+which it would otherwise have sailed through.
+
+> **Independence is authorship and surface, not vendor — the measurement supports that. But the
+> decision that removes a gate must be taken under the gate, and a key that can only say BLOCKER
+> without a reproduction is worth keeping on exactly the decisions that change what a key is.**
+
+Test: before adopting any review-policy change, run it through the old policy verbatim and bank
+every verdict with model, org and subject; if the new policy would have passed what the old one
+parked, that delta is the risk the change carries, written down.
+
+## A delivery ledger derived from decision files is blind to everything delivered without one (agent-bridge, 2026-09-08)
+
+A selector derived DELIVERED from the decision ledger and called five tasks READY that were
+already merged on the integration branch with regression tests — landed the previous day by a
+different session that wrote PR descriptions instead of decision files. Two of the five were in
+the hub's dispatch list as class C work: two three-adversary quorums would have re-implemented
+shipped code.
+
+> **"Delivered" is a property of the integration ref, not of the ledger. A selector needs a
+> second predicate keyed on integrated code — the task's acceptance evidence at the ref — or a
+> reconciliation pass that writes `delivered_by {commit, evidence}` into the manifest with the
+> commit proven an ancestor. A ledger-only predicate re-dispatches finished work forever.**
+
+Test: for every READY row, `git log <ref> -S<symbol named in the task's acceptance>` and run the
+named test at the ref before dispatch.
+>>>>>>> 4e7031f (traps+spec(agent-bridge): two integration lines, CLI-gated model refusal, five-schema ledger, gate-removal blocked by the gate, ledger-only delivery blindness; operating-model v1 parked / v2 in quorum)
