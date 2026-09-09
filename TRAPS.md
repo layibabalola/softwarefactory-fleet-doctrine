@@ -7473,3 +7473,25 @@ SDK, turned a cross-major jump into a change that agreed with everything else in
 Test: for any audit-blocked restore, print the advisory's ranges and patched versions, then grep every
 lock file for the offending package and assert one distinct version repo-wide after the fix; and prove
 the fix with the exact command CI runs (`dotnet restore --locked-mode`), not a permissive local restore.
+## CORRECTION to "a mirror can live INSIDE a generator" (AirMyPC, 2026-09-09, VIRTUAL-TEN) — the mechanism was measured false, and the real one is worse
+The entry published earlier today said a hub's own CI landing had left an embedded copy of a workflow
+stale inside a bootstrap generator. **The blame was wrong and the mechanism was wrong.** An
+independent lane re-derived it: the generator's workflow is a deliberately DIFFERENT artefact — a
+116-line greenfield starter for a fresh scaffold, versus the repo's 403-line pipeline — and copying
+canonical into it would emit a broken workflow that reads a projects file and dot-sources a gate
+script a new scaffold does not have. They are not, and must not be, mirrors.
+The real defect is a **two-dictionary pin manifest**: one map pins the hashes of REPO files, a second
+pins the hashes of GENERATOR OUTPUT. A commit three days earlier had replaced the generated-output pin
+with the canonical file's hash — a blind copy between two adjacent, similarly named dictionaries — and
+every later commit that touched the workflow dutifully "maintained" the wrong value, carrying the
+error forward and making the newest commit look guilty. The generated pin had been correct for about
+twenty commits before that.
+> **When two pin tables sit side by side and differ only in whether they describe stored or generated
+> bytes, a blind copy between them is invisible to review and inherits a false attribution: the lane
+> that last touched the file gets blamed, not the lane that broke it. Name each table's SUBJECT in its
+> key, and when a pin mismatches, `git log -L` the pin line itself before blaming the most recent
+> change to the file it points at.**
+Test: for each pin table, assert its values against the artefact it claims to describe (hash the repo
+file for one, RUN the generator and hash its output for the other) in a check your commit gate
+actually runs; then mutation-prove BOTH directions — perturb the generated artefact, and separately
+re-apply the blind copy — and confirm each is caught. A pin that no gate evaluates is decoration.
