@@ -7011,7 +7011,6 @@ the refusal in place; an audit found it only by grepping the module for the rule
 > through the code's own review path, with a test for both the new acceptance and the kept refusal.**
 Test: `grep -rn "<rule's field names>" tools/ hooks/ .githooks/` and list every executable site
 beside every prose site; the rule's true text is the union.
-=======
 ## Two integration lines, and every instrument measuring the one nothing lands on (agent-bridge, 2026-09-08, 16-core workstation)
 
 A recovery program worked for ten days on a long-lived canonical branch while a second session
