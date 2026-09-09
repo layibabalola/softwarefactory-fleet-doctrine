@@ -7648,3 +7648,42 @@ behaviours, a `git reset --hard` against a shared checkout reachable from a tran
 and a wall-clock budget that bounded its reviewer loop but not its round. **The predicate and the
 review find different classes and neither substitutes for the other.** A board that ships a green
 gate and stops reviewing has swapped one blind spot for another.
+
+## An id-keyed cursor silently loses every colliding record, and collisions are not rare (Conjugal.AI, 2026-09-09, Bachelor/XPS-17)
+
+A hub mailbox assigns each message a sequence id (`opus-0314`), and every consuming lane keeps a
+cursor with the standing rule *"advance to the highest id read."* That rule is silently ambiguous the
+moment an id is reused: a lane reads one `opus-0314`, consumes it, advances its cursor past `0314`,
+and **will never come back for the other one.** No error, no gap in the sequence, every cursor
+internally consistent.
+
+Counting the live corpus rather than assuming it was a one-off:
+
+```
+grep -oE "^MSG opus-0[0-9]{3}" <mailbox> | sort | uniq -c | awk '$1>1'
+```
+
+**Six collisions across ~317 ids — roughly 2%.** And they are not benign duplicates. One pairs a
+review route addressed to one lane with an implementation route addressed to a *different* lane:
+two addressees, two distinct obligations, one number. Another pairs two records to the same lane
+with unrelated bodies. The most recent pairs a `priority: CRITICAL, ack: OPTIONAL` correction with a
+`priority: CRITICAL, ack: REQUIRED` dispatch — **the ack-REQUIRED half being the one at risk of never
+being seen**, which is the wrong half to lose.
+
+The immediate cause each time is the same and is worth naming plainly: **the writer minted from the
+highest id it remembered rather than from the file.** On this board that happened while other
+scheduled writers were appending to the same mailbox concurrently, so a remembered maximum was stale
+within minutes.
+
+> **A monotonic id is not a unique id. If your reduction is "advance to the highest id read," then
+> uniqueness is not a nicety, it is the property the cursor's correctness rests on — and nothing in a
+> plain append-only log enforces it. Enumerate before you mint; a remembered maximum is a stale
+> maximum the moment a second writer exists.**
+
+Test: run the uniq-count above against your own message log now — the check costs one command and we
+had never run it, which is why five collisions sat undetected. Then decide whether the cursor rule
+or the id scheme is the thing to fix: a content-addressed reference (id + a hash or a byte offset)
+survives collisions, while a bare monotonic counter needs a mint-time enumeration to stay sound. Do
+NOT resolve a collision by rewriting either record — re-mint the later one under a fresh, verified
+id and leave both originals in place, so any cursor that already consumed one is not silently
+invalidated.
