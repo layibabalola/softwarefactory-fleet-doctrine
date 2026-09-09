@@ -7104,3 +7104,93 @@ shipped code.
 
 Test: for every READY row, `git log <ref> -S<symbol named in the task's acceptance>` and run the
 named test at the ref before dispatch.
+
+## A fabricated quotation inverted a route, and deferred the fix it named (Conjugal.AI, 2026-09-09, Bachelor/XPS-17)
+
+An orchestrator routed a CRITICAL item: fix a named function on a held branch, copy this exact
+idiom, cover it with this exact test, **take it before four other named items**. A later wake by the
+implementing lane then recorded, in its own lane file, that the item stayed blocked *"with no action
+vested in sonnet per the route's own text"* — and put that clause **in quotation marks, attributed
+to the route**.
+
+The quoted string does not exist. A positive grep of the mailbox returns one hit for the word in an
+unrelated context far above the route. The route says the opposite: an explicit ROUTE naming that
+lane as the actor, with a sequencing directive. **The fabrication inverted the instruction**, and
+the data-loss fix it named went undone for hours while every wire read correctly and the lane's own
+heartbeat reported it as a known blocked hazard.
+
+The lane caught it itself on a later wake and filed the finding against its own prior output.
+
+> **A quotation is the one artifact that looks like evidence while being generated. Every other
+> citation in a review chain — a SHA, a line number, an exit code — fails loudly when wrong, because
+> the reader can resolve it. A quoted sentence resolves against nothing, so a hallucinated one reads
+> exactly like a real one and inherits the authority of the source it names. Treat an
+> agent-authored quotation of another agent as unverified until grepped.**
+
+Test: for every quoted string attributed to another lane, route, or document, the citing session
+must run a positive search for that literal string and record the file:line it matched —
+`grep -n "<the exact quoted words>" <the named file>`. A quotation with no recorded hit is struck,
+not softened. Reviewers should grep the three most load-bearing quotations in any handoff before
+accepting its conclusion; a quotation that changes what the reader is obliged to do is the one to
+check first. Note this is NOT the "never parse prose for a command" trap — that one is about
+extracting an instruction from prose. This is its inverse: **inventing prose and attributing the
+instruction to it.**
+
+## A reducer that scores refusals as passes (Conjugal.AI, 2026-09-09, Bachelor/XPS-17)
+
+A board's shipped wire reducer counted a verifier's `BLOCKED` refusal as a `VERIFIED` row, and a
+reviewer's `CHANGES-REQUESTED` as a `REVIEWED` row, because it matched the row's status **keyword**
+and never read the verdict field beside it.
+
+Measured fleet-wide on that board: of 43 conforming `VERIFIED` rows, **15 were PASS and 22 were
+BLOCKED**; of 150 conforming `REVIEWED` rows, **82 were APPROVED and 64 CHANGES-REQUESTED**. So
+roughly **51% of verification credit and 43% of review credit were refusals scored as successes.**
+Every dashboard, every status brief and every orchestrator reduction on that board had been quoting
+inflated numbers, and the direction of the error is always the same: **toward health.**
+
+It was found only because a verifier blocked two malformed routes and an orchestrator went to
+reconcile why its own instrument and the verifier's disagreed. Two instruments, neither naming which
+was authoritative: one reduced by grammar and got zero, one reduced by tool and got one, and **both
+were internally correct.**
+
+> **A rung counter that keys on the status keyword and not on the verdict cannot distinguish "this
+> was checked and passed" from "this was checked and refused" — and it will always err toward
+> health, because a refusal is still an event on the rung. A board reading such a counter feels
+> productive while its queue fills with rejections.**
+
+Test: for each rung, count rows by *verdict* and not by keyword —
+`grep -rhE "^VERIFIED " <lanes> | grep -c "verdict: PASS"` against the bare row count. If the two
+differ, every historical figure derived from that counter is an upper bound and should be restated
+as one. Then check whether two instruments in your fleet reduce the same wire differently; where
+they disagree, the defect is usually one rung *above* the disagreement, in what the wire is allowed
+to say.
+
+## The healthy path must spawn no model (Conjugal.AI, 2026-09-09, Bachelor/XPS-17)
+
+An owner asked for continuous status reporting. The obvious build — a scheduled task that wakes a
+model every five minutes and asks it to describe the board — was rejected before it was built, on
+this board's own numbers: lanes advance on 30–60 minute floors, so a five-minute poll is roughly
+**90% billing to be told nothing changed.**
+
+What was built instead: a **cheap non-model predicate** runs on the timer, and the model is spawned
+only when it returns "changed". Pure git and file reads, no model, no network. Substantive is
+defined narrowly — the head moved with at least one **non-bookkeeping** commit, or the score moved
+past a threshold, or a lane crossed a liveness class. Receipts, IDLE wakes and checkpoints are
+explicitly *the board breathing, not the board moving*, and do not trigger a spawn.
+
+Two properties earned their place immediately. The detector returns a distinct exit for **"could not
+derive"**, separate from "no change" — an observer that cannot see must never report quiet, which is
+the fail-open every guard doctrine warns about, arriving in an observer instead of a gate. And the
+reporter is told to **render what tools reduce, never to reduce**: the first brief it produced
+called the board `STALLED` while the head had taken fourteen commits, because it judged on lane-file
+age rather than on the log.
+
+> **Put a cheap predicate in front of every scheduled model spawn, and let the healthy path cost
+> nothing. A status loop is the easiest place in a factory to spend continuously and learn nothing,
+> because its output always looks like work.**
+
+Test: log the spawn decision on every tick and take the ratio after a day; if a large majority of
+ticks spawned, the "substantive" definition is too loose and is billing you for bookkeeping. And
+give the reporter the exact reduction commands rather than a description of what to count — a
+reporter that counts for itself will double-count across directories and then name what the number
+means.
