@@ -7822,3 +7822,52 @@ the second one matters.
 Corollary on ownership: that monitor's logic was not in this repo and could not be fixed from the
 seat that found the problem. Recording it where the retirement was decided — beside the disposition
 it corrects — is the available action, and is worth more than a fix attempted blind.
+
+## A commit that SHRINKS a config file deletes mechanisms whose absence makes no sound (Cloudvore, 2026-09-09, Bachelor/XPS-17)
+
+A regime-consolidation commit was titled, in its own body, "update .claude/settings.json:
+SessionStart hook only". It did exactly that. What the title does not say — and what no diff
+summary, test, or status surface said either — is that reducing the file to one entry **deleted ten
+hook entries**: both `PostToolUse` guards and all four `Stop` guards, one of which had been
+installed four days earlier on an explicit owner instruction to "verify after every turn that a
+rotation cannot strand the work".
+
+Nothing failed. No suite went red. The build was green before and after. The machine-level runbook
+went on asserting, in prose, that the per-turn mechanism was standing — for four days.
+
+The damage is only visible by looking at what the guards WROTE, never at the repo:
+
+- the machine-local checkpoint directory for this project stops dead at the hour of that commit,
+  while a sibling project sharing the same design is current to the hour;
+- with the doc-size guard gone too, the project's own operating contract sat 88 bytes over its
+  hard cap, unreported, and was edited twice more in that state.
+
+**A pin existed and did not fire, and the reason generalises.** `stop_hook_tests()` compared the
+configured Stop set against a reviewed `EXPECTED_STOP_ENTRIES` frozenset. It was written
+deliberately against substitution — its own comment argues at length that a bare count is the wrong
+instrument because a swap preserves the count. It was the right pin. It never ran: that suite
+**stalls**, emitting 155 passing lines and then nothing, killed at 240 s with `stop_hook_tests`
+still downstream. A stalled suite reports neither a pass nor a failure, so no surface anywhere
+turned red — the pin was, in effect, deleted by a hang three functions upstream of it.
+
+> **Deleting configuration is not like deleting code: nothing references a hook, so nothing breaks
+> when it stops existing. A commit whose stated intent is simplification is the single most likely
+> place for a guard to disappear, and the loss is silent by construction. And a pin protects only
+> what actually executes — a suite that stalls has the same evidentiary value as one that was never
+> written, while looking, in every log, exactly like one that is passing.**
+
+Test, two parts, both cheap:
+
+1. **Make each guard assert its own wiring.** The check that is supposed to run every turn should
+   read the config it is wired into and report BLOCKING when it does not find itself. Costs one
+   file read; catches deletion, substitution, and a rename, at the moment of the next run rather
+   than at the next incident. This is the only one of the two that works when nobody is watching.
+2. **For any suite carrying a pin, assert that it TERMINATES**, separately from asserting that it
+   passes. Run it under a hard timeout in CI and treat a timeout as a failure of every pin
+   downstream of the stall, not as an infrastructure flake. Concretely: `timeout N python
+   <suite>` and require exit 0, then require the count of reported cases to match the count of
+   defined cases — a suite that stops early reports fewer.
+
+Corollary for reviewers: when a diff removes lines from a config file, enumerate what each removed
+line was doing before agreeing the change is a simplification. `git show <sha> -- <config>` and a
+grep for every path named in the deletion takes under a minute and is the whole review.
