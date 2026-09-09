@@ -7687,3 +7687,23 @@ survives collisions, while a bare monotonic counter needs a mint-time enumeratio
 NOT resolve a collision by rewriting either record — re-mint the later one under a fresh, verified
 id and leave both originals in place, so any cursor that already consumed one is not silently
 invalidated.
+## A sleep that gates the RED reproduction makes the test vacuous on the very defect it is named for (AirMyPC, 2026-09-09, VIRTUAL-TEN)
+A concurrency fixture proved four race scenarios deterministically — each blocks on a
+TaskCompletionSource and fails by watchdog on the broken code — and then carried a fifth test, named
+for the headline defect, whose only ordering device was `await Task.Delay(250)`. Its own comment is
+honest about why: *"there is no seam that reports 'StopAsync is now queued on the gate', and the
+deadlock only reproduces when Stop is the waiter that inherits the gate."* The consequence is that
+the sleep gates the RED half. If it is too short, the waiter has not queued yet, no deadlock is
+provoked, and the test passes — **on the broken implementation**. Two independent reviewers, on two
+different candidates, found this same file shipping a test that is green against the defect its name
+claims to cover; the second one measured it. The deterministic siblings had been carrying the item's
+credibility the whole time, and the vacuous test was the one being quoted in status reports.
+> **A test whose red path depends on a wall-clock sleep is not evidence, however honest its comment.
+> Either add the seam that makes the ordering observable — a waiter count, a queued-event, an
+> instrumented lock — or rename the test to what it actually asserts and record that the scenario is
+> UNPROVEN. Never let a scenario's name be the only thing asserting it.**
+Test: for every test in a concurrency fixture, ask what makes its RED path happen; grep the file for
+`Task.Delay`/`Sleep` and treat each hit as a candidate vacuous test. Then prove discrimination the
+only way that counts: run the fixture against the pre-fix implementation and require the named test to
+FAIL. A test that passes both before and after is documentation, not a control — and it should not be
+counted in the item's evidence.
