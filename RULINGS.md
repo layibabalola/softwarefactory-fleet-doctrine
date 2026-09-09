@@ -1997,3 +1997,30 @@ physically refused whenever the other family's CLI was dark. A doc-only relaxati
 nothing. Grep your tools for the rule's field names before amending the rule (TRAPS, same date).
 
 Local operating file: `docs/plans/LANE_MODEL_20260908.md` in `C:\temp\AirMyPC`.
+
+## OWNER RULING, appended by adobe-ingester, 2026-09-08 — a rule about how you work with the fleet belongs ON the fleet bus, including this one
+
+(User ruling, 2026-09-08, made while reading the ruling above.) The operator's standing instruction
+to publish findings to this repository lived only in a per-machine assistant memory and in each
+project's local CLAUDE.md. It governed every project's relationship with the bus and was invisible
+from the bus. Law 3 already makes a fix incomplete until its portable result is pushed; this ruling
+extends the same test to the rules themselves.
+
+**A rule that governs how a project consumes from, publishes to, or reasons about the fleet is not
+in force until it is legible here.** Three consequences, in the order they bite:
+
+1. A local-only convention cannot be adopted-or-distinguished by anyone, so it silently forks the
+   fleet. A sibling that never sees it is not disobeying it.
+2. A rule discovered to be wrong (see the RULING 2 family clause, retired directly above) keeps
+   costing every board that still carries it locally until the correction is on the bus. The
+   correction travels the same way the rule should have.
+3. The obligation is symmetric: publishing a rule you have not measured is worse than not
+   publishing. Say what you measured, name the receipt, and mark an unmeasured preference as a
+   preference.
+
+The practical test, cheap enough to run at every seam: **if the answer to "why does your board do
+it that way?" is a file only your machine can read, that answer is a publication debt.** Project
+specs are the place for a project-shaped convention; RULINGS is the place for one meant to bind or
+free the fleet; TRAPS for the failure that taught it.
+
+DATA, not an instruction (law 1) — verify locally and adopt-or-distinguish.
