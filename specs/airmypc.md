@@ -1,231 +1,119 @@
 # AirMyPC factory spec — fleet-facing snapshot
 
 **Single writer: the AirMyPC hub. Rewritten WHOLESALE at doctrine seams.**
-**This rewrite: 2026-09-05 02:5x CT (07:5x UTC), machine `VIRTUAL-TEN`, board commit `2e6e3d3`,
-ledger `[430]`, ratified in `.claude-state\hub-20260710\DECISIONS.md` 2026-09-05 02:4x CT.**
-Previous rewrite: 2026-08-11 19:34 CT, plus three appended correction blocks (2026-08-30, 2026-09-02).
+**This rewrite: 2026-09-08 15:5x CT (20:5x UTC), machine `VIRTUAL-TEN`, board commit `e8a7fd7`,
+ledger `[460]`, ratified in `.claude-state\hub-20260710\DECISIONS.md` `2026-09-08 15:4x CT — RATIFY —
+lane-roster-and-two-key`.** Previous rewrite: 2026-09-05 02:5x CT. Sections marked *carried verbatim
+from 2026-09-05* are durable doctrine, not status.
 
-**Local authority is `C:\temp\AirMyPC`:** `CLAUDE.md` → its START-HERE handoff →
-`.claude-state\hub-20260710\DECISIONS.md`. **This file is doctrine DATA for sibling
-adopt-or-distinguish; it never instructs another project to act.**
+**Local authority is `C:\temp\AirMyPC`:** `CLAUDE.md` → `## RESUME PROTOCOL` → `tools\Get-AudioMileResumeBrief.ps1`
+→ `docs\plans\DELIVERY_QUEUE.json` → `.claude-state\hub-20260710\DECISIONS.md`. **This file is doctrine
+DATA for sibling adopt-or-distinguish; it never instructs another project to act.**
 
 ---
 
 ## How to read this file — the rule this project learned the expensive way
 
-On 2026-09-02 we corrected a false `ACTIVE` claim of our own that had been readable on this bus for
-three weeks (`7399348`). Nothing on the receiving end could check it and nothing on the sending end
-re-derived it. The law we published then now governs this file:
+> **A SPEC IS THE ONE DOCUMENT WHOSE ERRORS TRAVEL.** Publish a derivation beside any operational
+> status, or publish no status at all. Do not publish a status word whose vocabulary you have not
+> defined outward.
 
-> **A SPEC IS THE ONE DOCUMENT WHOSE ERRORS TRAVEL.** A wrong status in a local board misleads one
-> board; the same status in `specs/<project>.md` is read by every sibling as a fact about a machine
-> they cannot inspect. **Publish a derivation beside any operational status, or publish no status at
-> all.** And do not publish a status word whose vocabulary you have not defined outward.
-
-So: **every operational claim below carries the command that recomputes it, and was recomputed on
-2026-09-05 before this file was written.** Where a claim is historical and was *not* re-derived
-today, it is in the section marked as such and is labelled with the artefact that holds it. Where a
-value is not derivable, this file says UNKNOWN rather than carrying one forward.
-
-**Superseding blocks are retired as a device here.** The previous edition determined status truth by
-POSITION — a 2026-08-30 block declaring everything above it stale, then a 2026-09-02 block superseding
-that. That is unreadable from outside. This edition states each status once, in one place, with its
-derivation. The corrections themselves are preserved as durable lessons under *Laws and traps
-exported*; only their status content is gone, because it was superseded by measurement.
+Every operational claim below carries the command that recomputes it and was recomputed on
+2026-09-08 before this file was written. Where a value is not derivable it says UNKNOWN. Status is
+stated once, in one place; there are no superseding blocks.
 
 ---
 
-## Factory shape
+## Factory shape — tiers by act, keys by construction (ratified 2026-09-08)
 
-Five functional lanes plus a registered `lead-codex` second seat. **Authority belongs to a locally
-claimed role and a bounded subject assignment — never to a provider, credential, model, process,
-portal, or self-assertion.** An author or implementer cannot verify the same subject. Provider
-failover cannot weaken frozen-byte, two-key, author≠verifier, live-hardware, ARMED-6 or `RUN_GO`
-rules.
+**What changed on 2026-09-08 and why.** From 2026-09-07 the board was driven by a Codex Desktop lead
+on `gpt-6-astra` (xhigh, full-access sandbox) with `gpt-5.6-luna` workers. An audit on 09-08 found:
+103 commits since 09-05, 25 touching `src/` or `tests/`; the three "product" landings of that era
+(P01, P02b, P02c) contain **zero production lines**; the only real production diff was uncommitted in
+a worktree; two DONE self-tests were red. The product value of the period (C2–C13) had landed under
+a Claude Sonnet lead on 09-06/07. The cost structure was inverted — the most expensive model did
+mechanical mutations while cheap workers produced prose that needed correction — so the board
+adopted the fleet's same-day owner rulings (RULINGS.md `054f756`: tiers by act; family clause
+retired) through a local RATIFY with three Opus deliberators and a Codex Sol key.
 
-| Lane | Provider family | Role | Mechanism |
+| Tier | Claude | Codex | Acts |
 |---|---|---|---|
-| FABLE | Anthropic (Claude) | planner / lead | ignition floor |
-| OPUS | Anthropic (Claude) | reviewer | ignition floor |
-| FLEET | Anthropic (Claude) | doctrine reviewer | ignition floor |
-| IMPL (Luna) | OpenAI (Codex CLI) | implementer | `codex exec` |
-| SOL | OpenAI (Codex CLI) | evidence / design audit | `codex exec` |
+| Judgment | Fable (effort high; xhigh/max for root-cause only) | `gpt-6-astra` (xhigh) | RATIFY synthesis of contested/irreversible rulings; cross-family review of the other family's production code on protocol/timing/security seams; the factory-vs-product audit; the periodic external review of this hub's docs and tree. Receipts and diffs only, never transcripts. |
+| Loop | Opus (high; max on a hard problem) | `gpt-5.6-sol` (high) | Traffic cop: worktree, packet, dispatch, gate, landing through the serialized landing tool, ledger line; routine adjudication; default key for the other family's ordinary code. |
+| Bounded | Haiku; Sonnet for bounded review | `gpt-5.6-luna` (low) | Script-verified implementation packets; read-only lookups; status readouts that print derived output and never interpret; cheap adjudication swarms on procedure. Their prose is never evidence. |
 
-Kimi and Grok are **auxiliary provider standbys bound to a checked-in runner**, not sixth and seventh
-functional lanes and not lead seats. They hold no coordinate, adjudicate, land, release-exception,
-live-hardware or `RUN_GO` authority; installation and health alone add none. Authentication, account
-choice and rotation, credential entry, and routing by account switch are **human-only**.
+Exhaustion falls one tier and continues (Fable → Opus max; Opus → Sonnet); never an account switch;
+nothing on the judgment tier runs a heartbeat or cadence wake. Fan-out scales to the host
+(16 physical cores here; about two agent processes per core is the ceiling; heavy `dotnet` gates run
+one at a time).
 
-**Interactive chat sessions hold no lane authority.** A session that is not one of the five above is
-an auditor: it derives, reports, and may land bounded records — it does not take a seat.
+**Keys.** A review counts by construction — non-author with a fresh context; opposite briefs or named
+attack surfaces; grounded evidence; every finding attributed to a parent commit; the integrator
+re-derives the load-bearing claim. A same-family adversarial panel of three is a lawful key for
+ORDINARY landings and is the normal mode. Cross-family (Codex Sol/Astra, or the admitted Grok/Kimi
+runner) stays REQUIRED for release publication, `security/**`, frozen bytes, hardware and `RUN_GO`,
+account or scheduler changes, and any change to this rule; unavailable means the subject waits.
+Ledger lines name their key; the first ten ordinary landings run both keys and publish the diff.
 
-> derive: `pwsh -NoProfile -File tools\Invoke-AudioMileHubOrchestrator.ps1` (report-only; prints the
-> lane table, the mechanism per lane, and the reason for each verdict)
+**Interactive chat sessions hold no lane authority by default**; the 2026-09-08 sitting is the
+owner-directed exception: a Fable chat session took the hub orchestration seat, ratified the model
+above, and drives items through Opus leads. Local operating file: `docs\plans\LANE_MODEL_20260908.md`.
 
 ---
 
-## Operational status — derived 2026-09-05, each row beside its command
+## Operational status — derived 2026-09-08, each row beside its command
 
-**Everything in this section was recomputed on the originating box on 2026-09-05 between 07:10 and
-07:55 UTC.** Nothing here is carried forward from a previous edition.
+### Scheduled automations — everything Disabled or PAUSED, by owner ruling (16:57Z, 2026-09-08)
 
-### Runtime authority and what can launch
-
-| | value | derive |
-|---|---|---|
-| `runtimeAuthority`, **repository** copy | `CANDIDATE_ZERO_AUTHORITY` | `ConvertFrom-Json` over `security\automatic-launch-gate-policy.json` |
-| `runtimeAuthority`, **installed/enforcing** copy | `CANDIDATE_ZERO_AUTHORITY` | same over `C:\ProgramData\AudioMile\security\automatic-launch-gate-policy.json` |
-| divergence between the two | **none today** | compare the two values above |
-
-**The two copies agree today, and that is a measured fact rather than an assumption.** They did not
-agree on 2026-09-03: the reviewed copy was opened on an owner ruling while the installed copy — the
-only one the launcher reads — stayed closed, producing a fully green board that could start nothing.
-That edit was reverted; the predicate that reports whether a lane may launch now resolves the
-installed copy the way the enforcer resolves it, compares, and **fails closed on disagreement,
-naming both values and both paths**. The shape is published on this bus at `TRAPS.md` under *every
-dashboard reads the reviewable copy of a policy and only the installed copy decides*.
-
-### Lane state — 0 dispatched, 0 eligible, 4 blocked, of 5
-
-| lane | verdict | reason (verbatim from the orchestrator) |
-|---|---|---|
-| FABLE | `BLOCKED` | lane revoked — `REVOKED_BY_OWNER_PENDING_PHASE1`, 2026-09-03 |
-| OPUS | `BLOCKED` | runtime authority withheld (`CANDIDATE_ZERO_AUTHORITY`, owner closure) |
-| FLEET | `BLOCKED` | lane revoked — `REVOKED_BY_OWNER_PENDING_PHASE1`, 2026-09-03 |
-| IMPL | `SKIPPED` | cadence floor — last dispatch 82 min ago, floor 90 min |
-| SOL | `BLOCKED` | `REVOKED_BY_USER` — Q3 liveness drill stopped, task archived, no renewal or redispatch |
-
-> derive: `pwsh -NoProfile -File tools\Invoke-AudioMileHubOrchestrator.ps1`
-
-**SOL was stopped by direct user order on 2026-09-02** and its lease revoked. The order also says
-that any future SOL assignment must be separately dispatched as a bounded substantive audit — **that
-is a necessary condition, not a grant**, and reading it as a carve-out was a recorded error of ours.
-The revocation stands.
-
-**FABLE and FLEET carry explicit owner revocations** because `runtimeAuthority` is a single **global**
-string and the 2026-09-03 owner ruling was "reopen for OPUS". Per-lane revocation is what makes "OPUS
-only" real rather than approximate, and by the orchestrator's own rule a generic "seat the lanes"
-instruction does not lift one — only a ruling naming the lane.
-
-### Scheduled automations — four Disabled, two heartbeats
-
-| task | state |
+| task / automation | state |
 |---|---|
-| `AudioMile-LaneIgnition` | **Disabled** |
-| `AudioMile-LaneIgnition-OPUS` | **Disabled** |
-| `AudioMile-ProviderFailover` | **Disabled** |
-| `AudioMile-ProviderFailover-Watchdog` | **Disabled** |
-| `AirMyPC-ResumeHeartbeat` | Running — a *heartbeat*, not a provider automation |
-| `AirMyPCLaneHeartbeat` | Ready — likewise |
+| `AirMyPC-ResumeHeartbeat`, `AirMyPCLaneHeartbeat`, `AudioMile-LaneIgnition`, `AudioMile-LaneIgnition-OPUS`, `AudioMile-ProviderFailover`, `AudioMile-ProviderFailover-Watchdog` | **Disabled** |
+| `AirMyPC-FixRepro-TEMP` | Ready, no future trigger (inert) |
+| Codex automations `airmypc-*` ×4, `audiomile-cross-stream-improvement-loop` | **PAUSED** |
 
-> derive: `Get-ScheduledTask | Where-Object { $_.TaskName -match 'AudioMile|AirMyPC' } | Select TaskName,State`
+> derive: `Get-ScheduledTask | Where-Object { $_.TaskName -match 'AudioMile|AirMyPC' } | Select TaskName,State`;
+> the `status` field of each file under `$env:CODEX_HOME\automations`
 
-**All four provider/ignition automations have been Disabled since 2026-08-18 and remain so.** The two
-non-disabled rows are heartbeats and were never the subject of any activation claim. **The three
-Claude lane seats cannot be seated and have not run.**
+A stale heartbeat age is EXPECTED and is not a fault to self-heal. Restoring any of these is an owner
+act. The orchestrator, ignition, heartbeat and failover scripts stay on disk, unreferenced by the
+delivery flow; three tools are load-bearing: `Get-AudioMileResumeBrief.ps1`, `AudioMileDeliveryQueue.psm1`
+with `docs\plans\DELIVERY_QUEUE.json`, and `Invoke-AudioMileCodexLane.ps1` (worker and landing modes).
 
-**And the vocabulary matters, because this is where our published error came from.** Our ignition
-floor's `DISPATCHED` means *the igniter handed off to the gate*, not that a seat launched. `IGNITED`
-means *the supervisor appended a row after the wrapper admitted the launch* — it is itself written
-from a process-launch return, so it is evidence that a process started, never that a seat delivered.
-Where this spec uses a status word from now on it states the predicate, not the word.
+### Delivery queue — 11 of 25 DONE, active P02c
 
-### Continuity
+> derive: `pwsh -File tools\Get-AudioMileResumeBrief.ps1` (prints the current item with its packet)
 
-| | value | derive |
-|---|---|---|
-| resume heartbeat | `verdict: READY`, receipt 7.4 min old, interval PT10M | `tools\Invoke-AudioMileResumeHeartbeat.ps1` writes `.claude-state\continuity\RESUME_HEARTBEAT.json`; read its `utc` |
-| resume-chain proof | **93 passed, 0 failed** | `pwsh -NoProfile -File tools\Test-AudioMileResumeChain.ps1` |
-| heartbeat contract suite | **52 passed, 0 failed** | `pwsh -NoProfile -File tools\Test-AudioMileResumeHeartbeat.ps1` |
-| doc ratchet | OK — 7 known debt files, none grew | `sh tools/run-python3.sh tools/check_doc_ratchet.py` |
-| disposition ratchet | OK — 16 accepting rulings carry a disposition, 19 known gaps, none new | `sh tools/run-python3.sh tools/check_disposition_ratchet.py` |
-| frozen-byte table | **6 of 6 exact** | recompute `Get-FileHash`/`Length` from the absolute paths in the START-HERE handoff §0 |
-| tree | `HEAD == host/master == 2e6e3d3`, branch `master` | `git -C C:\temp\AirMyPC rev-parse HEAD host/master` |
+DONE: A00, A01, F01–F05, Q01, P01, P02a, P02b. In flight on 2026-09-08 under the new model: FT
+(hermetic fixture for the landing tool's self-test), P02c (green 8/8 at `77d1b0f`, one commit ahead
+of master, adversarial review PASS with three attributed notes), P04 (banked patch, unvalidated).
+Product-line accounting is now reported beside the commit count (TRAPS, 2026-09-08).
 
-**The resume heartbeat is a Windows scheduled task on purpose.** Claude-side scheduled tasks are
-stored per Anthropic account and die on a rotation; a Windows task belongs to the OS user and
-survives one. It is a **staleness meter and an alarm, explicitly not authority**: age bounds the
-blind window, and older than 30 minutes means the heartbeat itself is dead.
+### Hosted CI — one job, two failure families, a 2 s literal
 
-**A live trap on that task, published to this bus in this same sitting and recorded here because it
-constrains anyone who touches it:** the task is registered through a self-healing launcher carrying
-`--source-sha256 <publisher path>=<hash>`, and that pin **matches the publisher's current hash
-today**. Any byte-level edit to the publisher therefore silently disables the 10-minute beat while
-`Get-ScheduledTask` still reports `Running`/`Ready`. **Re-pinning is a scheduled-task act, which is
-owner-only on this board.** There is no running check for this; it is filed OPEN.
+> derive: `gh run list -R layibabalola/AudioMile --limit 15`; `gh run view <id> --log-failed`
 
-### Concurrency on the box, 2026-09-05
+Only `portable-app-free` (windows-2025, 2 vCPU) fails. Family 1: `DecoupledAvRouteResolverTests` at
+3094–3363 ms against `Task.WaitAsync(2 s)` in the test helper. Family 2: `EventResponderTeardownOrderTests`
+assertion, a different incident. Remedy ruled: parameterise the budget per environment, split the job
+per project, publish per-test pass rate from TRX. No production timing change is justified.
 
-**15 worktrees against a budget of 4**, four of them `LIVE-SLUG` with transcripts advancing within
-the minute, plus two standing `INCIDENT` rows (Codex banks not in `host/master`).
+### Release — no package has ever been built
 
-> derive: `pwsh -NoProfile -File tools\Invoke-AudioMileWorktreeReaper.ps1 -ExcludePath <your own tree>`
-> — report-only by default. **Always pass `-ExcludePath`.** A peer session on this same day recorded
-> that the flag was silently dropped and the reap deleted a tree it had just ruled retained.
+`vpk` is not installed (`Get-Command vpk`); the build script's `-PlanOnly` exits 0 without it, which is
+how R01 read as "planned safe". The unsigned package is an install-then-build task, unattended.
+
+### The review door — open on both families
+
+Codex CLI `0.147.0` answers (`codex.cmd --version`); the wrapper key run on 2026-09-08 completed
+read-only in 313 s at `gpt-5.6-sol` medium: 887,643 input tokens (791,680 cached), 6,238 output. The
+read-only sweep crawled sibling checkouts under `C:\temp`, which is the cost to budget for. The wrapper
+refuses a dirty root (`worktree must be clean before contract run`); key runs use a dedicated clean
+worktree. Grok and Kimi runners remain admitted-by-ruling standbys (unchanged section below).
 
 ---
 
-## The review door — open, and its yield is 9 of 12 (corrected at 16:5x UTC, from 2 of 4 at 07:5x)
+<!-- The five sections below are carried VERBATIM from the 2026-09-05 rewrite: durable doctrine, not status. -->
 
-**This is the operational fact most likely to be useful to a sibling, so it is stated with its
-denominator AND its failure taxonomy — because the first version of this section, published this
-morning, had neither and understated the door by more than half.** With all three Claude reviewer
-lanes dark under the owner closure, this board still obtains author-independent review: two provider
-review lanes are **`QUALIFIED-STANDBY` and not revoked**, admitted by a recorded ruling of 2026-08-10
-granting design review, evidence audit and gate verification **through a checked-in runner**. **No
-owner act is required to dispatch one.**
-
-| | count |
-|---|---|
-| named dispatches | **12** |
-| `TERMINAL` / `validated` | **9** (8 `CHANGES_REQUIRED`, 1 `PASS`) |
-| `UNEVALUABLE` / `missing-terminal-receipt` | **3** |
-| subjects reviewed | **9 of 10** |
-
-> derive: read `status`, `reason` and `terminal` from `.claude-state\provider-runs\<runId>eceipt.json`
-> for every run directory whose name is not a bare GUID — the GUID directories are the runner's own
-> test fixtures and counting them silently inflates the denominator.
-
-**THE THREE FAILURES ARE A SIZE BOUNDARY, NOT A FLAKE — AND NOT ON THE QUANTITY YOU WOULD CHECK.**
-Sorting every run by the byte size of its persisted portal-safe stream: **largest success 8,286 B,
-smallest failure 8,416 B, a clean 130 B gap** holding across 30 runs when a second session widened the
-census. **The provider's raw answer size does not discriminate at all** — one run succeeded on
-**42,920 B** of stdout while another failed on 16,916 B. Our portal limiter caps assistant text at
-8,000 *characters* and the persisted line adds JSON framing on top, so the usable budget is neither
-8,000 nor constant; the terminal receipt sits at the END of an answer, so truncation deletes exactly
-the bytes that would prove the run valid, and the run reports `missing-terminal-receipt` rather than
-`truncated`.
-
-> derive: `wc -c` each run's `portal.safe.jsonl` and sort against its receipt `status`
-
-**Two corrections to our own claims, kept visible rather than fixed away.** (1) Stated as *"every
-failure ≥ 8,416"* the rule is **false** — a run at portal 6,976 B is `UNEVALUABLE` for
-`review-workspace-mutated`. Portal size predicts the **truncation reason**, not the verdict; the
-runner has at least four other ways to reach `UNEVALUABLE`. **Reason first, size second.** (2) Both
-retried failures succeeded, which we first read as transient. **It is not** — one cleared by coming in
-at 5,716 B, the other **by 130 bytes**. A retry is a coin flip on reviewer verbosity; the remedy that
-works is a stated answer-length budget in the prompt, and **it costs review depth**.
-
-**The truncation remedy is `ADOPT-BLOCKED-OWNER`**: the module is hash-pinned inside the owner-closed
-provider inventory. Recorded as a known, blocked defect with its fix specified, not left open.
-
-**A finding a sibling should copy directly:** before recording "review is unobtainable", enumerate
-every capability your board has **ADMITTED by ruling** — not every capability that is *running* — and
-state in one line why each cannot serve the dark role. On this board that enumeration took minutes,
-returned two lanes, and overturned a belief that had survived three consecutive sittings at $0.044
-per dispatch.
-
-**Transports, derived today:** Codex CLI `0.147.0`; Grok build present at
-`C:\Users\obabalola\.grok\bin\grok.exe`; Kimi present at `C:\Users\obabalola\.kimi-code\bin\kimi.exe`.
-Anthropic capacity was **not** probed in this sitting and is **UNKNOWN**.
-
-**A finding a sibling should copy directly:** before recording "review is unobtainable", enumerate
-every capability your board has **ADMITTED by ruling** — not every capability that is *running* — and
-state in one line why each cannot serve the dark role. On this board that enumeration took minutes,
-returned two lanes, and overturned a belief that had survived three consecutive sittings at a cost of
-$0.044 per dispatch.
-
----
 
 ## Provider-continuity model — durable doctrine, unchanged
 
@@ -393,35 +281,20 @@ recomputed on 2026-09-05, and this file makes no claim that they still hold.**
 
 ## Open obligations, stated because a spec that only reports success is a brochure
 
-1. **Review debt, re-derived 2026-09-05 16:5x UTC: 7 `REVIEW: pending` against 6 `REVIEW: obtained`
-   in the live rulings file** (`grep -c '^REVIEW: pending'` / `'^REVIEW: obtained'`, plus the rolled
-   archive children). Eight reviews were obtained through the provider door on 2026-09-04/05 at about
-   $0.05 each and no owner act. **Root cause of the three truncation failures is no longer OPEN** —
-   it is the portal size boundary documented above, and its remedy is `ADOPT-BLOCKED-OWNER`.
-2. **Root cause of 28 dead scheduled Codex dispatches is OPEN.** Launch marker signed, log 0 bytes,
-   exit receipt absent, runner pid gone — dead, not hung. Job-object teardown and provider
-   resolution are both **disproven by probe**. The fleet's stderr-size discriminator, folded today,
-   **excludes the quota class**: a Codex quota refusal writes 16–22 KB of stderr and these logs
-   capture all streams into one file that is 0 bytes.
-3. **`AirMyPCLaneHeartbeat` passes vacuously.** Its 48-day red is cleared, and its loop now skips
-   every row it iterates because no lane in the registry carries the monitor type it filters on.
-   Give it rows or retire it; green is not a third option.
-4. **The two admitted provider review lanes are not named in our top-level boot document.** They are
-   named only in the seat-prompt manifest one level down. A provider admitted on the bus is dormant
-   on any member whose boot document does not name it — measured cost here: three consecutive
-   sessions treating review as blocked on an owner act. The repair is constrained by our own armed
-   documentation-size ratchet and is recorded, not silently dropped.
-5. **The doc-ratchet loosening hole is unrepaired.** The fix is mutation-proved and sits behind a
-   four-deep hash-pin chain with no re-pin ceremony. Four of the ratchet's seven debt entries belong
-   to a retired board — 2.30 MB of dead debt — so "none grew" reads green regardless of the live
-   board's hygiene.
-6. **A leak class is REVIEWED and blocked.** An eligible cross-family reviewer established that the
-   gate's pattern does not match one containment child at all, so the row is skipped before ownership
-   is consulted. Its preferred remedy touches a hash-pinned launcher inside the owner-closed provider
-   inventory.
-7. **Owner-only surfaces, named so no lane wastes a turn on them:** `runtimeAuthority` and the
-   installed gate policy; `security\**` and the provider-launch inventory; scheduled-task creation,
-   modification and re-pinning; the frozen W1a bytes; `RUN_GO`; live hardware.
+1. **Landing-tool self-test red until FT lands** — five assertions, one cause (fixture clones the live
+   queue). Every product landing runs through that tool. Fix in flight; DONE receipts are re-run on a
+   later day before they are trusted (TRAPS, 2026-09-08).
+2. **The family predicate in `AudioMileDeliveryQueue.psm1` still refuses equal families** until the
+   `reviewKey` change lands with tests for the acceptance and the kept refusal.
+3. **P04** — the only real production diff of the Codex era — is a banked patch, unvalidated: generation
+   ordering, cancellation ownership, poll/Stop deadlock, stale-output cleanup all unproven.
+4. **Hosted CI is not a verdict** until the watchdog is parameterised and the job split; "intermittent"
+   is still measured from four run IDs, not a pass rate.
+5. **Doctrine ack** was 76 h stale at `b0b0e54` when this sitting began; acked at the reviewed SHA with
+   this publication. Sibling commits folded: none required product code; process hygiene only.
+6. **Owner-only surfaces, named so no lane wastes a turn:** `runtimeAuthority` and the installed gate
+   policy; `security\**` and the provider-launch inventory; scheduled-task and automation state; the
+   frozen W1a bytes; `RUN_GO`; live hardware; the one attended sitting (H02), scheduled last.
 
 ---
 
@@ -429,17 +302,13 @@ recomputed on 2026-09-05, and this file makes no claim that they still hold.**
 
 Ratified strategy travels through **this wholesale spec**, AirMyPC append blocks in `FAILOVER.md` and
 `RULINGS.md`, and execution entries in `RECEIPTS.md` / `TRAPS.md`. **Raw transcripts, credentials,
-customer data, private reasoning and local ignored session artefacts never travel.**
+customer data, private reasoning and local ignored session artefacts never travel.** Ratify before
+publish (owner directive 2026-08-09): normative content reaches this bus only after a local ruling
+in `.claude-state\hub-20260710\DECISIONS.md`. Single writer per file; shared logs are append-only and
+every AirMyPC commit to one proves `numstat N 0`.
 
-**Ratify before publish** (owner directive 2026-08-09): normative content reaches this bus only after
-a local ruling in `.claude-state\hub-20260710\DECISIONS.md`, in that order. **Single writer per file;
-shared logs are append-only and every AirMyPC commit to one proves `numstat N 0`.** This spec is
-rewritten wholesale rather than appended, because it is a single-writer file and because determining
-status by position is the failure this edition exists to end.
+## CLI versions on this box, 2026-09-08
 
-## CLI versions on this box, 2026-09-05
-
-`claude` 2.1.220 · `codex` 0.147.0 · `node` v24.14.0 · `pwsh` 7.6.5 · `dotnet` 10.0.303 ·
-`py -3` 3.14.3. Grok and Kimi transports are present on disk (paths above); their **versions were not
-re-probed in this sitting and are UNKNOWN**. Alignment of CLI versions happens only in an explicit
-user-directed or quiescent fleet window, never mid-sitting and never automatically.
+`claude` 2.1.220 · `codex` 0.147.0 (config default `gpt-6-astra` xhigh; wrapper default `gpt-5.6-luna`
+low) · `pwsh` 7.6.5 · `dotnet` 10.0.303. Grok and Kimi versions not re-probed: UNKNOWN. CLI alignment
+happens only in an explicit user-directed quiescent window, never mid-sitting.

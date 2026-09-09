@@ -6951,3 +6951,279 @@ instruction (law 1) — verify locally and adopt-or-distinguish.
   taken: a retroactive Sol review bound to the merged head, dispatched before the receipt. **Test:**
   the receipt writer refuses when `gh pr view <n> --json reviews` is empty at the merged head; a
   fixture with an empty reviews array must be refused.
+## A DONE receipt is a claim about the tree at signing time; a self-test that clones LIVE state re-decides it every day (AirMyPC, 2026-09-08, VIRTUAL-TEN)
+The factory's landing tool shipped with an acceptance suite that passed at signing (85 checks) and was
+recorded DONE. One day later the same command failed five assertions from ONE cause: the landing
+fixture cloned the live `docs/plans/DELIVERY_QUEUE.json` and repurposed a real item as its
+"next packet", and the queue had since moved that item to DONE, which the module's runnable-state rule
+correctly refuses. Nothing in the tool changed; the fixture's input did. The five failures were
+indistinguishable, from the outside, from a broken landing tool — and every product landing runs
+through that tool.
+> **A self-test that reads live state has the live state as an undeclared input. It is green only
+> for the moments when that state happens to satisfy the fixture, and its DONE receipt expires
+> silently. Synthesize the fixture; never clone the board into it.**
+Test: re-run every DONE item's recorded acceptance command on a later day before trusting `state:
+DONE`; any suite whose fixture opens a tracked live document by path is non-hermetic by
+construction — grep the fixture for the live file's name.
+## A refusal string with a non-ASCII byte tests green; a sentinel that watches the shared tree tests red when a peer writes a doc (AirMyPC, 2026-09-08, VIRTUAL-TEN)
+An auditor reported "1 of 16 fails: the `§` refusal message"; a fix was drafted to ASCII-fy the
+message. A second, independent run of the same suite passed 16/16 twice, and the assertion blamed —
+the `§` line — PASSED in the failing run too. The real failure was a `final cleanup` sentinel that
+asserts the canonical tree's state is unchanged across the run, and a concurrent session had
+written an untracked doc into that tree mid-run. Two agents nearly shipped an edit to green bytes.
+> **When a flake is attributed to a line, re-run and read the failing assertion's own name before
+> touching anything; a sentinel that watches a shared tree measures your peers, not your code.
+> An encoding hypothesis that fits the symptom is not evidence of an encoding defect.**
+Test: run the suite twice with no concurrent writers; if the FAIL moves or vanishes, grep the suite
+for sentinel or snapshot assertions and list what they watch. Attribute before you edit.
+## A test-only landing is not a product demonstration, and a queue counts it as one unless the packet names a src file (AirMyPC, 2026-09-08, VIRTUAL-TEN)
+A 25-item delivery queue reported 11 DONE and "two of three product demonstrations accepted". Diffing
+the DONE product items against `src/` gave zero production lines: one item re-tested a bug already
+fixed weeks earlier, the other added 712 lines of acceptance tests for behaviour already shipped.
+The only real production diff on the box was uncommitted in a worktree nobody counted. Meanwhile the
+landing ceremony for each test-only item produced five evidence JSONs and a 900-word continuation.
+> **Measure product delivery as lines landed under `src/` per session, beside the commit count, and
+> require every packet to name the `src/` file it may touch or declare itself test-only up front. A
+> factory that counts tests as demonstrations will optimise for tests.**
+Test: `git log --oneline --since=<window> | wc -l` versus `git log --oneline --since=<window> -- src |
+wc -l`, and `git show --stat <each DONE product commit> | grep '^ src/'` — an empty second list
+under a "product" heading is the finding.
+## A hardcoded test watchdog measured on a 16-core box is a CI lottery on two vCPUs (AirMyPC, 2026-09-08, VIRTUAL-TEN)
+Hosted CI failed four runs in the same job with "watchdog timeout" and a day of adjudication chased
+a production race. The watchdog was a test-harness helper wrapping `Task.WaitAsync(2 s)` around a
+production stop handshake; observed completions were 3.1–3.4 s on `processorCount=2`, the task
+finishing late, not hanging. A local reproduction with `DOTNET_PROCESSOR_COUNT=2` passed 13 of 13,
+because core count was never the binding constraint — hosted-runner scheduling was. A fifth cited run
+was a different test family entirely, folded into the same incident by its job name.
+> **A fixed wall-clock budget inside a unit test is an assertion about the runner, not the code.
+> Parameterise it for the environment, split the job so one family's timeout cannot mask another's
+> assertion, and quantify "intermittent" from the uploaded results before diagnosing it.**
+Test: grep tests for `WaitAsync(TimeSpan` / `FromSeconds(` with literals; for each, ask what
+machine the number was chosen on. Pull the per-test pass rate from the TRX artifacts over the last
+N runs before opening a race investigation.
+## The family ban was CODE in the landing tool, so "we relaxed the rule" would have changed nothing (AirMyPC, 2026-09-08, VIRTUAL-TEN)
+The two-key rule ("same family never implements and accepts one subject") read like doctrine in
+three documents. The landing module also asserted `authorFamily -ine reviewerFamily` in two places,
+so every ordinary landing physically refused when the other family's CLI was dark — the stall the
+rule's critics cited was enforced by the tool, not the prose. A doc-only relaxation would have left
+the refusal in place; an audit found it only by grepping the module for the rule's vocabulary.
+> **Before amending a rule, grep the tools for its predicate. A rule that lives in code changes
+> through the code's own review path, with a test for both the new acceptance and the kept refusal.**
+Test: `grep -rn "<rule's field names>" tools/ hooks/ .githooks/` and list every executable site
+beside every prose site; the rule's true text is the union.
+## Two integration lines, and every instrument measuring the one nothing lands on (agent-bridge, 2026-09-08, 16-core workstation)
+
+A recovery program worked for ten days on a long-lived canonical branch while a second session
+delivered four PRs to the actual GitHub default branch from throwaway `codex/*` branches. By the
+time anyone looked, canonical was **115 ahead and 49 behind** `github/master`. Not one board
+instrument said so: the board derivation, the ten-minute pulse and the per-turn cursor all
+computed `ahead`/`behind` against a **local `master`** that had not moved in nine days and that
+nothing integrated to, and each printed `behind=0`.
+
+The instruments were correct about the ref they were given. The ref was the defect.
+
+> **Ahead/behind is meaningless against a ref nothing integrates to. Every board instrument must
+> name its integration ref as a remote-tracking ref (`github/master`), fetch it before measuring,
+> and print the ref it measured against beside the number.** A local branch named `master` is a
+> cache of a claim about the remote, and a stale cache with a reassuring name is worse than none.
+
+Test: `git rev-list --count <remote>/master..HEAD` and `HEAD..<remote>/master` after `git fetch`;
+then grep every instrument for a bare `master` and ask which one it means.
+
+## A model gated on the CLI version fails as a 400 after five seconds, wearing a bad-model-name face (agent-bridge, 2026-09-08)
+
+A probe of a newly released model through the Codex lane driver exited 1 in 5 s with an empty
+stderr and a receipt reading `NO VERDICT ... process exited 1`. Only the events log carried the
+cause: `Model metadata for 'gpt-6-astra' not found` followed by a 400 `"requires a newer version of
+Codex. Please upgrade"`. The installed CLI was 0.147.0; npm latest was 0.153.4. The same surface
+shape — fast exit, empty stderr — is what a typo in the model slug produces.
+
+> **A five-second nonzero exit from a lane driver is UNKNOWN until the events log is read. Classify
+> by the refusal text, never by the exit code or duration; and record the CLI version beside every
+> model-availability claim, because availability is a property of the (model, CLI) pair.**
+
+Test: `codex --version` (from PowerShell on this host; the Git Bash shim is broken) and `npm view
+@openai/codex version`, side by side, in the receipt.
+
+## Decision files in five schemas, and a selector that read one (agent-bridge, 2026-09-08)
+
+Fifty-one decision files carried a positive verdict under any of five keys — `decision`,
+`outcome`, `verdict`, `hub_decision`, `reviewVerdict` — and the integrated commit under any of
+four — `integration_sha`, `candidate_sha`, `subject`, `expected_remote_head`. A first-draft
+selector read `decision` and `subject` and reported **two** tasks delivered; the ledger held
+**five**, three of which the board would have re-dispatched.
+
+> **Before a script consumes a ledger, enumerate the ledger's key vocabulary against a declared
+> count** (this bus already rules: enumerate any container against a declared count before
+> consuming it). **A positive verdict with no commit-like sha is UNVERIFIED, printed as such, never
+> silently DELIVERED and never silently READY.**
+
+Test: `python - <<EOF` over the decision directory printing the set of top-level keys per file;
+more than one vocabulary is the finding, and the selector must read all of them until a migration
+lands.
+
+## An amendment that removes a review gate was blocked by that gate, and the same-family panel found 25 majors first (agent-bridge, 2026-09-08)
+
+A hub drafted an operating-model amendment whose headline change was to drop the rule that an
+implementer's reviewer must come from the other model family. It convened three same-family
+(Opus) adversaries on distinct surfaces plus the cross-family key it proposed to demote.
+
+The three same-family seats returned **25 MAJOR findings** — a selector that fails open on
+no-sha verdicts, a writer lock that read a missing file as "no writers", a fan-out cap on a probe
+the board had already rejected, five READY rows that were in fact already merged, four unnamed
+supersessions of fail-closed clauses, a fallback that made the router its own adjudicator. The
+cross-family key returned BLOCKER and, under the rule still in force, parked the subject with no
+second round.
+
+Both halves are the finding. The same-family panel was *not* toothless: given authorship
+independence and a named surface each, it out-found the key on volume and caught the defects
+that would have hurt first. And the key still caught something the panel did not price: that
+the amendment's own supersession of "a missing key parks the decision" was the clause under
+which it would otherwise have sailed through.
+
+> **Independence is authorship and surface, not vendor — the measurement supports that. But the
+> decision that removes a gate must be taken under the gate, and a key that can only say BLOCKER
+> without a reproduction is worth keeping on exactly the decisions that change what a key is.**
+
+Test: before adopting any review-policy change, run it through the old policy verbatim and bank
+every verdict with model, org and subject; if the new policy would have passed what the old one
+parked, that delta is the risk the change carries, written down.
+
+## A delivery ledger derived from decision files is blind to everything delivered without one (agent-bridge, 2026-09-08)
+
+A selector derived DELIVERED from the decision ledger and called five tasks READY that were
+already merged on the integration branch with regression tests — landed the previous day by a
+different session that wrote PR descriptions instead of decision files. Two of the five were in
+the hub's dispatch list as class C work: two three-adversary quorums would have re-implemented
+shipped code.
+
+> **"Delivered" is a property of the integration ref, not of the ledger. A selector needs a
+> second predicate keyed on integrated code — the task's acceptance evidence at the ref — or a
+> reconciliation pass that writes `delivered_by {commit, evidence}` into the manifest with the
+> commit proven an ancestor. A ledger-only predicate re-dispatches finished work forever.**
+
+Test: for every READY row, `git log <ref> -S<symbol named in the task's acceptance>` and run the
+named test at the ref before dispatch.
+
+## A fabricated quotation inverted a route, and deferred the fix it named (Conjugal.AI, 2026-09-09, Bachelor/XPS-17)
+
+An orchestrator routed a CRITICAL item: fix a named function on a held branch, copy this exact
+idiom, cover it with this exact test, **take it before four other named items**. A later wake by the
+implementing lane then recorded, in its own lane file, that the item stayed blocked *"with no action
+vested in sonnet per the route's own text"* — and put that clause **in quotation marks, attributed
+to the route**.
+
+The quoted string does not exist. A positive grep of the mailbox returns one hit for the word in an
+unrelated context far above the route. The route says the opposite: an explicit ROUTE naming that
+lane as the actor, with a sequencing directive. **The fabrication inverted the instruction**, and
+the data-loss fix it named went undone for hours while every wire read correctly and the lane's own
+heartbeat reported it as a known blocked hazard.
+
+The lane caught it itself on a later wake and filed the finding against its own prior output.
+
+> **A quotation is the one artifact that looks like evidence while being generated. Every other
+> citation in a review chain — a SHA, a line number, an exit code — fails loudly when wrong, because
+> the reader can resolve it. A quoted sentence resolves against nothing, so a hallucinated one reads
+> exactly like a real one and inherits the authority of the source it names. Treat an
+> agent-authored quotation of another agent as unverified until grepped.**
+
+Test: for every quoted string attributed to another lane, route, or document, the citing session
+must run a positive search for that literal string and record the file:line it matched —
+`grep -n "<the exact quoted words>" <the named file>`. A quotation with no recorded hit is struck,
+not softened. Reviewers should grep the three most load-bearing quotations in any handoff before
+accepting its conclusion; a quotation that changes what the reader is obliged to do is the one to
+check first. Note this is NOT the "never parse prose for a command" trap — that one is about
+extracting an instruction from prose. This is its inverse: **inventing prose and attributing the
+instruction to it.**
+
+## A reducer that scores refusals as passes (Conjugal.AI, 2026-09-09, Bachelor/XPS-17)
+
+A board's shipped wire reducer counted a verifier's `BLOCKED` refusal as a `VERIFIED` row, and a
+reviewer's `CHANGES-REQUESTED` as a `REVIEWED` row, because it matched the row's status **keyword**
+and never read the verdict field beside it.
+
+Measured fleet-wide on that board: of 43 conforming `VERIFIED` rows, **15 were PASS and 22 were
+BLOCKED**; of 150 conforming `REVIEWED` rows, **82 were APPROVED and 64 CHANGES-REQUESTED**. So
+roughly **51% of verification credit and 43% of review credit were refusals scored as successes.**
+Every dashboard, every status brief and every orchestrator reduction on that board had been quoting
+inflated numbers, and the direction of the error is always the same: **toward health.**
+
+It was found only because a verifier blocked two malformed routes and an orchestrator went to
+reconcile why its own instrument and the verifier's disagreed. Two instruments, neither naming which
+was authoritative: one reduced by grammar and got zero, one reduced by tool and got one, and **both
+were internally correct.**
+
+> **A rung counter that keys on the status keyword and not on the verdict cannot distinguish "this
+> was checked and passed" from "this was checked and refused" — and it will always err toward
+> health, because a refusal is still an event on the rung. A board reading such a counter feels
+> productive while its queue fills with rejections.**
+
+Test: for each rung, count rows by *verdict* and not by keyword —
+`grep -rhE "^VERIFIED " <lanes> | grep -c "verdict: PASS"` against the bare row count. If the two
+differ, every historical figure derived from that counter is an upper bound and should be restated
+as one. Then check whether two instruments in your fleet reduce the same wire differently; where
+they disagree, the defect is usually one rung *above* the disagreement, in what the wire is allowed
+to say.
+
+## The healthy path must spawn no model (Conjugal.AI, 2026-09-09, Bachelor/XPS-17)
+
+An owner asked for continuous status reporting. The obvious build — a scheduled task that wakes a
+model every five minutes and asks it to describe the board — was rejected before it was built, on
+this board's own numbers: lanes advance on 30–60 minute floors, so a five-minute poll is roughly
+**90% billing to be told nothing changed.**
+
+What was built instead: a **cheap non-model predicate** runs on the timer, and the model is spawned
+only when it returns "changed". Pure git and file reads, no model, no network. Substantive is
+defined narrowly — the head moved with at least one **non-bookkeeping** commit, or the score moved
+past a threshold, or a lane crossed a liveness class. Receipts, IDLE wakes and checkpoints are
+explicitly *the board breathing, not the board moving*, and do not trigger a spawn.
+
+Two properties earned their place immediately. The detector returns a distinct exit for **"could not
+derive"**, separate from "no change" — an observer that cannot see must never report quiet, which is
+the fail-open every guard doctrine warns about, arriving in an observer instead of a gate. And the
+reporter is told to **render what tools reduce, never to reduce**: the first brief it produced
+called the board `STALLED` while the head had taken fourteen commits, because it judged on lane-file
+age rather than on the log.
+
+> **Put a cheap predicate in front of every scheduled model spawn, and let the healthy path cost
+> nothing. A status loop is the easiest place in a factory to spend continuously and learn nothing,
+> because its output always looks like work.**
+
+Test: log the spawn decision on every tick and take the ratio after a day; if a large majority of
+ticks spawned, the "substantive" definition is too loose and is billing you for bookkeeping. And
+give the reporter the exact reduction commands rather than a description of what to count — a
+reporter that counts for itself will double-count across directories and then name what the number
+means.
+
+## A heartbeat that resumes a FIXED thread has a built-in expiry, and it dies looking healthy (Cloudvore, 2026-09-09, Bachelor/XPS-17)
+
+An app-store automation was configured `kind = "heartbeat"`, `status = "ACTIVE"`,
+`rrule = FREQ=MINUTELY;INTERVAL=5`, with a fixed `target_thread_id`. It had run since 2026-09-07 and
+landed **zero commits** on the day it was audited, while every surface reported it healthy: the
+config was correct and active, the process was running, the follow-up queue was empty, and no error
+was ever raised.
+
+The cause is in the design, not the deployment. Because each wake RESUMES one thread, context
+accumulates monotonically and never resets. Measured from the thread's own rollout journal:
+
+- final turn: **145,356 input tokens -> 54 output tokens**
+- thread lifetime: **141,989,485 input tokens -> 375,583 output** (378 : 1)
+- rollout file: 30,174,574 bytes over 10,010 lines
+- last entry 16 hours before the audit, while the schedule kept firing every 5 minutes
+
+So the loop was not idle and not crashed. Every wake paid to re-read a saturated history, emitted a
+token or two, and stopped. The owner's first instinct was to reinstall the app, which would have
+destroyed the evidence and fixed nothing — the saturated thread, not the installation, was the
+fault.
+
+> **A scheduler tells you a wake FIRED, never that the wake could still think. A long-lived agent
+> loop that reuses one conversation has an expiry date built in, and it arrives silently: no error,
+> no crash, no queue backlog — just an input/output ratio that has quietly inverted. Cost keeps
+> being spent right up to and past the end.**
+
+Test: read the loop's own token accounting rather than its scheduler status. Per wake, compare
+output tokens against input; a healthy worker's ratio is stable, while a saturating one climbs
+toward hundreds-to-one before it stops producing. Alarm on that ratio and on the rollout journal's
+last-write time versus the schedule's period — "fired" and "advanced" are different facts. The
+structural fix is to make each wake a FRESH thread and carry state in tracked files the new thread
+derives, which a board already needs for cold starts on a new machine or account.

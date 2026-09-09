@@ -476,3 +476,41 @@ ticks, single-use canary authorization, one bounded canary returning CLOSED, and
 fresh independent exact-subject review remain mandatory. This section grants no
 provider call, task enablement for a provider launcher, canary, project `ADOPT`,
 production, landing, or release authority.
+
+
+## Operating model 2026-09-08 — tiered hub, same-family panels, one integration ref (owner directive; v1 and v2 PARKED by their own quorum, re-scoped)
+
+Status is DERIVED from the project's `decisions/DECISION-OPMODEL-0*.json`; this section records
+shape and what was measured, not adoption. Tracked text (once adopted):
+`docs/internal/OPERATING_MODEL_2026-09-08.md`. The portable ruling candidate is withheld from
+this bus until the local decision exists (bus law: RULING-class doctrine travels after hub
+review and lane ratification with vote citations); the measured traps travel now (TRAPS.md,
+2026-09-08, agent-bridge).
+
+- **Directive.** Fable (effort high) adjudicates only: class C chair, park/re-entry,
+  constitution, post-mortems. Opus high is the per-tick hub; Haiku low reports by running the
+  derivation scripts. Fallback Fable → Opus with recusal, stamped provisional. Codex: GPT-5.6 Sol
+  high is the cross-family key; GPT-6 Astra (needs Codex CLI ≥ 0.153; 0.147.0 refuses it) is
+  reserved for governance, storage/security subjects and the periodic audit of the hub's own
+  documentation; Luna implements, low only where a pilot qualifies it.
+- **Review.** Independence = prompt authorship + distinct surface + not-the-author. Class B:
+  three Haiku adversaries (Sonnet on a checked-in path list), with a SAMPLED cross-family
+  re-review as the false-approve detector. Class C: three Sonnet (Opus for governance/storage/
+  auth) plus the key as a preference with a representable absence — and the absence may only be
+  crossed for governance/docs/CI-config subjects; the critical-surface enumeration still parks.
+  This ADOPTS the Conjugal candidates and DISTINGUISHES execute-posture rule 5's throughput clause.
+- **Round 1 measured** (2026-09-08 21:25–22:10 CDT): v1 drew three same-family Opus
+  CHANGES_REQUESTED (25 MAJOR) and a SOL BLOCKER; parked with no second round under the rule it
+  proposed to narrow. Five READY rows were already merged on the integration ref. Two integration
+  lines had formed unnoticed (115 ahead / 49 behind). See the three 2026-09-08 agent-bridge traps.
+- **Integration.** `github/master` is the only integration ref; instruments now print it beside
+  the local-master line, with fetch age. The canonical recovery branch is NOT docs-only
+  (hook registration + 516 product/test lines) and is split three ways before any PR.
+- **Selector.** `tools/select_ready_tasks.py` (+ regressions): DELIVERED needs a positive verdict
+  AND an ancestry-proven sha; UNVERIFIED otherwise; writers file absent = UNKNOWN; REREVIEW-DUE
+  rows for stamped degraded-mode decisions.
+- **What the Codex-authored delivery era (2026-09-07/08, gpt-6-astra via Codex Desktop) got
+  right and wrong:** it broke the recursive repair loop and shipped four PRs to green master; it
+  left a static manifest that calls itself non-authoritative acting as the queue, a second
+  integration line, host-local evidence a clone cannot see, and an unqualified cheap-worker pilot.
+  Audit and plan: `docs/internal/AUDIT_2026-09-07.md`, `DELIVERY_PLAN_2026-09-07.md`.
