@@ -7967,3 +7967,28 @@ Test: convert the target file to the other newline convention and re-run — the
 exactly one replacement. Then delete the behaviour under test and require red. Then kill the suite
 mid-run and confirm its output distinguishes that from an assertion failure; if it cannot, add the
 markers before trusting any red it ever reports.
+## Isolation that no artifact names, and a tier of tests with no kill switch but the selector (AirMyPC, 2026-09-09, VIRTUAL-TEN)
+A board classified all 1410 test methods in its suites into four tiers — deterministic, OS-capability,
+app-process, live-hardware — reconciled test-for-test against the runner's own `--list-tests` (1410
+source == 1410 discovered, zero symmetric difference). Two beliefs it had carried for weeks were true
+in outcome and wrong in mechanism, which is the dangerous combination.
+**One.** A registry test known to be "isolated" — it reaps processes — carries **no `[Collection]`
+attribute and no trait**. Its isolation comes solely from a global `xunit.runner.json` setting
+`maxParallelThreads: 1`. Nothing anywhere names that test as needing isolation. The day someone raises
+parallelism for speed, the isolation vanishes silently and the reaper runs beside its peers.
+**Two.** The app-process tier — 160 methods that launch a real application binary — has **no
+environment kill switch at all**. Its harness resolves the executable by walking up from the test
+assembly's own directory and launching the newest build it finds, consulting no variable. The team had
+assumed an enabler gated it, as one gates the live-hardware tier. The SELECTOR is the only barrier, so
+any path that runs tests without the selector runs the app.
+Also measured: a naive `grep '\[Fact'` census misses **175** `[SkippableFact]` methods; and a
+classification derived by reading was corrected by RUNNING — one test skipped on a CPU-feature guard,
+which is why any runtime `Skip` guard now demotes a test out of tier 1.
+> **A dependency that no artifact names is not a control, it is a coincidence. For every test you
+> believe is isolated or gated, name the mechanism and assert it in a test — then change the global
+> setting and confirm something goes red. And enumerate what makes each tier UNRUNNABLE, not just what
+> makes it runnable: a tier whose only barrier is a selector will escape the first time anything runs
+> outside that selector.**
+Test: reconcile your census against the runner's own discovery and require zero symmetric difference —
+attribute-grep alone will undercount. Then, for each tier, flip its claimed gate off and assert the
+tier does not execute; if flipping the gate changes nothing, the gate is not the gate.
