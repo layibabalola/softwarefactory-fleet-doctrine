@@ -7417,3 +7417,59 @@ Corollary measured the same hour: a literal `|` inside an acceptance command bro
 on the first packet cut this way, in a repo whose parser had been taught that morning to accept `\|`
 for exactly that reason. The author of a rule is not exempt from forgetting it, which is a further
 argument for the rule being a check rather than a habit.
+## "Subject" meant two things: the wrapper bound the PROMPT hash, the seat prompt told the reviewer to refuse on the DIFF hash (AirMyPC, 2026-09-08, VIRTUAL-TEN)
+A review contract carried `subjectSha256`; the wrapper validated it against the SHA-256 of the prompt
+file it piped to the reviewer, while the reviewer's seat prompt said "refuse the subject if its sha256
+differs from the packet's" and the packet text quoted the hash of `git diff base...candidate`. The
+reviewer did exactly as told: recomputed the diff hash, saw it differ from the contract, and refused.
+Two runs and 90 s of reviewer time bought a refusal of a correct candidate. The fix was one sentence in
+the packet naming which bytes the contract hash covers.
+> **A hash is only an identity if every reader agrees which bytes it hashes. Name the hashed artefact
+> beside the hash in every contract and every prompt — "sha256 of `<exact command or file>`" — and
+> test the reviewer path with a candidate whose prompt hash and diff hash differ.**
+Test: build a contract for any non-empty diff, run the review role, and assert the reviewer reaches a
+finding rather than an identity refusal; grep the wrapper for what it compares `subjectSha256` to and
+grep the seat prompt for the word "sha" — the two must name the same bytes.
+## A read-only sandbox that denies %TEMP% turns "verify by execution" into static review, silently unless the reviewer says so (AirMyPC, 2026-09-08, VIRTUAL-TEN)
+Two consecutive Codex read-only reviews reported every static check positive and then, to their
+credit, stated that both test suites could not run because the sandbox refused to create the
+suites' temp fixtures. A less careful reviewer would have written APPROVE from the static half. The
+same limitation had appeared in the adjudication key run the same afternoon and was read as noise.
+> **Decide up front whether the key must EXECUTE. If it must, give it a sandbox that can write a
+> throwaway location, or a disposable worktree with workspace-write; if static-only is acceptable,
+> record the key as `static` in the ledger so the ratio of executed to static keys stays derivable.**
+Test: run the review role against a suite that writes to `%TEMP%` and assert the receipt's work
+outcome distinguishes "suites ran" from "suites could not run"; a single COMPLETED/BLOCKED bit hides
+it.
+## A mirror can live INSIDE a generator, and every twin-file mirror check is blind to it (AirMyPC, 2026-09-09, VIRTUAL-TEN)
+A hub landed a CI workflow change through a full review: three same-family adversaries plus a
+cross-family key, one of whom explicitly verified "scaffold mirrors byte-identical to their sources".
+It was true and it was not enough. The project's bootstrap script EMBEDS its own copy of that
+workflow to generate a fresh scaffold, and that copy is not a twin file — it is a literal inside a
+generator. The landing updated the canonical workflow and its pinned hash and left the embedded copy
+on the old bytes, so the generated scaffold's workflow stopped matching the pin. No gate caught it:
+the suite that checks the generated scaffold is not run by the pre-commit gate, so the regression was
+provably shipped and only found by running that suite by hand a day later.
+> **Enumerate mirrors by MECHANISM, not by filename. Grep the generators, templates and bootstrap
+> scripts for the path you just changed — a copy that is produced rather than stored will never
+> appear in a twin-file diff, and a reviewer who checks "mirrors are identical" answers a different
+> question than "every copy of this file changed".**
+Test: after changing any file that a generator can emit, `grep -rn "<basename>" <generator/template/bootstrap dirs>`
+and treat each hit as a copy to update. Then check whether the suite that validates generated output
+is actually in your commit gate; if it is not, the mirror is unenforced no matter how many reviewers read it.
+## An unpatchable major line makes "upgrade to the patched version" a version JUMP, and the advisory says which (AirMyPC, 2026-09-09, VIRTUAL-TEN)
+Hosted CI went red on every commit, content-independent: a newly published advisory hit a build-time
+transitive package, and the repo treats audit warnings as errors under locked restore, so restore
+failed before any test ran. The reflex remedies are both wrong here. Suppressing the advisory hides a
+real finding; bumping to "the next patch" does not exist, because the advisory's own data gave the
+installed 8.0.0 line a `first_patched_version` of **null** — that major line is never getting a fix.
+The machine-readable advisory listed four ranges, and only one of them carried a real patched
+version. Pinning forward to it, and choosing the value that also equalled the repo's already-pinned
+SDK, turned a cross-major jump into a change that agreed with everything else in the tree.
+> **Read the advisory as DATA before choosing a remedy: `gh api advisories/<GHSA-id>` gives you every
+> vulnerable range and its `first_patched_version`, and a null there means the line you are on is a
+> dead end. Prefer a pin that coincides with a version the repo already pins elsewhere. Suppression
+> is a security-posture decision for the board, never for the item fixing the build.**
+Test: for any audit-blocked restore, print the advisory's ranges and patched versions, then grep every
+lock file for the offending package and assert one distinct version repo-wide after the fix; and prove
+the fix with the exact command CI runs (`dotnet restore --locked-mode`), not a permissive local restore.

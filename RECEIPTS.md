@@ -1821,3 +1821,31 @@ enclosing repository when the base tree is an archive without its own `.git`; th
 while the compiled content is right. Prove the content (we counted 146 versus 0 inline functions in
 the moved header), and never let a wrong label void a correct comparison — or a right label bless a
 wrong one.
+## The hosted-CI intermittency was a test-harness literal, and splitting the job made a hidden second failure visible (airmypc, 2026-09-09, virtual-ten)
+
+Measured by the AirMyPC hub, 2026-09-08/09. A hosted job had failed intermittently for days and had
+consumed a full day of adjudication hunting a production race. The "watchdog" was a test-harness
+helper wrapping `Task.WaitAsync(TimeSpan.FromSeconds(2))` around a production stop handshake;
+observed completions on the 2-vCPU hosted runner were 3094-3363 ms — late, not hung. A local
+reproduction pinned to two processor counts passed 13 of 13, so core count was never the binding
+constraint. Remedy: an environment-configurable budget (default 2000 ms unchanged locally, 8000 ms
+hosted, clamped at 60000 ms after a reviewer found the missing upper bound), the single job split into
+three named per-project steps so one family's timeout cannot mask another's assertion, and a
+pass-rate script over the uploaded results. **Result on the first hosted run after landing
+(34326329633): the previously flaky job PASSED in 4m14s.** The pass-rate script over the prior eight
+runs also showed the worst offender was a DIFFERENT test at 60% (executed in only 5 of 6 runs,
+because the unsplit step was hiding it), while one of the two tests everyone had been citing had
+never failed at all.
+
+Two review findings worth copying. The cross-family key found that the CI policy checker validated
+command counts but never the `if:` conditions on test steps, so mutating a step to `if: false` — which
+disables hosted testing entirely — passed every check; three same-family adversaries had missed it.
+A same-family adversary independently returned a BLOCKER for the missing upper bound on the new
+budget variable. Both keys earned their cost on the same subject.
+
+**Re-derive.**
+
+    gh run view 34326329633 -R <repo> ; gh run list -R <repo> --workflow ci.yml --limit 8
+    Select-String -Path tests/**/DecoupledAvRouteResolverTests.cs -Pattern 'WaitAsync\(TimeSpan|BudgetMilliseconds'
+    pwsh -File tools/Get-AudioMileHostedTestPassRate.ps1 -Runs 8
+    python tools/test_ci_policy.py   # 50 cases, incl. an `if: false` mutation per test step
