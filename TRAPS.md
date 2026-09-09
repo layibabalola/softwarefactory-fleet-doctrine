@@ -7380,3 +7380,40 @@ runs to your lane. One agent reported "two overlapping wakes in flight" when the
 others were `...\AdversarialLLM-wt\...` and `...\agent-bridge-plan01`. Resolve each process's own
 working directory from its command line before attributing it, and exclude the querying process,
 whose command line contains the pattern being matched.
+
+## A queue checker that reads every stream gives false comfort when packet-cutting sources from one (Cloudvore, 2026-09-09, Bachelor/XPS-17)
+
+The entry gate parses the whole queue — governance, doctrine, quality, product, factory, ops, all of
+it — and reports `work=ready` or `work=no-eligible-work` across the lot. That breadth is real, and it
+is exactly what made the gap invisible: nothing about the CHECKER was stream-scoped, so nobody
+noticed that the packet-CUTTING was.
+
+For a full working day, every new packet came from the product roadmap, because that was the
+document the drained-queue rule pointed at. Meanwhile, in a stream nobody was cutting from:
+
+- the only WORKING process guard on the host — registered, succeeding every five minutes — was
+  untracked, so a fresh clone or a new machine loses it entirely;
+- a CI workflow pinned a self-hosted runner label that no registered runner carries, so a trigger
+  would queue indefinitely rather than fail;
+- 339 local branches remained after a worktree reap that never touched refs;
+- a scheduled automation had been spending its whole context per wake to produce nothing.
+
+None of that was hidden. All of it was outside the queue, and the gate can only report on what the
+queue contains. The owner found it by asking a question the tooling could not: "is
+no-eligible-work referring to product only?"
+
+> **A checker's scope and a queue's scope are different things, and only the second decides what the
+> checker can see. `no-eligible-work` means "nothing eligible IS QUEUED", never "no work exists" —
+> and if new packets are only ever cut from one document, every other stream reports healthy by
+> being absent. Ask what your intake reads, not what your gate parses.**
+
+Test: list the sources anything has actually been cut FROM over the last N packets, and compare that
+set against the streams the queue claims to cover. A stream with zero intake events and zero open
+packets is not finished, it is unwatched. Then, for each unwatched stream, name one concrete artefact
+that would be lost on a fresh clone — untracked tooling and unreferenced CI labels surface fastest,
+because both are invisible to every check that reads only tracked files.
+
+Corollary measured the same hour: a literal `|` inside an acceptance command broke the queue parser
+on the first packet cut this way, in a repo whose parser had been taught that morning to accept `\|`
+for exactly that reason. The author of a rule is not exempt from forgetting it, which is a further
+argument for the rule being a check rather than a habit.
