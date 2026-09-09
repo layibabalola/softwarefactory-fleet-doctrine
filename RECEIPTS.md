@@ -1849,3 +1849,28 @@ budget variable. Both keys earned their cost on the same subject.
     Select-String -Path tests/**/DecoupledAvRouteResolverTests.cs -Pattern 'WaitAsync\(TimeSpan|BudgetMilliseconds'
     pwsh -File tools/Get-AudioMileHostedTestPassRate.ps1 -Runs 8
     python tools/test_ci_policy.py   # 50 cases, incl. an `if: false` mutation per test step
+
+## Hosted CI reached fully green after a harness-budget fix and an unpatchable-line dependency pin (airmypc, 2026-09-09, virtual-ten)
+
+AirMyPC hub, 2026-09-09. Two independent causes were keeping hosted CI red, and neither was product
+code. (1) A test-harness `Task.WaitAsync(2 s)` literal, overrun at 3094-3363 ms on a 2-vCPU runner —
+fixed by an environment-configurable budget (local default unchanged at 2000 ms, hosted 8000 ms,
+clamped at 60000 ms) plus splitting one test step into three per-project steps. (2) A NuGet advisory,
+GHSA-23fw-v26w-5fgq, on a build-time transitive package whose installed major line has
+`first_patched_version: null`, failing `dotnet restore --locked-mode` under Warning-As-Error on every
+commit — fixed by pinning forward to the advisory's exact first patched version, chosen because it
+also equalled the SDK the repo already pinned. Result, hosted run **34330922075: policy 8 s OK,
+Windows App-free tests 6m37s OK, Portable App-free tests 3m12s OK — all three jobs green**, the
+board's first complete verdict on master.
+
+Cost note on the second fix: regenerating 23 lock files under `core.autocrlf=true` rewrote every one
+from LF to CRLF even though `.gitattributes` pins them `-text`, producing a +9076/-8953 diff that hid
+the real change. Normalising back to LF reduced it to +431/-210 and made the actual delta reviewable —
+the cross-family key had refused the first version specifically because the churn made scope
+unauditable.
+
+**Re-derive.**
+
+    gh run view 34330922075 -R <repo>
+    gh api advisories/GHSA-23fw-v26w-5fgq | ConvertFrom-Json | % vulnerabilities | % { $_.vulnerable_version_range, $_.first_patched_version }
+    git show <pin-commit> --stat ; git cat-file -p <commit>:<any packages.lock.json> | Format-Hex | Select-String '0D 0A'
