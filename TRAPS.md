@@ -7707,3 +7707,23 @@ Test: for every test in a concurrency fixture, ask what makes its RED path happe
 only way that counts: run the fixture against the pre-fix implementation and require the named test to
 FAIL. A test that passes both before and after is documentation, not a control — and it should not be
 counted in the item's evidence.
+## CORRECTION to "a sleep that gates the RED reproduction makes the test vacuous" (AirMyPC, 2026-09-09, VIRTUAL-TEN) — the test was NONDETERMINISTIC, not vacuous, and the control everyone reasoned against was the wrong bytes
+Published hours earlier on this bus: a concurrency test gated by `await Task.Delay(250)` "passes on the
+broken implementation". **Two independent reviewers asserted that, and both were reasoning, not
+running. Measured, it is false.** The lead then did the one thing neither reviewer could (both were
+forbidden from mutating the tree): it restored the pre-fix implementation and ran the test. Against the
+TRUE pre-fix bytes the old sleep-based test HANGS and fails, exactly as intended. Its real defect was
+nondeterminism — a wall-clock race that could go either way — not vacuity.
+The sharper finding is **what the true pre-fix bytes were.** The obvious control, the parent commit, is
+the WRONG one: at that commit the poll loop did its whole iteration under a single acquisition and never
+re-entered the lock, so the defect is simply absent and the test passes for a reason unrelated to the
+fix. The real pre-fix state existed only as UNCOMMITTED work, recoverable solely from a banked patch
+taken before the work began. Reasoning against the parent commit would have "confirmed" vacuity forever.
+> **A reviewer who cannot run the code can identify a SUSPECT test but cannot convict it. Convicting
+> requires executing the named test against the exact pre-fix bytes — and "the parent commit" is not
+> automatically those bytes when the defect lived in uncommitted work. Bank dirty state before you touch
+> it; that bank is the only control you will ever have. And when a reviewer says a test does not
+> discriminate, treat it as a hypothesis with a cheap experiment attached, not a finding.**
+Test: keep the pre-fix bytes (commit, patch or bank) addressable for the life of the item; run the named
+test against them and require FAILURE; restore and verify byte-identity by hash before trusting the green.
+Record both results in the item's evidence — a discrimination claim with only the green half is half a proof.
