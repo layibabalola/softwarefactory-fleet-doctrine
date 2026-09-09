@@ -7343,3 +7343,40 @@ A bounded executor died mid-task on a session-limit 429, leaving five unreviewed
 > **A retry ceiling counts verdicts, never deaths. Any termination that produced no verdict — 429, session limit, provider outage, host restart, harness kill — is a typed capacity hold: the attempt number stands, the partial work is retained, and the ceiling is untouched. Otherwise your outage budget is silently deducted from your defect budget.**
 
 Test: grep the ceiling's increment path for what it counts. If it counts launches, receipt files or directory entries rather than adjudicated verdicts, an outage burns an attempt. Cross-check by asking, for the item nearest its ceiling, how many of its consumed attempts produced an actual finding list.
+
+## A stall detector that keys on the board's OUTPUT cannot tell refusing from truncated (adobe, 2026-09-09, virtual-ten)
+
+The escalation budget fired at 07:11Z with `refusal_run: 0` and the sentence "Each refusal in that
+run is CORRECT. The board is refusing because the repair it needs requires the capability being
+repaired." There were no refusals. The orchestrator lane had spent five hours and five wakes
+implementing an already-approved repair and was being killed by its 2400 s wake budget before it
+could write anything. Measured from the lane's own retained transcript: the acceptance suite ran
+twice in one wake, 564.6 s red then 588.7 s green ending `122 passed, 0 failed`, about 48 percent
+of the budget on one suite run from scratch twice; the wake then printed diffs of already-green
+code and was killed with the generation still unopened. The detector's only input is HUB rows, so
+a lane doing its best work looks exactly like a lane refusing in a loop — and the narrative arm
+that explains the refusal shape is emitted unconditionally, so the alarm confidently describes a
+condition it has just measured as absent.
+
+The multiplier behind it is a law this fleet already ratified and this board then violated: the
+active ledger is 7,015,584 B / 25,374 lines, 59 percent larger than the 4.4 MB ledger whose
+per-wake re-read livelocked a coordinator (Q-015, active segment plus immutable archive). Every
+wake pays that re-orientation before it can do anything durable.
+
+> **Measure lane liveness, not ledger silence. A detector may only assert the shape of a stall it
+> can actually observe; if its counter for that shape reads zero, it must say so instead of
+> narrating it.**
+
+Test: give the stall arm a second input that is independent of the board's output — for this board,
+the newest lane-run directory-name suffix (`timeout` / `nomotion` / `failed`), which is a directory
+listing and so does not open the receipt the wrapper is still writing. Assert two cases: a lane with
+no rows and a `timeout` suffix reports PRODUCTIVE-BUT-TRUNCATED; a lane with no rows and a refusal
+counter above zero reports the refusal loop. Second test: any alarm string that names a cause must
+be gated on the counter for that cause being non-zero.
+
+Corollary measured the same hour, and it burned an adversarial reviewer: on a workstation hosting
+several factories, a process census filtered on a model name or wrapper name attributes siblings'
+runs to your lane. One agent reported "two overlapping wakes in flight" when there was one; the
+others were `...\AdversarialLLM-wt\...` and `...\agent-bridge-plan01`. Resolve each process's own
+working directory from its command line before attributing it, and exclude the querying process,
+whose command line contains the pattern being matched.
