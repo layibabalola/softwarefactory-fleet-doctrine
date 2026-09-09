@@ -7534,3 +7534,73 @@ Second-order, and the reason this is filed rather than shrugged off: the outcome
 green, no lost objects, an argument that reads as diligent. A review of the transcript would show a
 careful adversarial process reaching the correct conclusion. Only the branch count reveals that the
 conclusion arrived after the act it was meant to gate.
+
+## A reviewer killed at a token ceiling is UNKNOWN, and the cause is usually the object (agent-bridge, 2026-09-09)
+
+A class-B review came back with no verdict: `TOKEN_CEILING_EXCEEDED`, 2,203,334 tokens against a
+2.16M per-run ceiling, 776 seconds, $0.61 for nothing. The events log said why: **123 shell
+commands, several run between two and six times** - the reviewer kept re-deriving artifacts it had
+already read. The object was the defect: the commit bundled a **1,632-line data manifest with the
+480-line tool that reads it**, two subjects wearing one commit.
+
+The same reviewer, on the same branch, was then given two scoped passes with an explicit command
+budget and permission to return a partial verdict naming what it did not reach. Measured:
+
+| pass | commands | tokens | cost | result |
+|---|---:|---:|---:|---|
+| unscoped, both subjects | 123 | 2,203,334 | $0.61 | killed, no verdict |
+| scoped to the code | 5 | 127,738 | $0.19 | ten MAJOR fail-open findings |
+| scoped to the records | 30 | 1,540,623 | $0.42 | all claims verified, one MAJOR |
+
+> **A ceiling kill is not a timeout and not a verdict - it is UNKNOWN.** A timeout says the job was
+> slow; a ceiling says it was LARGE, and re-dispatching it unchanged buys the same kill at the same
+> price. Shrink the object rather than raising the ceiling.
+
+> **Repeated identical commands in a reviewer's trace are the signature of an oversized object.**
+> Distinct commands over total commands, far from one, is a reviewer re-reading rather than
+> reasoning - visible in the events log long before the kill.
+
+> **Never put a tool and the data it consumes in one reviewable subject.** Scope each pass to named
+> paths, give it a command budget, and ask for a partial verdict naming what it did not reach. An
+> unfinished review that says so is worth more than a killed one.
+
+## A prose summary that restates a machine record is a defect generator (agent-bridge, 2026-09-09)
+
+A reconciliation annotated a task manifest with per-task evidence, and appended a human-readable
+summary of the same facts to a queue document. A reviewer caught the two disagreeing. The summary
+was corrected. One round later, a second finding corrected the manifest - and the summary went
+stale **again, within two hours, by the same mechanism**: the record was fixed and its restatement
+was not. Both times the defect was introduced by the act of fixing something else.
+
+The tell is that neither instance was carelessness in the usual sense. Both corrections were
+right; the duplication is what made each correction incomplete by construction.
+
+> **Two artifacts asserting the same fact will disagree, and the disagreement will be created by
+> the act of correcting one of them. Let the record carry the facts and let the summary carry an
+> ADDRESS - no task list, no status, no commit. A pointer cannot disagree with what it points at,
+> because it asserts nothing.**
+
+Test: for any human-readable summary of a machine-readable record, delete every noun from the
+summary that also appears in the record. If nothing survives, the summary should have been a
+pointer all along.
+
+## Two review rounds that each find NEW defects are a signal to split the subject, not to fix again (agent-bridge, 2026-09-09)
+
+A tool was reviewed, drew ten MAJOR fail-open findings, was repaired, and drew **eight more, none
+of them repeats**. Twenty-four regressions passed throughout and passed after each repair. The
+defect rate did not converge because every fix widened the surface being attacked: closing the
+write path by deleting it exposed the read path's own edges.
+
+The board's cap allows one fix-and-resubmit, so the second CHANGES_REQUESTED parked it. That was
+the right outcome, and the reason is worth stating separately from the rule:
+
+> **A second review round that returns entirely NEW findings is evidence about the SUBJECT, not
+> about the author or the reviewer. It says the subject is larger than its review can cover, and
+> the correct response is to split or park it - not to fix again. Passing tests measure the arms
+> you thought of; a fresh reviewer measures the ones you did not, and a rising count of new arms
+> means the thing is still growing.**
+
+Corollary, measured the same night on the same board: **when a finding names a mechanism you added
+for a reason that has since been parked, delete the mechanism.** Three of the ten first-round
+findings were in a locking and process-identity path added to satisfy an amendment that was itself
+parked twice. Removing it answered all three and made the file 86 lines smaller.
