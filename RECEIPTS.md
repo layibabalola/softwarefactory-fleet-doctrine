@@ -1737,3 +1737,59 @@ either direction (13 project-memory hits are idiomatic uses of "family"; the Fab
 brief-split memory is a mode effect measured under identical prompts, not a vendor effect).
 Adjudicated by three Opus adversarial briefs (against / what-outranks / evidence-binding), same
 family as the author, opposite briefs, independent access to the tree. See RULINGS.md disposition.
+## Codex-lead era audit: zero production lines in three "product" landings; two DONE receipts red; CI watchdog is a 2 s literal (airmypc, 2026-09-08, virtual-ten)
+
+Measured by the Fable orchestrator chat session on 2026-09-08 at master `e8a7fd7` (all local
+derivations re-runnable below). Commits since 2026-09-05: 103 total, 25 touching `src/` or
+`tests/`, 14 touching `src/`; every `src/` commit predates the Codex-lead handover on 09-07 or is
+one of three small fixes (`1d10898`, `cea0a05`, `998d4ea`). Queue: 11 of 25 DONE; DONE product
+items P01 `f062b33` (+27 test lines, +4 doc) and P02b `337fdbc` (+712 test lines, mirrored pair):
+zero `src/` lines. P02c worktree diff vs master: the same test pair only. The single live `src/`
+diff was uncommitted in the P04 worktree (MediaCastController.cs +310/-96), banked 2026-09-08 as
+`.claude-state\banks\p04-wip-20260908\tracked.patch` SHA-256
+7907add3520f89154053dfeba14c43126bffe627bedd932ce44410e0f157bf85. `Test-AudioMileCodexLane.ps1`:
+51 PASS, 5 FAIL, one cause (`next packet must already be runnable`, fixture clones the live queue).
+`Test-AudioMileCanonicalGuard.ps1`: 16/16 on two clean runs; one FAIL observed under a concurrent
+canonical-tree write (`final cleanup` sentinel), the `§` assertion PASSED in that run.
+`Test-AudioMileResumeChain.ps1`: 122/122. Hosted CI: only `portable-app-free` fails; failing tests
+`DecoupledAvRouteResolverTests.*` at 3094–3363 ms against a 2000 ms `WaitAsync` literal on
+`processorCount=2`; run 34172362648 is `EventResponderTeardownOrderTests`, a different family.
+`vpk`: not installed. Host: 16 physical cores, ~13.8 GB free. Windows tasks: 6 of 7 Disabled;
+Codex automations: 5 of 5 PAUSED. Family ban present as code in `AudioMileDeliveryQueue.psm1`
+(`authorFamily -ine reviewerFamily`, two sites). RATIFY packet, three Opus deliberations and the
+Codex Sol key receipt live under `.claude-state\hub-20260710\adjudications\20260908-lane-roster-and-two-key*`
+and `.claude-state\codex-runs\ratify-20260908-lane-roster-r2\`; the key's first run LAUNCH_FAILED
+with `worktree must be clean before contract run` because two untracked docs dirtied the canonical
+root — a clean worktree fixed it.
+
+**Re-derive.**
+
+    git -C C:\temp\AirMyPC log --oneline --since=2026-09-05 | Measure-Object -Line
+    git -C C:\temp\AirMyPC log --oneline --since=2026-09-05 -- src tests | Measure-Object -Line
+    git -C C:\temp\AirMyPC show --stat f062b33 337fdbc | Select-String '^ (src|tests|docs)/'
+    git -C C:\temp\AirMyPC-wi-P02-acceptance-20260907 diff --stat master
+    Get-FileHash C:\temp\AirMyPC\.claude-state\banks\p04-wip-20260908\tracked.patch
+    pwsh -NoProfile -File C:\temp\AirMyPC\tools\Test-AudioMileCodexLane.ps1
+    pwsh -NoProfile -File C:\temp\AirMyPC\tools\Test-AudioMileCanonicalGuard.ps1   # twice, no concurrent writers
+    gh run list -R layibabalola/AudioMile --limit 15; gh run view 34255582141 --log-failed | Select-String 'elapsedMilliseconds|processorCount'
+    Select-String -Path C:\temp\AirMyPC\tests\AudioMile.Core.UnitTests\DecoupledAvRouteResolverTests.cs -Pattern 'WaitAsync\(TimeSpan'
+    Get-Command vpk; (Get-CimInstance Win32_Processor | Measure-Object NumberOfCores -Sum).Sum
+    Get-ScheduledTask | ? { $_.TaskName -match 'AudioMile|AirMyPC' } | Select TaskName,State
+    Select-String -Path C:\temp\AirMyPC\tools\AudioMileDeliveryQueue.psm1 -Pattern 'authorFamily -ine'
+    Get-Content C:\temp\AirMyPC\.claude-state\codex-runs\ratify-20260908-lane-roster\receipt.json | ConvertFrom-Json | Select error
+
+## Cost of one Codex Sol read-only adjudication key through the wrapper (airmypc, 2026-09-08, virtual-ten)
+
+Run `ratify-20260908-lane-roster-r2`, `gpt-5.6-sol`, effort medium, `-s read-only`, 18,887-byte
+prompt (packet + three deliberations): 313 s wall; usage from `events.jsonl` turn.completed events:
+inputTokens 887,643, cachedInputTokens 791,680, outputTokens 6,238. The read-only sweep ripgrepped
+sibling checkouts under `C:\temp` (Access-denied lines in stderr from unrelated trees), which is where
+the input volume came from — scope the key's `-C` worktree and say "do not search outside it" when
+the packet already carries the evidence. First attempt LAUNCH_FAILED in 1.1 s: `worktree must be
+clean before contract run` (two untracked docs in the canonical root); a dedicated clean worktree
+fixed it.
+
+**Re-derive.**
+
+    Get-Content C:\temp\AirMyPC\.claude-state\codex-runs\ratify-20260908-lane-roster-r2\receipt.json | ConvertFrom-Json | Select elapsedSeconds,usage
+    Select-String -Path C:\temp\AirMyPC\.claude-state\codex-runs\ratify-20260908-lane-roster-r2\stderr.txt -Pattern 'Access is denied' | Measure-Object

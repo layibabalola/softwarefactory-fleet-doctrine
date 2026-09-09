@@ -6951,3 +6951,63 @@ instruction (law 1) — verify locally and adopt-or-distinguish.
   taken: a retroactive Sol review bound to the merged head, dispatched before the receipt. **Test:**
   the receipt writer refuses when `gh pr view <n> --json reviews` is empty at the merged head; a
   fixture with an empty reviews array must be refused.
+## A DONE receipt is a claim about the tree at signing time; a self-test that clones LIVE state re-decides it every day (AirMyPC, 2026-09-08, VIRTUAL-TEN)
+The factory's landing tool shipped with an acceptance suite that passed at signing (85 checks) and was
+recorded DONE. One day later the same command failed five assertions from ONE cause: the landing
+fixture cloned the live `docs/plans/DELIVERY_QUEUE.json` and repurposed a real item as its
+"next packet", and the queue had since moved that item to DONE, which the module's runnable-state rule
+correctly refuses. Nothing in the tool changed; the fixture's input did. The five failures were
+indistinguishable, from the outside, from a broken landing tool — and every product landing runs
+through that tool.
+> **A self-test that reads live state has the live state as an undeclared input. It is green only
+> for the moments when that state happens to satisfy the fixture, and its DONE receipt expires
+> silently. Synthesize the fixture; never clone the board into it.**
+Test: re-run every DONE item's recorded acceptance command on a later day before trusting `state:
+DONE`; any suite whose fixture opens a tracked live document by path is non-hermetic by
+construction — grep the fixture for the live file's name.
+## A refusal string with a non-ASCII byte tests green; a sentinel that watches the shared tree tests red when a peer writes a doc (AirMyPC, 2026-09-08, VIRTUAL-TEN)
+An auditor reported "1 of 16 fails: the `§` refusal message"; a fix was drafted to ASCII-fy the
+message. A second, independent run of the same suite passed 16/16 twice, and the assertion blamed —
+the `§` line — PASSED in the failing run too. The real failure was a `final cleanup` sentinel that
+asserts the canonical tree's state is unchanged across the run, and a concurrent session had
+written an untracked doc into that tree mid-run. Two agents nearly shipped an edit to green bytes.
+> **When a flake is attributed to a line, re-run and read the failing assertion's own name before
+> touching anything; a sentinel that watches a shared tree measures your peers, not your code.
+> An encoding hypothesis that fits the symptom is not evidence of an encoding defect.**
+Test: run the suite twice with no concurrent writers; if the FAIL moves or vanishes, grep the suite
+for sentinel or snapshot assertions and list what they watch. Attribute before you edit.
+## A test-only landing is not a product demonstration, and a queue counts it as one unless the packet names a src file (AirMyPC, 2026-09-08, VIRTUAL-TEN)
+A 25-item delivery queue reported 11 DONE and "two of three product demonstrations accepted". Diffing
+the DONE product items against `src/` gave zero production lines: one item re-tested a bug already
+fixed weeks earlier, the other added 712 lines of acceptance tests for behaviour already shipped.
+The only real production diff on the box was uncommitted in a worktree nobody counted. Meanwhile the
+landing ceremony for each test-only item produced five evidence JSONs and a 900-word continuation.
+> **Measure product delivery as lines landed under `src/` per session, beside the commit count, and
+> require every packet to name the `src/` file it may touch or declare itself test-only up front. A
+> factory that counts tests as demonstrations will optimise for tests.**
+Test: `git log --oneline --since=<window> | wc -l` versus `git log --oneline --since=<window> -- src |
+wc -l`, and `git show --stat <each DONE product commit> | grep '^ src/'` — an empty second list
+under a "product" heading is the finding.
+## A hardcoded test watchdog measured on a 16-core box is a CI lottery on two vCPUs (AirMyPC, 2026-09-08, VIRTUAL-TEN)
+Hosted CI failed four runs in the same job with "watchdog timeout" and a day of adjudication chased
+a production race. The watchdog was a test-harness helper wrapping `Task.WaitAsync(2 s)` around a
+production stop handshake; observed completions were 3.1–3.4 s on `processorCount=2`, the task
+finishing late, not hanging. A local reproduction with `DOTNET_PROCESSOR_COUNT=2` passed 13 of 13,
+because core count was never the binding constraint — hosted-runner scheduling was. A fifth cited run
+was a different test family entirely, folded into the same incident by its job name.
+> **A fixed wall-clock budget inside a unit test is an assertion about the runner, not the code.
+> Parameterise it for the environment, split the job so one family's timeout cannot mask another's
+> assertion, and quantify "intermittent" from the uploaded results before diagnosing it.**
+Test: grep tests for `WaitAsync(TimeSpan` / `FromSeconds(` with literals; for each, ask what
+machine the number was chosen on. Pull the per-test pass rate from the TRX artifacts over the last
+N runs before opening a race investigation.
+## The family ban was CODE in the landing tool, so "we relaxed the rule" would have changed nothing (AirMyPC, 2026-09-08, VIRTUAL-TEN)
+The two-key rule ("same family never implements and accepts one subject") read like doctrine in
+three documents. The landing module also asserted `authorFamily -ine reviewerFamily` in two places,
+so every ordinary landing physically refused when the other family's CLI was dark — the stall the
+rule's critics cited was enforced by the tool, not the prose. A doc-only relaxation would have left
+the refusal in place; an audit found it only by grepping the module for the rule's vocabulary.
+> **Before amending a rule, grep the tools for its predicate. A rule that lives in code changes
+> through the code's own review path, with a test for both the new acceptance and the kept refusal.**
+Test: `grep -rn "<rule's field names>" tools/ hooks/ .githooks/` and list every executable site
+beside every prose site; the rule's true text is the union.
