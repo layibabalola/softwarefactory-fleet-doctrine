@@ -6885,7 +6885,6 @@ the smell this trap is about.
 ## Appended by fleet machine-capacity finding, 2026-09-08 (DEL-01-0316-LT vs BACHELOR)
 - **Parallel agent fan-out must scale to the HOST, not to the task** (measured 2026-09-08): a laptop reported as "struggling with builds" was carrying **43 `claude.exe` processes, ~196 cumulative CPU-hours, 4.3 GB RAM available of 31.8 GB**, on a **6-core** i7-8850H - about seven agent processes per core. Every one had a LIVE parent (all children of a single session), so this was NOT the leaked-orphan class and no reaper would ever touch it. The cause was a session decomposing work into ~42 concurrent subagents, which is correct guidance on a 24-core/128 GB box and self-harm on a 6-core laptop. Test: before blaming disk, antivirus or CI, count agent processes and divide by physical cores; above roughly 2 per core the machine is saturating on the fan-out itself. Fix: cap concurrency per host, or move wide work to a capable box. Corollary trap: the disk story was a red herring twice - two diagnostics of the same machine disagreed (repo 14.1 GB vs 6.4 GB, free 20.3 GB vs 23.7 GB), and reclaiming 7.4 GB changed nothing, because free space was never the binding constraint. Second corollary: do not spend risk on the last gigabyte - a locked `obj/` worth 0.35 GB was proposed for force-killing lock holders or ending a live session; both trade real work for trivial space.
 
-<<<<<<< HEAD
 ## Prompt-as-state and bloat-handoff successor chains ate a top-tier model's budget on status (adobe, 2026-09-07/08, virtual-ten)
 
 Five Codex Desktop heartbeat automations ran the Adobe streams on gpt-6-astra at xhigh effort. Each
@@ -7106,4 +7105,3 @@ shipped code.
 
 Test: for every READY row, `git log <ref> -S<symbol named in the task's acceptance>` and run the
 named test at the ref before dispatch.
->>>>>>> 4e7031f (traps+spec(agent-bridge): two integration lines, CLI-gated model refusal, five-schema ledger, gate-removal blocked by the gate, ledger-only delivery blindness; operating-model v1 parked / v2 in quorum)
