@@ -7319,3 +7319,27 @@ of one truth, and the moment they disagree is the moment the cheaper one is lyin
 Test: for each row your tooling calls DELIVERED, print the verdict string that justified it and
 read it as prose. If a human would answer "authorized, yes, but did it actually happen?", the
 predicate is wrong.
+
+## A stateless orchestrator that commits its own bookkeeping to the branch it must fast-forward onto starves every landing (DNG Auto Processor, 2026-09-09, ULTRAMAGNUS)
+
+The board's orchestrator ticks every 30 minutes: collect finished work, land what passed two independent reviews, dispatch, then write one status line and its card updates as a `chore: cop tick` commit on master. Its landing rule was the ordinary safe one — `git merge-base --is-ancestor master <sha>` then `git merge --ff-only`.
+
+Those two rules cannot both hold. A review takes about 90 minutes end to end; master advances every ~30. By the time any branch is reviewed, master carries two or three bookkeeping commits the branch does not, `--is-ancestor` is false, and no fast-forward exists. Four branches sat simultaneously landable-on-content and unlandable-on-topology. **Every one of the blocking commits touched zero product bytes** — status file, card files, nothing else.
+
+The orchestrator diagnosed it correctly and refused to make it worse: it declared the stall, named the exact blocking commits, applied the byte test to show all four branches were released, identified the limiting authority as **local policy** rather than capacity or CI, and then *did not commit that tick* because a third bookkeeping commit would have broken a branch whose second key was mid-flight. Good behaviour, and still zero landings, because the remedy was in a document it was forbidden to edit.
+
+> **If a seat writes coordination state into the same ref it must fast-forward, its cadence is a throughput ceiling on everything it governs. Either keep bookkeeping off that ref, or make the landing rule tolerate it: rebase over commits that touch zero product bytes and prove the rebase changed nothing.**
+
+The adopted remedy, offered as portable: a reviewed branch whose merge-base is behind the target ref **only** by commits touching a named inert set (status file, card directory, the orchestration doc, reports) is rebased and then fast-forwarded, on three proofs — `git patch-id --stable` byte-identical before and after, the full pre-commit gate re-run green on the rebased SHA, and a receipt carrying `reviewedSha`, `landedSha` and the shared patch-id. The keys stay valid because **a key reviews a diff, not a commit id**, and the diff is provably unchanged. One product byte in the intervening range voids the clause: that is a changed subject and needs current approval. Ordering matters too: land before you record, and a tick that changed no state commits nothing.
+
+Test: `git log --oneline <merge-base>..master` on any long-open branch; if every commit is your own orchestrator's bookkeeping, you have this trap. Sharper leading form — compare the orchestrator's commit interval against the p50 wall time from dispatch to second verdict. Interval shorter than the review is a landing ceiling of zero, and it is invisible on every per-branch view because each branch looks individually healthy.
+
+Related shape, same board: this is the governance-as-output failure (`ruling-candidates/governance-as-output-r1.md`) arriving through the **landing rule** rather than through the ledger — the coordination writes were never the deliverable here, they were the obstruction.
+
+## An executor killed by a provider 429 must not consume a review attempt (DNG Auto Processor, 2026-09-09, ULTRAMAGNUS)
+
+A bounded executor died mid-task on a session-limit 429, leaving five unreviewed commits on its branch. The orchestrator's three-attempt ceiling counted it as a spent attempt, which would have left one attempt for work that had never once been reviewed. The capacity clause already existed for *keys* (a provider outage yields a typed HELD state consuming no attempt) and had simply never been extended to *executors*.
+
+> **A retry ceiling counts verdicts, never deaths. Any termination that produced no verdict — 429, session limit, provider outage, host restart, harness kill — is a typed capacity hold: the attempt number stands, the partial work is retained, and the ceiling is untouched. Otherwise your outage budget is silently deducted from your defect budget.**
+
+Test: grep the ceiling's increment path for what it counts. If it counts launches, receipt files or directory entries rather than adjudicated verdicts, an outage burns an attempt. Cross-check by asking, for the item nearest its ceiling, how many of its consumed attempts produced an actual finding list.
