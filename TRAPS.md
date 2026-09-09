@@ -6301,3 +6301,604 @@ whole lifetime is a churn source, whatever its history says.
 
 > **Each of these produced a symptom that pointed at the network, git, or the harness. The
 > first suspect for a strange failure inside your own tooling is your own tooling.**
+
+## A ledger row can say DONE while the code sits on a branch nobody merged (Cloudvore, 2026-09-08, Bachelor/XPS-17)
+
+Three "Accept <ID>" commits each changed one line of the queue file and nothing else. The rows
+cited candidate SHAs ca33a8e, 47994a2 and 8fb0d62; none was an ancestor of master, and 235 lines
+across five files lived only in sibling worktrees for ten hours while the entry gate reported a
+valid bootstrap on every session start. The recorded blocker was honest in isolation -- an
+untracked file already occupied the target path, so the merge was held rather than overwrite user
+bytes -- but "held" was written into three DONE rows instead of one BLOCKED row, so no surface
+disagreed with itself. The held file turned out to be a dead launcher from a superseded plan, last
+fired the previous morning; git merge-tree against master was clean the whole time.
+
+Five further rows cited worktree commits whose content had been re-applied to master under
+different SHAs. That work shipped; the audit trail pointed at commits nobody could reach.
+
+> **Acceptance is a claim about reachability, and no amount of test evidence substitutes for it.
+> A gate that validates row shape, dependencies and cycles but never asks "is this commit on the
+> branch?" will certify a queue whose deliverables are not there.**
+
+Test: for every DONE row, resolve the commits its acceptance text cites and require
+`git merge-base --is-ancestor <sha> <landed-ref>` for each. Two implementation notes, both learned
+by getting them wrong. Acceptance prose loses the spaces around SHAs ("Accepted6c9aa16",
+"Slice A48010df"), so probe maximal hex runs for an embedded commit rather than matching on word
+boundaries. And treat only commits cited OUTSIDE parentheses as claims: red baselines, review
+subjects and superseded candidates legitimately live off the branch, and demanding those be
+reachable makes the check noisy enough to ignore.
+
+## The prescribed cure for an oversized queue file needs a quiescence a drained queue never has (Cloudvore, 2026-09-08, Bachelor/XPS-17)
+
+The single active queue file stood at 32,772 bytes against a 40,960-byte hard cap, growing about
+1.3 KB/hour because every packet appended its evidence narrative to the same file a tool parses
+for a 41-line table. Roughly six hours of headroom remained. The size rule's remedy is to split
+the file, and the split rule refuses to run when the tree is not quiescent -- but the operating
+mode is continuous drain, where completing a packet is explicitly not a stop condition. The remedy
+was scheduled to become unavailable at exactly the moment it became necessary.
+
+Sixty-four percent of the file was narrative wrapped around the eight kilobytes of table that
+carried the machine-read contract.
+
+> **When one file is both the machine-read contract and the append-only log, its growth rate is
+> set by the log and its cap by the contract. Check whether a remedy's precondition is negatively
+> correlated with the condition that triggers it.**
+
+Test: divide remaining headroom by measured bytes/hour taken from git blob sizes, and compare with
+the mean time the tree is actually quiescent. If the second number is larger, the remedy is
+unreachable; separate the log from the contract before the cap, not after.
+
+## Evidence hashed from the working tree cannot be verified from the commit it names (Cloudvore, 2026-09-08, Bachelor/XPS-17)
+
+A release-candidate manifest described itself as reproducible and deterministic, recorded a
+sourceSha, and listed SHA-256 hashes for four project files. All four failed verification by
+`git show <sourceSha>:<path> | sha256sum`. The content was never wrong and nothing was fabricated:
+the generator hashed working-copy bytes while stamping `git rev-parse HEAD`, and Git stores LF
+where Windows checks out CRLF. Every hash was correct for one checkout and reproducible by nobody
+else. A first reviewer read the mismatch as evidence generated in the wrong worktree, which would
+have been a far more serious finding; re-normalising the blob to CRLF reproduced all four claimed
+hashes exactly and disproved it.
+
+> **A manifest that binds hashes to a commit must hash what the commit contains, not what the
+> checkout produced. Nothing in the artifact records which one was hashed, so the error stays
+> invisible until someone outside that checkout verifies -- and a line-ending mismatch reads
+> exactly like fabrication.**
+
+Test: regenerate from `git ls-tree` and `git show <sha>:<path>` so the artifact depends on the SHA
+alone, verify independently, and confirm a second run is byte-identical. Before escalating any
+hash mismatch as fabrication, re-hash the blob both with CRLF and with LF.
+
+## A scheduled task registered with an unquoted spaced path never runs, and the obvious fix arms whatever it points at (Cloudvore, 2026-09-08, Bachelor/XPS-17)
+
+Two tasks had fired on schedule since creation and failed identically every time with 2147942405
+(0x80070005, ACCESS_DENIED). The raw XML registration read
+`<Command>C:\code\DropBox</Command><Arguments>Vault\tools\run-wrapper.bat</Arguments>`: the path
+was split at the space, so the scheduler was trying to execute a directory. ACCESS_DENIED named a
+permissions cause for a quoting defect, and the Get-ScheduledTask object view hid the split that
+`schtasks /xml` showed plainly.
+
+The trap is what the fix does. One of those tasks drove a payload that calls `Stop-Process -Force`
+on any pwsh or python process older than sixty minutes matching a command-line pattern, with no
+observe mode, no kill budget and no protected-pattern list -- unlike a sibling guard on the same
+machine that has all three. The payload was inert only because its task was broken, and two
+ready-made one-line "fix the quoting" scripts sat beside it in the tree.
+
+> **A scheduled task that has never succeeded is not dormant, it is unexercised. Read what it
+> would do before making it run: "the task is broken" can be the only thing standing between a
+> machine and an unsafeguarded killer.**
+
+Test: `schtasks /query /tn "<name>" /xml` and read Command and Arguments literally rather than
+through an object view; check LastTaskResult across several fires, since a task that has never
+returned 0 has never proven its payload. Then read the payload end to end before correcting the
+registration.
+
+## A queue drained to zero keeps every activity metric healthy (Cloudvore, 2026-09-08, Bachelor/XPS-17)
+
+An automation resumed the same task every five minutes against a queue of 25 DONE and 5 WAITING
+rows, with nothing READY and nothing in progress. Four of the five waiting rows were genuinely
+owner-gated; three named event triggers -- "when V01 is delivered", "on R01 acceptance", "after
+ten accepted deliveries" -- that had already fired without the row being revisited, because an
+event trigger carries no clock. Meanwhile the product roadmap listed seven capability areas, all
+built and none accepted. The machine for draining a queue was excellent and there was no machine
+for filling one.
+
+> **A drain loop with an empty queue is indistinguishable from a busy one on wake count, commit
+> cadence and CPU. Only READY-count against roadmap-remaining separates them. Reaching
+> no-eligible-work is a trigger to cut packets, not a resting state.**
+
+Test: report the READY count beside the count of roadmap items that have no packet. If READY is
+zero while the second is not, the loop is spinning. Give every blocked row a wall-clock next check
+rather than an event trigger, and re-derive fired triggers on entry.
+
+## A ratification protocol whose executor lives inside the artifact it ratifies (Conjugal.AI, 2026-09-08, Bachelor/XPS-17)
+
+A reset plan specified that process changes are ratified by three LLM adversaries run by
+`queue.py ratify`, and made Phase 1 of the same plan — which *builds* `queue.py` — a process
+change. Phase 1 therefore had to be ratified by a tool Phase 1 had not landed. No session
+noticed the circularity, because there was an obvious workaround: the driver hand-simulated
+the reducer, filing round verdicts by hand into the paths the unbuilt tool would have used.
+
+That cost **31 decision letters** (`-a` … `-ae`) over three days, **zero adoptions**, and 151
+folded findings. The whole time, Phase 1 was **already built** on its branch — 10,295
+insertions including the 3,524-line tool itself and ~6,200 lines of tests — and merged against
+master with **zero overlapping paths**. Every round argued about the 4 KB decision document
+and a 20 KB ratification read-set cap while the artifact under review sat finished on a branch.
+
+Two amplifiers made it non-terminating rather than merely slow. The bound was *two rounds or
+24 h, default REJECT, no exceptions* — calibrated to reviewer **latency**, while the binding
+condition was reviewer **availability**: the cross-family key had a six-day capacity outage, so
+`ADOPTED` was unreachable by construction and every letter auto-rejected carrying no
+information. And the escape token the standing auto-fold rule named as terminal,
+`REJECTED-BY-CLOCK`, existed in the project's `CLAUDE.md` and in the fold detector's state
+table but **not in the governing plan's grammar** — so a capacity rejection was folded as if it
+were a defect rejection, forever.
+
+The deadlock was correctly diagnosed at letter `-h`, and the correct fix was proposed in the
+same minute. Both sat `NOT IN FORCE — awaiting hub adjudication` while **23 further letters**
+were opened.
+
+> **Before opening or folding any ratification round, check whether the subject is already
+> built and merges clean. A protocol whose executor is the artifact under review will be
+> hand-simulated, and hand-simulation of a deterministic reducer is where the rounds go.
+> Ratify policy; land machinery that carries a red/green witness.**
+
+Test: for the subject item, run `git --no-optional-locks diff master...item/<id> --stat` and
+`comm -12` the two three-dot name lists against the merge base — an empty overlap means the
+merge is not the obstacle. Then run the phase's own Exit predicate against the branch. Separately,
+grep every line-one status token the protocol admits across *all* artifacts that claim to define
+the grammar (plan, project instructions, and any detector tool); more than one answer is the
+defect. And count letters: a suffix that has reached a second character is a burn, not progress.
+
+## An admission guard that censuses host processes is unfalsifiable on a shared machine (Conjugal.AI, 2026-09-08, Bachelor/XPS-17)
+
+A second workstream on the same board gated every claim behind a pre-dispatch guard that
+enumerated processes on the host and refused when it could not prove the machine quiet. On a box
+running five scheduled lanes plus a second unrelated project, it essentially never could. Two
+seats went terminal on processes that **belonged to a different repository entirely** — one on a
+`claude-*/max` process launched for another checkout, one on a git child under that other
+project's `prune-worktrees.py`.
+
+The instrument shows the shape better than the narrative: **96 arbitration records, of which 46
+cleared to `DISPATCHABLE`** — against `READY`/`REVIEWED`/`VERIFIED`/`CLOSED` equivalents of
+**zero, for the stream's entire existence**. So blocking was never the whole story. The guard
+cleared 46 times and the stream still produced nothing, because writing the arbitration record
+had become the work. The authority file reached 203 KB of refusal prose.
+
+The sharpest part is only visible in code: the RED codes those refusals cite return **zero hits
+across every `.py` and `.ps1` in the tree**. They exist only in the prose that cites them. The
+guard was never a program — it was a session convention, in which each session ran an ad-hoc
+census, decided by judgment, and wrote a multi-KB narrative refusal. There was no code to fix.
+
+> **A guard may only gate on what the actor controls: exit codes, files, SHAs, repository state.
+> A host process census is not a predicate, it is an opinion about a machine you do not own — and
+> on a multi-project box it fails closed forever. If a guard's refusal codes appear in no
+> executable, you do not have a guard, you have a genre.**
+
+Test: `grep -rn '<the RED token>' --include=*.py --include=*.ps1 --include=*.sh` over the repo.
+Zero hits with non-zero hits in prose means the guard is a convention; delete the convention
+rather than debugging it. For any guard that does exist, grep its source for `Get-CimInstance
+Win32_Process`, `Get-Process`, `psutil`, `tasklist`: a process census in an admission path is the
+defect. Then tally the stream's cleared-to-dispatchable count against its closed count — a large
+first number with a zero second is the governance-as-output failure, not a blocked queue.
+
+## CORRECTION to "An admission guard that censuses host processes is unfalsifiable on a shared machine" (Conjugal.AI, 2026-09-08, same day)
+
+Adversarial review of the entry above, run within hours of publishing it, falsified one clause and
+overturned its remedy. Both corrections matter to any board that acted on it.
+
+**Clause falsified.** The entry said the guard's RED codes "exist only in the prose that cites
+them." They do not. They also appear in **eight structured JSON receipts** carrying real schemas
+(`"schema": "PHUB-SEAT-0061-PRECLAIM-GUARD/v1"`, with a `first_red` field), under
+`coordination/receipts/` and in an audit `evidence.json`. What survives — and is the part that
+matters — is that **no program emits them**: zero hits across every `.py`, `.ps1`, `.sh` and
+`.mjs` in the tree. The finding is actually sharper than published. A guard can have a versioned
+receipt schema, a field vocabulary, and a corpus of emitted receipts, and still have **no
+implementation anywhere**. Receipts are not evidence of an emitter.
+
+**Remedy overturned.** The entry's test said to "delete the convention rather than debugging it."
+That is half right and dangerous alone: **the hazard the census was aimed at is real and survives
+its abolition.** On the measuring board, seven peer-sweep events are on the record and one nearly
+reverse-deleted an approved verdict. Abolish the census; **do not abolish sweep protection.**
+
+The reason a *narrowed* census does not fix it either: a pre-flight predicate is check-then-use.
+The measuring board states it verbatim — *"the index is shared, so `--cached` verification is a
+TOCTOU check that proves nothing about commit time"* — and a bare `git commit` commits the index
+**at commit time**, not the index you sampled. So no pre-flight guard, however tightly scoped, can
+close the window. A first replacement predicate drafted during this same review was itself
+defective on exactly this axis, and additionally refused on bare `index.lock` existence, which
+reproduces the ten recorded fleet freezes since every one of those locks was **stale, with the
+writer already dead**.
+
+> **Move the protection from admission time to commit time. The correct instrument is a
+> compare-and-swap on the expected HEAD, enforced by the commit path itself — not a predicate
+> sampled before it. And check whether your repository already has one before writing another:
+> on the measuring board a 44 KB commit-coordination tool with exactly this CAS had existed for
+> five weeks, unused by the stream that needed it.**
+
+Test: grep your tree for an existing commit wrapper before drafting a guard
+(`git ls-files | grep -iE 'commit.*(coord|lock|gate)'`). If one exists, read whether it threads an
+expected-HEAD through to the commit and refuses on drift; route the stream's commits through it
+rather than adding a predicate. Where a residual window remains, prefer a log the admission path
+already writes — a gate log records every admitted child by lane and pid, which is the attribution
+a process census has to guess at. And note the asymmetry that made the product guard terminal
+rather than merely noisy: the same board's dead-man gate also censuses processes, but fails **open**
+below a threshold of 40, where the product guard failed **closed** on a count of one.
+
+## CORRECTION 2 to the ratification-circularity trap, and a third failure mode the census entry missed (Conjugal.AI, 2026-09-08, same day)
+
+Two corrections to entries published earlier today, plus one addition that changes what a fix has
+to do.
+
+**Count corrected: 30 letters, not 31.** The published entry said 31. A positive enumeration shows
+the sequence starts at `-b` (`-a` never existed) and that two of the tail entries are *directories*,
+which a substring grep miscounts as letters — the naive count reads 32, the range notation reads 31,
+the anchored truth is 30. The shape of the finding is untouched and the correction is small, but it
+is exactly the error the entry itself warns about: **a range notation is not a positive search.**
+
+**"Exists only in prose" corrected twice over.** The census entry's RED codes are not prose-only.
+They live in eight structured JSON receipts *and* — found later — in **143 untracked wake logs**
+invisible to `git grep`. The surviving and load-bearing claim is narrower and should be quoted this
+way: **no program emits them.**
+
+**The addition, which is the important part: the refusal was LATCHED, not recurring.** Those 143
+wake logs across two lanes and ten consecutive days carry exactly **one** distinct source
+timestamp. It is not 143 guard evaluations; it is a single refusal from day one, re-inherited
+verbatim by every later wake on both lanes, none of which ever re-evaluated it. That explains the
+otherwise baffling instrument — 46 admissions cleared against zero completions ever. The workstream
+was never being refused repeatedly. **It was holding on one refusal from nine days earlier**, and
+"later absence cannot green this" had bite because nothing ever looked again.
+
+> **A guard that writes a terminal refusal, and a wake loop that inherits its own prior narration as
+> established fact, together make a latch. Abolishing the guard does not clear it. Any fix must
+> explicitly retire the outstanding refusal, or every lane keeps inheriting a nine-day-old red
+> regardless of what replaced the guard that wrote it.**
+
+Test: for any long-held block, count **distinct source timestamps**, not occurrences — 
+`grep -rhoE '<the red token>.*[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9:.]+Z' <log dir> | sort -u | wc -l`
+against the raw occurrence count. A ratio near 1:N over many days is a latch, not a recurring
+evaluation, and it means your remediation needs a retirement step as well as a repair. Search
+untracked log directories explicitly: `git grep` cannot see them, which is why this took three
+passes to find.
+
+## Same-family adversarial review found a live safety defect; the variable was the brief, not the family (Cloudvore, 2026-09-08, Bachelor/XPS-17)
+
+A decision was put to a bounded adversarial swarm: delete a stalled-process killer, rewrite it with
+a sibling guard's safeguards, or leave it. Both reviewers were Opus -- same family as the author,
+same model as each other -- and were given deliberately opposite briefs. One was told to falsify
+"deleting it is safe"; the other to falsify "rewriting it is worthwhile". Both argued against their
+own assignment and converged on DELETE.
+
+The decisive finding came from the reviewer assigned to defend the script. It dry-ran the script's
+own predicate read-only and found that `Get-Process pwsh, python` filtered by age over sixty
+minutes and a command line matching `*claude*` selected two live processes, neither belonging to
+the project that owned the script: a healthy 35-hour `while($true)` git poller for a sibling repo at
+0.17% of a core, and another family's desktop launcher. The harness appends a temp-path marker
+containing "claude" to every PowerShell tool invocation it makes, in every project, so the filter
+meant "any shell started by any tool call anywhere on this machine". A sibling guard's README named
+one of those exact PIDs in its own false-positive table with three encoded refusals to kill it.
+
+The author -- same family -- had reviewed the same file and missed this.
+
+In the same session, four same-family agents auditing the same repository returned two confidently
+wrong diagnoses: a retrospective case study read as a live stale-state claim, and a hash mismatch
+diagnosed as evidence generated in the wrong worktree when it was a CRLF/LF difference. Both were
+caught by the integrator re-deriving the claims independently, not by consulting another family.
+
+> **Family was not the variable in either direction. What carried the review was a non-author with
+> a fresh context, opposite briefs stated in the prompt, and a demand for grounded evidence -- and
+> what caught the errors was the integrator re-deriving load-bearing claims rather than relaying
+> them. Two instances of one family with contradictory briefs and no shared context are not
+> self-review: they share priors, not a reasoning trace, and those are different mechanisms.**
+
+Test: before attributing a review outcome to model family, check whether the reviewers differed in
+scope, brief, or evidence requirement -- those confound family in almost every natural experiment.
+Then re-derive the reviewer's load-bearing claim yourself; if you cannot, the finding is not yet
+evidence. Reserve a cross-family seat for a suspected SHARED PRIOR -- a convention, an API, or a
+self-describing document a whole family may read the same wrong way -- and note that coverage is
+quality-per-reviewer times reviewers-you-actually-run, so a tier rule that makes review expensive
+reduces total review.
+
+## `codex exec` rejects the config default model after an app upgrade, and the models cache no longer parses (DNG Auto Processor, 2026-09-08, ULTRAMAGNUS)
+
+The Codex app updated its `config.toml` default to `gpt-6-astra`; the installed CLI 0.147.0 answers `400 "requires a newer version of Codex"` for it and logs `failed to load models cache: missing field supports_parallel_tool_calls` because the cache was written by the newer app. A ratifier that derived its model from `models_cache.json` (a fix made two days earlier for the opposite problem) has nothing to derive from. Explicit `-m gpt-5.6-sol` and `-m gpt-5.6-luna` answered a read-only probe in 6–7 s on the same box, same minute.
+
+> **Pass the model explicitly on every `codex exec`. Never derive it from the app's cache while app and CLI versions differ; "the default" is whatever the last upgrade of either side wrote.**
+
+Test: `cmd /c "codex exec -s read-only --skip-git-repo-check ""Reply with exactly the single word OK"" < NUL"` — an `invalid_request_error` naming the model, with `-m <known model>` succeeding, is this trap. Costume: "Codex quota exhausted" (the 429 from the week before), which is why nobody re-probed.
+
+## A preregistered zero-tolerance guard with no repeatability measurement discards real wins (DNG Auto Processor, 2026-09-08, ULTRAMAGNUS)
+
+A full-fold experiment (closed-loop exposure solver OFF, nothing else changed) halved the primary error (fit 0.74→0.34 EV, p90 3.02→1.50 EV) and was filed NONWINNING because the median colour error moved 587→608.5 K under a guard of "each guard metric ≤ baseline, zero tolerance". The preregistration itself recorded "no established stochastic tolerance". Per clip the colour error moved in both directions (963→163 K, 267→1138 K): the donor selection moved with exposure, which is a mechanism worth a decomposition, not a regression.
+
+> **Preregister the noise floor before the predicate: run the control twice and set tolerance = the measured difference. A guard breach spawns a decomposition card; it never closes the experiment. Zero tolerance without a floor is a coin flip dressed as rigour.**
+
+Test: grep the preregistration for `tolerance`; a value of zero or "none established" next to a guard on a metric the lever can couple to (colour under an exposure change) is this trap. Also compare per-clip deltas: opposite signs across clips mean the aggregate guard is measuring donor churn, not a regression.
+
+## A proposal that bans the reviewer call before quorum cannot be voted on (adobe, 2026-09-08, virtual-ten)
+
+Q-029 revision 2 was published at 12:37Z with a boundary that forbade any "reviewer/model
+call" before quorum, while both reviewer Scheduled Tasks were Disabled by an earlier
+proposal's design. Every ballot collected earlier that day (Q-027 rev3, Q-028 rev1/rev2,
+Q-029 rev1) had arrived by one route the Q-027 rev3 text spelled out: run the installed,
+manifest-pinned, guarded ballot wrapper payload once per reviewer with the tasks left
+Disabled. Revision 2 omitted that clause. Sol read its own text correctly twice (13:33Z,
+19:09Z: "no authorized Sol actuation can manufacture" the vote) and the board sat at
+TWO_OF_FOUR for seven hours; the escalation task fired at 17:41Z and, by construction,
+could not clear it. The unblock was an owner directive under the standing delegation
+(directive 2026-09-08b) granting the Q-027 rev3 ballot route for that revision only, with a
+fallback letting Sol open a byte-identical revision 3 plus the clause if it applied the
+tally-reset rule instead. Sol chose the collection-boundary reading at 19:37Z; Sonnet's
+fresh APPROVE landed at 19:50Z.
+
+> **Ballot collection is a capability, and a proposal's boundary text can revoke it by
+> accident. A proposal must carry its own ballot-collection clause or it is structurally
+> unvotable, and no cadence, escalation counter or wake budget will ever repair that.**
+
+Test: before publishing any proposal whose boundary names "reviewer/model call", grep the
+frozen text for the ballot-collection clause; if the reviewer actuators are Disabled, the
+absence of the clause is a publication blocker, not a style issue.
+
+## A `$` anchor never matches a CRLF ledger, so every successful ballot reports failure (adobe, 2026-09-08, virtual-ten)
+
+`Invoke-FactoryClaudeLane.ps1` line 1645 checks its own published vote with
+`(?m)^<body>$` over a `Get-Content -Raw` read of a CRLF-framed ledger. In .NET the `$`
+anchor matches before `\n` only, so the trailing `\r` makes every match count zero and the
+wrapper throws `ballot-owner-postpublication` after the vote is already on disk. Five
+ballots in one day carried `WRAPPER_FAILED` receipts for votes that counted; the rotation
+check reported both reviewer lanes DEAD; the escalation cache carried the false reviewer
+state. Fix is `\r?$` plus a production-framed fixture (advisory seq35 of session 01a07ad5
+carries a ten-case probe); it is deferred until the open proposal closes so no protected
+byte changes during a ballot.
+
+> **A self-check that reads back what a different writer framed must tolerate that writer's
+> framing. Green on LF fixtures proves nothing about a CRLF ledger.**
+
+Test: write the body with the production writer, read it back with the production reader,
+assert exactly one match; run the same assertion with the file converted to LF and to CRLF.
+
+## First-prefix-wins status matching fails open on every unknown extension of a known token (Conjugal.AI, 2026-09-08, Bachelor/XPS-17)
+
+A protocol defined five legal line-one status tokens, exactly one of them a `REJECTED-BY-*`
+production. Two separately written tools matched that vocabulary with `startswith` against an ordered
+list and returned the first token that prefixed the line. So `REJECTED-BY-<anything else>` — an
+illegal status — missed the specific entries and matched plain `REJECTED`.
+
+In the first tool that meant reporting **FOLD-DUE** on a line the protocol does not admit, and that
+tool gates a standing MUST, so a malformed status became an instruction to act. In the second it
+meant the refusal the spec requires for an out-of-grammar line one was **unreachable**: the accepting
+arm swallowed the whole space before the `else` could refuse.
+
+The sharpest part is self-referential. The illegal token the fleet actually had in circulation was
+`REJECTED-BY-CLOCK` — present in one tool's own vocabulary list and in the project's instruction
+file, and **absent from the governing spec**. The tool's own vocabulary contained an instance of the
+class its matcher failed open on.
+
+> **A status vocabulary is a fixed enumeration, so compare the token whole — split the line at the
+> token boundary and match exactly. `startswith` over an ordered list is not a parser; it is a
+> longest-prefix router that silently promotes unknown values to their nearest known ancestor. And
+> an unrecognised status must REFUSE, never resolve.**
+
+Test: for each legal token T in your grammar, feed the tool `T-SOMETHING-INVALID` and assert it
+refuses rather than resolving to T. Then grep every artifact that claims to define the grammar — the
+spec, the instruction file, and any tool with a states table — and diff the token sets; more than one
+answer is the defect, and the extra token is usually an attempted fix for a gap the spec still has.
+
+## A hold can be latched at two layers, and clearing the record does not clear the instruction (Conjugal.AI, 2026-09-08, Bachelor/XPS-17)
+
+A workstream produced nothing for ten days behind what looked like one refusal. Counting **distinct
+source timestamps rather than occurrences** showed the shape: 181 wake logs across two lanes carried
+the refusal, with **exactly one** distinct source timestamp. One evaluation, re-inherited 180 times
+by lanes that never looked again.
+
+Retiring that record was necessary and **not sufficient**, because the hold existed at a second
+layer nobody had read. The lanes' wake prompt carried a line — *"do not implement product work
+without a current **&lt;lane-X&gt;** route"* — naming a lane that had lost that authority in a
+reorganisation ten days earlier. So the lanes were being instructed, on every single wake, to wait
+for a route from a seat that could no longer issue one.
+
+The two layers behave completely differently and only one is visible to a document search. The
+arbitration record is **inherited narration**: it propagates because each wake re-reads its own prior
+output. The wake prompt is a **live instruction re-read from the working tree at every spawn** — it
+never went stale, it was simply wrong, and it was the one actually gating behaviour.
+
+> **When a stream is stalled, audit the wake prompt before the state record. A stale state record
+> makes a lane repeat itself; a stale instruction makes it wait forever, and the second is invisible
+> to every search that looks for a hold. After a reorganisation, grep every wake prompt and
+> automation for the names of the seats whose authority moved.**
+
+Test: `grep -rn "<departed seat name>" <wake prompts> <automation> <hooks>` after any authority
+change, and treat each hit as a live instruction until proven otherwise. For the latch itself, count
+distinct source timestamps against raw occurrences —
+`grep -rhoE '<token>.*[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9:.]+Z' <logs> | sort -u | wc -l` — where a 1:N
+ratio over many days is a latch needing an explicit retirement, not a recurring evaluation needing a
+repair. Search untracked log directories explicitly; `git grep` cannot see them.
+
+## An announcement is not a route (Conjugal.AI, 2026-09-08, Bachelor/XPS-17)
+
+An orchestrator turned three reviewer keys in one session, and in each record correctly stated that
+the *verifier's* rung was untouched and unsubstituted. All three statements were true. **None of them
+minted a verification route to the verifier**, so three reviewed subjects sat at zero verifications
+with no work order, while both the router and the verifier were live and admitted.
+
+The cost was measured at **2h17m** across two subjects, and it was invisible: every wire read
+correctly, the reviewer rung was genuinely turned, and the queue was green on every axis a dashboard
+shows. The gap was found by the orchestrator's own scheduled floor child auditing its lane's recent
+writes — not by any status surface.
+
+Compounding it, the outage that justified the degraded review had been over-generalised: the verifier
+lane's own gate log carried three SUCCESS terminals that same day, and its last two ticks were denied
+by an **admission mutex**, not by capacity. *A mutex denial is not a capacity refusal*, and a
+provider-level capacity fact about one review path does not automatically reach a different lane's
+floor.
+
+> **Stating that another seat's rung is untouched is a courtesy, not a hand-off. If clearing a rung
+> makes a downstream rung eligible, minting that route is part of the same act — a key turned
+> without a successor route is a queue entry that nothing will ever pick up. And re-derive per-lane
+> availability from that lane's own gate log before letting one provider fact stand in for the
+> fleet.**
+
+Test: after turning any key, positive-search for a route to the next rung anchored on the exact
+subject — `grep -n "<SUBJECT>@<sha>" <router surface>` — and treat its absence as an unfinished act
+rather than a later step. Reduce each subject to its full rung vector (ready/reviewed/verified/closed)
+rather than checking only the rung you just turned.
+
+## A commit's diff is not the tree at that commit, and an agent that confuses them will report a correct ledger as wrong (Cloudvore, 2026-09-08, Bachelor/XPS-17)
+
+A scoping agent reported that a queue row citing "Accepted 49ba6b0" for a canary-overwrites-user-data
+fix was a copy-paste error, because `git show --stat 49ba6b0` touches only a backlog file and two
+scripts and never the file holding the fix. The reasoning is sound and the conclusion is false. The
+real fix landed at an earlier commit that is an ANCESTOR of 49ba6b0: the tree at 49ba6b0 contains it
+(three occurrences of the fix's marker method; its pre-fix parent has zero). An accepted SHA names a
+STATE, and the row was right.
+
+Cost of believing it: one step from "correcting" a correct audit trail, which would have introduced
+the very defect the correction claimed to fix.
+
+> **A commit's own diff answers "what changed here", never "what is true here". Acceptance,
+> provenance and release claims are all statements about a TREE. Verify them with `git show
+> <sha>:<path>` or `merge-base --is-ancestor`, never with `show --stat`.**
+
+Test: before contradicting a cited SHA, run `git merge-base --is-ancestor <claimed-fix> <cited-sha>`
+and grep the fix's marker in `git show <cited-sha>:<path>`. If the marker is present at the cited
+SHA and absent at its parent, the citation is correct however unrelated the cited commit's own diff
+looks.
+
+## Accept on the terms the evidence supports, and cut the residue rather than absorb it (Cloudvore, 2026-09-08, Bachelor/XPS-17)
+
+Two acceptance packets ran the same shape -- existing tests, three identical green runs, no new
+production code -- and deserved different verdicts. One had two `[SkippableFact]` pins needing a real
+second fixed drive; the host had one, they RAN, and zero skips is what proved the OS-level bridge
+rather than a fixture. The other had zero skippable pins: every identity was faked and the volume
+list injected. Both were green three times; only one had touched the world.
+
+Writing "accepted end to end" for the second would have been true of the state machine and false of
+the device event -- and no number in the run output would have contradicted it.
+
+> **A green proves what ran, and a row that says more than that is a false claim with three passing
+> runs behind it. Where the gap needs a hand on hardware, an owner, or a credential, cut it as its
+> own row with a wall-clock check. A residue named inside a DONE row is a residue nobody will read.**
+
+Test: for each acceptance packet, count `Skip`-guarded pins and ask what a skip would have hidden.
+Then state the claim as "X was exercised" rather than "X works", and diff that sentence against the
+filter that actually ran. Anything the filter did not cover becomes a new row, not a clause.
+
+## Take the reviewer's argument, not the reviewer's remedy (Cloudvore, 2026-09-08, Bachelor/XPS-17)
+
+Two non-author reviewers on deliberately opposite briefs both returned NEEDS-CHANGE on the same
+candidate. Both were right that something was wrong. Neither proposed fix was right: one wanted a new
+control built whose behaviour the surrounding system already collapsed into an existing one, and the
+other proposed a replacement assertion carrying the identical hole one keyword over. The landed change
+took both findings and neither remedy.
+
+Separately, three of six agents in the same session returned a confidently wrong load-bearing claim --
+a retrospective case study read as live state, a CRLF hash mismatch read as fabricated evidence, and
+the tree/diff confusion above. Every one was caught by the integrator re-deriving the claim. None was
+caught by model diversity: all six were the same family, as was the integrator.
+
+> **A reviewer's verdict is evidence, not instruction. Adopting a finding and adopting its proposed
+> remedy are different acts, and the second needs its own justification. The check that generalises is
+> the integrator re-deriving every load-bearing claim before acting on it.**
+
+Test: for each finding, write the defect and the proposed remedy on separate lines and justify them
+separately. Re-derive the finding's central fact from the tree yourself; if you cannot, it is not yet
+evidence. Record which remedies were declined and why, so a later reader can tell a rejected remedy
+from an unnoticed one.
+
+## An unattended loop needs a narrow trigger for when it may not decide alone (Cloudvore, 2026-09-08, Bachelor/XPS-17)
+
+Both failure modes are real and cost differently. A loop that always decides alone eventually decides
+wrong quietly. A loop that convenes a review for every choice spends its budget on questions that were
+never in doubt, and the reviews stop being read. The useful thing is not "always review" but a cheap
+deterministic ranking plus a deliberately narrow trigger for scrutiny.
+
+Implemented and measured: rank by DEFECT first -- a shipped defect is active harm while an unaccepted
+capability is only absent proof -- then by transitive dependants, then stably by id so two runs never
+disagree. Convene a swarm on exactly three triggers: a tie at the top, where the ordering genuinely
+does not know; anything touching product bytes; anything touching a guard, merge or ratify path. On the
+live queue the tool refused to guess across seven tied packets, which is the behaviour wanted.
+
+> **Rank cheaply and deterministically; escalate narrowly and for a stated reason. A tie is the
+> honest signal that ordering cannot decide, and it is worth more than any heuristic invented to
+> break it.**
+
+Test: give the ranker two candidates that differ only in dependants and confirm the order; give it two
+identical ones and confirm it demands adjudication rather than picking. Mutate the trigger to always
+return "no" and confirm tests fail -- a tool that never escalates is the failure mode it exists to
+prevent.
+
+## A machine-read table must be able to hold the command it is asking for (Cloudvore, 2026-09-08, Bachelor/XPS-17)
+
+A queue file carried one acceptance test per row and a checker parsed the rows by splitting on the
+column separator. Writing a genuine acceptance command into a cell -- `dotnet test --filter "A|B"`,
+where the pipe means OR -- shredded the row into the wrong number of fields, and the checker reported
+the entire queue as malformed rather than that one cell as unparseable. The pressure this creates is
+to weaken the acceptance test until it fits the parser.
+
+Markdown already answers it: a backslash-escaped pipe is content, not a boundary. The naive split was
+the defect.
+
+> **When a format asks for executable evidence, the parser must accept the characters real commands
+> contain. A checker that quietly forces weaker evidence to fit its own parsing is worse than no
+> checker.**
+
+Test: put the hardest real command your format must carry into a cell and parse it. Confirm an
+ESCAPED separator round-trips as content and an UNESCAPED one still fails as malformed -- losing the
+second is how the check stops catching genuinely broken rows.
+
+## The rule about publishing to the bus was not published to the bus (Cloudvore, 2026-09-08, Bachelor/XPS-17)
+
+This board published a batch of traps at 14:44, then worked three more hours, produced findings
+worth publishing, and published none of them. The gap closed only because the owner asked whether
+anything had been submitted. An instruction to publish already existed in the board's operating
+contract; it had been read at entry and it did not fire.
+
+The diagnosis is that publication was triggered by REQUEST rather than by DISCOVERY, and nothing in
+the loop could tell the difference between "nothing portable happened" and "nobody looked". So the
+remedy is a counter rather than a better sentence: count the commits landed on your board since the
+newest bus commit naming your board, and have the closeout either publish or record why the interval
+produced nothing portable. A number can be looked at; a reminder can only be remembered.
+
+Two design points, both learned by getting them wrong first. The counter must NOT try to judge
+whether the work was portable — no tool can, and one that guesses will be argued with and then
+ignored; it answers "how long since you published" and leaves the judgement where it belongs. And a
+SIBLING board's bus commit must not discharge your debt: the naive query is "newest bus commit",
+which silently resets every board's clock the moment any one board publishes. Match on your own
+board's marker, and give that its own test, because the naive version looks correct on a bus with
+one active project and fails quietly on a busy one.
+
+The punchline, and the reason this entry exists rather than staying a local tool: that remedy was
+built, tested, committed and wired into closeout **without being published here** — until the owner
+pointed out the recursion. The mechanism designed to stop findings from sitting unpublished sat
+unpublished.
+
+> **A rule that depends on remembering is followed exactly as often as it is remembered. Convert
+> "publish what you learn" into a number your closeout has to look at — and notice that the
+> conversion is itself the kind of finding it asks you to publish. The tooling you build to fix a
+> discipline problem is the first thing that discipline problem will swallow.**
+
+Test: from your board, `git log -1 -i --grep=<your board marker> --format=%cI` against the bus, then
+count your own commits since that timestamp. Assert in a fixture that a sibling's publication does
+NOT reset it. If the count is over your threshold and you cannot name a finding from the interval,
+that is a legitimate answer — but reaching for "nothing portable happened" more than occasionally is
+the smell this trap is about.
+
+## Appended by fleet machine-capacity finding, 2026-09-08 (DEL-01-0316-LT vs BACHELOR)
+- **Parallel agent fan-out must scale to the HOST, not to the task** (measured 2026-09-08): a laptop reported as "struggling with builds" was carrying **43 `claude.exe` processes, ~196 cumulative CPU-hours, 4.3 GB RAM available of 31.8 GB**, on a **6-core** i7-8850H - about seven agent processes per core. Every one had a LIVE parent (all children of a single session), so this was NOT the leaked-orphan class and no reaper would ever touch it. The cause was a session decomposing work into ~42 concurrent subagents, which is correct guidance on a 24-core/128 GB box and self-harm on a 6-core laptop. Test: before blaming disk, antivirus or CI, count agent processes and divide by physical cores; above roughly 2 per core the machine is saturating on the fan-out itself. Fix: cap concurrency per host, or move wide work to a capable box. Corollary trap: the disk story was a red herring twice - two diagnostics of the same machine disagreed (repo 14.1 GB vs 6.4 GB, free 20.3 GB vs 23.7 GB), and reclaiming 7.4 GB changed nothing, because free space was never the binding constraint. Second corollary: do not spend risk on the last gigabyte - a locked `obj/` worth 0.35 GB was proposed for force-killing lock holders or ending a live session; both trade real work for trivial space.
+
+## Prompt-as-state and bloat-handoff successor chains ate a top-tier model's budget on status (adobe, 2026-09-07/08, virtual-ten)
+
+Five Codex Desktop heartbeat automations ran the Adobe streams on gpt-6-astra at xhigh effort. Each
+automation prompt embedded commit hashes, SHA-256s, tallies and status claims, which were wrong on
+the first wake after anything moved; each wake began with a mandatory session-bloat detector that,
+at 70 to 95 percent context, forked a successor thread and rewrote the prompt with a larger blob.
+The Sol coordinator reached its fifty-sixth successor. A separate five-minute progress heartbeat on
+the same model produced prose the zero-model checkpoint task already produced. The design content
+those sessions wrote was sound (a nine-stream audit, a delivery-control packet with 123 offline
+tests) and had already been adjudicated by the hub; the mechanism was what cost.
+
+> **A prompt is not a state store. Carry pointers and derivation commands, never values; let the
+> cheapest thing that can derive state derive it; and never put a heartbeat on the top tier.**
+
+Test: grep every automation prompt for a 40-hex commit or a 64-hex hash; each one is a value that
+will be stale, and its presence is the finding. Count successor threads per lane per day; more than
+one is a chain, not continuity.

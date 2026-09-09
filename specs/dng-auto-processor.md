@@ -5,7 +5,40 @@
 keyframe-ramp workflow. **Rewritten wholesale at doctrine seams; artifacts live in
 `dng-auto-processor/` in this repo (standards + receipts, byte-anchored in its `EXPORTS.md`).**
 
-## Shape
+## Current posture (2026-09-08) — read this first; "Shape" and everything after it is historical
+
+**Product:** auto-grading pipeline for DNG *film* clips emulating the operator's LRTimelapse
+keyframe-ramp workflow; objective = AUTO XMP matches the manual grade per frame, measured by
+`tools/scoreboard.ps1` on a held-out leave-one-project-out fold.
+**Factory:** both coordination planes frozen since 2026-09-05; boot = `WORK.md` + `git log`.
+**Orchestration since 2026-09-08** (design of record `DngAutoProcessor/docs/14-ORCHESTRATION.md`):
+four lanes by what they consume (Trust, Safety, Quality, Delivery); seats by volume shape and
+disposition — Opus stateless traffic cop (desktop-app scheduled task, fresh session per tick,
+bounded boot ≤ 25k tokens, proceeds under stated assumptions), Sonnet/Luna bounded executors,
+key 1 = the family opposite the author (`codex exec -m gpt-5.6-sol -s read-only` for Claude
+authors), key 2 adversarial tiered by blast radius (Haiku chores · Opus Core/App · Fable for the
+acceptance surface and experiment dispositions), Fable never scheduled and reached only through
+cards marked `needs: fable`, Haiku answers status in chat from a one-read recipe. Evidence lives
+outside git; receipts ≤ 2 KB in git. No leases, heartbeats, hubs, chronicles.
+**Measured 2026-09-07→08 (Codex-thread steering period):** 7 product commits in ~24 h, each 2–6
+files with two SHA-bound reviews; acceptance-tool repairs left on a side branch with 87 MB of
+evidence in git (being landed as acceptance-only commits); hosted CI red on 3 of 6 master runs
+from two timing-sensitive tests; the largest exposure lever on record (closed-loop solver OFF:
+fit 0.74→0.34 EV, p90 3.02→1.50 EV on the 10-clip fold) filed NONWINNING under a zero-tolerance
+colour guard with no measured noise floor — reopened as a decomposition.
+
+**Dispositions published 2026-09-08 (single writer: DNG fable coordinator):**
+
+| Candidate / spec | DNG disposition |
+|---|---|
+| `fleet-orchestrator-execute-posture` rules 1, 3, 4, 6, 7 | ADOPT — forced-progress escape, out-of-band repair authority, authority restated in the seat payload, completion files, entries-to-transitions alarm |
+| `fleet-orchestrator-execute-posture` rule 5 | DISTINGUISH — the operator directive keeps the cross-family key REQUIRED for product landings; throughput is protected by implementation running ahead on branches and by author-family selection from measured availability, never by a same-family substitute |
+| `orchestrator-seat-fit-r1` R1-A, R1-C | ADOPT — bounded boot; cop proceeds under assumptions, verifiers refuse on ambiguity |
+| `orchestrator-seat-fit-r1` R1-B | ADOPT as author-family selection; key placement itself is fixed by directive |
+| `dispatch-budget-and-proportional-review-r1` rule 6 | ADOPT — key-2 tiers are its three risk classes |
+| `governance-as-output-r1` A1, A2, B1 and the same-day CAS correction | ADOPT — a change that builds the ratifier is gated on its own witness; HELD-FOR-KEY consumes no attempt; landing is ff-only of an exact SHA from an exact base |
+| adobe trap "wakes clean, writes nothing = read the receipt" | ADOPT — a PAUSE skip writes its receipt line; the status recipe reports it |
+## Shape (HISTORICAL — standing lanes; superseded by the 2026-09-05 freeze and docs/14)
 
 **A lane is its lease, never a model.** `coordination/leases/*.json` is the roster; the STANDING set
 is the `$standing` assignment inside `coordination/tools/claim-lane.ps1` and is deliberately not

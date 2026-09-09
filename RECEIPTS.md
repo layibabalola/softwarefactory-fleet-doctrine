@@ -1684,3 +1684,30 @@ Outcome of that wake was pending when this entry was written; derive it, do not 
     Get-Content $env:LOCALAPPDATA\AdobeIngesterFactory\receipts\sol-exec.json; Get-ChildItem 'C:\!Layi Wkspc\Adobe Document Cloud Ingester\.claude-state\lane-state'
     # reaper dry run and self-test (stops nothing / stops only its own marked processes)
     pwsh -NoProfile -File 'C:\!Layi Wkspc\OrphanReaper\Invoke-OrphanReaper.ps1'; pwsh -NoProfile -File 'C:\!Layi Wkspc\OrphanReaper\Test-OrphanReaper.ps1'
+
+## Q-029 rev2 unvotable-by-construction stall and its owner-directive unblock (adobe, 2026-09-08, virtual-ten)
+
+Measured by the Fable orchestrator chat session on 2026-09-08 (all UTC). Q-029 rev2 open
+12:37:42Z at TWO_OF_FOUR; reviewer tasks Disabled, AllowDemandStart false; Sol 13:33:03Z and
+19:09:31Z: no lawful actuation; EscalationBudget raised 17:41:06Z (fingerprint
+E855B035572E31A4, 4.13 h without a non-refusal ledger entry). Directive
+`OWNER-DIRECTIVE-1N-Q029-REV2-BALLOT-ROUTE-20260908.md` SHA-256
+932C0E74774EC75EF427EAFB0EE2863275577CC12F5F6779D245018D72DDBE85 filed 19:31:40Z (ingress
+session 73e3de4e seq2); Sol OWNER_DIRECTIVE_DELIVERED and ROUTE B at 19:37:53Z; prompt
+re-pin commit 67216ba; Sonnet ballot run 19:49:24Z, `VOTE Q-029 rev2 | APPROVE` at
+19:50:42Z; that Sol wake then hit its 1500 s budget (TIMEOUT / WAKE_EXCEEDED_BUDGET) before
+reconciling. Three-agent adjudication before delivery: 2 of 3 DELIVER, the dissent folded as
+the revision-3 fallback clause. Outcome of the reconciliation and QUORUM_DECISION was pending
+when this entry was written; derive it, do not assume it.
+
+**Re-derive.**
+
+    # open ballot, tally, reviewer task posture
+    Select-String -Path 'C:\!Layi Wkspc\Adobe Document Cloud Ingester\.factory\state.yaml' -Pattern 'r8_acceptance_selective_hub_eol_repair' -Context 0,30
+    Get-ScheduledTask AdobeIngesterFactory-Opus,AdobeIngesterFactory-Sonnet | Select-Object TaskName,State,@{n='Demand';e={$_.Settings.AllowDemandStart}}
+    # the vote and the receipt that calls it a failure
+    Select-String -Path 'C:\!Layi Wkspc\Adobe Document Cloud Ingester\.factory\coordination\SONNET_LOG.md' -Pattern '^VOTE Q-029 rev2'
+    Get-Content $env:LOCALAPPDATA\AdobeIngesterFactory\receipts\sonnet.json
+    # the directive, its ledger, and Sol's disposition
+    Get-Content 'C:\!Layi Wkspc\Adobe Document Cloud Ingester\.claude-state\coordination\owner-directives\DELIVERY-LEDGER.jsonl' -Tail 3
+    Select-String -Path 'C:\!Layi Wkspc\Adobe Document Cloud Ingester\.factory\coordination\HUB.md' -Pattern '^### \[2026-09-08T19:3' 
