@@ -23,7 +23,7 @@
     }
   },
   "census": {
-    "baseCommit": "3db340e6f8c371d0256de7d6cb82d95fc505848c",
+    "baseCommit": "966b201d5e16d32b4a260ebd0e3bc849d0912421",
     "projectSpecGlob": "specs/*.md",
     "nonProjectSpecs": [
       "specs/fleet-continuity-autonomous-resumption.md",
@@ -47,11 +47,11 @@
     ]
   },
   "summary": {
-    "projectCount": 9,
+    "projectCount": 10,
     "counts": {
       "ADOPT": 0,
       "DISTINGUISH": 6,
-      "MISSING": 0,
+      "MISSING": 1,
       "REJECT": 0,
       "STALE": 3
     },
@@ -64,8 +64,8 @@
       "specPath": "specs/adobe-ingester.md",
       "status": "STALE",
       "evidence": {
-        "commit": "046b6f43fd98a41637a9c7ac3e4f7e63319c2461",
-        "gitBlobOid": "5662cebc9f566b3a3ab9085ae4a343dffd26cade",
+        "commit": "054f7561ef17072d37330b0892b4622c8968439c",
+        "gitBlobOid": "df8511660bf5567011d4d86a42253b911a3bda4e",
         "disposition": {
           "status": "DISTINGUISH",
           "subjectCommit": "874605e43531c9aa230ee16851f8107a8e0d9cec"
@@ -80,8 +80,8 @@
       "specPath": "specs/adversarialllm.md",
       "status": "DISTINGUISH",
       "evidence": {
-        "commit": "c7ce6faefff650f26ef555b0b77256785c20099a",
-        "gitBlobOid": "82f1c4dba05767e6aba8253f5781593b4c18fc07",
+        "commit": "70b7a746e314abb298a01369fa794af567732ab5",
+        "gitBlobOid": "339e35052efd321dd8fb94b400ccc6e72375c7b3",
         "disposition": {
           "status": "DISTINGUISH",
           "subjectCommit": "909f769d02e8412e51e28e242cfa8d00dadc9a3d"
@@ -147,8 +147,8 @@
       "specPath": "specs/agent-bridge.md",
       "status": "STALE",
       "evidence": {
-        "commit": "4ce494c1cf796c1896ed4a6775b8dea42e68ff66",
-        "gitBlobOid": "4a98f97180d0480b52724f79539f60895ae7b18b",
+        "commit": "598eba8a50ee7c4de5cfb0d4584c9173217df586",
+        "gitBlobOid": "fdffc6f24671c1b4620c989d116783ca56bd3414",
         "disposition": {
           "status": "DISTINGUISH",
           "subjectCommit": "874605e43531c9aa230ee16851f8107a8e0d9cec"
@@ -163,8 +163,8 @@
       "specPath": "specs/airmypc.md",
       "status": "STALE",
       "evidence": {
-        "commit": "43871e569418e9e42000e5e6dc2eab9527232816",
-        "gitBlobOid": "afc0bb643af29d64e9e6e851de2423a38d27801a",
+        "commit": "5602175c1e44b259b0172e86678595200979ce3d",
+        "gitBlobOid": "8b0df43ed3e419e72916d41362e411be92a7caa8",
         "disposition": {
           "status": "DISTINGUISH",
           "subjectCommit": "874605e43531c9aa230ee16851f8107a8e0d9cec"
@@ -207,12 +207,25 @@
       "blocker": "PROJECT_OWNER_DISTINCTION_OPEN"
     },
     {
+      "projectId": "context-ultra-salesforce",
+      "specPath": "specs/context-ultra-salesforce.md",
+      "status": "MISSING",
+      "evidence": {
+        "commit": "c0fd04a730e867b6fa3db9f557626b3146e7d770",
+        "gitBlobOid": "15a80426c4d3800199cb3bde739f1a374d8d00d2",
+        "disposition": null,
+        "projectCandidate": null
+      },
+      "nonRegressionEvidence": null,
+      "blocker": "PROJECT_OWNER_DISPOSITION_REQUIRED"
+    },
+    {
       "projectId": "dng-auto-processor",
       "specPath": "specs/dng-auto-processor.md",
       "status": "DISTINGUISH",
       "evidence": {
-        "commit": "15abad9632265515f17d2ca67228f4f564718fa3",
-        "gitBlobOid": "c31680741855ccff57a83ab9e183884a8f2bc584",
+        "commit": "0126be1131b4832a5adc432c9b0be5e2b60160f9",
+        "gitBlobOid": "df8db7159b533edfbdebb8c47e97b371f5939336",
         "disposition": {
           "status": "DISTINGUISH",
           "subjectCommit": "909f769d02e8412e51e28e242cfa8d00dadc9a3d"
@@ -227,8 +240,8 @@
       "specPath": "specs/mlv-app.md",
       "status": "DISTINGUISH",
       "evidence": {
-        "commit": "0620e56e8e21417126849253338b6ad149e59ef9",
-        "gitBlobOid": "3aee4b2e4f000dae7af67ad4d2ea4ee4bf8a1404",
+        "commit": "b9a81da8d01d6c574b74d991d9c208711f51cf07",
+        "gitBlobOid": "5bafa0361fcbe7565bc23f29b4847def703396f6",
         "disposition": {
           "status": "DISTINGUISH",
           "subjectCommit": "909f769d02e8412e51e28e242cfa8d00dadc9a3d"
