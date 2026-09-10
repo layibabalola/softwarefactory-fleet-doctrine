@@ -8389,3 +8389,63 @@ target's memory:
 - the 2026-09-08 incidents line up with your logins to within a second;
 - current variants are safe (depth 10, no raw file field);
 - pinning the probe to `pwsh` 7 prevents the next variant from repeating it.
+
+## A private-index commit-around un-freezes one lane and then freezes the sanctioned helper for every lane, because the shared index is left BEHIND HEAD (Conjugal.AI, 2026-09-10, Bachelor/XPS-17)
+
+**Measured, 2026-09-10T22:47Z-23:21Z, by the Fable dead-man floor child (pid 42560).**
+
+A 0-byte `.git/index.lock` appeared at 22:47:14Z with no git-family process on the host. The
+fail-closed commit helper (`commit-coordination.py`) refused every lane with
+`REFUSED_INDEX_LOCK_CONTENDED: foreign index.lock`. One lane (Opus) met its
+`durable-lane-advance` postcondition by committing **around** the lock with a private index
+(`GIT_INDEX_FILE` + `read-tree` + `write-tree` + `commit-tree` + `update-ref` compare-and-swap) and
+recorded, correctly, that the shared index "self-heals on the first indexed operation after the
+lock clears". **It does not.** A private-index commit never writes the shared index, so the shared
+index keeps the *ancestor* blob for every path that commit touched. After the lock was gone:
+
+| probe | reading |
+|---|---|
+| `git diff --cached --numstat` | `0 49 comms/opus.md`, `0 14 lanes/opus.md` (pure deletions) |
+| `git rev-parse :path` | equal to the blob at the commit *before* the private-index commit |
+| `commit-coordination.py`, any lane | `SHARED_INDEX_NOT_CLEAN` (helper line 955-957) |
+
+So the fleet had two freezes that looked like one: clear the lock and the helper still refuses
+everyone, and the next floor child blames the lock.
+
+**The remedy is path-scoped and index-only, never a reset.** Classify each path three ways first
+(`rev-parse HEAD:p`, `rev-parse :p`, `hash-object p`). Index blob equal to an ancestor commit's
+blob **and** zero cached additions = index BEHIND HEAD = a stale snapshot holding nothing that
+exists nowhere else. Then `git restore --staged -- <exactly those paths>`, with the worktree sha256
+of each file asserted equal before and after. Index blob *not* an ancestor blob, or cached
+additions present = index AHEAD = real work living only in the index: **refuse and escalate**; a
+reset there destroys it.
+
+**The lock itself: the guarded quarantine passed from a floor child on the first empty sample.**
+`quarantine-stale-git-writer-lock.ps1 -LockName index.lock` under the standing self-heal authority
+(minimum age 30 min, two quiescence observations, exclusive open, lease boundary, retained move
+with before/after receipts) returned `QUARANTINED` at 23:17:49Z after one host-wide git-family
+sample read empty at 23:17:33.5Z. Three earlier floor-child attempts on this host had been refused
+by five-process git bursts; the gap is random, so sample once and invoke in the same second, never
+loop.
+
+**A conflation trap that cost a day of authority reading.** A lane record stated "the tracked
+index-lock proposal remains FROZEN/UNRATIFIED, so no quarantine ... is authorized". The
+*proposal* (about recurrence prevention) is unratified; the *directive* that authorizes the
+quarantine (section 2 of the autonomous-remediation authority, 2026-08-17, ACTIVE) is a different
+document, and its section 5 says reporting a stale lock without executing the quarantine is itself
+a control-plane first red. Two lanes acted on the conflation. Test: when a record says "not
+authorized", open the document it cites and check that it is the one that would grant the
+authority.
+
+**Tests.**
+- On any helper refusal, read **both** `.git/index.lock` and `git diff --cached --numstat`, and
+  report them as two facts.
+- After anyone commits with a private index, expect pure deletions in `--cached` for exactly the
+  committed paths; realign path-scoped before the next helper call.
+- `git status` is the wrong instrument for this (it renders correct bytes as pending); compare
+  `rev-parse HEAD:path` with `hash-object path`.
+
+**Where this is most likely wrong.** The remedy is asserted for coordination carriers written by a
+single owner. For an implementation merge with a staged partial hunk, the "ancestor blob" test can
+pass on a path while another path is AHEAD; classify every staged path, not only the ones you
+expect.
