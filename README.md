@@ -30,6 +30,7 @@ the human store-and-forward bus.
 - `TRAPS.md` - append-only: costume failures and environment traps, with the test for each
 - `RECEIPTS.md` - append-only: drill results with date + machine
 - `RULINGS.md` - append-only: ratified fleet doctrine with the measuring project cited
+- `cos-feedback/` - Chief-of-Staff (CoS / Grok Bot) post-push PR/CI feedback; single-writer CoS, projects READ only; see [`cos-feedback/README.md`](cos-feedback/README.md) (CANDIDATE until projects wire pull)
 
 ## Ratified portable cores (zero runtime authority until project adoption)
 
