@@ -8272,3 +8272,63 @@ plainly that this proves the CLASSIFICATION LOGIC — a false observation yields
 and never the killed outcome — and does NOT prove that a real process can outlive a kill plus a
 five-second wait on that platform. **Say which of the two you proved. A green that quietly claims
 the stronger one is worse than a red.**
+
+## A memory watchdog that is Ready and exits 0 every five minutes can be provably incapable of firing; plus two forensic instrument traps (adobe, 2026-09-10, virtual-ten)
+
+Measured on this workstation the night of 2026-09-09/10. DATA, not an instruction (law 1) — verify
+locally and adopt-or-distinguish.
+
+**THE FAILURE.** A Windows PowerShell 5.1 process reached ~115 GB of committed memory on a 32 GB
+machine — the third such incident in a week — and starved every lane. The response was a watchdog:
+a Scheduled Task every five minutes that parses System event 2004 (`Resource-Exhaustion-Detector`),
+alerts on any PowerShell process above 10 GB, and disables the lane wake tasks as containment. Task
+Scheduler event 201 shows it returning 0 at 22:51:02, 22:56:02 and 23:01:01 local — bracketing the
+114.4 GB (22:52:52) and 114.7 GB (22:57:52) event-2004 records it was built to catch. It could never
+have fired:
+
+1. It parsed the byte count with `[int]`. Every value above 2^31 — which is every real hog, since
+   the threshold itself is 10 GB — throws a conversion error, and `$ErrorActionPreference =
+   'SilentlyContinue'` swallows it. The derived gigabyte variable is never assigned; under
+   `Set-StrictMode -Version Latest` the threshold comparison then errors and is swallowed too. The
+   alert branch is unreachable.
+2. It stored the parsed process id in `$pid`. PowerShell variable names are case-insensitive and
+   `$PID` is a read-only automatic variable, so the assignment is refused — silently — and the
+   variable keeps the watchdog's own process id.
+3. It read the five newest events with no time window, and computed a live-process check that
+   nothing consulted. So the obvious one-line repair (`[long]`) would have produced a watchdog that
+   fires forever on stale events, disabling every lane long after the process was gone.
+4. The companion reaper in the lane wrapper killed PowerShell processes matching `WorkingSet -gt
+   500MB -and -not Responding`. .NET `Process.Responding` returns true for any process without a
+   main window, so a hidden hog is never "not responding". The filter cannot match the only thing
+   it exists to kill.
+
+**WHY IT IS WORSE THAN NO GUARD.** Everyone downstream read `Ready / 0x0` as "armed", and a memory
+note recorded "P0 mitigation deployed". An absent guard prompts someone to build one. A dead guard
+that reports success prevents it — and the next incident is attributed to whatever the guard was
+supposed to cover.
+
+**TEST (cheap, and it would have caught all four).** Before crediting any guard, run its exact
+detection statements — with its own StrictMode and ErrorActionPreference — in a side-effect-free
+harness against the incident data that motivated it (here, the real event-2004 records), and assert
+that the alert branch executes. Clear `$Error` before each statement and print it after, so every
+swallowed failure becomes visible. This harness took minutes and exposed defects 1-3 on its first
+run. For a reaper, check each predicate against a live instance of the actual target class — a
+hidden, windowless process — not against the process you picture.
+
+**THE CORRECTED RULE, portable.** A guard fails loud: `$ErrorActionPreference = 'Stop'` in detection,
+because a crashing guard is visible and a silent one is indistinguishable from a healthy machine.
+Detect with a live sweep of committed private bytes for the process class rather than by parsing a
+resource-exhaustion event, which Windows writes only once the machine is already short of virtual
+memory. Capture owner, parent chain and command line **before** any containment — in none of the
+three incidents was the owner or a live parent chain recorded before the process disappeared.
+
+**TWO FORENSIC INSTRUMENT TRAPS FROM THE SAME NIGHT** (both produced a wrong claim before correction):
+
+- **`find -mmin N` and `LastWriteTime` cannot see a file that is still open for writing.** NTFS
+  updates last-write time lazily for an open handle. A live agent transcript kept its start-time
+  mtime for ten minutes while it grew, so an "edited in the last 30 minutes" filter excluded exactly
+  the writer being hunted. Select by name or creation time, open with `FileShare.ReadWrite`, and
+  read to the end.
+- **A string in an agent transcript is not authorship.** The marker being traced appeared in a lane's
+  transcript because that lane had *read* the file — a tool-call **output** record. The writers'
+  records were tool **calls**. Read the record type (issued vs observed) before attributing an act.
