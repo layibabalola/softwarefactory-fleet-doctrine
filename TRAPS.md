@@ -8332,3 +8332,60 @@ three incidents was the owner or a live parent chain recorded before the process
 - **A string in an agent transcript is not authorship.** The marker being traced appeared in a lane's
   transcript because that lane had *read* the file — a tool-call **output** record. The writers'
   records were tool **calls**. Read the record type (issued vs observed) before attributing an act.
+
+## A runaway process that no local search could find was another fleet machine's SSH probe (adobe, 2026-09-10, virtual-ten)
+
+Measured on this workstation. DATA, not an instruction (law 1) — verify locally and adopt-or-distinguish.
+
+**THE FAILURE.** For a week, Windows PowerShell 5.1 processes on virtual-ten grew to about 100 GB of
+committed memory and starved every lane. It happened on 2026-09-03, 09-08 and 09-09. Every local
+search failed:
+- no scheduled task launched them;
+- no Codex rollout or Claude transcript mentioned them;
+- CIM showed an empty command line;
+- the only lineage clue was "created 0.24 s after a parent `pwsh`".
+
+Successive sessions blamed Codex, a lane wrapper, and orphaned test trees. One built a watchdog that
+could never fire (see the 2026-09-10 watchdog trap above). Lane holds were placed to contain it.
+Those holds could not have helped.
+
+**THE CAUSE.** An agent on another fleet machine, host `bachelor`, connects to virtual-ten over OpenSSH
+every ~16 minutes as the workstation user. It runs an encoded SBP RC92 capacity-report script in
+`powershell.exe` (5.1). One variant put `Get-Content -Raw` output into `ConvertTo-Json -Depth 12`.
+Windows PowerShell 5.1 serializes the extended metadata attached to those strings (PSPath, PSProvider,
+PSDrive …), and the result grows without bound. A bounded reproduction measured:
+
+| input | depth | result |
+|---|---|---|
+| raw `Get-Content` string | 4 | 434,244 characters |
+| raw `Get-Content` string | 6 | exceeded its deadline |
+| `[string]`-cast string | 12 | 71 characters |
+| same raw string, PowerShell 7 | 12 | 71 characters |
+
+PowerShell 7.2 and later stop serializing String ETS properties. That leaking variant ran exactly three
+times, and it produced exactly the three hogs.
+
+**WHY IT WAS INVISIBLE.** The process runs in the SSH network logon session, session 0. A query from
+the interactive session therefore reads its command line as empty. Its parent is the SSH login shell
+(`pwsh`) — the "0.24 s after a parent pwsh". Nothing on the target machine initiates it, so no target
+log of tasks, agents or lanes will ever contain it.
+
+**TEST (it would have ended the hunt on day one).**
+- Walk `ParentProcessId` to the root. It is visible even when the command line is not.
+- If `sshd` appears in the chain, read the `OpenSSH/Operational` "Accepted … from <addr>" events and
+  map the address (`tailscale whois <addr>`).
+- Never write a process-hunting filter that requires a readable command line. Record unreadable
+  processes instead of skipping them.
+
+**THE CORRECTED RULE, for any agent that runs diagnostics on another machine.** The caller owns the
+target's memory:
+- run remote diagnostics under `pwsh` 7, never `powershell.exe`, whenever JSON is involved;
+- cast file text to `[string]`, and bound both read size and depth;
+- on the target, consider running SSH sessions for automation keys inside a memory-capped Job Object
+  (an owner decision about sshd and keys).
+
+**FOR WHOEVER RUNS THE RC92 CAPACITY PROBE FROM `bachelor`:**
+- the leaking variant ran 19:30-19:47 local on 2026-09-09, and virtual-ten reached 114 GB;
+- the 2026-09-08 incidents line up with your logins to within a second;
+- current variants are safe (depth 10, no raw file field);
+- pinning the probe to `pwsh` 7 prevents the next variant from repeating it.
