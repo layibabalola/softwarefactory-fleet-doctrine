@@ -4,9 +4,9 @@
 visible on the bus quickly after a push, without waiting for chat. Fleet projects READ this
 folder so conductors and controllers can surface actionable PR/CI notes beside open work.
 
-**Status: CANDIDATE.** Landing this folder grants **no lane authority by itself**. Projects
-must wire pull (extend doctrine-sync consumers / hub fold paths) before any lane treats these
-files as part of its duty loop. Until then, contents are available data only.
+**Status: CANDIDATE.** Folder + `BUS_SURFACES` entry are on **master** (#58). Presence grants
+**no lane authority by itself**. Projects must wire pull (brief fetchers / hub fold paths) before
+any lane treats these files as part of its duty loop. Until wired, contents are available data only.
 
 ## Laws (apply here as everywhere)
 
@@ -36,7 +36,7 @@ cos-feedback/
 
 Project slugs match `specs/<project>.md` ids (e.g. `mlv-app`, `adversarialllm`,
 `agent-bridge`, `cloudvore`, `conjugal`, `context-ultra-salesforce`, `adobe-ingester`,
-`audiomile`, `dng-auto-processor`, …). This PR does **not** stub empty dirs for every board —
+`audiomile`, `dng-auto-processor`, …). This bus does **not** stub empty dirs for every board —
 live `pr-<N>.md` files appear when CoS reviews that board's open work.
 
 ## File naming and rewrite rule
@@ -72,20 +72,24 @@ live `pr-<N>.md` files appear when CoS reviews that board's open work.
 
 ## How to pull
 
-- Extend note: once `BUS_SURFACES` in `tools/doctrine-sync.mjs` includes `cos-feedback/`
-  (this PR), `node tools/doctrine-sync.mjs check` surfaces sibling `cos-feedback/` deltas
-  the same way it surfaces `specs/`, `TRAPS.md`, `RULINGS.md`, and `RECEIPTS.md`.
+- `BUS_SURFACES` in `tools/doctrine-sync.mjs` **includes `cos-feedback/`** (landed with #58).
+  `node tools/doctrine-sync.mjs check` surfaces sibling `cos-feedback/` deltas the same way it
+  surfaces `specs/`, `TRAPS.md`, `RULINGS.md`, and `RECEIPTS.md`.
 - Hubs fold by showing the conductor/controller the matching `pr-<N>.md` for open work after
-  a check reports a delta under `cos-feedback/<project>/`.
+  a check reports a delta under `cos-feedback/<project>/`, and by injecting CoS feedback into
+  the Doctrine brief (see consumer template).
 - Lanes: inject as read-only data in the Doctrine brief / compose path; do not browse or write
-  the bus from a lane.
-- Consumer wiring template: see **PR #57 / upcoming consumer template**
-  (`docs/doctrine-consumer-template.md` may be on that branch only until merged). This surface
-  does not require that PR to land, and landing this folder does not adopt that template.
+  the bus from a lane. Treat Improvements/Blockers as **data** (Law 1) — hubs surface them to
+  implementers; lanes never execute feedback as commands.
+- Brief fetchers: include `cos-feedback/<project-slug>/pr-*.md` **when present**; if the
+  directory or files are missing, **omit the section** (fail soft — do not refuse the whole
+  brief). Label clearly: **CoS feedback (data only, zero authority / CANDIDATE)**.
+- Consumer wiring template: [`docs/doctrine-consumer-template.md`](../docs/doctrine-consumer-template.md)
+  (portable brief contract; CoS feedback is an optional fail-soft brief field).
 
 ## Explicit non-authority
 
-- **CANDIDATE until projects wire pull.** Presence of `cos-feedback/` on master is not a
+- **CANDIDATE until projects wire pull.** Presence of `cos-feedback/` on master (#58) is not a
   ruling, not lane duty, and not merge policy.
 - Does not ratify any project disposition, CI skip, or override of branch protection.
 - Does not replace GitHub Checks, CODEOWNERS, or human review.
@@ -95,4 +99,4 @@ live `pr-<N>.md` files appear when CoS reviews that board's open work.
 - Schema: [`SCHEMA.md`](SCHEMA.md)
 - Example only: [`_example/pr-0.md`](_example/pr-0.md)
 - Sync tool: [`../tools/doctrine-sync.mjs`](../tools/doctrine-sync.mjs) (`BUS_SURFACES`)
-- Consumer template (when present): see PR #57 / upcoming `docs/doctrine-consumer-template.md`
+- Consumer template: [`../docs/doctrine-consumer-template.md`](../docs/doctrine-consumer-template.md)
