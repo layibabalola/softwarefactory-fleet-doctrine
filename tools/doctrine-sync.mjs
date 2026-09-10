@@ -31,7 +31,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const BUS_SURFACES = ['specs/', 'TRAPS.md', 'RULINGS.md', 'RECEIPTS.md'];
+const BUS_SURFACES = ['specs/', 'TRAPS.md', 'RULINGS.md', 'RECEIPTS.md', 'cos-feedback/'];
 const EXIT_OK = 0, EXIT_ACTION = 1, EXIT_FAIL = 2;
 
 function parseArgs(argv) {
@@ -72,6 +72,7 @@ function writeMarker(consumer, data) {
 }
 
 // A path is a sibling's doctrine surface if it is on the bus and is not this project's own spec.
+// BUS_SURFACES: specs/, TRAPS.md, RULINGS.md, RECEIPTS.md, cos-feedback/ (CoS-written; projects read).
 function isSiblingSurface(path, project) {
   if (path === `specs/${project}.md`) return false;
   return BUS_SURFACES.some((s) => (s.endsWith('/') ? path.startsWith(s) : path === s));
