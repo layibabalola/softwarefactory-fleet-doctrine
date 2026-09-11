@@ -195,21 +195,21 @@ Phases are independent; can parallelize or sequence based on operational load:
 | **1: Pipelining** | 4h (gate.py + swarm orchestration) | None | Week 1 |
 | **2: Cost routing** | 5h (classify + route table + escalation) | None (can run in parallel with Phase 1) | Week 1-2 |
 | **3: Metrics** | 2h (setup) + 5 min/week (collection) | Phase 1 (need pipelined data to collect) | Week 2 (start after Phase 1 lands) |
-| **4: Design routing** | Blocked on adjudication | Adjudication result required | TBD |
+| **4: Design routing** | 4h (implement HYBRID tier-up logic + escalation) | None (can parallelize with Phases 1-3) | Week 2-3 |
 
 ### Critical Path
 
 1. **Implement Phase 1** (pipelining) — unblocks faster metrics collection
 2. **Implement Phase 2** (cost routing) — independent of Phase 1; can start immediately
 3. **Start Phase 3** (metrics) — wait for Phase 1 data flowing
-4. **Await Phase 4** adjudication result
+4. **Implement Phase 4** (design routing) — HYBRID strategy ready for immediate deployment
 
 ### Rollout Strategy
 
 - **Phase 1:** Deploy on branch; test on CARD-INGEST-UX (3 packets); merge to master
 - **Phase 2:** Deploy alongside Phase 1; monitor HIGH/MEDIUM/LOW tier routing for 5 packets; escalate if disagreement rate >15%
 - **Phase 3:** Activate metrics collection once Phase 1 is stable; publish weekly summary
-- **Phase 4:** TBD (awaiting adjudication)
+- **Phase 4:** Deploy HYBRID design routing (high-risk → Astra/Fable, routine → Haiku/Luna with escalation); monitor escalation rate over 5 packets
 
 ---
 
@@ -276,9 +276,10 @@ For any fleet factory to adopt this strategy:
   - [ ] Commit first 4 weeks of metrics to track trends
 
 - [ ] **Phase 4 (Design Routing):**
-  - [ ] Await design-domain adjudication (independent review process)
-  - [ ] Once result received, implement design phase routing table
-  - [ ] Monitor design-decision rework rate post-implementation
+  - [ ] Implement HYBRID design routing (high-risk → Astra/Fable, routine → Haiku/Luna with escalation)
+  - [ ] Deploy routing logic to swarm agent assignment
+  - [ ] Monitor escalation rate and decision-type classification over 5 packets
+  - [ ] Adjust pre-routing if escalation rate exceeds 30% or falls below 10%
 
 ---
 
@@ -308,6 +309,6 @@ Developed during Cloudvore 2026-09-11 continuous validation audit. Strategy comp
 - Metrics-baseline agent (designed 4-week capture plan)
 - Synthesis agent (unified three phases into coherent improvement roadmap)
 
-Autonomous implementation authorized per owner standing instruction "work without me in the loop" — all phases use standard gate process (no new approval mechanism). Design-phase decision (Phase 4) remains pending specialized adjudication.
+Autonomous implementation authorized per owner standing instruction "work without me in the loop" — all four phases use standard gate process (no new approval mechanism). Design-phase decision (Phase 4) finalized 2026-09-11 by dual-path adjudication (converged: HYBRID tier-up strategy).
 
 Portable for all fleet factories with multi-agent validation infrastructure and staged code approval.
