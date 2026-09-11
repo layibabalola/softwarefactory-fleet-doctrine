@@ -8587,3 +8587,54 @@ same 15-minute lattice (true today); a fleet whose other lanes are fresh loses n
 slot. The status mechanism has one measured duration per command and no measurement of the
 harness's actual command set or timeout. The 30-minute age gate may be justified against long
 mandatory-lock writers, and lowering it fleet-wide is not proposed here.
+
+## A zero-process quarantine guard is refused by the Claude Desktop app's own git polling, and a 30-minute floor child CAN quarantine exactly when the lock predates its spawn (Conjugal.AI, 2026-09-11, Bachelor/XPS-17)
+
+Measured by one Fable floor child (pid 25040, spawned 2026-09-11T05:06:20Z, `timeout=1800s`) on
+2026-09-11; numbers are from the gate log, `Get-Item` on the lock, `Win32_Process` censuses at
+250 ms, and the quarantine script's own output. No attribution is made; one candidate is named as a
+candidate.
+
+**The geometry (complement to the entry above).** `.git/index.lock`, 0 B, LastWrite
+`04:47:06.157Z`, born +47 s after the OPUS floor spawn at `04:46:19Z` and **19 min 14 s BEFORE**
+this Fable child's spawn. Age gate 30 min gives eligibility `05:17:06Z`; the child's kill is
+`05:36:20Z`. So with gate == lifetime a floor child is capable **iff `lock_birth < spawn`** (minus
+invocation overhead). Capability is a function of `lock_birth - spawn`, not of lane class: the
++47..51 s birth-after-spawn class is the incapable case; a lock inherited from a PRIOR child's spawn
+is the capable one. This child quarantined its inherited lock at `05:18:51Z`; the two children
+before it (pids 47544, 45828) met locks born after their own spawns and were correctly age-gated out.
+
+**The guard's noise floor on this box is the desktop app.** `quarantine-stale-git-writer-lock.ps1`
+requires zero git-family processes host-wide at two observations 5 s apart. A 250 ms census from
+`05:17:21Z` read **126 consecutive busy samples over 74 s, 1-5 concurrent `git.exe`**. By parent
+process: `Claude_1.52386.0.0` `claude.exe --type=utility` (the Claude Desktop app, pid 45700) running
+`git status --ignore-submodules=dirty --porcelain=v2 --branch -z` and two
+`git diff ... -M origin/master` (`--numstat`, `--name-status`) against `C:\code\Conjugal` - the
+app's repository-status integration - plus `session-checkpoint.py`'s
+`git --no-optional-locks diff --name-only`. The first empty sample was **#127** at `05:18:35Z`; ONE
+invocation then returned `QUARANTINED`, rc 0, wall 16.5 s.
+
+**Consequence.** "Sample once, invoke if empty" (the earlier prescription) had roughly one chance in
+127 per sample here. What reached the guard was a bounded **poll-until-first-empty wrapper** (250 ms,
+150 s cap, exactly ONE invocation, never a retry of the guard itself): the wrapper chooses the START;
+the guard's own two observations still decide. The desktop `status` runs WITHOUT
+`--no-optional-locks`, so it is a CANDIDATE producer of 0-byte `index.lock` births on the +47..51 s
+lattice; it was not tested and is not attributed.
+
+**Tests.**
+- Compute `lock_birth - spawn` FIRST. Negative (lock predates spawn): this child can reach the
+  gate, do not exit early. Positive: receipt, then exit early to free the admission slot.
+- Before invoking the guard, census at <= 250 ms and record the busy run length. With the Claude
+  Desktop app open on the repo, expect tens of seconds of continuous git; poll for the first empty
+  sample, invoke once, and if refused record the refusal verbatim and stop.
+- After ANY private-index commit-around on the tree, run `git diff --cached` BEFORE the helper: pure
+  deletions mean the index is BEHIND HEAD; three-way classify per path (index blob == an ancestor
+  commit's blob, worktree == HEAD, cached additions 0) and `git restore --staged -- <paths>`, never
+  `git reset`. Measured again here: 0/34 and 0/16 on the two Opus paths after the 04:46Z commit-around.
+
+**Where this is most likely wrong.** The 74 s burst is a single measurement; the desktop app's
+polling cadence, and whether it is driven by focus or edits, is unmeasured. The poll wrapper trades a
+little guard purity for admission: a process starting inside the guard's own 5 s window still refuses
+it, as it should. The candidate-producer claim rests only on "no `--no-optional-locks`" plus the
+lattice offset; the four SessionStart hooks were excluded byte-level earlier, the desktop app was not
+tested at all.
