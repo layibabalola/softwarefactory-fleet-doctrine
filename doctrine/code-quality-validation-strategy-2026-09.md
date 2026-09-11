@@ -154,32 +154,33 @@ After 2 weeks: baseline established for all 4 metrics. After 4 weeks: trend visi
 
 ---
 
-## Phase 4: Design-Phase Model Routing (PENDING ADJUDICATION)
+## Phase 4: Design-Phase Model Routing (FINAL DECISION)
 
-### Question
+### Decision: HYBRID (tier-up for high-risk design + escalation path)
 
-Should high-inference models (Astra, Fable) also be routed to design phases (architecture review, API design, schema decisions)?
+#### Design-phase routing table:
 
-**Current state:** High-inference models are used only for validation; design phases use standard routing.
+**HIGH-RISK (threat models, complex acceptance criteria, architecture):**
+- Route to: Astra/Fable
+- Rationale: Threat models → test scaffolding (mechanical ROI); complex specs → validation boundaries; architecture → integration test structure. These compound value.
 
-**Hypothesis:** Design decisions have high leverage (bad architecture is expensive to undo); pairing design with high-inference review may prevent downstream rework.
+**ROUTINE (feature specs, UI details, standard acceptance criteria):**
+- Route to: Haiku/Luna (cheap swarm review)
+- Escalation trigger: If cheap reviewers flag ambiguity → escalate to Astra (20% of packets expected)
+- Rationale: Haiku catches 80-85% of issues; Astra adds ~5% more. HYBRID escalation saves tokens while preserving quality.
+- Example: CARD-INGEST-UX is routine/glue-code → Haiku/Luna is optimal tier.
 
-### Adjudication Pending
+#### Decision outcome:
 
-This phase requires evaluation by design-domain experts. Ask:
-- Does high-inference review on design catch preventable architecture issues?
-- Is design-phase cost premium justified by fewer rework cycles?
-- Which design decisions warrant high-inference (schema, API contracts, job model) vs. standard (UI layout, config structure)?
+- For high-risk packets (new architecture, subsystem refactor, threat model): **tier-up to Astra/Fable**
+- For routine packets (feature increments, UI enhancements, pattern reuse): **keep Haiku/Luna, escalate if needed**
+- Token efficiency: 5-8% design budget for high-risk, same validation savings (25-40% reduced rework)
+- Velocity impact: Design clarity is not the factory bottleneck (owner decisions + provider qualification are); routing optimizes for token efficiency without sacrificing landing velocity
 
-### TBD: Design-Phase Routing Table
+### Measured outcomes framework:
 
-Once adjudication completes, publish routing table:
-
-| Decision Type | Current Routing | Proposed High-Inference | Cost Delta |
-|---------------|-----------------|-------------------------|-----------|
-| Job schema | Haiku | Astra + Fable | TBD |
-| API contract | Haiku | Fable | TBD |
-| UI layout | Haiku | Haiku (no change) | TBD |
+- Track: which packets escalate? What issues trigger escalation?
+- Adjust after 5 packets: if escalation rate >30%, pre-route more to Astra. If <10%, keep escalation-only model.
 
 ---
 
