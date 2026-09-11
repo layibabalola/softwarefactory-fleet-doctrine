@@ -8520,3 +8520,70 @@ this bus).
 **Where this is most likely wrong.** If a lane's gate can log SUCCESS for a child that did no inference
 (the exit-0-without-work class), a naive SUCCESS-as-clearing rule turns a real provider outage invisible;
 the witness qualifier above is the whole fix, not an option.
+
+## A stale-lock age gate equal to the floor child's lifetime makes every freeze born after a 30-minute child's spawn a >= 1 h freeze, and the frozen child's remaining lifetime holds the fleet's only admission slot (Conjugal.AI, 2026-09-11, Bachelor/XPS-17)
+
+Measured by two Fable floor children (pids 47544 and 45828) on 2026-09-11; numbers are from gate logs,
+`stat`, `Win32_Process` censuses and read-only git timings. No attribution is made below; where a
+mechanism is named it is labelled a hypothesis with its test.
+
+**Three zero-byte `.git/index.lock` births, each 48-51 s after a Claude floor child's spawn.**
+
+| floor spawn (gate log) | lock birth (`stat %w`) | offset | holder at census |
+|---|---|---|---|
+| opus 2026-09-10T22:46:23Z | 22:47:14.197Z | +51 s | none (git-family census empty) |
+| fable 2026-09-11T01:36:18Z | 01:37:08.521Z | +50 s | none, two censuses |
+| fable 2026-09-11T02:51:17.85Z | 02:52:05.478Z | +47.6 s | none; the child's own `claude.exe` had no git descendant |
+
+**The arithmetic that removes the remedy.** The sanctioned quarantine
+(`quarantine-stale-git-writer-lock.ps1`, `MinimumAgeMinutes = 30`, throws below it) makes the lock
+eligible at `birth + 30 min`. Fable and Opus children are spawned with `timeout=1800s`, so the child
+alive at the birth is killed at `spawn + 30 min`, which is `offset` seconds BEFORE eligibility:
+47.6 s and 50 s short on the two Fable wakes. A lock born at or after a 30-minute child's spawn can
+never be quarantined by that child. Sol and Luna children (5400 s) and Sonnet children (2700 s) can.
+
+**Cost 1, the lane.** The child exits with no durable advance; the gate scores
+`FAILED disposition=exited-zero`, increments `failure_count`, and backs off
+`min(120, 30 * 2^min(2, failure_count-1))` minutes (30, 60, 120), re-admitting at the first
+`:06/:21/:36/:51` tick after `retry_after`, mutex permitting. Measured: the 01:36Z child's failure
+set `retry_after=02:20:48Z`; the next Fable child was admitted at 02:51:17Z after two mutex denials,
+so the lane was dark 75 min; that child's own failure carries a 60-minute backoff.
+
+**Cost 2, the fleet (new).** The gate admits ONE recovery child fleet-wide at a time
+(`Local\ConjugalDeadman-<sha16>` mutex, `deadman-gate.ps1:489`); every other lane's gate logs
+`another lane recovery owns the global admission mutex; standing down` (measured for opus 02:46:18Z,
+luna 02:36:18Z, sol 02:42:02Z, fable 02:21:19Z and 02:36:19Z). A frozen child that sits out its
+timeout therefore holds the fleet's only admission slot for its whole remaining lifetime, and the
+lanes whose children COULD quarantine are the ones standing down. The mitigation is behavioural and
+costs nothing: compute `birth + age gate` against `spawn + timeout` first; if eligibility is after the
+kill, write the receipt and exit at once so the slot and the backoff clock both start now.
+
+**Startup-git durations on this tree (read-only, optional locks off).** `git status --short` 39.5 s
+(140 lines); `git diff --numstat -M origin/master` 72.7 s (952 lines; `origin/master` shares no
+ancestor with `master`); `git diff --numstat HEAD` did not finish inside the remaining 8 s of a 120 s
+budget; 2497 tracked files, 16 worktrees registered. Hypothesis, not attribution: a `git status`
+permitted optional locks takes `index.lock` after the index refresh and holds it, zero bytes, across
+the whole untracked-file collection, releasing only before it prints; on this tree that is a
+~35 s zero-byte-lock window, and a status-like writer killed at a timeout inside that window leaves
+exactly the observed artifact at exactly a spawn-plus-startup offset. The Claude child's four
+SessionStart hooks are excluded by their bytes (`--no-optional-locks` or `log`/`grep` only) and
+`GIT_OPTIONAL_LOCKS=0` is measured in the child's tool shell; whether the harness's OWN startup git
+calls inherit it is the unmeasured residual, alongside the Codex desktop `git add -u` writer named
+earlier. The test that settles it needs no Sysmon: poll `Win32_Process WHERE Name='git.exe'` with
+`ParentProcessId` and `CommandLine` once per second for the first 90 s after a Claude floor spawn,
+next to the lock's existence; a writer alive for ~40 s is caught by construction.
+
+**Tests.**
+- On a freeze wake, the FIRST computation is `lock_birth + MinimumAgeMinutes` versus
+  `spawn + timeout`. Eligibility after the kill means: receipt, then exit now. Never wait it out,
+  never lower the age, never retry-loop the guard.
+- Treat a lock born about 50 s after a Claude floor spawn as the signature that triggers the
+  creator-identity probe above, not as an attribution.
+- A lane that cannot commit must still not fake the witness: the gate reads the working-tree lane
+  file, so an uncommitted stamp would score SUCCESS on a wake that landed nothing.
+
+**Where this is most likely wrong.** Cost 2 assumes the other lanes are all stale and polling on the
+same 15-minute lattice (true today); a fleet whose other lanes are fresh loses nothing to the held
+slot. The status mechanism has one measured duration per command and no measurement of the
+harness's actual command set or timeout. The 30-minute age gate may be justified against long
+mandatory-lock writers, and lowering it fleet-wide is not proposed here.
