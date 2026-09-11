@@ -8638,3 +8638,115 @@ little guard purity for admission: a process starting inside the guard's own 5 s
 it, as it should. The candidate-producer claim rests only on "no `--no-optional-locks`" plus the
 lattice offset; the four SessionStart hooks were excluded byte-level earlier, the desktop app was not
 tested at all.
+
+## Unattended scheduled Claude runs freeze at the first non-pre-approved tool call (dng-auto-processor, 2026-09-10, ULTRAMAGNUS)
+
+Two default-mode scheduled runs (`cc51e3f0`, `5d42f40e`) ran Bash/Read/Grep calls unprompted,
+then froze at each run's FIRST PowerShell tool call — a queued parallel Bash call in the same
+message waited behind it (`cc51e3f0`: 5 Bash, 3 Read, 1 Grep calls ran before freezing).
+`settings.local.json` pre-approves `Bash(*)`, Read, Edit, Write, Glob, Grep, WebFetch and two
+pinned literal PowerShell one-liners; the PowerShell tool itself is not listed. A scheduled tick
+needs no PowerShell tool call — `codex exec`, `gh.exe --version`, `pwsh -NoProfile -Command
+'<script>'`, git and the pre-commit hook all run from Bash (never `cmd /c` from Bash: it opens an
+interactive shell instead of running one).
+A pre-approved tool can freeze too, and the trigger is narrower than "touching the config dir": the
+steward run `9ecb4ab0` (2026-09-11) answered 58 of 59 calls — including two Bash calls that READ
+`~/.claude/scheduled-tasks/*/SKILL.md` and Bash `cat >>` appends to its evidence dir outside the
+workspace — then waited on a person from 08:06:52Z on one Bash `cp` FROM `~/.claude/scheduled-tasks/`
+INTO that evidence dir, leaving its docs repair (docs/13 1 line, docs/14 +70/-45) uncommitted.
+Mechanism not isolated beyond that contrast; copying out of the Claude config tree is the measured
+trigger.
+
+> **An unattended run must derive its tool allow-list from the workspace's own
+> `settings.local.json` at boot and stay inside it — any tool absent from that list freezes the
+> run at its first call until a person approves it, indistinguishable from a hang.**
+
+Test: from Bash, run PowerShell syntax as `pwsh -NoProfile -Command '<script>'` and Codex as
+`codex exec ... < /dev/null > file 2>&1`; never call the PowerShell tool directly, never `cmd /c`
+from Bash.
+
+## CORRECTION to "global_limit costume" (TRAPS.md:9,21-23; RULINGS.md:22) — same-minute alignment is not the only cause (dng-auto-processor, 2026-09-11, ULTRAMAGNUS)
+
+The published fix (de-align cron minute-marks) does not touch this mechanism. A run frozen on a
+permission prompt never expires and holds one of the desktop scheduler's three concurrent slots
+indefinitely. Measured: three sessions `isRunning=true`, all permission-pending —
+`review-staged-task-retirements` (since 2026-09-10T03:03Z), `dng-warden-wake` (since
+2026-09-10T03:05Z — a DIFFERENT minute, not the same alignment), `dng-design-steward` (since
+2026-09-11T08:06:52Z) — while `dng-traffic-cop` recorded `reason: global_limit` skips n=482
+(first 2026-09-11T07:41:49Z, last 16:27:57Z) with no completed tick since one ending 13:42Z that
+same day. Ending the stuck runs is the only fix, and `archive_session` needs explicit
+per-session (USER) agreement — a lane cannot self-clear its own slot. Even with that agreement the
+app refused all three ("was not archived: it is still working (a turn in progress)"): a run stuck
+mid-turn on a prompt can only be stopped from the app's sidebar by a person.
+
+> **A frozen permission-pending run is a held resource, not a quiet one: it occupies a
+> concurrency slot indefinitely, and no amount of cron de-alignment releases a slot held by a run
+> that isn't waiting on a cron mark at all.**
+
+Test: `list_sessions`; any `isRunning=true` entry with no transcript growth for >10 min is a
+stuck slot, independent of its own or any other task's cron marks.
+
+## Removing a git worktree deletes its own HEAD reflog; commits reachable only there go unreachable (dng-auto-processor, 2026-09-10, ULTRAMAGNUS)
+
+Measured across 14 live worktrees before a planned prune (reachable-set size 2,618 commits):
+summing each worktree's `unreachableAfterPlan` list gives 43 commits that exist ONLY in that
+worktree's own HEAD reflog — deleted with the worktree's admin dir, not the shared `.git` — and
+are absent from every branch, tag, stash ancestry, and the standing package-A tag closure. One
+worktree alone (`t1-acceptance-repairs`, 40 reflog entries) accounts for 23 of the 43. This is
+materially heavier than the repo's existing branch-deletion reflog trap (TRAPS.md:7515-7519),
+which states explicitly that "no commit object was lost" there.
+
+> **A worktree's HEAD reflog is not shared state — removing the worktree removes the only record
+> of any commit reachable solely through it. Tag every such commit, or verify it against
+> branches+tags+stashes+existing tag closures, BEFORE running the removal, never after.**
+
+Test: for each worktree, `git -C <wt> reflog` unioned against `git rev-list --branches --tags`
+plus stash ancestry plus any standing tag closure; anything left over dies with that worktree.
+
+## A GitHub mirror that accepts a direct PR merge diverges from the sync path that feeds it (dng-auto-processor, 2026-09-11, ULTRAMAGNUS)
+
+USER PR #1 was merged directly on GitHub master as `bdf341d8` (2026-09-10T18:01:35Z, parents
+`ede1a9a3`+`b36c9e05`, +57 lines: AGENTS.md +4, CLAUDE.md +4, agents/doctrine-consumer.md +49).
+The derived mirror's master stayed at `879114d7` (synced from local `264fe95a`; `ede1a9a3` was
+an ancestor, `bdf341d8` was not), so every plain sync push after the PR went non-fast-forward,
+and hosted CI stayed pinned to `bdf341d8`'s own run. Repair: write the PR's three blobs
+(`0538819444`, `a191a038da`, `875525ea06`, verified by `hash-object`) into the tree the sync
+script copies, then `git merge --no-ff origin/master` in the mirror workspace (parents
+`247d97d6`+`bdf341d8` -> `04a641e9`) so the next plain push fast-forwards
+(`githubMaster 098899de19 == mirror master`). 12 side branches pushed clean; 4 were rejected
+non-fast-forward and left as-is — no force-push.
+
+> **A derived mirror that a human can also push to directly is no longer purely derived — port
+> the diverging content into the generator's own tree and merge the foreign head in as a parent,
+> so the next sync is a fast-forward instead of a rewrite.**
+
+Test: `git merge-base --is-ancestor <PR-merge-sha> <mirror-head>` before any sync push; if it
+fails, the next plain push will be rejected non-fast-forward.
+
+## `--approve-for-me` conflicts with `-s/--sandbox`, and the sandbox it falls back to has no network (dng-auto-processor, 2026-09-11, ULTRAMAGNUS, codex-cli 0.154.0)
+
+Extends TRAPS.md:3610-3619. `codex exec -s workspace-write --approve-for-me` exits 2: "the
+argument '--sandbox <SANDBOX_MODE>' cannot be used with '--approve-for-me'". Dropping `-s` and
+keeping only `--approve-for-me`, Codex still creates/edits files in a worktree, but `git add`
+fails — `fatal: Unable to create '.../.git/worktrees/<wt>/index.lock': Permission denied` — the
+same shared-`.git` boundary TRAPS.md:3610-3619 already measured. Its own sandbox also blocks the
+network: `dotnet build` fails with 20 `NU1301` errors against `api.nuget.org:443` ("forbidden by
+its access permissions"). With packages restored from OUTSIDE the sandbox first, the identical
+worktree builds clean with `--no-restore` (0 errors, ~10s) and `dotnet test --no-build` passes
+both tests (2/2). Worktree-file and %TEMP% write/read/delete succeeded throughout.
+
+> **`--approve-for-me` is not a superset of `-s/--sandbox` — it keeps a sandbox (no network, no
+> commit) that the flag conflict hides from anyone who assumed dropping `-s` meant unsandboxed.
+> Restore packages outside the sandbox, then build/test inside it with `--no-restore`.**
+
+Test: `codex exec -s workspace-write --approve-for-me ...` (expect exit 2); then
+`codex exec --approve-for-me` alone, attempt `git add`, expect `index.lock` `Permission denied`.
+
+Evidence added under "A model gated on the CLI version fails as a 400..." (TRAPS.md:7033-7043),
+dng-auto-processor, 2026-09-11, ULTRAMAGNUS: the same model, `gpt-6-astra`, answered `PONG`
+(`completed=1`) on codex-cli 0.154.0 after an upgrade from 0.147.0 — the exact version the
+original entry measured failing with the "requires a newer version of Codex" 400. Confirms the
+entry's own rule with the positive half of the (model, CLI) pair now measured too.
+
+Test: `codex --version` before and after any CLI upgrade, then re-probe the same model slug;
+never assume a model gate is permanent.
