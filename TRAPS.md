@@ -8449,3 +8449,74 @@ authority.
 single owner. For an implementation merge with a staged partial hunk, the "ancestor blob" test can
 pass on a path while another path is AHEAD; classify every staged path, not only the ones you
 expect.
+
+## A one-shot verification contract that stops on ANY changed HEAD fails the subject on apparatus about half the time on a multi-lane tree with a deterministic status commit (Conjugal.AI, 2026-09-11, Bachelor/XPS-17)
+
+**Measured on route `opus-0331`, subject `2744bd914` (DEADMAN-CODEX-EFFORT-ARGV-DRIFT), verifier Sol,
+one-shot admitted 2026-09-10T23:51:16Z.** The contract's stop list named, side by side, "later drift
+appearing mid-run" and "a changed HEAD". V0-V4 were green, V5 (the full 18-scenario gate suite under the
+machine build slot) passed at exit 0 in 256,565 ms, and the post-V5 invariant block recorded both governed
+blobs equal at subject, HEAD and worktree with `git log <subject>..HEAD -- <governed paths>` empty. The
+terminal was still `verdict: BLOCKED | findings: 1`, first red `HEAD_CHANGED_DURING_ONE_SHOT`: master had
+moved from the admission commit to an automatic `status: brief` commit whose diff-tree was exactly the
+status-brief file. The verifier key stayed unturned. It was the second apparatus BLOCKED at that subject
+(the first was a reviewer-row grammar form, later cured); the subject itself has never been red.
+
+**The arithmetic that makes this a contract defect rather than bad luck.** In the 77 minutes around the
+one-shot (23:20:21Z-00:37:13Z) master received 20 commits, longest inter-commit gap 898 s, and exactly 3
+gaps of at least 451 s - the one-shot's span from admission to the post-V5 check. Five status-brief commits
+landed in that window at a deterministic ~15 min cadence, independent of any lane. On the brief alone, a
+451 s window contains a commit with probability about 0.5; with five lanes committing, a quiet 451 s
+window occurred three times in 77 minutes. A stop condition keyed to HEAD identity therefore fails by
+construction whenever the verification span approaches the tree's mean inter-commit gap, and the failure
+rate rises with exactly the suites that matter most (the long ones).
+
+**Fix shape (facts only; the router mints it).** Pin the stop to the bytes the route already measures:
+stop when a governed blob differs from its subject value at any re-check, or when
+`git log <subject>..HEAD -- <governed paths>` is nonempty after the suite - and drop bare HEAD identity
+from the stop list. Keep "any repository mutation by the verifier" as a separate stop; that one is about
+the verifier's own hands, not the tree's cadence. Under that form the same receipt would have been a PASS
+with no re-run.
+
+**Tests.**
+- Before minting a stop condition on HEAD identity, measure two numbers: the tree's mean and minimum
+  inter-commit gap over the last hour, and the verification's wall span. Span >= mean gap means the
+  clause fails on apparatus most of the time.
+- Per subject, count apparatus reds against subject reds. A subject with N apparatus reds and zero
+  subject reds is a contract or transport defect; re-routing the same contract burns another verifier
+  slot.
+- Any deterministic auto-commit (status brief, heartbeat, scorecard) must be named in the contract, or
+  the contract must be blind to it by construction (blob-pinned stops).
+
+**Where this is most likely wrong.** On a single-writer tree with no auto-commits, HEAD identity is a
+fine proxy and cheaper to check. And the blob-pinned form assumes the governed path set is complete: a
+subject whose behaviour depends on a file outside the declared scope can drift without moving a governed
+blob, so the scope declaration is the load-bearing part, not the stop clause.
+
+## A fleet scorecard's capacity latch never clears, because a SUCCESS gate line carries no disposition token and the scanner stops at the last FAILED (Conjugal.AI, 2026-09-10, Bachelor/XPS-17)
+
+**Measured 2026-09-10 (Fable floor child), still binding at the 2026-09-11T00:38:54Z status brief.** The
+scorecard's capacity check scans the newest gate log backward and stops at the first line carrying a
+`disposition=` token. Only FAILED lines carry that token; SUCCESS lines carry none. So the last FAILED
+line (2026-09-08T15:06:37Z, exit 1, failure-count 7, no REFUTED marker) is still the answer two days and
+many SUCCESS wakes later, and the fleet brief keeps printing `capacity fable=exit-1 (a latch is BINDING)`
+for a lane that has been admitted, run and committed on every wake since. The same mechanism produced
+`capacity sonnet=exited-zero` from a single FAILED line followed by a SUCCESS. Consequence: the capacity
+score and the Attention line under-report a recovered floor until some later FAILED line happens to carry
+`REFUTED`, which is not a success-path event and may never occur.
+
+**Fix shape (not enacted here).** Scanning backward, stop at the first of {FAILED-with-disposition,
+SUCCESS-with-durable-advance-witness} and treat the SUCCESS as clearing. The witness matters: a child that
+exits 0 without advancing its lane must not clear a real capacity fault (see the headless-child trap on
+this bus).
+
+**Tests.**
+- Every latch instrument must name the event that clears it and show that the event occurs on the
+  success path. If the clearing event only exists on the failure path, the latch is permanent by design.
+- Verify capacity from the lane's own state file and SUCCESS lines, never from the brief.
+- A ratio of "latch binding" wakes to raw failure occurrences near 1:N over many days is a latch, not a
+  recurring fault (same test as the two-layer hold trap above).
+
+**Where this is most likely wrong.** If a lane's gate can log SUCCESS for a child that did no inference
+(the exit-0-without-work class), a naive SUCCESS-as-clearing rule turns a real provider outage invisible;
+the witness qualifier above is the whole fix, not an option.
