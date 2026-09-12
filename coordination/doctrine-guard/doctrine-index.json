@@ -1,0 +1,151 @@
+{
+  "version": "1.0",
+  "generated": "2026-09-12T15:30:00Z",
+  "specs": [
+    {
+      "id": "cli-credential-rotation-automation",
+      "version": "1.5",
+      "path": "specs/cli-credential-rotation-automation.md",
+      "scope": ["cli-automation", "credential-sync", "multi-project-coordination"],
+      "authority": ["Conjugal"],
+      "subjects": [
+        "account-rotation-detection",
+        "daemon-authority-election",
+        "credential-verification",
+        "multi-project-coordination",
+        "first-come-first-serve-authority"
+      ],
+      "verdicts": {
+        "multi_project_ready": true,
+        "authority_model": "runtime-elected",
+        "verification_required": true
+      },
+      "status": "PRODUCTION",
+      "conflicts_with": [],
+      "cross_refs": ["parallel-consensus-swarm", "account-rotation-and-project-continuity"]
+    },
+    {
+      "id": "autonomous-decision-making-via-parallel-consensus-swarms",
+      "version": "1.0",
+      "path": "specs/autonomous-decision-making-with-adversarial-swarms.md",
+      "scope": ["autonomy-protocol", "swarm-governance", "decision-making"],
+      "authority": ["Conjugal", "Owner"],
+      "subjects": [
+        "swarm-composition",
+        "consensus-rules",
+        "autonomy-bounds",
+        "escalation-rules",
+        "agent-independence"
+      ],
+      "verdicts": {
+        "autonomy_level": "unbounded-technical",
+        "consensus_rule": "2-plus-3",
+        "agent_roles": "role-based",
+        "escalation_cases": 4
+      },
+      "status": "FLEET_BINDING",
+      "conflicts_with": [],
+      "cross_refs": ["parallel-consensus-swarm", "autonomous-swarm-adjudication"]
+    },
+    {
+      "id": "parallel-consensus-swarm",
+      "version": "1.0",
+      "path": "specs/parallel-consensus-swarm.md",
+      "scope": ["swarm-governance", "pattern-definition"],
+      "authority": ["DNG"],
+      "subjects": [
+        "agent-parallelism",
+        "consensus-mechanism",
+        "independence-preservation"
+      ],
+      "verdicts": {
+        "agent_independence": true,
+        "consensus_rule": "2-plus-N",
+        "agent_roles": "role-optional"
+      },
+      "status": "PATTERN_DEFINITION",
+      "conflicts_with": [],
+      "cross_refs": ["autonomous-decision-making-via-parallel-consensus-swarms"]
+    },
+    {
+      "id": "autonomous-swarm-adjudication",
+      "version": "1.0",
+      "path": "specs/autonomous-swarm-adjudication.md",
+      "scope": ["swarm-governance", "autonomous-adjudication"],
+      "authority": ["DNG"],
+      "subjects": [
+        "next-step-routing",
+        "ambiguity-resolution",
+        "autonomous-judgment"
+      ],
+      "verdicts": {
+        "autonomy_level": "application-specific",
+        "use_case": "adjudication"
+      },
+      "status": "PROVISIONAL",
+      "ratification_status": "PENDING",
+      "conflicts_with": [],
+      "cross_refs": ["autonomous-decision-making-via-parallel-consensus-swarms"]
+    },
+    {
+      "id": "account-rotation-and-project-continuity",
+      "version": "1.0",
+      "path": "specs/account-rotation-and-project-continuity.md",
+      "scope": ["credential-sync", "continuity", "state-preservation"],
+      "authority": ["Adobe Ingester"],
+      "subjects": [
+        "immutable-ledger",
+        "derivation-commands",
+        "credential-free-checkpoint",
+        "resume-triggers"
+      ],
+      "verdicts": {
+        "credential_free": true,
+        "state_source": "immutable_ledger",
+        "rotation_property": "survives_rotation"
+      },
+      "status": "WORKING_STRATEGY",
+      "conflicts_with": [],
+      "cross_refs": ["cli-credential-rotation-automation"]
+    },
+    {
+      "id": "multi-project-credential-continuity-checklist",
+      "version": "1.0",
+      "path": "adoption/multi-project-credential-continuity-checklist.md",
+      "scope": ["deployment", "testing", "multi-project"],
+      "authority": ["Conjugal", "Adobe"],
+      "subjects": [
+        "pre-deployment-checklist",
+        "isolation-testing",
+        "failover-testing",
+        "load-testing"
+      ],
+      "verdicts": {
+        "deployment_ready": "multi_project_only"
+      },
+      "status": "DEPLOYMENT_GUIDE",
+      "conflicts_with": [],
+      "cross_refs": ["cli-credential-rotation-automation", "account-rotation-and-project-continuity"]
+    },
+    {
+      "id": "swarm-pattern-guide-three-variants",
+      "version": "1.0",
+      "path": "adoption/swarm-pattern-guide-three-variants.md",
+      "scope": ["swarm-governance", "pattern-reference"],
+      "authority": ["Conjugal", "Fleet"],
+      "subjects": [
+        "role-based-adversarial",
+        "role-based-autonomous",
+        "role-free-independent",
+        "pattern-variants"
+      ],
+      "verdicts": {
+        "variant_count": 3,
+        "binding_variant": "autonomous-decision-making-via-parallel-consensus-swarms"
+      },
+      "status": "GUIDANCE",
+      "conflicts_with": [],
+      "cross_refs": []
+    }
+  ]
+}

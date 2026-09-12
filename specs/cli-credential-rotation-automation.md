@@ -130,7 +130,7 @@ Creates `~/.claude/cli-parity.json` with your desktop account.
 {
   "version": "1.0",
   "machines": {
-    "Bachelor": ["conjugal"],
+    "Bachelor": ["conjugal", "cloudvore"],
     "UltraMagnus": ["dropbox", "dng", "magic-lantern"],
     "default": ["conjugal", "dropbox", "dng", "magic-lantern"]
   },
@@ -141,10 +141,16 @@ Creates `~/.claude/cli-parity.json` with your desktop account.
 }
 ```
 
-**Precedence interpretation:**
-- On Bachelor: Conjugal is the daemon authority (if running)
-- On UltraMagnus: DropBox is authority; if down, DNG; if both down, Magic Lantern; if none, default
-- On unknown machine: use "default" precedence list
+**Precedence interpretation (Runtime First-Come-First-Serve):**
+- Precedence list is the ORDER to check for active heartbeats
+- First project in list that has a live heartbeat (< 30s old) becomes authority for this session
+- If authority crashes or heartbeat expires, next project in list becomes authority (fallback)
+- **The precedence list determines fallback order only; runtime election determines actual authority**
+
+**Example:**
+- On Bachelor: `["conjugal", "cloudvore"]` — if Conjugal starts a session first, Conjugal is authority (regardless of criticality). If Conjugal isn't running but Cloudvore is, Cloudvore is authority.
+- On UltraMagnus: `["dropbox", "dng", "magic-lantern"]` — first running project with heartbeat is authority
+- **Key point:** Authority is NOT pre-assigned by importance. It's determined at runtime by which project is actually running.
 
 #### Step 3: Project-Scoped State (Multi-Project Isolation)
 ```json
@@ -315,11 +321,13 @@ When ≥2 projects (Conjugal, DropBox, DNG, Magic Lantern) run on the **same Win
 ```
 
 **How it works:**
-1. **Authority Election (Deterministic):**
+1. **Authority Election (Runtime First-Come-First-Serve):**
+   - Each project checks for authority when it starts a session (via "resume our work" or SessionStart hook)
    - Read machine-specific precedence list (or use "default")
-   - Iterate list in order: first project that is running with active heartbeat = authority
-   - Example on UltraMagnus: try DropBox, then DNG, then ML; whichever has a heartbeat first becomes authority
-   - Election runs once at startup; no re-election (stable for session lifetime)
+   - Iterate list in order: first project that has an active heartbeat (< 30s old) = authority
+   - Example on UltraMagnus: try DropBox → check for heartbeat → if found, DropBox is authority; if not, try DNG → check for heartbeat; if found, DNG is authority; etc.
+   - **Key property:** Whichever project is actually running determines authority (not pre-assigned)
+   - Election runs when each project starts; if authority crashes, next project detects stale heartbeat and takes over (within 30s timeout)
 
 2. **Daemon Heartbeat (Prevents Deadlock):**
    - Authority project writes `~/.claude/.machine-reauth-daemon-active` with:
