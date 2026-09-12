@@ -153,15 +153,31 @@ Creates `~/.claude/cli-parity.json` with your desktop account.
   "version": "1.0",
   "project": "conjugal",
   "machine": "Bachelor",
+  "account_uuid": "c96755fb-e6a8-4158-a0d9-251a66468463",
   "last_rotation_timestamp": "2026-09-12T14:00:00Z",
-  "last_account_email": "darktravellersinfo@gmail.com",
-  "account_uuid": "c96755fb-e6a8-4158-a0d9-251a66468463"
+  "rotation_complete_marker": true
 }
 ```
 
 **Why:** Each project maintains its own rotation state file (NOT machine-wide). This ensures usage accounting and rotation tracking are project-scoped, not shared. If DropBox and Conjugal both rotate on the same machine, each tracks its own state independently.
 
+**Key fields:**
+- `account_uuid` (required): Desktop's `lastKnownAccountUuid` from config.json (machine-scoped account identifier, survives re-auth)
+- `last_rotation_timestamp`: Daemon's completion time (allows floors to detect "rotation just happened")
+- `rotation_complete_marker`: Set to `true` ONLY after post-login verification succeeds (signals floors that credential is fresh)
+
 **Naming:** `rotation-state-<PROJECT>.json` where `<PROJECT>` matches the project name in `machine-authority-precedence.json` (e.g., `rotation-state-conjugal.json`, `rotation-state-dropbox.json`).
+
+**Multi-Account Safety (Important for shared machines with multiple accounts):**
+If a machine will host multiple projects under different accounts (e.g., Conjugal on Account A + DropBox on Account B), extend parity file to account-scoped:
+```json
+# ~/.claude/cli-parity-<ACCOUNT>.json (if multiple accounts)
+{
+  "account_uuid": "c96755fb-e6a8-4158-a0d9-251a66468463",
+  "account_email": "darktravellersinfo@gmail.com"
+}
+```
+Daemon checks: "Desktop's UUID matches stored UUID?" rather than email-based parity (email alone doesn't disambiguate across accounts).
 
 #### Step 4: Start Daemon (Once at Windows Login, or Task Scheduler)
 ```powershell
@@ -436,6 +452,46 @@ With this static precedence model:
 - **Heartbeat-based liveness** — stale markers auto-expire (TTL 30s); no permanent deadlock
 - **Race-free delegation** — static precedence eliminates dynamic election race conditions
 - **Approach A as safety net** — hook-based checkpoints catch daemon failures on next SessionStart
+
+### Daemon-to-Floors Handoff Boundary
+
+When daemon completes rotation:
+1. Daemon sets `rotation_complete_marker: true` in `rotation-state-<PROJECT>.json` (atomic write)
+2. Daemon writes `~/.claude/.machine-reauth-daemon-active` heartbeat with timestamp
+3. Floors check: "Is heartbeat fresh AND is `rotation_complete_marker: true`?" 
+   - If yes: Trust credential is fresh; proceed
+   - If no: Credential may be stale; verify with `check-cli-auth.py --allow-live-probe`
+
+**Floors should NOT rely on `~/.claude/.credentials.json` timestamp** — use `rotation_complete_marker` and heartbeat age as signals instead.
+
+### SessionStart Hook Coordination (For Projects Using Adobe Continuity Pattern)
+
+**If your project adopts BOTH this spec AND account-rotation-and-project-continuity.md:**
+
+SessionStart hook should defer to daemon if heartbeat is fresh:
+```powershell
+# In SessionStart hook (before checking parity/drift)
+$heartbeatPath = "$env:USERPROFILE/.claude/.machine-reauth-daemon-active"
+$isHeartbeatFresh = $false
+if (Test-Path $heartbeatPath) {
+  $hb = Get-Content $heartbeatPath -Raw | ConvertFrom-Json
+  $age = (New-TimeSpan -Start ([datetime]::Parse($hb.timestamp)) -End (Get-Date)).TotalSeconds
+  if ($age -lt 30) {
+    $isHeartbeatFresh = $true
+  }
+}
+
+if ($isHeartbeatFresh) {
+  # Daemon is handling rotation; skip parity check
+  Write-Output "SessionStart: Daemon heartbeat fresh; deferring rotation check"
+  exit 0
+} else {
+  # No active daemon; perform parity check as normal
+  # (Your existing account drift check code here)
+}
+```
+
+**Why:** If daemon is mid-rotation and SessionStart hook runs concurrently, hook might see inconsistent credential state (old in one layer, new in another). By deferring to daemon's heartbeat, you ensure hook only runs AFTER daemon is idle or dead.
 
 ### Deployment Checklist for Multi-Project Machines
 
