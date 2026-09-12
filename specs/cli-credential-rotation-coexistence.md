@@ -115,6 +115,96 @@ T=0.5s: Session proceeds with correct credential
 
 ---
 
+## ANTI-PATTERN: Why Async Subprocess Operations Break Credential Rotation
+
+**Incident:** Cloudvore 2026-09-12 SessionStart hook deployed async auth without daemon coordination, causing repeated re-auth prompts and account corruption.
+
+### What Went Wrong
+
+**Broken Implementation (DO NOT DO THIS):**
+```python
+# ❌ WRONG: Spawns async subprocess without waiting or verifying
+subprocess.Popen(['claude', 'auth', 'login'], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+```
+
+**Timeline of Failure:**
+```
+T=0.0s: Desktop account rotates (user logs into new account via browser OAuth)
+T=0.1s: SessionStart hook fires (Claude Code session starts)
+T=0.2s: Hook spawns subprocess.Popen(['claude', 'auth', 'login'], ...) — returns immediately, no wait
+T=0.3s: TWO PROCESSES now race for credential files simultaneously:
+         - Desktop OAuth callback writes ~/.claude/session.auth (browser auth)
+         - CLI auth subprocess writes same files (CLI sync)
+T=0.4s: File corruption: concurrent writes, partial cache, stale file handles
+T=0.5s: Account state undefined; browser keeps asking for re-auth
+```
+
+### Why This Breaks the Safe Pattern
+
+1. **Async without waiting:** `subprocess.Popen()` spawns a child process and returns immediately; parent never waits for completion.
+2. **No daemon deferral:** Hook never checks if Pattern B daemon is already handling the rotation (see deferral protocol above).
+3. **No result verification:** Hook assumes success; never re-checks `check-cli-auth.py` after spawning wizard.
+4. **Concurrent writes to shared credential space:** OAuth tokens, session cache, CLI credentials all live in `~/.claude/` — simultaneous writes corrupt the shared state.
+
+### The Correct Pattern A Implementation
+
+**Pattern A is safe when implemented correctly:**
+
+```python
+# ✅ RIGHT: Detect-only, synchronous with verification
+divergence = subprocess.run(['python', 'check-cli-auth.py', '--json'], 
+                           capture_output=True, text=True, timeout=10)
+if 'misaligned' in divergence.stdout:
+    # Check daemon before acting
+    daemon_heartbeat = os.path.getmtime('~/.claude/.daemon-heartbeat')
+    if time.time() - daemon_heartbeat < 30:  # Daemon is fresh
+        return  # Defer to daemon (Pattern B)
+    else:  # Daemon absent/stale
+        # NOW spawn synchronously and wait
+        result = subprocess.run(['claude', 'auth', 'login'], 
+                               timeout=300, capture_output=True)
+        if result.returncode == 0:
+            # Verify re-check
+            verify = subprocess.run(['python', 'check-cli-auth.py'], 
+                                   capture_output=True, text=True)
+            if 'MATCHED' in verify.stdout:
+                return  # Success
+        raise RuntimeError("Re-auth failed; manual intervention needed")
+```
+
+### Fleet Safety Guardrails
+
+**DO NOT:**
+- ❌ Spawn async credential operations in SessionStart hooks
+- ❌ Use `subprocess.Popen()` without `subprocess.run(..., wait=True)` in hot-path hooks
+- ❌ Assume subprocess success without verifying result (exit code, state re-check)
+- ❌ Ignore daemon heartbeat signals; always defer to Pattern B if it's running
+
+**DO:**
+- ✅ Use synchronous operations in SessionStart: `subprocess.run(..., capture_output=True, timeout=60)`
+- ✅ Check daemon heartbeat before spawning auth operations (deferral protocol)
+- ✅ Always wait for subprocess completion
+- ✅ Always verify result: check exit code AND re-run `check-cli-auth.py` to confirm new state
+- ✅ Log all operations (help debugging when re-auth loops occur)
+
+### Backward Compatibility
+
+**All existing Pattern A implementations using `subprocess.run()` with `capture_output=True` are unaffected and remain compliant.** This anti-pattern applies only to async spawning (`subprocess.Popen()` without waiting). Synchronous operations with result verification are safe.
+
+### Fleet Audit
+
+**Projects: Scan your `.claude/settings.json` hooks for this pattern:**
+```bash
+# Detect async credential operations in hooks
+grep -r "Popen.*auth" .claude/settings.json
+grep -r "subprocess.*auth.*stderr" .claude/settings.json
+grep -rE "auth (login|logout)" .claude/settings.json | grep -v "subprocess.run"
+```
+
+If found, refactor to use `subprocess.run(..., capture_output=True, timeout=60)` and add result verification.
+
+---
+
 ## Deployment Checklist
 
 ### For Single-Project Machines
