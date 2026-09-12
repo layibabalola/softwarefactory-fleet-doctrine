@@ -19,6 +19,8 @@ This export documents a **production-grade automated rotation system** (Approach
 - **Isolates** projects via project-scoped state files (`rotation-state-<PROJECT>.json`)
 - **Coordinates** on shared machines via explicit authority precedence (no dynamic election)
 
+**User Experience:** Browser OAuth window pops automatically. You click Approve. Done. Zero manual commands, zero waiting for prompts. See "User Experience: Automation Boundaries" below for the exact timeline and what's automated vs. what requires your action.
+
 **Fleet applicability:** **ALL projects assume multi-project readiness by default.** Conjugal (primary authority on Bachelor), DropBox (authority on UltraMagnus if present), Magic Lantern, DNG, and any multi-account project. Even single-project machines deploy the coordination layer; the cost of retrofitting multi-project support later (breaking migration under live workloads) far exceeds the cost of having unused config today. Machine-specific config in `~/.claude/machine-authority-precedence.json` lists all projects that *might* run on that machine, ensuring no interference when a second project arrives.
 
 ---
@@ -72,6 +74,38 @@ Stage 3: COORDINATE (machine-authority-precedence.json, static)
 ├─ Other projects delegate via heartbeat check + timeout fallback
 └─ No cross-machine interference; each machine has its own config
 ```
+
+### User Experience: Automation Boundaries (Explicit)
+
+**What is FULLY AUTOMATED (no user action required):**
+
+| Step | Who | Trigger | Example |
+|------|-----|---------|---------|
+| 1. Detect drift | Hook / Monitor | SessionStart or 5s polling | CLI org ≠ Desktop org detected |
+| 2. Extract target | Detector script | Read desktop config.json | Desktop org UUID extracted |
+| 3. Invoke wizard | Hook | Auto-call reauth-cli-wizard.ps1 | Wizard runs without user command |
+| 4. Launch browser | Wizard → `claude auth login` | Automatic OAuth flow | Browser window pops automatically |
+| 5. Switch account | OAuth server + CLI | User approves (see below) | Credential updated in ~/.claude/.credentials.json |
+| 6. Verify result | Wizard (post-flight gate) | Check new CLI account matches target | PASS or FAIL logged |
+| 7. Report to session | Hook | Print status | ✓ or ⚠ shown; session continues |
+
+**What REQUIRES USER ACTION (1 click, unavoidable):**
+
+| Step | Action | Security Reason | Example |
+|------|--------|-----------------|---------|
+| OAuth approval | Click "Approve" in browser window | User consent required by OAuth2 standard | Browser shows "Claude Code wants to access your account" → click Approve |
+
+**Total user friction:** One browser window pops automatically; you click Approve; done. No manual wizard invocation, no commands to paste, no waiting for prompts.
+
+**Timeline:**
+- **T+0s:** SessionStart fires
+- **T+1s:** Hook detects drift, spawns wizard
+- **T+2s:** Browser OAuth window appears (automatic)
+- **T+3–10s:** User clicks Approve in browser
+- **T+11s:** Credential updated, wizard exits
+- **T+12s:** Session continues with fresh credentials
+
+---
 
 ### Key Hardening Properties
 
