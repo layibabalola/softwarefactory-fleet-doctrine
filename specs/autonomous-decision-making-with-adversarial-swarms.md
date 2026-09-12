@@ -1,9 +1,11 @@
-# Doctrine Export: Autonomous Decision-Making via Adversarial Haiku Swarms
+# Doctrine Export: Autonomous Decision-Making via Parallel Consensus Swarms
 
 **Date:** 2026-09-12T14:30:00Z  
 **Source:** Conjugal CLI Automation Governance (User-authorized autonomy protocol)  
-**Authority:** Owner guidance + fleet practice  
+**Authority:** Owner guidance + fleet practice + swarm consensus (2026-09-12)  
 **Status:** IN FORCE (fleet-wide autonomy standard)
+**Pattern reference:** `specs/parallel-consensus-swarm.md` (unified mechanism definition)
+**Related:** `specs/autonomous-swarm-adjudication.md` (DNG adjudication variant)
 
 ---
 
@@ -43,15 +45,21 @@ To eliminate decision-making bottlenecks, Claude sessions act **autonomously on 
 
 ---
 
-## The Swarm Composition
+## The Swarm Composition (Parallel Consensus Swarm Pattern)
 
-**Standard swarm: 3 agents with different expertise**
+**Standard swarm: 3 agents with different expertise (role-based variant)**
 
 1. **Agent A (Feasibility Reviewer):** "Can we build this? What's the simplest path?"
 2. **Agent B (Security/Risk Auditor):** "What could go wrong? What are the failure modes?"
 3. **Agent C (Pragmatist Comparator):** "Which option is actually better in practice? What's the cost?"
 
-Each agent works independently (no visibility to others' reasoning) and renders its own verdict. Consensus emerges when 2+ agents agree on the recommendation.
+**Core mechanism (see `parallel-consensus-swarm.md`):**
+- Each agent works independently (no visibility to others' reasoning)
+- Agents rendered concurrent verdicts
+- Consensus emerges when 2+ agents agree on the recommendation
+- **NOT a debate:** Agents don't see or rebut each other; independence is preserved
+
+**Pattern terminology:** This is a **role-based instantiation** of the parallel consensus swarm pattern. Other variants (role-free, independence-based) exist; see `autonomous-swarm-adjudication.md` for alternate deployment.
 
 **Real-world example (CLI rotation automation):**
 - Agent 1 (Determinism): "Dynamic parallelism-based election is non-deterministic; handoff undefined."
