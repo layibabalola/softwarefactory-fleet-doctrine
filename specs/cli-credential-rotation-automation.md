@@ -130,7 +130,7 @@ Creates `~/.claude/cli-parity.json` with your desktop account.
 {
   "version": "1.0",
   "machines": {
-    "Bachelor": ["conjugal"],
+    "Bachelor": ["conjugal", "cloudvore"],
     "UltraMagnus": ["dropbox", "dng", "magic-lantern"],
     "default": ["conjugal", "dropbox", "dng", "magic-lantern"]
   },
@@ -142,9 +142,11 @@ Creates `~/.claude/cli-parity.json` with your desktop account.
 ```
 
 **Precedence interpretation:**
-- On Bachelor: Conjugal is the daemon authority (if running)
+- On Bachelor: Conjugal is the daemon authority (4-floor parallelism requires atomic rotation); Cloudvore is fallback
 - On UltraMagnus: DropBox is authority; if down, DNG; if both down, Magic Lantern; if none, default
 - On unknown machine: use "default" precedence list
+
+**Authority selection rationale:** Projects with higher parallelism (more concurrent processes) are better daemon authorities because they benefit more from atomic, centralized credential rotation. Conjugal's 4-floor model is mission-critical; Cloudvore (archival) is secondary. Precedence reflects this: most-parallel-first.
 
 #### Step 3: Project-Scoped State (Multi-Project Isolation)
 ```json
