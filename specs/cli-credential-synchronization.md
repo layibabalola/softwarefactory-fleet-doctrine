@@ -2,7 +2,9 @@
 
 **Status:** Adopted (2026-09-12)  
 **Authority:** User directive (seamless multi-account experience)  
-**Scope:** Any machine with manual account rotation
+**Scope:** Any machine with manual account rotation  
+**Ratification:** Parallel Consensus Swarm (2/3 RATIFY, Lane A dissent noted)  
+**See also:** [[parallel-consensus-swarm]] (validation pattern used)
 
 ## The Problem
 
