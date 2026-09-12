@@ -11,14 +11,15 @@
 
 After desktop account rotation, the Claude CLI often remains on a stale account, causing silent failures downstream (usage limits on abandoned accounts, inference calls failing server-side). 
 
-This export documents a **production-grade automated rotation system** (Approach B — daemon-based) paired with a **project-agnostic multi-project coordination model** (static precedence config) that:
+This export documents a **production-grade automated rotation system** (Approach B — daemon-based) paired with a **multi-project coordination model** (static precedence config + project-scoped state) that:
 - **Detects** account rotation in real-time (5s polling, <3 min lag)
 - **Re-authenticates** the CLI automatically with hardened verification
 - **Prevents** silent wrong-account divergence via pre/post-login checks
 - **Protects** logs from race corruption and credential exposure across parallel lanes
+- **Isolates** projects via project-scoped state files (`rotation-state-<PROJECT>.json`)
 - **Coordinates** on shared machines via explicit authority precedence (no dynamic election)
 
-**Fleet applicability:** Conjugal (primary authority on Bachelor), DropBox (optional authority on UltraMagnus), Magic Lantern, DNG, and any multi-account project using Claude Code. Machine-specific config ensures UltraMagnus and Bachelor don't interfere.
+**Fleet applicability:** **ALL projects assume multi-project readiness by default.** Conjugal (primary authority on Bachelor), DropBox (authority on UltraMagnus if present), Magic Lantern, DNG, and any multi-account project. Even single-project machines deploy the coordination layer; the cost of retrofitting multi-project support later (breaking migration under live workloads) far exceeds the cost of having unused config today. Machine-specific config in `~/.claude/machine-authority-precedence.json` lists all projects that *might* run on that machine, ensuring no interference when a second project arrives.
 
 ---
 
@@ -145,14 +146,32 @@ Creates `~/.claude/cli-parity.json` with your desktop account.
 - On UltraMagnus: DropBox is authority; if down, DNG; if both down, Magic Lantern; if none, default
 - On unknown machine: use "default" precedence list
 
-#### Step 3: Start Daemon (Once at Windows Login, or Task Scheduler)
+#### Step 3: Project-Scoped State (Multi-Project Isolation)
+```json
+# ~/.claude/rotation-state-<PROJECT>.json
+{
+  "version": "1.0",
+  "project": "conjugal",
+  "machine": "Bachelor",
+  "last_rotation_timestamp": "2026-09-12T14:00:00Z",
+  "last_account_email": "darktravellersinfo@gmail.com",
+  "account_uuid": "c96755fb-e6a8-4158-a0d9-251a66468463"
+}
+```
+
+**Why:** Each project maintains its own rotation state file (NOT machine-wide). This ensures usage accounting and rotation tracking are project-scoped, not shared. If DropBox and Conjugal both rotate on the same machine, each tracks its own state independently.
+
+**Naming:** `rotation-state-<PROJECT>.json` where `<PROJECT>` matches the project name in `machine-authority-precedence.json` (e.g., `rotation-state-conjugal.json`, `rotation-state-dropbox.json`).
+
+#### Step 4: Start Daemon (Once at Windows Login, or Task Scheduler)
 ```powershell
 # On the authority project for this machine:
-pwsh -File coordination/tools/monitor-account-rotation.ps1 -CheckIntervalSeconds 5
+pwsh -File coordination/tools/monitor-account-rotation.ps1 -CheckIntervalSeconds 5 -ProjectName "conjugal"
 ```
 Runs continuously; detects rotation and auto-triggers re-auth.
 
 Creates `~/.claude/.machine-reauth-daemon-active` heartbeat file (expires after 30s of no updates).
+Updates `~/.claude/rotation-state-<PROJECT>.json` on successful rotation.
 
 #### Step 4: Verify Account Sync
 ```powershell
@@ -167,6 +186,31 @@ Conjugal (4 concurrent floors: Sol, Luna, Fable, Opus) should:
 2. **All floors share** the same credential store (`~/.claude/.credentials.json`)
 3. **Trust the daemon** to handle rotation atomically; floors inherit fixed credential on next wake
 4. **Daemon runs once system-wide** (one monitor-account-rotation.ps1 instance per machine)
+
+---
+
+## Multi-Project-by-Default Assumption
+
+**STANDING PRINCIPLE:** All machines are assumed to be potentially multi-project. Every deployment includes coordination infrastructure, even on single-project machines.
+
+### Rationale (Swarm-Audited Decision)
+
+**Asymmetric retrofit cost:**
+- **Single-project assumption → multi-project lands = breaking migration.** You must pause all floors mid-work, re-architect state paths (per-project vs. machine-wide), inject coordination logic into live systems, and test under concurrent load. This is a major version bump forced by environment change, not choice. Risk: race conditions during retrofitcorrect partial writes, usage accounting breaks.
+- **Multi-project assumption → stays single-project = harmless noise.** Config file lists projects that don't exist yet; no runtime cost, no operator friction. If a second project lands, coordination is already in place.
+
+**Evidence:** UltraMagnus will host DropBox, DNG, and Magic Lantern. You know multi-project is coming; the question is whether the system is ready when it arrives.
+
+### What This Means
+
+1. **Every deployment includes** `~/.claude/rotation-state-<PROJECT>.json` (project-scoped state, not machine-wide)
+2. **Machine config lists all projects** that *might* run there (in `machine-authority-precedence.json`)
+3. **Capacity and credential tracking are project-keyed** (not account-keyed, not machine-wide)
+4. **Single-project case is N=1** in the precedence list — the coordination layer just doesn't get exercised
+
+### When a Second Project Lands
+
+No retrofit needed. Authority election picks the first running project in the machine's precedence list. Non-authority projects delegate via heartbeat check. Both projects maintain independent state files. Zero coordination burden at deployment time.
 
 ---
 
@@ -201,13 +245,17 @@ Conjugal (4 concurrent floors: Sol, Luna, Fable, Opus) should:
 
 ### Project Examples
 
-| Project | Parallelism | Machine | Recommendation |
-|---------|-------------|---------|-----------------|
-| **Conjugal** | 4 floors (Sol, Luna, Fable, Opus) | Bachelor | **Approach B (authority)** |
-| **DropBox Vault** | 1–2 lanes | UltraMagnus (possible) | **Approach B (authority if alone on UltraMagnus)** |
-| **Magic Lantern** | 1 (single verifier) | Varies | **Approach A (delegates to B if shared)** |
-| **DNG Auto-Processor** | 1–2 processes | UltraMagnus (possible) | **Approach A (delegates to DropBox/Conjugal if shared)** |
-| **New project** | Unknown | Unknown | **Start with A; add to precedence list if shared machine** |
+**All projects assume multi-project readiness (static precedence config + project-scoped state):**
+
+| Project | Parallelism | Machine | Authority Role | State File |
+|---------|-------------|---------|-----------------|------------|
+| **Conjugal** | 4 floors (Sol, Luna, Fable, Opus) | Bachelor | Primary (first in precedence) | `rotation-state-conjugal.json` |
+| **DropBox Vault** | 1–2 lanes | UltraMagnus | Primary (first in precedence) | `rotation-state-dropbox.json` |
+| **Magic Lantern** | 1 (single verifier) | Varies | Fallback (if listed in precedence) | `rotation-state-magic-lantern.json` |
+| **DNG Auto-Processor** | 1–2 processes | UltraMagnus | Fallback (third in precedence) | `rotation-state-dng.json` |
+| **New project** | Unknown | Unknown | Fallback (added to precedence list) | `rotation-state-<project>.json` |
+
+**Why multi-project by default:** The retrofit cost of adding coordination to a single-project deployment is asymmetric. If you assume single-project and a second project lands, you must pause all floors mid-work, re-architect state paths, and test coordination on a live system (breaking migration). If you assume multi-project but stay single-project, you have an unused config file (zero cost). **Ship the stronger assumption.**
 
 ---
 
