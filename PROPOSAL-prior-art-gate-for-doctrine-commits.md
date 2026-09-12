@@ -96,25 +96,49 @@ When authoring new doctrine specs, there is no enforcement gate to verify prior-
 
 ---
 
-## Edge Cases
+## Intent Tags & Validation (REFINED)
 
-**Intent tags (allow override with rationale):**
-```yaml
-intent: "explore-alternative"  # New approach to existing domain
-rationale: "Investigate lightweight variant of X; existing spec Y remains authoritative"
-```
-Allows commit despite scope overlap, IF commit message documents intent + rationale.
+**Intent tag semantics (sharply defined):**
+
+| Intent | Meaning | Gate Behavior | Requires |
+|--------|---------|---------------|----------|
+| `propose` | New spec, no known prior art | Allow without prior-art check | Explicit rationale in commit |
+| `explore-alternative` | Investigate variant of existing domain | Warn scope overlap; allow if rationale approved | Swarm review of rationale BEFORE commit |
+| `cite-precedent` | Reference existing spec; not claiming novelty | Warn; require explicit cross-ref in spec header | Documentation link to cited spec |
+
+**Validation workflow (MOVED TO PRE-COMMIT):**
+1. Developer drafts spec with intent tag + rationale
+2. Pre-commit hook validates:
+   - Intent tag is recognized (propose / explore-alternative / cite-precedent)
+   - Rationale is non-empty
+   - For `explore-alternative`: REQUIRE swarm review of rationale (not post-push, not developer self-serve)
+3. Swarm (3-agent min) reviews rationale:
+   - Does rationale justify exploring this variant?
+   - Is existing spec properly cited/credited?
+   - Is coexistence strategy clear?
+4. On swarm APPROVE: commit proceeds with audit trail (swarm verdict recorded in commit)
+5. On swarm REJECT: developer refines rationale, resubmits to swarm
+
+**Audit trail:** Commit message includes swarm verdict + reasoning (immutable record).
+
+**Anti-gaming measures:**
+- Intent tags must have explicit, non-generic rationales
+- Swarm approval creates audit trail (no silent bypasses)
+- `propose` tag accepted only if scope has zero keyword overlap with existing specs
+- `explore-alternative` requires swarm pre-approval (not post-push forgiveness)
 
 **Cross-project coordination:**
 When two projects push simultaneously (Conjugal + DNG case):
-- Both pass local prior-art (neither knows about the other's in-flight commit)
+- Both pass local pre-commit (neither knows about in-flight commits)
 - Pre-push hook (Doctrine Guard) catches on second push
 - Swarm reconciliation runs
 - Verdict: COEXIST + cross-refs (not a violation; gate design catches it)
 
-**Novel proposals:**
-Specs marked `intent: "propose"` are expected to have no prior art (by definition, novel).
-Gate allows without conflict check IF `intent` tag present.
+**Scope overlap definition (OPERATIONALIZED):**
+- Primary: Shared top-level keywords (e.g., both specs mention "swarm-governance")
+- Secondary: Overlapping subject matter (check `subjects:` field in spec header)
+- Threshold: ≥3 shared keywords OR ≥2 shared subjects = overlap detected
+- Override: `intent: "explore-alternative"` + swarm-approved rationale can override
 
 ---
 
