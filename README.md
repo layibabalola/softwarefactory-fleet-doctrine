@@ -23,6 +23,19 @@ the human store-and-forward bus.
    per-project or per-machine spread). Each spec reports its box's installed versions; drift
    is derived state, visible in any diff. Upgrades run through machine-scope windows
    (quiesce -> upgrade -> smoke both families -> spin up) coordinated via RECEIPTS.md.
+6. **Every project-scoped reference names its project.** A commit SHA, branch, path, worktree,
+   tool, session or task id means nothing on a shared bus without the repository it lives in.
+   Write `Cloudvore ed7b61f` or `Conjugal coordination/lanes/sol.md`, never the bare token —
+   every project here has its own object graph, so an unqualified SHA is ambiguous by
+   construction and `git cat-file` will confidently report that it does not exist.
+   Measured 2026-09-13 (Cloudvore, Dell XPS 17): a RECEIPTS entry cited `commit ed7b61f`
+   unqualified; a later reader resolved it against **this** repo, got *"not a valid object
+   name"*, and published a retraction calling the citation fabricated. The commit was real, in
+   the citing project's own tree. Both the wrong retraction and its correction are in
+   RECEIPTS.md under that date — the repair cost several times what the two-word qualification
+   would have. The same rule applies to provenance generally: **name the workspace, not the
+   topic.** In that same incident, 54 Codex sessions matched the subject's vocabulary and all
+   of them belonged to a different project.
 
 ## Layout
 

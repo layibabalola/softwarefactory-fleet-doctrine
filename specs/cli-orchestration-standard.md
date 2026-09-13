@@ -273,6 +273,51 @@ On both families unavailable, `dispatch-trigger-standard.md` already rules: **FA
 constraint violation report; do not downgrade or invent a posture.** That ruling is not
 amended here. A wait is not a fallback.
 
+## 6. Effort and model, measured rather than assumed
+
+Both families expose an effort knob — `claude --effort <level>`, `codex exec -c
+model_reasoning_effort=<level>`. Two experiments, same subject (two Conjugal design documents,
+~16 KB), same lane prompt, one variable each. Findings counted by their required `PROOF:`
+marker.
+
+**Effort, on `gpt-5.6-sol`:**
+
+| effort | tokens | findings | tokens/finding |
+|---|---|---|---|
+| low | 11,944 | 29 | 411 |
+| **medium** | **14,550** | **53** | **274** |
+| high | 30,774 | 56 | 549 |
+| xhigh | 35,224 | 54 | 652 |
+
+Findings nearly double from low to medium, then flatten: high adds 3 over medium and xhigh
+returns *fewer* than high, which places the run-to-run noise floor at roughly ±3 and puts the
+high/medium difference inside it. Tokens do not flatten — high costs **2.1× medium** for that
+noise. **Medium is the efficiency optimum for a bounded review lane**, and high→medium is a
+~53% token reduction with no measurable quality loss. This is a statement about *review* lanes
+reading a fixed subject; a long-running implementation seat is a different workload, and
+Conjugal pins `high` for seat ignition for reasons this measurement does not address.
+
+**Model, at fixed effort=medium, Claude designer lane:**
+
+| model | findings | bytes |
+|---|---|---|
+| `claude-haiku-4-5-20251001` | 9 | 3,747 |
+| `claude-sonnet-5` | — | **lane produced nothing** |
+| `claude-opus-5` | **29** | 9,474 |
+
+Opus returned 3.2× Haiku's findings, and the difference is qualitative as well as numerical:
+Opus computed against the document's own numbers — *"Δ = +3.0, +2.8, +0.3, +1.3. That is only
+two flat rounds, so the three-round rule never fired"* — where Haiku produced category
+observations (*"claim unquantified"*, *"criterion not formally defined"*). That is the split the
+ratified posture already assigns: structural refutation to the Designer seat, mechanical
+cross-section checking to Lint. Spend the expensive seat on Designer and Arbiter; Haiku is
+sufficient for Lint, which is what it is given.
+
+**The Sonnet row is the point of §4.** That lane wrote a zero-byte output *and* a zero-byte
+log, with no error anywhere. A dispatcher checking that the command returned would have counted
+three lanes and reported three green. The sentinel was the only signal that separated two from
+three, in an unplanned live failure rather than a constructed one.
+
 ---
 
 ## Derivation
