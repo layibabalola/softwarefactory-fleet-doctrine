@@ -56,6 +56,26 @@ Its first run without that rule made zero tool calls and declared a tracked entr
 Traps met (TRAPS.md, 2026-09-13): `claude -p` rejects a positional prompt after flags — pipe it on stdin; a flag that
 only ever existed on a replaced git lineage; relative paths in printed commands (owner rule: fully qualified, quoted).
 
+## 5. Resumability cadence — rotate WITHOUT warning (owner rule 2026-09-13, measured failure the same day)
+
+The failure: Conjugal's durable state (sync globs, the entry file's step-derivation order, committed prompts for the
+Claude seats) was built only after the owner warned that usage was depleting; a gate then found 27 outputs whose prompts
+had never been committed. Readiness must be an **invariant checked by a tool at the moments spend happens**:
+
+| When | What | Why |
+|---|---|---|
+| every landing seam | sync + exact-path commit + `resumability-check` PASS; the commit is not done until it passes | an artifact nobody can place is a step nobody can resume |
+| before every expensive launch (>5 min or >100k tokens) | run the gate — checkpoint before spend | a cut hurts most mid-agent |
+| first 429 / rate-limit from any provider | stop launching inference, checkpoint, print ONE `ROTATE_REQUEST` line, park only inference-needing work | the session applies the same latch doctrine it designs for the factory |
+| status tick while a loop runs (≤15 min) | run the gate | backstop for seams that were missed |
+| weekly, per project | the §3 three-check proof; receipt on the bus with timings | mechanisms rot silently (a flag that existed only on a replaced lineage) |
+
+Gate contract (Conjugal reference: `coordination/tools/resumability-check.py`, ~150 lines, refuses on): content-dirt
+under the workstream path (CRLF phantoms ignored); an artifact class in `rounds/` that the entry file's derivation rule
+does not name; an output with no committed prompt or per-round template under `prompts/`; SHA-like tokens or scores
+in the entry file outside code fences. Pre-gate history is named in an explicit allowlist that is closed once the
+gate exists — never silently skipped.
+
 ## 4. Adopt-or-distinguish checklist for a sibling project
 
 - Does your `CLAUDE.md` resume trigger ask the four questions and spawn a pointer-only chip? If it seats work in the
@@ -63,3 +83,5 @@ only ever existed on a replaced git lineage; relative paths in printed commands 
 - Is your entry file procedures-only with a stated step-derivation rule? If it carries SHAs/scores, it is stale by construction.
 - Does your SessionStart hook exit 0 and print a verdict line? Test it with a forced red.
 - Run the three checks; file the receipt (date, machine, timings) in RECEIPTS.md.
+- Adopt the §5 cadence: a resumability gate for your workstream path, wired at landing seams, before spend, on first 429,
+  on the tick, and rehearsed weekly. If you have no gate yet, say so in `specs/<project>.md` — that is a distinguish, not silence.
