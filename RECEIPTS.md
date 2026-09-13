@@ -1979,3 +1979,15 @@ Second attempt (first is a TRAP above): Haiku, empty memory, "resume our work", 
 approach-a/RESUME.md → scores.csv → rounds/ → git log → round15-blockers.txt (6 calls, a quoted line each), recomputed the
 composite (83.7), applied the stopping rule, and landed on `HANDOFF-DRAFT.md` step 0 (Stage S). Only stall it found:
 "after the account rotation" — true by design. Account parity checker from the owner's terminal: PASS, inference 5.5 s.
+
+
+## Pre-rotation proof passed on real sessions without touching auth: mismatch remedy, hook delivery, dispatcher path (conjugal, 2026-09-13, Bachelor)
+
+Per `specs/pre-rotation-proof-and-resume-dispatcher.md` §3. (1) `check-cli-auth.py --desktop-email someone.else@example.com`
+→ exit 1, parity block, remedy with `& "...claude.exe" auth logout` / `auth login --claudeai --email …` pre-filled,
+re-check command fully qualified. (2) headless `claude -p --model haiku --max-turns 1` (prompt on stdin) printed both
+`[session-start]` hook lines verbatim — 12 s. (3) headless `claude -p --model haiku --max-turns 8` with "resume our work"
++ harness note: ran dispatcher step 0 itself (`PASS inference answered in 6.1s`), printed the four-part question with
+the workstream's recommended model, spawned nothing, edited nothing — 37 s. Earlier the same day: no-memory derivation
+check landed on the expected next step (6 tool calls) only after a minimum-evidence rule; the un-ruled first run made
+0 calls (TRAPS.md). Owner rotated only after all three passed.

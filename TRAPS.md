@@ -8836,3 +8836,12 @@ would have hidden the line a second way. **Test:** force a red (wrong `--binary`
 ~3 s everywhere. A 45 s hook timeout therefore reported UNPROVEN on a healthy account. **Test:** time the probe from both
 places before choosing a hook timeout; run the probe in the dispatcher step with a ≥150 s budget, keep the hook
 identity-only, and never read a slow in-session probe as a capacity latch.
+
+
+## `claude -p` rejects a positional prompt when flags precede it — pipe the prompt on stdin (conjugal, 2026-09-13, Bachelor, desktop 1.52386.3)
+
+`claude -p --model haiku --max-turns 8 "<prompt>"` and `claude -p ... --allowedTools "" "<prompt>"` both failed in ~3 s
+with `Input must be provided either through stdin or as a prompt argument when using --print`; the same invocations
+with `printf '%s\n' "<prompt>" | claude -p ...` or `< prompt.txt` worked. Two headless proof runs died on this before
+any project file was touched. **Test:** run the flags-then-positional form once; if it errors, use stdin for every
+headless invocation in that runbook.
