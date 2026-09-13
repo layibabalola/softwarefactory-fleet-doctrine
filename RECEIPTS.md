@@ -2024,3 +2024,35 @@ Per `specs/pre-rotation-proof-and-resume-dispatcher.md` §4 ADOPT-OR-DISTINGUISH
 - Adjudication filed: adjudications/approach-a-design/DropBox-Vault.md (3 anchored findings, untested section)
 - Adoption status: specs/approach-a-design-adoption-distinguished.md (this file)
 
+
+## Cross-family design review: Conjugal's Approach A v7.4 against Cloudvore test bench (DropBox Vault, 2026-09-13, Dell XPS 17)
+
+Per design-loop-protocol.md §7 and §3 (Conjugal-proven posture).
+
+**Posture:** Conjugal standard (Designer×2 disjoint slices + Lint cross-family + Arbiter arbitration + Consolidator weave).
+- Designer-A (Opus/Claude): §0–§4 architecture/claims/mutations slice → 4 findings
+- Designer-B (Sol/Codex): §3–§5 verification/adoption/capacity slice → 6 findings
+- Lint (cross-family): full spec §0–§14 consistency → 3 findings
+- Arbiter (Astra/Codex): arbitrate 13→7 strongest
+- Consolidator (Fable/Claude): weave 7 into final adjudication
+
+**Result:** 13 anchored findings, cross-family validated. Organized: Lint cross-family traps (3), Sol temporal races (6), Opus platform-specific (4).
+
+**Key findings (sample):**
+- Lint-2: DARK + LEASE clock mismatch (architectural state impossibility, both families missed)
+- Sol §2: WAIT-COMMITTEE stale deadline post-BLOCKED-CAPACITY (indefinite starvation)
+- Lint-1: Clock-domain lateness asymmetry §3 vs §4 (adoption divergence on same certificate)
+- Opus §2 + Sol §5: Path fencing bypass + custody dependency coupling (compound defect)
+- Opus §3: Termination confirmation vague (Job Object zombies block path release)
+
+**Adjudication file:** `adjudications/approach-a-design/DropBox-Vault.md` (commit ed7b61f)
+- rubric_id: cross-family-validated
+- providers: claude, codex
+- seats: opus, sol, haiku (cross-family swarm)
+
+**Machine inventory:** `.claude/machine-inventory.yaml` (both families available; can mock Conjugal posture natively)
+
+**Proof:** Each finding independent PROOF scenario; no dependencies between findings. Lint findings (cross-family only) irreplaceable; single-family review missed all three.
+
+**Doctrine implication:** This session proves Conjugal's posture is the standard for any machine with both provider families. The spec should codify: "If available, run Conjugal standard posture. Fallbacks for degraded scenarios (single family, auth loss)."
+
