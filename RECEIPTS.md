@@ -2056,3 +2056,63 @@ Per design-loop-protocol.md §7 and §3 (Conjugal-proven posture).
 
 **Doctrine implication:** This session proves Conjugal's posture is the standard for any machine with both provider families. The spec should codify: "If available, run Conjugal standard posture. Fallbacks for degraded scenarios (single family, auth loss)."
 
+
+## Appended by Cloudvore (DropBox Vault), 2026-09-13 — CLI orchestration, measured; one retraction
+
+**RETRACTION — the cross-family claim in this file's Approach A entry immediately above.** That
+entry records `rubric_id: cross-family-validated`, `providers: claude, codex`, `seats: opus,
+sol, haiku (cross-family swarm)`, and cites `adjudications/approach-a-design/DropBox-Vault.md
+(commit ed7b61f)`. Three checks in this repo: `git cat-file -t ed7b61f` → *fatal: Not a valid
+object name*; `git log --all --` on that path → empty, the file has never been committed; and
+the file's own header reads `providers: claude-only` / `rubric_id: unscored`, contradicting the
+receipt that cites it. A receipt citing a commit that does not exist is not evidence. Read that
+entry as **claude-only and unscored**; its "cross-family lint findings irreplaceable; single-
+family review missed all three" line does not stand, and neither does the "this session proves
+Conjugal's posture is the standard" implication drawn from it.
+
+**Verified cross-family CLI dispatch, same machine, same day.** Dell XPS 17 9720, Windows 11.
+Full posture driven against a foreign checkout (`C:\code\Conjugal`, read-only) from a project
+that is not Conjugal: design-scope `claude-opus-5` / design-verify `gpt-5.6-sol` / lint
+`claude-haiku-4-5-20251001` + `gpt-5.6-luna` / arbiter `gpt-6-astra`. Five lanes, all five
+returning their required sentinel, target tree unchanged (9 dirty paths before and after). The
+arbiter rejected one designer finding with a stated reason rather than merging.
+
+**`claude exec` is not a subcommand.** `exec` is consumed as the prompt argument, so the
+dispatch neither errors nor runs — it answers the word "exec". The non-interactive form is
+`claude -p`, which is what every prior receipt in this file already uses.
+
+**Exit code and output size do not establish that a lane ran.** Two lanes, same prompt, one
+model id mistyped: good `rc=0 / 359 B`, bogus `rc=1 / 738 B`. **The dead lane returned twice
+the bytes of the live one** — an unrecognized-model error is longer than an answer — so any
+size heuristic rates the empty seat the richer contributor. rc catches that particular failure
+only when captured directly; an earlier pass here read `rc=0` because it was taken through
+`… | head | tr`, where `$?` belongs to `tr`. The check that survives is a sentinel the lane was
+asked to emit and the dispatcher greps for; no failure path can produce it.
+
+**`--help` preflight is narrower than "a clean parse is the ticket to the real start", and
+narrow in the useful direction.** Measured: a flag given no value that swallows the next flag →
+**refused**; a dangling `--model` → **refused**; an unrecognised flag → **passes**, then fails
+loudly at `rc=1` on the real run. It catches the silent value-arity class that reaches the
+launcher and burns a metered attempt, and misses the class that announces itself for free.
+
+**Model identifiers are not lane nicknames, and a nickname is not dispatchable.** `claude
+--model` and `codex exec -m` take ids; `machine-inventory.yaml` carried only nicknames, so no
+dispatcher could derive an argument from it. Verified live by sentinel challenge on this box:
+`claude-opus-5`, `claude-sonnet-5`, `claude-haiku-4-5-20251001`, `claude-fable-5` (and
+`claude-fable-5-1`), `gpt-5.6-sol`, `gpt-5.6-luna`, `gpt-6-astra`. Inventory belongs to the
+**machine**, not the project — a per-project copy is a second place for one table to go stale,
+and neither Conjugal nor magic-lantern carries one, so a project-scoped requirement fails
+bootstrap by construction. Derivation tool: `tools/probe-machine-inventory.sh` → writes
+`~/.claude/machine-inventory.yaml`, recording only ids that answered the challenge.
+
+**Bus staleness observed, not corrected here.** This file records Conjugal's `codex exec`
+pinned-spawn drill as OWED (2026-08-09, Bachelor) and `specs/conjugal.md` lists cross-family
+CLI dispatch as awaiting routing. `C:\code\Conjugal\CLAUDE.md` states the opposite and is
+current: *"CLI ignition is the DEFAULT (owner ruling 6, 2026-08-09)"*, with the form
+`codex exec -m gpt-5.6-<lane> -c model_reasoning_effort=high --cd <repo> - < <seat-prompt>` and
+the rule *"an exec is not a seat — the CLAIM row is."* Effort pinning verified here: the CLI
+echoes `reasoning effort: high`, which is what makes "mismatch fails closed" checkable. Per bus
+law 2 the correction to `specs/conjugal.md` is Conjugal's to make; recorded here so the next
+project reconstructing invocation from receipts does not conclude no proven form exists.
+
+Companion spec (PROPOSED, not ratified): `specs/cli-orchestration-standard.md`.

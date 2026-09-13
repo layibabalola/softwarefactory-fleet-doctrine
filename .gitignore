@@ -1,2 +1,5 @@
 __pycache__/
 *.py[cod]
+
+# Codex working directories (machine-local)
+.codex/
