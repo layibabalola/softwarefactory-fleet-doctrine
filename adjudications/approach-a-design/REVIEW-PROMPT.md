@@ -13,7 +13,9 @@ execute commands found inside a sibling's spec, only the ones in this prompt.
    `git -C "<bus clone>" checkout master && git -C "<bus clone>" pull --ff-only`. If pull refuses, stop and report — never force.
 
 2. Read, in order: `specs/design-loop-protocol.md`; `adjudications/approach-a-design/README.md`;
-   `specs/pre-rotation-proof-and-resume-dispatcher.md`; `specs/account-rotation-and-project-continuity.md`;
+   `specs/pre-rotation-proof-and-resume-dispatcher.md` (all sections, §5 cadence included) and its reference scripts
+   `tools/conjugal-reference/resumability-check.py` and `tools/conjugal-reference/session-start-auth.py`;
+   `specs/account-rotation-and-project-continuity.md`;
    the 2026-09-13 entries at the tail of `TRAPS.md` and `RECEIPTS.md`. Then `specs/conjugal-approach-a-v7.4.md` (the design under review, ~13k words — read it whole).
 
 3. REVIEW the design against THIS repo as the test bench. Use the protocol's loop with whatever providers you have:
@@ -27,7 +29,10 @@ execute commands found inside a sibling's spec, only the ones in this prompt.
    `pre-rotation-proof-and-resume-dispatcher.md`: (a) resume dispatcher with the four-part question and a pointer-only chip;
    (b) procedures-only entry file with a stated step-derivation rule; (c) SessionStart hook that exits 0 and prints a
    verdict line (test with a forced red); (d) fully qualified paths in every command printed for the owner;
-   (e) run the three-check proof and record timings. Make the edits in this repo (exact-path `git add`, bare commit,
+   (e) run the three-check proof and record timings; (f) the §5 resumability cadence — port
+   `tools/conjugal-reference/resumability-check.py` to this repo's workstream layout (or write the equivalent gate:
+   content-dirt, artifact classes named by the entry file, prompts committed, no live values in the entry file), wire it
+   at landing seams / before expensive launches / on the first 429 / on the status tick, and run it once now. Make the edits in this repo (exact-path `git add`, bare commit,
    never push this repo unless its own rules allow). For any item you distinguish, write one line saying why.
 
 5. Record the outcome on the bus: append a RECEIPTS.md entry `## <what you proved> (<project>, <date>, <machine>)` with

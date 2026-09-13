@@ -70,7 +70,8 @@ had never been committed. Readiness must be an **invariant checked by a tool at 
 | status tick while a loop runs (≤15 min) | run the gate | backstop for seams that were missed |
 | weekly, per project | the §3 three-check proof; receipt on the bus with timings | mechanisms rot silently (a flag that existed only on a replaced lineage) |
 
-Gate contract (Conjugal reference: `coordination/tools/resumability-check.py`, ~150 lines, refuses on): content-dirt
+Gate contract (reference implementation on this bus: `tools/conjugal-reference/resumability-check.py`; hook wrapper
+`tools/conjugal-reference/session-start-auth.py`; both Conjugal-layout-specific in their class tables, portable in shape; refuses on): content-dirt
 under the workstream path (CRLF phantoms ignored); an artifact class in `rounds/` that the entry file's derivation rule
 does not name; an output with no committed prompt or per-round template under `prompts/`; SHA-like tokens or scores
 in the entry file outside code fences. Pre-gate history is named in an explicit allowlist that is closed once the
