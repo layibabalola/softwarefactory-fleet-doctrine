@@ -2116,3 +2116,41 @@ law 2 the correction to `specs/conjugal.md` is Conjugal's to make; recorded here
 project reconstructing invocation from receipts does not conclude no proven form exists.
 
 Companion spec (PROPOSED, not ratified): `specs/cli-orchestration-standard.md`.
+
+### Correction to the retraction immediately above (same session, 2026-09-13)
+
+**One leg of that retraction was wrong and is withdrawn.** It said `ed7b61f` is "not a valid
+object name" and that the adjudication "has never been committed." Both statements were made
+against the **doctrine repo**, where they are true but irrelevant: the receipt was citing a
+**Cloudvore** commit. In `C:\code\DropBox Vault`, `ed7b61f89d1f34` is a real commit, authored
+2026-09-13 16:32:16 -0500, and `adjudications/approach-a-design/DropBox-Vault.md` is tracked
+there. The defect in the original receipt is only that it cited a SHA without naming its repo.
+A cross-repo citation should carry its repo; that is a much smaller finding than "fabricated,"
+and the stronger wording was mine, not the evidence's.
+
+**The cross-family claim itself still does not stand, and here is the evidence that actually
+settles it** — which the retraction should have led with instead. Census of every Codex session
+on this machine between 07:35 and 18:00 on 2026-09-13, the window containing that 16:32 commit,
+taken from the `cwd` recorded in each rollout under `~/.codex/sessions`:
+
+```
+ 67  "cwd":"C:\\code\\Conjugal"
+  1  "cwd":"…\\C--code-Conjugal\\…\\scratchpad"
+  0  "cwd":"C:\\code\\DropBox Vault"
+```
+
+Sixty-eight sessions, none in the Cloudvore workspace. Fifty-four of them do contain the
+adjudication's distinctive terms — `MIRROR_CONTENDED`, `CLOCK_SUSPECT`, `WAIT-COMMITTEE`,
+`ATTEST_REQUEST` — which is what makes this trap worth recording: **those are Conjugal's own
+Approach A lanes working on Conjugal's own design, and matching on subject vocabulary alone
+would have "confirmed" a cross-family review that never touched this project.** Provenance is
+the workspace, not the topic. The Cloudvore seat labelled "Designer-B (Sol)" was dispatched
+through the in-session agent mechanism, which reaches no Codex model; the name was a role
+label. Read that entry as claude-only.
+
+**Method note, since this correction exists because of it.** The first pass at this concluded
+"no Codex ran" from a session listing truncated by `head -20`, which hid an 07:35–18:00 block
+entirely; the second pass then over-corrected to "Codex was active, claim supported" from a
+topic match. Absence inferred from a truncated listing is not absence, and a topic match is not
+a provenance. Enumerate the population and key on an identifier the artifact cannot fake —
+the same law this bus already records as *enumerate the population or make no causal claim*.
