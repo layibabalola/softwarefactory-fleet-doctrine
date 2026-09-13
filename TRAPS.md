@@ -8795,3 +8795,44 @@ never assume a model gate is permanent.
 
 Evidence: [`C:\code\Conjugal`](https://github.com/layibabalola/Conjugal/blob/master/coordination/DECISION-phase1-dogfood-2026-09-11-tier-break.md)
 
+
+
+## A resume dispatcher "derived" state with zero tool calls and declared a tracked entry file missing (conjugal, 2026-09-13, Bachelor)
+
+A Haiku agent told "resume our work" made 0 tool calls, read the session's git-status snapshot and memory index, and
+reported `docs/architecture/approach-a/RESUME.md` "does not exist" — it was tracked and committed minutes earlier.
+Cheap models answer from context when the context looks sufficient; a resume phrase plus a snapshot looks sufficient.
+**Test:** the report's tool-call count. Prompt rule that fixed it on the second run (6 calls, correct derivation):
+"every claim must cite a tool result from THIS run; a report below N tool calls is invalid; each file read is proven by
+one quoted line; 'missing' is proven only by Read or `git ls-files`."
+
+## A CLI flag that existed only on a replaced git lineage lived on in memory and two runbooks (conjugal, 2026-09-13, Bachelor)
+
+`check-cli-auth.py --floor-models` was landed in commit `7b13071f` on the OLD master lineage (replaced 2026-09-11, no
+common ancestor). Current master's tool never had it (`git log -S'floor-models' -- <tool>` is empty on master; the commit
+is reachable only from `claude/*` branches). Memory notes and the rotation runbook kept printing it; the owner hit
+`error: unrecognized arguments`. **Test:** before printing any command with flags, run `<tool> --help` in this session
+and quote from it; after a lineage replacement, re-verify every flag memory claims "landed".
+
+## Relative paths in printed commands fail from the owner's terminal (conjugal, 2026-09-13, Bachelor)
+
+`python coordination/tools/check-cli-auth.py` printed in chat failed with `No such file or directory` — the owner's
+PowerShell cwd was `C:\Users\layib`, not the repo. Owner rule: every command printed for a human is fully qualified and
+quoted (`python "C:\code\Conjugal\coordination\tools\check-cli-auth.py" ...`). **Test:** paste the command into a shell
+whose cwd is the user profile; it must run.
+
+## A SessionStart hook that exits non-zero has its output hidden — wrap it so the evidence line always prints (conjugal, 2026-09-13, Bachelor)
+
+Re-confirmed while automating the post-rotation auth check: the useful case (a red verdict) is exactly the one a
+non-zero exit silences. Fix: `coordination/tools/session-start-auth.py` runs the checker, prints
+`[session-start] ... (exit <n>): <verdict>` and always returns 0; the checker's exit code is carried in the text.
+Also reconfigure stdout to UTF-8 — the checker prints em-dashes and a cp1252 console raised UnicodeEncodeError, which
+would have hidden the line a second way. **Test:** force a red (wrong `--binary`) and a cp1252 console; the line must appear.
+
+## The live inference auth probe is ~10× slower from inside a Claude Code session than from a terminal (conjugal, 2026-09-13, Bachelor)
+
+`check-cli-auth.py --allow-live-probe`: 5.5 s from the owner's PowerShell; 53.3 s from a Bash call inside a session;
+88.9 s and killed with `CLAUDECODE`/`CLAUDE_CODE_*` scrubbed from the env (scrubbing does not help). Identity-only is
+~3 s everywhere. A 45 s hook timeout therefore reported UNPROVEN on a healthy account. **Test:** time the probe from both
+places before choosing a hook timeout; run the probe in the dispatcher step with a ≥150 s budget, keep the hook
+identity-only, and never read a slow in-session probe as a capacity latch.

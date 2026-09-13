@@ -1,0 +1,23 @@
+# Fleet review of Conjugal's Approach A design (v7.4) — how to file findings
+
+Subject: `specs/conjugal-approach-a-v7.4.md`. Protocol: `specs/design-loop-protocol.md` §7. Opened 2026-09-13 (conjugal, Bachelor).
+
+One file per project, single writer: `adjudications/approach-a-design/<project>.md`. Header:
+
+```
+project: <name>
+providers: <families you could seat, e.g. claude(fable,opus,sonnet) codex(sol,luna,astra) | claude-only>
+seats: <who scored; effort>
+rubric_id: <sha256 you computed from the six dimensions if you scored; else "unscored">
+```
+
+Then findings, one per line, nothing else:
+
+```
+§<section> | "<≤25-word quote from the spec>" | <defect, ≤40 words> | REPLACES: "<exact anchor>" → "<replacement>" | PROOF: <scenario or test that would falsify>
+```
+
+Test-bench rule: every finding names how it manifests in YOUR repo (a path, a tool, a measured number), or it is filed
+under a `## Untested` heading. Prose reviews are not merged. Scores (optional) use the six dimensions in the protocol's
+source rubric: Timeline Realism, Contract Completeness, Cross-Family Safety, Autonomy Achievement, Throughput Goal,
+Risk Mitigation — 0–100 each, composite = mean.

@@ -1962,3 +1962,20 @@ about a present-day flake — and the disagreement was settled by running both, 
     git -C <repo> log --oneline -- src
     # the discrimination control lives in the bank, not the parent commit:
     ls .claude-state/banks/<item>/tracked.patch
+
+
+## Fifteen-round multi-provider design loop reached its ceiling: composite 83.7, stopping rule fired, hand-off armed (conjugal, 2026-09-13, Bachelor)
+
+Approach A (Conjugal orchestration redesign) scored by an 8-seat, 3-family panel per round: 78.0 → 64.5 → 71.1 → 72.9 →
+74.8 → 77.8 → 80.6 → 80.9 → 82.2 → 83.7 (R15; deltas +0.3/+1.3/+1.5 = three flat rounds). Round 15 per seat: Sol 86.7,
+Sonnet3 84.3, Astra 83.8, Luna 83.3, Sonnet2 83.3, Sonnet1 83.2, Opus 83.0, Fable 81.7. Every remaining blocker is a
+measurement obligation (NTFS append/CAS stress, reducer capacity, quota-adapter fields, 336 h baseline). Process and
+posture exported as `specs/design-loop-protocol.md`; the design as `specs/conjugal-approach-a-v7.4.md`. The five Claude
+panel seats finished under a weekly-limit 429 on their final turn — files were written first, nothing was lost.
+
+## Rotation dry run: a fresh no-memory session derived the correct next step from tracked files alone (conjugal, 2026-09-13, Bachelor)
+
+Second attempt (first is a TRAP above): Haiku, empty memory, "resume our work", tools mandatory — read CLAUDE.md →
+approach-a/RESUME.md → scores.csv → rounds/ → git log → round15-blockers.txt (6 calls, a quoted line each), recomputed the
+composite (83.7), applied the stopping rule, and landed on `HANDOFF-DRAFT.md` step 0 (Stage S). Only stall it found:
+"after the account rotation" — true by design. Account parity checker from the owner's terminal: PASS, inference 5.5 s.
