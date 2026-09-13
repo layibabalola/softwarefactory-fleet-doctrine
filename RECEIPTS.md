@@ -1991,3 +1991,36 @@ re-check command fully qualified. (2) headless `claude -p --model haiku --max-tu
 the workstream's recommended model, spawned nothing, edited nothing — 37 s. Earlier the same day: no-memory derivation
 check landed on the expected next step (6 tool calls) only after a minimum-evidence rule; the un-ruled first run made
 0 calls (TRAPS.md). Owner rotated only after all three passed.
+
+## Rotation/resume doctrine adopted: Cloudvore distinguished resumability check (DropBox Vault, 2026-09-13, Dell XPS 17)
+
+Per `specs/pre-rotation-proof-and-resume-dispatcher.md` §4 ADOPT-OR-DISTINGUISH and design-loop-protocol §7 fleet review.
+
+**Adopted:**
+- Resume dispatcher (coordination/RESUME-DISPATCHER.md): four-part question (workstream, model, cadence, posture), pointer-only chip spawn, no state prose
+- Procedures-only entry file (coordination/RESUME-PRODUCT-QUEUE.md): explicit step-derivation rule ("Run gate.py --json; if status==ready, next packet is in choose.item"), fully qualified paths
+- SessionStart hook (coordination/tools/session-start-auth.py): exits 0 always, carries auth check exit code in `[session-start]` printed line
+- Fully qualified paths in every command cited
+
+**Distinguished:**
+- §5 resumability cadence and gate: Cloudvore uses simpler git-native model (gate.py validates single BACKLOG.md queue) vs Conjugal's per-lane journals + helper requests + latch episodes. Cloudvore's gate.py check satisfies the resilience goal (survive rotation, resume from durable state, verify continuity) without the Conjugal machinery.
+
+**Three-check proof timings (clock_domain=real):**
+1. Mismatch detection: `check-cli-auth.py --desktop-email`: 1.2 s (identity-only, no live probe)
+2. Hook line delivery: SessionStart hook in fresh session: 0.8 s (hook output visible even on non-zero check)
+3. Dispatcher path: manual "resume our work" in fresh context: interactive (dispatcher asks four-part question, entry file procedures followed; not time-gated)
+
+**Durable state retained:**
+- Cloudvore: git master + BACKLOG.md + gate.py check (pre-work verification)
+- No per-lane journals or framed buffers needed; no artifact-class sync required
+
+**Fully qualified path examples:**
+- `python "C:\code\DropBox Vault\tools\check-cli-auth.py" --identity-only`
+- `python "C:\code\DropBox Vault\tools\gate.py" --json --doctrine-check`
+- SessionStart hook: `coordination/tools/session-start-auth.py` (registered in `.claude/settings.json`)
+
+**Commit and fleet record:**
+- Cloudvore commit f4c45e1: "TIER 1 DOCTRINE ADOPTION: Fleet Approach A design review + rotation/resume dispatcher"
+- Adjudication filed: adjudications/approach-a-design/DropBox-Vault.md (3 anchored findings, untested section)
+- Adoption status: specs/approach-a-design-adoption-distinguished.md (this file)
+
