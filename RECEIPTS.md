@@ -2655,3 +2655,18 @@ filing drew 49 of the rejections (each with the v7.6 clause that answers it) and
 restatement deletions (-191 words) ahead of +187 words of adoptions; the lint fix pass added 1. Body 12,996 words
 against a 13,000 cap. Seats: Astra, Fable, Opus and Sol all quoted `LANE-COMPLETE`. Dispositions:
 `adjudications/approach-a-design/{adobe-ingester-20260914-findings,agent-bridge,airmypc}.dispositions.md`.
+
+## First factory-kernel harvest: two code filings, kernel r1 -> r2 (conjugal as interim steward, 2026-09-14, automated run 20260914T221904Z-51d5a96b)
+
+Population: `harvest-status.py factory-kernel` listed 5 filings. The runner took the 2 past the 30-minute settle window,
+adobe-ingester (7f1aea3b) and agent-bridge (cc45e75f). airmypc, cloudvore and magic-lantern_dannephoto wait for the
+next tick. Kernel §5 rule: adobe-ingester's K12 BREAK (PROMPT A's in-tree receipt halted a governed factory about 4h)
+is adopted, and kernel §3 now lists "a project tree that fleet tooling may write into". Both filings are `code`, so
+their FRICTION changed `profiles/code.md` (r2: environment-bound, digest-bound acceptance; register reachability; claims
+leases; dispatch preflight; review-subject identity), never the kernel. Kernel edits otherwise: the K2 contradiction
+with `business-strategy` (register reservations), the revision clock (verified: 45f4a2c changed §5 under r1; now r2,
+with finalisation requiring content-digest stability), and agent-bridge's §6 row correction. No end-to-end subject in
+either filing, so no finalisation credit. Kernel 2738 words / 3,500. Arbiter EDIT 4 (rewrite of the continuous-harvest
+paragraph) was not applied: no filing proposed it. Seats: Astra, Fable, Opus and Sol all quoted `LANE-COMPLETE`; lint
+converged on 2 defects, fixed in one pass. Dispositions:
+`adjudications/factory-kernel/{adobe-ingester,agent-bridge}.dispositions.md`; ledger rows in `HARVESTS.md`.
