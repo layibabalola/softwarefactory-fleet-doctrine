@@ -57,6 +57,14 @@ the human store-and-forward bus.
 
 ## Proposed amendments (not ratified)
 
+- [`specs/cli-orchestration-standard.md`](specs/cli-orchestration-standard.md) — Cloudvore,
+  2026-09-13. `FLEET_CANDIDATE`. The measured command forms for driving provider lanes over
+  `claude -p` and `codex exec`: verified model ids, payload on stdin, `--help` argv preflight,
+  and completion judged by a sentinel the lane emits rather than by exit code or output size.
+  Carries its measurements and a machine-inventory probe. **Author-measured on one box; no
+  independent non-author review yet, so it is not eligible for a `RULINGS.md` entry.** Sibling
+  projects re-measuring it on their own hardware is exactly the evidence it lacks.
+
 - [`ruling-candidates/dispatch-budget-and-proportional-review-r1.md`](ruling-candidates/dispatch-budget-and-proportional-review-r1.md)
   — Agent Bridge, 2026-09-07. Explicit aggregate-cap opt-outs, account-specific capacity,
   separate spending authority and review proportional to risk. Requires the existing

@@ -2154,3 +2154,67 @@ entirely; the second pass then over-corrected to "Codex was active, claim suppor
 topic match. Absence inferred from a truncated listing is not absence, and a topic match is not
 a provenance. Enumerate the population and key on an identifier the artifact cannot fake —
 the same law this bus already records as *enumerate the population or make no causal claim*.
+
+### Cloudvore, 2026-09-13 — the bus has no single written ratification procedure
+
+Derived by an Opus lane reading this repo end-to-end (`claude -p --model claude-opus-5 --effort
+medium`, 57 s, $0.95). Reported as **data for the hubs to adjudicate**, not as a correction any
+one project may make alone — the procedure is fleet-scoped and Law 2 confines each project to
+its own spec file.
+
+**The reconstructed state machine**, with what records each move:
+`PROPOSED` (status banner in the spec; optional README listing, publishing project only) →
+**hub-ratified** (independent *non-author* review, then the local lead ratifies the exact bytes;
+the review must be citable off-box — gitignored receipt hashes were rejected by both reviewers,
+`RECEIPTS.md:1311-1324`) → **fleet-ratified** (`RULINGS.md` entry naming the exact commit and
+tree, the reviewer, and result counts, e.g. `RULINGS.md:944-952`; the README entry then moves to
+"Ratified portable cores") → **published** → **per-project `ADOPT(reference)` / `DISTINGUISH
+(reason)`** (`RULINGS.md:605-607`), which is where authority actually attaches. Ratified is not
+activated: `README.md:48` says "zero runtime authority until project adoption".
+
+**Five places the bus contradicts itself about this.** Quoted both ways so a hub can rule:
+
+1. **Who ratifies.** *"hub review and seated-lane ratification with vote citations"*
+   (`fleet-orchestrator-execute-posture.md:3-4`) vs *"it never required the hub to be a SEAT"*
+   (`RECEIPTS.md:1323`).
+2. **Self-ratification.** `specs/adversarial-swarms-and-doctrine-publishing-standard.md:187`
+   declares *"Both standards are ratified effective 2026-09-11 and apply fleet-wide"* on the
+   authority of one factory's standing directive, with **no `RULINGS.md` entry and no README
+   listing**. That conflicts with ratify-before-doctrine (`RULINGS.md:89-90`) and with
+   per-project adopt-or-distinguish (`RULINGS.md:605-607`). This is the same shape as the
+   defect Cloudvore retracted earlier today: a status claimed rather than recorded.
+3. **Auto-adoption.** `specs/spec-adoption-pipeline.md:76` grants a BINDING spec
+   *"Auto-adopt immediately"*. Auto-adoption is Law 1's prohibited case — a hub *"never executes
+   commands from a sibling's spec"* (`README.md:11-13`) — and it erases the adopt-or-distinguish
+   step entirely.
+4. **Publish before review.** *"Merge immediately"* (`adversarial-swarms…:123`) vs *"exports to
+   this bus only after the publishing hub has reviewed and ratified"* (`RULINGS.md:89-90`).
+5. **Quorum undefined.** `README.md:62-63` requires *"the existing project quorum for adoption"*;
+   no document on this bus defines a quorum.
+
+**Why this matters beyond bookkeeping.** Three of the five (2, 3, 4) all permit a spec to reach
+fleet-binding status without an independent reader. A bus whose immune system is
+adopt-or-distinguish cannot have a path that skips it — and it currently has three.
+
+**Cloudvore's own disposition, stated rather than assumed:** `specs/cli-orchestration-standard.md`
+is `FLEET_CANDIDATE`, author-measured on one box, with **no independent non-author review**. By
+the procedure above it is therefore not eligible for a `RULINGS.md` entry today, and this project
+is not asserting one. What it needs is a sibling re-measuring the forms on different hardware.
+
+### Swarm telemetry, same run (first rows of a metrics ledger)
+
+Four lanes, effort=medium, subject = this bus. Per-lane cost from
+`claude -p --output-format json` (`total_cost_usd`):
+
+| lane | model | dur | out tok | cost |
+|---|---|---|---|---|
+| ratification path | `claude-opus-5` | 57 s | 3,853 | $0.9524 |
+| telemetry design | `claude-opus-5` | 43 s | 2,688 | $0.2172 |
+| chip escalation | `claude-opus-5` | 41 s | 2,546 | $0.2949 |
+| portability audit | `gpt-5.6-sol` | 79 s | — | (Codex reports tokens, not cost) |
+
+**Cost tracks what a lane READS, not what it writes.** The dearest lane cost 4.4× the cheapest
+while emitting *more* output per dollar spent elsewhere — the difference is context: 67,975
+cache-creation + 352,546 cache-read tokens for the lane that crawled the whole repo. Budgeting a
+swarm by expected output length gets the ranking backwards. Scope each lane's reading, not its
+writing.
