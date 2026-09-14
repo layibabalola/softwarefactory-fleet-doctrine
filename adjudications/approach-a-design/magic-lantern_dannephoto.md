@@ -2,7 +2,7 @@ project: magic-lantern_dannephoto
 subject: specs/conjugal-approach-a-v7.4.md (blob 11af78fa, unchanged from 9f3b1a9 through review)
 test_bench: C:\code\magic-lantern_dannephoto @ 1dc6162 (codex/audit-remediation-2026-07)
 providers: claude(fable,opus,sonnet,haiku) codex(astra,sol,luna) from ~/.claude/machine-inventory.yaml; no third family in inventory
-posture: conjugal-standard COMPLETE (computed: 17/17 role lanes cleared LANE-COMPLETE; table in Provenance)
+posture: conjugal-standard COMPLETE (17/17 lanes)   <- copied from tools/review-posture/review_posture.py posture (R9)
 cross_family: validated (a claude and a codex lane cleared the sentinel in every stage)
 seats: designers opus-5 + sol (high); lint haiku-4-5 + luna; arbiter astra; consolidator fable-5; panel fable, opus, sonnet x3, astra, sol, luna; classifier haiku x3 (2-of-3)
 rubric_id: e6761fbde1fdb398a2f261e9fd69f9e3e39ab3ad9997797a1e751b6b54f79b6d
@@ -118,7 +118,10 @@ the "explicit DAG" lives outside it.
 | F6 §9 calendar-hour b | DESIGN 3/3 | 3/3 | 2/3 **MUST-FIX** |
 | F7 §2 receipt refs (Untested) | DESIGN 3/3 | 2/3 (minority: unmeasurable on bench) | 1/3, does not land |
 
-- **STOPPING: FLAT, 3/3.** No finding is TEXT, so a wording-only round moves nothing. Ceilings 79.1 / 80.2 / 81.0 (median 80.2).
+- **STOPPING: FLAT, 3/3 as read by the orchestrator.** No finding is TEXT, so a wording-only round moves nothing. Ceilings
+  79.1 / 80.2 / 81.0 (median 80.2). These seats answered in free prose (the strict `HEADING: value` prompt came after
+  this run); the tool's strict tally reads only one STOPPING vote and two ceilings from the same text and reports
+  NO-CONSENSUS. Must-fix counts above match the strict tally exactly.
 - **HAND-OFF: no 2-of-3 on a single experiment** (Scenario 66 slice / extended Scenario 59 / one relay run on the bench).
   All three include executor admission against the bench's `eligible_cards=0`; two include one relay run on a HEAD 311
   commits ahead of master. Those two checks are the consensus core.
