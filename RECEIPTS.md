@@ -2270,3 +2270,52 @@ rots without any signal that it has.
 
 Verified: ladder `[claude-fable-5-DOES-NOT-EXIST, claude-haiku-4-5-20251001]` detected the dead
 rung, advanced, ran, and recorded `fallback_rung: 1` with the reason and both timestamps.
+
+### Cloudvore, 2026-09-13 — swarm vs concentration, measured; and two token-accounting traps
+
+One subject (`specs/conjugal-approach-a-v7.4.md`, ~100 KB), one test bench (Cloudvore), four
+arms, eight lanes, dispatched together. Findings counted by the `§` anchor the format requires.
+
+| arm | lanes | cleared sentinel | findings | wall clock | cost | $/finding |
+|---|---|---|---|---|---|---|
+| opus swarm @ medium, disjoint slices | 3 | 3 | 26 | **165 s** | $2.94 | $0.113 |
+| opus solo @ xhigh, whole subject | 1 | 1 | 27 | 781 s | $3.63 | $0.134 |
+| sonnet swarm @ medium, disjoint | 3 | 3 | 17 | 251 s | $1.87 | $0.110 |
+| sonnet solo @ max, whole subject | 1 | **0** | **0** | 1161 s | **$3.40** | — |
+
+**Swarm beats concentration on every axis that was measured.** Three Opus lanes at medium found
+26 where one Opus at xhigh found 27 — parity on yield — while finishing in **4.7× less wall
+clock** and costing 19% less. The slicing is doing the work: disjoint slices force coverage the
+single lane chooses for itself, and they parallelise, so a swarm's latency is its slowest lane
+while a solo's is its whole run. Cost per finding is nearly identical across the three arms that
+worked ($0.110-$0.134), which suggests yield-per-dollar is roughly conserved and the real
+purchase is **latency and coverage**, not cheaper findings.
+
+**Sonnet at max effort produced nothing and billed full freight.** 20 turns, 47,449 thinking
+tokens, 19 minutes, $3.40 — and the output was a *question*: "Want me to proceed with execution
+now … or do you want changes to the plan first?" Given a review task in a non-interactive
+context, maximum effort went into planning the review and asking permission rather than doing
+it. Every structural signal said success: `is_error: false`, `stop_reason: end_turn`,
+`terminal_reason: completed`, `subtype: success`. Only the sentinel caught it. Raising effort is
+not monotonic in usefulness, and the failure it produces is expensive, slow, and green.
+
+**Trap 1 — top-level `usage` is not the billing basis for a multi-turn lane.** `usage.output_tokens`
+reported 58,750 for that lane; `modelUsage` reported **148,579** cumulative. Anyone deriving cost
+from the top-level counters undercounts multi-turn work by up to 2.5× here. `total_cost_usd` is
+correct; the per-model `modelUsage` block is the counter that reconciles with it. This also
+settles fallback attribution for free: a lane that changed models carries one `modelUsage` entry
+per model, so the spend splits without any bookkeeping of our own.
+
+**Trap 2 — cache tokens are priced differently, and the rates can be derived rather than
+assumed.** Reconciling observed cost against a naive input/output model diverged by up to 3.8×.
+Solving for the missing rates across the Opus lanes gives **cache_creation = 2.0× the input rate
+and cache_read = 0.1× the input rate, with a maximum residual of $0.0000** across four lanes,
+and that ratio then predicts six of the eight lanes to the cent. The two it missed are the
+multi-turn Sonnet lanes, explained by Trap 1. This is the reconciliation design working as
+intended: the ledger did not merely detect drift, it recovered the missing price dimensions
+exactly, from observation rather than assertion.
+
+Filing produced by the first arm: `adjudications/approach-a-design/DropBox-Vault.md`, 26
+findings, each naming a Cloudvore path, tool or measured number. Its `providers:` line reads
+`claude-only` because zero Codex lanes were dispatched — computed, per R1-R5 candidate rule R3,
+not asserted.
