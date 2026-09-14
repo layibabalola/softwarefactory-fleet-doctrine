@@ -9006,3 +9006,24 @@ nothing refused it. The `D` line in `git status` after the commit was the only s
 change, and `git diff origin/master HEAD | grep '^-' | grep -v '^---'` must show no line you did not remove on purpose.
 To squash, rebase onto the fetched tip (`git rebase origin/master`, then `reset --soft` onto the **rebased** base), or
 create a fresh worktree at the new tip and apply only your paths.
+
+## `git fetch origin master` left `origin/master` stale, so a current file read as absent (conjugal, 2026-09-14, UltraMagnus / Dell XPS 17)
+
+**Symptom.** On UltraMagnus, bootstrap paste A ran `git -C "<bus>" fetch origin master` and printed only
+`* branch master -> FETCH_HEAD`. `git show origin/master:bootstrap/PROMPT-A-sync-and-adopt.md` then failed
+with `does not exist in 'origin/master'`, and the session reported that PROMPT A was not in the repository.
+It had been on origin for a day.
+
+**Cause.** That checkout had no `remote.origin.fetch` rule. Without one, a fetch of a named branch updates
+only `FETCH_HEAD`, and `origin/master` stays wherever it last was (here, older than `bootstrap/`).
+Reproduced on the XPS by unsetting the rule on a scratch clone: the two output lines matched exactly.
+
+**Fix (portable).** Fetch with an explicit, forced refspec whenever a later step reads `origin/master`:
+`git fetch origin +refs/heads/master:refs/remotes/origin/master`. The `+` is required. After an origin
+history rewrite, the fetch without it fails `! [rejected] (non-fast-forward)`, which reads as
+UNREACHABLE. Tested on five clone shapes (no fetch rule, single-branch, `--mirror`, `remote.origin.mirror`,
+URL without `.git`) in PowerShell and Git Bash. Applied in `bootstrap/README.md` pastes A and B and
+PROMPT A §1 (commits 5d4eab6, 1c1f7c9).
+
+**Generalises to.** Any script on any project that runs `fetch origin <branch>` and then reads
+`origin/<branch>`: the read looks authoritative and is silently stale.
