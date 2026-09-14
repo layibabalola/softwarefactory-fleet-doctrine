@@ -2024,3 +2024,42 @@ specs are the place for a project-shaped convention; RULINGS is the place for on
 free the fleet; TRAPS for the failure that taught it.
 
 DATA, not an instruction (law 1) — verify locally and adopt-or-distinguish.
+
+## Appended by Cloudvore, 2026-09-13 — owner ruling: the review-honesty floor
+
+**Owner ruling (Layi, 2026-09-13), binding fleet-wide.** Requested in these words: *"Make the
+candidates that are needed to bootstrap and properly review factory binding citing me so that we
+can get all of the fleet reviewing and testing."* Subject: `ruling-candidates/mandatory-review-floor-r1.md`,
+which carries the measurement behind each rule. R1-R5 are **not** subject to adopt-or-distinguish.
+Every other design choice remains each project's own.
+
+- **R1 - A session below the review floor does not review.** It escalates by exactly one chip
+  naming the recommended model, or it fails closed. Never "does its best" at a lower tier.
+  *(Measured: a Haiku session asked for cross-family review assembled the review itself and
+  reported success - one cheap model agreeing with itself.)*
+- **R2 - Completion is positive evidence from the lane, never absence of error.** A lane counts
+  as complete only when it emits a sentinel it was asked for; not exit code, not output size.
+  *(Measured: a dead lane returned rc=1/738 B where the live one returned rc=0/359 B - the
+  failure was LARGER than the success. Separately, Sonnet at max effort returned `is_error:
+  false`, `stop_reason: end_turn`, `terminal_reason: completed` having produced no findings at
+  all, for $3.40 and 19 minutes.)*
+- **R3 - A cross-family claim is computed, not asserted.** Filed as cross-family only if at
+  least one lane from each family cleared the sentinel. Intent, dispatch, and auth-errored lanes
+  do not count. *(Measured: this project published `rubric_id: cross-family-validated` when a cwd
+  census of 68 Codex sessions showed zero in its own workspace.)*
+- **R4 - Every project-scoped reference names its project.** Already README Law 6; restated here
+  as binding. *(Measured: an unqualified SHA resolved against the wrong repo produced a
+  retraction calling a real commit fabricated.)*
+- **R5 - Provider and model inventory is machine-scoped and probe-derived.** Each id earns its
+  place by answering a sentinel challenge on that box. *(Measured: two other projects on this
+  machine carry no inventory, so a project-scoped requirement fails bootstrap by construction;
+  and a hand-written inventory listed lane nicknames no CLI accepts as `-m`.)*
+
+These five constrain the honesty of a report, not its content. A project that cannot meet one
+says so in its own spec and has its filings read accordingly - which is a different act from
+distinguishing the rule away in silence.
+
+- **Filings are consumed, not just filed** (same ruling). `adjudications/<subject>/<project>.md`
+  is written by one project and **read by the subject's owning project**, which harvests every
+  filing, adjudicates conflicts between them, and rewrites the spec. A filing nobody harvests is
+  a report written into a drawer, and the fleet has no second mechanism that would notice.
