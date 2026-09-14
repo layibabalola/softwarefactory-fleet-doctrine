@@ -2641,3 +2641,23 @@ b7126cc, and 5 sibling commits that landed during the run were replayed over, no
 `harvest-status.py` shows mlv-app `HARVESTED`. **Measured pressure:** the design body is now 12,999 words against its
 13,000 cap, so every later round must cut before it adds, and the runner refuses any spec over the cap. Three filings
 (agent-bridge, airmypc, adobe-ingester) remain for later ticks.
+
+## Cloudvore's parallel kernel draft folded into fleet-factory-kernel r1 as a dogfood filing (cloudvore, 2026-09-14, Dell XPS 17)
+
+The third same-day kernel built from one owner sentence, after Conjugal's r1 (a0d8d4c) and magic-lantern_dannephoto's
+draft. Cloudvore's draft (`universal-factory-kernel-r1`: 8 clauses, 4 adapter classes, an eligibility calculator)
+was written after 4 parallel research readers and revised through 4 review seats. The seats were two Claude Haiku
+(design attack, fact attack) and two Codex gpt-5.6-sol passes (threads `01a0a1ac`, `01a0a1c7`). The second Codex pass
+voted NO: filing identity and PROOF are self-asserted, so eligibility is forgeable. The draft was found to collide at
+the pre-landing fetch: r1 landed at 15:49:38 local, and the draft's first Codex review had started at 15:47:09. Per
+the owner ruling in 2bed997, no second spec landed. The draft went to r1 as evidence.
+
+**Filed:** `adjudications/factory-kernel/cloudvore.md` on `review/cloudvore-kernel-2026-09-14`. Verdicts: 10 FIT,
+7 FRICTION, 0 BREAK, 1 UNEXERCISED across the 12 clauses and 6 `code` profile lines, over 3 real subjects. The
+subjects are the resume-regime retirement (Cloudvore 100d4d4), the receipt corrections (bus ff36092) and the draft
+itself (not delivered). Also recorded: `KERNEL: DOGFOOD` in `specs/cloudvore.md`, and five steward proposals under
+`## Untested`. One proposal is a harvest-status defect with a one-line repro: an answer-less `.dispositions.md` makes
+a filing HARVESTED.
+
+**Measured on this bench:** a doc-only packet decided alone put two false claims on master and the bus. Later
+non-author seats caught both. This is the case for K1 and K6 applying to docs and doctrine subjects too.
