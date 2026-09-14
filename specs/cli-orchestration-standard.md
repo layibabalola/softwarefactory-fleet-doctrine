@@ -302,7 +302,7 @@ Conjugal pins `high` for seat ignition for reasons this measurement does not add
 | model | findings | bytes |
 |---|---|---|
 | `claude-haiku-4-5-20251001` | 9 | 3,747 |
-| `claude-sonnet-5` | — | **lane produced nothing** |
+| `claude-sonnet-5` | 8 | 4,947 |
 | `claude-opus-5` | **29** | 9,474 |
 
 Opus returned 3.2× Haiku's findings, and the difference is qualitative as well as numerical:
@@ -313,10 +313,24 @@ ratified posture already assigns: structural refutation to the Designer seat, me
 cross-section checking to Lint. Spend the expensive seat on Designer and Arbiter; Haiku is
 sufficient for Lint, which is what it is given.
 
-**The Sonnet row is the point of §4.** That lane wrote a zero-byte output *and* a zero-byte
-log, with no error anywhere. A dispatcher checking that the command returned would have counted
-three lanes and reported three green. The sentinel was the only signal that separated two from
-three, in an unplanned live failure rather than a constructed one.
+**Correction, 2026-09-13.** An earlier revision of this table recorded the Sonnet row as
+"lane produced nothing", and built an argument on it. That was false, and the way it was reached
+matters more than the number: the artifacts were read **while that lane was still running**, and
+its partial state — an empty file — was written down as its result. The lane finished normally
+and returned 8 findings.
+
+The trap generalises beyond this table. A lane's output file exists from the moment it is
+created and is empty until the process writes; reading it on any schedule other than *after the
+process has exited* samples a race, and the sample is indistinguishable from a genuine failure.
+`wait` on the dispatcher is what makes a reading final — an artifact listing is not, however
+convenient it is to glance at. This is the same class as the pipe that swallowed an exit code
+earlier in this document: an observation taken through the wrong instrument, reported with the
+confidence of a measurement.
+
+A real instance of the failure that row was wrongly used to illustrate does exist, in the other
+experiment: `D-son-solo` in the filing run reached `terminal_reason: completed` after 20 turns
+and 47,449 thinking tokens, having produced a *question* rather than findings, and only the
+sentinel separated it from a success. That lane exited before it was read. §4 stands on it.
 
 ---
 

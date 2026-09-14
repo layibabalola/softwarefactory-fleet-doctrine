@@ -2419,3 +2419,40 @@ Verified without triggering a real login: aligned → inert; simulated drift →
 command; drift with a learned address → `claude auth login --email <addr>`; cooldown stamped →
 refuses to reopen; full `--repair` chain → parity detects, wizard is invoked, cooldown blocks
 the launch. Hook updated to `--repair`, timeout 30 s.
+
+### Cloudvore, 2026-09-13 — a published measurement was taken from a running process
+
+`specs/cli-orchestration-standard.md` §6 recorded a Sonnet lane as "lane produced nothing" and
+built an argument on it. **False, and now corrected in place.** That lane finished normally and
+returned 8 findings (4,947 bytes, sentinel present). What went wrong was not the arithmetic: the
+artifacts were listed **while the lane was still running**, and an output file that had not been
+written to yet was recorded as the lane's result.
+
+The trap generalises. A lane's output file exists from creation and is empty until the process
+writes, so reading it on any schedule other than *after the process exits* samples a race — and
+that sample is byte-identical to a genuine failure. `wait` on the dispatcher is what makes a
+reading final; an `ls` or a `wc -c` is not, however convenient. Same class as the pipeline that
+swallowed an exit code earlier today: an observation taken through the wrong instrument and
+then reported with the confidence of a measurement. Three of this session's errors now share
+that shape, which suggests the rule is not "be careful" but **name the event that makes a
+reading valid, and read only after it**.
+
+The failure §4 rests on is unaffected and real: `D-son-solo` in the filing run reached
+`terminal_reason: completed` after 20 turns and 47,449 thinking tokens having produced a
+question rather than findings, and exited before it was read. Only the sentinel separated it
+from a success.
+
+**Ledger consolidated: `metrics/lane-telemetry.jsonl` is 4 rows → 19.** Every measurement cited
+in today's receipts now has its raw row on the bus: the doctrine-bootstrap swarm (4), the
+swarm-vs-concentration filing experiment (8), the effort sweep on `gpt-5.6-sol` (4), and the
+model comparison at fixed effort (3). Previously the receipts asserted numbers whose source rows
+existed only in a scratch directory — readable as a conclusion, impossible to re-analyse,
+extend, or refute, which is precisely what a shared ledger is for.
+
+Two honesty properties of the backfill, since a ledger that hides its gaps is worse than a small
+one: every row carries a `gaps` field naming what is missing and why (the codex rows have a
+token total but no cost, because `codex exec` reports none and `pricing.jsonl` has no OpenAI
+rates; the model-comparison rows predate `--output-format json` capture and have neither).
+And `ts` on the backfilled rows is recovered from artifact mtime, **not** captured at dispatch —
+flagged in `gaps` rather than presented as a dispatch timestamp, because the difference is
+exactly what retroactive costing depends on.
