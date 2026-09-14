@@ -21,7 +21,12 @@ export RP_OUT RP_SUBJECT RP_BENCH RP_REPO
 case "$(command -v bash)" in */[Ww]indows/[Ss]ystem32/*) echo "WSL bash on PATH -- refuse"; exit 2;; esac
 [ -f "$RP_SUBJECT" ] || { echo "SUBJECT MISSING: $RP_SUBJECT"; exit 2; }
 ids_out=$("${PY[@]}" ids) || { echo "MODEL IDS UNRESOLVED -- refuse"; exit 2; }
-eval "$ids_out"
+# Parsed, never eval'd: an inventory value is data, and `luna: x; false` must not become shell syntax.
+while IFS='=' read -r k v; do
+  v=${v%$'\r'}; [ -n "$k" ] || continue
+  [[ "$k" =~ ^MODEL_[A-Z0-9_]+$ && "$v" =~ ^[A-Za-z0-9._:-]+$ ]] || { echo "MODEL ID LINE REJECTED: $k=$v -- refuse"; exit 2; }
+  printf -v "$k" '%s' "$v"
+done <<< "$ids_out"
 mkdir -p "$RP_OUT"
 
 stamp() { echo "$(date -u +%FT%TZ) $*"; }
@@ -56,15 +61,32 @@ run_stage() {    # stage secs
 
 # A launcher that cannot start is not an unavailable family: rc=127 from a broken npm shim once dropped every
 # Codex lane while auth and model ids were healthy (TRAPS, airmypc 2026-09-14). Refuse before dispatching anything.
+order="A B C D"; order=${order#*"$FROM"}; order="$FROM$order"
+
+# Resolve every lane's model before any lane is cleared or dispatched, so a bad nickname cannot strand paid lanes.
+unresolved=0
+for st in $order; do while read -r name fam nick; do
+  var="MODEL_$(echo "$nick" | tr a-z A-Z)"
+  [ -n "${!var:-}" ] || { echo "UNRESOLVED nickname $nick for lane $name"; unresolved=1; }
+done < <(stage_lanes "$st"); done
+[ "$unresolved" = 0 ] || { echo "UNRESOLVED nicknames -- refuse to dispatch"; exit 2; }
+
+# Probe the entrypoint each lane actually uses, bounded, without spending a model call.
+probe() { local out; out=$(timeout 30 "$@" 2>&1); lrc=$?; lline=$(printf '%s' "$out" | head -n 1); }
 launchers_ok=1
-for fam in $(for st in A B C D; do stage_lanes "$st"; done | awk '{print $2}' | sort -u); do
-  lv=$("$fam" --version 2>&1); lrc=$?
-  if [ "$lrc" -eq 0 ]; then echo "launcher ok family=$fam $(printf '%s' "$lv" | head -n 1)"
-  else echo "LAUNCHER-BROKEN family=$fam rc=$lrc: $(printf '%s' "$lv" | head -n 1)"; launchers_ok=0; fi
+for fam in $(for st in $order; do stage_lanes "$st"; done | awk '{print $2}' | sort -u); do
+  case "$fam" in
+    claude) checks=("claude --version" "claude --help") ;;
+    codex)  checks=("codex --version" "codex exec --help") ;;
+    *)      checks=("$fam --version") ;;
+  esac
+  for c in "${checks[@]}"; do
+    probe $c
+    if [ "$lrc" = 0 ]; then echo "launcher ok family=$fam [$c] $lline"
+    else [ "$lrc" = 124 ] && lline="timed out after 30s"; echo "LAUNCHER-BROKEN family=$fam [$c] rc=$lrc: $lline"; launchers_ok=0; fi
+  done
 done
 [ "$launchers_ok" = 1 ] || [ "$DRY" = 1 ] || { echo "LAUNCHER-BROKEN -- refuse to dispatch (a posture cannot be complete)"; exit 2; }
-
-order="A B C D"; order=${order#*"$FROM"}; order="$FROM$order"
 for st in $order; do
   "${PY[@]}" prompts "$st" || { echo "STAGE $st prompt generation failed"; break; }
   if [ "$DRY" = 1 ]; then stamp "dry-run: stage $st prompts OK"; [ "$st" = B ] && break; continue; fi
