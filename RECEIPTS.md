@@ -2536,3 +2536,56 @@ re-derived by the integrator before this entry.
 - **Moved - both "Trap (portable)" paragraphs.** Traps belong in `TRAPS.md` (README Layout), and both needed
   correction: the first missed local and user settings, the second trusted `--help`. The corrected versions are
   in `TRAPS.md` under this date. The receipt paragraphs stay (append-only) and are superseded by those entries.
+
+## Cross-family review of Approach A v7.4 filed by MLV-App: 12/17 lanes, both families, panel 80.88 (MLV-App, 2026-09-14, Dell XPS 17)
+
+Subject `specs/conjugal-approach-a-v7.4.md` blob `11af78fa`; test bench `C:\!Layi Wkspc\MLV-App` at `9c63151e`.
+Filing: `adjudications/approach-a-design/mlv-app.md`, scoring contract retained beside it as `mlv-app.rubric.json`
+(`rubric_id: b2f5862e9c0990d0e69e96862fba7ab4cc5e263151679ac336ab429187341c45`). Run by `tools/review-posture/run.sh`
+in one invocation; every model id came from a sentinel-verified machine inventory, none typed from memory.
+
+- **Posture, copied from the tool, not typed:** `conjugal-standard-PARTIAL (12/17 lanes; missing: Arbiter 0/1;
+  Consolidator 0/1; Classifier 0/3)`, `cross_family: validated`. Designer-Scope 1/1, Designer-Verify 1/1,
+  Lint-Consistency 2/2, Panel 8/8. This filing is **not** the conjugal-standard posture and does not claim it (R9).
+- **Why PARTIAL — a new failure mode for the bus.** The Arbiter lane (`gpt-6-astra`) returned a complete arbitration
+  **twice** — surviving findings, all nine lint rulings, a full losers table, `rc=0`, 8,554 and 7,997 bytes — and both
+  times stopped at the end of the prompt's ordered output contract ("Output, in order: (1)… (2)… (3) `## Losers`")
+  without emitting `LANE-COMPLETE`. Stage C is gated on that sentinel, so the Consolidator and the whole Classifier
+  swarm never ran. No sentinel was manufactured; the consolidation in the filing is the orchestrator's and says so.
+  The two arbitrations agreed on every lint ruling and on three of five surviving findings, so the content is
+  reproducible — it is the sentinel the ordered-output instruction competes with.
+- **TRAP, machine-level: the inventory said Codex was unavailable and it was wrong.** `~/.claude/machine-inventory.yaml`,
+  written by PROMPT A at 12:32:52-05:00 the same day, recorded `codex: available: false` with `sol`, `luna` and `astra`
+  all `UNVERIFIED -- not dispatchable`. Root cause: `%APPDATA%\npm\node_modules\node\bin\node` on this machine holds the
+  literal text `This file intentionally left blank` and carries the executable bit, so the stock `codex` Git Bash shim's
+  `[ -x "$basedir/node" ]` branch execs it and every `codex` call from Git Bash exits 127. The `claude` shim execs a
+  native `.exe` and is immune, which is exactly why only one family looked dead and nothing looked broken.
+  `codex --version` works from PowerShell throughout. With a PATH shim bypassing the dead file,
+  `probe-machine-inventory.sh` verified all seven ids by sentinel challenge. **Test:** before trusting any
+  `available: false`, run that family's CLI from the same shell the probe uses and check `rc`; a probe that cannot
+  execute the CLI is indistinguishable from an honest negative. Uncaught, this run would have filed as one-family
+  degraded with `cross_family: NO-CROSS-FAMILY-VALIDATION`.
+- **TRAP, tooling: `tools/review-posture/run.sh` silently drops every model id when its own path contains a space.**
+  `PY="python $HERE/review_posture.py"` is unquoted, so from `C:\!Layi Wkspc\...` Python receives `C:\!Layi`. The guard
+  `eval "$($PY ids)" || exit 2` does not fire, because the failed command substitution is empty and `eval ""` returns 0.
+  The runner proceeds with no `MODEL_*` values at all. Worked around here by running from a space-free worktree.
+- **Findings.** 3 design findings kept by the arbitration plus 2 recorded as arbitration-vs-arbitration disagreements,
+  1 Untested, 1 cross-section contradiction KEPT (§0's exact-genesis checker digests vs the replacement §§4/6/13
+  expressly permit), 12 losers each checked against the subject. One loser is recorded as **remedy refuted, defect
+  conceded**: §1's `N_batch=100` leaves no headroom over Scenario 20's 20 rows/s floor under either party's arithmetic.
+- **Panel:** 80.88 over 8/8 seats, both families, spread 20.17. Dissent is Contract Completeness, where the Codex
+  implementer seat scored 42 against a 74–84 band. All 24 panel blocker quotes verified verbatim.
+- **Orchestrator re-derivations that settled disagreements rather than averaging them.** (1) LINT-CODEX's claim that
+  1d-extended's `87,900 s` excludes the six MIXED rows is false: three independent derivations (this orchestrator in
+  Python, both arbitrations in PowerShell) give SUBSTRATE 77,100 + MIXED 10,800 = 87,900 exactly, and 1d = 33,240 s over
+  49 STUB rows. Both §10 literals reproduce; `98,700 s` double-counts MIXED. (2) The subject's own §14 cap is
+  unevaluable as written: the file is 13,009 whitespace-delimited words against a stated cap of 13,000 and begins with
+  an HTML bus header rather than the `# Approach A v7.4` heading §14 requires, while the body from line 3 is 12,972
+  words and does begin with that heading — 9 words either way. (3) The header asserts `Round 15 composite 83.7,
+  stopping rule fired` while §12's own ledger row for R15 reads `pending`; both strings verified verbatim.
+- **Bench citations were re-measured, not inherited.** Every MLV-App number in the filing was reproduced on this
+  machine: 7 worktrees over one `.git`, 4,255 loose objects, 108 packed refs / 27 heads, `gc.auto` and `gc.pruneExpire`
+  unset, 353 unreachable blobs, 10,918 of 106,363 `.claude-state` ledger lines over 3,500 B with a 4,342,710-byte
+  maximum, and every cited line in `closeout.config.json`, `brokered_closeout.py`, `autonomous-golden-authority.md`,
+  `test_candidate_acceptance.py` and `Invoke-Workstream.ps1`. One timing differed and is recorded as re-measured
+  (50 ms per `git show`, 34 ms per `rev-parse`, against the lane's 44/41 ms); the finding survives at either number.
