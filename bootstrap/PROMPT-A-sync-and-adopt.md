@@ -6,11 +6,11 @@ that PROMPT B has something to stand on.
 
 Run it again whenever you have been away; step 4 is the part that pays off on every re-run.
 
-**Before §0: confirm where you are running.** Name this session's working directory in the
-report. Stop with `FROZEN` if any instructions you hold mark it read-only or archived, whether they
-come from this project or from a user-level file. This prompt writes into the project. A path you
-could not read is `UNREADABLE`, not "missing" (`bootstrap/README.md`, "When a paste reports
-UNREADABLE"). Never search for a substitute file.
+**Before §0: confirm where you are running.** Paste A (`bootstrap/README.md`) has already resolved
+the project `T` and the checkout `D`. Reuse both and do not search again. "This project" means `T`,
+and every write below goes under `T`, never under `D`. Stop with `FROZEN` if any instructions you
+hold mark `T` read-only or archived. A path you could not read is `UNREADABLE`, not missing. Never
+search for a substitute file.
 
 ---
 
@@ -66,8 +66,9 @@ than as fact.
 
 ## 1. Sync the bus
 
-Find the doctrine checkout: a binding in this project's `CLAUDE.md`, else a pointer in `docs/`,
-else the machine convention (`C:\code\softwarefactory-fleet-doctrine` on this box — say so if you
+Use the checkout `D` that paste A resolved, and re-check that its `origin` is the bus. Only when
+you were not started by paste A, find the doctrine checkout yourself: a binding in this project's
+`CLAUDE.md`, else a pointer in `docs/`, else the machine convention (`C:\code\softwarefactory-fleet-doctrine` on this box — say so if you
 reach this rung, because a path that happens to be right here is a guess anywhere else).
 
 ```bash
