@@ -27,7 +27,7 @@ so the binding is checked here rather than discovered later.
 Run these and report each result. Any FAIL stops the run.
 
 ```bash
-# doctrine freshness — receipt written by PROMPT 1
+# doctrine freshness + parity — receipt written by PROMPT A
 cat .claude/doctrine-sync.json
 ```
 Require `status: "SYNCED"` and a `synced_at` within the last 24 hours. **Absence of this file
@@ -44,7 +44,7 @@ git -C "$REPO" status --short -- <SUBJECT paths only>
 Resolve the inventory, in this order, and say which answered:
 
 1. `./.claude/machine-inventory.yaml` — a project override, if this project needs one.
-2. `~/.claude/machine-inventory.yaml` — the machine inventory, written by PROMPT 1.
+2. `~/.claude/machine-inventory.yaml` — the machine inventory, derived by PROMPT A.
 3. Neither → **stop** and run `<doctrine>/tools/probe-machine-inventory.sh`, then retry.
 
 Providers and model ids are a property of the **machine**, not the project. Most projects

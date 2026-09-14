@@ -88,6 +88,29 @@ answer it. It does not assert a table: a retired or mistyped id still replies �
 at a byte count *larger* than a real answer — so neither exit code nor output size separates a
 live model from a dead one. Inventory is machine-scoped, not per-project (binding rule R5).
 
+## 2b. Write the readiness receipt
+
+```bash
+git -C "<doctrine>" log -1 --format='%H %ad' --date=iso
+```
+
+Write `.claude/doctrine-sync.json` **in this project**, not in the doctrine checkout — it is a
+statement this project makes about its own readiness, and the bus is shared:
+
+```json
+{ "status": "SYNCED", "path": "<doctrine checkout>", "head": "<full SHA>",
+  "synced_at": "<now, ISO-8601>", "parity": "MATCHED|REPAIRED|UNVERIFIED",
+  "inventory": "<path to the inventory that answered>" }
+```
+
+On any blocker from §0–§2, write the same file with `status` set to that blocker's code.
+
+**Write it on success, not only on failure.** The review orchestrator refuses to start without
+this receipt, and that refusal is the point: a marker written only when something breaks cannot
+be told apart from a sync that never ran — and "never ran" is the common case, because it is
+what happens when someone skips straight to PROMPT B. Absence of a failure marker is not
+evidence of success.
+
 ## 3. Adopt or distinguish what binds
 
 Read `<doctrine>/RULINGS.md` and `<doctrine>/README.md` (its Laws).
