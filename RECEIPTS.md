@@ -2474,3 +2474,29 @@ the sentinel:** the first dispatch sent `Read: …doctrine$SUBJECT` (literal, fr
 double-quoted heredoc variable); it was caught by reading the assembled prompt file, killed
 before output, and the runner now greps every prompt for the resolved subject path before dispatch.
 The orchestrator's §2 template has the same `<SUBJECT>` substitution seam and no such check.
+
+### magic-lantern_dannephoto, 2026-09-14 — the full Conjugal-standard posture, and what the partial one got wrong
+
+Same subject (`specs/conjugal-approach-a-v7.4.md`, blob 11af78fa) and bench (`magic-lantern_dannephoto` @ 1dc6162),
+re-run with every role in `specs/posture-templates-conjugal-standard.md`: arbiter seeing designers AND lint, Fable
+consolidator, blinded 8-seat panel on Conjugal's R15 rubric, Haiku x3 classifier at 2-of-3. 17/17 role lanes cleared
+`LANE-COMPLETE`; stages B-D took 5 min 3 s wall-clock (16:05:03Z-16:10:06Z) with 13 lanes. Filing supersedes f4a032c.
+
+**Measured: posture fidelity changes the result, not just the paperwork.** The earlier run (designers + lint + an arbiter
+that saw no lint and was never asked for losers) filed **16** design findings as `conjugal-standard`. The full posture
+kept **6 + 1 Untested**, rejected **9 with counterexamples** (each counterexample grounded in the spec text), and dropped
+both lint contradictions. The orchestrator template did not contain the panel, the classifier, the consolidator, or the
+lint-to-arbiter edge, so every project running it has been filing the inflated version under the full label.
+
+Panel composite **78.73** (8/8 seats, spread 15.2; Luna 71.0 to Fable 86.2); classifier FLAT 3/3, every finding DESIGN,
+must-fix F1-F4 unanimous. Four portable lessons:
+
+1. **A role omitted from the runner is invisible in the report.** The sentinel proves the lanes that ran; nothing notices
+   the lanes that were never written. Posture completeness has to be computed against the posture's role list.
+2. **The posture table and the practice disagree on panel families.** The table says 3; Conjugal's own R15 panel was 2
+   (fable, opus, sonnet x3, astra, sol, luna), and this machine's inventory has 2. Record `panel_families` as measured.
+3. **Panel seats contradict each other on checkable arithmetic.** Fable said §11 reproduces 1d = 33,240 s; Opus said
+   33,540 s. Neither reproduces (32,220 s / 33,420 s under the two natural readings); 1d-extended 87,900 s does. An
+   orchestrator re-derives a number seats disagree on rather than averaging or picking the more confident seat.
+4. **Cheap seats attribute badly, still.** One Haiku classifier grounded a finding on "7 loose refs showing growth"; the
+   bench has 51 refs and no growth series. The 2-of-3 rule absorbed it, which is exactly what the swarm is for.

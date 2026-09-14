@@ -1,0 +1,86 @@
+{
+  "dimensions": [
+    {
+      "name": "Timeline Realism",
+      "definition": "Stage S + Phase 1 line items; DAG forecasts; 2a/2b/2c; executable gates",
+      "weight": 1
+    },
+    {
+      "name": "Contract Completeness",
+      "definition": "can Luna code every section without asking a question? Is anything referenced but undefined?",
+      "weight": 1
+    },
+    {
+      "name": "Cross-Family Safety",
+      "definition": "pair quorum + epochs, artifact-bound votes, event registry fences, single SEAL rule, cross-family A pair, trust anchor, no shared secret, no single-lane authority",
+      "weight": 1
+    },
+    {
+      "name": "Autonomy Achievement",
+      "definition": "advisory budgets, ROTATE_REQUEST/ROTATION_COMPLETE, bounded WAIT-*/BLOCKED-CAPACITY dispositions, no new owner gates, Tier 0 stopping rule",
+      "weight": 1
+    },
+    {
+      "name": "Throughput Goal",
+      "definition": "ordered throughput plan, reducer capacity model, G-MEASURE, measured_multiple signed with CI, substrate provably not the bottleneck",
+      "weight": 1
+    },
+    {
+      "name": "Risk Mitigation",
+      "definition": "every mechanism has a scenario with a pass criterion; clock domains explicit; residuals stated once",
+      "weight": 1
+    }
+  ],
+  "seat_roster": [
+    {
+      "seat": "fable",
+      "family": "claude",
+      "model": "claude-fable-5",
+      "lens": "coherence and contract completeness - can an implementer code every section without asking; every term defined once; every event/ref/scenario referenced exists; owner directives honored verbatim."
+    },
+    {
+      "seat": "opus",
+      "family": "claude",
+      "model": "claude-opus-5",
+      "lens": "orchestration and throughput - reducer capacity model, pipelined publication attribution (depth 1 vs 2 at the same derived P_pub), lease/fence correctness under concurrency, recovery semantics, substrate provably not the bottleneck."
+    },
+    {
+      "seat": "sonnet1",
+      "family": "claude",
+      "model": "claude-sonnet-5",
+      "lens": "timeline realism and testability - Stage S and Phase 1 line items, manifest-derived forecasts and the critical path, every scenario has an executable pass criterion, phase gates runnable as written."
+    },
+    {
+      "seat": "sonnet2",
+      "family": "claude",
+      "model": "claude-sonnet-5",
+      "lens": "concurrency and recovery adversary - races between floors/sidecars/reducer, crash points (n-commit/n+1-build handoff, relay commit, helper-result ingress), idempotency keys that dedup a valid event or admit a stale one, index.lock and shared-worktree hazards."
+    },
+    {
+      "seat": "sonnet3",
+      "family": "claude",
+      "model": "claude-sonnet-5",
+      "lens": "autonomy and owner directives - advisory budgets (budget_mode default unrestricted, nothing stalls), latch episodes with one ROTATE_REQUEST and automatic resume, bounded WAIT-*/BLOCKED-CAPACITY dispositions, no new owner gates, Tier 0 stopping rule and rubric_id pinning."
+    },
+    {
+      "seat": "astra",
+      "family": "codex",
+      "model": "gpt-6-astra",
+      "lens": "Codex design explorer: cross-family routing under latch/rotation, deterministic attestation seat identities, reducer capacity ceiling, Phase 2 arithmetic and resumability, Tier 0 coherence with its evidence."
+    },
+    {
+      "seat": "sol",
+      "family": "codex",
+      "model": "gpt-5.6-sol",
+      "lens": "Codex orchestration verifier: safety gates, contract completeness, recovery semantics, quorum/attestation soundness, trust anchor and revocation, seal/immutability, no single-lane authority."
+    },
+    {
+      "seat": "luna",
+      "family": "codex",
+      "model": "gpt-5.6-luna",
+      "lens": "Codex implementer: can you code every section on a shared Windows git checkout without asking a question; are the registry fences, epochs, quota adapter fields, unit table, and reducer supervisor implementable; is the build stage honest."
+    }
+  ],
+  "blinding": "independent seats in parallel; no score history; no other seat's output; design findings not shown; classifier sees panel blockers with seat labels stripped",
+  "composite": "equal-weight mean of six dimensions per seat; panel composite = equal mean over seats"
+}
