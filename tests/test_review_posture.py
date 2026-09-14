@@ -182,6 +182,28 @@ class Prompts(Env):
         self.assertEqual(p.returncode, 1)
         self.assertFalse(list(self.out.glob("*.rc")), "a dry run must not dispatch any lane")
 
+    @unittest.skipUnless(BASH, "no non-WSL bash available")
+    def test_run_sh_survives_a_checkout_path_with_space_and_bang(self):
+        # airmypc 2026-09-14: the string-form PY split on `C:\!Layi Wkspc`, `eval ""` passed, 17/17 DID-NOT-RUN.
+        tool = self.tmp / "sp ace!dir" / "tools" / "review-posture"
+        shutil.copytree(TOOL, tool)
+        env = dict(os.environ, RP_REPO=str(ROOT))
+        p = subprocess.run([BASH, (tool / "run.sh").as_posix(), "--dry-run"], env=env, capture_output=True, text=True, timeout=120)
+        self.assertIn("dry-run: stage A prompts OK", p.stdout, p.stdout + p.stderr)
+        self.assertNotIn("prompt generation failed", p.stdout)
+
+    @unittest.skipUnless(BASH, "no non-WSL bash available")
+    def test_run_sh_refuses_to_dispatch_when_a_launcher_is_broken(self):
+        # airmypc 2026-09-14: a stray npm `node` shim made `codex` exit 127; every Codex lane died as if the family were absent.
+        fake = self.tmp / "fakebin"; fake.mkdir()
+        (fake / "claude").write_text("#!/bin/sh\necho 'fake claude 0'\n", encoding="utf-8", newline="\n")
+        (fake / "codex").write_text("#!/bin/sh\necho 'node: line 1: This: command not found'\nexit 127\n", encoding="utf-8", newline="\n")
+        env = dict(os.environ, RP_REPO=str(ROOT), PATH=str(fake) + os.pathsep + os.environ.get("PATH", ""))
+        p = subprocess.run([BASH, (TOOL / "run.sh").as_posix()], env=env, capture_output=True, text=True, timeout=120)
+        self.assertIn("LAUNCHER-BROKEN family=codex rc=127", p.stdout, p.stdout + p.stderr)
+        self.assertEqual(p.returncode, 2, p.stdout + p.stderr)
+        self.assertFalse(list(self.out.glob("*.rc")), "a broken launcher must stop dispatch before any lane starts")
+
 
 if __name__ == "__main__":
     unittest.main()
