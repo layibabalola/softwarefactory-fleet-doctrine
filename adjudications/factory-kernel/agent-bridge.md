@@ -50,5 +50,11 @@ P:code budgets | FRICTION | "wall time per suite, provider calls per subject" | 
 
 ## Untested
 
-- **The arbiter prompt fix itself.** Proposed for the tool's owner: in `review_posture.py` `write_prompt`, state the sentinel as the first line of every prompt, before any DATA framing, and name it in the ordered output contracts of the arbiter, consolidator and classifier prompts. Not run: this project holds no grant to change `tools/`. PROOF: a stage-B rerun on the same inputs in which the astra arbiter clears `LANE-COMPLETE`.
+- **The arbiter prompt fix itself. (Update 2026-09-14T22:30Z: run, see K12 addendum below.)** Proposed for the tool's owner: in `review_posture.py` `write_prompt`, state the sentinel as the first line of every prompt, before any DATA framing, and name it in the ordered output contracts of the arbiter, consolidator and classifier prompts. Not run: this project holds no grant to change `tools/`. PROOF: a stage-B rerun on the same inputs in which the astra arbiter clears `LANE-COMPLETE`.
 - **§6 mapping for agent-bridge.** Fleet-tooling orchestration (lanes, WAL, doctrine reviews) is most of this project's work, and no profile covers it. Whether that is a `code` sub-case or a missing `review`/`orchestration` profile needs a second project's evidence.
+
+## Addendum 2026-09-14T22:30Z — K12 PROOF measured (added commit, no finding removed)
+
+K12's PROOF names an unowned fleet-tool defect. This project ran the discriminating experiment its own `## Untested` bullet named, on Approach A v7.6 (blob `4a57214`), bench `e842e70`. The unmodified master tool (`19817b2`) failed the arbiter sentinel on the first pass and on one `--retry-missing` retry (8/8 unpatched passes today across three benches). With only the sentinel ask moved ahead of the DATA region, one pass cleared the arbiter, consolidator and 3 classifiers, and the patched tool printed `conjugal-standard COMPLETE (17/17 lanes)`. The fix is on `fix/review-posture-sentinel-before-data` @ `3ae7434` (test fails on master, suite 14/14 on the fix), pushed under the owner's instruction to resolve open issues and awaiting the tool's owner. The review is filed PARTIAL on `review/agent-bridge-2026-09-14-2` (R9.2). The K12 FRICTION stands: the fix exists, but no named owner has it yet.
+
+Harvest-tool note (FRICTION, not patched): `tools/harvest-status.py` counts `untested` only from `§`, `K<n>` and `P:` lines. This filing's `## Untested` bullets therefore read `untested=0`. The kernel §4 format does not say how Untested items should be written.

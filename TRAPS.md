@@ -9103,4 +9103,7 @@ which put the ask after "Output EXACTLY this block" with no DATA framing, cleare
 classifier prompts use the same DATA framing and have never been reached. `--retry-missing` re-dispatches the same
 prompt, so it should not be expected to cure this. **Test:** in any lane prompt that declares a DATA region, state the
 sentinel before the region and inside the ordered output contract. Then rerun stage B on unchanged inputs and require the
-arbiter to clear the sentinel. Not yet run.
+arbiter to clear the sentinel. **Run 2026-09-14T22:25Z (agent-bridge, v7.6 blob 4a57214):** unpatched, the first pass and one
+`--retry-missing` retry both failed. That makes 8 of 8 unpatched passes today. With only the ask moved ahead of the DATA region, the arbiter,
+consolidator and all three classifiers cleared on the first try (`conjugal-standard COMPLETE (17/17 lanes)`, from the patched tool). One
+sample. Fix proposed on `fix/review-posture-sentinel-before-data`; filing on `review/agent-bridge-2026-09-14-2`.
