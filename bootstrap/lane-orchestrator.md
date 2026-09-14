@@ -192,6 +192,14 @@ done
 
 Then run it in one call: `bash .claude/run-review.sh`
 
+**On Windows, confirm which `bash` that is.** From PowerShell, `bash` can resolve to **WSL**, not
+Git Bash — and WSL has its own filesystem and `PATH`, so it cannot see a Windows-installed
+`claude` and resolves `C:/...` paths differently. The failure does not look like a shell
+problem: an inventory that exists reads as absent, a model id that is present reads as
+missing. Measured 2026-09-13 in a live run, where a WSL detour produced a false "inventory
+lacks astra" conclusion that outlived the switch to Git Bash. Check with `command -v bash` or
+`bash -c 'command -v claude'` before trusting anything the runner reads.
+
 **Judge each lane on the sentinel, not on rc and not on size.** Measured, two lanes side by
 side with one model id mistyped:
 
@@ -206,6 +214,21 @@ than the answer — so any size heuristic rates the empty seat the richer contri
 the CLI's. And rc misses the quiet failures entirely, where a lane exits 0 having refused,
 truncated, or answered the wrong question. `LANE-COMPLETE` survives all of them because no
 failure path can emit it. Report all three; let the sentinel decide.
+
+## 2b. Verify what the lanes quoted before filing any of it
+
+Lanes paraphrase, and a paraphrase filed inside quotation marks is a fabricated citation.
+Before consolidating:
+
+- **Every quoted phrase** is checked verbatim against the subject: `grep -F "<phrase>" <subject>`.
+- **Every test-bench claim** — a path, a line number, a count — is re-measured on this repo.
+  A lane that cites `file.py:3886` is asserting something checkable; check it.
+- **Record what you did not re-measure** rather than letting it inherit the verified findings'
+  standing.
+
+Measured 2026-09-13: a cross-family run's lanes cited a test assertion at `factory-health.tests.py:3886`;
+it was at `:501`. Every other quote held. One wrong line number in an otherwise sound filing is
+the case that matters, because the filing is otherwise trustworthy enough that nobody re-reads it.
 
 ## 3. Consolidate — always
 
