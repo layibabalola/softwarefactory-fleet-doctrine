@@ -1,0 +1,76 @@
+{
+  "kernel_version": "0",
+  "project": "softwarefactory-fleet-doctrine",
+  "domain_class": "prose-strategy",
+  "domain_class_known": true,
+  "adapter": "strategy",
+  "manifest_sha256": "184b51dfe1bb06621c681d082e7aff91f3d38d39183b5d17a0da98851e57e125",
+  "measured_at": "2026-09-14T21:43:15+00:00",
+  "integration_ref": "origin/master",
+  "ref_head": "7d1b6f6134a5afea21b58af932c4bbead997c8ea",
+  "ledger": "manifest declares no native ledger",
+  "unmapped_native_states": [],
+  "invariants": {
+    "K1": {
+      "status": "UNKNOWN",
+      "evidence": "origin/master resolves, but no adopted units are readable (manifest declares no native ledger)"
+    },
+    "K2": {
+      "status": "WARN",
+      "evidence": "git common dir C:/code/softwarefactory-fleet-doctrine/.git; 41 worktrees; lock_identity=None (undeclared; a per-worktree identity splits locks)"
+    },
+    "K3": {
+      "status": "UNKNOWN",
+      "evidence": "no ledger: manifest declares no native ledger"
+    },
+    "K4": {
+      "status": "UNKNOWN",
+      "evidence": "no ledger: manifest declares no native ledger"
+    },
+    "K5": {
+      "status": "UNKNOWN",
+      "evidence": "no ledger: manifest declares no native ledger"
+    },
+    "K6": {
+      "status": "UNKNOWN",
+      "evidence": "no ledger: manifest declares no native ledger"
+    },
+    "K7": {
+      "status": "PASS",
+      "evidence": "524 commits on origin/master in 14d: governance=260 product=258 other=6 ratio=0.502 file-ratio=0.424 alarm>=0.9; eligible=None"
+    },
+    "K8": {
+      "status": "N/A",
+      "evidence": "manifest declares this project is the doctrine bus itself"
+    },
+    "K9": {
+      "status": "PASS",
+      "evidence": "3 owner-reserved actions declared: ['binding owner rulings', 'pushing or creating new external remotes', 'ratifying kernel v1'] (declared, not authenticated)"
+    },
+    "K10": {
+      "status": "UNKNOWN",
+      "evidence": "no ledger (manifest declares no native ledger); owner_channel='RULINGS.md' exists=True"
+    },
+    "K11": {
+      "status": "PASS",
+      "evidence": "probes=[] owner-interaction evidence 'RULINGS.md' last=2026-09-14T16:20:25-05:00 (fresh<= 14d: True)"
+    }
+  },
+  "metrics": {
+    "worktrees": 41,
+    "window_days": 14,
+    "commits": 524,
+    "governance_commits": 260,
+    "product_commits": 258,
+    "other_commits": 6,
+    "governance_ratio": 0.502,
+    "governance_file_ratio": 0.424
+  },
+  "tally": {
+    "PASS": 3,
+    "FAIL": 0,
+    "WARN": 1,
+    "UNKNOWN": 6,
+    "N/A": 1
+  }
+}

@@ -1,0 +1,119 @@
+{
+  "kernel_version": "0",
+  "project": "magic-lantern_dannephoto",
+  "domain_class": "firmware",
+  "domain_class_known": true,
+  "adapter": "firmware-hardware",
+  "manifest_sha256": "215517d6ead032ce984087f759837cedb698d92f1b8dc0955a16fa3ebc06d084",
+  "measured_at": "2026-09-14T21:43:13+00:00",
+  "integration_ref": "codex/audit-remediation-2026-07",
+  "ref_head": "1dc6162f95f432b4060c3c1807247c66fad4bf85",
+  "ledger": "json-tasks roadmap/recovery/execution-state.json (16 units)",
+  "unmapped_native_states": [],
+  "invariants": {
+    "K1": {
+      "status": "PASS",
+      "evidence": "codex/audit-remediation-2026-07 resolves; 11 adopted commit identities checked, 0 unreachable; 0 adopted units with non-commit identity (bound by K5 receipts); codex/audit-remediation-2026-07 is 311 ahead of master",
+      "unreachable": [],
+      "non_commit": []
+    },
+    "K2": {
+      "status": "WARN",
+      "evidence": "git common dir C:/code/magic-lantern_dannephoto/.git; 4 worktrees; lock_identity=None (undeclared; a per-worktree identity splits locks)"
+    },
+    "K3": {
+      "status": "PASS",
+      "evidence": "eligible=0 active=0 configured_min_executors=0 observed_executors=None (declared floor only; no executor probe)"
+    },
+    "K4": {
+      "status": "PASS",
+      "evidence": "ledger authority='audit-packet/60-owner-autonomous-recovery-20260907.md' exists_in_repo=True (recorded, not authenticated)"
+    },
+    "K5": {
+      "status": "WARN",
+      "evidence": "11 adopted: 0 cite no evidence, 0 evidence paths absent, 11 without a passing receipt, 4 failing status files, 0 verified by their author, 0 failing/invalid receipts -> evidence exists but does not prove a passing execution",
+      "no_evidence": [],
+      "missing": [],
+      "self_verified": [],
+      "unreceipted": [
+        "B01",
+        "P01",
+        "B02",
+        "B03",
+        "P03",
+        "P04",
+        "P02",
+        "M01",
+        "B04",
+        "B05",
+        "P05"
+      ],
+      "failing_status": [
+        "B03:audit-packet/recovery-20260907/b03/probe.status=1",
+        "B03:audit-packet/recovery-20260907/b03/pytest.status=1",
+        "B03:audit-packet/recovery-20260907/b03/verify/probe.status=1",
+        "B03:audit-packet/recovery-20260907/b03/verify/pytest.status=1"
+      ],
+      "bad_receipts": []
+    },
+    "K6": {
+      "status": "WARN",
+      "evidence": "adopted=11 delivered=0 pending=['R01', 'H01', 'H02', 'R02', 'K01'] claimed-without-delivery-evidence=[] (rule: a hardware (H*), release (R*) or camera-acceptance (K*) task reaching done is a delivered outcome; desk/factory cards are adoptions only; evidence field declared=False) -> no delivery_evidence field mapped; a future delivery could not be proven"
+    },
+    "K7": {
+      "status": "WARN",
+      "evidence": "34 commits on codex/audit-remediation-2026-07 in 14d: governance=31 product=0 other=3 ratio=1.0 file-ratio=1.0 alarm>=0.9; eligible=0 -> CONFORMANCE-FIXPOINT ALARM"
+    },
+    "K8": {
+      "status": "PASS",
+      "evidence": "receipt status=SYNCED age_h=18.0 max=168"
+    },
+    "K9": {
+      "status": "PASS",
+      "evidence": "4 owner-reserved actions declared: ['push to any remote', 'hardware acceptance on the 5D3', 'camera firmware defaults', 'release publication'] (declared, not authenticated)"
+    },
+    "K10": {
+      "status": "PASS",
+      "evidence": "5 blocked; 0 without a reason; owner_channel='roadmap/OWNER-ASKS-2026-07-20.md' exists=True",
+      "no_reason": []
+    },
+    "K11": {
+      "status": "FAIL",
+      "evidence": "probes=['Disabled'] owner-interaction evidence None last=None (fresh<= 14d: False) -> no declared floor is live"
+    }
+  },
+  "metrics": {
+    "worktrees": 4,
+    "eligible": 0,
+    "active": 0,
+    "observed_executors": null,
+    "k5_receipted": 0,
+    "k5_failing_status_files": 4,
+    "adopted": 11,
+    "delivered": 0,
+    "delivery_pending": [
+      "R01",
+      "H01",
+      "H02",
+      "R02",
+      "K01"
+    ],
+    "delivery_without_evidence": [],
+    "window_days": 14,
+    "commits": 34,
+    "governance_commits": 31,
+    "product_commits": 0,
+    "other_commits": 3,
+    "governance_ratio": 1.0,
+    "governance_file_ratio": 1.0,
+    "blocked": 5,
+    "ledger_updated": "2026-09-08T00:54:02.856Z"
+  },
+  "tally": {
+    "PASS": 6,
+    "FAIL": 1,
+    "WARN": 4,
+    "UNKNOWN": 0,
+    "N/A": 0
+  }
+}

@@ -1,0 +1,56 @@
+{
+  "project": "softwarefactory-fleet-doctrine",
+  "kernel_version": "0",
+  "domain_class": "prose-strategy",
+  "adapter": "strategy",
+  "repo": "C:/code/softwarefactory-fleet-doctrine",
+  "integration_ref": "origin/master",
+  "checkout": {
+    "model": "shared-checkout",
+    "lock_identity": null
+  },
+  "ledger": {
+    "kind": "none"
+  },
+  "admission": {},
+  "paths": {
+    "product": [
+      "specs/**",
+      "RULINGS.md",
+      "TRAPS.md",
+      "RECEIPTS.md",
+      "README.md",
+      "bootstrap/**",
+      "tools/**",
+      "tests/**",
+      "schemas/**",
+      "policy/**",
+      "doctrine/**",
+      "adjudications/**"
+    ],
+    "governance": [
+      "heartbeats/**",
+      "cos-feedback/**",
+      "manifests/**",
+      "adoption/**",
+      "feedback/**",
+      "metrics/**",
+      "receipts/**",
+      "coordination/**",
+      "ruling-candidates/**",
+      ".github/**"
+    ],
+    "alarm_ratio": 0.9
+  },
+  "owner_reserved": [
+    "binding owner rulings",
+    "pushing or creating new external remotes",
+    "ratifying kernel v1"
+  ],
+  "owner_channel": "RULINGS.md",
+  "liveness": {
+    "mode": "owner-interactive",
+    "evidence_path": "RULINGS.md"
+  },
+  "doctrine_receipt": false
+}

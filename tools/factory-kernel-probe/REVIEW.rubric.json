@@ -1,0 +1,86 @@
+{
+  "dimensions": [
+    {
+      "name": "Universality",
+      "definition": "every invariant and state transition holds for code, firmware, media-render, game-engine, mobile, prose-creative and strategy work without assuming a substrate (git master, one checkout, test suites, CI); domain specifics live only in adapters",
+      "weight": 1
+    },
+    {
+      "name": "Measurability",
+      "definition": "every invariant has a concrete shadow measurement, a PASS/FAIL/WARN/UNKNOWN rule, and never rounds UNKNOWN to PASS; the tool and the spec name the same invariants",
+      "weight": 1
+    },
+    {
+      "name": "Anti-Fixpoint Honesty",
+      "definition": "the kernel detects governance motion masquerading as progress, separates adoption from delivery, bounds admission by eligible work, and forbids manufactured backlog",
+      "weight": 1
+    },
+    {
+      "name": "Adoption Cost",
+      "definition": "a project with any native ledger (or none) can dogfood in shadow in under an hour without replacing machinery, and the manifest fields are sufficient and unambiguous",
+      "weight": 1
+    },
+    {
+      "name": "Self-Improvement Loop",
+      "definition": "feedback records, harvest, proposals, review, landing, demotion and promotion form an executable, falsifiable loop with evidence thresholds, versioning and no single-writer conflicts",
+      "weight": 1
+    },
+    {
+      "name": "Authority Safety",
+      "definition": "shadow mode grants zero authority, owner-reserved actions are preserved, promotion and enforcement require recorded owner acts, and nothing creates an escalation path",
+      "weight": 1
+    }
+  ],
+  "seat_roster": [
+    {
+      "seat": "panel-fable",
+      "family": "claude",
+      "model": "claude-fable-5",
+      "lens": "coherence and completeness - is every term defined once, every invariant measurable as written, every adapter field used; could a project dogfood from this document alone without asking a question."
+    },
+    {
+      "seat": "panel-opus",
+      "family": "claude",
+      "model": "claude-opus-5",
+      "lens": "universality adversary - pick the domain where each invariant breaks (a novel, an Unreal project with binary assets, a mobile app gated on store review, a business plan) and show the break with a quote."
+    },
+    {
+      "seat": "panel-sonnet1",
+      "family": "claude",
+      "model": "claude-sonnet-5",
+      "lens": "adoption cost - walk a project with a markdown ledger, one with a database ledger and one with no ledger through \u00a75 and \u00a77; count the questions they would have to ask."
+    },
+    {
+      "seat": "panel-sonnet2",
+      "family": "claude",
+      "model": "claude-sonnet-5",
+      "lens": "measurement adversary - where can a shadow check PASS while the invariant is violated, or FAIL while it holds (glob misclassification, stale receipts, ledgers that lie, worktree counts)."
+    },
+    {
+      "seat": "panel-sonnet3",
+      "family": "claude",
+      "model": "claude-sonnet-5",
+      "lens": "self-improvement loop - can \u00a78 actually change the kernel: proposal evidence thresholds, review cost, versioning, demotion, promotion; where does the loop stall or become governance motion itself."
+    },
+    {
+      "seat": "panel-astra",
+      "family": "codex",
+      "model": "gpt-6-astra",
+      "lens": "Codex design explorer: kernel vs adapter vs substrate boundaries, the unit state machine's completeness, how Approach A or any other substrate would be qualified against K1-K11."
+    },
+    {
+      "seat": "panel-sol",
+      "family": "codex",
+      "model": "gpt-5.6-sol",
+      "lens": "Codex verifier: authority safety - does anything in shadow mode, harvest or promotion let a project or tool act without an owner record; are single-writer paths and R7-R9 respected."
+    },
+    {
+      "seat": "panel-luna",
+      "family": "codex",
+      "model": "gpt-5.6-luna",
+      "lens": "Codex implementer: implement kernel.py's checks and a new adapter from the spec alone; are manifest semantics, ledger kinds and result rules precise enough to code without guessing."
+    }
+  ],
+  "blinding": "panel seats run independently in parallel; no score history; no other seat's output; design findings not shown to the panel; classifier sees panel blockers with seat labels stripped",
+  "composite": "equal-weight mean of dimensions per seat; panel composite = equal mean over scored seats"
+}

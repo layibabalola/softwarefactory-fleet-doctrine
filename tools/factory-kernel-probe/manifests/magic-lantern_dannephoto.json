@@ -1,0 +1,103 @@
+{
+  "project": "magic-lantern_dannephoto",
+  "kernel_version": "0",
+  "domain_class": "firmware",
+  "adapter": "firmware-hardware",
+  "repo": "C:/code/magic-lantern_dannephoto",
+  "integration_ref": "codex/audit-remediation-2026-07",
+  "checkout": {
+    "model": "shared-checkout",
+    "lock_identity": null,
+    "substrate": "git"
+  },
+  "ledger": {
+    "kind": "json-tasks",
+    "path": "roadmap/recovery/execution-state.json",
+    "list": "tasks",
+    "id": "id",
+    "status": "status",
+    "commit": "accepted_commit",
+    "evidence": "evidence",
+    "reason": "next_action",
+    "authority": "authority",
+    "updated": "updated_utc",
+    "state_map": {
+      "ready": "ELIGIBLE",
+      "eligible": "ELIGIBLE",
+      "in_progress": "CLAIMED",
+      "candidate": "CANDIDATE",
+      "done": "ADOPTED",
+      "blocked_external": "BLOCKED_EXTERNAL",
+      "blocked_owner": "BLOCKED_OWNER",
+      "rejected": "REJECTED"
+    },
+    "delivery": {
+      "describe": "a hardware (H*), release (R*) or camera-acceptance (K*) task reaching done is a delivered outcome; desk/factory cards are adoptions only",
+      "id_regex": "^(H|R|K)\\d+$",
+      "when_state": "ADOPTED"
+    },
+    "author": "worker",
+    "verifier": "verifier"
+  },
+  "admission": {
+    "configured_min_executors": 0
+  },
+  "paths": {
+    "product": [
+      "src/**",
+      "modules/**",
+      "platform/**",
+      "installer/**",
+      "contrib/**",
+      "tcc/**",
+      "include/**",
+      "minimal/**",
+      "data/**",
+      "icons/**",
+      "build_tools/**",
+      "Makefile*",
+      "scripts/**",
+      "tests/**"
+    ],
+    "governance": [
+      "roadmap/**",
+      "coordination/**",
+      "audit-packet/**",
+      ".claude/**",
+      "docs/**",
+      "doc/**",
+      "draft specs/**",
+      "prompts/**",
+      "release-inputs/**",
+      "tools/roadmap/**",
+      "*.md",
+      "*.pdf",
+      "*.html",
+      "Claude - */**",
+      "Claude - *",
+      "Codex - *",
+      "AUDIT-REMEDIATION-REPORT.md"
+    ]
+  },
+  "owner_reserved": [
+    "push to any remote",
+    "hardware acceptance on the 5D3",
+    "camera firmware defaults",
+    "release publication"
+  ],
+  "owner_channel": "roadmap/OWNER-ASKS-2026-07-20.md",
+  "liveness": {
+    "mode": "scheduled",
+    "probe": [
+      "powershell",
+      "-NoProfile",
+      "-Command",
+      "(Get-ScheduledTask -TaskName 'Magic Lantern Lane Supervisor').State"
+    ],
+    "ok": [
+      "Ready",
+      "Running"
+    ]
+  },
+  "doctrine_receipt": ".claude/doctrine-sync.json"
+}

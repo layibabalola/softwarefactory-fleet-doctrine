@@ -1,0 +1,21 @@
+{
+  "id_note": "Rubric for reviewing specs/universal-factory-kernel.md and its amendment proposals (§8). Domain-agnostic by design: it scores whether the kernel can govern work in any domain class, not whether it describes one substrate well.",
+  "dimensions": [
+    {"name": "Universality", "definition": "every invariant and state transition holds for code, firmware, media-render, game-engine, mobile, prose-creative and strategy work without assuming a substrate (git master, one checkout, test suites, CI); domain specifics live only in adapters"},
+    {"name": "Measurability", "definition": "every invariant has a concrete shadow measurement, a PASS/FAIL/WARN/UNKNOWN rule, and never rounds UNKNOWN to PASS; the tool and the spec name the same invariants"},
+    {"name": "Anti-Fixpoint Honesty", "definition": "the kernel detects governance motion masquerading as progress, separates adoption from delivery, bounds admission by eligible work, and forbids manufactured backlog"},
+    {"name": "Adoption Cost", "definition": "a project with any native ledger (or none) can dogfood in shadow in under an hour without replacing machinery, and the manifest fields are sufficient and unambiguous"},
+    {"name": "Self-Improvement Loop", "definition": "feedback records, harvest, proposals, review, landing, demotion and promotion form an executable, falsifiable loop with evidence thresholds, versioning and no single-writer conflicts"},
+    {"name": "Authority Safety", "definition": "shadow mode grants zero authority, owner-reserved actions are preserved, promotion and enforcement require recorded owner acts, and nothing creates an escalation path"}
+  ],
+  "lenses": {
+    "panel-fable": "coherence and completeness - is every term defined once, every invariant measurable as written, every adapter field used; could a project dogfood from this document alone without asking a question.",
+    "panel-opus": "universality adversary - pick the domain where each invariant breaks (a novel, an Unreal project with binary assets, a mobile app gated on store review, a business plan) and show the break with a quote.",
+    "panel-sonnet1": "adoption cost - walk a project with a markdown ledger, one with a database ledger and one with no ledger through §5 and §7; count the questions they would have to ask.",
+    "panel-sonnet2": "measurement adversary - where can a shadow check PASS while the invariant is violated, or FAIL while it holds (glob misclassification, stale receipts, ledgers that lie, worktree counts).",
+    "panel-sonnet3": "self-improvement loop - can §8 actually change the kernel: proposal evidence thresholds, review cost, versioning, demotion, promotion; where does the loop stall or become governance motion itself.",
+    "panel-astra": "Codex design explorer: kernel vs adapter vs substrate boundaries, the unit state machine's completeness, how Approach A or any other substrate would be qualified against K1-K11.",
+    "panel-sol": "Codex verifier: authority safety - does anything in shadow mode, harvest or promotion let a project or tool act without an owner record; are single-writer paths and R7-R9 respected.",
+    "panel-luna": "Codex implementer: implement kernel.py's checks and a new adapter from the spec alone; are manifest semantics, ledger kinds and result rules precise enough to code without guessing."
+  }
+}
