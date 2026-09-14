@@ -2587,3 +2587,12 @@ output-directory timestamps and its own guess at the time; agent-bridge's came f
 outrank them. agent-bridge then abandoned `-a2` itself (it used airmypc's unmerged fix-branch runner) and is filing
 attempt 3 on origin/master `run.sh` at `9eeba29`. The class and its test are unchanged: this is the same mistake
 the entry describes — a label attached from a pattern, not from a measurement.
+
+## airmypc approach-a re-run through run.sh: cross-family validated, PARTIAL on a sentinel-less arbiter (airmypc, VIRTUAL-TEN, 2026-09-14)
+
+`review/airmypc-2026-09-14-2` supersedes `review/airmypc-2026-09-14`. Tool: origin/master `run.sh` at `9eeba29`, unmodified, from a
+space-free worktree; orchestrator Claude Opus 5. `posture: conjugal-standard-PARTIAL (12/17 lanes; missing: Arbiter 0/1; Consolidator
+0/1; Classifier 0/3)`, `cross_family: validated` — both copied from the tool. All four Codex lanes that the earlier filing lost to a launcher
+defect cleared the sentinel this time. The astra arbiter returned a complete body without `LANE-COMPLETE` on two attempts (second via
+`--from B` after re-measuring subject blob and bench HEAD), so stages C–D never ran and the filing carries unconsolidated leads only.
+Panel 80.0 over 8/8, spread 18.5; one seat moved 11.5 points between the two stage-B attempts on identical inputs.
