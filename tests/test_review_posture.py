@@ -198,6 +198,8 @@ class Prompts(Env):
         fake = self.tmp / "fakebin"; fake.mkdir()
         (fake / "claude").write_text("#!/bin/sh\necho 'fake claude 0'\n", encoding="utf-8", newline="\n")
         (fake / "codex").write_text("#!/bin/sh\necho 'node: line 1: This: command not found'\nexit 127\n", encoding="utf-8", newline="\n")
+        # Every lane goes through `timeout`; faking it means a runner WITHOUT the preflight still dispatches nothing real.
+        (fake / "timeout").write_text("#!/bin/sh\nexit 99\n", encoding="utf-8", newline="\n")
         env = dict(os.environ, RP_REPO=str(ROOT), PATH=str(fake) + os.pathsep + os.environ.get("PATH", ""))
         p = subprocess.run([BASH, (TOOL / "run.sh").as_posix()], env=env, capture_output=True, text=True, timeout=120)
         self.assertIn("LAUNCHER-BROKEN family=codex rc=127", p.stdout, p.stdout + p.stderr)
