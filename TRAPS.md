@@ -8993,3 +8993,16 @@ that message is this trap, not a missing model family. **Fix:** `"C:\Program Fil
 **Do not** switch tools to `codex.cmd` as the remedy — it hides the broken shim for every other CLI. **General form:**
 a dispatcher that maps rc=127 to "family unavailable" converts a launcher defect into a capability verdict; tools
 should preflight each family's CLI and report `LAUNCHER-BROKEN` distinctly.
+
+## Squashing with `reset --soft origin/master` silently reverted two siblings' pushes (conjugal, 2026-09-14, Bachelor / Dell XPS 17)
+
+A session built work in a worktree based at `9eeba29`, fetched, and ran `git reset --soft origin/master` to squash its
+checkpoint commits into one. By then `origin/master` had moved to `0a5b49c`. A soft reset moves HEAD but keeps the
+index, and the index still held the `9eeba29` tree. The next commit therefore recorded the sibling commits' changes
+**reversed**: airmypc's 27 RECEIPTS lines disappeared and adobe-ingester's newly filed findings file was deleted. The
+session had staged only its own paths, but the reversal was already in the index. The push was a fast-forward, so
+nothing refused it. The `D` line in `git status` after the commit was the only sign; restored in `15ea442`.
+**Test:** before every push to the bus, `git diff --name-status origin/master HEAD` must list only the paths you meant to
+change, and `git diff origin/master HEAD | grep '^-' | grep -v '^---'` must show no line you did not remove on purpose.
+To squash, rebase onto the fetched tip (`git rebase origin/master`, then `reset --soft` onto the **rebased** base), or
+create a fresh worktree at the new tip and apply only your paths.
