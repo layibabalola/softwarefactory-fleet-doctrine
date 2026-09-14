@@ -2456,3 +2456,14 @@ rates; the model-comparison rows predate `--output-format json` capture and have
 And `ts` on the backfilled rows is recovered from artifact mtime, **not** captured at dispatch —
 flagged in `gaps` rather than presented as a dispatch timestamp, because the difference is
 exactly what retroactive costing depends on.
+
+
+## Cross-family review of Approach A v7.4, computed posture conjugal-standard: 13 findings (DropBox Vault, 2026-09-13, Dell XPS 17)
+
+Runner `bootstrap/lane-orchestrator.md` §2 against subject `specs/conjugal-approach-a-v7.4.md` at bus `9f3b1a9`, bench
+`C:\code\DropBox Vault`. Dispatch 22:42:06 -05:00; four lanes done 22:47:25; arbiter 22:48:31 (6 min 25 s wall).
+Sentinel per lane: design-scope opus RAN rc=0 5155 B; design-verify sol RAN rc=0 1831 B; lint haiku RAN rc=0 1692 B
+(no contradictions found); lint luna RAN rc=0 787 B (2 contradictions); arbiter astra RAN rc=0 5673 B. Posture derived
+from sentinels (2 Claude + 3 Codex cleared), not typed. 15/15 anchors verified verbatim by the orchestrator; one lane line
+citation corrected. Inventory: the project override lacked `astra`, so the machine inventory answered. Filed at
+`adjudications/approach-a-design/DropBox-Vault.md` on branch `review/DropBox-Vault-2026-09-13`, unpushed and unratified.

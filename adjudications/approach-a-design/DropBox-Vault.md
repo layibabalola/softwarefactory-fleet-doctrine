@@ -1,13 +1,57 @@
 project: DropBox Vault (Cloudvore)
-providers: claude-only
-seats: Designer-Scope, Designer-Contracts, Designer-Safety (claude-opus-5, effort=medium, disjoint slices)
+providers: claude(opus,haiku) codex(sol,luna,astra)
+seats: design-scope(claude-opus-5) design-verify(gpt-5.6-sol, effort=high) lint(claude-haiku-4-5-20251001 + gpt-5.6-luna) arbiter(gpt-6-astra, effort=high)
 rubric_id: unscored
+posture: conjugal-standard
 
-<!-- Subject: specs/conjugal-approach-a-v7.4.md. Protocol: specs/design-loop-protocol.md §7.
-     Test bench: C:\code\DropBox Vault -- every finding below names a Cloudvore path, tool or
-     measured number, per the test-bench rule in this directory's README.
-     posture computed, not asserted: 3 Claude lanes cleared the sentinel, 0 Codex lanes were
-     dispatched, therefore this filing does NOT claim cross-family validation. -->
+<!-- Subject: specs/conjugal-approach-a-v7.4.md (bus 9f3b1a9). Runner: bootstrap/lane-orchestrator.md §2.
+     Test bench: C:\code\DropBox Vault. Dispatched 2026-09-13T22:42:06-05:00, lanes done 22:47:25, arbiter done 22:48:31.
+     posture COMPUTED from sentinels, not asserted: all 5 lanes emitted LANE-COMPLETE; Claude lanes cleared = 2,
+     Codex lanes cleared = 3, so cross-family validation is claimed by measurement.
+     This run supersedes nothing below it: the prior claude-only filing is kept verbatim under its own heading. -->
+
+## Cross-family findings (arbiter-surviving designer defects + Codex lint)
+
+§5 | "commits the merged blob by private index (`read-tree HEAD`, `commit-tree`, `update-ref` CAS on master's expected tip)" | Advancing a checked-out branch leaves its worktree index stale; an ordinary commit can undo relay changes. The §1 verdicts mirror has the same defect. | REPLACES: "`update-ref` CAS on master's expected tip" → "`update-ref` CAS on a non-checked-out oracle branch, merged into master only by the landing path" | PROOF: master is checked out at `C:\code\DropBox Vault`; after a relay advance, committing an unrelated staged file restores the pre-relay mailbox blob and drops the marker, causing repeated relay appends. (The mailbox path itself is absent on the bench; see the prior filing's §5.)
+
+§1 | "readers use `git show refs/oracle/state:<path>`" | Replacement refs can substitute the blobs readers resolve, COMPLETE and replay included, without moving an Oracle CAS. | REPLACES: "readers use `git show refs/oracle/state:<path>`" → "readers use `git --no-replace-objects show refs/oracle/state:<path>`, with `GIT_NO_REPLACE_OBJECTS=1` set in every Oracle git call" | PROOF: `tools/factory-health.tests.py:501` creates a blob replacement and asserts `git cat-file` returns "SUBSTITUTED" (the lane cited :3886; corrected by the orchestrator).
+
+§1 | "One `oracle-reduce.py` instance per checkout (§7)" | Mutex identities scoped to a worktree do not exclude reducers acting on the Oracle refs those worktrees share. | REPLACES: "`.git` directory file identity" → "identity of `git rev-parse --git-common-dir`" | PROOF: `git worktree list` on the bench shows 5 worktrees sharing one common dir; when one reducer stalls past 120 s, a reducer in another worktree takes over while the first still holds its separate mutex.
+
+§1 | "Each lane has one authorized append helper at `coordination/oracle/journal/<lane>.ndjson`, serialized by a lane mutex" | Journal files local to each worktree diverge under one shared journal-head ref, and frames that are untracked and unignored can vanish via `git clean` or `stash -u`. | REPLACES: "`coordination/oracle/journal/<lane>.ndjson`" → "`<git-common-dir>/oracle/journal/<lane>.ndjson`" | PROOF: `git check-ignore -v coordination/oracle/journal/x.ndjson` on the bench exits 1 (not ignored); each linked worktree has its own `coordination/`.
+
+§1 | "Durability acknowledgment requires append, `FlushFileBuffers`, durable git blob storage" | Git object and ref flushing is never configured, so storage that was acknowledged can be lost in a crash. | REPLACES: "durable git blob storage" → "git blob storage under pinned `core.fsync=loose-object,reference` (`core.fsyncMethod=fsync`), verified at reducer start" | PROOF: `git config --get core.fsync` on the bench exits 1 (unset), and `git count-objects -v` warns about 13 torn `tmp_obj_*`/`tmp_pack_*` files.
+
+§2 | "receipt commits at `refs/oracle/receipts/<receipt_seq>`" | One permanent loose ref per receipt grows with no bound and no packing cadence, which undermines the publication latency and throughput claims. | REPLACES: "receipt commits at `refs/oracle/receipts/<receipt_seq>`" → "receipt commits chained from one mutable `refs/oracle/receipts` head, with a declared `pack-refs` cadence measured in Scenario 20" | PROOF: a 200 ms receipt tick creates 18,000 refs/hour; the bench uses the files ref backend and already carries a large loose-object store (lane measured 24,421 loose objects, 1.00 GiB).
+
+§4 | "signing ADOPT_REQUEST only after its own independent replay agrees" | Agreement on replay does not enforce the project's product acceptance bar. | REPLACES: "signing ADOPT_REQUEST only after its own independent replay agrees" → "signing ADOPT_REQUEST only after replay agrees and the project's acceptance runs pass at C.candidate_commit_oid" | PROOF: Cloudvore `CLAUDE.md` sets "The bar is 3× identical green runs"; an adoption that replays clean with a single run satisfies the spec and violates the bench.
+
+§4 | "refs/oracle/adopted/<S>` at the exact candidate commit" | Adoption can be declared while the candidate is still outside accepted master. | REPLACES: "refs/oracle/adopted/<S>` at the exact candidate commit" → "refs/oracle/adopted/<S>` only after proving the reviewed candidate is contained in master, recording candidate and landed OIDs" | PROOF: lane measured `python tools/check-merge-queue.py --base master --json` at 47 unmerged subjects across 48 refs; creating an Oracle ref lands none of them. Cross-agrees with the prior filing's §9 landing finding.
+
+§10 | "P_par=4 (provisional)" | The makespan assumes more concurrency than the bench can admit. | REPLACES: "P_par=4 (provisional)" → "P_par equal to bench-qualified admitted concurrency, default 1, with thermal admission modelled as an exclusive resource" | PROOF: `tools/test-admission.ps1` exists on the bench and serializes suites to concurrency 1 on thermal grounds. Cross-agrees with the prior filing's §1 P_par finding.
+
+§11 | "depths 1 and 2 at the same derived P_pub" | Scenario 68 budgets only half the experiment it declares. | REPLACES: "SUBSTRATE·1·43200" → "SUBSTRATE·1·86400" | PROOF: 3 levels × 2 depths × 4 h = 86,400 s when the bench's concurrency-1 admission serializes all six cells.
+
+§0/§4 | "Tier 2 verifies and attests without writing Oracle state" | Contradicts §4, where the helper "CAS-creates … the immutable HELPER_RESULT `refs/oracle/global/helper-result/<request_id>`". | REPLACES: "Tier 2 verifies and attests without writing Oracle state" → "Tier 2 verifies and attests without writing Oracle state other than the §4 HELPER_RESULT ref" | PROOF: lint (Luna); consistency defect, and the bench adds no evidence either way.
+
+§2/§3 | "The sidecar refuses renewal at H" | Off by one at the boundary: §2 makes reclaim eligible only at `oracle_now > claimed_at + H`, but §3 counts the execution-H deadline as missed at H, so at exactly H a lease is missed and yet not reclaimable. | REPLACES: "`oracle_now > claimed_at + H`" → "`oracle_now ≥ claimed_at + H`" | PROOF: lint (Luna); a boundary test with oracle_now = claimed_at + H records a miss while reclaim is refused.
+
+## Untested
+
+§2 | "`refs/oracle/claim/<S>`" | Subject ids that differ only by case can collide in loose ref storage while staying distinct in packed refs; the spec casefolds paths but not ref names. | REPLACES: "`claim/<S>`" → "`claim/<casefold-hex(S)>`" | PROOF: the bench has `core.ignorecase=true`, but no subject-id convention that exhibits a collision was found.
+
+## Provenance
+
+- design-scope (claude-opus-5): RAN rc=0 5,155 B. Source of §5, §1×4, §2, and Untested §2.
+- design-verify (gpt-5.6-sol): RAN rc=0 1,831 B. Source of §4×2, §10, §11.
+- arbiter (gpt-6-astra): RAN rc=0 5,673 B. Arbitrated the two designers; nothing was dropped as conflicting.
+- lint-codex (gpt-5.6-luna): RAN rc=0 787 B. Source of §0/§4 and §2/§3.
+- lint-claude (claude-haiku-4-5): RAN rc=0 1,692 B. Reported **no contradictions**, so its slice is covered but yielded nothing. Luna found two in the same slice, so Haiku's null result is a disagreement, recorded rather than silenced.
+- Orchestrator verification: all 15 quoted anchors were checked verbatim against the subject (15/15). Bench facts re-measured: `core.fsync` unset, `core.ignorecase=true`, journal path not ignored, 5 worktrees, `tools/test-admission.ps1` present, 13 tmp object/pack files. One lane line citation was corrected (`factory-health.tests.py` :3886 → :501). The 24,421-object and 47-unmerged counts are lane measurements, not re-measured.
+- Inventory: `~/.claude/machine-inventory.yaml`. The project override at `C:\code\DropBox Vault\.claude\machine-inventory.yaml` comes first in the order but has no `astra` id (drifted second copy), so it was bypassed.
+- Not a validation of `C:\code\DropBox Vault` master `ed7b61f`: that file's `rubric_id: cross-family-validated` remains unsupported by any Codex run (RECEIPTS 2026-09-13 retraction). This filing is the measured replacement.
+
+## Prior filing (claude-only, 3 Opus lanes; NOT cross-family validated; kept verbatim)
 
 §9 | "at least 20 additional adopted items at that level within a forecast `5 h (clock_domain=real)` allowance" | At Cloudvore's measured rate the 5 h allowance is about 7× too short. `gate.py --json` shows 49 DONE rows since `BACKLOG.md` was created on 2026-09-06, which is about 0.29 items/h. That gives about 1.5 items in 5 h, or about 3 at a 2× target. | REPLACES: "within a forecast `5 h (clock_domain=real)` allowance" -> "within a forecast `20/(m×b) h (clock_domain=real)` allowance, UNKNOWN until b is measured" | PROOF: Run 2a on Cloudvore at five executors; if 20 adoptions land in ≤5 h, the finding is false.
 
