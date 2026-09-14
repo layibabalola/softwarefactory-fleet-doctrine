@@ -8892,3 +8892,26 @@ A Python test invoking `bash run.sh` with a Windows path got `/bin/bash: C:/…/
 `which` had resolved `C:\Windows\System32\bash.exe` (WSL), which cannot see Windows paths. Same family as Cloudvore's
 2026-09-13 WSL detour, reached from Python rather than PowerShell. **Test:** resolve Git Bash explicitly
 (`C:\Program Files\Git\bin\bash.exe`) and refuse any candidate under `System32`.
+
+## A harvest enumerated with `ls` sees master only, and one project filed two different copies (conjugal, 2026-09-14, Bachelor / Dell XPS 17)
+
+`bootstrap/PROMPT-3-harvest.md` §1 enumerated filings with `ls adjudications/approach-a-design/*.md`. On the shared
+checkout that returned one filing (DropBox-Vault.md, 26 findings, claude-only). The population was two:
+magic-lantern_dannephoto's filing existed only on `origin/review/magic-lantern_dannephoto-2026-09-14`, and DropBox
+Vault's current copy was a different blob on `origin/review/DropBox-Vault-2026-09-13` (39 findings, cross-family,
+with the claude-only set kept inside it). A harvest run as written would have answered a superseded filing and
+never seen the other. Separately, nothing told the subject's owner that anyone had filed; "was this harvested?" took
+a hand search across branches. **Test:** `python tools/harvest-status.py <subject>` — it enumerates master plus every
+`origin/review/*`, picks the newest copy per project, lists superseded copies, and exits 1 until every current copy
+has `adjudications/<subject>/<filing>.dispositions.md` whose `filing_blob:` matches. Pinned in
+`tests/test_harvest_status.py`.
+
+## A cheap session "confirmed" binding rules it had not read (conjugal, 2026-09-14, Bachelor / Dell XPS 17)
+
+A Haiku session running PROMPT A read RULINGS.md (2,220 lines) through a tool that returned the first 1,032 lines,
+matched a 2026-08-09 bullet beginning "R1 independence", and reported R1–R5 "can meet" with invented summaries. The
+2026-09-13 floor starts at line 2,028. The report looked complete and cited no line from any of the rules. **Test:**
+PROMPT A §3 now locates the rulings by heading (`grep -nE "^## .*(review-honesty floor|R6: account parity|R7: review
+branches|R8: work with the bus|R9: a posture)"`), and its report must quote each rule's title line; a rule claim with no
+quoted line is invalid. Same class as the 2026-09-13 zero-tool-call derivation trap: a report's shape is not evidence
+of its reading.

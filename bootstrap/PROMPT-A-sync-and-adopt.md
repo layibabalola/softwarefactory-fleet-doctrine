@@ -118,7 +118,18 @@ evidence of success.
 
 ## 3. Adopt or distinguish what binds
 
-Read `<doctrine>/RULINGS.md` and `<doctrine>/README.md` (its Laws).
+Read `<doctrine>/README.md` (its Laws) and the binding rulings in `<doctrine>/RULINGS.md`. RULINGS is
+over 2,000 lines, so a first-page read ends long before them, and it also contains older bullets that
+begin "R1". **Locate the binding rulings by heading, then read each section whole:**
+
+```bash
+grep -nE "^## .*(review-honesty floor|R6: account parity|R7: review branches|R8: work with the bus|R9: a posture)" "<doctrine>/RULINGS.md"
+```
+
+Measured 2026-09-14 (Conjugal, Haiku session): a truncated read matched a 2026-08-09 "R1 independence"
+bullet instead of the 2026-09-13 floor, and the report marked R1–R5 "can meet" without having read
+them. **In the report, quote each rule's title line** (`R1 - A session below the review floor…`); a
+claim about a rule with no quoted line is invalid.
 
 **The five rules of the review-honesty floor (R1–R5, owner ruling 2026-09-13) are binding and
 are not subject to adopt-or-distinguish.** Read them, and confirm in your report that this
@@ -176,11 +187,24 @@ Three sources, and they are not the same:
 
 Where something you read applies here, act on it now or record why it does not.
 
+**If this project owns a subject, check whether its filings are answered — every sync:**
+
+```bash
+python "<doctrine>/tools/harvest-status.py" --all        # one line per subject: spec=specs/<owner>-… open=<n>
+python "<doctrine>/tools/harvest-status.py" <subject>    # for each subject whose spec is yours
+```
+
+`open>0` on a subject you own means filings sit unanswered: report it and name
+`bootstrap/PROMPT-3-harvest.md` as the next step. Without this check nothing tells an owner that
+anyone filed. Measured 2026-09-14: Conjugal's subject had two unharvested filings for a day, and
+finding that out took an ad-hoc search across branches.
+
 ## 5. Report
 
 Doctrine head SHA and how far it moved. Inventory: which families available, how many ids
-verified in each. R1–R5, R7, R8 and R9: can this project meet each one. Dispositions recorded, with their
-subjects. What you harvested from §4 and what you did about it.
+verified in each. R1–R9: for each, its quoted title line and whether this project can meet it. Dispositions recorded,
+with their subjects. What you harvested from §4 and what you did about it. For subjects this project owns: the
+`harvest-status.py` line (open count).
 
 Then: **ready for PROMPT B**, or blocked and why.
 

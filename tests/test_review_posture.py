@@ -84,7 +84,7 @@ class RolesMatchSpec(unittest.TestCase):
 class DesignLoopMeasuresPanelFamilies(unittest.TestCase):
     def test_round_15_records_the_two_families_that_actually_sat(self):
         text = (ROOT / "specs" / "design-loop-protocol.md").read_text(encoding="utf-8")
-        self.assertIn("2 families as seated in Round 15", text)
+        self.assertIn("Round 15 seated 2: Claude ×5, Codex ×3", text)
         self.assertIn("Record `panel_families` from the families whose seats actually completed", text)
         self.assertNotIn("8 seats, 3 families", text)
 

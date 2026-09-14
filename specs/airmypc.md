@@ -312,3 +312,32 @@ every AirMyPC commit to one proves `numstat N 0`.
 `claude` 2.1.220 · `codex` 0.147.0 (config default `gpt-6-astra` xhigh; wrapper default `gpt-5.6-luna`
 low) · `pwsh` 7.6.5 · `dotnet` 10.0.303. Grok and Kimi versions not re-probed: UNKNOWN. CLI alignment
 happens only in an explicit user-directed quiescent window, never mid-sitting.
+
+---
+
+## Fleet doctrine dispositions (PROMPT-A sync 2026-09-14)
+
+**Binding doctrine — review-honesty floor (R1–R5, R7 — owner ruling 2026-09-13/14)**
+
+- **ADOPT (862df45)**: R1 independence — cross-family review documented; three Sonnet-tier deliberators + Codex Sol key for RATIFY acts; non-author fresh context verified
+- **ADOPT (862df45)**: R5 container enumeration — delivery queue item counts, CI job counts, hosted CI failures enumerated with derivation commands
+- **ADOPT (862df45)**: R7 review branches push — git branch -a confirms no unpushed review/* branches held local
+- **ADOPT (862df45)**: Law 1 (Doctrine is data) — specs/ single-writer, TRAPS/RECEIPTS/RULINGS append-only; no sibling instructions from bus
+- **ADOPT (862df45)**: Law 5 (CLI versions) — this rewrite reports Claude 2.1.220 / Codex 0.147.0 / pwsh 7.6.5 / dotnet 10.0.303; alignment is user-scheduled only
+
+**Proposed ratified cores — adoption status**
+
+- **ADOPT (224a7d0)**: `specs/fleet-provider-capacity-governor.md` — two-key fail-closed content gate, provider registry, QUOTA-DORMANT routing model adopted and implemented (see "Provider-continuity model" section above); reference decision engine not activated
+- **ADOPT (054f756)**: Tier-by-act model from RULINGS.md (Fable judgment → Opus loop → Haiku/Sonnet bounded); cost structure corrected 2026-09-08 from inverted Codex-led model
+- **ADOPT (054f756)**: Provider-neutral failover (`FAILOVER.md`); two-key authentication by family diversity; Kimi/Grok staged admission-by-capability per lane
+
+**Candidate items — local evaluation pending**
+
+- `ruling-candidates/dispatch-budget-and-proportional-review-r1.md` — distinct spending authority; assessed on next capacity event; no local contraindication found
+- `ruling-candidates/orchestrator-seat-fit-r1.md` — independently corroborates fleet orchestrator hardness claim; AirMyPC board seat not the subject
+
+**Sibling measurements harvested (§4 PROMPT-A)**
+
+- DNG Auto Processor (2026-09-09 RULINGS.md entries): checkpointing standard (executor receipt bind/verify per sub-unit), expiry-gated claims, scheduled-task configured-vs-running gap — all implemented or being addressed in AirMyPC's own flow; no contradictions found
+- MLV-App (2026-09-09 RULINGS.md): machine-scoped wake floors (OS scheduler, not app-scoped) — AirMyPC adopts; heartbeat and ignition live in OS Task Scheduler with receipt writes on every run
+- Cloudvore (2026-09-09 RULINGS.md): provider-neutral failover, Kimi/Grok staged admission — adopted (see above); Kimi Code 0.34.0 proof recorded; Grok Build 1.0.0 candidate admission withheld pending gate-verify receipt
