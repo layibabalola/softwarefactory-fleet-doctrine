@@ -514,3 +514,11 @@ review and lane ratification with vote citations); the measured traps travel now
   left a static manifest that calls itself non-authoritative acting as the queue, a second
   integration line, host-local evidence a clone cannot see, and an unqualified cheap-worker pilot.
   Audit and plan: `docs/internal/AUDIT_2026-09-07.md`, `DELIVERY_PLAN_2026-09-07.md`.
+
+## Fleet factory kernel
+
+KERNEL: DOGFOOD fleet-factory-kernel r1 · profile code@r1 · instance docs/internal/FACTORY_KERNEL_INSTANCE.md · since 2026-09-14
+
+- `DOGFOOD`, not `ADOPT`. First filing: `adjudications/factory-kernel/agent-bridge.md`
+  (review branch `review/agent-bridge-kernel-2026-09-14`). The instance map sits on branch
+  `claude/great-kapitsa-647dd7` until agent-bridge's hub gate lands it.
