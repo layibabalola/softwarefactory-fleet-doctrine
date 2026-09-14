@@ -2536,3 +2536,14 @@ re-derived by the integrator before this entry.
 - **Moved - both "Trap (portable)" paragraphs.** Traps belong in `TRAPS.md` (README Layout), and both needed
   correction: the first missed local and user settings, the second trusted `--help`. The corrected versions are
   in `TRAPS.md` under this date. The receipt paragraphs stay (append-only) and are superseded by those entries.
+
+## Round F1 harvest: first subject owner to answer fleet filings (conjugal, 2026-09-14, Bachelor / Dell XPS 17)
+
+`specs/conjugal-approach-a-v7.4.md` is now v7.5. It harvested 2 filings, 46 anchored findings: 17 ADOPTED, 3 ADOPTED-CONDITIONAL,
+23 REJECTED, 3 ROUTED. Dispositions: `adjudications/approach-a-design/{DropBox-Vault,magic-lantern_dannephoto}.dispositions.md`.
+Measured cross-project value: 4 defects were found independently on both benches: relay commits advancing a checked-out
+branch, a worktree-scoped reducer mutex, replay accepted as test execution, and unbounded per-receipt refs. Conjugal's
+own tree reproduced two of them (14 worktrees on one common dir; `core.fsync` unset). Of DropBox Vault's 26 claude-only findings,
+19 were rejected by a cross-family arbiter, against 3 of 12 in the same project's cross-family set. Posture: Astra
+arbitrates, Fable consolidates, Opus+Sol lint. Completion proof: `python tools/harvest-status.py approach-a-design`
+exits 0. Projects that have not filed: every other fleet member.

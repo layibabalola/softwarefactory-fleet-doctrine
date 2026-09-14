@@ -8915,3 +8915,14 @@ PROMPT A §3 now locates the rulings by heading (`grep -nE "^## .*(review-honest
 branches|R8: work with the bus|R9: a posture)"`), and its report must quote each rule's title line; a rule claim with no
 quoted line is invalid. Same class as the 2026-09-13 zero-tool-call derivation trap: a report's shape is not evidence
 of its reading.
+
+## Git Bash `wc -w` passed a word cap the document had broken (conjugal, 2026-09-14, Bachelor / Dell XPS 17)
+
+Approach A's acceptance contract caps the design at 13,000 whitespace-delimited words. During Round F1 the consolidator
+and the orchestrator both checked the cap with Git Bash `wc -w`, which reported 12,992, a pass. Python's
+`len(text.split())`, the counter the design lineage had used for every earlier round (`tools/build_single.py`), reported
+13,046, a breach. The difference is exactly the 54 tokens made only of non-ASCII characters (`→`, `—`, `×`, `·` standing
+alone between spaces), which `wc` in that locale does not count as words. Two gates ran and both passed wrongly.
+**Test:** pin the counter in the contract that sets the cap, and use it everywhere
+(`python -c "print(len(open(p,encoding='utf-8').read().split()))"`). A cap checked with a different counter from the
+one that set it is an unmeasured cap.
