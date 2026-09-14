@@ -14,8 +14,15 @@ For `specs/conjugal-approach-a-v7.4.md`, the owning project is Conjugal.
 ## 1. Enumerate the population before reading any of it
 
 ```bash
-ls adjudications/approach-a-design/*.md        # one filing per project; README.md is not one
+python tools/harvest-status.py approach-a-design      # fetches; exit 1 while any filing lacks a disposition
 ```
+
+**Not `ls adjudications/…`.** Filings live on `origin/review/*` branches until merged (R7.5), and one
+project can hold different copies on master and on its review branch. Measured 2026-09-14
+(Conjugal harvest): `ls` saw one filing; the population was two, and DropBox Vault's master copy
+(26 findings, claude-only) was superseded by a 39-finding cross-family copy on its review branch.
+The tool picks the newest copy per project, lists superseded copies, counts findings and
+`## Untested` lines, and flags a `posture:` line not in R9's computed form.
 
 Count them, and say the count before you start. This bus's own law: *enumerate the population
 or make no causal claim*. A harvest that reads "the filings" without first knowing how many
@@ -68,8 +75,21 @@ spec, has not run.
 ## 5. Give every filing a disposition — this is what keeps projects filing
 
 For each filing, record per finding: `ADOPTED`, `ADOPTED-CONDITIONAL(<bench>)`, `REJECTED(<reason>)`,
-or `ROUTED(<bench>)`. Publish it where the filing project will see it — `RECEIPTS.md`, or a
-sibling file beside the filings.
+or `ROUTED(<bench>)`. **One place, so "was this harvested?" is a command, not a search:**
+`adjudications/<subject>/<filing>.dispositions.md`, written only by the subject's owner, starting with
+
+```
+filing_blob: <full blob sha of the filing copy you harvested, from harvest-status.py>
+filing_ref:  <ref that copy was read from>
+spec_commit: <bus commit that carries the rewritten spec>
+```
+
+then one line per finding, in the filing's order: `§<n> "<anchor, ≤10 words>" | <DISPOSITION> | <reason>`.
+Add a one-line RECEIPTS.md row pointing at the dispositions files. `harvest-status.py` reads
+`filing_blob:` — if the filer later changes the filing, its status turns `STALE` by itself.
+Filing-header defects (a `posture:` not copied from R9's tool, a cross-family claim the provenance
+contradicts) go in the dispositions file as `HEADER: <defect>`; harvest what the provenance supports
+rather than discarding the findings.
 
 Skipping this is the failure that ends the loop. A project that files findings into silence
 files once. The cost of a disposition line is trivial next to the cost of the fleet going quiet,
@@ -77,7 +97,8 @@ and a rejection with a stated reason is worth more to the filer than an adoption
 
 ## 6. Report
 
-Filings read (and the count), convergent findings adopted, divergences and which bench won,
+`python tools/harvest-status.py <subject>` exiting 0 after your push is the completion proof —
+paste its output. Filings read (and the count), convergent findings adopted, divergences and which bench won,
 singular findings and their scope, what was routed and where, the spec's new commit, and —
 plainly — **which projects have not filed**. That last line is the fleet's coverage metric: a
 spec hardened against three benches is not a universal factory, and only the harvest can see

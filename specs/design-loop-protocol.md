@@ -39,7 +39,7 @@ Only the *lint* (continuity/motivation/tone for creative work) and the *proof* (
 | Consolidator / coherence gate | strongest long-context model, **singleton** | coherence is a single-mind property |
 | Designers | every family, ×2 for the strongest, disjoint slices | different winners per slice; overlap costs duplication |
 | Lint | two families | each finds 7–23 items the other misses |
-| Panel | 8 seats, 3 families, cheap seats ×3 for breadth | cheap seats find well, attribute badly — require quotes |
+| Panel | 8 seats across every family the inventory holds (Round 15 seated 2: Claude ×5, Codex ×3), cheap seats ×3 for breadth; record families **as seated** (RULINGS R9.4) | cheap seats find well, attribute badly — require quotes |
 | Classifier / stopping evidence | cheapest model, swarm | predicted flat rounds accurately; never designs |
 
 Swarm high-inference models by *slice* for coverage, never by count; adjudication is one seat.
@@ -64,5 +64,7 @@ a SessionStart hook whose non-zero exit hid its own output; an in-session auth p
 
 - Review **against your own repo as the test bench**. Return anchored findings only — `§ | quote | defect | REPLACES | PROOF` —
   never prose, to a single-writer file `adjudications/approach-a-design/<project>.md` with a `providers:` header.
-- Conjugal holds the arbiter/consolidator seat and folds fleet findings as "Round F1"; re-export follows.
+- Conjugal holds the arbiter/consolidator seat and folds fleet findings as "Round F<n>" (`bootstrap/PROMPT-3-harvest.md`);
+  the rewritten spec keeps this path so filers' references stay valid, and each filing gets
+  `adjudications/approach-a-design/<project>.dispositions.md`. Open filings: `python tools/harvest-status.py approach-a-design`.
 - Nothing here grants runtime, adoption, or launch authority.
