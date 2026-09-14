@@ -2244,3 +2244,29 @@ Also flagged, not yet fixed: `--help` preflight is not an end-to-end canary (alr
 it catches value-arity faults, passes unknown flags); the probe's candidate model list is fixed
 rather than discovered, so a renamed id degrades silently to UNVERIFIED; and the probe assumes
 a Bash environment with GNU `timeout`, which stock Windows and macOS may not provide.
+
+### Cloudvore, 2026-09-13 — lane dispatch: timestamps at dispatch, and fallback provenance
+
+`tools/lane-dispatch.sh` added, after two gaps found by the operator rather than by a test.
+
+- **Token counts must be stamped when the inference ran, not when they were extracted.** Cost
+  is derived later by joining raw counts to a dated price table, so the join key is the
+  dispatch time. Extraction can happen weeks later, can be re-run, and can straddle a price
+  change; an extraction-time stamp silently prices old work at new rates. The first extractor
+  written here had exactly that bug — one timestamp computed once, copied onto all eight rows.
+  Rows now carry `lane_started_at` / `ended_at` taken at dispatch.
+- **A fallback must record the model that actually ran.** When the recommended model is
+  unavailable and the ladder advances (Fable → Opus), attributing the findings to the requested
+  model corrupts every comparison built on the ledger — the same provenance failure as calling
+  a single-family review cross-family. `requested_model`, `actual_model`, `fallback_rung` and
+  `fallback_reason` are separate fields and a substitution is never silent.
+
+**Detect availability structurally, not by matching error prose.** The first version grepped for
+`does not exist or you may not have access`; the CLI actually says *"It **may** not exist"*, so
+the ladder accepted a dead model and reported DID-NOT-RUN instead of falling back. The JSON
+envelope carries an explicit `is_error`, and a request that never reached a model has zero on
+every token counter with `duration_api_ms: 0`. Both are stable. Error wording is not, and it
+rots without any signal that it has.
+
+Verified: ladder `[claude-fable-5-DOES-NOT-EXIST, claude-haiku-4-5-20251001]` detected the dead
+rung, advanced, ran, and recorded `fallback_rung: 1` with the reason and both timestamps.
