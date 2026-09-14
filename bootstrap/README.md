@@ -40,7 +40,7 @@ The `ls-files` line tells the causes apart, so re-pasting is safe:
 | `ls-files` result | Cause | Fix |
 |---|---|---|
 | lists the file | **Access.** The session is scoped to its own folder (Claude Desktop does this) | Grant the session the doctrine folder, or open the session in a project that has it, then paste again |
-| `not a git repository` / no such path | **No checkout** at `<doctrine>` on this machine | Clone the bus there (PROMPT A §1 `UNREACHABLE`), then paste again |
+| `cannot change to` / `not a git repository` | **No checkout** at `<doctrine>` on this machine | Clone the bus there (PROMPT A §1 `UNREACHABLE`), then paste again |
 | lists `bootstrap/` without the file | **Renamed** | Use the name this README gives now |
 
 **Paste into the project you mean to join, never into a frozen archive.** An archive may not mark
