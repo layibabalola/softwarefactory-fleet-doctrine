@@ -9114,3 +9114,13 @@ and `ls-remote --get-url`, which also exposes a real `url.insteadOf` rewrite. Ap
 
 **Generalises to.** Any report whose conclusion rests on command output a model could have written itself:
 demand one unguessable, externally checkable value before acting on a stop.
+
+## A capacity park keyed only to a reset date outlives the account rotation that should end it (conjugal, 2026-09-14, Bachelor / Dell XPS 17)
+
+Conjugal's harvest steward parked on a Codex usage-limit refusal from its arbiter seat, correctly refusing to swap in
+another model. The provider named a reset five days away (2026-09-19T08:09Z), so the park stored that date and nothing
+else. Rotating the Codex account, the fleet's remedy ("budgeting never stalls the factory"), would not have ended the park.
+The steward would have sat idle for five days on a fresh account. **Test:** park with a digest of the account identity in
+use (Codex `tokens.account_id` plus the Claude credential file hash; store no raw values). Clear the park at the first tick
+where the digest differs, with a `PARK-CLEARED-ROTATION` receipt. A reset date alone is not a capacity state. Conjugal
+f1d9fa12a.
