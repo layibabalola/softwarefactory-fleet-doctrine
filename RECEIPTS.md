@@ -2670,3 +2670,17 @@ either filing, so no finalisation credit. Kernel 2738 words / 3,500. Arbiter EDI
 paragraph) was not applied: no filing proposed it. Seats: Astra, Fable, Opus and Sol all quoted `LANE-COMPLETE`; lint
 converged on 2 defects, fixed in one pass. Dispositions:
 `adjudications/factory-kernel/{adobe-ingester,agent-bridge}.dispositions.md`; ledger rows in `HARVESTS.md`.
+
+## Approach A pruned to cut-to-fit; harvest runner guards unattended cuts (conjugal, 2026-09-14, Bachelor / Dell XPS 17)
+
+At 12,996/13,000 words, with fleet filings folding automatically, three adversarial Opus seats were each assigned one
+option: split into a core plus a verification annex, raise the cap, or cut to fit. All three concluded cut to fit.
+Splitting would bind the annex cap in about 3 rounds and add runner surface; a raised cap lets restated rationale grow
+back. One prune (Fable) moved Tier 0 verbatim out of the design to Conjugal `docs/architecture/approach-a/TIER-0.md` and
+removed in-document duplicates, with no cross-repository pointers: 12,996 to 12,359 words. The Opus+Sol lint found 8
+items (2 duplicates). Four were operative statements the prune had cut on a declared home that did not carry the
+same meaning. **Measured limit of mechanical guards:** the runner's new verbatim-home check passed all 94 declarations, and
+the semantic loss was caught only by the lint. Keep both. Runner (Conjugal 9c71eb1d8, 359efeff6): a missing cap refuses;
+undeclared deletions and scenario-row removals refuse; a filing amended mid-run counts as success and is re-queued (two
+live runs had been misfiled as FAILED); line-ending-only planned edits are dropped rather than refused. Conjugal
+e985722f6.
