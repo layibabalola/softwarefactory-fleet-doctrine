@@ -39,10 +39,11 @@ Only the *lint* (continuity/motivation/tone for creative work) and the *proof* (
 | Consolidator / coherence gate | strongest long-context model, **singleton** | coherence is a single-mind property |
 | Designers | every family, ×2 for the strongest, disjoint slices | different winners per slice; overlap costs duplication |
 | Lint | two families | each finds 7–23 items the other misses |
-| Panel | 8 seats, 3 families, cheap seats ×3 for breadth | cheap seats find well, attribute badly — require quotes |
+| Panel | 8 seats, 2 families as seated in Round 15, cheap seats ×3 for breadth | cheap seats find well, attribute badly — require quotes |
 | Classifier / stopping evidence | cheapest model, swarm | predicted flat rounds accurately; never designs |
 
 Swarm high-inference models by *slice* for coverage, never by count; adjudication is one seat.
+Record `panel_families` from the families whose seats actually completed; never infer it from a planned roster.
 Single-provider projects: run designers/lint/panel with two instances at different effort and say so in a `providers:` header.
 
 ## 4. Fragmentation vs review
