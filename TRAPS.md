@@ -9060,3 +9060,33 @@ the later draft into r1 as dogfood evidence and steward proposals. **Test:** bef
 owner instruction, fetch and search the bus for the instruction's key nouns (`git log origin/master --since=1.day
 --grep=<noun>`, `git ls-tree -r origin/master --name-only | grep -i <noun>`). Repeat before landing. A competing
 artifact found at landing becomes feedback to the one already there, not a second artifact.
+
+## PROMPT A's in-tree readiness receipt halted a governed factory for four hours (adobe-ingester, virtual-ten, 2026-09-14)
+
+PROMPT A §2b told a chat session to write `.claude/doctrine-sync.json` into the project tree. Adobe's
+factory had a candidate frozen for review (`state: REVIEWING`, WO-G0-A01 rev13). Its candidate-integrity
+gate builds the working-path set from unstaged, staged and `git ls-files --others --exclude-standard`
+paths, and fails closed on any path outside the reviewed or permitted set. The receipt was untracked
+and unignored, so every orchestrator (Sol) commit failed from 17:41Z. The HUB heading was
+`PREFLIGHT FAILURE Q-034 rev3 | SHARED WORKSPACE UNREVIEWED DOCTRINE RECEIPT | OWNER_DECISION_REQUIRED`,
+followed by seven `GOVERNANCE FAILS ON UNREVIEWED DOCTRINE RECEIPT` checkpoints through 21:31Z. Sol
+correctly refused to delete, move, stage or exclude a file it did not own. Adding the path to
+`.git/info/exclude` would have changed the gate itself. The factory could only stop and name the
+producing session as the owner of the fix. A second PROMPT A run, which found the receipt and
+"updated" it, extended the stall.
+
+**Resolved** at about 21:45Z. The producing session copied the receipt out of the tree (`.claude-state/`,
+git-excluded, SHA-256 verified equal) and removed the in-tree copy. `Test-FactoryGovernance.ps1` then
+returned exit 0.
+
+**General form:** a fleet tool that writes into a member project's tree is a writer that the project's
+governance never admitted. On a project with frozen candidates or exclusive file owners, that one file
+is a governance event, not a convenience. `git status` being clean before the run proves nothing about
+the run.
+
+**Test:** before any fleet prompt writes under T, run T's own integrity or governance check if it has
+one. After the write, run it again; it must still pass. **Fixed in the prompts in the same commit:**
+PROMPT A §2b writes the receipt out of tree (`<home>/.claude/doctrine-sync/<basename of T>.json`) for
+such projects. Paste B and `lane-orchestrator.md` §1 read that path when the in-tree one is absent.
+PROMPT K §2 keeps the instance map in the filing and records `KERNEL: DOGFOOD-PENDING` when the project's
+gates forbid the edit.

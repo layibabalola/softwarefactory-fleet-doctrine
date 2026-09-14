@@ -139,6 +139,18 @@ statement this project makes about its own readiness, and the bus is shared:
   "inventory": "<path to the inventory that answered>" }
 ```
 
+**Unless T's own gates forbid an untracked file there.** A governed factory can hold a frozen review
+candidate whose integrity gate fails closed on any unreviewed path. For such a project, an in-tree
+receipt halts the factory. Measured 2026-09-14 (adobe-ingester): a receipt written by this section
+blocked every orchestrator commit for about four hours (Adobe `HUB.md` heading
+`PREFLIGHT FAILURE Q-034 rev3 | SHARED WORKSPACE UNREVIEWED DOCTRINE RECEIPT`, then seven checkpoints).
+Before writing, read T's operating contract (`FACTORY.md`, `AGENTS.md`, `CLAUDE.md`, or a `.factory/`-style
+tree). If it names a frozen or review-state candidate, a candidate-integrity check, or files with
+exclusive owners, or if you cannot tell, write the receipt **outside T** instead, at
+`<home>/.claude/doctrine-sync/<basename of T>.json` (home written out in full), and say so in the report.
+Never add an ignore or exclude entry so that an in-tree receipt passes: that edits the gate you would be
+tripping.
+
 **Read the old receipt's `head` before you overwrite it** and carry it as `previous_head`. It is
 §4's `<your-last-sync-sha>`, and the receipt is the only place it lives. Overwrite first and §4's
 range collapses to empty (`HEAD..HEAD`), so the harvest reports nothing new every time. Measured

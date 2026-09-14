@@ -28,7 +28,8 @@ Run these and report each result. Any FAIL stops the run.
 
 ```bash
 # doctrine freshness + parity — receipt written by PROMPT A
-cat .claude/doctrine-sync.json
+cat .claude/doctrine-sync.json \
+  || cat "$HOME/.claude/doctrine-sync/$(basename "$REPO").json"   # out-of-tree receipt, PROMPT A §2b
 ```
 Require `status: "SYNCED"` and a `synced_at` within the last 24 hours. **Absence of this file
 is a FAIL, not a pass** — it means the sync never ran, which is indistinguishable from a stale

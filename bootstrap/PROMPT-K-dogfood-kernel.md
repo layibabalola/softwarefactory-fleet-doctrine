@@ -38,6 +38,12 @@ keeps its operating contract. For each clause K1 to K12, name the mechanism that
 command. Where the project has nothing, write `NONE` next to the clause. A `NONE` is a finding in its own right, so do
 not invent a mechanism to fill the gap.
 
+**If the project's gates forbid the edit, do not make it.** This applies when the operating contract is exclusively
+owned, a candidate is frozen for review, or adoption needs the project's own ratification (PROMPT A §2b gives the
+test). In that case put the instance map in your filing under `## Instance map`, record the `KERNEL:` line as
+`KERNEL: DOGFOOD-PENDING <who ratifies>`, and send the adoption request through the project's own channel. A dogfood
+run that halts the factory it measures has produced its first `BREAK`, not evidence.
+
 ## 3. Run real work through it
 
 Take **one to three subjects the owner already authorised**. If the queue is empty, file now with `subjects: 0`, mark
