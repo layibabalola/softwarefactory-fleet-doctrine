@@ -22,10 +22,16 @@ printf 'Reply with exactly this and nothing else: %s\n' "$SENTINEL" > "$WORK/ask
 
 probe() {  # family nickname id
   local fam=$1 nick=$2 id=$3
+  local codex_cmd="codex"
+  # On Windows, the bash shim for codex is broken (TRAP: npm bash shim for codex).
+  # Use codex.cmd (PowerShell native) instead of codex (bash shim).
+  if [[ "$OSTYPE" == "msys" || "$OSTYPE" == "mingw"* || "$OSTYPE" == "win32" ]] || uname -s | grep -qi "MINGW"; then
+    codex_cmd="codex.cmd"
+  fi
   if [ "$fam" = claude ]; then
     timeout 120 claude -p --model "$id" < "$WORK/ask" > "$WORK/$fam.$nick" 2>&1
   else
-    timeout 180 codex exec -m "$id" -s read-only --skip-git-repo-check \
+    timeout 180 $codex_cmd exec -m "$id" -s read-only --skip-git-repo-check \
       -o "$WORK/$fam.$nick" - < "$WORK/ask" > /dev/null 2>&1
   fi
   # Anchored, whole-line match. An unanchored grep accepts the token wherever it appears --
