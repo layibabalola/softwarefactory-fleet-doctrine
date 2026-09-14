@@ -67,21 +67,44 @@ than as fact.
 ## 1. Sync the bus
 
 Use the checkout `D` that paste A resolved, and re-check that its `origin` is the bus. Only when
-you were not started by paste A, find the doctrine checkout yourself: a binding in this project's
-`CLAUDE.md` or `AGENTS.md`, else a pointer in `docs/`, else the machine convention (`C:\code\softwarefactory-fleet-doctrine` on this box — say so if you
+you were not started by paste A, find the doctrine checkout yourself: a line of this project's
+`CLAUDE.md` or `AGENTS.md` containing `softwarefactory-fleet-doctrine`, else the machine convention (`C:\code\softwarefactory-fleet-doctrine` on this box — say so if you
 reach this rung, because a path that happens to be right here is a guess anywhere else).
 
+Run these **one at a time**, and check each result before running the next. In a single block, a
+wrong-branch checkout was fast-forwarded before anything stopped:
+
 ```bash
-git -C "<doctrine>" rev-parse --abbrev-ref HEAD     # expect master
-git -C "<doctrine>" status --short                  # note dirty/untracked BEFORE fetching
-git -C "<doctrine>" fetch origin +refs/heads/master:refs/remotes/origin/master   # explicit: plain fetch leaves origin/master stale without a fetch rule
-git -C "<doctrine>" merge origin/master --ff-only
+git -C "<doctrine>" rev-parse --abbrev-ref HEAD     # not master -> WRONG_BRANCH; do not run the rest
+git -C "<doctrine>" status --short                  # non-empty -> DIRTY; do not run the rest
+git -C "<doctrine>" fetch origin +refs/heads/master:refs/remotes/origin/master   # explicit refspec; fails -> UNREACHABLE
+git -C "<doctrine>" merge origin/master --ff-only   # refused -> NON_FF or UNTRACKED_COLLISION
 ```
 
-Never `--force`, `reset --hard`, or `clean`; other sessions leave work here. Report distinctly:
-`NON_FF`, `UNTRACKED_COLLISION`, `WRONG_BRANCH`, `DIRTY`, `UNREACHABLE` — they are different
-problems with different fixes and the common mistake is to call them all "sync failed". On any
-of them, stop.
+Never `--force`, `reset --hard`, `clean`, `stash`, `checkout` or delete in `<doctrine>`; other sessions
+leave work there. Report distinctly: `NON_FF`, `UNTRACKED_COLLISION`, `WRONG_BRANCH`, `DIRTY`,
+`UNREACHABLE`. They are different problems with different fixes, and the common mistake is to call
+them all "sync failed". For each, quote `git -C "<doctrine>" rev-list --left-right --count
+master...origin/master` and `git -C "<doctrine>" status --short`.
+
+**`UNREACHABLE` stops.** Every other code is recoverable without touching the shared checkout, so
+recover instead of stopping. A checkout older than the lineage, left dirty by another session, or
+parked on a work branch still holds every object needed to read current doctrine:
+
+1. Record the class: `git -C "<doctrine>" merge-base master origin/master`. Empty output means
+   `LINEAGE_REPLACED`, otherwise `DIVERGED`. Also quote `git -C "<doctrine>" log --oneline
+   origin/master..master`. Leave the checkout's branch, index and tree exactly as they are.
+2. Let `R` = `<doctrine>-origin`, a sibling folder. If `R` does not exist, run `git -C "<doctrine>"
+   worktree add --detach "R" origin/master`. If `R` exists and `git -C "<doctrine>" worktree list
+   --porcelain` lists it, stop `DIRTY` when `git -C "R" status --short` is non-empty, and otherwise run
+   `git -C "R" checkout --detach origin/master`. If `R` exists and is not listed, stop
+   `UNTRACKED_COLLISION`.
+3. Use `R` as `<doctrine>` for §2–§5 and as `path` in §2b. Add `"diverged": {"checkout":
+   "<original>", "code": "<code>", "class": "LINEAGE_REPLACED|DIVERGED", "local_only": <count>}` to the
+   receipt. Report the original checkout as reconciliation the owner may schedule, not as a blocker.
+
+`R` is a read copy. Only this procedure moves it, it holds no branch, and §4b never removes it. Write
+to the bus only through a review branch (R7), never from `R`'s detached HEAD.
 
 Syncing is not a boot-only act (RULINGS **R8**). Fetch again before any write to the bus, and after
 any push leave the shared checkout level with `origin/master`, your review branches pushed, and your

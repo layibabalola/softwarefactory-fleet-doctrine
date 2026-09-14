@@ -227,7 +227,7 @@ git -C "$REPO" fetch origin
 git -C "$REPO" status -sb | head -1          # shared checkout: expect "## master...origin/master" with no [behind N]/[ahead N]
 git -C "$REPO" merge --ff-only origin/master # bring the shared checkout level; never reset/force/clean
 git -C "$REPO" branch -vv --list 'review/*'  # every review branch: tracking origin, no [ahead N]
-git -C "$REPO" worktree list                 # remove YOUR worktrees whose branch is pushed and clean
+git -C "$REPO" worktree list                 # remove YOUR worktrees whose branch is pushed and clean; never the detached read copy <checkout>-origin (PROMPT A §1)
 ```
 
 Doctrine edits to `master` follow the same shape: make them in a worktree detached at a freshly
