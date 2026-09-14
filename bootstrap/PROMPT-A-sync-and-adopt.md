@@ -68,7 +68,7 @@ than as fact.
 
 Use the checkout `D` that paste A resolved, and re-check that its `origin` is the bus. Only when
 you were not started by paste A, find the doctrine checkout yourself: a binding in this project's
-`CLAUDE.md`, else a pointer in `docs/`, else the machine convention (`C:\code\softwarefactory-fleet-doctrine` on this box — say so if you
+`CLAUDE.md` or `AGENTS.md`, else a pointer in `docs/`, else the machine convention (`C:\code\softwarefactory-fleet-doctrine` on this box — say so if you
 reach this rung, because a path that happens to be right here is a guess anywhere else).
 
 ```bash
