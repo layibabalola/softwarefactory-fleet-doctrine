@@ -6,6 +6,12 @@ that PROMPT B has something to stand on.
 
 Run it again whenever you have been away; step 4 is the part that pays off on every re-run.
 
+**Before §0: confirm where you are running.** Name this session's working directory in the
+report. Stop with `FROZEN` if any instructions you hold mark it read-only or archived, whether they
+come from this project or from a user-level file. This prompt writes into the project. A path you
+could not read is `UNREADABLE`, not "missing" (`bootstrap/README.md`, "When a paste reports
+UNREADABLE"). Never search for a substitute file.
+
 ---
 
 ## 0. Account parity — FIRST, before anything that reads a provider

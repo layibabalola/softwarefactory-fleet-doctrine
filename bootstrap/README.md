@@ -17,12 +17,36 @@ review, and A is cheap enough to re-run whenever you have been away.
 
 **A**, in the project you want to join:
 
-> Read and follow `<doctrine>/bootstrap/PROMPT-A-sync-and-adopt.md`.
+> Read and follow `<doctrine>/bootstrap/PROMPT-A-sync-and-adopt.md`. If that Read fails, do not
+> search for the file or try another path: run `git -C "<doctrine>" ls-files bootstrap/`, report
+> `UNREADABLE` with both errors verbatim, and stop.
 
 **B**, once A reports ready:
 
 > Read and follow `<doctrine>/bootstrap/PROMPT-B-begin-review.md`. The subject is
-> `specs/conjugal-approach-a-v7.4.md`; THIS project is the test bench.
+> `specs/conjugal-approach-a-v7.4.md`; THIS project is the test bench. If that Read fails, do not
+> search: run `git -C "<doctrine>" ls-files bootstrap/`, report `UNREADABLE` verbatim, and stop.
+
+### When a paste reports `UNREADABLE`
+
+The guard exists because the failure is outside the prompt. A session that cannot open the file
+cannot read any guard written inside it. Measured 2026-09-14 (Dell XPS 17): a Haiku session
+opened in `DngAutoProcessor - Claude` reported that PROMPT A "doesn't exist", then spent six shell
+commands searching for it. The file was present at that exact path, and a Conjugal session read it
+the same hour. The path was right; the session could not reach it.
+
+The `ls-files` line tells the causes apart, so re-pasting is safe:
+
+| `ls-files` result | Cause | Fix |
+|---|---|---|
+| lists the file | **Access.** The session is scoped to its own folder (Claude Desktop does this) | Grant the session the doctrine folder, or open the session in a project that has it, then paste again |
+| `not a git repository` / no such path | **No checkout** at `<doctrine>` on this machine | Clone the bus there (PROMPT A §1 `UNREACHABLE`), then paste again |
+| lists `bootstrap/` without the file | **Renamed** | Use the name this README gives now |
+
+**Paste into the project you mean to join, never into a frozen archive.** An archive may not mark
+itself as frozen. `DngAutoProcessor - Claude` is read-only by owner rule, and that rule lives only
+in the Conjugal instructions. PROMPT A writes `.claude/doctrine-sync.json` and adoption records, so
+a successful run there would have broken the rule.
 
 Expect B to refuse to review, ask once with a model pre-selected, and hand back a chip. Set the
 model picker to what it names **before** clicking — a chip inherits the picker at click time —
