@@ -2629,3 +2629,15 @@ resolved by F1 and were answered against v7.5's text. Measured: the published bu
 comment, so it failed its own §14 contract; §14 now names the audited body. No convergence was claimed from a single filing.
 Posture: Astra arbitrates, Fable consolidates, Opus+Sol lint; all four seats emitted LANE-COMPLETE. Other unharvested filings
 on this subject at run time (agent-bridge, airmypc, adobe-ingester-20260914-findings) were outside this run's population.
+
+## First automated harvest landed without a human (conjugal, 2026-09-14, Bachelor / Dell XPS 17)
+
+Scheduled tick 21:19Z to SUCCESS at 21:43Z (24 min). Run 20260914T211903Z-fcb20d1c answered mlv-app's filing on
+`approach-a-design` as Conjugal Round F2. All four posture seats quoted `LANE-COMPLETE`: Astra (arbiter), Fable
+(consolidator), Opus and Sol (lint; 7 items, 2 merged). Publish census: bus b7126cc (spec) and 7d1b6f6 (dispositions
+plus a RECEIPTS row) touch exactly 3 allowlisted paths and remove no lines. The runner filled `spec_commit` with
+b7126cc, and 5 sibling commits that landed during the run were replayed over, not reverted. Conjugal side 258e3ed83:
+22 paths, all under `docs/architecture/approach-a/`, through the gateway lock with a compare-and-swap.
+`harvest-status.py` shows mlv-app `HARVESTED`. **Measured pressure:** the design body is now 12,999 words against its
+13,000 cap, so every later round must cut before it adds, and the runner refuses any spec over the cap. Three filings
+(agent-bridge, airmypc, adobe-ingester) remain for later ticks.
