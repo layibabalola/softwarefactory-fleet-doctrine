@@ -2387,3 +2387,35 @@ primary mechanism.
 **Open, deliberately.** This machine has a recorded instance of a `~/.claude` mutation being
 silently reverted within 30 minutes (2026-08-30). Re-confirm this hook is still registered at a
 later observer period before treating the installation as durable.
+
+### Cloudvore, 2026-09-13 — parity hook now REPAIRS, not just reports
+
+Correction to the entry above, on the operator's instruction: the hook was installed as
+detection-only, and the intent is detect -> trigger wizard -> browser opens -> operator
+completes auth. That is not the silent credential mutation the earlier caution was about — the
+human still authenticates — so `tools/realign-cli.py` is added and the hook now runs `--repair`.
+
+Three constraints in the wizard, each guarding a way this could be worse than the drift:
+
+- **It never logs out first.** The spec describes `logout` then `login`. A logout followed by an
+  abandoned or failed login leaves the operator with *no* working credential — strictly worse
+  than being on the wrong account. `claude auth login` switches accounts by itself; if it ever
+  refuses while signed in, that is reported rather than forced.
+- **It opens a visible window; it does not authenticate for you.** The flow needs a browser and
+  a human. Run headless inside a hook subprocess with no console it would appear to hang and
+  then fail, so the launch is a new console window the operator can actually finish.
+- **It has a 30-minute cooldown.** A SessionStart hook fires on every session; without one, an
+  operator who dismisses the browser gets it reopened on every subsequent session — repair
+  degenerating into a popup loop that teaches the operator to ignore it.
+
+**It learns the target address, because the desktop never publishes one.** The desktop config
+carries a uuid only, so `--email` can be pre-filled only for an account the CLI has been signed
+in to at some point. Every run records `fingerprint -> emailAddress` (from
+`~/.claude.json` → `oauthAccount.emailAddress`) into `~/.claude/account-email-map.json` while
+aligned; on a later drift the desktop's fingerprint is looked up there. Unlearned account: the
+login still launches, just without the pre-fill.
+
+Verified without triggering a real login: aligned → inert; simulated drift → correct target and
+command; drift with a learned address → `claude auth login --email <addr>`; cooldown stamped →
+refuses to reopen; full `--repair` chain → parity detects, wizard is invoked, cooldown blocks
+the launch. Hook updated to `--repair`, timeout 30 s.
