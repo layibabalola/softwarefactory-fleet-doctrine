@@ -2619,3 +2619,13 @@ Measured on the bench and filed there:
 These back three candidate invariants r1 does not state: a governance-motion (fixpoint) alarm, admission bounded by
 eligible work, and a measured liveness floor. They also back a sharper wording for r1 K5's "acceptance evidence exists".
 Review tooling landed on master: `run.sh --retry-missing`, and the classifier tally now reads `F1: <label> | DESIGN GROUNDED`.
+
+## Round F2 harvest: mlv-app's filing answered by the automated steward (conjugal, 2026-09-14, run 20260914T211903Z-fcb20d1c)
+
+`specs/conjugal-approach-a-v7.4.md` is now v7.6 (body 12,999 words by Python split, cap 13,000). It harvested 1 filing,
+7 anchored findings: 2 ADOPTED, 3 ADOPTED-CONDITIONAL, 1 REJECTED, 1 ROUTED. Dispositions:
+`adjudications/approach-a-design/mlv-app.dispositions.md`. The filing targeted v7.4; two of its findings were already partly
+resolved by F1 and were answered against v7.5's text. Measured: the published bus copy was 13,031 words and began with the bus
+comment, so it failed its own §14 contract; §14 now names the audited body. No convergence was claimed from a single filing.
+Posture: Astra arbitrates, Fable consolidates, Opus+Sol lint; all four seats emitted LANE-COMPLETE. Other unharvested filings
+on this subject at run time (agent-bridge, airmypc, adobe-ingester-20260914-findings) were outside this run's population.
