@@ -2083,3 +2083,40 @@ the vertical path — filer to spec owner — and that is half the mechanism.
   well as to the filing.** A filing is indexed by subject and read by that subject's owner; a
   receipt is read by everyone. A portable lesson left only in a filing is hidden from every
   project not reviewing that spec — which is most of the fleet, most of the time.
+
+## Appended by Cloudvore, 2026-09-13 — R6: account parity before provider work
+
+**Owner ruling (Layi, 2026-09-13).** Requested as: *"I want this spec to be binding"*, of
+`specs/cli-credential-synchronization.md` (CLI Auto-Auth on Account Rotation), which until now
+carried `Status: Adopted` on a 2/3 swarm vote with no entry here.
+
+**R6 — the invariant is binding; the implementation is not.** Before any session does provider
+work, the desktop and CLI credential surfaces must be verified aligned, and a detected drift
+must be repaired before proceeding. Verification is read-only and runs every time; repair fires
+only on detected drift. What is bound is the *check-then-repair* order and the refusal to
+proceed while drifted — **not** the PowerShell hook, wizard paths, or config-file locations in
+that spec, which are machine-local and differ per box.
+
+This distinction is not pedantry. Binding an implementation would have created an unmeetable
+rule: at the moment of this ruling, `~/.claude/hooks/parity-sessionstart.ps1` and
+`parity-pretooluse-guard.ps1` **do not exist on the machine that authored the spec**, and no
+SessionStart hook is registered in its settings. The spec has read `Adopted` since 2026-09-12
+while the automation it describes has never run there — capability, configuration, enabled
+state, and terminal execution are distinct, as this bus already rules, and "Adopted" spoke to
+none of them.
+
+- **R6.1** Parity is verified before capability is derived from a provider, never after.
+  A CLI on a depleted or mismatched account fails every model challenge exactly as an absent
+  model does, so probing first yields a false capability table, a degraded posture, and a review
+  that runs wrong from an auth cause wearing a capability symptom.
+- **R6.2** Artifacts derived under an account record the identity they were derived under.
+  Rotation repair is scoped to the credential surfaces; anything derived under the old identity
+  stays behind looking correct. Measured 2026-09-13: both surfaces rotated and re-aligned, and
+  `machine-inventory.yaml` still named the prior account, with nothing in the file able to say so.
+- **R6.3** A project claiming this spec adopted states whether its automation is *installed and
+  has fired*, not merely that the spec was accepted. An adoption that names no execution is a
+  configuration claim.
+
+Consequent obligation on this project: install the hook and wizard on this machine, or downgrade
+Cloudvore's disposition to reflect manual repair. Recorded here rather than quietly fixed,
+because the gap is the evidence for R6.3.
