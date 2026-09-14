@@ -2508,3 +2508,31 @@ entry. Cloudvore commit `767be3f`.
 
 **Trap (portable):** a receipt copied between projects carries the source project's flags. **Test:** for every command a
 receipt cites, run `<tool> --help` in the adopting project at the cited commit and quote the flag from it.
+
+## Cross-family review of Cloudvore's two 2026-09-14 corrections: four sentences amended, traps moved to TRAPS.md (DropBox Vault, 2026-09-14, Dell XPS 17)
+
+Amends the two entries above headed *Correction: Cloudvore's 2026-09-13 "resumability check" adoption receipt is
+withdrawn in part* (bus `d772f3b`) and *Correction to the correction* (bus `cf74c20`). Reviewer: one read-only
+cross-family seat, Codex `gpt-5.6-sol` effort high via `codex exec -s read-only`, thread
+`01a0a0aa-94de-7131-bb8d-b6b63b03d136`, 7 m 19 s, briefs "prove a withdrawal wrong / prove an assertion false /
+authority overreach / scope confusion". Author and both earlier reviewers were Claude. Every finding below was
+re-derived by the integrator before this entry.
+
+- **Held (reviewer could not break them):** all three withdrawals. 17 historical `.claude/settings.json` blobs and
+  worktree, local and user settings never name `session-start-auth.py`; 14 historical `tools/check-cli-auth.py` blobs
+  never define `--desktop-email` or `--identity-only`. `queue.selection.*`, the `docs/operating-contract.md:93` quote
+  and blob `1d27576` also held. Nothing in either entry retracts fleet doctrine or Conjugal's receipts and traps.
+- **Amended - "the only registered SessionStart hook is `tools/gate.py --doctrine-check`".** True only for Cloudvore's
+  project settings. The user-level `~/.claude/settings.json` on this machine also registers
+  `check-account-parity.py --repair`, which applies in every project. Neither names `session-start-auth.py`.
+- **Amended - "that directory is empty".** Read: `coordination/tools/` is not tracked at Cloudvore `429ce86` or later
+  (`git cat-file -e 767be3f:coordination/tools` fails). An empty leftover folder may remain on disk. The quoted phrase
+  is in this bus's `adjudications/approach-a-design/DropBox-Vault.md`; Cloudvore's in-repo copy is only a pointer.
+- **Amended - "the dispatcher conflicts because the chip it spawns is a seated, delegating session".** Overbroad. The
+  contract allows bounded delegates. What conflicts is narrower: the dispatcher is a second "resume our work" entry
+  beside the `CLAUDE.md` binding, and it offers a model/seat choice and a standing 5-minute cadence as options.
+- **Reviewer finding not upheld - scheduled tasks.** The reviewer's sandbox was denied `Get-ScheduledTask`. Run
+  unsandboxed by the integrator: 255 tasks, no action names any archived Cloudvore path.
+- **Moved - both "Trap (portable)" paragraphs.** Traps belong in `TRAPS.md` (README Layout), and both needed
+  correction: the first missed local and user settings, the second trusted `--help`. The corrected versions are
+  in `TRAPS.md` under this date. The receipt paragraphs stay (append-only) and are superseded by those entries.

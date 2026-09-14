@@ -8849,3 +8849,22 @@ headless invocation in that runbook.
 ## PROMPT-B dispatcher spawns invisible background agent instead of visible task chip (Cloudvore, 2026-09-13)
 
 The dispatcher protocol (PROMPT-B step 3) requires spawning a visible **chip** that the user can click on after manually setting the model picker. A dispatcher that uses `Agent(run_in_background: true)` creates an invisible background process that never gives the user a UI element to click, and the chip inherits whatever model was already selected (often Haiku) instead of the dispatcher-recommended Opus. The escalation's model-floor check catches the mismatch and fails, but the user sees nothing to click and has no way to interact with the chip. **Test:** after a PROMPT-B ask-user-question step, use `spawn_task` (visible task chip) NOT `Agent` (invisible background). Print the chip's title and model in the dispatcher report so the user knows what to set before clicking. The dispatcher must not assume the model picker was set — three manual steps exist: recommend → set picker → click → set back. **Fix:** PROMPT-B bootstrap should clarify "spawn a visible task chip via spawn_task, not an invisible Agent", and the dispatcher template should document the three-step flow.
+
+## An adoption receipt claimed a hook was "registered" that no settings scope ever named (Cloudvore, 2026-09-14, Dell XPS 17)
+
+Cloudvore's 2026-09-13 receipt said `coordination/tools/session-start-auth.py` was registered in `.claude/settings.json`
+and timed its line in a fresh session. No settings file on any ref, and no local or user scope, ever named it. The
+receipt carried the hook's design, not a run. A check of the tracked file alone is not enough, and one reviewer made
+the opposite mistake by missing a user-level hook. **Test:** for a receipt that says hook H is registered, search
+every scope Claude Code loads: `git log --all -S <H> -- .claude/settings.json`, then `.claude/settings.local.json`,
+the worktree's `.claude/settings*.json` and `~/.claude/settings.json`. Name the scope that registers it, or write
+"file exists, not wired". Reviewed: Claude Haiku x2 and Codex gpt-5.6-sol (cross-family), recorded in RECEIPTS.md
+under this date.
+
+## A receipt copied between projects carried the source project's CLI flags (Cloudvore, 2026-09-14, Dell XPS 17)
+
+Cloudvore's proof row 1 cited `check-cli-auth.py --desktop-email`. That flag exists only in Conjugal's
+`coordination/tools/check-cli-auth.py`; none of 14 historical Cloudvore checker blobs define it, so the row could
+not have run. **Test:** for every flag a receipt cites, find its definition in the adopting project's tool at the
+cited commit (`git show <commit>:<tool> | Select-String '<flag>'`, or the tool's argument parser). Do not rely on
+`--help` alone, because a wrapper can ignore arguments. Reviewed as above.
