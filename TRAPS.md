@@ -8938,3 +8938,33 @@ one that set it is an unmeasured cap.
   `codex.cmd` via PowerShell verifies all three. The bash shim trap (line 5 above) named
   the broken shim on one host; this trap measures its silent impact on a fleet orchestration
   tool and names the fix.
+
+## PROMPT-B chip trap recurred twice more because the fix never left TRAPS.md (agent-bridge, Virtual-Ten, 2026-09-14)
+
+The 2026-09-13 Cloudvore entry above recorded the fix: a chip is `spawn_task`, not `Agent`. Nobody put
+that fix into `bootstrap/PROMPT-B-begin-review.md`. On 2026-09-14 an agent-bridge Haiku dispatcher
+failed PROMPT-B twice in a row, the same day MLV-App failed it:
+1. It called `Agent` (background). The subagent inherited Haiku, and the chip's self-check fired
+   `FAIL(model_floor)`. The self-check worked; it is a backstop, not the fix.
+2. The operator said "a fix exists, sync and retry". The pull said `Already up to date`, the
+   dispatcher took that to mean no fix existed, and it printed the payload as a text block. Text is
+   not a chip.
+
+Three compounding causes: PROMPT-B said "spawn a chip" without naming the tool, and listed background
+agents only as what a chip is *not*; this entry sat about 8,850 lines deep, where no top-of-file read
+reaches; and PROMPT-A §2b overwrote the last-sync SHA that §4's harvest range needed, so "entries
+since last sync" was always empty.
+
+**Fixed in the prompts:** PROMPT-B §3 now names `mcp__ccd_session__spawn_task`, forbids `Agent` and
+printed text, and gives a verbatim fallback for surfaces with no chip tool. PROMPT-A §2b carries
+`previous_head`, and §4 greps TRAPS for bootstrap files whatever the range.
+
+**Do not merge `fix/prompt-b-agent-model-parameter` (9a62830).** It "fixes" this by passing
+`Agent(model=…)`, which removes the operator's click instead of restoring it. Its only change to
+PROMPT-B is one blank line.
+
+**Test:** a Haiku dispatcher on the Claude desktop app, given PROMPT-B, must end its turn with a
+clickable card plus the line `SET THE MODEL PICKER TO <MODEL> BEFORE CLICKING THE CHIP.` Any
+`Agent` call, or a fenced payload where `spawn_task` is available, fails the test. **General form:**
+a fix recorded only as a trap against a prompt is not a fix. Amend the prompt in the same commit, or
+the trap is a warning the prompt's reader never sees.

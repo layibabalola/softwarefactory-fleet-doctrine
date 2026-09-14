@@ -104,9 +104,16 @@ statement this project makes about its own readiness, and the bus is shared:
 
 ```json
 { "status": "SYNCED", "path": "<doctrine checkout>", "head": "<full SHA>",
+  "previous_head": "<the head from the receipt this one replaces, or null on first run>",
   "synced_at": "<now, ISO-8601>", "parity": "MATCHED|REPAIRED|UNVERIFIED",
   "inventory": "<path to the inventory that answered>" }
 ```
+
+**Read the old receipt's `head` before you overwrite it** and carry it as `previous_head`. It is
+§4's `<your-last-sync-sha>`, and the receipt is the only place it lives. Overwrite first and §4's
+range collapses to empty (`HEAD..HEAD`), so the harvest reports nothing new every time. Measured
+2026-09-14 (agent-bridge): that is how a TRAPS entry recording the exact PROMPT-B failure about to
+happen went unread.
 
 On any blocker from §0–§2, write the same file with `status` set to that blocker's code.
 
@@ -168,7 +175,14 @@ git -C "<doctrine>" log --oneline <your-last-sync-sha>..master -- RECEIPTS.md TR
 ls -t "<doctrine>"/adjudications/*/*.md | head
 git -C "<doctrine>" ls-remote origin 'refs/heads/review/*'   # filings not yet on master (R7.5)
 git -C "<doctrine>" fetch origin 'refs/heads/review/*:refs/remotes/origin/review/*'
+grep -nE "PROMPT-?B|PROMPT-?A|lane-orchestrator|bootstrap/" "<doctrine>/TRAPS.md"   # traps against the prompts you run next
 ```
+
+The `<your-last-sync-sha>` is `previous_head` from §2b; with no previous receipt, read every entry
+the grep above finds. The grep runs **regardless of the range**: a trap against a bootstrap file can
+land before your last sync and still be unfixed in the file itself, and TRAPS.md is thousands of
+lines long, so a top-of-file read never reaches it. `Already up to date` from a pull proves the
+checkout is current; it does not prove that no trap applies to the prompt you are about to run.
 
 Three sources, and they are not the same:
 

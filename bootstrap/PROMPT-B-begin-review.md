@@ -26,11 +26,29 @@ completed, and reported success — a single cheap model reaching consensus with
 ## 2. Ask once
 
 One `AskUserQuestion` covering:
-- **model** — Opus pre-selected; Fable and Sonnet offered
+- **model** — Opus pre-selected; Fable and Sonnet offered. The answer fills `MODEL:` in the
+  payload; it does **not** set the model the chip runs on. Only the operator's model picker does.
 - **cadence** — 5-min cron / at milestones / none
 - **posture** — autonomous with escalation on deadlock only (default) / confirm before acting
 
-## 3. Spawn exactly one chip
+## 3. Spawn exactly one chip — by tool call, never by text
+
+**A chip is a `mcp__ccd_session__spawn_task` call** (Claude desktop app): `title`, `tldr`, and
+the payload below as `prompt`. It renders a card the operator clicks, and the new session starts
+on whatever the model picker shows at that moment. If the tool is listed as deferred, load it
+with ToolSearch (`select:mcp__ccd_session__spawn_task`) first.
+
+**Forbidden substitutes**, each of which has already happened on this bus:
+- **The `Agent` tool or any background subagent.** It is invisible, it has no picker step, and it
+  inherits the *dispatcher's* model, so the chip's self-check fires `FAIL(model_floor)` and nothing
+  reviews (TRAPS 2026-09-13 Cloudvore; again 2026-09-14 MLV-App and agent-bridge). Passing the
+  `Agent` tool's `model` parameter is not a fix either: it removes the operator's click, and the
+  escalation must be visible.
+- **Printing the payload as a text block** in place of the call. Text is not clickable.
+
+**No chip tool on this surface** (a plain `claude` terminal, a headless run): print the payload in
+a fenced block and say, verbatim, `NO CHIP TOOL ON THIS SURFACE — paste into a new session
+started on <MODEL>.` That is the only lawful case for text.
 
 Its prompt carries **pointers only**:
 
@@ -85,12 +103,14 @@ Without the cap the rule has no base case: a chip that lands on an unavailable m
 re-runs E1 and recognises a review request, spawns another chip, and every hop looks like
 progress while nothing reviews anything. This is a guard that refuses, not one that warns.
 
-Review lanes that the orchestrator itself dispatches — background agents, `claude -p`, `codex exec` —
-are **not** escalation chips and do not count against the cap.
+Review lanes that the *orchestrator* dispatches — background agents, `claude -p`, `codex exec` —
+are **not** escalation chips and do not count against the cap. That permission belongs to the
+orchestrator only; the dispatcher's one chip is always a `spawn_task` call (§3).
 
 ## 5. Report and stop
 
-Print the chip's title and model. Then stop. Claim no seat, do no review work, and do not
+Print the chip's title, then a final line of exactly
+`SET THE MODEL PICKER TO <MODEL> BEFORE CLICKING THE CHIP.` Then stop. Claim no seat, do no review work, and do not
 summarise the subject.
 
 ---
