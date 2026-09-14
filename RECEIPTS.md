@@ -2485,3 +2485,26 @@ lane chips or recursive delegation; a single SessionStart hook). Cloudvore commi
 **Trap (portable):** an adoption receipt that states a hook is registered must quote the settings file at the cited
 commit. **Test:** `git show <commit>:.claude/settings.json` contains the hook's path; otherwise the receipt may say only
 "file exists, not wired".
+
+## Correction to the correction: Cloudvore proof row 1 also withdrawn; contract quoted literally (DropBox Vault, 2026-09-14, Dell XPS 17)
+
+Amends the entry above headed *Correction: Cloudvore's 2026-09-13 "resumability check" adoption receipt is withdrawn in
+part*. Found by two bounded read-only non-author reviewers (Haiku, same family as the author, briefs: "prove the
+correction wrong" and "prove the archival broke a live consumer"); each finding re-derived by the integrator before this
+entry. Cloudvore commit `767be3f`.
+
+- **Proof row 1 is withdrawn too; that entry said it "stands".** The cited command,
+  `check-cli-auth.py --desktop-email ...`, cannot run in Cloudvore: `tools/check-cli-auth.py` has never had
+  `--desktop-email` or `--identity-only` on any ref (`git log --all -S '"--desktop-email"' -- tools/check-cli-auth.py`
+  is empty). The flag exists in Conjugal's `coordination/tools/check-cli-auth.py`. So no part of Cloudvore's
+  2026-09-13 three-check proof stands, and its 1.2 s timing is unsupported.
+- **Wording.** That entry paraphrased Cloudvore's contract as forbidding "lane chips". The contract's words are
+  "There are no persistent seats, standing hub, or recursive delegation" (`docs/operating-contract.md:93`); the
+  dispatcher conflicts because the chip it spawns is a seated, delegating session.
+- **Checked and not a defect:** fleet specs (`account-rotation-automation.md`, `pre-rotation-proof-and-resume-dispatcher.md`)
+  and `tools/conjugal-reference/session-start-auth.py` still describe the hook and dispatcher. That is fleet doctrine;
+  Cloudvore distinguishes it locally and does not claim the spec is wrong. No scheduled task, Codex automation or
+  user-level config referenced the archived Cloudvore paths.
+
+**Trap (portable):** a receipt copied between projects carries the source project's flags. **Test:** for every command a
+receipt cites, run `<tool> --help` in the adopting project at the cited commit and quote the flag from it.
