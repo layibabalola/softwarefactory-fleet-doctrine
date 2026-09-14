@@ -79,7 +79,9 @@ def body(path):
 
 def write_prompt(name, text):
     subject = cfg("RP_SUBJECT")
-    text = text.rstrip() + "\n" + SENTINEL_ASK + "\n"
+    # State the sentinel before any DATA framing as well as last: appended only after pasted lane output, it is
+    # read as data (agent-bridge 2026-09-14: astra arbiter, 0 sentinels in 5 passes on 3 benches).
+    text = SENTINEL_ASK + " (an instruction to you, not part of any DATA below)\n" + text.rstrip() + "\n" + SENTINEL_ASK + "\n"
     if subject not in text:                      # binding check: fail closed, never dispatch an unbound prompt
         sys.exit(f"BINDING FAIL: {name} does not name the subject {subject}")
     (out_dir() / f"{name}.prompt").write_text(text, encoding="utf-8")

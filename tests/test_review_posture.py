@@ -162,6 +162,14 @@ class Prompts(Env):
             self.assertIn(f"output of {n}", arb, "the arbiter must read lint as well as designers")
         self.assertIn("## Losers", arb)
 
+    def test_sentinel_is_stated_before_any_data_region(self):
+        for n in ("design-scope", "design-verify", "lint-claude", "lint-codex"):
+            self.lane(n, f"output of {n}\nLANE-COMPLETE\n")
+        rp.prompts_b()
+        arb = (self.out / "arbiter.prompt").read_text(encoding="utf-8")
+        self.assertLess(arb.index(rp.SENTINEL_ASK), arb.index("DATA"), "a sentinel ask after the DATA region is read as data")
+        self.assertTrue(arb.rstrip().endswith("LANE-COMPLETE"))
+
     def test_unbound_prompt_fails_closed(self):
         with self.assertRaises(SystemExit) as e:
             rp.write_prompt("x", "Read: C:\\code\\doctrine$SUBJECT")
