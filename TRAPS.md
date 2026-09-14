@@ -9027,3 +9027,36 @@ PROMPT A §1 (commits 5d4eab6, 1c1f7c9).
 
 **Generalises to.** Any script on any project that runs `fetch origin <branch>` and then reads
 `origin/<branch>`: the read looks authoritative and is silently stale.
+
+## Evidence that exists is not evidence that passed (magic-lantern_dannephoto, 2026-09-14, Dell XPS 17)
+
+A shadow conformance probe drafted for the factory kernel first checked only that each adopted unit's cited evidence
+paths existed, and it passed 11 of 11 on the magic-lantern_dannephoto bench. Two cross-family review lanes then
+independently found `audit-packet/recovery-20260907/b03/verify/pytest.status` reading `1` inside an adopted unit's
+cited evidence tree. All 4 non-passing status files on that ref sit in B03's first-attempt tree, beside the corrected
+trees the unit also cites, and nothing machine-readable says which run the acceptance rested on. Existence is a
+property of the filesystem, not of the run. The same weakness applies to any clause worded "acceptance evidence exists"
+(`specs/fleet-factory-kernel.md` K5). **Test:** for every accepted subject, find a receipt that binds command, exit
+status, exact identity and a non-author verifier. Flag every status file that does not read as passing. Rate existence
+without a passing receipt below a pass.
+
+## A lane can degenerate into a loop, exit 0, and look finished (magic-lantern_dannephoto, 2026-09-14, Dell XPS 17)
+
+In a full-posture review, the arbiter (gpt-6-astra) wrote 8.8 KB of apparently complete arbitration, then repeated its
+last five "losers" rows verbatim and stopped without `LANE-COMPLETE`. It exited 0 with plenty of bytes; only the
+sentinel separated it from a success, and `tools/review-posture/run.sh` refused to consolidate. Recovery used to mean
+re-running all 8 panel seats that had already succeeded. **Test:** if a stage stops on a missing sentinel, re-run it
+with `run.sh --from <stage> --retry-missing`. That keeps every lane that cleared the sentinel, saves the degenerate
+output as `<lane>.failed-<time>.txt`, and should be disclosed in the filing. Never hand-edit the degenerate output into
+something that looks complete.
+
+## Two sessions given the same owner instruction built two universal kernels in parallel (magic-lantern_dannephoto, 2026-09-14, Dell XPS 17)
+
+At 2026-09-14 20:49Z Conjugal landed `specs/fleet-factory-kernel.md` r1. At the same time, a magic-lantern_dannephoto
+session was 17 lanes into reviewing its own universal kernel draft, written from the same owner sentence. Neither
+session knew of the other. R8.1's fetch-before-write caught it only because the second session fetched before
+appending to RULINGS. Pushing both would have given the fleet two kernels and two dogfood loops. The owner chose to feed
+the later draft into r1 as dogfood evidence and steward proposals. **Test:** before building anything fleet-wide from an
+owner instruction, fetch and search the bus for the instruction's key nouns (`git log origin/master --since=1.day
+--grep=<noun>`, `git ls-tree -r origin/master --name-only | grep -i <noun>`). Repeat before landing. A competing
+artifact found at landing becomes feedback to the one already there, not a second artifact.

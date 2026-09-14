@@ -258,7 +258,7 @@ def tally():
     at = lambda h, val: re.search(rf"^[#\s]*{h}[ \t]*(?::[ \t]*|[ \t]*\n\s*\n?[ \t]*)({val})[ \t]*$", t, re.M)
     for s in live:
         t = body(o / f"{s}.txt").replace("*", "")
-        for k, kind, g in re.findall(r"\bF(\d+)\s*:\s*(TEXT|DESIGN)\s+(GROUNDED|UNGROUNDED)", t):
+        for k, kind, g in re.findall(r"\bF(\d+)\s*:[^\n]*?\b(TEXT|DESIGN)\b[\s|]*(GROUNDED|UNGROUNDED)\b", t):
             per.setdefault(int(k), {}).setdefault(s, (kind, g))
         m = at("MUST-FIX", r"F\d+(?:[ \t]*,[ \t]*F\d+)*")
         for k in (re.findall(r"F(\d+)", m.group(1)) if m else []):

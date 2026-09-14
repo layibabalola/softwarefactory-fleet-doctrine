@@ -103,6 +103,8 @@ tallies the classifier at 2-of-3 from strict `HEADING: value` lines only (anythi
 as unparsed, never guessed), and ends with `posture:` and `cross_family:` lines computed from the
 sentinels against `roles.json`. It exits 1 when the posture is PARTIAL.
 
+`--retry-missing` re-dispatches only the lanes that did not clear the sentinel, such as one arbiter that degenerated into a loop and exited 0 (TRAPS, 2026-09-14), instead of re-running every seat. Disclose retries in the filing.
+
 `--from B|C|D` reuses earlier stages already in `RP_OUT`. Do that only after re-measuring that the
 subject blob and the bench HEAD are unchanged, and disclose the reuse in the filing.
 

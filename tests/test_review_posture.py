@@ -130,7 +130,7 @@ class Tally(Env):
                                   "STOPPING: FLAT\nCEILING: 80.5\nLANE-COMPLETE\n")
         self.lane("classifier-2", "**F1: DESIGN GROUNDED** x\nF2: DESIGN UNGROUNDED y\n## MUST-FIX\n\nF1\n\nF2 is only architectural\n"
                                   "## STOPPING\n\nFLAT\n## CEILING\n\n78.73 (current) + 1.5 = 80.23\nLANE-COMPLETE\n")
-        self.lane("classifier-3", "F1: DESIGN GROUNDED\nF2: TEXT UNGROUNDED\nMUST-FIX: F1\nSTOPPING\nFLAT because reasons\n"
+        self.lane("classifier-3", "F1: §4 K5 evidence | DESIGN GROUNDED | label before the verdict\nF2: TEXT UNGROUNDED\nMUST-FIX: F1\nSTOPPING\nFLAT because reasons\n"
                                   "CEILING: 79\nLANE-COMPLETE\n")
         with mock.patch("builtins.print"):
             r = rp.tally()

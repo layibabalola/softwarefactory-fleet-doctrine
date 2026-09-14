@@ -8,7 +8,7 @@ measurement. Procedure around it: `bootstrap/lane-orchestrator.md` §2. Binding:
 | `roles.json` | the posture's roles, stages and lanes as data; the test fails if it drifts from the spec's roles table |
 | `rubrics/approach-a-r15.json` | Conjugal Round 15 dimensions and seat lenses (verbatim); write another of the same shape for other subjects |
 | `review_posture.py` | prompts per stage (binding-checked), panel scoring, classifier 2-of-3 tally, posture measurement |
-| `run.sh` | stages A→D in one invocation; `--dry-run`, `--from B|C|D` |
+| `run.sh` | stages A→D in one invocation; `--dry-run`, `--from B|C|D`, `--retry-missing` (re-dispatch only lanes that did not clear the sentinel) |
 | `../../tests/test_review_posture.py` | pins every failure below |
 
 ```bash

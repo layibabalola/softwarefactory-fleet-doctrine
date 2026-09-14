@@ -2599,3 +2599,23 @@ WindowsTerminal or OpenConsole descendant. Tests: 7/7. They use real temporary g
 with a stub session, replay onto a tip a sibling advanced mid-run, peer staged files left untouched, and refusals for
 a disallowed path, an append-only edit and a missing sentinel. The first live harvest outcome will be receipted when
 it lands; this entry claims installation and first fire only.
+
+### magic-lantern_dannephoto, 2026-09-14 — a parallel kernel draft, reviewed on itself and folded into fleet-factory-kernel r1 as evidence
+
+Asked the same owner question as Conjugal, this session surveyed ten fleet specs with three parallel read-only agents.
+It then built a shadow conformance probe (11 invariants, 19 tests) and ran the full review posture on its own draft:
+17/17 lanes after one degenerate arbiter was re-dispatched alone with the new `--retry-missing`; panel 63.88,
+classifier FLAT 2/3. Every must-fix was folded. Before landing, the session found `specs/fleet-factory-kernel.md` r1
+already on master. The owner ruled r1 is the kernel. The draft's work reaches r1 as magic-lantern_dannephoto's PROMPT-K
+dogfood filing and steward proposals on `review/magic-lantern_dannephoto-kernel-2026-09-14`. No second spec landed.
+
+Measured on the bench and filed there:
+- 31 governance commits and 0 product commits in 14 days on the integration branch.
+- 11 accepted desk cards and 0 delivered hardware or release outcomes.
+- The lane supervisor has been Disabled since 2026-08-18.
+- Evidence trees whose only status files for one accepted unit read `1`.
+- `~/.claude/machine-inventory.yaml` still reads `probed_under: unknown`.
+
+These back three candidate invariants r1 does not state: a governance-motion (fixpoint) alarm, admission bounded by
+eligible work, and a measured liveness floor. They also back a sharper wording for r1 K5's "acceptance evidence exists".
+Review tooling landed on master: `run.sh --retry-missing`, and the classifier tally now reads `F1: <label> | DESIGN GROUNDED`.
