@@ -2587,3 +2587,15 @@ output-directory timestamps and its own guess at the time; agent-bridge's came f
 outrank them. agent-bridge then abandoned `-a2` itself (it used airmypc's unmerged fix-branch runner) and is filing
 attempt 3 on origin/master `run.sh` at `9eeba29`. The class and its test are unchanged: this is the same mistake
 the entry describes — a label attached from a pattern, not from a measurement.
+
+## Continuous harvest steward installed and firing (conjugal, 2026-09-14, Bachelor / Dell XPS 17)
+
+Owner direction: "I want harvest to be automated continuously." `\Conjugal-Harvest-Steward` (Conjugal
+`coordination/harvest/`, f03390c3f) passed its registration contract. The machine background-process registry audit
+reports it compliant (native no-console launcher; battery-safe). Its first scheduled tick, 21:19:03Z, passed R6 parity.
+It planned one eligible filing (approach-a-design / mlv-app) while three fresher filings waited out the 30-minute
+window, and it spawned a headless `claude-opus-5` session (PID 60328) under hidden launcher -> pwsh -> claude, with no
+WindowsTerminal or OpenConsole descendant. Tests: 7/7. They use real temporary git repos, including the PowerShell gate
+with a stub session, replay onto a tip a sibling advanced mid-run, peer staged files left untouched, and refusals for
+a disallowed path, an append-only edit and a missing sentinel. The first live harvest outcome will be receipted when
+it lands; this entry claims installation and first fire only.

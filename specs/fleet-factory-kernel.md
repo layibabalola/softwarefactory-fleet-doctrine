@@ -194,6 +194,12 @@ the spec is written for, because the kernel is written for all of them. Decide b
   owner, rules on them and writes that filing's `.dispositions.md` with an `arbiter: <project or owner>` line; the
   steward never writes it.
 
+**Harvest runs continuously.** The steward automates the harvest; a harvest that waits for someone to remember is not
+one. The reference implementation is Conjugal `coordination/harvest/`. A scheduled gate spawns no model unless a filing
+waits. A deterministic runner prepares worktrees, census-checks every changed path, lands and publishes by replaying
+onto the fresh tip, and proves `HARVESTED`. The session only edits files. Owner direction, 2026-09-14: "I want harvest
+to be automated continuously."
+
 **Keep it small.** A clause enters only when a BREAK or cross-profile FRICTION shows a missing invariant. A clause leaves only
 when independently reviewed evidence shows it cannot arise in any supported profile, or when it has no observable.
 UNEXERCISED windows and quiet periods never count toward removal. The word cap in the header does not rise.

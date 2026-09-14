@@ -99,6 +99,17 @@ Skipping this is the failure that ends the loop. A project that files findings i
 files once. The cost of a disposition line is trivial next to the cost of the fleet going quiet,
 and a rejection with a stated reason is worth more to the filer than an adoption without one.
 
+## 5b. Automate it
+
+A subject owner should not run this prompt by hand; filings arrive at any hour. Conjugal's continuous steward
+(`C:\code\Conjugal\coordination\harvest\README.md`; Conjugal commit f03390c3f) is one implementation. A scheduled
+gate spawns a model only when `harvest-status.py` shows an eligible filing (it waits 30 minutes after the filing's last
+commit). The session edits only worktrees. A deterministic runner refuses any path outside the subject's allowlist,
+any non-append edit to an append-only file, and dispositions citing the wrong blob. It publishes by replaying onto the
+fresh tip and counts success only when `harvest-status.py` reports `HARVESTED`. Quota refusals park until reset;
+failures back off; two failures on the same open set raise `ATTENTION`. Portable parts: the gate, runner and census
+shape. Local parts: paths, cadence and posture.
+
 ## 6. Report
 
 `python tools/harvest-status.py <subject>` exiting 0 after your push is the completion proof —
