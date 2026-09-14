@@ -8,6 +8,36 @@ Run it again whenever you have been away; step 4 is the part that pays off on ev
 
 ---
 
+## 0. Account parity — FIRST, before anything that reads a provider
+
+Accounts cycle without warning. When one does, the desktop surface and the CLI credential store
+do not necessarily move together, and the usual trigger for repairing that is the phrase "resume
+our work" — which this prompt is not.
+
+```bash
+python tools/check-cli-auth.py          # or the project's equivalent; expect "MATCHED"
+codex login status                      # NOT `codex auth status` -- no such subcommand
+```
+
+If the surfaces disagree, repair before continuing: `specs/cli-credential-synchronization.md`
+describes the SessionStart hook and `-Auto` wizard that re-authenticate the CLI to match the
+desktop. If no hook is installed on this box, re-authenticate manually and say so in the report.
+
+**This check comes before §2's probe, and the order is not cosmetic.** A CLI pointed at a
+depleted or mismatched account fails *every* model challenge in exactly the way a genuinely
+absent model fails. The probe would then write `available: false` for a whole family, dispatch
+would route to a degraded posture or refuse outright, and the review would run wrong — with an
+auth cause and a capability-shaped symptom. The probe's guard refuses to write when *nothing*
+verifies, but a partially depleted account produces a plausible inventory that is simply false.
+Verify identity before deriving capability from it.
+
+**Derived artifacts do not follow a rotation on their own.** Measured on this machine
+2026-09-13: the two auth surfaces rotated and re-aligned correctly, while
+`.claude/machine-inventory.yaml` still carried the previous account in `managed_by` — an
+inventory probed under one identity and attributed to another. So record the identity a derived
+artifact was produced under, and treat a mismatch against the current account as stale rather
+than as fact.
+
 ## 1. Sync the bus
 
 Find the doctrine checkout: a binding in this project's `CLAUDE.md`, else a pointer in `docs/`,

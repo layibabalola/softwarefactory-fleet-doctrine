@@ -2319,3 +2319,34 @@ Filing produced by the first arm: `adjudications/approach-a-design/DropBox-Vault
 findings, each naming a Cloudvore path, tool or measured number. Its `providers:` line reads
 `claude-only` because zero Codex lanes were dispatched — computed, per R1-R5 candidate rule R3,
 not asserted.
+
+### Cloudvore, 2026-09-13 — account parity must precede capability probing
+
+`specs/cli-credential-synchronization.md` already covers re-aligning the CLI credential store to
+the desktop account after a rotation, triggered at SessionStart. Two gaps found while wiring the
+bootstrap flow, neither of which that spec is wrong about — both are about what sits *around* it.
+
+**Ordering.** `bootstrap/PROMPT-A` now runs the parity check as step 0, before the inventory
+probe, because a CLI pointed at a depleted or mismatched account fails every model challenge in
+exactly the way a genuinely absent model fails. The probe would write `available: false` for a
+whole family, dispatch would route to a degraded posture or refuse, and the review would run
+wrong — an auth cause presenting as a capability symptom. The probe's existing guard refuses to
+write when *nothing* verifies, but a partially depleted account produces a plausible inventory
+that is simply false. Verify identity before deriving capability from it.
+
+**Derived artifacts do not follow a rotation.** Measured here today: the account cycled
+mid-session, `check-cli-auth.py` reported `MATCHED` with both surfaces on the new account —
+the alignment worked — and `.claude/machine-inventory.yaml` still carried the *previous* account
+in `managed_by`. An inventory probed under one identity, attributed to another, with nothing in
+the file able to say so. Rotation repair is scoped to the credential surfaces; everything
+derived under the old identity stays behind, silently correct-looking.
+
+Fix: `tools/probe-machine-inventory.sh` now stamps `probed_under` (from `PROBE_IDENTITY`). A
+capability table is only true for the identity that probed it, so a reader whose account differs
+from that line is holding a stale file — and without the line there is nothing to compare
+against. `unknown` is recorded honestly when no identity was supplied, which at least says
+staleness is undetectable rather than implying freshness.
+
+Noted, not acted on: that spec carries `Status: Adopted` on the authority of a 2/3 swarm vote
+with no `RULINGS.md` entry — the same self-ratification shape reported earlier today among the
+five contradictions in this bus's ratification path.

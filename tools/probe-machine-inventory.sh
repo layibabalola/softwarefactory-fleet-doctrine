@@ -62,6 +62,13 @@ emit_family() {  # family  auth_probe  invoke
   echo "# challenge on this machine. Commented ids did not; they are not dispatchable."
   echo "# Re-run after a CLI upgrade or account rotation."
   echo "generated_at: $(date -Iseconds)"
+  # Stamp the identity this inventory was derived UNDER. Accounts cycle without warning, and a
+  # rotation re-aligns the auth surfaces while leaving artifacts derived under the old account
+  # in place -- measured 2026-09-13, when both surfaces rotated correctly and the inventory
+  # still named the previous account. A capability table is only true for the identity that
+  # probed it: a later reader whose account differs from this line is holding a stale file,
+  # and without the line there is nothing to compare against.
+  echo "probed_under: ${PROBE_IDENTITY:-unknown}   # pass PROBE_IDENTITY=<account or fingerprint>; 'unknown' means staleness cannot be detected"
   echo "host_cores: ${NUMBER_OF_PROCESSORS:-$(nproc 2>/dev/null || echo unknown)}"
   echo "agents_max: $(( ${NUMBER_OF_PROCESSORS:-4} / 2 ))"
   echo "providers:"
