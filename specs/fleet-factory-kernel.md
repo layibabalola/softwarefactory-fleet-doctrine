@@ -1,6 +1,6 @@
 # Fleet factory kernel — the universal core every project's factory runs on
 
-**Status: `CANDIDATE r1 — DOGFOODING`.** Submitted 2026-09-14 on the owner's instruction (Layi): *"Execute recommended
+**Status: `CANDIDATE r2 — DOGFOODING`.** Submitted 2026-09-14 on the owner's instruction (Layi): *"Execute recommended
 and submit to doctrine repo so we can finalize on factory spec and start dogfooding it in each project and giving
 feedback so it can self improve."* This is a submission for dogfooding, not a ratification. It grants no runtime,
 adoption or launch authority. A project is bound by it only once it records `ADOPT` (Law 1). RULINGS R1–R9 stay binding
@@ -49,8 +49,8 @@ is its producer, and an adjudicator never supplies the key it is adjudicating.
 
 ### K2 — Authority is a written register
 Each project keeps one register of what needs the owner and what does not. Everything unlisted is autonomous. Escalation
-goes to the owner only for deadlock, a novel class, high risk, or an irreversible act. A register entry beats a memory
-note, a charter or a handoff.
+goes to the owner for decisions reserved by that register; otherwise only for deadlock, a novel class, high risk, or an
+irreversible act. A register entry beats a memory note, a charter or a handoff.
 *Doctrine:* `specs/autonomous-decision-making-with-adversarial-swarms.md` ("IN FORCE (fleet-wide autonomy standard)").
 **Overlap:** `specs/autonomous-swarm-adjudication.md` ("Adopted… Ratification: Pending"). Both describe this; the kernel
 requires the register, not either mechanism.
@@ -143,7 +143,8 @@ Kernel text must not assume:
 - an automated test suite;
 - a single host;
 - a model as the verifier;
-- a software delivery target.
+- a software delivery target;
+- a project tree that fleet tooling may write into.
 
 Any sentence that does belongs in a profile. When a new domain joins, its first project checks every clause against
 this list before filing.
@@ -205,10 +206,12 @@ when independently reviewed evidence shows it cannot arise in any supported prof
 UNEXERCISED windows and quiet periods never count toward removal. The word cap in the header does not rise.
 
 **Versions.** The kernel's `r<n>` and each profile's own `r<n>` increment when that file's text changes. Filings name
-the revisions they ran. The harvest tool marks a filing `STALE` when its author changes it and reads its `kernel:`,
-`profile:`, `subjects:` and `health:` lines. Each harvest appends one row per filing to
-`adjudications/factory-kernel/HARVESTS.md` (steward-written): date, filing, blob, kernel and profile revisions,
-subjects, verdict counts, unresolved BREAKs. The finalisation rule reads that ledger, never a single filing.
+the revisions they ran. A harvest is one completed adjudication of a recorded eligible filing set, not a poll or retry.
+For finalisation, unchanged means identical kernel and participating-profile content digests as well as revisions. The
+harvest tool marks a filing `STALE` when its author changes it and reads its `kernel:`, `profile:`, `subjects:` and
+`health:` lines. Each harvest appends one row per filing to `adjudications/factory-kernel/HARVESTS.md`
+(steward-written): date, filing, blob, kernel and profile revisions, subjects, verdict counts, unresolved BREAKs. The
+finalisation rule reads that ledger, never a single filing.
 
 **Kernel v1 is FINAL when all four hold:**
 1. At least five member projects have filed, each covering at least one real subject end-to-end with receipts.
@@ -230,7 +233,7 @@ Derived 2026-09-14 from each project's own spec (or repo instructions where it h
 | conjugal | code | high | "fresh clean-clone acceptance, guarded full suite, and clean distinct-provider acceptance key" |
 | salesforce-tools | code (+ mobile for its KMP lane) | high | `build.ps1` publish, self-sign, ~230-check selftest, deploy |
 | adversarialllm | code | high | product commits in `src`/`tests` |
-| agent-bridge | code (fleet tooling) | low | process invariants; no product test bar found |
+| agent-bridge | code (fleet tooling and product) | high | `AGENTS.md:56`: 471 tests pass with `%LOCALAPPDATA%\Temp`; `C:\WINDOWS\TEMP` gives 467 passed / 4 failed |
 | adobe-ingester | code (automation probe) | medium | "a real, user-present, headed Adobe login" (human gate) |
 | airmypc | code + hardware-in-loop release gate | medium | "live hardware; the one attended sitting" |
 | magic-lantern_dannephoto (no bus spec yet; mapped from its repo's CLAUDE.md) | hardware-in-loop | high | "Hardware evidence comes only from the owner's camera" |
