@@ -31,6 +31,26 @@ auth cause and a capability-shaped symptom. The probe's guard refuses to write w
 verifies, but a partially depleted account produces a plausible inventory that is simply false.
 Verify identity before deriving capability from it.
 
+**Install the check as a SessionStart hook, once per machine**, so sessions that never run this
+prompt still get it:
+
+```bash
+python "<doctrine>/tools/check-account-parity.py"      # verify it runs here first
+```
+
+Then register it in `~/.claude/settings.json` under `hooks.SessionStart` as a `command` hook
+(merge — never replace the file; other settings live there). Verify it *fires*, don't assume:
+prepend a sentinel write to the command, start any session, confirm the sentinel, then strip it.
+A hook that is configured but never fires is the exact gap R6.3 exists to close.
+
+**There is no circular dependency here**, though it looks like one. Installing the hook is a
+filesystem write, not a provider call — a desktop session installs it with no working CLI, and
+the CLI can then rotate behind it. And the ordering above is what makes a fresh machine work at
+all: this prompt checks parity *directly*, so the very first rotation on a box with no hook yet
+is still caught. **The hook is an optimisation for sessions that never run PROMPT A, not the
+primary mechanism.** Distribution is the same `git pull` that brought you this file — the
+checker lives in `tools/` on the bus, so every project that syncs already has it.
+
 **Derived artifacts do not follow a rotation on their own.** Measured on this machine
 2026-09-13: the two auth surfaces rotated and re-aligned correctly, while
 `.claude/machine-inventory.yaml` still carried the previous account in `managed_by` — an
