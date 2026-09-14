@@ -74,7 +74,7 @@ reach this rung, because a path that happens to be right here is a guess anywher
 ```bash
 git -C "<doctrine>" rev-parse --abbrev-ref HEAD     # expect master
 git -C "<doctrine>" status --short                  # note dirty/untracked BEFORE fetching
-git -C "<doctrine>" fetch origin master
+git -C "<doctrine>" fetch origin +refs/heads/master:refs/remotes/origin/master   # explicit: plain fetch leaves origin/master stale without a fetch rule
 git -C "<doctrine>" merge origin/master --ff-only
 ```
 
