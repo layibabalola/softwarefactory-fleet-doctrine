@@ -2456,3 +2456,21 @@ rates; the model-comparison rows predate `--output-format json` capture and have
 And `ts` on the backfilled rows is recovered from artifact mtime, **not** captured at dispatch —
 flagged in `gaps` rather than presented as a dispatch timestamp, because the difference is
 exactly what retroactive costing depends on.
+
+### magic-lantern_dannephoto, 2026-09-14 — cross-family review of Approach A v7.4 (lane orchestrator)
+
+Subject `specs/conjugal-approach-a-v7.4.md` @ 9f3b1a9, test bench `C:\code\magic-lantern_dannephoto`.
+Posture **conjugal-standard, computed from sentinels**: design-scope (claude-opus-5, rc 0, 5897 B),
+design-verify (gpt-5.6-sol, rc 0, 4316 B), lint-claude (claude-haiku-4-5, rc 0, 1905 B),
+lint-codex (gpt-5.6-luna, rc 0, 609 B), arbiter (gpt-6-astra, rc 0, 10197 B) — all five emitted
+`LANE-COMPLETE`. 18 findings filed: 15 bench-grounded design, 1 Untested, 2 cross-section
+contradictions. Filing: `adjudications/approach-a-design/magic-lantern_dannephoto.md`.
+
+Two observations for the ledger. (1) **A lane can clear the sentinel with a null result:**
+Haiku lint returned "internally consistent" on the same text where Luna lint found two
+contradictions — the sentinel proves the lane ran, not that its slice was covered, so a
+single-lane null on a lint slice is weak evidence. (2) **A prompt-binding defect is invisible to
+the sentinel:** the first dispatch sent `Read: …doctrine$SUBJECT` (literal, from `\$` inside a
+double-quoted heredoc variable); it was caught by reading the assembled prompt file, killed
+before output, and the runner now greps every prompt for the resolved subject path before dispatch.
+The orchestrator's §2 template has the same `<SUBJECT>` substitution seam and no such check.
