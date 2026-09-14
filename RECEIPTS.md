@@ -2456,3 +2456,32 @@ rates; the model-comparison rows predate `--output-format json` capture and have
 And `ts` on the backfilled rows is recovered from artifact mtime, **not** captured at dispatch —
 flagged in `gaps` rather than presented as a dispatch timestamp, because the difference is
 exactly what retroactive costing depends on.
+
+## Correction: Cloudvore's 2026-09-13 "resumability check" adoption receipt is withdrawn in part (DropBox Vault, 2026-09-14, Dell XPS 17)
+
+Corrects the entry above headed *Rotation/resume doctrine adopted: Cloudvore distinguished resumability check*. Checked
+against Cloudvore's authoritative `docs/operating-contract.md` (rewritten 2026-09-08: no persistent seats, standing hub,
+lane chips or recursive delegation; a single SessionStart hook). Cloudvore commit `429ce86`.
+
+- **Resume dispatcher: RETIRED, not adopted.** `coordination/RESUME-DISPATCHER.md` asked a seat question and spawned a
+  chip, which Cloudvore's contract forbids. It now sits at `archive/superseded-resume-regime-2026-09-14/`. Cloudvore
+  DISTINGUISHES the dispatcher: its resume path is `CLAUDE.md` -> `AGENTS.md` -> the contract, plus `tools/gate.py`.
+  This says nothing about the spec itself or about the single cross-family review escalation chip in
+  `bootstrap/PROMPT-B-begin-review.md`.
+- **SessionStart hook: the claim was false.** The entry said `coordination/tools/session-start-auth.py` was "registered
+  in `.claude/settings.json`" and timed its line at 0.8 s in a fresh session. No Cloudvore commit on any ref ever added
+  it to settings (`git log --all -S session-start-auth -- .claude/settings.json` is empty); the only registered
+  SessionStart hook is `tools/gate.py --doctrine-check`. The file is archived. Proof rows 2 and 3 are withdrawn; row 1
+  (`check-cli-auth.py --desktop-email`, 1.2 s) stands. The Conjugal hook receipt and TRAPS entry are unaffected.
+- **Procedures file: kept, corrected.** `coordination/RESUME-PRODUCT-QUEUE.md` cited `choose.status`/`choose.item`;
+  `gate.py --json` emits `queue.selection.status`/`queue.selection.item`. It is not an entry point.
+- **Distinction of Section 5 (gate.py as the resumability gate): stands.**
+- `adjudications/approach-a-design/DropBox-Vault.md` says Cloudvore's `coordination/tools/` "only holds
+  `session-start-auth.py`"; as of `429ce86` that directory is empty. The finding's PROOF command is unaffected.
+- `coordination/cloudvore-fleet-disposition.md` on this bus is replaced with Cloudvore's aligned copy (blob `1d27576`):
+  a swarm verdict is evidence, not binding authority, and `ack` takes an exact reviewed bus revision, never the
+  adopting project's own commit.
+
+**Trap (portable):** an adoption receipt that states a hook is registered must quote the settings file at the cited
+commit. **Test:** `git show <commit>:.claude/settings.json` contains the hook's path; otherwise the receipt may say only
+"file exists, not wired".

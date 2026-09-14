@@ -1,8 +1,14 @@
 # Cloudvore Fleet Doctrine Disposition
 
 **Published:** 2026-09-12 (Tier 1 adoption — autonomous swarm verdict, 3/3 lanes unanimous)  
-**Authority:** Cloudvore factory (operating-contract.md § autonomous swarm adjudication)  
+**Authority:** Cloudvore factory under `docs/operating-contract.md` (§Deciding what is next; §Doctrine disposition)  
 **Fleet bus:** softwarefactory-fleet-doctrine (via doctrine-sync.mjs)
+
+> **Aligned 2026-09-14 with [`docs/operating-contract.md`](../docs/operating-contract.md).** The
+> contract has no "§ autonomous swarm adjudication": a swarm verdict is evidence the integrator
+> re-derives, not binding authority, and `ack` takes only an exact reviewed **bus** revision. The
+> resume-system design this table cited is archived at `archive/superseded-resume-regime-2026-09-14/`.
+> "Lanes" below means reviewer briefs in one bounded swarm, not seats. Original text at 973d65c.
 
 ---
 
@@ -29,8 +35,8 @@
 - **Authority:** Cloudvore operates by this rule already; formalizing brings fleet alignment
 
 ### 2. **autonomous-swarm-adjudication.md**
-- **What:** Establish swarm consensus as binding authority without owner gate
-- **Cloudvore status:** Implemented per operating-contract.md; used for V02D, doctrine adoption, now resume adjudication
+- **What:** Establish swarm consensus as decision evidence without an owner gate
+- **Cloudvore status:** Contract form: `tools/next.py` sets `adjudicate=YES`, a cheap decorrelated swarm runs, and the integrator re-derives every load-bearing claim — the verdict is evidence, not instruction (`docs/operating-contract-adjudication.md`). Used for V02D and doctrine adoption. The resume-adjudication use is retired.
 - **Adoption:** Create review/swarm-decisions.md audit ledger; wire ledger-append.py into swarm-dispatch pipeline
 - **Effort:** LOW (spec already in place; ledger formalization ongoing)
 - **Authority:** Cloudvore operates autonomously; doctrine codifies existing practice
@@ -44,7 +50,7 @@
 
 ### 4. **cli-credential-rotation-coexistence.md**
 - **What:** Handle simultaneous Pattern A (SessionStart drift detection) and Pattern B (async auth)
-- **Cloudvore status:** Experienced silent rotation 2026-09-09; now designing resume system (docs/resume-*.md)
+- **Cloudvore status:** Experienced silent rotation 2026-09-09; the resume-system design drafted in response is archived (conflicts with the contract); rotation is covered by `tools/rotation-ready.py --hook` and `gate.py` `landed=`
 - **Adoption:** Create .claude/hooks/parity-sessionstart.ps1 for drift detection
 - **Effort:** MEDIUM (1-2 hours for hook + wizard)
 - **Timeline:** Tier 2 (this week, after Tier 1 complete)
@@ -104,19 +110,16 @@
 ## Publication Plan
 
 ### Publication 1: This Table + P01/P02 Test Triples (Today)
-**Via:** `node tools/doctrine-sync.mjs ack --project cloudvore --commit <reviewed-SHA>`
+**Via:** publication closes with `export-check --source-commit <SHA> --publication-commit <SHA>` recorded in BACKLOG (contract §Doctrine disposition). `ack --commit` acknowledges an exact reviewed bus revision only — never this project's own commit.
 
 **Artifacts:**
 - This file (coordination/cloudvore-fleet-disposition.md)
 - docs/p01-p02-reusable-test-triples.md (test triple patterns)
 - review/swarm-decisions.md ledger (audit trail)
 
-**Command:**
+**Command (acknowledging a reviewed bus revision):**
 ```bash
-node tools/doctrine-sync.mjs ack \
-  --project cloudvore \
-  --consumer "C:\code\DropBox Vault" \
-  --commit <SHA-of-tier-1-completion>
+node tools/doctrine-sync.mjs ack --project cloudvore --consumer "C:\code\DropBox Vault" --commit <reviewed-bus-SHA>
 ```
 
 ### Publication 2: Tier 2 Evidence (After Implementation)
@@ -131,10 +134,10 @@ node tools/doctrine-sync.mjs ack \
 
 ## Cloudvore Adoption Authority
 
-- **Decision:** Autonomous swarm consensus (Scope/Coordination/Implementation lanes, 3/3 unanimous)
+- **Decision:** Bounded swarm (Scope/Coordination/Implementation reviewer briefs, 3/3 unanimous) as evidence; integrator decision recorded
 - **Recorded:** docs/doctrine-adoption-verdict-2026-09-12.md + review/swarm-decisions.md
-- **Authority chain:** CLAUDE.md → AGENTS.md → operating-contract.md § autonomous swarm adjudication
-- **No owner gate required** (per owner 2026-09-06 ruling: owner out of the loop)
+- **Authority chain:** CLAUDE.md → AGENTS.md → docs/operating-contract.md §Deciding what is next and §Doctrine disposition (adoption requires the exact reviewed revision and publication evidence)
+- **No owner gate required** for doctrine adoption; owner-only decisions stay as listed in `knowledge/owner-gated-decisions.md`
 
 ---
 
@@ -164,7 +167,7 @@ node tools/doctrine-sync.mjs ack \
 ---
 
 **Status:** READY FOR PUBLICATION  
-**Next step:** Execute doctrine-sync.mjs ack with this commit SHA  
+**Next step:** Close publication with `export-check` against exact source and bus commits (not `ack` on this commit)  
 **Timeline:** 2026-09-12 (today)  
 **Owner notification:** Not required (autonomous per operating-contract.md)
 
