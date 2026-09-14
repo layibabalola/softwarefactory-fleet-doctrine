@@ -36,7 +36,7 @@ is a FAIL, not a pass** — it means the sync never ran, which is indistinguisha
 doctrine unless you insist on the receipt.
 
 ```bash
-python tools/check-cli-auth.py      # Claude family
+python "<doctrine>/tools/check-account-parity.py"   # Claude family (there is no check-cli-auth.py)
 codex login status                  # Codex family  (NOT `codex auth status` — no such subcommand)
 git -C "$REPO" rev-parse --abbrev-ref HEAD
 git -C "$REPO" status --short -- <SUBJECT paths only>
@@ -56,6 +56,79 @@ id and reports clean.
 Take the `-m` / `--model` values from whichever file answered. **Do not type a model id from
 memory or from this prompt** — the inventory's ids were confirmed by live sentinel challenge,
 and a remembered one has no such standing.
+
+### 1b. Self-heal preflight — what the environment actually is, and what was repaired to get there
+
+Some environment faults are recoverable and the tooling repairs them; a repair that is not
+*recorded* is indistinguishable from a machine that never had the fault, and the next run on a
+different box inherits a conclusion that was never true there. So before routing:
+
+- **Run the tooling's own environment check** and read `$RP_OUT/environment.json` — bash path and
+  version, uname, host, python, the **resolved invocation and version for each CLI family**,
+  whether the path contains a space, effective `core.autocrlf` in `RP_BENCH` and `RP_REPO`, bench
+  HEAD, subject blob sha, the git worktree layout of each tree (`--git-common-dir` /
+  `--show-toplevel`, and whether it is a linked worktree), the **per-lane dispatch record**, the
+  inventory file it came from and that inventory's `probed_under`, and the repairs applied.
+- **Read the dispatch record as four separate facts, because it records four.** `lanes[]` in
+  `environment.json` carries `planned`, `dispatched`, `retried` and `completed_with_sentinel`
+  per lane, plus `model_planned`, the models actually launched, and the timestamped events
+  behind them (`dispatch-events.tsv` in `RP_OUT`). `planned` is roles.json — it is true of every
+  lane in a dry run, in a blocked stage, and in a family whose CLI never resolved. Only
+  `dispatched` means a process was launched, and only `completed_with_sentinel` means the lane
+  answered. **Never attribute a finding to a model on the strength of `planned`.** An earlier
+  version of this file published a single `models_dispatched` list built by walking roles.json,
+  so every lane read as dispatched at its planned model whether or not anything ran.
+- **Read the inventory's `repairs:` list** as well — a repair applied while probing the machine
+  and a repair applied during this run are different events, and the filing needs both.
+- **A family marked unavailable must carry a cause.** `available: false` with no fault code is
+  not a measurement, it is an absence of one; treat it as UNKNOWN and re-probe rather than
+  routing on it. A fault whose repair reports `verified=no` is *also* a named cause — say which.
+- **A repaired run says so in the filing.** Every repair goes in `## Provenance`: what fault, what
+  repair, verified or not. A run that needed a repair to happen at all is not the same evidence as
+  a run on a clean box, and a reader who cannot tell them apart will generalise the wrong one.
+- **A path containing a space is supported, not a caveat.** If a run from such a path behaves
+  differently from one without, that is a defect in the tooling, not a constraint on the
+  operator — report it rather than relocating the repo to work around it.
+- **Run the offline gate before the first dispatch of a session on a new box:**
+  `bash tools/review-posture/tests/run-tests.sh` (no network, no model calls, no credentials).
+  It is the same command `tools/review-posture/README.md` names. If it fails, the environment is
+  the finding; do not spend a provider call to rediscover it.
+
+**Two distinctions this preflight exists to keep straight**, because a 2026-09-14 MLV-App report
+blurred both:
+
+- **SUBJECT vs BENCH are not interchangeable.** The posture reviews the **subject document**; the
+  **bench** is the repo whose measured behaviour *grounds* findings about it. A finding says "this
+  defect in the subject manifests here, on this bench, thus". So **replication means the same
+  posture over the same subject blob — not the same findings.** Two benches that agree on every
+  finding have told you something about the benches, not about the subject; two that disagree
+  have not failed to replicate. Record the subject blob sha and the bench HEAD separately, and
+  never describe a bench measurement as a property of the subject.
+- **Cross-family unavailability is a DEGRADED posture with a named cause — never silently
+  one-family.** If a family cannot be seated, the run continues only as an explicitly degraded
+  posture that carries *why*: the fault code, the attempted repair, and its verification result.
+  "We ran Claude lanes" is a description; "Codex unavailable: shim interpreter is a placeholder
+  file, repair verified=no" is a cause. A one-family run whose filing does not name the cause is
+  indistinguishable from a one-family machine, and that is how an auth-shaped symptom with a PATH
+  cause survives into someone else's inventory.
+
+**A DEGRADED posture needs a NEXT ACTION, not just a label.** Naming the cause tells the reader
+what happened; it does not tell the operator what to do, and a filing that stops at the label
+leaves the same box broken for the next run. One imperative per cause class — take it before
+filing, and record which one you took:
+
+| cause class | how you know | do this |
+|---|---|---|
+| **PATH / tooling fault** — `fault=shim-interpreter-not-executable`, `rc126`, `rc127`, `not-on-path`, `repair=unresolved` | `environment.json` `clis.<family>.fault` is set and `verified` is `no`; inventory says `CLI-NOT-MEASURED` | **Re-run `tools/probe-machine-inventory.sh` and read its `repairs:` block.** If self-heal now verifies the family, re-run the posture — this is a recoverable fault and a degraded filing over it is a wasted run. If it still does not verify, file DEGRADED naming the fault code and the rung that failed. Never re-file the same PATH fault as a capability statement. |
+| **UNKNOWN provider-call failure** — CLI resolves and answers `--version`, every model challenge fails | inventory `unavailable_cause: "UNKNOWN-PROVIDER-CALL-FAILURE …"`, plus its `challenge_evidence:` block (per-model `rc`, `output_empty`, `output_bytes`, redacted first line) | **Do not call this an auth failure.** The probe collects no auth evidence — it never reads a credential and never calls a login-status surface — and this same shape comes from PATH-at-exec, network/proxy, a provider outage, a config or sandbox denial, or a retired model id. In order: **(1) re-run the probe** (a transient failure is indistinguishable from a persistent one on a single sample); **(2) then a READ-ONLY auth check** (`python tools/check-account-parity.py`; `codex login status` where it is not owner-gated) — and only if that check itself reports a problem may the filing say "auth"; **(3) then capacity/quota.** Read `challenge_evidence` before doing any of it: an `rc` of 126/127 with empty output is a launcher fault wearing this costume. Never run `claude auth login\|logout` or `codex login` yourself. If a re-auth does turn out to be needed, the owner does it, and you re-probe and record the new `probed_under` fingerprint — an inventory derived under a different identity is a stale file, not a capability. |
+| **Capacity** — challenges succeed intermittently, or lanes return rate-limit/quota errors | lane `.log` files carry the provider's own limit message; `--version` is fine | **Either file an explicitly degraded posture with the capacity cause, or wait and re-run the whole posture.** Do not mix: a run half-completed before a limit and half after is not one measurement. State which you chose. |
+| **Unmeasured** — `available: false` with no fault code, or a family absent from the inventory entirely | no `unavailable_cause`, no `repairs:` entry | **Re-probe.** An absence of a measurement is not a measurement; treat the family as unmeasured and route on nothing until the probe says something. |
+
+The three classes the probe itself can distinguish, and nothing more: **PATH fault** (the CLI never
+ran — repair the launcher); **CLI-resolved-but-challenge-failed** (`UNKNOWN-PROVIDER-CALL-FAILURE` —
+re-probe, *then* a read-only auth check, *then* capacity); **verified** (the model answered the
+sentinel and is dispatchable). "Auth" is not one of them, because nothing in the probe measures it.
+**Never tell an operator "auth" unless something actually proved auth.**
 
 Route per `dispatch-trigger-standard.md`:
 
@@ -104,10 +177,36 @@ tallies the classifier at 2-of-3 from strict `HEADING: value` lines only (anythi
 as unparsed, never guessed), and ends with `posture:` and `cross_family:` lines computed from the
 sentinels against `roles.json`. It exits 1 when the posture is PARTIAL.
 
-`--retry-missing` re-dispatches only the lanes that did not clear the sentinel, such as one arbiter that degenerated into a loop and exited 0 (TRAPS, 2026-09-14), instead of re-running every seat. Disclose retries in the filing.
+`--retry-missing` re-dispatches only the lanes that did not clear the sentinel, such as one arbiter that degenerated into a loop and exited 0 (TRAPS, 2026-09-14), instead of re-running every seat. Disclose retries in the filing. It reuses the lanes it keeps, so it is bound by the same `bindings.env` check as `--from`: a `--retry-missing` run over a changed subject, bench or tool refuses before it re-dispatches anything.
 
-`--from B|C|D` reuses earlier stages already in `RP_OUT`. Do that only after re-measuring that the
-subject blob and the bench HEAD are unchanged, and disclose the reuse in the filing.
+`--from B|C|D` reuses earlier stages already in `RP_OUT`, and **the tool now checks that rather than
+asking you to**. Every dispatched stage writes `bindings.env` (subject path and blob sha, bench HEAD
+**and bench working-tree digest**, subject-repo HEAD **and working-tree digest**, rubric id and
+rubric source blob, the git blobs of `run.sh` and `review_posture.py`, and which stages actually
+dispatched); a `--from` run re-derives all of them
+first and **refuses, naming each mismatch**, before it generates, clears or dispatches anything. A
+missing `bindings.env` is equally a refusal — "no record" is not "match". There is **no override
+flag**, deliberately: reuse over a changed subject would print a COMPLETE posture assembled from
+lanes that reviewed a document that no longer exists. Still disclose the reuse in the filing.
+
+**The working-tree digests are there because a HEAD is not a tree state.** An uncommitted edit to a
+tracked bench file, or a new untracked file the lanes read, leaves `bench_head` byte-identical while
+changing what was actually reviewed — so the digest covers the tracked diff vs HEAD plus every
+untracked non-ignored file's content, and a refusal names **the tree and its path**, telling you the
+difference is uncommitted rather than sending you to look at commits. The digest covers the index
+too (`git diff --cached HEAD`), and it **fails closed**: if it cannot be computed the value is
+`unknown`, and `unknown` on either side of a worktree, HEAD or blob binding is a refusal that says
+`could not be computed` — never a match. An `RP_OUT` nested inside the tree is excluded. Both
+digests are published in `environment.json` under `git.worktree_digest`, so a filing can state
+whether it was measured against a clean tree.
+
+**Ignored content is disclosed, not enforced — so quote the disclosure.** A live bench rewrites
+ignored state on its own (this fleet's own heartbeat rewrites a snapshot every ten minutes), so
+binding it would refuse nearly every legitimate reuse. Instead every accepted `--from` /
+`--retry-missing` prints, records in `environment.json` (`invocation.reuse_disclosure`), and appends
+to the posture line: `REUSE: stages <list> reused; ignored content NOT bound -- lanes may have cited
+it`. **Carry that line into the filing verbatim whenever you quote a reused posture** — a reused
+posture is not a pristine one, and the posture line is what a reader takes away.
 
 **On Windows, confirm which `bash` that is.** From PowerShell, `bash` can resolve to **WSL**, not
 Git Bash — and WSL has its own filesystem and `PATH`, so it cannot see a Windows-installed
@@ -174,7 +273,8 @@ rubric_id: <from the tool>                   panel: <composite> over <n>/8 seats
 ## Arbiter losers         (rejected, with counterexample — the fleet reads these before re-filing)
 ## Panel                  (score table, verified blocker quotes, any seat disagreement you re-derived)
 ## Classifier consensus   (per finding TEXT/DESIGN, GROUNDED, must-fix votes; STOPPING; ceilings; unparsed)
-## Provenance             (every lane: stage, model, rc, bytes, sentinel; reuse disclosed; what you did not re-measure)
+## Provenance             (every lane: stage, model, rc, bytes, sentinel; environment.json digest; every repair
+                          (fault, repair, verified); any SENTINEL_RETRY; reuse disclosed; what you did not re-measure)
 ```
 
 **Copy the `posture:` line from the tool; never type it.** It names the posture only when every lane

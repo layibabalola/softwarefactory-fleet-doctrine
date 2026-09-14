@@ -4,7 +4,7 @@ Each test names the failure it pins (magic-lantern_dannephoto, 2026-09-14): a re
 that ran 5 of 17 lanes; a prompt bound to the literal text `$SUBJECT`; a permissive parser that read
 "78.73 + 1.5 = 80.23" as a ceiling of 78.73.
 """
-import importlib.util, json, os, pathlib, re, shutil, subprocess, tempfile, unittest
+import importlib.util, json, os, pathlib, re, shutil, subprocess, sys, tempfile, unittest
 from unittest import mock
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
@@ -162,6 +162,15 @@ class Prompts(Env):
             self.assertIn(f"output of {n}", arb, "the arbiter must read lint as well as designers")
         self.assertIn("## Losers", arb)
 
+    def test_sentinel_is_stated_before_any_data_region(self):
+        for n in ("design-scope", "design-verify", "lint-claude", "lint-codex"):
+            self.lane(n, f"output of {n}\nLANE-COMPLETE\n")
+        rp.prompts_b()
+        arb = (self.out / "arbiter.prompt").read_text(encoding="utf-8")
+        self.assertLess(arb.index(rp.SENTINEL_ASK), arb.index(rp.DATA_BEGIN),
+                        "a sentinel ask stated only after the DATA region is read as data")
+        self.assertTrue(arb.rstrip().endswith("LANE-COMPLETE"))
+
     def test_unbound_prompt_fails_closed(self):
         with self.assertRaises(SystemExit) as e:
             rp.write_prompt("x", "Read: C:\\code\\doctrine$SUBJECT")
@@ -180,15 +189,19 @@ class Prompts(Env):
         self._assert_probes_were_fakes(log)
         self._assert_nothing_dispatched(log, p)
         self.assertIn("dry-run: stage A prompts OK", p.stdout, p.stdout + p.stderr)
-        self.assertIn("posture: conjugal-standard-PARTIAL (0/17", p.stdout)
-        self.assertEqual(p.returncode, 1)
+        # A dry run dispatched nothing, so it has NOT measured a posture. R9: a posture is a
+        # measurement. It must say so and exit 0; the old PARTIAL/exit-1 read as a failed run
+        # at the first command a new member types. Non-zero is reserved for a real binding
+        # failure, which is what the *other* tests in this file pin.
+        self.assertIn("posture: NOT-MEASURED (dry-run)", p.stdout)
+        self.assertNotIn("posture: conjugal-standard", p.stdout)
+        self.assertEqual(p.returncode, 0, p.stdout + p.stderr)
         self.assertFalse(list(self.out.glob("*.rc")), "a dry run must not dispatch any lane")
 
     @unittest.skipUnless(BASH, "no non-WSL bash available")
     def test_run_sh_survives_a_checkout_path_with_space_and_bang(self):
         # airmypc 2026-09-14: the string-form PY split on `C:\!Layi Wkspc`, `eval ""` passed, 17/17 DID-NOT-RUN.
-        tool = self.tmp / "sp ace!dir" / "tools" / "review-posture"
-        shutil.copytree(TOOL, tool)
+        tool = self._copy_tool(self.tmp / "sp ace!dir")
         env, log = self._fakes()
         p = self._run(env, "--dry-run", tool=tool)
         self.assertIn("dry-run: stage A prompts OK", p.stdout, p.stdout + p.stderr)
@@ -213,15 +226,41 @@ class Prompts(Env):
             p = fake / name
             p.write_text(body, encoding="utf-8", newline="\n")
             p.chmod(0o755)
-        env = dict(os.environ, RP_REPO=str(ROOT), RP_FAKEBIN=str(fake))
+        log.unlink(missing_ok=True)
+        # HOME/APPDATA are redirected into the temp tree and CLI_NODE is pinned at a path that does
+        # not exist. Without this the repair ladder in tools/lib/cli-resolve.sh does its job too
+        # well: measured 2026-09-14 on VIRTUAL-TEN, a test whose fake `codex` exits 127 was repaired
+        # to `node <real %APPDATA%>/npm/node_modules/@openai/codex/bin/codex.js` and probed the REAL
+        # codex-cli 0.154.0. The fake `timeout` still stopped any lane from launching, so nothing was
+        # ever paid for -- but "no test can reach a paid CLI" has to hold against the repair layer
+        # too, not only against the dispatcher. The js-entrypoint rung is covered hermetically, with
+        # a fake node and a fake npm tree, in tools/review-posture/tests/test-selfheal.sh (case A1).
+        env = dict(os.environ, RP_REPO=str(ROOT), RP_FAKEBIN=str(fake),
+                   RP_PYTHON=sys.executable,
+                   HOME=str(self.tmp), USERPROFILE=str(self.tmp), APPDATA=str(self.tmp / "appdata"),
+                   CLI_NODE=str(self.tmp / "no-such-node"))
         return env, log
 
     def _run(self, env, *args, tool=None):
-        # Prepend the fakes INSIDE bash: Git Bash's launcher puts /mingw64/bin, /usr/bin and $HOME/bin ahead of an
-        # inherited PATH, so a real CLI there would shadow a fake passed in from Python (Codex sol review round 4).
-        script = 'f="$RP_FAKEBIN"; command -v cygpath >/dev/null && f=$(cygpath -u "$f"); PATH="$f:$PATH"; exec bash "$@"'
+        # Build PATH INSIDE bash, and build it from nothing: Git Bash's launcher puts /mingw64/bin,
+        # /usr/bin and $HOME/bin ahead of an inherited PATH, so a real CLI there would shadow a fake
+        # passed in from Python (Codex sol review round 4). Prepending is not enough on its own --
+        # the resolver sweeps $PATH for fallback rungs -- so the fakes come first and only the
+        # POSIX toolbox and git follow. `git` stays because run.sh's bindings are git blobs/HEADs.
+        script = ('f="$RP_FAKEBIN"; command -v cygpath >/dev/null && f=$(cygpath -u "$f")\n'
+                  'g=$(dirname "$(command -v git 2>/dev/null || echo /usr/bin/git)")\n'
+                  'PATH="$f:/usr/bin:/bin:$g"; export PATH; exec bash "$@"')
         run_sh = ((tool or TOOL) / "run.sh").as_posix()
-        return subprocess.run([BASH, "-c", script, "_", run_sh, *args], env=env, capture_output=True, text=True, timeout=180)
+        return subprocess.run([BASH, "-c", script, "_", run_sh, *args], env=env, capture_output=True, text=True, timeout=300)
+
+    def _copy_tool(self, dest_repo):
+        # run.sh sources <repo>/tools/lib/cli-resolve.sh, so a copy of the tool is only a tool if
+        # its library comes with it.
+        tool = dest_repo / "tools" / "review-posture"
+        shutil.copytree(TOOL, tool)
+        (dest_repo / "tools" / "lib").mkdir(parents=True, exist_ok=True)
+        shutil.copy2(ROOT / "tools" / "lib" / "cli-resolve.sh", dest_repo / "tools" / "lib" / "cli-resolve.sh")
+        return tool
 
     def _assert_probes_were_fakes(self, log):
         calls = log.read_text(encoding="utf-8") if log.exists() else ""
@@ -260,7 +299,13 @@ class Prompts(Env):
         (self.tmp / "inv.yaml").write_text(INVENTORY.replace("gpt-5.6-luna", "gpt-5.6-luna;touch PWNED"), encoding="utf-8")
         env, log = self._fakes()
         p = self._run(env)
-        self.assertIn("MODEL ID LINE REJECTED", p.stdout, p.stdout + p.stderr)
+        # Two layers refuse this now and the OUTER one fires first, so the assertion accepts either
+        # token: review_posture.py validates the charset in the emitter (`MALFORMED MODEL ID`), so
+        # the injected value never reaches bash at all, and run.sh keeps PR #62's parse-and-validate
+        # loop (`MODEL ID LINE REJECTED`) as the backstop for anything that does. Pinning only the
+        # inner message would have made the stronger, earlier refusal read as a regression.
+        self.assertTrue("MODEL ID LINE REJECTED" in (p.stdout + p.stderr)
+                        or "MALFORMED MODEL ID" in (p.stdout + p.stderr), p.stdout + p.stderr)
         self.assertEqual(p.returncode, 2)
         self.assertFalse((ROOT / "PWNED").exists() or (self.tmp / "PWNED").exists())
         self._assert_nothing_dispatched(log, p)
@@ -269,8 +314,7 @@ class Prompts(Env):
     def test_run_sh_resolves_every_nickname_before_any_lane_starts(self):
         # Codex sol review 2026-09-14: a roles.json nickname the inventory never defines used to exit only after
         # earlier paid lanes in the same stage had started.
-        tool = self.tmp / "tool" / "tools" / "review-posture"
-        shutil.copytree(TOOL, tool)
+        tool = self._copy_tool(self.tmp / "tool")
         roles = tool / "roles.json"
         text = roles.read_text(encoding="utf-8")
         self.assertIn('"luna"', text)
@@ -284,6 +328,14 @@ class Prompts(Env):
     @unittest.skipUnless(BASH, "no non-WSL bash available")
     def test_retry_missing_does_not_preflight_families_it_will_not_dispatch(self):
         # Codex sol review round 4: a broken Codex launcher blocked --retry-missing even when only Claude lanes were pending.
+        # SEED FIRST. `--retry-missing` reuses the lanes it keeps, so it is bound by the same
+        # bindings.env check as `--from` (S-1): sentinels this run cannot attribute to a subject,
+        # bench and tool are refused, with no override flag. Hand-writing a bindings file here would
+        # be re-implementing run.sh's own derivation inside its test, so the seed is a real run --
+        # its lanes all die at the fake `timeout`, but `write_bindings` still records stages A and B.
+        seed_env, seed_log = self._fakes()
+        seed = self._run(seed_env)
+        self.assertTrue((self.out / "bindings.env").exists(), seed.stdout + seed.stderr)
         for l in rp.lanes("A") + rp.lanes("B"):
             text = PANEL_OK.format(seat=l["name"]) if l["name"].startswith("panel-") else f"output of {l['name']}\nLANE-COMPLETE\n"
             if l["name"] != "panel-fable":
