@@ -25,8 +25,15 @@ probe() {  # family nickname id
   if [ "$fam" = claude ]; then
     timeout 120 claude -p --model "$id" < "$WORK/ask" > "$WORK/$fam.$nick" 2>&1
   else
-    timeout 180 codex exec -m "$id" -s read-only --skip-git-repo-check \
-      -o "$WORK/$fam.$nick" - < "$WORK/ask" > /dev/null 2>&1
+    # On Windows, the bash shim for codex is broken (TRAP: npm bash shim for codex).
+    # Use codex.cmd (PowerShell native) instead of codex (bash shim).
+    if [[ "$OSTYPE" == "msys" || "$OSTYPE" == "mingw"* || "$OSTYPE" == "win32" ]] || uname -s | grep -qi "MINGW"; then
+      timeout 180 codex.cmd exec -m "$id" -s read-only --skip-git-repo-check \
+        -o "$WORK/$fam.$nick" - < "$WORK/ask" > /dev/null 2>&1
+    else
+      timeout 180 codex exec -m "$id" -s read-only --skip-git-repo-check \
+        -o "$WORK/$fam.$nick" - < "$WORK/ask" > /dev/null 2>&1
+    fi
   fi
   # Anchored, whole-line match. An unanchored grep accepts the token wherever it appears --
   # including inside an echoed prompt or an error that quotes the instruction -- which would
