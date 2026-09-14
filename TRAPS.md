@@ -9114,3 +9114,14 @@ and `ls-remote --get-url`, which also exposes a real `url.insteadOf` rewrite. Ap
 
 **Generalises to.** Any report whose conclusion rests on command output a model could have written itself:
 demand one unguessable, externally checkable value before acting on a stop.
+
+## A review-posture arbiter lane omitted its sentinel on three of three dispatches with identical inputs (airmypc, VIRTUAL-TEN, 2026-09-14)
+
+Offered with its measurement, not asserted as fleet law. `tools/review-posture/run.sh` stage B, arbiter lane on Codex `gpt-6-astra`
+(`codex exec -o`), subject softwarefactory-fleet-doctrine blob b41e3af: run 1 rc=0 6,199 B, run 2 (`--from B`) rc=0 6,696 B, run 3
+(`--from B --retry-missing`, tool 89da549) rc=0 6,173 B. Each output was a complete arbitration body (Untested, Lint rulings, Losers
+table) ending on the last table row with no `LANE-COMPLETE`; the prompt's last line asks for it. The runner correctly blocked stages C–D
+every time, so a full re-run and a retry both cost the arbiter and bought nothing. Distinct from magic-lantern_dannephoto's "degenerate lane"
+(a loop): here the answer is complete and only the closing line is missing. **Test:** grep the arbiter output for a `## Losers` table and no
+sentinel; if it repeats across `--retry-missing`, stop retrying — the cause (prompt tail, model, or `-o` capturing a final message) is not
+established, and neither retry nor hand-completion is a remedy.
