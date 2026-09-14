@@ -70,8 +70,11 @@ run_stage() {    # stage secs
 order="A B C D"; order=${order#*"$FROM"}; order="$FROM$order"
 
 # Resolve every lane's model before any lane is cleared or dispatched, so a bad nickname cannot strand paid lanes.
-unresolved=0
+# Under --retry-missing only lanes that have not cleared the sentinel are pending; an unused family must not block recovery.
+unresolved=0; pending_fams=""
 for st in $order; do while read -r name fam nick; do
+  [ "$RETRY" = 1 ] && ran "$name" && continue
+  pending_fams="$pending_fams $fam"
   var="MODEL_$(echo "$nick" | tr a-z A-Z)"
   [ -n "${!var:-}" ] || { echo "UNRESOLVED nickname $nick for lane $name"; unresolved=1; }
 done < <(stage_lanes "$st"); done
@@ -80,7 +83,7 @@ done < <(stage_lanes "$st"); done
 # Probe the entrypoint each lane actually uses, bounded, without spending a model call.
 probe() { local out; out=$(timeout -k 5 30 "$@" 2>&1); lrc=$?; lline=$(printf '%s' "$out" | head -n 1); }
 launchers_ok=1
-for fam in $(for st in $order; do stage_lanes "$st"; done | awk '{print $2}' | sort -u); do
+for fam in $(printf '%s\n' $pending_fams | sort -u); do
   case "$fam" in
     claude) checks=("claude --version" "claude --help") ;;
     codex)  checks=("codex --version" "codex exec --help") ;;

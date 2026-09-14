@@ -176,7 +176,8 @@ class Prompts(Env):
     @unittest.skipUnless(BASH, "no non-WSL bash available")
     def test_run_sh_dry_run_dispatches_nothing(self):
         env, log = self._fakes()
-        p = subprocess.run([BASH, (TOOL / "run.sh").as_posix(), "--dry-run"], env=env, capture_output=True, text=True, timeout=120)
+        p = self._run(env, "--dry-run")
+        self._assert_probes_were_fakes(log)
         self._assert_nothing_dispatched(log, p)
         self.assertIn("dry-run: stage A prompts OK", p.stdout, p.stdout + p.stderr)
         self.assertIn("posture: conjugal-standard-PARTIAL (0/17", p.stdout)
@@ -189,7 +190,7 @@ class Prompts(Env):
         tool = self.tmp / "sp ace!dir" / "tools" / "review-posture"
         shutil.copytree(TOOL, tool)
         env, log = self._fakes()
-        p = subprocess.run([BASH, (tool / "run.sh").as_posix(), "--dry-run"], env=env, capture_output=True, text=True, timeout=120)
+        p = self._run(env, "--dry-run", tool=tool)
         self.assertIn("dry-run: stage A prompts OK", p.stdout, p.stdout + p.stderr)
         self.assertNotIn("prompt generation failed", p.stdout)
         self._assert_nothing_dispatched(log, p)
@@ -212,11 +213,20 @@ class Prompts(Env):
             p = fake / name
             p.write_text(body, encoding="utf-8", newline="\n")
             p.chmod(0o755)
-        env = dict(os.environ, RP_REPO=str(ROOT), PATH=str(fake) + os.pathsep + os.environ.get("PATH", ""))
+        env = dict(os.environ, RP_REPO=str(ROOT), RP_FAKEBIN=str(fake))
         return env, log
 
-    def _run(self, env, *args):
-        return subprocess.run([BASH, (TOOL / "run.sh").as_posix(), *args], env=env, capture_output=True, text=True, timeout=180)
+    def _run(self, env, *args, tool=None):
+        # Prepend the fakes INSIDE bash: Git Bash's launcher puts /mingw64/bin, /usr/bin and $HOME/bin ahead of an
+        # inherited PATH, so a real CLI there would shadow a fake passed in from Python (Codex sol review round 4).
+        script = 'f="$RP_FAKEBIN"; command -v cygpath >/dev/null && f=$(cygpath -u "$f"); PATH="$f:$PATH"; exec bash "$@"'
+        run_sh = ((tool or TOOL) / "run.sh").as_posix()
+        return subprocess.run([BASH, "-c", script, "_", run_sh, *args], env=env, capture_output=True, text=True, timeout=180)
+
+    def _assert_probes_were_fakes(self, log):
+        calls = log.read_text(encoding="utf-8") if log.exists() else ""
+        for probe in ("claude --version", "claude --help"):
+            self.assertIn(probe, calls, "every launcher probe must be answered by a logged fake")
 
     def _assert_nothing_dispatched(self, log, p):
         calls = log.read_text(encoding="utf-8") if log.exists() else ""
@@ -266,10 +276,24 @@ class Prompts(Env):
         self.assertIn('"luna"', text)
         roles.write_text(text.replace('"luna"', '"terra"', 1), encoding="utf-8")
         env, log = self._fakes()
-        p = subprocess.run([BASH, (tool / "run.sh").as_posix()], env=env, capture_output=True, text=True, timeout=180)
+        p = self._run(env, tool=tool)
         self.assertIn("UNRESOLVED nickname terra", p.stdout, p.stdout + p.stderr)
         self.assertEqual(p.returncode, 2)
         self._assert_nothing_dispatched(log, p)
+
+    @unittest.skipUnless(BASH, "no non-WSL bash available")
+    def test_retry_missing_does_not_preflight_families_it_will_not_dispatch(self):
+        # Codex sol review round 4: a broken Codex launcher blocked --retry-missing even when only Claude lanes were pending.
+        for l in rp.lanes("A") + rp.lanes("B"):
+            text = PANEL_OK.format(seat=l["name"]) if l["name"].startswith("panel-") else f"output of {l['name']}\nLANE-COMPLETE\n"
+            if l["name"] != "panel-fable":
+                self.lane(l["name"], text)
+        env, log = self._fakes(codex_body="echo 'node: line 1: This: command not found'; exit 127")
+        p = self._run(env, "--from", "B", "--retry-missing")
+        self.assertNotIn("LAUNCHER-BROKEN family=codex", p.stdout, p.stdout + p.stderr)
+        calls = log.read_text(encoding="utf-8") if log.exists() else ""
+        self.assertNotIn("codex", calls, "no Codex lane is pending, so Codex must be neither probed nor dispatched")
+        self.assertIn("DISPATCH", calls, "the pending Claude lane must reach the (fake) dispatcher")
 
 
 if __name__ == "__main__":
