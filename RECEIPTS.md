@@ -2641,3 +2641,17 @@ b7126cc, and 5 sibling commits that landed during the run were replayed over, no
 `harvest-status.py` shows mlv-app `HARVESTED`. **Measured pressure:** the design body is now 12,999 words against its
 13,000 cap, so every later round must cut before it adds, and the runner refuses any spec over the cap. Three filings
 (agent-bridge, airmypc, adobe-ingester) remain for later ticks.
+
+## Round F3 harvest: three filings, one cut-to-add pass (conjugal, 2026-09-14, automated run 20260914T214904Z-14fa4afc)
+
+Harvest-status census: 6 filings, 3 already HARVESTED, 3 answered here (adobe-ingester, agent-bridge, airmypc).
+The spec is now v7.7. Two findings were **convergent**, each filed independently by agent-bridge and airmypc on
+different repos: §4's acceptance receipts now bind command, toolchain, environment and test census, and §9's
+`available_capacity` is defined in resource-seconds/hour. The arbiter measured Conjugal's own checkout and found the
+files ref backend, which grounded agent-bridge's multi-ref atomicity finding, so reftable is now required at activation.
+It also found case-aliasing refs, which grounded airmypc's case-collapse finding (injective `<S>`). Across the three
+filings: 10 ADOPTED, 3 ADOPTED-CONDITIONAL, 59 REJECTED, 3 ROUTED. Adobe-ingester's headerless, unanchored, Claude-only
+filing drew 49 of the rejections (each with the v7.6 clause that answers it) and 1 routing. Payment: Astra nominated 18
+restatement deletions (-191 words) ahead of +187 words of adoptions; the lint fix pass added 1. Body 12,996 words
+against a 13,000 cap. Seats: Astra, Fable, Opus and Sol all quoted `LANE-COMPLETE`. Dispositions:
+`adjudications/approach-a-design/{adobe-ingester-20260914-findings,agent-bridge,airmypc}.dispositions.md`.
