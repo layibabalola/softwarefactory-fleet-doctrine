@@ -72,7 +72,7 @@ done < <(stage_lanes "$st"); done
 [ "$unresolved" = 0 ] || { echo "UNRESOLVED nicknames -- refuse to dispatch"; exit 2; }
 
 # Probe the entrypoint each lane actually uses, bounded, without spending a model call.
-probe() { local out; out=$(timeout 30 "$@" 2>&1); lrc=$?; lline=$(printf '%s' "$out" | head -n 1); }
+probe() { local out; out=$(timeout -k 5 30 "$@" 2>&1); lrc=$?; lline=$(printf '%s' "$out" | head -n 1); }
 launchers_ok=1
 for fam in $(for st in $order; do stage_lanes "$st"; done | awk '{print $2}' | sort -u); do
   case "$fam" in

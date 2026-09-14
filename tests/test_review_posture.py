@@ -175,8 +175,9 @@ class Prompts(Env):
 
     @unittest.skipUnless(BASH, "no non-WSL bash available")
     def test_run_sh_dry_run_dispatches_nothing(self):
-        env = dict(os.environ, RP_REPO=str(ROOT))
+        env, log = self._fakes()
         p = subprocess.run([BASH, (TOOL / "run.sh").as_posix(), "--dry-run"], env=env, capture_output=True, text=True, timeout=120)
+        self._assert_nothing_dispatched(log, p)
         self.assertIn("dry-run: stage A prompts OK", p.stdout, p.stdout + p.stderr)
         self.assertIn("posture: conjugal-standard-PARTIAL (0/17", p.stdout)
         self.assertEqual(p.returncode, 1)
@@ -187,10 +188,11 @@ class Prompts(Env):
         # airmypc 2026-09-14: the string-form PY split on `C:\!Layi Wkspc`, `eval ""` passed, 17/17 DID-NOT-RUN.
         tool = self.tmp / "sp ace!dir" / "tools" / "review-posture"
         shutil.copytree(TOOL, tool)
-        env = dict(os.environ, RP_REPO=str(ROOT))
+        env, log = self._fakes()
         p = subprocess.run([BASH, (tool / "run.sh").as_posix(), "--dry-run"], env=env, capture_output=True, text=True, timeout=120)
         self.assertIn("dry-run: stage A prompts OK", p.stdout, p.stdout + p.stderr)
         self.assertNotIn("prompt generation failed", p.stdout)
+        self._assert_nothing_dispatched(log, p)
 
     def _fakes(self, codex_body="echo 'fake codex'", claude_body="echo 'fake claude'"):
         # Executable shims that log every call. `timeout` passes probes (--version/--help) through to the real
@@ -200,7 +202,10 @@ class Prompts(Env):
         shims = {
             "claude": f'#!/bin/sh\necho "claude $*" >> "{log.as_posix()}"\n{claude_body}\n',
             "codex": f'#!/bin/sh\necho "codex $*" >> "{log.as_posix()}"\n{codex_body}\n',
-            "timeout": ('#!/bin/sh\ncase " $* " in *" --version "*|*" --help "*) exec /usr/bin/timeout "$@";; esac\n'
+            # Probes run the fake CLI directly (no platform timeout needed); anything else is recorded, never run.
+            "timeout": ('#!/bin/sh\ncase " $* " in *" --version "*|*" --help "*)\n'
+                        '  while [ $# -gt 0 ]; do case "$1" in -k) shift 2;; -*) shift;; *) break;; esac; done\n'
+                        '  shift; exec "$@";;\nesac\n'
                         f'echo "DISPATCH $*" >> "{log.as_posix()}"\nexit 99\n'),
         }
         for name, body in shims.items():
