@@ -28,7 +28,10 @@ probe() {  # family nickname id
     timeout 180 codex exec -m "$id" -s read-only --skip-git-repo-check \
       -o "$WORK/$fam.$nick" - < "$WORK/ask" > /dev/null 2>&1
   fi
-  grep -q "$SENTINEL" "$WORK/$fam.$nick" 2>/dev/null && echo "$nick:$id:VERIFIED" \
+  # Anchored, whole-line match. An unanchored grep accepts the token wherever it appears --
+  # including inside an echoed prompt or an error that quotes the instruction -- which would
+  # verify a model that never answered.
+  grep -qx "$SENTINEL" "$WORK/$fam.$nick" 2>/dev/null && echo "$nick:$id:VERIFIED" \
     || echo "$nick:$id:UNVERIFIED"
 }
 
@@ -76,6 +79,18 @@ emit_family() {  # family  auth_probe  invoke
 
 echo "--- derived ---"
 cat "$WORK/inventory.yaml"
+
+# Refuse to write an inventory in which nothing verified. On a box where the shell lacks
+# `timeout`, or the CLIs are absent, or auth is dead, every probe fails the same way a
+# genuinely-unavailable model does -- and an all-false inventory written from that state is
+# indistinguishable from an honest one. Fail loudly instead; a missing file is a better
+# signal than a confident empty one.
+if ! grep -qE '^      [a-z]+: [a-z0-9.-]+$' "$WORK/inventory.yaml"; then
+  echo "--- REFUSING TO WRITE: zero models verified ---" >&2
+  echo "    Every probe failed. Check: CLIs on PATH, auth (\`codex login status\`," >&2
+  echo "    \`python tools/check-cli-auth.py\`), and that this shell has \`timeout\`." >&2
+  exit 3
+fi
 
 if [ "$DRY" = 1 ]; then
   echo "--- dry run: $DEST not written ---"

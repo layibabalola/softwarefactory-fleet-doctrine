@@ -2218,3 +2218,29 @@ while emitting *more* output per dollar spent elsewhere — the difference is co
 cache-creation + 352,546 cache-read tokens for the lane that crawled the whole repo. Budgeting a
 swarm by expected output length gets the ranking backwards. Scope each lane's reading, not its
 writing.
+
+### Cloudvore, 2026-09-13 — cross-family lane audit of the bootstrap tooling
+
+A `gpt-5.6-sol` lane audited this repo's bootstrap path for what breaks on a machine other than
+the one it was built on. Three findings acted on immediately; recorded because each is a silent
+failure, and two of them were introduced by the same session that shipped the tooling.
+
+- **A substring sentinel verifies a model that never answered.** `tools/probe-machine-inventory.sh`
+  matched its challenge token with an unanchored `grep -q`, which accepts the token wherever it
+  appears — including inside an echoed prompt or an error quoting the instruction. Now `grep -qx`
+  (whole line). The same weakness is why lane completion is anchored as `^LANE-COMPLETE$`.
+- **An all-unverified inventory is indistinguishable from an honest one.** On a box lacking
+  `timeout`, or without the CLIs on PATH, or with dead auth, every probe fails exactly as a
+  genuinely-absent model does — and the tool still wrote a confident `available: false`
+  inventory from that state. It now refuses to write when nothing verified and says what to
+  check. A missing file is a better signal than a confident empty one.
+- **A single-family run can be committed as cross-family.** The orchestrator set its `posture:`
+  line from what it intended to dispatch. It is now computed from which families actually
+  cleared the sentinel: cross-family may be claimed only when at least one Claude lane AND at
+  least one Codex lane completed. Intent does not count; an auth-errored lane does not count.
+  This is the mechanical form of the defect this project retracted earlier today.
+
+Also flagged, not yet fixed: `--help` preflight is not an end-to-end canary (already measured —
+it catches value-arity faults, passes unknown flags); the probe's candidate model list is fixed
+rather than discovered, so a renamed id degrades silently to UNVERIFIED; and the probe assumes
+a Bash environment with GNU `timeout`, which stock Windows and macOS may not provide.
