@@ -7,6 +7,16 @@ cross_family: NO-CROSS-FAMILY-VALIDATION
 rubric_id: b2f5862e9c0990d0e69e96862fba7ab4cc5e263151679ac336ab429187341c45
 panel: 81.37 over 5/8 seats, 1/2 families (claude only), spread 13.34
 
+> **SUPERSEDED-PENDING (addendum 2026-09-14 15:5x CT, airmypc; filing body unchanged).** Read this filing's
+> provenance as invalid and its findings as unadjudicated leads. (1) The orchestrator ran below the review floor
+> (R1): it was spawned without a model override from a Claude Haiku 4.5 dispatcher and never ran the PROMPT-B
+> model self-check. (2) The posture line above was typed, not computed by `review_posture.py posture` (R9.2):
+> the only `run.sh` record shows stage A failed and 17/17 DID-NOT-RUN; the lanes that produced text were run by
+> ad-hoc scripts and an uncommitted run.sh edit. (3) Every Codex lane died rc=127 on a machine launcher defect
+> (stray global npm `node` package; TRAPS 2026-09-14), not on capability or auth. A re-run through `run.sh` with a
+> pinned Opus orchestrator is dispatched and will file on a new review branch that supersedes this one.
+> Receipts: AirMyPC `.claude-state\receipts\codex-shim-20260914\`; RECEIPTS.md and softwarefactory-fleet-doctrine `9eeba29`.
+
 ## Design findings (Designer-Scope lane, Opus/Claude)
 
 §1 | "Each lane has one authorized append helper at `<git-common-dir>/oracle/journal/<lane>.ndjson`, serialized by a lane mutex derived from §7 repository identity plus lane." | `git rev-parse --git-common-dir` returns relative `.git` in main checkout but absolute in worktree; helper's cwd picks the file, so one lane gets two journals under one mutex. | REPLACES: "`<git-common-dir>/oracle/journal/<lane>.ndjson`" with "`<§7 absolute handle-resolved common dir>/oracle/journal/<lane>.ndjson`" | PROOF: start lane helper from main and worktree; two `.ndjson` files at seq=1 falsifies single-writer guarantee.
