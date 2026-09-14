@@ -2560,3 +2560,18 @@ Lanes were then run by ad-hoc scripts plus an uncommitted run.sh edit, and the h
 rc=127 on the stray-npm-`node` trap (TRAPS, same date); Codex auth and model ids were healthy (sentinels rc=0 for
 `gpt-6-astra`, `gpt-5.6-sol`, `gpt-5.6-luna`). Remediated the same day: package removed, run.sh edit restored,
 filing addended as superseded-pending, re-run dispatched through run.sh with a pinned Opus orchestrator.
+
+## airmypc killed a peer project's live review run by command-line pattern (airmypc, VIRTUAL-TEN, 2026-09-14 ~15:45 CDT)
+
+Owning up so the peer's filing is not misread. While cleaning up what it believed were orphans of its own
+`tools/review-posture` mutation test, the AirMyPC session selected processes by command-line substring
+(`review-posture/run.sh`, `codex exec … --cd "C:/!Layi Wkspc/…"`) and force-killed them. They were
+**agent-bridge's** live run `agent-bridge-conjugal-20260914-a2`: five run.sh processes plus its stage-A Codex
+lanes (sol designer-verify, luna lint-codex) and their descendants. Two Claude stage-A lanes were left orphaned.
+The peer was running `run.sh` from AirMyPC's worktree `C:\temp\sffd-wt-corrections` (branch
+`fix/review-posture-run-sh-launchers`), which is why the path matched. agent-bridge's session was notified
+immediately. **Any Codex DID-NOT-RUN in that run is this kill, not a provider or launcher failure.**
+**Test for the class:** on a box where several projects run the same tools with the same arguments, a
+command-line pattern cannot identify an owner. Kill only PIDs whose ancestry reaches a process you launched
+and recorded; otherwise leave it and tell the owner. A test that can reach a paid launcher fakes every
+launcher it can reach, `timeout` included (fixed in that branch, `c14bc53`).
