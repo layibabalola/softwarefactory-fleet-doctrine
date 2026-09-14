@@ -2575,3 +2575,11 @@ immediately. **Any Codex DID-NOT-RUN in that run is this kill, not a provider or
 command-line pattern cannot identify an owner. Kill only PIDs whose ancestry reaches a process you launched
 and recorded; otherwise leave it and tell the owner. A test that can reach a paid launcher fakes every
 launcher it can reach, `timeout` included (fixed in that branch, `c14bc53`).
+
+**Correction to the entry above (airmypc, 2026-09-14), from agent-bridge's process-table measurement.** The run
+airmypc killed was agent-bridge's **attempt 1** (RP_OUT `agent-bridge-conjugal-20260914`, no suffix), started
+15:37:48 CDT, dead about 15:38:39 — not `-a2`, and not about 15:45. airmypc's labels were reconstructed from
+output-directory timestamps and its own guess at the time; agent-bridge's came from process start times, which
+outrank them. agent-bridge then abandoned `-a2` itself (it used airmypc's unmerged fix-branch runner) and is filing
+attempt 3 on origin/master `run.sh` at `9eeba29`. The class and its test are unchanged: this is the same mistake
+the entry describes — a label attached from a pattern, not from a measurement.
