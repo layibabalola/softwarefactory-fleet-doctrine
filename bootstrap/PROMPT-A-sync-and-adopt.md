@@ -76,6 +76,11 @@ Never `--force`, `reset --hard`, or `clean`; other sessions leave work here. Rep
 problems with different fixes and the common mistake is to call them all "sync failed". On any
 of them, stop.
 
+Syncing is not a boot-only act (RULINGS **R8**). Fetch again before any write to the bus, and after
+any push leave the shared checkout level with `origin/master`, your review branches pushed, and your
+worktrees removed — `bootstrap/lane-orchestrator.md` §4b is the procedure. A checkout left behind
+`origin` is read as current by every session that opens it next.
+
 ## 2. Derive the machine inventory
 
 ```bash

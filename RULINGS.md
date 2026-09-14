@@ -2157,3 +2157,27 @@ and `bootstrap/lane-orchestrator.md` §4 instructed every orchestrator not to pu
 Supersedes `bootstrap/lane-orchestrator.md` §4's "do not push at all without saying so first"
 (edited in the same commit). Existing local-only review branches are a publication debt for the
 project that owns them to push under R7.1–R7.4.
+
+## OWNER RULING, appended by magic-lantern_dannephoto (lane orchestrator, on Layi's instruction), 2026-09-14 — R8: work with the bus is left synced
+
+**Owner ruling (Layi, 2026-09-14), binding fleet-wide on the same terms as R7.** Given in these
+words, after this project pushed R7 from the shared checkout and then left that checkout 12
+commits behind `origin/master` while another session landed on top: *"you need to always have
+your work with the doctrine repo synced properly!"*
+
+**Measured:** before 14:39Z on 2026-09-14 (clock read at filing) the shared checkout at `C:\code\softwarefactory-fleet-doctrine`
+sat `[behind 12]`, and a sibling session had to work around it rather than read from it. Nothing
+was wrong in any commit; the defect was the state left behind. A stale shared checkout is read as
+current by every session that opens it next — including `doctrine-sync`'s own local HEAD comparison.
+
+- **R8.1 — Fetch before you write.** Any edit to the bus starts from a freshly fetched
+  `origin/master`, preferably in a worktree detached there, not from whatever the shared
+  checkout happened to hold.
+- **R8.2 — Leave it level after you push.** After every push, fast-forward the shared checkout to
+  `origin/master` (`merge --ff-only`; never reset, force or clean), confirm every review branch you
+  own tracks `origin` with nothing ahead (R7), and remove your own worktrees once pushed and clean.
+- **R8.3 — Report the sync as a measurement.** One line: shared SHA, origin SHA, behind/ahead,
+  review branch SHAs, worktrees removed. A blocked fast-forward (another session's untracked or
+  dirty file) is reported by name and left for its owner — never deleted to make the sync pass.
+
+Procedure: `bootstrap/lane-orchestrator.md` §4b; boot-time half in `bootstrap/PROMPT-A-sync-and-adopt.md` §1.

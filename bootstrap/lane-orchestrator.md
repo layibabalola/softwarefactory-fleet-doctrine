@@ -292,12 +292,34 @@ If the checkout that holds `master` is shared, create the branch in its own work
 (`git worktree add -b review/<PROJECT>-<date> <dir> master`) rather than switching the shared
 checkout's branch under another session.
 
+## 4b. Leave the bus synced — every time you touch it (RULINGS R8)
+
+Your work with the doctrine repo is not finished until the shared checkout, `origin`, and your own
+branches agree. Run this after every bus write — a review branch, a doctrine edit, anything:
+
+```bash
+git -C "$REPO" fetch origin
+git -C "$REPO" status -sb | head -1          # shared checkout: expect "## master...origin/master" with no [behind N]/[ahead N]
+git -C "$REPO" merge --ff-only origin/master # bring the shared checkout level; never reset/force/clean
+git -C "$REPO" branch -vv --list 'review/*'  # every review branch: tracking origin, no [ahead N]
+git -C "$REPO" worktree list                 # remove YOUR worktrees whose branch is pushed and clean
+```
+
+Doctrine edits to `master` follow the same shape: make them in a worktree detached at a freshly
+fetched `origin/master`, push, verify with `ls-remote`, then fast-forward the shared checkout and
+remove the worktree. A rejected (non-fast-forward) push means someone landed first — fetch, rebase
+your commit onto `origin/master`, re-run any tests, push again. Never force.
+
+Report it as one line: `bus: shared=<sha> origin=<sha> behind=0 ahead=0 review=<branch>@<sha> pushed worktrees-removed=<n>`.
+Any non-zero `behind`/`ahead`, or an untracked file that blocks the fast-forward, is reported by
+name, not smoothed over — and an untracked file another session left is theirs: never delete it.
+
 ## 5. Report
 
 State: posture used, per-lane rc **and** bytes, findings count, the adjudication path, the
 branch name **and the remote SHA `ls-remote` returned** (or `PUSH-FAILED` with the error), and
 anything a lane refused to do. If a lane came back empty, say which and say
-that its slice went unreviewed — do not present four lanes as five.
+that its slice went unreviewed — do not present four lanes as five. Close with the §4b sync line.
 
 ---
 
