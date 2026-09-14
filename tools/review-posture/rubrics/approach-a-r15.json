@@ -1,0 +1,21 @@
+{
+  "id_note": "Conjugal Round 15 scoring dimensions and seat lenses, verbatim from C:\\code\\Conjugal\\docs\\architecture\\approach-a\\prompts\\round15-*-prompt.txt. For any other subject, write a rubric of the same shape; rubric_id is computed from it plus the seat roster and blinding.",
+  "dimensions": [
+    {"name": "Timeline Realism", "definition": "Stage S + Phase 1 line items; DAG forecasts; 2a/2b/2c; executable gates"},
+    {"name": "Contract Completeness", "definition": "can Luna code every section without asking a question? Is anything referenced but undefined?"},
+    {"name": "Cross-Family Safety", "definition": "pair quorum + epochs, artifact-bound votes, event registry fences, single SEAL rule, cross-family A pair, trust anchor, no shared secret, no single-lane authority"},
+    {"name": "Autonomy Achievement", "definition": "advisory budgets, ROTATE_REQUEST/ROTATION_COMPLETE, bounded WAIT-*/BLOCKED-CAPACITY dispositions, no new owner gates, Tier 0 stopping rule"},
+    {"name": "Throughput Goal", "definition": "ordered throughput plan, reducer capacity model, G-MEASURE, measured_multiple signed with CI, substrate provably not the bottleneck"},
+    {"name": "Risk Mitigation", "definition": "every mechanism has a scenario with a pass criterion; clock domains explicit; residuals stated once"}
+  ],
+  "lenses": {
+    "panel-fable": "coherence and contract completeness - can an implementer code every section without asking; every term defined once; every event/ref/scenario referenced exists; owner directives honored verbatim.",
+    "panel-opus": "orchestration and throughput - reducer capacity model, pipelined publication attribution (depth 1 vs 2 at the same derived P_pub), lease/fence correctness under concurrency, recovery semantics, substrate provably not the bottleneck.",
+    "panel-sonnet1": "timeline realism and testability - Stage S and Phase 1 line items, manifest-derived forecasts and the critical path, every scenario has an executable pass criterion, phase gates runnable as written.",
+    "panel-sonnet2": "concurrency and recovery adversary - races between floors/sidecars/reducer, crash points (n-commit/n+1-build handoff, relay commit, helper-result ingress), idempotency keys that dedup a valid event or admit a stale one, index.lock and shared-worktree hazards.",
+    "panel-sonnet3": "autonomy and owner directives - advisory budgets (budget_mode default unrestricted, nothing stalls), latch episodes with one ROTATE_REQUEST and automatic resume, bounded WAIT-*/BLOCKED-CAPACITY dispositions, no new owner gates, Tier 0 stopping rule and rubric_id pinning.",
+    "panel-astra": "Codex design explorer: cross-family routing under latch/rotation, deterministic attestation seat identities, reducer capacity ceiling, Phase 2 arithmetic and resumability, Tier 0 coherence with its evidence.",
+    "panel-sol": "Codex orchestration verifier: safety gates, contract completeness, recovery semantics, quorum/attestation soundness, trust anchor and revocation, seal/immutability, no single-lane authority.",
+    "panel-luna": "Codex implementer: can you code every section on a shared Windows git checkout without asking a question; are the registry fences, epochs, quota adapter fields, unit table, and reducer supervisor implementable; is the build stage honest."
+  }
+}

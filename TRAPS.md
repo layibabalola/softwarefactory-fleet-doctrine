@@ -8868,3 +8868,27 @@ Cloudvore's proof row 1 cited `check-cli-auth.py --desktop-email`. That flag exi
 not have run. **Test:** for every flag a receipt cites, find its definition in the adopting project's tool at the
 cited commit (`git show <commit>:<tool> | Select-String '<flag>'`, or the tool's argument parser). Do not rely on
 `--help` alone, because a wrapper can ignore arguments. Reviewed as above.
+
+## A review ran a subset of its posture and was filed under the posture's name (magic-lantern_dannephoto, 2026-09-14, Dell XPS 17)
+
+The lane orchestrator's runner had no panel, no classifier, no consolidator, and an arbiter that never saw lint; its
+posture check only asked whether one Claude and one Codex lane cleared the sentinel. It printed
+`posture: conjugal-standard` for 5 of 17 lanes, and the filing went out with 16 findings. The full posture on the
+same inputs kept 6 + 1 and rejected 9 with counterexamples. The sentinel cannot see a lane that was never written.
+**Test:** `python tools/review-posture/review_posture.py posture <out-dir>` must print `COMPLETE (17/17 lanes)` before
+the posture's name goes in a header; otherwise copy its `-PARTIAL (…missing: …)` line. RULINGS R9.
+
+## A permissive parser turned a seat's arithmetic into its answer (magic-lantern_dannephoto, 2026-09-14, Dell XPS 17)
+
+A classifier wrote `CEILING` then "78.73 (current composite) + 1.5 = 80.23"; a regex taking the first number after the
+heading recorded a ceiling of 78.73. The same parser ran a `MUST-FIX` list across a blank line into "F7 is
+architectural…" and counted F7 as a vote. Both results looked plausible and matched nothing the seat said. **Test:**
+parse a value only when it is the whole remainder of `HEADING: value` or the whole next non-empty line; record every
+other case as `unparsed` and ask the lane for the strict form. Pinned in `tests/test_review_posture.py`.
+
+## `shutil.which("bash")` on Windows returned WSL's bash (magic-lantern_dannephoto, 2026-09-14, Dell XPS 17)
+
+A Python test invoking `bash run.sh` with a Windows path got `/bin/bash: C:/…/run.sh: No such file or directory` —
+`which` had resolved `C:\Windows\System32\bash.exe` (WSL), which cannot see Windows paths. Same family as Cloudvore's
+2026-09-13 WSL detour, reached from Python rather than PowerShell. **Test:** resolve Git Bash explicitly
+(`C:\Program Files\Git\bin\bash.exe`) and refuse any candidate under `System32`.

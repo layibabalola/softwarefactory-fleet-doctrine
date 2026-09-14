@@ -1,0 +1,30 @@
+{
+  "posture": "conjugal-standard",
+  "source": "specs/posture-templates-conjugal-standard.md (roles table); measured shape: Conjugal Round 15 + magic-lantern_dannephoto 2026-09-14",
+  "note": "tests/test_review_posture.py fails if this list and the spec's roles table name different roles. Change both or neither.",
+  "stages": {
+    "A": "designers and lint, in parallel",
+    "B": "arbiter (reads designers AND lint) in parallel with the blinded panel (reads only the subject)",
+    "C": "consolidator (reads the arbitration)",
+    "D": "classifier swarm (reads consolidated findings + seat-stripped panel blockers + panel scores)"
+  },
+  "roles": [
+    {"role": "Designer-Scope",   "stage": "A", "lanes": [{"name": "design-scope",  "family": "claude", "model": "opus"}]},
+    {"role": "Designer-Verify",  "stage": "A", "lanes": [{"name": "design-verify", "family": "codex",  "model": "sol"}]},
+    {"role": "Lint-Consistency", "stage": "A", "lanes": [{"name": "lint-claude",   "family": "claude", "model": "haiku"},
+                                                        {"name": "lint-codex",    "family": "codex",  "model": "luna"}]},
+    {"role": "Arbiter",          "stage": "B", "lanes": [{"name": "arbiter",       "family": "codex",  "model": "astra"}]},
+    {"role": "Consolidator",     "stage": "C", "lanes": [{"name": "consolidator",  "family": "claude", "model": "fable"}]},
+    {"role": "Panel",            "stage": "B", "lanes": [{"name": "panel-fable",   "family": "claude", "model": "fable"},
+                                                        {"name": "panel-opus",    "family": "claude", "model": "opus"},
+                                                        {"name": "panel-sonnet1", "family": "claude", "model": "sonnet"},
+                                                        {"name": "panel-sonnet2", "family": "claude", "model": "sonnet"},
+                                                        {"name": "panel-sonnet3", "family": "claude", "model": "sonnet"},
+                                                        {"name": "panel-astra",   "family": "codex",  "model": "astra"},
+                                                        {"name": "panel-sol",     "family": "codex",  "model": "sol"},
+                                                        {"name": "panel-luna",    "family": "codex",  "model": "luna"}]},
+    {"role": "Classifier",       "stage": "D", "lanes": [{"name": "classifier-1",  "family": "claude", "model": "haiku"},
+                                                        {"name": "classifier-2",  "family": "claude", "model": "haiku"},
+                                                        {"name": "classifier-3",  "family": "claude", "model": "haiku"}]}
+  ]
+}

@@ -61,7 +61,8 @@ Each exists because it failed on this fleet within one week, silently, and repor
 ## What a filing must contain
 
 `adjudications/<subject>/<project>.md`, one file per project, single writer. Header declares
-`project`, `providers`, `seats`, `rubric_id`. Then findings, one per line:
+`project`, `providers`, `seats`, `rubric_id`, and a `posture:` line copied from
+`tools/review-posture/review_posture.py posture` (RULINGS R9). Then findings, one per line:
 
 ```
 §<section> | "<quote, <=25 words>" | <defect, <=40 words> | REPLACES: "<anchor>" -> "<new>" | PROOF: <what would falsify it>

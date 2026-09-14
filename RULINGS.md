@@ -2181,3 +2181,39 @@ current by every session that opens it next — including `doctrine-sync`'s own 
   dirty file) is reported by name and left for its owner — never deleted to make the sync pass.
 
 Procedure: `bootstrap/lane-orchestrator.md` §4b; boot-time half in `bootstrap/PROMPT-A-sync-and-adopt.md` §1.
+
+## OWNER RULING, appended by magic-lantern_dannephoto (lane orchestrator, on Layi's instruction), 2026-09-14 — R9: a posture is named only when it ran in full
+
+**Owner ruling (Layi, 2026-09-14), binding fleet-wide on the same terms as R1–R5.** Given as *"run the full posture
+with panel and classifier, and update the template. Prevent future failures for this and projects in the fleet by
+updating doctrines"*, after the owner asked whether a review filed as `conjugal-standard` had used Conjugal's
+multi-provider, multi-model swarm strategy, and it had not.
+
+**Measured.** `bootstrap/lane-orchestrator.md`'s runner dispatched 5 of the posture's 17 lanes — designers, lint, and
+an arbiter that never saw lint and was never asked for losers — and derived `posture: conjugal-standard` from "one
+Claude and one Codex lane ran". magic-lantern_dannephoto filed 16 findings under that label. The full posture on the
+same subject blob and bench HEAD kept 6 + 1 Untested and rejected 9 with counterexamples grounded in the subject;
+panel 78.73 over 8 seats; classifier FLAT. The partial run did not produce a smaller version of the same review — it
+produced a different one, and nothing on the bus could tell them apart.
+
+- **R9.1 — Named only when complete.** A filing carries a posture's name only when every lane of every role that
+  posture defines cleared its sentinel. Otherwise the posture line reads `<posture>-PARTIAL (<n>/<N> lanes; missing:
+  <role n/m>…)`. Skipping a role is allowed; hiding that it was skipped is not.
+- **R9.2 — The role list is data, and the count is computed.** The posture line is copied from a tool that counts
+  sentinels against the posture's role list (`tools/review-posture/roles.json`, `review_posture.py posture`) — never
+  typed, and never derived from a check narrower than the role list. When a posture spec's roles change, its role
+  list changes in the same commit; `tests/test_review_posture.py` fails if they drift.
+- **R9.3 — Cross-family (R3) and completeness (R9) are separate claims.** A cross-family-validated run can be PARTIAL,
+  and the header states both.
+- **R9.4 — Record what the practice measured, not what a table asserts.** Panel families are recorded as seated
+  (Conjugal's own R15 panel was 2 families although its posture table said 3). A rubric id is filed with its retained
+  contract, or it has no comparability standing.
+- **R9.5 — Existing filings.** A filing labelled with a posture it did not run in full is relabelled `-PARTIAL` by its
+  owner at the next sync, or re-run in full. magic-lantern_dannephoto's is superseded by its full-posture filing
+  (review branch `review/magic-lantern_dannephoto-2026-09-14` @ 153183c).
+
+These edits to shared bootstrap and posture files are made under this owner ruling (Law 2's single-writer rule covers
+`specs/<project>.md`; the owner directed the shared procedure to change). `specs/design-loop-protocol.md` is Conjugal's
+and is left for Conjugal to reconcile with R9.4.
+
+Procedure: `bootstrap/lane-orchestrator.md` §1–§3; tool: `tools/review-posture/README.md`.

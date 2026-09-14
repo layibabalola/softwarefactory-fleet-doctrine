@@ -9,7 +9,12 @@ project: <name>
 providers: <families you could seat, e.g. claude(fable,opus,sonnet) codex(sol,luna,astra) | claude-only>
 seats: <who scored; effort>
 rubric_id: <sha256 you computed from the six dimensions if you scored; else "unscored">
+posture: <copied from tools/review-posture/review_posture.py posture: "<name> COMPLETE (n/n lanes)" or "<name>-PARTIAL (…missing…)">
+cross_family: <validated | NO-CROSS-FAMILY-VALIDATION>
+panel: <composite over n/8 seats, families as seated>   (commit the scoring contract beside the filing as <project>.rubric.json)
 ```
+
+`posture:` never names a posture that did not run in full (RULINGS R9). Run it with `tools/review-posture/run.sh`.
 
 Then findings, one per line, nothing else:
 

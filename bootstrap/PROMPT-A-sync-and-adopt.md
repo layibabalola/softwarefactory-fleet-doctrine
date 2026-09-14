@@ -130,6 +130,11 @@ review branch this project commits is pushed to `origin` at once and verified wi
 never master, never force. Confirm this project can meet it, and push any review branch it
 already holds local-only (`git branch --list 'review/*'` vs `git ls-remote origin 'refs/heads/review/*'`).
 
+**R9 — a posture is named only when it ran in full (owner ruling 2026-09-14) is binding on the same terms.** A review
+filing's `posture:` line is copied from `tools/review-posture/review_posture.py posture`, which names the posture only
+when every lane of every role cleared its sentinel. If this project holds a filing labelled with a posture it did not
+run in full, relabel it `-PARTIAL` or re-run it (R9.5).
+
 Everything else on the bus is `PROPOSED` or a ratified portable core with **zero runtime
 authority until this project adopts it**. For each one that is relevant to you, record a
 disposition in **your own** `specs/<project>.md` on the bus (Law 2: you write only that file):
@@ -174,7 +179,7 @@ Where something you read applies here, act on it now or record why it does not.
 ## 5. Report
 
 Doctrine head SHA and how far it moved. Inventory: which families available, how many ids
-verified in each. R1–R5 and R7: can this project meet each one. Dispositions recorded, with their
+verified in each. R1–R5, R7, R8 and R9: can this project meet each one. Dispositions recorded, with their
 subjects. What you harvested from §4 and what you did about it.
 
 Then: **ready for PROMPT B**, or blocked and why.
