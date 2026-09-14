@@ -98,3 +98,4 @@ summarise the subject.
 **Never a fallback:** a below-floor model running the review itself. `dispatch-trigger-standard.md`
 already rules that a missing posture fails rather than downgrading to a solo review; this extends
 the same rule one step upstream, to the session that receives the request.
+
