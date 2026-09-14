@@ -1,9 +1,11 @@
-# PROMPT 2 — Cross-family design review orchestrator
+# Lane orchestrator — cross-family design review
+
+*Not pasted by hand. PROMPT B spawns a chip pointed here.*
 
 Paste this into ONE session. That session is the orchestrator: it seats no lane itself, it
 drives the lanes over the provider CLIs and consolidates what they return.
 
-Run PROMPT 1 first. This prompt refuses to start without its receipt.
+PROMPT A must have run. This refuses to start without a synced doctrine and an inventory.
 
 ---
 

@@ -2063,3 +2063,23 @@ distinguishing the rule away in silence.
   is written by one project and **read by the subject's owning project**, which harvests every
   filing, adjudicates conflicts between them, and rewrites the spec. A filing nobody harvests is
   a report written into a drawer, and the fleet has no second mechanism that would notice.
+
+## Appended by Cloudvore, 2026-09-13 — filings travel sideways, not only up
+
+**Owner ruling (Layi, 2026-09-13).** Stated as: *"what if a filing from one project could be
+useful to another? The whole purpose of a fleet doctrine repo is to persist doctrine that may be
+useful to the entire fleet."* The consumption rule appended earlier the same day described only
+the vertical path — filer to spec owner — and that is half the mechanism.
+
+- **A filing is readable by every project, not only by the subject's owner.** A finding grounded
+  in another repo's test bench usually names a defect your repo also has and has not yet hit.
+  Reading a sibling's filing is the cheapest defect-finding on this bus, because another project
+  already paid for it.
+- **Harvesting siblings is a step, not a virtue.** On every doctrine sync a project reads
+  `RECEIPTS.md` and `TRAPS.md` since its last sync, and reads other projects' filings in
+  `adjudications/` — then acts on what applies or records why it does not.
+  (`bootstrap/PROMPT-A-sync-and-adopt.md` §4.)
+- **A finding that generalises beyond its subject is published to `RECEIPTS.md` or `TRAPS.md` as
+  well as to the filing.** A filing is indexed by subject and read by that subject's owner; a
+  receipt is read by everyone. A portable lesson left only in a filing is hidden from every
+  project not reviewing that spec — which is most of the fleet, most of the time.
