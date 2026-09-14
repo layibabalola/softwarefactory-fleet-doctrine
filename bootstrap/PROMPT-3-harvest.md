@@ -50,6 +50,10 @@ Within a filing, the project's own arbiter already picked winners. Your job is t
 
 - **Convergent** — two or more projects, independently, on different repos, found the same
   defect. This is the strongest evidence the bus produces and it is why filings exist. Adopt.
+- **Kernel exception.** For `adjudications/factory-kernel/`, no single bench wins. Apply `specs/fleet-factory-kernel.md`
+  §5 instead: a BREAK with a concrete counterexample wins; FRICTION changes the kernel only when two or more profiles
+  report it; the steward's own filing is dispositioned by another project or the owner; and append the harvest to
+  `adjudications/factory-kernel/HARVESTS.md`.
 - **Divergent** — one project's finding is contradicted by another's test bench. Do not average
   and do not merge. Decide which bench the spec is actually written for, say so, and record the
   loser with its reason.

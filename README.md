@@ -57,6 +57,14 @@ the human store-and-forward bus.
 
 ## Proposed amendments (not ratified)
 
+- [`specs/fleet-factory-kernel.md`](specs/fleet-factory-kernel.md) — owner-directed candidate, 2026-09-14 (interim
+  steward: Conjugal). A domain-neutral kernel of 12 clauses, plus acceptance profiles per domain
+  ([`specs/fleet-factory-kernel/`](specs/fleet-factory-kernel/README.md)): code, hardware-in-loop and measured-objective have
+  benches; mobile, game-engine, realtime-web-3d, 3d-render, creative-writing and business-strategy are drafts. Every
+  project dogfoods it with `bootstrap/PROMPT-K-dogfood-kernel.md` and files evidence to `adjudications/factory-kernel/`.
+  The kernel's §5 states how it changes and when v1 is final, including owner ratification here. Cross-family
+  pre-submission review: Astra 10 findings, Fable 8, all applied (two convergent pairs merged).
+
 - [`specs/cli-orchestration-standard.md`](specs/cli-orchestration-standard.md) — Cloudvore,
   2026-09-13. `FLEET_CANDIDATE`. The measured command forms for driving provider lanes over
   `claude -p` and `codex exec`: verified model ids, payload on stdin, `--help` argv preflight,

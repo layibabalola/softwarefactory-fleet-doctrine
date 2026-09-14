@@ -201,6 +201,10 @@ Three sources, and they are not the same:
 
 Where something you read applies here, act on it now or record why it does not.
 
+**Every project dogfoods the fleet factory kernel.** If `adjudications/factory-kernel/<this project>.md` does not exist on
+master or any `origin/review/*` branch, or its `kernel:` revision is older than `specs/fleet-factory-kernel.md`'s header,
+report it and name `bootstrap/PROMPT-K-dogfood-kernel.md` as the next step after this sync.
+
 **If this project owns a subject, check whether its filings are answered — every sync:**
 
 ```bash

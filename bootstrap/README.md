@@ -7,6 +7,7 @@
 | **PROMPT A** | ✅ | your session, any model | Syncs the bus, derives the machine inventory, records this project's adoptions, and harvests what the fleet has learned since you last synced. No review. |
 | **PROMPT B** | ✅ | your session, any model | Decides the request is above its tier and spawns **one** chip naming the model it recommends. No review. |
 | `lane-orchestrator.md` | — | that chip | Dispatches cross-family lanes over the provider CLIs, arbitrates, files `adjudications/<subject>/<project>.md`. |
+| **PROMPT K** | ✅ | every project, after A | Runs this project's real work through `specs/fleet-factory-kernel.md` and files FIT/FRICTION/BREAK evidence to `adjudications/factory-kernel/`. |
 | **PROMPT 3** | — | the project that **owns** the subject spec | Harvests every filing, adjudicates across projects, rewrites the spec, publishes dispositions back. |
 
 A and B are separate pastes on purpose: a failed sync should never be mistakable for a failed
