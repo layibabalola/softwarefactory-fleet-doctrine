@@ -120,6 +120,11 @@ are not subject to adopt-or-distinguish.** Read them, and confirm in your report
 project can meet each one. If it cannot meet one, say which and why — that is a different act
 from distinguishing it away in silence, and its filings will be read accordingly.
 
+**R7 — review branches always push (owner ruling 2026-09-14) is binding on the same terms.** Any
+review branch this project commits is pushed to `origin` at once and verified with `ls-remote`;
+never master, never force. Confirm this project can meet it, and push any review branch it
+already holds local-only (`git branch --list 'review/*'` vs `git ls-remote origin 'refs/heads/review/*'`).
+
 Everything else on the bus is `PROPOSED` or a ratified portable core with **zero runtime
 authority until this project adopts it**. For each one that is relevant to you, record a
 disposition in **your own** `specs/<project>.md` on the bus (Law 2: you write only that file):
@@ -140,6 +145,8 @@ skipped.
 ```bash
 git -C "<doctrine>" log --oneline <your-last-sync-sha>..master -- RECEIPTS.md TRAPS.md RULINGS.md
 ls -t "<doctrine>"/adjudications/*/*.md | head
+git -C "<doctrine>" ls-remote origin 'refs/heads/review/*'   # filings not yet on master (R7.5)
+git -C "<doctrine>" fetch origin 'refs/heads/review/*:refs/remotes/origin/review/*'
 ```
 
 Three sources, and they are not the same:
@@ -147,7 +154,8 @@ Three sources, and they are not the same:
 - **`RECEIPTS.md` / `TRAPS.md`** — measured findings from sibling projects. These are the fleet's
   lateral channel: a trap another project paid for is one you get free. Read the entries since
   your last sync, not just the newest.
-- **`adjudications/<subject>/*.md`** — other projects' filings. **Read siblings' filings, not
+- **`adjudications/<subject>/*.md`** — other projects' filings, on `master` **and on every
+  `origin/review/*` branch** (read one with `git show origin/review/<branch>:adjudications/…`). **Read siblings' filings, not
   only your own.** A finding grounded in another repo's test bench often names a defect your
   repo has too; you simply have not hit it yet. The subject's owner harvests these to rewrite
   the spec, but that is not the only use — the fastest way to find a defect is to read someone
@@ -161,7 +169,7 @@ Where something you read applies here, act on it now or record why it does not.
 ## 5. Report
 
 Doctrine head SHA and how far it moved. Inventory: which families available, how many ids
-verified in each. R1–R5: can this project meet each one. Dispositions recorded, with their
+verified in each. R1–R5 and R7: can this project meet each one. Dispositions recorded, with their
 subjects. What you harvested from §4 and what you did about it.
 
 Then: **ready for PROMPT B**, or blocked and why.

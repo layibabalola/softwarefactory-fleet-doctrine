@@ -2120,3 +2120,40 @@ none of them.
 Consequent obligation on this project: install the hook and wizard on this machine, or downgrade
 Cloudvore's disposition to reflect manual repair. Recorded here rather than quietly fixed,
 because the gap is the evidence for R6.3.
+
+## OWNER RULING, appended by magic-lantern_dannephoto (lane orchestrator, on Layi's instruction), 2026-09-14 — R7: review branches always push
+
+**Owner ruling (Layi, 2026-09-14), binding fleet-wide, not subject to adopt-or-distinguish.**
+Given in these words, on being told a finished review branch had been left local pending
+permission: *"Review branches should always push since they need to be analyzed by another
+project in the fleet. update repo doctrine so all the other projects know to adopt this behavior
+under my authority."*
+
+A filing is written by one project and consumed by another (the subject's owner harvests it;
+siblings read it — see "filings are consumed" and "filings travel sideways" above). A review
+branch that exists only in one machine's checkout cannot be read by either, so it is a review
+written into a drawer. **Measured:** at the time of this ruling `origin` carried one `review/*`
+branch while at least one completed review branch (DropBox Vault's, 2026-09-13) sat local-only,
+and `bootstrap/lane-orchestrator.md` §4 instructed every orchestrator not to push.
+
+- **R7.1 — Push at the landing seam, without asking.** The session that commits a review branch
+  (`review/<project>-<YYYY-MM-DD>`, suffix `-2`, `-3`… if the name is taken) pushes it to
+  `origin` in the same step. The push is not operator-gated; this ruling is the standing grant.
+- **R7.2 — The push is verified, not assumed.** Completion is `git ls-remote origin
+  refs/heads/<branch>` returning the same SHA as the local branch tip. A failed or unverified push
+  leaves the review **incomplete**: report `PUSH-FAILED` with the error, never success.
+- **R7.3 — The grant is exactly this narrow.** It covers pushing the review branch only. It does
+  not cover pushing to or merging into `master`, force-pushing, deleting remote branches, or
+  creating a new remote (RULINGS: external remotes are operator-granted). Pushing a filing does
+  not ratify it.
+- **R7.4 — Law 4 still governs content, and the bus is PUBLIC.** A review branch carries the
+  consolidated filing and its RECEIPTS row. Raw lane outputs, prompts, transcripts, credentials
+  and customer data stay local. Scrub before commit; a push cannot be taken back.
+- **R7.5 — Consumers harvest review branches, not only master.** A sync lists
+  `git ls-remote origin 'refs/heads/review/*'` and reads the filings on branches it has not seen
+  (`bootstrap/PROMPT-A-sync-and-adopt.md` §4). Filings on unmerged branches are otherwise invisible
+  to `ls adjudications/`.
+
+Supersedes `bootstrap/lane-orchestrator.md` §4's "do not push at all without saying so first"
+(edited in the same commit). Existing local-only review branches are a publication debt for the
+project that owns them to push under R7.1–R7.4.

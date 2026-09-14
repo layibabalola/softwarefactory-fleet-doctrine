@@ -253,15 +253,27 @@ git -C "$REPO" checkout -b review/<PROJECT>-<date>
 git -C "$REPO" add adjudications/approach-a-design/<PROJECT>.md
 # append a RECEIPTS.md row; create the file with a header if it does not exist
 git -C "$REPO" commit -m "cross-family review: <SUBJECT> (<n> findings, <posture>)"
+git -C "$REPO" push -u origin review/<PROJECT>-<date>
+test "$(git -C "$REPO" ls-remote origin refs/heads/review/<PROJECT>-<date> | cut -f1)" \
+   = "$(git -C "$REPO" rev-parse review/<PROJECT>-<date>)" && echo PUSHED || echo PUSH-FAILED
 ```
 
-Commit to a branch. **Do not push to master, and do not push at all without saying so first** —
-the bus is shared state and this run is unratified by construction.
+Commit to a branch and **push that branch, without asking** (RULINGS **R7**, owner ruling
+2026-09-14): a filing exists to be analysed by another project, and a local-only branch cannot be.
+The push is complete only when `ls-remote` returns the local tip's SHA; otherwise the run is
+`PUSH-FAILED`, not done. The grant is narrow: **never push to or merge into master, never
+force-push** — the run is still unratified by construction. The bus is public: push the filing
+and its RECEIPTS row only, never the raw lane outputs or prompts (Law 4).
+
+If the checkout that holds `master` is shared, create the branch in its own worktree
+(`git worktree add -b review/<PROJECT>-<date> <dir> master`) rather than switching the shared
+checkout's branch under another session.
 
 ## 5. Report
 
 State: posture used, per-lane rc **and** bytes, findings count, the adjudication path, the
-branch name, and anything a lane refused to do. If a lane came back empty, say which and say
+branch name **and the remote SHA `ls-remote` returned** (or `PUSH-FAILED` with the error), and
+anything a lane refused to do. If a lane came back empty, say which and say
 that its slice went unreviewed — do not present four lanes as five.
 
 ---

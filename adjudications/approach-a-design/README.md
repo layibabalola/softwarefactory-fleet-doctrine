@@ -21,3 +21,7 @@ Test-bench rule: every finding names how it manifests in YOUR repo (a path, a to
 under a `## Untested` heading. Prose reviews are not merged. Scores (optional) use the six dimensions in the protocol's
 source rubric: Timeline Realism, Contract Completeness, Cross-Family Safety, Autonomy Achievement, Throughput Goal,
 Risk Mitigation — 0–100 each, composite = mean.
+
+Landing (RULINGS R7, owner ruling 2026-09-14): commit the filing plus its RECEIPTS row on `review/<project>-<YYYY-MM-DD>`
+and **push that branch immediately, without asking**; it is done only when `git ls-remote origin refs/heads/<branch>`
+matches the local tip. Never push to master. Filings not yet merged live on `origin/review/*` — harvesters read those too.
