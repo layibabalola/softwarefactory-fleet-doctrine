@@ -18,9 +18,10 @@ Exit 0 = every filing HARVESTED; 1 = at least one UNHARVESTED or STALE; 2 = tool
 """
 import argparse, json, pathlib, re, subprocess, sys
 
-NOT_FILINGS = {"README.md", "REVIEW-PROMPT.md"}
-HEADER_KEYS = ("project", "providers", "posture", "cross_family", "rubric_id", "panel")
-R9_POSTURE = re.compile(r"^\S+ COMPLETE \((\d+)/\1 lanes\)|^\S+-PARTIAL \(\d+/\d+ lanes")
+NOT_FILINGS = {"README.md", "REVIEW-PROMPT.md", "HARVESTS.md"}
+HEADER_KEYS = ("project", "providers", "posture", "cross_family", "rubric_id", "panel",
+               "kernel", "profile", "subjects", "health", "arbiter")
+R9_POSTURE = re.compile(r"^\S+ COMPLETE \((\d+)/\1 lanes\)|^\S+-PARTIAL \(\d+/\d+ lanes|^no model review$")
 
 
 class ToolError(Exception):
@@ -70,7 +71,7 @@ def parse_filing(text):
             header[m.group(1)] = m.group(2).strip()
         if line.startswith("## "):
             section = line[3:].strip().lower()
-        if line.startswith("§"):
+        if line.startswith("§") or re.match(r"^(K\d+ |P:\S+[^|\n]*)\|", line):
             if section.startswith("untested"):
                 untested += 1
             else:

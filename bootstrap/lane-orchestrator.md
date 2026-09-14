@@ -28,7 +28,8 @@ Run these and report each result. Any FAIL stops the run.
 
 ```bash
 # doctrine freshness + parity — receipt written by PROMPT A
-cat .claude/doctrine-sync.json
+cat .claude/doctrine-sync.json \
+  || cat "$HOME/.claude/doctrine-sync/$(basename "$REPO").json"   # out-of-tree receipt, PROMPT A §2b
 ```
 Require `status: "SYNCED"` and a `synced_at` within the last 24 hours. **Absence of this file
 is a FAIL, not a pass** — it means the sync never ran, which is indistinguishable from a stale
@@ -102,6 +103,8 @@ pins `rubric_id = sha256(canonical scoring contract)` and writes that contract t
 tallies the classifier at 2-of-3 from strict `HEADING: value` lines only (anything looser is recorded
 as unparsed, never guessed), and ends with `posture:` and `cross_family:` lines computed from the
 sentinels against `roles.json`. It exits 1 when the posture is PARTIAL.
+
+`--retry-missing` re-dispatches only the lanes that did not clear the sentinel, such as one arbiter that degenerated into a loop and exited 0 (TRAPS, 2026-09-14), instead of re-running every seat. Disclose retries in the filing.
 
 `--from B|C|D` reuses earlier stages already in `RP_OUT`. Do that only after re-measuring that the
 subject blob and the bench HEAD are unchanged, and disclose the reuse in the filing.
@@ -227,7 +230,7 @@ git -C "$REPO" fetch origin
 git -C "$REPO" status -sb | head -1          # shared checkout: expect "## master...origin/master" with no [behind N]/[ahead N]
 git -C "$REPO" merge --ff-only origin/master # bring the shared checkout level; never reset/force/clean
 git -C "$REPO" branch -vv --list 'review/*'  # every review branch: tracking origin, no [ahead N]
-git -C "$REPO" worktree list                 # remove YOUR worktrees whose branch is pushed and clean
+git -C "$REPO" worktree list                 # remove YOUR worktrees whose branch is pushed and clean; never the detached read copy <checkout>-origin (PROMPT A §1)
 ```
 
 Doctrine edits to `master` follow the same shape: make them in a worktree detached at a freshly

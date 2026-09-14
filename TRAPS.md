@@ -8993,3 +8993,100 @@ that message is this trap, not a missing model family. **Fix:** `"C:\Program Fil
 **Do not** switch tools to `codex.cmd` as the remedy — it hides the broken shim for every other CLI. **General form:**
 a dispatcher that maps rc=127 to "family unavailable" converts a launcher defect into a capability verdict; tools
 should preflight each family's CLI and report `LAUNCHER-BROKEN` distinctly.
+
+## Squashing with `reset --soft origin/master` silently reverted two siblings' pushes (conjugal, 2026-09-14, Bachelor / Dell XPS 17)
+
+A session built work in a worktree based at `9eeba29`, fetched, and ran `git reset --soft origin/master` to squash its
+checkpoint commits into one. By then `origin/master` had moved to `0a5b49c`. A soft reset moves HEAD but keeps the
+index, and the index still held the `9eeba29` tree. The next commit therefore recorded the sibling commits' changes
+**reversed**: airmypc's 27 RECEIPTS lines disappeared and adobe-ingester's newly filed findings file was deleted. The
+session had staged only its own paths, but the reversal was already in the index. The push was a fast-forward, so
+nothing refused it. The `D` line in `git status` after the commit was the only sign; restored in `15ea442`.
+**Test:** before every push to the bus, `git diff --name-status origin/master HEAD` must list only the paths you meant to
+change, and `git diff origin/master HEAD | grep '^-' | grep -v '^---'` must show no line you did not remove on purpose.
+To squash, rebase onto the fetched tip (`git rebase origin/master`, then `reset --soft` onto the **rebased** base), or
+create a fresh worktree at the new tip and apply only your paths.
+
+## `git fetch origin master` left `origin/master` stale, so a current file read as absent (conjugal, 2026-09-14, UltraMagnus / Dell XPS 17)
+
+**Symptom.** On UltraMagnus, bootstrap paste A ran `git -C "<bus>" fetch origin master` and printed only
+`* branch master -> FETCH_HEAD`. `git show origin/master:bootstrap/PROMPT-A-sync-and-adopt.md` then failed
+with `does not exist in 'origin/master'`, and the session reported that PROMPT A was not in the repository.
+It had been on origin for a day.
+
+**Cause.** That checkout had no `remote.origin.fetch` rule. Without one, a fetch of a named branch updates
+only `FETCH_HEAD`, and `origin/master` stays wherever it last was (here, older than `bootstrap/`).
+Reproduced on the XPS by unsetting the rule on a scratch clone: the two output lines matched exactly.
+
+**Fix (portable).** Fetch with an explicit, forced refspec whenever a later step reads `origin/master`:
+`git fetch origin +refs/heads/master:refs/remotes/origin/master`. The `+` is required. After an origin
+history rewrite, the fetch without it fails `! [rejected] (non-fast-forward)`, which reads as
+UNREACHABLE. Tested on five clone shapes (no fetch rule, single-branch, `--mirror`, `remote.origin.mirror`,
+URL without `.git`) in PowerShell and Git Bash. Applied in `bootstrap/README.md` pastes A and B and
+PROMPT A §1 (commits 5d4eab6, 1c1f7c9).
+
+**Generalises to.** Any script on any project that runs `fetch origin <branch>` and then reads
+`origin/<branch>`: the read looks authoritative and is silently stale.
+
+## Evidence that exists is not evidence that passed (magic-lantern_dannephoto, 2026-09-14, Dell XPS 17)
+
+A shadow conformance probe drafted for the factory kernel first checked only that each adopted unit's cited evidence
+paths existed, and it passed 11 of 11 on the magic-lantern_dannephoto bench. Two cross-family review lanes then
+independently found `audit-packet/recovery-20260907/b03/verify/pytest.status` reading `1` inside an adopted unit's
+cited evidence tree. All 4 non-passing status files on that ref sit in B03's first-attempt tree, beside the corrected
+trees the unit also cites, and nothing machine-readable says which run the acceptance rested on. Existence is a
+property of the filesystem, not of the run. The same weakness applies to any clause worded "acceptance evidence exists"
+(`specs/fleet-factory-kernel.md` K5). **Test:** for every accepted subject, find a receipt that binds command, exit
+status, exact identity and a non-author verifier. Flag every status file that does not read as passing. Rate existence
+without a passing receipt below a pass.
+
+## A lane can degenerate into a loop, exit 0, and look finished (magic-lantern_dannephoto, 2026-09-14, Dell XPS 17)
+
+In a full-posture review, the arbiter (gpt-6-astra) wrote 8.8 KB of apparently complete arbitration, then repeated its
+last five "losers" rows verbatim and stopped without `LANE-COMPLETE`. It exited 0 with plenty of bytes; only the
+sentinel separated it from a success, and `tools/review-posture/run.sh` refused to consolidate. Recovery used to mean
+re-running all 8 panel seats that had already succeeded. **Test:** if a stage stops on a missing sentinel, re-run it
+with `run.sh --from <stage> --retry-missing`. That keeps every lane that cleared the sentinel, saves the degenerate
+output as `<lane>.failed-<time>.txt`, and should be disclosed in the filing. Never hand-edit the degenerate output into
+something that looks complete.
+
+## Two sessions given the same owner instruction built two universal kernels in parallel (magic-lantern_dannephoto, 2026-09-14, Dell XPS 17)
+
+At 2026-09-14 20:49Z Conjugal landed `specs/fleet-factory-kernel.md` r1. At the same time, a magic-lantern_dannephoto
+session was 17 lanes into reviewing its own universal kernel draft, written from the same owner sentence. Neither
+session knew of the other. R8.1's fetch-before-write caught it only because the second session fetched before
+appending to RULINGS. Pushing both would have given the fleet two kernels and two dogfood loops. The owner chose to feed
+the later draft into r1 as dogfood evidence and steward proposals. **Test:** before building anything fleet-wide from an
+owner instruction, fetch and search the bus for the instruction's key nouns (`git log origin/master --since=1.day
+--grep=<noun>`, `git ls-tree -r origin/master --name-only | grep -i <noun>`). Repeat before landing. A competing
+artifact found at landing becomes feedback to the one already there, not a second artifact.
+
+## PROMPT A's in-tree readiness receipt halted a governed factory for four hours (adobe-ingester, virtual-ten, 2026-09-14)
+
+PROMPT A §2b told a chat session to write `.claude/doctrine-sync.json` into the project tree. Adobe's
+factory had a candidate frozen for review (`state: REVIEWING`, WO-G0-A01 rev13). Its candidate-integrity
+gate builds the working-path set from unstaged, staged and `git ls-files --others --exclude-standard`
+paths, and fails closed on any path outside the reviewed or permitted set. The receipt was untracked
+and unignored, so every orchestrator (Sol) commit failed from 17:41Z. The HUB heading was
+`PREFLIGHT FAILURE Q-034 rev3 | SHARED WORKSPACE UNREVIEWED DOCTRINE RECEIPT | OWNER_DECISION_REQUIRED`,
+followed by seven `GOVERNANCE FAILS ON UNREVIEWED DOCTRINE RECEIPT` checkpoints through 21:31Z. Sol
+correctly refused to delete, move, stage or exclude a file it did not own. Adding the path to
+`.git/info/exclude` would have changed the gate itself. The factory could only stop and name the
+producing session as the owner of the fix. A second PROMPT A run, which found the receipt and
+"updated" it, extended the stall.
+
+**Resolved** at about 21:45Z. The producing session copied the receipt out of the tree (`.claude-state/`,
+git-excluded, SHA-256 verified equal) and removed the in-tree copy. `Test-FactoryGovernance.ps1` then
+returned exit 0.
+
+**General form:** a fleet tool that writes into a member project's tree is a writer that the project's
+governance never admitted. On a project with frozen candidates or exclusive file owners, that one file
+is a governance event, not a convenience. `git status` being clean before the run proves nothing about
+the run.
+
+**Test:** before any fleet prompt writes under T, run T's own integrity or governance check if it has
+one. After the write, run it again; it must still pass. **Fixed in the prompts in the same commit:**
+PROMPT A §2b writes the receipt out of tree (`<home>/.claude/doctrine-sync/<basename of T>.json`) for
+such projects. Paste B and `lane-orchestrator.md` §1 read that path when the in-tree one is absent.
+PROMPT K §2 keeps the instance map in the filing and records `KERNEL: DOGFOOD-PENDING` when the project's
+gates forbid the edit.

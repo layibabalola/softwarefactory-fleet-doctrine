@@ -6,6 +6,8 @@
 #
 # --dry-run   generate and binding-check every prompt it can, dispatch nothing.
 # --from X    reuse earlier stages already in RP_OUT (only if subject blob and bench HEAD are unchanged -- say so in the filing).
+# --retry-missing  within each stage run, re-dispatch only lanes that have not cleared LANE-COMPLETE (e.g. one arbiter that
+#             degenerated) instead of re-running every seat. Disclose retries in the filing.
 # The final lines are the posture measurement; exit 1 if the posture is PARTIAL.
 set -u
 HERE="$(cd "$(dirname "$0")" && pwd)"
@@ -13,8 +15,8 @@ HERE="$(cd "$(dirname "$0")" && pwd)"
 # `ids` failed, `eval ""` succeeded, and stage A died with 17/17 DID-NOT-RUN (airmypc, 2026-09-14).
 PY=(python "$HERE/review_posture.py")
 : "${RP_OUT:?}" "${RP_SUBJECT:?}" "${RP_BENCH:?}" "${RP_REPO:?}"
-FROM=A; DRY=0
-while [ $# -gt 0 ]; do case "$1" in --from) FROM=$2; shift 2;; --dry-run) DRY=1; shift;; *) echo "unknown arg $1"; exit 2;; esac; done
+FROM=A; DRY=0; RETRY=0
+while [ $# -gt 0 ]; do case "$1" in --from) FROM=$2; shift 2;; --dry-run) DRY=1; shift;; --retry-missing) RETRY=1; shift;; *) echo "unknown arg $1"; exit 2;; esac; done
 export RP_OUT RP_SUBJECT RP_BENCH RP_REPO
 
 # A Windows host can resolve `bash` to WSL's, which sees neither this CLI nor these paths.
@@ -55,8 +57,12 @@ PY
 }
 run_stage() {    # stage secs
   local pids=() name fam nick
-  while read -r name fam nick; do clear_lanes "$name"; dispatch "$name" "$fam" "$nick" "$2"; pids+=("$LASTPID"); done < <(stage_lanes "$1")
-  wait "${pids[@]}"
+  while read -r name fam nick; do
+    if [ "$RETRY" = 1 ] && ran "$name"; then stamp "keep $name (already cleared the sentinel)"; continue; fi
+    [ "$RETRY" = 1 ] && [ -f "$RP_OUT/$name.txt" ] && cp "$RP_OUT/$name.txt" "$RP_OUT/$name.failed-$(date -u +%H%M%S).txt"
+    clear_lanes "$name"; dispatch "$name" "$fam" "$nick" "$2"; pids+=("$LASTPID")
+  done < <(stage_lanes "$1")
+  [ ${#pids[@]} -gt 0 ] && wait "${pids[@]}"
 }
 
 # A launcher that cannot start is not an unavailable family: rc=127 from a broken npm shim once dropped every

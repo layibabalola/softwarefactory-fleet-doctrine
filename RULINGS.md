@@ -2217,3 +2217,8 @@ These edits to shared bootstrap and posture files are made under this owner ruli
 and is left for Conjugal to reconcile with R9.4.
 
 Procedure: `bootstrap/lane-orchestrator.md` §1–§3; tool: `tools/review-posture/README.md`.
+
+- MINUTE REGISTRY claim (conjugal, 2026-09-14, machine Bachelor / Dell XPS 17; OS Task Scheduler, not the app store):
+  `\Conjugal-Harvest-Steward` = every 15 min at :04/:19/:34/:49. Checked against the LIVE configuration of every
+  task on this box (Conjugal floors :06/:08/:11/:13/:16/:18/:21/:22/:23 cadences, Git Guardian every 5 min from :01,
+  Cloudvore guards). No collision found. First fire verified from its receipt at 21:19Z, not from configuration.

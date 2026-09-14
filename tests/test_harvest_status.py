@@ -80,8 +80,22 @@ class HarvestStatus(unittest.TestCase):
         self.assertEqual(hs.main(base), 1)
         self.assertEqual(hs.main(["demo", "--repo", str(self.tmp.name)]), 2)
 
+    def test_kernel_dogfood_lines_count_as_findings(self):
+        text = ("project: x\nproviders: y\n\nK1 | FIT | \"q\" | evidence\nK12 | BREAK | \"q\" | e | REPLACES: \"a\" -> \"b\" | PROOF: p\n"
+                "P:code Acceptance evidence (K5) | FRICTION | \"q\" | e\n## Untested\nK3 | BREAK | \"q\" | e\n")
+        _, n, u, _ = hs.parse_filing(text)
+        self.assertEqual((n, u), (3, 1))
+
+    def test_kernel_header_keys_parsed(self):
+        text = ("project: x\nkernel: fleet-factory-kernel r1\nprofile: code@r1\nsubjects: 2 (a1b2, c3d4)\n"
+                "health: assurance=SATISFIED operability=NORMAL\nproviders: claude codex\nposture: no model review\n")
+        h, _, _, flags = hs.parse_filing(text)
+        self.assertEqual((h["kernel"], h["profile"], h["health"][:19]), ("fleet-factory-kernel r1", "code@r1", "assurance=SATISFIED"))
+        self.assertTrue(h["subjects"].startswith("2"))
+        self.assertEqual(flags, [])
+
     def test_r9_posture_forms_are_not_flagged(self):
-        for p in ("conjugal-standard COMPLETE (17/17 lanes)", "conjugal-standard-PARTIAL (5/17 lanes; missing: panel 0/8)"):
+        for p in ("no model review", "conjugal-standard COMPLETE (17/17 lanes)", "conjugal-standard-PARTIAL (5/17 lanes; missing: panel 0/8)"):
             _, _, _, flags = hs.parse_filing(f"project: x\nproviders: y\nposture: {p}\n")
             self.assertEqual(flags, [], p)
 

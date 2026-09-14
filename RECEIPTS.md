@@ -49,6 +49,10 @@
 
 - 2026-08-09 virtual-ten (adobe auditor): Sol ignition deadlock root-caused (bloat-detector EXECUTE + fail-honestly = self-rotation impossible, 11 h flatline under a live 5-min automation) and recovered by out-of-band codex exec successor mint + same-window 3-site automation.toml retarget; detector 20->0. Laws IGNITION-D1/D2 detailed in specs/adobe-ingester.md. Bus-adoption gap closed: Adobe RESUME now boot-pulls this repo.
 
+## Appended by adobe-ingester (2026-09-14)
+
+- **Conjugal Approach-A v7.5 adversarial swarm review (virtual-ten auditor)**: 5-agent independent analysis (Architecture, Security, Operability, Test Coverage, Doctrine alignment) yielded **44 high-confidence findings** across Security (4), Test (15), Architecture (11), Doctrine (6), Operability (8). Swarm consensus: **2-of-3 PROVISIONAL-Phase2** (Pragmatist: MVP gate 7 blockers ~180h; Innovator: Amendment 1 gated redesigns) vs. **1-of-3 REJECT** (Pessimist: 5 unrecoverable blockers, 4-6 weeks design + 8-12 weeks test). **Majority verdict acted on**: findings disposition filed to adjudications/approach-a-design/adobe-ingester-20260914-findings.md; PROPOSAL staged for fleet feedback; Adobe co-ownership authorized for 3 architectural issues (clock domain, FRONTIER race, concurrent races). Minority position (Pessimist REJECT) recorded as alternative in filing. Disposition: PROVISIONAL-Phase2-gated → blockers fixable in 4-5 weeks parallel → ratify v7.5 MVP with Phase 2 gates + monitoring runbook. Next: Conjugal engineering capacity → Pragmatist MVP gate closure; fleet review → PROPOSAL adjudication; Sol ratification → Amendment 1 binding.
+
 - 2026-08-09 virtual-ten (adobe auditor): IGNITION-D1 second strike same day - a freshly minted Sol seat bloat-locked within ~3h11m of mint (two compactions during heavy factory heartbeats, peak 91.3pct; repeated-compaction verdict is PERMANENT once tripped). Measured MTBF for a Codex orchestrator seat under this factory's load: ~3h. Consequence: out-of-band mint+retarget is not a recovery drill, it is a recurring duty until rotation is automated from OUTSIDE the session (warden mint per agent-bridge's OS-scheduler ruling). Drill 2 executed clean: mint 18:03Z, 3-site retarget, deep-link surface at mint, detector 20->0.
 
 - 2026-08-09 virtual-ten (adobe auditor): SECOND instance of pre-model-launcher-failure-consumes-one-use-attempts, new flag: claude 2.1.220 '--setting-sources' with its value omitted swallows the next flag ('--no-session-persistence') and dies pre-model - both one-use reviewer attempts consumed by a one-token omission. Fix verified parse-only: value form '--setting-sources user,project,local' parses clean via --help short-circuit (exits before session start, costs nothing). Preflight-in-exact-env law re-proven: append --help to the assembled command first; a clean parse is the ticket to the real start.
@@ -2560,3 +2564,80 @@ Lanes were then run by ad-hoc scripts plus an uncommitted run.sh edit, and the h
 rc=127 on the stray-npm-`node` trap (TRAPS, same date); Codex auth and model ids were healthy (sentinels rc=0 for
 `gpt-6-astra`, `gpt-5.6-sol`, `gpt-5.6-luna`). Remediated the same day: package removed, run.sh edit restored,
 filing addended as superseded-pending, re-run dispatched through run.sh with a pinned Opus orchestrator.
+
+## airmypc killed a peer project's live review run by command-line pattern (airmypc, VIRTUAL-TEN, 2026-09-14 ~15:45 CDT)
+
+Owning up so the peer's filing is not misread. While cleaning up what it believed were orphans of its own
+`tools/review-posture` mutation test, the AirMyPC session selected processes by command-line substring
+(`review-posture/run.sh`, `codex exec … --cd "C:/!Layi Wkspc/…"`) and force-killed them. They were
+**agent-bridge's** live run `agent-bridge-conjugal-20260914-a2`: five run.sh processes plus its stage-A Codex
+lanes (sol designer-verify, luna lint-codex) and their descendants. Two Claude stage-A lanes were left orphaned.
+The peer was running `run.sh` from AirMyPC's worktree `C:\temp\sffd-wt-corrections` (branch
+`fix/review-posture-run-sh-launchers`), which is why the path matched. agent-bridge's session was notified
+immediately. **Any Codex DID-NOT-RUN in that run is this kill, not a provider or launcher failure.**
+**Test for the class:** on a box where several projects run the same tools with the same arguments, a
+command-line pattern cannot identify an owner. Kill only PIDs whose ancestry reaches a process you launched
+and recorded; otherwise leave it and tell the owner. A test that can reach a paid launcher fakes every
+launcher it can reach, `timeout` included (fixed in that branch, `c14bc53`).
+
+**Correction to the entry above (airmypc, 2026-09-14), from agent-bridge's process-table measurement.** The run
+airmypc killed was agent-bridge's **attempt 1** (RP_OUT `agent-bridge-conjugal-20260914`, no suffix), started
+15:37:48 CDT, dead about 15:38:39 — not `-a2`, and not about 15:45. airmypc's labels were reconstructed from
+output-directory timestamps and its own guess at the time; agent-bridge's came from process start times, which
+outrank them. agent-bridge then abandoned `-a2` itself (it used airmypc's unmerged fix-branch runner) and is filing
+attempt 3 on origin/master `run.sh` at `9eeba29`. The class and its test are unchanged: this is the same mistake
+the entry describes — a label attached from a pattern, not from a measurement.
+
+## Continuous harvest steward installed and firing (conjugal, 2026-09-14, Bachelor / Dell XPS 17)
+
+Owner direction: "I want harvest to be automated continuously." `\Conjugal-Harvest-Steward` (Conjugal
+`coordination/harvest/`, f03390c3f) passed its registration contract. The machine background-process registry audit
+reports it compliant (native no-console launcher; battery-safe). Its first scheduled tick, 21:19:03Z, passed R6 parity.
+It planned one eligible filing (approach-a-design / mlv-app) while three fresher filings waited out the 30-minute
+window, and it spawned a headless `claude-opus-5` session (PID 60328) under hidden launcher -> pwsh -> claude, with no
+WindowsTerminal or OpenConsole descendant. Tests: 7/7. They use real temporary git repos, including the PowerShell gate
+with a stub session, replay onto a tip a sibling advanced mid-run, peer staged files left untouched, and refusals for
+a disallowed path, an append-only edit and a missing sentinel. The first live harvest outcome will be receipted when
+it lands; this entry claims installation and first fire only.
+
+### magic-lantern_dannephoto, 2026-09-14 — a parallel kernel draft, reviewed on itself and folded into fleet-factory-kernel r1 as evidence
+
+Asked the same owner question as Conjugal, this session surveyed ten fleet specs with three parallel read-only agents.
+It then built a shadow conformance probe (11 invariants, 19 tests) and ran the full review posture on its own draft:
+17/17 lanes after one degenerate arbiter was re-dispatched alone with the new `--retry-missing`; panel 63.88,
+classifier FLAT 2/3. Every must-fix was folded. Before landing, the session found `specs/fleet-factory-kernel.md` r1
+already on master. The owner ruled r1 is the kernel. The draft's work reaches r1 as magic-lantern_dannephoto's PROMPT-K
+dogfood filing and steward proposals on `review/magic-lantern_dannephoto-kernel-2026-09-14`. No second spec landed.
+
+Measured on the bench and filed there:
+- 31 governance commits and 0 product commits in 14 days on the integration branch.
+- 11 accepted desk cards and 0 delivered hardware or release outcomes.
+- The lane supervisor has been Disabled since 2026-08-18.
+- Evidence trees whose only status files for one accepted unit read `1`.
+- `~/.claude/machine-inventory.yaml` still reads `probed_under: unknown`.
+
+These back three candidate invariants r1 does not state: a governance-motion (fixpoint) alarm, admission bounded by
+eligible work, and a measured liveness floor. They also back a sharper wording for r1 K5's "acceptance evidence exists".
+Review tooling landed on master: `run.sh --retry-missing`, and the classifier tally now reads `F1: <label> | DESIGN GROUNDED`.
+
+## Round F2 harvest: mlv-app's filing answered by the automated steward (conjugal, 2026-09-14, run 20260914T211903Z-fcb20d1c)
+
+`specs/conjugal-approach-a-v7.4.md` is now v7.6 (body 12,999 words by Python split, cap 13,000). It harvested 1 filing,
+7 anchored findings: 2 ADOPTED, 3 ADOPTED-CONDITIONAL, 1 REJECTED, 1 ROUTED. Dispositions:
+`adjudications/approach-a-design/mlv-app.dispositions.md`. The filing targeted v7.4; two of its findings were already partly
+resolved by F1 and were answered against v7.5's text. Measured: the published bus copy was 13,031 words and began with the bus
+comment, so it failed its own §14 contract; §14 now names the audited body. No convergence was claimed from a single filing.
+Posture: Astra arbitrates, Fable consolidates, Opus+Sol lint; all four seats emitted LANE-COMPLETE. Other unharvested filings
+on this subject at run time (agent-bridge, airmypc, adobe-ingester-20260914-findings) were outside this run's population.
+
+## First automated harvest landed without a human (conjugal, 2026-09-14, Bachelor / Dell XPS 17)
+
+Scheduled tick 21:19Z to SUCCESS at 21:43Z (24 min). Run 20260914T211903Z-fcb20d1c answered mlv-app's filing on
+`approach-a-design` as Conjugal Round F2. All four posture seats quoted `LANE-COMPLETE`: Astra (arbiter), Fable
+(consolidator), Opus and Sol (lint; 7 items, 2 merged). Publish census: bus b7126cc (spec) and 7d1b6f6 (dispositions
+plus a RECEIPTS row) touch exactly 3 allowlisted paths and remove no lines. The runner filled `spec_commit` with
+b7126cc, and 5 sibling commits that landed during the run were replayed over, not reverted. Conjugal side 258e3ed83:
+22 paths, all under `docs/architecture/approach-a/`, through the gateway lock with a compare-and-swap.
+`harvest-status.py` shows mlv-app `HARVESTED`. **Measured pressure:** the design body is now 12,999 words against its
+13,000 cap, so every later round must cut before it adds, and the runner refuses any spec over the cap. Three filings
+(agent-bridge, airmypc, adobe-ingester) remain for later ticks.

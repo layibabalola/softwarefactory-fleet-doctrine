@@ -6,6 +6,12 @@ that PROMPT B has something to stand on.
 
 Run it again whenever you have been away; step 4 is the part that pays off on every re-run.
 
+**Before §0: confirm where you are running.** Paste A (`bootstrap/README.md`) has already resolved
+the project `T` and the checkout `D`. Reuse both and do not search again. "This project" means `T`,
+and every write below goes under `T`, never under `D`. Stop with `FROZEN` if any instructions you
+hold mark `T` read-only or archived. A path you could not read is `UNREADABLE`, not missing. Never
+search for a substitute file.
+
 ---
 
 ## 0. Account parity — FIRST, before anything that reads a provider
@@ -60,21 +66,45 @@ than as fact.
 
 ## 1. Sync the bus
 
-Find the doctrine checkout: a binding in this project's `CLAUDE.md`, else a pointer in `docs/`,
-else the machine convention (`C:\code\softwarefactory-fleet-doctrine` on this box — say so if you
+Use the checkout `D` that paste A resolved, and re-check that its `origin` is the bus. Only when
+you were not started by paste A, find the doctrine checkout yourself: a line of this project's
+`CLAUDE.md` or `AGENTS.md` containing `softwarefactory-fleet-doctrine`, else the machine convention (`C:\code\softwarefactory-fleet-doctrine` on this box — say so if you
 reach this rung, because a path that happens to be right here is a guess anywhere else).
 
+Run these **one at a time**, and check each result before running the next. In a single block, a
+wrong-branch checkout was fast-forwarded before anything stopped:
+
 ```bash
-git -C "<doctrine>" rev-parse --abbrev-ref HEAD     # expect master
-git -C "<doctrine>" status --short                  # note dirty/untracked BEFORE fetching
-git -C "<doctrine>" fetch origin master
-git -C "<doctrine>" merge origin/master --ff-only
+git -C "<doctrine>" rev-parse --abbrev-ref HEAD     # not master -> WRONG_BRANCH; do not run the rest
+git -C "<doctrine>" status --short                  # non-empty -> DIRTY; do not run the rest
+git -C "<doctrine>" fetch origin +refs/heads/master:refs/remotes/origin/master   # explicit refspec; fails -> UNREACHABLE
+git -C "<doctrine>" merge origin/master --ff-only   # refused -> NON_FF or UNTRACKED_COLLISION
 ```
 
-Never `--force`, `reset --hard`, or `clean`; other sessions leave work here. Report distinctly:
-`NON_FF`, `UNTRACKED_COLLISION`, `WRONG_BRANCH`, `DIRTY`, `UNREACHABLE` — they are different
-problems with different fixes and the common mistake is to call them all "sync failed". On any
-of them, stop.
+Never `--force`, `reset --hard`, `clean`, `stash`, `checkout` or delete in `<doctrine>`; other sessions
+leave work there. Report distinctly: `NON_FF`, `UNTRACKED_COLLISION`, `WRONG_BRANCH`, `DIRTY`,
+`UNREACHABLE`. They are different problems with different fixes, and the common mistake is to call
+them all "sync failed". For each, quote `git -C "<doctrine>" rev-list --left-right --count
+master...origin/master` and `git -C "<doctrine>" status --short`.
+
+**`UNREACHABLE` stops.** Every other code is recoverable without touching the shared checkout, so
+recover instead of stopping. A checkout older than the lineage, left dirty by another session, or
+parked on a work branch still holds every object needed to read current doctrine:
+
+1. Record the class: `git -C "<doctrine>" merge-base master origin/master`. Empty output means
+   `LINEAGE_REPLACED`, otherwise `DIVERGED`. Also quote `git -C "<doctrine>" log --oneline
+   origin/master..master`. Leave the checkout's branch, index and tree exactly as they are.
+2. Let `R` = `<doctrine>-origin`, a sibling folder. If `R` does not exist, run `git -C "<doctrine>"
+   worktree add --detach "R" origin/master`. If `R` exists and `git -C "<doctrine>" worktree list
+   --porcelain` lists it, stop `DIRTY` when `git -C "R" status --short` is non-empty, and otherwise run
+   `git -C "R" checkout --detach origin/master`. If `R` exists and is not listed, stop
+   `UNTRACKED_COLLISION`.
+3. Use `R` as `<doctrine>` for §2–§5 and as `path` in §2b. Add `"diverged": {"checkout":
+   "<original>", "code": "<code>", "class": "LINEAGE_REPLACED|DIVERGED", "local_only": <count>}` to the
+   receipt. Report the original checkout as reconciliation the owner may schedule, not as a blocker.
+
+`R` is a read copy. Only this procedure moves it, it holds no branch, and §4b never removes it. Write
+to the bus only through a review branch (R7), never from `R`'s detached HEAD.
 
 Syncing is not a boot-only act (RULINGS **R8**). Fetch again before any write to the bus, and after
 any push leave the shared checkout level with `origin/master`, your review branches pushed, and your
@@ -108,6 +138,18 @@ statement this project makes about its own readiness, and the bus is shared:
   "synced_at": "<now, ISO-8601>", "parity": "MATCHED|REPAIRED|UNVERIFIED",
   "inventory": "<path to the inventory that answered>" }
 ```
+
+**Unless T's own gates forbid an untracked file there.** A governed factory can hold a frozen review
+candidate whose integrity gate fails closed on any unreviewed path. For such a project, an in-tree
+receipt halts the factory. Measured 2026-09-14 (adobe-ingester): a receipt written by this section
+blocked every orchestrator commit for about four hours (Adobe `HUB.md` heading
+`PREFLIGHT FAILURE Q-034 rev3 | SHARED WORKSPACE UNREVIEWED DOCTRINE RECEIPT`, then seven checkpoints).
+Before writing, read T's operating contract (`FACTORY.md`, `AGENTS.md`, `CLAUDE.md`, or a `.factory/`-style
+tree). If it names a frozen or review-state candidate, a candidate-integrity check, or files with
+exclusive owners, or if you cannot tell, write the receipt **outside T** instead, at
+`<home>/.claude/doctrine-sync/<basename of T>.json` (home written out in full), and say so in the report.
+Never add an ignore or exclude entry so that an in-tree receipt passes: that edits the gate you would be
+tripping.
 
 **Read the old receipt's `head` before you overwrite it** and carry it as `previous_head`. It is
 §4's `<your-last-sync-sha>`, and the receipt is the only place it lives. Overwrite first and §4's
@@ -200,6 +242,10 @@ Three sources, and they are not the same:
   re-measurement is exactly the independent evidence the bus needs.
 
 Where something you read applies here, act on it now or record why it does not.
+
+**Every project dogfoods the fleet factory kernel.** If `adjudications/factory-kernel/<this project>.md` does not exist on
+master or any `origin/review/*` branch, or its `kernel:` revision is older than `specs/fleet-factory-kernel.md`'s header,
+report it and name `bootstrap/PROMPT-K-dogfood-kernel.md` as the next step after this sync.
 
 **If this project owns a subject, check whether its filings are answered — every sync:**
 
