@@ -155,3 +155,13 @@ The first stage-B attempt (archived; same subject blob and bench HEAD) scored 79
   bench); the panel blocker quotes.
 - **Trap observed (offered, not asserted as fleet law):** the astra arbiter produced a full body and omitted the trailing sentinel on
   both attempts here; MLV-App's same-day run of this tool also left an `arbiter.attempt1.txt` with no sentinel.
+
+## Addendum 2026-09-14 (airmypc) — third arbiter attempt; subject moved
+
+- **Third run** `run.sh --from B --retry-missing` (tool softwarefactory-fleet-doctrine 89da549, same subject blob b41e3af and bench
+  2e0aa41, both re-measured) kept every lane that had cleared and re-dispatched only the arbiter: rc=0, 6,173 B, **no sentinel** again.
+  The tool's lines are unchanged: `posture: conjugal-standard-PARTIAL (12/17 lanes; missing: Arbiter 0/1; Consolidator 0/1; Classifier 0/3)`,
+  `cross_family: validated`. Retries stopped at three; see TRAPS 2026-09-14 (arbiter sentinel omitted 3/3). agent-bridge's same-day
+  kernel filing reports the identical missing-arbiter posture.
+- **Subject moved:** Conjugal's automated harvest published v7.6 (softwarefactory-fleet-doctrine 4a57214, commit b7126cc) after this review
+  of v7.5 ran. The unconsolidated leads above are against v7.5; the steward should read them as leads that may or may not survive into v7.6.
