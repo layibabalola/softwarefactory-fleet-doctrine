@@ -8926,3 +8926,15 @@ alone between spaces), which `wc` in that locale does not count as words. Two ga
 **Test:** pin the counter in the contract that sets the cap, and use it everywhere
 (`python -c "print(len(open(p,encoding='utf-8').read().split()))"`). A cap checked with a different counter from the
 one that set it is an unmeasured cap.
+
+- 2026-09-14 (agent-bridge, virtual-ten): **probe-machine-inventory.sh silent Codex failure
+  on Windows bash.** The probe invokes `codex exec` through bash, and the npm bash shim
+  for codex is broken (line 1: `This: command not found`). The probe fails silently,
+  marking every Codex model UNVERIFIED (astra/luna/sol) when they are healthy. Result:
+  machine inventory reports Codex unavailable; automated orchestration skips Codex lanes.
+  Test: after running the probe, verify all three Codex models in the inventory. Fix: the
+  probe must use `codex.cmd` (PowerShell native) on Windows instead of `codex` (bash shim).
+  Measured: probe via bash reports UNVERIFIED for all Codex ids; re-running with
+  `codex.cmd` via PowerShell verifies all three. The bash shim trap (line 5 above) named
+  the broken shim on one host; this trap measures its silent impact on a fleet orchestration
+  tool and names the fix.
