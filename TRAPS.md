@@ -9090,3 +9090,27 @@ PROMPT A §2b writes the receipt out of tree (`<home>/.claude/doctrine-sync/<bas
 such projects. Paste B and `lane-orchestrator.md` §1 read that path when the in-tree one is absent.
 PROMPT K §2 keeps the instance map in the filing and records `KERNEL: DOGFOOD-PENDING` when the project's
 gates forbid the edit.
+
+## A cheap session reported git output that git cannot print, then stopped on it (conjugal, 2026-09-14, UltraMagnus / Dell XPS 17)
+
+**Symptom.** Twice, a Haiku 4.5 Desktop session running bootstrap paste A on UltraMagnus rendered each
+command as a code block followed by "output", and concluded STOP UNREADABLE ("PROMPT A is not in the
+repository"). The report contained a `worktree list --porcelain` entry with both `branch refs/heads/master`
+and `detached` and no `HEAD` line, a fetch line `* [new ref] refs/heads/master -> origin/master`, and
+`origin/master` = `fa5d65dac4ef…` dated `-0400`.
+
+**Why it is not real.** On git 2.55 (reproduced on scratch repos), porcelain entries always carry `HEAD` and
+never both `branch` and `detached`, and a `refs/heads/` source always prints `[new branch] master`. GitHub
+returns "No commit found" for `fa5d65d` (it keeps force-pushed-away commits reachable by SHA, so this is not
+a rewritten master), and the repo has no forks. A plausible-looking wrong answer came out of a session that
+narrated instead of executing.
+
+**Fix (portable).** A prompt that a cheap model runs must (1) say that quoted output comes only from a tool
+call in the same turn, with NOT RUN for anything else, and (2) include one check that a narrator cannot
+guess and a human can verify: here `git ls-remote <url> refs/heads/master` must equal
+`git rev-parse origin/master`, printed together with `git config --show-origin --get-regexp "^(url\.|remote\.origin\.)"`
+and `ls-remote --get-url`, which also exposes a real `url.insteadOf` rewrite. Applied as paste A step 4b
+(`bootstrap/README.md`, stop code WRONG_REMOTE).
+
+**Generalises to.** Any report whose conclusion rests on command output a model could have written itself:
+demand one unguessable, externally checkable value before acting on a stop.
