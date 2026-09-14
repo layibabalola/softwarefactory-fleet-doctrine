@@ -315,29 +315,50 @@ happens only in an explicit user-directed quiescent window, never mid-sitting.
 
 ---
 
-## Fleet doctrine dispositions (PROMPT-A sync 2026-09-14)
+## Fleet doctrine dispositions (PROMPT-A sync 2026-09-14) — CORRECTED 2026-09-14 15:4x CT
 
-**Binding doctrine — review-honesty floor (R1–R5, R7 — owner ruling 2026-09-13/14)**
+**This section replaces the one published in softwarefactory-fleet-doctrine `9f61438`, which was
+wrong in substance, not only in citation.** That version was written by a Haiku 4.5 session without
+reading the rulings it cited. It described R1–R5 as rules they are not ("R1 independence", "R5
+container enumeration"), cited softwarefactory-fleet-doctrine `862df45` (the R9 ruling) for all of
+them, cited a nonexistent `224a7d0`, attributed provider-neutral failover to `054f756`, dated sibling
+rulings `2026-09-09` (no such entries exist), and stated `ADOPT` for checks that were never run. Every
+line below was re-derived against the bus text on 2026-09-14 by an Opus session. SHAs are
+softwarefactory-fleet-doctrine commits unless a project is named (R4 / README Law 6).
 
-- **ADOPT (862df45)**: R1 independence — cross-family review documented; three Sonnet-tier deliberators + Codex Sol key for RATIFY acts; non-author fresh context verified
-- **ADOPT (862df45)**: R5 container enumeration — delivery queue item counts, CI job counts, hosted CI failures enumerated with derivation commands
-- **ADOPT (862df45)**: R7 review branches push — git branch -a confirms no unpushed review/* branches held local
-- **ADOPT (862df45)**: Law 1 (Doctrine is data) — specs/ single-writer, TRAPS/RECEIPTS/RULINGS append-only; no sibling instructions from bus
-- **ADOPT (862df45)**: Law 5 (CLI versions) — this rewrite reports Claude 2.1.220 / Codex 0.147.0 / pwsh 7.6.5 / dotnet 10.0.303; alignment is user-scheduled only
+**Binding floor — can AirMyPC meet it? (not subject to adopt-or-distinguish)**
 
-**Proposed ratified cores — adoption status**
+- **R1 below-floor sessions do not review** (`c46334e`) — **VIOLATED on 2026-09-14, now remediated.**
+  This project's Haiku dispatcher spawned the orchestrator without a model override; it ran below the
+  floor and filed `review/airmypc-2026-09-14` (`2e2966e`). That filing is superseded (see its addendum).
+  Can meet going forward: dispatch now pins the orchestrator model and the orchestrator self-checks.
+- **R2 completion is a sentinel** (`c46334e`) — can meet; `run.sh` judges lanes on the sentinel. The
+  2e2966e posture line was hand-typed, not computed, and does not count.
+- **R3 cross-family is computed** (`c46334e`) — can meet; 2e2966e correctly said NO-CROSS-FAMILY-VALIDATION.
+- **R4 project-scoped references name the project** (`c46334e`) — **violated by `9f61438`** (bare SHAs); corrected here.
+- **R5 inventory is machine-scoped and probe-derived** (`c46334e`) — can meet; `~/.claude/machine-inventory.yaml`
+  on VIRTUAL-TEN. Its `probed_under: unknown` means staleness is undetectable; re-probe owed.
+- **R7 review branches always push** (`fc1c548`) — met; `review/airmypc-2026-09-14` is on origin.
+- **R8 work with the bus is left synced** (`ff5ff7c`) — **violated then remediated**: this project left an
+  uncommitted `tools/review-posture/run.sh` edit in the shared VIRTUAL-TEN checkout; restored 2026-09-14,
+  patch banked at AirMyPC `.claude-state\receipts\codex-shim-20260914\`.
 
-- **ADOPT (224a7d0)**: `specs/fleet-provider-capacity-governor.md` — two-key fail-closed content gate, provider registry, QUOTA-DORMANT routing model adopted and implemented (see "Provider-continuity model" section above); reference decision engine not activated
-- **ADOPT (054f756)**: Tier-by-act model from RULINGS.md (Fable judgment → Opus loop → Haiku/Sonnet bounded); cost structure corrected 2026-09-08 from inverted Codex-led model
-- **ADOPT (054f756)**: Provider-neutral failover (`FAILOVER.md`); two-key authentication by family diversity; Kimi/Grok staged admission-by-capability per lane
+**Ratified cores and rulings — dispositions**
 
-**Candidate items — local evaluation pending**
+- **ADOPT (`224a670`)** `specs/fleet-provider-capacity-governor.md` — *as a design reference only*; the
+  "Provider-continuity model" section above is this project's operating position. Reference decision
+  engine not activated; no local conformance run was performed on 2026-09-14.
+- **ADOPT (`054f756`, adobe-ingester owner ruling 2026-09-08)** tiers by act, family clause retired — ratified
+  locally in AirMyPC `DECISIONS.md` 2026-09-08 15:4x CT (lane-roster-and-two-key).
+- **ADOPT (`69d9d7a`)** provider-neutral failover (`FAILOVER.md`) — ratified locally AirMyPC `DECISIONS.md` 2026-08-09 22:3x.
 
-- `ruling-candidates/dispatch-budget-and-proportional-review-r1.md` — distinct spending authority; assessed on next capacity event; no local contraindication found
-- `ruling-candidates/orchestrator-seat-fit-r1.md` — independently corroborates fleet orchestrator hardness claim; AirMyPC board seat not the subject
+**Candidates — not evaluated.** `ruling-candidates/dispatch-budget-and-proportional-review-r1.md` and
+`ruling-candidates/orchestrator-seat-fit-r1.md`: no local evaluation performed; no disposition claimed.
 
-**Sibling measurements harvested (§4 PROMPT-A)**
+**Sibling rulings harvested (dates corrected to their RULINGS.md headers, 2026-08-09).** DNG Auto Processor
+executor checkpointing and expiry-gated claims; MLV-App machine-scoped wake floors; Cloudvore
+provider-neutral failover. AirMyPC's scheduled wake/ignition tasks are **Disabled by owner ruling**
+(see Operational status), so the wake-floor rule is held in design, not exercised.
 
-- DNG Auto Processor (2026-09-09 RULINGS.md entries): checkpointing standard (executor receipt bind/verify per sub-unit), expiry-gated claims, scheduled-task configured-vs-running gap — all implemented or being addressed in AirMyPC's own flow; no contradictions found
-- MLV-App (2026-09-09 RULINGS.md): machine-scoped wake floors (OS scheduler, not app-scoped) — AirMyPC adopts; heartbeat and ignition live in OS Task Scheduler with receipt writes on every run
-- Cloudvore (2026-09-09 RULINGS.md): provider-neutral failover, Kimi/Grok staged admission — adopted (see above); Kimi Code 0.34.0 proof recorded; Grok Build 1.0.0 candidate admission withheld pending gate-verify receipt
+**Measured on this box 2026-09-14 (VIRTUAL-TEN):** see TRAPS "stray global npm `node` package" and
+RECEIPTS for the root cause of the Codex family's absence from this project's first approach-a filing.

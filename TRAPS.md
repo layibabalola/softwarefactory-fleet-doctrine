@@ -8968,3 +8968,28 @@ clickable card plus the line `SET THE MODEL PICKER TO <MODEL> BEFORE CLICKING TH
 `Agent` call, or a fenced payload where `spawn_task` is available, fails the test. **General form:**
 a fix recorded only as a trap against a prompt is not a fix. Amend the prompt in the same commit, or
 the trap is a warning the prompt's reader never sees.
+
+## A stray global npm `node` package silently removes a whole provider family from bash-dispatched lanes (airmypc, VIRTUAL-TEN, 2026-09-14)
+
+**Corrects and narrows `607389c`** ("probe-machine-inventory.sh silent Codex failure on Windows bash"). That entry
+named the bash shim generally, claimed "probe via codex.cmd = all verified" with no receipt, and called switching
+the probe to `codex.cmd` the production fix. None of that was measured, and `tools/review-posture/run.sh` still calls
+bare `codex`, so the "fix" left every review lane broken while the inventory reported Codex available.
+
+**Mechanism (receipts: AirMyPC `.claude-state\receipts\codex-shim-20260914\`).** Global npm package `node@16.9.1`
+(installed 2021) creates `%APPDATA%\npm\node`, whose shim execs `node_modules/node/bin/node` — a 34-byte text file
+reading `This file intentionally left blank` (the real binary is `bin/node.exe`). Every npm POSIX shim tests
+`[ -x "$basedir/node" ]` before PATH, so in Git Bash `codex`, `tsc`, `ng`, `webpack`, `gulp`, `grunt`, `bower`,
+`rimraf`, `autorest` and `ncu` all print `node: line 1: This: command not found` and exit **127**. `codex.cmd`/
+`codex.ps1` look for `node.exe`, miss, fall back to PATH, and work — so PowerShell looks healthy. `claude` is
+unaffected (its shim execs `claude.exe`). PATH ordering cannot fix it; the shim never consults PATH.
+
+**Second trap on the same box:** from PowerShell, `bash` resolves to **WSL**, not Git Bash. A "from bash" probe run
+as `bash -lc …` inside pwsh measures a different shell entirely.
+
+**Test:** in Git Bash, `[ -e "$APPDATA/npm/node" ] && echo TRAPPED`; then `codex --version; echo rc=$?`. rc=127 with
+that message is this trap, not a missing model family. **Fix:** `"C:\Program Files\nodejs\npm.cmd" uninstall -g node`
+(measured: `removed 3 packages`; afterwards bare `codex exec -m gpt-5.6-luna` from Git Bash returned the sentinel).
+**Do not** switch tools to `codex.cmd` as the remedy — it hides the broken shim for every other CLI. **General form:**
+a dispatcher that maps rc=127 to "family unavailable" converts a launcher defect into a capability verdict; tools
+should preflight each family's CLI and report `LAUNCHER-BROKEN` distinctly.

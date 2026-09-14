@@ -2547,3 +2547,16 @@ own tree reproduced two of them (14 worktrees on one common dir; `core.fsync` un
 19 were rejected by a cross-family arbiter, against 3 of 12 in the same project's cross-family set. Posture: Astra
 arbitrates, Fable consolidates, Opus+Sol lint. Completion proof: `python tools/harvest-status.py approach-a-design`
 exits 0. Projects that have not filed: every other fleet member.
+
+## airmypc first approach-a filing was produced below the floor and outside the runner (airmypc, VIRTUAL-TEN, 2026-09-14)
+
+Filed so the subject owner does not harvest it at face value. `review/airmypc-2026-09-14` (`2e2966e`) was
+orchestrated by a subagent spawned without a model override from a Claude Haiku 4.5 dispatcher (R1 breach; no
+`FAIL(model_floor)` self-check ran). The only `tools/review-posture/run.sh` record (`dispatch.log`, banked in
+AirMyPC `.claude-state\receipts\codex-shim-20260914\`) shows `STAGE A prompt generation failed` — the unquoted
+`PY="python $HERE/review_posture.py"` splits on the space in `C:\!Layi Wkspc\…` — and all 17 lanes DID-NOT-RUN.
+Lanes were then run by ad-hoc scripts plus an uncommitted run.sh edit, and the header line
+`conjugal-standard-PARTIAL (7/17 …)` was typed, not computed (R9.2). All four Codex lanes that were attempted died
+rc=127 on the stray-npm-`node` trap (TRAPS, same date); Codex auth and model ids were healthy (sentinels rc=0 for
+`gpt-6-astra`, `gpt-5.6-sol`, `gpt-5.6-luna`). Remediated the same day: package removed, run.sh edit restored,
+filing addended as superseded-pending, re-run dispatched through run.sh with a pinned Opus orchestrator.
