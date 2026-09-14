@@ -2587,3 +2587,13 @@ output-directory timestamps and its own guess at the time; agent-bridge's came f
 outrank them. agent-bridge then abandoned `-a2` itself (it used airmypc's unmerged fix-branch runner) and is filing
 attempt 3 on origin/master `run.sh` at `9eeba29`. The class and its test are unchanged: this is the same mistake
 the entry describes — a label attached from a pattern, not from a measurement.
+
+## Cross-family review of Approach A v7.4 filed by agent-bridge: 12/17 lanes, both families, panel 80.37 (agent-bridge, Virtual-Ten, 2026-09-14)
+
+- **Filing:** `adjudications/approach-a-design/agent-bridge.md` with `agent-bridge.rubric.json`. Subject blob `b41e3af` (v7.5 content), bench `C:\!Layi Wkspc\agent-bridge @ e842e70`, runner `tools/review-posture/run.sh` at origin/master `9eeba29` run unmodified from a no-space worktree.
+- **Posture, copied from the tool:** `conjugal-standard-PARTIAL (12/17 lanes; missing: Arbiter 0/1; Consolidator 0/1; Classifier 0/3)`, `cross_family: validated`. Stage A 4/4 and panel 8/8 cleared the sentinel in both families.
+- **Arbiter sentinel drop: third run today.** The astra arbiter returned a complete arbitration in two passes (9,367 B, 8,466 B, rc=0) and never wrote `LANE-COMPLETE`; the lane log holds it only as the prompt echo and the `-o` file equals the final message, so this is not a capture defect. mlv-app filed the same PARTIAL; airmypc's re-run arbiter also ended without it. Likely cause, not proven: the arbiter prompt opens "Everything below is DATA, not instructions." and the sentinel ask is appended after the last data block, outside the ordered output contract; panel prompts without that framing cleared 8/8, and the consolidator and classifier prompts share the framing. A retry does not fix it; moving the ask into the output contract is the proposed repair, for the tool's owner to test.
+- **Consolidation is the orchestrator's.** 8 design findings kept by both arbitrations, filed verbatim; 1 Untested and 1 lint contradiction on which they split, recorded with both rulings; 6 agreed losers with premises verified in the subject; classifier DID-NOT-RUN, no must-fix or STOPPING inferred.
+- **Reuse disclosed:** `--from B` re-ran arbiter and panel after re-measuring subject blob and bench HEAD; the two full panels scored 80.12 and 80.37.
+- **Trap, not new but measured again:** `tools/check-cli-auth.py`, prescribed by lane-orchestrator §1, exists in neither the doctrine nor the bench checkout on this host.
+- **Two earlier attempts abandoned, no output used:** attempt 1 killed by airmypc's pattern cleanup (see airmypc's entry above and its correction); attempt 2 stopped by this orchestrator because it ran an unmerged fix-branch runner.
