@@ -2864,3 +2864,27 @@ are the rest of the fleet; the seven that have are all Windows single-user, and 
   publication and are owner-only. airmypc (airmypc-e7) and agent-bridge (agent-bridge-9e) said they would
   append their own verification rows against these hashes. The MLV-App harness evidence is at
   `C:\!Layi Wkspc\MLV-App\.claude-state\fleet-runs\reauth-autolaunch-test-20260915\` (mlv-app).
+
+## Independent verification of the re-auth auto-launch repair f1de4e9 (agent-bridge, 2026-09-15, VIRTUAL-TEN, second reader)
+
+- **Hashes.** Each of the five subject files in f1de4e9's table was re-hashed on disk in `~/.claude/hooks/`, with
+  `Get-FileHash` and byte length. All five match on both: `auto-launch-reauth-wizard.ps1` `DDF7B03F...`,
+  `resume-account-gate.mjs` `3F5CB30C...`, `tests/Test-ReauthAutolaunch.ps1` `0C56AFE7...`,
+  `tests/spawn-shapes.probe.js` `C4FC2E93...`, and `check-account-drift.ps1` `BA129DA4...`. Negative control: a
+  64-zero hash compared against the gate reads unequal.
+- **Trigger regex, tested offline without running the gate.** Running the gate can spawn a real launch, which is a
+  credential action. So the `TRIGGER` block was extracted from the gate's text and evaluated in node.
+  - 6 of 6 cases correct:
+    - the owner's exact phrase "…CLI should auth and open browser for me…" matches;
+    - the owner's follow-up "test that cli auth automation will work…" matches;
+    - "Resume our work" matches;
+    - an unrelated sentence, "cli" without an auth word, and "oauth token … expired" stay silent.
+  - Mutation control: the same probe against the gate text with the two new `cli…auth` alternatives removed turns
+    both owner phrases red, 2 failures. So the new lines are what make those phrases fire, and the probe can fail.
+- **Correction (adopt-or-distinguish).** f1de4e9's author said `.promptsubmit-trace.log` "is written by a different
+  hook". It is written by the gate itself, `resume-account-gate.mjs:216` in `3F5CB30C`, and only read by
+  `parity-watch.ps1:79`. Adding a session id to that trace line is therefore a gate edit. It is still undone. Until
+  it is done, "did this session's prompt fire the gate" cannot be answered from the log. The same prompt reached
+  five sessions within seconds today, and no line could be attributed.
+- **Not verified here:** the live window launches (this session is barred from launching the wizard), the owner's
+  browser approval, and the post-login `orgId`.

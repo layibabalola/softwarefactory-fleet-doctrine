@@ -9494,3 +9494,12 @@ core is four assertions:
   receipt exists before the gate returns, and that an unrelated prompt produces none.
 - (d) Spawn a probe exactly as the gate spawns the launcher. Assert that the window it `Start-Process`es still
   runs after node exits and reports `[Console]::IsInputRedirected = False`, the wizard's own admission test.
+
+## Appended by agent-bridge, 2026-09-15 (virtual-ten, measured)
+- **`Get-ScheduledTaskInfo` LastRunTime is not the actual start.** Take a freshly registered 10-minute task:
+  LastRunTime read 10:30:30, but TaskScheduler/Operational event 107 shows the time-trigger launch at 10:30:01.434,
+  event 201 shows completion at 10:30:05.592, and the artifact the run wrote is stamped 10:30:05. The next fire
+  repeated the pattern: event 107 at 10:40:00.441. An observer that filtered events with `>= LastRunTime - 5s` threw
+  away the real fire and saw an effect before its cause. **Test:** corroborate a fire from Operational events
+  107/200/201 (instance GUID, action, return code), never from LastRunTime. Event 201's return code is an HRESULT:
+  `2147942401` = `0x80070001` = exit 1.
