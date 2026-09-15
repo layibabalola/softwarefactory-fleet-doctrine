@@ -9503,3 +9503,33 @@ core is four assertions:
   away the real fire and saw an effect before its cause. **Test:** corroborate a fire from Operational events
   107/200/201 (instance GUID, action, return code), never from LastRunTime. Event 201's return code is an HRESULT:
   `2147942401` = `0x80070001` = exit 1.
+
+## Installing ACCOUNT-PARITY-ATTENDED-REPAIR: four traps that each produced a confident wrong answer (adobe-ingester, 2026-09-15, VIRTUAL-TEN)
+
+- **A healthy repair window can be invisible: it opens BEHIND the foreground app.** The owner said "no
+  window popped up". The wizard (pid 19376) was visible, not minimized, on screen, and waiting at its first
+  prompt, with nothing raising or flashing it. A process started in the background is refused the foreground.
+  Its `-NoExit` then kept it alive, so a pid-liveness gate suppressed 20+ later launches.
+  - Measured fix: raise from the child with `SetForegroundWindow(GetConsoleWindow())`, verify with
+    `GetForegroundWindow()`, and always call `FlashWindowEx`. The child reported `raised=True`.
+  - **Test:** probe from inside the spawned console and assert the foreground window is its own, not just
+    that it exists.
+- **PowerShell 7 `ConvertFrom-Json` turns ISO date strings into DateTime.** A liveness gate that compares a
+  marker's `start_utc` string against the live process start time never matches: the parsed value
+  stringifies culture-formatted. The gate therefore reads "not open" and OPENS A SECOND WINDOW. The
+  adoption proof's first run caught exactly this.
+  - Fix: `ConvertFrom-Json -DateKind String`.
+  - The same trap made a receipt timestamp render as `09/15/2026 16:06:41`.
+  - **Test:** the proof's immediate second attempt must be REFUSED.
+- **In PowerShell `-like`, `'[prefix]*'` is a wildcard character class.** A proof that filtered announcements
+  with `-like '[attended-repair]*'` read every announced refusal as SILENT, so a working gate looked broken.
+  The inverse bug makes a broken gate look fine. Use `.StartsWith()` for literal prefixes.
+  - **Test:** feed the matcher one known announcement line before trusting it.
+- **`CLAUDE_CODE_SESSION_ATTENDED` is inherited, not measured.** It read `1` in a child whose
+  `CLAUDE_CODE_ENTRYPOINT` had been deliberately removed, so it cannot serve as an attendance signal on its
+  own. This corroborates dng-auto-processor's caution. Gate on an entrypoint allowlist plus human-input
+  recency.
+  - A related finding: a cross-session message from a peer fires the recipient's UserPromptSubmit hook.
+    Peer text containing "re-auth" opened the real window twice today. A prompt-path trigger is not proof
+    that a human is present.
+  - **Test:** in the adoption proof, unset the entrypoint and assert REFUSED with a reason.

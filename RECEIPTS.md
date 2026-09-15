@@ -2888,3 +2888,87 @@ are the rest of the fleet; the seven that have are all Windows single-user, and 
   five sessions within seconds today, and no line could be attributed.
 - **Not verified here:** the live window launches (this session is barred from launching the wizard), the owner's
   browser approval, and the post-login `orgId`.
+
+## ACCOUNT-PARITY-ATTENDED-REPAIR adopted on VIRTUAL-TEN, proven by an executable receipt; drift NOT yet cleared (adobe-ingester session for the box, 2026-09-15, Windows 10 19045, pwsh 7.6.6, node v24.14.0)
+
+**Authority, derived at bus 93e52a0:**
+- BINDING (RULINGS.md): Cloudvore 2026-08-10, both passes and the same-day correction; R6 (2026-09-13),
+  which binds check-then-repair order plus R6.3 "installed AND fired".
+- PROPOSED, zero authority, weighed and not inherited: `ruling-candidates/detector-to-control-hardening-r1.md`
+  (H1-H5) and `_bus` PR #69 R6.4.
+- Parent standard: `cloudvore/standards/ACCOUNT-PARITY-ATTENDED-REPAIR.md`.
+- Found by content search. An unfolded-commit window would not have surfaced the 36-day-old standard (H1's
+  retrodiction, reproduced here).
+
+**Proof:** `~/.claude/hooks/tests/Prove-AttendedRepair.ps1` (SHA-256 `0B9EC6CD...2055`), result `PASS` at
+2026-09-15T16:11:30.9Z. Receipt at `~/.claude/identity/attended-repair-proof.json`. The three refusals and
+observations, verbatim:
+- (i) headless: `[attended-repair] REFUSED: headless: CLAUDE_CODE_ENTRYPOINT='(unset)' is not an attended entrypoint (allowlist: cli, claude-desktop, claude-vscode, claude-jetbrains); unknown means no`
+- (i-b) governed lane: `[attended-repair] REFUSED: headless: FACTORY_LANE='opus' is a governed lane, not an operator`
+- (ii) liveness: `[attended-repair] REFUSED: a repair window is already open (pid 32900, 0 min old, probe); finish or close it first`,
+  immediately after `[attended-repair] OPENED: repair window pid 32900 (signature changed; surface confirmed by its marker) [probe]`
+- (iii) observed inside the child: `predicate_pass=True is_input_redirected=False user_interactive=True session=1 raised=True (SetForegroundWindow) flashed=True visible=True survived_launcher_exit=True`
+
+The cooldown refusal was not exercised by the proof. Probe mode deliberately never stamps the real cooldown.
+
+**Live:** at 2026-09-15T16:09:56Z the hook opened a real window from the prompt path (pid 36528, confirmed by
+its marker). The next trigger answered `REFUSED: a repair window is already open (pid 36528, 0.7 min old, look
+for the flashing taskbar button)`. This session then closed pid 36528 by exact PID (its wizard had no `claude` child, and the CLI was still
+signed out) to install the no-typed-gate change. It cleared that window's cooldown stamp and re-proved.
+Stale pre-standard windows 32104 and 19376 were closed the same way. `check-account-drift.ps1` now prints
+`repair surface: ARMED (proved <utc>)`.
+Editing it dropped the line to `DETECTOR ONLY (check-account-drift.ps1 changed since the proof)`, and
+re-proving restored it.
+
+**Adopt or distinguish:**
+- **Binding:**
+  - ADOPTED: an attended surface; a signature of the shape (verdict, desktop org, CLI org, logged in) with a
+    240-minute cooldown; an attendance ALLOWLIST (plus FACTORY_LANE, session 0, and 30-minute
+    GetLastInputInfo recency); every refusal announced on stdout and in the receipt; opening is not
+    performing; raise from the child, verify with GetForegroundWindow, and always flash; cheap path first with
+    a private-window escalation; one typed gate, not two.
+  - DISTINGUISHED: no typed gate at all when the CLI is signed out. The owner asked in so many words for
+    "everything automated", and the consent that matters, the browser sign-in, stays the owner's. One gate
+    remains when a live credential is at stake. This box's `~/.claude/CLAUDE.md` still calls a pre-emptive
+    browser sign-out "load-bearing", which conflicts with the corrected ruling. Left for the owner and not
+    edited by an agent.
+  - GAP, not claimed: the prompt gate's `FACTORY_LANE` early return is still silent.
+- **Proposed:**
+  - ADOPTED: H2 (executable proof plus a per-artifact hash pin); H3 (the logout step removed from the wizard,
+    not disabled; the box has no auto mode); H4 (the guard, gate and detector texts no longer name logout or
+    a pre-emptive sign-out, and the guard now says there is no auto mode).
+  - PARTIAL: H5. Every announcement carries `fires=<n>` per signature, but there is no threshold escalation
+    naming an addressee.
+  - DISTINGUISHED: H1, since this box's doctrine-sync tooling is outside this parity-only scope. PR #69
+    R6.4.1: the binding attendance gate carries its unattended-wake rationale, and the launcher opens a
+    wizard, not a login.
+- **Windows specifics:**
+  - DISTINGUISHED: `CREATE_BREAKAWAY_FROM_JOB`. Measured unnecessary here: the `Start-Process` grandchild
+    survives its launcher and node (`survived_launcher_exit=True`).
+  - DISTINGUISHED: raise-by-title. On Windows 10 conhost, `GetConsoleWindow()` returns the real window.
+
+**Artifacts (SHA-256):**
+
+| file | SHA-256 |
+|---|---|
+| `check-account-drift.ps1` | `CCED60EE...4B59` |
+| `auto-launch-reauth-wizard.ps1` | `7EA52625...7055` |
+| `reauth-bootstrap.ps1` | `BB177DD3...9701` |
+| `reauth-cli-wizard.ps1` | `A7FE65CC...82D8` |
+| `ReauthInteractivity.psm1` | `FF1ADFEB...35A7` |
+| `resume-account-gate.mjs` | `76276FBA...1CCD` |
+| `check-continuity-boundaries.py` | `70268232...CBFF` |
+
+The full hashes are in the proof receipt. The regression suite `tests/Test-ReauthAutolaunch.ps1`
+(`A6EE233D...E80E`) passes.
+
+**Drift:** NOT cleared at publication. The CLI is `loggedIn:false`, and Desktop is on a different org. The
+owner's browser sign-in is pending in the next opened window.
+
+**UNVERIFIED:**
+- whether `claude auth login` over a LIVE credential switches cleanly, or strands it when abandoned (this box
+  was signed out throughout);
+- `CLAUDE_CODE_SESSION_ATTENDED` in scheduled sessions. Here it read `1` even in the proof's
+  deliberately-headless case, because it is inherited environment, not a measurement;
+- whether the real repair window was brought forward for the OWNER's eyes. The probe measured
+  `raised=True`; the owner has not yet confirmed seeing it.
