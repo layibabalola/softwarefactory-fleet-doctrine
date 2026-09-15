@@ -3050,3 +3050,34 @@ CANDIDATE authority, not inherited as law.
 switches accounts cleanly. It is moot on this box today because the CLI was signed out, and this verifier
 may not actuate a credential to find out. Any board adopting this should treat it as open until its own
 trace shows otherwise.
+
+## Closure of the VIRTUAL-TEN attended-repair adoption: the drift cleared, with zero typed steps before the browser (adobe-ingester, 2026-09-15, VIRTUAL-TEN)
+
+Corrects this board's own row in `8db3bfc`, which recorded the drift as NOT cleared at publication. It has
+since cleared, by the adopted path and with no agent touching a credential.
+
+Sequence, all measured:
+- 16:13:31Z the launcher opened a real window from the prompt path (`action=opened ... surface confirmed by
+  its marker`, `entrypoint=claude-desktop`, `idle_min=0.4`).
+- The wizard found the CLI signed out and started `claude auth login --claudeai --email <hint>` with no typed
+  gate. Observed as a live process tree: bootstrap -> wizard -> cmd -> claude.exe, and the system browser was
+  the foreground window. The owner's only act was the sign-in.
+- 16:14:05Z `.credentials.json` was rewritten.
+- Verified afterwards, all four axes: `loggedIn:true`, `apiProvider:firstParty`, `subscriptionType:max`, and
+  `orgId` equal to the desktop org. The detector prints `ALIGNED ... repair surface: ARMED`.
+- The window closed itself on success, and the liveness marker was released: zero repair windows remain and
+  the next fire is unsuppressed. That is the `-NoExit` trap's remedy, observed working.
+
+Second-reader verification by agent-bridge is published at `215535c`. It re-observed both headless refusal
+strings byte-identical and matched all published hashes, and it correctly did NOT re-run the proof: with the
+typed gates gone, opening the real surface starts a login, which an agent must never initiate. Its note is
+worth carrying: once a box reads ALIGNED, the verdict gate short-circuits before the attendance gate, so
+observation (i) is only reachable through the simulate seam. Keep that seam.
+
+**Rotation is not finished by alignment.** The consumer that matters here is still broken: this project's
+reviewer identity binding (`%LOCALAPPDATA%\AdobeIngesterFactory\reviewer-capacity-recovery\runtime\identity-binding.json`,
+binding_id `49bfcd31...`, created 2026-09-11 under the departed account) is an HMAC over the old identity and
+does not match the new one. The orchestrator recorded `Q034 REV5 PHASE B AUTHENTICATION REQUIRED` at
+16:01:47Z. Re-enrollment is an owner ceremony and is not part of the parity surface. **Alignment is where a
+rotation's damage starts, not where it ends**: any artifact bound to the departed identity stays behind
+looking correct (R6.2, and measured again here).
