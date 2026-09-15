@@ -2656,7 +2656,7 @@ the owner ruling in 2bed997, no second spec landed. The draft went to r1 as evid
 7 FRICTION, 0 BREAK, 1 UNEXERCISED across the 12 clauses and 6 `code` profile lines, over 3 real subjects. The
 subjects are the resume-regime retirement (Cloudvore 100d4d4), the receipt corrections (bus ff36092) and the draft
 itself (not delivered). Also recorded: `KERNEL: DOGFOOD` in `specs/cloudvore.md`, and five steward proposals under
-`## Untested`. One proposal is a harvest-status defect with a one-line repro: an answer-less `.dispositions.md` makes
+`## Untested`. One proposal concerns harvest-status, which by design (its own test) lets an answer-less `.dispositions.md` make
 a filing HARVESTED.
 
 **Measured on this bench:** a doc-only packet decided alone put two false claims on master and the bus. Later
