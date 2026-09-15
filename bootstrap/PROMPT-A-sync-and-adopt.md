@@ -219,7 +219,10 @@ skipped.
 
 ```bash
 git -C "<doctrine>" log --oneline <your-last-sync-sha>..origin/master -- RECEIPTS.md TRAPS.md RULINGS.md
-git -C "<doctrine>" log origin/master --name-only --format= -- adjudications | awk 'NF && !seen[$0]++' | head   # newest filings by commit
+git -C "<doctrine>" ls-tree -r --name-only origin/master -- adjudications | awk '/\.md$/' |
+  while IFS= read -r p; do printf '%s\t%s\n' \
+    "$(git -C "<doctrine>" log -1 --format=%ct origin/master -- "$p")" "$p"; done |
+  sort -k1,1nr | cut -f2- | head   # files that exist now, newest commit first
 git -C "<doctrine>" ls-remote origin 'refs/heads/review/*'   # filings not yet on master (R7.5)
 git -C "<doctrine>" fetch origin 'refs/heads/review/*:refs/remotes/origin/review/*'
 grep -nE "PROMPT-?B|PROMPT-?A|lane-orchestrator|bootstrap/" "<doctrine>/TRAPS.md"   # traps against the prompts you run next

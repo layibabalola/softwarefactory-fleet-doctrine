@@ -16,11 +16,13 @@ DRY=0; [ "${1:-}" = "--dry-run" ] && DRY=1
 DEST="$HOME/.claude/machine-inventory.yaml"
 WORK="$(mktemp -d)"; trap 'rm -rf "$WORK"' EXIT
 SENTINEL="INVENTORY-OK"
-# A provider refusing on an exhausted allowance ("You've hit your usage limit", "... monthly spend
+# A provider refusing on an exhausted allowance ("You've hit your monthly spend limit", "... usage
 # limit", "... session limit") fails the sentinel exactly as a retired id does, but it is not
 # evidence about the model. It gets its own terminal (measured: DngAutoProcessor, UltraMagnus,
-# 2026-09-14 -- a spend-limit refusal was written as `claude: available: false`).
-LIMIT_RE="hit your [a-z0-9 -]*limit|usage limit|spend limit|session limit|weekly limit|rate limit"
+# 2026-09-14 -- a spend-limit refusal was written as `claude: available: false`). The text alone
+# does not decide it: a live model answering about limits exits 0 and must never be read as
+# LIMITED, so the non-zero exit is required too.
+LIMIT_RE="hit your [a-z0-9 -]*limit|usage limit reached|limit will reset"
 
 CLAUDE_MODELS="opus:claude-opus-5 sonnet:claude-sonnet-5 haiku:claude-haiku-4-5-20251001 fable:claude-fable-5"
 CODEX_MODELS="sol:gpt-5.6-sol luna:gpt-5.6-luna astra:gpt-6-astra"
@@ -29,7 +31,7 @@ printf 'Reply with exactly this and nothing else: %s\n' "$SENTINEL" > "$WORK/ask
 
 probe() {  # family nickname id
   local fam=$1 nick=$2 id=$3
-  local codex_cmd="codex"
+  local codex_cmd="codex" rc=0
   # On Windows, the bash shim for codex is broken (TRAP: npm bash shim for codex).
   # Use codex.cmd (PowerShell native) instead of codex (bash shim).
   if [[ "$OSTYPE" == "msys" || "$OSTYPE" == "mingw"* || "$OSTYPE" == "win32" ]] || uname -s | grep -qi "MINGW"; then
@@ -37,17 +39,19 @@ probe() {  # family nickname id
   fi
   if [ "$fam" = claude ]; then
     timeout 120 claude -p --model "$id" < "$WORK/ask" > "$WORK/$fam.$nick" 2>&1
+    rc=$?
   else
     # Keep codex's console output: a limit refusal is printed there, never in the -o reply file.
     timeout 180 $codex_cmd exec -m "$id" -s read-only --skip-git-repo-check \
       -o "$WORK/$fam.$nick" - < "$WORK/ask" > "$WORK/$fam.$nick.log" 2>&1
+    rc=$?
   fi
   # Anchored, whole-line match. An unanchored grep accepts the token wherever it appears --
   # including inside an echoed prompt or an error that quotes the instruction -- which would
   # verify a model that never answered.
   if grep -qx "$SENTINEL" "$WORK/$fam.$nick" 2>/dev/null; then
     echo "$nick:$id:VERIFIED"
-  elif cat "$WORK/$fam.$nick" "$WORK/$fam.$nick.log" 2>/dev/null | grep -qiE "$LIMIT_RE"; then
+  elif [ "$rc" -ne 0 ] && cat "$WORK/$fam.$nick" "$WORK/$fam.$nick.log" 2>/dev/null | grep -qiE "$LIMIT_RE"; then
     echo "$nick:$id:LIMITED"
   else
     echo "$nick:$id:UNVERIFIED"
@@ -61,13 +65,20 @@ wait
 
 # The EXIT trap deletes $WORK, and with it the only record of WHY an id failed. Keep the replies
 # of every id that did not verify, so a LIMITED or UNVERIFIED verdict can be read afterwards.
-EVID="$HOME/.claude/machine-inventory-evidence/$(date +%Y%m%dT%H%M%S)"
+EVID_ROOT="$HOME/.claude/machine-inventory-evidence"
+EVID=""
 for r in "$WORK"/r.*.*; do
   [ -e "$r" ] || continue
   IFS=: read -r nick id state < "$r"
   [ "$state" = VERIFIED ] && continue
   fam=${r#"$WORK"/r.}; fam=${fam%%.*}
-  mkdir -p "$EVID"
+  if [ -z "$EVID" ]; then
+    # mktemp, not a bare timestamp: two probes starting in the same second would otherwise share
+    # a directory and overwrite each other's replies.
+    EVID=$(mkdir -p "$EVID_ROOT" && mktemp -d "$EVID_ROOT/$(date +%Y%m%dT%H%M%S).XXXXXX") || {
+      echo "warning: cannot preserve probe replies under $EVID_ROOT" >&2; EVID="-"; }
+  fi
+  [ "$EVID" = "-" ] && continue
   for src in "$WORK/$fam.$nick" "$WORK/$fam.$nick.log"; do
     [ -e "$src" ] && cp "$src" "$EVID/${src##*/}.$state"
   done
@@ -128,7 +139,8 @@ cat "$WORK/inventory.yaml"
 if grep -q ':LIMITED$' "$WORK"/r.*.* 2>/dev/null; then
   echo "--- REFUSING TO WRITE: usage/spend-limit refusals are not model evidence ---" >&2
   grep -h ':LIMITED$' "$WORK"/r.*.* | sed 's/^/    /' >&2
-  echo "    Replies kept in $EVID. $DEST is unchanged; re-probe after the limit resets." >&2
+  [ -n "$EVID" ] && [ "$EVID" != "-" ] && echo "    Replies kept in $EVID." >&2
+  echo "    $DEST is unchanged; re-probe after the limit resets." >&2
   exit 4
 fi
 
