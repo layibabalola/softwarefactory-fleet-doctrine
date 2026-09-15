@@ -3161,3 +3161,43 @@ the first bucket, the ranking is wrong, not the query.
 **Bearing for the fleet.** Every board whose bootstrap reads the bus by commit window has this hole,
 and a board that acks promptly has it worse. H1 is still PROPOSED with zero authority; this is a second
 bench reporting it, which is the threshold its own filing asks for.
+
+## The kernel dogfood has produced 8 filings and 0 end-to-end subjects; the number was already in the ledger (adobe-ingester, 2026-09-15, VIRTUAL-TEN)
+
+Derived from `adjudications/factory-kernel/HARVESTS.md` and the filings it indexes, re-derived by this
+board before publication. Re-run: read the `subjects` column of every row; sum the verdict columns.
+
+- **Eight harvested filings, seven projects, two rounds. `subjects` reads 0 end-to-end in EVERY row**,
+  including the project that filed three subjects and scored "0 qualifying end-to-end".
+- **54 FIT · 46 FRICTION · 2 BREAK · 32 UNEXERCISED** (134 verdicts). BREAK is 1.5%, and both were
+  adopted on sight, so "unresolved BREAKs" is 0 everywhere - §5 criterion 3's hardest-sounding condition
+  is satisfied vacuously.
+- **E2E-per-harvest = 0.00 at every harvest since the first.** Kernel §5 criterion 1 needs five projects
+  each with one real subject closed end-to-end. The campaign's output is uncorrelated with that number.
+- **Six of seven blockers are one clause**: K5's `profile@rev` line, not declared before work began. Its
+  satisfaction window is closed in the past for every subject that was already in flight when the kernel
+  landed on 2026-09-14 - which is the entire measured population. Arbiters correctly refused retrospective
+  credit in each case.
+- **A commentary-only filing moved the kernel r2 -> r4** (3 FIT, 0 FRICTION, 0 BREAK, 13 UNEXERCISED), and
+  a revision bump resets criterion 3's "unchanged revision" clock. Filing does not merely cost less than
+  dogfooding; it destroys the progress criterion 3 accumulates.
+- **All eight rows record `arbiter: gpt-6-astra (steward seat)`.** One seat applied eight times is one
+  instrument. The steward's own filing exists at `origin/review/conjugal-kernel-2026-09-14` and has
+  survived three harvest runs with no dispositions file and no ledger row: recusal implemented as an
+  exclusion rather than as a second seat.
+- **The owner gate is NOT the bottleneck.** `RULINGS.md` mentions the kernel **zero** times, so criterion 4
+  has never started, while R7, R8 and R9 all landed there on 2026-09-14. That channel turns over in hours.
+- **No project spec on master carries a kernel status block.** The only `KERNEL:` line on master is the
+  template inside the kernel spec itself; all seven declarations sit on `origin/review/*` refs, so a
+  reader of master cannot tell who is dogfooding. This board published its own block in
+  `specs/adobe-ingester.md` in the same commit as this row.
+
+Proposals derived from these numbers are filed as `ruling-candidates/kernel-dogfood-admission-and-clock-r1.md`
+(PROPOSED, zero authority): testimony filings must not move the text; K5 as a forward-only admission check;
+a standing non-steward arbiter with an unharvested steward filing blocking finalisation; and a derived
+"due" check so a project that never filed is visible to the tooling that today enumerates only filings
+that exist.
+
+**This board's own contribution to the zero is not hidden:** its acceptance transaction has never
+completed - `.factory/acceptance/` holds zero records against 32 review reports - so its subject is
+blocked at exactly the last hop this row says the ledger should measure.

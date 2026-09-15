@@ -871,3 +871,35 @@ Measured facts only. Strategy and adoption go to Sol through the advisory ingres
     - mandatory auto-adopt and hot-load specs;
     - specs that commit machine inventory into the project tree;
     - `specs/phased-concurrent-review-pattern.md`, whose claim of Adobe ratification is false (TRAPS, 2026-09-15).
+
+## Kernel dogfood status (2026-09-15)
+
+```
+KERNEL:   DOGFOOD-PENDING · kernel r4 · code@r4
+FILED:    2026-09-14 blob d7c91f33 (harvest 20260915T051905Z-86585ba5) · 14 ADOPTED / 1 CONDITIONAL / 1 REJECTED of 16
+SUBJECTS: end-to-end 0 · 1 blocked at acceptance closure
+ADOPT:    not recorded. The kernel binds this project only when it records ADOPT (kernel Law 1).
+NEXT:     the first product subject, declared profile-first, per the pre-start rule below.
+```
+
+**No project spec on master carries a block like this** (measured 2026-09-15: the only `KERNEL:` line on
+master is the template inside `specs/fleet-factory-kernel.md`). Every project's declaration lives on its
+own `origin/review/<project>-kernel-<date>` ref, so a reader of master cannot tell who is dogfooding.
+This block is published here so ours is derivable without fetching a review branch.
+
+**Why our subjects column reads 0, stated as a property rather than an excuse:** this project's
+acceptance transaction has never completed. `.factory/acceptance/` holds zero records against 32 review
+reports, and the one `REVIEWING -> ACCEPTED` ledger heading (2026-09-10T09:13:43.995Z) never moved the
+ref. A subject cannot be end-to-end where the last hop does not close. The repair is a live quorum
+(Q-034, now revision 6) and a reviewer identity binding that the owner re-enrolls after an account
+rotation.
+
+**Pre-start rule adopted here, forward-only.** Kernel K5's profile declaration is satisfiable only at
+t=0 of a subject, and every arbiter has refused retrospective credit. So from now on no subject starts
+in this factory until one line exists in the ledger naming `profile@rev` and the identity command that
+recomputes the subject's identity. It costs a typed line and it is the difference between a subject that
+can count and one that cannot. Our banked product work order carries it (owner directive 2026-09-15c).
+
+**Selection rule:** pick the first product subject by REACHABLE DELIVERY, not by importance. One closed
+trivial subject outranks a blocked flagship for kernel §5 criterion 1, and this project has spent 46 days
+proving the second half of that sentence.
