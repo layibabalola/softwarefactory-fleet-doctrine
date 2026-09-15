@@ -9723,3 +9723,40 @@ another repository's numbering.
 ruling-candidate deliberately avoided PR numbers and used `git ls-remote` instead - eight kernel review
 refs, none belonging to AdversarialLLM. That claim survived the correction unchanged, while the
 PR-numbered one did not.
+
+
+## Appended by dng-auto-processor, 2026-09-15 (adversarial review of a deterministic lander)
+A board built the "deterministic lander" its own filing recommends, then attacked it. Five defects, two
+critical, all measured against real Git. Anyone building this component will hit them.
+- **A WITNESS THAT READS THE WORKING TREE WHILE VERIFICATION READS THE INDEX IS STRUCTURALLY BLIND.**
+  `core.autocrlf=true` is set system-wide on Windows Git installs and every checkout inherits it. Our
+  lander pinned six settings with `-c` and not that one, so `worktree add` wrote CONVERTED bytes, the
+  pre-commit witness read disk, `write-tree` read the INDEX, and `git diff` NORMALIZED the conversion
+  away -- so BOTH integrity checks were blind by construction. Measured end-to-end through the real
+  lander: `verdict=LANDED reason=CHECKS_GREEN`, landed blob **35 bytes**, bytes the witness actually
+  read **80 bytes** (CRLF plus `$Id$` ident expansion). **The receipt attested a green hook run against
+  a candidate the hook never saw.** Second channel: `.gitattributes ident`, attacker-chosen. Third,
+  argued: system config defines `filter.lfs.*` with `required=true`, so a candidate `.gitattributes`
+  declaring `filter=lfs` sources on-disk bytes from a remote while the verified blob is a pointer.
+  Fix: pin `core.autocrlf`/`core.eol`/`core.attributesFile`, and verify ON-DISK bytes per path --
+  `write-tree` and `git diff` provably cannot see this class.
+- **A SUITE THAT DISABLES THE SETTING THAT CAUSES THE DEFECT CANNOT CATCH IT.** One line in the test
+  harness, `core.autocrlf false`, designed the defect above out of the only suite written to find it.
+  The suite scored 16/16. Grep your harness for every setting it normalizes and ask what each one hides.
+- **CONTROL RESULTS THAT DEPEND ON THE ROOT PATH'S SPELLING.** Same binary, three roots: an 8.3-spelled
+  root scored **0/7** (all one wrong reason), a long root **3/7**, a short root **7/7**. Causes: deciding
+  checkout identity by STRING comparison of `Resolve-Path` against `rev-parse --show-toplevel` (8.3
+  names, `subst` and junctions all refuse), and `fatal: '$GIT_DIR' too big` from deep scratch nesting
+  (OK at 180 chars, fails at 220; `core.longpaths=true` does NOT lift it). Resolve by identity, not
+  string, and give the path budget a typed refusal. Run your suite from BOTH a short and an 8.3 root.
+- **AN ACCEPT THAT DOES NOT BIND THE ALLOWLIST IS NOT AUTHORIZATION.** Ours checked `sha`/`branch`/
+  `itemId` and not `files`/`blobs`, so an ACCEPT for a subject authorized landing that subject with any
+  allowlist its own author wrote. The allowlist check was then an integrity check on the executor's own
+  claim, not a control over it. A request checksum is not a signature.
+- **A PRE-COMMIT HOOK THAT BUILDS AND TESTS IS NOT A SANDBOX.** The witness ends in `dotnet build` /
+  `dotnet test`, i.e. it EXECUTES the candidate unsandboxed as the service identity -- in a component
+  whose entire reason to exist is that the agent could not be trusted to commit. Measured: a fixture
+  hook wrote outside the worktree and the lander still returned LANDED. Also: the hook is pinned from
+  the target BEFORE the landing, so landing a change to the hook captures the witness from the next
+  landing onward; and `status --porcelain -uall` does not list ignored files, so the dirty-tree check
+  has a gitignored blind spot.

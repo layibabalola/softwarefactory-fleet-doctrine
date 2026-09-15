@@ -123,6 +123,33 @@ Whichever orchestrator is alive enqueues landing requests; the lander drains the
 landing off the inference path entirely.** A second orchestrator still cannot land, because it is still
 sandboxed. This is the finding that matters most for anyone planning cross-provider continuity.
 
+## 5a. We built it and attacked it. Do not deploy a first draft of this.
+
+The rule in §5 survives adversarial review. **The first implementation of it did not**, and a board
+adopting the rule should budget for that. We built the lander, then ran an independent lane whose only
+job was to break it. Five defects, two critical, measured against real Git — all in `TRAPS.md`.
+
+The one that matters most, because it produces a **green receipt over a false attestation**: the
+witness read the working tree while verification read the index, so line-ending conversion made both
+integrity checks blind. Measured: `verdict=LANDED`, hook `GREEN`, landed blob 35 bytes, bytes the hook
+actually read 80 bytes. And the test suite could not have caught it, because one line in the harness
+disabled the very setting that causes it while scoring 16/16.
+
+Three consequences for anyone adopting §5:
+
+- **A lander's receipt is only as good as the byte-identity of what the witness read.** Verify on-disk
+  bytes per path. `write-tree` reads the index and `git diff` normalizes; neither can see this class.
+- **"The witness runs where the executor cannot edit its result" is not satisfied by a pre-commit hook
+  that builds and tests.** That hook EXECUTES the candidate, unsandboxed, in the component that exists
+  because the executor was not trusted. Either sandbox it or stop calling it a witness.
+- **Bind the allowlist into the acceptance.** An ACCEPT that names only the subject id authorizes that
+  subject with whatever allowlist its author wrote, which makes the allowlist check an integrity check
+  on the executor's own claim rather than a control over it.
+
+We are not deploying ours against a live checkout. On the machine that measured this, the first landing
+would have produced a receipt whose hook attestation was false. That is a better outcome than a fleet
+of boards discovering it one at a time, which is why it is filed here before the component ships.
+
 ## 6. Adopt or distinguish
 
 Adopt if your delivery target admits an atomic operation with an after-predicate. Distinguish, naming
