@@ -9354,3 +9354,53 @@ with a machine-local core copy.
 **Test:** in every project, open a desktop-app session and end one turn. Then check
 `ls -t ~/.claude/session-checkpoints/<repo>/` shows a new `SESSION-<id>.md`. If it doesn't, check the worktree's base
 with `git -C <worktree> log -1` against the branch that carries the hook.
+
+## Account parity: MATCHED is identity-only, a signed-out CLI repairs nothing, and the prefill map could only learn accounts you had left (Conjugal, 2026-09-15, Dell XPS 17)
+
+`tools/check-account-parity.py` is registered at user scope, so it fires in every project on the
+host. Three separate defects, each measured, each of which makes its green line mean less than it
+appears to:
+
+- **A signed-out CLI lands in UNKNOWN and no repair is attempted, even under `--repair`.** The
+  repair branch is `elif d_fp and c_fp:` — it requires BOTH surfaces to name an account and differ.
+  A CLI with no `oauthAccount.accountUuid` yields `c_fp = None` and falls past it. `realign-cli.py`
+  independently refuses the same state (`if not d_fp or not c_fp: ... doing nothing`). So *wrong
+  account* is repaired and *no account* is not — and no account is the state that darkens every
+  scheduled dead-man floor while the desktop app looks perfectly healthy. Proven by executing all
+  four branches with stubbed fingerprints, not by reading the code.
+
+- **The prefill map could only ever learn ABANDONED accounts.** `realign-cli.py`'s `learn()`
+  records fingerprint -> address, but the wizard was invoked only from the DRIFT branch — i.e. only
+  while the CLI still held the account being left. `target = MAP.get(desktop_fp)` then looks up the
+  account being moved TO, a guaranteed miss. Observed: a host MATCHED all day on `5247997b9e08`
+  whose map contained only `b4d2646b85c1`, the account it had rotated away from two days earlier.
+  The wizard therefore launches `claude auth login` with no `--email`, inviting the operator to
+  re-authenticate onto the wrong account — the exact failure the tool exists to prevent. Because
+  `~/.claude/.credentials.json` is shared by the app copy and the floor binary, one wrong login
+  rewrites credentials for every live lane and floor at once.
+
+- **The banner reads in the wrong causal order.** `print()` is block-buffered when a hook captures
+  stdout, so the wizard's output overtakes the parent's and the operator sees the remedy before the
+  diagnosis that caused it. One `sys.stdout.flush()` before the subprocess fixes it.
+
+**Widening the repair trigger to cover the signed-out case was considered and REJECTED** (three
+adversarial seats; the objection carried). `~/.claude.json` is a profile cache, not the credential
+store — `~/.claude/.credentials.json` is — so "no `accountUuid`" has benign causes: a desktop-only
+host, a machine mid-bootstrap per `bootstrap/PROMPT-A-sync-and-adopt.md`, or a torn read of a file
+that is rewritten constantly. And an unattended floor wake IS a SessionStart, so the change would
+fire a focus-stealing login window, up to 48x/day under the 30-minute cooldown, at a machine nobody
+is watching. Detection belongs in the shared hook; **enforcement belongs in the consumer's own floor
+spawn path**, where failing closed is correct and where a dark floor actually costs something.
+
+**Shipped instead:** a named `CLI-SIGNED-OUT` verdict distinct from `UNKNOWN` (so a consumer can
+gate on it), `learn()` on the MATCHED branch so the map records the HEALTHY account, and the flush.
+Still `return 0` always; still no credential mutation.
+
+**Test:** `python -m unittest discover -s tests -p "test_account_parity.py" -v` (23 tests, hermetic).
+The suite's own trap is worth knowing: on Windows, `Path.home()` is `os.path.expanduser("~")`, which
+consults **`USERPROFILE`** first and **ignores `HOME` entirely** — precedence is `USERPROFILE` ->
+`HOMEDRIVE`+`HOMEPATH` -> unchanged. A sandbox that exports only `HOME`, the POSIX reflex, looks
+green while writing every scenario into the operator's real `~/.claude`. `realign-cli.py` also binds
+`HOME`/`MAP`/`STAMP` as module constants at import time, so in-process monkeypatching tests nothing;
+the scripts must be run as subprocesses. The suite sets all the variables, proves the redirection by
+asking a child process before any test runs, and hashes the real credential files before and after.

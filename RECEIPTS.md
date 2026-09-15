@@ -2759,3 +2759,49 @@ subjects (S1 bus candidate unaccepted and undelivered; S2 a failed seam), so not
 INSTANCE-FAILURE counting in PROMPT-K, the harvest parsers and the HARVESTS.md verdict columns is routed to Conjugal's
 filing-format/tool bench; no bootstrap or tools text changed. Dispositions:
 `adjudications/factory-kernel/mlv-app.dispositions.md`; ledger row in `HARVESTS.md`.
+
+## Account-parity automation exercised end to end, and three defects closed (Conjugal, 2026-09-15, Dell XPS 17)
+
+Drill: does the R6 check-then-repair automation actually fire, and does its green line mean what it
+appears to? Answered with a hermetic suite rather than by inspection, because the machinery reads
+and writes credential-adjacent files and can launch an interactive login.
+
+**It fires.** `~/.claude/.realign-last-attempt` carries 2026-09-15T09:28:25 local, written only by
+`realign-cli.py` at the moment it launches a login window, reachable only from the DRIFT branch;
+`~/.claude/.credentials.json` was rewritten 09:29:25, one minute later. Repair ran and the operator
+completed it. R6.3 answerable with evidence: installed, and has fired.
+
+**Its green line meant less than it appeared to.** Three defects, each measured, each now closed
+(see TRAPS.md for the full anatomy): a signed-out CLI fell into UNKNOWN and was never repaired even
+under `--repair`; `learn()` ran only on the DRIFT path so the prefill map could only accumulate
+accounts already departed (this host: MATCHED all day on `5247997b9e08`, map holding only
+`b4d2646b85c1`, abandoned two days earlier); and the hook banner printed the remedy before the
+diagnosis because stdout is block-buffered under a hook.
+
+**Adjudication.** Three adversarial seats. The proposal to widen the repair trigger to cover the
+signed-out state was REJECTED on the objection that `~/.claude.json` is a profile cache rather than
+the credential store, so the predicate has benign causes, and that an unattended floor wake is a
+SessionStart — the change would fire focus-stealing login windows at unattended machines. Detection
+only in the shared hook, per the ratified posture; enforcement belongs in each consumer's floor
+spawn path.
+
+**Changed:** `tools/check-account-parity.py` — a named `CLI-SIGNED-OUT` verdict distinct from
+`UNKNOWN`, `learn()` on the MATCHED branch so the map records the healthy account, and a flush before
+the wizard. Still `return 0` always; still zero credential mutation. **Added:**
+`tests/test_account_parity.py`, 23 tests, stdlib unittest.
+
+**Result: 23/23 pass**, run twice for determinism, from a worktree detached at `origin/master`
+(5416236). No test may reach a login launch: the one path that could is neutralised with a fresh
+cooldown stamp and the test asserts the stamp bytes are unchanged, which is direct proof the launch
+path was not reached; PATH is scrubbed so a stray `claude` cannot resolve. The four real credential
+files are hashed before and after the run — unchanged.
+
+**Live verification of the prefill fix on this host:** map before
+`{b4d2646b85c1: mentatduke@gmail.com}`; after one run of the changed hook,
+`{b4d2646b85c1: mentatduke@gmail.com, 5247997b9e08: layibabalola@gmail.com}`. A future drift will now
+offer the correct address instead of an empty login.
+
+**Trap recorded for anyone writing similar tests:** on Windows, `Path.home()` consults `USERPROFILE`
+first and ignores `HOME` entirely; a sandbox that exports only `HOME` passes while writing into the
+operator's real credential directory. `realign-cli.py` also binds its state paths as module
+constants at import time, so the scripts must be exercised as subprocesses, never imported.
