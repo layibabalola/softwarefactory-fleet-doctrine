@@ -1,0 +1,25 @@
+{
+  "_what": "Working-copy path per kernel §6 roster member, for machine-local readiness derivation.",
+  "_why": "tools/fleet-resume-readiness.py must distinguish a member that has NOT adopted resume prep from one that is merely not checked out on the host doing the asking. Without a path map those two are the same observation, and the second would silently be reported as the first.",
+  "_rules": [
+    "A member absent from `repos` is UNREACHABLE, never assumed compliant and never assumed delinquent.",
+    "Every path here was verified to exist on the host named by `machine` at `derived`. This file is machine-scoped evidence, not a fleet-wide claim; another host maintains its own.",
+    "Never add a path by guessing from a similar directory name. Absence of evidence is not evidence (kernel K4).",
+    "Frozen archives and review clones are deliberately excluded: they are not the live project."
+  ],
+  "machine": "Bachelor / Dell XPS 17 9720",
+  "derived": "2026-09-15",
+  "repos": {
+    "conjugal": "C:\\code\\Conjugal",
+    "cloudvore": "C:\\code\\DropBox Vault",
+    "magic-lantern_dannephoto": "C:\\code\\magic-lantern_dannephoto",
+    "salesforce-tools": "C:\\code\\SalesforceSupportTools"
+  },
+  "_not_on_this_machine": {
+    "_note": "Recorded so the gap is legible rather than merely missing. These read UNREACHABLE here.",
+    "members": ["adversarialllm", "agent-bridge", "adobe-ingester", "airmypc", "mlv-app"]
+  },
+  "_deliberately_unmapped": {
+    "dng-auto-processor": "The only checkout on this host is `C:\\code\\DngAutoProcessor - Claude`, a frozen archive that is read-only by standing rule. Mapping a frozen archive as the live project would make an unadoptable path look adoptable."
+  }
+}
