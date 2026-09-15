@@ -2641,3 +2641,30 @@ b7126cc, and 5 sibling commits that landed during the run were replayed over, no
 `harvest-status.py` shows mlv-app `HARVESTED`. **Measured pressure:** the design body is now 12,999 words against its
 13,000 cap, so every later round must cut before it adds, and the runner refuses any spec over the cap. Three filings
 (agent-bridge, airmypc, adobe-ingester) remain for later ticks.
+
+## Review-posture self-heal repair: four environment faults, documented against an incoming tooling fix (MLV-App, 2026-09-14, VIRTUAL-TEN / Windows 10)
+
+| item | value |
+|---|---|
+| reporting project | MLV-App (reporting; the repair lands on the fleet doctrine bus) |
+| host | VIRTUAL-TEN, Windows 10, Git Bash `/usr/bin/bash`, node v24 at `/c/Program Files/nodejs/node` |
+| date | 2026-09-14 |
+| branch | `fix/review-posture-self-heal-20260914`, **stacked on PR #62** (`fix/review-posture-run-sh-launchers`, head `e557f473`). Started on `origin/master` 8ad5e59 and rebased forward; #62 merges first, and this branch is the delta on top of it |
+| fix SHA | `<pending>` |
+| layering | PR #62 is the **refusal** layer (bounded launcher preflight, `LAUNCHER-BROKEN`); this branch is the **repair** layer (`tools/lib/cli-resolve.sh`: structural detection, verified ladder, identity check). Order is repair → verify the repaired invocation → refuse if it still cannot start |
+| F1 proof status | measured live once on VIRTUAL-TEN by a lane (rc 127 → codex-cli 0.154.0) before another session removed the stray npm node package (fleet doctrine bus `9eeba29`); **no receipt of that run exists**; the fault is no longer reproducible on this host; the standing proof is the hermetic fake-shim test `tools/review-posture/tests/test-selfheal.sh` case **A1** |
+| superseded | the `codex.cmd` OS heuristic in `97b6f66` (bus) and its twin `d72df2c` (branch `fix/prompt-b-agent-model-parameter`) — both replaced by the verified ladder, whose rungs already include `.cmd` |
+| faults | F1 placeholder-npm-`node` shim → codex exits 127 → false one-family inventory; F2 unquoted `$PY` from a spaced path + `eval "$(cmd)"` that cannot fail → run proceeds with zero model ids; F3 `tools/check-cli-auth.py` named in three places and has never existed; F4 arbiter returned a complete arbitration twice (rc=0, 8,554 B / 7,997 B) with no sentinel — stage C blocked correctly |
+| docs changed | `bootstrap/PROMPT-A-sync-and-adopt.md`, `bootstrap/PROMPT-B-begin-review.md`, `bootstrap/lane-orchestrator.md`, `tools/review-posture/README.md`, `TRAPS.md` (+4) |
+| tooling | separate lane; the prose describing it was tagged `[L1-CONTRACT]` until verified. Repair lane R3 checked each tag against the code, corrected the sentences that had drifted, and removed every tag; none remain |
+
+Also repaired, and a different class from the four: the **PROMPT-B dispatcher chip defect**. A Haiku dispatcher
+escalated correctly, then launched the orchestrator with the in-session Agent tool rather than a clickable chip —
+first launch inherited Haiku and printed `FAIL(model_floor)`, second passed a model override and ran on Opus, so the
+review happened with the operator never given a chip to click. Ruled a bug by the operator. **Two earlier fixes did
+not bind:** `9f3b1a9` wrote it into `TRAPS.md` and changed no bootstrap file, and `9a62830` (fleet doctrine bus,
+branch `fix/prompt-b-agent-model-parameter`) has a commit message describing Agent-model guidance and a diff of **one blank
+line**. Both are now in `TRAPS.md` with their test, and PROMPT B §3 states the rule directly in the file the
+dispatcher actually reads: a chip is a clickable spawned task, never an in-session `Agent` call, never `claude -p`; a
+dispatcher that cannot post one prints the payload and stops; an in-session model override is not a substitute
+because it deletes the operator's click; the report's last line names the required model and nothing else.

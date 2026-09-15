@@ -1,0 +1,13 @@
+# Shell scripts are LF, always. The bus is authored on a Windows host whose SYSTEM gitconfig
+# sets core.autocrlf=true; Git for Windows' own bash tolerates the CR it leaves behind, so a
+# CRLF checkout looks healthy right up until a WSL/Linux/macOS bash reads the same file and
+# reports `\r: command not found`. Measured 2026-09-14 on the fleet doctrine bus, host
+# VIRTUAL-TEN: CRLF confirmed on the shipped scripts in a fresh clone under core.autocrlf=true,
+# and Git Bash ran them anyway -- which is what makes this silent.
+#
+# DELIBERATELY *.sh ONLY. An earlier draft also carried `*.py text eol=lf`; it was dropped
+# because the measured CR hazard is bash, not python -- CPython accepts CRLF source on every
+# platform -- while the *.py rule renormalises EVERY python file in this repository at its next
+# checkout, which shows up as a repo-wide dirty tree in the other sessions that census this bus
+# for uncommitted work. Scoping the rule to the files that actually break is the whole point.
+*.sh text eol=lf

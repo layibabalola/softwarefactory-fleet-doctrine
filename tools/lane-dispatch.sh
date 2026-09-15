@@ -16,11 +16,28 @@
 #    model corrupts every comparison built on top of it -- the same provenance failure as
 #    calling a single-family review cross-family. requested_model and actual_model are
 #    separate fields, and a substitution is never silent.
+#
+# 3. THE CLI IS RESOLVED, NOT ASSUMED. `claude` and `timeout` are reached through
+#    tools/lib/cli-resolve.sh (invocation seam only -- the ladder, the classifier and the
+#    provenance row are untouched). An npm shim whose interpreter is broken exits 127 before
+#    any inference, which this script would otherwise walk the whole ladder over and record
+#    as "no model available" -- a capability claim with a PATH cause.
 set -u
 
 OUT=$1; LANE=$2; EFFORT=$3; PROMPT=$4; TMO=$5; shift 5
 LADDER=("$@")
 mkdir -p "$OUT"
+
+. "$(cd "$(dirname "$0")" && pwd)/lib/cli-resolve.sh"
+# Same one python discovery as run.sh and the probe: it EXECUTES each candidate, because a
+# bare `python` can be a Windows Store stub that exits 9009 without ever being an interpreter.
+PYTHON="$(cli_python)" || { echo "FAIL(no_python): $LANE -- no runnable python on PATH" >&2; exit 125; }
+run_timeout_selftest || exit 125
+if ! cli_resolve claude; then
+  echo "FAIL(no_cli): $LANE -- $(cli_cause claude)" >&2
+  exit 125
+fi
+cli_repair_line claude >&2
 
 # Classify an attempt STRUCTURALLY, not by matching error prose. The JSON envelope carries an
 # explicit `is_error` flag, and a request that never reached a model has zero tokens on every
@@ -28,7 +45,7 @@ mkdir -p "$OUT"
 # of this script grepped for "does not exist or you may not have access" and missed the real
 # message, which says "may not exist". Text signatures rot silently; counters do not.
 classify() {  # -> RAN | UNAVAILABLE | ERROR, plus a reason on stdout
-python - "$1" <<'PY'
+"$PYTHON" - "$1" <<'PY'
 import json,sys
 try: d=json.load(open(sys.argv[1],encoding="utf-8",errors="replace"))
 except Exception as e: print(f"ERROR\tunparseable envelope: {e}"); raise SystemExit
@@ -44,11 +61,11 @@ else:
 PY
 }
 
-started=$(date -Iseconds)
+started=$(date -u +%FT%TZ)   # -I is GNU-only; BSD/macOS date rejects it
 rung=0; actual=""; reason=""; rc=99; t0=$started
 for m in "${LADDER[@]}"; do
-  t0=$(date -Iseconds)
-  timeout "$TMO" claude -p --model "$m" --effort "$EFFORT" --permission-mode plan \
+  t0=$(date -u +%FT%TZ)
+  cli_timed claude "$TMO" -p --model "$m" --effort "$EFFORT" --permission-mode plan \
       --output-format json < "$PROMPT" > "$OUT/$LANE.raw" 2> "$OUT/$LANE.err"
   rc=$?
   verdict=$(classify "$OUT/$LANE.raw"); why=${verdict#*$'\t'}; verdict=${verdict%%$'\t'*}
@@ -57,13 +74,13 @@ for m in "${LADDER[@]}"; do
   reason="${reason}${reason:+; }$m: $why"
   rung=$((rung+1))
 done
-ended=$(date -Iseconds)
+ended=$(date -u +%FT%TZ)
 
 if [ -z "$actual" ]; then
   echo "FAIL(no_model_available): $LANE exhausted ladder [${LADDER[*]}]" >&2
 fi
 
-python - "$OUT" "$LANE" <<PY
+"$PYTHON" - "$OUT" "$LANE" <<PY
 import json,sys,pathlib,re
 out,lane=pathlib.Path(sys.argv[1]),sys.argv[2]
 raw=out/f"{lane}.raw"

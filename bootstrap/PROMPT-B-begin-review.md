@@ -50,6 +50,21 @@ with ToolSearch (`select:mcp__ccd_session__spawn_task`) first.
 a fenced block and say, verbatim, `NO CHIP TOOL ON THIS SURFACE — paste into a new session
 started on <MODEL>.` That is the only lawful case for text.
 
+**What "chip" means, exactly — this is the part that has failed three times.** A chip is a
+**clickable spawned task** that the *operator* launches: on Claude Code desktop, `spawn_task`. It
+is **never** an in-session subagent (`Agent`, a background agent, a Task call) and **never**
+`claude -p`. Those run *now*, on *this* session's model, with nothing to click.
+
+**If your surface cannot post a clickable chip, print the payload below verbatim and stop.** A
+printed payload the operator pastes is a correct outcome. An in-session launch is not, and
+"I couldn't post a chip" is not a licence to run the review yourself by another name.
+
+**An in-session model override is not a substitute.** Passing `model: opus` to an `Agent` call
+does produce an Opus run — and it deletes the operator's click, which is the step that makes the
+model choice observable and revocable *before* tokens are spent. The three-step flow (dispatcher
+recommends → operator sets the picker → operator clicks) is the control. A dispatcher that
+launches the work itself has replaced that control with a claim about it.
+
 Its prompt carries **pointers only**:
 
 ```
@@ -87,6 +102,22 @@ trusting that a lane ran because it was dispatched. The chip's first act is:
 This is cheap, it catches the mis-click before any tokens are spent on review, and it is the
 only check that survives an operator interruption mid-sequence.
 
+Measured, MLV-App on VIRTUAL-TEN, 2026-09-14: a Haiku dispatcher escalated correctly, then
+launched the orchestrator with the in-session Agent tool. The first launch inherited Haiku and
+printed `FAIL(model_floor)` — the floor check did its job. The dispatcher then re-launched with a
+model override; that one ran on Opus, so the orchestrator reviewed without the operator ever
+having had a chip to click. The operator ruled the second launch a bug, not a recovery: the floor
+check is a backstop for a mis-click, not a substitute for the click.
+
+**Two earlier fixes did not bind, for two different reasons, and both are worth knowing.**
+`9f3b1a9` (this repo, 2026-09-13) wrote the defect into `TRAPS.md` and changed no bootstrap file
+— the dispatcher reads *this* file, not the trap log, so nothing the dispatcher reads ever
+changed. `9a62830` (fleet doctrine bus, branch `fix/prompt-b-agent-model-parameter`, 2026-09-14) carries a commit
+message describing Agent-model guidance and a diff of **one blank line** at end of file: the edit
+never matched anything. It also named the wrong mechanism — an Agent `model` parameter is exactly
+the substitution ruled out above. **A commit message is not evidence of its diff, and a trap
+entry is not a fix to the file that gets read.**
+
 The reason is the whole point of escalating. If you paste your own derived state — "Codex is
 available", "3 findings so far" — then *your* cheap, possibly stale read picks the posture, and
 the stronger model inherits it and never re-derives it. An auth or capacity result is valid only
@@ -105,13 +136,21 @@ progress while nothing reviews anything. This is a guard that refuses, not one t
 
 Review lanes that the *orchestrator* dispatches — background agents, `claude -p`, `codex exec` —
 are **not** escalation chips and do not count against the cap. That permission belongs to the
-orchestrator only; the dispatcher's one chip is always a `spawn_task` call (§3).
+orchestrator only, downstream of the click; the dispatcher's one chip is always a `spawn_task`
+call (§3), and the orchestrator's permission is not a back door for the dispatcher to use the
+same mechanisms *before* one.
 
 ## 5. Report and stop
 
-Print the chip's title, then a final line of exactly
-`SET THE MODEL PICKER TO <MODEL> BEFORE CLICKING THE CHIP.` Then stop. Claim no seat, do no review work, and do not
-summarise the subject.
+Print the chip's title and model — or, if you could not post a chip, the payload itself. Then
+stop. Claim no seat, do no review work, and do not summarise the subject.
+
+**The last line of your report names the required model and nothing else**, so the operator can
+set the picker without reading back up. It is exactly:
+
+```
+SET THE MODEL PICKER TO <MODEL> BEFORE CLICKING THE CHIP.
+```
 
 ---
 

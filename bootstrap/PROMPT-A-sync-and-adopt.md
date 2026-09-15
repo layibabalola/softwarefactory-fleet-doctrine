@@ -21,9 +21,19 @@ do not necessarily move together, and the usual trigger for repairing that is th
 our work" — which this prompt is not.
 
 ```bash
-python tools/check-cli-auth.py          # or the project's equivalent; expect "MATCHED"
-codex login status                      # NOT `codex auth status` -- no such subcommand
+python "<doctrine>/tools/check-account-parity.py"   # expect "MATCHED"
+codex login status                                  # NOT `codex auth status` -- no such subcommand
 ```
+
+**There is no `tools/check-cli-auth.py` on the bus.** Earlier revisions of this prompt and of
+`probe-machine-inventory.sh` named it; it has never been tracked here on any ref
+(`git log --all -- '**/check-cli-auth.py'` is empty). What exists is
+`tools/check-account-parity.py` — the parity check, and the same script the SessionStart hook runs —
+alongside `tools/session-start-auth.py`. Several *member projects* do have a file by that name, at
+their own paths and with their own flags (Conjugal's is `coordination/tools/check-cli-auth.py`),
+which is why the wrong name kept looking plausible: run **the bus's** checker from a bus prompt,
+and name the project's own only in that project's spec. A step that names a missing script fails
+in the way that reads as "the check found nothing".
 
 If the surfaces disagree, repair before continuing: `specs/cli-credential-synchronization.md`
 describes the SessionStart hook and `-Auto` wizard that re-authenticate the CLI to match the
@@ -122,6 +132,10 @@ The probe dispatches a sentinel challenge to each candidate model and records on
 answer it. It does not assert a table: a retired or mistyped id still replies — with an error,
 at a byte count *larger* than a real answer — so neither exit code nor output size separates a
 live model from a dead one. Inventory is machine-scoped, not per-project (binding rule R5).
+
+**A whole family UNVERIFIED while its CLI resolved with a fault is a PATH cause, not a capacity
+one**, and the probe now records that fault and any repair alongside the availability line, so
+the distinction survives into the inventory rather than being re-guessed later.
 
 ## 2b. Write the readiness receipt
 
