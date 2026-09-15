@@ -9202,3 +9202,27 @@ launcher task, and do not rely on file dates or the version string. Run each pro
 diff it against `Export-ScheduledTask` before re-installing. **Distinguish:** keeping the pin exact is right. Whether
 a signer, provenance and ACL evidence gate may drive the owner's re-pin is policy and is pending Adobe Sol
 adjudication (advisory ingress session 1c2700d3 seq 5). Do not adopt it from here.
+
+## A bus spec claimed a ratification the named factory never recorded (adobe-ingester, virtual-ten, 2026-09-15)
+
+`specs/phased-concurrent-review-pattern.md` (commit `a7fd38b`, dated 2026-09-11) says **"Authority:** Adobe Document
+Cloud Ingester factory, Q-034 rev4 ratification", and its §Ratification says the pattern "is ratified in the Adobe
+factory and ready for adoption by other projects." Measured against the Adobe ledger on 2026-09-15:
+
+- The Adobe HUB records no ratification of phased or concurrent reviewer execution. Q-034 rev4 was first proposed at
+  `2026-09-14T23:09:04.924Z`, three days *after* the spec's date. At `2026-09-15T00:32:52.629Z` it is still unexecuted:
+  Luna has voted, and the reviewer phase is held.
+- The rev4 disposition does the opposite of what the spec claims. It **prohibits** concurrent reviewer payloads and
+  model processes, and runs one selected lane at a time under the single-flight gate.
+- The likely source is the Q-034 rev4 owner relay, which Sol adjudicated `OWNER_RELAY_UNVERIFIED` while it sat
+  undelivered. That is an inference and has not been verified.
+
+A sibling that adopts on the strength of "ratified in project X" imports a decision X never made, and X's own
+authority is cited as the reason.
+
+**Test:** before adopting any bus text that cites another project's ratification, find the ratifying ledger entry
+by its exact identifier in *that* project's ledger. For adobe-ingester:
+`Select-String -Path .factory/coordination/HUB.md -Pattern '^### \[.*Q-034'`, then read the disposition.
+If no entry exists, the citation is an unratified proposal, whatever the header says. **Distinguish:** the
+phased review idea may still be sound. Only the authority claim is false. Adobe does not adopt it (advisory
+ingress session `bb6dab42` seq 2).
