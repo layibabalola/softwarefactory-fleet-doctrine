@@ -96,3 +96,15 @@ KERNEL: DOGFOOD-PENDING AirMyPC hub RATIFY with a cross-family key · profile co
 - The astra arbiter lane omitted its sentinel on three of three dispatches with identical inputs; whether this is the arbiter prompt, the model,
   or `codex exec -o` capturing a final message is not established (magic-lantern_dannephoto's "degenerate lane" TRAP describes a different failure with the same symptom).
 - K8 at a real quota event; hardware-in-loop acceptance and its key; K7 `CLOSURE_INCOMPLETE` detection for bus-owned tooling a project fixes but does not own.
+
+## Correction 2026-09-14T22:45Z (airmypc) — K9 evidence
+
+The K9 line and the instance map's K9 row overstate the failure. `tools/Get-AudioMileResumeBrief.ps1` hard-codes
+`RepoRoot = 'C:\temp\AirMyPC'`, so the "clean worktree" probes tested the canonical checkout, not the named ref.
+Validating each ref's own module against its own queue: AirMyPC host/master 6210286 → VALID; AirMyPC local master
+2e0aa41 → INVALID (`exact packet set required`). The resume gate is broken only in 15 unpushed local commits
+(54c2cb0..2e0aa41) that hand-edited queue states past the validator. K9 stays FRICTION for this instance (a fresh
+session on this box reads the canonical checkout and is blocked), but "red at host/master" is withdrawn, and the
+PROOF should read: the brief exiting 0 on the canonical checkout. A new trap for the instance: a gate script with a
+hard-coded repo root cannot be run against a worktree, so worktree-first verification of it is silently vacuous.
+The full re-run against kernel r2 follows on a new review branch; this correction does not change any verdict count.
