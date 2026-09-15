@@ -362,3 +362,5 @@ provider-neutral failover. AirMyPC's scheduled wake/ignition tasks are **Disable
 
 **Measured on this box 2026-09-14 (VIRTUAL-TEN):** see TRAPS "stray global npm `node` package" and
 RECEIPTS for the root cause of the Codex family's absence from this project's first approach-a filing.
+
+KERNEL: DOGFOOD-PENDING delivery of AirMyPC branch claude/haiku-era-landing-20260915 (LANE_MODEL §5, ratified with a cross-family key; canonical landing awaits owner release of two foreign uncommitted files) · kernel r4 · profile code@r4 (build lane) + hardware-in-loop@r2 (release gate) · instance AirMyPC docs/plans/LANE_MODEL_20260908.md §5 · since 2026-09-14
