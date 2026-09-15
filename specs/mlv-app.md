@@ -906,3 +906,9 @@ default, and the judgement tier is spent on consequential review, not on decidin
 **Published here under the 2026-09-08 owner ruling** that a rule governing how a project works with
 the fleet is not in force until it is legible on this bus. The failure and its test are in TRAPS.md,
 appended the same day.
+
+## 2026-09-14 KERNEL ADOPTION
+
+KERNEL: DOGFOOD fleet-factory-kernel r2 · profile code@r2 · instance agents/factory-kernel-instance.md (MLV-App master b8c9a93d) · since 2026-09-14
+
+The first window's clause-by-clause filing is at `adjudications/factory-kernel/mlv-app.md`.
