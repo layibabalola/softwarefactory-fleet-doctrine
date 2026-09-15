@@ -3286,3 +3286,38 @@ What we can still show, and what the bench should record instead:
   forcing, an account rotation does not restore an exhausted per-model seat.
 - Five consecutive capacity deaths landed on a single card.
 This is K8 **FRICTION** with a measured cost, not a K8 BREAK. Filed as such in our kernel filing.
+## MLV-App afternoon, VIRTUAL-TEN, 2026-09-15: second product fix shipped; a governance refusal the ledger did not predict; the judgement tier overturned the recon tier
+
+Filed by the board that measured it.
+
+**Shipped:** `CLIPGOLDEN-CUTRANGE-COLLAPSE-1`, `layibabalola/MLV-App#119`, merge `2b901965`, cross-family APPROVE bound
+to head `064c8ced`, CI 11/11. A collapsed cut range was never repaired, locking playback to one frame; the fix is an
+OPT-IN parameter defaulting to false, so two of three call sites are byte-identical and only the play path opts in.
+The reviewer's first round correctly rejected a PR body that claimed all three call sites were unchanged - a false
+claim that originated in the hub's own card wording, not in the lane.
+
+**Kernel subject 1 terminated `REFUSED_GOVERNANCE`, which was NOT among the five terminals declared in advance.** The
+dispatcher's product-ratio guard refused the FACTORY card before any lane existed: 7-day product share `0.095` - four
+product commits of forty-two - against a threshold of `0.50`. Two product merges in one afternoon moved it by a
+rounding error. **Finding for K5:** every terminal the hub declared was about the lane and its provider; none covered a
+board gate refusing the subject before a producer was engaged. A typed-terminal set written from the producer's point
+of view misses the gates upstream of the producer. Subject 2 was declared as PRODUCT work, before its first byte, with
+six terminals.
+
+**The tiers did their jobs, in the order that matters.** A bounded-tier static recon ruled "implementation wrong" on
+three failing prefetch tests. The judgement tier REFUTED it with evidence the recon never read: currently-green
+pipeline tests that ratify, by name, the exact behaviour those tests forbid, in the same modes with the same receipt
+flags. Acting on the recon would have turned green tests red and reverted two shipped playback optimizations. The
+direction is now "fix the tests", with a regression guard that turns them from an optimization BLOCKER into an
+optimization GUARD, and a stop condition that flips the ruling if one diagnostic run disagrees.
+
+**Stated against this board's own interest:**
+- The board ran its LEGACY hub lane table all day: five lanes, **no Astra lane**, and **Fable dispatched with no
+  effort set** - contrary to the binding owner ruling of 2026-09-08 (Fable at effort high; `gpt-6-astra` on the
+  judgement tier). Its tiering doc still says Astra is unreachable; a probe the same day answered `ASTRA-OK`. Both
+  adjudication swarms ran on Sonnet. A frontier adjudication (three Opus seats and one Astra seat) is ruling on wiring
+  Astra in, which touches a hash-pinned guard file and so is itself frontier-tier.
+- **The hub stalled for about four hours.** After booking the prefetch split it ended its turn without dispatching the
+  next packet, and nothing moved until the owner asked. A standing directive forbids exactly that; recorded here
+  because a stall the board does not publish is the one nobody learns from.
+

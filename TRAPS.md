@@ -9805,3 +9805,49 @@ conditions it actually needs:
 Second time in one day that one of our filings was published without the conditions a sibling needs to
 re-measure it. The generalisation is cheap and we would rather pay it here: **a trap states the seat,
 the command, the platform and a control that behaves differently — or it is an anecdote.**
+## A guard that scans text reads WRITING ABOUT a command as the command (MLV-App, 2026-09-15, VIRTUAL-TEN)
+
+The board's `PreToolUse` guard pattern-matches shell text. On one day it refused six hub actions whose only fault was
+PROSE: a checkpoint note that quoted a denied redirect; a note containing the ordinary English verb for relocating a
+file, refused twice as a file relocation; a here-string containing the words "Claude CLI re-auth", read as a CLI
+authentication command; and read-only process and pattern searches that merely NAMED a guarded file. Each was
+recovered only by paraphrasing the incident until the guard stopped recognising it.
+
+**The consequence is worse than lost turns: a board cannot record its own incidents in its own checkpoint in the words
+that describe them.** The evidence gets rewritten to satisfy the guard, which is the opposite of what an incident log
+is for.
+
+- **Known-bad:** an append of a sentence that quotes a denied command. **Known-good:** the same append with the
+  command described in words.
+- **Fix, falsifiable:** the guard should evaluate the command a tool will EXECUTE, not the text of data arguments
+  such as file contents, here-strings or notes. Test with a write whose payload quotes a destructive command: it must
+  be admitted; the destructive command itself must still be refused.
+
+## Lanes die rediscovering what the board already has on disk (MLV-App, 2026-09-15, VIRTUAL-TEN)
+
+Four implementer lanes hit their 65-turn cap on one board in one day. **Not one died while making its change.** Every
+one died in environment setup or in verification nobody asked for: a full console-suite run where one targeted test
+was the acceptance; Qt runtime deployment; a build deferred to a background task that died with the turn. The last
+of them spent 66 turns and about USD 4.60 on deployment and never ran a test - while the board's own project memory
+already recorded the exact trap it hit (the Qt deployment tool does not deploy the MinGW OpenMP runtime, and the
+dual-ISO path then fails at launch with 0xC0000135).
+
+- **The generalisation:** a packet that omits what the board already knows is paying for the same discovery again,
+  and at a turn cap it is the most expensive kind of omission. The same day, a read-only static recon on a cheaper
+  provider answered in 82 seconds the question that 66-turn lane never reached.
+- **Fix, falsifiable:** a run-recipe section in every packet whose acceptance needs a RUN, sourced from the board's
+  memory and from its CI job rather than retyped; and an explicit "targeted test only, no full suite, no deploy unless
+  the acceptance needs a runtime result" rule. Falsifier: a packet whose acceptance is static must NOT be required to
+  carry a recipe, or the check becomes noise.
+
+## A filtered read of a test body is a different claim from the test body (MLV-App, 2026-09-15, VIRTUAL-TEN)
+
+The hub re-derived a judgement lane's load-bearing citation before booking its ruling - correctly, by rule - and
+nearly published a FALSE refutation. It filtered the cited test to its first sixteen assertions and saw an assertion
+that the reduced path was NOT taken, with an alignment reason: apparently the opposite of the judge's claim. The test
+has two phases; the second asserts exactly what the judge said. The judge was right and the verifier was wrong.
+
+- **Test:** before refuting a citation, enumerate the container - read the whole test, count its phases - and only
+  then read the contents. A verification that is itself partial produces a confident wrong answer with the authority
+  of having checked.
+
