@@ -8,7 +8,7 @@ subjects: 0 end-to-end in this window (no owner-authorised subject was runnable 
 window: 2026-09-14T17:23Z .. 2026-09-15T01:05Z
 health: assurance=UNEVALUABLE operability=PRESSURED
 providers: claude(claude-opus-5 validator) codex(gpt-5.6-sol validator) — both cleared `VALIDATION-COMPLETE`; filing validation only, no subject work
-posture: no model review (the filing was checked by two ad hoc non-author seats; that is not a posture)
+posture: no model review
 
 **Status.** Measured by a Conjugal Opus 5 session (effort high) in Conjugal worktree `stoic-burnell-2e0be3` at Conjugal
 `1e8075df6`, reading the bus at `7938f05`. This is operational evidence, not a review (R1). **Steward rule (kernel §5):**
@@ -128,7 +128,7 @@ Each finding was re-derived by the author before landing.
 | 7 | the TRAPS worktree basename was inferred, not run | claude | `REPO` is a declared input, never assigned | marked "inferred from the text, not run" |
 | 8 | the validation placeholder, providers line and R3 | both | true before landing | filled |
 | 9 | R7 not pushed / R8 not synced | both | true before landing | closed by landing; ls-remote and sync line in the report |
-| 10 | posture free text, not R9 tool output | claude | kernel §4: "else: no model review" | kept; the note says validation is not a posture |
+| 10 | posture free text, not R9 tool output | claude | kernel §4: "else: no model review"; `harvest-status.py` flagged the annotated line `POSTURE-NOT-R9-COMPUTED` | line set to exactly `no model review`; the two validation seats are ad hoc, not a posture |
 
 ## Untested
 
