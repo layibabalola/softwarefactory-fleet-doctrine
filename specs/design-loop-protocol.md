@@ -43,6 +43,7 @@ Only the *lint* (continuity/motivation/tone for creative work) and the *proof* (
 | Classifier / stopping evidence | cheapest model, swarm | predicted flat rounds accurately; never designs |
 
 Swarm high-inference models by *slice* for coverage, never by count; adjudication is one seat.
+Record `panel_families` from the families whose seats actually completed; never infer it from a planned roster.
 Single-provider projects: run designers/lint/panel with two instances at different effort and say so in a `providers:` header.
 
 ## 4. Fragmentation vs review
