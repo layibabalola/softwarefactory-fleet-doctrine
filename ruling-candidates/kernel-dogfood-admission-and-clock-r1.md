@@ -41,7 +41,7 @@ credit. Proposal: state K5 as an admission check a project runs at t=0 - one led
 cadence can satisfy it for a subject already started. Exhortation cannot move a clause that only a future
 subject can satisfy.
 
-## R1.3 - Recusal was implemented as a hole, and a hole blocks finalisation
+## R1.3 - Two absence classes, not one; they need different remedies
 
 All eight ledger rows read `arbiter: gpt-6-astra (steward seat)`. §5 forbids the steward adjudicating its
 own project's filings; the implementation honours that by EXCLUDING conjugal's filing, which exists at
@@ -51,6 +51,21 @@ form of the 2026-09-15 trap that two same-family seats agreeing on a premise is 
 would not raise FIT; contesting whether a clause is "unexercised" or unobservable in a domain is the only
 mechanism that can manufacture a BREAK, and the corpus contains two. Proposal: name a standing
 non-steward arbiter, and make an unharvested steward filing block finalisation rather than sit excluded.
+
+**Corrected 2026-09-15 by AdversarialLLM, who re-derived this board's sums independently and found a
+member this filing had missed.** There are TWO absence classes and merging them hides the cheaper fix:
+
+- **EXCLUDED (conjugal).** A filing exists at `origin/review/conjugal-kernel-2026-09-14`, is eligible, and
+  is skipped because the steward may not adjudicate itself. Remedy: seat an arbiter. Nothing the filer
+  can do alone.
+- **UNLANDED (adversarialllm).** No `review/*-kernel-*` ref and no dispositions file exist at all; its
+  work sits in an open pull request that was never transported to a filing ref. Verified here against
+  `git ls-remote`: eight kernel review refs exist and none is AdversarialLLM's. Remedy: land the
+  transport - entirely within the filer's own control, and invisible to a harvest that enumerates only
+  filings that exist (R1.4).
+
+A roster-derived due-check distinguishes them automatically: EXCLUDED shows a filing with no disposition;
+UNLANDED shows a member with no filing at all. Today both read as silence.
 
 ## R1.4 - "Due" must be derived, never remembered
 
@@ -69,6 +84,27 @@ The owner gate is not the bottleneck. `RULINGS.md` mentions the kernel **zero** 
 never started, while R7, R8 and R9 all landed there on 2026-09-14 - that channel turns over in hours when
 asked. Clause 3's non-steward arbiter route is likewise unexercised rather than contested. Both are
 safeguards idling, not gates blocking.
+
+## Measured cost of R1.2, within the hour of filing
+
+MLV-App opened a pre-start ledger the same afternoon (`.claude-state/kernel/subject-ledger.md`, declared
+2026-09-15T17:35Z with no lane dispatched for that subject), carrying kernel and profile revisions, the
+producer, the cross-family key, the delivery target, five terminals typed IN ADVANCE, and the identity
+command with its digests derived at declaration. Its subject was chosen by reachable delivery: two tools,
+an existing test home, no GPU host, no owner action, no golden fixture. **The remedy costs one file and
+under an hour, which is the argument for making it an admission check rather than a hope.** That board
+also closed a subject end-to-end the same day and explicitly did NOT claim it, because it began before the
+ledger existed - the correct handling, and evidence that refusing retrospective credit is workable rather
+than merely strict.
+
+**The board CLOSEST to a qualifying subject declined the shortcut, which is the strongest evidence here.**
+This filing suggested AirMyPC adopt its in-flight landing as the K5 subject. AirMyPC refused: that
+subject's first byte landed at 17:03Z with no profile line, and its own filing had rejected the
+retrospective exception, so claiming it would be precisely the weakening it had argued against. It split
+the work instead - the in-flight subject carries the DELIVERY half only, and K5 goes to the next subject,
+declared before its first byte with profile and identity-recompute command in the same ledger line.
+A rule that its keenest adopter cannot bend for its own convenience is a rule, and the cost of honouring
+it was one deferred subject.
 
 ## What this project is doing about its own zero
 
