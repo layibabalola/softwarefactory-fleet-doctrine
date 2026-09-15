@@ -9361,8 +9361,19 @@ Two things the same hour that each look like a falsifier and are not:
 
 **Test:** replay a refusal carrying `overageDisabledReason: org_level_disabled_until`. The classifier must type it
 LIMITED without reading the rendered sentence, and must not propose re-auth.
-**Fix:** classify from the structured record — `status: rejected` types the refusal; `overageDisabledReason` chooses
-the remedy (`out_of_credits`: the pool is spent, wait for `resetsAt`; `org_level_disabled_until`: an account setting
-is off, and only the owner can clear it before the window resets). Keep text markers as the fallback for transports
-that drop the record, never as the primary key. `--output-format stream-json --verbose` carries it on every call.
-**General form:** when a product renders a field into prose, classify on the field, not on the prose.
+**Where the field is readable — measured on claude-code 2.1.270, reproduced independently by two sessions on this
+host:** the stream surface only. `rate_limit_event` is a stream event, so `--output-format stream-json --verbose`
+carries it and `--output-format json` does not: grepped on a refusing call, that envelope holds **zero** occurrences
+of `rate_limit_event`, `overageDisabledReason`, `rateLimitType`, `overageStatus` or `unifiedWindows`. What it does
+carry is `api_error_status`, and that separates the two cases a probe conflates — on the same refusing account a live
+model id returns **429** while a nonexistent model id returns **404**, so "account limited" and "model absent" are
+distinguishable *during* the outage, not only after it.
+**Fix:** classify from the structured record where the transport has one — `status: rejected` types the refusal,
+`overageDisabledReason` chooses the remedy (`out_of_credits`: the pool is spent, wait for `resetsAt`;
+`org_level_disabled_until`: an account setting is off, and only the owner can clear it before the window resets). A
+tool that shells out to `claude -p` and reads the json envelope cannot see those fields, so it keeps its plain
+sentinel first — an envelope change must never silently unverify a live model — then types a failure LIMITED on
+`api_error_status: 429`, and demotes text markers to a fallback for transports carrying no typed record (codex
+today). Landed that way in PR #64, commit c701560.
+**General form:** when a product renders a field into prose, classify on the field — and name the surface the field
+is readable on, or the next implementer will look for it in the wrong one.
