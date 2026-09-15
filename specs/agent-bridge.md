@@ -517,8 +517,10 @@ review and lane ratification with vote citations); the measured traps travel now
 
 ## Fleet factory kernel
 
-KERNEL: DOGFOOD fleet-factory-kernel r1 · profile code@r1 · instance docs/internal/FACTORY_KERNEL_INSTANCE.md · since 2026-09-14
+KERNEL: DOGFOOD-PENDING agent-bridge hub class-B landing gate (parked: no cross-family key, see filing K6) · fleet-factory-kernel r2 · profile code@r2 · since 2026-09-14
 
-- `DOGFOOD`, not `ADOPT`. First filing: `adjudications/factory-kernel/agent-bridge.md`
-  (review branch `review/agent-bridge-kernel-2026-09-14`). The instance map sits on branch
-  `claude/great-kapitsa-647dd7` until agent-bridge's hub gate lands it.
+- `DOGFOOD`, not `ADOPT`. Filing: `adjudications/factory-kernel/agent-bridge.md`
+  (review branch `review/agent-bridge-kernel-2026-09-14`). r1 ran as `DOGFOOD`. It becomes `PENDING` at r2
+  because landing the instance map is a publication to agent-bridge's integration ref, and that is
+  class B, parked while SOL has no meter. The r2 map is in the filing under `## Instance map`
+  (PROMPT K §2). The r1 map is commit `3ab6eea` on `claude/great-kapitsa-647dd7`, unlanded.
