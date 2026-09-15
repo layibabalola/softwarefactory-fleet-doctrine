@@ -2760,6 +2760,134 @@ INSTANCE-FAILURE counting in PROMPT-K, the harvest parsers and the HARVESTS.md v
 filing-format/tool bench; no bootstrap or tools text changed. Dispositions:
 `adjudications/factory-kernel/mlv-app.dispositions.md`; ledger row in `HARVESTS.md`.
 
+## Appended by dng-auto-processor, 2026-09-15 (ULTRA-MAGNUS)
+- **ACCOUNT-PARITY-ATTENDED-REPAIR adoption: PASS**, 2026-09-15, machine ULTRA-MAGNUS. Proof is
+  executable (`parity-verify-adoption.ps1`) and must emit all three refusal reasons or exit non-zero.
+  The three reasons observed, verbatim:
+  1. `[parity-repair] REFUSED [attendance]: unattended surfaces never paint; app-not-attended(CLAUDE_CODE_SESSION_ATTENDED=''), entrypoint-not-allowlisted('scheduled-tick-not-allowlisted')`
+  2. `[parity-repair] REFUSED [liveness]: a repair window opened 9/15/2026 10:42:22 AM is still unanswered (pid 20516); finish or close it`
+  3. child-side verdict `realKeyboard=True raised=True` (foreground verified as `Claude-CLI-re-auth-<sig>`)
+  Observation 3 is the one that matters and it FAILED on first run — the console opened and then
+  refused itself in parameter binding, which from the parent side is indistinguishable from success.
+  Prior state: 2 of the standard's 4 artifacts had been installed for 36 days, undetected.
+- **The control fired in production the same hour: PASS.** Drift `desktop=cfc2c3c4 cli=b59121b3`
+  (persisting, by the trace, across 10 detections) → detector escalated → launcher opened a console →
+  operator completed the sign-in → the bootstrap's own post-login re-check wrote
+  `OK desktop=cfc2c3c4 cli=cfc2c3c4`. Independently confirmed: `ALIGNED - CLI and desktop both on org
+  cfc2c3c4`. Elapsed detector-to-cleared: ~1 minute, against 256 prior fires over 37 days that cleared
+  nothing. Credential handling unchanged throughout: the control opened the console and typed nothing.
+- Filed alongside: `ruling-candidates/detector-to-control-hardening-r1.md` (H1/H2/H5 asked of the hub),
+  and six installation traps in `TRAPS.md`.
+
+## 2026-09-15 — Conjugal harvest, Round F4 on `specs/conjugal-approach-a-v7.4.md` (automated run 20260915T143404Z-6e5aa419)
+
+Population enumerated with `tools/harvest-status.py approach-a-design` before reading: 7 filings, 4 already HARVESTED,
+3 open (AdversarialLLM UNHARVESTED; agent-bridge and airmypc STALE). All 3 read; spec rewritten v7.7 -> v7.8, 12,674
+words against the unchanged 13,000-word cap. Dispositions: `adjudications/approach-a-design/{AdversarialLLM,
+agent-bridge,airmypc}.dispositions.md`. Round artifacts in Conjugal `docs/architecture/approach-a/rounds/f4-*`.
+
+**AdversarialLLM's first filing** is the largest single filing this subject has had: 43 anchored lines, 5 seats, and
+`posture: none` honestly declared because its bench guard denies the posture tool (R9-correct; the tool's
+POSTURE-NOT-R9-COMPUTED flag is the absence, not an accusation). 9 ADOPTED, 9 ADOPTED-CONDITIONAL, 10 REJECTED,
+15 ROUTED. Its self-declared REBASE-NEEDED was confirmed and extended: 6 of 43 anchors were already absent from v7.7,
+three of them because earlier rounds had fixed them.
+
+**Convergence decided three things.** (1) Helper retry after HELPER_TIMEOUT was unbounded — AdversarialLLM [A] and
+agent-bridge `b.u2` (classifier 2-of-3 must-fix), two repos, two measurements; §4 now caps at `N_helper=3` with
+`min(T_helper*2^attempt, 960 s)` backoff, two outstanding requests per helper, and durable BLOCKED-CAPACITY resumed
+only by a HELPER_CAPABILITY_PROBE. (2) §0's "Tier 2 verifies and attests without writing Oracle state" contradicted
+§4's helper-created refs — raised now by three benches (AdversarialLLM a.21, airmypc lint-codex in F3, agent-bridge's
+luna lane). F3 rejected it on the mechanism and left the sentence; the third independent raise carried the wording fix,
+with no mechanism change. (3) Subject-keyed ref case aliasing, filed by all three benches, was already fixed in F3
+(`<S>` = lowercase hex) — so all three copies were rejected as already-resolved, with the encoding quoted back.
+
+**The scope ruling that shaped the round:** this design is the code-profile instance of `specs/fleet-factory-kernel.md`,
+not the universal factory. AdversarialLLM's universality seat is largely right and largely aimed at the wrong document,
+so 15 lines are ROUTED to `adjudications/factory-kernel/` with the kernel clause named, rather than rejected.
+
+**Two findings the document most needed**, both singular and both grounded on Conjugal's own measured bench:
+`a.29` stopped §7 overstating its security claim (all lanes run as one Windows user principal on one shared `.git`;
+enforcement is cooperative wrapper admission, not an OS boundary), and `a.34` caught that `metrics/` is untracked,
+never committed and absent from `.gitignore`, so the first write of §9's bare path would have turned telemetry into
+tracked state.
+
+**airmypc's STALE re-file carried no new finding** — the diff against the F3-harvested blob is a 10-line addendum. Its
+15 F3 rulings are restated against the new blob so the dispositions travel with it. Re-filing was still correct: the
+tool cannot tell an addendum from a rewrite, and the cost of finding out was one diff.
+
+Posture: arbiter Astra (`gpt-6-astra`, high, three scoped calls after five failed single-call attempts); consolidator
+Fable (`claude-fable-5`); lint Opus (`claude-opus-5`) + Sol (`gpt-5.6-sol`), 2 and 5 findings, 4 distinct defects, all
+fixed in one pass (+2 words). Every seat ended on `LANE-COMPLETE`. Projects that have still not filed on this subject
+are the rest of the fleet; the seven that have are all Windows single-user, and none is Conjugal's own bench.
+
+## CLI re-auth auto-launch: measured dead, repaired, and live-launched (adobe-ingester, 2026-09-15, VIRTUAL-TEN, node v24.14.0, pwsh 7.6.6)
+
+- **Before the repair:** `~/.claude/hooks/.reauth-autolaunch-receipts.log` held 1,310 decisions and zero
+  launches: 1,105 `ALIGNED`, 158 `CLI_UNREADABLE`, 47 `CLI_BEHIND_DESKTOP`. Re-derive by counting `action=` and
+  `verdict=` pairs in that log.
+- **Spawn shapes:** `node ~/.claude/hooks/tests/spawn-shapes.probe.js <dir> 0 [X]`. Each child writes a marker.
+
+  | shape | result |
+  |---|---|
+  | detached, stdio ignored, hidden | never ran |
+  | detached, visible | never ran |
+  | attached | ran |
+  | attached + unref, fast child, node exited at 646 ms | ran |
+  | attached + unref relay that `Start-Process`es a window | the window never ran |
+  | `spawnSync` relay that `Start-Process`es a window | the window ran after node exited at 608 ms, with `IsInputRedirected=False`, `UserInteractive=True`, `SessionId=1` |
+
+- **Suite:** `pwsh -File ~/.claude/hooks/tests/Test-ReauthAutolaunch.ps1`.
+  - Run 1 found the test's own bug: a single receipt line unrolled to a `[string]`, and indexing `[-1]` returned
+    its last character, so 9 cases falsely read FAIL.
+  - Run 2 found one real gap: the trigger regex did not match "CLI should auth". Sections 1-3 and 5 passed,
+    including the launch-args assertions (no `-TargetOrg`, quoted `-File`).
+  - Run 3 ended `RESULT: PASS`: 8 of 8 verdict cases, the live verdict, the owner-phrase chain, the negative
+    prompt, and window survival. The launch-args section read SKIP because a real wizard was open and the
+    launcher correctly answered `suppressed`.
+- **Live launches:**
+  - `2026-09-15T15:38:03.9Z action=launched src=prompt`. That window (pid 32104) carried the broken prefix. It
+    was idle, with no `claude` child process and the CLI still logged out, so it was closed by PID and the
+    cooldown was cleared.
+  - `15:43:04.7Z action=launched src=prompt` opened pid 19376, running
+    `pwsh -NoLogo -NoExit -ExecutionPolicy Bypass -File "<...>\reauth-cli-wizard.ps1"`.
+- **Subject SHA-256** (VIRTUAL-TEN, user-level `~/.claude/hooks/`, not in any project repo):
+
+  | file | SHA-256 | bytes |
+  |---|---|---|
+  | `auto-launch-reauth-wizard.ps1` | `DDF7B03F314D318C875CAFA8BCE1A0BB280BD8A2D2A1D7253DAB1FF25FCAE065` | 9,100 |
+  | `resume-account-gate.mjs` | `3F5CB30C2E6D3D95A47B75D31666AD6E801581100042E0FD145723FC1DF5F333` | 24,610 |
+  | `tests/Test-ReauthAutolaunch.ps1` | `0C56AFE7AFDB8247E213A11D579FB56C668056AF85428F914915A14A47447038` | 11,165 |
+  | `tests/spawn-shapes.probe.js` | `C4FC2E93BD4EB5657C619937A43078FAE325B6AAA282367E86DB2B12F1934FBB` | 3,459 |
+  | `check-account-drift.ps1` (unchanged) | `BA129DA48D5E80FBBC9D719B09BA53009AD58A4FBE4E49CDB21CFB2CC72C3C54` | 33,925 |
+
+- **Not proven here:** the owner's browser approval and the post-login `orgId` check. They were pending at
+  publication and are owner-only. airmypc (airmypc-e7) and agent-bridge (agent-bridge-9e) said they would
+  append their own verification rows against these hashes. The MLV-App harness evidence is at
+  `C:\!Layi Wkspc\MLV-App\.claude-state\fleet-runs\reauth-autolaunch-test-20260915\` (mlv-app).
+
+## Independent verification of the re-auth auto-launch repair f1de4e9 (agent-bridge, 2026-09-15, VIRTUAL-TEN, second reader)
+
+- **Hashes.** Each of the five subject files in f1de4e9's table was re-hashed on disk in `~/.claude/hooks/`, with
+  `Get-FileHash` and byte length. All five match on both: `auto-launch-reauth-wizard.ps1` `DDF7B03F...`,
+  `resume-account-gate.mjs` `3F5CB30C...`, `tests/Test-ReauthAutolaunch.ps1` `0C56AFE7...`,
+  `tests/spawn-shapes.probe.js` `C4FC2E93...`, and `check-account-drift.ps1` `BA129DA4...`. Negative control: a
+  64-zero hash compared against the gate reads unequal.
+- **Trigger regex, tested offline without running the gate.** Running the gate can spawn a real launch, which is a
+  credential action. So the `TRIGGER` block was extracted from the gate's text and evaluated in node.
+  - 6 of 6 cases correct:
+    - the owner's exact phrase "…CLI should auth and open browser for me…" matches;
+    - the owner's follow-up "test that cli auth automation will work…" matches;
+    - "Resume our work" matches;
+    - an unrelated sentence, "cli" without an auth word, and "oauth token … expired" stay silent.
+  - Mutation control: the same probe against the gate text with the two new `cli…auth` alternatives removed turns
+    both owner phrases red, 2 failures. So the new lines are what make those phrases fire, and the probe can fail.
+- **Correction (adopt-or-distinguish).** f1de4e9's author said `.promptsubmit-trace.log` "is written by a different
+  hook". It is written by the gate itself, `resume-account-gate.mjs:216` in `3F5CB30C`, and only read by
+  `parity-watch.ps1:79`. Adding a session id to that trace line is therefore a gate edit. It is still undone. Until
+  it is done, "did this session's prompt fire the gate" cannot be answered from the log. The same prompt reached
+  five sessions within seconds today, and no line could be attributed.
+- **Not verified here:** the live window launches (this session is barred from launching the wizard), the owner's
+  browser approval, and the post-login `orgId`.
 ## Account-parity automation exercised end to end, and three defects closed (Conjugal, 2026-09-15, Dell XPS 17)
 
 Drill: does the R6 check-then-repair automation actually fire, and does its green line mean what it

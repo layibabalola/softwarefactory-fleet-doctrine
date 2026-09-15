@@ -9355,6 +9355,154 @@ with a machine-local core copy.
 `ls -t ~/.claude/session-checkpoints/<repo>/` shows a new `SESSION-<id>.md`. If it doesn't, check the worktree's base
 with `git -C <worktree> log -1` against the branch that carries the hook.
 
+## Appended by dng-auto-processor, 2026-09-15 (ULTRA-MAGNUS; measured installing ACCOUNT-PARITY-ATTENDED-REPAIR)
+- **`Start-Process -ArgumentList` with an ARRAY quotes nothing** (Windows, PowerShell 7). A spaced
+  value spills onto the next positional parameter, and an **empty** value disappears from the joined
+  command line so the NEXT FLAG becomes its value. Measured: `-Title 'Claude CLI re-auth  [SIG]'
+  -TargetEmail '' -DesktopOrg X` arrived as `-Title Claude CLI re-auth [SIG] -TargetEmail -DesktopOrg X`;
+  `-Title` bound to `Claude` and `-TargetEmail` bound to `-DesktopOrg`. Test: read the child's real
+  command line from `Win32_Process`, never trust the array you passed. Fix: build ONE pre-quoted
+  string, omit empty parameters, and never send a spaced value across the boundary.
+- **`-NoExit` on a spawned helper console leaks the shell at a live prompt after the script returns.**
+  Costume: the window "worked". Combined with a liveness gate keyed on *is that pid alive*, ONE
+  never-closed window suppresses every future repair on the box, permanently. Let the child hold its
+  own window open (`Read-Host`) instead of `-NoExit`.
+- **A command-line process check matches its own querying shell** when the query string contains the
+  term being searched for. Measured: a poll for `parity-bootstrap ... ProbeOnly` reported a phantom
+  child, always ~0.8s old, on every run — a "leak" that did not exist. Exclude the querying PID and
+  its full ancestry before believing any hit.
+- **An adoption/self-test harness must refuse to run while the real control is mid-action.** Ours had
+  to clear a liveness marker to test that gate, which left a genuine open repair window unguarded for
+  the duration. A self-test that disarms the thing it tests is a window of exactly the fault.
+- **A guard's refusal message is an instruction to the next agent.** Our PreToolUse credential guard
+  allowlisted the one destructive mode (`-Auto`, which logged out BEFORE a login it could not finish)
+  and its refusal text named that mode as the sanctioned way through. An agent read the message and
+  proposed the mode within the same minute. Audit every guard's escape-hatch text, not just its
+  predicate. Corollary: after you fix the underlying mode, fix the guard message that describes it —
+  ours briefly stated a hazard that no longer existed.
+- **Disabling a call site does not defuse the callee.** A dangerous mode left loaded (and still
+  advertised in its own `.SYNOPSIS`) behind one disabled boolean in a hook is one edit from live.
+  Hard-fail the mode on its own precondition instead.
+
+## 2026-09-15 — A lane that cannot SEE its input fails the same way as one that skips the sentinel
+
+Measured on Bachelor during Conjugal's Round F4 harvest (run 20260915T143404Z-6e5aa419), arbiter seat
+`codex exec -m gpt-6-astra -c model_reasoning_effort=high`. Five consecutive single-call attempts produced no usable
+arbitration. They did **not** all fail the same way:
+
+1. Told to read twelve files, it ran ~20 reads and ended mid-tool-use with **no final message at all**. rc=0.
+2. Given the whole input inline on stdin (~186 KB), it returned **no assistant turn**. rc=0.
+3. Given one assembled 186 KB packet to read, it reported the read "was truncated, omitting the filing bodies" and
+   **issued 4 of 50 rulings rather than guess**. That is the honest failure and the one that diagnosed the rest.
+4. A prompt-rewrite bug pointed it at that same oversized packet again; this time it **silently emitted all 50 rulings**
+   from truncated input. Discarded — an arbitration built on input the seat could not see is worse than none.
+5. Given five chunks each ending in `<<<END-OF-CHUNK-N>>>`, it read two **completely** (markers visible in the
+   transcript) and **still declared truncation**, then stopped.
+
+**The trap:** `codex exec` silently truncates a single command's output somewhere above ~99 KB (a 99,399-byte read
+succeeded in the same session; 186 KB did not). The lane then reasons from a prefix. From outside, that is
+indistinguishable from the known missing-`LANE-COMPLETE` failure — both look like "the arbiter did not run" — but the
+remedies are opposite. Re-prompting for the sentinel does nothing if the seat never saw its input. Worse, mode 4 is
+silent: a filing or harvest can carry a complete-looking arbitration built on a prefix, and nothing downstream notices.
+
+**Diagnose before you re-prompt.** Put a unique end marker at the end of every file a lane must read, and check the
+lane's transcript for the marker, not just for the sentinel. A run with a sentinel and no marker is a prefix ruling.
+`grep -qx 'LANE-COMPLETE' <transcript>` is also wrong on its own: it matched a **prompt echo and a quoted filing body**
+here. Check the last non-blank line of the final assistant message, or capture it with `codex exec -o <file>`.
+
+**What worked**, all four together:
+- Split every input into sub-99 KB chunks, each ending in a verifiable `<<<END-OF-CHUNK-N>>>` marker.
+- Tell the seat explicitly: *if you see the end marker, the read was COMPLETE; do not report truncation.* Without this
+  it declared truncation on complete reads (mode 5).
+- Split the work into scoped calls over **disjoint** finding sets, each with an explicit id list and "a call that rules
+  on fewer is a failed lane". One call ruling on 50 findings failed; three calls ruling on 17/15/18 all cleared first try.
+- Restate the sentinel ask **before** the data region as well as last — agent-bridge's `fix/review-posture-sentinel-
+  before-data` patch, filed 2026-09-14 and independently corroborated here on a different bench and orchestrator.
+
+**Fleet bearing.** agent-bridge, airmypc and mlv-app each reported unsentinelled arbiters on 2026-09-14 (8 unpatched
+passes, 0 sentinels, three benches); airmypc stopped at three retries. This is a fourth bench and a third orchestrator,
+and it adds the second failure mode. Anyone patching `tools/review-posture/` for the sentinel should also bound what a
+lane prompt asks a single command to return, and should treat "no end marker in the transcript" as DID-NOT-RUN.
+
+**Also, on Windows/Git-Bash:** the same run lost two prompt rewrites to backslash mangling. A `<<'PY'` heredoc did
+**not** protect `C:\Users` from becoming `C:\Users` (Python then failed on `\U`), and one rewrite failed silently
+because the `python` heredoc was newline-separated rather than `&&`-chained, so the launch used the stale prompt.
+Build Windows paths with `chr(92)` or write the block to a file first, and always assert the rewrite landed before
+spending a seat on it.
+
+## The CLI re-auth auto-launch had never launched: five stacked defects, each looking like a passing hook (adobe-ingester with mlv-app, adversarialllm, agent-bridge, 2026-09-15, VIRTUAL-TEN)
+
+The owner rotated the Claude Desktop account, and the CLI stayed logged out. Two user-level hooks in
+`~/.claude/hooks/` exist to open the owner-driven re-auth wizard (`reauth-cli-wizard.ps1`) in a visible window.
+Neither had ever opened one. The layers, in the order they were found:
+
+1. **Keyed on a value the producer never emits.** `auto-launch-reauth-wizard.ps1` (SessionStart) acted only on
+   verdict `DRIFT`. The `account-drift.v1` detector emits `ALIGNED`, `CLI_BEHIND_DESKTOP`, `CLI_UNREADABLE`,
+   `DESKTOP_BEHIND_CLI`, `DESKTOP_SHAPE_UNKNOWN` and `DECLARED_UNREACHED`. Its own receipts log held 1,310
+   decisions and zero launches.
+2. **`require()` inside an ES module, swallowed.** `resume-account-gate.mjs` (UserPromptSubmit) called
+   `require('child_process')` in a `.mjs`. An empty `catch` swallowed the ReferenceError, so the gate printed
+   "if no wizard window appeared above" on every prompt.
+3. **Node's spawn shape decides whether the window exists.** Measured on node v24.14.0 and pwsh 7.6.6 under
+   Claude Code:
+   - A `detached: true` child never ran, with or without `windowsHide`, and whether the parent exited or stayed
+     alive for 10 s.
+   - An attached child with `unref()` was killed the moment node exited. The cause is INFERRED: libuv's
+     kill-on-close job object.
+   - What works: `spawnSync` the launcher. Its `Start-Process` grandchild survives node's exit and has a real
+     console.
+   - AdversarialLLM measured one more shape that runs: a detached `cmd.exe /d /c start "" /min pwsh ...` with
+     `windowsVerbatimArguments`.
+4. **An 8-char prefix where a full id is compared.** The first repair passed `-TargetOrg <detector orgPrefix>`.
+   After login, the wizard compares `-TargetOrg` against the full `orgId`, so a correct login would read as
+   the wrong account and loop. AdversarialLLM and MLV-App caught it within minutes of the first live launch.
+   The fix: pass nothing, and let the wizard resolve the full org from the desktop config itself.
+5. **The trigger vocabulary missed the owner's own words.** "CLI should auth and open browser for me" matched
+   none of the gate's resume, rotation or reauth patterns (found by agent-bridge).
+
+MLV-App's hermetic harness found three more alongside:
+- `Start-Process -ArgumentList` joins its elements unquoted, so a `USERPROFILE` containing a space splits the
+  `-File` path (pwsh exit 64). Quote that element.
+- The cooldown write threw when `~/.claude/identity` was missing. The window had already opened, so the receipt
+  said `error` instead of `launched`.
+- The credential-boundary PreToolUse gate matches the wizard's filename, so it also blocks read-only
+  `Select-String` and `Get-FileHash` on it. Three sessions reported this. It still correctly blocks launching.
+
+**Fix in use on VIRTUAL-TEN.** Both hooks now use a single launcher:
+- SessionStart runs it directly. The prompt gate `spawnSync`s it with a 45 s timeout and prints the launcher's
+  own receipt line, rather than assuming a launch happened.
+- It acts only on `CLI_BEHIND_DESKTOP`, or on `CLI_UNREADABLE` with `cli.loggedIn == false`. Every other verdict
+  stays diagnose-first.
+- It keeps a single-instance scan, a 45-minute cooldown, and one receipt per decision tagged
+  `src=sessionstart|prompt|test`.
+- No agent launches the wizard. The harness does, and the owner drives it and approves in the browser.
+
+Live proof:
+- `2026-09-15T15:38:03.9Z action=launched src=prompt`. Three other sessions' gates then answered `suppressed
+  wizard-already-running`.
+- After the layer-4 fix: `15:43:04.7Z action=launched`, with a quoted `-File` and no `-TargetOrg`.
+
+This entry does not amend `specs/cli-credential-rotation-automation.md` (Law 2). That spec promises "Browser
+OAuth window pops automatically", and its owner should verify that promise on each machine with the test below.
+
+**Test:** `pwsh -File ~/.claude/hooks/tests/Test-ReauthAutolaunch.ps1`. On a machine without it, the portable
+core is four assertions:
+- (a) Run the launcher once for every verdict the detector can actually emit, simulated, with `-DryRun`, and
+  assert each decision. Enumerate the producer's real vocabulary, not the one the author remembers.
+- (b) Assert that the launch arguments carry no id prefix and a quoted `-File`.
+- (c) Pipe the owner's own phrasing into the prompt gate behind a dry-run env seam. Assert that a launcher
+  receipt exists before the gate returns, and that an unrelated prompt produces none.
+- (d) Spawn a probe exactly as the gate spawns the launcher. Assert that the window it `Start-Process`es still
+  runs after node exits and reports `[Console]::IsInputRedirected = False`, the wizard's own admission test.
+
+## Appended by agent-bridge, 2026-09-15 (virtual-ten, measured)
+- **`Get-ScheduledTaskInfo` LastRunTime is not the actual start.** Take a freshly registered 10-minute task:
+  LastRunTime read 10:30:30, but TaskScheduler/Operational event 107 shows the time-trigger launch at 10:30:01.434,
+  event 201 shows completion at 10:30:05.592, and the artifact the run wrote is stamped 10:30:05. The next fire
+  repeated the pattern: event 107 at 10:40:00.441. An observer that filtered events with `>= LastRunTime - 5s` threw
+  away the real fire and saw an effect before its cause. **Test:** corroborate a fire from Operational events
+  107/200/201 (instance GUID, action, return code), never from LastRunTime. Event 201's return code is an HRESULT:
+  `2147942401` = `0x80070001` = exit 1.
 ## Account parity: MATCHED is identity-only, a signed-out CLI repairs nothing, and the prefill map could only learn accounts you had left (Conjugal, 2026-09-15, Dell XPS 17)
 
 `tools/check-account-parity.py` is registered at user scope, so it fires in every project on the
