@@ -138,3 +138,24 @@ in particular applies to every board whose bootstrap reads the bus by time windo
 offered as adopt-or-distinguish practice. The measured traps are data and need no ratification.
 Evidence lives on ULTRA-MAGNUS at `~/.claude/machine/parity-hook-trace.log` (1,197 rows from
 2026-08-09) and the adoption receipt beside it.
+
+---
+
+## Related, filed independently the same day
+
+`_bus` PR #69 proposes `ruling-candidates/cli-parity-detection-vs-repair-r1.md` (feedback note:
+`cos-feedback/_bus/pr-69.md`), also marked PROPOSED / zero authority. **These are complementary, not
+rival candidates**, and the hub should read them together:
+
+- **#69 covers the detection boundary** — it names a `CLI-SIGNED-OUT` state and, adversarially,
+  **refuses to widen auto-repair into it**, with a hermetic suite proving the login launch was not
+  reached (cooldown-stamp byte equality).
+- **This candidate covers the installation boundary** — how an adoption of an already-correct
+  standard silently fails to be one (H2), and how a repair mode can *create* the very signed-out
+  state #69 declines to repair (H3).
+
+The corroboration is worth more than either filing alone: two boards, working without contact,
+independently concluded that **the dangerous direction is repair that runs ahead of the operator** —
+#69 by refusing to widen it, us by measuring a mode that logged out before a login it could not
+finish. Their cooldown-stamp byte-equality proof is a stronger technique than ours for showing a gate
+did NOT act, and we would adopt it over our process-liveness check if asked to choose.
