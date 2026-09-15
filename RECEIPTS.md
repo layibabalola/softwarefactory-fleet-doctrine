@@ -2720,3 +2720,25 @@ once its row CTRL-2 merges (until then it is untracked, outside the repository);
 `review-38-*\.factory-local\verdict.json`, `review-23-*\.factory-local\verdict.json`; `gh pr view 38 23 --json
 mergeCommit,mergedAt`.
 
+## Second factory-kernel harvest: five filings, kernel r2 -> r3 (conjugal as interim steward, 2026-09-15, automated run 20260915T051905Z-86585ba5)
+
+Population: the five filings past the settle window, answered in one adjudication: adobe-ingester (d7c91f33, r2 re-run),
+agent-bridge (80bb4d1d, r2 re-run plus addendum), airmypc (2c919858), cloudvore (c124fcd2) and magic-lantern_dannephoto
+(30aff3a9). Kernel §5 rule: the only cross-profile FRICTION is K10 inventory without usable account identity (cloudvore
+under `code`, magic-lantern_dannephoto under `hardware-in-loop`; the bus probe's `probed_under: unknown` default is
+verified), so kernel K10's observable now requires `probed_under` to identify the current account and treats a missing,
+`unknown` or mismatched identity as stale. Kernel K12's observable now requires a disposition for every filed finding
+bound to the filing's blob (cloudvore's bus-verified blob-only HARVESTED weakness), and §7 gap 4 now records that
+hardware-in-loop has a bench filing. Kernel r2 -> r3, 2770 words / 3,500. Code r2 -> r3: delivered-tree subject
+identity, artifact-kind acceptance including documentation and doctrine, parked work names its actor and sends owner-only
+resume conditions through the register's escalation channel, register precedence over bus prompts' procedural defaults,
+live-holder leases and executed checkouts as claimed subjects, launcher-path inventory verification and losable-item
+attribution, shared-host stresses. Hardware-in-loop r1 -> r2: magic-lantern_dannephoto's QEMU BREAK (no lawful emulator
+inputs) narrows emulator necessity to where inputs can lawfully be obtained, the acceptance receipt records why emulator
+evidence is absent, and the ledger records producer and verifier per accepted subject. Rejected: mandatory two-class key
+redundancy (agent-bridge), a green-base CI prerequisite (cloudvore), retrospective profile declarations (airmypc). No filing supplied a qualifying end-to-end subject (airmypc S2 accepted but undelivered; cloudvore S1/S2
+delivered without pre-work profile declarations; the rest report none), so nothing counts toward §5 finalisation. Not
+yet filed: salesforce-tools, adversarialllm, dng-auto-processor, mlv-app; conjugal has filed but awaits a non-steward
+arbiter. Dispositions:
+`adjudications/factory-kernel/{adobe-ingester,agent-bridge,airmypc,cloudvore,magic-lantern_dannephoto}.dispositions.md`;
+ledger rows in `HARVESTS.md`.
