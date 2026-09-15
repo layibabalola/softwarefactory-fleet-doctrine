@@ -9226,3 +9226,36 @@ by its exact identifier in *that* project's ledger. For adobe-ingester:
 If no entry exists, the citation is an unratified proposal, whatever the header says. **Distinguish:** the
 phased review idea may still be sound. Only the authority claim is false. Adobe does not adopt it (advisory
 ingress session `bb6dab42` seq 2).
+## A pre-f6e1972 in-tree doctrine receipt shadows the out-of-tree one, and a worktree names the wrong receipt (conjugal, Bachelor, 2026-09-14)
+
+bus `f6e1972` moved PROMPT A §2b's receipt out of tree for governed projects, but did not migrate receipts already
+written in tree. Paste B (`bootstrap/README.md`) and `bootstrap/lane-orchestrator.md` §1 read `.claude/doctrine-sync.json`
+**first**, and fall back to `$HOME/.claude/doctrine-sync/<basename>.json` only when it is absent. **Measured:**
+`C:\code\Conjugal\.claude\doctrine-sync.json` (untracked, not ignored; `head` 862df45, synced 2026-09-14T12:23-05:00) was
+still in Conjugal's shared checkout when this session wrote a fresh out-of-tree receipt (`head` 7938f05). A paste B
+started in `C:\code\Conjugal` reads the stale one. There is a second defect: `lane-orchestrator.md` §1 computes
+`basename "$REPO"`, where `REPO` is the declared input "absolute path to the repository the subject lives in". When the
+session passes its git worktree path (here `C:\code\Conjugal\.claude\worktrees\stoic-burnell-2e0be3`), that basename
+is `stoic-burnell-2e0be3`, so the fallback path names a receipt that does not exist (inferred from the text, not run), while the in-tree path is absent there
+because untracked files do not follow worktrees. So one project gives a different sync answer depending on which checkout
+the session opened.
+
+**Test:** for each project, `ls <canonical checkout>/.claude/doctrine-sync.json ~/.claude/doctrine-sync/<project>.json`.
+If both exist, compare `head`. From a worktree, resolve the project name from `git rev-parse --git-common-dir`, not from
+the worktree folder. **Not fixed here:** the stale file belongs to the project's shared checkout. Deleting it is the
+project's call, and `bootstrap/*` is not Conjugal's to write.
+
+## A headless harvest session ended its turn while its own background seat was still running (conjugal, Bachelor, 2026-09-15)
+
+Conjugal's automated steward spawns a `claude -p` session per harvest (`coordination/harvest/harvest_runner.py`). In run
+`20260915T004904Z-06b1bd96` the session started the Astra arbiter seat in the background, and its last output was "still
+waiting on Astra's arbitration for Round F4, which is running in the background". In `-p` mode, ending the turn ends
+the process, so the session exited 0 at about 00:52:38Z. The Astra seat had written `LANE-COMPLETE` at 00:52:32Z, and
+the consolidation, lint and landing never ran. The runner's sentinel check refused it (`FAILED SESSION_NO_SENTINEL`,
+`detail: exit=0`, backoff 30 min), so no partial harvest landed. R2 did its job here. The defect is in the session
+prompt (`coordination/harvest/prompts/harvest-session.md` says nothing about background seats).
+
+**Test:** any prompt run under `claude -p` or `codex exec` that dispatches seats must run them in the foreground, or poll
+their output files in a foreground loop until each sentinel appears, before yielding. A headless session that "waits"
+for a notification has already exited. **Distinguish:** interactive desktop sessions are re-invoked when background
+work completes; headless ones are not.
