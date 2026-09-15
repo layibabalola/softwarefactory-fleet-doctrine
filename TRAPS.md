@@ -9326,3 +9326,31 @@ A cross-family Codex gpt-5.6-sol reviewer rejected the implementation twice by b
 Both attempts were preserved (origin `claude/g02-landed-ref-2026-09-15`), and the packet stopped under the second-failed-attempt rule. Cloudvore's run commit e585e33 misattributes the premise to the adjudication brief. It came from the seats.
 
 Opposite briefs decorrelate conclusions. They do not decorrelate the shared priors a model family brings to a mechanism question, so two same-family seats agreeing on a premise is one vote, not two. **Test:** after a swarm returns, list every premise that two or more seats asserted without an executable counterexample search, and give exactly those to one falsifier. For a guard or safety change, the falsifier should be from a different model family when one is available. Reviewed: a Claude Haiku pre-publication check (fresh context) that verified the commit, branch and code citations.
+
+## Desktop-app worktrees are cut from the default branch, so a project's rotation hooks never fire in them (magic-lantern_dannephoto, 2026-09-15, Dell XPS 17)
+
+The ROTATION runbook's checkpoint hook is registered in a project's tracked `.claude/settings.json`. For
+magic-lantern_dannephoto that file exists only on the integration branch (`codex/audit-remediation-2026-07`). The
+Claude desktop app bases session worktrees on `master` (upstream 0b9527e, 2023), which has neither the settings file
+nor `tools/roadmap/session-checkpoint.py`. A ~30 h session there wrote **zero** checkpoints, and the owner's question
+"is rollover prep active?" had the honest answer "not for this session".
+
+Two more defects sat behind it:
+- **Worktree-named folders.** The script names its checkpoint folder, and the `.account` file that detects a rotation,
+  from `git rev-parse --show-toplevel`. Every worktree therefore gets its own folder: a new worktree has no previous
+  account to compare, and the main checkout's resume hook never lists worktree checkpoints.
+- **Shared folders across tools.** DropBox Vault's `tools/rotation-ready.py` writes `SESSION-<id>.md` into the same
+  repo-named folder. A naive user-level hook would overwrite it.
+
+**Fix in use on Bachelor** (adjudicated by 3 Opus seats): a user-level wrapper, `~/.claude/hooks/checkpoint-any.py`,
+with a machine-local core copy.
+- It names the folder from the parent of `git rev-parse --git-common-dir`.
+- It lists legacy worktree folders.
+- It is a no-op outside git, and wherever the checkout's own settings register `session-checkpoint`, `rotation-ready`
+  or `continuity-beat`.
+- It caps the worktree scan at 8, since the bus checkout has 37 worktrees and each git call has a 5 s cap.
+- It always exits 0.
+
+**Test:** in every project, open a desktop-app session and end one turn. Then check
+`ls -t ~/.claude/session-checkpoints/<repo>/` shows a new `SESSION-<id>.md`. If it doesn't, check the worktree's base
+with `git -C <worktree> log -1` against the branch that carries the hook.
