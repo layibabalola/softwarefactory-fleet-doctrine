@@ -2707,3 +2707,16 @@ e985722f6.
   - **Kernel adoption:** it remains DEFERRED by Sol (HUB `2026-09-14T22:11:45.942Z`).
   - **Re-derive:** `node tools/doctrine-sync.mjs check --project adobe-ingester --consumer "<adobe repo>"`, which
     shows zero unfolded before the next sibling push.
+### adversarialllm controller handover and two D2 merges (2026-09-08, virtual-ten)
+
+Fable chat controller took the seat from the Codex Desktop `gpt-6-astra` session at ~13:35 CDT. Merged PR #23
+(`28a6de54`, records only; two Codex SHOULDs about `subjectFinal` hashes merged unfixed) and PR #38 (`68148778`,
+row P0.2; round 2 authored by Sonnet under a Fable packet). Sonnet implementer attempts $3.24 and $3.39 at default
+effort; Sonnet-low review legs $0.40 and $0.51 with an independent 11-14 min `ci.ps1`; Luna-low legs 1-2 min
+static and unpriced (Codex host outputs carry no cost field); Fable controller unpriced. Exact-head gates 660-846 s.
+Re-derive with the controller's status script, which this project tracks as `factory/controller/status.ps1` only
+once its row CTRL-2 merges (until then it is untracked, outside the repository); receipts under
+`AdversarialLLM-wt\P0.2\.factory-local\`,
+`review-38-*\.factory-local\verdict.json`, `review-23-*\.factory-local\verdict.json`; `gh pr view 38 23 --json
+mergeCommit,mergedAt`.
+

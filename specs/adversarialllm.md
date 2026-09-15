@@ -37,15 +37,18 @@ is a real attractor and this board has its own instance of it") — and this pro
 of 30-day commits touching neither `src` nor `tests`) are a further independent instance of it, not a
 rebuttal or a ranking against those boards' figures.
 
-**Current operation (2026-09-08):** the authorized Codex desktop recovery controller executes the
-reviewed queue; the parent owns mutations and bounded read-only Luna shards investigate. Native
+**Current operation (2026-09-09):** a Claude chat controller session executes the reviewed queue, having
+taken the seat from the authorized Codex desktop recovery session at ~13:35 CDT on 2026-09-08 (see the
+2026-09-08 seam below); the controller owns mutations and bounded read-only shards of either family
+investigate. Native
 conductor WORK returns `WORK-SAFETY-BLOCKED` pending a reviewed restricted controller. The six legacy
 `AdvLLM-*` scheduled tasks remain disabled; configured hourly behavior is not proof of an active worker.
 Roles run on demand in their own worktrees, with no standing lanes or seats.
 
 The only path onto `master` is D2: exact-head full local CI and all three named GitHub checks green,
-validated native Claude and Codex receipts pinned to an immutable head/base, zero MUST/BLOCKER and
-literal APPROVE from the family that did not implement. A tracked `pre-push` hook and diagnostic
+two validated native receipts pinned to an immutable head/base from independent adversarial legs, zero
+MUST/BLOCKER and literal APPROVE from a leg that did not author that head; one leg per family is required
+for the high-risk class and preferred elsewhere (see the 2026-09-08 seam below). A tracked `pre-push` hook and diagnostic
 tripwire supplement that gate; historical diagnostic debt does not hold independent product work.
 Two evaluable rejections close the attempt `adj-close`, but its requirement stays unfinished. A
 closed attempt is never silently retried or counted delivered; replacement requirements need an
@@ -242,3 +245,74 @@ This section grants no `ADOPT`, provider lane, runtime activation, rollout stage
 task, schedule, queue, watcher, persistence, authentication, reset, Desktop, deployment, automatic-gate,
 repository-write, patch, commit, merge, push, release, review, correctness, adjudication, completion,
 model/provider fallback, continuation, retry, second-job, or host-hard-close authority.
+
+## 2026-09-08 seam — controller handover, review independence by setup, tiers by act
+
+**Handover.** A Claude Fable 5.1 chat session took the factory controller seat at ~13:35 CDT from the Codex
+Desktop `gpt-6-astra` session that had driven PRs 24-38 by hand since 2026-09-07. Its first acts: post the two
+round-1 verdicts for PR #38 that had sat unposted for 40 minutes, freeze the round-2 packet for the one real MUST,
+and drive PR #38 and the 36-hour-old PR #23 to D2 merges (`68148778`, `28a6de54`). The hourly conductor stays
+disabled; every tick is manual through the controller drivers, which row CTRL-2 tracks as `factory/controller/*.ps1`
+(until it merges they are untracked, outside the repository). They wrap `worker-host.ps1` and the pure state
+modules and never bypass the publication ledger.
+
+**Adopted as project law (operative amendment point 8):** the fleet owner rulings of 2026-09-08 in the bus
+`RULINGS.md` — "RULING 2's family clause is retired; adversarial swarms count at any tier" and "model tiers by
+act, and the top tier never drives a heartbeat". Independence is author != reviewer, opposite briefs, grounded
+evidence, review of the combination, and the integrator re-deriving the load-bearing claim. Cross-family stays
+preferred and is required for this project's high-risk class (guard, CI, hooks, controller and state modules,
+scheduled tasks, live wiring, `RATIFY:` subjects, and the process-authority documents themselves: root
+`CLAUDE.md`, `AGENTS.md`, `factory/HUB.md`, `factory/RESET-PLAN.md` and `factory/prompts/`); a high-risk pull
+request waits for a dark family rather than merging without it. Tier follows the act: Fable and Astra for judgement only;
+Opus and Sol run the loops; Sonnet and Luna do bounded packets and low-effort review legs; Haiku narrates
+scripted status and staffs cheap swarms; fall to the next tier when one is exhausted. Adjudicated 2026-09-08 by
+three Opus agents on distinct briefs (against the default; what outranks it; evidence binding); their reduction
+is in the PR that carries this seam.
+
+**One datum, stated with its confound.** On PR #38 round 1 the Luna-low leg found the day's only real MUST on
+bytes the Sonnet-low leg had approved with `items: []` and `declared_self_failure: "None."`. The legs were not
+equal instruments: the Claude leg had Read/Glob/Grep plus one fixed gate tool and no `git`/`rg`, ran 8 turns in
+25 s, and was told to re-run the 846 s gate the controller had already run; the Codex leg had `git` and `rg` and
+was told to spend its budget reading code. That is evidence about instruments and briefs before it is evidence
+about families, so it does not narrow the owner ruling. What it does say: equalize the legs (read-only `git`/`rg`
+for the Claude leg through the fixed MCP route, adversarial and parent-check clauses, no re-run of a gate the
+controller already ran) before drawing any family conclusion.
+
+**Traps measured, each with the check that catches it:**
+- A Sonnet implementer rehydrated a page handler with `new Function` inside the MV3 side panel, whose default
+  CSP forbids eval. Its own focused tests, typecheck and lint were green on that tree; the full gate was never
+  run on it, and by construction would not have caught it either: lint scopes to `src/**` and `tests/**`, and
+  the browser lane never installs the live monitor. The controller caught it by reading the diff. Check: lint
+  `adversarialllm/scripts/**/*.mjs` with `no-new-func` and `no-eval`; name environment constraints (CSP, line
+  endings, owned paths) in every implementer packet.
+- The same commit normalized two docs from mixed CRLF/LF to LF (CRLF count 55 to 0 and 1 to 0); `git diff`
+  showed 112 changed lines for a one-sentence edit, and the implementer self-certified with `git diff -w`, which
+  structurally cannot see CR removal. Check: compare `git diff --stat` with `--ignore-cr-at-eol --stat` in the
+  gate and refuse a delta that differs; forbid whitespace-insensitive self-proof in implementer prompts.
+- PR #23's Codex leg hit an abandoned `Global\AdvLLM-ci-gate` mutex in its prepended gate run and filed that as
+  a MUST; the PR sat 36 hours. The raw round-1 artifact survives only as the posted PR comment and controller
+  prose. Check: a verdict whose only MUST cites the reviewer's own infrastructure is `INFRASTRUCTURE_FAILURE`
+  (`consumesRound:false`) and is re-dispatched; keep every `verdict.json` under its attempt directory.
+- PR #38 merged labelled `impl:codex` while its round-2 bytes were Claude-authored (commit trailer), so the
+  cross-family key was turned against a stale label; the Claude round-2 leg declared the same-family fact
+  itself. Check: derive authorship per round from producing-command and trailer evidence, never the first-reap
+  label (point 8; the mechanical change is row CTRL-2).
+- A rowless PR (#23) left its merge publication reconcile at `WAITING / BODY_MISMATCH` although the PR merged,
+  because the reconcile requires a `row:` token. Check: `merge-pr.ps1` reports it; the ledger validator should
+  accept a declared rowless subject.
+- Publication serializes PRs: the ledger requires fresh `master == PR base`, so the second of two open PRs
+  always pays a master merge, re-gate and re-review. Check: `status.ps1` shows it; plan one PR at a time.
+- The guard's bus-path allowlist is narrower than D12 reads. On a Claude session only `git -C <bus>
+  fetch|commit|push`, `node <bus>/tools/doctrine-sync.mjs`, pure reads, and Write/Edit to the exact
+  `specs/adversarialllm.md` pass; `pull`, `switch`, `add`, `worktree`, `clone` from that path, and any statement
+  containing a shell redirection are blocked. F1.4b works from a fresh `gh repo clone` of the bus into an
+  `AdversarialLLM*` path plus `gh pr create|merge -R`; the row carries the planned `D12_DEST` widening.
+
+**Receipts (re-derive under `AdversarialLLM-wt\P0.2\.factory-local\`, `review-38-*`, `review-23-*`):** Sonnet
+implementer attempts $3.24 (60 turns) and $3.39 (56 turns) at default effort; Sonnet-low review legs $0.40 and
+$0.51, each with an independent 11-14 min gate; Luna-low legs 1-2 min static, unpriced (Codex host outputs carry
+no cost field); Fable controller unpriced (no receipt); exact-head `ci.ps1` runs 660-846 s. PR #23 merged with two
+Codex SHOULDs unfixed (`subjectFinal` in `ADJ-20260906-rguard.json` and `ADJ-20260906-rbudget.json` do not match
+the committed proposal hashes). Queue at those merges: 16 unresolved, next ready F1.4b; this seam's own commit
+adds CTRL-3 (order 54) and CTRL-2 (order 55, dependsOn CTRL-3) and makes F1.4b depend on CTRL-2, so the sequence
+is CTRL-3, CTRL-2, F1.4b, then F1.5b, F1.6, H1.
