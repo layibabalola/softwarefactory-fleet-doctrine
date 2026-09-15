@@ -2759,3 +2759,22 @@ subjects (S1 bus candidate unaccepted and undelivered; S2 a failed seam), so not
 INSTANCE-FAILURE counting in PROMPT-K, the harvest parsers and the HARVESTS.md verdict columns is routed to Conjugal's
 filing-format/tool bench; no bootstrap or tools text changed. Dispositions:
 `adjudications/factory-kernel/mlv-app.dispositions.md`; ledger row in `HARVESTS.md`.
+
+## Appended by dng-auto-processor, 2026-09-15 (ULTRA-MAGNUS)
+- **ACCOUNT-PARITY-ATTENDED-REPAIR adoption: PASS**, 2026-09-15, machine ULTRA-MAGNUS. Proof is
+  executable (`parity-verify-adoption.ps1`) and must emit all three refusal reasons or exit non-zero.
+  The three reasons observed, verbatim:
+  1. `[parity-repair] REFUSED [attendance]: unattended surfaces never paint; app-not-attended(CLAUDE_CODE_SESSION_ATTENDED=''), entrypoint-not-allowlisted('scheduled-tick-not-allowlisted')`
+  2. `[parity-repair] REFUSED [liveness]: a repair window opened 9/15/2026 10:42:22 AM is still unanswered (pid 20516); finish or close it`
+  3. child-side verdict `realKeyboard=True raised=True` (foreground verified as `Claude-CLI-re-auth-<sig>`)
+  Observation 3 is the one that matters and it FAILED on first run — the console opened and then
+  refused itself in parameter binding, which from the parent side is indistinguishable from success.
+  Prior state: 2 of the standard's 4 artifacts had been installed for 36 days, undetected.
+- **The control fired in production the same hour: PASS.** Drift `desktop=cfc2c3c4 cli=b59121b3`
+  (persisting, by the trace, across 10 detections) → detector escalated → launcher opened a console →
+  operator completed the sign-in → the bootstrap's own post-login re-check wrote
+  `OK desktop=cfc2c3c4 cli=cfc2c3c4`. Independently confirmed: `ALIGNED - CLI and desktop both on org
+  cfc2c3c4`. Elapsed detector-to-cleared: ~1 minute, against 256 prior fires over 37 days that cleared
+  nothing. Credential handling unchanged throughout: the control opened the console and typed nothing.
+- Filed alongside: `ruling-candidates/detector-to-control-hardening-r1.md` (H1/H2/H5 asked of the hub),
+  and six installation traps in `TRAPS.md`.

@@ -9354,3 +9354,32 @@ with a machine-local core copy.
 **Test:** in every project, open a desktop-app session and end one turn. Then check
 `ls -t ~/.claude/session-checkpoints/<repo>/` shows a new `SESSION-<id>.md`. If it doesn't, check the worktree's base
 with `git -C <worktree> log -1` against the branch that carries the hook.
+
+## Appended by dng-auto-processor, 2026-09-15 (ULTRA-MAGNUS; measured installing ACCOUNT-PARITY-ATTENDED-REPAIR)
+- **`Start-Process -ArgumentList` with an ARRAY quotes nothing** (Windows, PowerShell 7). A spaced
+  value spills onto the next positional parameter, and an **empty** value disappears from the joined
+  command line so the NEXT FLAG becomes its value. Measured: `-Title 'Claude CLI re-auth  [SIG]'
+  -TargetEmail '' -DesktopOrg X` arrived as `-Title Claude CLI re-auth [SIG] -TargetEmail -DesktopOrg X`;
+  `-Title` bound to `Claude` and `-TargetEmail` bound to `-DesktopOrg`. Test: read the child's real
+  command line from `Win32_Process`, never trust the array you passed. Fix: build ONE pre-quoted
+  string, omit empty parameters, and never send a spaced value across the boundary.
+- **`-NoExit` on a spawned helper console leaks the shell at a live prompt after the script returns.**
+  Costume: the window "worked". Combined with a liveness gate keyed on *is that pid alive*, ONE
+  never-closed window suppresses every future repair on the box, permanently. Let the child hold its
+  own window open (`Read-Host`) instead of `-NoExit`.
+- **A command-line process check matches its own querying shell** when the query string contains the
+  term being searched for. Measured: a poll for `parity-bootstrap ... ProbeOnly` reported a phantom
+  child, always ~0.8s old, on every run — a "leak" that did not exist. Exclude the querying PID and
+  its full ancestry before believing any hit.
+- **An adoption/self-test harness must refuse to run while the real control is mid-action.** Ours had
+  to clear a liveness marker to test that gate, which left a genuine open repair window unguarded for
+  the duration. A self-test that disarms the thing it tests is a window of exactly the fault.
+- **A guard's refusal message is an instruction to the next agent.** Our PreToolUse credential guard
+  allowlisted the one destructive mode (`-Auto`, which logged out BEFORE a login it could not finish)
+  and its refusal text named that mode as the sanctioned way through. An agent read the message and
+  proposed the mode within the same minute. Audit every guard's escape-hatch text, not just its
+  predicate. Corollary: after you fix the underlying mode, fix the guard message that describes it —
+  ours briefly stated a hazard that no longer existed.
+- **Disabling a call site does not defuse the callee.** A dangerous mode left loaded (and still
+  advertised in its own `.SYNOPSIS`) behind one disabled boolean in a hook is one edit from live.
+  Hard-fail the mode on its own precondition instead.
