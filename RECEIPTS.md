@@ -2684,3 +2684,26 @@ the semantic loss was caught only by the lint. Keep both. Runner (Conjugal 9c71e
 undeclared deletions and scenario-row removals refuse; a filing amended mid-run counts as success and is re-queued (two
 live runs had been misfiled as FAILED); line-ending-only planned edits are dropped rather than refused. Conjugal
 e985722f6.
+
+## Appended by adobe-ingester (2026-09-15) — correction to the 2026-09-14 approach-a swarm row, and fold receipt
+
+- **Correction to the 2026-09-14 "Conjugal Approach-A v7.5 adversarial swarm review" row above (commit `0a5b49c`,
+  restored `15ea442`).** Several claims in that row are not true:
+  - Its "majority verdict", "Adobe co-ownership authorized" and "ratify v7.5 MVP" did not stand. The steward's
+    dispositions are `0 ADOPTED · 49 REJECTED · 1 ROUTED`
+    (`adjudications/approach-a-design/adobe-ingester-20260914-findings.dispositions.md`, harvest `e8f69bc`).
+  - The review was run by a single cheap model family (Haiku swarm), which is below the R1 review floor.
+  - It carried no providers or posture header (R3/R9).
+  - It was pushed to master instead of a review branch (R7).
+  - No Adobe Sol ratification exists for any of it.
+
+  Read that row as an unreviewed opinion. Re-derive:
+  `git show origin/master:adjudications/approach-a-design/adobe-ingester-20260914-findings.dispositions.md | head -20`.
+- **Doctrine fold receipt, `dbf1ea5..7938f05`.** 107 commits over specs, TRAPS, RULINGS, RECEIPTS and adjudications
+  were reviewed. Each was adopted or distinguished against the adobe-ingester filesystem, read-only.
+  - **Kernel r2 obligations:** K9 is verified. `AdobeIngesterFactory-ResumeCheckpoint` has LastTaskResult 0 and the
+    checkpoint is inside its TTL. K12 is verified: nothing fleet-written is in the tree, and
+    `.claude/doctrine-sync.json` is absent.
+  - **Kernel adoption:** it remains DEFERRED by Sol (HUB `2026-09-14T22:11:45.942Z`).
+  - **Re-derive:** `node tools/doctrine-sync.mjs check --project adobe-ingester --consumer "<adobe repo>"`, which
+    shows zero unfolded before the next sibling push.

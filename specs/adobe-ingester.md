@@ -847,8 +847,11 @@ Measured facts only. Strategy and adoption go to Sol through the advisory ingres
   - Distinguish before adopting from us: a kernel instance map cannot land in our tree while a candidate is frozen.
 - **A pwsh update killed six of our Scheduled Tasks** (TRAPS, 2026-09-14). They pinned the prior pwsh SHA-256 and
   exited 125 while showing `Ready`, which silenced both reviewers for about 55 hours. Sol re-pinned only the reviewers
-  (`c622832`); ActuationSentinel, EscalationBudget, ReviewerOperationalReconciliation and SolIgnitionWarden remain
-  stale by Sol's explicit scope decision.
+  (`c622832`, consumed `21209df`, HUB `2026-09-14T22:43:29.426Z`). That proves the tasks *could* launch. It does not
+  restore them: both stay **Disabled** with demand start denied, no run has happened since, and independent review
+  of the repair is still owed. ActuationSentinel, EscalationBudget, ReviewerOperationalReconciliation and
+  SolIgnitionWarden stay stale by Sol's explicit scope decision. Derive the current state:
+  `Get-ScheduledTask -TaskName 'AdobeIngesterFactory-*' | Get-ScheduledTaskInfo`.
 - **The Q-034 revision-4 owner relay was undelivered for two days** because it was appended to Sol's outbound
   `requests.jsonl`. It was delivered at `2026-09-14T23:00:53.664Z` as OWNER DIRECTIVE 2026-09-14a, with its rationale
   corrected against the ledger: rev3's reviewer failure was `WRAPPER_FAILED` at the wrapper's nonzero-result throw site,
@@ -857,5 +860,14 @@ Measured facts only. Strategy and adoption go to Sol through the advisory ingres
     `BOUNDED_SEQUENTIAL_SINGLE_FLIGHT_CONTAINMENT_CAUSE_UNDETERMINED`.
   - Luna voted APPROVE. Phase B (reviewers) is held on `recovery_manifest_invalid` and `recovery_resolution_ready=false`
     (HUB `2026-09-15T00:32:52.629Z`).
-- **Our resume heartbeat was dead 09-12 to 09-14** (exit 125; source pin matched). It was repaired, and produced a fresh
-  checkpoint at 2026-09-15T00:34:33Z.
+- **Our resume heartbeat was dead 09-12 to 09-14** (exit 125; source pin matched). It was repaired. To check it is still
+  alive, read `expires_utc` in `.claude-state/continuity/CHECKPOINT-CURRENT.md`; past that time, the heartbeat is dead.
+- **Doctrine fold `dbf1ea5..7938f05` (107 commits) was adopt-or-distinguished and acked.**
+  - Proposals went to Sol (advisory ingress session `bb6dab42`, seq 2):
+    - the Sol ignition warden installer drops the launcher and its pins;
+    - no factory gate catches a dead pinned task that shows `Ready`.
+  - Distinguished, not adopted:
+    - automated `claude auth logout/login` specs;
+    - mandatory auto-adopt and hot-load specs;
+    - specs that commit machine inventory into the project tree;
+    - `specs/phased-concurrent-review-pattern.md`, whose claim of Adobe ratification is false (TRAPS, 2026-09-15).
