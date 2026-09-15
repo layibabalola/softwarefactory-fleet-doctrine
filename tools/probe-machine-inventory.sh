@@ -40,6 +40,13 @@ probe() {  # family nickname id
   if [ "$fam" = claude ]; then
     timeout 120 claude -p --model "$id" < "$WORK/ask" > "$WORK/$fam.$nick" 2>&1
     rc=$?
+    # Only on failure, and only to CLASSIFY it: the plain call above stays the sentinel, so a change to
+    # the JSON envelope can never silently unverify a live model. The envelope types the failure where the
+    # rendered sentence only describes it. Measured on one machine, same limited account, 2026-09-15:
+    # a live id gives "api_error_status":429, a nonexistent id gives 404 -- so the status separates an
+    # exhausted account from an absent model even during the outage, which is the conflation this fixes.
+    [ "$rc" -ne 0 ] && timeout 120 claude -p --output-format json --model "$id" \
+      < "$WORK/ask" > "$WORK/$fam.$nick.json" 2>&1
   else
     # Keep codex's console output: a limit refusal is printed there, never in the -o reply file.
     timeout 180 $codex_cmd exec -m "$id" -s read-only --skip-git-repo-check \
@@ -51,7 +58,10 @@ probe() {  # family nickname id
   # verify a model that never answered.
   if grep -qx "$SENTINEL" "$WORK/$fam.$nick" 2>/dev/null; then
     echo "$nick:$id:VERIFIED"
+  elif [ "$rc" -ne 0 ] && grep -q '"api_error_status":429' "$WORK/$fam.$nick.json" 2>/dev/null; then
+    echo "$nick:$id:LIMITED"
   elif [ "$rc" -ne 0 ] && cat "$WORK/$fam.$nick" "$WORK/$fam.$nick.log" 2>/dev/null | grep -qiE "$LIMIT_RE"; then
+    # Fallback for transports that carry no typed record, codex among them today.
     echo "$nick:$id:LIMITED"
   else
     echo "$nick:$id:UNVERIFIED"
@@ -79,7 +89,7 @@ for r in "$WORK"/r.*.*; do
       echo "warning: cannot preserve probe replies under $EVID_ROOT" >&2; EVID="-"; }
   fi
   [ "$EVID" = "-" ] && continue
-  for src in "$WORK/$fam.$nick" "$WORK/$fam.$nick.log"; do
+  for src in "$WORK/$fam.$nick" "$WORK/$fam.$nick.log" "$WORK/$fam.$nick.json"; do
     [ -e "$src" ] && cp "$src" "$EVID/${src##*/}.$state"
   done
 done
