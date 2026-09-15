@@ -9136,3 +9136,41 @@ fails its sentinel and degrades honestly at run time (R2/R3). **Test:** before a
 `codex exec` sentinel. If the output names a usage limit, skip the re-probe, record the reset time in the project's
 sync receipt, and re-probe after it. The probe should classify quota exhaustion separately from an unknown model id
 (the costume of TRAPS line "Codex quota exhausted" is the reverse mistake).
+
+## A PowerShell update silently kills every task that pins pwsh's hash (adobe-ingester, virtual-ten, 2026-09-14)
+
+pwsh 7.6.6 (`C:/Program Files/PowerShell/7/pwsh.exe`, written 2026-09-02, SHA-256 BFB46AF8...) replaced the build whose
+SHA-256 is 362A356C.... Every Scheduled Task launched through the SBP self-healing launcher with
+`--expected-executable-sha256 362A356C...` then refused to start and exited **125**. Task Scheduler kept showing those
+tasks as `Ready` and firing them on schedule. Measured on virtual-ten, 2026-09-15T00:30Z: nine tasks still carry the
+stale pin.
+- Enabled and exiting 125: Adobe `ActuationSentinel`, `EscalationBudget`, `ReviewerOperationalReconciliation`,
+  `SolIgnitionWarden`; `AgentBridgeClaudeGovernorShadow`; `SBP Autonomous Controller Deployment Broker`;
+  `SBP-DirectConsoleRiskCompanion`.
+- Disabled: `AdvLLM-ResumeState-Heartbeat`, `AirMyPC-ResumeHeartbeat`.
+
+Adobe's two reviewer tasks sat dead for about 55 hours. A rotation-completeness hook reported it as "rotation
+incomplete", which was the wrong cause. Adobe's Sol re-pinned only the reviewer tasks (Adobe `c622832`), as a
+deliberate reviewer-only repair unit. The other seven belong to their owners.
+
+**General form:** a hash pin on an interpreter that is updated automatically is a scheduled outage. A `Ready`
+state and an on-time `LastRunTime` say nothing about whether the payload ran (kernel K4).
+
+**Test:** on each machine, for every task whose arguments contain `expected-executable-sha256`, compare the pin with
+`Get-FileHash` of the executable it launches, and alert on `LastTaskResult` 125. **Fix:** the owning project re-pins
+through its own governed path. For a pin that can recur, have the launcher report `PIN_DRIFT` with both hashes
+instead of a bare exit code, so the first failed run is diagnosable.
+
+## A hold released by an event the system can never produce is a deadlock (adobe-ingester, virtual-ten, 2026-09-14)
+
+An auditor session held an owner-directive relay "until a reviewer task has run with LastTaskResult 0". The
+reviewer tasks are Disabled, with demand start off, until a governed ballot dispatches them. The ballot needed the
+relay. So the hold could never release. Its watch also first keyed on "the task ran" instead of "the task returned
+0", and fired on two runs that both exited 125. The same relay had already failed silently for two days, because
+earlier sessions appended it to the orchestrator's own outbound `requests.jsonl` instead of the auditor's
+protocol-v2 response file (Adobe HUB `2026-09-14T23:00:53.664Z` records the correct delivery).
+
+**Test:** before arming a hold or a watch, name the component that produces the release event, and check that it
+can produce it in the current state (enabled, dispatchable, not itself waiting on the hold). **Fix:** key the
+release on a state the waiting side can observe and the other side can reach, such as a ledger disposition or a pin
+that matches. Prove the watch's key with one negative case before trusting its silence.
