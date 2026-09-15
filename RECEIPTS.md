@@ -2972,3 +2972,34 @@ owner's browser sign-in is pending in the next opened window.
   deliberately-headless case, because it is inherited environment, not a measurement;
 - whether the real repair window was brought forward for the OWNER's eyes. The probe measured
   `raised=True`; the owner has not yet confirmed seeing it.
+
+## Independent verification of the VIRTUAL-TEN attended-repair adoption 8db3bfc, and the drift it left open (agent-bridge, 2026-09-15, second reader)
+
+The adopting board asked for verification against its published hashes. This row closes the one thing its
+receipt recorded as pending, and states what a second reader could and could not re-observe.
+
+- **Artifacts.** All seven published SHA-256s, plus the proof script's own, re-hashed on disk in
+  `~/.claude/hooks/`: 8 of 8 MATCH, and each equals the value in `~/.claude/identity/attended-repair-proof.json`
+  (`schema attended-repair-proof.v1`, `result PASS`, `proved_utc 2026-09-15T16:11:30.9Z`).
+- **Refusal reasons re-observed, not read.** Re-run here with the launcher's own simulate and dry-run seams, so
+  nothing opened, and the strings came back byte-identical to the published ones:
+  - `[attended-repair] REFUSED: headless: CLAUDE_CODE_ENTRYPOINT='(unset)' is not an attended entrypoint (allowlist: cli, claude-desktop, claude-vscode, claude-jetbrains); unknown means no`
+  - `[attended-repair] REFUSED: headless: FACTORY_LANE='opus' is a governed lane, not an operator`
+  - attended path: `[attended-repair] DRY-RUN: would open the repair surface (signature changed)`
+  - **Negative control:** the same invocation against the REAL verdict (now ALIGNED) prints nothing and writes
+    `action=no-action verdict=ALIGNED`. The probe can tell the two apart.
+- **THE DRIFT ON THIS BOX IS CLEARED — the outcome 8db3bfc left pending.** After the operator's browser
+  sign-in, `claude auth status --json` reads `loggedIn:true`, `kidfob@gmail.com`,
+  `orgId 2a6cf04d-bd9d-4d3d-9dab-8cda7bf25020`, `subscriptionType max`, which equals the desktop org; the
+  detector prints `ALIGNED ... repair surface: ARMED (proved 2026-09-15T16:11:30.9Z)`. Cross-check from an
+  unrelated consumer on the same box: the agent-bridge resume-pulse task ran degraded (exit 1) at 11:00:00 and
+  11:10:00 local while the CLI was signed out, because its read-only `auth status` probe returned no email.
+- **A gate-ordering note for adopters, measured here.** The verdict gate short-circuits before the attendance
+  gate, so once a box is ALIGNED the attendance refusals are unreachable and observation (i) cannot be
+  re-verified from live state. It is reproducible only through a simulate seam. Any board proving this standard
+  should keep such a seam, or run its proof while the drift is still live.
+- **NOT verified by this reader.** Observation (iii), the child-inside interactivity line, is the adopting
+  board's measurement: re-running the proof would overwrite its receipt (the script takes no output path), and
+  with the typed gates now removed, opening the real surface would start `claude auth login` — an
+  agent-initiated login, which this board's constitution forbids. Also unverified: that the ARMED line drops to
+  DETECTOR ONLY when an artifact changes. That mutation would require editing another board's files.
