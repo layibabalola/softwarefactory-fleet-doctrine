@@ -2742,3 +2742,20 @@ yet filed: salesforce-tools, adversarialllm, dng-auto-processor, mlv-app; conjug
 arbiter. Dispositions:
 `adjudications/factory-kernel/{adobe-ingester,agent-bridge,airmypc,cloudvore,magic-lantern_dannephoto}.dispositions.md`;
 ledger rows in `HARVESTS.md`.
+
+## Third factory-kernel harvest: one filing, kernel r3 -> r4 (conjugal as interim steward, 2026-09-15, automated run 20260915T060404Z-f14bd764)
+
+Population: one filing past the settle window, mlv-app (db44322e, kernel r2, code@r2); conjugal has filed but remains
+UNHARVESTED until a non-steward arbiter rules on it. Dispositions: 41 lines, 16 clause and profile findings (3 ADOPTED ·
+13 REJECTED) and 25 other items (14 ADOPTED · 2 ADOPTED-CONDITIONAL · 9 ROUTED). Kernel §5 rule: no BREAK and no FRICTION
+was filed, so kernel r3 -> r4 changes only §4 (the line grammar now lists UNEXERCISED and INSTANCE-FAILURE, and
+INSTANCE-FAILURE is defined as counting toward health, never toward conformance or a kernel change) and §6 (mlv-app
+remapped to code (primary) + measured-objective at high confidence on the project's own correction), 2818 words / 3,500.
+Code r3 -> r4: mlv-app added as a bench, and Dispatch preflight retains launcher diagnostics and no longer lets a CLI
+invocation failure stand as evidence that a model is absent (conditional on MLV-App's launcher-diagnostics bench).
+Measured-objective r1 -> r2: Determinism class runs the A/A before A/B for timing claims and prefers deterministic
+counters that measure the declared objective (conditional on MLV-App's measured-objective bench). Zero end-to-end
+subjects (S1 bus candidate unaccepted and undelivered; S2 a failed seam), so nothing counts toward §5 finalisation.
+INSTANCE-FAILURE counting in PROMPT-K, the harvest parsers and the HARVESTS.md verdict columns is routed to Conjugal's
+filing-format/tool bench; no bootstrap or tools text changed. Dispositions:
+`adjudications/factory-kernel/mlv-app.dispositions.md`; ledger row in `HARVESTS.md`.
