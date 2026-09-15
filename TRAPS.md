@@ -9226,3 +9226,52 @@ by its exact identifier in *that* project's ledger. For adobe-ingester:
 If no entry exists, the citation is an unratified proposal, whatever the header says. **Distinguish:** the
 phased review idea may still be sound. Only the authority claim is false. Adobe does not adopt it (advisory
 ingress session `bb6dab42` seq 2).
+### Offline gates cannot see extension-page CSP, and `git diff -w` cannot see CR removal (adversarialllm, 2026-09-08, virtual-ten)
+
+A Sonnet implementer, correcting a real round-1 MUST under a controller-frozen packet, rehydrated a page handler
+with `new Function` inside an MV3 side panel whose default CSP forbids eval, and normalized two docs from mixed
+CRLF/LF to LF (CRLF counts 55 to 0 and 1 to 0) so that `git diff` showed 112 changed lines for a one-sentence
+edit. Its focused tests, typecheck and lint were green; lint scopes to `src/**` and `tests/**` and the browser
+lane never installs the live monitor, so the full gate would have been green too. The implementer self-certified
+the line endings with `git diff -w`, which structurally cannot see CR removal. The Fable controller caught both by
+reading the diff before dispatching round-2 reviews, because round 2 is the last round.
+
+> **Name environment constraints in the packet; lint every file the harness executes; compare `--stat` with
+> `--ignore-cr-at-eol --stat` in the gate; forbid whitespace-insensitive self-proof.**
+
+Test: `git show <sha> -- <harness file> | grep -c 'new Function('` is 0; the two stat forms agree.
+
+### A reviewer's own gate failure filed as a code MUST stalls a PR for a day (adversarialllm, 2026-09-07/08)
+
+PR #23's Codex leg hit an abandoned `Global\AdvLLM-ci-gate` mutex in its prepended `ci.ps1` run and returned
+CHANGES_REQUESTED with a MUST that cited only that abort. The PR (nine records files) sat 36 hours. Under the
+project's own amendment that is an infrastructure failure consuming no round.
+
+> **A verdict whose only MUST cites the reviewer's infrastructure is `INFRASTRUCTURE_FAILURE`; re-dispatch it.**
+
+Test: grep the MUST's evidence for the reviewer's own gate path or mutex name.
+
+### A stale implementer label turned the cross-family key on the wrong family (adversarialllm, 2026-09-08)
+
+PR #38 was labelled `impl:codex` at first reap; its round-2 bytes were written by a Claude leg under a frozen
+packet. The merge evaluator derived "the family that did not implement" from the label, so the key it demanded was
+a Claude APPROVE for Claude-authored bytes. The Claude round-2 leg declared the same-family fact in its own
+verdict. Nothing in the evaluator read the trailer.
+
+> **Derive authorship per round from producing-command and commit-trailer evidence; a first-reap label names
+> the row's implementer, not the author of the current head.**
+
+Test: `git log --format=%B <base>..<head> | grep Co-Authored-By` against the label.
+
+### One family's review leg was a weaker instrument than the other, and it looked like a family effect (adversarialllm, 2026-09-08)
+
+On the same bytes the Luna-low leg found a real MUST and the Sonnet-low leg returned no findings with
+`declared_self_failure: "None."`. The Claude leg had Read/Glob/Grep plus one fixed gate tool and no `git`/`rg`,
+ran 8 turns in 25 s, and was told to re-run an 846 s gate the controller had already run; the Codex leg had `git`
+and `rg` and was told to spend its budget on code. Published as a family datum this would have been a false clause.
+
+> **Before comparing families, equalize tools, briefs and budget; a missing adversarial clause or a missing
+> `git` is the finding.**
+
+Test: diff the two legs' tool allowlists and prompts before reading their verdicts.
+
