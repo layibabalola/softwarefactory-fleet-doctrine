@@ -84,3 +84,24 @@ The r2 map, kept in this filing because landing `docs/internal/FACTORY_KERNEL_IN
 - **Harvest-tool `untested` count (carried from r1, no disposition).** `tools/harvest-status.py` counts `untested` only from `§`, `K<n>` and `P:` lines, so bullets in this section still read `untested=0`. Kernel §4 still does not say how Untested items should be written.
 </content>
 </invoke>
+
+## Addendum 2026-09-15T04:20Z — the blocked seam, after the owner acted (added commit, no finding removed)
+
+**K2 FRICTION: the owner escalation reached the owner.**
+- The r2 filing's report named the three owner-only exits.
+- The owner replied in chat: "resolve open issues autonomously and take the next steps without me in the loop".
+- A three-adversary fork read that as exit (1) for one bootstrap launch only: `decisions\OWNER-RULING-F17-METER-BOOTSTRAP-9274013F.json` in agent-bridge's canonical `.claude-state`.
+- The fork rejected exit (2), a CLI pin. A live probe showed the version attribution was unfounded (TRAPS entry of this date).
+- The K2 REPLACES stands. The channel that worked was the interactive report, and no mechanism carries it. A fork adversary also flagged a precedent risk: general autonomy language was read as a specific constitutional exception.
+
+**K6 FRICTION: the independent key worked and refused.**
+- The one SOL run went through the route-v2 guard. The watchdog was ARMED, then EXIT_CLEAN, and tokens agree three ways at 526486 against a 1620000 ceiling.
+- SOL returned `SOL-VERDICT: BLOCKER` with a concrete fail-open wrong-run bind.
+- One Sonnet adversary also returned BLOCKER, reproduced offline. Another returned CHANGES_REQUESTED, the third APPROVE.
+- The subject parked (`DECISION-F17-METER-BF41EA68.json`). A cross-family key caught a defect that one of three same-family keys approved. That is K6 evidence, not a failure.
+
+**K4 FIT, negative check.** The hub refused the diagnosis's claim that "0.154.0 dropped user_message" once the probe falsified it. The refusal is recorded in `PROBE.md`.
+
+**K7 UNEXERCISED.** Nothing was accepted.
+
+**Still blocked.** Class C has no SOL path through the live driver. Successor card F19 (nonce identity, absorbs F18) is being drafted offline as class A. Its quorum needs SOL, which needs a further owner act. `subjects:` stays 0 completed.

@@ -9331,3 +9331,17 @@ and `rg` and was told to spend its budget on code. Published as a family datum t
 
 Test: diff the two legs' tool allowlists and prompts before reading their verdicts.
 
+## A prompt-prefix match is not a run identity, and a first bind that is cached forever turns a collision into an unmetered run (agent-bridge, Virtual-Ten, 2026-09-14)
+
+agent-bridge's Codex spend meter binds each lane to its rollout file by cwd, session start and a `StartsWith` on the first 160
+characters of the prompt. The driver caches the first non-null bind for the whole run. codex-cli 0.154.0 live rollouts carry the
+prompt only as a `response_item` message with `role=user`, and so do injected context records. The proposed fix widened the binder to
+accept any such record. Under one owner-authorised bootstrap run, SOL (gpt-5.6-sol) returned BLOCKER, and a Sonnet adversary reproduced it
+offline: a same-cwd run whose prompt, or a context record, shares the prefix and is visible before the real prompt record gets bound. The
+real run is then metered from a static file, its silence kill never arms, and it runs to its timeout unmetered. Ambiguity refusal
+only fires when both files are visible on the same poll. Separately, **finished rollouts are not evidence of the live schema**: 150
+rollouts from every CLI version on disk (0.111 to 0.154) show zero `user_message` lines, including a 0.147 run the old
+binder demonstrably bound live, so a version-drift diagnosis made from completed files was unfounded.
+**Test:** bind by an identity the dispatcher mints (a per-run nonce, or a dispatcher-created unique directory), compare by
+equality, restrict eligibility structurally (for example the first single-item user record after `turn_context`), and re-check the bind on
+every poll until the first meter sample. Take schema evidence from a live mid-run snapshot, never from a completed file.
