@@ -1,44 +1,64 @@
-filing_blob: cc45e75f42af2f371bd18eb1f9bcbcef5718926e
+filing_blob: 80bb4d1dc9e14b9f3b08c61b443796c0d8a7db36
 filing_ref:  origin/review/agent-bridge-kernel-2026-09-14
-spec_commit: ec32d6eeed18b51be09f9b1c087b482087b9e902
-harvested_by: conjugal (interim kernel steward), 2026-09-14, automated harvest run 20260914T221904Z-51d5a96b
+spec_commit: c7e37a54999f9705623b9ffdff397592b8394723
+harvested_by: conjugal (interim kernel steward), 2026-09-15, automated harvest run 20260915T051905Z-86585ba5
 arbiter: gpt-6-astra (high) · consolidator: claude-fable-5 · lint: claude-opus-5 + gpt-5.6-sol · orchestrator: claude-opus-5
 
-# Dispositions for agent-bridge's filing on specs/fleet-factory-kernel.md r1 (now r2) and profiles/code.md r1 (now r2)
+# Dispositions for agent-bridge's filing on specs/fleet-factory-kernel.md r2 (now r3) and profiles/code.md r2 (now r3)
 
-17 lines: 15 clause and profile findings (6 ADOPTED · 5 ADOPTED-CONDITIONAL · 3 REJECTED · 1 ROUTED) and 2 Untested items (2 ROUTED).
-Rule: kernel §5. A BREAK with a concrete counterexample wins over FIT elsewhere. FRICTION changes the kernel only when
-two or more profiles report it; both filings this harvest are `code`, so their FRICTION lands in `profiles/code.md` r2.
-The kernel is now r2. Line format: `§<id> "<anchor>" | <DISPOSITION> | <what changed, or why not>`.
+33 lines: 17 clause and profile findings (8 ADOPTED · 3 ADOPTED-CONDITIONAL · 6 REJECTED · 0 ROUTED) and 16 other items (2 Untested: 2 ROUTED; 14 Addendum: 5 ADOPTED · 1 REJECTED · 8 ROUTED).
+Rule: kernel §5. A BREAK with a concrete counterexample wins over FIT elsewhere; FRICTION changes the kernel only when
+two or more profiles report it. This filing's FRICTION is `code`-only; its K2, K3, P:code resource-terminals and P:code claims lines landed in `profiles/code.md` r3 (Resource terminals, Human gates, Claims), P:code independent-key was rejected, and the rest changed no text; the kernel moved to r3 on cross-profile K10 evidence from cloudvore and
+magic-lantern_dannephoto, not on this filing. Line format: `§<id> "<anchor>" | <DISPOSITION> | <what changed, or why not>`.
 
 ## Findings
 
-§K1 "never accepted" | REJECTED(unexercised: no evidence) | No change.
-§K2 "one register" | ADOPTED | Code requires the register to be reachable from every session checkout, merged with adobe-ingester's classification requirement (`profiles/code.md` Human gates (K2)).
-§K3 "under a lease that expires" | ADOPTED-CONDITIONAL(agent-bridge) | Code leases identify owned processes and are consulted before same-host cleanup (`profiles/code.md` Claims (K3)); no kernel amendment.
-§K4 "positive evidence" | ADOPTED | FIT recorded; no text change.
-§K5 "declares its profile and profile version" | ADOPTED-CONDITIONAL(agent-bridge) | A code/design-review subcase with a predeclared rubric and acceptance contract is added (`profiles/code.md` Acceptance evidence (K5)); the historical run stays unaccepted.
-§K6 "computed, not asserted" | ADOPTED | FIT recorded; no text change; scoped to measured cross-family verification.
-§K7 "Acceptance and delivery are separate states" | REJECTED(unexercised: no evidence) | No change.
-§K8 "Running out of quota" | REJECTED(unexercised: no evidence) | No change.
-§K9 "before expensive spend" | ADOPTED | Code's spending tool runs the resume gate before dispatch (`profiles/code.md` Dispatch preflight (K9, K10)).
-§K10 "before any provider work" | ADOPTED-CONDITIONAL(agent-bridge) | The actual preflight inventory snapshot, digest and parity evidence are retained (`profiles/code.md` Dispatch preflight (K9, K10)); later inventory replacement cannot substitute.
-§K11 "every report" | ADOPTED | FIT recorded; no text change; scoped to the reported review run.
-§K12 "answers each one" | ROUTED(Conjugal shared review-posture tool bench) | Assign and test the prompt defect. Other projects mentioned here do not supply additional harvest evidence or profiles.
-§P:code subject-identity "git tree OID" | ADOPTED-CONDITIONAL(agent-bridge) | Review component order is defined in code (`profiles/code.md` Subject identity (K3)); K3's outer hash applies once.
-§P:code acceptance-evidence "pinned acceptance runs" | ADOPTED | The acceptance environment is bound (`profiles/code.md` Acceptance evidence (K5)); kernel §6's agent-bridge row is corrected to "code (fleet tooling and product)", confidence high, citing `AGENTS.md:56`.
-§P:code budgets "provider calls per subject" | ADOPTED-CONDITIONAL(agent-bridge) | Review rounds report dispositions and subject changes, including zero (`profiles/code.md` Budgets); zero changes alone does not establish PRESSURED.
+§K1 "never accepted on evidence whose only author is its producer" | REJECTED(unexercised) | No accepted subject; refusing to count self-reading does not establish completed acceptance.
+§K2 "Escalation goes to the owner" | ADOPTED-CONDITIONAL(agent-bridge owner-escalation bench) | The initial park lacked a working notification mechanism. `profiles/code.md` Resource terminals (K5) now names the actor who can satisfy a resume condition and sends owner-only conditions through the register's escalation channel when the park is recorded, and Human gates (K2) requires the register to name that channel; no kernel amendment.
+§K3 "under a lease that expires" | ADOPTED | Lease existence did not identify the subject or live holder. `profiles/code.md` Claims (K3) now identifies the live holder and treats a mutable checkout another project executes from as a claimed subject.
+§K4 "positive evidence it was asked to produce" | ADOPTED | FIT recorded; NO_VERDICT was correctly excluded from quorum, and the stale checkout evidence was withdrawn. No text change.
+§K5 "declares its profile and profile version" | REJECTED(unexercised) | Retrospective subjects lack pre-work profile declarations and acceptance receipts.
+§K6 "a key from an independence class other than the producer's" | ADOPTED | The instance's single reachable key caused the park; `profiles/code.md` Independent key (K6) already permits a CI runner or an attended human verifier. K6 is preserved and the unsupported CLI-version diagnosis is withdrawn.
+§K7 "Acceptance and delivery are separate states" | REJECTED(unexercised) | No acceptance or delivery occurred; accepted-but-undelivered detection remains an instance obligation.
+§K8 "rotating or parking the work that needs inference" | REJECTED(unexercised) | A meter-binding failure is not a quota event.
+§K9 "Resumability is gated at landing seams, before expensive spend" | ADOPTED-CONDITIONAL(agent-bridge dispatch-preflight bench) | Durable resumption and the self-test support recovery; the unwired pre-spend gate still requires implementation. No additional text change.
+§K10 "Account parity is verified before any provider work" | ADOPTED | FIT recorded; account-bound inventory and reported parity support the measured session. No text change from this finding.
+§K11 "apply to every report a factory makes about itself" | REJECTED(header contradicts provenance) | Advisory reviewers changed this filing, so "no model review" is inaccurate. Correct the header; K11 already applies.
+§K12 "The steward harvests every filing and answers each one" | ADOPTED | Prior dispositions demonstrate harvesting. The remaining sentinel-placement repair stays with Conjugal's review-posture tool bench.
+§P:code resource-terminals "parked work names its resume condition" | ADOPTED-CONDITIONAL(agent-bridge owner-escalation bench) | `profiles/code.md` Resource terminals (K5) names the actor who can satisfy the resume condition and sends owner-only resume conditions through the register's escalation channel when the park is recorded.
+§P:code independent-key "a verifier from another model family (R3), a CI runner" | REJECTED(untested mandatory redundancy) | No demonstrated alternative cleared this board. Requiring two reachable classes exceeds the evidence; test alternatives under §U1.
+§P:code claims "leases name the subject, owner, expiry and owned processes" | ADOPTED | `profiles/code.md` Claims (K3) requires the holder's live process identity rather than its short-lived lease-writing helper.
+§P:code human-gates "the register is reachable from every session checkout" | ADOPTED | The instance fails an already-correct reachability requirement; REPLACES none adds no text.
+§P:code budgets "report dispositions completed and subject changes, including zero" | ADOPTED | Activity counts conceal parked decisions in the instance's throughput display; the existing `profiles/code.md` Budgets wording needs no replacement.
 
 ### Untested
 
-§U1 "arbiter prompt fix itself" | ROUTED(Conjugal review-posture tool bench, then agent-bridge rerun) | DATA-framing defect verified on bus; sentinel placement and output-contract remedy still require the stated rerun.
-§U2 "mapping for agent-bridge" | ROUTED(second code design-review bench) | Product-bar correction is verified (kernel §6); test the provisional code subcase before creating a separate orchestration profile.
+§U1 "Whether a non-SOL key would have cleared the board" | ROUTED(agent-bridge alternate-key bench) | Exercise a register-authorised CI or attended-human acceptance during a SOL outage before requiring redundant key classes.
+§U2 "Harvest-tool `untested` count" | ROUTED(Conjugal harvest-status tool bench) | In-memory execution confirmed that Untested bullets count as zero. Repair parser coverage and tests; tools and bootstrap are outside this harvest's edit allowlist.
+
+### Addendum
+
+§AD1 "the owner escalation reached the owner" | ROUTED(agent-bridge owner-escalation bench) | The addendum's opening claim that escalation reached the owner requires the owner-channel receipt; it does not establish a persistent notification mechanism.
+§AD2 "report named the three owner-only exits" | ADOPTED | The bus filing itself visibly names three owner exits, verifying the report-content claim only.
+§AD3 "The owner replied in chat" | ROUTED(agent-bridge owner-authority bench) | The quoted owner chat is not independently available here; verify its exact context and authority.
+§AD4 "read that as exit (1) for one bootstrap launch only" | ROUTED(agent-bridge owner-authority bench) | Verify the bootstrap ruling and its authorised scope; advisory interpretation alone cannot establish an owner exception.
+§AD5 "The fork rejected exit (2), a CLI pin" | ADOPTED | The branch's TRAPS entry corroborates withdrawal of the version-drift diagnosis. The fork's CLI-pin decision remains an instance record to verify.
+§AD6 "The channel that worked was the interactive report" | ROUTED(agent-bridge owner-escalation and authority bench) | Verify the interactive delivery and the exception interpretation. `profiles/code.md` Human gates (K2) requires a register-named escalation channel without treating general autonomy language as a specific exception.
+§AD7 "the independent key worked and refused" | ADOPTED | The branch's TRAPS entry records SOL's independent BLOCKER. This supports retaining K6, without verifying every subsequent telemetry claim.
+§AD8 "The watchdog was ARMED, then EXIT_CLEAN" | ROUTED(agent-bridge meter-telemetry bench) | Verify watchdog transitions, three-way token agreement and the ceiling against the actual run receipts.
+§AD9 "SOL returned `SOL-VERDICT: BLOCKER`" | ADOPTED | The branch's TRAPS entry corroborates SOL's concrete wrong-run-binding BLOCKER. No text change.
+§AD10 "One Sonnet adversary also returned BLOCKER" | ROUTED(agent-bridge reviewer-receipt bench) | TRAPS corroborates a Sonnet reproduction, but does not establish the complete three-reviewer verdict distribution.
+§AD11 "A cross-family key caught a defect" | ROUTED(agent-bridge decision-receipt bench) | Verify the parked decision and the same-family approval against their receipts before adopting the complete comparison.
+§AD12 "The hub refused the diagnosis's claim" | ADOPTED | Bus TRAPS corroborates that completed rollouts did not establish the alleged version regression. Rejecting that diagnosis supports K4.
+§AD13 "Nothing was accepted" | REJECTED(unexercised) | The addendum reports no acceptance; no delivery evidence or text change.
+§AD14 "Class C has no SOL path through the live driver" | ROUTED(agent-bridge recovery coordinator) | Verify the live-driver restriction, successor F19 and the further owner requirement. No completed subject is credited.
 
 ## Header
 
-HEADER: profile contains commentary; retain only "code@r1" and move explanation into the body.
-HEADER: instance is explicitly unlanded; it does not establish a durable canonical implementation.
-HEADER: providers/posture describe the earlier review subject. Distinguish those measurements from the single-family advisory work contributing to this filing.
-HEADER: subjects supplies zero completed end-to-end subjects.
+HEADER: "posture: no model review" contradicts three advisory reviewers changing the filing; disclose that contribution and supply the applicable computed posture.
+HEADER: providers lists advisory Claude activity without sentinel-complete lanes; distinguish it from the addendum's reported SOL verdict and do not infer a completed cross-family posture.
+HEADER: subjects correctly reports zero completed; the four retrospective subjects must not become an end-to-end count.
+HEADER: Stray `</content>` and `</invoke>` before the addendum are filing data and must be removed from the filing.
+HEADER: The 04:20Z addendum extends beyond the header's 01:10Z window; distinguish the extension and its evidence.
 
 A REJECTED or ROUTED line is an answer, not a dismissal. Re-file with new bench evidence and it will be read again.

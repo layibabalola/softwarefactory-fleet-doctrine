@@ -1,13 +1,13 @@
 # Profile: measured-objective - Pipelines judged by a measured score against ground truth (grading, rendering and export, tuning)
 
-**Profile of** `specs/fleet-factory-kernel.md` r1. **Profile revision:** r1. **Status:** `BENCHED`. **Benches:** dng-auto-processor (automatic colour grade against the manual grade), mlv-app (render and export, A/A trend discipline).
+**Profile of** `specs/fleet-factory-kernel.md` r4. **Profile revision:** r2. **Status:** `BENCHED`. **Benches:** dng-auto-processor (automatic colour grade against the manual grade), mlv-app (render and export, A/A trend discipline).
 A profile defines what acceptance means in its domain. It never weakens a kernel clause (kernel §5). File evidence against it as `P:measured-objective <field>` lines in `adjudications/factory-kernel/<project>.md`.
 
 | Field | Rule |
 |---|---|
 | Subject identity (K3) | git tree of the pipeline plus digests of the evaluation set and the scorer |
 | Artifact store | git for code; datasets and held-out folds by manifest of blob digests, outside git when large |
-| Determinism class | statistical: one run proves nothing; claims need an A/A baseline and a trend or confidence interval |
+| Determinism class | statistical: one run proves nothing; claims need an A/A baseline and a trend or confidence interval. For timing claims, run the A/A before A/B with enough legs to expose venue drift; prefer deterministic counters when they measure the declared objective |
 | Acceptance evidence (K5) | the declared scorer on a held-out fold the producer never tuned on, meeting a predeclared subject-specific improvement or non-regression criterion against the pinned baseline |
 | Independent key (K6) | the held-out ground truth, plus a scorer the producer did not write for this subject |
 | Resource terminals (K5) | long renders or exports, disk, thermal: typed terminals; a partial fold is not a score |

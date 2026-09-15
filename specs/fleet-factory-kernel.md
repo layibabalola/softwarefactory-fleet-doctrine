@@ -1,6 +1,6 @@
 # Fleet factory kernel — the universal core every project's factory runs on
 
-**Status: `CANDIDATE r2 — DOGFOODING`.** Submitted 2026-09-14 on the owner's instruction (Layi): *"Execute recommended
+**Status: `CANDIDATE r4 — DOGFOODING`.** Submitted 2026-09-14 on the owner's instruction (Layi): *"Execute recommended
 and submit to doctrine repo so we can finalize on factory spec and start dogfooding it in each project and giving
 feedback so it can self improve."* This is a submission for dogfooding, not a ratification. It grants no runtime,
 adoption or launch authority. A project is bound by it only once it records `ADOPT` (Law 1). RULINGS R1–R9 stay binding
@@ -118,7 +118,7 @@ portable pattern"). `specs/fleet-continuity-autonomous-resumption.md` is superse
 Provider and model inventory is machine-scoped and probe-derived, and it records the account it was derived under.
 Account parity is verified before any provider work.
 *Doctrine:* RULINGS R5, R6 (binding); `specs/machine-inventory-schema.md`.
-*Observable:* inventory path, `probed_under` value, parity command output.
+*Observable:* inventory path, `probed_under` identifying the current account, and parity command output. Missing, `unknown` or mismatched account identity makes the inventory stale; re-probe under the current account before provider work.
 
 ### K11 — Reports are honest
 R1–R5, R7, R8 and R9 apply to every report a factory makes about itself, including dogfood filings under this kernel.
@@ -131,8 +131,7 @@ filing reports its factory health as the ordered pair **assurance** / **operabil
 steward harvests every filing and answers each one.
 *Doctrine:* RULINGS "factory health is an ordered pair" (ratified log); "Filings are consumed, not just filed" and
 "filings travel sideways" (owner rulings); `bootstrap/PROMPT-3-harvest.md`; `tools/harvest-status.py`.
-*Observable:* the project's filing on `origin`, and `harvest-status.py factory-kernel` showing it `HARVESTED` after the
-next harvest.
+*Observable:* the project's filing on `origin`, `harvest-status.py factory-kernel` showing it `HARVESTED`, and a disposition for every filed finding, including Untested items, proposals and addendum claims, bound to that filing's blob.
 
 ## 3. The universality test for kernel text
 
@@ -170,7 +169,7 @@ the project exercised. `<field-id>` is the field's table name in lowercase, hyph
 (`subject-identity`, `acceptance-evidence`):
 
 ```
-K<n> | FIT|FRICTION|BREAK|N/A | "<≤25-word quote from the kernel or profile>" | <evidence in YOUR repo: path, tool, measured number> | REPLACES: "<anchor>" -> "<replacement>" (FRICTION/BREAK only) | PROOF: <what would falsify this line>
+K<n> | FIT|FRICTION|BREAK|N/A|UNEXERCISED|INSTANCE-FAILURE | "<≤25-word quote from the kernel or profile>" | <evidence in YOUR repo: path, tool, measured number> | REPLACES: "<anchor>" -> "<replacement>" (FRICTION/BREAK only) | PROOF: <what would falsify this line>
 ```
 
 - **FIT**: the clause held and cost nothing extra.
@@ -179,6 +178,8 @@ K<n> | FIT|FRICTION|BREAK|N/A | "<≤25-word quote from the kernel or profile>" 
 - **N/A**: the clause cannot arise in this project's domain. Give the reason.
 - **UNEXERCISED**: the clause could arise but did not in this window (for example, no subject ran or no quota event
   happened). It is not evidence about the clause.
+- **INSTANCE-FAILURE**: the clause arose and honest compliance was possible, but the instance failed it. Name the
+  failure and evidence; no replacement. It counts toward health, never toward conformance or a kernel change.
 
 **Only real work counts.** Subjects are owner-authorised work the project already had. Manufactured subjects are not
 filed (Approach A Round F1, cluster C8). Findings with no evidence from your own repo go under `## Untested`.
@@ -210,7 +211,8 @@ the revisions they ran. A harvest is one completed adjudication of a recorded el
 For finalisation, unchanged means identical kernel and participating-profile content digests as well as revisions. The
 harvest tool marks a filing `STALE` when its author changes it and reads its `kernel:`, `profile:`, `subjects:` and
 `health:` lines. Each harvest appends one row per filing to `adjudications/factory-kernel/HARVESTS.md`
-(steward-written): date, filing, blob, kernel and profile revisions, subjects, verdict counts, unresolved BREAKs. The
+(steward-written): date, filing, blob, kernel and profile revisions, subjects, verdict counts, unresolved BREAKs.
+INSTANCE-FAILURE lines count toward health, not the ledger's verdict counts. The
 finalisation rule reads that ledger, never a single filing.
 
 **Kernel v1 is FINAL when all four hold:**
@@ -238,7 +240,7 @@ Derived 2026-09-14 from each project's own spec (or repo instructions where it h
 | airmypc | code + hardware-in-loop release gate | medium | "live hardware; the one attended sitting" |
 | magic-lantern_dannephoto (no bus spec yet; mapped from its repo's CLAUDE.md) | hardware-in-loop | high | "Hardware evidence comes only from the owner's camera" |
 | dng-auto-processor | measured-objective | high | auto grade "matches the manual grade per frame", scored on a held-out fold |
-| mlv-app | measured-objective (render/export) | medium | "a falsifier suite that runs"; A/A trend before claims |
+| mlv-app | code (primary) + measured-objective (render/export parity and playback measurement) | high | "a falsifier suite that runs"; "compare artifacts by hash, per file, zero tolerance"; A/A trend before claims |
 
 `specs/context-ultra-salesforce.md` is a git-hygiene pattern document, not a project, and is mapped to no profile.
 **No bench yet:** `game-engine`, `realtime-web-3d`, `3d-render`, `creative-writing`, `business-strategy`, and `mobile-app`
@@ -249,5 +251,5 @@ beyond one scaffold lane.
 1. No fleet claims/leases spec (K3 states the invariant only).
 2. Two overlapping autonomy specs at different ratification maturity (K2).
 3. The continuity spec's status contradicts itself (K9).
-4. None of the non-code profiles has a harvested filing yet; they are drafts written from first principles.
+4. Hardware-in-loop has a bench filing; the other non-code profiles still lack harvested evidence.
 5. The kernel has never been run end to end. Every clause is `unpassed` until a filing says otherwise.
