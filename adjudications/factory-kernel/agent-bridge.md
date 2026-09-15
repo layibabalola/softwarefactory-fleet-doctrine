@@ -2,13 +2,13 @@
 
 project: agent-bridge
 kernel: fleet-factory-kernel r1
-profile: code@r1 (§6 row corrected below: agent-bridge has a product test bar; the subject this window was review work the code profile does not describe)
-instance: docs/internal/FACTORY_KERNEL_INSTANCE.md (agent-bridge, branch claude/great-kapitsa-647dd7, not yet landed: agent-bridge's NO-push law lands product-repo changes through its hub gate)
-subjects: 1 run, 0 closed end-to-end — the owner-authorised Approach A cross-family review run `agent-bridge-conjugal-20260914-a3`, identity 95f117c98bf63506af6e334443d068bb1052d31334765f94a60801189ea97ce1
+profile: code@r1
+instance: docs/internal/FACTORY_KERNEL_INSTANCE.md (unlanded)
+subjects: 0 completed end-to-end; 1 run (identity 95f117c98bf63506af6e334443d068bb1052d31334765f94a60801189ea97ce1)
 window: 2026-09-14T20:34Z .. 2026-09-14T22:10Z
 health: assurance=UNEVALUABLE operability=PRESSURED
-providers: claude, codex (Stage A 4/4 and panel 8/8 cleared the sentinel)
-posture: conjugal-standard-PARTIAL (12/17 lanes; missing: Arbiter 0/1; Consolidator 0/1; Classifier 0/3)
+providers: claude, codex (review subject lanes only; this filing's advisory adjudication was single-family Claude)
+posture: conjugal-standard-PARTIAL (12/17 lanes; missing: Arbiter 0/1; Consolidator 0/1; Classifier 0/3) (review subject; this filing itself: no model review)
 
 **What this filing is.** Operational evidence from one Opus orchestrator session on Virtual-Ten. It is not a design review of the kernel. The subject is real work the owner asked for, not work created to have something to measure: a design review of `specs/conjugal-approach-a-v7.4.md` with agent-bridge as the test bench, filed at `origin/review/agent-bridge-2026-09-14` @ `28430bc`. It ran **before** this project declared `KERNEL: DOGFOOD`, so no profile line was recorded before work (K5). Every clause that needs a declared profile or an accepted subject is marked `UNEXERCISED` or `FRICTION`, never `FIT`. The plan for this filing was put to three adversarial Claude Opus agents (one family, so no cross-family standing). They cut three of the five recommendations the session had drafted, because kernel r1 already contains them (§0 layers, K5 profiles, §5 criterion 2 and word cap). Only what r1 lacks is filed below.
 
@@ -58,3 +58,11 @@ P:code budgets | FRICTION | "wall time per suite, provider calls per subject" | 
 K12's PROOF names an unowned fleet-tool defect. This project ran the discriminating experiment its own `## Untested` bullet named, on Approach A v7.6 (blob `4a57214`), bench `e842e70`. The unmodified master tool (`19817b2`) failed the arbiter sentinel on the first pass and on one `--retry-missing` retry (8/8 unpatched passes today across three benches). With only the sentinel ask moved ahead of the DATA region, one pass cleared the arbiter, consolidator and 3 classifiers, and the patched tool printed `conjugal-standard COMPLETE (17/17 lanes)`. The fix is on `fix/review-posture-sentinel-before-data` @ `3ae7434` (test fails on master, suite 14/14 on the fix), pushed under the owner's instruction to resolve open issues and awaiting the tool's owner. The review is filed PARTIAL on `review/agent-bridge-2026-09-14-2` (R9.2). The K12 FRICTION stands: the fix exists, but no named owner has it yet.
 
 Harvest-tool note (FRICTION, not patched): `tools/harvest-status.py` counts `untested` only from `§`, `K<n>` and `P:` lines. This filing's `## Untested` bullets therefore read `untested=0`. The kernel §4 format does not say how Untested items should be written.
+
+## Header notes (added 2026-09-14 after dispositions 009f216, which answered blob cc45e75f)
+
+- `profile:` now carries only `code@r1`. The explanation moved here: the window's subject was design-review work, and the kernel §6 row correction was adopted (`code (fleet tooling and product)`, citing `AGENTS.md:56`).
+- `instance:` is unlanded. The map is commit `3ab6eea` on agent-bridge branch `claude/great-kapitsa-647dd7` and lands only through agent-bridge's hub gate, so it establishes no durable canonical implementation yet.
+- `providers:` and `posture:` describe the review subject's lanes. The advisory adjudication behind this filing used three Claude Opus agents, one family, with no cross-family standing.
+- `subjects:` states zero completed end-to-end subjects.
+- Next window runs against kernel r2 and `profiles/code.md` r2 (PROMPT-K re-run trigger: revision changed).
