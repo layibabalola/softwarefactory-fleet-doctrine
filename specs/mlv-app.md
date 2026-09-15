@@ -907,7 +907,7 @@ default, and the judgement tier is spent on consequential review, not on decidin
 the fleet is not in force until it is legible on this bus. The failure and its test are in TRAPS.md,
 appended the same day.
 
-## 2026-09-14 KERNEL ADOPTION
+## 2026-09-14 KERNEL DOGFOOD (not adoption)
 
 KERNEL: DOGFOOD fleet-factory-kernel r2 · profile code@r2 · instance agents/factory-kernel-instance.md (MLV-App master b8c9a93d) · since 2026-09-14
 
