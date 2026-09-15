@@ -9383,3 +9383,49 @@ with `git -C <worktree> log -1` against the branch that carries the hook.
 - **Disabling a call site does not defuse the callee.** A dangerous mode left loaded (and still
   advertised in its own `.SYNOPSIS`) behind one disabled boolean in a hook is one edit from live.
   Hard-fail the mode on its own precondition instead.
+
+## 2026-09-15 — A lane that cannot SEE its input fails the same way as one that skips the sentinel
+
+Measured on Bachelor during Conjugal's Round F4 harvest (run 20260915T143404Z-6e5aa419), arbiter seat
+`codex exec -m gpt-6-astra -c model_reasoning_effort=high`. Five consecutive single-call attempts produced no usable
+arbitration. They did **not** all fail the same way:
+
+1. Told to read twelve files, it ran ~20 reads and ended mid-tool-use with **no final message at all**. rc=0.
+2. Given the whole input inline on stdin (~186 KB), it returned **no assistant turn**. rc=0.
+3. Given one assembled 186 KB packet to read, it reported the read "was truncated, omitting the filing bodies" and
+   **issued 4 of 50 rulings rather than guess**. That is the honest failure and the one that diagnosed the rest.
+4. A prompt-rewrite bug pointed it at that same oversized packet again; this time it **silently emitted all 50 rulings**
+   from truncated input. Discarded — an arbitration built on input the seat could not see is worse than none.
+5. Given five chunks each ending in `<<<END-OF-CHUNK-N>>>`, it read two **completely** (markers visible in the
+   transcript) and **still declared truncation**, then stopped.
+
+**The trap:** `codex exec` silently truncates a single command's output somewhere above ~99 KB (a 99,399-byte read
+succeeded in the same session; 186 KB did not). The lane then reasons from a prefix. From outside, that is
+indistinguishable from the known missing-`LANE-COMPLETE` failure — both look like "the arbiter did not run" — but the
+remedies are opposite. Re-prompting for the sentinel does nothing if the seat never saw its input. Worse, mode 4 is
+silent: a filing or harvest can carry a complete-looking arbitration built on a prefix, and nothing downstream notices.
+
+**Diagnose before you re-prompt.** Put a unique end marker at the end of every file a lane must read, and check the
+lane's transcript for the marker, not just for the sentinel. A run with a sentinel and no marker is a prefix ruling.
+`grep -qx 'LANE-COMPLETE' <transcript>` is also wrong on its own: it matched a **prompt echo and a quoted filing body**
+here. Check the last non-blank line of the final assistant message, or capture it with `codex exec -o <file>`.
+
+**What worked**, all four together:
+- Split every input into sub-99 KB chunks, each ending in a verifiable `<<<END-OF-CHUNK-N>>>` marker.
+- Tell the seat explicitly: *if you see the end marker, the read was COMPLETE; do not report truncation.* Without this
+  it declared truncation on complete reads (mode 5).
+- Split the work into scoped calls over **disjoint** finding sets, each with an explicit id list and "a call that rules
+  on fewer is a failed lane". One call ruling on 50 findings failed; three calls ruling on 17/15/18 all cleared first try.
+- Restate the sentinel ask **before** the data region as well as last — agent-bridge's `fix/review-posture-sentinel-
+  before-data` patch, filed 2026-09-14 and independently corroborated here on a different bench and orchestrator.
+
+**Fleet bearing.** agent-bridge, airmypc and mlv-app each reported unsentinelled arbiters on 2026-09-14 (8 unpatched
+passes, 0 sentinels, three benches); airmypc stopped at three retries. This is a fourth bench and a third orchestrator,
+and it adds the second failure mode. Anyone patching `tools/review-posture/` for the sentinel should also bound what a
+lane prompt asks a single command to return, and should treat "no end marker in the transcript" as DID-NOT-RUN.
+
+**Also, on Windows/Git-Bash:** the same run lost two prompt rewrites to backslash mangling. A `<<'PY'` heredoc did
+**not** protect `C:\Users` from becoming `C:\Users` (Python then failed on `\U`), and one rewrite failed silently
+because the `python` heredoc was newline-separated rather than `&&`-chained, so the launch used the stale prompt.
+Build Windows paths with `chr(92)` or write the block to a file first, and always assert the rewrite landed before
+spending a seat on it.
