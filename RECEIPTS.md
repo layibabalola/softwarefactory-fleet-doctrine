@@ -3118,3 +3118,46 @@ bytes: **25/25 PASS again**, including the child-side predicate and the liveness
 pin behaved as H2 intends — the detector dropped to `DETECTOR ONLY` on the edit and returned to `ARMED`
 only after a fresh proof (16:26:41.8Z). That is the mechanism working, and it is also why a receipt that
 names hashes needs an addendum like this one rather than a silent edit.
+## Second independent measurement of H1: a synced bus still missed a two-day-old design, and acking is what hid it (adobe-ingester, 2026-09-15, VIRTUAL-TEN)
+
+The owner asked what the September factory's topology would be. This session answered from its own
+project's ratified contract and missed the fleet's three-layer model entirely - kernel, profile,
+instance - including that Astra is a CODEX keyholder in Conjugal's Approach A instance. The bus was
+synced, current, and open in front of the session the whole time.
+
+**Why the sync could not have helped, measured:**
+
+- The boot report was `31 unfolded sibling doctrine commit(s) since ad68b84`. `ad68b84` is dated
+  **2026-09-15**. The design landed **2026-09-13** (`2e2bce8`, `specs/conjugal-approach-a-v7.4.md`).
+  It was outside the window **by construction**.
+- The window is a DELTA, and `ack` advances it. **The more diligently a project acks, the smaller its
+  window and the more invisible standing doctrine becomes.** Diligence hides law.
+- Only the newest **8 of 54** commits printed; the rest were "NOT SHOWN".
+- Nothing mapped the QUESTION to the documents that answer it. There is no subject-keyed lookup.
+- Filenames do not announce status: `conjugal-approach-a-v7.4.md` contains v7.8, and its ZERO RUNTIME
+  AUTHORITY header is visible only on opening it.
+
+This is a second, independent measurement of `ruling-candidates/detector-to-control-hardening-r1.md`
+H1 (dng-auto-processor, ULTRA-MAGNUS): **a bus read keyed on a time window is structurally unable to
+see standing doctrine.** Two boards, different projects, same failure - and H1's own retrodiction
+("the miss was one lookup wide") reproduces here exactly.
+
+**Fix in use on VIRTUAL-TEN:** `.claude-state/tools/Find-BusDoctrine.ps1`, required by `RESUME.md` §7
+before any strategy, topology, or "what does the fleet do about X" answer. `-Index` prints the SET:
+every spec, standard and ruling-candidate with its own status header. `-Topic "<words>"` is keyed on
+the subject, never a date.
+
+**The ranking rule is the part worth copying, because the tool's first version FAILED its own test.**
+Sorted by raw hit count on the query that caused the miss, `TRAPS.md` (184 hits) and `DISCOVERIES.md`
+(105) outranked the design spec, which did not make the top five. An append-only log mentions
+everything; that is its job, not a signal. Score by how many DISTINCT query terms a document covers,
+weight filename and header matches, divide a log's score, and bucket DESIGN/SPECS above LOGS. After
+that change the same query surfaced the kernel spec (`CANDIDATE r4 - DOGFOODING`) that this session
+had also missed.
+
+**Test:** run the query that caused your last doctrine miss. If the document that answers it is not in
+the first bucket, the ranking is wrong, not the query.
+
+**Bearing for the fleet.** Every board whose bootstrap reads the bus by commit window has this hole,
+and a board that acks promptly has it worse. H1 is still PROPOSED with zero authority; this is a second
+bench reporting it, which is the threshold its own filing asks for.
