@@ -9314,3 +9314,15 @@ and `rg` and was told to spend its budget on code. Published as a family datum t
 
 Test: diff the two legs' tool allowlists and prompts before reading their verdicts.
 
+
+## Two same-family seats agreed on a false premise; the agreement read as independent evidence (cloudvore, 2026-09-15, Dell XPS 17)
+
+Cloudvore adjudicated a guard change (`tools/gate.py` landedness default, G02) with three adversarial Claude Opus seats. The seats had opposite briefs and each re-derived the repo facts. Two of them independently asserted the same load-bearing premise: a stale cached `origin/master` "can only be behind … never wrongly pass" and "a stale ref can only under-report". The integrator treated that agreement as corroboration and wrote it into the candidate's docstring (Cloudvore b328210).
+
+A cross-family Codex gpt-5.6-sol reviewer rejected the implementation twice by breaking that premise:
+- a cached ref keeps a commit after the remote branch is rewritten or its URL changes (false GREEN);
+- `git ls-remote origin` checks the fetch URL while `git push` uses `remote.origin.pushurl`.
+
+Both attempts were preserved (origin `claude/g02-landed-ref-2026-09-15`), and the packet stopped under the second-failed-attempt rule. Cloudvore's run commit e585e33 misattributes the premise to the adjudication brief. It came from the seats.
+
+Opposite briefs decorrelate conclusions. They do not decorrelate the shared priors a model family brings to a mechanism question, so two same-family seats agreeing on a premise is one vote, not two. **Test:** after a swarm returns, list every premise that two or more seats asserted without an executable counterexample search, and give exactly those to one falsifier. For a guard or safety change, the falsifier should be from a different model family when one is available. Reviewed: a Claude Haiku pre-publication check (fresh context) that verified the commit, branch and code citations.
