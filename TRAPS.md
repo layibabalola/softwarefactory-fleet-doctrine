@@ -9504,6 +9504,23 @@ core is four assertions:
   107/200/201 (instance GUID, action, return code), never from LastRunTime. Event 201's return code is an HRESULT:
   `2147942401` = `0x80070001` = exit 1.
 
+
+## Appended by dng-auto-processor, 2026-09-15 (cross-provider landing)
+- **A sandboxed agent CLI can be write-protected on the git admin directory regardless of checkout type.**
+  Measured: one vendor's CLI in `workspace-write`, inside a PLAIN CLONE with no worktree involved, failed
+  at `git add` with `fatal: Unable to create '<clone>/.git/index.lock': Permission denied`; commit exit 1,
+  HEAD unchanged, verified from outside the sandbox. Costume: the widely-repeated explanation is "git
+  worktrees put the admin dir outside the sandbox" -- that IS true and reproducible, but switching to a
+  clone does NOT restore the ability to commit. A board adopting clones believing it has cross-provider
+  failover will have none. Test: run one throwaway add+commit in a plain clone before designing on it.
+- **`git format-patch`/`am` REGENERATES commit ids.** `bundle` and a lander-initiated `fetch` preserve
+  them; `push` to a bare repo preserves them but requires the writer to write its own `.git` (remote and
+  refs), which disqualifies it for a read-only writer. If your acceptance pins an exact commit id, a
+  patch-based handoff breaks it silently at delivery, after review has already passed.
+- **A conclusion can be right while its experiment never ran.** Our operating doc recorded "the agent
+  cannot commit" as measured; the probe it cited had instructed the agent "no add, commit, checkout,
+  reset, stash". Right answer, wrong mechanism, no experiment. Grep your own probes for the operation the
+  conclusion names before citing them as measurement.
 ## Installing ACCOUNT-PARITY-ATTENDED-REPAIR: four traps that each produced a confident wrong answer (adobe-ingester, 2026-09-15, VIRTUAL-TEN)
 
 - **A healthy repair window can be invisible: it opens BEHIND the foreground app.** The owner said "no

@@ -2889,6 +2889,16 @@ are the rest of the fleet; the seven that have are all Windows single-user, and 
 - **Not verified here:** the live window launches (this session is barred from launching the wizard), the owner's
   browser approval, and the post-login `orgId`.
 
+
+## Appended by dng-auto-processor, 2026-09-15 (K8 bench evidence)
+- **K8 at a real quota event -- EVIDENCE SUPPLIED** for the bench the steward routed as `§U3`. Three quota
+  events in five days on ULTRA-MAGNUS, each failing the factory CLOSED: six consecutive scheduled runs on
+  a weekly limit; ~20 h dark across an account rotation; a monthly spend limit. K8's Observable ("what
+  happened to in-flight work at the last quota event") is answerable for the first time.
+- **Cross-provider landing probe: NEGATIVE, measured.** A second-provider agent cannot commit even in a
+  plain clone (`.git/index.lock` Permission denied). A fallback orchestrator on the other provider does
+  NOT deliver K8 -- it can dispatch and collect, but never land. Filed with the fix in
+  `ruling-candidates/landing-must-not-depend-on-inference-r1.md`.
 ## ACCOUNT-PARITY-ATTENDED-REPAIR adopted on VIRTUAL-TEN, proven by an executable receipt; drift NOT yet cleared (adobe-ingester session for the box, 2026-09-15, Windows 10 19045, pwsh 7.6.6, node v24.14.0)
 
 **Authority, derived at bus 93e52a0:**
