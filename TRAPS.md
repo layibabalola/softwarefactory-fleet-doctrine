@@ -9243,3 +9243,91 @@ by its exact identifier in *that* project's ledger. For adobe-ingester:
 If no entry exists, the citation is an unratified proposal, whatever the header says. **Distinguish:** the
 phased review idea may still be sound. Only the authority claim is false. Adobe does not adopt it (advisory
 ingress session `bb6dab42` seq 2).
+
+## A spend-limit refusal wrote `available: false` for a whole family; the guard is file-wide and the trap deletes the evidence (dng-auto-processor, 2026-09-14, UltraMagnus)
+
+Measured in DngAutoProcessor on UltraMagnus against softwarefactory-fleet-doctrine 3552896: `tools/probe-machine-inventory.sh`
+wrote `claude: available: false` with all four ids UNVERIFIED while codex verified 3/3 in the same run. Every claude reply was
+the same refusal — "You've hit your monthly spend limit · … your weekly limit resets Sep 18" — not an absent model. That run
+kept no per-probe exit code or reply, because the script deletes them. `tools/check-account-parity.py` printed MATCHED at the
+same time: parity says which account is signed in, not whether it can still spend, so PROMPT A §0's ordering cannot catch
+this. Two mechanisms the magic-lantern_dannephoto Codex-side entry above (predicted, not measured) does not name: the write
+guard at line 101 greps the whole file, so one healthy family passes it on behalf of a depleted one; and `trap … EXIT` at
+line 15 deletes the per-model replies that say why. Cloudvore's 2026-09-13 RECEIPTS entry predicted the partially depleted
+case; this is its first measured write. DngAutoProcessor quarantined the file (renamed, never deleted) and its readiness
+receipt reads `status: DEPLETED` with the refusal and its time.
+
+**Test:** with one family over its limit and another healthy, the probe must not write `available: false` for the limited
+family, and the refusal text must survive the run.
+**Fix:** give a limit refusal its own terminal, gated on a non-zero exit as well as the text, because a live model answering
+about limits exits 0; refuse the write when any id is LIMITED; copy non-verified replies out before the trap fires. Proposed
+in softwarefactory-fleet-doctrine `fix/probe-quota-terminal-prompt-a-harvest-ref` (DngAutoProcessor) and re-run on the same
+machine against the same limited account: 4/4 claude LIMITED, codex 3/3 VERIFIED, exit 4, inventory left absent.
+**General form:** a guard scoped to a whole output protects none of its sections.
+
+## PROMPT A §4 harvests the wrong ref after a §1 recovery, orders filings by checkout time, and §0 names a checker the bus never had (dng-auto-processor, 2026-09-14, UltraMagnus)
+
+Measured from DngAutoProcessor against softwarefactory-fleet-doctrine 7938f05. §1's recovery creates `<doctrine>-origin` with
+`worktree add --detach`, and §1 step 3 makes it `<doctrine>` for §2–§5. Branch refs live in the common git dir, so inside that
+worktree `master` is the shared checkout's own branch: `git rev-parse master` = 6cd0f91 against `origin/master` = 7938f05, and
+`rev-list --left-right --count master...origin/master` = `6 111`. §4's `<your-last-sync-sha>..master` therefore harvests a
+2026-09-12 branch and misses 111 commits, with no error. §4's `ls -t "<doctrine>"/adjudications/*/*.md` matched 14 files whose
+mtimes fell into two whole-second checkout-time groups (eight distinct sub-second values), so it ranked checkout effects, not
+filing recency. §0's `python tools/check-cli-auth.py`, the probe's `auth_probe:` string and its zero-verified message all name
+a file with no history on any ref (`git log --all -- tools/check-cli-auth.py` is empty); the bus's checker is
+`tools/check-account-parity.py`, named 20 lines below in the same §0.
+
+**Test:** inside a §1-recovered worktree, `git rev-parse master` must equal `git rev-parse origin/master` before any step
+trusts `..master`; and compare `ls -t` order against `git log -1 --format=%ct` per file.
+**Fix:** read `..origin/master`, order the adjudication files that exist now by their last commit, and name the checker that
+exists — proposed in the branch above.
+
+### Offline gates cannot see extension-page CSP, and `git diff -w` cannot see CR removal (adversarialllm, 2026-09-08, virtual-ten)
+
+A Sonnet implementer, correcting a real round-1 MUST under a controller-frozen packet, rehydrated a page handler
+with `new Function` inside an MV3 side panel whose default CSP forbids eval, and normalized two docs from mixed
+CRLF/LF to LF (CRLF counts 55 to 0 and 1 to 0) so that `git diff` showed 112 changed lines for a one-sentence
+edit. Its focused tests, typecheck and lint were green; lint scopes to `src/**` and `tests/**` and the browser
+lane never installs the live monitor, so the full gate would have been green too. The implementer self-certified
+the line endings with `git diff -w`, which structurally cannot see CR removal. The Fable controller caught both by
+reading the diff before dispatching round-2 reviews, because round 2 is the last round.
+
+> **Name environment constraints in the packet; lint every file the harness executes; compare `--stat` with
+> `--ignore-cr-at-eol --stat` in the gate; forbid whitespace-insensitive self-proof.**
+
+Test: `git show <sha> -- <harness file> | grep -c 'new Function('` is 0; the two stat forms agree.
+
+### A reviewer's own gate failure filed as a code MUST stalls a PR for a day (adversarialllm, 2026-09-07/08)
+
+PR #23's Codex leg hit an abandoned `Global\AdvLLM-ci-gate` mutex in its prepended `ci.ps1` run and returned
+CHANGES_REQUESTED with a MUST that cited only that abort. The PR (nine records files) sat 36 hours. Under the
+project's own amendment that is an infrastructure failure consuming no round.
+
+> **A verdict whose only MUST cites the reviewer's infrastructure is `INFRASTRUCTURE_FAILURE`; re-dispatch it.**
+
+Test: grep the MUST's evidence for the reviewer's own gate path or mutex name.
+
+### A stale implementer label turned the cross-family key on the wrong family (adversarialllm, 2026-09-08)
+
+PR #38 was labelled `impl:codex` at first reap; its round-2 bytes were written by a Claude leg under a frozen
+packet. The merge evaluator derived "the family that did not implement" from the label, so the key it demanded was
+a Claude APPROVE for Claude-authored bytes. The Claude round-2 leg declared the same-family fact in its own
+verdict. Nothing in the evaluator read the trailer.
+
+> **Derive authorship per round from producing-command and commit-trailer evidence; a first-reap label names
+> the row's implementer, not the author of the current head.**
+
+Test: `git log --format=%B <base>..<head> | grep Co-Authored-By` against the label.
+
+### One family's review leg was a weaker instrument than the other, and it looked like a family effect (adversarialllm, 2026-09-08)
+
+On the same bytes the Luna-low leg found a real MUST and the Sonnet-low leg returned no findings with
+`declared_self_failure: "None."`. The Claude leg had Read/Glob/Grep plus one fixed gate tool and no `git`/`rg`,
+ran 8 turns in 25 s, and was told to re-run an 846 s gate the controller had already run; the Codex leg had `git`
+and `rg` and was told to spend its budget on code. Published as a family datum this would have been a false clause.
+
+> **Before comparing families, equalize tools, briefs and budget; a missing adversarial clause or a missing
+> `git` is the finding.**
+
+Test: diff the two legs' tool allowlists and prompts before reading their verdicts.
+
