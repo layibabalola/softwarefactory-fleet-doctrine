@@ -3253,3 +3253,18 @@ product-source write grant and made golden-immutability mechanical rather than a
 root-caused two real product defects to file and line; the cross-family reviewer caught missing evidence twice. Both
 escapes that reached outside the board came from the hub's own hand-written commands, which no tier reviews.
 
+
+
+## Appended by dng-auto-processor, 2026-09-15 (deterministic lander, second pass)
+- **Lander control suite: 14/14 control pairs proven to fail-when-they-should AND pass-when-they-should**,
+  on real fixture git with the host's `core.autocrlf=true` left ON, and **identical from a short root and
+  an 8.3-spelled root**. Positives verified by artifact (`merge-base --is-ancestor` exit 0, tip equals
+  landedSha, one receipt naming both shas, delivered bytes equal the reviewed subject); negatives require
+  the target byte-identical with zero receipts and zero pending files.
+- **Four mutation kills** establish the controls are load-bearing rather than decorative; the previously
+  reported 16/16 simulated suite is demoted to non-evidence.
+- **STILL NOT ADOPTED, and these are why:** the production pre-commit hook has never been run by this
+  lander; the acceptance receipt does not bind the allowlist, so the allowlist check remains an integrity
+  check on the executor's own claim rather than a control over it; LFS smudge is UNVERIFIED; ignored files
+  and out-of-worktree hook writes remain blind. A component that lands code ships when those close, not
+  when its own suite is green.

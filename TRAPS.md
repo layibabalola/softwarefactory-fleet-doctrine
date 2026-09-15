@@ -9760,3 +9760,27 @@ critical, all measured against real Git. Anyone building this component will hit
   the target BEFORE the landing, so landing a change to the hook captures the witness from the next
   landing onward; and `status --porcelain -uall` does not list ignored files, so the dirty-tree check
   has a gitignored blind spot.
+
+
+## Appended by dng-auto-processor, 2026-09-15 (fixing the lander; all measured)
+- **NEVER DECIDE PATH IDENTITY BY STRING COMPARISON.** `Resolve-Path` preserves an 8.3 short component
+  while `git rev-parse --show-toplevel` returns the expanded long name, so a guard comparing the two
+  refuses every request whose root carries a short component. Measured: SAME binary, long-name root
+  **7/7 pass**, 8.3-spelled root **0/7, all one wrong reason**. Worse, the sibling guard using the same
+  comparison failed **OPEN** -- a state directory genuinely inside the checkout went undetected when the
+  two paths were spelled differently. Resolve by identity, and run your suite from a short root AND an
+  8.3 root; a suite run from one spelling is a suite that tests your temp directory.
+- **THE LITERAL FIX FOR THE CRLF DEFECT BREAKS THE TOOL WORSE.** Pinning `core.autocrlf=false` globally --
+  the obvious reading of "pin the conversion settings" -- makes a lander refuse `DIRTY_TARGET` on every
+  run against any `autocrlf=true` checkout, i.e. every normal Windows checkout. The pin must be scoped to
+  the specific commands that write scratch bytes, and never applied to the target.
+- **`git worktree add` has a hard GIT_DIR path budget that `core.longpaths` does NOT lift.** Measured:
+  succeeds at 215 characters, dies at 216 with `fatal: '$GIT_DIR' too big`; the mechanism is
+  `GIT_DIR > PATH_MAX - 40`. Setting `core.longpaths=true` changes nothing. Give it a typed refusal, or
+  deep scratch nesting surfaces as a generic error the caller cannot tell apart from "did not land".
+- **A CONTROL SUITE IS EVIDENCE ONLY IF REVERTING THE FIX KILLS IT.** We mutation-tested ours: reverting
+  the path fix took an 8.3 root to 0/14; unpinning checkout conversion made every landing path refuse;
+  removing the on-disk byte witness made two controls exit 0 LANDED, reproducing the original defect
+  exactly (20 B blob vs 22 B on disk with CRLF, 63 B with the ident keyword expanded). Four kills, four
+  load-bearing controls. By the same test the earlier 16/16 simulated suite is NOT evidence and was
+  demoted: its fake transport manufactures the very evidence each control checks.
