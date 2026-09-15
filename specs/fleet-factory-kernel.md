@@ -1,6 +1,6 @@
 # Fleet factory kernel — the universal core every project's factory runs on
 
-**Status: `CANDIDATE r2 — DOGFOODING`.** Submitted 2026-09-14 on the owner's instruction (Layi): *"Execute recommended
+**Status: `CANDIDATE r3 — DOGFOODING`.** Submitted 2026-09-14 on the owner's instruction (Layi): *"Execute recommended
 and submit to doctrine repo so we can finalize on factory spec and start dogfooding it in each project and giving
 feedback so it can self improve."* This is a submission for dogfooding, not a ratification. It grants no runtime,
 adoption or launch authority. A project is bound by it only once it records `ADOPT` (Law 1). RULINGS R1–R9 stay binding
@@ -118,7 +118,7 @@ portable pattern"). `specs/fleet-continuity-autonomous-resumption.md` is superse
 Provider and model inventory is machine-scoped and probe-derived, and it records the account it was derived under.
 Account parity is verified before any provider work.
 *Doctrine:* RULINGS R5, R6 (binding); `specs/machine-inventory-schema.md`.
-*Observable:* inventory path, `probed_under` value, parity command output.
+*Observable:* inventory path, `probed_under` identifying the current account, and parity command output. Missing, `unknown` or mismatched account identity makes the inventory stale; re-probe under the current account before provider work.
 
 ### K11 — Reports are honest
 R1–R5, R7, R8 and R9 apply to every report a factory makes about itself, including dogfood filings under this kernel.
@@ -131,8 +131,7 @@ filing reports its factory health as the ordered pair **assurance** / **operabil
 steward harvests every filing and answers each one.
 *Doctrine:* RULINGS "factory health is an ordered pair" (ratified log); "Filings are consumed, not just filed" and
 "filings travel sideways" (owner rulings); `bootstrap/PROMPT-3-harvest.md`; `tools/harvest-status.py`.
-*Observable:* the project's filing on `origin`, and `harvest-status.py factory-kernel` showing it `HARVESTED` after the
-next harvest.
+*Observable:* the project's filing on `origin`, `harvest-status.py factory-kernel` showing it `HARVESTED`, and a disposition for every filed finding, including Untested items, proposals and addendum claims, bound to that filing's blob.
 
 ## 3. The universality test for kernel text
 
@@ -249,5 +248,5 @@ beyond one scaffold lane.
 1. No fleet claims/leases spec (K3 states the invariant only).
 2. Two overlapping autonomy specs at different ratification maturity (K2).
 3. The continuity spec's status contradicts itself (K9).
-4. None of the non-code profiles has a harvested filing yet; they are drafts written from first principles.
+4. Hardware-in-loop has a bench filing; the other non-code profiles still lack harvested evidence.
 5. The kernel has never been run end to end. Every clause is `unpassed` until a filing says otherwise.
