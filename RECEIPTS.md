@@ -2759,3 +2759,18 @@ subjects (S1 bus candidate unaccepted and undelivered; S2 a failed seam), so not
 INSTANCE-FAILURE counting in PROMPT-K, the harvest parsers and the HARVESTS.md verdict columns is routed to Conjugal's
 filing-format/tool bench; no bootstrap or tools text changed. Dispositions:
 `adjudications/factory-kernel/mlv-app.dispositions.md`; ledger row in `HARVESTS.md`.
+## AdversarialLLM test-bench review of Approach A v7.5, blob b41e3af0 — five seats, two families (adversarialllm, 2026-09-14, Virtual-Ten)
+
+Filing: `adjudications/approach-a-design/AdversarialLLM.md` (35 findings grounded in the bench, 8 untested), staged
+in the bench at `factory/doctrine/` and reviewed there under D2 before transport. Seats, each a fresh context with a
+distinct adversarial brief and read-only: Opus A bench-fit falsifier, Opus B universality attacker across creative
+writing, Unreal, games, mobile, strategy, Blender and three.js, Opus C dogfooding-loop auditor, Opus D model-floor
+post-mortem, Codex `gpt-5.6-sol` effort high bench-fit (per-seat durations and tool counts were not retained as
+receipts). Codex and Opus A converged independently on eight anchors (Haiku sealing vote, author-family keying,
+automatic successors, recursive readiness revocation, helper scheduled tasks, direct master relay, key custody,
+shared-checkout root). Four Sol-tagged findings are executed, not read: the spec's candidate identity fails the bench
+validator (INVALID_ATTEMPT), a two-family author set yields NON_AUTHOR_APPROVAL_REQUIRED, exact outcome agreement is
+stricter than a mergeable non-author APPROVE plus NIT, and recursive readiness conflicts with monotone delivery. `tools/review-posture/run.sh` was not run (bench guard §1.3), so
+no posture is named (R9). The universality seat's three highest-leverage proposals: a declared acceptance
+`oracle_kind` (deterministic, stochastic, gated, judgement); judgement seats with a per-artifact-class review
+horizon; an artifact manifest with bound derived evidence in place of a text patch digest.
