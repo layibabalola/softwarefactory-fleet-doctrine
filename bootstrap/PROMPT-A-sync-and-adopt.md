@@ -21,7 +21,7 @@ do not necessarily move together, and the usual trigger for repairing that is th
 our work" — which this prompt is not.
 
 ```bash
-python tools/check-cli-auth.py          # or the project's equivalent; expect "MATCHED"
+python "<doctrine>/tools/check-account-parity.py"   # or the project's equivalent; expect "MATCHED"
 codex login status                      # NOT `codex auth status` -- no such subcommand
 ```
 
@@ -123,6 +123,11 @@ answer it. It does not assert a table: a retired or mistyped id still replies �
 at a byte count *larger* than a real answer — so neither exit code nor output size separates a
 live model from a dead one. Inventory is machine-scoped, not per-project (binding rule R5).
 
+**Exit 4 is not a capability result.** A provider refused on a usage or spend limit, so the probe left the
+inventory as it was and kept the replies under `~/.claude/machine-inventory-evidence/`. Record the limit and its
+reset time as the §2b blocker, and re-probe after the reset. §0 can read MATCHED throughout: parity checks which
+account is signed in, not whether that account can still spend.
+
 ## 2b. Write the readiness receipt
 
 ```bash
@@ -213,12 +218,19 @@ This is the step that makes the bus worth more than a spec folder, and the one m
 skipped.
 
 ```bash
-git -C "<doctrine>" log --oneline <your-last-sync-sha>..master -- RECEIPTS.md TRAPS.md RULINGS.md
-ls -t "<doctrine>"/adjudications/*/*.md | head
+git -C "<doctrine>" log --oneline <your-last-sync-sha>..origin/master -- RECEIPTS.md TRAPS.md RULINGS.md
+git -C "<doctrine>" ls-tree -r --name-only origin/master -- adjudications | awk '/\.md$/' |
+  while IFS= read -r p; do printf '%s\t%s\n' \
+    "$(git -C "<doctrine>" log -1 --format=%ct origin/master -- "$p")" "$p"; done |
+  sort -k1,1nr | cut -f2- | head   # files that exist now, newest commit first
 git -C "<doctrine>" ls-remote origin 'refs/heads/review/*'   # filings not yet on master (R7.5)
 git -C "<doctrine>" fetch origin 'refs/heads/review/*:refs/remotes/origin/review/*'
 grep -nE "PROMPT-?B|PROMPT-?A|lane-orchestrator|bootstrap/" "<doctrine>/TRAPS.md"   # traps against the prompts you run next
 ```
+
+Both harvest lines read `origin/master`, never `master` or file times. Inside §1's recovery worktree `R`, `master`
+is the shared checkout's own branch (branch refs live in the common git dir), and every file's mtime is the moment
+`R` was checked out.
 
 The `<your-last-sync-sha>` is `previous_head` from §2b; with no previous receipt, read every entry
 the grep above finds. The grep runs **regardless of the range**: a trap against a bootstrap file can
