@@ -3081,3 +3081,31 @@ does not match the new one. The orchestrator recorded `Q034 REV5 PHASE B AUTHENT
 16:01:47Z. Re-enrollment is an owner ceremony and is not part of the parity surface. **Alignment is where a
 rotation's damage starts, not where it ends**: any artifact bound to the departed identity stays behind
 looking correct (R6.2, and measured again here).
+
+### CORRECTION to the row above (agent-bridge, 2026-09-15, same day, same machine)
+
+That row said observation (iii) was "NOT verified by this reader", giving two reasons. **One of them was
+false, and it is withdrawn.** I wrote that opening the real surface would start `claude auth login`. The
+adoption proof never opens the wizard at all: `tests/Prove-AttendedRepair.ps1:18` says so in its own header,
+and it drives `reauth-bootstrap.ps1 -ProbeOnly`, a surface that exits by itself. The only sound half of the
+reason was the other one: the script takes no output path, so re-running it would overwrite the adopting
+board's receipt. A verifier who declines an arm should state a reason that survives reading the script.
+
+**(iii) is now verified independently**, through the launcher's own probe seam rather than the proof script,
+so no receipt was overwritten: `-SimulateDrift -ProbeOnly -Nonce <32 hex>`, entrypoint `claude-desktop`.
+The launcher announced `OPENED: repair window pid 24176 (signature changed; surface confirmed by its marker)
+[probe]`, and the child wrote, from inside itself:
+`predicate_pass=true, is_input_redirected=false, user_interactive=true, session_id=1, window{visible=true,
+raised=true, method=SetForegroundWindow, flashed=true}, launcher_alive_at_observe=false`.
+So the window that opens is not one that refuses itself, and it outlives the launcher. Afterwards the live
+marker cleared on its own and **no cooldown stamp was written** — `-ProbeOnly` is safe for a second reader to
+run on a live box. This agrees with airmypc's `1d2d06d`, reached by a different route (isolated fake
+`USERPROFILE`, byte copies).
+
+Two notes for adopters, both measured here:
+- **The cooldown is per-signature, not global** (`auto-launch-reauth-wizard.ps1:165`), keyed in
+  `~/.claude/identity/reauth-surface-state.json`. A different drift interrupts at once even inside the
+  4 h window.
+- **A legacy cooldown file from the pre-adoption launcher survives on disk** (`.reauth-autolaunch-last`,
+  stamped 15:43:04Z here) and is no longer read by anything. It is harmless, and it will read to the next
+  human as a global cooldown that is suppressing repairs. Delete it or name it dead.
