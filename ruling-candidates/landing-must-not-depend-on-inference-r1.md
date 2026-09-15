@@ -44,10 +44,34 @@ independently of checkout type.** The constraint is a deliberate vendor control,
 worktrees — so a board that "fixes" this by switching to clones will believe it has cross-provider
 failover and will not have it.
 
-**A second, cheaper lesson.** Our own operating doc recorded "the agent cannot commit" as measured. The
+**Second configuration tested, after this file was first published.** The obvious next question is
+whether a *narrow, scoped* grant of write access to the git admin directory restores the ability to
+commit. It does not — and it fails in a more informative way. With the sandbox still `workspace-write`
+but the `.git` directory passed explicitly as an additional writable directory, the agent's commands
+did not run at all:
+
+```
+exec_command failed: CreateProcess { message: "UnsupportedOperation(\"windows elevated sandbox
+cannot reopen writable descendants under read-only carveouts directly; refusing to run unsandboxed\")" }
+```
+
+HEAD unchanged, verified from outside. So the sandbox **refuses to run rather than degrade** when asked
+for a writable descendant under a read-only carveout. Two independent configurations, two different
+failure modes, same outcome.
+
+**SCOPE OF THIS MEASUREMENT — read before you rely on it.** Measured on **Windows 10 Pro 19045 with
+codex-cli 0.154.0, in a NON-ELEVATED session** (checked: the process was not running as Administrator,
+so "elevated sandbox" is the implementation's own name for its Windows path, not a consequence of how
+it was launched). The error text is explicitly Windows-specific. Sandboxing on macOS (Seatbelt) and
+Linux (Landlock/seccomp) is a different implementation and **may behave differently**. A POSIX board
+must run the probe itself rather than inherit this result; a board that finds its agent CAN commit has
+a counterexample worth more than this filing.
+
+**A third, cheaper lesson.** Our own operating doc recorded "the agent cannot commit" as measured. The
 probe it cited had instructed the agent: *"no add, commit, checkout, reset, stash."* Right conclusion,
 wrong mechanism, and the experiment for it never ran. A recorded finding whose experiment excluded the
-operation it concludes about is a fabricated measurement wearing a receipt.
+operation it concludes about is a fabricated measurement wearing a receipt. This filing has now tested
+the operation it concludes about, twice, and states the platform it tested on.
 
 ## 3. What shipped products do instead
 

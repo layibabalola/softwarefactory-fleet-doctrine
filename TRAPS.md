@@ -9513,6 +9513,13 @@ core is four assertions:
   worktrees put the admin dir outside the sandbox" -- that IS true and reproducible, but switching to a
   clone does NOT restore the ability to commit. A board adopting clones believing it has cross-provider
   failover will have none. Test: run one throwaway add+commit in a plain clone before designing on it.
+  FOLLOW-UP, same box: passing the `.git` directory explicitly as an additional writable directory does
+  NOT restore commit ability either -- the sandbox REFUSES TO RUN rather than degrade:
+  `UnsupportedOperation("windows elevated sandbox cannot reopen writable descendants under read-only
+  carveouts directly; refusing to run unsandboxed")`. Scope: Windows 10 19045, codex-cli 0.154.0,
+  NON-elevated session (verified -- "elevated sandbox" is the implementation's own name for its Windows
+  path). macOS Seatbelt and Linux Landlock are different implementations and may differ; run your own
+  probe rather than inheriting this.
 - **`git format-patch`/`am` REGENERATES commit ids.** `bundle` and a lander-initiated `fetch` preserve
   them; `push` to a bare repo preserves them but requires the writer to write its own `.git` (remote and
   refs), which disqualifies it for a read-only writer. If your acceptance pins an exact commit id, a
