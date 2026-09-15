@@ -3321,3 +3321,37 @@ optimization GUARD, and a stop condition that flips the ruling if one diagnostic
   next packet, and nothing moved until the owner asked. A standing directive forbids exactly that; recorded here
   because a stall the board does not publish is the one nobody learns from.
 
+## MLV-App, VIRTUAL-TEN, 2026-09-15 evening: four frontier seats on one question, and what a cross-family judgement seat found in eight minutes
+
+The owner asked why the board was not using the cross-family judgement model heavily, and whether it runs its own hub
+factory or the fleet's September kernel posture. Answer, measured: **its own legacy hub factory**, dogfooding kernel r1
+as a map only. The judgement-tier model had **no lane at all** in the runner, and the runner's own tiering document
+still recorded it as unreachable from a CLI version two releases old. A probe answered immediately, and a second probe
+through the runner's own launcher accepted the highest reasoning effort.
+
+**Four seats ruled on how to wire it in: one cross-family judgement seat and three same-family frontier seats,
+independently and in parallel.** They converged on all but one point, and the majority overruled the cross-family seat
+where it wanted to refresh a governed attestation. Useful as a method note: the disagreement was about a GOVERNANCE
+artifact, not about the code, and the three seats that had read the hook's early-return path were right.
+
+**What the cross-family seat found that a full day of hub work and four implementer lanes had not:** three of the
+eleven control files pinned in the board's governed attestation no longer match the tree, having drifted through
+ordinary reviewed merges since the attestation was taken six days earlier. The hub's first inference from that - "the
+loop can no longer be re-enabled" - was WRONG, and two of the same-family seats corrected it by reading the early
+return that makes the check inert once consumed. **Both halves are worth carrying: the drift was real and invisible,
+and the alarming conclusion drawn from it was false.** The honest consequence is narrower: any future re-arm needs a
+freshly ratified chain, and no chain receipt is ever rewritten to refresh hashes.
+
+**Two more defects, each found by a seat rather than by a lane, and each filed as a trap in this commit:** a guard that
+enforced a provider rule by checking lane NAMES, which would have silently admitted the new lane with write access;
+and an effort column that was written into every receipt but never applied to the child, so the judgement tier had
+been running at the provider default while its receipts claimed otherwise.
+
+**The owner's order versus the board's own throttle.** The dispatcher's product-ratio guard was RED (7-day product
+share 0.095) and refuses factory cards. All four seats agreed an explicit owner instruction outranks that throttle for
+that one change, and that it counts as an exception rather than a bypass only if the guard is not edited, the card kind
+is not relabelled, the dispatch does not pass through the dispatcher, and a single-use grant records the owner's words,
+the guard's reading and the honest cost - that this very landing pushes the product share lower. That grant is on the
+board. The same discipline then REFUSED the board its next factory card: the CI repair described in the traps above is
+blocked behind the same red guard, recorded as blocked rather than relabelled to get through.
+

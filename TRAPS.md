@@ -9851,3 +9851,49 @@ has two phases; the second asserts exactly what the judge said. The judge was ri
   then read the contents. A verification that is itself partial produces a confident wrong answer with the authority
   of having checked.
 
+## A test suite that SKIPS in CI is a green that says nothing (MLV-App, 2026-09-15, VIRTUAL-TEN)
+
+A board spent weeks reasoning around "ten console tests that fail on clean master", treating them as a known floor
+under every A/B comparison. A lane that finally built the product binary and ran them discovered something nobody had
+checked: **those tests never run in CI at all.** The product-oracle job never builds the application and never sets
+the environment variable the tests use to find it, so every test needing the app takes an early SKIP path. Every
+green tick on that check has been silent about them rather than clean.
+
+- **Test:** for any suite you believe CI enforces, find a test you KNOW is failing and prove CI reports it. If the job
+  cannot name the executions it ran and show zero skips, it is not enforcing anything.
+- **Sequencing that follows from it, and it is the part boards get wrong:** when the fix is "correct the stale test",
+  make CI actually RUN the suite FIRST, with the failing baseline visible, and only then correct the contract.
+  Otherwise the board edits tests that nothing enforces and CI never once sees them red.
+- Second trap from the same run: the harness was a minimal in-repo one, not gtest, and silently ignored a
+  colon-joined filter list. A filter the harness does not understand runs the wrong set, or nothing, and still exits 0.
+
+## An effort setting that is RECORDED but never APPLIED makes every receipt lie (MLV-App, 2026-09-15, VIRTUAL-TEN)
+
+A lane runner carried a per-lane model table with an `effort` column, and wrote that column into each run receipt. But
+only an explicit command-line override actually set the child's effort environment variable; the table value was never
+applied. So the judgement-tier lane had been running at the provider default for weeks while its receipts recorded the
+effort the table declared - and the fleet's binding model-tier ruling ("judgement tier at effort high by default") was
+satisfied on paper only.
+
+The trap is that the obvious fix makes it worse: setting the table value to `high` without fixing the forwarding
+produces receipts that assert `high` more confidently while nothing changes.
+
+- **Test:** for every configuration value a receipt reports, prove the value reached the child - read it back from the
+  child's own environment or its provider-reported settings, not from the table the receipt was written from.
+- **Generalisation:** a receipt field copied from intent rather than measured from effect is not evidence. This is the
+  same family as a receipt that reports `complete` for a lane that delivered nothing.
+
+## A capability guard keyed on NAMES silently admits the next name you add (MLV-App, 2026-09-15, VIRTUAL-TEN)
+
+A runner enforced "lanes on the read-only provider may never be granted edit rights" by checking the LANE NAME against
+a hard-coded pair. The rule is about the ENGINE, and the check was about the roster. Adding a third read-only lane -
+ordered by the owner, designed by four frontier seats - would have silently created a lane that could be granted write
+access and run with no hook in the way, because its name was not in the pair.
+
+Nobody would have written "let the new lane edit". It would have arrived as a side effect of adding a row to a table.
+
+- **Known-bad:** the name-keyed check with a new row added. **Known-good:** the same check keyed on the engine field.
+- **Test:** for every guard, ask what it would do the next time the set it protects GROWS. If the answer depends on
+  someone remembering to update the guard, the guard is keyed on the wrong thing. Prove it with a test that adds a
+  member and asserts the refusal still fires before any side effect.
+
