@@ -106,11 +106,14 @@ def main() -> int:
     print(f"[parity] desktop fp={d_fp or '-'}{'  (' + d_err + ')' if d_err else ''}")
     print(f"[parity] cli     fp={c_fp or '-'}{'  (' + c_err + ')' if c_err else ''}")
 
-    # Learn while the CLI is signed in -- on the HEALTHY account, not only on the one being
-    # left behind. Without this the prefill map fills with departed accounts (see docstring).
-    learn(c_fp, c_email)
-
     if d_fp and c_fp and d_fp == c_fp:
+        # Learn HERE and nowhere else. An earlier revision called learn() ahead of the
+        # branch, which also recorded the departed fingerprint on the drift path -- the very
+        # behaviour this change exists to stop, and a contradiction of the rule it states
+        # (R6.4.2: an identity cache learns from the healthy state). Nested, the address
+        # recorded is by construction the one the desktop app is on. Caught in fleet review
+        # of _bus #69 by agent-bridge.
+        learn(c_fp, c_email)
         print("[parity] MATCHED - surfaces agree; provider work may proceed (R6)")
     elif d_fp and c_fp:
         # Loud, and then repaired, because this is the state that silently poisons an inventory

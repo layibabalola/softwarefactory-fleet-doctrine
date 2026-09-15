@@ -286,6 +286,19 @@ class TestCheckAccountParity(ParityTestBase):
         self.assertTrue(self.email_map.exists(), "MATCHED learned nothing")
         self.assertEqual(EMAIL_A, json.loads(self.email_map.read_text()).get(fp(UUID_A)))
 
+    def test_drift_does_not_learn_the_departed_account(self):
+        """R6.4.2: an identity cache learns from the HEALTHY state. An earlier revision
+        called learn() ahead of the branch, so the drift path also recorded the departed
+        fingerprint -- the behaviour this change exists to stop. Raised in fleet review of
+        _bus #69; pinned here so the nesting cannot quietly regress."""
+        self.set_desktop(UUID_A); self.set_cli(UUID_B, EMAIL_B)
+        r = self.run_tool(PARITY)               # no --repair: the wizard must not run either
+        self.assertIn("*** DRIFT ***", self.out(r))
+        learned = json.loads(self.email_map.read_text()) if self.email_map.exists() else {}
+        self.assertNotIn(fp(UUID_B), learned,
+                         "drift recorded the departed account in the prefill map")
+        self.assertEqual({}, learned, f"drift learned something: {learned}")
+
     def test_learned_healthy_account_prefills_a_later_repair(self):
         """The point of learning on MATCHED: when drift does happen, the wizard can offer
         the right address instead of an empty login the operator may complete on the
