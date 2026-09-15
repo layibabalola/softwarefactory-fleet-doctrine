@@ -2819,3 +2819,48 @@ Posture: arbiter Astra (`gpt-6-astra`, high, three scoped calls after five faile
 Fable (`claude-fable-5`); lint Opus (`claude-opus-5`) + Sol (`gpt-5.6-sol`), 2 and 5 findings, 4 distinct defects, all
 fixed in one pass (+2 words). Every seat ended on `LANE-COMPLETE`. Projects that have still not filed on this subject
 are the rest of the fleet; the seven that have are all Windows single-user, and none is Conjugal's own bench.
+
+## CLI re-auth auto-launch: measured dead, repaired, and live-launched (adobe-ingester, 2026-09-15, VIRTUAL-TEN, node v24.14.0, pwsh 7.6.6)
+
+- **Before the repair:** `~/.claude/hooks/.reauth-autolaunch-receipts.log` held 1,310 decisions and zero
+  launches: 1,105 `ALIGNED`, 158 `CLI_UNREADABLE`, 47 `CLI_BEHIND_DESKTOP`. Re-derive by counting `action=` and
+  `verdict=` pairs in that log.
+- **Spawn shapes:** `node ~/.claude/hooks/tests/spawn-shapes.probe.js <dir> 0 [X]`. Each child writes a marker.
+
+  | shape | result |
+  |---|---|
+  | detached, stdio ignored, hidden | never ran |
+  | detached, visible | never ran |
+  | attached | ran |
+  | attached + unref, fast child, node exited at 646 ms | ran |
+  | attached + unref relay that `Start-Process`es a window | the window never ran |
+  | `spawnSync` relay that `Start-Process`es a window | the window ran after node exited at 608 ms, with `IsInputRedirected=False`, `UserInteractive=True`, `SessionId=1` |
+
+- **Suite:** `pwsh -File ~/.claude/hooks/tests/Test-ReauthAutolaunch.ps1`.
+  - Run 1 found the test's own bug: a single receipt line unrolled to a `[string]`, and indexing `[-1]` returned
+    its last character, so 9 cases falsely read FAIL.
+  - Run 2 found one real gap: the trigger regex did not match "CLI should auth". Sections 1-3 and 5 passed,
+    including the launch-args assertions (no `-TargetOrg`, quoted `-File`).
+  - Run 3 ended `RESULT: PASS`: 8 of 8 verdict cases, the live verdict, the owner-phrase chain, the negative
+    prompt, and window survival. The launch-args section read SKIP because a real wizard was open and the
+    launcher correctly answered `suppressed`.
+- **Live launches:**
+  - `2026-09-15T15:38:03.9Z action=launched src=prompt`. That window (pid 32104) carried the broken prefix. It
+    was idle, with no `claude` child process and the CLI still logged out, so it was closed by PID and the
+    cooldown was cleared.
+  - `15:43:04.7Z action=launched src=prompt` opened pid 19376, running
+    `pwsh -NoLogo -NoExit -ExecutionPolicy Bypass -File "<...>\reauth-cli-wizard.ps1"`.
+- **Subject SHA-256** (VIRTUAL-TEN, user-level `~/.claude/hooks/`, not in any project repo):
+
+  | file | SHA-256 | bytes |
+  |---|---|---|
+  | `auto-launch-reauth-wizard.ps1` | `DDF7B03F314D318C875CAFA8BCE1A0BB280BD8A2D2A1D7253DAB1FF25FCAE065` | 9,100 |
+  | `resume-account-gate.mjs` | `3F5CB30C2E6D3D95A47B75D31666AD6E801581100042E0FD145723FC1DF5F333` | 24,610 |
+  | `tests/Test-ReauthAutolaunch.ps1` | `0C56AFE7AFDB8247E213A11D579FB56C668056AF85428F914915A14A47447038` | 11,165 |
+  | `tests/spawn-shapes.probe.js` | `C4FC2E93BD4EB5657C619937A43078FAE325B6AAA282367E86DB2B12F1934FBB` | 3,459 |
+  | `check-account-drift.ps1` (unchanged) | `BA129DA48D5E80FBBC9D719B09BA53009AD58A4FBE4E49CDB21CFB2CC72C3C54` | 33,925 |
+
+- **Not proven here:** the owner's browser approval and the post-login `orgId` check. They were pending at
+  publication and are owner-only. airmypc (airmypc-e7) and agent-bridge (agent-bridge-9e) said they would
+  append their own verification rows against these hashes. The MLV-App harness evidence is at
+  `C:\!Layi Wkspc\MLV-App\.claude-state\fleet-runs\reauth-autolaunch-test-20260915\` (mlv-app).

@@ -9429,3 +9429,68 @@ lane prompt asks a single command to return, and should treat "no end marker in 
 because the `python` heredoc was newline-separated rather than `&&`-chained, so the launch used the stale prompt.
 Build Windows paths with `chr(92)` or write the block to a file first, and always assert the rewrite landed before
 spending a seat on it.
+
+## The CLI re-auth auto-launch had never launched: five stacked defects, each looking like a passing hook (adobe-ingester with mlv-app, adversarialllm, agent-bridge, 2026-09-15, VIRTUAL-TEN)
+
+The owner rotated the Claude Desktop account, and the CLI stayed logged out. Two user-level hooks in
+`~/.claude/hooks/` exist to open the owner-driven re-auth wizard (`reauth-cli-wizard.ps1`) in a visible window.
+Neither had ever opened one. The layers, in the order they were found:
+
+1. **Keyed on a value the producer never emits.** `auto-launch-reauth-wizard.ps1` (SessionStart) acted only on
+   verdict `DRIFT`. The `account-drift.v1` detector emits `ALIGNED`, `CLI_BEHIND_DESKTOP`, `CLI_UNREADABLE`,
+   `DESKTOP_BEHIND_CLI`, `DESKTOP_SHAPE_UNKNOWN` and `DECLARED_UNREACHED`. Its own receipts log held 1,310
+   decisions and zero launches.
+2. **`require()` inside an ES module, swallowed.** `resume-account-gate.mjs` (UserPromptSubmit) called
+   `require('child_process')` in a `.mjs`. An empty `catch` swallowed the ReferenceError, so the gate printed
+   "if no wizard window appeared above" on every prompt.
+3. **Node's spawn shape decides whether the window exists.** Measured on node v24.14.0 and pwsh 7.6.6 under
+   Claude Code:
+   - A `detached: true` child never ran, with or without `windowsHide`, and whether the parent exited or stayed
+     alive for 10 s.
+   - An attached child with `unref()` was killed the moment node exited. The cause is INFERRED: libuv's
+     kill-on-close job object.
+   - What works: `spawnSync` the launcher. Its `Start-Process` grandchild survives node's exit and has a real
+     console.
+   - AdversarialLLM measured one more shape that runs: a detached `cmd.exe /d /c start "" /min pwsh ...` with
+     `windowsVerbatimArguments`.
+4. **An 8-char prefix where a full id is compared.** The first repair passed `-TargetOrg <detector orgPrefix>`.
+   After login, the wizard compares `-TargetOrg` against the full `orgId`, so a correct login would read as
+   the wrong account and loop. AdversarialLLM and MLV-App caught it within minutes of the first live launch.
+   The fix: pass nothing, and let the wizard resolve the full org from the desktop config itself.
+5. **The trigger vocabulary missed the owner's own words.** "CLI should auth and open browser for me" matched
+   none of the gate's resume, rotation or reauth patterns (found by agent-bridge).
+
+MLV-App's hermetic harness found three more alongside:
+- `Start-Process -ArgumentList` joins its elements unquoted, so a `USERPROFILE` containing a space splits the
+  `-File` path (pwsh exit 64). Quote that element.
+- The cooldown write threw when `~/.claude/identity` was missing. The window had already opened, so the receipt
+  said `error` instead of `launched`.
+- The credential-boundary PreToolUse gate matches the wizard's filename, so it also blocks read-only
+  `Select-String` and `Get-FileHash` on it. Three sessions reported this. It still correctly blocks launching.
+
+**Fix in use on VIRTUAL-TEN.** Both hooks now use a single launcher:
+- SessionStart runs it directly. The prompt gate `spawnSync`s it with a 45 s timeout and prints the launcher's
+  own receipt line, rather than assuming a launch happened.
+- It acts only on `CLI_BEHIND_DESKTOP`, or on `CLI_UNREADABLE` with `cli.loggedIn == false`. Every other verdict
+  stays diagnose-first.
+- It keeps a single-instance scan, a 45-minute cooldown, and one receipt per decision tagged
+  `src=sessionstart|prompt|test`.
+- No agent launches the wizard. The harness does, and the owner drives it and approves in the browser.
+
+Live proof:
+- `2026-09-15T15:38:03.9Z action=launched src=prompt`. Three other sessions' gates then answered `suppressed
+  wizard-already-running`.
+- After the layer-4 fix: `15:43:04.7Z action=launched`, with a quoted `-File` and no `-TargetOrg`.
+
+This entry does not amend `specs/cli-credential-rotation-automation.md` (Law 2). That spec promises "Browser
+OAuth window pops automatically", and its owner should verify that promise on each machine with the test below.
+
+**Test:** `pwsh -File ~/.claude/hooks/tests/Test-ReauthAutolaunch.ps1`. On a machine without it, the portable
+core is four assertions:
+- (a) Run the launcher once for every verdict the detector can actually emit, simulated, with `-DryRun`, and
+  assert each decision. Enumerate the producer's real vocabulary, not the one the author remembers.
+- (b) Assert that the launch arguments carry no id prefix and a quoted `-File`.
+- (c) Pipe the owner's own phrasing into the prompt gate behind a dry-run env seam. Assert that a launcher
+  receipt exists before the gate returns, and that an unrelated prompt produces none.
+- (d) Spawn a probe exactly as the gate spawns the launcher. Assert that the window it `Start-Process`es still
+  runs after node exits and reports `[Console]::IsInputRedirected = False`, the wizard's own admission test.
