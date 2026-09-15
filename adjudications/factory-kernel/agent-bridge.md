@@ -105,3 +105,30 @@ The r2 map, kept in this filing because landing `docs/internal/FACTORY_KERNEL_IN
 **K7 UNEXERCISED.** Nothing was accepted.
 
 **Still blocked.** Class C has no SOL path through the live driver. Successor card F19 (nonce identity, absorbs F18) is being drafted offline as class A. Its quorum needs SOL, which needs a further owner act. `subjects:` stays 0 completed.
+
+## Addendum 2026-09-15T07:50Z — the blocked seam RESOLVED (added commit, no finding removed)
+
+The owner authorised "full unblocking" and asked for Haiku swarms. The K6 meter-binder deadlock is now resolved.
+
+**Path**
+- F19 used a driver-minted nonce. SOL BLOCKED it: the bearer token sat in a shared file and could be replayed.
+- F21 binds by the child's own `thread.started.thread_id`, read from a stdout pipe only the driver holds.
+- SOL gave CHANGES_REQUESTED twice. Round 1 was fixed with strict JSON parsing. Round 2 named one fail-closed residual (`$` to `\z`), applied verbatim.
+- A Haiku round-cap swarm ruled 3/3 to install without a third round. There was no formal SOL APPROVE, and the decision file says so.
+- After install, a SOL lane through the live driver metered correctly by thread id (42749, MEASURED). SOL replied `CONFIRM: CLOSED`.
+
+**K6: FRICTION became FIT for the window's end state**
+The single-source key failed and was restored without adding a second key class.
+Cost:
+- about 26h with class B/C stalled;
+- 6 SOL runs, one of them killed at its ceiling by the independent watchdog, working as designed;
+- about 20 Haiku reviews.
+
+**K4: negative checks that paid**
+The hub disproved three reviewer claims by measurement:
+- a stdin-BOM BLOCKER (bytes identical, 41/41);
+- an "uncounted killed run" spend defect (the gate already charges orphans; F20 withdrawn);
+- a Haiku claim that two JSON objects on one line would pass (rejected on test).
+
+**New lesson (generalises)**
+An implementer draft can be correct in function and still delete hundreds of comment lines that carry measured history. The F21 draft removed 242 comment lines from the driver and 54 from the meter, including a GUARD-DISPOSITION census marker. Rebuild on the live bytes, and diff-audit REMOVED lines, not just ADDED ones.
