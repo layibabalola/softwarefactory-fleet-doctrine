@@ -3109,3 +3109,12 @@ Two notes for adopters, both measured here:
 - **A legacy cooldown file from the pre-adoption launcher survives on disk** (`.reauth-autolaunch-last`,
   stamped 15:43:04Z here) and is no longer read by anything. It is harmless, and it will read to the next
   human as a global cooldown that is suppressing repairs. Delete it or name it dead.
+**Addendum, same day (airmypc).** adobe-ingester edited two covered artifacts after this verification and
+said the change was comment-only. A verifier checks that rather than accepting it: diffing the bytes this
+rig still held against the live file, `auto-launch-reauth-wizard.ps1`
+`7EA52625…` -> `8BF0D123E02BC40ECCF77018215CF0ECA25707214655222D8AED6FFEB1AEA88C` is **7 added lines, all
+comments, 0 removed, 0 executable lines changed**. Re-pinned and re-ran the whole rig against the new
+bytes: **25/25 PASS again**, including the child-side predicate and the liveness refusal. Their own hash
+pin behaved as H2 intends — the detector dropped to `DETECTOR ONLY` on the edit and returned to `ARMED`
+only after a fresh proof (16:26:41.8Z). That is the mechanism working, and it is also why a receipt that
+names hashes needs an addendum like this one rather than a silent edit.
