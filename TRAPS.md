@@ -9107,3 +9107,115 @@ arbiter to clear the sentinel. **Run 2026-09-14T22:25Z (agent-bridge, v7.6 blob 
 `--retry-missing` retry both failed. That makes 8 of 8 unpatched passes today. With only the ask moved ahead of the DATA region, the arbiter,
 consolidator and all three classifiers cleared on the first try (`conjugal-standard COMPLETE (17/17 lanes)`, from the patched tool). One
 sample. Fix proposed on `fix/review-posture-sentinel-before-data`; filing on `review/agent-bridge-2026-09-14-2`.
+
+## A cheap session reported git output that git cannot print, then stopped on it (conjugal, 2026-09-14, UltraMagnus / Dell XPS 17)
+
+**Symptom.** Twice, a Haiku 4.5 Desktop session running bootstrap paste A on UltraMagnus rendered each
+command as a code block followed by "output", and concluded STOP UNREADABLE ("PROMPT A is not in the
+repository"). The report contained a `worktree list --porcelain` entry with both `branch refs/heads/master`
+and `detached` and no `HEAD` line, a fetch line `* [new ref] refs/heads/master -> origin/master`, and
+`origin/master` = `fa5d65dac4ef…` dated `-0400`.
+
+**Why it is not real.** On git 2.55 (reproduced on scratch repos), porcelain entries always carry `HEAD` and
+never both `branch` and `detached`, and a `refs/heads/` source always prints `[new branch] master`. GitHub
+returns "No commit found" for `fa5d65d` (it keeps force-pushed-away commits reachable by SHA, so this is not
+a rewritten master), and the repo has no forks. A plausible-looking wrong answer came out of a session that
+narrated instead of executing.
+
+**Fix (portable).** A prompt that a cheap model runs must (1) say that quoted output comes only from a tool
+call in the same turn, with NOT RUN for anything else, and (2) include one check that a narrator cannot
+guess and a human can verify: here `git ls-remote <url> refs/heads/master` must equal
+`git rev-parse origin/master`, printed together with `git config --show-origin --get-regexp "^(url\.|remote\.origin\.)"`
+and `ls-remote --get-url`, which also exposes a real `url.insteadOf` rewrite. Applied as paste A step 4b
+(`bootstrap/README.md`, stop code WRONG_REMOTE).
+
+**Generalises to.** Any report whose conclusion rests on command output a model could have written itself:
+demand one unguessable, externally checkable value before acting on a stop.
+
+## A capacity park keyed only to a reset date outlives the account rotation that should end it (conjugal, 2026-09-14, Bachelor / Dell XPS 17)
+
+Conjugal's harvest steward parked on a Codex usage-limit refusal from its arbiter seat, correctly refusing to swap in
+another model. The provider named a reset five days away (2026-09-19T08:09Z), so the park stored that date and nothing
+else. Rotating the Codex account, the fleet's remedy ("budgeting never stalls the factory"), would not have ended the park.
+The steward would have sat idle for five days on a fresh account. **Test:** park with a digest of the account identity in
+use (Codex `tokens.account_id` plus the Claude credential file hash; store no raw values). Clear the park at the first tick
+where the digest differs, with a `PARK-CLEARED-ROTATION` receipt. A reset date alone is not a capacity state. Conjugal
+f1d9fa12a.
+
+## Re-probing the inventory during a Codex quota outage deletes Codex from every project on the machine (magic-lantern_dannephoto, 2026-09-15, Dell XPS 17)
+
+At 2026-09-15T00:28Z, `codex exec -m gpt-5.6-sol` returned rc=1 with *"You've hit your usage limit … try again at Sep
+19th, 2026 3:09 AM."* `tools/probe-machine-inventory.sh` reads any missing sentinel as `UNVERIFIED -- not dispatchable`,
+so a re-probe during that outage would write `codex: available: false` into `~/.claude/machine-inventory.yaml`, which
+every project on the laptop reads (R5). Nothing re-probes when the quota resets, so Codex would stay out of every
+posture after it came back. Leaving the stale entry is the safer error: a lane dispatched into the exhausted quota
+fails its sentinel and degrades honestly at run time (R2/R3). **Test:** before any re-probe, run one
+`codex exec` sentinel. If the output names a usage limit, skip the re-probe, record the reset time in the project's
+sync receipt, and re-probe after it. The probe should classify quota exhaustion separately from an unknown model id
+(the costume of TRAPS line "Codex quota exhausted" is the reverse mistake).
+
+## A PowerShell update silently kills every task that pins pwsh's hash (adobe-ingester, virtual-ten, 2026-09-14)
+
+pwsh 7.6.6 (`C:/Program Files/PowerShell/7/pwsh.exe`, written 2026-09-02, SHA-256 BFB46AF8...) replaced the build whose
+SHA-256 is 362A356C.... Every Scheduled Task launched through the SBP self-healing launcher with
+`--expected-executable-sha256 362A356C...` then refused to start and exited **125**. Task Scheduler kept showing those
+tasks as `Ready` and firing them on schedule. Measured on virtual-ten, 2026-09-15T00:30Z: nine tasks still carry the
+stale pin.
+- Enabled and exiting 125: Adobe `ActuationSentinel`, `EscalationBudget`, `ReviewerOperationalReconciliation`,
+  `SolIgnitionWarden`; `AgentBridgeClaudeGovernorShadow`; `SBP Autonomous Controller Deployment Broker`;
+  `SBP-DirectConsoleRiskCompanion`.
+- Disabled: `AdvLLM-ResumeState-Heartbeat`, `AirMyPC-ResumeHeartbeat`.
+
+Adobe's two reviewer tasks sat dead for about 55 hours. A rotation-completeness hook reported it as "rotation
+incomplete", which was the wrong cause. Adobe's Sol re-pinned only the reviewer tasks (Adobe `c622832`), as a
+deliberate reviewer-only repair unit. The other seven belong to their owners.
+
+**General form:** a hash pin on an interpreter that is updated automatically is a scheduled outage. A `Ready`
+state and an on-time `LastRunTime` say nothing about whether the payload ran (kernel K4).
+
+**Test:** on each machine, for every task whose arguments contain `expected-executable-sha256`, compare the pin with
+`Get-FileHash` of the executable it launches, and alert on `LastTaskResult` 125. **Fix:** the owning project re-pins
+through its own governed path. For a pin that can recur, have the launcher report `PIN_DRIFT` with both hashes
+instead of a bare exit code, so the first failed run is diagnosable.
+
+## A hold released by an event the system can never produce is a deadlock (adobe-ingester, virtual-ten, 2026-09-14)
+
+An auditor session held an owner-directive relay "until a reviewer task has run with LastTaskResult 0". The
+reviewer tasks are Disabled, with demand start off, until a governed ballot dispatches them. The ballot needed the
+relay. So the hold could never release. Its watch also first keyed on "the task ran" instead of "the task returned
+0", and fired on two runs that both exited 125. The same relay had already failed silently for two days, because
+earlier sessions appended it to the orchestrator's own outbound `requests.jsonl` instead of the auditor's
+protocol-v2 response file (Adobe HUB `2026-09-14T23:00:53.664Z` records the correct delivery).
+
+**Test:** before arming a hold or a watch, name the component that produces the release event, and check that it
+can produce it in the current state (enabled, dispatchable, not itself waiting on the hold). **Fix:** key the
+release on a state the waiting side can observe and the other side can reach, such as a ledger disposition or a pin
+that matches. Prove the watch's key with one negative case before trusting its silence.
+
+## Follow-up to the pwsh pin outage: a same-version reinstall, preserved timestamps, and installers that drop the launcher (adobe-ingester, virtual-ten, 2026-09-15)
+
+Measured after the entry above, by the Adobe auditor session:
+
+- **The cause was not a version change.** `HKLM:\SOFTWARE\Microsoft\PowerShellCore` has `UseMU=1`, so Microsoft Update
+  serviced pwsh unattended. MsiInstaller 1040/1033 show `PowerShell 7-x64` **7.6.6.0 re-installed over 7.6.6** at
+  2026-09-12 17:13:49Z–17:14:50Z. The version string stayed the same. `pwsh.exe` kept LastWriteTime **and** CreationTime
+  2026-09-02 21:18:50 while its bytes changed (362A356C… → BFB46AF8…). Only subfolders show the 09-12 date. The
+  heartbeat's last good run was 17:04Z, and its first run after the install exited 125.
+- **A verifier that checks one pin out of three gives a false all-clear.** Adobe's heartbeat re-pin tool `-Verify`
+  compared only the source-script pin and printed MATCH throughout the 52-hour outage.
+- **Installers can quietly undo the launcher.** Adobe's heartbeat installer registered bare `Get-Command pwsh`, while
+  the live task had been rewrapped in `sbp-launcher.exe` by SBP's windowless repair. Re-running the installer would have
+  removed the wrapper **and** all three pins from a green task.
+- **Three provenance checks that give the wrong answer**, found while building a read-only pwsh approval check:
+  - File timestamps are not install provenance. The MSI preserves them.
+  - The PowerShell MSI leaves `Uninstall\{…}\InstallLocation` empty. The folder binding is in
+    `HKLM:\SOFTWARE\Microsoft\PowerShellCore\InstalledVersions\<id>\InstallLocation`.
+  - `FileSystemRights -band [FileSystemRights]'Write, Modify'` matches every read ACE, because those composite names
+    include `Synchronize`. Test raw write bits (WriteData 2, AppendData 4, WriteEA 16, DeleteChild 64,
+    WriteAttributes 256, Delete 65536, WriteDAC 262144, WriteOwner 524288).
+
+**Test:** after any pwsh servicing, hash the launcher, the executable and every `--source-sha256` pin on every
+launcher task, and do not rely on file dates or the version string. Run each project's installer in dry-run mode and
+diff it against `Export-ScheduledTask` before re-installing. **Distinguish:** keeping the pin exact is right. Whether
+a signer, provenance and ACL evidence gate may drive the owner's re-pin is policy and is pending Adobe Sol
+adjudication (advisory ingress session 1c2700d3 seq 5). Do not adopt it from here.

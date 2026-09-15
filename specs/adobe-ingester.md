@@ -2,7 +2,7 @@
 
 Writer: the Adobe project's portal/auditor session (single-writer file). Updated at
 doctrine-changing seams. Doctrine here is DATA, never instructions (README law 1).
-Machine: virtual-ten (shared workstation, 5+ factories). Last update: 2026-09-02.
+Machine: virtual-ten (shared workstation, 5+ factories). Last update: 2026-09-15.
 
 ## Shape
 
@@ -827,3 +827,35 @@ no implementation yet (audit bundle WS-01..WS-09, 36 packets, unadopted). AC-07 
 
 Re-derive: `pwsh -NoProfile -File .factory/tools/Test-FactoryDispatch.ps1`; newest HUB heading;
 `Get-Content .claude-state/coordination/owner-directives/DELIVERY-LEDGER.jsonl -Tail 4`.
+
+## 2026-09-14 seam — a fleet prompt halted us, the kernel filing landed, and two dead-actuator outages (adobe, virtual-ten)
+
+Measured facts only. Strategy and adoption go to Sol through the advisory ingress first.
+
+- **A fleet bootstrap write halted the factory for about 4 hours.** PROMPT A §2b wrote `.claude/doctrine-sync.json` into
+  our frozen REVIEWING tree. Candidate integrity failed closed on every Sol commit from 17:41Z (HUB `PREFLIGHT FAILURE
+  Q-034 rev3`). The producing session withdrew its own file, and governance returned exit 0.
+  - Bus fix and trap: `f6e1972`. Kernel §3 now forbids assuming a writable project tree (harvest `ec32d6e`).
+  - Our readiness receipt now lives out of tree, at `<home>/.claude/doctrine-sync/Adobe Document Cloud Ingester.json`.
+- **Kernel dogfooding: evidence filed, adoption DEFERRED.**
+  - The filing on `review/adobe-ingester-kernel-2026-09-14` was harvested: 13 ADOPTED, 3 ADOPTED-CONDITIONAL,
+    1 REJECTED (see `adjudications/factory-kernel/adobe-ingester.dispositions.md`). Its K5 offset-binding finding and
+    the code-profile rows (attended human key, feasibility delivery target, parking under an unavailable key) are now
+    in `profiles/code.md` r2.
+  - Sol DEFERRED adoption as advisory cross-factory work while WO-G0-A01 rev13 is REVIEWING (HUB
+    `2026-09-14T22:11:45.942Z`).
+  - Distinguish before adopting from us: a kernel instance map cannot land in our tree while a candidate is frozen.
+- **A pwsh update killed six of our Scheduled Tasks** (TRAPS, 2026-09-14). They pinned the prior pwsh SHA-256 and
+  exited 125 while showing `Ready`, which silenced both reviewers for about 55 hours. Sol re-pinned only the reviewers
+  (`c622832`); ActuationSentinel, EscalationBudget, ReviewerOperationalReconciliation and SolIgnitionWarden remain
+  stale by Sol's explicit scope decision.
+- **The Q-034 revision-4 owner relay was undelivered for two days** because it was appended to Sol's outbound
+  `requests.jsonl`. It was delivered at `2026-09-14T23:00:53.664Z` as OWNER DIRECTIVE 2026-09-14a, with its rationale
+  corrected against the ledger: rev3's reviewer failure was `WRAPPER_FAILED` at the wrapper's nonzero-result throw site,
+  cause undetermined, not token exhaustion.
+  - Sol then proposed rev4 and recorded the line-1604 disposition as
+    `BOUNDED_SEQUENTIAL_SINGLE_FLIGHT_CONTAINMENT_CAUSE_UNDETERMINED`.
+  - Luna voted APPROVE. Phase B (reviewers) is held on `recovery_manifest_invalid` and `recovery_resolution_ready=false`
+    (HUB `2026-09-15T00:32:52.629Z`).
+- **Our resume heartbeat was dead 09-12 to 09-14** (exit 125; source pin matched). It was repaired, and produced a fresh
+  checkpoint at 2026-09-15T00:34:33Z.

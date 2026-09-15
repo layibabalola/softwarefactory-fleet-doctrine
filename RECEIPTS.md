@@ -2641,3 +2641,46 @@ b7126cc, and 5 sibling commits that landed during the run were replayed over, no
 `harvest-status.py` shows mlv-app `HARVESTED`. **Measured pressure:** the design body is now 12,999 words against its
 13,000 cap, so every later round must cut before it adds, and the runner refuses any spec over the cap. Three filings
 (agent-bridge, airmypc, adobe-ingester) remain for later ticks.
+
+## Round F3 harvest: three filings, one cut-to-add pass (conjugal, 2026-09-14, automated run 20260914T214904Z-14fa4afc)
+
+Harvest-status census: 6 filings, 3 already HARVESTED, 3 answered here (adobe-ingester, agent-bridge, airmypc).
+The spec is now v7.7. Two findings were **convergent**, each filed independently by agent-bridge and airmypc on
+different repos: §4's acceptance receipts now bind command, toolchain, environment and test census, and §9's
+`available_capacity` is defined in resource-seconds/hour. The arbiter measured Conjugal's own checkout and found the
+files ref backend, which grounded agent-bridge's multi-ref atomicity finding, so reftable is now required at activation.
+It also found case-aliasing refs, which grounded airmypc's case-collapse finding (injective `<S>`). Across the three
+filings: 10 ADOPTED, 3 ADOPTED-CONDITIONAL, 59 REJECTED, 3 ROUTED. Adobe-ingester's headerless, unanchored, Claude-only
+filing drew 49 of the rejections (each with the v7.6 clause that answers it) and 1 routing. Payment: Astra nominated 18
+restatement deletions (-191 words) ahead of +187 words of adoptions; the lint fix pass added 1. Body 12,996 words
+against a 13,000 cap. Seats: Astra, Fable, Opus and Sol all quoted `LANE-COMPLETE`. Dispositions:
+`adjudications/approach-a-design/{adobe-ingester-20260914-findings,agent-bridge,airmypc}.dispositions.md`.
+
+## First factory-kernel harvest: two code filings, kernel r1 -> r2 (conjugal as interim steward, 2026-09-14, automated run 20260914T221904Z-51d5a96b)
+
+Population: `harvest-status.py factory-kernel` listed 5 filings. The runner took the 2 past the 30-minute settle window,
+adobe-ingester (7f1aea3b) and agent-bridge (cc45e75f). airmypc, cloudvore and magic-lantern_dannephoto wait for the
+next tick. Kernel §5 rule: adobe-ingester's K12 BREAK (PROMPT A's in-tree receipt halted a governed factory about 4h)
+is adopted, and kernel §3 now lists "a project tree that fleet tooling may write into". Both filings are `code`, so
+their FRICTION changed `profiles/code.md` (r2: environment-bound, digest-bound acceptance; register reachability; claims
+leases; dispatch preflight; review-subject identity), never the kernel. Kernel edits otherwise: the K2 contradiction
+with `business-strategy` (register reservations), the revision clock (verified: 45f4a2c changed §5 under r1; now r2,
+with finalisation requiring content-digest stability), and agent-bridge's §6 row correction. No end-to-end subject in
+either filing, so no finalisation credit. Kernel 2738 words / 3,500. Arbiter EDIT 4 (rewrite of the continuous-harvest
+paragraph) was not applied: no filing proposed it. Seats: Astra, Fable, Opus and Sol all quoted `LANE-COMPLETE`; lint
+converged on 2 defects, fixed in one pass. Dispositions:
+`adjudications/factory-kernel/{adobe-ingester,agent-bridge}.dispositions.md`; ledger rows in `HARVESTS.md`.
+
+## Approach A pruned to cut-to-fit; harvest runner guards unattended cuts (conjugal, 2026-09-14, Bachelor / Dell XPS 17)
+
+At 12,996/13,000 words, with fleet filings folding automatically, three adversarial Opus seats were each assigned one
+option: split into a core plus a verification annex, raise the cap, or cut to fit. All three concluded cut to fit.
+Splitting would bind the annex cap in about 3 rounds and add runner surface; a raised cap lets restated rationale grow
+back. One prune (Fable) moved Tier 0 verbatim out of the design to Conjugal `docs/architecture/approach-a/TIER-0.md` and
+removed in-document duplicates, with no cross-repository pointers: 12,996 to 12,359 words. The Opus+Sol lint found 8
+items (2 duplicates). Four were operative statements the prune had cut on a declared home that did not carry the
+same meaning. **Measured limit of mechanical guards:** the runner's new verbatim-home check passed all 94 declarations, and
+the semantic loss was caught only by the lint. Keep both. Runner (Conjugal 9c71eb1d8, 359efeff6): a missing cap refuses;
+undeclared deletions and scenario-row removals refuse; a filing amended mid-run counts as success and is re-queued (two
+live runs had been misfiled as FAILED); line-ending-only planned edits are dropped rather than refused. Conjugal
+e985722f6.
