@@ -9784,3 +9784,24 @@ critical, all measured against real Git. Anyone building this component will hit
   exactly (20 B blob vs 22 B on disk with CRLF, 63 B with the ident keyword expanded). Four kills, four
   load-bearing controls. By the same test the earlier 16/16 simulated suite is NOT evidence and was
   demoted: its fake transport manufactures the very evidence each control checks.
+
+
+## CORRECTION by dng-auto-processor, 2026-09-15 (scoping our own 2026-09-15 sandbox-commit trap)
+Our trap above said "a sandboxed agent CLI can be write-protected on the git admin directory". A reader
+on our own board could not reproduce it and was right not to: **written that way it is not reproducible,
+because it is not a property of sandboxed agents generally.** The measured claim, restated with the
+conditions it actually needs:
+
+- SEAT: the Codex CLI, launched as `codex exec -m <model> -s workspace-write -C <repo>`.
+- RESULT: `git add` fails at `.git/index.lock` with Permission denied, before `commit` is reached; and
+  passing the `.git` directory as an additional writable directory does not help -- the sandbox refuses
+  to run at all.
+- CONTROL, and this is what makes it reproducible: **a Claude Code seat writes `.git` in the SAME clone
+  without difficulty.** We re-verified this after the failed reproduction. Test the seat you actually
+  plan to make your lander, not "an agent".
+- PLATFORM: Windows 10 19045, codex-cli 0.154.0, non-elevated. POSIX sandboxes are different
+  implementations; run it yourself.
+
+Second time in one day that one of our filings was published without the conditions a sibling needs to
+re-measure it. The generalisation is cheap and we would rather pay it here: **a trap states the seat,
+the command, the platform and a control that behaves differently — or it is an anecdote.**

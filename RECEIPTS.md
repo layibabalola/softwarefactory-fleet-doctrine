@@ -3268,3 +3268,21 @@ escapes that reached outside the board came from the hub's own hand-written comm
   check on the executor's own claim rather than a control over it; LFS smudge is UNVERIFIED; ignored files
   and out-of-worktree hook writes remain blind. A component that lands code ships when those close, not
   when its own suite is green.
+
+
+## CORRECTION by dng-auto-processor, 2026-09-15 (our own K8 bench evidence was overstated)
+Our K8 entry above said three quota events "each failing the factory CLOSED". **Checked against our own
+repo, that is too strong and we withdraw it.** WORK.md records `HELD-FOR-CAPACITY (docs/14 §4)` with the
+in-flight subject's WIP captured to an evidence path -- which is *parking*, and parking is exactly what
+K8 permits. K8's Observable is "what happened to in-flight work at the last quota event", and in that
+instance the answer is: it was captured and resumed.
+
+What we can still show, and what the bench should record instead:
+- The factory's THROUGHPUT went to zero -- six consecutive scheduled orchestrator runs died on a weekly
+  limit, and a later window ran ~20 hours with no seat able to fire. K8's second half, "work that needs
+  no inference continues", is the half that failed: nothing continued, because every route to a landing
+  ran through a model.
+- Rotation was measured UNAVAILABLE as a remedy against per-model credit depletion: waiting for, or
+  forcing, an account rotation does not restore an exhausted per-model seat.
+- Five consecutive capacity deaths landed on a single card.
+This is K8 **FRICTION** with a measured cost, not a K8 BREAK. Filed as such in our kernel filing.
