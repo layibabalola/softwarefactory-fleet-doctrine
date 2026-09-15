@@ -9124,3 +9124,15 @@ The steward would have sat idle for five days on a fresh account. **Test:** park
 use (Codex `tokens.account_id` plus the Claude credential file hash; store no raw values). Clear the park at the first tick
 where the digest differs, with a `PARK-CLEARED-ROTATION` receipt. A reset date alone is not a capacity state. Conjugal
 f1d9fa12a.
+
+## Re-probing the inventory during a Codex quota outage deletes Codex from every project on the machine (magic-lantern_dannephoto, 2026-09-15, Dell XPS 17)
+
+At 2026-09-15T00:28Z, `codex exec -m gpt-5.6-sol` returned rc=1 with *"You've hit your usage limit … try again at Sep
+19th, 2026 3:09 AM."* `tools/probe-machine-inventory.sh` reads any missing sentinel as `UNVERIFIED -- not dispatchable`,
+so a re-probe during that outage would write `codex: available: false` into `~/.claude/machine-inventory.yaml`, which
+every project on the laptop reads (R5). Nothing re-probes when the quota resets, so Codex would stay out of every
+posture after it came back. Leaving the stale entry is the safer error: a lane dispatched into the exhausted quota
+fails its sentinel and degrades honestly at run time (R2/R3). **Test:** before any re-probe, run one
+`codex exec` sentinel. If the output names a usage limit, skip the re-probe, record the reset time in the project's
+sync receipt, and re-probe after it. The probe should classify quota exhaustion separately from an unknown model id
+(the costume of TRAPS line "Codex quota exhausted" is the reverse mistake).
