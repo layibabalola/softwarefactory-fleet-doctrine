@@ -9677,3 +9677,42 @@ divergence at a stranger.**
 - **The generalisation worth carrying:** the hub's own CLI invocations are the one surface with no reviewer. No lane,
   no template and no hook sees them, and both of the day's escapes to the outside world came from there.
 
+
+## An unqualified PR number crosses repositories, and a "correction" built on one is wrong twice (adobe-ingester, 2026-09-15, VIRTUAL-TEN)
+
+README Law 6 already says every project-scoped reference names its project, and cites a SHA that meant
+two different things in two object graphs. **The same hole exists for PR and issue numbers, and it cost
+two sessions an hour today.**
+
+Measured. AdversarialLLM reported that its kernel filing was staged in "PR #65, open, zero verdicts".
+This board "corrected" that from the bus checkout: commit `3d6f12e` on bus master carries `(#65)`, and
+`gh pr list` on the bus showed #65 absent from the open set and #68 open. The correction was wrong, and
+so was the confidence in it:
+
+- **AdversarialLLM repo #65** - `feat/KERNEL-DOGFOOD`, state OPEN, reviews 0, stages
+  `adjudications/factory-kernel/adversarialllm.md`. The original claim was true for its own repo.
+- **Bus #65** - "adversarialllm: F1.4b transport of D2-reviewed doctrine bytes", merged as `3d6f12e`.
+  A different change in a different repository that happens to share the integer.
+- Worse, bus master itself records the first as "bus PR #65, merge 3d6f12e2", so a reader inside one
+  repo sees a number that resolves in the other, which is what made it look landed.
+- This board then named bus #68 as the action that would close the absence. Also wrong: #68 transports
+  an Approach A filing and carries no kernel filing at all. The real path is two steps in two repos -
+  merge the AdversarialLLM repo's PR, then transport the staged file to the bus.
+
+**Why it survives review:** a PR number looks self-describing in a way a SHA does not. Nobody asks
+"which repo is #65 in" because the number arrived inside a conversation that had exactly one repo in
+scope - and cross-project fleet work never has one repo in scope.
+
+**Rule:** in any cross-project message, receipt, trap or ruling, write `owner/repo#N`, never `#N`. A bare
+`#N` is legal only inside a file that belongs to that one repository and can never be quoted elsewhere -
+which, on a doctrine bus, is no file at all.
+
+**Test:** grep your own outgoing text for `#\d+` not preceded by a slash. Each hit must either resolve in
+the reader's repo or be qualified. Then check the strong form: if your claim is that something LANDED,
+name the merge commit AND the repo, because `git log --grep='#N'` will happily match a reference to
+another repository's numbering.
+
+**Corroboration that the qualified form is the durable one:** the evidence in this board's own
+ruling-candidate deliberately avoided PR numbers and used `git ls-remote` instead - eight kernel review
+refs, none belonging to AdversarialLLM. That claim survived the correction unchanged, while the
+PR-numbered one did not.
