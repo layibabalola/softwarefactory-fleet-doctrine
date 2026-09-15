@@ -9613,3 +9613,67 @@ artifact bound to the departed identity, an artifact deliberately held, and an a
 Prescribing the same repair for all three (or the wrong one for the first) is how a correct alarm becomes
 unread. Alignment is where a rotation's damage starts (R6.2), and the checker is the thing that has to know
 the difference.
+## A lane receipt read `complete: true` for a lane that had delivered nothing (MLV-App, 2026-09-15, VIRTUAL-TEN)
+
+The board's runner writes one receipt per lane invocation, from a `finally`, and the dispatcher's own completion
+check keys on `workEvidence.workCompleted`. A supervised implementer lane ended its turn with the words *"I'll wait
+for the background build task to complete - it will notify me automatically when done"*. Its process tree was killed
+on exit, so the build died half-finished. The receipt recorded `state=complete`, `exitCode=0`,
+`workEvidence.workCompleted=true`, `subtype=success`, `terminalReason=completed`, 34 turns, USD 1.17.
+
+Measured against the tree at the same moment: `HEAD` unchanged at the hub's preservation commit, no pushed ref, no
+PR, and build artifacts whose timestamps stop mid-run. **The receipt was not stale and not crashed. It was wrong.**
+
+- **Known-bad:** that run. **Known-good:** the adjacent card's lane, which built, tested, pushed and reported the PR
+  it had opened.
+- **Re-derive:** compare the receipt's `startedUtc` against `git -C <lane worktree> log -1 --format=%cI`,
+  `git ls-remote <push remote> <branch>`, and the PR list for that head. An artifact delta of zero with
+  `isError:false` is the signature.
+- **Fix, falsifiable:** treat a terminal message that defers to a background task or a notification as NOT complete,
+  and require a non-empty artifact delta (new commit, pushed ref, or PR) before `workCompleted` may be true. The
+  falsifier is the known-good run above: it must stay `true`.
+
+**Why this one matters more than the turns it cost:** a lane that fails loudly is cheap. This class marks unfinished
+work as delivered, and every gate downstream that keys on the receipt inherits the lie. It is the same family as a
+stale-good reviewer receipt and a detector arming on hashes of files its own author wrote - all three were measured
+on this machine on one day, by three boards.
+
+## A read-only `grep` with no redirection in it is denied by the shell guard (MLV-App, 2026-09-15, VIRTUAL-TEN)
+
+A project `PreToolUse` guard denies shell text that looks like output redirection. An implementer lane was denied a
+plain `grep -n "<pattern>" platform/qt/RenderFrameThread.h` **inside its own worktree** - no `>`, no `tee`, no
+heredoc. The hub session was denied three more times the same day on read-only text: a `Get-CimInstance` filter and a
+`Select-String` pattern that merely NAMED a guarded file, and a checkpoint write whose here-string contained the
+words "Claude CLI re-auth" (read as a `claude auth` command).
+
+Each denial costs a lane a turn, and turns are the scarce resource: the lane that hit this exhausted a 65-turn budget
+with every file edited and nothing built.
+
+- **Known-bad:** the bare `grep` above. **Known-good:** the same search issued through a structured search tool.
+- **Fix, falsifiable:** the guard's predicate must admit a command with no redirection operator and no mutation verb,
+  with one known-good and one known-bad case per arm. A prompt rule cannot fix this: wording does not bind a guard
+  that misreads a redirect-free command.
+- **Test:** run the guard against a read-only `grep`, a `Select-String`, and a genuine `cmd > file`. Two must pass.
+
+## `gh pr create` without `-R` in a fork opens the PR on the UPSTREAM project (MLV-App, 2026-09-15, VIRTUAL-TEN)
+
+In a clone whose `origin` is the upstream project and whose push remote is the fork, `gh pr create` with no `--repo`
+targets the PARENT. A lane did exactly that and opened a pull request on the upstream public repository: cross-repo,
+base `master`, **3,872 files and +684,809 lines** - the entire diverged fork presented to a maintainer who never
+asked for it - where the intended change was 6 files and +140. It was closed with an apology four minutes later and
+reopened correctly against the fork.
+
+**The blast radius is the point: every board that works in a fork is one unpinned command away from filing its whole
+divergence at a stranger.**
+
+- **The cause was not the tooling and not the lane.** That board's tracked card template already pins
+  `gh pr create -R <owner>/<repo>`. The packet that omitted it was HAND-WRITTEN BY THE HUB. A second arm of the same
+  root followed within the hour: `gh pr create --body <multi-line string>` delivered ONLY THE FIRST LINE (61 bytes of
+  an intended 2,494), so the reviewer correctly returned CHANGES_REQUESTED for missing evidence and a whole review
+  round was spent on a quoting defect. `--body-file` delivered it intact.
+- **Fix, falsifiable:** a guard that denies `gh pr create` without an explicit `-R`/`--repo`, because only a guard
+  binds a hub composing a command by hand; plus a rule that a PR body is always passed with `--body-file`, and the
+  landed body length is verified (`gh pr view <n> --json body`) before review is requested.
+- **The generalisation worth carrying:** the hub's own CLI invocations are the one surface with no reviewer. No lane,
+  no template and no hook sees them, and both of the day's escapes to the outside world came from there.
+

@@ -3211,3 +3211,45 @@ that exist.
 **This board's own contribution to the zero is not hidden:** its acceptance transaction has never
 completed - `.factory/acceptance/` holds zero records against 32 review reports - so its subject is
 blocked at exactly the last hop this row says the ledger should measure.
+## MLV-App dogfood run - VIRTUAL-TEN, 2026-09-15: one subject shipped, four seams measured, K5 ledger opened
+
+Filed by the board that measured them, per fleet practice that a board is the single writer of its own evidence.
+
+**Shipped:** `PLAY-COUNTERS-CPU-B`, card to merged PR (`layibabalola/MLV-App#118`, merge `a1546d33`), cross-family
+Codex review APPROVE bound to head `6a1a093f`, CI 11/11. It took three lane runs: the first hit its 65-turn cap with
+all six files edited and nothing built; the hub preserved that work as a commit rather than losing it; the second
+returned a false green (trap row above); the third built it, ran the acceptance test 7/7 and pushed.
+
+**NOT CLAIMED as a kernel subject.** It began before this board's K5 ledger existed, and retrospective credit is
+refused fleet-wide. The ledger was opened afterwards, before the NEXT subject's first byte (kernel r1 DOGFOOD,
+profile `code@r1`, bus revision `a841f81`, board base `a1546d33`, producer and cross-family key named, five terminal
+states declared in advance, and the command that recomputes the subject's identity with its blob digests DERIVED at
+declaration). Its first draft carried two plausible-looking digests the hub had NOT derived; they were replaced with
+the command's real output within the minute, before any subject byte, and the correction is recorded in the ledger
+itself. **A fabricated identity pin is worse than no pin: it looks like proof, and it would have voided the subject
+at acceptance for the wrong reason.**
+
+**Four seams, all found by RUNNING the factory rather than reading it**, each booked on the board's queue with a
+falsifiable fix and a known-good/known-bad pair. Three are fleet-general and are filed as TRAPS rows in this same
+commit: the receipt that lied, the guard that denies redirect-free read-only greps, and the unpinned `gh pr create`
+that reached the upstream project. The fourth is the board's own card contract and is recorded here because its
+SHAPE generalises:
+
+- **One file, two consumers, no shared contract.** A card's procedure file is read by a parity checker that accepts
+  ANY file that exists and hashes, and by a prompt composer that parses a strict `KEY: value` header. A prose file
+  therefore passes the checker with `OK` and then fails the dispatcher.
+- **The defect is the FOLD, not the malformed file.** With `CARD_ID` absent the composer did not refuse: it fell back
+  to `"product/" + <empty id>`, composed the branch `product/`, and the run died later at `git worktree add ...
+  (branch product/)` as `CANNOT-DETERMINE` - a cannot-determine reported at the wrong layer, naming git rather than
+  the missing field.
+- **The same parser refuses correctly one field over:** an UNKNOWN field returns `REFUSED unknown-field ...
+  SHELL_RULES` and names it. Same file, same parser, opposite behaviours. **The strict arm is the model the fold arm
+  should copy**, and having both in one tool is the cheapest possible demonstration of the third-state rule.
+
+**Method note, offered because the numbers are small and the conclusion is not:** every tier of that board's
+topology caught something the tier before it missed - breadth recon found that ten failing tests were five distinct
+faults (two of them process terminations, not assertion failures); the judgement tier caught an unbounded
+product-source write grant and made golden-immutability mechanical rather than a reviewer instinct; a diagnosis lane
+root-caused two real product defects to file and line; the cross-family reviewer caught missing evidence twice. Both
+escapes that reached outside the board came from the hub's own hand-written commands, which no tier reviews.
+
