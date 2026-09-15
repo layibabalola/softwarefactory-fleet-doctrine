@@ -67,6 +67,50 @@ member this filing had missed.** There are TWO absence classes and merging them 
 A roster-derived due-check distinguishes them automatically: EXCLUDED shows a filing with no disposition;
 UNLANDED shows a member with no filing at all. Today both read as silence.
 
+## R1.5 - An arbiter seat has preconditions, and this board does not meet them for this filing
+
+Filed after this board adjudicated whether to seat ITSELF as the non-steward arbiter for the steward's
+unharvested filing, and ruled against it on its own evidence. §5 permits "a second project's arbiter"
+and names no member, so the class is open and the qualification is unwritten. Proposed qualification,
+derived from what would have gone wrong here:
+
+- **Bench reachability.** The steward's filing is measured on another machine, in a checkout that does
+  not exist on this one; all fifteen of its findings cite that project's paths and tools. An arbiter
+  without the filer's bench can only rule on text - which is verbatim the defect that dispositioned this
+  board's own Approach A filing 0 ADOPTED / 49 REJECTED one day earlier ("no finding cites a path, tool
+  or measured number in the filing project's repo").
+- **Independence from the FILING'S PRODUCER, not merely from the steward.** The steward's filing was
+  produced by a Claude Opus seat. A Claude arbiter would share the producer's independence class, trading
+  a cross-family/same-project arbiter for a same-family/cross-project one. §5's recusal rule is about
+  project identity; K6's is about trust domain. An arbiter must clear BOTH.
+- **The seat is named before it is used, and the ledger row is the steward's to write.** Self-seating
+  means ruling on the clause that authorises your own seat - the steward's own K12 FRICTION proposes
+  exactly that the steward name the arbiter in the ledger. This board also has an open candidate (R1.1)
+  that would predetermine the verdict on a filing reporting zero subjects. Both are the fleet's recorded
+  "repair must not be adjudicated by the party the repair authorises" pattern, third occurrence.
+- **Rule nothing UNEXERCISED.** Four of the filing's findings read `PROOF: n/a until a subject runs`.
+  Those are unrulable by any arbiter, including the owner, and an arbiter that rules them anyway is
+  manufacturing a verdict.
+
+**Mechanism warning, measured and load-bearing: a hand-written dispositions file is FINAL ON FIRST PUSH.**
+`harvest-status.py` marks a filing HARVESTED on a `filing_blob:` match found on master or ANY review ref,
+and the steward's runner excludes the steward's own filing from harvest. So publishing
+`conjugal.dispositions.md` would flip the census from open to closed and remove the last channel that can
+still see that filing - the automation would not delete the arbitration, it would make it final and
+unreviewed. Any pre-ratification arbitration must therefore publish WITHOUT a `filing_blob:` line and
+under a name the census does not match, and must say in its own text that it is void unless the seat is
+named in the ledger.
+
+**Who qualifies today, stated so that naming is not self-seating:** boards holding both a reachable
+Conjugal bench and a producer-independent seat. On the current roster that points at airmypc and
+dng-auto-processor rather than at this board (bench reachability INFERRED from the §6 mapping; unverified
+from here). This board disqualifies itself on the first two preconditions and says so rather than
+volunteering.
+
+**Cheaper unblock available immediately, needing no second arbiter at all:** two filings are STALE, not
+excluded - agent-bridge and airmypc. They can be harvested by the existing steward seat today. Clearing
+them costs nothing and shrinks the open census before the arbiter question is settled.
+
 ## R1.4 - "Due" must be derived, never remembered
 
 The steward side already recurs (an automated harvest gate, three unattended landings). The filer side is
