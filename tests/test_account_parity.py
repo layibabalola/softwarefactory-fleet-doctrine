@@ -272,12 +272,14 @@ class TestCheckAccountParity(ParityTestBase):
                 self.assertNotIn("CLI-SIGNED-OUT", out)
 
     def test_matched_learns_the_healthy_account(self):
-        """The regression this guards against: learn() used to run only via the wizard,
-        which is only invoked on DRIFT -- i.e. only while the CLI still held the account
-        being LEFT. The map could therefore only ever accumulate departed accounts, and
-        the later lookup of the account being moved TO was a guaranteed miss. Observed on
-        a live host: MATCHED all day on one fingerprint, map containing only the account
-        it had rotated away from two days earlier."""
+        """The regression this guards against: no AUTOMATIC path primed the map with a
+        healthy account. learn() is unconditional inside realign-cli.py, so running that
+        script by hand primes it -- but the hook invoked the wizard only on DRIFT, i.e.
+        only while the CLI still held the account being LEFT. Unattended, the map could
+        accumulate only departed accounts, and the later lookup of the account being moved
+        TO missed. Observed on a live host: MATCHED all day on one fingerprint, map holding
+        only the account it had rotated away from two days earlier. Worst on a fresh
+        machine, where the map is empty at the first event."""
         self.set_desktop(UUID_A); self.set_cli(UUID_A, EMAIL_A)
         r = self.run_tool(PARITY)
         self.assertIn("MATCHED", self.out(r))

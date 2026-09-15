@@ -9369,11 +9369,17 @@ appears to:
   scheduled dead-man floor while the desktop app looks perfectly healthy. Proven by executing all
   four branches with stubbed fingerprints, not by reading the code.
 
-- **The prefill map could only ever learn ABANDONED accounts.** `realign-cli.py`'s `learn()`
-  records fingerprint -> address, but the wizard was invoked only from the DRIFT branch — i.e. only
-  while the CLI still held the account being left. `target = MAP.get(desktop_fp)` then looks up the
-  account being moved TO, a guaranteed miss. Observed: a host MATCHED all day on `5247997b9e08`
-  whose map contained only `b4d2646b85c1`, the account it had rotated away from two days earlier.
+- **Nothing primed the prefill map automatically.** `realign-cli.py`'s `learn()` records
+  fingerprint -> address and is called *unconditionally*, ahead of its own "cannot compare" guard,
+  so any direct run of that script while signed in primes the map. But the hook — the only part
+  that runs on its own — invoked the wizard only from the DRIFT branch, i.e. only while the CLI
+  still held the account being left. So in unattended operation the map could be written only by
+  drift events, and priming it with a *healthy* account depended on a human happening to run
+  `realign-cli.py` by hand. `target = MAP.get(desktop_fp)` then looks up the account being moved
+  TO and misses. Observed: a host MATCHED all day on `5247997b9e08` whose map contained only
+  `b4d2646b85c1`, the account it had rotated away from two days earlier. Worst on a fresh machine,
+  the population `bootstrap/PROMPT-A-sync-and-adopt.md` explicitly designs for: the map is empty at
+  the first event, so there is nothing to offer at all.
   The wizard therefore launches `claude auth login` with no `--email`, inviting the operator to
   re-authenticate onto the wrong account — the exact failure the tool exists to prevent. Because
   `~/.claude/.credentials.json` is shared by the app copy and the floor binary, one wrong login

@@ -2773,8 +2773,9 @@ completed it. R6.3 answerable with evidence: installed, and has fired.
 
 **Its green line meant less than it appeared to.** Three defects, each measured, each now closed
 (see TRAPS.md for the full anatomy): a signed-out CLI fell into UNKNOWN and was never repaired even
-under `--repair`; `learn()` ran only on the DRIFT path so the prefill map could only accumulate
-accounts already departed (this host: MATCHED all day on `5247997b9e08`, map holding only
+under `--repair`; nothing primed the prefill map automatically -- `learn()` is unconditional in
+`realign-cli.py`, so a manual run primes it, but the hook invoked the wizard only on the DRIFT
+path, so in unattended operation the map could accumulate only accounts already departed (this host: MATCHED all day on `5247997b9e08`, map holding only
 `b4d2646b85c1`, abandoned two days earlier); and the hook banner printed the remedy before the
 diagnosis because stdout is block-buffered under a hook.
 
@@ -2800,6 +2801,13 @@ files are hashed before and after the run — unchanged.
 `{b4d2646b85c1: mentatduke@gmail.com}`; after one run of the changed hook,
 `{b4d2646b85c1: mentatduke@gmail.com, 5247997b9e08: layibabalola@gmail.com}`. A future drift will now
 offer the correct address instead of an empty login.
+
+**Correction to this receipt, same day.** An earlier draft asserted the prefill map could only
+EVER learn abandoned accounts. Too strong: `learn()` sits ahead of `realign-cli.py`'s own
+"cannot compare" guard, so any direct run of that script while signed in primes the map. What
+survives is narrower and still load-bearing -- no automatic path primed it with a healthy
+account, and on a fresh machine the map is empty at the first event. Caught by a slow adversarial
+grep that finished after the first verdict was filed, and recorded rather than quietly dropped.
 
 **Trap recorded for anyone writing similar tests:** on Windows, `Path.home()` consults `USERPROFILE`
 first and ignores `HOME` entirely; a sandbox that exports only `HOME` passes while writing into the

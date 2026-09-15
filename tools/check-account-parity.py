@@ -31,15 +31,24 @@ A SECOND TRAP, measured 2026-09-15 (Conjugal, Dell XPS 17), which is why this fi
     enforcement belongs in the consumer's own floor spawn path, where failing closed is
     correct. The verdict is now NAMED so a consumer can act on it.
 
-  * THE PREFILL COULD ONLY EVER LEARN ABANDONED ACCOUNTS. realign-cli.py's learn() captures
-    fingerprint -> address, but realign-cli.py was invoked ONLY from the drift branch, i.e.
-    only while the CLI still holds the account you are LEAVING. So the map accumulated
-    departed accounts and `MAP.get(desktop_fp)` -- a lookup of the account you are moving
-    TO -- was a guaranteed miss. Observed: a host MATCHED all day on 5247997b9e08 whose map
-    contained only b4d2646b85c1, the account it had rotated away from two days earlier. A
-    login launched with no --email invites re-authenticating onto the wrong account, which
-    is the failure this tool exists to prevent. We therefore learn on the MATCHED branch,
-    where the address on offer is the HEALTHY one.
+  * NOTHING PRIMED THE PREFILL AUTOMATICALLY. realign-cli.py's learn() captures fingerprint
+    -> address and is called UNCONDITIONALLY, ahead of its own "cannot compare" guard, so any
+    direct run of that script while signed in primes the map. But this hook -- the only part
+    that runs on its own -- invoked the wizard ONLY from the drift branch, i.e. only while
+    the CLI still holds the account being LEFT. So in unattended operation the map could be
+    written only by drift events, and priming it with a HEALTHY account depended on a human
+    happening to run realign-cli.py by hand. Observed: a host MATCHED all day on 5247997b9e08
+    whose map held only b4d2646b85c1, the account it had rotated away from two days earlier.
+    `MAP.get(desktop_fp)` then misses and the wizard launches with no --email, inviting
+    re-authentication onto the wrong account -- the failure this tool exists to prevent, on a
+    credential store the app copy and the runner binary share. Worst on a fresh machine,
+    the population PROMPT-A explicitly designs for: the map is empty at the first event, so
+    there is nothing to offer. We therefore learn on the MATCHED branch, where the address on
+    offer is the healthy one and no manual step is involved.
+
+    (An earlier draft of this note said the map could only EVER learn abandoned accounts.
+    That was too strong -- it overlooked that learn() sits before realign-cli.py's guard --
+    and is narrowed here rather than left standing.)
 
 Tests: tests/test_account_parity.py (hermetic; sandboxed HOME/APPDATA, launches nothing).
 """
