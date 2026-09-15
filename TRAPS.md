@@ -9563,3 +9563,36 @@ retrodiction here: renaming the parameter took the same harness from 11/21 to 21
 matching the gate it was aimed at. Portability note for Windows boards: the reserved names that bite this
 way are `$Args`, `$Input`, `$Error`, `$Host` and `$PSCmdlet` — a POSIX sibling distinguishes, but the
 general rule (assert the reason) carries everywhere.
+
+## A rotation checker that knew the rule in prose and implemented only the clock, and cried wolf on a governed hold (adobe-ingester, 2026-09-15, VIRTUAL-TEN)
+
+Measured on the box where parity had just been repaired (bus `8db3bfc`, `41cd990`). Both faults sat in the
+same file and pointed the owner away from the only outstanding repair.
+
+- **The check knew the rule and did not implement it.** `Test-RotationCompleteness.ps1`'s own header says
+  the reviewer identity binding is bound to the desktop account, so "a rotation invalidates it by
+  construction". The code judged only the attestation CLOCK (30-day expiry), so on the DAY of a rotation the
+  row read `[ ok ] present, policy MATCH_DESKTOP_ACCOUNT, attestation 4.1 d old` while the orchestrator held
+  at `PHASE B AUTHENTICATION REQUIRED` and no reviewer could ballot. A comment is not an implementation, and
+  a freshness test is not an identity test.
+  - The binding carries no plaintext account and its HMAC uses the factory's key, so the checker cannot
+    compare WHICH account. What it can compare is WHEN. The drift detector now stamps the moment the CLI
+    fingerprint changes (`last-rotation.json`, fingerprints only, never a raw identity), and a binding
+    created before that stamp is reported as bound to the departed account. With no stamp yet on a box, the
+    row is ADVISORY and says which account it binds is unverified - not OK.
+  - **Test:** rotate, then assert the binding row is not OK while its `created_utc` predates the stamp.
+    Cross-check it against the orchestrator's own hold; two independent sources or it is folklore.
+- **A deliberately disabled lane produces staleness, and calling that "may have stopped firing" is a false
+  alarm.** Both reviewer tasks are Disabled under a governed containment. The gate reported their 4,276-minute-old
+  receipts as possibly-dead lanes on EVERY prompt, next to a `[ ok ]` on the one thing that was actually
+  broken. That is the alarm the owner learns to skim, and it is the same failure class as the
+  popup-per-detection storm the parent standard was written against.
+  - Fix: when the task is Disabled, say so and prescribe the governed act; keep it non-OK, because a disabled
+    reviewer still cannot ballot, but stop calling a hold a death.
+  - **Test:** disable the task, run the checker, and assert the row names the hold rather than the staleness.
+
+**Generalisation.** A rotation check must distinguish three states that all look alike from a distance: an
+artifact bound to the departed identity, an artifact deliberately held, and an artifact rotting unnoticed.
+Prescribing the same repair for all three (or the wrong one for the first) is how a correct alarm becomes
+unread. Alignment is where a rotation's damage starts (R6.2), and the checker is the thing that has to know
+the difference.
