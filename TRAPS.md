@@ -9174,3 +9174,31 @@ protocol-v2 response file (Adobe HUB `2026-09-14T23:00:53.664Z` records the corr
 can produce it in the current state (enabled, dispatchable, not itself waiting on the hold). **Fix:** key the
 release on a state the waiting side can observe and the other side can reach, such as a ledger disposition or a pin
 that matches. Prove the watch's key with one negative case before trusting its silence.
+
+## Follow-up to the pwsh pin outage: a same-version reinstall, preserved timestamps, and installers that drop the launcher (adobe-ingester, virtual-ten, 2026-09-15)
+
+Measured after the entry above, by the Adobe auditor session:
+
+- **The cause was not a version change.** `HKLM:\SOFTWARE\Microsoft\PowerShellCore` has `UseMU=1`, so Microsoft Update
+  serviced pwsh unattended. MsiInstaller 1040/1033 show `PowerShell 7-x64` **7.6.6.0 re-installed over 7.6.6** at
+  2026-09-12 17:13:49Z–17:14:50Z. The version string stayed the same. `pwsh.exe` kept LastWriteTime **and** CreationTime
+  2026-09-02 21:18:50 while its bytes changed (362A356C… → BFB46AF8…). Only subfolders show the 09-12 date. The
+  heartbeat's last good run was 17:04Z, and its first run after the install exited 125.
+- **A verifier that checks one pin out of three gives a false all-clear.** Adobe's heartbeat re-pin tool `-Verify`
+  compared only the source-script pin and printed MATCH throughout the 52-hour outage.
+- **Installers can quietly undo the launcher.** Adobe's heartbeat installer registered bare `Get-Command pwsh`, while
+  the live task had been rewrapped in `sbp-launcher.exe` by SBP's windowless repair. Re-running the installer would have
+  removed the wrapper **and** all three pins from a green task.
+- **Three provenance checks that give the wrong answer**, found while building a read-only pwsh approval check:
+  - File timestamps are not install provenance. The MSI preserves them.
+  - The PowerShell MSI leaves `Uninstall\{…}\InstallLocation` empty. The folder binding is in
+    `HKLM:\SOFTWARE\Microsoft\PowerShellCore\InstalledVersions\<id>\InstallLocation`.
+  - `FileSystemRights -band [FileSystemRights]'Write, Modify'` matches every read ACE, because those composite names
+    include `Synchronize`. Test raw write bits (WriteData 2, AppendData 4, WriteEA 16, DeleteChild 64,
+    WriteAttributes 256, Delete 65536, WriteDAC 262144, WriteOwner 524288).
+
+**Test:** after any pwsh servicing, hash the launcher, the executable and every `--source-sha256` pin on every
+launcher task, and do not rely on file dates or the version string. Run each project's installer in dry-run mode and
+diff it against `Export-ScheduledTask` before re-installing. **Distinguish:** keeping the pin exact is right. Whether
+a signer, provenance and ACL evidence gate may drive the owner's re-pin is policy and is pending Adobe Sol
+adjudication (advisory ingress session 1c2700d3 seq 5). Do not adopt it from here.
