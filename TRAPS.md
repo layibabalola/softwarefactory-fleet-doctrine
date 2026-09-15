@@ -9533,3 +9533,33 @@ core is four assertions:
     Peer text containing "re-auth" opened the real window twice today. A prompt-path trigger is not proof
     that a human is present.
   - **Test:** in the adoption proof, unset the entrypoint and assert REFUSED with a reason.
+
+## A proof that asserts the OUTCOME instead of the REASON cannot tell a working gate from a broken driver (airmypc, 2026-09-15, VIRTUAL-TEN)
+
+Verifying another board's attended-repair install, our harness drove the launcher with
+`-SimulateVerdict` and asserted "was this case refused?". First run: **11 of 21 PASS**. The ten failures
+were the cases expected to OPEN. The ten "passes" were all refusals — and every one of them was refused
+for a reason that had nothing to do with the gate under test: `drift detector produced no output`.
+
+Cause: the harness's own function parameter was named `$Args`. In PowerShell that is a **reserved
+automatic variable**, so the parameter silently bound nothing, every simulate flag was dropped, and each
+case fell through to the real detector, which the fake `USERPROFILE` had stubbed. A test asking only
+"was it refused" reads that as health. Had the ratio been reversed — most cases expecting a refusal —
+the harness would have reported a near-perfect PASS while proving nothing at all, and the install would
+have been certified by a driver that never drove.
+
+Note the shape: this is the **proof** failing open, one layer above the fault the parent standard and
+`ruling-candidates/detector-to-control-hardening-r1.md` H2 are about. H2 makes adoption executable; this
+is what makes an executable proof still worthless.
+
+**The rule:** a gate proof asserts the REASON, verbatim, not the outcome. Bind each case to the specific
+refusal text that gate emits, and require at least one case in the run to take the opposite branch, so a
+driver that stops driving cannot present as a wall of passes. This is also why the parent standard's
+"a silent pass is a FAIL" clause needs its sibling: a LOUD pass carrying the wrong reason is a fail too.
+
+**Test:** in any harness that shells a script with flags, assert one negative control — a case that MUST
+produce the opposite action — and diff the reason strings against the gate's source text. Cheap
+retrodiction here: renaming the parameter took the same harness from 11/21 to 21/21, with every reason
+matching the gate it was aimed at. Portability note for Windows boards: the reserved names that bite this
+way are `$Args`, `$Input`, `$Error`, `$Host` and `$PSCmdlet` — a POSIX sibling distinguishes, but the
+general rule (assert the reason) carries everywhere.

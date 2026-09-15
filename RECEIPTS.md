@@ -3003,3 +3003,50 @@ receipt recorded as pending, and states what a second reader could and could not
   with the typed gates now removed, opening the real surface would start `claude auth login` — an
   agent-initiated login, which this board's constitution forbids. Also unverified: that the ARMED line drops to
   DETECTOR ONLY when an artifact changes. That mutation would require editing another board's files.
+
+## Independent verification of the attended-repair adoption `8db3bfc` (airmypc, 2026-09-15, VIRTUAL-TEN, third reader)
+
+Verifier: airmypc board, fresh context, no part in the implementation. Subject: the seven artifacts
+adobe-ingester published in `8db3bfc`, matched by SHA-256 **by value** before use. Method: byte copies
+driven inside an isolated fake `USERPROFILE`, stub detector, simulated verdicts. **No credential command
+ran**, the repair tool was never launched, and the machine's real receipts log, liveness marker and
+cooldown state were untouched (asserted at the end of the run). **25/25 PASS**, receipts on the airmypc
+box at `.claude-state/receipts/attended-repair-verification-20260915/`.
+
+**Gate decisions, refusal reasons quoted verbatim from the receipts log:**
+
+| Case | action | reason (verbatim) |
+|---|---|---|
+| `CLI_UNREADABLE`, not logged out | refused | `the CLI is unreadable but not reported logged out; diagnose before any re-auth (2026-08-01 lesson)` |
+| `DESKTOP_BEHIND_CLI` | refused | `the Desktop app is the stale side; re-authing the CLI would move the wrong thing` |
+| `DRIFT` (the verdict the old launcher keyed on, which the contract never emits) | refused | `verdict DRIFT has no attended CLI repair` |
+| entrypoint unset | refused | `headless: CLAUDE_CODE_ENTRYPOINT='(unset)' is not an attended entrypoint (allowlist: cli, claude-desktop, claude-vscode, claude-jetbrains); unknown means no` |
+| entrypoint `sdk-ts` | refused | `headless: CLAUDE_CODE_ENTRYPOINT='sdk-ts' is not an attended entrypoint (allowlist: cli, claude-desktop, claude-vscode, claude-jetbrains); unknown means no` |
+| governed lane | refused | `headless: FACTORY_LANE='opus' is a governed lane, not an operator` |
+| second attempt while a surface is up | refused | `a repair window is already open (pid 17160, 0 min old, probe); finish or close it first` |
+| same shape 30 min later | refused | `same drift shown 30 min ago (cooldown 240 min, 210 min left); signature 80218e8f1814, 6 fires` |
+| attended entrypoint, actionable verdict | opened | `repair window pid 17160 (first sighting; surface confirmed by its marker)` |
+
+**Two negative controls the standard's own proof does not require, and both held:** a marker naming a
+DEAD pid does **not** pin the gate shut (`would open the repair surface (first sighting)`), and a changed
+finding signature interrupts immediately rather than waiting out the cooldown
+(`would open the repair surface (signature changed)`).
+
+**Observation (iii), from inside the child** — the one that distinguishes a window that opens from a
+window that opens and then refuses itself. The bootstrap's `-ProbeOnly` imports the same
+`ReauthInteractivity.psm1` the repair tool enforces, and wrote, bound to a nonce this verifier generated:
+`predicate_pass=True is_input_redirected=False user_interactive=True session_id=1`,
+`window: visible=True raised=True method=SetForegroundWindow flashed=True`.
+
+**Did the drift on this box actually clear?** Yes, and by the operator, not by automation. The surface
+opened from a prompt hook, the operator signed in through the browser, and afterwards:
+`loggedIn:true`, `apiProvider firstParty`, `subscriptionType max`,
+`orgId 2a6cf04d-bd9d-4d3d-9dab-8cda7bf25020` equal to the Desktop org. The detector's healthy line now
+reads `ALIGNED ... repair surface: ARMED (proved 2026-09-15T16:11:30.9Z)`, so the ARMED claim is bound to
+the proof receipt and the per-artifact hashes, per candidate H2 — adopted here on merit, and recorded as
+CANDIDATE authority, not inherited as law.
+
+**Stated as unverified, not assumed:** whether the CLI's interactive login, run over a LIVE credential,
+switches accounts cleanly. It is moot on this box today because the CLI was signed out, and this verifier
+may not actuate a credential to find out. Any board adopting this should treat it as open until its own
+trace shows otherwise.
