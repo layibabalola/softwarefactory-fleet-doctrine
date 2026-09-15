@@ -9326,3 +9326,54 @@ A cross-family Codex gpt-5.6-sol reviewer rejected the implementation twice by b
 Both attempts were preserved (origin `claude/g02-landed-ref-2026-09-15`), and the packet stopped under the second-failed-attempt rule. Cloudvore's run commit e585e33 misattributes the premise to the adjudication brief. It came from the seats.
 
 Opposite briefs decorrelate conclusions. They do not decorrelate the shared priors a model family brings to a mechanism question, so two same-family seats agreeing on a premise is one vote, not two. **Test:** after a swarm returns, list every premise that two or more seats asserted without an executable counterexample search, and give exactly those to one falsifier. For a guard or safety change, the falsifier should be from a different model family when one is available. Reviewed: a Claude Haiku pre-publication check (fresh context) that verified the commit, branch and code citations.
+
+## The refusal sentence is chosen by `overageDisabledReason`, so a text-keyed classifier reads the wrong limit (dng-auto-processor, 2026-09-15, UltraMagnus)
+
+Measured at 00:10 CDT against softwarefactory-fleet-doctrine 6cd5f55. `claude -p --output-format stream-json --verbose`
+refused three models in a row — `claude-haiku-4-5-20251001`, `claude-sonnet-5`, `claude-opus-5` — each with exit 1,
+`total_cost_usd: 0`, and an identical `rate_limit_event`:
+
+```json
+{"status":"rejected","rateLimitType":"seven_day","overageStatus":"rejected",
+ "overageDisabledReason":"org_level_disabled_until","isUsingOverage":false,
+ "unifiedWindows":{"five_hour":{"utilization":0,"resetsAt":1789466400},
+                   "seven_day":{"utilization":1,"resetsAt":1789711200}}}
+```
+
+rendered as *"You've hit your monthly spend limit · raise it at claude.ai/settings/usage · your weekly limit resets
+Sep 18, 1am (America/Chicago)"*. The sentence is selected by `overageDisabledReason`, **not** by the window that
+rejected: the same `rateLimitType: seven_day` rendered *"You've hit your weekly limit"* on this machine on 2026-08-31
+when the reason was `out_of_credits`. The entry above gates its terminal on the rendered text plus a non-zero exit
+(`fix/probe-quota-terminal-prompt-a-harvest-ref`, PR #64); that is keyed on a field whose wording changes between
+runs of the same refusal class, and the marker sets in use — `weekly limit` / `usage limit` / `five-hour limit` —
+all miss this one.
+
+Two things the same hour that each look like a falsifier and are not:
+
+- **Account parity is GREEN for this refusal.** `claude auth status`, the machine's session-start parity hook and its
+  realign wizard all agreed on one account and one org, because nothing is misrouted: a setting is off. A MATCHED
+  parity line is not evidence that a limit refusal is spurious, and re-auth is the wrong remedy — it changes nothing
+  and spends an owner login. (It is also how this one nearly got misfiled: the wizard, invoked by hand, answered
+  DRIFT because it took the last `dxt:allowlistLastUpdated:*` key in file order instead of the newest stamp.)
+- **A working desktop session is not a falsifier either.** The Claude Code desktop popover read `5h 50% / weekly 88%,
+  resets Sat 11PM` in the same minute the server rejected the CLI on the same account naming a Fri 01:00 reset. The
+  owner read the popover as "no limits". Only the CLI's own `rate_limit_event` says whether the CLI can run.
+
+**Test:** replay a refusal carrying `overageDisabledReason: org_level_disabled_until`. The classifier must type it
+LIMITED without reading the rendered sentence, and must not propose re-auth.
+**Where the field is readable — measured on claude-code 2.1.270, reproduced independently by two sessions on this
+host:** the stream surface only. `rate_limit_event` is a stream event, so `--output-format stream-json --verbose`
+carries it and `--output-format json` does not: grepped on a refusing call, that envelope holds **zero** occurrences
+of `rate_limit_event`, `overageDisabledReason`, `rateLimitType`, `overageStatus` or `unifiedWindows`. What it does
+carry is `api_error_status`, and that separates the two cases a probe conflates — on the same refusing account a live
+model id returns **429** while a nonexistent model id returns **404**, so "account limited" and "model absent" are
+distinguishable *during* the outage, not only after it.
+**Fix:** classify from the structured record where the transport has one — `status: rejected` types the refusal,
+`overageDisabledReason` chooses the remedy (`out_of_credits`: the pool is spent, wait for `resetsAt`;
+`org_level_disabled_until`: an account setting is off, and only the owner can clear it before the window resets). A
+tool that shells out to `claude -p` and reads the json envelope cannot see those fields, so it keeps its plain
+sentinel first — an envelope change must never silently unverify a live model — then types a failure LIMITED on
+`api_error_status: 429`, and demotes text markers to a fallback for transports carrying no typed record (codex
+today). Landed that way in PR #64, commit c701560.
+**General form:** when a product renders a field into prose, classify on the field — and name the surface the field
+is readable on, or the next implementer will look for it in the wrong one.
