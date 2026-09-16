@@ -115,6 +115,21 @@ a project believes for nine days that it is covered.
    configured command resolves; only a real session proves the host actually calls it.
 4. **FRESH** — after your next real session ends, confirm a new checkpoint appeared.
 
+**Layer 3 is the one that actually fails, and it fails silently.** Measured 2026-09-16 on the
+steward's host: `salesforce-tools` had the script installed, the `Stop` hook declared, the project
+trusted (`hasTrustDialogAccepted: true`), and the configured command verified to resolve and write —
+and then a REAL session ran in that directory across several turns and wrote **no checkpoint at
+all**. On the same machine and in the same window, another project's newly-added `Stop` hook fired
+normally for five concurrent sessions. So "installed, wired and trusted" did not imply "runs", and
+nothing announced the difference. That is the entire reason this list has four entries instead of
+two, and why `fleet-resume-readiness.py` refuses to call an install-verified member READY.
+
+**And know what this strategy does NOT cover.** The hook runs when a turn ENDS. A session killed
+outright — the process dies, the machine loses power, the host crashes — never reaches that point,
+so the work of the turn in flight is unrecorded. What survives is the PREVIOUS turn's checkpoint, so
+the exposure is bounded at roughly one turn rather than a whole session. Say that plainly when you
+report adoption; a resume strategy oversold is one nobody checks.
+
    Use exactly `WIRECHECK` as the session id in layer 3. `fleet-resume-readiness.py` treats a
    checkpoint with that id as INSTALL-VERIFIED and deliberately **not** READY, so your install
    cannot report itself as a working hook before the host has been observed calling it. It converts

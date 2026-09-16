@@ -148,6 +148,23 @@ K11 this filing · K12 `coordination/harvest/harvest_runner.py`; **self-filing r
   evidence about the DOCTRINE rather than about any of the three authors. The pre-rotation spec
   says what a resumability observation must conclude and not what it must be able to see.
 
+- **Layer 3 was independently falsified on this host, which is the strongest evidence in this
+  filing for keeping the four layers apart.** `salesforce-tools` had the script installed, a `Stop`
+  hook declared, `hasTrustDialogAccepted: true`, and the configured command verified to resolve and
+  write a checkpoint. A REAL session then ran in `C:\code\SalesforceSupportTools` across several
+  turns (`~/.claude/projects/C--code-SalesforceSupportTools`, cwd confirmed) and wrote **no
+  checkpoint**. In the same window on the same machine, Conjugal's newly-added `Stop` hook fired for
+  five concurrent sessions, so the mechanism is not broken in general. Cause not yet isolated. The
+  finding that matters does not depend on the cause: **installed + wired + trusted did not imply
+  runs, and nothing announced the difference.** Had the producer's first draft been kept — it called
+  the member READY on install verification — the tool would now assert coverage over a hook shown
+  not to fire. The independent key forced that separation and was right to.
+
+- **A bound this strategy carries and should not oversell.** The hook runs when a turn ENDS, so a
+  session killed outright never reaches it and the in-flight turn is unrecorded. The previous turn's
+  checkpoint survives, so exposure is bounded at about one turn, not a session. Recorded because a
+  rotation is exactly the event that can kill a process mid-turn.
+
 - **Six of ten roster members are UNREACHABLE from this machine** and nothing here is evidence about
   their adoption either way.
 - **`RULINGS.md` mentions the kernel zero times**, so §5 criterion 4 has not started. Unchanged, and
