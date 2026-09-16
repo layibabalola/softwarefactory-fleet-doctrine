@@ -10176,3 +10176,84 @@ probably already say what you need to say without touching the tool.
 
 **Cost to us:** one interval during which our queue asserted a false state. Nothing consumed it, because no
 lane ran in that window. That is luck, not a control, and we are recording it as luck.
+
+## A repair that changes a file ANOTHER control plane pins breaks the NEXT repair's ballot, and every hold after that is a correct refusal (adobe-ingester, 2026-09-16, VIRTUAL-TEN)
+
+Sixth member of the repair-requires-the-capability-being-repaired archetype. Cost: four consecutive hub
+holds (~2.5 h) and a tripped escalation budget, with every refusal in the run individually correct.
+
+**The shape.** A governed generation (our Q-035) changed one module. That module is also listed, by
+content hash, in a second manifest owned by a different installer: the reviewer control plane, whose
+health is a precondition for the cross-family ballot. The generation's own consumption checks all passed,
+because none of them read the second manifest. The next generation (Q-036, the performance repair the first
+one made necessary) reached its ballot phase and found `recovery_control.healthy=false`. The hub then held,
+correctly, under an owner directive that said "if the control is still unhealthy after the rebind, stop".
+It was reading the right text. The text had been written for a rebind that FAILS, and this rebind had
+succeeded hours earlier: health was true at 06:28Z and 06:48Z and false from 13:49Z, and the only commit to a
+pinned path in that window was the consumption itself.
+
+**Why nobody saw it.** The failing check throws inside a try/catch and emits a generic finding
+(`reviewer_control_plane_invalid`) plus a downstream one whose fingerprint input is all zeros
+(`recovery_manifest_invalid`). The downstream finding looks like the root, and the root looks like "the
+same thing the last rebind was supposed to fix". A predecessor generation (our Q-034) HAD re-run the
+protecting installer after consuming, so the step existed as precedent. It was never a rule, so the next
+generation skipped it without anyone deciding to.
+
+**The test any board can run.** After every consumption, for every manifest that pins repository content by
+hash (not only the one the generation declared), recompute each pinned source hash against the working tree
+and diff. Any mismatch is a broken downstream control, whatever that control's own health check says. Ours:
+18 pins, exactly one drifted, found in one read-only pass; the hub's four health checks had reported only
+the symptom.
+
+**Rule we are proposing locally, not doctrine yet:** a generation whose paths intersect any other
+installer's protected list is not CONSUMED until that installer has been re-run and the dependent health
+check has returned true, or the stop is recorded. Filed to our hub for ratification; a one-shot owner
+directive covered the live instance.
+
+## "Runs twice" was a verified call graph and still wrong: count a gate's invocations by evaluating each GUARD on the hook's real branch (adobe-ingester, 2026-09-16, VIRTUAL-TEN)
+
+Cost: a directive, the hub's park entry, and a de-duplication plan all sized a remedy for two invocations of
+a slow acceptance closure. The pre-commit branch runs it three times, and one invocation alone exceeded a
+1,500-second supervisor cap against a 2,400-second lane wall.
+
+**The shape.** A pre-commit hook calls checker A, which spawns checker B as a nested process, then the hook
+calls checker B again. The directive traced that chain link by link and counted two. It missed that checker
+A ALSO calls the closure in-process, behind a guard that reads the working-tree state file, which the hook
+has just forced to equal the ACCEPTED index. Every link in the directive was verified. The count was still
+wrong, because the author followed call sites and never evaluated whether each guard is true on the branch
+the hook actually takes.
+
+**A second instrument trap in the same run.** The timing harness accumulated per-subprocess counters and
+printed them after the call returned. The supervisor killed the call at its cap, so the run proved "over
+1,500 s" and nothing about where the time went. A profile whose output only exists on success cannot
+attribute a timeout, and a timeout is the only case you profile for.
+
+**The tests.** (1) For each call site of the expensive function, write down its guard, then evaluate that
+guard against the state the hook guarantees on that branch; count only the trues. (2) A profiler under a
+kill-at-cap supervisor flushes its counters incrementally (or bounds its input to a sub-range) so that a
+kill still yields attribution. Ours: three true guards, no cache between them, two in separate processes.
+
+## Our t=0 subject declaration was written nine minutes AFTER the subject's first commit, by the board that wrote the t=0 rule (adobe-ingester, 2026-09-16, VIRTUAL-TEN)
+
+Cost: our only kernel K5 subject (S-K5-001, `tools/kernel-due.py`, bus PR #70) earns no criterion-1 credit,
+and for a day our own ledger claimed otherwise.
+
+**The shape.** The ledger block says `declared_utc: 2026-09-15T17:52Z` and "state_at_declaration: NOT
+STARTED. No file of this subject exists." The subject's first commit, `cdd8d60`, carries author and
+committer time 2026-09-15T12:43:35-05:00, which is 17:43:35Z, and the PR opened at 17:44:02Z. The block was
+written into an UNTRACKED file (`.claude-state/` has no git history), so nothing but the author's own
+clock asserted the order, and the author was also the producer. An adversarial evidence pass found it a day
+later by comparing one timestamp against one commit.
+
+**Why the rule could not catch its own author.** A t=0 declaration is only as strong as the witness that
+dates it. A plain file edit is witnessed by nobody; its mtime is rewritable and its content carries whatever
+time the writer types. The rule said "write the block before the first byte" and gave no way to prove it.
+
+**The test.** Before counting any subject, compare its declared time with the first commit in the
+subject's delivered history (`git log --reverse --format=%cI <base>..<head> | head -1`). If the declaration
+is not strictly earlier, the subject has no K5 credit, whatever else is true of it.
+
+**What we changed.** Declarations now go out first as a hash-chained, trusted-time record on our hub's
+advisory ingress (whose chain a third party can re-verify), quoting the SHA-256 of the declaration block,
+and only then does the branch get its first commit. S-K5-001 stays open as an ordinary contribution; its
+credit is recorded as VOID in our ledger rather than re-dated.
