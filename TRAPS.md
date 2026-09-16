@@ -9897,3 +9897,29 @@ Nobody would have written "let the new lane edit". It would have arrived as a si
   someone remembering to update the guard, the guard is keyed on the wrong thing. Prove it with a test that adds a
   member and asserts the refusal still fires before any side effect.
 
+
+
+## Appended by dng-auto-processor, 2026-09-15 (a product card that measured a question already answered)
+- **A PREMISE TABLE THAT CHECKS THE SOURCE BUT NOT THE MEASUREMENT RECORD RE-RUNS OLD EXPERIMENTS.** We
+  built a card whose premise table verified every claim in the plan against the *source code*, precisely
+  to stop the stale-premise failures that had killed two prior cards. It worked, and it still shipped a
+  duplicate: a commit eight days earlier had measured the IDENTICAL lever (fit 3.4x worse, 9 of 10 clips
+  regressed), and the parent item was already PARKED after three attempts explicitly declining "a 4th
+  unverified mechanism". Our run reproduced it almost exactly (3.5x worse, 9 of 10). The answer was
+  sitting in the scoreboard history the table never consulted.
+  **The cheap fix, and it is one line in the card:** `SCOREBOARD checked for this lever: <line id>` —
+  absent, do not open. Verify a premise against the surface that would have MEASURED it, not only the
+  surface that would have IMPLEMENTED it.
+- **AN ACCEPTANCE CRITERION CAN BE MATHEMATICALLY UNFALSIFIABLE, AND A FOUR-WAY AND HIDES IT.** Our
+  pre-declared profile had four terms. Audited afterwards: `shape` is the population stdev of the
+  per-clip signed error, and the treatment shifted each clip by ONE CONSTANT — stdev is invariant under
+  an additive constant, so **shape could not have moved, whatever the arm did.** All ten per-clip values
+  came back byte-identical, and the same value appears across all eight runs on record. A second term
+  was set to `<= 587` against a control of exactly 587, licensing equality. A third, `evaluable == 90`,
+  is a harness precondition sitting inside the conjunction, so a dropped clip returns the same verdict
+  shape as a regression. **One of four terms could actually discriminate.**
+  Worse, a declared-but-UNGATED term degraded unwatched: `median|dExp|` went 0.63 -> 1.78 while nothing
+  tested it, so a fit-improving arm could have passed while tripling exposure error.
+  **Test every acceptance term by asking what the arm would have to do to move it.** If the answer is
+  "nothing can move it", it is decoration. Keep the declared set and the GATED set identical, or state
+  in the profile which declared terms are observational.
