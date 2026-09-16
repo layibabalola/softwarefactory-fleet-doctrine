@@ -144,7 +144,30 @@ def _unfenced_lines(text):
     """
     out = []
     fence = None
+    in_comment = False
     for line in text.splitlines():
+        # An HTML comment is not a record either, and this helper had NO comment handling at all
+        # while its own sibling guard blanked both -- same author, same day, same class of gap.
+        # A commented-out `**PRIMARY: `x`.**` read as a live naming. Every comment on the line is
+        # stripped and the visible text kept, so a closed inline comment cannot swallow the rest.
+        rest, kept = line, []
+        while True:
+            if in_comment:
+                if "-->" in rest:
+                    rest = rest.split("-->", 1)[1]
+                    in_comment = False
+                    continue
+                rest = ""
+                break
+            if "<!--" in rest:
+                before, after = rest.split("<!--", 1)
+                kept.append(before)
+                rest = after
+                in_comment = True
+                continue
+            kept.append(rest)
+            break
+        line = "".join(kept)
         stripped = line.strip()
         marker = "```" if stripped.startswith("```") else (
             "~~~" if stripped.startswith("~~~") else None)
@@ -159,6 +182,18 @@ def _unfenced_lines(text):
             continue
         out.append(line)
     return out
+
+
+UNKEYABLE_NAMES = []
+
+
+def _keyable(name):
+    """Can this tool key on the name -- ASCII, and drawn from the character set it matches on?"""
+    try:
+        name.encode("ascii")
+    except UnicodeEncodeError:
+        return False
+    return bool(re.match(r"^[A-Za-z0-9_.-]+$", name))
 
 
 def _clean_name(raw):
@@ -176,18 +211,22 @@ def _clean_name(raw):
     name = name.rstrip(".,;:)]}").strip()
     if not name:
         return ""
-    try:
-        name.encode("ascii")
-    except UnicodeEncodeError:
-        raise Refused(
-            "a project name in the factory-kernel ledger is not ASCII (%r). Round 1 truncated it "
-            "to its leading ASCII run, which routed a live duty to a name nobody queries and told "
-            "the real arbiter NOTHING OWED. Refusing rather than guessing which project is meant."
-            % (name,))
-    if not re.match(r"^[A-Za-z0-9_.-]+$", name):
-        raise Refused(
-            "a project name in the factory-kernel ledger carries characters this tool cannot key "
-            "on (%r); refusing rather than silently dropping the assignment it belongs to" % name)
+    if not _keyable(name):
+        # NOT a refusal. `_clean_name` is called while walking the WHOLE ledger, before main()
+        # filters by the project asked about, so raising here aborted every OTHER project's query
+        # over one bad row -- and `Refused` is SystemExit(2), which the kernel's own interface
+        # ("exits non-zero while any filing names it") reads as a duty. One malformed row therefore
+        # reported a duty that does not exist, to everybody. A sibling whose cycle reddens on
+        # another project's data drops the check, and the mechanism is lost. That is an
+        # availability bug under any threat model.
+        #
+        # The row is recorded and surfaced loudly instead; it is attributed to no project, so it
+        # cannot clear anyone's duty either. Residual risk, accepted knowingly under the threat
+        # model recorded in this subject's declaration: a name CRAFTED to be a confusable of the
+        # caller still reads as unkeyable rather than as that caller's duty. Crafted input is out
+        # of scope; an honest author does not produce a homoglyph.
+        UNKEYABLE_NAMES.append(name)
+        return ""
     if name.lower() in PLACEHOLDER_VALUES:
         return ""
     return name.lower()
@@ -396,6 +435,7 @@ def filings_present():
     if not os.path.isdir(FILINGS_DIR):
         raise Refused("filings directory not found at " + FILINGS_DIR)
     del INVENTORY_NOTES[:]
+    del UNKEYABLE_NAMES[:]
     names = set()
     for entry in sorted(os.listdir(FILINGS_DIR)):
         if not entry.endswith(".md"):
@@ -609,7 +649,8 @@ def main(argv=None):
 
     if args.json:
         json.dump({"project": args.project or "", "owed": len(owed), "rows": shown,
-                   "inventory_notes": list(INVENTORY_NOTES)},
+                   "inventory_notes": list(INVENTORY_NOTES),
+                   "unkeyable_names": list(UNKEYABLE_NAMES)},
                   sys.stdout, indent=2, sort_keys=True)
         sys.stdout.write("\n")
     else:
@@ -625,7 +666,14 @@ def main(argv=None):
         # G: an ambiguity resolved in silence is an ambiguity hidden.
         for note in INVENTORY_NOTES:
             print("  NOTE inventory: " + note)
-        if INVENTORY_NOTES:
+        for bad in sorted(set(UNKEYABLE_NAMES)):
+            # Loud, and on stderr as well, because this row is attributed to NOBODY: it cannot
+            # clear a duty and it does not create one, so the only way it is not silent is here.
+            msg = ("the ledger carries a name this tool cannot key on (%r); the row it belongs to "
+                   "is attributed to no project" % bad)
+            print("  NOTE unkeyable: " + msg)
+            sys.stderr.write("NOTE arbitration-queue: " + msg + "\n")
+        if INVENTORY_NOTES or UNKEYABLE_NAMES:
             print("")
         print("VERDICT: " + ("NOTHING OWED" if not owed
                              else "%d FILING(S) AWAIT YOUR ARBITRATION" % len(owed)))

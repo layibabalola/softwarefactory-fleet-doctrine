@@ -309,6 +309,25 @@ def run_round2_case(tmp):
                                     ("ALTERNATE", "dng-auto-processor")],
           str(named.get("conjugal")))
 
+    # B4/B5: an HTML comment is not a record either. This helper had NO comment handling while its
+    # own sibling guard blanked both -- the threat-model pass found it by looking, not by a key round.
+    commented = LEDGER + (
+        "\n## Steward status -- 2029-02-02\n\n"
+        "**Arbiter named for `conjugal`.**\n\n"
+        "<!-- superseded, left in place for the record\n"
+        "- **PRIMARY: `cloudvore`.**\n"
+        "-->\n")
+    check("B4: a commented-out naming does NOT replace the live assignment",
+          mod.namings(commented).get("conjugal") == [("PRIMARY", "airmypc"),
+                                                     ("ALTERNATE", "dng-auto-processor")],
+          str(mod.namings(commented).get("conjugal")))
+    after_comment = LEDGER.replace(
+        "- **PRIMARY: `airmypc`.**",
+        "<!-- superseded --> - **PRIMARY: `airmypc`.**")
+    check("B5: a naming AFTER a closed inline comment is still read",
+          ("PRIMARY", "airmypc") in mod.namings(after_comment).get("conjugal", []),
+          str(mod.namings(after_comment).get("conjugal")))
+
     # ---- C: placeholder arbiter values -----------------------------------------------------
     print("case C: a placeholder value names nobody and does not clear a duty")
     for value, label in (("TODO", "C1: `arbiter: TODO` leaves the duty standing"),
@@ -356,18 +375,44 @@ def run_round2_case(tmp):
     check("E2: `2026-02-30` is validated away too",
           named.get("conjugal") == [("PRIMARY", "airmypc")], str(named.get("conjugal")))
 
-    # ---- F: non-ASCII names ----------------------------------------------------------------
-    print("case F: a non-ASCII project name REFUSES; it is never truncated or ignored")
+    # ---- F: names this tool cannot key on ---------------------------------------------------
+    print("case F: an unkeyable name is surfaced and attributed to nobody -- it aborts no query")
     cyrillic = LEDGER.replace("`airmypc`", "`airmуpc`")
-    refuses(mod, lambda: mod.namings(cyrillic),
-            "F1: a Cyrillic-confusable arbiter name refuses rather than truncating to `airm`",
-            "parsed it into some ASCII prefix instead of refusing")
-    refuses(mod, lambda: mod.namings(LEDGER.replace("`conjugal`", "`conjugаl`")),
-            "F2: a Cyrillic-confusable FILING subject refuses too")
-    check("F3: the ASCII ledger is unaffected -- the refusal is not a blanket one",
+    # Wrapped, because the behaviour under test IS whether this refuses. Unwrapped, a regression to
+    # the global refusal killed the whole suite at exit 2 before any named assertion ran, so the
+    # mutation was caught only by an exit code -- which tells a reader that something broke, not what.
+    try:
+        named = mod.namings(cyrillic)
+    except SystemExit as exc:
+        check("F0: an unkeyable name does not abort the parse", False,
+              "REFUSED exit=" + str(exc.code) + " -- one bad row stops every project's query")
+        named = {}
+    check("F1: a Cyrillic-confusable arbiter name is NOT truncated to an ASCII prefix",
+          all(a != "airm" for _rank, a in named.get("conjugal", [])), str(named.get("conjugal")))
+    check("F2: and it is recorded as unkeyable rather than dropped in silence",
+          any("airm" in n for n in mod.UNKEYABLE_NAMES), str(mod.UNKEYABLE_NAMES))
+    check("F3: the ASCII ledger is unaffected",
           mod.namings(LEDGER).get("conjugal") == [("PRIMARY", "airmypc"),
                                                   ("ALTERNATE", "dng-auto-processor")],
           str(mod.namings(LEDGER).get("conjugal")))
+    # F4 is the availability bug the two advisors' evidence exposed together: `_clean_name` runs
+    # while walking the WHOLE ledger, before main() filters by project, so raising there aborted
+    # every OTHER project's query over one bad row -- and exit 2 reads, on the kernel's own stated
+    # interface, as "you owe something".
+    write(fdir / "HARVESTS.md", LEDGER.replace("`airmypc`", "`airmуpc`"))
+    try:
+        rc = mod.main(["mlv-app", "--json"])
+    except SystemExit as exc:
+        rc = "REFUSED exit=" + str(exc.code)
+    check("F4: one unkeyable row does NOT abort an unrelated project's query", rc == 0,
+          str(rc) + " -- a malformed row elsewhere reported a duty that does not exist")
+    check("F5: the unkeyable record is per-run, not cumulative across runs",
+          mod.main(["mlv-app", "--json"]) == 0 and len(mod.UNKEYABLE_NAMES) == len(
+              set(mod.UNKEYABLE_NAMES)) and all(
+              n for n in mod.UNKEYABLE_NAMES) and mod.UNKEYABLE_NAMES.count(
+              mod.UNKEYABLE_NAMES[0]) == 1 if mod.UNKEYABLE_NAMES else True,
+          str(mod.UNKEYABLE_NAMES))
+    write(fdir / "HARVESTS.md", LEDGER)
 
     # ---- G: inventory keyed on the header, not the filename --------------------------------
     print("case G: the inventory is keyed on `project:`, so a rename cannot hide an assignment")
