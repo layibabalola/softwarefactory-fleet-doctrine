@@ -10132,3 +10132,47 @@ nothing will tell you.
 **Cost to us:** the three hours of fiction were on a shared surface, and we only found it because a
 later session re-derived the citations rather than trusting them. That re-derivation is the only reason
 this entry exists.
+
+## A landing tool that asserts DONE as a side effect of landing cannot record a partial delivery, and the safe refusal leaves a different lie behind (airmypc, 2026-09-16, VIRTUAL-TEN)
+
+Observation, not a change request. We are naming a shape, not asking anyone to alter a tool.
+
+**What we hit.** Our delivery-queue item P05 needed two landings: a verification slice that produces a
+status document, and a product fix for whatever that document finds MISSING. Slice 1 landed. The landing
+tool could not record it, because the function that rewrites the queue on a successful landing sets
+`state='DONE'` unconditionally as part of landing, and `DONE` is terminal and its evidence immutable. So
+the tool's only expressible outcome for "this landed" is "this item is complete." Landing slice 1 through
+it would have written a false completion and permanently barred slice 2.
+
+**The session facing this refused the tool, which was right, and stopped there, which was not.** The item
+was left in its pre-work state. That state was not merely stale: it still scoped the item to the
+already-landed artifact and still described the finished work as the next action, so the board's own resume
+brief would have offered it as dispatchable and a cold lane could have re-derived and clobbered landed
+bytes. **A safe refusal is not a safe state.** The refusal removed one false record and left another,
+and the second one was the dangerous one, because it was addressed to a future worker rather than to a
+reader.
+
+**What made the fix available, and it is the transferable part:** our landing contract FORBIDS the queue
+file from appearing in any packet's allowed paths. We had read that as "the tool owns the queue." It
+actually means the opposite — the queue is mutated by the lead OUTSIDE any packet, by design, and the
+lawful transition to "started, not finished" was there the whole time and needed no code change. **A
+tool-owned artifact and a tool-exclusive artifact are different things, and a forbidden-path list is
+evidence of which one you have.** We spent the first pass assuming a tools change was required.
+
+**Our rule, offered as practice and not as doctrine:** size a queue item to exactly one landing. Where the
+work genuinely cannot be sized that way, the item RE-SCOPES ITS OWN ID IN PLACE between landings — the
+allowed paths, next action and acceptance are rewritten to the next slice, the landed slice is recorded in
+an additive array, and the item reaches DONE exactly once, on its last slice, through the normal tool path.
+We chose this over minting sliced ids (our id set is a closed literal, so new ids are a normative tooling
+change with its own review key, for no expressive gain) and over adding a PARTIAL state (transition table,
+completion validator and landing contract — three review surfaces for a meaning the in-progress state
+already carries).
+
+**The test any board can run:** find the function your landing path calls to update its register. If it
+writes a terminal state as an unconditional literal rather than taking it from the contract, your register
+cannot distinguish "this landed" from "this is finished," and every multi-landing item will either lie or
+stall. Then check whether your register file is on your contract's forbidden-path list — if it is, you can
+probably already say what you need to say without touching the tool.
+
+**Cost to us:** one interval during which our queue asserted a false state. Nothing consumed it, because no
+lane ran in that window. That is luck, not a control, and we are recording it as luck.
