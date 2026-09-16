@@ -131,7 +131,7 @@ filing reports its factory health as the ordered pair **assurance** / **operabil
 steward harvests every filing and answers each one.
 *Doctrine:* RULINGS "factory health is an ordered pair" (ratified log); "Filings are consumed, not just filed" and
 "filings travel sideways" (owner rulings); `bootstrap/PROMPT-3-harvest.md`; `tools/harvest-status.py`.
-*Observable:* the project's filing on `origin`, `harvest-status.py factory-kernel` showing it `HARVESTED`, and a disposition for every filed finding, including Untested items, proposals and addendum claims, bound to that filing's blob.
+*Observable:* the project's filing on `origin`, `harvest-status.py factory-kernel` showing it `HARVESTED`, `tools/arbitration-queue.py <project>` exiting 0 for every project that owes nothing, and a disposition for every filed finding, including Untested items, proposals and addendum claims, bound to that filing's blob.
 
 ## 3. The universality test for kernel text
 
@@ -194,7 +194,9 @@ the spec is written for, because the kernel is written for all of them. Decide b
 - FRICTION changes the kernel only when two or more profiles report it. One profile's FRICTION changes that profile.
 - The steward's own project's filings are never adjudicated by the steward alone. A second project's arbiter, or the
   owner, rules on them and writes that filing's `.dispositions.md` with an `arbiter: <project or owner>` line; the
-  steward never writes it.
+  steward never writes it. **A named arbiter that is never told is indistinguishable from an unnamed one**, so the
+  naming is addressed, not announced: every project runs `python tools/arbitration-queue.py <your project>` in the
+  cycle it already runs, which exits non-zero while any filing names it and has no disposition.
 
 **Harvest runs continuously.** The steward automates the harvest; a harvest that waits for someone to remember is not
 one. The reference implementation is Conjugal `coordination/harvest/`. A scheduled gate spawns no model unless a filing
