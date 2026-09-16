@@ -71,10 +71,10 @@ def make_member(root, name, script_rel=None, wired=True, script_body=None):
     return repo
 
 
-def fire(ckroot, repo, age_hours=0.0):
+def fire(ckroot, repo, age_hours=0.0, name="SESSION-X.md"):
     d = ckroot / repo.name
     d.mkdir(parents=True, exist_ok=True)
-    f = d / "SESSION-X.md"
+    f = d / name
     write(f, "checkpoint\n")
     if age_hours:
         old = time.time() - age_hours * 3600
@@ -174,6 +174,30 @@ def run_case(tmp):
     check("an old checkpoint reads STALE, not READY", state == mod.STALE, state + " " + detail)
     state, _ = mod.assess("stalegoat", str(st), 1000)
     check("the same checkpoint is READY under a wider limit", state == mod.READY, state)
+
+    print("case: a file that is not a checkpoint is not evidence of firing")
+    # Reproduces a FALSE GREEN the independent acceptance key found: a member whose hook is broken,
+    # with an unrelated file sitting in its checkpoint folder, read READY.
+    broken = make_member(root, "brokenhook", "tools/session-checkpoint.py")
+    d = ckroot / broken.name
+    d.mkdir(parents=True, exist_ok=True)
+    write(d / "notes.txt", "an unrelated file")
+    state, detail = mod.assess("brokenhook", str(broken), 72)
+    check("an unrelated file does NOT make it READY", state != mod.READY, state + " " + detail)
+    check("it reads NOT-FIRING", state == mod.NOT_FIRING, state)
+
+    print("case: install verification is not a session-driven fire")
+    iv = make_member(root, "justinstalled", "tools/session-checkpoint.py")
+    fire(ckroot, iv, 0.1, name="SESSION-WIRECHECK.md")
+    state, detail = mod.assess("justinstalled", str(iv), 72)
+    check("a WIRECHECK checkpoint reads INSTALL-VERIFIED, not READY",
+          state == mod.INSTALL_VERIFIED, state + " " + detail)
+    check("INSTALL-VERIFIED is not counted ready", state != mod.READY, state)
+    # A real session later must override it, whatever the relative ages.
+    fire(ckroot, iv, 5.0, name="SESSION-realsession.md")
+    state, _ = mod.assess("justinstalled", str(iv), 72)
+    check("a real session checkpoint outranks a newer install stamp",
+          state == mod.READY, state)
 
     print("case: UNREACHABLE is neither ready nor failing")
     mod.PATHMAP = str(pm)

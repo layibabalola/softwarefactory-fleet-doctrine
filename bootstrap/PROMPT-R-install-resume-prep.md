@@ -41,20 +41,29 @@ capability, never by filename.
 ## STEP 1 — install or upgrade the script
 
 The reference implementation is `bootstrap/session-checkpoint.py` **on this bus**, with its proof
-in `bootstrap/test-session-checkpoint.py` (89 checks, 13 cases, every case mutation-proven).
+in `bootstrap/test-session-checkpoint.py` (94 checks, 14 cases, every case mutation-proven).
 
-1. Read the first line of the docstring of your project's existing script, if it has one, and read
-   the reference implementation's. **If they differ, replace yours with the reference copy.**
-   Do not skip merely because a file exists — that is the guard this prompt exists to remove.
+1. **Compare content digests, not prose.** An earlier draft of this step compared the first
+   docstring line; the independent acceptance key showed those lines are identical across versions
+   whose BEHAVIOUR differs, so the check would have reported "up to date" over a stale copy — the
+   same failure as the skip-if-present guard, wearing a different hat. Run:
+
+   ```
+   python -c "import hashlib,sys;print(hashlib.sha256(open(sys.argv[1],'rb').read()).hexdigest())" <your script>
+   python -c "import hashlib,sys;print(hashlib.sha256(open(sys.argv[1],'rb').read()).hexdigest())" bootstrap/session-checkpoint.py
+   ```
+
+   **If the digests differ, replace yours with the reference copy** (or port §2 in full if your
+   project implements this under another name). Do not skip merely because a file exists.
 2. If your project has no script, copy the reference file to your script path.
 3. Copy `bootstrap/test-session-checkpoint.py` beside it, adjusting only the `HOOK` path constant.
 4. Run the test. It must exit 0, read directly and **never through a pipe** — `tail` reports its own
    exit status, which has already produced a false green in this fleet.
 
-## STEP 2 — the seven corrections, if you are porting rather than copying
+## STEP 2 — the eight corrections, if you are porting rather than copying
 
 Each is a way the checkpoint reported that a rotation would lose nothing while real uncommitted
-work sat in the tree. Port all seven or copy the file; a partial port leaves the class open.
+work sat in the tree. Port all eight or copy the file; a partial port leaves the class open.
 
 1. **Read `status --porcelain -z`.** Without `-z`, git C-quotes any non-ASCII path, so `café.txt` is
    recorded as an escape sequence that resolves to nothing. `-z` also removes the hand-rolled quote
@@ -75,9 +84,13 @@ work sat in the tree. Port all seven or copy the file; a partial port leaves the
    you EXAMINED and what you did NOT. Check the footer too: the sixth refusal in this sequence was
    for leaving "everything else is committed and derivable" two lines below the new scope note.
 
-Also: a tree that is **not a repository at all** is a third fact, distinct from both a clean tree and
-a failed command. Nothing in it is committed anywhere, so a rotation takes all of it, and the
-checkpoint should say that rather than blame git.
+8. **Probe the instrument before describing the tree.** Two more members of the same family, both
+   found by the key. A tree that is **not a repository at all** is distinct from a clean tree and
+   from a failed command: nothing in it is committed anywhere, so a rotation takes all of it, and
+   the checkpoint must say so rather than blame git. And when **git itself cannot be run** — absent
+   from PATH — every call returns its default and a perfectly healthy repository reads as
+   unversioned. Check `git --version` first; if that fails, report the instrument, because you have
+   learned nothing about the tree.
 
 ## STEP 3 — wire the Stop hook
 
@@ -101,6 +114,11 @@ a project believes for nine days that it is covered.
    appear under `<home>/.claude/session-checkpoints/<main repo directory name>/`. This proves the
    configured command resolves; only a real session proves the host actually calls it.
 4. **FRESH** — after your next real session ends, confirm a new checkpoint appeared.
+
+   Use exactly `WIRECHECK` as the session id in layer 3. `fleet-resume-readiness.py` treats a
+   checkpoint with that id as INSTALL-VERIFIED and deliberately **not** READY, so your install
+   cannot report itself as a working hook before the host has been observed calling it. It converts
+   to READY on its own at layer 4.
 
 ## STEP 5 — report it where it can be counted
 

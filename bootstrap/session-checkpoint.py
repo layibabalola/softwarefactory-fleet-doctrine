@@ -86,7 +86,13 @@ def main():
     # means "look by hand", while an unversioned tree means everything in it is uncommitted by
     # construction. Fleet members are not uniformly under git -- salesforce-tools is a real source
     # tree with no VCS at all -- so this is a live case, not a hypothetical.
-    is_repo = bool(common)
+    #
+    # "git is not installed" is a THIRD fact again, and it presents identically: every git call
+    # returns its default, so a perfectly normal repository read as "not under version control"
+    # until this check existed. Found by the independent acceptance key, 2026-09-16. Probe the tool
+    # before concluding anything about the tree.
+    git_available = bool(git(repo, "--version"))
+    is_repo = git_available and bool(common)
     name = os.path.basename(main_repo.rstrip("\\/")) or "repo"
 
     branch = git(repo, "rev-parse", "--abbrev-ref", "HEAD") or "?"
@@ -163,7 +169,13 @@ def main():
         "- branch: {} @ {}".format(branch, head),
         "- last commit: {}".format(last),
     ]
-    if not is_repo:
+    if not git_available:
+        # Says nothing about the tree, which may be a perfectly healthy repository. The honest
+        # report is about the MEASURING INSTRUMENT, not about what it failed to measure.
+        lines.append("- uncommitted files: UNKNOWN -- `git` could not be run at all, so this "
+                     "checkpoint could not look. This says nothing about whether the tree is a "
+                     "repository or whether it is clean. Fix git on PATH, then look by hand.")
+    elif not is_repo:
         # The strongest statement this file ever makes, and the only one that is unconditional --
         # because for an unversioned tree it is true by construction rather than by observation.
         # Nothing here is committed anywhere, so a rotation or a lost disk takes all of it. Saying

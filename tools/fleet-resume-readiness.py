@@ -61,8 +61,15 @@ SCRIPT_CANDIDATES = [
 ]
 SETTINGS = ".claude/settings.json"
 DEFAULT_MAX_AGE_HOURS = 72
+CHECKPOINT_PREFIX = "SESSION-"
+CHECKPOINT_SUFFIX = ".md"
+# Session ids reserved for proving a fresh install's wiring resolves. A checkpoint carrying one is
+# evidence about the INSTALL, never about the host actually calling the hook, and the two must not
+# be reported as the same thing.
+INSTALL_SESSION_IDS = ("WIRECHECK", "INSTALLPROOF")
 
 READY = "READY"
+INSTALL_VERIFIED = "INSTALL-VERIFIED"
 STALE = "STALE"
 NOT_FIRING = "NOT-FIRING"
 NOT_WIRED = "NOT-WIRED"
@@ -70,7 +77,7 @@ ABSENT = "ABSENT"
 UNREACHABLE = "UNREACHABLE"
 
 # Ordered worst-first, so a summary line leads with the thing worth acting on.
-SEVERITY = [ABSENT, NOT_WIRED, NOT_FIRING, STALE, READY, UNREACHABLE]
+SEVERITY = [ABSENT, NOT_WIRED, NOT_FIRING, STALE, INSTALL_VERIFIED, READY, UNREACHABLE]
 
 
 class Refused(SystemExit):
@@ -128,31 +135,54 @@ def checkpoint_root():
 
 
 def newest_checkpoint_age_hours(repo_path):
-    """Age of the newest checkpoint filed for this repo, or None if it has never fired.
+    """(age_hours, provenance) for the newest real checkpoint, or (None, None) if none exists.
 
     Checkpoints are filed under the MAIN repo's directory name, so the lookup key is that name and
     not the member's roster name -- the two differ wherever a repo is checked out under a directory
     that is not its project name, which is the common case on this machine.
+
+    TWO CORRECTIONS from the independent acceptance key, 2026-09-16, both of which had produced a
+    FALSE GREEN:
+
+    1. ONLY files matching the checkpoint naming convention count. Previously any file in the
+       directory did, so a member whose hook exits 17 while an unrelated text file happens to sit
+       in its checkpoint folder read READY. Trusting the hook's OUTPUT rather than its source text
+       is what closes that: a broken script cannot write a real checkpoint, so requiring one is a
+       stronger test than reading the script and hoping.
+
+    2. Checkpoints written by INSTALL VERIFICATION are distinguished from checkpoints written by a
+       real session ending. Verifying the configured command proves the wiring resolves; it does
+       not prove the host calls it. Those are the two different facts this tool exists to keep
+       apart, and collapsing them here would have been the same defect it reports on others.
     """
     name = os.path.basename(os.path.abspath(repo_path).rstrip("\\/"))
     for candidate in (name, name.replace(" ", "-")):
         d = os.path.join(checkpoint_root(), candidate)
         if not os.path.isdir(d):
             continue
-        newest = None
+        newest, provenance = None, None
         for entry in os.listdir(d):
             full = os.path.join(d, entry)
             if not os.path.isfile(full):
                 continue
+            if not (entry.startswith(CHECKPOINT_PREFIX) and entry.endswith(CHECKPOINT_SUFFIX)):
+                continue        # not a checkpoint; an unrelated file is not evidence of firing
+            session = entry[len(CHECKPOINT_PREFIX):-len(CHECKPOINT_SUFFIX)]
+            kind = "install" if session.upper() in INSTALL_SESSION_IDS else "session"
             try:
                 mtime = os.path.getmtime(full)
             except OSError:
                 continue
-            if newest is None or mtime > newest:
-                newest = mtime
+            # A real session's checkpoint outranks an install-verification one regardless of age:
+            # it is the stronger evidence, and the newest install stamp must not mask it.
+            better = (newest is None
+                      or (kind == "session" and provenance == "install")
+                      or (kind == provenance and mtime > newest))
+            if better:
+                newest, provenance = mtime, kind
         if newest is not None:
-            return max(0.0, (time.time() - newest) / 3600.0)
-    return None
+            return max(0.0, (time.time() - newest) / 3600.0), provenance
+    return None, None
 
 
 def stop_hook_scripts(repo_path):
@@ -222,9 +252,15 @@ def assess(member, repo_path, max_age_hours):
             return NOT_WIRED, present[0] + " exists but no Stop hook invokes it"
         return ABSENT, "no Stop hook invokes a checkpoint-capable script in this tree"
     script_rel = wired_rel
-    age = newest_checkpoint_age_hours(repo_path)
+    age, provenance = newest_checkpoint_age_hours(repo_path)
     if age is None:
         return NOT_FIRING, "wired at " + script_rel + " but no checkpoint has ever been written"
+    if provenance == "install":
+        # Deliberately NOT ready. The install was verified; the host has not been observed calling
+        # the hook. Converts to READY on its own the first time a real session ends here.
+        return (INSTALL_VERIFIED,
+                "wiring verified at " + script_rel + " (%.1f h ago) but no REAL session has "
+                "written a checkpoint yet; a verified command is not an observed call" % age)
     if age > max_age_hours:
         return STALE, "newest checkpoint is %.1f h old (limit %g h)" % (age, max_age_hours)
     return READY, "newest checkpoint %.1f h old" % age

@@ -336,6 +336,43 @@ def case_unversioned_tree_is_not_a_failed_status(tmp):
           "would lose nothing" not in body and "NONE REPORTED" not in body, body[-400:])
 
 
+def case_missing_git_is_not_an_unversioned_tree(tmp):
+    """A fourth fact that presents identically to the other three.
+
+    With git absent from PATH every call returns its default, so a healthy repository read as
+    "version control: NONE" -- a statement about the tree, made on evidence that was only ever
+    about the instrument. Found by the independent acceptance key, 2026-09-16.
+    """
+    print("case: git missing is reported as git missing, not as an unversioned tree")
+    home = tmp / "home15"
+    repo = make_repo(tmp)
+    (repo / "tracked.txt").write_text("real uncommitted work\n", encoding="utf-8")
+
+    env = dict(os.environ)
+    empty = tmp / "no-tools"
+    empty.mkdir(parents=True, exist_ok=True)
+    env["PATH"] = str(empty)          # git is now unreachable
+    env["HOME"] = str(home)
+    env["USERPROFILE"] = str(home)
+    env.pop("CLAUDE_PROJECT_DIR", None)
+    rc = subprocess.run(
+        [sys.executable, str(HOOK)],
+        input=json.dumps({"cwd": str(repo), "session_id": "TESTSESS"}),
+        env=env, capture_output=True, text=True, timeout=60,
+        encoding="utf-8", errors="replace")
+    check("hook exits 0 with no git on PATH", rc.returncode == 0, rc.stderr[-200:])
+    cp = checkpoint_for(home, repo)
+    check("checkpoint still written", cp.exists(), str(cp))
+    if not cp.exists():
+        return
+    body = cp.read_text(encoding="utf-8")
+    check("does NOT claim the tree is unversioned",
+          "version control: NONE" not in body, body[-300:])
+    check("names the instrument as the problem", "`git` could not be run" in body, body[-300:])
+    check("makes no absolute safety claim",
+          "would lose nothing" not in body, body[-300:])
+
+
 def case_clean_repo_says_nothing_would_be_lost(tmp):
     print("case: a clean tree states the absence positively, it does not omit the line")
     home = tmp / "home4"
@@ -481,6 +518,7 @@ def main():
         case_index_hidden_paths_are_named_not_silently_dropped,
         case_absolute_claim_appears_nowhere,
         case_unversioned_tree_is_not_a_failed_status,
+        case_missing_git_is_not_an_unversioned_tree,
         case_clean_repo_says_nothing_would_be_lost,
         case_never_exits_non_zero,
         case_performs_no_git_write,
