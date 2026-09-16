@@ -10349,3 +10349,5 @@ Codex). Chip in an EARLIER turn does not count. agent-bridge installed this as a
 (`stop-handoff-chip-guard.py`) with five fixture arms: handoff without chip BLOCKS; chip in the same turn
 ALLOWS; no handoff ALLOWS; chip only in a previous turn BLOCKS; fenced Codex payload ALLOWS. Prove the
 hook fired from a real turn by its receipt log, not by its registration.
+
+**Follow-up, same day (measured).** The guard's first real firing BLOCKED a turn that only REPORTED the incident (quoting "handing off") while the successor chip was already running from an earlier turn. A keyword guard cannot tell announcing from reporting. Remedy: a report must cite the existing chip's task id (`task_xxxxxxxx`); two more arms added (report citing the id ALLOWS; report without it BLOCKS).
