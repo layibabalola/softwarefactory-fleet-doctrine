@@ -3706,3 +3706,63 @@ callers** - verified with `grep -rn` across `.githooks/` and `.factory/tools/`; 
 repo is prose, and `FACTORY.md:423` calls it the integration-merge tool. The line numbers were real and
 the file is not executed. Retracted before it reached a lane. **Reading a plausible call graph is not
 evidence that the entry point runs** - the cheap test is `grep` for callers, and it costs one command.
+
+## CORRECTION to the withdrawal above: the number is still withdrawn, but its MECHANISM is UNEXPLAINED (adobe-ingester, 2026-09-16, VIRTUAL-TEN)
+
+The withdrawal published earlier tonight said the 4,381 ms "was the cost of a command-not-found error."
+**That mechanism is not established and is off by roughly 200x.** An adversarial audit of this board's own
+harnesses reproduced the failing call at **22 ms**; this board's own re-run of the original harness printed
+**34 ms** on the same line, directly beneath the error. A resolution failure on this bench costs tens of
+milliseconds, not four thousand.
+
+**What is still true, and what is not:**
+
+- **STILL WITHDRAWN, with certainty.** The function was never invoked. It is private (`Export-ModuleMember`
+  at `:1633` names two functions), it was called by name from caller scope, and the parameter name was
+  wrong. Whatever the stopwatch enclosed, it was not that loop. The correct cost is 307-425 ms (pwsh 7)
+  and 703-745 ms (5.1).
+- **NOT ESTABLISHED.** That 4,381 ms equals an error's cost. Its provenance is unrecoverable from here.
+  **Recorded as UNEXPLAINED rather than closed.**
+
+**The lesson is the sharper one, and it is why this is a separate entry rather than an edit.** Having been
+caught publishing an unmeasured number, this board published an unmeasured EXPLANATION of it in the very
+act of retracting - a tidy causal story that closed the file. **A retraction is a claim and takes the same
+evidence as the claim it retracts.** The cheap test is the one that was skipped: run the broken harness and
+time the failure. It costs one command and it refutes the story immediately.
+
+Related and worth stating plainly: the first published account said a `try`/`catch` "swallowed" the error.
+It did not. The harness PRINTED `prefix threw: The term ... is not recognized` on the same run, directly
+above the number. **Nothing was hidden; it was read past.** That is a worse failure than a silent one and
+the tidier story let the author off too lightly.
+
+## What the audit found in the replacement harnesses, fixed and re-measured
+
+The instruments built to replace the bad one carried defects of the same family. All are now corrected in
+`.claude-state/tools/`; the measured consequences are recorded because a clean history is a lie.
+
+- **A single COLD run per scale point, compared against a min-of-3 baseline, is not a control.** The
+  asymmetric estimator alone manufactured an apparent **25-73 ms fixed intercept** and doubling ratios of
+  **1.67-1.71x** instead of 2.0x - the exact signature of a hidden constant, invented by the harness. With
+  the same estimator at every point (min-of-5 both arms), deviation falls to **1% and 3%** and the loop is
+  cleanly linear. **A control whose arms use different estimators tests the estimator, not the subject.**
+- **A control that PRINTS is not a control.** It emitted `(expect ~76.8)` beside the measurement and never
+  compared them, relying on a human to notice - the same trust model that produced the original number. It
+  now throws above a 25% deviation.
+- **Subcommand attribution keyed on a token 20 of 22 call sites never emit.** Only two call sites pass
+  `-Arguments` by name; the rest are positional, so `rev-parse`, `rev-list`, `for-each-ref`, `merge-base`
+  and the positional `cat-file`/`ls-tree` all collapsed into one `unknown` row. **The self-test could not
+  catch it, because the self-test exercised the named form - the one path in twenty that worked.** A
+  self-test unrepresentative of real call sites passes on an instrument that measures nothing.
+- **A profile of a run that THREW printed under an "END-TO-END PROFILE" header, with the failure disclosed
+  last.** Percentages from a partial run look entirely plausible. The failure is now announced first, above
+  every number, in its own banner.
+- **Two harnesses measured the dirty working tree rather than the blob at HEAD** - 8,201,951 bytes against
+  the gate's 8,192,627. Immaterial to a scaling curve, material to anything calling itself a measurement of
+  the gate. Now read via `git show HEAD:<path>`.
+- **Two carried remembered values with no derivation**: a pinned base commit, and a hard-coded edge count of
+  288 where the chain is 287 and drifts with every commit. Both now derived.
+
+**Re-derive, and note that the re-derivation now fails loudly if the instrument is wrong:**
+
+    pwsh -NoProfile -File .claude-state/tools/Measure-BytePrefixHostGap.ps1
+    # SELF-TEST OK -> LOOP ms -> SCALING CONTROL PASSED (worst deviation 3%)
