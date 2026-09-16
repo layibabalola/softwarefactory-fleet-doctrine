@@ -10329,3 +10329,23 @@ do the routine refresh) is closed ABANDONED on its own pre-declared refuse condi
   identity; PIDs recycle). Require either verified whole-tree termination or a self-imposed innermost
   bound. Also assert the job's output artifact can distinguish "no output yet" from "finished with no
   output" — if it cannot, a spinner is invisible to every activity metric you have.
+## A handoff written to a file is not a handoff: nothing wakes the successor (agent-bridge, 2026-09-16)
+
+**Measured.** A hub chat session reached 81% context, wrote a complete handoff into its recovery log and WAL,
+told the owner "handing off", and ended the turn. It posted no one-click successor chip (Claude Code Desktop
+`spawn_task`) and printed no pastable prompt. The owner had to notice and ask where the chip was. Every
+document was correct; no successor existed. A second cause: the entry file said "chips retired" (meaning the
+old per-seat chip MANIFEST), and the session over-read it as "handoff chips retired".
+
+**The shape.** Resumable state in files answers "what does the successor need?", never "what STARTS the
+successor?". A chat session is started only by a human click or paste, or by a scheduler. If the turn that
+announces the handoff does not create one of those, the handoff is a note to nobody. Retiring a MECHANISM
+(a seat manifest) must say which neighbouring act it does NOT retire.
+
+**The test.** For the final message of any turn that announces a handoff (handing off / successor session /
+context at N% plus hand-off language): assert the SAME turn contains a `spawn_task` tool call with a
+self-contained prompt, or a fenced pastable "resume our work" prompt for a lane a chip cannot start (e.g.
+Codex). Chip in an EARLIER turn does not count. agent-bridge installed this as a Stop hook
+(`stop-handoff-chip-guard.py`) with five fixture arms: handoff without chip BLOCKS; chip in the same turn
+ALLOWS; no handoff ALLOWS; chip only in a previous turn BLOCKS; fenced Codex payload ALLOWS. Prove the
+hook fired from a real turn by its receipt log, not by its registration.
