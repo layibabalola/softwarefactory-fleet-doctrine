@@ -141,6 +141,72 @@ def run_case(tmp):
     check("the superseded arbiter no longer owes it", rc == 0, "rc=" + str(rc))
     write(fdir / "HARVESTS.md", LEDGER)
 
+    print("case: a NON-EMPTY file that is not a ledger REFUSES (key defect D1)")
+    write(fdir / "HARVESTS.md", "this is not a ledger\n")
+    try:
+        mod.rows()
+        check("garbage that is merely non-empty refuses", False, "returned NOTHING OWED instead")
+    except SystemExit as exc:
+        check("garbage that is merely non-empty refuses", exc.code == 2, "exit=" + str(exc.code))
+    write(fdir / "HARVESTS.md", LEDGER)
+
+    print("case: a placeholder disposition does NOT clear the duty (key defect D3)")
+    write(fdir / "conjugal.dispositions.md", "")
+    rc = mod.main(["airmypc", "--json"])
+    check("an empty dispositions file leaves the duty standing", rc == 1, "rc=" + str(rc))
+    write(fdir / "conjugal.dispositions.md", "# TODO: rule on this\n")
+    rc = mod.main(["airmypc", "--json"])
+    check("a dispositions file with no arbiter line leaves the duty standing",
+          rc == 1, "rc=" + str(rc))
+    write(fdir / "conjugal.dispositions.md", "arbiter: airmypc\n")
+    rc = mod.main(["airmypc", "--json"])
+    check("a real disposition still clears it", rc == 0, "rc=" + str(rc))
+    os.remove(str(fdir / "conjugal.dispositions.md"))
+
+    print("case: a filing is found wherever its header sits, and a quoted example is not one (D4)")
+    write(fdir / "latefiling.md", ("\n" * 45) + filing("latefiling"))
+    write(fdir / "README.md",
+          "# How filings work\n\nEvery filing opens like this:\n\n```\n"
+          + filing("exampleproject") + "```\n")
+    present = mod.filings_present()
+    check("a header below line 40 is still a filing", "latefiling" in present, str(sorted(present)))
+    check("a fenced example in the README is not a filing",
+          "readme" not in present and "exampleproject" not in present, str(sorted(present)))
+    os.remove(str(fdir / "latefiling.md"))
+    write(fdir / "README.md", "# How filings work\n\nSome prose.\n")
+
+    print("case: the documented UNDECORATED naming form is read (key defect D5)")
+    plain = LEDGER.replace("- **PRIMARY: `airmypc`.**", "- PRIMARY: `airmypc`.")
+    named = mod.namings(plain)
+    check("an undecorated PRIMARY line still names an arbiter",
+          ("PRIMARY", "airmypc") in named.get("conjugal", []), str(named.get("conjugal")))
+    check("prose merely containing the word PRIMARY names nobody",
+          mod.NAMING_RE.search("the primary reason: airmypc was busy") is None, "matched prose")
+
+    print("case: precedence is the steward DATE, not file position (key defect D6)")
+    dated = ("## Steward status -- 2026-09-16\n\n"
+             "**Arbiter named for `conjugal`.**\n\n"
+             "- **PRIMARY: `airmypc`.**\n\n"
+             "## Steward status -- 2026-09-15\n\n"
+             "**Arbiter named for `conjugal`.**\n\n"
+             "- **PRIMARY: `cloudvore`.** Older block, appended last.\n")
+    named = mod.namings(dated)
+    check("an older block appended last does NOT override a newer one",
+          named.get("conjugal") == [("PRIMARY", "airmypc")], str(named.get("conjugal")))
+    named = mod.namings(dated.replace("2026-09-16", "2026-09-14"))
+    check("and when the appended block IS the newer one, it wins",
+          named.get("conjugal") == [("PRIMARY", "cloudvore")], str(named.get("conjugal")))
+
+    print("case: a named filing the inventory cannot see is NOT silently dropped (key defect D2)")
+    os.remove(str(fdir / "mlv-app.md"))
+    rows = mod.rows()
+    lost = [r for r in rows if r["filing"] == "mlv-app"]
+    check("it appears as FILING-NOT-FOUND, not as nothing",
+          lost and lost[0]["state"] == mod.FILING_NOT_FOUND, str(lost))
+    rc = mod.main(["cloudvore", "--json"])
+    check("and its named arbiter still gets a non-zero exit", rc == 1, "rc=" + str(rc))
+    write(fdir / "mlv-app.md", filing("mlv-app"))
+
     print("case: an unreadable ledger REFUSES; it never reports an empty queue")
     write(fdir / "HARVESTS.md", "   \n")
     try:
@@ -156,6 +222,106 @@ def run_case(tmp):
         check("a missing ledger refuses", exc.code == 2, "exit=" + str(exc.code))
 
 
+def run_discovery_case(tmp):
+    """Key defect D7: review-branch discovery was stubbed out in every case, so a mutation that
+    disabled it entirely left the suite green. This case drives a REAL git repository.
+
+    It also pins the failure direction that matters: when git cannot answer, the tool must REFUSE
+    (exit 2). Returning an empty set made a broken instrument read as an absent duty, which is the
+    one answer this tool exists to prevent.
+    """
+    import subprocess
+
+    mod = load()
+    root = tmp / "busrepo"
+    fdir = root / "adjudications" / "factory-kernel"
+    fdir.mkdir(parents=True, exist_ok=True)
+
+    def git(*args):
+        return subprocess.run(["git", "-C", str(root)] + list(args),
+                              capture_output=True, text=True)
+
+    if subprocess.run(["git", "--version"], capture_output=True).returncode != 0:
+        check("git is available to test discovery", False, "git --version failed")
+        return
+
+    git("init", "-q")
+    git("config", "user.email", "test@example.invalid")
+    git("config", "user.name", "test")
+    write(fdir / "onmaster.md", filing("onmaster"))
+    write(fdir / "HARVESTS.md", LEDGER)
+    git("add", "-A")
+    git("commit", "-q", "-m", "master filing")
+    git("checkout", "-q", "-b", "reviewbranch")
+    write(fdir / "onreviewonly.md", filing("onreviewonly"))
+    write(fdir / "README.md",
+          "# not a filing\n\n```\n" + filing("quotedexample") + "```\n")
+    git("add", "-A")
+    git("commit", "-q", "-m", "review-branch filing")
+    git("update-ref", "refs/remotes/origin/review/onreviewonly-kernel", "reviewbranch")
+    git("checkout", "-q", "master")
+
+    mod.ROOT = str(root)
+    mod.LEDGER = str(fdir / "HARVESTS.md")
+    mod.FILINGS_DIR = str(fdir)
+
+    print("case: a filing on an unmerged review branch is still a filing (R7.5), proven on real git")
+    found = mod._filings_on_review_branches()
+    check("discovery finds a filing that exists only on origin/review/*",
+          "onreviewonly" in found, str(sorted(found)))
+    check("and does not admit a fenced example from that branch's README",
+          "readme" not in found and "quotedexample" not in found, str(sorted(found)))
+    check("the local filing is still present too",
+          "onmaster" in mod.filings_present(), str(sorted(mod.filings_present())))
+
+    print("case: discovery reads blobs BY OID, never as a combined <rev>:<path> argument")
+    seen_args = []
+    real_run_probe = subprocess.run
+
+    def recording_run(cmd, *a, **kw):
+        seen_args.append(list(cmd))
+        return real_run_probe(cmd, *a, **kw)
+
+    mod.subprocess.run = recording_run
+    try:
+        mod._filings_on_review_branches()
+    finally:
+        mod.subprocess.run = real_run_probe
+    combined = [c for c in seen_args
+                for arg in c if arg.startswith("refs/") and ":" in arg]
+    check("no git call joins a ref and a path with a colon",
+          not combined,
+          "git stats that combined string and, on Windows under a deep checkout, aborts with "
+          "ENAMETOOLONG -- every review-branch filing then reads as absent: " + str(combined[:1]))
+    check("and the blob is fetched by object id instead",
+          any("cat-file" in c and "blob" in c for c in seen_args),
+          str(seen_args[-1] if seen_args else []))
+
+    print("case: when git cannot answer, discovery REFUSES -- it never returns an empty set (D2)")
+    mod.ROOT = str(tmp / "not-a-repo")
+    (tmp / "not-a-repo").mkdir(parents=True, exist_ok=True)
+    try:
+        mod._filings_on_review_branches()
+        check("a non-repository refuses", False, "returned instead of refusing")
+    except SystemExit as exc:
+        check("a non-repository refuses", exc.code == 2, "exit=" + str(exc.code))
+
+    real_run = subprocess.run
+
+    def exploding_run(*a, **kw):
+        raise OSError("git is not on PATH")
+
+    mod.ROOT = str(root)
+    mod.subprocess.run = exploding_run
+    try:
+        mod._filings_on_review_branches()
+        check("git missing from PATH refuses", False, "returned instead of refusing")
+    except SystemExit as exc:
+        check("git missing from PATH refuses", exc.code == 2, "exit=" + str(exc.code))
+    finally:
+        mod.subprocess.run = real_run
+
+
 def main():
     if not TOOL.exists():
         print("FAIL: tool not found at " + str(TOOL))
@@ -166,6 +332,7 @@ def main():
         try:
             sys.stdout = out
             run_case(Path(raw))
+            run_discovery_case(Path(raw))
         finally:
             sys.stdout = real
         for line in out.getvalue().splitlines():
