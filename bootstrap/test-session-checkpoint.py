@@ -16,6 +16,22 @@ Every case drives the real hook as a subprocess against a real temporary git
 repository, because the defect lived in the seam between git's output format
 and the parser -- a seam a mocked git would have reproduced incorrectly and
 declared green.
+
+KNOWN UNCOVERED, stated here rather than left to be discovered. Two fixes in the
+hook have no test in this file:
+
+  * a FAILED `ls-files` must read as "whether any path is hidden is UNKNOWN",
+    never as "no path carries a hiding flag";
+  * git older than 2.31 has no `--path-format`, and the fallback stops a healthy
+    repository being declared unversioned.
+
+Both need a git that misbehaves in one specific subcommand, which means a shim
+on PATH -- and on Windows the executable is resolved from the PARENT process's
+PATH, so a shim placed for the child is never reached. A first attempt at such a
+case PASSED while the fix was mutated away, i.e. it was vacuous, and a test that
+cannot fail asserts coverage that does not exist. It was removed rather than
+kept for appearance. Anyone adding it needs a real shim install (distlib-style
+launcher), not a PATH entry.
 """
 
 from __future__ import annotations
@@ -373,6 +389,136 @@ def case_missing_git_is_not_an_unversioned_tree(tmp):
           "would lose nothing" not in body, body[-300:])
 
 
+def case_unreadable_repo_is_not_an_unversioned_tree(tmp):
+    """Fifth road to the same misdescription, and the worst-sounding one.
+
+    A malformed `.git/config` makes repository DISCOVERY fail with 128 while `git --version` still
+    exits 0, so the absence of an answer looked exactly like the absence of a repository. The tree
+    had real committed history, and the checkpoint announced that NOTHING in it was committed.
+    Found by the independent acceptance key, 2026-09-16.
+    """
+    print("case: a repo git cannot open is not an unversioned tree")
+    home = tmp / "home16"
+    repo = make_repo(tmp)
+    (repo / "tracked.txt").write_text("uncommitted edit\n", encoding="utf-8")
+    head_before = git(repo, "rev-parse", "HEAD").stdout.strip()
+    config = repo / ".git" / "config"
+    original = config.read_text(encoding="utf-8")
+    config.write_text(original + "\n[malformed\n", encoding="utf-8")
+
+    broke = git(repo, "rev-parse", "--git-common-dir")
+    check("fixture really breaks repository discovery", broke.returncode != 0,
+          "rc=" + str(broke.returncode))
+    check("but git itself still runs", git(repo, "--version").returncode == 0)
+
+    rc = run_hook(repo, home)
+    check("hook exits 0", rc.returncode == 0, rc.stderr[-200:])
+    cp = checkpoint_for(home, repo)
+    check("checkpoint written", cp.exists(), str(cp))
+    if cp.exists():
+        body = cp.read_text(encoding="utf-8")
+        check("does NOT claim the tree is unversioned",
+              "version control: NONE" not in body, body[-400:])
+        check("does NOT claim nothing is committed",
+              "NOTHING in it is committed" not in body, body[-400:])
+        check("says a repository IS here but unreadable",
+              "IS a repository" in body, body[-400:])
+        check("makes no absolute safety claim",
+              "would lose nothing" not in body, body[-400:])
+
+    config.write_text(original, encoding="utf-8")
+    check("committed history was there all along",
+          git(repo, "rev-parse", "HEAD").stdout.strip() == head_before)
+
+
+def case_inherited_git_env_cannot_redirect_the_measurement(tmp):
+    """Config was pinned on the command line; the ENVIRONMENT was not, and it wins.
+
+    With GIT_DIR / GIT_WORK_TREE inherited from the parent process, every measurement is taken
+    against a DIFFERENT repository, and a tree full of uncommitted work reports clean. The file
+    claimed no repository or user setting could narrow what it sees; that was false.
+    """
+    print("case: inherited GIT_DIR/GIT_WORK_TREE cannot redirect the measurement")
+    home = tmp / "home17"
+    dirty = make_repo(tmp)
+    (dirty / "tracked.txt").write_text("real uncommitted work\n", encoding="utf-8")
+    (dirty / "new-design.md").write_text("untracked work\n", encoding="utf-8")
+    clean = tmp / "cleanone"
+    clean.mkdir()
+    git(clean, "init", "-q", "-b", "main")
+    git(clean, "config", "user.email", "t@example.invalid")
+    git(clean, "config", "user.name", "test")
+    (clean / "seed.txt").write_text("x\n", encoding="utf-8")
+    git(clean, "add", "-A")
+    git(clean, "commit", "-q", "-m", "seed")
+
+    env = dict(os.environ)
+    env["HOME"] = str(home)
+    env["USERPROFILE"] = str(home)
+    env.pop("CLAUDE_PROJECT_DIR", None)
+    env["GIT_DIR"] = str(clean / ".git")
+    env["GIT_WORK_TREE"] = str(clean)
+    rc = subprocess.run(
+        [sys.executable, str(HOOK)],
+        input=json.dumps({"cwd": str(dirty), "session_id": "TESTSESS"}),
+        env=env, capture_output=True, text=True, timeout=60,
+        encoding="utf-8", errors="replace")
+    check("hook exits 0", rc.returncode == 0, rc.stderr[-200:])
+    cp = checkpoint_for(home, dirty)
+    check("checkpoint filed under the REAL repo", cp.exists(), str(cp))
+    if not cp.exists():
+        return
+    body = cp.read_text(encoding="utf-8")
+    paths = listed_paths(body)
+    check("the real dirty file is reported", "tracked.txt" in paths, str(paths))
+    check("the real untracked file is reported", "new-design.md" in paths, str(paths))
+    check("does NOT report the redirected clean tree",
+          "NONE REPORTED" not in body, body[-300:])
+
+
+def case_a_hidden_and_modified_path_is_never_buried(tmp):
+    """Sparse-checkout marks every excluded path skip-worktree, and truncation buried the one
+    path that was both hidden AND modified -- while the file promised it would be listed."""
+    print("case: the dangerous hidden path survives truncation")
+    home = tmp / "home19"
+    repo = make_repo(tmp)
+    (repo / "drop").mkdir()
+    for i in range(60):
+        (repo / "drop" / ("z%02d.txt" % i)).write_text("x\n", encoding="utf-8")
+    (repo / "keep").mkdir()
+    (repo / "keep" / "secret-draft.md").write_text("original\n", encoding="utf-8")
+    git(repo, "add", "-A")
+    git(repo, "commit", "-q", "-m", "bulk")
+    for i in range(60):
+        git(repo, "update-index", "--skip-worktree", "drop/z%02d.txt" % i)
+    git(repo, "update-index", "--assume-unchanged", "keep/secret-draft.md")
+    (repo / "keep" / "secret-draft.md").write_text("REAL UNSAVED WORK\n", encoding="utf-8")
+
+    rc = run_hook(repo, home)
+    check("hook exits 0", rc.returncode == 0, rc.stderr[-200:])
+    body = checkpoint_for(home, repo).read_text(encoding="utf-8")
+    check("the dangerous path is named somewhere",
+          "keep/secret-draft.md" in body, body[-500:])
+    check("nothing was silently dropped at this size",
+          "TRUNCATED" not in body, body[-300:])
+
+    # And when the list DOES exceed the cap, the truncation must be declared rather than implied.
+    huge = tmp / "huge"
+    huge.mkdir(parents=True, exist_ok=True)
+    big = make_repo(huge)
+    (big / "bulk").mkdir()
+    for i in range(320):
+        (big / "bulk" / ("f%03d.txt" % i)).write_text("x\n", encoding="utf-8")
+    git(big, "add", "-A")
+    git(big, "commit", "-q", "-m", "bulk")
+    for i in range(320):
+        git(big, "update-index", "--skip-worktree", "bulk/f%03d.txt" % i)
+    rc = run_hook(big, tmp / "home19b")
+    check("hook exits 0 on a large hidden set", rc.returncode == 0, rc.stderr[-200:])
+    body2 = checkpoint_for(tmp / "home19b", big).read_text(encoding="utf-8")
+    check("truncation is declared, not silent", "TRUNCATED" in body2, body2[-300:])
+
+
 def case_clean_repo_says_nothing_would_be_lost(tmp):
     print("case: a clean tree states the absence positively, it does not omit the line")
     home = tmp / "home4"
@@ -519,6 +665,9 @@ def main():
         case_absolute_claim_appears_nowhere,
         case_unversioned_tree_is_not_a_failed_status,
         case_missing_git_is_not_an_unversioned_tree,
+        case_unreadable_repo_is_not_an_unversioned_tree,
+        case_inherited_git_env_cannot_redirect_the_measurement,
+        case_a_hidden_and_modified_path_is_never_buried,
         case_clean_repo_says_nothing_would_be_lost,
         case_never_exits_non_zero,
         case_performs_no_git_write,

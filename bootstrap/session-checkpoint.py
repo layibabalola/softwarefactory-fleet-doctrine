@@ -21,14 +21,23 @@ Why this file existed only as an install prompt until now: the prompt was writte
 names `coordination/tools/session-checkpoint.py` for this repo, but it was never run here. Measured
 2026-09-15: newest Conjugal checkpoint was 2026-09-11, four days stale, while three sessions ran.
 """
+import hashlib
 import json
 import os
 import subprocess
 import sys
 from datetime import datetime, timezone
 
-TIMEOUT = 10
+# Deliberately small. The hook makes several git calls and `.claude/settings.json` gives it a 20 s
+# budget; at 10 s each the worst case measured 70 s, and the kill left a STALE checkpoint on disk
+# that reads exactly like a current one. A per-call ceiling that cannot exceed the budget is the
+# only version of this that degrades honestly.
+TIMEOUT = 2
 MAX_DIRTY_LISTED = 40
+# Hidden paths get a far higher cap than dirty ones: a sparse-checkout marks EVERY excluded path
+# skip-worktree, so this list runs to hundreds where the dirty list runs to tens, and truncating it
+# at the same number buried the one path that mattered under dozens that did not.
+MAX_HIDDEN_LISTED = 300
 
 
 def git(repo, *args, raw=False, default=""):
@@ -51,7 +60,14 @@ def git(repo, *args, raw=False, default=""):
     exist is worse than no list.
     """
     try:
-        p = subprocess.run(["git", "--no-optional-locks", *args], cwd=repo,
+        # Inherited GIT_DIR / GIT_WORK_TREE / GIT_INDEX_FILE silently redirect every measurement
+        # at a DIFFERENT repository, so a dirty tree reported clean while the docstring claimed no
+        # setting could narrow what this sees. Environment beats command line; scrub it.
+        env = dict(os.environ)
+        for var in ("GIT_DIR", "GIT_WORK_TREE", "GIT_INDEX_FILE", "GIT_COMMON_DIR",
+                    "GIT_OBJECT_DIRECTORY", "GIT_CEILING_DIRECTORIES"):
+            env.pop(var, None)
+        p = subprocess.run(["git", "--no-optional-locks", *args], cwd=repo, env=env,
                            capture_output=True, text=True, timeout=TIMEOUT,
                            encoding="utf-8", errors="replace")
         if p.returncode != 0:
@@ -59,6 +75,32 @@ def git(repo, *args, raw=False, default=""):
         return p.stdout if raw else p.stdout.strip()
     except Exception:
         return default
+
+
+def has_git_marker(start):
+    """True when a `.git` directory or file exists at `start` or any ancestor.
+
+    Deliberately a filesystem test rather than a git call or a scrape of git's stderr: it is exactly
+    the evidence git cannot give us when git is the thing that is broken, and it does not depend on
+    message wording that changes between versions and locales.
+    """
+    try:
+        path = os.path.abspath(start)
+    except Exception:
+        return False
+    seen = set()
+    while path and path not in seen:
+        seen.add(path)
+        try:
+            if os.path.exists(os.path.join(path, ".git")):
+                return True
+        except Exception:
+            return False
+        parent = os.path.dirname(path)
+        if parent == path:
+            break
+        path = parent
+    return False
 
 
 def main():
@@ -78,7 +120,14 @@ def main():
 
     # Checkpoint under the MAIN repo's name, not the worktree's: a worktree can be deleted, and a
     # checkpoint filed under a vanished directory is a checkpoint nobody finds.
+    # --path-format arrived in git 2.31; Debian bullseye ships 2.30.2 and RHEL 8 ships 2.27, where
+    # this call fails and every healthy repository read as unversioned. Fall back rather than
+    # conclude anything from one unsupported option.
     common = git(repo, "rev-parse", "--path-format=absolute", "--git-common-dir") or ""
+    if not common:
+        common = git(repo, "rev-parse", "--git-common-dir") or ""
+        if common and not os.path.isabs(common):
+            common = os.path.abspath(os.path.join(repo, common))
     main_repo = os.path.dirname(common) if common.endswith(".git") else repo
     # A tree that is NOT A REPOSITORY and a repository whose status command FAILED are different
     # facts, and reporting the first as the second is the evidence-layer collapse this file has
@@ -92,7 +141,17 @@ def main():
     # until this check existed. Found by the independent acceptance key, 2026-09-16. Probe the tool
     # before concluding anything about the tree.
     git_available = bool(git(repo, "--version"))
+    # A FIFTH member of the family, found by the key on 2026-09-16: a malformed `.git/config` makes
+    # repository DISCOVERY fail (exit 128) while `git --version` still exits 0. Absence of an answer
+    # from git is then indistinguishable from absence of a repository -- and the tree in question had
+    # real committed history, so "NOTHING in it is committed" was flatly false.
+    #
+    # The discriminator is the filesystem, not git's message text: if a `.git` marker exists anywhere
+    # up the tree, a repository IS here and git merely could not read it. Never claim "no version
+    # control" over a directory that carries the marker.
+    marker = has_git_marker(repo)
     is_repo = git_available and bool(common)
+    repo_unreadable = git_available and not common and marker
     name = os.path.basename(main_repo.rstrip("\\/")) or "repo"
 
     branch = git(repo, "rev-parse", "--abbrev-ref", "HEAD") or "?"
@@ -148,6 +207,7 @@ def main():
     # `ls-files -v` marks skip-worktree with "S" and assume-unchanged with a LOWERCASE letter.
     hidden = []
     listing = git(repo, "ls-files", "-v", "-z", raw=True, default=None)
+    hidden_unknown = listing is None
     if listing:
         for entry in listing.split("\0"):
             if len(entry) < 3:
@@ -169,12 +229,23 @@ def main():
         "- branch: {} @ {}".format(branch, head),
         "- last commit: {}".format(last),
     ]
-    if not git_available:
+    if not os.path.isdir(repo):
+        lines.append("- uncommitted files: UNKNOWN -- the working directory no longer exists. A "
+                     "worktree was probably removed while this session was running, so nothing "
+                     "here describes it. This says nothing about git.")
+    elif not git_available:
         # Says nothing about the tree, which may be a perfectly healthy repository. The honest
         # report is about the MEASURING INSTRUMENT, not about what it failed to measure.
         lines.append("- uncommitted files: UNKNOWN -- `git` could not be run at all, so this "
                      "checkpoint could not look. This says nothing about whether the tree is a "
                      "repository or whether it is clean. Fix git on PATH, then look by hand.")
+    elif repo_unreadable:
+        # A repository IS here; git could not read it. Saying "no version control" would deny the
+        # existence of committed history that is sitting on disk.
+        lines.append("- uncommitted files: UNKNOWN -- a `.git` marker exists here, so this IS a "
+                     "repository, but git could not open it (a malformed config or a damaged "
+                     "repo will do this while `git --version` still works). Repair the repository "
+                     "and look by hand; do NOT read this as an unversioned tree.")
     elif not is_repo:
         # The strongest statement this file ever makes, and the only one that is unconditional --
         # because for an unversioned tree it is true by construction rather than by observation.
@@ -218,15 +289,34 @@ def main():
         lines.append("  NOT examined, and able to hold unsaved work: files excluded by .gitignore, "
                      "and anything a submodule's own index hides. Changes to a path marked "
                      "assume-unchanged or skip-worktree are invisible to git status; any such path "
-                     "in THIS index is listed below.")
+                     "in THIS index is listed below unless that list says it was truncated.")
     if is_repo and not dirty and not status_failed and not hidden:
-        lines.append("  No path in this index carries a hiding flag.")
+        if hidden_unknown:
+            lines.append("  Whether any path carries a hiding flag is UNKNOWN: `ls-files` failed, "
+                         "so this census could not run. Do not read it as none.")
+        else:
+            lines.append("  No path in this index carries a hiding flag.")
     if hidden:
-        lines.append("- paths the index hides from status ({}):".format(len(hidden)))
-        for f in hidden[:MAX_DIRTY_LISTED]:
+        # Sparse-checkout marks EVERY excluded path skip-worktree, so this list is routinely
+        # dominated by paths nobody is working on -- and the one path that is hidden AND modified
+        # got buried past the truncation, while the file above promised "any such path is listed
+        # below". Rank by actual risk so truncation can never drop the dangerous entry, and say
+        # plainly what was dropped.
+        # RANKING THESE BY RISK WAS TRIED AND ABANDONED, deliberately. A hidden path never appears
+        # in `status`, so the only way to tell a modified one from an untouched one is to compare
+        # the working bytes against the index blob -- and under `core.autocrlf` every working file
+        # differs from its blob, so that ranking marked all 61 paths dangerous and buried the real
+        # one just as thoroughly. Reproducing git's clean filter here would be a worse bug than the
+        # one it fixes. So the list is not ranked; it is raised and its truncation is DECLARED,
+        # which is the honest version of a promise this file cannot fully keep.
+        lines.append("- paths the index hides from status ({} total):".format(len(hidden)))
+        for f in hidden[:MAX_HIDDEN_LISTED]:
             lines.append("  ! {}".format(f))
-        if len(hidden) > MAX_DIRTY_LISTED:
-            lines.append("  ! ... and {} more".format(len(hidden) - MAX_DIRTY_LISTED))
+        if len(hidden) > MAX_HIDDEN_LISTED:
+            lines.append("  ! ... and {} more NOT listed here. This list is TRUNCATED and is "
+                         "therefore NOT the complete set -- the path you care about may be among "
+                         "the ones omitted. Run `git ls-files -v` for all of them."
+                         .format(len(hidden) - MAX_HIDDEN_LISTED))
     lines += [
         "",
         # The footer carried the retired absolute in different words -- "everything else is

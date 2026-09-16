@@ -41,7 +41,7 @@ capability, never by filename.
 ## STEP 1 — install or upgrade the script
 
 The reference implementation is `bootstrap/session-checkpoint.py` **on this bus**, with its proof
-in `bootstrap/test-session-checkpoint.py` (94 checks, 14 cases, every case mutation-proven).
+in `bootstrap/test-session-checkpoint.py` (113 checks, 17 cases; see its docstring for two fixes it does NOT cover).
 
 1. **Compare content digests, not prose.** An earlier draft of this step compared the first
    docstring line; the independent acceptance key showed those lines are identical across versions
@@ -60,10 +60,10 @@ in `bootstrap/test-session-checkpoint.py` (94 checks, 14 cases, every case mutat
 4. Run the test. It must exit 0, read directly and **never through a pipe** — `tail` reports its own
    exit status, which has already produced a false green in this fleet.
 
-## STEP 2 — the eight corrections, if you are porting rather than copying
+## STEP 2 — the corrections, if you are porting rather than copying
 
 Each is a way the checkpoint reported that a rotation would lose nothing while real uncommitted
-work sat in the tree. Port all eight or copy the file; a partial port leaves the class open.
+work sat in the tree. Port all of them or copy the file; a partial port leaves the class open.
 
 1. **Read `status --porcelain -z`.** Without `-z`, git C-quotes any non-ASCII path, so `café.txt` is
    recorded as an escape sequence that resolves to nothing. `-z` also removes the hand-rolled quote
@@ -90,7 +90,24 @@ work sat in the tree. Port all eight or copy the file; a partial port leaves the
    the checkpoint must say so rather than blame git. And when **git itself cannot be run** — absent
    from PATH — every call returns its default and a perfectly healthy repository reads as
    unversioned. Check `git --version` first; if that fails, report the instrument, because you have
-   learned nothing about the tree.
+   learned nothing about the tree. A repository git cannot OPEN (a malformed `.git/config` makes
+   discovery exit 128 while `git --version` still works) is a fourth case again: check for a `.git`
+   marker on the filesystem before ever saying "no version control".
+
+9. **Scrub the git environment.** Pinning options on the command line is not enough — inherited
+   `GIT_DIR`, `GIT_WORK_TREE` and `GIT_INDEX_FILE` redirect every measurement at another repository,
+   and a dirty tree then reports clean. Environment beats command line.
+
+10. **Keep the total runtime under the hook's configured budget.** Several git calls at a generous
+    per-call timeout can exceed it; the kill then leaves a STALE checkpoint that reads exactly like
+    a current one. Size the per-call timeout so the worst case cannot overrun.
+
+11. **Do not promise a complete list you might truncate.** A sparse-checkout marks every excluded
+    path skip-worktree, so the hidden-path list runs to hundreds and truncation buries the one path
+    that is hidden AND modified. Raise the cap and DECLARE truncation.
+
+12. **`--path-format` needs git 2.31.** Debian bullseye ships 2.30.2 and RHEL 8 ships 2.27, where
+    that option fails and a healthy repository reads as unversioned. Fall back rather than conclude.
 
 ## STEP 3 — wire the Stop hook
 
