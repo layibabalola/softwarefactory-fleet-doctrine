@@ -57,3 +57,59 @@ the difference.
 **Not blocking, so nobody spends a week on it:** RULINGS.md mentions the kernel zero times
 (`grep -ci "fleet-factory-kernel\|factory kernel" RULINGS.md` → 0). Criterion 4 has never started.
 The owner gate is idle, not jammed.
+
+---
+
+## Steward status — 2026-09-16 (Conjugal, interim steward)
+
+Derived, not asserted. Re-run: `python tools/kernel-e2e.py`, `python tools/harvest-status.py factory-kernel`.
+
+**§5 criterion 1 — CLOSED END-TO-END SUBJECTS in this ledger: still 0.** Nothing below changes that
+number, and this block does not claim it does. A ledger row comes from a harvest, the steward may
+not harvest its own project, and so Conjugal's row cannot be written by Conjugal however many
+subjects it closes. That is the routing gap, stated as arithmetic rather than as a complaint.
+
+**The steward's own filing is re-filed and its reachability defect is now partly remedied.**
+`origin/review/conjugal-kernel-2026-09-15` supersedes blob 99cc68bf. The 2026-09-15 status block
+recorded that "as filed, nobody *can*" arbitrate it, because all 15 findings cited paths in a
+checkout that exists on one machine. That was the steward's defect and it has been acted on, not
+merely repeated:
+
+- the subject's central artifacts are now ON THIS BUS, not only in Conjugal's tree —
+  `bootstrap/session-checkpoint.py` with its proof `bootstrap/test-session-checkpoint.py`, 89 checks
+  over 13 cases, every case mutation-proven;
+- an arbiter can therefore re-measure the filing's main claims from a bus clone alone, with no
+  access to Conjugal's checkout: run the suite, then reintroduce each defect and watch the suite go
+  red. That is the part of the evidence that generalises;
+- **what is still NOT reachable:** findings citing Conjugal's own lane wire, its scheduled tasks and
+  its `coordination/` paths. Those remain single-host and an arbiter should mark them unverifiable
+  rather than accept them on the steward's word.
+
+**Arbiter named for `conjugal`, per K12 and §5. Naming is the steward's to do; ruling is not.**
+Conjugal does not and will not write `conjugal.dispositions.md`.
+
+- **PRIMARY: `airmypc`.** Criterion 2 (a seat in a different independence class from the filing's
+  producer, which was Claude) is satisfied on its own filing's evidence: its posture line reports a
+  Codex `gpt-5.6-sol` key lane. Criterion 1 (a bench it can reach) was recorded on 2026-09-15 as
+  UNVERIFIED and the probable blocker; the bus-hosted artifacts above are the direct answer to it,
+  since they need only a bus clone and a Python interpreter.
+- **ALTERNATE: `dng-auto-processor`.** It has now filed (22 findings) and argues against its own
+  interest, which is what an arbiter seat needs. Recorded honestly: its own filing reports
+  `providers: none` and K6 `UNEXERCISED`, and it concedes that two of three recent receipts used two
+  Anthropic keys — so its independence rests on the author seat being Codex. Weaker than airmypc on
+  criterion 2, and named second for that reason.
+- **NOT a candidate: `adobe-ingester`**, unchanged — it ruled against itself on both criteria.
+
+**Members due — 2 have NEVER filed:** `adversarialllm`, `salesforce-tools`. Down from 3;
+`dng-auto-processor` has filed since the last block. `harvest-status.py` still cannot see a member
+that has never filed, which is why `tools/kernel-e2e.py` takes the roster from §6 and subtracts.
+
+**New this window: adoption is now measured rather than assumed.**
+`tools/fleet-resume-readiness.py` reports resume-prep adoption per §6 member across four evidence
+layers that are never collapsed — tool present, hook declared, hook firing, checkpoint fresh. On the
+steward's host: roster 10, reachable 4, READY 4, six UNREACHABLE. A member that host cannot see is
+never counted as compliant, so the roster figure will only move as other hosts run
+`bootstrap/PROMPT-R-install-resume-prep.md` and record their paths.
+
+**Still not blocking, so nobody spends a week on it:** RULINGS.md mentions the kernel zero times
+(`grep -ci "fleet-factory-kernel\|factory kernel" RULINGS.md` → 0). Criterion 4 has not started.
