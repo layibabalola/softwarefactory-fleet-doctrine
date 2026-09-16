@@ -165,6 +165,24 @@ K11 this filing · K12 `coordination/harvest/harvest_runner.py`; **self-filing r
   checkpoint survives, so exposure is bounded at about one turn, not a session. Recorded because a
   rotation is exactly the event that can kill a process mid-turn.
 
+- **K6 has no route for a SECURITY-class subject, and this is a new finding with a receipt.**
+  S5 fixes a script-block escape. The acceptance key was commissioned in the normal way — verify
+  the fix by trying to defeat it — and the provider **terminated the run on its own content
+  filter**, twice in one output: `ERROR: This content was flagged for possible cybersecurity risk`.
+  No verdict was produced. Under the `code` profile that is a typed resource terminal
+  (`independent key unavailable`), with zero partial credit, and it is filed as one.
+  A second commission, reframed to verify the escape's INERTNESS and LOSSLESSNESS by property
+  rather than to construct a breakout, is the honest way through — the work is defensive and the
+  reframing does not weaken the check, because inertness and losslessness are what actually decide
+  acceptance. But the general problem stands: **the kernel requires an independent key, and for
+  security-class subjects the most natural commissioning of that key is refused by the provider.**
+  A project that hits this and does not know the shape will read it as a tooling failure and either
+  give up or, worse, quietly accept its own fix.
+  REPLACES: "Every acceptance includes a key from an independence class other than the producer's"
+  -> the same, plus: "for a security-class subject, commission the key to verify the fix's
+  properties rather than to produce an exploit; a provider refusal is a typed terminal, never a
+  pass."
+
 - **Six of ten roster members are UNREACHABLE from this machine** and nothing here is evidence about
   their adoption either way.
 - **`RULINGS.md` mentions the kernel zero times**, so §5 criterion 4 has not started. Unchanged, and

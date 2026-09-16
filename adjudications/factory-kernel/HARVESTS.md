@@ -113,3 +113,52 @@ never counted as compliant, so the roster figure will only move as other hosts r
 
 **Still not blocking, so nobody spends a week on it:** RULINGS.md mentions the kernel zero times
 (`grep -ci "fleet-factory-kernel\|factory kernel" RULINGS.md` → 0). Criterion 4 has not started.
+
+---
+
+## Steward status — 2026-09-16b (Conjugal, interim steward)
+
+Derived, not asserted. Adjudicated from four adversarial advisors run in parallel, each assigned a
+different position and required to cite paths and command output. Two of the four refuted the
+steward's own prior work; both are recorded here rather than quietly fixed.
+
+**§5 criterion 1 is NOT REACHABLE FROM THIS HOST, and that is the finding of the day.**
+`tools/fleet-resume-readiness.py` reports `roster 10 | reachable 4`. Criterion 1 needs **five**
+projects with at least one closed end-to-end subject each. Four is already short of five before
+subtracting `salesforce-tools`, which has never filed, and `magic-lantern_dannephoto`, whose ledger
+row reads `0 eligible; 5 blocked_external` because its acceptance is the owner's camera. **The
+ceiling from this machine is three.** Criterion 1 requires work on hosts a steward session here
+cannot reach, by construction. No amount of local effort closes it, and any plan that implies
+otherwise is wrong.
+
+**Exactly ONE filing on this bus claims a closed end-to-end subject.** Every other filing's
+`subjects:` line reads zero — verified filing by filing. So harvesting the other open filings is
+the move that most LOOKS like ledger progress and provably adds nothing to criterion 1. Worth doing
+for its own sake; not worth doing as criterion-1 work.
+
+**The arbitration route the steward built on 09-16 is UNDISCOVERABLE, which is the same defect it
+was built to fix.** `tools/arbitration-queue.py` exists only on this review branch: on bus `master`
+it does not exist, and `grep -n "arbitrat" bootstrap/PROMPT-A-sync-and-adopt.md` returns no match.
+The prompt every sibling actually runs never calls it. A router nobody runs is an announcement.
+
+**Two remedies are OUT OF THE STEWARD'S AUTHORITY and are raised here as requests, not done:**
+- **Landing this branch to bus `master`.** R7.3 is explicit: the standing push grant "does not cover
+  pushing to or merging into `master`". Requested of the owner or a board with that grant.
+- **One line in `bootstrap/PROMPT-A-sync-and-adopt.md` §4** calling
+  `python tools/arbitration-queue.py <your project>` so a sibling is TOLD what it owes. That file is
+  a shared fleet prompt, not the steward's under Law 2. Requested, not edited. Declaring an artifact
+  the project has no authority to write was already this steward's own K2 finding on S3; doing it
+  deliberately would be worse than having done it once by accident.
+
+**Ledger-relevance of the steward's open subjects, stated against interest.** Criterion 1 counts
+PROJECTS with at least one, not subjects. Conjugal already has one (S1). Keying S2, S3, S4 or S5
+would move conjugal from one subject to several and move criterion 1 by **zero**, and all are
+`code@r4`, so criterion 2 moves by zero too. They are filed unaccepted and should not consume key
+capacity on ledger grounds. S5 was keyed anyway, on merit: it contains a security fix and a second
+pair of eyes on that is worth more than its ledger value, which is nil.
+
+**Criterion 4 cannot legitimately start.** `grep -ci "fleet-factory-kernel\|factory kernel"
+RULINGS.md` → 0. Ratifying a kernel at 0/5 on criterion 1 would ratify nothing. The cheapest
+legitimate move is REGISTRATION rather than ratification: one RULINGS line naming the kernel and
+`python tools/kernel-e2e.py` as the command the owner reads, so the gate becomes addressable. That
+is also an owner-facing edit and is raised here rather than taken.
