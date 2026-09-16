@@ -136,16 +136,28 @@ def _unfenced_lines(text):
 
     Lines are blanked rather than dropped so that file positions (used only to break a genuine
     same-rank tie) stay honest.
+
+    Only the marker that OPENED a fence can close it. The sibling guard
+    `tools/test-kernel-arbitration-route.py` carried the same "either marker toggles" bug, and its
+    independent key showed the consequence: a ``` inside a ~~~ block turns fencing OFF, so the rest
+    of the document reads as live content while it is in fact all inside one example.
     """
     out = []
-    fenced = False
+    fence = None
     for line in text.splitlines():
         stripped = line.strip()
-        if stripped.startswith("```") or stripped.startswith("~~~"):
-            fenced = not fenced
+        marker = "```" if stripped.startswith("```") else (
+            "~~~" if stripped.startswith("~~~") else None)
+        if marker and fence is None:
+            fence = marker
             out.append("")
             continue
-        out.append("" if fenced else line)
+        if fence is not None:
+            if marker == fence:
+                fence = None
+            out.append("")
+            continue
+        out.append(line)
     return out
 
 
@@ -331,16 +343,9 @@ def _filing_project(text):
     `airmypc.md` to a Cyrillic-confusable stem, with `project: airmypc` untouched inside, made the
     live assignment read UNREACHABLE-ARBITER and dropped it out of the owed set entirely.
     """
-    fenced = False
     seen = set()
     project = None
-    for line in text.splitlines():
-        stripped = line.strip()
-        if stripped.startswith("```") or stripped.startswith("~~~"):
-            fenced = not fenced
-            continue
-        if fenced:
-            continue
+    for line in _unfenced_lines(text):
         low = line.lower()
         for field in ("project:", "kernel:"):
             if low.startswith(field):

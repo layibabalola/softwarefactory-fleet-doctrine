@@ -292,6 +292,22 @@ def run_round2_case(tmp):
           named.get("conjugal") == [("PRIMARY", "airmypc"),
                                     ("ALTERNATE", "dng-auto-processor")],
           str(named.get("conjugal")))
+    # B3 comes from the sibling guard's independent key, which found the same bug in
+    # tools/test-kernel-arbitration-route.py: if EITHER marker closes a fence, a ``` written inside
+    # a ~~~ example turns fencing off and the rest of the example reads as live content.
+    mixed_ledger = LEDGER + (
+        "\n## Steward status -- 2029-01-01\n\n"
+        "Worked example, written with tildes because it contains backticks:\n\n"
+        "~~~\n"
+        "```\n"
+        "**Arbiter named for `conjugal`.**\n\n"
+        "- **PRIMARY: `cloudvore`.**\n"
+        "~~~\n")
+    named = mod.namings(mixed_ledger)
+    check("B3: a ``` inside a ~~~ example does not re-open the ledger to that example",
+          named.get("conjugal") == [("PRIMARY", "airmypc"),
+                                    ("ALTERNATE", "dng-auto-processor")],
+          str(named.get("conjugal")))
 
     # ---- C: placeholder arbiter values -----------------------------------------------------
     print("case C: a placeholder value names nobody and does not clear a duty")
