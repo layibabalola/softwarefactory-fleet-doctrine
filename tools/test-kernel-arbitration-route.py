@@ -64,68 +64,128 @@ def governed_lines(text):
     Lines are blanked rather than removed so that every anchor keeps its real position.
     """
     out = []
-    fenced = False
+    fence = None            # the marker that OPENED the current fence, or None
     in_comment = False
     for line in text.splitlines():
         stripped = line.strip()
-        if not in_comment and (stripped.startswith("```") or stripped.startswith("~~~")):
-            fenced = not fenced
-            out.append("")
-            continue
-        if fenced:
-            out.append("")
-            continue
-        if not in_comment and "<!--" in line:
-            in_comment = "-->" not in line.split("<!--", 1)[1]
-            out.append(line.split("<!--", 1)[0])
-            continue
-        if in_comment:
-            if "-->" in line:
-                in_comment = False
-                out.append(line.split("-->", 1)[1])
-            else:
+        if not in_comment:
+            marker = "```" if stripped.startswith("```") else (
+                "~~~" if stripped.startswith("~~~") else None)
+            if marker and fence is None:
+                fence = marker
                 out.append("")
+                continue
+            if fence is not None:
+                # Round 2 of the key: a ``` inside a ~~~ block toggled the state off, so the rest of
+                # the spec read as governing prose while it was in fact all inside one fence. Only
+                # the marker that opened a fence can close it.
+                if marker == fence:
+                    fence = None
+                out.append("")
+                continue
+        if fence is not None:
+            out.append("")
             continue
-        out.append(line)
+        # Round 2 of the key: text after a CLOSED inline comment was discarded, and a second comment
+        # on a later line was never seen. Strip every comment on the line, keeping what is outside.
+        rest = line
+        kept = []
+        while True:
+            if in_comment:
+                if "-->" in rest:
+                    rest = rest.split("-->", 1)[1]
+                    in_comment = False
+                    continue
+                rest = ""
+                break
+            if "<!--" in rest:
+                before, after = rest.split("<!--", 1)
+                kept.append(before)
+                rest = after
+                in_comment = True
+                continue
+            kept.append(rest)
+            rest = ""
+            break
+        out.append("".join(kept))
     return out
 
 
-def _block_from(lines, start):
-    """One markdown block: its first line plus wrapped continuation lines.
+def _section_bounds(lines, number):
+    """[start, end) of the top-level `## <number>.` section, or REFUSE.
+
+    Round 2 of the key: the duty anchor was found ANYWHERE -- an appendix, a table cell, a different
+    section -- so the guard never established that section 5 itself carries the route. Locating the
+    section first is the difference between "the clause that creates the duty names the command" and
+    "the string appears in the file somewhere", which is the whole distinction this subject is about.
+    """
+    prefix = "## " + str(number) + "."
+    starts = [i for i, line in enumerate(lines) if line.startswith(prefix)]
+    if not starts:
+        raise Refused("section %s is gone from the governing prose; the spec was restructured"
+                      % number)
+    if len(starts) > 1:
+        raise Refused("section %s appears %d times in the governing prose; refusing rather than "
+                      "picking one" % (number, len(starts)))
+    start = starts[0]
+    for i in range(start + 1, len(lines)):
+        if lines[i].startswith("## "):
+            return start, i
+    return start, len(lines)
+
+
+def _block_from(lines, start, end=None):
+    """One markdown block: its first line, its wrapped continuation lines, and its NESTED bullets.
 
     Ordinary Markdown wrapping put the K12 command on an indented continuation line, and round 1
-    correctly called the resulting FAILURE a false one. A continuation line belongs to the block; a
-    new bullet, heading or bold run starts a different one and must not be read into it.
+    correctly called the resulting FAILURE a false one. Round 2 found the mirror case: a nested
+    sub-bullet under the duty bullet carrying the command was rejected too. Both belong to the
+    block. A bullet at the SAME indentation, a heading, or a new bold run starts a different block
+    and must not be read into it.
     """
+    end = len(lines) if end is None else end
+    base = len(lines[start]) - len(lines[start].lstrip())
     out = [lines[start]]
-    for line in lines[start + 1:]:
+    for line in lines[start + 1:end]:
         if not line.strip():
             break
         lead = line.lstrip()
-        if (lead.startswith(BULLETS) or line.startswith("#") or line.startswith("**")
-                or lead.startswith(OBSERVABLE) or lead.startswith("*Doctrine:*")):
+        indent = len(line) - len(lead)
+        if line.startswith("#") or line.startswith("**"):
+            break
+        if lead.startswith(BULLETS) and indent <= base:
+            break
+        if indent == 0 and (lead.startswith(OBSERVABLE) or lead.startswith("*Doctrine:*")):
             break
         out.append(line)
     return "\n".join(out)
 
 
 def duty_clause(text):
-    """The section 5 bullet that creates the duty, and ONLY that bullet."""
+    """The section 5 bullet that creates the duty, inside section 5, and ONLY that bullet."""
     lines = governed_lines(text)
-    hits = [i for i, line in enumerate(lines) if DUTY_ANCHOR in line]
+    lo, hi = _section_bounds(lines, 5)
+    hits = [i for i in range(lo, hi) if DUTY_ANCHOR in lines[i]]
     if not hits:
-        raise Refused("the section 5 duty clause anchor is gone from the governing prose; the spec "
-                      "was restructured and this guard can no longer say where the route belongs")
+        raise Refused("the duty clause anchor is gone from section 5 of the governing prose; the "
+                      "spec was restructured and this guard can no longer say where the route "
+                      "belongs")
     if len(hits) > 1:
-        raise Refused("the section 5 duty clause anchor appears %d times in the governing prose; "
-                      "refusing rather than picking one" % len(hits))
-    return _block_from(lines, hits[0])
+        raise Refused("the duty clause anchor appears %d times inside section 5; refusing rather "
+                      "than picking one" % len(hits))
+    return _block_from(lines, hits[0], hi)
 
 
 def k12_observable(text):
-    """K12's `*Observable:*` block, and ONLY it."""
+    """K12's `*Observable:*` block, and ONLY it.
+
+    Returns "" when K12 exists but carries no Observable line at all. Round 2 of the key was right
+    that this must be a named FAILURE, not a refusal: the section is locatable, so the guard CAN
+    measure, and the honest answer is that the governed place does not name the command.
+    """
     lines = governed_lines(text)
-    heads = [i for i, line in enumerate(lines) if line.startswith(K12_HEADING)]
+    heads = [i for i, line in enumerate(lines)
+             if line.rstrip() == K12_HEADING or line.startswith(K12_HEADING + " ")]
     if not heads:
         raise Refused("the K12 heading is gone from the governing prose; the spec was restructured")
     if len(heads) > 1:
@@ -136,7 +196,7 @@ def k12_observable(text):
             break
         if lines[i].startswith(OBSERVABLE):
             return _block_from(lines, i)
-    raise Refused("K12 has no *Observable:* line; the spec was restructured")
+    return ""
 
 
 def checks(text, root=None):
