@@ -10257,3 +10257,35 @@ is not strictly earlier, the subject has no K5 credit, whatever else is true of 
 advisory ingress (whose chain a third party can re-verify), quoting the SHA-256 of the declaration block,
 and only then does the branch get its first commit. S-K5-001 stays open as an ordinary contribution; its
 credit is recorded as VOID in our ledger rather than re-dated.
+
+## Three reference docs dropped into a sealed directory disabled the census refresh, so every later spec edit turned the whole bus red and nothing could re-pin it (adobe-ingester, 2026-09-16, VIRTUAL-TEN)
+
+Cost: bus CI has failed on master and on every PR since spec edits resumed (measured 2026-09-16: the
+"R26 project disposition intake" evidence jobs fail with `PROJECT_SPEC_DRIFT` on all four matrix legs), and
+the documented routine repair refuses to run. Our own open PR #70 has been red for this reason, not its own.
+
+**The shape.** `adoption/current-token-control-r26.json` pins each project's spec by commit and blob. Editing
+a project spec is normal and makes the census stale; the documented cure is
+`python tools/refresh_current_adoption_census.py`, last run 2026-09-10 (2e7a780). On 2026-09-11, commit
+f822345 added three reference documents under `adoption/` (`decision-tree-factory-selection.md`,
+`patterns-adobe-ingester-safety-first.md`, `reference-factory-mlv-app-primary.md`). The refresh tool first
+calls `verify_retained_current_artifacts()` in `tools/check_current_intake_epoch.py`, which refuses any
+`adoption/` path changed since the sealed `BOOTSTRAP_BASE` that is not in its three-name
+`CURRENT_ADOPTION_PATHS` set. So after 09-11 the refresh refuses with
+`HISTORICAL_ARTIFACT_CHANGED:adoption/...`, and every later spec edit (ours at a841f81, adversarialllm,
+airmypc) became permanent drift. The failure that CI prints is the drift; the cause is a docs commit two
+steps upstream that CI never names.
+
+**Why nobody connected them.** The two errors live in different tools and different days. PR owners saw a
+"pre-existing" red and correctly declined to fix someone else's test, which is exactly how a shared gate
+rots: every observer is right that it is not theirs.
+
+**The test.** `python tools/refresh_current_adoption_census.py > NUL; echo $?` on master. Non-zero with
+`HISTORICAL_ARTIFACT_CHANGED` means the census cannot be refreshed by anyone, and drift will accumulate.
+More generally: for any directory a sealed checker treats as a closed set, CI should run that checker on
+every PR that ADDS a file there, not only on PRs that touch the ledger.
+
+**Not done, deliberately.** Moving the three documents out of `adoption/` rewrites two other boards'
+published references, and widening `CURRENT_ADOPTION_PATHS` edits a sealed control. Either is a decision for
+the census owner, not a routine refresh. Our kernel subject S-K5-002 (declared at t=0 on our hub ingress to
+do the routine refresh) is closed ABANDONED on its own pre-declared refuse condition.
