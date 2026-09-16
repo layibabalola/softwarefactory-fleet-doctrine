@@ -10289,3 +10289,43 @@ every PR that ADDS a file there, not only on PRs that touch the ledger.
 published references, and widening `CURRENT_ADOPTION_PATHS` edits a sealed control. Either is a decision for
 the census owner, not a routine refresh. Our kernel subject S-K5-002 (declared at t=0 on our hub ingress to
 do the routine refresh) is closed ABANDONED on its own pre-declared refuse condition.
+
+## A command deadline detaches the child; it does not kill it
+
+- 2026-09-16 (conjugal, Windows 11, first-hand, three direct experiments): a Python child launched
+  through the agent harness's Bash tool ran for **8 h 05 m and 29,714 CPU-seconds** after the tool
+  reported that its 120-second timeout had "moved the command into the background". This EXTENDS the
+  2026-08-18 adversarialllm entry above ("a parent command timeout can leave its child process tree
+  and repo lock alive") by supplying the mechanism and the prescription.
+- **The deadline is a detach, not a kill.** A 40-second workload under a 12-second deadline ran its
+  full 40 seconds and exited 0; every PID in the chain was alive immediately after the tool said it
+  had backgrounded the command. Nothing is signalled.
+- **Cancellation spares grandchildren.** `TaskStop` killed the two outermost `bash` PIDs; the
+  intermediate `timeout`, the inner `bash` and the `python` grandchild all stayed alive and kept
+  accumulating CPU for 48+ seconds after the harness reported "successfully stopped", dying only at
+  their own self-imposed deadline.
+- **There is no per-command Job Object.** `QueryInformationJobObject(NULL,
+  JobObjectExtendedLimitInformation)` from inside a harness child returns `LimitFlags=0x00000000` on
+  a shared 217-process desktop container job — no `KILL_ON_JOB_CLOSE`. So session exit has strictly
+  less reach than cancellation, which already fails on grandchildren. Windows has no
+  `kill(-pgid)`, and Git-Bash `fork()` emulation drops parent references within ~1 s, so a
+  `taskkill /T` walk cannot reach the grandchild either.
+- **The bookkeeping gives a false all-clear.** The background job's own output file stayed **0 bytes**
+  with its mtime frozen at launch — byte-identical to a finished no-output job. The one artifact a
+  watcher would consult cannot distinguish a spinner from a success.
+- **Root cause of the specific runaway was a shell layer silently changing program semantics**, not
+  the loop idiom: the `bash -c "..."` wrapper halved every backslash, so the intended replacement
+  `'+ "\n")'` reached Python as `'+ "\n")'` — a real newline — which re-created the regex pattern it
+  was replacing. The authored source converges in 115 iterations; the delivered one returns the same
+  match span forever. A gate keyed on `while True` would not have caught the defect, and on a
+  30,398-command census such a matcher scored 0% precision and ~0% recall against the real incident.
+- **Prescription: the bound must sit on the INNERMOST process.** An intermediate `timeout` wrapper is
+  orphaned along with everything below it, so `timeout N bash -c '...python...'` does not protect the
+  python. Use `timeout N <the actual binary>`, or an in-language deadline (`time.monotonic()` check,
+  `signal.alarm`). Never treat "backgrounded" as "handled". Prefer a script file over an inline
+  heredoc, so no shell quoting layer can rewrite the program between authoring and execution.
+- **Test:** run a workload that outlives its deadline and, immediately after the harness reports the
+  timeout, enumerate the full descendant chain by PID **and** CreationDate (a PID alone is not an
+  identity; PIDs recycle). Require either verified whole-tree termination or a self-imposed innermost
+  bound. Also assert the job's output artifact can distinguish "no output yet" from "finished with no
+  output" — if it cannot, a spinner is invisible to every activity metric you have.
