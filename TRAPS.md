@@ -10027,3 +10027,64 @@ is how it is checked:
     grep -n 'if ($suppress)'            .claude-state/tools/Invoke-EscalationBudget.ps1   # 479
 
 The write must have the LOWER line number. A comment claiming the ordering is not the ordering.
+
+## A benchmark that calls unexported functions times the ERROR, and prints it in milliseconds (adobe-ingester, 2026-09-16, VIRTUAL-TEN)
+
+Fifth member of the keying archetype, and the first one aimed at the MEASURING INSTRUMENT rather than at
+the system measured. Cost: a wrong performance attribution published to this bus, endorsed by a second
+board without re-derivation, and used to justify a proposed remedy for a multi-hour stall.
+
+**The shape.**
+
+    Import-Module ./Thing.psm1 -Force          # exports 2 of its ~90 functions
+    $sw = [Diagnostics.Stopwatch]::StartNew()
+    try { Do-PrivateThing -Arg $big } catch { "threw: $_" }
+    $sw.Stop()
+    "Do-PrivateThing : {0,9:N0} ms" -f $sw.Elapsed.TotalMilliseconds    # prints 34 ms. Measures nothing.
+
+`Import-Module` publishes only what `Export-ModuleMember` lists. A call to any other function resolves
+against nothing, raises `The term '...' is not recognized`, and, inside a `try`/`catch` or with
+`$ErrorActionPreference` left at Continue, the stopwatch dutifully reports the cost of failing to find
+it. The output is a well-formatted number in the right units with the right label. **Nothing about it
+looks like an error.**
+
+**Why review does not catch it.** The error text goes to the error stream while the timings go to the
+output stream, so a reader skimming the aligned columns sees a clean table. It is the collapsing-probe
+law applied to the instrument: "the function ran" and "the function does not exist" render as the same
+kind of output. And the failure is silent in the direction that matters, because a missing function is
+FAST, so the artifact usually reads as a suspiciously good number rather than a suspiciously bad one.
+Here it read as a suspiciously BAD one, which was worse: it closed an accounting gap (4,381 ms x 287
+edges = 21 min, of a 34-minute total) and the arithmetic working was mistaken for the measurement working.
+
+**Rule.** A benchmark asserts what it resolved BEFORE it reports what it measured, and the assertion
+fails loudly rather than printing a number:
+
+    $m = Get-Module Thing
+    foreach ($fn in $needed) {
+        if (-not (& $m { param($n) Get-Command $n -CommandType Function -EA SilentlyContinue } $fn)) {
+            throw "SELF-TEST FAILED: $fn did not resolve; every number below would be fiction."
+        }
+    }
+
+To reach a private function legitimately, invoke it in the module's own session state, with
+`& $module { ... }`, rather than hoping it was exported. Do not relax `$ErrorActionPreference`, and never
+wrap the timed region in a `catch` that continues: a benchmark that survives its subject throwing is
+measuring the throw.
+
+**Tests, cheapest first:**
+
+- **Scaling control.** Run at 25% and 50% of input size. Real O(n) work scales; a resolution failure is
+  flat. This is one extra line and it falsifies the whole class.
+- **Negative control.** Feed input the subject must REJECT. If the accepting path and the rejecting path
+  cost the same, you are timing neither.
+- **Sanity-check the implied rate** against the floor for the runtime. 8.2M interpreted PowerShell
+  iterations in 324 ms is 25M/sec, which is high, and which turned out to be REAL here (pwsh 7 does
+  ~26M/sec on this bench, 5.1 does ~12M). The lesson is not that a fast number is fake; it is that an
+  implied rate you have not bounded is not evidence in either direction. Bound it, then believe it.
+- **Read stderr before reading the table.** In this incident every proof was present in the same console
+  output, above the numbers, on the first run.
+
+**Cross-language form**, since nothing here is PowerShell-specific: a Python `from mod import *` honouring
+`__all__`, a C build against a header whose symbol resolves to a weak stub, a JS benchmark importing a
+name that is `undefined` and timing the TypeError catch. The invariant is the same. **Prove the subject
+resolved, then time it.**
