@@ -69,7 +69,18 @@ CHECKPOINT_SUFFIX = ".md"
 # Session ids reserved for proving a fresh install's wiring resolves. A checkpoint carrying one is
 # evidence about the INSTALL, never about the host actually calling the hook, and the two must not
 # be reported as the same thing.
-INSTALL_SESSION_IDS = ("WIRECHECK", "INSTALLPROOF")
+INSTALL_SESSION_IDS = ("WIRECHECK", "INSTALLPROOF", "MANUAL", "UNKNOWN", "TEST", "TESTSESS")
+# A real host stamps a session UUID. Anything else -- an install check, a hand-run, or the hook's
+# own "unknown" fallback when stdin carried no session_id -- is NOT session-driven firing.
+# Keying on an allowlist of magic strings made the guard OPT-IN BY THE PARTY BEING AUDITED: omit
+# `session_id` from the install check and the hook writes SESSION-unknown.md, which was not on the
+# list, and the member read READY with no session having ever ended (found 2026-09-16).
+# Shape is the honest test: only a UUID-shaped id counts as a real session.
+# Hosts stamp a session id whose leading 8 characters are hex: Conjugal writes
+# "a1a95c95-0809-42", cloudvore and magic-lantern write "0150c1d1". A requirement of the full
+# dashed UUID shape was too strict and turned two genuinely-firing siblings red -- the opposite
+# error, and just as wrong.
+SESSION_ID_RE = re.compile(r"^[0-9a-f]{8}", re.I)
 
 READY = "READY"
 INSTALL_VERIFIED = "INSTALL-VERIFIED"
@@ -106,12 +117,14 @@ def roster():
         if not line.startswith("|"):
             continue
         cells = [c.strip() for c in line.strip().strip("|").split("|")]
-        if len(cells) < 2 or not cells[0] or cells[0].startswith("---"):
+        if len(cells) < 2 or not cells[0]:
             continue
+        if set(cells[0]) <= set("-: "):
+            continue        # an alignment separator row, e.g. |:---|:---:|, is not a member
         if cells[0].lower() == "project":
             continue
         # §6 annotates some rows, e.g. "name (no bus spec yet; mapped from ...)".
-        name = cells[0].split("(")[0].strip().strip("`")
+        name = cells[0].split("(")[0].strip().strip("`").strip("*").strip()
         if name:
             names.append(name)
     if not names:
@@ -122,15 +135,39 @@ def roster():
 def path_map():
     """Member -> working copy path. Absent members are UNREACHABLE, never guessed."""
     if not os.path.isfile(PATHMAP):
-        return {}
+        return {}, set()
     try:
         data = json.load(io.open(PATHMAP, encoding="utf-8"))
     except Exception as exc:
         raise Refused("could not read " + PATHMAP + ": " + str(exc))
-    repos = data.get("repos", data)
+    repos = data.get("repos", data) if isinstance(data, dict) else None
     if not isinstance(repos, dict):
         raise Refused(PATHMAP + " must map member -> path")
-    return repos
+    clean = {}
+    for k, v in repos.items():
+        if not isinstance(v, str):
+            raise Refused("path for %r must be a string, got %r" % (k, v))
+        clean[str(k).strip().lower()] = v          # matched case-insensitively; §6 casing drifts
+    # Two members pointing at ONE directory made both READY off a single member's checkpoint.
+    seen = {}
+    for member, path in clean.items():
+        key = os.path.normcase(os.path.abspath(path))
+        if key in seen:
+            raise Refused("%r and %r are mapped to the same directory (%s); one checkout cannot "
+                          "be evidence for two members" % (seen[key], member, path))
+        seen[key] = member
+    # A member absent from the map reads UNREACHABLE, which is neither ready nor failing -- so a
+    # genuinely delinquent member disappears if its roster name merely drifts from its map key.
+    # Absence must therefore be DECLARED, not inferred from a lookup miss.
+    declared = set()
+    if isinstance(data, dict):
+        off = data.get("_not_on_this_machine") or {}
+        if isinstance(off, dict):
+            declared |= set(str(m).strip().lower() for m in (off.get("members") or []))
+        un = data.get("_deliberately_unmapped") or {}
+        if isinstance(un, dict):
+            declared |= set(str(m).strip().lower() for m in un.keys() if not str(m).startswith("_"))
+    return clean, declared
 
 
 def checkpoint_root():
@@ -147,7 +184,7 @@ def checkpoint_is_for(path, repo_path):
     absolute repo path it describes, so bind to that and the collision stops mattering.
     """
     try:
-        text = io.open(path, encoding="utf-8", errors="replace").read(4096)
+        text = io.open(path, encoding="utf-8", errors="replace").read(65536)
     except Exception:
         return False
     want = os.path.normcase(os.path.abspath(repo_path).replace("\\", "/").rstrip("/"))
@@ -195,7 +232,9 @@ def newest_checkpoint_age_hours(repo_path):
             if not checkpoint_is_for(full, repo_path):
                 continue        # written for a DIFFERENT checkout that shares this basename
             session = entry[len(CHECKPOINT_PREFIX):-len(CHECKPOINT_SUFFIX)]
-            kind = "install" if session.upper() in INSTALL_SESSION_IDS else "session"
+            kind = ("session" if (SESSION_ID_RE.match(session)
+                                  and session.upper() not in INSTALL_SESSION_IDS)
+                    else "install")
             try:
                 mtime = os.path.getmtime(full)
             except OSError:
@@ -208,7 +247,12 @@ def newest_checkpoint_age_hours(repo_path):
             if better:
                 newest, provenance = mtime, kind
         if newest is not None:
-            return max(0.0, (time.time() - newest) / 3600.0), provenance
+            age = (time.time() - newest) / 3600.0
+            # A checkpoint dated in the FUTURE is not fresh evidence, it is a skewed clock or a
+            # touched file. Clamping it to 0.0 made "touch it forward once" mean READY forever.
+            if age < -0.05:
+                return age, "future"
+            return max(0.0, age), provenance
     return None, None
 
 
@@ -228,8 +272,18 @@ def stop_hook_scripts(repo_path):
             layer = json.load(io.open(full, encoding="utf-8"))
         except Exception:
             continue
-        if isinstance(layer, dict):
-            data.update(layer)          # later file wins, which is the precedence the host uses
+        if not isinstance(layer, dict):
+            continue
+        for key, value in layer.items():
+            if key == "hooks" and isinstance(value, dict) and isinstance(data.get("hooks"), dict):
+                # Merge PER EVENT. A top-level update replaced the whole `hooks` object, so a local
+                # file declaring only a PreToolUse hook deleted the project's Stop hook and the
+                # member read NOT-WIRED -- a false RED, the mirror of the defects above.
+                merged = dict(data["hooks"])
+                merged.update(value)
+                data["hooks"] = merged
+            else:
+                data[key] = value
     if not data:
         return []
     # Configuration and ENABLED STATE are different facts (R6), and this switch turns every hook
@@ -238,9 +292,22 @@ def stop_hook_scripts(repo_path):
     if data.get("disableAllHooks") is True:
         return []
     found = []
-    for group in (data.get("hooks") or {}).get("Stop") or []:
-        for hook in (group or {}).get("hooks", []):
-            command = str((hook or {}).get("command", ""))
+    hooks = data.get("hooks")
+    if not isinstance(hooks, dict):
+        return []
+    stop = hooks.get("Stop")
+    if not isinstance(stop, list):
+        return []           # "Stop": {...} or a string is malformed, not a wired hook
+    for group in stop:
+        if not isinstance(group, dict):
+            continue
+        entries = group.get("hooks")
+        if not isinstance(entries, list):
+            continue
+        for hook in entries:
+            if not isinstance(hook, dict):
+                continue
+            command = str(hook.get("command", ""))
             for token in re.findall(r"[^\s\"']+\.py", command):
                 rel = token.replace("\\", "/")
                 # Hook commands address the repo through a launcher variable; strip it to get a
@@ -293,6 +360,9 @@ def assess(member, repo_path, max_age_hours):
     age, provenance = newest_checkpoint_age_hours(repo_path)
     if age is None:
         return NOT_FIRING, "wired at " + script_rel + " but no checkpoint has ever been written"
+    if provenance == "future":
+        return (NOT_FIRING, "newest checkpoint is dated %.1f h in the FUTURE; a clock skew or a "
+                            "touched file, not evidence of firing" % abs(age))
     if provenance == "install":
         # Deliberately NOT ready. The install was verified; the host has not been observed calling
         # the hook. Converts to READY on its own the first time a real session ends here.
@@ -311,12 +381,23 @@ def main(argv=None):
                     help="a checkpoint older than this reads STALE (default %d)"
                          % DEFAULT_MAX_AGE_HOURS)
     args = ap.parse_args(argv)
+    # nan compares False against everything, so `age > nan` was always False and every checkpoint
+    # read fresh. A limit that cannot gate is not a limit.
+    if not (args.max_age_hours >= 0 and args.max_age_hours < float("inf")):
+        raise Refused("--max-age-hours must be a finite, non-negative number; got "
+                      + repr(args.max_age_hours))
 
     members = roster()
-    paths = path_map()
+    paths, declared_absent = path_map()
+    unaccounted = [m for m in members
+                   if m.lower() not in paths and m.lower() not in declared_absent]
+    if unaccounted and paths:
+        raise Refused("these §6 members are neither mapped nor declared absent, so they would "
+                      "silently read UNREACHABLE: " + ", ".join(sorted(unaccounted))
+                      + " -- add a path, or list them under _not_on_this_machine")
     rows = []
     for member in members:
-        repo_path = paths.get(member)
+        repo_path = paths.get(member.lower())
         state, detail = assess(member, repo_path, args.max_age_hours)
         rows.append({"member": member, "path": repo_path or "",
                      "state": state, "detail": detail})

@@ -71,7 +71,7 @@ def make_member(root, name, script_rel=None, wired=True, script_body=None):
     return repo
 
 
-def fire(ckroot, repo, age_hours=0.0, name="SESSION-X.md", repo_line=None):
+def fire(ckroot, repo, age_hours=0.0, name="SESSION-0150c1d1.md", repo_line=None):
     """Write a checkpoint that looks like a real one.
 
     A real checkpoint records the absolute repo path it describes, and the tool binds to that line
@@ -150,7 +150,11 @@ def run_case(tmp):
              "gamma": str(root / "gamma"), "delta": str(root / "delta"),
              "epsilon": str(root / "epsilon")}
     pm = tmp / "paths.json"
-    write(pm, json.dumps({"repos": paths}, indent=2) + "\n")
+    # zeta is declared absent rather than merely missing: an unaccounted roster member now REFUSES,
+    # because UNREACHABLE counts as neither ready nor failing and a delinquent member would
+    # otherwise vanish on a name drift.
+    write(pm, json.dumps({"repos": paths,
+                          "_not_on_this_machine": {"members": ["zeta"]}}, indent=2) + "\n")
     mod.PATHMAP = str(pm)
 
     print("case: the four evidence layers are reported as four different states")
@@ -201,7 +205,7 @@ def run_case(tmp):
           state == mod.INSTALL_VERIFIED, state + " " + detail)
     check("INSTALL-VERIFIED is not counted ready", state != mod.READY, state)
     # A real session later must override it, whatever the relative ages.
-    fire(ckroot, iv, 5.0, name="SESSION-realsession.md")
+    fire(ckroot, iv, 5.0, name="SESSION-b7c3e991.md")
     state, _ = mod.assess("justinstalled", str(iv), 72)
     check("a real session checkpoint outranks a newer install stamp",
           state == mod.READY, state)
@@ -221,7 +225,7 @@ def run_case(tmp):
         write(t / ".claude" / "settings.json", settings)
     d = ckroot / "member"          # ONE folder, both checkouts
     d.mkdir(parents=True, exist_ok=True)
-    write(d / "SESSION-A.md", "# checkpoint\n\n- repo: " + str(twin_a) + "\n")
+    write(d / "SESSION-a1a95c95.md", "# checkpoint\n\n- repo: " + str(twin_a) + "\n")
     state_a, _ = mod.assess("twinA", str(twin_a), 72)
     state_b, detail_b = mod.assess("twinB", str(twin_b), 72)
     check("the checkout that DID fire reads READY", state_a == mod.READY, state_a)
@@ -246,6 +250,80 @@ def run_case(tmp):
     check("disableAllHooks in settings.local.json is NOT READY",
           state != mod.READY, state + " " + detail)
 
+    print("case: a roster member neither mapped nor declared absent is REFUSED, not silently UNREACHABLE")
+    # UNREACHABLE counts as neither ready nor failing, so a delinquent member vanished if its
+    # roster name merely drifted from its manifest key. Absence must be DECLARED.
+    drift = tmp / "drift.json"
+    write(drift, json.dumps({"repos": {"alpha": str(root / "alpha")}}, indent=2) + "\n")
+    mod.PATHMAP = str(drift)
+    try:
+        mod.main(["--json"])
+        check("an unaccounted member refuses", False, "returned instead of refusing")
+    except SystemExit as exc:
+        check("an unaccounted member refuses", exc.code == 2, "exit=" + str(exc.code))
+    mod.PATHMAP = str(pm)
+
+    print("case: two members mapped to one directory is REFUSED")
+    dup = tmp / "dup.json"
+    write(dup, json.dumps({"repos": {"alpha": str(root / "alpha"), "beta": str(root / "alpha")},
+                           "_not_on_this_machine": {"members": ["gamma", "delta", "epsilon",
+                                                                "zeta"]}}, indent=2) + "\n")
+    mod.PATHMAP = str(dup)
+    try:
+        mod.path_map()
+        check("duplicate directories refuse", False, "returned instead of refusing")
+    except SystemExit as exc:
+        check("duplicate directories refuse", exc.code == 2, "exit=" + str(exc.code))
+    mod.PATHMAP = str(pm)
+
+    print("case: a non-finite freshness limit is REFUSED, it cannot silently disable the layer")
+    try:
+        mod.main(["--max-age-hours", "nan"])
+        check("nan limit refuses", False, "returned instead of refusing")
+    except SystemExit as exc:
+        check("nan limit refuses", exc.code == 2, "exit=" + str(exc.code))
+
+    print("case: a checkpoint dated in the FUTURE is not fresh evidence")
+    fut = make_member(root, "futurist", "tools/session-checkpoint.py")
+    fire(ckroot, fut, -8760.0)          # one year ahead
+    state, detail = mod.assess("futurist", str(fut), 72)
+    check("a future checkpoint is not READY", state != mod.READY, state + " " + detail)
+
+    print("case: an install-shaped session id cannot be dodged by omitting it")
+    # The hook falls back to "unknown" when stdin carries no session_id, and that string was not on
+    # the magic-string allowlist, so the guard was opt-in by the party being audited.
+    dodge = make_member(root, "dodger", "tools/session-checkpoint.py")
+    fire(ckroot, dodge, 0.1, name="SESSION-unknown.md")
+    state, detail = mod.assess("dodger", str(dodge), 72)
+    check("SESSION-unknown.md is not session-driven firing",
+          state == mod.INSTALL_VERIFIED, state + " " + detail)
+    fire(ckroot, dodge, 0.2, name="SESSION-0150c1d1.md")
+    state, _ = mod.assess("dodger", str(dodge), 72)
+    check("a real host id still reads READY", state == mod.READY, state)
+
+    print("case: a local settings file declaring ANOTHER event must not delete the Stop hook")
+    keep = make_member(root, "keephooks", "tools/session-checkpoint.py")
+    write(keep / ".claude" / "settings.local.json",
+          json.dumps({"hooks": {"PreToolUse": [{"hooks": [{"type": "command",
+                                                           "command": "echo hi"}]}]}},
+                     indent=2) + "\n")
+    fire(ckroot, keep, 0.1, name="SESSION-0150c1d1.md")
+    state, detail = mod.assess("keephooks", str(keep), 72)
+    check("the Stop hook survives an unrelated local hook", state == mod.READY,
+          state + " " + detail)
+
+    print("case: malformed-but-valid JSON does not crash")
+    for label, blob in (("Stop as an object", {"hooks": {"Stop": {"hooks": []}}}),
+                        ("hooks as a list", {"hooks": [1, 2, 3]}),
+                        ("a hook entry as a string", {"hooks": {"Stop": ["nope"]}})):
+        bad = make_member(root, "bad-" + label.replace(" ", "-"), "tools/session-checkpoint.py")
+        write(bad / ".claude" / "settings.json", json.dumps(blob, indent=2) + "\n")
+        try:
+            state, _ = mod.assess("bad", str(bad), 72)
+            check("survives " + label, state in (mod.ABSENT, mod.NOT_WIRED), state)
+        except Exception as exc:
+            check("survives " + label, False, type(exc).__name__ + ": " + str(exc))
+
     print("case: UNREACHABLE is neither ready nor failing")
     mod.PATHMAP = str(pm)
     rc = mod.main(["--json"])
@@ -253,7 +331,10 @@ def run_case(tmp):
 
     print("case: exits 0 only when every reachable member is ready")
     ready_only = tmp / "ready.json"
-    write(ready_only, json.dumps({"repos": {"alpha": str(root / "alpha")}}, indent=2) + "\n")
+    write(ready_only, json.dumps(
+        {"repos": {"alpha": str(root / "alpha")},
+         "_not_on_this_machine": {"members": ["beta", "gamma", "delta", "epsilon", "zeta"]}},
+        indent=2) + "\n")
     mod.PATHMAP = str(ready_only)
     rc = mod.main(["--json"])
     check("exits 0 when all reachable members are READY", rc == 0, "rc=" + str(rc))
