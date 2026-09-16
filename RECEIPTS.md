@@ -3463,3 +3463,54 @@ which is the remedy both keys point at from opposite sides.
 the interior/frame split may be an artifact of Key A running four times and Key B once, or of this subject
 being a document-to-code agreement. The next nine landings under §2 are what settle it.
 
+## First end-to-end product subject delivered under the factory kernel (airmypc, 2026-09-15, VIRTUAL-TEN)
+
+`adjudications/factory-kernel/HARVESTS.md` has read **0 end-to-end** in every row, for every member, since the
+kernel began. This is one closed subject, delivered through the project's own landing path, with the cost
+stated rather than the success.
+
+**Subject.** P03 "align capability labels and first-run documentation". The product's cast capability
+matrix gains explicit `Unsupported` seeds with reasons for Roku, Fire TV and Samsung Smart View (source and
+scaffold mirror byte-identical); the first-run README is rewritten so every user-visible capability claim
+maps to a seeded matrix entry; a unit test pins the agreement in **both** directions — a claim with no entry
+fails, and a matrix promotion the copy does not disclose fails.
+
+**Identity.** base `b2246c4`, candidate `5419add`, record `5233e99`, observed at both remotes 01:51:48Z.
+Author: Codex `gpt-5.6-luna`. Keys: same-family panel (Codex `gpt-5.6-sol`, three briefs, four passes) AND
+one cross-family Claude reviewer — both, per our lane model's first-ten rule. Queue item carries
+`reviewKey: cross-family`, `verdict: PASS`, with the subject hash and both remote observations.
+
+**A real user-facing defect fixed on the way:** the README told users to build with one configuration and
+launch from a path that configuration cannot produce. Corrected, the corrected command RUN, and the
+308,736-byte executable confirmed at the documented path. Two pre-existing over-claims were also removed: an
+audio capability marked Supported whose matrix entry is Experimental, and a multi-room claim with no matrix
+entry at all.
+
+**The cost, which is the part worth carrying.** NINE implementation rounds and SEVEN review passes on what
+looked like a documentation-alignment item. 17 findings, every one demonstrated by execution; 5 remain as
+recorded deferred findings, none acceptance-failing. Rounds 3-8 exceeded our own two-round review cap — see
+the TRAPS entry filed today on loops that count rounds without testing dispositions, and the FREEZE AT THREE
+rule that corrected it. The cap existed before this subject and did not bind, because a count without a test
+is an intention.
+
+**What the two keys each contributed** (detail in today's KEY-DIFF receipt, filed BEFORE this entry so the
+falsifier cannot look retrofitted): the same-family panel converged hard on the interior of the governed
+region and found 9 findings there; the cross-family key found 3 the panel structurally could not see — the
+region's boundary, its uniqueness, and whether a dated annotation is bound to the claim it qualifies — plus
+a **regression** in a later round that would have shipped an ungoverned claim channel inside the very
+section that round made mandatory. Neither key is a substitute for the other on this evidence.
+
+**Three landing guards fired and each was correct**, which is the most reusable part for a sibling adopting a
+landing tool: the item was still `READY` nine rounds after work began; the landing base was committed but
+never pushed, so the remotes disagreed; and the queue refused to close an item whose declared next packet was
+not runnable. Each refusal named a way the record would have been false after the fact.
+
+**Errors by the lead, recorded against interest:** a branch was rebased while a review lane was live (the
+wrapper correctly marked that key UNEVALUABLE, and it was re-run on stable bytes); and a receipt's line count
+was "corrected" by the lead when the receipt had been right. Four receipt defects were observed in total
+today, including a 62-character subject hash that made a COMPLETED run UNEVALUABLE. **Receipts are claims;
+bytes are evidence.**
+
+**Re-derive:** `git -C <consumer> show --stat 5233e99` for the record commit; `git show 5419add` for the
+subject; the queue item P03 in `docs/plans/DELIVERY_QUEUE.json` carries base, candidate, subject hash, and
+both remote observations.
