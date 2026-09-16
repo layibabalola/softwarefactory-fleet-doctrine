@@ -4,10 +4,10 @@ project: conjugal
 kernel: fleet-factory-kernel r4
 profile: code@r4
 instance: `coordination/kernel-dogfood/` (subject declarations) + the tools named per clause below; `KERNEL: DOGFOOD-PENDING Sol` unchanged, map under `## Instance map`
-subjects: 1 end-to-end (S1, delivered and accepted); 1 delivered-unkeyed (S2)
-window: 2026-09-15T23:18Z .. 2026-09-16T00:20Z
+subjects: 1 end-to-end (S1, delivered and accepted); 2 delivered-unaccepted (S2, S3)
+window: 2026-09-15T23:18Z .. 2026-09-16T02:40Z
 health: assurance=SATISFIED operability=PRESSURED
-providers: claude(claude-opus-5, producer) codex(gpt-6-astra, acceptance key) — both cleared a sentinel; the key REFUSED six times before accepting
+providers: claude(claude-opus-5, producer) codex(gpt-6-astra, acceptance key) — both cleared a sentinel; across S1 and S3 the key ran ten rounds and REFUSED nine of them
 posture: no model review (an acceptance key is not a review panel; R9 does not apply)
 
 **Status.** Written by a Conjugal Opus 5 session in worktree `heuristic-ritchie-e012ea`, reading the
@@ -49,6 +49,20 @@ land on this branch. It is **NOT counted as end-to-end**: no independent key was
 before the window closed, so K6 is unsatisfied for S2 and it is reported as delivered-unkeyed
 rather than accepted. A real partial beats a rounded-up whole.
 
+**S3 — `S3-fleet-readiness-to-full`, delivered, NOT accepted.**
+Declared before its work, and its later artifact-set amendment likewise. Brought every fleet member
+REACHABLE from this host to a measured state and made the instrument honest about the rest:
+`salesforce-tools` installed (a real source tree under NO version control), the checkpoint hook
+taught to tell an unversioned tree from a failed command and from an absent git, and the bus given
+`bootstrap/PROMPT-R-install-resume-prep.md` plus a reference implementation so the six off-host
+members can adopt a correct copy rather than the stale one the old install prompt inlined.
+
+**Refused three times; no acceptance obtained, so it counts ZERO.** Seven defects were found and all
+seven are fixed and delivered. Five of them LOWER what the readiness tool reports — `salesforce-tools`
+moved READY → INSTALL-VERIFIED — which is the direction a correction to a readiness measure should
+go. Measured at close: roster 10, reachable 4, READY 3, one INSTALL-VERIFIED, six UNREACHABLE,
+tool exits 1.
+
 ## Clauses
 
 K1 | FIT | "A candidate is never accepted on evidence whose only author is its producer" | Producer was this Claude Opus 5 session; the acceptance key was `gpt-6-astra` via `codex exec`, a separate credential store and provider family. The separation is demonstrated rather than asserted: the key **REFUSED six times** before accepting, each time reproducing the defect in this repo rather than asserting it: `a1eb9db4b` on non-ASCII paths recorded as C-escapes and on a failed `git status` read as a clean tree; `d71b5e28f` on `status.showUntrackedFiles=no`; `1715ec548` on `diff.ignoreSubmodules=all`; `3b497b60a` on root-index `assume-unchanged`/`skip-worktree`; `5f9b68681` on an index flag inside a SUBMODULE and on a `.gitignore`-excluded draft; `59fc013b6` on the footer still asserting "everything else is committed and derivable" two lines below the scope note that refused exactly that. Seven defects, all found by the key and none by the producer's own suite, which is the argument for the key rather than against the suite. All five defects were found by the key and none by the producer's own suite, which is the argument for the key rather than against the suite. A key that cannot refuse is not a key | PROOF: an acceptance on this repo whose producing and accepting actors resolve to the same independence class
@@ -84,6 +98,8 @@ P:code acceptance-evidence | FIT | "the project's pinned acceptance checks … r
 P:code independent-key | FIT | "a verifier from another model family (R3)" | `gpt-6-astra`, class `codex-openai`. Verdict 1 REFUSED `reason=CHECKPOINT-PATH-CORRUPTION-AND-FALSE-CLEAN`; verdict 2 on the fixed candidate. The first verdict is the load-bearing evidence: the key found two defects a 30-check suite had passed | PROOF: a verdict here produced by a Claude seat
 
 P:code delivery-target | FRICTION | "integration branch via the project's landing path" | Delivery worked, but the landing path is undocumented and had to be derived. `master` is checked out in the shared canonical checkout, so a worktree cannot advance it: pushing to a checked-out branch is refused, and advancing the ref alone would have shown every peer lane a tree full of phantom deletions. The safe route — `git -C <canonical> merge --ff-only <branch>`, which refuses rather than clobbers — is written down nowhere. **Cost:** three rejected approaches before one that is safe under four concurrent lanes | REPLACES: "integration branch via the project's landing path" -> "integration branch via the project's landing path, which the project states as a command" | PROOF: a Conjugal file naming the command that lands a worktree branch on master
+
+P:code subject-identity | FRICTION | "git tree OID of the candidate commit as it will be delivered, after any merge with the delivery target" | Second instance, and a sharper one than K3's. The S3 amendment's COMMITTER date is 16 s later than the work it covers, because `git rebase` onto a master that moved four times rewrote it; its AUTHOR date precedes that work by ~2 min (`e71c88683` author 20:21:56 vs bus `57a3356` author 20:23:52). An arbiter read the committer date and refused a compliant subject `reason=RETROSPECTIVE` — having accepted the same ordering a round earlier on reflog evidence. On a shared checkout where rebasing is mandatory, committer dates are not an ordering proof | REPLACES: "the profile line recorded before work" -> "the profile line recorded before work, its precedence read from author dates or the reflog and never from committer dates, which rebasing rewrites" | PROOF: a Conjugal subject whose declaration precedence survives a rebase when read from committer dates
 
 P:code dispatch-preflight | FRICTION | "the spending tool runs the project's resume gate before dispatch and retains its result, the inventory snapshot and digest, and account-parity evidence" | No Conjugal dispatch tool retains any of it, and the inventory was stale at dispatch (K10). The gate result and parity output exist only because this session ran them by hand and pasted them here | REPLACES: none; this is an instance gap | PROOF: a Conjugal dispatch receipt carrying an inventory digest
 
