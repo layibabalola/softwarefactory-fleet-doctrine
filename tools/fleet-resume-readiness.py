@@ -134,6 +134,28 @@ def checkpoint_root():
     return os.path.join(os.path.expanduser("~"), ".claude", "session-checkpoints")
 
 
+def checkpoint_is_for(path, repo_path):
+    """True when this checkpoint was written FOR this checkout, not merely filed under its name.
+
+    The checkpoint root is keyed on a repository's DIRECTORY BASENAME, so two checkouts that happen
+    to share one -- entirely ordinary on a machine full of worktrees and clones -- write into the
+    same folder. A member whose hook is broken then reads READY by borrowing its neighbour's
+    checkpoint (found by the independent acceptance key, 2026-09-16). The checkpoint records the
+    absolute repo path it describes, so bind to that and the collision stops mattering.
+    """
+    try:
+        text = io.open(path, encoding="utf-8", errors="replace").read(4096)
+    except Exception:
+        return False
+    want = os.path.normcase(os.path.abspath(repo_path).replace("\\", "/").rstrip("/"))
+    for line in text.splitlines():
+        stripped = line.strip()
+        if stripped.startswith("- repo:"):
+            got = stripped.split(":", 1)[1].strip().replace("\\", "/").rstrip("/")
+            return os.path.normcase(got) == want
+    return False        # a checkpoint that does not say what it describes is not evidence
+
+
 def newest_checkpoint_age_hours(repo_path):
     """(age_hours, provenance) for the newest real checkpoint, or (None, None) if none exists.
 
@@ -167,6 +189,8 @@ def newest_checkpoint_age_hours(repo_path):
                 continue
             if not (entry.startswith(CHECKPOINT_PREFIX) and entry.endswith(CHECKPOINT_SUFFIX)):
                 continue        # not a checkpoint; an unrelated file is not evidence of firing
+            if not checkpoint_is_for(full, repo_path):
+                continue        # written for a DIFFERENT checkout that shares this basename
             session = entry[len(CHECKPOINT_PREFIX):-len(CHECKPOINT_SUFFIX)]
             kind = "install" if session.upper() in INSTALL_SESSION_IDS else "session"
             try:
@@ -198,6 +222,11 @@ def stop_hook_scripts(repo_path):
     try:
         data = json.load(io.open(settings, encoding="utf-8"))
     except Exception:
+        return []
+    # Configuration and ENABLED STATE are different facts (R6), and this switch turns every hook
+    # in the project off while leaving the declaration in place -- so a survey reading only the
+    # declaration reports a hook that provably cannot run (found by the key, 2026-09-16).
+    if data.get("disableAllHooks") is True:
         return []
     found = []
     for group in (data.get("hooks") or {}).get("Stop") or []:

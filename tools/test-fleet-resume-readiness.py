@@ -71,11 +71,18 @@ def make_member(root, name, script_rel=None, wired=True, script_body=None):
     return repo
 
 
-def fire(ckroot, repo, age_hours=0.0, name="SESSION-X.md"):
+def fire(ckroot, repo, age_hours=0.0, name="SESSION-X.md", repo_line=None):
+    """Write a checkpoint that looks like a real one.
+
+    A real checkpoint records the absolute repo path it describes, and the tool binds to that line
+    so two checkouts sharing a directory basename cannot borrow each other's evidence. A fixture
+    without that line is not a fixture of the thing under test.
+    """
     d = ckroot / repo.name
     d.mkdir(parents=True, exist_ok=True)
     f = d / name
-    write(f, "checkpoint\n")
+    write(f, "# checkpoint\n\n- repo: "
+          + str(repo_line if repo_line is not None else repo) + "\n")
     if age_hours:
         old = time.time() - age_hours * 3600
         os.utime(f, (old, old))
@@ -198,6 +205,37 @@ def run_case(tmp):
     state, _ = mod.assess("justinstalled", str(iv), 72)
     check("a real session checkpoint outranks a newer install stamp",
           state == mod.READY, state)
+
+    print("case: two checkouts sharing a directory name cannot borrow each other's evidence")
+    # Reproduces a FALSE GREEN the key found: the checkpoint root is keyed on a directory BASENAME,
+    # so a member whose hook never fired read READY off its neighbour's checkpoint. Ordinary on any
+    # machine full of worktrees and clones.
+    hook_body = "ROOT = 'session-checkpoints'\n"
+    settings = json.dumps({"hooks": {"Stop": [{"hooks": [{
+        "type": "command",
+        "command": 'python "$CLAUDE_PROJECT_DIR/tools/session-checkpoint.py"'}]}]}}, indent=2) + "\n"
+    twin_a = root / "siteA" / "member"
+    twin_b = root / "siteB" / "member"
+    for t in (twin_a, twin_b):
+        write(t / "tools" / "session-checkpoint.py", hook_body)
+        write(t / ".claude" / "settings.json", settings)
+    d = ckroot / "member"          # ONE folder, both checkouts
+    d.mkdir(parents=True, exist_ok=True)
+    write(d / "SESSION-A.md", "# checkpoint\n\n- repo: " + str(twin_a) + "\n")
+    state_a, _ = mod.assess("twinA", str(twin_a), 72)
+    state_b, detail_b = mod.assess("twinB", str(twin_b), 72)
+    check("the checkout that DID fire reads READY", state_a == mod.READY, state_a)
+    check("the twin that did NOT fire cannot borrow it",
+          state_b == mod.NOT_FIRING, state_b + " " + detail_b)
+
+    print("case: a global hook kill switch is enabled-state, not configuration")
+    off = make_member(root, "hooksoff", "tools/session-checkpoint.py")
+    cfg = json.loads((off / ".claude" / "settings.json").read_text(encoding="utf-8"))
+    cfg["disableAllHooks"] = True
+    write(off / ".claude" / "settings.json", json.dumps(cfg, indent=2) + "\n")
+    fire(ckroot, off, 0.1)
+    state, detail = mod.assess("hooksoff", str(off), 72)
+    check("disableAllHooks is NOT reported as READY", state != mod.READY, state + " " + detail)
 
     print("case: UNREACHABLE is neither ready nor failing")
     mod.PATHMAP = str(pm)
