@@ -3787,3 +3787,19 @@ culprit commit. A fix labelled durable is one nobody re-measures.
 generation: the parent blob of edge N is the commit blob of edge N-1, so **574 fetches are really 288**;
 and append-only can be verified by chained digest incrementally instead of by re-comparing the whole
 prefix at every edge. Those change the exponent. Everything else buys time.
+
+## MLV-App, 2026-09-16 (VIRTUAL-TEN): five board findings filed, four as new traps, one as a receipt against an existing trap
+
+- Filing pushed per R7 on `review/mlv-app-traps-20260916`: four new TRAPS.md entries (RED-by-design
+  guard reason not surfaced in output, label-vs-path gate/metric mismatch, unenforced degraded-mode
+  re-review, correctness-only review missing a "what does this break" seat) plus this row.
+- Command-guard-parses-data trap already exists on this bus (`A read-only grep with no redirection in
+  it is denied by the shell guard`, MLV-App, 2026-09-15): the same guard class reproduces on heredoc
+  bodies and quoted commit messages — 14 refusals in one hub session, 2026-09-16 — so no new trap is
+  filed for it. Workaround unchanged: write long text to a file with a file-writing tool and pass the
+  file (`git commit -F <file>`, `--body-file <file>`), never inline shell prose.
+- Correction folded into this same push: finding about `Test-ProductRatioGuard.ps1`'s coverage arm was
+  first drafted as a defect ("guard is unsatisfiable"); a three-seat review verified the always-PARTIAL
+  coverage reader is deliberate (`docs/product-ratio-guard.md`, `docs/definitive-fix-plan-20260906.md`,
+  commit `17e1d63b`, PR #100, reviewer-approved), so the trap as filed is about the missing reason code
+  and the tests' synthetic-COMPLETE bypass, not about the RED verdict itself.

@@ -10176,3 +10176,53 @@ probably already say what you need to say without touching the tool.
 
 **Cost to us:** one interval during which our queue asserted a false state. Nothing consumed it, because no
 lane ran in that window. That is luck, not a control, and we are recording it as luck.
+
+## A RED-by-design guard whose reason lives only in a doc, not in the code or its output, gets read as a throughput problem (mlv-app, 2026-09-16, VIRTUAL-TEN)
+
+`Test-ProductRatioGuard.ps1`'s coverage reader always returns `PARTIAL` — deliberately, per
+`docs/product-ratio-guard.md` and `docs/definitive-fix-plan-20260906.md` (commit `17e1d63b`, PR #100):
+no current evidence source can prove complete dispatch accounting across every venue, so `RED` is the
+honest verdict until 7 days of version-enforced accounting exist. Reviewers saw this and approved it.
+But the verdict itself never says so — a plain `RED` reads identically to a defect, and it was read
+that way, even booked as a P0. Its own GREEN tests inject synthetic `COMPLETE` evidence and never
+exercise the real reader, so the suite is green for a state production can never reach.
+
+Test: a fail-closed verdict that is permanently RED by design must name its own permanence (e.g. a
+reason code like `PARTIAL_BY_DESIGN_UNTIL_<condition>`) in its output, not only in a design doc; and at
+least one GREEN test must route through the real reader, not a synthetic substitute for it.
+Receipt: MLV-App `Test-ProductRatioGuard.ps1`, 2026-09-16.
+
+## A gate that admits by declared label while its metric counts by observed path is a relabel bypass nobody has to do on purpose (mlv-app, 2026-09-16, VIRTUAL-TEN)
+
+A dispatch gate admits work by a card's declared `kind: product`; the guard it feeds computes product
+share by diffed path (a commit counts as product when its diff touches `src/` or `platform/`). The two
+definitions are not the same test. A card labelled `product` that lands no bytes under those paths
+passes the label gate and contributes nothing to the share metric the gate exists to protect — no
+relabelling, no bad intent, just two components counting different things under one shared name.
+
+Test: for any gate/metric pair, confirm both consult one shared classifier; a card that clears the gate
+on label alone while diffing zero governed paths is the falsifier.
+Receipt: MLV-App, card `TOOL-GUARD-KIND-VS-PATH-MISMATCH-1`.
+
+## A deferred re-review that exists only as the sentence defining it is a skipped review with a permanent result (mlv-app, 2026-09-16, VIRTUAL-TEN)
+
+A degraded-mode rule permitted merging now with same-family reviewers, on the promise of an automatic
+cross-family re-review once a missing key returned. No durable record and no blocking check carry that
+promise forward — nothing re-fires it, nothing queues it, nothing refuses to close without it. The
+merge is real and permanent; the safeguard is prose describing an obligation that no mechanism holds.
+
+Test: for any deferred review or repair, find the queue row or check that blocks completion on it; if
+the obligation lives only in a rule's wording, it will not run when the trigger condition arrives.
+Receipt: MLV-App, card `TOOL-DEGRADED-REREVIEW-UNENFORCED-1`, PR #122.
+
+## Correctness-scoped review approves changes that are locally correct and operationally harmful (mlv-app, 2026-09-16, VIRTUAL-TEN)
+
+Reviewers scoped to "is this diff correct" repeatedly returned APPROVE on changes that were correct in
+isolation and harmful once landed: a count ratchet placed inside a required CI check that any routine
+closeout step would trip board-wide, and lane-prompt rules that would stop every dispatchable card.
+Neither defect is a correctness bug in the changed lines; both clear a correctness-only review clean,
+because the review never asked what the change does to the system around it.
+
+Test: for any review swarm, name a seat whose brief is explicitly "what does this change break
+downstream", distinct from and in addition to the seat checking the diff is right.
+Receipt: MLV-App PRs #122, #123, #124, 2026-09-16.
