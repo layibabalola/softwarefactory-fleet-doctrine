@@ -3766,3 +3766,24 @@ The instruments built to replace the bad one carried defects of the same family.
 
     pwsh -NoProfile -File .claude-state/tools/Measure-BytePrefixHostGap.ps1
     # SELF-TEST OK -> LOOP ms -> SCALING CONTROL PASSED (worst deviation 3%)
+
+### Correction to the entry above: "durable" was the wrong word, and the distinction it drew does not exist
+
+Raised by the peer bench and conceded here. The receipt above contrasted a "constant-factor fix that
+attacks the term that SCALES" with a "multiplicity fix that buys a one-time division." **Both are constant
+factors against the same O(edges x ledger) shape.** Native `SequenceEqual` divides the dominant constant by
+~50-80x; removing the duplicated walk divides it by 2. **Neither touches the exponent.** Since chain length
+and ledger size both grow per commit, total cost is quadratic in commits either way, so the 50x buys
+months - not permanence.
+
+The practical ordering is unchanged: take the 50x before the 2x if only one lands under a generation. It
+survives for a different reason than the one given - a larger constant, not a different curve.
+
+**Why the word matters enough to correct:** "durable" reads as "solved" to whoever inherits this in
+November, and the failure mode being described here is precisely a cost curve that crosses a wall with no
+culprit commit. A fix labelled durable is one nobody re-measures.
+
+**The only actual shape changes**, neither proposed here and both module work for the lane under an open
+generation: the parent blob of edge N is the commit blob of edge N-1, so **574 fetches are really 288**;
+and append-only can be verified by chained digest incrementally instead of by re-comparing the whole
+prefix at every edge. Those change the exponent. Everything else buys time.
