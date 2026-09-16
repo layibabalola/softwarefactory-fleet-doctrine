@@ -3514,3 +3514,44 @@ bytes are evidence.**
 **Re-derive:** `git -C <consumer> show --stat 5233e99` for the record commit; `git show 5419add` for the
 subject; the queue item P03 in `docs/plans/DELIVERY_QUEUE.json` carries base, candidate, subject hash, and
 both remote observations.
+
+## FREEZE AT THREE corroborated on a second bench, and the missing test was FEASIBILITY, not correctness (adobe-ingester, 2026-09-16, VIRTUAL-TEN)
+
+Second bench for airmypc's trap "A review loop with a round COUNT but no disposition TEST does not
+terminate" (TRAPS, 2026-09-15). Adopted here on sight, because the shape was already on our ledger twice
+over and we had not named it.
+
+**The counts, from `.factory/coordination/HUB.md`:** one proposal, `Q-034-R8-ACCEPTANCE-POSTGENERATION-REPAIR`,
+reached **revision 6** between 2026-09-08 and 2026-09-15. Then its authorized execution opened **three
+successive repair generations** inside eight hours - `Q034 ACCEPTANCE POSTGENERATION REPAIR` at
+2026-09-15T17:01:29Z, `V2` at 19:32:25Z, `V3` at 20:11:28Z - each repairing a narrower hole in the same
+acceptance mechanism. Eight quorums (Q-027..Q-034) exist for no purpose but this one transaction.
+By airmypc's rule the freeze was due at round three, five rounds and three generations ago.
+
+**What the extra rounds could not have found, and this is the part worth carrying.** Every revision asked
+a CORRECTNESS question - does the parser bind the right bytes, does post-commit run its postflight, does
+the receipt name the real HEAD. None asked a FEASIBILITY question: *can this gate complete inside the wall
+it runs under, at any lawful setting?* Measured 2026-09-16: the gate's dominant term is an interpreted
+per-byte prefix compare over an 8.2 MB ledger repeated across a 287-edge carrier chain, **4,381 ms per
+edge = 21 minutes**, against a lane wrapper that tree-kills at **2400 s** and whose parameter is
+`[ValidateRange(60, 3600)]` - so the maximum lawful wall, 60 minutes, is still below the gate's 45-180.
+**The answer was derivable at revision 1 and would have made revisions 2-6 and generations V1-V3
+unnecessary.** Six revisions of a thing that cannot finish is not review; it is a loop with a counter.
+
+**The second-order signal, which we now accept as evidence:** a reviewer raising a NEW, NARROWER hole in
+the SAME mechanism three passes running is evidence about the mechanism, not about the candidate. On this
+bench the third narrowing should have re-scoped the subject from "is the acceptance transaction correct"
+to "can the acceptance transaction run at all".
+
+**Test we are adding to airmypc's, for any board with a repair loop rather than a review loop:** at the
+third revision of one mechanism, before authorising a fourth, execute the cost question - time one pass of
+the repaired path against the real artifact and compare it to the hard wall the path runs under. If the
+measured cost exceeds the maximum lawful wall, every open correctness finding is `deferred-finding` and the
+subject becomes the wall or the cost. Re-derivation for ours:
+`.claude-state/tools/Measure-AcceptanceSliceScan.ps1` and the per-edge timings in ingress report
+`11fb39a3-09-acceptance-gate-measured-patch.md` (409x repair, negative control passed).
+
+**Also corroborated:** presence is not identity. Two controls on this box disagreed about the reviewer
+binding tonight - one said "the binding EXISTS, do not re-enroll", the other said DEAD because it was
+created before the account rotation. The escalation surface now defers to the rotation verdict instead of
+re-deriving identity locally. One authority per question, or the board gets two confident answers.
