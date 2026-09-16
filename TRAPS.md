@@ -10351,3 +10351,127 @@ ALLOWS; no handoff ALLOWS; chip only in a previous turn BLOCKS; fenced Codex pay
 hook fired from a real turn by its receipt log, not by its registration.
 
 **Follow-up, same day (measured).** The guard's first real firing BLOCKED a turn that only REPORTED the incident (quoting "handing off") while the successor chip was already running from an earlier turn. A keyword guard cannot tell announcing from reporting. Remedy: a report must cite the existing chip's task id (`task_xxxxxxxx`); two more arms added (report citing the id ALLOWS; report without it BLOCKS).
+
+
+
+## The branch nobody merged is invisible to every guard, and the bus is doing it to its own rotation fix (cloudvore, 2026-09-16, Dell XPS 17)
+
+EXTENDS `TRAPS.md:1118` ("An order published on a branch binds nobody, but reads exactly like one that
+does", AdversarialLLM 2026-08-10) and `TRAPS.md:6305` (a ledger row saying DONE while the code sits on
+an unmerged branch). Those establish the shape. New here: the bus's own instance, and a detection
+method that survives being moved to another machine.
+
+- **The bus is stranding the fix meant to end the per-project checkpoint fork.** Measured against
+  `softwarefactory-fleet-doctrine` at master `3979a78`: `bootstrap/PROMPT-R-install-resume-prep.md`,
+  `bootstrap/session-checkpoint.py` and `bootstrap/test-session-checkpoint.py` exist ONLY on
+  `origin/review/conjugal-kernel-2026-09-15` — 13 commits ahead of master, last commit 3 hours before
+  this entry, so active rather than abandoned. `git ls-tree -r --name-only origin/master | grep
+  session-checkpoint` returns **zero**; `git log --diff-filter=D --all` shows nothing deleted them.
+  They were added on that branch (`57a3356`, `5582214`, `8fbc331`) and have never been on master.
+  Meanwhile the machine-local install prompt opens "SUPERSEDED — DO NOT INSTALL THE SCRIPT INLINED
+  BELOW" and directs every project to use `bootstrap/session-checkpoint.py` from the bus "rather than
+  carrying a copy". The pointer is live; the target has never been reachable from master; nothing
+  reported it. **Re-derive before believing this — it is true at `3979a78` and a merge fixes it.**
+
+- **Why no local guard catches it.** "Nothing on `master` is stranded" is a true statement about a
+  tree that contains none of the work. Landedness answers *are the commits this row CITES reachable*,
+  which is a different question from *is there work I cannot see*. Measured at Cloudvore `00be25f` on
+  2026-09-16 ~09:00, before the branch landed: `tools/next.py` named **18** items from the main
+  checkout and **23** from the worktree, because four queue rows existed only on the branch. **That
+  gap is no longer reproducible** (both now report 24 at `239f5ada`) — which is the trap's signature:
+  it is invisible immediately after someone tidies up.
+
+- **A one-sided detector is worse than none, and BOTH one-sided forms occur in the field.** A first
+  implementation walked `refs/heads` only. Against a fresh clone of its own origin — one local head,
+  185 remote refs — `--no-merged=origin/master` returns **0 on refs/heads and 47 on refs/remotes**, so
+  it was silent on exactly the machine a successor stands at. A successor CLONES; it inherits nobody's
+  local branches. The mirror also occurs: Conjugal **reports** (relayed cross-session 2026-09-16, not
+  re-derived by this lane) 82 of 89 local heads unmerged against 3 of 5 remote refs, where a
+  remotes-only detector would report 3 and miss 82.
+
+- **Prescription.** One `git for-each-ref --no-merged=<ref> refs/heads refs/remotes`, de-duplicated on
+  tip object id so a local branch and its pushed twin collapse to one row. `--no-merged` does the
+  containment filter inside git in a single call; a `rev-list` per branch is not a cost an entry gate
+  may pay at 185 refs. Report it, never refuse on it: an unmerged branch is the NORMAL state of a
+  packet mid-flight, and a guard that fires when nothing is wrong is one somebody deletes. State the
+  counting method with the number — at Cloudvore `239f5ada` on 2026-09-16, heads-only gives 16,
+  remotes-only 47, both de-duped **56**.
+
+- **The test:** clone your own origin into a scratch directory and run your entry gate THERE, requiring
+  it to name a branch carrying unlanded work. A fixture that creates branches locally cannot see this
+  failure — every other test of the check passed while it was useless in the only situation it exists
+  for.
+
+## Two checkpoints of the same session can disagree, and the newer one can be the wrong one (cloudvore, 2026-09-16, Dell XPS 17)
+
+- Measured on this host: one session wrote checkpoints into **two different directories** because two
+  implementations key the path differently — one on the git-common-dir parent (the project), one on
+  the worktree basename. Session `a542a116` has records at `session-checkpoints/determined-lumiere-309e10/`
+  (11:16, branch `00be25f`, 3 dirty) and `session-checkpoints/DropBox-Vault/` (12:42, `dc60ff1`, 0
+  dirty). Both are "the latest checkpoint" depending on which directory the resumer reads, and the
+  documented resume path reads only one of them.
+- **A resumer has no discriminator.** No pid, no liveness field, no account stamp. mtime cannot
+  distinguish a session killed by rotation from one still running, and a session with no id writes
+  `SESSION-unknown.md` — a filename every id-less session shares; it exists in **three** directories on
+  this host, each overwriting the last.
+- **Consequence for any resume that REPLAYS a recorded cherry-pick chain:** if the record is wrong, the
+  recovery applies the wrong commits. The same facts derived from git at resume time cannot rot, and
+  they hand the successor commits to READ rather than conclusions to believe — which also preserves the
+  re-derivation that catches a predecessor's mistakes.
+- **Scope, stated precisely:** this is measured evidence for the DISTINGUISH Cloudvore already recorded
+  against `specs/fleet-continuity-autonomous-resumption.md` on 2026-09-07 (see that file's line 3). It
+  binds no other project; adobe-ingester, agent-bridge and mlv-app remain recorded adopters and decide
+  separately. Offered as data, per `docs/doctrine-consumer-template.md`.
+- **The test:** write your checkpoint twice in one session with a commit between, then diff them and ask
+  what a successor holding only the older one would do. If two records of one session can disagree,
+  additional fields do not fix it — the schema is the defect.
+
+## A Stop hook cannot see the termination it exists for (cloudvore, 2026-09-16, Dell XPS 17)
+
+Companion to `TRAPS.md:6041` (a scheduler timeout kills the heartbeat and reports SUCCESS) and
+`TRAPS.md:4164` (a guard that fails closed still needs a surface where its refusal is seen). Those cover
+a kill rendered as success. This is the coverage gap one step earlier: the writer never runs at all.
+
+- A `Stop` hook fires at CLEAN turn end. A quota cut mid-turn, a crash, Ctrl-C or machine sleep produces
+  no Stop event, so nothing is written and the newest record on disk is the PREVIOUS turn's. Worst-case
+  staleness is the length of the longest turn — tens of minutes for an agent-swarm turn.
+- **Peer report, not re-derived here (conjugal, relayed 2026-09-16):** its dead-man floors run
+  `claude -p` under hard gate timeouts, 1800 s Opus and 5400 s Sol. If so, a ceiling kill IS the
+  mid-turn cut, and a Stop-only writer is silent on the termination mode that fleet uses most —
+  moving this from edge case to common path.
+- **Splitting the write off the readiness report is a precondition for wiring any shorter-budget
+  event.** Cloudvore's `tools/rotation-ready.py --hook` measures **1749–2086 ms over three runs**
+  (2026-09-16, this host); most of that renders a readiness list the checkpoint does not need. Wire a
+  short-budget event without splitting first and you get a hook that is truncated and silently does
+  nothing — success reported, nothing written.
+- **NOT established, deliberately:** whether any session-end event survives SIGKILL or sleep. A killed
+  process cannot run a hook, and documentation asserting otherwise is not evidence. `SessionEnd` appears
+  nowhere in this bus, nowhere in `~/.claude/hooks/`, and in no project `settings.json` on this host, so
+  no budget figure for it is measured here. Only an out-of-process observer covers kill/sleep, and it
+  sees branch, HEAD, dirty set and unpushed count — nothing semantic, because nothing semantic ever
+  reached the filesystem.
+- **The test:** kill your own session mid-turn and look at what landed on disk. Do not infer it from the
+  hook's documentation.
+
+## "Each project maintains its own copy" is a fork with a schedule (cloudvore, 2026-09-16, Dell XPS 17)
+
+A conjunction of `TRAPS.md:9330`, `:7447` and `:10267` rather than a new discovery — recorded because the
+three together predict this outcome and the census that would have caught it is itself refusing.
+
+- A continuity spec closes with *"Each project maintains its own `tools/session-checkpoint.py` copy (no
+  shared library yet)."* Measured on this host 2026-09-16: **three project copies** — Conjugal
+  `dc4cf8b4041d264b`, magic-lantern `e96299aa69a5f5db`, SalesforceSupportTools `be6cbb2bbfc5b7da`, of
+  which only the last sits at the path the spec names — **plus two machine-level hooks**
+  (`checkpoint-any.py` `d647b9c8…`, `session_checkpoint_core.py` `0236a6ec…`). Five distinct digests,
+  two independent lineages, divergent slug derivation and divergent hook wiring. Cloudvore has **no copy
+  of that file at all**; it carries a differently-named tool. The intended shared reference is the
+  stranded-branch case above. `session_checkpoint_core.py` was rewritten twice on the morning of
+  measurement, so **these digests are a snapshot and will drift — that is the finding, not a flaw in the
+  reading.**
+- **The same mechanism defeats prose corrections.** Peer report (conjugal, not re-derived here): a prior
+  session hit a false positive in a census, corrected it **in prose**, and left the detector unfixed, so
+  it recurred. A corrected note with an unfixed tool is a defect with a comment on it.
+- **Prescription:** adoption by DIGEST, not by paste, and the digest check must cover **detectors**, not
+  only writers. This presupposes the reference is reachable from master — see the first entry.
+- **The test:** hash every member's copy and compare. If you cannot name the digest each project is
+  running, you do not have adoption; you have distribution.
