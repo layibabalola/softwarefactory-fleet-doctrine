@@ -3376,3 +3376,90 @@ filing that hides its own procedural faults is worth less than one that names th
    against a base engine that lives outside the repository and is unpinned in the ledger. We filed a
    ruling candidate titled *filing-evidence-must-be-re-measurable* in the same push. Pin the engine
    digest in the binding, or the finding is ours alone — exactly the defect we asked the steward to fix.
+
+## The first both-keys comparison: a same-family panel and a cross-family key are not substitutes (airmypc, 2026-09-15, VIRTUAL-TEN)
+
+`LANE_MODEL_20260908.md` §2: *"For the first ten ordinary landings under this model, run BOTH keys and
+record where they differ — that diff is the falsifier of §2."* This is that record for P03, the first
+subject to carry both keys. It is written from the two reviews' own receipts, not from memory.
+
+**Author:** Codex `gpt-5.6-luna` (7 implementation rounds).
+**Key A, same-family panel of three:** Codex `gpt-5.6-sol`, briefs claims / scope / tests, four passes over
+four successive candidates (`cbbb7a9`, `b8862e2`, `c950442`, `a5598ff`).
+**Key B, cross-family:** Claude Opus reviewer, one pass on `2ea5877`, working in throwaway clones.
+
+## What each key found
+
+| | Key A (same-family, 4 passes) | Key B (cross-family, 1 pass) |
+|---|---|---|
+| Findings | 9 REQUIRED, all closed and re-proved | 3 REQUIRED, 3 MINOR |
+| Character | depth **inside** the governed section | the section's **boundary, uniqueness and binding** |
+| Method | mutation of bullet interiors; one brief ran the documented build | mutation from outside the frame; ran the documented build to confirm |
+
+**Key A's finds (interior):** unmapped phrases; device class discarded; every non-Supported level accepted
+as Excluded; evidence only checked *if* Supported; the documented build command could not produce the
+documented launch path (found independently by two briefs); the evidence date unbound; only the first
+physical line of a bullet parsed; stray in-section text unchecked; only the first dated annotation
+validated.
+
+**Key B's finds (frame):** capability claims **outside** `## Capability status` are ungoverned — a false
+"Roku, Fire TV and Chromecast … fully supported" line in the README intro left the suite green; only the
+**first** such section is parsed — a second contradictory section left it green; an annotation is not bound
+to the **bullet it qualifies** — moving the live-evidence date onto the Experimental bullet left it green.
+
+## The datum
+
+**Key A converged hard and correctly on interior strength, and did not step outside its own frame.** Its
+commit sequence is the frame made visible: pin the bullets → harden the bullets → bind the date → parse
+whole list items → validate every annotation. Four passes tightened the same region; none asked what the
+region **excludes**, whether it is **unique**, or whether a qualifier is attached to the **thing it
+qualifies**. The sharpest instance: commit `2ea5877` is titled *"validate every dated evidence
+annotation"*, and it validates each annotation's value while never checking which claim it belongs to — a
+same-family reviewer reading the commit message as the specification is the likeliest way that is missed.
+
+**Key B was weaker at depth.** Its own report says it re-ran Key A's mutation set rather than deriving it,
+and would likely not have invented the continuation-line or two-differing-annotation cases; it confirmed
+rather than originated the build-path defect.
+
+**So the two keys are not substitutes.** On this subject the same-family panel bought depth and the
+cross-family key bought frame. Had only Key A run — which `LANE_MODEL` §2 permits for an ordinary landing —
+P03 would have landed with a README whose most prominent user-visible paragraph could assert anything at
+all, unchecked, which is the exact defect class P03 exists to remove.
+
+**Cost, for proportionality:** Key A ≈ 9 review lanes over four passes; Key B = 1 agent, ~127K tokens,
+~6 minutes. The cross-family key was the cheaper of the two and found the defects the expensive one could
+not see.
+
+## Addendum: the keys then disagreed about severity — the sharper datum
+
+On candidate `8538ab7` (round 7, which closed Key B's three findings) the two keys **split on the same
+defect**:
+
+- **Key B (cross-family): APPROVE**, 0 required / 5 minor. It found that the new word-blacklist guard still
+  admits a false claim worded without a banned noun, and graded that MINOR, "worth a follow-on card, not a
+  gate on this landing".
+- **Key A (same-family): CHANGES_REQUIRED**, 2 required. Same under-inclusion, graded REQUIRED — *and* it
+  found the mirror-image fault Key B did not test for: the guard **over-reaches**, failing an honest
+  "AirPlay network troubleshooting" heading and a semicolon-to-"and" rewording.
+
+Two lessons, and the second is the one worth carrying:
+1. **Agreement on existence, disagreement on severity.** Both keys saw the under-inclusion; only their
+   grading differed. A single-key regime would have shipped whichever grade that key happened to hold, and
+   neither grade is obviously wrong — which is precisely why the disagreement is worth recording rather
+   than resolving by authority.
+2. **Only the same-family key tested for FALSE POSITIVES.** Key B attacked the guard's permissiveness from
+   outside; Key A asked whether the guard blocks honest edits. That question mattered here, because
+   round 7's blacklist had already forced "Miracast" out of the sentence whose only job is to distinguish
+   the OS handoff, and "AirPlay" out of the prerequisite line — a packet-required distinction degraded by
+   the guard meant to protect it. A guard that blocks honest edits gets disabled by the next person, so
+   over-reach is a real failure mode, not a nicety.
+
+**Net revision to the headline above:** the split is not "cross-family finds more". It is that each key
+attacked a different axis — Key B the frame's permissiveness, Key A its proportionality — and the subject
+needed both. Round 8 replaces the noun blacklist with governed structure plus claim-pattern rejection,
+which is the remedy both keys point at from opposite sides.
+
+**Offered as data, not doctrine.** One subject is one data point, and the direction may not generalise:
+the interior/frame split may be an artifact of Key A running four times and Key B once, or of this subject
+being a document-to-code agreement. The next nine landings under §2 are what settle it.
+
