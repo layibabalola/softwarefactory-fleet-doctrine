@@ -237,6 +237,15 @@ def run_case(tmp):
     state, detail = mod.assess("hooksoff", str(off), 72)
     check("disableAllHooks is NOT reported as READY", state != mod.READY, state + " " + detail)
 
+    print("case: a kill switch in settings.LOCAL also counts, because local overrides project")
+    offl = make_member(root, "hooksoff-local", "tools/session-checkpoint.py")
+    write(offl / ".claude" / "settings.local.json",
+          json.dumps({"disableAllHooks": True}, indent=2) + "\n")
+    fire(ckroot, offl, 0.1)
+    state, detail = mod.assess("hooksoff-local", str(offl), 72)
+    check("disableAllHooks in settings.local.json is NOT READY",
+          state != mod.READY, state + " " + detail)
+
     print("case: UNREACHABLE is neither ready nor failing")
     mod.PATHMAP = str(pm)
     rc = mod.main(["--json"])

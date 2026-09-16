@@ -59,7 +59,10 @@ SCRIPT_CANDIDATES = [
     "tools/roadmap/session-checkpoint.py",
     "tools/session-checkpoint.py",
 ]
-SETTINGS = ".claude/settings.json"
+# Both files are read, LOCAL LAST, because local settings override project settings -- so a
+# project-level Stop hook can be switched off by a file the project does not track. Reading only
+# the project file reported a hook that provably could not run (independent key, 2026-09-16).
+SETTINGS_FILES = (".claude/settings.json", ".claude/settings.local.json")
 DEFAULT_MAX_AGE_HOURS = 72
 CHECKPOINT_PREFIX = "SESSION-"
 CHECKPOINT_SUFFIX = ".md"
@@ -216,12 +219,18 @@ def stop_hook_scripts(repo_path):
     than guessed. Anything the command names that does not exist in the tree is skipped: a hook
     pointing at a missing file is not a capability.
     """
-    settings = os.path.join(repo_path, SETTINGS)
-    if not os.path.isfile(settings):
-        return []
-    try:
-        data = json.load(io.open(settings, encoding="utf-8"))
-    except Exception:
+    data = {}
+    for rel in SETTINGS_FILES:
+        full = os.path.join(repo_path, rel)
+        if not os.path.isfile(full):
+            continue
+        try:
+            layer = json.load(io.open(full, encoding="utf-8"))
+        except Exception:
+            continue
+        if isinstance(layer, dict):
+            data.update(layer)          # later file wins, which is the precedence the host uses
+    if not data:
         return []
     # Configuration and ENABLED STATE are different facts (R6), and this switch turns every hook
     # in the project off while leaving the declaration in place -- so a survey reading only the
