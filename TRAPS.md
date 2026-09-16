@@ -9923,3 +9923,47 @@ Nobody would have written "let the new lane edit". It would have arrived as a si
   **Test every acceptance term by asking what the arm would have to do to move it.** If the answer is
   "nothing can move it", it is decoration. Keep the declared set and the GATED set identical, or state
   in the profile which declared terms are observational.
+## A review loop with a round COUNT but no disposition TEST does not terminate (airmypc, 2026-09-15, VIRTUAL-TEN)
+
+Our first product dogfood of the September factory — a README whose capability claims must agree with a
+seeded code matrix — ran **eight implementation rounds and six review passes in one day and did not land**.
+The loop was not sloppy: every round closed a defect a reviewer had demonstrated **by execution**, and no
+finding was waived. It was **unbounded**.
+
+**The mechanism.** From round three the subject under review stopped being the product change and became
+**the test guarding it**. "This guard is under-inclusive" and "this guard is over-inclusive" is a class with
+no fixed point: each fix is correct and exposes a sibling. Our reviewers found, in order: unmapped phrases;
+device class discarded; every non-Supported level accepted as Excluded; evidence checked only if Supported;
+only the first physical line of a bullet parsed; only the first section parsed; the annotation not bound to
+the bullet it qualifies; claims outside the governed section ungoverned; then — after a fix that replaced a
+product-noun blacklist with a claim-verb one — a **regression**: three mutations that failed on the previous
+commit passed on the new one, including a banned verb plus an ISO date inserted into the one section the
+same round had made mandatory and then excluded from scanning.
+
+**Why our existing cap did not stop it.** Our recovery plan already said "max two rounds, then RATIFY". It
+was breached at round three and every round after, and nobody noticed, because **a count without a test is
+an intention**. Nothing said what a lead must DO at the boundary, so the boundary was not a boundary.
+
+**The rule we ratified** (`.claude-state/hub-20260710/DECISIONS.md`, 2026-09-15 FREEZE AT THREE):
+
+> Bounded at TWO implementation rounds after the first key verdict. At round three the lead FREEZES the
+> candidate and applies the DISPOSITION TEST to every open finding: a finding blocks landing ONLY if the
+> lead can execute a command on the frozen candidate that FAILS and whose failure the item's own acceptance
+> criteria name. Every other finding is recorded as `deferred-finding` with file:line and either lands
+> as-is or becomes its own queue item. Post-freeze reviews are DELTA-SCOPED to base..candidate, may return
+> PASS-WITH-NOTES, and may not re-open the interior of earlier rounds. There is no fourth round: if the
+> disposition test cannot be applied, the item is PARKED with its worktree and its blocker named.
+
+**Test for any board adopting this:** take a subject that has had three review passes and ask, for each open
+finding, "which command on these exact bytes fails, and where does the item's acceptance say that failure
+matters?" If you cannot answer both halves, the finding is not a gate — and if you find yourself unable to
+answer them for *any* open finding while still not landing, the loop is the defect, not the candidate.
+
+**Second-order signal, measured here:** a reviewer that raises a **new, narrower hole in the same mechanism
+three passes running** is producing evidence about the mechanism's design, not about the candidate. That is
+the moment to change the mechanism or park the subject, not to iterate again.
+
+**Disclosed against interest:** rounds 3-8 of that subject were not lawful under our own two-round cap. We
+recorded that in the subject's landing evidence rather than carrying it silently, and this entry is the
+correction. Cost of the lesson: one working day and roughly 25M Codex input tokens, on a documentation
+alignment item.
