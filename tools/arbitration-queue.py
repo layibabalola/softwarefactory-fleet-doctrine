@@ -32,8 +32,24 @@ has failed open. An unparseable ledger REFUSES (exit 2) rather than reporting an
     python tools/arbitration-queue.py airmypc
     python tools/arbitration-queue.py --all
     python tools/arbitration-queue.py airmypc --json
+
+ROUND-2 REPAIRS (independent adversarial key, reason=false-empty-queues). Every one of A..J below
+was REPRODUCED, and every one of them produced a false NOTHING OWED or a silently dropped duty:
+
+    A  ledger shape was satisfied by a lone steward heading, or a lone table header row, over
+       nonsense -- see LEDGER_SHAPE and the documented parse/refuse line there
+    B  fenced examples were read as live content, in the ledger AND in a dispositions file
+    C  placeholder arbiter values (`arbiter: TODO`, a bare `arbiter:`) cleared a duty
+    D  an undated or non-ISO steward heading inherited the previous block's date
+    E  an impossible date (`9999-99-99`) outranked every real one
+    F  a non-ASCII project name was silently TRUNCATED by the naming token class
+    G  the inventory was keyed on the FILENAME stem, so a rename hid a live assignment
+    H  the test suite never exercised the CALLER of review-branch discovery
+    I  the blob-by-OID assertion accepted `origin/review/...:path` in place of an object id
+    J  11 unique blobs were read 30 times
 """
 import argparse
+import datetime
 import io
 import json
 import os
@@ -55,28 +71,50 @@ FILING_NOT_FOUND = "FILING-NOT-FOUND"
 # States that keep a duty alive, and so keep the exit status non-zero for the named arbiter.
 OWED_STATES = (OWED, FILING_NOT_FOUND)
 
+# G: where a filing's FILENAME and its `project:` header disagree, the header wins (it is what the
+# ledger names) but the disagreement is REPORTED. Saying "I preferred the header" out loud is the
+# difference between a resolved ambiguity and a hidden one.
+INVENTORY_NOTES = []
+
 # "**PRIMARY: `airmypc`.**", "- **ALTERNATE: `dng-auto-processor`.**", and the same lines with the
 # bold markers absent. The key's D5: requiring `**` meant the documented undecorated form was read as
 # NO NAMING AT ALL, which is a false "nothing owed" -- the one answer this tool exists to prevent.
 # Anchored to the start of the line (after an optional list marker and optional bold) so that prose
 # merely mentioning the word PRIMARY cannot mint an assignment.
+#
+# F: the token class used to be `[A-Za-z0-9_.-]+`, which SILENTLY TRUNCATED `airm<U+0443>pc` to
+# `airm` -- the queried arbiter then got NOTHING OWED for a filing that named it. The token is now
+# wide (anything that is not whitespace, a backtick or an asterisk) and is VALIDATED afterwards by
+# `_clean_name`, which REFUSES on a non-ASCII name rather than truncating or ignoring it.
 NAMING_RE = re.compile(
-    r"^\s*(?:[-*+]\s+)?(?:\*\*)?\s*(PRIMARY|ALTERNATE)\s*:\s*(?:\*\*)?\s*`?([A-Za-z0-9_.-]+)`?",
+    r"^\s*(?:[-*+]\s+)?(?:\*\*)?\s*(PRIMARY|ALTERNATE)\s*:\s*(?:\*\*)?\s*"
+    r"(?:`([^`\n]*)`|([^\s`*]*))",
     re.I)
 # "**Arbiter named for `conjugal`, per K12 and §5.**"
 SUBJECT_RE = re.compile(
-    r"arbiter\s+named\s+for\s+`?([A-Za-z0-9_.-]+)`?", re.I)
+    r"arbiter\s+named\s+for\s+(?:`([^`\n]*)`|([^\s`*]+))", re.I)
 
+# C: a value that is a placeholder is not a value. `arbiter: TODO` next to an unanswered filing is
+# an unanswered filing with a note on it, and it cleared the duty. Same list governs the ledger's
+# naming values -- `PRIMARY: TBD` names nobody.
+PLACEHOLDER_VALUES = frozenset(
+    ["todo", "tbd", "tbc", "none", "n/a", "na", "pending", "?", "-", "--", "---",
+     "...", "xxx", "tba", "unknown", "unassigned"])
 
-# D1: a file that is merely non-empty is not a ledger. This tool's whole value is the difference
-# between "nothing is owed" and "I could not read it", and `this is not a ledger` previously read as
-# the former. A real ledger carries the harvest table or at least one dated steward status block.
-LEDGER_SHAPE_RE = re.compile(
-    r"^\s*\|\s*date\s*\|\s*harvest\s*\|\s*filing\s*\|"
-    r"|^##+\s*Steward status", re.I | re.M)
+# A: the ledger's DEFINING structure is the harvest table header row. Nothing else identifies this
+# file: a steward heading is prose anybody can type, and the round-1 shape check accepted a file
+# whose entire content was one such heading followed by nonsense.
+LEDGER_TABLE_HEADER_RE = re.compile(
+    r"^\s*\|\s*date\s*\|\s*harvest\s*\|\s*filing\s*\|", re.I)
+LEDGER_TABLE_SEPARATOR_RE = re.compile(r"^\s*\|[\s:|-]+\|\s*$")
+# Any `## Steward status` heading at all -- D: this RESETS the date state whether or not it carries
+# a well-formed date, so an undated or malformed heading can never leave the parser holding the
+# PREVIOUS block's date and let a stale block outrank a newer one.
+STEWARD_HEADING_RE = re.compile(r"^##+\s*Steward status\b", re.I)
 # D6: "last in the file" is not "newest". Rank naming blocks by the date on their enclosing steward
 # heading -- `## Steward status -- 2026-09-16b (...)` -- so an appended older block cannot override a
-# newer one. The optional trailing letter orders same-day blocks.
+# newer one. The optional trailing letter orders same-day blocks. E: the date is then validated with
+# `datetime.date`, so `9999-99-99` is not a date and ranks as undated instead of above everything.
 STEWARD_DATE_RE = re.compile(
     r"^##+\s*Steward status\s*[^0-9]*(\d{4}-\d{2}-\d{2})([a-z]?)", re.I)
 
@@ -85,6 +123,108 @@ class Refused(SystemExit):
     def __init__(self, msg):
         sys.stderr.write("REFUSE arbitration-queue: " + msg + "\n")
         SystemExit.__init__(self, 2)
+
+
+def _unfenced_lines(text):
+    """Every line of `text`, with the CONTENT of ``` / ~~~ fenced blocks blanked out.
+
+    B: a worked EXAMPLE is not a record. The round-1 tool read fenced blocks as live content in two
+    places -- a `<filing>.dispositions.md` whose only `arbiter:` line sat inside a fence CLEARED the
+    duty, and a naming block inside a fenced example in the ledger REPLACED the live assignment.
+    `_is_filing` already skipped fences correctly; this lifts that one behaviour into a helper and
+    routes the ledger parse, the shape check and the disposition parse through it.
+
+    Lines are blanked rather than dropped so that file positions (used only to break a genuine
+    same-rank tie) stay honest.
+    """
+    out = []
+    fenced = False
+    for line in text.splitlines():
+        stripped = line.strip()
+        if stripped.startswith("```") or stripped.startswith("~~~"):
+            fenced = not fenced
+            out.append("")
+            continue
+        out.append("" if fenced else line)
+    return out
+
+
+def _clean_name(raw):
+    """Normalise a captured project name, or REFUSE if it cannot be one. May return "".
+
+    F, reproduced by the independent key: `airm<CYRILLIC U>pc` was matched by a `[A-Za-z0-9_.-]+`
+    token class as `airm`, so the ledger's live naming of `airmypc` reached the queue under a name
+    nobody queries and the real arbiter was told NOTHING OWED. Truncation and silent skipping are
+    both false-empty producers, so a name that is not ASCII is now a REFUSAL with the offending
+    text quoted: the operator is told the ledger carries a name this tool cannot key on, which is a
+    fact they can act on, rather than being handed a calm empty queue.
+    """
+    name = (raw or "").strip().strip("*").strip().strip("`").strip()
+    # Trailing sentence punctuation from an undecorated form: "PRIMARY: airmypc." / "..., per K12".
+    name = name.rstrip(".,;:)]}").strip()
+    if not name:
+        return ""
+    try:
+        name.encode("ascii")
+    except UnicodeEncodeError:
+        raise Refused(
+            "a project name in the factory-kernel ledger is not ASCII (%r). Round 1 truncated it "
+            "to its leading ASCII run, which routed a live duty to a name nobody queries and told "
+            "the real arbiter NOTHING OWED. Refusing rather than guessing which project is meant."
+            % (name,))
+    if not re.match(r"^[A-Za-z0-9_.-]+$", name):
+        raise Refused(
+            "a project name in the factory-kernel ledger carries characters this tool cannot key "
+            "on (%r); refusing rather than silently dropping the assignment it belongs to" % name)
+    if name.lower() in PLACEHOLDER_VALUES:
+        return ""
+    return name.lower()
+
+
+def _pick(match, a, b):
+    """The backticked capture if it matched, else the bare one."""
+    got = match.group(a)
+    return got if got is not None else (match.group(b) or "")
+
+
+def _ledger_is_shaped(lines):
+    """(ok, why). A: what makes this file a ledger, and where the parse/refuse line is drawn.
+
+    THE LINE, decided here and stated out loud because round 1 drew it wrong:
+
+      * "could not parse" -> REFUSE (exit 2). The file does not carry the harvest table header row
+        (`| date | harvest | filing | ...`) OUTSIDE a fence, or it carries that row and nothing
+        else -- no data row and no steward status heading. Round 1 accepted both of the reviewer's
+        probes here (a lone steward heading over nonsense; a lone table header over nonsense) and
+        answered NOTHING OWED, exit 0.
+      * "parsed to no assignments" -> a LEGITIMATE answer, exit 0/1 as the rows dictate. The file
+        IS a ledger -- header row plus at least one harvest row or one steward status block -- and
+        simply names no arbiter for anyone yet. A real ledger the day before its first naming looks
+        exactly like this, and refusing on it would make the tool unusable in a cycle.
+
+    In short: the DEFINING STRUCTURE plus at least one unit of content. Shape, never sentiment.
+    """
+    header = False
+    body = False
+    steward = False
+    for line in lines:
+        if LEDGER_TABLE_HEADER_RE.match(line):
+            header = True
+            continue
+        if STEWARD_HEADING_RE.match(line):
+            steward = True
+            continue
+        if line.lstrip().startswith("|") and not LEDGER_TABLE_SEPARATOR_RE.match(line):
+            if line.count("|") >= 4:
+                body = True
+    if not header:
+        return False, ("no harvest table header row (`| date | harvest | filing | ...`) outside a "
+                       "fenced block; that row is what makes this file a ledger")
+    if not (body or steward):
+        return False, ("the harvest table header row is present but the file carries no harvest "
+                       "row and no `## Steward status` block; a header over nonsense is not a "
+                       "ledger that parsed to no assignments")
+    return True, ""
 
 
 def read_ledger():
@@ -96,10 +236,10 @@ def read_ledger():
         raise Refused("could not read the ledger: " + str(exc))
     if not text.strip():
         raise Refused("ledger is empty; refusing to report an empty queue")
-    if not LEDGER_SHAPE_RE.search(text):
-        raise Refused("ledger does not parse as a factory-kernel harvest ledger (no harvest table "
-                      "and no steward status block); refusing -- 'I could not parse it' and "
-                      "'nobody owes anything' are different facts")
+    ok, why = _ledger_is_shaped(_unfenced_lines(text))
+    if not ok:
+        raise Refused("ledger does not parse as a factory-kernel harvest ledger -- %s; refusing -- "
+                      "'I could not parse it' and 'nobody owes anything' are different facts" % why)
     return text
 
 
@@ -116,20 +256,43 @@ def namings(text):
     return namings_ranked(text)
 
 
+def _heading_date(line):
+    """(date, suffix) for a well-formed ISO steward heading, else (None, "").
+
+    D + E, both reproduced. D: ANY `## Steward status` heading resets the date state, so
+    `## Steward status -- undated` and the non-ISO `## Steward status -- 2026-9-15` no longer leave
+    the parser holding the PREVIOUS heading's date -- which let a stale block silently outrank a
+    newer one. E: `9999-99-99` matched the digit shape and sorted above every real date; the date
+    is now constructed with `datetime.date`, and an impossible one is treated as undated.
+    """
+    m = STEWARD_DATE_RE.search(line)
+    if not m:
+        return None, ""
+    try:
+        datetime.date(*[int(p) for p in m.group(1).split("-")])
+    except ValueError:
+        return None, ""
+    return m.group(1), (m.group(2) or "").lower()
+
+
 def namings_ranked(text):
     """As `namings`, but keeping every block so the newest can be chosen per filing."""
     out = {}
     current = None
     heading = (None, "")
     seq = 0
-    for line in text.splitlines():
-        h = STEWARD_DATE_RE.search(line)
-        if h:
-            heading = (h.group(1), (h.group(2) or "").lower())
+    for line in _unfenced_lines(text):
+        if STEWARD_HEADING_RE.match(line):
+            # D: reset FIRST, unconditionally. Only a well-formed ISO date then sets the state.
+            heading = _heading_date(line)
+            current = None
             continue
         m = SUBJECT_RE.search(line)
         if m:
-            current = m.group(1).lower()
+            subject = _clean_name(_pick(m, 1, 2))
+            if not subject:
+                continue
+            current = subject
             seq += 1
             key = (1 if heading[0] else 0, heading[0] or "", heading[1], seq)
             out.setdefault(current, []).append([key, []])
@@ -137,7 +300,9 @@ def namings_ranked(text):
         if current:
             n = NAMING_RE.search(line)
             if n:
-                out[current][-1][1].append((n.group(1).upper(), n.group(2).lower()))
+                arbiter = _clean_name(_pick(n, 2, 3))
+                if arbiter:
+                    out[current][-1][1].append((n.group(1).upper(), arbiter))
     best = {}
     for filing, blocks in out.items():
         blocks = [b for b in blocks if b[1]]
@@ -147,8 +312,10 @@ def namings_ranked(text):
     return best
 
 
-def _is_filing(text):
-    """A filing is identified by its HEADER, not by sitting in the directory or being quoted.
+def _filing_project(text):
+    """The `project:` value of a filing, or None if this text is not a filing at all.
+
+    A filing is identified by its HEADER, not by sitting in the directory or being quoted.
 
     Two D4 defects from the independent key, both false answers in opposite directions:
 
@@ -159,9 +326,14 @@ def _is_filing(text):
 
     So: scan the whole file, skip fenced blocks, and require two header fields rather than one --
     prose that happens to start a line with `project:` is not a filing.
+
+    G: the VALUE is returned, because the round-1 inventory was keyed on the filename stem. Renaming
+    `airmypc.md` to a Cyrillic-confusable stem, with `project: airmypc` untouched inside, made the
+    live assignment read UNREACHABLE-ARBITER and dropped it out of the owed set entirely.
     """
     fenced = False
     seen = set()
+    project = None
     for line in text.splitlines():
         stripped = line.strip()
         if stripped.startswith("```") or stripped.startswith("~~~"):
@@ -173,7 +345,38 @@ def _is_filing(text):
         for field in ("project:", "kernel:"):
             if low.startswith(field):
                 seen.add(field)
-    return {"project:", "kernel:"} <= seen
+                if field == "project:" and project is None:
+                    project = line.split(":", 1)[1]
+    if {"project:", "kernel:"} <= seen:
+        return project if project is not None else ""
+    return None
+
+
+def _is_filing(text):
+    """Kept as the boolean form of `_filing_project`; the two-field rule lives in one place."""
+    return _filing_project(text) is not None
+
+
+def _register(names, raw_project, stem, where):
+    """Add one discovered filing to the inventory, keyed on its header (G).
+
+    The STEM is only ever compared, never validated: a filename this tool cannot key on is not a
+    reason to refuse when the header inside says exactly which project filed. It becomes a refusal
+    only in the fallback branch, where the header gave nothing and the stem is all there is.
+    """
+    name = _clean_name(raw_project)
+    if not name:
+        INVENTORY_NOTES.append(
+            "%s has no usable `project:` value; keyed on its filename stem `%s` instead"
+            % (where, stem))
+        name = _clean_name(stem)
+        if not name:
+            return
+    elif name != stem.strip().lower():
+        INVENTORY_NOTES.append(
+            "%s: filename stem `%s` disagrees with its header `project: %s`; keyed on the HEADER, "
+            "because that is the name the ledger addresses" % (where, stem, name))
+    names.add(name)
 
 
 def filings_present():
@@ -187,8 +390,9 @@ def filings_present():
     """
     if not os.path.isdir(FILINGS_DIR):
         raise Refused("filings directory not found at " + FILINGS_DIR)
+    del INVENTORY_NOTES[:]
     names = set()
-    for entry in os.listdir(FILINGS_DIR):
+    for entry in sorted(os.listdir(FILINGS_DIR)):
         if not entry.endswith(".md"):
             continue
         stem = entry[:-3]
@@ -199,10 +403,14 @@ def filings_present():
                            errors="replace").read()
         except Exception:
             continue
-        if _is_filing(text):
-            names.add(stem.lower())
+        project = _filing_project(text)
+        if project is not None:
+            _register(names, project, stem, entry)
     names |= _filings_on_review_branches()
     return names
+
+
+_BLOB_CACHE = {}
 
 
 def _git(*args):
@@ -213,19 +421,46 @@ def _git(*args):
     collapsed into "no filings on review branches" and the tool answered NOTHING OWED. A duty that
     disappears because the instrument broke is exactly the false negative this tool exists to
     prevent. A missing instrument is now a refusal (exit 2), never an absent duty.
+
+    THE CHOICE, documented because the cost is real: refusing on a transient hiccup costs a cycle,
+    and a tool that cries wolf gets wired out. So a read-only git call is retried ONCE before the
+    refusal stands. A retry cannot manufacture a false green -- a persistently broken instrument
+    still refuses -- it only stops a single flaky invocation from stopping a board. What is NOT
+    done, deliberately, is degrading to a partial inventory: a partial inventory is precisely the
+    false-empty this tool exists to prevent, so it is never traded for availability.
     """
-    try:
-        p = subprocess.run(["git", "-C", ROOT, "--no-optional-locks"] + list(args),
-                           capture_output=True, text=True, timeout=60,
-                           encoding="utf-8", errors="replace")
-    except Exception as exc:
-        raise Refused("git could not be run (%s: %s); a missing instrument is not an absent duty"
-                      % (type(exc).__name__, exc))
-    if p.returncode != 0:
-        raise Refused("git %s failed with status %d (%s); refusing rather than reporting a queue "
-                      "derived from a partial inventory"
-                      % (" ".join(args[:2]), p.returncode, (p.stderr or "").strip()[:120]))
-    return p.stdout
+    last = None
+    for _attempt in (1, 2):
+        try:
+            p = subprocess.run(["git", "-C", ROOT, "--no-optional-locks"] + list(args),
+                               capture_output=True, text=True, timeout=60,
+                               encoding="utf-8", errors="replace")
+        except Exception as exc:
+            last = ("git could not be run (%s: %s); a missing instrument is not an absent duty"
+                    % (type(exc).__name__, exc))
+            continue
+        if p.returncode == 0:
+            return p.stdout
+        last = ("git %s failed with status %d (%s); refusing rather than reporting a queue "
+                "derived from a partial inventory"
+                % (" ".join(args[:2]), p.returncode, (p.stderr or "").strip()[:120]))
+    raise Refused(last)
+
+
+def _read_blob(oid):
+    """Read a blob BY OBJECT ID, once per id.
+
+    J: the reviewer measured 30 blob reads for 11 unique object ids -- the same filing, unchanged
+    across several review refs, re-read once per ref. Caching is keyed on the object id, which is
+    the content, so this is a pure deduplication and not a staleness risk. The cache is cleared at
+    the start of every discovery pass so a long-lived process never serves a stale tree.
+
+    A read that FAILS is not cached: `_git` refuses, and the refusal must stay reachable on every
+    call rather than being answered from a remembered success.
+    """
+    if oid not in _BLOB_CACHE:
+        _BLOB_CACHE[oid] = _git("cat-file", "blob", oid)
+    return _BLOB_CACHE[oid]
 
 
 def _filings_on_review_branches():
@@ -234,6 +469,7 @@ def _filings_on_review_branches():
     R7.5: "Consumers harvest review branches, not only master." A filing on an unmerged branch is
     still a filing. Every git call here refuses on failure (D2) rather than yielding an empty set.
     """
+    _BLOB_CACHE.clear()
     found = set()
     refs = _git("for-each-ref", "--format=%(refname)", "refs/remotes/origin/review/")
     rel = "adjudications/factory-kernel/"
@@ -254,9 +490,10 @@ def _filings_on_review_branches():
             # ENAMETOOLONG and git aborts -- so every filing on every review branch became
             # unreadable purely because of where the repository sits. The old code swallowed that
             # into "no filings on review branches"; with D2's refusal in place it became visible.
-            blob = _git("cat-file", "blob", parts[2])
-            if blob and _is_filing(blob):
-                found.add(stem.lower())
+            blob = _read_blob(parts[2])
+            project = _filing_project(blob) if blob else None
+            if project is not None:
+                _register(found, project, stem, ref + ":" + name)
     return found
 
 
@@ -268,6 +505,11 @@ def disposition_state(filing):
     filing's `.dispositions.md` with an `arbiter: <project or owner>` line", so that line is what
     makes a disposition a disposition. A file that does not carry it is an unanswered filing with a
     placeholder next to it, and the duty stands.
+
+    B (round 2): the round-1 scan read FENCED blocks, so a dispositions file whose only `arbiter:`
+    line sat inside a ``` example cleared the duty. C (round 2): a placeholder VALUE -- `TODO`,
+    `TBD`, a bare `arbiter:` with nothing after it, or a backtick-only value -- also cleared it.
+    Both are answered here; both are the same failure as D3 wearing a different hat.
     """
     path = os.path.join(FILINGS_DIR, filing + ".dispositions.md")
     if not os.path.isfile(path):
@@ -278,13 +520,22 @@ def disposition_state(filing):
         return True, False, "the dispositions file exists but could not be read: %s" % exc
     if not text.strip():
         return True, False, "the dispositions file is empty; a placeholder is not an answer"
-    for line in text.splitlines():
+    saw_placeholder = None
+    for line in _unfenced_lines(text):
         low = line.strip().lower().lstrip("*- ")
-        if low.startswith("arbiter:") and low.split(":", 1)[1].strip(" *`"):
+        if not low.startswith("arbiter:"):
+            continue
+        value = low.split(":", 1)[1].strip().strip("*` ").strip()
+        if value and value not in PLACEHOLDER_VALUES:
             return True, True, ""
-    return True, False, ("the dispositions file carries no `arbiter: <project or owner>` line, "
-                         "which section 5 requires; the duty stands")
-
+        saw_placeholder = value
+    if saw_placeholder is not None:
+        return True, False, ("the dispositions file's `arbiter:` line carries %s, which names "
+                             "nobody; the duty stands"
+                             % ("no value" if not saw_placeholder
+                                else "the placeholder %r" % saw_placeholder))
+    return True, False, ("the dispositions file carries no `arbiter: <project or owner>` line "
+                         "outside a fenced example, which section 5 requires; the duty stands")
 
 
 def rows():
@@ -305,6 +556,9 @@ def rows():
     for filing in universe:
         arbiters = named.get(filing, [])
         exists, valid, why = disposition_state(filing)
+        # The FILING-NOT-FOUND escape, probed by the reviewer and kept deliberately: a disposition
+        # still clears a filing the inventory cannot see, so a broken inventory can never WEDGE an
+        # arbiter permanently on a duty it has already discharged.
         if exists and valid:
             out.append({"filing": filing, "state": ANSWERED, "arbiter": "",
                         "detail": filing + ".dispositions.md exists and names an arbiter"})
@@ -349,7 +603,8 @@ def main(argv=None):
         owed = [r for r in shown if r["state"] in OWED_STATES and r["arbiter"] == who]
 
     if args.json:
-        json.dump({"project": args.project or "", "owed": len(owed), "rows": shown},
+        json.dump({"project": args.project or "", "owed": len(owed), "rows": shown,
+                   "inventory_notes": list(INVENTORY_NOTES)},
                   sys.stdout, indent=2, sort_keys=True)
         sys.stdout.write("\n")
     else:
@@ -362,6 +617,11 @@ def main(argv=None):
             print("  %-26s %-20s %-22s %s"
                   % (r["filing"], r["state"], r["arbiter"] or "-", r["detail"]))
         print("")
+        # G: an ambiguity resolved in silence is an ambiguity hidden.
+        for note in INVENTORY_NOTES:
+            print("  NOTE inventory: " + note)
+        if INVENTORY_NOTES:
+            print("")
         print("VERDICT: " + ("NOTHING OWED" if not owed
                              else "%d FILING(S) AWAIT YOUR ARBITRATION" % len(owed)))
     return 1 if owed else 0

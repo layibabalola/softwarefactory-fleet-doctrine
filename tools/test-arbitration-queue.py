@@ -10,6 +10,12 @@ about the four states it refuses to collapse and about the two false answers tha
 
 It also pins the refusal behaviour: an unparseable or empty ledger must REFUSE, never report an
 empty queue, because "nothing owed" and "I could not read the ledger" are different facts.
+
+ROUND 2. The independent adversarial key refused this candidate with `reason=false-empty-queues`
+and, separately, showed the MUTATION BAR was not met: five reverts left the suite green. Both are
+answered in `run_round2_case` and in the strengthened `run_discovery_case`. Every assertion added
+there is named for the item it proves (A..J) or for the mutation it kills (M1..M5), so a mutation
+harness can report WHICH named assertion went red rather than only that something did.
 """
 from __future__ import annotations
 
@@ -17,6 +23,7 @@ import importlib.util
 import io
 import json
 import os
+import re
 import sys
 import tempfile
 from pathlib import Path
@@ -57,6 +64,7 @@ LEDGER = """# Factory-kernel harvest ledger
 
 | date | harvest | filing |
 |---|---|---|
+| 2026-09-15 | 20260915T051905Z-86585ba5 | conjugal |
 
 ## Steward status -- test
 
@@ -71,21 +79,36 @@ LEDGER = """# Factory-kernel harvest ledger
 """
 
 
-def run_case(tmp):
+def refuses(mod, fn, label, detail=""):
+    """Assert that `fn()` REFUSES with exit 2 rather than answering."""
+    try:
+        fn()
+    except SystemExit as exc:
+        check(label, exc.code == 2, "exit=" + str(exc.code))
+        return
+    check(label, False, detail or "returned an answer instead of refusing")
+
+
+def fixture(tmp, name):
+    """A tool module pointed at a throwaway bus tree, with review-branch discovery stubbed."""
     mod = load()
-    root = tmp / "bus"
+    root = tmp / name
     fdir = root / "adjudications" / "factory-kernel"
     fdir.mkdir(parents=True, exist_ok=True)
     for p in ("conjugal", "airmypc", "mlv-app", "cloudvore", "adobe-ingester"):
         write(fdir / (p + ".md"), filing(p))
-    # Not a filing: it sits in the directory but has no `project:` header.
-    write(fdir / "README.md", "# How filings work\n\nSome prose.\n")
     write(fdir / "HARVESTS.md", LEDGER)
-
     mod.ROOT = str(root)
     mod.LEDGER = str(fdir / "HARVESTS.md")
     mod.FILINGS_DIR = str(fdir)
     mod._filings_on_review_branches = lambda: set()   # no git in this fixture
+    return mod, fdir
+
+
+def run_case(tmp):
+    mod, fdir = fixture(tmp, "bus")
+    # Not a filing: it sits in the directory but has no `project:` header.
+    write(fdir / "README.md", "# How filings work\n\nSome prose.\n")
 
     print("case: README.md is not a filing, because a filing is known by its header")
     present = mod.filings_present()
@@ -143,11 +166,8 @@ def run_case(tmp):
 
     print("case: a NON-EMPTY file that is not a ledger REFUSES (key defect D1)")
     write(fdir / "HARVESTS.md", "this is not a ledger\n")
-    try:
-        mod.rows()
-        check("garbage that is merely non-empty refuses", False, "returned NOTHING OWED instead")
-    except SystemExit as exc:
-        check("garbage that is merely non-empty refuses", exc.code == 2, "exit=" + str(exc.code))
+    refuses(mod, mod.rows, "garbage that is merely non-empty refuses",
+            "returned NOTHING OWED instead")
     write(fdir / "HARVESTS.md", LEDGER)
 
     print("case: a placeholder disposition does NOT clear the duty (key defect D3)")
@@ -180,8 +200,11 @@ def run_case(tmp):
     named = mod.namings(plain)
     check("an undecorated PRIMARY line still names an arbiter",
           ("PRIMARY", "airmypc") in named.get("conjugal", []), str(named.get("conjugal")))
-    check("prose merely containing the word PRIMARY names nobody",
+    check("M5: prose merely containing the word PRIMARY names nobody",
           mod.NAMING_RE.search("the primary reason: airmypc was busy") is None, "matched prose")
+    check("M5: an indented continuation line cannot mint a naming either",
+          mod.NAMING_RE.search("    ... and the primary: cloudvore was not asked") is None,
+          "matched a mid-sentence colon form")
 
     print("case: precedence is the steward DATE, not file position (key defect D6)")
     dated = ("## Steward status -- 2026-09-16\n\n"
@@ -205,21 +228,173 @@ def run_case(tmp):
           lost and lost[0]["state"] == mod.FILING_NOT_FOUND, str(lost))
     rc = mod.main(["cloudvore", "--json"])
     check("and its named arbiter still gets a non-zero exit", rc == 1, "rc=" + str(rc))
+    print("case: FILING-NOT-FOUND cannot WEDGE an arbiter -- a disposition still clears it")
+    write(fdir / "mlv-app.dispositions.md", "arbiter: cloudvore\n")
+    rc = mod.main(["cloudvore", "--json"])
+    check("a disposition clears a filing the inventory cannot see", rc == 0, "rc=" + str(rc))
+    os.remove(str(fdir / "mlv-app.dispositions.md"))
     write(fdir / "mlv-app.md", filing("mlv-app"))
 
     print("case: an unreadable ledger REFUSES; it never reports an empty queue")
     write(fdir / "HARVESTS.md", "   \n")
-    try:
-        mod.rows()
-        check("an empty ledger refuses", False, "returned instead of refusing")
-    except SystemExit as exc:
-        check("an empty ledger refuses", exc.code == 2, "exit=" + str(exc.code))
+    refuses(mod, mod.rows, "an empty ledger refuses")
     os.remove(str(fdir / "HARVESTS.md"))
+    refuses(mod, mod.rows, "a missing ledger refuses")
+
+
+# --------------------------------------------------------------------------------------------
+# ROUND 2 -- every case below is a defect the independent key REPRODUCED, not a hypothetical.
+# --------------------------------------------------------------------------------------------
+
+def run_round2_case(tmp):
+    mod, fdir = fixture(tmp, "bus2")
+
+    # ---- A: ledger shape -------------------------------------------------------------------
+    print("case A: ledger shape requires the harvest table header row, not a plausible heading")
+    write(fdir / "HARVESTS.md",
+          "## Steward status -- 2026-09-16\n\nqwertyuiop nonsense nonsense\n")
+    refuses(mod, mod.rows,
+            "A1: a lone steward heading over nonsense REFUSES, it does not answer NOTHING OWED")
+    write(fdir / "HARVESTS.md",
+          "| date | harvest | filing |\n|---|---|---|\nqwertyuiop nonsense nonsense\n")
+    refuses(mod, mod.rows,
+            "A2: a lone harvest table header over nonsense REFUSES")
+    write(fdir / "HARVESTS.md",
+          "# Factory-kernel harvest ledger\n\n"
+          "| date | harvest | filing |\n|---|---|---|\n"
+          "| 2026-09-15 | h1 | conjugal |\n")
     try:
-        mod.rows()
-        check("a missing ledger refuses", False, "returned instead of refusing")
+        rows = mod.rows()
+        check("A3: a real ledger that names nobody PARSES to zero assignments, it does not refuse",
+              all(r["state"] == mod.UNASSIGNED for r in rows) and rows, str(rows))
     except SystemExit as exc:
-        check("a missing ledger refuses", exc.code == 2, "exit=" + str(exc.code))
+        check("A3: a real ledger that names nobody PARSES to zero assignments, it does not refuse",
+              False, "refused with exit " + str(exc.code))
+    write(fdir / "HARVESTS.md", LEDGER)
+
+    # ---- B: fenced examples ----------------------------------------------------------------
+    print("case B: a fenced EXAMPLE is not a record, in the ledger or in a dispositions file")
+    write(fdir / "conjugal.dispositions.md",
+          "# Ruling pending\n\nThe file will eventually look like this:\n\n"
+          "```\narbiter: airmypc\n```\n\nNothing has been ruled yet.\n")
+    rc = mod.main(["airmypc", "--json"])
+    check("B1: an `arbiter:` line inside a fence does NOT clear the duty", rc == 1, "rc=" + str(rc))
+    os.remove(str(fdir / "conjugal.dispositions.md"))
+    fenced_ledger = LEDGER + (
+        "\n## Steward status -- 2029-01-01\n\n"
+        "Worked example of how a re-naming is written:\n\n"
+        "```\n"
+        "**Arbiter named for `conjugal`.**\n\n"
+        "- **PRIMARY: `cloudvore`.**\n"
+        "```\n")
+    named = mod.namings(fenced_ledger)
+    check("B2: a naming block inside a fenced ledger example does NOT replace the live assignment",
+          named.get("conjugal") == [("PRIMARY", "airmypc"),
+                                    ("ALTERNATE", "dng-auto-processor")],
+          str(named.get("conjugal")))
+
+    # ---- C: placeholder arbiter values -----------------------------------------------------
+    print("case C: a placeholder value names nobody and does not clear a duty")
+    for value, label in (("TODO", "C1: `arbiter: TODO` leaves the duty standing"),
+                         ("", "C2/M4: a bare `arbiter:` with no value leaves the duty standing"),
+                         ("``", "C3: a backtick-only arbiter value leaves the duty standing"),
+                         ("TBD", "C4: `arbiter: TBD` leaves the duty standing"),
+                         ("n/a", "C5: `arbiter: n/a` leaves the duty standing"),
+                         ("-", "C6: `arbiter: -` leaves the duty standing")):
+        write(fdir / "conjugal.dispositions.md", "arbiter: " + value + "\n")
+        rc = mod.main(["airmypc", "--json"])
+        check(label, rc == 1, "rc=" + str(rc))
+    write(fdir / "conjugal.dispositions.md", "arbiter: airmypc\n")
+    rc = mod.main(["airmypc", "--json"])
+    check("C7: a real arbiter value still clears it", rc == 0, "rc=" + str(rc))
+    os.remove(str(fdir / "conjugal.dispositions.md"))
+    check("C8: a placeholder in the LEDGER names nobody either",
+          mod.namings(LEDGER.replace("`airmypc`", "`TBD`")).get("conjugal")
+          == [("ALTERNATE", "dng-auto-processor")],
+          str(mod.namings(LEDGER.replace("`airmypc`", "`TBD`")).get("conjugal")))
+
+    # ---- D: heading date state resets ------------------------------------------------------
+    print("case D: ANY steward heading resets the date; only a well-formed ISO date sets it")
+    base = ("## Steward status -- 2026-09-16\n\n"
+            "**Arbiter named for `conjugal`.**\n\n"
+            "- **PRIMARY: `airmypc`.**\n\n"
+            "## Steward status -- %s\n\n"
+            "**Arbiter named for `conjugal`.**\n\n"
+            "- **PRIMARY: `cloudvore`.**\n")
+    named = mod.namings(base % "undated")
+    check("D1: an UNDATED heading does not inherit the previous block's date",
+          named.get("conjugal") == [("PRIMARY", "airmypc")], str(named.get("conjugal")))
+    named = mod.namings(base % "2026-9-15")
+    check("D2: a NON-ISO heading does not inherit the previous block's date either",
+          named.get("conjugal") == [("PRIMARY", "airmypc")], str(named.get("conjugal")))
+    named = mod.namings(base % "2026-09-17")
+    check("D3: a properly dated later heading still wins, so the reset is not a blanket ignore",
+          named.get("conjugal") == [("PRIMARY", "cloudvore")], str(named.get("conjugal")))
+
+    # ---- E: impossible dates ---------------------------------------------------------------
+    print("case E: an impossible date is not a date")
+    named = mod.namings(base % "9999-99-99")
+    check("E1: `9999-99-99` does not outrank a real date; it ranks as undated",
+          named.get("conjugal") == [("PRIMARY", "airmypc")], str(named.get("conjugal")))
+    named = mod.namings(base % "2026-02-30")
+    check("E2: `2026-02-30` is validated away too",
+          named.get("conjugal") == [("PRIMARY", "airmypc")], str(named.get("conjugal")))
+
+    # ---- F: non-ASCII names ----------------------------------------------------------------
+    print("case F: a non-ASCII project name REFUSES; it is never truncated or ignored")
+    cyrillic = LEDGER.replace("`airmypc`", "`airmуpc`")
+    refuses(mod, lambda: mod.namings(cyrillic),
+            "F1: a Cyrillic-confusable arbiter name refuses rather than truncating to `airm`",
+            "parsed it into some ASCII prefix instead of refusing")
+    refuses(mod, lambda: mod.namings(LEDGER.replace("`conjugal`", "`conjugаl`")),
+            "F2: a Cyrillic-confusable FILING subject refuses too")
+    check("F3: the ASCII ledger is unaffected -- the refusal is not a blanket one",
+          mod.namings(LEDGER).get("conjugal") == [("PRIMARY", "airmypc"),
+                                                  ("ALTERNATE", "dng-auto-processor")],
+          str(mod.namings(LEDGER).get("conjugal")))
+
+    # ---- G: inventory keyed on the header, not the filename --------------------------------
+    print("case G: the inventory is keyed on `project:`, so a rename cannot hide an assignment")
+    os.remove(str(fdir / "conjugal.md"))
+    write(fdir / "conjugаl.md", filing("conjugal"))   # Cyrillic a in the FILENAME only
+    present = mod.filings_present()
+    check("G1: a filing renamed to a confusable stem is still keyed on its header value",
+          "conjugal" in present, str(sorted(present)))
+    rc = mod.main(["airmypc", "--json"])
+    check("G2: and its live assignment is still OWED to the named arbiter", rc == 1, "rc=" + str(rc))
+    primary = [r for r in mod.rows()
+               if r["filing"] == "conjugal" and r["arbiter"] == "airmypc"]
+    check("G3: it reads OWED, not UNREACHABLE-ARBITER",
+          primary and primary[0]["state"] == mod.OWED, str(primary))
+    mod.filings_present()
+    check("G4: the stem/header disagreement is REPORTED, not silently resolved",
+          any("disagrees with its header" in n for n in mod.INVENTORY_NOTES),
+          str(mod.INVENTORY_NOTES))
+    os.remove(str(fdir / "conjugаl.md"))
+    write(fdir / "conjugal.md", filing("conjugal"))
+    mod.filings_present()
+    check("G5: with no disagreement there is no note, so the note means something",
+          not any("disagrees" in n for n in mod.INVENTORY_NOTES), str(mod.INVENTORY_NOTES))
+
+    # ---- M2: two-field filing detection ----------------------------------------------------
+    print("case M2: one header field is not a filing")
+    write(fdir / "notafiling.md", "# notes\n\nproject: notafiling\n\nSome prose, no kernel line.\n")
+    present = mod.filings_present()
+    check("M2: a file with `project:` but no `kernel:` is NOT admitted to the inventory",
+          "notafiling" not in present, str(sorted(present)))
+    os.remove(str(fdir / "notafiling.md"))
+
+    # ---- M3: same-day letter-suffix ranking ------------------------------------------------
+    print("case M3: the same-day letter suffix orders blocks written on one day")
+    sameday = ("## Steward status -- 2026-09-16b\n\n"
+               "**Arbiter named for `conjugal`.**\n\n"
+               "- **PRIMARY: `cloudvore`.**\n\n"
+               "## Steward status -- 2026-09-16\n\n"
+               "**Arbiter named for `conjugal`.**\n\n"
+               "- **PRIMARY: `airmypc`.** Written earlier the same day, appended later.\n")
+    named = mod.namings(sameday)
+    check("M3: `2026-09-16b` outranks `2026-09-16` even when it appears FIRST in the file",
+          named.get("conjugal") == [("PRIMARY", "cloudvore")], str(named.get("conjugal")))
 
 
 def run_discovery_case(tmp):
@@ -229,6 +404,13 @@ def run_discovery_case(tmp):
     It also pins the failure direction that matters: when git cannot answer, the tool must REFUSE
     (exit 2). Returning an empty set made a broken instrument read as an absent duty, which is the
     one answer this tool exists to prevent.
+
+    ROUND 2, item H: stubbing was only half the hole. The reviewer replaced the CALLER --
+    `names |= _filings_on_review_branches()` with `names |= set()` -- and the suite stayed green,
+    because nothing asserted that a review-only filing reaches the OWED list through
+    `filings_present()`. `M1` below does exactly that, and asserts the state is OWED rather than
+    merely a non-zero exit: with discovery disabled the same filing still exits 1, as
+    FILING-NOT-FOUND, so an exit-status-only assertion is satisfied by the mutation.
     """
     import subprocess
 
@@ -245,11 +427,19 @@ def run_discovery_case(tmp):
         check("git is available to test discovery", False, "git --version failed")
         return
 
+    repo_ledger = (
+        "# Factory-kernel harvest ledger\n\n"
+        "| date | harvest | filing |\n|---|---|---|\n"
+        "| 2026-09-16 | h1 | onreviewonly |\n\n"
+        "## Steward status -- 2026-09-16\n\n"
+        "**Arbiter named for `onreviewonly`.**\n\n"
+        "- **PRIMARY: `onmaster`.**\n")
+
     git("init", "-q")
     git("config", "user.email", "test@example.invalid")
     git("config", "user.name", "test")
     write(fdir / "onmaster.md", filing("onmaster"))
-    write(fdir / "HARVESTS.md", LEDGER)
+    write(fdir / "HARVESTS.md", repo_ledger)
     git("add", "-A")
     git("commit", "-q", "-m", "master filing")
     git("checkout", "-q", "-b", "reviewbranch")
@@ -259,6 +449,9 @@ def run_discovery_case(tmp):
     git("add", "-A")
     git("commit", "-q", "-m", "review-branch filing")
     git("update-ref", "refs/remotes/origin/review/onreviewonly-kernel", "reviewbranch")
+    # J: a SECOND review ref carrying the identical trees. The reviewer measured 30 blob reads for
+    # 11 unique object ids; two refs over one commit is the smallest fixture that reproduces it.
+    git("update-ref", "refs/remotes/origin/review/onreviewonly-kernel-dup", "reviewbranch")
     git("checkout", "-q", "master")
 
     mod.ROOT = str(root)
@@ -274,7 +467,19 @@ def run_discovery_case(tmp):
     check("the local filing is still present too",
           "onmaster" in mod.filings_present(), str(sorted(mod.filings_present())))
 
-    print("case: discovery reads blobs BY OID, never as a combined <rev>:<path> argument")
+    print("case H/M1: the CALLER of discovery is exercised end to end, not just the function")
+    present = mod.filings_present()
+    check("M1a: filings_present() carries the review-only filing into the inventory",
+          "onreviewonly" in present, str(sorted(present)))
+    rows = mod.rows()
+    states = dict((r["filing"], r["state"]) for r in rows)
+    check("M1b: a review-only filing reaches the owed list as OWED, not FILING-NOT-FOUND",
+          states.get("onreviewonly") == mod.OWED, str(states))
+    rc = mod.main(["onmaster", "--json"])
+    check("M1c: and its named arbiter gets exit 1 from the real end-to-end path",
+          rc == 1, "rc=" + str(rc))
+
+    print("case I: the blob is fetched by a 40-hex OBJECT ID, not a <rev>:<path> string")
     seen_args = []
     real_run_probe = subprocess.run
 
@@ -293,18 +498,23 @@ def run_discovery_case(tmp):
           not combined,
           "git stats that combined string and, on Windows under a deep checkout, aborts with "
           "ENAMETOOLONG -- every review-branch filing then reads as absent: " + str(combined[:1]))
-    check("and the blob is fetched by object id instead",
-          any("cat-file" in c and "blob" in c for c in seen_args),
-          str(seen_args[-1] if seen_args else []))
+    catfile = [c for c in seen_args if "cat-file" in c and "blob" in c]
+    check("I1: at least one blob read happened at all", bool(catfile), str(seen_args[-1:]))
+    oids = [c[-1] for c in catfile]
+    check("I2: every blob argument is a 40-hex object id, which `origin/review/...:path` is not",
+          bool(oids) and all(re.match(r"^[0-9a-f]{40}$", o) for o in oids), str(oids[:3]))
+
+    print("case J: blobs are read once per object id, not once per ref")
+    check("J1: the number of cat-file calls equals the number of DISTINCT object ids",
+          len(oids) == len(set(oids)), "%d calls for %d unique ids" % (len(oids), len(set(oids))))
+    check("J2: and the two review refs really did present the same blobs",
+          len([c for c in seen_args if "ls-tree" in c]) >= 2,
+          str(len([c for c in seen_args if "ls-tree" in c])))
 
     print("case: when git cannot answer, discovery REFUSES -- it never returns an empty set (D2)")
     mod.ROOT = str(tmp / "not-a-repo")
     (tmp / "not-a-repo").mkdir(parents=True, exist_ok=True)
-    try:
-        mod._filings_on_review_branches()
-        check("a non-repository refuses", False, "returned instead of refusing")
-    except SystemExit as exc:
-        check("a non-repository refuses", exc.code == 2, "exit=" + str(exc.code))
+    refuses(mod, mod._filings_on_review_branches, "a non-repository refuses")
 
     real_run = subprocess.run
 
@@ -314,10 +524,23 @@ def run_discovery_case(tmp):
     mod.ROOT = str(root)
     mod.subprocess.run = exploding_run
     try:
-        mod._filings_on_review_branches()
-        check("git missing from PATH refuses", False, "returned instead of refusing")
-    except SystemExit as exc:
-        check("git missing from PATH refuses", exc.code == 2, "exit=" + str(exc.code))
+        refuses(mod, mod._filings_on_review_branches, "git missing from PATH refuses")
+    finally:
+        mod.subprocess.run = real_run
+
+    print("case J3: deduplication must not swallow a failure -- a broken read still refuses")
+    calls = {"n": 0}
+
+    def failing_catfile(cmd, *a, **kw):
+        if "cat-file" in cmd:
+            calls["n"] += 1
+            raise OSError("object store unreadable")
+        return real_run(cmd, *a, **kw)
+
+    mod.subprocess.run = failing_catfile
+    try:
+        refuses(mod, mod._filings_on_review_branches,
+                "J3: a blob read that fails REFUSES; the cache never turns it into an empty set")
     finally:
         mod.subprocess.run = real_run
 
@@ -332,12 +555,17 @@ def main():
         try:
             sys.stdout = out
             run_case(Path(raw))
+            run_round2_case(Path(raw))
             run_discovery_case(Path(raw))
         finally:
             sys.stdout = real
         for line in out.getvalue().splitlines():
-            if line.startswith("  ok ") or line.startswith("  FAIL") or line.startswith("case:"):
-                print(line)
+            if line.startswith("  ok ") or line.startswith("  FAIL") or line.startswith("case"):
+                # The confusable-name cases carry non-ASCII in their failure detail, and a Windows
+                # cp1252 console raises on it -- a test that CRASHES while reporting a failure
+                # reports nothing at all, which is how the G mutation first looked like a bare
+                # exit 1 with no named assertion.
+                print(line.encode("ascii", "backslashreplace").decode("ascii"))
     if FAILURES:
         print("\nFAIL arbitration-queue: " + str(len(FAILURES)) + " check(s) failed")
         for f in FAILURES:
