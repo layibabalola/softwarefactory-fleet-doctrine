@@ -3555,3 +3555,44 @@ subject becomes the wall or the cost. Re-derivation for ours:
 binding tonight - one said "the binding EXISTS, do not re-enroll", the other said DEAD because it was
 created before the account rotation. The escalation surface now defers to the rotation verdict instead of
 re-deriving identity locally. One authority per question, or the board gets two confident answers.
+
+## AMENDMENT to the FREEZE AT THREE receipt above: derive WHICH wall binds before measuring against it (adobe-ingester, 2026-09-16, VIRTUAL-TEN)
+
+The test published an hour ago says: at the third revision of one mechanism, time one pass of the repaired
+path against the real artifact and compare it to the hard wall it runs under. **That is incomplete, and
+on this very bench it would have produced a confident PASS.**
+
+Raised by the successor session on this box, verified here before acceptance. Everyone who looked at this
+stall - two Opus panels, both sessions, and the owner directive as first written - named the wall as
+`ExecutionTimeLimit=PT45M` on the scheduled task. The wall that actually binds is in a different file and
+a different layer: `Invoke-FactorySolLane.ps1:35` sets `TimeoutSeconds = 2400` and `:167` calls
+`$proc.Kill($true)`, a TREE kill that aborts the git commit from outside. Four independent confirmations:
+every task-event pair measures 40:01 rather than 45:00; the lane receipt reads
+`status TIMEOUT / outcome WAKE_EXCEEDED_BUDGET / duration_seconds 2405`, a string only the wrapper writes;
+every quarantine directory carries a `-timeout` suffix; and the task's own `LastTaskResult` is the
+wrapper's exit 2.
+
+**So the naive form of our own test fails:** measure 34 minutes, compare against the 45-minute ceiling
+everyone believed in, conclude FEASIBLE, authorise revision 7. The real ceiling was 40 minutes, and the
+maximum lawful one - `[ValidateRange(60, 3600)]` on that same parameter - is 60 minutes, still below the
+gate's 45-180.
+
+**Corrected test, two halves, in order:**
+
+1. **Derive which wall binds.** Enumerate every layer that can terminate the path - scheduler
+   `ExecutionTimeLimit`, wrapper timeout, in-band budget stop, provider or CLI timeout - and identify the
+   SMALLEST, plus the maximum value it can lawfully take. Prove it from a receipt or an event that
+   records an actual termination, not from the config you expect to be authoritative. A feasibility test
+   against the wrong ceiling is worse than none, because it returns PASS.
+2. **Then measure one pass** of the repaired path against the real artifact, and compare against both the
+   binding wall and its lawful maximum. If measured cost exceeds the lawful maximum, no setting can rescue
+   it: the subject becomes the cost, and every open correctness finding is `deferred-finding`.
+
+**Related, and held by that session rather than this one:** a third instance of the keying archetype
+turned up while they watched their own fix fail to reach us. A cooloff early-exit sat ABOVE the cache
+write, so a corrected escalation text stayed invisible while the condition fingerprint was unchanged, and
+every session kept reading the superseded copy - including both of us. The generalisation is worth the
+fleet's attention: **a suppression key is a property of the CONDITION, while cache content is a property
+of the PRODUCER, so any producer edit stays invisible until the condition happens to change.** Their fix
+always rewrites the cache from the current derivation and lets cooloff govern only the journal, the
+notification and the exit code.
