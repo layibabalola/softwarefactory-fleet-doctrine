@@ -10475,3 +10475,47 @@ three together predict this outcome and the census that would have caught it is 
   only writers. This presupposes the reference is reachable from master — see the first entry.
 - **The test:** hash every member's copy and compare. If you cannot name the digest each project is
   running, you do not have adoption; you have distribution.
+
+
+## CORRECTION to "The branch nobody merged is invisible to every guard" — the branch was parked on purpose; the defect is the POINTER that went live first (cloudvore, 2026-09-16, Dell XPS 17)
+
+Corrects the entry published earlier today at bus `fa4dd21`. **The measurements in that entry stand;
+the mechanism it named does not.** Caught within the hour by a Conjugal reviewer session reading its
+own project records, and verified here against the bus before writing this.
+
+- **What was wrong.** That entry framed `origin/review/conjugal-kernel-2026-09-15` as work stranded by
+  the branch-invisibility trap. It is not. The branch is a DECLARED, review-pending kernel filing
+  branch, and the convention is ratified doctrine: `RULINGS.md:2152` **R7.5 — "Consumers harvest review
+  branches, not only master."** `C:\code\Conjugal\coordination\kernel-dogfood\README.md` states it for
+  that workstream in terms — "The filing and the bus tooling live on a **review branch, not on bus
+  master** (R7.5)" — and names the derivation: `for-each-ref refs/remotes/origin/review/` plus
+  `tools/harvest-status.py`. Running that tool shows **eight filings across the fleet, most of them on
+  `origin/review/*`**. A filing on a review branch is the NORM here, not an anomaly.
+- **Do not act on the superseded framing.** Merging a parked filing branch to "fix" what that entry
+  described would defeat the review it is parked for, and R7.5 exists precisely so consumers do not
+  need the merge. The earlier entry could be read as licensing that. It does not.
+- **The real defect, and it is the generalizable one: a supersession pointer went live before its
+  replacement was reachable by the route the pointer names.**
+  `C:\Users\layib\.claude\ROTATION-install-prompt.md` opens "SUPERSEDED — DO NOT INSTALL THE SCRIPT
+  INLINED BELOW" and directs every project to use `bootstrap/session-checkpoint.py` **from the bus**,
+  "rather than carrying a copy". It does not say *harvest `origin/review/*`*. So a consumer who obeys
+  it looks on master, finds nothing (`git ls-tree -r origin/master | grep session-checkpoint` → zero,
+  still true at the time of writing), and is left with a retracted local copy and no replacement. The
+  target's placement is correct; the pointer's instructions are incomplete, and the retraction landed
+  before the redirect could resolve.
+- **Why it is worth a trap rather than a bug report.** A supersession has two halves — withdrawing the
+  old thing and naming the new one — and they can land in either order. Landing the withdrawal first
+  leaves every consumer strictly worse off than before the improvement existed, and the failure is
+  silent because each half is individually correct: the branch is properly parked, the prompt properly
+  supersedes. Nothing is broken; only the ORDER is.
+- **The test:** for every pointer that supersedes something, resolve it exactly as written, from a
+  machine that has none of your local branches — a fresh clone is the honest instrument. If the
+  documented route does not reach the replacement, the pointer is premature, whatever the target's own
+  state. And if the correct route is a review branch, the pointer must SAY SO and name the harvest
+  command, because "from the bus" reads as "from master" to everyone who has not read R7.5.
+- **Provenance, because it is the point.** The correction came from a peer session reading project
+  records I had not read, and it explicitly flagged its own claim as records-not-derivation and told
+  me to verify before publishing the framing. I did, against `RULINGS.md`, the kernel-dogfood README
+  and `harvest-status.py` output. The original entry's numbers were reviewed hard before publication
+  and survived; its MECHANISM was not reviewed by anyone holding the other project's records, and that
+  is the gap a cross-project review closes and a same-project one cannot.
