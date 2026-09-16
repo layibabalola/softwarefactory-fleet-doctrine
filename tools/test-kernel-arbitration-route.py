@@ -49,46 +49,93 @@ def read_spec(path=None):
     return text
 
 
-def duty_clause(text):
-    """The §5 bullet that creates the duty, and ONLY that bullet.
+BULLETS = ("- ", "* ", "+ ")
 
-    A markdown bullet runs to the next bullet at the same level or to a blank line followed by a
-    non-indented line. Reading past it would let a neighbouring sentence satisfy this check.
+
+def governed_lines(text):
+    """The spec's GOVERNING prose: fenced blocks and HTML comments blanked, line numbers kept.
+
+    Round 1 of the independent key greened this guard three ways without changing a single governing
+    clause: a prepended fenced EXAMPLE supplied duplicate anchors and the tool name; HTML comments
+    carrying the tool name satisfied both assertions; and a neighbouring `* ` bullet supplied the
+    name because the walker only terminated on `- `. None of those tell an arbiter anything, which
+    is the whole point of the subject -- a guard that a decoy can satisfy is an announcement too.
+
+    Lines are blanked rather than removed so that every anchor keeps its real position.
     """
-    lines = text.splitlines()
-    start = None
-    for i, line in enumerate(lines):
-        if DUTY_ANCHOR in line:
-            start = i
-            break
-    if start is None:
-        raise Refused("the section 5 duty clause anchor is gone; the spec was restructured and this "
-                      "guard can no longer say where the route belongs")
+    out = []
+    fenced = False
+    in_comment = False
+    for line in text.splitlines():
+        stripped = line.strip()
+        if not in_comment and (stripped.startswith("```") or stripped.startswith("~~~")):
+            fenced = not fenced
+            out.append("")
+            continue
+        if fenced:
+            out.append("")
+            continue
+        if not in_comment and "<!--" in line:
+            in_comment = "-->" not in line.split("<!--", 1)[1]
+            out.append(line.split("<!--", 1)[0])
+            continue
+        if in_comment:
+            if "-->" in line:
+                in_comment = False
+                out.append(line.split("-->", 1)[1])
+            else:
+                out.append("")
+            continue
+        out.append(line)
+    return out
+
+
+def _block_from(lines, start):
+    """One markdown block: its first line plus wrapped continuation lines.
+
+    Ordinary Markdown wrapping put the K12 command on an indented continuation line, and round 1
+    correctly called the resulting FAILURE a false one. A continuation line belongs to the block; a
+    new bullet, heading or bold run starts a different one and must not be read into it.
+    """
     out = [lines[start]]
     for line in lines[start + 1:]:
         if not line.strip():
             break
-        if line.lstrip().startswith("- ") or line.startswith("#") or line.startswith("**"):
+        lead = line.lstrip()
+        if (lead.startswith(BULLETS) or line.startswith("#") or line.startswith("**")
+                or lead.startswith(OBSERVABLE) or lead.startswith("*Doctrine:*")):
             break
         out.append(line)
     return "\n".join(out)
 
 
+def duty_clause(text):
+    """The section 5 bullet that creates the duty, and ONLY that bullet."""
+    lines = governed_lines(text)
+    hits = [i for i, line in enumerate(lines) if DUTY_ANCHOR in line]
+    if not hits:
+        raise Refused("the section 5 duty clause anchor is gone from the governing prose; the spec "
+                      "was restructured and this guard can no longer say where the route belongs")
+    if len(hits) > 1:
+        raise Refused("the section 5 duty clause anchor appears %d times in the governing prose; "
+                      "refusing rather than picking one" % len(hits))
+    return _block_from(lines, hits[0])
+
+
 def k12_observable(text):
-    """K12's `*Observable:*` line, and ONLY it."""
-    lines = text.splitlines()
-    start = None
-    for i, line in enumerate(lines):
-        if line.startswith(K12_HEADING):
-            start = i
+    """K12's `*Observable:*` block, and ONLY it."""
+    lines = governed_lines(text)
+    heads = [i for i, line in enumerate(lines) if line.startswith(K12_HEADING)]
+    if not heads:
+        raise Refused("the K12 heading is gone from the governing prose; the spec was restructured")
+    if len(heads) > 1:
+        raise Refused("the K12 heading appears %d times in the governing prose; refusing rather "
+                      "than picking one" % len(heads))
+    for i in range(heads[0] + 1, len(lines)):
+        if lines[i].startswith("### ") or lines[i].startswith("## "):
             break
-    if start is None:
-        raise Refused("the K12 heading is gone; the spec was restructured")
-    for line in lines[start + 1:]:
-        if line.startswith("### ") or line.startswith("## "):
-            break
-        if line.startswith(OBSERVABLE):
-            return line
+        if lines[i].startswith(OBSERVABLE):
+            return _block_from(lines, i)
     raise Refused("K12 has no *Observable:* line; the spec was restructured")
 
 
