@@ -9967,3 +9967,63 @@ the moment to change the mechanism or park the subject, not to iterate again.
 recorded that in the subject's landing evidence rather than carrying it silently, and this entry is the
 correction. Cost of the lesson: one working day and roughly 25M Codex input tokens, on a documentation
 alignment item.
+
+## A suppression key belongs to the CONDITION; cache content belongs to the PRODUCER — so every producer fix is invisible until the condition happens to change (adobe-ingester, 2026-09-16, VIRTUAL-TEN)
+
+Fourth member of the keying archetype already recorded above under "The collapsing probe". Those three
+were about a key that renders two different states identically. **This one is about a key that is
+perfectly correct and still serves stale bytes, because it gates the wrong write.** Found by the peer
+session on this box while watching its own fix fail to reach anybody; verified here in the source before
+publication.
+
+**The shape.** An alarm has two jobs that look like one: RAISE (append the journal, notify, set the exit
+code) and PUBLISH (write the human-readable cache every consumer actually reads). A cooloff exists so the
+raise does not repeat every 15 minutes. The early `exit` was placed above BOTH, so cooloff suppressed the
+publish as well.
+
+    derive()                    # correct, every run
+    if (suppress) { exit 0 }    # <-- the bug: everything below is now conditional
+    write_cache(derivation)     # only runs when the alarm re-raises
+    append_journal(); notify()
+
+**What it costs, measured.** The escalation's binding text was wrong (it cited a ceiling that does not
+bind — see the RECEIPTS amendment of the same date). The producer was corrected. The CONDITION was
+unchanged: same fingerprint, same stall, same refusal count — which is precisely what a good fingerprint
+should do. So every subsequent run suppressed, the cache kept the superseded text, and the SessionStart
+hook injected that text into **both** sessions on this box for over an hour. Both of us then reasoned
+from it, and one of us published a rule from it onto this bus. **The cache goes stale exactly when its
+producer is being fixed**, because a fix changes the producer and not the condition.
+
+**Why it survives review.** Every part is individually defensible: the fingerprint is right, the cooloff
+is right, the derivation is right. Nothing is a stale-cache bug in the usual sense — no TTL is wrong, no
+invalidation is missed. The defect is entirely in the ORDER of two statements, and the reviewer's eye
+reads `if (suppress) exit` as "skip the alarm", not as "skip the publish".
+
+**The generalisation, which is not specific to alarms:** a suppression key is a property of the
+CONDITION being watched; cache content is a property of the PRODUCER that renders it. Gating the second
+on the first couples two things with different change rates, and the producer is the one that changes
+when a human is fixing something.
+
+**Rule.** Always re-render the cache from the current run's derivation. Let suppression govern only the
+append-only journal, the notification and the exit code. State it as an ordering invariant, because that
+is how it is checked:
+
+> **every unconditional write precedes the first conditional exit.**
+
+**Tests, cheapest first:**
+
+- Read the producer top to bottom and list every `exit` / `return` before the end. For each, name what is
+  below it. If a consumer-facing artifact is below one, that artifact is conditional and you have this bug.
+- Edit ONLY the rendered text — not the condition — and re-run. If the consumer still reads the old text,
+  the publish is gated. This is a one-minute test and it is the one nobody runs, because "I changed the
+  message, of course it changed".
+- Have the suppressed path emit proof it published: the receipt here now carries `cache_refreshed = $true`,
+  so a suppressed run is distinguishable from a run that did nothing — which is the collapsing-probe law
+  above applied to its own remedy.
+
+**Verification of the fix, from outside the producer** (do not take the comment's word for it):
+
+    grep -n 'WriteAllText($currentPath' .claude-state/tools/Invoke-EscalationBudget.ps1   # 468
+    grep -n 'if ($suppress)'            .claude-state/tools/Invoke-EscalationBudget.ps1   # 479
+
+The write must have the LOWER line number. A comment claiming the ordering is not the ordering.
