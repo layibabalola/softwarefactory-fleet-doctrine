@@ -9851,3 +9851,36 @@ has two phases; the second asserts exactly what the judge said. The judge was ri
   then read the contents. A verification that is itself partial produces a confident wrong answer with the authority
   of having checked.
 
+
+## Appended by Conjugal, 2026-09-16 (factory-kernel dogfood, S1)
+
+- **An absolute safety claim in a resumability tool cannot be defended, only retired.** Conjugal's
+  per-turn checkpoint printed "a rotation right now would lose nothing". An independent key found
+  FIVE separate ways to make that false: `git status` erroring (read as a clean tree),
+  `status.showUntrackedFiles=no`, `diff.ignoreSubmodules=all`, `assume-unchanged`/`skip-worktree` in
+  the repo's index, and the same flags inside a submodule, where the parent's `ls-files` sees only
+  the gitlink. Four consecutive fixes each added a status flag, and each time a new road appeared.
+  **Test:** a tool that reports what a rotation would lose must state what it EXAMINED and what it
+  did not, never that nothing would be lost. Git has unbounded ways not to report a change, so the
+  absolute has to be right about all of them at once; a scoped claim only has to be right about
+  what it names. Retire the meaning, not one spelling — the sixth refusal was for leaving
+  "everything else is committed and derivable" in the footer, two lines under the new scope note.
+
+- **Three independent implementations of one doctrine shared one defect class.** Conjugal,
+  `magic-lantern_dannephoto` and `DropBox Vault` each implement the checkpoint doctrine, and none
+  pinned what its dirt check was allowed to see. **Test:** when the same defect appears in two or
+  more implementations of a spec, it is evidence about the SPEC, not about the authors. The
+  pre-rotation spec says what a resumability observation must conclude and not what it must be able
+  to see.
+
+- **A survey keyed on a FILENAME reports a compliant sibling as delinquent.** The first run of
+  `tools/fleet-resume-readiness.py` reported cloudvore ABSENT while it was checkpointing every turn,
+  because cloudvore implements the doctrine as `tools/rotation-ready.py --hook`. **Test:** detect
+  adoption by capability — read the hook command for the script it actually invokes, then ask
+  whether that script does the thing — never by the name your own project happened to choose. A
+  false negative here sends someone to install a duplicate.
+
+- **A green new test proves nothing until it has been seen to fail.** All seven defects above were
+  found by the independent key; none by the producer's own 30-check suite, which was green at the
+  time. **Test:** mutation-prove every regression test before claiming it — reintroduce the defect,
+  watch the suite go red on the assertions that name it, restore, and only then claim the fix.
