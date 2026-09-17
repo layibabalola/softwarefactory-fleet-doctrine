@@ -10657,3 +10657,141 @@ degraded-mode procedure, whose protection is several adversaries on distinct nam
   constrained card class. If it returns a seat, ask whether that seat is eligible under every OTHER rule
   you hold. If the honest answer is "it is what was left", you will get a verdict-shaped object that
   certifies nothing — and unlike a refusal, nothing will tell you.
+
+## CORRECTION to `specs/cli-orchestration-standard.md` "Codex family" — its own canonical example uses the two forms the rest of the spec forbids and under-qualifies, and both failed here (dng-auto-processor, 2026-09-17, UltraMagnus)
+
+The spec's example at `specs/cli-orchestration-standard.md:90` is
+`codex exec -m <model-id> -s read-only -C <repo> -o <outfile> "<prompt>"`, marked "Verified: exit 0". We
+copied that shape into our own orchestration document and it broke in two independent ways. Neither is
+visible at the size a verification run is usually done at.
+
+- **The positional prompt is already ruled against, 28 lines further down the same file.**
+  `specs/cli-orchestration-standard.md:118` reads **"Deliver the payload through a file on stdin, not
+  through argv"**, and `TRAPS.md:34` has carried "argv is not a prompt carrier (Windows)" since
+  2026-08-09. The example at `:90` contradicts both, and an example is what gets copied. Measured here:
+  a **38,343 B** brief, `C:\DngAutoJobs\evidence\REACH-SUPPLY-OWED\attempt1\brief.implement.sol.91bda4c3.md`,
+  died as `C:\Users\obabalola\tools\node-v24.18.0-win-x64/node: Argument list too long`, raised by the
+  launcher's own shell shim (`codex: line 13:`) **before the model was reached** — so there was no session
+  id, no seat and no attempt to show for it. Receipt:
+  `…\REACH-SUPPLY-OWED\attempt1\cop-note-1130Z-tick26-receipt.md`.
+- **What is new, and is the reason this is worth a correction rather than a re-derivation: payload size is
+  not incidental, it is a function of review depth.** Our rules put the approach review verbatim into the
+  brief, and on a later attempt BOTH reviewers' findings verbatim. So the brief grows with how hard the
+  subject is being reviewed, and the argv ceiling is reached **exactly on the deepest round**. The APPROACH
+  brief on the same card was **14,212 B** (`…\attempt1\brief.approach.sol.7d74460a.md`) and fit, which is
+  why the form read "working" for six days. Through stdin the next attempt launched **42,570 B**
+  (`…\REACH-SUPPLY-OWED\attempt2\launch.implement.52952784.json`). A board whose briefs are short today
+  inherits this the first time it makes a reviewer's output part of the next brief.
+- **`-o` needs one more sentence than `:108-109` gives it.** The spec recommends `-o` as "the capture
+  primitive" and is right about why — it sidesteps the sandbox case that "can leave a model-authored
+  artifact at 0 bytes while the model believes it wrote". The unstated half: **`-o` writes the FINAL
+  MESSAGE, so it TRUNCATES whatever path it names, at the end of the run.** Point it at a path the seat
+  also writes and the CLI deletes that product at the last instant, after the seat produced it correctly.
+  Measured: the seat's real product survives as
+  `C:\DngAutoJobs\evidence\REACH-SUPPLY-OWED\attempt1\approach.recovered.md`, **4,142 B**, reconstructed
+  from the six `+++ b/…/approach.md` apply-patch hunks in `…\attempt1\author.approach.log` (194,899 B);
+  what `-o` left on disk is preserved beside it as `…\attempt1\approach.clobbered-by-o.md` — **4 bytes,
+  `44 4f 4e 45`, `DONE`**, the seat's typed one-line return sitting where its 4,142-byte product had been.
+- **The rule, stated so it covers both of the spec's cases: `-o` must name a path nothing else writes.**
+  Not "only for read-only seats" — that formulation is wrong and `:108-109`'s own 0-byte case is the
+  counterexample, a seat that CAN write and for which `-o` is the only reliable carrier. The variable is
+  path collision, not seat capability.
+- **Two tests, deliberately not one law.** (1) For every flag that names a path, ask what else writes that
+  path. (2) Validate a launch form at the largest payload your own rules can produce, not at the smallest
+  one that proves the binary starts. They are separate because the two failures are: the argv death is
+  purely a size effect, and the `-o` clobber is size-INDEPENDENT — the clobbered file is 4 bytes, and a
+  168 ms probe that READ it would have caught it. `:122`'s `--help` preflight validates the parse, which
+  is neither.
+- **How we convinced ourselves the form worked, recorded because it is the reusable part.** Our clause
+  said the launch was "measured working (the seat wrote its progress line and completed its first probe in
+  168 ms)". That witnessed the LAUNCH and never the FILE. Relatedly, the periodic CLI-upgrade check that
+  claims in its own words to smoke "the forms the tick uses" smoked `"Reply PONG"` — **10 bytes** — so it
+  could pass on every upgrade while the form actually launched was broken.
+
+## An all-bad-at-once adversarial fixture backs only the FIRST term of a short-circuited chain, and the fleet's own mutation test cannot refute a finding that says so (dng-auto-processor, 2026-09-17, UltraMagnus)
+
+A validator's evidence block is one chain: `if (A -or B -or C -or D -or E) { return INVALID }`. Its
+adversarial fixture makes everything bad at once. Evaluation stops at A, so B through E are never reached
+and can be deleted without changing a single test result. A review found this on one term, the fix added
+a fixture, and the next round found the identical signature on a sibling term of the very line the fix had
+edited.
+
+- **Measured by deletion, not by reading.** Removing exactly **61 bytes** — one whole term,
+  ` -or -not (Test-Gate0SummaryShape $obj.masterBaselineSummary)` — in binary mode left the suite
+  byte-for-byte equivalent: `PASS test-gate0-comparability: 103 total assertions` with `BASELINE_EXIT=0`
+  and `PROBE_D_EXIT=0`, in
+  `C:\DngAutoJobs\evidence\GATE0-COMPARABILITY-BATCH-PASS\attempt3\k2-8055a42c-baseline-pristine.txt` and
+  `…\k2-8055a42c-probeD-masterbaseline-clause-deleted-byteexact.txt`. Run over the whole block it corrected
+  the author's own sweep from "11 of 12 backed" to **7 backed / 1 out of reach / 4 unbacked of 12**
+  (`…\attempt3\cop\disposition-round3-REVISE-cop-0910Z.md`, 48,655 B). The four unbacked terms were not
+  four oversights; they were four terms one fixture shadows at once.
+- **It is the fixture's SHAPE, not its count, and we got this wrong before we got it right.** Our first
+  filing claimed outcome assertions could never distinguish the terms "however many fixtures are added".
+  That is false by construction: a fixture with every field valid except C returns INVALID with C present
+  and falls through to VALID with C deleted, so the outcome flips and a plain outcome assertion backs the
+  term. **One-bad-clause fixtures are necessary and sufficient for the terms that exist today.** Asserting
+  the per-term REASON — `TRAPS.md:9561` — buys DURABILITY, not testability: the day a NEW term also fires
+  on an existing one-bad-clause input, that case stops discriminating and silently re-masks the term it
+  was written for.
+- **The amendment, and it is the reason to file this at all.** `TRAPS.md:7909` rules "mutation-test every
+  BLOCKER and MAJOR before it reaches an author: kill the line the finding names and see whether the named
+  check actually goes red. Survives, confirmed…" That assumes the mutation discriminates. **Where the
+  finding IS "no existing check goes RED for this line", the procedure is unavailable by construction:
+  killing the line changes nothing, and a reviewer applying 7909 mechanically drops a TRUE finding as
+  refuted.** A finding whose content is the ABSENCE of a control needs an independent cross-key grade of
+  the same `file:line`, never a mutation. That bound is not stated anywhere on the bus.
+- **Prior art this does NOT extend, named so the bus does not count one lesson twice.** `TRAPS.md:9561`
+  (assert the REASON, not the OUTCOME) · `TRAPS.md:4742` (a multi-way `-or` chain throwing one string is a
+  diagnostic that misdirects; report which conjunct failed) · `specs/dng-auto-processor.md:176` (prove
+  every guard load-bearing by mutating its condition; a surviving mutant is an inert guard) — which is our
+  own published detector and is exactly the right instrument here · `specs/dng-auto-processor.md:161` (ask
+  whether the branch that would report the alternative is reachable at all).
+- **One claim withdrawn before it was filed.** We nearly wrote that a falling confirmed-finding count
+  (8+ → 3 → 2) makes this trap invisible to round triage. It does not: `TRAPS.md:7897`'s own table has
+  `any | SAME class re-found | stuck | PARK, batch pass`, and applying it gave the right answer here. The
+  count column never got to vote.
+- **The test.** For every multi-term validation chain, ask per term: *if I delete term k, does any case go
+  RED?* Run it, by deletion. Then ask of your adversarial fixture: *does it make everything bad at once?*
+  If so it is one control, not N.
+
+## Two clauses defined "the orchestrator's receipt" and the staleness alarm read the narrower one, so it got LOUDER the more exactly the seat obeyed the other (dng-auto-processor, 2026-09-17, UltraMagnus)
+
+`specs/adobe-ingester.md:70` prescribes IGNITION-D2: "no staleness alarm on the orchestrator's receipt ⇒
+orchestrator death is [invisible]". The prescription is right and, as stated, unimplementable — because
+"receipt" is not defined there, so the implementation picks one carrier, and in our document two clauses
+name two different ones.
+
+- **Clause A, the alarm's:** the receipt is the bookkeeping COMMIT that advances the seat's tick counter.
+  **Clause B, the load interlock's:** a tick deferred because the machine is busy writes no commit, and
+  its ledger note "is the receipt, so a deferring tick writes one."
+- **Measured, both readings, same instant.** On commits: newest `3b7c6a86`, `2026-09-16T23:14:32Z`, age
+  **3.17 h**; cadence **0.75 h** as the median of the newest five gaps (0.24, 0.73, 1.41, 0.75, 2.44 h,
+  from `git log --format=%at` on that file's history); bound 2 × cadence = **1.50 h** ⇒ **FIRING**. On
+  ledger notes: newest is
+  `C:\DngAutoJobs\evidence\RUNNER-BASE-IMPORT\attempt1\cop\cop-note-0155Z-tick4-deferred.md`, 16,810 B,
+  age **~0.5 h** ⇒ fine. The seat was executing while the alarm read it as stopped.
+- **The gradient is the finding.** Deferring is the seat obeying the interlock exactly, and on a long
+  measurement every tick must defer — so the commit-based age climbs without bound precisely while
+  compliance is highest. An alarm with a compliance gradient is measuring compliance, not liveness.
+- **A DERIVED cadence makes it worse than a flat bound.** We previously filed the flat-bound version of
+  this against ourselves — `ruling-candidates/project-scoped-resume-rearms-account-scoped-seats-r1.md:37`
+  ("correct behaviour defers commits") and `:47` ("a flat 15-minute, or 1-hour, commit bound is violated by
+  correct behaviour on a loaded machine"). A cadence-derived bound is strictly nastier: it tightens as the
+  seat's own recent history gets denser, so a burst of healthy activity lowers the bar for condemning it.
+- **The same alarm's input was wrong a second time the same day, in the opposite direction, from the same
+  root.** Its cadence counts FILES where the quantity it means is RUNS. Our steward ledger
+  `C:\DngAutoJobs\evidence\steward\` holds 32 top-level files over 18 distinct run stamps — the stamp
+  `20260917-074609` alone carries five (`.md` plus four commit and push logs) and `20260915-194618` carries
+  four — so four of the newest five FILE gaps are 0.000 h, the median is 0, the bound is 2 × 0 = **0 h**,
+  and `age > 2 × cadence` fires on ANY nonzero age. By distinct STAMP the same ledger reads cadence
+  **6.001 h** against age 0.15 h: healthy, and that seat had fired five seconds before the run that
+  measured it. Here it failed toward FIRING, on the one seat that was working — but the identical defect
+  reads a genuinely dark seat as ALIVE the moment its last pass happened to write a single file, and
+  **that** direction is silent, which is the direction IGNITION-D2 exists to cover.
+- **The fix, for anyone implementing IGNITION-D2.** Define "receipt" ONCE, as the union of every carrier
+  the seat writes when it runs — including the carrier it writes when it deliberately does nothing — and
+  make the alarm POINT at that definition rather than restate a narrower copy. Count RUNS, not files: one
+  run is one stamp however many files it writes.
+- **The test.** Of any liveness alarm: *is there a correct behaviour that makes this fire?* and *does the
+  artifact class I read exhaust the ways this seat records that it ran?* A no to the second is how a
+  staleness alarm ends up condemning the only seat that is working.
