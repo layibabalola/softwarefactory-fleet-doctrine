@@ -24,7 +24,7 @@ permissions:
   contents: read
 jobs:
   offline-regressions:
-    runs-on: windows-latest
+    runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
