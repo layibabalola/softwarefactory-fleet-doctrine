@@ -2,8 +2,14 @@ name: R26 project disposition intake
 
 on:
   pull_request:
+    paths-ignore:
+      - "cos-feedback/**"
+      - "heartbeats/**"
   push:
     branches: [master]
+    paths-ignore:
+      - "cos-feedback/**"
+      - "heartbeats/**"
   workflow_dispatch:
 
 permissions:
