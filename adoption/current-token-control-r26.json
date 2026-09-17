@@ -23,7 +23,7 @@
     }
   },
   "census": {
-    "baseCommit": "aa4498fc32355ee4c93dece22d12050ead33f7f5",
+    "baseCommit": "8727672750932f123bfb68440fd95ba0e29c464f",
     "projectSpecGlob": "specs/*.md",
     "nonProjectSpecs": [
       "specs/account-rotation-and-project-continuity.md",
