@@ -80,13 +80,16 @@ evidence exists **for that exact subject identity**. A resource stop (thermal, q
 unavailable) is a typed terminal with zero partial credit. It is never re-read as a pass, and never waived by relabelling.
 *Doctrine:* RULINGS "Cloudvore ratification — two-stage resource-blocked assurance failover" and "Minimum portable
 adoption proof" (ratified log). Profiles: `specs/fleet-factory-kernel/profiles/`.
-*Observable:* the profile line recorded before work, and the acceptance receipt bound to the same identity.
+*Observable:* the profile line recorded before work, and the acceptance receipt bound to the same identity. Precedence is read from AUTHOR dates or the reflog, never committer dates: a rebase onto a moving integration branch rewrites committer dates, and a verifier reading them has refused a compliant subject (Conjugal S3).
 
 ### K6 — At least one independent key
 Every acceptance includes a key from an independence class other than the producer's. When the check is model judgment,
 the cross-family rule applies and the claim is computed, not asserted (R3). When the check is a human, a hardware rig or
 a measured score against held-out ground truth, that is the independent key, and the receipt names it. A profile may
-require more keys; it may not require fewer.
+require more keys; it may not require fewer. A key that is dispatched and terminated without producing a verdict --
+by a provider safety classifier, a capacity stop, or a crash -- is the typed terminal `KEY_UNAVAILABLE_BY_PROVIDER`.
+It carries zero credit and never closes a subject; it exists so that a reachability failure is enumerable and is not
+recorded as though no key was ever sought. The receipt names the class that was unreachable.
 *Doctrine:* RULINGS R3 (binding); `independence_class` (Cloudvore 2026-08-10, ratified log).
 *Observable:* the independence class of each key on one accepted subject.
 
@@ -219,8 +222,12 @@ finalisation rule reads that ledger, never a single filing.
 1. At least five member projects have filed, each covering at least one real subject end-to-end with receipts.
 2. At least three profiles have been exercised, including at least two whose acceptance is not an automated test suite.
    `hardware-in-loop` and `measured-objective` both have benches today.
-3. Two successive harvests on the **unchanged** revision contain fresh end-to-end evidence meeting criteria 1 and 2,
-   with no unresolved BREAK; a disputed rejection of a BREAK is adjudicated by a project other than the steward.
+3. Two successive harvests in which no **section 2 clause text** changed contain fresh end-to-end evidence meeting
+   criteria 1 and 2, with no unresolved BREAK; a disputed rejection of a BREAK is adjudicated by a project other
+   than the steward. Profile-only and section 6 roster edits do not reset the window; a clause edit does. Read
+   literally, "unchanged revision" was unsatisfiable by construction: the harvest is the process that amends the
+   kernel, and every harvest so far bumped the revision (r1 to r4 inside 48 hours), so the criterion was reset by
+   the only mechanism that could satisfy it.
 4. The owner's ratification is appended to RULINGS.md.
 
 After v1, a BREAK from a new domain opens `v1.<m>`. A profile leaves `DRAFT - NO BENCH` when its first project files.
