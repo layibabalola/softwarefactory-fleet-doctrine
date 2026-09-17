@@ -20,10 +20,16 @@
 //
 // MEMBERSHIP IS DERIVED, NOT DECLARED IN A SECOND PLACE.
 // The bus layout is already the authority: `specs/<project>.md`, one per project, single
-// writer (law 2). Members = those files on origin/master, minus `specs/fleet-*.md`, which are
-// cross-cutting candidates with no owning project and no clone to keep current. A separate
-// registry file would be a second authority for one fact, and this fleet has paid for that
-// (six-to-eight gate ledgers, and the one that gated was whichever you had not checked).
+// writer (law 2). Members = those files on origin/master, MINUS the R26 census's
+// `census.nonProjectSpecs` -- the SAME subtraction the sealed checker enforces at
+// tools/check_adoption_ledger.py. That is not a second registry; it is the one closed set,
+// read by both readers.
+//
+// It used to subtract `specs/fleet-*.md` by filename PREFIX. A prefix is a guess, not an
+// authority, and it drifted: every non-project spec not starting with `fleet-` read as a
+// board, so this sweep derived 30 members against a census of 10, long after RECEIPTS.md:1626
+// recorded the classifier repaired to nine. If the census blob is unreachable the classifier
+// falls back to that heuristic and says so on stderr -- degraded, never silent.
 //
 // LOCAL ROOTS ARE MACHINE-SCOPED and live outside every repo (default: ~/.fleet-roots.json).
 // The fleet spans machines: a member with no clone here reports `no-local-clone`, which is
@@ -101,10 +107,23 @@ function git(args) {
   }
 }
 
+// Read the closed set from the SAME treeish the spec paths come from, so the two can never
+// be read at different commits. Returns null when the census is unreachable.
+function censusNonProjectSpecsFromBus() {
+  try {
+    const raw = git(['show', 'origin/master:adoption/current-token-control-r26.json']);
+    const list = JSON.parse(raw)?.census?.nonProjectSpecs;
+    if (!Array.isArray(list) || list.length === 0) return null;
+    return new Set(list.map((entry) => String(entry).split('/').pop()));
+  } catch { return null; }
+}
+
 function declaredMembers() {
   const paths = git(['ls-tree', '--name-only', 'origin/master', 'specs/'])
     .split('\n').map((s) => s.trim()).filter(Boolean);
-  return fleetMembers(paths).map((project) => ({ project, specFile: `specs/${project}.md` }));
+  const nonProject = censusNonProjectSpecsFromBus();
+  if (!nonProject) console.error('[fleet-sweep] WARN: census unreachable - membership falls back to the prefix heuristic.');
+  return fleetMembers(paths, nonProject).map((project) => ({ project, specFile: `specs/${project}.md` }));
 }
 
 function runCheck(project, consumer) {

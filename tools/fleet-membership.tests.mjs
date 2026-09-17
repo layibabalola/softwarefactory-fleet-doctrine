@@ -1,16 +1,43 @@
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs';
+import { cpSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { fleetMembers } from './fleet-membership.mjs';
+import { censusNonProjectSpecs, fleetMembers } from './fleet-membership.mjs';
 
 const repo = fileURLToPath(new URL('..', import.meta.url));
 for (const name of ['continuity-autonomous-resumption.md', 'resumption-parallel-launch-0906.md']) {
   assert.ok(existsSync(join(repo, 'specs', `fleet-${name}`)), `actual spec must use fleet- prefix: ${name}`);
   assert.ok(!existsSync(join(repo, 'specs', name)), `old name would create phantom board: ${name}`);
 }
+
+// Regression control: on the REAL repo the classifier must equal the R26 census
+// project set. The census is the only authority on which specs name a project;
+// the prefix heuristic is a guess. RECEIPTS.md:1626 recorded this classifier
+// repaired to nine members -- it had drifted to thirty against a census of ten,
+// because every non-project spec not starting with `fleet-` read as a board.
+const realSpecs = readdirSync(join(repo, 'specs'), { withFileTypes: true })
+  .filter((entry) => entry.isFile())
+  .map((entry) => entry.name);
+const nonProject = censusNonProjectSpecs(join(repo, 'specs'));
+assert.ok(nonProject && nonProject.size > 0, 'census must be reachable from the real repo');
+const censusProjects = JSON.parse(
+  readFileSync(join(repo, 'adoption', 'current-token-control-r26.json'), 'utf8'),
+).projects.map((project) => project.projectId).sort();
+assert.deepEqual(
+  fleetMembers(realSpecs, nonProject), censusProjects,
+  'classifier must equal the census project set',
+);
+
+// NEGATIVE CONTROL -- this gate must be shown able to fail before its pass
+// counts. The retired heuristic must still DISAGREE with the census; if this
+// assertion ever trips, the two classifiers have converged and the check above
+// has silently stopped testing anything.
+assert.notDeepEqual(
+  fleetMembers(realSpecs), censusProjects,
+  'heuristic must still differ from the census, or the regression test is inert',
+);
 const ps = process.platform === 'win32' ? 'powershell.exe' : 'pwsh';
 const root = mkdtempSync(join(tmpdir(), 'fleet-membership-'));
 const bus = join(root, 'bus');
