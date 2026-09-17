@@ -3801,3 +3801,36 @@ prefix at every edge. Those change the exponent. Everything else buys time.
   filing is HARVESTED, and cloudvore's `ruling-candidates/harvest-has-one-steward-and-the-backlog-
   grows-r1.md` is hereby reported REDUNDANT — §5 already assigns this duty, so no round-robin rule is
   needed.
+
+
+- 2026-09-17 factory-kernel harvest, run `20260917T193405Z-ab7b8aef` (Conjugal, interim steward; Dell XPS 17).
+  Population enumerated with `tools/harvest-status.py factory-kernel --no-fetch`, not `ls`: 4 eligible filings
+  (adobe-ingester, agent-bridge, airmypc, dng-auto-processor), all four blobs re-verified against
+  `git show <ref>:adjudications/factory-kernel/<filing>.md` before reading. The steward's own filing is excluded by
+  kernel §5 and by run config, and the ledger block appended this round corrects two things this ledger previously said
+  about it. Dispositions at `adjudications/factory-kernel/{adobe-ingester,agent-bridge,airmypc,dng-auto-processor}.dispositions.md`
+  — **113 `§` lines (73 ADOPTED · 1 ADOPTED-CONDITIONAL · 19 REJECTED · 20 ROUTED) plus 8 `HEADER:` lines**, one per
+  filed finding including every `N`, `IF`, `M`, `O` and `Untested` item; counts machine-recounted from the files, not
+  taken from any seat's summary. 113 lines cover 112 distinct findings: agent-bridge's N2 has no heading in its filing
+  and is tagged inline on its `P:code budgets` line, so it carries two labels.
+  Ledger: 4 rows appended at EOF of `adjudications/factory-kernel/HARVESTS.md` (see TRAPS, same date, for why not inside
+  the table above); totals re-derived by `tools/kernel-e2e.py` — 12 rows, 7 projects, **closed end-to-end 0**,
+  77 FIT / 71 FRICTION / 5 BREAK / 0 N/A / 47 UNEXERCISED, `unparsed_rows: []`.
+  Spec changes: `fleet-factory-kernel.md` r4 → r5 — K3's claim sentence, K3's observable, the §6 `dng-auto-processor`
+  mapping row, and §7 gap 4 — 2,828 → 2,867 words of 3,500 (`len(text.split())`); `profiles/code.md` r4 → r5, 679 → 864
+  (seven field rows plus Benches); `profiles/measured-objective.md` r2 → r3, 327 → 391 (four field rows).
+  **Only one filing changed the kernel, and §5 is why.** Three `code` filings produced 21 FRICTION lines between them
+  and amended no kernel clause, because one profile's FRICTION changes that profile; they amended seven rows of
+  `profiles/code.md` instead. dng-auto-processor's K3 BREAK — the first `measured-objective` filing on this ledger —
+  amended K3: an expiring lease is now one mechanism among several rather than the mandate, and a claim's staleness must
+  be decidable **and releasable** by an observer other than the claimant. K9 drew FRICTION from two profiles, clearing
+  §5's numerical bar, and still changed nothing: the two filings report different defects and neither remedy follows
+  from both.
+  Seats, all foreground, each verified by its own sentinel line before its output was consumed: arbiter gpt-6-astra
+  (high) `LANE-COMPLETE`; consolidator claude-fable-5 `LANE-COMPLETE`; consistency lint gpt-5.6-sol `LANE-COMPLETE`
+  (17 CRITICAL quote-fidelity defects, checks 2-8 clean) and claude-opus-5 `LANE-COMPLETE` (4 CRITICAL, 2 MAJOR,
+  7 MINOR, including two false claims in a first draft of the ledger block and a byte-corrupted code sample in a first
+  draft of the TRAPS entry); orchestrator claude-opus-5. All lint findings were applied in one pass and the three
+  append-only files were reverted to base and re-appended rather than edited, so each remains a pure byte prefix.
+  Lesson kept separately in TRAPS: the append-only checker is a byte-prefix test, and a mid-file insert with a
+  zero-deletion diff still refuses the run.

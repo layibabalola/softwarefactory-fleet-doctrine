@@ -11154,3 +11154,62 @@ convert explicitly (`%T@` → `date -u -d @…`). Generally: **a unit or timezon
 rather than emitted by the producer is an unverified claim wearing the costume of a measurement** — and the
 same is true of any predicate whose escape may be eaten before it reaches the tool, so assert the byte, not
 a rendering of it.
+
+
+## "Append-only" meant a BYTE PREFIX, not "no line removed" -- a mid-file insert with a 4-insertions/0-deletions diff is still refused (Conjugal factory-kernel harvest, 2026-09-17, Dell XPS 17)
+
+`adjudications/factory-kernel/HARVESTS.md` is a markdown table followed by a prose status section. The four new ledger
+rows belong **in the table**, so the obvious edit inserts them before the `---` that starts the prose. `git diff --stat`
+then reads `4 ++++, 1 file changed, 4 insertions(+)` -- zero deletions, every existing line byte-identical. By the usual
+reading of "append-only: add lines at the end, never edit or remove existing lines", that passes.
+
+It does not. The enforcing code is a strict prefix test:
+
+```python
+def pure_append(old, new):
+    o, n = old.replace(b"\r\n", b"\n"), new.replace(b"\r\n", b"\n")
+    if not n.startswith(o):
+        return None          # -> Refusal("BUS_APPEND_ONLY_VIOLATED")
+    return n[len(o):]
+```
+
+A mid-file insert fails `n.startswith(o)` at the first inserted byte, and the whole RUN is refused, not just the file.
+It was caught here only by reading the runner before finishing, and the revert was clean because nothing had been
+committed.
+
+**The class: a natural-language invariant and its checker can disagree about a case neither mentions.** "Never remove a
+line" and "the old bytes are a prefix of the new bytes" agree on every edit that appends and every edit that deletes.
+They disagree on exactly one move -- inserting in the middle -- and that is the move a table at the top of a file with
+prose under it actively invites. The prose form of an invariant is a summary of its checker, never a substitute.
+
+**What to do instead, when the append target is not the last thing in the file:** append a new dated section at EOF with
+its own table header, and say in it why the rows are not in the table above. That cost nothing here because the reader
+of record is a tool that takes rows by content, not by position:
+
+```python
+return [l for l in io.open(LEDGER, encoding="utf-8") if l.startswith("| 2026-")]
+```
+
+`tools/kernel-e2e.py` then summed 12 rows across both tables and re-derived every total the new section claims. A
+position-independent parser is what makes EOF-appending safe; check for one before assuming a table must stay
+contiguous.
+
+**Two checks before the first byte of an append-only edit.** Read the enforcing code, not the prose that describes it.
+Then verify the result the way the runner will:
+
+```python
+new.replace(b"\r\n", b"\n").startswith(old.replace(b"\r\n", b"\n"))
+```
+
+The CRLF normalisation matters on Windows -- a file the runner reads as LF against a worktree that writes CRLF would
+otherwise fail a prefix test that is logically true.
+
+**A correction against this entry's own interest, and the reason it is worth reading twice.** The first version of this
+entry was written through a shell heredoc, and the heredoc ate the escapes: both code samples above landed with REAL CR
+and LF bytes inside the byte literals instead of the two-character escape sequences. The block was an
+unterminated-string SyntaxError, and worse, the verify command degraded to "replace LF with LF" -- a no-op that would
+have PASSED a test it should fail, in the entry whose entire subject is CRLF handling. A second lint family caught it
+with a byte-level scan; a reader would have caught it only by running it. The rewrite you are reading was produced by
+writing this script to a file and running it, because the same heredoc ate the escape a second time on the first repair
+attempt. **Escape-bearing code routed through a shell is written blind.** Build the sample by concatenating `chr(92)`,
+or read the file's bytes back with `repr()` before believing what is on screen.
