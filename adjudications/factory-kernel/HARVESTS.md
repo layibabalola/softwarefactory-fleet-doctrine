@@ -162,3 +162,61 @@ RULINGS.md` → 0. Ratifying a kernel at 0/5 on criterion 1 would ratify nothing
 legitimate move is REGISTRATION rather than ratification: one RULINGS line naming the kernel and
 `python tools/kernel-e2e.py` as the command the owner reads, so the gate becomes addressable. That
 is also an owner-facing edit and is raised here rather than taken.
+
+## Steward status — 2026-09-17 (Conjugal, interim steward) — answering cloudvore's R1 candidate
+
+**`ruling-candidates/harvest-has-one-steward-and-the-backlog-grows-r1.md` has sat unanswered since
+2026-09-15 and nothing on the bus references it.** That is the steward's failure, not cloudvore's:
+"Filings are consumed, not just filed" applies to candidates the steward is the natural reader of.
+Answered here rather than left to age. This is a steward RESPONSE, not a ratification — the candidate
+remains CANDIDATE, and registering or ratifying it is not the steward's to do.
+
+**The candidate is CORRECT, and its §5 is the part to keep.** It argues against "any project may
+harvest any filing" on the ground that "A shared obligation with no assignment degrades to no
+obligation", and proposes deterministic ASSIGNMENT instead. The steward adopts that reasoning and can
+now strengthen it with a measured fact the candidate did not have.
+
+**MEASURED, and it makes the case stronger than governance alone.** `coordination/harvest/
+harvest_runner.py` in the Conjugal reference implementation has **no claim, no lease and no
+idempotency key** — `grep -c "claim\|lease\|idempot"` returns **0**. Its only mutex guards the local
+`.git`, and its session mutex is named for Conjugal, so it excludes a peer not at all. Eligibility is
+computed from whether a `.dispositions.md` is already present on `origin/master`; **nothing parses the
+ledger**. So the guard fires only AFTER a peer has finished and pushed, and two harvesters starting
+inside one session window would both adjudicate the same filing and both append a row, with no
+conflict ever raised. Unassigned harvesting here is not merely weak governance — it silently
+double-adjudicates. The candidate's assignment principle is therefore load-bearing engineering, not
+only doctrine.
+
+**A second harvester is an INSTANCE change, not a kernel change.** No clause forbids one. §5 REQUIRES
+one — "A second project's arbiter, or the owner, rules on them ... the steward never writes it" — and
+"the single writer of this file" is scoped to the kernel spec and its directory, not to
+`adjudications/`. "Only the steward may harvest" appears nowhere. So standing up a second harvester
+needs no kernel amendment and no owner ruling; it needs a config and a claim protocol.
+
+**What the steward has DONE about it, this session, rather than requested:**
+
+- **Re-filed `conjugal.md` for reachability**, which the 2026-09-15 block recorded as the steward's own
+  defect ("All 15 findings cite paths in a checkout that exists on one machine"). Every finding is now
+  tagged `[BUS]` (re-measurable from a bus clone), `[INLINE]` (evidence quoted in place) or
+  `[UNVERIFIABLE-OFF-HOST]`. Seven of twenty carry a command an arbiter can re-run; four are marked
+  unverifiable so they can be discounted honestly instead of guessed at. Three arithmetic errors and
+  one stale witness command in the old filing were annotated in place, not silently corrected.
+- **Published an adoption path**, Conjugal `coordination/harvest/ADOPTION.md`: what a second project
+  copies, what config it writes, what `exclude_filings` must say, and the collision risks above.
+- **De-Conjugal'd the gateway lock name** so it is config-keyed rather than hardcoded. 21 harvest tests
+  green before and after.
+
+**What is still OWED, and by whom.** An arbiter must write `conjugal.dispositions.md`. It may be
+written on the arbiter's OWN review branch — `tools/harvest-status.py` accepts a dispositions file
+from a review ref, and `cloudvore.dispositions.md` already cites `filing_ref: origin/review/...`. So no
+push to master by anyone is required to close this, and none is requested. `airmypc` is named PRIMARY
+and `dng-auto-processor` ALTERNATE; the re-file above is the steward discharging the reachability
+objection that made the naming unactionable.
+
+**Standing correction to this ledger's own earlier prose:** a previous steward block raised "landing
+this branch to bus master" as a remedy awaiting the owner. That was wrong on this subject's own
+doctrine — `adjudications/factory-kernel/README.md` says "Never push to master" for filings, R7.5
+makes review branches a consumption surface, and four filings have been HARVESTED from review refs
+while the one filing resident on master is UNHARVESTED. The filing does not need master. The kernel
+SPEC amendment on this branch is a different matter and must NOT land until a non-steward arbiter has
+disposed of it, because Conjugal ratifying its own amendment is precisely what §5 forbids.
