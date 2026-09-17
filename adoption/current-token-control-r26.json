@@ -23,7 +23,7 @@
     }
   },
   "census": {
-    "baseCommit": "966b201d5e16d32b4a260ebd0e3bc849d0912421",
+    "baseCommit": "aa4498fc32355ee4c93dece22d12050ead33f7f5",
     "projectSpecGlob": "specs/*.md",
     "nonProjectSpecs": [
       "specs/account-rotation-and-project-continuity.md",
@@ -86,8 +86,8 @@
       "specPath": "specs/adobe-ingester.md",
       "status": "STALE",
       "evidence": {
-        "commit": "054f7561ef17072d37330b0892b4622c8968439c",
-        "gitBlobOid": "df8511660bf5567011d4d86a42253b911a3bda4e",
+        "commit": "a841f81a62cde2db60245e06d8e223a679c50561",
+        "gitBlobOid": "585baa6d0cd20af352fca04d04b06052a2dfcdb4",
         "disposition": {
           "status": "DISTINGUISH",
           "subjectCommit": "874605e43531c9aa230ee16851f8107a8e0d9cec"
@@ -102,8 +102,8 @@
       "specPath": "specs/adversarialllm.md",
       "status": "DISTINGUISH",
       "evidence": {
-        "commit": "70b7a746e314abb298a01369fa794af567732ab5",
-        "gitBlobOid": "339e35052efd321dd8fb94b400ccc6e72375c7b3",
+        "commit": "3d6f12e2135c22bcd780a98de1e1b1fb8b85db91",
+        "gitBlobOid": "f920ff167cedb93dc3d57d6846c00b3b057a94a4",
         "disposition": {
           "status": "DISTINGUISH",
           "subjectCommit": "909f769d02e8412e51e28e242cfa8d00dadc9a3d"
@@ -185,8 +185,8 @@
       "specPath": "specs/airmypc.md",
       "status": "STALE",
       "evidence": {
-        "commit": "5602175c1e44b259b0172e86678595200979ce3d",
-        "gitBlobOid": "8b0df43ed3e419e72916d41362e411be92a7caa8",
+        "commit": "9eeba2905af25202bbccd1d627bd05d8d5358aff",
+        "gitBlobOid": "e2df1a91a7dddd0f5f5dc6ff8f7f7ba4271ded1c",
         "disposition": {
           "status": "DISTINGUISH",
           "subjectCommit": "874605e43531c9aa230ee16851f8107a8e0d9cec"
