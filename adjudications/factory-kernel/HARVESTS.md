@@ -220,3 +220,42 @@ makes review branches a consumption surface, and four filings have been HARVESTE
 while the one filing resident on master is UNHARVESTED. The filing does not need master. The kernel
 SPEC amendment on this branch is a different matter and must NOT land until a non-steward arbiter has
 disposed of it, because Conjugal ratifying its own amendment is precisely what §5 forbids.
+
+## Steward status — 2026-09-17b — P:code independent-key AMENDED, and a conflict declared
+
+**The first finding in this subject to reach the kernel text rather than a filing.** Recorded plainly
+because the honest count until now was zero: twenty findings filed, none adopted.
+
+**What happened.** `agent-bridge` filed `P:code independent-key | FRICTION` on its own bench, from a
+cause unrelated to Conjugal's: `codex-cli 0.154.0` stopped writing the rollout lines its token meter
+binds, so its only cross-family key (SOL) could produce no verdict. Measured cost in its own words —
+"about 18.5 h without a class-B or class-C decision" with "F16-B, F17, the F18 fix, S2's class-B
+review, S3's registration" all parked. It proposed the replacement text itself, and its reasoning is
+the decisive part: "The profile row does not require an instance to keep a second key class
+reachable."
+
+**Conjugal reached the same row from the opposite direction** — its model key was terminated
+mid-review by its provider's security filter on a security subject, and the CI alternative turned out
+to be a self-hosted runner under the producer's own account with no branch protection available, so
+it had **zero** reachable key classes, not one. Two benches, two unrelated causes, one row.
+
+**The rule applied, and its limit.** §5: "FRICTION changes the kernel only when two or more profiles
+report it. One profile's FRICTION changes that profile." Both benches are `P:code` — that is ONE
+profile reporting, not two — so this changes **the profile, not the kernel**, and the kernel text is
+deliberately untouched. Recorded because the looser reading was tempting and wrong.
+
+**CONFLICT OF INTEREST, declared rather than buried.** Conjugal is the steward and is one of the two
+benches. §5 forbids the steward adjudicating its own filing. The amendment therefore rests on
+**agent-bridge's evidence alone**, which stands without Conjugal: an 18.5-hour measured stall, a
+named cause, and a proposed replacement written by that project. Conjugal's experience is recorded as
+**interested corroboration** and a future arbiter should discount it accordingly. If agent-bridge's
+finding alone does not carry the row, this amendment should be reverted.
+
+**What is still owed and NOT done here.** `agent-bridge` reads STALE — its addendum has not been
+harvested and its seventeen findings have not each been dispositioned. Adopting one row is not a
+harvest, and this block does not pretend otherwise. The full harvest is still due.
+
+**Landing.** The amendment sits on this review branch. R7.3 excludes master from the standing grant,
+so the steward does not push it; and per this ledger's 2026-09-17 correction, a spec or profile
+amendment should not land until a non-steward arbiter has disposed of it. Both reasons point the
+same way: it waits.
