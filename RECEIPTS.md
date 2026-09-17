@@ -3834,3 +3834,67 @@ prefix at every edge. Those change the exponent. Everything else buys time.
   append-only files were reverted to base and re-appended rather than edited, so each remains a pure byte prefix.
   Lesson kept separately in TRAPS: the append-only checker is a byte-prefix test, and a mid-file insert with a
   zero-deletion diff still refuses the run.
+## 2026-09-17, Dell XPS 17 — factory-kernel board re-derived by the doctrine-repo auditor session, at bus `8e2144b`
+
+A read-only re-derivation run from an interactive chat session (no lane, no seat). It is on the record because it
+**corrects two claims in the newest `HARVESTS.md` block**, and a correction that only exists in a chat window is not a
+correction. The steward owns the ledger; this is the append-only channel that reaches it under law 3.
+
+**Board, every number re-run rather than quoted.**
+`python tools/kernel-e2e.py --json` -> `ledger_rows: 12`, `projects_in_ledger: 7`, **`closed_end_to_end: 0`**,
+`criterion_1_met: false`, totals `77 FIT / 71 FRICTION / 5 BREAK / 0 N/A / 47 UNEXERCISED`, `unparsed_rows: []`,
+`open_filings: {}`, `filed_but_unrowed: ["conjugal"]`, `never_filed: ["adversarialllm", "salesforce-tools"]`,
+`any_due: true`, exit 1.
+`python tools/harvest-status.py factory-kernel` -> `filings=8`, `open=0`; `conjugal blob=3a36f3e6
+ref=origin/review/conjugal-kernel-2026-09-15 findings=20`, flagged `POSTURE-NOT-R9-COMPUTED`.
+`grep -ciE 'fleet-factory-kernel|factory kernel' RULINGS.md` -> `0`. Criterion 4 is idle, not jammed — the block says
+so and it reproduces.
+`git show --stat 5d1d0d9` -> three spec files changed this round (`fleet-factory-kernel.md`, `profiles/code.md`,
+`profiles/measured-objective.md`), so criterion 3's "two successive harvests on an unchanged revision" cannot have
+started. Also reproduces.
+
+**Correction 1 — arbiter assignment was not open; it had been executed 14 minutes earlier.**
+The block states *"What actually remains, therefore, is arbiter assignment and nothing else"* and weighs
+`dng-auto-processor` and `airmypc` as candidates. `adjudications/factory-kernel/conjugal.dispositions.md` was on master
+before the block was committed: commit `dc2a719`, `2026-09-17 15:02:59 -0500`, line 5 `arbiter: cloudvore —
+claude-opus-5 (integrator) · two read-only adversary lanes`, all 20 findings disposed.
+`git merge-base --is-ancestor dc2a719 5d1d0d9 ; echo "exit=$?"` -> `exit=0`. `git show --stat 8e2144b` confirms the
+harvest rewrote four other dispositions files and appended 77 lines to `HARVESTS.md` while never touching conjugal's.
+The candidate-arbiter paragraph should be read as withdrawn. Mechanism and remedy in TRAPS, same date.
+
+**Correction 2 — the reachability discharge is real, but its size is overstated 3.4x.**
+The block reports "**17** are `[BUS]`" and "14 are `[UNVERIFIABLE-OFF-HOST]`" over the 20 findings of blob `3a36f3e6`.
+Recounted: `grep -o` gives `BUS 17 / INLINE 21 / UNVERIFIABLE-OFF-HOST 14` = **52 tags over 20 findings**, which cannot
+be a census — it counts the tag legend and every corroborating clause inside a finding whose first tag differs. The
+filing's own census, line 36 of the same blob and in the section the block quotes, reads **5 `[BUS]`, 9 `[INLINE]`,
+4 `[UNVERIFIABLE-OFF-HOST]`, 2 UNEXERCISED**, with 7 of 20 holding at least one re-runnable thing. The discharge
+stands; the number does not. Command in TRAPS, same date.
+
+**Finding — the ledger row for conjugal has no legal writer, and the condition is self-latching.**
+`grep -c '| conjugal |' adjudications/factory-kernel/HARVESTS.md` -> `0`. Kernel §5 bars the steward from writing its
+own filing's dispositions, makes `HARVESTS.md` steward-written, and points the finalisation rule at the ledger only.
+With the filing now `HARVESTED / open=0`, the steward's `open>0` trigger can never re-fire, so 20 dispositioned
+findings count zero toward §5 permanently. Only `kernel-e2e.py` sees it (`filed_but_unrowed`, exit 1);
+`harvest-status.py` and `arbitration-queue.py` both read clean. Predicate fix proposed in
+`ruling-candidates/steward-filing-has-no-legal-row-writer-r1.md`.
+
+**Finding — master's criterion-1 instrument is wrong in two ways, and the branch that fixes it would revert this day.**
+`tools/kernel-e2e.py:140` tests a SUM against 5 where §5 wants five distinct projects;
+`tools/kernel-e2e.py:37` `E2E_RE` needs digits, so `'one subject closed end-to-end'` scores 0. Both are fixed with a
+131-line test file at `d8a1194` on `origin/review/conjugal-kernel-e2e-instrument-2026-09-17`. Verified no-op on current
+data: that tool, extracted to a throwaway probe and run against master's ledger, returns `criterion_1_projects: 0`,
+`ambiguous_subject_cells: []`, `criterion_1_met: false`, exit 1 — identical verdict; probe removed, `git status
+--porcelain` empty. **But** `git diff --stat master <that branch>` = `363 insertions / 670 deletions`, including
+`TRAPS.md -168`, `HARVESTS.md -77`, `RECEIPTS.md -47`, and two dispositions files. **Cherry-pick `d8a1194`; do not
+merge the branch.**
+
+**What this run did NOT change, stated so the next session does not spend a week on it.** Criterion 1 stays at 0
+whether or not `adversarialllm` and `salesforce-tools` ever file: zero of twelve ledger rows closed a subject
+end-to-end, and no surface writable from this repo moves that — it needs a member project to close a real subject with
+receipts. Arbiter assignment is done. Criterion 3 cannot start this round. Criterion 4 is the owner's and is idle.
+
+**Boundaries observed.** Nothing was written outside the append-only shared logs and one new `ruling-candidates/` file.
+No `*.dispositions.md`, no `HARVESTS.md`, no other project's single-writer file, no `specs/`, no `review/*` branch
+pushed. Appends verified as pure byte prefixes of `HEAD` after CRLF normalisation before committing. A machine-global
+CLI/Desktop account drift was live throughout (CLI org `2a6cf04d`) and blocked nothing — every command above ran; it is
+the owner's to repair and no agent touched it.

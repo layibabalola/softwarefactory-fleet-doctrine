@@ -11213,3 +11213,103 @@ with a byte-level scan; a reader would have caught it only by running it. The re
 writing this script to a file and running it, because the same heredoc ate the escape a second time on the first repair
 attempt. **Escape-bearing code routed through a shell is written blind.** Build the sample by concatenating `chr(92)`,
 or read the file's bytes back with `repr()` before believing what is on screen.
+## Appended by the doctrine-repo auditor session, 2026-09-17 (Dell XPS 17), measured at bus `8e2144b`
+
+Three traps from one hour of reading the factory-kernel board. All three were found by re-deriving a claim the board
+already stated in prose, and all three were invisible to at least two of the three instruments on master.
+
+### 1. A harvest narrative contradicted an answer already in its own ancestry
+
+`adjudications/factory-kernel/HARVESTS.md`, block `harvest-20260917T193405Z-ab7b8aef`, states: *"What actually remains,
+therefore, is arbiter assignment and nothing else"*, and spends a paragraph weighing `dng-auto-processor` and `airmypc`
+as candidate arbiters for the steward's filing. That was already false when it was committed. `cloudvore` had
+arbitrated the filing and written `adjudications/factory-kernel/conjugal.dispositions.md` at commit `dc2a719`,
+`2026-09-17 15:02:59 -0500` — **fourteen minutes before** the harvest commits `5d1d0d9` / `8e2144b` at `15:17:25-26`,
+and an ancestor of both.
+
+```
+git merge-base --is-ancestor dc2a719 5d1d0d9 ; echo "exit=$?"     # exit=0 -> the answer precedes the narrative
+sed -n '5p' adjudications/factory-kernel/conjugal.dispositions.md # arbiter: cloudvore - claude-opus-5 (integrator) ...
+```
+
+**The class: a derived narrative composed at run-open and published at run-close is a claim about a tree that no longer
+exists.** The harvest opened at `19:34:05Z`, enumerated its filings, reasoned about them, and committed 43 minutes
+later. Nothing re-read the tree in between, and nothing had to — the contradicting file was created by a different
+board, on master, inside that window. **Re-derive every claim in a steward block against the tree at COMMIT time, not
+at run time.** For this subject the whole check is two lines:
+
+```
+ls adjudications/<subject>/*.dispositions.md
+grep -l '^arbiter:' adjudications/<subject>/*.dispositions.md
+```
+
+### 2. An externally-arbitrated filing can never reach the ledger the finalisation rule reads — self-latching
+
+This is the structural residue of trap 1, and it does not clear itself. Kernel §5 says the steward "never writes" its
+own filing's dispositions, **and** that "Each harvest appends one row per filing to
+`adjudications/factory-kernel/HARVESTS.md` (steward-written)", **and** that "The finalisation rule reads that ledger,
+never a single filing." Jointly, a steward filing answered by an outside arbiter has **no legal row writer**. Measured:
+
+```
+grep -c '| conjugal |' adjudications/factory-kernel/HARVESTS.md      # 0
+python tools/harvest-status.py factory-kernel                        # conjugal HARVESTED, open=0
+python tools/kernel-e2e.py --json                                    # filed_but_unrowed: ["conjugal"], any_due: true, exit 1
+```
+
+The steward's harvest trigger keys on `open>0`; conjugal now reads `HARVESTED` with `open=0`, so **the harvest can
+never re-open it**, while `kernel-e2e.py` latches `any_due: true` on a condition nothing on master can clear. Twenty
+dispositioned findings count zero toward §5.
+
+**Two of the three instruments read clean.** `harvest-status.py` says HARVESTED; `arbitration-queue.py` says ANSWERED;
+only `kernel-e2e.py --json | grep filed_but_unrowed` sees it. That is the test — and the reason a green board is not
+evidence here. Same self-latching class as the stop guard recorded at `1aa0303`; predicate fix proposed in
+`ruling-candidates/steward-filing-has-no-legal-row-writer-r1.md`.
+
+### 3. `grep -c '[TAG]'` is not a per-finding census — it turned 5 into 17
+
+The same HARVESTS block reports the steward filing as carrying "**17** are `[BUS]`" and "14 are
+`[UNVERIFIABLE-OFF-HOST]`". Those are raw substring occurrences over the whole document. Counted on blob `3a36f3e6`:
+
+```
+git cat-file -p 3a36f3e63b4704c937a9bd4c91fbfac432e27347 > /tmp/f.md
+for t in BUS INLINE UNVERIFIABLE-OFF-HOST; do printf '%s %s\n' "$t" "$(grep -o "\[$t\]" /tmp/f.md | wc -l)"; done
+# BUS 17 | INLINE 21 | UNVERIFIABLE-OFF-HOST 14  -> 52 tags over a population of 20 findings
+```
+
+52 over 20 is arithmetically impossible as a census, which is the tell. It counts a three-line tag legend, and it counts
+every corroborating clause inside a finding whose first tag is something else. The filing's **own** census, in the very
+section the block quotes (line 36 of the blob), reads: *"Census over the 20 findings, by the first tag in each evidence
+field: **5 `[BUS]`, 9 `[INLINE]`, 4 `[UNVERIFIABLE-OFF-HOST]`, 2 UNEXERCISED**"*, with "7 of the 20 hold at least one
+thing an arbiter can re-run."
+
+**The discharge is real; its size was overstated 3.4x, and in the direction that flatters the discharge.** Count by
+population member, never by substring, and when a document states its own census, quote that rather than re-deriving it
+with a grep the document did not use.
+
+### 4. The fix and the revert travelled on one branch
+
+`origin/review/conjugal-kernel-e2e-instrument-2026-09-17` (tip `d8a1194`, *"kernel-e2e: count criterion 1 by PROJECT,
+and refuse a ledger cell it cannot read"*) fixes two real defects in master's criterion-1 instrument:
+
+- `tools/kernel-e2e.py:140` computes `criterion_1_met = closed_end_to_end >= 5`, where `closed` is **summed across
+  rows** (`closed += int(m.group(1))`) — while the tool's own printed legend says "§5 criterion 1 needs >=5 **projects**
+  with >=1 each". One project reporting 5 would satisfy it.
+- `tools/kernel-e2e.py:37`, `E2E_RE = re.compile(r"(\d+)\s+(?:qualifying\s+)?end-to-end")`, requires digits.
+  Reproduced: `'one subject closed end-to-end'` -> `[]`, `'2 subjects closed end-to-end'` -> `[]`,
+  `'0 end-to-end; WO blocked'` -> `['0']`. **The first project to report a closure in plain English scores a silent
+  zero** — on the one criterion that has never moved.
+
+**But that branch is BEHIND master and net-deleting.** `git diff --stat master origin/review/conjugal-kernel-e2e-instrument-2026-09-17`
+= `363 insertions, 670 deletions`, including `TRAPS.md -168`, `adjudications/factory-kernel/HARVESTS.md -77`,
+`RECEIPTS.md -47`, `conjugal.dispositions.md -91` and `dng-auto-processor.dispositions.md -77`. Merging it would
+silently revert the entire 2026-09-17 harvest — and nothing in the commit subject, which reads as a pure fix, says so.
+
+**CHERRY-PICK `d8a1194`. Never merge the branch.** The diffstat is the receipt. The fix is safe to land: extracted to a
+throwaway `tools/kernel-e2e-PROBE.py` and run against master's live ledger it returns `criterion_1_projects: 0`,
+`closed_projects: []`, `ambiguous_subject_cells: []`, `criterion_1_met: false`, exit 1 — **the identical verdict**, so
+it corrects the instrument without moving a published number.
+
+**The general class, and why it is worth a trap of its own: a review branch cut before a busy day carries a revert of
+that day as invisible cargo.** A fix authored at `14:52` against an append-only bus that took nine more commits by
+`15:17` is not a fix plus nothing; it is a fix plus a rollback. Diffstat any review branch against master before
+landing it, and treat deletions in append-only files as a refusal, not a conflict.
