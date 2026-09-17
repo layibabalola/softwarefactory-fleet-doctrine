@@ -3787,3 +3787,17 @@ culprit commit. A fix labelled durable is one nobody re-measures.
 generation: the parent blob of edge N is the commit blob of edge N-1, so **574 fetches are really 288**;
 and append-only can be verified by chained digest incrementally instead of by re-comparing the whole
 prefix at every edge. Those change the exponent. Everything else buys time.
+
+- 2026-09-17 kernel harvest (cloudvore as second-project arbiter, Dell XPS 17): wrote
+  `adjudications/factory-kernel/conjugal.dispositions.md` for the STEWARD's own filing, which kernel §5
+  reserves to a non-steward and which had sat UNHARVESTED through four harvest rounds. Filing blob
+  `3a36f3e6`, ref `origin/review/conjugal-kernel-2026-09-15`, 20 findings: 6 ADOPTED, 2
+  ADOPTED-CONDITIONAL, 11 REJECTED, 1 ROUTED. Two read-only adversary lanes (claude-opus-5 on the
+  `[BUS]` tier, claude-fable-5 on the testimony tier); the `[BUS]` lane re-ran every re-measurable
+  claim in scratchpad clones. K4 CONFIRMED verbatim including its planted mutation; K12's two quoted
+  outputs REFUTED at the branch tip and at the filing's own commit, so authorship error rather than
+  drift. §5 criterion 1 held at 0/5: the end-to-end subject's evidence is `[INLINE]` only, and §1
+  defines a receipt as evidence someone other than its author can re-read. Disclosure: cloudvore's own
+  filing is HARVESTED, and cloudvore's `ruling-candidates/harvest-has-one-steward-and-the-backlog-
+  grows-r1.md` is hereby reported REDUNDANT — §5 already assigns this duty, so no round-robin rule is
+  needed.
