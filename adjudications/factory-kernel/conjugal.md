@@ -41,11 +41,10 @@ finding says which of its parts that is. Two arithmetic defects in the supersede
 revision's own prose are annotated in place as `NOTE:` inside K1 and K4 — annotated, not corrected,
 because a re-file may not quietly change a finding.
 
-**The bench.** Every `[BUS]` line runs from this branch's root: `bootstrap/session-checkpoint.py`
-(the S1 implementation) with `bootstrap/test-session-checkpoint.py`;
-`tools/fleet-resume-readiness.py` (S2) with `tools/test-fleet-resume-readiness.py`;
-`tools/arbitration-queue.py`; `tools/harvest-status.py`;
-`tools/conjugal-reference/resumability-check.py` (the K9 gate). Read every exit status **unpiped** —
+**The bench.** Every `[BUS]` line runs from this branch's root against artifacts already pushed
+here: `bootstrap/session-checkpoint.py` (S1) and its suite, `tools/fleet-resume-readiness.py` (S2)
+and its suite, `tools/arbitration-queue.py`, `tools/harvest-status.py`, and the K9 gate at
+`tools/conjugal-reference/resumability-check.py`. Read every exit status **unpiped** —
 `<cmd> ; echo "exit=$?"`. K4 below is about exactly the failure of not doing that.
 
 **What changed since the 2026-09-14 filing.** That filing reported `subjects: 0` and K3, K5, K6 and
@@ -81,8 +80,7 @@ implementation and its suite are `bootstrap/session-checkpoint.py` and
 `[UNVERIFIABLE-OFF-HOST]` Owner-authorised, not manufactured (PROMPT K §3):
 `~/.claude/ROTATION-install-prompt.md` has named `coordination/tools/session-checkpoint.py` for this
 repo since 2026-09-06, and the owner restated it on 2026-09-15 as *"fully implemented and tested and
-the entire fleet is using it."* That file is outside every repository; treat the authorisation as
-asserted.
+the entire fleet is using it."* That file is in no repository; treat the authorisation as asserted.
 
 `[INLINE]` Measured state at declaration: the landing-seam gate was RED (`resumability-check.py`
 exit 1, `PROMPTS-missing f4-anchor-check.txt`); the checkpoint tool was ABSENT from `master`; no
@@ -138,9 +136,9 @@ K9 | FIT | "the resumability gate's command and its last passing output" | `[BUS
 
 K10 | INSTANCE-FAILURE | "Missing, `unknown` or mismatched account identity makes the inventory stale; re-probe under the current account before provider work" | `[UNVERIFIABLE-OFF-HOST]` Parity passed: SessionStart reported `[parity] MATCHED`, desktop and cli fp `5247997b9e08`. But `~/.claude/machine-inventory.yaml` records `probed_under: b4d2646b85c1`, generated 2026-09-14T19:38:54-05:00 — **a different account fingerprint**. By K10's own sentence the inventory is stale, and this session then performed provider work anyway (two `gpt-6-astra` calls) without re-probing. Nothing refused, because the SessionStart hook proves the two surfaces agree and checks no inventory at all. Honest compliance was possible — re-probe first — and the instance did not. **Every observable is this machine's account state, outside any repository; an arbiter can neither reach nor reproduce it and should discount this line. It is an INSTANCE-FAILURE, which counts toward health and never toward conformance, so discounting it costs the kernel nothing** | PROOF: a Conjugal preflight that compares `probed_under` against the live parity fingerprint and refuses on mismatch
 
-K11 | FIT | "the quoted title line of each rule the project confirms it meets" | `[BUS]` This is the clause an arbiter can check most directly, because its subject is this document: quoted titles under `## R1–R9`, and `python tools/harvest-status.py factory-kernel ; echo "exit=$?"` reads this filing from the branch and reports its parsed header and finding count. This seat is Opus 5 and is not below the review floor (R1). Completion is positive evidence throughout (R2). No cross-family claim is asserted (R3): the key's family is named and its verdict quoted. The branch is pushed and `ls-remote`-verified (R7.2), fetched before writing (R8.1). The honesty claimed here is now testable in a stronger sense: every finding states what an outsider can and cannot check, so an overclaim shows up as a wrong tag | PROOF: a rule below that this filing violates
+K11 | FIT | "the quoted title line of each rule the project confirms it meets" | `[BUS]` This is the clause an arbiter can check most directly, because its subject is this document: quoted titles under `## R1–R9`, and `python tools/harvest-status.py factory-kernel ; echo "exit=$?"` reads this filing from the branch and reports its parsed header and finding count. This seat is Opus 5 and is not below the review floor (R1). Completion is positive evidence throughout (R2). No cross-family claim is asserted (R3). The branch is pushed and `ls-remote`-verified (R7.2), fetched before writing (R8.1). The honesty claimed here is now testable in a stronger sense: every finding states what an outsider can and cannot check, so an overclaim shows up as a wrong tag | PROOF: a rule below that this filing violates
 
-K12 | FRICTION | "The steward harvests every filing and answers each one" | `[BUS]` Unchanged, now four harvests old, and **entirely re-measurable from this branch**. `python tools/harvest-status.py factory-kernel ; echo "exit=$?"` → 8 filings, `conjugal UNHARVESTED blob=cc47adc8 ref=origin/review/conjugal-kernel-2026-09-15 findings=20`, superseded copy `blob=99cc68bf ref=origin/review/conjugal-kernel-2026-09-14`, `open=4`, `exit=1`; neither copy has a dispositions file or a ledger row. `python tools/arbitration-queue.py airmypc ; echo "exit=$?"` → `conjugal OWED airmypc primary arbiter; no disposition exists`, `VERDICT: 1 FILING(S) AWAIT YOUR ARBITRATION`, `exit=1`. `[INLINE]` The exclusion half stays Conjugal-side: `coordination/harvest/harvest-config.json` sets, under the `factory-kernel` subject, `"exclude_filings": ["conjugal"]` and `"conjugal_export": []` — the steward excludes its own filing by configuration and nothing routed it onward, so exclusion read as silence until `arbitration-queue.py` existed. **This filing narrows the reachability half of that problem**: the S1 and S2 implementations and their suites are on this branch, seven findings are re-runnable from a bus clone alone, and the four that are not are marked so an arbiter can discount them honestly | REPLACES: "A second project's arbiter, or the owner, rules on them" -> "A second project's arbiter, or the owner, rules on them; the steward names that arbiter in HARVESTS.md when the filing lands, and PROMPT A §4 surfaces it to the named project" | PROOF: a sibling's PROMPT A run that reports conjugal's kernel filing as awaiting its arbitration
+K12 | FRICTION | "The steward harvests every filing and answers each one" | `[BUS]` Unchanged, now four harvests old, and **entirely re-measurable from this branch**. `python tools/harvest-status.py factory-kernel ; echo "exit=$?"` → 8 filings, `conjugal UNHARVESTED ref=origin/review/conjugal-kernel-2026-09-15 findings=20`, superseded copy `ref=origin/review/conjugal-kernel-2026-09-14`, `open=4`, `exit=1`; neither copy has a dispositions file or a ledger row. (Blob ids are deliberately not quoted: this filing IS the blob, so any value written here is wrong the moment it is revised — the previous revision quoted one and this re-file invalidated it.) `python tools/arbitration-queue.py airmypc ; echo "exit=$?"` → `conjugal OWED airmypc primary arbiter; no disposition exists`, `VERDICT: 1 FILING(S) AWAIT YOUR ARBITRATION`, `exit=1`. `[INLINE]` The exclusion half stays Conjugal-side: `coordination/harvest/harvest-config.json` sets, under the `factory-kernel` subject, `"exclude_filings": ["conjugal"]` and `"conjugal_export": []` — the steward excludes its own filing by configuration and nothing routed it onward, so exclusion read as silence until `arbitration-queue.py` existed. **This filing narrows the reachability half of that problem**: the S1 and S2 implementations and their suites are on this branch, seven findings are re-runnable from a bus clone alone, and the four that are not are marked so an arbiter can discount them honestly | REPLACES: "A second project's arbiter, or the owner, rules on them" -> "A second project's arbiter, or the owner, rules on them; the steward names that arbiter in HARVESTS.md when the filing lands, and PROMPT A §4 surfaces it to the named project" | PROOF: a sibling's PROMPT A run that reports conjugal's kernel filing as awaiting its arbitration
 
 ## Profile fields
 
@@ -164,8 +162,8 @@ P:code claims | UNEXERCISED | "leases name the subject, owner, expiry and owned 
 
 Unchanged from 2026-09-14 except where a mechanism was added this window. `KERNEL:` line remains
 `DOGFOOD-PENDING Sol`: PROMPT K §2 forbids the in-tree adoption edit while the operating contract is
-exclusively owned, and it still is. **This section is `[UNVERIFIABLE-OFF-HOST]`** — every path named
-is inside Conjugal's checkout — except the entries marked `→ bus`, whose reference copies are here.
+exclusively owned. **This section is `[UNVERIFIABLE-OFF-HOST]`** — every path named is inside
+Conjugal's checkout — except the entries marked `→ bus`, whose reference copies are here.
 
 K1 lane wire `coordination/lanes/` + `codex exec` acceptance keys · K2 **NONE** (spread across
 `CLAUDE.md`, `AGENTS.md`, 37 `user-directive-*.md`, `coordination/product/AUTHORITY.md`) ·
@@ -213,7 +211,7 @@ NONE** · K11 this filing · K12 `coordination/harvest/harvest_runner.py`; **sel
   implementation is on this branch, so the comparison has one reachable arm.
 - **Layer 3 was independently falsified on this host, which is the strongest evidence in this
   filing for keeping the four layers apart.** `[UNVERIFIABLE-OFF-HOST]` — and it matters that the
-  strongest claim here is the unreachable one, because the steward will not trade on it.
+  strongest claim here is the unreachable one; the steward does not trade on it.
   `salesforce-tools` had the script installed, a `Stop` hook declared, `hasTrustDialogAccepted: true`,
   and the configured command verified to resolve and write a checkpoint. A REAL session then ran in
   `C:\code\SalesforceSupportTools` across several turns
@@ -230,8 +228,8 @@ NONE** · K11 this filing · K12 `coordination/harvest/harvest_runner.py`; **sel
 - **A bound this strategy carries and should not oversell.** The hook runs when a turn ENDS, so a
   session killed outright never reaches it and the in-flight turn is unrecorded. The previous turn's
   checkpoint survives, so exposure is bounded at about one turn, not a session. Recorded because a
-  rotation is exactly the event that can kill a process mid-turn. This is a property of
-  `bootstrap/session-checkpoint.py` as published here, so it is readable on the bus.
+  rotation is exactly the event that can kill a process mid-turn. `[BUS]` — it is a property of
+  `bootstrap/session-checkpoint.py` as published here.
 - **K6 has no route for a SECURITY-class subject, and this is a new finding with a receipt.**
   `[INLINE]` S5 fixes a script-block escape. The acceptance key was commissioned in the normal way —
   verify the fix by trying to defeat it — and the provider **terminated the run on its own content
@@ -251,7 +249,7 @@ NONE** · K11 this filing · K12 `coordination/harvest/harvest_runner.py`; **sel
   properties rather than to produce an exploit; a provider refusal is a typed terminal, never a
   pass."
 - **Six of ten roster members are UNREACHABLE from this machine** and nothing here is evidence about
-  their adoption either way. `[UNVERIFIABLE-OFF-HOST]` by construction — the reading is this host's.
+  their adoption either way. `[UNVERIFIABLE-OFF-HOST]`: the reading is this host's.
 - **`RULINGS.md` mentions the kernel zero times**, so §5 criterion 4 has not started. `[BUS]`, and
   the only line in this section an arbiter settles in one command:
   `grep -ci "fleet-factory-kernel\|factory kernel" RULINGS.md ; echo "exit=$?"` → `0`, `exit=1`
@@ -271,5 +269,5 @@ NONE** · K11 this filing · K12 `coordination/harvest/harvest_runner.py`; **sel
 
 ## Landing
 
-Branch `review/conjugal-kernel-2026-09-15`. SHA and `ls-remote` equality are reported in the
-session's final message: a filing carries procedures, not values that decay.
+Branch `review/conjugal-kernel-2026-09-15`. SHA and `ls-remote` equality go in the session's final
+message: a filing carries procedures, not values that decay.
