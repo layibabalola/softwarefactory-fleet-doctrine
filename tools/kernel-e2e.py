@@ -34,7 +34,21 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 KERNEL = os.path.join(ROOT, "specs", "fleet-factory-kernel.md")
 LEDGER = os.path.join(ROOT, "adjudications", "factory-kernel", "HARVESTS.md")
 
-E2E_RE = re.compile(r"(\d+)\s+(?:qualifying\s+)?end-to-end")
+# Criterion 1 counts PROJECTS with >=1 closed subject; it never sums subjects. The previous
+# reduction did both wrong at once: it accumulated the per-row number across rows and compared the
+# SUM to 5, so five closed subjects in ONE project would have greened a criterion that requires five
+# DISTINCT projects. Measured 2026-09-17; both numbers were 0, so it had never yet mattered.
+#
+# The extraction was also unsound in both directions. `(\d+)\s+(?:qualifying\s+)?end-to-end`
+# silently returned None -- read as zero -- for the criterion's OWN wording:
+#     "1 closed end-to-end with receipts"  -> None    (spec 5.1 says "one real subject end-to-end
+#     "S1 closed end-to-end"               -> None     with receipts", so a truthful cell reads 0)
+#     "one subject end-to-end"             -> None
+# while a bare "5 end-to-end" in free prose written by the measured party would have counted 5.
+# A cell that mentions end-to-end but carries no parseable count is now UNPARSED and REFUSES to be
+# read as zero: an unreadable instrument must never be indistinguishable from a measured absence.
+E2E_COUNT_RE = re.compile(r"(?<![\w.])(\d+)\s+(?:\w+\s+){0,2}?end-to-end", re.I)
+E2E_MENTION_RE = re.compile(r"end-to-end", re.I)
 
 
 class Refused(SystemExit):
@@ -99,10 +113,15 @@ def ledger_rows():
 
 
 def e2e_and_totals():
-    """Sum the closed-end-to-end count and the verdict columns across every ledger row."""
+    """Reduce the ledger to what criterion 1 actually asks: which PROJECTS closed a subject.
+
+    Returns the per-project closed counts, the set of projects with >=1, and the subject total --
+    the last for information only. Criterion 1 is evaluated on the PROJECT set, never the total.
+    """
     names = ["FIT", "FRICTION", "BREAK", "N/A", "UNEXERCISED"]
     totals = dict.fromkeys(names, 0)
-    closed, rowed, unparsed = 0, set(), []
+    rowed, unparsed, ambiguous = set(), [], []
+    per_project = {}
     for r in ledger_rows():
         c = [x.strip() for x in r.split("|")]
         try:
@@ -112,11 +131,35 @@ def e2e_and_totals():
             unparsed.append(c[3] if len(c) > 3 else r[:40])
             continue
         rowed.add(c[3])
-        m = E2E_RE.search(c[7])
+        cell = c[7]
+        m = E2E_COUNT_RE.search(cell)
         if m:
-            closed += int(m.group(1))
-    return {"closed_end_to_end": closed, "rows": len(ledger_rows()),
-            "projects_in_ledger": sorted(rowed), "totals": totals, "unparsed": unparsed}
+            n = int(m.group(1))
+            # A project's closed count is the MAX across its rows, never the sum: successive
+            # harvests restate the same standing total, so summing double-counts one closure.
+            per_project[c[3]] = max(per_project.get(c[3], 0), n)
+        elif E2E_MENTION_RE.search(cell):
+            ambiguous.append("{}: {!r}".format(c[3], cell[:80]))
+        else:
+            per_project.setdefault(c[3], 0)
+    closed_projects = sorted(k for k, v in per_project.items() if v > 0)
+    return {"closed_end_to_end": sum(per_project.values()),
+            "closed_projects": closed_projects,
+            "per_project_closed": per_project,
+            "rows": len(ledger_rows()),
+            "projects_in_ledger": sorted(rowed), "totals": totals,
+            "unparsed": unparsed, "ambiguous_subject_cells": ambiguous}
+
+
+def criterion_1_met(led):
+    """Section 5.1: ">=5 member PROJECTS ... each covering at least one real subject end-to-end".
+
+    Counted over DISTINCT PROJECTS, never over a sum of subjects. Extracted into its own function
+    so the gate is testable; the predicate previously lived inline in main() and no test reached it.
+    An ambiguous ledger blocks: a criterion cannot be certified from cells the instrument admits it
+    could not read.
+    """
+    return len(led["closed_projects"]) >= 5 and not led["ambiguous_subject_cells"]
 
 
 def main():
@@ -137,7 +180,15 @@ def main():
 
     result = {"subject": a.subject, "roster": members,
               "closed_end_to_end": led["closed_end_to_end"],
-              "criterion_1_met": led["closed_end_to_end"] >= 5,
+              "closed_projects": led["closed_projects"],
+              "per_project_closed": led["per_project_closed"],
+              # Criterion 1: ">=5 member PROJECTS ... each covering at least one real subject
+              # end-to-end". Counted over distinct projects. A ledger row whose subjects cell
+              # mentions end-to-end but carries no parseable count is AMBIGUOUS, and an ambiguous
+              # ledger cannot certify a criterion -- it blocks rather than reads as zero.
+              "criterion_1_met": criterion_1_met(led),
+              "criterion_1_projects": len(led["closed_projects"]),
+              "ambiguous_subject_cells": led["ambiguous_subject_cells"],
               "ledger_rows": led["rows"], "ledger_totals": led["totals"],
               "projects_in_ledger": led["projects_in_ledger"],
               "never_filed": never_filed, "open_filings": open_filings,
@@ -151,8 +202,11 @@ def main():
 
     t = led["totals"]
     print("kernel finalisation, derived {}".format(a.subject))
-    print("  CLOSED END-TO-END SUBJECTS : {}   (§5 criterion 1 needs >=5 projects with >=1 each)"
-          .format(led["closed_end_to_end"]))
+    print("  PROJECTS WITH >=1 CLOSED   : {}   (§5 criterion 1 needs >=5; counted by PROJECT, never summed)"
+          .format(len(led["closed_projects"])))
+    if led["closed_projects"]:
+        print("      {}".format(", ".join(led["closed_projects"])))
+    print("  closed subjects (info only): {}".format(led["closed_end_to_end"]))
     print("  ledger                     : {} rows over {} projects | {} FIT, {} FRICTION, {} BREAK, "
           "{} UNEXERCISED".format(led["rows"], len(led["projects_in_ledger"]),
                                   t["FIT"], t["FRICTION"], t["BREAK"], t["UNEXERCISED"]))
@@ -174,6 +228,12 @@ def main():
             print("      {}".format(k))
     if led["unparsed"]:
         print("  UNPARSED LEDGER ROWS: {}".format(led["unparsed"]))
+    if led["ambiguous_subject_cells"]:
+        print("  AMBIGUOUS subjects cells ({}) -- mention end-to-end with no parseable count;"
+              .format(len(led["ambiguous_subject_cells"])))
+        print("  these BLOCK criterion 1 rather than reading as zero:")
+        for x in led["ambiguous_subject_cells"]:
+            print("      {}".format(x))
     print("")
     print("VERDICT: {}".format("MEMBERS DUE" if due else "no member due"))
     return 1 if due else 0
