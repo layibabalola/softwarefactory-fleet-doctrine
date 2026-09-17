@@ -10795,3 +10795,70 @@ name two different ones.
 - **The test.** Of any liveness alarm: *is there a correct behaviour that makes this fire?* and *does the
   artifact class I read exhaust the ways this seat records that it ran?* A no to the second is how a
   staleness alarm ends up condemning the only seat that is working.
+
+## A guard keyed off the DECLARATION is blind, by construction, to the thing that should declare and does not (cloudvore, 2026-09-17, Dell XPS 17)
+
+- **The shape, stated first because it is not about accessibility.** A guard written as *"for every X that
+  declares P, assert P is wired"* enumerates the declarations. The rule it is meant to enforce ranges over
+  the **renderings**. Every enumerated case is handled correctly, so the guard is green and reads correct
+  in review — and it cannot see the one member of the rule's domain that is missing from the guard's.
+  This is "writer's domain narrower than a reader's" arriving through the guard's own **selector** rather
+  than through a shared predicate, which is why reading the assertions does not reveal it.
+- **The instance.** A WPF wizard renders one status property (`StatusText` — "Stopping… finishing the files
+  already in flight.", "Paused.", "Transfer failed…") **three** times, once per stage panel, exactly one of
+  which is on screen at a time. Two of the three carried `AutomationProperties.LiveSetting`. The guard
+  enumerated elements carrying `LiveSetting` and checked each was wired to something that announces: green.
+  The unwired third is the copy in the transferring panel — the one visible when the user presses Stop, and
+  whose own markup comment says it exists so "a click is never silent". Stop sets the status **without**
+  changing stage, so the two wired copies were both collapsed and the visible copy announced nothing. The
+  net effect of "fixing" accessibility was silence on the most-used path, with every guard green.
+- **Re-keying fixed it and opened the mirror hole, which is the part worth carrying.** Keyed off the source
+  instead — *"every rendering of this source must declare AND wire"* — the missing third was caught and a
+  planted mutation bit. But the source-keyed form reaches an element only if it renders that source, so
+  `LiveSetting`-without-wiring became unguarded for **everything else**: re-adding the attribute to an
+  unrelated element shipped the original defect, green. Neither direction alone is sufficient. Both are
+  cheap. The lesson is not "prefer one key" — it is that a selector is a claim about a domain, and a guard
+  needs as many selectors as the rule has directions.
+- **The test, applicable to any markup/config guard.** Before trusting it: (1) state the rule's domain in
+  words; (2) check the selector yields exactly that set; (3) if the selector keys off the very attribute the
+  rule is about, assume it is blind to **absence** until proved otherwise; (4) plant the absence, not only
+  the corruption. A mutation that removes the attribute from an element the guard never enumerates is the
+  one that finds this, and it is not the mutation anybody reaches for first.
+- **Frequency, because one instance is an anecdote.** Three in one session on one board, all the same shape:
+  this one; a file-walk filtered to `/Views/` while the rule said "the app", leaving a real interactive list
+  outside the scan and compliant only by accident; and an XLinq attribute lookup for `TabNavigation` where
+  the parser reports the attached property's local name as `KeyboardNavigation.TabNavigation`, so the
+  lookup matched **nothing** and a planted keyboard trap walked straight through a green suite.
+
+## `AutomationProperties.LiveSetting` in WPF announces NOTHING on its own, so a11y markup can read as met while delivering zero (cloudvore, 2026-09-17, Dell XPS 17)
+
+- **The fact.** `AutomationProperties.LiveSetting="Polite"` is metadata on the automation peer and nothing
+  more. A UI Automation client speaks only on receiving a `LiveRegionChanged` event, and **WPF does not
+  raise one** when a bound `TextBlock.Text` changes. Without an explicit
+  `peer.RaiseAutomationEvent(AutomationEvents.LiveRegionChanged)` the declaration is inert. Three such
+  declarations had shipped here; `grep -rn "RaiseAutomationEvent" src/` returned **zero lines**, so the
+  number of announcements the application had ever made was zero.
+- **Why it survives review.** It is the false-green shape wearing accessibility clothing: a reviewer reading
+  the view finds a live region on the failure message and moves on, and an a11y bar can be called met on the
+  strength of an attribute that does nothing. Nothing fails. Nothing looks unfinished.
+- **The executable check, any WPF repo, ten seconds.**
+  `grep -rn "LiveSetting" src/` and `grep -rn "RaiseAutomationEvent" src/`. Any hit in the first with none
+  in the second is a silent live region. There is no configuration under which that combination works.
+- **Three things that bit when wiring it, none of which is obvious.** (1) Binding one source twice — to
+  `Text` and to the announcing property — means WPF notifies **in document order**, so raising synchronously
+  fires while `Text` still holds the previous value; on the first status of a run that is empty, and a
+  confidently wrong announcement is worse than silence. Posting the raise at `DispatcherPriority.Background`
+  removes the dependency on attribute order entirely. (2) `UIElementAutomationPeer.FromElement` returning
+  null means *no client is listening*; falling back to `CreatePeerForElement` raises on a peer nobody asked
+  for. (3) Writing `LiveSetting` from the announcing code clobbers a narrower domain — the writer knows one
+  value, the reader's domain includes `Assertive` and `Off`.
+- **The scope trap on the other side.** The obvious next step is to announce every status-like string. One
+  candidate here was rewritten inside a progress callback with a file counter in the sentence, against a
+  500 ms poll, for a phase the code's own comment calls "an hour or more" — roughly **seven thousand**
+  announcements during one healthy run. The discriminator is not "is it written on a tick" (a fixed sentence
+  written on a tick is suppressed by dependency-property value equality) but **"does the value change on
+  every tick"**. A counter in the string makes every tick distinct.
+- **The honest bound on testing it.** `RaiseAutomationEvent` is a no-op when no client is listening and a
+  unit test is not a client, so no assertion can prove a screen reader spoke. Pin the reachable half
+  behaviourally and pin the call itself in **compiled IL** — a source-substring assertion is satisfied by a
+  commented-out line, by the string in a doc comment, and by `if (false)`, all of which were confirmed here.
