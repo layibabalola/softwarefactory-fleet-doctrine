@@ -10862,3 +10862,114 @@ name two different ones.
   unit test is not a client, so no assertion can prove a screen reader spoke. Pin the reachable half
   behaviourally and pin the call itself in **compiled IL** — a source-substring assertion is satisfied by a
   commented-out line, by the string in a doc comment, and by `if (false)`, all of which were confirmed here.
+
+## Zero-effect and positive controls validate the JUDGE from both sides and still cannot see that the two ARMS are identical (dng-auto-processor, 2026-09-17, UltraMagnus)
+
+A blind visual comparison returned `INDISTINGUISHABLE` with **all 8 exit-predicate clauses PASS and both
+controls perfect — ZERO 9/9, POSITIVE 9/9 over 27 blind-judged pairs** — and the honest verdict was
+worthless, because the two arms were the same treatment in effect.
+
+- **Measured, and the executing seat published the fact that undermined its own conclusion rather than
+  burying it:** `sha256` of every composed sheet was EQUAL across armA, armB *and* the control on all four
+  sequences. The two engine files differed in exactly one field, `"TargetedWbTrim": true` vs `false`, so
+  the engines were genuinely distinct, genuinely loaded and correctly receipted — and **flipping the single
+  variable changed not one rendered pixel.**
+- **Why the controls could not catch it.** A judge answering "all same" fails POSITIVE; a judge answering
+  "all different" fails ZERO. Between them they close vacuity for the JUDGE completely. **Neither asks
+  whether the arms differ.** Every clause and both controls pass exactly as reported *even if the
+  `--engine` argument were ignored entirely.*
+- **The correct reading was not "the variable has no visible effect" but "the instrument did not vary, so
+  this experiment could not have detected one"** — a null-instrument run whose EFFECT arm was the ZERO arm
+  by construction.
+- **Root cause, found later by a full diff rather than by the protocol:** the variable actuated and
+  demanded a LARGE move (two frames wanted −949 K and −885 K, both delivered at a 600 K clamp, 2 clamp
+  warnings in armA and ctrl, ZERO in armB) and a *later* pipeline step overwrote the field by reflection
+  from the clip's own manual grade, with no guard against the earlier step having just run. **Two writers
+  of one field, and the receipt was re-derived from the LAST one**, so the receipt reported a settled value
+  while the first writer's contribution had been discarded.
+
+**The rule.** A comparison owes an **arms-differ witness** as a named exit clause that can FAIL: the
+emitted per-subject values must differ between arms on at least one element, with the differing count
+reported. Equal vectors mean the variable did not reach the output *whatever the flag said*, and the run is
+VOID naming that witness — never "no effect". **A composed-artifact hash is not this witness**: it answers
+a later question and can be equal for many reasons.
+
+**Direction, which is why it must be mandatory and not advised: a controls-only protocol fails toward
+DECLARING VICTORY.** That is survivable in an experiment and fatal in an acceptance definition — ours was
+about to become one, since the owner had just defined "feature complete" as *blind-judged
+indistinguishable*, which makes the instrument's failure mode and its success condition the same string.
+
+## An alarm whose predicate reads a closed set containing the tooling the factory maintains is not blind — it is FED (dng-auto-processor, 2026-09-17, UltraMagnus)
+
+Our alarm 1 is "product commits per day < 1 for 48 h". "Product commit" is defined by a single closed set
+of paths that includes `tools/**`. The application itself took **zero commits for 116 hours** and the alarm
+was quiet the whole time.
+
+- **It did not fail to fire.** It fired correctly at `alarm 1 STALL 60.9h` during a window when `tools/**`
+  happened to be quiet too, then went silent while the stall continued.
+- **The closed set that silenced it, enumerated:** all 15 commits satisfying the predicate over the next
+  two days were `tools/**` — test scripts and a vendored runner base — and **zero** touched the three
+  application assemblies. 200 commits landed in the stall window; none touched them.
+- **The mechanism is ONE closed set answering TWO questions.** Our set has three declared readers: an
+  inert-commit rebase rule, a CI-currency rule, and this alarm. For the first two, `tools/**` **must** be
+  product, because a tooling change can invalidate a completed review. For "is the product advancing" it
+  must **not** be, because tooling is how the factory maintains itself. A prior repair correctly settled
+  *which* definition governs and never asked whether one definition can serve all three readers.
+
+**Say "satisfiable by the wrong evidence", never "blind".** The difference decides the remedy: a blind
+alarm needs replacing, a fed one needs a narrower predicate for that reader only. **Direction: it fails
+toward SILENCE** — it can only fail to notice a stall, never raise a false one.
+
+**The generalizable test:** for every closed set in your governance, list its readers and ask what question
+each is really asking. Where two readers ask different questions, one set cannot answer both, and the
+reader whose question is "is the *subject* advancing" is the one that will be fed by the *instrument's* own
+maintenance.
+
+## Guard SHAPE decides failure direction: `if ($obj.field) { Fail }` fails silent on an absent field while its `-ne` siblings in the same file fail loud (dng-auto-processor, 2026-09-17, UltraMagnus)
+
+Five receipt-derived guards sit within 35 lines of one PowerShell script and **do not fail the same way**
+when the receipt lacks the field.
+
+- **Fail LOUD (correct):** `$r.clipsRemoved -ne $expected` → `$null -ne <count>` is true → refuses.
+  `if (-not $r.projectRemoved)` → `-not $null` is true → refuses. `$onDiskSha -ne $expectedSha` → a missing
+  field makes `$expectedSha` null → true → refuses.
+- **Fail SILENT (the hazard):** four guards of the shape `if ($r.hasColourShapesByClip) { Fail }`. A
+  `ConvertFrom-Json` object missing the property yields `$null`, which is falsy, so **the guard passes
+  without measuring anything.** No `Set-StrictMode` in this file — eleven of its siblings under `tools/`
+  have one — and the gate invokes it as `pwsh -NoProfile -File`, a fresh process, so no inheritance.
+- **The bound, stated because it keeps the finding honest:** the writer currently always emits the field
+  (no conditional around the serialization; `git log -S` shows one introducing commit and no removal; all
+  12 on-disk receipts carry it). So the absent case is unreachable *from any committed writer* — the hole
+  is guarded by the WRITER's behaviour, never by the reader. That is exactly what a schema pin closes, and
+  there is none: the only `schema` token in the file is the script's own output schema.
+
+**The rule: a boolean-truthiness guard over external data is not a check unless the reader pins the schema.**
+Prefer an explicit presence test over truthiness, and pin the producer's schema version at the boundary.
+Auditing a file for "does it have guards" will pass; audit for **which direction each guard fails in**, and
+expect the shapes to disagree inside one file.
+
+## A scheduled task's REGISTRATION is per-account and dies with a rotation; its DEFINITION survives on disk — recover the schedule from the stranded account's own record (dng-auto-processor, 2026-09-17, UltraMagnus)
+
+An account rotation stranded 2 of 4 authorised scheduled seats. The resume procedure re-creates only the
+two it names, and explicitly forbids a seat from creating the others, so the pair stayed dead for a day
+with one of them being the project's only outward alarm channel.
+
+- **What survives a rotation:** the task's `SKILL.md` on disk — name, description and the entire prompt
+  body. Both stranded tasks' files were intact and byte-comparable afterwards.
+- **What does NOT survive:** the registration, which is where the **cron expression** lives. Re-creating
+  from `SKILL.md` alone silently invents a new schedule.
+- **Recover it, do not guess it.** The stranded account's own registration JSON still held them. Ours gave
+  `3 * * * *` and `17 7 * * 0` — and, in the same file, the two *surviving* seats' crons, which matched the
+  live registrations exactly. **That match is the control that validates the file as the right source**; a
+  recovery with no such control is a guess wearing evidence.
+- **Verify after creating**, because the create path rewrites `SKILL.md`: diff the new body against a
+  pre-create backup. Ours came back byte-identical at 4,030 B and 4,325 B.
+- **Use the host application's own task mechanism, not the OS scheduler.** A prior swarm here created
+  duplicate OS-level twins of two live seats that then had to be deleted.
+- **A displayed schedule is not the stored one.** The UI showed "12 minutes past" and "07:21 AM" for crons
+  of `3 * * * *` and `17 7 * * 0`; the difference was per-task jitter (566 s, 247 s). Compare the stored
+  `cronExpression`, never the rendered string.
+
+**The class:** an alarm channel that dies at a rotation is the one you least want dying, because its death
+is exactly what it would have reported. **Discharge the instance and say plainly that the mechanism is
+untouched** — ours re-creates two of four by design, so the next rotation strands the same pair.
