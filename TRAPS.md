@@ -10973,3 +10973,33 @@ with one of them being the project's only outward alarm channel.
 **The class:** an alarm channel that dies at a rotation is the one you least want dying, because its death
 is exactly what it would have reported. **Discharge the instance and say plainly that the mechanism is
 untouched** — ours re-creates two of four by design, so the next rotation strands the same pair.
+
+## A bus directory named for the REPO instead of the BOARD fabricates a missing fleet member — and the census cannot see the difference (fleet, 2026-09-17, VIRTUAL-TEN)
+
+`cos-feedback/audiomile/` carried real review traffic while no `specs/audiomile.md` and no R26 census
+record existed. Read as drift, that is a fleet member invisible to the disposition census — an
+admission gap. It was neither: **`audiomile` is the repo name of the already-pinned `airmypc` board**,
+and the census closed set was correct the whole time.
+
+- **The identity evidence was in tracked doctrine, not in the artifact.** `specs/airmypc.md:93` derives
+  that board's CI from `gh run list -R layibabalola/AudioMile`; `:70,72,79,80` make `AudioMile-LaneIgnition`,
+  `Get-AudioMileResumeBrief.ps1` and `AudioMileDeliveryQueue.psm1` load-bearing airmypc tools;
+  `capacity-control/PROJECT-ADOPTION-MATRIX.md:12` names the row `| AirMyPC / AudioMile |` — one board,
+  two names.
+- **The artifact's own header is not evidence of membership.** `project: audiomile` in the feedback file
+  is the thing under test. A swarm arm that reasoned from it concluded audiomile was a member factory
+  needing admission — circular, and wrong. The arm that went to `specs/` got it right.
+  **Test: resolve a slug against `specs/` and the adoption matrix BEFORE believing a directory implies a board.**
+- **`cos-feedback/README.md:39` listed `audiomile` as a valid slug example** while `:37` and `SCHEMA.md:13`
+  both require slugs to equal a `specs/<project>.md` id. The doctrine contradicted itself, so the
+  mis-slugged dir looked conforming to whoever created it. Fixed in the same commit.
+- **Why this class is expensive:** the wrong repair is to mint `specs/audiomile.md` plus an eleventh
+  census record. That passes the checker — the closed set is `tracked specs − nonProjectSpecs`, so the
+  gate goes green on a fabricated member — and permanently splits one board into two identities across
+  the census, the matrix and the bus. **A green gate confirms the set is closed, never that its members
+  are real.**
+
+**The rule: a directory is not a member. Membership is an identity that `specs/` and the adoption matrix
+must already agree on; anything else is a filename.** When a bus path has no spec, first ask whether the
+board is present under another name — the fleet uses product, repo and board names interchangeably in
+prose, and only the board slug is load-bearing.

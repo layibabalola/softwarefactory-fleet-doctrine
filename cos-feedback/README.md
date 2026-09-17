@@ -36,7 +36,7 @@ cos-feedback/
 
 Project slugs match `specs/<project>.md` ids (e.g. `mlv-app`, `adversarialllm`,
 `agent-bridge`, `cloudvore`, `conjugal`, `context-ultra-salesforce`, `adobe-ingester`,
-`audiomile`, `dng-auto-processor`, …). This bus does **not** stub empty dirs for every board —
+`airmypc`, `dng-auto-processor`, …). This bus does **not** stub empty dirs for every board —
 live `pr-<N>.md` files appear when CoS reviews that board's open work.
 
 ## File naming and rewrite rule
