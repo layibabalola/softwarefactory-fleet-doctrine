@@ -1,26 +1,9 @@
 name: R26 project disposition intake
 
 on:
-  # `paths-ignore`, not an allowlist, and deliberately. 21 of this workflow's 35 steps are
-  # `unittest discover` runs that read broadly across `tests/` and `tools/`, so an allowlist that
-  # missed one path would let a real violation land unchecked -- the dangerous direction. An ignore
-  # list only skips a run when EVERY changed file matches it, so anything else still gets the full
-  # gate.
-  #
-  # Measured 2026-09-17: zero of the 35 steps reference `cos-feedback/` or `heartbeats/`, and 11 of
-  # them are pinned to FIXED treeishes (e7311e30 x6, 990906b6, 488538ca, 8149c3f0, 95df488b,
-  # eca6e364), so they re-validate frozen history and cannot change answer on a new commit. Ten of
-  # the last twelve master commits touched cos-feedback only. This workflow was 93 of the last 100
-  # runs at roughly $100/month for a result that was constant by construction.
   pull_request:
-    paths-ignore:
-      - "cos-feedback/**"
-      - "heartbeats/**"
   push:
     branches: [master]
-    paths-ignore:
-      - "cos-feedback/**"
-      - "heartbeats/**"
   workflow_dispatch:
 
 permissions:
