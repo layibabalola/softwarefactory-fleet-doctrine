@@ -10973,3 +10973,75 @@ with one of them being the project's only outward alarm channel.
 **The class:** an alarm channel that dies at a rotation is the one you least want dying, because its death
 is exactly what it would have reported. **Discharge the instance and say plainly that the mechanism is
 untouched** — ours re-creates two of four by design, so the next rotation strands the same pair.
+
+## Gross Actions usage is not your bill: a PUBLIC repo reports gross and bills zero, so aggregating the wrong column ranks your repos exactly backwards (cloudvore, 2026-09-17, UltraMagnus)
+
+A spending-limit block prompted a cost investigation. `users/<u>/settings/billing/usage` was aggregated by
+repository and the two largest were named as 83% of the problem; four turns of analysis, two repo edits, a
+runner registration and a PR followed. All of it was misdirected. The two "largest" repositories are
+**public**, and GitHub bills standard runners on public repositories at **zero** — it still reports their
+gross usage, then discounts it entirely.
+
+- **The numbers, measured 2026-09-17 for September.** Gross $446.03, actually billed **$61.35**. By repo,
+  gross vs billed: MLV-App `$243.90 / $0.00` (public), softwarefactory-fleet-doctrine `$128.70 / $0.00`
+  (public), AdversarialLLM-ClaudeCode `$27.59 / $26.36`, Cloudvore `$31.17 / $20.57`, AudioMile
+  `$8.00 / $8.00`, context-ultra-salesforce `$3.42 / $3.17`.
+- **The inversion is total, not marginal.** By gross, the top two are 83% of spend. By billed, they are
+  **0%**, and the real #1 is a repo that was dismissed as a minor line at 43%. The #2 at 33.5% was the
+  investigating board's *own* project, which it had reported as 7%.
+- **Why it is easy to do.** The API returns `grossAmount`, `discountAmount` and `netAmount` side by side per
+  row. `grossAmount` is the intuitive field, it is the larger number, and it is wrong. The discount column is
+  where visibility lives; nothing in the row says "public".
+- **The executable check, ten seconds, before naming any cost target.**
+  `gh api "users/<u>/settings/billing/usage?year=Y&month=M" --jq '[.usageItems[]|select(.unitType=="Minutes")]|group_by(.repositoryName)|map({repo:.[0].repositoryName, gross:([.[].grossAmount]|add), billed:([.[].netAmount]|add)})'`
+  Any row where `billed` is 0 and `gross` is not is a free repo. Confirm with
+  `gh api repos/<o>/<r> --jq .private`.
+- **The corollary that costs the most time.** On a free repo, minutes are still *latency* and *queue
+  contention*, which are real, but they are not dollars — so "move it to a self-hosted runner to save money"
+  is a null action there. Decide which currency you are optimising before choosing the remedy.
+
+## Enumerate what GUARDS a file before editing it — seals, literal pins and required checks each bite only after the edit lands (cloudvore, 2026-09-17, UltraMagnus)
+
+Three distinct guard types bit in one session, each invisible in the file being edited and each discovered
+only from CI or a local checker *after* the change was committed.
+
+- **A byte seal.** `.github/workflows/disposition-intake.yml` is one of 44 entries in a `controlFiles`
+  manifest pinned by `bytes`, `sha256` and `gitBlobOid`; `verify_control_seal` raises
+  `CONTROL_BYTES_CHANGED`. A `paths-ignore` addition of 17 lines, made to reduce CI cost, added a NEW
+  failure to an already-red gate and was reverted.
+- **An exact-literal test pin.** `tools/check_phase12_phase16_descendant_scope.py` declares
+  `b"        os: [windows-latest, ubuntu-latest]"` at line 135 and asserts it at line 239. Such pins exist
+  precisely so a cost-motivated edit cannot quietly delete cross-platform evidence.
+- **A required status check.** See the next entry.
+- **Worse: the edit was also wrong on the merits, and the policy said so.** The same repo's canonical
+  `CI-COST-CONTROL.md` rule 3 states "The sealed disposition workflow remains an unfiltered integrity gate."
+  The workflow's unfiltered trigger was *deliberate policy*, not the oversight it was diagnosed as. Reading
+  the governing policy would have prevented the edit before any guard had to.
+- **The executable check, before touching a workflow or config file.** `grep -rn "<path>" tools/ tests/`
+  for pins; grep the repo's checkers for a `CONTROL_PATHS`/seal list containing it; and
+  `gh api repos/<o>/<r>/branches/<b>/protection --jq .required_status_checks.contexts`. Then read the
+  canonical policy that governs the file — the guard is the last line of defence, not the first.
+
+## A REQUIRED status check that stops reporting blocks every PR silently — the standard CI-cost fix is the trigger (cloudvore, 2026-09-17, UltraMagnus)
+
+The canonical cost remedy for an expensive matrix is to gate the expensive leg to `push: master` and give
+pull requests one cheap job. If that leg is a **required** status check, gating it off `pull_request` means
+it never reports, and GitHub holds the PR at "Expected — Waiting for status to be reported" forever. The
+repository does not go red. It goes silent, which is worse: nothing alerts, and the cause is in a file
+nobody re-reads.
+
+- **Measured.** `layibabalola/MLV-App` master requires exactly five contexts — `Repo Hygiene Python
+  (windows-latest)`, `Repo Hygiene Python (ubuntu-latest)`, `Windows GUI Pilot`, `Windows Product Oracles`,
+  `Batch Compile` — with `strict: true` and `enforce_admins: true`. An adversarial reviewer recommended
+  gating the first of these to `push: master`, having verified test coverage but not branch protection.
+- **The distinction that decides it, and it is not obvious.** A required check must report `success`,
+  `skipped` or `neutral`. A job **skipped by an `if:` inside a workflow that still ran** reports Success and
+  does NOT block. A workflow that **never triggers at all** never reports and DOES block. So the same word
+  "skip" is safe in one design and fatal in the other.
+- **This is a live gap in canonical policy, not only in practice.** `CI-COST-CONTROL.md` rule 1 prescribes
+  "Eligible pull-request workflows run one representative `ubuntu-latest` / Python 3.14 job" with no warning
+  about required contexts. A project adopting that rule literally, on a repo with a required Windows
+  context, bricks its own merge queue.
+- **The executable check, before changing any trigger or matrix.**
+  `gh api repos/<o>/<r>/branches/<b>/protection --jq .required_status_checks.contexts` and confirm no job
+  name you are about to stop producing appears in it.
