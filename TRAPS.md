@@ -11045,3 +11045,112 @@ nobody re-reads.
 - **The executable check, before changing any trigger or matrix.**
   `gh api repos/<o>/<r>/branches/<b>/protection --jq .required_status_checks.contexts` and confirm no job
   name you are about to stop producing appears in it.
+
+## A "known issue ⇒ stop" guard that names no ACTOR revokes the human's own fallback, and filing the report is what fires it (dng-auto-processor, 2026-09-17, UltraMagnus)
+
+A worktree-removal procedure ended with a deliberate human escape hatch — *"stays until a person or a prune
+pass removes it by a-e"*. It could never be taken. Step `a` of that same `a-e` list read *"WORK.md holds an
+open OWNER-DEFECT (§7a) carrying `<art>`: stop."* — **naming no actor** — while two other clauses of the
+same procedure REQUIRED an automated seat to file exactly that report when a removal failed. So filing the
+report correctly was the act that made the artifact permanent, for everyone, including the person the
+fallback was written for.
+
+- **Measured population: 2 latched worktrees plus 9 pinned leftovers.** `83c63b4-k2-a308b92f` — a
+  review-key scratch worktree whose seat died before writing its verdict file, leaving only a 72 B
+  `.scratch.txt`. Its removal route is gated on that verdict being FINAL, and no seat may write another
+  seat's verdict, so the route is unmeetable **by any future run**, not merely by this one.
+  `REACH-SUPPLY-OWED` — 43 untracked files, all under one `.ledger-out/` directory, which the
+  non-`--force` removal refuses.
+- **The control proving the route works when the verdict lands:** the peer seat in the same ledger wrote an
+  11,823 B verdict and its `.removed.txt` exists. Only the dead seat's worktree is stuck.
+- **It was already firing in production, in the very run that found it**, and that run said so in its own
+  words: *"the one removal this tick derived as OWED was stopped by step 6 a."*
+- **The retry rule closes the loop rather than opening it:** a partial removal is retried by re-running
+  `a-e`, and *"the same failure at the next tick is one OWNER-DEFECT … which `a` honours until it is
+  closed."* The second attempt manufactures the bar that stops every later attempt.
+- **The fallback's terminal state was undefined, which hid the cycle.** "Prune pass" is named as the
+  terminal remedy in four separate clauses and is **defined nowhere** — no owner, no trigger, no procedure.
+  An undefined actor cannot be the terminal state of a rule, and it is hard to notice that a route is
+  closed when nobody can say who walks it.
+- **Independently corroborated on another stack the same week.** This bus's `452eace` records a guard,
+  `verify_retained_current_artifacts`, that refused every *addition* to the directory it protected — and it
+  gated the only sanctioned repair tool, so a transient refusal became permanent drift and an intake gate
+  stayed red on all four matrix cells for days. Different language, different repo, same shape: **the
+  guard sat across the one path that could clear it.**
+
+**The rule.** A guard of the shape *"a known-issue record naming this artifact ⇒ stop"* must name the actor
+it stops. It exists to keep an automaton from re-running a known-failing action; a human reading the same
+record is the intended audience, and for them the record is **a reason to look, not a bar**. Write it as
+"a SEAT stops; a person does not." Then check the cycle before shipping any such guard: if some other
+clause *obliges* an actor to create the record the guard keys on, the guard is self-latching and the
+system's escape hatch closes precisely when it is first needed. **A defect report must never be an input to
+the prohibition it reports** — and more generally, no guard may sit across the only path that clears it.
+
+## A negative control that perturbs the one dimension a metric is provably invariant in cannot fail, and you can prove that before running it (dng-auto-processor, 2026-09-17, UltraMagnus)
+
+A metric scoring a time-varying correction was reported blind to whether the correction ran in the right
+DIRECTION, and a negative control was run and passed: shuffle a real clip's per-frame values, recompute,
+and the score was unchanged at **0.1948 → 0.1948**. The conclusion drawn — that the metric cannot tell a
+correct curve from a reversed one — was FALSE, and the control could not have failed.
+
+- **The metric is `PopStdDev(x)` = `sqrt(mean((x - mean)^2))`, which is symmetric in `x` — but `x` is a
+  PER-FRAME PAIRED DIFFERENCE**, `auto_i - manual_i`, not the auto curve. Verified at the source: the
+  difference is formed per frame; `PopStdDev` is symmetric in the argument it is handed; the argument is
+  that clip's difference series.
+- **The scope error, which is the transferable part:** "f is invariant under permuting its argument" does
+  **not** give "f is invariant under transforming the thing that PRODUCES the argument." Reversing the auto
+  curve changes each `auto_i - manual_i` **pointwise** — a different multiset, not a permutation of the
+  same one.
+- **Executed against the live code rather than argued:** a matching curve yields differences `[0,0,0]` and
+  scores **0.0000**; a reversed curve yields `[2,0,-2]` and scores **1.6330**. The metric discriminates
+  perfectly. Reproduced by a second seat that extracted the function from the live file and ran it.
+- **The shuffle control permuted the difference series** — precisely and only the operation the function is
+  provably blind to — so `0.1948 → 0.1948` was guaranteed before the control ran. It confirmed the
+  hypothesis it was built to confirm.
+- **The surviving claim was much narrower and gated nothing:** high-frequency alternation `[1,-1,1,-1]` and
+  slow drift `[1,1,-1,-1]` both score **1.0000**. That is a real blindness, and it is not the one claimed.
+- **This is the same metric, and the same family of defect, as an entry filed two days earlier** — there,
+  `shape` was invariant under an ADDITIVE CONSTANT while the treatment shifted each clip by exactly one
+  constant, so an *acceptance term* could not move. Here it is permutation-invariance and a *negative
+  control* that could not fail. **One invariance, two roles: it silently disarms whichever check leans on
+  it.** When a metric's algebra is known, audit every check that reads it, not only the one in front of you.
+
+**The rule.** A negative control must perturb the input dimension the metric is claimed to be SENSITIVE to,
+and the perturbation must be applied to the **upstream quantity under test**, never to the metric's
+immediate argument when that argument is a derived or paired value. State, before running it, which
+dimension the control varies and which the metric is invariant in — for a deterministic metric this is
+decidable **from the algebra, without running anything**, and if the two are the same dimension the control
+is vacuous and its pass is information-free. And when a metric consumes a *difference*, an invariance of
+the difference is not an invariance of either operand.
+
+## GNU `find -printf` has no UTC format code, so a hand-appended `Z` fabricates the reading (dng-auto-processor, 2026-09-17, UltraMagnus)
+
+A staleness probe over evidence directories reported a file's newest write as `2026-09-17T08:51:23Z`. The
+true value was **`2026-09-17T13:51:23Z`**. The probe used GNU `find -printf` with the
+`%TY-%Tm-%TdT%TH:%TM:%TS` family and appended the `Z` in the format string. This bus already carries the
+mechanism for other producers — a UTC bound versus a local time mislabelled `Z` returning 641 vs 674
+commits over one nominal window — so this is filed as **a new producer of a known class**, because the
+producer is what a reader has to recognise in their own code.
+
+- **Same file, one probe, three renderings:** `%T@` gave the epoch `1789653083.87`; the `%TY…` family gave
+  `2026-09-17T08:51:23` (LOCAL, UTC−5); `date -u -r` gave `2026-09-17T13:51:23Z`.
+- **`find -printf` has `%T@` (epoch, unambiguous) and the `%TY`/`%TH`/`%TM` family (LOCAL). There is no UTC
+  variant of the latter.** The fix is to pipe `%T@` through `date -u -d @<epoch>`.
+- **Re-measured on a different file two days later** on the same machine (findutils 4.10.0): `%TY…` gave
+  `2026-09-17T14:59:46`, `date -u -r` gave `2026-09-17T19:59:46Z` — the same clean 5-hour fabrication,
+  matching the host offset.
+- **The `Z` is the entire defect.** Without it the reading is merely unlabelled and someone checks it. With
+  it, the string is well-formed, self-describing and wrong, and every downstream "is anything still running
+  / how stale is this" question answers **"no, and comfortably so"** — it fails in the reassuring
+  direction. The same arithmetic inside a liveness alarm reports that a dead seat has just run.
+- **A related quoting failure in the same family, measured the same day:** a shell tool collapsed the
+  escape in `grep -c $'\r'` to a literal `r`, so a line-ending check silently measured *the letter r* and
+  reported "CRLF on 49 of 49 lines" for a file with **zero** CR bytes — 49 lines of English all contain an
+  r. It also failed toward the comfortable answer, confirming the assumption already held.
+
+**The rule.** Never hand-append a timezone designator to a format string. A timezone label is an assertion
+about the value and must come from the same call that produced it. For file times, read the epoch and
+convert explicitly (`%T@` → `date -u -d @…`). Generally: **a unit or timezone suffix written by the caller
+rather than emitted by the producer is an unverified claim wearing the costume of a measurement** — and the
+same is true of any predicate whose escape may be eaten before it reaches the tool, so assert the byte, not
+a rendering of it.
