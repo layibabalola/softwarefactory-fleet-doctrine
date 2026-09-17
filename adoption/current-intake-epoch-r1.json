@@ -132,9 +132,9 @@
       "sha256": "de493a06c03cfa425692372e7f8e2b83e5c6b4e84817f5b1abee0daf1b82e47f"
     },
     "tools/check_adoption_ledger.py": {
-      "gitBlobOid": "6e0481a24700768e9be700fef8be32700641daf5",
-      "bytes": 48871,
-      "sha256": "b056c593fa3a82edf0bf51c6c4fc9d48bcb253a27df008088dd81d0ff7aa8163"
+      "gitBlobOid": "354d6b0312d32e47f41ec0e462c22c5f68dd2c56",
+      "bytes": 49928,
+      "sha256": "cc9a25e40990c9cc2ea7c68310707ba80d0ca138c565486927061a5c843b6139"
     },
     "tools/check_current_intake_epoch.py": {
       "gitBlobOid": "64ee4236b80388dd74f94eee3ab8008ba99423fe",

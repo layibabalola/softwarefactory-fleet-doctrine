@@ -34,10 +34,32 @@ NON_PROJECT_SPECS = {
 # Current portable doctrine documents are explicitly classified. Historical
 # verification keeps its original closed set; no caller-supplied exclusions.
 CURRENT_NON_PROJECT_SPECS = NON_PROJECT_SPECS | {
+    "specs/account-rotation-and-project-continuity.md",
+    "specs/account-rotation-automation.md",
+    "specs/adversarial-swarms-and-doctrine-publishing-standard.md",
+    "specs/autonomous-decision-making-with-adversarial-swarms.md",
+    "specs/autonomous-swarm-adjudication.md",
+    "specs/cli-credential-rotation-automation.md",
+    "specs/cli-credential-rotation-coexistence.md",
+    "specs/cli-credential-synchronization.md",
+    "specs/cli-orchestration-standard.md",
+    "specs/conjugal-approach-a-v7.4.md",
+    "specs/design-loop-protocol.md",
+    "specs/dispatch-trigger-standard.md",
+    "specs/doctrine-guard-conflict-prevention.md",
     "specs/fleet-continuity-autonomous-resumption.md",
+    "specs/fleet-factory-kernel.md",
     "specs/fleet-orchestrator-execute-posture.md",
-    "specs/provider-audit-consumer-provenance.md",
     "specs/fleet-resumption-parallel-launch-0906.md",
+    "specs/machine-inventory-schema.md",
+    "specs/multi-provider-failover-pattern.md",
+    "specs/parallel-consensus-swarm.md",
+    "specs/phased-concurrent-review-pattern.md",
+    "specs/posture-templates-conjugal-standard.md",
+    "specs/pre-rotation-proof-and-resume-dispatcher.md",
+    "specs/provider-audit-consumer-provenance.md",
+    "specs/spec-adoption-pipeline.md",
+    "specs/spec-continuous-sync-for-floors.md",
 }
 PROJECT_CANDIDATE_IDS = {"adversarialllm", "cloudvore", "mlv-app", "salesforce-tools"}
 PROJECT_CANDIDATE_STATUSES = {
