@@ -183,8 +183,22 @@ def verify_control_seal(manifest: dict) -> None:
             raise IntakeError(f"CONTROL_WORKTREE_DRIFT:{path}")
 
 
+def paths_altered(base: str, head: str = "HEAD") -> set[str]:
+    # Every change to a path that already existed at BASE, and nothing that is
+    # purely a new file. A retained artifact is one whose bytes must not move;
+    # a document added beside it alters no retained claim, so intake admits it.
+    # --no-renames decomposes a rename into its delete and its add, so moving a
+    # retained artifact out of adoption/ still surfaces here as the delete.
+    # Rename detection is on by default and would otherwise report only the new
+    # path, hiding exactly that move.
+    output = git("diff", "--no-renames", "--name-only", "-z",
+                 "--diff-filter=MDTUXB", base, head)
+    return {p.decode("utf-8") for p in output.split(b"\0") if p}
+
+
 def verify_retained_current_artifacts() -> None:
-    for path in paths_changed(BOOTSTRAP_BASE):
+    # Sorted so a tree with several offenders names the same one every run.
+    for path in sorted(paths_altered(BOOTSTRAP_BASE)):
         if path.startswith("adoption/") and path not in CURRENT_ADOPTION_PATHS:
             raise IntakeError(f"HISTORICAL_ARTIFACT_CHANGED:{path}")
         if path == "manifests/universal-provider-control-reconciliation-r26.json":

@@ -191,6 +191,46 @@ class GitEventTests(unittest.TestCase):
         with self.assertRaisesRegex(E.IntakeError, "HISTORICAL_ARTIFACT_CHANGED"):
             E.verify_retained_current_artifacts()
 
+    def test_added_document_beside_retained_artifacts_is_admitted(self):
+        # Ordinary documentation added under adoption/ alters no retained claim.
+        # Refusing it stranded the census refresh, the only sanctioned re-pin.
+        self.publish_epoch()
+        self.write("adoption/reference-guide.md", "new reference\n")
+        self.commit("add reference document")
+        E.verify_retained_current_artifacts()
+
+    def test_retained_artifact_moved_out_of_adoption_is_refused(self):
+        # Rename detection reports only the destination, so a move once left
+        # adoption/ silently. The delete half must still be seen.
+        self.publish_epoch()
+        self.git("mv", "adoption/old.json", "old.json")
+        self.commit("move retained evidence out of adoption")
+        with self.assertRaisesRegex(E.IntakeError, "HISTORICAL_ARTIFACT_CHANGED:adoption/old.json"):
+            E.verify_retained_current_artifacts()
+
+    def test_retained_artifact_deletion_is_refused(self):
+        self.publish_epoch()
+        (self.root / "adoption/old.json").unlink()
+        self.commit("delete retained evidence")
+        with self.assertRaisesRegex(E.IntakeError, "HISTORICAL_ARTIFACT_CHANGED:adoption/old.json"):
+            E.verify_retained_current_artifacts()
+
+    def test_offender_named_deterministically_when_several_are_altered(self):
+        # Set iteration order made this message a coin flip across runs, which
+        # sent three separate investigations after the wrong file.
+        self.publish_epoch()
+        self.write("adoption/zzz.json", "seed\n")
+        self.commit("seed second artifact")
+        self.write("adoption/old.json", "rewritten\n")
+        self.write("adoption/zzz.json", "rewritten too\n")
+        self.commit("alter both retained artifacts")
+        named = set()
+        for _ in range(5):
+            with self.assertRaises(E.IntakeError) as caught:
+                E.verify_retained_current_artifacts()
+            named.add(str(caught.exception))
+        self.assertEqual(named, {"HISTORICAL_ARTIFACT_CHANGED:adoption/old.json"})
+
     def test_git_indirection_and_replace_refs_are_refused(self):
         E.verify_git_object_isolation()
         with mock.patch.dict(os.environ, {"GIT_CONFIG_COUNT": "0"}):
