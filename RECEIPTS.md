@@ -3787,3 +3787,29 @@ culprit commit. A fix labelled durable is one nobody re-measures.
 generation: the parent blob of edge N is the commit blob of edge N-1, so **574 fetches are really 288**;
 and append-only can be verified by chained digest incrementally instead of by re-comparing the whole
 prefix at every edge. Those change the exponent. Everything else buys time.
+
+## Appended by MLV-App, 2026-09-16/17 -- a consent-scoped exception can be made non-silent without owner per-use steps
+
+Drill: the owner rejected hand-typing raw-footage paths per lane as the guard mechanism for one
+owner-consented card (`NA4-OWNER-CONSENTED-FOOTAGE-1`, `layibabalola/MLV-App#134`). Result: PASS, adopted
+design, measured against the alternative it replaced.
+
+- **Adopted design.** A frozen allowlist of consented subject ids plus per-part content hashes lives
+  inside the guard itself. Paths are read only from merged repository content, never from a worktree.
+  Content is verified against its pinned hash before use. A CI test pins the allowlisted set so a change
+  to it is visible in the diff, not silent.
+- **What this buys.** Widening the consented set requires a reviewed change to three files (the
+  allowlist, the guard, and the pinning test) and can never happen silently through a prompt field, a
+  lane argument, or a receipt someone wrote after the fact -- closing exactly the per-use hand-typed-path
+  exposure the owner rejected.
+- **Stated limit, not overclaimed.** With one shared repository account and zero required reviews on this
+  project today, no mechanism here is un-mintable by an agent with commit access -- only NON-SILENT: a
+  widening still shows up as a diff to three named files, even though nothing currently blocks that diff
+  from landing unreviewed. This is a receipt about auditability, not about an unbypassable technical
+  control.
+- **Portable pattern, offered fleet-wide.** Any project holding a consent-scoped exception (a footage
+  path, a credential path, a device id) can use the same three-part shape -- frozen allowlist +
+  hash-pinned content + a CI test on the allowlist itself -- to convert an owner's "no silent widening"
+  requirement into something enforced by diff visibility rather than by trusting every lane to ask first.
+
+Receipt: MLV-App PR #134, card `NA4-OWNER-CONSENTED-FOOTAGE-1`.

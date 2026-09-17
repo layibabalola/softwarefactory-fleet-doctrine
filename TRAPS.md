@@ -10795,3 +10795,95 @@ name two different ones.
 - **The test.** Of any liveness alarm: *is there a correct behaviour that makes this fire?* and *does the
   artifact class I read exhaust the ways this seat records that it ran?* A no to the second is how a
   staleness alarm ends up condemning the only seat that is working.
+
+## K5 has a declaration line but no dispatch-time observable, so it decays silently (MLV-App, 2026-09-16/17)
+
+A project opened a K5 subject ledger (`.claude-state/kernel/subject-ledger.md`, MLV-App, last written
+2026-09-15) after its first dogfood harvest and declared two subjects. It then shipped five product PRs
+over the following two days (#125, #129, #132, #133, #135) without declaring any of them against the
+ledger, so all five earned zero kernel credit -- and retrospective credit is correctly refused per the
+harvest's own ruling on this project (`adjudications/factory-kernel/mlv-app.dispositions.md` SS K5:
+"REJECTED(unexercised) | Bus `a0d8d4c` confirms the kernel arrived after S1's stated start. That supports
+no retrospective credit and cannot excuse undeclared subjects started later."). No dispatcher, gate or
+resume entry point read the ledger, and the project's `RESUME.md` never mentioned the kernel at all -- the
+declaration line existed but nothing downstream consulted it, so it aged out of use without any signal.
+
+Kernel text as filed: `specs/fleet-factory-kernel.md` K5 -- *"Before work starts, a subject declares its
+profile and profile version. Accepted means that profile's acceptance evidence exists for that exact
+subject identity."* -- states the declaration requirement but names no place that enforces it is actually
+read before dispatch.
+
+**Kernel-level proposal:** K5's observable should include a DISPATCH-TIME check, not only the declaration
+line itself -- the dispatch venue (hub, scheduler, resume entry point) refuses, or at minimum visibly flags,
+a subject with no prior K5 declaration, the same way K4 already requires a negative case (a lane that
+exited 0 without its sentinel). A declaration nobody reads at dispatch time is functionally the same as no
+declaration.
+
+**Test:** for any project claiming K5 conformance, ask whether the dispatch path that starts a subject
+reads the K5 ledger before starting it, or only after, when someone happens to write the filing.
+
+## Instance maps go stale silently unless each gap row carries its own re-derivation command (MLV-App, 2026-09-16/17)
+
+A project's K1-K12 instance map (kept in this project's own operating-contract file) kept reporting a K4
+gap already fixed on `master`, and a K12 filing marked `PENDING` that had in fact been harvested two days
+earlier (`adjudications/factory-kernel/HARVESTS.md` row `20260915T060404Z-f14bd764 | mlv-app`). Its
+tiering doc (`agents/orchestration-tiering.md`) also kept calling a model "unreachable" after a probe had
+already proven it reachable. Hubs reading the stale map acted on rows nobody had re-checked since they
+were written.
+
+**Proposal:** each instance-map gap row should carry (a) the exact command that re-derives that row's
+status, and (b) the date it was last derived -- not just the date the map was last edited. The project's
+re-file cadence (kernel SS5's weekly re-run while `CANDIDATE`) should include re-deriving every row, not
+only bumping the filing's revision line. A map that is internally consistent but has not been
+re-*derived* reads as current to every session that opens it next, exactly the failure R8 named for the
+shared bus checkout ("A stale shared checkout is read as current by every session that opens it next").
+
+**Test:** pick any row on an instance map older than one re-file cycle and re-run its own cited command;
+if the map disagrees with what the command reports right now, the map was stale before anyone noticed.
+
+## K2's authority evidence has to live somewhere agents cannot write, or a peer cannot accept it (MLV-App, 2026-09-16/17)
+
+The owner gave consent and then a direct instruction in an interactive chat session. Every derived record
+of that instruction -- receipts written by agents into agent-writable board directories under
+`.claude-state/` -- was, correctly, not accepted as proof by a peer session verifying the same claim,
+because an agent-writable path is exactly the kind of evidence an agent could also have minted after the
+fact. The only artifact both sessions could independently verify, and that no agent could have minted, was
+the harness conversation transcript line itself (`type=user`, non-sidechain) together with its sha256
+digest -- a location neither session's own tooling can write to.
+
+Kernel text: `specs/fleet-factory-kernel.md` K2 -- *"Each project keeps one register of what needs the
+owner and what does not... A register entry beats a memory note, a charter or a handoff."* -- names that a
+register must exist, but not where its evidence has to live to be independently trustworthy.
+
+**Kernel-level proposal:** K2's authority register clause should name a constraint on *where* owner-
+authority evidence lives -- outside any path an agent in that project can write -- and require citation by
+an immutable locator plus a content digest (the same discipline K3 already requires for subject identity),
+not merely that a register file exists. A register an agent produced end-to-end proves the agent wrote a
+register, not that the owner authorised anything.
+
+**Test:** for a claimed owner-authority event, ask whether the cited evidence sits in a path any lane in
+that project could have written unsupervised. If yes, it is not independent proof of the claim it is
+being used to support, however confidently the receipt states it.
+
+## A tier named in doctrine but not enforced at dispatch is exercised at whatever rate the default falls back to (MLV-App, 2026-09-16/17)
+
+A project's tiering doc assigns consequential judgement to one specific model tier, but a global directive
+elsewhere said only "Opus for judgment-heavy forks" without a dispatch-time gate enforcing it, so hubs
+launched every adjudication seat on the default tier instead. Lane receipts over a 7-day window: **4 runs
+on the intended judgement tier out of 137 total.** The doc's intent and the fleet's actual behaviour
+diverged by roughly 35x, and nothing in the doctrine or the receipts stream surfaced that gap until someone
+went and counted.
+
+Kernel text: `specs/fleet-factory-kernel.md` K1 -- *"Producer, verifier, adjudicator and owner are distinct
+roles... Observable: for one completed subject, the receipts name different actors for production and
+acceptance."* -- the current observable checks role SEPARATION, not whether the intended tier for a role
+was the one that actually ran.
+
+**Kernel-level proposal:** K1's observable should include the per-role lane mix computed from receipts
+(what fraction of adjudication runs actually used the intended tier), so a tier that is designed in but
+almost never exercised shows up as a finding on its own, rather than staying invisible until an
+after-the-fact audit counts it. Receipt: MLV-App card `TOOL-FABLE-UNDERUSED-1`.
+
+**Test:** for any doctrine line that names an intended model or tier for a role, compute the actual mix
+from the receipts stream over a real window (not a sample of recent memory) and compare; a directive with
+no dispatch-time enforcement is a preference, not a control, until someone measures whether it held.
