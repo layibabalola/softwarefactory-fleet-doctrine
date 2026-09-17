@@ -10887,3 +10887,89 @@ after-the-fact audit counts it. Receipt: MLV-App card `TOOL-FABLE-UNDERUSED-1`.
 **Test:** for any doctrine line that names an intended model or tier for a role, compute the actual mix
 from the receipts stream over a real window (not a sample of recent memory) and compare; a directive with
 no dispatch-time enforcement is a preference, not a control, until someone measures whether it held.
+
+## A "behind" count is a notice; a FOLD VERDICT is a gate input, and a wrong companion line trains readers to ignore the true one too (MLV-App, 2026-09-17)
+
+A project's session-start line printed "N commits behind" plus a list of unfolded sibling commits at
+every session start for days, and no session acted on it. Two structural reasons, not one carelessness:
+
+- **Being behind is not itself evidence of anything.** It says nothing about whether GOVERNING text
+  (specs, profiles, rulings, bootstrap) changed versus routine sibling churn, so a reader who checks a
+  few times and finds nothing actionable learns the count is noise and stops reading it.
+- **The companion line on the same output was wrong by construction, which is worse.** It reported "no
+  fold marker" every time, because the consumer path resolved to a git WORKTREE while the marker file is
+  gitignored and can only exist in the base checkout -- a worktree never has it, however current the
+  project actually is. A message that is wrong every single time it fires trains readers to disregard the
+  TRUE part of the same line along with the false part.
+
+**Fix adopted.** The project's own periodic board-state snapshot (the artifact every resuming session
+reads first, ahead of any live derivation) now carries a fold probe that reports: the consumer-written
+marker (read from the base checkout, never a worktree), the count of unfolded commits touching GOVERNING
+paths only, a verdict of `CURRENT` or `FOLD-REQUIRED`, the exact read command, and the exact ack command --
+with the worktree-vs-base-checkout warning stated inline so the next reader does not re-derive it from a
+resolution bug.
+
+**Kernel/bootstrap-level proposal.** Bus-fold adoption should be measured against a consumer-WRITTEN
+marker filtered to governing paths, and surfaced where sessions already look (a resume/board snapshot),
+rather than as a raw ahead/behind notice at start-up. A raw commit-behind count conflates "the bus moved"
+with "the rules changed," and a marker resolved from the wrong git context (worktree vs. base checkout)
+is not a lesser bug than being wrong outright -- it corrupts every reading of the true half of the same
+line.
+
+**Receipt:** MLV-App board-heartbeat probe `doctrine_fold`, 2026-09-17; verified `CURRENT` with 160
+unfolded non-governing commits and 0 governing commits.
+
+**Test.** For any "behind" or "unfolded" notice a session reads at start-up: (a) does it filter to paths
+that govern behavior, or does routine sibling churn count the same as a ruling? (b) was the marker it
+reports read from the exact git context (base checkout, not a worktree) where that marker can actually
+exist? A notice that fails either test will be read as noise even on the day it is right.
+
+## Rotation/resume readiness is only real when a checker fails loudly, not when a prose rule says to refresh it (MLV-App, 2026-09-17)
+
+A project keeps a pointer-only handoff anchor so an account rotation can resume seamlessly, plus a
+standing rule that it be refreshed as work happens (not only at handoff). The anchor was **29.7 hours**
+old against a stated 6-hour limit, and nobody noticed -- because the freshness rule lived only in prose,
+and prose that says "keep this fresh" has no failure mode when it is not followed. What caught it was a
+checker script that exits non-zero, names the specific stale surface, and prints the fix command.
+
+**Proposal for the resume clause.** A project's resume-readiness observable should be a checker's exit
+code evaluated against per-surface freshness limits (each resumable artifact gets its own limit, not one
+blanket number), never the mere existence of resume documents or a standing instruction to keep them
+current. "We have a rule to refresh it" and "a script currently reports CLEAN" are different claims, and
+only the second is falsifiable at the moment someone needs the anchor.
+
+**Receipt:** MLV-App `assert-resume-readiness.ps1`, state `STALE` (29.7h against a 6h limit) then `CLEAN`
+after refresh, 2026-09-17.
+
+**Test.** For any "keep resumable state fresh" rule: is there a script that currently fails when it is
+violated, with the specific stale surface named and a fix command printed -- or is the freshness claim
+resting on the existence of a document plus the assumption that the rule was followed? If the latter,
+treat the freshness claim as unverified until a checker exists.
+
+## A venue rule can exclude every session that could satisfy it, and the fix is a NAMED reachable mechanism plus a proof of occupancy (MLV-App, 2026-09-17)
+
+A project's guard refuses edits to its own hook unless the hook's project-dir equals the board root.
+Every interactive session in this project runs in a git worktree, so no interactive session ever
+qualified -- and the guard-repair work therefore had nowhere to run under the guard's own rule. The
+obvious workarounds do not escape it: moving the session, spawning a subagent, or dispatching a lane all
+still inherit the worktree cwd, because the venue rule is about the process's own working directory, not
+about who is asking.
+
+**What resolved it.** The host's scheduled-task runner starts a session with its working directory set
+to the project root itself, which satisfies the venue rule without weakening it -- proved by a read-only
+probe of the session's own `cwd` (printed and checked against the board root) BEFORE any edit was
+attempted, not assumed from the runner's configuration.
+
+**Proposal.** Where doctrine or a project's own guard names a privileged venue (a path an action must run
+from), it should also name at least one mechanism actually reachable from ordinary operation that occupies
+that venue, and a probe that proves occupancy at the moment of use -- not at the moment the mechanism was
+configured. A rule that is satisfiable only by a venue nothing in normal practice ever occupies is a rule
+that silently blocks its own repair.
+
+**Receipt:** MLV-App `NA-10` plus an ad-hoc scheduled-task session whose cwd probe matched the board root,
+2026-09-17.
+
+**Test.** For any guard that gates on "where this runs from": enumerate every mechanism your project
+actually uses to start a session (interactive, worktree, subagent, lane, scheduled task) and check which
+ones, if any, satisfy the guard's venue as configured. If the answer is none, the guard is unrepairable
+from inside itself until a reachable venue is named and its occupancy is probed, not assumed.

@@ -3813,3 +3813,39 @@ design, measured against the alternative it replaced.
   requirement into something enforced by diff visibility rather than by trusting every lane to ask first.
 
 Receipt: MLV-App PR #134, card `NA4-OWNER-CONSENTED-FOOTAGE-1`.
+
+## RECEIPT against "A tier named in doctrine but not enforced at dispatch is exercised at whatever rate the default falls back to" (TRAPS.md, MLV-App, 2026-09-16/17) -- the same measurement also shows the fallback was not a lower TIER, it was a collapsed TOPOLOGY
+
+Same window, same card family (`TOOL-FABLE-UNDERUSED-1`), same 7-day receipts stream: **137 lane runs, 4
+on the intended judgement tier.** The trap above files that as a tier-enforcement gap. This receipt adds
+the structural half of the same measurement, filed separately rather than as a duplicate trap because it
+is additional evidence read off the identical run set, not a new defect class: **0 of the 137 runs used a
+cross-family judgement seat at all.**
+
+What ran instead, on the runs that did reach the intended tier: three same-tier, same-family agents with
+distinct adversarial briefs, synthesized into one verdict by the PRODUCING session itself. That collapses
+verify, adjudicate and attest into one actor and one model family. It is not a smaller version of a
+cross-family review -- it is a different shape that happens to produce a verdict-shaped output, and
+nothing in the receipts stream distinguished the two shapes from each other. The project's own kernel
+instance map had already listed roles-separate and independent-key as `NONE` for this seam; the 137/0
+count is the first time that `NONE` was measured against a real run count rather than left as a
+self-reported gap.
+
+**Kernel-level proposal, additional to the trap's dispatch-time-mix proposal.** The roles-separate
+observable (`specs/fleet-factory-kernel.md` K1: *"for one completed subject, the receipts name different
+actors for production and acceptance"*) should be checked by NAME, not by counting seats: does the
+receipts stream name a PRODUCING actor distinct from the VERIFYING actor(s), and are the verifying actors
+drawn from a model family opposite the producer's on at least one seat (R1 independence: *"a
+cross-family-invoked seat keeps independence IFF..."*)? Three seats of the same tier and the same family,
+synthesized by the producer, satisfy neither test even though they satisfy "three lanes ran with distinct
+briefs." A producer-synthesized verdict is visibly not a verification once the check asks who produced it
+and who verified it, rather than how many briefs were written.
+
+Receipt: MLV-App cards `TOOL-REVIEW-TOPOLOGY-CONJUGAL-1` and `TOOL-FABLE-UNDERUSED-1`, same 137-run / 7-day
+window as the TRAPS.md entry this corroborates and extends, 2026-09-17.
+
+**Test.** Where a trap or receipt reports a dispatch-tier gap, re-read the same run set for the SEPARATE
+question of topology: of the runs that did reach the intended tier, how many named a producer distinct
+from an independent, opposite-family verifier? A tier count and a topology count can diverge in either
+direction, and a fix that only routes runs to the right tier does not by itself fix a collapsed topology
+those runs still run inside.
