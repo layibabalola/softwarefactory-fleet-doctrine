@@ -1,0 +1,24 @@
+{
+  "card": "F30f",
+  "class": "C",
+  "outcome": "PARKED",
+  "subject": "evidence\\F30f-r2-20260916\\SUBJECT-SUMS.f2.txt",
+  "subjectSha256": "5C91A36610B95CDECA2A89252B768FB23F8708ECE648A11F85B0119FFF43F5CB",
+  "outcomeRule": "Pre-declared in the WAL before round 2 (three-Opus ruling wf_5916245b-d79): SOL CHANGES_REQUESTED in round 2 parks F30f, installs nothing, and the successor is a KERNEL stall review, not another test card.",
+  "round1": {
+    "subject": "E032DA40",
+    "verdicts": "A1 CR (dropped upper bound), A2 APPROVE, A3 CR (executed stall35 survivor), SOL CR SOL-20260916-142341-164 (harness-distinguishable gates: EncodedCommand, receipt path; synthetic pump/capability; upper bound; PID-only)",
+    "hubTest": "170 PASS"
+  },
+  "round2": {
+    "verdicts": "A1 APPROVE, A2 APPROVE, A3 not dispatched (outcome fixed by the pre-declared rule once SOL returned CR), SOL CR SOL-20260916-145010-085 (294 s, 0.34 USD): findings 5/7/8 RESOLVED; NEW survivor `if ($proc.ProcessName -ne 'pwsh') { $deadline = (Get-Date).AddYears(1) }` passes behavioural and structural arms; mutation predicate widened from behavioural-RED to behavioural-OR-structural-RED"
+  },
+  "nothingInstalled": "Live drivers D0B2EF68/A3D9152F, Set-LaneCeiling 7893FBA7, lane-budget 7DBDB6AB unchanged; F30 null daily cap in force.",
+  "pattern": "Candidate bytes unchanged since F30b r2 and approved on behaviour + prose by every reader. Across F30b R1-R2, F30c R1-R2, F30f R1-R2 SOL returned a NEW test-depth finding every round (6 consecutive), each a mutation gated on a value the harness cannot make equal to production. The class is unbounded for any harness that does not run the real provider binary against the real receipt root.",
+  "successor": {
+    "card": "KR-F30-STALL (class C, governance)",
+    "question": "For class-C changes whose candidate bytes are hash-pinned and behaviour-approved, what test acceptance is satisfiable? Options to weigh: (1) behavioural arms + named control-flow mutations + span AST-hash pin as change detector; (2) require a real-binary integration run under a throwaway canonical root; (3) SOL test-depth findings admissible only when they name a production-reachable input; (4) keep status quo and retire F30 per-run removal as not worth its review cost.",
+    "priorityNote": "Low urgency: per-run reservations run at 1.0 USD/s and bind only far beyond measured usage, and the owner-ordered null daily cap is already in force; no lane is blocked by budget. F30e (Claude poll-loop catch) waits on this ruling because it needs the same test apparatus."
+  },
+  "lesson": "Pre-declaring the park rule before the last round stopped a fourth test card. When a reviewer produces a new finding of the same unbounded class every round, the defect is in the acceptance definition, not in the subject."
+}

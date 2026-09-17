@@ -1,0 +1,22 @@
+{
+  "card": "KR-CONVERGE",
+  "class": "C",
+  "outcome": "PARKED",
+  "subject": "evidence\\KR-CONVERGE-r2-20260916\\SUBJECT-SUMS.txt",
+  "subjectSha256": "AEB49FAA42433B183243A5D369ADB1064176D56CBFA4A2014C40317423E5C8F6",
+  "liveKernelUnchanged": "2FF1C50A9C46BA3F0AC63C581DAA48475E44B94668D31669CF9F175E5AE0FC73",
+  "round1": "A1 CR, A2 CR, A3 CR, SOL CR (SOL-20260916-165655-972); r1 subject B00134AE",
+  "round2": "A1 BLOCKER (follow-up X->F->Y: a follow-up scoped to X never gates Y carrying the same defect), A2 APPROVE (5/5 back-test parks preserved, no reader-dependent case), A3 APPROVE, SOL CR (SOL-20260916-170311-624, 288 s, 0.19 USD): freeze point wording; round-1 defect class unbounded so any new witness re-parks; jointly-reject result undefined; follow-up gating antecedent ambiguous; bar challenge has no cure path)",
+  "outcomeRule": "KERNEL: any BLOCK plus reproduction stops the decision; SOL CR on the last round leaves the subject unapproved; two rounds spent.",
+  "finding": "The amendment meant to make class-C review converge did not itself converge under class-C review: round 2 produced a BLOCKER and five new SOL findings. Measured 2026-09-16: 14 PARKED vs 3 ADOPTED/INSTALLED. The review process cannot currently change its own convergence rule.",
+  "survives": [
+    "SOL-wording core: mutation survivor in scope under (a)/(c); SOL scope statement needs SOL concurrence (A2, A3, SOL agree)",
+    "class C only; bar sha recorded",
+    "back-test: the rule preserves all five measured parks, i.e. it would NOT have unblocked F30 by itself"
+  ],
+  "nextOptions": [
+    "Owner amends KERNEL convergence directly (owner is the constitutional authority; not never_authorized)",
+    "Narrower successor: only a hard lineage cap (a card and its successors get N total rounds, then the lineage closes as NOT-DOING with findings banked) - smallest possible text",
+    "Stop spending class-C review on low-value governance: close F30 lineage as NOT-DOING (null daily cap already in force; per-run ceilings bind far beyond usage)"
+  ]
+}

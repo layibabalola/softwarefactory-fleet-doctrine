@@ -1,0 +1,10 @@
+{
+  "ruling": "KR-LINEAGE",
+  "date": "2026-09-17",
+  "ownerVerbatim": "I prefer the wisdom of the factory lanes and adversarially swarming Opus to adjudicate and make next steps autonomously without me in the loop. Why cant we use that approach rather than having me directly intervene?",
+  "applied": "KERNEL.md paragraph \"Lineage adjudication\" inserted before \"Ordinary errors follow bounded remediation\"",
+  "kernelPre": "2FF1C50A9C46BA3F0AC63C581DAA48475E44B94668D31669CF9F175E5AE0FC73",
+  "kernelPost": "B76BDC57EECA61CEDD50773AB6338AA832467C49699A0BB834DAB4E5A2AA1EAF",
+  "boundary": "Two-key rule for class-C installs unchanged (L-TWO-KEY: same-family quorum never clears class C alone). Swarm rules lineage next steps only.",
+  "why": "Hub 8b82e3d8 had routed a parked governance loop to the owner; that contradicted the 2026-09-05 owner-out-of-loop directive. Closing, narrowing or continuing a lineage installs nothing, so it needs no second key."
+}

@@ -1,0 +1,31 @@
+{
+  "card": "P-0b",
+  "subject": "35d82c9c6cec9cc1511d2153109178fee7c0450c",
+  "subjectKind": "commit",
+  "base": "2438ff5e25cdb54a8833bbd01739cf08065f876f",
+  "branch": "card/p-0b",
+  "commits": ["35d82c9c6cec9cc1511d2153109178fee7c0450c"],
+  "class": "B",
+  "classRationale": "test-only change to test_server_wrapper_phase2.py (7 call sites + one helper); no product, hook, CI, auth, storage-write or invariant surface touched. Card text says B; hub agrees.",
+  "bar": "docs/internal/RECOVERY_PLAN/cards.md P-0b acceptance: cause named with line; fix or isolation; file 10x consecutive green at one sha, banked; nothing skipped/deleted/weakened.",
+  "decidedAt": "2026-09-17T09:43:00-05:00",
+  "decidedBy": "hub cycle 52250cd7-c45e-4178-a9ee-0d9343722e9c (Claude Opus 5, unattended scheduled hub)",
+  "round": 1,
+  "outcome": "ADOPTED-LOCAL",
+  "cause": "SupervisorHarness.wait_for_snapshot_ready (test_server_wrapper_phase2.py:457 at base, `mtime_ns != old_file_mtime_ns`) uses snapshot mtime change as the rewrite witness; NTFS per-tick mtime lets server_wrapper.py:811/838 write_json share the seeding write's tick, so the wait times out although the rewrite happened.",
+  "evidence": {
+    "dir": ".claude-state/coordination/evidence/P0b-measure-20260917/",
+    "baseline": "SUMMARY.txt: 10/10 whole-file runs green at 2438ff5 (did not reproduce by repetition)",
+    "probe": "probe-mtime-collision.txt: raw 90/300 identical mtimes, backdated 0/300 (an earlier probe run: 79/300)",
+    "fix": "SUMMARY-fix.txt: 10/10 whole-file runs green at 35d82c9 (81 passed each); smoke test_phase0_contract.py+test_server_wrapper_phase2.py 129 passed, 18 subtests",
+    "historical": ".claude-state/coordination/evidence/P0a-transplant-20260906/ (timeouts in corrupt/wrong-schema tests)"
+  },
+  "reviewers": {
+    "SOL": {"verdict": "APPROVE", "receipt": "SOL-20260917-093452-631", "prompt": "lane-prompts/SOL-P-0b-round1-35d82c9c.txt", "falsification": "traced all 7 seeded call sites: an unchanged valid snapshot keeps the returned backdated mtime so the wait cannot pass without a rewrite; corrupt/wrong-schema also fail the schema check; no call site missed; product never reads the snapshot file's own mtime; write_json atomic replace supports the mechanism."}
+  },
+  "disclosed": [
+    "Third historical failure test_new_trigger_file_between_sessions_restarts (timeout waiting for mcp_server_self_restarted after the restart was queued) is a different mechanism, UNMEASURED, not addressed; carded as P-0b-trig.",
+    "The fix cannot be shown RED->GREEN by repetition because base was 10/10 green; the mechanism is shown by the probe instead."
+  ],
+  "publication": "NOT PUBLISHED. The scheduled-hub prompt requires a class-C quorum for any push to origin, and GitHub Actions is blocked by owner billing (PR #11, #12). Branch card/p-0b is local only."
+}

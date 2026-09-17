@@ -1,0 +1,39 @@
+{
+  "card": "P-0c",
+  "subject": "9d83d025716f8c8f7e9bf3cd42e36be836fbeec0",
+  "subjectKind": "commit",
+  "base": "2438ff5e25cdb54a8833bbd01739cf08065f876f",
+  "branch": "card/p-0c",
+  "commits": ["4a9d16d5fb06d8dfa881ec9f6a58025c15cdcd14", "9d83d025716f8c8f7e9bf3cd42e36be836fbeec0"],
+  "class": "C",
+  "classRationale": "card text said B; hub escalated because the CIM CommandLine feeds fingerprint comparators that terminate processes scored as pid-reused (destructive-operation surface). KERNEL: uncertainty escalates.",
+  "bar": "docs/internal/RECOVERY_PLAN/cards-archive-2026-09-07-P-0c-body.md acceptance + LINEAGE-5 L2 hub arms (a)-(d), evidence/LINEAGE-5-P16-20260917/VERDICT-L5-L2.md:96-118",
+  "decidedAt": "2026-09-17T09:20:00-05:00",
+  "decidedBy": "hub cycle 471a6690-b62b-425f-8038-a7e17325236e (Claude Opus 5, unattended scheduled hub)",
+  "round": 2,
+  "outcome": "ADOPTED",
+  "round1": {
+    "subject": "4a9d16d5fb06d8dfa881ec9f6a58025c15cdcd14",
+    "outcome": "NOT-ADOPTED (A1 BLOCKER with repro)",
+    "A1": {"verdict": "BLOCKER", "file": "evidence/P-0c-20260917/review/VERDICT-A1.md", "gist": "encoding fix works both shells; bootstrap_session._enumerate_watcher_processes: utf-8 decode failure in subprocess reader thread -> stdout=None -> .strip() AttributeError escapes bootstrap"},
+    "A2": {"verdict": "APPROVE", "file": "evidence/P-0c-20260917/review/VERDICT-A2.md"},
+    "A3": {"verdict": "NOT RECEIVED before round 1 closed (superseded by round-2 A3 on the final subject)"},
+    "SOL": {"verdict": "CHANGES_REQUESTED", "receipt": "SOL-20260917-074557-080", "file": "evidence/P-0c-20260917/review/VERDICT-SOL-round1.md", "gist": "same bootstrap defect; native-probe skip; mutation (b) accepts any None; arm (d) may skip an engine / 5.1 unverified"}
+  },
+  "reviewers": {
+    "A1": {"verdict": "APPROVE", "file": "evidence/P-0c-20260917/review/VERDICT-A1-round2.md", "gist": "BLOCKER fixed via real bootstrap entry points, 9 failure shapes incl. live reader-thread decode failure; encoding fix live under pwsh + PS5.1.", "crs": ["non-blocking: helper ValueError guard sits outside the try at 5 of 6 sites; unreachable by any current caller"]},
+    "A2": {"verdict": "APPROVE", "file": "evidence/P-0c-20260917/review/VERDICT-A2-round2.md", "gist": "all 5 round-1 items resolved with file:line; no pre-existing assertion weakened across 2438ff5..9d83d02; no workflow/hook/invariant change; guard safe for all current callers."},
+    "A3": {"verdict": "CHANGES_REQUESTED", "file": "evidence/P-0c-20260917/review/VERDICT-A3-round2.md", "gist": "12 mutants: 7 caught; M3-M7 (revert encoding=utf-8 to text=True at core/processes.py:173, server.py:379, server_wrapper.py:223, server_wrapper_trampoline.py:69, bootstrap_session.py:200) survive because those sites' tests mock subprocess.run with ASCII fixtures.", "independenceNote": "A3 read the other round-2 verdicts before writing; it dissented, so contamination did not produce conformity. Disclosed."},
+    "SOL": {"verdict": "APPROVE", "receipt": "SOL-20260917-085826-146", "file": "evidence/P-0c-20260917/review/VERDICT-SOL-round2.md", "prompt": "review/SOL-PROMPT-round2.md sha8 061416AE", "gist": "all round-1 items resolved; broad except in bootstrap non-blocking; guard not a full parser (BOM, [CmdletBinding()], block comment bypass) but no current caller affected."}
+  },
+  "adjudication": "Adversary majority APPROVE (A1, A2) with no BLOCK+repro; SOL second key APPROVE. ADOPTED. A3's CR is a verified TEST-COVERAGE gap, not a defect in the subject: A2 and SOL independently confirmed the pin and utf-8 decode are present at every site at 9d83d02. Carded as follow-up P-0c-cov (class A/B tests only) rather than a third round, which KERNEL forbids.",
+  "hubEvidence": {
+    "round1Rerun": "evidence/P-0c-20260917/HUB-TESTS.txt: test_win_process+smoke pair+test_agent_bridge at 4a9d16d 663 passed 70 subtests 0 skipped; PytestUnhandledThreadExceptionWarning under mutation (b) corroborated A1",
+    "round2Rerun": "evidence/P-0c-20260917/HUB-TESTS-round2.txt: same suites at 9d83d02 669 passed 1 skipped 70 subtests; the skip is the live decode-failure repro whose precondition did not occur, backed by deterministic test_agent_bridge.py::test_bootstrap_watcher_enumeration_degrades_on_none_stdout"
+  },
+  "followUps": [
+    "P-0c-cov: per-site read-side encoding mutation coverage for the 5 surviving sites (A3 round 2 M3-M7)",
+    "optional hardening: move powershell_cim_command inside each caller's try; guard BOM/[CmdletBinding()]/block-comment (A1 r2, SOL r2 notes)"
+  ],
+  "publication": "Not merged. CI is BLOCKED for the whole repo by GitHub billing (owner escrow from cycle 8486f546, run 35220742063). Merge only with matched head 9d83d025 after PR CI green and then post-merge master CI green, before DONE. Any new commit on card/p-0c voids this adoption."
+}

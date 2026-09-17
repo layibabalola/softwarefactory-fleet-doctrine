@@ -1,0 +1,23 @@
+{
+  "card": "F20f",
+  "class": "C",
+  "outcome": "PARKED",
+  "subject": "evidence\\F20f-gate-on-F20e-20260917\\SUBJECT-SUMS.txt",
+  "subjectSha256": "0778B34E42AD1B8ACCA84342D26C7C3677CFBC7D869CE4307472237047B936BF",
+  "outcomeRule": "KERNEL: SOL BLOCKER immediately parks.",
+  "round1": {
+    "A1": "CR: no classification mismatch vs F20e found; add arms for duplicate lane= and Lane= case variant inside a WAL claim bracket",
+    "A2": "CR: bar 6/6 met; install exit-4/U0 correct; TAB fail-open must not ship as a footnote; install plan lacks explicit hub follow-up; rollback untested",
+    "A3": "CR: F20b-2 BOM/CR/Lane resolved; TAB gap production-reachable; candidate EXIT text prescribes object walSeq rows that crash Test-WorktreeHygiene.ps1:199",
+    "SOL": "BLOCKER SOL-20260917-003807-703 (404 s, 0.30 USD): lenient J1 ledger row selected as the seat contradicts F20e 2.2 (J2-only FOR/newest) -> a trailing-comma row lets a non-seated session land exit 0; also TAB fail-open (conservative consumer rule needed), HUB-CLAIM+HANDOFF consumed as succession though F20e NOT-CLAIM (disclosed consumer rule), surviving mutant Select-Object -First 5 on records (needs late-record arm); install exit 4 on live U0 is CORRECT",
+    "hubTest": "independent re-run exit 0, 118 PASS, 207 s; live gate 162D8A72 unchanged"
+  },
+  "survives": [
+    "F20e framing F1-F4 exact (SOL, A1)",
+    "BOM / bare-CR / J2 Lane-case blockers from F20b-2 resolved",
+    "install result exit 4 on live walSeq=6763534 is correct fail-closed (SOL, A2)",
+    "19 mutants killed; harness executes candidate on real bytes (A3)"
+  ],
+  "nothingInstalled": "Live Invoke-HubAction.ps1 162D8A72 unchanged.",
+  "lineage": "F20 gate lineage parks: F20b, F20b-2, F20f -> KERNEL Lineage adjudication (Opus swarm) decides next."
+}

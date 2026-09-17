@@ -1,0 +1,35 @@
+{
+  "card": "P-16-R",
+  "subject": "516b436e9b8b0f164a9843437e98d71505cd48cc",
+  "subjectKind": "commit",
+  "base": "2438ff5e25cdb54a8833bbd01739cf08065f876f",
+  "branch": "card/p-16-r",
+  "class": "C",
+  "classRationale": "wake/provider surface (root wake_codex.ps1 resolver). TERMINAL card of the P-16 lineage (LINEAGE-5 NARROW).",
+  "bar": "evidence/LINEAGE-5-P16-20260917/VERDICT-L5-L1.md section FROZEN SUCCESSOR CARD, sha8 8AC7F904, chosen 4/4 in DECISION-P-16-R-PICK-8ac7f904.json",
+  "decidedAt": "2026-09-17T07:24:00-05:00",
+  "decidedBy": "hub cycle 8486f546-c3c7-493f-9054-6c00cb7fe352 (Claude Opus 5, unattended scheduled hub)",
+  "round": 1,
+  "outcome": "ADOPTED",
+  "reviewers": {
+    "A1": {"brief": "falsify the fix vs base, both shells", "verdict": "APPROVE", "file": "evidence/P-16-R-20260917/review/VERDICT-A1.md", "gist": "hostile dist-info/egg-info, PYTHONPATH, nested trees, 8.3 names, relative path, -File/&/dot-source all resolve beside-wrapper; arg and exit/throw forwarding match base. Disclosed gap: file-symlink attack untested (no privilege)."},
+    "A2": {"brief": "never_authorized + contract/scope", "verdict": "APPROVE", "file": "evidence/P-16-R-20260917/review/VERDICT-A2.md", "gist": "every assertion of the two removed tests survives in R4/R5 or unchanged tests except the preference itself; only the two scoped files changed; no other test reads the removed behavior.", "crs": ["stale docs: docs/internal/IMPLEMENTATION_QUEUE.md:478, docs/internal/WAKE_CODEX_TUNING.md:8-9", "stale docstring test_wake_codex_wrapper.py:258,270-271 still describes installed preference"]},
+    "A3": {"brief": "test vacuity mutants + CI fit", "verdict": "APPROVE", "file": "evidence/P-16-R-20260917/review/VERDICT-A3.md", "gist": "8 mutants/env flips executed; every arm R1-R8 goes RED on a violating mutant; CI editable install makes cwd-shadowing arms meaningful on the runner.", "crs": ["R7 substring guard evadable by string concatenation; behavioral R4/R5 catch the same mutant"]},
+    "SOL": {"verdict": "APPROVE", "receipt": "SOL-20260917-070721-235", "output": "evidence/P-16-R-20260917/review/SOL-dispatch-output.txt", "prompt": "review/SOL-PROMPT-round1.md sha8 4190C41B", "gist": "scope exact; production powershell -File launch behavior-identical to base; all six base tests survive or are inverted (R4 line 159, R5 line 299); shims are on the subprocess PATH and write sentinels; absence asserted lines 185, 326; R6 seeded caller line 486; no invariant/CI/agent_bridge change.", "evidenceCoverage": "PARTIAL - APPARATUS-1, no test evidence; hub supplied it."}
+  },
+  "testInversionRuling": "Carded behavior removal, NOT a weakening: SOL (round 0 and round 1) and A2 (assertion-by-assertion) both ruled so. Scope item 2 of the bar: 'replace test_installed_asset_is_preferred_... and test_py_launcher_resolves_the_installed_asset_... with inverted tests (arms R4, R5).'",
+  "acceptance": {
+    "redAtBase": "implementer: R1,R3,R4,R5,R6,R7 RED at base; R8 RED under pwsh, green under 5.1; R2 green (regression guard)",
+    "mutationProofs": "M1 restore Find-InstalledWakeScript -> R1,R3,R4,R7 RED; M2 drop LASTEXITCODE reset -> R6 RED (both shells, seeded caller). Independently reproduced by A2 and A3.",
+    "hubTestEvidence": [
+      "test_wake_codex_wrapper.py + test_wheel_install.py: 15 passed, 0 skipped, 9 subtests (hub rerun at 516b436)",
+      "test_phase0_contract.py + test_server_wrapper_phase2.py: 129 passed, 18 subtests",
+      "full gate test_agent_bridge.py + wrapper + wheel: 501 passed, 53 subtests, 0 failed (P-16-A3 lesson: bar must name the full gate)"
+    ],
+    "ciMembership": "git show 516b436:.github/workflows/windows-ci.yml line 109 test_wake_codex_wrapper.py, line 67 test_wheel_install.py",
+    "ciRun": "OPEN - requires push; gates merge and DONE, not adoption"
+  },
+  "publication": "Authorized by this class-C quorum: push card/p-16-r to github and open a PR against master. Merge only on matched head 516b436 with actual CI green on that head, then post-merge CI green before DONE. Any new commit on the branch voids this adoption.",
+  "followUps": ["class A: stale docs named by A2 (IMPLEMENTATION_QUEUE.md:478, WAKE_CODEX_TUNING.md:8-9) after merge", "A3 CR-1 R7 obfuscation: banked, no card (behavioral arms cover)"],
+  "neverAuthorizedCheck": "PASS - no test deleted or weakened (inversion ruled a carded removal by SOL and A2), no invariant, CI, hook or agent_bridge change, no force push."
+}

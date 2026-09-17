@@ -1,0 +1,16 @@
+{
+  "card": "KR-WALFREEZE",
+  "class": "C",
+  "outcome": "ADOPTED-INSTALLED",
+  "subject": "evidence\\KR-WALFREEZE-r2-20260917\\SUBJECT-SUMS.txt",
+  "subjectSha256": "E9CB461EE995C9FD84782B1E8BEDD8F582BEFE5083E41EDE49F73BF1F236AC1B",
+  "round1": "A1 CR, A2 APPROVE, A3 CR, SOL CR SOL-20260917-004715-451",
+  "round2": "A1 APPROVE, A2 APPROVE (non-blocking: A7 beyond bar item 2 literal text), A3 APPROVE, SOL APPROVE SOL-20260917-005336-910",
+  "install": {
+    "kernelPre": "B76BDC57EECA61CEDD50773AB6338AA832467C49699A0BB834DAB4E5A2AA1EAF",
+    "kernelPost": "29B63747CB941483ED1197818074141EC0650647CEB52A76A298179A7F8900D5",
+    "cardsCommit": "86737211b71848406a005789e5b90eb725d6a613"
+  },
+  "effect": "Named start-only exceptions to WAL > 250 KB: P-16-A6, P-16-A7 (exact-path manifest + effect exclusions), F30e (REPRO.md sha E2284C9D, at most two named control-flow changes). Red CI and decisions/commits > 5 still freeze everything.",
+  "alsoWithdrawn": "Hub 8b82e3d8 KR-CONVERGE freeze note in cards.md and WAL STALL-DIAGNOSED-FREEZE directive, superseded by KR-LINEAGE rulings + this amendment."
+}

@@ -1,0 +1,12 @@
+{
+  "ruling": "KR-LINEAGE lineage adjudication #2 (F20 gate lineage: F20b, F20b-2, F20f parked)",
+  "swarm": "wf_9223e2f1-917, 3 Opus, all returned",
+  "rulings": {
+    "KR_WALFREEZE": "CONTINUE/card now (3/3): amend KERNEL Stall alarm so WAL > 250 KB no longer freezes PRODUCT cards; decisions/commits > 5 and red master CI stay binding. FIRST and alone (2/3: sequential, not parallel with F20g).",
+    "F20": "NARROW to F20g, TERMINAL (2/3; 1/3 CLOSE): one round, a park CLOSES the lineage and F19 is re-carded; starts only after KR-WALFREEZE is decided.",
+    "F20g_bar": "(a) SOL trailing-comma J1 fixture as sess-Z exits nonzero, no J1 row ever sets the seat, F-J1 mutant redefined as J1-selected goes RED; (b) claim bracket containing TAB or other non-space whitespace exits 3 or 4; (c) five padding records then a LIVE foreign claim at record 6 exits 4, Select-Object -First 5 mutant RED; (d) duplicate lane= and Lane= case variant inside a WAL claim bracket never own (exit 3 or 4); (e) HUB-CLAIM+HANDOFF either not succession or a disclosed conservative exit-4 rule with an arm; (f) EXIT text never prescribes object walSeq rows; (g) INSTALL-PLAN names the hub follow-up and a rollback is executed on a throwaway copy with pre/post sha256; (h) every F20f arm and killed mutant stays green; (i) an arm counts J1 rows in the live ledger and the plan states expected live behaviour. Named PASS lines required for each new fixture.",
+    "HygieneReader": "card separately: Test-WorktreeHygiene.ps1:199 object walSeq crash; must land before object anchors or gate call-site rollout."
+  },
+  "withdrawn": "The claim that the F20 gate is the proven fix path for the WAL-size stall is withdrawn as unproven (1/3 raised, not contested).",
+  "walBytes": 310255
+}

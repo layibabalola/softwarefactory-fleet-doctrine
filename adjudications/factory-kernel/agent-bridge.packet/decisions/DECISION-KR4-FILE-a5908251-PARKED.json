@@ -1,0 +1,17 @@
+{
+  "card": "KR4-FILE",
+  "class": "C",
+  "outcome": "PARKED (round 2 last; SOL CHANGES_REQUESTED)",
+  "subject": "evidence\\KR4-FILE-20260917\\SUBJECT-SUMS.r2.txt",
+  "subjectSha256": "A59082514E6D5C455A7B530EC8737A7EF69982561F668553A359197530334C6C",
+  "round1": "ASTRA CR (ASTRA-20260917-100804-072, first Astra run), SOL CR, A1 CR, A2 CR, A3 CR",
+  "round2": {
+    "A1": "APPROVE (9/9 facts trace)",
+    "A2": "APPROVE (grammar, header, 8/8 benches; publication: branch review/agent-bridge-kernel-2026-09-17, file adjudications/factory-kernel/agent-bridge.md, push, ls-remote verify, never master)",
+    "A3": "APPROVE (model-neutral, scoped; K6 kernel text needs second-profile corroboration per section 5)",
+    "SOL": "CHANGES_REQUESTED SOL-20260917-102131-045: items 1,2,4-9 RESOLVED; open: posture line not computed (R9); runtime-artifact evidence belongs in P:code subject-identity/artifact-store/delivery-target lines; K6 should be Untested not FRICTION; zero-r4 reason should cite WAL L551 not unread cards; \"L557 is the filing-review entry\"; AND SOL cannot be the independent key for Astra-close lines (same Codex class)",
+    "ASTRA": "round-2 run failed: provider \"Selected model is at capacity\" (ASTRA-20260917-102129-346); retry in flight"
+  },
+  "finding": "INDEPENDENCE EXHAUSTION WITH TWO CLASSES: the author is Claude and the reviewer text adopted closely is Codex (Astra), so neither class can key the co-authored lines. Bench evidence for K6 / P:code independent-key.",
+  "successor": "KR4-FILE-2 (class C): ONE class authors every line (Claude, Fable high); Codex reviewer output used only as defect reports, never as replacement text; fix SOL round-2 open items; compute posture with the bus review_posture tool if runnable; SOL (Codex) then keys the whole subject; Astra reviews as a defect reporter."
+}

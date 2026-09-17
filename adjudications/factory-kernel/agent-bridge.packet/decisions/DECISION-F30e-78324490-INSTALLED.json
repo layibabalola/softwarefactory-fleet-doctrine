@@ -1,0 +1,24 @@
+{
+  "card": "F30e",
+  "class": "C",
+  "outcome": "ADOPTED-INSTALLED",
+  "subject": "evidence\\F30e-poll-catch-20260917\\SUBJECT-SUMS.txt",
+  "subjectSha256": "78324490A6AC21517A9DF63717F27E76DFFCF9A74CA4D60B68E3583961D51045",
+  "authority": "KERNEL Stall alarm named exception (KR-WALFREEZE): REPRO.md E2284C9D, two named changes C1/C2",
+  "round1": {
+    "A1": "APPROVE (two changes only; pre-try throw gap pre-existing, same as Codex)",
+    "A2": "CHANGES_REQUESTED (install plan wording: optional paid PROBE framed as quorum-approvable; add re-bless note) - install-document only, majority approves",
+    "A3": "APPROVE (real child+grandchild; all in-loop throw sites covered)",
+    "SOL": "APPROVE SOL-20260917-010432-239",
+    "hubTest": "independent re-run exit 0, 70 PASS, 36 s"
+  },
+  "install": {
+    "pre": "A3D9152F61E97067569C3ECCD81888B06207A645BFA22E1A452A837FCD1FEF2A",
+    "post": "09EFEEE80C16AF2DA71B325ED9394D3EB20ABDB41B3A2F1469F2572F35FC86DD",
+    "backup": "evidence\\F30e-poll-catch-20260917\\BACKUP-Invoke-ClaudeLane.ps1.pre-install-A3D9152F.txt",
+    "probe": "NOT run (A2: spend wording); parse check only",
+    "rollback": "Copy-Item the backup over automation\\Invoke-ClaudeLane.ps1 and verify A3D9152F"
+  },
+  "ownerOnly": "Enforcement surface changed again (Claude driver): owner re-bless.",
+  "followUp": "F30h (class C, not started): residual orphan paths named by A1/A3/SOL - throw before the poll-loop try (deadline computation after child start), Kill/WaitForExit failure swallowed, Write-ReceiptAtomic double fault, driver process killed externally."
+}

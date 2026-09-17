@@ -1,0 +1,21 @@
+{
+  "card": "F20e",
+  "class": "C",
+  "outcome": "ADOPTED",
+  "subject": "0aba2cce55fd227515bbc04f3b08400f8ebdda67:docs/internal/RECOVERY_PLAN/F20e-wal-record-grammar-2026-09-17.md",
+  "blob": "6b05ca3784b6cd41e1bbeec36b0817999c429eb6",
+  "sha256LF": "2507AEF55E7BFDADFC7228075CCFA1FB878315348DC850104E87AA0BF519D108",
+  "sha256Checkout": "BA2AFED2CFA44CF8EDF686C9788A78AEEE74D599EBD1C9157DD042FF29D0A987",
+  "frozenBar": "DECISION-LINEAGE-20260917-wfa787c06e.json L3",
+  "round1": {
+    "A1": "APPROVE (10 byte-shape attacks, totality re-derived)",
+    "A2": "APPROVE (F20a-4 consistent: F20e record positions a proper subset of admitted positions)",
+    "A3": "APPROVE (every F20b-2 failure class decided by a quoted clause; raw bytes authoritative over line-reading APIs)",
+    "SOL": "APPROVE SOL-20260917-001027-537 (397 s, 0.34 USD): framing/classes total and exclusive; bar re-derived; escapes restored, zero C2 AD"
+  },
+  "notes": [
+    "First commit 309909e had tool-decoded escapes; superseded by 0aba2cc (SOL confirmed).",
+    "Non-blocking: an explicit \"raw bytes, not ReadAllLines\" sentence would remove inference (A3)."
+  ],
+  "lineage": "F20 lineage converged on round 1 of its last successor. Next in the WAL-alarm chain: F20f = re-card of the F20b fail-closed gate patch citing F20e (class C), then F19 roll."
+}

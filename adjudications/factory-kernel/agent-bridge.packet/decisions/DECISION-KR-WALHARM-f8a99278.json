@@ -1,0 +1,49 @@
+{
+  "card": "KR-WALHARM",
+  "class": "C",
+  "round": 1,
+  "hub": "bf2ed31e-587d-4756-ba54-e0f00c379c8b",
+  "decidedAt": "2026-09-17T05:33:45.8651692-05:00",
+  "outcome": "ADOPTED-INSTALLED",
+  "subject": {
+    "L1": "VERDICT-L4-L1.md sha F8A99278 (text sha C6362D3E, 585 B)",
+    "L2": "VERDICT-L4-L2.md sha 01DBA6EE",
+    "L3": "VERDICT-L4-L3.md sha BC126622"
+  },
+  "votes": {
+    "A1": "PICK L3; L1 CR, L2 CR, L3 CR; no BLOCK (review\\VERDICT-A1.md sha 72C54B75)",
+    "A2": "PICK L1; L1 APPROVE, L2 BLOCK with repro (reader-failure clause trips on Read tool 256 KB cap), L3 CR (bundles Get-BoardState code edit) (VERDICT-A2.md sha AFFC6B00)",
+    "A3": "PICK L1; L1 CR, L2 CR, L3 CR; no BLOCK (VERDICT-A3.md sha 65CE62F2)",
+    "SOL": "VERDICT L1; L1 APPROVE, L2 BLOCKER (omits empty-ledger UNKNOWN; repro), L3 BLOCKER (product UNKNOWN freeze with no in-scope exit; repro RAW_EXIT=128) (receipt SOL-20260917-052251-340, last.txt sha B2AD7A9E)"
+  },
+  "rule": "Card leaf procedure: candidate with any BLOCK carrying a repro is out; adopt the unblocked candidate with a majority that includes SOL.",
+  "excluded": [
+    "L2 (A2 BLOCK + SOL BLOCKER)",
+    "L3 (SOL BLOCKER)"
+  ],
+  "winner": "L1: picked by A2, A3, SOL (3 of 4, incl. SOL); no BLOCK from any reviewer; SOL APPROVE",
+  "changesRequestedDisposition": [
+    "A1 L1 CR (delivery clause has no bar arm): no text change requested; SOL ran positive/negative control (live route False, synthetic STALL True, UNKNOWN False).",
+    "A3 L1 CR (no explicit pre-install sha assert in L1 bar): no text change requested; install ran behind the card-leaf binding assert KERNEL sha 29B63747."
+  ],
+  "procedureNote": "L1's own bar item 4 (3 RATIFY + SOL APPROVE, terminal) was written for L1 as a standalone card; KR-WALHARM's leaf procedure (lineage-4 ruling) governs this round and is what was applied. Recorded so a reader can dispute it by name.",
+  "install": {
+    "file": ".claude-state\\coordination\\KERNEL.md",
+    "preSha": "29B63747CB941483ED1197818074141EC0650647CEB52A76A298179A7F8900D5",
+    "postSha": "3B0EE2D2CD8E5EF785A50F3BD7AB88C53A7CACFE69EE1D369A402F7B209A797A",
+    "bytes": "6955 -> 6568",
+    "method": "scripted: Stall alarm body (9 CRLF lines) replaced as one unit with L1 text verbatim, sha-asserted before and read back after"
+  },
+  "obligations": [
+    "cards.md P-16-A6/A7 thaw pointer re-pointed",
+    "prompts.md:214 scorecard alarm line",
+    "RECOVERY_PLAN_2026-09-05.md:109 scorecard line"
+  ],
+  "followUps": [
+    "Get-BoardState.ps1 product line fails open on git fatal (A1, A2, A3, SOL reproduced) - separate class-C instrument card",
+    "decisions/commits has no instrument (A2, A3, SOL)",
+    "master-CI arm unscorable by read-only SOL dispatch (A3)",
+    "P-16-A6 now startable under ordinary class-C rules (A2)"
+  ],
+  "nothingElse": "no push, no product code, no WAL roll"
+}

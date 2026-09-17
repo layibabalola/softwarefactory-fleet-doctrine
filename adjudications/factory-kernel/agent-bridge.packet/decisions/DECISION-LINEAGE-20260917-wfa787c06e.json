@@ -1,0 +1,15 @@
+{
+  "ruling": "KR-LINEAGE lineage adjudication #1",
+  "rule": "KERNEL \"Lineage adjudication\" (OWNER-RULING-KR-LINEAGE-20260917.json)",
+  "swarm": "workflow wf_a787c06e-65c, 3 Opus adversaries (against-default / what-outranks / post-mortem), all three returned",
+  "stalePremiseCorrected": "F20b-2 was not live: DECISION-F20b-2-9793d485-PARKED.json closed 2026-09-16 17:02; d6d749c4 holds no claim; its new ground is F20e (cards-F20-successors.md)",
+  "rulings": {
+    "L1_F30": "CLOSE F30b, F30c, F30f, KR-F30-STALL as NOT-DOING (3/3); null daily cap stays in force; NARROW to F30e only (3/3): Claude driver poll loop gains the Codex POLL_LOOP_ERROR shape; bar frozen before review (injected throw -> POLL_LOOP_ERROR receipt, child and grandchild dead; Codex-shape parity; at most two named control-flow mutations); defect to be reproduced by an executed arm first (1/3 required, adopted); queued behind the stall alarm",
+    "L2_F29": "CLOSE F29, F29a, F29b as NOT-DOING (3/3); reopen only if a runtime invoker of Invoke-Orchestrator.ps1 appears",
+    "L3_F20": "NARROW to F20e, the LAST successor of the F20 lineage (3/3): raw-byte WAL record grammar definition; frozen bar = BOM before a first-line claim, bare-CR-only line endings, a later row keyed Lane (case variant) vs the SEAT row, round-1 cases unchanged, each landing in exactly one class plus totality; two rounds; if it parks the F20 lineage CLOSES and F19 is re-carded against a different mechanism",
+    "L4_P16": "CLOSE P-16-A5 (3/3); P-16-A6 CONTINUE (3/3); P-16-A7 CONTINUE (2/3; 1/3 bank); both stay frozen while KERNEL stall alarm text stands",
+    "L5_KRCONVERGE": "CLOSE, superseded by KR-LINEAGE (3/3)",
+    "freeze": "Ruled a stall (3/3) but it is KERNEL law and a lineage ruling cannot lift it (3/3). Order: F20e first; if F20e parks, the single next class-C card is a narrow KERNEL amendment removing WAL size as a freeze on PRODUCT cards (two-key quorum incl. SOL)."
+  },
+  "banked": "Survives/finding fields of each closed decision remain authoritative: DECISION-F30b-r2sums-PARKED, DECISION-F30c-3e6e67c1-PARKED, DECISION-F30f-5c91a366-PARKED, DECISION-F29*, DECISION-P-16-A5-1c23ec3-PARKED, DECISION-KR-CONVERGE-aeb49faa-PARKED."
+}

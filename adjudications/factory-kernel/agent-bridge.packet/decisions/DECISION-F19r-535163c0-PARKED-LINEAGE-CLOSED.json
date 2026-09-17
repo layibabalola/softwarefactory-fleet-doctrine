@@ -1,0 +1,25 @@
+{
+  "card": "F19r",
+  "class": "C",
+  "round": 2,
+  "terminal": true,
+  "outcome": "PARKED round 2 (terminal). F19 WAL-roll lineage CLOSED per lineage ruling #3. WAL-size threshold becomes class-C KERNEL question (card KR-WALSIZE). Nothing installed.",
+  "subject": "evidence\\F19r-candidate-20260917-r2\\SUBJECT-SUMS.txt",
+  "subjectSha256Prefix": "535163C0",
+  "round2": {
+    "A1": "CHANGES_REQUESTED + RATIFY R1: 49/49 reproduced; 3 mutants flipped, 2 RED; BAR-3 concatenated-line arm is vacuous (live-WAL seed pins cut before synthetic content; reverting the parser fix stays 49/49)",
+    "A2": "BLOCK + RATIFY R1: status= scanner at Invoke-WalRoll.ps1:611 case-sensitive; Status=IN-REVIEW archived end-to-end repro; residual SetLength(0)+Write crash window with no automated rollback; lock verified to deny Append-Wal",
+    "A3": "CHANGES_REQUESTED + RATIFY R1: independent re-run 48/1 (pre-lock-race-window mutation flaky), so 49/0 not reproducible; 3 wrong citations in FINDINGS-RESOLUTION; Append-Wal has no retry on sharing violation",
+    "SOL": "BLOCKER + RATIFY R1 SOL-20260917-041715-760: FileShare.Delete permits rename/path swap -> roll rewrites renamed file and exits 0; rollstate marker accepted without phase/archive verification -> retry truncates WAL with no verified archive (Must-NOT); TOCTOU after final quiesce check; status=IN-PROGRESS: punctuation cut; census read/enumeration failures still fold to omission, fixed task-string list; several mutants static; item 5 gate accepts fixture exit 1; header arm decoy-able"
+  },
+  "hubProceduralError": "The hub wrote SOL-PROMPT-round2.md into the frozen r2 subject dir after SUBJECT-SUMS was computed; SOL counted the unlisted file as a mismatch BLOCKER. Named here; the park does not rest on it. Law: prompts and verdicts go to a sibling review dir, never the subject dir.",
+  "amendmentR1": "RATIFIED 4/4 as a correct statement of bar item 7; it has no effect now that F19r is parked, but binds any future WAL-roll card.",
+  "survives": [
+    "Candidate r2 lock denies Append-Wal FileMode.Append (A2 two-process race)",
+    "Amendment R1 wording",
+    "A3 adversary-authored section7 fixture",
+    "Must-stay scanner handles dashless/indented/concatenated lines (fails closed)"
+  ],
+  "reuse": "A future card may cite Invoke-WalRoll r2 FDFF56BA + Test-F19r ACFC51AE as prior art; approval does not transfer.",
+  "nothingInstalled": "Live WAL never rolled; no STOP-ALL-LANES created; no push; no protected-script edits."
+}

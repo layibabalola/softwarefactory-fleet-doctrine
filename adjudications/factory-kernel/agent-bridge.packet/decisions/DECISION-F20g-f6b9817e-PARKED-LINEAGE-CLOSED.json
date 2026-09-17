@@ -1,0 +1,21 @@
+{
+  "card": "F20g",
+  "class": "C",
+  "outcome": "PARKED; F20 gate lineage CLOSED (terminal rule, DECISION-LINEAGE-20260917-2-wf9223e2f1.json)",
+  "subject": "evidence\\F20g-gate-terminal-20260917\\SUBJECT-SUMS.txt",
+  "subjectSha256": "F6B9817E8333B36338E87C6B7C44F7D44C56CC0922E4D5F1CD6EC476AE20D735",
+  "round1": {
+    "A1": "CHANGES_REQUESTED: G4/G15/G16/N re-expressed with a prior seat row; the malformed-row-as-sole-candidate case lacks an arm (coverage gap)",
+    "A2": "APPROVE: every hunk maps to bar (a)-(i); not a permanent stall; suggest a live whitespace-taint census arm",
+    "A3": "APPROVE: every traced failure path only adds holds",
+    "SOL": "CHANGES_REQUESTED SOL-20260917-014042-871: bar (a)-(i) ALL MET; F20f findings RESOLVED; re-expression legitimate; case-insensitive claim keys conservative; ONE test gap: session-identity comparison mutant (OrdinalIgnoreCase seat session) stays GREEN -> needs a case-variant session arm expecting exit 2"
+  },
+  "nothingInstalled": "Live Invoke-HubAction.ps1 162D8A72 unchanged.",
+  "survives": [
+    "Candidate 8854AE45 behaviour approved by SOL on every bar item; open findings are TEST gaps only (session case-variant arm + mutant; malformed-sole-candidate arm)",
+    "F20e framing, J1 shadow, TAB taint, late-record, HANDOFF rules",
+    "Rollback drill PASS; live J1=0"
+  ],
+  "lineageClosed": "Per the pre-declared terminal rule no F20h. Next per lineage ruling #1: F19 re-carded against a different mechanism (roll the WAL while all lanes are quiesced in SAFE-HOLD, no gate patch), decided by the next lineage adjudication.",
+  "reuse": "A future card may cite candidate 8854AE45 + Test-F20g as prior art; approval does not transfer."
+}
