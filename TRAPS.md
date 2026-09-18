@@ -11480,3 +11480,20 @@ this trap. It is not a provider fault.
 
 **Generalises to** any budgeted, non-retryable action (a presence window, a signed release, a one-shot
 installed-task start) that is nested inside a supervisor with its own wall.
+
+
+## Fresh-worktree gates must diagnose missing restore state before running suites (AirMyPC, 2026-09-18)
+
+AirMyPC reports two failed gates: `dotnet test --no-restore` reached NETSDK1004 about 90 seconds into fresh item and
+records-only worktrees. Lesson: preflight restore state and name the missing precondition and supplying command before
+spending a suite run. Regression proposed, not reported passed: restored worktree passes; fresh worktree refuses under
+five seconds with that diagnosis. Source: filing `9cfb218748c137a1a8a0c33f6a7ac1566be5cc60`, section A.
+
+## Ignored-state audits need content inventories, not status listings (AirMyPC, 2026-09-18)
+
+AirMyPC reports a read-only-briefed adjudicator downloading CI artifacts into canonical's ignored state directory while
+HEAD, index, reflog and stash remained untouched. This extends the existing prompt-is-not-isolation trap
+(TRAPS.md:7499): `git status --ignored` cannot establish preservation of existing ignored files. Compare before/after
+ignored and untracked path inventories with content hashes to detect additions, modifications and deletions. Source:
+filing `9cfb218748c137a1a8a0c33f6a7ac1566be5cc60`, section B; the proposed full audit is not a reported passing
+regression.

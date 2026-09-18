@@ -3898,3 +3898,15 @@ No `*.dispositions.md`, no `HARVESTS.md`, no other project's single-writer file,
 pushed. Appends verified as pure byte prefixes of `HEAD` after CRLF normalisation before committing. A machine-global
 CLI/Desktop account drift was live throughout (CLI org `2a6cf04d`) and blocked nothing — every command above ran; it is
 the owner's to repair and no agent touched it.
+
+## Factory-kernel harvest 2026-09-18 - airmypc-dogfood-20260918 (Conjugal, interim steward, run 20260918T084905Z-ec1ce658)
+
+2026-09-18 | airmypc-dogfood-20260918 | blob `9cfb218748c137a1a8a0c33f6a7ac1566be5cc60` |
+[Dispositions](adjudications/factory-kernel/airmypc-dogfood-20260918.dispositions.md) | Single-seat ruling: header
+defects recorded; A routed with TRAP; B/C code-profile changes approved; C TRAP duplicate; kernel unchanged; all
+verdict counts zero; end-to-end credit zero.
+
+This receipt records the ruling, not a successful landing or a verified `HARVESTED` state. `specs/fleet-factory-kernel.md`
+is unchanged at r5 (2,867 words of 3,500); `specs/fleet-factory-kernel/profiles/code.md` r5 -> r6 (+85 words, 949).
+Ledger row in `adjudications/factory-kernel/HARVESTS.md`. Seats: arbiter gpt-6-astra (high), consolidator
+claude-fable-5, lint claude-opus-5 + gpt-5.6-sol, orchestrator claude-opus-5.

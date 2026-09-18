@@ -134,3 +134,65 @@ UNVERIFIED. **dng-auto-processor is now a candidate it was not on 2026-09-15**: 
 across 43 dispositioned findings, and its author seat is Codex — a different independence class from the Claude seat
 that produced the steward's filing. Its own U5 raises the matching question from the other side, and this harvest routed
 that to a dng adoption-authority bench.
+
+---
+
+## Harvest 2026-09-18 — run 20260918T084905Z-ec1ce658 (Conjugal, interim steward)
+
+Appended at end of file; this ledger is byte-append-only. Same columns, same order; `tools/kernel-e2e.py` takes rows by
+content, not position, and sums all three tables.
+
+| date | harvest | filing | blob | kernel | profile | subjects | FIT | FRICTION | BREAK | N/A | UNEXERCISED | unresolved BREAKs | arbiter |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 2026-09-18 | 20260918T084905Z-ec1ce658 | airmypc-dogfood-20260918 | 9cfb218748c137a1a8a0c33f6a7ac1566be5cc60 | undeclared by the filing; adjudicated against r5, which is unchanged this round | undeclared by the filing; adjudicated against code@r5 (now r6) | 0 credited end-to-end, and the true number is unestablished rather than proved zero: no declared subject identity, no window, no pre-work profile line, no acceptance receipt, no delivery closure; window-opened-before-kernel=undeclared | 0 | 0 | 0 | 0 | 0 | 0 submitted | gpt-6-astra (steward seat; not a steward filing) |
+
+**This row is all zeros because the packet declares no verdict line, not because every clause passed.** The filing is a
+`FLEET_CANDIDATE` packet with sections A/B/C and none of the nine kernel §4 header fields, so `harvest-status.py` reads
+`findings=0` and flags `NO-PROVIDERS-HEADER`. Under PROMPT-3 §5 it was harvested for the substance its provenance
+supports and all nine header defects were recorded as `HEADER:` lines. Three narrative sections are not three verdicts,
+and twelve absent clause lines are not twelve UNEXERCISED findings; inventing either would corrupt the only numbers
+§5 reads.
+
+Derived, not asserted. Re-run: `python tools/kernel-e2e.py --json`.
+
+**§5 criterion 1 — CLOSED END-TO-END SUBJECTS: 0.** Thirteen rows now across seven projects (`kernel-e2e` lists eight ledger identifiers because this row's filing
+name `airmypc-dogfood-20260918` does not map to `airmypc`), and it has been 0 at every
+harvest. Criterion 1 needs at least five projects with at least one closed subject each, so finalisation is 0/5.
+Verdicts across all 13 rows are unchanged by this round: **77 FIT, 71 FRICTION, 5 BREAK, 0 N/A, 47 UNEXERCISED.**
+
+**§5 criterion 2 remains MET** on the 2026-09-17 finding: `code`, `hardware-in-loop` and `measured-objective` all carry
+harvested rows with exercised verdict lines, the latter two being the non-test-suite pair. Nothing this round touches it.
+
+**§5 criterion 3 — the closest this ledger has come, and it still does not start.** For the first time since the kernel
+was submitted, **the kernel text is unchanged this round: r5 in, r5 out.** That unchangedness is not evidence about
+the kernel: the packet declares no verdict line, so no clause was exercised and none could have moved the text. It is
+the digest half of criterion 3 and nothing more. No item in this filing could move it — §5
+admits a kernel change only on a BREAK with a concrete counterexample or on FRICTION from two or more profiles, and
+this packet establishes neither, being one bench and one profile (`code`) throughout. But criterion 3 requires
+"identical kernel and participating-profile content digests as well as revisions", and `code` is the participating
+profile and moved r5 → r6 on the two adopted findings. The clock therefore does not start here. It would start at the
+first harvest that changes no participating profile either — and criterion 3 also requires fresh end-to-end evidence
+meeting criteria 1 and 2, which criterion 1 blocks regardless. **Criterion 4 has never started**;
+`grep -ci "fleet-factory-kernel\|factory kernel" RULINGS.md` is still 0. The owner gate is idle, not jammed.
+
+**Members due — 2 have NEVER filed:** `adversarialllm`, `salesforce-tools`. Unchanged from 2026-09-17.
+`harvest-status.py` still cannot see a member who has never filed; `tools/kernel-e2e.py` takes the roster from §6.
+
+**Steward self-filing — adjudicated on 2026-09-17, still unrowed.** `tools/kernel-e2e.py` reports `conjugal` in
+`filed_but_unrowed`, and that is a ledger gap, not a routing gap: `adjudications/factory-kernel/conjugal.dispositions.md`
+exists at commit `dc2a719` — arbiter cloudvore, 2026-09-17, ruling on blob `3a36f3e6` (20 findings: 6 ADOPTED ·
+2 ADOPTED-CONDITIONAL · 11 REJECTED · 1 ROUTED, spec_commit `da4e9201`) — and `harvest-status.py` marks `conjugal`
+HARVESTED. No arbiter assignment is outstanding for this filing, and the causal account matters as much as the
+conclusion: cloudvore had already filled the arbiter seat at commit `dc2a719`, 2026-09-17 15:02:59 -0500, fourteen
+minutes BEFORE the block recruiting `airmypc` and `dng-auto-processor` was committed at `8e2144b`, 15:17:26 -0500.
+Those candidates were never seated and never needed to be; that recruitment was stale on arrival. What remains is
+this ledger's own row, which HARVESTS.md being
+steward-written (kernel §5) puts squarely on the steward: the next run should append conjugal's row derived from
+cloudvore's dispositions rather than re-route the filing. This run's scope was one filing and it did not append that
+row.
+
+**What this round did change:** `specs/fleet-factory-kernel/profiles/code.md` r5 → r6, +85 words (864 → 949), on two
+adopted findings — a Claims (K3) row requiring enforced boundaries for read-only reviewer access plus a before/after
+canonical audit that compares content hashes, and a Subject identity (K3) row requiring review contracts to name each
+identity field's hashed artifact set. Kernel unchanged at 2,867 of 3,500 words. Dispositions:
+`adjudications/factory-kernel/airmypc-dogfood-20260918.dispositions.md`.
