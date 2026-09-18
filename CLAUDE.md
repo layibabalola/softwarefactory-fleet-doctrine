@@ -72,7 +72,7 @@ Machine-local, and deliberately outside every repo: `~/.claude/ROTATION.md` is t
 SessionStart and Stop. Checkpoints record **where work was, not what to do next** — read the newest
 few, not just the newest.
 
-Many checkpoints name a `repo:`/`cwd:` under `...\harvestuns\<ts>us` that no longer exists.
+Many checkpoints name a `repo:`/`cwd:` under `...\harvest\runs\<ts>\bus` that no longer exists.
 **Ignore the dead path; it is cosmetic and nothing is lost.** Those are `git worktree add --detach`
 of THIS repo (Conjugal's `harvest_runner.py`, `bus_repo` = softwarefactory-fleet-doctrine), not
 clones, so they share this object store: their commits are durable the moment they are written and
@@ -80,9 +80,12 @@ survive the directory's deletion. The SHA on the line below the dead path resolv
 checkpoint is already filed under the durable repo slug. Resolve it with `git log <sha>`, not by
 hunting for the directory.
 
-**A checkpoint cannot tell you your work is backed up, and does not claim to.** Its branch listing
-counts commits ahead of *master* and never consults `origin`, so it names branches that are safely
-pushed and stays silent about ones that are not. (Its worktree scan is also capped -- default 8 of
+**A checkpoint's branch listing is about landedness, not durability.** It counts commits ahead of
+*master*; appearing on that list does NOT mean a branch is at risk. Until 2026-09-18 it never
+consulted `origin` at all, so it named branches that were safely pushed and stayed silent about
+ones that were not. The hook on this machine now also emits an `*** UNBACKED` block for commits
+reachable from no remote ref -- but that fix lives in `~/.claude/hooks/`, outside every repo, so
+**another machine's hook may still be blind.** (Its worktree scan is also capped -- default 8 of
 40 here, raise with the `CHECKPOINT_SCAN_CAP` env var -- but that scan measures dirt and
 ahead-of-main, not unpushed, so the cap is the wrong lever.) Measured 2026-09-18: eight commits on
 three branches existed only on local disk while every instrument reported fine. Run this yourself
