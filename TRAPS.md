@@ -11739,3 +11739,86 @@ An environment-only block is a typed lane terminal, not a subject verdict or com
 Section F supplies no regression pattern and reports none passing. Proposed regression, not reported passing: dispatch an execution-required review with its required scratch writes denied; verify an environment terminal, no subject verdict or completed-round credit, and retained attempt accounting. Restore the required capability and verify execution against the same subject identity.
 
 Source: filing 5a9e8df5c94f48851dabce282e8aafa1c0c542b4, section F.
+
+## A schema stamp the typed deserialiser DEFAULTS is a stamp the reader never checks (cloudvore, 2026-09-18, Dell XPS 17)
+
+**What happened** (cloudvore `966ff93`..`38c256b`). `VaultJob.SchemaVersion { get; set; } = 1` had existed
+since the first commit and had a writer and no reader. Under System.Text.Json a missing property keeps its
+initialiser, so a file with NO stamp loaded as version 1; a stamp of `99` deserialised as 99 and was loaded anyway,
+because nothing compared it to anything; only a string `"1"` threw, and was quarantined as corrupt -- loud, but
+labelled as the wrong defect. Any later build's file, with fields this build does not know silently ignored and
+fields it expects left at their defaults, could then be verified, exported, or offered as SAFE TO WIPE. The history
+store was worse: `RunManifest.SchemaVersion`'s initialiser is the NEWEST version, so a manifest with no stamp read
+as the most trustworthy record the app knows. Three same-family reads of the code had called both "already
+versioned", because a property named `SchemaVersion` was visibly there.
+
+**The rule.** A version stamp is read where the FILE is read -- from the document (`JsonDocument` /
+`TryGetProperty`), before any typed deserialise -- and an absent or non-integer stamp is refused, never left to an
+initialiser. Then the ORDER of the refusals is the contract: a numeric stamp this build does not read is refused in
+place whatever the shape, because a later build may have renamed a field this build calls required, and
+quarantining that as "missing field" is corruption handling applied to valid data. Shape validation still runs
+for a supported stamp; it just runs AFTER the version question, never instead of it.
+
+**The test that catches it.** Save one record through the real store, delete the stamp from the file with a JSON
+editor, load through the real store: the load must refuse and name the file. Then set the stamp to `current + 1`
+AND rename one required field: the load must refuse with the version reason, not the shape reason, and the file
+must still be where it was, byte for byte. Both were red on the old code (`JobStoreTests`, cloudvore `b1ad67c`).
+
+## A ratifier's predicted verdict flip is a claim to RUN, not to argue (cloudvore, 2026-09-18, Dell XPS 17)
+
+**What happened** (cloudvore `d3f9c91`). A cross-family seat refused an overlap-guard fix on a specific
+prediction: `char.IsLetter` accepts `é`, so `\\?\é:\Footage` vs `\\?\é:\Footage\Backup` "passes before this change
+and fails afterward". Plausible, well-cited, wrong in outcome for THIS guard: stripped to a rootless pair, its
+`else` branch still ran containment, so the verdict never flipped. The pin written for the prediction passed on
+both revisions. On the same day the same seat's refusal of a different change (the null-peer rule below) was
+right, and two same-family seats had waved that one through.
+
+**The rule.** When a reviewer predicts that input X yields verdict V on revision A and V' on revision B, run X on
+both revisions before either side wins. Keep the narrower predicate if it is the correct definition, but do not
+keep a pin that was written to demonstrate a difference it cannot demonstrate; say in the commit why it went. A
+refusal refuted in outcome is recorded as such, not folded silently -- the record is what stops the next session
+re-litigating it.
+
+**The test that catches it.** Any new pin added to demonstrate a review finding: check it out against the PRE-fix
+product bytes and run it. If it is green there, it does not pin the finding -- it may still be a fair regression
+guard, but it is not the evidence the finding needs, and the commit must not present it as such.
+
+## `FromElement` null means "no cached peer", not "nobody is listening" -- and the sentence came from this bus (cloudvore, 2026-09-18, Dell XPS 17)
+
+**What happened** (cloudvore `df2f629`, correction `f606292` on this file). Cloudvore adopted, verbatim from its own 09-17 entry on this file, "a null from
+`UIElementAutomationPeer.FromElement` means no client is listening" and wrote `if (peer is null) return` into the
+live-region announcer. `FromElement` is `element.GetAutomationPeer()` -- the cached peer and nothing else -- and a
+UIA client materialises peers lazily as it walks, so the status line in a panel that has only just become visible,
+the exact "Stopped." case the class was built for, was refused while a screen reader listened to the whole window.
+The author, two Opus reviewers and the trap all shared the prior; a Codex seat reading dotnet/wpf source refused it.
+`RaiseAutomationEvent` returns early when no client has registered the event and does not throw, so
+`FromElement(e) ?? CreatePeerForElement(e)` then raise is safe in both directions.
+
+**The rule.** A trap adopted verbatim is a shared prior, and a shared prior is exactly what same-family review
+cannot see. Text that describes a platform API's contract gets one cross-family seat against the primary source
+before it becomes code, and a correction to a published trap is itself published the same day (`f606292` on this
+file). The 09-17 entry above now carries the correction inline.
+
+**The test that catches it.** With no UIA client the delivered event is unobservable (`RaiseAutomationEvent`
+returns early), so count ATTEMPTS through a test-only seam raised beside the real call, and pin the call itself in
+compiled IL. Host a fresh `TextBlock` in a shown window, assert `FromElement` is null as the PRECONDITION (no
+client has walked it -- assert it, do not assume it), bind the announcing property, drain `Background`, expect
+exactly one attempt and a non-null peer afterwards. The null-return version measures zero; planted, it reddened
+six of fourteen tests in cloudvore's `LiveRegionAnnouncementTests`.
+
+## A folded ruling wrote a date the register grammar does not admit, and the machine reader dropped the one ruling that mattered (cloudvore, 2026-09-18, Dell XPS 17)
+
+**What happened** (cloudvore `f0763a8`). `knowledge/owner-gated-decisions.md` is machine-read by `state.py` against
+`- [OPEN|RULED <date>] <id> — <line> → <path>`. On 09-16 a session folded the owner's "engineering adjudication is
+delegated; `src/` ratification is by two blind cross-family adversaries" ruling into the register as
+`[RULED 2026-09-06, FOLDED 2026-09-16]`. The parser refused the row; `state.tests.py` went red on master and stayed
+red for two days, hidden behind a suite that also times out locally; and a packet that landed on 09-17 wrote
+"merging to master touches `src/`, which the register reserves for the owner" and sat unmerged -- citing the OLDER
+merge-authority row, because the newer one was, to the tool, not there.
+
+**The rule.** A register with a grammar has a parser test that runs at entry, in a suite fast enough to be run,
+and a fold into that register runs the parser before the commit. A ruling the machine cannot read will be
+out-voted by an older ruling the machine can, in exactly the session that most needs the new one.
+
+**The test that catches it.** Parse the tracked register with the tool's own regex and count rows it rejects,
+excluding the header's grammar example. Any other rejected row is a ruling nobody can cite by tool.
