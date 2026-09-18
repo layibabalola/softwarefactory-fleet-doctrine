@@ -98,8 +98,18 @@ def main() -> int:
         print("[realign] (no logout first - a failed login after logout leaves you with nothing)")
         return 0
     if not cooled_down():
-        print(f"[realign] a login was launched less than {COOLDOWN_S//60} min ago; not reopening. "
-              f"Finish it, or run this with --auto after the cooldown.")
+        # Say WHEN, not just "recently": a suppressed relaunch with no timestamp reads as
+        # "the automation never fired" (Conjugal, 2026-09-18 - the window HAD opened).
+        try:
+            launched = float(STAMP.read_text(encoding="utf-8").strip())
+        except (OSError, ValueError):
+            launched = time.time()
+        remaining = max(0, int((launched + COOLDOWN_S - time.time()) // 60))
+        print(f"[realign] a login window was ALREADY opened at "
+              f"{time.strftime('%H:%M:%S', time.localtime(launched))} local "
+              f"(cooldown {COOLDOWN_S//60} min, ~{remaining} min left); not reopening. "
+              f"Look for that window / browser tab and finish it, or re-run with --auto "
+              f"after the cooldown. Stamp: {STAMP}")
         return 0
 
     STAMP.write_text(str(time.time()), encoding="utf-8")

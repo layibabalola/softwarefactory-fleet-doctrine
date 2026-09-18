@@ -3932,3 +3932,49 @@ A narrow F TRAPS extension records recurrence beyond AirMyPC's existing TRAPS.md
 Kernel r5 remains unchanged at 2,867 of 3,500 words; the A/C/E/F kernel amendments are rejected. The HARVESTS.md row records zero submitted verdicts and zero credited end-to-end subjects, with the actual qualifying total unestablished rather than proved zero. Exercised revisions remain undeclared. Criterion 3 does not advance because the participating profile changes and qualifying end-to-end evidence remains absent.
 
 This block records the read-only adjudication and authorized changes, not their application, successful landing, passing production regressions, or verified HARVESTED status. Earlier ruling corrections and K11 departure records remain carried forward. Seats: arbiter gpt-6-astra (high), consolidator claude-fable-5, lint claude-opus-5 + gpt-5.6-sol, orchestrator claude-opus-5.
+
+### Conjugal, 2026-09-18 — a parity checker's org "election" produced a hard ACCOUNT_MISMATCH on a healthy host; fixed, and the realign cooldown now says when it fired
+
+**Drill.** Dispatcher resume under R6 (`check-cli-auth.py --allow-live-probe`) returned
+`FAIL ACCOUNT_MISMATCH: ... org uuid (config.json allowlist — live desktop-side mismatch)` and
+printed the logout/re-auth wizard. The session stopped on it as a credential escalation. Owner
+challenged the stall; a 3-agent adversarial swarm (parity-file audit / floor blast radius /
+governing-rule audit) adjudicated in ~4 min.
+
+**Result — the verdict was a polling artifact, not drift.**
+- Conjugal's checker elected the desktop org as *newest `dxt:allowlistLastUpdated:<org>` stamp*
+  in `%APPDATA%\Claude\config.json`. Those stamps are a background poll refreshed for **every org
+  the host has ever seen** (5 here, on parallel ~2 h cadences). Decisive: the org the app was
+  demonstrably running as (a `claude-desktop` entrypoint event on it that same hour) had **no
+  stamp at all** — `grep -c <org> config.json` = 0. The election could not have returned the
+  right answer under any ordering.
+- Meanwhile the floors were live on the CLI credential: Opus wake 21:26Z `capacity probe
+  outcome=pass reason=inference-answered`, Fable 21:06Z `SUCCESS - child exit=0
+  witness=durable-lane-advance`, both `failure_count: 0`, empty err.logs, no 429/auth strings.
+  What had actually bitten that day was a **weekly limit** (two children returned the limit
+  banner 17:36Z–18:48Z) followed by the gate's 120-min artifact-age latch — a quota event
+  wearing an auth-shaped verdict, the exact inversion R6.1 warns about, in the other direction.
+- The bus's own `tools/check-account-parity.py` and `tools/realign-cli.py` derive from
+  `lastKnownAccountUuid` and never had the election; `realign --verify` reported *aligned* on the
+  same host at the same time. The defect was Conjugal-local.
+
+**Fix (Conjugal `9f156e680`, pushed).** `desktop_org_from_config()` now returns its stamp
+`population`; `accounts_differ()` treats config-live org inequality as mismatch evidence **only
+when the CLI's org is a member of that population** — the app knows that org and still stamped
+another one newer (the 2026-08-10 trap, which stays a hard mismatch and is tested). When the
+CLI's org is absent the election was blind to it → `PARITY_UNVERIFIED`, still exit 1 (fail
+closed, floors still gated), but no wizard aimed at a healthy host. Tests 62 → 66.
+
+**Second finding — the rotation automation DID fire and then hid itself.** `realign-cli.py`
+opened a login window on drift, then its 30-min cooldown suppressed the relaunch with
+"launched less than 30 min ago; not reopening" — no timestamp, no remaining time — which the
+owner read as "no browser action was triggered". This commit changes that line to print the
+launch time, minutes left, and the stamp path.
+
+**Candidate for the register, NOT in force (needs owner minting under R6):**
+*R6.4 — an identity axis that is a poll over historical identities may demote a verdict to
+UNVERIFIED but may never on its own promote one to MISMATCH; a hard mismatch requires an axis
+that names the current identity (owner attestation, `lastKnownAccountUuid`, or a population in
+which the compared identity is a member).* Evidence above; adopt-or-distinguish.
+
+Machine: Conjugal host (XPS 17). Coordination surfaces not exported (Law 4).
