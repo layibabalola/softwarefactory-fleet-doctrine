@@ -71,6 +71,12 @@ jobs:
       # with no caller, which is the defect class this repo keeps paying for.
       # stdlib unittest, matching the repo convention (29 of 34 tests/) -- no pip install, so
       # this runs on a bare runner.
+      # ALARM, never a gate: `|| true` is deliberate belt-and-braces on top of the tool's own
+      # exit 0. The ruling-candidate queue records arrivals and never records its own drains, so
+      # its depth reads the same whether it is draining or drowning. Measuring it and showing it
+      # to nobody is the same defect one level up, so it prints in every run of this workflow.
+      - name: Ruling-candidate backlog (report only)
+        run: python tools/candidate-flow.py || true
       - name: Derived-instrument regressions
         run: |
           python -m unittest discover -s tests -p "test_traps_index.py" -v
