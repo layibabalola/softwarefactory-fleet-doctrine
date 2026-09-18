@@ -131,7 +131,7 @@ def e2e_and_totals():
             unparsed.append(c[3] if len(c) > 3 else r[:40])
             continue
         rowed.add(c[3])
-        cell = c[7]
+        cell = c[7] if len(c) > 7 else ""
         m = E2E_COUNT_RE.search(cell)
         if m:
             n = int(m.group(1))
@@ -148,7 +148,12 @@ def e2e_and_totals():
             "per_project_closed": per_project,
             "rows": len(ledger_rows()),
             "projects_in_ledger": sorted(rowed), "totals": totals,
-            "unparsed": unparsed, "ambiguous_subject_cells": ambiguous}
+            "unparsed": unparsed, "ambiguous_subject_cells": ambiguous,
+            # Aliases from the independent fix on claude/vibrant-mayer-751247 (407ecea): same
+            # reduction, its names. `e2e_unreadable` is the PROJECT list behind the ambiguous cells.
+            "closed_end_to_end_by_project": per_project,
+            "projects_closing_end_to_end": closed_projects,
+            "e2e_unreadable": sorted({x.split(":", 1)[0] for x in ambiguous})}
 
 
 def criterion_1_met(led):
@@ -189,6 +194,9 @@ def main():
               "criterion_1_met": criterion_1_met(led),
               "criterion_1_projects": len(led["closed_projects"]),
               "ambiguous_subject_cells": led["ambiguous_subject_cells"],
+              "closed_end_to_end_by_project": led["closed_end_to_end_by_project"],
+              "projects_closing_end_to_end": led["projects_closing_end_to_end"],
+              "e2e_unreadable_rows": led["e2e_unreadable"],
               "ledger_rows": led["rows"], "ledger_totals": led["totals"],
               "projects_in_ledger": led["projects_in_ledger"],
               "never_filed": never_filed, "open_filings": open_filings,
@@ -206,7 +214,8 @@ def main():
           .format(len(led["closed_projects"])))
     if led["closed_projects"]:
         print("      {}".format(", ".join(led["closed_projects"])))
-    print("  closed subjects (info only): {}".format(led["closed_end_to_end"]))
+    print("  closed subjects (info only): {} across {} project(s)".format(
+        led["closed_end_to_end"], len(led["closed_projects"])))
     print("  ledger                     : {} rows over {} projects | {} FIT, {} FRICTION, {} BREAK, "
           "{} UNEXERCISED".format(led["rows"], len(led["projects_in_ledger"]),
                                   t["FIT"], t["FRICTION"], t["BREAK"], t["UNEXERCISED"]))

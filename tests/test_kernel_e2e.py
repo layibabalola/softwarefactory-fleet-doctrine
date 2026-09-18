@@ -127,5 +127,62 @@ class LedgerReduction(unittest.TestCase):
         self.assertEqual(sorted(got["projects_in_ledger"]), ["alpha", "beta"])
 
 
+# ---------------------------------------------------------------------------------------------
+# Cases from the independent fix on claude/vibrant-mayer-751247 (407ecea), cherry-picked onto
+# the same instrument. pytest collects these alongside the unittest classes above.
+# ---------------------------------------------------------------------------------------------
+import pytest
+
+
+def _row12(project, subjects):
+    # 12-cell layout (no unresolved-BREAKs / arbiter columns): c[3] project, c[7] subjects,
+    # c[8..12] the FIT/FRICTION/BREAK/N-A/UNEXERCISED counts.
+    cells = ["2026-09-14", "run-id", project, "sha", "r1", "code@r1", subjects,
+             "0", "0", "0", "0", "0"]
+    return "| " + " | ".join(cells) + " |\n"
+
+
+@pytest.fixture
+def kernel(monkeypatch):
+    def use(rows):
+        monkeypatch.setattr(ke, "ledger_rows", lambda: list(rows))
+        return ke.e2e_and_totals()
+    return use
+
+
+def test_one_project_with_five_does_not_meet_criterion_1(kernel):
+    # THE BUG: a fleet sum of 5 from a single project used to report criterion_1_met true.
+    led = kernel([_row12("mlv-app", "5 end-to-end")])
+    assert led["closed_end_to_end"] == 5
+    assert led["projects_closing_end_to_end"] == ["mlv-app"]
+    assert len(led["projects_closing_end_to_end"]) < 5
+
+
+def test_five_distinct_projects_with_one_each_meets_criterion_1(kernel):
+    led = kernel([_row12(p, "1 end-to-end") for p in
+                  ("adobe-ingester", "agent-bridge", "airmypc", "cloudvore", "conjugal")])
+    assert len(led["projects_closing_end_to_end"]) == 5
+
+
+def test_a_project_filing_twice_is_not_double_counted(kernel):
+    # Rows are per-filing-per-harvest, so summing lets two harvests of one project inflate it.
+    led = kernel([_row12("mlv-app", "2 end-to-end"), _row12("mlv-app", "3 end-to-end")])
+    assert led["projects_closing_end_to_end"] == ["mlv-app"]
+    assert led["closed_end_to_end_by_project"]["mlv-app"] == 3
+
+
+def test_prose_drift_is_named_not_silently_scored_zero(kernel):
+    # A number read out of a free-text cell. A miss must not look like a real zero.
+    led = kernel([_row12("cloudvore", "end-to-end: two subjects closed")])
+    assert led["e2e_unreadable"] == ["cloudvore"]
+    assert led["projects_closing_end_to_end"] == []
+
+
+def test_a_genuine_zero_is_not_flagged_unreadable(kernel):
+    led = kernel([_row12("conjugal", "0 end-to-end (1 blocked at acceptance closure)")])
+    assert led["e2e_unreadable"] == []
+    assert led["projects_closing_end_to_end"] == []
+
+
 if __name__ == "__main__":
     unittest.main()
