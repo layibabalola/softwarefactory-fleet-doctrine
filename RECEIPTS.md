@@ -3910,3 +3910,13 @@ This receipt records the ruling, not a successful landing or a verified `HARVEST
 is unchanged at r5 (2,867 words of 3,500); `specs/fleet-factory-kernel/profiles/code.md` r5 -> r6 (+85 words, 949).
 Ledger row in `adjudications/factory-kernel/HARVESTS.md`. Seats: arbiter gpt-6-astra (high), consolidator
 claude-fable-5, lint claude-opus-5 + gpt-5.6-sol, orchestrator claude-opus-5.
+
+## Factory-kernel re-file ruling 2026-09-18 - airmypc-dogfood-20260918 (run 20260918T151906Z-abb94321)
+
+Single arbiter gpt-6-astra (high) ruled on filing blob 697289f24e921ee73412566d7de4e4b043f4d6cd at origin/review/airmypc-dogfood-2026-09-18. [Dispositions](adjudications/factory-kernel/airmypc-dogfood-20260918.dispositions.md). The blob adds D/E and extends Proposed destinations relative to harvested blob 9cfb218748c137a1a8a0c33f6a7ac1566be5cc60; unchanged A/B/C carry forward without reapplication. Destination identifiers are §PD-TRAPS and §PD-KERNEL.
+
+A remains routed to the AirMyPC gate-preflight bench. B/C remain adopted at code r6. D is adopted as a narrowed refusal-classification TRAP only. E is conditionally adopted for git landings with a governing record commit: validate the exact proposed record through its commit validators and hooks before product publication. Its negative regressions remain proposed. Existing recovery obligations remain binding.
+
+The authorized profile insertion is 44 whitespace-delimited words: code r6 to r7, 949 to 993 words. Kernel r5 remains unchanged at 2,867 of 3,500 words. D/E receive new TRAPS entries; A/B retain their existing entries; C's duplicate TRAP remains rejected. Nine HEADER defects carry forward. The proposed tenth defect is rejected because the cited filing rules do not require a re-file changelog or supersession marker.
+
+The appended HARVESTS.md row records zero submitted verdicts and zero credited end-to-end subjects; the actual qualifying subject total is unestablished, not proved zero. Exercised revisions remain undeclared. This block records the adjudication and authorized changes, not successful landing, passing production regressions, or verified HARVESTED status.

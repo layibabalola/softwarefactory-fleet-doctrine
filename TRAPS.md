@@ -11590,3 +11590,27 @@ opens a replacement. The 1 h refusal and the decoy's survival passed in both arm
 its window opened — *"a repair window opened 9/15/2026 10:42:22 AM is still unanswered"* — and nobody
 subtracted it. Print the elapsed time and the bound in the refusal line itself. Our launcher's refusal line does
 not do this yet; the age bound acts on the marker, but the line still prints only the open time.
+
+## A wording-sensitive provider refusal needs a caller-controlled resume condition (AirMyPC, 2026-09-18)
+
+AirMyPC reports one Codex xhigh attempt refused with "access_programs parameter is not enabled for this organization (access_programs.cyber)". Its prompt described harming a runner and killing processes; the same substance worded neutrally was reviewed normally. The lane correctly recorded FAILED/UNEVALUABLE. This is a reported wording-sensitive recovery, not proof of the provider's internal classifier or of a credential or capacity fault.
+
+This extends "Two byte-identical launcher-refusal logs are OPPOSITE classes" (TRAPS.md:1825), "transport refusal vs authority refusal costume" (TRAPS.md:3335), and the transport/quota/API-path distinction at TRAPS.md:5060. MLV-App's "A guard that scans text reads WRITING ABOUT a command as the command" (TRAPS.md:9808) supplies a related local-guard example. The increment is the provider-review surface and a resume condition the caller can satisfy.
+
+Classify the actual refusal before selecting recovery. Where wording is the demonstrated discriminator, neutral restatement preserves the task and subject while changing the review packet; recompute that packet's identity. Retain the refused attempt and its expenditure, with no subject verdict or completed-review credit. Parking solely for a quota reset would not address a wording defect; the filing does not report that misclassification occurring.
+
+Section D supplies no regression pattern. Proposed regression, not reported passing: exercise the refused wording and its neutral equivalent against the same subject, retain both attempt receipts and distinct packet identities, and verify that the refused attempt supplies no verdict.
+
+Source: filing 697289f24e921ee73412566d7de4e4b043f4d6cd, section D.
+
+## Validate the exact governing record before publishing the product (AirMyPC, 2026-09-18)
+
+AirMyPC reports Invoke-AudioMileLanding pushing Q02b product bytes to both remotes before the queue record commit reached its pre-commit hook. That hook refused: the promoted next packet was BLOCKED with no paths or command, and evidence objects lacked fields the downstream validator required. Contract validation had missed those fields. The result was PARTIAL with no governing record; replay recomputed the same invalid bytes. Recovery required a lead edit, a new candidate, another cross-family key and a second landing.
+
+This extends Cloudvore's "delivery closure can lag a successful merge" (TRAPS.md:1705) and AirMyPC's "A landing tool that asserts DONE as a side effect of landing..." (TRAPS.md:10136). Their closure and state-representation lessons remain. The increment is prevention of predictable record rejection: build the exact proposed record and run its commit validators and hooks before any product push; contract validation must cover every field downstream validators read. Preflight does not replace CLOSURE_INCOMPLETE recovery and the next-landing interlock.
+
+The filing reports scratch-tree resume-chain rehearsal (122/0), followed by candidate 5 landing DONE. That is a reported workaround, not proof that the queued production-tool fix or its negative tests pass.
+
+PROPOSED regression from the filing, not reported passing: a contract whose next packet has empty paths or command, and a contract whose evidence lacks the verdict field, must each be refused with no ref moved on any remote.
+
+Source: filing 697289f24e921ee73412566d7de4e4b043f4d6cd, section E.

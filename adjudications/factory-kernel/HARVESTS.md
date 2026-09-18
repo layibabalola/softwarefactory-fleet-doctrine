@@ -196,3 +196,65 @@ adopted findings — a Claims (K3) row requiring enforced boundaries for read-on
 canonical audit that compares content hashes, and a Subject identity (K3) row requiring review contracts to name each
 identity field's hashed artifact set. Kernel unchanged at 2,867 of 3,500 words. Dispositions:
 `adjudications/factory-kernel/airmypc-dogfood-20260918.dispositions.md`.
+
+---
+
+## Harvest 2026-09-18 (second) — run 20260918T151906Z-abb94321 (Conjugal, interim steward)
+
+Appended at end of file; this ledger is byte-append-only. Same columns, same order; `tools/kernel-e2e.py` takes rows by
+content, not position, and sums all four tables.
+
+**This row and the 2026-09-18 row above are the SAME filing at two blobs, not two filings.** `airmypc-dogfood-20260918`
+was harvested this morning at blob `9cfb2187` and re-filed at blob `697289f2`, which appends sections D and E and
+extends `## Proposed destinations`; A/B/C are byte-identical and their dispositions carried forward without
+reapplication. Both rows are kept because the ledger is append-only and because a re-file is a real event, but **nothing
+in this row is new end-to-end evidence and the two rows must never be summed as two projects' worth of coverage.**
+
+| date | harvest | filing | blob | kernel | profile | subjects | FIT | FRICTION | BREAK | N/A | UNEXERCISED | unresolved BREAKs | arbiter |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 2026-09-18 | 20260918T151906Z-abb94321 | airmypc-dogfood-20260918 | 697289f24e921ee73412566d7de4e4b043f4d6cd | undeclared by the filing; adjudicated against r5, unchanged this round | undeclared by the filing; adjudicated against code@r6 (now r7) | 0 credited end-to-end; actual qualifying total unestablished rather than proved zero; no declared exact subject identities, window, pre-work profile or bound acceptance/delivery receipts; window-opened-before-kernel=undeclared | 0 | 0 | 0 | 0 | 0 | 0 submitted | gpt-6-astra (high; steward seat; not a steward filing) |
+
+These zeros count submitted verdict lines; they do not certify FIT, manufacture UNEXERCISED findings, or erase attempted
+work. Five narrative sections are not five verdicts. A, B and C receive no duplicate evidence credit for appearing in a
+second blob.
+
+Derived, not asserted. Re-run: `python tools/kernel-e2e.py --json`.
+
+**§5 criterion 1 — CLOSED END-TO-END SUBJECTS: 0.** Fourteen rows across the same seven projects — `kernel-e2e.py`
+prints eight `projects_in_ledger` because the filing name `airmypc-dogfood-20260918` does not map to `airmypc` — and it
+has been 0 at
+every harvest. Criterion 1 needs at least five projects with at least one closed subject each, so finalisation is 0/5.
+Verdicts across all 14 rows are unchanged by this round: **77 FIT, 71 FRICTION, 5 BREAK, 0 N/A, 47 UNEXERCISED.**
+
+**§5 criterion 2 remains MET** on the 2026-09-17 finding: `code`, `hardware-in-loop` and `measured-objective` all carry
+harvested rows with exercised verdict lines, the latter two being the non-test-suite pair. Nothing this round touches it.
+
+**§5 criterion 3 — the kernel text is unchanged at r5 for the SECOND consecutive round, and the clock still does not
+start.** Two things have to be true, and neither is true here. The digest half: `code` is the participating profile and moved
+r6 → r7 on the one conditionally adopted finding, so kernel-and-participating-profile digests are not identical across
+the pair. The evidence half: criterion 3 requires "fresh end-to-end evidence meeting criteria 1 and 2", and criterion 1
+is 0. Either alone stops it. Stating this plainly because two successive unchanged-kernel rounds is the closest this
+ledger has come, and the temptation to read it as progress toward finalisation is exactly what criterion 3's second
+requirement exists to refuse. **Criterion 4 has never started**; `grep -ci "fleet-factory-kernel\|factory kernel"
+RULINGS.md` is still 0. The owner gate is idle, not jammed.
+
+**Members due — 2 have NEVER filed:** `adversarialllm`, `salesforce-tools`. Unchanged from 2026-09-17.
+`harvest-status.py` still cannot see a member who has never filed; `tools/kernel-e2e.py` takes the roster from §6.
+
+**Steward self-filing — the ledger gap named on 2026-09-18 (first) is now in its second round, and this run did not close
+it either.** `tools/kernel-e2e.py` still reports `conjugal` in `filed_but_unrowed`. This remains a ledger gap, not a
+routing gap: `adjudications/factory-kernel/conjugal.dispositions.md` exists at commit `dc2a719` — arbiter cloudvore,
+2026-09-17, ruling on blob `3a36f3e6` (20 findings: 6 ADOPTED · 2 ADOPTED-CONDITIONAL · 11 REJECTED · 1 ROUTED, spec
+commit `da4e9201`) — and `harvest-status.py` marks `conjugal` HARVESTED. Both 2026-09-18 runs were scoped by their
+runner to one filing, `airmypc-dogfood-20260918`, and neither could append a row for a different filing without leaving
+its allowlist. **Recording the reason rather than repeating the observation: this is not a step anyone forgets, it is a
+step no single-filing run is authorised to take, so it will not close until a run is scoped to include it.** HARVESTS.md
+being steward-written (kernel §5) puts it on the steward.
+
+**What this round changed:** `specs/fleet-factory-kernel/profiles/code.md` r6 → r7, +44 words (949 → 993), on one
+ADOPTED-CONDITIONAL finding — a Delivery target (K7) requirement that, for git landings with a governing record commit,
+the exact proposed record is built and run through the validators and hooks it will face before any product push, with
+contract validation covering every field downstream validators read. Kernel unchanged at r5, 2,867 of 3,500 words. Two
+TRAPS.md entries appended (sections D and E). Dispositions:
+`adjudications/factory-kernel/airmypc-dogfood-20260918.dispositions.md`, rewritten for blob `697289f2` and superseding
+its own ruling on blob `9cfb2187` without withdrawing any disposition that ruling recorded.
