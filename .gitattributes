@@ -1,0 +1,20 @@
+# Append-only shared logs: every writer adds at EOF, so two branches that both append
+# conflict on the SAME final hunk every time. README.md law 2 says "Merge conflicts are
+# impossible by construction" -- that holds only for writers appending directly to master.
+# The fleet uses branches (review/*, codex/*, claude/*), and TRAPS.md alone takes ~480 added
+# lines/day, so in practice this conflicted on essentially every branch that recorded a trap.
+#
+# `union` is git's built-in driver for exactly this shape: on conflict it keeps BOTH sides'
+# lines rather than raising. That is the correct resolution for an append-only log and it is
+# what a human does by hand anyway. It does NOT make edits safe -- if two branches rewrite the
+# same existing line, union keeps both copies -- which is fine here precisely because these
+# files are append-only by doctrine. Corrections are appended as new CORRECTION entries, never
+# by editing the entry being corrected.
+TRAPS.md        merge=union
+RECEIPTS.md     merge=union
+RULINGS.md      merge=union
+DISCOVERIES.md  merge=union
+
+# Generated, never hand-edited: regenerate with `python tools/traps-index.py --write` rather
+# than resolving it. Union would interleave two derived tables into nonsense.
+TRAPS-INDEX.md  -merge

@@ -10,6 +10,16 @@ on:
       - 'specs/*continuity*'
       - 'specs/*resumption*'
       - '.github/workflows/doctrine-sync.yml'
+      - 'tools/traps-index.py'
+      - 'tools/candidate-flow.py'
+      - 'tools/kernel-e2e.py'
+      - 'tests/test_traps_index.py'
+      - 'tests/test_candidate_flow.py'
+      - 'tests/test_kernel_e2e.py'
+      - 'TRAPS.md'
+      - 'TRAPS-INDEX.md'
+      - 'ruling-candidates/**'
+      - 'adjudications/**'
   pull_request:
     paths:
       - 'tools/doctrine-sync*'
@@ -19,6 +29,16 @@ on:
       - 'specs/*continuity*'
       - 'specs/*resumption*'
       - '.github/workflows/doctrine-sync.yml'
+      - 'tools/traps-index.py'
+      - 'tools/candidate-flow.py'
+      - 'tools/kernel-e2e.py'
+      - 'tests/test_traps_index.py'
+      - 'tests/test_candidate_flow.py'
+      - 'tests/test_kernel_e2e.py'
+      - 'TRAPS.md'
+      - 'TRAPS-INDEX.md'
+      - 'ruling-candidates/**'
+      - 'adjudications/**'
   workflow_dispatch:
 permissions:
   contents: read
@@ -40,3 +60,25 @@ jobs:
         run: node tools/doctrine-sync.tests.mjs
       - name: Real member discovery and absent Cloudvore heartbeat
         run: node tools/fleet-membership.tests.mjs
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.14'
+      # A generated enumeration that nothing checks will rot. This is that check.
+      - name: TRAPS index is current
+        run: python tools/traps-index.py --check
+      # These suites otherwise run in no workflow at all: every other workflow names its test
+      # files individually, so a new tests/ file is invisible to CI by default -- a capability
+      # with no caller, which is the defect class this repo keeps paying for.
+      # stdlib unittest, matching the repo convention (29 of 34 tests/) -- no pip install, so
+      # this runs on a bare runner.
+      # ALARM, never a gate: `|| true` is deliberate belt-and-braces on top of the tool's own
+      # exit 0. The ruling-candidate queue records arrivals and never records its own drains, so
+      # its depth reads the same whether it is draining or drowning. Measuring it and showing it
+      # to nobody is the same defect one level up, so it prints in every run of this workflow.
+      - name: Ruling-candidate backlog (report only)
+        run: python tools/candidate-flow.py || true
+      - name: Derived-instrument regressions
+        run: |
+          python -m unittest discover -s tests -p "test_traps_index.py" -v
+          python -m unittest discover -s tests -p "test_candidate_flow.py" -v
+          python -m unittest discover -s tests -p "test_kernel_e2e.py" -v

@@ -99,10 +99,23 @@ def ledger_rows():
 
 
 def e2e_and_totals():
-    """Sum the closed-end-to-end count and the verdict columns across every ledger row."""
+    """Verdict totals, plus the end-to-end count PER PROJECT.
+
+    Criterion 1 is a distinct-project count, not a fleet sum: specs/fleet-factory-kernel.md:219
+    requires "At least five member projects have filed, each covering at least one real subject
+    end-to-end". A fleet sum says true when ONE project closes five, which fails permissively --
+    the direction nobody audits. Rows are per-filing-per-harvest, so a project appearing in two
+    harvests would also double-count; take that project's MAX rather than its sum.
+
+    E2E_RE reads a number out of a free-text column. A steward writing "end-to-end: 2" or
+    "1 closed end-to-end" yields no match, and a miss is indistinguishable from a real zero.
+    When the cell mentions end-to-end but does not parse, name the row in `e2e_unreadable`
+    instead of silently scoring it 0.
+    """
     names = ["FIT", "FRICTION", "BREAK", "N/A", "UNEXERCISED"]
     totals = dict.fromkeys(names, 0)
-    closed, rowed, unparsed = 0, set(), []
+    rowed, unparsed, unreadable = set(), [], []
+    per_project = {}
     for r in ledger_rows():
         c = [x.strip() for x in r.split("|")]
         try:
@@ -111,12 +124,21 @@ def e2e_and_totals():
         except (ValueError, IndexError):
             unparsed.append(c[3] if len(c) > 3 else r[:40])
             continue
-        rowed.add(c[3])
-        m = E2E_RE.search(c[7])
+        project = c[3]
+        rowed.add(project)
+        subjects = c[7] if len(c) > 7 else ""
+        m = E2E_RE.search(subjects)
         if m:
-            closed += int(m.group(1))
-    return {"closed_end_to_end": closed, "rows": len(ledger_rows()),
-            "projects_in_ledger": sorted(rowed), "totals": totals, "unparsed": unparsed}
+            per_project[project] = max(per_project.get(project, 0), int(m.group(1)))
+        elif "end-to-end" in subjects.lower():
+            unreadable.append(project)
+    closed_projects = sorted(p for p, n in per_project.items() if n >= 1)
+    return {"closed_end_to_end": sum(per_project.values()),
+            "closed_end_to_end_by_project": per_project,
+            "projects_closing_end_to_end": closed_projects,
+            "rows": len(ledger_rows()),
+            "projects_in_ledger": sorted(rowed), "totals": totals,
+            "unparsed": unparsed, "e2e_unreadable": sorted(set(unreadable))}
 
 
 def main():
@@ -137,7 +159,11 @@ def main():
 
     result = {"subject": a.subject, "roster": members,
               "closed_end_to_end": led["closed_end_to_end"],
-              "criterion_1_met": led["closed_end_to_end"] >= 5,
+              "closed_end_to_end_by_project": led["closed_end_to_end_by_project"],
+              "projects_closing_end_to_end": led["projects_closing_end_to_end"],
+              # Distinct projects with >=1, NOT the fleet sum. See e2e_and_totals().
+              "criterion_1_met": len(led["projects_closing_end_to_end"]) >= 5,
+              "e2e_unreadable_rows": led["e2e_unreadable"],
               "ledger_rows": led["rows"], "ledger_totals": led["totals"],
               "projects_in_ledger": led["projects_in_ledger"],
               "never_filed": never_filed, "open_filings": open_filings,
@@ -151,8 +177,12 @@ def main():
 
     t = led["totals"]
     print("kernel finalisation, derived {}".format(a.subject))
-    print("  CLOSED END-TO-END SUBJECTS : {}   (§5 criterion 1 needs >=5 projects with >=1 each)"
-          .format(led["closed_end_to_end"]))
+    print("  CLOSED END-TO-END SUBJECTS : {} across {} project(s)   "
+          "(§5 criterion 1 needs >=5 projects with >=1 each)"
+          .format(led["closed_end_to_end"], len(led["projects_closing_end_to_end"])))
+    if led["e2e_unreadable"]:
+        print("  E2E CELL UNREADABLE        : {}   (says end-to-end, no number parsed -- NOT scored 0)"
+              .format(", ".join(led["e2e_unreadable"])))
     print("  ledger                     : {} rows over {} projects | {} FIT, {} FRICTION, {} BREAK, "
           "{} UNEXERCISED".format(led["rows"], len(led["projects_in_ledger"]),
                                   t["FIT"], t["FRICTION"], t["BREAK"], t["UNEXERCISED"]))

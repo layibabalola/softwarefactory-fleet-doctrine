@@ -999,3 +999,64 @@ This validation demonstrates a production-ready multi-provider factory architect
 
 ---
 
+
+---
+
+## The apparatus measures itself: five independent adversarial reads converge on routing, not capacity (fleet, 2026-09-17, VIRTUAL-TEN)
+
+Five Opus arms were run in parallel on disjoint questions — stated purpose, ceremony
+cost, the caller gap, gate design, and throughput. They were not told each other's
+findings. They converged, and one of them was assigned to argue the opposite.
+
+**The measurements, each independently derived:**
+
+- **Delivery counter has never moved.** `python tools/kernel-e2e.py` → `CLOSED END-TO-END
+  SUBJECTS : 0`, and `adjudications/factory-kernel/HARVESTS.md:24-25`: "It has been 0 at
+  every harvest." 151 findings across 8 kernel filings; zero closed subjects.
+- **Machinery is 49% of the tree by bytes and 5.8 control file-touches per payload
+  touch.** `tools/` + `tests/` + `manifests/` + `adoption/` + `schemas/` = 3.24 MB against
+  `specs/` at 787 KB — the doctrine payload the whole apparatus exists to move.
+- **The candidate queue has never drained.** 33 candidates, `git log --diff-filter=D --
+  ruling-candidates/` returns zero rows. Nothing has ever left.
+- **Two disagreeing closed sets.** `tools/fleet-membership.mjs` derived 30 members against
+  a census of 10 (fixed in c118982).
+- **Doctrine payload outgrew every possible reader.** `TRAPS.md` went 2,861 → 11,047 lines
+  between 2026-09-01 and 09-17 — 3.9x in 17 days, ~480 lines/day sustained, in a repo 39
+  days old.
+
+**The adjudication.** The obvious reading — the owner is a bottleneck — is WRONG, and the
+evidence that kills it is specific: both candidates that were ever ruled on were ruled
+**the same day they were filed**. Service latency when an item is actually routed is 0
+days; routing probability is 6%. The steward already wrote this down at `HARVESTS.md:59`:
+"The owner gate is idle, not jammed." The bottleneck is that nobody is asked.
+
+**The second wrong reading is that the ceremony is uniformly waste.** It is not. The
+ceremony that REVIEWS earns its cost — `doctrine-sync.mjs` and `merit-adjudicate.mjs` are
+450 lines with 25 citations and a recorded catch of a gate whose publication detection was
+a substring match on commit subjects, so any commit mentioning a project cleared its debt.
+`TRAPS.md` is ~257 harvested entries plus 69 early sections, all produced by review boards,
+none by a checker. (An earlier draft of this entry said 368: that is the raw `##` count, and
+42 of those lines are wrapped continuations of the preceding heading, not entries. A naive
+heading parser overcounts this file by ~13%.) The
+waste is the ceremony that SEALS and RE-VALIDATES: 16 `check_phase*.py` pinned to immutable
+SHAs that re-verify frozen history on every push and can only fail if git is corrupted.
+
+**The sharpest single fact.** `cos-feedback/` is the one limb with real flow — 114 files in
+8 days, 106 carrying concrete improvements, revised as PR heads move, touching actual
+product PRs. **It bypasses the candidate, census and adjudication apparatus entirely.** The
+value-producing limb is the one with no ceremony, and it is the limb doctrine grants no
+authority (`cos-feedback/README.md:7-9`).
+
+**The rule this yields: a queue that does not record its own service is unfalsifiable from
+inside — its depth looks identical whether it is draining or drowning.** The proof is in
+the queue itself: the two candidates that WERE ratified still carry "PROPOSED ONLY — NOT
+YET A RATIFIED RULING" in their own text. The queue cannot tell you it drained twice.
+`tools/candidate-flow.py` (added here) measures it and deliberately exits 0: routing is an
+owner act, and a blocking version would be the arbitrary, gameable gate that
+`specs/mlv-app.md:372` already withdrew once.
+
+**What was NOT done here, because it is owner-gated, not mechanical:** adding `decision:`
+front-matter to 33 owner-facing candidates, auto-expiring anything, deleting the pinned
+`check_phase*` suites, or retiring the 44-file byte seal. Those change governance. The
+measurement is on the record so the decision can be made against numbers instead of
+impressions.

@@ -1,5 +1,5 @@
 schema: cos-feedback.v1
-project: audiomile
+project: airmypc
 repo: layibabalola/AudioMile
 pr: 1
 head: e153653aa5acae7b97cbf2422fc05c671fe90ab7

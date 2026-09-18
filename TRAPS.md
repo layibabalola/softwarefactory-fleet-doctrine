@@ -11450,6 +11450,71 @@ never on the document that instructs it.** The document edit is the repair; the 
 line or output is the evidence, and until that artifact exists the token stays open. Corollary for any
 factory whose seats are configured outside the repository: when the fix needs a file you cannot write, the
 token does not close — it acquires an addressee.
+## A bus directory named for the REPO instead of the BOARD fabricates a missing fleet member — and the census cannot see the difference (fleet, 2026-09-17, VIRTUAL-TEN)
+
+`cos-feedback/audiomile/` carried real review traffic while no `specs/audiomile.md` and no R26 census
+record existed. Read as drift, that is a fleet member invisible to the disposition census — an
+admission gap. It was neither: **`audiomile` is the repo name of the already-pinned `airmypc` board**,
+and the census closed set was correct the whole time.
+
+- **The identity evidence was in tracked doctrine, not in the artifact.** `specs/airmypc.md:93` derives
+  that board's CI from `gh run list -R layibabalola/AudioMile`; `:70,72,79,80` make `AudioMile-LaneIgnition`,
+  `Get-AudioMileResumeBrief.ps1` and `AudioMileDeliveryQueue.psm1` load-bearing airmypc tools;
+  `capacity-control/PROJECT-ADOPTION-MATRIX.md:12` names the row `| AirMyPC / AudioMile |` — one board,
+  two names.
+- **The artifact's own header is not evidence of membership.** `project: audiomile` in the feedback file
+  is the thing under test. A swarm arm that reasoned from it concluded audiomile was a member factory
+  needing admission — circular, and wrong. The arm that went to `specs/` got it right.
+  **Test: resolve a slug against `specs/` and the adoption matrix BEFORE believing a directory implies a board.**
+- **`cos-feedback/README.md:39` listed `audiomile` as a valid slug example** while `:37` and `SCHEMA.md:13`
+  both require slugs to equal a `specs/<project>.md` id. The doctrine contradicted itself, so the
+  mis-slugged dir looked conforming to whoever created it. Fixed in the same commit.
+- **Why this class is expensive:** the wrong repair is to mint `specs/audiomile.md` plus an eleventh
+  census record. That passes the checker — the closed set is `tracked specs − nonProjectSpecs`, so the
+  gate goes green on a fabricated member — and permanently splits one board into two identities across
+  the census, the matrix and the bus. **A green gate confirms the set is closed, never that its members
+  are real.**
+
+**The rule: a directory is not a member. Membership is an identity that `specs/` and the adoption matrix
+must already agree on; anything else is a filename.** When a bus path has no spec, first ask whether the
+board is present under another name — the fleet uses product, repo and board names interchangeably in
+prose, and only the board slug is load-bearing.
+
+## A byte-pinned control that binds a LIVING document is a gate with an expiry date — and ours has been red for eight days while nine of thirteen bus PRs routed around it (fleet, 2026-09-18, VIRTUAL-TEN)
+
+`Provider capacity governor contracts` fails on master and on every PR. It is cited across the bus
+as "pre-existing red, not introduced here" — **9 of the 13 files in `cos-feedback/_bus/` carry some
+version of that note**. In eight days nobody wrote down WHY, because routing around it is cheaper
+each time than reading a 3,185-line checker. The cost is not the red; it is that a permanently red
+required check trains every reviewer to ignore CI, which is the same instrument they need on the
+day something real breaks.
+
+**The root cause, in one line:** `manifests/universal-provider-control-reconciliation-r45.json`
+lists `README.md` in `subjectFiles`, pinned at **20,000 bytes**. `README.md` is **22,781 bytes**
+today. `check_universal_manifest.py:2978` raises `MANIFEST_SUBJECT_MISMATCH`, and the two
+`ReviewResourceAdmissionR29Tests` cases ERROR out of it.
+
+- **Derive it in ten seconds**, rather than reading the checker: for each entry in `subjectFiles`,
+  compare `sha256`/`bytes` against `git show :<path>`. Exactly one of the seven drifts. The other
+  six — `RECONCILIATION.md`, the schema, the reconciliation spec, and the three big tools/tests —
+  are byte-identical, because they are frozen artifacts. README is not.
+- **The dates prove it is structural, not an accident.** The manifest was last re-pinned
+  `39dac93` on 2026-09-07, the same day README was committed at exactly 20,000 bytes (`a99bf5e0`).
+  README has changed four times since — 09-10, 09-13 twice, 09-14 — and the gate went red at the
+  first of those and has stayed red. **Six of the seven subjects have not moved in a month; the
+  seventh moves whenever anyone documents anything.**
+- **Re-pinning is a snooze, not a fix.** `tools/refresh_current_universal_manifest.py --candidate
+  <exact commit>` is the sanctioned re-bind and is explicitly not a ratification. It turns the gate
+  green until the next README edit, which on the last month's cadence is days. The real question —
+  should a control that certifies provider-control reconciliation bind the repo's README at all? —
+  is a design judgment about what the control certifies, and belongs to whoever owns it.
+
+**The rule: a byte-seal over a file that the fleet edits in the ordinary course of work does not
+certify that file, it schedules an outage.** Before pinning a path, ask what its commit cadence is;
+if the answer is "whenever someone writes a sentence", pin a frozen extract or do not pin it.
+**And treat a required check that has been red for more than a day as a live incident with an
+owner, not as weather** — "pre-existing, not introduced here" is an accurate statement about a diff
+and a false statement about the fleet.
 
 ## A one-shot allowance issued late inside a bounded parent is spent by the parent's wall, not by the child (adobe-ingester, 2026-09-18, auditor f3b26c50)
 
