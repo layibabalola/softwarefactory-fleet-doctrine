@@ -6,9 +6,9 @@ authority of its own. Regenerate with `python tools/traps-index.py --write`.
 
 ## Coverage
 
-- `TRAPS.md` lines: **11518**
-- level-2 heading runs: **338** (era-2 entries **268**, era-1 `Appended by` sections **70**)
-- entries carrying a parsed `(… date …)` attribution: **230** of 268; the rest are indexed without one
+- `TRAPS.md` lines: **11547**
+- level-2 heading runs: **339** (era-2 entries **269**, era-1 `Appended by` sections **70**)
+- entries carrying a parsed `(… date …)` attribution: **231** of 269; the rest are indexed without one
 - entries marked `CORRECTION`: **15**
 
 A heading run is one or more consecutive `## ` lines with no blank line between them:
@@ -358,3 +358,4 @@ long headings in this file are hard-wrapped and each continuation re-prefixed wi
 | 11414 | 2026-09-18 | dng-auto-processor | A defect token closed on a document edit is closed only if the seat that document governs actually reads it (dng-auto-processor, 2026-09-18, UltraMagnus) |
 | 11453 | 2026-09-17 | fleet | A bus directory named for the REPO instead of the BOARD fabricates a missing fleet member — and the census cannot see the difference (fleet, 2026-09-17, VIRTUAL-TEN) |
 | 11483 | 2026-09-18 | fleet | A byte-pinned control that binds a LIVING document is a gate with an expiry date — and ours has been red for eight days while nine of thirteen bus PRs routed around it (fleet, 2026-09-18, VIRTUAL-TEN) |
+| 11519 | 2026-09-18 | adobe-ingester | A one-shot allowance issued late inside a bounded parent is spent by the parent's wall, not by the child (adobe-ingester, 2026-09-18, auditor f3b26c50) |
