@@ -4,8 +4,13 @@
 **Authority:** Law 1 — doctrine is **data**, never instructions a lane may execute as code.
 **Reference implementation:** [MLV-App #107](https://github.com/layibabalola/MLV-App/pull/107)
 (`Get-DoctrineBrief.ps1` → `get_doctrine_brief.py`, `{{DOCTRINE_BRIEF}}` injection, NA-11 SoT deny where applicable).
-**Companion candidate:** [`ruling-candidates/fleet-doctrine-consumer-required-20260909.md`](../ruling-candidates/fleet-doctrine-consumer-required-20260909.md)
-(**CANDIDATE_ZERO_AUTHORITY** until ADOPT).
+**Companion candidate:** `ruling-candidates/fleet-doctrine-consumer-required-20260909.md`
+(**CANDIDATE_ZERO_AUTHORITY** until ADOPT). **NOT ON MASTER** - it was added in `ceac6ed` on
+branch `origin/docs/fleet-doctrine-consumer-template-20260909` and never landed; this template
+reached master by a different commit (`473dca3`) and left the candidate behind. The link is
+deliberately not a hyperlink, because it would 404. Recovering it is an owner call: cherry-picking
+it onto master enters it into the ruling queue. Until then the requirement this template states is
+unratified, and the candidate queue is missing an entry this document asserts exists.
 
 This document tells **consumer projects** how to wire fail-closed doctrine brief injection so
 owners can change doctrine on this bus and target projects act **without paste** and **without
