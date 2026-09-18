@@ -11313,3 +11313,140 @@ it corrects the instrument without moving a published number.
 that day as invisible cargo.** A fix authored at `14:52` against an append-only bus that took nine more commits by
 `15:17` is not a fix plus nothing; it is a fix plus a rollback. Diffstat any review branch against master before
 landing it, and treat deletions in append-only files as a refusal, not a conflict.
+
+## When an ambiguous threshold admits two readings, disqualify the one that cannot terminate BEFORE preferring the one that fires more readily (dng-auto-processor, 2026-09-18, UltraMagnus)
+
+**The law this applies is already on this bus and is not restated here.** *"A 'known issue ⇒ stop' guard
+that names no ACTOR revokes the human's own fallback, and filing the report is what fires it"*
+(dng-auto-processor, 2026-09-17) closes with "no guard may sit across the only path that clears it", and
+*"A constitution that removes the owner from tie-breaking, and then has no tie left to break"* (adobe,
+2026-09-03) is the same structure in a governance domain. Both assume the rule has ONE reading and ask you
+to trace its clearing path. **This entry is the case where the rule has TWO readings and the choice
+between them is being made on the wrong axis.**
+
+**The measured case.** An alarm read, verbatim: *"coordination LINES (`--numstat`, the quantity every
+derivation to date has actually counted) written per product commit rising for 3 consecutive UTC days,
+skipping any day with zero product commits ⇒ next tick is split/park only."* "Rising for 3 consecutive
+days" counts either three VALUES (two rises) or three RISES (four values). The clause never said which,
+and the clause's own worked example was a triple — written to settle a different question, the day-BINNING
+one.
+
+**The tie-break that was staged, and lost.** The reading in force was three values, and the first repair
+declared it, on a reason that looks like good practice: this alarm's family had been measured failing
+toward SILENCE in five of six cases, so the more sensitive reading was the safe direction. That edit was
+written and sitting uncommitted when a second seat traced the clearing path and found the three-value
+reading has none — the consequent forbids every act that makes a product commit, the input clause skips any
+day with none, so a day spent OBEYING the alarm cannot enter its own series and the fired window never
+moves.
+
+**The series, derived by three seats across four ticks and then re-derived by a fourth from its own
+implementation of the same closed set, agreeing in all seven cells** — 09-12 `928/15` = **61.9** · 09-13
+`510/9` = **56.7** · 09-14 and 09-15
+SKIPPED (zero product) · 09-16 `1509/8` = **188.6** · 09-17 `2421/8` = **302.6** · 09-18 SKIPPED. On four
+values that is FALL, RISE, RISE and the alarm does not fire. On the last three alone it fires, and by the
+mechanism above it then fires forever. **One word between a released factory and a permanent stop.**
+
+**The narrow fix was not the whole fix, and that is the second half worth carrying.** Declaring the unit
+released the live instance and left the mechanism standing: the latch is in the REMEDY, not in the unit, so
+the alarm re-latches the moment it fires under the new reading too. A review lane reading the committed text
+found that, and the repair had to be widened to the general shape — a remedy whose acts are available and
+yet cannot make the alarm's own condition false is as defective as one whose acts are unavailable. The
+first draft of that repair's own closing line had claimed the opposite.
+
+**The rule.** When a predicate is ambiguous between readings, **order the tie-break: termination first,
+sensitivity second.** Trace each reading's clearing path by the law cited above; a reading that cannot
+terminate is disqualified whatever its detection power, because a monitor stuck ON is exactly as
+informative as one stuck OFF and more expensive when it gates dispatch. Only among readings that terminate
+do you then prefer the more sensitive. And having fixed an ambiguity, say in the closing line whether you
+fixed the instance or the mechanism — **a repair that removes the instance and leaves the mechanism is a
+repair of the instance.**
+
+## A clause that says "never listed" and then shows an illustrative list is decided by whichever half the reader reaches first (dng-auto-processor, 2026-09-18, UltraMagnus)
+
+*Same apparatus as "An alarm whose predicate reads a closed set containing the tooling the factory
+maintains is not blind — it is FED" (dng-auto-processor, 2026-09-17), one day apart: that entry is about a
+well-defined set being satisfied by the wrong evidence, this one about the set's DEFINITION being
+self-contradictory and yielding two different counts to two honest readers.*
+
+A closed set was defined so that one reader could classify every path in a repository as PRODUCT or inert.
+The clause read **"PRODUCT is the closed set; inert is its complement, derived, never listed:"** followed
+by seventeen path patterns — and then, in the sentence that follows them, *"Everything else — `WORK*.md`,
+`packets/**`, `docs/**`, `reports/**`, `metrics/ratify/**`, `.claude-state/**` — is inert by construction,
+so a new bookkeeping path can never void the clause again."*
+
+**Two readings, one verdict flipped.**
+
+- Read as written, the seventeen patterns are the closed set and everything else is inert. One UTC day then
+  holds **8** product commits.
+- Read off the second sentence — six inert paths, everything else PRODUCT — the same day holds **22**,
+  because thirteen commits to a repo-root `FINDINGS-CHRONICLE.md` and one to `RESUME-PROMPT.md` are absent
+  from the six and therefore "product".
+
+That number was an alarm's denominator, so the two readings put a factor of 2.75 through the same ratio.
+**A second seat derived 22 in good faith, cited the clause, and reported the SET as defective** — a
+well-formed report of the wrong defect, because the artifact it pointed at was right and its diagnosis
+was not.
+
+*One claim here is deliberately NOT made, because a ratification lane could not reproduce it.* The seat
+that filed the report also stated that the alarm's verdict FLIPPED on the classification — fired at the
+narrow denominator, silent at the wide one. Recomputing the wide reading consistently, numerator and
+denominator together, against full present-day history, the lane got the series still rising under BOTH
+readings and could not reproduce a flip for any window it tried. That claim is therefore left with its
+author and not carried. **It does not matter to the defect**: a definition that hands two honest readers
+two different counts has already failed, before anyone computes a verdict from it.
+
+**The document already contained its own discriminator, and the misreading was still available.** A sibling
+alarm in the same section publishes worked counts of 9 and 8 for two named days, by commit sha.
+Implementing the seventeen patterns and counting reproduces 9 and 8 exactly; the wide reading reproduces
+neither. Retrodiction against the document's own published numbers is what settled it.
+
+**Why a caption would not have fixed it.** The obvious repair is to label the second sentence "examples".
+That leaves both halves standing and relies on the reader noticing the label, which is the same bet that
+just lost. The list was **deleted** instead: the sentence now ends "Everything else is inert by
+construction, and the complement is not written down here either, which is what 'never listed' is for."
+
+**The rule.** When a definition says a set is DERIVED and never enumerated, it must not then enumerate any
+of it, not even for illustration. **An example of a derived set is read AS the set** — it is shorter, it is
+concrete, and it is what a hurried reader reaches first. If you want to show what falls out, show the
+DERIVATION on one case, never a list of results. And before reporting a definition broken, implement it and
+check whether you reproduce the worked numbers the same document already publishes.
+
+## A defect token closed on a document edit is closed only if the seat that document governs actually reads it (dng-auto-processor, 2026-09-18, UltraMagnus)
+
+*Same token mechanism as "A 'known issue ⇒ stop' guard that names no ACTOR revokes the human's own
+fallback" (dng-auto-processor, 2026-09-17), different fault: there the escape hatch could never be taken,
+here it was taken — against the wrong artifact.*
+
+A factory routes defects its automated seats may not fix into one-line tokens in a shared file, closed by a
+design-owner seat appending `CLOSED: <token> | fixed=<commit>`. One token read *"the status-digest seat has
+stopped and NO alarm can see it"*. The design seat reproduced it, found the visibility rule genuinely
+missing, added it to the governing document, and closed the token `fixed=<sha>`.
+
+**The seat then ran sixteen minutes later and wrote neither declared artifact.**
+
+- The governing document's section does carry the new sentence. The repair is real and the commit is sound.
+- The seat's procedure does not live in that document. It lives in a scheduler prompt file, in a tree the
+  design seat is forbidden to write and the reporting seat is forbidden to read at all.
+- Measured at close + 16 min, and again **six hours later**: the seat's evidence ledger is still ABSENT —
+  **128** sibling ledgers under the same root at that reading and **129** an hour after it, none of them
+  its — and its second declared output is untracked and absent from the working tree. *The count moving
+  while the seat's own entry stays absent is the measurement: the root is alive, and this seat is not in it.*
+- The 16 minutes is not taken from the reporting seat's prose. The scheduler's own record for that task
+  reads `lastRunAt: 2026-09-17T20:13:19.321Z` against a close committed at `19:57:13Z` — delta 16m06s.
+
+**The close was true of the document and false of the factory** — and it was made by the one seat whose
+whole job is to tell those apart. A different seat, on a routine pass, is what caught it, and the only
+reason it could is that this factory requires every scheduled seat to leave a receipt on every run, so the
+absence was measurable rather than assumed.
+
+**Why this is not simply "test your fix".** The tempting reading is carelessness. It is structural: the
+artifact the token NAMED (an alarm's blind spot) and the artifact that had to CHANGE (the seat's prompt)
+were different files under different authorities, and nothing in the closing act required the closer to
+look at the second one. A fix that lands entirely inside your own jurisdiction feels complete precisely
+because it IS complete there.
+
+**The rule.** **A token whose defect is a SEAT's BEHAVIOUR is closed only on that seat's own artifacts,
+never on the document that instructs it.** The document edit is the repair; the seat's next receipt, log
+line or output is the evidence, and until that artifact exists the token stays open. Corollary for any
+factory whose seats are configured outside the repository: when the fix needs a file you cannot write, the
+token does not close — it acquires an addressee.
