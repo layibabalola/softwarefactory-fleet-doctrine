@@ -146,7 +146,13 @@ function cmdCheck({ bus, consumer, project, quiet, max = 12 }) {
   return EXIT_ACTION;
 }
 
-function cmdAck({ bus, consumer, project, commit }) {
+// The marker is the ONLY record that doctrine was reviewed, so it must not move backwards by
+// accident. `ack` cannot prove bytes were read -- no mechanism can, and that stays an owner
+// question -- but it CAN refuse a cursor that rewinds. A stale SHA used to overwrite a newer one
+// silently, after which `check` re-lists commits already folded, or hides them once the cursor
+// walks forward again. Rewinding is legitimate (a bad fold being redone), so it is allowed with
+// --rewind plus a reason, and the reason is recorded IN the marker rather than lost in a shell.
+function cmdAck({ bus, consumer, project, commit, rewind }) {
   git(bus, ['fetch', 'origin', '--quiet']);
   if (!commit || typeof commit !== 'string' || !/^[0-9a-fA-F]{7,40}$/.test(commit)) {
     throw new Error('ack requires an explicit hexadecimal --commit <reviewedSHA>');
@@ -154,12 +160,37 @@ function cmdAck({ bus, consumer, project, commit }) {
   const reviewed = git(bus, ['rev-parse', '--verify', `${commit}^{commit}`], { allowFail: true });
   const onRemote = reviewed !== null && git(bus, ['merge-base', '--is-ancestor', reviewed, 'origin/master'], { allowFail: true }) !== null;
   if (!onRemote) throw new Error(`reviewed commit '${commit}' is not reachable from fetched origin/master; marker unchanged`);
+
+  const prior = readMarker(consumer);
+  const priorSeen = prior && typeof prior.lastSeen === 'string' ? prior.lastSeen : null;
+  let rewoundFrom;
+  if (priorSeen && priorSeen !== reviewed) {
+    const advances = git(bus, ['merge-base', '--is-ancestor', priorSeen, reviewed], { allowFail: true }) !== null;
+    if (!advances) {
+      if (!rewind) {
+        throw new Error(
+          `ack would REWIND the fold cursor from ${priorSeen.slice(0, 7)} to ${reviewed.slice(0, 7)}, `
+          + 'which silently un-folds doctrine already marked reviewed. '
+          + 'Pass --rewind "<reason>" if that is deliberate; marker unchanged',
+        );
+      }
+      rewoundFrom = priorSeen;
+    }
+  }
+
   const p = writeMarker(consumer, {
     project,
     lastSeen: reviewed,
     lastSeenAt: new Date().toISOString(),
+    ...(rewoundFrom ? {
+      rewoundFrom,
+      rewoundReason: typeof rewind === 'string' ? rewind : 'unspecified',
+    } : {}),
     note: 'Folded up to this bus commit under adopt-or-distinguish. Written by the CONSUMER, never by the bus.',
   });
+  if (rewoundFrom) {
+    console.error(`[doctrine-sync] WARN: cursor REWOUND from ${rewoundFrom.slice(0, 7)} -- doctrine between it and ${reviewed.slice(0, 7)} is no longer marked folded.`);
+  }
   console.log(`[doctrine-sync] folded through ${reviewed.slice(0, 7)}; marker written to ${p}`);
   return EXIT_OK;
 }
@@ -240,7 +271,7 @@ function main() {
   if (!existsSync(join(consumer, '.git'))) { console.error(`[doctrine-sync] ${consumer} is not a git repository.`); return EXIT_FAIL; }
 
   if (mode === 'check') return cmdCheck({ bus, consumer, project, quiet: !!args.quiet, max: args.max ? Number(args.max) : 12 });
-  if (mode === 'ack') return cmdAck({ bus, consumer, project, commit: args.commit });
+  if (mode === 'ack') return cmdAck({ bus, consumer, project, commit: args.commit, rewind: args.rewind });
   return cmdExportCheck({ bus, consumer, project, sinceHours: args['since-hours'], sourceCommit: args['source-commit'], publicationCommit: args['publication-commit'] });
 }
 

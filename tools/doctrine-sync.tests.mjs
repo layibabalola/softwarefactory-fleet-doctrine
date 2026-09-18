@@ -67,6 +67,32 @@ try {
   assert.throws(() => assert.equal(JSON.parse(readFileSync(join(consumer, '.codex-state/doctrine/last-seen.json'))).lastSeen, a), assert.AssertionError); cases++;
   sync(['ack', ...base, '--commit', b]); assert.equal(JSON.parse(readFileSync(join(consumer, '.codex-state/doctrine/last-seen.json'))).lastSeen, b);
   cases++;
+  // MONOTONICITY. The marker is the only record that doctrine was reviewed, so a stale SHA must
+  // not silently un-fold it. Cursor is at b; acking the older a is a REWIND and must be refused
+  // with the marker untouched.
+  const markerFile = join(consumer, '.codex-state/doctrine/last-seen.json');
+  r = sync(['ack', ...base, '--commit', a], true);
+  assert.equal(r.status, 2, 'a rewinding ack must fail');
+  assert.match(r.output, /REWIND/, 'the refusal must name the rewind');
+  assert.equal(JSON.parse(readFileSync(markerFile)).lastSeen, b, 'marker must be unchanged');
+  cases++;
+  // Rewinding IS legitimate when a bad fold is being redone -- but it must be deliberate, and the
+  // reason is recorded in the marker rather than lost in a shell.
+  sync(['ack', ...base, '--commit', a, '--rewind', 'redoing a bad fold']);
+  const rewound = JSON.parse(readFileSync(markerFile));
+  assert.equal(rewound.lastSeen, a);
+  assert.equal(rewound.rewoundFrom, b);
+  assert.equal(rewound.rewoundReason, 'redoing a bad fold');
+  cases++;
+  // Re-acking the SAME commit is not a rewind and stays allowed (idempotent re-fold).
+  sync(['ack', ...base, '--commit', a]);
+  assert.equal(JSON.parse(readFileSync(markerFile)).lastSeen, a);
+  // Advancing forward again clears the rewind annotation rather than carrying it.
+  sync(['ack', ...base, '--commit', b]);
+  const forward = JSON.parse(readFileSync(markerFile));
+  assert.equal(forward.lastSeen, b);
+  assert.equal(forward.rewoundFrom, undefined, 'a forward ack must not inherit a stale rewind mark');
+  cases++;
   // Exact D03 publication fixtures use a separate consumer remote so ancestry is real.
   const sourceRemote = join(root, 'source.git'); execFileSync('git', ['init', '--bare', sourceRemote]);
   const sourceSeed = join(root, 'source-seed'); execFileSync('git', ['init', sourceSeed]);
