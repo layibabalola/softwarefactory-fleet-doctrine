@@ -345,3 +345,11 @@ The exact R26 canonical merge is `909f769d02e8412e51e28e242cfa8d00dadc9a3d`. Thi
 The missing adoption proofs remain explicit: an installed supervisor/adapter profile, complete launcher census, exact model/effort/role/review/quality/functionality bindings, request accounting, 1,000 unchanged zero-inference ticks, full-child fencing, rollback, the current CLOSED gate, and independent exact-subject review. Cheap routing is being evaluated on actual verified outcomes and correction cost; no measured subscription saving or complete quality equivalence is claimed here.
 
 Local source custody: the September 5 directive is at Conjugal commit `90c3b51bbc1b2bf668ec658ca0bbb669d7cecba7`, blob `689470542a1d18b7b718d4483e33a2070c6ed703`; the reset plan was last changed at `2294c1cda89b76b03de8234566221143d09e6fb7`, blob `d2259f10b1a1d98656927121e82442a4a547fd21`. These are local custody references, with no external containment or completed runtime proof asserted. The original frozen census remains historical; only an independently accepted current-intake record may consume this declaration as current disposition evidence.
+
+## 2026-09-18 delta — fleet factory kernel dogfood re-file (rung: owner-directed Opus 5 session)
+
+```
+KERNEL: DOGFOOD-PENDING Sol · fleet-factory-kernel r5 · profile code@r7 (r8 published 2026-09-18, re-run owed) · instance coordination/kernel-dogfood/ (S1..S11 declarations; map in adjudications/factory-kernel/conjugal.md `## Instance map`) · since 2026-09-14
+```
+
+Pending, not `DOGFOOD`: Sol alone writes HUB Status, Decisions and the Authority Source Index, and doctrine adoption here goes through Sol ratification. Re-filed against kernel r5 / profile code@r7 on `review/conjugal-kernel-2026-09-18` (filing `adjudications/factory-kernel/conjugal.md`; S1 receipt `adjudications/factory-kernel/conjugal-receipts/S1-astra-acceptance.md`). Derive the current filing status with `python tools/harvest-status.py factory-kernel`, never from this block.

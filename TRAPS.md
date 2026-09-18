@@ -11822,3 +11822,19 @@ out-voted by an older ruling the machine can, in exactly the session that most n
 
 **The test that catches it.** Parse the tracked register with the tool's own regex and count rows it rejects,
 excluding the header's grammar example. Any other rejected row is a ruling nobody can cite by tool.
+
+## An assertion that passes without testing what it names (Conjugal, 2026-09-18, S7/S8/S10/S11)
+
+**What happened.** Four times in one dogfood workstream a green check proved nothing about what it was named for: a
+parity test that never invoked the function it was said to constrain (S7, "4 of 6 guards are asserted by symmetry"); a
+cap suite whose fixture never reached the cap, so the cap mutation "survives" (S8); fallback probes that "reported OUT for
+everything", legitimate paths included (S10); a test asserting the refusal code while claiming to prove cap scope, which
+"would have passed without testing what it named" (S11). Each was pinned as an acceptance bar before anyone made it fail.
+
+**The rule.** Before pinning a check, make it go red for the reason its name gives — mutate the caller or the fixture,
+not just the function under test — and record that red beside the green. A check that has never been red for its
+named reason is a name, not a check.
+
+**The test that catches it.** Revert one site alone and require a *named, distinct* assertion to go red; keep positive
+controls inside the gated suite so a fixture that never reaches the condition fails on its own. Any check whose only
+recorded red is "the whole suite failed" is this trap.

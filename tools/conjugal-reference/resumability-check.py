@@ -37,6 +37,23 @@ CLASSES = [
     (r"^design-of-design-evidence\.md$", "evidence"),
     (r"^update_evidence_r\d+\.py$", "evidence"),
     (r"^[a-z0-9-]+-family(-inputs)?\.md$", "family"),
+    (r"^f\d+-[a-z0-9-]+\.(md|txt)$", "f<N>-"),
+]
+
+# Artifacts produced by a SCRIPT, not by a model seat. They have no prompt by construction, so
+# demanding one is a false positive -- and a gate that cries wolf gets switched off, which is worse
+# than the gap it was guarding. Distinguishing these is the only honest way to keep the prompt rule
+# strict for everything else.
+#
+# Added 2026-09-15 after Round F4 landed `f4-anchor-check.txt` (emitted by
+# coordination/harvest/harvest_runner.py) and turned this gate red across the fleet -- it is
+# exported to every project by harvest-config.json `conjugal_export`.
+SCRIPT_GENERATED = [
+    r"^f\d+-anchor-check\.txt$",      # harvest runner's pre-flight anchor census
+    r"^f\d+-inputs\.md$",             # harvested filing population
+    r"^f\d+-filing\d+\.txt$",         # verbatim sibling filings, copied from the bus
+    r"^round\d+-blockers\.txt$",      # derived round summary
+    r"^stage-s-[0-9A-Za-z-]+\.(txt|json)$",   # execution gate receipts, emitted by stage_s.py
 ]
 PROMPT_OF = [  # output filename regex -> prompt filename candidates (any one suffices)
     (r"^(d\d+)-([a-z0-9]+)\.md$", ["{0}-{1}.txt", "design-swarm-r{n}-template.txt", "design-swarm-r{n}-claude-template.txt"]),
@@ -44,6 +61,7 @@ PROMPT_OF = [  # output filename regex -> prompt filename candidates (any one su
     (r"^lint(\d+)-([a-z]+)-out\.txt$", ["lint{0}-{1}-prompt.txt", "lint-template.txt"]),
     (r"^astra-arbitrate-r(\d+)\.md$", ["astra-arbitrate-r{0}-prompt.txt"]),
     (r"^consolidate-r(\d+)-report\.md$", ["consolidate-r{0}-prompt.txt"]),
+    (r"^f(\d+)-([a-z]+-[a-z]+)(-report|-out)?\.(md|txt)$", ["f{0}-{1}-prompt.txt"]),
 ]
 SHA_RE = re.compile(r"\b[0-9a-f]{9,40}\b")
 LIVE_RE = re.compile(r"(?i)\b(composite|score)\s*[:=]?\s*\d{2}\.\d\b")
@@ -96,6 +114,8 @@ def check_prompts(ws):
     for f in sorted(os.listdir(rounds)) if os.path.isdir(rounds) else []:
         if f in allow:
             continue  # explicitly recorded as pre-gate history, not reproducible
+        if any(re.match(rx, f) for rx in SCRIPT_GENERATED):
+            continue  # emitted by a script; no model prompt exists to commit
         for rx, cands in PROMPT_OF:
             m = re.match(rx, f)
             if not m:
