@@ -243,11 +243,29 @@ implementation is AdversarialLLM's:
 
 Requires `node` and `git`. Git children have a 30-second deadline and interactive prompts disabled.
 `tools/fleet-membership.mjs` is the shared member classifier used by the sweep and heartbeat
-reader. It excludes `fleet-*` and the two legacy protocol specs whose names are pinned:
-`provider-model-benchmarking.md` and `provider-audit-consumer-provenance.md`. Other `provider-*`
-names remain eligible projects. The heartbeat reader also requires Node and refuses unreadable
-or malformed membership instead of reporting a healthy empty fleet.
-Regression commands: `node tools/doctrine-sync.tests.mjs` and `node tools/fleet-membership.tests.mjs`.
+reader. It derives members from **`census.nonProjectSpecs` in `adoption/current-token-control-r26.json`**
+— the same closed set `tools/check_adoption_ledger.py` enforces — so the sweep and the ledger cannot
+disagree about who is a board. It used to subtract `specs/fleet-*.md` by filename PREFIX; that is a
+guess, not an authority, and it drifted to **30 members against a census of 10** before being caught.
+The prefix guard is retained as belt-and-braces and the heuristic remains only as a fallback for a bus
+carrying no census. **A fallback is a degraded instrument, not a result:** `fleet-sweep` returns
+`EXIT_FAIL` rather than reporting all-clear when membership is not authoritative, and also fails when
+the derived members do not equal the census `projects[]` exactly. The heartbeat reader requires Node,
+warns when the classifier was not authoritative, and refuses unreadable or malformed membership
+instead of reporting a healthy empty fleet.
+
+Two derived instruments report rather than gate, and both exit 0 by design
+(`specs/mlv-app.md:372` — "withdrawn as a gate, retained as an alarm"):
+`tools/candidate-flow.py` measures the `ruling-candidates/` queue — depth, arrivals, routed vs
+unrouted, and per-item age — because that queue records arrivals and never records its own drains, so
+its depth reads the same whether it is draining or drowning. `tools/traps-index.py --write` derives
+`TRAPS-INDEX.md`, a pointer into `TRAPS.md`; the source file is never modified and stays append-only.
+Both print an explicit degraded/coverage line rather than returning a tidy empty answer on failure.
+
+Regression commands: `node tools/doctrine-sync.tests.mjs`, `node tools/fleet-membership.tests.mjs`,
+`python tools/traps-index.py --check`, and
+`python -m unittest discover -s tests -p "test_traps_index.py"` (likewise `test_candidate_flow.py`,
+`test_kernel_e2e.py`). All of these run in `.github/workflows/doctrine-sync.yml`.
 Deliberately not Python — `py -3` has been measured absent on at least
 one fleet box, and a sync tool that fails open is worse than none.
 
