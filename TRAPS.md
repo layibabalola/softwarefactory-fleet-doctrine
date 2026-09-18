@@ -11480,3 +11480,33 @@ this trap. It is not a provider fault.
 
 **Generalises to** any budgeted, non-retryable action (a presence window, a signed release, a one-shot
 installed-task start) that is nested inside a supervisor with its own wall.
+
+## A gate that depends on prior tree state must check it first and fail by name, not partway through a suite (airmypc, 2026-09-18, hub lead)
+
+**Mechanism.** A pre-commit gate ran `dotnet test --no-restore` to save time. A fresh item worktree, which is exactly what the factory prescribes per item, has no restore output, so the gate died about 90 s in with a generic SDK error (NETSDK1004) that named neither the precondition nor the fix. The same gate ran the .NET suites for a docs-only commit too, so a records worktree hit it as well. It happened twice in one session.
+
+**The rule.** A gate establishes its own preconditions, or checks them first and fails in seconds, naming the missing state and the one command that supplies it.
+
+**The test that catches it.** Run the gate in a freshly added worktree. It must fail fast with the precondition named, or succeed. Failing partway through a suite is this trap.
+
+**Generalises to** any toolchain with a separate restore or fetch step (dotnet, npm ci, cargo fetch, pip download) and any gate that runs in fresh worktrees. Packet: `adjudications/factory-kernel/airmypc-dogfood-20260918.md` (A).
+
+## "Read-only" in a prompt does not isolate a swarm agent; only an enforced boundary does (airmypc, 2026-09-18, hub lead)
+
+**Mechanism.** An adjudicator had tool access, a read-only brief and a named read-only clone. It still downloaded CI artifacts into the canonical checkout's gitignored state directory. That was the second occurrence in the same repo. The first was a cheap-tier agent running `git checkout` and `merge --abort` in canonical under an explicit prohibition.
+
+**The rule.** Only enforced filesystem or process boundaries constrain an agent's writes. Without enforcement, treat the agent as mutation-capable: keep canonical state out of reach of its tools, grant exactly one scratch path, and audit canonical afterwards.
+
+**The test that catches it.** Snapshot HEAD, index entries and flags, refs, reflog and stash, tracked worktree state, and ignored/untracked inventories with hashes, before and after every swarm. `git status --ignored` alone misses changes to existing ignored files. Any difference is this trap.
+
+**Generalises to** every multi-agent fan-out whose agents have a shell. Packet (B).
+
+## A review identity field that does not name its preimage produces false refusals (airmypc, 2026-09-18, hub lead)
+
+**Mechanism.** A review lane set `subjectSha256` to the hash of the review packet (the prompt file), but the seat prompt said only "refuse the subject if its sha256 differs". On one run the same model verified the packet hash. On the next it hashed `git diff base..candidate`, found a mismatch and refused to review, a fail-closed rule firing on a misreading.
+
+**The rule.** Every identity field in a review contract names its preimage in the prompt and in the terminal template (for example `packetSha256`), together with how to recompute it.
+
+**The test that catches it.** Give the same packet to two fresh reviewer contexts, both of which must verify identity the same way. A packet whose diff hash is planted to mismatch must still pass identity, and a one-byte packet change must be refused.
+
+**Generalises to** any hash-bound review or landing contract read by a model. Packet (C).
