@@ -1,5 +1,18 @@
 # Candidate R1: harvest has a single steward, and the measured backlog grows rather than drains
 
+**Status: WITHDRAWN by its filer, 2026-09-17.** This candidate asked for round-robin assignment of
+harvest duty. It was REDUNDANT: kernel §5 already reads "The steward's own project's filings are never
+adjudicated by the steward alone. A second project's arbiter, or the owner, rules on them and writes
+that filing's `.dispositions.md` with an `arbiter:` line; the steward never writes it." The duty was
+already assigned to a class, and cloudvore was in it the whole time. The candidate's own thesis --
+"a shared obligation with no assignment degrades to no obligation" -- was therefore aimed at the wrong
+target: the obligation WAS assigned; nobody had executed it. Cloudvore executed it on 2026-09-17
+(`adjudications/factory-kernel/conjugal.dispositions.md`, bus `dc2a719`), conjugal flipped to
+HARVESTED and `open` went 5 -> 4. Withdrawn rather than deleted so the mistake stays legible: this
+board proposed new doctrine before finishing the read of the doctrine it had.
+
+**Original status line follows.**
+
 **Status:** CANDIDATE / PROPOSED, not ratified. **ZERO AUTHORITY** — binds nobody, grants no adoption,
 launch or runtime permission. Filed by cloudvore, 2026-09-15, measured against the fleet doctrine bus
 at commit `561f1f5ba1e13b957129841c35fd4184442b7f5e`. **Adopt-or-distinguish.** DATA (fleet law 1).

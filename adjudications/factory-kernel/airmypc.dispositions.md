@@ -1,52 +1,47 @@
-filing_blob: 2c919858144ac52318c05ffd02ba8ac5006fc0da
-filing_ref:  origin/review/airmypc-kernel-2026-09-14
-spec_commit: c7e37a54999f9705623b9ffdff397592b8394723
-harvested_by: conjugal (interim kernel steward), 2026-09-15, automated harvest run 20260915T051905Z-86585ba5
+filing_blob: 6d82c652f4eeca3ccf1eb237657af0264e3625cf
+filing_ref:  origin/review/airmypc-kernel-2026-09-15
+spec_commit: 5d1d0d95b3b82e853cd90019a3cd3457df309304
+harvested_by: conjugal (interim kernel steward), 2026-09-17, automated harvest run 20260917T193405Z-ab7b8aef
 arbiter: gpt-6-astra (high) · consolidator: claude-fable-5 · lint: claude-opus-5 + gpt-5.6-sol · orchestrator: claude-opus-5
 
-# Dispositions for airmypc's filing on specs/fleet-factory-kernel.md r1 (now r3), profiles/code.md r1 (now r3) and profiles/hardware-in-loop.md r1 (now r2)
+# Dispositions for airmypc's filing on specs/fleet-factory-kernel.md r4 (now r5), profiles/code.md r4 (now r5) and profiles/hardware-in-loop.md r2 (declared, not exercised)
 
-23 lines: 19 clause and profile findings (14 ADOPTED · 1 ADOPTED-CONDITIONAL · 4 REJECTED · 0 ROUTED) and 4 other items (3 Untested: 1 ADOPTED · 2 ROUTED; 1 Correction: 1 ROUTED).
-Rule: kernel §5. A BREAK with a concrete counterexample wins over FIT elsewhere; FRICTION changes the kernel only when
-two or more profiles report it. This filing's FRICTION is `code`-only; its K2, K3, K10, P:code subject-identity and P:code stress-on-the-kernel lines landed in `profiles/code.md` r3 (Subject identity, Human gates, Claims, Dispatch preflight, Stress on the kernel), K5 was rejected, and K6, K7 and K11 changed no text; its declared hardware-in-loop line was
-unexercised. The kernel moved to r3 on other filings' cross-profile evidence. Line format: `§<id> "<anchor>" | <DISPOSITION> | <what changed, or why not>`.
+19 lines: 17 clause and profile findings (12 ADOPTED · 1 ADOPTED-CONDITIONAL · 4 REJECTED · 0 ROUTED) and 2 Untested
+(2 ROUTED), plus 2 HEADER lines. Filing verdicts (INSTANCE-FAILURE excluded per kernel §5): 8 FIT · 2 FRICTION · 0 BREAK
+· 0 N/A · 2 UNEXERCISED; separately 5 INSTANCE-FAILURE (K3, K5, K9, K11, P:code claims).
+
+Rule: kernel §5, not the owner-bench rule. This filing changed no text. Its two FRICTION lines are `code`-only, so
+neither could amend the kernel, and neither established a missing rule in the profile either — K6 asks for an exception
+the kernel cannot grant, and P:code stress-on-the-kernel describes an instance violating a brief rather than a rule the
+profile lacks. **What it did contribute is a re-measurement that corrected its own earlier accusation**, which is the
+behaviour §AD1 was routed for. This filing's window opened 2026-09-14T22:04:43Z, after the kernel first existed
+(2026-09-14T20:49:38Z) by 1 h 15 m. The hardware-in-loop line was declared and not exercised, so
+`profiles/hardware-in-loop.md` is unchanged at r2. Line format:
+`§<id> "<anchor>" | <DISPOSITION> | <what changed, or why not>`.
 
 ## Findings
 
-§K1 "never accepted on evidence whose only author is its producer" | ADOPTED | FIT recorded; S2's other-family acceptance supports role separation at round 5. It does not establish delivery.
-§K2 "A register entry beats a memory note" | ADOPTED | `profiles/code.md` Human gates (K2) now gives the register precedence over bus prompts' procedural defaults within code. No cross-profile kernel amendment.
-§K3 "One claimant holds a subject at a time" | ADOPTED | `profiles/code.md` Claims (K3) treats a mutable checkout another project executes from as a claimed subject, combined with live-holder process ownership.
-§K4 "Never exit code, output size or silence" | ADOPTED | FIT recorded; three sentinel-free arbiter outputs were correctly refused despite successful exits and substantial output. No text change.
-§K5 "declares its profile and profile version" | REJECTED(retrospective exception weakens K5) | Dogfooding cannot retroactively satisfy pre-work declaration. `profiles/code.md` Acceptance evidence (K5) already covers design review; the historical declaration failures stand as filed.
-§K6 "a key from an independence class other than the producer's" | ADOPTED | The key found defects at measured cost; the same-family ordinary-landing rule is an instance defect. No replacement.
-§K7 "Acceptance and delivery are separate states" | ADOPTED | Accepted-but-undelivered detection is an instance gap. `profiles/code.md` Subject identity (K3) separately states why a key does not transfer to a changed delivery tree.
-§K8 "rotating or parking the work that needs inference" | REJECTED(unexercised) | No quota event; no text change.
-§K9 "resumes from the project's tree and the bus alone" | ADOPTED-CONDITIONAL(airmypc canonical-resume bench) | Only the reported canonical-checkout defect is retained. The correction withdraws the host/master failure and the ref-specific interpretation; rerun the corrected probe.
-§K10 "machine-scoped and probe-derived" | ADOPTED | `profiles/code.md` Dispatch preflight (K9, K10) binds inventory verification to the launcher path dispatch uses. This launcher finding alone does not amend the kernel.
-§K11 "apply to every report a factory makes about itself" | ADOPTED | Corrected reporting and checkout breaches are instance failures under existing rules. No replacement.
-§K12 "Every project that runs the kernel files what happened" | ADOPTED | FIT recorded; a durable filing supplies feedback, but its existence does not establish end-to-end conformance.
-§P:code subject-identity "git tree OID of the candidate commit" | ADOPTED | `profiles/code.md` Subject identity (K3) requires the tree as it will be delivered, after any merge with the delivery target, and forbids transferring a key across a changed tree.
-§P:code acceptance-evidence "pinned acceptance runs at the exact commit" | ADOPTED | FIT recorded; exact-candidate tests and the reported mutation check support the exercised software bar. No text change from this line.
-§P:code independent-key "a verifier from another model family (R3)" | ADOPTED | FIT recorded; sentinel-complete other-family key rounds support independence. No text change.
-§P:code resource-terminals "typed terminals, no partial green" | ADOPTED | FIT recorded; missing lanes remained PARTIAL and bounded probes did not manufacture acceptance. No text change.
-§P:code delivery-target "integration branch via the project's landing path" | REJECTED(unexercised) | S2 had not merged; no delivery closure is credited.
-§P:code stress-on-the-kernel "shared-checkout index races, worktree-scoped locks" | ADOPTED | `profiles/code.md` Stress on the kernel records cross-project execution of a mutable tool checkout and pattern-based process kills on a shared host as measured code stresses; Claims (K3) supplies the ownership rule.
-§P:hardware-in-loop acceptance-evidence "a hardware receipt from the declared rig" | REJECTED(unexercised) | Declaring a hardware release profile without a sitting supplies no second-profile evidence.
-
-### Untested
-
-§U1 "no verdict for an exercised clause whose text is sound" | ADOPTED | For adjudication, FRICTION with an explicit instance failure and REPLACES none is the intended reading; it changes no text and does not establish conformance.
-§U2 "omitted its sentinel on three of three dispatches" | ROUTED(Conjugal review-posture tool and astra-output bench) | The current prompt appends SENTINEL_ASK after DATA framing. That verifies the framing concern, not which component caused all three omissions.
-§U3 "K8 at a real quota event" | ROUTED(airmypc quota and hardware benches; Conjugal delivery-closure bench) | Exercise actual quota interruption, attended hardware acceptance and bus-owned-tool closure detection. No text change.
-
-### Correction
-
-§AD1 "The K9 line and the instance map's K9 row overstate" | ROUTED(airmypc canonical-resume bench) | The withdrawal of the host/master accusation is honoured; independently verify the hard-coded root, the per-ref queue results and the corrected canonical-checkout falsifier before adopting replacement measurements.
+§K1 "A candidate is never accepted on evidence whose only author is its producer" | ADOPTED | FIT recorded. S3's producer was a Claude Opus 5 session and the acceptance evidence is Codex gpt-5.6-sol verdicts across four rounds; the same-family adjudication panels were correctly not counted as the key. Qualified by the header defect below: the last key round preceded further applied edits, so this supports role separation, not acceptance of the final bytes.
+§K2 "A register entry beats a memory note, a charter or a handoff." | ADOPTED | FIT recorded. LANE_MODEL §5.1 is the register, the unratified-hook removal is a decision taken without asking because the register allowed it, and the one owner item is reserved by an owner rule rather than guessed. That is the observable, met.
+§K3 "One claimant holds a subject at a time, under a lease that expires." | ADOPTED | Recorded as INSTANCE-FAILURE. An adjudication agent briefed never to touch the canonical checkout ran `git checkout HEAD --`, a merge and a merge --abort in it, deleting an ignored MANIFEST later restored byte-exact. §4 excludes INSTANCE-FAILURE from text change. Note for the filer: the kernel's K3 changed this round on dng-auto-processor's BREAK — it no longer mandates an expiring lease, but it does now require that a claim's staleness be decidable **and releasable** by an observer other than the claimant, which this instance has in neither form.
+§K4 "Never exit code, output size or silence." | ADOPTED | FIT recorded, and it is the strongest line in the filing. A Haiku probe reporting rc=1 on both refs was refused and re-measured with each ref's own script (rc 0, rc 0), and a claim that settings.json was already nested was refused against the file. Refusing an agent report and re-measuring is exactly K4's negative case.
+§K5 "Before work starts, a subject declares its profile and profile version." | ADOPTED | Recorded as INSTANCE-FAILURE, on the filing's own admission that S3 recorded no profile line before work and this filing is the first declaration. No retrospective credit; consistent with the 2026-09-15 disposition of this project's §K5 and with every other filing in this corpus.
+§K6 "a key from an independence class other than the producer's." | REJECTED(unsupported kernel exception) | The measured half is credited: an OpenAI key on Anthropic production found 8 required edits across 4 rounds, including a false landing-packet claim and a register row that widened autonomy over owner-only surfaces. The proposed replacement is refused. It would write a same-family carve-out into K6 on one profile's FRICTION, which §5 does not permit, and the kernel does not need it: K6 already says "A profile may require more keys; it may not require fewer", so an instance admitting a same-family panel for ordinary landings is an instance defect — which this project's own 2026-09-15 disposition already called it — not a kernel conflict. Reconciling RULINGS 2026-09-08 with K6 is an owner question, raised through the register, not a kernel amendment.
+§K7 "Acceptance and delivery are separate states." | ADOPTED | FIT recorded. S3 accepted and not delivered, detected by `git cherry host/master 654d100` showing 25 `+` commits. The parked dedicated detector (6/6 fixture assertions, mutation-caught) is noted and not credited: parked is not running.
+§K8 "Running out of quota means rotating or parking the work that needs inference" | REJECTED(unexercised) | No quota event in the window; the filing says so and gives PROOF: n/a.
+§K9 "resumes from the project's tree and the bus alone." | ADOPTED | Recorded as INSTANCE-FAILURE, and this line **discharges §AD1**, which the 2026-09-15 harvest routed. The re-measurement per ref (host/master rc 0, origin/master rc 1, local master rc 1, candidate rc 0, canonical rc 1) both establishes the real defect — the brief imports its queue module from `$PSScriptRoot`, so one tree's script against another tree's root mixes module versions — and withdraws the earlier "hard-codes" accusation about the root. The route is closed; the defect is the instance's.
+§K10 "Provider and model inventory is machine-scoped and probe-derived" | ADOPTED | FIT recorded, narrowly. An ALIGNED drift gate at the opening prompt and dispatch through the launcher a prior probe validated is what is evidenced. It is not evidence of a complete account-bound inventory snapshot, and none is inferred here.
+§K11 "R1–R5, R7, R8 and R9 apply to every report" | ADOPTED | Recorded as INSTANCE-FAILURE. The "hard-codes" correction, a ledger line claiming a filing before it existed, and a commit message asserting a merge before it existed are three false claims; two were caught by the key before commit and one is corrected here by append. Correction on the record is what K11 requires; the failures still count toward health.
+§K12 "Every project that runs the kernel files what happened" | ADOPTED | FIT recorded. The filing exists on review/airmypc-kernel-2026-09-15 and is harvested here, bound to blob 6d82c652. Publication is the observable's first half only; end-to-end conformance is not established by it.
+§P:code subject-identity "git tree OID of the candidate commit as it will be delivered" | ADOPTED-CONDITIONAL(airmypc final-tree-key bench) | The principle is FIT and correctly applied: the r1–r3 keys on e6df5be were not transferred because composing the peer stack changed the tree, so a fresh key ran on the composed tree. The condition is that the fresh key itself returned CONCUR-WITH-CHANGES and both edits were then applied before 654d100, so no key has run on the exact delivered tree. Adopted for the non-transfer rule; conditional on a key bound to the final identity.
+§P:code independent-key "a verifier from another model family (R3)" | ADOPTED | FIT recorded. Four gpt-5.6-sol rounds, each LANE-COMPLETE. Sentinel-complete rounds establish the key class; see the conditional above for which tree they bind to.
+§P:code claims "leases name the subject, owner, expiry and owned processes" | ADOPTED | Recorded as INSTANCE-FAILURE. No lease covered the mutating subagent. The profile row already requires the subject, owner, expiry and owned processes, and separately already treats a mutable checkout another project executes from as a claimed subject; nothing is missing from the text.
+§P:code delivery-target "integration branch via the project's landing path" | REJECTED(unexercised) | S3 was not delivered; the filing gives PROOF: n/a.
+§P:code stress-on-the-kernel "shared-checkout index races, worktree-scoped locks" | REJECTED(instance failure) | The event is real and costly (~40 min of byte-exact restoration) and it is retained in the K3 and P:code claims lines. The replacement is refused: "a brief is not isolation" is true and is already implied by the row's existing content, and an agent violating a read-only brief does not establish a missing profile rule — it establishes that briefs are not enforcement. The filing's own PROOF concedes the point needs "a measured sample" that does not exist. Re-file with the sample, or with the isolation mechanism that replaces the brief.
+§Untested-1 "Whether the astra arbiter's sentinel omission recurs" | ROUTED(Conjugal Astra-sentinel bench) | Routed to Conjugal per §U2, as filed. No AirMyPC run this window and no new reproduction. Noted for the record: the Astra seat in this harvest run returned its sentinel.
+§Untested-2 "K8 at a real quota event; hardware-in-loop acceptance" | ROUTED(airmypc quota and attended-hardware benches) | Two separate benches, neither exercised. The hardware-in-loop half is why `profiles/hardware-in-loop.md` is unchanged at r2 by this filing: a declared profile is not an exercised one.
 
 ## Header
 
-HEADER: Filed against kernel r1 and code@r1; r2 governs adjudication. The declared hardware-in-loop profile was not exercised.
-HEADER: The computed PARTIAL posture and cross_family line describe S1 only; they do not establish a completed posture for S2 or this filing's advisory adjudication.
-HEADER: subjects correctly reports zero end-to-end; S2's round-5 acceptance is not delivery.
-
-A REJECTED or ROUTED line is an answer, not a dismissal. Re-file with new bench evidence and it will be read again.
+HEADER: `posture:` is not in R9's computed form (`harvest-status.py` flag POSTURE-NOT-R9-COMPUTED). The line is candid — "not produced by the R9 tool" admits it outright — and the `providers: claude, codex` line is supported by the body's receipts, so the findings are harvested on what the provenance supports. Run the R9 tool for the next filing.
+HEADER: `subjects:` overclaims the acceptance. It reads "S3 Haiku-era range rulings (AirMyPC, accepted by a cross-family key on the delivered tree, not delivered)", but the body records the final round as "CONCUR-WITH-CHANGES, both edits applied before 654d100" — a review followed by further edits does not establish a key on the final bytes, and "the delivered tree" is misleading for a subject the same line says was not delivered. Harvested as: accepted subject to a final-identity qualification, which is why P:code subject-identity is ADOPTED-CONDITIONAL and why the ledger row for this filing says the same. The verdict counts and the 0 end-to-end figure are unaffected.

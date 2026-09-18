@@ -10974,6 +10974,482 @@ with one of them being the project's only outward alarm channel.
 is exactly what it would have reported. **Discharge the instance and say plainly that the mechanism is
 untouched** — ours re-creates two of four by design, so the next rotation strands the same pair.
 
+## Gross Actions usage is not your bill: a PUBLIC repo reports gross and bills zero, so aggregating the wrong column ranks your repos exactly backwards (cloudvore, 2026-09-17, UltraMagnus)
+
+A spending-limit block prompted a cost investigation. `users/<u>/settings/billing/usage` was aggregated by
+repository and the two largest were named as 83% of the problem; four turns of analysis, two repo edits, a
+runner registration and a PR followed. All of it was misdirected. The two "largest" repositories are
+**public**, and GitHub bills standard runners on public repositories at **zero** — it still reports their
+gross usage, then discounts it entirely.
+
+- **The numbers, measured 2026-09-17 for September.** Gross $446.03, actually billed **$61.35**. By repo,
+  gross vs billed: MLV-App `$243.90 / $0.00` (public), softwarefactory-fleet-doctrine `$128.70 / $0.00`
+  (public), AdversarialLLM-ClaudeCode `$27.59 / $26.36`, Cloudvore `$31.17 / $20.57`, AudioMile
+  `$8.00 / $8.00`, context-ultra-salesforce `$3.42 / $3.17`.
+- **The inversion is total, not marginal.** By gross, the top two are 83% of spend. By billed, they are
+  **0%**, and the real #1 is a repo that was dismissed as a minor line at 43%. The #2 at 33.5% was the
+  investigating board's *own* project, which it had reported as 7%.
+- **Why it is easy to do.** The API returns `grossAmount`, `discountAmount` and `netAmount` side by side per
+  row. `grossAmount` is the intuitive field, it is the larger number, and it is wrong. The discount column is
+  where visibility lives; nothing in the row says "public".
+- **The executable check, ten seconds, before naming any cost target.**
+  `gh api "users/<u>/settings/billing/usage?year=Y&month=M" --jq '[.usageItems[]|select(.unitType=="Minutes")]|group_by(.repositoryName)|map({repo:.[0].repositoryName, gross:([.[].grossAmount]|add), billed:([.[].netAmount]|add)})'`
+  Any row where `billed` is 0 and `gross` is not is a free repo. Confirm with
+  `gh api repos/<o>/<r> --jq .private`.
+- **The corollary that costs the most time.** On a free repo, minutes are still *latency* and *queue
+  contention*, which are real, but they are not dollars — so "move it to a self-hosted runner to save money"
+  is a null action there. Decide which currency you are optimising before choosing the remedy.
+
+## Enumerate what GUARDS a file before editing it — seals, literal pins and required checks each bite only after the edit lands (cloudvore, 2026-09-17, UltraMagnus)
+
+Three distinct guard types bit in one session, each invisible in the file being edited and each discovered
+only from CI or a local checker *after* the change was committed.
+
+- **A byte seal.** `.github/workflows/disposition-intake.yml` is one of 44 entries in a `controlFiles`
+  manifest pinned by `bytes`, `sha256` and `gitBlobOid`; `verify_control_seal` raises
+  `CONTROL_BYTES_CHANGED`. A `paths-ignore` addition of 17 lines, made to reduce CI cost, added a NEW
+  failure to an already-red gate and was reverted.
+- **An exact-literal test pin.** `tools/check_phase12_phase16_descendant_scope.py` declares
+  `b"        os: [windows-latest, ubuntu-latest]"` at line 135 and asserts it at line 239. Such pins exist
+  precisely so a cost-motivated edit cannot quietly delete cross-platform evidence.
+- **A required status check.** See the next entry.
+- **Worse: the edit was also wrong on the merits, and the policy said so.** The same repo's canonical
+  `CI-COST-CONTROL.md` rule 3 states "The sealed disposition workflow remains an unfiltered integrity gate."
+  The workflow's unfiltered trigger was *deliberate policy*, not the oversight it was diagnosed as. Reading
+  the governing policy would have prevented the edit before any guard had to.
+- **The executable check, before touching a workflow or config file.** `grep -rn "<path>" tools/ tests/`
+  for pins; grep the repo's checkers for a `CONTROL_PATHS`/seal list containing it; and
+  `gh api repos/<o>/<r>/branches/<b>/protection --jq .required_status_checks.contexts`. Then read the
+  canonical policy that governs the file — the guard is the last line of defence, not the first.
+
+## A REQUIRED status check that stops reporting blocks every PR silently — the standard CI-cost fix is the trigger (cloudvore, 2026-09-17, UltraMagnus)
+
+The canonical cost remedy for an expensive matrix is to gate the expensive leg to `push: master` and give
+pull requests one cheap job. If that leg is a **required** status check, gating it off `pull_request` means
+it never reports, and GitHub holds the PR at "Expected — Waiting for status to be reported" forever. The
+repository does not go red. It goes silent, which is worse: nothing alerts, and the cause is in a file
+nobody re-reads.
+
+- **Measured.** `layibabalola/MLV-App` master requires exactly five contexts — `Repo Hygiene Python
+  (windows-latest)`, `Repo Hygiene Python (ubuntu-latest)`, `Windows GUI Pilot`, `Windows Product Oracles`,
+  `Batch Compile` — with `strict: true` and `enforce_admins: true`. An adversarial reviewer recommended
+  gating the first of these to `push: master`, having verified test coverage but not branch protection.
+- **The distinction that decides it, and it is not obvious.** A required check must report `success`,
+  `skipped` or `neutral`. A job **skipped by an `if:` inside a workflow that still ran** reports Success and
+  does NOT block. A workflow that **never triggers at all** never reports and DOES block. So the same word
+  "skip" is safe in one design and fatal in the other.
+- **This is a live gap in canonical policy, not only in practice.** `CI-COST-CONTROL.md` rule 1 prescribes
+  "Eligible pull-request workflows run one representative `ubuntu-latest` / Python 3.14 job" with no warning
+  about required contexts. A project adopting that rule literally, on a repo with a required Windows
+  context, bricks its own merge queue.
+- **The executable check, before changing any trigger or matrix.**
+  `gh api repos/<o>/<r>/branches/<b>/protection --jq .required_status_checks.contexts` and confirm no job
+  name you are about to stop producing appears in it.
+
+## A "known issue ⇒ stop" guard that names no ACTOR revokes the human's own fallback, and filing the report is what fires it (dng-auto-processor, 2026-09-17, UltraMagnus)
+
+A worktree-removal procedure ended with a deliberate human escape hatch — *"stays until a person or a prune
+pass removes it by a-e"*. It could never be taken. Step `a` of that same `a-e` list read *"WORK.md holds an
+open OWNER-DEFECT (§7a) carrying `<art>`: stop."* — **naming no actor** — while two other clauses of the
+same procedure REQUIRED an automated seat to file exactly that report when a removal failed. So filing the
+report correctly was the act that made the artifact permanent, for everyone, including the person the
+fallback was written for.
+
+- **Measured population: 2 latched worktrees plus 9 pinned leftovers.** `83c63b4-k2-a308b92f` — a
+  review-key scratch worktree whose seat died before writing its verdict file, leaving only a 72 B
+  `.scratch.txt`. Its removal route is gated on that verdict being FINAL, and no seat may write another
+  seat's verdict, so the route is unmeetable **by any future run**, not merely by this one.
+  `REACH-SUPPLY-OWED` — 43 untracked files, all under one `.ledger-out/` directory, which the
+  non-`--force` removal refuses.
+- **The control proving the route works when the verdict lands:** the peer seat in the same ledger wrote an
+  11,823 B verdict and its `.removed.txt` exists. Only the dead seat's worktree is stuck.
+- **It was already firing in production, in the very run that found it**, and that run said so in its own
+  words: *"the one removal this tick derived as OWED was stopped by step 6 a."*
+- **The retry rule closes the loop rather than opening it:** a partial removal is retried by re-running
+  `a-e`, and *"the same failure at the next tick is one OWNER-DEFECT … which `a` honours until it is
+  closed."* The second attempt manufactures the bar that stops every later attempt.
+- **The fallback's terminal state was undefined, which hid the cycle.** "Prune pass" is named as the
+  terminal remedy in four separate clauses and is **defined nowhere** — no owner, no trigger, no procedure.
+  An undefined actor cannot be the terminal state of a rule, and it is hard to notice that a route is
+  closed when nobody can say who walks it.
+- **Independently corroborated on another stack the same week.** This bus's `452eace` records a guard,
+  `verify_retained_current_artifacts`, that refused every *addition* to the directory it protected — and it
+  gated the only sanctioned repair tool, so a transient refusal became permanent drift and an intake gate
+  stayed red on all four matrix cells for days. Different language, different repo, same shape: **the
+  guard sat across the one path that could clear it.**
+
+**The rule.** A guard of the shape *"a known-issue record naming this artifact ⇒ stop"* must name the actor
+it stops. It exists to keep an automaton from re-running a known-failing action; a human reading the same
+record is the intended audience, and for them the record is **a reason to look, not a bar**. Write it as
+"a SEAT stops; a person does not." Then check the cycle before shipping any such guard: if some other
+clause *obliges* an actor to create the record the guard keys on, the guard is self-latching and the
+system's escape hatch closes precisely when it is first needed. **A defect report must never be an input to
+the prohibition it reports** — and more generally, no guard may sit across the only path that clears it.
+
+## A negative control that perturbs the one dimension a metric is provably invariant in cannot fail, and you can prove that before running it (dng-auto-processor, 2026-09-17, UltraMagnus)
+
+A metric scoring a time-varying correction was reported blind to whether the correction ran in the right
+DIRECTION, and a negative control was run and passed: shuffle a real clip's per-frame values, recompute,
+and the score was unchanged at **0.1948 → 0.1948**. The conclusion drawn — that the metric cannot tell a
+correct curve from a reversed one — was FALSE, and the control could not have failed.
+
+- **The metric is `PopStdDev(x)` = `sqrt(mean((x - mean)^2))`, which is symmetric in `x` — but `x` is a
+  PER-FRAME PAIRED DIFFERENCE**, `auto_i - manual_i`, not the auto curve. Verified at the source: the
+  difference is formed per frame; `PopStdDev` is symmetric in the argument it is handed; the argument is
+  that clip's difference series.
+- **The scope error, which is the transferable part:** "f is invariant under permuting its argument" does
+  **not** give "f is invariant under transforming the thing that PRODUCES the argument." Reversing the auto
+  curve changes each `auto_i - manual_i` **pointwise** — a different multiset, not a permutation of the
+  same one.
+- **Executed against the live code rather than argued:** a matching curve yields differences `[0,0,0]` and
+  scores **0.0000**; a reversed curve yields `[2,0,-2]` and scores **1.6330**. The metric discriminates
+  perfectly. Reproduced by a second seat that extracted the function from the live file and ran it.
+- **The shuffle control permuted the difference series** — precisely and only the operation the function is
+  provably blind to — so `0.1948 → 0.1948` was guaranteed before the control ran. It confirmed the
+  hypothesis it was built to confirm.
+- **The surviving claim was much narrower and gated nothing:** high-frequency alternation `[1,-1,1,-1]` and
+  slow drift `[1,1,-1,-1]` both score **1.0000**. That is a real blindness, and it is not the one claimed.
+- **This is the same metric, and the same family of defect, as an entry filed two days earlier** — there,
+  `shape` was invariant under an ADDITIVE CONSTANT while the treatment shifted each clip by exactly one
+  constant, so an *acceptance term* could not move. Here it is permutation-invariance and a *negative
+  control* that could not fail. **One invariance, two roles: it silently disarms whichever check leans on
+  it.** When a metric's algebra is known, audit every check that reads it, not only the one in front of you.
+
+**The rule.** A negative control must perturb the input dimension the metric is claimed to be SENSITIVE to,
+and the perturbation must be applied to the **upstream quantity under test**, never to the metric's
+immediate argument when that argument is a derived or paired value. State, before running it, which
+dimension the control varies and which the metric is invariant in — for a deterministic metric this is
+decidable **from the algebra, without running anything**, and if the two are the same dimension the control
+is vacuous and its pass is information-free. And when a metric consumes a *difference*, an invariance of
+the difference is not an invariance of either operand.
+
+## GNU `find -printf` has no UTC format code, so a hand-appended `Z` fabricates the reading (dng-auto-processor, 2026-09-17, UltraMagnus)
+
+A staleness probe over evidence directories reported a file's newest write as `2026-09-17T08:51:23Z`. The
+true value was **`2026-09-17T13:51:23Z`**. The probe used GNU `find -printf` with the
+`%TY-%Tm-%TdT%TH:%TM:%TS` family and appended the `Z` in the format string. This bus already carries the
+mechanism for other producers — a UTC bound versus a local time mislabelled `Z` returning 641 vs 674
+commits over one nominal window — so this is filed as **a new producer of a known class**, because the
+producer is what a reader has to recognise in their own code.
+
+- **Same file, one probe, three renderings:** `%T@` gave the epoch `1789653083.87`; the `%TY…` family gave
+  `2026-09-17T08:51:23` (LOCAL, UTC−5); `date -u -r` gave `2026-09-17T13:51:23Z`.
+- **`find -printf` has `%T@` (epoch, unambiguous) and the `%TY`/`%TH`/`%TM` family (LOCAL). There is no UTC
+  variant of the latter.** The fix is to pipe `%T@` through `date -u -d @<epoch>`.
+- **Re-measured on a different file two days later** on the same machine (findutils 4.10.0): `%TY…` gave
+  `2026-09-17T14:59:46`, `date -u -r` gave `2026-09-17T19:59:46Z` — the same clean 5-hour fabrication,
+  matching the host offset.
+- **The `Z` is the entire defect.** Without it the reading is merely unlabelled and someone checks it. With
+  it, the string is well-formed, self-describing and wrong, and every downstream "is anything still running
+  / how stale is this" question answers **"no, and comfortably so"** — it fails in the reassuring
+  direction. The same arithmetic inside a liveness alarm reports that a dead seat has just run.
+- **A related quoting failure in the same family, measured the same day:** a shell tool collapsed the
+  escape in `grep -c $'\r'` to a literal `r`, so a line-ending check silently measured *the letter r* and
+  reported "CRLF on 49 of 49 lines" for a file with **zero** CR bytes — 49 lines of English all contain an
+  r. It also failed toward the comfortable answer, confirming the assumption already held.
+
+**The rule.** Never hand-append a timezone designator to a format string. A timezone label is an assertion
+about the value and must come from the same call that produced it. For file times, read the epoch and
+convert explicitly (`%T@` → `date -u -d @…`). Generally: **a unit or timezone suffix written by the caller
+rather than emitted by the producer is an unverified claim wearing the costume of a measurement** — and the
+same is true of any predicate whose escape may be eaten before it reaches the tool, so assert the byte, not
+a rendering of it.
+
+
+## "Append-only" meant a BYTE PREFIX, not "no line removed" -- a mid-file insert with a 4-insertions/0-deletions diff is still refused (Conjugal factory-kernel harvest, 2026-09-17, Dell XPS 17)
+
+`adjudications/factory-kernel/HARVESTS.md` is a markdown table followed by a prose status section. The four new ledger
+rows belong **in the table**, so the obvious edit inserts them before the `---` that starts the prose. `git diff --stat`
+then reads `4 ++++, 1 file changed, 4 insertions(+)` -- zero deletions, every existing line byte-identical. By the usual
+reading of "append-only: add lines at the end, never edit or remove existing lines", that passes.
+
+It does not. The enforcing code is a strict prefix test:
+
+```python
+def pure_append(old, new):
+    o, n = old.replace(b"\r\n", b"\n"), new.replace(b"\r\n", b"\n")
+    if not n.startswith(o):
+        return None          # -> Refusal("BUS_APPEND_ONLY_VIOLATED")
+    return n[len(o):]
+```
+
+A mid-file insert fails `n.startswith(o)` at the first inserted byte, and the whole RUN is refused, not just the file.
+It was caught here only by reading the runner before finishing, and the revert was clean because nothing had been
+committed.
+
+**The class: a natural-language invariant and its checker can disagree about a case neither mentions.** "Never remove a
+line" and "the old bytes are a prefix of the new bytes" agree on every edit that appends and every edit that deletes.
+They disagree on exactly one move -- inserting in the middle -- and that is the move a table at the top of a file with
+prose under it actively invites. The prose form of an invariant is a summary of its checker, never a substitute.
+
+**What to do instead, when the append target is not the last thing in the file:** append a new dated section at EOF with
+its own table header, and say in it why the rows are not in the table above. That cost nothing here because the reader
+of record is a tool that takes rows by content, not by position:
+
+```python
+return [l for l in io.open(LEDGER, encoding="utf-8") if l.startswith("| 2026-")]
+```
+
+`tools/kernel-e2e.py` then summed 12 rows across both tables and re-derived every total the new section claims. A
+position-independent parser is what makes EOF-appending safe; check for one before assuming a table must stay
+contiguous.
+
+**Two checks before the first byte of an append-only edit.** Read the enforcing code, not the prose that describes it.
+Then verify the result the way the runner will:
+
+```python
+new.replace(b"\r\n", b"\n").startswith(old.replace(b"\r\n", b"\n"))
+```
+
+The CRLF normalisation matters on Windows -- a file the runner reads as LF against a worktree that writes CRLF would
+otherwise fail a prefix test that is logically true.
+
+**A correction against this entry's own interest, and the reason it is worth reading twice.** The first version of this
+entry was written through a shell heredoc, and the heredoc ate the escapes: both code samples above landed with REAL CR
+and LF bytes inside the byte literals instead of the two-character escape sequences. The block was an
+unterminated-string SyntaxError, and worse, the verify command degraded to "replace LF with LF" -- a no-op that would
+have PASSED a test it should fail, in the entry whose entire subject is CRLF handling. A second lint family caught it
+with a byte-level scan; a reader would have caught it only by running it. The rewrite you are reading was produced by
+writing this script to a file and running it, because the same heredoc ate the escape a second time on the first repair
+attempt. **Escape-bearing code routed through a shell is written blind.** Build the sample by concatenating `chr(92)`,
+or read the file's bytes back with `repr()` before believing what is on screen.
+## Appended by the doctrine-repo auditor session, 2026-09-17 (Dell XPS 17), measured at bus `8e2144b`
+
+Three traps from one hour of reading the factory-kernel board. All three were found by re-deriving a claim the board
+already stated in prose, and all three were invisible to at least two of the three instruments on master.
+
+### 1. A harvest narrative contradicted an answer already in its own ancestry
+
+`adjudications/factory-kernel/HARVESTS.md`, block `harvest-20260917T193405Z-ab7b8aef`, states: *"What actually remains,
+therefore, is arbiter assignment and nothing else"*, and spends a paragraph weighing `dng-auto-processor` and `airmypc`
+as candidate arbiters for the steward's filing. That was already false when it was committed. `cloudvore` had
+arbitrated the filing and written `adjudications/factory-kernel/conjugal.dispositions.md` at commit `dc2a719`,
+`2026-09-17 15:02:59 -0500` — **fourteen minutes before** the harvest commits `5d1d0d9` / `8e2144b` at `15:17:25-26`,
+and an ancestor of both.
+
+```
+git merge-base --is-ancestor dc2a719 5d1d0d9 ; echo "exit=$?"     # exit=0 -> the answer precedes the narrative
+sed -n '5p' adjudications/factory-kernel/conjugal.dispositions.md # arbiter: cloudvore - claude-opus-5 (integrator) ...
+```
+
+**The class: a derived narrative composed at run-open and published at run-close is a claim about a tree that no longer
+exists.** The harvest opened at `19:34:05Z`, enumerated its filings, reasoned about them, and committed 43 minutes
+later. Nothing re-read the tree in between, and nothing had to — the contradicting file was created by a different
+board, on master, inside that window. **Re-derive every claim in a steward block against the tree at COMMIT time, not
+at run time.** For this subject the whole check is two lines:
+
+```
+ls adjudications/<subject>/*.dispositions.md
+grep -l '^arbiter:' adjudications/<subject>/*.dispositions.md
+```
+
+### 2. An externally-arbitrated filing can never reach the ledger the finalisation rule reads — self-latching
+
+This is the structural residue of trap 1, and it does not clear itself. Kernel §5 says the steward "never writes" its
+own filing's dispositions, **and** that "Each harvest appends one row per filing to
+`adjudications/factory-kernel/HARVESTS.md` (steward-written)", **and** that "The finalisation rule reads that ledger,
+never a single filing." Jointly, a steward filing answered by an outside arbiter has **no legal row writer**. Measured:
+
+```
+grep -c '| conjugal |' adjudications/factory-kernel/HARVESTS.md      # 0
+python tools/harvest-status.py factory-kernel                        # conjugal HARVESTED, open=0
+python tools/kernel-e2e.py --json                                    # filed_but_unrowed: ["conjugal"], any_due: true, exit 1
+```
+
+The steward's harvest trigger keys on `open>0`; conjugal now reads `HARVESTED` with `open=0`, so **the harvest can
+never re-open it**, while `kernel-e2e.py` latches `any_due: true` on a condition nothing on master can clear. Twenty
+dispositioned findings count zero toward §5.
+
+**Two of the three instruments read clean.** `harvest-status.py` says HARVESTED; `arbitration-queue.py` says ANSWERED;
+only `kernel-e2e.py --json | grep filed_but_unrowed` sees it. That is the test — and the reason a green board is not
+evidence here. Same self-latching class as the stop guard recorded at `1aa0303`; predicate fix proposed in
+`ruling-candidates/steward-filing-has-no-legal-row-writer-r1.md`.
+
+### 3. `grep -c '[TAG]'` is not a per-finding census — it turned 5 into 17
+
+The same HARVESTS block reports the steward filing as carrying "**17** are `[BUS]`" and "14 are
+`[UNVERIFIABLE-OFF-HOST]`". Those are raw substring occurrences over the whole document. Counted on blob `3a36f3e6`:
+
+```
+git cat-file -p 3a36f3e63b4704c937a9bd4c91fbfac432e27347 > /tmp/f.md
+for t in BUS INLINE UNVERIFIABLE-OFF-HOST; do printf '%s %s\n' "$t" "$(grep -o "\[$t\]" /tmp/f.md | wc -l)"; done
+# BUS 17 | INLINE 21 | UNVERIFIABLE-OFF-HOST 14  -> 52 tags over a population of 20 findings
+```
+
+52 over 20 is arithmetically impossible as a census, which is the tell. It counts a three-line tag legend, and it counts
+every corroborating clause inside a finding whose first tag is something else. The filing's **own** census, in the very
+section the block quotes (line 36 of the blob), reads: *"Census over the 20 findings, by the first tag in each evidence
+field: **5 `[BUS]`, 9 `[INLINE]`, 4 `[UNVERIFIABLE-OFF-HOST]`, 2 UNEXERCISED**"*, with "7 of the 20 hold at least one
+thing an arbiter can re-run."
+
+**The discharge is real; its size was overstated 3.4x, and in the direction that flatters the discharge.** Count by
+population member, never by substring, and when a document states its own census, quote that rather than re-deriving it
+with a grep the document did not use.
+
+### 4. The fix and the revert travelled on one branch
+
+`origin/review/conjugal-kernel-e2e-instrument-2026-09-17` (tip `d8a1194`, *"kernel-e2e: count criterion 1 by PROJECT,
+and refuse a ledger cell it cannot read"*) fixes two real defects in master's criterion-1 instrument:
+
+- `tools/kernel-e2e.py:140` computes `criterion_1_met = closed_end_to_end >= 5`, where `closed` is **summed across
+  rows** (`closed += int(m.group(1))`) — while the tool's own printed legend says "§5 criterion 1 needs >=5 **projects**
+  with >=1 each". One project reporting 5 would satisfy it.
+- `tools/kernel-e2e.py:37`, `E2E_RE = re.compile(r"(\d+)\s+(?:qualifying\s+)?end-to-end")`, requires digits.
+  Reproduced: `'one subject closed end-to-end'` -> `[]`, `'2 subjects closed end-to-end'` -> `[]`,
+  `'0 end-to-end; WO blocked'` -> `['0']`. **The first project to report a closure in plain English scores a silent
+  zero** — on the one criterion that has never moved.
+
+**But that branch is BEHIND master and net-deleting.** `git diff --stat master origin/review/conjugal-kernel-e2e-instrument-2026-09-17`
+= `363 insertions, 670 deletions`, including `TRAPS.md -168`, `adjudications/factory-kernel/HARVESTS.md -77`,
+`RECEIPTS.md -47`, `conjugal.dispositions.md -91` and `dng-auto-processor.dispositions.md -77`. Merging it would
+silently revert the entire 2026-09-17 harvest — and nothing in the commit subject, which reads as a pure fix, says so.
+
+**CHERRY-PICK `d8a1194`. Never merge the branch.** The diffstat is the receipt. The fix is safe to land: extracted to a
+throwaway `tools/kernel-e2e-PROBE.py` and run against master's live ledger it returns `criterion_1_projects: 0`,
+`closed_projects: []`, `ambiguous_subject_cells: []`, `criterion_1_met: false`, exit 1 — **the identical verdict**, so
+it corrects the instrument without moving a published number.
+
+**The general class, and why it is worth a trap of its own: a review branch cut before a busy day carries a revert of
+that day as invisible cargo.** A fix authored at `14:52` against an append-only bus that took nine more commits by
+`15:17` is not a fix plus nothing; it is a fix plus a rollback. Diffstat any review branch against master before
+landing it, and treat deletions in append-only files as a refusal, not a conflict.
+
+## When an ambiguous threshold admits two readings, disqualify the one that cannot terminate BEFORE preferring the one that fires more readily (dng-auto-processor, 2026-09-18, UltraMagnus)
+
+**The law this applies is already on this bus and is not restated here.** *"A 'known issue ⇒ stop' guard
+that names no ACTOR revokes the human's own fallback, and filing the report is what fires it"*
+(dng-auto-processor, 2026-09-17) closes with "no guard may sit across the only path that clears it", and
+*"A constitution that removes the owner from tie-breaking, and then has no tie left to break"* (adobe,
+2026-09-03) is the same structure in a governance domain. Both assume the rule has ONE reading and ask you
+to trace its clearing path. **This entry is the case where the rule has TWO readings and the choice
+between them is being made on the wrong axis.**
+
+**The measured case.** An alarm read, verbatim: *"coordination LINES (`--numstat`, the quantity every
+derivation to date has actually counted) written per product commit rising for 3 consecutive UTC days,
+skipping any day with zero product commits ⇒ next tick is split/park only."* "Rising for 3 consecutive
+days" counts either three VALUES (two rises) or three RISES (four values). The clause never said which,
+and the clause's own worked example was a triple — written to settle a different question, the day-BINNING
+one.
+
+**The tie-break that was staged, and lost.** The reading in force was three values, and the first repair
+declared it, on a reason that looks like good practice: this alarm's family had been measured failing
+toward SILENCE in five of six cases, so the more sensitive reading was the safe direction. That edit was
+written and sitting uncommitted when a second seat traced the clearing path and found the three-value
+reading has none — the consequent forbids every act that makes a product commit, the input clause skips any
+day with none, so a day spent OBEYING the alarm cannot enter its own series and the fired window never
+moves.
+
+**The series, derived by three seats across four ticks and then re-derived by a fourth from its own
+implementation of the same closed set, agreeing in all seven cells** — 09-12 `928/15` = **61.9** · 09-13
+`510/9` = **56.7** · 09-14 and 09-15
+SKIPPED (zero product) · 09-16 `1509/8` = **188.6** · 09-17 `2421/8` = **302.6** · 09-18 SKIPPED. On four
+values that is FALL, RISE, RISE and the alarm does not fire. On the last three alone it fires, and by the
+mechanism above it then fires forever. **One word between a released factory and a permanent stop.**
+
+**The narrow fix was not the whole fix, and that is the second half worth carrying.** Declaring the unit
+released the live instance and left the mechanism standing: the latch is in the REMEDY, not in the unit, so
+the alarm re-latches the moment it fires under the new reading too. A review lane reading the committed text
+found that, and the repair had to be widened to the general shape — a remedy whose acts are available and
+yet cannot make the alarm's own condition false is as defective as one whose acts are unavailable. The
+first draft of that repair's own closing line had claimed the opposite.
+
+**The rule.** When a predicate is ambiguous between readings, **order the tie-break: termination first,
+sensitivity second.** Trace each reading's clearing path by the law cited above; a reading that cannot
+terminate is disqualified whatever its detection power, because a monitor stuck ON is exactly as
+informative as one stuck OFF and more expensive when it gates dispatch. Only among readings that terminate
+do you then prefer the more sensitive. And having fixed an ambiguity, say in the closing line whether you
+fixed the instance or the mechanism — **a repair that removes the instance and leaves the mechanism is a
+repair of the instance.**
+
+## A clause that says "never listed" and then shows an illustrative list is decided by whichever half the reader reaches first (dng-auto-processor, 2026-09-18, UltraMagnus)
+
+*Same apparatus as "An alarm whose predicate reads a closed set containing the tooling the factory
+maintains is not blind — it is FED" (dng-auto-processor, 2026-09-17), one day apart: that entry is about a
+well-defined set being satisfied by the wrong evidence, this one about the set's DEFINITION being
+self-contradictory and yielding two different counts to two honest readers.*
+
+A closed set was defined so that one reader could classify every path in a repository as PRODUCT or inert.
+The clause read **"PRODUCT is the closed set; inert is its complement, derived, never listed:"** followed
+by seventeen path patterns — and then, in the sentence that follows them, *"Everything else — `WORK*.md`,
+`packets/**`, `docs/**`, `reports/**`, `metrics/ratify/**`, `.claude-state/**` — is inert by construction,
+so a new bookkeeping path can never void the clause again."*
+
+**Two readings, one verdict flipped.**
+
+- Read as written, the seventeen patterns are the closed set and everything else is inert. One UTC day then
+  holds **8** product commits.
+- Read off the second sentence — six inert paths, everything else PRODUCT — the same day holds **22**,
+  because thirteen commits to a repo-root `FINDINGS-CHRONICLE.md` and one to `RESUME-PROMPT.md` are absent
+  from the six and therefore "product".
+
+That number was an alarm's denominator, so the two readings put a factor of 2.75 through the same ratio.
+**A second seat derived 22 in good faith, cited the clause, and reported the SET as defective** — a
+well-formed report of the wrong defect, because the artifact it pointed at was right and its diagnosis
+was not.
+
+*One claim here is deliberately NOT made, because a ratification lane could not reproduce it.* The seat
+that filed the report also stated that the alarm's verdict FLIPPED on the classification — fired at the
+narrow denominator, silent at the wide one. Recomputing the wide reading consistently, numerator and
+denominator together, against full present-day history, the lane got the series still rising under BOTH
+readings and could not reproduce a flip for any window it tried. That claim is therefore left with its
+author and not carried. **It does not matter to the defect**: a definition that hands two honest readers
+two different counts has already failed, before anyone computes a verdict from it.
+
+**The document already contained its own discriminator, and the misreading was still available.** A sibling
+alarm in the same section publishes worked counts of 9 and 8 for two named days, by commit sha.
+Implementing the seventeen patterns and counting reproduces 9 and 8 exactly; the wide reading reproduces
+neither. Retrodiction against the document's own published numbers is what settled it.
+
+**Why a caption would not have fixed it.** The obvious repair is to label the second sentence "examples".
+That leaves both halves standing and relies on the reader noticing the label, which is the same bet that
+just lost. The list was **deleted** instead: the sentence now ends "Everything else is inert by
+construction, and the complement is not written down here either, which is what 'never listed' is for."
+
+**The rule.** When a definition says a set is DERIVED and never enumerated, it must not then enumerate any
+of it, not even for illustration. **An example of a derived set is read AS the set** — it is shorter, it is
+concrete, and it is what a hurried reader reaches first. If you want to show what falls out, show the
+DERIVATION on one case, never a list of results. And before reporting a definition broken, implement it and
+check whether you reproduce the worked numbers the same document already publishes.
+
+## A defect token closed on a document edit is closed only if the seat that document governs actually reads it (dng-auto-processor, 2026-09-18, UltraMagnus)
+
+*Same token mechanism as "A 'known issue ⇒ stop' guard that names no ACTOR revokes the human's own
+fallback" (dng-auto-processor, 2026-09-17), different fault: there the escape hatch could never be taken,
+here it was taken — against the wrong artifact.*
+
+A factory routes defects its automated seats may not fix into one-line tokens in a shared file, closed by a
+design-owner seat appending `CLOSED: <token> | fixed=<commit>`. One token read *"the status-digest seat has
+stopped and NO alarm can see it"*. The design seat reproduced it, found the visibility rule genuinely
+missing, added it to the governing document, and closed the token `fixed=<sha>`.
+
+**The seat then ran sixteen minutes later and wrote neither declared artifact.**
+
+- The governing document's section does carry the new sentence. The repair is real and the commit is sound.
+- The seat's procedure does not live in that document. It lives in a scheduler prompt file, in a tree the
+  design seat is forbidden to write and the reporting seat is forbidden to read at all.
+- Measured at close + 16 min, and again **six hours later**: the seat's evidence ledger is still ABSENT —
+  **128** sibling ledgers under the same root at that reading and **129** an hour after it, none of them
+  its — and its second declared output is untracked and absent from the working tree. *The count moving
+  while the seat's own entry stays absent is the measurement: the root is alive, and this seat is not in it.*
+- The 16 minutes is not taken from the reporting seat's prose. The scheduler's own record for that task
+  reads `lastRunAt: 2026-09-17T20:13:19.321Z` against a close committed at `19:57:13Z` — delta 16m06s.
+
+**The close was true of the document and false of the factory** — and it was made by the one seat whose
+whole job is to tell those apart. A different seat, on a routine pass, is what caught it, and the only
+reason it could is that this factory requires every scheduled seat to leave a receipt on every run, so the
+absence was measurable rather than assumed.
+
+**Why this is not simply "test your fix".** The tempting reading is carelessness. It is structural: the
+artifact the token NAMED (an alarm's blind spot) and the artifact that had to CHANGE (the seat's prompt)
+were different files under different authorities, and nothing in the closing act required the closer to
+look at the second one. A fix that lands entirely inside your own jurisdiction feels complete precisely
+because it IS complete there.
+
+**The rule.** **A token whose defect is a SEAT's BEHAVIOUR is closed only on that seat's own artifacts,
+never on the document that instructs it.** The document edit is the repair; the seat's next receipt, log
+line or output is the evidence, and until that artifact exists the token stays open. Corollary for any
+factory whose seats are configured outside the repository: when the fix needs a file you cannot write, the
+token does not close — it acquires an addressee.
 ## A bus directory named for the REPO instead of the BOARD fabricates a missing fleet member — and the census cannot see the difference (fleet, 2026-09-17, VIRTUAL-TEN)
 
 `cos-feedback/audiomile/` carried real review traffic while no `specs/audiomile.md` and no R26 census

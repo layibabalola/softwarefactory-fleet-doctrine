@@ -1,6 +1,6 @@
 # Fleet factory kernel — the universal core every project's factory runs on
 
-**Status: `CANDIDATE r4 — DOGFOODING`.** Submitted 2026-09-14 on the owner's instruction (Layi): *"Execute recommended
+**Status: `CANDIDATE r5 — DOGFOODING`.** Submitted 2026-09-14 on the owner's instruction (Layi): *"Execute recommended
 and submit to doctrine repo so we can finalize on factory spec and start dogfooding it in each project and giving
 feedback so it can self improve."* This is a submission for dogfooding, not a ratification. It grants no runtime,
 adoption or launch authority. A project is bound by it only once it records `ADOPT` (Law 1). RULINGS R1–R9 stay binding
@@ -59,12 +59,12 @@ requires the register, not either mechanism.
 ### K3 — Every subject has an exact identity and one claimant
 A subject's identity is a content digest over its **declared artifact set**. That can be a git tree, an asset manifest
 of blob hashes for binaries held outside git, or a document hash. It is never a branch name, a filename or a path alone.
-One claimant holds a subject at a time, under a lease that expires. Each durable file has one writer.
+One claimant holds a subject at a time, under a claim an observer other than the claimant can decide stale and release; an expiring lease is one such mechanism. Each durable file has one writer.
 *Doctrine:* README Law 2 (single writer, ratified 2026-08-08); RULINGS "exact-worktree claim creates a seat";
-recoverable-delivery ruling "exact closure subject". **Gap:** there is no fleet claims/leases spec. This clause states
-the invariant. Each profile lists identity components; the identity is `sha256` over the component digests,
+recoverable-delivery ruling "exact closure subject". **Gap:** there is no fleet claims/leases spec. Each profile lists identity components; the identity is `sha256` over the component digests,
 joined by newlines in the profile's listed order.
-*Observable:* the identity string of one subject, and the command that recomputes it from the artifacts.
+*Observable:* the identity string of one subject, and the command that recomputes it from the artifacts; and, for one
+held subject, its claim record and the procedure by which someone other than the claimant decides it stale and releases it.
 
 ### K4 — Completion is positive evidence
 Work is complete only on positive evidence it was asked to produce: a sentinel, a receipt, an artifact digest. Never
@@ -239,7 +239,7 @@ Derived 2026-09-14 from each project's own spec (or repo instructions where it h
 | adobe-ingester | code (automation probe) | medium | "a real, user-present, headed Adobe login" (human gate) |
 | airmypc | code + hardware-in-loop release gate | medium | "live hardware; the one attended sitting" |
 | magic-lantern_dannephoto (no bus spec yet; mapped from its repo's CLAUDE.md) | hardware-in-loop | high | "Hardware evidence comes only from the owner's camera" |
-| dng-auto-processor | measured-objective | high | auto grade "matches the manual grade per frame", scored on a held-out fold |
+| dng-auto-processor | code (primary) + measured-objective | high | code gates; auto grade "matches the manual grade per frame", scored on a held-out fold |
 | mlv-app | code (primary) + measured-objective (render/export parity and playback measurement) | high | "a falsifier suite that runs"; "compare artifacts by hash, per file, zero tolerance"; A/A trend before claims |
 
 `specs/context-ultra-salesforce.md` is a git-hygiene pattern document, not a project, and is mapped to no profile.
@@ -251,5 +251,5 @@ beyond one scaffold lane.
 1. No fleet claims/leases spec (K3 states the invariant only).
 2. Two overlapping autonomy specs at different ratification maturity (K2).
 3. The continuity spec's status contradicts itself (K9).
-4. Hardware-in-loop has a bench filing; the other non-code profiles still lack harvested evidence.
+4. Hardware-in-loop and measured-objective have harvested evidence; other non-code profiles still lack it.
 5. The kernel has never been run end to end. Every clause is `unpassed` until a filing says otherwise.

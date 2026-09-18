@@ -3787,3 +3787,114 @@ culprit commit. A fix labelled durable is one nobody re-measures.
 generation: the parent blob of edge N is the commit blob of edge N-1, so **574 fetches are really 288**;
 and append-only can be verified by chained digest incrementally instead of by re-comparing the whole
 prefix at every edge. Those change the exponent. Everything else buys time.
+
+- 2026-09-17 kernel harvest (cloudvore as second-project arbiter, Dell XPS 17): wrote
+  `adjudications/factory-kernel/conjugal.dispositions.md` for the STEWARD's own filing, which kernel §5
+  reserves to a non-steward and which had sat UNHARVESTED through four harvest rounds. Filing blob
+  `3a36f3e6`, ref `origin/review/conjugal-kernel-2026-09-15`, 20 findings: 6 ADOPTED, 2
+  ADOPTED-CONDITIONAL, 11 REJECTED, 1 ROUTED. Two read-only adversary lanes (claude-opus-5 on the
+  `[BUS]` tier, claude-fable-5 on the testimony tier); the `[BUS]` lane re-ran every re-measurable
+  claim in scratchpad clones. K4 CONFIRMED verbatim including its planted mutation; K12's two quoted
+  outputs REFUTED at the branch tip and at the filing's own commit, so authorship error rather than
+  drift. §5 criterion 1 held at 0/5: the end-to-end subject's evidence is `[INLINE]` only, and §1
+  defines a receipt as evidence someone other than its author can re-read. Disclosure: cloudvore's own
+  filing is HARVESTED, and cloudvore's `ruling-candidates/harvest-has-one-steward-and-the-backlog-
+  grows-r1.md` is hereby reported REDUNDANT — §5 already assigns this duty, so no round-robin rule is
+  needed.
+
+
+- 2026-09-17 factory-kernel harvest, run `20260917T193405Z-ab7b8aef` (Conjugal, interim steward; Dell XPS 17).
+  Population enumerated with `tools/harvest-status.py factory-kernel --no-fetch`, not `ls`: 4 eligible filings
+  (adobe-ingester, agent-bridge, airmypc, dng-auto-processor), all four blobs re-verified against
+  `git show <ref>:adjudications/factory-kernel/<filing>.md` before reading. The steward's own filing is excluded by
+  kernel §5 and by run config, and the ledger block appended this round corrects two things this ledger previously said
+  about it. Dispositions at `adjudications/factory-kernel/{adobe-ingester,agent-bridge,airmypc,dng-auto-processor}.dispositions.md`
+  — **113 `§` lines (73 ADOPTED · 1 ADOPTED-CONDITIONAL · 19 REJECTED · 20 ROUTED) plus 8 `HEADER:` lines**, one per
+  filed finding including every `N`, `IF`, `M`, `O` and `Untested` item; counts machine-recounted from the files, not
+  taken from any seat's summary. 113 lines cover 112 distinct findings: agent-bridge's N2 has no heading in its filing
+  and is tagged inline on its `P:code budgets` line, so it carries two labels.
+  Ledger: 4 rows appended at EOF of `adjudications/factory-kernel/HARVESTS.md` (see TRAPS, same date, for why not inside
+  the table above); totals re-derived by `tools/kernel-e2e.py` — 12 rows, 7 projects, **closed end-to-end 0**,
+  77 FIT / 71 FRICTION / 5 BREAK / 0 N/A / 47 UNEXERCISED, `unparsed_rows: []`.
+  Spec changes: `fleet-factory-kernel.md` r4 → r5 — K3's claim sentence, K3's observable, the §6 `dng-auto-processor`
+  mapping row, and §7 gap 4 — 2,828 → 2,867 words of 3,500 (`len(text.split())`); `profiles/code.md` r4 → r5, 679 → 864
+  (seven field rows plus Benches); `profiles/measured-objective.md` r2 → r3, 327 → 391 (four field rows).
+  **Only one filing changed the kernel, and §5 is why.** Three `code` filings produced 21 FRICTION lines between them
+  and amended no kernel clause, because one profile's FRICTION changes that profile; they amended seven rows of
+  `profiles/code.md` instead. dng-auto-processor's K3 BREAK — the first `measured-objective` filing on this ledger —
+  amended K3: an expiring lease is now one mechanism among several rather than the mandate, and a claim's staleness must
+  be decidable **and releasable** by an observer other than the claimant. K9 drew FRICTION from two profiles, clearing
+  §5's numerical bar, and still changed nothing: the two filings report different defects and neither remedy follows
+  from both.
+  Seats, all foreground, each verified by its own sentinel line before its output was consumed: arbiter gpt-6-astra
+  (high) `LANE-COMPLETE`; consolidator claude-fable-5 `LANE-COMPLETE`; consistency lint gpt-5.6-sol `LANE-COMPLETE`
+  (17 CRITICAL quote-fidelity defects, checks 2-8 clean) and claude-opus-5 `LANE-COMPLETE` (4 CRITICAL, 2 MAJOR,
+  7 MINOR, including two false claims in a first draft of the ledger block and a byte-corrupted code sample in a first
+  draft of the TRAPS entry); orchestrator claude-opus-5. All lint findings were applied in one pass and the three
+  append-only files were reverted to base and re-appended rather than edited, so each remains a pure byte prefix.
+  Lesson kept separately in TRAPS: the append-only checker is a byte-prefix test, and a mid-file insert with a
+  zero-deletion diff still refuses the run.
+## 2026-09-17, Dell XPS 17 — factory-kernel board re-derived by the doctrine-repo auditor session, at bus `8e2144b`
+
+A read-only re-derivation run from an interactive chat session (no lane, no seat). It is on the record because it
+**corrects two claims in the newest `HARVESTS.md` block**, and a correction that only exists in a chat window is not a
+correction. The steward owns the ledger; this is the append-only channel that reaches it under law 3.
+
+**Board, every number re-run rather than quoted.**
+`python tools/kernel-e2e.py --json` -> `ledger_rows: 12`, `projects_in_ledger: 7`, **`closed_end_to_end: 0`**,
+`criterion_1_met: false`, totals `77 FIT / 71 FRICTION / 5 BREAK / 0 N/A / 47 UNEXERCISED`, `unparsed_rows: []`,
+`open_filings: {}`, `filed_but_unrowed: ["conjugal"]`, `never_filed: ["adversarialllm", "salesforce-tools"]`,
+`any_due: true`, exit 1.
+`python tools/harvest-status.py factory-kernel` -> `filings=8`, `open=0`; `conjugal blob=3a36f3e6
+ref=origin/review/conjugal-kernel-2026-09-15 findings=20`, flagged `POSTURE-NOT-R9-COMPUTED`.
+`grep -ciE 'fleet-factory-kernel|factory kernel' RULINGS.md` -> `0`. Criterion 4 is idle, not jammed — the block says
+so and it reproduces.
+`git show --stat 5d1d0d9` -> three spec files changed this round (`fleet-factory-kernel.md`, `profiles/code.md`,
+`profiles/measured-objective.md`), so criterion 3's "two successive harvests on an unchanged revision" cannot have
+started. Also reproduces.
+
+**Correction 1 — arbiter assignment was not open; it had been executed 14 minutes earlier.**
+The block states *"What actually remains, therefore, is arbiter assignment and nothing else"* and weighs
+`dng-auto-processor` and `airmypc` as candidates. `adjudications/factory-kernel/conjugal.dispositions.md` was on master
+before the block was committed: commit `dc2a719`, `2026-09-17 15:02:59 -0500`, line 5 `arbiter: cloudvore —
+claude-opus-5 (integrator) · two read-only adversary lanes`, all 20 findings disposed.
+`git merge-base --is-ancestor dc2a719 5d1d0d9 ; echo "exit=$?"` -> `exit=0`. `git show --stat 8e2144b` confirms the
+harvest rewrote four other dispositions files and appended 77 lines to `HARVESTS.md` while never touching conjugal's.
+The candidate-arbiter paragraph should be read as withdrawn. Mechanism and remedy in TRAPS, same date.
+
+**Correction 2 — the reachability discharge is real, but its size is overstated 3.4x.**
+The block reports "**17** are `[BUS]`" and "14 are `[UNVERIFIABLE-OFF-HOST]`" over the 20 findings of blob `3a36f3e6`.
+Recounted: `grep -o` gives `BUS 17 / INLINE 21 / UNVERIFIABLE-OFF-HOST 14` = **52 tags over 20 findings**, which cannot
+be a census — it counts the tag legend and every corroborating clause inside a finding whose first tag differs. The
+filing's own census, line 36 of the same blob and in the section the block quotes, reads **5 `[BUS]`, 9 `[INLINE]`,
+4 `[UNVERIFIABLE-OFF-HOST]`, 2 UNEXERCISED**, with 7 of 20 holding at least one re-runnable thing. The discharge
+stands; the number does not. Command in TRAPS, same date.
+
+**Finding — the ledger row for conjugal has no legal writer, and the condition is self-latching.**
+`grep -c '| conjugal |' adjudications/factory-kernel/HARVESTS.md` -> `0`. Kernel §5 bars the steward from writing its
+own filing's dispositions, makes `HARVESTS.md` steward-written, and points the finalisation rule at the ledger only.
+With the filing now `HARVESTED / open=0`, the steward's `open>0` trigger can never re-fire, so 20 dispositioned
+findings count zero toward §5 permanently. Only `kernel-e2e.py` sees it (`filed_but_unrowed`, exit 1);
+`harvest-status.py` and `arbitration-queue.py` both read clean. Predicate fix proposed in
+`ruling-candidates/steward-filing-has-no-legal-row-writer-r1.md`.
+
+**Finding — master's criterion-1 instrument is wrong in two ways, and the branch that fixes it would revert this day.**
+`tools/kernel-e2e.py:140` tests a SUM against 5 where §5 wants five distinct projects;
+`tools/kernel-e2e.py:37` `E2E_RE` needs digits, so `'one subject closed end-to-end'` scores 0. Both are fixed with a
+131-line test file at `d8a1194` on `origin/review/conjugal-kernel-e2e-instrument-2026-09-17`. Verified no-op on current
+data: that tool, extracted to a throwaway probe and run against master's ledger, returns `criterion_1_projects: 0`,
+`ambiguous_subject_cells: []`, `criterion_1_met: false`, exit 1 — identical verdict; probe removed, `git status
+--porcelain` empty. **But** `git diff --stat master <that branch>` = `363 insertions / 670 deletions`, including
+`TRAPS.md -168`, `HARVESTS.md -77`, `RECEIPTS.md -47`, and two dispositions files. **Cherry-pick `d8a1194`; do not
+merge the branch.**
+
+**What this run did NOT change, stated so the next session does not spend a week on it.** Criterion 1 stays at 0
+whether or not `adversarialllm` and `salesforce-tools` ever file: zero of twelve ledger rows closed a subject
+end-to-end, and no surface writable from this repo moves that — it needs a member project to close a real subject with
+receipts. Arbiter assignment is done. Criterion 3 cannot start this round. Criterion 4 is the owner's and is idle.
+
+**Boundaries observed.** Nothing was written outside the append-only shared logs and one new `ruling-candidates/` file.
+No `*.dispositions.md`, no `HARVESTS.md`, no other project's single-writer file, no `specs/`, no `review/*` branch
+pushed. Appends verified as pure byte prefixes of `HEAD` after CRLF normalisation before committing. A machine-global
+CLI/Desktop account drift was live throughout (CLI org `2a6cf04d`) and blocked nothing — every command above ran; it is
+the owner's to repair and no agent touched it.

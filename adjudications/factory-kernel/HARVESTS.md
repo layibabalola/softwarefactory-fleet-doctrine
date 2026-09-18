@@ -57,3 +57,80 @@ the difference.
 **Not blocking, so nobody spends a week on it:** RULINGS.md mentions the kernel zero times
 (`grep -ci "fleet-factory-kernel\|factory kernel" RULINGS.md` → 0). Criterion 4 has never started.
 The owner gate is idle, not jammed.
+
+
+---
+
+## Harvest 2026-09-17 — run 20260917T193405Z-ab7b8aef (Conjugal, interim steward)
+
+Appended at end of file: this ledger is byte-append-only (the runner's `pure_append` requires the new bytes to start
+with the old ones), so new rows cannot be inserted into the table above. Same columns, same order; `tools/kernel-e2e.py`
+takes rows by content, not position, and sums both tables.
+
+| date | harvest | filing | blob | kernel | profile | subjects | FIT | FRICTION | BREAK | N/A | UNEXERCISED | unresolved BREAKs | arbiter |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 2026-09-17 | 20260917T193405Z-ab7b8aef | adobe-ingester | 5e285849969134fb8cafa7ac1fc520864496ae0e | r4 (now r5) | code@r4 (now r5) | 0 end-to-end; WO-G0-A01 rev13 blocked at acceptance closure; control Q-036 rev7/rev8 typed terminals; window-opened-before-kernel=no | 1 | 12 | 0 | 0 | 3 | 0 | gpt-6-astra (steward seat; not a steward filing) |
+| 2026-09-17 | 20260917T193405Z-ab7b8aef | agent-bridge | d20a110f7481376553d313ec7fe7a96616e1070d | r4 (now r5) | code@r4 (now r5) | 0 end-to-end under r4; 7 accepted under the local KERNEL (Table S); window-opened-before-kernel=no | 9 | 7 | 0 | 0 | 2 | 0 | gpt-6-astra (steward seat; not a steward filing) |
+| 2026-09-17 | 20260917T193405Z-ab7b8aef | airmypc | 6d82c652f4eeca3ccf1eb237657af0264e3625cf | r4 (now r5) | code@r4 (now r5); hardware-in-loop@r2 declared, not exercised | 0 end-to-end; S3 accepted subject to a final-identity qualification, not delivered; window-opened-before-kernel=no | 8 | 2 | 0 | 0 | 2 | 0 | gpt-6-astra (steward seat; not a steward filing) |
+| 2026-09-17 | 20260917T193405Z-ab7b8aef | dng-auto-processor | 1f2eceffae1bc8f27fcae12f5e82d158d4bc1158 | r4 (now r5) | measured-objective@r2 (now r3); kernel §6 remapped to code (primary) + measured-objective | 0 end-to-end; 1 in-flight claimed for nothing; 5 retrospective pre-kernel landings not counted; window-opened-before-kernel=yes | 5 | 4 | 3 | 0 | 8 | 0 (K3 BREAK adopted into kernel r5; P:measured-objective subject-identity BREAK adopted into measured-objective r3; P:measured-objective resource-terminals BREAK rejected as instance failure against existing text) | gpt-6-astra (steward seat; not a steward filing) |
+
+Derived, not asserted. Re-run: `python tools/kernel-e2e.py --json`. Every number below is that tool's output.
+
+**§5 criterion 1 — CLOSED END-TO-END SUBJECTS: 0.** Twelve rows, seven projects, and it has been 0 at every harvest.
+Criterion 1 needs at least five projects with at least one closed subject each, so finalisation is 0/5. Verdicts across
+all 12 rows: **77 FIT, 71 FRICTION, 5 BREAK, 0 N/A, 47 UNEXERCISED.**
+
+**§5 criterion 2 now reads MET on its own text, and that is worth stating plainly rather than leaving implicit.** It
+asks for "At least three profiles have been exercised, including at least two whose acceptance is not an automated test
+suite." Three profiles now carry harvested rows with exercised verdict lines: `code` throughout, `hardware-in-loop` via
+magic-lantern_dannephoto (2026-09-15; a P:hardware-in-loop BREAK was adopted into that profile's r2), and
+`measured-objective` via dng-auto-processor in this round — the first `measured-objective` filing on this ledger, where
+every earlier row was `code@rN` or `hardware-in-loop@rN`. The two non-test-suite profiles are the latter two. Criterion 2
+carries no end-to-end requirement; that bar belongs to criterion 3, which requires "fresh end-to-end evidence meeting
+criteria 1 and 2". So criterion 1 is the only criterion whose own text is unmet on evidence, and it blocks criterion 3
+with it.
+
+**§5 criterion 3 has not started and cannot start from here:** it needs two successive harvests on an UNCHANGED
+revision, and three files changed this round — kernel r4 → r5, `code` r4 → r5, `measured-objective` r2 → r3.
+**Criterion 4 has never started**; `grep -ci "fleet-factory-kernel|factory kernel" RULINGS.md` is still 0. The owner gate
+is idle, not jammed.
+
+**`window-opened-before-kernel` is new in these rows** (dng-auto-processor O1, adopted in fact and routed as a
+standard). The kernel first existed at 2026-09-14T20:49:38Z. Of these four filings only dng-auto-processor's window
+opens before that instant. It is context for criterion 1's zero, not credit against it, and dng attached both
+disqualifiers itself: adobe-ingester's window is entirely post-kernel and still returned 0, and granting K5
+retroactively to every earlier row leaves end-to-end at 0. The field lives inside the `subjects` cell because this file
+is append-only and the table header above cannot be edited.
+
+**Members due — 2 have NEVER filed:** `adversarialllm`, `salesforce-tools`. **`dng-auto-processor` has now filed and
+leaves that list**, where the 2026-09-15 block named it as a never-filed alternate arbiter. `harvest-status.py` still
+cannot see a member who has never filed; `tools/kernel-e2e.py` takes the roster from §6 and reports the difference.
+
+**Steward self-filing — correcting this ledger's own 2026-09-15 entry, on both of its claims.**
+
+*First, the count.* It would be easy to write that the steward's filing has "survived four harvests"; that is false, and
+the falsehood is this ledger's to avoid. `origin/review/conjugal-kernel-2026-09-15` (blob `3a36f3e6`, 20 findings by
+`harvest-status.py`) first appeared on that branch at 2026-09-15T19:12:41-05:00 = **2026-09-16T00:12Z**, after all three
+harvests the 2026-09-15 block was written against (20260914T221904Z, 20260915T051905Z, 20260915T060404Z). Its current
+blob was last written 2026-09-17T05:14Z. **This is its first harvest-eligible round, not its fourth.** What survived
+three harvests was its predecessor, `conjugal-kernel-2026-09-14` (blob `99cc68bf`, 15 findings), correctly named above.
+The standing problem — that no steward filing has ever been routed to an arbiter — is four harvests old; this filing is
+not.
+
+*Second, the reachability defect is DISCHARGED, and the 2026-09-15 entry should no longer be read as live.* That entry
+recorded "All 15 findings cite paths in a checkout that exists on one machine. No sibling can re-measure them", and
+concluded the steward must "re-file against a bench a sibling can reach, or supply the evidence inline." Blob `3a36f3e6`
+does exactly that. It carries a section headed "## Reachability re-file, 2026-09-17 — read before ruling" which quotes
+that sentence and answers it: "**This revision discharges it. No verdict, claim or wording of any finding changed — only
+how its evidence is presented.**" Every finding's evidence field now opens with a tag; measured on the blob, **17 are
+`[BUS]`** — "re-measurable from a clone of this branch plus Python, no access to Conjugal needed" — and 14 are
+`[UNVERIFIABLE-OFF-HOST]`, declared as such rather than presented as measurable. A ledger that kept saying "nobody can
+arbitrate it" would be describing a defect its filer removed before this harvest opened.
+
+*What actually remains, therefore, is arbiter assignment and nothing else.* The steward is excluded from this by kernel
+§5 and by this run's configuration, correctly, but exclusion is not routing. The 2026-09-15 block ruled adobe-ingester
+out (unreachable bench, producer's own class) and named airmypc a candidate on independence with reachability
+UNVERIFIED. **dng-auto-processor is now a candidate it was not on 2026-09-15**: it has filed, its bench is evidenced
+across 43 dispositioned findings, and its author seat is Codex — a different independence class from the Claude seat
+that produced the steward's filing. Its own U5 raises the matching question from the other side, and this harvest routed
+that to a dng adoption-authority bench.
