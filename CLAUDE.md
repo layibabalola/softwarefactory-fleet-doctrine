@@ -70,8 +70,15 @@ project adopts or distinguishes it (law 2).
 Machine-local, and deliberately outside every repo: `~/.claude/ROTATION.md` is the runbook, and
 `~/.claude/hooks/checkpoint-any.py` writes `~/.claude/session-checkpoints/<repo>/` on both
 SessionStart and Stop. Checkpoints record **where work was, not what to do next** — read the newest
-few, not just the newest, because sessions running in ephemeral harvest clones write checkpoints
-whose `repo:`/`cwd:` paths are deleted soon after.
+few, not just the newest.
+
+Many checkpoints name a `repo:`/`cwd:` under `...\harvestuns\<ts>us` that no longer exists.
+**Ignore the dead path; it is cosmetic and nothing is lost.** Those are `git worktree add --detach`
+of THIS repo (Conjugal's `harvest_runner.py`, `bus_repo` = softwarefactory-fleet-doctrine), not
+clones, so they share this object store: their commits are durable the moment they are written and
+survive the directory's deletion. The SHA on the line below the dead path resolves here, and the
+checkpoint is already filed under the durable repo slug. Resolve it with `git log <sha>`, not by
+hunting for the directory.
 
 **A checkpoint cannot tell you your work is backed up, and does not claim to.** Its branch listing
 counts commits ahead of *master* and never consults `origin`, so it names branches that are safely
