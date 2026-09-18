@@ -86,7 +86,20 @@ Sanitized: no credentials, no transcripts, no machine state beyond the mechanism
   (122/0) before landing candidate 5, which then landed DONE. The tool fix is queued as its own keyed item
   (DECISIONS 2026-09-18 Ruling 12).
 
+## F. A review seat told to "verify by execution" must be able to execute  (TRAP + normative)
+
+- **Mechanism.** The AirMyPC cross-family review lane runs its seat with a read-only sandbox, but the seat prompt
+  says to verify by execution and never from the author's receipt. Across nine rounds on one subject no round ran a
+  build. Every review was static reading plus in-memory probes. The final round found no defect and still returned
+  BLOCKED, because it could not execute and refused author receipts.
+- **Harm.** A clean review cannot say SHIP. Either the lead lands on evidence that no key executed, or the subject
+  parks over the sandbox and not the code.
+- **Invariant.** A review seat's charter must match its sandbox. Either the charter is "review by reading", with a
+  separate execution key producing evidence the reviewer can check by hash, or the seat gets an execution-capable
+  sandbox in a disposable clone. A BLOCKED caused only by the sandbox is a lane outcome, never a verdict or a round.
+- **Local status.** R01 slice 1 landed on cross-family static review plus a fresh-context same-family execution key
+  that ran the exact commit in a clean clone (AirMyPC DECISIONS 2026-09-18 Ruling 15).
 ## Proposed destinations
 
-TRAPS.md (A, B, C, D, E) and the fleet-factory-kernel review surface (A, C and E as normative kernel requirements).
+TRAPS.md (A, B, C, D, E, F) and the fleet-factory-kernel review surface (A, C, E and F as normative kernel requirements).
 Each sibling records ADOPT or DISTINGUISH.

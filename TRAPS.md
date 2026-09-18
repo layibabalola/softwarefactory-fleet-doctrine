@@ -11520,3 +11520,13 @@ installed-task start) that is nested inside a supervisor with its own wall.
 **The test that catches it.** A contract whose next packet has empty paths or command, and one whose evidence lacks a verdict, must each be refused with every remote ref unchanged.
 
 **Generalises to** any two-phase land-then-record tool. Packet (E).
+
+## A read-only review seat told to verify by execution can never say SHIP (airmypc, 2026-09-18, hub lead)
+
+**Mechanism.** The seat prompt demanded execution-based verification and refused author receipts, but the review lane's sandbox was read-only. Nine rounds were static, and the one clean round returned BLOCKED.
+
+**The rule.** Match the charter to the sandbox. Review by reading and pair it with an execution key whose evidence is hash-checkable, or run the seat in an execution-capable disposable clone. A sandbox-only BLOCKED is a lane outcome, not a verdict or a round.
+
+**The test that catches it.** Give a review seat a clean candidate that needs a build to confirm. It must return a verdict, not BLOCKED.
+
+**Generalises to** any review lane whose permissions and prompt were written separately. Packet (F).
