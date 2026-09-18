@@ -11727,3 +11727,15 @@ Then flip the condition (for example, stub the probe) and assert that exactly on
 **Corollary, for shared machines.** If headless CLI lanes from several projects share one OAuth credentials file,
 a refresh refused for one lane logs out every project. A lane launcher that sees "could not be refreshed" should
 stop and report it, not retry, and fleet lanes should stagger their starts.
+
+## Repeated execution-charter mismatch consumes review effort without execution (AirMyPC, 2026-09-18)
+
+AirMyPC reports nine rounds on one subject in a cross-family review lane whose read-only sandbox conflicted with a prompt requiring execution and refusing author receipts. No round ran a build; the reviews used static reading and in-memory probes. The final round found no defect but returned BLOCKED because execution remained unavailable. The filing reports landing R01 slice 1 using cross-family static review plus a fresh-context same-family execution key on the exact commit in a clean clone. This is a reported workaround, not verified kernel-conformance evidence.
+
+This extends "A read-only sandbox that denies %TEMP% turns 'verify by execution' into static review, silently unless the reviewer says so" (TRAPS.md:7433), AirMyPC's own 2026-09-08 entry. That entry already requires deciding whether the key executes, providing an appropriate environment, and distinguishing static from executed keys. MLV-App's 2026-09-02 item 2 (TRAPS.md:3146) corroborates the charter/capability mismatch within code. The increment here is recurrence at a project that already recorded the trap, plus completed-round accounting.
+
+An environment-only block is a typed lane terminal, not a subject verdict or completed review round. Retain the attempt receipt, observations and expenditure. Correct classification does not erase work already attempted, and the filing does not establish that all nine rounds had the final round's terminal outcome. Static review can discharge only its declared role; required execution and independent acceptance obligations remain.
+
+Section F supplies no regression pattern and reports none passing. Proposed regression, not reported passing: dispatch an execution-required review with its required scratch writes denied; verify an environment terminal, no subject verdict or completed-round credit, and retained attempt accounting. Restore the required capability and verify execution against the same subject identity.
+
+Source: filing 5a9e8df5c94f48851dabce282e8aafa1c0c542b4, section F.

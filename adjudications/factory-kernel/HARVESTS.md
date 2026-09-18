@@ -286,3 +286,73 @@ is the steward's next filing's job, on a fresh `review/conjugal-kernel-<date>` b
 that repeats the [INLINE] claim without the receipt should expect the same ruling.
 
 Derived, not asserted. Re-run: `python tools/kernel-e2e.py --json`.
+
+---
+
+## Harvest 2026-09-18 (third) — run 20260918T220405Z-e0211e4b (Conjugal, interim steward)
+
+Appended at end of file; this ledger is byte-append-only. Same columns, same order; `tools/kernel-e2e.py` takes rows by
+content, not position, and sums all five tables.
+
+**This row and the two 2026-09-18 rows above are the SAME filing at three blobs, not three filings.**
+`airmypc-dogfood-20260918` was harvested at blob `9cfb2187` (A/B/C), re-filed at `697289f2` (added D/E) and re-filed
+again at `5a9e8df5`, which appends section F and extends `## Proposed destinations`; A–E are byte-identical and their
+dispositions carried forward without reapplication. All three rows are kept because the ledger is append-only and
+because a re-file is a real event, but **nothing in this row is new end-to-end evidence and the three rows must never be
+summed as three projects' worth of coverage.**
+
+| date | harvest | filing | blob | kernel | profile | subjects | FIT | FRICTION | BREAK | N/A | UNEXERCISED | unresolved BREAKs | arbiter |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 2026-09-18 | 20260918T220405Z-e0211e4b | airmypc-dogfood-20260918 | 5a9e8df5c94f48851dabce282e8aafa1c0c542b4 | undeclared by the filing; adjudicated against r5, unchanged this round | undeclared by the filing; adjudicated against code@r7 (now r8) | 0 credited end-to-end; actual qualifying total unestablished rather than proved zero; no declared exact subject identities, window, pre-work profile or bound acceptance/delivery receipts; window-opened-before-kernel=undeclared | 0 | 0 | 0 | 0 | 0 | 0 submitted | gpt-6-astra (high; steward seat; not a steward filing) |
+
+These zeros count submitted verdict lines; they do not certify FIT, manufacture UNEXERCISED findings, or erase attempted
+work. Six narrative sections are not six verdicts. Zero unresolved BREAKs means none submitted, not universal
+conformance. A through E receive no duplicate evidence credit for appearing in a third blob.
+
+Derived, not asserted. Re-run: `python tools/kernel-e2e.py --json`.
+
+**§5 criterion 1 — CLOSED END-TO-END SUBJECTS: 0.** Fifteen rows across the same seven projects — `kernel-e2e.py`
+prints eight `projects_in_ledger` because the filing name `airmypc-dogfood-20260918` does not map to `airmypc` — and it
+has been 0 at every harvest. Criterion 1 needs at least five projects with at least one closed subject each, so
+finalisation is 0/5. Verdicts across all 15 rows are unchanged by this round: **77 FIT, 71 FRICTION, 5 BREAK, 0 N/A,
+47 UNEXERCISED.**
+
+**§5 criterion 2 remains MET** on the 2026-09-17 finding: `code`, `hardware-in-loop` and `measured-objective` all carry
+harvested rows with exercised verdict lines, the latter two being the non-test-suite pair. Nothing this round touches it.
+
+**§5 criterion 3 — the kernel text is unchanged at r5 for the THIRD consecutive round, and the clock still does not
+start.** The digest half: `code` is the participating profile and moved r7 → r8 on the one conditionally adopted
+finding, so kernel-and-participating-profile digests are not identical across any pair of these rounds. The evidence
+half: criterion 3 requires "fresh end-to-end evidence meeting criteria 1 and 2", and criterion 1 is 0. Either alone
+stops it. Three successive unchanged-kernel rounds are the closest this ledger has come, and each of them moved the
+`code` profile, which is exactly the case criterion 3's digest requirement exists to refuse. **Criterion 4 has never
+started**; `grep -ci "fleet-factory-kernel\|factory kernel" RULINGS.md` is still 0. The owner gate is idle, not jammed.
+
+**Members due — 2 have NEVER filed:** `adversarialllm`, `salesforce-tools`. Unchanged from 2026-09-17.
+`harvest-status.py` still cannot see a member who has never filed; `tools/kernel-e2e.py` takes the roster from §6.
+
+**Steward self-filing — the ledger gap named on 2026-09-18 (first) is now in its third round, and this run did not close
+it either, for the reason already recorded.** `tools/kernel-e2e.py` still reports `conjugal` in `filed_but_unrowed`.
+This remains a ledger gap, not a routing gap: `adjudications/factory-kernel/conjugal.dispositions.md` exists at commit
+`dc2a719` — arbiter cloudvore, 2026-09-17, ruling on blob `3a36f3e6` (20 findings: 6 ADOPTED · 2 ADOPTED-CONDITIONAL ·
+11 REJECTED · 1 ROUTED, spec commit `da4e9201`) — and `harvest-status.py` marks `conjugal` HARVESTED. All three
+2026-09-18 runs were scoped by their runner to one filing, `airmypc-dogfood-20260918`, and none could append a row for a
+different filing without leaving its allowlist. It will not close until a run is scoped to include it; HARVESTS.md
+being steward-written (kernel §5) puts it on the steward.
+
+**A pattern worth naming after three harvests of one filing in one day.** Each re-file of this packet has appended
+one or two sections, and each has cost a full harvest — arbiter, consolidator, two lint families — to disposition
+that increment against a profile that has now moved r5 → r8 in one day on this packet alone. Nothing in
+`adjudications/factory-kernel/README.md` forbids incremental re-filing, and the prior arbiter refused to invent a
+changelog requirement, so this is recorded as an observation and not a defect: a filer who batches sections before
+pushing spends one harvest where three were spent here.
+
+**What this round changed:** `specs/fleet-factory-kernel/profiles/code.md` r7 → r8, +44 words (993 → 1,037), on one
+ADOPTED-CONDITIONAL finding, split across two rows — Independent key (K6), 28 words: review-key charters declare
+execution or static review before dispatch, execution charters require an execution-capable disposable environment,
+and static keys authenticate required execution receipts by digest against the exact subject; Resource terminals (K5),
+16 words: environment-only review blocks are typed terminals, not subject verdicts or completed rounds, with attempts
+and expenditure retained. Kernel unchanged at r5, 2,867 of 3,500 words. One TRAPS.md entry appended (section F, as a
+narrow extension of AirMyPC's own `TRAPS.md:7433`). Dispositions:
+`adjudications/factory-kernel/airmypc-dogfood-20260918.dispositions.md`, rewritten for blob `5a9e8df5` and superseding
+its own ruling on blob `697289f2` without withdrawing any disposition that ruling recorded.
