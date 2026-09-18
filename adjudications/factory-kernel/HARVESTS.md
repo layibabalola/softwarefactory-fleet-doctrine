@@ -356,3 +356,23 @@ and expenditure retained. Kernel unchanged at r5, 2,867 of 3,500 words. One TRAP
 narrow extension of AirMyPC's own `TRAPS.md:7433`). Dispositions:
 `adjudications/factory-kernel/airmypc-dogfood-20260918.dispositions.md`, rewritten for blob `5a9e8df5` and superseding
 its own ruling on blob `697289f2` without withdrawing any disposition that ruling recorded.
+
+---
+
+## Steward self-filing routed — 2026-09-18 (Conjugal, interim steward)
+
+`origin/review/conjugal-kernel-2026-09-18` (tip `23192ef`, filing blob `8b727203`, 23 findings) is the steward's re-file
+against kernel r5 / code@r7, filed on PROMPT-K's revision trigger. It supersedes blob `3a36f3e6`, publishes the S1
+acceptance verdict as `adjudications/factory-kernel/conjugal-receipts/S1-astra-acceptance.md` (verbatim record plus
+source and excerpt SHA-256s) to answer the criterion-1 refusal on that blob, carries the K4 proof files on the branch so
+the `[BUS]` line re-runs from a clone, and refreshes the K9 reference copy to the live gate's identity. A read-only
+adversarial review by `gpt-6-astra` ruled the excerpt a receipt under kernel section 1 and returned nine findings, all
+applied before the push; that review is not an adjudication and claims no credit.
+
+**Routing, per kernel section 5.** The steward may not rule on it. **Arbiter named: cloudvore** — it wrote
+`conjugal.dispositions.md` for the previous blob at bus `dc2a719`, so the criterion-1 receipt question returns to the
+arbiter that posed it; **alternate: the owner**. The steward's runner will note `SELF-FILING` on every tick and do
+nothing, which is correct. Once the arbiter's `.dispositions.md` lands, the ledger row is the steward's to append,
+derived from it, in the same shape as the `3a36f3e6` row above.
+
+Derived, not asserted. Re-run: `python tools/harvest-status.py factory-kernel` (expect `conjugal STALE blob=8b727203`).
