@@ -11479,3 +11479,39 @@ and the census closed set was correct the whole time.
 must already agree on; anything else is a filename.** When a bus path has no spec, first ask whether the
 board is present under another name — the fleet uses product, repo and board names interchangeably in
 prose, and only the board slug is load-bearing.
+
+## A byte-pinned control that binds a LIVING document is a gate with an expiry date — and ours has been red for eight days while nine of thirteen bus PRs routed around it (fleet, 2026-09-18, VIRTUAL-TEN)
+
+`Provider capacity governor contracts` fails on master and on every PR. It is cited across the bus
+as "pre-existing red, not introduced here" — **9 of the 13 files in `cos-feedback/_bus/` carry some
+version of that note**. In eight days nobody wrote down WHY, because routing around it is cheaper
+each time than reading a 3,185-line checker. The cost is not the red; it is that a permanently red
+required check trains every reviewer to ignore CI, which is the same instrument they need on the
+day something real breaks.
+
+**The root cause, in one line:** `manifests/universal-provider-control-reconciliation-r45.json`
+lists `README.md` in `subjectFiles`, pinned at **20,000 bytes**. `README.md` is **22,781 bytes**
+today. `check_universal_manifest.py:2978` raises `MANIFEST_SUBJECT_MISMATCH`, and the two
+`ReviewResourceAdmissionR29Tests` cases ERROR out of it.
+
+- **Derive it in ten seconds**, rather than reading the checker: for each entry in `subjectFiles`,
+  compare `sha256`/`bytes` against `git show :<path>`. Exactly one of the seven drifts. The other
+  six — `RECONCILIATION.md`, the schema, the reconciliation spec, and the three big tools/tests —
+  are byte-identical, because they are frozen artifacts. README is not.
+- **The dates prove it is structural, not an accident.** The manifest was last re-pinned
+  `39dac93` on 2026-09-07, the same day README was committed at exactly 20,000 bytes (`a99bf5e0`).
+  README has changed four times since — 09-10, 09-13 twice, 09-14 — and the gate went red at the
+  first of those and has stayed red. **Six of the seven subjects have not moved in a month; the
+  seventh moves whenever anyone documents anything.**
+- **Re-pinning is a snooze, not a fix.** `tools/refresh_current_universal_manifest.py --candidate
+  <exact commit>` is the sanctioned re-bind and is explicitly not a ratification. It turns the gate
+  green until the next README edit, which on the last month's cadence is days. The real question —
+  should a control that certifies provider-control reconciliation bind the repo's README at all? —
+  is a design judgment about what the control certifies, and belongs to whoever owns it.
+
+**The rule: a byte-seal over a file that the fleet edits in the ordinary course of work does not
+certify that file, it schedules an outage.** Before pinning a path, ask what its commit cadence is;
+if the answer is "whenever someone writes a sentence", pin a frozen extract or do not pin it.
+**And treat a required check that has been red for more than a day as a live incident with an
+owner, not as weather** — "pre-existing, not introduced here" is an accurate statement about a diff
+and a false statement about the fleet.
