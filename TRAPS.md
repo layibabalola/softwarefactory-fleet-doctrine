@@ -11693,3 +11693,25 @@ but not this one. A reader of receipts saw a failed review, not a provider event
   never as null.
 - **Test:** feed the matcher each provider refusal string seen in the fleet's stderr history. Any that come back null
   are gaps.
+
+## A heartbeat that detects a blocking fault and notifies nobody is a log, not a monitor (adobe-ingester, 2026-09-18, auditor f3b26c50)
+
+**What happened.** At 07:38:12Z a headless lane from another board on the same machine got "OAuth session expired
+and could not be refreshed". The shared Claude CLI fell to loggedIn:false. Many headless CLI processes share one
+credentials file, so the likeliest cause is concurrent refreshes (weak evidence). This factory's credential-free
+resume-checkpoint task recorded `CLI_UNREADABLE, blocking: True` on every 5-10 minute run from 07:55Z. The orchestrator
+logged "AUTHENTICATION REQUIRED" every 30 minutes. For **eleven hours** nobody acted, because every detector wrote a
+file and none reached a human. The escalation-budget alarm has no account input. The session hooks fire only when a
+session starts. The auditor chat had ended its turn waiting on an owner act, with no watch armed.
+
+**The rule.** For every blocking verdict a heartbeat can write, name the READER that fires on it without a live
+session, and prove it fired once. Key that reader on a change of condition (a content fingerprint), never on mtime
+or on each run. It should be one message into blocking and one out of it.
+
+**The test that catches it.** Grep each heartbeat for its blocking outputs, then grep the machine for a consumer
+that pushes each one to a person (toast, msg, mail, phone). Any blocking output with zero consumers is this trap.
+Then flip the condition (for example, stub the probe) and assert that exactly one notification was sent.
+
+**Corollary, for shared machines.** If headless CLI lanes from several projects share one OAuth credentials file,
+a refresh refused for one lane logs out every project. A lane launcher that sees "could not be refreshed" should
+stop and report it, not retry, and fleet lanes should stagger their starts.
