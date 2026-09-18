@@ -14,7 +14,7 @@ Source files are Codex CLI rollout logs (JSONL). All paths below are **machine-l
 
 ## Source files
 
-| # | File (machine-local, directory `C:\Users\layib\.codex\sessions\2026\09\15\`) | Bytes | SHA-256 | Verdict record line |
+| # | File (machine-local, directory `%USERPROFILE%\.codex\sessions\2026\09\15\`) | Bytes | SHA-256 | Verdict record line |
 |---|---|---|---|---|
 | 1 | `rollout-2026-09-15T18-23-13-01a0a761-b4e5-71c2-80e8-c19e97ff9e5c.jsonl` | 840092 | `53387d8aafcbd12289009bc9a77d788099c0b59dc08d2800b770adc3864f6e0a` | 75 |
 | 2 | `rollout-2026-09-15T18-31-31-01a0a769-4c0b-7dc0-a2d2-6854dc566422.jsonl` | 492308 | `bc2fcc34f386765ec03420813b3d3e34cae4e79dbdac4c85920dddf735d4c3b8` | 56 |
