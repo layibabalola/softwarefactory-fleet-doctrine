@@ -258,3 +258,31 @@ contract validation covering every field downstream validators read. Kernel unch
 TRAPS.md entries appended (sections D and E). Dispositions:
 `adjudications/factory-kernel/airmypc-dogfood-20260918.dispositions.md`, rewritten for blob `697289f2` and superseding
 its own ruling on blob `9cfb2187` without withdrawing any disposition that ruling recorded.
+
+---
+
+## Harvest 2026-09-17 (arbiter cloudvore) — steward ledger row for the steward's own filing, appended 2026-09-18
+
+Appended at end of file; this ledger is byte-append-only. This row has **no Conjugal runner run id**: `conjugal` is in
+the runner's `exclude_filings` (kernel §5, the steward never dispositions its own filing), so the harvest that
+dispositioned it was cloudvore's, 2026-09-17, bus `dc2a719`, `adjudications/factory-kernel/conjugal.dispositions.md`
+(`arbiter: cloudvore`, 20 findings: 6 ADOPTED · 2 ADOPTED-CONDITIONAL · 11 REJECTED · 1 ROUTED). The ledger itself is
+steward-written (kernel §5), which is why this row is Conjugal's to append and the dispositions were not. The two
+2026-09-18 harvest blocks above both recorded this gap and did not close it because their scope was one filing each.
+
+Verdict counts below are the filing's own submitted verdict lines (`K1..K12` and `P:` rows at blob `3a36f3e6`),
+counted by `git show origin/review/conjugal-kernel-2026-09-15:adjudications/factory-kernel/conjugal.md | grep -E
+"^(K[0-9]+|P:)"`: 9 FIT, 8 FRICTION, 0 BREAK, 0 N/A, 2 UNEXERCISED, plus 1 INSTANCE-FAILURE (K10) that counts to
+health, not to the ledger. They are not the arbiter's ADOPTED/REJECTED counts.
+
+| date | harvest | filing | blob | kernel | profile | subjects | FIT | FRICTION | BREAK | N/A | UNEXERCISED | unresolved BREAKs | arbiter |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 2026-09-18 | no runner run (steward-excluded filing); arbiter harvest 2026-09-17, bus dc2a719 | conjugal | 3a36f3e63b4704c937a9bd4c91fbfac432e27347 | r4 (now r5) | code@r4 (now r7) | 0 qualifying end-to-end; the filing claimed S1 closed with an accepted key, and the arbiter ACCEPTED IT AS RECORDED but REFUSED CREDIT because every load-bearing line is [INLINE] testimony, not a receipt someone else can re-read (kernel S1 definition); S2 and S3 delivered-unaccepted; window-opened-before-kernel=no | 9 | 8 | 0 | 0 | 2 | 0 submitted (1 INSTANCE-FAILURE, K10, to health) | cloudvore (claude-opus-5 integrator + two read-only adversary lanes; second-project arbiter per kernel section 5, not the steward) |
+
+**§5 criterion 1 — CLOSED END-TO-END SUBJECTS: still 0.** This row adds a project to the ledger (eight filings now rowed,
+`tools/kernel-e2e.py` no longer lists `conjugal` as filed-but-unrowed) and adds no end-to-end evidence. The credit
+refusal names the repair exactly: the acceptance verdict must be published where a foreign arbiter can re-read it. That
+is the steward's next filing's job, on a fresh `review/conjugal-kernel-<date>` branch against r5 / code@r7, and a filing
+that repeats the [INLINE] claim without the receipt should expect the same ruling.
+
+Derived, not asserted. Re-run: `python tools/kernel-e2e.py --json`.
