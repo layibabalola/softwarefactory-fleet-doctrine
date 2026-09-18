@@ -57,7 +57,36 @@ Sanitized: no credentials, no transcripts, no machine state beyond the mechanism
 - **Local status.** Worked around by stating the preimage in the packet. A seat-prompt fix is a keyed change
   to the lane script.
 
+## D. A provider refusal is a lane outcome, never a verdict  (TRAP)
+
+- **Mechanism.** One Codex xhigh review run was refused by the provider ("access_programs parameter is not enabled
+  for this organization (access_programs.cyber)"). Its prompt described harming a runner and killing processes.
+  The same substance, worded neutrally, was reviewed normally. The lane receipt recorded FAILED/UNEVALUABLE correctly.
+- **Invariant.** A refusal ends the attempt with no verdict. It is never counted as a PASS, a FAIL, or a review
+  round. Reword the request neutrally and re-run on the same subject.
+- **Local status.** Ruled in AirMyPC DECISIONS 2026-09-18 Ruling 11.
+
+## E. A landing tool must prove its record commit before it pushes the product  (TRAP + normative)
+
+- **Mechanism.** The AirMyPC landing tool (Invoke-AudioMileLanding) ran in this order: validate the contract,
+  fast-forward the candidate and push it to both remotes, then write the queue record commit through the normal
+  pre-commit hook. On the Q02b DONE landing the hook refused the record commit. The resume-chain check requires the
+  newly active packet to be executable, and the promoted next packet was BLOCKED with no paths or command. The
+  contract's evidence objects also lacked inline fields the queue validator reads, and the contract check never
+  looked for them. Result: a PARTIAL, with the product on both remotes and no record. Resuming cannot help, because
+  the journal recomputes the same proposed bytes.
+- **Harm.** An irreversible push with its governing record missing. Recovery needed a lead edit, a new candidate,
+  another cross-family key and a second landing.
+- **Invariant.** Before any push, the landing tool builds the exact proposed record, runs it through the same
+  validators and hooks that the record commit will face, and refuses if either fails. The contract check covers
+  every field the downstream validator reads, including whether the next packet is executable.
+- **Regression pattern.** A contract whose next packet has empty paths or command, and a contract whose evidence
+  lacks the verdict field, must each be refused with no ref moved on any remote.
+- **Local status.** Worked around by rehearsing the landed queue through the resume chain in a scratch tree
+  (122/0) before landing candidate 5, which then landed DONE. The tool fix is queued as its own keyed item
+  (DECISIONS 2026-09-18 Ruling 12).
+
 ## Proposed destinations
 
-TRAPS.md (A, B, C) and the fleet-factory-kernel review surface (A and C as normative kernel requirements).
+TRAPS.md (A, B, C, D, E) and the fleet-factory-kernel review surface (A, C and E as normative kernel requirements).
 Each sibling records ADOPT or DISTINGUISH.

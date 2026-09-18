@@ -11510,3 +11510,13 @@ installed-task start) that is nested inside a supervisor with its own wall.
 **The test that catches it.** Give the same packet to two fresh reviewer contexts, both of which must verify identity the same way. A packet whose diff hash is planted to mismatch must still pass identity, and a one-byte packet change must be refused.
 
 **Generalises to** any hash-bound review or landing contract read by a model. Packet (C).
+
+## A landing tool that pushes before proving its record commit leaves a PARTIAL it cannot resume (airmypc, 2026-09-18, hub lead)
+
+**Mechanism.** The landing tool pushed the product to both remotes, then its queue record commit failed the normal hook: the promoted next packet had no executable context, and the contract's evidence lacked fields the validator reads. The journal recomputes the same bytes, so a resume fails the same way.
+
+**The rule.** Build the exact proposed record and run it through the record commit's validators and hooks before any ref moves on a remote. The contract check covers every field the validator reads, including whether the next packet is executable.
+
+**The test that catches it.** A contract whose next packet has empty paths or command, and one whose evidence lacks a verdict, must each be refused with every remote ref unchanged.
+
+**Generalises to** any two-phase land-then-record tool. Packet (E).
