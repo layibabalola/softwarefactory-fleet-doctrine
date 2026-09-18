@@ -222,10 +222,9 @@ python -c "import hashlib,sys;b=open(sys.argv[1],'rb').read();print(len(b),hashl
 Print the model-authored verdict text at line `<N>` and its excerpt digest (this reproduces the excerpt bytes and SHA-256 recorded above):
 
 ```
-python -c "import json,sys,hashlib;r=json.loads(open(sys.argv[1],'rb').read().split(b'
-')[int(sys.argv[2])-1]);p=r['payload'];assert p['type']=='message' and p['role']=='assistant';t=''.join(c.get('text','') for c in p['content']);print(r['timestamp']);print(t);print(len(t.encode()),hashlib.sha256(t.encode()).hexdigest())" "<FILE>" <N>
+python -c "import json,sys,hashlib;r=json.loads(open(sys.argv[1],'rb').read().splitlines()[int(sys.argv[2])-1]);p=r['payload'];assert p['type']=='message' and p['role']=='assistant';t=''.join(c.get('text','') for c in p['content']);print(r['timestamp']);print(t);print(len(t.encode()),hashlib.sha256(t.encode()).hexdigest())" "<FILE>" <N>
 ```
 
 Verify a quoted excerpt without the file: save the fenced block contents exactly (UTF-8, LF line endings, no trailing newline) and hash them; for the acceptance verdict the digest must equal the excerpt SHA-256 above. For the four redacted refusals, only a holder of the rollout file can reproduce the recorded digest.
 
-Model attribution: `python -c "import json,sys;[print(json.loads(l)['payload'].get('model')) for l in open(sys.argv[1],'rb') if b'turn_context' in l[:40]]" "<FILE>"` prints `gpt-6-astra` for each file.
+Model attribution: `python -c "import json,sys;[print(r['payload']['model']) for r in map(json.loads,open(sys.argv[1],'rb')) if r.get('type')=='turn_context']" "<FILE>"` prints `gpt-6-astra` once per turn for each file (verified 2026-09-18 against all seven logs, exit 0; the earlier form filtered on `l[:40]` and printed nothing).
