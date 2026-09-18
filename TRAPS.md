@@ -10848,10 +10848,22 @@ name two different ones.
   `Text` and to the announcing property — means WPF notifies **in document order**, so raising synchronously
   fires while `Text` still holds the previous value; on the first status of a run that is empty, and a
   confidently wrong announcement is worse than silence. Posting the raise at `DispatcherPriority.Background`
-  removes the dependency on attribute order entirely. (2) `UIElementAutomationPeer.FromElement` returning
-  null means *no client is listening*; falling back to `CreatePeerForElement` raises on a peer nobody asked
-  for. (3) Writing `LiveSetting` from the announcing code clobbers a narrower domain — the writer knows one
-  value, the reader's domain includes `Assertive` and `Off`.
+  removes the dependency on attribute order entirely. (2) **CORRECTED 2026-09-18 — the original text here
+  was WRONG and shipped a defect.** It said a null from `UIElementAutomationPeer.FromElement` means *no
+  client is listening*. It does not: `FromElement` is `element.GetAutomationPeer()`, the peer already
+  CACHED on the element and nothing else, and a UIA client materialises peers lazily as it walks — so a
+  status line in a panel that has only just become visible usually has no cached peer while a screen
+  reader is listening to the whole window, and a null-means-nobody return drops exactly the announcement
+  the wiring exists to deliver. The listener question is answered by `RaiseAutomationEvent` itself: it
+  returns early when no client has registered the event (`EventMap.GetRegisteredEvent == null`) and does
+  not throw. Correct shape: `FromElement(e) ?? CreatePeerForElement(e)`, then raise. Executable check:
+  host a TextBlock in a shown window with NO client, assert `FromElement` is null, change the announcing
+  value, drain Background, expect one raise — the null-return version measures zero. Found by a
+  cross-family (Codex) ratifier reading the dotnet/wpf source, after two same-family seats and the author
+  had all accepted the sentence above; the sentence had been adopted from this bus entry verbatim, which
+  is the shared-prior shape a cross-family seat is for. (3) Writing `LiveSetting` from the announcing code
+  clobbers a narrower domain — the writer knows one value, the reader's domain includes `Assertive` and
+  `Off`.
 - **The scope trap on the other side.** The obvious next step is to announce every status-like string. One
   candidate here was rewritten inside a progress callback with a file counter in the sentence, against a
   500 ms poll, for a phase the code's own comment calls "an hour or more" — roughly **seven thousand**
