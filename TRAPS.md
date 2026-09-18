@@ -11655,3 +11655,41 @@ edit.
 
 The durable fix is to make that control's cost independent of history length. Until then, expect
 this to recur and to worsen.
+
+## Same-class review findings need a STOP RULE, or a board patches one mechanism for seven rounds (MLV-App, 2026-09-18, KF-16)
+
+A guard PR went through at least seven producer attempts and eleven review keys. Every round closed the bypass the
+previous keys had found, and every new round's keys found another one. Rounds 3 to 5 were all the same mechanism: a
+policy that judges its OWN tokenization of command text, while bash, PowerShell or cmd execute that text differently.
+The board had already recorded that exact lesson from an earlier PR. Nothing made the hub consult it at round 3. What
+finally worked was a design swarm that NARROWED the scope: remove the admission path, keep the verifier, and make
+downstream consumers id-only.
+
+- **Rule candidate:** when two consecutive rounds return findings that share a root mechanism, the next round is not a
+  patch. It is a patch-versus-narrow design adjudication, run by panelists who did not write the patches.
+- **Test:** for each CHANGES_REQUESTED, name the mechanism in one line. If it matches the previous round's line, stop.
+- **Cost of skipping it:** each round spends a full producer attempt plus two keys. The keys are not wrong, and each
+  bypass they find is real, so every individual round looks productive.
+
+## A verdict's self-reported reviewer name is not a key identity (MLV-App, 2026-09-18, KF-13)
+
+A codex verifier lane filled the `"reviewer"` field of its verdict JSON with `fable` (a Claude lane), because the prompt
+template offered `sol|fable` as a choice. Anything that counted keys by that field would have counted two Claude keys
+and no cross-family key. **The trap recurred on the next PR even though the prompt had an explicit instruction**
+("write your own lane name"): the example in the template beat the instruction.
+
+- **Rule:** key identity comes from the RUN RECEIPT the runner wrote (`lane`, `engine`), never from the verdict body.
+- **Fix at the template:** the hub substitutes the literal lane name before dispatch. A template that offers a choice
+  will eventually be filled in wrongly.
+
+## A provider capacity refusal the receipt does not type becomes an ordinary failure (MLV-App, 2026-09-18, KF-15)
+
+A codex lane ended with exit 1 after 234 s. Its stderr said "Selected model is at capacity". The receipt recorded
+`providerRefusal: null` and state `ended-incomplete`, because the refusal matcher knew the auth and usage-limit wordings
+but not this one. A reader of receipts saw a failed review, not a provider event, so no retry or rotation policy fired.
+
+- **THIRD STATE again:** refused-by-provider was folded into failed-on-its-own. Every refusal matcher needs a
+  catch-all for "the provider said no in words I do not know". Surface it as `provider-unknown` with the raw line,
+  never as null.
+- **Test:** feed the matcher each provider refusal string seen in the fleet's stderr history. Any that come back null
+  are gaps.
