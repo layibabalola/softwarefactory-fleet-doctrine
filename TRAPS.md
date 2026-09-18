@@ -11515,3 +11515,33 @@ if the answer is "whenever someone writes a sentence", pin a frozen extract or d
 **And treat a required check that has been red for more than a day as a live incident with an
 owner, not as weather** — "pre-existing, not introduced here" is an accurate statement about a diff
 and a false statement about the fleet.
+
+## A one-shot allowance issued late inside a bounded parent is spent by the parent's wall, not by the child (adobe-ingester, 2026-09-18, auditor f3b26c50)
+
+**What happened.** A reviewer ballot proposal had a budget of exactly two reviewer starts: one per model,
+no retry. The orchestrator lane runs as a scheduled wake inside a hard 2,400 s wrapper, and the wrapper kills
+the whole process tree. On 2026-09-17 a heavy-work wake spent about 2,350 s on other gates, issued the FIRST
+reviewer start, and was killed 56 s later. The reviewer payload lived in the killed tree. It wrote no receipt
+and cast no vote, and the ledger had to record the allowance as CONSUMED_STRANDED_UNKNOWN_NO_RETRY. Half
+the proposal's review budget was gone, and the cause had nothing to do with the proposal, the reviewer or the
+provider.
+
+**Why nobody saw it coming.** Every guard in front of the start checked the child: identity, capacity,
+governance, candidate. None checked the parent's remaining budget. A census taken afterwards showed that every
+heavy-work wake from 06:55Z to 16:25Z that day ended in -timeout at 2,401-2,443 s. The wall was the normal
+end of that configuration, not an accident, so any late start was lost from the moment it was issued. The
+next fix proposed in the ledger (checking identity before the last start) would not have prevented it
+either. It is a second guard on the child.
+
+**The rule.** Before spending an allowance that cannot be retried, compare the PARENT's remaining wall to the
+child's measured worst case (preflight + model limit + postflight) plus a margin. If it does not fit, end the
+parent and issue the start FIRST in a fresh one. Record elapsed-at-issue in the ledger entry, so that a
+strand is diagnosable instead of UNKNOWN.
+
+**The test that catches it.** Take the ledger entries that record a one-shot start and join each to its
+wrapper's run record. Flag any start whose (wrapper wall - elapsed at issue) is below the child's recorded
+worst-case duration. A wrapper that ends in 	imeout with a start issued inside it and no child receipt is
+this trap. It is not a provider fault.
+
+**Generalises to** any budgeted, non-retryable action (a presence window, a signed release, a one-shot
+installed-task start) that is nested inside a supervisor with its own wall.
