@@ -73,12 +73,23 @@ SessionStart and Stop. Checkpoints record **where work was, not what to do next*
 few, not just the newest, because sessions running in ephemeral harvest clones write checkpoints
 whose `repo:`/`cwd:` paths are deleted soon after.
 
-Before concluding work is safe, check **every** worktree, not the first few — the checkpoint hook's
-scan is capped well below the worktree count here and has reported an all-clear it had not earned:
+**A checkpoint cannot tell you your work is backed up, and does not claim to.** Its branch listing
+counts commits ahead of *master* and never consults `origin`, so it names branches that are safely
+pushed and stays silent about ones that are not. (Its worktree scan is also capped -- default 8 of
+40 here, raise with the `CHECKPOINT_SCAN_CAP` env var -- but that scan measures dirt and
+ahead-of-main, not unpushed, so the cap is the wrong lever.) Measured 2026-09-18: eight commits on
+three branches existed only on local disk while every instrument reported fine. Run this yourself
+before trusting any all-clear:
 
 ```bash
+git fetch -q origin
 git for-each-ref --format='%(refname:short)' refs/heads | while read b; do \
   a=$(git rev-list --count master.."$b" 2>/dev/null); [ "${a:-0}" -gt 0 ] || continue; \
-  r=$(git ls-remote origin "refs/heads/$b" | cut -f1); l=$(git rev-parse "$b"); \
-  [ "$l" = "$r" ] || echo "UNBACKED: $b ahead=$a remote=${r:-NONE}"; done
+  git merge-base --is-ancestor "$b" origin/"$b" 2>/dev/null || echo "UNBACKED: $b ahead=$a"; done
 ```
+
+Use **containment** (`git merge-base --is-ancestor`), never SHA equality. A branch merely *behind*
+its remote is fully backed up; comparing tips flags it as at risk and sends the next session
+chasing work that was never in danger. Measured 2026-09-18: the equality form reported
+`codex/conjugal-opus-failback-0824` as UNBACKED when it was 0 ahead / 12 behind origin -- every
+local commit already pushed. Silence from this command is the only all-clear worth having.
