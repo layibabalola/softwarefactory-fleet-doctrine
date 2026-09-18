@@ -11614,3 +11614,44 @@ The filing reports scratch-tree resume-chain rehearsal (122/0), followed by cand
 PROPOSED regression from the filing, not reported passing: a contract whose next packet has empty paths or command, and a contract whose evidence lacks the verdict field, must each be refused with no ref moved on any remote.
 
 Source: filing 697289f24e921ee73412566d7de4e4b043f4d6cd, section E.
+
+## A CI deadline that scales with repo history, and two fixes that cannot work (Fleet Doctrine, 2026-09-18)
+
+`Provider capacity governor contracts` has been red on master since 2026-09-16. It carried TWO
+independent causes, and the first masked the second. Fixing `MANIFEST_SUBJECT_MISMATCH` (22640ed,
+a stale `README.md` subject pin) exposed `UNIVERSAL_RUN_REFUSED: WORKER_DEADLINE_EXCEEDED` in
+`tools/run_windows_universal_tests.py`. Reproduced twice; `windows-latest` 3.13 fails while 3.14
+passes on identical bytes, so it is margin, not design.
+
+**The cost is growing with HISTORY, not with the suite.** Last success 2026-09-10. `EXPECTED = 252`
+and `CENSUS_SHA256` are unchanged, and `tests/test_universal_provider_control.py` has no edit since
+2026-09-09 -- but 542 commits landed in between, and the heavy anchor
+(`frozen_r43_authoritative_source...`) went from `Ran 1 test in 603.968s` to never finishing inside
+the budget. Its subject is "history executes only from the authenticated frozen R43 graph", so its
+runtime tracks the length of the history it replays. **This gets worse on its own, with no change to
+any test.** Observed spread for that single test across one matrix: 545.6 / 570.3 / 654.5 / 685.7 s.
+
+Two fixes look obvious and are both wrong:
+
+  * **Repartitioning the shards cannot help.** The budget is consumed by ONE INDIVISIBLE test, and
+    no partition splits a single test. Re-running the balance with measured weights emits exactly
+    `[1, 1, 125, 125]` -- identical to the current code, which is already optimal. Worse,
+    `tests/test_windows_universal_runner.py:59` hard-asserts that shape, so a "rebalance" turns a
+    one-job failure into a two-job failure. The stale comment in `partition()` claiming 418 s and
+    203 s for the anchors is what makes this look like an imbalance; measured, they are ~669 s and
+    ~650 s, and workers 0 and 1 are not idle.
+  * **Raising `DEADLINE_SECONDS` alone is arithmetically inert.** `worker_budget()` returns
+    `min(DEADLINE_SECONDS, JOB_SECONDS - elapsed - RESERVE_SECONDS)`. Measured elapsed ~99 s gives
+    `min(720, 711) = 711`, so `JOB_SECONDS` binds and `DEADLINE_SECONDS` is not the ceiling. Raising
+    `JOB_SECONDS` without also raising the workflow's `timeout-minutes: 15` only converts an
+    informative typed refusal into an uninformative hard runner kill.
+
+A real budget raise therefore means more billable `windows-latest` minutes, which
+`CI-COST-CONTROL.md` governs: Windows accounted for `$37.43` of an exact `$50.00` net cap. It is
+also a weakening of a running safety stop, which `RULINGS.md` (Cloudvore ratification) forbids as a
+recovery move -- recovery "may only tighten start/admission conditions. It never weakens running
+stops." So the cheap fix is both a spend decision and a doctrine question, not a green-the-build
+edit.
+
+The durable fix is to make that control's cost independent of history length. Until then, expect
+this to recur and to worsen.
