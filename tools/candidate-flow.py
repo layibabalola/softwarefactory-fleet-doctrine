@@ -33,14 +33,25 @@ RULINGS = ROOT / "RULINGS.md"
 WINDOW_DAYS = 30
 
 
+GIT_FAILURES: list[str] = []
+
+
 def _git(*args: str) -> str:
+    """Run git, recording failures. An instrument that returns "" on error reports a tidy
+    empty queue and suppresses its own alarm block -- the same silent-degradation shape this
+    tool exists to expose. Failures are counted and printed rather than swallowed."""
     try:
-        return subprocess.run(
+        proc = subprocess.run(
             ["git", "-C", str(ROOT), *args],
             capture_output=True, text=True, timeout=30, check=False,
-        ).stdout.strip()
-    except (OSError, subprocess.SubprocessError):
+        )
+    except (OSError, subprocess.SubprocessError) as exc:
+        GIT_FAILURES.append(f"{' '.join(args[:2])}: {type(exc).__name__}")
         return ""
+    if proc.returncode != 0:
+        GIT_FAILURES.append(f"{' '.join(args[:2])}: exit {proc.returncode}")
+        return ""
+    return proc.stdout.strip()
 
 
 def added_utc(path: Path) -> datetime | None:
@@ -77,6 +88,7 @@ def main() -> int:
     ).splitlines() if ln.startswith("ruling-candidates/")])
 
     arrivals = len([r for r in rows if r[1] is not None and r[1] <= WINDOW_DAYS])
+    undated = len([r for r in rows if r[1] is None])
     routed = [r for r in rows if r[2]]
     unrouted = [r for r in rows if not r[2]]
     oldest = max((r for r in rows if r[1] is not None), key=lambda r: r[1], default=None)
@@ -88,8 +100,19 @@ def main() -> int:
     print(f"ever removed     : {removed}")
     if oldest:
         print(f"oldest unserviced: {oldest[0]} ({oldest[1]}d)")
-    if arrivals and len(routed):
-        print(f"arrival:service  : {arrivals / max(len(routed), 1):.1f} : 1 over {WINDOW_DAYS}d")
+    if undated:
+        print(f"undated          : {undated}  (no commit yet, or history unreadable)")
+    if rows and routed:
+        # BOTH sides all-time. A 30d numerator over an all-time denominator can only look worse
+        # as the queue drains, which would be a lying metric. Caveat: a candidate that was ruled
+        # on AND removed appears in neither side, so this UNDERSTATES service once removal starts.
+        print(f"arrival:service  : {len(rows) / len(routed):.1f} : 1 (all time, present files only)")
+    if GIT_FAILURES:
+        print("")
+        print(f"INSTRUMENT DEGRADED -- {len(GIT_FAILURES)} git call(s) failed; ages"
+              " and arrivals are incomplete. This report is NOT a clean queue:")
+        for failure in GIT_FAILURES[:5]:
+            print(f"  {failure}")
 
     stale = sorted(
         (r for r in unrouted if r[1] is not None and r[1] > 7),

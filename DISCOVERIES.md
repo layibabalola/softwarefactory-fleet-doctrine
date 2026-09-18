@@ -1034,7 +1034,10 @@ days; routing probability is 6%. The steward already wrote this down at `HARVEST
 ceremony that REVIEWS earns its cost — `doctrine-sync.mjs` and `merit-adjudicate.mjs` are
 450 lines with 25 citations and a recorded catch of a gate whose publication detection was
 a substring match on commit subjects, so any commit mentioning a project cleared its debt.
-`TRAPS.md` is 368 harvested defects, all produced by review boards, none by a checker. The
+`TRAPS.md` is ~257 harvested entries plus 69 early sections, all produced by review boards,
+none by a checker. (An earlier draft of this entry said 368: that is the raw `##` count, and
+42 of those lines are wrapped continuations of the preceding heading, not entries. A naive
+heading parser overcounts this file by ~13%.) The
 waste is the ceremony that SEALS and RE-VALIDATES: 16 `check_phase*.py` pinned to immutable
 SHAs that re-verify frozen history on every push and can only fail if git is corrupted.
 

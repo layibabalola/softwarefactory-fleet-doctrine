@@ -84,6 +84,12 @@ try {
     $exitCode = $proc.ExitCode
     $proc.Dispose()
     if ($exitCode -ne 0) { throw ('membership helper exit {0}: {1}' -f $exitCode, $membershipErr) }
+    # The helper reports a non-authoritative classification on stderr and still exits 0, so an
+    # exit-code-only check consumes a prefix GUESS with no trace. Surface it: membership derived
+    # without the census has been measured at 30 boards against a census of 10.
+    if ($membershipErr -and $membershipErr -match 'heuristic-fallback') {
+        Write-Warning ('membership is NOT authoritative (census unreachable): {0}' -f $membershipErr.Trim())
+    }
     $membership = ConvertFrom-Json -InputObject $membershipRaw -ErrorAction Stop
     if ($null -eq $membership.members -or $membership.members -is [string] -or $membership.members -isnot [array]) { throw 'members must be an array' }
     $memberValues = @($membership.members)

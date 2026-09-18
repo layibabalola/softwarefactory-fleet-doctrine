@@ -109,21 +109,30 @@ function git(args) {
 
 // Read the closed set from the SAME treeish the spec paths come from, so the two can never
 // be read at different commits. Returns null when the census is unreachable.
-function censusNonProjectSpecsFromBus() {
+let censusFailure = null;
+function censusFromBus() {
   try {
     const raw = git(['show', 'origin/master:adoption/current-token-control-r26.json']);
-    const list = JSON.parse(raw)?.census?.nonProjectSpecs;
-    if (!Array.isArray(list) || list.length === 0) return null;
-    return new Set(list.map((entry) => String(entry).split('/').pop()));
-  } catch { return null; }
+    const parsed = JSON.parse(raw);
+    const list = parsed?.census?.nonProjectSpecs;
+    const projects = parsed?.projects;
+    if (!Array.isArray(list) || list.length === 0) { censusFailure = 'census.nonProjectSpecs missing/empty'; return null; }
+    if (!Array.isArray(projects) || projects.length === 0) { censusFailure = 'census projects[] missing/empty'; return null; }
+    return {
+      nonProject: new Set(list.map((entry) => String(entry).split('/').pop())),
+      projectIds: projects.map((entry) => entry?.projectId).filter(Boolean).sort(),
+    };
+  } catch (err) { censusFailure = (err && err.message) ? err.message : String(err); return null; }
 }
 
 function declaredMembers() {
   const paths = git(['ls-tree', '--name-only', 'origin/master', 'specs/'])
     .split('\n').map((s) => s.trim()).filter(Boolean);
-  const nonProject = censusNonProjectSpecsFromBus();
-  if (!nonProject) console.error('[fleet-sweep] WARN: census unreachable - membership falls back to the prefix heuristic.');
-  return fleetMembers(paths, nonProject).map((project) => ({ project, specFile: `specs/${project}.md` }));
+  const census = censusFromBus();
+  const members = fleetMembers(paths, census ? census.nonProject : null)
+    .map((project) => ({ project, specFile: `specs/${project}.md` }));
+  // authoritative:false means the classifier GUESSED. Callers must refuse to report all-clear.
+  return { members, authoritative: Boolean(census), projectIds: census ? census.projectIds : null };
 }
 
 function runCheck(project, consumer) {
@@ -185,11 +194,29 @@ function main() {
 
   git(['fetch', 'origin', '--quiet']);
   const busHead = git(['rev-parse', 'origin/master']);
-  const members = declaredMembers();
+  const derived = declaredMembers();
+  const members = derived.members;
   if (members.length === 0) {
     // An empty enumeration is a broken instrument, never a healthy fleet.
     console.error('[fleet-sweep] FAIL: zero members derived from specs/ - refusing to report all-clear.');
     return EXIT_FAIL;
+  }
+  if (!derived.authoritative) {
+    // Measured: the prefix guess yields 30 boards against a census of 10, and every phantom takes
+    // the `no-local-clone` path, which increments neither `failed` nor `action` -- so the run would
+    // print "no member is stale" and exit 0. A wrong instrument must not be able to report health.
+    console.error(`[fleet-sweep] FAIL: membership is NOT authoritative (${censusFailure}) - refusing to report all-clear.`);
+    return EXIT_FAIL;
+  }
+  {
+    // Derived-from-specs and pinned-in-census must agree. If they disagree one of them is wrong,
+    // and this tool cannot tell which -- so it reports neither as health.
+    const want = derived.projectIds || [];
+    const got = members.map((m) => m.project).sort();
+    if (got.length !== want.length || got.some((id, i) => id !== want[i])) {
+      console.error(`[fleet-sweep] FAIL: derived [${got.join(', ')}] != census projects [${want.join(', ')}].`);
+      return EXIT_FAIL;
+    }
   }
 
   const maxAgeHours = Number.parseFloat(a['max-age-hours']) || DEFAULT_MAX_AGE_HOURS;

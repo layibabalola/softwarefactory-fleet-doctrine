@@ -44,6 +44,7 @@ const bus = join(root, 'bus');
 const tools = join(bus, 'tools');
 mkdirSync(join(bus, 'specs'), { recursive: true });
 mkdirSync(join(bus, 'heartbeats'), { recursive: true });
+mkdirSync(join(bus, 'adoption'), { recursive: true });
 mkdirSync(tools);
 for (const file of ['fleet-sweep.mjs', 'fleet-membership.mjs', 'doctrine-sync.mjs', 'Get-FleetHeartbeatStatus.ps1']) {
   cpSync(join(repo, 'tools', file), join(tools, file));
@@ -57,6 +58,18 @@ function runOutput(file, args, options = {}) {
   catch (err) { if (typeof err.stdout === 'string') return err.stdout; throw err; }
 }
 function git(...args) { return run('git', args); }
+// The sweep classifies membership from the census, so the fixture bus must carry one. Only the
+// fields the classifier reads are modelled: census.nonProjectSpecs and projects[].projectId.
+function writeCensus(projectIds) {
+  writeFileSync(join(bus, 'adoption', 'current-token-control-r26.json'), JSON.stringify({
+    census: { nonProjectSpecs: [
+      'specs/provider-model-benchmarking.md',
+      'specs/provider-audit-consumer-provenance.md',
+    ] },
+    projects: projectIds.map((projectId) => ({ projectId })),
+  }, null, 1));
+}
+
 function commitSpecs() {
   git('add', '.');
   git('-c', 'user.name=fixture', '-c', 'user.email=fixture@example.invalid', 'commit', '-m', 'fixture');
@@ -72,6 +85,7 @@ try {
   writeFileSync(join(bus, 'specs', 'provider-model-benchmarking.md'), 'legacy\n');
   writeFileSync(join(bus, 'specs', 'provider-audit-consumer-provenance.md'), 'legacy\n');
   writeFileSync(join(bus, 'specs', 'provider-foo.md'), 'real\n');
+  writeCensus(['adobe-ingester', 'cloudvore', 'continuity-autonomous-resumption', 'provider-foo', 'resumption-parallel-launch-0906']);
   commitSpecs();
   const bare = join(root, 'origin.git');
   run('git', ['clone', '--bare', '-q', bus, bare], { cwd: root });
@@ -90,6 +104,7 @@ try {
   const oldB = join(bus, 'specs', 'resumption-parallel-launch-0906.md');
   renameSync(oldA, join(bus, 'specs', 'fleet-continuity-autonomous-resumption.md'));
   renameSync(oldB, join(bus, 'specs', 'fleet-resumption-parallel-launch-0906.md'));
+  writeCensus(['adobe-ingester', 'cloudvore', 'provider-foo']);
   commitSpecs();
   git('push', '-q', 'origin', 'master');
   run(process.execPath, [join(tools, 'fleet-sweep.mjs'), '--roots', roots, '--json-out', receipt]);
@@ -100,9 +115,29 @@ try {
   assert.deepEqual(heartbeat.boards.map((b) => b.board).sort(), ['adobe-ingester', 'cloudvore', 'provider-foo']);
   assert.equal(heartbeat.boards.find((b) => b.board === 'cloudvore').status, 'ABSENT');
   assert.deepEqual(fleetMembers(['specs/cloudvore.md', 'specs/fleet-x.md', 'specs/provider-model-benchmarking.md', 'specs/provider-audit-consumer-provenance.md', 'specs/provider-foo.md']), ['cloudvore', 'provider-foo']);
+  // NEGATIVE CONTROL for the authoritative-membership guard. Without the census the classifier
+  // falls back to a prefix GUESS; measured on the real bus that guess yields 30 boards against a
+  // census of 10, and every phantom takes the `no-local-clone` path, which increments nothing --
+  // so the sweep would print "no member is stale" and exit 0. A wrong instrument must not be able
+  // to report health. If this assertion ever stops throwing, that failure mode is back.
+  rmSync(join(bus, 'adoption', 'current-token-control-r26.json'));
+  commitSpecs();
+  git('push', '-q', 'origin', 'master');
+  let refusedStatus = 0;
+  let refusedText = '';
+  try {
+    run(process.execPath, [join(tools, 'fleet-sweep.mjs'), '--roots', roots, '--json-out', receipt]);
+  } catch (err) {
+    refusedStatus = err.status ?? -1;
+    refusedText = `${err.stderr ?? ''}${err.stdout ?? ''}${err.message ?? ''}`;
+  }
+  assert.notEqual(refusedStatus, 0, 'sweep must REFUSE when membership is not authoritative');
+  assert.match(refusedText, /NOT authoritative/, 'the refusal must name the reason');
+
   writeFileSync(join(tools, 'fleet-membership.mjs'), "process.stdout.write(JSON.stringify({members:[{bad:'object'}]}));\n");
   assert.throws(() => run(ps, ['-NoProfile', '-File', join(tools, 'Get-FleetHeartbeatStatus.ps1'), '-BusRoot', bus, '-Json']), (err) => err.status === 1);
   console.log('fleet membership: shared classifier agrees across sweep and heartbeat reader');
+  console.log('fleet membership: sweep refuses to report all-clear on non-authoritative membership');
 } finally {
   rmSync(root, { recursive: true, force: true });
 }

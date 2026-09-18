@@ -36,7 +36,12 @@ export function fleetMembers(specPaths, nonProjectSpecs = null) {
   return [...new Set(specPaths
     .map((value) => basename(String(value).trim()))
     .filter((name) => name.endsWith('.md'))
-    .filter((name) => authoritative || !name.startsWith('fleet-'))
+    // Kept in BOTH modes. In authoritative mode every `fleet-*` spec is already in
+    // nonProjectSpecs, so this excludes nothing extra -- but it structurally prevents a
+    // future `specs/fleet-*.md` that is missing from the census from silently becoming a
+    // board. If a project is ever legitimately named `fleet-*`, fleet-sweep's census
+    // cross-check fails loudly rather than this classifier guessing.
+    .filter((name) => !name.startsWith('fleet-'))
     .filter((name) => !excluded.has(name))
     .map((name) => name.slice(0, -3))
     .filter((project) => /^[a-z0-9][a-z0-9-]{1,63}$/.test(project)))].sort();
