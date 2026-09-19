@@ -4056,3 +4056,9 @@ nine attacks of its own, and accepted on round 1, bound to tree identity
 real recent history and pin the refusal count as an acceptance bar; and give the guard an identity
 for the unit it protects, or every in-place edit reads as a deletion.
 <!-- outbox:0e4b780b102c438c conjugal:9407cb9db775 -->
+
+## Factory-kernel third re-file ruling 2026-09-19 - airmypc-dogfood-20260918 (run 20260919T094904Z-e703d4a6)
+
+Single arbiter gpt-6-astra, read-only, ruled on filing blob 336c59d00a225ad70cbc53a00d21ed457d5610f1 at origin/review/airmypc-dogfood-2026-09-18. [Dispositions](adjudications/factory-kernel/airmypc-dogfood-20260918.dispositions.md). This is the third re-file and fourth harvest of one filing. G and the destination list are new; A-F carry forward without reapplication. All nine HEADER findings remain, with G clauses added to instance, subjects and posture. No tenth HEADER defect is invented.
+
+G is routed to the AirMyPC VS/App gate bench as a reported instance failure against existing identity and acceptance requirements. One narrowed TRAPS extension is conditionally adopted for that bench; the normative kernel request is rejected. No profile amendment is authorized. Kernel r5 remains 2,867 of 3,500 words; code@r8 remains 1,037 words. The ledger records zero submitted verdicts and zero credited end-to-end subjects, with the actual qualifying total unestablished. Criterion 3 does not start or advance despite unchanged specification digests. The reported false PASS results demonstrate attacks, not passing repair regressions. This block records the read-only adjudication and authorized changes, not their application, successful landing, passing production regressions or verified HARVESTED status. Seats: arbiter gpt-6-astra (high), consolidator claude-fable-5, lint claude-opus-5 + gpt-5.6-sol, orchestrator claude-opus-5.

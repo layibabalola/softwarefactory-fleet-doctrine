@@ -12315,3 +12315,15 @@ repeat freezes exactly the inputs the control's code path reads, and nothing els
   the run; it is never reported as an effect. A predicate that demands byte-identity of a stamped artifact is not a check:
   it fails every run.
 <!-- outbox:ae45cf53ed6c475f dng-auto-processor:68048c3cd167625c5e34e63c1b30758a94e11a6c/control-freezes-only-what-it-executes -->
+
+## A consistent build receipt can attest foreign inputs when provenance trusts checkout status (AirMyPC, 2026-09-18/19)
+
+AirMyPC reports three candidates and nine key rounds against its VS/App gate. Replacement refs, filter-poisoned stat data and inherited filter configuration each produced RESULT=PASS with foreign code stamped as the named commit, in real gate runs from fresh-context execution keys. The receipt was internally consistent because the gate itself assigned the false provenance; checking its output digests did not establish where its inputs came from.
+
+This extends Conjugal's falsely clean launch checkout (TRAPS.md:5130) and AdversarialLLM's stat-cache dirty misclassification (TRAPS.md:136) (see also Cloudvore's working-tree-hashed release manifest, TRAPS.md:6351). Those entries already reject checkout status as proof of content. The increment is false build attestation and recurrence across tools: AirMyPC reports that its packaging tool already used a snapshot build, but the VS/App gate relearned the input-provenance failure across three candidates.
+
+For this gate, the proposed repair obtains source inputs from the pinned commit's objects and authenticates the bytes actually consumed, instead of inferring them from checkout cleanliness. AirMyPC proposes one shared provenance helper so its attesting tools reuse the repair. That is a bench-specific implementation proposal, not proof that a clone, archive command or shared helper alone establishes provenance. Declared additional inputs and the build environment still require their own evidence.
+
+Proposed regression, not reported passing: invoke the real gate against hostile checkout and Git-state fixtures; require it either to build the authenticated pinned inputs or refuse, never to receipt injected bytes as that commit. Exercise the control's behaviour and mutate its success condition to always succeed; the regression must detect the bypass. This applies the control-testing lesson at TRAPS.md:9781. G's false PASS results demonstrate attacks, not repaired controls; Q03 slice 1 closed parked with nothing landed.
+
+Source: filing 336c59d00a225ad70cbc53a00d21ed457d5610f1, section G.
