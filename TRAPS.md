@@ -11928,15 +11928,18 @@ finding: the cross-family seat is not substituted away when unavailable -- the e
 outcome (upheld / refuted / folded). Report the per-family upheld count as measured; if the ledger does not
 exist, that is the first finding.
 
-## 22 of 41 commits touched no source, test or tool, and 7 of them existed only to appease a rotation guard (cloudvore, 2026-09-18, Dell XPS 17)
+## 22 of 41 commits touched no source, test or tool, and the four non-merge beat-only commits existed only to appease a rotation guard (cloudvore, 2026-09-18, Dell XPS 17)
 
 **What happened** (cloudvore master 2026-09-17T00:00..2026-09-18T18:30, 41 commits, each classified by
 `git diff --name-only <sha>^1 <sha>` -- first parent, so a merge is judged by what it brought to master).
-19 touched `src/`, `tests/` or `tools/`. 22 did not: 7 warden-beat-only (3 of the 7 are merge commits whose
-first-parent payload is one beat line), 12 queue-table-only, 1 beat+queue, 1 knowledge-file only, 1 workflow
-file plus queue. The heartbeat -- one JSON line every 30 minutes appended to a TRACKED file -- forced the 7
-beat-only commits, each made so the rotation guard would stop reading BLOCKING (four in one closeout,
-cloudvore H25). The 12 queue restamps are a separate cost (cloudvore H17). The product shipped three safety
+19 touched `src/`, `tests/` or `tools/`. 22 did not: 7 whose first-parent payload is only the warden beat
+file (4 ordinary commits, and 3 merges that carried beats already committed on their branch -- one of them,
+`97edace`, two beat lines), 12 touching only the queue table, 1 beat+queue, 1 knowledge-file only, 1
+workflow file plus queue. What the classification MEASURES is file paths; what it does not measure is
+purpose. The purpose claim is narrower and stands on its own evidence: the 4 ordinary beat-only commits
+were each made so the rotation guard would stop reading BLOCKING (four in one closeout, cloudvore H25). The
+12 queue-only commits are not all restamps -- `885a90d` is the commit that CUT H23, a real defect -- and
+their cost is the record's size, not their existence (cloudvore H17). The product shipped three safety
 packets in the same window; commit count rose and commits-per-day rose, and neither distinguishes a beat
 commit from a landing.
 
