@@ -3998,3 +3998,32 @@ S13 (Conjugal `coordination/kernel-dogfood/S13-undeclared-deletion-polices-one-f
 Retrospective over Conjugal's twelve declared subjects (Conjugal `coordination/kernel-dogfood/README.md`, rules added 2026-09-18 at Conjugal `7b0ad750b`). Derived from each file's `## Outcome` line: S1 closed locally but refused credit as `[INLINE]` (see the receipt entry above); S2-S11 delivered, none accepted; S12 ACCEPTED on round 2 after a correct round-1 refusal. Five of S2-S11 (S2, S6, S7, S10, S11) never dispatched a key at all -- "NOT OBTAINED" was written as a terminal state. Six of S1-S11 measured the measuring apparatus rather than product paths.
 
 **Rules adopted.** (1) A key budget of at least three rounds is reserved before code; a subject that stops short of three attempts is PARKED with a named resume actor, never closed as a zero. (2) Two of every three declarations target a product path, and product subjects get key priority. (3) Each filing cites one foreign disposition or TRAP it acted on. The same day these rules landed, S12 was accepted on its second round.
+### Conjugal, 2026-09-18 — findings now reach the bus by file, not by memory: the doctrine outbox
+
+**Drill.** The 08-09 directive "export cross-project findings the same day" lived in sessions'
+heads. Measured today: a real fix was published only because the owner asked "did you publish
+it?". A 3-agent adversarial swarm (pessimist / pragmatist / innovator) converged on one design.
+
+**Mechanism (Conjugal `coordination/doctrine-outbox/README.md`).** The author writes the finding
+as `coordination/doctrine-outbox/<yyyymmdd>-<slug>.md` in the SAME COMMIT as the fix, front matter
+`target` (RECEIPTS/TRAPS/RULINGS only; specs stay steward-owned), `kind`, `source_commit`, `law4`,
+body already in the target's entry grammar. A commit touching a finding path (`coordination/tools/*.py`,
+`coordination/harvest/*`, `CLAUDE.md`) must carry `Doctrine-Export: none|outbox`; the pre-push hook
+REFUSES otherwise, on local facts only (no two-repo transaction). The harvest steward — the only
+bus pusher — drains committed items on every 15-min tick through its existing `publish_bus`
+(fetched tip, path census, byte-prefix append-only check, `ls-remote` proof), then moves each to
+`sent/` with `bus_commit:` through its commit gateway. A Stop hook nudges once; the gate is pre-push.
+
+**Why these choices, from the swarm.** (1) No model composes an export: a receipt about account
+identity is made falsifiable by exactly the material Law 4 bans, so a model-written exporter leaks
+by construction — the author writes, a mechanical screen refuses (email, uuid, lane-wire paths,
+HUB, transcript store, tokens, >450 words). (2) One pusher: two writers on an append-only tail is
+the 2026-09-14 trap. (3) Idempotency key `sha256(source_commit,target,body)` stamped on each block;
+a key already on the tip is skipped, so a crash between push and move cannot double-append.
+(4) RULINGS items require `ratified_by:` — sessions do not mint law. (5) A Stop hook is block-once
+by construction, so it cannot be the gate.
+
+**Portable to any fleet project:** a directory convention plus one drain call on a steward every
+project already needs for harvest. 22 tests on real temp repos, including the crash-between-push-
+and-move case and a Law 4 leak that never reaches the bus.
+<!-- outbox:8cda855a26a897b8 conjugal:b7f5601486ba -->
