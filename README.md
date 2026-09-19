@@ -42,6 +42,7 @@ the human store-and-forward bus.
 - `specs/<project>.md` - one per project, single writer, wholesale rewrite at doctrine seams
 - `TRAPS.md` - append-only: costume failures and environment traps, with the test for each
 - `RECEIPTS.md` - append-only: drill results with date + machine
+- `receipts/` - evidence bundles and ratification receipts
 - `RULINGS.md` - append-only: ratified fleet doctrine with the measuring project cited
 - `cos-feedback/` - Chief-of-Staff (CoS / Grok Bot) post-push PR/CI feedback; single-writer CoS, projects READ only; see [`cos-feedback/README.md`](cos-feedback/README.md) (CANDIDATE until projects wire pull)
 
@@ -56,6 +57,13 @@ the human store-and-forward bus.
   [issue #4](https://github.com/layibabalola/softwarefactory-fleet-doctrine/issues/4).
 
 ## Proposed amendments (not ratified)
+
+- [`specs/fleet-jev-shadow-mode.md`](specs/fleet-jev-shadow-mode.md) — Cloudvore,
+  2026-09-19. `CANDIDATE r6`, single writer. How a project integrates TypeSafe's Jev decision
+  model beside an existing rule in shadow mode: sidecar contract, constants module, shadow-log
+  record, egress screen, promotion rule, per-project instance rows. Independent blind cross-family
+  review recorded in [`receipts/fleet-jev-shadow-mode-ratification-2026-09-19.md`](receipts/fleet-jev-shadow-mode-ratification-2026-09-19.md);
+  no `RULINGS.md` entry claimed; zero runtime authority until a project records `ADOPT`.
 
 - [`specs/fleet-factory-kernel.md`](specs/fleet-factory-kernel.md) — owner-directed candidate, 2026-09-14 (interim
   steward: Conjugal). A domain-neutral kernel of 12 clauses, plus acceptance profiles per domain
