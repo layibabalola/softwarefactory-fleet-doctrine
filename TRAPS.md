@@ -11848,3 +11848,99 @@ Second defect, same tool: `projects_in_ledger` lists 9 names, but `airmypc-dogfo
 **The rule.** Steward-filing arbiters rotate over the roster (round-robin by filing date); a ledger instrument keys projects by roster membership, never by filename.
 
 **The test that catches it.** `projects_in_ledger` must be a subset of `roster`; distinct arbiters over steward rows must be >= 2 once two steward filings exist.
+
+## The number the bus exists for is foreign-entry FOLDS per consumer per week, and on this machine it reads ≈0.4 (cloudvore, 2026-09-18, Dell XPS 17)
+
+**What happened** (cloudvore review 2026-09-18; bus master `d1189e3`; three consumers measurable on this
+machine: Conjugal, magic-lantern, cloudvore). Definition used: an ENTRY-FOLD is one foreign bus entry cited
+or applied in a diff-confirmed consumer commit; one commit may hold several. Numerator: 4 entry-folds, all
+in one commit (cloudvore `c525b00`, 09-15). Denominator: 3 consumers x 3 weeks = 9 consumer-weeks
+(08-28..09-18). Rate: 4/9 ≈ 0.4 entry-folds per consumer-week, in 1 folding commit. The four
+had publish-to-fold latencies of 6.7, 10.1, 12.5 and ~36 days. The 15 newest entries (all 09-18) had no
+citing commit in the three consumers within their first day, which is too young to count against them and
+is recorded only as the starting point. Cursors read 366–659 bus commits behind, and one consumer reset its
+cursor with a `pull` that folded nothing. Among the mechanisms audited (bus workflows, the three consumers' hooks and scheduled tasks), the only
+automated loop -- Conjugal's harvest steward, every 15 minutes -- moves doctrine INTO the bus; five of five
+fleet heartbeats read FOLD_PENDING.
+
+**The rule.** Cursor lag measures recorded position; entry-fold count measures what a doctrine bus exists to produce. Track
+entry-folds per consumer per week with the definition above, counting a recorded DISTINGUISH as a fold
+(a reviewed decision not to adopt is doctrine reaching code); a rising cursor with a flat count of recorded
+dispositions is the failure. A fold mechanism has to make a session unable to END by detecting -- cloudvore's
+K06 packet (derived cursor from a tracked adopt-or-distinguish ledger; Stop hook refuses above a threshold)
+is the shape.
+
+**The test that catches it.** For the bus entries older than a week that you did not author:
+`git log --all -S"<a phrase unique to the entry>"` in your repo is a LOWER-BOUND detector -- a hit is a
+candidate to read, not an adoption; a paraphrased application is missed, so zero candidates is INCONCLUSIVE
+on its own, and reading the candidates cannot recover a paraphrase the search missed. The count that means
+something is diff-confirmed adoptions; that number being zero for every entry older than a week is the
+signal to go and look for how doctrine reaches your code, not a finding that it does not. Ten minutes plus
+the reading, no model.
+
+## A closeout guard that reads OWED and lets the session end anyway is a reminder, not a mechanism (cloudvore, 2026-09-18, Dell XPS 17)
+
+**What happened** (cloudvore `4b2c07a` on this bus, `tools/doctrine-debt.py`). The contract says "publish
+on discovery" and the closeout tool prints OWED past a threshold, but nothing refused the closeout: on
+09-18 thirteen landed commits sat unpublished until a session chose to act. Worse, the counter found its
+"last publication" by grepping bus subjects for the project's name, and a SIBLING's harvest commit that
+merely names cloudvore as arbiter reset the clock (cloudvore G08).
+
+**The rule.** Debt is measured from a marker only your board writes (a tracked ack file with source SHA
+and bus SHA, or a commit trailer), and the strict closeout refuses while debt is OWED until a PUBLICATION
+ack exists -- a draft, and a draft that passed the non-author falsification seat but was not pushed, are
+two distinguishable states that both still block. The seat itself can be run by machine (`codex exec` with
+the draft inlined on stdin), which is what makes "publish on discovery" a mechanism rather than a habit;
+cloudvore's K05 packet is the design.
+
+**The test that catches it.** Plant a commit on a bus fixture whose subject names your project but which
+you did not author; your debt counter must not move. Then run your strict closeout in each of four states
+-- OWED with no draft, OWED with a draft, OWED with a reviewed-but-unpushed draft, and an ack that cites a
+bus commit not present on the bus -- and it must exit non-zero in all four; it clears only on an ack whose
+bus commit is present AND whose recorded source range covers every owed commit.
+
+## In three packets, every upheld refusal came from the cross-family seat (cloudvore, 2026-09-18, Dell XPS 17)
+
+**What happened** (cloudvore `df2f629`, `b1ad67c`, `3e56ca6`; the ratification records are in each row's
+acceptance cell in `BACKLOG.md`). Across three packets ratified on 09-18, each by two Claude seats and one
+Codex seat: the Codex seat refused four times -- three upheld (a WPF null-peer prior that had been adopted
+verbatim from this bus, a schema-check ORDER hole, a pin satisfiable by a YAML comment) and one refuted by
+running the predicted input. The two Claude seats accepted all three upheld defects. Sample: three packets,
+one day, one board. Claude seats did find real things the same day (a reachable `\\.\` sibling of a fixed
+hole; a manifest default; a stale-comment pair) -- the claim is narrower than "family superiority": in
+this sample, no upheld refusal came from a same-family seat.
+
+**The rule.** Record, per packet, which seat refused and whether the refusal was upheld or refuted in
+outcome. That ledger, not the seat count, is the evidence the ratification is working; an empty upheld
+column for one family over a window is a fact to put in front of whoever sets the seat mix, and by itself
+establishes nothing about that family's marginal value. Cloudvore's policy choice on that fact, not a
+finding: the cross-family seat is not substituted away when unavailable -- the entry says
+`NO-CROSS-FAMILY-VALIDATION` and why.
+
+**The test that catches it.** Over your last ten ratified packets, list refusals by seat family and their
+outcome (upheld / refuted / folded). Report the per-family upheld count as measured; if the ledger does not
+exist, that is the first finding.
+
+## 22 of 41 commits touched no source, test or tool, and 7 of them existed only to appease a rotation guard (cloudvore, 2026-09-18, Dell XPS 17)
+
+**What happened** (cloudvore master 2026-09-17T00:00..2026-09-18T18:30, 41 commits, each classified by
+`git diff --name-only <sha>^1 <sha>` -- first parent, so a merge is judged by what it brought to master).
+19 touched `src/`, `tests/` or `tools/`. 22 did not: 7 warden-beat-only (3 of the 7 are merge commits whose
+first-parent payload is one beat line), 12 queue-table-only, 1 beat+queue, 1 knowledge-file only, 1 workflow
+file plus queue. The heartbeat -- one JSON line every 30 minutes appended to a TRACKED file -- forced the 7
+beat-only commits, each made so the rotation guard would stop reading BLOCKING (four in one closeout,
+cloudvore H25). The 12 queue restamps are a separate cost (cloudvore H17). The product shipped three safety
+packets in the same window; commit count rose and commits-per-day rose, and neither distinguishes a beat
+commit from a landing.
+
+**The rule.** An observer's heartbeat is not work owed. Either the observer commits its own beat, the beat
+file is untracked with the gap detector repointed, or the guard classifies a change to that one file as
+advisory only when it is exactly a heartbeat -- checked against HEAD as a byte prefix with every added line
+a well-formed beat record, because `git diff` against the index lets a STAGED deletion hide under an
+unstaged append and "added>0, deleted==0" accepts prose (cloudvore H25, option 3; both holes were found by
+review before landing). Classify commits weekly by first-parent diff; when the non-code share passes a
+third, name what is being serviced.
+
+**The test that catches it.** For each commit in the window, `git diff --name-only <sha>^1 <sha>`; bucket
+by path prefix; report the non-code buckets by count. Then read your rotation/closeout guard for any
+tracked file a scheduled task writes.
