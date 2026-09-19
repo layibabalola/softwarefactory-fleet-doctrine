@@ -12153,3 +12153,109 @@ mid-review.
 they are disjoint and the rebased sha re-runs green, the refusal cost a round and bought nothing. For every
 landing it allowed, compare per-path blobs, not trees. The enumeration was never the safety mechanism; blob
 identity and the green re-run are.
+
+## A name allow-list can never be the identity of "this machine" (cloudvore, 2026-09-19, Dell XPS 17)
+
+**What happened** (cloudvore H26, landed `2347d0d`; 38 revisions over 34 blind cross-family rounds --
+in the tree Opus ratified r8, r18, r26 and Codex r37). An overlap guard folded `\\localhost\...`,
+`127.0.0.1` and the NetBIOS name back to a local path. The source spelled through the machine's own
+LAN IP, FQDN, an alias or a DFS link passed straight through as "a foreign share", and a nested
+destination was admitted -- a silent copy of the original onto itself with a green verdict.
+
+**The rule.** Never decide "is this ours" by host name. Decide by FILE IDENTITY: `FileIdInfo` (volume
+serial + 128-bit id) is served over SMB with the same values a local handle returns; if the
+destination's volume serial matches a local volume, open the directory BY ID on that volume and
+compare physical paths. A share this machine serves is folded through the share service and the
+answer is verified by identity; the host spelling is never consulted.
+
+**The test that catches it.** Reach the source through the machine's own non-loopback IPv4 address
+(`Dns.GetHostAddresses`) and assert refusal of a nested destination; the pin goes red with the
+identity gate removed.
+
+## An ancestor walk over SMB stops at the share root (cloudvore, 2026-09-19, Dell XPS 17)
+
+**What happened** (cloudvore H26 r4, both seats independently). "Is the destination inside the source"
+was answered by walking the destination's ancestors and comparing identities. Over SMB the walk ends
+at the share root, so a share rooted BELOW the source -- the general case: a whole-card source and any
+non-admin share -- hid a nested destination with every identity query succeeding.
+
+**The rule.** Do not climb; place. Same volume as the source: resolve the destination's local path by
+open-by-id on the source's volume and compare paths. Different volume: cannot nest.
+
+**The test that catches it.** Source = the volume root; destination = a folder under the default
+`Users` share reached over the machine's own IP. Must refuse.
+
+## rclone opens the ENCODED name; Root reports the typed one (cloudvore, 2026-09-19, Dell XPS 17)
+
+**What happened** (cloudvore H26 r10-r16). Two blind seats disagreed on rclone's Windows encoder
+direction for a round; the binary (v1.74.4, throwaway `RCLONE_CONFIG`) settled it: a typed `Backup.`
+lists the fullwidth `Backup．` junction and cannot see a native `Backup.` at all, while `Root` reports
+the typed spelling. A guard comparing the typed name -- or .NET's normalisation of it, which strips a
+trailing period -- was looking at a phantom while rclone wrote into the source. The measured rules
+(44 pinned rows): decode-then-encode; a quote rune (U+201B) before a Standard-set rune keeps that rune
+literal; trailing period/space are positional (U+FF0E/U+2420; `Mid．dle` opens itself, `Quoted．` opens
+`Quoted‛．`); fullwidth Windows punctuation is quoted anywhere; ASCII `"*:<>?|` go fullwidth;
+navigation is cleaned first; the plain UNC host+share are exempt (Go's VolumeName) but the extended
+`\\?\UNC` form encodes them, and since Root reports both forms alike the TYPED spelling decides.
+
+**The rule.** When a guard reasons about a path another program will open, reproduce that program's
+name mapping and MEASURE it against the binary -- never read it off the source, and never trust a
+seat's reading over a measurement. Keep the path in extended form so no normaliser touches it.
+
+**The test that catches it.** A Theory of typed-to-native rows, each row measured by `rclone lsf`
+against junctions whose targets carry distinct marker files, so the listing names the folder the
+binary opened.
+
+## A junction's lexical parent is not its physical container; a reparse ATTRIBUTE is not redirection (cloudvore, 2026-09-19, Dell XPS 17)
+
+**What happened** (cloudvore H26 r31, r37). The ancestry walk climbed from a junction into the folder
+that merely contains the junction's NAME and refused a disjoint job (a source aliased INTO the
+destination folder). Then the reparse attribute was taken to mean redirection, and a hydrated cloud
+placeholder (tag `0x9000301A`, measured) cut the walk short and admitted a nested destination.
+
+**The rule.** Stop the walk only at a name-surrogate reparse tag (`tag & 0x20000000`; junction
+`0xA0000003`); a cloud placeholder does not redirect. An unqueryable component is uncertainty, never
+"ordinary".
+
+**The test that catches it.** `FSCTL_SET_REPARSE_POINT` with a non-Microsoft GUID buffer needs no
+privilege and no cloud provider: tag `0x00001234` must not stop the walk; `0x20001234` must.
+
+## A pin that only inspects the helper cannot license the fix (cloudvore, 2026-09-19, Dell XPS 17)
+
+**What happened** (cloudvore H26 r9/r10 and r37/r38). Twice a fix shipped with a pin that drove the
+predicate directly (a case-fold split, a reparse-tag rule): the mutation reverting the fix left the
+suite green. Each time the seat that found it also found a real, unprivileged way to exercise the
+wiring: `fsutil file setCaseSensitiveInfo` works non-elevated; so does a synthetic reparse point.
+
+**The rule.** Before trusting a pin, plant the mutation the fix exists to prevent; if the suite stays
+green, the pin is shape (a) and the fix is unlicensed. Reach for the OS's own knobs before declaring a
+case unpinnable.
+
+**The test that catches it.** The planted mutation itself: revert the fix's one line and run the
+suite; a pin that licenses the fix goes red.
+
+## A reviewer's "nonblocking" can be blocking on the next checkout (cloudvore, 2026-09-19, Dell XPS 17)
+
+**What happened** (cloudvore H17a, landed `bf4cb75`). A Codex pass called a checker reading a
+content-addressed archive with `read_text` (line-ending normalised) a nonblocking inconsistency. On
+the master checkout `core.autocrlf=true` rewrote the archive to CRLF and the raw-bytes check refused
+it with 67 missing sections.
+
+**The rule.** A content-addressed file is byte-addressed: pin its checkout bytes in `.gitattributes`
+(`eol=lf`) and read it as bytes. A reviewer's "nonblocking" means "not exercised here".
+
+**The test that catches it.** Rewrite the archive to CRLF and run the check: it must name the CR as
+the cause, and the `.gitattributes` pin must be present.
+
+## Measured on Windows/SMB, worth carrying (cloudvore, 2026-09-19, Dell XPS 17)
+
+- `GetFinalPathNameByHandleW(VOLUME_NAME_GUID)` fails with `ERROR_PATH_NOT_FOUND` (3) on a redirector
+  handle -- UNC and mapped letters alike; the DOS form succeeds (pinned).
+- `FileIdInfo` matches across `C:\x`, `\\localhost\C$\x` and `\\<own-ip>\C$\x` (pinned).
+- `DriveInfo.GetDrives` misses letterless mount points; `FindFirstVolumeW` enumerates them (pinned).
+- rclone never climbs above a plain `\\host\share` on `..`; the `\\?\UNC` form climbs (pinned).
+- `mklink /J` normalised a trailing period away on this host; `New-Item -ItemType Junction` kept the
+  `\\?\` spelling.
+- Seat-measured, not pinned: on a FAT32 volume `OpenFileById` fails with `ERROR_INVALID_FUNCTION` (1)
+  and `FileIdInfo` with `ERROR_INVALID_PARAMETER` (87); the classic `BY_HANDLE_FILE_INFORMATION`
+  fallback identifies it.
