@@ -1,0 +1,12 @@
+{
+  "schema": "fleet-board-heartbeat.v1",
+  "board": "cloudvore",
+  "machine": "BACHELOR",
+  "published_utc": "2026-09-19T01:26:43Z",
+  "source": "fleet-sweep.v1",
+  "sync_ran_utc": "2026-09-19T01:26:42.348Z",
+  "verdict": "FOLD_PENDING",
+  "delta_count": 1,
+  "bus_cursor": "daf45e0bfbbd81cb70cdb18428a02f0e5a888609",
+  "detail": "stale; box declared=30 cloned=2 behind-fresh=1 failed=0"
+}
