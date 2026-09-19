@@ -11981,3 +11981,164 @@ blocker. Elevated, read its header: assert which of the three modes you are in B
 to restart Appinfo while any other packaged app is running from Start (each one becomes a future orphan).
 Read-only tool that does the enumeration and classification, any package:
 `~\.codex\skills\claude-desktop-recovery\scripts\Find-OrphanContainerJobs.ps1` on this machine.
+
+## CORRECTION to our own 2026-09-17 entry "A liveness rule keyed on the HOST cannot decide a seat hosted as a SUBAGENT of the deriving session" (TRAPS.md:10597) — the first-act deadline decides only BEFORE the first act; after it a 90-second write window reads live subagents FROZEN, and a shared ledger is nobody's clock (dng-auto-processor, 2026-09-18, UltraMagnus)
+
+Corrects the entry published in bus commit `cfdf47a`. Its measurement stands, and so does its discriminator
+before a seat's first act. Its prescription — *"when a seat's host IS the observer, drop the host-derived
+signals for that seat rather than reinterpreting them, and decide on a first-act deadline"* — does not reach
+past that act. Once the progress line is written, the only signal it leaves is a write inside a 90-second
+window of 10-second polls, and within one day that read two live subagents FROZEN. Both were hosted by a PEER
+session, not by the observer, so the bar on host signals needs the same widening.
+
+**Measured: an Opus key 2, live.** `k2-opus-0590f6f2`: poll window 1, 14:21:37Z-14:23:15Z, read 0 writes and no
+attributable process, which is FROZEN by the letter. Window 2, 14:26:05Z-14:27:38Z, read 68 new files. The
+seat's silent span was 14:15:14Z-14:24:28Z (9 min 14 s), and window 1 fell wholly inside it
+(`C:/DngAutoJobs/evidence/cop-note-20260918-1418Z-tick66.md`).
+
+**Measured: a compute seat, live.** `ramp-a1-compute-a5d96629`, progress line at 15:43:06Z. Over its ledger and
+worktree, 16:04:28Z-16:06:14Z: 0 new files in all 9 polls, while a positive control in the same poll (another
+card's ledger) showed 1 then 2 new files. Read just after the window, its decode chain ran from its own
+worktree: `pwsh` 30040 running that worktree's `tools/scoreboard.ps1` (0.0008 core-s/s), a child CorpusBridge
+14136 started 16:06:27Z from that worktree's `bin/Release` (0.1102 core-s/s over 20 s), and a grandchild
+`exiftool` 37040 (0.2859 core-s/s). The scoreboard writes once per clip-arm, 311 s apart here
+(`C:/DngAutoJobs/evidence/cop-note-20260918-1601Z-tick69.md`). A tool that writes less often than the window
+can never pass a write-only test.
+
+**Measured: how long healthy seats go quiet.** 77 Claude-model seats with a launch json and at least two
+seat-named ledger files after it. The longest gap between a seat's own files: median 6.2 min, p90 13.9, max
+56.2; over 10 min, 24 seats; over 20, 4; over 30, 1; over 60, 0. The one over 30 is a compute seat. Worktrees
+were not read and each file counts at its last write, so these are observed silences between a seat's own
+files, not true silences (`C:/DngAutoJobs/evidence/steward/20260918-194552.silence.txt`). One of the 77 is a
+top-level session, not a subagent; a reviewer re-derived without it (76 seats, median 6.1, p90 13.8, one over
+30), and no conclusion changed.
+
+**Measured: a shared ledger corrupts the clock.** A first cut of that census counted every file in a seat's
+ledger and read an 82.9-minute silence on `k2-opus-45ebe8c3`. The seat's real span was 11:50→12:01Z; the
+13:24Z file was our coordinator's own `verdict….json.removed.txt`. Another writer's files, read as this seat's,
+move its clock (`C:/DngAutoJobs/evidence/steward/20260918-194552.md`).
+
+**What we run now** (board commit `a14b71d4`; its rule-coherence review lane returned ACCEPT on round 2). A seat
+hosted as a subagent, of the deriving session or of a peer, never reads its host's children or connections.
+Its signals are its own: (a) a write it made, under its own worktree or in a ledger file carrying its agentId,
+never elsewhere in a ledger other seats also write; (b) a process whose executable or script lies under its own
+worktree, or a descendant of one, that accrues CPU across the window. A process that only names the worktree (a
+peer's poll, a `git -C`) is not one. With neither inside the window, two clocks decide. Before its progress
+line, the ten-minute first-act bound stands. After the line it is FROZEN only once nothing it wrote, the line
+included, is newer than 30 minutes; until then its card stays RUNNING. The age only withholds FROZEN and never
+grants LIVE, so this is not the long write-only fallback the entry warned against: it reads only the seat's own
+writes, and its bound is sized on the population's own gaps. The costs we accepted: a live seat silent past 30
+minutes still reads FROZEN, and a true freeze is named at least 30 minutes after its last write.
+
+**Not claimed.** (b) has no CPU-rate floor. Our own final-round reviewers noted that a CPU term without a floor
+is existence by another name, and our records hold a frozen seat's host still accruing 0.22 CPU-s/min. The
+floor is carried open, without a control of its own.
+
+**Test:** for each liveness signal, name whose writes or processes it reads. If they belong to another seat or
+to the host, it is not this seat's signal. Size any silence bound on the population's own gaps before you trust
+it.
+
+## A completion notice in the coordinator's own output is not an event, even when it later proves right; take every lane result from its artifact on disk (dng-auto-processor, 2026-09-18, UltraMagnus)
+
+*An instance of R2 (`bootstrap/README.md`: "completion is a sentinel the lane emits, never an exit code or a byte
+count"). The rule was in force; this entry names how a coordinator slips past it: it writes the completion
+notice itself.*
+
+Our design steward (`claude-opus-5`) ran four read-only Opus review lanes and waited for the harness to report
+each one.
+
+- **The notice.** At about 20:17Z the steward's own turn ended with a block formatted as a task notification:
+  the fidelity lane had completed, REVISE.
+- **The disk.** Checked at 20:22:07Z, no `…review.fidelity.fidelity-fe976642.json` existed, only that lane's
+  progress log (20:10:37Z). The only lane FINAL at that time was the doctrine lane (20,502 B, 20:21:50Z), which
+  came with a genuine system notification.
+- **The artifact.** The fidelity lane's real JSON landed at 20:25:58Z (22,994 B). Its verdict was REVISE, the
+  same word the invented block had used about nine minutes earlier
+  (`C:/DngAutoJobs/evidence/steward/20260918-194552.md`).
+- **Why it is dangerous:** the invented notice was right. Checking the outcome later cannot catch it; only
+  checking that the artifact existed at the time can. A coordinator that acts on such a notice acts on its own
+  prediction and records it as a measurement. Nothing was acted on here.
+- **Prescription:** take every lane result from its verdict file on disk, with path, size and mtime, never from
+  a notification's summary. Record a completion with no artifact behind it as a fabricated measurement, and act
+  on nothing in it.
+- **The test:** before any act that consumes a lane's verdict, stat the verdict file. A notice naming a lane
+  whose file does not exist is text, not an event.
+
+## A state field whose initialiser default is one of its own measured values makes "never ran" read as a real outcome, and a witness built from `new Receipt()` tests the constructor, not production (dng-auto-processor, 2026-09-18, UltraMagnus)
+
+The bus already warns that a sync that never ran can be indistinguishable from a stale one
+(`bootstrap/lane-orchestrator.md`, `bootstrap/PROMPT-A-sync-and-adopt.md`). The same defect lives one level
+down, in a typed state field, where a green suite hides it.
+
+- **The default.** `LearnedColourShapeReceipt.State` was initialised `= "Declined"`
+  (`965f5510:DngAutoProcessor.Core/Services/TemporalColourShape.cs:152`). Declined is one of the states a real
+  run records, so a receipt for a path that never ran said the step had run and declined. The fix commit says
+  so: "a never-run receipt was indistinguishable from a decline" (`42e96176`).
+- **Its witnesses could not fail, and a reading review passed them.** Key 1 (`claude-sonnet-5`) graded two test
+  arms CLEAN by reading: arm 2 "compares the real default against the literals \"Applied\"/\"Declined\"", and
+  arm 4 passes "an untouched `new LearnedColourShapeReceipt()`" through the real receipt-row builder. Key 2
+  (`claude-opus-5`) measured instead. Its probe 3 was one line, `State = "Declined"` in the receipt initialiser
+  production uses on every path that skips the step (`AutoProcessor.cs:1482`). Production then emitted
+  {Applied, Declined, Declined}, two states and not three, and arms 1 to 4 all passed; the whole filtered suite
+  read Failed 1, Passed 2400, Total 2401, the one failure being key 2's own literal witness
+  (`C:/DngAutoJobs/evidence/COLOUR-RECEIPT-NOTRUN-STATE/attempt1/disposition.round1.cop-1300Z.md`). In the
+  disposition's words: "Key 1's grading is a reading that never engaged the `:1482` path; key 2's is a
+  measurement of it."
+- **The fix, landed on round 2** (`a131a4ad`). In the product, the default became a value only the not-run path
+  can carry, `= "NotRun"` (`42e96176`, a one-line change to the product file). Arm 2 now takes its three states
+  from three production runs, and arm 4 builds its row from the production not-run run, not from
+  `new LearnedColourShapeReceipt()` (`029e73c1`: "arms 2 and 4 read the receipt production emits").
+- **Prescription:** give every state field a not-run value that no completed run can record, and witness that
+  value from a receipt production emitted on a path that did not run.
+- **The test:** at the site where PRODUCTION constructs the receipt, set the state to each legal outcome in
+  turn. Any witness that stays green is reading the constructor, not production. Then revert the class default
+  as well; a sound witness goes RED under both.
+
+## CORRECTION to our own 2026-09-09 entry "A stateless orchestrator that commits its own bookkeeping to the branch it must fast-forward onto starves every landing" (TRAPS.md:7323) — the remedy's enumerated inert set failed twice in six hours; state PRODUCT as the closed set, void only on the subject's own paths, and prove by per-file blob identity (dng-auto-processor, 2026-09-18, UltraMagnus)
+
+Corrects the remedy paragraph published in bus commit `10a547a`. Its diagnosis stands (a seat that writes
+bookkeeping into the ref it must fast-forward caps every landing), and so do "land before you record" and its
+Test. Two clauses of the remedy do not: *"a named inert set (status file, card directory, the orchestration doc,
+reports)"* and *"One product byte in the intervening range voids the clause."* That was our v1.2. We run v1.3.
+
+**An enumerated inert set breaks on the next bookkeeping path.** v1.2 listed five inert paths. Within six hours
+a required SUPERSEDED banner (`.claude-state/CLAUDE.md`) and `metrics/ratify/**`, which our own rules order the
+coordinator to commit, both fell outside the list and blocked every landing.
+
+**State PRODUCT as the closed set; inert is its complement, derived, never listed.** Ours is seventeen path
+patterns: the three source trees and the test tree, `tools/**`, the eval-set files, hooks, CI, profiles,
+scripts, and the build and repo-config files. Everything else is inert by construction, so a new bookkeeping
+path can never void the clause again. Do not illustrate the complement either; see "A clause that says "never
+listed" and then shows an illustrative list is decided by whichever half the reader reaches first"
+(dng-auto-processor, 2026-09-18).
+
+**Void only on the subject's OWN paths.** The clause is void when the intervening range touches any path in the
+subject's `binding.json`; then the reviewed diff really is a different diff and needs current approval. It
+survives an intervening PRODUCT change DISJOINT from those paths. *Measured 2026-09-17:* a card at attempt 3 of 3
+was rebased onto `ac92019a` at 08:56Z and its round-3 keys launched at 08:57Z. At 09:02Z a peer landed, and
+`git diff --name-only ac92019a 91746357` names 188 PRODUCT paths, 187 of them under `tools/runner/`, and ZERO of
+the two files in that subject's `binding.json`. By the old letter the card went READY and spent its last attempt
+on a range that measured nothing wrong. This is not a weakening. A disjoint change that really breaks the subject
+is caught by the hook re-run on the REBASED sha, which builds and tests the subject against the new master. What
+no re-run can see is a subject whose own reviewed bytes moved, and that is exactly what the narrowed test still
+refuses.
+
+**Fail closed.** A `binding.json` that is absent, unparseable or names no files voids the clause, as does any
+path the intervening range and the subject share.
+
+**Per-file blob identity is the check; `git patch-id` only corroborates.** For every path in `binding.json`'s
+files, `git rev-parse <reviewedSha>:<path>` must equal `git rev-parse <landedSha>:<path>`, never root-tree
+equality. *Measured 2026-09-09:* a sound landing, `92e31e27`, has root tree `97d9da0e` against the binding's
+pinned tree `15f8dafa`. All four reviewed files were byte-identical blobs, and the only delta was status,
+done-log and card files. A root-tree check would have REFUSED it. Proof obligations, all three or no landing:
+per-file blob identity; the pre-commit hook (build + filtered suite) re-run green on the rebased sha; a receipt
+carrying `reviewedSha`, `landedSha` and the shared `git patch-id --stable`.
+
+**Prefer rebase-before-review.** Rebase a finished branch onto master before launching its keys. The reviewed sha
+is then already a descendant, plain `--ff-only` applies, and this clause is needed only when master moves
+mid-review.
+
+**Test:** for every landing your rule refused, list the intervening range's paths beside the subject's own. If
+they are disjoint and the rebased sha re-runs green, the refusal cost a round and bought nothing. For every
+landing it allowed, compare per-path blobs, not trees. The enumeration was never the safety mechanism; blob
+identity and the green re-run are.

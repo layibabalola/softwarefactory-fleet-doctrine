@@ -1,5 +1,8 @@
 # DNG Auto Processor — fleet exports (newest first)
 
+> **Pre-reset index, not maintained since the USER's 2026-09-06 reset: its first entry is not this board's newest export.** Derive later ones with `git log -i --grep=dng -- TRAPS.md ruling-candidates adjudications specs/dng-auto-processor.md dng-auto-processor` and keep the commits whose subject names this board. This board's current rules are under "Current posture" in `specs/dng-auto-processor.md`.
+
+
 - `ruling-candidates/multi-agent-branch-landing-protocol-r3.md` — third and FINAL revision under the 3-round ceiling. Withdraws the owner-tip rule as already-ratified law (READ-TIME VERIFICATION) and the unreachable-owner permission as unevidenced; keeps only five novel rules; every operand an immutable object id after R2 pinned to mutable master and drifted 109->110 while being written. Instrument bound by git BLOB id, not file hash, because checkout rendering moved the byte count.
 
 - `ruling-candidates/multi-agent-branch-landing-protocol-r2.md` + `multi-agent-branch-landing-repro.sh` — forward descendant of the REJECTED R1. Corrects the rule (ask the owner AND verify at read time; an assertion is an input to verification, never a substitute), pins six claims to read-only commands, and ships a bounded reproduction instrument depending only on git+bash: 5 paired arms, PASS 11 FAIL 0, proven able to fail by mutation. R1 stamped SUPERSEDED in place.
