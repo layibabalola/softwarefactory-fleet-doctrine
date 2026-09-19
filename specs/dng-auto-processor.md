@@ -1,4 +1,5 @@
-# DNG Auto Processor — factory spec (doctrine owner: the `dng-design-steward` seat, USER unfreeze 2026-09-11, docs/14 §0; its publish step, docs/13 P-STEWARD step 7b, appends only to TRAPS.md and ruling-candidates/, so this file is refreshed by a USER-directed session, docs/14 §7a)
+# DNG Auto Processor — factory spec (one writer: the `dng-design-steward` seat, docs/13 P-STEWARD step 7d; a posture change made anywhere else reaches this file as a census item of that seat's next pass)
+source_commit: 083b80e0134b01602b1c16978be473a4635636a0
 
 **Machine:** ULTRAMAGNUS (personal box). **Project root:** `C:\code\DngAutoProcessor - Claude`.
 **Product:** auto-grading pipeline for DNG timelapse clips emulating the operator's LRTimelapse
@@ -10,7 +11,8 @@ keyframe-ramp workflow. **Rewritten wholesale at doctrine seams; artifacts live 
 Board truth: `DngAutoProcessor/docs/14-ORCHESTRATION.md`, the design of record (§ below means its sections), plus
 section P-RESUME of `DngAutoProcessor/docs/13-RESET-PROMPTS.md` (docs/13); plan of record `docs/12-RESET-PLAN.md`;
 `WORK.md` on master is the only selector (§0). This block restates their rules with a section each and carries no
-state; where they differ, they win. Below the dispositions table is history: "current" or "must know" there meant then.
+state; where they differ, they win. It is rewritten when a docs/13 or docs/14 change since `source_commit` falls in a
+section it cites. Below the dispositions table is history: "current" or "must know" there meant then.
 
 ### Portable rules (measured on this board; offered to any board)
 - **Standing authority is one section every seat's boot reads verbatim** (§0; docs/13 P-COP, P-STEWARD), never
@@ -20,9 +22,10 @@ state; where they differ, they win. Below the dispositions table is history: "cu
   the evidence ledgers within §3's budget, and a boot over it makes the tick's only act a split or park. A budget no
   reading set can meet is fixed on the READ: when a correct never-fold rule grows a file, read its live parts by pattern.
 - **Resume re-arms, reports and stops** (docs/13 P-RESUME steps 2, 6, 7): re-create only the seats its rows list,
-  ask about each other stranded task singly (a run with no person present asks nothing), write a receipt, and
-  run no tick, dispatch, landing or governing-doc edit. A seat is alive only when its next run leaves its own
-  receipt; "enabled" proves nothing. Every scheduled seat writes a receipt on every run, a no-op included (§5).
+  ask about each other stranded task singly (a run with no person present asks nothing), relay every line a steward
+  receipt addresses to the USER, write a receipt, and run no tick, dispatch, landing or governing-doc edit. A seat is
+  alive only when its next run leaves its own receipt; "enabled" proves nothing. Every scheduled seat writes a
+  receipt on every run, a no-op included (§5).
 - **Make overlap harmless; never add a lease** (§3): claim on disk before acting (state line and launch json
   before the launch); re-read a card before any launch, landing or rewrite, and stand down if it changed; every
   launch json, brief, progress log, scratch file and verdict a dispatched seat writes carries its agentId in its
@@ -75,11 +78,11 @@ state; where they differ, they win. Below the dispositions table is history: "cu
 - **Two keys, derived from the author, never the lane** (§2): key 1 from the family opposite the author, key 2
   an Anthropic model that is not the author's; both run every round into one finding list; a permissive key
   never overrides an unrefuted BLOCKER.
-- **Approach before code** (§2, USER unfreeze 2026-09-11): at most 60 lines, ONE round by the opposite family,
+- **Approach before code** (§2, a USER unfreeze in §0): at most 60 lines, ONE round by the opposite family,
   every BLOCKER and MAJOR answered before the first product byte, never a second approach round; a review silent
-  45 minutes is relaunched once, then IMPLEMENT proceeds with it recorded TIMEOUT. **The weave** (§2, USER
-  2026-09-11): author families take turns by tier pair; a card keeps its family so its rounds stay comparable.
-- **Failover shifts work; nothing waits** (§2, USER 2026-09-11): a dark family's seats move to their tier
+  45 minutes is relaunched once, then IMPLEMENT proceeds with it recorded TIMEOUT. **The weave** (§2, USER, §0):
+  author families take turns by tier pair; a card keeps its family so its rounds stay comparable.
+- **Failover shifts work; nothing waits** (§2, USER, §0): a dark family's seats move to their tier
   analogs; a round with no live cross-family key is SINGLE-FAMILY (two non-author live-family keys, a third
   adversary on guard, hook, CI, ratifier, acceptance or data-loss cards, stamped) and is re-reviewed cross-family
   when the family returns. Darkness follows the meter the error came from, measured on the account in use. An
@@ -91,31 +94,31 @@ state; where they differ, they win. Below the dispositions table is history: "cu
   master's PRODUCT bytes, else `ci=stale`.
 - **Worktrees are sparse; a free-space floor holds creation, and an unreadable reading holds it**; HELD-FOR-DISK
   spends no attempt; the item worktree goes on landing, a key's once its verdict is written (§10 "Task
-  worktrees", USER unfreeze 2026-09-13).
+  worktrees", a USER unfreeze in §0).
 - **CLI currency smokes the launch form the tick really uses and rolls back on failure; each landing receipt
-  measures every seat's cost and correctness; a provider joins only after admission drills** (§10, USER 2026-09-11).
+  measures every seat's cost and correctness; a provider joins only after admission drills** (§10, USER, §0).
 
 ### This board
 - **Objective**: AUTO XMP matches the USER's manual LRTimelapse grade per frame, measured by `tools/scoreboard.ps1`
-  on `metrics/eval-set.json` (WORK.md header). **Definition of done** (USER 2026-09-17, §0): blind-judged
+  on `metrics/eval-set.json` (WORK.md header). **Definition of done** (USER, §0): blind-judged
   indistinguishable, meaning a person cannot reliably pick auto from manual on a blind contact sheet, with
   zero-effect and positive controls; the numeric metrics still run; every comparison carries an arms-differ witness (§6).
 - **Boot**: "resume our work" runs docs/13 P-RESUME: re-arm, report, stop (workspace `CLAUDE.md`). The cop boots each
   tick by §3's derivation commands, never reading WORK.md whole (docs/13 P-COP "Bounded boot"); the steward by P-STEWARD's
-  read list; a weekly read-only `dng-resume-drill` exercises P-RESUME and asks nothing (§0, USER 2026-09-16).
+  read list; a weekly read-only `dng-resume-drill` exercises P-RESUME and asks nothing (§0, USER).
 - **Seats** (exact model ids, launch forms and cadences: §2, §10 and docs/13 P-RESUME step 2):
 
 | Seat | Model | Shape and jurisdiction |
 |---|---|---|
 | Traffic cop `dng-traffic-cop` | Opus; an exhausted Opus defers the tick, never swaps | stateless scheduled tick, fresh session per fire: collect, land, dispatch, record; proceeds under stated assumptions (§2, §3; docs/13 P-COP) |
-| Design steward `dng-design-steward` | Opus, every six hours | acts only on OWNER-DEFECT tokens and PARKED cards a cop wrote, plus the doctrine loop; may edit docs/12, docs/13 (P-COP included, never P-STEWARD) and docs/14; disposes of a park as ONE dimensioned batch pass or as the ruling the park names; closes a token only by appending a CLOSED line; never dispatches, launches keys, lands or opens ordinary cards; a receipt every run (§7a; docs/13 P-STEWARD) |
-| USER-directed orchestrator | Opus at medium effort (USER 2026-09-18) | launches each seat it drives as a CLI process (`codex exec`, `claude -p`) whose launch json, written first, carries `phase`, `"route": "cli"` and its `pid`; not an unfreeze: adds no lane, gate, tool or scheduled task, changes no cop seat, key tier or landing rule, edits no governing doc (§0; §2 launch route) |
+| Design steward `dng-design-steward` | Opus, every six hours | acts only on OWNER-DEFECT tokens and PARKED cards a cop wrote, plus the doctrine loop; may edit docs/12, docs/13 (P-COP included, never P-STEWARD) and docs/14; disposes of a park as ONE dimensioned batch pass or as the ruling the park names; closes a token only by appending a CLOSED line; never dispatches, launches keys, lands or opens ordinary cards; writes this spec and this board's kernel filing; a receipt every run (§7a; docs/13 P-STEWARD) |
+| USER-directed orchestrator | Opus at medium effort (USER, §0) | launches each seat it drives as a CLI process (`codex exec`, `claude -p`) whose launch json, written first, carries `phase`, `"route": "cli"` and its `pid`; not an unfreeze: adds no lane, gate, tool or scheduled task, changes no cop seat, key tier or landing rule, edits no governing doc (§0; §2 launch route) |
 | Executor | Sonnet or Sol under the weave; Luna only for a fixed task with prewritten failing checks; complex diagnostics Sol, or Sonnet while Codex is dark | bounded brief, at most 4 files, dies at return; a Codex author runs §10's author route and a Sonnet committer commits (§2, §10; docs/13 C-COMMIT) |
 | Approach review | opposite family: Sol for a Claude author, Opus for a Codex author; Astra or Fable when the card touches a guard, hook, CI, the ratifier, the acceptance surface or a data-loss path | one round before any product byte; refuses on ambiguity (§2; docs/13 B-APPROACH) |
 | Key 1 correctness | opposite family: Sol for a Claude author, Sonnet for a Codex author | per subject; named paths and a command budget (§2, §4a) |
-| Key 2 adversarial | Anthropic, never the author's model: Opus, the acceptance surface included. docs/14 §2's table still lists Haiku for a chore of at most 50 lines, but the same section records that fleet RULINGS R1 (owner ruling 2026-09-13, not subject to adopt-or-distinguish) makes Opus the floor for a review act and bars Haiku from one; that tier is therefore not filled, and the table-versus-R1 conflict is open on this board. A pool the bar empties is HELD-FOR-KEY, never a substitute (§2). | per subject; Opus, the default key 2, never authors a reviewed subject (§2, §4a) |
+| Key 2 adversarial | Anthropic, never the author's model: Opus, the acceptance surface included. Fleet RULINGS R1 (an owner ruling, not subject to adopt-or-distinguish) makes Opus the floor for a review act and bars Haiku from one, so docs/14 §2's Haiku tier for a chore of at most 50 lines is never filled; a pool the bar empties is HELD-FOR-KEY, never a substitute (§2). | per subject; Opus, the default key 2, never authors a reviewed subject (§2, §4a) |
 | Fable / Astra | taking turns by card | experiment dispositions, `needs: fable` design cards and T3 approach reviews only; never a key-2 tier, never scheduled (§2) |
-| Status | Haiku, cross-checked by a read-only Haiku swarm | reads, never writes; `dng-status-digest` where the USER added it, otherwise chat on "status"; pushes only on exception (§2, §8) |
+| Status | Haiku, cross-checked by a read-only Haiku swarm | reads, and writes only its own run receipt and report (§8); `dng-status-digest` where the USER added it, otherwise chat on "status"; pushes only on exception (§2, §8) |
 
 - **The factory is frozen** (WORK.md rule 3): no new tool, standard, lane, gate or scheduled task without the
   USER's word "unfreeze", and each unfreeze §0 records authorises only its literal scope. No chips, lanes,
@@ -123,9 +126,15 @@ state; where they differ, they win. Below the dispositions table is history: "cu
 - **A product commit is one touching §4's PRODUCT closed set**, the only definition (§4; WORK.md rule 1).
 - **Layout**: the git root is the nested `DngAutoProcessor/` repo (run `git -C` on it); evidence lives outside git
   under `C:/DngAutoJobs/evidence/` (docs/13 P-COP "Layout"; §5).
-- **Doctrine loop** (USER unfreeze 2026-09-11; docs/13 P-STEWARD step 7): the steward folds other boards' ruling-candidates/,
-  adoption/, TRAPS.md and RULINGS.md commits as data (ADOPT, DISTINGUISH or NOT-APPLICABLE, with a reason) and publishes
-  measured findings the bus does not already state, each ratified by two read-only subagents before the push.
+- **Doctrine loop** (a USER unfreeze in §0; docs/13 P-STEWARD step 7): the steward folds other boards'
+  ruling-candidates/, adoption/, TRAPS.md and RULINGS.md commits as data (ADOPT, DISTINGUISH or NOT-APPLICABLE, one
+  reason each), then takes a CENSUS of what this board recorded since its last census line — closed tokens, card
+  state changes with their dispositions, governing-doc commits, the alarms its daily lines name — and gives every
+  item exactly one line: PUBLISH, ON-BUS (the bus path and entry heading), NOT-EXPORTABLE (one reason) or CARRIED
+  (the event that releases it). Nothing is selected, and a PUBLISH is never downgraded for size, taste or time. Two
+  read-only Opus lanes — evidence fidelity; law, format, overlap and public safety — ratify every entry, this spec
+  and the kernel filing before any push; each entry's stamped bytes are saved beside the receipt and every retry
+  re-uses them, never a re-draft.
 
 ## Dispositions of fleet doctrine (docs/14 §9 verbatim; § = a docs/14 section; re-derive it there, never here)
 
@@ -329,7 +338,7 @@ by waiting out a full grace period on a corpse.** Two lanes did exactly that bef
 
 ## Publication posture (operator ruling, 2026-08-09 evening)
 
-> **Partly SUPERSEDED.** There is no hub (docs/13 channel rule: "Chips, lanes, leases, hubs, and heartbeats do not exist"), so no hub ratification exists. This board publishes through the dng-design-steward's doctrine loop, which ratifies each entry with two read-only subagents and then pushes without a USER gate (docs/13 P-STEWARD step 7b, USER unfreeze 2026-09-11); that step appends only to TRAPS.md and ruling-candidates/, so this spec is refreshed by a USER-directed session (docs/14 §7a).
+> **Partly SUPERSEDED.** There is no hub (docs/13 channel rule: "Chips, lanes, leases, hubs, and heartbeats do not exist"), so no hub ratification exists. This board publishes through the dng-design-steward's doctrine loop, which ratifies each entry with two read-only subagents and then pushes without a USER gate (docs/13 P-STEWARD step 7b, USER unfreeze 2026-09-11); that step appends only to TRAPS.md and ruling-candidates/, so this spec is refreshed by a USER-directed session (docs/14 §7a). [Superseded in turn by this file's header: docs/13 P-STEWARD step 7d now makes the steward this spec's one writer, and step 7c appends to RECEIPTS.md, TRAPS.md or ruling-candidates/.]
 
 
 Bus pushes are **never operator-gated**. Verbatim: *"Pushing code to doctrine repo should not be

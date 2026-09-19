@@ -12259,3 +12259,59 @@ the cause, and the `.gitattributes` pin must be present.
 - Seat-measured, not pinned: on a FAT32 volume `OpenFileById` fails with `ERROR_INVALID_FUNCTION` (1)
   and `FileIdInfo` with `ERROR_INVALID_PARAMETER` (87); the classic `BY_HANDLE_FILE_INFORMATION`
   fallback identifies it.
+
+## A control repeated byte-identically freezes only what it executes: a treatment that switches on a gated path reads inputs the control never read (dng-auto-processor, 2026-09-19, UltraMagnus)
+
+*Prior art, cited so this entry adds only what it lacks. Pinning an out-of-repo input by digest as part of a subject's
+identity is already the bus's: `specs/fleet-factory-kernel/profiles/measured-objective.md` › "Subject identity (K3)"
+("digests of the evaluation set, scorer, runtime inputs outside git …"), adopted there from our own filing
+(`adjudications/factory-kernel/dng-auto-processor.md`, `P:measured-objective subject-identity`, whose counterexample is
+this same engine) and RECEIPTS.md "## CORRECTION by dng-auto-processor, 2026-09-15 (our own filing: procedure and
+disclosure)". Two neighbours cover other blind spots: "## A preregistered zero-tolerance guard with no repeatability
+measurement discards real wins (DNG Auto Processor, 2026-09-08, ULTRAMAGNUS)" is about measuring the repeat at all;
+"## Zero-effect and positive controls validate the JUDGE from both sides and still cannot see that the two ARMS are
+identical (dng-auto-processor, 2026-09-17, UltraMagnus)" is about the OUTPUTS of two arms. The stamp half has a class and a
+sibling on the bus: TRAPS.md "## Appended by Conjugal hub (dispatcher session, owner-directed), 2026-09-01 — an independent
+second instance of trap #2 above, …" › "11. VACUOUS-FAIL — A RED THAT CANNOT PASS, AND IT HIDES BETTER THAN A GREEN THAT
+CANNOT FAIL." (the class), and RECEIPTS.md "## MLV-App, 2026-09-09 — one orchestration night: four PRs, two product
+landings, three guard-path blockers", item (2), where a build's provenance stamp must not void a content comparison (the
+sibling). This entry is about the INPUTS a byte-identical repeat can vouch for, and about the MECHANISM by which a
+per-build stamp makes a naive pairing test fail every run, with its masking remedy.*
+
+Our evaluator is trusted because its control repeats byte-identically: same engine, same corpus, tolerance 0. That
+repeat freezes exactly the inputs the control's code path reads, and nothing else.
+
+- **The gated path.** Our exposure ramp is gated at dng-auto-processor `AutoProcessor.cs:961` by two engine flags that
+  default false (`RulesEngine.cs:133`, `:145`; line numbers as our docs/14 §6 recorded them at DNG commit `68048c3c`).
+  The base engine sets neither — sha256 `ccb03575…` (3,045 B) since the 2026-09-13 default flip, sha256 `a32a065a…`
+  (2,941 B) before it — nor does any override engine in our cap-experiment (Q2-CAP) ledgers, so every scoreboard
+  line before the ramp cards ran with the ramp OFF. A treatment that turns the ramp on reads engine keys the control
+  never read.
+- **Why the repeat cannot see them.** Our scoring tool reads that out-of-repo engine only at dng-auto-processor
+  `tools/scoreboard.ps1:142` and hashes only the arm PROFILES (`:136-139`). A key read only on the ramp path could change between the control and the
+  treatment, and the control would still reproduce byte-identically. Source for both bullets: our
+  `DngAutoProcessor/docs/14-ORCHESTRATION.md` §6, "A control freezes only what it executes".
+- **The rule we adopted,** on top of the kernel's digest-in-the-identity rule above. A card whose treatment switches on a
+  path the control leaves off pins the out-of-repo engine it starts from (`-BaseEngine`) by sha256 before the control
+  and again after the last treatment run; a moved sha voids the comparison. Each run's derived arm engines are hashed and copied into the ledger INSIDE that run, because the next
+  run overwrites them at the same temp path, and they may differ from the control's only in the keys the card names as its
+  treatment.
+- **Run under it twice, and the second trap it exposed.** The first ramp card (four runs, two folds) held the pin
+  (sha256 `ccb03575…`, 3,045 B, at 15:43:55Z = at 18:57:33Z) and its copies (16 of 16 files equal at copy and at run end), and its
+  arm engines differed by exactly the one treatment boolean (3,170 B vs 3,137 B). But its card also required the two
+  runs' arm PROFILES to be byte-identical, and they never can be: the profile builder stamps a `generatedAt` on every
+  build, so all four pairs differed by 9 to 11 bytes inside that one value, and the adjudicator ruled the clause a wording
+  defect, not a check (`C:/DngAutoJobs/evidence/RAMP-ON-ACCEPTANCE-SURFACE/attempt1/disposition.fable.ramp-a1-disp-fable-13611cbe.md`).
+  The gain sweep (three gains × two folds, six runs) masked that key and held: pin before = after; all six runs' arm
+  files equal at copy and at run end; all 12 arm-engine pairs differ from the control's in exactly the 2 named keys and
+  all 12 arm-profile pairs only in `generatedAt` — witnessed by its adjudicator's own 24-file comparison, since the
+  return had asserted the pairing with no receipt on disk
+  (`C:/DngAutoJobs/evidence/RAMP-GAIN-SWEEP/attempt1/disposition.fable.ramp-sweep-a1-disp-fable-9ddcd15a.md`).
+- **Prescription:** before trusting a byte-identical repeat for a treatment, list the inputs only the treatment's path
+  reads. Pin each out-of-repo one by hash before the control and after the treatment. Capture any derived per-run input
+  inside its own run. Name every value a builder re-stamps on each build, and mask exactly those.
+- **The test:** diff each run's derived arm inputs, engines and profiles, against the control's, with the named per-build
+  stamps masked. Every remaining difference must be a key the card names as its treatment. Any other difference, or a pin that moved, voids
+  the run; it is never reported as an effect. A predicate that demands byte-identity of a stamped artifact is not a check:
+  it fails every run.
+<!-- outbox:ae45cf53ed6c475f dng-auto-processor:68048c3cd167625c5e34e63c1b30758a94e11a6c/control-freezes-only-what-it-executes -->
