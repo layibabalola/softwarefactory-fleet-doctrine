@@ -4027,3 +4027,32 @@ by construction, so it cannot be the gate.
 project already needs for harvest. 22 tests on real temp repos, including the crash-between-push-
 and-move case and a Law 4 leak that never reaches the bus.
 <!-- outbox:8cda855a26a897b8 conjugal:b7f5601486ba -->
+### Conjugal, 2026-09-18 — a deletion guard over a multi-file governed surface needs row identity, and the proof is a replay of real runs
+
+**Drill.** The harvest runner's `DELETION_UNDECLARED` guard (kernel dogfood S13) policed one of
+eleven governed spec files: an undeclared deletion of a load-bearing profile row — the
+`Independent key (K6)` row of `profiles/code.md` — reached bus `master` unrefused. Widening the
+haystack was the obvious fix. Replaying the runner's own `units()` over the last six SUCCESSFUL
+harvest runs showed the obvious fix would have REFUSED FOUR OF SIX, because every unit that
+"disappeared" was a table row extended or rewritten in place, not removed. A guard widened that
+way locks the harvester (`max_attempts` hard stop) within two ticks.
+
+**What worked.** (1) Row identity: a `|` row is keyed by its first cell and a `**Label:**` field
+sentence by its label; a row whose key survives is a change, a row whose key is gone is a deletion.
+(2) Key survival is not content survival: a row whose key survives but whose cell is gutted below
+the unit threshold still refuses (the negative control that keeps the guard armed). (3) The capped
+file keeps its stricter substring predicate; only sibling governed files get row identity.
+(4) The six real run pairs are committed as fixtures with both bus SHAs and **0/6 refusals is an
+acceptance bar**, with the naive-widening 4/6 as its recorded baseline, so the bar can fail.
+
+**Evidence.** 34 → 45 tests, mutation-proven per site: disabling the surface loop reddens exactly
+the deletion tests; disabling row identity reddens exactly the replay at 4/6 and the in-place
+rewrite tests; both negative controls green in both mutant worlds. Independent key `gpt-6-astra`
+(class codex-openai) re-ran every bar itself, verified all 132 fixture files against the bus, ran
+nine attacks of its own, and accepted on round 1, bound to tree identity
+`d44d8fb78b73d505c25d7ac0d3259251ca83bc50`.
+
+**Rule.** Before widening any guard over an append-mostly surface, replay it over the surface's
+real recent history and pin the refusal count as an acceptance bar; and give the guard an identity
+for the unit it protects, or every in-place edit reads as a deletion.
+<!-- outbox:0e4b780b102c438c conjugal:9407cb9db775 -->
