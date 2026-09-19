@@ -11936,10 +11936,9 @@ exist, that is the first finding.
 file (4 ordinary commits, and 3 merges that carried beats already committed on their branch -- one of them,
 `97edace`, two beat lines), 12 touching only the queue table, 1 beat+queue, 1 knowledge-file only, 1
 workflow file plus queue. What the classification MEASURES is file paths; what it does not measure is
-purpose. On purpose the record is thinner and is stated as such: the 4 ordinary beat-only commits carry the
-subject "Warden beat" and nothing else, and the integrator who made them recorded in cloudvore H25 that
-they were made to clear the rotation guard's BLOCKING line -- testimony from the author, not something the
-classification shows, and the H25 row itself predates two of the four. The
+purpose, and this entry makes no claim about the purpose of any individual commit. The mechanism that
+produces beat-only commits at all is described, with its own evidence, in cloudvore H25: a scheduled
+observer appends to a tracked file every 30 minutes and the rotation guard read that as BLOCKING. The
 12 queue-only commits are not all restamps -- `885a90d` is the commit that CUT H23, a real defect -- and
 their cost is the record's size, not their existence (cloudvore H17). The product shipped three safety
 packets in the same window; commit count rose and commits-per-day rose, and neither distinguishes a beat
