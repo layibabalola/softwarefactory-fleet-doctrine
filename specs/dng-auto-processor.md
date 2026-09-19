@@ -1,11 +1,154 @@
-# DNG Auto Processor — factory spec (single writer: the DNG fable coordinator)
+# DNG Auto Processor — factory spec (doctrine owner: the `dng-design-steward` seat, USER unfreeze 2026-09-11, docs/14 §0; its publish step, docs/13 P-STEWARD step 7b, appends only to TRAPS.md and ruling-candidates/, so this file is refreshed by a USER-directed session, docs/14 §7a)
 
 **Machine:** ULTRAMAGNUS (personal box). **Project root:** `C:\code\DngAutoProcessor - Claude`.
 **Product:** auto-grading pipeline for DNG timelapse clips emulating the operator's LRTimelapse
 keyframe-ramp workflow. **Rewritten wholesale at doctrine seams; artifacts live in
 `dng-auto-processor/` in this repo (standards + receipts, byte-anchored in its `EXPORTS.md`).**
 
-## Current posture (2026-09-08) — read this first; "Shape" and everything after it is historical
+## Current posture — rules only; read this first
+
+Board truth: `DngAutoProcessor/docs/14-ORCHESTRATION.md`, the design of record (§ below means its sections), plus
+section P-RESUME of `DngAutoProcessor/docs/13-RESET-PROMPTS.md` (docs/13); plan of record `docs/12-RESET-PLAN.md`;
+`WORK.md` on master is the only selector (§0). This block restates their rules with a section each and carries no
+state; where they differ, they win. Below the dispositions table is history: "current" or "must know" there meant then.
+
+### Portable rules (measured on this board; offered to any board)
+- **Standing authority is one section every seat's boot reads verbatim** (§0; docs/13 P-COP, P-STEWARD), never
+  retyped into a seat prompt (§10 "Net rules"). A USER ruling is recorded as {exact question, selected label,
+  rejected alternatives}, authorises only its literal scope, and a relay of it is evidence, never an authority multiplier.
+- **Boot is derivation, never "read fully"** (§3): a stateless seat derives state from git, the queue, its cards and
+  the evidence ledgers within §3's budget, and a boot over it makes the tick's only act a split or park. A budget no
+  reading set can meet is fixed on the READ: when a correct never-fold rule grows a file, read its live parts by pattern.
+- **Resume re-arms, reports and stops** (docs/13 P-RESUME steps 2, 6, 7): re-create only the seats its rows list,
+  ask about each other stranded task singly (a run with no person present asks nothing), write a receipt, and
+  run no tick, dispatch, landing or governing-doc edit. A seat is alive only when its next run leaves its own
+  receipt; "enabled" proves nothing. Every scheduled seat writes a receipt on every run, a no-op included (§5).
+- **Make overlap harmless; never add a lease** (§3): claim on disk before acting (state line and launch json
+  before the launch); re-read a card before any launch, landing or rewrite, and stand down if it changed; every
+  launch json, brief, progress log, scratch file and verdict a dispatched seat writes carries its agentId in its
+  name (`<kind>.<model>.<agentId>.<ext>`), because a derived seat name collides by construction; fixed-name slot
+  files are copied before a rewrite, never renamed (next rule).
+- **A seat is live by evidence read INSIDE a 90 s poll, never by file age, a lease or the clock** (§3): a write
+  that appears, the seat's own process (its `pid` on the CLI route) or its host's API connection. Its first act
+  is one progress line, and none ten minutes after launch means it never started. A subagent never reads its
+  host's signals: its own writes and CPU-accruing processes under its own worktree count, and after its line it
+  is FROZEN only once nothing of its own is newer than 30 minutes. FROZEN or DARK is skipped; its worktree is kept.
+- **Phases are read from the ledger, first match wins; `return.md` is a slot** (§3): before a phase rewrites a
+  fixed-name file, copy it byte-identical to `<name>.<phase>.<agentId>.<ext>`; renaming the writer's file moves
+  the slot and changes the derivation. **Forced progress never forces an illegal act** (§3): a tick that moved
+  nothing PARKs, REOPENs or SPLITs one item unless each is derived unavailable and named.
+- **A card is admissible before it is opened** (§4): allowlist paths are relative to the git root; MODIFY means
+  `git ls-files --error-unmatch` exits 0; CREATE means it exits 1, `git check-ignore -q` exits non-zero with any
+  trailing slash stripped, and the path is marked new. Never `git status --porcelain -- <path>`, whose empty
+  output is the same for untracked, unmodified and absent. One instance obliges a sweep of every open card.
+- **The disposition comes off the ADJUDICATED finding list, never a verdict string** (§4), under four guards: a
+  drop is a recorded mutation refutation; with no covering check only the other key's independent grading drops
+  it; a cop never lands on its own refutation of a severity its brief pre-named; zero confirmed is necessary,
+  never sufficient.
+- **Refute before hand-back, then triage by trend** (§4b): each BLOCKER and MAJOR gets the smallest mutation to
+  the line it names; caught is refuted and kept in the ledger, surviving is confirmed. Falling with new classes:
+  another round; flat or rising with new classes: SPLIT; the same class re-found: PARK into ONE dimensioned batch
+  pass. The three-round ceiling is the LAST test, and an unadjudicated round does not count.
+- **Land on per-file blob identity** (§4): every `binding.json` path has one blob at the reviewed and the landed
+  sha, never root-tree equality, and patch-id only corroborates; `git merge --ff-only` of an exact sha; land
+  before you record; a tick that changed no state commits nothing.
+- **Inert-commit rebase states the closed PRODUCT set and derives inert as its complement** (§4): a clause that
+  says "never listed" and then lists is decided by whichever half is read first. It voids only when the
+  intervening range touches the subject's own `binding.json` paths (absent or unparseable fails closed); the
+  hook re-run on the rebased sha catches a disjoint break. Prefer rebase-before-review.
+- **Scope every review** (§4a): named paths, a command budget, PARTIAL allowed; a key's ACCEPT with a RED in its
+  own run log is void; a subject over the file cap is split before dispatch; key 2 tiers by blast radius, never
+  by line count; a round without two real verdicts is HELD and spends no attempt.
+- **A silent key is retried once whole, then as ONE dimensioned fan-out** (§4 A2): one bounded seat per defect
+  class, PARTIAL at its bound, adjudicated as a set; never a third whole-brief seat, never a landing without the
+  key. HELD-FOR-KEY and a capacity death spend no attempt (§4).
+- **Quiet before a hook build is a closed-set question answered with named negatives** (§4): no live suite,
+  build or decode the commit would corrupt, judged by rates across consecutive windows, `bin/`/`obj/` writes and
+  what each RUNNING card's own clauses name, never by process presence or a load gauge. A hook rejection naming a
+  locked build output is a load reading: retry once, then defer, never `--no-verify`. A hold derives from
+  processes, never from card state.
+- **An alarm that cannot read its input FIRES; one whose remedy cannot clear it is REPORTED, not obeyed** (§7).
+- **The authority wall has an addressee** (§7a): a seat at a wall appends one bounded token naming the artifact
+  and the authority exceeded; one owner seat acts only on tokens and parks; a token about a seat's behaviour
+  closes only on that seat's next receipt; no seat writes its own procedure, and no tick edits its governing
+  document, which the hook enforces (§4).
+- **Two keys, derived from the author, never the lane** (§2): key 1 from the family opposite the author, key 2
+  an Anthropic model that is not the author's; both run every round into one finding list; a permissive key
+  never overrides an unrefuted BLOCKER.
+- **Approach before code** (§2, USER unfreeze 2026-09-11): at most 60 lines, ONE round by the opposite family,
+  every BLOCKER and MAJOR answered before the first product byte, never a second approach round; a review silent
+  45 minutes is relaunched once, then IMPLEMENT proceeds with it recorded TIMEOUT. **The weave** (§2, USER
+  2026-09-11): author families take turns by tier pair; a card keeps its family so its rounds stay comparable.
+- **Failover shifts work; nothing waits** (§2, USER 2026-09-11): a dark family's seats move to their tier
+  analogs; a round with no live cross-family key is SINGLE-FAMILY (two non-author live-family keys, a third
+  adversary on guard, hook, CI, ratifier, acceptance or data-loss cards, stamped) and is re-reviewed cross-family
+  when the family returns. Darkness follows the meter the error came from, measured on the account in use. An
+  empty derived key pool is HELD-FOR-KEY, never the last model standing; two models of one provider are never
+  cross-family; a card needing the network first takes a Claude-hosted seat, which is not darkness.
+- **Evidence lives outside git, which holds receipts of at most 2 KB** (§5); a card points at its ledger and is
+  never the chronicle; caps are structural, never byte gates whose last remedy drops evidence (§5). **A mirror
+  is derived; local master is the authority** (§3): CI speaks for master only when the run's commit carries
+  master's PRODUCT bytes, else `ci=stale`.
+- **Worktrees are sparse; a free-space floor holds creation, and an unreadable reading holds it**; HELD-FOR-DISK
+  spends no attempt; the item worktree goes on landing, a key's once its verdict is written (§10 "Task
+  worktrees", USER unfreeze 2026-09-13).
+- **CLI currency smokes the launch form the tick really uses and rolls back on failure; each landing receipt
+  measures every seat's cost and correctness; a provider joins only after admission drills** (§10, USER 2026-09-11).
+
+### This board
+- **Objective**: AUTO XMP matches the USER's manual LRTimelapse grade per frame, measured by `tools/scoreboard.ps1`
+  on `metrics/eval-set.json` (WORK.md header). **Definition of done** (USER 2026-09-17, §0): blind-judged
+  indistinguishable, meaning a person cannot reliably pick auto from manual on a blind contact sheet, with
+  zero-effect and positive controls; the numeric metrics still run; every comparison carries an arms-differ witness (§6).
+- **Boot**: "resume our work" runs docs/13 P-RESUME: re-arm, report, stop (workspace `CLAUDE.md`). The cop boots each
+  tick by §3's derivation commands, never reading WORK.md whole (docs/13 P-COP "Bounded boot"); the steward by P-STEWARD's
+  read list; a weekly read-only `dng-resume-drill` exercises P-RESUME and asks nothing (§0, USER 2026-09-16).
+- **Seats** (exact model ids, launch forms and cadences: §2, §10 and docs/13 P-RESUME step 2):
+
+| Seat | Model | Shape and jurisdiction |
+|---|---|---|
+| Traffic cop `dng-traffic-cop` | Opus; an exhausted Opus defers the tick, never swaps | stateless scheduled tick, fresh session per fire: collect, land, dispatch, record; proceeds under stated assumptions (§2, §3; docs/13 P-COP) |
+| Design steward `dng-design-steward` | Opus, every six hours | acts only on OWNER-DEFECT tokens and PARKED cards a cop wrote, plus the doctrine loop; may edit docs/12, docs/13 (P-COP included, never P-STEWARD) and docs/14; disposes of a park as ONE dimensioned batch pass or as the ruling the park names; closes a token only by appending a CLOSED line; never dispatches, launches keys, lands or opens ordinary cards; a receipt every run (§7a; docs/13 P-STEWARD) |
+| USER-directed orchestrator | Opus at medium effort (USER 2026-09-18) | launches each seat it drives as a CLI process (`codex exec`, `claude -p`) whose launch json, written first, carries `phase`, `"route": "cli"` and its `pid`; not an unfreeze: adds no lane, gate, tool or scheduled task, changes no cop seat, key tier or landing rule, edits no governing doc (§0; §2 launch route) |
+| Executor | Sonnet or Sol under the weave; Luna only for a fixed task with prewritten failing checks; complex diagnostics Sol, or Sonnet while Codex is dark | bounded brief, at most 4 files, dies at return; a Codex author runs §10's author route and a Sonnet committer commits (§2, §10; docs/13 C-COMMIT) |
+| Approach review | opposite family: Sol for a Claude author, Opus for a Codex author; Astra or Fable when the card touches a guard, hook, CI, the ratifier, the acceptance surface or a data-loss path | one round before any product byte; refuses on ambiguity (§2; docs/13 B-APPROACH) |
+| Key 1 correctness | opposite family: Sol for a Claude author, Sonnet for a Codex author | per subject; named paths and a command budget (§2, §4a) |
+| Key 2 adversarial | Anthropic, never the author's model: Opus, the acceptance surface included. docs/14 §2's table still lists Haiku for a chore of at most 50 lines, but the same section records that fleet RULINGS R1 (owner ruling 2026-09-13, not subject to adopt-or-distinguish) makes Opus the floor for a review act and bars Haiku from one; that tier is therefore not filled, and the table-versus-R1 conflict is open on this board. A pool the bar empties is HELD-FOR-KEY, never a substitute (§2). | per subject; Opus, the default key 2, never authors a reviewed subject (§2, §4a) |
+| Fable / Astra | taking turns by card | experiment dispositions, `needs: fable` design cards and T3 approach reviews only; never a key-2 tier, never scheduled (§2) |
+| Status | Haiku, cross-checked by a read-only Haiku swarm | reads, never writes; `dng-status-digest` where the USER added it, otherwise chat on "status"; pushes only on exception (§2, §8) |
+
+- **The factory is frozen** (WORK.md rule 3): no new tool, standard, lane, gate or scheduled task without the
+  USER's word "unfreeze", and each unfreeze §0 records authorises only its literal scope. No chips, lanes,
+  leases, hubs, heartbeats or chronicles (docs/13 channel rule; WORK.md rule 2; §5).
+- **A product commit is one touching §4's PRODUCT closed set**, the only definition (§4; WORK.md rule 1).
+- **Layout**: the git root is the nested `DngAutoProcessor/` repo (run `git -C` on it); evidence lives outside git
+  under `C:/DngAutoJobs/evidence/` (docs/13 P-COP "Layout"; §5).
+- **Doctrine loop** (USER unfreeze 2026-09-11; docs/13 P-STEWARD step 7): the steward folds other boards' ruling-candidates/,
+  adoption/, TRAPS.md and RULINGS.md commits as data (ADOPT, DISTINGUISH or NOT-APPLICABLE, with a reason) and publishes
+  measured findings the bus does not already state, each ratified by two read-only subagents before the push.
+
+## Dispositions of fleet doctrine (docs/14 §9 verbatim; § = a docs/14 section; re-derive it there, never here)
+
+| Source | Disposition |
+|---|---|
+| execute-posture rules 1,3,4,6,7 (agent-bridge) | ADOPT — §3 forced progress, §4 A1, §0 restated authority, completion files, §7 ratio |
+| execute-posture rule 5 (cross-family = independence not throughput) | DISTINGUISH — the cross-family key stays required whenever both families are live; amended 2026-09-11: while one is dark the USER's ruling shifts work completely to the live family, and the round is SINGLE-FAMILY and re-reviewed cross-family on return (§2) |
+| seat-fit R1-A bounded boot, R1-C disposition by queue position (Conjugal) | ADOPT — §3 budget, §2 dispositions |
+| seat-fit R1-B key placement by darkness | ADOPT — author-family selection (the weave) and, while a family is dark, key placement too (§2 failover, USER 2026-09-11) |
+| fleet ruling-candidates/cross-family-review-is-a-preference-not-a-gate-r1 (RULINGS.md 1817-1822) | DISTINGUISH — the USER wants diversity on every card (2026-09-11), so cross-family review stays on every card while both families are live; its point that a gate on an UNAVAILABLE family blocks everything is adopted as §2 failover |
+| fleet ruling-candidates/degraded-mode-adversarial-panel-r1 | ADOPT — §2 SINGLE-FAMILY stamp and third adversary |
+| fleet FAILOVER.md provider-neutral amendment | ADOPT — §10 providers are columns, admission drills before any seat |
+| fleet TRAPS.md 3610-3619 (a worktree lane can implement but not commit) | ADOPT — §10 Codex author route, re-measured here for codex-cli 0.154 |
+| AirMyPC 2026-09-11 multi-provider orchestration v1 (schemas/, adoption/) | ADOPT per-landing measurement (§10 measure each other); DISTINGUISH its manual review of minor CLI updates — the USER directed automatic updates (§0), guarded by smoke and rollback (§10) |
+| proportional review rule 6 (Agent Bridge) | ADOPT — §2 key-2 tiers are its three classes |
+| governance-as-output A1/A2, B1 and the CAS correction (Conjugal) | ADOPT — §4; the landing guard gates on git state and fast-forwards an exact SHA |
+| adobe trap "wakes clean, writes nothing = read the receipt" | ADOPT — §3 PAUSE writes a receipt line; §8 reports it |
+
+## SUPERSEDED — the 2026-09-08 posture and dispositions, kept verbatim so a sibling that cited them can find them
+> Not current. Later rulings in docs/14 (USER rulings in §0; measured rules in §3 and §4a.5) replaced its boot, executor list, key-2 tiers, failover wording, R1-B wording and writer. The rules under "Current posture" at the top of this file govern.
+
+Header before this refresh: # DNG Auto Processor — factory spec (single writer: the DNG fable coordinator). No fable coordinator seat has existed since the USER's 2026-09-08 ruling that Fable is used only for important complex reviews (docs/14 §0); this board's doctrine belongs to dng-design-steward (USER unfreeze 2026-09-11, docs/14 §0).
+
 
 **Product:** auto-grading pipeline for DNG *film* clips emulating the operator's LRTimelapse
 keyframe-ramp workflow; objective = AUTO XMP matches the manual grade per frame, measured by
@@ -38,6 +181,7 @@ colour guard with no measured noise floor — reopened as a decomposition.
 | `dispatch-budget-and-proportional-review-r1` rule 6 | ADOPT — key-2 tiers are its three risk classes |
 | `governance-as-output-r1` A1, A2, B1 and the same-day CAS correction | ADOPT — a change that builds the ratifier is gated on its own witness; HELD-FOR-KEY consumes no attempt; landing is ff-only of an exact SHA from an exact base |
 | adobe trap "wakes clean, writes nothing = read the receipt" | ADOPT — a PAUSE skip writes its receipt line; the status recipe reports it |
+
 ## Shape (HISTORICAL — standing lanes; superseded by the 2026-09-05 freeze and docs/14)
 
 **A lane is its lease, never a model.** `coordination/leases/*.json` is the roster; the STANDING set
@@ -185,6 +329,9 @@ by waiting out a full grace period on a corpse.** Two lanes did exactly that bef
 
 ## Publication posture (operator ruling, 2026-08-09 evening)
 
+> **Partly SUPERSEDED.** There is no hub (docs/13 channel rule: "Chips, lanes, leases, hubs, and heartbeats do not exist"), so no hub ratification exists. This board publishes through the dng-design-steward's doctrine loop, which ratifies each entry with two read-only subagents and then pushes without a USER gate (docs/13 P-STEWARD step 7b, USER unfreeze 2026-09-11); that step appends only to TRAPS.md and ruling-candidates/, so this spec is refreshed by a USER-directed session (docs/14 §7a).
+
+
 Bus pushes are **never operator-gated**. Verbatim: *"Pushing code to doctrine repo should not be
 user gated. Always push it so the siblings can see it immediately."* Hub ratification remains
 required before strategy/law becomes doctrine (ratify-before-doctrine's gate half is intact); once
@@ -222,6 +369,9 @@ required fail-closed controls are defined in
 
 ## Universal provider-control status and exact DNG proposal (2026-08-18/19)
 
+> **SUPERSEDED — historical; "current" below meant 2026-08-18/19.** The lane, lease, inbox and provider-admission model this section describes is not part of the design adopted after the USER's 2026-09-06 reset (docs/13 channel rule; WORK.md rule 2), and these DISTINGUISH lines bind nothing today. Whether any machine task from that era is still installed is machine state: derive it there, never from this section. The current rules are under "Current posture" at the top of this file.
+
+
 DNG's current exact dispositions are:
 
 **DISTINGUISH(224a6705d81dfbc670313cdcef4d825216f2b380,
@@ -253,6 +403,9 @@ executable. Reset, authentication, capacity return, a green test, a lease claim,
 provider call cannot change these dispositions.
 
 ### Exact DNG token-saving profile
+
+> **SUPERSEDED — historical.** This profile's boot (read `RESUME.md`, claim a lane at M0, read the lane's inbox) and its lease release belong to the lane model the USER's 2026-09-06 reset removed. Boot now: a session runs docs/13 P-RESUME; the cop's tick boots by docs/14 §3's derivations; the steward by docs/13 P-STEWARD's read list.
+
 
 Every unattended Fable, Opus, and Sonnet launch now enters the same DNG admission envelope while
 retaining its exact role, model, `max` effort, review obligations, tests, and product gates:
@@ -428,6 +581,9 @@ fleet-wide adoption.
 
 ## Carve-outs a citing sibling must know
 
+> **SUPERSEDED — historical; do not cite as current.** Landing is the cop's `git merge --ff-only` of an exact sha after two keys and per-file blob identity (docs/14 §4); there is no hub and no CONSENSUS-CALL (docs/13 channel rule). A GitHub mirror is derived from local master, which is the authority (docs/14 §3). The three-round ceiling is the LAST test, after refutation and trend triage (docs/14 §4b). The branch the main checkout sits on is state: derive it. Still true, and carried into "Current posture": the git root is the nested `DngAutoProcessor/` repo.
+
+
 - The real git root is a NESTED repo (`DngAutoProcessor\`); `coordination/` is deliberately in no git
   repo (chip worktrees must not fork it) — our bus exports are therefore copies, not submodules.
 - Merges execute via commit-tree (no remote exists on the product repo); master mutation is
@@ -442,10 +598,16 @@ fleet-wide adoption.
 
 ## CLI versions (law 5)
 
+> **SUPERSEDED — versions from an earlier rewrite, not current.** This board upgrades both CLIs automatically, at most once per six hours, smoke-testing the launch form it uses and rolling back on failure (docs/14 §10 "CLI currency", USER 2026-09-11). Derive versions on the machine (`claude --version`, `codex --version`), never from this line.
+
+
 claude 2.1.224 (Claude Code) · codex-cli 0.147.0. Both measured on ULTRAMAGNUS at the time of this
 rewrite. One version per CLI across the fleet, per the operator ruling.
 
 ## 2026-09-06 — DISTINGUISH: product-first reset, both factory planes frozen
+
+> **SUPERSEDED in part — the reset stands; its boot and merge sentences do not.** "Resume our work" runs docs/13 P-RESUME, which re-arms the scheduled seats, reports and STOPS, because the scheduled cop is the only cop (P-RESUME step 7); a session that takes "the top OPEN item" becomes a second executor. The cop boots each tick by docs/14 §3's derivations and never reads WORK.md whole. Key 1 is the family opposite the author, so not always Codex (docs/14 §2). See "Current posture".
+
 
 Written by the Phase F executor per `RESET-PLAN.md` F9 (the plan's single-writer convention above
 predates this reset and is itself one of the things being distinguished against). Per the USER's
