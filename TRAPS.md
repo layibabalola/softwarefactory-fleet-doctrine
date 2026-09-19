@@ -11849,13 +11849,16 @@ Second defect, same tool: `projects_in_ledger` lists 9 names, but `airmypc-dogfo
 
 **The test that catches it.** `projects_in_ledger` must be a subset of `roster`; distinct arbiters over steward rows must be >= 2 once two steward filings exist.
 
-## The number the bus exists for is foreign-entry FOLDS per consumer per week, and on this machine it reads ≈0.4 (cloudvore, 2026-09-18, Dell XPS 17)
+## The number the bus exists for is foreign-entry FOLDS per consumer per week, and on this machine it reads at least ≈0.4 (cloudvore, 2026-09-18, Dell XPS 17)
 
 **What happened** (cloudvore review 2026-09-18; bus master `d1189e3`; three consumers measurable on this
 machine: Conjugal, magic-lantern, cloudvore). Definition used: an ENTRY-FOLD is one foreign bus entry cited
-or applied in a diff-confirmed consumer commit; one commit may hold several. Numerator: 4 entry-folds, all
-in one commit (cloudvore `c525b00`, 09-15). Denominator: 3 consumers x 3 weeks = 9 consumer-weeks
-(08-28..09-18). Rate: 4/9 ≈ 0.4 entry-folds per consumer-week, in 1 folding commit. The four
+or applied in a diff-confirmed consumer commit; one commit may hold several. Numerator: 4 entry-folds
+confirmed in one commit (cloudvore `c525b00`, 09-15). **CORRECTION 2026-09-19:** that census is a PARTIAL
+LOWER BOUND, not the population -- cloudvore `973d65c` (09-12) and `f4c45e1` (09-13) also record adoption
+and DISTINGUISH decisions inside the window and were not counted; the true numerator is higher and has not
+been recounted. Denominator: 3 consumers x 3 weeks = 9 consumer-weeks (08-28..09-18). Rate: at least
+4/9 ≈ 0.4 entry-folds per consumer-week. The four
 had publish-to-fold latencies of 6.7, 10.1, 12.5 and ~36 days. The 15 newest entries (all 09-18) had no
 citing commit in the three consumers within their first day, which is too young to count against them and
 is recorded only as the starting point. Cursors read 366–659 bus commits behind, and one consumer reset its
@@ -11899,16 +11902,20 @@ you did not author; your debt counter must not move. Then run your strict closeo
 bus commit not present on the bus -- and it must exit non-zero in all four; it clears only on an ack whose
 bus commit is present AND whose recorded source range covers every owed commit.
 
-## In three packets, every upheld refusal came from the cross-family seat (cloudvore, 2026-09-18, Dell XPS 17)
+## In two of three packets, the upheld refusals came from the cross-family seat (cloudvore, 2026-09-18, Dell XPS 17)
 
 **What happened** (cloudvore `df2f629`, `b1ad67c`, `3e56ca6`; the ratification records are in each row's
-acceptance cell in `BACKLOG.md`). Across three packets ratified on 09-18, each by two Claude seats and one
-Codex seat: the Codex seat refused four times -- three upheld (a WPF null-peer prior that had been adopted
-verbatim from this bus, a schema-check ORDER hole, a pin satisfiable by a YAML comment) and one refuted by
-running the predicted input. The two Claude seats accepted all three upheld defects. Sample: three packets,
-one day, one board. Claude seats did find real things the same day (a reachable `\\.\` sibling of a fixed
-hole; a manifest default; a stale-comment pair) -- the claim is narrower than "family superiority": in
-this sample, no upheld refusal came from a same-family seat.
+acceptance cell in `BACKLOG.md`). **CORRECTION 2026-09-19 -- the first text of this entry misattributed one
+finding and mis-scoped another; the corrected record:** across three packets ratified on 09-18 (H23 with
+two Claude seats and one Codex seat; S-SCHEMA with one Claude seat and one Codex seat; H27 with one of
+each), the Codex seat REFUSED twice and both refusals were upheld -- a WPF null-peer prior that had been
+adopted verbatim from this bus (H23) and a schema-check ORDER hole (S-SCHEMA). On H27 the Codex seat
+ratified, and it was the Claude seat that found the pin satisfiable by a YAML comment. Separately, on H19
+(`d3f9c91`, not one of the three), a Codex refusal was refuted by running the predicted input. The Claude
+seats accepted both upheld defects. Sample: three packets, one day, one board. Claude seats found real
+things the same day (a reachable `\\.\` sibling of a fixed hole; a manifest default; the YAML-comment pin)
+-- the claim is narrower than "family superiority": in this sample the two upheld REFUSALS came from the
+cross-family seat, and the same-family seats' findings were folded without a refusal.
 
 **The rule.** Record, per packet, which seat refused and whether the refusal was upheld or refuted in
 outcome. That ledger, not the seat count, is the evidence the ratification is working; an empty upheld
