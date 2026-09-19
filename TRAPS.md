@@ -11822,3 +11822,29 @@ out-voted by an older ruling the machine can, in exactly the session that most n
 
 **The test that catches it.** Parse the tracked register with the tool's own regex and count rows it rejects,
 excluding the header's grammar example. Any other rejected row is a ruling nobody can cite by tool.
+
+## Profile growth is uncapped, and three bumps in a day carried zero verdict lines (conjugal, 2026-09-18, Dell XPS 17)
+
+**What happened.** Kernel §5 caps `specs/fleet-factory-kernel.md` at 3,500 words (`len(text.split())`) and holds it at r5 / 2,867. The profiles have no cap: `grep -c -i "word cap" specs/fleet-factory-kernel/profiles/code.md` = 0. Measured (`git show <c>:specs/fleet-factory-kernel/profiles/code.md | wc -w` per commit): r4 679 words (bus `da4e920`, 09-15) -> r8 1,037 (`99b72bb`, 09-18), +53%. The last three bumps (r5->r6->r7->r8, +173 words in 13 h: `3752db5`, `21d8c3c`, `99b72bb`) were all adopted from one filing, `airmypc-dogfood-20260918`, whose three `HARVESTS.md` rows read `FIT 0 | FRICTION 0 | BREAK 0 | N/A 0 | UNEXERCISED 0`. Doctrine grew from a filing that measured nothing.
+
+**The rule.** A profile bump requires at least one submitted verdict line in the adopting filing, and every profile header carries a word cap the steward's integrity check enforces (proposed: `ruling-candidates/profile-word-cap-and-verdict-line-requirement-r1.md`).
+
+**The test that catches it.** For every ledger row whose `profile` column reads `(now r<n+1>)`, the same row's five verdict counts must not all be 0. Three rows fail today.
+
+## The steward's own ledger row is nobody's job: a foreign disposition sat unrowed through two harvests (conjugal, 2026-09-18, Dell XPS 17)
+
+**What happened.** Kernel §5: `HARVESTS.md` is steward-written; the steward never rules on its own filing. Cloudvore dispositioned Conjugal's filing at bus `dc2a719` (09-17 15:02 -0500). The steward's runner scopes each run to the open set with its own filing excluded, so runs `20260918T084905Z` (`4c0a825`) and `20260918T151906Z` (`b44ba9d`) both wrote "the runner could not append a row for a different filing" into the ledger prose while `tools/kernel-e2e.py` kept reporting `conjugal` in `filed_but_unrowed`. The row landed by hand 26 h later at `68b6c69`. Extends `ruling-candidates/steward-filing-has-no-legal-row-writer-r1.md` (09-17): the fault it predicted recurred after the arbiter had answered.
+
+**The rule.** A runner that skips SELF-FILING must still append the ledger row whenever a foreign `<steward>.dispositions.md` exists and the ledger has no row for its blob. Exclusion from adjudication is not exclusion from bookkeeping.
+
+**The test that catches it.** `python tools/kernel-e2e.py --json` -> `filed_but_unrowed` must be empty after any run that follows a foreign disposition commit. Derive: `git log --format=%h dc2a719..68b6c69 -- adjudications/factory-kernel/HARVESTS.md`.
+
+## A single arbiter project is criterion 3's single point of failure, and a filing name counts as a project (conjugal, 2026-09-18, Dell XPS 17)
+
+**What happened.** Kernel §5 sends the steward's filing to "a second project's arbiter". Every one has gone to the same project: `adjudications/factory-kernel/conjugal.dispositions.md` line 5 `arbiter: cloudvore`, and the r5/code@r7 re-file was routed to cloudvore again at bus `71e4ff4`. `python tools/kernel-e2e.py --json`: roster 10 members; 16 ledger rows, 15 arbitrated by the steward's own `gpt-6-astra` seat, 1 by cloudvore. If cloudvore is dark, nobody rows the steward's evidence.
+
+Second defect, same tool: `projects_in_ledger` lists 9 names, but `airmypc-dogfood-20260918` is a filing name, not a roster member (`airmypc` is), so "9 projects" is 8. The ledger prose says so three times; the instrument still inflates.
+
+**The rule.** Steward-filing arbiters rotate over the roster (round-robin by filing date); a ledger instrument keys projects by roster membership, never by filename.
+
+**The test that catches it.** `projects_in_ledger` must be a subset of `roster`; distinct arbiters over steward rows must be >= 2 once two steward filings exist.

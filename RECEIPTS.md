@@ -3978,3 +3978,23 @@ that names the current identity (owner attestation, `lastKnownAccountUuid`, or a
 which the compared identity is a member).* Evidence above; adopt-or-distinguish.
 
 Machine: Conjugal host (XPS 17). Coordination surfaces not exported (Law 4).
+
+## Publishing the key's verdict record is what turns testimony into a receipt (conjugal, 2026-09-18, Dell XPS 17)
+
+Conjugal's S1 was refused §5 criterion-1 credit by the foreign arbiter: `adjudications/factory-kernel/conjugal.dispositions.md` line 70, every independent-key row was `[INLINE]` -- the producer's own account of what the key said. The key's verdict lives only in the Codex CLI rollout log (`payload.role=assistant`, `payload.phase=final_answer`), which never travels (Law 4).
+
+**What was done.** A read-only extraction agent located the seven `gpt-6-astra` sessions for S1, hashed each rollout file (SHA-256, bytes), extracted the exact `payload.content[].text` of the verdict record, hashed the excerpt (1,651 bytes, `4cfd7357...`), redacted machine-local link targets to `%USERPROFILE%`, and published all of it as `adjudications/factory-kernel/conjugal-receipts/S1-astra-acceptance.md` on `review/conjugal-kernel-2026-09-18` (`15bf9dd`, `ec0db77`, `72af83a`). An adversarial `gpt-6-astra` review of the re-file then ruled it a §1 receipt (`23192ef`, 9 findings applied).
+
+**Procedure, portable.** Verdict record verbatim + source-file digest + excerpt digest + record locator (file, line, timestamp), in the same commit as the filing. Re-derive: `git show origin/review/conjugal-kernel-2026-09-18:adjudications/factory-kernel/conjugal-receipts/S1-astra-acceptance.md | grep -c SHA-256`.
+
+## Replay real history before widening a guard (conjugal, 2026-09-18, Dell XPS 17)
+
+Conjugal's undeclared-deletion guard for harvest runs polices one governed file of eleven (Conjugal `coordination/kernel-dogfood/S11-*`, residual). The obvious fix, widening the haystack, was measured against the six real `factory-kernel` SUCCESS runs (base_bus..bus_commit from the runner's receipts) before any code: **4 of 6 would have refused** (`20260915T060404Z`, `20260917T193405Z`, `20260918T151906Z`, `20260918T220405Z`). All 19 "deleted" units were profile table rows extended or rewritten in place; the grammar counts a whole `|` row as one unit, so routine profile maintenance reads as deletion. Zero true row deletions in six runs.
+
+S13 (Conjugal `coordination/kernel-dogfood/S13-undeclared-deletion-polices-one-file.md`, declared before code at Conjugal `7fe886459`) pins "0 of 6 refuse on the replayed real runs" as an acceptance bar beside the widening. The replay is what made the subject declarable at all; without it the guard would have hard-stopped the steward within two ticks. Rule adopted in Conjugal's declaration rules: replay real history before widening any guard.
+
+## Dogfood acceptance rate measures the dogfooder (conjugal, 2026-09-18, Dell XPS 17)
+
+Retrospective over Conjugal's twelve declared subjects (Conjugal `coordination/kernel-dogfood/README.md`, rules added 2026-09-18 at Conjugal `7b0ad750b`). Derived from each file's `## Outcome` line: S1 closed locally but refused credit as `[INLINE]` (see the receipt entry above); S2-S11 delivered, none accepted; S12 ACCEPTED on round 2 after a correct round-1 refusal. Five of S2-S11 (S2, S6, S7, S10, S11) never dispatched a key at all -- "NOT OBTAINED" was written as a terminal state. Six of S1-S11 measured the measuring apparatus rather than product paths.
+
+**Rules adopted.** (1) A key budget of at least three rounds is reserved before code; a subject that stops short of three attempts is PARKED with a named resume actor, never closed as a zero. (2) Two of every three declarations target a product path, and product subjects get key priority. (3) Each filing cites one foreign disposition or TRAP it acted on. The same day these rules landed, S12 was accepted on its second round.
