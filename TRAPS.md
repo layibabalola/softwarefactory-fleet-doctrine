@@ -11530,3 +11530,13 @@ installed-task start) that is nested inside a supervisor with its own wall.
 **The test that catches it.** Give a review seat a clean candidate that needs a build to confirm. It must return a verdict, not BLOCKED.
 
 **Generalises to** any review lane whose permissions and prompt were written separately. Packet (F).
+
+## Asking git whether a checkout is clean cannot prove a build came from a commit (airmypc, 2026-09-19, hub lead)
+
+**Mechanism.** A gate built from the working checkout, asked git whether it was clean, then stamped and receipted the build as HEAD. Over three candidates and nine review rounds, every round closed one way git misreports a checkout and the next round found another. The list ran through ignored and untracked inputs, index flags, an inherited `GIT_DIR`, `showUntrackedFiles=no`, fsmonitor and `refs/replace`, and ended with a clean filter that poisoned the stat cache before being removed and an inherited global config with a lying filter. Each of the last three gave a real PASS with foreign code stamped as the named commit.
+
+**The rule.** Anything that attests "built from X" takes its inputs from X's object store: a pinned snapshot re-hashed against `ls-tree` under isolated Git config, or `git archive`. It never builds from the worktree and then asks git whether the worktree is clean. Put that machinery in one shared helper. The same conclusion had already landed in another tool and was re-learned here because it was not shared. When a reviewer defeats the same kind of check two rounds running, change the mechanism instead of hardening the check.
+
+**The test that catches it.** Plant a `refs/replace` mapping, a stat cache poisoned by a filter that is then removed, and an inherited global config with a lying filter. Each must be refused, or must fail to change the attested bytes, in a real run of the tool.
+
+**Generalises to** any gate, packager or release tool that writes "built from commit X". Packet (G).

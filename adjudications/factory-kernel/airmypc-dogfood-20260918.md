@@ -99,7 +99,35 @@ Sanitized: no credentials, no transcripts, no machine state beyond the mechanism
   sandbox in a disposable clone. A BLOCKED caused only by the sandbox is a lane outcome, never a verdict or a round.
 - **Local status.** R01 slice 1 landed on cross-family static review plus a fresh-context same-family execution key
   that ran the exact commit in a clean clone (AirMyPC DECISIONS 2026-09-18 Ruling 15).
+## G. Prove a build came from a commit by building from the commit's bytes, not by asking git about the checkout  (TRAP + normative)
+
+- **Mechanism.** The AirMyPC VS/App gate stamped and receipted its build as "built from HEAD" after asking git whether
+  the working checkout was clean. Across three candidates and nine key rounds (2026-09-18/19), each round closed one way
+  git can misreport a checkout and the next round found another: untracked and ignored inputs (`[Bb]uild/`),
+  `--skip-worktree` / `--assume-unchanged`, an inherited `GIT_DIR`/`GIT_WORK_TREE`, `status.showUntrackedFiles=no`, fsmonitor,
+  `refs/replace`, a clean filter set just long enough to poison the index stat cache and then removed, and an inherited
+  `GIT_CONFIG_GLOBAL` with a lying filter. The last three each produced RESULT=PASS with foreign code stamped as the named
+  commit, in a real gate run, from a fresh-context execution key.
+- **Harm.** A receipt that names a commit while the bytes it covers came from somewhere else. Downstream digest and stamp
+  checks cannot detect it, because the gate wrote a consistent receipt. Every fix to the check is one more patch on a
+  mechanism with no floor.
+- **Invariant.** Anything that attests "built from commit X" obtains its inputs from X's object store: a pinned snapshot
+  (`clone --shared` of the full SHA, detached checkout, isolated Git config set before any git call, every file re-hashed
+  against its `ls-tree` blob, index-flag refusal) or `git archive`. It never builds from the worktree and then asks git
+  whether the worktree is clean. When a key defeats the same kind of check two rounds running, stop hardening the check
+  and change the mechanism.
+- **Why it recurred.** AirMyPC's packaging tool had already reached this conclusion and landed a snapshot build (its
+  DECISIONS 2026-09-18 Ruling 13), but the machinery lived inside that one tool. The next script that needed provenance
+  re-learned it across three candidates. **Provenance belongs in ONE shared, hardened helper** that every attesting tool
+  calls.
+- **Also seen here.** Text pins on script controls prove presence, not behaviour: `Ok = ($LASTEXITCODE -eq 0) -or $true`
+  passes a pin on the original text. Pin controls with a behavioural test (build the hostile repository, run the tool's own
+  call) and mutation-test it. A hosted CI run that was dispatched is not a hosted CI result: four runs never started (a
+  billing block) and were reported as dispatched without being confirmed.
+- **Local status.** Q03 slice 1 closed at park 3 with nothing landed, and candidate 3 is banked. The next slice ports the
+  snapshot machinery into one shared module (AirMyPC DECISIONS 2026-09-19 Ruling 18, ledger [518]).
+
 ## Proposed destinations
 
-TRAPS.md (A, B, C, D, E, F) and the fleet-factory-kernel review surface (A, C, E and F as normative kernel requirements).
+TRAPS.md (A, B, C, D, E, F, G) and the fleet-factory-kernel review surface (A, C, E, F and G as normative kernel requirements).
 Each sibling records ADOPT or DISTINGUISH.
