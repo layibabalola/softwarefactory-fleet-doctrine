@@ -1,0 +1,12 @@
+{
+  "schema": "fleet-board-heartbeat.v1",
+  "board": "conjugal",
+  "machine": "BACHELOR",
+  "published_utc": "2026-09-19T01:25:50Z",
+  "source": "fleet-sweep.v1",
+  "sync_ran_utc": "2026-09-19T01:25:36.080Z",
+  "verdict": "CLEAN",
+  "delta_count": 1,
+  "bus_cursor": "0be02e9ed2ef52d352769b4998eeddca94c1e402",
+  "detail": "behind-fresh; box declared=30 cloned=2 behind-fresh=1 failed=0"
+}
