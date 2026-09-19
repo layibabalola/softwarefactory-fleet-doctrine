@@ -11944,3 +11944,40 @@ third, name what is being serviced.
 **The test that catches it.** For each commit in the window, `git diff --name-only <sha>^1 <sha>`; bucket
 by path prefix; report the non-code buckets by count. Then read your rotation/closeout guard for any
 tracked file a scheduled task writes.
+
+## The same MSIX launch error had two different owners two days apart; force-restarting Appinfo to fix one packaged app orphaned the next one (cloudvore, 2026-09-18, Dell XPS 17)
+
+**What happened** (machine-level, Windows 11 26200; evidence in
+`~\.claude\ops\evidence\codex-desktop-recovery-20260918\`, case file
+`~\.codex\skills\claude-desktop-recovery\references\incident-2026-09-18-codex.md`). On 09-16 Claude
+Desktop failed to launch with "Another program is currently using this file" and AppModel-Runtime
+events 215/215/208 `0x80070020` "error encountered converting the job". An elevated Process Explorer
+search found the Appinfo service host holding a container job for a version of Claude two updates old;
+force-terminating that host (graceful restart had timed out) fixed it. On 09-18 Codex Desktop failed with
+the identical dialog and the identical event triplet after its own auto-update. Replaying the Claude
+remedy would have done nothing: the Codex blocker, `\Container_OpenAI.Codex_26.908.…-<user SID>` at the
+object-namespace root, was **OBJ_PERMANENT with HandleCount 0 and 0 member processes** -- nothing held
+it; its teardown never ran. The most likely reason it never ran is the 09-16 Appinfo kill: Appinfo hosts
+the container lifecycle of every Start-launched packaged app, so killing it to free one app strands the
+teardown of every other packaged app it had launched, and the strand surfaces only at that app's next
+update. The same elevated scan shows the next occurrence already armed: the new Appinfo host holds a
+handle to the live Claude 2.110 job.
+
+**The mechanism.** Desktop AppX container jobs are named `\Container_<PackageFullName>-<UserSID>` (or
+`-PackagedService`), created permanent, made temporary at teardown. An old-version job that survives
+blocks the next version's container for that package family with a sharing violation. Three survival
+modes are indistinguishable from the dialog and the event log, and only the object header
+(`NtQueryObject` basic information) separates them: member PIDs > 0 = processes still in the old
+container; HandleCount > 0 = a leaked handle (find the holder; on 09-16 it was Appinfo); HandleCount 0
+and PERMANENT = an orphan that only `NtMakeTemporaryObject` (or a reboot) removes. Sysinternals
+`handle64 -a` returns "no matching handles" for ALL of these object types even elevated -- that empty
+result is not evidence. A walk of the system handle table for Job-type handles, or Process Explorer's
+driver-backed search, is.
+
+**The test that catches it.** Before choosing a remedy for a `0x80070020 ... converting the job` launch
+failure, enumerate `\` for `Container_<PackageName>_*` jobs (no elevation needed; `NtQueryDirectoryObject`)
+and compare each job's version with `Get-AppxPackage`. A job whose version is not registered is the
+blocker. Elevated, read its header: assert which of the three modes you are in BEFORE acting, and refuse
+to restart Appinfo while any other packaged app is running from Start (each one becomes a future orphan).
+Read-only tool that does the enumeration and classification, any package:
+`~\.codex\skills\claude-desktop-recovery\scripts\Find-OrphanContainerJobs.ps1` on this machine.
