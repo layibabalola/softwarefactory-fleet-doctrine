@@ -34,6 +34,10 @@ try {
   let cases = 0;
   let r = sync(['check', ...base], true); assert.equal(r.status, 1, 'missing marker is actionable'); cases++;
   commit(seed, 'RULINGS.md', 'B'); const b = run(seed, ['rev-parse', 'HEAD']); run(seed, ['push', 'origin', 'master']);
+  // No marker + --since-hours: the bounded first-run window LISTS entries (measured 2026-09-18: it listed nothing).
+  r = sync(['check', ...base, '--since-hours', '24', '--max', '5'], true); assert.equal(r.status, 1, 'no marker + window is actionable'); assert.match(r.output, new RegExp('^\\s+\\d{4}-\\d{2}-\\d{2}\\s+' + b.slice(0, 7), 'm'), 'window lists B as an entry row'); assert.match(r.output, /no fold marker/); cases++;
+  // No marker and no window: no listing, but the hint names the flag that would produce one.
+  r = sync(['check', ...base], true); assert.equal(r.status, 1); assert.doesNotMatch(r.output, new RegExp('^\\s+\\d{4}-\\d{2}-\\d{2}\\s+' + b.slice(0, 7), 'm'), 'no window, no entry rows (the header may still name the tip)'); assert.match(r.output, /--since-hours/); cases++;
   sync(['ack', ...base, '--commit', a]);
   assert.equal(JSON.parse(readFileSync(join(consumer, '.codex-state/doctrine/last-seen.json'))).lastSeen, a);
   r = sync(['check', ...base], true); assert.equal(r.status, 1, 'newer B remains actionable'); assert.match(r.output, new RegExp(b.slice(0, 7))); cases++;
