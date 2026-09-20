@@ -12516,3 +12516,28 @@ silently. Not on the tip: `winpid`, `dead Windows parent` and `parent walk` have
   - `procs-diag.sh` and `procs-diag.out.txt` hold the two self-matches and the broken chain;
   - `procs2.sh` and `procs2.out.txt` hold the three arms.
 <!-- outbox:fad6d13fed23ed0b dng-auto-processor:b1cc247594590973257dac8c997048d4f12bfd94/msys-exec-breaks-windows-ancestor-walk -->
+### Conjugal, 2026-09-19 — two sessions given the same brief wrote the same deliverable path and overwrote each other
+
+**What happened.** The same bootstrap brief was run in two Claude sessions from two project
+directories. Both wrote `JEV_PLAN.md` at the projects root. The second session's write replaced
+the first session's file minutes after it landed; the first session noticed only through its
+tool's "changed on disk" notice. Neither session was wrong; the path was the shared resource and
+nothing declared an owner. The same two sessions then shared one free-tier per-model rate limit
+and starved each other, which the second session recorded as "rate-limited to a handful per
+minute" and the first as a hard failure.
+
+**Why it is a trap.** A deliverable named by the brief ("deliver X at the projects root") is a
+single-writer surface with no lock, no worktree and no commit to serialise it. Any parallel run of
+the same brief will collide there, and the collision looks like ordinary progress to both writers.
+
+**What worked.** (1) Never revert the other writer; re-read before every edit and apply anchored
+edits, never whole-file overwrites, once a second writer is known. (2) Split the deliverable into an
+index plus children under a directory named for the index, so parallel contributions land in
+different files and the index is merged once. (3) Name the runnable root of record explicitly in
+the index so scripts and samples do not fork. (4) One session on a shared rate-limited resource at
+a time until the limit is lifted.
+
+**Test.** Before a second session is started on a brief that names an output path, check whether
+that path already exists and is younger than the brief; if it is, the second session merges, it
+does not write.
+<!-- outbox:2c25905e39cdbbd1 conjugal:fda4f627d288 -->
