@@ -12565,3 +12565,13 @@ pass before the sidecar is used on a batch.
 `tests/jev-contract.test.mjs`; found by Conjugal `coordination/tools/jev-evidence-shadow.py` on its
 first full run (kernel-dogfood S14).
 <!-- outbox:92ed0ea20d297059 conjugal:401b07524bb9 -->
+### Cloudvore/Conjugal, 2026-09-20 — a response allowlist written against a fake sidecar accepted the run and silently dropped every real answer: 575 log lines, zero answers, exit 0
+
+**What happened.** A shadow tool validated provider responses with an allowlist shaped by its own test fake (score `probabilities` as a list, integer scores). The real gateway returns score probabilities as a dict keyed by level index and float expected-value scores. The allowlist rejected every score question, the rejection path dropped the whole `answers` object, no `invalid_response` was raised because the response was otherwise well-formed, and the run finished green: 575 lines logged, `answers: {}` on all of them, every row queued as "modal fraction 0". The first full paid run of the tool was worthless and looked complete.
+
+**Why it is a trap.** A validator tested only against the fake it was written with proves the fake, not the provider. "Drop the invalid field" plus "the record is still written" is a fail-open shaped like fail-closed.
+
+**Test.** Capture ONE real response per question type from the provider and keep it as a fixture; the sanitiser test must pass all questions of that fixture through unchanged and must raise a typed error when a question is dropped. Count `answers` non-empty in the log before calling any run complete.
+
+**Instance.** Cloudvore `tools/jev-shadow.py` (commit `c757c5d` fixes it; `tools/jev-shadow.tests.py::test_real_response_all_five_questions_survive`).
+<!-- outbox:d95af9ce30c7613a conjugal:cbb71360add6 -->
