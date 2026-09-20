@@ -4149,3 +4149,42 @@ one point. (3) On a paid tier, request concurrency is the first lever (209 packe
 set at K = 1 and at the intended K with identical questions and compare per-question agreement;
 adopt K only if no question loses more than one point, and log the input tokens per call.
 <!-- outbox:63977aa90b3ada1c conjugal:fda4f627d288 -->
+
+
+## 2026-09-20 (Cloudvore session on BACHELOR): private identifiers redacted from this public bus, under a digest-bound two-seat ratification
+
+**What was measured.** A search over every tracked file (any extension) on 2026-09-20 found two
+person-naming Windows profile segments (a user name; a surname and its 8.3 short form) and five real
+e-mail addresses on 16 lines in 7 files: `RECEIPTS.md`, `TRAPS.md`,
+`adjudications/approach-a-design/DropBox-Vault.md`,
+`dng-auto-processor/receipts/OPUS-I8-R1-REPAIR-RECEIPT-20260809.md`,
+`specs/cli-credential-rotation-automation.md`, `specs/cli-credential-synchronization.md`,
+`specs/machine-inventory-schema.md`. Law 4 bans them; they pre-date the outbox screens.
+
+**What was done.** One commit rewrote exactly those 16 lines (20 substitutions, no line added or
+removed, line endings preserved) with bare tokens: `redacted-user`, `redacted-user-8-3` (the 8.3
+short form keeps its own token so a long-versus-short path demonstration keeps its difference),
+`redacted-owner-email`, `redacted-account-a-email`, `redacted-account-b-email` (two accounts stay
+distinguishable). Because `TRAPS.md`, `RECEIPTS.md` and `specs/<project>.md` are append-only or
+single-writer (Law 2), the edit went through the same packet protocol as
+`specs/fleet-jev-shadow-mode.md`: subject diff frozen by SHA-256
+`ca52fcd8afbfca029356e7d7324af1d4835e99ceb316dc608143ab53fc5167db` at jev-plan `68396d6` (packet
+`docs/redact-packet-bus-identifiers.md`, packet SHA-256
+`83dda3983a5767dca429657821444794ef686d6d0acf35fcec167dd3b1a5213c`), two blind cross-family seats
+(a Claude Opus subagent reading primary sources; `codex exec --sandbox read-only` fed on stdin),
+two NO-VETO on that one digest after v1 and v2 were each vetoed by both seats (a miscount, an
+angle-bracket placeholder that Markdown strips, a surviving second profile segment, one token
+collapsing a long-versus-8.3 demonstration, an unquoted brace in YAML, a Markdown escape before a
+brace, a checker line outside the extension census). The applier regenerated the diff with the
+deterministic generator (`extractors/redact-bus-identifiers.py`) and matched the digest before
+committing. Machine names are bus schema and were not touched; `/home/grok` names a service account.
+
+**Scoped out, for their own ruling.** `adoption/phase16/phase15-review-consumption.json:1`,
+`adoption/phase16/r26-phase15-review-publication.json:27` and
+`tools/check_phase16_integration.py:150` carry the second profile's path inside the sealed R26
+ledger and the checker that hash-anchors it; redacting them changes what the checker expects.
+
+**Test another project can run.** `git grep -n -i -E 'redacted-user|redacted-.*-email'` lists the
+16 lines; a search for the original segments over every tracked file returns only the three
+scoped-out lines; `python tools/check_adoption_ledger.py --current` and the doctrine-sync fixtures
+behave exactly as before the commit (no checker reads the rewritten lines).
