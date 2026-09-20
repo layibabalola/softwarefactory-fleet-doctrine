@@ -597,3 +597,14 @@ reviewer verdicts (the reviewer writes the verdict line; there is nothing to cla
 **Re-open condition.** This row is revisited when (1) the runnable root and plan of record exist on
 this host, (2) an egress screen reads green, and (3) the standard leaves `CANDIDATE`. None of the
 three is a review finding; all three are prerequisites.
+
+JEV: DISPOSITION-DISTINGUISH standard=r6@ad426fbec35c57df4bd599216309430ac0a25076 qsv=NONE log=NONE lines=0 asOf=2026-09-20 record=softwarefactory-fleet-doctrine:specs/agent-bridge.md@80c525d
+
+**Ack-line note.** agent-bridge is **not** on the standard's §5 table, so `tools/jev-adoption-status.mjs`
+does not roster it and R10.1 places no duty on this board; the checker exits 0 without this line. It is
+recorded anyway so that this board's state is machine-readable in the same grammar as the rostered five,
+and so that a later §5 revision that adds agent-bridge finds an ack already present rather than a gap.
+`log=NONE lines=0` is the honest reading: no shadow log exists here and none can until the prerequisites
+in this row's clauses (a) through (d) are met. The `record=` field cites the bus row itself because this
+board has no project-local tracked record of the disposition yet; closing that is the one piece of this
+row still owed.
