@@ -1130,3 +1130,46 @@ is a reason to route to review rather than a defect. `urgency` returned 0.6 / 0.
 **Bounds of this receipt.** n = 1 synthetic case, 2 runs. It establishes that the route works from this
 OS user on this machine and that the fields exist; it measures no agreement against any incumbent rule,
 and it licenses nothing under §2.4.
+
+### ADDENDUM 2026-09-20T22:17Z — kernel revision PINNED, and both workstreams terminate at one blocker
+
+Two measured additions. Neither records an ADOPT and neither changes a disposition.
+
+**1. The kernel declaration is now pinned to a revision.** Adobe's `KERNEL:` block above has always been
+honest — `DOGFOOD-PENDING · kernel r4 · code@r4`, `ADOPT: not recorded` — but it never named WHICH
+kernel revision it referred to, so `Get-DoctrineDispositionDebt.ps1` correctly reported it as
+*mentioned but not blob-pinned*: a statement about an unknown revision. The subject is bus blob
+**`6821c4c3390712522b699e72a1781bc9d89a771a`** (`specs/fleet-factory-kernel.md` at bus HEAD `df88193889d0fee2a3297965634e5330adcfc997`). The
+`DOGFOOD-PENDING` state and the absent ADOPT are unchanged and are re-asserted against that blob.
+
+The deferral reason already on this surface is principled and still true: a kernel instance map cannot
+land in our tree while the candidate is frozen.
+
+**2. Kernel dogfooding and product code are blocked at the SAME point, and it is no longer identity.**
+Derived this tick, after the owner completed the reviewer identity enrollment at 2026-09-20T21:33Z:
+
+| Axis | State |
+|---|---|
+| `reviewer-identity-binding` | **ok** — MEASURED IDENTITY_MATCH against the live account |
+| `cli-identity` | ok — CLI and Desktop both on org `b59121b3` |
+| plan usage | ok — 5 h 13%, weekly 31% |
+| product | `state.yaml:40` `…ACCEPTANCE_RETRY_READY`; `next_action: AWAIT_R8_DUAL_INDEPENDENT_PUBLICATIONS_THEN_ACCEPTANCE_PREFLIGHT` |
+| kernel dogfood | `origin/review/adobe-ingester-kernel-2026-09-17`: `SUBJECTS: end-to-end 0 · 1 blocked at acceptance closure` |
+| `AdobeIngesterFactory-Opus` / `-Sonnet` | **Disabled**, ledger: "AllowDemandStart=false and zero non-null triggers" |
+| `AdobeIngesterFactory-AcceptanceTransaction` | Disabled |
+| `.factory/acceptance/` | **0 files against 32 reviews** — nothing has ever closed |
+
+So: acceptance closure needs two INDEPENDENT reviewer publications; reviewer publications need the
+reviewer tasks startable; no lane may self-enable. The kernel's single subject is blocked at acceptance
+closure, and so is the product. **One posture gates both workstreams.**
+
+Two things that would be easy to misread, so stated plainly. The reviewer tasks' `LastTaskResult 125`
+dates from **2026-09-14** and PREDATES Sol's reviewer-pair re-pin at `c622832`; the launcher pin census
+run after this morning's repair reports `drift_tasks 3` and no reviewer task among them. So this is a
+**deliberate governance posture, not pin drift** — do not "fix" it as a pin. And the auditor has not
+enabled or started any reviewer or acceptance task and must not: lifting that posture is Sol's act on
+the ledger, now that the release precondition it named (a fresh `IDENTITY_MATCH`) is satisfied and
+measured. Filed to Sol at advisory ingress `10ccd732` seq 7.
+
+Bounds: measured receipt only, on Adobe's own single-writer surface. No disposition recorded, no
+`.factory/` write, no lane seat, no task enabled, and Sol's in-flight wake receipt was not opened.
