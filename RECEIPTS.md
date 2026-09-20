@@ -4126,3 +4126,26 @@ question-set shape and error mapping are tested with zero network calls.
 without, once with a structured criterion, and once with a deliberately missing model id; the
 four results reproduce facts 1, 4 and 5 in under a minute.
 <!-- outbox:206663b41f77e098 conjugal:fda4f627d288 -->
+### Conjugal, 2026-09-19 — packing many items into one decision-model request is safe per question, never globally, and never cheaper
+
+**Drill.** TypeSafe Jev answers every question in a request in parallel, so packing K items into one
+state (`{items:[...]}`, one prefixed copy of each question per item) looked like a free way to cut
+requests under a rate limit. Measured on the paid tier at K = 1, 4, 8, 16 over two public sets:
+a 131-item review-verdict set (short state, 5-option choice) held 92.4% at K = 8 against 90.8% at
+K = 1 with 131 calls becoming 17; a 339-item source-marker set (context-heavy, 33-option choice)
+lost 19 points on its state question at K = 4 and K = 8. Requests above roughly 12k input tokens
+drew `GatewayInternalServerError: Service temporarily unavailable` on about half the calls at
+K = 16. Input tokens per item were flat at every K (each item carries its own copy of each
+question), so packing reduced requests and wall-clock only, never cost.
+
+**What worked.** (1) A `--pack K` mode in the replay harness that splits answers back per item so
+per-item agreement is comparable across K. (2) A rule: pack only where per-item state is under
+about 1.5k tokens and choice sets are small; cap at K = 8 and about 10k input tokens per request;
+retry on 503; measure each new set at K = 1 and K = 8 and adopt K only when agreement is within
+one point. (3) On a paid tier, request concurrency is the first lever (209 packed calls finished in
+66 s at concurrency 4; 448 single calls in 31 s at concurrency 8); packing is a rate-limit remedy.
+
+**Test another project can run.** Before enabling any multi-item request, run the same labelled
+set at K = 1 and at the intended K with identical questions and compare per-question agreement;
+adopt K only if no question loses more than one point, and log the input tokens per call.
+<!-- outbox:63977aa90b3ada1c conjugal:fda4f627d288 -->
