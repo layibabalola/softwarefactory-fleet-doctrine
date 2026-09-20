@@ -12789,3 +12789,81 @@ to look at."
 exit 0. Measured on VIRTUAL-TEN 2026-09-20 by agent-bridge, which is itself one of the two
 unrostered writers and repaired its own line before filing this. The disposition of the checker and
 the ruling stays with their writers.
+
+*Vocabulary for the six entries that follow: a *bar* is the project's test suite run three times identically
+before a change may land; a *pin* is a test written so that one specific failure reddens it; the
+*drain* is the autonomous loop that takes queue rows to landed commits.*
+
+## Two workflows were red on master while every local bar was green (cloudvore, 2026-09-20, Dell XPS 17 + Ultra Magnus runner)
+
+**Measured** (`5a4c092`, `06a5313`): the Product bar workflow failed on every master push for
+about 36 hours (from the landing of H26 at 09-19 03:00Z) and the Tools bar for about 5 hours
+(from the landing of K06 at 09-20 15:47Z), while the cited landings had passed the local
+bar. Nothing in the project's entry chain read a workflow conclusion. One red
+was host-specific (the admin share, next entry); the other was a suite exceeding a time budget
+that the local bar does not enforce.
+
+**What held:** both were found only by reading `gh run list`. `BACKLOG.md` K12 (READY, not
+done) owns making the entry gate print each workflow's last conclusion on master; until then a
+machine-local note tells the next session to read the run list before deriving.
+
+## A self-hosted runner's service account could not open the admin share a test mapped (cloudvore, 2026-09-20, Dell XPS 17 + Ultra Magnus runner)
+
+**Measured** (`5a4c092`): the runner service runs as a real local user with a UAC-filtered
+token; mapping a drive through the administrative share (`net use` to `\\localhost\C$\...`)
+exits 2 there, so a test that did that died at its own setup and read as a product failure. The
+same test is green in the project's local bar, which runs in an elevated developer shell. A
+sibling Python suite (`06a5313`) failed only on that host because the runner user's TEMP is an
+8.3 short name and one assertion compared an unresolved fixture path with the path the tool had
+resolved.
+
+**What held:** the test now checks the map's exit code and skips with the reason when it is
+non-zero (`[SkippableFact]` + `Skip.If`; the commit body records planting an unmappable share
+and observing SKIP rather than FAIL). The path assertion resolves both sides.
+
+## A required suite of 13 tests takes 868 s; the bar's per-suite budget was 300 s (cloudvore, 2026-09-20, Dell XPS 17 + Ultra Magnus runner)
+
+**Measured** (`06a5313`, K12): `doctrine-fold.tests.py` builds a git repository per fixture
+with subprocess git; it ran 868 s locally (all 13 tests green) and exceeded the Tools bar's
+300 s per-suite budget on the runner on every push since it landed. The local bar has no time
+budget, so the local run was green and the workflow was red.
+
+**What held:** the budget was raised to 1200 s so the suite is judged on correctness; K12
+records the measured duration and owns bringing the suite under 300 s.
+
+## An installer rehearsal that searched for its own input ran on the owner's machine (cloudvore, 2026-09-20, Dell XPS 17 + Ultra Magnus runner)
+
+**Measured** (`96707df`; sources in the packet): the install/uninstall fact fell back to
+searching the build output tree for an MSI. The test project's default filter
+`Category!=Integration` is a `VSTestTestCaseFilter` property that applies only when no
+`--filter` is given; a developer's `--filter "FullyQualifiedName~InstallerTests"` replaced it,
+the fact found a local build, and it installed and uninstalled twice on the owner's machine,
+writing its canary into the live default data root. Both runs left nothing behind (canary
+intact; exe, folder, registry value and shortcut gone).
+
+**What held:** the fact now takes the MSI only from the `CLOUDVORE_MSI` environment variable,
+which the publish workflow sets, and skips when it is unset (run locally with it unset and a
+build present: 1 skipped, 0 failed).
+
+## Same-version MSI builds would install beside each other (cloudvore, 2026-09-20, Dell XPS 17 + Ultra Magnus runner)
+
+**Measured** (`f27373f` body, review record; `installer/Package.wxs` in the packet): every
+push publishes as `0.1.0` and the package declares no ProductCode, so WiX generates one per
+build. With `MajorUpgrade` at its default, the review found that a second build would install
+side by side rather than upgrade, sharing the single component, so uninstalling either entry
+leaves the exe; both blind seats reported it. `AllowSameVersionUpgrades="yes"` is now set and
+the fact asserts the attribute's value. The first runner install (`b293dde`) failed with
+msiexec exit 1619 on a path the workflow composed as `$GITHUB_WORKSPACE + "/artifacts/..."`;
+resolving the path with `Path.GetFullPath` fixed it and the next run installed and uninstalled
+green (`9fa9800`, run 35533140058).
+
+## A publication-debt reader keyed on the draft name while every ack names the review file (cloudvore, 2026-09-20, Dell XPS 17 + Ultra Magnus runner)
+
+**Measured** (`1991550`): `doctrine-debt.py` decided "already published" by the draft's file
+name; every real ack in `knowledge/bus-publications.jsonl` records the review file's path
+(`<name>.review.md`). Every publication read as `draft-ratified-unpushed` forever, and the
+rotation guard BLOCKED on a draft that had been on the bus for a day. The suite was green
+because its fixture acked the draft's own name — the assertion inspected the slice the reader
+accepted, not the one the writer writes. Fixed red-first
+(`test_an_ack_naming_the_review_file_publishes_its_draft`, in the packet).
+

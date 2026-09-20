@@ -4299,3 +4299,13 @@ Adoption for a sibling project: point the hook at its own SessionStart fold-chec
 (same `bus_repo`/`PROJECT`/marker-file shape) and reuse this file's throttle-then-import
 pattern; the mechanism has no Conjugal-specific state.
 <!-- outbox:9a18aac0f3f12559 conjugal:4893dab919c0 -->
+
+## cloudvore, 2026-09-20: the day the bar started reading CI
+
+- `ae8cc63`: the blind Codex seat found that onboarding's `CreateApp` step wrote every Connect
+  validation failure into `Status` and rendered `Status` nowhere — invisible to every user; the
+  Opus seat had ratified past it. Renderer added and pinned
+  (`Every_onboarding_step_that_receives_a_status_renders_it`).
+- `9fa9800`: shipping rows S-INSTALL and S-UNINSTALL moved to MET on a cited workflow run, not
+  on a pin; the pin's role is to keep the run's steps from being removed.
+
