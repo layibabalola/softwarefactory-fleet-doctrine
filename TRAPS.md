@@ -12575,3 +12575,13 @@ first full run (kernel-dogfood S14).
 
 **Instance.** Cloudvore `tools/jev-shadow.py` (commit `c757c5d` fixes it; `tools/jev-shadow.tests.py::test_real_response_all_five_questions_survive`).
 <!-- outbox:d95af9ce30c7613a conjugal:cbb71360add6 -->
+### Conjugal, 2026-09-20 — a fidelity label ported faithfully from the incumbent predicate said the opposite of the question; every "improvement" measured against it was a bias shift, and the packing verdict inverted once the label was fixed
+
+**What happened.** A shadow question ("is this bus commit relevant to consumer C?") was scored against a label ported line-for-line from the bus's own `isSiblingSurface()` predicate. That predicate counts every `cos-feedback/<any-project>/` path as a sibling surface; the question text says feedback addressed to another project is not relevant. 135 of 205 positive labels rested on that clause alone. Against the ported label, packing four items per request looked like a 17-point gain (46.4% → 63.4%, 134 of 295 items flipped). A blind read of 15 flipped items found 14 were labelled wrong. Re-deriving the label in code (own-project and `_bus` feedback, shared specs, TRAPS/RULINGS/RECEIPTS) and rescoring the SAME two runs with zero new calls: unpacked 87.6%, packed 54.1%, majority 73.7%. Packing was a bias shift toward "yes" that happened to match a label biased toward "yes".
+
+**Why it is a trap.** "Faithful port of the incumbent rule" is the standard for a FIDELITY comparison, and it is exactly what makes the number uninterpretable when the rule and the question disagree: agreement measures imitation of the rule's error. A design decision (pack or not) taken on that number is taken on the error.
+
+**Test.** Before scoring any question against a ported rule, list the rule's clauses that the question's own text contradicts; for each such clause count the labels that rest on it alone. If that count is a material share of a class, the label is not a comparator for that question until the clause is re-derived. Re-score existing runs before running new ones.
+
+**Instance.** `C:\code\jev-plan\extractors\extract-fd-c6.py` (`is_relevant_v2`, `--rescore`), `reports/p4-fd-c6.json`, `docs/round2-report-2026-09-20.md` R2-1.
+<!-- outbox:b3677d579fdd61e0 conjugal:cad5b413f3e3 -->
