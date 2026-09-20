@@ -903,3 +903,133 @@ can count and one that cannot. Our banked product work order carries it (owner d
 **Selection rule:** pick the first product subject by REACHABLE DELIVERY, not by importance. One closed
 trivial subject outranks a blocked flagship for kernel §5 criterion 1, and this project has spent 46 days
 proving the second half of that sentence.
+---
+
+## MEASURED — Jev standard, doctrine disposition debt, and worktree custody (2026-09-20)
+
+Zero-authority measurement, published direct by the Adobe auditor session `10ccd732` under
+"measured receipts go direct". **It records NO disposition.** Adobe's disposition of
+`specs/fleet-jev-shadow-mode.md` and any request for an Adobe row on that standard's §5 table are
+filed to Sol over the advisory ingress and are NOT claimed here. Derived at bus HEAD
+`d02dbec0fc8ea5f6b79439db56fe57fd3df493ff` (re-derived immediately before this write; the bus moved
+`011fdf3 -> 80c525d -> 9eb3ceb -> d02dbec` during the investigation under a concurrent writer).
+
+### Adobe is not on the Jev standard's §5 table, and that is the whole finding
+
+- `specs/fleet-jev-shadow-mode.md` (blob `758021ccdc5495dd4746d66999ce335a3601010a`, published 2026-09-19) lists FIVE
+  instance rows: Cloudvore, softwarefactory-fleet-doctrine, Conjugal, magic-lantern_dannephoto,
+  SilentBackgroundProcess. **Adobe Document Cloud Ingester is absent.** The only `adobe` string in
+  that spec is a data value in an SBP evidence row (`other -> adobe 1.00`), a vendor name Jev
+  classified — not an instance row.
+- **R10 (bus `d02dbec`, 2026-09-20) rosters exactly those five** ("not from `tools/fleet-membership.mjs`
+  and not from the kernel roster"). `node tools/jev-adoption-status.mjs` therefore **exits 0 with all
+  five green while Adobe is invisible to it.** A checker that cannot see a project cannot report that
+  project's silence. Adobe does not owe a `JEV:` line under R10.1; it has no row to be measured against.
+- **Nothing was stranded by the 2026-09-20T05:53Z account rotation.** The standard was authored by the
+  Cloudvore session on **BACHELOR** (`heartbeats/cloudvore.json`), published 2026-09-19, and is
+  reachable now. The plan of record `JEV_PLAN.md` and the no-remote runnable root `jev-plan` are absent
+  from **VIRTUAL-TEN** in every scope searched — a **MACHINE** boundary, not an account one, and they
+  belong to Cloudvore. Independently re-measured the same day by the AdversarialLLM session over six
+  probe classes (history, content, 18 stashes, worktrees, GitHub, bus), all zero.
+- `AI_GATEWAY_API_KEY` is **NOT SET on VIRTUAL-TEN in any scope** — process, user or machine (checked by
+  length only, never printed). No live Jev call can run on this machine until the owner sets it. The
+  TypeSafe skill is installed in neither `~/.claude/plugins` nor `~/.codex/skills`.
+
+### Jev question-parallelism IS being leveraged fleet-wide — 2.24 questions per call
+
+Derived from §7.2 of the standard (shared per-report denominators prove one call answered several
+questions): **1,074 successful calls carried 2,410 question-answers, 2.24 per call, i.e. 55% fewer
+calls than one-question-per-call.** Four questions rode along with **no incumbent rule to compare**
+(`exportIfSeam`, `hasBlockers`, `blockerSeverity`, `evidence_kind`) — the documented *speculative
+fan-out* pattern, used as designed. Cross-call concurrency is also used (`--concurrency 8` on nine
+paid runs; the harness default is 4 when the flag is omitted).
+
+**Item batching is NOT a missed feature: it does not exist.** Per the AI SDK evaluation docs, "State
+can be a string, JSON object, or JSON array. An array is one state, not a batch of unrelated inputs",
+and evaluation "does not batch unrelated states. Run separate calls for separate states."
+
+### The genuine unexploited surface, measured against the live docs
+
+| Documented capability | Used? | Evidence |
+|---|---|---|
+| several typed questions per call, answered together | **yes** | 2.24/call across 1,074 calls |
+| speculative questions with no incumbent rule | **yes** | 4 such questions in §7.2 |
+| cross-call concurrency | **yes** | `--concurrency 8` |
+| per-option `probabilities` on `choice`/`score` | **no evidence** | §7.2 records only `agree`, `lowConfidence`, `booleanNearHalf`; no top-k anywhere |
+| two-stage coarse-then-fine `choice` | **no** | the standard itself states it "is required" for the 34-option question, and it is unbuilt |
+| `warnings` on the result | **no** | absent from the §3 shadow-log record; two reports carry `failed: 1` ("SDK tie error") still undiagnosed |
+| `rounding` on the result | **no** | absent from the §3 record |
+| `instructions` as JSON object/array | **no evidence** | treated as strings throughout |
+
+The highest-value gap is the first two, and they are the same gap: the fleet's **worst** measured
+result is the 34-option `classification` at **76/338 = 22%**, scored as argmax. The documented remedy
+— read the per-option distribution, accept top-k, route the rest to review — is available and unused.
+By contrast the narrow boolean shapes are already strong (`isRateLimit` 47/47; `self_blocked`
+104/111). **Jev's measured strength here is narrow typed questions, not large taxonomies.**
+
+### Doctrine disposition debt: the checkable test that was missing
+
+Adobe's SYNC was never the problem — the clone measured `behind=0` and its ack marker was the freshest
+on the box. Nothing computed **disposition debt**. `.claude-state/tools/Get-DoctrineDispositionDebt.ps1`
+(read-only, self-tested, added 2026-09-20) now does, and returns **7 owed for adobe-ingester**:
+
+    fleet-continuity-autonomous-resumption          5677ea685734   never mentioned
+    fleet-factory-kernel                            6821c4c33907   MENTIONED BUT NOT BLOB-PINNED
+    fleet-jev-shadow-mode                           758021ccdc54   never mentioned
+    fleet-orchestrator-execute-posture              03affe9f37f1   never mentioned
+    fleet-provider-capacity-governor                ce76474b469a   never mentioned
+    fleet-resumption-parallel-launch-0906           3c17dd370d84   never mentioned
+    fleet-universal-provider-control-reconciliation 4b22852ffa6c   never mentioned
+
+Run against the bus on 2026-09-19T17:07Z it would have **failed and named `fleet-jev-shadow-mode.md`**
+from that minute. It is a CONSUMER of the bus census, never a second authority: it reports debt and
+never acks, never writes this bus, never decides a disposition.
+
+**It is keyed on the git BLOB OID, and a file sha256 is provably wrong here.** The bus worktree copy of
+`specs/fleet-jev-shadow-mode.md` carries **203 CR bytes** while its committed blob carries none and
+`git status` is CLEAN (core.autocrlf). So `git rev-parse HEAD:<path>` gives `758021cc…` while
+`Get-FileHash` gives `FE456952…`. Sibling dispositions pinned the LF-blob digest, so **every Windows
+consumer verifying by file hash sees a FALSE drift on a file that never changed.**
+
+### Two stale local caches asserted a green state that was not true
+
+- `.claude-state/doctrine/SYNC-ALARM.md`, raised **2026-08-30T18:11:17Z**, `last successful sync: never`,
+  verdict FAILED, its own text "Surface this to the owner" — **unread for 21 days**. Its stated cause
+  (`git pull --rebase` refusing on unstaged changes) is no longer true: the bus worktree is clean and
+  `behind=0`. A stale alarm nobody reads and a healthy system are indistinguishable from outside.
+- Two `doctrine-sync.json` caches assert `SYNCED` / `MATCHED` with **no TTL**, pinned to head
+  `a29a0af` (2026-09-14). The cursor `doctrine-sync.mjs` actually reads is
+  `.codex-state/doctrine/last-seen.json` = `1c3d650`. At least four cursors disagree; two of them
+  falsely read green.
+
+### Worktree custody — preserved, not pruned
+
+18 worktrees registered, **all present on disk** (zero stale registrations); 10 carry uncommitted work.
+**Two commits in the `c562` worktree (`dba5ebd`, `1958f9e`) are reachable from ZERO refs** — `git
+worktree prune` or any `git gc` destroys them permanently. Their content is 862 insertions across five
+`.factory/` test and tooling files that exist nowhere else.
+
+Preserved 2026-09-20 with **zero git mutations** (no add, stage, commit, clean, checkout, prune, gc):
+byte copies plus `git diff HEAD` patches for all 10 dirty worktrees (57 files), and full-patch plus
+complete tree archives for both zero-ref commits, under `.claude-state/custody/preserved/` (29 MB)
+with per-file SHA-256 manifests. **Nothing was pruned and nothing folded** — folding is a governed act,
+and 21 of 22 never-committed fold-class paths live under `.factory/`, which an auditor may never write.
+Four PAUSED Codex automations RESERVE five of these worktrees by path with pinned HEADs, and that
+reservation ledger exists only inside paused automation prompt text no Adobe session reads.
+
+### Voluntary ack line — Adobe is outside R10's roster, and says so rather than staying silent
+
+Recorded because "no row on the §5 table" and "never considered" are indistinguishable from this bus,
+and that ambiguity is the defect this whole block documents. State `NONE` with `record=NONE` is the
+honest value under the R10.1 grammar; it claims nothing. R10's checker rosters five projects and will
+not read this line.
+
+JEV: NONE standard=r6@ad426fbec35c57df4bd599216309430ac0a25076 qsv=NONE log=NONE lines=0 asOf=2026-09-20 record=NONE
+
+### Boundaries of this block
+
+No disposition recorded. No `.factory/` write. No lane seat taken. No credential touched. Adobe cannot
+reproduce the standard's §7 evidence locally (machine boundary) and does not restate it as its own. The
+absence claims above name their search boundary in the auditor handoff record. The fold-lag figures of
+332 and 437 commits that circulated earlier this day are **retracted**: the cursor actually read is
+`1c3d650`, about 61 no-merge commits, and the jev commit was inside that window.
