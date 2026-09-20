@@ -435,3 +435,34 @@ a verdict line") as a ground, and rejected a profile bump on the opposite ground
 already exists and G's new material is implementation and testing of it. Dispositions:
 `adjudications/factory-kernel/airmypc-dogfood-20260918.dispositions.md`, rewritten for blob `336c59d0` and superseding
 its own ruling on blob `5a9e8df5` without withdrawing any disposition that ruling recorded.
+
+## 2026-09-20 — harvest 20260920T020405Z-d6c743fe (dng-auto-processor second filing, blob d6a5f40f)
+
+| date | harvest | filing | blob | kernel | profile | subjects | FIT | FRICTION | BREAK | N/A | UNEXERCISED | unresolved BREAKs | arbiter |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 2026-09-20 | 20260920T020405Z-d6c743fe | dng-auto-processor | d6a5f40f05dd5056e32068ac22e4975b3670cc65 | r5 (unchanged) | filed code@r8 (now r9) + measured-objective@r3; two subjects declared code@r7 | 0 end-to-end; 2 declared before production, only GATE0 established before work; 0 accepted, both PARKED at attempt 2; 11 undeclared route landings not counted; window-opened-before-kernel=no | 11 | 1 | 0 | 0 | 4 | 0 submitted | gpt-6-astra (read-only arbiter seat; not a steward filing) |
+
+Derived, not asserted. Re-run: `python tools/kernel-e2e.py --json`. Before this row: `closed_end_to_end: 0`,
+`ledger_rows: 17`, `ledger_totals: FIT 86 · FRICTION 79 · BREAK 5 · N/A 0 · UNEXERCISED 49`. After it: 18 rows;
+97 FIT · 80 FRICTION · 5 BREAK · 0 N/A · 53 UNEXERCISED; closed end-to-end stays 0.
+
+**§5 criterion 1 — CLOSED END-TO-END SUBJECTS: 0.** Still 0/5. Two subjects declared before production, both PARKED at
+attempt 2; eleven route landings declared nothing and are not counted.
+**§5 criterion 2 remains MET** on the 2026-09-17 finding (`code`, `hardware-in-loop`, `measured-objective`); nothing this
+round touches it.
+**§5 criterion 3 does not start:** criterion 1 is 0, and `code`'s digest changes (r8 → r9), so neither half holds.
+Criterion 2's coverage is no substitute for criterion 3's fresh end-to-end evidence.
+**Criterion 4 has never started**; `grep -ci "fleet-factory-kernel\|factory kernel" RULINGS.md` → 0. The owner gate is
+idle, not jammed.
+**Members due — 2 have NEVER filed:** `adversarialllm`, `salesforce-tools`. Steward self-filing `conjugal` reads STALE at
+blob `8b727203`, routed to cloudvore; untouched by this run.
+
+**What this round changed:** `specs/fleet-factory-kernel/profiles/code.md` r8 → r9, +146 words (1,037 → 1,183), on two
+ADOPTED-CONDITIONAL findings from one bench — Subject identity (K3) admits a declared path-manifest identity where the
+delivery target advances under a candidate between review and landing (identities must match, intervening range touches no
+declared path, checks re-run green at the delivered tree, patch-id corroborates only); Claims (K3) admits observer-released
+claims beside leases, naming subject, owner, owned processes and the staleness-and-release rule. The arbiter's ruled texts
+named the bench inside the profile; the landed texts scope by the bench's conditions, a departure recorded in the
+dispositions file's Rule paragraph. Kernel unchanged at r5, 2,867 of 3,500 words; measured-objective unchanged at r3, 391
+words. Dispositions: `adjudications/factory-kernel/dng-auto-processor.dispositions.md`, rewritten for blob `d6a5f40f` and
+superseding its own ruling on blob `1f2eceff` without withdrawing any disposition that ruling recorded.
