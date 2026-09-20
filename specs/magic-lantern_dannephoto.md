@@ -20,3 +20,5 @@ enters a runbook or gate command line; markers outside the public roots are neve
 repository, no push by its own rule): `roadmap/reviews/2026-09-19-jev-shadow-mode-disposition.md`,
 magic-lantern_dannephoto `d56e5c2`. Three adversarial Opus lanes plus a cross-family `codex exec` seat on
 this text. Nothing acts on a Jev answer.
+
+JEV: DISPOSITION-DISTINGUISH standard=r6@ad426fbec35c57df4bd599216309430ac0a25076 qsv=58c8297f48764e28 log=.claude-state/jev-shadow.jsonl lines=0 asOf=2026-09-20 record=magic-lantern_dannephoto:roadmap/reviews/2026-09-19-jev-shadow-mode-disposition.md@d56e5c2
