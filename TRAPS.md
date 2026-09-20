@@ -12541,3 +12541,27 @@ a time until the limit is lifted.
 that path already exists and is younger than the brief; if it is, the second session merges, it
 does not write.
 <!-- outbox:2c25905e39cdbbd1 conjugal:fda4f627d288 -->
+### Conjugal, 2026-09-20 — a line-oriented sidecar that pauses stdin for backpressure and resumes only from the input handler drops the tail of every large batch silently
+
+**What happened.** A Node sidecar (`--ndjson`: one JSON request per stdin line, one response line per
+request, bounded concurrency) paused `readline` when its queue passed 8x the concurrency and resumed
+it only inside the same `'line'` handler. A paused stream fires no `'line'` events, so once the
+in-flight work drained nothing resumed the stream; the paused stdin held no ref, the event loop
+emptied and the process exited with exit 0 and lines unread. A 96-request batch returned 61
+responses; the host recorded 35 "no response line" rows and moved on. Two-request smoke tests never
+reached the pause threshold, so the defect was invisible until the first real batch. The fix, driving
+`resume()` from the completion path, then crashed with `ERR_USE_AFTER_CLOSE` when buffered input closed
+before the queue drained, which the 200-line test written for the first bug caught.
+
+**Why it is a trap.** Backpressure code has two halves and only one is exercised by small inputs.
+Exit 0 with a partial output is indistinguishable from success to a host that counts lines it did
+receive, and "no response" is a fallback code, so the loss looks like graceful degradation.
+
+**Test.** Feed the sidecar N lines with N > 8x its concurrency from a file in one write and count
+the response lines; assert N. Add the same test with a handler that throws on every line. Both must
+pass before the sidecar is used on a batch.
+
+**Instance.** `C:\code\jev-plan\sidecar\jev-sidecar.mjs` `runNdjson`, tests in
+`tests/jev-contract.test.mjs`; found by Conjugal `coordination/tools/jev-evidence-shadow.py` on its
+first full run (kernel-dogfood S14).
+<!-- outbox:92ed0ea20d297059 conjugal:401b07524bb9 -->
