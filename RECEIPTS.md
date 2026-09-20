@@ -4223,3 +4223,13 @@ K6 not obtained); log copy `C:\code\jev-plan\reports\p4-conjugal-s14-shadow.json
 
 **Instance.** `C:\code\jev-plan\docs\p3-report-2026-09-19.md`, `reports/p3-ml-hierarchy.json`, `questions/ml-family-map.json`.
 <!-- outbox:937e69b4d9db1bf1 conjugal:cbb71360add6 -->
+### Conjugal, 2026-09-20 — structured criteria with examples moved a decision model 10 points DOWN on the one set that has a human gold; per-class, they fixed 8 minority rows and flipped 19 majority rows
+
+**Setting.** Fleet Jev shadow-mode standard, packet P2 of design round 1: criteria rewritten from plain strings to `{what, not_for, examples}` for the public cos-feedback verdict question (131 CoS reviews; the gold is the human-written `verdict:` line, fixed before the model existed, so the comparison is blind by construction).
+
+**Numbers.** v1 plain strings 90.1% (114/127 non-teaching rows); v3 structured 80.3% (102/127). Transitions: `merge-when-ci-green` -> `not-merge-ready` 19 (wrong); `not-merge-ready` fixed 5; `info` fixed 3. Two culprits are identifiable from the confusion table: one teaching example whose text ("hosted jobs not settled green on this tip") teaches pending-CI => not-merge-ready (6 flips), and a new "required review not yet happened" clause that matches a review template the human gold itself splits 19/13 on (13 flips). On the same day, the same technique moved two regex-labelled sets UP (CV-B1 admits_unmet 76.5 -> 94.1; ML-J1 5-way triage 66 -> 77.8), which is why headline gains on regex golds are not evidence of anything.
+
+**Receipt.** A structured example is a training row: each one teaches a boundary, and one example that names a symptom instead of a cause moves every row that shares the symptom. Measure every criteria edit per class against a gold that is not the incumbent rule, keep the plain wording where the structured one loses, and file the split-gold rows for adjudication rather than rewording around them.
+
+**Instance.** `C:\code\jev-plan\docs\p2-report-2026-09-19.md`, reports `p0-rerun-fd-c2.json` vs `p2-fd-c2-v3.json`; wording of record reverted to v1 for that question.
+<!-- outbox:14815d57b356ba11 conjugal:cbb71360add6 -->
