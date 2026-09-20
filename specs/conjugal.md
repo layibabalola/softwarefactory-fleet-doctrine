@@ -362,3 +362,5 @@ no dead-man wake invokes it. No advisory promotion: Conjugal has no K2 authority
 (ADOPT-QUEUED; owner of the queued register row: the Conjugal dispatcher session that holds S14). Record: Conjugal `coordination/doctrine-folds/20260919-jev-shadow-mode-disposition.md`
 (single-entry disposition, fold marker unmoved, no ack). Three adversarial Opus lanes plus a
 cross-family `codex exec` seat on this text; nothing here acts on a Jev answer.
+
+JEV: DISPOSITION-DISTINGUISH standard=r6@ad426fbec35c57df4bd599216309430ac0a25076 qsv=NONE log=scratchpad/jev-capacity-shadow.jsonl lines=515 asOf=2026-09-20 record=conjugal:coordination/doctrine-folds/20260919-jev-shadow-mode-disposition.md@7e5515348

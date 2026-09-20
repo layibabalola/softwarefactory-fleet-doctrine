@@ -4233,3 +4233,14 @@ K6 not obtained); log copy `C:\code\jev-plan\reports\p4-conjugal-s14-shadow.json
 
 **Instance.** `C:\code\jev-plan\docs\p2-report-2026-09-19.md`, reports `p0-rerun-fd-c2.json` vs `p2-fd-c2-v3.json`; wording of record reverted to v1 for that question.
 <!-- outbox:14815d57b356ba11 conjugal:cbb71360add6 -->
+
+## 2026-09-20 (jev-plan, Cloudvore session on BACHELOR): `JEV:` ack lines for the three projects without a `specs/` file on master (RULINGS R10.1)
+
+Read by `tools/jev-adoption-status.mjs` (R10.3); the last `JEV:` line per project is current. Each
+record is the project's own disposition file at the commit named after `@` (Law 6). The
+magic-lantern_dannephoto line is repeated on its review-branch stub; its wiring state is derived
+from its tree, never from this line. Nothing acts on a Jev answer.
+
+JEV: DISPOSITION-DISTINGUISH standard=r6@ad426fbec35c57df4bd599216309430ac0a25076 qsv=NONE log=NONE lines=0 asOf=2026-09-20 record=softwarefactory-fleet-doctrine:receipts/fleet-jev-shadow-mode-ratification-2026-09-19.md@2d30df9
+JEV: DISPOSITION-DISTINGUISH standard=r6@ad426fbec35c57df4bd599216309430ac0a25076 qsv=58c8297f48764e28 log=.claude-state/jev-shadow.jsonl lines=0 asOf=2026-09-20 record=magic-lantern_dannephoto:roadmap/reviews/2026-09-19-jev-shadow-mode-disposition.md@d56e5c2
+JEV: DISPOSITION-HOLD standard=r6@ad426fbec35c57df4bd599216309430ac0a25076 qsv=NONE log=NONE lines=0 asOf=2026-09-20 record=silentbackgroundprocess:reports/JEV-SHADOW-MODE-DISPOSITION-20260919.md@a23bb3f

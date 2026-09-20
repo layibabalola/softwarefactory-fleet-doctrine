@@ -2222,3 +2222,81 @@ Procedure: `bootstrap/lane-orchestrator.md` §1–§3; tool: `tools/review-postu
   `\Conjugal-Harvest-Steward` = every 15 min at :04/:19/:34/:49. Checked against the LIVE configuration of every
   task on this box (Conjugal floors :06/:08/:11/:13/:16/:18/:21/:22/:23 cadences, Git Guardian every 5 min from :01,
   Cloudvore guards). No collision found. First fire verified from its receipt at 21:19Z, not from configuration.
+
+## OWNER RULING, appended by jev-plan (Cloudvore session on BACHELOR, on Layi's instruction), 2026-09-20 — R10: every project records how it leverages Jev, and the fleet reads the acks from one line
+
+**Owner ruling (Layi, 2026-09-20), binding fleet-wide on the same terms as R1–R9.** Given as *"We need to tell each
+project how to leverage jev going forward and get an ack that it folded everything in and is now leveraging jev"*,
+after the five projects on the standard's §5 table had each recorded a disposition on the fleet Jev shadow-mode
+standard (`specs/fleet-jev-shadow-mode.md`, `CANDIDATE r6`, bus `ad426fbec35c57df4bd599216309430ac0a25076`) and
+nothing on the bus could say, without opening five repositories, which of them had gone further than a disposition.
+
+**Measured (2026-09-20, from each tree; qualified per Law 6).** Cloudvore: `BACKLOG.md` row JS1 (tool landed at Cloudvore
+`c757c5d`, non-author acceptance recorded at Cloudvore `b8bc7e0` and `517f08f`, criterion stated precisely at `7200236`), `tools/jev-shadow.py` run only by
+hand after `gate.py`, 1175 shadow lines over one calendar day in the gitignored `logs/jev/jev-shadow.jsonl` under
+question set `66e7e43e123e84d5`, review-queue rows read by no tool, and a non-author acceptance of the row's whole
+executable line (20 offline cases exit 0; `gate.py --json` byte-identical around `--dry` and around the live
+`--repeats 5` run once gate's own relative-age field is masked, which is the row's criterion and what the tool's
+tests mask).
+softwarefactory-fleet-doctrine: DISTINGUISH on the standard's receipt (bus `2d30df9`); no hook in tree. Conjugal:
+DISTINGUISH with ADOPT queued at Conjugal `7e5515348` (`coordination/doctrine-folds/20260919-jev-shadow-mode-disposition.md`);
+the S14 live seat parked (its key blocked by the provider's filter on the egress fixtures) and S15 landed at Conjugal
+`9e7e360f9`: an offline CJ-A1 capacity-refusal replay, 515 lines in the gitignored `scratchpad/jev-capacity-shadow.jsonl`
+(plus 34 from S14 in `scratchpad/jev-shadow.jsonl`); no hook of the §5 row is in tree. magic-lantern_dannephoto: DISTINGUISH at local `d56e5c2`
+(`roadmap/reviews/2026-09-19-jev-shadow-mode-disposition.md`, four conditions); the `--jev-shadow` flag and the
+provenance field are the local commit `7dd004b` on `codex/audit-remediation-2026-07` (`todo_inventory.py --check`
+VALID, census sha `80d9b21c…` unchanged, 24 new tests, question set `58c8297f48764e28`, log gitignored at
+`.gitignore:50`); no live run, so its log holds 0 lines and it stays a disposition, not `SHADOW-LIVE`. SilentBackgroundProcess: HOLD at SBP `a23bb3f`
+(`reports/JEV-SHADOW-MODE-DISPOSITION-20260919.md`: HOLD lifts to DISTINGUISH only by re-adjudication against the
+commit that lands the 1.2 tree (uncommitted at `a23bb3f`; the repository's sole committer is the owner) and five
+numbered conditions, the first being that
+the shadow is diagnostic-only and never writes a registry field). Nothing acts on a Jev answer anywhere in the fleet; no threshold is wired to a branch.
+
+- **R10.1 — One line is the ack.** Each project on the standard's §5 table records exactly one current `JEV:` line
+  on its bus surface: `specs/<project>.md` where that file exists, otherwise an appended `RECEIPTS.md` entry. The
+  line is printable ASCII, one physical line with no trailing whitespace, key=value pairs separated by single
+  spaces:
+  `JEV: <STATE> standard=r<N>@<bus sha, 7-40 lowercase hex> qsv=<16 lowercase hex|NONE> log=<path|NONE> lines=<1-9 decimal digits> asOf=<YYYY-MM-DD> record=<lowercase project>:<path-or-sha>`.
+  `<STATE>` is one of `NONE`, `DISPOSITION-ADOPT`, `DISPOSITION-DISTINGUISH`, `DISPOSITION-HOLD`, `SHADOW-LIVE`,
+  `ADVISORY`. `record=` names the project's own disposition or acceptance record (Law 2: the project writes its
+  own surface; the record token is the lowercase spec stem, and `NONE` is a record only for state `NONE`). Any
+  line that starts `JEV:` and does not match the grammar is malformed. The last `JEV:` line on the surface is
+  current; earlier ones are history and are never edited. On the shared `RECEIPTS.md` surface a line belongs to
+  the project its last field, `record=`, names. The lines of 2026-09-20 are placed by the session appending this
+  ruling, on the owner's instruction that names every project (the same exception under which the 2026-09-19
+  dispositions were appended, bus `2d30df9`); from then on each project supersedes its own line.
+- **R10.2 — "Leveraging Jev" has one meaning: `SHADOW-LIVE`.** A project may record `SHADOW-LIVE` only when all
+  four hold in its tree: the hook point named in the standard's §5 row is in tree at a commit reachable from the
+  project's main line; the constants module pins a `questionSetVersion` and every log line carries it; the shadow
+  log is gitignored, carries `stateSha256` and never the raw state, and holds at least 100 lines; and a non-author
+  acceptance of the row's executable acceptance line is recorded (a seat other than the author ran it; this is
+  not the §2.4 promotion's fidelity run, which belongs to `ADVISORY`). The checker
+  reads only the declared fields (state, `qsv`, `log`, `lines`, `record`); the four tree-side conditions are the
+  project's to keep true, and a line that declares them falsely is answered under R9.4, not by the checker.
+  `DISPOSITION-*`
+  is what a project records until then; it is an honest ack, not a lesser one. `ADVISORY` is reserved: no project
+  records it until the standard's §2.4 promotion (fidelity run, blind adjudication, a K2 register row) has run and
+  a further ruling names the project.
+- **R10.3 — The fleet reads the acks with one checker, which writes nothing.** `tools/jev-adoption-status.mjs`
+  (bus) rosters the five projects from the standard's §5 table, not from `tools/fleet-membership.mjs` and not from
+  the kernel roster, reads each surface (`--ref` for a review branch), and exits 0 when every project has a
+  well-formed line, 2 when one is missing, 3 when a project's current line is malformed or claims a state its
+  declared fields do not support, 4 when the roster is unreadable or an argument is unknown or incomplete. It
+  reads a ref with `git show` under `GIT_NO_LAZY_FETCH=1`, so a partial clone fetches nothing on its behalf. It calls no gateway and never edits a surface. Its exit code is a report, never
+  a gate: no hook, sweep or heartbeat may block on it.
+- **R10.4 — Nothing here acts on a Jev answer.** This ruling changes what is recorded, not what runs. The
+  standard's §2 stands: shadow mode is the only permitted first step; no threshold is wired to a branch; the
+  egress screen stays a blocking gate on every state that leaves the machine. A `JEV:` line that claims
+  `SHADOW-LIVE` for a tree where a Jev answer changes behaviour is false, and R9.4 applies: record what the
+  practice measured.
+- **R10.5 — Directives, per project, stand as recorded in each tree** (this ruling does not duplicate them; the
+  bus reads the line): Cloudvore keeps JS1 shadow-only and the next step is JS2 replay against the blind labels;
+  the bus's own instance (FD-C1/C2) waits on a sidecar-absent fixture and a wording round; Conjugal's live seat
+  resumes on a key of another independence class from the producer and replays weekly offline until then;
+  magic-lantern_dannephoto's flag is never in a runbook or gate and never sends a non-public path; SBP lifts HOLD
+  only by re-adjudicating against the commit that lands the 1.2 tree and clearing its own five conditions.
+
+**Measured, not asserted:** the numbers above are from `python tools/jev-shadow.tests.py`, `git check-ignore`,
+`wc -l` and `git log` in each tree on 2026-09-20; the checker's own tests (`tools/jev-adoption-status.tests.mjs`,
+57 assertions, the count computed from the file when it runs) fix the grammar. Record of this entry's packet: jev-plan
+`docs/rulings-packet-r10-jev-ack-2026-09-20.md` (subject digest in the packet; two blind cross-family seats).
