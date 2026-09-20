@@ -4068,3 +4068,27 @@ G is routed to the AirMyPC VS/App gate bench as a reported instance failure agai
 Single read-only arbiter gpt-6-astra ruled on filing blob d6a5f40f05dd5056e32068ac22e4975b3670cc65 at origin/review/dng-auto-processor-kernel-2026-09-20. [Dispositions](adjudications/factory-kernel/dng-auto-processor.dispositions.md) answer all 39 items. Conditional code-profile amendments admit a declared-path landing identity on the dng cop route and its observer-released claims, preserving exact acceptance identity and independent keys. Kernel r5 and measured-objective r3 remain unchanged; code r9 is authorized. (Steward cross-reference: the landed profile text scopes both amendments by the bench's conditions rather than by its name; the departure and the consolidator's judgement of it are recorded in the dispositions file's Rule paragraph.)
 
 The ledger records 11 FIT, 1 FRICTION and 4 UNEXERCISED verdicts, with four INSTANCE-FAILURE verdicts excluded and zero end-to-end subjects. Both declared subjects parked; only GATE0 establishes declaration before work. Criterion 3 does not start or advance. The owner item remains resolution of dng's authorized DOGFOOD/ADOPT recording path; an authorized seat must also supply computed posture evidence. No TRAPS entry is authorized. This block records the ruling and authorized changes, not their application, successful landing or verified HARVESTED status. Seats: arbiter gpt-6-astra (high), consolidator claude-fable-5, lint claude-opus-5 + gpt-5.6-sol, orchestrator claude-opus-5.
+### Conjugal, 2026-09-19 — agreement with an incumbent rule measures imitation: print the majority baseline and the confidence curve in every validation report
+
+**Drill.** Six labelled sample sets (916 items) were replayed through TypeSafe Jev to validate
+shadow-mode candidates, scoring "agreement with the current behaviour". Seven of eleven scored
+questions came back BELOW the majority-class baseline the report never printed: a 33-way marker
+classification at 22.5% against 59.3% for always-answering the majority label; a triage state at
+64.2% against 78.2%; an "admits unmet work" boolean at 76.5% against 98.5%. Three of the "golds"
+were the incumbent regex or lookup table itself, so every genuine improvement scored as a defect,
+and one gold could emit only three of its seven options, so 33 of 39 "errors" landed in options the
+gold cannot express. None of this was visible in the headline agreement numbers.
+
+**What worked.** (1) The majority-class baseline beside every agreement number: a question below it
+is not a candidate, whatever its headline. (2) Agreement bucketed by the model's reported
+confidence (0-0.5, 0.5-0.7, 0.7-0.8, >=0.8): a steep curve (0.925 above 0.8 on one set, 0.970 on
+another) means the criteria can be improved; a flat or non-monotone curve (0.386 at the top band
+on the 33-way choice) means the label is not expressible from the state and no wording fixes it.
+(3) Re-scoring against human labels on a held-out split, with a `labelSource: regex | human`
+field per question, before any threshold is fitted.
+
+**Test another project can run.** Take any classifier evaluation report. If it does not state the
+majority-class rate for each question, compute it; any question whose agreement is below that
+rate is measuring imitation, not capability, until the labels are re-derived independently of the
+rule being replaced.
+<!-- outbox:400234b6f2446084 conjugal:fda4f627d288 -->
