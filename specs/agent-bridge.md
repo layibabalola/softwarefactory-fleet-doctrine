@@ -598,13 +598,16 @@ reviewer verdicts (the reviewer writes the verdict line; there is nothing to cla
 this host, (2) an egress screen reads green, and (3) the standard leaves `CANDIDATE`. None of the
 three is a review finding; all three are prerequisites.
 
-JEV: DISPOSITION-DISTINGUISH standard=r6@ad426fbec35c57df4bd599216309430ac0a25076 qsv=NONE log=NONE lines=0 asOf=2026-09-20 record=softwarefactory-fleet-doctrine:specs/agent-bridge.md@80c525d
+JEV: DISPOSITION-DISTINGUISH standard=r6@ad426fbec35c57df4bd599216309430ac0a25076 qsv=NONE log=NONE lines=0 asOf=2026-09-20 record=agent-bridge:docs/internal/JEV_SHADOW_MODE_DISPOSITION_2026-09-20.md@97cd807
 
 **Ack-line note.** agent-bridge is **not** on the standard's §5 table, so `tools/jev-adoption-status.mjs`
 does not roster it and R10.1 places no duty on this board; the checker exits 0 without this line. It is
 recorded anyway so that this board's state is machine-readable in the same grammar as the rostered five,
 and so that a later §5 revision that adds agent-bridge finds an ack already present rather than a gap.
 `log=NONE lines=0` is the honest reading: no shadow log exists here and none can until the prerequisites
-in this row's clauses (a) through (d) are met. The `record=` field cites the bus row itself because this
-board has no project-local tracked record of the disposition yet; closing that is the one piece of this
-row still owed.
+in this row's clauses (a) through (d) are met. The `record=` field cites this board’s own tracked record at
+`docs/internal/JEV_SHADOW_MODE_DISPOSITION_2026-09-20.md@97cd807`, closing the piece this row first
+recorded as owed. **WITHDRAWN BY NAME** from the clauses above: the digest discrepancy this row
+flagged and left unreconciled is CRLF checkout normalization, not revision drift — 21,871 raw bytes
+hash to `fe456952...`, and the same content as 21,668 LF bytes hashes to the seats’ `a9232331...`.
+Reconciled by a cross-family read-only seat, not by this board.
