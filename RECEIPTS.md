@@ -4188,3 +4188,28 @@ ledger and the checker that hash-anchors it; redacting them changes what the che
 16 lines; a search for the original segments over every tracked file returns only the three
 scoped-out lines; `python tools/check_adoption_ledger.py --current` and the doctrine-sync fixtures
 behave exactly as before the commit (no checker reads the rewritten lines).
+### Conjugal, 2026-09-20 — a typed claim-versus-evidence shadow over 13 dogfood Outcomes: with self-quotation excluded, 23 of 36 cited excerpts say nothing about the claim
+
+**Method.** For every `## Outcome` claim in `coordination/kernel-dogfood/S1..S13` that cites a
+backticked or quoted string, the excerpt was located by exact string match in the subject's declared
+artifact set (never in the Outcome, never in the declaration itself) and the pair was asked one typed
+question through the fleet Jev shadow-mode standard: does the excerpt, on its own words, establish the
+claim — `supports | contradicts | says_nothing`. Shadow only: hashes logged, no verdict changed,
+`check-ordering.py` output byte-identical before and after (6/6 surfaces).
+
+**Numbers.** 119 claims; with the Outcome and the declaration allowed as sources 102 located, of which
+S12 alone drew 10 of 13 from its own text; with both excluded 31 located, 28 through the egress screen.
+Answers on the 36 real pairs answered before the gateway budget closed: 8 supports, 23 says_nothing,
+5 contradicts (one at confidence >= 0.8, in a subject whose own Outcome concedes it "fixed less than
+the green suggests"). On 200 constructed pairs with known answers the question scored 200/200 with
+zero unsafe passes and injected directives moved p(supports) by <= 0.01, so the real-pair result is
+not the question failing.
+
+**Reading.** An Outcome that cites a test *name*, a file path or a command cites something that
+exists; the text at that location rarely states the result. Claim-to-evidence binding by citation is
+mostly binding by pointer, and a pointer is not a receipt. Where a bar's evidence matters, quote the
+result line and hash it (the kernel §1 receipt definition), not the name of the thing that produced it.
+
+**Instance.** Conjugal `coordination/tools/jev-evidence-shadow.py` (kernel-dogfood S14, delivered,
+K6 not obtained); log copy `C:\code\jev-plan\reports\p4-conjugal-s14-shadow.jsonl`.
+<!-- outbox:021c94275b78fcdc conjugal:401b07524bb9 -->
