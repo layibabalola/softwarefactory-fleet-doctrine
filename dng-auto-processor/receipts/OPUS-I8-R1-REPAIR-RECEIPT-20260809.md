@@ -18,14 +18,14 @@ Prior harness identity superseded: 27,404 B / `0616271E5B58D5A374B50033A07AAF4F2
 1. **Engine bytes unchanged** — re-hashed identical before and after every run (table above).
 2. **One filesystem identity before relativization.** `Get-TreeDigest` now canonicalizes the root AND every enumerated child through Win32 `GetLongPathNameW` (`Get-CanonicalPath`, fail-closed on API failure), then performs a guarded `StartsWith` + `Substring(rootCanon.Length+1)`; a child not under the canonical root is a thrown harness error, never a silent mis-relativization. No raw string-length subtraction across potentially aliased spellings remains on any verdict path. No caller-forced long root is required or used.
 3. **Both-host 8.3-root control** — `control-83-alias-root`, one row per host, three stages:
-   - SETUP PRECONDITION: `GetShortPathNameW(scratch)` must differ from `GetLongPathNameW(scratch)` (case-insensitive), AND enumeration from the short-spelled sandbox must return spellings that do not start with the short root verbatim — otherwise SETUP-FAILED (a red row), never a pass. Proven satisfiable here: `C:\Users\OBABAL~1\...` vs `C:\Users\obabalola\...`.
+   - SETUP PRECONDITION: `GetShortPathNameW(scratch)` must differ from `GetLongPathNameW(scratch)` (case-insensitive), AND enumeration from the short-spelled sandbox must return spellings that do not start with the short root verbatim — otherwise SETUP-FAILED (a red row), never a pass. Proven satisfiable here: `C:\Users\redacted-user-8-3\...` vs `C:\Users\redacted-user\...`.
    - RED: `Get-TreeDigestNaive` — a source-derived verbatim copy of the pre-repair derivation — run over a short-root sandbox around a real engine invocation of the `toctou-immune-allow` arm with `Excl=prompt.txt` must report the measured false-red (digest delta despite the exclusion). Reproduced on both hosts, both outers.
    - GREEN: the repaired `Get-TreeDigest` over the same sandbox holds digest-equal and the engine exits ALLOW.
 4. **Everything preserved.** All prior 28 rows/host intact: 3 positive, 12 refusal rows over exactly the 11 distinct I8 arm tokens, 2 recovery, 11 load-bearing mutants with setup preconditions. Census asserted per host (now 29 rows/host including the control), filtered runs still non-certifying, zero-write assertions and zero scratch residue verified by re-listing.
 5. **Runs executed (all exit 0):**
    - Full suite, default scratch root, outer pwsh 7: 58/58 OK, census both hosts, SCRATCH CLEAN, CONTROL SET GREEN.
    - Full suite, default scratch root, outer Windows PowerShell 5.1: 58/58 OK, same terminal set.
-   - Targeted TOCTOU (`toctou-immune-allow`, `arm-capture-toctou`, `mutant-capture-toctou`) from short root `C:\Users\OBABAL~1\AppData\Local\Temp`: 6/6 both hosts, under BOTH outers.
+   - Targeted TOCTOU (`toctou-immune-allow`, `arm-capture-toctou`, `mutant-capture-toctou`) from short root `C:\Users\redacted-user-8-3\AppData\Local\Temp`: 6/6 both hosts, under BOTH outers.
    - Full suite from the short root, outer pwsh 7 AND outer 5.1: 58/58 each, census both hosts, SCRATCH CLEAN, CONTROL SET GREEN.
 
 ## Hygiene

@@ -618,7 +618,7 @@
 
 - **AN EXPLICIT OUTER PYTHON EXECUTABLE DOES NOT PROVE A NESTED GIT-BASH SUITE CAN DISCOVER
   PYTHON.** Conjugal's guarded acceptance runner itself used
-  `C:\Users\layib\AppData\Local\Programs\Python\Python314\python.exe`, and every ordered
+  `C:\Users\redacted-user\AppData\Local\Programs\Python\Python314\python.exe`, and every ordered
   Python prerequisite passed. The full suite later stopped at
   `test-p5-bite-state-contract.sh` with `ERROR: no compatible Python 3.10+ candidate found`:
   that child independently searched only `PYTHON` and `command -v python3|python|python.exe|py`,
@@ -6184,7 +6184,7 @@ See [SELF-HOSTED-WINDOWS-RUNNER.md](SELF-HOSTED-WINDOWS-RUNNER.md) for the full 
 - **`shell: bash` resolves to WSL, not Git Bash, on a self-hosted Windows runner** — `C:\Windows\System32\bash.exe` (the WSL launcher) wins on PATH, and with no distro every `shell: bash` step prints "Windows Subsystem for Linux has no installed distributions" and exits 1. Reads like a broken build; it is a PATH costume. Test: `where.exe bash` — System32 first. Fix: prepend `C:\Program Files\Git\bin` to the MACHINE PATH and restart the runner service. (GitHub-hosted images put Git Bash first; self-hosted boxes usually don't.)
 - **PowerShell ExecutionPolicy Restricted blocks `actions/setup-python`** — its downloaded `setup.ps1` fails "running scripts is disabled on this system". Test: setup-python step errors on script execution. Fix: `Set-ExecutionPolicy -Scope LocalMachine RemoteSigned` (matches hosted).
 - **A runner service running as `NT AUTHORITY\NETWORK SERVICE` cannot complete `actions/setup-python`** — the python-versions `setup.ps1` runs the Python installer (registry writes, a user profile) and throws "Error happened during Python installation" at the install step. Everything up to it (checkout, setup-node) passes, so it looks like a Python-specific bug. Fix: run the runner service as a REAL interactive user (services.msc → the `actions.runner.*` service → Log On tab → This account → `.\<user>` + password, which auto-grants Log-on-as-a-service), then restart. Needs the account password, so it is an owner action.
-- **A test that FAKES its toolchains needs none of them installed — do not install to satisfy it** (Conjugal build-profile suite, measured): `scripts/test-build-profiles.sh` writes fake shims for `dotnet npm python go cargo gradle mvn cmake ctest javac MSBuild` into a prepended `$FAKE_BIN` and asserts on their logged invocations. A red "node build command missing npm run build" is NOT a missing Node. An agent proposed installing JDK + VS Build Tools + Go + Rust + Gradle + CMake (~10 GB); reading the test source showed all are stubbed. Test: before installing a toolchain for a failing CI test, grep the test for a fake/stub of that tool. Fix: never install the faked toolchain. Costume: a "missing toolchain" failure whose toolchain the test itself provides. **Root cause of that specific red is still OPEN — and one attractive theory is MEASURED FALSE:** "a real `npm` on PATH shadows the fake shim" is wrong on this box. Probed in Git Bash on Ultra Magnus: with `$FAKE_BIN` prepended, `command -v npm` returns the FAKE, `npm run build` runs the FAKE, absolute pre-resolution returns the FAKE, and `bash -lc` still returns the FAKE, while the real npm sits at `/c/Users/obabalola/tools/node-v24.18.0-win-x64/npm`. Remaining candidates (untested): the MSYS `$COMMAND_LOG` vs `$COMMAND_LOG_HOST` split writing the fake's log where the assertion does not read it, and `PAIRPROG_BUILD_TIMEOUT_SECONDS=5` expiring on a shared runner at 83-87% CPU. Second-order trap: an agent's plausible root cause was adopted into doctrine before it was measured — measure the mechanism, then publish it.
+- **A test that FAKES its toolchains needs none of them installed — do not install to satisfy it** (Conjugal build-profile suite, measured): `scripts/test-build-profiles.sh` writes fake shims for `dotnet npm python go cargo gradle mvn cmake ctest javac MSBuild` into a prepended `$FAKE_BIN` and asserts on their logged invocations. A red "node build command missing npm run build" is NOT a missing Node. An agent proposed installing JDK + VS Build Tools + Go + Rust + Gradle + CMake (~10 GB); reading the test source showed all are stubbed. Test: before installing a toolchain for a failing CI test, grep the test for a fake/stub of that tool. Fix: never install the faked toolchain. Costume: a "missing toolchain" failure whose toolchain the test itself provides. **Root cause of that specific red is still OPEN — and one attractive theory is MEASURED FALSE:** "a real `npm` on PATH shadows the fake shim" is wrong on this box. Probed in Git Bash on Ultra Magnus: with `$FAKE_BIN` prepended, `command -v npm` returns the FAKE, `npm run build` runs the FAKE, absolute pre-resolution returns the FAKE, and `bash -lc` still returns the FAKE, while the real npm sits at `/c/Users/redacted-user/tools/node-v24.18.0-win-x64/npm`. Remaining candidates (untested): the MSYS `$COMMAND_LOG` vs `$COMMAND_LOG_HOST` split writing the fake's log where the assertion does not read it, and `PAIRPROG_BUILD_TIMEOUT_SECONDS=5` expiring on a shared runner at 83-87% CPU. Second-order trap: an agent's plausible root cause was adopted into doctrine before it was measured — measure the mechanism, then publish it.
 - **`runs-on` is better selected by a repo variable than a hardcoded label** — `runs-on: ${{ vars.CI_RUNS_ON != '' && fromJSON(vars.CI_RUNS_ON) || 'windows-latest' }}` lets a single `gh variable set/delete CI_RUNS_ON` move CI between a self-hosted runner and hosted with no workflow edit and instant, reviewable rollback. Validate on a `pull_request` run before merging the workflow change to master.
 
 ## A lane that wakes clean and writes nothing may be honouring its own kill switch — read the receipt before the theory (adobe, 2026-09-07, virtual-ten)
@@ -8817,7 +8817,7 @@ and quote from it; after a lineage replacement, re-verify every flag memory clai
 ## Relative paths in printed commands fail from the owner's terminal (conjugal, 2026-09-13, Bachelor)
 
 `python coordination/tools/check-cli-auth.py` printed in chat failed with `No such file or directory` — the owner's
-PowerShell cwd was `C:\Users\layib`, not the repo. Owner rule: every command printed for a human is fully qualified and
+PowerShell cwd was `C:\Users\redacted-user`, not the repo. Owner rule: every command printed for a human is fully qualified and
 quoted (`python "C:\code\Conjugal\coordination\tools\check-cli-auth.py" ...`). **Test:** paste the command into a shell
 whose cwd is the user profile; it must run.
 
@@ -10496,7 +10496,7 @@ own project records, and verified here against the bus before writing this.
   need the merge. The earlier entry could be read as licensing that. It does not.
 - **The real defect, and it is the generalizable one: a supersession pointer went live before its
   replacement was reachable by the route the pointer names.**
-  `C:\Users\layib\.claude\ROTATION-install-prompt.md` opens "SUPERSEDED — DO NOT INSTALL THE SCRIPT
+  `C:\Users\redacted-user\.claude\ROTATION-install-prompt.md` opens "SUPERSEDED — DO NOT INSTALL THE SCRIPT
   INLINED BELOW" and directs every project to use `bootstrap/session-checkpoint.py` **from the bus**,
   "rather than carrying a copy". It does not say *harvest `origin/review/*`*. So a consumer who obeys
   it looks on master, finds nothing (`git ls-tree -r origin/master | grep session-checkpoint` → zero,
@@ -10670,7 +10670,7 @@ visible at the size a verification run is usually done at.
   through argv"**, and `TRAPS.md:34` has carried "argv is not a prompt carrier (Windows)" since
   2026-08-09. The example at `:90` contradicts both, and an example is what gets copied. Measured here:
   a **38,343 B** brief, `C:\DngAutoJobs\evidence\REACH-SUPPLY-OWED\attempt1\brief.implement.sol.91bda4c3.md`,
-  died as `C:\Users\obabalola\tools\node-v24.18.0-win-x64/node: Argument list too long`, raised by the
+  died as `C:\Users\redacted-user\tools\node-v24.18.0-win-x64/node: Argument list too long`, raised by the
   launcher's own shell shim (`codex: line 13:`) **before the model was reached** — so there was no session
   id, no seat and no attempt to show for it. Receipt:
   `…\REACH-SUPPLY-OWED\attempt1\cop-note-1130Z-tick26-receipt.md`.

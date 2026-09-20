@@ -214,7 +214,7 @@ If a machine will host multiple projects under different accounts (e.g., Conjuga
 # ~/.claude/cli-parity-<ACCOUNT>.json (if multiple accounts)
 {
   "account_uuid": "c96755fb-e6a8-4158-a0d9-251a66468463",
-  "account_email": "darktravellersinfo@gmail.com"
+  "account_email": "redacted-account-a-email"
 }
 ```
 Daemon checks: "Desktop's UUID matches stored UUID?" rather than email-based parity (email alone doesn't disambiguate across accounts).

@@ -105,8 +105,8 @@ Session proceeds. No action.
 **Drift detected, auto-fix succeeds:**
 ```
 SessionStart: [account-parity] DRIFT DETECTED
-  Desktop: c96755fb  darktravellersinfo@gmail.com
-  CLI:     2a6cf04d  kidfob@gmail.com
+  Desktop: c96755fb  redacted-account-a-email
+  CLI:     2a6cf04d  redacted-account-b-email
   AUTO-FIXING: Running CLI re-auth wizard...
   ✓ CLI re-authenticated and is now aligned.
 ```

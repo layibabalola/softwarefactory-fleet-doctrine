@@ -90,7 +90,7 @@
   while colliding.
 
 - AirMyPC Kimi Code receipt (virtual-ten, 2026-08-09, direct user-authorized install): official
-  checksum-verifying Windows installer PASS; `C:\Users\obabalola\.kimi-code\bin\kimi.exe` 0.34.0;
+  checksum-verifying Windows installer PASS; `C:\Users\redacted-user\.kimi-code\bin\kimi.exe` 0.34.0;
   user PATH PASS; `doctor` PASS; managed provider config read PASS; no login/auth mutation. Kimi
   design session `session_ea2fe654-fc39-4670-a15e-fe2363d372f0` authored a provider-neutral strategy
   and incorporated two independent Codex REQUIRED corrections.
@@ -256,7 +256,7 @@
 ## Appended by Cloudvore, 2026-08-10 (WSL permeability measurement)
 
 - Ubuntu 22.04 `grok` UID 1000 measurement: `/etc/wsl.conf` contained only systemd enablement;
-  `/mnt/c` was DrvFs/9p read-write; `/mnt/c/Users/layib/.claude` was readable; Windows PATH entries
+  `/mnt/c` was DrvFs/9p read-write; `/mnt/c/Users/redacted-user/.claude` was readable; Windows PATH entries
   were appended; the WSL interop binfmt handler appeared absent at measurement time. This proves an
   identity-separated but non-hermetic filesystem boundary. No `.claude` contents were read.
 - Binary SHA-256
@@ -2999,7 +2999,7 @@ receipt recorded as pending, and states what a second reader could and could not
   - **Negative control:** the same invocation against the REAL verdict (now ALIGNED) prints nothing and writes
     `action=no-action verdict=ALIGNED`. The probe can tell the two apart.
 - **THE DRIFT ON THIS BOX IS CLEARED — the outcome 8db3bfc left pending.** After the operator's browser
-  sign-in, `claude auth status --json` reads `loggedIn:true`, `kidfob@gmail.com`,
+  sign-in, `claude auth status --json` reads `loggedIn:true`, `redacted-account-b-email`,
   `orgId 2a6cf04d-bd9d-4d3d-9dab-8cda7bf25020`, `subscriptionType max`, which equals the desktop org; the
   detector prints `ALIGNED ... repair surface: ARMED (proved 2026-09-15T16:11:30.9Z)`. Cross-check from an
   unrelated consumer on the same box: the agent-bridge resume-pulse task ran degraded (exit 1) at 11:00:00 and

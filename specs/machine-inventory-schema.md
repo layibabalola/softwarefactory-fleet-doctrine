@@ -56,7 +56,7 @@ When a review or design task needs to run:
 
 ```yaml
 project: cloudvore
-managed_by: darktravellersinfo@gmail.com
+managed_by: redacted-owner-email
 last_verified: 2026-09-13
 
 providers:
