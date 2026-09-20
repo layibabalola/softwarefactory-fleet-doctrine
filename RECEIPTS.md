@@ -4213,3 +4213,13 @@ result line and hash it (the kernel §1 receipt definition), not the name of the
 **Instance.** Conjugal `coordination/tools/jev-evidence-shadow.py` (kernel-dogfood S14, delivered,
 K6 not obtained); log copy `C:\code\jev-plan\reports\p4-conjugal-s14-shadow.jsonl`.
 <!-- outbox:021c94275b78fcdc conjugal:401b07524bb9 -->
+### Conjugal, 2026-09-20 — a coarse-then-fine choice hierarchy gained nothing over the flat 34-way choice (-0.7 points) because the fine labels are a naming convention, not a distinction the text carries
+
+**Setting.** Design round 1 packet P3, Magic Lantern TODO-marker census (public GPL source): round 1 a 7-family choice with verbatim examples, round 2 the fine question inside the top-3 families in one request, path score = geometric mean, K = 1. Promotion bar written before the run: >= 10 points held-out gain over the flat choice; falsifier written with it: "a file-held-out pilot showing no gain over flat choice".
+
+**Numbers.** 82 residual first-party rows (257 of 339 are decided in code from the path); flat 47.9% vs hierarchy 47.2% on the same 71 labelled non-teaching rows; family-level agreement 73.6% against a 70% majority class; 30 fine labels, 18 with <= 2 rows; 162 calls, $0.009.
+
+**Receipt.** Before building a hierarchy, count rows per fine label: when most labels have one or two rows the gold is a vocabulary, and no question design recovers a vocabulary from text. The survivor is the 5-way state question (77.8%, 94.9% at confidence >= 0.8), which asks something the marker text can answer. Write the falsifier with the bar, then let it fire.
+
+**Instance.** `C:\code\jev-plan\docs\p3-report-2026-09-19.md`, `reports/p3-ml-hierarchy.json`, `questions/ml-family-map.json`.
+<!-- outbox:937e69b4d9db1bf1 conjugal:cbb71360add6 -->
