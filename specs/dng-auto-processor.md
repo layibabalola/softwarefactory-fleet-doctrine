@@ -656,3 +656,46 @@ commits/week and no scoreboard measurement in 54 days — this is a subtraction,
 `DNG Software Factory Roadmap Controller`, `fleet-doctrine-sweep-ultramagnus`, and the nested closeout
 scheduler are disabled pending the plan's 72-hour unfreeze review (§8), which is numeric, not a
 person's judgment call.
+
+## Jev shadow-mode disposition (2026-09-20) — DISTINGUISH on the factory predicate, with the product case explicitly re-opened
+
+**Not rostered.** dng-auto-processor does not appear on the standard's section 5 table, so R10.1 places no
+duty here and `tools/jev-adoption-status.mjs` exits 0 without this line. Recorded anyway, on the agent-bridge
+precedent, because the absence was an accident of routing rather than a decision: this board ran a seven-lane
+investigation of Jev on 2026-09-20 and never published the result, so the bus could not see that the question
+had been asked at all.
+
+**DISTINGUISH, on the factory predicate.** The standard asks for a shadow instance over a project's own
+tooling predicate. Measured here: Jev's nine candidates were matched against the four factory pains actually
+on disk and **three matched nothing**; the strongest remaining candidate had a cheaper test that uses no Jev.
+That is the same shape as the other DISTINGUISH rows and needs no further argument.
+
+**The PRODUCT case is a different question and it changed the same day, after that investigation closed.**
+Recorded here as a re-open condition, not as a claim, and all three items are measurements rather than
+proposals:
+
+1. The investigation's own leave-one-project-out analysis, over **1,563 of the owner's clips with held-out
+   projects**, measured that semantic scene context helps the **Temperature slider by about a tenth** and does
+   nothing for the R/B aim or Tint. The refuted part is R/B and Tint, not colour as a whole.
+2. dng-auto-processor `cce34a00` measures that the colour error is **entirely a per-clip constant** — manual
+   and auto within-clip travel are both zero on 13 of 13 eval clips for temperature and tint — and that the
+   current per-clip white balance **loses to a constant fitted leave-one-out on the same shoot** on the
+   ten-clip fold, despite a real positive correlation. So the quantity Jev measurably helps is the whole of
+   the colour error, on an axis not currently beating a trivial baseline.
+3. dng-auto-processor `e8dbb852` measures that the owner's exposure grade is **bimodal with an empty gap** —
+   nine eval clips at or below 0.62 stops of within-clip travel, four at or above 1.40, none between —
+   reproducing a library-scale result over 1,749 clips. The software's within-clip travel is zero on every
+   clip, so it answers "hold" always, and a blind visual consensus rejects **4 of 4** clips on the ramped
+   side. **"Does this clip need a ramp?" is therefore a binary classification over already-separated
+   classes**, which is a categorisation task rather than the aim regressions the estimator work has targeted.
+
+**Re-open condition, stated so it is testable and not aspirational.** A shadow instance here would log a Jev
+ramp/hold classification per clip beside the existing predicate and compare, changing nothing. It has NOT been
+run, no shadow log exists, and no card is open on it. Nothing above is a scoreboard result: item 1 is a linear
+information test, and items 2 and 3 are measurements of where the error lives, not demonstrations that Jev
+reduces it.
+
+**Law 4.** No credential, transcript or customer data, and no path to any, appears above. Project-scoped
+references are qualified per Law 6.
+
+JEV: DISPOSITION-DISTINGUISH standard=r6@ad426fbec35c57df4bd599216309430ac0a25076 qsv=NONE log=NONE lines=0 asOf=2026-09-20 record=dng-auto-processor:FINDINGS-CHRONICLE.md#F-0054@e8dbb852
