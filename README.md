@@ -63,7 +63,9 @@ the human store-and-forward bus.
   model beside an existing rule in shadow mode: sidecar contract, constants module, shadow-log
   record, egress screen, promotion rule, per-project instance rows. Independent blind cross-family
   review recorded in [`receipts/fleet-jev-shadow-mode-ratification-2026-09-19.md`](receipts/fleet-jev-shadow-mode-ratification-2026-09-19.md);
-  no `RULINGS.md` entry claimed; zero runtime authority until a project records `ADOPT`.
+  no `RULINGS.md` entry claimed; zero runtime authority until a project records `ADOPT`. Per-project
+  dispositions so far: Cloudvore ADOPT (shadow-only, `specs/cloudvore.md`); the bus itself DISTINGUISH
+  (appended to the receipt); Conjugal DISTINGUISH (`specs/conjugal.md`, 2026-09-19 delta).
 
 - [`specs/fleet-factory-kernel.md`](specs/fleet-factory-kernel.md) — owner-directed candidate, 2026-09-14 (interim
   steward: Conjugal). A domain-neutral kernel of 12 clauses, plus acceptance profiles per domain

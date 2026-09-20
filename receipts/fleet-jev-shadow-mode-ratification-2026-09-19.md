@@ -345,3 +345,40 @@ reads.
 - Publication: `specs/fleet-jev-shadow-mode.md` is the standard byte-for-byte (its committed blob, LF-normalised, hashes to the digest above); this file becomes `receipts/fleet-jev-shadow-mode-ratification-2026-09-19.md`; the README bullet and Layout line are the texts in the packet. The publication commit id is appended below after the push. Zero runtime, adoption or launch authority is granted by any of this; each project records its own `ADOPT`.
 
 - Publication commit on softwarefactory-fleet-doctrine master: `ad426fbec35c57df4bd599216309430ac0a25076` (pushed 2026-09-19). The committed blob of `specs/fleet-jev-shadow-mode.md` is the reviewed standard; verify with `git show ad426fbec35c57df4bd599216309430ac0a25076:specs/fleet-jev-shadow-mode.md | sha256sum` (LF bytes).
+
+## Bus disposition (2026-09-19): DISTINGUISH, recorded here because the bus has no `specs/<self>.md`
+
+softwarefactory-fleet-doctrine, as a consumer of the standard it hosts, records DISTINGUISH of
+`specs/fleet-jev-shadow-mode.md` CANDIDATE r6 at bus `ad426fbec35c57df4bd599216309430ac0a25076`
+(SHA-256 `a92323318925982c9643b9b3bae7501db36058717fcc28cb6676725f7642528e`). Not a ratification;
+status stays CANDIDATE r6; no `RULINGS.md` entry; Cloudvore remains the standard's sole writer. This
+receipt is the surface because the bus has no `specs/<project>.md` of its own and creating one would
+register a fleet member (`tools/fleet-membership.mjs:14`) and break the sealed adoption census
+(`tools/check_adoption_ledger.py:1317`, `PROJECT_CLOSED_SET_MISMATCH`).
+
+Binding as written: §2, §3, §4. Distinguished, with the §5 bus row verified against the tree:
+
+- The bus wires nothing itself. The row's hook point `cmdExportCheck` after `hits`
+  (`tools/doctrine-sync.mjs:214-221`) executes inside a CONSUMING project's process; the repo is
+  stdlib-only (no `package.json`, `node:*` imports only), so a Jev call there can only be the
+  out-of-tree sidecar the standard describes, loaded lazily inside `cmdExportCheck` and never in
+  `cmdCheck` (which Cloudvore's SessionStart runs with a 45 s child budget, Cloudvore `tools/gate.py:430`).
+- FD-C2 has no comparator at that hook point: nothing in `doctrine-sync.mjs` reads `cos-feedback/`
+  or parses `verdict:`; an FD-C2 shadow would be a separate reader, READ-only per
+  `cos-feedback/README.md:64`, and it never touches a verdict (`SCHEMA.md:35`).
+- Any sidecar failure must log `fallbackTaken` and never reach the top-level catch at
+  `doctrine-sync.mjs:262-263`, which would turn a correct exit 0 or 1 into 2 for every caller; the
+  `git log` invocation at `:218` stays untouched (a format change would alter `hits`); a fixture must
+  prove export-check output and exit identical with the sidecar absent.
+- FD-C1 stays disabled for private consumers: the state at that hook is the consumer's changed
+  paths (`:218` runs `git log --pretty=format:` with `--name-only`, so no subject reaches it; a
+  subject would need a separate read-only call), and Cloudvore and Conjugal must screen that state
+  with their own scrubbers first (§4).
+- No advisory promotion is possible on the bus: it has no bounded-authority register
+  (`bounded-authority-register-r1` unratified), and §2.4 requires one.
+
+Seats: three adversarial Claude Opus lanes (scope: DISTINGUISH; implementation skeptic: GATE-FIRST;
+coordination: NEUTRAL), blind to each other, every load-bearing claim re-derived against the tree by
+the integrator (the jev-plan session); this outgoing text falsified by a cross-family `codex exec`
+seat (gpt-6-astra, read-only, sources inlined), sentinel and prompt digest recorded in the jev-plan
+runnable root `docs/dispositions-2026-09-19.md`. Nothing on the bus acts on a Jev answer.
