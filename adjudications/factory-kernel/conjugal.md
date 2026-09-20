@@ -29,6 +29,16 @@ each stands as its S-file's `## Outcome` records (S6 *"acceptance bars green"*, 
 Re-run 2026-09-18: `## Ordering witness`; K7 detector census `git ls-files coordination/tools | grep -iE
 "deliver|accepted|kernel"` → nothing, exit 1 — NONE.
 
+**S14 — `S14-jev-evidence-shadow-beside-check-ordering`, delivered, NOT accepted, PARKED, counts zero.** Declaration conjugal
+`b8f78db0b` (author 2026-09-19T22:08:04-05:00) precedes candidates `f9ea1dc86`, `5185f08c5`, `16eccf6df` (author dates 22:42:17,
+23:22:23, 2026-09-20 09:26:32); each fast-forwarded to `master` (`merge-base --is-ancestor` exit 0). Key `gpt-6-astra`
+(class `codex-openai`): round 1 REFUSE, round 2 REFUSE on the same mechanism narrowed (patch-versus-narrow adjudication
+by three read-only panelists: PATCH), round 3 *`KEY_UNAVAILABLE_BY_PROVIDER`* — the cybersecurity filter terminated the
+review while it read the egress-screen fixtures (second instance after S8 r2). Receipts, mechanisms and the wall:
+`adjudications/factory-kernel/conjugal-receipts/S14-key-rounds.md`. Bar 1 as declared named a `check-ordering.py --json`
+flag that does not exist: NOT MET as written, a declaration defect recorded rather than amended. The subject is the
+first Conjugal instance of the fleet Jev shadow-mode standard (bus `specs/fleet-jev-shadow-mode.md`, CANDIDATE r6).
+
 ## Clauses
 
 K1 | FIT | "A candidate is never accepted on evidence whose only author is its producer" | ADOPTED. Producer `claude-opus-5`, key `gpt-6-astra`, six refusals then acceptance. `[BUS]` `grep -n "porcelain\|untracked-files\|ignore-submodules\|assume-unchanged\|skip-worktree" bootstrap/session-checkpoint.py` returns the pins the key forced (authorship not established by the grep). The receipt identifies the accepting model and the extraction agent only; producer identity and completion evidence are `[INLINE]` testimony (S1 file), so no verified credit for the producer half | PROOF: an acceptance here whose producing and accepting actors resolve to one independence class
