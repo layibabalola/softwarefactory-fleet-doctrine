@@ -1069,3 +1069,64 @@ property that made them survive is what makes a per-OS-user secret unreachable f
 Unchanged consequence: no live Jev call can run on VIRTUAL-TEN as `obabalola`, and Adobe still has no
 §5 row to call from. Enabling it here would be a separate owner act on this machine for this OS user
 — and it is **not** requested: Adobe's filed disposition is DISTINGUISH.
+
+### ADDENDUM 2026-09-20 — live gateway receipt: ZDR is refused on this plan, and `probabilities` ARE returned
+
+The owner set `AI_GATEWAY_API_KEY` for OS user `obabalola` on VIRTUAL-TEN (length-only check; never
+printed), so the boundary recorded above is closed for this machine. Two live calls were then run
+against `typesafe-ai/jev` on `ai@7.0.107` from a scratch directory **outside every repository**, with
+**fabricated** state — no repository content, no log, no path, no e-mail, no machine or user name, no
+customer data — so no §4 egress screen was owed and none is claimed to have run. Total cost
+**$0.000059** (1,400 input tokens at $0.042/1M; output free). Script and stdout:
+`.claude-state/evidence/jev-smoke-20260920/`. This is a capability receipt only; **Adobe's filed
+disposition remains DISTINGUISH and no Adobe hook, corpus, constants module or shadow log exists.**
+
+**1. Zero data retention is REFUSED on the account behind this key.** With
+`providerOptions.gateway.zeroDataRetention: true` the gateway returned **HTTP 403**,
+`name: "ZdrUnauthorizedError"`, `"Zero Data Retention (ZDR) is only available for Pro and Enterprise
+plans. Current plan: hobby."`, and `providerMetadata.gateway.routing` shows
+`modelAttemptCount: 1, providerAttemptCount: 0` — the refusal happens **before the model**, which is
+exactly the fail-closed behaviour §3 describes. Note this is not a contradiction of the §1 sentence
+about moving to the paid tier on 2026-09-19: that concerns the **rate-limit** tier. The plan flag that
+gates **ZDR** reads `hobby`. Consequence for every project: **§4's egress screen cannot be relieved by
+ZDR on this key** — it is mandatory for any real corpus, and a `zdr: true` request does not degrade
+gracefully, it fails the call outright.
+
+**2. Per-option `probabilities` are returned for `choice` and `score`, and are not being used.** The
+gap this project reported from the §7.2 tables is now measured directly rather than inferred. One call
+carrying three typed questions (`boolean` + `choice` + `score`), reproduced twice:
+
+    latency          448 ms / 547 ms
+    usage            inputTokens 700, outputTokens 117, totalTokens 817 (identical both runs)
+    rounding         {"probabilityDecimals":2,"scoreDecimals":2}      <- a returned field absent from the §3 record
+    providerMetadata.typesafe.confidence  {"cause":1,"urgency":0.4}   <- choice/score only; NOT emitted for boolean
+    warnings         absent on a clean call (so it is conditional, and worth logging when present)
+
+    boolean  needsOwnerAction  -> { probability: 0.53 }            keys: type, probability   (no `probabilities`)
+    choice   cause             -> { choice: "auth_missing_credential",
+                                    probabilities: { auth_missing_credential: 1, capacity_exhausted: 0,
+                                                     transport_or_network: 0, timeout_no_motion: 0,
+                                                     config_or_pin_mismatch: 0, other: 0 } }
+    score    urgency           -> { score: 0.6,
+                                    probabilities: { "0": 0.62, "1": 0.26, "2": 0.02, "3": 0.1 } }
+
+So the full distribution is available on every `choice` and `score` answer. The §3 shadow-log record
+stores `answers` and `confidence` but no distribution and no `rounding`, and §7.2 reports only `agree`,
+`lowConfidence` and `booleanNearHalf`. **A 34-option `classification` scored at 76/338 = 22% was scored
+as argmax over a distribution that was returned and discarded.** Top-k acceptance plus a
+coarse-then-fine second stage — which §7 already says "is required" — are both reachable without any
+new provider capability. `boolean` needs no such change: its `probability` already IS the distribution.
+
+**3. Calibration behaved well on the one case checked, including where it was uncertain.** The
+synthetic state was a lane failure whose stderr tail ends in `401 Unauthorized: Missing bearer`. Jev
+chose `auth_missing_credential` at probability **1.00**, confidence **1**, in both runs — the same
+diagnosis this project reached by hand earlier the same day. More usefully, `needsOwnerAction` came
+back **0.53 / 0.51**, i.e. deliberately near half, and that hedge was *correct*: the real 401 observed
+on this board self-refreshed about one minute later without any human action, so the honest answer was
+"unclear". A near-half boolean is the shape §7.2's `booleanNearHalf` column already anticipates, and it
+is a reason to route to review rather than a defect. `urgency` returned 0.6 / 0.65 at confidence
+0.4 / 0.35 — low confidence, appropriately.
+
+**Bounds of this receipt.** n = 1 synthetic case, 2 runs. It establishes that the route works from this
+OS user on this machine and that the fields exist; it measures no agreement against any incumbent rule,
+and it licenses nothing under §2.4.
