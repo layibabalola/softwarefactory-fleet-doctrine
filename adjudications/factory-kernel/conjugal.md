@@ -39,6 +39,15 @@ review while it read the egress-screen fixtures (second instance after S8 r2). R
 flag that does not exist: NOT MET as written, a declaration defect recorded rather than amended. The subject is the
 first Conjugal instance of the fleet Jev shadow-mode standard (bus `specs/fleet-jev-shadow-mode.md`, CANDIDATE r6).
 
+**S15 — `S15-jev-capacity-refusal-replay`, delivered, NOT accepted, PARKED, counts zero.** Declaration conjugal
+`efb8ab8fe` (author 2026-09-20T13:53:42-05:00) precedes candidates `9e7e360f9`, `58dd7f8f0`, `e50b0dcda`, `cfdc286d7`
+(author dates 14:17:58, 14:28:00, 14:47:14, 14:57:35); each fast-forwarded to `master` (`merge-base --is-ancestor` exit 0).
+Key `gpt-6-astra` (class `codex-openai`): three rounds, three REFUSE verdicts, each on a reproduced defect (hard-link
+alias; junction TOCTOU + NDJSON parser; truncation-before-validate + unhashable choice), each fixed in the next commit;
+the declared three-round budget is spent. Receipts and mechanisms: `adjudications/factory-kernel/conjugal-receipts/S15-key-rounds.md`.
+No provider-filter termination this time: the fixture rule (no token-shaped strings) held. Second Conjugal instance of the
+fleet Jev shadow-mode standard; its measured deliverable (6 capacity refusals both keyword lists miss) is in the Outcome.
+
 ## Clauses
 
 K1 | FIT | "A candidate is never accepted on evidence whose only author is its producer" | ADOPTED. Producer `claude-opus-5`, key `gpt-6-astra`, six refusals then acceptance. `[BUS]` `grep -n "porcelain\|untracked-files\|ignore-submodules\|assume-unchanged\|skip-worktree" bootstrap/session-checkpoint.py` returns the pins the key forced (authorship not established by the grep). The receipt identifies the accepting model and the extraction agent only; producer identity and completion evidence are `[INLINE]` testimony (S1 file), so no verified credit for the producer half | PROOF: an acceptance here whose producing and accepting actors resolve to one independence class
