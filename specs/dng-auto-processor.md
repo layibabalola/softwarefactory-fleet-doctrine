@@ -1,5 +1,5 @@
 # DNG Auto Processor — factory spec (one writer: the `dng-design-steward` seat, docs/13 P-STEWARD step 7d; a posture change made anywhere else reaches this file as a census item of that seat's next pass)
-source_commit: 083b80e0134b01602b1c16978be473a4635636a0
+source_commit: f37a18eef0a4014433248684cafc37d2acb5c32a
 
 **Machine:** ULTRAMAGNUS (personal box). **Project root:** `C:\code\DngAutoProcessor - Claude`.
 **Product:** auto-grading pipeline for DNG timelapse clips emulating the operator's LRTimelapse
@@ -80,8 +80,28 @@ section it cites. Below the dispositions table is history: "current" or "must kn
   never overrides an unrefuted BLOCKER.
 - **Approach before code** (§2, a USER unfreeze in §0): at most 60 lines, ONE round by the opposite family,
   every BLOCKER and MAJOR answered before the first product byte, never a second approach round; a review silent
-  45 minutes is relaunched once, then IMPLEMENT proceeds with it recorded TIMEOUT. **The weave** (§2, USER, §0):
-  author families take turns by tier pair; a card keeps its family so its rounds stay comparable.
+  45 minutes is relaunched once, then IMPLEMENT proceeds with it recorded TIMEOUT. A card whose deliverable is a
+  test, fixture, receipt, scorer or harness takes a top-tier approach review, whose brief names, for each failing
+  test, the plausible wrong implementation it kills (§2, USER, §0). **The weave** (§2, USER, §0): author families
+  take turns by tier pair; a card keeps its family so its rounds stay comparable, and a retry keeps it too.
+- **Top-tier inference goes where a wrong answer costs the most rounds** (§2 "Top-tier posture", USER, §0):
+  product direction, instruments, retries and the review acts the fleet's Opus floor reaches; mechanical execution
+  stays where it is, and quality outranks token savings. A retry after a confirmed defect class is authored by the
+  top-tier model of the card's own family, and its brief owes the closed set including negatives: every witness, the
+  wrong implementation it kills, and the run that shows it. The top-tier model that wrote a lineage's product bytes,
+  or served as its instrument, never writes that lineage's disposition, challenge or successor design. When the
+  derived lever set is empty, a lineage closes or parks twice on one class, or evidence invalidates a premise,
+  direction is a design card by the top-tier seat by turn, challenged once by the other top-tier family: at most
+  three ranked levers, each with arms, a null, an arms-differ witness, a stop rule and a compute estimate; a decision
+  swarm then chooses. A swarm, convened by the USER-directed orchestrator for a consequential unresolved choice only,
+  runs Opus, Fable and Astra lanes at high effort and decides 2 of 3 with both providers in the majority; an
+  Anthropic-only majority against the Astra lane has that dissent's decisive premise measured and one re-vote, and
+  every decisive premise is re-measured before acting. An instrument run pauses and resumes on one model id and
+  never mixes models in one scored run; every other top-tier seat falls through at once, never to Opus as an
+  author. The posture proves itself per review round, intent-to-treat with parks counted, scored by a seat that did
+  not author it. It DISTINGUISHES the
+  fleet's "model tiers by act" ruling for this board only, in that a top-tier model writes product bytes on a retry
+  (proposed to the fleet as `ruling-candidates/top-tier-inference-for-durable-product-outcomes-r1.md`).
 - **Failover shifts work; nothing waits** (§2, USER, §0): a dark family's seats move to their tier
   analogs; a round with no live cross-family key is SINGLE-FAMILY (two non-author live-family keys, a third
   adversary on guard, hook, CI, ratifier, acceptance or data-loss cards, stamped) and is re-reviewed cross-family
@@ -113,11 +133,11 @@ section it cites. Below the dispositions table is history: "current" or "must kn
 | Traffic cop `dng-traffic-cop` | Opus; an exhausted Opus defers the tick, never swaps | stateless scheduled tick, fresh session per fire: collect, land, dispatch, record; proceeds under stated assumptions (§2, §3; docs/13 P-COP) |
 | Design steward `dng-design-steward` | Opus, every six hours | acts only on OWNER-DEFECT tokens and PARKED cards a cop wrote, plus the doctrine loop; may edit docs/12, docs/13 (P-COP included, never P-STEWARD) and docs/14; disposes of a park as ONE dimensioned batch pass or as the ruling the park names; closes a token only by appending a CLOSED line; never dispatches, launches keys, lands or opens ordinary cards; writes this spec and this board's kernel filing; a receipt every run (§7a; docs/13 P-STEWARD) |
 | USER-directed orchestrator | Opus at medium effort (USER, §0) | launches each seat it drives as a CLI process (`codex exec`, `claude -p`) whose launch json, written first, carries `phase`, `"route": "cli"` and its `pid`; not an unfreeze: adds no lane, gate, tool or scheduled task, changes no cop seat, key tier or landing rule, edits no governing doc (§0; §2 launch route) |
-| Executor | Sonnet or Sol under the weave; Luna only for a fixed task with prewritten failing checks; complex diagnostics Sol, or Sonnet while Codex is dark | bounded brief, at most 4 files, dies at return; a Codex author runs §10's author route and a Sonnet committer commits (§2, §10; docs/13 C-COMMIT) |
-| Approach review | opposite family: Sol for a Claude author, Opus for a Codex author; Astra or Fable when the card touches a guard, hook, CI, the ratifier, the acceptance surface or a data-loss path | one round before any product byte; refuses on ambiguity (§2; docs/13 B-APPROACH) |
-| Key 1 correctness | opposite family: Sol for a Claude author, Sonnet for a Codex author | per subject; named paths and a command budget (§2, §4a) |
+| Executor | Sonnet or Sol under the weave; Luna only for a fixed task with prewritten failing checks; complex diagnostics Sol, or Sonnet while Codex is dark; a retry (attempt 2 or later of an implementation card) the top-tier model of the card's own family at high effort, Fable for a Claude-family card and Astra for a Codex-family card, and Sonnet for a Claude-family retry while Codex is dark (USER, §0) | bounded brief, at most 4 files, dies at return; a Codex author runs §10's author route and a Sonnet committer commits (§2, §10; docs/13 C-COMMIT) |
+| Approach review | opposite family: Sol for a Claude author, Opus for a Codex author; Astra or Fable when the card touches a guard, hook, CI, the ratifier, the acceptance surface or a data-loss path, or when its deliverable is a test, fixture, receipt, scorer or harness (USER, §0) | one round before any product byte; refuses on ambiguity (§2; docs/13 B-APPROACH) |
+| Key 1 correctness | opposite family: Sol for a Claude author, Fable at high effort for a Codex author (USER, §0; the fleet's Opus floor for a review act) | per subject; named paths and a command budget (§2, §4a) |
 | Key 2 adversarial | Anthropic, never the author's model: Opus, the acceptance surface included. Fleet RULINGS R1 (an owner ruling, not subject to adopt-or-distinguish) makes Opus the floor for a review act and bars Haiku from one, so docs/14 §2's Haiku tier for a chore of at most 50 lines is never filled; a pool the bar empties is HELD-FOR-KEY, never a substitute (§2). | per subject; Opus, the default key 2, never authors a reviewed subject (§2, §4a) |
-| Fable / Astra | taking turns by card | experiment dispositions, `needs: fable` design cards and T3 approach reviews only; never a key-2 tier, never scheduled (§2) |
+| Fable / Astra | taking turns by card | experiment dispositions, `needs: fable` design cards and T3 approach reviews; and, by the USER's ruling in §0, the retry author, key 1 for a Codex author (Fable), the blind done-test judge (Fable, launched only by the USER-directed orchestrator on the CLI route) and USER-directed decision-swarm lanes; never a key-2 tier, never scheduled, never the cop (§2) |
 | Status | Haiku, cross-checked by a read-only Haiku swarm | reads, and writes only its own run receipt and report (§8); `dng-status-digest` where the USER added it, otherwise chat on "status"; pushes only on exception (§2, §8) |
 
 - **The factory is frozen** (WORK.md rule 3): no new tool, standard, lane, gate or scheduled task without the
