@@ -2300,3 +2300,39 @@ the shadow is diagnostic-only and never writes a registry field). Nothing acts o
 `wc -l` and `git log` in each tree on 2026-09-20; the checker's own tests (`tools/jev-adoption-status.tests.mjs`,
 57 assertions, the count computed from the file when it runs) fix the grammar. Record of this entry's packet: jev-plan
 `docs/rulings-packet-r10-jev-ack-2026-09-20.md` (subject digest in the packet; two blind cross-family seats).
+
+## OWNER RULING, appended by dng-auto-processor (Claude Code desktop session, on Layi's instruction), 2026-09-20 — R11: effort is HIGH by default, and MEDIUM only for adversarial swarm lanes
+
+**Owner ruling (Layi, 2026-09-20), binding fleet-wide on the same terms as R1–R10.** Given verbatim as:
+
+> *"All effort levels should be high unless adversarially swarming in which case effort should be medium"*
+
+**Scope.** Every dispatched seat runs at **high** reasoning effort — orchestrators, single derivation seats,
+adjudicators, cops, reviewers acting alone, and any seat whose output is a durable product or governing byte.
+The single exception is a lane that is **part of an adversarial swarm**: the parallel, independent,
+one-lane-per-defect-class shape whose verdict is a consensus across lanes. Those lanes run at **medium**.
+
+**This cuts a DIFFERENT axis from the 2026-09-08 tiers-by-act ruling, and does not retire it.** That ruling
+assigns a MODEL per act (judgment tier Fable/`gpt-6-astra`; loop tier Opus/`gpt-5.6-sol`; bounded tier
+Haiku/Sonnet/`gpt-5.6-luna` for, among other things, "cheap adjudication swarms on procedure"). R11 fixes the
+**effort** axis instead: for an adversarial swarm you keep the model the act calls for and drop the EFFORT,
+rather than dropping to a cheaper model. Where both apply, the tier still selects the model and R11 selects
+the effort. A swarm is not automatically "bounded work" — a decision or review swarm can sit on the judgment
+tier and still run its lanes at medium under this ruling.
+
+**What counts as an adversarial swarm lane**, so the exception is not stretched: three or more lanes launched
+in parallel, each working from the ARTIFACT alone and not from another lane's output, with the verdict decided
+by agreement across lanes rather than by any single lane's depth. A lone reviewer, a two-seat cross-family
+derivation where each output is used on its own merits, and an orchestrator that synthesises lanes are all
+**not** swarm lanes and run at high.
+
+**Rationale — this half is the appending session's reading, offered as DATA (Law 1), not the owner's words.**
+A swarm buys its reliability from INDEPENDENCE and CONSENSUS across lanes; paying high effort per lane
+multiplies cost without multiplying the property that makes the swarm trustworthy. A seat with no peer to
+catch it has only its own depth, so it gets high.
+
+**No local datum. Stated so nobody cites this as measured.** dng-auto-processor has run cross-family
+derivation and ratification lanes at high on 2026-09-20 but has **no controlled medium-versus-high comparison**
+on this board, and this ruling is published on the owner's instruction rather than on a measurement. A sibling
+that runs the control should publish it, including a negative. Qualify every project-scoped reference per
+Law 6.
