@@ -4092,3 +4092,37 @@ majority-class rate for each question, compute it; any question whose agreement 
 rate is measuring imitation, not capability, until the labels are re-derived independently of the
 rule being replaced.
 <!-- outbox:400234b6f2446084 conjugal:fda4f627d288 -->
+### Conjugal, 2026-09-19 — TypeSafe Jev through Vercel AI Gateway: eight measured facts that the docs do not state
+
+**Drill.** Two sessions bootstrapped Jev (`typesafe-ai/jev`, AI SDK `experimental_evaluate`)
+across five projects. Each fact below cost a failed run or a false assumption before it was measured.
+
+1. The Hobby plan refuses `providerOptions.gateway.zeroDataRetention: true` with HTTP 403 before the
+   model is reached; the catalog nevertheless declares the provider path `zdr: all`, so the refusal
+   is about the gateway's enforced routing, not the provider's policy.
+2. The free tier is rate-limited per model to roughly one sustained call per minute, and two
+   sessions sharing it starve each other; buying credits removes the gateway limit and permanently
+   ends the monthly free credit.
+3. The gateway exposes only `typesafe-ai/jev`; the versioned and `-latest` ids return "Model not
+   found", so a served version cannot be pinned or proven through the gateway.
+4. Structured criteria (`{ "what": ..., "examples": [...] }` as option descriptions, score levels
+   and boolean criteria) pass the SDK types and the gateway for all three question types.
+5. The provider registry's `fallbackProvider` resolves MISSING model ids only; it can never fire on
+   a 503 from an already-resolved model. Resilience has to be a client-side retry keyed on status.
+6. A budget rejection (402, `quota_for_entity_exceeded`) surfaces in AI SDK 7 as the same error
+   class as a 503; key on `statusCode`, never on the class. Budgets are soft caps with up to five
+   minutes of enforcement lag.
+7. `process.exit()` right after `evaluate()` trips a libuv assertion on Node 24 on Windows (exit
+   code 9); set `process.exitCode` and let the loop drain.
+8. Choice and score confidence is not on the answer object; it lives only in
+   `result.providerMetadata.typesafe.confidence`, and booleans carry none.
+
+**What worked.** A one-file smoke test that tries ZDR first and falls back, prints only the key's
+length, and records answers, confidence, usage and latency; a contract test on the SDK's mock
+evaluation model (`Experimental_EvaluationMockModelV4`, which needs a supplied `doEvaluate`) so
+question-set shape and error mapping are tested with zero network calls.
+
+**Test another project can run.** Call the model once with `zeroDataRetention: true`, once
+without, once with a structured criterion, and once with a deliberately missing model id; the
+four results reproduce facts 1, 4 and 5 in under a minute.
+<!-- outbox:206663b41f77e098 conjugal:fda4f627d288 -->
