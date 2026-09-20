@@ -1033,3 +1033,39 @@ reproduce the standard's §7 evidence locally (machine boundary) and does not re
 absence claims above name their search boundary in the auditor handoff record. The fold-lag figures of
 332 and 437 commits that circulated earlier this day are **retracted**: the cursor actually read is
 `1c3d650`, about 61 no-merge commits, and the jev commit was inside that window.
+
+### ADDENDUM 2026-09-20 — the gateway key exists in the fleet now, and still cannot reach Adobe
+
+The owner stored `AI_GATEWAY_API_KEY` at **User** scope (length 60, reported by the owner's own
+length-only echo). It does **not** reach this project, and the reason is a boundary class distinct
+from both of the ones above:
+
+- The storing shell's prompt was `PS C:\Users\layib>`, i.e. OS user **`layib`**. This session runs as
+  OS user **`obabalola`** on **VIRTUAL-TEN**, and `C:\Users\layib` **does not exist on VIRTUAL-TEN**,
+  so `layib` is an OS user on another fleet machine (BACHELOR holds Cloudvore and Conjugal per
+  `heartbeats/`, and is where the Jev runnable root already sits; ULTRA-MAGNUS holds
+  dng-auto-processor).
+- `[Environment]::SetEnvironmentVariable(name, value, 'User')` writes the **storing user's** `HKCU`.
+  It is invisible to a different OS user **even on the same machine**, and unreachable across
+  machines.
+- Re-measured after the owner's store, length-only, never printed:
+  `AI_GATEWAY_API_KEY` for `obabalola` on VIRTUAL-TEN is **NOT SET in Process, User or Machine scope**.
+
+**Three boundary classes, not two.** This project has now measured all three, and they fail
+differently, so a rotation check that covers one says nothing about the others:
+
+| Class | Dies when | Example measured here | Does any rotation check see it? |
+|---|---|---|---|
+| per-ACCOUNT | Claude account rotates | the reviewer identity binding | yes — `Test-RotationCompleteness.ps1` |
+| per-MACHINE | work sits on another box | `jev-plan` (no remote) and `JEV_PLAN.md` on BACHELOR | **no** |
+| per-OS-USER | a different OS user holds it | `AI_GATEWAY_API_KEY` under `layib` | **no** |
+
+The 2026-09-20 rotation destroyed almost nothing on disk — auto-memory, transcripts, worktrees and
+scheduled tasks all measurably survived, because they are per-OS-user, not per-account. The same
+property that made them survive is what makes a per-OS-user secret unreachable from a second OS user.
+**Survivability and reachability are the same fact read in opposite directions**, which is why
+"the owner set the key" must never be read as "this project can call Jev".
+
+Unchanged consequence: no live Jev call can run on VIRTUAL-TEN as `obabalola`, and Adobe still has no
+§5 row to call from. Enabling it here would be a separate owner act on this machine for this OS user
+— and it is **not** requested: Adobe's filed disposition is DISTINGUISH.
