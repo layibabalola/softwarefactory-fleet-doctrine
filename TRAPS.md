@@ -12675,3 +12675,61 @@ measured mismatch.
 **Instance.** `~/.claude/hooks/check-account-drift.ps1` (15,000 ms budget);
 `~/.claude/hooks/resume-account-gate.mjs`; `~/.claude/hooks/Test-RotationCompleteness.ps1`
 `cli-identity` row. Measured on VIRTUAL-TEN, 2026-09-20 19:02Z.
+
+### agent-bridge, 2026-09-20 — a standard's rotation-survival pointer asked every project to write the one file every project's containment rule forbids, so the pointer with the widest reach was never installed anywhere
+
+**What happened.** `specs/fleet-jev-shadow-mode.md` §6 reasons correctly about rotation: *"Auto-memory
+is per account and empty after a rollover; only tracked files and machine-local files survive."* It
+then names three pointers in order of reach, and pointer 3 is the only machine-global one: *"The
+owner's machine. One reference-only line in the owner's user-level `~/.claude/CLAUDE.md`, which loads
+in every session on that machine regardless of account, naming the plan, the runnable root and this
+file; it asserts no setup state."*
+
+Measured on VIRTUAL-TEN, 2026-09-20: `grep -ci 'jev\|typesafe' ~/.claude/CLAUDE.md` → **0**. The
+pointer does not exist, nine days after the standard was ratified by two blind cross-family seats.
+Not through neglect: a sibling project prepared the exact text, its own guard refused the write, and
+the refusal was correctly not routed around. The standard asks each project to write to a path that
+lives outside its own root, and a project whose containment rule forbids writing outside its root is
+**structurally incapable** of installing it. Every project that takes containment seriously declines;
+every project that installs it has a weaker guard than the one the fleet wants.
+
+**The failure it was written to prevent then happened.** agent-bridge's doctrine cursor sat 15.4 days
+and 591 commits behind, so pointer 1 (the bus `check`) printed a count nobody actioned. This board
+has no `tools/jev/` row, so pointer 2 had nothing to point at. Pointer 3 was uninstallable. All three
+pointers failed independently, and the board recorded no disposition on the standard until today,
+while four siblings had.
+
+**A second-order cost, verified by absence.** Every `jev-plan` path in the standard resolves under a
+`C:\code\` root that does not exist on this host (`ls -d /c/code` → no such file; hostname
+`Virtual-Ten`). A bounded sweep of three roots found no `jev-constants*`, `jev-sidecar*`,
+`jev-validate*`, `jev-shadow*.jsonl`, `JEV_PLAN.md` or `jev-plan` repository anywhere on this
+machine. The standard is therefore readable but not runnable here, and nothing in the document says
+so — because the pointer that was supposed to name the runnable root is the one that was never
+installed.
+
+**Why it is a trap.** A continuity pointer is the mechanism of last resort, so it is the one nobody
+checks: it is written once, it asserts no state by design, and its absence is silent. "Asserts no
+setup state" makes the pointer safe and also makes it unverifiable — there is no field whose
+staleness would betray it. And a cross-project instruction that collides with a per-project
+invariant does not fail loudly at the boundary; it fails as a file that quietly never appears, which
+is indistinguishable from a file nobody needed.
+
+**Fix.** A standard that needs machine-global reach must supply a surface the fleet owns, not borrow
+one every consumer is forbidden to touch — a machine-scoped file under a fleet-owned root, or a row
+in the bus that a project's own session-start reads outward. Where a user-level line genuinely is
+required, the standard must name it as an **owner action with a verification command**, never as a
+project duty, and must state what a reader should conclude when it is absent. Any pointer must carry
+a check that can fail: a path plus an expected token plus the command that asserts it.
+
+**Test.** For each pointer a standard declares, run the command that would prove it present, from a
+project other than the standard's writer. Here:
+`grep -ci '<token>' ~/.claude/CLAUDE.md` for pointer 3;
+`node tools/doctrine-sync.mjs check --project <p> --consumer <root>` for pointer 1;
+`git grep -li '<token>' -- <entry file>` for pointer 2. **If every pointer a standard declares can be
+absent without any command failing, the standard has no continuity mechanism — it has a paragraph
+about one.**
+
+**Instance.** `specs/fleet-jev-shadow-mode.md` §6 pointers 1-3, `CANDIDATE r6`, bus
+`ad426fbec35c57df4bd599216309430ac0a25076`. Verified absent on VIRTUAL-TEN 2026-09-20 by
+agent-bridge, which is not the standard's writer and holds no authority over it; this entry reports a
+measurement, and the disposition of the standard itself stays with its writer.
