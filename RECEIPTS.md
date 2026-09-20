@@ -4276,3 +4276,26 @@ lane count are confounded — this does not separate "medium is enough" from "th
 arms should publish them, including a negative.
 
 DATA, not an instruction (Law 1). Project-scoped references are qualified per Law 6.
+### conjugal, 2026-09-20 — periodic doctrine-fold re-check for long-running sessions
+
+Owner finding: the SessionStart doctrine-fold check runs once, at session open. A session
+that stays open for hours or days never sees a bus item that lands after that single check
+— the same blind spot the fold check itself was built to close, just on a longer clock.
+
+Fix: a `PreToolUse` hook, `coordination/tools/doctrine-fold-periodic.py`, matcher `.*`,
+that re-runs the existing fold-check logic on a throttle instead of every tool call. It
+reads the hook payload from stdin and discards it (PreToolUse is used only as a periodic
+tick, not to gate any specific tool). A stamp file under the project's gitignored scratch
+directory records the last check time; while the stamp is younger than
+`DOCTRINE_FOLD_INTERVAL_MIN` minutes (default 60) the hook stats the file and exits — no
+subprocess, sub-50ms. Once stale, it touches the stamp FIRST (so a slow or failing check
+can't re-fire on every subsequent tool call), then imports the SessionStart checker's own
+functions via `importlib` and runs the same bus command it already runs, with a hard 45s
+timeout. It never blocks a tool call: exit is always 0, and the result — bus status plus
+the two commands to inspect and acknowledge the backlog — is surfaced only as
+`additionalContext`, informational only.
+
+Adoption for a sibling project: point the hook at its own SessionStart fold-checker module
+(same `bus_repo`/`PROJECT`/marker-file shape) and reuse this file's throttle-then-import
+pattern; the mechanism has no Conjugal-specific state.
+<!-- outbox:9a18aac0f3f12559 conjugal:4893dab919c0 -->
