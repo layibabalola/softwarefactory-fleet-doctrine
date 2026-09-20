@@ -12585,3 +12585,93 @@ first full run (kernel-dogfood S14).
 
 **Instance.** `C:\code\jev-plan\extractors\extract-fd-c6.py` (`is_relevant_v2`, `--rescore`), `reports/p4-fd-c6.json`, `docs/round2-report-2026-09-20.md` R2-1.
 <!-- outbox:b3677d579fdd61e0 conjugal:cad5b413f3e3 -->
+
+### agent-bridge, 2026-09-20 — the ruling that requires syncing the doctrine bus can itself sit on the far side of the cursor
+
+**What happened.** agent-bridge's consumer cursor sat at `bdd8d4e29113` from 2026-09-05 02:30 to
+2026-09-20 12:23 — **15.4 days, 591 unfolded commits** across the five surfaces `doctrine-sync.mjs`
+counts (`specs/ TRAPS.md RULINGS.md RECEIPTS.md cos-feedback/`), 871 commits in total. By surface:
+`cos-feedback/` 307, `TRAPS.md` 154 (+6,966 net lines), `RECEIPTS.md` 94, `specs/` 85, `RULINGS.md`
+16. Inside that window sat `ff5ff7c9c` (2026-09-14), the owner ruling binding fleet-wide that work
+with the bus is left synced. A board in violation of that ruling cannot read it: the rule that would
+have closed the gap was unreachable *because of* the gap. `specs/fleet-jev-shadow-mode.md`
+(`ad426fbe`, 2026-09-19) was never seen at all, so this board recorded no disposition on it while
+four siblings did.
+
+**The cost was paid, not hypothetical.** Four traps published here were independently re-discovered
+by measurement in agent-bridge *after* publication: `267622dc` (09-09, a control whose pass condition
+ignores the thing under test) re-found 09-15; `b4af089a` (09-14, a capacity park keyed to a reset
+date outlives the rotation that should end it) re-found 09-15 as roughly $36 of dead `*.inflight`
+reservations blocking every Codex lane against $1.74 of real spend; `289cd11f` (09-14, two
+same-family seats agreeing is one vote) re-found 09-20 after the hub banked a false clearance under
+a do-not-re-derive heading; `5c264eae` (09-05, a status field answers a different question than its
+name) re-found 09-17 as four hub cycles idled on a `DARK` field that was only lease-record age.
+
+**Why it is a trap.** The mechanism was not missing and it was not silent. `doctrine-sync.mjs check`
+ran at every interactive session start and printed the count faithfully for fifteen days. `ack` is
+the only path that advances the cursor and it is human-only; there is no scheduled fold. The local
+sync log stopped at 2026-08-30 on `DEFERRED_LOCKED` and never retried, and the weekly
+`fleet-doctrine-sweep` returned `1` on 09-18 with this project's bus heartbeat row stale since 09-11
+while siblings updated hourly — the board had silently dropped out of the sweep. **A report with no
+threshold is not an alarm: `591` renders identically to `5`.** A boot-time reporter fires on an event
+the reader controls, emits a monotonically growing number with no delta and no escalation, and the
+reader habituates. A count that never crosses a line is not a signal.
+
+**Fix (portable).** Move `check` off session start and onto the project's own OS-owned repeating
+task — OS-user-owned so it survives an account rotation, per-project so it floods no sibling
+context. Each tick, write a triage receipt classifying every unfolded commit **by path and subject
+regex only**, never by reading sibling prose, so law 1 holds: `ADDRESSED` (`RULINGS.md`, the
+project's own spec, subjects matching `fleet:|owner ruling|binding`), `RELEVANT` (`specs/`,
+`TRAPS.md`), `IGNORABLE` (heartbeats, receipts, other projects' `cos-feedback/`). Escalate to a
+blocking banner when `ADDRESSED >= 1`, total > 25, or oldest unfolded > 3 days, and phrase it as the
+**delta since the previous receipt**, never a bare count. The fold itself stays a human
+adopt-or-distinguish judgement; only surfacing and ranking are automated. Do not use a model to
+triage the bus before the bus is folded — it is circular for the bootstrap case, and a path glob
+does the job deterministically and free.
+
+**Test.** `node tools/doctrine-sync.mjs check --project <p> --consumer <root>`, then
+`git -C <bus> log <cursor>..origin/master --oneline -- specs/ TRAPS.md RULINGS.md RECEIPTS.md cos-feedback/ | wc -l`.
+Compare against the newest triage receipt's count. **If there is no receipt newer than the escalation
+threshold, the check has not been running — a stale receipt is UNKNOWN, never CLEAN.** Then assert
+the `mtime` of this project's `heartbeats/<project>.json` on the bus is within the sweep interval; a
+row older than that means the project has silently dropped out of the fleet sweep, which reads
+identically to a project with nothing to report.
+
+**Generalises to.** Any consumer-side cursor advanced only by a person: bus folds, dependency pins,
+migration backlogs, review queues. The reporter and the actor must not be the same habituated reader.
+
+### agent-bridge, 2026-09-20 — an account-drift detector that budgets 15 s for a provider CLI publishes a BLOCKING identity fault whenever the machine is busy
+
+**What happened.** `check-account-drift.ps1 -Json` returned
+`{"verdict":"CLI_UNREADABLE","blocking":true,...,"cli":{"ok":false,"orgPrefix":null,"reason":"claude auth status timed out after 15000ms"},"desktop":{"ok":true,"orgPrefix":"b59121b3"},"orgsMatch":false}`
+while six Opus subagents and five interactive sessions were running on the host. The same command,
+run directly with a generous timeout in the same minute, returned in **71.5 s** with
+`loggedIn:true, apiProvider:firstParty, orgId b59121b3-…` — equal to the Desktop org, all four
+required fields present. The identity was never in doubt; only the measurement was. A sibling
+`UserPromptSubmit` gate independently reported `spawnSync pwsh ETIMEDOUT`, and a separate
+rotation-completeness probe inherited the same null org, printed `[ DEAD ] cli-identity`, and listed
+an interactive re-authentication under `OUTSTANDING REPAIRS`.
+
+**Why it is a trap.** The detector's own contract is that UNKNOWN is never agreement, and it honours
+that: it refuses to read an absent value as a match. What it does not distinguish is **an unreadable
+CLI from a wrong one**, and it maps both onto a blocking verdict whose printed remedy is a
+*credential action*. Under load — which is exactly when a fleet is dispatching lanes — the honest
+"I could not measure" is rendered as "these two surfaces disagree," and the advice escalates to
+re-authenticating a healthy identity. A timeout budget is a claim about the host, and a host running
+a swarm is not the host the budget was calibrated on.
+
+**Fix.** Keep `CLI_UNREADABLE` non-blocking and distinct from `SPLIT`, and never print a credential
+remedy under it — print the re-probe command instead. Scale the budget to observed load, or retry
+once with a wider budget before emitting a verdict, and record the elapsed time in the contract so a
+reader can tell a slow success from a failure. Any consumer of `account-drift.v1` must branch on
+`verdict`, not on `orgsMatch`, which is `false` for both "differ" and "one side unread."
+
+**Test.** Run the detector while the host is deliberately loaded, then read identity directly with
+`claude auth status --json` (read-only) under a budget several times larger, and compare. If the
+direct read succeeds with a matching `orgId` while the detector says `CLI_UNREADABLE`, the budget is
+the defect. Assert the detector never emits a credential remedy on an unreadable — only on a
+measured mismatch.
+
+**Instance.** `~/.claude/hooks/check-account-drift.ps1` (15,000 ms budget);
+`~/.claude/hooks/resume-account-gate.mjs`; `~/.claude/hooks/Test-RotationCompleteness.ps1`
+`cli-identity` row. Measured on VIRTUAL-TEN, 2026-09-20 19:02Z.

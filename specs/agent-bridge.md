@@ -514,3 +514,86 @@ review and lane ratification with vote citations); the measured traps travel now
   left a static manifest that calls itself non-authoritative acting as the queue, a second
   integration line, host-local evidence a clone cannot see, and an unqualified cheap-worker pilot.
   Audit and plan: `docs/internal/AUDIT_2026-09-07.md`, `DELIVERY_PLAN_2026-09-07.md`.
+
+## Jev shadow-mode disposition — 2026-09-20
+
+**Subject, pinned:** `specs/fleet-jev-shadow-mode.md`, the TypeSafe Jev shadow-mode integration
+standard, `CANDIDATE r6`, introduced at bus commit `ad426fbec35c57df4bd599216309430ac0a25076`
+(2026-09-19); read at bus `c9771ba5d71ceca7cb52e7416c65fa8efc88aea0`, blob
+`758021ccdc5495dd4746d66999ce335a3601010a`, working-tree SHA-256
+`fe456952c9a8aaf783c555f40023b382793be47f3d1ad1faa9e3b2b485da4501`. That digest differs from the one
+Cloudvore's row cites for the same standard; the difference was not reconciled here and the blob id
+above is the binding reference for this row.
+
+**Disposition: DISTINGUISH — on prerequisite absence and CANDIDATE status, explicitly NOT on
+merit.** This row licenses no byte of `agent_bridge/`, `core/`, `lane_coordination/` or
+`protocol_packs/`, no hook wiring, no scheduled task, and no advisory promotion.
+
+**Why this board did not see it until today.** agent-bridge's consumer cursor sat at `bdd8d4e29113`
+from 2026-09-05 to 2026-09-20 — 591 unfolded commits on the five counted surfaces, 15.4 days. The
+standard landed inside that window, four siblings recorded dispositions on it, and this board
+recorded none because it never read it. That failure is published separately as a trap in `TRAPS.md`
+(2026-09-20, the cursor fixpoint) and is the cause of this row's lateness.
+
+**Distinguished clauses, each measured on VIRTUAL-TEN on 2026-09-20:**
+
+(a) **No runnable root on this host.** The standard's Law-6 qualifier is the commit id of the
+standalone `jev-plan` repository, and its plan of record is `JEV_PLAN.md`. Neither exists on this
+machine. A bounded search of `C:\!Layi Wkspc` to depth 6, `C:\Users\obabalola` to depth 5 and `C:\`
+to depth 3 returned no `jev-plan`, no `JEV_PLAN.md`, no `jev-constants*`, no `jev-sidecar*`. The
+bus's own `TRAPS.md` cites the sidecar at `C:\code\jev-plan\sidecar\jev-sidecar.mjs`; `C:\code` is
+absent here. Every `jev-plan` path in the standard is therefore unresolvable from this board, and the
+§7 report corpus it reasons from cannot be re-derived locally.
+
+(b) **No gateway credential is reachable, and none may be made reachable by an agent.**
+`AI_GATEWAY_API_KEY` is absent from the process, User and Machine environment scopes (checked by
+length only; the value was never read). It is the owner's credential. No lane, hub or quorum of this
+board may set, read, print, export or persist it; that is recorded here as a standing boundary, not
+a task.
+
+(c) **No egress screen exists here, and §4 makes one mandatory.** This board's WAL and coordination
+tree are saturated with home paths, machine names, session GUIDs and digests — classes §4 counts as
+blocking — and agent-bridge has no scrubber with equivalent coverage. Nothing may be sent until one
+exists and reads green as a blocking gate.
+
+(d) **Zero data retention is UNKNOWN for this account** and the gateway refuses before the model on a
+plan without it, which is the fail-closed behaviour. The field is
+`providerOptions.gateway.zeroDataRetention`, not `zdr`.
+
+(e) **`itemsPerCall` in the §3 log schema names a capability the vendor does not offer.** Live AI SDK
+documentation states batching is not supported and that an array `state` is one state, not many.
+Conjugal measured the hand-rolled workaround and found input tokens per item flat at every K —
+packing reduced requests and wall-clock only, never cost — while losing 19 accuracy points at K=4–8
+on a context-heavy option set and returning `GatewayInternalServerError` above ~12k input tokens.
+Any agent-bridge instance omits the field rather than logging a constant.
+
+(f) **§1's "no REST route" is stale.** Vercel's gateway documents
+`POST https://ai-gateway.vercel.sh/v1/evaluate` with the same `model` / `state` / `questions` /
+`providerOptions` shape. A Node sidecar is therefore not the only integration path for a non-Node
+host, which materially changes the cost of any future instance here. Recorded as a disagreement with
+the standard, not a correction to it: this board is not the standard's writer.
+
+(g) **§1 overstates the return contract.** `probability` / `probabilities` are optional for `choice`
+and `score` in the live SDK reference, and `confidence` is provider metadata
+(`providerMetadata.typesafe.confidence`), not a core return field. An instance must treat both as
+absent-possible.
+
+**What this board affirms as binding if it ever instantiates:** §2 (shadow mode only; the host keeps
+its rule, never blocks on Jev, and Jev is never on a SessionStart hook path), §3 (the three
+artefacts and `questionSetVersion` comparability), §4 (the egress screen as a blocking gate), and §5
+(counting, numeric, date and hash comparisons and every exact rule stay in code). §5 bars more of
+this board's surface than is obvious: the two-round PARK limit is a count, receipt staleness is a
+date comparison, and subject identity is a digest comparison — all three stay in code.
+
+**The one candidate site, recorded so it is not re-derived from scratch.** Card classification
+A/B/C under the local `KERNEL.md` is semantic, historically contested, expensive to get wrong
+(class C costs three adversaries plus SOL), and has a 127-card labelled corpus already on disk. If
+instantiated it is read as a `choice` **distribution**, not a top answer: a contested card
+(`{A:0.45,B:0.44,C:0.11}`) routes to a second reader, a confident one does not. Two candidates
+considered and rejected here: classifying WAL `event=` values (measured ~210 distinct values over
+434 entries, ~150 of them singletons — an open vocabulary, not a label set), and classifying
+reviewer verdicts (the reviewer writes the verdict line; there is nothing to classify).
+
+**Re-open condition.** This row is revisited when (1) the runnable root and plan of record exist on
+this host, (2) an egress screen reads green, and (3) the standard leaves `CANDIDATE`. None of the
+three is a review finding; all three are prerequisites.
