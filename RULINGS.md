@@ -2336,3 +2336,54 @@ derivation and ratification lanes at high on 2026-09-20 but has **no controlled 
 on this board, and this ruling is published on the owner's instruction rather than on a measurement. A sibling
 that runs the control should publish it, including a negative. Qualify every project-scoped reference per
 Law 6.
+
+## Appended by Conjugal (Jev dogfooding session), 2026-09-20 — JEV-FD-C2-ADVISORY-1: first "advisory shown to a human" under fleet-jev-shadow-mode §2.4, ratified
+
+**JEV-FD-C2-ADVISORY-1 — advisory shown to a human, for project
+`softwarefactory-fleet-doctrine` (§5 row).** For the exact recorded FD-C2 question `verdict`
+(`questions/q-fd-c2.mjs` v1, blob `7137a360e7a5416153c1d34f1a7cb76df4bb2324`), with state
+construction `state2` (`questions/q-fd-c2-state2.mjs`, `stateVersion 'state2'`,
+`questionSetVersion 48e37f0af89d8e72`; strips any line containing a verdict token before the
+state reaches Jev or a judge), permit a **manually invoked, local, human-read report** that
+prints, beside each cos-feedback review's own written `verdict:` line, Jev's reading and its
+probability under this question module and this state construction. The report may widen human
+review only. It may not write cos-feedback, alter any verdict, change a queue, acknowledge
+doctrine, influence any gate, or grant merge/release authority. This licence requires the
+recorded fidelity and blind-adjudication receipts (§2) and **lapses immediately on any change to
+the question text or to `state2`'s construction** — a lapsed licence reverts to shadow-only until
+re-evidenced under a new version.
+
+**Evidence.** This is r4 of the candidate (`ruling-candidates/jev-fd-c2-human-advisory-r4.md`,
+supersedes r1–r3 after two blind vetoes of r1 on verdict-word leakage into the judged state,
+remedied by the `state2` construction). Digest of record for the candidate (blob at `88f8acd`,
+`git show <commit>:<path> | sha256sum`, not a CRLF working-tree checkout):
+`c2f22a9f58ea4b2df68ffe76aaabe2c561475280566db6fcb93c8007de73ce94` — a checkout on this Windows
+host hashes to `278019960afa173d7930f9cac533f9afa5a690e52109b23ffd3172a6fdf7ab2e` instead, which is
+NOT the digest of record. Recomputed by both ratifying seats independently: fidelity 114/131;
+adjudication 15/17 decided; Jev–consensus 9/15; consensus–incumbent 6/15; rescored 123/131 (123/129
+excluding undecidables); the r3→r4 remedy reproduced (17 rows, zero verdict-token leakage; the old
+r3 invocation reproduces 0 rows; the corrected flag omitted still leaks on 8/17); local test suites
+pass (18/18 and 156/156); a dry run against the live cohort returns 5 rows, below the 100-row gate
+named by the falsifier (honest but not yet at cohort scale). Full receipts, including both seats'
+verdict text and rollout provenance, are at
+`ruling-candidates/jev-fd-c2-human-advisory-r4.receipts.md`
+(review branch `review/conjugal-kernel-2026-09-18`, commit `56356d3`).
+
+**Seat verdicts.**
+- codex-openai `gpt-6-astra`: `RATIFY c2f22a9f58ea4b2df68ffe76aaabe2c561475280566db6fcb93c8007de73ce94`
+  (rollout `rollout-2026-09-20T20-07-28-01a0c180-f1bf-7293-93d8-9018705961b2.jsonl`, session id
+  `01a0c180-f1bf-7293-93d8-9018705961b2`, 951073 bytes, sha256
+  `dcd8373ccea3a933f1a2f7105a80e21a84a563921c7237a9d7fa5c103e75c8ff`).
+- claude-anthropic Opus 5 (in-process subagent): `RATIFY c2f22a9f58ea4b2df68ffe76aaabe2c561475280566db6fcb93c8007de73ce94`.
+
+**Falsifier and its cohort gate.** `ruling-candidates/jev-fd-c2-human-advisory-r4.md` §4 defines the
+executable falsifier (the corrected sheet CLI against `state2`). Run today it returns 5 rows against
+a fresh-cohort gate of 100 — the falsifier is honest and reproducible but not yet run at the scale
+the ruling's evidentiary bar names; it does not block this promotion, which rests on the fidelity
+and blind-adjudication receipts already recorded, but a project relying on this advisory should
+re-run the falsifier at scale before treating its output as more than directional.
+
+**Ratification.** Two blind, cross-family seats, each bound independently to the blob digest of
+record, both returned `RATIFY`. Under the owner ruling of 2026-09-06 (adversarial seats ratify),
+JEV-FD-C2-ADVISORY-1 r4 is **RATIFIED** — the first project promoted to `ADVISORY` under
+`fleet-jev-shadow-mode.md` §2.4.

@@ -4309,3 +4309,5 @@ pattern; the mechanism has no Conjugal-specific state.
 - `9fa9800`: shipping rows S-INSTALL and S-UNINSTALL moved to MET on a cited workflow run, not
   on a pin; the pin's role is to keep the run's steps from being removed.
 
+
+JEV: ADVISORY standard=r6@ad426fbec35c57df4bd599216309430ac0a25076 qsv=48e37f0af89d8e72 log=NONE lines=0 asOf=2026-09-20 record=softwarefactory-fleet-doctrine:RULINGS.md#appended-by-conjugal-jev-dogfooding-session-2026-09-20-jev-fd-c2-advisory-1-first-advisory-shown-to-a-human-under-fleet-jev-shadow-mode-24-ratified
