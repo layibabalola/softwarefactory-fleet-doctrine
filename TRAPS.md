@@ -13308,3 +13308,39 @@ green one. A status that cries wolf is not the conservative setting; it is the i
 **The check**: for a predicate that gates a verdict, construct an input on each side — one that must
 be included and is not, one that must be excluded and is not — before trusting either direction. All
 four findings were filed as their own row with a clock rather than absorbed into the accepted commit.
+### Fleet, 2026-09-21 — A THRESHOLD WHOSE DENOMINATOR ADMITS REPEATS, OR SETS NO QUALITY BAR, IS NOT A FLOOR; THE JEV STANDARD HAS TWO
+
+Two of `specs/fleet-jev-shadow-mode.md`'s promotion gates can be cleared without the property
+the gate exists to establish. Neither is a violation by any project; both are gaps in the
+standard, filed so the next promotion cannot pass by the same route without someone having
+decided that is acceptable. Sessions do not mint law: the remedies below are proposals.
+
+**Instance 1 — R10.2's line floor counts lines, and lines admit repeats.** R10.2 requires the
+shadow log to hold "at least 100 lines", with no distinctness clause. `magic-lantern_dannephoto`
+found this against itself and declined to exploit it. Its marker population is 76 and grows only
+when the codebase does; its log holds 152 lines because the same 76 markers were judged twice.
+Measured across the two halves by that project: `stateSha256` identical 76/76, triage `choice`
+identical 76/76, `agree` identical 76/76 — only the probabilities jitter. So a literal reading of
+R10.2 passes on 76 subjects, and any project short of the floor can reach it by re-running the
+tool. That project's own words: "re-running the same markers to clear a count is padding ... it is
+the fleet's call, not this project's." The fleet has not been asked until now, which is why this
+is filed rather than ruled.
+
+*Proposed remedy:* count distinct `stateSha256` values, not lines, and say so in R10.2 — or
+state explicitly that repeats count and why.
+
+**Instance 2 — §2.4 sets no quality bar for the blind adjudication it requires.** §2.4 requires
+"agreement against blind adjudication" without specifying any floor for that adjudication's own
+quality. `JEV-FD-C2-ADVISORY-1`, the fleet's only promotion, satisfies the letter: across its 13
+blind rows the three families agree unanimously on 30.8 % — the lowest of six sheets, with zero
+abstentions, so that is genuine disagreement and not a coverage artifact — and 3 of the 15
+consensus-adjudicated rows have no blind row at all yet sit in the denominator. That promotion
+stands, because `ADVISORY` grants no authority and nothing downstream depends on it. The gap is
+that a future promotion could clear the same bar the same way.
+
+*Proposed remedy:* a named minimum for inter-family agreement, and a rule that a row with no
+blind adjudication is excluded from the denominator rather than counted in it.
+
+**The shape, which is why these are one filing and not two:** a threshold is only a floor if its
+denominator describes what is in it. Both gates count something cheaper than the thing they name.
+<!-- outbox:50fc7b1703261bbe conjugal:d9dfab0a2834 -->
