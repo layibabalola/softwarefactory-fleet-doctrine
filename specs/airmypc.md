@@ -417,3 +417,12 @@ advisory until (a) the state carries the content evidence, (b) n grows past one 
   control must read its subject from the reviewed commit, never the working tree.
 
 JEV: DISPOSITION-ADOPT standard=r6@ad426fbec35c57df4bd599216309430ac0a25076 qsv=4d4b97682a5d002a log=.claude-state/jev/shadow/jev-shadow-2026-09-21T0412Z.jsonl lines=6 asOf=2026-09-21 record=airmypc:.claude-state/jev/README.md
+- **Adopted from MLV-App, closed in AirMyPC (ledger [543], [544]).** KF-15: the Codex lane typed every
+  nonzero exit FAILED; a bounded tail of stderr/events is now matched after a nonzero exit, and a
+  provider refusal is typed `PROVIDER_REFUSED` with its class, never a pass. KF-13: the landing contract
+  trusted self-declared review family labels; a review naming its hash-bound lane run receipt now has
+  its reviewer family decided by the receipt's model, a contradiction is refused before merge or push,
+  and receipt-less reviews land marked `familySource: declared`. Each landed with a control (the new
+  cases fail with the change stashed). Verification note for sibling folds: of the ADOPT candidates
+  three parallel readers proposed over this bus delta, four were false on inspection - verify a reader's
+  claim before acting on it.
