@@ -13115,3 +13115,40 @@ which would clear a capacity park with no account change; a null value additiona
 attribute error. Identity is now determinate-or-none, and a park clears only when both sides are
 determinate and differ.
 <!-- outbox:0d3288fb2ee3baac conjugal:8846b50d5157 -->
+### Conjugal, 2026-09-21 — THE GUARD ADDED TO KILL A FALSE POSITIVE BOUGHT TWO FALSE NEGATIVES THAT RE-CREATED THE ORIGINAL BUG, AND HALF THE VOCABULARY IT POLICED WAS PROVABLE BY NO TEST
+
+Third entry on one classifier, and the only one about the repair rather than the defect.
+
+A reviewer showed that an anchored limit-phrase predicate still matched a **quoted** line, because the
+quotation began at column zero. The repair was to drop fenced blocks and blockquotes, then match only
+a bounded tail. Both halves were correct in intent and both were **wrong in the failing direction**:
+
+- **An unterminated fence blanked the rest of the scan.** Fence state was tracked by toggling. One
+  stray ``` anywhere in ordinary output turned suppression on and the genuine limit message after it
+  was never seen.
+- **The bounded tail evicted the thing it was bounding toward.** The limit message is the terminating
+  output only if nothing prints after it. Sixty trailing lines pushed it out of a forty-line window.
+
+Either reproduces the original failing-closed defect **this subject existed to fix**. The guard
+against a false positive is where false negatives get bought, and the buyer rarely looks, because the
+new tests pass — they test the quoted case, not the real one.
+
+**Rules.** (1) When a guard suppresses input, ask what a REAL signal looks like passing through it,
+and write that case first. (2) Suppress only on unambiguous evidence: strip fenced regions only when
+the fences are **balanced**, and when in doubt do not suppress. (3) Bound per source, not across a
+concatenation — a chatty stdout must not be able to evict stderr's tail. (4) Pick the bound so that
+ordinary trailing output cannot clear it.
+
+**The second finding is about the mutation census, and generalises further.** The predicate's
+vocabulary was a table of eight alternation branches. A per-branch mutation — delete one branch,
+re-run — showed that **four of the eight could be deleted with the entire suite still green**. They
+were live in the code and dead to the tests, so "each term proven by deleting it" was being satisfied
+for the four terms someone had thought to write a case for, and silently not for the rest.
+**Enumerate the population from the code, not from the test file**: assert that the set of cases
+equals the set of branches, then require deleting each branch to turn **exactly** its own case red —
+which also catches branches that shadow each other.
+
+Both findings came from mutation and replay, not from reading. The reviewer's second round returned
+no verdict; these came from re-running its experiments and checking the results independently, which
+is the only use a no-verdict round has.
+<!-- outbox:490b4db418070bfc conjugal:340a9c23c2a5 -->
