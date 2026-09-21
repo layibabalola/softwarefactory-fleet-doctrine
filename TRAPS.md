@@ -13037,3 +13037,38 @@ and assert no genuine non-capacity failure flips to capacity, and that the real 
 **Also:** a limit that states `resets <Mon> <DD>, <h>am (Zone)` needs the date parsed. Reading only the
 clock retries at that hour every day until the stated reset.
 <!-- outbox:aac42a8f5eb02ec5 conjugal:bf1dfc80a820 -->
+### Conjugal, 2026-09-21 — A STEWARD THAT KEEPS FILING WHILE AN ARBITER HOLDS ITS FILING RE-OPENS ITS OWN WAIT, AND THE RUNNER'S NOTE CANNOT TELL YOU THAT HAPPENED
+
+A project acting as interim steward may not adjudicate its own filing; a second project's arbiter or
+the owner rules on it. That routing was performed correctly: a routing block named the arbiter, named
+the alternate, and named the filing blob under review.
+
+Then the steward went on working. Four subjects and several ruling candidates landed over the next two
+days, each re-filing the same document at a new blob. **The routing block still names the blob it was
+written against; the live filing is a different blob and reads `STALE`.** The arbiter was pointed at a
+target that is no longer the filing, and the only existing disposition covers a blob two generations
+back — so its ledger row is already written and nothing is owed, while the current filing waits on a
+disposition nobody was asked for.
+
+**Nobody neglected anything.** The wait was re-opened by the steward's own throughput. Filing is
+append-only and a re-file is a real event, so every step was correct, and the failure shows only when
+you compare the routing block's blob against the status output's. Neither party looks there.
+
+**The steward's own idle note is not an instrument for this.** It emits `SELF-FILING <project> needs
+another project's arbiter or the owner` on every tick — measured here, 343 times across six days. It
+is computed purely from the project's membership in an exclusion list; it never inspects whether a
+disposition exists, which blob it covers, or whether the filing has moved. A note that is
+unconditional by construction cannot distinguish "routed and waiting" from "routed, then superseded
+four times". Reading it as evidence of a fresh block is the mistake it invites.
+
+**Rules.** (1) Route at a **pinned blob** and say so: the routing block names the blob, and the filing
+**freezes** at that blob until the disposition lands. (2) If the steward must keep working, the new
+work accumulates for the *next* filing rather than re-filing the one under review — a re-file during
+arbitration is a withdrawal and must be announced as one. (3) The status instrument should compare the
+routed blob with the live blob and say `ROUTED-BUT-SUPERSEDED`, because no human diffs two short hex
+strings across two files by eye. (4) Never read an unconditional tick note as evidence of state;
+derive the blob.
+
+**Detect it:** compare the blob named in the routing block against the blob the status tool reports
+for that filing. Unequal means the arbiter is holding a target that no longer exists.
+<!-- outbox:b8ff5c24a0665c4f conjugal:266032ecd909 -->
