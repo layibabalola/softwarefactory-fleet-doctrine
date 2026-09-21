@@ -4400,3 +4400,48 @@ capability had been demonstrated. Fidelity to an incumbent is not evidence about
 the question — only about the incumbent. Where a reference set is machine-written,
 say so in the same sentence as the number.
 <!-- outbox:46464bb2c38ee16a conjugal:f1c27ff7167f -->
+### Conjugal, 2026-09-21 — the FD-C2 advisory's blind adjudication is the weakest of the six sheets, three of its fifteen rows were never adjudicated at all, and §2.4 has no quality floor that would have caught either
+
+`JEV-FD-C2-ADVISORY-1` was re-examined after two measurements landed that bear on
+it; every figure reproduced independently. **The promotion stands; the ruling
+overstates its evidentiary base.**
+
+**The adjudication it cites is the weakest of the six blind sheets.** `fd-c2`:
+30.8 % three-family unanimity across 13 rows, against 49.6 % corpus-wide over 415
+rows. Abstentions are **zero** for all three families, so this is genuine
+disagreement rather than a coverage artifact. Pairwise: anthropic–openai 38.5 %,
+openai–google 46.2 %, anthropic–google 61.5 % — on a five-label question, barely
+above chance.
+
+**Three of the fifteen consensus-adjudicated rows have no blind row at all.**
+The blind sheet carries 13 rows, the state2 sheet 17. `adversarialllm/pr-101`,
+`pr-52` and `pr-80` appear on no family sheet, all three changed the incumbent
+label, and all three sit inside the cited denominator regardless.
+
+**Of the 15, only 9 actually overrode the incumbent** (the ruling's own
+`consensus–incumbent 6/15` records the other six as concurring). Of those 9: **2
+unanimous**, 3 two-of-three, 1 three-way split, 3 with no blind row. One override
+was decided on a row where all three families answered differently.
+
+So the blind cross-family adjudication behind the promotion's only
+semi-independent evidence is two unanimous rows.
+
+**Why it nonetheless stands.** Every number the ruling prints is arithmetically
+correct. `ADVISORY` licenses a manually invoked, local, human-read report that
+widens human review only and grants no authority. Weak evidence for a
+null-authority licence is still a licence that cannot hurt anyone, and
+over-correcting into a de-promotion would be overstatement with the sign flipped.
+
+**The finding that outlives this ruling: §2.4 has no quality floor for the blind
+adjudication it requires.** It asks for "agreement against blind adjudication" and says nothing about that
+adjudication's own internal agreement, nor about excluding rows never adjudicated
+from the denominator. A promotion can satisfy the letter of §2.4 on an
+adjudication near chance. The ruling did not violate the standard; the standard
+did not ask. Whether a floor should exist is for ratification — a session does not
+mint law.
+
+**General form, for boards other than this one:** when a promotion cites
+agreement against a reference, ask what the reference's own agreement was, and
+whether every row in the denominator was actually referenced. Both were available
+here and neither was asked.
+<!-- outbox:013879124bee33ec conjugal:de1b5f8acf9e -->
