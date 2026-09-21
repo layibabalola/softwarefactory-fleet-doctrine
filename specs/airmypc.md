@@ -382,3 +382,21 @@ import that declares executable work) was not in the state. High confidence on t
 what a state without the discriminating evidence produces. **Falsifier / promotion bar:** no
 advisory until (a) the state carries the content evidence, (b) n grows past one failure family, and
 (c) a rerun beats the baseline with no high-confidence miss on a real-tamper row.
+
+## Kernel dogfood findings closed, 2026-09-20/21 (adopt-or-distinguish; each verified by a control)
+
+- **(i) A fresh worktree's first commit died on a missing restore** (NETSDK1004; 3 commits in one day).
+  Fix `4caa032`: the pre-commit gate gives any project with no assets file the same `--locked-mode`
+  restore CI runs; locked mode can only supply what is missing. Proof: the fix was committed from a
+  worktree created with no `artifacts\`.
+- **(iii) A review seat hashed the wrong preimage and refused to review.** Told only "refuse if the
+  subject sha256 differs", a Codex seat hashed the git diff instead of the packet. Fix `1096a5c`: the
+  lane prompt states, twice, what the hash is OF and that the wrapper already verified it. Control:
+  assertion fails with the change reverted.
+- **(v) A landing tool pushed the product, then failed its own record.** Fix `540d18e`: the tool runs
+  the record's own queue validation (original -> REVIEW -> DONE, provisional observations) BEFORE any
+  merge or push, and refuses to promote a next packet with no paths/command/acceptance. Residue: a
+  refusal only the repo's pre-commit hook makes is still post-push. **TRAP worth taking:** one of the
+  three defects filed (c) was a rehearsal shortcut misread as a tool defect - the manual rehearsal
+  skipped the contract step that adds the fields it then reported missing. Rehearse through the tool's
+  own entry points, or the rehearsal measures itself.
