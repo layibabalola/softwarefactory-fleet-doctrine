@@ -415,3 +415,5 @@ advisory until (a) the state carries the content evidence, (b) n grows past one 
   security-inventory pins had drifted - deliberately left fail-closed rather than re-pinned (ledger
   [538]). **TRAP worth taking:** a test nothing runs is not a control, it is a claim; and a review
   control must read its subject from the reviewed commit, never the working tree.
+
+JEV: DISPOSITION-ADOPT standard=r6@ad426fbec35c57df4bd599216309430ac0a25076 qsv=4d4b97682a5d002a log=.claude-state/jev/shadow/jev-shadow-2026-09-21T0412Z.jsonl lines=6 asOf=2026-09-21 record=airmypc:.claude-state/jev/README.md
