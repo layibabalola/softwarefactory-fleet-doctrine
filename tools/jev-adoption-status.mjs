@@ -11,10 +11,13 @@
 //   JEV: <STATE> standard=r<N>@<7-40 lowercase hex> qsv=<16 lowercase hex|NONE> log=<path|NONE> lines=<1-9 decimal digits> asOf=<YYYY-MM-DD> record=<lowercase project>:<path-or-sha>
 // STATE: NONE | DISPOSITION-ADOPT | DISPOSITION-DISTINGUISH | DISPOSITION-HOLD | SHADOW-LIVE | ADVISORY
 // Surface: `specs/<project>.md` when that file exists at the ref, else `RECEIPTS.md` (append-only;
-// the record= project token is the lowercase spec stem and must equal the project). ADVISORY is reserved (no project may record
-// it until the standard's §2.4 promotion has run); every state but NONE needs a record; SHADOW-LIVE
-// also needs qsv, a log path and lines>=100 (the checker reads the declared fields; the tree-side
-// conditions of R10.2 are the project's to keep true). Exit: 0 every rostered project has a well-formed line; 2 a project has no line;
+// the record= project token is the lowercase spec stem and must equal the project). ADVISORY is
+// accepted only when record= is `RULINGS.md#<anchor>` (bus RULINGS.md, same ref) and that anchor
+// resolves to a heading whose section text contains the word "ratified" (case-insensitive) and
+// names the project (R10.2, made mechanical) — otherwise it is refused; every state but NONE needs
+// a record; SHADOW-LIVE also needs qsv, a log path and lines>=100 (the checker reads the declared
+// fields; the tree-side conditions of R10.2 are the project's to keep true). Exit: 0 every rostered
+// project has a well-formed line; 2 a project has no line;
 // 3 a line is malformed or its state constraints fail; 4 the roster is unreadable or an argument is
 // unknown or incomplete.
 import { execFileSync } from 'node:child_process';
@@ -64,11 +67,53 @@ export function parseLine(text) {
   return { state, standard, qsv, log, lines: Number(lines), asOf, recordProject, record };
 }
 
-export function constraintErrors(parsed, project, revision) {
+const ADVISORY_REFUSAL = 'ADVISORY requires record= to name a ratified RULINGS.md entry that names the project';
+const ADVISORY_RECORD = /^RULINGS\.md#([a-z0-9-]+)$/;
+const HEADING = /^(#{1,6})\s+(.*)$/;
+
+// GitHub-style heading anchor: lowercase, drop anything but [a-z0-9 -], collapse whitespace runs to
+// a single '-', trim leading/trailing '-'. Reproduces the bus's own RECEIPTS.md ADVISORY line
+// (`record=softwarefactory-fleet-doctrine:RULINGS.md#appended-by-conjugal-jev-dogfooding-session-2026-09-20-...`)
+// from the RULINGS.md heading it names.
+export function headingSlug(text) {
+  return text.toLowerCase().replace(/[^a-z0-9 -]/g, '').replace(/\s+/g, '-').replace(/^-+|-+$/g, '');
+}
+
+// The section of rulingsText headed by a heading whose slug equals anchor: from that heading's line
+// (inclusive) to the line before the next heading of any level, or EOF. Returns null if no heading
+// in rulingsText has that anchor.
+export function ratifiedRulingsSection(rulingsText, anchor) {
+  if (!rulingsText) return null;
+  const lines = rulingsText.split(/\r?\n/);
+  const headings = [];
+  lines.forEach((l, i) => { if (HEADING.test(l)) headings.push({ i, slug: headingSlug(HEADING.exec(l)[2]) }); });
+  const idx = headings.findIndex((h) => h.slug === anchor);
+  if (idx < 0) return null;
+  const end = idx + 1 < headings.length ? headings[idx + 1].i : lines.length;
+  return lines.slice(headings[idx].i, end).join('\n');
+}
+
+// R10.2 made mechanical: ADVISORY's record= must name a RULINGS.md anchor whose section text says
+// the entry is ratified and names this project. Returns the refusal text, or null when it checks out.
+export function advisoryRecordError(parsed, project, bus, ref) {
+  const m = ADVISORY_RECORD.exec(parsed.record);
+  if (!m) return ADVISORY_REFUSAL;
+  const rulings = readAt(bus, ref, 'RULINGS.md');
+  const section = ratifiedRulingsSection(rulings, m[1]);
+  if (!section) return ADVISORY_REFUSAL;
+  if (!/ratified/i.test(section)) return ADVISORY_REFUSAL;
+  if (!section.toLowerCase().includes(project.toLowerCase())) return ADVISORY_REFUSAL;
+  return null;
+}
+
+export function constraintErrors(parsed, project, revision, bus, ref) {
   const errs = [];
   if (parsed.recordProject !== project.toLowerCase()) errs.push(`record names ${parsed.recordProject}, surface is ${project.toLowerCase()}`);
   if (!parsed.standard.startsWith(`${revision}@`)) errs.push(`standard ${parsed.standard} is not the bus's ${revision}`);
-  if (parsed.state === 'ADVISORY') errs.push('ADVISORY is reserved until the standard\'s §2.4 promotion has run');
+  if (parsed.state === 'ADVISORY') {
+    const err = advisoryRecordError(parsed, project, bus, ref);
+    if (err) errs.push(err);
+  }
   if (parsed.state === 'SHADOW-LIVE') {
     if (parsed.qsv === 'NONE') errs.push('SHADOW-LIVE needs a pinned qsv');
     if (parsed.log === 'NONE') errs.push('SHADOW-LIVE needs a log path');
@@ -99,7 +144,7 @@ export function projectStatus(bus, ref, project, revision) {
   if (hits.length === 0) return { project, surface, state: 'NONE', found: 0, errors: [] };
   const last = hits[hits.length - 1];
   if (last.parsed.error) return { project, surface, lineNo: last.lineNo, state: 'NONE', found: hits.length, errors: [last.parsed.error] };
-  return { project, surface, lineNo: last.lineNo, found: hits.length, ...last.parsed, errors: constraintErrors(last.parsed, project, revision) };
+  return { project, surface, lineNo: last.lineNo, found: hits.length, ...last.parsed, errors: constraintErrors(last.parsed, project, revision, bus, ref) };
 }
 
 export function fleetStatus(bus, ref) {

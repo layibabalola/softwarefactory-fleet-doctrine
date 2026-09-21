@@ -4,7 +4,7 @@ import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'nod
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { constraintErrors, fleetStatus, parseLine, roster, table } from './jev-adoption-status.mjs';
+import { advisoryRecordError, constraintErrors, fleetStatus, headingSlug, parseLine, ratifiedRulingsSection, roster, table } from './jev-adoption-status.mjs';
 
 const here = fileURLToPath(new URL('.', import.meta.url));
 const root = mkdtempSync(join(tmpdir(), 'jev-adoption-'));
@@ -59,7 +59,34 @@ assert.equal(constraintErrors(live, 'cloudvore', 'r6').length, 3);
 const liveNoRecord = parseLine('JEV: SHADOW-LIVE standard=r6@ad426fb qsv=66e7e43e123e84d5 log=l lines=500 asOf=2026-09-20 record=cloudvore:NONE');
 assert.deepEqual(constraintErrors(liveNoRecord, 'cloudvore', 'r6'), ['SHADOW-LIVE needs a record']);
 const adv = parseLine('JEV: ADVISORY standard=r6@ad426fb qsv=66e7e43e123e84d5 log=l lines=500 asOf=2026-09-20 record=cloudvore:x');
-assert.match(constraintErrors(adv, 'cloudvore', 'r6')[0], /reserved/);
+assert.equal(constraintErrors(adv, 'cloudvore', 'r6')[0], 'ADVISORY requires record= to name a ratified RULINGS.md entry that names the project');
+
+// R10.2 made mechanical: ADVISORY accepted only when record= names a ratified RULINGS.md anchor for the project
+assert.equal(headingSlug('Appended by Conjugal (Jev dogfooding session), 2026-09-20 — JEV-FD-C2-ADVISORY-1: first "advisory shown to a human" under fleet-jev-shadow-mode §2.4, ratified'), 'appended-by-conjugal-jev-dogfooding-session-2026-09-20-jev-fd-c2-advisory-1-first-advisory-shown-to-a-human-under-fleet-jev-shadow-mode-24-ratified');
+const RULINGS = [
+  '# Rulings', '',
+  '## Some other entry, not ratified', '',
+  'Nothing about softwarefactory-fleet-doctrine here.', '',
+  '## Appended by Conjugal, 2026-09-20 — X-1: a promotion for `cloudvore`, ratified', '',
+  'This entry is **RATIFIED** for project `cloudvore`.', '',
+].join('\n');
+write('RULINGS.md', RULINGS);
+assert.equal(ratifiedRulingsSection(RULINGS, 'appended-by-conjugal-2026-09-20-x-1-a-promotion-for-cloudvore-ratified').includes('cloudvore'), true);
+assert.equal(ratifiedRulingsSection(RULINGS, 'no-such-anchor'), null);
+const goodAdvisory = parseLine('JEV: ADVISORY standard=r6@ad426fb qsv=66e7e43e123e84d5 log=l lines=500 asOf=2026-09-20 record=cloudvore:RULINGS.md#appended-by-conjugal-2026-09-20-x-1-a-promotion-for-cloudvore-ratified');
+assert.equal(advisoryRecordError(goodAdvisory, 'cloudvore', bus, null), null, 'a ratified anchor naming the project is accepted');
+const wrongProject = parseLine('JEV: ADVISORY standard=r6@ad426fb qsv=66e7e43e123e84d5 log=l lines=500 asOf=2026-09-20 record=cloudvore:RULINGS.md#some-other-entry-not-ratified');
+assert.equal(advisoryRecordError(wrongProject, 'cloudvore', bus, null), 'ADVISORY requires record= to name a ratified RULINGS.md entry that names the project', 'section lacking "ratified" is refused');
+const missingAnchor = parseLine('JEV: ADVISORY standard=r6@ad426fb qsv=66e7e43e123e84d5 log=l lines=500 asOf=2026-09-20 record=cloudvore:RULINGS.md#nope');
+assert.equal(advisoryRecordError(missingAnchor, 'cloudvore', bus, null), 'ADVISORY requires record= to name a ratified RULINGS.md entry that names the project', 'missing anchor is refused');
+const notThisProject = parseLine('JEV: ADVISORY standard=r6@ad426fb qsv=66e7e43e123e84d5 log=l lines=500 asOf=2026-09-20 record=silentbackgroundprocess:RULINGS.md#appended-by-conjugal-2026-09-20-x-1-a-promotion-for-cloudvore-ratified');
+assert.equal(advisoryRecordError(notThisProject, 'silentbackgroundprocess', bus, null), 'ADVISORY requires record= to name a ratified RULINGS.md entry that names the project', 'ratified section naming a different project is refused');
+// the bus's own live line reproduces from the real RULINGS.md
+const busRoot = join(here, '..');
+const realRulings = readFileSync(join(busRoot, 'RULINGS.md'), 'utf8');
+const realAnchor = 'appended-by-conjugal-jev-dogfooding-session-2026-09-20-jev-fd-c2-advisory-1-first-advisory-shown-to-a-human-under-fleet-jev-shadow-mode-24-ratified';
+const realAdvisory = parseLine(`JEV: ADVISORY standard=r6@ad426fbec35c57df4bd599216309430ac0a25076 qsv=48e37f0af89d8e72 log=NONE lines=0 asOf=2026-09-20 record=softwarefactory-fleet-doctrine:RULINGS.md#${realAnchor}`);
+assert.equal(advisoryRecordError(realAdvisory, 'softwarefactory-fleet-doctrine', busRoot, null), null, 'the real bus ADVISORY line resolves against the real RULINGS.md');
 const noRecord = parseLine('JEV: DISPOSITION-HOLD standard=r6@ad426fb qsv=NONE log=NONE lines=0 asOf=2026-09-20 record=silentbackgroundprocess:NONE');
 assert.deepEqual(constraintErrors(noRecord, 'silentbackgroundprocess', 'r6'), ['DISPOSITION-HOLD needs a record']);
 
