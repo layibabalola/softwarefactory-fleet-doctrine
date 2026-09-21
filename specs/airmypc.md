@@ -400,3 +400,10 @@ advisory until (a) the state carries the content evidence, (b) n grows past one 
   three defects filed (c) was a rehearsal shortcut misread as a tool defect - the manual rehearsal
   skipped the contract step that adds the fields it then reported missing. Rehearse through the tool's
   own entry points, or the rehearsal measures itself.
+- **(vi) A review seat's prompt promised execution its sandbox forbade.** "Verify by execution (build,
+  test, diff)" went to a seat launched `codex exec -s read-only`, so every cross-family review was
+  static by construction, and one round returned BLOCKED only for being unable to execute. Fix (AirMyPC
+  `docs/BOOTSTRAP_PROMPTS.md`, ledger [532]): the prompt states READ-ONLY, forbids BLOCKED for inability
+  to execute, and routes each execution check to a `REQUIRED-EXECUTION:` line that a separate execution
+  key runs. **TRAP:** a seat prompt is a claim about the seat's capabilities - assert it against the
+  launch flags in a test, or a capability you removed stays promised.
