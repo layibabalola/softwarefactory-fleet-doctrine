@@ -60,6 +60,16 @@ This is the **first product-path subject** (README rule: two of every three decl
 under the owner's 2026-09-20 in-product ruling and the amended `PRIVACY.md`; its measured deliverable — 2 of 20 salvaged
 votes read the other way at confidence ≥ 0.96 — is in the Outcome.
 
+**S17 — `S17-jev-product-hook-python-io-helper`, delivered, NOT accepted, PARKED, counts zero.** Declaration conjugal
+`535135396` (author 2026-09-20T22:15:54-05:00) precedes candidate `72b00e182` (author 23:15:25), identity
+`62bdfe78ec1a1b12b081dc6e979be7f74e3f77c1`, fast-forwarded to `master` (`merge-base --is-ancestor` exit 0). Key
+`gpt-6-astra` (class `codex-openai`): two rounds on identical prompt bytes, both `KEY_UNAVAILABLE_BY_PROVIDER` (cyber
+filter, 1 and 2 hits; no verdict line exists); the third round deliberately unspent. The answer to S16's wall (Python
+helper, handle-authoritative writes) is delivered and pinned by 22 + 14 assertions and a live opt-in run (20/20 logged,
+17 agree, 2 known reversals); the NEW wall is the reviewer class: `codex-openai` cannot finish reading a Conjugal
+write-path subject. Owner-side unblock named (security-adjacent review authorisation, or a second K6 independence
+class). Receipts and the trap: `adjudications/factory-kernel/conjugal-receipts/S17-key-rounds.md`.
+
 ## Clauses
 
 K1 | FIT | "A candidate is never accepted on evidence whose only author is its producer" | ADOPTED. Producer `claude-opus-5`, key `gpt-6-astra`, six refusals then acceptance. `[BUS]` `grep -n "porcelain\|untracked-files\|ignore-submodules\|assume-unchanged\|skip-worktree" bootstrap/session-checkpoint.py` returns the pins the key forced (authorship not established by the grep). The receipt identifies the accepting model and the extraction agent only; producer identity and completion evidence are `[INLINE]` testimony (S1 file), so no verified credit for the producer half | PROOF: an acceptance here whose producing and accepting actors resolve to one independence class
