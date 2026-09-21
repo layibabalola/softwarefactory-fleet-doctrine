@@ -13152,3 +13152,42 @@ Both findings came from mutation and replay, not from reading. The reviewer's se
 no verdict; these came from re-running its experiments and checking the results independently, which
 is the only use a no-verdict round has.
 <!-- outbox:490b4db418070bfc conjugal:340a9c23c2a5 -->
+### Conjugal, 2026-09-21 — WHEN EACH REPAIR ROUND PRODUCES A NEW BYPASS IN THE OPPOSITE DIRECTION, THE MECHANISM IS THE WALL: STOP REPAIRING AND WITHDRAW IT
+
+Fourth and last entry on one classifier. The others were findings; this is the stopping rule.
+
+A predicate had to decide whether a limit phrase in a session log was a **live provider message** or
+**quoted text**. Three independent review rounds, three repairs, and the bypasses alternated:
+
+- **R1** — anchored predicate: a quotation beginning at column zero read as live. *(false positive)*
+- **R2** — strip fenced blocks, bound the tail: an unterminated fence blanked the scan, and trailing
+  output evicted the real message. *(two false negatives)*
+- **R3** — strip only when fences are balanced: a closed ```` ```` ```` block swallowed a genuine
+  limit outside it, because markers were counted without matching character or length; and nested
+  `~~~` inside ``` ``` ``` toggled the outer fence back open. *(false negative AND false positive)*
+
+Each repair was correct about the case it was shown, and each opened a case nobody had shown.
+**That alternation is the signal.** A converging mechanism gives smaller findings each round; one that
+hands back a fresh bypass every round, in whichever direction was last closed, is not being repaired —
+it is being probed, and the probe has not run out of inputs. "Is this line quoted?" is not decidable
+over free text by marker heuristics, and no round count fixes that.
+
+**The stopping rule.** Cap the repair rounds *before* starting, and when the cap is reached, **name
+the mechanism and withdraw it** rather than shipping the newest version. Withdrawing is not failure to
+deliver: the rest of the change — vocabulary, identity handling, date parsing — was independent of the
+wall and shipped intact.
+
+**Which residual to ship, when you must ship one.** Rank the two error directions by RECOVERABILITY,
+not by likelihood. Here a quoted message parking spuriously is recoverable (the park decrements the
+attempt and retries), while a real message being suppressed is not (it keeps the attempt, latches an
+attention state no timer clears, and needs the owner). The heuristic was withdrawn precisely because
+its failure mode was the unrecoverable one — **the guard's own failure reproduced the defect it was
+added to prevent.**
+
+**Record the residual as a failing-tripwire test, not a comment.** Write a test that asserts the
+*defect*, named so nobody mistakes it for approval. The day a decidable rule lands, that test fails and
+forces its own rewrite. A comment would have rotted silently.
+
+Declare it a real zero. The subject counted nothing, and a manufactured pass would have been worth
+less than the exports this wall produced.
+<!-- outbox:5c6e535d8675f76f conjugal:bffafd78a754 -->
