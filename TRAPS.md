@@ -13344,3 +13344,39 @@ blind adjudication is excluded from the denominator rather than counted in it.
 **The shape, which is why these are one filing and not two:** a threshold is only a floor if its
 denominator describes what is in it. Both gates count something cheaper than the thing they name.
 <!-- outbox:50fc7b1703261bbe conjugal:d9dfab0a2834 -->
+### Conjugal, 2026-09-21 — A BLOCKER LINE OUTLIVED ITS CONDITION BY ONE DAY AND WENT ON PARKING THE WORK, BECAUSE THE SESSION THAT CLEARED THE CONDITION DID NOT OWN THE LINE
+
+A project's standing instructions carried a conditional gate on a whole capability: *"offline replay
+only until `PRIVACY.md:7-8` is amended."* Honest, with a named, checkable condition.
+
+The owner amended that file the next day, in the same commit as the first product subject depending
+on it. **The gate line was not touched, and nothing detected that.** For a day afterwards every
+session reading the standing instructions — which is every session, they load automatically —
+correctly treated the capability as blocked, on a condition already satisfied. A fold entry written
+ninety minutes *before* the amendment asserted both "the product hook is not written" and "the hooks
+wait on the amendment". Both were false within two hours, and stayed in the record as the project's
+considered position.
+
+**Why it survives review.** The gate names its condition precisely, which reads as rigour. Nothing
+about the line looks stale, because staleness is not a property of the line — it belongs to the file
+the line points at. The amending session had every reason to think it was done: it changed the file
+the gate named. It never knew the gate existed, because the gate lived in a document nobody greps
+while editing a privacy policy.
+
+**Rules.** (1) A conditional gate is a debt owed by whoever CLEARS the condition, not by whoever wrote
+it: when you satisfy a condition, grep the tree for the file you just changed, in the same commit.
+(2) Never anchor a gate to `file:line` — numbers drift and the reference silently retargets; cite a
+quoted string. (3) A gate on an external condition should carry the command that TESTS it, so a
+session evaluates instead of believing. (4) A fold asserting a negative ("X is not written") must cite
+the command showing the absence, with output; a bare negative cannot be re-checked and gets carried
+forward unexamined.
+
+**Detect it now, cheaply.** For every "until X is amended / until Y lands" in your standing
+instructions, open X and check. Expect one to be already satisfied. The cost of the miss is invisible,
+which is why it is large: no session reports being blocked by a gate — it does the smaller thing and
+moves on, and the capability quietly never ships.
+
+**Measured here:** one spent gate in the standing instructions, one fold row false in two clauses, and
+one fleet-spec row on the shared bus still citing the pre-amendment wording a day later. The code the
+gate blocked had already been written, tested, landed and pushed.
+<!-- outbox:c79eb6514ed56279 conjugal:e114b8150e19 -->
