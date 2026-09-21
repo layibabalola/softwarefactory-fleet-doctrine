@@ -4344,6 +4344,7 @@ JEV: ADVISORY standard=r6@ad426fbec35c57df4bd599216309430ac0a25076 qsv=48e37f0af
   carry one. Both fixed in one pass in `f5-inputs.md` and the dispositions file.
 - Round artifacts: Conjugal `docs/architecture/approach-a/rounds/f5-*` and `prompts/f5-*`.
 
+<!-- cloudvore-filing:2026-09-21 generated from review/doctrine-drafts/2026-09-21-a-claim-with-no-witness.md -->
 - **cloudvore, 2026-09-21 (G04 landing).** Two non-author seats reviewed the same candidate independently, both RATIFIED it, and both
   reported the same structural hole anyway (`8d328df`). Everything this board can say about how they
   reached it is absent from the commits, so it is not said here.
