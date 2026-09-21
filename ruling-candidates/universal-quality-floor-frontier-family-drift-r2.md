@@ -44,11 +44,13 @@ the digest of record; reproduce it with `git show <commit>:<path> | sha256sum`.
 | `specs/agent-bridge.md` | 41,995 | `51c65683c4b957148e85c494656771db54c60176d019f56da1348bcf43ee5dd7` | 42,608 | `77f215755aa2ee02aeb1798fb5ab11e3318e734415df70569e9c4176d4deaee1` |
 | `RULINGS.md` | 186,772 | `27c065629b564a1e1e4eed88482d995f6a4b2adce469abd1ba2a56da9dbdb479` | 189,161 | `294cace8b2a6876b072bb2d46578658bbb7f6478a70a088826a845a9baa05b98` |
 
-**Do not restate these digests anywhere else.** An adjudicator derives currency, never re-pins:
+**Do not restate these digests anywhere else.** An adjudicator derives currency, never re-pins. Note
+that the second command is anchored on the table's own text rather than on a line number, for the
+reason recorded below: a `file:line` citation is a pin and decays with its file.
 
 ```
 git log --oneline 62aa8b9..HEAD -- tools/universal_provider_control.py      # SHOULD be empty
-git log -L 342,347:tools/universal_provider_control.py                      # the gate block itself
+git log -L '/FRONTIER_HIGH_MODEL = /,+6:tools/universal_provider_control.py'   # the gate block itself
 ```
 
 The second command is the one that matters, and it is why r1's findings survived r1's rot: the
@@ -149,8 +151,9 @@ it twice, and it failed both times:
 | `gpt-6-astra` | 2026-09-08 | `0126be1` | **no** — 13 days, gate unchanged |
 | `claude-fable-5-1` | 2026-09-13 | `3dd41c5` | **no** — 8 days, gate unchanged |
 
-Derivable: `git log --reverse -S"gpt-6-astra"` and `git log -L 342,347:tools/universal_provider_control.py`
-have no commit in common; the second returns only `0054253` (2026-08-18), which predates both.
+Derivable: `git log --reverse -S"gpt-6-astra"` and
+`git log -L '/FRONTIER_HIGH_MODEL = /,+6:tools/universal_provider_control.py'` have no commit in
+common; the second returns only `0054253` (2026-08-18), which predates both.
 
 This is evidence *about the repair*, not only about the defect. A curated accept-set that nobody
 sweeps decays at the observed rate of one missed generation every few days. It is the strongest
@@ -213,7 +216,8 @@ adds one clause, which finding 7 makes available and r1 could not have written:
 This candidate is ADJUDICABLE when all four hold, each re-derived rather than read from here:
 
 1. `git log --oneline 62aa8b9..HEAD -- tools/universal_provider_control.py` is empty;
-2. `git log -L 342,347:tools/universal_provider_control.py` still returns only `0054253`;
+2. `git log -L '/FRONTIER_HIGH_MODEL = /,+6:tools/universal_provider_control.py'` still returns
+   only `0054253`;
 3. the finding-7 table reproduces — re-run the closed set against the identities `RULINGS.md:1974`
    names, taking the tiers from the register at read time, not from this document;
 4. the adjudicator is **not the author of any finding in r1 or r2**.
