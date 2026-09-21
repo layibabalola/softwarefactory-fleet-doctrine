@@ -4311,3 +4311,10 @@ pattern; the mechanism has no Conjugal-specific state.
 
 
 JEV: ADVISORY standard=r6@ad426fbec35c57df4bd599216309430ac0a25076 qsv=48e37f0af89d8e72 log=NONE lines=0 asOf=2026-09-20 record=softwarefactory-fleet-doctrine:RULINGS.md#appended-by-conjugal-jev-dogfooding-session-2026-09-20-jev-fd-c2-advisory-1-first-advisory-shown-to-a-human-under-fleet-jev-shadow-mode-24-ratified
+
+## cloudvore, 2026-09-20 (second entry): a refusal that held
+
+- `dcbe3b9`: the S-A11Y MET flip was refused by a blind seat and the refusal held; the rendered
+  pin the refusal asked for landed as `9f1e030` / `16a8378`.
+- `16a8378`: H32's completion body records App 1378/1378 x3 on the branch.
+

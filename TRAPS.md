@@ -12929,3 +12929,56 @@ known to be reliable — it is known to have been lucky.**
 **Instance.** agent-bridge cards `P-0c-ARM`, `P-14-VACUOUS`, `P-14-FLAKE` and `P-22-SCALE`, all
 2026-09-20. The first three are landed; `P-22-SCALE` was in review at the time of writing. Measured on
 VIRTUAL-TEN against GitHub-hosted `windows-latest`.
+
+*Vocabulary for the four entries that follow: a *bar* is the test suite run three
+times identically before a change lands; a *pin* is a test that one specific failure reddens; a
+*seat* is a blind reviewer given only sources.*
+
+## A shipping verify that matched zero tests had read as MET (cloudvore, 2026-09-20 second entry, Dell XPS 17 + Ultra Magnus runner)
+
+**Measured** (`dcbe3b9`): the shipping-requirements table escapes `|` in a cell, and the escaped
+form of a `dotnet test --filter "A\|B"` verify reached the test runner literally, matched zero
+tests and exited 0; the S-SCHEMA row had been MET on that command since 09-18. A blind seat
+reviewing the S-A11Y flip measured it.
+
+**What held** (`dcbe3b9`): the checker refuses any pipe in a MET verify; both rows filter by a
+`Shipping` trait; a test pins the exact class inventory behind the trait, because a class that
+loses the trait would otherwise drop out of the verify silently. Recorded residual: a pipe-free
+verify naming a class that does not exist is not caught at entry.
+
+## A WPF Style setter lost to a Classic-theme template trigger, on the runner only (cloudvore, 2026-09-20 second entry, Dell XPS 17 + Ultra Magnus runner)
+
+**Measured** (`6546fd4`): implicit CheckBox/RadioButton styles setting `FocusVisualStyle` passed
+on every Aero2 host and failed the live-control pin on the self-hosted runner, whose session has
+no visual styles (Classic theme): Classic's CheckBox/RadioButton TEMPLATE sets `FocusVisualStyle`
+from a `HasContent` trigger, and a template trigger outranks a Style setter; Aero2 carries that
+trigger in the theme STYLE, which loses to a Style setter.
+
+**What held** (`6546fd4`): the ring is asserted from `Style.Triggers` on `HasContent` (a Style
+trigger outranks a template trigger); measured red without and green with on the runner host.
+
+## A markup pin for a rendered bar, and what rendering found instead (cloudvore, 2026-09-20 second entry, Dell XPS 17 + Ultra Magnus runner)
+
+**Measured** (`dcbe3b9`, `9f1e030`): the ruled bar was "200%/reflow below 960 DIP"; the pin held
+only the markup spellings that re-enable horizontal scrolling, and a blind seat refused the MET
+flip on that basis. Rendering the real view in a 480-logical-DIP window (960 DIP at 200% display
+scaling) found neither of the two markup suspicions -- the implicit TextBlock style wraps the
+headline; the 250-DIP column fits at 480 and, as recorded, would not at 320. Adding the verdict
+card's gradient START colours to the contrast catalogue found the catalogue red in most of 24 variants, with the headline at
+2.29:1 on darkroom, on the row's own named surface. Pulling the start toward the
+end to make the ink readable flattened five cards -- a seat had predicted it and a pin measured
+it -- so the end now deepens until the stops keep an anti-flatness floor.
+
+**What held** (`9f1e030`, `16a8378`): the rendered pin with per-stage sentinels and a right-edge
+oracle; the contrast catalogue and anti-flatness theory across 24 variants; the S-A11Y row stays UNMET
+with its limits written beside the table (`dcbe3b9`).
+
+## Two seats, two families, different holes (cloudvore, 2026-09-20 second entry, Dell XPS 17 + Ultra Magnus runner)
+
+**Measured** (`9f48248`, `90dd92b`, `9f1e030`): on H31 the Codex seat found the UNC spelling lost
+through an empty-root alias and the Opus seat found the config dump read on every poll tick; on
+the phase-entry packet both found the `AutomationProperties.Name` override that would have made the
+live region speak "Phase", Codex found the deferred raises coalescing wrongly, Opus found the
+observer's double announcement; on H32 Codex found the empty sentinel and Opus predicted the
+flattening. The commit bodies record each of these fixed in a later round.
+
