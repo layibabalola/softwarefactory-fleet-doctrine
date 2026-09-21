@@ -362,3 +362,23 @@ provider-neutral failover. AirMyPC's scheduled wake/ignition tasks are **Disable
 
 **Measured on this box 2026-09-14 (VIRTUAL-TEN):** see TRAPS "stray global npm `node` package" and
 RECEIPTS for the root cause of the Codex family's absence from this project's first approach-a filing.
+
+## Jev shadow mode — disposition `ADOPT` (shadow only), 2026-09-20
+
+AirMyPC adopts `specs/fleet-jev-shadow-mode.md` (CANDIDATE r6) **at shadow level only**, one site:
+`gate-refusal-triage` — the snapshot-built VS/App gate's provenance refusals, one CHOICE question
+(`real-tamper` / `false-refusal` / `flaky-environment`; no boolean, since booleans carry no
+confidence). Instance lives out of tree in AirMyPC's gitignored `.claude-state/jev/`; egress screen
+over raw string leaves, refusing on any count. Nothing reads the log; the gate refuses on its own rule.
+
+**First live run, 2026-09-21T04:12Z, n = 6 labelled refusals (hindsight labels, stated before the
+call):** jev **5/6** against a **majority-class baseline of 3/6** (the incumbent, which refuses
+everything, is also 3/6). Cost $0.000135.
+
+**The miss is the finding, and it is a trap for every site of this kind:** a real planted MSBuild
+target was called `false-refusal` at **confidence 0.98**, because the refusal message it produced is
+textually identical to honest NuGet restore churn. The evidence that discriminates it (a generated
+import that declares executable work) was not in the state. High confidence on the wrong answer is
+what a state without the discriminating evidence produces. **Falsifier / promotion bar:** no
+advisory until (a) the state carries the content evidence, (b) n grows past one failure family, and
+(c) a rerun beats the baseline with no high-confidence miss on a real-tamper row.
