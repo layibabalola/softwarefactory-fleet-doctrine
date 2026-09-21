@@ -12867,3 +12867,65 @@ because its fixture acked the draft's own name — the assertion inspected the s
 accepted, not the one the writer writes. Fixed red-first
 (`test_an_ack_naming_the_review_file_publishes_its_draft`, in the packet).
 
+
+### agent-bridge, 2026-09-20 — four tests in one evening passed or failed for reasons unrelated to the code they test, and every one was found by chasing the failure instead of re-running it
+
+**What happened.** Draining a twelve-branch adoption queue onto a trunk that had not moved in five
+days surfaced four test-reliability defects in a single session. **None was a defect in the product.**
+Three turned the trunk red or blocked a publication. Each was initially shaped like a flake, and each
+turned out to have a deterministic mechanism once the failure was read instead of re-run.
+
+1. **The environment neutralised the mutation.** A mutation arm asserted that restoring `text=True`
+   at a call site would mojibake a marker. CI sets `PYTHONUTF8: "1"` at job level, under which
+   `text=True` decodes as UTF-8 — exactly what the production `encoding="utf-8"` pin does. The
+   mutation became a no-op and the arm could never redden **in CI's own configuration**. Measured as a
+   matched pair on one host at one sha, changing one variable: without the variable the arm passed,
+   with it the arm failed.
+2. **The assertion could not discriminate.** A setup assertion reading *"setup did not reproduce a
+   hidden RECEIPT: the dispatch is not pending"* passed with **no receipt written at all**, because the
+   dispatch is pending in both worlds. Deleting the seven-line append that wrote the receipt left the
+   file at 72 passed.
+3. **The test depended on the host's process table.** A test mocked `subprocess.run` against a
+   fabricated pid `456` and read `run.call_args.args[0]`. The function under test returns early when
+   `native_process_entry(pid)` is non-None — never reaching `subprocess.run` — so `call_args` was
+   `None` and the test died on `'NoneType' object has no attribute 'args'`. On the dev box pid 456 does
+   not exist; **on a hosted runner low pids are live system processes.** It turned the trunk red twice
+   in ninety minutes and passed on each re-run. Every sibling test in the same file already pinned
+   `native_process_entry`; this one was the only member of its family missing the idiom.
+4. **A knob reached one of the two files that needed it.** CI sets `WRAPPER_TEST_TIMEOUT_SCALE` at job
+   level with a comment stating it *"stops a loaded runner being reported as a product defect."* A
+   repository-wide search found exactly one consumer. The other test file carried 19 literal subprocess
+   timeouts, and a loaded runner was then reported as a product defect in it — the precise outcome the
+   knob was written to prevent.
+
+**Why it is a trap.** A re-run that goes green is the most persuasive non-evidence in CI. Defect 3 was
+re-run twice and passed twice, and each green run was correctly consistent with the mechanism rather
+than evidence against it — pid 456 simply was not alive that time. **A failure you can make go away by
+re-running is a failure you have not understood yet.** Two further shapes recur across the four:
+
+- **A control over the test is not a control over the product.** The first fix for defect 1 made the
+  arm reddenable and was "proven" by neutering the *test* mutation. An independent reviewer then
+  mutated the *production* call site two realistic ways and measured that the arm still passed both
+  times. The arm had to be replaced by a call-shape assertion before it detected the regression it was
+  named for.
+- **A mutation must be proven to hit its intended site.** One fix was first "verified" by a mutation
+  whose finder matched the wrong call — the first occurrence in the file — and reddened a *different*
+  test. It printed `1 failed` and looked exactly like success. The finder must anchor on the assertion
+  under test and print the line it hit.
+
+**Fix (portable).** When a test fails and a re-run passes: read the function under test for early
+returns and environment reads before re-running again. Identify the one variable the outcome depends on
+and **measure it as a matched pair** — same host, same sha, that variable changed. For every repair,
+run the named mutation against the **production** code, not the test's own harness, and show the line
+the mutation touched.
+
+**Test.** For any test whose failure was once cleared by a re-run: (a) grep the function under test for
+early returns guarded by host state (pids, paths, environment variables, process tables); (b) list every
+environment variable CI sets at job level and ask of each mutation arm whether that variable makes the
+mutation a no-op; (c) for every knob CI sets, grep for its consumers and confirm the count matches the
+number of files that need it. **If a re-run was the only thing that ever cleared it, the test is not
+known to be reliable — it is known to have been lucky.**
+
+**Instance.** agent-bridge cards `P-0c-ARM`, `P-14-VACUOUS`, `P-14-FLAKE` and `P-22-SCALE`, all
+2026-09-20. The first three are landed; `P-22-SCALE` was in review at the time of writing. Measured on
+VIRTUAL-TEN against GitHub-hosted `windows-latest`.
