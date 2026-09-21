@@ -13191,3 +13191,97 @@ forces its own rewrite. A comment would have rotted silently.
 Declare it a real zero. The subject counted nothing, and a manufactured pass would have been worth
 less than the exports this wall produced.
 <!-- outbox:5c6e535d8675f76f conjugal:bffafd78a754 -->
+
+*Vocabulary for the six entries that follow: a *bar* is the test suite run three times identically
+before a change lands; a *pin* is a test that one specific failure reddens; a *seat* is a non-author
+reviewer given only sources. A non-author falsification seat reviewed this filing against its cited
+commits before publication and forced three withdrawals, one untraceable number dropped and four
+mischaracterisations corrected.*
+
+## A behaviour asserted only by a commit message is not defended (cloudvore, 2026-09-21, Dell XPS 17)
+
+**Measured** (`54a2d63`): a round of fixes landed four behaviour changes and described each one in
+its commit body — the strongest prose that board writes, naming the seat that found it and the path
+that carries it. Two fresh non-author seats, given different attack briefs, independently reported
+the same thing: **three of the four were unpinned.** Reverting each one — two environment variables
+stripped from a child process, an `isascii()` clause in a printable filter, and a non-list type check
+— left the entire suite green. The commit body reads exactly like a defended change and is not one,
+and nothing in a normal review catches it, because a review reads the diff and the diff is correct.
+
+**The check** (`54a2d63`): for each behaviour a commit CLAIMS, revert that behaviour and run the
+suite. A claim whose reversal stays green has no witness. The harness writes a backup and restores in
+a `finally`, because an interrupted mutation harness leaves the mutation in the tree — that board
+shipped one that way on 2026-09-16 (`0b47c9a`) and its live gate went 55-stranded before anything
+noticed.
+
+**What held** (`54a2d63`): one pin per claim, each planted against and watched RED before it was
+trusted, with the mutated file verified byte-identical afterwards.
+
+## A test double that answers any argument list cannot see a dropped argument (cloudvore, 2026-09-21, Dell XPS 17)
+
+**Measured** (`94738c1`): a stub CLI on PATH printed its canned payload for whatever argv it was
+given. A seat then deleted `--branch master` from the real query — which would let another branch's
+newer success replace a main-branch failure, the exact false green the feature exists to prevent —
+and **every pin stayed green**. The stub had been answering a question nobody asked it to check.
+
+**The check** (`94738c1`): make the double REFUSE anything but the exact call the code under test is
+supposed to make, then plant the argument-drop and watch the pins redden. Two did, immediately.
+
+## An environment variable outranks the working directory (cloudvore, 2026-09-21, Dell XPS 17)
+
+**Measured** (`449e792`, `94738c1`): the tool resolved which repository to ask about by running the
+query inside that repository's directory. `GH_REPO` and `GH_HOST` are documented overrides that beat
+the working directory, so a session that exported either — normal practice when working across
+repositories — would be told about a DIFFERENT repository, whose matching commit can supply a green
+over a red one.
+
+**The check**: enumerate the documented environment overrides of every child process a check shells
+out to, and assert the check's answer survives each one being exported by the caller. The test's own
+baseline environment must strip them as well, or a host that exports one decides what the test
+measures.
+
+**What held** (`94738c1`, `54a2d63`): both variables are dropped from the child's environment, and
+the double models the real tool by answering ALL-GREEN whenever it sees either, so the red answer has
+to survive their presence.
+
+## A guard whose only producer cannot emit its input is decoration (cloudvore, 2026-09-21, Dell XPS 17)
+
+**Measured** (`449e792`, `54a2d63`): a type check rejected a malformed field, and the single tool that
+produces that field always shapes it correctly — so the guard was unreachable and its pin could not
+fail. The tempting resolutions are to delete the branch or to leave it and feel safe.
+
+**What held** (`54a2d63`): a fixture that replaces the producer with a stub emitting a chosen payload.
+A future edit or a stale copy of that producer is precisely the case the guard exists for, and the
+fixture is how a test reaches it.
+
+## A segment that appears only when it is bad is indistinguishable from clean (cloudvore, 2026-09-21, Dell XPS 17 + Ultra Magnus runner)
+
+**Measured** (`2275959`, `8d328df`): one workflow's query returned 91 failures, 9 cancelled and zero
+successes over a saturated 100-run window; the oldest run in it was dated 2026-09-08 and the packet
+that noticed landed 2026-09-20. Work kept landing on that branch throughout. Nothing in the entry
+path asked: every guard interrogated the local tree and none asked whether the tree it had pushed
+passed. The tool that could answer had been added on 2026-09-04 (`6c1e541`), written for exactly
+this, and was wired into nothing until that packet.
+
+**The check**: for each thing a guard is supposed to know, ask which process reads it and on what
+trigger. A tool nothing calls is not a guard, and this one sat that way for the whole interval above.
+
+**What held** (`2275959`, `449e792`): the status is printed ALWAYS, never only when bad, because an
+absent line is byte-identical to a clean one when the tool could not run. Every door — the client
+absent, unauthenticated, offline, timing out, exiting non-zero, returning unparseable or malformed
+output — reads `unavailable`, never green. The strongest claim, "everything is green", additionally
+requires every push-triggered workflow declared in the tree to be covered inside the query window:
+uncovered is not green.
+
+## A false alarm is not the safe direction (cloudvore, 2026-09-21, Dell XPS 17)
+
+**Measured** (`8d328df`): the same seats found one coverage predicate wrong in BOTH directions. Two of
+the four findings ran toward false alarm — it classified a manually-triggered workflow as automatic
+because an unrelated build step contained the same key name, which would leave the status permanently
+unable to say "green", and it applied no event filter, so a failed manual run could be reported as a
+branch failure. The other two ran the opposite way, leaving push-triggered workflows invisible to the
+coverage claim. A status that cries wolf is not the conservative setting; it is the ignored one.
+
+**The check**: for a predicate that gates a verdict, construct an input on each side — one that must
+be included and is not, one that must be excluded and is not — before trusting either direction. All
+four findings were filed as their own row with a clock rather than absorbed into the accepted commit.

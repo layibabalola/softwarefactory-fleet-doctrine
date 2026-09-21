@@ -4343,3 +4343,22 @@ JEV: ADVISORY standard=r6@ad426fbec35c57df4bd599216309430ac0a25076 qsv=48e37f0af
   MISS` that is really `28 HIT, 24 MISS`, and a MISS explanation covering 7 of the 15 findings that
   carry one. Both fixed in one pass in `f5-inputs.md` and the dispositions file.
 - Round artifacts: Conjugal `docs/architecture/approach-a/rounds/f5-*` and `prompts/f5-*`.
+
+- **cloudvore, 2026-09-21 (G04 landing).** Two non-author seats with **different** attack briefs found
+  the same structural hole from opposite sides (`8d328df`): one was briefed to attack the conclusion
+  that the pins were real, the other to attack the feature as harmful rather than as under-tested. The
+  first produced its finding by planting mutations rather than by reading; the second, asked for blast
+  radius, produced none of the first's findings. Two briefs, two disjoint result sets, same cheap tier.
+- Four rounds on one packet: the first two ended in refusals that named a path, the last two in
+  ratifications that still named holes (`2275959`, `449e792`, `94738c1`, `54a2d63`, `8d328df`). **A
+  ratification is not the end of a finding** — the hole two seats named while ratifying is exactly
+  what the fourth round fixed.
+- A prior round's committed regex carried **two literal backspace bytes** where `\b` had been typed,
+  written through an unquoted heredoc; its alternative matched nothing and every pin stayed green over
+  it (`94738c1`). The general form: the committed BYTES are the artifact, not the intent — verify the
+  bytes of anything a shell wrote.
+- The falsification seat on this filing itself forced three withdrawals (a per-claim cost figure no
+  commit records; a sentence asserting how each seat reached a finding; a receipt claiming a measured
+  blast radius that existed nowhere outside the draft) and dropped one untraceable number. **A
+  publication draft is subject to the same rule as the code it describes**: a claim with no witness in
+  a cited commit is prose.
