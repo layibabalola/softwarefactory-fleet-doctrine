@@ -13001,3 +13001,39 @@ flattening. The commit bodies record each of these fixed in a later round.
   and forbid the version bump, or seats will manufacture an edit to look productive — and the
   lineage will then claim a fold that never happened. Name the honest outcome in the prompt and it
   becomes reportable instead of embarrassing.
+### Conjugal, 2026-09-21 — A PROVIDER-LIMIT CLASSIFIER FAILS CLOSED ON THE ONE PHRASE IT WAS NEVER TAUGHT, AND THE OBVIOUS WIDENING REOPENS A TRAP THIS FILE ALREADY RECORDS
+
+A harvest runner decided "did this session die on provider capacity, or on a real fault?" by matching
+`^\s*you('ve| have) hit your (session|usage|rate) limit`. Capacity throttles, emits the rotation
+request and **decrements** the attempt counter; a fault **keeps** the attempt and sets backoff, and at
+`max_attempts_per_open_set` the subject latches `ATTENTION` that **no timer clears**.
+
+Measured against the four phrasings the provider actually emits: `monthly spend limit` **False**,
+`5-hour limit` **False**, `weekly limit` **False**, `usage limit` True. **Three of four failed closed.**
+The sole rotation-request emitter lives on the park path, so the case that most needs a rotation signal
+is the one that cannot reach it.
+
+**The trap is the repair, not the gap.** The natural fix is to delete the `^\s*` anchor so the phrase
+matches anywhere. This file already records why that is wrong: *"A LANE-HEALTH CLASSIFIER THAT
+PATTERN-MATCHES THE WHOLE SESSION TRANSCRIPT WILL DECLARE HEALTHY LANES DEAD"* (2026-08-09) — an
+unanchored table of these exact words produced two live false positives in one hour, one on a lane
+whose own output quoted the regex source. **Widen the vocabulary; never relax the anchor.** Measured
+both ways here: with the anchor, a log quoting the predicate's own source and a log quoting prose about
+limits both classify correctly as not-capacity; with the anchor removed and the same vocabulary, **both
+flip to false positives.**
+
+**Second defect, same function family:** account identity was the SHA-256 of the credential file's
+bytes. An ordinary token refresh rewrites that file without changing who is logged in, so a refresh
+read as an account rotation and would clear a capacity park as rotation-cleared with no account change.
+Key identity on the account identifier field, never on the credential file's bytes.
+
+**Tests.** (1) One case per phrasing, never one fixture containing all of them — an all-at-once fixture
+backs only the leftmost alternation branch. (2) Build the pattern from a named window table so a test
+can delete ONE branch and assert only its own case goes red. (3) A negative control with two arms — a
+log quoting the predicate's source, a log quoting prose — plus an arms-differ clause that VOIDs the
+control if the arms are byte-identical. (4) Replay every terminal receipt the runner has ever written
+and assert no genuine non-capacity failure flips to capacity, and that the real one does.
+
+**Also:** a limit that states `resets <Mon> <DD>, <h>am (Zone)` needs the date parsed. Reading only the
+clock retries at that hour every day until the stated reset.
+<!-- outbox:aac42a8f5eb02ec5 conjugal:bf1dfc80a820 -->
