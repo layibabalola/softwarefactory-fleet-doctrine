@@ -13380,3 +13380,39 @@ moves on, and the capability quietly never ships.
 one fleet-spec row on the shared bus still citing the pre-amendment wording a day later. The code the
 gate blocked had already been written, tested, landed and pushed.
 <!-- outbox:c79eb6514ed56279 conjugal:e114b8150e19 -->
+### Conjugal, 2026-09-21 — THE PROVIDER'S CYBER FILTER FIRES ON WHAT YOU ASK THE REVIEWER TO DO, NOT ON WHAT THE CODE IS, AND A PROJECT THAT MISREADS THAT PARKS SUBJECTS THAT WERE NEVER BLOCKED
+
+A project lost several review rounds to `KEY_UNAVAILABLE_BY_PROVIDER` — "flagged for possible
+cybersecurity risk" — and concluded in writing that the cause was the SUBJECT: *"a key that must
+construct alias, egress and secret-handling attacks against a write path is doing security work in the
+provider's eyes."* That named a whole class of subjects unreviewable and pointed the remedy at the
+owner: authorisation for security work, or another independence class.
+
+**The reading was wrong, and the counterexample was cheap.** The next subject was a docs build script
+that checks whether fonts are embedded in a PDF — no credentials, no egress, no write path. Its review
+was killed by the same filter, twice, mid-scan.
+
+The difference was the PROMPT. It asked the reviewer to *"construct a PDF that genuinely embeds its
+fonts but that the tightened scanner reports NO"*. **Asking a reviewer to construct a bypass of a
+checker is a request to generate an evasion, whatever the checker checks.** Re-issued as a request to
+VERIFY — here are the inputs, do they classify correctly, is this attribution rule right for documents
+storing objects in compressed streams — the same model on the same subject ran with **zero** filter
+hits.
+
+**Rules.** (1) Ask a reviewer to CHECK properties, never to CONSTRUCT a bypass. Supply the adversarial
+inputs yourself and ask whether they classify correctly: the coverage is kept and the request stops
+looking like evasion work. (2) Before blaming a filter on a subject's domain, test the framing — one
+round, and the cheaper hypothesis. (3) Distinguish rewording to sneak a blocked request through
+(evasion, never do it) from correcting a badly-framed ask (ordinary engineering). The test is whether
+the new request still asks for the thing the policy exists to prevent; "construct an evasion" and
+"verify these classifications" are different requests, not one in different clothes. (4) A conclusion
+of the form "this class is unreviewable" must name the experiment that would refute it, or it becomes
+a standing exclusion nobody retests.
+
+**Cost of the misreading:** several subjects parked with a resume actor pointed at the owner
+(credentials, programme enrolment), when the remedy was one sentence of reviewer instructions.
+
+**Nothing was lost by not asking for bypass construction.** Every bypass in that subject — three
+successive false refusals, each a container the attribution rule could not reach — was found by the
+producer building the cases and measuring; the reviewer's questions still pointed at where to look.
+<!-- outbox:53b41c0c508b6af6 conjugal:6b879362d8b2 -->
