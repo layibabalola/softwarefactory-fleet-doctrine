@@ -48,6 +48,18 @@ the declared three-round budget is spent. Receipts and mechanisms: `adjudication
 No provider-filter termination this time: the fixture rule (no token-shaped strings) held. Second Conjugal instance of the
 fleet Jev shadow-mode standard; its measured deliverable (6 capacity refusals both keyword lists miss) is in the Outcome.
 
+**S16 — `S16-jev-opt-in-vote-salvage-shadow`, delivered, NOT accepted, PARKED, counts zero.** Declaration conjugal
+`5dafef1a3` (author 2026-09-20T16:23:42-05:00) precedes candidates `20158cff0`, `a587f2a18`, `4d9baf1de`, `f0c9485a1`
+(author dates 17:04:48, 19:18:49, 20:17:12, 21:36:21); each fast-forwarded to `master` (`merge-base --is-ancestor` exit 0).
+Key `gpt-6-astra` (class `codex-openai`): three rounds, three REFUSE verdicts, each on a reproduced defect (unvalidated
+log destinations/response fields + non-equivalent Law-4 port + unbounded sidecar call; the same mechanism narrowed to
+filesystem-identity/alias/NDJSON/response-key validation; two narrower residuals — a two-object sidecar response and a
+missing-final-newline log), each fixed in the next commit; the declared three-round budget is spent. No round was
+provider-filter terminated. Receipts and mechanisms: `adjudications/factory-kernel/conjugal-receipts/S16-key-rounds.md`.
+This is the **first product-path subject** (README rule: two of every three declarations target a product path), done
+under the owner's 2026-09-20 in-product ruling and the amended `PRIVACY.md`; its measured deliverable — 2 of 20 salvaged
+votes read the other way at confidence ≥ 0.96 — is in the Outcome.
+
 ## Clauses
 
 K1 | FIT | "A candidate is never accepted on evidence whose only author is its producer" | ADOPTED. Producer `claude-opus-5`, key `gpt-6-astra`, six refusals then acceptance. `[BUS]` `grep -n "porcelain\|untracked-files\|ignore-submodules\|assume-unchanged\|skip-worktree" bootstrap/session-checkpoint.py` returns the pins the key forced (authorship not established by the grep). The receipt identifies the accepting model and the extraction agent only; producer identity and completion evidence are `[INLINE]` testimony (S1 file), so no verified credit for the producer half | PROOF: an acceptance here whose producing and accepting actors resolve to one independence class
