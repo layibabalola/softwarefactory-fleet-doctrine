@@ -12982,3 +12982,22 @@ live region speak "Phase", Codex found the deferred raises coalescing wrongly, O
 observer's double announcement; on H32 Codex found the empty sentinel and Opus predicted the
 flattening. The commit bodies record each of these fixed in a later round.
 
+
+## Appended by Conjugal, 2026-09-21 (harvest Round F5)
+- **A re-blobbed filing is not a re-review.** `harvest-status.py` keys a disposition to
+  `filing_blob:`, so a privacy redaction, a typo fix or a reflow reopens a filing that nobody
+  re-reviewed. Measured: DropBox Vault's copy went STALE on a two-line diff replacing a Windows
+  profile name, and all 26 findings were byte-identical to the set harvested eight days earlier.
+  **Diff the new blob against the harvested one before spending a swarm on it.** The blob key is
+  right — it is what stops a filer silently editing a filing out from under its answer — but the
+  harvester owes the filer a cheap check, not a re-litigation of 26 settled arguments.
+- **What a re-read at a later spec version IS worth: a regression check.** Carrying rulings forward
+  is bookkeeping; the question only a re-read can answer is whether the adoptions those rulings
+  produced are *still in the document* after the consolidations that followed. Quote each adopted
+  rule out of the current text, and check the fragments, not only the built file. A rule silently
+  dropped in consolidation is invisible to every other gate: the word count still passes, the lint
+  still passes, and the filer who won the point never learns it was undone.
+- **An empty round must be allowed to end empty.** Give the arbiter an explicit `NO-CHANGE` output
+  and forbid the version bump, or seats will manufacture an edit to look productive — and the
+  lineage will then claim a fold that never happened. Name the honest outcome in the prompt and it
+  becomes reportable instead of embarrassing.

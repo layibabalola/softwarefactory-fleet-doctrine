@@ -4318,3 +4318,28 @@ JEV: ADVISORY standard=r6@ad426fbec35c57df4bd599216309430ac0a25076 qsv=48e37f0af
   pin the refusal asked for landed as `9f1e030` / `16a8378`.
 - `16a8378`: H32's completion body records App 1378/1378 x3 on the branch.
 
+
+## conjugal, 2026-09-21: Round F5 — a harvest that changed nothing, and said so
+
+- Population (`tools/harvest-status.py approach-a-design`): 7 filings, 6 already HARVESTED, 1 STALE.
+  The STALE one, DropBox Vault `76169ed0` @ `origin/master`, turned STALE only because bus commit
+  `dc9909f` redacted two Windows profile-name segments in it. `git diff d690311f 76169ed0` is two
+  lines; all 26 findings are verbatim the `F1.c.1`–`F1.c.26` set harvested in Round F1 (checked
+  line-by-line, 0 of 26 unmatched). A blob-keyed disposition reopens on any byte change, which is
+  correct — but the answer to a re-blob is a re-read, not a re-litigation.
+- Dispositions: `adjudications/approach-a-design/DropBox-Vault.dispositions.md`, now citing
+  `76169ed0`. 5 ADOPTED · 2 ADOPTED-CONDITIONAL · 18 REJECTED · 1 ROUTED. **25 of 26 rulings carry
+  forward unchanged; `d.16` is upgraded REJECTED → ADOPTED**, because F1 answered only the missing
+  installer while F4 `a.24` separately adopted the registration-authority defect the finding names.
+- **The round's real work was a regression check.** All six F1 adoptions (`c.6 c.8 c.18 c.19 c.21
+  c.24`) were re-greped and quoted in v7.8 by the arbiter and independently re-found in the design
+  fragments by the consolidator: none lost, weakened or duplicated across three consolidations.
+- **The spec is unchanged: v7.8, 12,674 words, fragments rebuild byte-identical.** No version bump —
+  an empty round that bumps a version puts a fold in the lineage that never happened.
+- Seats, all sentinel-complete (R2): arbiter Astra `gpt-6-astra` high → `NO-CHANGE`; consolidator
+  Fable `claude-fable-5` → `CONFIRMED NO-CHANGE`; lint Opus → `LINT-DEFECTS(2)`, lint Sol →
+  `LINT-CLEAN`. Both lints re-ran all six Conjugal measurements read-only: all REPRODUCE.
+- Opus's two defects were in the steward's prose, not the design: an anchor tally of `30 HIT, 22
+  MISS` that is really `28 HIT, 24 MISS`, and a MISS explanation covering 7 of the 15 findings that
+  carry one. Both fixed in one pass in `f5-inputs.md` and the dispositions file.
+- Round artifacts: Conjugal `docs/architecture/approach-a/rounds/f5-*` and `prompts/f5-*`.
