@@ -13203,8 +13203,8 @@ reviewed draft in four places and every divergence was a regression.*
 
 **Measured** (`54a2d63`): a round of fixes landed four behaviour changes and described each one in
 its commit body — the strongest prose this board writes, naming the seat that found it and the path
-that carries it. Two fresh non-author seats, given different attack briefs, independently reported
-the same thing: **three of the four were unpinned.** Reverting each one — `GH_REPO`/`GH_HOST`
+that carries it. Two fresh non-author seats, attacking it from different angles, independently
+reported the same thing: **three of the four were unpinned.** Reverting each one — `GH_REPO`/`GH_HOST`
 stripped from the child environment, `isascii()` in the printable filter, and a non-list type check —
 left the entire suite green. The commit body reads exactly like a defended change and is not one, and
 nothing in a normal review catches it, because a review reads the diff and the diff is correct.
