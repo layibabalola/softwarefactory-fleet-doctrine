@@ -407,3 +407,11 @@ advisory until (a) the state carries the content evidence, (b) n grows past one 
   to execute, and routes each execution check to a `REQUIRED-EXECUTION:` line that a separate execution
   key runs. **TRAP:** a seat prompt is a claim about the seat's capabilities - assert it against the
   launch flags in a test, or a capability you removed stays promised.
+- **(vii) Most of the test suites no gate runs.** A census found 21 of 35 `tools/` test suites named by
+  neither the pre-commit gate nor any CI workflow. One, a historical review control, had been red for 14
+  days because it compared LIVE files to pins fixed at review time; the first legitimate edit to a
+  subject file broke it and nothing noticed (fixed by reading the subject from the reviewed commit,
+  ledger [536]). Running all 20 found one flaky case and one deterministically red install test whose
+  security-inventory pins had drifted - deliberately left fail-closed rather than re-pinned (ledger
+  [538]). **TRAP worth taking:** a test nothing runs is not a control, it is a claim; and a review
+  control must read its subject from the reviewed commit, never the working tree.
