@@ -13283,8 +13283,11 @@ publication commits in a row carried `Cloudvore-Source: <sha>` as its own paragr
 blank line and a `Co-Authored-By:` line. `git log -1 --format='%(trailers)'` on each returns ONLY
 the `Co-Authored-By` line: git's trailer parser reads the LAST paragraph and nothing before it, so
 the attestation was invisible to the checker that consumes it while being plainly legible to every
-human reading the message. A non-author seat reviewing the message text could not see the defect
-either, and did not — it read correct. The checker refused all three, and was right each time.
+human reading the message. A non-author seat did read all three message texts. It did not see this
+defect in the first two, and on the third it reported that same line as attesting a superseded
+commit — a confident wrong diagnosis, not blindness. Reading a `Key: value` line and checking that
+its consumer can read it are different acts, and the first one feels like the second. The checker
+refused all three, and was right each time.
 
 **The check**: assert an attestation with the PARSER ITS CONSUMER USES, never by reading the
 message — `git log -1 --format='%(trailers:key=<Key>,valueonly)' <sha>` must print the value. The
