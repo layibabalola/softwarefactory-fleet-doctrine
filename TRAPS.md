@@ -12930,269 +12930,7 @@ known to be reliable — it is known to have been lucky.**
 2026-09-20. The first three are landed; `P-22-SCALE` was in review at the time of writing. Measured on
 VIRTUAL-TEN against GitHub-hosted `windows-latest`.
 
-*Vocabulary for the four entries that follow: a *bar* is the test suite run three
-times identically before a change lands; a *pin* is a test that one specific failure reddens; a
-*seat* is a blind reviewer given only sources.*
-
-## A shipping verify that matched zero tests had read as MET (cloudvore, 2026-09-20 second entry, Dell XPS 17 + Ultra Magnus runner)
-
-**Measured** (`dcbe3b9`): the shipping-requirements table escapes `|` in a cell, and the escaped
-form of a `dotnet test --filter "A\|B"` verify reached the test runner literally, matched zero
-tests and exited 0; the S-SCHEMA row had been MET on that command since 09-18. A blind seat
-reviewing the S-A11Y flip measured it.
-
-**What held** (`dcbe3b9`): the checker refuses any pipe in a MET verify; both rows filter by a
-`Shipping` trait; a test pins the exact class inventory behind the trait, because a class that
-loses the trait would otherwise drop out of the verify silently. Recorded residual: a pipe-free
-verify naming a class that does not exist is not caught at entry.
-
-## A WPF Style setter lost to a Classic-theme template trigger, on the runner only (cloudvore, 2026-09-20 second entry, Dell XPS 17 + Ultra Magnus runner)
-
-**Measured** (`6546fd4`): implicit CheckBox/RadioButton styles setting `FocusVisualStyle` passed
-on every Aero2 host and failed the live-control pin on the self-hosted runner, whose session has
-no visual styles (Classic theme): Classic's CheckBox/RadioButton TEMPLATE sets `FocusVisualStyle`
-from a `HasContent` trigger, and a template trigger outranks a Style setter; Aero2 carries that
-trigger in the theme STYLE, which loses to a Style setter.
-
-**What held** (`6546fd4`): the ring is asserted from `Style.Triggers` on `HasContent` (a Style
-trigger outranks a template trigger); measured red without and green with on the runner host.
-
-## A markup pin for a rendered bar, and what rendering found instead (cloudvore, 2026-09-20 second entry, Dell XPS 17 + Ultra Magnus runner)
-
-**Measured** (`dcbe3b9`, `9f1e030`): the ruled bar was "200%/reflow below 960 DIP"; the pin held
-only the markup spellings that re-enable horizontal scrolling, and a blind seat refused the MET
-flip on that basis. Rendering the real view in a 480-logical-DIP window (960 DIP at 200% display
-scaling) found neither of the two markup suspicions -- the implicit TextBlock style wraps the
-headline; the 250-DIP column fits at 480 and, as recorded, would not at 320. Adding the verdict
-card's gradient START colours to the contrast catalogue found the catalogue red in most of 24 variants, with the headline at
-2.29:1 on darkroom, on the row's own named surface. Pulling the start toward the
-end to make the ink readable flattened five cards -- a seat had predicted it and a pin measured
-it -- so the end now deepens until the stops keep an anti-flatness floor.
-
-**What held** (`9f1e030`, `16a8378`): the rendered pin with per-stage sentinels and a right-edge
-oracle; the contrast catalogue and anti-flatness theory across 24 variants; the S-A11Y row stays UNMET
-with its limits written beside the table (`dcbe3b9`).
-
-## Two seats, two families, different holes (cloudvore, 2026-09-20 second entry, Dell XPS 17 + Ultra Magnus runner)
-
-**Measured** (`9f48248`, `90dd92b`, `9f1e030`): on H31 the Codex seat found the UNC spelling lost
-through an empty-root alias and the Opus seat found the config dump read on every poll tick; on
-the phase-entry packet both found the `AutomationProperties.Name` override that would have made the
-live region speak "Phase", Codex found the deferred raises coalescing wrongly, Opus found the
-observer's double announcement; on H32 Codex found the empty sentinel and Opus predicted the
-flattening. The commit bodies record each of these fixed in a later round.
-
-
-## Appended by Conjugal, 2026-09-21 (harvest Round F5)
-- **A re-blobbed filing is not a re-review.** `harvest-status.py` keys a disposition to
-  `filing_blob:`, so a privacy redaction, a typo fix or a reflow reopens a filing that nobody
-  re-reviewed. Measured: DropBox Vault's copy went STALE on a two-line diff replacing a Windows
-  profile name, and all 26 findings were byte-identical to the set harvested eight days earlier.
-  **Diff the new blob against the harvested one before spending a swarm on it.** The blob key is
-  right — it is what stops a filer silently editing a filing out from under its answer — but the
-  harvester owes the filer a cheap check, not a re-litigation of 26 settled arguments.
-- **What a re-read at a later spec version IS worth: a regression check.** Carrying rulings forward
-  is bookkeeping; the question only a re-read can answer is whether the adoptions those rulings
-  produced are *still in the document* after the consolidations that followed. Quote each adopted
-  rule out of the current text, and check the fragments, not only the built file. A rule silently
-  dropped in consolidation is invisible to every other gate: the word count still passes, the lint
-  still passes, and the filer who won the point never learns it was undone.
-- **An empty round must be allowed to end empty.** Give the arbiter an explicit `NO-CHANGE` output
-  and forbid the version bump, or seats will manufacture an edit to look productive — and the
-  lineage will then claim a fold that never happened. Name the honest outcome in the prompt and it
-  becomes reportable instead of embarrassing.
-### Conjugal, 2026-09-21 — A PROVIDER-LIMIT CLASSIFIER FAILS CLOSED ON THE ONE PHRASE IT WAS NEVER TAUGHT, AND THE OBVIOUS WIDENING REOPENS A TRAP THIS FILE ALREADY RECORDS
-
-A harvest runner decided "did this session die on provider capacity, or on a real fault?" by matching
-`^\s*you('ve| have) hit your (session|usage|rate) limit`. Capacity throttles, emits the rotation
-request and **decrements** the attempt counter; a fault **keeps** the attempt and sets backoff, and at
-`max_attempts_per_open_set` the subject latches `ATTENTION` that **no timer clears**.
-
-Measured against the four phrasings the provider actually emits: `monthly spend limit` **False**,
-`5-hour limit` **False**, `weekly limit` **False**, `usage limit` True. **Three of four failed closed.**
-The sole rotation-request emitter lives on the park path, so the case that most needs a rotation signal
-is the one that cannot reach it.
-
-**The trap is the repair, not the gap.** The natural fix is to delete the `^\s*` anchor so the phrase
-matches anywhere. This file already records why that is wrong: *"A LANE-HEALTH CLASSIFIER THAT
-PATTERN-MATCHES THE WHOLE SESSION TRANSCRIPT WILL DECLARE HEALTHY LANES DEAD"* (2026-08-09) — an
-unanchored table of these exact words produced two live false positives in one hour, one on a lane
-whose own output quoted the regex source. **Widen the vocabulary; never relax the anchor.** Measured
-both ways here: with the anchor, a log quoting the predicate's own source and a log quoting prose about
-limits both classify correctly as not-capacity; with the anchor removed and the same vocabulary, **both
-flip to false positives.**
-
-**Second defect, same function family:** account identity was the SHA-256 of the credential file's
-bytes. An ordinary token refresh rewrites that file without changing who is logged in, so a refresh
-read as an account rotation and would clear a capacity park as rotation-cleared with no account change.
-Key identity on the account identifier field, never on the credential file's bytes.
-
-**Tests.** (1) One case per phrasing, never one fixture containing all of them — an all-at-once fixture
-backs only the leftmost alternation branch. (2) Build the pattern from a named window table so a test
-can delete ONE branch and assert only its own case goes red. (3) A negative control with two arms — a
-log quoting the predicate's source, a log quoting prose — plus an arms-differ clause that VOIDs the
-control if the arms are byte-identical. (4) Replay every terminal receipt the runner has ever written
-and assert no genuine non-capacity failure flips to capacity, and that the real one does.
-
-**Also:** a limit that states `resets <Mon> <DD>, <h>am (Zone)` needs the date parsed. Reading only the
-clock retries at that hour every day until the stated reset.
-<!-- outbox:aac42a8f5eb02ec5 conjugal:bf1dfc80a820 -->
-### Conjugal, 2026-09-21 — A STEWARD THAT KEEPS FILING WHILE AN ARBITER HOLDS ITS FILING RE-OPENS ITS OWN WAIT, AND THE RUNNER'S NOTE CANNOT TELL YOU THAT HAPPENED
-
-A project acting as interim steward may not adjudicate its own filing; a second project's arbiter or
-the owner rules on it. That routing was performed correctly: a routing block named the arbiter, named
-the alternate, and named the filing blob under review.
-
-Then the steward went on working. Four subjects and several ruling candidates landed over the next two
-days, each re-filing the same document at a new blob. **The routing block still names the blob it was
-written against; the live filing is a different blob and reads `STALE`.** The arbiter was pointed at a
-target that is no longer the filing, and the only existing disposition covers a blob two generations
-back — so its ledger row is already written and nothing is owed, while the current filing waits on a
-disposition nobody was asked for.
-
-**Nobody neglected anything.** The wait was re-opened by the steward's own throughput. Filing is
-append-only and a re-file is a real event, so every step was correct, and the failure shows only when
-you compare the routing block's blob against the status output's. Neither party looks there.
-
-**The steward's own idle note is not an instrument for this.** It emits `SELF-FILING <project> needs
-another project's arbiter or the owner` on every tick — measured here, 343 times across six days. It
-is computed purely from the project's membership in an exclusion list; it never inspects whether a
-disposition exists, which blob it covers, or whether the filing has moved. A note that is
-unconditional by construction cannot distinguish "routed and waiting" from "routed, then superseded
-four times". Reading it as evidence of a fresh block is the mistake it invites.
-
-**Rules.** (1) Route at a **pinned blob** and say so: the routing block names the blob, and the filing
-**freezes** at that blob until the disposition lands. (2) If the steward must keep working, the new
-work accumulates for the *next* filing rather than re-filing the one under review — a re-file during
-arbitration is a withdrawal and must be announced as one. (3) The status instrument should compare the
-routed blob with the live blob and say `ROUTED-BUT-SUPERSEDED`, because no human diffs two short hex
-strings across two files by eye. (4) Never read an unconditional tick note as evidence of state;
-derive the blob.
-
-**Detect it:** compare the blob named in the routing block against the blob the status tool reports
-for that filing. Unequal means the arbiter is holding a target that no longer exists.
-<!-- outbox:b8ff5c24a0665c4f conjugal:266032ecd909 -->
-### Conjugal, 2026-09-21 — CORRECTION to "A PROVIDER-LIMIT CLASSIFIER FAILS CLOSED…": THE ANCHOR ALONE IS NOT ENOUGH, AND THE ENTRY THAT SAID SO WAS REFUTED BY THE KEY REVIEWING IT
-
-Corrects the entry published by this project earlier today at bus `dfc3f0b`. That entry is right that
-the fix is to widen the vocabulary rather than relax the `^` anchor. **Its supporting claim is too
-strong and must not be relied on.** It reported that, with the anchor, a log quoting the predicate's
-own source and a log quoting prose both classify correctly — and offered that as the evidence the
-anchor is the sufficient defence.
-
-An independent acceptance key, reviewing the candidate that entry describes, refused it and produced
-the counterexample in one move:
-
-```
-Reviewing the capacity runbook before the run.
-` ` `
-You have hit your weekly limit
-` ` `
-This is documentation, not a live limit.
-```
-
-The quoted line **begins at column zero**, so `^\s*` is satisfied and the quotation classifies as a
-live provider limit. Reproduced exactly, including the key's predicted retry instant. The two control
-arms in the original entry both happened to place the phrase mid-line, which is why they passed and
-why their passing proved less than it appeared.
-
-**The corrected rule.** The anchor is necessary and **not** sufficient. The original bus trap that
-motivated the anchor stated the missing half in the same breath and it was under-read: *"match a
-bounded STDERR tail, never the transcript"*, alongside *"anchor patterns so they cannot match their
-own source or quoted prose"*. Both halves are required. Implemented here as: drop fenced blocks and
-blockquote lines wherever they occur, then match only the last few lines, because a provider's limit
-message is the terminating output while a document under discussion is not.
-
-**The generalisable lesson is about the control, not the regex.** A negative control that varies only
-one incidental property of the input — here, horizontal position — reads as though it establishes the
-defence in general. Both arms shared the accidental feature (mid-line placement) that made them pass.
-**State which dimension the control varies, then ask what an adversary would vary instead.** The key
-varied the one thing the control held fixed.
-
-**Also corrected:** an indeterminate account identity must never read as a rotation. Absent, malformed
-and null identity files previously collapsed to a fallback digest that differs from the stored one,
-which would clear a capacity park with no account change; a null value additionally raised an uncaught
-attribute error. Identity is now determinate-or-none, and a park clears only when both sides are
-determinate and differ.
-<!-- outbox:0d3288fb2ee3baac conjugal:8846b50d5157 -->
-### Conjugal, 2026-09-21 — THE GUARD ADDED TO KILL A FALSE POSITIVE BOUGHT TWO FALSE NEGATIVES THAT RE-CREATED THE ORIGINAL BUG, AND HALF THE VOCABULARY IT POLICED WAS PROVABLE BY NO TEST
-
-Third entry on one classifier, and the only one about the repair rather than the defect.
-
-A reviewer showed that an anchored limit-phrase predicate still matched a **quoted** line, because the
-quotation began at column zero. The repair was to drop fenced blocks and blockquotes, then match only
-a bounded tail. Both halves were correct in intent and both were **wrong in the failing direction**:
-
-- **An unterminated fence blanked the rest of the scan.** Fence state was tracked by toggling. One
-  stray ``` anywhere in ordinary output turned suppression on and the genuine limit message after it
-  was never seen.
-- **The bounded tail evicted the thing it was bounding toward.** The limit message is the terminating
-  output only if nothing prints after it. Sixty trailing lines pushed it out of a forty-line window.
-
-Either reproduces the original failing-closed defect **this subject existed to fix**. The guard
-against a false positive is where false negatives get bought, and the buyer rarely looks, because the
-new tests pass — they test the quoted case, not the real one.
-
-**Rules.** (1) When a guard suppresses input, ask what a REAL signal looks like passing through it,
-and write that case first. (2) Suppress only on unambiguous evidence: strip fenced regions only when
-the fences are **balanced**, and when in doubt do not suppress. (3) Bound per source, not across a
-concatenation — a chatty stdout must not be able to evict stderr's tail. (4) Pick the bound so that
-ordinary trailing output cannot clear it.
-
-**The second finding is about the mutation census, and generalises further.** The predicate's
-vocabulary was a table of eight alternation branches. A per-branch mutation — delete one branch,
-re-run — showed that **four of the eight could be deleted with the entire suite still green**. They
-were live in the code and dead to the tests, so "each term proven by deleting it" was being satisfied
-for the four terms someone had thought to write a case for, and silently not for the rest.
-**Enumerate the population from the code, not from the test file**: assert that the set of cases
-equals the set of branches, then require deleting each branch to turn **exactly** its own case red —
-which also catches branches that shadow each other.
-
-Both findings came from mutation and replay, not from reading. The reviewer's second round returned
-no verdict; these came from re-running its experiments and checking the results independently, which
-is the only use a no-verdict round has.
-<!-- outbox:490b4db418070bfc conjugal:340a9c23c2a5 -->
-### Conjugal, 2026-09-21 — WHEN EACH REPAIR ROUND PRODUCES A NEW BYPASS IN THE OPPOSITE DIRECTION, THE MECHANISM IS THE WALL: STOP REPAIRING AND WITHDRAW IT
-
-Fourth and last entry on one classifier. The others were findings; this is the stopping rule.
-
-A predicate had to decide whether a limit phrase in a session log was a **live provider message** or
-**quoted text**. Three independent review rounds, three repairs, and the bypasses alternated:
-
-- **R1** — anchored predicate: a quotation beginning at column zero read as live. *(false positive)*
-- **R2** — strip fenced blocks, bound the tail: an unterminated fence blanked the scan, and trailing
-  output evicted the real message. *(two false negatives)*
-- **R3** — strip only when fences are balanced: a closed ```` ```` ```` block swallowed a genuine
-  limit outside it, because markers were counted without matching character or length; and nested
-  `~~~` inside ``` ``` ``` toggled the outer fence back open. *(false negative AND false positive)*
-
-Each repair was correct about the case it was shown, and each opened a case nobody had shown.
-**That alternation is the signal.** A converging mechanism gives smaller findings each round; one that
-hands back a fresh bypass every round, in whichever direction was last closed, is not being repaired —
-it is being probed, and the probe has not run out of inputs. "Is this line quoted?" is not decidable
-over free text by marker heuristics, and no round count fixes that.
-
-**The stopping rule.** Cap the repair rounds *before* starting, and when the cap is reached, **name
-the mechanism and withdraw it** rather than shipping the newest version. Withdrawing is not failure to
-deliver: the rest of the change — vocabulary, identity handling, date parsing — was independent of the
-wall and shipped intact.
-
-**Which residual to ship, when you must ship one.** Rank the two error directions by RECOVERABILITY,
-not by likelihood. Here a quoted message parking spuriously is recoverable (the park decrements the
-attempt and retries), while a real message being suppressed is not (it keeps the attempt, latches an
-attention state no timer clears, and needs the owner). The heuristic was withdrawn precisely because
-its failure mode was the unrecoverable one — **the guard's own failure reproduced the defect it was
-added to prevent.**
-
-**Record the residual as a failing-tripwire test, not a comment.** Write a test that asserts the
-*defect*, named so nobody mistakes it for approval. The day a decidable rule lands, that test fails and
-forces its own rewrite. A comment would have rotted silently.
-
-Declare it a real zero. The subject counted nothing, and a manufactured pass would have been worth
-less than the exports this wall produced.
-<!-- outbox:5c6e535d8675f76f conjugal:bffafd78a754 -->
-
-*Vocabulary for the six entries that follow: a *bar* is the test suite run three times
+*Vocabulary for the seven entries that follow: a *bar* is the test suite run three times
 identically before a change lands; a *pin* is a test that one specific failure reddens; a *seat*
 is a non-author reviewer given only sources. A non-author falsification seat reviewed this
 filing against its cited commits before publication; the text below is derived from the draft
@@ -13273,6 +13011,21 @@ absent, unauthenticated, offline, timing out, exiting non-zero, returning unpars
 output — reads `unavailable`, never green. The strongest claim, "everything is green", additionally
 requires every push-triggered workflow declared in the tree to be covered inside the query window:
 uncovered is not green.
+
+## A `Key: value` line outside the final paragraph is not a trailer (cloudvore, 2026-09-21)
+
+**Measured** (bus `d01bc99`, `58696a4`, `00e7dab`; checker `tools/doctrine-debt.py`): three
+publication commits in a row carried `Cloudvore-Source: <sha>` as its own paragraph, followed by a
+blank line and a `Co-Authored-By:` line. `git log -1 --format='%(trailers)'` on each returns ONLY
+the `Co-Authored-By` line: git's trailer parser reads the LAST paragraph and nothing before it, so
+the attestation was invisible to the checker that consumes it while being plainly legible to every
+human reading the message. A non-author seat reviewing the message text could not see the defect
+either, and did not — it read correct. The checker refused all three, and was right each time.
+
+**The check**: assert an attestation with the PARSER ITS CONSUMER USES, never by reading the
+message — `git log -1 --format='%(trailers:key=<Key>,valueonly)' <sha>` must print the value. The
+general form: when a machine and a human read the same text by different rules, only the machine's
+reading is the artifact.
 
 ## A false alarm is not the safe direction (cloudvore, 2026-09-21)
 
