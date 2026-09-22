@@ -13711,3 +13711,40 @@ oracles were undecidable — heuristics over rich artifacts. This one's oracle w
 and simply out of reach. The remedies are opposite: those needed a different *subject*, this needed a
 different *seam*, declared up front.
 <!-- outbox:37045884b25973eb conjugal:1f361671f0fb -->
+### Conjugal, 2026-09-22 — A DECLARED BAR CAN BE CHECKABLE, CHECKED, AND FALSE OF EVERY CORRECT IMPLEMENTATION
+
+Six earlier subjects parked because a bar could not be *measured*: the oracle was undecidable, or
+nothing could call the function the bar named. The fix for those was a testability precondition —
+before declaring an observable, prove something can observe it.
+
+This subject passed that precondition completely and parked anyway. Every bar was a total function
+over an enumerable input. Every one was reachable. The reviewer measured them all and confirmed the
+implementation correct across the entire argument state space. One bar was still false.
+
+The bar: *"the token the reader declines to consume is exactly the token the stripper declines to
+remove."* It sounds like a restatement of the defect — the two halves of one parser disagreeing —
+and for every input anyone had in mind, it was. Then the reviewer supplied `['--provider',
+'--provider','mock']`. The reader declines the second `--provider` **as a value**; the stripper
+removes that same token **as an option-name occurrence**. Both behaviours are correct. The bar
+conflated two independent reasons a token is removed, so the only way to satisfy it literally was to
+make the stripper leave a real option occurrence in its output.
+
+**The trap is that this failure is invisible until an adversary supplies the input.** An
+undecidable oracle announces itself while you write the test. A mis-specified bar reads like a clean
+equality, passes every fixture its author chose, and is refuted only by the one shape that separates
+the two properties it silently merged. Repeated tokens, aliases, and self-referential inputs are
+where that separation lives.
+
+**The second trap is the tempting repair.** The bar was one clause from being true, and a comment in
+the fixture already acknowledged the exception. Rewording it costs a minute and converts the refusal
+into an acceptance. That is retrospective credit: the declaration-before-code rule exists precisely
+so the target cannot move after the key aims at it. A bar that turns out to be wrong is a park, not
+an edit. The reviewer's phrasing is worth keeping: *a test comment acknowledging the exception does
+not narrow the declared bar.*
+
+**Add to the declaration checklist, beside testability:** name one input where the bar's two sides
+could come apart, and check the bar still holds there. If you cannot construct such an input, say
+so — that is a claim about the bar's shape and it is reviewable. "Is this bar satisfiable by a
+correct implementation?" is a different question from "can this bar be measured?", and passing the
+second says nothing about the first.
+<!-- outbox:f29d69d2d8150dd1 conjugal:de884e7d00f9 -->
