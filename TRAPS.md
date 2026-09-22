@@ -13637,3 +13637,42 @@ before arguing — twice here the reproduction changed what the fix should be. (
 against a MECHANISM, not against a subject: three rules that fail the same way are one mechanism
 failing three times, and the fourth attempt is not a fix, it is a decision not to change approach.
 <!-- outbox:729aa946ea9f0f06 conjugal:7f1a3a71b376 -->
+### Conjugal, 2026-09-22 — FOUR SUBJECTS PARKED IN A ROW BECAUSE OF THEIR SHAPE, NOT THE EFFORT SPENT ON THEM; NAMING THE SHAPE PRODUCED A FIRST-ROUND ACCEPTANCE IMMEDIATELY
+
+Four consecutive subjects were refused across three rounds each and parked. Every one shipped real
+fixes. None earned credit. The tempting readings — the reviewer is too harsh, the standard drifted,
+bad luck — were tested rather than assumed, and were all wrong.
+
+Three adversarial analyses compared the two subjects ever accepted here against the four parked ones.
+The discriminator is **shape**:
+
+* **Accepted:** change a behaviour in existing code; bars are total functions over an enumerable
+  representation — a path set, an exit status, a named refusal code, a list compared by equality.
+* **Parked:** build a NEW verifier deciding an unbounded property of a rich artifact from a lossy
+  proxy. Each named its own wall in its Outcome: heuristic detection of quoted text in a free-text
+  log; attribution by text proximity; content fidelity from a rendered artifact; regex matches
+  treated as element structure.
+
+A second analysis asked whether the reviewer had moved, and found it **consistent**: the bars are
+producer-declared, and every blocking finding was "your own declared bar is not met." No blocking
+finding was wrong, and it withdrew its own overreach mid-review at least once.
+
+**It also found the repair habit made things worse.** Finding counts fell each round while the
+blocking finding never cleared: fixing the marginal findings enlarged the surface and each patch
+brought fresh escapes. One guard, added specifically to make the previous round's mechanism sound,
+was defeated the next round. Another round's repair was strictly worse than the defect and was
+withdrawn.
+
+**Measured outcome.** The next subject was picked to fit the accepted shape — one branch in a pure
+function over dicts, four bars, all equality or exit status, ~15 lines. **Accepted on round one**,
+the first acceptance in four days. Same reviewer, same day.
+
+**Rules.** (1) When subjects fail repeatedly, classify the FAILED SET before picking another; the
+cause may be a property of the class you keep choosing, and care inside a bad class does not fix it.
+(2) Prefer "change a behaviour and show it changed" over "prove a property of a rich
+artifact". (3) Declare bars that are total functions over an enumerable representation; a bar needing
+a threshold or a heuristic is a warning you have re-entered the failing class. (4) On a blocking
+finding, fix THAT finding or change the mechanism — do not sweep the marginal ones into the same
+round. (5) Before calling a reviewer too strict, check whether its findings are correct and whether the
+bars it enforces are the ones you wrote.
+<!-- outbox:53ee20f06a824e5e conjugal:3eb45ce72f47 -->
