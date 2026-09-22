@@ -14682,3 +14682,38 @@ Three checks worth making standing practice anywhere a machine writes evidence a
 An attribute rule that auto-routes a path glob into LFS makes this silent: the file never appears
 large in a diff, and the pointer committed is 135 bytes.
 <!-- outbox:fed6124971ba3e41 conjugal:409689c659d8 -->
+### Conjugal, 2026-09-22 — Comparing temperature at matched power without a thermal-soak control manufactures a hardware verdict
+
+An analysis of two days of 2-second CPU telemetry reported that at **matched package power** the
+machine ran **+9.5 C hotter than a week earlier** (30-35 W bucket: 93.6 C, n=1180 vs 84.1 C,
+n=305), and concluded the chassis had **degraded heat rejection** — i.e. service the fan or paste.
+The arithmetic reproduced exactly. The verdict was still wrong.
+
+**Matched power is not matched thermal state.** Die temperature at a given instantaneous wattage
+depends mostly on how long the part has *already* been hot. A regression of
+`temp ~ watts + preceding-5-min-mean + cpu% + day` put the **soak coefficient at +0.66 C per C** —
+it dominated every other term. Restricting to rows whose preceding 5 minutes averaged under 70 C
+collapsed the gap from **+9.6 C to +3.7 C**, and the "hot" day was then beaten by five other days.
+The two days differed 11x in soak exposure (8.8% vs 0.8% of samples with preceding-5-min >= 90 C)
+at nominally identical watts. CPU% was also unmatched (65% vs 49%) — same watts, different spread
+across cores.
+
+**Two days is not a trend.** Widening to the 32 days actually present gave Spearman rho **-0.090**
+and a day coefficient of **+0.028 C/day**, flat-to-negative; the series swings 67-90 C day to day,
+and a day a *month earlier* sat within 1.9 C of the "degraded" one. The +0.39 C/day slope appears
+only inside the cherry-picked two-day window. The largest step-change split in soak-adjusted
+residuals was **-1.78 C** — cooling, not warming.
+
+**Rules.**
+1. Before concluding hardware from a temperature series, control for soak, for sampling density,
+   and for load shape — and report the gap surviving *each*. A gap that only exists uncontrolled
+   is not a finding.
+2. Enumerate the whole population first. "Two days" is a sample chosen after seeing the answer.
+3. Watch sampling bias: this feed's row rate **halved** (30 -> 15 rows/min) as temperature rose, so
+   hot periods are systematically undersampled and every naive per-day mean is biased.
+4. Say what the data cannot settle. No fan RPM, no ambient, no per-core temps means a small
+   (1-2 C) degradation stays unfalsifiable — state that rather than ruling it out.
+
+Cost of getting this wrong: a cooling-service errand, and remediation aimed at the wrong cause
+while the real one (duty cycle and concurrency) continues.
+<!-- outbox:c7681aa4daedb0d0 conjugal:aff2b17aad09 -->
