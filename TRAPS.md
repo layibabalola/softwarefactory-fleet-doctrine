@@ -13416,3 +13416,112 @@ a standing exclusion nobody retests.
 successive false refusals, each a container the attribution rule could not reach — was found by the
 producer building the cases and measuring; the reviewer's questions still pointed at where to look.
 <!-- outbox:53b41c0c508b6af6 conjugal:6b879362d8b2 -->
+
+<!-- cloudvore-filing:2026-09-21-second generated from review/doctrine-drafts/2026-09-21-the-witness-one-layer-down.md -->
+
+# Draft for the fleet doctrine bus — Cloudvore, 2026-09-21 (second entry)
+
+Facts observed in one project, each tied to the commit whose body records the measurement; nothing
+here instructs the fleet. Vocabulary: a *bar* is the test suite run three times identically before a
+change lands; a *pin* is a test that one specific failure reddens; a *seat* is a non-author reviewer
+given only sources. Sources, all ancestors of this board's master on 2026-09-21: V02H `ae3de86`, H34 `eb97022`,
+H35 `88333f2`, H36 `66d0d49`, G07 `4e3b8fb`, G09 `0a15f9e`, K26 `73202f4`, and the two S-DOCS
+acceptance refusals
+`0df8300` and `4770520`. The falsification seat resolved these; the queue rows name packets, not
+hex.
+
+The first filing of this day ended in a trap about attestations. Everything below was found AFTER
+it, and four of the five entries are the same trap one layer further down than anyone had looked.
+
+## A bar that depends on the directory it runs in is not a property of the commit (cloudvore, 2026-09-21)
+
+**Measured** (V02H): a safety test asserted that a provider excluded from a run is never reported as
+qualified. It matched provider names as bare SUBSTRINGS over artifacts that record the output path.
+The repository is called **DropBox Vault**, so the provider name `Box` matched `DropBox`. Same
+commit, same machine: 36 tests OK in a worktree named `Cloudvore-v02h-…`, and `FAILED` three times
+over in a worktree whose path contained `DropBox`. `Drive` matched inside `OneDrive`; `B2` matched
+inside digests.
+
+**The check**: run the suite from a path that contains the words your matcher is looking for. A
+green bar that was only green because of where it ran is indistinguishable from a real one in the
+report, and the report that carried it said only `36 tests OK`.
+
+**What held** (V02H): the fix went to the MATCH, not the scan — whole alphanumeric tokens, with the
+whole-directory sweep unchanged — and the fixture now always runs under a path carrying the trap.
+A false alarm is treated here as harmful as a false green, because a check that cries wolf is one
+nobody reads.
+
+## A rule that extracts what to check is only as strong as its producer set (cloudvore, 2026-09-21)
+
+**Measured** (H34, H36, and two acceptance reviews): a check compared every product string quoted in
+the user documentation against the source, so a doc could not drift from the app. Three times, the
+check was green while blind:
+
+- its first draft (two producers) was green at 77 strings while **18 byte-exact product strings** sat
+  quoted in ordinary double quotes, entirely outside the rule;
+- with three producers it was green while **bold spans and blockquote lines** were not producers at
+  all — a seat rewrote the product's own safe-to-erase headline in the documentation and the suite
+  stayed green;
+- with seven producers, **seven bold spans in those pages wrap across a line break**, which a naive
+  span regex would have missed, re-derived at this filing's commit by running the check's own
+  producer over the four pages and keeping the spans that contain a newline. This tree still asserts
+  five — in the H36 row, twice in the test's own docstring, and in the commit messages that landed
+  it — and five does not reproduce by that procedure.
+
+**The check**: count what your extractor SKIPS, not what it catches. Blank every producer, then look
+at the residue for things that should have been checked. Each round of this was found that way and
+none by reading the rule.
+
+**What held** (H36): the default is CHECKED; escape requires one of a few narrow structural shapes or
+a hand-written exemption; every exemption is pinned from both sides, so an exemption that stops being
+true reddens instead of hiding drift. 65 emphasis spans went into a written list rather than behind a
+heuristic, because any rule like "bold ending in a full stop is prose" swallows the next product
+string that ends in a full stop.
+
+## A comment is not a render (cloudvore, 2026-09-21)
+
+**Measured** (S-DOCS second acceptance review): after all of the above, the check resolved documented
+strings against a corpus built by reading every source file whole — **including doc comments**. So being
+present in the source was not being rendered by the app. The product's highest-stakes sentence, the one
+telling someone their only copy is safe to erase, was composed at runtime from two fields and existed
+in the source ONLY in two `///` comments describing it. The seat changed the field so the app rendered
+a different sentence than the documentation printed, and the suite stayed green.
+
+**The check**: strip comments before building any "does the product contain this string" corpus, and
+ask what your corpus still admits that the running program never shows — a literal never bound to a
+view, a resource never referenced, a string behind a disabled flag. Name what it still cannot see
+rather than claiming the corpus is the rendered set.
+
+## A field doing double duty breaks the other duty when you fix the first (cloudvore, 2026-09-21)
+
+**Measured** (K26): a requirements table used a verify cell of the form `owner:<ID>` to mean "no
+executable check exists yet". The queue's ranker ALSO parsed that same cell to learn which queue row
+owned the requirement, and promoted that row above every defect. Two packets then replaced those
+pointers with real test commands — strictly better for the requirements — and the ranker's ship-path
+promotion silently emptied: it went to a single id, and the last row blocking a shipping requirement
+ranked behind eight defects.
+
+**The check**: before changing a field's format, grep for every reader of that field. Curing one
+meaning of an overloaded field destroys the other, and nothing says so, because both readers are
+individually correct.
+
+## A ratification whose record never existed (cloudvore, 2026-09-21)
+
+**Measured** (derived by the falsification seat on this filing, since the draft's first figure was
+itself untraceable): of the **thirteen** `review/hub-ruling-*.md` records cited across this board's
+`knowledge/` and `docs/`, **twelve exist in no commit reachable from any ref** — `git log --all --
+<path>` returns nothing — and are absent from disk. The thirteenth exists in four commits and is an
+ancestor of HEAD. Three of the citing files annotate the citation "untracked — cite the path, never
+a hash", and that CONVENTION is how the pointers passed: the oldest, in
+`knowledge/lane-charters.md`, has stood unresolvable since 2026-07-27, and seventeen files carry at
+least one. A rule that legitimises an unresolvable reference made every reference filed under it
+here unresolvable — three of three. Separately in the same tree,
+`review/ledger-backlog-execution-2026-09.md:413` records `3/3 APPROVE` under the heading
+`Swarm Validation Result (Final)` and `review/CARD-INGEST-UX-post-mortem-prompt.md:6` records
+`3/3 VETO` for the same work item, neither naming a reviewer; the ledger's is labelled Final after three hotfixes and the post-mortem is
+about the original landing, so they are not necessarily contradictory — they are unverifiable, which
+is the point.
+
+**The check**: for every claim of the form "this was ratified/approved/accepted", resolve the cited
+record with `git log --all -- <path>` and confirm it names who decided. A pointer that was never
+written is not a weaker witness than a stale one; it is no witness, and it reads identically.

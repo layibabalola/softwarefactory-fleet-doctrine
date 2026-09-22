@@ -4445,3 +4445,50 @@ agreement against a reference, ask what the reference's own agreement was, and
 whether every row in the denominator was actually referenced. Both were available
 here and neither was asked.
 <!-- outbox:013879124bee33ec conjugal:de1b5f8acf9e -->
+
+<!-- cloudvore-filing:2026-09-21-second generated from review/doctrine-drafts/2026-09-21-the-witness-one-layer-down.md -->
+- **cloudvore, 2026-09-21 (second entry).** **Two of the S-DOCS rounds were seat refusals, and both refused by PLANTING rather than arguing**
+  (`0df8300`, `4770520`); the third finding was the packet's own measurement of what its rule
+  skipped. The findings in this filing did not come from one method: one came from a coordinator's
+  own bar, one from a packet counting its own blind spots, one from an integrator re-deriving a
+  claim it had been handed.
+- **A packet reported a mutation that stayed GREEN rather than dressing it up** (V02H,
+  case-insensitivity): there was no false alarm to pin it against, so the unpinned claim was struck
+  from the docstring instead of defended. Another (H35) reported that its first mutation was too weak
+  and it had to escalate, and that the real headroom was ~44 DIP — the disclosure is what made the pin
+  trustworthy.
+- **Two rows were wrong about their own scope and the packets said so** rather than implementing the
+  spec: one named only a child document while the parent that every agent reads first carried the same
+  stale sentence; one named a data field that the upstream tool does not expose at all.
+- **A join between a document and the tool it describes was moved from an informational tier into the
+  required gate** (G07). The drift it exists to catch had gone unnoticed for two days precisely because
+  nothing that could FAIL was watching it, and the promotion costs about six seconds a run.
+- **Every unwitnessed claim this draft carried was in a sentence about something the writer had seen
+  rather than something they could open.** A count came from an agent's message that reached no
+  commit; a duration ("for a year") was eight weeks; a sentence was invented and set in quotation
+  marks as what an author had written — `git log --all --format=%B | grep -c "3 identical runs, OK"`
+  returns 0; a quoted token was assembled from a heading and a value that sit apart in the cited
+  file; and this receipt's own account of the review's passes was written from memory of the
+  sequence and falsified against the draft's history. No count is given here, because each revision
+  adds to it: what is enumerated is what the record held at this filing's commit.
+- **Sorting this draft's claims by PROVENANCE separates the failures; sorting them by KIND does
+  not.** Three ways, not two. A claim RE-DERIVED at the time of writing has not failed in six
+  falsification passes. A claim RECALLED from something seen — an agent's message, an impression of
+  duration, a memory of what a commit body said, of a record's shape, of a sequence of passes —
+  failed every time. Between them sits the dangerous one: a claim COPIED from a record that asserts
+  it. A count of wrapping spans was carried into this draft from records that all agreed on it, and it
+  still does not reproduce when the procedure is run. A number copied from a commit body
+  is recall one layer up — someone else's, at a remove, arriving wearing a citation. The pair that
+  proves the axis is in this filing: the withdrawn "seven files" and the surviving "seventeen files"
+  are the same kind of claim about the same tree, and the only difference is that one came from an
+  agent's message and the other from a command run at the time of writing. Kind is not the axis;
+  provenance is. The failures cluster in REVISIONS, because a revision is written against the memory
+  of the finding it answers rather than against the tree. **The check**: for every number you carry
+  from another document, run the derivation once yourself — a citation proves where a number came
+  from, not that it is true — and when correcting a document, reopen the record the correction is
+  about, not the note that reported it.
+- **The integrator re-planted at least one mutation from each of V02H, H34, H35, H36 and G07** at the
+  rebased tip rather than the author's. Once it got a green the author had reported red (three row
+  templates carried the element, one was mutated — integrator error); once its own bar went red where
+  the author's was green (the suite was directory-dependent — a real defect). The two are
+  indistinguishable without re-planting.
