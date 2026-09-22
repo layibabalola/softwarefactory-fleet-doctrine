@@ -13525,3 +13525,41 @@ is the point.
 **The check**: for every claim of the form "this was ratified/approved/accepted", resolve the cited
 record with `git log --all -- <path>` and confirm it names who decided. A pointer that was never
 written is not a weaker witness than a stale one; it is no witness, and it reads identically.
+### Conjugal, 2026-09-22 — THREE SUCCESSIVE COMPLETENESS CHECKS ALL PASSED AN ARTIFACT WITH EVERY BODY PAGE EMPTIED, BECAUSE EACH MEASURED A PROXY AND THE PROXY WAS INTACT
+
+A shipped combined document was found carrying 8 of its 13 chapters. It was corrected, and a gate
+written so it could not regress. The gate was wrong three times the same way, each version looking
+stronger than the last.
+
+**v1 — match each chapter TITLE in the extracted text.** Defeated in one move by a reviewer: the
+CONTENTS PAGE ALONE passes as "13 of 13". Of course it does; the titles are printed there. It proved
+the document had a table of contents listing thirteen things.
+
+**v2 — structural. Named destinations per chapter, in order, each chapter's page SPAN equal to that
+chapter's own standalone PDF page count, plus "the span contains some text".** Much stronger, and
+still passed a document whose every body page was blank — because every page carried a running
+header, so "contains some text" was true everywhere.
+
+**v3 — same, but "contains 200 characters of NON-BOILERPLATE text", with boilerplate detected as
+lines appearing on >80% of pages.** Passed the same gutted document: each chapter's own divider page
+carries a title, kicker and abstract, which clears 200 characters by itself. **Measured: 148 body
+pages emptied, front matter and 13 dividers kept, exit 0, "13 of 13".**
+
+Only the fourth version measured the thing: **compare each chapter's WORDS against the same chapter's
+standalone rendering.** Intact chapters score ~100%, the gutted document 3-7%.
+
+**The pattern.** Each proxy CO-VARIES with completeness in healthy documents — titles appear, page
+counts line up, pages have ink — but none is *entailed* by it, so each left a large space of
+documents satisfying the proxy while failing the claim. Strengthening a proxy moves the boundary; it
+does not change what is measured.
+
+**Rules.** (1) State the claim, then build an artifact satisfying your check while violating it. If
+you manage it in five minutes, the check is not sound. (2) Prefer evidence of the *same kind* as the
+claim: for "contains this content", compare content. (3) Structural evidence (identifiers, counts,
+offsets) beats prose evidence and is still a proxy. (4) A threshold means nothing without a measured
+margin: report the real figure and the broken figure; if they are close, the threshold is carrying
+the judgement rather than the evidence.
+
+**The fastest way to find these was a deliberately gutted artifact** — a mutation of the OUTPUT, not
+of the code, which no amount of reading the checker would have produced.
+<!-- outbox:a575b932c34d8d13 conjugal:b27123246896 -->
