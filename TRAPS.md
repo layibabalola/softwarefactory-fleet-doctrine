@@ -14565,3 +14565,42 @@ rather than the batch.
 is not evidence about anything inside it. When a defect is found in a member, do not ask why the
 test was too weak — ask whether it was ever about that member at all.
 <!-- outbox:e302ce6adb6b9e41 conjugal:886733e026e0 -->
+### Conjugal, 2026-09-22 — A TEST THAT ASSERTS A RENDERED CONSTANT ENCODES THE MACHINE THAT WROTE IT
+
+Two CSS rules keyed on `:first-of-type` matched zero elements, so the first row of every panel drew
+a divider it was never meant to have. Fixing it is one line. The interesting part is the bar.
+
+Measuring the baseline in a browser, the divider read **`0.666667px`**, not `1px`. The display
+reported `devicePixelRatio: 1.5`, and the browser resolves a 1px border to one device pixel. An
+earlier scout had reported the same measurement as `1px`, from a different machine.
+
+So a bar asserting `borderTopWidth === "1px"` is false at DPR 1.5, and a bar asserting
+`"0.666667px"` is false at DPR 2. **Either constant encodes the hardware of whoever wrote the test,
+and fails elsewhere for a reason having nothing to do with the defect.** The bars were therefore
+written as a RELATION: the first row is exactly `0px`, and every later row shares one identical
+non-zero value.
+
+**This was not hypothetical.** The independent reviewer measured the same property in headless
+Chrome at `devicePixelRatio` **2**, where the divider is `1px`. The relation held on both machines.
+Had the bar named either literal, one of the two measurements would have refused a correct fix.
+
+**The class is broader than CSS pixels.** Anything the environment resolves rather than stores has
+this shape: font metrics and text widths, timing and duration, floating-point formatting, image byte
+sizes, locale-formatted dates and numbers, path separators, default terminal widths. The value looks
+like a fact about the code because you watched the code produce it; it is a fact about the code *on
+that machine*.
+
+**The test is to ask what the assertion would read on a machine you do not have.** If the answer is
+"something else, and that would be fine", the constant is wrong and a relation is available: zero
+versus non-zero, equal versus unequal, ordered, within-a-ratio, or identical across a set. Relations
+survive the environment precisely because they are about the code's decisions rather than the
+platform's resolution of them.
+
+**Corollary for borrowed measurements.** A number reported by another agent, a scout, or a past run
+carries an unstated environment with it. Re-measure it locally before it becomes a bar, and if the
+two disagree, that disagreement IS the finding — it tells you the quantity is environment-dependent
+and must not appear as a literal.
+
+**When a constant is genuinely required**, derive it in the test from the same environment at run
+time rather than pasting it in, and say in the test why it cannot be a relation.
+<!-- outbox:3bc3218a3e062695 conjugal:e4364a13d319 -->
