@@ -1,5 +1,5 @@
 # DNG Auto Processor — factory spec (one writer: the `dng-design-steward` seat, docs/13 P-STEWARD step 7d; a posture change made anywhere else reaches this file as a census item of that seat's next pass)
-source_commit: 25763faa1975005a1e7bf686f69bf9a5c4b20b6b
+source_commit: 6a7ad68f3eef689a18326a231c124520d90aa145
 
 **Machine:** ULTRAMAGNUS (personal box). **Project root:** `C:\code\DngAutoProcessor - Claude`.
 **Product:** auto-grading pipeline for DNG timelapse clips emulating the operator's LRTimelapse
@@ -26,9 +26,13 @@ section it cites. Below the dispositions table is history: "current" or "must kn
   receipt addresses to the USER, write a receipt, and run no tick, dispatch, landing or governing-doc edit. A seat is
   alive only when its next run leaves its own receipt; "enabled" proves nothing. Every scheduled seat writes a
   receipt on every run, a no-op included (§5) — which makes that ledger the seat's fire history, so a row's CRON
-  is checkable the same way and needs no access to the scheduler: a row whose cron does not reproduce the offset
-  and gap of the seat's own stamps is a row the live registration does not carry. A row that a procedure
-  RE-APPLIES on recovery drives live state rather than describing it, so a mismatch is not cosmetic.
+  is checkable the same way and needs no access to the scheduler. **That comparison CONVERTS before it
+  compares**: a scheduler evaluates cron in MACHINE-LOCAL time while every stamp written here is UTC, so a row
+  checked against a UTC stamp reports a divergence between two byte-identical artifacts, orders a repair to live
+  state, and on the same reading inverts a deliberate odd/even interleave between two seats. Only a row that
+  fails the CONVERTED comparison is a row the live registration does not carry; the few minutes past the due
+  minute are startup latency. A row that a procedure RE-APPLIES on recovery drives live state rather than
+  describing it, so a mismatch is not cosmetic — and neither is a false one.
 - **Make overlap harmless; never add a lease** (§3): claim on disk before acting (state line and launch json
   before the launch); re-read a card before any launch, landing or rewrite, and stand down if it changed; every
   launch json, brief, progress log, scratch file and verdict a dispatched seat writes carries its agentId in its
@@ -65,9 +69,14 @@ section it cites. Below the dispositions table is history: "current" or "must kn
   rescue it, and a card of that kind declares bars that are total functions over an enumerable representation, or
   it is not opened in that form. A bar needing a threshold or a heuristic is the warning that the class has been
   re-entered.
-- **Land on per-file blob identity** (§4): every `binding.json` path has one blob at the reviewed and the landed
-  sha, never root-tree equality, and patch-id only corroborates; `git merge --ff-only` of an exact sha; land
-  before you record; a tick that changed no state commits nothing.
+- **Land on per-file blob identity AND on the enumerated landing RANGE** (§4): every `binding.json` path has one
+  blob at the reviewed and the landed sha, never root-tree equality, and patch-id only corroborates. **Blob
+  identity checks the paths a key READ and the fast-forward moves a RANGE**, and the two are the same set only
+  when the subject is based on master: enumerate `master..<subject>` before the merge and fail closed on any
+  path absent from `binding.json` and present in the PRODUCT set, because a green suite is not a review of bytes
+  no key saw. A card whose `Base` is not master is landed by rebasing its own commits onto master, so the range
+  IS the reviewed diff, and never by a bare fast-forward over its base. Then `git merge --ff-only` of an exact
+  sha; land before you record; a tick that changed no state commits nothing.
 - **Inert-commit rebase states the closed PRODUCT set and derives inert as its complement** (§4): a clause that
   says "never listed" and then lists is decided by whichever half is read first. It voids only when the
   intervening range touches the subject's own `binding.json` paths (absent or unparseable fails closed); the
@@ -89,7 +98,11 @@ section it cites. Below the dispositions table is history: "current" or "must kn
 - **An alarm that cannot read its input FIRES; one whose remedy cannot clear it is REPORTED, not obeyed** (§7).
   **And an alarm computed only from a FAILURE history reads healthy on a subject that stopped running
   altogether**, because a thing that never fires writes no failure and an empty input satisfies no
-  count-the-violations arm: such an alarm needs one arm relative to the subject's OWN cadence.
+  count-the-violations arm: such an alarm needs one arm relative to the subject's OWN cadence. **That arm's
+  window START is itself a field a new subject does not yet have**: written as "since its last run" it is a
+  missing key, which the first rule above then turns into a permanent FIRE against a healthy subject for the
+  whole interval between registration and its first fire — so the start falls back to a field every subject
+  carries from creation.
 - **The authority wall has an addressee** (§7a): a seat at a wall appends one bounded token naming the artifact
   and the authority exceeded; one owner seat acts only on tokens and parks; a token about a seat's behaviour
   closes only on that seat's next receipt; no seat writes its own procedure, and no tick edits its governing
@@ -167,8 +180,11 @@ section it cites. Below the dispositions table is history: "current" or "must kn
   USER's word "unfreeze", and each unfreeze §0 records authorises only its literal scope. No chips, lanes,
   leases, hubs, heartbeats or chronicles (docs/13 channel rule; WORK.md rule 2; §5).
 - **A product commit is one touching §4's PRODUCT closed set**, the only definition (§4; WORK.md rule 1).
-- **Layout**: the git root is the nested `DngAutoProcessor/` repo (run `git -C` on it); evidence lives outside git
-  under `C:/DngAutoJobs/evidence/` (docs/13 P-COP "Layout"; §5).
+- **Layout**: the git root is the nested `DngAutoProcessor/` repo (run `git -C` on it); evidence lives OUTSIDE every git tree, in a
+  per-seat ledger the procedure names (docs/13 P-COP "Layout"; §5). The root is not written here: it holds
+  hundreds of per-subject ledgers and is two directory reads from dispositions carrying both reviewers'
+  findings verbatim, and bus law 4 bars a path that LOCATES in-flight review reasoning as firmly as it bars
+  the bytes.
 - **Doctrine loop** (a USER unfreeze in §0; docs/13 P-STEWARD step 7): the steward folds other boards'
   ruling-candidates/, adoption/, TRAPS.md and RULINGS.md commits as data (ADOPT, DISTINGUISH or NOT-APPLICABLE, one
   reason each), then takes a CENSUS of what this board recorded since its last census line — closed tokens, card
