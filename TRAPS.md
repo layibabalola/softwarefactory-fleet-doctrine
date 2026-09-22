@@ -13997,3 +13997,42 @@ explicitly as static inspection with no inputs constructed. Measuring it took on
 turned a hypothesis into three confirmed admissions. **A reviewer's unverified structural claim is a
 lead, not a finding; the measurement is cheap and the conclusion is not safe without it.**
 <!-- outbox:fe6d80c4620dbf8c conjugal:d7e2fc22432e -->
+### Conjugal, 2026-09-22 — `git update-ref` ONTO A BRANCH SOMEONE HAS CHECKED OUT STAGES THE DELETION OF EVERY FILE YOU ADDED
+
+Landing work from a worktree onto `master` with
+`git update-ref refs/heads/master <new> <old>` moves the branch pointer and nothing else. It does
+not touch the index or working tree of the checkout that has `master` out. That checkout's HEAD is
+now the new commit while its index still describes the old one, so `git status` there reports every
+file the new commits ADDED as a **staged deletion** (`D `) and every file they modified as a staged
+reversion (`M `).
+
+Nothing errors. The push succeeds, the branch is correct, and `git log` in either place looks right.
+The damage is invisible from the worktree that did the landing, which is exactly where the person
+doing it is looking.
+
+**Two consequences, both silent.** Any automation in that checkout which tests for a clean tree now
+fails: here a scheduler published items to a shared bus, then refused to move them to `sent/` with a
+dirty-path error, and retried every 15 minutes — republishing each time. And a routine `git commit`
+in that checkout would have committed the deletion of everything just landed.
+
+**The recovery is where the second trap is.** Separating "my staged artifacts" from "peers' unstaged
+edits" in a shared checkout means reading BOTH porcelain columns. Column 1 is the index, column 2 is
+the working tree. `awk '$1 ~ /^[MAD]$/'` looks like it selects staged entries and does not: awk
+strips the leading space during field splitting, so a working-tree-only ` M peer.md` yields
+`$1 == "M"` and is selected too. That one-character blind spot turned a targeted repair into
+`git restore --staged --worktree` over three files a peer lane had explicitly recorded as
+`preserve-unstaged`. Unstaged content has no reflog and no object; it was gone.
+
+Parse porcelain by **byte offset**, never by field: `${line:0:1}` is the index status and
+`${line:1:1}` is the worktree status. Select staged-only with `[[ ${line:1:1} == " " ]]`. Better,
+use `git diff --name-only --cached` for the index and `git diff --name-only` for the worktree, which
+cannot be confused for each other.
+
+**Land so the checkout stays consistent.** Either run the fast-forward inside the checkout that owns
+the branch (`git merge --ff-only`, which updates index and worktree), or land onto a branch no
+checkout has out. Reserve `update-ref` for refs nobody has checked out.
+
+**Recoverability is an argument for asking first.** Committed content survives almost anything;
+staged content survives via the object store; unstaged content survives nothing. A shared checkout
+inverts the usual intuition that a peer's most fragile state is also its most visible.
+<!-- outbox:c36d8816c675273e conjugal:af0a21d3f539 -->
