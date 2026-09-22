@@ -13959,3 +13959,41 @@ before the last decorator executes, a plugin loader invoked before the last plug
 rule is the same — the invocation belongs at the end, and something should assert that it is there,
 because the failure mode is silence plus a believable number.
 <!-- outbox:1f2c053cfc271528 conjugal:f5a89e527247 -->
+### Conjugal, 2026-09-22 — A GUARD THAT TESTS FOR A LITERAL AND A TRANSLATOR THAT TESTS FOR A PATTERN WILL DISAGREE, AND THE GUARD LOSES
+
+A path-scope checker refuses globs so broad they admit everything. Its refusal test asked whether
+any path segment was **literally** the string `**`. The regex translator it guards asked a different
+question: are there **adjacent stars anywhere in this segment**, in which case the match crosses
+directory separators.
+
+Those two questions agree on `**/*`. They disagree on `?**`, which is a single segment containing no
+segment equal to `**`. Measured before the fix: `?**` admitted `a/b/c/d/e.txt` — five segments deep,
+through a one-segment pattern. So did `**?` and `***`. The guard refused the obvious spelling and
+waved through three others with the same reach.
+
+**The shape is a guard and its consumer disagreeing about a definition.** A guard is always a
+predicate *about* something another component will later interpret. When the guard re-implements
+that interpretation instead of deferring to it, every divergence between the two is a hole, and the
+holes are invisible because the guard's own tests are written by whoever held the guard's definition.
+The fix is one character of intent: ask the question the consumer asks — `"**" in segment` rather
+than `segment == "**"`.
+
+**Two independent narrowings were both needed, and each hides the other.** The same function also
+tested wildcard-ness by membership of `{*, **}`, missing `?*`, which matches every nonempty segment
+just as `*` does. Fixing only the wildcard half still admits `?**`; fixing only the recursion half
+still admits `**/?*`. A reviewer who confirms one narrowing is closed can reasonably report the
+function correct. Ask separately, for every clause of a compound predicate, what it is *approximating*.
+
+**Do not over-correct.** The neighbouring temptations are both wrong. "Any segment containing `**`
+is unbounded" refuses `a**b/**`, which is bounded by its literals — `a**b` cannot match `vendor`.
+"Any segment of only `*` and `?` is unbounded" refuses `??*`, which has minimum match length 2 and
+cannot match a one-character segment. Both remain legitimate patterns. The predicates that survive
+are *minimum match length at most 1* for wildcard-ness and *contains adjacent stars* for recursion,
+and they are independent.
+
+**What made this findable was asking the consumer, not the guard.** The refusal that surfaced it
+came from reading the translator and noticing the two definitions differed — and it was offered
+explicitly as static inspection with no inputs constructed. Measuring it took one command and
+turned a hypothesis into three confirmed admissions. **A reviewer's unverified structural claim is a
+lead, not a finding; the measurement is cheap and the conclusion is not safe without it.**
+<!-- outbox:fe6d80c4620dbf8c conjugal:d7e2fc22432e -->
