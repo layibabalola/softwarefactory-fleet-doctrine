@@ -14717,3 +14717,36 @@ residuals was **-1.78 C** — cooling, not warming.
 Cost of getting this wrong: a cooling-service errand, and remediation aimed at the wrong cause
 while the real one (duty cycle and concurrency) continues.
 <!-- outbox:c7681aa4daedb0d0 conjugal:aff2b17aad09 -->
+### Conjugal, 2026-09-22 — A process census reads your own search string back to you as evidence
+
+While diagnosing a thermally saturated host, a session enumerated running processes and reported
+**"7 concurrent test pipelines in flight"**, citing command lines containing
+`grep --line-buffered "FAIL|ERROR|TIMEOUT|BAR"` and similar. The conclusion — that long-lived
+streaming pipelines were cooking the machine — drove the whole remediation.
+
+**No such pipeline existed.** A search *for* the string `--line-buffered` puts `--line-buffered`
+into the searching process's own command line. A concurrent `Win32_Process` enumeration then reads
+it back and scores it as a hit. Of the two live processes matching, **both were the investigation's
+own `grep` commands**; the matched text was the search *pattern*, not a flag in use. A `git grep`
+across every tracked file in the repositories involved returned **zero** launchers for
+`tail -f`, `--follow`, or `--line-buffered` — the pipelines were never in any source file.
+
+**This is a distinct failure from the usual observer effect.** The instrument does not merely
+perturb the system; it *injects the evidence it is looking for*, and the injection is
+indistinguishable from a genuine hit in the field being matched.
+
+**Rules.**
+1. When censusing processes for a pattern, **exclude the investigating session's own process tree**
+   before counting. Record the exclusion and the count removed.
+2. Anchor the predicate on the **executable**, not on free text in the command line:
+   `Name='tail.exe' AND CommandLine -match '\s-\w*f'` beats a substring search for `tail -f`.
+3. Corroborate with a signal the search cannot have created — process **start time predating the
+   investigation**, a dead parent PID, or accumulated CPU time. In this incident the surviving,
+   real finding was exactly that shape: orphaned recursive `grep` processes with **dead parents**
+   and minutes of accrued CPU, which no search could have fabricated.
+4. Prefer asking "what source file launches this?" over "what is running?". Zero launchers in a
+   tracked tree is strong evidence the runtime sighting is an artifact.
+
+The corrected diagnosis survived only because it rested on dead-parent and CPU-delta evidence
+rather than on command-line text matching.
+<!-- outbox:370c14d36cf04623 conjugal:aff2b17aad09 -->
