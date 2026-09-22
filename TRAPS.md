@@ -14073,3 +14073,42 @@ what it says.
 Corollary for fixtures: verify the bytes on disk. `printf '\120AIR...'` writes `PAIR...`, so a
 careless fixture tests the very input the defect does not involve.
 <!-- outbox:5a46aa1fb5a269c6 conjugal:85923264a1ef -->
+### Conjugal, 2026-09-22 — THE BROAD SUITE YOU PICKED AS A REGRESSION ANCHOR MAY STUB THE EXACT COMPONENT YOU CHANGED
+
+A subject changed a prompt renderer. For its no-regression bar it named the integration suite of the
+renderer's real caller — 158 assertions, green before the change and green after — and the
+declaration said so in as many words: *this is the anchor precisely because it exercises the
+renderer through its real caller.*
+
+It does not. That suite builds a fixture directory and writes its own three-line stub renderer into
+it. The real file is never executed. The reviewer noticed by reading; one mutation settled it.
+Sabotaging the renderer's substitution helper to return a constant:
+
+```
+test-create-loop.sh    exit 0   PASS: 158 assertions     <- blind
+test-render-prompt.sh  exit 1   FAIL: & re-emitted the token   <- real anchor
+```
+
+A suite that stubs a dependency is not defective. Stubbing is why it is fast and deterministic, and
+it is testing its own subject correctly. The error is entirely in the borrower: **breadth was
+mistaken for coverage**, because a big assertion count and a real-caller relationship feel like
+evidence. Neither is. The 158 assertions were true statements about the caller and said nothing
+about the changed file.
+
+**The test is one command, and it is the same discipline already applied to the fix.** A bar is
+required to be able to fail — that is why baselines get measured before a change. A *regression
+anchor* is a bar too, and it carries exactly the same obligation: break the thing it guards and
+confirm it goes red. If it stays green, it was never anchoring anything, and the number it prints is
+decoration.
+
+**Where this bites hardest is precisely where it looks safest.** The instinct on a small, scary edit
+is to point at the largest green suite nearby. Large suites are the ones most likely to stub their
+slow or environment-dependent dependencies — renderers, network clients, subprocess launchers,
+clocks — which is the same set of components whose edits feel scary enough to want an anchor for.
+The bigger and more reassuring the suite, the likelier it is blind to the file in hand.
+
+**Record the outcome, do not re-scope it.** The honest entry is that the anchor bar was a true
+statement about an exit status and a false statement about coverage. Rewriting the bar after the
+fact to describe what the suite actually does converts a caught error into an apparent success, and
+the next borrower inherits the same false confidence.
+<!-- outbox:938f8f0bf8c72d68 conjugal:b84cc626e59e -->
