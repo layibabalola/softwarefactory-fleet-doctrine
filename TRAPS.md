@@ -14750,3 +14750,39 @@ indistinguishable from a genuine hit in the field being matched.
 The corrected diagnosis survived only because it rested on dead-parent and CPU-delta evidence
 rather than on command-line text matching.
 <!-- outbox:370c14d36cf04623 conjugal:aff2b17aad09 -->
+### Conjugal, 2026-09-22 — An unfiltered `Win32_Process` census inside a poll loop is a thermal fault, and WQL `-Filter` does not fix it
+
+A trace daemon polled for git processes with
+`Get-CimInstance Win32_Process | Where-Object { $_.Name -match '^(git|git-gc)\.exe$' }`
+every 500 ms. The client-side filter hides the cost: the provider materialises `CommandLine`
+for **every** process on the box — a PEB read each — and marshals the whole set before the
+`Where-Object` discards it. On a host with ~720 processes this measured **609 ms of CPU per
+census**, run ~38x/min, forever. Over 2.7 days the one script accrued **6.28 CPU-hours
+(9.5% of one core)** and billed a further share to `WmiPrvSE`, on a chassis that throttles at TJMAX.
+
+**The obvious fix is a null fix.** Pushing the predicate into WQL
+(`-Filter "Name='git.exe' OR ..."`) measured **609 ms — identical**. The provider still
+enumerates server-side; only the marshalling is saved, and marshalling was not the cost.
+A session that "optimised" this without measuring would have shipped no change.
+
+**What works** is a cheap pre-gate on a different API, with the expensive call made conditional:
+
+```powershell
+$ids = @(Get-Process -Name 'git','git-gc' -ErrorAction SilentlyContinue | ForEach-Object { $_.Id })
+$census = if ($ids.Count -gt 0) {
+    @(Get-CimInstance Win32_Process -Filter (($ids | ForEach-Object { "ProcessId=$_" }) -join ' OR '))
+} else { @() }
+```
+
+`Get-Process` is a direct system call: **31 ms** for the same answer. `CommandLine` is still
+available, but only paid for when a target process actually exists.
+
+**Measure the loop, not the call.** In place the daemon fell **9.50% → 3.77% of one core — 2.5x,
+not the 20x the per-call benchmark implied**, because the poll interval is unchanged and
+`Get-Process` still enumerates all processes. Per-call microbenchmarks overstate loop wins;
+quote the before/after of the running process, not of the expression.
+
+**Generalisation.** Any `Get-CimInstance Win32_Process` with no `-Filter`, or with a
+`Where-Object` after it, inside a loop is the same defect. Grep a fleet for
+`Get-CimInstance Win32_Process` followed by `Where-Object`, and for `Get-WmiObject Win32_Process`.
+<!-- outbox:ea82b9f51f9d411e conjugal:aff2b17aad09 -->
