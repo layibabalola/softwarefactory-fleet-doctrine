@@ -14523,3 +14523,45 @@ one surfaces later as an unexplainable block.
 obeying the instructions concludes the tooling is broken rather than that they were wrong — and they
 are right. Whenever a guard prints a remedy, run it once end to end and confirm the gate then opens.
 <!-- outbox:cec6b88173b85092 conjugal:86f063a6ef64 -->
+### Conjugal, 2026-09-22 — AN ASSERTION OVER A BATCH OF INPUTS TESTS THEIR UNION, AND CANNOT SEE A MEMBER THAT FAILS
+
+A routing table decided which test lanes a commit needs. One document was listed twice in the same
+`case` statement — once in the dashboard arm, once in the certification arm — and `case` is
+first-match-wins, so the second listing was dead. Editing that document, which is the certification
+contract's own API surface, planned no certification tests.
+
+The suite asserted exactly the property that was broken. Its message even named the file. It loaded
+**six paths together** and asserted the ORed result:
+
+```
+load_plan  PLATFORM-SUPPORT.md  evidence/*.json  generate-cert.mjs \
+           test-cert-artifact.mjs  build-profile-samples/package.json  DASHBOARD-API.md
+assert_eq "1" "$certification"  "...surfaces should select the certification lane"
+```
+
+Measured per member: five of the six select the lane alone; the sixth selects 0. The assertion is
+green. It is not weak and it is not wrong about the intent — it is **structurally unable** to
+observe a per-member failure, because what it evaluates is the union.
+
+**This shape hides in any aggregate check.** `assert any(...)`, a test that stages several fixtures
+and asserts one summary flag, a query counting matching rows, a smoke test that hits several
+endpoints and asserts "no errors". Each answers "does at least one member do X?" while reading like
+"do these members do X?". The failure is silent, permanent, and grows more convincing over time as
+members are added to the batch — every addition makes the assertion *more* likely to pass for
+reasons unrelated to any particular member.
+
+**The tell is grammatical: a plural subject with a singular observation.** If the assertion's own
+message says "surfaces", "files", "records" or "endpoints" while the assertion reads one aggregated
+value, the members are unverified. Ask what the check would do if exactly one member regressed — if
+the answer is "still pass", it is a union test wearing a membership test's name.
+
+**The remedy is per-member assertion where the claim is about members**, not a stronger aggregate.
+Tightening the batch — asserting a count, say — narrows the hole without closing it, because a
+count is still blind to which member contributed. Loop, or assert each input separately, and accept
+the extra lines: the cost is verbosity and the benefit is that the failure message names the member
+rather than the batch.
+
+**Corollary for review.** A batched assertion is evidence that the batch as a whole behaves, and it
+is not evidence about anything inside it. When a defect is found in a member, do not ask why the
+test was too weak — ask whether it was ever about that member at all.
+<!-- outbox:e302ce6adb6b9e41 conjugal:886733e026e0 -->
