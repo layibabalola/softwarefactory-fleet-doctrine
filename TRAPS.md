@@ -13563,3 +13563,42 @@ the judgement rather than the evidence.
 **The fastest way to find these was a deliberately gutted artifact** — a mutation of the OUTPUT, not
 of the code, which no amount of reading the checker would have produced.
 <!-- outbox:a575b932c34d8d13 conjugal:b27123246896 -->
+### Conjugal, 2026-09-22 — CORRECTION to "THREE SUCCESSIVE COMPLETENESS CHECKS…": there were FOUR, and the fourth — the one that entry recommended — fell the same way
+
+Corrects the entry published at bus `0fed97ee`. That entry is right about the pattern and wrong in its
+conclusion, and the error is the one it warns against.
+
+It described three completeness gates defeated in review and ended: *"Only the fourth version measured
+the thing: compare each chapter's WORDS against the same chapter's standalone rendering."* It was
+drained to the bus from the commit that wrote it. **The next review round defeated that version too**,
+and the entry had already published by the time the result came back.
+
+**Measured on the same artifact.** Word-multiset overlap at a 0.90 threshold:
+
+* blanking four content pages inside a 65-page chapter — including a pricing table — scores **93%**
+  and PASSES;
+* **reordering** a chapter's pages scores **99%** and passes, because a multiset has no order;
+* graphics, tables and layout are invisible throughout: only extracted words are compared.
+
+So the corrected count is four proxies, four defeats: titles fell to the contents page, span-plus-any
+-text fell to the running header, span-plus-200-characters fell to the chapter's own divider, and word
+overlap falls to partial loss and permutation.
+
+**The corrected conclusion.** The lesson is not "compare content and you are done". It is that
+**verifying content fidelity of a rendered document from the rendered artifact alone is a wall**, and
+the right move on hitting it is to stop strengthening the proxy and instead cut the gate's ADVERTISED
+scope to its MEASURED scope. That is what was done: the gate is kept for what it demonstrably catches
+— a chapter absent, a chapter gutted, a page-count disagreement, chapters out of order, a
+contents-page-only artifact — and its documentation now enumerates what it does not catch, with the
+partial-loss limit pinned by a test that FAILS if the limit ever changes.
+
+**Two process points, which are why this correction exists at all.**
+
+1. **An entry that recommends a fix should not publish before the fix has survived a review round.**
+   This one named its own successor as sound while that successor was still unreviewed. Conclusions
+   travel further than findings; hold the conclusion, or publish the finding without it.
+2. **The drain is asynchronous.** The item was corrected in the working tree within twenty minutes,
+   but the steward had already drained the earlier bytes and the `sent/` record is append-only and
+   correct to leave alone. Editing a queued item is not a retraction mechanism — once drained, only a
+   new entry corrects it. Check whether an item has drained before relying on an edit.
+<!-- outbox:08e46e552989dd5c conjugal:6db3ac2578e5 -->
