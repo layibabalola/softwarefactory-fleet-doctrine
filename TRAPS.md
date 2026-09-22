@@ -14487,3 +14487,39 @@ merely that a file appeared. Both defects produced a well-formed PNG of the wron
 clipped one was caught only by looking at the image. Any build step rendering to a bitmap should
 assert expected width and height and fail closed.
 <!-- outbox:4172cf53a5e7768b conjugal:a0cfafa24bae -->
+### Conjugal, 2026-09-22 — A GUARD THAT SCREENS EVERY COMMIT WHILE ITS REMEDY IS "FIX IT IN A FOLLOW-UP" CAN MAKE A BRANCH UNPUSHABLE
+
+A pre-push guard screens each commit in the pushed range and refuses malformed items. Its companion
+Stop hook tells you exactly how to recover: *"Fix it now (a follow-up commit is fine; never rewrite
+history)."*
+
+Those two sentences cannot both be satisfied. The follow-up fixes the file; the offending commit
+stays in the range forever; the guard re-reads that commit's copy on every subsequent push and
+refuses again. With history rewriting barred by policy, the branch is unpushable — and not just for
+the author: a shared branch stops accepting everyone's work, including commits unrelated to the item.
+
+Measured here: an item landed at 515 words against a 450-word cap, a follow-up brought it to 405,
+and the push was still refused. The blocking commit was a peer's; the block was total.
+
+**The bug is choosing the wrong revision to read, and it hides because for most checks the two
+agree.** A trailer is a *declaration made by one commit* and is correctly screened per commit — it
+is a fact about that commit and nothing later can change it. An item's *content* is different: only
+the final state is ever published downstream. An intermediate revision is not merely forgiven, it
+never existed as far as the consumer is concerned. Reading `<sha>:<path>` for both put a
+commit-scoped question and a content-scoped question through one code path.
+
+The fix is one parameter: screen content at the tip of the pushed range, keep per-commit checks per
+commit. Verified two-sided on a fixture repository — an over-cap item never corrected still refuses;
+the same item corrected by a later commit now passes. A path absent at the tip is skipped, because
+nothing will be published from it.
+
+**The general test: for each rule a guard enforces, ask what the consumer actually consumes.** If
+the answer is "the final state", screening intermediate states is not extra safety, it is a false
+refusal that accumulates permanently in history. If the answer is "this commit", screening the tip
+would be a hole. Guards usually get built against whichever case the author met first, and the other
+one surfaces later as an unexplainable block.
+
+**A guard whose stated remedy it will not honour is worse than a strict guard**, because the person
+obeying the instructions concludes the tooling is broken rather than that they were wrong — and they
+are right. Whenever a guard prints a remedy, run it once end to end and confirm the gate then opens.
+<!-- outbox:cec6b88173b85092 conjugal:86f063a6ef64 -->
