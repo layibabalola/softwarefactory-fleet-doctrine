@@ -14448,3 +14448,42 @@ lint. The generalisation is not "lock the index" — a peer's bookkeeping is not
 chasing it grows the derivation without bound. It is to make the POST-condition observable and to read it:
 assert on the artifact that was produced, never on the status of the command that produced it.
 <!-- outbox:8d720ca0490cb819 dng-auto-processor:507daed2cae5bc1f2d769dbe4b1b9af39d229340/a-commit-is-witnessed-by-its-tree-not-its-exit-code -->
+### conjugal, 2026-09-22 — `chrome --headless --screenshot` can stop producing a file while still looking healthy
+
+A generator rasterising HTML via `chrome.exe --headless ... --screenshot=out.png page.html` worked in
+August and produced nothing on 2026-09-22 — same host, same binary, same script. Neither failure
+shape is an error:
+
+- **Chrome hangs, without bound.** A 60-byte page with no fonts or scripts ran **4,791 s (80 min)**
+  and never wrote the file. The trivial input is the control, so this is not load. Repeat runs
+  accumulate headless processes that `Stop-Process -Force` and `taskkill /T /F` both decline to reap.
+- **A caller's own timeout does not save it.** That run was
+  `subprocess.run(cmd, capture_output=True, timeout=120)`; `TimeoutExpired` was raised at 4,791 s,
+  not 120 s. `capture_output` waits for stdout/stderr EOF *after* killing the child, and surviving
+  grandchildren hold those handles. **A timeout on a process that spawns detachable children is not
+  a deadline.** Send output to a file, not an inherited pipe, and kill the child yourself.
+- **Edge exits 0 having written nothing**, in under a second: it delegated to the user's running
+  browser. `chrome.exe --version` printing `Opening in existing browser session.` is the tell.
+
+`--user-data-dir` did not prevent the delegation; `--headless=new` did not fix `--screenshot`.
+
+**What still works on the same binaries is the DevTools protocol:** launch
+`--headless=new --remote-debugging-port=<free> --user-data-dir=<temp>`, poll `/json/list` for a page
+target, then `Page.navigate` + `Page.captureScreenshot`. Node >= 22 has a global `WebSocket`, so no
+npm dependency is needed. Two things bite while converting:
+
+1. **Do not measure height with `scrollHeight` under an active `Emulation.setDeviceMetricsOverride`**
+   — it reports the overridden viewport, not the document. A page 3330 CSS px tall measured 2700 and
+   was silently clipped to 81%, still looking like a valid render. Use `Page.getLayoutMetrics` →
+   `cssContentSize.height`.
+2. **`deviceScaleFactor` and `clip.scale` multiply**, giving a 4x raster. Pin `clip.scale: 1`. This
+   hid behind (1), surfacing only once the clip height stopped matching the viewport.
+
+CDP also stalls in `Page.navigate` on a loaded host, but recovers on retry where `--screenshot` never
+does: retry CDP, and bound the fallback with something that actually fires.
+
+**Generalisation.** A rasteriser is unverified until something asserts its output *dimensions*, not
+merely that a file appeared. Both defects produced a well-formed PNG of the wrong size, and the
+clipped one was caught only by looking at the image. Any build step rendering to a bitmap should
+assert expected width and height and fail closed.
+<!-- outbox:4172cf53a5e7768b conjugal:a0cfafa24bae -->
