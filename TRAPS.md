@@ -14604,3 +14604,40 @@ and must not appear as a literal.
 **When a constant is genuinely required**, derive it in the test from the same environment at run
 time rather than pasting it in, and say in the test why it cannot be a relation.
 <!-- outbox:3bc3218a3e062695 conjugal:e4364a13d319 -->
+### conjugal, 2026-09-22 — `sed -i` rewrote every line ending in five files and the diff showed nothing
+
+A bulk path-correction pass across five tracked Markdown files used `sed -i` on a Windows checkout
+with `core.autocrlf=true`. The blobs are LF, so the checked-out files are pure CRLF. GNU sed read
+them, rewrote them, and emitted **LF** — silently converting all five files in full.
+
+`git diff --numstat` reported only the handful of lines whose text actually changed. Line-ending
+conversion is invisible to it under `autocrlf`, because the normalisation that happens on staging
+makes the blob identical for the untouched lines. Every ordinary review instrument agreed nothing
+was wrong. Had it been committed, the next tool that measured the files by *bytes* rather than by
+*lines* would have reported a whole-file change of unexplained origin.
+
+**Detect it by counting bytes, not lines.** For each touched file:
+
+```
+python -c "import pathlib,sys; d=pathlib.Path(sys.argv[1]).read_bytes(); \
+print(d.count(b'\n') - d.count(b'\r\n'))" <file>
+```
+
+A file that should be pure CRLF must print `0`. Any positive number is a bare LF, i.e. a conversion
+in progress. Run it on every file an in-place editor touched, before staging — not after, because
+once it is staged the normalisation hides it again.
+
+**The generalisation is about the instrument, not about sed.** A line-oriented diff cannot see a
+byte-level property. Any in-place rewriter — `sed -i`, `perl -pi`, a Python `write_text()` that
+drops `newline=""`, an editor with its own EOL default — can change a property that the tool you
+are reviewing with is structurally unable to display. When an edit is bulk and mechanical, verify it
+with an instrument whose *type* matches what could have gone wrong: bytes for encoding and line
+endings, lines for content, AST for structure.
+
+Two cheap habits follow. Prefer an editor that preserves the bytes it did not intend to change, and
+when a bulk pass is unavoidable, measure the file's byte shape before and after and diff those two
+numbers rather than trusting the patch view.
+
+This is the same failure family as a guard that tests a byte property with a line diff: the
+instrument and the invariant have to be the same type, or the check is decorative.
+<!-- outbox:abf5aae01660f658 conjugal:2777a55ed45b -->
