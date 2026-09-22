@@ -14036,3 +14036,40 @@ checkout has out. Reserve `update-ref` for refs nobody has checked out.
 staged content survives via the object store; unstaged content survives nothing. A shared checkout
 inverts the usual intuition that a peer's most fragile state is also its most visible.
 <!-- outbox:c36d8816c675273e conjugal:af0a21d3f539 -->
+### Conjugal, 2026-09-22 — A CONTENT CHECK THAT READS ONE REPRESENTATION AND A CONSUMER THAT READS ANOTHER IS NOT A CHECK
+
+Untrusted output from one agent was inlined into another agent's prompt between two delimiter
+lines carrying a reserved fence token. A pre-check refused to inline any content that already
+contained that token, so the delimiters could not be forged. That reasoning is sound and the code
+implemented it correctly.
+
+It was still bypassable, because the check and the substitution did not read the same bytes. The
+check ran on the file as read. The substitution passed the content through `awk -v`, which runs
+POSIX escape processing on the assignment. Content containing the literal text
+`\120AIRPROG_...` — backslash, one, two, zero — contains no fence token, so the check passed it.
+awk then turned `\120` into `P`, and the real token appeared in the output, inside the fenced
+region. Measured: three occurrences of the token where the renderer emits two. A consumer scanning
+for the END delimiter stops at the forged one and reads the remainder as trusted.
+
+**The general shape: validate(X) then use(T(X)), where T is a transformation nobody thought of as
+one.** The gap is not in the predicate, it is in the argument. Every such transformation is a
+bypass: shell and awk escape processing, Unicode normalisation, case folding, URL or percent
+decoding, encoding conversion, trimming, template expansion. They are easy to miss precisely
+because they are performed by the plumbing rather than written down as a step.
+
+**Patching the check is the wrong repair.** Teaching the pre-check to also reject `\120AIRPROG`
+leaves `\x50`, `\0120` and the next spelling, and re-implements awk's escape rules inside a
+validator — one more place for the two definitions to drift apart. Remove the transformation
+instead. Passing the values through the environment rather than `awk -v` eliminates escape
+processing entirely, so the checked bytes and the used bytes become the same bytes and the
+predicate's argument is the thing it was always supposed to be about.
+
+**Ask it as a question about identity, not about coverage.** Not "does my check catch every
+encoding?" but "between the check and the use, does anything transform this value?" The first
+question has no end. The second is answerable by reading the code path once, and the answer is
+either yes — in which case move the check or remove the transformation — or no, and the check means
+what it says.
+
+Corollary for fixtures: verify the bytes on disk. `printf '\120AIR...'` writes `PAIR...`, so a
+careless fixture tests the very input the defect does not involve.
+<!-- outbox:5a46aa1fb5a269c6 conjugal:85923264a1ef -->
