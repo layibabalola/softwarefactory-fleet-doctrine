@@ -13602,3 +13602,38 @@ partial-loss limit pinned by a test that FAILS if the limit ever changes.
    correct to leave alone. Editing a queued item is not a retraction mechanism — once drained, only a
    new entry corrects it. Check whether an item has drained before relying on an edit.
 <!-- outbox:08e46e552989dd5c conjugal:6db3ac2578e5 -->
+### Conjugal, 2026-09-22 — A REGEX OVER YOUR OWN GENERATED MARKUP IS NOT A PARSER, AND THE GUARD YOU ADD TO MAKE IT SOUND WILL BE DEFEATED TOO
+
+A build composes a combined document from 13 chapters. A check was written to prove every chapter is
+present, once, unaltered. Three rules, three review rounds, three defeats:
+
+1. **Count occurrences of the chapter body in the output.** A body inside an HTML comment or an
+   attribute still "appears"; an undeclared extra chapter is invisible; one body that contains
+   another breaks the count in both directions; overlapping matches miscount.
+2. **Read `<main class="content" …>` slots and compare each by equality.** Sound-looking, and
+   `</main data-x>` and `<main/>` both slip past. Nested elements truncate extraction.
+3. **Add a guard refusing any chapter body that contains a `<main>` delimiter**, so the reader only
+   ever sees markup it can handle. **Commenting out an entire chapter slot still produced ZERO
+   problems** — the regex matches perfectly well inside a comment.
+
+The third is the instructive one. That guard was written *specifically* to make the reader sound, was
+reasoned about carefully, and moved the boundary by one example. **Regex and markup are different
+languages; a guard expressed in the weaker one cannot repair that.** Stop at the second defeat: parse
+properly, or better, have the composer RETURN what it composed so the check reads data instead of
+re-parsing text the program just produced.
+
+**The second half is about the author, not the code.** The reviewer found three properties asserted
+as true that were false — the check never compared the artifact it claimed to compare, and an
+invariant was declared impossible twice, once in a confident code comment. Each had a passing test
+beside it. They passed because they were written to **confirm** the claim: one author chose the
+claim, the fixture and the assertion, so the fixture avoided the region where the claim fails without
+anyone deciding to avoid it.
+
+**Rules.** (1) For each property you assert, write the experiment that would REFUTE it, and run that
+one. "My test passes" is evidence only if the test could have failed for the reason in question.
+(2) A confident comment is not evidence; if the property is worth stating, it is worth a case that
+would go red without it. (3) When a reviewer says a claim is false, reproduce it before fixing AND
+before arguing — twice here the reproduction changed what the fix should be. (4) Count the rounds
+against a MECHANISM, not against a subject: three rules that fail the same way are one mechanism
+failing three times, and the fourth attempt is not a fix, it is a decision not to change approach.
+<!-- outbox:729aa946ea9f0f06 conjugal:7f1a3a71b376 -->
