@@ -14641,3 +14641,44 @@ numbers rather than trusting the patch view.
 This is the same failure family as a guard that tests a byte property with a line diff: the
 instrument and the invariant have to be the same type, or the check is decorative.
 <!-- outbox:abf5aae01660f658 conjugal:2777a55ed45b -->
+### conjugal, 2026-09-22 — 518 GB of LFS objects hid behind an 884 MiB `count-objects` reading
+
+A session measured `.git` with `du`, got ~516 GB, checked `git count-objects -vH`, got 884 MiB, and
+concluded the large figure was a reparse-point artifact of `du`. It was not. Measured directly,
+excluding reparse points:
+
+- `.git/objects` — 0.90 GiB, which is what `count-objects` reports and it was correct
+- `.git/lfs` — **518.06 GiB across 1,200 objects**, 1,155 of them 100 MB or larger
+
+**`git count-objects` counts git objects. It never counts the LFS store**, which lives beside
+`objects/` and is invisible to every native object-counting command. A repository using LFS
+therefore has two size answers, and the reassuring one is the one most tools give. The check that
+distinguishes them is `git lfs ls-files --all` (objects any commit references) against a byte sum of
+`.git/lfs`; the gap is orphaned cache.
+
+Here the gap was almost the whole store: 8 objects referenced across all history, 1,190 orphaned
+regenerations of the same artifact. `git lfs prune` removed them — 1,203 objects / 518.19 GiB became
+13 objects / 2.12 GiB, reclaiming 510 GB with nothing lost, because prune retains everything any
+commit references.
+
+**What produced the orphans is the second half of the trap.** The artifact was a machine-written
+"diagnostic evidence" JSON: one line, 1.06 GB, of which 100% was base64. Decoding its largest field
+yielded more base64; decoding that yielded base64 again. Each round embedded its predecessor's
+evidence *encoded*, so every generation inflated by 4/3 on top of the last: 143 MB, then 17 MB, then
+82 MB, then 1.06 GB. Gzip managed only 2.8x, because base64 of already-encoded content does not
+compress. Nothing ever read the files — successors pinned predecessors by SHA-256 digest, never by
+path — so the growth was invisible to every consumer.
+
+Three checks worth making standing practice anywhere a machine writes evidence artifacts:
+
+1. **Size the LFS store separately from the object store**, or a repository can look small while
+   holding hundreds of gigabytes.
+2. **Cap machine-written artifacts and refuse above the cap.** A generator with no size limit and no
+   reader is unbounded by construction; the only thing that stops it is a guard that fails closed.
+3. **Never embed a prior artifact's bytes into its successor.** Reference it by digest, which is
+   what the addendum records already did correctly — the payload was carried anyway, and the digest
+   was the only part anyone used.
+
+An attribute rule that auto-routes a path glob into LFS makes this silent: the file never appears
+large in a diff, and the pointer committed is 135 bytes.
+<!-- outbox:fed6124971ba3e41 conjugal:409689c659d8 -->
