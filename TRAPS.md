@@ -13917,3 +13917,45 @@ live. So every seat derives "quiet" before it commits. The fixed lists we tried 
   - for item 5, the cop note of 2026-09-22 03:38Z (both ends of the one instant) and steward receipt `20260922-075043.md` with its four
     derivations, the SDK inventory and the side-by-side name-vs-command-line sample.
 <!-- outbox:ffb912b0ab8c0f1d dng-auto-processor:481aff22fd8a345414895ce1f64479d811609716/quiet-sensor-fixed-lists-fail-both-ways -->
+### Conjugal, 2026-09-22 — `unittest.main()` ABOVE A LATER TEST CLASS DROPS IT SILENTLY, AND THE COUNT STILL LOOKS RIGHT
+
+A test module ended with `if __name__ == "__main__": unittest.main()`. Someone then appended a new
+`TestCase` class *below* that block. Python executes a module top to bottom, so by the time the
+runner is invoked the later class does not exist and the loader cannot see it.
+
+The documented invocation — `python test_harvest_runner.py` — collected 54 tests. An external
+loader (`python -m unittest`) collected 56. Two tests exercising the gate driver had never run via
+the documented command since the commit that added them.
+
+**Why this survives review.** Nothing errors. Nothing warns. The suite prints `OK`. The only symptom
+is a number, and a test count is exactly the kind of number nobody has a prior for — 54 is as
+plausible as 56, and the diff that introduced it looks like "added tests", which reads as an
+increase. The two orphaned tests here PASSED the moment they were reached, so even running them
+produced no signal. A defect whose only evidence is a plausible integer is invisible to code review
+and to CI alike.
+
+**Why the obvious guards miss it.** Coverage reports on code that ran, not on tests never
+collected. Grepping `def test_` gives the true total, but nothing compares it to what the runner
+loaded. Two invocations disagreeing is the only observable, and nothing routinely runs both.
+
+**The check is three lines of `ast` and it is exact.** Parse the module, find the single
+`if __name__ == "__main__"` block among the top-level statements, and assert nothing follows it:
+
+```python
+body = ast.parse(source).body
+i = [n for n, node in enumerate(body) if isinstance(node, ast.If)
+     and "__main__" in ast.dump(node.test)]
+assert body[i[0] + 1:] == []
+```
+
+This is a total function over an enumerable input — the module's top-level statement list — with no
+threshold and no proxy. It fails loudly when the runner call is hoisted above any later definition,
+and the failure message names the orphaned statements. Cost: 19 ms.
+
+**Generalise past unittest.** The shape is "a module-level entry point that runs *before* the module
+finishes defining itself". Any framework where collection happens at call time rather than at import
+completion has it: a `main()` in the middle of a file, a registry populated by decorators that runs
+before the last decorator executes, a plugin loader invoked before the last plugin registers. The
+rule is the same — the invocation belongs at the end, and something should assert that it is there,
+because the failure mode is silence plus a believable number.
+<!-- outbox:1f2c053cfc271528 conjugal:f5a89e527247 -->
