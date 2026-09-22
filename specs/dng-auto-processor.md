@@ -1,5 +1,5 @@
 # DNG Auto Processor — factory spec (one writer: the `dng-design-steward` seat, docs/13 P-STEWARD step 7d; a posture change made anywhere else reaches this file as a census item of that seat's next pass)
-source_commit: f37a18eef0a4014433248684cafc37d2acb5c32a
+source_commit: 25763faa1975005a1e7bf686f69bf9a5c4b20b6b
 
 **Machine:** ULTRAMAGNUS (personal box). **Project root:** `C:\code\DngAutoProcessor - Claude`.
 **Product:** auto-grading pipeline for DNG timelapse clips emulating the operator's LRTimelapse
@@ -25,7 +25,10 @@ section it cites. Below the dispositions table is history: "current" or "must kn
   ask about each other stranded task singly (a run with no person present asks nothing), relay every line a steward
   receipt addresses to the USER, write a receipt, and run no tick, dispatch, landing or governing-doc edit. A seat is
   alive only when its next run leaves its own receipt; "enabled" proves nothing. Every scheduled seat writes a
-  receipt on every run, a no-op included (§5).
+  receipt on every run, a no-op included (§5) — which makes that ledger the seat's fire history, so a row's CRON
+  is checkable the same way and needs no access to the scheduler: a row whose cron does not reproduce the offset
+  and gap of the seat's own stamps is a row the live registration does not carry. A row that a procedure
+  RE-APPLIES on recovery drives live state rather than describing it, so a mismatch is not cosmetic.
 - **Make overlap harmless; never add a lease** (§3): claim on disk before acting (state line and launch json
   before the launch); re-read a card before any launch, landing or rewrite, and stand down if it changed; every
   launch json, brief, progress log, scratch file and verdict a dispatched seat writes carries its agentId in its
@@ -36,6 +39,11 @@ section it cites. Below the dispositions table is history: "current" or "must kn
   is one progress line, and none ten minutes after launch means it never started. A subagent never reads its
   host's signals: its own writes and CPU-accruing processes under its own worktree count, and after its line it
   is FROZEN only once nothing of its own is newer than 30 minutes. FROZEN or DARK is skipped; its worktree is kept.
+  **And the relaunch is bounded exactly as a key's is** (§3, §4 A2): a freeze is NOT a capacity death — that
+  exemption names a 429, a session limit, a provider outage and a host restart, all read from outside the seat —
+  so failover once and whole, one more relaunch only with a changed brief, and a third freeze on one attempt
+  advances the attempt. An exemption that moves no counter is an unbounded loop, and the ceiling it bypasses is
+  then unreachable by construction along that path.
 - **Phases are read from the ledger, first match wins; `return.md` is a slot** (§3): before a phase rewrites a
   fixed-name file, copy it byte-identical to `<name>.<phase>.<agentId>.<ext>`; renaming the writer's file moves
   the slot and changes the derivation. **Forced progress never forces an illegal act** (§3): a tick that moved
@@ -51,7 +59,12 @@ section it cites. Below the dispositions table is history: "current" or "must kn
 - **Refute before hand-back, then triage by trend** (§4b): each BLOCKER and MAJOR gets the smallest mutation to
   the line it names; caught is refuted and kept in the ledger, surviving is confirmed. Falling with new classes:
   another round; flat or rising with new classes: SPLIT; the same class re-found: PARK into ONE dimensioned batch
-  pass. The three-round ceiling is the LAST test, and an unadjudicated round does not count.
+  pass. The three-round ceiling is the LAST test, and an unadjudicated round does not count. **Classify the
+  FAILED SET as well as the round** (§4b, adopted from this bus): when the parks share a SHAPE — build a NEW
+  verifier deciding an unbounded property of a rich artifact from a lossy proxy — care inside that class does not
+  rescue it, and a card of that kind declares bars that are total functions over an enumerable representation, or
+  it is not opened in that form. A bar needing a threshold or a heuristic is the warning that the class has been
+  re-entered.
 - **Land on per-file blob identity** (§4): every `binding.json` path has one blob at the reviewed and the landed
   sha, never root-tree equality, and patch-id only corroborates; `git merge --ff-only` of an exact sha; land
   before you record; a tick that changed no state commits nothing.
@@ -67,10 +80,16 @@ section it cites. Below the dispositions table is history: "current" or "must kn
   key. HELD-FOR-KEY and a capacity death spend no attempt (§4).
 - **Quiet before a hook build is a closed-set question answered with named negatives** (§4): no live suite,
   build or decode the commit would corrupt, judged by rates across consecutive windows, `bin/`/`obj/` writes and
-  what each RUNNING card's own clauses name, never by process presence or a load gauge. A hook rejection naming a
+  what each RUNNING card's own clauses name, never by process presence or a load gauge. Every process in those
+  terms is identified by its COMMAND LINE, never by its executable name: a component hosted by a runtime — an
+  SDK's build engine and compiler server shipped as libraries — is invisible to its own name, so a name query
+  reports its absence forever without ever reading false. A hook rejection naming a
   locked build output is a load reading: retry once, then defer, never `--no-verify`. A hold derives from
   processes, never from card state.
 - **An alarm that cannot read its input FIRES; one whose remedy cannot clear it is REPORTED, not obeyed** (§7).
+  **And an alarm computed only from a FAILURE history reads healthy on a subject that stopped running
+  altogether**, because a thing that never fires writes no failure and an empty input satisfies no
+  count-the-violations arm: such an alarm needs one arm relative to the subject's OWN cadence.
 - **The authority wall has an addressee** (§7a): a seat at a wall appends one bounded token naming the artifact
   and the authority exceeded; one owner seat acts only on tokens and parks; a token about a seat's behaviour
   closes only on that seat's next receipt; no seat writes its own procedure, and no tick edits its governing
@@ -114,7 +133,11 @@ section it cites. Below the dispositions table is history: "current" or "must kn
   master's PRODUCT bytes, else `ci=stale`.
 - **Worktrees are sparse; a free-space floor holds creation, and an unreadable reading holds it**; HELD-FOR-DISK
   spends no attempt; the item worktree goes on landing, a key's once its verdict is written (§10 "Task
-  worktrees", a USER unfreeze in §0).
+  worktrees", a USER unfreeze in §0). A removal is never forced on an item worktree — but a working copy dirtied
+  ONLY by the factory's own mandated restore has exactly those paths reverted after the census has captured them,
+  and is then removed unforced: a mandated setup step that dirties the copy the cleanup rule refuses to touch is a
+  permanent latch, and the rule's own "stop if a defect report names this worktree" makes REPORTING it the act
+  that makes the latch permanent.
 - **CLI currency smokes the launch form the tick really uses and rolls back on failure; each landing receipt
   measures every seat's cost and correctness; a provider joins only after admission drills** (§10, USER, §0).
 

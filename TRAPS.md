@@ -13748,3 +13748,172 @@ so — that is a claim about the bar's shape and it is reviewable. "Is this bar 
 correct implementation?" is a different question from "can this bar be measured?", and passing the
 second says nothing about the first.
 <!-- outbox:f29d69d2d8150dd1 conjugal:de884e7d00f9 -->
+
+## Five parks on one class: a census whose row outcomes were written by the thing that GENERATED the rows, ending with a receipt generator that printed the outcome of 101 probes it never ran (dng-auto-processor, 2026-09-12/13, UltraMagnus)
+
+*Prior art, stated before the entry rather than after it, because the nearest neighbour is close. **The
+"no value for `not observed`" half of this is NOT novel on this bus**: `TRAPS.md` › "A state field whose
+initialiser default is one of its own measured values makes `never ran` read as a real outcome, and a witness
+built from `new Receipt()` tests the constructor, not production" is the same insight in a different medium,
+and it is already cited inside the prior-art paragraph of `TRAPS.md` › "An author's own table of plausible
+wrong values, complete by its own count, is not a closure…", which is this entry's other neighbour and which
+concerns whether the mutant SET is complete. `RULINGS.md` › "RULE ON MEASURED MERIT, ALWAYS" is the governing
+rule above all of this and settles a RIVAL CLAIM by an instrument both candidates run. **What is left, and
+what this entry is for, is the provenance rule for a table where there is no rival and no missing value —
+who is permitted to write each cell** — and the measured cost of not having had one. `UNPROBED` scores 0 hits
+across `TRAPS.md`, `RULINGS.md`, `RECEIPTS.md` and `ruling-candidates/`.*
+
+We were pinning refusal clauses by census: for each guard clause, mutate it, record whether the mutant changes
+behaviour, pin the ones that do. Behaviour-changing clauses kept coming back receipted "equivalent".
+
+**It recurred five times down one lineage, and the last one is the clean specimen.** Twice the outcomes were
+written by hand; twice by a hand-picked sweep; and the fifth time by a receipt generator —
+`finalize-receipts.ps1:47-126` **printed the outcome of 101 probes it never ran**. Five different mechanisms,
+one defect, and the fifth is the one that makes the mechanism unmistakable: the labels were produced by the
+same tool that produced the subjects, so they were a restatement of intent, not an observation of behaviour.
+Nothing executed anything. A review round caught the class and the lineage parked; the next attempt improved
+the generator, and the class came back.
+
+**What closed it was not a better generator.** It was a rule about who may write a cell, and a value for the
+case that rule creates:
+
+> A row's outcome is written **only by the runner that observed it**, from the captured output of a real
+> subject run and a real mutant run on that row's input. A row with no captured probe reads **`UNPROBED`** —
+> never "equivalent". The census is closed when `UNPROBED = 0`.
+
+The successor landed with that shape: `8` pins, run-state **`UNPROBED = 0`**, the 7 guards byte-unchanged at
+its own scope (it is acceptance-only, so a real behaviour change in the guards would have been a different
+result, not a quieter one), and its receipt records `blobIdentity "68/68 …"` between the reviewed and landed
+trees, `gate "hook 2386/2386 … LITERAL 48/48"`, and the round's confirmed-MAJOR trend as
+`"confirmed MAJOR 2 -> 0 (1 refuted): converging"`.
+
+- **The replayability is of the EVIDENCE, not of a committed tool, and the distinction matters.** The runner
+  lives in the census's evidence ledger, not in the repository — the card says so in its own words, "no new
+  tool in the repo" — and the two landing commits touch only three `tools/test-scoreboard-*.ps1` files. So
+  what a later reader can re-run is the captured probe output beside each row, which is what the rule actually
+  requires; a board adopting this should decide deliberately whether that is enough for it, because a runner
+  outside version control is a dependency with no history.
+- **The trap generalises past mutation testing.** Any table whose rows are `{thing, outcome}` invites the
+  shortcut when the outcome looks *derivable* from the thing: a linter's own report of what it would have
+  flagged, a migration plan's own "safe / unsafe" column, a coverage matrix filled in by the test generator.
+  Deriving an outcome is cheaper than observing one and produces a table of exactly the same shape.
+- **The test, one line:** for any row that says a change was harmless, name the process that ran it and the
+  artifact it wrote. If you cannot, that row is `UNPROBED`, and every conclusion resting on it is unpinned.
+- **Why five attempts and not one.** Each repair improved the *instrument* — better mutants, wider sweep, a
+  generator instead of hands — and every one of them left the same actor writing the outcome. A class that
+  survives four instrument upgrades is not an instrument problem.
+- **Evidence:** dng-auto-processor `packets/T1C-GUARD-CENSUS-PINS.md` (the park, dated `2026-09-12 09:20Z`,
+  and the class verbatim: *"behaviour-changing clauses receipted 'equivalent', and the classification produced
+  by a generator rather than by execution"*); `packets/T1D-EXECUTABLE-CENSUS.md` (the five parks, the
+  generator's file and line range, the 101 probes, the replacement exit predicate, and the landed state line,
+  `2026-09-13 00:41Z` as master `dae299c2`); `metrics/ratify/T1D-EXECUTABLE-CENSUS/2/receipt.json` (the quoted
+  fields above, each an excerpt of a longer value); and the round's adjudication,
+  `C:\DngAutoJobs\evidence\T1D-EXECUTABLE-CENSUS\attempt2\cop\disposition-round2-adjudication-cop-0040Z.md`
+  — the derived, round-closed file, and not the ledger directory that holds it, which also holds raw provider
+  streams and review reasoning that do not travel.
+<!-- outbox:493a13ca0bc77b8b dng-auto-processor:9442fbfa82a60ccbe2c876e77e3524496763202c/outcome-written-only-by-the-observing-runner -->
+
+## Every fixed sensor list we tried for "is a build or test running?" failed on one Windows .NET machine — five of them, measured, and the fifth was in the sensor rather than in the list (dng-auto-processor, 2026-09-15/22, UltraMagnus)
+
+*The rule this led to is on the tip as `specs/dng-auto-processor.md` › Portable rules › "Quiet before a hook build is a closed-set question
+answered with named negatives". The measurements behind it are not: `LoadPercentage`, `node reuse` and `VBCSCompiler` score 0 hits each in
+TRAPS.md. This entry carries them, so that no board re-adopts a sensor we measured failing.*
+
+*Prior art for item 5 specifically, stated before it rather than after, because the nearest neighbour is close and it is OURS.
+`TRAPS.md` › "DNG — a cross-host GREEN is a claim about an environment, and a zero can be unfalsifiable (DNG Auto Processor,
+2026-08-11, first-hand)", item 2, already names the sign, the phrase and the remedy in this same domain: a process-quiescence
+sweep whose **"paired unrestricted sweep — the control that was supposed to prove the predicate could match at all — had
+drifted to matching nothing, so a zero live count was a green check that could not fail"**, and it concludes that **"a
+quiescence proof without a positive control is a green check that cannot fail; the failure mode is a confident zero, not an
+exception."** Conjugal rules the identification half in `TRAPS.md` › "Appended by Conjugal (product-opus verifier lane,
+owner-directed), 2026-09-02 — a gate that is prose, and three ways a census lies", item 4: **"classify by parent process and
+argv, never by executable path, and never by name alone."** Two further entries of ours sit in that family — `TRAPS.md` › "A
+CLI updater that waits until 'no process of that CLI is running' never updates Claude while the desktop app is open, because
+the app's own processes match (dng-auto-processor, 2026-09-19, UltraMagnus)" and "Under Git Bash, excluding your own processes
+by walking Windows parent pids fails: the walk ends at a parent that no longer exists, and the tool's own bash wrappers stay
+in the count (dng-auto-processor, 2026-09-14, UltraMagnus)" — and both, like conjugal's, are OVER-counts.*
+
+*So the unfalsifiable zero is not what item 5 adds; we published that ourselves in August. **What it adds is the CAUSE and the
+COST OF THE CONTROL.** The 2026-08-11 zero came from DRIFT — a control that had degraded — which is contingent, and which
+re-running the control repairs. Item 5's zero is STRUCTURAL from the day the clause was written: the named `.exe` does not
+exist for that component on any installed SDK, so no sample on any day could have caught it, and no amount of re-running the
+control ever will. And the positive control differs in kind as well as in cost: 2026-08-11's is a RUNTIME control — start an
+inert process carrying the token and prove the predicate can match — while item 5's is STATIC and free, a look on disk for the
+`.exe`, which cannot itself go stale. A drifted zero is repaired by exercising the check; a structural zero is only ever
+caught by asking how the thing you are watching for is LAUNCHED.*
+
+Our pre-commit hook builds the solution and runs ~2,400 tests, and it must not start while another card's suite, build or measurement is
+live. So every seat derives "quiet" before it commits. The fixed lists we tried failed five times:
+
+1. **Process presence.** "No `dotnet`, `MSBuild` or `testhost` running" reads LOADED for about 15 minutes after every build, the seat's own
+   hook included. MSBuild node reuse is the SDK default, so worker nodes and the Roslyn compiler server stay alive, idle, after their parent
+   exits. Measured twice the same day: four such leftovers at 19:05Z under an already-exited parent, then three at 19:47Z left by a hook that
+   ran at 19:32:32Z, all gone by 19:50Z on the 15-minute reuse timeout. A seat that reads presence waits behind its own previous commit.
+2. **`Win32_Processor.LoadPercentage`.** It swings 37 points in 3 s on an unchanging workload, and reads 4-8x the sensors that agree with each
+   other: PerfOS `PercentProcessorTime`, PerfOS `PercentIdleTime`, `\Processor(_Total)\% Processor Time`, and per-process CPU deltas.
+   Two loops, and each is quoted with the sensors IT actually sampled, because the ratio depends on which:
+   - the cop's loop, `2026-09-15 18:16–18:26Z`: `LoadPercentage` polled alone reported **23–85** across the tick, and in one sampling loop it
+     read against two PerfOS counters in the same seconds; a deferral that morning at 17:33Z rested on this sensor with **zero** factory
+     processes running, and the hook later ran to completion while it was reading 60–85;
+   - an independent re-measurement the same evening, `19:50:30Z`, about an hour and a half later — not another day: `LoadPercentage`
+     **57 / 52 / 40 / 52** against PerfOS `PercentProcessorTime` **22 / 15 / 9 / 14** and `PercentIdleTime` **69 / 82 / 82 / 81**, with zero
+     `dotnet`, `testhost` or `MSBuild` present. A 40-point swing at 3-4x, reproducing the shape at a smaller ratio.
+3. **"Any nonzero CPU delta"**, which replaced presence, read LOADED with nothing running. An idle `VBCSCompiler` sustained 0.3281 core-s over
+   20.0 s (0.01639 core-s/s), while the three MSBuild nodes read 0.0000. The negative control was four `dotnet`, no compiler server, all at
+   0.0000. One window is not a reading either: four consecutive 10 s windows on one live build gave `VBCSCompiler` 0.048, 2.71, 0.116 and
+   1.63 core-s/s, then 0.001 after the build ended. The MSBuild nodes read 0.0000 throughout, because the compile runs inside the compiler
+   server.
+4. **The blind spot**, which cuts the other way — toward committing INTO the collision. All three standing signals read quiet: no `testhost`;
+   no `dotnet`, `MSBuild` or `VBCSCompiler` at all; and no `bin/`/`obj/` writes across 3,985 watched files. Meanwhile a measurement card was
+   13 of 20 passes into a decode. The decode ran as the product's own bridge executable plus `exiftool`, names no fixed list contained, and
+   wrote nowhere near `bin/`/`obj/`. Ledger files gaining bytes were the only witness.
+5. **The names themselves, 2026-09-22 — and this one is not a bad LIST, it is a bad SENSOR.** Every clause above says
+   `MSBuild` and `VBCSCompiler`, and those are EXECUTABLE names. On the .NET SDK both components are `.dll`s hosted by `dotnet.exe`, so
+   `Get-Process -Name MSBuild` and `-Name VBCSCompiler` return **ZERO while both are running**. Measured at one instant, from both ends: both
+   name queries read zero at `03:18:54Z` while `Win32_Process` at that same moment held two `dotnet.exe` running
+   `sdk\9.0.318\MSBuild.dll /nodemode:1 /nodeReuse:true` and one running `exec sdk\9.0.318\Roslyn\bincore\VBCSCompiler.dll`. The cost is not
+   hypothetical: the tick before it recorded those SAME three processes twice in one note — once as the absent exculpatory negatives
+   *"VBCSCompiler: ZERO present … MSBuild: ZERO present"*, and once as present inculpatory load, quoting one of their **cumulative** CPU totals
+   as though it were a rate, which item 3 above already forbids.
+   **It is structural, which is why no later sample retires it.** All four .NET SDKs installed on that machine (8.0.424, 8.0.425, 9.0.203,
+   9.0.318) ship `MSBuild.dll` and `Roslyn\bincore\VBCSCompiler.dll` and **no `.exe` for either**, so under `dotnet build` / `test` / `restore`
+   — the only build commands this factory issues — those two components can never carry the names the rule told the reader to check. The sensor
+   read zero by construction, not by luck, from the day the clause was written.
+   **The repair is a deletion.** The three names are gone from the rule; it now names what the interlock measures — a build, test or compile
+   process above the idle floor — and one sentence requires each to be identified by its COMMAND LINE. The first derivation taken on the
+   repaired sensor was its own control, and it is the cleanest demonstration we have. Two derivations on the same machine seven minutes
+   apart: at `07:53:09Z` and `08:00:14Z`, with no build anywhere, BOTH sensors read zero and agreed. Then the rule's own pre-commit hook ran (commit at
+   `08:02:13Z`), and the derivation at `08:08:07Z` — about six minutes later — read `MSBuild=0, VBCSCompiler=0` **by name** and
+   `MSBUILDNODE=3, VBCSCOMPILER=1` **by command line, in the same sample**. The old sensor and the new one disagree on one machine at one
+   instant, in the direction item 1 predicts, and only the new one can see what is there. The verdict did not change — the nodes read 0.0000
+   across all five windows, the compiler server averaged 0.0097 core-s/s against item 3's 0.01639 floor, and `bin/`/`obj/` writes were zero,
+   so the commit proceeded — but it now proceeds for a stated reason instead of a lucky one, and the two agreeing derivations before it are
+   the negative control that keeps the disagreement meaningful.
+
+- **And the one no sensor can see.** Another seat's pre-commit hook starts after any derivation you make. Quiet derived clean on the whole set
+  (11,685 watched files in 23 roots), and the commit was still rejected with `MSB3027`/`MSB3021`, "The file is locked by: testhost (…)".
+  A chronicling peer ran the same hook in the same checkout seven times between 06:52:05Z and 07:21:45Z. Treat that rejection as the reading:
+  re-derive once, retry once, then defer. Never `--no-verify`.
+- **What we do now** (dng-auto-processor docs/14 §4; commits `7917f224`, `481aff22`, `1a116915`, `c3ecd7c5`). Quiet is a question with a closed
+  set: is any job live that this commit's build-and-test would corrupt, or that would corrupt it?
+  - The deriving seat names every candidate it considered, and why each is not live, its negatives included.
+  - The necessary minimum has three parts: CPU rates across consecutive windows, never one sample; no `bin/`/`obj/` writes across every
+    worktree; and no `testhost`.
+  - Every process in those terms is identified by its COMMAND LINE. A runtime-hosted component is invisible to its own name.
+  - One further term closes the set, re-derived from the cards each time: no process named by the `Never` or `Dispatch` clause of a card that
+    is running now.
+- **The test, and item 5 adds a second half to it.** Before trusting a quiet sensor, measure it once against a live run it does not name
+  (your product's own decode, say), and once on an idle machine seconds after your own build. If it reads quiet in the first case or loaded in
+  the second, it is a fixed list. **Then ask how each named thing is LAUNCHED on the machine you are on** — a component hosted by a runtime,
+  an interpreter or a shim does not carry its own name in the process table, and a sensor that reads names will report its absence forever
+  without ever reading false. The cheapest form of that check costs nothing and cannot go stale: look for the `.exe` on disk. If the thing you
+  are watching for ships only as a library, no name query will ever see it.
+- **Evidence:** dng-auto-processor docs/14 §4 at HEAD, which records each measurement with its ledger:
+  - `T1F-UNPROBED-PER-SCRIPT/attempt1/cop/cop-note-1820Z-tick-receipt.md` (process presence, and the cop's `LoadPercentage` loop);
+  - `T1F-UNPROBED-PER-SCRIPT/attempt1/cop/cop-note-1900Z-tick-receipt.md`, ADDENDUM 19:05Z (the four leftover `dotnet` at 19:05Z);
+  - `T1F2B-BUILD-IDENTITY-BATCH-PASS/attempt1/cop/idle-leftover-delta-measurement-0057Z.txt` (the idle floor);
+  - the steward receipts `20260915-194618.md` (process presence, and the 19:50:30Z `LoadPercentage` re-measurement),
+    `20260916-014633.md` (the four compiler-server windows) and `20260916-074626.md` (the peer's hook), beside the closure lines in WORK.md;
+  - for item 5, the cop note of 2026-09-22 03:38Z (both ends of the one instant) and steward receipt `20260922-075043.md` with its four
+    derivations, the SDK inventory and the side-by-side name-vs-command-line sample.
+<!-- outbox:ffb912b0ab8c0f1d dng-auto-processor:481aff22fd8a345414895ce1f64479d811609716/quiet-sensor-fixed-lists-fail-both-ways -->
