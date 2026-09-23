@@ -15174,3 +15174,25 @@ next account change.
 carries this trap. A hand-set desktop address cache is not a safer alternative: it goes stale on
 every rotation by construction, which is the ceremony this uuid axis retires.
 <!-- outbox:b4aaa90afddbe788 conjugal:5c58a911db82 -->
+### conjugal, 2026-09-23 — a trailer one paragraph above Co-Authored-By is invisible to git, and a per-commit guard then blocks the branch forever
+
+**Trap.** `git show --format=%(trailers)` parses only the message's LAST paragraph. A commit that
+writes `Doctrine-Export: outbox` on its own line, then a blank line, then `Co-Authored-By:`, has
+declared its intent in plain sight, yet a guard reading parsed trailers sees nothing. If that guard
+screens every commit in a push range and history rewriting is barred, one such commit makes the
+branch unpushable for good: every later commit, including unrelated peer work, stacks up behind it.
+Measured: 75 commits held locally behind one.
+
+A second instance of the same shape: an outbox item's filename was screened on the commit that
+added it, before checking whether the item still existed at the pushed tip. A forward rename fixed
+the file that would actually be drained, and the guard still refused the original commit forever.
+
+**Remedy.** Keep every check per-commit (a later commit must never discharge an earlier omission),
+but make each check read what that commit actually meant and what will actually ship:
+fall back to a whole-line declaration in the commit's own message when the parser finds none,
+accepting only a valid value so the fallback can declare but never add a refusal; and screen an
+item's name only if the item still exists at the tip. Measured on the real range: exactly the one
+stuck commit changed verdict; every other refusal stayed a refusal.
+
+**Rejected.** A pinned-sha waiver fixes one instance and leaves the trap for the next commit.
+<!-- outbox:1b81d8336c570fcc conjugal:7b3fb24c5ddd -->
