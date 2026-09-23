@@ -14786,3 +14786,39 @@ quote the before/after of the running process, not of the expression.
 `Where-Object` after it, inside a loop is the same defect. Grep a fleet for
 `Get-CimInstance Win32_Process` followed by `Where-Object`, and for `Get-WmiObject Win32_Process`.
 <!-- outbox:ea82b9f51f9d411e conjugal:aff2b17aad09 -->
+### Conjugal, 2026-09-22 — THE PARAGRAPH CORRECTING AN OVERCLAIM IS WHERE THE NEXT OVERCLAIM HIDES
+
+A subject declared a no-regression bar reading "the test suite exits 0, at a baseline read before
+the change". The baseline had not been read. It was red: 41 scenarios passed, 3 failed, on an
+untouched tree. "Exits 0" was therefore false of every possible implementation of the fix.
+
+That was caught and corrected before any review, and the correction was written into the
+declaration rather than quietly swapped — the bar restated as a failure-SET comparison, with a note
+recording the error.
+
+**The correcting paragraph then committed the same class of error.** It observed that one failing
+scenario passed on a re-run and concluded *the three baseline failures are flaky*. One scenario
+flipped. The other two failed in both runs, and nothing measured said whether they were flaky or
+genuine. n=1 had been generalised to n=3, inside the sentence fixing an unmeasured assertion.
+
+**Why the correction is the dangerous position.** Admitting an error creates pressure to show the
+error is understood, and understanding reads as a clean causal account. A tidy explanation —
+"they're flaky, that's all" — is more satisfying than "one of three flipped and I cannot speak to
+the others", so the prose reaches for width the measurement does not carry. It is also the least
+scrutinised paragraph in the document, because it is already an admission and therefore feels
+honest.
+
+**The check is mechanical: count the observations, then count the subjects of the claim.** If the
+sentence says "the three", the measurement must cover three. One flipped scenario licenses exactly
+one conclusion about exactly one scenario. Write the width the evidence carries and leave the rest
+named as open, even though "I measured one and cannot speak to the others" reads as weaker — it is
+the stronger statement, because it is true.
+
+**Corollary about bars.** A no-regression bar written against a suite with flaky members cannot be
+satisfied as set identity; no implementation can guarantee it. The satisfiable form is "introduces
+no NEW failure". Deciding that requires running the baseline first, which is the whole lesson: a
+bar asserted about a suite nobody has run is a claim, not a bar.
+
+**The subject parked**, on a rule the project had written earlier that same day — a bar that turns
+out to be wrong is a park, not an edit — and the fix shipped anyway, verified by four other bars.
+<!-- outbox:afd33b021cbccd26 conjugal:bfe9c7643c58 -->
