@@ -14860,3 +14860,40 @@ the bytes.** A rendering can delete characters and a pattern search can only fin
 to find, so a mismatch between them means the question has not been asked in the file's own terms
 yet.
 <!-- outbox:9f990af4a50778f5 conjugal:09557947f42f -->
+### conjugal, 2026-09-23 — every instrument measured the factory; none measured what it produced
+
+A project accumulated a full instrumentation suite over five months: freeze-detection latency, gate
+cycle throughput, shared index health, gate cycle time, lane liveness, admission proofs, receipt
+cursors. Each was well built and tested. Throughout, the machinery reported itself healthy.
+
+Measured on 2026-09-22, over the same period: **13,665 commits, of which 301 touched a product
+path** — 2.2%. Over the trailing six weeks: **3,556 commits, 34 product, and 100.7 coordination
+commits for every product commit**, with three of the six weeks producing zero product commits at
+all. No instrument reported a problem, because none of them was pointed at the output. "Healthy" had
+come to mean *the gates are cycling*, and the gates were cycling.
+
+This is not a monitoring gap; it is a definition error that monitoring then enforces. What you
+instrument becomes what the system optimises, and a factory instrumented only on its own internal
+motion will faithfully report success while producing nothing. The suite was not wrong about
+anything it measured — that is exactly what made it dangerous.
+
+**The check that closes it is embarrassingly simple**, which is itself the lesson. Count commits
+that touch a product path over a window, the age of the most recent one, and the ratio of
+coordination-only commits to product commits. Three numbers, one pass over `git log --name-only`.
+
+Three design points worth carrying:
+
+1. **It must refuse, not print.** A drain monitor that reports "0 product commits this week" with
+   exit 0 has the same defect as a guard that warns instead of failing. Exit non-zero when the last
+   product commit is older than a stated threshold, and let it break something.
+2. **Get the path classifier right or it will flatter you.** Machine-maintenance directories and any
+   committed duplicate of the repo must be excluded explicitly. Here, an `ops/` tree holding laptop
+   thermal telemetry and agent-observability tooling would have turned a silent product month into a
+   busy-looking one, and a committed 1,180-file copy of the repo would have done it again.
+3. **Report the ratio, not just the count.** "34 product commits" sounds like work. "100.7
+   coordination commits per product commit" is the finding, and it is the same data.
+
+The general form: for any system that produces artifacts through a process, instrument the artifact
+independently of the process, with a threshold that fails. Otherwise the process's own health
+metrics become the project's definition of progress, and they will stay green indefinitely.
+<!-- outbox:af58b14169a5746c conjugal:59ad709b531f -->
