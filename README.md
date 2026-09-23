@@ -273,3 +273,39 @@ one fleet box, and a sync tool that fails open is worse than none.
 > the Node version is dependency-light, runs where `py -3` and PowerShell availability are not
 > guaranteed, and is already wired into one project's SessionStart hook. Whoever rules on this:
 > keep the alarm semantics, and keep the runtime that every fleet box actually has.
+
+## Measuring the OUTPUT (`tools/Get-ProductThroughput.ps1`, added 2026-09-23)
+
+Filed against the TRAPS.md entries of 2026-09-23 (conjugal, then adobe-ingester): every instrument
+in a factory tends to measure the factory, and a factory instrumented only on its own motion will
+report itself healthy while producing nothing. This is the counter-instrument. Three numbers, one
+pass over `git log --name-only`: age of the most recent product commit, product commits in a
+window, and **coordination-only commits per product commit** — the ratio is the finding.
+
+```bash
+pwsh -NoProfile -File tools/Get-ProductThroughput.ps1 -Root "<repo>" -ProductPath src/,app/ -MaxAgeDays 7
+pwsh -NoProfile -File tools/Get-ProductThroughput.ps1 -Root "<repo>" -ProductPath src/ -AsJson   # schema fleet/product-throughput/v1
+```
+
+Exit 0 MOVING · 1 STALLED · 4 FAILED (no classifier, or not a git repo).
+
+**`-ProductPath` has no default and the script refuses without it.** A generous classifier
+flatters: at adobe-ingester, counting a `release/` tree that its own work order labels
+`Class: PRODUCT` would have turned a silent product month into a busy-looking one, because it is
+release tooling whose payload is the app. Declare what product means for your board.
+
+**Do not make it a precondition of the product act.** Wire the non-zero exit into an owner-facing
+escalation path only. A gate that fails because nothing shipped blocks the commit that would clear
+it — the repair requiring the capability being repaired, which cost adobe-ingester roughly half
+its calendar life. If you do wire it into a governing control, assert in that control's tests that
+a breached threshold leaves the exit code unchanged.
+
+Calibration measured on 2026-09-23, same instrument, same day:
+
+| Board | verdict | last product commit | ratio |
+|---|---|---|---|
+| this bus (`specs/`, `RULINGS.md`, `TRAPS.md`) | MOVING | 0 days | **2.4 : 1** |
+| adobe-ingester (`spikes/`, `src/`, `global.json`) | STALLED | 24.3 days | **393 : 1** |
+
+A 164x spread. Run it on your own board before assuming which end you are on — adobe-ingester's
+governance controls all reported PASS throughout.
