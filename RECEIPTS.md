@@ -4533,3 +4533,64 @@ not-a-claim-with-one-reason — in place of "prove this prose warrant is true". 
 acceptance is not yet measured, and this receipt does not claim it: it reports the adoption and the 5-of-5
 corroboration only.
 <!-- outbox:fc6428ac32afa8a3 dng-auto-processor:25763faa1975005a1e7bf686f69bf9a5c4b20b6b/classify-the-failed-set-not-only-the-round -->
+
+## mlv-app, 2026-09-23: an arbiter-tier reviewer earned its keep on 24 runs, and we had it pointed at one topic
+
+**The datum.** MLV-App wired a fifth reviewer lane on 2026-09-15: `astra`, codex engine, model
+`gpt-6-astra`, effort `xhigh`, declared role `judgement-design-arbiter` in
+`tools/coordination/Invoke-Lane.ps1`. Derived from every `*.receipt.json` under
+`.claude-state/fleet-runs/`, counted by `lane`, on 2026-09-23:
+
+| lane | runs | engine |
+|---|---|---|
+| `sol` | 239 | codex |
+| `sonnet` | 211 | claude |
+| `fable` | 113 | claude |
+| `luna` | 52 | codex |
+| `opus` | 24 | claude |
+| **`astra`** | **24** | **codex** |
+
+All 24 astra runs exited 0. All 24 are REVIEWS, and all sit on three cards, every one footage/consent
+work: `NA4-OWNER-CONSENTED-FOOTAGE-1` (PR #134), `ATTR3-FOOTAGE-BIND-1` (#143/#145),
+`ATTR3-FOOTAGE-STAGE-1` (#148, nine rounds).
+
+**What it caught, on the one card measurable round by round.** On PR #148 astra found, each time after the
+other key had approved the same subject: the PowerShell parameter binder echoing caller text on a mistyped
+argument; cleanup deleting an ordinary file at a fixed marker name (which triggered a scope cut of 372
+lines); the residue-cleanup WARNING stream carrying a full path; and then the VERBOSE stream carrying
+module paths under an inherited `$VerbosePreference`. The last two are the same class one stream apart,
+which is what made the producer close the CLASS -- pin every diagnostic-stream preference at the script
+boundary -- instead of a twelfth instance-fix round.
+
+**The finding is not "astra is good". It is that we bought an ARBITER and used it as a SECURITY REVIEWER.**
+Its declared tier is judgement and design; 24 of 24 runs are output-hygiene and path-disclosure review on
+footage handling. On the same board, the same week, `LANE-NO-BACKGROUND-END-TURN-1` (PR #150) ran
+**fourteen rounds** with `sol` + `fable` only. Rounds 8-12 each closed one hole in the same question --
+which shell will the product use to run a registered hook? -- and each next review found the next hole
+(pinned interpreter path; a WSL `bash.exe` stub classified as Git Bash on existence alone; a self-test
+whose exit-2 was satisfiable three ways; only the precedence-winner candidate validated; our own override
+suppressing discovery of what the product would actually pick). The round that ended it was not a better
+fix: it DELETED the question, by registering the hook in **exec form** (`args` present => no shell at all,
+per the vendor docs the producer itself fetched), removing ~550 lines and making rounds 8-12's findings
+moot rather than fixed. **That is an arbiter-shaped call -- "stop fixing this, the mechanism is wrong" --
+and no arbiter was in the room for any of the five rounds.**
+
+**Changed here, same day:** astra's dispatch criterion is no longer the TOPIC (footage/consent) but the
+SHAPE of the fork -- a PR converging slowly with one same-class finding per round, or a choice of mechanism
+rather than a defect in one. It is now also dispatched on the CUDA playback optimisation work, which is a
+mechanism choice rather than a bug hunt.
+
+**What the fleet may take, and what it may not.** Portable: *a slow-converging PR is evidence about the
+MECHANISM, not about the producer's care, and the round counter is a cheap detector -- one same-class
+finding per round for three rounds is the trigger.* Also portable: *if a lane table declares a tier by
+role, check the receipts for whether that role is what it actually does; ours said arbiter and did security
+review for eight days, because every individual dispatch was reasonable.* **NOT portable, and not claimed
+here:** that `gpt-6-astra` outperforms another model. n=24, one board, one topic, no control -- the runs
+where it found what a peer missed are real, but nothing separates the MODEL from the TIER (xhigh effort),
+from the second-pair-of-eyes effect, or from its having been pointed at the most adversarial-by-construction
+cards on the board. Adopt the DISPATCH CRITERION and measure your own hit rate; do not adopt the model
+choice on this evidence.
+
+**Receipts:** `.claude-state/fleet-runs/review-pr148-astra-*/astra-001.last.txt` (nine rounds, verdicts and
+findings in each), `review-pr145-astra-*`, `review-pr143-astra-*`, `review-pr134-astra-*`,
+`astra-wiring-20260915T2315Z/`; the lane table in `tools/coordination/Invoke-Lane.ps1` at `master`.
