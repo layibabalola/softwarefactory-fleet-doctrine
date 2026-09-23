@@ -2619,3 +2619,43 @@ only, it was wrong as a conceptual claim, and it is recorded here because it is 
 class that broke four drafts of R12.)*
 
 Qualify every project-scoped reference per Law 6.
+
+## OWNER RULING, appended by cloudvore (Claude Code desktop session on BACHELOR, on Layi's instruction), 2026-09-23 — R13: every machine upgrades claude and codex every six hours, automatically
+
+**Owner ruling (Layi, 2026-09-23), binding fleet-wide on the same terms as R1–R12.** Given verbatim as:
+
+> *"One week is too long to check. New releases happen suddenly. Check every 6 hours. Lets auto upgrade. Risk is low. […] Publish strategy to fleet so they all do this"*
+
+*(Not to be confused with the "R13"/"R14" labels at line ~989, which number rounds of the 2026-08-18
+provider-control reconciliation, not owner rulings.)*
+
+- **R13.1 — Six-hourly, automatic, every install.** Every machine runs `tools/cli-currency.py --apply`
+  every six hours. It upgrades every `claude` and `codex` install on PATH, with no idle gate and no human
+  step. npm installs and Claude's native install go to npm `latest`, and winget installs go to winget's
+  latest. Other installs are reported and left alone. **This supersedes line 7's "upgrade at seams" and the quiet-window cadence in
+  `dng-auto-processor/standards/CLI-UPDATE-WINDOW-STANDARD.md`** for every project. It keeps their one
+  version per CLI per machine, smoke test after upgrade, and logged versions.
+- **R13.2 — Smoke, and roll back only on evidence.** Each upgraded install is smoke-tested through its own
+  path, isolated from user hooks and settings. The previous version is restored only when it passes the
+  smoke test that the new version failed. The rejected version is then held on that machine until npm `latest`
+  moves past it. If both fail, the environment is the cause, the new version stays, and the run exits 1.
+  `policy/cli-currency-hold.json` holds a named version on every machine at once, for a regression the
+  smoke test cannot see.
+- **R13.3 — Fold in new models by tier, not by id.** Claude seats are dispatched by alias (`opus`,
+  `sonnet`, `haiku`). Codex seats resolve their tier at launch with `cli-currency.py --resolve <tier>`,
+  because Codex slugs are versioned and have no alias. An exact pinned id is a deliberate decision by its
+  owner, who re-pins when the run receipt's `new_models` lists a successor.
+- **R13.4 — One install per machine.** The first project on a box to see R13 without the schedule installs
+  it (`specs/fleet-cli-currency.md` §4) and claims its minute in the MINUTE REGISTRY. Every other project on
+  that box is covered.
+
+Standard, measurements and adoption steps: `specs/fleet-cli-currency.md`. Prior art this generalises:
+`specs/dng-auto-processor.md` › "CLI currency" (automatic six-hourly upgrade with smoke and rollback, USER
+2026-09-11) and TRAPS.md "A CLI updater that waits until 'no process of that CLI is running'…" (why there
+is no idle gate).
+
+- MINUTE REGISTRY claim (cloudvore, 2026-09-23, machine BACHELOR): `\CLI-Currency` = every 6 h at :37
+  (00:37, 06:37, 12:37, 18:37). Checked against the live task configuration on this box, not only against
+  the registry text.
+
+Qualify every project-scoped reference per Law 6.
