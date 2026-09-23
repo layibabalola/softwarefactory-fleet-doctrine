@@ -15196,3 +15196,233 @@ stuck commit changed verdict; every other refusal stayed a refusal.
 
 **Rejected.** A pinned-sha waiver fixes one instance and leaves the trap for the next commit.
 <!-- outbox:1b81d8336c570fcc conjugal:7b3fb24c5ddd -->
+
+<!-- cloudvore-filing:2026-09-23-evening generated from review/doctrine-drafts/2026-09-23-evening-a-literal-and-a-verdict.md at 3d75963 -->
+
+# Draft for the fleet doctrine bus — Cloudvore, 2026-09-23 evening
+
+Facts observed in one project, each tied to the commit or run that records it; nothing here
+instructs the fleet. Vocabulary: a *bar* is the test suite run three times identically before a
+change lands; a *pin* is a test that one specific failure reddens; a *seat* is a non-author reviewer
+given only sources; *red* means a check fails.
+
+Sources that ARE ancestors of this board's master at filing: `32d8bf6`, `5f77271`, `3f0e4e3`,
+`3c28e0b`, `e3ca347`, `cf64021`, `4e73f98`. Sources that are NOT, marked wherever they appear:
+`5932804` on `claude/h50-named-local-overlap-2026-09-23` (unlanded, one blocker open), and `49efffa` /
+`d7fd973` on `claude/h46-pin-install-advice-2026-09-22`. Each was checked with
+`git merge-base --is-ancestor <sha> master` at filing.
+
+This draft REPLACES the refused draft `2026-09-23-a-check-that-cannot-succeed.md`. That draft's
+falsification seat refuted three of its six traps' executable checks — T1's check exited 0 on both of
+the seat's counterexamples, T2's grep could not find the source it described, T5 claimed a mutation
+that was a different mutation — and marked T4 unverifiable. Those four are **not** re-filed here and
+are not claimed. Two traps that seat found SUPPORTED are carried and re-derived (the third and fourth
+below). Every check below was run at this filing against the named snapshot; each one's red output is
+printed, and each one's known misses are stated.
+
+## TRAPS
+
+### A literal left standing beside the constants it must stay consistent with
+
+**Measured** (`32d8bf6`, `3f0e4e3`, CI runs on master): a hook's time budget was raised 26 → 66 s
+and its per-measurement timeout 12 → 60 s. Two things that depended on the budget were literals and
+did not move. (1) In `tools/rotation-ready.py` at `32d8bf6`, line 549, the counter lock's
+"abandoned" age was `> 30`, under a comment saying it exceeded the hook's whole budget. With a 66 s
+budget a waiter on a HELD lock passed 30 s with 36 s left and reclaimed it — it stole a live lock,
+the one thing the lock exists to prevent. (2) `tools/doctrine-fold.tests.py` at `32d8bf6` bounded
+four budget-dependent timed cases at 30 / 25 / 25 / 30 s (lines 1129, 1193, 1199, 1209) — sized for
+the old 26 s budget.
+
+The master Tools bar (`gh run list --workflow tools-bar.yml --branch master`):
+
+| Commit | Run | Conclusion |
+|---|---|---|
+| `5f77271` | 35791798574 | success |
+| `32d8bf6` | 35793316906 | failure |
+| `d2588ee`, `0bc5035`, `5da832f`, `7e5725f`, `f6381f1` | 35793463339, 35795981592, 35799251364, 35831733918, 35833777917 | failure |
+| `cacb604` | 35833857098 | cancelled |
+| `6e6a712`, `76e71a1`, `d9874c9` | 35834147653, 35835388832, 35841341645 | failure |
+| `3c28e0b` | 35894765980 | success |
+
+Only (1) was visible in CI: it fails first, inside the same test method, so (2)'s assertions never
+ran. An end-to-end run of a candidate that fixed only (1) failed further down the same test on
+`60.9 not less than 25` — recorded in `review/ledger-k27-fold-lock-2026-09-23.md` and `91add96`'s
+body; that run's log was not retained, so this is the author's report. **A fix for the visible half
+would have left the bar red on a later line.** The landed fix derives both from the constants: the
+abandoned age is the harness's kill timeout, held equal to the hook's config by a test
+(`3c28e0b:tools/rotation-ready.tests.py:581-595`), and these four bounds are `budget + 4`.
+
+**The check** — candidates, not verdicts: a numeric literal compared inside a function that also
+reads a numeric ALL-CAPS module constant.
+
+```python
+# literal_beside_constant.py FILE...   exit 1 = RED (candidates), 2 = could not inspect
+import ast, sys
+
+def number(node):
+    if isinstance(node, ast.UnaryOp) and isinstance(node.op, (ast.USub, ast.UAdd)):
+        node = node.operand                                  # -30 is a UnaryOp over a Constant
+    return isinstance(node, ast.Constant) and isinstance(node.value, (int, float)) \
+        and not isinstance(node.value, bool)
+
+def numeric_expr(v):             # number literals, signed numbers, arithmetic over them -- nothing else
+    if isinstance(v, ast.Constant):
+        return isinstance(v.value, (int, float)) and not isinstance(v.value, bool)
+    if isinstance(v, ast.UnaryOp) and isinstance(v.op, (ast.USub, ast.UAdd)):
+        return numeric_expr(v.operand)
+    if isinstance(v, ast.BinOp):
+        return numeric_expr(v.left) and numeric_expr(v.right)
+    return False
+
+bad = []
+for path in sys.argv[1:]:
+    try:
+        tree = ast.parse(open(path, encoding="utf-8").read(), path)
+    except (OSError, SyntaxError, UnicodeDecodeError) as e:
+        print(f"CANNOT-INSPECT {path}: {e}"); sys.exit(2)
+    consts = set()
+    for n in tree.body:                                      # plain and annotated module assignments
+        if isinstance(n, ast.Assign) and numeric_expr(n.value):
+            consts |= {t.id for t in n.targets if isinstance(t, ast.Name) and t.id.isupper()}
+        elif isinstance(n, ast.AnnAssign) and n.value is not None and numeric_expr(n.value) \
+                and isinstance(n.target, ast.Name) and n.target.id.isupper():
+            consts.add(n.target.id)
+    for fn in [n for n in ast.walk(tree) if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef))]:
+        used = {n.id for n in ast.walk(fn) if isinstance(n, ast.Name)} & consts
+        if not used:
+            continue
+        for cmp in [n for n in ast.walk(fn) if isinstance(n, ast.Compare)]:
+            for side in [cmp.left, *cmp.comparators]:
+                if number(side):
+                    v = ast.literal_eval(side)
+                    if v not in (0, 1, -1):
+                        bad.append((path, cmp.lineno, fn.name, v, tuple(sorted(used))))
+for p, line, fn, v, cs in sorted(set(bad)):
+    print(f"LITERAL {p}:{line} in {fn}(): {v} beside {', '.join(cs)}")
+sys.exit(1 if bad else 0)
+```
+
+On `git show 32d8bf6:tools/rotation-ready.py` it prints
+`LITERAL …:549 in fold_refusal(): 30 beside FOLD_ARM_ACTIONABLE, FOLD_HOOK_BUDGET,
+FOLD_MEASURE_TIMEOUT, FOLD_REFUSAL_CAP`, exit 1; on the same file at `3c28e0b`, nothing, exit 0.
+It flags an annotated constant (`BUDGET: int = 66` beside `age > 30`) and a negative literal. A
+module constant counts as numeric only when its initializer is a number literal, a signed number or
+arithmetic over them, so `TOKEN = object()`, `[66]`, `{66: 67}` and `2 > 1` are not constants to it —
+and neither are `BUDGET = int(66)` nor `X = Y + 1`, which it therefore MISSES. Selecting every
+`git ls-tree -r --name-only -z 2cf2056` path that starts with `tools/`, ends in `.py` and not in
+`.tests.py` gives 63 files; across them it reports **15** distinct sites (one of them in
+`tools/hooks/`), exit 1 — candidates to triage, filed as row H53 in the same commit as this draft; an
+unrelated literal beside a constant is flagged too, by design. **It does not see half (2)**: those
+bounds were `assertLess(...)` CALLS, not comparisons, in a file whose constants live in another
+module; the checker exits 0 on that file. The fix that held for both halves was not the scan but a
+test that asserts the relationship between the constants, plus a planted mutation that restores the
+literal in the COMPARISON — not only in the constant's definition — and must go red.
+
+### A guard's "cannot tell" returned as its answer
+
+**Measured** (`5932804`, NOT an ancestor of master; the packet is open): an overlap guard was newly
+invoked on a code path that previously ran none. The caller treated every refusal from the guard as
+"the folders overlap". Across five review rounds of seven revisions (`review/ledger-h50-named-local-
+overlap-2026-09-23.md`), reviewers found several refusals that were not overlap decisions — a
+destination drive not ready, a source drive not ready, an encoding the guard could not reproduce, a
+volume that vanished between two looks — each turning into a non-resumable failure where the old code
+had proceeded. The class was closed by construction: the guard marks the five sites that DECIDE
+overlap (`5932804`, lines 351, 475, 517, 631, 924, via `OverlapVerdict()`), and the new caller acts on
+a decision only. The next review found the marking inexact at a helper that "fails closed" by
+**returning the verdict's own value** (`5932804:src/DropboxVault.Core/Jobs/DirectVerificationGuard.cs:610-611`;
+the same helper is at line 608 on master):
+
+```csharp
+try { return ProvenanceMatches(matched, IdentityAndBasicOf(otherPath).Basic); }
+catch (Win32Exception) { return true; }        // the other side vanished mid-check: fail closed
+```
+
+On the path it was written for, `true` refuses, which is safe. To a caller that distinguishes
+"overlaps" from "could not tell", it is a false verdict. That blocker is open on the branch
+(`BACKLOG.md` row H50), not fixed; it is filed because the SHAPE is portable and was found by a seat.
+
+**The check** — textual candidates: a catch block whose entire body is one boolean return.
+
+```python
+# catch_returns_verdict.py FILE...   exit 1 = RED (candidates)
+import re, sys
+PAT = re.compile(r"catch\s*(\([^)]*\))?\s*(when\s*\([^)]*\)\s*)?\{\s*return\s+(true|false)\s*;\s*\}", re.S)
+bad = []
+for path in sys.argv[1:]:
+    text = open(path, encoding="utf-8", errors="replace").read()
+    for m in PAT.finditer(text):
+        bad.append((path, text.count("\n", 0, m.start()) + 1, m.group(3)))
+for p, line, v in bad:
+    print(f"CATCH-RETURNS-{v.upper()} {p}:{line}")
+sys.exit(1 if bad else 0)
+```
+
+On the guard at `5932804` it prints `CATCH-RETURNS-TRUE …DirectVerificationGuard.cs:611` (the
+blocker) and `CATCH-RETURNS-FALSE` at 935 and 1116, exit 1. Across the 132 tracked `src/**/*.cs`
+files at master it reports **8**; one is the blocker's helper, seven are untriaged and filed as row
+H53, and nothing is claimed about them. **Its misses, measured**: a comment or statement before the
+`return` (`catch (Exception) { /* why */ return true; }`) exits 0; a `when (...)` filter containing a
+nested call's parentheses escapes; a commented-out catch in `//` text is flagged. It is a candidate
+finder for C#; a syntax-tree query would close the first two. The portable part is the question each
+hit asks: *can a caller of this predicate ever need to tell "false" from "could not decide"?* If yes,
+preserve the indeterminate outcome for that caller — as an exception, or as an explicit third result.
+
+### Text-mode file I/O silently rewrites source bytes
+
+Carried from the refused draft, where the seat found it SUPPORTED except one count; re-derived here.
+**Measured** (`49efffa`, `d7fd973`, NOT ancestors of master): Python's `read_text` / `write_text` use
+universal newlines, so a bare `\r` inside a string literal becomes a line break on the round trip.
+`tests/DropboxVault.App.Tests/FirstRunRcloneTests.cs` holds 4 bare CR and 4 form-feed bytes inside
+verbatim literals (an earlier escape incident interpreted `\f` and `\r` in `@"C:\fake\rclone.exe"`).
+A tool round trip in unrelated work split a literal across lines and rewrote the file: for that file,
+`git diff --numstat 49efffa^ 49efffa` reads **311 / 294**, while the intended change,
+`git diff --numstat 49efffa^ d7fd973`, reads **19 / 6**. The App suite is reported in those commits'
+bodies as passing before and after — reported, not re-run here — consistent with the corrupted value
+being a fake that nothing resolves.
+
+**The check** — bytes, source extensions only, and an inspection failure is not a clean result:
+
+```
+python -c "import pathlib,subprocess,sys; \
+r=subprocess.run(['git','ls-files','-z'],capture_output=True,check=True); \
+f=[x for x in r.stdout.decode().split(chr(0)) if x.endswith(('.cs','.py','.ps1','.xaml','.ts','.java'))]; \
+bad=[(p,b.count(b'\r')-b.count(b'\r\n'),b.count(b'\x0c')) for p in f for b in [pathlib.Path(p).read_bytes()] \
+   if (b.count(b'\r')-b.count(b'\r\n'))>0 or b'\x0c' in b]; \
+[print('SUSPECT',*x) for x in bad]; sys.exit(1 if bad else 0)"
+```
+
+At `2cf2056` (master before this draft was committed): **947** tracked files, **531** selected
+sources, one hit — `SUSPECT tests/DropboxVault.App.Tests/FirstRunRcloneTests.cs 4 4`, exit 1; a
+failing `git ls-files` now raises instead of exiting 0. It is a byte POLICY, not proof of corruption:
+a form feed can be legitimate in a source file (`x = 1\f` parses in Python), so a project adopting it
+declares which bytes are forbidden and allow-lists intentional fixtures. **State of the tree**: the
+unlanded branch repairs the additional newline rewrite; the original four corrupted literals remain on
+both trees, filed as row H47. Reading bytes rather than grepping matters on Windows, where this board
+has earlier recorded MSYS grep misreporting line endings — a report, not re-run here. Second check,
+the one that caught it: read `git diff --numstat` against your intent after any tool rewrites a file.
+
+### A string that is a strict prefix of another cannot be found missing
+
+Carried from the refused draft, SUPPORTED there; references re-derived.
+**Measured** (`e3ca347`, `cf64021`, `4e73f98`): a check resolved documented product strings against
+every phrase the product composes, joined into ONE string, with `Contains`. `Safe to delete the
+source` is a strict prefix of `Safe to delete the source folder`, so the shorter could never be found
+missing while the longer stood — and the shorter is the lowest-evidence green the product shows. The
+fix commit's body reports that a planted mutation stayed green with the old substring arm restored —
+a reported run, not re-executed here; the prefix relation itself is checkable from the two strings.
+
+**The check** — prefix pairs within a list of expected values, duplicates removed:
+
+```
+python -c "import sys; v=sorted(set(open('expected.txt').read().split(chr(10)))-{''}); \
+bad=[(a,b) for a,b in zip(v,v[1:]) if b.startswith(a)]; \
+[print('SHADOWED',repr(a),'by',repr(b)) for a,b in bad]; sys.exit(1 if bad else 0)"
+```
+
+With the two headlines in `expected.txt` it prints
+`SHADOWED 'Safe to delete the source' by 'Safe to delete the source folder'`, exit 1. **Its scope**:
+it finds a prefix pair among the EXPECTED values only; a masking phrase that exists in the corpus but
+not in the expected list, and a match in the middle of a longer string, are invisible to it. The
+complete fix is at the membership test — whole-value equality over a set
+(`tests/DropboxVault.App.Tests/DocumentedProductStringTests.cs:701`, `ComposedSet()`, used at 851) —
+not a wider corpus.

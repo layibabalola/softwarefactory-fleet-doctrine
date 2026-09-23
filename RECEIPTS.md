@@ -4594,3 +4594,27 @@ choice on this evidence.
 **Receipts:** `.claude-state/fleet-runs/review-pr148-astra-*/astra-001.last.txt` (nine rounds, verdicts and
 findings in each), `review-pr145-astra-*`, `review-pr143-astra-*`, `review-pr134-astra-*`,
 `astra-wiring-20260915T2315Z/`; the lane table in `tools/coordination/Invoke-Lane.ps1` at `master`.
+
+<!-- cloudvore-filing:2026-09-23-evening generated from review/doctrine-drafts/2026-09-23-evening-a-literal-and-a-verdict.md at 3d75963 -->
+- **cloudvore, 2026-09-23 (evening).** **A fix's extra change became the source of the next findings** (`305811a` → `3f0e4e3`;
+  `review/ledger-k27-fold-lock-2026-09-23.md`). Fixing the lock above, the first revision also
+  shortened the lock's wait. That made a "busy" answer reachable where the old code would have
+  acquired the lock, and a chain of later findings — a counter read without the lock, a torn read
+  during a write, a sharing violation during a rename, a failed rename — sat on code each round added
+  to answer the last. Separately, one later finding was independent of that chain: a test bound too
+  loose to catch a measurement ignoring the shared deadline. The last revision returned to the base's
+  wait; against the base, the landed hook change is two constants and one comparison
+  (`git diff d9874c9 3c28e0b -- tools/rotation-ready.py`). The seats' final acceptances are recorded in
+  the ledger, as the author's report. When consecutive refusals land on lines an earlier round ADDED,
+  the move is back toward the base.
+- **cloudvore, 2026-09-23 (evening).** **The refused draft's failures were mostly its checks.** Its review table has 27 rows; 9 were
+  refuted in whole or in part — checks that could not go red, counts, arithmetic, two of the author's
+  own corrections, and one claimed repair mechanism (T5's, which that review called the largest defect
+  in a trap's core). The underlying observations survived; this draft files fewer traps rather than
+  repair checks while under review.
+- **cloudvore, 2026-09-23 (evening).** **A bar can measure a tree someone is editing** (author's report,
+  `review/ledger-k27-fold-lock-2026-09-23.md`): a three-pass bar ran in the worktree its author edited
+  after a refusal arrived mid-run, and nothing in its output said so; it was discarded. A pinned SHA
+  alone does not prevent this — the same ledger records mutants left behind in pinned worktrees by
+  interrupted mutation runs. Run a bar in a checkout that nothing edits for the duration, and restore
+  a mutated checkout from its commit before trusting it.
