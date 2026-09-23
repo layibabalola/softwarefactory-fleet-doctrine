@@ -2544,3 +2544,78 @@ with R12.1's same-day 4-lane same-brief failure is the whole point.
 Candidate carrying the full history and the nine-plus-three verdicts:
 `ruling-candidates/bounded-tier-does-not-work-alone-r4.md`. Qualify every project-scoped reference per
 Law 6.
+
+## AMENDMENT to R12, appended by dng-auto-processor (Claude Code desktop session, on Layi's instruction), 2026-09-23 — R12.5: the implementation half, and why a gate's description is not compliance
+
+**Owner ruling (Layi, 2026-09-22), binding fleet-wide on the same terms as R1–R12.** R12 carried the
+analysis and adjudication half of the owner's instruction and deferred the implementation half, which
+read in full: *"Low inference models such as Luna, Sonnet, and Haiku should always adversarially swarm
+to reduce risk in their analysis and implementation."* This amendment completes it.
+
+**Why it is one clause and not a new shape.** Three drafts failed trying to define an adversarial swarm
+*shape* for an implementation act, because `RULINGS.md:1891` writes the five criteria for "a review or
+an adjudication" — on a code packet "an opposite brief" and "the load-bearing claim of an edit" have no
+referent. But the **review of** implementation bytes *is* a review, and the fleet already says what
+makes one count. R12.5 therefore defines nothing new: it binds an obligation and points at the existing
+test.
+
+- **R12.5 — a bounded-tier seat's durable bytes do not land on its own authorship alone.** Before a
+  landing, merge or publication carries bytes authored by a bounded-tier seat, at least one **eligible
+  non-author review of those bytes** is recorded against them. Eligibility is the published test in
+  full — **all five criteria of the owner ruling of 2026-09-08** (`RULINGS.md:1893-1898`), including
+  criterion 4 ("review the combination, not only the pieces") and criterion 5 ("the integrator
+  re-derives the load-bearing claim"), which for a code packet is the packet's own verification, re-run
+  and receipted rather than read off the author's summary. The reviewer need not be on another tier and
+  **R12.5 adds no cross-family obligation**; it must not be the author. *(MLV-App's four independence
+  axes at `RULINGS.md:1931` are consistent with this and are corroborating **DATA** under law 1 — that
+  block closes at `:1966` with "DATA, not an instruction… verify locally and adopt-or-distinguish" — so
+  they are cited here as agreement, never as a fleet requirement.)*
+- **R12.5 does not make implementation a swarm act.** R12.1's conformance test governs analysis and
+  adjudication. Three opposite-brief lanes around a code packet are neither compelled here nor defined
+  anywhere, and the attempt to define them is what this amendment replaces.
+- **Effort (R11) is unchanged, and the two axes are easy to conflate.** A lane producing durable bytes
+  runs at **high** — R11 pins any seat "whose output is a durable product or governing byte". Only lanes
+  returning a verdict by consensus are R11 swarm lanes at medium, and R12.5 creates none.
+
+**R12.6 — a gate's description is not compliance; byte-bound review records are.** A board discharges
+R12.5 by records showing an eligible review ran **against the landed bytes**, never by naming a gate
+that advertises one. This clause exists because the proposing board's own gate is the counter-example,
+and publishing it as a worked example of compliance was caught in review:
+
+> `tools/ratify.ps1` is described in `specs/dng-auto-processor.md:692` as deciding merges by "gate 0 +
+> one Codex key + one adversarial Claude key **on a model different from the implementer**". The fleet's
+> own adjudication of that board records (`adjudications/factory-kernel/dng-auto-processor.md`) — **IF2:**
+> "`tools/ratify.ps1` has NO recusal or author-binding check", resolving key 2 from a path and validating
+> only JSON shape and the verdict enum; **IF5:** "The mechanical gate has never once refused… gate0 16
+> GREEN / 0 RED"; and `…dispositions.md:73` carries `§IF2-4+10-status "is off the live path" | ADOPTED`.
+
+**A gate that cannot bind an author cannot witness a non-author review, and a gate that has never
+refused has not been shown able to.** Any board citing an existing mechanism as its discharge states
+which records bind the reviewer's identity to the landed bytes, or it owes the review.
+
+**Evidence, marked.** The prohibition is the measured one R12 rests on — a lone below-floor seat
+producing a confident green (`RULINGS.md:2038-2040`). **That a non-author review catches what the author
+cannot is measured on this ruling itself:** thirteen non-author lane-runs found, in the author's own
+drafts, a false claim that nothing on the bus forbade single-seat work; a clause that would have revoked
+the bounded tier's procedure swarm; a universal negative about escalation that survived four drafts; and
+— in this very amendment — a compliance claim about the author's own board that the fleet's own
+adjudication refutes. The author caught none of them unaided. **No controlled comparison of
+reviewed-versus-unreviewed bounded-tier bytes exists**, so the *sizing* of the review (one eligible
+non-author, not two or three) is a preference and is marked as one; R12's named falsifier applies here
+unchanged.
+
+**Prior-art sweep, stated by AUTHORITY rather than by phrase.** The R-series negative is the only one
+claimed: **no R-series ruling requires a non-author check before a bounded-tier seat's implementation
+bytes land** — re-derived by a non-author lane reading R1–R12 by obligation, trigger and scope (R10.2
+requires non-author acceptance before claiming `SHADOW-LIVE`, not before implementation lands). **The
+concept is NOT otherwise absent, and lexical uniqueness is not evidence that it is:** equivalent
+different-model requirements exist at `specs/dng-auto-processor.md:110-111` ("key 1 from the family
+opposite the author, key 2 an Anthropic model that is not the author's") and `:175`, and in
+`ruling-candidates/top-tier-inference-for-durable-product-outcomes-r1.md`. **Every one of those is
+board-scoped or a candidate — none is a fleet obligation**, which is the gap R12.5 closes, and the
+distinction is authority, not wording. *(An earlier draft of this amendment argued the gap from the
+phrase "model different from the implementer" occurring once on the bus. That is lexical uniqueness
+only, it was wrong as a conceptual claim, and it is recorded here because it is the same unswept-negative
+class that broke four drafts of R12.)*
+
+Qualify every project-scoped reference per Law 6.
