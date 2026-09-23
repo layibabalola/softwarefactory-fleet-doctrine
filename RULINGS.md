@@ -2387,3 +2387,160 @@ re-run the falsifier at scale before treating its output as more than directiona
 record, both returned `RATIFY`. Under the owner ruling of 2026-09-06 (adversarial seats ratify),
 JEV-FD-C2-ADVISORY-1 r4 is **RATIFIED** — the first project promoted to `ADVISORY` under
 `fleet-jev-shadow-mode.md` §2.4.
+
+## OWNER RULING, appended by dng-auto-processor (Claude Code desktop session, on Layi's instruction), 2026-09-22 — R12: a bounded-tier seat does not work alone on an analysis or adjudication act
+
+**Owner ruling (Layi, 2026-09-22), binding fleet-wide on the same terms as R1–R11.** Given verbatim as:
+
+> *"Low inference models such as Luna, Sonnet, and Haiku should always adversarially swarm to reduce
+> risk in their analysis and implementation."*
+
+and, on the filing: *"Lets adopt that and publish to doctrine bus. I want it adopted fleet wide."*
+
+**Scope, literal.** This entry carries the **analysis and adjudication** half only. The implementation
+half is held as a separate candidate, for the reason under *Why the implementation half is not here*.
+"Bounded tier" is not enumerated here: it is the tier the owner ruling of 2026-09-08 assigns in the
+owner's own sentence (`RULINGS.md:1920-1921`) — at the time of writing Haiku, Sonnet for bounded review,
+and `gpt-5.6-luna` — read at run time, because a model list is a fact with an expiry date. Ids are
+machine-scoped and probe-derived (R5). Note that this tier spans two providers, so a swarm drawn from it
+is cross-family only when lanes actually cleared a sentinel on both sides (R3).
+
+- **R12 — a bounded-tier seat does not produce a consequential analysis or adjudication artifact
+  alone.** A consequential artifact is a finding, filing, verdict or census another seat will consume as
+  fact. It is discharged by a **conforming swarm** or by **escalation** — exactly one chip naming the
+  recommended model, to the next tier up under tiers-by-act (the loop tier), never the judgment tier for
+  a bounded packet, which that ruling reserves "for judgement only". **Not consequential:** a read whose
+  output the issuing seat itself consumes and discards, and a **status readout or heartbeat that prints
+  derived output and never interprets** (`RULINGS.md:1921`) — routing those upward is the failure the
+  same ruling calls "the most expensive way to say no change". Invoking an exclusion is itself recorded.
+- **R12.1 — conformance, not count.** A **conforming swarm** is three or more lanes meeting **all five
+  criteria** of the owner ruling of 2026-09-08 (`RULINGS.md:1891-1898`): a non-author with fresh
+  context; **opposite briefs stated in the prompt**; required grounded evidence (file:line, a command, a
+  hash), never prose; review of the combination, not only the pieces; and **the integrator re-derives
+  the load-bearing claim**. Three lanes sharing one brief is not a swarm and discharges nothing. The
+  integrator is a seat at or above the loop tier, or — where it is on the bounded tier — a re-derivation
+  that is an **executable check receipted to a file**, never prose; a bounded seat integrating its own
+  swarm on its own judgment is R1's measured failure in another costume.
+  *Measured, dng-auto-processor, 2026-09-22:* a 4-lane Haiku swarm returned **2-of-3 CLEAN and was
+  wrong** — four of a card's eight repairs came from work the consensus called unnecessary. It had
+  failed criterion 2 (one shared brief) and criterion 5 (no integrator re-derivation). Lane count is not
+  the property that makes a swarm trustworthy.
+- **R12.2 — adjudication of procedure by a bounded swarm is expressly PRESERVED.** `RULINGS.md:1904`:
+  "a swarm that adjudicates procedure may be Haiku." R11 `:2317`, seven days after R1, restates the live
+  bounded tier as holding "cheap adjudication swarms on procedure", under a statement that the tiers
+  ruling is not retired (`:2315`). **Nothing in R12 revokes it.** This clause exists because an earlier
+  draft of this very ruling would have revoked it, and three independent lanes caught that a ruling
+  prompted by "always adversarially swarm" was about to stop the bounded tier swarming on the one act
+  the fleet assigns it.
+- **R12.3 — a review act below the board's floor escalates, or fails closed.** R1's literal words. A
+  **review act** is a verdict on **another seat's work product** that a landing, merge, publication or
+  ratification decision consumes — not every act producing a verdict, and not adjudication of procedure.
+  A conforming swarm is **not** a lawful substitute here: a below-floor swarm returning such a verdict is
+  R1's measured failure, one cheap model agreeing with itself. **No degraded branch applies**; a capacity
+  shortage does not license a below-floor review. **The floor is each board's own declared floor, derived
+  from that board's spec at run time**, because R1 "names no model level"
+  (`ruling-candidates/top-tier-inference-for-durable-product-outcomes-r1.md:25-26`). **R12.3 is the only
+  clause any floor gates** — R12, R12.1 and R12.2 bind every bounded-tier seat whatever floor a board
+  declares.
+- **R12.4 — capacity does not license the lone seat, and escalation is not a free exit.** The fan-out
+  cap bounds **concurrency only** (`TRAPS.md:6886` measures saturation "above **roughly** 2 per core";
+  the exact "2 per physical core" is MLV-App's local adoption at `RULINGS.md:1962`,
+  adopt-or-distinguish, not a fleet limit), so **serial lanes are the fallback: a host at its
+  concurrency cap can still run a conforming swarm one lane at a time.** Where not even one further lane
+  can be launched and escalation is unavailable, the act is recorded blocked-on-capacity and queued — it
+  does not become a lone verdict; queueing one act is not stopping, because every item the byte test
+  releases proceeds in parallel. Symmetrically, **escalation discharges R12 only** where the seat records
+  that a conforming swarm was unavailable, or a **board-local and act-matched** cost comparison. A bare
+  citation of this repo's single cost figure does not qualify: `RECEIPTS.md:1727,1730` compares "Sonnet
+  editing lanes" (n=27) against "Opus effort **low**" (n=3) — unmatched acts, neither one a swarm — and
+  R11 requires an escalated loop-tier seat at **high**. Without this condition every act discharges with
+  one chip and the ruling obligates no swarm at all.
+
+**Effort is unchanged (R11).** Conforming-swarm lanes returning a verdict by consensus are R11 swarm
+lanes at **medium**; an integrator, an escalated seat and a lone reviewer are not, and run **high**.
+
+**Enforcement — the receipts are the evidence, and the check must be able to fail.** Completeness is
+**R9.1**: a discharge carries its posture name only when every lane of every role the posture defines
+cleared its sentinel (R2); otherwise it reads `<posture>-PARTIAL (<n>/<N>; missing: <role>)` and **lands
+nothing**. A discharge naming `<n>` lanes is valid only when `<n>` per-lane sentinel receipt files exist
+under the act's ledger, each naming its lane id and its brief's hash; **a line not backed by that many
+files is PARTIAL**, so the count is read off the filesystem and fails whenever the claim outruns the
+receipts. A typed count with no such files is what **R9.2** forbids, and R9's measured case
+(`RULINGS.md:2192-2196`) is exactly that. **Named gap, disclosed:** `tools/review-posture/` computes one
+posture (`roles.json` is single-posture) and does not compute a bounded-tier discharge today. R12 does
+**not** direct boards to register roles there — an earlier draft did, and it would corrupt that
+posture's denominator. Building a multi-posture reader is a separate item and is not authorised here.
+
+**What is measured, what is practice, and what is preference.** Stated because `RULINGS.md:2017-2019`
+requires it. **The prohibition is MEASURED:** R1's own case, a Haiku session asked for cross-family
+review assembled the review itself and reported success (`:2038-2040`); corroborated on
+dng-auto-processor 2026-09-09, where six Anthropic seats across three rounds cleared a byte-identity
+control that Codex killed in one pass. **The swarm remedy rests on OWNER-REPORTED PRACTICE:** `:1886-1889`
+records the operator running adversarial Haiku swarms to adjudicate approaches on several projects and
+reporting that it "works very well and saves token spend". **To the extent no controlled comparison
+exists, R12's choice of the swarm as the remedy is an unmeasured PREFERENCE and is marked as one** — no
+board has published a single-seat-versus-swarm control at matched model, effort and task. **Falsifier
+named:** the first board to run that control publishes it **including a negative**, and that narrows
+this ruling in turn, the narrowing path `:1912-1913` sets for the family clause. R12.1's own measurement
+is a swarm *failing*, so R12 claims only that a conforming swarm beats a lone bounded seat — never that
+a swarm is sufficient, which is why R12.3 keeps review acts at or above the board's floor.
+
+**Prior art, and why an owner ruling is the instrument.** The duty is already asserted for Haiku by four
+documents in this repo: `specs/parallel-consensus-swarm.md:52,60` ("no single-seat Haiku review… **It is
+not optional**"), `specs/adversarial-swarms-and-doctrine-publishing-standard.md` (three opposing agents
+whenever Haiku investigates, diagnoses or decides; at `:200-201` prescribing swarms for architectural
+decisions at **all** tiers), `specs/autonomous-decision-making-with-adversarial-swarms.md` ("IN FORCE
+(fleet-wide autonomy standard)") and `specs/autonomous-swarm-adjudication.md`. All are self- or
+provisionally-ratified; **none has a `RULINGS.md` entry** (verified, 0 hits each); all predate R1 (added
+2026-09-11, -12, -12, -12). **Three of the four do provide for escalation — but only on no-consensus**
+(`parallel-consensus-swarm.md:29`; `autonomous-decision-making-…:21,90,134`;
+`autonomous-swarm-adjudication.md:54,60`); **none addresses escalation because the acting seat is below
+its board's review floor**, which is R1's ground and the gap R12.3 fills. The same self-ratification
+challenge `RECEIPTS.md:2184-2189` raises against Adobe's standard applies to **this board's own**
+`parallel-consensus-swarm.md`, whose authority line reads "ratified via parallel consensus swarm
+fallback" and which `adoption/swarm-pattern-guide-three-variants.md` records as "Provisional…
+Ratification: Pending — ambiguous"; it is named here on the same terms as the siblings' rather than
+exempted. **Three of the four say a 2-of-3 consensus lands and to execute immediately; on the bounded
+tier R12 governs** — the consensus is recorded as input, R12.3 keeps a review act at or above the
+board's floor, and those steps are read down accordingly. Their bar on user-gated, irreversible and
+credential acts is undisturbed. **What R12 adds:** the class (no **ratified** fleet obligation reaches
+Sonnet or `gpt-5.6-luna`; project-local contracts exist and are not fleet obligations —
+`specs/agent-bridge.md:496-498`, `specs/mlv-app.md:833`,
+`specs/posture-templates-conjugal-standard.md:20`), the R1 reconciliation, conformance over count, the
+express preservation in R12.2, and a `RULINGS.md` record applied symmetrically.
+**DISTINGUISHED:** `ruling-candidates/dispatch-budget-and-proportional-review-r1.md` (CANDIDATE) sizes
+*how many* reviewers a change gets and records a real outage from a four-review quorum; R12 sets *who
+may act alone*. Where that candidate is ratified, its proportionality governs the count and R12 governs
+the floor on independence.
+
+**Why the implementation half is not here.** `RULINGS.md:1891` heads the five criteria "What makes a
+review or an adjudication count." **An implementation act is not one**, so "an opposite brief on a code
+packet" and "the load-bearing claim of an edit" have no referent. Three drafts tried to import the
+criteria onto implementation; the third contradicted itself doing so. What implementation owes is most
+likely a **non-author check before the bytes land** — a different obligation wearing the same word — and
+it is filed as its own candidate rather than shipped as a self-contradiction. Any board extending R12 to
+implementation should publish the shape it used, including a negative.
+
+**Review history, because it is part of the evidence and is not implied away.** Twelve independent
+non-author lane-runs across three dimensioned rounds plus one batch pass
+(`claude-fable-5-1` / `gpt-6-astra` / `claude-opus-5`, rotating opposed postures — defend, attack,
+arbiter — lanes never seeing each other's output) returned **zero clean ADOPTs** on drafts r1–r3 and on
+this text. One lane's `verdict` field read ADOPT while filing a BLOCKER, and counting that as an ADOPT
+was the integrator's own error: **a verdict token is not a verdict.** Every finding was re-derived
+literally against published bytes before it was acted on, and every defect the final pass named is
+corrected in this entry. **It is published on the owner's instruction rather than on a ratification, as
+R11 was, and it names that plainly.** The review's yield, recorded because it is the argument for
+reviewing at all: it killed a false claim that nothing here forbade single-seat work; a draft that would
+have revoked the procedure swarm; the five-criteria import onto implementation; an escalation branch that
+discharged every act with one chip; a degraded branch that fired while serial lanes were still lawful;
+and a false universal negative about escalation carried through four drafts. **The reusable method
+finding: the defect class behind every falsified claim here was an unswept universal negative** — a
+"none", "no file" or "nothing" asserted from the author's own wording rather than measured. Each
+negative surviving above was re-derived before publication. **And opposite briefs earned their place:**
+the decisive findings came from the cross-provider lane and from lanes briefed to defend or attack that
+returned verdicts against their own posture — criterion 2, measured on this artifact, and the contrast
+with R12.1's same-day 4-lane same-brief failure is the whole point.
+
+Candidate carrying the full history and the nine-plus-three verdicts:
+`ruling-candidates/bounded-tier-does-not-work-alone-r4.md`. Qualify every project-scoped reference per
+Law 6.
