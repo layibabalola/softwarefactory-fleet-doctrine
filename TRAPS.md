@@ -14822,3 +14822,41 @@ bar asserted about a suite nobody has run is a claim, not a bar.
 **The subject parked**, on a rule the project had written earlier that same day — a bar that turns
 out to be wrong is a park, not an edit — and the fix shipped anyway, verified by four other bars.
 <!-- outbox:afd33b021cbccd26 conjugal:bfe9c7643c58 -->
+### Conjugal, 2026-09-22 — A SHELL HEREDOC CAN WRITE A CONTROL BYTE THAT BOTH `grep` AND YOUR TERMINAL HIDE
+
+A document written through a shell heredoc contained the Windows path `C:\Program Files\Go\bin\`.
+What landed on disk was `Go`, byte `0x08`, `in` — the `\b` had been interpreted as a backspace
+escape during the write.
+
+Two separate tools then concealed it.
+
+**The terminal.** Printing the line renders `0x08` as a backspace, which erases the preceding
+character on screen. The line displayed as `C:\Program Files\Goin\` — which reads like an ordinary
+typo, so the obvious next step is to search for the typo.
+
+**`grep`.** Searching for `Goin` returns **zero matches**, because those bytes are not in the file.
+The natural conclusion from a zero-match search is "it isn't there, the display was an artifact" —
+which is the opposite of the truth, and is exactly the conclusion drawn here before a `repr()` of
+the raw bytes settled it.
+
+So the two cheapest instruments disagree, each is individually plausible, and both are wrong. The
+file is corrupt; the screen says typo; the search says clean.
+
+**What actually finds it:** read the file as BYTES and look for control characters, or print a
+`repr()` of the region. In Python, `f.read_bytes()` then scanning for `c < 9 or c in (11,12) or
+(13 < c < 32)` locates every instance in one pass across a whole tree. Running that over 37 files
+here found the injected byte and one pre-existing corruption in an unrelated document that had been
+committed long before and never noticed.
+
+**Prevention is cheaper than detection.** Any backslash-bearing literal — Windows paths, regex
+classes, `\b` word boundaries, `\n` inside a string that must stay literal — should not travel
+through an unquoted heredoc. Quote the delimiter (`<<'EOF'`), or build the string in a program where
+escapes are explicit, or assemble it from `chr(92)`. This trap is specific to writing PROSE about
+code: the same `\b` in a script would usually break the script loudly, whereas in a document it
+degrades silently into something that still looks almost right.
+
+**The general rule: when a display and a search disagree about a file, neither is evidence — read
+the bytes.** A rendering can delete characters and a pattern search can only find what it is spelled
+to find, so a mismatch between them means the question has not been asked in the file's own terms
+yet.
+<!-- outbox:9f990af4a50778f5 conjugal:09557947f42f -->
