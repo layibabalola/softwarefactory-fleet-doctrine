@@ -1,5 +1,5 @@
 # DNG Auto Processor — factory spec (one writer: the `dng-design-steward` seat, docs/13 P-STEWARD step 7d; a posture change made anywhere else reaches this file as a census item of that seat's next pass)
-source_commit: 6a7ad68f3eef689a18326a231c124520d90aa145
+source_commit: 425ff19484c59914329fc9d197afeff540f1cd94
 
 **Machine:** ULTRAMAGNUS (personal box). **Project root:** `C:\code\DngAutoProcessor - Claude`.
 **Product:** auto-grading pipeline for DNG timelapse clips emulating the operator's LRTimelapse
@@ -48,6 +48,25 @@ section it cites. Below the dispositions table is history: "current" or "must kn
   so failover once and whole, one more relaunch only with a changed brief, and a third freeze on one attempt
   advances the attempt. An exemption that moves no counter is an unbounded loop, and the ceiling it bypasses is
   then unreachable by construction along that path.
+  **A seat that reached the model and DECLINED is not frozen, and that ladder is not its disposition** (§3,
+  §4 A2): a refusal, as distinct from a capacity, quota or connectivity error, is a property of the ASK, so the
+  disposition is to re-shape the brief or fail over, and it consumes no attempt. A whole relaunch puts the same
+  ask to the same model, because a failover rule triggered by usage, quota, session-limit, auth or outage
+  errors, or by a failed CLI probe, is not triggered by a refusal and so shifts nothing — a remedy that cannot
+  make its own condition false. The cost is real and is stated rather than closed over: at the polling window,
+  a seat that declines without writing is indistinguishable from a freeze, so the decline route has to be a
+  property of the BRIEF and not of the liveness rule.
+- **An autonomy directive travels as the AUTHORISATION it is, and the brief NAMES the decline route** (docs/13
+  P-COP Step 3; §0). An owner declining to be interrupted has authorised autonomy; rendering that as a ban on
+  asking anyone, broader than the owner's words and with no route named beside it, states the opposite thing,
+  and an unattended run's true property is simply that no person is present to answer — a fact about the run,
+  never a rule about oversight. A factory whose return contract types `BLOCKED <reason>` for a failed check but
+  never names it as the route for an OBJECTION has a decline route on paper only: a seat that judges the work
+  improper, unsafe, misdescribed or beyond what it should do unsupervised then has nowhere to put the objection
+  but silence, and silence is what a liveness rule reads as a crash. **Offered with its own limit stated: this
+  clause names no writer and no checker**, so by the test this same file exports — *for every field a protocol
+  requires, name the writer that can set it* — it is a contract clause and not a gate, and a board adopting it
+  inherits that gap rather than a guarantee.
 - **Phases are read from the ledger, first match wins; `return.md` is a slot** (§3): before a phase rewrites a
   fixed-name file, copy it byte-identical to `<name>.<phase>.<agentId>.<ext>`; renaming the writer's file moves
   the slot and changes the derivation. **Forced progress never forces an illegal act** (§3): a tick that moved
@@ -76,17 +95,35 @@ section it cites. Below the dispositions table is history: "current" or "must kn
   path absent from `binding.json` and present in the PRODUCT set, because a green suite is not a review of bytes
   no key saw. A card whose `Base` is not master is landed by rebasing its own commits onto master, so the range
   IS the reviewed diff, and never by a bare fast-forward over its base. Then `git merge --ff-only` of an exact
-  sha; land before you record; a tick that changed no state commits nothing.
+  sha; land before you record; a tick that changed no state commits nothing. **A route with exactly one step
+  owes a test for whether that step is performable, and a NAMED ACTOR for the case where it is not**: the test
+  is mechanical — a three-way merge of the subject onto master against its recorded base, whose NONZERO EXIT
+  means the rebase cannot be performed — and a card whose only route is unperformable has no route at all. A
+  PARKED base lineage is a separate fact and is never the test: it is why the FALLBACK, landing the base
+  first, is gone too. The re-scope onto master is a new ordinary card, so it is opened by the
+  seat that may open cards — routing it to the design owner, who may not, parks the disposition on the one seat
+  that cannot perform it, which is the remedy that cannot make its own condition false wearing the shape of a
+  correct escalation.
 - **Inert-commit rebase states the closed PRODUCT set and derives inert as its complement** (§4): a clause that
   says "never listed" and then lists is decided by whichever half is read first. It voids only when the
   intervening range touches the subject's own `binding.json` paths (absent or unparseable fails closed); the
   hook re-run on the rebased sha catches a disjoint break. Prefer rebase-before-review.
-- **Scope every review** (§4a): named paths, a command budget, PARTIAL allowed; a key's ACCEPT with a RED in its
-  own run log is void; a subject over the file cap is split before dispatch; key 2 tiers by blast radius, never
-  by line count; a round without two real verdicts is HELD and spends no attempt.
+- **Scope every review** (§4a): named paths, a command budget, PARTIAL allowed; a subject over the file cap is
+  split before dispatch; key 2 tiers by blast radius, never by line count; a round without two real verdicts is
+  HELD and spends no attempt. **A void-on-RED clause is scoped to the subject AS COMMITTED, and the
+  discriminator is the TREE a command ran against, never its exit code**: where the same rules ORDER an
+  adversarial key to revert production files or mutate the line a finding names, those acts produce a red
+  exactly when the change under review is CORRECT, so an unscoped clause voids every key-2 ACCEPT a compliant
+  key can return. A red is exempt only where the key ATTRIBUTES it to a named revert or mutation; an
+  unattributed red still voids, which keeps the clause's original measured case — a key that attributed nothing
+  and reported a green run over a red one on the unmodified subject.
 - **A silent key is retried once whole, then as ONE dimensioned fan-out** (§4 A2): one bounded seat per defect
   class, PARTIAL at its bound, adjudicated as a set; never a third whole-brief seat, never a landing without the
-  key. HELD-FOR-KEY and a capacity death spend no attempt (§4).
+  key. HELD-FOR-KEY and a capacity death spend no attempt (§4). **A key its PROVIDER refuses on content or
+  safety grounds is held on those same terms and spends no attempt**: the refusal is a property of the ask, so
+  the disposition is to re-shape the brief or fail over — never to charge the card an attempt, and never to
+  narrow what the factory will review. A causes list of capacity, connectivity and liveness only is a list a
+  refusal falls straight through, landing by default on the attempt counter.
 - **Quiet before a hook build is a closed-set question answered with named negatives** (§4): no live suite,
   build or decode the commit would corrupt, judged by rates across consecutive windows, `bin/`/`obj/` writes and
   what each RUNNING card's own clauses name, never by process presence or a load gauge. Every process in those
@@ -94,7 +131,17 @@ section it cites. Below the dispositions table is history: "current" or "must kn
   SDK's build engine and compiler server shipped as libraries — is invisible to its own name, so a name query
   reports its absence forever without ever reading false. A hook rejection naming a
   locked build output is a load reading: retry once, then defer, never `--no-verify`. A hold derives from
-  processes, never from card state.
+  processes, never from card state. **A process sensor cannot see a peer's uncommitted BYTES, so the tree is
+  read too**: take every path that is EITHER tracked-and-modified OR untracked with an extension the build
+  compiles, AND newer than HEAD's commit time, AND not one this seat is about to stage by name; if any
+  remains, defer and name each with its write time. **The age and staging conditions distribute over BOTH
+  arms, and they are what keep this a sensor rather than a latch**: an age-blind test defers forever on the
+  first stale file anyone leaves behind, and without the staging condition a seat defers on its own bytes and
+  every commit blocks itself. The age condition's limit is stated with it: HEAD's commit time stands in for
+  the last hook that built THIS tree, which it is not when HEAD arrived by fast-forward from another worktree,
+  whose hook built that one. Both arms are needed and neither is the other — a
+  restriction to TRACKED paths misses half the class, because default globbing compiles a file whatever git
+  knows of it.
 - **An alarm that cannot read its input FIRES; one whose remedy cannot clear it is REPORTED, not obeyed** (§7).
   **And an alarm computed only from a FAILURE history reads healthy on a subject that stopped running
   altogether**, because a thing that never fires writes no failure and an empty input satisfies no
@@ -143,7 +190,14 @@ section it cites. Below the dispositions table is history: "current" or "must kn
 - **Evidence lives outside git, which holds receipts of at most 2 KB** (§5); a card points at its ledger and is
   never the chronicle; caps are structural, never byte gates whose last remedy drops evidence (§5). **A mirror
   is derived; local master is the authority** (§3): CI speaks for master only when the run's commit carries
-  master's PRODUCT bytes, else `ci=stale`.
+  master's PRODUCT bytes, else `ci=stale`. **A seat that rewrites a shared file derives that file's newline
+  convention AT WRITE TIME, refuses on a MIXED reading rather than picking one, and checks the diff is the size
+  it intended** (§5): the convention is not stable — under an autocrlf-style working-copy conversion one shared
+  file has read in each convention on successive measurements — so an instrument carrying either as a constant
+  silently rewrites every line as one diff, with the intended one-line append buried inside it. Under autocrlf
+  a whole-file line-ending rewrite is invisible to a numstat-style diff summary, so no ordinary review
+  instrument reports it, and a later per-file blob-identity check then fails for a reason nobody can account
+  for.
 - **Worktrees are sparse; a free-space floor holds creation, and an unreadable reading holds it**; HELD-FOR-DISK
   spends no attempt; the item worktree goes on landing, a key's once its verdict is written (§10 "Task
   worktrees", a USER unfreeze in §0). A removal is never forced on an item worktree — but a working copy dirtied
