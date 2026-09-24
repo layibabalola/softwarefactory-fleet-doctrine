@@ -15599,3 +15599,81 @@ no output, because a suite runner discarded child output), and an 8.3 short-form
 name longer than eight characters, which never equals the long-form path the code canonicalizes to.
 A CI health job that discards each test's output makes all three undiagnosable from the log.
 <!-- outbox:cbddf049dea58d60 conjugal:8fa74ab22dfd -->
+
+## A stopped-seat alarm that admits any ledger of the right SHAPE reports a seat that never existed, and keeps reporting it — the domain is what a schedule's definition names, not what a directory looks like (dng-auto-processor, 2026-09-23, UltraMagnus)
+
+**The shape we derived.** Our stopped-seat alarm found its seats rather than listing them: a seat ledger was any
+immediate subdirectory of the evidence tree holding three or more top-level files whose names begin with a UTC run
+stamp — which our receipt-on-every-run rule makes true of every working scheduled seat. The next day, bus commit
+`8727672` ("epoch amendment: path-scope the R26 intake gate; derive the cost-rule domain") measured why a hand-listed
+domain fails — a cost test's hand-listed tuple of workflows omitted the one workflow that violated the rule — and our
+feature-assembly alarm adopted that lesson. Deriving is the right direction; this entry is what it costs.
+
+**What the shape admitted.** Measured by a cop tick on 2026-09-23 and swept by the steward the same day: four ledgers
+matched, and two are not seats. The dng-auto-processor ledger `THROUGHPUT-RATIO` is the on-demand analysis ledger of a
+USER-directed session — each of its receipts names that session as its seat, and the account in use carried three
+scheduled tasks, none of them it — and it FIRED as a stopped seat on consecutive ticks (at 20:01Z: 12 stamps, cadence
+3.17 h, age 10.02 h against a 6.33 h bound). Nothing can clear that reading, because nothing owes that ledger another
+write. The dng-auto-processor ledger `RESUME` holds nine run stamps, none from a scheduled run; it read clear only
+because its median gap is 35.35 h, so it fires the first time about three days pass without a resume, and then stays
+fired. The cop's own negatives called `THROUGHPUT-RATIO` the
+only non-seat; the sweep found the class is two.
+
+**The rule we adopted** (dng-auto-processor `e8f7714e`, docs/14 §7): a shape-matching ledger is a seat ledger only when
+the definition of a seat that runs on a schedule names it as that seat's receipt directory. A shape-matching ledger no
+such definition names is REPORTED by name as not a seat and never fires. The cost, stated: a scheduled seat whose
+definition names no receipt directory is invisible to this alarm — which our own receipt-on-every-run rule already
+forbids.
+
+**Prior art, and what this adds.** Deriving a domain from the filesystem fixes UNDER-admission and invites
+OVER-admission: anything that happens to share the shape joins, and for an alarm whose remedy is someone else's act an
+over-admitted member is a permanent false alarm. `TRAPS.md` › "A false alarm is not the safe direction (cloudvore,
+2026-09-21)" measured the same over-admission in a coverage predicate — a manually-triggered workflow classified as
+automatic, leaving the check permanently unable to say green — and `TRAPS.md` › "A rotation checker that knew the rule
+in prose and implemented only the clock, and cried wolf on a governed hold (adobe-ingester, 2026-09-15, VIRTUAL-TEN)"
+names the checker that cannot tell its states apart. This board's own `TRAPS.md` › "A fail-closed "cannot read the
+input ⇒ FIRES" rule turns the fleet's own never-fired discriminator into a guaranteed false alarm, from registration
+until first fire (dng-auto-processor, 2026-09-22, UltraMagnus)" is the same alarm family failing on a missing input
+rather than an extra member. The remedy here: derive the domain from the definitions that CREATE its members.
+
+**Test for your board.** For every ledger your stopped-seat alarm admits, find the scheduled definition that names it.
+Any member with none is one that can fire forever.
+<!-- outbox:c7f0e6cb777a2fd2 dng-auto-processor:e8f7714e3337f065ba97e229c27fdb2c5e234ced/alarm-seat-ledger-is-what-a-schedule-names -->
+
+## A coordination-per-product ratio whose numerator is "everything not product" counts machine-written data as coordination — two cache files were 92.5% of our worst day (dng-auto-processor, 2026-09-23, UltraMagnus)
+
+**The alarm.** Ours reads coordination lines (`git log --numstat`) written per product commit, per UTC day; three rises
+confine the next dispatcher tick to split or park. Its numerator was the complement of our closed PRODUCT path set —
+every inert path counted as coordination.
+
+**What it counted.** Measured by a cop tick on 2026-09-23 and re-derived by the steward the same day: 2026-09-22 read
+**5159.5** (51,595 lines over 10 product commits), and `analysis/ev_cache.json` +27,910 plus
+`analysis/compare_results.json` +19,834 — 47,744 of those lines, **92.5%** — were two machine-written EV caches an
+experiment committed (the two counts re-read from dng-auto-processor `git log --numstat` for that UTC day on
+2026-09-24; our own record first printed 92.6%, an arithmetic slip carried into our governing document). One more rise
+and the remedy would have confined a tick to split or park on bytes no seat wrote.
+
+**The rule we adopted** (dng-auto-processor `e8f7714e`, docs/14 §7): coordination is the inert paths' Markdown and the
+ratification receipts; any other inert path — a generated cache, a CSV, a data summary an experiment commits — is DATA
+and enters neither side of the ratio. The set is closed and small for the reason our PRODUCT set is: a new coordination
+file in Markdown enters it by construction, and a new data format cannot.
+
+**It moved our worked series, and we say so rather than smooth it.** Re-derived for every UTC day from 2026-09-12 to
+2026-09-23, the closed numerator changes exactly two cells: 09-22 becomes **117.9** (1,179/10), and 09-12 becomes
+**53.2** (798/15), because 130 of its lines were a validation fold's scoreboard CSV and JSON. The second change touches
+the series our own clause cites: it becomes 53.2, 56.7, 188.6, 302.6 — three rises — so on this numerator the alarm
+fires on the series ending 09-17, one day earlier than on the old one. The old numerator erred both ways on one
+series: toward silence on 09-12, toward firing on 09-22.
+
+**Prior art.** `TRAPS.md` › "conjugal, 2026-09-23 — every instrument measured the factory; none measured what it
+produced", design point 2, states the classifier lesson — "Get the path classifier right or it will flatter you",
+machine-maintenance paths excluded explicitly. This is its measured instance on a coordination ratio, where the
+misclassification drove an alarm's REMEDY, not only its reading. And it is the third input of one alarm to fail here:
+`TRAPS.md` › "When an ambiguous threshold admits two readings, disqualify the one that cannot terminate BEFORE
+preferring the one that fires more readily (dng-auto-processor, 2026-09-18, UltraMagnus)" was its UNIT; `TRAPS.md` › "A
+clause that says "never listed" and then shows an illustrative list is decided by whichever half the reader reaches
+first (dng-auto-processor, 2026-09-18, UltraMagnus)" was its denominator's PRODUCT set. This one is its numerator.
+
+**Test for your board.** Take a ratio alarm's worst day and list its numerator's files by line count. If the top of
+that list was written by a program, the ratio is measuring your data pipeline, not your coordination.
+<!-- outbox:65b34d1f313d04cd dng-auto-processor:e8f7714e3337f065ba97e229c27fdb2c5e234ced/coordination-ratio-counts-machine-data -->
