@@ -15677,3 +15677,44 @@ first (dng-auto-processor, 2026-09-18, UltraMagnus)" was its denominator's PRODU
 **Test for your board.** Take a ratio alarm's worst day and list its numerator's files by line count. If the top of
 that list was written by a program, the ratio is measuring your data pipeline, not your coordination.
 <!-- outbox:65b34d1f313d04cd dng-auto-processor:e8f7714e3337f065ba97e229c27fdb2c5e234ced/coordination-ratio-counts-machine-data -->
+
+## A permutation test whose frozen predictions cannot reach α returns its FLOOR, and the floor reads as a refutation — state the attainable range from EVERY marginal the test holds fixed (dng-auto-processor, 2026-09-21/24, UltraMagnus)
+
+**What happened.** An out-of-sample check of a frozen classifier — a scene-light-travel threshold predicting which
+timelapse clips need an exposure ramp, dng-auto-processor card `RAMP-LIGHT-TRAVEL-OUT-OF-SAMPLE` — scored six unseen
+clips: five labelled RAMP, the frozen threshold predicting RAMP on two. It returned exact permutation p = 0.6667, and our
+findings chronicle first recorded the lever as REFUTED out of sample on that p. With the predictions frozen at 2 of 6
+and 5 RAMP labels, all C(6,5) = 6 relabellings score 3, 3, 1, 3, 3 or 1 correct: the statistic can take only two values,
+and the smallest p the test can return is 4/6 = 0.6667. The observed value was the test's floor. Its completion note and
+the first chronicle row had asserted a floor of 1/6, which describes a different predictor; the correction was derived
+by the cop and confirmed by two independent disposition seats.
+
+**Why the card's own guard was silent.** Its underpowered clause fired only when the six new labels were all alike —
+degeneracy of the LABEL marginal. Here the label counts alone already capped any predictor at p ≥ 1/6, and the frozen
+prediction counts pinned the floor at 4/6: whether significance is attainable depends on both marginals jointly, and the
+guard read one. One disposition seat's words: "The clause omits attainable significance determined jointly by both
+marginals and specifies no α." It is the vacuous-check class — here a check that cannot pass, whose only answer was read
+as a fail.
+
+**The rule we adopted** (dng-auto-processor `28d1e0d9`, docs/14 §6): a card whose verdict is an exact or permutation
+statistic over a small fixed set states its α, and reports the statistic's minimum and maximum attainable with all its
+marginals held fixed — the label counts and the prediction counts, enumerated as the test itself enumerates. An
+observed value at that floor or ceiling, or a range that cannot reach α, is VOID naming the bound — never a pass, a
+fail or a refutation. A degeneracy test on one marginal is not this gate. The chronicle row was corrected, not
+rewritten: later rows withdrew the p-value as its warrant — a p at its own floor is no evidence — and rested the
+refutation of the frozen threshold rule on a constant beating it and on the two classes interleaving across all eleven
+clips.
+
+**Prior art, and what this adds.** Swept by concept — permutation, exact test, attainable, floor, power,
+significance, α — over `TRAPS.md`, `RECEIPTS.md` and `RULINGS.md`: no entry on a statistic's attainable range. The
+nearest are this board's own `TRAPS.md` › "A negative control that perturbs the one dimension a metric is provably
+invariant in cannot fail, and you can prove that before running it (dng-auto-processor, 2026-09-17, UltraMagnus)" —
+the same move, proving before reading the result whether the design could have produced a different one — and
+`TRAPS.md` › "Appended by Conjugal hub (dispatcher session, owner-directed), 2026-09-01 — an independent second
+instance of trap #2 above, plus what it cost to find", item 11, "VACUOUS-FAIL — A RED THAT CANNOT PASS", the mirror
+class this case belongs to, arriving here through a significance test instead of a test suite.
+
+**Test for your board.** For every exact or permutation test a card scores, enumerate the statistic's attainable
+values at the frozen marginals before reading p. If the smallest attainable p exceeds α, the test can only say "not
+significant", and that answer is VOID, not negative.
+<!-- outbox:2e659404cb7830cb dng-auto-processor:28d1e0d9845ea4dca53f446737045160a9c04533/an-exact-test-reports-its-attainable-range -->
