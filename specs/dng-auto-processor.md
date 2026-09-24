@@ -1,5 +1,5 @@
 # DNG Auto Processor — factory spec (one writer: the `dng-design-steward` seat, docs/13 P-STEWARD step 7d; a posture change made anywhere else reaches this file as a census item of that seat's next pass)
-source_commit: 47bfe31de4de8d5eebab38351e1fbc93ad30ec55
+source_commit: 3e187e01edbd8655a2c9615d54e7d8cc11f97139
 
 **Machine:** ULTRAMAGNUS (personal box). **Project root:** `C:\code\DngAutoProcessor - Claude`.
 **Product:** auto-grading pipeline for DNG timelapse clips emulating the operator's LRTimelapse
@@ -37,10 +37,14 @@ section it cites. Below the dispositions table is history: "current" or "must kn
   before the launch); re-read a card before any launch, landing or rewrite, and stand down if it changed; every
   launch json, brief, progress log, scratch file and verdict a dispatched seat writes carries its agentId in its
   name (`<kind>.<model>.<agentId>.<ext>`), because a derived seat name collides by construction; fixed-name slot
-  files are copied before a rewrite, never renamed (next rule).
+  files are copied before a rewrite, never renamed (next rule). **A peer that advances a PHASE changes no state
+  line — it writes a launch json — so a launch also re-derives the card's phase first, and stands down when the
+  derivation no longer names that launch**: a state line is blind to the commonest overlap, a host re-entering on
+  a subagent's completion, and two sessions of one claim otherwise launch two writers into one worktree.
 - **A seat is live by evidence read INSIDE a 90 s poll, never by file age, a lease or the clock** (§3): a write
-  that appears, the seat's own process (its `pid` on the CLI route) or its host's API connection. Its first act
-  is one progress line, and none ten minutes after launch means it never started. A subagent never reads its
+  that appears, the seat's own process (its `pid` on the CLI route) or its host's API connection. Its first act,
+  if it can write, is one progress line, and none ten minutes after launch means it never started; a seat launched
+  read-only cannot write one, so for it the absence means nothing and the poll reads its own process. A subagent never reads its
   host's signals: its own writes and CPU-accruing processes under its own worktree count, and after its line it
   is FROZEN only once nothing of its own is newer than 30 minutes. FROZEN or DARK is skipped; its worktree is kept.
   **And the relaunch is bounded exactly as a key's is** (§3, §4 A2): a freeze is NOT a capacity death — that
@@ -67,9 +71,17 @@ section it cites. Below the dispositions table is history: "current" or "must kn
   clause names no writer and no checker**, so by the test this same file exports — *for every field a protocol
   requires, name the writer that can set it* — it is a contract clause and not a gate, and a board adopting it
   inherits that gap rather than a guarantee.
+- **A brief carries its card INLINED, never only its path** (docs/13 P-COP Step 3, B-APPROACH, C-COMMIT): a card
+  opened in a tick is untracked until that tick's commit, and a worktree cut from master does not contain it, so a
+  seat told only the path reads a file its tree does not hold; the launch record's brief hash then pins the card
+  bytes the seat actually read.
 - **Phases are read from the ledger, first match wins; `return.md` is a slot** (§3): before a phase rewrites a
   fixed-name file, copy it byte-identical to `<name>.<phase>.<agentId>.<ext>`; renaming the writer's file moves
-  the slot and changes the derivation. **Forced progress never forces an illegal act** (§3): a tick that moved
+  the slot and changes the derivation. **A launch json is read by its `phase` FIELD, never its filename**, so it
+  takes the instance name like every other seat file, and a fixed name an older attempt wrote reads the same way;
+  a phase machine that looks files up by fixed name while its naming rule forbids fixed names makes every launch
+  record either invisible or a file two peers are aimed at. The rule that sends a finished author to its commit
+  step yields while a commit step already launched has no output. **Forced progress never forces an illegal act** (§3): a tick that moved
   nothing PARKs, REOPENs or SPLITs one item unless each is derived unavailable and named.
 - **A card is admissible before it is opened** (§4): allowlist paths are relative to the git root; MODIFY means
   `git ls-files --error-unmatch` exits 0; CREATE means it exits 1, `git check-ignore -q` exits non-zero with any
@@ -80,7 +92,9 @@ section it cites. Below the dispositions table is history: "current" or "must kn
   it; a cop never lands on its own refutation of a severity its brief pre-named; zero confirmed is necessary,
   never sufficient.
 - **Refute before hand-back, then triage by trend** (§4b): each BLOCKER and MAJOR gets the smallest mutation to
-  the line it names; caught is refuted and kept in the ledger, surviving is confirmed. Falling with new classes:
+  the line it names; caught is refuted and kept in the ledger, surviving is confirmed. The cop mutates in a probe
+  worktree made and removed on a key's scratch-worktree terms, never in the item worktree that holds the reviewed
+  bytes. Falling with new classes:
   another round; flat or rising with new classes: SPLIT; the same class re-found: PARK into ONE dimensioned batch
   pass. The three-round ceiling is the LAST test, and an unadjudicated round does not count. **Classify the
   FAILED SET as well as the round** (§4b, adopted from this bus): when the parks share a SHAPE — build a NEW
@@ -129,16 +143,22 @@ section it cites. Below the dispositions table is history: "current" or "must kn
   what each RUNNING card's own clauses name, never by process presence or a load gauge. Every process in those
   terms is identified by its COMMAND LINE, never by its executable name: a component hosted by a runtime — an
   SDK's build engine and compiler server shipped as libraries — is invisible to its own name, so a name query
-  reports its absence forever without ever reading false. A hook rejection naming a
-  locked build output is a load reading: retry once, then defer, never `--no-verify`. A hold derives from
+  reports its absence forever without ever reading false. **A command line that reads NULL answers nothing, so it
+  never exculpates**: a process that exits while the census is being read comes back partly unpopulated, and the
+  spawn-and-exit churn of a build or a restore is made of exactly such processes, so it is named UNREADABLE and
+  counts as live until a later window reads it, or finds it gone with no build-output write in between. A hook
+  rejection naming a locked build output is a load reading: retry once, then defer, never `--no-verify`. A hold derives from
   processes, never from card state. **A process sensor cannot see a peer's uncommitted BYTES, so the tree is
   read too**: take every path that is EITHER tracked-and-modified OR untracked with an extension the build
-  compiles, AND newer than HEAD's commit time, AND not one this seat is about to stage by name; if any
-  remains, defer and name each with its write time. **The age and staging conditions distribute over BOTH
-  arms, and the age condition is what keeps this a sensor rather than a latch**: an age-blind test defers
-  forever on the first stale file anyone leaves behind. Both arms are needed and neither is the other — a
-  restriction to TRACKED paths misses half the class, because default globbing compiles a file whatever git
-  knows of it.
+  compiles, AND newer than the newest `commit` or `commit (amend)` entry of this checkout's own HEAD reflog,
+  AND not one this seat is about to stage by name; if any remains, defer and name each with its write time.
+  **The age and staging conditions distribute over BOTH arms, and the age condition is what keeps this a
+  sensor rather than a latch**: an age-blind test defers forever on the first stale file anyone leaves behind.
+  Both arms are needed and neither is the other — a restriction to TRACKED paths misses half the class, because
+  default globbing compiles a file whatever git knows of it. **The age clock is that reflog entry, never HEAD's
+  commit time**: a landing fast-forwards HEAD to a commit whose hook ran in another
+  worktree and never saw this one, so HEAD's time would certify whatever a peer left here before it; a reflog
+  holding no such entry proves nothing, and every path defers.
 - **An alarm that cannot read its input FIRES; one whose remedy cannot clear it is REPORTED, not obeyed** (§7).
   **And an alarm computed only from a FAILURE history reads healthy on a subject that stopped running
   altogether**, because a thing that never fires writes no failure and an empty input satisfies no
@@ -150,7 +170,10 @@ section it cites. Below the dispositions table is history: "current" or "must kn
   never from a directory's shape alone** (§7): the shape is also true of a ledger an on-demand procedure writes
   whenever it happens to run, which owes no cadence, so its silence reads as a stopped seat forever — nothing owes
   that ledger another write. A shape-matching ledger no definition names is reported by name as not a seat, and
-  never fires. **A ratio alarm's numerator is a closed set, never the complement of one** (§7): coordination
+  never fires. **And a stamp is a run only once its receipt is FINISHED, where the seat's definition says how a
+  receipt ends** (§7): read by existence and age alone, a pass that opened its receipt and then died is the seat's
+  freshest run — a pulse with nothing behind it — so an unterminated stamp enters neither the cadence nor the age,
+  and is reported by name with its age. **A ratio alarm's numerator is a closed set, never the complement of one** (§7): coordination
   counted as everything outside the product set takes in every machine-written cache, CSV or data summary an
   experiment commits, and fires on bytes no seat wrote; coordination is the inert paths' Markdown and the landing
   receipts, and any other inert path is data that enters neither side.
@@ -160,7 +183,11 @@ section it cites. Below the dispositions table is history: "current" or "must kn
   document, which the hook enforces (§4).
 - **Two keys, derived from the author, never the lane** (§2): key 1 from the family opposite the author, key 2
   an Anthropic model that is not the author's; both run every round into one finding list; a permissive key
-  never overrides an unrefuted BLOCKER.
+  never overrides an unrefuted BLOCKER. **Where the rules give a card's approach review and a round's key 1 the
+  SAME model, the key is briefed on what that model already asserted** (§2; docs/13 P-COP Step 2 points at it):
+  the pair is derived from the rules at launch, never listed; both keys' briefs carry every approach-review
+  finding the approach records as ADOPTED, and key 1 is told its own model asserted them and re-derives each at
+  the artifact — otherwise the seat that must catch a false premise is the one that asserted it.
 - **Approach before code** (§2, a USER unfreeze in §0): at most 60 lines, ONE round by the opposite family,
   every BLOCKER and MAJOR answered before the first product byte, never a second approach round; a review silent
   45 minutes is relaunched once, then IMPLEMENT proceeds with it recorded TIMEOUT. A card whose deliverable is a
@@ -189,10 +216,17 @@ section it cites. Below the dispositions table is history: "current" or "must kn
   analogs; a round with no live cross-family key is SINGLE-FAMILY (two non-author live-family keys, a third
   adversary on guard, hook, CI, ratifier, acceptance or data-loss cards, stamped) and is re-reviewed cross-family
   when the family returns. Darkness follows the meter the error came from, measured on the account in use. An
-  empty derived key pool is HELD-FOR-KEY, never the last model standing; two models of one provider are never
+  empty derived key pool is HELD-FOR-KEY, never the last model standing, and a capacity hold releases on EVIDENCE
+  that the held seat answers — a one-line probe on its own model at most once per tick, or any completed call on
+  its meter — never because the error window emptied while nothing ran, since a seat that is not launched cannot
+  return an error; two models of one provider are never
   cross-family; a card needing the network first takes a Claude-hosted seat, which is not darkness.
 - **Evidence lives outside git, which holds receipts of at most 2 KB** (§5); a card points at its ledger and is
-  never the chronicle; caps are structural, never byte gates whose last remedy drops evidence (§5). **A mirror
+  never the chronicle; caps are structural, never byte gates whose last remedy drops evidence (§5). **A DAILY
+  line belongs to its own UTC day** (§5; docs/13 P-COP Step 5 points at it): the day is the writing
+  tick's own UTC date, and no tick rewrites, re-dates, folds or carries forward the totals of an earlier day's
+  line, so a new day's first tick starts a new line; a day left with no line stands as a hole, never
+  reconstructed into WORK.md, and is read from git and the deferred ticks' notes. **A mirror
   is derived; local master is the authority** (§3): CI speaks for master only when the run's commit carries
   master's PRODUCT bytes, else `ci=stale`. **A seat that rewrites a shared file derives that file's newline
   convention AT WRITE TIME, refuses on a MIXED reading rather than picking one, and checks the diff is the size
@@ -204,11 +238,14 @@ section it cites. Below the dispositions table is history: "current" or "must kn
   for.
 - **Worktrees are sparse; a free-space floor holds creation, and an unreadable reading holds it**; HELD-FOR-DISK
   spends no attempt; the item worktree goes on landing, a key's once its verdict is written (§10 "Task
-  worktrees", a USER unfreeze in §0). A removal is never forced on an item worktree — but a working copy dirtied
-  ONLY by the factory's own mandated restore has exactly those paths reverted after the census has captured them,
-  and is then removed unforced: a mandated setup step that dirties the copy the cleanup rule refuses to touch is a
-  permanent latch, and the rule's own "stop if a defect report names this worktree" makes REPORTING it the act
-  that makes the latch permanent.
+  worktrees", a USER unfreeze in §0). **A lock file that the factory's own mandated restore — or any build that restores — rewrites is never the
+  card's byte**: no seat stages it, no allowlist check counts it, and a git operation that refuses a dirty tree, a
+  rebase or a removal, is preceded by reverting exactly that path (for a removal, after the census has captured
+  it), which loses nothing a restore does not rewrite; a card whose allowlist names that file is untouched. A
+  removal is never otherwise forced on an item worktree: a mandated setup step that dirties the copy the commit,
+  rebase and cleanup rules refuse to touch is a permanent latch, and the cleanup rule's own "stop if a defect
+  report names this worktree" makes REPORTING it the act that makes the latch permanent. The cop's refutation
+  probe is removed on a key's scratch-worktree terms.
 - **CLI currency upgrades on a six-hour clock with no idle gate, smokes the launch form the tick really uses —
   isolated from user hooks — and rolls back only on evidence** (§10, USER, §0; fleet R13, adopted from this bus):
   a failed smoke reinstalls the previous version only when that version passes the smoke the new one failed,
@@ -247,8 +284,9 @@ section it cites. Below the dispositions table is history: "current" or "must kn
   findings verbatim, and bus law 4 bars a path that LOCATES in-flight review reasoning as firmly as it bars
   the bytes.
 - **Doctrine loop** (a USER unfreeze in §0; docs/13 P-STEWARD step 7): the steward folds other boards'
-  ruling-candidates/, adoption/, TRAPS.md and RULINGS.md commits as data (ADOPT, DISTINGUISH or NOT-APPLICABLE, one
-  reason each), then takes a CENSUS of what this board recorded since its last census line — closed tokens, card
+  ruling-candidates/, adoption/, TRAPS.md, RULINGS.md and RECEIPTS.md commits, adjudications that name this board,
+  and any change to the revision of the kernel spec or of this board's profile, as data (ADOPT, DISTINGUISH or
+  NOT-APPLICABLE, one reason each), then takes a CENSUS of what this board recorded since its last census line — closed tokens, card
   state changes with their dispositions, governing-doc commits, the alarms its daily lines name — and gives every
   item exactly one line: PUBLISH, ON-BUS (the bus path and entry heading), NOT-EXPORTABLE (one reason) or CARRIED
   (the event that releases it). Nothing is selected, and a PUBLISH is never downgraded for size, taste or time. Two
