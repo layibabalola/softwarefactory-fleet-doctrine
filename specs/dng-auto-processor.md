@@ -1,5 +1,5 @@
 # DNG Auto Processor — factory spec (one writer: the `dng-design-steward` seat, docs/13 P-STEWARD step 7d; a posture change made anywhere else reaches this file as a census item of that seat's next pass)
-source_commit: 425ff19484c59914329fc9d197afeff540f1cd94
+source_commit: 47bfe31de4de8d5eebab38351e1fbc93ad30ec55
 
 **Machine:** ULTRAMAGNUS (personal box). **Project root:** `C:\code\DngAutoProcessor - Claude`.
 **Product:** auto-grading pipeline for DNG timelapse clips emulating the operator's LRTimelapse
@@ -63,7 +63,7 @@ section it cites. Below the dispositions table is history: "current" or "must kn
   never a rule about oversight. A factory whose return contract types `BLOCKED <reason>` for a failed check but
   never names it as the route for an OBJECTION has a decline route on paper only: a seat that judges the work
   improper, unsafe, misdescribed or beyond what it should do unsupervised then has nowhere to put the objection
-  but silence, and silence is what a liveness rule reads as a crash. **Offered with its own limit stated: this
+  but silence, and silence is what a liveness rule reads as a freeze. **Offered with its own limit stated: this
   clause names no writer and no checker**, so by the test this same file exports — *for every field a protocol
   requires, name the writer that can set it* — it is a contract clause and not a gate, and a board adopting it
   inherits that gap rather than a guarantee.
@@ -120,7 +120,7 @@ section it cites. Below the dispositions table is history: "current" or "must kn
 - **A silent key is retried once whole, then as ONE dimensioned fan-out** (§4 A2): one bounded seat per defect
   class, PARTIAL at its bound, adjudicated as a set; never a third whole-brief seat, never a landing without the
   key. HELD-FOR-KEY and a capacity death spend no attempt (§4). **A key its PROVIDER refuses on content or
-  safety grounds is held on those same terms and spends no attempt**: the refusal is a property of the ask, so
+  safety grounds is held on those same terms and spends no attempt** (§4 A2, adopted from this bus): the refusal is a property of the ask, so
   the disposition is to re-shape the brief or fail over — never to charge the card an attempt, and never to
   narrow what the factory will review. A causes list of capacity, connectivity and liveness only is a list a
   refusal falls straight through, landing by default on the attempt counter.
@@ -135,11 +135,8 @@ section it cites. Below the dispositions table is history: "current" or "must kn
   read too**: take every path that is EITHER tracked-and-modified OR untracked with an extension the build
   compiles, AND newer than HEAD's commit time, AND not one this seat is about to stage by name; if any
   remains, defer and name each with its write time. **The age and staging conditions distribute over BOTH
-  arms, and they are what keep this a sensor rather than a latch**: an age-blind test defers forever on the
-  first stale file anyone leaves behind, and without the staging condition a seat defers on its own bytes and
-  every commit blocks itself. The age condition's limit is stated with it: HEAD's commit time stands in for
-  the last hook that built THIS tree, which it is not when HEAD arrived by fast-forward from another worktree,
-  whose hook built that one. Both arms are needed and neither is the other — a
+  arms, and the age condition is what keeps this a sensor rather than a latch**: an age-blind test defers
+  forever on the first stale file anyone leaves behind. Both arms are needed and neither is the other — a
   restriction to TRACKED paths misses half the class, because default globbing compiles a file whatever git
   knows of it.
 - **An alarm that cannot read its input FIRES; one whose remedy cannot clear it is REPORTED, not obeyed** (§7).
@@ -149,7 +146,14 @@ section it cites. Below the dispositions table is history: "current" or "must kn
   window START is itself a field a new subject does not yet have**: written as "since its last run" it is a
   missing key, which the first rule above then turns into a permanent FIRE against a healthy subject for the
   whole interval between registration and its first fire — so the start falls back to a field every subject
-  carries from creation.
+  carries from creation. **A liveness alarm derives its seats from the ledgers a schedule's DEFINITION names,
+  never from a directory's shape alone** (§7): the shape is also true of a ledger an on-demand procedure writes
+  whenever it happens to run, which owes no cadence, so its silence reads as a stopped seat forever — nothing owes
+  that ledger another write. A shape-matching ledger no definition names is reported by name as not a seat, and
+  never fires. **A ratio alarm's numerator is a closed set, never the complement of one** (§7): coordination
+  counted as everything outside the product set takes in every machine-written cache, CSV or data summary an
+  experiment commits, and fires on bytes no seat wrote; coordination is the inert paths' Markdown and the landing
+  receipts, and any other inert path is data that enters neither side.
 - **The authority wall has an addressee** (§7a): a seat at a wall appends one bounded token naming the artifact
   and the authority exceeded; one owner seat acts only on tokens and parks; a token about a seat's behaviour
   closes only on that seat's next receipt; no seat writes its own procedure, and no tick edits its governing
@@ -192,7 +196,7 @@ section it cites. Below the dispositions table is history: "current" or "must kn
   is derived; local master is the authority** (§3): CI speaks for master only when the run's commit carries
   master's PRODUCT bytes, else `ci=stale`. **A seat that rewrites a shared file derives that file's newline
   convention AT WRITE TIME, refuses on a MIXED reading rather than picking one, and checks the diff is the size
-  it intended** (§5): the convention is not stable — under an autocrlf-style working-copy conversion one shared
+  it intended** (§5, adopted from this bus): the convention is not stable — under an autocrlf-style working-copy conversion one shared
   file has read in each convention on successive measurements — so an instrument carrying either as a constant
   silently rewrites every line as one diff, with the intended one-line append buried inside it. Under autocrlf
   a whole-file line-ending rewrite is invisible to a numstat-style diff summary, so no ordinary review
@@ -205,7 +209,10 @@ section it cites. Below the dispositions table is history: "current" or "must kn
   and is then removed unforced: a mandated setup step that dirties the copy the cleanup rule refuses to touch is a
   permanent latch, and the rule's own "stop if a defect report names this worktree" makes REPORTING it the act
   that makes the latch permanent.
-- **CLI currency smokes the launch form the tick really uses and rolls back on failure; each landing receipt
+- **CLI currency upgrades on a six-hour clock with no idle gate, smokes the launch form the tick really uses —
+  isolated from user hooks — and rolls back only on evidence** (§10, USER, §0; fleet R13, adopted from this bus):
+  a failed smoke reinstalls the previous version only when that version passes the smoke the new one failed,
+  because a smoke that fails on auth, quota or network fails the old version too. **Each landing receipt
   measures every seat's cost and correctness; a provider joins only after admission drills** (§10, USER, §0).
 
 ### This board
