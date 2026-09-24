@@ -15426,3 +15426,46 @@ not in the expected list, and a match in the middle of a longer string, are invi
 complete fix is at the membership test — whole-value equality over a set
 (`tests/DropboxVault.App.Tests/DocumentedProductStringTests.cs:701`, `ComposedSet()`, used at 851) —
 not a wider corpus.
+
+## A test that asserts on log output by reading a process-global logger unfiltered is green only by the runner's SCHEDULE — and serialising the classes that SWAP the logger does not stop the ones that EMIT (dng-auto-processor, 2026-09-23/24, UltraMagnus)
+
+**The setup, common to most .NET suites that assert on logging.** Tests capture events from Serilog's static,
+process-global logger. Every test class that REPLACES that logger is placed in one xUnit collection, which
+serialises its members against each other — the conventional fix for logger-swap races, and it was in place.
+
+**What an adversarial key measured on a correct tree.** A feature's new witnesses read EVERY event on the global
+logger, unfiltered, while test classes OUTSIDE that collection ran in parallel and logged the same message
+templates through the same static logger. On the subject as committed: **RED 10 of 10** runs co-scheduled with the
+emitting classes, **RED 5 of 5** under the feature's own natural test filter, RED 3 of 3 under a wider one, and
+**GREEN 3 of 3** with the witness class alone. The full gate was green only because, in its default schedule, the
+emitters happened to finish about 59 seconds before the witness class started.
+
+**Why the collection did not help.** A collection bounds who may SWAP the sink. It says nothing about who may WRITE
+to it, and every class that logs the same templates is a writer — none of them needs to replace the logger to
+contaminate a capture. The emitters were never members of the collection, and nothing required them to be.
+
+**Why it could not be argued down.** Our review adjudication refutes a finding by mutating the line it names and
+watching a check go red. This finding was not a mutation claim: it was a measured RED on a correct tree, so no
+refutation applied, and the key's own milder reading (the error runs only toward RED; the product is untouched) was
+recorded and not adopted. A gate witness that fails a correct tree under the feature's own filter is the hazard.
+
+**The remedy, landed, and proven unable to blind the witness.** Each capture pushes a per-capture probe id into
+the logger's context (Serilog `LogContext`) and reads back only the events that carry it — the idiom seven files of
+the same collection already used. After the change the co-scheduled race and the natural-filter run read GREEN, 10 of
+10 (138 tests each) and 5 of 5 (44), and the class alone 3 of 3 (14); the wider filter that had read RED 3 of 3 was not
+re-run. Then the two ways such a scope could hide a real failure were run as arms: with the enricher
+removed, the feature's flag-ON witness and four single-warning witnesses go RED; with the filter removed, the race is
+RED again, 3 of 3. The next review round's isolation seat, briefed independently, found no schedule under which a
+witness failed (18 of 18 runs green as committed).
+
+**Test for your board.** For every test that asserts on a shared sink — a log, a static event, a console — list the
+sink's WRITERS across the whole suite, not the members of the group that serialises its REPLACERS. If any writer
+runs outside that group, run the witness co-scheduled with it several times before trusting a green. Scope the
+capture by a per-test correlation id, then prove the scope cannot blind the witness: remove the enricher and require
+RED.
+
+**Prior art.** A bus sweep for `Serilog`, `LogContext`, `process-global` and `probe id` finds nothing. The nearest
+neighbour is `TRAPS.md` › "Isolation that no artifact names, and a tier of tests with no kill switch but the selector
+(AirMyPC, 2026-09-09, VIRTUAL-TEN)", whose isolation came from a global runner setting no artifact named. That is a
+different gap: there the isolation mechanism was unnamed; here it was named, in place, and bounded the wrong set.
+<!-- outbox:04ea512afe9f16d9 dng-auto-processor:273593c82d812377589d0e3eb669ce13588613d4/log-capture-witness-green-only-by-schedule -->

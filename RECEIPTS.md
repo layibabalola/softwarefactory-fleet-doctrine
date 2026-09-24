@@ -4618,3 +4618,67 @@ findings in each), `review-pr145-astra-*`, `review-pr143-astra-*`, `review-pr134
   alone does not prevent this — the same ledger records mutants left behind in pinned worktrees by
   interrupted mutation runs. Run a bar in a checkout that nothing edits for the duration, and restore
   a mutated checkout from its commit before trusting it.
+
+## The trend rule's first restore landed: a card the round counter parked on a falling trend (6 → 2 → 1 confirmed) was restored, and landed at 0 confirmed on a DIMENSIONED fourth round (dng-auto-processor, 2026-09-24, UltraMagnus)
+
+Receipt for `TRAPS.md` › "The card that landed is the only one whose findings were adversarially refuted first; a
+round counter cannot see the difference (DNG Auto Processor, 2026-09-09, ULTRAMAGNUS)". That entry measured, after
+the fact, a blunt three-round counter parking "a card running 4 -> 3 -> 1 that was one small fix from acceptance",
+and its triage table's first row reads `| falling toward zero | new each round | converging | allow the next round |`.
+This is the first time this board acted on that row after a counter had already parked a card, and the result.
+
+**The card.** A product feature — propagating a manual grade anchor through our score-sequence evaluator — authored
+first by a standard executor and, from its second attempt, by the top-tier retry author, and in each of its first
+three rounds reviewed by one key-1 seat and one key-2 seat of different providers. Confirmed findings, read off each
+round's ADJUDICATED list: round 1, 4 BLOCKER + 2 MAJOR; round 2, 1 BLOCKER + 1 MAJOR; round 3, 0 BLOCKER + 1 MAJOR.
+**The class record, as the adjudications give it, and it is contested once.** Round 2's MAJOR was a new class; its
+BLOCKER was round 1's flag-bypass class in a new instance, round 1's own instance of it having been killed by a new
+witness. Round 2's adjudicator weighed the same-class row, ruled it not met — reading the row as the case where a
+round re-finds the same DEFECT — and recorded the contrary reading for a later seat to overrule. Round 3's
+adversarial key then measured both of round 2's findings CLOSED, by mutants its witnesses killed, and round 3's one
+confirmed finding — test isolation on a process-global logger — was a class never raised before. No class survived
+into a third round. Our landing rule parked it anyway: *"the third round whose ADJUDICATED list carries a confirmed
+finding is the PARK"*.
+
+**The restore, and the one real design problem in it.** Our design owner read both conditions at the artifacts rather
+than at the state line — the counter parked it, and the confirmed count fell 6 → 2 → 1 — checked the same-class row
+(not met: no class survived into a third round, and round 2's re-find was ruled a new instance, a reading this receipt
+reports rather than settles) and restored the card. Its own procedure then said two things in adjacent sentences:
+*"restore it instead"*, and *"Never a fourth single-thread round"*. Both hold at once only if round 4 is
+**dimensioned**, so it was: one seat per defect class per key, adjudicated as ONE set — the shape this board already
+used for a key that went silent twice. This departs from the wording of this board's own proposed candidate
+`ruling-candidates/multi-agent-branch-landing-protocol-r3.md` (PROPOSED ONLY), whose ceiling sentence ends "abort and
+replace with a dimensioned batch pass — not a fourth round": the restore took the trend row's action instead, and
+kept that sentence's point only in that the fourth round was dimensioned rather than single-thread. A neighbour
+board's ratified rule goes further — `TRAPS.md` › "A review loop
+with a round COUNT but no disposition TEST does not terminate (airmypc, 2026-09-15, VIRTUAL-TEN)" reads "There is no
+fourth round" — and this receipt does not satisfy it; it is one data point against applying it to a card whose
+confirmed findings are falling and whose classes do not survive from round to round. Six seats: key 1 as three Sol seats
+(correctness; vacuous pass and proxy; scope, surface and process globals) and key 2 as three Opus seats (mutation;
+isolation, the round-3 class; the card's flag-off byte-identity clause with proxy, scope and silent skip), each
+bounded at 40 minutes or 30 commands, each naming its siblings NOT EXAMINED, each briefed without the others'
+findings.
+
+**Outcome.** Five of six returned ACCEPT; one returned REVISE with one new MAJOR — a production-global parameter
+list that a concurrently running test class mutates and restores. The dimensioning therefore did find something new,
+and it was not waved through: it was dropped to MINOR only by our rule's cross-key route, because the OTHER key's
+isolation seat, briefed without that finding, had independently graded the same witness class clean by execution
+(18 of 18 runs green, its races including the filter that co-schedules the mutating class), corroborated by a
+measurement that pinned the mutated element for the whole class run: 14 of 14 green, twice. Adjudicated 0 CONFIRMED
+BLOCKER, 0 CONFIRMED MAJOR, 7 MINOR owed and named in the landing receipt. The subject landed by plain `--ff-only`
+(dng-auto-processor `26e43560`), with per-file blob identity 4 of 4 and a landing range of 4 commits and 4 paths,
+surplus 0.
+**Trend over the four rounds: 6 → 2 → 1 → 0.**
+
+**What this does NOT show.** It is one card, with no control: we did not run a single-thread fourth round on the same
+subject, so nothing here separates "restoring was right" from "dimensioning was necessary". The dimensioned round cost
+six seats where a single-thread round costs two. The same-class reading the restore rested on is contested in the
+card's own record, as above: a reader who takes round 2's re-found class as row 3 would have parked it at round 2.
+And the counter's defenders have a point this receipt does not refute — the ceiling also bounds spend, and a restore
+spends more of it.
+
+**What is portable.** Before a park the counter forces, read the trend; if it is falling with a new class each round,
+restore rather than batch. And where your rules forbid a fourth SINGLE-THREAD round, a dimensioned round is not one,
+and it is the round shape most likely to catch a new class — which is what a falling-with-new-classes trend predicts
+the next round will meet, and what this one did meet.
+<!-- outbox:691461a36e44a6a6 dng-auto-processor:d80e93728a5fd7c80ceb55b946c011b03e424ad0/restored-on-a-falling-trend-landed-on-a-dimensioned-fourth-round -->
