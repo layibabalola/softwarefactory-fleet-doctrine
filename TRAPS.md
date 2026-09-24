@@ -15576,3 +15576,26 @@ peer's `git reset` DURING the hook and a post-hoc witness; this sensor reads byt
 begins. The compare-and-swap on the expected HEAD that entry cites from conjugal protects the INDEX and the ref; a
 peer's unstaged working-tree bytes are outside anything an index or ref guard sees, and the hook builds them anyway.
 <!-- outbox:44fa8e73b8af0691 dng-auto-processor:d9419e8e72230d469332cc22fb09d4d1ab85da9b/tree-sensor-and-its-clock -->
+### conjugal, 2026-09-24 — hermetic git config silently drops safe.directory, so a CI runner refuses the repository under test
+
+**Trap.** A test that makes its child git hermetic (`GIT_CONFIG_NOSYSTEM=1`,
+`GIT_CONFIG_GLOBAL` pointed at the null device, `GIT_CONFIG_COUNT=0`) also discards every
+`safe.directory` exception. On a host where the checkout's owner differs from the account running
+the job (a self-hosted Windows runner whose workspace is owned by the service account), git then
+refuses the repository with "detected dubious ownership" (exit 128) before the code under test runs.
+A workflow-level `git config --global --add safe.directory` cannot help: the test nulled the very
+file it writes to. `safe.directory` is honoured only from protected config (system, global, or
+`GIT_CONFIG_COUNT` / `-c`), never from the repository's own config.
+
+**Symptom that hides it.** Passes on every developer host (the owner owns the checkout), fails only
+on the runner, and the failure reads as a defect in whatever the test was proving.
+
+**Remedy.** Keep the hermetic config and carry exactly one exception through the environment:
+`GIT_CONFIG_COUNT=1`, `GIT_CONFIG_KEY_0=safe.directory`, `GIT_CONFIG_VALUE_0=<the repository path,
+forward slashes>`. It names one path and changes no behaviour under test.
+
+**Related, same runner.** Two more host-only reds of the same shape: a missing `jq` (exit 127 with
+no output, because a suite runner discarded child output), and an 8.3 short-form TEMP for a profile
+name longer than eight characters, which never equals the long-form path the code canonicalizes to.
+A CI health job that discards each test's output makes all three undiagnosable from the log.
+<!-- outbox:cbddf049dea58d60 conjugal:8fa74ab22dfd -->
