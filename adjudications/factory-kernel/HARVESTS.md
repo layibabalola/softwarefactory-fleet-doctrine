@@ -466,3 +466,38 @@ named the bench inside the profile; the landed texts scope by the bench's condit
 dispositions file's Rule paragraph. Kernel unchanged at r5, 2,867 of 3,500 words; measured-objective unchanged at r3, 391
 words. Dispositions: `adjudications/factory-kernel/dng-auto-processor.dispositions.md`, rewritten for blob `d6a5f40f` and
 superseding its own ruling on blob `1f2eceff` without withdrawing any disposition that ruling recorded.
+
+## 2026-09-24 — harvest 20260924T144908Z-f4c8eff1 (dng-auto-processor third filing, blob a018daf6)
+
+| date | harvest | filing | blob | kernel | profile | subjects | FIT | FRICTION | BREAK | N/A | UNEXERCISED | unresolved BREAKs | arbiter |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 2026-09-24 | 20260924T144908Z-f4c8eff1 | dng-auto-processor | a018daf665bffb08a3e93211a22161db42b25fba | r5 (unchanged) | code@r9 + measured-objective@r3 (both unchanged) | 0 end-to-end; 0 declared; 15 receipted route landings plus 2 with receipts uncommitted at cutoff, and 22 off-route PRODUCT commits, all uncounted; window-opened-before-kernel=no | 7 | 0 | 0 | 0 | 5 | 0 submitted or established | gpt-6-astra (read-only arbiter seat; not a steward filing) |
+
+Derived, not asserted. Re-run: `python tools/kernel-e2e.py --json`. Before this row: `closed_end_to_end: 0`,
+`ledger_rows: 18`, `ledger_totals: FIT 97 · FRICTION 80 · BREAK 5 · N/A 0 · UNEXERCISED 53`. After it: 19 rows;
+104 FIT · 80 FRICTION · 5 BREAK · 0 N/A · 58 UNEXERCISED; closed end-to-end stays 0.
+
+**§5 criterion 1 — CLOSED END-TO-END SUBJECTS: 0.** Still 0/5, and it has been 0 at every harvest. This filing declares
+0 subjects and 0 in-window declarations — the newest `k5-declaration.json` predates its window — and its 15 receipted
+route landings, 2 later-receipted landings and 22 off-route PRODUCT commits are all reported as mechanism evidence and
+never counted.
+**§5 criterion 2 remains MET** on the 2026-09-17 finding (`code`, `hardware-in-loop`, `measured-objective`, the latter
+two the non-test-suite pair); nothing this round touches it.
+**§5 criterion 3 does not start:** kernel and participating-profile bytes match the preceding harvest's recorded spec
+commit `9e230759…` and remain unchanged here, so the unchanged-digest half holds across this pair — but criterion 3
+also requires fresh end-to-end evidence meeting criteria 1 and 2, and criterion 1 is 0. Matching digests and zero
+unresolved BREAKs cannot substitute for that evidence.
+**Criterion 4 has never started**; no owner ratification of the kernel appears in `RULINGS.md`. The owner gate is idle,
+not jammed.
+**Members due — 2 have NEVER filed:** `adversarialllm`, `salesforce-tools`. Steward self-filing `conjugal` still reads
+STALE (routed to cloudvore as arbiter in the 2026-09-18 block); this round adjudicates only dng.
+
+**What this round changed:** no spec text at all. The filing submits 0 BREAK and 0 FRICTION; its seven
+INSTANCE-FAILURE lines count toward health, never toward conformance or a text change (kernel §4), and its five
+UNEXERCISED lines are not evidence about their clauses. The arbiter's substantive audit adds one further
+INSTANCE-FAILURE inside a submitted FIT — the `P:code claims` canonical-before-and-after-audit fence, dispositioned
+on its own line — which changes no submitted census cell in the row above. Kernel unchanged at r5, 2,867 of 3,500 words; `code.md`
+unchanged at r9, 1,183 words; `measured-objective.md` unchanged at r3, 391 words. Dispositions:
+`adjudications/factory-kernel/dng-auto-processor.dispositions.md`, rewritten for blob `a018daf6` and superseding its
+own ruling on blob `d6a5f40f` without withdrawing any disposition that ruling recorded — the `code.md` r9 increments
+it produced remain in force.
