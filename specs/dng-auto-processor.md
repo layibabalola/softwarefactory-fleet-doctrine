@@ -1,5 +1,5 @@
 # DNG Auto Processor — factory spec (one writer: the `dng-design-steward` seat, docs/13 P-STEWARD step 7d; a posture change made anywhere else reaches this file as a census item of that seat's next pass)
-source_commit: 3e187e01edbd8655a2c9615d54e7d8cc11f97139
+source_commit: fbd94c536e4e8a770e112cf9c63b7ce14571df99
 
 **Machine:** ULTRAMAGNUS (personal box). **Project root:** `C:\code\DngAutoProcessor - Claude`.
 **Product:** auto-grading pipeline for DNG timelapse clips emulating the operator's LRTimelapse
@@ -39,8 +39,11 @@ section it cites. Below the dispositions table is history: "current" or "must kn
   name (`<kind>.<model>.<agentId>.<ext>`), because a derived seat name collides by construction; fixed-name slot
   files are copied before a rewrite, never renamed (next rule). **A peer that advances a PHASE changes no state
   line — it writes a launch json — so a launch also re-derives the card's phase first, and stands down when the
-  derivation no longer names that launch**: a state line is blind to the commonest overlap, a host re-entering on
-  a subagent's completion, and two sessions of one claim otherwise launch two writers into one worktree.
+  derivation no longer names that launch**: a state line is blind to a routine overlap, a host re-entering on a
+  subagent's completion, and two sessions of one claim otherwise launch two writers into one worktree. **A launch
+  record already written when a seat stands down leaves the launch set in the same act** (renamed `standdown.*`):
+  left in place it asserts a phase that never started, the liveness rule then calls its absent seat frozen, and
+  that remedy relaunches into a live seat's worktree.
 - **A seat is live by evidence read INSIDE a 90 s poll, never by file age, a lease or the clock** (§3): a write
   that appears, the seat's own process (its `pid` on the CLI route) or its host's API connection. Its first act,
   if it can write, is one progress line, and none ten minutes after launch means it never started; a seat launched
@@ -81,7 +84,12 @@ section it cites. Below the dispositions table is history: "current" or "must kn
   takes the instance name like every other seat file, and a fixed name an older attempt wrote reads the same way;
   a phase machine that looks files up by fixed name while its naming rule forbids fixed names makes every launch
   record either invisible or a file two peers are aimed at. The rule that sends a finished author to its commit
-  step yields while a commit step already launched has no output. **Forced progress never forces an illegal act** (§3): a tick that moved
+  step yields while a commit step already launched has no output. **A subject committed while its author is still
+  live is not finished**: a commit made early as insurance against the author's death is not the phase's output,
+  so FINISHED waits until the committing seat has returned — its return written after its own launch record's
+  start, never read off the commit's time, which a rebase rewrites — or is shown dead. **A phase that has returned
+  is ready for its next step whatever the clock says**: an approach review launches once the approach seat
+  returns, not only after its product has stood still for a fixed time. **Forced progress never forces an illegal act** (§3): a tick that moved
   nothing PARKs, REOPENs or SPLITs one item unless each is derived unavailable and named.
 - **A card is admissible before it is opened** (§4): allowlist paths are relative to the git root; MODIFY means
   `git ls-files --error-unmatch` exits 0; CREATE means it exits 1, `git check-ignore -q` exits non-zero with any
@@ -103,7 +111,9 @@ section it cites. Below the dispositions table is history: "current" or "must kn
   it is not opened in that form. A bar needing a threshold or a heuristic is the warning that the class has been
   re-entered.
 - **Land on per-file blob identity AND on the enumerated landing RANGE** (§4): every `binding.json` path has one
-  blob at the reviewed and the landed sha, never root-tree equality, and patch-id only corroborates. **Blob
+  blob at the reviewed and the landed sha, never root-tree equality, and patch-id only corroborates. The manifest
+  names the whole base-to-subject diff the keys reviewed, never one commit's: a committer that lists only its own
+  commit's files leaves the check passing over a population nobody declared. **Blob
   identity checks the paths a key READ and the fast-forward moves a RANGE**, and the two are the same set only
   when the subject is based on master: enumerate `master..<subject>` before the merge and fail closed on any
   path absent from `binding.json` and present in the PRODUCT set, because a green suite is not a review of bytes
@@ -177,6 +187,11 @@ section it cites. Below the dispositions table is history: "current" or "must kn
   counted as everything outside the product set takes in every machine-written cache, CSV or data summary an
   experiment commits, and fires on bytes no seat wrote; coordination is the inert paths' Markdown and the landing
   receipts, and any other inert path is data that enters neither side.
+- **An exact test reports the range its statistic can ATTAIN, from every marginal it holds fixed, before its
+  verdict is read** (§6): a card scoring an exact or permutation statistic states its α and the statistic's
+  attainable minimum and maximum with the label counts AND the prediction counts held fixed; a value at that bound,
+  or a range that cannot reach α, is VOID naming the bound — never a pass, a fail or a refutation — and a
+  degeneracy test on one marginal is not this gate.
 - **The authority wall has an addressee** (§7a): a seat at a wall appends one bounded token naming the artifact
   and the authority exceeded; one owner seat acts only on tokens and parks; a token about a seat's behaviour
   closes only on that seat's next receipt; no seat writes its own procedure, and no tick edits its governing
@@ -203,7 +218,10 @@ section it cites. Below the dispositions table is history: "current" or "must kn
   derived lever set is empty, a lineage closes or parks twice on one class, or evidence invalidates a premise,
   direction is a design card by the top-tier seat by turn, challenged once by the other top-tier family: at most
   three ranked levers, each with arms, a null, an arms-differ witness, a stop rule and a compute estimate; a decision
-  swarm then chooses. A swarm, convened by the USER-directed orchestrator for a consequential unresolved choice only,
+  swarm then chooses. The cop opens such a card like any other when a trigger holds: a reservation of the opening
+  to another seat, stated only in a queue line or in a defect token's reason clause, is no rule — a queue of
+  pointers is reviewed by no one as a rulebook, and such a clause once routed a design call, tick after tick, to
+  the one seat barred from opening cards. A swarm, convened by the USER-directed orchestrator for a consequential unresolved choice only,
   runs Opus, Fable and Astra lanes at high effort and decides 2 of 3 with both providers in the majority; an
   Anthropic-only majority against the Astra lane has that dissent's decisive premise measured and one re-vote, and
   every decisive premise is re-measured before acting. An instrument run pauses and resumes on one model id and
@@ -221,8 +239,9 @@ section it cites. Below the dispositions table is history: "current" or "must kn
   its meter — never because the error window emptied while nothing ran, since a seat that is not launched cannot
   return an error; two models of one provider are never
   cross-family; a card needing the network first takes a Claude-hosted seat, which is not darkness.
-- **Evidence lives outside git, which holds receipts of at most 2 KB** (§5); a card points at its ledger and is
-  never the chronicle; caps are structural, never byte gates whose last remedy drops evidence (§5). **A DAILY
+- **Evidence lives outside git, which holds only the landing receipts** (§5) — sha256 and path of every evidence
+  file and a row per seat, with no byte gate; a card points at its ledger and is never the chronicle; caps are
+  structural, never byte gates whose last remedy drops evidence (§5). **A DAILY
   line belongs to its own UTC day** (§5; docs/13 P-COP Step 5 points at it): the day is the writing
   tick's own UTC date, and no tick rewrites, re-dates, folds or carries forward the totals of an earlier day's
   line, so a new day's first tick starts a new line; a day left with no line stands as a hole, never
@@ -235,7 +254,10 @@ section it cites. Below the dispositions table is history: "current" or "must kn
   silently rewrites every line as one diff, with the intended one-line append buried inside it. Under autocrlf
   a whole-file line-ending rewrite is invisible to a numstat-style diff summary, so no ordinary review
   instrument reports it, and a later per-file blob-identity check then fails for a reason nobody can account
-  for.
+  for. **And the lines a seat adds carry no control byte but a TAB and the line ending** (§5): a Windows path
+  written through a shell string that interprets escapes turns `\a` into a bell and `\r` into a bare carriage
+  return, invisible in every rendered view, and a line-based reader stops at the carriage return; write such text
+  with a file-writing tool and scan the added lines before staging.
 - **Worktrees are sparse; a free-space floor holds creation, and an unreadable reading holds it**; HELD-FOR-DISK
   spends no attempt; the item worktree goes on landing, a key's once its verdict is written (§10 "Task
   worktrees", a USER unfreeze in §0). **A lock file that the factory's own mandated restore — or any build that restores — rewrites is never the
@@ -245,7 +267,10 @@ section it cites. Below the dispositions table is history: "current" or "must kn
   removal is never otherwise forced on an item worktree: a mandated setup step that dirties the copy the commit,
   rebase and cleanup rules refuse to touch is a permanent latch, and the cleanup rule's own "stop if a defect
   report names this worktree" makes REPORTING it the act that makes the latch permanent. The cop's refutation
-  probe is removed on a key's scratch-worktree terms.
+  probe is removed on a key's scratch-worktree terms. **A removal is held only by a card that OWNS or USES the
+  worktree — its own, or one its seats read, such as a frozen evaluator — never by one that only MENTIONS it**: a
+  state line that cites a path as evidence — a load reading, a quoted receipt — would otherwise latch what it cited
+  until it closed, because a card that correctly records why it waited names what it waited on.
 - **CLI currency upgrades on a six-hour clock with no idle gate, smokes the launch form the tick really uses —
   isolated from user hooks — and rolls back only on evidence** (§10, USER, §0; fleet R13, adopted from this bus):
   a failed smoke reinstalls the previous version only when that version passes the smoke the new one failed,
