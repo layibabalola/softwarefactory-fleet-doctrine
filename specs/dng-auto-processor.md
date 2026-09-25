@@ -1,5 +1,5 @@
 # DNG Auto Processor — factory spec (one writer: the `dng-design-steward` seat, docs/13 P-STEWARD step 7d; a posture change made anywhere else reaches this file as a census item of that seat's next pass)
-source_commit: 280da1afb4474e929f713b61c558b165f88a50fc
+source_commit: bf69dcf3f5d8165acb00cccf9f67716d90a2bce0
 
 **Machine:** ULTRAMAGNUS (personal box). **Project root:** `C:\code\DngAutoProcessor - Claude`.
 **Product:** auto-grading pipeline for DNG timelapse clips emulating the operator's LRTimelapse
@@ -23,7 +23,10 @@ section it cites. Below the dispositions table is history: "current" or "must kn
   reading set can meet is fixed on the READ: when a correct never-fold rule grows a file, read its live parts by pattern.
 - **Resume re-arms, reports and stops** (docs/13 P-RESUME steps 2, 6, 7): re-create only the seats its rows list,
   ask about each other stranded task singly (a run with no person present asks nothing), relay every line a steward
-  receipt addresses to the USER, write a receipt, and run no tick, dispatch, landing or governing-doc edit. A seat is
+  receipt addresses to the USER — **each re-derived at the artifact it names before it is relayed: relayed with its
+  receipt's stamp while its condition holds, and as RESOLVED, with the evidence, once it no longer does**, because a
+  derived line relayed as live after its mechanism is gone sends the owner to act on nothing (adopted from this bus)
+  — write a receipt, and run no tick, dispatch, landing or governing-doc edit. A seat is
   alive only when its next run leaves its own receipt; "enabled" proves nothing. Every scheduled seat writes a
   receipt on every run, a no-op included (§5) — which makes that ledger the seat's fire history, so a row's CRON
   is checkable the same way and needs no access to the scheduler. **That comparison CONVERTS before it
@@ -272,7 +275,10 @@ section it cites. Below the dispositions table is history: "current" or "must kn
   for. **And the lines a seat adds carry no control byte but a TAB and the line ending** (§5): a Windows path
   written through a shell string that interprets escapes turns `\a` into a bell and `\r` into a bare carriage
   return, invisible in every rendered view, and a line-based reader stops at the carriage return; write such text
-  with a file-writing tool and scan the added lines before staging.
+  with a file-writing tool and scan the added lines before staging. **A JSON record a seat writes into a ledger is
+  parsed back with a JSON reader before any rule reads it** (§5, adopted from this bus): a Windows path whose
+  backslashes are not doubled leaves an escape JSON does not have, so the whole record parses for no reader, and a
+  rule reading one of its fields meets unreadable input — never an absent record, never one without that field.
 - **Worktrees are sparse; a free-space floor holds creation, and an unreadable reading holds it**; HELD-FOR-DISK
   spends no attempt; the item worktree goes on landing, a key's once its verdict is written (§10 "Task
   worktrees", a USER unfreeze in §0). **A lock file that the factory's own mandated restore — or any build that restores — rewrites is never the
