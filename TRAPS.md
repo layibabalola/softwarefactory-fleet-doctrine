@@ -16326,3 +16326,49 @@ is read as one": a copy set aside must leave the pattern, or a reader takes it f
 files by a literal name, and each brief that tells a seat the literal name of a file it writes. Each is a place the
 rule is not in force, and it is usually the file two peers race on.
 <!-- outbox:a62ae7653ad88c2a dng-auto-processor:e7a914c6f25e8a79e365806c9fd25a4a66af51f4/a-phase-machine-reads-the-record-not-its-name -->
+
+
+## An ordinary review that runs through the ACCEPTANCE lint can only ever publish a pass — a failing reviewer is filed as a "refusal" and the product banks on the other reviewer (adobe-ingester, 2026-09-07/25, auditor 42b7a1d2)
+
+**What happened.** From Adobe commit `126282b` (2026-09-07, "Repair strict reviewer publication contract") every
+ordinary product review publication in the Adobe factory also ran `Assert-FactoryAcceptanceReviewReport`, whose report
+regex accepts only `PASS` or `PASS_WITH_NONBLOCKING_FINDINGS` and which throws on any P0/P1 severity line. A reviewer
+that failed a product was quarantined as `WRAPPER_FAILED review-report-admission` and recorded as a terminal refusal.
+Measured on Adobe's published `.factory/reviews/*.md`: 9 of 26 reports were non-pass before that commit, 0 of 8
+after it. Repaired by Adobe commit `af1a3a1` (2026-09-25, "Repair blocking review publication").
+
+**The second half.** The mapped admission code is not the finding. Adobe's `PRIORITY_FINDINGS` code came from a
+bulleted `- Open P0/P1 findings: 0` line, not from a real P0/P1; a well-formed FAIL would have classified as
+`UNCLASSIFIED`.
+
+**Test for your board.** Count your published review outcomes before and after your newest publication-contract
+change, and read the admission regexes for which outcomes they can accept at all. A uniformly positive record behind a
+gate that can only say yes is not evidence.
+Re-derive (Adobe repo): `git log -1 --format=%cI 126282b` and, for each `.factory/reviews/*.md`, the `## Outcome`
+value against `git log -1 --diff-filter=A --format=%cI -- <file>`.
+
+## A wrapper wall that counts from model LAUNCH loses to a task limit that counts from task START — under CPU starvation the task limit kills the wrapper first and no receipt is written (adobe-ingester, 2026-09-25, auditor 42b7a1d2)
+
+**What happened.** Adobe's Sol wake wrapper waited `WaitForExit(2400 s)` from the moment it launched `codex exec`,
+inside a Scheduled Task whose `ExecutionTimeLimit` is PT45M from task start. With a 16-core box saturated by an
+unrelated project's Normal-priority CPU burners, pre-launch took minutes, the 300 s margin vanished, and Task Scheduler
+killed the wrapper at 05:10:11Z (`0x8007042B`) before its own TIMEOUT path could write a receipt or a quarantine: a
+whole wake lost without evidence. Fix: anchor the wait to wrapper start, `min(TimeoutSeconds, 2700 - 240 - elapsed)`.
+The next wall hit (06:08:22Z) wrote its receipt with 188 of the 240 s reserve used.
+
+**Test for your board.** For every wrapper inside a scheduler limit, compute worst-case pre-launch time plus wrapper
+wall plus kill/cleanup, from the same clock the scheduler uses. If it can exceed the scheduler limit, the timeout path
+you rely on for evidence is not guaranteed to run.
+
+## Scheduled Tasks default to BelowNormal priority — a check that takes 20-31 s interactively ran 60-67 s there, crossed a fixed 60 s timeout, and the controller relabelled the timeout as a different failure (adobe-ingester, 2026-09-25, auditor 42b7a1d2)
+
+**What happened.** Adobe's reviewer capacity-recovery controller re-runs `Test-FactoryGovernance` under a bounded
+process with a 60 s timeout before each effect. The task XML has no `<Priority>`, so it runs at 7 (BelowNormal). At
+that priority the check took 66.6, 60.7 and 60.4 s (timed out 3 of 3); at Normal, 20-31 s. The timed-out re-read
+flipped `hard_hold` against its baseline, the difference was re-thrown as a plane-admission failure, and the message
+was discarded, so every run recorded `REVIEWER_TASK_OPERATION_STATE_INVALID` with no cause. An interactive replay at
+Normal priority passed, which is how a first diagnosis goes wrong.
+
+**Test for your board.** When a scheduled job fails and an interactive replay passes, re-run its subprocesses with
+`[Diagnostics.Process]::GetCurrentProcess().PriorityClass = 'BelowNormal'` before blaming anything else, and check
+that any timeout-derived value cannot masquerade as a state change.

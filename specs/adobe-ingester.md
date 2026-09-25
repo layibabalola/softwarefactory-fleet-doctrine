@@ -1173,3 +1173,37 @@ measured. Filed to Sol at advisory ingress `10ccd732` seq 7.
 
 Bounds: measured receipt only, on Adobe's own single-writer surface. No disposition recorded, no
 `.factory/` write, no lane seat, no task enabled, and Sol's in-flight wake receipt was not opened.
+
+
+### MEASURED 2026-09-25 (adobe-ingester, auditor 42b7a1d2) — kernel status corrected; first product motion since the kernel; owner channel
+
+**Kernel status, corrected.** Earlier sections of this spec say `ADOPT: not recorded` (the kernel declaration block and its 2026-09-20 note). That was wrong when written: Adobe's
+HUB records ADOPT of `fleet-factory-kernel` r4 with `code@r4` at 2026-09-16T02:34Z, and `state.yaml` carries it.
+What IS true on 2026-09-25: Adobe is not conforming. The last PROFILE DECLARATION in Adobe's HUB is 2026-09-21 (Q-041);
+none was made for the two product work orders or the six control generations of 2026-09-25 (K5), and no K12 filing
+exists for that window. The bus kernel has moved past r4; Adobe has not taken the later-revision decision. A
+re-alignment owner directive (2026-09-25g) is staged for the owner, not yet delivered.
+
+**Product motion (measured, not accepted).**
+- `WO-PROD-PDF-INTAKE-CORE-002`: first independent review published — Sonnet `PASS_WITH_NONBLOCKING_FINDINGS`;
+  Opus refused at report admission 4/4 (`PEER_DISCLOSURE`). No acceptance.
+- `WO-PROD-ADOBE-SESSION-ROUTE-FIRST-003`: product commit Adobe `fffe579` (route-first session verdict), reviewed at
+  Adobe `ecf701b` — Sonnet `PASS_WITH_NONBLOCKING_FINDINGS`; Opus report retained (outcome `BLOCKED_BY_MISSING_EVIDENCE`,
+  zero P0/P1, ROUTE-AC-01..06 PASS) but unpublished because of the pass-only gate (TRAPS.md, this date). No acceptance.
+- `WO-G0-A02` rev1 closed `CAPABILITY_UNAVAILABLE` non-falsifying; revision 2 is contracted and held for one attended
+  owner sitting (deadline 2026-09-27T13:33:33Z), currently blocked by Adobe's own uncommitted control work.
+
+**Owner channel.** Adobe owner directive 2026-09-25d (delivered, Adobe HUB 2026-09-25T17:39:22Z) makes one
+auditor-orchestrator chat the owner's channel: a verbatim relay counts as an owner message only if it cites a transcript
+line the coordinator can verify on disk (Claude: `type=user`, `userType=external`). Lesson worth taking: a presence
+gate written as "a direct message in the coordinator's task" has no live producer when the coordinator only runs as a
+headless scheduled job; Adobe's first relay was correctly refused for that reason.
+
+**Staged, not ratified (do not adopt from here).** Owner directive 2026-09-25f proposes that Adobe's coordination seat
+is a provider-neutral role (Codex or Claude runner, one lease holder, owner-event handover), citing the ratified
+Cloudvore provider-neutral failover ruling in RULINGS.md. It binds nothing until the owner approves it and Sol records
+it.
+
+Bounds: measured entries only, on Adobe's single-writer surface and append-only TRAPS.md. No `.factory/` write, no lane
+seat, no disposition. Re-derive: in the Adobe repo, `Select-String .factory/coordination/HUB.md -Pattern 'PROFILE
+DECLARATION|fleet-factory-kernel r4' | Select -Last 3` and `git log -8 --format='%h %cI %s'`.
