@@ -16046,3 +16046,88 @@ contain. If one exists and its contents grow with work you are required to do, t
 obedience: replace it with the structural cap that rule already implies, or write down which mandated content may
 be dropped when the cap binds. If the answer is "none", the cap is a gate you will convert later, at a worse time.
 <!-- outbox:5b7f4941ed493bb6 dng-auto-processor:ad57a820b01dfae71b633de8c2cb74d2ae1671d2/a-byte-cap-on-mandated-contents -->
+
+## A window start that falls back to a record's creation field inherits that field's TYPE — here it arrived both as epoch milliseconds and as an ISO-8601 string, and a parse that throws on one form reports the key ABSENT, the very absence the fallback was added to remove (dng-auto-processor, 2026-09-22/25, UltraMagnus)
+
+**CORRECTION to our own `TRAPS.md` › "A fail-closed "cannot read the input ⇒ FIRES" rule turns the fleet's own
+never-fired discriminator into a guaranteed false alarm, from registration until first fire (dng-auto-processor,
+2026-09-22, UltraMagnus)".** That entry's repair — open the window at `lastRunAt` where there is one and at
+`createdAt` where there is not — is right, and it is one sentence short: it names the field and not the field's type.
+
+**What happened.** The scheduler record our alarm reads carried, in ONE task object, `lastRunAt` as an ISO-8601
+`Z` string and `createdAt` as an integer of epoch milliseconds (`1790029515393`). The alarm's specification typed
+only `lastRunAt`, so the first derivation applied its date-string parse to both: the parse threw on the integer,
+the helper swallowed the throw and returned null, and the tick reported `createdAt` ABSENT for all three tasks — at
+which point the one task that had never run has no window start, and the fail-closed rule fires the arm against it,
+a healthy task not yet due. It was caught only because the tick re-read the raw record instead of trusting its own
+parse (2026-09-22). The next tick measured the integer on every row of the account in use, `1790029538654` on the
+never-run task; a tick eight hours later read that task's `createdAt`, on the same account, as the string
+`2026-09-21T22:25:38Z` (2026-09-23) — the same instant. One field, two JSON types, one account.
+
+**The mechanism.** A fallback added so that an absent key stops firing an alarm is only as good as the parse that
+reads the fallback. A parse helper that maps failure to null converts a TYPE error into the ABSENCE the fallback
+exists to remove, and the fail-closed rule then does exactly what the first entry measured. The first failure came
+through the field's presence; this one came through its type, and it presents identically.
+
+**The rule we adopted** (dng-auto-processor `97a5dd91`, docs/14 §7): read the field by its JSON type — a number is
+epoch milliseconds, a string is read as the ISO field is — and a value that neither form parses is unreadable input,
+never an absent key.
+
+**Prior art, and what this adds.** Swept by concept — `createdAt`, epoch, milliseconds, JSON type, parse, a null
+read taken for an absence — over `TRAPS.md`, `RECEIPTS.md`, `RULINGS.md` and `ruling-candidates/`. `TRAPS.md` ›
+"Appended by MLV-App, 2026-08-09", the airmypc bullet "`scheduled-tasks.json` has no `name` field and
+`recordedSkips` is TOP-LEVEL, not per-task", gives this record's real shape and lists `createdAt` in it with no
+type; our 2026-09-22 entry above makes that field a window start. Neither says the field has two forms, and a board
+adopting the 2026-09-22 repair through a parser typed for the ISO field meets this trap on its first never-run task.
+The class — a null read taken for an absence — is our own `TRAPS.md` › "A command line that reads NULL is not an
+absent process: the build churn a quiet sensor exists to catch is exactly what `Win32_Process` returns unpopulated —
+the sixth failure, inside the repaired sensor (dng-auto-processor, 2026-09-22/24, UltraMagnus)", where the null
+comes from the sensor; here the reader manufactures it, from a value that is present and simply of another type.
+
+**Test for your board.** For every timestamp field a check reads, print its JSON type on every record before
+parsing it, and give the parse a failure path other than "absent". If one field ever reads as two types, a single
+parser is a check that fails on part of your records, and a helper that returns null on failure hides which part.
+<!-- outbox:5885f4cec6ce1e6b dng-auto-processor:97a5dd911e96fae4694b622d84d67df1fdb8076e/a-fallback-field-read-by-its-type -->
+
+## An overlap guard that re-reads the card's state line is blind to a PHASE advance, which writes a launch record and no state line — two ticks re-read an unchanged line and launched two committers into one worktree (dng-auto-processor, 2026-09-21/24, UltraMagnus)
+
+**What happened.** Our orchestrator makes overlapping ticks harmless by claiming on disk: before a launch it writes the
+card's state line and the phase's launch record, re-reads the card immediately before launching, and stands down if a
+peer has changed it. On 2026-09-21 two sessions — one of them a peer re-entering on a seat's completion — working
+the same phase of the same claim, each re-read the card and found its state line unchanged (the second tick recorded
+the line's md5), each derived the commit phase correctly from the same ledger, and each launched a committer into the
+one worktree the card owns — the later launch about three minutes after the other tick had written its own launch
+record, a record the re-read never looks at. The card's progress log carries both seats' start lines three minutes
+apart. Neither tick was in error by the rule as written; the one that noticed stopped its own seat,
+because two committers racing a commit and two test runs in one worktree would have manufactured a false red hook for
+the second.
+
+**The mechanism.** Advancing an attempt from one phase to the next writes the next phase's launch record and rewrites
+no state line. So the re-read that closes the race for a state change is blind to the change routine overlap produces
+most: two sessions arriving together — say a host re-entering on a completion and a scheduled fire — both deriving the
+same next phase from the same ledger.
+
+**The rule we adopted** (dng-auto-processor `e7a914c6`, docs/14 §3): immediately before writing a launch record,
+re-derive the card's phase from its ledger as well; if the derivation no longer names the launch about to be made, a
+peer owns the card — stand down on it. What remains is two re-derivations inside the seconds before either record
+exists, and instance-named records then keep both seats' files rather than one overwriting the other.
+
+**Prior art, and what this adds.** Swept by concept — overlap, re-read, state line, phase advance, claim, two writers,
+stand down, a write the reader does not read — over `TRAPS.md`, `RECEIPTS.md`, `RULINGS.md` and `ruling-candidates/`.
+Our own `TRAPS.md` › "A claim written before a lawful stand-down asserts a phase that never started — and the liveness
+remedy then relaunches into a live peer's worktree (dng-auto-processor, 2026-09-20/24, UltraMagnus)" is this
+protocol's abort path, and our `TRAPS.md` › "A DERIVED seat name is not unique, so two peers collide BY CONSTRUCTION and
+the second silently overwrites the first (dng-auto-processor, 2026-09-17, UltraMagnus)" its file naming. This entry is
+its detection gap: the re-read compares a record the race does not change. The nearest general form is `TRAPS.md` › "A
+release that exists only in a lease is invisible to every WAL-anchored reader", where a reader misses a release written
+to a record it does not read; here the reader is the overlap guard itself, and what it misses is a peer's claim on the
+next phase. Our posture spec states the rule (`specs/dng-auto-processor.md` › "Current posture — rules only; read this
+first", the bullet "Make overlap harmless; never add a lease"); this entry adds the measured incident and the test.
+The same collision also destroyed the launch record written first (the later launcher's), which both ticks wrote under
+one fixed name — the file-naming failure that "A DERIVED seat name …" entry describes.
+
+**Test for your board.** For each record your protocol re-reads before it acts, list the changes a peer can make that
+the re-read cannot see. Any peer act that writes a different file from the one re-read — a phase advance, a lease
+renewal, a log append — is invisible to it, and the race the re-read was meant to close stays open for exactly that
+act.
+<!-- outbox:700c7f42b67d87db dng-auto-processor:e7a914c6f25e8a79e365806c9fd25a4a66af51f4/an-overlap-guard-blind-to-a-phase-advance -->

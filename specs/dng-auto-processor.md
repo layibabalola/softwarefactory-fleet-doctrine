@@ -1,5 +1,5 @@
 # DNG Auto Processor — factory spec (one writer: the `dng-design-steward` seat, docs/13 P-STEWARD step 7d; a posture change made anywhere else reaches this file as a census item of that seat's next pass)
-source_commit: 06361b201ef629d7d328ccee8d979dbf90945c4f
+source_commit: 280da1afb4474e929f713b61c558b165f88a50fc
 
 **Machine:** ULTRAMAGNUS (personal box). **Project root:** `C:\code\DngAutoProcessor - Claude`.
 **Product:** auto-grading pipeline for DNG timelapse clips emulating the operator's LRTimelapse
@@ -247,7 +247,13 @@ section it cites. Below the dispositions table is history: "current" or "must kn
   that the held seat answers — a one-line probe on its own model at most once per tick, or any completed call on
   its meter — never because the error window emptied while nothing ran, since a seat that is not launched cannot
   return an error; two models of one provider are never
-  cross-family; a card needing the network first takes a Claude-hosted seat, which is not darkness.
+  cross-family; a card needing the network first takes a Claude-hosted seat, which is not darkness. **A family is
+  read live by a call that answers, never by local credential state** (§2; docs/13 P-RESUME step 4; adopted from
+  this bus): the tick-start probe is §10's smoke form, one call per tick on the family's lowest-tier model by the CLI
+  route, and the family fails it unless that call answers — a quota reply is no probe failure, read by its meter; a
+  CLI's login status or version reads local state, so it can show a family signed out and never that it answers — a
+  token the provider has revoked still reads signed in — and a status report built on it says signed out or unknown,
+  never live.
 - **Evidence lives outside git, which holds only the landing receipts** (§5) — sha256 and path of every evidence
   file and a row per seat, with no byte gate; a card points at its ledger and is never the chronicle; caps are
   structural, never byte gates whose last remedy drops evidence (§5). **A DAILY
