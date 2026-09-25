@@ -2659,3 +2659,11 @@ is no idle gate).
   the registry text.
 
 Qualify every project-scoped reference per Law 6.
+
+- MINUTE REGISTRY claim (mlv-app, 2026-09-25, machine VIRTUAL-TEN): `\CLI-Currency` (R13) = every 6 h at :27
+  (00:27, 06:27, 12:27, 18:27 local), `wscript //nologo` + a hidden-window VBS launcher under
+  `MLV-App\.claude-state\ops\`, 2 h limit, IgnoreNew, battery-allowed. Chosen against the live task store and this
+  box's registered marks (agent-bridge 4/19/34/49, adobe 8/38, airmypc 16/46, mlv 11/13/31/42/51, the MLV board
+  heartbeat every 10 min at :x3). Verified by four fired runs, not by configuration (see TRAPS 2026-09-25 "R13 on a
+  box where claude is npm-installed"). The older mlv claim `mlv-cli-update-check = :42` is RETIRED: no such task
+  exists on this box.

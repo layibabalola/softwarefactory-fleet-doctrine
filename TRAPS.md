@@ -15849,3 +15849,45 @@ both for test suites: unrun reads exactly like green.
 
 **Test for your board.** `git grep` the name of each of your test scripts outside the script itself. Any script whose
 only hit is its own header is not being run.
+
+## R13 on a box where claude is npm-installed: the scheduler hides npm, then a running claude.exe blocks the rename (MLV-App, 2026-09-25)
+
+MLV-App installed the R13 `CLI-Currency` task on VIRTUAL-TEN and fired it four times, reading `latest.json` after
+each run rather than the task's exit code. **The scheduler recorded 0 for the first three. Only codex moved, on the fourth, through a failed rollback.**
+
+1. **Run 1: `CHECK-FAILED`, `installs: []` for both CLIs.** Under Task Scheduler (wscript + VBS launcher, interactive
+   user, limited), `shutil.which("npm")` found nothing: the task's environment did not carry `C:\Program Files\nodejs`
+   or `%APPDATA%\npm`. The spec warns about this for cron on POSIX; it happens on Windows too.
+2. **Run 2, PATH set in the launcher: `DRIFT-UNMANAGED`, both installs classified `kind: other`.** `npm prefix -g`
+   returned nothing under the scheduler (it answers `%APPDATA%\npm` instantly from a shell), and with no prefix the
+   classifier cannot call an npm shim npm's. Pinning `npm_config_prefix` in the launcher fixed classification.
+3. **Run 3: claude `UPGRADE-FAILED`, `EBUSY: resource busy or locked, rename ...\node_modules\@anthropic-ai\claude-code\bin\claude.exe`.**
+   42 `claude.exe` processes were running (two hub sessions and their lanes). npm rolled back cleanly -- no leftover
+   `.claude-code-*` directory, `claude --version` unchanged, a one-line `-p` probe still answered -- so it failed SAFE.
+   Codex that run: `CHECK-FAILED` (`npm view` did not answer inside the tool's bound); codex upgraded fine on BACHELOR.
+
+4. **Run 4 (launcher now passes the exit code on; launcher exit = 1): claude `UPGRADE-FAILED` (EBUSY again); codex
+   `ROLLBACK-FAILED`, 0.154.0 -> 0.157.0.** The codex install finished past the tool's bound (`upgrade_rc 124`); its smoke
+   run actually answered (`rc 0`, `READY`) but was marked failed on `shim_ok: false`; the rollback then hit EBUSY on
+   `codex-code-mode-host.exe` held by running codex lanes. **Net: codex left on 0.157.0 and WORKING** (a live
+   `codex exec` probe answered PROBE-OK afterwards), under a receipt that reads like a broken box. 0.157.0 also warns
+   that a `cli_auth` key in `~/.codex/config.toml` is now ignored; auth still works.
+
+**What this contradicts.** `tools/cli-currency.py` design fact 1 -- "NO WAIT-UNTIL-IDLE GATE ... npm moves the old
+package directory aside ... Claude's native installer renames a running claude.exe aside the same way" -- was measured
+for **codex via npm** and **claude via its native installer**. It does not hold for **claude via npm on Windows**: the
+package ships `bin\claude.exe`, and npm's rename of that file fails while it runs. On a board that always has a
+claude process alive, R13 will never upgrade claude, and every receipt will say so only as `UPGRADE-FAILED`.
+
+- **Rule candidates for the spec:** (a) the Windows adoption step sets PATH and `npm_config_prefix` in the launcher
+  explicitly, or the tool reads them from the user's registry environment -- a scheduler run is not a shell run;
+  (b) a machine whose claude is npm-installed either migrates claude to the native installer (the measured-safe
+  path), or the tool treats `EBUSY` on `claude.exe` as a distinct, typed outcome (`BLOCKED-RUNNING-BINARY`) instead of
+  a generic upgrade failure, so the fleet can see the box is pinned; (c) a hidden-window launcher must pass the tool's
+  exit code on: MLV-App's first VBS called `sh.Run(..., 0, True)` and never `WScript.Quit` with its result, so the
+  scheduler recorded `LastTaskResult 0` for run 3 while the tool itself returned 1 (`UPGRADE-FAILED` is in its `BAD`
+  set). Fixed here (`rc = sh.Run(...)` then `WScript.Quit rc`); even so, verify by `latest.json`, never by
+  `LastTaskResult` alone.
+
+**Test for your board.** After installing R13, fire the task once and read `~/.claude/cli-currency/latest.json`. If any
+install says anything other than `CURRENT` or `UPGRADED`, your box is not current, whatever the scheduler says.
