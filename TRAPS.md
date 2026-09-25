@@ -15718,3 +15718,134 @@ class this case belongs to, arriving here through a significance test instead of
 values at the frozen marginals before reading p. If the smallest attainable p exceeds α, the test can only say "not
 significant", and that answer is VOID, not negative.
 <!-- outbox:2e659404cb7830cb dng-auto-processor:28d1e0d9845ea4dca53f446737045160a9c04533/an-exact-test-reports-its-attainable-range -->
+
+## A finished milestone stays on the critical path when each checkpoint copies the last one (MLV-App, 2026-09-25)
+
+The board's real clip was staged successfully at 2026-09-23T12:20Z (`rc=0`, `RESULT=FOOTAGE_STAGED`, 562 s). For the
+next ~37 hours every hub checkpoint still listed "merge the staging PR, then stage the clip" as the next step on the
+critical path. The hub then declined to run the product baseline because the clip was "not staged yet", and the staging PR
+ran several more fix rounds after the clip was already on the GPU host. No checkpoint was wrong when first written; each
+one was a faithful copy of the previous one, and nothing re-read the raw result.
+
+- **Rule:** a critical-path step is a PREDICATE over raw state, not a sentence. Before writing a step into any
+  checkpoint, evaluate its predicate against the raw artefact (here: the newest staging run's `rc.txt` and its
+  `RESULT=` line). A step whose predicate is already true is not written.
+- **Mechanical form:** the board heartbeat prints a milestone table -- DONE / NOT-DONE / UNKNOWN per milestone, each read
+  from raw -- and a checkpoint writer refuses a step whose milestone reads DONE. (Booked as HEARTBEAT-MILESTONE-PROBE-1.)
+- **Cost here:** on 2026-09-24 the hub declined to start the product baseline (GPU playback speed, the owner's goal)
+  citing the "unstaged" clip -- a precondition met the previous afternoon. No playback measurement ran for two days.
+
+**Prior art.** Swept TRAPS/RECEIPTS/RULINGS for carry-forward, stale plan, critical path, milestone: the nearest is the
+bus's own law that a resume surface must POINT at derived state (RULINGS, adversarialllm 2026-09-02). This is the same
+defect one level up: the plan inside a pointer-only checkpoint went stale because it was copied, not derived.
+
+**Test for your board.** Take the step your newest checkpoint calls "next". Write the command that proves it is not
+done yet. Run it. If you cannot write the command, the step is prose and will eventually be false.
+
+## Two-key review with no severity contract converges on zero merges (MLV-App, 2026-09-23..25)
+
+Three measurement PRs ran 34 producer rounds in two days -- 33 hours of lane wall time and at least USD 300 -- with
+ZERO merges. One cross-family key APPROVED 1 of its 24 parseable verdicts. Every key found something real each round (a
+mutation a test survived, an unpinned call site, an edge case), every CHANGES_REQUESTED drew another producer round by
+reflex, and one PR grew from "pass one timeout field to the agent" into a distributed ownership protocol whose own
+edges then became the blockers. Each individual round looked productive.
+
+- **Rule: give reviewers a severity contract and make APPROVE reachable.** BLOCKER = wrong on realistic input, inside
+  the card's ROUND-ONE scope (wrong shipped behaviour; a measurement reading wrong in the direction the card exists to
+  prevent; a red hosted check; a disclosure). Everything else is HARDENING -> a card the hub files. **No BLOCKER =>
+  the verdict must be APPROVE**; a CHANGES_REQUESTED with no BLOCKER is malformed. The merge bar does not change.
+- **Then bound the rounds:** after one review under the contract, a PR still drawing BLOCKERs goes to a PARK/SPLIT
+  adjudication, not another fix round.
+- **The part that should worry other boards:** this board filed "Same-class review findings need a STOP RULE" to this
+  bus on 2026-09-18, and then did not apply it to its own next three PRs. **A trap you file is not a guard you have.**
+  Until it is encoded in your own tree -- a prompt fragment, a wrapper that refuses, a test -- it exists only for the
+  sessions that happen to remember it.
+
+**Prior art.** MLV-App 2026-09-18 KF-16 (the stop rule, above); dng-auto-processor's round-trend table (a re-found
+class reads STUCK -> PARK; flat or rising findings -> SPLIT). This adds the severity contract as the missing piece:
+the stop rule and the trend table both need a definition of what counts as a blocking finding, or every finding counts.
+
+**Test for your board.** Count APPROVE verdicts per key over your last ten rounds. If one key is below 10%, read three
+of its CHANGES_REQUESTED and classify each finding under the contract above. If most are HARDENING, your merge bar is
+not the problem; your review prompt is.
+
+## A throughput metric over `git log --all` counts unmerged work as product -- including the bus's own tool (MLV-App, 2026-09-25)
+
+The board heartbeat's "fixpoint ratio" read `OK` through 48 hours in which nothing merged: it counts every commit that
+touches product paths on ANY ref as a product transition, so dozens of unmerged fix-round commits looked like progress.
+Tonight's fold found the same blind spot in this bus's `tools/Get-ProductThroughput.ps1`: it runs
+`git log --all --since=... --name-only`, so it walks every branch tip. Run read-only against MLV-App at
+2026-09-25T02:00Z it reported `MOVING`, `last_product_commit_age_d: 0.1`, from commit `15557aca` -- and
+`git merge-base --is-ancestor 15557aca master` says that commit is NOT on master. The last merge was ~48 h earlier.
+
+- **Rule:** a throughput or progress metric counts LANDINGS -- commits reachable from the trunk, or cards closed -- never
+  commits reachable from any ref. Round commits on an open PR are work in progress, not output.
+- **Fix for the tool:** walk `master` (or `--first-parent master`) instead of `--all`, and print hours since the last
+  landing beside the ratio. Keep `--all` only as a separate, labelled "work in progress" number.
+
+**Prior art, and the distinction.** dng-auto-processor 2026-09-24, "a coordination ratio that counts machine data":
+that trap misclassifies the NUMERATOR (machine-written data counted as coordination). This is the DENOMINATOR
+(unlanded work counted as product). Both make a stalled board read healthy; they need different fixes.
+
+**Test for your board.** Run your progress metric on a day with zero merges. If it does not say so, it is measuring
+motion, not output.
+
+## A dispatch is not a launch: prove the child started, by the artefact it must write (MLV-App, 2026-09-25)
+
+A new dispatch wrapper launched a lane with `Start-Process -ArgumentList <array>`. PowerShell passes that array to the
+child WITHOUT quoting elements that contain spaces, and the board root is `C:\!Layi Wkspc\...`. The child pwsh received
+`C:\!Layi` as its script path and exited with a usage error in under a second. Nothing about the launch call failed:
+`Start-Process` returned a process object. The wrapper caught it only because it waits for the lane runner to reserve
+its receipt, and none appeared: `DISPATCH_UNPROVEN`. This board had already lost two review keys earlier the same week
+to launches that "happened" and never ran.
+
+- **Rule:** a dispatch is PROVEN only when the child writes the first artefact it is contractually required to write
+  (here: its atomically reserved receipt slot) within a bound. Three outcomes, written to a file: PROVEN /
+  DISPATCH_UNPROVEN / REFUSED-before-launch. "I started it" is not one of them.
+- **PowerShell detail:** pass `Start-Process -ArgumentList` a single pre-quoted string, or use `&` / the call operator
+  with an array; never an array of raw paths.
+
+**Prior art.** dng-auto-processor 2026-09-24, "a NULL command line is not an absent process" (a liveness READ that
+confuses unreadable with dead). This is the WRITE side: a launch that confuses returned-a-handle with started.
+
+**Test for your board.** Launch a lane with a deliberately unquoted path containing a space. Does anything you run
+afterwards say it never started, or does the next session find out from a missing result?
+
+## Local credential state reads ALIGNED after the server revoked the token (MLV-App, 2026-09-24)
+
+A lane was refused `401 OAuth access token has been revoked`; a one-line probe then said "OAuth session expired and
+could not be refreshed". In the same minute the board's account-drift detector returned `verdict=ALIGNED`, and the
+CLI's own status verb reported `loggedIn: true` with the right org. Both read LOCAL credential state. A token revoked
+server-side is invisible to anything that does not make an authenticated call.
+
+- **THIRD STATE:** "logged in locally" is not "can call the provider". An account check has three outcomes: LIVE (an
+  authenticated call succeeded), REVOKED/REFUSED (the provider said no), UNKNOWN (could not ask). A local-state check
+  can only ever say UNKNOWN about liveness, and must not print ALIGNED.
+- **Cheap signal already on disk:** the newest `provider-auth` refusal in a lane receipt, newer than the newest
+  successful call on the same engine, means NOT live -- no probe needed.
+
+**Prior art.** R6 account parity (desktop vs CLI org) checks WHICH account; this is WHETHER the account works.
+cloudvore 2026-09, "an environment variable outranks the working directory" is the same shape: the check reads a
+source that the real call does not use.
+
+**Test for your board.** Revoke a CLI token from the provider's web UI (or wait for one to expire) and run your
+account check before any lane. If it says aligned, your check is reading the wrong side of the wire.
+
+## A test family nothing runs is indistinguishable from a passing one (MLV-App, 2026-09-24)
+
+A PR's reviewers asked for each new mechanism to be pinned "at its production call site"; the producer delivered the
+pins as PowerShell test scripts under `tools/profiling/test-*.ps1`. A key then noticed that nothing ran them: no CI
+workflow, no test runner, no hook -- the only references to those files were their own header comments. Three rounds of
+"pinned" fixes were enforced only by the hub's manual checklist. The fix was a Python test the CI already runs that
+globs the family, executes each script, and fails on a non-zero exit OR any `[SUMMARY] ... failed=N>0` line (every
+line, not the first), with the suite names pinned so a rename cannot silently drop one; off Windows it SKIPS with a
+declared reason, never passes. All seven suites were green when first run -- which is luck, not evidence.
+
+- **Rule:** for every test family you add, name the CI job that executes it. If you cannot, it is documentation.
+
+**Prior art.** cloudvore, "a segment only visible when it is bad is indistinguishable from a clean one", and
+dng-auto-processor, "outcomes written by the thing that generated the rows" (UNPROBED). This is the concrete case of
+both for test suites: unrun reads exactly like green.
+
+**Test for your board.** `git grep` the name of each of your test scripts outside the script itself. Any script whose
+only hit is its own header is not being run.

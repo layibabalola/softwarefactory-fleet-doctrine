@@ -4690,3 +4690,45 @@ Single read-only arbiter gpt-6-astra ruled on filing blob a018daf665bffb08a3e932
 Two lines were refused promotion. P:code subject-identity is typed INSTANCE-FAILURE and stays there: the board failed the conditional path-manifest permission adopted from its own previous filing - no input manifest declared before review, no combined digest, eleven of fifteen keys transferred where r9 says they do not - without showing that permission unworkable. K8 is routed to an instance bench rather than adopted as a literal violation: K8's "They" refers to reset events, the filing does not establish a reset event opened its gate, and the capacity governor expressly permits recovery without spending an inference probe, so the proposed successful-probe-only falsifier is stronger than the kernel text and enters no universal probe requirement. One type correction is recorded: the P:code claims FENCE is an additional INSTANCE-FAILURE with its own disposition line rather than a caveat inside a FIT.
 
 The ledger records 7 FIT, 0 FRICTION, 0 BREAK, 0 N/A and 5 UNEXERCISED submitted verdicts, with seven INSTANCE-FAILURE verdicts excluded, zero end-to-end subjects and zero in-window declarations. Criterion 1 stays 0/5; criterion 3 does not start; criterion 4 has never started. Open owner items are unchanged and both routed: dng's authorized DOGFOOD/ADOPT recording path (U5), and a register-authorized seat to supply computed R9 posture evidence (U6, the standing HEADER defect). No TRAPS entry is authorized. This block records the ruling and its landed artifacts, not a verified HARVESTED status. Seats: arbiter gpt-6-astra (high), consolidator claude-fable-5, lint claude-opus-5 + gpt-5.6-sol, orchestrator claude-opus-5.
+
+## mlv-app, 2026-09-25: thirty-four fix rounds, zero merges -- the receipts, and what a three-brief swarm changed
+
+**The datum.** Re-derived by the integrator (a script over `lane-<card>-r*/*.receipt.json` durationSec/spend.costUsd and the last verdict JSON in `review-pr15{3,4,5}-sol-*/sol-001.last.txt`) from every producer and review receipt under `.claude-state/fleet-runs/` for the three
+measurement PRs open 2026-09-23..25 -- #153 `ATTR3-FOOTAGE-STAGE-SUBMIT-RETRY-1`, #154
+`PLAYBACK-MEASURE-HOST-LOAD-GATE-1`, #155 `CUDA-ATTRIBUTION-BASELINE-1`:
+
+| measure | value |
+|---|---|
+| producer run directories | 34 (42 receipts, incl. refused and retried dispatches): #153 r1-r12 + r10/r10b, #154 r1-r9, #155 r1-r12 + r8b |
+| producer wall time, summed from receipts | 33.1 h |
+| reported cost, summed from receipts | >= USD 300 (receipts killed at their wall clock report 0) |
+| merges to master in the window | 0 (last merge 2026-09-23T00:01Z) |
+| cross-family key `sol` APPROVE | 1 of 24 parseable verdicts |
+| product measurements run (the owner's goal: GPU playback speed) | 0 |
+| kernel K5 subject-ledger entries written | 0 (ledger untouched 2026-09-21T21:51Z -> 2026-09-25) |
+
+**What a three-brief adjudication found** (Opus seats: against the default / what outranks it / post-mortem bound to
+evidence). The post-mortem ranked the causes by evidence: (1) a finished milestone -- the real clip staged `rc=0` at
+2026-09-23T12:20Z -- stayed on the critical path ~37 h because each checkpoint copied the last; (2) unbounded fix
+rounds with no severity contract and reflexive re-dispatch; (3) one PR's scope grew from a single timeout field into a
+distributed ownership protocol; (4) three rules existed only in prose -- this board's own 2026-09-18 stop-rule trap,
+declare-before-first-byte, and dispatch liveness. The "what outranks it" brief found the board's own stop rule and the
+fleet round-trend table both already prescribed PARK/SPLIT, and that the heartbeat's fixpoint ratio could not see a
+48 h merge drought (TRAPS entry filed the same day).
+
+**Ruled and landed the same night** (kernel ledger entry "PROGRESS-RECOVERY-20260925"): a PROVISIONAL product
+baseline runs in parallel with the plumbing PRs instead of behind them; a severity contract is appended to every key
+prompt (merge bar unchanged); a hub dispatch wrapper refuses a card absent from the subject ledger and proves each
+launch by the lane's receipt reservation. **The wrapper's first real use caught a launch that failed on an unquoted
+path and would otherwise have read as dispatched** (TRAPS entry filed the same day). The clip was re-confirmed on the
+GPU host from the staging PR's head (`ALREADY_PRESENT=true`, 155 s) -- also the first live run of that PR's new
+submission protocol against the deployed agent.
+
+**Kernel observables.** None of the 34 rounds earns K5 credit, correctly: their subjects were never declared before
+first byte. The gap is recorded late in the ledger with no credit claimed, and a K12 finding: the runner accepts a
+card without checking the ledger, so a hub under load skips the declaration silently. The product baseline declared
+tonight is the first subject declared before its first byte since 2026-09-21.
+
+**Portable takeaway.** Count merges, not rounds. A board whose keys each find something real every round will spend
+unbounded effort unless (a) a severity contract says what may block and (b) a progress metric counts landings. Both
+were missing here, and every individual round looked like progress.
