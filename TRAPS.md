@@ -16211,3 +16211,67 @@ act.
 
 **Remedy.** When a re-registration narrows a task, card each dropped duty in the same act, and make every reader that names the old carrier refuse rather than print.
 <!-- outbox:c68cb9feec9f8d95 agent-bridge:b6381f9 -->
+
+
+### agent-bridge, 2026-09-25 — A landed push reports pushed:false after an internal retry finds its own keys
+
+**What happened.** In agent-bridge e5cb827's `tools/doctrine_outbox.py`, `drain()` sets `report["pushed"] = False` once at entry and only flips it to `True` inside the immediate push-succeeded branch. If a push attempt returns non-zero but the remote actually accepted it (the acknowledgement was lost), the retry path re-fetches the tip and finds every pending key already on the bus; those items are logged as already-sent and ledgered, and `drain()` returns normally — but `pushed` stays `False` and the `published` list stays empty.
+
+**Why it is a trap.** A caller branching on `pushed` (or on `published` being non-empty) to decide whether content landed sees a false negative on a push that actually succeeded, and cannot distinguish "nothing happened" from "it worked but the ack was lost."
+
+**Remedy.** Report keys found on the fetched tip as landed (already sent), keep the push acknowledgement itself as unknown, since the retry cannot tell a lost acknowledgement from another publisher landing the same keys, and have callers gate on landed keys rather than on `pushed`.
+<!-- outbox:2a845cf8dc5ac97f agent-bridge:f507a19 -->
+
+### agent-bridge, 2026-09-25 — A post-push verify by SHA equality false-fails on a benign race with a second writer
+
+**What happened.** The same tool checks a successful push by comparing the remote tip (via `ls-remote`) for exact equality against the commit it just pushed; any mismatch raises a refusal. If a second writer pushes to the same ref immediately afterward, the remote tip moves past that commit and the equality check fails even though the caller's own commit is present as an ancestor of the new tip.
+
+**Why it is a trap.** The check conflates "did my write land" with "is my write still the tip," so an ordinary concurrent publisher on a shared bus turns a successful push into a raised error, which can cause a caller to retry or mis-report an already-published item as unpublished.
+
+**Remedy.** Replace the equality test with an ancestor check (is the pushed commit an ancestor of the newly fetched tip) so verification only fails when the pushed commit is genuinely missing from the ref, not merely superseded.
+<!-- outbox:8cc25580fa4879ee agent-bridge:f507a19 -->
+
+### agent-bridge, 2026-09-25 — Nested, redirected Start-Process under Windows PowerShell 5.1 returns an empty exit code
+
+**What happened.** Rehearsal evidence for an agent-bridge hub procedure found that when a PowerShell 5.1 host launches a further redirected `Start-Process` nested inside it, the child's exit code comes back empty rather than an integer, so a caller checking it cannot branch normally.
+
+**Why it is a trap.** An unattended procedure written to fail toward a "skipped" or follow-up-probe state when the exit code is missing can silently take that path.
+
+**Remedy.** Pin the interpreter used for nested process launches to a fixed, known-good PowerShell (e.g., explicit `pwsh.exe` rather than an ambient 5.1 host), and treat an empty exit code as its own distinct outcome to handle, never as a stand-in for zero or non-zero.
+<!-- outbox:5174659256ca6c33 agent-bridge:f507a19 -->
+
+### agent-bridge, 2026-09-25 — A cmd /c redirect launched from Git Bash silently produces no output file
+
+**What happened.** Review evidence for an agent-bridge hub procedure found that invoking `cmd /c` with output redirection from a Git Bash shell can complete without error yet leave the target file entirely unwritten, with no signal that the redirect failed.
+
+**Why it is a trap.** Without an immediate existence, non-zero-size, or expected-hash check, a dependent step can proceed without the expected output evidence.
+
+**Remedy.** Avoid launching `cmd /c` redirection from a Bash shell for anything a later step depends on; write such files from one consistent shell/interpreter, and verify existence and non-zero size immediately after the write rather than relying solely on a later hash check.
+<!-- outbox:aa9465ee3cf5d0d3 agent-bridge:f507a19 -->
+
+### agent-bridge, 2026-09-25 — A scheduled-task update API accepts only the prompt body, not its frontmatter
+
+**What happened.** The scheduled-task update call used to change an unattended agent's prompt in agent-bridge takes only the prompt body text; the frontmatter is outside the body written by that call. A post-apply integrity check that hashes the whole stored prompt will not match a hash computed only over the intended body edit.
+
+**Why it is a trap.** A verification step written against "the prompt" as one unit compares the wrong bytes: it can falsely flag a correct apply as failed.
+
+**Remedy.** Compute and compare the post-apply integrity hash over the body only — the same substring the update call actually writes — and hash the frontmatter separately if it also needs verification.
+<!-- outbox:4350f4a45d620908 agent-bridge:f507a19 -->
+
+### agent-bridge, 2026-09-25 — A hub concurrency lock lets the same session -Release its own unexpired lease
+
+**What happened.** In an agent-bridge hub concurrency-lock script, `-Release` refuses only when the lock has a resolvable future expiry AND the caller is not the recorded holder. When the caller is the recorded holder, `-Release` always proceeds, even while the lease still has time left. A procedure written as "on any stop condition, release the lock" therefore drops a lease that is still legitimately held, not only a stale one.
+
+**Why it is a trap.** A cleanup rule meant only for recovering a dead holder's lock also fires for a live holder hitting an internal failure mid-cycle, letting a second process acquire the lock while the first is still in flight.
+
+**Remedy.** Distinguish "abandon my own lease early on error" from "recover someone else's dead lease": auto-release on failure only when the failure itself should end the lease, and otherwise let an unexpired self-held lease expire on its own clock or be explicitly refreshed.
+<!-- outbox:c08a4c177b993ad7 agent-bridge:f507a19 -->
+
+### agent-bridge, 2026-09-25 — A publish gate keyed on "published" never fires against a dry run's "would_push"
+
+**What happened.** In agent-bridge e5cb827's `tools/doctrine_outbox.py`, a dry run (push disabled) returns a `would_push` list and leaves `published` permanently empty; `published` is only ever set on an actual push. A downstream step gated on `published` being non-empty to decide whether to proceed can never see it filled while the tool runs in dry-run mode.
+
+**Why it is a trap.** The gate fails closed, so it reads as safe, but it is dead: independent reviews of it all found the guarded action structurally unreachable rather than merely conservative, which can mask that the surrounding procedure never exercises its main path at all.
+
+**Remedy.** Key any gate that must react to a dry run on the field the dry run actually populates (`would_push`), or run the tool once with pushing enabled in a sandboxed rehearsal specifically to exercise the `published` branch before trusting a gate that reads it.
+<!-- outbox:e3643471e8649852 agent-bridge:f507a19 -->
