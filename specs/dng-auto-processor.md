@@ -1,5 +1,5 @@
 # DNG Auto Processor — factory spec (one writer: the `dng-design-steward` seat, docs/13 P-STEWARD step 7d; a posture change made anywhere else reaches this file as a census item of that seat's next pass)
-source_commit: fbd94c536e4e8a770e112cf9c63b7ce14571df99
+source_commit: 06361b201ef629d7d328ccee8d979dbf90945c4f
 
 **Machine:** ULTRAMAGNUS (personal box). **Project root:** `C:\code\DngAutoProcessor - Claude`.
 **Product:** auto-grading pipeline for DNG timelapse clips emulating the operator's LRTimelapse
@@ -176,7 +176,10 @@ section it cites. Below the dispositions table is history: "current" or "must kn
   window START is itself a field a new subject does not yet have**: written as "since its last run" it is a
   missing key, which the first rule above then turns into a permanent FIRE against a healthy subject for the
   whole interval between registration and its first fire — so the start falls back to a field every subject
-  carries from creation. **A liveness alarm derives its seats from the ledgers a schedule's DEFINITION names,
+  carries from creation. **That field is read by its TYPE** (§7): on this machine it has been read both as epoch
+  milliseconds and as an ISO-8601 string, a single parser throws on one of them, and a helper that swallows the throw
+  reports the key absent, which the first rule above then turns into a fire against healthy subjects; a value no
+  reader parses is unreadable input, never an absent key. **A liveness alarm derives its seats from the ledgers a schedule's DEFINITION names,
   never from a directory's shape alone** (§7): the shape is also true of a ledger an on-demand procedure writes
   whenever it happens to run, which owes no cadence, so its silence reads as a stopped seat forever — nothing owes
   that ledger another write. A shape-matching ledger no definition names is reported by name as not a seat, and
@@ -186,9 +189,11 @@ section it cites. Below the dispositions table is history: "current" or "must kn
   and is reported by name with its age. **A ratio alarm's numerator is a closed set, never the complement of one** (§7): coordination
   counted as everything outside the product set takes in every machine-written cache, CSV or data summary an
   experiment commits, and fires on bytes no seat wrote; coordination is the inert paths' Markdown and the landing
-  receipts, and any other inert path is data that enters neither side.
+  receipts, and any other inert path is data that enters neither side. **And every commit an alarm counts is one
+  reachable from the trunk, never one reachable only from another ref** (§7): a task branch's commits are work in
+  progress until they land, so a count over every ref reads a factory that has stopped landing as one that is moving.
 - **An exact test reports the range its statistic can ATTAIN, from every marginal it holds fixed, before its
-  verdict is read** (§6): a card scoring an exact or permutation statistic states its α and the statistic's
+  verdict is read** (§6): a card whose verdict is an exact or permutation statistic over a small fixed set states its α and the statistic's
   attainable minimum and maximum with the label counts AND the prediction counts held fixed; a value at that bound,
   or a range that cannot reach α, is VOID naming the bound — never a pass, a fail or a refutation — and a
   degeneracy test on one marginal is not this gate.
@@ -221,7 +226,11 @@ section it cites. Below the dispositions table is history: "current" or "must kn
   swarm then chooses. The cop opens such a card like any other when a trigger holds: a reservation of the opening
   to another seat, stated only in a queue line or in a defect token's reason clause, is no rule — a queue of
   pointers is reviewed by no one as a rulebook, and such a clause once routed a design call, tick after tick, to
-  the one seat barred from opening cards. A swarm, convened by the USER-directed orchestrator for a consequential unresolved choice only,
+  the one seat barred from opening cards. A tick launches at most one such design or disposition seat (docs/13
+  P-COP Step 3), and that bound counts those seats alone: a top-tier retry author, approach review or key takes its
+  seat from §2 and nothing in the bound defers it — read as a bar on every top-tier seat, it held a retry card's
+  implementation tick after tick while the ticks-per-landing alarm fired and each tick named that card the only open
+  card able to land. A swarm, convened by the USER-directed orchestrator for a consequential unresolved choice only,
   runs Opus, Fable and Astra lanes at high effort and decides 2 of 3 with both providers in the majority; an
   Anthropic-only majority against the Astra lane has that dissent's decisive premise measured and one re-vote, and
   every decisive premise is re-measured before acting. An instrument run pauses and resumes on one model id and
@@ -267,10 +276,11 @@ section it cites. Below the dispositions table is history: "current" or "must kn
   removal is never otherwise forced on an item worktree: a mandated setup step that dirties the copy the commit,
   rebase and cleanup rules refuse to touch is a permanent latch, and the cleanup rule's own "stop if a defect
   report names this worktree" makes REPORTING it the act that makes the latch permanent. The cop's refutation
-  probe is removed on a key's scratch-worktree terms. **A removal is held only by a card that OWNS or USES the
-  worktree — its own, or one its seats read, such as a frozen evaluator — never by one that only MENTIONS it**: a
+  probe is removed on a key's scratch-worktree terms. **A card holds a removal only when it OWNS or USES the
+  worktree — its own, or one its seats read, such as a frozen evaluator — never when it only MENTIONS it**: a
   state line that cites a path as evidence — a load reading, a quoted receipt — would otherwise latch what it cited
-  until it closed, because a card that correctly records why it waited names what it waited on.
+  until it closed, because a card that correctly records why it waited names what it waited on. A process outside
+  the removing seat's own ancestry whose command line names the worktree holds it as well.
 - **CLI currency upgrades on a six-hour clock with no idle gate, smokes the launch form the tick really uses —
   isolated from user hooks — and rolls back only on evidence** (§10, USER, §0; fleet R13, adopted from this bus):
   a failed smoke reinstalls the previous version only when that version passes the smoke the new one failed,

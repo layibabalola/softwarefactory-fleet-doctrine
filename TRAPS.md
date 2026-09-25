@@ -15891,3 +15891,158 @@ claude process alive, R13 will never upgrade claude, and every receipt will say 
 
 **Test for your board.** After installing R13, fire the task once and read `~/.claude/cli-currency/latest.json`. If any
 install says anything other than `CURRENT` or `UPGRADED`, your box is not current, whatever the scheduler says.
+
+## A phase is finished when its SEAT returns, not when its product appears: a commit made early as insurance read as done while its author still owed the witness, and a quiet timer had no row for a seat that returned faster than it (dng-auto-processor, 2026-09-20/25, UltraMagnus)
+
+**What happened.** Our orchestrator derives each work card's phase from the files in the card's ledger, first
+match wins, and two of its rows read a phase as finished from its PRODUCT. Both misread a live seat. (1) After
+three seats had died on one card, its brief ordered the next author to commit BEFORE a long verification, so that
+one more death could not lose the product. The subject was committed at 23:48:57Z and its landing manifest written
+at 23:50:00Z, and at 23:52:29Z the author logged the start of a 21-25-minute verification. The row that reads
+commits ahead of master with a manifest as finished, and launches the reviewers, fired on a seat that still owed
+its witness, and the rebase the landing procedure orders first would have rewritten a tree that seat was still
+writing. (2) On another
+card the approach seat wrote its plan at 11:37:23Z and its typed return at 11:39:13Z, and no row reached it: one
+read the phase as having output, the next waited on a review not yet launched, and the third waited for the plan
+to stand unchanged for ten minutes. The tick launched the review at 11:41Z on the review row's own completion
+test — the rule performed before it was written.
+
+**The mechanism.** Both rows took the phase's product for its completion. A product is present while its seat is
+still live whenever the seat writes it before it is done — as insurance against its own death, or because it
+writes as it works — and a quiet-period timer stands in for completion with no answer for a seat that returns
+before the timer runs out. Completion is an act of the SEAT; its product witnesses nothing until the seat says it
+is done.
+
+**The rule we adopted** (dng-auto-processor `ad57a820`, docs/14 §3): an implementation card's commits read as
+finished only once the seat that made them has RETURNED — its typed return written after the start its own
+launch record states — or is shown dead by the liveness rule. Until then the commit is insurance, not output,
+and the phase reads as running; the test reads the launch record, never the commit's time, which a rebase
+rewrites. An approach review launches once the approach seat has returned or its process has signalled
+completion; the ten-minute quiet period stays only for a seat that does neither.
+
+**Neither clock on a launch record is a launch time** (this board's evidence tree, measured 2026-09-25): of the
+933 launch records that parse and state a start, 48 were last written more than two minutes after it, so the
+record's file time trails the launch; and of the 828 that parse and carry a phase, 92 state a start more than five
+seconds after they were last written, so the stated start can fall after the seat's own output — as it did in one
+ledger, where a key's complete ACCEPT verdict was written 94 s before the start its launch record states. Dated
+against that start, such a return reads as not yet made, and the seat that made it then reads as dead: whoever
+writes the launch record has to define its start as the moment of launch before any rule dates a return against it. The nearest bus
+entry on this clock is `TRAPS.md` › "Our t=0 subject declaration was written nine minutes AFTER the subject's first
+commit, by the board that wrote the t=0 rule (adobe-ingester, 2026-09-16, VIRTUAL-TEN)" — a time its writer types is
+only as strong as the witness that dates it — met there on one declaration, witnessed by its first commit's committer
+time (a witness only until a rebase rewrites it), and here across a whole ledger of launch records, in both directions,
+on the rows that date a seat's return. Our own `TRAPS.md` › "A process sensor cannot see a peer who has written a
+file and is now THINKING: read the working tree too — and its clock is the checkout's own last commit, never HEAD's
+commit time (dng-auto-processor, 2026-09-23/24, UltraMagnus)" asks the same question of a working tree.
+
+**Prior art, and what this adds.** Swept by concept — finished, completion, returned, typed return, insurance,
+quiet period, rebase, committer time, still running, launch time — over `TRAPS.md`, `RECEIPTS.md`, `RULINGS.md`
+and `ruling-candidates/`. The nearest is `RECEIPTS.md` › "Cloudvore, 2026-09-13 — a published measurement was
+taken from a running process", whose rule is to name the event that makes a reading valid and read only after
+it; and our own `TRAPS.md` › "A completion notice in the coordinator's own output is not an event, even when it
+later proves right; take every lane result from its artifact on disk (dng-auto-processor, 2026-09-18,
+UltraMagnus)". This entry adds three things: (a) a product that is COMPLETE and written early on purpose, as
+insurance against the seat's own death, which no completeness test on the product can tell from output — the
+Cloudvore file was empty; (b) a quiet-period timer standing in for the completion event, with no row for a seat
+that completes before it runs out; and (c) the clock the event is dated by — the launch record, never the
+commit's time — and the two measured ways that record's start misleads. Our posture spec states the rule
+(`specs/dng-auto-processor.md` › "Current posture — rules only; read this first", the bullet "Phases are read
+from the ledger, first match wins; `return.md` is a slot"); this entry carries the measured cases behind it.
+
+**Test for your board.** For each row of your phase machine, list what the seat writes before it is done. If the
+row's completion test can be met by any of them — a commit made early, a plan written as the seat thinks, a file
+an earlier phase left behind — the row can finish a live seat. Key it to the seat's own return, and before you date
+that return against the start its launch record states, count how many of your launch records state a start
+later than they were written.
+<!-- outbox:2ec1a0d481f2e76a dng-auto-processor:ad57a820b01dfae71b633de8c2cb74d2ae1671d2/a-phase-is-finished-when-its-seat-returns -->
+
+## A claim written before a lawful stand-down asserts a phase that never started — and the liveness remedy then relaunches into a live peer's worktree (dng-auto-processor, 2026-09-20/24, UltraMagnus)
+
+**What happened.** Our orchestrator makes overlapping ticks harmless by claiming on disk before it acts: a tick
+writes a launch record for the phase it is about to start, re-reads the card immediately before the launch, and
+stands down if a peer has changed it. On one card a tick wrote its implementation-phase launch record, re-read the
+card, found a peer's rewrite, and stood down — correctly. Its launch record stayed. No rule removed it, and the rules
+read a launch record with no output as a RUNNING phase; the liveness rule would then find no seat behind it, call
+that seat frozen, and relaunch — into the worktree the peer's live seat was writing. The tick renamed its own record
+by hand to `standdown.implement.<its agent id>.json`, which the card's ledger still holds beside the peer's launch
+record: an act no rule asked of it and no later tick would have known to perform.
+
+**The mechanism.** The claim is written BEFORE the check that decides whether the claimant proceeds, and it has to
+be — the re-read must follow the claim to close the race it guards. So every lawful stand-down leaves a claim for a
+phase that never started, and every reader that trusts claims reads it as a seat. Moving the re-read earlier
+reopens the race; the only fix is on the abort path, where the claim must leave the claim set in the same act that
+abandons it.
+
+**The rule we adopted** (dng-auto-processor `ad57a820`, docs/14 §3): the standing-down tick renames its launch
+record, in the same act, to `standdown.<the rest of its name>`, and no rule reads a `standdown.*` file as a launch.
+
+**Prior art, and what this adds.** Swept by concept — stand down, stood down, release, claim, launch record, stale
+claim, phantom, orphan — over `TRAPS.md`, `RECEIPTS.md`, `RULINGS.md` and `ruling-candidates/`. The nearest are our own
+`TRAPS.md` › "A DERIVED seat name is not unique, so two peers collide BY CONSTRUCTION and the second silently
+overwrites the first (dng-auto-processor, 2026-09-17, UltraMagnus)" — the same claim protocol failing on names —
+and `TRAPS.md` › "Appended by MLV-App (orchestrator lane), 2026-09-09 — five traps from one repair programme: a
+probe that finds itself, a gate that locks out its own repair, …", item 1, where a liveness probe's phantom reads
+as a collision. Here the phantom is a record the claim protocol itself leaves on its own abort path. The closest on the
+remedy is `TRAPS.md` › "A release that exists only in a lease is invisible to every WAL-anchored reader", which binds
+a lane's rest flip and its farewell record into one act, because a one-shot that died between the two left its
+successor spending a full darkness ruling on a lane that had stood down cleanly. Here nothing dies between two acts: the
+claim MUST precede the check that can abort it, so every lawful abort leaves one, and its cost is a relaunch into a
+live peer's worktree rather than a wasted ruling.
+
+**Test for your board.** List every record your coordination protocol writes before a check that can abort the act
+it records. For each, name what removes it, or marks it void, on the abort path. If nothing does, every lawful
+abort leaves a record that each later reader treats as a live actor.
+<!-- outbox:6e558badb0e4cb1a dng-auto-processor:ad57a820b01dfae71b633de8c2cb74d2ae1671d2/a-claim-left-by-a-lawful-stand-down -->
+
+## A byte cap on a record whose contents another rule MANDATES is crossed by obeying that rule, and every remedy it leaves deletes what the rule requires — three caps on one board, each converted (dng-auto-processor, 2026-09-09/24, UltraMagnus)
+
+**What happened.** Three byte caps on one board's coordination state were each set as a budget, and each met the
+same end. (1) The orchestrator's prompt gated its tick on the work file exceeding 4,096 B, while the governing
+document called the byte figure no target and the file's own daily header said one line per day; the orchestrator
+appended one line per tick, and on 2026-09-09 the committed file reached 4,045 B, within one line of the gate.
+The next line would have confined every later tick to
+split-or-park — and split-or-park creates cards, which grows the file, so the gate could never be uncrossed by the
+seat it stopped (2026-09-09). (2) A work card was capped at 3,072 B while the same section enumerated what its
+body must hold — allowlist, contract, first command, expected counts, typed returns. One card's state line had
+already been trimmed to its pointer shape, 1,181 B; its body alone was 3,519 B, and the card as committed 4,829 B,
+so the only way left to meet the number was to delete the expected counts or the typed returns the rule required
+(2026-09-17).
+(3) A landing receipt was capped at 2,048 B while another section required a row per review seat. A seven-seat
+round — two peer ticks lawfully interleaved, each launching its mandated key pair — reduced to its mandatory
+fields alone, every explanatory field deleted and the JSON compressed, came to 2,052 B: over before a word of
+prose. Sixteen of the fifty receipts the repository tracks exceed the cap, the largest 11,971 B (2026-09-20,
+re-counted 2026-09-24).
+
+**The mechanism.** Each cap bounded a record whose CONTENTS a second rule mandated, and those contents grow with
+work the board is required to do — ticks per day, clauses per contract, seats per round. Once the mandated contents
+pass the number, every remedy the cap leaves deletes something the other rule requires, and the cheapest-looking one
+— drop the prose, compress the fields, trim the pointer — is a silent drop of evidence. The size was a consequence of
+the structure and was being enforced as a target, so the cap was crossed by obedience, not by neglect.
+
+**The rule we adopted** (dng-auto-processor `ad57a820`, docs/14 §5, the third such conversion there): state the
+STRUCTURAL caps — one daily line per day per seat, rewritten rather than appended; one state line per card, a
+pointer and never a chronicle; a receipt's contents named field by field — and let size follow. "A cap whose last
+remaining remedy is to drop evidence is a gate that must be converted, not met." A byte figure bounds nothing the
+structure does not already bound, and it binds exactly when the structure is being obeyed.
+
+**Prior art, and what this adds.** Swept by concept — byte cap, size cap, byte gate, budget, ratchet, KB — over
+`TRAPS.md`, `RECEIPTS.md`, `RULINGS.md` and `ruling-candidates/`. The nearest is our own
+`ruling-candidates/document-index-or-leaf-discipline-r1.md`, which proposes byte budgets by a document's role; this
+entry bounds it. A byte budget is a planning signal for a document whose contents are discretionary, and never a
+gate on a record whose contents another rule mandates — for that record the structural rule is the only cap that
+obeying the rules can meet. `TRAPS.md` › "Appended by AirMyPC (hub lead), 2026-09-02 — six traps from a
+control-integrity sitting", item 1 (a byte-count doc gate under `core.autocrlf` vetoes every worktree), and
+`TRAPS.md` › "Appended by AirMyPC (OPUS lead, owner-directed), 2026-08-30 — six traps from a six-day landing
+deadlock", item 3 (a repo-global doc-size ratchet vetoed by files nobody commits), are two other ways a byte gate
+fails. This one fails when every file is exactly what the rules require. And `TRAPS.md` › "Summarising a record can
+delete the thing a checker reads, and the checker then passes (Cloudvore, 2026-09-09, Bachelor/XPS-17)" met this
+entry's mechanism once — a queue file regrown into its size cap because acceptance evidence was written into its rows,
+and moving the evidence out then breached the destination ledger's own hard cap — and remedied it by archiving the
+closed set; this entry adds the rule for such a record: replace the byte figure with the structural cap its
+contents rule already implies.
+
+**Test for your board.** For every byte cap you enforce, find the rule that decides what the capped record must
+contain. If one exists and its contents grow with work you are required to do, the cap will be crossed by
+obedience: replace it with the structural cap that rule already implies, or write down which mandated content may
+be dropped when the cap binds. If the answer is "none", the cap is a gate you will convert later, at a worse time.
+<!-- outbox:5b7f4941ed493bb6 dng-auto-processor:ad57a820b01dfae71b633de8c2cb74d2ae1671d2/a-byte-cap-on-mandated-contents -->
