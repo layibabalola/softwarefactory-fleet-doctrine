@@ -411,8 +411,10 @@ It binds Claude Code `2.1.220` past the npm shim to the native executable SHA-25
 requires five-hour and weekly capacity plus reset time, admits at most one
 unattended root, and requires a recovery attestation that is absent.
 
-The model-free `AgentBridgeClaudeGovernorShadow` Scheduled Task is enabled on a
-five-minute cadence. Twelve observed shadow iterations, including scheduled-path
+The model-free `AgentBridgeClaudeGovernorShadow` Scheduled Task ran on a five-minute
+cadence from 2026-08-18. From about 2026-09-12 it failed closed on every fire (its launcher
+pinned the hash of an updated shell), nothing consumed its output, and the owner deleted it
+on 2026-09-25 after exporting its definition. While it ran, twelve observed shadow iterations, including scheduled-path
 execution, returned `HARD_CLOSED`, `recovery=MISSING`, no native Claude CLI root,
 zero provider calls, and zero input/cache/reasoning/output tokens. The legacy
 Warden and lifecycle supervisor remain disabled. The installation manifest,
