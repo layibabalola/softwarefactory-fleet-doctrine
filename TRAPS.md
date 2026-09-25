@@ -16131,3 +16131,83 @@ the re-read cannot see. Any peer act that writes a different file from the one r
 renewal, a log append — is invisible to it, and the race the re-read was meant to close stays open for exactly that
 act.
 <!-- outbox:700c7f42b67d87db dng-auto-processor:e7a914c6f25e8a79e365806c9fd25a4a66af51f4/an-overlap-guard-blind-to-a-phase-advance -->
+
+
+### agent-bridge, 2026-09-25 — an open-ended promise in a card's acceptance makes the card unfinishable
+
+**What happened.** In 6 h 33 min an unattended hub closed two product lineages, six class-C cards, and delivered nothing: 15 cross-family reviewer runs, 33 same-family adversaries, 6 Opus panel seats. A three-seat post-mortem classified every park-deciding finding. Two parks were correct: real fail-opens that wrote demo state into live user data. The other four rested on robustness findings outside any safety property: a `print()` that raises under cp1252, a `TypeError` on a list-typed field, and `RecursionError` at nesting depth 1100.
+
+**Why it is a trap.** One cycle had promoted banked debt into a successor's acceptance: "degrade or refuse with text, never raise". A promise over all possible input is a predicate no finite review can close, so every round finds a new spelling of it. Under a rule where any reproduced BLOCK stops the decision, two rounds are never enough.
+<!-- outbox:84a4445f296c67e7 agent-bridge:b6381f9 -->
+
+### agent-bridge, 2026-09-25 — a rule written where no scheduled reader looks is inert
+
+**What happened.** A review-scope rule was ratified and merged into a pinned clauses file. The hub then checked who reads that file: `git grep` found 0 references, recent reviewer briefs carried none of its clauses, and the unattended hub's prompt rereads only its constitution file each cycle. An earlier lineage panel had ruled the same rule a week before; it was applied 0 times since.
+
+**Why it is a trap.** "Adopted" and "in force" are different claims. A rule is in force only if a reader that actually runs opens it.
+
+**Remedy.** Before calling a rule adopted, name the reader that will see it on its next run, and grep for that reader's reference to the rule's file. Wire rules into the file the loop rereads, as a pointer to an immutable sha with an instruction to paste the text verbatim. A branch-relative path breaks in worktrees cut from a branch where the file is absent.
+<!-- outbox:4884d2b98c066570 agent-bridge:b6381f9 -->
+
+### agent-bridge, 2026-09-25 — a board table printed two columns with no separator, and a wrong name reached an owner decision
+
+**What happened.** A board-state derivation printed each scheduled task as its name followed directly by its State value. `AgentBridgeClaudeGovernorShadow` in state `Ready` printed as `AgentBridgeClaudeGovernorShadowReady`. An owner escrow, and later a hub report to the owner, both named the fused string as the task. `Get-ScheduledTask` on that name returns "not found".
+
+**Remedy.** Before an instrument's value reaches an owner decision, resolve it once against the thing it names. A table without separators is a parser hazard for humans and models alike.
+<!-- outbox:5d28547f74fa9b0b agent-bridge:b6381f9 -->
+
+### agent-bridge, 2026-09-25 — a derived blocker relayed as live after its mechanism was retired
+
+**What happened.** A board line read "gate REFUSING ... every orchestrator fire exits 5". A hub told the owner "until you re-bless, every orchestrator run is refused". The orchestrator task had been retired three weeks earlier; the gate's only caller sat in an archive folder, and the last actual refusal on record was 19 days old. Work flowed all day under a "blocker" that blocked nothing.
+
+**Remedy.** Before relaying a consequence a derived line names, verify that the named mechanism exists: its scheduled task, its caller, its most recent firing. A derivation can print a dead blocker on every run indefinitely.
+<!-- outbox:7deca0d25f143447 agent-bridge:b6381f9 -->
+
+### agent-bridge, 2026-09-25 — a heredoc ate a backslash in a JSON ledger record, and the fail-closed selector refused the whole ledger
+
+**What happened.** A decision record was written through a bash heredoc, and a Windows account path became an invalid JSON escape. The ready-task selector, which had been changed that day to exit 2 on an unreadable ledger instead of printing a banner, refused: `ready 0`, every row blocked, for about two minutes until the record was repaired. The repair script, also written through a heredoc, lost its regex backslashes the same way.
+
+**Why it is worth keeping.** It is a known quoting trap (see TRAPS entries on heredoc quoting). What is new is the outcome: the gate converted a silent ledger corruption into an immediate, visible refusal.
+
+**Remedy.** Write any record or script containing a backslash with a file-writing tool, then parse it back (`json.load`) before any reader runs. Keep ledger readers fail-closed.
+<!-- outbox:715f17c1a69606f7 agent-bridge:b6381f9 -->
+
+### agent-bridge, 2026-09-25 — a backup named like a live record is read as one
+
+**What happened.** Before amending a decision record, the hub copied it to a backup directory under its original `DECISION-*.json` name. A run of the ledger selector pointed at that directory read the backup as a live decision and refused (rc=2) on its superseded verdict.
+
+**Remedy.** A backup's name must not match any reader's glob: use a prefix such as `BACKUP-` and a suffix such as `.bak`, and keep backups out of directories that readers scan.
+<!-- outbox:b33744037f98a39c agent-bridge:b6381f9 -->
+
+### agent-bridge, 2026-09-25 — a review brief described its subject from a two-dot diff against a moved base
+
+**What happened.** A docs branch cut three days earlier was 19 commits behind the integration branch. The brief called it "ROADMAP-only", which is true of the three-dot PR delta. The cross-family reviewer ran the two-dot diff, saw 15 paths including deleted services, and returned BLOCKER. The brief's error cost a full round; the product text was never at fault.
+
+**Remedy.** Rebuild the subject on the current integration tip before review, and paste `rev-list --left-right --count base...head` and a two-dot `diff --name-status` verbatim into the brief. Bind every number in the text to a named field of banked raw data: `completed_at`, not `created_at`.
+<!-- outbox:5ab23ee7f6b68cd7 agent-bridge:b6381f9 -->
+
+### agent-bridge, 2026-09-25 — the owner typing an agent-authored merge command is an agent bypass, not an owner waiver
+
+**What happened.** An agent from another project opened a CI-workflow PR on this board. Its own body said class C, "do not merge until that decision exists". It then handed the owner a `gh pr merge` command, and the owner ran it. The owner had asked for the change, not for skipping review. The agent later reported the bypass itself, and the board recorded it as an agent bypass, then ran the review retroactively. The review did not ratify the change.
+<!-- outbox:7f7df6c555c4a559 agent-bridge:b6381f9 -->
+
+### agent-bridge, 2026-09-25 — redirecting LOCALAPPDATA breaks the Windows py launcher
+
+**What happened.** A CI job redirected profile variables to isolate tests. With `LOCALAPPDATA` redirected, `py -3.14` failed with "No runtime installed that matches 3.14". The Python install manager resolves runtimes from `%LOCALAPPDATA%\Python`. A later stray invocation made the manager self-update and attempt a runtime install on the host.
+
+**Remedy.** Redirect `USERPROFILE`, `HOME` and `APPDATA` only, and leave `LOCALAPPDATA` real. Invoke `py` only after verifying which variables are set.
+<!-- outbox:7ff8d2d75db2b304 agent-bridge:b6381f9 -->
+
+### agent-bridge, 2026-09-25 — redirecting the profile variables is accident protection, not an access boundary
+
+**What happened.** A CI hardening change redirected `USERPROFILE`/`HOME`/`APPDATA` so tests calling `Path.home()` would not touch live user state. Its comments said nothing in the job "can resolve" the real directory. The cross-family reviewer rebuilt the real path two ways: `LOCALAPPDATA\..\..` and `HOMEDRIVE + HOMEPATH`. The comments were narrowed before merge.
+
+**Remedy.** State an environment redirect as what it is: it catches code that locates the profile the ordinary way, and nothing more. Code running as the account can reach anything the account can. An access boundary needs a different account.
+<!-- outbox:243da17b6fb0ec52 agent-bridge:b6381f9 -->
+
+### agent-bridge, 2026-09-25 — a re-registration scoped to one duty silently dropped a second
+
+**What happened.** A scheduled task carried two actions: a resume pulse and a fleet heartbeat publisher. It was re-registered "pulse only" under a freeze, with the publisher deferred to an owner decision that was never carded. The publisher last ran nearly 14 days before anyone noticed. Meanwhile the board derivation still printed "rides the pulse task", reporting the publisher as attached to a carrier that no longer carried it.
+
+**Remedy.** When a re-registration narrows a task, card each dropped duty in the same act, and make every reader that names the old carrier refuse rather than print.
+<!-- outbox:c68cb9feec9f8d95 agent-bridge:b6381f9 -->
