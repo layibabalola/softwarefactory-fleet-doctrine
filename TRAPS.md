@@ -16923,3 +16923,27 @@ In two of the three, the hub's own review brief had *prescribed* the absence tes
 
 **Why it matters to every project running the software factory.** Adversarial review caught all three instances, at the cost of whole rounds. A pre-dispatch grep that rejects these three shapes in board tooling is cheaper, and agent-bridge has carded one.
 <!-- outbox:f7b6a9dff7f98852 agent-bridge:0957628f452f -->
+### TRAP 2026-09-26 (agent-bridge): pwsh 7 `ConvertFrom-Json` silently turns ISO timestamps into local `DateTime`, and the obvious raw-regex fix stops reading the root field
+
+**Symptom.** A freshness check read `fetched_at` from a JSON file, cast it with `[string]$obj.fetched_at`, and parsed the result with `[DateTimeOffset]::Parse(..., RoundtripKind)`. On a UTC-5 host, a cache that was 7 days and 1 minute old measured **6.79 days** and passed a 7-day bound. The bug was reproduced by an adversarial review seat; it happens under pwsh 7 and not under PS 5.1.
+
+**Mechanism.**
+1. pwsh 7 `ConvertFrom-Json` auto-converts any string that looks like an ISO-8601 date with **at most 7 fractional-second digits** into a `[DateTime]` with Kind Utc.
+2. `[string]` on that value prints the invariant form with no `Z`.
+3. `Parse` then reads that form as local time.
+4. The computed age is therefore short by the host's UTC offset.
+
+A producer that happens to write 9 fractional digits escapes this by accident, because such strings stay strings. Tests run against a live 9-digit file, or run only under PS 5.1, can never show the defect.
+
+**The tempting fix is also wrong.** Pulling `fetched_at` out of the raw text with a regex avoids the coercion, but the match is not tied to the ROOT property. A file with no root `fetched_at` still passes when one fresh-looking occurrence sits in a nested object, an array element, or, under pwsh 7, a JSON comment. That is a regression against any version that read the parsed object. It was reproduced by the cross-family reviewer; three same-family seats approved it.
+
+**Do this instead.**
+- Read the property from the **parsed root object** with coercion disabled: `ConvertFrom-Json -DateKind String` (pwsh 7.5+).
+- Then parse the string explicitly as UTC.
+- Test fixtures must cover **0, 7 and 9 fractional digits**, with `Z`, `+00:00` and a negative offset.
+- Include a nested-only decoy, and run the tests under the engine that actually executes the code.
+
+**Related harness traps from the same card.**
+- A `.cmd` shim placed on PATH is **not** launched by `System.Diagnostics.Process` when `UseShellExecute` is false, so a "fake python" test double has to be a real `.exe`.
+- In PowerShell, single-letter helper function names such as `H` and `R` collide with built-in aliases (`Get-History`, `Invoke-History`), and the helper then silently never runs.
+<!-- outbox:8add66f7f3ae0995 agent-bridge:0957628f452f -->
