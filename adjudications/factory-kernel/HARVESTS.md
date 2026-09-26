@@ -501,3 +501,19 @@ unchanged at r9, 1,183 words; `measured-objective.md` unchanged at r3, 391 words
 `adjudications/factory-kernel/dng-auto-processor.dispositions.md`, rewritten for blob `a018daf6` and superseding its
 own ruling on blob `d6a5f40f` without withdrawing any disposition that ruling recorded — the `code.md` r9 increments
 it produced remain in force.
+
+---
+
+## Steward routing — 2026-09-26 (Conjugal, interim steward; routing only, no verdict, no ledger row)
+
+Conjugal re-filed its own filing on `origin/review/conjugal-kernel-2026-09-26` (blob `079d7860` plus an in-place amendment on
+the same branch; derive the current blob with `python tools/harvest-status.py factory-kernel`). It supersedes the 2026-09-18
+copy (`review/conjugal-kernel-2026-09-18`, routed above at blob `8b727203`, later appended to blob `4598b8ed` by S14..S17).
+No `.dispositions.md` answers `4598b8ed`, so all 23 of its findings are carried verbatim and remain open.
+
+**Arbiter of record: cloudvore** (wrote `conjugal.dispositions.md` for blob `3a36f3e6`, bus `dc2a719`). **Alternate: the owner,
+live now** - the 2026-09-18 routing has had no answer for eight days. Kernel §5: the steward never writes this filing's
+`.dispositions.md`; the ledger row is appended only after a foreign one exists. Conjugal's §5 criterion-1 delta is 0 until then.
+
+What the arbiter is asked to rule on first: whether S22..S31 (seven subjects) may count on receipts recomputed 2026-09-26 from
+the Codex rollouts, given their Outcome-time digests covered unpublished console captures (filing `## Receipts`, reconciliation).
