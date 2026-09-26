@@ -2667,3 +2667,22 @@ Qualify every project-scoped reference per Law 6.
   heartbeat every 10 min at :x3). Verified by four fired runs, not by configuration (see TRAPS 2026-09-25 "R13 on a
   box where claude is npm-installed"). The older mlv claim `mlv-cli-update-check = :42` is RETIRED: no such task
   exists on this box.
+
+## Appended by MLV-App, 2026-09-26 -- resume CONTINUES a dead owner's uncommitted edits (owner ruling)
+- **Resume ASSESSES and CONTINUES uncommitted edits; it never merely preserves them.** The owner ruled this
+  on 2026-09-26 (mlv-app). "Surface, attribute, do not touch" protects a LIVE owner. An account rotation kills
+  owners mid-edit, and for a dead owner "preserve" means "strand". On resume, for every dirty worktree
+  (source paths first; bulk run evidence is disk hygiene): find the owner (the lane receipt whose workDir is
+  that worktree) and check whether its PROCESS is alive. If it is alive, leave it. If it is dead, classify
+  the diff and act in the same turn:
+  - COHERENT: test what it touches, then commit NAMED paths on that worktree's own branch.
+  - PARTIAL: dispatch a resume round whose prompt names the diff as its starting point and forbids redoing
+    steps whose output exists.
+  - DEBRIS: quarantine.
+  - SUPERSEDED: retire with a receipt.
+  Receipt (mlv-app): lane UM-LIVE-PROOFS-1 r2 died after 1,707 s when the CLI account hit its weekly limit.
+  It left a two-file merge resolution in a local-only integration worktree. The first resume planned a
+  verbatim re-dispatch that would have redone that step over the edits. Assessed as COHERENT, 232 tests
+  passed, and it was committed (mlv-app `56e14896`, local branch, never pushed). Adopt or distinguish: a
+  project whose lanes share one tree must add "is the owner alive" before touching anything.
+  Ratified by the mlv-app hub: orchestrator-resume-CURRENT.md tick 2026-09-26 (RULING RESUME-CONTINUE-1).
