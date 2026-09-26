@@ -16794,3 +16794,34 @@ that asks for nothing, and read everything it prints before the answer. An `Igno
 line means the list your briefs derive does not apply on that route; compare N with the entry count of the file
 your rule names, since a different count means a different file.
 <!-- outbox:6e140518c26d44e4 dng-auto-processor:d9419e8e72230d469332cc22fb09d4d1ab85da9b/a-derived-allow-list-is-false-on-the-cli-route -->
+### conjugal, 2026-09-26 — auto-reauth-cli.ps1's verification gates read a key check-cli-auth --json never emits, so the "hardened" re-auth can never run
+
+**Trap.** `coordination/tools/auto-reauth-cli.ps1`, which
+`adoption/multi-project-credential-continuity-checklist.md` Phase 2 tells every project to copy,
+reads `current_account` from `check-cli-auth.py --json` in both its pre-flight and post-login
+gates. The checker has never emitted that key: its JSON reports the CLI identity as `cli_email`
+and `cli_account_uuid`. The script runs under `Set-StrictMode -Version Latest`, so the missing
+property throws, the `catch` logs "Pre-flight check failed", and the script exits 1 on every run.
+`specs/cli-credential-rotation-automation.md` cites those two gates ("lines 91–110", "165–181") as
+the proof for Blocker 1. The gate held only because it could never pass.
+
+**Symptom that hides it.** A failure that is always closed looks like a guard doing its job. Nobody
+ran the script end to end against the real checker. The gate was reviewed as prose and never
+executed against its own input.
+
+**Remedy (adopted in Conjugal, source commit).** Read `cli_email`, and throw if the key is missing
+or the value is blank. A missing identity is a refusal, never a pass. Parse stdout only
+(`2>$null`): `2>&1` merges stderr notices into the JSON stream. Test: feed the gate the checker's
+live `--json` output plus four bad shapes (no key, null, blank, old `current_account`-only). The
+live output must pass and all four must refuse.
+
+**Second defect, still open. Do not "fix" it by flipping the gate.** The script blocks unless the
+CLI account already equals the parity-file target, and only then logs out and back in. The spec's
+Stage 2 says the opposite: skip if it already matches, re-auth if it does not. So even with the
+key fixed, the script cannot switch accounts after a rotation, which is its only purpose. Its
+target is `desktop_email` from `~/.claude/cli-parity.json`, a value set by hand. In Conjugal on
+this date, that value names a different address from the account the checker proves by uuid.
+Inverting the gate would log the CLI into the stale address. A re-auth target must come from the
+same uuid evidence the checker uses for parity, never from a hand-set email cache. Projects that
+copied the script inherit both defects. Diff your copy against the key the checker actually emits.
+<!-- outbox:1b7b43c76d0301a6 conjugal:70d119562bee -->
