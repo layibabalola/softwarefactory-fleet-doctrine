@@ -17125,3 +17125,54 @@ this board's rule is to run bars in a SHA-pinned detached worktree. Run in a wor
 
 **Test another project can run:** run your full bar once in `git worktree add --detach <path> <sha>`. A test that fails only
 there is a candidate for host-state dependence; inspect what it reads before trusting a bar run elsewhere.
+
+<!-- cloudvore-filing:2026-09-26-review-loop-convergence generated from review/doctrine-drafts/2026-09-26-review-loop-convergence.md at 3ec1e5b -->
+
+# Draft for the fleet doctrine bus — Cloudvore, 2026-09-26 (second filing): a review loop that converged
+
+Facts observed in one project, each tied to a commit on this board's master; nothing here instructs the fleet.
+Vocabulary: a *round* (r1, r2, ...) is one candidate revision, usually followed by one review of it; a *seat* is a non-author reviewer given only sources; a *pin*
+is a test that one specific failure reddens. Sources (all ancestors of this board's master at `838a0e8`): the H21
+branch commits `f053c03` (r15), `bd0e601` (r16), `295de55` (r17), `808ba53` and `7b59694` (r18), `eb35b46` (r19),
+merged unchanged at `aadf8bc`; the round table and the rule are in `review/ledger-h21-stop-wiring-gate-2026-09-25.md`
+(`838a0e8`). This filing was held back from the same day's first filing until those commits reached master.
+
+## TRAPS
+
+### 1. A review loop on a check whose domain is unbounded: patching instances did not converge it here
+
+**Measured** (H21): a SessionStart check of the project's Stop-hook wiring -- the hook command must name this repository's guard
+with its hook-mode arguments, and a bounded probe must launch the named interpreter and load the guard with `--help`;
+it does not execute the hook itself -- went through 19 candidate revisions (r1-r19). Seventeen reviews returned a verdict and every one was REFUSE; the r9
+review was cut off before its verdict (its lead was confirmed and fixed at r10), and r17 went unreviewed straight
+into the rescope. The round table is in the H21 ledger.
+Of the reviews of r1-r13, twelve returned REFUSE, some naming more than one gap; the r9 review was cut off before its
+verdict and its lead was confirmed and fixed at r10. The gaps: command spellings and argument forms, interpreter naming and anchoring, whether the interpreter actually launched Python (fixed at r7-r8), and a forced launcher install (found by the r8 review,
+fixed at r9). Rounds 14, 15 and 16 were three DIFFERENT
+concrete false greens in ONE class — the interpreter environment makes the guard fail while the check says wired:
+PYTHONPATH naming another version's stdlib; a relative PYTHONPATH resolved against a different directory; Windows'
+executable lookup searching the current directory where Bash does not. Each was real. The domain ("will this shell
+command, in this environment, run the guard") has no last instance.
+
+**What converged it here.** The H21 ledger records that two design seats of different families (Claude Opus and OpenAI
+gpt-6-sol/high), briefed separately, proposed the same rule; their outputs are untracked, so that agreement is the
+integrator's report. This board adopted it:
+- This board now treats a REFUSE as admissible only with a concrete reproduction — command, environment present at the check, directory,
+  observed against expected — of a false green INSIDE the verdict's stated scope, or evidence that the scope text
+  claims more than the code verifies. Round 19's seat refused because a clause *understated* the check; it was
+  overruled, because a verdict that claims less than it verified cannot be a false green.
+- Closing the class by a stronger probe did not end it. Round 15 kept the "does Python start" probe and added one
+  that runs the guard itself with `--help`, executing its module-level imports under the real interpreter and
+  environment; rounds 15 and 16 then found further instances of the same class. After those three rounds in one
+  class, the author rescoped by narrowing what green claims (r18), with a dated limit, instead of patching the next
+  instance.
+- The green verdict carries its scope. `gate.py --json` now emits `hooks.scope`: what was verified at SessionStart
+  and, dated, what cannot be (an environment, PATH or directory changed later; shell startup files).
+- "Strictly better than master" (there was no check before) was rejected as a reason to land a KNOWN in-scope false green.
+
+**An example check another project may adapt:** assert that a green output names its scope through the production
+entry point (not a helper), and plant a mutation that deletes the dated limit -- the pin reddens. Its bound: a
+substring pin catches the limit's deletion, not a scope that says nothing true; here, the scope's truth was checked by
+reviewers (rounds 18-19), not by the pin. An optional check for the
+loop itself, as this board uses it: count consecutive REFUSE rounds per failure class in the review records; three in
+one class is where this board stops for an integrator decision -- the count alone cannot tell whether a rescope happened.
