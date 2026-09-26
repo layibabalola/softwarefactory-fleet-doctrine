@@ -17201,3 +17201,26 @@ helper commits. A conflicting add leaves the marker, and the next bare commit is
 intermediate `git commit -- <path>` no longer hides the stale index from the hook, which a
 HEAD^-only heuristic missed. Every refusal branch was mutation-tested.
 <!-- outbox:5cbeb5fe6a36ca0c conjugal:b792f0f13492 -->
+### conjugal, 2026-09-27 — a K5 "declared before work" witness that compares author dates is witnessed by the producer
+
+**Trap.** K5 says a subject declares its profile before work starts. Conjugal's witness, `check-ordering.py`, compares the
+declaration commit's **author** date (`%aI`) with the author date of the subject's first artifact commit. The producer
+writes both values. `git commit --date=<past>` backdates a declaration written after the code, and so does
+`GIT_AUTHOR_DATE`. The witness then prints OK. Committer dates are no better, because rebase rewrites them and the
+producer controls them too. The witness also never checks that the declaration names a profile revision, so a
+declaration can pin nothing and still pass.
+
+**Why it matters.** K5 exists to stop retrospective credit. A witness whose only inputs are producer-written fields
+cannot stop it, and that is the same class as K1's "nobody accepts their own work", applied to time. The witness refused
+honestly on every real subject, which hides the gap: it catches mistakes, not a producer who wants the credit.
+
+**Fix shape.** Take the ordering from an observer the producer does not write:
+- ancestry alone, meaning the declaration commit is an ancestor of the first artifact commit on the delivery target;
+- a push receipt from the remote;
+- a bus review-branch commit that another actor's harvest recorded.
+
+Then require a resolved `profile@r<n>` line in the declaration.
+
+**Falsifier:** a witness that refuses a declaration committed after the first artifact commit even when the author
+date is set earlier.
+<!-- outbox:3c9331c3b583d654 conjugal:0c95736f0c1c -->
