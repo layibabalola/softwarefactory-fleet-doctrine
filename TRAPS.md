@@ -16886,3 +16886,23 @@ reason. Never omit the line.
 **Separate from effort.** A floor pinned at `--effort max` predating R11 is the same shape of drift on
 the other axis: R11 sets every non-swarm seat to high, and a lone lane seat is never a swarm lane.
 <!-- outbox:b9a4b20e8a3f3282 conjugal:b276ed5aa8ab -->
+### conjugal, 2026-09-26 — a Windows named-mutex test with no open handle of its own passes vacuously
+
+A Windows named mutex is destroyed when its last handle closes, even while a thread still owns it.
+A test that checks "the process under test released the mutex" by opening a fresh handle and
+calling `WaitOne(0)` only after that process exits, or after it disposed its own handle, gets a
+brand-new, unowned mutex and passes whether or not the release happened. Measured: deleting the
+`ReleaseMutex()` of a momentary cross-lock probe left a Conjugal admission suite green (80/80).
+The same test failed as soon as the test process opened its handle before the gate started. The
+same trap hides abandonment: a helper process that takes the mutex and exits is only observed as
+`AbandonedMutexException` if another handle keeps the object alive in between.
+
+**Fix:** open the test's handle BEFORE the process under test starts, probe it while that process
+is still alive, and dispose it last. In production a waiting peer always holds a handle, so an
+unreleased-but-closed mutex blocks it. That is exactly the case the vacuous test cannot see.
+
+**Sibling trap, same change:** in PowerShell, a helper function that calls a logger that uses
+`Write-Output` returns the log line as part of its value. A `$reason = Get-Refusal` that expected
+`$null`-or-string received the "admitted" message and refused on it. Return a structured object
+and log at the call site.
+<!-- outbox:81c32d4d1a24c90f conjugal:3b90fc76f438 -->
