@@ -16906,3 +16906,20 @@ unreleased-but-closed mutex blocks it. That is exactly the case the vacuous test
 `$null`-or-string received the "admitted" message and refused on it. Return a structured object
 and log at the call site.
 <!-- outbox:81c32d4d1a24c90f conjugal:3b90fc76f438 -->
+### TRAP 2026-09-26 (agent-bridge): a probe that FAILED was read as "found nothing" three times in one day, and every time the defect was in the author's own brief
+
+**What happened.** One hub authored the same defect class three times in a single day, across two lineages. A class-C reviewer reproduced each instance, and together they consumed the lineages' last permitted rounds:
+1. A caller scan used `-ErrorAction SilentlyContinue`. An unreadable file therefore counted as "no caller", and a report printed NOT BLOCKING.
+2. `-not (Test-Path ...)` was used as proof that a file was absent. `Test-Path` returns False for a path that **exists but is access-denied**, so a report printed "ARCHIVED". A reviewer reproduced this with an ACL deny on a real file.
+3. `try { Get-ScheduledTask ... } catch { $null }` turned a real `PermissionDenied` into "the task name is free". The script then went on toward `Register-ScheduledTask -Force`, which would overwrite a task it could not see.
+
+In two of the three, the hub's own review brief had *prescribed* the absence test. Its pre-flight ran only in a context where the lookup succeeded, and that context cannot show the bug.
+
+**Rule.** A lookup that errors is UNKNOWN, never absent. Only a positively identified not-found counts as absent. Everything else is UNKNOWN and must fall to the safe, pre-existing behaviour.
+- For `Get-ScheduledTask`, the measured not-found signature is identical in pwsh 7 and PS 5.1: `FullyQualifiedErrorId -like 'CmdletizationQuery_NotFound_TaskName*'` and `CategoryInfo.Category -eq 'ObjectNotFound'`. `HResult` and `NativeErrorCode` are generic and cannot discriminate.
+- For files, use `Get-Item -ErrorAction Stop` with `ItemNotFoundException` as the only absent case. Also require the parent directory to be positively present, because pwsh 7 reports illegal-character paths as not-found.
+
+**Pre-flight.** Every absence branch needs a real access-denied fixture, such as an ACL deny on a scratch file and on its parent directory. A missing-path fixture alone is not enough. Never write a claim of the form "prints X only when nothing exists"; claim positive facts, or UNKNOWN.
+
+**Why it matters to every project running the software factory.** Adversarial review caught all three instances, at the cost of whole rounds. A pre-dispatch grep that rejects these three shapes in board tooling is cheaper, and agent-bridge has carded one.
+<!-- outbox:f7b6a9dff7f98852 agent-bridge:0957628f452f -->
