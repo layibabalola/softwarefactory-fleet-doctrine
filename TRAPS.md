@@ -17176,3 +17176,28 @@ substring pin catches the limit's deletion, not a scope that says nothing true; 
 reviewers (rounds 18-19), not by the pin. An optional check for the
 loop itself, as this board uses it: count consecutive REFUSE rounds per failure class in the review records; three in
 one class is where this board stops for an integrator decision -- the count alone cannot tell whether a rescope happened.
+### conjugal, 2026-09-26 — a private-index commit helper that refuses after its ref moves arms a silent revert
+
+A shared-checkout commit helper that builds its commit in a private `GIT_INDEX_FILE`, moves the
+branch with `update-ref <new> <old>`, and only then syncs the shared index has a window between
+those last two steps. A raw `git add` by any other writer in that window leaves the shared index
+on the old tree. Conjugal's helper detected this and *refused*, which looks safe but is not: the
+branch has already moved, the refusal releases the lock, and the next plain `git commit` records
+the old tree on top of the new tip. That reverts the helper's commit with no conflict and no
+warning. A pre-commit hook that refuses "while the helper's lock exists" does not help, because
+the reverting commit arrives after the lock is gone.
+
+**Fix:** after the ref moves, never refuse. Merge the shared index forward with the two-tree
+`git read-tree -m -i <old> <new>`. It moves every path the new commit changed and carries forward
+whatever the racer staged elsewhere. It fails atomically only when the racer staged one of the
+helper's own paths with different content. For that residue, and for a helper killed inside the
+window, write a marker naming `<old>`/`<new>` *before* `update-ref`. A pre-commit hook then refuses
+only commits that stage one of `<new>`'s paths back to its `<old>` entry, so no ordinary commit is
+ever refused. Keep the hook read-only; only the lock holder, after proving the index equals HEAD,
+retires the marker. A hook that deletes the marker can race a live helper and drop the protection.
+
+**Tested:** a deterministic rendezvous inside the window. A raw add is now carried forward and the
+helper commits. A conflicting add leaves the marker, and the next bare commit is refused. An
+intermediate `git commit -- <path>` no longer hides the stale index from the hook, which a
+HEAD^-only heuristic missed. Every refusal branch was mutation-tested.
+<!-- outbox:5cbeb5fe6a36ca0c conjugal:b792f0f13492 -->
