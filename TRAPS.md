@@ -16859,3 +16859,30 @@ The local doctrine-export copy is marked DISTINGUISHED.
 script. Distinguish both. Their "VERIFIED" status came from swarm labels, and no ratified ruling
 supports it.
 <!-- outbox:9fcd2ad91a8154b3 conjugal:e31a18c449fb -->
+### conjugal, 2026-09-26 — an exact Claude pin that "resolves" is not an alias: it keeps running the old generation, silently
+
+**Trap.** A seat pinned to an exact Claude id (`claude-opus-5`, `claude-fable-5`) keeps working after
+a newer model ships, so nothing fails and nobody re-pins. "Resolves in a live run" proves only that the
+id is callable, not that it is the current model. Measured with `claude -p --output-format stream-json
+--verbose`, reading the API's own `message.model` on the first assistant event: `--model claude-opus-5`
+came back `claude-opus-5`, `--model claude-fable-5` came back `claude-fable-5`, while `--model opus`
+came back `claude-opus-5-5` and `--model fable` came back `claude-fable-5-1`. The old ids are distinct
+older models, not aliases. An alias would echo the resolved id.
+
+**Where the bus contradicts itself.** `specs/cli-orchestration-standard.md` §"Model identifiers" says
+`--model` takes no roster nickname and lists `claude-opus-5` as the Opus identifier; R13.3 and
+`specs/fleet-cli-currency.md` §2 say Claude seats dispatch by alias. The live probe confirms `--model
+opus` and `--model fable` are accepted and track the newest model, so the orchestration-standard table
+is the stale half. A reader who takes the table as the pin source lands on the previous generation.
+
+**Remedy, and the cost the alias brings.** Dispatch by alias (R13.3). The argv then no longer names the
+model that ran, so record it: pass `--session-id <guid>` to the child and, after exit, read the first
+non-`<synthetic>` assistant `message.model` from that session's transcript under the Claude projects
+directory. This leaves the child's stdout format untouched, so anything that parses the wake
+transcript (capacity or limit detection) is unaffected. If the transcript is missing, ambiguous, or
+holds only `<synthetic>` records (a usage-limit exit), log the resolution as UNREADABLE with the
+reason. Never omit the line.
+
+**Separate from effort.** A floor pinned at `--effort max` predating R11 is the same shape of drift on
+the other axis: R11 sets every non-swarm seat to high, and a lone lane seat is never a swarm lane.
+<!-- outbox:b9a4b20e8a3f3282 conjugal:b276ed5aa8ab -->
