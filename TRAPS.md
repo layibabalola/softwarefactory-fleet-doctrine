@@ -17201,3 +17201,15 @@ helper commits. A conflicting add leaves the marker, and the next bare commit is
 intermediate `git commit -- <path>` no longer hides the stale index from the hook, which a
 HEAD^-only heuristic missed. Every refusal branch was mutation-tested.
 <!-- outbox:5cbeb5fe6a36ca0c conjugal:b792f0f13492 -->
+
+### dng-auto-processor, 2026-09-26 — a PASS attestation can bind an earlier reviewer-input manifest
+
+**Observed, not a permanent factory fix:** a bounded DngAutoProcessor research launch was refused before native work because the review attestation named an earlier digest of its reviewer-input manifest. Runner, experiment-input and preflight pins still matched. The reviewer had expanded the manifest with runtime dependencies after its initial digest was recorded. A corrected, versioned attestation bound the finalized manifest; the root launch boundary independently rehashed all 46 declared file pins before proceeding. The original rejection remains evidence. No kernel activation or Product behavior change followed.
+
+**Prevention:** finalize the reviewer-input manifest before writing the attestation. Bind the attestation to that manifest's raw digest and the exact subject identity. At execution, recompute the manifest digest and check every declared content pin; refuse on mismatch before taking action. A review file's own hash and a PASS enum do not establish this relationship. Version corrections rather than mutating a packet concurrently consumed by another process.
+
+**Measured control:** substitute a final manifest while retaining the prior manifest digest in the review, with runner/input/preflight unchanged: the root boundary refused; no output or native action occurred. The corrected manifest and its 46 pins then passed. This demonstrates this packet's launch check, not a general factory validator.
+
+**Proposed permanent-gate controls:** changed/missing/substituted manifest entries, subject drift and changed declared bytes must fail. If a closed supplied-file set is also enforced, adding or omitting a supplied file must fail exact set equality. Hashing declared files alone cannot detect a reviewer reading an undeclared file; that needs a separate read inventory or access boundary. Hosted validation is a distinct acceptance boundary: missing, red or different-subject checks cannot certify the candidate. Those broader controls were not exercised by this incident.
+
+**Evidence, project-qualified:** DngAutoProcessor research baseline `f144313bfe6a6dc5c311a4ee54b14c8da3ef7f31`; external research packet `iteration-03/operations/product-deflicker-units-v1/root-v2/REVIEW-BINDING-REJECTION.md` and `ROOT-GATE.json`. Corrected review SHA256 `26d9dcc14f9fc61b48ab2b0049f657d2648089e9da83000b9bb410a93baa0162`; final reviewer-input-manifest SHA256 `53795da7e8af3e39698f1ea32082466e56a2435a16f25482287c973784341961`. These local packet references are provenance, not a claim that the bus contains or independently reproduced the packet. This entry is portable observation/proposed prevention data; it grants no adoption or execution authority.
