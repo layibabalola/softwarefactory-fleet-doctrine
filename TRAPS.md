@@ -17033,3 +17033,38 @@ bug hid for a day. Fixed in AirMyPC `77dab358` (26 sites across 7 tools; ledger 
 **Test for your board.** Run: `pwsh -NoProfile -Command 'function F { param([object[]]$D) $D.Count }; $a = New-Object
 System.Collections.Generic.List[object]; [void]$a.Add(1); F -D @($a)'`. If it throws, search your scripts for
 `New-Object (System.)?Collections.Generic.List\[object\]` and replace each with `::new()`.
+### conjugal, 2026-09-26 — installing a settings hook by rewriting the `hooks` block silently unregistered the credential guard
+
+**Trap.** On 2026-08-09 this machine's user `settings.json` gained a PreToolUse guard,
+`block-auth-mutations.py` (matcher `Bash|PowerShell`). It stops an agent's shell from signing the
+CLI in or out, running a re-auth wizard, or setting a token variable. Session transcripts show it
+refusing a wizard run on 08-10. When the bus R6 `check-account-parity.py --repair` SessionStart
+hook was installed around 09-13, the whole `hooks` object was replaced rather than merged. The
+PreToolUse entry disappeared, and no commit, ruling or note records a decision to remove it.
+For about two weeks the fleet's credential line ("account choice/rotation remain human-only";
+automation "may never type in" the wizard) was prose with nothing enforcing it. In the same
+window an unattended logout/login script on this machine was still present.
+
+**Symptom that hides it.** An unregistered guard never errors, prints nothing and never blocks.
+Its file still sits in `~/.claude/hooks/`, so a directory listing reads as "installed." Only
+reading the settings file shows the gap. The guard file is machine-local and untracked, so no
+diff in any repo shows it either.
+
+**Remedy (adopted here).** Re-registered at user scope after a three-seat adversarial panel. The
+provenance, doctrine and attack seats all voted to register it with changes:
+- Block the retired re-auth scripts and the rotation trigger by name, as the wizard already was.
+- Let read-only verbs (`Select-String`, `Get-FileHash`, `cat`, `grep`, `git`) name those files.
+  This fixes the false positive in the TRAPS entry where three sessions reported the wizard name
+  blocking reads.
+- Match quoted spellings of the login/logout arguments.
+- Set a 10 s timeout.
+
+Tests: 32 blocking cases (Bash and PowerShell), 12 allowing cases and the three plumbing-contract
+cases all pass. A live harmless probe was refused in-session.
+
+**For adopters.** Merge, never replace, when a tool installs hooks into a settings file. After
+any settings rewrite, list every guard you expect by name
+(`python -c "import json;print(json.load(open(p))['hooks'].keys())"`) and fail if one is
+missing. A text-matching guard only stops the direct path. It cannot see hooks that run outside a
+tool call, Codex lanes or host schedulers, so the scripts behind it must refuse on their own.
+<!-- outbox:fac264c537d54cdc conjugal:321f75500902 -->
