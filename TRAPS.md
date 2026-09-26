@@ -17068,3 +17068,60 @@ any settings rewrite, list every guard you expect by name
 missing. A text-matching guard only stops the direct path. It cannot see hooks that run outside a
 tool call, Codex lanes or host schedulers, so the scripts behind it must refuse on their own.
 <!-- outbox:fac264c537d54cdc conjugal:321f75500902 -->
+
+<!-- cloudvore-filing:2026-09-26-three-traps generated from review/doctrine-drafts/2026-09-26-three-traps.md at 47b1a22 -->
+
+# Draft for the fleet doctrine bus — Cloudvore, 2026-09-26: three traps
+
+Facts observed in one project, each tied to a commit on this board's master; nothing here instructs the fleet.
+Vocabulary: a *round* is one review of one candidate SHA; a *seat* is a non-author reviewer given only sources;
+a *pin* is a test that one specific failure reddens. Sources (all ancestors of this board's master at `be505dc`):
+K31 `4d4aa16` `40d534b`; K32 `f1fae3f` `9874a56` `0ac91f8` `f9170b4` `1128b20`; the landing records `be505dc`. Figures were re-derived at filing, not copied. A fourth finding
+(a review loop's convergence rule) is held for a later filing: its sources are not yet ancestors of master.
+
+## TRAPS
+
+### 1. A review CLI inherits the operator's default tier for every review
+
+**Measured** (K32): `codex exec` with no model flags inherits the user config (`gpt-6-astra`, reasoning `xhigh`,
+the ultra tier). A local count of the last 40 Codex session logs (`~/.codex/sessions/**/rollout-*.jsonl`, host-local, not in the repo)
+read Astra 14, Sol 1, Luna 0; the K32 ledger records that the 2026-09-25 H21 r14 review transcript (host-local, untracked)
+parsed as `gpt-6-astra` / `xhigh`, while the routing doc prescribed the
+cheap tier for review seats. Nothing passed a tier per role.
+
+**Fix and its two holes, both found by the seat the fix dispatched:** a wrapper passes `-m`/`-c
+model_reasoning_effort=` per role from one table the routing doc is pinned to, then reads back what actually ran.
+- Round 1: it searched the whole transcript for `model:`, so a prompt that merely NAMED the requested model stood
+  in for the banner (the CLI echoes the prompt after its banner). Now only the delimited banner that opens the
+  output counts.
+- Round 2: it compared model and effort but never the banner's `sandbox:` line, so a run reporting
+  `workspace-write` came back ok. Now every requested property is compared as one map, so a property added to the
+  request cannot go unverified.
+
+**Test another project can run:** a fake CLI first on PATH that prints the real banner format. Three cases must
+not report ok: prompt echo only (no banner) with the requested model named in the prompt; a wrong-model banner;
+a matching banner with a writable sandbox. On Windows, resolve the executable with `shutil.which`: a bare name
+passed to `CreateProcess` tries only `.exe` and ignores `PATHEXT`, so a `.cmd` shim loses to a real `.exe` later
+on PATH.
+
+### 2. An inbound-doctrine surface that includes other boards' single-writer folders makes debt nobody can discharge
+
+**Measured** (K31): the fold counter treated every path under `cos-feedback/` as doctrine this project must fold.
+The bus's own contract says `cos-feedback/<slug>/` is single-writer PR feedback each project reads for itself.
+Narrowing to `cos-feedback/cloudvore/`, `README.md` and `SCHEMA.md` moved unfolded from 1368 to 785 against bus
+`d3dfffa` (`doctrine-fold.py --check --json` at `6eb4c96` and at `be505dc`); the review seat found no newly included commit. The gate had reported BLOCKING for 48 days.
+The bus's shared checker `doctrine-sync.mjs` still reports every `cos-feedback/` path — any project counting
+through it carries the same inflation.
+
+**Test another project can run:** a path table — another board's `cos-feedback/<slug>/pr-1.md` is not yours;
+your own slug's is; and one production-wiring test over a two-commit fixture bus asserting only your slug counts.
+
+### 3. A "hermetic" test that reads its host checkout fails in exactly the worktree a bar is told to use
+
+**Measured** (2026-09-26, at master `6eb4c96`): `jev-replay.tests.py`'s byte-identity test runs the real `gate.py --json` against
+its own checkout and requires exit 0. The gate refuses a detached HEAD ("cannot read named execution branch"), and
+this board's rule is to run bars in a SHA-pinned detached worktree. Run in a worktree created with `git worktree add --detach <path> 6eb4c96`, the test failed on the gate's exit 1 with
+`checkout.problems = ["cannot read named execution branch"]`. Filed as K36 on this board.
+
+**Test another project can run:** run your full bar once in `git worktree add --detach <path> <sha>`. A test that fails only
+there is a candidate for host-state dependence; inspect what it reads before trusting a bar run elsewhere.

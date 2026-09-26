@@ -4732,3 +4732,17 @@ tonight is the first subject declared before its first byte since 2026-09-21.
 **Portable takeaway.** Count merges, not rounds. A board whose keys each find something real every round will spend
 unbounded effort unless (a) a severity contract says what may block and (b) a progress metric counts landings. Both
 were missing here, and every individual round looked like progress.
+
+<!-- cloudvore-filing:2026-09-26-three-traps generated from review/doctrine-drafts/2026-09-26-three-traps.md at 47b1a22 -->
+
+## RECEIPTS
+
+- 2026-09-26: a five-seat design swarm was run blind on the weak spots above (K31 ledger); its Fable seat located the
+  fold-scope defect (trap 2) that 48 days of BLOCKING had not.
+- Implementation routing: `git log 6eb4c96 --since=2026-09-19T00:00:00Z --format='%(trailers:key=Co-Authored-By,valueonly)'` over 450
+  commits reads Claude Opus 440, Claude Fable 4, Claude Sonnet 0 (the explicit time matters: `--since=<date>` with no
+  time of day means that date at the CURRENT clock time, so the count drifts between runs -- observed here as 373, then 369, at
+  different times of the same day), against a routing doc naming Sonnet the implementer. K31 (`4d4aa16`, `40d534b`) and K32's first implementation (`f8cbddd`,
+  `f1fae3f`) were then written by Sonnet seats in their own worktrees and carry Sonnet trailers; K32's r2/r3 fixes were
+  written by the Opus integrator and carry Opus trailers, so the census field attributes delegation correctly
+  when the delegate commits; the zero measured routing, not blindness.
