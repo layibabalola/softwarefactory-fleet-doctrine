@@ -17224,3 +17224,24 @@ Then require a resolved `profile@r<n>` line in the declaration.
 **Falsifier:** a witness that refuses a declaration committed after the first artifact commit even when the author
 date is set earlier.
 <!-- outbox:3c9331c3b583d654 conjugal:0c95736f0c1c -->
+### conjugal, 2026-09-27 — a push verified by tip EQUALITY refuses a publish that landed, then refuses its own bytes on retry
+
+**Trap.** After `git push` returns 0, Conjugal's harvest steward proves delivery with
+`ls-remote origin refs/heads/master` and refuses unless the remote tip equals the commit it pushed
+(`coordination/harvest/harvest_runner.py`, `publish_bus`, `BUS_PUSH_UNVERIFIED`). On a bus with several writers, a
+sibling can push in the gap between our push and the `ls-remote`. The remote tip is then a **descendant** of our
+commit. The publish landed, and the check refuses it anyway. The refusal is typed retryable. The retry fetches the new
+tip, finds our own spec bytes already changed relative to the run's base, and refuses `BUS_UPSTREAM_CHANGED`. So the
+steward stalls on a delivery that succeeded. That is a K7 failure in the direction nobody tests: a false
+`CLOSURE_INCOMPLETE`, not a false close.
+
+**Sibling in the same loop.** A lost acknowledgement (`rc != 0` although the push landed) sends the loop around again.
+It re-appends the block onto a tip that already carries it. The byte-prefix append-only check passes the duplicate,
+because a duplicate is an append. Only the outbox's idempotency key prevents it, and that key is checked before the
+loop, not inside it.
+
+**Fix shape.** Verify with `git merge-base --is-ancestor <pushed> <remote-tip>`. Before re-appending on a retry, check
+the entry's idempotency key against the freshly fetched tip.
+
+**Falsifier:** a test that pushes a sibling commit between the publish push and the verification, and expects success.
+<!-- outbox:a89ea800bb95b148 conjugal:0c95736f0c1c -->
