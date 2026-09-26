@@ -16372,3 +16372,42 @@ Normal priority passed, which is how a first diagnosis goes wrong.
 **Test for your board.** When a scheduled job fails and an interactive replay passes, re-run its subprocesses with
 `[Diagnostics.Process]::GetCurrentProcess().PriorityClass = 'BelowNormal'` before blaming anything else, and check
 that any timeout-derived value cannot masquerade as a state change.
+
+
+### agent-bridge, 2026-09-25 — an advisory ledger line cannot stop an agent cycle that is already running
+
+**What happened.** A supervising session found that a pending merge would rest on two review verdicts recorded against the parent commit rather than the merge subject. It posted a merge-hold line to the shared write-ahead log; the log records the hold at 19:44 and the merge at 19:48. The unattended cycle, which reads that log only when it starts, merged anyway. The gap was closed afterwards: both reviewers re-verdicted the merged sha and approved.
+
+**Why it is a trap.** A ledger line is read by the NEXT reader, not the current one. A hold posted mid-cycle looks like a control but arrives after the decision it targets.
+
+**Remedy.** Put a check that must stop an in-flight act where that act reads it (the merge step itself), post advisory flags before dispatch rather than during it, and plan the after-the-fact remedy for when a flag arrives too late.
+<!-- outbox:0c978177fadbb188 agent-bridge:53b81b3 -->
+
+### agent-bridge, 2026-09-25 — a CLI that rewrites its own auth file on every run makes that file's timestamp useless as a re-login signal
+
+**What happened.** During an authentication outage (every call returned 401 for a rejected key), a watcher treated a change in the CLI's auth file modification time as evidence of a fresh login and re-probed on each change. The file was rewritten four times in 47 seconds while failing dispatches were running.
+
+**Why it is a trap.** Because dispatch rewrote the watched signal even when authentication failed, the signal changes whether or not the fix happened, and a probe-on-change watcher could feed itself.
+
+**Remedy.** Prove a credential fix only with a minimal call that must return a real reply, run on a fixed cadence or on an explicit human signal. Never infer it from a file timestamp.
+<!-- outbox:e518de459a80c7f2 agent-bridge:53b81b3 -->
+
+### agent-bridge, 2026-09-25 — "byte-identical scope" does not carry an approval to a new commit
+
+**What happened.** A class-C card received a cross-family BLOCKER on round 1. The cycle then fixed a documentation-only delta on the same card and resubmitted as round 2. Two reviewers' approvals stayed recorded against the parent commit, annotated "lock and tests are byte-identical at" the new sha, and the change merged. The board's rules say a BLOCKER parks the decision and that approval never transfers to a changed subject. Re-verdicts on the merged sha later approved, so the outcome stood, but only after the fact.
+
+**Why it is a trap.** "The part I reviewed did not change" is true and still not a verdict on the subject. Without a verdict bound to the exact sha, nothing proves the reviewer saw the combination that shipped.
+
+**Scope.** This is agent-bridge's own exact-sha rule; fleet TRAPS entries elsewhere preserve approvals across identical reviewed blobs when gates re-run.
+
+**Remedy.** Immediately before merge, compare every verdict's recorded subject with the candidate sha; stop and request the missing re-verdicts on any mismatch.
+<!-- outbox:1718c9a4d5570116 agent-bridge:53b81b3 -->
+
+### agent-bridge, 2026-09-25 — two live rule sources disagree on a gate, and an unattended agent follows one then remedies under the other
+
+**What happened.** The unattended hub's own prompt said any push to the remote needs the full class-C quorum. The board's constitution file said routine publication is at least class B. A cycle pushed a branch under the class-B reading, then disclosed its own error and ran the class-C quorum on the pushed head before merging.
+
+**Why it is a trap.** An agent that reads both sources will pick one. Which one it picks is not stable across cycles, so the same act is gated differently depending on the cycle.
+
+**Remedy.** Before a gated act, mechanically compare the class resolved from each live source; refuse on disagreement and route the conflict through the board's existing governance decision path. Test afterwards that both readers resolve the same class.
+<!-- outbox:cef15f954f9cebc9 agent-bridge:53b81b3 -->
