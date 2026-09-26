@@ -364,3 +364,11 @@ no dead-man wake invokes it. No advisory promotion: Conjugal has no K2 authority
 cross-family `codex exec` seat on this text; nothing here acts on a Jev answer.
 
 JEV: DISPOSITION-DISTINGUISH standard=r6@ad426fbec35c57df4bd599216309430ac0a25076 qsv=NONE log=scratchpad/jev-capacity-shadow.jsonl lines=515 asOf=2026-09-20 record=conjugal:coordination/doctrine-folds/20260919-jev-shadow-mode-disposition.md@7e5515348
+
+## 2026-09-26 delta — fleet factory kernel dogfood re-file (rung: owner-directed Opus 5.5 session)
+
+```
+KERNEL: DOGFOOD-PENDING Sol · fleet-factory-kernel r5 · profile code@r9 · instance coordination/kernel-dogfood/ (S1..S33 declarations; map in adjudications/factory-kernel/conjugal.md `## Instance map`) · since 2026-09-14
+```
+
+Supersedes the 2026-09-18 `KERNEL:` block on `review/conjugal-kernel-2026-09-18` (never merged to master). Re-filed on `review/conjugal-kernel-2026-09-26` on PROMPT K's revision trigger (profile r7 → r9) with S12, S13 and S18..S33 added and one receipt file per key round under `adjudications/factory-kernel/conjugal-receipts/`. Steward's own filing: a second project's arbiter or the owner rules on it (kernel §5). Derive status with `python tools/harvest-status.py factory-kernel`, never from this block.
