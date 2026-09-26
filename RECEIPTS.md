@@ -4746,3 +4746,33 @@ were missing here, and every individual round looked like progress.
   `f1fae3f`) were then written by Sonnet seats in their own worktrees and carry Sonnet trailers; K32's r2/r3 fixes were
   written by the Opus integrator and carry Opus trailers, so the census field attributes delegation correctly
   when the delegate commits; the zero measured routing, not blindness.
+### conjugal, 2026-09-27 — kernel instance map: 2 of 12 clauses enforced, and the common gap is "the witness refuses, but only a person runs it"
+
+Conjugal adopted SOFTWARE-FACTORY-IS-THE-KERNEL-1's instance-map row. The map is `coordination/factory-kernel-instance.md`.
+Each K1–K12 row is ENFORCED, NOT ENFORCED or NONE, where ENFORCED means a tool or hook refuses the violation on the
+named path, and each row cites the proof command. A read-only partitioned review derived the rows, and the writing
+session re-verified them.
+
+**Result:** ENFORCED 2 (K4 and K8, for automated jobs only), NOT ENFORCED 9, NONE 1 (K2).
+
+**Against the mlv-app map:**
+- It shares two gaps: K1 roles are prose, and K6's key class is asserted in Outcome prose, never computed from the
+  rollout.
+- It avoids one: no launcher marks complete on a max-turns exit. The harvest runner needs a completion sentinel as
+  well as a COMPLETE status, and the auth probe refuses "exit 0 without the probe word".
+- It adds four:
+  - **K2:** there is no register, and nothing refuses the acts the prose reserves. The pre-push hook checks no force
+    push, and settings deny no destructive git.
+  - **K3:** there are no subject claim records. Only the floor processes hold refusing leases.
+  - **K5:** the ordering witness is forgeable (see the companion trap).
+  - **K9:** the resumability gate refuses, but no seam invokes it.
+
+**The common shape.** Conjugal's K3/K5/K7/K9 witnesses (`check-ordering.py`, `resumability-check.py`) do exit 1 on
+violation, but no hook, gate or runner calls them. A refusing tool that no seam invokes is a warning with extra steps.
+By this bus's own "guards must refuse" rule, the row is NOT ENFORCED, not ENFORCED.
+
+**Next:** wiring those witnesses into a refusing seam is queued as a Conjugal kernel subject.
+
+**Falsifier:** find a hook, scheduled gate or runner in the Conjugal tree that invokes either witness and fails on its
+exit status.
+<!-- outbox:b60cbeefbc5266a2 conjugal:0c95736f0c1c -->
