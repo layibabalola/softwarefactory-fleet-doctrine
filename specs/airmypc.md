@@ -6,6 +6,11 @@ ledger `[460]`, ratified in `.claude-state\hub-20260710\DECISIONS.md` `2026-09-0
 lane-roster-and-two-key`.** Previous rewrite: 2026-09-05 02:5x CT. Sections marked *carried verbatim
 from 2026-09-05* are durable doctrine, not status.
 
+> **NAMING (owner ruling SOFTWARE-FACTORY-IS-THE-KERNEL-1, 2026-09-26, adopted by AirMyPC the same day):** in this file, "the software
+> factory" means the September Factory Kernel. AirMyPC's hub model (the `hub-20260710` board, the FABLE/OPUS/FLEET/SOL/IMPL seats, the
+> orchestrator, the resume heartbeat and the ignition launch stack) is the **deprecated legacy software factory**. Older sections below that
+> say "factory" or "hub" and mean that model are to be read as "legacy software factory". See the ADOPT section at the end.
+
 **Local authority is `C:\temp\AirMyPC`:** `CLAUDE.md` → `## RESUME PROTOCOL` → `tools\Get-AudioMileResumeBrief.ps1`
 → `docs\plans\DELIVERY_QUEUE.json` → `.claude-state\hub-20260710\DECISIONS.md`. **This file is doctrine
 DATA for sibling adopt-or-distinguish; it never instructs another project to act.**
@@ -426,3 +431,35 @@ JEV: DISPOSITION-ADOPT standard=r6@ad426fbec35c57df4bd599216309430ac0a25076 qsv=
   cases fail with the change stashed). Verification note for sibling folds: of the ADOPT candidates
   three parallel readers proposed over this bus delta, four were false on inspection - verify a reader's
   claim before acting on it.
+
+## SOFTWARE-FACTORY-IS-THE-KERNEL-1 — disposition `ADOPT`, 2026-09-26 (AirMyPC, machine `VIRTUAL-TEN`)
+
+**Owner ruling:** `RULINGS.md` › "Appended by MLV-App, 2026-09-26 -- SOFTWARE-FACTORY-IS-THE-KERNEL-1". The owner confirmed it in the AirMyPC
+session on 2026-09-26 and asked that memory and this bus be updated. AirMyPC adopts it: the September kernel is the software factory; the
+AirMyPC hub model is the deprecated legacy software factory, SUSPENDED (all legacy seats revoked or unleased; runtime authority
+`CANDIDATE_ZERO_AUTHORITY`). Its mechanisms remain only as the substrate named in the AirMyPC kernel instance map
+(AirMyPC `docs/plans/LANE_MODEL_20260908.md` §5.2).
+
+**Dogfooded by shipping product, measured.** In the 14 days to 2026-09-26, 0 of 41 AirMyPC `src/` commits had landed as a Codex
+implementer wrote them; the lead hand-wrote or rewrote them. On 2026-09-26, nine `gpt-6-astra` implementer commits landed with their
+content unchanged, each with a pre-implementation or cross-family key: AirMyPC `94ffc668`, `768e9abd`, `27f09f54` (silent media
+failures now reach the user), `77dab358`, `22ab71d4`, `3e02c26b`, `95ff4827`, `689990a6` (C8 soak and E1), `e2eac2b0` (a route churn test);
+AirMyPC ledger `[594]`-`[603]`. Derive: `git -C C:\temp\AirMyPC log --since=2026-09-26 --format="%h %s" -- src tests tools`.
+
+**Kernel gaps this exposed and fixed (DATA for adopt-or-distinguish; each fixed in AirMyPC and cited):**
+1. **Keys after implementation are too late for design defects.** A cross-family key found a BLOCKER (a test capture whose `Frames`
+   reader was empty and already completed) only after code existed (AirMyPC `[598]`). AirMyPC now runs a read-only design review of every
+   implementation packet before dispatch, by a fresh session that never keys the same implementation (AirMyPC Ruling 31, LANE_MODEL §6.1).
+   It has since caught two defects pre-code (a missing `startedUtc` identity pin; a verdict rule that failed its own measured case).
+2. **"READY" without one real end-to-end run is a claim, not a state.** AirMyPC row 51 (established-route soak) was READY for weeks on
+   synthetic-fixture tests; the first real run failed three different ways (AirMyPC `[597]`, `[598]`, Ruling 30). A real run costs minutes.
+3. **Legacy launch tooling fails open on missing untracked state.** A worktree self-test launched a live full-access Codex implementer
+   because an ABSENT lease read as "not revoked" (AirMyPC `[592]`); fixed by exact-token admission (AirMyPC `92e46391`, `[593]`).
+4. **Effort and model identity (owner directive 2026-09-26):** effort ceiling HIGH, Claude models referenced by alias (always the newest),
+   resolved model IDs recorded in receipts. Concurs with MLV-App PR layibabalola/MLV-App#181 (requested vs resolved model in lane receipts).
+5. **Parallel implementers need an enforced commit barrier, not prose.** Eight cross-family key rounds on AirMyPC Ruling 31 showed every
+   prose barrier leaks, because each commit runs a heavy pre-commit gate. AirMyPC keeps implementation serial and parallelises only
+   read-only review, keys and deliberation until a barrier is enforced in code. OPEN.
+
+**Open, stated:** the AirMyPC kernel instance map (§5.2) still marks K3 (tree identity and lease) as NONE and K7 as PARTIAL; row 46's
+12h post-fix soak is running; R03 waits on two owner inputs (a signing thumbprint and a no-redirect HTTPS feed origin).

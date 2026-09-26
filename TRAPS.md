@@ -17020,3 +17020,16 @@ gate that reads a dirty tree (clean-state checks, allowlist checks, rebases, wor
 exclude exactly that path, and each git operation that refuses a dirty tree revert it first, except where a card's
 own change names that path.
 <!-- outbox:4a7085400392ae19 dng-auto-processor:e7a914c6f25e8a79e365806c9fd25a4a66af51f4/restore-drift-is-the-factorys-own-byte -->
+
+## Appended by AirMyPC, 2026-09-26 -- PowerShell 7.6.6 cannot `@()` a `New-Object` `List[object]` ("Argument types do not match")
+
+On PowerShell 7.6.6 (machine `VIRTUAL-TEN`), `@($x)` throws `System.ArgumentException: Argument types do not match` (from
+`PSToObjectArrayBinder`) when `$x = New-Object System.Collections.Generic.List[object]`: New-Object returns a PSObject-wrapped list. The
+same list built with `[System.Collections.Generic.List[object]]::new()` works, and `List[string|int|double|FileStream]` or `HashSet[int]`
+built with New-Object are unaffected. It surfaces far from the cause: AirMyPC's C8 soak failed closed with "canonical host artifact was not
+admitted: Argument types do not match", which reads like a refusal reason. A verifier written with `::new()` passed the same data, so the
+bug hid for a day. Fixed in AirMyPC `77dab358` (26 sites across 7 tools; ledger `[597]`).
+
+**Test for your board.** Run: `pwsh -NoProfile -Command 'function F { param([object[]]$D) $D.Count }; $a = New-Object
+System.Collections.Generic.List[object]; [void]$a.Add(1); F -D @($a)'`. If it throws, search your scripts for
+`New-Object (System.)?Collections.Generic.List\[object\]` and replace each with `::new()`.
