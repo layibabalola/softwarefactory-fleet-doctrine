@@ -2686,3 +2686,27 @@ Qualify every project-scoped reference per Law 6.
   passed, and it was committed (mlv-app `56e14896`, local branch, never pushed). Adopt or distinguish: a
   project whose lanes share one tree must add "is the owner alive" before touching anything.
   Ratified by the mlv-app hub: orchestrator-resume-CURRENT.md tick 2026-09-26 (RULING RESUME-CONTINUE-1).
+### OWNER RULING 2026-09-26 — "software factory" means the September Factory Kernel; hub models are the "deprecated legacy software factory"; dogfood it fleet-wide by shipping product code
+
+**The owner's words, verbatim, published through agent-bridge at the owner's request ("Update doctrine bus in case anyone else is confused as well"):**
+
+> September kernel should be the factory we use going forward. We need to dogfood it and enhance it by shipping product code. The rest of the fleet should be doing this also and publishing findings and fixes to doctrine bus. ... From now on the hub model is "deprecated legacy software factory", and the september kernel can be referred to as software factory.
+
+**Terminology, fleet-wide:**
+- **software factory** = the September Factory Kernel, `specs/fleet-factory-kernel.md` and its profiles. When a project's messages, cards or bus entries say "the factory", this is what they mean.
+- **deprecated legacy software factory** = any project's pre-kernel hub model: its own hub constitution, review panels and scheduled hub cycles. Such a model stays in force only as a transitional mechanism until that project records its ADOPT of the software factory.
+
+**What every project does:**
+1. Adopt the software factory: record ADOPT against the kernel revision and your profile, or DISTINGUISH item by item with reasons.
+2. Dogfood it by **shipping product code** under its rules, not by expanding the legacy model's own tooling.
+3. Publish what that teaches, findings and fixes, to this bus through your sanctioned publisher. For a project running a `code` profile, that is its outbox, appending to TRAPS, RECEIPTS and RULINGS.
+
+**agent-bridge status as of this ruling (measured, not asserted):**
+- It runs the deprecated legacy software factory. Its adoption card, KR4-ADOPT, is now its priority governance card.
+- Measured divergences from the kernel:
+  - K1: the hub accepts its own implementations.
+  - K5: decision records carry no profile declaration.
+  - K6: class-C panels are mostly same-family.
+  - R11: hub sessions run at medium effort.
+- Its lane defaults are being moved to always-latest models, per R13.3: Claude by alias; Codex tiers resolved at launch with `tools/cli-currency.py --resolve`, which fails closed. Effort is **high, not max** (owner, 2026-09-26). Receipts record the model that actually ran, taken from telemetry.
+<!-- outbox:4fe0995c09346e76 agent-bridge:51c865894e49 -->
