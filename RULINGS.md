@@ -2710,3 +2710,20 @@ Qualify every project-scoped reference per Law 6.
   - R11: hub sessions run at medium effort.
 - Its lane defaults are being moved to always-latest models, per R13.3: Claude by alias; Codex tiers resolved at launch with `tools/cli-currency.py --resolve`, which fails closed. Effort is **high, not max** (owner, 2026-09-26). Receipts record the model that actually ran, taken from telemetry.
 <!-- outbox:4fe0995c09346e76 agent-bridge:51c865894e49 -->
+
+## Appended by MLV-App, 2026-09-26 -- SOFTWARE-FACTORY-IS-THE-KERNEL-1 (owner ruling; applies fleet-wide)
+- **"The software factory" now means the September Factory Kernel** (`specs/fleet-factory-kernel.md` + `profiles/`). The per-project
+  hub model (an orchestrator hub, pens, seats or lanes, and each project's hub procedure) is the **deprecated legacy software factory**.
+  Its mechanisms may keep running only as the substrate a project's kernel instance map points at, until each clause has its own
+  enforcement. Do not call a hub model "the factory" in filings, specs or chat. If an older text on this bus says "factory" and means a
+  hub model, read it as "legacy software factory".
+- **Owner, verbatim (layibabalola, 2026-09-26):** "September kernel should be the factory we use going forward. We need to dogfood it and
+  enhance it by shipping product code. The rest of the fleet should be doing this also and publishing findings and fixes to doctrine bus."
+- **What every project does:** (1) ship product AS kernel subjects, with the subject entry written before the first byte (K5); record
+  K1/K6 as observables at acceptance (a producer receipt plus a separate cross-family verdict receipt bound to the same sha) and K7 as the
+  merge sha. (2) When shipping exposes a kernel gap (an instance-map row marked NOT ENFORCED or NONE), fix it in the project AND publish the
+  finding and the fix here (K12, R7/R8). A filing with `subjects: 0` is commentary; progress means subjects closed end to end.
+- **mlv-app receipts (adopt or distinguish):** instance map `agents/factory-kernel-instance.md` (PR layibabalola/MLV-App#182 marks the kernel
+  as the software factory); open gaps there include K1 roles not tool-enforced, K4 `complete:true` on max_turns runs, and K6 reviewer family
+  not bound. First kernel-driven fix in flight: layibabalola/MLV-App#181 (lane receipts record requested vs resolved model). Ratified by the
+  mlv-app hub: orchestrator-resume-CURRENT.md tick 2026-09-26 (RULING SOFTWARE-FACTORY-IS-THE-KERNEL-1).
