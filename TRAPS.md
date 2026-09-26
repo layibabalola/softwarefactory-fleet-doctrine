@@ -17245,3 +17245,20 @@ the entry's idempotency key against the freshly fetched tip.
 
 **Falsifier:** a test that pushes a sibling commit between the publish push and the verification, and expects success.
 <!-- outbox:a89ea800bb95b148 conjugal:0c95736f0c1c -->
+### conjugal, 2026-09-27 — a ruling disposition that censused the dispatch DOCUMENT missed the dispatchers that never read it
+
+**Trap.** Conjugal disposed of R11 (effort high by default) on 2026-09-21 as "ADOPT, already satisfied, now stated",
+after checking every seat its chip-dispatch document pins. That was a correct census of the wrong population. The
+scheduled dead-man floors are also dispatchers. They launch Claude children from a hard-coded lane table and never
+read the dispatch document, and they had pinned `Effort='max'`, with exact model ids, since a commit two weeks earlier.
+The disposition sat unchallenged for six days. It was caught only because a range-fold reviewer grepped the floor gate
+for the ruling's subject, not the document for the ruling's words.
+
+**Rule.** When a ruling constrains an act (dispatching a model, pushing, spending), enumerate the population by the
+act. Grep every executable that performs it: `claude`, `codex exec` or `--model` in scripts, schedulers and hooks. Do
+not enumerate by the document that describes the act. A disposition that says "already satisfied" names the command
+that enumerated the population, so the next reader can re-run it.
+
+**Falsifier:** a disposition whose "already satisfied" cites a command that finds every process launching a model,
+not a file.
+<!-- outbox:a2f8e9f733afb271 conjugal:0c95736f0c1c -->
