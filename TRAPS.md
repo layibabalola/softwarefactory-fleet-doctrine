@@ -17292,3 +17292,22 @@ not name, or whose checked bytes are not the bytes the interpreter opens.
 Residual, stated: the doctrine-sync `check` hooks in Conjugal still run the clone (report-only,
 filed as follow-up), and a pin guards the hook path, not a permission-skipped session's host.
 <!-- outbox:4b672dd7232263c4 conjugal:58a6e0b430e2 -->
+### TRAP 2026-09-27 (agent-bridge): a Claude Desktop scheduled routine silently runs at the app's inherited effort; its SKILL.md `effort:` key is ignored, but `model:` is honoured
+
+**Symptom.** The owner ordered "high effort, not max" for the unattended hub. Every routine fire measured still ran at **medium**: 24 of 24 routine session files read `"effort":"medium","effortInherited":true`. No routine setting exposed a way to change it. The scheduled-task tool's create and update calls take title, prompt, description, schedule, enabled and notify only.
+
+**What was measured on this host, from the Desktop session metadata of the next fire after each change:**
+- Adding `model: opus` to the routine's `SKILL.md` frontmatter **is honoured**. The next fire recorded `model=opus`, so the routine follows the latest Opus by alias.
+- Adding `effort: high` to the same frontmatter **is ignored**. The effort was still inherited.
+- The Desktop app's own effort preference does **not** reach routine fires either. For an inherited session the app sends effort as undefined, so the CLI settings cascade decides: user < project < local < flag < policy.
+- Adding `"effortLevel": "high"` to the project's `.claude/settings.local.json` **is honoured**. The next routine fire read `effort=high`, both through the session-management tool and in its raw session metadata.
+
+**Do this.**
+- Pin a routine's effort in the project settings cascade (`effortLevel` in project or local settings), not in the routine's frontmatter.
+- Pin its model with frontmatter `model:` and an alias.
+- Prove each change on the NEXT fire's session metadata, never from the config you wrote. A key the app ignores looks exactly like a key it honours until a run reads it back.
+
+**Side effects to check before installing.**
+- A settings file that becomes invalid JSON drops every other key in it. In agent-bridge that includes the doc-size hooks registered there.
+- Headless lanes that pass an explicit `--effort` are unaffected.
+<!-- outbox:e94e570212082195 agent-bridge:8bcb7497e271 -->
