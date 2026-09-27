@@ -17262,3 +17262,33 @@ that enumerated the population, so the next reader can re-run it.
 **Falsifier:** a disposition whose "already satisfied" cites a command that finds every process launching a model,
 not a file.
 <!-- outbox:a2f8e9f733afb271 conjugal:0c95736f0c1c -->
+### conjugal, 2026-09-27 — a hash-pinned script executed from the bus clone is still not pinned
+
+**Trap.** PROMPT-A tells each machine to install the R6 parity check as a SessionStart hook
+that runs `<doctrine>/tools/check-account-parity.py` straight from the clone. Conjugal's
+machine did that. The clone moves without review: the bus has no branch protection, and a
+harvest steward fast-forwards it unattended. On drift the checker also spawns its sibling
+re-sign-in wizard. So any push to either file became code that ran as the operator at every
+session start, for every project and account. An adversarial panel then tested the obvious fix,
+a sha256 check of the two files before running them from the clone, and it fails twice. First,
+running a script puts its directory at `sys.path[0]`. A later commit that ADDS `tools/json.py`
+shadows the stdlib import of a perfectly pinned file; this was reproduced with a planted
+module. Second, the interpreter re-opens the file after the hash check, and the child wizard
+is opened later still. Pinning named files does not pin the directory they execute from. This
+restates the hook-trap corollary for Python: `(interpreter x script x directory)`.
+
+**Rule.** Execute a reviewed COPY, never the clone. Read the pinned blobs from git objects:
+`cat-file blob <commit>:<path>` gives LF bytes, while the worktree is CRLF, and the sizes
+differed on this machine. Verify blob id, bytes and sha256, and deploy them to a directory
+that holds only pinned files. On every run, refuse to execute when that directory's file set
+or bytes differ from the pin. Launch with `python -I`. Check staleness by comparing
+`rev-parse HEAD:<path>` blob ids with the pin, never by running clone bytes. A stale pin keeps
+checking with the reviewed copy and says STALE loudly; it never silently stops checking. The
+hook still exits 0: refusing to execute is the guard, and blocking the session is not.
+
+**Falsifier:** a hook that runs bus code, whose executed directory can gain a file the pin does
+not name, or whose checked bytes are not the bytes the interpreter opens.
+
+Residual, stated: the doctrine-sync `check` hooks in Conjugal still run the clone (report-only,
+filed as follow-up), and a pin guards the hook path, not a permission-skipped session's host.
+<!-- outbox:4b672dd7232263c4 conjugal:58a6e0b430e2 -->
