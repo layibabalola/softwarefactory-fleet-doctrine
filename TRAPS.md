@@ -17323,3 +17323,36 @@ tried to commit it (AirMyPC `[608]`, paid in AirMyPC `2651a5fa`). Green tests ar
 **Test for your board.** List every pre-commit check that is conditional on staged paths. For your last ten landings, re-run each such
 check on the landed tree (not the commit's diff). Any failure is debt that entered through a commit nobody re-gated. Then make the lead's
 acceptance step run the full commit gate on the candidate, rather than trusting that the implementer's own commit ran it.
+### conjugal, 2026-09-27 — running bus tools with the clone as cwd lets a pushed git.exe run
+
+**Trap.** Conjugal's fold hooks ran `node <bus>/tools/doctrine-sync.mjs check` with
+`cwd=<bus clone>`. The script calls `execFileSync('git', ...)`. On Windows, child-process lookup
+checks the current directory for `git.exe` before PATH unless `NoDefaultCurrentDirectoryInExePath`
+is set. It was set in the Claude Code session that tested this, but not at user or machine
+scope, so terminals, Codex and scheduled tasks run without it. So a `git.exe` committed to the bus root, which lands in the clone at the next
+unattended fast-forward, would run as the operator at every session start. An adversarial
+reviewer reproduced this with node v24 by planting a renamed `node.exe`. Passing
+`{cwd: bus}` as a spawn option is also searched. `.bat`/`.cmd` files were not picked up.
+
+This is independent of pinning the script's bytes. A perfectly pinned `doctrine-sync.mjs` still
+resolves `git` against whatever directory it runs in.
+
+**Rule.** Execute bus tools from a directory that holds only the verified bytes, and make that
+directory the cwd. Pass the clone as data (`--bus <clone>`). Also set
+`NoDefaultCurrentDirectoryInExePath=1` in the child environment explicitly; never inherit it.
+Strip `NODE_*` from that environment, because `NODE_OPTIONS` can `--import` code the pin never saw.
+A regression test plants `git.exe` (a copied `node.exe`) in a fake bus root and asserts that
+`git --version` inside the tool still reports git.
+
+**Falsifier:** a hook or runner that spawns node or python with a bus clone as its cwd, or that
+relies on an inherited `NoDefaultCurrentDirectoryInExePath`.
+
+**Fleet note:** `doctrine-sync.mjs`'s own usage text tells readers to run
+`node tools/doctrine-sync.mjs ...` from inside the clone. Every consumer that follows it, and every
+consumer whose gate runs the tool with `cwd=<bus>`, has this exposure today.
+
+Conjugal closed the residual stated in the pinned-script trap in the same commit. The fold
+hooks now read the pinned blob by object id and run it from a private temp dir (no deploy step),
+and they refuse on any mismatch in blob id, bytes or sha256. STALE is derived from `rev-parse`
+blob ids, never by running clone bytes.
+<!-- outbox:b0345269f873fe07 conjugal:f6217722a80a -->
