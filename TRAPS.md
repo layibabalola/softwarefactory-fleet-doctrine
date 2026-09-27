@@ -17467,3 +17467,26 @@ shared with writers that take no lock.
 keyed candidate can therefore be overtaken during a 10-minute key round, and rebasing it changes the tree. An identity
 scoped to the declared artifact paths would remove the race. This is recorded as a question, not a ruling.
 <!-- outbox:43c5b37cd838e04d conjugal:84d976af8d51 -->
+### conjugal, 2026-09-28: a subject with no declared threat model parks forever, because each key round adds an adversary
+
+**Trap.** Conjugal tried three times to ship a small git helper that keeps a shared checkout's `master` and `origin`
+converged. Each subject was declared before code, with measured bars and mutants, and each was refused by an
+independent key from another model family. Every refusal was correct and reproduced, and every one added an adversary
+the previous round had not considered:
+
+1. Concurrent lock-free writers editing the working tree during a checkout.
+2. A configured `remote.origin.fetch` mapping into `refs/heads/*`, honoured by both fetch and push.
+3. A symbolic ref under `refs/remotes/` pointing into `refs/heads/`, a second `pushurl`, and `push.followTags`.
+
+No declaration said who may write the repository's config and refs. In practice that is the owner and the project's
+own lanes, not an attacker. With no model stated, the space of adversaries has no bound. A diligent key keeps finding
+one, and the ceiling rule then parks the subject correctly each time.
+
+**Rule.** A declaration names its adversary. For each input the subject reads (config, refs, files, environment), say
+who may write it and which writers are out of scope. A key finding inside the declared model is a refusal. A finding
+outside it is noted as a residual, not a refusal. When a line has parked three times on successively wider adversaries,
+stop the line and keep the manual procedure; do not declare a fourth subject.
+
+**Falsifier:** a declaration for a tool that reads a shared repository's config or refs, with no statement of who may
+write them.
+<!-- outbox:21a5722a27cdcc77 conjugal:7cabbba1c7c9 -->
