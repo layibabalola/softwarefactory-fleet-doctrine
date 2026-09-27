@@ -4776,3 +4776,26 @@ By this bus's own "guards must refuse" rule, the row is NOT ENFORCED, not ENFORC
 **Falsifier:** find a hook, scheduled gate or runner in the Conjugal tree that invokes either witness and fails on its
 exit status.
 <!-- outbox:b60cbeefbc5266a2 conjugal:0c95736f0c1c -->
+### RECEIPT 2026-09-27 (agent-bridge): KR4-ADOPT, adopting the software factory at kernel r5 / code@r9. Re-baseline, three installed slices, and one correction
+
+**Scope.** agent-bridge is adopting the September Factory Kernel, "the software factory" in the owner ruling of 2026-09-26. Every subject below declared `kernel: r5, profile: code@r9` before its first byte (K5). A separate implementer seat wrote each subject; the hub reviewed it and never accepted its own bytes (K1). Each passed one class-C round with three adversaries plus a cross-family SOL key (K6).
+
+**Phase 0 re-baseline, measured against the r5 kernel and the r9 code profile.**
+- agent-bridge's earlier published dispositions (KR4-FILE-3) were made against r4 and code@r4.
+- Between r4 and r5 only K3 (observer-released claims) changed.
+- **0 DISTINGUISH.** ADOPT: K4, K7, K8, artifact-store and determinism.
+- Every other row is ADOPT-WITH-GAP, each with its instance work named, e.g. claim records (K3), a class-A key (K6), probed model inventory (K10).
+
+**Slices installed and proven by real runs.**
+1. **KR4-ADOPT-MC (model currency, K10).**
+   - Claude lanes dispatch by alias (`fable`, `sonnet`, `opus`) at high effort.
+   - Codex tiers resolve at launch through `tools/cli-currency.py --resolve`. The resolved slug must match the tier exactly, stdout must be exactly one line (stderr is kept separate), and resolution is bounded at 60 s.
+   - Receipts record the model that actually ran, taken from telemetry, together with a drift flag.
+   - Proof: every SOL and PROBE run after the install requested and ran `gpt-6-sol`, and `modelDrift` was false every time.
+2. **The self-authored model-cache freshness gate was DROPPED (K8).** It was blocked in two rounds for two different parse defects. A fail-closed freshness gate can also lock every launch out after a week with no runs, because a refused launch never refreshes the cache. The cache is now read only as receipt evidence. KR4-MC-DEBT-1 bounds that read at 1 MiB, and a read that fails yields null fields and never throws.
+3. **KR4-EFFORT-1 (owner: effort high, not max).** The scheduled hub routine inherited medium effort. It was moved to `effortLevel: "high"` in the project's `.claude/settings.local.json`, and the next scheduled fire read `effort=high`.
+
+**Correction (K11).** The agent-bridge line in the 2026-09-26 owner-ruling RULINGS entry said the lane defaults "are being moved". When it was written, the first attempt (TOPOLOGY-1) had installed nothing and later closed. The move landed afterwards in KR4-ADOPT-MC, above. This receipt makes the record true; the ruling entry itself is unchanged, since the bus is append-only.
+
+**Still owed.** Every remaining ADOPT-WITH-GAP row, taken in the order product work needs them. The next slice is K2's kernel-instance map. Product work shipped under r5 in the same window: PRs #64-#70, SCORECARD-DEF and its debt cards.
+<!-- outbox:068e2569121ae4f6 agent-bridge:8bcb7497e271 -->
