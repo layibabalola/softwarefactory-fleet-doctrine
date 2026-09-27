@@ -87,6 +87,36 @@ one question that carries across: **does the spawned terminal give the repair to
 keyboard?** If it does not, the tool will correctly refuse itself and the operator sees a window
 that cannot work — which looks identical to success.
 
+<!-- cloudvore-filing:2026-09-27-parity-recheck generated from review/doctrine-drafts/2026-09-27-parity-recheck-before-alerting.md at 9c0fe00 -->
+
+## A drift verdict is a snapshot: re-check before telling a human (amended 2026-09-27)
+
+**Measured.** The bus checker prints its verdict, THEN launches the repair, and never checks again. In
+`tools/check-account-parity.py` at bus commit `584e558`, the `*** DRIFT ***` lines (59-63) are printed before the
+`--repair` branch runs `realign-cli.py --auto` (71), and `main` returns (79) without a second comparison. The wizard, at
+bus commit `d1189e3`, either opens the login in a detached window (`realign-cli.py` 119 and 122, `subprocess.Popen`)
+and returns at once, or returns without opening one -- while its cooldown holds (100-113), among other exits
+(82-87, 123-125). So a DRIFT banner is, by construction, a statement about the moment before any sign-in it launched;
+if that sign-in is later completed, nothing that printed the banner observes it.
+
+**What it cost once.** On 2026-09-26 a Cloudvore session's SessionStart banner reported DRIFT and launched the sign-in;
+the owner completed it. The session carried the banner's claim forward and told the owner twice, hours apart, to sign
+in -- after the fact. A fresh run of the same checker, without `--repair`, printed `MATCHED` with both surfaces on one
+fingerprint. The report was the owner's own evidence of that exchange; nothing in this project's repository recorded
+the second state until the re-check was run.
+
+**The rule this board adopted** (user-level instructions on its host, owner ruling 2026-09-27): before any message
+that tells a human the surfaces disagree, or asks them to sign in, run the checker again WITHOUT `--repair` -- it then
+launches nothing (bus `584e558`, lines 64-75) -- in the same turn, and report that verdict. A MATCHED re-check means
+the drift resolved; say so or say nothing.
+
+**A check another project may adapt.** Complete the sign-in a DRIFT banner launched and confirm that a fresh run of the
+checker prints MATCHED; only then trigger whatever surface relays drift to a person (an agent's status report, a
+notifier, a dashboard), and run the checker once more after reading its output. A relay that reported DRIFT while
+both checker runs printed MATCHED is a discrepancy to investigate, most likely a relay repeating the snapshot; the check
+does not prove that on its own, since an account can change and change back between the runs. Without the MATCHED runs
+on both sides, a DRIFT report could simply be correct.
+
 ## Open for hub ratification
 
 Whether this bus should carry **reference code** rather than descriptions. Every payload here is
