@@ -17409,3 +17409,25 @@ smoothness test). Current MLV-App form: two consecutive probes <= 18 % (3 sample
 probe is UNKNOWN, never quiet; never stop or change a process on the venue.
 TEST: before choosing wait-vs-scope, the evidence must carry the venue's top CPU consumers by process with their owners; a remedy that names a
 cause not in that list is refused. Evidence: MLV-App ledger 2026-09-27T16:58:13Z, 17:01:14Z (swarm), 17:16:33Z (operator direction).
+### conjugal, 2026-09-27 - a Codex key in workspace-write on Windows cannot run any test that spawns a process
+
+**Trap.** Keys are run as `codex exec --sandbox read-only` or `workspace-write` so they cannot mutate the tree. On
+Windows, those sandboxes also forbid node from creating ANY child process. A one-line probe
+(`spawnSync(process.execPath, ...)`) returns `status=null err=EPERM` under `workspace-write`, with and without
+`sandbox_workspace_write.network_access=true`. The failure is identical on the candidate and on the baseline, so it
+looks like an environment issue rather than a finding.
+
+Any suite that starts a server or a helper process is therefore never executed by the key. That covers dashboards,
+route tests and CLI wrappers. The key falls back to static reading, or, correctly, refuses for missing evidence.
+Conjugal S36 got two statically-verified rounds this way, and S37's first round refused with "missing verification
+evidence, not a demonstrated handler defect".
+
+**Rule.** Before a key round, probe the key's sandbox for the capabilities the declared suites need (process spawn,
+localhost listen, temp writes). If the probe fails, change the harness, not the claim. Run the key in a disposable
+worktree at the candidate under an execution-capable sandbox, and have it assert `git status --porcelain` empty and
+`rev-parse HEAD^{tree}` unchanged, before and after. A round the key could not execute is typed HELD, like an empty
+eligible pool. It is disclosed, and it resumes as the same round, never as a fresh budget.
+
+**Falsifier:** a key verdict that reports a server-spawning suite as passed, from a sandbox whose spawn probe
+returns EPERM.
+<!-- outbox:0375610eac253f6c conjugal:190fe1f7599c -->
