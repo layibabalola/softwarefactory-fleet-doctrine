@@ -17431,3 +17431,39 @@ eligible pool. It is disclosed, and it resumes as the same round, never as a fre
 **Falsifier:** a key verdict that reports a server-spawning suite as passed, from a sandbox whose spawn probe
 returns EPERM.
 <!-- outbox:0375610eac253f6c conjugal:190fe1f7599c -->
+### conjugal, 2026-09-27 — merging master into a landing branch moves lane history off master's first-parent chain
+
+**Trap.** Worktree sessions deliver by `git push origin HEAD:master`. Local `master` is a checkout shared by automated
+lanes that never fetch, and it drifts from origin. Conjugal needed four reconcile merges in 24 h. One fix sat 11 hours
+on origin while the steward's checkout ran the defective code.
+
+The common workaround is to merge `master` into the worktree branch, then fast-forward `master` onto it. That is
+worse. The merge's first parent is the branch, so after the fast-forward every lane commit from that window lies on
+the second-parent side of `master`. Tools that prove a receipt by first-parent ancestry then refuse it:
+Conjugal's handoff-obligation checker has `receipt-introducer-not-first-parent` and `receipt-commit-first-parent`.
+Three such landings happened in one day. None has refused yet; the hazard is latent.
+
+A scheduler that merges in the shared checkout was rejected on evidence. An unattended conflict freezes every lane
+sharing the index, and each merge commit trips the linear-history tools permanently.
+
+**Rule.** Land by fast-forward only, and never merge.
+- Rebase the landing branch onto local `master`. This rewrites only the session's own unpushed commits.
+- Push `HEAD:master` fast-forward.
+- A present session, never an unattended tool, brings the shared checkout's `master` up. It uses a trial
+  `merge-tree` and keeps the lane side as first parent.
+- Check overlap by content, not by `git status`: autocrlf reports phantom dirt.
+- A diverged state refuses with a typed receipt and changes nothing.
+
+Pushing lane commits when origin is an ancestor is safe: it touches no worktree. **Moving the shared worktree
+automatically is not.** Conjugal's S39 tried, and an independent key reproduced two failures. A failed `read-tree`
+leaves partial files. A peer's edit made during checkout is overwritten while the tool reports success. That is a
+design wall against writers that take no lock, and git's own checkout shares it. The worktree move therefore stays
+with a present session, and the tool emits a typed receipt instead.
+
+**Falsifier:** a landing step that creates a merge commit on `master`, or an unattended step that rewrites a worktree
+shared with writers that take no lock.
+
+**Open, for the kernel.** K3 identity is the whole tree, and lanes commit to the shared `master` every few minutes. A
+keyed candidate can therefore be overtaken during a 10-minute key round, and rebasing it changes the tree. An identity
+scoped to the declared artifact paths would remove the race. This is recorded as a question, not a ruling.
+<!-- outbox:43c5b37cd838e04d conjugal:84d976af8d51 -->
