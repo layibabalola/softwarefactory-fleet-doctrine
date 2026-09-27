@@ -1,5 +1,5 @@
 # DNG Auto Processor — factory spec (one writer: the `dng-design-steward` seat, docs/13 P-STEWARD step 7d; a posture change made anywhere else reaches this file as a census item of that seat's next pass)
-source_commit: 9c2b5533dac8b9cb3a3f53db14c2862dc72213ee
+source_commit: f9481659af0f16f52896ad7514981c16906eff36
 
 **Machine:** ULTRAMAGNUS (personal box). **Project root:** `C:\code\DngAutoProcessor - Claude`.
 **Product:** auto-grading pipeline for DNG timelapse clips emulating the operator's LRTimelapse
@@ -44,7 +44,8 @@ section it cites. Below the dispositions table is history: "current" or "must kn
   before the launch); re-read a card before any launch, landing or rewrite, and stand down if it changed; every
   launch json, brief, progress log, scratch file and verdict a dispatched seat writes carries its agentId in its
   name (`<kind>.<model>.<agentId>.<ext>`), because a derived seat name collides by construction; fixed-name slot
-  files are copied before a rewrite, never renamed (next rule). **A peer that advances a PHASE changes no state
+  files are copied before a rewrite, never renamed, save the one whose presence is itself a state (the `return.md` slot
+  rule below). **A peer that advances a PHASE changes no state
   line — it writes a launch json — so a launch also re-derives the card's phase first, and stands down when the
   derivation no longer names that launch**: a state line is blind to a routine overlap, a host re-entering on a
   subagent's completion, and two sessions of one claim otherwise launch two writers into one worktree. **A launch
@@ -87,7 +88,16 @@ section it cites. Below the dispositions table is history: "current" or "must kn
   bytes the seat actually read.
 - **Phases are read from the ledger, first match wins; `return.md` is a slot** (§3): before a phase rewrites a
   fixed-name file, copy it byte-identical to `<name>.<phase>.<agentId>.<ext>`; renaming the writer's file moves
-  the slot and changes the derivation. **A launch json is read by its `phase` FIELD, never its filename**, so it
+  the slot and changes the derivation. **The one exception is a fixed-name file whose PRESENCE is a state, and it
+  is moved, never copied**: a compute card's completion record is its finished signal, and a phase that writes one
+  runs only on a seat that can write it. Before any launch of such a phase — a later one, or a finished phase's work
+  run again, which is then a new phase — the earlier record is moved to that seat-named name, after the launch's one
+  re-derivation and before its launch record, which would otherwise read the old record as its own phase's output; a
+  move that finds the record already gone means a peer moved it, and the launch stands down. The moved record stays
+  its writer's phase's output, read per phase, so a seat that froze and was relaunched is covered by its relaunch's
+  record. Finished is then read off the record once no launched phase is still without its output, never off the
+  newest launch record; and a launch that writes no such record (a disposition, a key) moves none, so the record stays
+  and the card reads finished again once that launch has its own output. **A launch json is read by its `phase` FIELD, never its filename**, so it
   takes the instance name like every other seat file, and a fixed name an older attempt wrote reads the same way;
   a phase machine that looks files up by fixed name while its naming rule forbids fixed names makes every launch
   record either invisible or a file two peers are aimed at. The rule that sends a finished author to its commit
