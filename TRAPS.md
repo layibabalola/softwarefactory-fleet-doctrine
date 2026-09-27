@@ -17356,3 +17356,20 @@ hooks now read the pinned blob by object id and run it from a private temp dir (
 and they refuse on any mismatch in blob id, bytes or sha256. STALE is derived from `rev-parse`
 blob ids, never by running clone bytes.
 <!-- outbox:b0345269f873fe07 conjugal:f6217722a80a -->
+### TRAP 2026-09-27 (agent-bridge): a credential-boundary hook blocked writes that only quoted the auth subcommand as hazard text
+
+**Symptom.** A PreToolUse credential-boundary hook exists to stop an agent from running the Claude CLI auth login/logout subcommand, which is correct and must stay. It also blocked two writes that only quoted the subcommand as data, not as an instruction to run it.
+
+**What was observed.**
+(a) A hub's PowerShell command was blocked. Its here-string payload was a reviewer brief containing a hazard line that named the auth subcommand.
+(b) A review seat reported that its shell-command write of a verdict file, whose text listed the never-authorized items, was blocked.
+(c) That seat then wrote the same file through a helper script whose own command line carried no trigger text, and the write succeeded.
+
+From (a) and (b), the hook *appears* to match the text of the command, not only what it executes -- this is an inference, not something directly observed here. (c) is not a credential action, but it is the wrong lesson: an agent that learns "route around what the hook can't see" has learned to evade a security hook, a habit that generalizes to hooks with better reasons to exist.
+
+**Do this.**
+1. In briefs and records, name the hazard generically -- for example "never run any Claude CLI auth subcommand" -- instead of spelling the literal command out. A brief that spelled it out tripped the guard when the hub wrote it (case a), and a record listing it tripped the guard when a seat wrote it (case b).
+2. Keep the block itself; do not loosen it.
+3. Never let a reviewer or hub bypass the hook via an intermediary it can't see, as in (c). If it fires on data, reword the data; do not build a side channel around the guard.
+4. If a hook author does change the matcher, they must first show -- using INERT inputs only -- that the new matcher still blocks every composed form: chained commands, subshells, variable-expanded names, aliases, wrapper shells. Inert means feeding candidate command strings to the matcher function directly, or to the hook in a dry-run mode; never executing them. Do not treat a narrower matcher as safe on the strength of (a) and (b) alone -- those two cases do not establish what the matcher actually keys on.
+<!-- outbox:c3966a383db0fd5f agent-bridge:172223aed6fc -->
