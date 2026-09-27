@@ -1,5 +1,5 @@
 # DNG Auto Processor — factory spec (one writer: the `dng-design-steward` seat, docs/13 P-STEWARD step 7d; a posture change made anywhere else reaches this file as a census item of that seat's next pass)
-source_commit: bf69dcf3f5d8165acb00cccf9f67716d90a2bce0
+source_commit: 9c2b5533dac8b9cb3a3f53db14c2862dc72213ee
 
 **Machine:** ULTRAMAGNUS (personal box). **Project root:** `C:\code\DngAutoProcessor - Claude`.
 **Product:** auto-grading pipeline for DNG timelapse clips emulating the operator's LRTimelapse
@@ -21,6 +21,10 @@ section it cites. Below the dispositions table is history: "current" or "must kn
 - **Boot is derivation, never "read fully"** (§3): a stateless seat derives state from git, the queue, its cards and
   the evidence ledgers within §3's budget, and a boot over it makes the tick's only act a split or park. A budget no
   reading set can meet is fixed on the READ: when a correct never-fold rule grows a file, read its live parts by pattern.
+  **The boot's kill switch is read by an absolute path and reads ABSENT only on a positive not-found; any other read —
+  the file found, or an error — skips the tick** (§3, adopted from this bus): a read that answers "not there" for a
+  path it did not see — a relative path resolved from another directory, or, as the bus entry measured, an
+  access-denied path — fails silently, and for a kill switch it fails toward running.
 - **Resume re-arms, reports and stops** (docs/13 P-RESUME steps 2, 6, 7): re-create only the seats its rows list,
   ask about each other stranded task singly (a run with no person present asks nothing), relay every line a steward
   receipt addresses to the USER — **each re-derived at the artifact it names before it is relayed: relayed with its
@@ -211,6 +215,9 @@ section it cites. Below the dispositions table is history: "current" or "must kn
   the pair is derived from the rules at launch, never listed; both keys' briefs carry every approach-review
   finding the approach records as ADOPTED, and key 1 is told its own model asserted them and re-derives each at
   the artifact — otherwise the seat that must catch a false premise is the one that asserted it.
+  **Every Codex seat's launch names its effort — R11's high, medium only for a swarm lane — never the operator's
+  default** (§2, adopted from this bus): a CLI seat launched with no effort flag runs at whatever tier the operator's
+  own CLI configuration sets as its default.
 - **Approach before code** (§2, a USER unfreeze in §0): at most 60 lines, ONE round by the opposite family,
   every BLOCKER and MAJOR answered before the first product byte, never a second approach round; a review silent
   45 minutes is relaunched once, then IMPLEMENT proceeds with it recorded TIMEOUT. A card whose deliverable is a
@@ -234,7 +241,8 @@ section it cites. Below the dispositions table is history: "current" or "must kn
   seat from §2 and nothing in the bound defers it — read as a bar on every top-tier seat, it held a retry card's
   implementation tick after tick while the ticks-per-landing alarm fired and each tick named that card the only open
   card able to land. A swarm, convened by the USER-directed orchestrator for a consequential unresolved choice only,
-  runs Opus, Fable and Astra lanes at high effort and decides 2 of 3 with both providers in the majority; an
+  runs Opus, Fable and Astra lanes at medium effort (fleet R11's one exception to high) and decides 2 of 3 with both
+  providers in the majority; an
   Anthropic-only majority against the Astra lane has that dissent's decisive premise measured and one re-vote, and
   every decisive premise is re-measured before acting. An instrument run pauses and resumes on one model id and
   never mixes models in one scored run; every other top-tier seat falls through at once, never to Opus as an
@@ -279,6 +287,11 @@ section it cites. Below the dispositions table is history: "current" or "must kn
   parsed back with a JSON reader before any rule reads it** (§5, adopted from this bus): a Windows path whose
   backslashes are not doubled leaves an escape JSON does not have, so the whole record parses for no reader, and a
   rule reading one of its fields meets unreadable input — never an absent record, never one without that field.
+  **And an ISO-8601 timestamp in any JSON document is kept a string and parsed as UTC, never through the parser's own
+  date conversion** (§5, adopted from this bus): what a JSON parser returns for a timestamp depends on the engine and on
+  the string's form — one engine hands back a UTC-kind value whose default text drops the zone, and an offset form
+  already moved to local time; the other hands back the raw string — so a stated kind goes stale with the engine, and
+  re-labelling a local-kind value as UTC moves it by the host's offset.
 - **Worktrees are sparse; a free-space floor holds creation, and an unreadable reading holds it**; HELD-FOR-DISK
   spends no attempt; the item worktree goes on landing, a key's once its verdict is written (§10 "Task
   worktrees", a USER unfreeze in §0). **A lock file that the factory's own mandated restore — or any build that restores — rewrites is never the
