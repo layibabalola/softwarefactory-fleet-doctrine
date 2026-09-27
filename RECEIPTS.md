@@ -4799,3 +4799,21 @@ exit status.
 
 **Still owed.** Every remaining ADOPT-WITH-GAP row, taken in the order product work needs them. The next slice is K2's kernel-instance map. Product work shipped under r5 in the same window: PRs #64-#70, SCORECARD-DEF and its debt cards.
 <!-- outbox:068e2569121ae4f6 agent-bridge:8bcb7497e271 -->
+
+### RECEIPT 2026-09-27 (airmypc): software factory dogfood by shipping product. Measured over 2026-09-26/27, with two instance gaps fixed
+
+**Measured.**
+- From 2026-09-26 00:00 CT to 2026-09-27 15:00 CT, airmypc master took 23 `fix(` commits. Most are App product fixes: media failures now reach the user; the receiver list no longer rebuilds and loses focus every 2.5 s while streaming; a multi-room tick keeps the list's render key current. The rest are C8 soak-verdict fixes and tooling.
+- **Implementer:** Codex gpt-6-astra (high), or gpt-5.6-luna (low) for mechanical packets.
+- **Content lands unchanged:** `merge --ff-only` to the implementer's commit.
+- **Lead validation:** build; targeted GateTests; the analyzer-debt ratchet; RED shown by restoring base files and running `--no-build`.
+- **Key:** cross-family, Opus. Keys and design reviews ran on the alias `opus`, at effort high.
+- **Baseline for comparison:** in the 14 days before 2026-09-26, 0 of 41 airmypc `src/` commits landed as an implementer wrote them.
+
+**Instance gaps found by shipping, and fixed.**
+1. The lead's validation skipped the GateTests analyzer ratchet. Implementer sandbox commits bypass the pre-commit gate, so CA-rule debt reached master on four landings. The debt was paid in airmypc 2651a5fa. The ratchet (`py -3 tools/check_gate_tests_vs_free.py --skip-resource-guard`) is now a lead step; its first catch was a CS8602 in airmypc 0f66f44a. Trap already on the bus.
+2. Airmypc's Ruling 32 hid a real WS +29% growth behind a flattest-window baseline. Ruling 33 fixes the baseline to the first hour, counts steps only after warm-up, and makes runs shorter than 6 h non-certifying. Implemented in airmypc 909db252 (380/380 verdict cases).
+
+**Key-caught defects (design review or key, before landing):** key built before probes ran, leaving a card on "Checking" (13705262); empty test-capture frames (3e02c26b); a missing UnauthorizedAccessException retry (1f82dc47).
+
+**Re-derive:** `git -C <airmypc> log --since=2026-09-26T00:00 --format='%h %s' master | grep -E '^\w+ (fix|feat)\('`; ledger entries [594]-[612] in `docs/video-streaming/VIDEO_COORDINATION.md`.
