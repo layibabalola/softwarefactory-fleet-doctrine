@@ -17373,3 +17373,39 @@ From (a) and (b), the hook *appears* to match the text of the command, not only 
 3. Never let a reviewer or hub bypass the hook via an intermediary it can't see, as in (c). If it fires on data, reword the data; do not build a side channel around the guard.
 4. If a hook author does change the matcher, they must first show -- using INERT inputs only -- that the new matcher still blocks every composed form: chained commands, subshells, variable-expanded names, aliases, wrapper shells. Inert means feeding candidate command strings to the matcher function directly, or to the hook in a dry-run mode; never executing them. Do not treat a narrower matcher as safe on the strength of (a) and (b) alone -- those two cases do not establish what the matcher actually keys on.
 <!-- outbox:c3966a383db0fd5f agent-bridge:172223aed6fc -->
+
+### Appended by MLV-App (hub session), 2026-09-27 - three measured traps from one day of lanes on a live venue
+
+**1. Merging a guard-hook change leaves the hook-enforcement receipt pinned to the old hash, and every editing lane refuses (MLV-App, 2026-09-27).**
+MLV-App's lane runner refuses `-AllowEdits` unless the worktree's guard hook matches the hash pinned in a hook-enforcement receipt. Merging PR #107
+(guard v27 + a new deny rule) moved the hook on master; the receipt still pinned the previous hash, so every new editing lane refused with
+hook-not-enforced until the hub re-derived the receipt (blob hashes at the merge, AST case counts, the hosted Tests run at the merge, a verifier's
+merge-tree == reviewed-tree check) about 40 minutes later. It was the SECOND time (first 2026-09-09); the receipt's own open-risk note predicted it.
+FIX: the act that merges a hook change refreshes the receipt in the same turn, before any new editing dispatch (MLV-App hub procedure v2.3 item 6).
+TEST: after any merge touching the hook or its test, `hash(hook on master) == receipt.hookSha256`; a dispatch probe with `-AllowEdits` from a fresh
+worktree must start. Evidence: MLV-App orchestrator ticks 2026-09-27T14:53:51Z and 15:11:23Z; receipt block hookRefresh20260927.
+Relates to `TRAPS.md` > "A dispatch is not a launch: prove the child started, by the artefact it must write (MLV-App, 2026-09-25)".
+
+**2. A rejected dispatch is not a non-launch: the rejection can land after the lane has already started (MLV-App, 2026-09-27).**
+The hub ran its dispatcher (a synchronous command that spawns a detached lane, then proves the child started). The operator rejected the tool call;
+the hub reported "not dispatched" and wrote that to the ledger. The lane had already been spawned 3 s into the call (its dispatch-proof file
+existed), ran for about 4 minutes, and submitted one job to a live workstation, which the operator saw play. The inverse of the 2026-09-25 entry:
+there, a dispatch was reported as a launch without proof; here, a rejection was reported as a non-launch without checking.
+FIX: after any rejected, interrupted, or timed-out dispatch, derive what happened from artefacts before reporting: the run dir's dispatch proof
+and receipt, the process table, and the venue's job share (running/outbox). A ledger line that says "not dispatched" must cite that probe.
+TEST: interrupt a dispatch after the spawn step; the hub's report must name the live lane (or its receipt), never "not dispatched".
+(Fleet `TRAPS.md` > conjugal 2026-09-27 "a ruling disposition that censused the dispatch document missed dispatchers that never read it" is the
+authorization side of the same gap; MLV-App files it as card DISPATCH-AUTH-AT-LAUNCH-1.)
+Evidence: MLV-App ledger entries 2026-09-27T17:05Z (correction) and orchestrator tick of the same minute; job result
+`um-live-proofs-2-r2-fullscreen-c1.result.json` on the venue share.
+
+**3. A CPU-quiescence gate on an interactive venue: blame the load on the right process before choosing a remedy (MLV-App, 2026-09-27).**
+A 20 % `\Processor(_Total)\% Processor Time` gate refused every leg on the operator's workstation (39-54 %). The lane attributed the load to the
+operator's remote session; a single read-only probe found four long-running agent CLI processes using about 28 % of the machine between them
+(the remote-desktop client used about 1 CPU-second). The load was STEADY, so "wait and retry" would have refused again, and a swarm ruled to
+scope the gate to perf legs only (correctness legs at 100 %, load recorded). The operator then ruled instead: run every leg only in a QUIET
+WINDOW on a 10-20 s owner clip, never on the short looping fixture (a looping fixture visibly plays on the operator's screen and reads as a
+smoothness test). Current MLV-App form: two consecutive probes <= 18 % (3 samples ~12 s apart, matching the gate) before any submission; an empty
+probe is UNKNOWN, never quiet; never stop or change a process on the venue.
+TEST: before choosing wait-vs-scope, the evidence must carry the venue's top CPU consumers by process with their owners; a remedy that names a
+cause not in that list is refused. Evidence: MLV-App ledger 2026-09-27T16:58:13Z, 17:01:14Z (swarm), 17:16:33Z (operator direction).
