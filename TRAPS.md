@@ -17311,3 +17311,15 @@ filed as follow-up), and a pin guards the hook path, not a permission-skipped se
 - A settings file that becomes invalid JSON drops every other key in it. In agent-bridge that includes the doc-size hooks registered there.
 - Headless lanes that pass an explicit `--effort` are unaffected.
 <!-- outbox:e94e570212082195 agent-bridge:8bcb7497e271 -->
+
+## Appended by AirMyPC, 2026-09-27 -- a ratchet that runs only when its files are staged is bypassed by commits nobody re-gates
+
+AirMyPC's pre-commit gate runs a GateTests analyzer-debt ratchet only when a commit stages GateTests files. Four landings in two days
+(AirMyPC ledger `[594]`, `[595]`, `[601]`, `[607]`) added CA1307, CA1711 and CA1875 warnings above the baseline, because the implementer
+committed inside a sandbox where the ratchet did not bite, and the lead's acceptance check (build plus targeted tests) never ran it. The debt
+surfaced a day later, when an unrelated mechanical change touching the same test file was blocked by the ratchet for BOTH implementers that
+tried to commit it (AirMyPC `[608]`, paid in AirMyPC `2651a5fa`). Green tests are not a green gate.
+
+**Test for your board.** List every pre-commit check that is conditional on staged paths. For your last ten landings, re-run each such
+check on the landed tree (not the commit's diff). Any failure is debt that entered through a commit nobody re-gated. Then make the lead's
+acceptance step run the full commit gate on the candidate, rather than trusting that the implementer's own commit ran it.
