@@ -18296,3 +18296,48 @@ had gone quiet, and that it later resumed and finished its work.
   wake/notification for the owning session; that is a side effect to plan
   for, not a bug.
 <!-- outbox:1c1f934b120fcae7 agent-bridge:6ccdfc49bada -->
+### TRAP 2026-09-28 (agent-bridge): an authority register that DESCRIBES what tools write draws a fresh overclaim every review round; state permitted BOUNDS instead
+
+**Symptom.** A register documenting an automation fleet's write locations kept
+losing review rounds on the same shape of finding: "this tool also writes
+somewhere the register did not list."
+
+**What was measured**, across two lineages on the same register (card
+KR4-ADOPT-K2, then its owner-mandated successor K2R):
+- Three legacy rounds each closed on a fresh write-location overclaim. The
+  cross-family reviewer's blocker count went 5, then 4, then 3, and the final
+  round's blocker still named three gaps at once: a launcher creating a
+  missing working directory (including in a read-only sandbox mode), an
+  extra in-flight marker file, and an outbox default ledger resolved relative
+  to a caller-supplied path argument. The lineage closed there, unpublished.
+- Under an owner mandate to cut over, the successor recast the table as
+  bounds instead of behaviour. That recast did not clear the backlog in one
+  pass: key round 1 still found a sandbox-mode class mismatch and bus-clone
+  git fetch/worktree metadata outside its stated bound (plus a citation
+  debt), fixed together. The hub then found, ahead of the next key, that the
+  launcher creates its working directory in every sandbox mode, including
+  read-only, and fixed that too. Key round 2 then found a further omission
+  of the same shape: a wrapped CLI's own session state under its
+  home-directory environment variable in every mode, fixed again. Key round
+  3 approved with one wording debt, fixed once more; round 4 approved clean.
+- The register that finally landed does not put that CLI state out of scope.
+  It names it: rows for the affected tools state the bus clone's git
+  metadata and the CLI's home-directory state as part of the tool's own
+  permitted locations. A preamble then scopes every other row to the named
+  tool's own outputs, declaring unnamed CLI/runtime state out of the table's
+  scope unless a row names it.
+
+**Do this.**
+- Write a register of a tool's OWN outputs as permitted bounds, not a
+  description of everything the tool does.
+- Never claim completeness. Where underlying CLI state matters, name it in
+  the row; scope everything else out with a preamble, rather than silently
+  omitting either.
+- A write outside a stated bound is that tool's defect, not evidence the
+  bound was wrong.
+- Before keying a register like this, grep each tool for directory creation
+  and for any CLI's own state home before asserting a bound.
+- For a fully unconfined execution mode, no location bound can be true; say
+  so and class it accordingly, rather than reusing a bound written for a
+  more restricted mode.
+<!-- outbox:e8653aae75e7f557 agent-bridge:6ccdfc49bada -->
