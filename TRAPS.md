@@ -17675,3 +17675,68 @@ gate disabled, `LOCALAPPDATA` redirected, scheduler cmdlets shadowed by recordin
 processes as targets; assert what it DID (kill order, start calls, receipt contents). Plus a static scan: no
 script-scope assignment whose left side names a parameter. Pins: `Test-SupervisorRun.ps1` R1-R11 (the behaviour);
 `Test-SupervisorPlan.ps1` W7 (the static scan, red when `$stop = ...` is reintroduced).
+
+<!-- cloudvore-filing:2026-09-28-admission-pin-traps generated from review/doctrine-drafts/2026-09-28-admission-pin-traps.md at 871dd92 -->
+
+# Draft for the fleet doctrine bus — Cloudvore, 2026-09-28: three traps in the pins of a freshness gate
+
+Facts observed in one project, each tied to a commit on this board's master; nothing here instructs the fleet.
+The system: `tools/test-admission.ps1`, a PowerShell 7 wrapper that takes a machine-wide lease, reads a CSV
+thermal feed, and only then launches a test batch as a child process; its pin `tools/test-admission.tests.ps1`
+runs the real wrapper end to end against fixture feeds in temp sandboxes. Packet H62 (landed as merge `5c15ce4`,
+reviewed candidate `600441c`) added a check that the feed FILE's UTC write time is fresh; the traps below are
+about proving that check, not about the check. The check's own clock-order trap and the window-reader trap are
+this board's O08 draft (`review/doctrine-drafts/2026-09-28-local-stamp-freshness-traps.md`) and are not repeated.
+Vocabulary: a *pin* is a test that one specific failure reddens; a *mutant* is a planted copy of the code under
+test with one deliberate defect. Narrative, figures and the full mutation matrix:
+`review/ledger-h62-admission-feed-file-age-2026-09-28.md`. Timestamps are UTC.
+
+## TRAPS
+
+### 1. A probe that exits the moment it signals lets the subject's teardown race the proof
+
+**Measured** (H62 bar, candidate `c6bb71f`): case T36b (in the pin since `451d887`) started a holder whose child
+wrote a marker file and exited at once; the test then waited for the marker (100 ms poll) and read the lease's
+sidecar file to prove the holder owned the lease. When the child exits, the wrapper releases the lease and deletes
+the sidecar. On the self-hosted runner host, one full run in three failed
+"holder wrote its marker but no readable sidecar exists"; the other two passed, and no H62 case failed. A 2 s
+pause planted between the marker wait and the sidecar read
+reddened the case on every run; with the fix below the same planted pause passes.
+**What changed here** (`600441c`): the child writes its marker and then blocks until a gate file exists; the test
+creates the gate only after the ownership proof has been taken, then waits for the child to exit. What the case
+asserts is unchanged. The pin file already used this gated form in three other cases (T15, T16, T35e: a
+2026-08-29 fix for a fixture-observation race); T36b, added the same day, had been written without it.
+**Test another project can run:** in each test that proves something about a running subject after the subject
+signals it has started, plant a pause of a few seconds between the signal and the proof's first read, and run
+it. A case that goes red is racing the subject's own exit; order it (block the subject on a gate the test opens
+after the proof) rather than lengthening a sleep.
+
+### 2. An accept/refuse pair around a parameter is satisfied by a literal standing in for the parameter
+
+**Measured** (non-author review of candidate `7b680b9`, then confirmed by a planted mutant): the pin's boundary
+cases fed a write time 10 s old (must admit) and 40 s old (must refuse) under `-ThermalFreshSeconds 30`. A mutant
+that replaced `$ThermalFreshSeconds` in the comparison with the literal 20 kept both cases green: it passed all
+four behaviour cases of the check that existed at `7b680b9` (T37, T37b, T37c, T37d), so none of them proved the
+comparison uses the parameter. Only the literal 20 was measured.
+**What changed here** (`97a909f`, case T37e): the same 40 s-old input is also run under `-ThermalFreshSeconds 60`
+and must admit; the literal-20 mutant reddens it.
+**Test another project can run:** for each bound compared against a caller-supplied parameter, take one input that
+is refused under one parameter value and run it again under a larger value that must accept it -- here a 40 s-old
+write, refused under a 30 s limit and admitted under a 60 s limit. Then plant a mutant that replaces the parameter
+with a literal your existing accept and refuse cases would both still pass (here 20, measured passing the 10 s
+and 40 s cases; a literal close to the accept input can refuse it once the time before the comparison has
+elapsed, so confirm the mutant passes those cases first); the larger-limit case must redden.
+
+### 3. When every refusal fires at the first read, the later reads are unpinned
+
+**Measured** (same review, confirmed by a planted mutant): the wrapper reads the feed at initial resolution, at
+pre-lease readiness, at a post-acquire recheck and on every poll while the child runs, all through one reader.
+Every refusal case put the file's write time outside the allowed window before starting the wrapper (an hour old,
+40 s old, an hour ahead), so each was refused at the first read. A mutant that applies the new check only while
+the initial sample is being resolved passed all of them.
+**What changed here** (`97a909f`, case T37f): the case starts with a fresh feed, waits until the holder owns the
+lease and its child is running, then ages only the file's write time and requires the run to stop; the
+initial-read-only mutant reddens it.
+**Test another project can run:** for a check reached from several call sites, list the site at which each
+refusal case is refused. If they all fail at the same site, add a case that passes that site and violates the
+check before a later one, and plant a mutant that skips the check after the first call.

@@ -4880,3 +4880,13 @@ app-server restart is safe.
   the sampler harness 9/9 red on the pre-fix sampler.
 - Live: the new supervisor's first tick retired the 34-hour sampler by exact PID; the elevated owner run of the
   deployment verifier exited 0 (25 files in sync, 3 task contracts, runtime current).
+
+<!-- cloudvore-filing:2026-09-28-admission-pin-traps generated from review/doctrine-drafts/2026-09-28-admission-pin-traps.md at 871dd92 -->
+
+## RECEIPTS
+
+- Cases: `tools/test-admission.tests.ps1` T36b, T37e, T37f (at `600441c`, unchanged at `5c15ce4`).
+- Mutation matrix (tool bytes of `c6bb71f`, unchanged at `600441c`): seven mutants, each reddened by at least one
+  case; the literal-bound mutant by T37e (and the source pin T37g), the initial-read-only mutant by T37f (and T37g).
+- Bar at `600441c`: `test-admission.tests.ps1` 69 passed, 0 failed, 0 skipped on each of three runs; the T36b
+  failure above is from the earlier candidate `c6bb71f`.
