@@ -4950,3 +4950,21 @@ app-server restart is safe.
   printed "Tool-Real: mention oracle True; content oracle True" and "Tool-Mutant: mention oracle True; content oracle
   False" under both. Trap 7, from the 7.6.6 parent: True, False, True; with the user folder prepended to the parent's
   module path, it refused, as written.
+
+<!-- cloudvore-filing:2026-09-28-native-message-fallback-traps generated from review/doctrine-drafts/2026-09-28-native-message-fallback-traps.md at b4ae763 -->
+
+## RECEIPTS
+
+- O12: RED before the fix (base `b93b3ef`) 7 passed / 5 failed (N8 reproduced the live failed receipt); 14/0/0 three times at
+  the reviewed candidate `f600073` on the Windows 10 build 19045 host (local thermal admission refused the local
+  bar); 29 planted mutants killed; non-author review over four rounds, Codex SHIP and two Opus seats SHIP (ledger
+  `review/ledger-o12-notifier-native-fallback-2026-09-28.md`). One labelled live message at 2026-09-28 12:51Z, in
+  the watch's launch shape with no toast module: exit 0, `delivered`, `BurntToastFailed-NativeFallback`.
+- Portable blocks, extracted from this draft's text and run as extracted on this host (Windows 11 build 26200, ANSI
+  code page 1252), 2026-09-28 evening: trap 1's block under pwsh 7.6.6 and under Windows PowerShell 5.1.26100 alike
+  printed True, False, False, True; the same block with `$msg` pointed at a `.cmd` fake that exits 0 for any text
+  printed True four times. Trap 2's block under pwsh 7.6.6, from the root of this board's tree at `55b65fd`,
+  printed `5.1 length, no BOM: 3`, `5.1 length, BOM: 1`, `flagged, no BOM: True; flagged, BOM: False`, then listed two
+  files, `tools/provider-adapters/Invoke-GrokLane.ps1` and `tools/provider-adapters/Invoke-KimiLane.ps1` (not part of
+  O12; whether their non-ASCII bytes change behaviour under 5.1 was not examined). The notifier is not listed: it
+  holds no byte above 0x7F since `d159324`.

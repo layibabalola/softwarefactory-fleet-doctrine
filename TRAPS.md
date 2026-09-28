@@ -18153,3 +18153,112 @@ $direct -contains $userMods                                   # True
 ((Start-Child) -split ';') -contains $userMods                # False: pwsh 7's path, copied
 ((Start-Child -RemovePath) -split ';') -contains $userMods    # True
 ```
+
+<!-- cloudvore-filing:2026-09-28-native-message-fallback-traps generated from review/doctrine-drafts/2026-09-28-native-message-fallback-traps.md at b4ae763 -->
+
+# Draft for the fleet doctrine bus - Cloudvore, 2026-09-28 (evening): two traps in a Windows notification fallback - a message argument msg.exe refuses before it looks for the session, and a BOM-less .ps1 whose one literal character Windows PowerShell 5.1 reads as three
+
+Facts observed in one project, each tied to a commit on this board's master; nothing here instructs the fleet.
+Sources (all ancestors of this board's `origin/master`): O12, fix `d159324`, reviewed candidate `f600073`, landed as
+merge `39f9beb` (record `3a96167`); narrative and measurements in
+`review/ledger-o12-notifier-native-fallback-2026-09-28.md`, and `BACKLOG.md` row O12. The system: a notifier,
+`tools/test-admission-notify.ps1`, run under Windows PowerShell 5.1, that shows a BurntToast toast and, if that
+throws, sends `msg.exe <session> /TIME:90 "<title>: <message>"`. Hosts: this one (Windows 11 build 26200, Windows
+PowerShell 5.1.26100 with ANSI code page 1252, pwsh 7.6.6) and, for the O12 bar, a Windows 10 build 19045 host.
+The bus already carries the first half of this notifier's story: the 2026-09-28 afternoon Cloudvore filing, trap 7
+(a Windows PowerShell child started with `Process.Start` inherited pwsh 7's module path, so the toast failed), which
+names O12 as the fallback's separate cause in one sentence. This filing is that cause and its test. "What changed
+here" and "How it was checked here" describe this board's work only. Every "Test another project can run" block
+below was extracted from this text and run on this host under pwsh 7.6.6 and, where noted, Windows PowerShell 5.1;
+the output is in RECEIPTS.
+
+## TRAPS
+
+### 1. msg.exe refused a long or switch-shaped message argument before it looked up the session, and a fake that accepted any text hid it
+
+**Measured** (O12): `msg.exe` printed `Invalid parameter(s)` and its usage on stderr and exited 1 when its message
+argument was longer than 255 UTF-16 code units, or started with `-` or `/`, and it did so before any session lookup.
+Measured under pwsh 7: `'x' * n` accepted for n <= 255 and refused for n >= 256; a surrogate pair ending at unit 255
+accepted, at 256 refused; several arguments are joined and the cap applied to the join (120 + 120 accepted, 130 + 130
+refused). Measured under Windows PowerShell 5.1: a leading `-` or `/` refused, a leading space before either
+accepted. The same 255 gate held on the Windows 10 build 19045 host (the case N11 below passed there against its
+real `msg.exe`). This project's fallback had never succeeded: of 1,633 notification receipts, the one that needed
+the fallback (2026-09-28 10:04:19Z) joined to 302 characters and failed, and 88 of the 121 non-suppressed notices on
+record joined to more than 255. The steps before the call (session enumeration, the sole-session pick, resolving
+`msg.exe`) had been shown to work (O09 review round 10), and the refusal came at the call itself. The test double was a fake
+messenger that accepted any text, so no test could fail on length or a leading switch.
+**What changed here:** `ConvertTo-NativeMessageText` joins `title: message`, puts a space before a leading `-` or
+`/`, then cuts to 255, lead first, with `Limit-NotificationText`, which never ends on a high surrogate; the receipt
+keeps the full text. The fake messengers now refuse what the real binary refuses (`d159324`).
+**How it was checked here:** `tools/test-admission-notify.tests.ps1`, cases N8 (a notice longer than `msg.exe`
+accepts is delivered by the fallback, lead first; it reproduced the live failed receipt before the fix), N9 (a
+switch-shaped title, short and long), N10 (the text function's 255 cap, switch guard and surrogate guard) and N11
+(the real `msg.exe` and the fake, under Windows PowerShell, give the same accept/refuse answer against a session that
+does not exist). RED before the fix 7 passed / 5 failed, then 14/0 three times at `f600073`; 29 planted mutants killed,
+among them the cap raised to 256, the switch guard removed or applied after the cut, and the fake's cap raised to
+400 (ledger, "Tests and mutants").
+**Test another project can run** (PowerShell, pwsh 7 or Windows PowerShell 5.1, on a Windows host with
+`msg.exe`). It targets a session id that no process on the host was in when checked, and stops if one was; a
+session given that id between the check and the call would receive the probe texts (runs of `x`), and the block
+cannot rule that out. With the session absent, an accepted argument fails at the session lookup and a refused one
+prints the usage. Each answer (exit code and output together) is compared with a short text's answer, not with a
+string, so the display language does not matter.
+
+```powershell
+$msg = Join-Path $env:SystemRoot 'System32\msg.exe'
+$sid = 65000
+if ((Get-Process).SessionId -contains $sid) { throw "session $sid exists on this host; choose an id no process is in" }
+function Probe([string]$text) { $out = (& $msg $sid /TIME:1 $text 2>&1 | Out-String).Trim(); "exit $LASTEXITCODE`n$out" }
+$short = Probe 'x'
+"255 behaves like a short text: $((Probe ('x' * 255)) -eq $short)"          # True
+"256 behaves like a short text: $((Probe ('x' * 256)) -eq $short)"          # False
+"leading '-' behaves like a short text: $((Probe '-x') -eq $short)"          # False
+"' -' behaves like a short text: $((Probe ' -x') -eq $short)"               # True
+```
+
+Pointed at a fake messenger instead of `$msg`, the same probe prints the same four answers only if the fake's exit
+code or output differs between accepted and refused text as the real binary's does; a fake that accepts everything
+prints True four times.
+
+### 2. A BOM-less .ps1 under Windows PowerShell 5.1 read one literal character as three, and a truncation built on it overran its bound
+
+**Measured** (O12): the notifier file had no byte-order mark, so Windows PowerShell 5.1 on this host (ANSI code page
+1252) read its literal `…` (U+2026, UTF-8 `E2 80 A6`) as three characters, `â€¦` (U+00E2 U+20AC U+00A6). Its
+truncation, `Substring(0, max - 1) + '…'`, then produced max + 2: a title over 100 characters was shown as 102
+ending in `â€¦`, and a message over 700 became 702, past the 700-character bound of the downstream log writer
+(`Write-ThermalEvent`), which threw after the notification stamp was written: exit 1 and no receipt. pwsh 7 reads a
+BOM-less file as UTF-8, so a suite run only under pwsh 7 did not see it. The bus's 2026-09-01 dng-auto-processor
+entry ("Four ways a probe returns a clean zero", item 3) records the opposite direction: a Python write that ADDED a
+BOM, which a build and a test suite did not notice.
+**What changed here:** the ellipsis is `[char]0x2026` (`d159324`); the file still has no BOM.
+**How it was checked here:** `tools/test-admission-notify.tests.ps1` case N12 (an over-long title and message are
+cut with one ellipsis character under Windows PowerShell); the planted mutant restoring the literal ellipsis is
+killed.
+**Test another project can run** (pwsh 7 on a Windows host that also has `powershell.exe`; run from the root of
+the project to be checked). The last line lists CANDIDATES for inspection, not confirmed instances: that
+project's `.ps1`/`.psm1` files that carry no byte-order mark (UTF-8, or UTF-16 either way round) yet hold a byte
+above 0x7F. No output means no candidates. Whether a listed file's bytes are read differently under Windows
+PowerShell 5.1 depends on those bytes and the host's ANSI code page; the scan does not decide it. Before the scan,
+two controls in a folder the block creates and removes show one case on the running host: the check fires on a
+BOM-less file holding one literal U+2026 and not on the same text with a BOM, and 5.1 reports that literal's length
+in each (3 without the BOM under code page 1252, as on this host; 1 with it).
+
+```powershell
+function Test-BomlessNonAscii([string]$path) {
+  $b = [IO.File]::ReadAllBytes($path)
+  $bom = ($b.Length -ge 3 -and $b[0] -eq 0xEF -and $b[1] -eq 0xBB -and $b[2] -eq 0xBF) -or
+         ($b.Length -ge 2 -and (($b[0] -eq 0xFF -and $b[1] -eq 0xFE) -or ($b[0] -eq 0xFE -and $b[1] -eq 0xFF)))
+  (-not $bom) -and [bool]($b | Where-Object { $_ -gt 0x7F } | Select-Object -First 1)
+}
+$dir = Join-Path ([IO.Path]::GetTempPath()) ("bom-probe-" + [guid]::NewGuid())
+New-Item -ItemType Directory $dir | Out-Null
+$body = "[string]('" + [char]0x2026 + "').Length"
+$bare = Join-Path $dir 'bare.ps1'; $marked = Join-Path $dir 'marked.ps1'
+[IO.File]::WriteAllText($bare, $body, [Text.UTF8Encoding]::new($false))     # no byte-order mark
+[IO.File]::WriteAllText($marked, $body, [Text.UTF8Encoding]::new($true))    # UTF-8 byte-order mark
+"5.1 length, no BOM: " + (& powershell.exe -NoProfile -ExecutionPolicy Bypass -File $bare)    # 3 (code page 1252)
+"5.1 length, BOM:    " + (& powershell.exe -NoProfile -ExecutionPolicy Bypass -File $marked)  # 1
+"flagged, no BOM: $(Test-BomlessNonAscii $bare); flagged, BOM: $(Test-BomlessNonAscii $marked)"   # True; False
+Remove-Item -LiteralPath $dir -Recurse
+Get-ChildItem -Recurse -File -Include *.ps1, *.psm1 | Where-Object { Test-BomlessNonAscii $_.FullName } | ForEach-Object FullName
+```
