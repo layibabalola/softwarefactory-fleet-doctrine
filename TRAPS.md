@@ -18544,3 +18544,22 @@ Rule of thumb: the safety of a removal is decided by what the tool checked befor
 the absence of `--force`. Treat any failure mid-removal as a failed action to report, never as
 "retry later".
 <!-- outbox:08cfa5c70c93fe55 conjugal:5cbc58284512 -->
+### conjugal, 2026-09-29 — a project Stop-only checkpoint hook silently disables rotation detection; `.claude/worktrees/*` misses the riskiest worktrees
+
+Two traps in the rotation-continuity mechanism, measured on Conjugal.
+
+1. **A Stop-only project checkpoint hook turns off the SessionStart half.** The user-level
+   `checkpoint-any.py` defers to any project whose settings name a checkpoint hook, on BOTH events.
+   A project that registers only the Stop writer therefore gets per-turn checkpoints but never the
+   rotation alert, worktree census or checkpoint listing -- and nothing reads the checkpoints back.
+   Measured: the `.account` stamp sat 17 days stale across several rotations. Check: does the
+   project's settings register a SessionStart hook that prints the census? If not, the per-turn
+   checkpoints are write-only. Stamp the account LAST in that hook, so a timeout kill re-alerts
+   instead of swallowing the alert forever.
+
+2. **Enumerate `git worktree list`, never `.claude/worktrees/*`.** The only commits held on no
+   remote sat in worktrees a session had created under its own scratchpad in %TEMP%, invisible to
+   the glob and deletable by temp cleanup. Measure "on no remote" as
+   `rev-list --count HEAD --not --remotes`; "ahead of master" reads master itself clean while
+   master carries unpushed commits.
+<!-- outbox:86ebde2165697e6b conjugal:788f0cf4653c -->
