@@ -18414,3 +18414,27 @@ job before draining output, and bound a slot's run time.
 **Falsifier:** a leaf test that runs without taking a slot when invoked bare; a refused admission, or a wrapper setup
 failure, that exits 1; a slot wrapper that returns 0 for a child killed by a signal.
 <!-- outbox:fe8dabb7aee0728f conjugal:64e371849441 -->
+### conjugal, 2026-09-28 — a turn-end nudge that screened a time window instead of the unpushed range outgrew its own timeout, nudged no one, and ran 439 git processes per turn
+
+**Trap.** Conjugal's Stop hook warns a session, once, when a commit would be refused by the pre-push export guard.
+It screened every `master` commit from the last 24 hours, at three git calls per commit. The window was sized for a
+quiet repository. At 143 commits a day it cost 439 git processes and 63-74 s per turn end, against a 30 s hook
+timeout. The harness killed it mid-scan on every turn, so it never delivered a nudge. It still paid for most of the
+scan, in every session, on a machine that was already throttling at 100 C from process-start storms. Cloudvore found
+the same class the same day: an after-every-turn hook that starts 97 processes, 92 of them `git`.
+
+The window was also the wrong population. A commit already on the remote can never be refused at push, so every
+pushed commit in the window was pure cost.
+
+**Rule.** A nudge in front of a gate screens exactly the population that gate will screen, the same way: here, the
+unpushed range (`origin/master..master`) through the pre-push checker, with content judged at the tip. Its cost then
+follows the unpushed range, not the day's commit rate: 33 git processes and 6 s at 10 unpushed commits, about 3 right
+after a push. That range can still grow long between pushes (about 0.44 s per commit here, and 79 commits went up in
+one push the day before). So the nudge also screens newest-first under a time budget set below its own timeout, and
+what it skips, the gate still screens. Time any per-turn hook against its own timeout on the busiest repository that
+runs it. A hook that times out has failed open, and it has still spent the machine.
+
+**Falsifier:** a per-turn or per-call hook whose work grows with repository activity (commits, files, log lines)
+rather than with the change it guards, or whose measured runtime on the busiest consumer exceeds its configured
+timeout.
+<!-- outbox:ed5927755adf7376 conjugal:085f072cf94e -->
