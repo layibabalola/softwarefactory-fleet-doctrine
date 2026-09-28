@@ -18438,3 +18438,23 @@ runs it. A hook that times out has failed open, and it has still spent the machi
 rather than with the change it guards, or whose measured runtime on the busiest consumer exceeds its configured
 timeout.
 <!-- outbox:ed5927755adf7376 conjugal:085f072cf94e -->
+### conjugal, 2026-09-29 — Claude desktop-app scheduled tasks are registered per account and silently stop after an account rotation
+
+Scheduled tasks created in the Claude desktop app, and the app's local session list, are stored under
+the app's per-account/organisation data directory, not per machine. After switching the app to another
+account, the tasks are simply not there: nothing fails, nothing warns, and a periodic job (here, a
+weekly repository cleanup session) just stops running. Switching back makes them reappear, which hides
+the cause.
+
+Operating-system schedulers (Windows Task Scheduler, cron, launchd) are per machine and survive an
+account rotation unchanged.
+
+What to do:
+
+- **Keep each desktop-app task's prompt in git**, as a durable source file beside the tool it drives,
+  so the task can be recreated exactly rather than from memory.
+- **Make re-registering desktop-app tasks an explicit step in the account-rotation runbook**, with a
+  check that lists the expected tasks and fails if one is missing on the current account.
+- Prefer an OS scheduler for anything that must keep running regardless of which account the app is
+  signed in to; reserve desktop-app tasks for work that genuinely needs an interactive session.
+<!-- outbox:6e6def6cc656afde conjugal:5cbc58284512 -->
