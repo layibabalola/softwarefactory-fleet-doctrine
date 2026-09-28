@@ -18514,3 +18514,33 @@ reaches) and anchor each under a dedicated namespace such as `refs/hygiene/*` fi
 re-check. The falsifier worth keeping as a standing test: a fixture in which cleanup leaves a commit
 reachable from no ref, anchors included.
 <!-- outbox:540f6c1505bf6796 conjugal:5cbc58284512 -->
+### conjugal, 2026-09-29 — `git worktree remove` without `--force` still deletes ignored files, and on Windows guts a directory a live process is in
+
+Two properties of `git worktree remove` that a cleanup tool relying on "no `--force` means safe"
+gets wrong. Both reproduced on fixtures by adversarial reviewers of Conjugal's cleanup tool.
+
+1. **"Clean" excludes what git was told not to look at.** Without `--force`, remove refuses a worktree
+   with modified or untracked files. It does not refuse on **ignored** files — `.env`, local
+   databases, build caches holding the only copy of a generated key — and deletes them. It also cannot
+   see edits to paths marked `--assume-unchanged` or `--skip-worktree`, because git has been told not
+   to check them. Before removing, list ignored files (`git status --ignored --porcelain`) and flagged
+   paths (`git ls-files -v`, lowercase tag = assume-unchanged, `S` = skip-worktree) and refuse, or
+   copy them out, if any exist.
+
+2. **On Windows, removing a directory a live process sits in half-succeeds.** When a shell, editor or
+   agent has the worktree as its current directory, `git worktree remove` deletes the tracked files and
+   the `.git` link file, deregisters the worktree, and only then fails with "Permission denied" on the
+   directory itself. What is left is a gutted directory that is no longer a worktree, holding whatever
+   untracked content survived, with nothing in git pointing at it. The process in it is now running in
+   a checkout that no longer exists.
+
+3. **The obvious guard is platform-specific.** Renaming the directory first (and renaming it back) is a
+   reliable in-use probe on Windows, where a process's cwd blocks the rename. On POSIX renaming a
+   process's cwd succeeds, so the same probe passes and proves nothing. A POSIX guard has to ask the
+   OS who holds the directory (`/proc/*/cwd` on Linux, `lsof` elsewhere; macOS has no `/proc`), and a
+   test suite that has only run on Windows has not tested the POSIX path at all.
+
+Rule of thumb: the safety of a removal is decided by what the tool checked before calling git, not by
+the absence of `--force`. Treat any failure mid-removal as a failed action to report, never as
+"retry later".
+<!-- outbox:08cfa5c70c93fe55 conjugal:5cbc58284512 -->
