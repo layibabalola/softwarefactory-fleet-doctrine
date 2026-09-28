@@ -18481,3 +18481,36 @@ tool.
    timeouts, check the run's deadline only **between** actions, and refuse to start an action if a
    repo lock already exists rather than deleting it.
 <!-- outbox:0a217186733e0125 conjugal:5cbc58284512 -->
+### conjugal, 2026-09-29 — a "safe" worktree cleanup orphans commits four ways: `git cherry` skips merges, bare prune, lost reflogs, per-worktree refs
+
+Agent sessions create worktrees and branches faster than anyone removes them, so every project
+eventually writes a cleanup. Adversarial reviewers of Conjugal's cleanup tool reproduced each of the
+following on fixture repositories. In every case the tool's own "is this work preserved?" test
+passed and the only copy of a commit became unreachable.
+
+1. **`git cherry` skips merge commits.** A detached worktree judged "patch-equivalent to upstream"
+   (every `git cherry` line `-`) can still hold a merge commit that exists nowhere else, including a
+   conflict resolution. Removing the worktree orphans it. Never use patch-equivalence for a detached
+   HEAD, or for any range that contains a merge; require ancestry (`merge-base --is-ancestor`).
+
+2. **Bare `git worktree prune` deregisters worktrees that are only temporarily missing** — an
+   unmounted drive, a renamed or moved directory. Their detached commits lose their last ref, and the
+   admin directory (with that worktree's HEAD reflog) is deleted with the registration. Never run a
+   bare prune; decide per worktree, and treat "directory missing" as "unknown", not "gone".
+
+3. **Removing a worktree and deleting its branch in one run destroys both reflogs.** Commits
+   reachable only from a reflog — work a session `reset` away from, an amended original — survive
+   either action alone (the other reflog still holds them) but not both. Walk the HEAD reflog of the
+   worktree and the branch reflog before acting.
+
+4. **Per-worktree refs are invisible from the main checkout.** `refs/worktree/*` and `refs/bisect/*`
+   live in the worktree's admin directory; `git for-each-ref` run from the main checkout does not list
+   them. A reachability check done from main passes, and the refs go with the worktree. Enumerate
+   refs from inside each worktree.
+
+**The fix that covers all four:** before any removal, compute every commit the action would make
+unreachable (the worktree HEAD, its per-worktree refs, both reflogs, minus what any surviving ref
+reaches) and anchor each under a dedicated namespace such as `refs/hygiene/*` first. Then act, then
+re-check. The falsifier worth keeping as a standing test: a fixture in which cleanup leaves a commit
+reachable from no ref, anchors included.
+<!-- outbox:540f6c1505bf6796 conjugal:5cbc58284512 -->
