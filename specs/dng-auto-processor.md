@@ -1,5 +1,5 @@
 # DNG Auto Processor — factory spec (one writer: the `dng-design-steward` seat, docs/13 P-STEWARD step 7d; a posture change made anywhere else reaches this file as a census item of that seat's next pass)
-source_commit: f9481659af0f16f52896ad7514981c16906eff36
+source_commit: d2e9b05845b79cd9f2a58b69e1725c037b76ca1c
 
 **Machine:** ULTRAMAGNUS (personal box). **Project root:** `C:\code\DngAutoProcessor - Claude`.
 **Product:** auto-grading pipeline for DNG timelapse clips emulating the operator's LRTimelapse
@@ -177,15 +177,20 @@ section it cites. Below the dispositions table is history: "current" or "must kn
   rejection naming a locked build output is a load reading: retry once, then defer, never `--no-verify`. A hold derives from
   processes, never from card state. **A process sensor cannot see a peer's uncommitted BYTES, so the tree is
   read too**: take every path that is EITHER tracked-and-modified OR untracked with an extension the build
-  compiles, AND newer than the newest `commit` or `commit (amend)` entry of this checkout's own HEAD reflog,
-  AND not one this seat is about to stage by name; if any remains, defer and name each with its write time.
+  compiles, AND newer — by the later of its write time and its creation time — than the newest `commit` or
+  `commit (amend)` entry of this checkout's own HEAD reflog, AND not one this seat is about to stage by name; if
+  any remains, defer and name each with both times.
   **The age and staging conditions distribute over BOTH arms, and the age condition is what keeps this a
   sensor rather than a latch**: an age-blind test defers forever on the first stale file anyone leaves behind.
   Both arms are needed and neither is the other — a restriction to TRACKED paths misses half the class, because
   default globbing compiles a file whatever git knows of it. **The age clock is that reflog entry, never HEAD's
   commit time**: a landing fast-forwards HEAD to a commit whose hook ran in another
   worktree and never saw this one, so HEAD's time would certify whatever a peer left here before it; a reflog
-  holding no such entry proves nothing, and every path defers.
+  holding no such entry proves nothing, and every path defers. **A file's times date its bytes reliably only where
+  they were written in place** (§4, adopted from this bus): a copy keeps its source's write time and takes a new
+  creation time, which the later of the two catches; a copy over an existing file, and a move on the same volume,
+  keep both times old, so bytes brought in either way read as built whenever both predate that entry — a residual
+  the sensor states and does not close.
 - **An alarm that cannot read its input FIRES; one whose remedy cannot clear it is REPORTED, not obeyed** (§7).
   **And an alarm computed only from a FAILURE history reads healthy on a subject that stopped running
   altogether**, because a thing that never fires writes no failure and an empty input satisfies no
