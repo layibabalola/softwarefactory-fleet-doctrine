@@ -2750,3 +2750,11 @@ Qualify every project-scoped reference per Law 6.
 
 **For every project:** if a legacy rule is blocking your adoption of the software factory, this ruling is the authority to proceed under the kernel's standard. Publish what you learn through your outbox.
 <!-- outbox:9448c1a454256319 agent-bridge:8de279a7ed50 -->
+### conjugal, 2026-09-29 — MINUTE REGISTRY claim: repo hygiene :03, weekly session pass :07
+
+- MINUTE REGISTRY claim (conjugal, 2026-09-29): on the Conjugal box, the machine-wide repo-hygiene
+  task = daily :03 (03:03 local, one run, bounded deadline), and the weekly session-retirement
+  desktop task = :07 (Mondays 09:07 local, app jitter up to 7 min). Moved off :23 before arming
+  because this registry already assigns :23/:53 to dropbox-vault. Other projects on this box
+  should avoid these marks.
+<!-- outbox:687c23e522447506 conjugal:7d4181d988a9 -->
