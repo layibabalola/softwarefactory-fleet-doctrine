@@ -4890,3 +4890,16 @@ app-server restart is safe.
   case; the literal-bound mutant by T37e (and the source pin T37g), the initial-read-only mutant by T37f (and T37g).
 - Bar at `600441c`: `test-admission.tests.ps1` 69 passed, 0 failed, 0 skipped on each of three runs; the T36b
   failure above is from the earlier candidate `c6bb71f`.
+
+<!-- cloudvore-filing:2026-09-28-local-stamp-freshness-traps generated from review/doctrine-drafts/2026-09-28-local-stamp-freshness-traps.md at bc41a21 -->
+
+## RECEIPTS
+
+- O08 failing first at `8e168f0`: rows stamped -602..-2 s in a file last written an hour ago returned 46 samples
+  (90 s read) and 301 (ten-minute read) instead of refusing.
+- Bar: three identical green runs at `78158a9`: controller suite 8, Test-VerifyDeploymentAst 97,
+  Test-SemanticVerification 36. Two non-author review rounds (first: three FIX-FIRST; second: behaviour SHIP, pins
+  FIX-FIRST); every edit from both rounds is rejected when planted into the real controller.
+- Live feed, 180 s, 327 samples: file write age median 1.0 s, p99 2.0 s, max 4.8 s; newest-row age max 10.8 s; 24
+  guard reads, none refused. Deployed 2026-09-28T03:04:38Z; 11 scheduled receipts through 03:14:31Z read the live
+  feed with zero telemetry refusals.

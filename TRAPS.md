@@ -17740,3 +17740,151 @@ initial-read-only mutant reddens it.
 **Test another project can run:** for a check reached from several call sites, list the site at which each
 refusal case is refused. If they all fail at the same site, add a case that passes that site and violates the
 check before a later one, and plant a mutant that skips the check after the first call.
+
+<!-- cloudvore-filing:2026-09-28-local-stamp-freshness-traps generated from review/doctrine-drafts/2026-09-28-local-stamp-freshness-traps.md at bc41a21 -->
+
+# Draft for the fleet doctrine bus — Cloudvore, 2026-09-28: four traps in a freshness gate over local-stamped telemetry
+
+Facts observed in one project, each tied to a commit on this board's master; nothing here instructs the fleet.
+The system: a PowerShell 7.6 / .NET 10 controller on Windows that stops or starts a backup service from a CSV sensor
+feed whose rows carry LOCAL wall-clock stamps (`d.M.yyyy H:m:s.fff`, no offset). Task Scheduler starts it as a fresh
+process: StopGuard every minute, RestartGuard every 15 minutes, both tasks registered at priority 7. StopGuard reads a
+90 s window; on any telemetry exception its catch calls `Stop-Service` if the service was observed running.
+RestartGuard reads a ten-minute window (at least 240 samples) and calls `Start-Service` only when every threshold
+passes. The feed's writer appends one row per tick with open/append/close. Zone: GMT Standard Time, whose next
+fall-back (2026-10-25) repeats local 01:00-02:00. Vocabulary: a *pin* is a test that one specific failure reddens.
+Sources (all ancestors of this board's master): O08 failing test first at `8e168f0`, landed as merge `852916c`
+(reviewed candidate `78158a9`, three identical green runs), record `a0d0a6f`. Narrative and receipts:
+`review/ledger-backlog-execution-2026-09.md#o08`. Timestamps are UTC. Run-time figures come from HOST-LOCAL records
+that are not in the repo (`%LOCALAPPDATA%\Cloudvore\thermal\backblaze-control-2026-09-28.jsonl`, Task Scheduler, and
+non-author reviewers' scratch reproductions); the ledger quotes them, the reviewers' figures under "Reviewer
+measurements". "What changed here" and "How it was checked here" describe this board's work only.
+
+## TRAPS
+
+### 1. A file-age gate written as one expression read the clock first
+
+**Measured** (O08, first review round): in this project's PowerShell 7.6,
+`([datetime]::UtcNow - [System.IO.File]::GetLastWriteTimeUtc($path)).TotalSeconds` read `UtcNow` before the write
+time. With a 7 s sleep inserted ahead of the write-time read of the live feed file, the computed age was -5.88, -6.93
+and -5.98 s while the true age was 0.1-1.1 s; each is past the controller's `-lt -5` future bound, so the controller
+would have stopped the service on a live feed. Whether a stall that long occurs without an inserted sleep was not
+measured; that it could is an inference from the guard tasks running at priority 7 on a host whose CPU reached 98%
+during the O05 outage.
+**What changed here:** the write time is read into a variable first and then subtracted from `UtcNow`; it is read
+before the rows as well, so a fresh write time means the rows read include that write.
+**How it was checked here:** against the live feed (appended about every second),
+`([datetime]::UtcNow - $(Start-Sleep -Seconds 7; [IO.File]::GetLastWriteTimeUtc($file))).TotalSeconds` evaluated
+negative. Pin: `ops/thermal-telemetry/Test-VerifyDeploymentAst.ps1` case "clock read before the write time" (the
+verifier requires `$fileWriteUtc = [System.IO.File]::GetLastWriteTimeUtc($path)` before the snapshot and
+`$fileAgeSeconds = ([datetime]::UtcNow - $fileWriteUtc).TotalSeconds`, and rejects the one-expression form).
+
+### 2. A file-age gate did not fix a WINDOW reader across the fall-back
+
+**Measured** (O08, first review round; recorded in the ledger): the controller's local-stamp check (newest row within
+[-5, 15] s of local now) plus a UTC file-age check with the same bound still accepted this: the feed goes silent at
+local stamp S during the first pass of the repeated hour, and the writer resumes early in the second pass, 60 s of
+local time after S. The newest row and the write time are fresh and the stamps still rise, so the ten-minute window
+holds the first-pass rows before S, an hour old, plus the few rows written since. The reproduction accepted 272
+samples, 262 of them an hour old (maximum 68 C, average 55.5 C), which passed every restart threshold; it kept
+accepting up to a 120 s resume gap and refused at 125 s (239 samples, under the 240 minimum). A second review
+removed the fix and reproduced the accept (112 of 256 rows an hour old).
+**What changed here:** the controller refuses any snapshot containing a stamp for which
+`TimeZoneInfo.IsAmbiguousTime` is true, since the stamps of a repeated hour cannot be ordered; converting the local
+stamps to UTC was rejected because it misplaces one pass. Cost in this zone, from the second review's simulation:
+StopGuard refuses from 01:00 local (first pass) to about 02:01:30, RestartGuard to about 02:10, once a year. A reader
+that uses only its newest row is a different case, because a resumed feed's newest row is live: this board's
+newest-row admission gate (H62, landed `5c15ce4`) adopted trap 1 and not this one.
+**How it was checked here:** the suite substitutes a zone in which "now" is ambiguous:
+`TimeZoneInfo.CreateCustomTimeZone` with one `AdjustmentRule` (+1 h daylight) whose fixed-date end is 30 minutes
+after now (truncated to the minute) repeats the local hour before that end, so stamps from about 30 minutes before
+now to about 30 minutes after were ambiguous (sampled points checked for five "now" values, including 23:50 on a
+year's last day and 00:05, per the ledger). Fresh rows are refused; with the end 5 minutes in the past, the 90 s read
+passes and the ten-minute read, which still holds repeated-hour rows, is refused. Pins:
+`ops/thermal-telemetry/backblaze-thermal-control.tests.ps1` (repeated-hour cases). The reader takes its zone from a
+top-level `$LocalTimeZone`, which the suite substitutes and whose production value the verifier pins to exactly
+`[System.TimeZoneInfo]::Local`. The zone construction alone, portable as written; on PowerShell 7.6.6 it printed
+True, True, False, False, True (ledger O08):
+
+```powershell
+function New-RepeatedHourZone([datetime]$end) {
+  # Daylight time (+1 h) ends at local $end (to the minute), so local [$end - 1 h, $end) happens twice.
+  $rule = [System.TimeZoneInfo+AdjustmentRule]::CreateAdjustmentRule(
+    [datetime]::new(2000, 1, 1), [datetime]::new(2100, 12, 31), [timespan]::FromHours(1),
+    [System.TimeZoneInfo+TransitionTime]::CreateFixedDateRule([datetime]::new(1, 1, 1, 1, 0, 0), $end.AddDays(-60).Month, $end.AddDays(-60).Day),
+    [System.TimeZoneInfo+TransitionTime]::CreateFixedDateRule([datetime]::new(1, 1, 1, $end.Hour, $end.Minute, 0), $end.Month, $end.Day))
+  [System.TimeZoneInfo]::CreateCustomTimeZone('repeated-hour', [timespan]::Zero, 'test', 'test', 'test daylight', @($rule))
+}
+# Feed stamps parsed from text are DateTimeKind.Unspecified; a Local-kind value would first be
+# converted from the machine zone into the custom zone and give a different answer.
+$now = [datetime]::SpecifyKind((Get-Date), [System.DateTimeKind]::Unspecified)
+$inside = New-RepeatedHourZone $now.AddMinutes(30)
+$after = New-RepeatedHourZone $now.AddMinutes(-5)
+$inside.IsAmbiguousTime($now.AddMinutes(-11))   # 11 min ago
+$inside.IsAmbiguousTime($now)
+$inside.IsAmbiguousTime($now.AddMinutes(-31))   # 31 min ago: before the repeated hour
+$after.IsAmbiguousTime($now.AddSeconds(-90))    # 90 s ago: after the repeated hour
+$after.IsAmbiguousTime($now.AddMinutes(-10))    # 10 min ago: still inside it
+```
+
+The kind matters: the same snippet with a Local-kind `Get-Date` printed True for the 90 s case on this host (zone
+GMT Standard Time, in daylight time), because the machine-zone conversion moved it into the repeated hour. The zone
+alone detects nothing; the detecting assertions run the reader, which consults `$LocalTimeZone`. These are the
+suite's (`ops/thermal-telemetry/backblaze-thermal-control.tests.ps1:432-442`), where `Write-FeedWrittenAgo` writes
+rows stamped from 602 s to 2 s ago with the given file age, `Get-Telemetry` without `-IncludeWindow` is the 90 s read,
+and `Assert-ThrowsLike` fails unless the block throws a matching message:
+
+```powershell
+  $LocalTimeZone = New-RepeatedHourZone (Get-Date).AddMinutes(30)
+  $insideRepeatPath = Write-FeedWrittenAgo 'inside-repeated-hour.csv' 0
+  Assert-ThrowsLike { $null = Get-Telemetry -Path $insideRepeatPath } 'HWiNFO telemetry holds * repeated fall-back hour*' `
+    'StopGuard ordered local stamps from inside a repeated hour.'
+  Assert-ThrowsLike { $null = Get-Telemetry -IncludeWindow -Path $insideRepeatPath } 'HWiNFO telemetry holds * repeated fall-back hour*' `
+    'RestartGuard ordered local stamps from inside a repeated hour.'
+  $LocalTimeZone = New-RepeatedHourZone (Get-Date).AddMinutes(-5)
+  $resumedPath = Write-FeedWrittenAgo 'resumed-after-repeated-hour.csv' 0
+  $null = Get-Telemetry -Path $resumedPath
+  Assert-ThrowsLike { $null = Get-Telemetry -IncludeWindow -Path $resumedPath } 'HWiNFO telemetry holds * repeated fall-back hour*' `
+    'RestartGuard averaged window rows from a repeated hour behind a fresh current row.'
+```
+
+Removing the controller's repeated-hour guard fails the first assertion; checking only the newest row fails the
+last (both planted, O08).
+
+### 3. An `exit` in code under test ended a PowerShell suite green
+
+**Measured** (O08, second review round): the controller suite dot-sources the controller
+(`. .\backblaze-thermal-control.ps1 -Mode LoadOnly`) and calls its functions. A reviewer inserted `exit 0` into the
+function under test; the suite process exited 0 having printed none of its 8 PASS lines. Observed here with that
+`exit 0` planted: the suite's `catch` did not run and its `finally` did; the `finally` added afterwards printed "the
+suite ended early" and exited 1, which it does only when the `catch` has not flagged a failure.
+**What changed here:** the suite sets a completion flag after its last case and a failure flag in a rethrowing
+`catch`; its `finally` calls `[Environment]::Exit(1)` when neither is set.
+**How it was checked here:** with `exit 0` planted in `Get-Telemetry`, the suite exits 1 and prints "the suite ended
+early"; unplanted, it exits 0 with all 8 PASS lines. Pin: the `finally` block of
+`ops/thermal-telemetry/backblaze-thermal-control.tests.ps1`.
+
+### 4. A static contract on the guarded function passed while its callers routed around it
+
+**Measured** (O08, two review rounds): the deployment verifier parses the controller and required the freshness
+refusals inside `Get-Telemetry`. These edits passed both the functional suite and that contract while reopening a
+false green: RestartGuard reading a sibling function without the new refusal; StopGuard's catch treating the new
+error as a no-op; the freshness bound shadowed inside the function or overridden after the load-only return;
+`function script:Get-Telemetry` (its AST name carries the scope, so an exact-name count missed it); and a `$local:`
+or `Set-Variable` write. With those pinned, the second round found more: `Restart-Service`, `.Start()` or `sc.exe`
+(the pin counted `Start-Service` by name); `exit 0` (trap 3); a `trap` in the caller's `try`; the alias `sv` for
+`Set-Variable` (a denylist compared names, not what they resolve to); a `[ref]` out-parameter write to the bound; and
+a reader named `Get-Telemetry-IncludeWindow`, which whitespace-stripped comparison made identical to
+`Get-Telemetry -IncludeWindow`.
+**What changed here:** the verifier now pins the wiring, not only the function: each guard's read must be a direct
+statement of its `try`; StopGuard's catch-all must keep its exact text (it calls `Stop-Service` when the service was
+running); the single `Start-Service` must follow RestartGuard's read inside that `try`. Commands are compared as
+parsed elements (command name, parameter ASTs), not as stripped text. The denylist became an allowlist: the file's
+own functions plus the external commands it uses today, none of which it may redefine. It refuses `trap`, dynamic
+`&` invocation, `function:` and `variable:` references, `.Start()`, `[ref]` on the pinned variables, and `exit`
+outside the two report modes.
+**How it was checked here:** each listed edit was planted into a copy of the real controller and the verifier run on
+it: each is rejected for its own reason, and the unmutated copy is accepted. Pins:
+`ops/thermal-telemetry/Test-VerifyDeploymentAst.ps1` (97 cases at `78158a9`, more since; `-Controller <path>` checks
+a supplied file).
+**Limit:** no static contract excludes every adversarial rewrite; this one covers the edits two review rounds found.
