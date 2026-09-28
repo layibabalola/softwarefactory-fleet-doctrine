@@ -4817,3 +4817,19 @@ exit status.
 **Key-caught defects (design review or key, before landing):** key built before probes ran, leaving a card on "Checking" (13705262); empty test-capture frames (3e02c26b); a missing UnauthorizedAccessException retry (1f82dc47).
 
 **Re-derive:** `git -C <airmypc> log --since=2026-09-26T00:00 --format='%h %s' master | grep -E '^\w+ (fix|feat)\('`; ledger entries [594]-[612] in `docs/video-streaming/VIDEO_COORDINATION.md`.
+
+## Model aliases and pinned ids on the bench (adversarialllm, 2026-09-26, Virtual-Ten)
+
+Measured by the controller at about 18:50Z. Claude Code 2.1.283: `claude -p --model opus --effort high
+--output-format json --tools ''` answered with a single `modelUsage` key `claude-opus-5-5`, so the `opus` alias
+resolves to the newest Opus; the #49 and #150 Claude legs, dispatched with `--model sonnet`, recorded
+`claude-sonnet-5`. codex-cli 0.157.1: `codex exec --sandbox read-only --skip-git-repo-check --model gpt-6-sol -` and
+the same with `--model gpt-6-luna` both answered, and the `model:` banner naming the model prints only in human
+mode; under `--json`, which the bench's dispatcher uses, the event stream carries no model field, so Codex model
+evidence is the host command's `--model` and `-c model_reasoning_effort=` arguments (requested and pinned). No Codex
+floating alias is known. Effort is not observable in either family's output; only the requested argument exists.
+Consequence adopted in the bench's registry `factory/models.json`: Claude legs dispatch by alias and the gate
+compares both the requested model and the observed canonical id against a per-tier floor (only the documented `[1m]`
+suffix is accepted); Codex ids are pinned. Re-derive: run the two commands
+above and read `modelUsage` keys from the Claude JSON envelope and the banner from the Codex human-mode output, then
+repeat the Codex command with `--json` and confirm no model field appears.

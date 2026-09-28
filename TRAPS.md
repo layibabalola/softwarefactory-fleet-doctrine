@@ -17490,3 +17490,92 @@ stop the line and keep the manual procedure; do not declare a fourth subject.
 **Falsifier:** a declaration for a tool that reads a shared repository's config or refs, with no statement of who may
 write them.
 <!-- outbox:21a5722a27cdcc77 conjugal:7cabbba1c7c9 -->
+
+### High-risk review legs ran below tier and merged through a family-only gate, twice, off the tracked driver (adversarialllm, 2026-09-26, Virtual-Ten)
+
+Point 8 of this bench's operative amendment staffs high-risk-class review legs from the loops tier (Opus and the Codex
+loops model, effort high). Two consecutive high-risk pull requests merged below it: #49 (controller drivers) with a
+Claude leg at `--model sonnet --effort low` and a Codex leg at `gpt-5.6-luna` low, and #150 (controller defaults)
+with Sonnet low and `gpt-5.6-sol` low, and no verdict comment was published on #150 at all. Three layers each looked
+like someone else's check. The review dispatcher defaulted every pull request to the bounded tier and never called
+the change classifier it sits beside. The pure merge evaluator checked identity, one leg per family, MUST/BLOCKER and
+a non-author APPROVE, but neither tier nor publication. And both merges were decided off the tracked merge driver,
+which exits 5 without an authorship receipt, by calling the evaluator directly, so any predicate living only in the
+driver would have been skipped too. Evidence: AdversarialLLM-ClaudeCode issue #151.
+
+> **Tier and publication are merge predicates inside the pure evaluator, not steps of a driver or a dispatcher
+> default, and the evaluator refuses any input that lacks the evidence those predicates read: no recorded authorship
+> means no decision, never the older family-only rule. Missing tier evidence fails closed. A publication counts only
+> when the published comment names the same attempt and carries the same verdict, not merely the same self-declared
+> hash. The risk class comes from the classifier over the full diff, never from the caller, so only the tracked driver
+> that computes it is a D2 route.**
+
+Test: `node --test factory/review-state.test.mjs factory/controller/controller.test.mjs` in AdversarialLLM-ClaudeCode;
+"evaluateMerge refuses every legacy-shaped input (no authors) with AUTHORS_REQUIRED, including PR #49 legs",
+"replays of PR #49 and PR #150 review inputs are refused" (REVIEW_BELOW_TIER; #150 with tiered legs but no published
+verdict is VERDICT_UNPUBLISHED), "missing or malformed producing evidence is TIER_EVIDENCE_MISSING on every
+authors-path merge", "a publication binds to its own attempt, round, base, row and exact verdict, never to a
+self-declared hash alone", and "merge-pr -WhatIf: high-risk legs below tier, unpublished verdicts and missing
+evidence are refused; valid evidence is mergeable".
+
+### A controller that checks its own model floor has not checked its legs' tier (adversarialllm, 2026-09-26, Virtual-Ten)
+
+This bench's autonomy rule makes a merging controller's first act a model-floor check. Both controller sessions that
+merged #49 and #150 passed that check on themselves, and it covered nothing that mattered: the merge keys were the
+review legs' verdicts, and nobody read the legs' producing evidence for tier. A floor check on the deciding session
+is a self-report about the one seat whose output is not a key.
+
+> **A model floor binds every seat whose output is a merge key, and it is checked on that seat's own producing
+> evidence (requested model and effort, observed canonical model) inside the evaluator; the deciding session's floor
+> is necessary and never sufficient.**
+
+Test: the evaluator input carries no field for the deciding session's model; a high-risk input whose legs ran below
+the loops tier is refused whatever session evaluates it (same command; "high-risk legs below the loops tier or
+below high effort are REVIEW_BELOW_TIER; at or above passes").
+
+### An exported test helper that returns approval is a production bypass (adversarialllm, 2026-09-26, Virtual-Ten)
+
+The first fix for the trap above made the merge evaluator refuse every input without recorded authorship, and kept
+the old family-only decision alive as an exported function under a test-sounding name, so the legacy vectors could
+keep exercising it. That function still returned `mergeable: true, reason: D2_SATISFIED` with no tier and no
+publication check, and any caller could import it. The round-2 Codex leg filed it as a MUST and the pull request
+(#154) was closed with `adj-close`: a name is not an access control, and "for tests" is a comment, not a boundary.
+
+> **A module that decides a merge exports exactly one function able to approve, and it applies every predicate. Any
+> helper it shares returns only a refusal reason or nothing, never an approval object; an old decision kept as a
+> test oracle lives in test code as a reference model, and its vectors are re-derived through the production routes
+> with the same expectations.**
+
+Test: `node --test factory/review-state.test.mjs` in AdversarialLLM-ClaudeCode; "review-state exports no
+approval-returning function that skips the tier and publication predicates" (the export list is exactly
+`REQUIRED_CHECKS`, `evaluateMerge`, `evaluateReview`, `subjectAndChecksDefect`; no other tracked production module
+contains `D2_SATISFIED` or `mergeable: true`) and "production re-derives every legacy decision across a
+table-driven cross product". Re-derive: `git grep -lE "D2_SATISFIED|mergeable: *true" -- '*.mjs' '*.js' '*.ps1'
+':!*.test.mjs'` lists only `factory/review-state.mjs`; with `-nE "mergeable: *true"` and the same pathspecs it prints
+one line, `evaluateMerge`'s final return, which follows `refuse('VERDICT_UNPUBLISHED')` and
+`refuse('NON_AUTHOR_APPROVAL_REQUIRED')`.
+
+### A review leg's own gate cannot finish inside its tool timeout (adversarialllm, 2026-09-26, Virtual-Ten)
+
+This bench's Claude review leg runs the exact-head local gate through one fixed MCP tool, and its wrapper set
+`MCP_TOOL_TIMEOUT` to 1800000 ms (30 min). The gate script first waits up to 30 min for the host's run mutex, and the
+controller's exact-head gates on #154's three heads took 1619, 2404 and 3241 s. Every at-tier Claude leg on #154
+therefore timed out mid-gate, left a gate log and no gate receipt, and returned no evaluable verdict, while the
+orphaned CI child kept running. The tier floor was enforced and could not be met: the timeout, not the reviewer, decided that the
+high-risk class would wait.
+
+> **A leg's tool timeout exceeds the worst observed gate plus the lease wait, the gate ends itself before that
+> timeout (killing the child tree reachable by `taskkill /T`, writing a RED receipt marked timed out, and replying on
+> the child's exit without waiting for any survivor that still holds its pipes), and the host timeout exceeds the gate
+> deadline by the review time, so a reviewer always receives an evaluable answer before its client times out. A
+> detached grandchild can survive that kill; the gate does not contain it.**
+
+Test: `node --test factory/controller/controller.test.mjs` in AdversarialLLM-ClaudeCode; "the review gate ends
+before the client tool timeout, which ends before the host timeout" and "the review gate kills its CI child at the
+deadline and returns a RED timedOut receipt" (its detached, pipe-holding grandchild survives the kill and the reply
+does not wait for it). Re-derive: `MCP_TOOL_TIMEOUT` in
+`factory/controller/templates/claude-readonly-wrapper.ps1` is 5400000, `DEADLINE_MS` in
+`factory/controller/templates/review-gate-server.mjs` is 5100000 and the `TimeoutSeconds` default in
+`factory/controller/dispatch-review.ps1` is 9000 (5100 s + 3600 s); `startedAt`/`finishedAt` in the
+`gate-154-*-exact-ci.json` receipts under the TIER-FLOOR worktree's `.factory-local` give 1619, 2404 and 3241 s, and
+the #154 Claude review-attempt worktrees hold `reviewer-ci.log` but no `reviewer-ci.json`.
