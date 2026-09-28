@@ -4817,3 +4817,53 @@ exit status.
 **Key-caught defects (design review or key, before landing):** key built before probes ran, leaving a card on "Checking" (13705262); empty test-capture frames (3e02c26b); a missing UnauthorizedAccessException retry (1f82dc47).
 
 **Re-derive:** `git -C <airmypc> log --since=2026-09-26T00:00 --format='%h %s' master | grep -E '^\w+ (fix|feat)\('`; ledger entries [594]-[612] in `docs/video-streaming/VIDEO_COORDINATION.md`.
+
+### RECEIPT 2026-09-28 (adobe-ingester, machine VIRTUAL-TEN): Codex Desktop 26.924.2738 startup hang, the clog left by an app-server restart, and a UI-reload watcher
+
+**Measured on VIRTUAL-TEN** (all times UTC).
+- **Install.** Build `OpenAI.Codex_26.924.2738.0` (11645) was registered at 2026-09-26 22:35:05Z (AppXDeploymentServer
+  events 400/613/649). Event 472 moved `26.924.1866.0` (build 11431) to the Deleted folder.
+- **Launches on build 11645: 6.** The first, right after install, loaded by itself: the primary window mounted after
+  24.8 s. The other 5 hung until someone intervened. One of the 5 was a diagnostic launch with a debug port.
+- **The hung launches.** `app_start outcome=failure reason=timeout` came at about 120 s, with the marks ending at
+  `settings_ready`. Inspected live over CDP, `gatewayOAuthReadiness` was `"loading"` and the local host capabilities were
+  `null`. Re-sending `ready {initializationOnly:true}` loaded the UI immediately.
+- **The listener gap**, from an instrumented reload of `app://-/index.html`:
+  - +1588 ms: the app's `message` listener was removed.
+  - +1601 ms and +1620 ms: the two `ready` messages were sent.
+  - +1622 ms: the listener was re-added.
+  - +1744 ms and +1747 ms: the snapshot replies arrived.
+
+  I did not capture a failing run with the probe attached.
+- **App-server restart as the fix.** Used twice; both times the UI mounted 6–10 s later.
+  - After the first restart (2026-09-26 23:37Z), 5 `turn/start` requests went through with `errorCode=null` the next
+    day.
+  - After the second (2026-09-27 23:52Z), the queue was clogged by 2026-09-28 00:33Z. Zero send or steer requests went
+    through, `queueWaitMs` was 22–29 s, and `thread/list` timed out repeatedly.
+- **UI-only reload** (2026-09-28 00:38Z). Six renderer processes were killed; the app-server pid did not change.
+  - The primary window remounted after 11.1 s, with `app_start outcome=success` at 9.3 s.
+  - The longest `queueWaitMs` in the first minute was 1.5 s.
+  - The running turn and its sub-agent were not interrupted.
+  - `turn/steer` went through at 00:52:19Z in 11 ms.
+- **Detector replay.** Run against all 12 saved launch logs on VIRTUAL-TEN, each cut off 45 s after launch: 5 of 5 hung
+  and 7 of 7 healthy launches were classified correctly, and nothing was classified `hung` before 45 s.
+
+**Installed on VIRTUAL-TEN** (machine-local; not shared code). A per-user logon Scheduled Task,
+`CodexDesktopStartupRescue`, runs `%USERPROFILE%\bin\Watch-CodexDesktopStartup.ps1`.
+- It acts only on build 26.924.2738.0.
+- It keys each launch on pid + CreationDate.
+- It reloads the UI up to 3 times, then restarts the app-server once.
+- It writes JSONL receipts under `%LOCALAPPDATA%\CodexDesktopStartupRescue\`.
+
+The manual tool is `%USERPROFILE%\bin\Start-CodexDesktop.ps1`; its `-ReloadUi` switch fixes a clogged queue.
+
+Status: armed. The UI-reload path has been proven by hand but not yet on a real hang.
+
+**Re-derive (on VIRTUAL-TEN).**
+- `Get-Content "$env:LOCALAPPDATA\CodexDesktopStartupRescue\receipts.jsonl" -Tail 20`
+- `pwsh -File "$env:USERPROFILE\bin\Watch-CodexDesktopStartup.ps1" -ReplayLog <desktop log> -ReplayAgeSec 45`
+- `Select-String -Path "$env:LOCALAPPDATA\Codex\Logs\2026\09\*\codex-desktop-*-t0-*.log" -Pattern 'name=app_start'`
+- `Get-WinEvent -LogName 'Microsoft-Windows-AppXDeploymentServer/Operational' | Where-Object Message -match 'OpenAI.Codex_26.924'`
+
+**Upstream:** openai/codex#48463, comments 5861145859 and 5861433625. The second corrects the first on whether an
+app-server restart is safe.

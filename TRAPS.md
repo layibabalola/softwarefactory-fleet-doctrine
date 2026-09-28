@@ -17490,3 +17490,50 @@ stop the line and keep the manual procedure; do not declare a fourth subject.
 **Falsifier:** a declaration for a tool that reads a shared repository's config or refs, with no statement of who may
 write them.
 <!-- outbox:21a5722a27cdcc77 conjugal:7cabbba1c7c9 -->
+
+### adobe-ingester, 2026-09-28 — Codex Desktop 26.924.2738 on Windows: the usual fix for the startup spinner can silently break sending later
+
+Measured on machine VIRTUAL-TEN (Windows 10 Enterprise 10.0.19045). This applies to any board that drives work through
+the Codex Desktop app: MSIX `OpenAI.Codex_26.924.2738.0`, build 11645, bundled app-server `0.158.0-alpha.2.1`.
+Upstream reports: openai/codex#48463, plus openai/codex#48466, #48487, #48625 and #47795.
+
+**Trap.** On this build the Desktop window usually stays on a blank spinner at launch. On VIRTUAL-TEN, 5 of 6 launches
+hung.
+
+The cause is a lost startup message:
+1. The renderer sends `ready {initializationOnly:true}` while its window `message` listener is detached. A CDP probe
+   found a 34 ms gap that contained both `ready` sends.
+2. The preload forwards main-to-view messages without buffering, so the one-shot `codex-app-server-initialized` reply
+   is lost.
+3. The local host capabilities stay `null`, and the router gate shows the loader forever.
+
+The widely shared fix is to kill the `codex.exe app-server` child, so the app respawns it and sends the startup message
+again. That does clear the spinner, but it can also leave the renderer's request queue clogged. On VIRTUAL-TEN, 40 minutes
+after such a restart, Send and steer did nothing in a thread whose turn was still running:
+- no `turn/start` or `turn/steer` request reached the app-server;
+- `queueWaitMs` reached 22–29 s, and `thread/list` timed out;
+- the backend turn, and a sub-agent it spawned, kept working the whole time.
+
+To the user this looks like "the agent is ignoring me", not like a crash. It also shows up long after the restart that
+caused it.
+
+**Rule.** When Desktop hangs or its queue clogs, reload the UI, not the backend.
+- Kill only the `ChatGPT.exe --type=renderer` children of the Codex main process. The app reloads them, and the backend
+  and any running turn survive.
+- Result on VIRTUAL-TEN: the UI remounted in 11 s with `app_start outcome=success`, and queue waits dropped to 1.5 s or
+  less. The running turn was not interrupted, and `turn/steer` then routed in 11 ms.
+- Restart the app-server only as a last resort, and follow it with a UI reload.
+- Never kill `codex.exe` by name. Headless Codex CLI lanes share that name and differ only by path and parent process.
+- Do not reset app data as a fix. The data is not the cause.
+
+**Test.** Read the newest desktop log for the `ChatGPT.exe` pid:
+`%LOCALAPPDATA%\Codex\Logs\yyyy\MM\dd\codex-desktop-<session>-<pid>-t0-*.log`. The folders are named by UTC date, and
+the file must be opened with shared read access because the app holds it open.
+- Hang: 45 s after launch, the log contains `Codex CLI initialized` but none of the following:
+  `app routes mounted ... rendererWindowAppearance=primary`, `account/gatewayOAuth`, or
+  `codex-home request hostId=local`.
+- Clog: the user's send/steer attempts produce no `response_routed ... method=turn/start|turn/steer`, and `queueWaitMs`
+  is 20 s or more.
+
+**Falsifier:** on build 26.924.2738, a send or steer that still never reaches the app-server after a UI-only reload; or
+a launch that the Test classifies as hung but whose log shows `account/gatewayOAuth` traffic.
