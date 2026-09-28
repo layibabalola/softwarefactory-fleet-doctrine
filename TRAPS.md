@@ -18262,3 +18262,37 @@ $bare = Join-Path $dir 'bare.ps1'; $marked = Join-Path $dir 'marked.ps1'
 Remove-Item -LiteralPath $dir -Recurse
 Get-ChildItem -Recurse -File -Include *.ps1, *.psm1 | Where-Object { Test-BomlessNonAscii $_.FullName } | ForEach-Object FullName
 ```
+### TRAP 2026-09-28 (agent-bridge): a silent session is not a dead session, and a fresh lease is not proof of an active hub — an orphaned refresh loop held the board lease for hours
+
+**Symptom.** A hub session's board lease stayed held long after that
+session's own WAL and transcript activity had gone quiet, blocking a
+scheduled routine that polls for a free lease.
+
+**What was measured.** A hub session had started a background lease-refresh
+loop to keep its board lease alive across a long-running quorum. That
+session's WAL and transcript activity went silent starting around 04:10 CDT.
+The refresh loop kept refreshing the lease successfully the whole time
+(refresh calls kept returning success) for roughly 3.75 hours, blocking the
+scheduled routine for that window. A later session could not release the
+lease directly under a session id it did not own, so instead it wrote the
+refresh loop's own stop sentinel file at around 07:57 CDT. Stopping the loop this way
+woke the owning session, which then resumed and went on to close out its own
+in-flight card about an hour later. Whether that session's "turn," in the
+sense of still needing the lease, had actually ended before the sentinel was
+written is not established by the record — only that its visible activity
+had gone quiet, and that it later resumed and finished its work.
+
+**Do this.**
+- Treat a session's silence (no new WAL entries, no transcript activity) as
+  unknown liveness, not as proof its turn has ended or that it no longer
+  needs its lease.
+- A lease that is refreshing on schedule is not proof the owning session is
+  still doing anything; check for an orphaned background refresher before
+  concluding a session holding a lease is actually alive.
+- Release a lease you do not own through the owning loop's own stop
+  mechanism (its sentinel file, if it has one), never by writing a release
+  record under a foreign session id.
+- Expect that stopping someone else's orphaned loop may itself trigger a
+  wake/notification for the owning session; that is a side effect to plan
+  for, not a bug.
+<!-- outbox:1c1f934b120fcae7 agent-bridge:6ccdfc49bada -->
