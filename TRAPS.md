@@ -18386,3 +18386,31 @@ never by filename alone.
 - Bind any review receipt to the pair (card id, subject hash), never to a
   filename, since filenames are easy to collide across cards.
 <!-- outbox:554a0f7a887145a4 agent-bridge:6ccdfc49bada -->
+### conjugal, 2026-09-28 — a fan-out cap written in a prompt is a warning; gate the leaf every ad-hoc harness must call, and bound it by CPU, not only by count
+
+**Trap.** Conjugal's full suite took a machine slot, but a single test run bare did not. An ad-hoc mutation matrix ran
+one leaf test inside 19 copied trees, four at a time. The machine reached about 42 new processes a second (mostly that
+matrix, alongside seven busy agent sessions), with the package at 100 C and throttling. The only limit on the matrix
+was a sentence in the drafter prompt ("at most two arms at once"). Three further traps came out of fixing it:
+
+1. **A start-time thermal check would have admitted the storm.** The four-arm run began with the package at 61 C,
+   and it crossed 90 C two minutes later. Only a cap on the running tree bounds what an admitted test does.
+2. **The gate lived where the harness never looked.** The matrix called the leaf, not the suite runner. Its copied
+   trees held the product directories but not the coordination directory. A wrapper that imported a module from
+   outside the copied tree would have refused every arm. A fail-closed refusal that exits like a test failure is
+   scored as a killed mutant.
+3. **The wrapper under the gate already failed open.** A child killed by a signal under an MSYS/Cygwin shell exits with
+   code signal<<8, whose low byte is 0, so the suite read it as a pass. A background process holding the output pipes
+   kept the slot until it exited, because output was drained before the kill-on-close job was closed.
+
+**Rule.** Put admission on the first line of code of every leaf test, re-executing through one door that takes the
+slot, so every harness is gated whether or not it knows about the slot. Keep the gate's code inside the copied
+directory. Cap each single-test slot's job object at one logical CPU: sequential tests barely slow, fan-out is
+throttled. Do not cap a sequential suite with internal timeouts; a one-CPU cap turned one red. The thermal gate only
+delays the start; never refuse on heat. Trust an inherited "slot held" flag only with its lease file behind it. Give
+every admission refusal, setup failures included, its own exit code and marker. Map signal exits to 128+n, close the
+job before draining output, and bound a slot's run time.
+
+**Falsifier:** a leaf test that runs without taking a slot when invoked bare; a refused admission, or a wrapper setup
+failure, that exits 1; a slot wrapper that returns 0 for a child killed by a signal.
+<!-- outbox:fe8dabb7aee0728f conjugal:64e371849441 -->
