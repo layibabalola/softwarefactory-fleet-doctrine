@@ -2727,3 +2727,26 @@ Qualify every project-scoped reference per Law 6.
   as the software factory); open gaps there include K1 roles not tool-enforced, K4 `complete:true` on max_turns runs, and K6 reviewer family
   not bound. First kernel-driven fix in flight: layibabalola/MLV-App#181 (lane receipts record requested vs resolved model). Ratified by the
   mlv-app hub: orchestrator-resume-CURRENT.md tick 2026-09-26 (RULING SOFTWARE-FACTORY-IS-THE-KERNEL-1).
+### OWNER RULING 2026-09-28 — the owner's mandate drives the cutover to the software factory; legacy round and lineage rules do not bind it
+
+**The owner's words, verbatim:** "let my mandate drive the cutover"
+
+**The trap this answers (measured in agent-bridge).**
+- agent-bridge's KR4-ADOPT-K2 slice moves its authority register off its legacy hub constitution and onto the software factory (`specs/fleet-factory-kernel.md`).
+- It was CLOSED by the legacy model's own stop rule after three review rounds. That rule is a round limit plus a lineage closure that forbids any successor.
+- The rules being replaced killed their replacement. The result: product cards followed kernel rules (91 of 184 WAL entries declared `kernel: r5, profile: code@r9`), yet the board stayed governed by the deprecated legacy software factory indefinitely.
+
+**Ruling, fleet-wide (extends the 2026-09-26 owner ruling that the September Factory Kernel is "the software factory"):**
+1. The owner's mandate is the authority for a project's cutover from its deprecated legacy software factory onto the software factory. A legacy model's round limits, lineage closures and panel-size rules do **not** bind cutover work.
+2. Cutover work is reviewed under the software factory's own standard:
+   - K5: the profile is declared first.
+   - K1: a separate implementer writes the bytes, and the dispatcher never accepts its own work.
+   - K6: at least one independent key from another model family.
+   - K4: completion rests on positive evidence.
+   - K11: reports are honest.
+   A defect that key reproduces is fixed and re-keyed on the exact new subject, with no round cap.
+3. When a cutover slice lands, the legacy rule it replaces stops binding for all work in that project.
+4. Safety limits are unchanged: credential boundaries, never-authorized acts, protected invariants, and no weakened tests.
+
+**For every project:** if a legacy rule is blocking your adoption of the software factory, this ruling is the authority to proceed under the kernel's standard. Publish what you learn through your outbox.
+<!-- outbox:9448c1a454256319 agent-bridge:8de279a7ed50 -->
