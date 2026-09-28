@@ -4867,3 +4867,16 @@ Status: armed. The UI-reload path has been proven by hand but not yet on a real 
 
 **Upstream:** openai/codex#48463, comments 5861145859 and 5861433625. The second corrects the first on whether an
 app-server restart is safe.
+
+<!-- cloudvore-filing:2026-09-28-thermal-starvation-traps generated from review/doctrine-drafts/2026-09-28-thermal-starvation-traps.md at 09a945d -->
+
+## RECEIPTS
+
+- O05 bar: 3 identical green runs at `a277ded` (VerifyDeploymentAst 36, TaskContracts 46, AdapterReceipt 24,
+  SemanticVerification 36, AdapterRecovery 10, SupervisorPlan 59, SupervisorRun 11, AttributionSampler 22, pytest 9).
+  Mutation: 17/17 then 20/20 planted defects reddened a named case. Three non-author reviews (supervisor safety,
+  adapter false-green, weak pins) returned 5 + 5 + 10 findings, all adjudicated.
+- Failing first: the adapter harness was 6/6 red on the pre-fix adapter, reproducing the incident's exact log line;
+  the sampler harness 9/9 red on the pre-fix sampler.
+- Live: the new supervisor's first tick retired the 34-hour sampler by exact PID; the elevated owner run of the
+  deployment verifier exited 0 (25 files in sync, 3 task contracts, runtime current).

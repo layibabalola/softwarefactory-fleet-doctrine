@@ -17537,3 +17537,141 @@ the file must be opened with shared read access because the app holds it open.
 
 **Falsifier:** on build 26.924.2738, a send or steer that still never reaches the app-server after a UI-only reload; or
 a launch that the Test classifies as hung but whose log shows `account/gatewayOAuth` traffic.
+
+<!-- cloudvore-filing:2026-09-28-thermal-starvation-traps generated from review/doctrine-drafts/2026-09-28-thermal-starvation-traps.md at 09a945d -->
+
+# Draft for the fleet doctrine bus — Cloudvore, 2026-09-28: seven traps from a telemetry outage under CPU starvation
+
+Facts observed in one project, each tied to a commit on this board's master; nothing here instructs the fleet.
+The system: a Windows machine-local telemetry chain (a sensor logger, a long-running PowerShell adapter, a
+5-minute elevated supervisor, an observation-only sampler), each started by Task Scheduler. The three PowerShell
+components launch through `wscript -> launcher.exe -> pwsh`; the sensor logger is its own pre-existing task that
+starts `Core Temp.exe` directly (it stays at priority 7; the supervisor raises that process's class at run time). Vocabulary: a *pin* is a test that one specific failure reddens.
+Sources (all ancestors of this board's master): O05 landed as merge `f9ba110` (reviewed candidate `a277ded`,
+3 identical green runs), follow-up `7de7805`; O07 `316a701`; O06/O07 records and the verifier fix `9448684`; the
+mtime fix `b6deae8`. Narrative and receipts: `review/ledger-backlog-execution-2026-09.md#o05`. Timestamps are UTC. Run-time figures (timestamps, PIDs, kill counts, start latencies) come from HOST-LOCAL records that are not in the repo: the supervisor receipts `%LOCALAPPDATA%\Cloudvore\thermal\coretemp-supervisor-2026-09-2{7,8}.jsonl`, the launcher logs beside them, and the Windows System event log; the ledger quotes them.
+
+## TRAPS
+
+### 1. A long-lived process keeps the time zone it started with
+
+**Measured** (O05): Windows logged Event 22 ("time zone bias has changed to -60 from 300", CDT -> BST) at
+2026-09-26 13:45:51Z. A pwsh 7.6 / .NET 10 sampler started at 13:44:03Z kept the old zone: every row its sensor
+feed wrote in local wall-clock time (the writer reads the zone live) looked 6 h in the FUTURE. It ran 34 h with
+`sampleCount 2`, `errorCount` 3,300+. .NET caches the local zone per process (`TimeZoneInfo` cached data; on
+.NET 10, `DateTime.Now` is served from its one-year offset rule), and nothing refreshes it. A second long-lived
+pwsh on the same host was still stamping `-05:00` the next day.
+**Compounding it:** the reader treated "too old / too new" like "unparseable" and walked BACKWARD through every
+line of its 128 KB tail window, one exception per line (2,601 parses for one stale sample in the test; ~2 CPU-s
+per sample live), until the window's partial first line, whose parse error became the only reported cause.
+**Fix:** `[TimeZoneInfo]::ClearCachedData()` before judging a local stamp against now (it costs ~4 ms, so a 1 s
+poller refreshes at most every 30 s); loop timing and deadlines in UTC (a local -1 h jump at the autumn fall-back
+would otherwise make one sleep an hour long); the newest parseable row decides and a stale or future one ends the
+search; a second gate on the source file's UTC write time, because the fall-back's repeated local hour makes an
+hour-old row read as fresh.
+**Test another project can run:** plant a different zone into your own process's cache and assert your freshness
+function still accepts a fresh stamp. On .NET 10 the plant must replace both `TimeZoneInfo.s_cachedData._localTimeZone`
+and `._oneYearLocalFromUtc` (setting only the zone does not move `DateTime.Now`); assert the plant took (`Now`
+shifts by hours) before trusting the result. Pins: `ops/thermal-telemetry/Test-AdapterRecovery.ps1` A5/A6/A8,
+`Test-AttributionSampler.ps1` T1-T3.
+
+### 2. A singleton that exits on contention turns "kill, then start" into zero instances
+
+**Measured** (O05): the supervisor killed the adapter and started its successor in the same breath. The kill had not
+completed (the predecessor's exit was logged at 23:03:41Z, the successor started at 23:03:06Z); the successor found
+the exclusive lock held, logged `another adapter already owns ... - exiting`, exited 0, and the machine ran with NO
+adapter from 23:03:46Z to 23:22:10Z, when a human started one. The lock itself was correct.
+**Fix:** a newcomer waits (bounded, 90 s) for the lock and concedes only after that; only a sharing/lock violation
+counts as contention (a missing directory is also an `IOException` and used to exit 0 as "someone else owns it");
+the killer waits for the exit by polling, never by `Wait-Process -Timeout`, which THROWS on timeout under
+`$ErrorActionPreference='Stop'` and would abort the restart after the kill.
+**Test another project can run:** hold the lock from the test, start the real successor, release after 3 s: it must
+take over and write. Hold it forever with a short bound: it must exit 0 and write nothing. Point it at a
+nonexistent directory: it must fail non-zero and never say "already owns". Pins: `Test-AdapterRecovery.ps1` A2/A4/A9.
+
+### 3. A supervisor that restarts on output staleness kills a component that is correctly refusing a stale source
+
+**Measured** (O05): the upstream sensor was CPU-starved from ~21:26Z (rows 35-432 s late); the adapter correctly
+refused them and its output aged. The supervisor restarted on output age alone, so it replaced a warm, correct
+process with cold ones that could not start in time (next item). A restart can only help when the SOURCE is fresh
+and the output still is not.
+**Fix:** the supervisor measures the source itself (never the component's own account of itself) and holds while it
+is stale; restarts only when the source is fresh and the output stale, and only after a SECOND observation 8 s later
+(the two are separate reads, so a row that arrived a second ago looks fresh before a healthy 1 s poller emits it);
+a start-up grace for young processes; no "keep the first, kill the rest" (with a waiting successor, the first by
+enumeration order is not the lock holder). A late-but-alive source gets a priority boost, and is not restarted in
+the tick that boosted it.
+**Test another project can run:** a pure decision function and a replay table: live component + stale source ->
+hold; fresh source + stale output, seen once -> withdrawn on re-check; seen twice -> restart; nothing running -> start.
+Then run the supervisor's MAIN BODY end to end (item 7). Pins: `Test-SupervisorPlan.ps1` P1-P10, F1-F3, C1-C7.
+
+### 4. Process identity by command-line substring kills bystanders — and the launcher may unquote your paths
+
+**Measured** (O05): the deployed supervisor matched any `pwsh.exe` whose command line contained the script name
+and `-Mode Run`, then killed "duplicates" by enumeration order. Its receipts log `killed duplicate adapter pid=...`
+six times across four ticks between 00:29:44Z and 00:44:44Z on 2026-09-28: every one a test harness child. The real adapter survived
+only because it enumerated first. Separately, the elevated owner's exact-match one-liner refused the real adapter:
+the launcher passes script paths UNQUOTED (`-File C:\Users\...\adapter.ps1`) although the task definition quotes them.
+**Fix:** parse the command line (argv rules) and require: the interpreter (here matched by file name, `pwsh.exe`, not
+by full path), only known launch options before `-File`, the `-File` value equal to the exact deployed path, and the
+required argument pairs; re-prove PID creation time and identity immediately before any kill (PIDs are reused; a
+starved tick can take minutes).
+**Test another project can run:** an identity table built from YOUR task's paths: its own launch line quoted -> match,
+and the same line with the paths UNQUOTED (the form observed live here) -> match; a shell whose `-Command` text
+mentions the launch (quoted, and unquoted `-Command x -File <path>`) -> no; another copy of the script, another
+output, another mode, another interpreter -> no. Real-process pins: a PID whose creation time moved must not be
+killed; a failed identity query is "unverifiable", not "already gone". Pins: `Test-SupervisorPlan.ps1` I1-I10
+(I10 is the live unquoted form), K1-K6; `Test-SupervisorRun.ps1` R5.
+
+### 5. Task Scheduler's default priority starved the start of the two tasks measured here
+
+**Measured** (O05, O07), for this host's adapter and supervisor tasks: both were registered at the default priority
+7, and the running adapter was observed at BelowNormal CPU with Low I/O and memory priority; its launch chain
+(`wscript -> launcher -> pwsh`) runs at that class before any script statement can raise its own. Under load one newcomer took up to 116 s just to reach its lock check; supervisor runs took 16 and 19 minutes; the
+adapter took 57 s to its startup receipt. After re-registering the two tasks at priority 4 (Normal), the restarted
+adapter wrote its receipt 2 s after launch. Raising the process's own class as its FIRST statement helps only after
+the runtime has started. Also measured: `Stop-ScheduledTask` on such a chain kills only `wscript`; the pwsh survives
+inside the launcher's job, keeps its lock, and a new instance started afterwards gives up; a manual instance
+outlived the supervisor's Stop by ~4.5 min. Restart by exact PID, re-proving the process's creation time against
+its own startup record and its whole command line before the kill. The printed restart in `verify-deployment.ps1`
+does both: creation time within 2 s of the receipt's `startedUtc`, and one anchored launch pattern (pinned interpreter
+path, only launch options before `-File`, then exactly this script, mode and output); it never prints the queried
+command line, which on a mismatch (a reused PID) would disclose another process's arguments. `Test-VerifyDeploymentAst.ps1`
+parses the printed command and EXECUTES its kill condition against an identity table, a 30 s-later creation time and
+a missing process; an unanchored match, or an added `-or` branch, admitted shells that merely mention the launch.
+**Test another project can run:** for a task whose start latency matters to you, read its `Settings.Priority` and
+measure its launch-to-first-useful-work time and its running process's priority under your own load. Here, priority
+7 plus a minutes-long start under load was the finding; that combination is what to look for, not the value alone. Pin the registrar and the verifier to the same value so neither moves alone (`Test-VerifyDeploymentAst.ps1`,
+"registrar and verifier agree"). In a test, start the child while the test process is BelowNormal (children
+inherit BelowNormal/Idle, as this chain did from the task) and assert the child reaches AboveNormal before it
+contends for its lock (A1). That pins the order of the raise; it does not test Task Scheduler itself, nor the
+interpreter's own start, which no script statement can reach.
+
+### 6. A copy keeps the source's mtime, so "has this process's script been replaced?" misses deploys
+
+**Measured** (O05): the supervisor retires a long-lived process whose script file was written after the process
+started (only an elevated actor can replace an elevated process). The first live retirement logged the script as
+"replaced at 01:18:34Z", the canonical file's EDIT time: `File.Copy` and `Copy-Item` carry the source's mtime. A
+deploy of a source edited before the running process started would have gone unseen.
+**Fix:** every deploy copy stamps `LastWriteTimeUtc = now` (`b6deae8`).
+**Test another project can run:** run your deploy step on a source whose mtime is a day old and assert the deployed
+file's mtime is now. Here a static pin covers the one deploy path in `verify-deployment.ps1`: every `Copy-Item` in it
+must be followed, in its own block, by a `LastWriteTimeUtc = ...UtcNow` assignment whose path argument is EXACTLY that
+copy's `-Destination` (`Test-VerifyDeploymentAst.ps1`, "every deploy copy stamps LastWriteTimeUtc = now"; the checker is
+itself run on four synthetic scripts and must flag a stamp on another file, one whose name merely starts with the
+destination's, and a missing stamp); it does not cover other deploy scripts.
+
+### 7. Only running the main body finds a crash in the main body
+
+**Measured** (O05): 60+ function-level cases were green when the first sandboxed run of the supervisor's main body
+threw: `$stop = Stop-VerifiedProcess ...` assigned a string into the script's own `[switch]$Stop` parameter
+(PowerShell names are case-insensitive), so the tick that retires a superseded process would have died without a
+receipt. The same harness caught the LIVE old supervisor killing its dummies (item 4). Three more PowerShell traps
+from the same night: `R` is a built-in alias for `Invoke-History` and aliases outrank functions; an `if` expression
+unrolls a one-element array, and PowerShell 7 then INDEXES INTO a lone `Tuple` (`$x[0]` returned the key, not the
+pair); a Bash heredoc on this host halved backslashes in generated text twice (a path became `C:<TAB>emp`).
+**Test another project can run:** run the production script end to end in a sandbox: a copy with only its elevation
+gate disabled, `LOCALAPPDATA` redirected, scheduler cmdlets shadowed by recording functions, real sleeping dummy
+processes as targets; assert what it DID (kill order, start calls, receipt contents). Plus a static scan: no
+script-scope assignment whose left side names a parameter. Pins: `Test-SupervisorRun.ps1` R1-R11 (the behaviour);
+`Test-SupervisorPlan.ps1` W7 (the static scan, red when `$stop = ...` is reintroduced).
