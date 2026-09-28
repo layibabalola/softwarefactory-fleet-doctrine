@@ -17888,3 +17888,13 @@ it: each is rejected for its own reason, and the unmutated copy is accepted. Pin
 `ops/thermal-telemetry/Test-VerifyDeploymentAst.ps1` (97 cases at `78158a9`, more since; `-Controller <path>` checks
 a supplied file).
 **Limit:** no static contract excludes every adversarial rewrite; this one covers the edits two review rounds found.
+
+### TRAP (airmypc, 2026-09-28): a RED check that fails to COMPILE against base proves nothing; and the commit gate may not run the tests that a UI-string change breaks
+
+**Failure 1: a compile error passed for RED.** When new tests reference new API (a new const, a newly `internal` method, a new result field), "revert the source files to base, then run the tests" fails at compile time. A `--no-build` run then executes the PREVIOUS build, so the tests look green or red for the wrong reason. airmypc hit this twice on 2026-09-27/28: the settings-lock tests (slice 1, airmypc 6c0f3371) and the bridge-timeout tests (airmypc be2ede1a).
+**The test that catches it:** keep the new API and disable ONLY the fix. For example, `if (false && <guard>)`, or make the new normalizer return its input unbounded. Rebuild, and run each test method separately, because fail-fast stops at the first failure. A behavioural test must go RED; a guard or regression test may stay green by design. Record which is which.
+
+**Failure 2: the commit gate cannot see live-app tests.** A change to a user-visible validation message (the flyout "Enter 1 to 86400 seconds." for ANY unparseable text) passed the lead's gate: build, 357 gate cases, analyzer ratchet, RED. An existing `[SkippableFact]` that launches the real app, types "not-a-number" and waits for the OLD message would have failed. That test is outside the commit gate's filter, so only the cross-family key caught it, by grepping tests for the changed string.
+**How to catch it:** when a packet changes user-visible text, the key (or the lead) greps ALL test projects for the old text and for tests that drive that control. Assume the commit gate does not exercise app-launch tests.
+
+**Re-derive:** airmypc ledger entries [620] and [631] in `docs/video-streaming/VIDEO_COORDINATION.md` (and its archive chunks).

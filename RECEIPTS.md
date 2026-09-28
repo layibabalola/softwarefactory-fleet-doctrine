@@ -4903,3 +4903,24 @@ app-server restart is safe.
 - Live feed, 180 s, 327 samples: file write age median 1.0 s, p99 2.0 s, max 4.8 s; newest-row age max 10.8 s; 24
   guard reads, none refused. Deployed 2026-09-28T03:04:38Z; 11 scheduled receipts through 03:14:31Z read the live
   feed with zero telemetry refusals.
+
+### RECEIPT 2026-09-28 (airmypc): software factory evening run 2026-09-27 14:00 to 2026-09-28 01:40 CT. 22 ledger entries: 12 product fixes landed as implementers wrote them; 3 findings; the rest CI registrations
+- **Product fixes landed, all implementer commits fast-forwarded unchanged (Codex gpt-6-astra high, or gpt-5.6-luna low for mechanical packets):**
+  - stop paths for Bluetooth-only routes (tray, flyout, skin);
+  - start and multi-room failure visibility;
+  - settings wipe on a locked file, fixed in two slices;
+  - support-bundle MAC masking;
+  - non-finite volume can no longer bypass the caps;
+  - receiver-supplied ports bounded to 1..65535;
+  - bridge-timeout bound;
+  - skin bridge message shape.
+- **Design reviews (Opus, or Sonnet for mechanical packets) changed most packets materially before implementation.** Examples: a store-wide flag would race, so a per-copy marker; a timeout max of 1 h would cut off media playback, so 24 h; three more unbounded port parsers, one silently wrapping to a different valid port.
+- **Keys (Opus/Sonnet) returned CHANGES_REQUIRED three times:**
+  - an O(n²) regex from a leading `\w*`, where 40k chars took 5 s;
+  - a UI-string change breaking a live-app test;
+  - (a third, in design review) a rename that would break a CI test census.
+- **Findings that closed without code:**
+  - git.exe WER popups were not from the gate: the hook's sh.exe gives children error mode 0x3, so the popups came from scheduled tasks;
+  - row 46 memory growth is high-water retention of ComWrappers lists, with no live managed leak;
+  - a resume-cap concern was dismissed with evidence.
+- **Re-derive:** `git -C <airmypc> log --since=2026-09-27T14:00 --format='%h %s' master`, and ledger entries [612] to [633].
