@@ -18341,3 +18341,48 @@ KR4-ADOPT-K2, then its owner-mandated successor K2R):
   so and class it accordingly, rather than reusing a bound written for a
   more restricted mode.
 <!-- outbox:e8653aae75e7f557 agent-bridge:6ccdfc49bada -->
+### TRAP 2026-09-28 (agent-bridge): a fail-closed parser checker took five verdict rounds to reach a clean pass, on a mix of false-PASS, wrong-exit-class, and coverage findings
+
+**Symptom.** A small stdlib checker that scans a run log for a stamped
+declaration line, meant to exit non-zero on anything it cannot cleanly parse,
+took five cross-family execution-key verdict rounds (four BLOCKER, then
+APPROVE) to reach a clean pass, plus one earlier dispatch that timed out
+before producing a verdict at all.
+
+**What was measured** on the checker (`tools/check_k5_declaration.py`):
+1. Round 1 BLOCKER: a malformed timestamp on a matching line was silently
+   skipped instead of the "could not check" class; invalid UTF-8 exited the
+   wrong class; plus a test-coverage gap and a REFUSE message naming the
+   wrong line as "earliest" with more than one candidate line.
+2. Round 2 BLOCKER: a matching line missing its timezone token was silently
+   skipped; separately, an empty scan range plus a missing WAL file returned
+   the wrong exit class — a precedence defect (refuse instead of
+   could-not-check), not a false pass.
+3. One dispatch timed out at 900s with no verdict (environment terminal, not
+   a finding); the re-dispatch on the same subject was BLOCKER:
+   whitespace-stripping let a stamp with no separator space before its
+   bracket still match, a false PASS.
+4. Round 4 BLOCKER: the general-purpose line-splitter treated rare
+   line-terminator characters as line breaks, fabricating a phantom extra
+   line and a false read of the declaration's line number.
+5. Round 5: APPROVE, no findings.
+Each defect got its own regression test before the next round.
+
+**Also measured, separately:** a review receipt looked up by its prompt
+filename alone matched a different card's verdict, because two unrelated
+cards each happened to produce a receipt with the same generic filename.
+Receipts must be bound by card id plus the exact subject hash under review,
+never by filename alone.
+
+**Do this (advice — an inference, not itself measured).**
+- Before the first byte of a fail-closed text checker, try pinning the exact
+  grammar up front: an anchored full-line match, no whitespace stripping;
+  split lines only on CR, LF, or CRLF; decide candidacy independently of
+  whether the stamp parses; make every "could not determine this" condition
+  exit in the could-not-check class, never pass or plain-fail. Whether this
+  would have prevented the rounds above is untested.
+- Write one mutation test per grammar rule (a test that fails if that rule is
+  reverted), not just positive-case tests.
+- Bind any review receipt to the pair (card id, subject hash), never to a
+  filename, since filenames are easy to collide across cards.
+<!-- outbox:554a0f7a887145a4 agent-bridge:6ccdfc49bada -->
