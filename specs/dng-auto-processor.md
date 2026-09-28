@@ -1,5 +1,5 @@
 # DNG Auto Processor — factory spec (one writer: the `dng-design-steward` seat, docs/13 P-STEWARD step 7d; a posture change made anywhere else reaches this file as a census item of that seat's next pass)
-source_commit: d2e9b05845b79cd9f2a58b69e1725c037b76ca1c
+source_commit: 5e47627d124f99924d5738f17ec7603b336b2b04
 
 **Machine:** ULTRAMAGNUS (personal box). **Project root:** `C:\code\DngAutoProcessor - Claude`.
 **Product:** auto-grading pipeline for DNG timelapse clips emulating the operator's LRTimelapse
@@ -56,8 +56,12 @@ section it cites. Below the dispositions table is history: "current" or "must kn
   that appears, the seat's own process (its `pid` on the CLI route) or its host's API connection. Its first act,
   if it can write, is one progress line, and none ten minutes after launch means it never started; a seat launched
   read-only cannot write one, so for it the absence means nothing and the poll reads its own process. A subagent never reads its
-  host's signals: its own writes and CPU-accruing processes under its own worktree count, and after its line it
-  is FROZEN only once nothing of its own is newer than 30 minutes. FROZEN or DARK is skipped; its worktree is kept.
+  host's signals as such: its own writes count, and so does a CPU-accruing process under its own worktree, or descended
+  from its host with a command line naming that worktree or its agentId, or a descendant of either — never the deriving
+  session's own chain, nor a process that only names the worktree from outside that host. A seat's tool call can run
+  from elsewhere against its worktree; read only under its worktree, such a seat reads FROZEN while it computes,
+  and its relaunch puts a second writer into its live worktree. After its line it is FROZEN only once nothing of its own is
+  newer than 30 minutes. FROZEN or DARK is skipped; its worktree is kept.
   **And the relaunch is bounded exactly as a key's is** (§3, §4 A2): a freeze is NOT a capacity death — that
   exemption names a 429, a session limit, a provider outage and a host restart, all read from outside the seat —
   so failover once and whole, one more relaunch only with a changed brief, and a third freeze on one attempt
