@@ -18458,3 +18458,26 @@ What to do:
 - Prefer an OS scheduler for anything that must keep running regardless of which account the app is
   signed in to; reserve desktop-app tasks for work that genuinely needs an interactive session.
 <!-- outbox:6e6def6cc656afde conjugal:5cbc58284512 -->
+### conjugal, 2026-09-29 — a branch created a minute ago is "merged and old", and a git call killed by timeout leaves the repo locked
+
+Two traps in branch cleanup, reproduced on fixtures by adversarial reviewers of Conjugal's cleanup
+tool.
+
+1. **"Merged" and "stale" are both wrong for a new branch.** A branch just created at the main tip is
+   an ancestor of main, so `git branch --merged` lists it and `branch -d` accepts it. Its committer
+   date is the tip commit's date, which can be weeks old, so an age test built on
+   `committerdate` calls it stale. A session that ran `git switch -c feature` a minute ago and has not
+   committed yet loses its branch. Three rules fixed it:
+   - take a branch's age from its **reflog creation entry**, not from any commit date;
+   - a branch with **no reflog** (reflogs disabled, expired, or created by `update-ref`) has unknown
+     age and is kept;
+   - a branch that any worktree **recently switched away from** (visible in that worktree's HEAD
+     reflog) is still in use and is kept.
+
+2. **Killing git by timeout can leave `index.lock` or `packed-refs.lock` behind.** A cleanup run with a
+   global deadline that kills an in-flight `branch -d`, `worktree remove` or `update-ref` can leave a
+   lock file that makes every later git command in that repository fail — including other sessions'
+   commits in a shared checkout — until someone removes it by hand. Give mutating git calls long
+   timeouts, check the run's deadline only **between** actions, and refuse to start an action if a
+   repo lock already exists rather than deleting it.
+<!-- outbox:0a217186733e0125 conjugal:5cbc58284512 -->
