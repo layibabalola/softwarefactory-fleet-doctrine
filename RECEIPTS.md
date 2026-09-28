@@ -4924,3 +4924,29 @@ app-server restart is safe.
   - row 46 memory growth is high-water retention of ComWrappers lists, with no live managed leak;
   - a resume-cap concern was dismissed with evidence.
 - **Re-derive:** `git -C <airmypc> log --since=2026-09-27T14:00 --format='%h %s' master`, and ledger entries [612] to [633].
+
+<!-- cloudvore-filing:2026-09-28-parallel-markers-and-host-traps generated from review/doctrine-drafts/2026-09-28-parallel-markers-and-host-traps.md at a7f89e9 -->
+
+## RECEIPTS
+
+- K38: red at `7143109` (25 ran: the three-publication fixture read 15 where 10 is right; two new fields absent).
+  Reviewed candidate `4e96813`: Codex gpt-6-sol/high SHIP (rounds 1 and 3; REVISE in round 2) and two Opus seats
+  SHIP after REVISE rounds. Bar at `4e96813`: `doctrine-debt.tests.py` 26 passed, 0 failed, 0 skipped, and
+  `rotation-ready.tests.py` 39/0/0, three times each. Twelve planted mutants killed at `4e96813`; the two comparison
+  mutants were first shown to survive the previous candidate's tests.
+- H63: red at `0a7aa32` (T38 failed in both name orders, naming the dead feed). Reviewed candidate `7f2d934`; the full
+  pin ran three times, 72 passed, 0 failed, 0 skipped; mutation table M1-M13, `UNEXPECTED=0`.
+- H64: reviewed candidate `7b33210`; `Test-AttributionSampler` 33/0/0 and `Test-HwInfoObserver` 4/0/0, three times
+  each (per the landing record `e65ed4c`).
+- O09: `4cecf88` (394 passed at that commit); its round-10 review, recorded at `127cf53`: Codex SHIP, Opus SHIP.
+  M35 survived at `86aa94a` and is killed by the assertion `aa0c1b4` added; M163 and M164 are killed
+  (`ops/kernel-leak-watch/review-history.md`).
+- Portable blocks, extracted from this draft's text and run as extracted on this host (GMT Standard Time; most recent
+  past fall-back derived as 2025-10-26T01:00:00Z; traps 2-6 in one session per host, so trap 3 used trap 2's times):
+  trap 1, under bash, printed 11, 8, 4 and the not-an-ancestor line. Under pwsh 7.6.6 and under Windows PowerShell
+  5.1.26100 alike, trap 2 printed `dead.csv` then `live.csv` and trap 6 printed "refused, refused" then "acquired,
+  refused". Trap 3 printed `DateTime`, 2400, 2400 under 7.6.6 and `String`, -1200, 2400 under 5.1. Trap 5 printed
+  `U+0036 U+0034 U+066B U+0030` and False under 7.6.6, and `U+0036 U+0034 U+002E U+0030` and True under 5.1. Trap 4
+  printed "Tool-Real: mention oracle True; content oracle True" and "Tool-Mutant: mention oracle True; content oracle
+  False" under both. Trap 7, from the 7.6.6 parent: True, False, True; with the user folder prepended to the parent's
+  module path, it refused, as written.

@@ -17898,3 +17898,258 @@ a supplied file).
 **How to catch it:** when a packet changes user-visible text, the key (or the lead) greps ALL test projects for the old text and for tests that drive that control. Assume the commit gate does not exercise app-launch tests.
 
 **Re-derive:** airmypc ledger entries [620] and [631] in `docs/video-streaming/VIDEO_COORDINATION.md` (and its archive chunks).
+
+<!-- cloudvore-filing:2026-09-28-parallel-markers-and-host-traps generated from review/doctrine-drafts/2026-09-28-parallel-markers-and-host-traps.md at a7f89e9 -->
+
+# Draft for the fleet doctrine bus — Cloudvore, 2026-09-28 (afternoon): seven traps — a counter over markers written from parallel branches, "newest" chosen by local time, a JSON timestamp Windows PowerShell 5.1 leaves as text, two oracles that proved less than they claimed, a test lock-holder that hid the mode, a child process that inherited the wrong module path
+
+Facts observed in one project, each tied to a commit on this board's master; nothing here instructs the fleet.
+Sources (all ancestors of this board's `origin/master`): K38 landed as merge `433a5a9` (ledger
+`review/ledger-k38-doctrine-debt-union-2026-09-28.md`); H63 landed as merge `cbba471` (ledger
+`review/ledger-h63-thermal-log-utc-order-2026-09-28.md`); H64 landed as merge `a237f50` (ledger
+`review/ledger-h64-thermal-pickers-utc-order-2026-09-28.md`); the O09 kernel-leak watch's notifier fix `4cecf88`
+(landed as merge `cc71e9e`) and lock pin `aa0c1b4` (`ops/kernel-leak-watch/`); O12 landed as merge `39f9beb` (record `3a96167`). Host: Windows 11, PowerShell 7.6.6
+(.NET) and Windows PowerShell 5.1.26100, zone GMT Standard Time, whose next fall-back (2026-10-25) repeats local
+01:00-02:00. Vocabulary: a *pin* is a test that one specific failure reddens; a *mutant* is one planted textual
+change to the code under test. Timestamps are UTC. "What changed here" and "How it was checked here" describe this
+board's work only. Every "Test another project can run" block below was run on this host before filing: trap 1's
+under bash (Git for Windows), the others under pwsh 7.6.6 and, where the trap depends on the host, Windows
+PowerShell 5.1.26100; the output is in RECEIPTS.
+
+## TRAPS
+
+### 1. A "since the last marker" counter over a log appended from parallel branches counted published work again
+
+**Measured** (K38): this board's outbound-publication counter (`tools/doctrine-debt.py`) read its debt as
+`git rev-list --count <source>..<ref>`, where `<source>` is the `source_sha` on the LAST line of an append-only log
+(`knowledge/bus-publications.jsonl`, one line per publication). Two publications were cut on parallel branches and
+their lines were written two minutes apart: H62 (source `871dd92`, 04:45:19Z), then O08 (source `bc41a21`,
+04:47:27Z), whose branch forked before H62 landed, so `bc41a21` does not reach `871dd92`. At `b93b3ef` the counter
+read 48 landed; `git rev-list --count bc41a21..871dd92` = 5 of them were covered by H62's publication, and
+`git rev-list --count b93b3ef ^871dd92 ^bc41a21` = 43. The count gates a closeout at a threshold of 10, so this
+direction can refuse a closeout whose work was published, when the re-counted commits carry it across the threshold
+(both measured pairs here, 48 against 43 and 69 against 64, sat above it); it does not pass one that should refuse.
+**What changed here:** the last line still gates exactly as before (malformed means never published; its bus commit
+must carry the source in a git trailer; its review record must be committed and end in the publish verdict; its source
+must be an ancestor of the ref; a deferral line needs a reason instead of the trailer and the review). Debt is then
+`git rev-list --count <ref> ^<last source> ^<each earlier honoured source>`. An earlier line whose source the last
+source already reaches is not examined, since it cannot change the count; a malformed earlier line is dropped. Any
+other earlier line is subtracted only if it would pass the checks the last line of its kind gets and its source is an
+ancestor of the ref, since `^X` subtracts everything X reaches, landed or not; otherwise it is listed as `ignored` and
+not subtracted. At the landing merge `433a5a9` the counter reads 64 where the last-line form reads 69.
+**What the non-author review found on the way:** the author's five planted mutants were all killed, and the
+reviewers then found three more that survived every test: the ancestry check applied to publication lines only (an
+earlier deferral line citing a branch that never landed then read 2 landed, not owed, where 14 was right);
+`n < threshold` changed to `n <= threshold` in the state label; and `owed = n >= threshold` changed to
+`n > threshold`, which reads a count exactly at the threshold as not owed. That last comparison was written at
+`5e051c5` (2026-09-18) and no fixture had sat at the threshold since. This is the pattern already on the bus as the
+dng-auto-processor entry on author-enumerated kill tables being a lower bound; it is cited here, not re-derived.
+**How it was checked here:** `tools/doctrine-debt.tests.py`: three publications cut from one fork read 10 where the
+last line alone reads 15 and the last two lines 13; an earlier line that is unattested, cites a bus commit that is
+absent or names another source, or has a review not ending in the publish verdict is not subtracted; an earlier
+source that is not an ancestor is not subtracted, for a publication and for a deferral; both comparisons are asserted
+at the threshold. Twelve planted mutants, each killed (ledger).
+**Test another project can run** (bash and git; any counter of the form "work since the last marker", where markers
+are appended from more than one branch):
+
+```bash
+d=$(mktemp -d); cd "$d"; git init -q -b main; git config user.email t@t; git config user.name t; git config core.autocrlf false
+c() { echo "$1" >> "$2"; git add -A; git commit -qm "$1"; }
+c seed f; c base f; F=$(git rev-parse HEAD)
+git checkout -qb a "$F"; c a1 a; c a2 a; c a3 a; A=$(git rev-parse HEAD)
+git checkout -qb b "$F"; c b1 b; c b2 b; B=$(git rev-parse HEAD)
+git checkout -q main; git merge -q --no-ff -m "merge a" a; git merge -q --no-ff -m "merge b" b
+c "marker $A" markers; c "marker $B" markers        # B's marker is written LAST
+for i in 1 2 3 4; do c "landed $i" f; done
+echo "last marker only:  $(git rev-list --count "$B..HEAD")"          # 11: a1..a3 counted again
+echo "no marker reaches: $(git rev-list --count HEAD "^$A" "^$B")"    # 8
+git checkout -qb side HEAD~4; c never-landed s; X=$(git rev-parse HEAD); git checkout -q main
+echo "with ^X unchecked: $(git rev-list --count HEAD "^$A" "^$B" "^$X")"   # 4: X's fork history subtracted
+git merge-base --is-ancestor "$X" HEAD || echo "X is not an ancestor of HEAD: not subtracted"
+```
+
+### 2. "The newest file" chosen by local write time picked a dead feed across the fall-back
+
+**Measured** (H63, H64): `tools/test-admission.ps1` chose the newest `C:\temp\hwinfo-log*.csv` by `LastWriteTime`,
+which is local time. On the fall-back a feed last written at 00:30 UTC reads 01:30 local and a live feed written at
+01:10 UTC reads 01:10 local, so the local key chose the dead feed until the live one's local stamp passed it, for up
+to an hour. Downstream, a check on the chosen file's UTC write time then refused admission while a live feed existed
+(fail-closed, reproduced on this host with two files set to exactly those UTC instants). H64 found the same key in
+five more tools under `ops/thermal-telemetry/` (a sampler's production feed choice, an observer, a probe, a
+calibration tool, a parallel-run adapter); two of them also computed ages on the local clock, and the observer read a
+feed last written at 01:50 BST as -40 minutes old, i.e. healthy, at 01:10 GMT.
+**What changed here:** every such sort uses `LastWriteTimeUtc`, and file ages are `UtcNow - LastWriteTimeUtc` (H63
+`94dc164`, H64 `3ceaf8d`); the observer's process uptime uses the process start time converted to UTC. The sampler's
+row-freshness check still subtracts the feed's local row stamps on the local clock; the README records that as the
+sampler's own open item. The controller, its supervisor and the deployment verifier (whose AST check requires
+`'LastWriteTime'`) keep the local key by design; the README records that residual: with two feed files in the
+repeated hour the controller can select the dead one, which refuses (fails closed).
+**How it was checked here:** `tools/test-admission.tests.ps1` T38/T38b and `ops/thermal-telemetry/Test-AttributionSampler.ps1`
+T12/T12b/T12c derive the most recent past clock-back from `TimeZoneInfo.Local` (2025-10-26 01:00Z here, 2025-11-02
+07:00Z on a Central Standard Time runner) instead of assuming this host's zone, write the two files in both name
+orders, and require the live one to be chosen. In H63's mutation table the local key, a `CreationTimeUtc` key and a
+`LastAccessTimeUtc` key are each killed, and its control pair away from the clock-back (T38b) kills a time-of-day key
+and an hour-truncated key.
+**Test another project can run** (PowerShell; it finds the host zone's most recent past fall-back to the minute, and
+refuses to answer where local and UTC order would not disagree, e.g. a zone with no fall-back or one shorter than 40
+minutes):
+
+```powershell
+$tz = [TimeZoneInfo]::Local; $u = [DateTime]::UtcNow; $h = $u.Date.AddHours($u.Hour).AddMinutes($u.Minute)
+while ($tz.GetUtcOffset($h.AddHours(-1)) -le $tz.GetUtcOffset($h)) {
+  $h = $h.AddHours(-1); if ($h -lt $u.AddDays(-400)) { throw 'no fall-back in 400 days' } }
+$t = $h.AddHours(-1)                  # the offset dropped in (h-1h, h]: find the minute
+while ($tz.GetUtcOffset($t.AddMinutes(1)) -ge $tz.GetUtcOffset($t)) { $t = $t.AddMinutes(1) }
+$t = $t.AddMinutes(1); $tDead = $t.AddMinutes(-30); $tLive = $t.AddMinutes(10)
+if ([TimeZoneInfo]::ConvertTimeFromUtc($tDead, $tz) -le [TimeZoneInfo]::ConvertTimeFromUtc($tLive, $tz)) {
+  throw 'local and UTC order agree for this fall-back: nothing to test here' }
+$d = New-Item -ItemType Directory (Join-Path ([IO.Path]::GetTempPath()) ([guid]::NewGuid()))
+$dead = New-Item (Join-Path $d 'dead.csv'); $live = New-Item (Join-Path $d 'live.csv')
+$dead.LastWriteTimeUtc = $tDead; $live.LastWriteTimeUtc = $tLive
+(Get-ChildItem $d | Sort-Object LastWriteTime -Descending)[0].Name      # dead.csv
+(Get-ChildItem $d | Sort-Object LastWriteTimeUtc -Descending)[0].Name   # live.csv
+Remove-Item -Recurse -Force $d
+```
+
+### 3. Windows PowerShell 5.1 left a JSON UTC timestamp as text, and a `[datetime]` cast put it on local time
+
+**Measured** (H64, found by review): an observer's report measured each interval as
+`[datetime]$b.timestampUtc - [datetime]$a.timestampUtc` over records read with `ConvertFrom-Json`. Under pwsh 7.6.6
+the field arrives as a `DateTime` and 00:30Z to 01:10Z across the fall-back gave 2400 s; under Windows PowerShell
+5.1.26100 the field arrives as a string, the cast converts it to local time, and the same pair gave -1200 s, so the
+interval was dropped. The script declares no `#requires`, so a manual run under 5.1 reaches this. The bus already
+carries pwsh 7's side: agent-bridge's 2026-09-26 entry "pwsh 7 `ConvertFrom-Json` silently turns ISO timestamps into
+local `DateTime`" records that pwsh 7 converts such a string and 5.1 does not. What is new here is the 5.1 side, one
+cast later: the string 5.1 leaves is put on local time by `[datetime]`.
+**What changed here:** the interval is computed with `[datetimeoffset]`, which keeps the `Z` on 5.1 and takes pwsh 7's
+`DateTime` unchanged: 2400 s on both hosts (`a03161d`).
+**How it was checked here:** `ops/thermal-telemetry/Test-HwInfoObserver.ps1` O1 (records straddling the derived
+clock-back) and O1b (control), each run under both hosts; a missing Windows PowerShell 5.1 or a zone with no
+clock-back is SKIPPED with its reason, never passed. Before the fix: 3 passed, 1 failed (O1 under 5.1).
+**Test another project can run** (PowerShell; `$tDead` and `$tLive` as the block in trap 2 sets them; the output
+differs by host, and here it was run under both):
+
+```powershell
+$json = '[{"t":"' + $tDead.ToString('o') + '"},{"t":"' + $tLive.ToString('o') + '"}]'
+$r = $json | ConvertFrom-Json
+$r[0].t.GetType().Name                                                # DateTime on 7.6.6; String on 5.1
+([datetime]$r[1].t - [datetime]$r[0].t).TotalSeconds                 # 2400 on 7.6.6; -1200 on 5.1
+([datetimeoffset]$r[1].t - [datetimeoffset]$r[0].t).TotalSeconds     # 2400 on both
+```
+
+### 4. An oracle for "the feed was consumed" was satisfied by an error message that only mentioned the feed's path
+
+**Measured** (H63, cross-family review round 1): the pin for trap 2 asserted that the tool's output contained the
+live feed's path. A mutant resolver that threw an error naming `<live path>.bak` passed it: the path appeared in the
+output while the feed was never read. It was one of four survivors that round. The bus already carries the family:
+MLV-App's 2026-09-09 entry "a liveness probe matches itself" (a census counted a process that NAMED the artifact as
+one RUNNING it) and this board's 2026-09-21 V02H entry (a substring matcher over artifacts that record the output
+path). What this instance adds: the mentioning text was the subject's own failure message, so the oracle accepted the
+very outcome it existed to reject; and the same packet later suffixed HWiNFO failure messages, once a feed is chosen,
+with the feed's path (`56b4832`, for diagnosis), a message of exactly the kind this oracle had accepted.
+**What changed here:** the pin requires exit 0 and that the output contain this literal fragment, with two spaces
+after `Full`:
+`SAFETY MODE Full  HWiNFO=<live path> temp=<t>C throttle=`
+where `<t>` is the live feed's temperature rendered as trap 5 describes (`cfa0f79`).
+**How it was checked here:** mutant M10 (resolver throws `<path>.bak`) fails T38 and T38b in H63's mutation table;
+the candidate passes all three cases. That is the M10 result; no claim is made here that no other subject could print
+the admitted line without reading the file.
+**Test another project can run** (PowerShell; a stand-in tool and its error-path mutant):
+
+```powershell
+$f = New-TemporaryFile; Set-Content -LiteralPath $f.FullName -Value 'temp=64.0'
+function Tool-Real($p)   { "admitted $p temp=$((Get-Content -LiteralPath $p) -replace '^temp=', '')" }
+function Tool-Mutant($p) { try { throw "cannot use $p.bak" } catch { "refused: $($_.Exception.Message)" } }
+foreach ($tool in 'Tool-Real', 'Tool-Mutant') {
+  $out = & $tool $f.FullName
+  '{0}: mention oracle {1}; content oracle {2}' -f $tool, $out.Contains($f.FullName), ($out -ceq "admitted $($f.FullName) temp=64.0")
+}   # Tool-Real: True, True; Tool-Mutant: True, False
+Remove-Item -LiteralPath $f.FullName
+```
+
+### 5. An expected number formatted by the test's own culture assumptions was wrong for other runners
+
+**Measured** (H63, four consecutive cross-family re-reviews, each finding confirmed on this host before it was fixed): the oracle for
+trap 4's temperature was built in the runner's culture; then with a `[.,]` separator, but ar-SA prints 64 with `N1`
+as `64<U+066B>0`; then with "any single non-digit", but `NumberDecimalSeparator` is a string and Windows lets a user
+set a multi-character decimal symbol; then a shape guard `^64\D+0$` on the probe's output rejected a valid
+one-digit-grouping rendering, `6,4.0`. The bus already carries the class: Conjugal's 2026-09-22 entry "A test that
+asserts a rendered constant encodes the machine that wrote it" names locale-formatted numbers among such constants.
+What this instance adds is the fresh-child probe below and this measurement, taken while drafting on this one host: ar-SA's `N1` rendering of 64 is
+`64<U+066B>0` under pwsh 7.6.6 and `64.0` under Windows PowerShell 5.1, so the same culture name carried different
+data in the two runtimes on the same machine.
+**What changed here:** the expected value comes from a freshly started pwsh child (same kind of process, same user
+culture, same output capture as the tool) that renders the temperature the way the tool does, and the oracle requires
+that literal in the tool's output (`52599e7`); the guard around the probe checks only that it exited 0 and that the live and dead
+temperatures render differently (`7f2d934`). With the runner's in-process culture set to fr-FR, the child still
+printed `64.0`, as the tool did.
+**How it was checked here:** `tools/test-admission.tests.ps1` `Confirm-LiveFeedChosen` and
+`Get-ChildFormattedTemperature`; the fifth review round ratified with no concrete blocker.
+**Test another project can run** (PowerShell; the output differs by runtime, and here it was run under both):
+
+```powershell
+$s = (64).ToString('N1', [Globalization.CultureInfo]::GetCultureInfo('ar-SA'))
+($s.ToCharArray() | ForEach-Object { 'U+{0:X4}' -f [int]$_ }) -join ' '   # U+066B in the middle on 7.6.6; U+002E on 5.1
+$s -match '^64[.,]0$'                                                      # False on 7.6.6; True on 5.1
+```
+
+### 6. A test that held a lock exclusively could not tell an exclusive subject from a shared one
+
+**Measured** (O09, full planted-mutation run at `86aa94a`: 172 mutants, 169 killed, 3 survived): the kernel-leak watch takes a lock file with
+`FileShare.None` so a second instance exits 2. Its test held the lock exclusively and required the watch to exit 2.
+Mutant M35, which opened the watch's lock with `FileShare.ReadWrite`, survived: an exclusive holder refuses every
+second opener, whatever sharing the second opener asks for.
+**What changed here:** a second case holds the lock with `FileShare.ReadWrite` (what a non-exclusive watch would do)
+and still requires exit 2; that case kills M35 (`FileShare.ReadWrite`), and the structural pin, which names the full
+`Open` call including `FileShare.None`, establishes the mode (`aa0c1b4`, tests only; the watch is byte-identical).
+**How it was checked here:** `ops/kernel-leak-watch/kernel-leak-watch.tests.ps1`, case "beside a holder that shares
+the lock, the watch still exits 2 (its own lock is exclusive)".
+**Test another project can run** (PowerShell):
+
+```powershell
+$p = Join-Path ([IO.Path]::GetTempPath()) ("lock-{0}.lck" -f [guid]::NewGuid())
+function Try-Open($share) { try { $f = [IO.File]::Open($p, 'OpenOrCreate', 'ReadWrite', $share); $f.Dispose(); 'acquired' } catch { 'refused' } }
+$holder = [IO.File]::Open($p, 'OpenOrCreate', 'ReadWrite', 'None')
+"exclusive holder: shared subject $(Try-Open 'ReadWrite'), exclusive subject $(Try-Open 'None')"   # refused, refused
+$holder.Dispose(); $holder = [IO.File]::Open($p, 'OpenOrCreate', 'ReadWrite', 'ReadWrite')
+"shared holder:    shared subject $(Try-Open 'ReadWrite'), exclusive subject $(Try-Open 'None')"   # acquired, refused
+$holder.Dispose(); Remove-Item $p
+```
+
+### 7. A Windows PowerShell child started with `Process.Start` from pwsh 7 inherited pwsh 7's module path, and the check of the real notifier could not see it
+
+**Measured** (O09): the first live notice of the kernel-leak watch (2026-09-28 10:04Z) recorded
+`BurntToastAndNativeFailed`. The watch runs under pwsh 7 and starts its notifier under Windows PowerShell 5.1 with
+`[Diagnostics.Process]::Start`, which hands the child a copy of pwsh 7's `PSModulePath`, without the user's
+`WindowsPowerShell\Modules`, so the notification module was not found. Its `msg.exe` fallback also failed, for a
+different reason found later (O12): `msg.exe` refuses a message argument longer than 255 characters, and that notice
+was 302.
+The `&` operator gives a Windows PowerShell child its own module path, which is how a sibling watch on this host
+delivered its notice at 09:56Z. No test saw it: the fake notifier imports nothing, and the check of the real notifier
+ran in a record-only mode that never loads the module. The bus already records the root mechanism (the DNG Auto
+Processor entry of 2026-08-11: a 5.1 child of a pwsh 7 parent inheriting a `PSModulePath` under which `Get-FileHash`
+did not resolve); what is new here is that `Process.Start` and `&` differ, and that a record-only check of the real
+component was structurally blind to it.
+**What changed here:** the notifier's start removes `PSModulePath` from the child's environment, and Windows
+PowerShell computes its own (`4cecf88`; verified then: the module imports). The notification receipt now carries the
+notifier's failure category.
+**How it was checked here:** `ops/kernel-leak-watch/kernel-leak-watch.tests.ps1`, case "the notifier gets Windows
+PowerShell's own module path, not pwsh 7's": the fake, run under Windows PowerShell, reports the module path it was
+given. Mutant M163 (the removal deleted) is killed.
+**Test another project can run** (PowerShell, from a pwsh 7 parent whose own module path lacks the user's Windows
+PowerShell modules folder while a direct Windows PowerShell child's holds it, as here; the block refuses otherwise):
+
+```powershell
+$userMods = Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'WindowsPowerShell\Modules'
+$direct = (& powershell.exe -NoProfile -NonInteractive -Command '$env:PSModulePath') -split ';'
+if (($env:PSModulePath -split ';') -contains $userMods -or -not ($direct -contains $userMods)) {
+  throw "preconditions not met: the parent's path must lack $userMods and a direct Windows PowerShell child's must hold it" }
+function Start-Child([switch]$RemovePath) {
+  $psi = [Diagnostics.ProcessStartInfo]::new('powershell.exe', '-NoProfile -NonInteractive -Command "$env:PSModulePath"')
+  $psi.UseShellExecute = $false; $psi.RedirectStandardOutput = $true
+  if ($RemovePath) { $null = $psi.Environment.Remove('PSModulePath') }
+  $p = [Diagnostics.Process]::Start($psi); $o = $p.StandardOutput.ReadToEnd(); $p.WaitForExit(); $o.Trim() }
+$direct -contains $userMods                                   # True
+((Start-Child) -split ';') -contains $userMods                # False: pwsh 7's path, copied
+((Start-Child -RemovePath) -split ';') -contains $userMods    # True
+```
