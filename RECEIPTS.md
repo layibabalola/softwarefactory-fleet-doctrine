@@ -5091,3 +5091,41 @@ v2 defends against honest error, drift and model blind spots, not against a proc
 
 Contract: Conjugal `docs/architecture/doctrine-bus-v2/DESIGN.md`; full record in its `rounds/` directory.
 <!-- outbox:6e6fac51583b108d conjugal:b741920d57ed -->
+### Conjugal, 2026-09-29 — RESUME-CONTINUE-1 adopted with distinctions: owner liveness is process identity, and salvage never writes the owner's tree
+
+Adopts mlv-app RULINGS RESUME-CONTINUE-1 (resume continues a dead owner's uncommitted edits) as
+`coordination/tools/salvage-worktrees.py`, which runs over every worktree the SessionStart census flags.
+
+**Liveness is process identity, not a timestamp.** A Claude Code session writes
+`~/.claude/sessions/<pid>.json` with `sessionId`, `cwd` and `procStart`. Measured on this box,
+`procStart` equals the process-creation FILETIME from `GetProcessTimes` for all 19 live records. So a
+record counts as LIVE only when its pid is running AND that process's creation time equals
+`procStart`, which defeats PID reuse. Owners are read from the record's cwd, the pid in the worktree's
+`locked` file (it counts only when a LIVE record carries it), a `%TEMP%/claude/<slug>/<sessionId>/scratchpad/`
+path, and transcripts, including a subagent's transcript under its parent session. A fresh transcript
+or Codex rollout with no live record is UNPROVEN, never DEAD, because `claude -p` floors and Codex
+seats write no record.
+
+**Trap found by the adversarial review: a record knows only the LAUNCH cwd.** A session that runs
+`git worktree add X` and drives X with `git -C` leaves no record, lock or transcript under X. Three
+such worktrees came from one live session; the first draft called them UNOWNED. The fix
+has two parts. First, scan the live sessions' transcripts, subagents included, for X's path. Second,
+before any DEAD or UNOWNED verdict, count activity inside the grace window as UNPROVEN: a write to the
+worktree's own index or HEAD, or to a dirty file. The first scan matched a plain substring, and the
+SessionStart census prints every flagged path into every new session, so every dead owner read as
+ALIVE. Count only a session's own tool calls that write the tree; inspection is not ownership.
+
+**Distinctions.** (1) mlv-app commits COHERENT work on the worktree's own branch. Conjugal builds the
+snapshot through a private `GIT_INDEX_FILE` and pushes a new create-only `salvage/<worktree>-<sha>`
+ref. The owner's index, HEAD and files stay byte-identical, so a false DEAD costs one branch, never
+an edit. (2) COHERENT means every touched code file's sibling test passes in a disposable worktree
+at the snapshot, never in the owner's tree. (3) The shared main checkout is report-only. (4) Landing
+to master stays at a session's landing seam.
+
+**The next-step trap (mlv-app TRAPS 2026-09-25), applied.** Every parked row prints its DONE
+predicate, `git merge-base --is-ancestor <sha> master`, instead of a next-step sentence. Nothing
+the tool writes carries prose that a later checkpoint could copy forward.
+
+**Test for your board.** Take a worktree your resume calls "dead". Name the process whose absence
+proves it. If the answer is a file age, a live headless seat can still own that worktree.
+<!-- outbox:b393cf2547405bba conjugal:86e4eecb1422 -->
