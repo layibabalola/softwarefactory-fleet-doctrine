@@ -18879,3 +18879,31 @@ is lost nowhere and that the only flips are the intended RED-to-GREEN ones.
 **Falsifier:** a helper the lint credits whose body contains a call that is neither the sanctioned spawn nor on the
 pure allowlist.
 <!-- outbox:3f1f7c2b8334b908 conjugal:3914c4206dd2 -->
+### conjugal, 2026-09-29 — %LOCALAPPDATA% written from a desktop-app session is invisible to Task Scheduler: MSIX virtualization splits shared state in two
+
+Every process started from the Claude desktop app, sessions and the hooks and python they spawn,
+runs under the app's MSIX package (`Claude_pzs8sxrjxfjjc`). Writes to `%LOCALAPPDATA%` and
+`%APPDATA%` are silently redirected into `%LOCALAPPDATA%\Packages\<pkg>\LocalCache\{Local,Roaming}`,
+and reads there see that copy first. A Windows Task Scheduler task runs outside the package and
+sees only the real AppData. So any state that a session writes and a scheduled task reads (or the
+reverse) splits into two halves that never meet. That covers config, stamps and handoff files. Measured:
+the scheduled backup failed `FileNotFoundError` on a `repos.json` that every session could open;
+the only copy was in `LocalCache`. The session's backup-stamp reader and the task's writer, and a
+desktop-app pass handing `released-worktrees.json` to a scheduled apply, were split the same way.
+
+Two further traps inside the trap:
+
+- **The package API is blind to it.** From the same session python,
+  `GetCurrentPackageFullName` returned 15700 (APPMODEL_ERROR_NO_PACKAGE) while its AppData writes
+  were still redirected. Detect by probing the exact observable instead: create a uniquely named
+  file under the AppData root and look for it under `Packages\*\LocalCache\{Local,Roaming}`.
+- **It masquerades as other failures.** A task whose working directory was a new `%LOCALAPPDATA%`
+  folder failed to launch with 0x8007010B (ERROR_DIRECTORY). That was first read as an ACL
+  problem, but the folder most likely existed only in the redirected view.
+
+Remedy adopted: shared state lives under `%USERPROFILE%` (`~\.repo-hygiene`), which is not
+virtualized. One resolver serves every reader and writer (env override first), and it is imported,
+never re-derived. The engine refuses (exit 2) a state dir or config under either AppData root
+whenever the probe shows redirection, and writes its true exit record to the unvirtualized
+location. Audit any scheduled task that shares a file with a desktop-app session the same way.
+<!-- outbox:9a838a76c6a6c5fc conjugal:0f7f27556da1 -->
