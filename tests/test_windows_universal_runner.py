@@ -10,6 +10,7 @@ import subprocess
 import sys
 import tempfile
 import time
+import types
 import unittest
 from unittest import mock
 
@@ -451,6 +452,143 @@ class WindowsContainmentTests(unittest.TestCase):
                             if '"UNIVERSAL_WORKER_PROGRESS"' in line]
                 self.assertEqual([line["exit_code"] for line in progress], [None] * 4)
                 self.assertEqual(progress[2]["last_started_test"], "in.flight")
+
+    def drive_main(self, ctx, on_wait):
+        """Run main() with mocked workers; `on_wait` plays wait_workers. Returns
+        (exit code, every refusal sink: stderr + sys.__stderr__ + raw fd writes)."""
+        ids = runner.source_census()
+        stdout, stderr, dunder, raw = RaisingStream(), RaisingStream(), RaisingStream(), []
+        stdout.armed = stderr.armed = dunder.armed = False
+        real_write = os.write
+        def write(descriptor, data):
+            if descriptor in (1, 2):
+                raw.append(bytes(data))
+                return len(data)
+            return real_write(descriptor, data)
+        def wait(processes, deadline, exited):
+            try:
+                return on_wait(ctx.output)
+            finally:
+                ctx.armed = True
+                stdout.armed = ctx.stdout_fails
+                stderr.armed = ctx.stderr_fails >= 1
+                dunder.armed = ctx.stderr_fails >= 2
+        processes = [mock.Mock() for _ in range(4)]
+        for process, code in zip(processes, ctx.codes):
+            process.poll.return_value = code
+            process.poll.side_effect = ctx.poll_error
+        job = mock.Mock()
+        job.active.return_value = 0
+        job.cleanup.side_effect = ctx.job_error
+        with tempfile.TemporaryDirectory() as directory, contextlib.ExitStack() as stack:
+            ctx.output = Path(directory) / "new-run"
+            for patcher in [mock.patch.object(runner, "snapshot", return_value={"head": "a" * 40}),
+                            mock.patch.object(runner, "source_census", return_value=ids),
+                            mock.patch.object(runner, "WindowsJob", return_value=job),
+                            mock.patch.object(runner.subprocess, "Popen", side_effect=processes),
+                            mock.patch.object(runner, "wait_workers", side_effect=wait),
+                            mock.patch.object(runner.os, "write", write),
+                            mock.patch.object(sys, "__stderr__", dunder),
+                            mock.patch.object(sys, "argv", ["runner", "--output-dir", str(ctx.output)]),
+                            *ctx.patchers]:
+                stack.enter_context(patcher)
+            stack.enter_context(contextlib.redirect_stdout(stdout))
+            stack.enter_context(contextlib.redirect_stderr(stderr))
+            try:
+                code = runner.main()
+            except SystemExit as error:
+                code = ("SystemExit", error.code)
+            except BaseException as error:
+                code = error
+        sink = stderr.getvalue() + dunder.getvalue() + b"".join(raw).decode("utf-8", "replace")
+        return code, sink.splitlines()
+
+    def test_refusal_choke_point_holds_when_any_refusal_path_site_raises(self):
+        # Sites enumerated from run()/main(): every call that executes after
+        # wait_workers decides a refusal, in execution order.
+        real_read, real_open = Path.read_text, Path.open
+        def armed(ctx, real, error):
+            def call(*args, **kwargs):
+                if ctx.armed:
+                    raise error
+                return real(*args, **kwargs)
+            return call
+        def module(name, error):
+            return lambda ctx: [mock.patch.object(runner, name, armed(ctx, getattr(runner, name), error))]
+        def read(suffix, error):
+            def build(ctx):
+                def read_text(path, *args, **kwargs):
+                    if ctx.armed and path.suffix == suffix:
+                        raise error
+                    return real_read(path, *args, **kwargs)
+                return [mock.patch.object(Path, "read_text", read_text)]
+            return build
+        def log_close(error):
+            def build(ctx):
+                def open_(path, mode="r", *args, **kwargs):
+                    if mode == "xb":  # worker log handles; Popen is mocked
+                        log = mock.Mock()
+                        log.close.side_effect = error
+                        return log
+                    return real_open(path, mode, *args, **kwargs)
+                return [mock.patch.object(Path, "open", open_)]
+            return build
+        def field(name, value):
+            return lambda ctx: setattr(ctx, name, value) or []
+        rows = [
+            ("capture_failure", module("capture_failure", RuntimeError("capture failed"))),
+            ("process.poll", field("poll_error", OSError("poll failed"))),
+            ("job.cleanup", field("job_error", runner.Refused("INCOMPLETE_PROCESS_CLEANUP:[]"))),
+            ("log.close", log_close(OSError("log close failed"))),
+            ("log.close SystemExit(0)", log_close(SystemExit(0))),
+            ("emit", module("emit", RuntimeError("emit failed"))),
+            ("worker log read_text", read(".log", RuntimeError("log read failed"))),
+            ("report_progress", module("report_progress", RuntimeError("report failed"))),
+            ("timing-file read_text", read(".jsonl", RuntimeError("timing read failed"))),
+            ("read_progress", module("read_progress", RuntimeError("progress failed"))),
+            ("json.dumps", lambda ctx: [mock.patch.object(
+                runner.json, "dumps", armed(ctx, json.dumps, RuntimeError("dumps failed")))]),
+            ("slowest_line", module("slowest_line", RuntimeError("slowest failed"))),
+            ("stdout print", field("stdout_fails", True)),
+            ("stderr refusal print", field("stderr_fails", 1)),
+            ("stderr and sys.__stderr__", field("stderr_fails", 2)),
+        ]
+        for reason, codes in (("WORKER_DEADLINE_EXCEEDED", [0, None, None, 0]),
+                              ("CHILD_FAILED:[0, 0, 1, None]", [0, 0, 1, None])):
+            for site, build in rows:
+                with self.subTest(reason=reason, site=site):
+                    ctx = types.SimpleNamespace(armed=False, codes=codes, poll_error=None, job_error=None,
+                                                stdout_fails=False, stderr_fails=0, patchers=[])
+                    ctx.patchers = build(ctx)
+                    def on_wait(output):
+                        (output / "worker-2.progress.jsonl").write_text(
+                            json.dumps({"start": "in.flight", "wall": time.time()}) + "\n", encoding="utf-8")
+                        raise runner.Refused(reason)
+                    code, sink = self.drive_main(ctx, on_wait)
+                    self.assertEqual(code, 1)
+                    self.assertIn("UNIVERSAL_RUN_REFUSED: " + reason, sink)
+
+    def test_diagnostic_failure_cannot_flip_success_or_genuine_failure(self):
+        for broken, want in ((False, 0), (True, 1)):
+            with self.subTest(genuine_failure=broken):
+                ctx = types.SimpleNamespace(armed=False, codes=[0] * 4, poll_error=None, job_error=None,
+                                            stdout_fails=True, stderr_fails=0, patchers=[])
+                def on_wait(output):
+                    plan = runner.read_json(output / "plan.json")
+                    for index, assigned in enumerate(plan["shards"]):
+                        runner.atomic_json(output / f"worker-{index}.json", {
+                            "plan_sha256": runner.digest(plan), "worker": index, "assigned": assigned,
+                            "started": assigned, "stopped": assigned, "successful": assigned,
+                            "test_seconds": {item: 0.1 for item in assigned}, "seconds": 1.0,
+                            "tests_run": len(assigned), "exit_status": int(broken and index == 2),
+                            "failures": int(broken and index == 2), "errors": 0, "skips": 0,
+                            "expected_failures": 0, "unexpected_successes": 0})
+                code, sink = self.drive_main(ctx, on_wait)
+                self.assertEqual(code, want)
+                if broken:
+                    self.assertIn("UNIVERSAL_RUN_REFUSED: RECEIPT_OUTCOME_MISMATCH:exit_status", sink)
+                else:
+                    self.assertEqual(sink, [])
 
     def test_win64_layout_matches_windows_sdk(self):
         if ctypes.sizeof(ctypes.c_void_p) == 8:

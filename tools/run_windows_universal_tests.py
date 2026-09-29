@@ -259,7 +259,7 @@ def worker(output, index):
                "skips": len(result.skipped), "expected_failures": len(result.expectedFailures),
                "unexpected_successes": len(result.unexpectedSuccesses), "exit_status": status}
     atomic_json(output / f"worker-{index}.json", receipt)
-    print(json.dumps(receipt, sort_keys=True), flush=True)
+    emit_json(lambda: receipt)
     return status
 
 
@@ -467,7 +467,11 @@ def wait_workers(processes, deadline, exited=None):
         time.sleep(0.1)
 
 
-def run(output):
+def run(output, decided=None):
+    # `decided` is the refusal choke point shared with main(): the first
+    # refusal is recorded before any cleanup or diagnostics run, so nothing
+    # that runs afterwards can replace it or change the exit code.
+    decided = [] if decided is None else decided
     if os.name != "nt":
         raise Refused("WINDOWS_REQUIRED_USE_UNCHANGED_DISCOVERY_ON_LINUX")
     output = output.resolve()
@@ -478,7 +482,7 @@ def run(output):
     plan = plan_for(cases, source, uuid.uuid4().hex)
     output.mkdir(parents=True, exist_ok=False)
     atomic_json(output / "plan.json", plan)
-    print(json.dumps({"plan": plan}, sort_keys=True), flush=True)
+    emit_json(lambda: {"plan": plan})
     processes, logs, exited, failure = [], [], {}, None
     job = WindowsJob()
     started = time.monotonic()
@@ -507,18 +511,26 @@ def run(output):
         try:
             wait_workers(processes, started + budget, exited)
         except Refused as error:
+            decided.append(error)
             if str(error).startswith(("WORKER_DEADLINE_EXCEEDED", "CHILD_FAILED")):
                 # Capture before cleanup kills the workers and rewrites exit codes.
                 failure = capture_failure(str(error), processes)
             raise
         if job.active() != 0:
             raise Refused("WORKER_LEFT_LIVE_DESCENDANTS")
+    except Exception as error:
+        if not decided:
+            decided.append(error)
+        raise
     finally:
         try:
             job.cleanup(processes)
         finally:
-            for log in logs:
-                log.close()
+            for index, log in enumerate(logs):
+                try:
+                    log.close()
+                except Exception as error:
+                    emit(lambda: f"DIAGNOSTIC_LOG_CLOSE_FAILED worker={index}: {error!r}")
             # This block runs while a refusal may be pending: emit() never raises,
             # so a failing stdout cannot replace the refusal or its exit code.
             for index in range(len(logs)):
@@ -542,15 +554,42 @@ def run(output):
     validate_receipts(plan, receipts)
     # Full completion receipts remain in normal CI logs even when artifacts expire.
     for receipt in receipts:
-        print(json.dumps(receipt, sort_keys=True), flush=True)
+        emit_json(lambda: receipt)
     for index, receipt in enumerate(receipts):
         emit_json(lambda: slowest_line(index, receipt["test_seconds"]) | {
             "seconds": round(receipt["seconds"], 3)})
     summary = {"status": "PASS", "plan": plan, "tests_run": EXPECTED,
                "workers": WORKERS, "seconds": time.monotonic() - started}
     atomic_json(output / "complete.json", summary)
-    print(json.dumps(summary, sort_keys=True), flush=True)
+    emit_json(lambda: summary)
     return 0
+
+
+def refuse(error):
+    """Write the refusal line. Never raises: falls back to sys.__stderr__,
+    then to raw fd 2 and fd 1, if the streams themselves fail."""
+    try:
+        detail = str(error)
+    except BaseException:
+        detail = type(error).__name__
+    line = f"UNIVERSAL_RUN_REFUSED: {detail}"
+    try:
+        print(line, file=sys.stderr, flush=True)
+        return
+    except BaseException:
+        pass
+    try:
+        sys.__stderr__.write(line + "\n")
+        sys.__stderr__.flush()
+        return
+    except BaseException:
+        pass
+    for descriptor in (2, 1):
+        try:
+            os.write(descriptor, (line + "\n").encode("utf-8", "replace"))
+            return
+        except BaseException:
+            pass
 
 
 def main():
@@ -558,10 +597,23 @@ def main():
     parser.add_argument("--output-dir", required=True, type=Path)
     parser.add_argument("--worker", type=int)
     args = parser.parse_args()
+    decided = []
     try:
-        return worker(args.output_dir, args.worker) if args.worker is not None else run(args.output_dir)
-    except Exception as error:
-        print(f"UNIVERSAL_RUN_REFUSED: {error}", file=sys.stderr, flush=True)
+        return worker(args.output_dir, args.worker) if args.worker is not None else run(args.output_dir, decided)
+    except BaseException as error:
+        # The single refusal choke point. The first recorded refusal wins over
+        # anything raised by cleanup or diagnostics after it; any failure,
+        # including SystemExit(0) from cleanup, exits 1. An interrupt with no
+        # refusal decided still propagates, and never exits 0.
+        verdict = decided[0] if decided else error
+        if isinstance(verdict, KeyboardInterrupt):
+            raise
+        if error is not verdict:
+            try:
+                emit(lambda: f"UNIVERSAL_RUN_SECONDARY_ERROR: {error!r}")
+            except BaseException:
+                pass
+        refuse(verdict)
         return 1
 
 
