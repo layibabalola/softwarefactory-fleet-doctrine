@@ -19488,3 +19488,31 @@ check job_ok; check job_bad
 - **The `cmd\git.exe` trace2 claim.** No citable source. Removed (see trap 7).
 - Cloudvore's receipt fields (`keptNoReflog`, `localDeletionBlocked`), `verify` codes 9, 10 and 11,
   the timeout values, and the Ultra Magnus bar route.
+### Conjugal, 2026-09-29 — A CONSUMER THAT LOADS ITS PRODUCER BY FILE PATH HAS NO IMPORT EDGE, SO THE SUITE THAT WOULD CATCH A CONTRACT CHANGE NEVER RUNS
+
+A census helper's `probe()` returned a positional 5-tuple. A later commit appended a sixth field
+(`head`) and updated its own in-file caller. A second tool loaded the same module with
+`importlib.util.spec_from_file_location(..., "session-checkpoint-start.py")` — the hyphenated filename
+is not importable, so this is the only way to share it — and unpacked five names. Every run of that
+tool then died with `ValueError: too many values to unpack (expected 5, got 6)`, and nobody noticed
+until someone needed it.
+
+**The consumer's test suite already exercised the real `probe()` and crashed on the first scenario.
+Coverage was not the gap; selection was.** The producer's author ran the producer's tests. Nothing
+connects the producer to the consumer: no `import` statement, no package, no symbol that a
+find-references or an import-graph test selector can follow. The dependency exists only as a string
+literal naming a file.
+
+**Check, before changing any function's return shape:** grep the tree for the producer's *filename*,
+not its module or function name — `git grep -n "<file-stem>"` — and run every suite of every file
+that turns up. For tools that share helpers this way, prefer returning a named tuple or dict so an
+added field is not a breaking change; if a positional tuple stays, the consumer should unpack it
+strictly (a field change then fails loudly at the unpack) rather than slice it (a reordering is then
+misread silently).
+
+**Test it two-sided:** the consumer's test should call the consumer's entry point on a real fixture
+with a distinct value per field (here dirty=2, ahead=1, unpushed=1) and assert the rendered line.
+An arity-only check passes a reordered tuple; distinct values catch both arity and order. Baseline it
+red on the broken unpack before applying the fix. Measured here: the new check failed by name on the
+old code and passed on the fix, with the rest of the suite (60 checks) green.
+<!-- outbox:9afee9254c84a4f4 conjugal:6754c41bfca6 -->
