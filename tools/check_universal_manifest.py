@@ -7,6 +7,7 @@ import argparse
 import ast
 import contextlib
 from dataclasses import dataclass
+import functools
 import hashlib
 import inspect
 import json
@@ -995,7 +996,118 @@ def _pairs(values: list[tuple[str, Any]]) -> dict[str, Any]:
     return result
 
 
+_OBJECT_NAME = re.compile(r"[0-9a-f]{40}(?::[A-Za-z0-9._/-]+|\^\{tree\}|\^[1-9][0-9]*)?")
+_OBJECT_HEADER = re.compile(rb"([0-9a-f]{40,64}) (blob|tree|commit|tag) ([0-9]+)\n")
+_OBJECT_MISSING = object()
+
+
+class _ObjectReadSession:
+    """One verification call's immutable object reads over `git cat-file` pipes.
+
+    This changes transport, not queries. Every read the spawn path issued is still issued, one
+    request per read, to git resolving the repository from the same cwd and environment. The
+    session lives for a single verification call: its processes start lazily on the first
+    read inside the call and are closed when the call returns or raises, so no git state
+    outlives the call. Only a well-formed positive answer is used; any other answer (missing,
+    wrong type, malformed, broken pipe) re-issues the original spawn, so every refusal keeps
+    the exact error class and code of the spawn path.
+    """
+
+    _modes = ("--batch", "--batch-check=%(objectname)")
+
+    def __init__(self) -> None:
+        self._processes: dict[str, subprocess.Popen[bytes]] = {}
+        self._broken = False
+
+    def _request(self, mode: str, name: str) -> tuple[bytes, bytes] | object | None:
+        if self._broken or _OBJECT_NAME.fullmatch(name) is None:
+            return None
+        try:
+            process = self._processes.get(mode)
+            if process is None:
+                process = subprocess.Popen(
+                    ["git", "cat-file", mode], cwd=ROOT, stdin=subprocess.PIPE,
+                    stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
+                )
+                self._processes[mode] = process
+            assert process.stdin is not None and process.stdout is not None
+            process.stdin.write(name.encode("ascii") + b"\n")
+            process.stdin.flush()
+            line = process.stdout.readline()
+            if line in (name.encode("ascii") + b" missing\n", name.encode("ascii") + b" ambiguous\n"):
+                return _OBJECT_MISSING
+            if mode == "--batch":
+                header = _OBJECT_HEADER.fullmatch(line)
+                if header is not None:
+                    size = int(header.group(3))
+                    body = process.stdout.read(size + 1)
+                    if len(body) == size + 1 and body.endswith(b"\n"):
+                        return header.group(2), body[:size]
+            elif re.fullmatch(rb"[0-9a-f]{40,64}\n", line) is not None:
+                return line[:-1], b""
+        except (OSError, ValueError):
+            pass
+        self._broken = True  # desynchronised or dead: every later read uses the spawn path
+        return None
+
+    def contents(self, name: str) -> tuple[str, bytes] | object | None:
+        answer = self._request("--batch", name)
+        if isinstance(answer, tuple):
+            return answer[0].decode("ascii"), answer[1]
+        return answer
+
+    def resolve(self, name: str) -> str | object | None:
+        answer = self._request("--batch-check=%(objectname)", name)
+        return answer[0].decode("ascii") if isinstance(answer, tuple) else answer
+
+    def processes(self) -> tuple[subprocess.Popen[bytes], ...]:
+        return tuple(self._processes.values())
+
+    def close(self) -> None:
+        for process in self._processes.values():
+            try:
+                if process.stdin is not None:
+                    process.stdin.close()
+                process.wait(timeout=30)
+            except (OSError, subprocess.TimeoutExpired):
+                process.kill()
+                process.wait()
+            finally:
+                if process.stdout is not None:
+                    process.stdout.close()
+
+
+_OBJECT_READS = threading.local()
+
+
+def _object_read_session() -> _ObjectReadSession | None:
+    return getattr(_OBJECT_READS, "session", None)
+
+
+def _object_read_scope(function: Callable[..., Any]) -> Callable[..., Any]:
+    """Serve one verification call's immutable object reads from a call-scoped session."""
+
+    @functools.wraps(function)
+    def scoped(*args: Any, **kwargs: Any) -> Any:
+        if _object_read_session() is not None:
+            return function(*args, **kwargs)
+        session = _ObjectReadSession()
+        _OBJECT_READS.session = session
+        try:
+            return function(*args, **kwargs)
+        finally:
+            _OBJECT_READS.session = None
+            session.close()
+
+    return scoped
+
+
 def _git(spec: str, *, text: bool = False) -> bytes | str:
+    session = _object_read_session()
+    if session is not None and not text:
+        answer = session.contents(spec)
+        if isinstance(answer, tuple) and answer[0] == "blob":
+            return answer[1]
     run = subprocess.run(
         ["git", "show", spec], cwd=ROOT, check=False, capture_output=True,
         text=text, encoding="utf-8" if text else None,
@@ -1011,6 +1123,11 @@ def _blob_spec(treeish: str, path: str) -> str:
 
 def _oid(treeish: str, path: str) -> str:
     spec = _blob_spec(treeish, path)
+    session = _object_read_session()
+    if session is not None:
+        answer = session.resolve(spec)
+        if isinstance(answer, str):
+            return answer
     run = subprocess.run(
         ["git", "rev-parse", spec], cwd=ROOT, check=False, capture_output=True, text=True,
         encoding="utf-8",
@@ -1164,6 +1281,7 @@ def _frozen_tree_member_paths(treeish: str, prefix: str) -> tuple[str, ...]:
     return tuple(sorted(paths))
 
 
+@_object_read_scope
 def _load_frozen_r43_execution_graph() -> Mapping[str, bytes]:
     """Authenticate the complete closed frozen R43 dependency graph before any load."""
 
@@ -1641,7 +1759,44 @@ def _frozen_manifest_bytes(
     return frozen
 
 
+def _session_commit_tuple(session: _ObjectReadSession, commit: str) -> tuple[str, list[str]] | None:
+    """Answer `show -s --format=%T%n%P` only when it provably equals the raw commit.
+
+    %T/%P are parsed values (grafts, shallow boundaries and replacements applied); the raw
+    object is not. The session answers only when the parsed tree and parents resolved by git
+    (`^{tree}`, `^1`..`^n`, and a missing `^(n+1)`) equal the raw commit's lines exactly.
+    """
+
+    raw = session.contents(commit)
+    if not isinstance(raw, tuple) or raw[0] != "commit":
+        return None
+    header = raw[1].split(b"\n\n", 1)[0].split(b"\n")
+    if not header or re.fullmatch(rb"tree [0-9a-f]{40,64}", header[0]) is None:
+        return None
+    raw_tree = header[0][5:].decode("ascii")
+    raw_parents = []
+    for line in header[1:]:
+        if not line.startswith(b"parent "):
+            break
+        if re.fullmatch(rb"parent [0-9a-f]{40,64}", line) is None:
+            return None
+        raw_parents.append(line[7:].decode("ascii"))
+    if session.resolve(f"{commit}^{{tree}}") != raw_tree:
+        return None
+    for number, parent in enumerate(raw_parents, start=1):
+        if session.resolve(f"{commit}^{number}") != parent:
+            return None
+    if session.resolve(f"{commit}^{len(raw_parents) + 1}") is not _OBJECT_MISSING:
+        return None
+    return raw_tree, raw_parents
+
+
 def _commit_tuple(commit: str) -> tuple[str, list[str]]:
+    session = _object_read_session()
+    if session is not None:
+        answer = _session_commit_tuple(session, commit)
+        if answer is not None:
+            return answer
     run = subprocess.run(
         ["git", "show", "-s", "--format=%T%n%P", commit], cwd=ROOT,
         check=False, capture_output=True, text=True, encoding="utf-8",
@@ -1657,6 +1812,7 @@ def _commit_tuple(commit: str) -> tuple[str, list[str]]:
     return lines[0], parents
 
 
+@_object_read_scope
 def verify_reconciliation(manifest: dict[str, Any], treeish: str = "HEAD") -> None:
     """Verify the exact R15-R26 linear subjects and ordered canonical-master merges."""
 
@@ -2957,6 +3113,7 @@ def _parse_manifest(raw: bytes, expected_schema: str) -> dict[str, Any]:
     return manifest
 
 
+@_object_read_scope
 def _verify_subjects_and_self(
     manifest: dict[str, Any], raw: bytes, *, manifest_path: str, candidate: str
 ) -> int:

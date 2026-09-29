@@ -304,6 +304,115 @@ class ReceiptTests(unittest.TestCase):
             discover.assert_not_called()
 
 
+class ObjectReadTransportTests(unittest.TestCase):
+    """Batched `git cat-file` transport must issue the same reads and refuse the same way."""
+
+    @staticmethod
+    def frozen_r43_manifest():
+        import check_universal_manifest as checker
+
+        raw = checker._git(f"{checker.FROZEN_R43}:{checker.R43_MANIFEST}")
+        return checker, json.loads(raw), raw
+
+    def verify_subjects(self, checker, manifest, raw):
+        return checker._verify_subjects_and_self(
+            manifest, raw, manifest_path=checker.R43_MANIFEST, candidate=checker.FROZEN_R43
+        )
+
+    def test_every_read_is_issued_once_and_answers_equal_the_spawn_path(self):
+        checker, manifest, raw = self.frozen_r43_manifest()
+        candidate = checker.FROZEN_R43
+        paths = [subject["path"] for subject in manifest["subjectFiles"]]
+        requests = []
+        real_request = checker._ObjectReadSession._request
+
+        def spy(session, mode, name):
+            requests.append((mode, name))
+            return real_request(session, mode, name)
+
+        with mock.patch.object(checker._ObjectReadSession, "_request", spy), \
+                mock.patch.object(subprocess, "Popen", wraps=subprocess.Popen) as popen:
+            self.assertEqual(self.verify_subjects(checker, manifest, raw), len(paths))
+        expected = []
+        for path in paths:
+            expected += [("--batch", f"{candidate}:{path}"),
+                         ("--batch-check=%(objectname)", f"{candidate}:{path}")]
+        self.assertEqual(requests, expected)
+        self.assertEqual(sorted(call.args[0][1:] for call in popen.call_args_list),
+                         [["cat-file", "--batch"], ["cat-file", "--batch-check=%(objectname)"]])
+
+        def reads():
+            return [(checker._git(checker._blob_spec(candidate, path)), checker._oid(candidate, path))
+                    for path in paths]
+
+        self.assertEqual(checker._object_read_scope(reads)(), reads())
+        commits = [checker.R43_BASE["commit"], *checker.R43_BASE["orderedParents"]]
+        self.assertEqual(
+            checker._object_read_scope(lambda: [checker._commit_tuple(c) for c in commits])(),
+            [checker._commit_tuple(commit) for commit in commits],
+        )
+
+    def test_missing_object_and_non_blob_answers_match_the_spawn_path(self):
+        import check_universal_manifest as checker
+
+        missing = "0" * 39 + "1"
+        for function, args, code in (
+            (checker._git, (f"{missing}:README.md",), "GIT_BLOB_UNAVAILABLE"),
+            (checker._oid, (missing, "README.md"), "GIT_BLOB_OID_UNAVAILABLE"),
+            (checker._commit_tuple, (missing,), "RECONCILIATION_OBJECT_UNAVAILABLE"),
+        ):
+            for label, call in (("spawn", function), ("batched", checker._object_read_scope(function))):
+                with self.subTest(function=function.__name__, path=label), \
+                        self.assertRaisesRegex(checker.ManifestError, f"^{code}$"):
+                    call(*args)
+        tree_spec = f"{checker.FROZEN_R43}:tools"
+        self.assertEqual(checker._object_read_scope(checker._git)(tree_spec), checker._git(tree_spec))
+
+    def test_rebind_between_calls_and_between_assertions_still_refuses(self):
+        checker, manifest, raw = self.frozen_r43_manifest()
+        with tempfile.TemporaryDirectory() as other:
+            subprocess.run(["git", "init", "-q", other], check=True, capture_output=True)
+            rebound = {"GIT_DIR": str(Path(other) / ".git")}
+            self.assertEqual(self.verify_subjects(checker, manifest, raw), len(manifest["subjectFiles"]))
+            with mock.patch.dict(os.environ, rebound):
+                with self.assertRaisesRegex(checker.ManifestError, "^GIT_BLOB_UNAVAILABLE$"):
+                    checker._git(checker._blob_spec(checker.FROZEN_R43, checker.R43_MANIFEST))
+                with self.assertRaisesRegex(checker.ManifestError, "^GIT_BLOB_UNAVAILABLE$"):
+                    self.verify_subjects(checker, manifest, raw)
+            self.assertEqual(self.verify_subjects(checker, manifest, raw), len(manifest["subjectFiles"]))
+            with checker._open_frozen_r43_historical_modules() as frozen:
+                frozen._assert_graph()
+                self.assertIsNone(checker._object_read_session())
+                with mock.patch.dict(os.environ, rebound):
+                    with self.assertRaisesRegex(
+                        checker.ManifestError, "R43_HISTORICAL_GRAPH_OBJECT_STORE_INVALID"
+                    ):
+                        frozen._assert_graph()
+                frozen._assert_graph()
+
+    def test_no_cat_file_process_outlives_a_refusal(self):
+        checker, manifest, raw = self.frozen_r43_manifest()
+        tampered = copy.deepcopy(manifest)
+        tampered["subjectFiles"][-1]["sha256"] = "sha256:" + "0" * 64
+        started = []
+        real_popen = subprocess.Popen
+
+        def track(*args, **kwargs):
+            process = real_popen(*args, **kwargs)
+            started.append(process)
+            return process
+
+        with mock.patch.object(subprocess, "Popen", side_effect=track):
+            with self.assertRaisesRegex(checker.ManifestError, "^MANIFEST_SUBJECT_MISMATCH$"):
+                self.verify_subjects(checker, tampered, raw)
+        batch = [process for process in started if process.args[1:2] == ["cat-file"]]
+        self.assertEqual(len(batch), 2)
+        for process in batch:
+            self.assertIsNotNone(process.poll())
+            self.assertTrue(process.stdin.closed and process.stdout.closed)
+        self.assertIsNone(checker._object_read_session())
+
+
 @unittest.skipUnless(os.name == "nt", "Windows Job Object lifecycle controls")
 class WindowsContainmentTests(unittest.TestCase):
     def test_parent_interrupt_and_child_failure_always_clean_every_started_worker(self):
