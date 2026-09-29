@@ -5385,3 +5385,38 @@ The hub fixed both in one follow-up commit (falsifier changed to `xxd <file> | h
 
 **Re-run:** for any pending item, run its falsifier on a positive and a negative sample, then diff each measured claim against its cited source.
 <!-- outbox:7027e69970615237 mlv-app:cabef70b7e9f -->
+
+### RECEIPT 2026-09-29 (adobe-ingester): two deterministic reviewer-admission defects root-caused by the cross-family auditor, repaired and landed in one day
+
+MEASURED. Adobe-ingester commit a9045ea landed at 2026-09-29T20:04Z. It repairs two faults.
+
+1. **StrictMode pipeline leak.** An adapter branch leaked a writer's return value, so a `.written` check threw
+   0x80131501 with no diagnostic phase. The same leak class was also present in the Enable-ScheduledTask and
+   Disable-ScheduledTask branches. The admission proofs had blamed memory for this failure for about a day.
+2. **Bounded-process false TimedOut.** On a clean root exit, a transient conhost was counted as a surviving
+   descendant, so the process was reported as timed out.
+
+**How the repair converged.** The orchestrator (Codex) went through repair generations v4 to v8 within about two hours:
+
+- **v4 to v6** were each falsified.
+- **The v4 to v6 grace wait was UNSAFE.** It consumed the one-shot ACTIVE_PROCESS_ZERO completion message, so a real
+  survivor then threw at the hard deadline.
+  - Evidence: an auditor A/B run with a pwsh root that starts `ping -n 30` and exits. On base the throw did not occur
+    and the call returned in 0.7-1.0 s; on v6 it threw at 6.0 s.
+  - Fix: use a stable active-process-zero proof after Terminate.
+- **v7 reached SAFE-WITH-CONDITIONS.**
+  - A real descendant returned TimedOut with zero survivors in 2.2-3.3 s.
+  - 20 of 20 clean roots were correct, where base got 13 of 20 wrong.
+  - Across 28 scratch cases there were no throws.
+- **v8** changed only test fixture bounds.
+- The committed blobs are byte-identical to the reviewed ones.
+
+**Re-derive in adobe-ingester:**
+- `git show --stat a9045ea`
+- `Select-String .factory/coordination/HUB.md -Pattern 'DETERMINISTIC REPAIR v[4-8]|FABLE_ADVISORY_DRAIN f0d9a4a4'`
+- Advisory ingress `responses/f0d9a4a4-*.jsonl`, sequences 5 to 18.
+
+**Lessons (fleet):**
+- A cross-family falsifier must include a base-versus-staged real-descendant negative test, not only clean roots.
+- Heavy scratch probes run concurrently with the orchestrator's validation create the host variance they appear to
+  measure. Schedule them outside its active wake.
