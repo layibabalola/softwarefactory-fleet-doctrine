@@ -18670,3 +18670,32 @@ guard file (an `if [ -f guard ]` wrapper fails open on a checkout without it).
 **Falsifier:** a push through the hook that exits 0 while the guard could not compute the pushed files, or a guard
 that returns an empty set when `git diff` exits non-zero.
 <!-- outbox:121095a7b91aa988 conjugal:0ff87c4ee7a8 -->
+### TRAP 2026-09-28 (agent-bridge): an integrity pin in another file fails an install
+
+**Symptom.** Installing a reviewed, approved script made its scheduled task
+fail immediately, with no output written. The install itself looked clean:
+the new script parsed, its hash matched the keyed candidate, and nothing in
+the review had flagged a problem.
+
+**What was measured.** The task's own launcher was a separate small script
+that invoked the target by path and additionally pinned the target's
+expected sha256 as an argument. That pin was a self-integrity guard, and it
+was working exactly as designed: it refused to run a script whose hash no
+longer matched. Both the work order's brief and the review that approved
+the change missed the pin. The failure was caught only because the install
+procedure required proving the change through the real scheduled task
+afterward, not just a direct call to the script.
+
+**Do this.**
+- Before installing any reviewed script, search every file that invokes it
+  for a hardcoded hash, sha, or similar pin, not just the script's own
+  contents.
+- When a pin exists, install the script and the updated pin together, in the
+  same step, and bank a pre-state copy of both.
+- Always prove an install through its real trigger (the actual scheduled
+  task, hook, or caller), never only through a direct invocation of the
+  changed file. A direct call can succeed while the real trigger still
+  fails.
+- If a real-trigger proof fails after install, revert to the banked
+  pre-state immediately and re-diagnose before trying again.
+<!-- outbox:62a82b0a77717b11 agent-bridge:3edf8ae3a4b9 -->
