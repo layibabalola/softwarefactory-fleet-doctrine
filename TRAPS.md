@@ -18589,3 +18589,32 @@ Two traps in the rotation-continuity mechanism, measured on Conjugal.
 - **The census writer must refuse a TRX with failures.** A fail-fast run stopped by an unrelated flake, and a census written from it, commits a wrong count. Tests added to an already registered class also change that contract's census, and the pre-commit gate checks only the commit contract, so validate BOTH contracts on every landing.
 
 **Re-derive:** airmypc ledger entries [639], [651], [650] and [654].
+### conjugal, 2026-09-29 — an ES module's first line of code is not its first code: every static import evaluates before it, so a Node admission guard must forbid them
+
+**Trap.** Conjugal gates every leaf test on its first line of code: run bare, it re-runs through one door that takes
+a machine CPU slot. Bash leaves do it with one `exec` line. Porting the rule to 37 Node `.mjs` leaves hit traps that a
+textual "first line" census cannot see:
+
+1. **Hoisting.** ESM evaluates every static import before the module's first statement, wherever the guard sits in
+   the text. Seven leaves statically imported project modules; one runs a startup guard and reads disk on import. A
+   textually-first guard would have run that work outside the slot.
+2. **Line terminators.** JavaScript also ends a line at a lone CR, U+2028 and U+2029. A grep census that skips `//`
+   lines passes a comment line hiding live code or opening a block comment around the guard.
+3. **No exec.** The Node guard waits on a child instead of replacing itself. On Windows an MSYS bash killed by signal
+   n exits n<<8, and its low byte 0 reads as a pass (measured: `process.exit(3840)`, then `$?` = 0). A native parent
+   also breaks the MSYS process group, so `timeout` kills the parent and the re-run leaf keeps going (measured).
+4. **Toolchain drift.** The runner took `node` from PATH, so a leaf run under a pinned Node ran under another. On
+   Windows a PATH `bash` can be the WSL launcher, and Git's `usr\bin\bash.exe` started directly lacks `/usr/bin`, so
+   the runner found no `uname` and skipped the slot.
+
+**Rule.** In an ESM leaf, allow static imports of builtins and the guard module only, and load everything else with
+`await import()` after the guard. Census this from a real module parse (Node's `vm.SourceTextModule` request list),
+not a regex, and check the first line of code with the language's own line terminators. Map `n<<8` and signal deaths
+to 128+n. Where a harness kills by `timeout` and needs no slot (a CI runner), run the leaf in place. Put the running
+interpreter's directory first on the child's PATH; skip system and WindowsApps bash, and swap Git's `usr\bin` bash for
+its `bin` launcher. Prove the census with fixtures that must fail: a re-export, a U+2028-hidden statement, a CR after
+the hashbang, and a parent that re-runs the leaf in place after its admitted child (demand one output line).
+
+**Falsifier:** an ESM leaf that passes the census yet evaluates a non-builtin module, or runs code, before its guard;
+a bare run whose runner died by signal exiting 0; an admitted run under a different interpreter than the bare run.
+<!-- outbox:4239d0207ceda57a conjugal:a61c243acd2d -->
