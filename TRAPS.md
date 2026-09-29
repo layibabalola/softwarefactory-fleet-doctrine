@@ -18941,3 +18941,22 @@ location. Audit any scheduled task that shares a file with a desktop-app session
 - Keep brackets at 4h, 8h and end outside any reap path.
 
 **Re-derive:** airmypc ledger entries [679] to [681].
+
+### TRAP (bus, 2026-09-29): master CI red for ten days on FOUR stacked causes, and each fix only unmasks the next
+
+**Failure.** No green master run of `Provider capacity governor contracts` since 2026-09-19T10:27Z (`4adb953`), `R26 project disposition intake` since 09-19T01:13Z (`2c93e6b`), or `R26 adoption ledger` since 09-18T22:36Z (`337e47c`). The failure message has changed several times over those ten days, and each change looked like "the" cause. Measured on HEAD `a411084`, there are four independent causes:
+
+1. **README pin treadmill.** The Ubuntu governor jobs fail with `MANIFEST_SUBJECT_MISMATCH` at `tools/check_universal_manifest.py:2978`. Of the seven `subjectFiles` pins in r45, only `README.md` drifted (pinned 22781 bytes, HEAD 25802). `22640ed` fixed this same drift on 09-18, and `ad426fb`, `2d30df9` and `ae78464` re-broke it. **Every README edit re-breaks the governor.** `tools/refresh_current_universal_manifest.py --candidate <sha>` emits the re-pin mechanically (`changedBindings:["README.md"]` plus the self-binding) without writing anything.
+2. **Windows deadline.** Both Windows governor jobs fail `UNIVERSAL_RUN_REFUSED: WORKER_DEADLINE_EXCEEDED` on every one of the last 12 failed runs. This cause predates the README drift (first seen on `fd181dc`, a TRAPS-only commit). The history-scaling trap above ("A CI deadline that scales with repo history") still governs it, so a re-pin turns Ubuntu green and leaves Windows red.
+3. **A test broken by BETTER evidence.** Intake fails at `tests/test_phase8_integration.py:30`. The test asserts that objects `c5b9efd`, `ed8a2f3` and `1f3c3d8` are absent. They became reachable on 2026-09-21T21:28Z, when `codex/phase7-evidence-import-20260821` and `codex/manifest-repair-evidence-import-20260821` were pushed. The flip is exact: the last intake run before that push fails on spec drift only, and the first after it fails on phase 8 only. `tests/test_phase9_integration.py` has the same flaw, but CI never reaches it because the phase-9 step runs after phase 8. Locally, both tests fail and both checkers PASS with `--rederive-source-objects`.
+4. **Spec drift.** The ledger workflow still fails `PROJECT_SPEC_DRIFT` in `test_current_adoption_ledger`, first on `9fe6a1a` (`specs/dng-auto-processor.md`). It is not this test at all.
+
+**The rules:**
+- A red that persists across more than one fix is presumed to be a STACK of causes. Enumerate every failing job's own first error before naming a cause, because the headline job hides the rest.
+- A test that encodes an ENVIRONMENT fact ("these objects are absent") must mock that fact. When the environment improves, answer it with a stronger check (run the rederive path in CI), not by deleting the fail-closed test.
+- A living document must not be a pinned evidence subject unless the same commit re-pins it. Either guard README edits with a pre-commit re-pin check, or move the subject. Both are ruling-candidate questions, not green-the-build edits.
+- Raising the Windows budget remains a spend and running-stop question (`CI-COST-CONTROL.md`, the Cloudvore ratification).
+
+**Not done here:** no fix bytes were written. Per `RULINGS.md:1493-1498` a chat session records. Per K1/K6 (`RULINGS.md:2742-2746`) a separate implementer writes the bytes and a cross-family key reviews them, landed as ONE push (`CI-COST-CONTROL.md:32-33`). The work packet is `ruling-candidates/master-ci-four-cause-repair-packet-r1.md`.
+
+**Re-derive:** `gh run list --workflow "<name>" --limit 300 --json conclusion,createdAt,headSha`; `python -m unittest tests.test_phase8_integration tests.test_phase9_integration`; `python tools/refresh_current_universal_manifest.py --candidate $(git rev-parse HEAD)`.
