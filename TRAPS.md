@@ -18563,3 +18563,29 @@ Two traps in the rotation-continuity mechanism, measured on Conjugal.
    `rev-list --count HEAD --not --remotes`; "ahead of master" reads master itself clean while
    master carries unpushed commits.
 <!-- outbox:86ebde2165697e6b conjugal:788f0cf4653c -->
+
+### TRAP (airmypc, 2026-09-28): a fix for a transient race can turn it into a PERMANENT one; review whether the fix loses a self-healing property
+
+**Failure.** A reservation fix held a stopping owner's Bluetooth endpoint until its legs stopped (so a concurrent re-arm could not open a brief doubled leg). It passed the lead's build, the tests, both CI census checks, the ratchet and a behavioural RED. The cross-family key WITHHELD it anyway. A room that started during the stop checked the endpoint before its network awaits and took an inactive placeholder. The stop's finally then ran before that room's slots were attached, so neither side re-armed. Before the fix the same interleaving gave a brief double leg that healed itself on the next tick. After the fix it gave silence until the device dropped and came back.
+
+**The test that catches it:** for every "hold X until Y" fix, the reviewer lists what used to retry or heal on its own, and walks both lock orders of the two parties: A releases before B checks, and A releases between B's two lock sections. At least one side must always see the other. The fix that passed records the skip at B's check and re-checks after B attaches, under the same lock A releases in. Add a test that blocks B's network start across A's whole stop.
+
+**A related class:** fire-and-forget request handlers plus a `DisposeAsync` that awaits only the accept loop. After dispose returns, handlers still hold resources, such as the served file's FileStream. It first showed up as a CI flake, "being used by another process" at `File.Delete` in a test's finally. **Treat a file-in-use flake as a product race** until it is disproved. The fix: register each handler before scheduling it, and drain them with a bounded wait in dispose.
+
+**Re-derive:** airmypc ledger entries [653], [655] and [657] in `docs/video-streaming/VIDEO_COORDINATION.md`.
+
+### TRAP (airmypc, 2026-09-28): a UDP control socket bound to Any that answers any sender is a reflection amplifier
+
+**Failure.** The native AirPlay 2 RTP retransmit loop received on a control socket bound to `IPAddress.Any`. It answered any datagram that parsed as a retransmit request, replying to the datagram's sender, and it iterated the request's untrusted u16 count with no cap. One spoofed 8-byte packet from any LAN host could make the app send about 1,024 stored packets (about 1.4 MB) to an address the attacker chose.
+
+**The test that catches it:** grep for every `ReceiveAsync` loop that replies to `RemoteEndPoint`, and ask two things. (1) Is the sender checked against the peer we negotiated with? Compare normalised addresses: map IPv4-mapped addresses back to IPv4 and ignore the IPv6 ScopeId. Do not trust "the first peer seen", which is trust on first use. (2) Is every untrusted count clamped to what we actually hold? Prove it with real loopback sockets: bind the attacker to 127.0.0.2, since Windows routes 127/8 to loopback.
+
+**Re-derive:** airmypc ledger entry [648].
+
+### TRAP (airmypc, 2026-09-28): verification harness self-inflicted dirt; and a lane "TIMEOUT" is not "no work"
+
+- **Restoring a file after a RED check.** `[IO.File]::ReadAllText` plus `WriteAllText` strips the UTF-8 BOM, so the file stays modified, and the next check (the analyzer ratchet) runs on a dirty tree. Restore with `git checkout HEAD -- <file>` instead.
+- **Codex implementer lanes reported `processOutcome=TIMEOUT` twice with the work done.** Once with a commit already made (`workOutcome=COMPLETED`), and once with all files STAGED, because the sandbox's pre-commit gate is slow. Before re-dispatching, inspect `git log` and `git status` in the lane's worktree. Commit staged bytes unchanged, and disclose any lead edit in the commit body.
+- **The census writer must refuse a TRX with failures.** A fail-fast run stopped by an unrelated flake, and a census written from it, commits a wrong count. Tests added to an already registered class also change that contract's census, and the pre-commit gate checks only the commit contract, so validate BOTH contracts on every landing.
+
+**Re-derive:** airmypc ledger entries [639], [651], [650] and [654].

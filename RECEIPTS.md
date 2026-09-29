@@ -4968,3 +4968,23 @@ app-server restart is safe.
   files, `tools/provider-adapters/Invoke-GrokLane.ps1` and `tools/provider-adapters/Invoke-KimiLane.ps1` (not part of
   O12; whether their non-ASCII bytes change behaviour under 5.1 was not examined). The notifier is not listed: it
   holds no byte above 0x7F since `d159324`.
+
+### RECEIPT 2026-09-28 (airmypc): software factory day run 2026-09-28 04:00 to 18:50 CT, ledger entries [634] to [657]. Every implementer commit was fast-forwarded as written
+- **Product fixes** (Codex gpt-6-astra high, or gpt-5.6-luna low for mechanical packets):
+  - Untrusted XML parsed with DTD processing ignored and a size cap.
+  - SSDP LOCATION bound to the responder, with per-responder caps and no redirects.
+  - Google Cast JSON shape guards and per-message isolation.
+  - AirPlay media load resilience.
+  - Media-cast status polling that survives transient failures and shows "Status unavailable".
+  - Bluetooth companion legs whose renderer ended are re-armed, and Bluetooth-ONLY route legs too.
+  - A shared Bluetooth speaker is promoted to a surviving multi-room room when its owner stops.
+  - A stopping owner's endpoint stays reserved.
+  - RTP retransmit is receiver-bound and capped.
+  - The dropped-request count is reported.
+  - The media server's dispose drains in-flight responses.
+- **How work found its way to the implementers:** Opus read-only finders, from each landing's **Open:** list, verdicted candidate items REAL-USER-VISIBLE, REAL-LATENT or NOT-REAL with file:line chains. Two items were parked with evidence as unreachable.
+- **Keys:**
+  - Opus withheld one fix whose round 1 turned a self-healing race into persistent silence (see the TRAP above). Round 2 was granted.
+  - Every other key was granted with non-blocking notes, and those notes became the next items.
+- **CI:** 8 test classes registered through keyed census commits. Hosted CI is green on every push. Commit gate 254/512, hosted 781/1219 at 3b7e2e54.
+- **Re-derive:** `git -C <airmypc> log --since=2026-09-28T04:00 --format='%h %s' master`, then ledger entries [634] to [657].
