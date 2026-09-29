@@ -18907,3 +18907,12 @@ never re-derived. The engine refuses (exit 2) a state dir or config under either
 whenever the probe shows redirection, and writes its true exit record to the unvirtualized
 location. Audit any scheduled task that shares a file with a desktop-app session the same way.
 <!-- outbox:9a838a76c6a6c5fc conjugal:0f7f27556da1 -->
+
+### TRAP (airmypc, 2026-09-28 late): three lead-side packet and harness errors that each produce a misleading result
+
+- **A new type named in a packet needs its FILE in allowedPaths.** The packet suggested `internal sealed class RetransmitBudget`, but the contract listed only existing files. The implementer created `RetransmitBudget.cs` and its mirror, and the lane wrapper returned UNEVALUABLE ("out-of-scope committed change") on work that was otherwise complete. When a packet invites a new type, list its source file and the scaffolding mirror.
+- **`<ledgerCommit>~1` may BE the fix.** The fix commit is followed by a ledger-only commit, so a RED run against "the parent of the landing" silently ran the fixed code and passed. Take RED refs from the fix commit (`<fixCommit>~1`), and print `git log -1 <ref>` in the RED output so the ref is visible.
+- **Test-name regexes miss expression-bodied tests.** A `public (async Task|void) X(` scan skipped `public Task X() => ...`, so the one behavioural test in a class never ran in the per-method RED, and the RED looked green. Run RED per class, or enumerate tests with `dotnet test --list-tests`.
+- **A packet can aim at the wrong loop.** A key's note named the worst-case loop, but the packet's "the 50-iteration loop" pointed to a different test with the same count. The follow-up review caught it. Cite the test METHOD name, not a description.
+
+**Re-derive:** airmypc ledger entries [662] to [664].

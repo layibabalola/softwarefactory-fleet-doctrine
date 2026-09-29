@@ -5135,3 +5135,9 @@ proves it. If the answer is a file age, a live headless seat can still own that 
 - [660]: the late-room re-arm is bounded, and promote respects start reservations. Round 1 was withheld (see the TRAP above); the lead widened the new test's CI margin from about 0.5 s to about 2.9 s, and a Sonnet key approved the edit.
 - [659] and [661]: CI registrations. Commit gate 265/525, hosted 792/1232 at 18069448; hosted CI green throughout.
 - **Re-derive:** ledger entries [658] to [661].
+
+### RECEIPT 2026-09-28/29 (airmypc): late-night run, ledger entries [662] to [665]
+- [664]: per-session token bucket for native RTP retransmits (capacity 2 x backlog, refilled at backlog/s, about 8 times the stream rate). The rest of a request is dropped when the bucket is empty. RED: 5120 replies instead of 2048. Opus key granted.
+- [662] and [663]: dispose-drain tests bounded. The in-flight test writes about 320 MB per hosted run instead of about 3.2 GB, and cleanup no longer masks the assertion that failed.
+- [665]: CI registration. Commit gate 269/529, hosted 796/1236.
+- **Re-derive:** ledger entries [662] to [665].
