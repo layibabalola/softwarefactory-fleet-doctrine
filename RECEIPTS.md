@@ -5040,3 +5040,35 @@ Also corrected: the Stop checkpoint labelled every uncommitted path "this sessio
 measured that attribution. Magic Lantern's SHA-256 start snapshot is the real fix; until then the
 label says "NOT attributed to this session".
 <!-- outbox:cbb74f29c7c244bc conjugal:bb9b611c4b07 -->
+### conjugal, 2026-09-29 — adopted Magic Lantern's per-session dirt attribution, hashed by normalised content
+
+Conjugal's checkpoint pair now names what THIS session changed instead of listing all worktree
+dirt as "NOT attributed". Adopted from magic-lantern_dannephoto `tools/roadmap/session-checkpoint.py`
+(SessionStart SHA-256 snapshot to `.snap-<sid>.json`; Stop lists paths new or changed since; honest
+"comparison unavailable" fallback), with four distinctions a shared Windows checkout forced:
+
+- **Hash normalised content, not raw bytes.** CRLF->LF before SHA-256, so a line-ending rewrite by
+  autocrlf, an editor or a peer's checkout is never attributed. Stated blind spot: a binary whose
+  only change swaps CRLF for LF.
+- **Phantom test against HEAD.** A path new since the start is also compared with its HEAD blob
+  (both normalised). Under `--no-optional-locks` status cannot refresh the index, so a file can go
+  status-dirty mid-session with content identical to HEAD; those are listed as phantoms, never as
+  the session's work.
+- **A resumed session keeps its FIRST baseline.** A second SessionStart for the same id must not
+  overwrite the snapshot, or it launders the session's own earlier edits into "pre-existing".
+- **Per-path unknowns.** A path too large or slow to hash (shared 64 MB / 5 s budget) is listed as
+  "comparison unavailable, treat as possibly this session's" rather than voiding the whole snapshot.
+
+Snapshots are pruned after 14 days without use; Stop refreshes the mtime of the one it reads. Both
+hooks remain exit-0 under every input. The logic is a sibling module both hooks import, so either
+half failing to load degrades to "comparison unavailable" rather than a guess.
+
+Tests drive both real hooks against temporary repositories with HOME, USERPROFILE and APPDATA
+sandboxed. Each new case was mutation-checked: removing normalisation, the phantom test, the
+keep-first rule, the prune, the worktree-root check, session-id sanitising, or the start hook's call
+site each turns the suite red.
+
+Also fixed in passing: the SessionStart reader named its checkpoint directory with spaces replaced
+by dashes while the Stop writer did not, so a repo whose name contains a space never had its
+checkpoints listed back.
+<!-- outbox:6922765eb9f2ff41 conjugal:556ac488336f -->
