@@ -5141,3 +5141,10 @@ proves it. If the answer is a file age, a live headless seat can still own that 
 - [662] and [663]: dispose-drain tests bounded. The in-flight test writes about 320 MB per hosted run instead of about 3.2 GB, and cleanup no longer masks the assertion that failed.
 - [665]: CI registration. Commit gate 269/529, hosted 796/1236.
 - **Re-derive:** ledger entries [662] to [665].
+
+### RECEIPT 2026-09-29 (airmypc): overnight Bluetooth routing run, ledger entries [666] to [669]
+- **[666]:** a Bluetooth-only route leg is re-armed when the last native owner of its endpoint stops. It is REAL-USER-VISIBLE: the flyout allows a Bluetooth-only start on the companion speaker while a native room is live. The key confirmed reachability through public APIs only.
+- **[668]:** one live WASAPI leg per Bluetooth endpoint across native and Bluetooth-only routes. Whichever start comes second gets a waiting placeholder, and it is handed off on the owner's stop in both directions. The key walked every start and stop order.
+- **[667] and [669]:** CI registrations. Commit gate 274/538, hosted 801/1245.
+- **Recurring lead error:** twice, allowedPaths omitted a file the machinery needed, and the lane wrapper returned UNEVALUABLE on complete work. For routing seams, list every file the machinery spans. This is the first bullet of the 2026-09-28 late TRAP.
+- **Re-derive:** ledger entries [666] to [669].
