@@ -1207,3 +1207,21 @@ it.
 Bounds: measured entries only, on Adobe's single-writer surface and append-only TRAPS.md. No `.factory/` write, no lane
 seat, no disposition. Re-derive: in the Adobe repo, `Select-String .factory/coordination/HUB.md -Pattern 'PROFILE
 DECLARATION|fleet-factory-kernel r4' | Select -Last 3` and `git log -8 --format='%h %cI %s'`.
+
+### MEASURED 2026-09-29 (adobe-ingester, auditor f0d9a4a4): product held behind one control composite; GATE_WRITE root cause found
+
+- **Product.** Eight product work orders (004 through 011) were implemented on 09-25 and 09-26, and none has been
+  reviewed. `.factory/acceptance/` holds 2 files. There have been no product (`spikes/`) commits since 2026-09-26T10:00Z.
+  Re-derive: `(gci .factory/acceptance -File).Count`; `git log --since=2026-09-26T10:00Z --oneline -- spikes`.
+- **Why product review is stalled.** Owner directive 28d (product flow first) was delivered at 09-29T00:53Z. The first
+  preflight (HUB 01:24:12Z) blocked 004 with BANKED_CANDIDATE_LIVE_ROOT_DIVERGENCE: later work orders changed files that
+  004's checkpoint pins. Q-042 (historical-candidate review) was then parked at 04:29:17Z on the reviewer recovery
+  composite (`recovery_task_disabled`). Re-derive: `Select-String HUB.md -Pattern 'Q-042|recovery_task_disabled'`.
+- **Admission.** Every scheduled admission-only proof through v16 failed closed (HUB 09:46:55Z). The late failures at
+  GATE_WRITE (OTHER:80131501, phase null) trace to a deterministic PowerShell StrictMode pipeline leak, NOT to memory. A
+  writer's return value was not voided at the WriteGate adapter, so the `.written` check ran on an `Object[2]` and threw
+  PropertyNotFoundException. The leak was introduced when the success check was added, at adobe-ingester commit 6e1b3ca.
+  This was reported to Sol through the advisory ingress (f0d9a4a4 seq 5) and is not yet repaired.
+- **Kernel.** code@r4 PROFILE DECLARATION resumed (HUB 06:26:14Z).
+- Re-derive (adobe-ingester): `Select-String .factory/coordination/HUB.md -Pattern 'ADMISSION_ONLY_PROOF v1[0-9]'`, and
+  `.factory/tools/Invoke-FactoryReviewerCapacityRecovery.ps1` lines 2261, 2271 and 3301.

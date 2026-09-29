@@ -19532,3 +19532,26 @@ A three-seat adversarial panel (against-default, what-outranks, post-mortem) re-
 **Lane-family consequence:** Codex `workspace-write` on Windows returns EPERM on process spawn (TRAPS ~17416), and these suites shell out to git. So the K1 implementer for this repair is headless Claude and the K6 key is Codex in `read-only`. That is the reverse of the obvious pairing.
 
 Superseding packet: `ruling-candidates/master-ci-four-cause-repair-packet-r2.md`.
+
+### TRAP 2026-09-29 (adobe-ingester): a success check added on a PowerShell function's return value reads leaked pipeline output
+
+**Symptom.** Eight scheduled proofs over two days failed at a gate write with a generic `0x80131501` error and no phase
+tag. Memory pressure was the leading hypothesis for most of a day: the Job peaked at 950 MB against a 1 GiB limit. A
+standalone repro of the writer succeeded.
+
+**What was measured.** An adapter branch called a writer that returns a status object, without `[void]`. It then did
+`return [ordered]@{ written = $true }`. PowerShell emits every uncaptured value, so the caller received an `Object[2]`.
+Commit 6e1b3ca (adobe-ingester) added `if (-not [bool]$gateWrite.written)`. Under `Set-StrictMode -Version Latest`,
+member enumeration over that array hits the element without `written` and throws PropertyNotFoundException `0x80131501`.
+That happens after the write has succeeded and outside the adapter's catch block, so no diagnostic tag attaches. The
+earlier code had wrapped the call in `[void]`, which masked the leak. Tests passed because the injected test adapter
+returned only the dictionary, and the only production-adapter test covered the throw path.
+
+**Do this.**
+- In PowerShell, every call inside a function whose value you do not return must be `[void](...)`, `$null = ...`, or
+  assigned. This matters most in adapter or dispatch functions whose output a caller inspects.
+- When you add a property check on a function's result, add a success-path test that runs the REAL production branch
+  under the same StrictMode, and assert the result's type and count, not just a property.
+- A generic HResult (`0x80131501` is COR_E_SYSTEM) with no phase tag means the throw happened outside your tagged region.
+  Look at the caller's handling of the return value before you look at resources.
+- A Job peak-memory figure is a high-water mark over the whole run. It is not the memory in use at the failure point.
