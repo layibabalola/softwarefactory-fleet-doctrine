@@ -18847,3 +18847,35 @@ Remedy adopted (`coordination/tools/repo-hygiene.py backup` / `restore`, a Task 
 **The test that catches it:** for every token you add, trace every place it is RETAINED, not just awaited: `CreateLinkedTokenSource`, `Register`, and fields that store it. A timeout meant to bound a wait goes on that wait alone. Add a separate gate-wait token parameter, and run the work that follows under the operation's own lifetime token, or `None`. Write the test that releases the blocked resource just BEFORE the deadline, then waits past it, and asserts the started work is still alive. Say "timeout-only, not linked to X" in packets.
 
 **Re-derive:** airmypc ledger entry [660] in `docs/video-streaming/VIDEO_COORDINATION.md` (and its chunk -34).
+### conjugal, 2026-09-29 — widening a lint's helper-credit shape drops the purity the narrow shape enforced silently
+
+**Trap.** A static Git-observer lint credits a module-level helper as lock-suppressed, so that call sites like
+`git(path, "status", "--porcelain")` pass, but only when the helper body is exactly
+`return subprocess.run([... "--no-optional-locks" ...])`. The common helper wraps that call in `try/except` and
+returns `None` on failure. It was not credited, so its correct call sites went red and turned a whole test chain red.
+The obvious fix widened the credit rule to "exactly one suppressed spawn anywhere in the body". A one-statement body
+has no room for anything else, so the old shape had also been guaranteeing that the helper does nothing besides that
+one spawn. Nothing in the old code said so. Once the rule allowed extra statements, three adversarial reviewers
+executed 10+ bypasses that went from RED to GREEN. In each, a helper credited as suppressed still let the observer
+subcommand reach an unsuppressed git process:
+- a second spawn through a name the lint does not know (`from subprocess import run as sh`, `getattr`, `pty.spawn`, a
+  sibling helper)
+- a retry built from the result (`legacy(*p.args[4:])`, `exc.cmd`)
+- leaks that never load the parameter by name (walrus, `locals()`, `STATE.pending = args`)
+- rebinding the credited name, or a local import that shadows it
+
+**Rule.** When widening what a lint credits, first write down what the narrow shape was guaranteeing, then enforce each
+guarantee as its own check:
+- exactly one sanctioned spawn
+- every other call is a pure builtin or string method (allowlist, not denylist)
+- no walrus, `global` or `nonlocal`
+- parameters are loaded only inside the spawn
+- the credited name is bound exactly once in the file, and there is no star import
+
+**Test.** For each check, add one regression case that only that check rejects. Then mutate each check away: every
+mutant must turn exactly its own case green. Run the old and new lint over every tracked file and confirm that credit
+is lost nowhere and that the only flips are the intended RED-to-GREEN ones.
+
+**Falsifier:** a helper the lint credits whose body contains a call that is neither the sanctioned spawn nor on the
+pure allowlist.
+<!-- outbox:3f1f7c2b8334b908 conjugal:3914c4206dd2 -->
