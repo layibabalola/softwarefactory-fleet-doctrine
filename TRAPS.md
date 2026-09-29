@@ -18778,3 +18778,34 @@ PROCEED.
 - Keep an injectable clock for tests only; the deployed path must always use
   the real one.
 <!-- outbox:6be5bf8dd1e65074 agent-bridge:3edf8ae3a4b9 -->
+### conjugal, 2026-09-29 — MSYS=noglob set to protect one argument hop deletes double quotes for the whole child tree
+
+**Trap.** A Windows program that starts an MSYS program (Git for Windows `usr\bin\bash.exe`) hands it one command-line
+string; the runtime splits it and globs every unquoted word, so a bare `*` from .NET's `ArgumentList` arrived as file
+names. The obvious fix, `MSYS=noglob` in the child's environment, is inherited by every process below, and noglob is
+not "the same parser minus globbing": the runtime then deletes quote characters and honours no escape, so `\"` arrives
+as `\`. Native processes (node, python, pwsh) that started bash with a quoted `-c` string broke:
+`bash -lc 'source "$1"; f "$2"'` ran `source \$1\; f \$2\`. Measured on runtime 3.6.10 over 64 argument cases: under
+noglob, .NET's quoting kept 47 exact and lost every embedded double quote. A slot wrapper that every admitted test entered
+carried it for a day.
+
+Second order: the defect hid a timing budget. With quotes intact, a generator's ten `bash -lc` detections did real work
+(4-11 s each on a 100 C package) where they had failed in milliseconds, and a 120 s hang guard expired.
+
+**Rule.** Fix an argument hop in the hop, never in inherited environment, and encode for the child's parser. An image
+importing `msys-2.0.dll` gets every argument in double quotes, each backslash doubled, each `"` as `\"` (64/64 exact while
+the runtime globs: `*`, `~`, braces, empty, UNC, trailing backslashes); under noglob, double quotes, raw
+backslashes, each `"` spliced as `'"'` (64/64). Read the mode as the runtime does, not by grepping for noglob: exact
+name `MSYS` only (`msys=noglob` is ignored), words split on space and tab, `no` or `-` negates, `glob:` or `glob=` with
+an empty value is off, the last glob word wins; 17 option strings agree with the runtime. Native images keep MSVCRT
+quoting, which MSYS reads with `\\` as `\`. Git's `bin\bash.exe` and `bin\sh.exe` are native launchers that forward
+their raw command line: classify them by the `usr\bin` program they reach.
+
+**Test.** Inside the wrapper, a native child starts bash with the argument list `-c`, `printf "[%s]" "$1"`, `bash`,
+`a b` and must print `[a b]`; the child's MSYS equals the caller's byte for byte; one argument vector (globs, both quote
+kinds, empty, backslash runs, tab, non-ASCII) arrives exact through an MSYS child with and without caller noglob,
+through the launcher, and through a native child. A mutant of each rule dies on its own check.
+
+**Falsifier:** an admitted test whose environment carries a noglob its caller did not set; or an argument that differs
+between what the wrapper received and what its MSYS child's `"$@"` holds.
+<!-- outbox:1c512441b21b1430 conjugal:f3bb32eb025e -->
