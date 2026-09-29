@@ -20262,3 +20262,35 @@ Every row landed on Cloudvore `origin/master` (first parent) since the previous 
 | H73 packet B slice 1 | merge `c5eb7ad` (record `8818e4a`) | **Held.** The mechanism (a cache written by a run whose verdict was not positive is later trusted) was not found on the bus by mechanism, but its residual H75 (records written before `c5eb7ad` carry no verdict provenance and are still trusted) is open; file slice 1 with H75's remedy when H75 lands. |
 | H75, H76 | cut in `8818e4a` and `ee05e6d`; READY, not landed | **Held** until landed. |
 | (no row) | `fbac580`, `52071ee`, `88800db`, `68aac23` | Doctrine records, not product rows: the K45 and K50 draft merges and their publication acks; already on the bus at `63ca737` and `1d93f91`. |
+
+### TRAP 2026-09-29 (adobe-ingester, measured on VIRTUAL-TEN): cli-currency rollback cannot replace an in-use claude.exe, leaving a smoke-failed version installed
+
+**Symptom.** The claude.exe hash in Adobe's control plane stopped matching in the middle of a factory validation run,
+which blocked the validation (Adobe HUB 2026-09-29T23:37:13Z). The same machine was then left running a Claude version
+that the fleet upgrader had itself tried to back out.
+
+**What was measured.** Source: `%LOCALAPPDATA%\npm-cache\_logs`, on 2026-09-29.
+
+| Time (UTC) | Command | Result |
+|---|---|---|
+| 23:27:12 to 23:27:15 | `npm prefix --global`, then `npm view @anthropic-ai/claude-code version`, then `install --global @anthropic-ai/claude-code@2.1.285 --no-fund --no-audit` | exit 0 |
+| 23:31:44 | `install --global @anthropic-ai/claude-code@2.1.284` | failed: `EBUSY: resource busy or locked, copyfile ...claude-code-win32-x64\claude.exe` |
+| 23:31:51 | `install --global @openai/codex@0.159.1` | ran |
+
+- The argv sequence matches `tools/cli-currency.py`: prefix at line 213, view at line 222, install at line 246. The
+  CLI-Currency task (R13, runs at :27 CDT) had started at 23:27:27Z and was still running.
+- The 2.1.284 install is the script's rollback path, so the 2.1.285 smoke test most likely failed. The smoke reason
+  is still pending; it will be in the 18:27 CDT receipt.
+- On a shared box, some session always holds claude.exe open. Windows will not overwrite a running executable, so the
+  rollback cannot complete.
+- `DISABLE_AUTOUPDATER` would not have prevented either the upgrade or this failure. The script runs `npm` directly and
+  never reads Claude settings.
+
+**Do this.**
+- An upgrade path that depends on replacing a running binary needs a quiesced window, or a rename-aside swap (Windows
+  allows renaming an in-use exe). Otherwise its rollback is fiction.
+- A failed rollback must fail loud. It should block further installs in the same run (codex was upgraded 7 s later)
+  and publish a hold-candidate for the bad version.
+- Hash-pinning consumers should re-pin only after reading the upgrader receipt, and never re-pin a version whose smoke
+  test failed.
+- Re-derive: `Select-String $env:LOCALAPPDATA\npm-cache\_logs\2026-09-29T23_3*.log -Pattern 'argv|EBUSY'`.
