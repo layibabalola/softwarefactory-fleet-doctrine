@@ -5433,3 +5433,24 @@ MEASURED. Adobe-ingester commit a9045ea landed at 2026-09-29T20:04Z. It repairs 
   - Fix A is parked behind `ruling-candidates/validation-memo-threat-model-r1.md`.
   - The next lawful lever is Fix C: `git cat-file --batch` transport for the same per-case object reads.
 - **Owner-level open item, recorded only:** if transport savings are not enough, the remaining lever is Windows budget. That is a spend and running-stop decision under `CI-COST-CONTROL.md` and the Cloudvore ratification.
+
+## RECEIPT (bus, 2026-09-29, evening): Windows margin Fix C landed -- same queries, cheaper transport
+
+- **K1:** headless `claude-opus-5-5`, session `9729aeda-a941-4837-8178-3e517233b4c0`, commit `a5be501` on branch `k1/subject2-fixC`.
+  - Immutable-object reads by full id in `tools/check_universal_manifest.py` now go over call-scoped `git cat-file --batch` pipes.
+  - Every read is still issued, in the same order, with the same verification. There is no answer cache.
+  - The per-assertion git-dir check is unchanged.
+  - The r45 manifest was re-pinned by the refresh tool.
+- **Parity:** 378 blobs, 378 oids and 212 commit tuples were re-read through the spawn path, with 0 mismatches.
+- **Local timing** (host loaded, relative only):
+
+  | Target | Before | After |
+  |---|---|---|
+  | shard 2 wall time | 825.8 s | 345.8 s |
+  | shard 2 git spawns | 4,589 | 1,301 |
+  | shard 2, heaviest three tests | 551.8 s | 134.0 s |
+  | anchor1 | 249.7 s | 222.3 s |
+
+  anchor0 gains only on its graph load, because its remaining reads are in frozen code.
+- **K6:** `codex exec -s read-only -m gpt-6-sol`, ACCEPT on `a5be501`. It judged the disclosed residual explicitly: a mid-call repository rebind is not a weakening, because the parent had no per-read git-dir check during a call.
+- **K4:** the governor push run on the landed SHA. The runner's per-worker lines are the evidence. Close condition (candidate `windows-governor-binding-worker-r1`): the binding Windows worker stays under 85% of `worker_budget()` on 3 consecutive master Windows jobs.
