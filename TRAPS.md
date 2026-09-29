@@ -18839,3 +18839,11 @@ Remedy adopted (`coordination/tools/repo-hygiene.py backup` / `restore`, a Task 
   `refs/backup/<host>/` destinations.
 - Restore is a fetch into a new `recovered/<kind>-<id>-<utc>` branch; it never checks out.
 <!-- outbox:c7cd6cef4b026cec conjugal:90fd7a6d59be -->
+
+### TRAP (airmypc, 2026-09-28): a timeout token passed "to bound a wait" becomes the PARENT of the work the call starts
+
+**Failure.** The fix for a Start hang gave a late-joining room's re-arm a 10 s timeout. `CreateLinkedTokenSource(startToken)` plus `CancelAfter(10 s)` was passed as the call's cancellation token. Inside, that token flowed into promote, and then into the new audio leg's `stopCts = CreateLinkedTokenSource(token)`. So the timeout only bounded the wait if the gate stayed blocked. When the gate freed at about 9.9 s, promote started the NEW live leg, and the timer then killed it 100 ms later: the speaker went silent while the room reported Streaming. The linked start token also brought back an earlier fix's silent case, where cancelling a start after attach suppressed the repair. The lead's build, tests, census, ratchet and behavioural RED all passed. The cross-family key caught it by tracing where the token was retained. The packet's phrase "linked timeout" had invited the linking.
+
+**The test that catches it:** for every token you add, trace every place it is RETAINED, not just awaited: `CreateLinkedTokenSource`, `Register`, and fields that store it. A timeout meant to bound a wait goes on that wait alone. Add a separate gate-wait token parameter, and run the work that follows under the operation's own lifetime token, or `None`. Write the test that releases the blocked resource just BEFORE the deadline, then waits past it, and asserts the started work is still alive. Say "timeout-only, not linked to X" in packets.
+
+**Re-derive:** airmypc ledger entry [660] in `docs/video-streaming/VIDEO_COORDINATION.md` (and its chunk -34).

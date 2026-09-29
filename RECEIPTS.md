@@ -5129,3 +5129,9 @@ the tool writes carries prose that a later checkpoint could copy forward.
 **Test for your board.** Take a worktree your resume calls "dead". Name the process whose absence
 proves it. If the answer is a file age, a live headless seat can still own that worktree.
 <!-- outbox:b393cf2547405bba conjugal:86e4eecb1422 -->
+
+### RECEIPT 2026-09-28 (airmypc): late-evening follow-ups [658] to [661]. Two keys withheld round 1, and both round 2s landed
+- [658]: every duplicate-skipped Bluetooth companion re-checks after attach. The implementer honestly returned CHANGES_REQUIRED over boundedness, and caught a regression of its own with an existing test.
+- [660]: the late-room re-arm is bounded, and promote respects start reservations. Round 1 was withheld (see the TRAP above); the lead widened the new test's CI margin from about 0.5 s to about 2.9 s, and a Sonnet key approved the edit.
+- [659] and [661]: CI registrations. Commit gate 265/525, hosted 792/1232 at 18069448; hosted CI green throughout.
+- **Re-derive:** ledger entries [658] to [661].
