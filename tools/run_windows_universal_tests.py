@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import ast
 import ctypes
+import functools
 import hashlib
 import json
 import math
@@ -187,19 +188,32 @@ def atomic_json(path, value):
 
 
 class RecordingResult(unittest.TextTestResult):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, progress=None, **kwargs):
         super().__init__(*args, **kwargs)
         self.started, self.stopped, self.successful = [], [], []
         self.test_seconds = {}
+        # Diagnostic journal only: a killed worker writes no receipt, so the
+        # parent reads this to name the test each worker was running.
+        self.progress = progress
+
+    def note(self, event):
+        if self.progress is not None:
+            try:
+                self.progress.write(json.dumps(event, sort_keys=True) + "\n")
+                self.progress.flush()
+            except (OSError, ValueError):
+                self.progress = None
 
     def startTest(self, test):
         self.started.append(test.id())
         self.began = time.monotonic()
+        self.note({"start": test.id(), "wall": time.time()})
         super().startTest(test)
 
     def stopTest(self, test):
         self.stopped.append(test.id())
         self.test_seconds[test.id()] = time.monotonic() - self.began
+        self.note({"stop": test.id(), "seconds": self.test_seconds[test.id()]})
         super().stopTest(test)
 
     def addSuccess(self, test):
@@ -219,8 +233,11 @@ def worker(output, index):
         raise Refused("WORKER_PLAN_OR_SOURCE_MISMATCH")
     assigned = plan["shards"][index]
     start = time.monotonic()
-    result = unittest.TextTestRunner(verbosity=2, resultclass=RecordingResult).run(
-        unittest.TestSuite(cases[item] for item in assigned))
+    with (output / f"worker-{index}.progress.jsonl").open("x", encoding="utf-8", newline="\n") as progress:
+        result = unittest.TextTestRunner(
+            verbosity=2, resultclass=functools.partial(RecordingResult, progress=progress)).run(
+            unittest.TestSuite(cases[item] for item in assigned))
+    print(json.dumps(slowest_line(index, result.test_seconds), sort_keys=True), flush=True)
     if snapshot() != source:
         raise Refused("SOURCE_CHANGED_DURING_EXECUTION")
     status = 0 if result.wasSuccessful() and not result.skipped and not result.expectedFailures else 1
@@ -342,9 +359,66 @@ class WindowsJob:
             raise Refused("INCOMPLETE_PROCESS_CLEANUP:" + repr(errors))
 
 
-def wait_workers(processes, deadline):
+def slowest_line(index, test_seconds, limit=20):
+    ranked = sorted(test_seconds.items(), key=lambda item: (-item[1], item[0]))[:limit]
+    return {"event": "UNIVERSAL_WORKER_SLOWEST", "worker": index,
+            "slowest": [[name, round(seconds, 3)] for name, seconds in ranked]}
+
+
+def read_progress(path):
+    # Tolerates a torn final line: the worker may be killed mid-write.
+    started, seconds = [], {}
+    try:
+        lines = path.read_text(encoding="utf-8", errors="replace").splitlines()
+    except OSError:
+        return None
+    for line in lines:
+        try:
+            event = json.loads(line)
+        except ValueError:
+            continue
+        if isinstance(event, dict) and isinstance(event.get("start"), str):
+            started.append((event["start"], event.get("wall")))
+        elif isinstance(event, dict) and isinstance(event.get("stop"), str) \
+                and type(event.get("seconds")) in (int, float):
+            seconds[event["stop"]] = event["seconds"]
+    return started, seconds
+
+
+def report_progress(output, plan, budget, started, exited, failure):
+    """Name the binding worker(s). Never raises: must not mask the refusal."""
+    reason, codes, stopped_at, wall = failure
+    for index in range(WORKERS):
+        try:
+            code = codes[index] if index < len(codes) else None
+            code = code if type(code) is int else None
+            progress = read_progress(output / f"worker-{index}.progress.jsonl")
+            begun, seconds = progress or ([], {})
+            last, last_wall = begun[-1] if begun else (None, None)
+            in_flight = last is not None and last not in seconds
+            binding = code is None if reason.startswith("WORKER_DEADLINE_EXCEEDED") else code not in (None, 0)
+            line = {"event": "UNIVERSAL_WORKER_PROGRESS", "worker": index, "binding": binding,
+                    "elapsed_seconds": round(exited.get(index, stopped_at) - started, 3),
+                    "budget_seconds": round(budget, 3), "exit_code": code,
+                    "last_started_test": last, "completed_count": len(seconds),
+                    "planned_count": len(plan["shards"][index]),
+                    "in_flight_seconds": round(wall - last_wall, 3)
+                    if in_flight and type(last_wall) in (int, float) else None,
+                    "progress_available": progress is not None}
+            print(json.dumps(line, sort_keys=True), flush=True)
+            print(json.dumps(slowest_line(index, seconds), sort_keys=True), flush=True)
+        except Exception as error:
+            print(f"DIAGNOSTIC_PROGRESS_UNAVAILABLE worker={index}: {error!r}", flush=True)
+
+
+def wait_workers(processes, deadline, exited=None):
     while True:
         codes = [process.poll() for process in processes]
+        if exited is not None:
+            now = time.monotonic()
+            for index, code in enumerate(codes):
+                if code is not None:
+                    exited.setdefault(index, now)
         if any(code is not None and code != 0 for code in codes):
             raise Refused("CHILD_FAILED:" + repr(codes))
         if all(code == 0 for code in codes):
@@ -366,7 +440,7 @@ def run(output):
     output.mkdir(parents=True, exist_ok=False)
     atomic_json(output / "plan.json", plan)
     print(json.dumps({"plan": plan}, sort_keys=True), flush=True)
-    processes, logs = [], []
+    processes, logs, exited, failure = [], [], {}, None
     job = WindowsJob()
     started = time.monotonic()
     try:
@@ -391,7 +465,14 @@ def run(output):
                 raise
             process.stdin.write(b"GO\n")
             process.stdin.close()
-        wait_workers(processes, started + budget)
+        try:
+            wait_workers(processes, started + budget, exited)
+        except Refused as error:
+            if str(error).startswith(("WORKER_DEADLINE_EXCEEDED", "CHILD_FAILED")):
+                # Capture before cleanup kills the workers and rewrites exit codes.
+                failure = (str(error), [process.poll() for process in processes],
+                           time.monotonic(), time.time())
+            raise
         if job.active() != 0:
             raise Refused("WORKER_LEFT_LIVE_DESCENDANTS")
     finally:
@@ -407,6 +488,9 @@ def run(output):
                 except OSError as error:
                     print(f"DIAGNOSTIC_LOG_UNAVAILABLE worker={index}: {error}", flush=True)
             print(f"Preserved receipts and logs: {output}", flush=True)
+            if failure is not None:
+                # Last, so the per-worker lines sit directly above the refusal.
+                report_progress(output, plan, budget, started, exited, failure)
     if snapshot() != source:
         raise Refused("PARENT_SOURCE_CHANGED")
     receipts = [read_json(output / f"worker-{index}.json") for index in range(WORKERS)]
@@ -414,6 +498,9 @@ def run(output):
     # Full completion receipts remain in normal CI logs even when artifacts expire.
     for receipt in receipts:
         print(json.dumps(receipt, sort_keys=True), flush=True)
+    for index, receipt in enumerate(receipts):
+        print(json.dumps(slowest_line(index, receipt["test_seconds"]) | {
+            "seconds": round(receipt["seconds"], 3)}, sort_keys=True), flush=True)
     summary = {"status": "PASS", "plan": plan, "tests_run": EXPECTED,
                "workers": WORKERS, "seconds": time.monotonic() - started}
     atomic_json(output / "complete.json", summary)

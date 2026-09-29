@@ -1,4 +1,5 @@
 """Receipt falsification and real Windows descendant-containment controls."""
+import contextlib
 import copy
 import ctypes
 import io
@@ -165,6 +166,104 @@ class ReceiptTests(unittest.TestCase):
         process.poll.return_value = 0
         runner.wait_workers([process], time.monotonic() + 10)
 
+    def write_progress(self, directory, index, completed, in_flight=None, torn=False):
+        lines = []
+        for name, seconds in completed:
+            lines += [json.dumps({"start": name, "wall": 1.0}), json.dumps({"stop": name, "seconds": seconds})]
+        if in_flight:
+            lines.append(json.dumps({"start": in_flight, "wall": 1000.0}))
+        text = "\n".join(lines) + "\n" + ('{"start": "torn' if torn else "")
+        (Path(directory) / f"worker-{index}.progress.jsonl").write_text(text, encoding="utf-8")
+
+    def progress_lines(self, printed, event):
+        lines = [json.loads(call.args[0]) for call in printed.call_args_list
+                 if call.args and str(call.args[0]).startswith("{")]
+        return [line for line in lines if line.get("event") == event]
+
+    def test_deadline_progress_names_binding_worker_and_in_flight_test(self):
+        shards = self.plan["shards"]
+        with tempfile.TemporaryDirectory() as directory:
+            self.write_progress(directory, 0, [(shards[0][0], 400.0)])
+            self.write_progress(directory, 1, [], in_flight=shards[1][0])
+            self.write_progress(directory, 2, [(name, 2.0) for name in shards[2][:60]]
+                                + [(shards[2][60], 90.0)], in_flight=shards[2][61], torn=True)
+            self.write_progress(directory, 3, [(name, 1.0) for name in shards[3]])
+            failure = ("WORKER_DEADLINE_EXCEEDED", [0, None, None, 0], 1709.0, 1300.0)
+            with mock.patch("builtins.print") as printed:
+                runner.report_progress(Path(directory), self.plan, 709.0, 1000.0,
+                                       {0: 1500.0, 3: 1600.0}, failure)
+        progress = self.progress_lines(printed, "UNIVERSAL_WORKER_PROGRESS")
+        self.assertEqual([line["worker"] for line in progress], [0, 1, 2, 3])
+        for line in progress:
+            self.assertLessEqual({"worker", "elapsed_seconds", "budget_seconds", "last_started_test",
+                                  "completed_count", "planned_count"}, set(line))
+            self.assertEqual(line["budget_seconds"], 709.0)
+        self.assertEqual([line["binding"] for line in progress], [False, True, True, False])
+        self.assertEqual([line["elapsed_seconds"] for line in progress], [500.0, 709.0, 709.0, 600.0])
+        self.assertEqual([line["completed_count"] for line in progress], [1, 0, 61, 125])
+        self.assertEqual([line["planned_count"] for line in progress], [1, 1, 125, 125])
+        self.assertEqual(progress[2]["last_started_test"], shards[2][61])
+        self.assertEqual(progress[2]["in_flight_seconds"], 300.0)
+        self.assertIsNone(progress[3]["in_flight_seconds"])
+        slowest = self.progress_lines(printed, "UNIVERSAL_WORKER_SLOWEST")
+        self.assertEqual(slowest[2]["slowest"][0], [shards[2][60], 90.0])
+        self.assertEqual(len(slowest[3]["slowest"]), 20)
+
+    def test_child_failure_progress_marks_failed_worker_binding(self):
+        failure = ("CHILD_FAILED:[None, 0, 1, None]", [None, 0, 1, None], 50.0, 0.0)
+        with tempfile.TemporaryDirectory() as directory, mock.patch("builtins.print") as printed:
+            runner.report_progress(Path(directory), self.plan, 709.0, 0.0, {1: 20.0, 2: 49.9}, failure)
+        progress = self.progress_lines(printed, "UNIVERSAL_WORKER_PROGRESS")
+        self.assertEqual([line["binding"] for line in progress], [False, False, True, False])
+        self.assertEqual([line["progress_available"] for line in progress], [False] * 4)
+        self.assertEqual([line["exit_code"] for line in progress], [None, 0, 1, None])
+
+    def test_progress_report_never_raises_over_the_refusal(self):
+        broken_plan = {"shards": []}
+        with tempfile.TemporaryDirectory() as directory, mock.patch("builtins.print") as printed:
+            runner.report_progress(Path(directory), broken_plan, 1.0, 0.0, {},
+                                   ("WORKER_DEADLINE_EXCEEDED", [None] * 4, 1.0, 1.0))
+        self.assertEqual(sum("DIAGNOSTIC_PROGRESS_UNAVAILABLE" in str(call)
+                             for call in printed.call_args_list), 4)
+
+    def test_recording_result_journals_start_stop_and_duration(self):
+        class Probe(unittest.TestCase):
+            def test_one(self):
+                pass
+        journal = io.StringIO()
+        result = unittest.TextTestRunner(
+            stream=io.StringIO(), resultclass=runner.functools.partial(
+                runner.RecordingResult, progress=journal)).run(
+            unittest.defaultTestLoader.loadTestsFromTestCase(Probe))
+        events = [json.loads(line) for line in journal.getvalue().splitlines()]
+        self.assertEqual([next(iter(set(event) - {"wall", "seconds"})) for event in events],
+                         ["start", "stop"])
+        self.assertEqual(events[1]["seconds"], result.test_seconds[events[0]["start"]])
+        self.assertTrue(result.wasSuccessful())
+        journal.close()
+        rerun = unittest.TextTestRunner(stream=io.StringIO(), resultclass=runner.functools.partial(
+            runner.RecordingResult, progress=journal)).run(
+            unittest.defaultTestLoader.loadTestsFromTestCase(Probe))
+        self.assertTrue(rerun.wasSuccessful())
+        self.assertIsNone(rerun.progress)
+
+    def test_slowest_line_is_top_twenty_descending(self):
+        line = runner.slowest_line(2, {f"t{index:02}": float(index) for index in range(30)})
+        self.assertEqual(line["worker"], 2)
+        self.assertEqual(len(line["slowest"]), 20)
+        self.assertEqual(line["slowest"][0], ["t29", 29.0])
+        self.assertEqual(line["slowest"][-1], ["t10", 10.0])
+
+    def test_wait_workers_records_first_exit_time_only(self):
+        first, second = mock.Mock(), mock.Mock()
+        first.poll.return_value, second.poll.return_value = 0, None
+        exited = {}
+        with mock.patch.object(runner.time, "sleep"), \
+             mock.patch.object(runner.time, "monotonic", side_effect=[5.0, 5.0, 7.0, 7.0]):
+            with self.assertRaisesRegex(runner.Refused, "WORKER_DEADLINE_EXCEEDED"):
+                runner.wait_workers([first, second], 6.0, exited)
+        self.assertEqual(exited, {0: 5.0})
+
     def test_handshake_eof_refuses_before_project_discovery(self):
         with mock.patch.object(sys, "stdin", io.StringIO("")), mock.patch.object(runner, "discover") as discover:
             with self.assertRaisesRegex(runner.Refused, "HANDSHAKE"):
@@ -239,6 +338,41 @@ class WindowsContainmentTests(unittest.TestCase):
                 with self.assertRaisesRegex(runner.Refused, "CHILD_FAILED"):
                     runner.run(Path(directory) / "new-run")
                 self.assertEqual(sum("DIAGNOSTIC_LOG_UNAVAILABLE" in str(call) for call in output.call_args_list), 4)
+
+    def test_simulated_deadline_emits_worker_progress_before_refusal_and_fails_closed(self):
+        ids = runner.source_census()
+        shards = runner.partition(ids)
+        for reason, codes, binding in (("WORKER_DEADLINE_EXCEEDED", [0, None, None, 0], [1, 2]),
+                                       ("CHILD_FAILED:[0, 0, 1, None]", [0, 0, 1, None], [2])):
+            with self.subTest(reason=reason), tempfile.TemporaryDirectory() as directory:
+                output = Path(directory) / "new-run"
+                processes = [mock.Mock() for _ in range(4)]
+                for process, code in zip(processes, codes):
+                    process.poll.return_value = code
+                def deadline(processes, deadline, exited):
+                    (output / "worker-2.progress.jsonl").write_text(
+                        json.dumps({"start": shards[2][0], "wall": time.time()}) + "\n", encoding="utf-8")
+                    raise runner.Refused(reason)
+                stream = io.StringIO()
+                with mock.patch.object(runner, "snapshot", return_value={"head": "a" * 40}), \
+                     mock.patch.object(runner, "source_census", return_value=ids), \
+                     mock.patch.object(runner, "WindowsJob"), \
+                     mock.patch.object(runner.subprocess, "Popen", side_effect=processes), \
+                     mock.patch.object(runner, "wait_workers", side_effect=deadline), \
+                     mock.patch.object(sys, "argv", ["runner", "--output-dir", str(output)]), \
+                     contextlib.redirect_stdout(stream), contextlib.redirect_stderr(stream):
+                    self.assertEqual(runner.main(), 1)
+                lines = stream.getvalue().splitlines()
+                refusal = [index for index, line in enumerate(lines)
+                           if line == "UNIVERSAL_RUN_REFUSED: " + reason]
+                self.assertEqual(len(refusal), 1)
+                progress = [(index, json.loads(line)) for index, line in enumerate(lines)
+                            if line.startswith('{"') and '"UNIVERSAL_WORKER_PROGRESS"' in line]
+                self.assertEqual([line["worker"] for _, line in progress], [0, 1, 2, 3])
+                self.assertTrue(all(index < refusal[0] for index, _ in progress))
+                self.assertEqual([line["worker"] for _, line in progress if line["binding"]], binding)
+                self.assertEqual(progress[2][1]["last_started_test"], shards[2][0])
+                self.assertFalse((output / "complete.json").exists())
 
     def test_win64_layout_matches_windows_sdk(self):
         if ctypes.sizeof(ctypes.c_void_p) == 8:
