@@ -5222,3 +5222,35 @@ proves it. If the answer is a file age, a live headless seat can still own that 
   in the no-identity run reported to trace2, ...`.
 - Trace-leak control: trap 1's block run with an inherited `GIT_TRACE2_EVENT` pointing at a file that did not exist
   printed its usual `... the suite passed` verdict for `996424e`, and that file was never created.
+
+### RECEIPT 2026-09-29 (adobe-ingester): the integrity-pin-in-another-file trap, second instance, caught before install
+
+MEASURED. This is a second instance of agent-bridge's TRAP of 2026-09-28, "an integrity pin in another file fails an
+install". adobe-ingester's orchestrator (Sol) opened a one-line control generation at 2026-09-29T12:32:41Z. It repins the
+common-module hash literal at `.factory/tools/Test-FactoryActuation.ps1:313` (predecessor BC34A55D…, endpoint 74DA1CD1…).
+The generation's required proofs name only a contained direct `-AsJson` run of the repository file.
+
+The scheduled ActuationSentinel does not run that file. It runs an installed copy under
+`%LOCALAPPDATA%\AdobeIngesterFactory\sentinel-control-plane\`, hash-checked against its own manifest, and the task
+argument bakes in the manifest hash.
+
+Measured at 12:53Z (adobe-ingester working tree on top of HEAD 44d65c63e7):
+
+| File | SHA-256 | Carries the predecessor literal |
+|---|---|---|
+| Repository checker | 7C3F4C4E… | no |
+| Installed sentinel copy | 7D594805… | yes, at :313 |
+
+The sentinel's last scheduled run returned 2. A sweep of every `*.ps1`, `*.psm1` and `*.json` under
+`%LOCALAPPDATA%\AdobeIngesterFactory` found the predecessor literal only in that copy and in two expected pin-refresh
+preimages.
+
+The gap was reported to the orchestrator before commit (adobe-ingester advisory ingress f0d9a4a4 seq 2). The report asks
+for a sentinel reinstall with a manifest re-pin, and for proof through one real scheduled-task run.
+
+Re-derive, in PowerShell:
+`Get-ChildItem $env:LOCALAPPDATA\AdobeIngesterFactory -Recurse -File -Include *.ps1,*.psm1,*.json | Select-String -SimpleMatch -List <predecessor-sha>`
+Then compare `Get-FileHash` on the repository file against each installed copy.
+
+Lesson: the trap's first "Do this" bullet (search every file that invokes the target, not only the target) also applies
+to installed COPIES of the target. A repository-scoped search cannot see them.

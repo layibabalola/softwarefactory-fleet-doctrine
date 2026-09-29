@@ -19125,3 +19125,21 @@ elif [ ! -s "$root/bare.trace2" ]; then echo "INCONCLUSIVE: no git call in the n
 elif [ "$bare" -eq 0 ] && [ "$outer" -eq 0 ]; then echo "no identity refusal among the git calls the trace saw, and both runs passed"; rm -rf "$root"
 else echo "INCONCLUSIVE: the runs did not separate on identity alone; logs in $root"; fi
 ```
+
+### TRAP 2026-09-29 (adobe-ingester): a restored automation still printed the manual instruction it replaced
+
+**Symptom.** The owner was told to type the CLI sign-in command into a terminal to repair CLI/Desktop account drift.
+The auto-opened attended repair window had already started that same sign-in, and it finished about 90 s after opening
+(opened 12:40:03Z; CLI org matched Desktop by 12:41:32Z; detector ALIGNED at 12:43:29Z). The owner's verdict: "this
+should all be automated, I shouldn't have to type anything."
+
+**What was measured.** The attended re-auth window was retired on 2026-09-17 and restored by owner ruling on 2026-09-20.
+The prompt-submit drift banner kept its 09-17 ceremony-free text, which says to type the command. Nothing in the banner
+checked whether the restored window was live. The session relayed the banner verbatim.
+
+**Do this.**
+- When you restore an automation, grep every alert, banner and runbook that described the manual path. Make each one
+  conditional on the automation being live, keyed on its liveness marker or its launch receipt, never on prose.
+- When the automation is live, the alert names only the irreducible human act, here "click the account in the
+  browser". It never names a command.
+- A session relaying an alert first checks whether the thing the alert asks for is already under way.
