@@ -415,6 +415,18 @@ class ObjectReadTransportTests(unittest.TestCase):
 
 @unittest.skipUnless(os.name == "nt", "Windows Job Object lifecycle controls")
 class WindowsContainmentTests(unittest.TestCase):
+    @staticmethod
+    def fresh_job_clock():
+        """Pin a job clock that starts now. The governor workflow exports
+        UNIVERSAL_JOB_STARTED_UNIX before this suite runs; late in a job the
+        real worker_budget() would refuse first and mask the refusal under test."""
+        return mock.patch.dict(os.environ, {"UNIVERSAL_JOB_STARTED_UNIX": str(int(time.time()))})
+
+    def setUp(self):
+        clock = self.fresh_job_clock()
+        clock.start()
+        self.addCleanup(clock.stop)
+
     def test_parent_interrupt_and_child_failure_always_clean_every_started_worker(self):
         ids = runner.source_census()
         for error in (KeyboardInterrupt(), runner.Refused("CHILD_FAILED"),
@@ -539,6 +551,7 @@ class WindowsContainmentTests(unittest.TestCase):
                  mock.patch.object(runner.subprocess, "Popen", side_effect=processes), \
                  mock.patch.object(runner, "wait_workers", side_effect=refuse), \
                  mock.patch.object(sys, "argv", ["runner", "--output-dir", str(output)]), \
+                 self.fresh_job_clock(), \
                  contextlib.redirect_stdout(stdout), contextlib.redirect_stderr(stderr):
                 code = runner.main()
         return code, stderr.getvalue().splitlines(), stdout.getvalue()
@@ -599,6 +612,7 @@ class WindowsContainmentTests(unittest.TestCase):
                             mock.patch.object(runner.os, "write", write),
                             mock.patch.object(sys, "__stderr__", dunder),
                             mock.patch.object(sys, "argv", ["runner", "--output-dir", str(ctx.output)]),
+                            self.fresh_job_clock(),
                             *ctx.patchers]:
                 stack.enter_context(patcher)
             stack.enter_context(contextlib.redirect_stdout(stdout))
@@ -676,6 +690,22 @@ class WindowsContainmentTests(unittest.TestCase):
                     code, sink = self.drive_main(ctx, on_wait)
                     self.assertEqual(code, 1)
                     self.assertIn("UNIVERSAL_RUN_REFUSED: " + reason, sink)
+
+    def test_choke_point_refusal_reaches_output_under_stale_ambient_job_clock(self):
+        # Reproduce a CI step that starts late in its job: the ambient clock alone
+        # already exhausts the cleanup reserve.
+        stale = {"UNIVERSAL_JOB_STARTED_UNIX": str(int(time.time()) - 850), "GITHUB_ACTIONS": "true"}
+        with mock.patch.dict(os.environ, stale):
+            with self.assertRaisesRegex(runner.Refused, "INSUFFICIENT_JOB_CLEANUP_RESERVE"):
+                runner.worker_budget()
+            ctx = types.SimpleNamespace(armed=False, codes=[0, None, None, 0], poll_error=None,
+                                        job_error=None, stdout_fails=False, stderr_fails=0, patchers=[])
+            def on_wait(output):
+                raise runner.Refused("WORKER_DEADLINE_EXCEEDED")
+            code, sink = self.drive_main(ctx, on_wait)
+        self.assertEqual(code, 1)
+        self.assertIn("UNIVERSAL_RUN_REFUSED: WORKER_DEADLINE_EXCEEDED", sink)
+        self.assertFalse(any("INSUFFICIENT_JOB_CLEANUP_RESERVE" in line for line in sink))
 
     def test_diagnostic_failure_cannot_flip_success_or_genuine_failure(self):
         for broken, want in ((False, 0), (True, 1)):
