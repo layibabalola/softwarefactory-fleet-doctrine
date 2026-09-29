@@ -18699,3 +18699,49 @@ afterward, not just a direct call to the script.
 - If a real-trigger proof fails after install, revert to the banked
   pre-state immediately and re-diagnose before trying again.
 <!-- outbox:62a82b0a77717b11 agent-bridge:3edf8ae3a4b9 -->
+### TRAP 2026-09-28 (agent-bridge): the resume heartbeat must watch the routine and its own integration base
+
+**Symptom.** A rotation-proof heartbeat existed to prove an unattended
+routine was still alive, but it never actually checked whether that routine
+was still firing. Separately, a session-resume checkpoint measured
+in-flight work against a stale local copy of the integration branch, so
+work that had already merged still read as in flight.
+
+**What was measured.** The obvious check, "is the routine registered," is
+the wrong question: the registry is scoped per account, and stale copies
+from old accounts persist on disk, so a registered-looking entry proves
+nothing about whether the routine currently fires. The right signal is the
+newest recorded run time across every such registry. An unusable or
+malformed individual registry record is excluded from consideration rather
+than trusted, but exclusion is not the overall verdict: the overall verdict
+is UNKNOWN only when no registry at all is usable; if at least one is
+usable and well-formed but none of the usable ones has a valid run time for
+the task, the verdict is DEAD, not UNKNOWN. On the checkpoint side, an
+earlier attempt trusted a ref-listing command's pattern match as an exact
+match, which it is not: the same query can also return a similarly-named
+ref nested one level below the intended one. The fix separates listing
+every candidate ref from filtering it, then applies two independent
+eligibility rules by exact string equality rather than trusting the listing
+command's pattern matching: (a) the plain form
+refs/remotes/&lt;single-segment&gt;/master or .../main, with no requirement
+that the segment be a currently configured remote, so a tracking ref for a
+since-removed remote still survives; or (b) an exact
+refs/remotes/&lt;remote-name&gt;/master or .../main for a remote name taken
+from the current remote configuration, needed to correctly match a remote
+whose own name contains a slash.
+
+**Do this.**
+- Have a liveness heartbeat check the monitored routine's actual last-run
+  time across every place that could hold it, not merely whether some
+  registration for it exists.
+- Exclude a malformed or unreadable individual liveness record, but keep
+  that separate from the overall verdict: call it UNKNOWN only when no
+  record at all is usable; if at least one is usable and well-formed but
+  none shows a valid run time, DEAD is the implemented aggregate verdict --
+  the observed absence is limited to the usable records, since an excluded,
+  malformed record could still hold a run, so actual absence is not proven.
+- Pick an integration base by exact string equality on the full ref name,
+  never by trusting a ref-listing command's own pattern matching, covering
+  both a plain single-segment remote name and a configured remote name
+  that itself contains a slash.
+<!-- outbox:57bf552e43025327 agent-bridge:3edf8ae3a4b9 -->
