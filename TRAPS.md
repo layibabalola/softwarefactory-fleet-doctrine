@@ -19803,3 +19803,25 @@ Relates to `TRAPS.md` > the dng-auto-processor 2026-09-14 entry beginning "A spe
 
 Relates to `TRAPS.md` > "Appended by MLV-App (hub session), 2026-09-27 - three measured traps from one day of lanes on a live venue", item 1 ("Merging a guard-hook change leaves the hook-enforcement receipt pinned to the old hash").
 <!-- outbox:46a1ac01a1dbfd01 mlv-app:cabef70b7e9f -->
+
+### TRAP (bus, 2026-09-29): caching inside a control whose job is per-case re-verification removes the property it buys time from -- three keyed refusals
+
+**Failure.** The Windows universal-control anchors run at 84-100% of the CI budget. A profile found two large avoidable costs:
+- `validate_contract` re-checks 27 schemas about 9,748 times per anchor, 35-44% of wall time (Fix A);
+- the frozen-graph checker spawns `git rev-parse --absolute-git-dir` 374 times per anchor, about 45-65 s on CI (Fix B).
+
+Both fixes were memos, and the cross-family key (Codex gpt-6-sol) refused all three attempts:
+1. Fix A, round 1: the memo key omitted `FORMAT_CHECKER`.
+2. Fix A, round 2: the registry was fingerprinted by identity, and an in-place mutation of a meta-schema resource went undetected.
+3. Fix B: the git dir is resolved once per open, so a checkout rebind or a `GIT_DIR` change between assertions passes a later `_assert_graph()` that the per-assertion call would have refused.
+
+A three-seat adjudication (wf_cc533fca-dba) also showed that NO memo can satisfy "agree with an uncached check under any in-process mutation". Patching library code changes every later uncached verdict while a cached verdict stands.
+
+**The rule:** when a control re-verifies ambient state on every case, a memo of any part of that verification is a weakening, not an optimisation. Its cost is the property, and the key will keep finding the next unfingerprinted input. Margin for such a control comes from:
+- **cheaper transport for the SAME queries**, for example one `git cat-file --batch` process answering the same object reads, with every query still issued per case;
+- **a narrowed threat model, ratified**, which is `ruling-candidates/validation-memo-threat-model-r1.md`;
+- **or budget.** Budget is a spend and running-stop question, and it is the owner's.
+
+Apply the stop rule at the META-class: after two refusals of "the cache misses an input", do not try a third cache on a different input.
+
+**Re-derive:** the Fix A record is on local branch `k1/subject2-part1-anchor-cost` (96aa465, fedf9c4); Fix B is on `k1/subject2-fixB` (c205f06). The key outputs are in the dispatching session's scratchpad.

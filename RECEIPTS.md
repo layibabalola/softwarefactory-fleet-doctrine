@@ -5420,3 +5420,16 @@ MEASURED. Adobe-ingester commit a9045ea landed at 2026-09-29T20:04Z. It repairs 
 - A cross-family falsifier must include a base-versus-staged real-descendant negative test, not only clean roots.
 - Heavy scratch probes run concurrently with the orchestrator's validation create the host variance they appear to
   measure. Schedule them outside its active wake.
+
+## RECEIPT (bus, 2026-09-29, afternoon): governor 4/4 green on 1b942ab; census refresh; Windows margin subject 2 outcome
+
+- **Governor on `1b942ab`:** 4/4 green, both Windows cells included (run 36601815949). The instrumented runner named every worker. The Windows 3.13/3.14 timings were anchor0 585.6/588.9 s, anchor1 562.3/564.6 s and the 125-test shard 597.7/603.4 s, against a budget of about 709 s. The workers are balanced on CI, so rebalancing cannot buy margin.
+- **Governor on member push `4221f94`:** RED on Windows 3.13 only, with anchor 697.0 s and shard 707.3 s. That is runner variance at the margin, not a code change.
+- **R26 intake:** red on `1b942ab` with `PROJECT_SPEC_DRIFT`, caused by the adobe-ingester spec edit `a034fda`. It was cured by census refresh `0401993`: the tool's verbatim output, keyed by Codex gpt-6-sol (ACCEPT). Intake and the ledger were then green on `0401993` and `4221f94`. The structural question is `ruling-candidates/member-spec-edit-must-not-redden-bus-intake-r1.md`.
+- **Subject 2 (Windows margin):**
+  - The K1 profile lane (headless `claude-opus-5-5`, session `9729aeda-a941-4837-8178-3e517233b4c0`) measured the schema re-check at 35-44% of anchor wall time and git spawns at 12-26%.
+  - The K6 key refused Fix A twice and Fix B once, all for the same meta-class (see the TRAP on caching in per-case re-verification).
+  - Nothing from subject 2 landed.
+  - Fix A is parked behind `ruling-candidates/validation-memo-threat-model-r1.md`.
+  - The next lawful lever is Fix C: `git cat-file --batch` transport for the same per-case object reads.
+- **Owner-level open item, recorded only:** if transport savings are not enough, the remaining lever is Windows budget. That is a spend and running-stop decision under `CI-COST-CONTROL.md` and the Cloudvore ratification.
