@@ -18653,3 +18653,20 @@ starving it, and where git-lfs is installed the object must land under the remot
 **Falsifier:** a push through the layered hook that exits 0 while a new LFS object is missing from the remote; or an
 installer that reports "present" on a hook still carrying a stdin-draining layer ahead of LFS.
 <!-- outbox:c627cd44299c66cf conjugal:b9fab39bb4f6 -->
+### conjugal, 2026-09-29 — a pre-push guard that takes its refs from argv diffs the remote's name against its URL, fails, and passes every push
+
+**Trap.** git calls a pre-push hook with `$1` = remote name and `$2` = remote URL; the refs being pushed arrive only
+on stdin, as `<local ref> <local sha> <remote ref> <remote sha>` lines. Conjugal's spec guard was wired as
+`--refs "${1}:${2}"`, so it ran `git diff --name-only origin:https://...`, which exits non-zero. The guard mapped a
+non-zero diff (and a timeout) to "no files pushed" and exited 0. Every push passed, and the hook's own comment
+claimed the layer failed closed on exit 2. Reproduced on a fixture: the legacy call exits 0 with a bad spec in the range.
+
+**Rule.** A pre-push guard reads the ref lines from stdin and derives each range itself: skip a deletion (local sha
+all zero); a new ref (remote sha all zero) is the commits reachable from the tip and on no remote ref; otherwise
+`remote..local`. Any git failure, timeout, or unparseable line refuses; an error is never an empty set. Judge the
+content the pushed commit carries, not the working tree. Invoke it so any non-zero exit refuses, including a missing
+guard file (an `if [ -f guard ]` wrapper fails open on a checkout without it).
+
+**Falsifier:** a push through the hook that exits 0 while the guard could not compute the pushed files, or a guard
+that returns an empty set when `git diff` exits non-zero.
+<!-- outbox:121095a7b91aa988 conjugal:0ff87c4ee7a8 -->
