@@ -23,7 +23,7 @@
     }
   },
   "census": {
-    "baseCommit": "8727672750932f123bfb68440fd95ba0e29c464f",
+    "baseCommit": "8883a5fcbb1d2d802f2ddf500c3ab1b963884c8c",
     "projectSpecGlob": "specs/*.md",
     "nonProjectSpecs": [
       "specs/account-rotation-and-project-continuity.md",
@@ -88,8 +88,8 @@
       "specPath": "specs/adobe-ingester.md",
       "status": "STALE",
       "evidence": {
-        "commit": "a841f81a62cde2db60245e06d8e223a679c50561",
-        "gitBlobOid": "585baa6d0cd20af352fca04d04b06052a2dfcdb4",
+        "commit": "24072ee8ad7485b38f08482e9768188875096e4a",
+        "gitBlobOid": "11ec79c5455bcfe6679ef4283e41de09934b0c80",
         "disposition": {
           "status": "DISTINGUISH",
           "subjectCommit": "874605e43531c9aa230ee16851f8107a8e0d9cec"
@@ -171,8 +171,8 @@
       "specPath": "specs/agent-bridge.md",
       "status": "STALE",
       "evidence": {
-        "commit": "598eba8a50ee7c4de5cfb0d4584c9173217df586",
-        "gitBlobOid": "fdffc6f24671c1b4620c989d116783ca56bd3414",
+        "commit": "afd4bf72bde59e73a73e6c434aa97391ed54515f",
+        "gitBlobOid": "f375ceff8bb852bc49180a0528aeca796c0a6c15",
         "disposition": {
           "status": "DISTINGUISH",
           "subjectCommit": "874605e43531c9aa230ee16851f8107a8e0d9cec"
@@ -187,8 +187,8 @@
       "specPath": "specs/airmypc.md",
       "status": "STALE",
       "evidence": {
-        "commit": "9eeba2905af25202bbccd1d627bd05d8d5358aff",
-        "gitBlobOid": "e2df1a91a7dddd0f5f5dc6ff8f7f7ba4271ded1c",
+        "commit": "37c9a46aba4dfbc55b8fe4fac77df1879b0e3e9e",
+        "gitBlobOid": "c05e847576da8da699be0b3f1b495d76fa1d9f67",
         "disposition": {
           "status": "DISTINGUISH",
           "subjectCommit": "874605e43531c9aa230ee16851f8107a8e0d9cec"
@@ -203,8 +203,8 @@
       "specPath": "specs/cloudvore.md",
       "status": "DISTINGUISH",
       "evidence": {
-        "commit": "41b3f6ad1cdb2256ce6d21a1c945ab9a71f3f98d",
-        "gitBlobOid": "9ccafc9b7db1c39960a0110fbde6ade218c6b825",
+        "commit": "d02dbec0fc8ea5f6b79439db56fe57fd3df493ff",
+        "gitBlobOid": "b4275634e79441fc3331b3f31bc45e3e44506d12",
         "disposition": {
           "status": "DISTINGUISH",
           "subjectCommit": "909f769d02e8412e51e28e242cfa8d00dadc9a3d"
@@ -219,8 +219,8 @@
       "specPath": "specs/conjugal.md",
       "status": "DISTINGUISH",
       "evidence": {
-        "commit": "fa31fbee4b921f0acd51d11619fdef953d9bbffd",
-        "gitBlobOid": "0719e8856610053fdd594245248fc8577c9440e6",
+        "commit": "d02dbec0fc8ea5f6b79439db56fe57fd3df493ff",
+        "gitBlobOid": "13e215400a5008f1ece1f2fceff64d128f418823",
         "disposition": {
           "status": "DISTINGUISH",
           "subjectCommit": "e70a044f31dd2f43ab7c716d63a4eb89318c61b6"
@@ -248,8 +248,8 @@
       "specPath": "specs/dng-auto-processor.md",
       "status": "DISTINGUISH",
       "evidence": {
-        "commit": "0126be1131b4832a5adc432c9b0be5e2b60160f9",
-        "gitBlobOid": "df8db7159b533edfbdebb8c47e97b371f5939336",
+        "commit": "8c7526d7a954c6c49d32a09bd854660defb9078c",
+        "gitBlobOid": "f5e5fdd4625adbce7d773745138da688ffa65dd2",
         "disposition": {
           "status": "DISTINGUISH",
           "subjectCommit": "909f769d02e8412e51e28e242cfa8d00dadc9a3d"
