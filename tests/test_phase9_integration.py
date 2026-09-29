@@ -28,8 +28,9 @@ class Phase9IntegrationTests(unittest.TestCase):
         })
 
     def test_optional_source_rederive_fails_closed_while_objects_are_absent(self):
-        with self.assertRaisesRegex(MODULE.Phase9Error, "SOURCE_OBJECTS_UNAVAILABLE_NOT_REVERIFIED"):
-            MODULE.verify_integration(SNAPSHOT, rederive_source_objects=True)
+        with mock.patch.object(MODULE, "missing_source_objects", return_value=set(MODULE.UNAVAILABLE_SOURCE_OBJECTS)):
+            with self.assertRaisesRegex(MODULE.Phase9Error, "SOURCE_OBJECTS_UNAVAILABLE_NOT_REVERIFIED"):
+                MODULE.verify_integration(SNAPSHOT, rederive_source_objects=True)
 
     def test_present_source_mismatch_is_not_relabeled_unavailable(self):
         with (
