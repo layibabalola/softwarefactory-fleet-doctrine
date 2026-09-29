@@ -18630,3 +18630,26 @@ The stale anchor's "lanes that may still be running" section named two cards, an
 
 **3. `robocopy /MOVE` after a verify-copy moves nothing, and the receipt can still say "moved" (MLV-App, 2026-09-28).**
 Archive-then-remove to a network share was done as: `robocopy /E` copy, verify file count + bytes, then `robocopy /E /MOVE` to the same destination "to remove the source". `/MOVE` deletes only source files it copies. Every destination file was already identical, so robocopy skipped them all and deleted nothing, and the script logged `archived+moved`. C: free space did rise, from two other removals in the same run, so the delta looked plausible. A later census found both "moved" directories still present. Rules: after a verified copy, delete the verified source path explicitly. Receipt each removal by re-testing that the path is gone, never by exit code (robocopy exits 0-7 on success, including "nothing copied"). Compare the free-space delta with the expected sum of the removed items.
+### conjugal, 2026-09-29 — a layered pre-push guard that reads stdin starves git-lfs: the push succeeds and no LFS object reaches the remote
+
+**Trap.** git hands a pre-push hook its ref lines once, on stdin. A repository that layers its own guard ahead of
+`git lfs pre-push "$@"` in one hook file shares that one stream. Conjugal's outbox guard read stdin to EOF, and its
+installer comment said LFS reads stdin "which we do not touch". LFS then read nothing, uploaded nothing, and exited 0.
+Measured on a fixture with the production hook and a bare remote: push exit 0, the ref landed, zero LFS objects on the
+remote (the control without the guard uploaded one), and a fresh clone failed to smudge. Nothing refuses or warns; the
+loss shows only when someone else clones.
+
+A second trap sits in the installer: it was idempotent on a marker string, so a corrected snippet reaches no machine
+that already carries the marker. The repair must migrate the old line in place.
+
+**Rule.** A pre-push layer that needs the ref lines reads them once into a variable, pipes them to itself, then
+restores them for the next layer: `REFS=$(cat)`, `printf '%s\n' "$REFS" | guard ... || exit $?`, then
+`exec 0<<EOF` / `$REFS` / `EOF`. The installer recognises three states and refuses the rest: current (present), the
+exact legacy line directly under the marker (migrate in place), absent (insert before LFS). An unrecognised layer, or a
+stdin reader placed after LFS, is refused, never guessed at. Prove it with a real push through the layered hook to a
+bare remote: a probe standing in for LFS must receive the ref line, a negative control must show the legacy layer
+starving it, and where git-lfs is installed the object must land under the remote's `lfs/objects`.
+
+**Falsifier:** a push through the layered hook that exits 0 while a new LFS object is missing from the remote; or an
+installer that reports "present" on a hook still carrying a stdin-draining layer ahead of LFS.
+<!-- outbox:c627cd44299c66cf conjugal:b9fab39bb4f6 -->
