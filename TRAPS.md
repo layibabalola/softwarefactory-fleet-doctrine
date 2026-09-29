@@ -19516,3 +19516,19 @@ An arity-only check passes a reordered tuple; distinct values catch both arity a
 red on the broken unpack before applying the fix. Measured here: the new check failed by name on the
 old code and passed on the fix, with the rest of the suite (60 checks) green.
 <!-- outbox:9afee9254c84a4f4 conjugal:6754c41bfca6 -->
+
+### TRAP (bus, 2026-09-29): CORRECTION to the four-cause CI TRAP (aff5eef): a repair packet written without reading the seals turns N causes into N+1
+
+A three-seat adversarial panel (against-default, what-outranks, post-mortem) re-derived the aff5eef TRAP and `ruling-candidates/master-ci-four-cause-repair-packet-r1.md` against 63ca737. All four causes are real, but packet r1 was not executable as written:
+
+1. **The tests it edits are sealed.** `tests/test_phase8_integration.py`, `tests/test_phase9_integration.py` and `tools/check_adoption_ledger.py` are sha256-sealed in `adoption/current-intake-epoch-r1.json` `controlFiles`. Editing them without a same-commit epoch re-seal raises `CONTROL_EPOCH_AMENDMENT_REQUIRED` (`tools/check_current_intake_epoch.py`). The lawful form is an epoch amendment, following the precedent of 8727672.
+2. **Its CI step cannot be bundled.** Item 3 (a rederive step in `.github/workflows/disposition-intake.yml`) touches a file sealed by the same epoch and by `WORKFLOW_SHA256`, and `CI-COST-CONTROL.md` rule 1 requires a separately reviewed doctrine epoch for it. It is dropped from the repair.
+3. **Cause 4 is two causes, and there is a fifth.** `python tools/refresh_current_adoption_census.py` refuses with `PROJECT_CLOSED_SET_MISMATCH`. Two portable specs are not classified in `CURRENT_NON_PROJECT_SPECS` (`tools/check_adoption_ledger.py:36`, a sealed file): `specs/fleet-cli-currency.md` (89697f2) and `specs/fleet-jev-shadow-mode.md` (ad426fb). Six project evidence rows have also drifted. Classifying the specs is a judgment edit to a sealed checker, not a refresh.
+4. **The Windows detail was stale.** Run 36568111346 (windows 3.14) fails `UNIVERSAL_RUN_REFUSED: CHILD_FAILED:[None, 0, 1, 0]`, not only `WORKER_DEADLINE_EXCEEDED`. The ceiling that binds is `DEADLINE_SECONDS=720` in `tools/run_windows_universal_tests.py`.
+5. **The citation was wrong.** RULINGS.md:2742-2746 is the agent-bridge cutover ruling. The canonical K1 and K6 definitions are in `specs/fleet-factory-kernel.md`.
+
+**The rule:** before writing a repair packet for a red gate, list every path the packet touches against every seal that covers it (`adoption/current-intake-epoch-r1.json` `controlFiles`, workflow SHA pins, manifest `subjectFiles`), and split the work at the seal boundary. Run the sanctioned refresh tool before calling anything "a stale binding"; a refusal from that tool is a diagnosis.
+
+**Lane-family consequence:** Codex `workspace-write` on Windows returns EPERM on process spawn (TRAPS ~17416), and these suites shell out to git. So the K1 implementer for this repair is headless Claude and the K6 key is Codex in `read-only`. That is the reverse of the obvious pairing.
+
+Superseding packet: `ruling-candidates/master-ci-four-cause-repair-packet-r2.md`.
