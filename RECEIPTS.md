@@ -5254,3 +5254,74 @@ Then compare `Get-FileHash` on the repository file against each installed copy.
 
 Lesson: the trap's first "Do this" bullet (search every file that invokes the target, not only the target) also applies
 to installed COPIES of the target. A repository-scoped search cannot see them.
+
+<!-- cloudvore-filing:2026-09-29-repo-hygiene-traps generated from review/doctrine-drafts/2026-09-29-repo-hygiene-traps.md at d9603dd -->
+
+## RECEIPTS
+
+Run on 2026-09-29 with git 2.55.0.windows.5, Windows 11 Pro 10.0.26200, Git Bash, each script in a
+fresh directory under the session scratch directory. Output verbatim.
+
+T1:
+```
+GREEN  -c maintenance.auto=false -c gc.auto=0 : 2 worktrees registered; commit reachable: 1
+GREEN  fetch --no-auto-maintenance            : 2 worktrees registered
+RED    plain fetch (no --prune)               : 1 worktrees registered
+       commit made in that worktree still reachable from any ref or reflog: 0
+       child git processes:
+         "argv":["git","maintenance","run","--auto","--quiet","--no-detach"]
+         "argv":["git","rev-list","--objects","--stdin","--not","--exclude-hidden=fetch","--all","--quiet","--alternate-refs"]
+         "argv":["git","worktree","prune","--expire","now"]
+```
+A separate run of the same fixture with `fetch --prune` in the RED arm also left 1 worktree
+registered, with the same `maintenance run` and `worktree prune` children.
+
+T2:
+```
+after clone              : old=NONE moved=NONE new=NONE 
+after no-op fetch        : old=NONE moved=NONE new=NONE 
+after fetch moving/adding: old=NONE moved=reflog new=reflog 
+clone's reflog dir: HEAD moved new 
+```
+
+T3:
+```
+session branch merged into main: 1   (a branch-only predicate would retire it)
+refs/worktree/* listed from main checkout: 0; from the worktree: 1
+HEAD + HEAD reflog only (K50's predicate): 1 commit(s) held only here
+HEAD + HEAD reflog + per-worktree refs   : 2 commit(s) held only here
+```
+
+T4:
+```
+--- git status --ignored --porcelain (default: collapses to directories)
+!! src/App/bin/
+!! tools/
+--- --ignored=matching -uall (still a directory row for an ignored directory)
+!! src/App/bin/
+!! tools/bin/
+--- ls-files --others --ignored --exclude-standard (one row per file)
+src/App/bin/Debug/App.dll
+tools/bin/mytool.ps1
+name rule leaves as blocking : 0   (RED: tools/bin/mytool.ps1 admitted)
+anchored rule leaves blocking: !! tools/bin/   (GREEN)
+```
+
+T6:
+```
+from .:
+  --show-toplevel                         : <t6>/r
+  --git-common-dir                        : .git
+  --path-format=absolute --git-common-dir : <t6>/r/.git
+from ../wt:
+  --show-toplevel                         : <t6>/wt
+  --git-common-dir                        : <t6>/r/.git
+  --path-format=absolute --git-common-dir : <t6>/r/.git
+```
+
+T7:
+```
+index before/after plain 'git status' on a stat-only change: b6bb2d9088e7 / b6bb2d9088e7
+job_ok: top-level git starts=2, without the flag=0 -> GREEN
+job_bad: top-level git starts=2, without the flag=1 -> RED
+```

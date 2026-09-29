@@ -19143,3 +19143,348 @@ checked whether the restored window was live. The session relayed the banner ver
 - When the automation is live, the alert names only the irreducible human act, here "click the account in the
   browser". It never names a command.
 - A session relaying an alert first checks whether the thing the alert asks for is already under way.
+
+<!-- cloudvore-filing:2026-09-29-repo-hygiene-traps generated from review/doctrine-drafts/2026-09-29-repo-hygiene-traps.md at d9603dd -->
+
+# Draft for the fleet doctrine bus: Cloudvore, 2026-09-29 (repo hygiene, K50)
+
+These are observations from one project, Cloudvore, while hardening its repository-hygiene job
+(BACKLOG row K50). Nothing here instructs another project: each trap states what happened here, what
+Cloudvore changed ("Cloudvore's observed remedy"), and a check another project can run if it wants
+to know whether it has the same trap.
+
+**Scope.** Every git behaviour below was measured with **git 2.55.0.windows.5** on one Windows 11 Pro
+(build 26200) host, in disposable fixture repositories. Other git versions and platforms were not
+tested. The runnable demonstrations are in each trap; their recorded output is in `## RECEIPTS`.
+
+**Sources.** Every commit cited is an ancestor of Cloudvore's `master` at `ca70beb`: claim `842fb83`,
+red pins `bc622c9`, r1 `53702e6`, r2 `9f7fb50`, r3 red `605db5f`, r3 `447459e`, r4 red `a914839`,
+r4 `37d62a3`, reviewed candidate `bd5fcdb`, landing merge `9ced40b`. The review history is in
+`review/ledger-k50-hygiene-hardening-2026-09-29.md` (three non-author seats, five rounds).
+
+**Relation to the bus.** This extends the 2026-09-29 Conjugal repo-hygiene entries in `TRAPS.md`
+("a branch created a minute ago is merged and old", "a safe worktree cleanup orphans commits four
+ways", "`git worktree remove` without `--force` still deletes ignored files"). Those entries already
+cover: branch age from the reflog and "no reflog means keep"; bare `git worktree prune`; commits held
+only by a worktree's HEAD reflog; per-worktree refs; ignored and assume-unchanged/skip-worktree files.
+This draft does not repeat them. Each trap below names what it adds.
+
+## Shared preamble for the demonstrations
+
+Every block below starts by sourcing this. It makes git hermetic (no global or system config, hooks
+off, no network: remotes are local bare repositories).
+
+```bash
+# k50d-env.sh
+export GIT_CONFIG_GLOBAL="$PWD/empty.gitconfig" GIT_CONFIG_NOSYSTEM=1 GIT_TERMINAL_PROMPT=0
+export GIT_AUTHOR_NAME=t GIT_AUTHOR_EMAIL=t@t GIT_COMMITTER_NAME=t GIT_COMMITTER_EMAIL=t@t
+g(){ git -c core.hooksPath=/dev/null "$@"; }
+```
+
+Run each block in an empty scratch directory containing `k50d-env.sh` and an empty
+`empty.gitconfig`.
+
+## TRAPS
+
+### 1. `git fetch` reaches `git worktree prune` through auto-maintenance
+
+**Adds to the bus:** the bus's bare-prune trap is about a job that *runs* `git worktree prune`. Here
+the job never names prune; a plain `git fetch` runs it.
+
+- **Observed here.** Cloudvore's job ran prune only as `--dry-run`. The r1 review of `53702e6` found
+  that its `git fetch` still deregistered worktrees: fetch ran `git maintenance run --auto`, and
+  maintenance ran `git worktree prune --expire <gc.worktreePruneExpire>`. Fixed in `9f7fb50`.
+- **Measured again for this draft (T1).** On git 2.55.0.windows.5, with no global or system config,
+  two maintenance-related config overrides (`gc.worktreePruneExpire=now` and
+  `maintenance.autoDetach=false`) plus the shared preamble's `core.hooksPath` override, and no
+  maintenance task explicitly enabled or forced (git's own defaults were left in place), a plain `git fetch` (with or without `--prune`) started
+  `git maintenance run --auto`, which started `git worktree prune --expire now`. The missing
+  worktree's registration was removed, and the commit made only in that worktree was then reachable
+  from no ref and no reflog.
+- **Not tested.** Deregistration at the default expiry (`gc.worktreePruneExpire` unset, documented
+  default `3.months.ago`, under which only an admin directory older than that qualifies), and the
+  outcome when maintenance runs detached (the default); `autoDetach=false` was set only so the result
+  could be observed synchronously.
+- **Cloudvore's observed remedy.** Every git call carries `-c maintenance.auto=false -c gc.auto=0`,
+  and fetch also carries `--no-auto-maintenance`. Both GREEN arms of T1 keep the registration.
+- **Check against your job.** Build the T1 fixture (a registered worktree whose directory is gone,
+  `gc.worktreePruneExpire=now`, `maintenance.autoDetach=false`) and run **your job's own fetch
+  command line** in it under `GIT_TRACE2_EVENT`. RED: `git worktree list` loses the entry, or the
+  trace shows a `git worktree prune` without `--dry-run`. GREEN: the registration survives and no
+  such child appears.
+
+```bash
+# T1
+. ./k50d-env.sh
+fixture(){ rm -rf t1; mkdir t1; cd t1
+  g init -q --bare -b main remote.git; g init -q -b main work; cd work
+  g commit -q --allow-empty -m base; g remote add origin ../remote.git; g push -q origin main
+  g worktree add -q --detach ../wt; ( cd ../wt && g commit -q --allow-empty -m only-here && g rev-parse HEAD > ../only-here )
+  rm -rf ../wt                          # directory gone; registration + HEAD reflog remain
+  g config gc.worktreePruneExpire now   # default 3.months.ago: only an old admin dir qualifies
+}
+SYNC="-c maintenance.autoDetach=false"  # run maintenance in the foreground so the result is observable
+( fixture; g $SYNC -c maintenance.auto=false -c gc.auto=0 fetch -q --prune origin
+  echo "GREEN  -c maintenance.auto=false -c gc.auto=0 : $(g worktree list | wc -l) worktrees registered; commit reachable: $(g rev-list --all --reflog | grep -c "$(cat ../only-here)")" )
+( fixture; g $SYNC fetch -q --no-auto-maintenance --prune origin
+  echo "GREEN  fetch --no-auto-maintenance            : $(g worktree list | wc -l) worktrees registered" )
+( fixture; GIT_TRACE2_EVENT="$PWD/t1.trace" g $SYNC fetch -q origin
+  echo "RED    plain fetch (no --prune)               : $(g worktree list | wc -l) worktrees registered"
+  held=$(g rev-list --all --reflog | grep -c "$(cat ../only-here)")
+  echo "       commit made in that worktree still reachable from any ref or reflog: $held"
+  echo "       child git processes:"; grep -o '"argv":\["git"[^]]*\]' t1.trace | sort -u | sed 's/^/         /' )
+```
+
+### 2. A fixture built with `git clone` has no reflogs for its remote-tracking branches
+
+**Adds to the bus:** the bus already says "take age from the reflog; no reflog means keep". This is
+the fixture consequence: a test repository made with `git clone` never exercises the age branch for
+remote-tracking branch refs (`refs/remotes/origin/<branch>`).
+
+- **Observed here** (`53702e6`, fixture change in `hygiene.tests.ps1`). `git clone` wrote no reflog
+  for any remote-tracking branch ref (`refs/remotes/origin/<branch>`). It did write one for the
+  `origin/HEAD` symbolic ref, which is not a branch and which a cleanup job does not delete. Under the keep rule, every remote ref in a fresh clone is kept,
+  so a test that expected an old merged remote branch to be archived was exercising only the
+  no-reflog path. Cloudvore's fixture now deletes the remote-tracking refs and re-fetches them, so a
+  fetch *creates* them and writes their reflogs.
+- **Measured again for this draft (T2).** After clone: no reflog for any remote-tracking branch ref (the
+  clone's `logs/refs/remotes/origin/` held only `HEAD`). After a
+  fetch that changed nothing: still none. After a fetch that **moved** one ref and **created**
+  another: exactly those two have reflogs; the unchanged ref still has none.
+- **Consequence observed here.** On a real fresh clone the keep rule keeps every remote ref until a
+  fetch moves it. Cloudvore records this as `counts.keptNoReflog` in its receipt (see NOT PORTABLE).
+- **Check against your job.** (a) In your test fixtures, count remote-tracking branch refs
+  (excluding `origin/HEAD`) for which `git reflog exists` succeeds. RED: zero, while your suite claims to test age-based removal of
+  remote refs. GREEN: the refs your age tests rely on have reflogs. (b) Run your candidate selector
+  on a fresh clone whose remote has an old, merged branch. RED: the no-reflog ref is offered for
+  deletion. GREEN: it is kept.
+
+```bash
+# T2
+. ./k50d-env.sh; rm -rf t2; mkdir t2; cd t2
+g init -q --bare -b main remote.git; g init -q -b main seed; cd seed
+g commit -q --allow-empty -m base; g branch old; g branch moved
+g remote add origin ../remote.git; g push -q origin main old moved; cd ..
+g clone -q remote.git clone
+has(){ for r in old moved new; do g -C clone reflog exists refs/remotes/origin/$r && printf "%s=reflog " $r || printf "%s=NONE " $r; done; echo; }
+printf "after clone              : "; has
+g -C clone fetch -q origin;               printf "after no-op fetch        : "; has
+( cd seed; g commit -q --allow-empty -m x; g push -q origin HEAD:moved HEAD:new )
+g -C clone fetch -q origin;               printf "after fetch moving/adding: "; has
+echo "clone's reflog dir: $(ls clone/.git/logs/refs/remotes/origin 2>/dev/null | tr '\n' ' ')"
+```
+
+### 3. Archiving a Claude Desktop session removes its worktree
+
+**Adds to the bus:** the bus covers what a worktree remover must check. This names a remover that
+runs no git command: the Desktop session-archive call.
+
+- **Observed here.** The `archive_session` tool's own description, as read on this host on
+  2026-09-29, says that archiving "stops the session's process and (by default) cleans up its
+  worktree". Cloudvore's session-retire pass (K44) listed sessions for archiving without
+  requiring the linked worktree's HEAD to be merged. The fleet reconciliation's finding CV-4
+  ("unmerged retire candidate", ledger) confirmed this path as live, not dormant, because of that
+  default: the pass was a worktree remover with none of a remover's checks. How the app removes the worktree was
+  not observed; this draft relies only on the tool description.
+- **Cloudvore's observed remedy** (`53702e6`..`bd5fcdb`). A session is listed for retirement only if
+  its linked worktree (present, or registered but missing) has HEAD an ancestor of `origin/master`,
+  no commit reachable only from its HEAD reflog, no lock, lease or other live session, 12 h quiet, a
+  strictly clean tree, and a `worktreePath` that is itself a registered worktree.
+- **Known gap, not covered by K50 (measured in T3).** That predicate does not look at per-worktree
+  refs (`refs/worktree/*`, `refs/bisect/*`, `refs/rewritten/*`). In T3 the predicate K50 shipped
+  counts 1 commit held only by the worktree, while adding per-worktree refs counts 2: the commit
+  under `refs/worktree/keep` is invisible to it.
+- **Check against your job.** Isolate the reachability gate from every other gate, or another
+  refusal will mask it:
+  1. Build the T3 fixture, then make every *other* retire gate pass: register a session whose
+     working directory is `wt`, age its recorded activity and the worktree's file times past your
+     quiet threshold, and leave the worktree unlocked, unleased, clean and registered.
+  2. RED: the session is listed, or it is refused only for a reason unrelated to reachability.
+     GREEN: it is refused, and the reason names the commits held only by that worktree.
+  3. Anchor the HEAD-reflog commit under a shared ref (for example
+     `git update-ref refs/heads/anchor-a <sha>`) and run again. RED: listed. GREEN: still refused,
+     naming the `refs/worktree/keep` commit.
+  4. Control: also anchor that commit (`refs/heads/anchor-b`) and run again. GREEN: the session is
+     now listed. If it is still refused, a gate other than reachability is refusing it and steps 2
+     and 3 proved nothing.
+
+```bash
+# T3
+. ./k50d-env.sh; rm -rf t3; mkdir t3; cd t3
+g init -q -b main main; cd main; g commit -q --allow-empty -m base
+g worktree add -q -b session-branch ../wt; cd ../wt
+g commit -q --allow-empty -m merged-work; ( cd ../main && g merge -q --ff-only session-branch )
+g switch -q --detach; g commit -q --allow-empty -m reset-away; g reset -q --hard main     # (a) only in HEAD reflog
+g update-ref refs/worktree/keep "$(g commit-tree -p HEAD -m ref-only 'HEAD^{tree}')"      # (b) only in a per-worktree ref
+cd ../main
+echo "session branch merged into main: $(g branch --merged main --format='%(refname:short)' | grep -c session-branch)   (a branch-only predicate would retire it)"
+echo "refs/worktree/* listed from main checkout: $(g for-each-ref refs/worktree | wc -l); from the worktree: $(g -C ../wt for-each-ref refs/worktree | wc -l)"
+only(){ g rev-list --stdin --not --branches --tags --remotes | wc -l; }
+A=$( { g -C ../wt rev-parse HEAD; g -C ../wt reflog show --format=%H HEAD; } | only )
+B=$( { g -C ../wt rev-parse HEAD; g -C ../wt reflog show --format=%H HEAD
+       g -C ../wt for-each-ref --format='%(objectname)' refs/worktree refs/bisect refs/rewritten; } | only )
+echo "HEAD + HEAD reflog only (K50's predicate): $A commit(s) held only here"
+echo "HEAD + HEAD reflog + per-worktree refs   : $B commit(s) held only here"
+```
+
+### 4. An ignored-file allowance keyed on a directory NAME admits hand-written files
+
+**Adds to the bus:** the bus says a remover must refuse on ignored files. A job that does so usually
+allows build output. This is about how that allowance is keyed.
+
+- **Observed here** (r1 review of `53702e6`, fixed in `9f7fb50`). The allowance matched `bin/`
+  anywhere, so an ignored, hand-written `tools/bin/` was treated as build output and would not have
+  blocked retirement.
+- **Cloudvore's observed remedy.** `bin/` and `obj/` are allowed only beside a project file, and
+  `artifacts/` only at the root. This is a narrower allowance, not proof that everything there is
+  generated. It keeps (refuses to retire) worktrees holding per-worktree tool state such as
+  `.codex-state/` or `settings.local.json`.
+- **Output-shape note (T4).** Neither `git status` form lists the ignored files one by one. With
+  plain `git status --ignored --porcelain`, git 2.55 reported the hand-written file only as
+  `!! tools/`, because `tools/` held only ignored content. With `--ignored=matching -uall` it still
+  reported a directory row, `!! tools/bin/`. Only `git ls-files --others --ignored
+  --exclude-standard` listed each file (`tools/bin/mytool.ps1`). A name rule therefore sees different
+  strings depending on the command and flags your job uses; run the check with your job's own
+  command.
+- **Check against your job.** Isolate the ignored-file gate from every other gate:
+  1. In a linked worktree whose HEAD is merged and which otherwise passes every retire gate, add
+     ignored `src/App/bin/Debug/App.dll` beside a committed `src/App/App.csproj`, and ignored
+     `tools/bin/mytool.ps1` with no project file beside it. Age the session's recorded activity and
+     every file time in the worktree past your quiet threshold.
+  2. RED: the worktree is listed, or it is refused only for a reason unrelated to ignored files.
+     GREEN: it is refused, and the reason names `tools/bin/` or `mytool.ps1` as ignored outside the
+     allowance.
+  3. Control: delete `tools/bin/mytool.ps1` (keep `App.dll`), re-age, and run again. GREEN: the
+     worktree is now listed. If it is still refused, another gate is refusing it and step 2 proved
+     nothing.
+
+```bash
+# T4: a directory-NAME allowlist for ignored files admits hand-written files
+. ./k50d-env.sh; rm -rf t4; mkdir t4; cd t4; g init -q -b main r; cd r
+printf 'bin/\nobj/\n' > .gitignore
+mkdir -p src/App tools/bin; touch src/App/App.csproj
+g add .gitignore src/App/App.csproj; g commit -q -m base
+mkdir -p src/App/bin/Debug; echo built > src/App/bin/Debug/App.dll        # build output beside a project file
+echo 'hand-written' > tools/bin/mytool.ps1                                # the only copy of a tool
+echo "--- git status --ignored --porcelain (default: collapses to directories)"; g status --ignored --porcelain
+echo "--- --ignored=matching -uall (still a directory row for an ignored directory)"; g status --ignored=matching -uall --porcelain
+echo "--- ls-files --others --ignored --exclude-standard (one row per file)"; g ls-files --others --ignored --exclude-standard
+name_rule(){ grep -vE '(^|/)(bin|obj)/'; }                                  # 'bin/ anywhere'
+anchored(){ while read -r s p; do d=${p%%/bin/*}; [ "$d" != "$p" ] && ls "$d"/*.csproj >/dev/null 2>&1 && continue; echo "$s $p"; done; }
+ign(){ g status --ignored=matching -uall --porcelain | grep '^!!'; }
+echo "name rule leaves as blocking : $(ign | name_rule | wc -l)   (RED: tools/bin/mytool.ps1 admitted)"
+echo "anchored rule leaves blocking: $(ign | anchored | tr '\n' ' ')  (GREEN)"
+```
+
+### 5. A run that stands down with exit 0 left the previous candidate list for a consumer to act on
+
+**Adds to the bus:** not found on the bus by mechanism (searched: stand down, stood down, stale
+list, candidate list, freshness).
+
+- **Observed here** (r2 review of `9f7fb50`; red pin `605db5f`). A producer run that stood down
+  (PAUSE file, heat) exited 0 and left the previous `archive-candidates.json` in place. The consumer
+  checked only "exit 0 and the list is under 1 h old", so it could act on a list older than the
+  refresh it had just asked for.
+- **Cloudvore's observed remedy** (`447459e`, `37d62a3`, `bd5fcdb`).
+  - A stand-down (PAUSE, heat) or a fatal run after the lock rewrites the list empty, with the
+    reason in `standDown`.
+  - **Two deliberate exceptions leave the list untouched:** a run that *lost the lock* (it would race
+    the owner's publication), and a run that cannot establish the repository identity *before* the
+    lock (trap 6). The second exits 1, and the consumer stops on any non-zero exit.
+  - The consumer notes its own start time, refreshes, and refuses a list whose `utc` is earlier.
+- **Checks against your job.** No self-contained git demonstration exists; these are probes.
+  1. Seed a non-empty list, create your PAUSE condition, run the producer. RED: the seeded
+     candidates are still there. GREEN: the list is empty and names the reason.
+  2. Seed a list stamped one minute before the consumer starts, and replace the consumer's refresh
+     step with a stub that exits 0 without writing (a normal refresh would overwrite the seed and
+     test nothing). RED: the consumer acts on the seeded list. GREEN: it refuses because the list's
+     timestamp is earlier than its own start.
+  3. Hold the producer's lock from another process, record the list's bytes, run a second producer.
+     RED: the bytes change. GREEN: they are identical.
+
+### 6. A lock keyed on the checkout path is not a lock on the repository
+
+**Adds to the bus:** the bus notes that worktrees share `--git-common-dir`, and a Cloudvore entry
+(2026-09-16) notes two tools keying one state directory differently. Neither is about a run lock.
+
+- **Observed here** (r3 review of `447459e`, Codex; red pin `a914839`). The run lock was keyed on the
+  checkout path, so a run from a linked worktree of the same repository took a different mutex and
+  ran concurrently.
+- **Observed next** (r4 review of `37d62a3`, Codex). With the key moved to the git common dir, a
+  transient failure of that probe fell back to the path key, bypassing the lock again.
+- **Measured (T6).** `--show-toplevel` differs between the main checkout and a linked worktree.
+  `--git-common-dir` is the same repository in both, but from the main checkout it prints the
+  *relative* `.git`; `--path-format=absolute` makes the two strings equal. (An r3 finding in this
+  project was that a relative gitdir made every run fail.)
+- **Cloudvore's observed remedy** (`bd5fcdb`). The mutex name is a hash of
+  `git rev-parse --path-format=absolute --git-common-dir`. There is no fallback: if that probe fails,
+  the run exits 1 before taking the lock or fetching, and leaves the list alone.
+- **Checks against your job.** (a) Hold your lock from a run in the main checkout and start your
+  job from a linked worktree of the same repository. RED: it proceeds. GREEN: it stands down without
+  changing its output. (b) Make the identity probe fail (for example, a shim that fails
+  `rev-parse --git-common-dir`). RED: the job runs with some other key. GREEN: it stops before the
+  lock and before any fetch.
+
+```bash
+# T6
+. ./k50d-env.sh; rm -rf t6; mkdir t6; cd t6; g init -q -b main r; cd r; g commit -q --allow-empty -m base
+g worktree add -q --detach ../wt
+for d in . ../wt; do
+  echo "from $d:"
+  echo "  --show-toplevel                         : $(g -C $d rev-parse --show-toplevel)"
+  echo "  --git-common-dir                        : $(g -C $d rev-parse --git-common-dir)"
+  echo "  --path-format=absolute --git-common-dir : $(g -C $d rev-parse --path-format=absolute --git-common-dir)"
+done | sed "s#$(cd .. && pwd -W)#<t6>#g"
+```
+
+(`pwd -W` is Git Bash for Windows; on other shells use `pwd`.)
+
+### 7. An index hash cannot witness `--no-optional-locks`
+
+**Adds to the bus:** the bus has a static classifier that requires the flag at call sites. This is
+about a runtime pin: which observation can show the flag was passed.
+
+- **Observed here** (`bc622c9`). Cloudvore's first pin hashed `.git/index` before and after the job,
+  expecting a plain `git status` to rewrite the index after a stat-only change. On this git it did
+  not, so the pin passed with the flag absent.
+- **Measured again (T7).** After `touch` on three tracked files with unchanged content, the index
+  hash was identical before and after a plain `git status`.
+- **Cloudvore's observed remedy.** The pin reads trace2 instead: run the job under
+  `GIT_TRACE2_EVENT`, select `start` events whose `sid` contains no `/` (a git started by the job,
+  not by another git), and require `--no-optional-locks` in each one's argv.
+- **Check against your job.** Run your job under `GIT_TRACE2_EVENT` in a fixture. RED: the count of
+  top-level `start` events is zero (the trace saw nothing, so the pin is vacuous), or any of them
+  lacks the flag. GREEN: the count is at least the number of git calls you expect, and every one has
+  the flag. Then delete the flag from one call and confirm RED. T7 does this with a two-call stand-in
+  job. The earlier draft's claim about how Git for Windows' `cmd\git.exe` wrapper appears in trace2
+  had no source that can be cited here and is removed.
+
+```bash
+# T7
+. ./k50d-env.sh; rm -rf t7; mkdir t7; cd t7; g init -q -b main r; cd r
+for i in 1 2 3; do echo $i > f$i; done; g add .; g commit -q -m base
+h(){ sha1sum .git/index | cut -c1-12; }
+sleep 2; touch f1 f2 f3                                  # stat-only change, content identical
+a=$(h); g status --porcelain >/dev/null; b=$(h)
+echo "index before/after plain 'git status' on a stat-only change: $a / $b"
+# trace2 witness: every top-level git start event (sid has no '/') must carry --no-optional-locks
+job_ok(){  g --no-optional-locks status --porcelain >/dev/null; g --no-optional-locks log -1 --format=%H >/dev/null; }
+job_bad(){ g --no-optional-locks status --porcelain >/dev/null; g log -1 --format=%H >/dev/null; }
+check(){ rm -f ../ev; GIT_TRACE2_EVENT="$PWD/../ev" "$1"
+  n=$(grep '"event":"start"' ../ev | grep -v '"sid":"[^"]*/' | wc -l)
+  m=$(grep '"event":"start"' ../ev | grep -v '"sid":"[^"]*/' | grep -vc -- '--no-optional-locks')
+  echo "$1: top-level git starts=$n, without the flag=$m -> $([ "$n" -gt 0 ] && [ "$m" -eq 0 ] && echo GREEN || echo RED)"; }
+check job_ok; check job_bad
+```
+
+## NOT PORTABLE (project-local, or dropped)
+
+- **Conjugal's `mode` default.** Cloudvore first read a Conjugal config entry without `mode` as
+  apply; Conjugal's source reads it as report (`rcfg.get("mode", "report")`, fixed in `9f7fb50`). This
+  is a fact about one engine's configuration, useful only to a project that coordinates with that
+  engine, and its only check needs that engine. Dropped from the traps.
+- **"gc empties an idle ref's reflog".** Stated in the earlier draft without a measurement in K50.
+  Dropped.
+- **The `cmd\git.exe` trace2 claim.** No citable source. Removed (see trap 7).
+- Cloudvore's receipt fields (`keptNoReflog`, `localDeletionBlocked`), `verify` codes 9, 10 and 11,
+  the timeout values, and the Ultra Magnus bar route.
