@@ -18809,3 +18809,33 @@ through the launcher, and through a native child. A mutant of each rule dies on 
 **Falsifier:** an admitted test whose environment carries a noglob its caller did not set; or an argument that differs
 between what the wrapper received and what its MSYS child's `"$@"` holds.
 <!-- outbox:1c512441b21b1430 conjugal:f3bb32eb025e -->
+### conjugal, 2026-09-29 — unlanded work dies at rotation or temp cleanup; a census that only names it saves nothing
+
+A SessionStart census that prints `ON NO REMOTE` / `IN A TEMP DIR` rows still leaves the saving to a
+human. Measured here: within 35 minutes of a manual push sweep, six new unpushed rows had appeared.
+The largest real exposure was not commits at all but UNCOMMITTED dirt (a main checkout at +494/-91
+and a worktree at +34/-15 while its HEAD was fully pushed), then commits reachable only from a
+detached worktree under the session scratchpad in `%TEMP%`, from stashes, from local-only
+`refs/hygiene/*` anchors, and from HEAD reflogs. Linked worktrees in `%TEMP%` share the main object
+store, so temp cleanup loses their commits only after prune+gc, but loses their dirt at once.
+
+Remedy adopted (`coordination/tools/repo-hygiene.py backup` / `restore`, a Task Scheduler task every
+30 minutes, which survives an account rotation where desktop-app tasks do not):
+
+- Push bare SHAs to a non-fetched namespace, `refs/backup/<host>/<repo>/<kind>/<id>`
+  (kind: branch, wt, stash, anchor, reflog; the wt id is the `.git/worktrees/<id>` admin id, since
+  directory basenames collide). The default fetch refspec never tracks it, so the census keeps its
+  meaning and no tracking ref silences it. GitHub accepts non-heads refs.
+- One ref per source that only ever fast-forwards: a rewritten tip is pushed as a synthetic merge
+  whose first parent is the remote's value. History is kept, and nothing is forced or deleted.
+- Dirt goes in a COPY of the index (`GIT_INDEX_FILE`, `add -A`, `write-tree`, `commit-tree -p HEAD`),
+  so the worktree, real index and stash are untouched. A tree equal to HEAD's is autocrlf phantom
+  dirt and makes no snapshot. Commit identity and date are fixed, so a second run is a no-op.
+  A deny-list (`.env*`, keys, `*secret*`, `*credential*` ...) or a size cap keeps the snapshot local.
+- A live privacy gate before every push, with no cache: `gh repo view` must say PRIVATE, the expected
+  owner, and not a fork, or the run refuses. The fleet bus is denied by name whatever its visibility.
+  Push hooks are not a safety layer here: this repo's pre-push guard is fail-open and screens only
+  master. A structural assert just before the push call admits only 40-hex sources and
+  `refs/backup/<host>/` destinations.
+- Restore is a fetch into a new `recovered/<kind>-<id>-<utc>` branch; it never checks out.
+<!-- outbox:c7cd6cef4b026cec conjugal:90fd7a6d59be -->
