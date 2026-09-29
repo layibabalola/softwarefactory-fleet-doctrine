@@ -201,7 +201,7 @@ class RecordingResult(unittest.TextTestResult):
             try:
                 self.progress.write(json.dumps(event, sort_keys=True) + "\n")
                 self.progress.flush()
-            except (OSError, ValueError):
+            except Exception:
                 self.progress = None
 
     def startTest(self, test):
@@ -233,11 +233,21 @@ def worker(output, index):
         raise Refused("WORKER_PLAN_OR_SOURCE_MISMATCH")
     assigned = plan["shards"][index]
     start = time.monotonic()
-    with (output / f"worker-{index}.progress.jsonl").open("x", encoding="utf-8", newline="\n") as progress:
+    try:
+        progress = (output / f"worker-{index}.progress.jsonl").open("x", encoding="utf-8", newline="\n")
+    except Exception:
+        progress = None  # Diagnostics only: never fail the worker over the journal.
+    try:
         result = unittest.TextTestRunner(
             verbosity=2, resultclass=functools.partial(RecordingResult, progress=progress)).run(
             unittest.TestSuite(cases[item] for item in assigned))
-    print(json.dumps(slowest_line(index, result.test_seconds), sort_keys=True), flush=True)
+    finally:
+        if progress is not None:
+            try:
+                progress.close()
+            except Exception:
+                pass
+    emit_json(lambda: slowest_line(index, result.test_seconds))
     if snapshot() != source:
         raise Refused("SOURCE_CHANGED_DURING_EXECUTION")
     status = 0 if result.wasSuccessful() and not result.skipped and not result.expectedFailures else 1
@@ -385,11 +395,24 @@ def read_progress(path):
     return started, seconds
 
 
+def emit(render):
+    """Print one diagnostic line. Never raises -- not even when stdout itself
+    fails -- so diagnostics cannot replace a pending refusal or change the exit code."""
+    try:
+        print(render() if callable(render) else render, flush=True)
+    except Exception:
+        pass
+
+
+def emit_json(build):
+    emit(lambda: json.dumps(build(), sort_keys=True))
+
+
 def report_progress(output, plan, budget, started, exited, failure):
     """Name the binding worker(s). Never raises: must not mask the refusal."""
-    reason, codes, stopped_at, wall = failure
     for index in range(WORKERS):
         try:
+            reason, codes, stopped_at, wall = failure
             code = codes[index] if index < len(codes) else None
             code = code if type(code) is int else None
             progress = read_progress(output / f"worker-{index}.progress.jsonl")
@@ -405,10 +428,26 @@ def report_progress(output, plan, budget, started, exited, failure):
                     "in_flight_seconds": round(wall - last_wall, 3)
                     if in_flight and type(last_wall) in (int, float) else None,
                     "progress_available": progress is not None}
-            print(json.dumps(line, sort_keys=True), flush=True)
-            print(json.dumps(slowest_line(index, seconds), sort_keys=True), flush=True)
+            text = json.dumps(line, sort_keys=True)
         except Exception as error:
-            print(f"DIAGNOSTIC_PROGRESS_UNAVAILABLE worker={index}: {error!r}", flush=True)
+            emit(lambda: f"DIAGNOSTIC_PROGRESS_UNAVAILABLE worker={index}: {error!r}")
+            continue
+        emit(text)
+        emit_json(lambda: slowest_line(index, seconds))
+
+
+def capture_failure(reason, processes):
+    # Runs inside `except Refused`: anything raised here would replace the refusal.
+    try:
+        codes = []
+        for process in processes:
+            try:
+                codes.append(process.poll())
+            except Exception:
+                codes.append(None)
+        return (reason, codes, time.monotonic(), time.time())
+    except Exception:
+        return None
 
 
 def wait_workers(processes, deadline, exited=None):
@@ -470,8 +509,7 @@ def run(output):
         except Refused as error:
             if str(error).startswith(("WORKER_DEADLINE_EXCEEDED", "CHILD_FAILED")):
                 # Capture before cleanup kills the workers and rewrites exit codes.
-                failure = (str(error), [process.poll() for process in processes],
-                           time.monotonic(), time.time())
+                failure = capture_failure(str(error), processes)
             raise
         if job.active() != 0:
             raise Refused("WORKER_LEFT_LIVE_DESCENDANTS")
@@ -481,16 +519,23 @@ def run(output):
         finally:
             for log in logs:
                 log.close()
+            # This block runs while a refusal may be pending: emit() never raises,
+            # so a failing stdout cannot replace the refusal or its exit code.
             for index in range(len(logs)):
-                print(f"--- worker {index} log ---", flush=True)
+                emit(f"--- worker {index} log ---")
                 try:
-                    print((output / f"worker-{index}.log").read_text(encoding="utf-8", errors="replace"), flush=True)
-                except OSError as error:
-                    print(f"DIAGNOSTIC_LOG_UNAVAILABLE worker={index}: {error}", flush=True)
-            print(f"Preserved receipts and logs: {output}", flush=True)
+                    text = (output / f"worker-{index}.log").read_text(encoding="utf-8", errors="replace")
+                except Exception as error:
+                    emit(lambda: f"DIAGNOSTIC_LOG_UNAVAILABLE worker={index}: {error}")
+                else:
+                    emit(text)
+            emit(f"Preserved receipts and logs: {output}")
             if failure is not None:
                 # Last, so the per-worker lines sit directly above the refusal.
-                report_progress(output, plan, budget, started, exited, failure)
+                try:
+                    report_progress(output, plan, budget, started, exited, failure)
+                except Exception:
+                    pass
     if snapshot() != source:
         raise Refused("PARENT_SOURCE_CHANGED")
     receipts = [read_json(output / f"worker-{index}.json") for index in range(WORKERS)]
@@ -499,8 +544,8 @@ def run(output):
     for receipt in receipts:
         print(json.dumps(receipt, sort_keys=True), flush=True)
     for index, receipt in enumerate(receipts):
-        print(json.dumps(slowest_line(index, receipt["test_seconds"]) | {
-            "seconds": round(receipt["seconds"], 3)}, sort_keys=True), flush=True)
+        emit_json(lambda: slowest_line(index, receipt["test_seconds"]) | {
+            "seconds": round(receipt["seconds"], 3)})
     summary = {"status": "PASS", "plan": plan, "tests_run": EXPECTED,
                "workers": WORKERS, "seconds": time.monotonic() - started}
     atomic_json(output / "complete.json", summary)

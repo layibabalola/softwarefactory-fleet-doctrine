@@ -17,6 +17,16 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "tools"))
 import run_windows_universal_tests as runner
 
 
+class RaisingStream(io.StringIO):
+    """A stdout that fails every write once armed."""
+    armed = True
+
+    def write(self, text):
+        if self.armed:
+            raise OSError("stdout unavailable")
+        return super().write(text)
+
+
 class ReceiptTests(unittest.TestCase):
     def test_same_count_census_substitution_is_refused(self):
         ids = runner.source_census()
@@ -226,6 +236,28 @@ class ReceiptTests(unittest.TestCase):
         self.assertEqual(sum("DIAGNOSTIC_PROGRESS_UNAVAILABLE" in str(call)
                              for call in printed.call_args_list), 4)
 
+    def test_progress_report_survives_raising_stdout(self):
+        # Cross-family key finding on 754b37b: the fallback print was unguarded.
+        for failure in (("WORKER_DEADLINE_EXCEEDED", [0, None, None, 0], 1709.0, 1300.0),
+                        ("CHILD_FAILED:[0, 0, 1, None]", [0, 0, 1, None], 50.0, 0.0),
+                        ("WORKER_DEADLINE_EXCEEDED", "malformed", None, None)):
+            with self.subTest(failure=failure[0]), tempfile.TemporaryDirectory() as directory, \
+                 contextlib.redirect_stdout(RaisingStream()):
+                runner.report_progress(Path(directory), self.plan, 709.0, 1000.0, {}, failure)
+
+    def test_journal_write_failure_of_any_kind_never_fails_a_test(self):
+        class Probe(unittest.TestCase):
+            def test_one(self):
+                pass
+        journal = mock.Mock()
+        journal.write.side_effect = RuntimeError("journal broken")
+        result = unittest.TextTestRunner(stream=io.StringIO(), resultclass=runner.functools.partial(
+            runner.RecordingResult, progress=journal)).run(
+            unittest.defaultTestLoader.loadTestsFromTestCase(Probe))
+        self.assertTrue(result.wasSuccessful())
+        self.assertEqual(len(result.successful), 1)
+        self.assertIsNone(result.progress)
+
     def test_recording_result_journals_start_stop_and_duration(self):
         class Probe(unittest.TestCase):
             def test_one(self):
@@ -373,6 +405,52 @@ class WindowsContainmentTests(unittest.TestCase):
                 self.assertEqual([line["worker"] for _, line in progress if line["binding"]], binding)
                 self.assertEqual(progress[2][1]["last_started_test"], shards[2][0])
                 self.assertFalse((output / "complete.json").exists())
+
+    def run_refused(self, reason, codes, poll_error=None):
+        """Drive main() to a simulated refusal with stdout failing from that moment on."""
+        ids = runner.source_census()
+        stdout, stderr = RaisingStream(), io.StringIO()
+        stdout.armed = False
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory) / "new-run"
+            processes = [mock.Mock() for _ in range(4)]
+            for process, code in zip(processes, codes):
+                process.poll.return_value = code
+                if poll_error is not None:
+                    process.poll.side_effect = poll_error
+            def refuse(processes, deadline, exited):
+                (output / "worker-2.progress.jsonl").write_text(
+                    json.dumps({"start": "in.flight", "wall": time.time()}) + "\n", encoding="utf-8")
+                stdout.armed = poll_error is None
+                raise runner.Refused(reason)
+            with mock.patch.object(runner, "snapshot", return_value={"head": "a" * 40}), \
+                 mock.patch.object(runner, "source_census", return_value=ids), \
+                 mock.patch.object(runner, "WindowsJob"), \
+                 mock.patch.object(runner.subprocess, "Popen", side_effect=processes), \
+                 mock.patch.object(runner, "wait_workers", side_effect=refuse), \
+                 mock.patch.object(sys, "argv", ["runner", "--output-dir", str(output)]), \
+                 contextlib.redirect_stdout(stdout), contextlib.redirect_stderr(stderr):
+                code = runner.main()
+        return code, stderr.getvalue().splitlines(), stdout.getvalue()
+
+    def test_raising_stdout_during_refusal_keeps_refusal_line_and_exit_code(self):
+        for reason, codes in (("WORKER_DEADLINE_EXCEEDED", [0, None, None, 0]),
+                              ("CHILD_FAILED:[0, 0, 1, None]", [0, 0, 1, None])):
+            with self.subTest(reason=reason):
+                code, stderr, _ = self.run_refused(reason, codes)
+                self.assertEqual(code, 1)
+                self.assertEqual(stderr, ["UNIVERSAL_RUN_REFUSED: " + reason])
+
+    def test_poll_failure_while_capturing_progress_keeps_refusal(self):
+        for reason in ("WORKER_DEADLINE_EXCEEDED", "CHILD_FAILED:[0, 0, 1, None]"):
+            with self.subTest(reason=reason):
+                code, stderr, stdout = self.run_refused(reason, [None] * 4, OSError("poll failed"))
+                self.assertEqual(code, 1)
+                self.assertEqual(stderr, ["UNIVERSAL_RUN_REFUSED: " + reason])
+                progress = [json.loads(line) for line in stdout.splitlines()
+                            if '"UNIVERSAL_WORKER_PROGRESS"' in line]
+                self.assertEqual([line["exit_code"] for line in progress], [None] * 4)
+                self.assertEqual(progress[2]["last_started_test"], "in.flight")
 
     def test_win64_layout_matches_windows_sdk(self):
         if ctypes.sizeof(ctypes.c_void_p) == 8:
