@@ -5169,3 +5169,56 @@ proves it. If the answer is a file age, a live headless seat can still own that 
 - **[679]/[680]:** a swarm deferred the 6h soak to a verified quiet window; the box was building, with about 40 agent processes, and both soak binaries were stale. Row 52 was attributed as benign (see the TRAP above).
 - **[681]/[682]:** the mirror submenu is rebuilt only when it changed, and both submenus rebuild after a click. Round 1 was withheld (see the TRAP above). CI: commit gate 298/565, hosted 825/1272.
 - **Re-derive:** ledger entries [677] to [682].
+
+<!-- cloudvore-filing:2026-09-28-git-fixture-inherits-parent-repo generated from review/doctrine-drafts/2026-09-28-git-fixture-inherits-parent-repo.md at d4038a0 -->
+
+## RECEIPTS
+
+- Host: Windows 11 (`ver`: 10.0.26200.9550), git 2.55.0.windows.5, Python 3.14.4, GNU bash 5.3.15 (Git Bash). The
+  K45 bar host: Windows 10 build 19045, Python 3.14.6.
+- K45: RED on master `2ae42c5` with HOME and GIT_CONFIG_GLOBAL at an empty directory (git merge exit 128, suite
+  exit 1). Codex (gpt-6-sol, high) REFUSE at `b392a3c` (trap 2) and at `691f75d` (trap 1), each reproduced red by the
+  author before the fix, then RATIFY at `e529128`. Bar at `e529128`: 12/12 green on the Windows 10 build 19045 host
+  (local thermal admission refused). Ledger `review/ledger-K45-fixture-identity-2026-09-28.md`.
+- Hook environment, measured on this host in throwaway repositories: a pre-commit hook saw `GIT_EXEC_PATH
+  GIT_INDEX_FILE GIT_PREFIX` in the main checkout and `GIT_DIR GIT_EXEC_PATH GIT_INDEX_FILE GIT_PREFIX` in a linked
+  worktree; a `!` alias under `git -c user.name=Outer` saw `GIT_CONFIG_PARAMETERS GIT_EXEC_PATH GIT_PREFIX`.
+- Portable blocks, extracted from this draft's text and run as extracted under Git Bash on this host, 2026-09-28
+  night, each with `SUITE='python tools/prune-worktrees.tests.py'`, stdin from `/dev/null`, and `SRC` a checkout of
+  this board at `2ae42c5` (before K45), then at `996424e` (after K45); a clone of each was confirmed to check out
+  that commit. At `2ae42c5`: trap 1's block printed `control exit 0; exit under the inherited GIT_DIR 1` and `TRAP:
+  the suite wrote into the inherited repository; ...`; trap 2's printed `no identity anywhere: exit 1 (1 git identity
+  refusal line(s)); identity only from a parent git -c: exit 0` and `TRAP: a git call in the suite needs an identity
+  it does not supply itself; ...` (the suite captures git's stderr; the refusal came from the trace2 file). At
+  `996424e`: trap 1's printed `control exit 0; exit under the inherited GIT_DIR 0` and `no persistent change under the
+  victim, and the suite passed`; trap 2's printed `no identity anywhere: exit 0 (0 git identity refusal line(s)); identity only from a
+  parent git -c: exit 0` and `no identity refusal among the git calls the trace saw, and both runs passed`.
+- Positive control for trap 1's snapshot: the same block with `SRC` at `996424e` and `SUITE='git config --local
+  probe.flag yes'` (a suite whose only write is repository config) printed `control exit 0; exit under the inherited
+  GIT_DIR 0` and `TRAP: the suite wrote into the inherited repository; ...`.
+- Negative control for trap 2's block: with `SRC` at `996424e` and `SUITE='[ -z "$GIT_CONFIG_PARAMETERS" ]'` (a
+  suite that fails only when a parent identity is present) it printed `no identity anywhere: exit 0 (0 git identity
+  refusal line(s)); identity only from a parent git -c: exit 1` and `INCONCLUSIVE: no git call in the no-identity run
+  reported to trace2, so an identity refusal could not be seen; ...` (that suite makes no git call).
+- Ordering control for trap 1's block: with `SUITE='git config --local probe.flag yes; false'` (writes to the
+  victim, then fails) it printed `control exit 1; exit under the inherited GIT_DIR 1` and `TRAP: the suite wrote into
+  the inherited repository; ...`.
+- Guessed-identity control for trap 2's block (each arm's global config sets `user.useConfigOnly = true`): with
+  `SUITE` an identity-less commit in a fresh repository (`d=$(mktemp -d) && git init -q "$d" && git -C "$d" commit
+  -q --allow-empty -m x`) it printed `no identity anywhere: exit 128 (4 git identity refusal line(s)); identity only
+  from a parent git -c: exit 0` and `TRAP: ...`. With `useConfigOnly` set, git's refusal reads `no email was given and
+  auto-detection is disabled` (seen in the trace2 file), which the block's pattern includes.
+- Snapshot control for trap 1's block (the snapshot records every path with its type, not only file contents): with
+  `SUITE='[ -n "$GIT_DIR" ] && mkdir "$GIT_DIR/probe-dir" || true'` (leaves only an empty directory in the victim)
+  it printed `control exit 0; exit under the inherited GIT_DIR 0` and `TRAP: ...`.
+- Swallowed-refusal control for trap 2's block: with `SUITE` an identity-less commit whose failure the suite ignores
+  (`d=$(mktemp -d); git init -q "$d"; git -C "$d" commit -q --allow-empty -m x; true`) it printed `no identity
+  anywhere: exit 0 (4 git identity refusal line(s)); identity only from a parent git -c: exit 0` and `SUSPECT: git
+  refused an identity in the no-identity run, but the exit codes did not separate ...`.
+- Every case above was rerun on the r12 text in one pass (known-bad and fixed trees, and all controls for both
+  blocks); each printed what is recorded here.
+- Empty-trace control for trap 2's block: with `SUITE='true'` (no git call at all) it printed `no identity anywhere:
+  exit 0 (0 git identity refusal line(s)); identity only from a parent git -c: exit 0` and `INCONCLUSIVE: no git call
+  in the no-identity run reported to trace2, ...`.
+- Trace-leak control: trap 1's block run with an inherited `GIT_TRACE2_EVENT` pointing at a file that did not exist
+  printed its usual `... the suite passed` verdict for `996424e`, and that file was never created.

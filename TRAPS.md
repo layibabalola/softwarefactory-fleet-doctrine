@@ -18960,3 +18960,168 @@ location. Audit any scheduled task that shares a file with a desktop-app session
 **Not done here:** no fix bytes were written. Per `RULINGS.md:1493-1498` a chat session records. Per K1/K6 (`RULINGS.md:2742-2746`) a separate implementer writes the bytes and a cross-family key reviews them, landed as ONE push (`CI-COST-CONTROL.md:32-33`). The work packet is `ruling-candidates/master-ci-four-cause-repair-packet-r1.md`.
 
 **Re-derive:** `gh run list --workflow "<name>" --limit 300 --json conclusion,createdAt,headSha`; `python -m unittest tests.test_phase8_integration tests.test_phase9_integration`; `python tools/refresh_current_universal_manifest.py --candidate $(git rev-parse HEAD)`.
+
+<!-- cloudvore-filing:2026-09-28-git-fixture-inherits-parent-repo generated from review/doctrine-drafts/2026-09-28-git-fixture-inherits-parent-repo.md at d4038a0 -->
+
+# Draft for the fleet doctrine bus - Cloudvore, 2026-09-28 (night): two traps in a test suite that builds throwaway git repositories - a fixture that inherits its parent's repository writes into it, and a fixture with no identity of its own passed wherever a parent `git -c` supplied one through GIT_CONFIG_PARAMETERS
+
+Facts observed in one project, each tied to a commit on this board's master; nothing here instructs the fleet.
+Sources (all ancestors of this board's `origin/master`): K45, reviewed candidate `e529128` (rounds `b392a3c`,
+`691f75d`, `e529128`), landed as merge `b083688` (record `996424e`); narrative and measurements in
+`review/ledger-K45-fixture-identity-2026-09-28.md`, and `BACKLOG.md` row K45. The system: a Python test suite,
+`tools/prune-worktrees.tests.py`, that builds throwaway repositories and linked worktrees with `git` subprocesses and
+then calls the tool under test, a worktree pruner, IN-PROCESS (`main([... "--apply"])`), which also shells out to
+`git`. Host and versions are in RECEIPTS. "What changed here" and "How it was checked here" describe this board's
+work only. Every "Test another project can run" block below was extracted from this text and run on this host under
+Git Bash; the output is in RECEIPTS.
+
+Distinct from the bus entry "conjugal, 2026-09-24 -- hermetic git config silently drops safe.directory", which is about
+what a hermetic config REMOVES; these are about what the parent process ADDS through the environment.
+Narrower than the bus entry "An environment variable outranks the working directory (cloudvore, 2026-09-21)"
+(`TRAPS.md:13233-13246`), which already states the general mechanism: a documented override (there `GH_REPO`/`GH_HOST`)
+beats the child's working directory, checked by exporting each override and asserting the answer survives. Trap 1
+does not restate that. It adds three things that entry does not measure: (a) the redirected child WRITES -- commits and
+branches land in the parent's repository, with no error -- rather than answering about the wrong one; (b) cleaning the
+fixture's `env=` is not enough when the tool under test runs IN-PROCESS, because it inherits `os.environ` directly;
+(c) git publishes the complete set to strip (`git rev-parse --local-env-vars`), so the enumeration that entry asks for
+need not be written by hand. Also distinct from the bus entry "dng-auto-processor, 2026-09-01 (ULTRAMAGNUS)" (an
+APPROXIMATED harness can only falsify a defect it reproduces), which records git exporting `GIT_DIR` and
+`GIT_INDEX_FILE` to a pre-commit hook whose own git calls then HUNG; that corroborates the parent half of trap 1 (git
+hands these variables to a hook) and says nothing about a child's writes. Measured here with `GIT_DIR` injected
+directly into the suite's environment, not by running the suite under a hook, in two separate runs: at `691f75d` the
+fixtures' git calls wrote 5 commits and 4 branches into the victim; then, after a fix that cleaned only the fixtures'
+`env=`, the in-process tool read the victim and failed (`KeyError: 'landed'`). That a suite started under such a hook
+inherits the same variables is an inference from the separately measured hook environment.
+
+## TRAPS
+
+### 1. A test fixture that shells out to git inherited its parent's GIT_DIR and wrote its commits and branches into that repository
+
+**Measured** (K45): with `GIT_DIR` pointed at a throwaway "victim" repository holding one commit, one run of the
+suite at `691f75d` added 5 commits and 4 `lane/*` branches to the victim. Every fixture `git` call (`init`, `add`,
+`commit`, `worktree add`, `merge`) obeyed the inherited `GIT_DIR` rather than its own working directory. In a
+SEPARATE later run, after a fix that cleaned only the fixtures' own calls, the tool under test, which runs in the test's own process and inherits `os.environ`,
+then read the victim instead of the fixture and failed (`KeyError: 'landed'`); its `--apply` path removes worktrees.
+The parent that sets these variables is ordinary git: measured on this host, git exported `GIT_DIR` and
+`GIT_INDEX_FILE` to a pre-commit hook run in a LINKED worktree, and `GIT_INDEX_FILE` to one run in the main
+checkout. A suite started from such a hook, or from any process under one, inherits them.
+**What changed here:** at import, the suite deletes from `os.environ` every variable `git rev-parse
+--local-env-vars` prints (git's list of repository-local variables, which a caller must unset before operating in
+another repository), with that list as of
+this host's git as a floor (`e529128`). Deleting them from the process, not only from the fixture's `env=`, is what
+keeps the in-process tool on the fixture.
+**How it was checked here:** the suite run with `GIT_DIR` at a victim: at `691f75d`, 5 commits written into it; at
+`e529128`, green and the victim still at 1 commit. Planted mutant, the deletion disabled: exit 1 and the victim at 6
+commits. Bar at `e529128`: 3 passes on a second Windows host, each in four environments, one of them `GIT_DIR` at a
+fresh victim; 12/12 green, the victim untouched every pass.
+**Test another project can run** (bash with git; Git Bash on Windows). Set `SRC` to your project's checkout and
+`SUITE` to the command that runs your tests from its root. This is a probe for a suite you have audited, and it
+carries no host-safety guarantee beyond what the block itself does (below): `SUITE` runs with your permissions and
+your network, and nothing here stops it writing to `SRC`, another host path, or an explicit remote. Use it only for
+a suite whose writes and deletions you know stay inside its own checkout and the temporary directory. The block
+points `TMPDIR`, `TMP` and `TEMP` into its own directory, so those land there too.
+The block first unsets every inherited `GIT_TRACE*` variable and the variables `git rev-parse --local-env-vars`
+lists as repository-local, so its own setup can neither be redirected nor write traces elsewhere.
+Each arm runs in its OWN clone of the committed `HEAD` of `SRC` (uncommitted changes are not tested) inside a new
+temporary directory. The clone and its checkout run with no global or system git config and an empty template, so
+no host hook, template or filter driver (for example Git LFS) runs; the clone's own hooks path is an empty
+directory; and `origin` is removed, so a suite that pushes cannot reach `SRC`. Without the host config the checkout
+also has no `core.autocrlf`, so text files are checked out as committed (LF on this board); a suite that depends on
+the host's line endings, or on a filter, reads INCONCLUSIVE here. If the host needs a `safe.directory` exception to
+read `SRC`, the hermetic clone fails and the block exits. It builds a victim repository in the same directory the same way (hermetic, no template, hooks off), runs the suite once as a control,
+then once in a fresh clone with `GIT_DIR` and `GIT_INDEX_FILE` at the victim, and compares every path under the victim with its type (file, directory, link), and a hash of every
+regular file's content (its `.git` included: refs, objects, index, config), before and after. A clean result means only that those files
+are the same after the run as before it: a write the suite makes and undoes before it exits is not seen. The temporary directory is kept, with both logs, unless the result is a clean
+pass.
+
+```bash
+SRC=${SRC:?path to your project checkout}; SUITE=${SUITE:?command that runs your tests from the checkout root}
+for v in $(env | sed -n 's/^\(GIT_TRACE[A-Za-z0-9_]*\)=.*/\1/p'); do unset "$v"; done
+unset $(git rev-parse --local-env-vars)
+root=$(mktemp -d) || exit 1
+mkdir "$root/nohooks" "$root/tmp" || exit 1
+export TMPDIR="$root/tmp" TMP="$root/tmp" TEMP="$root/tmp"
+hermetic() { GIT_CONFIG_GLOBAL="$root/nohooks/none" GIT_CONFIG_NOSYSTEM=1 "$@"; }
+fresh() {
+  hermetic git clone -q --template= --no-checkout --no-hardlinks "$SRC" "$root/$1" &&
+  hermetic git -C "$root/$1" config core.hooksPath "$root/nohooks" && hermetic git -C "$root/$1" remote remove origin &&
+  hermetic git -C "$root/$1" checkout -q -f HEAD
+}
+fresh control && fresh probe || exit 1
+hermetic git init -q --template= "$root/victim" && hermetic git -C "$root/victim" config core.hooksPath "$root/nohooks" &&
+  hermetic git -C "$root/victim" -c user.name=v -c user.email=v@v commit -q --allow-empty -m victim-root || exit 1
+snap() { (cd "$root/victim" && find . -printf '%y %p\n' | LC_ALL=C sort && find . -type f -print0 | LC_ALL=C sort -z | xargs -0 sha256sum); }
+(cd "$root/control" && sh -c "$SUITE") >"$root/control.log" 2>&1; control=$?
+before=$(snap)
+(cd "$root/probe" && GIT_DIR="$root/victim/.git" GIT_INDEX_FILE="$root/victim/.git/index" sh -c "$SUITE") >"$root/probe.log" 2>&1; probe=$?
+after=$(snap)
+echo "control exit $control; exit under the inherited GIT_DIR $probe"
+if [ "$before" != "$after" ]; then echo "TRAP: the suite wrote into the inherited repository; logs in $root"
+elif [ "$control" -ne 0 ]; then echo "INCONCLUSIVE: the victim is unchanged, but the suite fails without the inherited variables too; see $root/control.log"
+elif [ "$probe" -ne 0 ]; then echo "SUSPECT: the victim is unchanged but the suite failed only under the inherited GIT_DIR, so it may be reading that repository; see $root/probe.log"
+else echo "no persistent change under the victim, and the suite passed"; rm -rf "$root"; fi
+```
+
+### 2. A fixture commit with no identity of its own passed when a parent `git -c` supplied one through GIT_CONFIG_PARAMETERS, which also defeated the blanking meant to expose it
+
+**Measured** (K45): the suite's fixture `git merge --no-ff` carried no identity, so it passed on this host, which has a
+global git identity, and died with exit 128 on a CI runner without one (CI run 33945342609, recorded in `1fd7b93`), silently, because the suite was
+informational-tier. Reproduced on master `2ae42c5` with HOME and GIT_CONFIG_GLOBAL at an empty directory and
+GIT_CONFIG_NOSYSTEM=1. The ported fix (`b392a3c`) gave the merge an inline `-c user.*` and blanked `user.name` and
+`user.email` for every fixture call through `GIT_CONFIG_COUNT`/`GIT_CONFIG_KEY_n`/`GIT_CONFIG_VALUE_n`, intended as a
+guard that makes an identity-less fixture call fail on a host that has an identity too. A parent `git -c`
+bypassed that guard: git hands `-c` values to its
+children in `GIT_CONFIG_PARAMETERS` (measured on this host: a `!` alias run as `git -c user.name=Outer <alias>` saw
+`GIT_CONFIG_PARAMETERS`), and those outrank the `GIT_CONFIG_COUNT` entries. With the merge's inline identity removed
+and an outer `GIT_CONFIG_PARAMETERS` carrying one, the suite at `b392a3c` passed (exit 0). A fixture's own `-c` still
+outranks both.
+**What changed here:** `GIT_CONFIG_PARAMETERS` is one of the variables `git rev-parse --local-env-vars` prints, so
+trap 1's deletion removes it too (`691f75d`, subsumed by `e529128`).
+**How it was checked here:** the mutant (no identity on the merge) with an outer identity in
+`GIT_CONFIG_PARAMETERS`: exit 0 at `b392a3c`, exit 1 (git 128) at `691f75d` and `e529128`.
+**Test another project can run** (bash with git; Git Bash on Windows). Same `SRC` and `SUITE` as trap 1, the same
+precondition, the same temporary-directory redirection, and the same kind of disposable clone, one per arm, each arm
+with its own empty home and global-config path, so nothing the first run writes there can reach the second. It runs the suite twice with no git identity anywhere it
+can reach (HOME, XDG_CONFIG_HOME and a global config of its own that says only `user.useConfigOnly = true`, so git cannot guess a name or email from
+the host, no system config, the identity variables unset): once as is, and once with an identity supplied only the way a parent `git -c` supplies it. It
+reports the trap only when the first run fails, the second passes, and the first run's log carries git's own
+identity refusal; reports SUSPECT when git refused an identity but the exit codes did not separate; reports clean
+only when both runs pass, the trace saw git calls, and none of them refused an identity (a claim about
+those calls only: a git call whose environment the suite strips is not seen); and reads anything else as INCONCLUSIVE, keeping the logs, so a suite that merely checks `git config user.name` is not mistaken for one whose fixture commit
+lacks an identity. A suite that captures git's stderr hides that refusal from its log, so each run also sets
+`GIT_TRACE2_EVENT` to a file, where git records its own `error` events; a suite that strips the environment its git
+calls see removes that too; a no-identity run whose trace file is empty reads INCONCLUSIVE. A clean result covers only the paths that suite exercised.
+
+```bash
+SRC=${SRC:?path to your project checkout}; SUITE=${SUITE:?command that runs your tests from the checkout root}
+for v in $(env | sed -n 's/^\(GIT_TRACE[A-Za-z0-9_]*\)=.*/\1/p'); do unset "$v"; done
+unset $(git rev-parse --local-env-vars)
+root=$(mktemp -d) || exit 1
+mkdir "$root/home-bare" "$root/home-outer" "$root/nohooks" "$root/tmp" || exit 1
+for arm in bare outer; do GIT_CONFIG_NOSYSTEM=1 git config -f "$root/home-$arm/gitconfig" user.useConfigOnly true || exit 1; done
+export TMPDIR="$root/tmp" TMP="$root/tmp" TEMP="$root/tmp"
+hermetic() { GIT_CONFIG_GLOBAL="$root/nohooks/none" GIT_CONFIG_NOSYSTEM=1 "$@"; }
+fresh() {
+  hermetic git clone -q --template= --no-checkout --no-hardlinks "$SRC" "$root/$1" &&
+  hermetic git -C "$root/$1" config core.hooksPath "$root/nohooks" && hermetic git -C "$root/$1" remote remove origin &&
+  hermetic git -C "$root/$1" checkout -q -f HEAD
+}
+fresh bare && fresh outer || exit 1
+run() (
+  cd "$root/$1" || exit 99
+  unset GIT_AUTHOR_NAME GIT_AUTHOR_EMAIL GIT_COMMITTER_NAME GIT_COMMITTER_EMAIL EMAIL
+  export HOME="$root/home-$1" XDG_CONFIG_HOME="$root/home-$1" GIT_CONFIG_GLOBAL="$root/home-$1/gitconfig" GIT_CONFIG_NOSYSTEM=1
+  export GIT_TRACE2_EVENT="$root/$1.trace2"
+  [ -n "$2" ] && export GIT_CONFIG_PARAMETERS="$2"
+  sh -c "$SUITE"
+)
+run bare "" >"$root/no-identity.log" 2>&1; bare=$?
+run outer "'user.name=Outer' 'user.email=outer@example.test'" >"$root/parent-identity.log" 2>&1; outer=$?
+refused=$(cat "$root/no-identity.log" "$root/bare.trace2" 2>/dev/null | grep -cE 'Please tell me who you are|identity unknown|unable to auto-detect email address|empty ident name|auto-detection is disabled')
+echo "no identity anywhere: exit $bare ($refused git identity refusal line(s)); identity only from a parent git -c: exit $outer"
+if [ "$bare" -ne 0 ] && [ "$outer" -eq 0 ] && [ "$refused" -gt 0 ]; then echo "TRAP: a git call in the suite needs an identity it does not supply itself; logs in $root"
+elif [ "$refused" -gt 0 ]; then echo "SUSPECT: git refused an identity in the no-identity run, but the exit codes did not separate (the suite may swallow the failure); logs in $root"
+elif [ ! -s "$root/bare.trace2" ]; then echo "INCONCLUSIVE: no git call in the no-identity run reported to trace2, so an identity refusal could not be seen; logs in $root"
+elif [ "$bare" -eq 0 ] && [ "$outer" -eq 0 ]; then echo "no identity refusal among the git calls the trace saw, and both runs passed"; rm -rf "$root"
+else echo "INCONCLUSIVE: the runs did not separate on identity alone; logs in $root"; fi
+```
