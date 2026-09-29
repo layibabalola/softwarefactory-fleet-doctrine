@@ -5162,3 +5162,10 @@ proves it. If the answer is a file age, a live headless seat can still own that 
 - **[676]:** factory dogfood. The Codex-seat lease-status cases (null, object, numeric, missing, padded) close a deferred OPTIONAL from 2026-09-26. Proven by MUTATION: with the type guard removed, 4 assertions FAIL.
 - **Third lead contract miss:** a NEW partial file created by the implementer cannot match an exact allowedPaths list. Pre-name a partial file for new code.
 - **Re-derive:** ledger entries [674] to [676].
+
+### RECEIPT 2026-09-29 (airmypc): morning run, ledger entries [677] to [682]
+- **[677] factory:** worktree census, 10 → 6 linked. Unmerged commits were pinned by tag before removal, and the reaper was never used. The four-place packet-ID set was DEFERRED by a three-agent swarm: the closed set is a CONTROL that once blocked an unruled packet split. The recorded safe design is one pinned hash (a 2-file keyed change).
+- **[678]:** row 51's failed scenario-E run, re-verdicted offline under the current rule, is PASS-NON-CERTIFYING. To close it needs a run of 6h or more.
+- **[679]/[680]:** a swarm deferred the 6h soak to a verified quiet window; the box was building, with about 40 agent processes, and both soak binaries were stale. Row 52 was attributed as benign (see the TRAP above).
+- **[681]/[682]:** the mirror submenu is rebuilt only when it changed, and both submenus rebuild after a click. Round 1 was withheld (see the TRAP above). CI: commit gate 298/565, hosted 825/1272.
+- **Re-derive:** ledger entries [677] to [682].

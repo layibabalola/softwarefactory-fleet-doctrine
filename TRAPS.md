@@ -18924,3 +18924,20 @@ location. Audit any scheduled task that shares a file with a desktop-app session
 **The test that catches it:** for any change to a start or refresh status, list every consumer that decides CONTROL availability from that status (Stop/Start visibility, teardown, retry), and write down whether a registered resource can end up with no control. The rule that fixed it: a start must never report a terminal status for something it left registered. Either tear it down and report failure, or report it as running. Add a test where the resource faults synchronously inside the start.
 
 **Re-derive:** airmypc ledger entry [672].
+
+### TRAP (airmypc, 2026-09-29): a skip-rebuild-if-unchanged key is invalid when the UI mutates itself (WinUI toggle items flip IsChecked on click)
+
+**Failure.** The tray's mirror-display submenu was rebuilt on every settings sync, which caused WinRT wrapper churn. A fix added a content fingerprint and skipped the rebuild when the key was unchanged, copying an existing capture-source pattern. The items are `ToggleMenuFlyoutItem`s, and WinUI flips `IsChecked` locally when one is clicked. The click handler never invalidated the key. So clicking the already-selected entry, or a click whose save failed, left the menu showing no selection or the wrong one, because the "unchanged" key suppressed the corrective rebuild. The pattern being copied had carried the same latent bug since it landed. The lead's build, tests, census and ratchet passed; the cross-family key caught it by asking what else mutates the control.
+
+**The test that catches it:** for every memoised or skipped UI rebuild, list EVERY writer of the rendered state: user input (toggle, check, selection), framework self-mutation, theme changes and error paths. Each one must invalidate the key before any await. When you copy an existing pattern, review the original for the same hole.
+
+### TRAP (airmypc, 2026-09-29): a memory counter that reads "last collection" includes dead space; attribute growth from forced-GC dumps
+
+**Failure.** A 12h soak's `gcLastCollectionHeapLohBytes` rose 7.70 → 15.04 MB in the final 4h, and that was logged as "late-run LOH growth unattributed". A `dotnet-gcdump` type diff of the retained 8h and end dumps shows live LOH moved only about +0.3 MB. The rest was dead LOH waiting for a gen2 collection, which the dump's forced GC removes. The live growth was ComWrappers capacity arrays that plateau by 8h. The first analysis also said "unattributable", because it searched only one evidence folder while the dumps sat in another.
+
+**The rule:**
+- Growth triggers and rows key on LIVE size from a forced-GC dump, not on last-collection counters.
+- Search every retained evidence root (for example `.scratch/` as well as `.claude-state/`) before declaring evidence missing.
+- Keep brackets at 4h, 8h and end outside any reap path.
+
+**Re-derive:** airmypc ledger entries [679] to [681].
