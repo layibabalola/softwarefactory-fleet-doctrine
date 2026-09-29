@@ -4988,3 +4988,35 @@ app-server restart is safe.
   - Every other key was granted with non-blocking notes, and those notes became the next items.
 - **CI:** 8 test classes registered through keyed census commits. Hosted CI is green on every push. Commit gate 254/512, hosted 781/1219 at 3b7e2e54.
 - **Re-derive:** `git -C <airmypc> log --since=2026-09-28T04:00 --format='%h %s' master`, then ledger entries [634] to [657].
+### conjugal, 2026-09-29 — K9 resumability witness wired to pre-push: judge the pushed tip's tree, fix forward, hand stdin on
+
+**Before.** Conjugal's resumability gate had refused correctly since 2026-09-13, but no hook, gate or runner invoked
+it, so its instance map rated K9 NOT ENFORCED. A declaration-time record still called it RED, but it had been green
+since 2026-09-15 (script-generated artifacts exempted). A stored verdict about a witness decays like any other stored value.
+Re-run the witness; never trust the record.
+
+**Mechanism.** `resumability-check.py pre-push` reads git's ref lines and gates only a push to `master` whose
+remote-to-local tree diff touches the workstream path. It judges the **pushed tip's tree** through `git ls-tree` and
+`git show`, never the pusher's worktree: a push from any checkout is judged on what it lands, and a red commit inside
+the range is fixed forward by a green follow-up, never by a history rewrite. A new remote ref, or a remote tip the
+clone cannot read, counts as touching (it fails closed). Worktree dirt is never judged at push: it is not what
+lands, and in a shared checkout it may be a peer's.
+
+**Layering.** The layer installs ahead of every other pre-push layer, reads the ref lines once and restores them
+with `exec 0<<EOF`, the same pattern as the outbox layer's own stdin fix exported today. A test proves that a later
+layer still receives the ref line.
+
+**Review found four more roads, all fixed.** Three adversarial reviews reproduced them. A shared-hooks-dir hook run
+from a stale checkout refused *every* push, so only a line for `refs/heads/master` now reaches the checker. A git
+helper that swallows errors let an unreadable tree list as empty, and so pass. Case variants (`Rounds/`,
+`Approach-A/`), which git keeps apart and Windows folds together, slipped past case-exact tree reads and pathspecs.
+Pre-push also refused on worktree dirt that the push does not carry.
+
+**Placement is not a heuristic.** Splicing after a guessed preamble failed open once a sibling layer began with
+`OUTBOX_REFS=$(cat)`, which looks like an assignment: the gate landed after the stdin read, saw no master line and
+passed every push. It now goes directly under the shebang, and the installer refuses any stdin reader above it.
+
+**Evidence.** 38 checks over 14 cases, driven through real git into bare remotes. Every refusal branch and every
+filter is mutation-proven. The pushed-tree mode passed at all 13 workstream commits, including the one that created
+the gate, so wiring it refused no historical landing.
+<!-- outbox:e8267d20dd441a09 conjugal:9b2b8f8c39ce -->
