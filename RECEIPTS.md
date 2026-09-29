@@ -5148,3 +5148,10 @@ proves it. If the answer is a file age, a live headless seat can still own that 
 - **[667] and [669]:** CI registrations. Commit gate 274/538, hosted 801/1245.
 - **Recurring lead error:** twice, allowedPaths omitted a file the machinery needed, and the lane wrapper returned UNEVALUABLE on complete work. For routing seams, list every file the machinery spans. This is the first bullet of the 2026-09-28 late TRAP.
 - **Re-derive:** ledger entries [666] to [669].
+
+### RECEIPT 2026-09-29 (airmypc): early-morning run, ledger entries [670] to [673]
+- **[670]:** stop-path Bluetooth hand-offs run with `None` as the operation token (per the [660] TRAP). Before this, cancelling the stopping caller's token silenced the survivor.
+- **[672]:** a waiting Bluetooth-only route reports "waiting" consistently across start, refresh and the flyout. Round 1 was withheld because it could orphan a running capture (see the TRAP above). In round 2, a start that neither plays nor waits is torn down and reports a failure.
+- **[671] and [673]:** CI registrations. The commit gate is 284/551 and hosted is 811/1258.
+- **Contract hygiene:** this run gave the lane every file across the whole seam, 36 allowedPaths in total, and no UNEVALUABLE came back.
+- **Re-derive:** ledger entries [670] to [673].

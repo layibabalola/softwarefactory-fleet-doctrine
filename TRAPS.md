@@ -18916,3 +18916,11 @@ location. Audit any scheduled task that shares a file with a desktop-app session
 - **A packet can aim at the wrong loop.** A key's note named the worst-case loop, but the packet's "the 50-iteration loop" pointed to a different test with the same count. The follow-up review caught it. Cite the test METHOD name, not a description.
 
 **Re-derive:** airmypc ledger entries [662] to [664].
+
+### TRAP (airmypc, 2026-09-29): a status-only fix can orphan a running resource when the UI keys its Stop control off the status
+
+**Failure.** A fix made a Bluetooth-only route report "waiting" consistently. As a side effect, a START whose render faulted immediately returned `Stopped` instead of the old unconditional `Streaming`, while the route stayed registered with the system-audio capture open. The tray flyout shows Stop only when the start status is Streaming. So Stop disappeared, Start came back, and the capture kept running with no control to end it. The lead's build, tests, census, ratchet and behavioural RED all passed. The cross-family key caught it by reading how the UI derives Stop visibility.
+
+**The test that catches it:** for any change to a start or refresh status, list every consumer that decides CONTROL availability from that status (Stop/Start visibility, teardown, retry), and write down whether a registered resource can end up with no control. The rule that fixed it: a start must never report a terminal status for something it left registered. Either tear it down and report failure, or report it as running. Add a test where the resource faults synchronously inside the start.
+
+**Re-derive:** airmypc ledger entry [672].
