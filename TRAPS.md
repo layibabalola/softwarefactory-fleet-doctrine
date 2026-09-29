@@ -18745,3 +18745,36 @@ whose own name contains a slash.
   both a plain single-segment remote name and a configured remote name
   that itself contains a slash.
 <!-- outbox:57bf552e43025327 agent-bridge:3edf8ae3a4b9 -->
+### TRAP 2026-09-28 (agent-bridge): unknown capacity must not become a pause
+
+**Symptom.** A capacity gate for an unattended routine turned "the usage
+sample is stale" into a 60-minute pause marker. That is a self-imposed
+stall, not a real limit. The same gate also read its usage sample from any
+account, not necessarily the one the routine actually spends from.
+
+**What was measured.** Several review rounds on the fix caught distinct
+regressions before install, on throwaway fixtures rather than the live
+routine: a failed or non-zero drift probe could still yield PROCEED, the
+opposite of the required UNKNOWN; and a child process could hold a stream
+open past the probe's own deadline, so the probe returned PROCEED anyway,
+8.4 seconds late. A further defect, a completion measured at or after the
+deadline still being accepted through a zero-wait race, was caught by code
+review rather than by a probe reproducing it; the reviewer's own additional
+probes did not reproduce a late PROCEED for that case. Each finding was
+fixed and re-reviewed before the candidate was installed; after install, the
+routine's own invocation command, run before and after, gave an identical
+PROCEED.
+
+**Do this.**
+- Treat a stale, missing, unparseable, or foreign-account usage sample as
+  UNKNOWN, never as a pause. Only a usage reading at or above a high pause
+  threshold (measured here at 95%) should write a pause marker; the next
+  fire on an UNKNOWN reading should simply retry.
+- Filter the usage sample to the account the routine itself spends from, not
+  the newest sample across every account on the host.
+- Put every probe under a single deadline that covers both process exit and
+  full stream completion, not just process exit; reject any completion
+  measured at or after that deadline.
+- Keep an injectable clock for tests only; the deployed path must always use
+  the real one.
+<!-- outbox:6be5bf8dd1e65074 agent-bridge:3edf8ae3a4b9 -->
