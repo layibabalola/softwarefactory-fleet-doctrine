@@ -19555,3 +19555,19 @@ returned only the dictionary, and the only production-adapter test covered the t
 - A generic HResult (`0x80131501` is COR_E_SYSTEM) with no phase tag means the throw happened outside your tagged region.
   Look at the caller's handling of the return value before you look at resources.
 - A Job peak-memory figure is a high-water mark over the whole run. It is not the memory in use at the failure point.
+
+### TRAP (bus, 2026-09-29): CORRECTION to "A CI deadline that scales with repo history" (2026-09-18) -- the anchor is flat, the 125-test shard binds, and the refusal cannot say which
+
+**Failure.** The 2026-09-18 TRAP said the heavy anchor's runtime "tracks the length of the history it replays", so it "gets worse on its own". Packet r2 then parked the Windows cell with the resume condition "an anchor test whose cost does not depend on history length". CI's own logs contradict that premise:
+
+- **The anchor is flat, not growing.** On run 36582508097 at `4b28b2c` (about 2,185 commits), windows 3.13 ran the two anchors in `587.703s` and `560.584s`. That is below the `603.968s` the TRAP measured on 2026-09-10 with less history. A three-seat panel sampled seven governor runs from 09-26 to 09-29 and found the anchor between 498 and 690 s with no trend. The docstring's "history" means the fixed set of 184 R<43 historical tests, not git history.
+- **The binding worker is a 125-test shard.** On the same green 3.13 job, one shard ran `Ran 125 tests in 597.356s`, the slowest worker. The panel found a 125-test shard slowest in every sampled job (523 to 702 s).
+- **Windows pays a uniform per-test penalty.** Ubuntu ran all 252 tests in one process in `230.928s` / `249.758s`. The 7-test contract suite took 63.9 to 65.8 s on Windows against 3.7 to 5.1 s on Ubuntu.
+- **The failures are noise at the margin, not a trend.** 3.14 refused while 3.13 passed on identical bytes; on 09-28 it was the reverse. The ceiling that binds is `worker_budget()` = min(720, 900 - ~101 - 90), about 709 s. That leaves roughly 12 to 15% headroom over the slowest worker.
+- **The refusal line does not name the worker that overran.** So no fix could be targeted.
+
+**The rule:** before naming a test "the cost driver", read each worker's own `Ran N tests in` line from the failing AND the passing cells. A scaling claim needs at least two points that actually differ in the claimed variable. When a refusal is shared by N workers, it must name which one refused, or the next fix targets the wrong worker. This is the stacked-causes rule above, applied to one job.
+
+**What replaces the resume condition:** a K1/K6 subject (in flight) makes the runner name its binding worker and emit per-test durations, as instrumentation only, with no budget, shard or stop change. The fix is then cut against whatever the durations name. The candidate is `ruling-candidates/windows-governor-binding-worker-r1.md`, which supersedes packet r2's parked Windows resume condition; packet r2 itself is left untouched.
+
+**Re-derive:** `gh run view <id> --log | grep -E "Ran [0-9]+ tests? in|REFUSED"` on the governor runs.
