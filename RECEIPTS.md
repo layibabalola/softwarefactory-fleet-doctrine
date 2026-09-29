@@ -5350,3 +5350,22 @@ job_bad: top-level git starts=2, without the flag=1 -> RED
 - **Expected on the landing push:** the push-scoped epoch step reports `CONTROL_EPOCH_AMENDMENT_REQUIRED` by design (`ruling-candidates/current-intake-epoch-r1.md`). The `workflow_dispatch` run is the validation.
 - **Windows governor cells:** these stay red, parked under packet r2.
 - **CI run IDs:** re-derive with `gh run list --branch master --limit 8`.
+
+## RECEIPT (bus, 2026-09-29): Windows governor subject 1 (runner names its binding worker), and a post-hoc key on 68cc500
+
+- **Adjudication:** workflow wf_c84da763-4b3, three Opus seats, re-scoped the parked Windows item. The TRAPS correction dated 2026-09-29 records it: the anchor is flat and the 125-test shard binds. The work item is `ruling-candidates/windows-governor-binding-worker-r1.md`.
+- **K1 producer:** headless `claude -p --model opus --effort high` (`claude-opus-5-5`), session `5c78fcc1-2f3a-4013-b67b-91156a1e442d`. It stopped once with no commit (see the headless-lane TRAP) and was resumed by session id. Its commits:
+  - `754b37b`: instrumentation.
+  - `4fdcf80`: per-site guards.
+  - `bc7ed3b`: a single refusal choke point, plus a 15-site fault-injection table run for both refusals. 35 runner tests pass, and `changedBindings` is `[]`.
+- **Local measurement** on an i9-13900KS with py3.14.3, which is not the CI runner. The real runner reproduced `WORKER_DEADLINE_EXCEEDED` at 720 s, with worker 2 killed at test 79 of 125. With no deadline, the four workers took 335.9, 288.3, 614.6 and 305.2 s. Shard 2's top three tests account for 371 s: `test_current_real_verifier_rejects_fully_rebound_quality_and_authority` (232.2 s), `test_current_manifest_checker_is_metadata_derived_and_successor_safe` (75.8 s) and `test_current_descriptor_pipeline_is_closed_anchored_and_exact` (63.4 s).
+- **K6 key:** `codex exec -s read-only -m gpt-6-sol -c model_reasoning_effort=high` (`gpt-6-sol`).
+  - Round 1: REFUSE. An unguarded fallback print could replace the refusal. Upheld.
+  - Round 2: REFUSE. An unguarded `log.close()` could replace the refusal. Upheld. This was the same root mechanism twice, so the stop rule (KF-16) applied, and round 3 was a structural change rather than a spot patch.
+  - Round 3: ACCEPT on `bc7ed3b`.
+  - The sandbox cannot create temp directories, so owner-side CI on the landed SHA is the execution key.
+- **Post-hoc K6 on landed `68cc500`** (packet r2, Landing B2 as landed): ACCEPT. Its bytes equal the refresh output at `8883a5f`, and they differ from the keyed `61b1afb` only in `baseCommit`.
+- **Corrections to this morning's records:**
+  - There are **15** local-only branches by the containment test, not 13.
+  - `arbiter-request-delivery-r1`'s premise that "the owner-alternate path no longer works" cites no bus ruling. The owner-out-of-loop directive is machine-level (`~/.claude/CLAUDE.md`) and is not in `RULINGS.md`, `README.md` or `specs/`.
+- **K4:** the governor push run on the landed SHA; its Windows logs must show the per-worker lines. Subject 2, the fix targeting the binding worker's tests, is cut after that run.

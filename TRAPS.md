@@ -19571,3 +19571,16 @@ returned only the dictionary, and the only production-adapter test covered the t
 **What replaces the resume condition:** a K1/K6 subject (in flight) makes the runner name its binding worker and emit per-test durations, as instrumentation only, with no budget, shard or stop change. The fix is then cut against whatever the durations name. The candidate is `ruling-candidates/windows-governor-binding-worker-r1.md`, which supersedes packet r2's parked Windows resume condition; packet r2 itself is left untouched.
 
 **Re-derive:** `gh run view <id> --log | grep -E "Ran [0-9]+ tests? in|REFUSED"` on the governor runs.
+
+### TRAP (bus, 2026-09-29): a headless `claude -p` lane that backgrounds its long step exits with no commit and leaves orphan processes
+
+**Failure.** A K1 implementer lane ran as `claude -p --output-format json`. It started a roughly 10-minute shard measurement with the harness's background-task facility, then ended its turn to wait for the notification. A headless session exits when the turn ends, so nothing could wake it. The lane returned exit 0 with no commit and a result that read "the shard measurement is still running". The four measurement processes kept running as orphans.
+
+**Recovery that worked.** Resume the SAME session with `claude -p --resume <session-id>` and a message stating that it is headless, that background tasks are forbidden, and that the turn must not end until the commit exists. Context survived, and the lane committed about 9 minutes later. The orphans' output files were still usable.
+
+**The rules:**
+- Every headless lane brief states: "you are headless; never use background tasks or monitors; your turn ends only when the deliverable is committed."
+- A lane result of exit 0 is not a deliverable. Check `git log` in the lane worktree before keying anything.
+- Record the lane's session id at dispatch (it is in the JSON envelope) so a short-stop can be resumed rather than re-run.
+
+**A second finding from the same lane.** Its measurement also refuted the 2026-09-18 claim that "repartitioning the shards cannot help". That claim held only for the two indivisible anchors. `partition()` deals tests alternately into shards 2 and 3 in sorted order, so the three heaviest `ReviewResourceAdmissionR29Tests.test_current_*` tests land together in shard 2: 232.2 s, 75.8 s and 63.4 s, or 371 s of shard 2's 614.6 s locally. Shard 3 ran in 305.2 s. The imbalance is inside the 125/125 split, not between the anchors. Measured on an i9-13900KS; the CI runner differs, and the instrumented runner (754b37b) will name the binding worker on CI.
