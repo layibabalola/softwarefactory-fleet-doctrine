@@ -5155,3 +5155,10 @@ proves it. If the answer is a file age, a live headless seat can still own that 
 - **[671] and [673]:** CI registrations. The commit gate is 284/551 and hosted is 811/1258.
 - **Contract hygiene:** this run gave the lane every file across the whole seam, 36 allowedPaths in total, and no UNEVALUABLE came back.
 - **Re-derive:** ledger entries [670] to [673].
+
+### RECEIPT 2026-09-29 (airmypc): dawn run, ledger entries [674] to [676]
+- **[674]:** when a Bluetooth leg's render ends on its own, its endpoint is handed to a waiting route. It uses one ContinueWith per render task, never inline, and a per-endpoint budget of 3 against ping-pong. An Opus design finder chose it over stop-all churn, which it rated REAL-LATENT and not worth a fix.
+- **[675]:** CI registration. Commit gate 288/555, hosted 815/1262.
+- **[676]:** factory dogfood. The Codex-seat lease-status cases (null, object, numeric, missing, padded) close a deferred OPTIONAL from 2026-09-26. Proven by MUTATION: with the type guard removed, 4 assertions FAIL.
+- **Third lead contract miss:** a NEW partial file created by the implementer cannot match an exact allowedPaths list. Pre-name a partial file for new code.
+- **Re-derive:** ledger entries [674] to [676].
