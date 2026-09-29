@@ -5479,3 +5479,215 @@ MEASURED. Adobe-ingester commit a9045ea landed at 2026-09-29T20:04Z. It repairs 
   - Windows budget: a spend and running-stop decision for the owner (`CI-COST-CONTROL.md`).
 
 - **Hermetic-clock fix:** K1 headless `claude-opus-5-5` (session `94d2ebd0-cfd6-4bbe-8437-67c9844f66b1`), commit `b5c4994`. The stale-clock repro went from failures=41/errors=3 to 0; the suite passes both clean and stale (40 tests). K6 `gpt-6-sol`: ACCEPT. It confirmed that no assertion was removed and that no unintended call site reads the ambient clock.
+
+<!-- cloudvore-filing:2026-09-29-rclone-stored-hash-traps generated from review/doctrine-drafts/2026-09-29-rclone-stored-hash-traps.md at da841b4 -->
+
+## RECEIPTS
+
+Run on 2026-09-29 with rclone v1.74.4 on Windows 11 Pro 10.0.26200 under Git Bash (GNU bash 5.3) and
+Python 3.14, each script as printed above, from one directory in the session scratch area. Absolute
+scratch paths in rclone's messages are shortened to `<t1>` and `<t1d>` by a `sed` on the output; nothing
+else is edited. Other scratch paths are shortened to `<dir>`, and the CR bytes Python writes to a
+pipe on Windows are stripped.
+
+Each block was run with its default hooks, then with a GREEN setting, and T1, T1b and T2 also with a
+broken hook, as labelled. The whole sequence is this runner, run from the directory holding the scripts
+and the three T4 modules (`GV` is a GREEN `VERIFY`; `BAD` is a hook that errors on any input):
+```bash
+GV='R check --download "$1" "$2"'
+BAD='R check "$1" nosuchremote:'
+run(){ label=$1; shift; echo "== $label"; env "$@" 2>&1 | sed -E 's#//\?/C:/[^:]*/(t1d?)/#<\1>/#' | tr -d '\r'; }
+run "t1.sh (default VERIFY: plain check)" bash t1.sh
+run "t1.sh VERIFY=\"\$GV\"" VERIFY="$GV" bash t1.sh
+run "t1.sh VERIFY=\"\$BAD\" (a broken hook)" VERIFY="$BAD" bash t1.sh
+run "t1b.sh (defaults)" bash t1b.sh
+run "t1b.sh VERIFY=\"\$GV\"" VERIFY="$GV" bash t1b.sh
+run "t1b.sh PLANT='flip s-hs/canary.bin' (planted underneath, same size and mtime)" PLANT='flip s-hs/canary.bin' bash t1b.sh
+run "t1b.sh VERIFY=\"\$BAD\" (a broken hook)" VERIFY="$BAD" bash t1b.sh
+run "t1c.sh (run 1)" bash t1c.sh
+run "t1c.sh (run 2)" bash t1c.sh
+run "t2.sh (default VERIFY)" bash t2.sh
+run "t2.sh VERIFY=\"\$GV\"" VERIFY="$GV" bash t2.sh
+run "t2.sh VERIFY=\"\$BAD\" (a broken hook)" VERIFY="$BAD" bash t2.sh
+run "t3.sh (default AFTER_EDIT=:)" bash t3.sh
+run "t3.sh AFTER_EDIT='rc fscache/clear >/dev/null'" AFTER_EDIT='rc fscache/clear >/dev/null' bash t3.sh
+run "t4.sh (no CMP_MODULE)" bash t4.sh
+run "t4.sh CMP_MODULE=red_cmp.py (denylist: every key but token)" CMP_MODULE=red_cmp.py bash t4.sh
+run "t4.sh CMP_MODULE=green_cmp.py (allowlist: type, endpoint)" CMP_MODULE=green_cmp.py bash t4.sh
+run "t4.sh CMP_MODULE=type_cmp.py ENDPOINT_MATTERS=no (Cloudvore's shape)" CMP_MODULE=type_cmp.py ENDPOINT_MATTERS=no bash t4.sh
+run "t1d.sh" bash t1d.sh
+```
+
+The T4 comparator modules:
+```python
+# A denylist comparator: every key except `token`.
+def compare(before, after):
+    strip = lambda d: {n: {k: v for k, v in s.items() if k != "token"} for n, s in d.items()}
+    return strip(before) != strip(after)
+```
+```python
+# An allowlist comparator: compare only the keys the answer depends on (here: type and endpoint).
+KEYS = ("type", "endpoint")
+def compare(before, after):
+    names = set(before) | set(after)
+    return any(tuple(before.get(n, {}).get(k) for k in KEYS) != tuple(after.get(n, {}).get(k) for k in KEYS) for n in names)
+```
+```python
+# Cloudvore's shape for a non-local storage section: compare the backend type only.
+def compare(before, after):
+    names = set(before) | set(after)
+    return any(before.get(n, {}).get("type") != after.get(n, {}).get("type") for n in names)
+```
+
+The T1d script (not a test; the cache fixture could not be built here):
+```bash
+# T1d: the cache backend over a local folder
+rm -rf t1d; mkdir t1d; cd t1d; . ../dr-env.sh
+printf '%s\n' '[cch]' 'type = cache' "remote = $T/s-cch" > "$RCLONE_CONFIG"
+mk src/a.bin:200000 src/b.bin:3000000
+R copy src cch: 2>&1 | grep -v NOTICE | head -3
+echo "files that reached the store: $(ls s-cch 2>/dev/null | wc -l)"
+R check --download src cch: > dl.log 2>&1; rc=$?
+echo "check --download: exit $rc; ERROR lines $(grep -c ERROR dl.log); summary: $(grep -o '[0-9]* differences found' dl.log | sort -u | tr '\n' ' ')"
+```
+
+```
+== t1.sh (default VERIFY: plain check)
+control plain plain check: ERROR : big.bin: md5 differ|ERROR : small.bin: md5 differ|NOTICE: Failed to check with 2 errors: last error was: 2 differences found|NOTICE: Local file system at <t1>/s-plain: 2 differences found|
+control hs0  plain check: ERROR : big.bin: md5 differ|ERROR : small.bin: md5 differ|NOTICE: Failed to check with 2 errors: last error was: 2 differences found|NOTICE: hasher::hs0:: 2 differences found|
+hs   plain check: NOTICE: hasher::hs:: 0 differences found|NOTICE: hasher::hs:: 2 matching files|
+ck   plain check: NOTICE: Chunked 'ck:': 0 differences found|NOTICE: Chunked 'ck:': 2 matching files|
+cmp  plain check: NOTICE: Compressed: cmp:: 0 differences found|NOTICE: Compressed: cmp:: 2 matching files|
+plain  VERIFY -> GREEN: plain: refused flipped bytes
+hs0    VERIFY -> GREEN: hs0: refused flipped bytes
+hs     VERIFY -> RED: hs: passed flipped bytes
+ck     VERIFY -> RED: ck: passed flipped bytes
+cmp    VERIFY -> RED: cmp: passed flipped bytes
+ck small.bin also flipped, plain check: ERROR : small.bin: md5 differ|NOTICE: Chunked 'ck:': 1 differences found|NOTICE: Chunked 'ck:': 1 matching files|NOTICE: Failed to check: 1 differences found|
+== t1.sh VERIFY="$GV"
+control plain plain check: ERROR : big.bin: md5 differ|ERROR : small.bin: md5 differ|NOTICE: Failed to check with 2 errors: last error was: 2 differences found|NOTICE: Local file system at <t1>/s-plain: 2 differences found|
+control hs0  plain check: ERROR : big.bin: md5 differ|ERROR : small.bin: md5 differ|NOTICE: Failed to check with 2 errors: last error was: 2 differences found|NOTICE: hasher::hs0:: 2 differences found|
+hs   plain check: NOTICE: hasher::hs:: 0 differences found|NOTICE: hasher::hs:: 2 matching files|
+ck   plain check: NOTICE: Chunked 'ck:': 0 differences found|NOTICE: Chunked 'ck:': 2 matching files|
+cmp  plain check: NOTICE: Compressed: cmp:: 0 differences found|NOTICE: Compressed: cmp:: 2 matching files|
+plain  VERIFY -> GREEN: plain: refused flipped bytes
+hs0    VERIFY -> GREEN: hs0: refused flipped bytes
+hs     VERIFY -> GREEN: hs: refused flipped bytes
+ck     VERIFY -> GREEN: ck: refused flipped bytes
+cmp    VERIFY -> GREEN: cmp: refused flipped bytes
+ck small.bin also flipped, plain check: ERROR : small.bin: md5 differ|NOTICE: Chunked 'ck:': 1 differences found|NOTICE: Chunked 'ck:': 1 matching files|NOTICE: Failed to check: 1 differences found|
+== t1.sh VERIFY="$BAD" (a broken hook)
+INCONCLUSIVE: VERIFY does not accept an intact copy (plain:)
+== t1b.sh (defaults)
+canary fired: yes; rotted data.bin: passed
+RED: the canary fired, so the check looked sound, but the rot passed
+== t1b.sh VERIFY="$GV"
+canary fired: yes; rotted data.bin: refused
+GREEN: the rot was refused
+== t1b.sh PLANT='flip s-hs/canary.bin' (planted underneath, same size and mtime)
+canary fired: no; rotted data.bin: passed
+GREEN: the canary did not fire, so it exposed a check that passes rot (your VERIFY still passes rot: T1 is RED)
+== t1b.sh VERIFY="$BAD" (a broken hook)
+INCONCLUSIVE: VERIFY does not accept an intact copy (hs:)
+== t1c.sh (run 1)
+check before --download: NOTICE: hasher::hs:: 0 differences found|NOTICE: hasher::hs:: 2 matching files|
+check after  --download: ERROR : b.bin: md5 differ|NOTICE: Failed to check: 1 differences found|NOTICE: hasher::hs:: 1 differences found|NOTICE: hasher::hs:: 1 matching files|
+== t1c.sh (run 2)
+check before --download: NOTICE: hasher::hs:: 0 differences found|NOTICE: hasher::hs:: 2 matching files|
+check after  --download: ERROR : b.bin: md5 differ|NOTICE: Failed to check: 1 differences found|NOTICE: hasher::hs:: 1 differences found|NOTICE: hasher::hs:: 1 matching files|
+== t2.sh (default VERIFY)
+(a) store after edit: big.bin big.bin.rclone_chunk.001 big.bin.rclone_chunk.002 big.bin.rclone_chunk.003 
+(a) chunker, config edited   plain check: NOTICE: Chunked 'ck:': 0 differences found|NOTICE: Chunked 'ck:': 1 matching files|
+(a) VERIFY -> RED: ck: passed flipped bytes
+(b) hash DB files: local~hasher.bolt 
+(b) hasher renamed, sha1    plain check: NOTICE: hasher::hs2:: 0 differences found|NOTICE: hasher::hs2:: 1 matching files|
+(b) VERIFY -> RED: hs2: passed flipped bytes
+(b) control: fixture valid (a live hash caught the flip)
+== t2.sh VERIFY="$GV"
+(a) store after edit: big.bin big.bin.rclone_chunk.001 big.bin.rclone_chunk.002 big.bin.rclone_chunk.003 
+(a) chunker, config edited   plain check: NOTICE: Chunked 'ck:': 0 differences found|NOTICE: Chunked 'ck:': 1 matching files|
+(a) VERIFY -> GREEN: ck: refused flipped bytes
+(b) hash DB files: local~hasher.bolt 
+(b) hasher renamed, sha1    plain check: NOTICE: hasher::hs2:: 0 differences found|NOTICE: hasher::hs2:: 1 matching files|
+(b) VERIFY -> GREEN: hs2: refused flipped bytes
+(b) control: fixture valid (a live hash caught the flip)
+== t2.sh VERIFY="$BAD" (a broken hook)
+(a) store after edit: big.bin big.bin.rclone_chunk.001 big.bin.rclone_chunk.002 big.bin.rclone_chunk.003 
+INCONCLUSIVE: VERIFY does not accept an intact copy (ck:)
+== t3.sh (default AFTER_EDIT=:)
+prime                        : success=True differ=[]
+config/dump now says max_age : 0
+check after edit (same rcd)  : success=True differ=[]
+control, fresh CLI process   : caught the flip
+RED: the running rcd answered from the old config
+== t3.sh AFTER_EDIT='rc fscache/clear >/dev/null'
+prime                        : success=True differ=[]
+config/dump now says max_age : 0
+check after edit (same rcd)  : success=False differ=['big.bin']
+control, fresh CLI process   : caught the flip
+GREEN: the running rcd saw the edit
+== t4.sh (no CMP_MODULE)
+config/dump saw the simulated refresh: True
+case (should flag?)                         naive   table   type    
+refresh (token, token_expiry) (no)          flag!   quiet   quiet   
+write-back of a key the table lacks (no)    flag!   flag!   quiet   
+endpoint changed (yes)                      flag    flag    quiet!  
+backend type changed (yes)                  flag    flag    flag    
+'!' marks an answer that differs from the (should flag?) column
+== t4.sh CMP_MODULE=red_cmp.py (denylist: every key but token)
+config/dump saw the simulated refresh: True
+case (should flag?)                         naive   table   type    yours   
+refresh (token, token_expiry) (no)          flag!   quiet   quiet   flag!   
+write-back of a key the table lacks (no)    flag!   flag!   quiet   flag!   
+endpoint changed (yes)                      flag    flag    quiet!  flag    
+backend type changed (yes)                  flag    flag    flag    flag    
+'!' marks an answer that differs from the (should flag?) column
+RED: your comparator is wrong on 2 case(s)
+== t4.sh CMP_MODULE=green_cmp.py (allowlist: type, endpoint)
+config/dump saw the simulated refresh: True
+case (should flag?)                         naive   table   type    yours   
+refresh (token, token_expiry) (no)          flag!   quiet   quiet   quiet   
+write-back of a key the table lacks (no)    flag!   flag!   quiet   quiet   
+endpoint changed (yes)                      flag    flag    quiet!  flag    
+backend type changed (yes)                  flag    flag    flag    flag    
+'!' marks an answer that differs from the (should flag?) column
+GREEN: your comparator is right on every case
+== t4.sh CMP_MODULE=type_cmp.py ENDPOINT_MATTERS=no (Cloudvore's shape)
+config/dump saw the simulated refresh: True
+case (should flag?)                         naive   table   type    yours   
+refresh (token, token_expiry) (no)          flag!   quiet   quiet   quiet   
+write-back of a key the table lacks (no)    flag!   flag!   quiet   quiet   
+endpoint changed (no)                       flag!   flag!   quiet   quiet   
+backend type changed (yes)                  flag    flag    flag    flag    
+'!' marks an answer that differs from the (should flag?) column
+GREEN: your comparator is right on every case
+== t1d.sh
+2026/09/29 23:45:52 ERROR : a.bin: error refreshing object in : in cache fs Local file system at <t1d>/s-cch: object not found
+2026/09/29 23:45:52 ERROR : a.bin: Failed to copy: in cache fs Local file system at <t1d>/s-cch: object not found
+2026/09/29 23:45:52 ERROR : b.bin: error refreshing object in : in cache fs Local file system at <t1d>/s-cch: object not found
+files that reached the store: 0
+check --download: exit 4; ERROR lines 4; summary: 0 differences found 
+```
+
+`rclone backend features <remote>:` "Hashes" for T1's remotes (T1 "Measured here"), run in T1's directory
+after T1:
+```
+plain  Hashes: ['md5', 'sha1', 'whirlpool', 'crc32', 'sha256', 'sha512', 'blake3', 'xxh3', 'xxh128', 'dropbox', 'hidrive', 'mailru', 'quickxor']
+hs     Hashes: ['md5', 'sha1', 'whirlpool', 'crc32', 'sha256', 'sha512', 'blake3', 'xxh3', 'xxh128', 'dropbox', 'hidrive', 'mailru', 'quickxor']
+hs0    Hashes: ['md5', 'sha1', 'whirlpool', 'crc32', 'sha256', 'sha512', 'blake3', 'xxh3', 'xxh128', 'dropbox', 'hidrive', 'mailru', 'quickxor']
+ck     Hashes: ['md5']
+cmp    Hashes: ['md5']
+```
+
+Help text (T4 "Measured here"), read with `RCLONE_CONFIG` at a nonexistent file:
+```
+filefabric token_expiry: Don't set this value - rclone will set it automatically.
+filefabric version: Don't set this value - rclone will set it automatically.
+sugarsync authorization: Leave blank normally, will be auto configured by rclone.
+sugarsync user: Leave blank normally, will be auto configured by rclone.
+shade token_expiry: JWT Token Expiration time. Don't set this value - rclone will set it automatically
+protondrive client_uid: Client uid key (internal use only)
+protondrive client_access_token: Client access token key (internal use only)
+protondrive client_refresh_token: Client refresh token key (internal use only)
+protondrive client_salted_key_pass: Client salted key pass key (internal use only)
+```

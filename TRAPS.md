@@ -19825,3 +19825,440 @@ A three-seat adjudication (wf_cc533fca-dba) also showed that NO memo can satisfy
 Apply the stop rule at the META-class: after two refusals of "the cache misses an input", do not try a third cache on a different input.
 
 **Re-derive:** the Fix A record is on local branch `k1/subject2-part1-anchor-cost` (96aa465, fedf9c4); Fix B is on `k1/subject2-fixB` (c205f06). The key outputs are in the dispatching session's scratchpad.
+
+<!-- cloudvore-filing:2026-09-29-rclone-stored-hash-traps generated from review/doctrine-drafts/2026-09-29-rclone-stored-hash-traps.md at da841b4 -->
+
+# Draft for the fleet doctrine bus: Cloudvore, 2026-09-29 (rclone stored hashes, H73 packet B slice 2)
+
+These are observations from one project, Cloudvore, a Windows app that decides whether a source folder
+may be wiped by asking rclone whether a destination holds the same bytes. Nothing here instructs another
+project: each trap states what was measured here, what Cloudvore changed, how that was checked here, and a
+test another project can run if it wants to know whether it has the same trap.
+
+**Scope.** Every rclone behaviour below was measured with **rclone v1.74.4** (`os/version: Microsoft
+Windows 11 Pro 25H2`, kernel 10.0.26200.9550, x86_64) on one host, with a throwaway `RCLONE_CONFIG` and
+`RCLONE_CACHE_DIR`, LOCAL folders only, and no provider, OAuth endpoint or browser contacted. Other rclone
+versions, other platforms and real cloud backends were not tested. The runnable demonstrations are in each
+trap; their recorded output, from runs made for this draft on 2026-09-29, is in `## RECEIPTS`.
+
+**Sources.** Every commit cited is an ancestor of Cloudvore's `origin/master` at `ee05e6d`. H73 packet B
+slice 2: reviewed candidate `26f2eeb`, landed as merge `c53aa8d`, record `ee05e6d`; rounds cited by
+trap: r3 red `c8519a5`, r4 red `28e2159`, r7 red `1c26467`, r9 red `fc4f191` and fix `a1d2b69`, r10 red
+`a58ac34` and fix `78641f6`, r11 red `4e2802d` and fix `5619a85`. Measurements, rounds and residuals:
+`review/ledger-h73b-stored-hash-cap-2026-09-29.md` (12 rounds; two Opus seats with opposing briefs each
+round). Slice 1 (the verification cache trusts only a Verified run) is merge `c5eb7ad`; it is not filed
+here (see `## ROWS`).
+
+**Relation to the bus** (fleet doctrine `TRAPS.md` at `112e567`; line numbers re-checked there). Searched by mechanism: `rclone`,
+`hasher`, `chunker`, `compress`, `fscache`, `--download`, `stored hash`, `canary`, `rcd`, `config/dump`,
+`token_expiry`, `re-read`/`reload` of a config, `long-lived process`. The only rclone entry is
+"rclone opens the ENCODED name; Root reports the typed one" (`TRAPS.md:12188`, this project), a different
+mechanism. The nearest neighbours are named in each trap.
+
+## Shared preamble for the demonstrations
+
+Every block sources this from its parent directory. It points rclone at a config and cache inside the
+current directory, so nothing reads or writes the live `rclone.conf` or the default cache. `mk` writes
+random files; `flip` inverts one byte in the middle of a file and restores its mtime, so size and
+modification time are unchanged and only the bytes differ. Every rclone call runs under `timeout 120`.
+The scripts need bash (Git Bash on Windows), Python 3, coreutils `timeout` and rclone on `PATH`.
+
+**Hooks.** Each test prints `RED` or `GREEN` for YOUR implementation, which you supply through a hook; the
+defaults are bare rclone, so run unchanged they show the RED case on v1.74.4. `VERIFY` (T1, T1b, T2) is a
+shell command deciding "destination `$2` holds source `$1`", exit 0 meaning yes; it must use the exported
+`RCLONE_CONFIG` and `RCLONE_CACHE_DIR` (the fixture's). Each test first runs it once on the intact pair
+and stops with `INCONCLUSIVE: VERIFY does not accept an intact copy` unless it exits 0 there, so a hook
+that merely errors cannot read GREEN. `PLANT` (T1b) plants a
+canary your way; `AFTER_EDIT` (T3) is what your service does after a config change; `CMP_MODULE` (T4) is
+your config comparator. RECEIPTS show each block with its defaults and with a GREEN setting.
+
+```bash
+# dr-env.sh: throwaway rclone config and cache in $T; local folders only; no provider, no network.
+T=$(cygpath -m "$PWD")                                  # Git Bash; elsewhere T=$PWD
+export RCLONE_CONFIG="$T/rclone.conf" RCLONE_CACHE_DIR="$T/cache"
+R(){ timeout 120 rclone --config "$RCLONE_CONFIG" --cache-dir "$RCLONE_CACHE_DIR" "$@"; }
+mk(){ python - "$@" <<'PY'
+import os, sys
+for spec in sys.argv[1:]:
+    p, n = spec.rsplit(":", 1); os.makedirs(os.path.dirname(p) or ".", exist_ok=True)
+    open(p, "wb").write(os.urandom(int(n)))
+PY
+}
+flip(){ python - "$@" <<'PY'   # invert one byte mid-file, restore mtime: same size, same time, different bytes
+import os, sys
+for p in sys.argv[1:]:
+    st = os.stat(p)
+    with open(p, "r+b") as f:
+        f.seek(st.st_size // 2); b = f.read(1); f.seek(st.st_size // 2); f.write(bytes([b[0] ^ 0xFF]))
+    os.utime(p, ns=(st.st_atime_ns, st.st_mtime_ns))
+PY
+}
+# VERIFY: how YOUR tool decides "destination $2 holds source $1". Exit 0 means "same". Default: plain check.
+VERIFY=${VERIFY:-'R check "$1" "$2"'}
+verify(){ eval "$VERIFY" >/dev/null 2>&1; }
+# intact: run once on the INTACT pair, before any flip. A hook that cannot say "same" there proves nothing.
+intact(){ verify "$1" "$2" || { echo "INCONCLUSIVE: VERIFY does not accept an intact copy ($2)"; exit 3; }; }
+redgreen(){ if verify "$1" "$2"; then echo "RED: $2 passed flipped bytes"; else echo "GREEN: $2 refused flipped bytes"; fi; }
+verdict(){ grep -E "differences found|matching files|ERROR" | sed -E 's/^[0-9\/]+ [0-9:]+ //' | sort | tr '\n' '|' ; echo; }
+```
+
+Put `dr-env.sh` and each `t*.sh` in one empty directory and run `bash t1.sh` (and so on) from there. Each
+script makes its own subdirectory. T3 and T4 start an `rclone rcd` of their own on a fixed loopback port
+(`PORT` overrides it) and stop it with `core/quit`; they stop no other rclone process.
+
+## TRAPS
+
+### 1. `rclone check` without `--download` answered from STORED hashes for hasher, chunker composites and compress, so a same-size flip underneath passed; a canary planted through the wrapper cannot show it
+
+**Adds to the bus:** not found by mechanism (searched above). The nearest entries are about checks that
+cannot fail; none is about a hash that a backend stored rather than computed.
+
+- **Measured here (H73-B slice 2, ledger "Measurements"; re-run for this draft as T1).** With the
+  destination's bytes flipped and mtime restored, plain `check` reported **0 differences** for a caching
+  **hasher** (`max_age` unset), for **compress** (md5 from its `.json` sidecar), and for a **chunker**
+  composite (a file larger than `chunk_size`, with `hash_type = md5`); a chunker file below `chunk_size`
+  was hashed live and caught. A plain local folder (through `alias`) and a hasher with `max_age = 0` were
+  caught by plain `check`. `check --download` caught every case. `rclone backend features` listed md5 for
+  all three, so `check` did compare hashes; nothing in its output says the hash was stored.
+- **The canary (T1b).** A canary is planted to prove the check can fail. Planted *through* the wrapper,
+  its stored hash is computed from the planted bytes, so it is correct: in T1b `check` flagged the canary
+  (it "fired") and in the same run passed the file whose bytes had been flipped underneath. The canary
+  proves the comparison runs, not that the stored hash matches the bytes.
+- **Also seen, not characterised (T1c).** After one `check --download` over the flipped hasher, the next
+  plain `check` caught the 3 MB file but still passed the 200 KB file, in two runs. So a plain check's
+  answer can depend on whether a download pass ran before it. The mechanism was not investigated.
+- **cache backend.** The ledger records that the deprecated `cache` backend served stored hashes. The
+  re-run here could not reproduce the fixture: on this host `rclone copy` into a `cache` over a local
+  folder failed ("object not found") and no file reached the store, so no stored-hash result is claimed
+  for cache (T1d). T1d did measure one thing: `check --download` over that empty store logged 4 ERROR
+  lines and ended with `0 differences found`, with exit code 4. A reader that parses only the count
+  reads it as a pass; the exit code does not.
+- **What changed here** (`c53aa8d`). A destination chain is walked (alias, union, combine, every wrapper's
+  `remote=`) against an allowlist: real storage backends and alias/union/combine/crypt pass hashes through
+  live; a hasher unless `max_age` is zero, a chunker unless `hash_type = none`, compress, cache, and any
+  type this build does not know cap the verdict at Unverifiable. `--download` (byte-for-byte) runs are
+  exempt. The wording says the hashes ARE stored for compress and MAY be for the others.
+- **How it was checked here.** Red pins at `c8519a5` and `28e2159` (a chunker, a hasher listing only sha1,
+  cache and unknown wrappers reached Verified); planted mutants and a 3x identical green bar at `26f2eeb`
+  (ledger "Planted mutants", "Bar").
+- **Test another project can run (T1, T1b).** T1: replace the `[hs]`/`[ck]`/`[cmp]` sections with the
+  wrapper types your destinations use, keep `plain` and `hs0` as controls, set `VERIFY` to your
+  verification, and run. RED: `VERIFY` exits 0 (says "same") for a remote whose bytes were flipped. GREEN:
+  it refuses every one. The two `control` lines must report both flips; if they do not, the flip did not
+  happen and the run proves nothing. T1 flips only the chunker's composite; its last line then also flips
+  the chunker's small file, which a plain check catches (hashed live). T1b: set `PLANT` to your canary
+  planting and `VERIFY` to your check. It plants a wrong canary, checks, puts the canary right, rots a
+  data file underneath, and checks again. RED: the canary fired and the rot passed. GREEN: the rot was
+  refused, or the canary did not fire (it then exposed a check that passes rot; your VERIFY still passes
+  rot, so T1 is RED). With
+  `PLANT='flip s-hs/canary.bin'` (a canary planted underneath the wrapper, same size and mtime) the
+  canary does not fire under a plain check (RECEIPTS). T1c is an observation, not a test.
+
+```bash
+# T1: which wrappers answer a verification from a STORED hash (VERIFY hook: see dr-env.sh)
+rm -rf t1; mkdir t1; cd t1; . ../dr-env.sh
+cat > "$RCLONE_CONFIG" <<CONF
+[hs]
+type = hasher
+remote = $T/s-hs
+hashes = md5
+
+[hs0]
+type = hasher
+remote = $T/s-hs0
+hashes = md5
+max_age = 0
+
+[ck]
+type = chunker
+remote = $T/s-ck
+chunk_size = 1Mi
+hash_type = md5
+
+[cmp]
+type = compress
+remote = $T/s-cmp
+mode = gzip
+
+[plain]
+type = alias
+remote = $T/s-plain
+CONF
+mk src/small.bin:200000 src/big.bin:3000000
+for r in hs hs0 ck cmp plain; do R copy src $r: ; done
+R check src hs: >/dev/null 2>&1                           # a first check fills hasher's hash DB
+for r in plain hs0 hs ck cmp; do intact src $r:; done
+flip s-hs/small.bin s-hs/big.bin s-hs0/small.bin s-hs0/big.bin s-plain/small.bin s-plain/big.bin
+flip "s-ck/$(ls s-ck | grep 'big.bin.rclone_chunk.002')"          # chunker: only the 3-chunk composite
+for f in s-cmp/*; do case $f in *.json) ;; *) flip "$f";; esac; done
+for r in plain hs0; do printf 'control %-4s plain check: ' $r; R check src $r: 2>&1 | verdict; done   # must report both flips
+for r in hs ck cmp; do printf '%-4s plain check: ' $r; R check src $r: 2>&1 | verdict; done
+for r in plain hs0 hs ck cmp; do printf '%-6s VERIFY -> ' $r; redgreen src $r:; done
+flip s-ck/small.bin                                       # chunker, a file below chunk_size (one plain file)
+printf 'ck small.bin also flipped, plain check: '; R check src ck: 2>&1 | verdict
+```
+
+```bash
+# T1b: a corruption canary planted THROUGH the wrapper fires, yet rot underneath passes.
+# PLANT hook: how YOUR tool plants a canary file ($1 = local file to plant as canary.bin on the destination).
+rm -rf t1b; mkdir t1b; cd t1b; . ../dr-env.sh
+PLANT=${PLANT:-'R copyto "$1" hs:canary.bin'}
+plant(){ eval "$PLANT"; }
+printf '[hs]\ntype = hasher\nremote = %s/s-hs\nhashes = md5\n' "$T" > "$RCLONE_CONFIG"
+mk src/data.bin:300000 src/canary.bin:50000 canary-planted.bin:50000
+R copy src hs:; R check src hs: >/dev/null 2>&1                  # fill the hash DB
+intact src hs:
+plant canary-planted.bin                                          # wrong bytes, planted your way
+if verify src hs:; then fired=no; else fired=yes; fi
+plant src/canary.bin                                              # canary put right again, your way
+flip s-hs/data.bin                                                # real at-rest rot, same size and mtime
+if verify src hs:; then rot=passed; else rot=refused; fi
+echo "canary fired: $fired; rotted data.bin: $rot"
+case $fired:$rot in
+  yes:passed)  echo "RED: the canary fired, so the check looked sound, but the rot passed" ;;
+  yes:refused) echo "GREEN: the rot was refused" ;;
+  no:passed)   echo "GREEN: the canary did not fire, so it exposed a check that passes rot (your VERIFY still passes rot: T1 is RED)" ;;
+  no:refused)  echo "INCONCLUSIVE: the rot was refused but the canary did not fire" ;;
+esac
+```
+
+```bash
+# T1c: does a --download pass change what the next plain check answers?
+rm -rf t1c; mkdir t1c; cd t1c; . ../dr-env.sh
+printf '[hs]\ntype = hasher\nremote = %s/s-hs\nhashes = md5\n' "$T" > "$RCLONE_CONFIG"
+mk src/a.bin:200000 src/b.bin:3000000
+R copy src hs:; R check src hs: >/dev/null 2>&1
+flip s-hs/a.bin s-hs/b.bin
+printf 'check before --download: '; R check src hs: 2>&1 | verdict
+R check --download src hs: >/dev/null 2>&1
+printf 'check after  --download: '; R check src hs: 2>&1 | verdict
+```
+
+### 2. Stored hashes outlive the config lines that created them, so judging a wrapper by today's config is unsound
+
+**Adds to the bus:** not found by mechanism (searched above, plus `config history`, `persist`).
+
+- **Measured here (H73-B slice 2 r3 and r4; re-run as T2).** (a) A chunker written with `chunk_size = 1Mi`
+  and `hash_type = md5`, then edited to name neither: its composites and their stored md5 stayed on disk
+  and still answered; a flipped chunk passed plain `check`. The ledger also records an `md5all` composite
+  switched to `md5` behaving the same way. (b) A hasher's hash database is one file per BASE backend,
+  named after the base (`local~hasher.bolt` in `RCLONE_CACHE_DIR/kv`), not after the section. A database
+  filled under `[hs] hashes = md5`, then read through a renamed section `[hs2] hashes = sha1` over the same
+  folder, still answered md5 from storage and passed the flip. Control: a hasher that never stored md5,
+  also `hashes = sha1`, over another folder read md5 live and caught the flip.
+- **What changed here** (`c53aa8d`). The size rule was dropped: a chunker caps unless `hash_type = none`,
+  whatever its `chunk_size` or its files' sizes, and a hasher caps unless `max_age` is zero, whatever its
+  `hashes` list. The explanation says Cloudvore cannot tell which files were answered from storage.
+- **How it was checked here.** `c8519a5` inverted two earlier pins that had asserted Verified for a chunker
+  whose files were all below today's chunk size ("the r2 pins that asserted Verified pinned the false
+  green"); `28e2159` did the same for a hasher listing only sha1.
+- **Test another project can run (T2).** Set `VERIFY` as in T1. RED: arm (a) or (b) prints `RED` (your
+  verification said "same" over flipped bytes). GREEN: both print `GREEN`. The (b) control line must read
+  `fixture valid`; if it does not, the fixture is wrong and the arms prove nothing.
+
+```bash
+# T2: stored hashes outlive the config lines that created them (VERIFY hook: see dr-env.sh)
+rm -rf t2; mkdir t2; cd t2; . ../dr-env.sh
+mk src/big.bin:3000000
+conf(){ printf '%s\n' "$@" > "$RCLONE_CONFIG"; }
+# (a) chunker: written with chunk_size 1Mi + md5; today's config has neither
+conf '[ck]' 'type = chunker' "remote = $T/s-ck" 'chunk_size = 1Mi' 'hash_type = md5'
+R copy src ck:
+conf '[ck]' 'type = chunker' "remote = $T/s-ck"                 # today's config: defaults (2Gi, md5)
+echo "(a) store after edit: $(ls s-ck | tr '\n' ' ')"
+intact src ck:
+flip "s-ck/$(ls s-ck | grep 'rclone_chunk.002')"
+printf '(a) chunker, config edited   plain check: '; R check src ck: 2>&1 | verdict
+printf '(a) VERIFY -> '; redgreen src ck:
+# (b) hasher: DB filled under hashes=md5, remote renamed and hashes changed to sha1 only
+conf '[hs]' 'type = hasher' "remote = $T/s-hs" 'hashes = md5'
+R copy src hs:; R check src hs: >/dev/null 2>&1
+echo "(b) hash DB files: $(ls cache/kv 2>/dev/null | tr '\n' ' ')"
+conf '[hs2]' 'type = hasher' "remote = $T/s-hs" 'hashes = sha1'
+intact src hs2:
+flip s-hs/big.bin
+printf '(b) hasher renamed, sha1    plain check: '; R check src hs2: 2>&1 | verdict
+printf '(b) VERIFY -> '; redgreen src hs2:
+# (b) fixture control: a hasher that never stored md5, hashes=sha1: plain check must catch the flip
+conf '[hsx]' 'type = hasher' "remote = $T/s-hsx" 'hashes = sha1'
+R copy src hsx:; R check src hsx: >/dev/null 2>&1; flip s-hsx/big.bin
+if R check src hsx: >/dev/null 2>&1; then echo "(b) control: INVALID FIXTURE (plain check missed a live flip)"; else echo "(b) control: fixture valid (a live hash caught the flip)"; fi
+```
+
+### 3. A long-lived `rclone rcd` keeps the Fs it built from the OLD config after the file changes, while `config/dump` already shows the new one
+
+**Adds to the bus:** extends "A long-lived process keeps the time zone it started with"
+(`TRAPS.md:17556`, this project), which is about an environment value read once at start. Here two
+readers in one process disagree: `config/dump` reads the file as it is now, and `operations/check` uses a
+cached Fs built from the file as it was.
+
+- **Measured here (H73-B slice 2 r6/r7, ledger "Measurements"; re-run as T3).** One `rcd`; a caching hasher
+  checked once; its bytes flipped; its section edited to `max_age = 0` (the remedy). `config/dump` then
+  showed `max_age = 0`, and the next `operations/check` on the same rcd still returned `success=True`
+  with no differences. After `fscache/clear` it returned `differ=['big.bin']`. A new `rclone check` process
+  with the same config file also caught it. rclone's own flag help gives the cache lifetime:
+  `--fs-cache-expire-duration` "Cache remotes for this long (0 to disable caching) (default 5m0s)",
+  checked every `--fs-cache-expire-interval` (default 1m0s). The expiry itself was not timed here.
+- **What changed here** (`1c26467` red, fixed within `c53aa8d`). Cloudvore keeps one rcd for the app's
+  lifetime. Before every verify phase and before the scan's check it calls `fscache/clear` with a time
+  limit (a failure caps the verdict), re-derives the destination facts it had cached itself, reads
+  `config/dump`, and reads the dump again at the verdict; a changed chain caps as configuration changed.
+- **How it was checked here.** At `1c26467` a fake that models rclone's Fs cache made three pins fail: a
+  user who applied the remedy and re-verified got SAFE TO WIPE on flipped bytes; a config edited during the
+  check reached Verified; a failed `fscache/clear` reached Verified.
+- **Residual recorded here (ledger (a)).** Another caller on the same rcd can build an Fs from the old
+  config after this job's clear; an A->B->A edit between the two dump reads is invisible. Read, not
+  reproduced.
+- **Test another project can run (T3).** Set `AFTER_EDIT` to what your service does after a config
+  change (it may call the script's `rc` function). RED: the check after the edit reads `success=True`
+  while the fresh-process control catches the flip. GREEN: it reports the difference. With the default
+  (`:`, nothing) it is RED; with `AFTER_EDIT='rc fscache/clear >/dev/null'` it is GREEN (RECEIPTS). The
+  fresh-process control runs after `core/quit`, so the running rcd no longer holds the hash database.
+
+```bash
+# T3: a long-lived `rclone rcd` keeps using the Fs built from the OLD config after the file changes.
+# AFTER_EDIT hook: what YOUR service does after a config change, before the next check (default: nothing).
+rm -rf t3; mkdir t3; cd t3; . ../dr-env.sh
+AFTER_EDIT=${AFTER_EDIT:-:}
+PORT=${PORT:-55731}; URL="http://127.0.0.1:$PORT/"
+printf '%s\n' '[hs]' 'type = hasher' "remote = $T/s-hs" 'hashes = md5' > "$RCLONE_CONFIG"   # caching (max_age unset)
+mk src/big.bin:3000000
+R copy src hs:
+R rcd --rc-addr 127.0.0.1:$PORT --rc-no-auth > rcd.log 2>&1 &
+for i in $(seq 50); do timeout 120 rclone rc --url $URL rc/noop >/dev/null 2>&1 && break; python -c 'import time; time.sleep(0.2)'; done
+rc(){ timeout 120 rclone rc --url $URL "$@" 2>&1; }
+chk(){ rc operations/check srcFs="$T/src" dstFs=hs: | python -c 'import json,sys; d=json.load(sys.stdin); print("success=%s differ=%s" % (d.get("success"), d.get("differ")))'; }
+printf 'prime                        : '; chk
+flip s-hs/big.bin
+printf '%s\n' '[hs]' 'type = hasher' "remote = $T/s-hs" 'hashes = md5' 'max_age = 0' > "$RCLONE_CONFIG"   # the remedy: read live
+printf 'config/dump now says max_age : '; rc config/dump | python -c 'import json,sys; print(json.load(sys.stdin)["hs"].get("max_age"))'
+eval "$AFTER_EDIT"
+after=$(chk); echo "check after edit (same rcd)  : $after"
+rc core/quit >/dev/null; wait
+if R check src hs: >/dev/null 2>&1; then ctl=missed; else ctl=caught; fi
+echo "control, fresh CLI process   : $ctl the flip"
+case "$ctl:$after" in
+  caught:success=True*) echo "RED: the running rcd answered from the old config" ;;
+  caught:*)             echo "GREEN: the running rcd saw the edit" ;;
+  *)                    echo "INCONCLUSIVE: the fresh-process control did not catch the flip" ;;
+esac
+```
+
+### 4. rclone writes session state back into the config at runtime, so a before/after comparison of the config across a long run raises false alarms, and a per-key exemption table does not close them
+
+**Adds to the bus:** extends "a CLI that rewrites its own auth file on every run makes that file's
+timestamp useless as a re-login signal" (`TRAPS.md:16386`, agent-bridge), which is about the file's
+TIMESTAMP. This is about its CONTENT: a comparison of `config/dump` across an operation, the rclone keys
+involved, and why a table of those keys was not enough here.
+
+- **Measured here.** rclone v1.74.4's own help text (`rclone help backend <name>`, read locally) says of
+  filefabric `token_expiry` and `version`: "Don't set this value - rclone will set it automatically"; of
+  sugarsync `authorization` and `user`: "Leave blank normally, will be auto configured by rclone"; of
+  shade `token_expiry`: "Don't set this value - rclone will set it automatically"; and marks all four
+  protondrive keys `client_uid`, `client_access_token`, `client_refresh_token` and
+  `client_salted_key_pass` "(internal use only)". The ledger adds, from the seats' reading of rclone's
+  source, OAuth `token` for dropbox, onedrive, drive, box and pcloud, and sugarsync
+  `authorization_expiry`. **No real refresh was observed here**: that would contact a provider. T4 shows the other half: `config/dump`
+  on a running rcd reflects a write to the file (simulated by editing it), so any such write lands in a
+  before/after comparison.
+- **What happened here.** r9 (`fc4f191`, `a1d2b69`) exempted `token`; r10 (`a58ac34`, `78641f6`) replaced
+  that with a per-type table of write-back keys; the r10 review refused it (a shade `token_expiry`
+  refresh, the third round of the same class). r11 (`4e2802d`, `5619a85`) deleted the table: for an
+  allowlisted non-local storage backend, the two questions Cloudvore's comparison answers (are hashes
+  live, does a local root overlap the source) depend only on its type, so such a section is compared by
+  type only; local and every wrapper, virtual or unknown section are compared by all keys with no
+  exemptions. The ledger lists iclouddrive `cookies`/`trust_token` and pikpak `captcha_token` as
+  unconfirmed write-backs that a table would have had to guess about (residual (f)).
+- **Test another project can run (T4).** Set `CMP_MODULE` to a Python file defining
+  `compare(before, after)` over two `config/dump` dicts (True means changed); it becomes the `yours`
+  column. Set `ENDPOINT_MATTERS=no` if your answer does not depend on a storage section's endpoint (as for
+  Cloudvore's hash question). RED: the `yours` column carries any `!`. GREEN: none does. RECEIPTS run a
+  denylist (every key but `token`: RED), an allowlist of the keys the answer depends on (`type`,
+  `endpoint`: GREEN), and Cloudvore's type-only shape with `ENDPOINT_MATTERS=no` (GREEN); all three
+  modules are printed there. The built-in `table` column shows why a table of write-back keys is fragile:
+  it is quiet only for keys someone listed (`session_hint` stands in for a key a table lacks).
+
+```bash
+# T4: config/dump is read from the file live, so a runtime session write lands in a before/after comparison.
+# Only config/dump is called: no Fs is built for the OAuth-type section and nothing is contacted. The runtime
+# write is SIMULATED by editing the file, because a real refresh would contact a provider.
+# CMP_MODULE: optional path to YOUR comparator, a Python file defining compare(before, after) -> True if changed,
+# over two config/dump dicts. ENDPOINT_MATTERS=no if your answer does not depend on a storage endpoint.
+if [ -n "${CMP_MODULE:-}" ]; then                 # resolve YOUR module's path before the cd below
+  CMP_MODULE=$(realpath "$CMP_MODULE") || exit 1
+  command -v cygpath >/dev/null && CMP_MODULE=$(cygpath -m "$CMP_MODULE")   # Windows Python needs C:/...
+fi
+rm -rf t4; mkdir t4; cd t4; . ../dr-env.sh
+PORT=${PORT:-55732}; URL="http://127.0.0.1:$PORT/"
+w(){ { printf '%s\n' '[dst]' 'type = shade'; printf '%s\n' "$@"; } > "$RCLONE_CONFIG"; }
+dump(){ timeout 120 rclone rc --url $URL config/dump > "$1"; }
+w 'token = {"access_token":"A1"}' 'token_expiry = 2026-09-29T10:00:00Z'
+R rcd --rc-addr 127.0.0.1:$PORT --rc-no-auth > rcd.log 2>&1 &
+for i in $(seq 50); do timeout 120 rclone rc --url $URL rc/noop >/dev/null 2>&1 && break; python -c 'import time; time.sleep(0.2)'; done
+dump before.json
+w 'token = {"access_token":"A2"}' 'token_expiry = 2026-09-29T11:00:00Z';                         dump refresh.json
+w 'token = {"access_token":"A2"}' 'token_expiry = 2026-09-29T11:00:00Z' 'session_hint = x';     dump unlisted.json
+w 'token = {"access_token":"A2"}' 'token_expiry = 2026-09-29T11:00:00Z' 'endpoint = https://other.example.test'; dump endpoint.json
+w 'type = s3' 'token = {"access_token":"A2"}';                                                    dump retyped.json
+timeout 120 rclone rc --url $URL core/quit >/dev/null; wait
+CMP_MODULE=${CMP_MODULE:-} ENDPOINT_MATTERS=${ENDPOINT_MATTERS:-yes} python - <<'PY'
+import json, os, importlib.util
+L = lambda f: json.load(open(f))
+b = L("before.json")
+print("config/dump saw the simulated refresh:", b["dst"]["token"] != L("refresh.json")["dst"]["token"])
+TABLE = {"*": {"token"}, "shade": {"token_expiry"}}          # a per-type table of known write-back keys
+def naive(x, y): return x != y
+def table(x, y):
+    t = x["dst"].get("type"); skip = TABLE["*"] | TABLE.get(t, set())
+    f = lambda d: {k: v for k, v in d["dst"].items() if k not in skip}
+    return f(x) != f(y)
+def type_only(x, y): return x["dst"].get("type") != y["dst"].get("type")
+cmps = [("naive", naive), ("table", table), ("type", type_only)]
+if os.environ["CMP_MODULE"]:
+    spec = importlib.util.spec_from_file_location("yours", os.environ["CMP_MODULE"])
+    mod = importlib.util.module_from_spec(spec); spec.loader.exec_module(mod); cmps.append(("yours", mod.compare))
+ep = os.environ["ENDPOINT_MATTERS"] == "yes"
+cases = [("refresh (token, token_expiry)", "refresh.json", False),
+         ("write-back of a key the table lacks", "unlisted.json", False),
+         ("endpoint changed", "endpoint.json", ep),
+         ("backend type changed", "retyped.json", True)]
+print("%-44s" % "case (should flag?)" + "".join("%-8s" % n for n, _ in cmps))
+bad = {n: 0 for n, _ in cmps}
+for name, f, want in cases:
+    a = L(f); row = ""
+    for n, cmp in cmps:
+        got = bool(cmp(b, a)); bad[n] += got != want
+        row += "%-8s" % (("flag" if got else "quiet") + ("" if got == want else "!"))
+    print("%-44s" % (name + (" (yes)" if want else " (no)")) + row)
+print("'!' marks an answer that differs from the (should flag?) column")
+if "yours" in bad: print("RED: your comparator is wrong on %d case(s)" % bad["yours"] if bad["yours"] else "GREEN: your comparator is right on every case")
+PY
+```
+
+## NOT FILED
+
+- **Path-prefix attribution by substring (Cloudvore O11, merge `3e850de`).** `C:\code\Conjugal` matched
+  inside `C:\code\Conjugal-ui`; fixed by matching only at a path boundary. Dropped: the bus already has
+  the mechanism, a prefix match with no boundary promotes an unknown extension of a known token
+  ("First-prefix-wins status matching fails open on every unknown extension of a known token",
+  `TRAPS.md:6659`; and "A string that is a strict prefix of another cannot be found missing",
+  `TRAPS.md:15404`). A path is one more instance.
+- A connection-string override (`mylocal,type=hasher,...:`) opens a caching hasher over a section typed
+  `local` (ledger "Measurements"). Not re-measured for this draft.
+- Cloudvore's allowlist contents, the `HashSource` tri-state, the verdict wording, and the MHL refusal.
+
+## ROWS
+
+Every row landed on Cloudvore `origin/master` (first parent) since the previous publication source
+`d9603dd`, at `ee05e6d`:
+
+| Row | Landing | Disposition |
+|---|---|---|
+| H73 packet B slice 2 | merge `c53aa8d` (candidate `26f2eeb`, record `ee05e6d`) | **Covered by this filing**, traps 1-4. |
+| H65 | merge `e993782` | **Covered by an existing bus entry:** "'The newest file' chosen by local write time picked a dead feed across the fall-back" (`TRAPS.md:17971`, Cloudvore 2026-09-28). H65 applies the same UTC write-time pick to the two remaining readers. |
+| H66 | merge `dc597ae` | **Covered by existing bus entries:** "A file-age gate written as one expression read the clock first" (`TRAPS.md:17765`) and "A file-age gate did not fix a WINDOW reader across the fall-back" (`TRAPS.md:17782`), both Cloudvore 2026-09-28. H66 adds the UTC write age to the sampler. |
+| H68 | merge `7b7c776` | **Covered by existing bus entries:** `TRAPS.md:17765` (write time read before the clock, a future bound) and the future-dated-sample rule at `TRAPS.md:3927` (adversarialllm, 2026-09-02: a future-dated sample is not evidence of health). |
+| O11 | merge `3e850de` | **Covered by existing bus entries** `TRAPS.md:6659` and `TRAPS.md:15404` (see NOT FILED). |
+| H73 packet B slice 1 | merge `c5eb7ad` (record `8818e4a`) | **Held.** The mechanism (a cache written by a run whose verdict was not positive is later trusted) was not found on the bus by mechanism, but its residual H75 (records written before `c5eb7ad` carry no verdict provenance and are still trusted) is open; file slice 1 with H75's remedy when H75 lands. |
+| H75, H76 | cut in `8818e4a` and `ee05e6d`; READY, not landed | **Held** until landed. |
+| (no row) | `fbac580`, `52071ee`, `88800db`, `68aac23` | Doctrine records, not product rows: the K45 and K50 draft merges and their publication acks; already on the bus at `63ca737` and `1d93f91`. |
