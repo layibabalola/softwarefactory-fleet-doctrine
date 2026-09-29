@@ -5454,3 +5454,28 @@ MEASURED. Adobe-ingester commit a9045ea landed at 2026-09-29T20:04Z. It repairs 
   anchor0 gains only on its graph load, because its remaining reads are in frozen code.
 - **K6:** `codex exec -s read-only -m gpt-6-sol`, ACCEPT on `a5be501`. It judged the disclosed residual explicitly: a mid-call repository rebind is not a weakening, because the parent had no per-read git-dir check during a call.
 - **K4:** the governor push run on the landed SHA. The runner's per-worker lines are the evidence. Close condition (candidate `windows-governor-binding-worker-r1`): the binding Windows worker stays under 85% of `worker_budget()` on 3 consecutive master Windows jobs.
+
+## RECEIPT (bus, 2026-09-29, late): Fix C on CI -- governor 4/4 green; the binding worker is now the frozen anchors; the Windows card is blocked on rulings
+
+- **Governor on `db07cad`** (run 36633578361): 4/4 green. Windows timings:
+
+  | Cell | anchor0 | anchor1 | 125-test shard |
+  |---|---|---|---|
+  | 3.13 | 666.3 s | 655.4 s | 600.3 s |
+  | 3.14 | 649.3 s | 630.9 s | 593.3 s |
+
+  The budget is about 709 s, so the binding worker is anchor0 at about 94%. The close condition (under 85% on 3 consecutive jobs) is NOT met.
+- **Normalised reading.** This runner was slow: the anchors ran 11-17% above the 1b942ab baseline, and the anchors run frozen code that Fix C does not touch. The shard held flat (597.7 -> 600.3 s), and its heavy git-bound tests left its top-3: `test_current_real_verifier_...` at 90.2 s and `test_current_descriptor_pipeline_...` at 37.8 s. A per-runner normalisation suggests some shard gain, but one run cannot separate that from variance, so no gain is claimed.
+- **Measurement-host lesson.** The local gain (shard 826 -> 346 s) overstated the CI gain several-fold. The local repo holds 5,194 loose objects, which make every git read expensive, while CI's fresh checkout is packed. Local timings of git-bound work are valid only on a packed clone. Run `git count-objects -v` before trusting them.
+- **Correction: the governor red on `fd49523` (run 36625284214, windows 3.14) was NOT margin.**
+  - The worker step PASSED: anchor 708.4 s, 125 tests OK.
+  - The failing step was "Run Windows census and containment controls". The runner unit tests landed in `1b942ab` read the ambient CI job clock (`UNIVERSAL_JOB_STARTED_UNIX`). Late in the job, `worker_budget()` refused first with `INSUFFICIENT_JOB_CLEANUP_RESERVE`, and the tests reported false refusal-ordering failures.
+  - Reproduced locally with a stale clock: failures=41, errors=3.
+  - The dispatcher's chat status had called this run a margin failure. That was wrong: the step-level failure was not read before a cause was named, which breaks the stacked-causes rule.
+  - The fix, RUNNER-TESTS-JOB-CLOCK-HERMETIC-1 (test-only), ships as its own K1/K6 subject in this push.
+- **Fix C on CI, restated honestly.** The anchor worker ran 585/589 s (1b942ab), 583/708 s (fd49523) and 649/666 s (db07cad). The binding worker did not measurably move, and the 4/4 green on db07cad is within runner variance. A green log cannot show the close condition either, because `budget_seconds` is emitted only on the refusal path.
+- **Remaining levers.** Both need a ruling, not chat:
+  - `ruling-candidates/validation-memo-threat-model-r1.md`, Fix A, the largest CPU lever. It applies to the frozen anchors only through a shim around the frozen run, which needs a separate adjudication.
+  - Windows budget: a spend and running-stop decision for the owner (`CI-COST-CONTROL.md`).
+
+- **Hermetic-clock fix:** K1 headless `claude-opus-5-5` (session `94d2ebd0-cfd6-4bbe-8437-67c9844f66b1`), commit `b5c4994`. The stale-clock repro went from failures=41/errors=3 to 0; the suite passes both clean and stale (40 tests). K6 `gpt-6-sol`: ACCEPT. It confirmed that no assertion was removed and that no unintended call site reads the ambient clock.
