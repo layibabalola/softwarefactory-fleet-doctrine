@@ -5726,3 +5726,252 @@ Re-derive:
 
 **Falsifier:** run `python -m tools.repo_hygiene.k9_witness tree HEAD`, expect `verdict=PASS`, exit 0. Commit a K9 row naming a nonexistent path, expect `failed=C3`, exit 1. Delete a loose spine or pointer blob, expect exit 2.
 <!-- outbox:d19de9e78ba860d3 mlv-app:e65db1d11ca8 -->
+
+<!-- cloudvore-filing:2026-09-30-rclone-placement-traps generated from review/doctrine-drafts/2026-09-30-rclone-placement-traps.md at 1fb09ba -->
+
+## RECEIPTS
+
+Run on 2026-09-30 with rclone v1.74.4 on Windows 11 Pro 10.0.26200 under Git Bash and Python 3.14. Scratch
+paths are shortened to `<dir>` (and `<t>` inside T4's labels), the Python interpreter's full path to
+`<python>`, and the process ids in T5's lines to `<pid>`; CR bytes Python writes to a pipe on Windows are
+stripped; nothing else is edited.
+Every block, `runall.sh` and `place.py` were then extracted from this draft's text into a fresh directory and
+the runner was run again: the output was identical.
+
+The GREEN sample reader used as `PLACE` (run from inside each test directory):
+```python
+# place.py SRC DEST: a POSITIVE placement reader. Exit 0 only if every leaf is placed and none is the source.
+# A sample GREEN implementation for the PLACE hook in this draft; not Cloudvore's code.
+import json, os, re, subprocess, sys
+sys.stdout.reconfigure(encoding="utf-8", errors="backslashreplace")
+src = os.path.normcase(os.path.abspath(sys.argv[1]))
+dump = subprocess.run(["rclone", "config", "dump"], capture_output=True, text=True, encoding="utf-8", timeout=120)
+conf = json.loads(dump.stdout)                          # no dump: crash, never "nothing configured"
+HERE = {"localhost", "127.0.0.1", "::1", "[::1]", "0.0.0.0"}
+WRAP = {"alias", "hasher", "chunker", "compress", "crypt", "cache"}
+SERVER = {"webdav": "url", "http": "url", "sftp": "host", "ftp": "host", "smb": "host"}
+STORAGE = {"s3", "drive", "dropbox", "onedrive", "b2", "box", "pcloud"}   # extend with your own allowlist
+
+
+class Unplaced(Exception):
+    pass
+
+
+def host_here(h):
+    try:
+        h = h.encode("idna").decode().lower()            # UTS 46-style mapping: fullwidth, soft hyphen, U+3002
+    except UnicodeError:
+        raise Unplaced("IDNA refuses the host %r" % h)
+    return h in HERE or h.endswith(".localhost")
+
+
+def leaf_path(p):
+    if not re.match(r"^([A-Za-z]:[\\/]|[\\/]{2})", p):
+        raise Unplaced("not an absolute path: %r" % p)
+    r = os.path.normcase(os.path.abspath(p))
+    if r == src or r.startswith(src + os.sep) or src.startswith(r + os.sep):
+        raise Unplaced("overlaps the source: %r" % p)
+
+
+def walk(spec, depth=0):
+    if depth > 10:
+        raise Unplaced("chain too deep")
+    m = re.match(r"^([^:/\\]{2,}):(.*)$", spec)          # a remote name has 2+ characters; 'C:' is a drive
+    if not m:
+        return leaf_path(spec)
+    name, rest = m.groups()
+    if "," in name:
+        raise Unplaced("connection-string override: %r" % spec)
+    sec = conf.get(name)
+    if sec is None:
+        raise Unplaced("no section %r" % name)
+    t = sec.get("type")
+    if t == "local":
+        return leaf_path(rest)
+    if t in WRAP:
+        return walk(sec.get("remote", "").rstrip("/") + ("/" + rest if rest else ""), depth + 1)
+    if t in ("union", "combine"):
+        ups = sec.get("upstreams", "").split()
+        if not ups:
+            raise Unplaced("no upstreams")
+        for u in ups:
+            walk(re.sub(r":(ro|nc|writeback)$", "", u), depth + 1)
+        return
+    if t in SERVER:
+        v = sec.get(SERVER[t], "")
+        h = re.sub(r"^[a-z]+://", "", v).split("/")[0].rsplit(":", 1)[0] if SERVER[t] == "url" else v
+        if not h or host_here(h):
+            raise Unplaced("a server on this computer, or no host: %r" % v)
+        return
+    if t in STORAGE:
+        return
+    raise Unplaced("type not recognised: %r" % t)
+
+
+try:
+    walk(sys.argv[2])
+    sys.exit(0)
+except Unplaced as e:
+    print("refused:", e)
+    sys.exit(10)
+```
+
+The runner that produced the output below (`GP` is the GREEN setting; the others are a hook that refuses
+everything, a hook that allows only local paths and so refuses every remote, a hook that crashes, and T5 with
+a missing `SCAN_DIR`, an empty one, and a clean one):
+```bash
+GP='python ../place.py "$1" "$2"'                 # the GREEN sample reader (the scripts run inside t1/..t4/)
+LOCALONLY='case "$2" in ?:/*) exit 0;; *) exit 10;; esac'   # allows only absolute local paths: refuses every remote
+run(){ label=$1; shift; echo "== $label"; env "$@" 2>&1 | tr -d '\r'; }
+for t in t1 t2 t3 t4; do
+  run "$t.sh (default PLACE)" bash $t.sh
+  run "$t.sh PLACE=\"\$GP\"" PLACE="$GP" bash $t.sh
+done
+run "t1.sh PLACE='exit 10' (a hook that refuses everything)" PLACE='exit 10' bash t1.sh
+run "t1.sh PLACE=\"\$LOCALONLY\" (a hook that refuses every remote)" PLACE="$LOCALONLY" bash t1.sh
+run "t2.sh PLACE=\"\$LOCALONLY\" (a hook that refuses every remote)" PLACE="$LOCALONLY" bash t2.sh
+run "t4.sh PLACE='python ../nosuch.py \"\$1\" \"\$2\"' (a hook that crashes)" PLACE='python ../nosuch.py "$1" "$2"' bash t4.sh
+run "t5.sh (default SCAN_DIR fixture, default START)" bash t5.sh
+mkdir -p goodonly; echo 'rclone rcd --rc-addr 127.0.0.1:5572 --rc-no-auth &' > goodonly/good.sh
+run "t5.sh SCAN_DIR=goodonly" SCAN_DIR="$PWD/goodonly" bash t5.sh
+run "t5.sh SCAN_DIR=nosuchdir" SCAN_DIR="$PWD/nosuchdir" bash t5.sh
+mkdir -p emptydir
+run "t5.sh SCAN_DIR=emptydir (an empty directory)" SCAN_DIR="$PWD/emptydir" bash t5.sh
+run "t2probe.sh (T2B_DNS unset)" bash t2probe.sh
+```
+
+```
+== t1.sh (default PLACE)
+control: <dir>/t1/elsewhere allowed
+control: far: allowed
+wd  fsinfo: IsLocal=False Root='' | check: 0 differences found 3 matching files 
+wd  PLACE -> RED: wd: allowed, and it serves the source
+sf  fsinfo: IsLocal=False Root='' | check: 0 differences found 3 matching files 
+sf  PLACE -> RED: sf: allowed, and it serves the source
+ft  fsinfo: IsLocal=False Root='' | check: 0 differences found 3 matching files 
+ft  PLACE -> RED: ft: allowed, and it serves the source
+a canary written through wd: landed in the source as: .vault-canary/canary.bin
+== t1.sh PLACE="$GP"
+control: <dir>/t1/elsewhere allowed
+control: far: allowed
+wd  fsinfo: IsLocal=False Root='' | check: 0 differences found 3 matching files 
+wd  PLACE -> GREEN: wd: refused (refused: a server on this computer, or no host: 'http://127.0.0.1:55741/')
+sf  fsinfo: IsLocal=False Root='' | check: 0 differences found 3 matching files 
+sf  PLACE -> GREEN: sf: refused (refused: a server on this computer, or no host: '127.0.0.1')
+ft  fsinfo: IsLocal=False Root='' | check: 0 differences found 3 matching files 
+ft  PLACE -> GREEN: ft: refused (refused: a server on this computer, or no host: '127.0.0.1')
+a canary written through wd: landed in the source as: .vault-canary/canary.bin
+== t2.sh (default PLACE)
+control: <dir>/t2/elsewhere allowed
+control: far: allowed
+offline IDNA mapping (no lookup): '\uff4c\uff4f\uff43\uff41\uff4c\uff48\uff4f\uff53\uff54' -> localhost 'local\xadhost' -> localhost '127\u30020\u30020\u30021' -> 127.0.0.1
+control: wd-ascii: refused
+fullwidth    rclone lists: a.bin  PLACE -> RED: wd-fullwidth: allowed, and it serves the source
+softhyphen   rclone lists: a.bin  PLACE -> RED: wd-softhyphen: allowed, and it serves the source
+ideographic  rclone lists: a.bin  PLACE -> RED: wd-ideographic: allowed, and it serves the source
+== t2.sh PLACE="$GP"
+control: <dir>/t2/elsewhere allowed
+control: far: allowed
+offline IDNA mapping (no lookup): '\uff4c\uff4f\uff43\uff41\uff4c\uff48\uff4f\uff53\uff54' -> localhost 'local\xadhost' -> localhost '127\u30020\u30020\u30021' -> 127.0.0.1
+control: wd-ascii: refused
+fullwidth    rclone lists: a.bin  PLACE -> GREEN: wd-fullwidth: refused (refused: a server on this computer, or no host: 'http://ｌｏｃａｌｈｏｓｔ:55741/')
+softhyphen   rclone lists: a.bin  PLACE -> GREEN: wd-softhyphen: refused (refused: a server on this computer, or no host: 'http://local\xadhost:55741/')
+ideographic  rclone lists: a.bin  PLACE -> GREEN: wd-ideographic: refused (refused: a server on this computer, or no host: 'http://127。0。0。1:55741/')
+== t3.sh (default PLACE)
+hs-src:     fsinfo: IsLocal=True Root=''
+hs-dst:     fsinfo: IsLocal=True Root=''
+hs-dst:sub  fsinfo: IsLocal=True Root='sub'
+control: <dir>/t3/dst allowed
+hs-dst: allowed (disjoint hasher: correct)
+hs-src: lists a.bin -> RED: hs-src: allowed, and it serves the source
+== t3.sh PLACE="$GP"
+hs-src:     fsinfo: IsLocal=True Root=''
+hs-dst:     fsinfo: IsLocal=True Root=''
+hs-dst:sub  fsinfo: IsLocal=True Root='sub'
+control: <dir>/t3/dst allowed
+hs-dst: allowed (disjoint hasher: correct)
+hs-src: lists a.bin -> GREEN: hs-src: refused (refused: overlaps the source: '<dir>/t3/src')
+== t4.sh (default PLACE)
+control: un-ok: allowed
+un-onthefly:           fsinfo: IsLocal=False Root=''    lists: a.bin y.bin  -> RED: un-onthefly: allowed, and it serves the source
+un-encoder:            fsinfo: IsLocal=False Root=''    lists: a.bin y.bin  -> RED: un-encoder: allowed, and it serves the source
+un-relative:           fsinfo: IsLocal=False Root=''    lists: a.bin y.bin  -> RED: un-relative: allowed, and it serves the source
+un-driverel:           fsinfo: IsLocal=False Root=''    lists: a.bin y.bin  -> RED: un-driverel: allowed, and it serves the source
+nas,type=local:<t>/src fsinfo: IsLocal=True Root='//?/<dir>/t4/src' lists: a.bin        -> RED: nas,type=local:<t>/src allowed, and it serves the source
+== t4.sh PLACE="$GP"
+control: un-ok: allowed
+un-onthefly:           fsinfo: IsLocal=False Root=''    lists: a.bin y.bin  -> GREEN: un-onthefly: refused (refused: not an absolute path: ":hasher,remote='<t>/src':")
+un-encoder:            fsinfo: IsLocal=False Root=''    lists: a.bin y.bin  -> GREEN: un-encoder: refused (refused: not an absolute path: ':local,copy_links=false:<t>/src')
+un-relative:           fsinfo: IsLocal=False Root=''    lists: a.bin y.bin  -> GREEN: un-relative: refused (refused: not an absolute path: 'src')
+un-driverel:           fsinfo: IsLocal=False Root=''    lists: a.bin y.bin  -> GREEN: un-driverel: refused (refused: not an absolute path: 'C:src')
+nas,type=local:<t>/src fsinfo: IsLocal=True Root='//?/<dir>/t4/src' lists: a.bin        -> GREEN: nas,type=local:<t>/src refused (refused: connection-string override: 'nas,type=local:<t>/src')
+== t1.sh PLACE='exit 10' (a hook that refuses everything)
+INCONCLUSIVE: PLACE does not allow an independent destination (<dir>/t1/elsewhere)
+== t1.sh PLACE="$LOCALONLY" (a hook that refuses every remote)
+control: <dir>/t1/elsewhere allowed
+INCONCLUSIVE: PLACE does not allow an independent destination (far:)
+== t2.sh PLACE="$LOCALONLY" (a hook that refuses every remote)
+control: <dir>/t2/elsewhere allowed
+INCONCLUSIVE: PLACE does not allow an independent destination (far:)
+== t4.sh PLACE='python ../nosuch.py "$1" "$2"' (a hook that crashes)
+INCONCLUSIVE: PLACE does not allow an independent destination (un-ok:): <python>: can't open file '<dir>\\nosuch.py': [Errno 2] No such file or directory
+== t5.sh (default SCAN_DIR fixture, default START)
+RED (static): an all-interfaces bind:
+Bad.cs:1:psi.ArgumentList.Add($"--rc-addr=:{port}");
+bad.py:1:args = ["rclone", "rcd", "--rc-addr", ":5572"]
+bad.sh:1:rclone rcd --rc-addr :5572 --rc-no-auth &
+bad2.sh:1:rclone rcd --rc-addr=:$PORT --rc-no-auth &
+pid <pid> listened on: 127.0.0.1:55761
+GREEN (runtime): loopback only
+== t5.sh SCAN_DIR=goodonly
+GREEN (static): no all-interfaces bind in goodonly
+pid <pid> listened on: 127.0.0.1:55761
+GREEN (runtime): loopback only
+== t5.sh SCAN_DIR=nosuchdir
+INCONCLUSIVE: SCAN_DIR is not a directory: <dir>/nosuchdir
+== t5.sh SCAN_DIR=emptydir (an empty directory)
+INCONCLUSIVE: nothing in SCAN_DIR mentions rclone or --addr/--rc-addr
+== t2probe.sh (T2B_DNS unset)
+skipped: set T2B_DNS=yes to let this block make three DNS lookups
+```
+
+T2b, the sftp arm of trap 2. It sends three literal host names to the DNS resolver, so it is opt-in and not
+part of the test. The runner above runs it without `T2B_DNS` (it prints that it skipped); this output is a
+separate run with `T2B_DNS=yes`:
+```bash
+# THIS BLOCK SENDS THREE LITERAL HOST NAMES TO YOUR DNS RESOLVER (the sftp client does not map them).
+# It runs only with T2B_DNS=yes.
+[ "${T2B_DNS:-no}" = yes ] || { echo "skipped: set T2B_DNS=yes to let this block make three DNS lookups"; exit 0; }
+PLACE=:                                          # this block makes no placement decision
+rm -rf t2p; mkdir t2p; cd t2p; . ../dp-env.sh
+mk src/a.bin:1000
+P=$(R obscure probe)
+python - "$RCLONE_CONFIG" "$P" <<'PY'
+import sys
+conf, p = sys.argv[1], sys.argv[2]
+hosts = {"fw": "\uff4c\uff4f\uff43\uff41\uff4c\uff48\uff4f\uff53\uff54", "shy": "local\u00adhost", "ideo": "127\u30020\u30020\u30021"}
+out = []
+for k, h in hosts.items():
+    out += ["[sf-%s]" % k, "type = sftp", "host = " + h, "port = 55742", "user = probe", "pass = " + p, ""]
+    out += ["[wd-%s]" % k, "type = webdav", "url = http://%s:55741/" % h, "vendor = rclone", "user = probe", "pass = " + p, ""]
+open(conf, "w", encoding="utf-8").write("\n".join(out))
+PY
+serve webdav 55741 55751 src; serve sftp 55742 55752 src
+for r in sf-fw sf-shy sf-ideo wd-fw wd-shy wd-ideo; do printf '%-8s lsf: ' $r; R lsf $r: 2>&1 | tail -1 | cut -c1-140; done
+for p in 55751 55752; do unserve $p; done; wait
+```
+```
+sf-fw    lsf: CRITICAL: Failed to create file system for "sf-fw:": NewFs: couldn't connect SSH: dial tcp: lookup ｌｏｃａｌｈｏ
+sf-shy   lsf: CRITICAL: Failed to create file system for "sf-shy:": NewFs: couldn't connect SSH: dial tcp: lookup local­host: no such
+sf-ideo  lsf: CRITICAL: Failed to create file system for "sf-ideo:": NewFs: couldn't connect SSH: dial tcp: lookup 127。0。0。1: no
+wd-fw    lsf: a.bin
+wd-shy   lsf: a.bin
+wd-ideo  lsf: a.bin
+```
+
+rclone's help text for trap 5, read with `RCLONE_CONFIG` at a nonexistent file:
+```
+--rc-addr stringArray                IPaddress:Port or :Port to bind server to (default localhost:5572)
+By default the server binds to localhost:2022 - if you want it to be
+reachable externally then supply `--addr :2022` for example.
+```

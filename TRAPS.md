@@ -20363,3 +20363,466 @@ seat, the pre-registered prediction and its score, and the erosion that followed
 cycle and its longest run over the last ten; flag any seat whose longest run, or the tail of its re-entering runs,
 reaches its interval, and name the seat that waits for quiet while it runs.
 <!-- outbox:1a0e632eeb01bda5 dng-auto-processor:2dab22fb48b4ad0d24fb8bf2fa25a99f50dacf73/a-scheduled-run-longer-than-its-interval-overlaps-itself -->
+
+<!-- cloudvore-filing:2026-09-30-rclone-placement-traps generated from review/doctrine-drafts/2026-09-30-rclone-placement-traps.md at 1fb09ba -->
+
+# Draft for the fleet doctrine bus: Cloudvore, 2026-09-30 (rclone destination placement: H73 slice 3, item 4, H79, H80)
+
+These are observations from one project, Cloudvore, a Windows app that decides whether a source folder may
+be wiped by asking rclone whether a destination holds an independent copy. Nothing here instructs another
+project: each trap states what was measured here, what Cloudvore changed, how that was checked here, and a
+test another project can run against its own code if it wants to know whether it has the same trap.
+
+**Scope.** Every rclone behaviour below was measured with **rclone v1.74.4** on one Windows 11 Pro host
+(10.0.26200), with a throwaway `RCLONE_CONFIG` and `RCLONE_CACHE_DIR`, local folders, and servers bound to
+`127.0.0.1` only. No provider, OAuth endpoint or browser was contacted. Other versions, platforms and real
+remote servers were not tested. The runnable demonstrations are below; their recorded output, from runs made
+for this draft on 2026-09-30, is in `## RECEIPTS`.
+
+**Sources.** Every commit cited is an ancestor of Cloudvore's `origin/master` at `7accc50`:
+
+- H73 packet B slice 3 (a server on this computer): merge `38f16ec` (candidate `271f351`, record `569249e`);
+  ledger `review/ledger-h73b-unplaced-leaves-2026-09-29.md` (measurements, two review rounds, 27 + r2 mutants).
+- H77 (canary withheld when a config read is missing): merge `acd6b7c`.
+- H73 packet B item 4 (a hasher false alarm) and H79 (overlap readers dropped a leaf they could not root):
+  merge `df73b6f` (candidate `720542b`).
+- H80 (every leaf must be positively placed): merge `a2b6565` (candidate `6a4410d`, red `45399de`).
+- H78 (the canary race after the plant): merge `55c9245`.
+The BACKLOG rows for these carry the review rounds and bars.
+
+**Relation to the bus** (fleet doctrine `TRAPS.md` at `df8acf7`). Searched by mechanism: `rclone serve`,
+`IsLocal`, `fsinfo`, `IDNA`, `IdnHost`, `punycode`, `fullwidth`, `soft hyphen`, `NFKC`, `confusable`,
+`unplace`, `cannot root`, `on-the-fly`, `connection string`, `firewall`, `all interfaces`, `0.0.0.0`,
+`bind`, `orphan`, `outliv`. The previous Cloudvore rclone filing (stored hashes, `TRAPS.md:19831`) and
+"rclone opens the ENCODED name" (`TRAPS.md:12188`) are different mechanisms. Nearest neighbours are named
+per trap.
+
+## Shared preamble
+
+Every block sources `dp-env.sh` from its parent directory. It points rclone at a config and cache inside
+the current directory, so nothing reads or writes the live `rclone.conf`. Every rclone call runs under
+`timeout 120`. Every server or `rcd` a block starts binds `127.0.0.1:<port>` explicitly and is stopped
+through its own rc with `core/quit`; a block stops no process it did not start. The scripts need bash (Git
+Bash on Windows), Python 3, coreutils `timeout` and rclone on `PATH`.
+
+**The hook.** Traps 1-4 test one decision: "is destination `$2` placed, and is it not the source folder
+`$1`?" Supply YOUR implementation as `PLACE`, a shell command using the exported `RCLONE_CONFIG`; exit 0
+means allowed, **exit 10 means refused**, and any other exit (a crash, a missing file) reads INCONCLUSIVE,
+so a hook that errors cannot read GREEN. Every test first requires the hook to ALLOW a genuinely
+independent local folder and stops INCONCLUSIVE otherwise; T1 and T2 also require it to allow a webdav
+remote on another host (`far`, `nas.example.test`, written into the config and never contacted), so a hook
+that refuses every remote cannot read GREEN either. The defaults are small readers with the trap in them,
+so run unchanged each block shows RED: `place_skip` (T1, T4) reads the config only and skips every leaf it
+cannot root; `place_literal` (T2) compares a webdav host literally; `place_fsinfo` (T3) trusts fsinfo's
+Root and builds the Fs, so it is used only on local remotes.
+`place.py` in RECEIPTS is a sample positive reader (not Cloudvore's code) that the runs use as the GREEN
+setting.
+
+```bash
+# dp-env.sh: throwaway rclone config and cache in $T; local folders and 127.0.0.1 only; no provider.
+T=$(cygpath -m "$PWD")                                  # Git Bash; elsewhere T=$PWD
+export RCLONE_CONFIG="$T/rclone.conf" RCLONE_CACHE_DIR="$T/cache"
+R(){ timeout 120 rclone --config "$RCLONE_CONFIG" --cache-dir "$RCLONE_CACHE_DIR" "$@"; }
+mk(){ python - "$@" <<'PY'
+import os, sys
+for spec in sys.argv[1:]:
+    p, n = spec.rsplit(":", 1); os.makedirs(os.path.dirname(p) or ".", exist_ok=True)
+    open(p, "wb").write(os.urandom(int(n)))
+PY
+}
+# serve KIND PORT RCPORT DIR: an rclone server bound to 127.0.0.1 ONLY, stoppable through its own rc
+serve(){ R serve "$1" "$4" --addr "127.0.0.1:$2" --user probe --pass probe \
+           --rc --rc-addr "127.0.0.1:$3" --rc-no-auth > "serve-$1.log" 2>&1 &
+         for i in $(seq 50); do timeout 120 rclone rc --url "http://127.0.0.1:$3/" rc/noop >/dev/null 2>&1 && return 0
+           python -c 'import time; time.sleep(0.2)'; done; echo "serve $1 did not start"; return 1; }
+unserve(){ timeout 120 rclone rc --url "http://127.0.0.1:$1/" core/quit >/dev/null 2>&1; }
+fsinfo(){ R backend features "$1" 2>/dev/null | python -c 'import json,sys; d=json.load(sys.stdin); f=d.get("Features",{}); print("IsLocal=%s Root=%r" % (f.get("IsLocal"), d.get("Root")))'; }
+# PLACE: how YOUR tool decides that destination $2 is placed and is NOT the source folder $1.
+# Exit 0 = allowed (independent); exit 10 = refused; any other exit (a crash) = the hook failed, INCONCLUSIVE.
+# It must use the exported RCLONE_CONFIG. Its first output line is printed as the reason.
+# Each test sets its own default PLACE before sourcing this file; the defaults are three readers with the trap in them
+# (place_fsinfo and place_skip below; place_literal in t2.sh).
+# place_fsinfo trusts fsinfo, refusing only a local Root inside the source. It builds the Fs, so use it only
+# on local remotes (a remote server would be contacted).
+place_fsinfo(){ R backend features "$2" 2>/dev/null | python -c '
+import json, os, sys
+d = json.load(sys.stdin); src = os.path.normcase(os.path.abspath(sys.argv[1]))
+root = d.get("Root", "").replace("//?/", "")
+if d.get("Features", {}).get("IsLocal") and root:
+    r = os.path.normcase(os.path.abspath(root))
+    sys.exit(10 if r == src or r.startswith(src + os.sep) or src.startswith(r + os.sep) else 0)
+sys.exit(0)' "$1"; }
+# place_skip reads the config only (contacts nothing): it judges every leaf it can root and skips the rest.
+place_skip(){ R config dump | python -c '
+import json, os, re, sys
+sys.stdin.reconfigure(encoding="utf-8")
+conf = json.load(sys.stdin); src = os.path.normcase(os.path.abspath(sys.argv[1]))
+def bad(p):
+    r = os.path.normcase(os.path.abspath(p))
+    return r == src or r.startswith(src + os.sep) or src.startswith(r + os.sep)
+def walk(spec):
+    if re.match(r"^[A-Za-z]:[\\/]", spec): return bad(spec)          # an absolute path: judged
+    m = re.match(r"^([A-Za-z0-9_-]{2,})(,[^:]*)?:(.*)$", spec)       # a named remote; an override suffix is ignored
+    if not m: return False                                          # anything else: cannot root it, skipped
+    sec = conf.get(m.group(1), {}); t = sec.get("type")
+    if t == "local": return walk(m.group(3))
+    if t in ("union", "combine"): return any(walk(u) for u in sec.get("upstreams", "").split())
+    if t in ("alias", "hasher"): return walk(sec.get("remote", ""))
+    return False                                                    # a server or a cloud type: not local, not judged
+sys.exit(10 if walk(sys.argv[2]) else 0)' "$1" "$2"; }
+[ -n "${PLACE:-}" ] || { echo "INCONCLUSIVE: no PLACE set"; exit 3; }
+place(){ local rc; WHY=$(eval "$PLACE" 2>&1); rc=$?; WHY=${WHY%%$'
+'*}; return $rc; }
+# judge SRC DEST: RED if the source-serving destination is allowed
+judge(){ place "$1" "$2"; case $? in
+  0)  echo "RED: $2 allowed, and it serves the source" ;;
+  10) echo "GREEN: $2 refused${WHY:+ ($WHY)}" ;;
+  *)  echo "INCONCLUSIVE: PLACE failed on $2${WHY:+ ($WHY)}" ;; esac; }
+# control SRC DEST: a genuinely independent destination must be allowed, or the hook refuses everything
+control(){ place "$1" "$2" || { echo "INCONCLUSIVE: PLACE does not allow an independent destination ($2)${WHY:+: $WHY}"; exit 3; }; echo "control: $2 allowed"; }
+```
+
+## TRAPS
+
+### 1. An rclone server on this computer serves the source as a "remote" destination, and fsinfo cannot tell
+
+**Adds to the bus:** not found by mechanism (searched above).
+
+- **Measured here (slice 3 ledger "Measurements"; re-run as T1).** `rclone serve webdav`, `serve sftp` and
+  `serve ftp` over the SOURCE folder on 127.0.0.1, each reached through an ordinary remote of that type:
+  `check source <remote>:` reported `0 differences found`, `3 matching files` for all three. `rclone backend
+  features` (fsinfo) reported `IsLocal=False` and `Root=''` for all three: nothing rclone reports says
+  the storage is this computer's disk, let alone the source. The sftp remote advertised md5 and sha1 (the
+  client detected the server's emulated `md5sum`, writing `shell_type`, `md5sum_command` and
+  `sha1sum_command` into the section on first use), so a hash check matched by hash; webdav and ftp
+  advertised none. A canary file written through the webdav remote landed in the source as
+  `.vault-canary/canary.bin`.
+- **What changed here.** `38f16ec`: the chain's server hosts are read from the config and a host placed on
+  this computer from literal facts (loopback and unspecified addresses, `localhost` and `*.localhost`, this
+  computer's names and addresses, its hosts file; no DNS) is REFUSED before any copy; one that only may be
+  is capped and the canary withheld. `acd6b7c` withholds the canary when a config read is missing and the
+  chain names a server. `55c9245` re-reads the config after the plant and removes the file that run
+  planted, byte-proven, if the placement changed.
+- **How it was checked here.** Slice 3's red `00c57b8` ended 29 pins Verified (sftp on loopback, webdav,
+  ftp and others in download mode); r1 was refused by both seats because the canary planted into the
+  source through a served webdav before the cap was read.
+- **Test another project can run (T1).** RED: `PLACE` allows a served remote. GREEN: it refuses all three
+  and allows the controls (a local folder elsewhere, and `far`).
+  The canary line shows where a write through such a destination goes.
+
+```bash
+# T1: an rclone server on THIS computer serves the source as a "remote" destination (PLACE hook: see dp-env.sh)
+PLACE=${PLACE:-'place_skip "$1" "$2"'}           # default: a config reader that judges only local leaves
+rm -rf t1; mkdir t1; cd t1; . ../dp-env.sh
+mk src/a.bin:100000 src/b.bin:200000 src/c.bin:300000 elsewhere/z.bin:10
+P=$(R obscure probe); S="$T/src"
+cat > "$RCLONE_CONFIG" <<CONF
+[wd]
+type = webdav
+url = http://127.0.0.1:55741/
+vendor = rclone
+user = probe
+pass = $P
+
+[sf]
+type = sftp
+host = 127.0.0.1
+port = 55742
+user = probe
+pass = $P
+
+[ft]
+type = ftp
+host = 127.0.0.1
+port = 55743
+user = probe
+pass = $P
+
+[far]
+type = webdav
+url = http://nas.example.test:55741/
+vendor = rclone
+CONF
+trap 'for p in 55751 55752 55753; do unserve $p; done; wait' EXIT      # stop only the servers this script started
+serve webdav 55741 55751 src; serve sftp 55742 55752 src; serve ftp 55743 55753 src
+control "$S" "$T/elsewhere"
+control "$S" far:                 # a server elsewhere, config only: never contacted, must be allowed
+for r in wd sf ft; do
+  printf '%-3s fsinfo: %s | check: ' $r "$(fsinfo $r:)"
+  R check src $r: 2>&1 | grep -E 'differences found|matching files' | sed -E 's/^.*: ([0-9]+ (differences found|matching files))/\1/' | tr '\n' ' '; echo
+  printf '%-3s PLACE -> ' $r; judge "$S" $r:
+done
+mk canary.bin:4096; R copyto canary.bin wd:.vault-canary/canary.bin
+echo "a canary written through wd: landed in the source as: $(cd src && ls -d .vault-canary/* 2>/dev/null)"
+```
+
+### 2. Unicode spellings of this computer reach loopback through rclone's webdav client and miss a literal compare
+
+**Adds to the bus:** not found by mechanism (searched `IDNA`, `IdnHost`, `punycode`, `fullwidth`, `soft
+hyphen`, `NFKC`, `confusable`). The fullwidth characters in `TRAPS.md:12192` are rclone's filename encoder,
+not host names.
+
+- **Measured here (slice 3 r1 review, finding A2; re-run as T2).** A webdav remote whose url host was
+  fullwidth `ｌｏｃａｌｈｏｓｔ`, `local` + U+00AD (soft hyphen) + `host`, or `127。0。0。1` (U+3002 as the
+  dots) listed the source's file from a server bound to 127.0.0.1. A reader that lower-cases the host and
+  compares it with `localhost`/`127.0.0.1`/`::1` called each of them elsewhere. Python's `idna` codec maps
+  all three to `localhost` or `127.0.0.1`. The sftp client did NOT map them: the same three hosts in an
+  sftp section failed with `dial tcp: lookup <name>: no such host` (T2b in RECEIPTS; T2b sends each literal
+  name to your DNS resolver, says so at its top, and runs only with `T2B_DNS=yes`). T2 itself makes no
+  lookup: it shows the mapping offline with Python's `idna` codec. So the mapping depends on the backend.
+- **What changed here** (`38f16ec`, r2 ruling 2). Hosts go through .NET `Uri.IdnHost` / `IdnMapping` (UTS
+  46) before the literal compare; anything still non-ASCII, or refused by IDNA, is "may be this computer".
+- **Test another project can run (T2).** The default `PLACE` is a literal-compare reader. RED: any Unicode
+  spelling is allowed while rclone lists the source through it. GREEN: all three refused. Controls: an
+  independent local folder must be allowed and the ASCII `127.0.0.1` spelling refused, or the run is
+  INCONCLUSIVE.
+
+```bash
+# T2: Unicode spellings of this computer that rclone's webdav client dials as loopback (PLACE hook: see dp-env.sh)
+# Default PLACE here: a config reader that compares the webdav host LITERALLY with the loopback names (the trap).
+place_literal(){ R config dump | python -c '
+import json, re, sys
+sys.stdin.reconfigure(encoding="utf-8")
+sec = json.load(sys.stdin).get(sys.argv[1].rstrip(":"), {})
+if sec.get("type") != "webdav": sys.exit(0)
+host = re.sub(r"^[a-z]+://", "", sec.get("url", "")).split("/")[0].rsplit(":", 1)[0].lower()
+sys.exit(10 if host in ("localhost", "127.0.0.1", "::1") else 0)' "$2"; }
+PLACE=${PLACE:-'place_literal "$1" "$2"'}
+rm -rf t2; mkdir t2; cd t2; . ../dp-env.sh
+mk src/a.bin:1000 elsewhere/z.bin:10
+P=$(R obscure probe); S="$T/src"
+python - "$RCLONE_CONFIG" "$P" <<'PY'
+import sys
+conf, p = sys.argv[1], sys.argv[2]
+hosts = {"ascii": "127.0.0.1",
+         "fullwidth": "ｌｏｃａｌｈｏｓｔ",   # fullwidth "localhost"
+         "softhyphen": "local­host",                                         # soft hyphen inside "localhost"
+         "ideographic": "127。0。0。1"}                               # U+3002 as the dots
+out = []
+for k, h in hosts.items():
+    out += ["[wd-%s]" % k, "type = webdav", "url = http://%s:55741/" % h, "vendor = rclone", "user = probe", "pass = " + p, ""]
+out += ["[far]", "type = webdav", "url = http://nas.example.test:55741/", "vendor = rclone", ""]   # never contacted
+open(conf, "w", encoding="utf-8").write("\n".join(out))
+PY
+trap 'unserve 55751; wait' EXIT                 # stop only the server this script started
+serve webdav 55741 55751 src
+control "$S" "$T/elsewhere"
+control "$S" far:                 # a server elsewhere, config only: must be allowed
+python - <<'PY'                                  # offline: Python's idna codec, no lookup
+names = ["ｌｏｃａｌｈｏｓｔ", "local­host", "127。0。0。1"]
+print("offline IDNA mapping (no lookup):", " ".join(ascii(n) + " -> " + n.encode("idna").decode() for n in names))
+PY
+place "$S" wd-ascii:; [ $? -eq 10 ] || { echo "INCONCLUSIVE: PLACE does not refuse even the ASCII loopback server"; exit 3; }
+echo "control: wd-ascii: refused"
+for k in fullwidth softhyphen ideographic; do
+  printf '%-12s rclone lists: %-6s PLACE -> ' $k "$(R lsf wd-$k: 2>/dev/null | tr '\n' ' ')"; judge "$S" wd-$k:
+done
+```
+
+### 3. A hasher over a local folder reports IsLocal=true with Root '' or 'sub', which is not a folder
+
+**Adds to the bus:** not found by mechanism.
+
+- **Measured here (item 4, BACKLOG H73; re-run as T3).** fsinfo for a hasher section over a local folder:
+  `IsLocal=True Root=''`; for `hasher:sub`, `Root='sub'`. A reader that takes fsinfo's Root as the folder
+  judges nothing; a hasher over the source was allowed.
+- **What happened here.** Before `df73b6f`, Cloudvore refused such a hasher outright (it could not root
+  it): a false alarm on a disjoint hasher, the other direction of the same trap. `df73b6f` reads the
+  hasher's `remote=` from the config and judges the real folder: over the source it is refused, disjoint it
+  proceeds (and slice 2's stored-hash cap then applies).
+- **Test another project can run (T3).** RED: the hasher over the source is allowed, or the disjoint hasher
+  is refused. GREEN: over-source refused, disjoint allowed.
+
+```bash
+# T3: a hasher over a local folder reports IsLocal=true with Root '' or 'sub', not a folder (PLACE hook: see dp-env.sh)
+PLACE=${PLACE:-'place_fsinfo "$1" "$2"'}         # default: a reader that trusts fsinfo's Root
+rm -rf t3; mkdir t3; cd t3; . ../dp-env.sh
+mk src/a.bin:1000 dst/sub/x.bin:1000
+S="$T/src"
+cat > "$RCLONE_CONFIG" <<CONF
+[hs-src]
+type = hasher
+remote = $T/src
+hashes = md5
+
+[hs-dst]
+type = hasher
+remote = $T/dst
+hashes = md5
+CONF
+for r in hs-src: hs-dst: hs-dst:sub; do printf '%-11s fsinfo: %s\n' $r "$(fsinfo $r)"; done
+control "$S" "$T/dst"
+# the other direction of the same trap: refusing every hasher is a false alarm on a disjoint one
+place "$S" hs-dst:; case $? in 0) echo "hs-dst: allowed (disjoint hasher: correct)" ;;
+  10) echo "RED: hs-dst: refused, a false alarm on a disjoint hasher${WHY:+ ($WHY)}" ;; *) echo "INCONCLUSIVE: PLACE failed on hs-dst:"; exit 3 ;; esac
+printf 'hs-src: lists %s-> ' "$(R lsf hs-src: | tr '\n' ' ')"; judge "$S" hs-src:
+```
+
+### 4. An overlap reader that judges only what it can root is blind to spellings that serve the source; placement must be positive
+
+**Adds to the bus:** the nearest entry is this project's own note in the stored-hash filing that a
+connection-string override (`mylocal,type=hasher,...:`) changes a section's type (`TRAPS.md:20246`); that
+note is about stored hashes, this trap about placement. It also extends "The gate that matters is
+attendance, and unknown must mean no" (in
+"Attended-surface popups", `TRAPS.md:777`, this project) and "signal reducers that DROP malformed lines
+instead of refusing" (`TRAPS.md:4306`), which state the principle for other inputs. This adds the rclone
+spellings that defeat an overlap reader and the test that finds them.
+
+- **Measured here (H79 and H80; re-run as T4).** Each of these lists the source's file, and fsinfo gives no
+  folder for any union (`IsLocal=False Root=''`): a union whose upstream is an on-the-fly wrapper
+  `:hasher,remote='<source>':`, an on-the-fly local encoder `:local,copy_links=false:<source>`, a relative
+  path `src`, or a drive-relative path `C:src` (resolved against the current directory on that drive); and a
+  connection-string override `nas,type=local:<source>` of a section `[nas]` whose type is `sftp` (rclone
+  takes `type` from the spelling; a reader of the `[nas]` section sees a remote server). A reader that
+  roots what it can and skips the rest allowed all five.
+- **What changed here.** `df73b6f` (H79): every overlap reader REFUSES a local-ish leaf it cannot judge,
+  with a named cause, before any copy or canary. `a2b6565` (H80): every leaf of the destination chain must
+  be positively placed (a rooted local folder judged for overlap, a positively non-local storage leaf, or
+  a this-machine server, which is refused) or the job is refused; on-the-fly wrappers, overrides, unknown
+  types and unreadable chains are refused.
+- **How it was checked here.** H79's red at the production boundary: unions with `:local,copy_links=false:`,
+  drive-relative and relative upstreams serving the source; control: a union of disjoint local folders
+  reaches Verified. H80's r2 red `45399de`: a union with an on-the-fly `:hasher`, `:combine` or `:alias`
+  upstream over the source, an on-the-fly union destination, and a type the build did not know were only
+  logged, and the copy and canary went ahead; `48c6d7b` records that the on-the-fly wrappers under a union
+  planted the canary into the source on master.
+- **Test another project can run (T4).** The default `PLACE` roots what it can and skips the rest. RED: any
+  of the five is allowed. GREEN: all five refused. Control: a union of two disjoint folders must be allowed.
+
+```bash
+# T4: spellings that serve the source but that an overlap reader cannot root (PLACE hook: see dp-env.sh)
+# Every destination below lists the source's file; a reader must REFUSE what it cannot place.
+# Default PLACE here: place_skip (dp-env.sh), which judges what it can root and skips the rest (the trap).
+PLACE=${PLACE:-'place_skip "$1" "$2"'}
+rm -rf t4; mkdir t4; cd t4; . ../dp-env.sh
+mk src/a.bin:1000 other/y.bin:10 dst/x.bin:10
+S="$T/src"; D=${T%%:*}                                 # D: this directory's drive letter
+cat > "$RCLONE_CONFIG" <<CONF
+[un-onthefly]
+type = union
+upstreams = $T/other :hasher,remote='$T/src':
+
+[un-encoder]
+type = union
+upstreams = $T/other :local,copy_links=false:$T/src
+
+[un-relative]
+type = union
+upstreams = $T/other src
+
+[un-driverel]
+type = union
+upstreams = $T/other $D:src
+
+[nas]
+type = sftp
+host = nas.example.test
+
+[un-ok]
+type = union
+upstreams = $T/other $T/dst
+CONF
+control "$S" un-ok:
+for r in un-onthefly: un-encoder: un-relative: un-driverel: "nas,type=local:$T/src"; do
+  printf '%-22s fsinfo: %-24s lists: %-12s -> ' "${r/$T/<t>}" "$(fsinfo "$r" | cut -d' ' -f1-2)" "$(R lsf "$r" 2>/dev/null | tr '\n' ' ')"
+  judge "$S" "$r" | sed "s#$T#<t>#g"
+done
+```
+
+### 5. rclone reads `--addr :PORT` / `--rc-addr :PORT` as every interface; on this host an agent's probe raised a firewall prompt on the owner's screen
+
+**Adds to the bus:** extends "Attended-surface popups" (`TRAPS.md:777`, this project), which records a probe
+that left an OAuth page on the operator's screen; this is a second cause of the same class. Not found on the
+bus: `firewall`, `all interfaces`, `0.0.0.0`.
+
+- **Observed here, 2026-09-30.** An agent's `rclone rcd --rc-addr :<port>` raised a Windows Defender
+  Firewall prompt on the owner's screen. This was reported to the integrating session; it is not recorded in
+  the repository, and it was not reproduced for this draft (reproducing it would raise the prompt again).
+- **Measured here.** `rclone rcd --help` (v1.74.4) says it directly: "`--rc-addr :8080` to listen to all
+  IPs. By default it only listens on localhost." (`serve sftp --help` says the same of `--addr :2022`.) T5
+  shows a listener started with `127.0.0.1:<port>` listening only on 127.0.0.1.
+- **What changed here.** The integrating session's probe briefs since then require an explicit
+  `127.0.0.1:<port>` on every `rcd` and `serve`, `timeout 120` on every rclone call, and stopping only the
+  PIDs a probe started. This draft's probes follow them. Cloudvore's own rcd already binds `127.0.0.1`
+  (`src/DropboxVault.Core/Rclone/RcdProcess.cs:181`, `--rc-addr=127.0.0.1:{port}`).
+- **Test another project can run (T5).** `SCAN_DIR`: a directory of your scripts and code that start rclone
+  (a missing directory reads INCONCLUSIVE). RED (static): an `--addr`/`--rc-addr` whose value starts with
+  `:` or names `0.0.0.0` or `[::]`, written as a shell flag (`--rc-addr :5572`, `--rc-addr=:$PORT`), inside
+  one string (C# `$"--rc-addr=:{port}"`), or as the next item of an argument list (Python
+  `["--rc-addr", ":5572"]`). The scan is per line: an argument list split across lines (`"--rc-addr",` on
+  one line, `":5572"` on the next) is not seen, nor is a bind computed at run time. A directory in which no
+  file mentions `rclone`, `--addr` or `--rc-addr` reads INCONCLUSIVE, not GREEN. `START`: a command that starts your
+  listener with an rc on `127.0.0.1:$1`. RED (runtime): the process listens beyond loopback. The runtime
+  half parses Windows `netstat -ano` output; on another OS no socket matches and it reads INCONCLUSIVE. The
+  default `SCAN_DIR` is a fixture of six one-line files (four bad, two good) that is never executed; no run
+  here binds anything but 127.0.0.1, so the runtime RED is not demonstrated.
+
+```bash
+# T5: an rclone listener given ':PORT' binds every interface. Two checks; neither binds anything but 127.0.0.1.
+# SCAN_DIR hook: the directory of YOUR scripts and code that start rclone (default: a six-file fixture).
+# START hook: a command that starts YOUR rclone listener with an rc on 127.0.0.1:$1 (default: a correct one).
+PLACE=:                                          # this block makes no placement decision
+rm -rf t5; mkdir t5; cd t5; . ../dp-env.sh
+if [ -z "${SCAN_DIR:-}" ]; then
+  mkdir fixture; SCAN_DIR=$PWD/fixture                          # six one-line files, never executed
+  echo 'rclone rcd --rc-addr :5572 --rc-no-auth &'             > fixture/bad.sh
+  echo 'rclone rcd --rc-addr=:$PORT --rc-no-auth &'            > fixture/bad2.sh
+  echo 'psi.ArgumentList.Add($"--rc-addr=:{port}");'          > fixture/Bad.cs
+  echo 'args = ["rclone", "rcd", "--rc-addr", ":5572"]'  > fixture/bad.py
+  echo 'rclone rcd --rc-addr 127.0.0.1:5572 --rc-no-auth &'    > fixture/good.sh
+  echo 'psi.ArgumentList.Add($"--rc-addr=127.0.0.1:{port}");' > fixture/Good.cs
+fi
+[ -d "$SCAN_DIR" ] || { echo "INCONCLUSIVE: SCAN_DIR is not a directory: $SCAN_DIR"; exit 3; }
+grep -rqlE -e "rclone|--(rc-)?addr" "$SCAN_DIR" || { echo "INCONCLUSIVE: nothing in SCAN_DIR mentions rclone or --addr/--rc-addr"; exit 3; }
+# (a) static: --addr/--rc-addr, then '=' or spaces (optionally a quote), or a closing quote, comma and an
+# opening quote (an argument list), then a value starting with ':' or naming 0.0.0.0 or [::].
+# The scan is PER LINE: an argument list split across lines ("--rc-addr",<newline>":5572") is not seen.
+hits=$(grep -rnE -e "--(rc-)?addr([= ]+[\"']?|[\"'] *, *[\"'])(:|0\.0\.0\.0|\[::\])" "$SCAN_DIR")
+if [ -n "$hits" ]; then echo "RED (static): an all-interfaces bind:"; echo "$hits" | sed "s#$SCAN_DIR/##"; else echo "GREEN (static): no all-interfaces bind in $(basename "$SCAN_DIR")"; fi
+# (b) runtime: what the started process actually listens on. This parses Windows `netstat -ano` output;
+# on another OS no socket matches and the check reads INCONCLUSIVE.
+START=${START:-'R rcd --rc-addr "127.0.0.1:$1" --rc-no-auth'}
+mk src/a.bin:10
+start(){ eval "$START"; }                              # $1 inside START is the rc port
+trap 'unserve 55761; wait' EXIT                        # stop only the process this script started
+start 55761 > start.log 2>&1 &
+for i in $(seq 50); do timeout 120 rclone rc --url http://127.0.0.1:55761/ rc/noop >/dev/null 2>&1 && break; python -c 'import time; time.sleep(0.2)'; done
+pid=$(timeout 120 rclone rc --url http://127.0.0.1:55761/ core/pid 2>/dev/null | python -c 'import json,sys; print(json.load(sys.stdin)["pid"])')
+[ -n "$pid" ] || { echo "INCONCLUSIVE: START did not answer on 127.0.0.1:55761"; exit 3; }
+socks=$(netstat -ano | awk -v p="$pid" '$1=="TCP" && $4=="LISTENING" && $5==p {print $2}')
+echo "pid $pid listened on: $(echo $socks)"
+if [ -z "$socks" ]; then echo "INCONCLUSIVE: no listening socket seen for pid $pid"
+elif echo "$socks" | grep -vqE '^(127\.[0-9.]+|\[::1\]):'; then echo "RED (runtime): a listener beyond loopback"; else echo "GREEN (runtime): loopback only"; fi
+```
+
+## NOT FILED
+
+- **A throwaway-config probe that outlived its agent.** On 2026-09-29 this session saw `rclone.exe` PID 15468,
+  started 17:51 with `--config` in a session scratch directory, still running at about 23:15 with a 7.2 GB
+  working set; it was not the author's and was left alone. Covered by the bus by mechanism: "Session-scoped
+  inline monitors outlive their sessions" (`TRAPS.md:6253`) and "`python3 - <<'EOF'` from an agent shell on
+  Windows spins a core until someone looks" (`TRAPS.md:6236`): a process started by an agent has no owner once
+  the agent ends.
+- Cloudvore's this-computer facts (machine names, interface addresses, hosts file), the sia exclusion, the
+  withheld-canary accounting and wording, the canary's byte-proven removal (H78), and the junction findings in
+  the slice 3 ledger (a same-named junction below a local root: copy wrote through it; check reported the
+  difference unless `-L`).
+- `rclone serve s3` over the probe folder: fsinfo reported md5; `lsf`/`check` timed out in the ledger's run.
+  Not chased.
+
+## ROWS
+
+Every row landed on Cloudvore `origin/master` (first parent) since the previous publication source `da841b4`,
+at `7accc50`:
+
+| Row | Landing | Disposition |
+|---|---|---|
+| H73 packet B slice 3 | merge `38f16ec` (candidate `271f351`, record `569249e`) | **Covered by this filing**, traps 1 and 2. |
+| H77 | merge `acd6b7c` (record `35bf770`) | **Covered by this filing**, trap 1 (the canary lands in the source through a served destination; withheld when placement cannot be read). |
+| H73 packet B item 4 + H79 | merge `df73b6f` (record `41f7df1`; H79 cut `58f39e9`) | **Covered by this filing**, traps 3 and 4. |
+| H80 | merge `a2b6565` (record `4bce207`; widened `48c6d7b`) | **Covered by this filing**, trap 4. |
+| H78 | merge `55c9245` (record `7accc50`) | **Held.** Its mechanism (re-read placement after a write and remove only what this run wrote, byte-proven) is partly named in trap 1; its follow-ups H81 (an empty `.vault-canary/` left behind, a structural pin on the only delete caller, a partial plant never removed) are open. File with H81. |
+| K46 | merge `8ae8525` (record `65c881f`; row fix `d9c315a`) | **Covered by existing bus entries:** "signal reducers that DROP malformed lines instead of refusing" (`TRAPS.md:4306`) and "a ruling asked every project for an ack line while its checker validated only the rostered ones" (`TRAPS.md:12737`). K46 makes every line under an owner register's Rows section parsed, provably prose, or reported. |
+| H68 guard fix | merge `878d709` | **Project-local.** Cloudvore's own process-kill guard matched a test that shadowed `Get-Process`; the test was changed. No mechanism beyond that guard. |
+| K58, H81 | cut in `5d168ae` and `7accc50`; READY, not landed | **Held** until landed. |
+| (no row) | `490c47e`, `d5f361e` | Doctrine records: the stored-hash draft merge and its publication ack; already on the bus at `80db2e3`. |
