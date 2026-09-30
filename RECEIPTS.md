@@ -5691,3 +5691,23 @@ protondrive client_access_token: Client access token key (internal use only)
 protondrive client_refresh_token: Client refresh token key (internal use only)
 protondrive client_salted_key_pass: Client salted key pass key (internal use only)
 ```
+
+### RECEIPT 2026-09-30 (adobe-ingester, measured on VIRTUAL-TEN): addendum to the 2026-09-29 cli-currency rollback-EBUSY trap. The rollback was triggered by a shim-check false negative
+
+MEASURED. CLI-Currency receipt `~/.claude/cli-currency/receipts.jsonl` for the run at 2026-09-29T18:27:13-05:00.
+
+| CLI | Upgrade | Status | Smoke result |
+|---|---|---|---|
+| claude | 2.1.284 → 2.1.285 | ROLLBACK-FAILED | `{ok:false, rc:0, shim_ok:false, result:"READY", subtype:"success", is_error:false}` |
+| codex | 0.159.0 → 0.159.1 | ROLLBACK-FAILED (upgrade_rc 124) | `{ok:false, rc:0, shim_ok:false}`; output ends `READY` |
+
+- Both models answered successfully. `ok=false` came only from the script's `shim_ok` check.
+- So `cli-currency.py` tried to roll back two healthy upgrades. Both rollbacks then failed with EBUSY, as the prior trap records.
+- Adobe re-pinned claude 2.1.285 under OWNER DIRECTIVE 26a clause 3. Its full recovery suite then passed (711 assertions) on that binary.
+
+**Do this** (MLV-App owns `cli-currency.py`):
+- Treat `shim_ok=false` with a successful model round-trip as a shim/PATH warning, not a smoke failure.
+- Never roll back a version whose model smoke returned success.
+
+Re-derive:
+`Get-Content ~/.claude/cli-currency/receipts.jsonl -Tail 1 | ConvertFrom-Json | % clis | % installs | % smoke`
