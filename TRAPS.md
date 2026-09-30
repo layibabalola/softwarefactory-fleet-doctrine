@@ -21336,3 +21336,492 @@ All four 26.928.2636 launches passed the watcher's 45 s hang threshold before th
 **Re-derive.** In each t0 log, find the first `app routes mounted` line and compare it to the launch time in the
 filename. Then:
 `pwsh -NoProfile -File $env:USERPROFILE\bin\Watch-CodexDesktopStartup.ps1 -ReplayLog <t0 log>`.
+
+<!-- cloudvore-filing:2026-09-30-rclone-crypt-and-delete-traps generated from review/doctrine-drafts/2026-09-30-rclone-crypt-and-delete-traps.md at e91570a -->
+
+# Draft for the fleet doctrine bus: Cloudvore, 2026-09-30 (rclone crypt placement and destructive rc calls: H73 packet C, H81)
+
+These are observations from one project, Cloudvore, a Windows app that decides whether a source folder may
+be wiped by asking rclone whether a destination holds an independent copy. Nothing here instructs another
+project: each trap states what was measured here, what Cloudvore changed, how that was checked here, and a
+test another project can run against its own code if it wants to know whether it has the same trap.
+
+**Scope.** Every rclone behaviour below was measured with **rclone v1.74.4** on one Windows 11 Pro host
+(10.0.26200), with a throwaway `RCLONE_CONFIG` and `RCLONE_CACHE_DIR`, local folders only, and `rclone rcd` bound
+to `127.0.0.1` only (T2's own, and in one receipt a decoy the runner started itself), each stopped through its own
+rc by the script that launched it. No provider, OAuth endpoint or browser was contacted.
+Other versions, platforms, and crypts over real remote storage were not tested. The runnable demonstrations
+are below; their recorded output, from runs made for this draft on 2026-09-30, is in `## RECEIPTS`.
+
+**Sources.** Every commit cited is an ancestor of Cloudvore's `origin/master` at `85cadb3`:
+
+- H73 packet C (crypt placement): merge `367da48` (candidate `fc9bf04`, RED `8e7f589`); the live defect was
+  recorded at `d75eb9b` before review, and the landing at `65b35ee`. Packet C has no ledger file of its own:
+  its measurements are in the messages of `8e7f589` and `fc9bf04` and in the H73 BACKLOG row; the first crypt
+  measurement is the "crypt" bullet of `review/ledger-h73-wrapped-dest-2026-09-28.md` (packet A).
+- H81 (the canary's empty folder; one structural guard over every destructive rclone call): merge `b50cb19`
+  (candidate `29616da`, RED `8c41bcf`, rounds `15566fc`, `0f070bf`, `13a88b0`, `cf0804e`), record `c3d4f34`.
+The BACKLOG rows for these carry the review rounds and bars.
+
+**Relation to the bus** (fleet doctrine `TRAPS.md` and `RECEIPTS.md` at `cd61844`, searched again at `86e01f5` with no new match; every line cited below except `TRAPS.md:20832`, which
+arrived at `a2ae2ba`, is unchanged since `fd86aa5`, as both files only grew at their ends). Searched by mechanism:
+`crypt`, `cipher`, `filename_encryption`, `directory_name`, `ParseBool`, `core/command`, `job/batch`,
+`backend/command`, `deletefile`, `rmdir`, `purge`, `escape hatch`, `denylist`. Apart from "encrypted reasoning"
+(`TRAPS.md:388`), the only `crypt` hits are this project's stored-hash filing, which lists crypt as a wrapper that passes hashes through live
+(`TRAPS.md:19937`), and this project's placement filing, whose sample GREEN reader follows a crypt exactly like
+an alias (`RECEIPTS.md:5751`, the `WRAP` set). T1 shows that reader refusing a crypt that writes nothing into
+the source (RECEIPTS, "the bus's own sample reader"): safe, but a false alarm this filing corrects. No
+`core/command` or `job/batch` hit. Nearest neighbours are named per trap.
+
+## Shared preamble
+
+Every block sources `dp-env.sh` from its parent directory. It first unsets every exported variable whose name
+starts `RCLONE_` in ANY case and prints each name it unset, and stops INCONCLUSIVE if a child process would still
+see one, in any case (bash cannot unset a name that is not a shell identifier, such as `RCLONE_CONFIG_E-PAR_...`
+or `RCLONE_CONFIG_MY-NAS_TYPE`, but passes it on; run the block as `env -u NAME bash t1.sh` to drop it for that
+run only, RECEIPTS `r23`). rclone reads any `RCLONE_<FLAG>` from the environment and the rcd inherits it; on
+Windows it reads the name in any case (`rclone_exclude` filters too, RECEIPTS `nu/r22`). An ambient
+`RCLONE_EXCLUDE='*.bin'` made `operations/delete`, `sync/move`, `sync/sync` and `core/command` remove nothing, so
+before this scrub and T2's `EXPECT` check a guard admitting `sync/sync` and `core/command` read GREEN (found in
+review; RECEIPTS `nu/r17` without the scrub now reads INCONCLUSIVE, `r16` with it reads RED). It then points rclone at a config and
+cache inside the current directory, so nothing reads or writes the live `rclone.conf`. Every rclone call runs
+under `timeout 120`. The one `rcd` (T2) binds `127.0.0.1:<port>` explicitly with per-run random credentials. If
+anything already listens on that port, T2 stops INCONCLUSIVE before launching or calling anything; it calls its
+rcd only after seeing the PID it launched alive and that rcd's log saying it serves the port, checks the PID
+again before every call, and stops only that PID (`core/quit` through its own rc once confirmed, otherwise
+`kill` on the PID it launched). No block removes anything outside the folders it
+creates, and each refuses to run over a leftover one. The scripts need bash (Git Bash on Windows), Python 3,
+coreutils `timeout` and rclone on `PATH`.
+
+**The hooks.** Each test takes YOUR decision as a shell command in a variable: `PLACE` (T1: is destination
+`$2` placed, and not the source folder `$1`?) and `GUARD` (T2: would your guard let new code call rc endpoint
+`$1`?). T2 also takes two lists, `ALLOW` and `NEED`. The defaults are small readers with the trap in them, so
+each block run unchanged shows RED.
+
+**The hook contract.** A hook, list or environment that breaks it gives INCONCLUSIVE, never GREEN or RED; each
+clause names the check that enforces it.
+1. *Answer.* Exit 0 means allowed, **exit 10 means refused**; any other exit (a crash, a missing file) reads
+   INCONCLUSIVE.
+2. *Not everything refused.* Before the main loop the hook must allow something genuinely safe (T1: an independent
+   folder and a disjoint crypt; T2: every `NEED` endpoint), or the run stops INCONCLUSIVE.
+3. *Independent calls.* Each call answers from its arguments alone: it must not depend on earlier calls, their
+   order or their count. A guard that plants a call in a scratch copy of your source must make a FRESH copy for
+   every call. After the main loop each block asks every question again (T1: the seven cases in reverse order,
+   then both controls; T2: every `NEED` endpoint, then every judged deleter in reverse, so the first-judged one
+   is asked last); any answer that differs from the first reads INCONCLUSIVE, even over RED (RECEIPTS `r24` and
+   `r26`; the same planting guard with a fresh copy per call, `r25`, reads RED). Limit: re-asking sees only state that CHANGES between the two passes. A hook whose state is
+   set before a question is first asked and is unchanged when it is asked again -- a cache of its own first answers,
+   a latch set by an earlier call (for example a flag file written on its first refusal), a scratch copy that has
+   already saturated -- answers the same both times and cannot be told apart from an independent one from outside.
+   Clause 3 is a contract you keep, not one these blocks can fully check.
+4. *Isolated.* The hook runs in a subshell with no stdin, so it cannot change the block's variables. Its text
+   is `eval`ed in the block's shell, so a command in it named like one of the block's own functions (`R`, `rc`,
+   `m`, `say`, `hook`, `knob`) runs the block's function, not yours: call your tool by its full path; a hook that
+   writes into T1's fixtures breaks that case's own measurement, which then reads INCONCLUSIVE. T2 asks `GUARD`
+   nothing until its rcd is stopped, so a slow guard cannot outlive the rcd and no guard call can reach it.
+5. *Settings read as written.* `PLACE`, `GUARD`, `ALLOW` and `NEED` are read by those exact names; one set in
+   another case (`Guard=...`) is not silently ignored but stops INCONCLUSIVE (RECEIPTS `r30`). Unset means the default; set but
+   empty means empty (an empty `ALLOW` exempts nothing, RECEIPTS `r29`; an empty hook or `NEED` is INCONCLUSIVE). The lists split
+   on ANY whitespace (spaces, tabs, CR, newlines, so `$(cat allow.txt)` works, RECEIPTS `r28`) and are never globbed; the block
+   prints each parsed list, and every `ALLOW` or `NEED` entry must be an endpoint it measured (a typo or another
+   case would otherwise exempt or admit nothing, silently).
+6. *Environment.* No `RCLONE_*` variable, in any case, reaches rclone (`dp-env.sh`, above; RECEIPTS `r27`).
+**A verdict needs positive evidence that the measurement worked for everything it covers:** a case or endpoint
+whose own fixture did not do what the block says it does reads INCONCLUSIVE, whatever the hook said. Each of T1
+and T2 ends with one summary line and exits with it: **RED exits 1** (any case RED), **INCONCLUSIVE exits 3**
+(any case INCONCLUSIVE and none RED, or a control or measurement failed), **GREEN exits 0** (nothing else).
+`cryptplace.py` in RECEIPTS is a sample positive reader (not Cloudvore's code) used as T1's GREEN setting.
+
+```bash
+# dp-env.sh: throwaway rclone config and cache in $T; local folders and 127.0.0.1 only; no provider.
+# rclone reads EVERY RCLONE_<FLAG> variable (RCLONE_EXCLUDE, RCLONE_FILTER, RCLONE_DRY_RUN, RCLONE_CONFIG_<NAME>_...)
+# and the rcd inherits them, so an ambient one changes what a block measures. On Windows it reads the names in
+# any case (rclone_exclude filters too). Unset them all first, in any spelling (names printed).
+for v in $(compgen -e | grep -i '^rclone_'); do echo "dp-env.sh: unset inherited $v"; unset "$v"; done   # scrub
+# bash cannot unset a name it does not import (RCLONE_CONFIG_E-PAR_...), yet passes it on: ask a child what is left.
+left=$(env | grep -io '^rclone_[^=]*' | tr '\n' ' ')                                                    # scrub
+[ -z "$left" ] || { echo "INCONCLUSIVE: rclone would still inherit $left(bash cannot unset these); calling nothing. Run the block as: env -u NAME bash <block>.sh"; exit 3; }   # scrub
+set -f                  # this script globs nothing it splits (a list entry `*` stays `*`); hooks glob as usual
+T=$(cygpath -m "$PWD")                                  # Git Bash; elsewhere T=$PWD
+export RCLONE_CONFIG="$T/rclone.conf" RCLONE_CACHE_DIR="$T/cache"
+R(){ timeout 120 rclone --config "$RCLONE_CONFIG" --cache-dir "$RCLONE_CACHE_DIR" "$@"; }
+nap(){ python -c 'import time; time.sleep(0.2)'; }
+nfiles(){ find "$1" -type f 2>/dev/null | wc -l | tr -d ' '; }
+# an rcd bound to 127.0.0.1 ONLY, with per-run random credentials (an rcd started by anyone else refuses them).
+# It is used only once this script has launched it, seen its PID alive and its log say it serves on the port.
+RCU=u$(python -c 'import secrets; print(secrets.token_hex(8))'); RCP=$(python -c 'import secrets; print(secrets.token_hex(16))')
+rc(){ local p=$1; shift; timeout 120 rclone rc --url "http://127.0.0.1:$p/" --user "$RCU" --pass "$RCP" "$@"; }
+listening(){ python -c 'import socket, sys
+try: socket.create_connection(("127.0.0.1", int(sys.argv[1])), 2).close()
+except OSError: sys.exit(1)' "$1"; }
+RCD_PID=; RCD_OK=
+rcd_start(){ if listening "$1" || rc "$1" rc/noop >/dev/null 2>&1; then     # checked BEFORE launching anything
+    echo "INCONCLUSIVE: something already listens on 127.0.0.1:$1; this block calls nothing there"; exit 3; fi
+  timeout 120 rclone --config "$RCLONE_CONFIG" --cache-dir "$RCLONE_CACHE_DIR" rcd --rc-addr "127.0.0.1:$1" \
+    --rc-user "$RCU" --rc-pass "$RCP" > "rcd-$1.log" 2>&1 &
+  RCD_PID=$!
+  for i in $(seq 50); do
+    kill -0 "$RCD_PID" 2>/dev/null || { echo "INCONCLUSIVE: the rcd this block launched exited: $(head -1 "rcd-$1.log")"; exit 3; }
+    kill -0 "$RCD_PID" 2>/dev/null && grep -q "Serving remote control on http://127.0.0.1:$1/" "rcd-$1.log" \
+      && rc "$1" rc/noop >/dev/null 2>&1 && { RCD_OK=1; return 0; }
+    nap; done
+  echo "INCONCLUSIVE: rcd did not start on 127.0.0.1:$1"; exit 3; }
+# rcd_alive: call before every rc call; if the rcd this block launched is gone, nothing more is called.
+rcd_alive(){ [ -n "$RCD_OK" ] && kill -0 "$RCD_PID" 2>/dev/null && return 0
+  echo "INCONCLUSIVE: the rcd this block launched is not running; calling nothing more"; return 1; }
+# rcd_stop: stops only the rcd this block launched: through its own rc once confirmed, else by its own PID.
+rcd_stop(){ [ -n "$RCD_PID" ] && kill -0 "$RCD_PID" 2>/dev/null || return 0
+  if [ -n "$RCD_OK" ] && rc "$1" core/quit >/dev/null 2>&1; then :; else kill "$RCD_PID" 2>/dev/null; fi
+  wait "$RCD_PID" 2>/dev/null; }
+# hook HOOK ARGS...: run YOUR command held in the variable named HOOK with ARGS as $1 $2 ...
+# exit 0 = allowed, exit 10 = refused, any other exit (a crash, a missing file) = the hook failed.
+# Its first output line is kept in $WHY. It runs in a subshell with no stdin, so it cannot change this script.
+hook(){ local h=$1 rc; shift; WHY=$(set +f; set -- "$@"; eval "${!h}" 2>&1 </dev/null); rc=$?; WHY=${WHY%%$'\n'*}; return $rc; }
+# knob NAME DEFAULT: read YOUR setting NAME exactly as spelled; unset means DEFAULT (set but empty stays empty).
+# A variable spelled NAME in another case would be silently ignored, so the block stops instead.
+knob(){ local n=$1 v
+  for v in $(compgen -A export | grep -ix "$n" | grep -vx "$n"); do
+    echo "INCONCLUSIVE: $v is set, but this block reads $n (the name is case-sensitive); calling nothing"; exit 3; done
+  [ -n "${!n+set}" ] || printf -v "$n" '%s' "$2"; }
+# words LIST: a list knob split on ANY whitespace (spaces, tabs, CR, newlines), one space between (set -f: no glob).
+words(){ local IFS=$' \t\r\n' w out=; for w in $1; do out="$out $w"; done; printf '%s' "${out# }"; }
+# ask HOOK KEY ARGS...: hook, and remember its exit as the first answer for KEY. again HOOK KEY ARGS...: ask once
+# more; if the exit differs from the first answer, the hook is stateful and no verdict stands (see the contract).
+unset ANS; declare -A ANS=()
+ask(){ local k=$2 h=$1; shift 2; hook "$h" "$@"; ANS[$k]=$?; return ${ANS[$k]}; }
+again(){ local k=$2 h=$1 r; shift 2; hook "$h" "$@"; r=$?; [ "$r" = "${ANS[$k]}" ] && return 0
+  echo "INCONCLUSIVE: $h answered $k with exit ${ANS[$k]} at first and exit $r when asked again: its answers depend on earlier calls, which the hook contract forbids${WHY:+ ($WHY)}"; exit 3; }
+```
+
+## TRAPS
+
+### 1. A crypt destination stores its bytes behind its `remote=`, and where depends on its name settings; a crypt in the source writes ciphertext INTO the source and an inventory-scoped verify passes
+
+**Adds to the bus:** not found by mechanism (searched above). It extends this project's "An overlap reader
+that judges only what it can root is blind to spellings that serve the source; placement must be positive"
+(`TRAPS.md:20661`) with the one wrapper whose placement depends on a setting, and it corrects that filing's
+sample reader (`RECEIPTS.md:5751`), which follows every crypt like an alias. The literal-compare half is a
+case of "A guard that tests for a literal and a translator that tests for a pattern will disagree"
+(`TRAPS.md:13962`, conjugal): here the translator is rclone's own option parser.
+
+- **Measured here (`8e7f589`, `fc9bf04`; re-run as T1 and T1w).** fsinfo reports every crypt as
+  `IsLocal=False`, with `Root` '' or the subpath: nothing rclone reports says where the bytes go.
+  - A crypt whose `remote=` is inside the source (`c-in`) or is the source (`c-at`) writes its ciphertext into
+    the source: copying the source's two files to it added two encrypted-name files to the source.
+  - With **plain folder names**, a crypt stores `remote/subpath` verbatim. Over the source's PARENT,
+    `crypt:src` writes into the source: `filename_encryption = off` added `a.txt.bin` and `b.txt.bin` beside
+    `a.txt` and `b.txt`; `directory_name_encryption = false` added two encrypted-name files.
+  - rclone reads those settings loosely: `filename_encryption = OFF` behaves as `off`, and
+    `directory_name_encryption = F` (and `0`) as `false` (Go's `strconv.ParseBool`; `no` makes rclone refuse the
+    remote). A reader that compares the literal strings `off` / `false` calls those two encrypted.
+  - With **encrypted names**, the subpath is encrypted too: `crypt:src` over the parent stored its files under
+    `<parent>/397a93fgndm07hbkk8ka50jdt0/`, and the source was untouched. A reader that follows a crypt like an
+    alias refuses it: a false alarm.
+  - A check scoped to the run's own inventory (`--files-from`), with or without `--download`, reported
+    `0 differences` and `2 matching` after `c-in` wrote into the source; only a whole-tree `check` or
+    `cryptcheck` reported the two ciphertext files, as "file not in" the crypt (T1w). On master before
+    `367da48`, Cloudvore's byte-for-byte run over a crypt inside the source reached Verified with
+    `IsSafeToWipe=true` (`8e7f589`): the backup would have been wiped with the source it lived in.
+- **What changed here** (`fc9bf04`). The placement walk expands a crypt. Plain folder names (`off`,
+  case-insensitive, or `directory_name_encryption` false as `ParseBool` reads it): the leaves of
+  `remote/subpath`, judged against the source in both directions. Encrypted names: the leaves of the remote
+  ROOT, refused only when the root is at or inside the source. No `remote=`, a name setting rclone refuses, or
+  an on-the-fly crypt: refused as unplaceable. A union with a DISJOINT crypt upstream is no longer refused.
+- **How it was checked here.** RED `8e7f589` (a crypt inside the source reaches SAFE TO WIPE; a disjoint crypt
+  union upstream is refused); two opposing Opus seats RATIFY at r1 (26 spellings refused before any copy or
+  canary, 10/10 mutants killed; no false refusals); bar 3x green at `fc9bf04` and on the merged tree.
+  **Residual, recorded on the H73 row:** an encrypted crypt whose root CONTAINS the source, where the encrypted
+  subpath happens to lead into it, is allowed; telling needs rclone to encode the name
+  (`backend/command encode`). `cryptplace.py` has the same residual.
+- **Test another project can run (T1).** RED: `PLACE` allows any of the six crypts that write into the source,
+  or refuses `e-par:src`, which does not. GREEN: all six refused and `e-par:src` allowed. Controls: an
+  independent local folder and a crypt over a disjoint folder (`c-far:`) must be allowed, or the run is
+  INCONCLUSIVE. Each verdict also needs the case's own measurement: the copy must have stored the source's two
+  files in the case's folder, both of them in the source (the six) or neither (`e-par`); otherwise the case reads
+  INCONCLUSIVE, whatever `PLACE` said, since a copy that stored nothing also "leaves the source alone". The
+  summary line `T1: GREEN` needs all seven cases measured and judged correctly and `PLACE` to give the same nine
+  answers when asked again after the loop (exits 0, 1 or 3, as above). Two more readers with a trap in them
+  are in the block (`place_cfg alias`, `place_cfg literal`); RECEIPTS runs both. T1w needs no hook: it prints what four checks report after a crypt in the
+  source was written to.
+
+```bash
+# T1: a crypt destination stores its bytes behind its remote=, and WHERE depends on its name settings (PLACE hook)
+# PLACE: how YOUR tool decides that destination $2 is placed and is NOT the source folder $1 (see dp-env.sh `hook`).
+# Default: place_fsinfo, which trusts fsinfo (a crypt reports IsLocal=false), so it judges no crypt at all.
+[ -e t1 ] && { echo "INCONCLUSIVE: t1 exists; run in a fresh directory"; exit 3; }
+mkdir t1; cd t1; . ../dp-env.sh
+knob PLACE 'place_fsinfo "$1" "$2"'
+[[ $PLACE =~ [^[:space:]] ]] || { echo "INCONCLUSIVE: PLACE is set but empty; calling nothing"; exit 3; }
+echo "PLACE: $PLACE"
+place_fsinfo(){ R backend features "$2" 2>/dev/null | python -c '
+import json, os, sys
+d = json.load(sys.stdin); src = os.path.normcase(os.path.abspath(sys.argv[1]))
+root = d.get("Root", "").replace("//?/", "")
+if d.get("Features", {}).get("IsLocal") and os.path.isabs(root):
+    r = os.path.normcase(os.path.abspath(root))
+    sys.exit(10 if r == src or r.startswith(src + os.sep) or src.startswith(r + os.sep) else 0)
+sys.exit(0)' "$1"; }
+# place_cfg MODE SRC DEST reads the config only (two more readers with a trap in them).
+#   alias:   follows a crypt like an alias (remote/subpath), judged both ways.
+#   literal: plain folder names only when filename_encryption is exactly "off" or directory_name_encryption
+#            exactly "false"; otherwise encrypted, and only a root at or inside the source is refused.
+place_cfg(){ R config dump | python -c '
+import json, os, sys
+conf = json.load(sys.stdin); mode = sys.argv[1]; src = os.path.normcase(os.path.abspath(sys.argv[2]))
+def rel(p):
+    r = os.path.normcase(os.path.abspath(p))
+    return "at" if r == src else "inside" if r.startswith(src + os.sep) else "contains" if src.startswith(r + os.sep) else ""
+name, _, rest = sys.argv[3].partition(":")
+sec = conf.get(name, {})
+if sec.get("type") != "crypt": sys.exit(10 if rel(sys.argv[3]) else 0)
+root = sec.get("remote", "")
+plain = mode == "alias" or sec.get("filename_encryption") == "off" or sec.get("directory_name_encryption") == "false"
+if plain: sys.exit(10 if rel(root + ("/" + rest if rest else "")) else 0)
+sys.exit(10 if rel(root) in ("at", "inside") else 0)' "$@"; }
+P=$(R obscure probe)
+# case_ NAME DEST REMOTE SETTING: a folder NAME/ holding a source NAME/src, and a crypt section NAME whose remote= is
+# NAME/ + REMOTE, with SETTING as an extra line. DEST (unused here) is the destination the loop below writes to.
+# Each case has its own source, so what lands in it is attributable to that case alone.
+: > "$RCLONE_CONFIG"
+case_(){ mkdir -p "$1/src"; echo alpha > "$1/src/a.txt"; echo bravo > "$1/src/b.txt"
+  printf '[%s]\ntype = crypt\nremote = %s\npassword = %s\n%s\n\n' "$1" "$T/$1$3" "$P" "$4" >> "$RCLONE_CONFIG"; }
+case_ c-in    c-in:       /src/vault ""                                 # remote= inside the source
+case_ c-at    c-at:       /src       ""                                 # remote= is the source
+case_ p-off   p-off:src   ""         "filename_encryption = off"        # plain names over the source's parent
+case_ p-upper p-upper:src ""         "filename_encryption = OFF"        # rclone reads the mode case-insensitively
+case_ d-false d-false:src ""         "directory_name_encryption = false"
+case_ d-f     d-f:src     ""         "directory_name_encryption = F"    # rclone reads it with Go's ParseBool
+case_ e-par   e-par:src   ""         ""                                 # encrypted names over the parent: NOT the source
+case_ c-far   c-far:      /elsewhere ""                                 # control: a crypt over a folder elsewhere
+mkdir -p elsewhere
+printf 'a.txt\nb.txt\n' > inventory.txt            # what a run that verifies only its own inventory compares
+control(){ ask PLACE "$2" "$1" "$2" || { echo "INCONCLUSIVE: PLACE does not allow an independent destination ($2)${WHY:+: $WHY}"; exit 3; }
+  echo "control: $2 allowed"; }
+control "$T/c-far/src" "$T/elsewhere"
+control "$T/c-far/src" c-far:                        # a crypt over a disjoint folder: refusing every crypt is not GREEN
+fsinfo(){ R backend features "$1" 2>/dev/null | python -c 'import json,sys; d=json.load(sys.stdin); print("IsLocal=%s Root=%r" % (d["Features"].get("IsLocal"), d.get("Root")))'; }
+echo "fsinfo: c-in: $(fsinfo c-in:) | p-off:src $(fsinfo p-off:src)"
+red=0; inc=0; ok=0
+CASES="c-in:c-in: c-at:c-at: p-off:p-off:src p-upper:p-upper:src d-false:d-false:src d-f:d-f:src e-par:e-par:src"
+for c in $CASES; do
+  n=${c%%:*}; d=${c#*:}; S="$T/$n/src"
+  ask PLACE "$d" "$S" "$d"; v=$?
+  R copy "$S" "$d" 2>/dev/null                                  # what the backup does if it is allowed
+  gained=$(( $(nfiles "$S") - 2 )); stored=$(( $(nfiles "$T/$n") - 2 ))   # the case folder holds only this case
+  chk=$(R check "$S" "$d" --download --files-from inventory.txt 2>&1 | grep -oE '[0-9]+ differences found' | head -1)
+  printf '%-8s %-12s source gained %s file(s); inventory check: %-19s PLACE -> ' $n "$d" $gained "${chk:-no result};"
+  # the verdict stands only if this run measured what the case is for: the copy stored the source's 2 files in
+  # the case folder, and e-par wrote none of them into the source while the other six wrote both. Otherwise the
+  # fixture did not do what it claims (a copy that stored nothing also "leaves the source"), so no verdict.
+  case "$n" in e-par) want=0 ;; *) want=2 ;; esac
+  if [ "$stored" -ne 2 ] || [ "$gained" -ne "$want" ]; then
+    echo "INCONCLUSIVE: this case is meant to store 2 file(s) and write $want into the source; it stored $stored and wrote $gained"
+    inc=$((inc+1)); continue; fi
+  case "$n:$v" in
+    e-par:0)  echo "allowed (encrypted names land beside the source: correct)"; ok=$((ok+1)) ;;
+    e-par:10) echo "RED: refused, a false alarm: this crypt writes nothing into the source${WHY:+ ($WHY)}"; red=$((red+1)) ;;
+    *:0)      echo "RED: allowed, and it writes into the source"; red=$((red+1)) ;;
+    *:10)     echo "GREEN: refused${WHY:+ ($WHY)}"; ok=$((ok+1)) ;;
+    *)        echo "INCONCLUSIVE: PLACE failed${WHY:+ ($WHY)}"; inc=$((inc+1)) ;;
+  esac
+done
+# the hook contract, checked after the loop: every case again in reverse order, then both controls. A PLACE whose
+# answer depends on earlier calls (a counter, a scratch file it never resets) gives no verdict, even over RED.
+for c in $(printf '%s\n' $CASES | tac); do n=${c%%:*}; d=${c#*:}; again PLACE "$d" "$T/$n/src" "$d"; done
+again PLACE c-far: "$T/c-far/src" c-far:; again PLACE "$T/elsewhere" "$T/c-far/src" "$T/elsewhere"
+echo "PLACE gave the same answer to all 9 questions when asked again"
+# one summary line and its exit: GREEN only when all 7 cases were measured and judged correctly.
+[ $red -gt 0 ] && { echo "T1: RED ($red of 7 case(s) RED, $inc INCONCLUSIVE)"; exit 1; }
+[ $inc -gt 0 ] || [ $ok -ne 7 ] && { echo "T1: INCONCLUSIVE ($inc of 7 case(s) not measured or not judged)"; exit 3; }
+echo "T1: GREEN (all 7 cases measured and judged correctly)"; exit 0
+```
+
+```bash
+# T1w: the same crypt-in-source copy, checked three ways (no hook; it prints what rclone reports)
+[ -e t1w ] && { echo "INCONCLUSIVE: t1w exists; run in a fresh directory"; exit 3; }
+mkdir t1w; cd t1w; . ../dp-env.sh
+mkdir src; echo alpha > src/a.txt; echo bravo > src/b.txt; printf 'a.txt\nb.txt\n' > inventory.txt
+printf '[c-in]\ntype = crypt\nremote = %s\npassword = %s\n' "$T/src/vault" "$(R obscure probe)" > "$RCLONE_CONFIG"
+R copy src c-in: 2>/dev/null
+echo "source now: $(cd src && find . -type f | sed 's#^\./##' | sort | tr '\n' ' ')"
+say(){ printf '%-53s -> %s\n' "$*" "$(R "$@" 2>&1 | python -c '
+import re, sys
+t = sys.stdin.read(); n = lambda k: (re.findall(r"(\d+) " + k, t) or ["?"])[0]
+print("%s differences, %s matching, %d \"file not in\" errors" % (n("differences found"), n("matching files"), t.count("file not in")))')"; }
+say check src c-in: --files-from inventory.txt                 # a verify scoped to the run's own inventory
+say check src c-in: --download --files-from inventory.txt
+say check src c-in:                                            # the whole tree
+say cryptcheck src c-in:
+```
+
+### 2. A guard that names rclone's destructive rc calls misses the ones that run other calls: `core/command` and `job/batch` deleted files, and so did `sync/sync`
+
+**Adds to the bus:** not found by mechanism (searched `core/command`, `job/batch`, `backend/command`,
+`deletefile`, `purge`, `rmdir`, `escape hatch`, `denylist`). It is an rclone instance of "A capability guard
+keyed on NAMES silently admits the next name you add" (`TRAPS.md:9886`, MLV-App): here the name list is
+incomplete on the day it is written, because some endpoints delete by running other commands.
+
+- **Measured here (re-run as T2).** Against one fixture per endpoint (two files), through an `rcd` on
+  127.0.0.1: `operations/delete`, `operations/purge`, `operations/deletefile`, `operations/movefile`,
+  `sync/move` and `sync/sync` (from an empty folder) removed files, as their names say or imply;
+  `core/command` with `command=delete` removed both files, and `job/batch` running `operations/deletefile`
+  removed one. `operations/rmdir` on a folder holding a file was refused ("The directory is not empty.") and the
+  file survived; on an empty folder it removed it. `operations/rmdirs` removed no file; `operations/cleanup` is
+  not supported on a local folder; `sync/copy` from an empty folder and `operations/list` removed none. A
+  guard that bans names containing `delete`, `purge`, `rmdirs`, `cleanup`, `move` or `mirror` (the shape of
+  Cloudvore's first text guard) admits `sync/sync`, `core/command` and `job/batch`.
+- **What happened here** (H81). Cloudvore's only FILE-deleting rclone calls are the canary's: delete the file
+  this run planted, after its bytes are proven, with `operations/deletefile`, and now remove the
+  `.vault-canary` folder with `operations/rmdir` (empty-only) only when a complete parent listing proved this
+  run created it (`3ce8fe2`). The guard also pins `config/delete` (`ConfigDelete`), which deletes a remote
+  from rclone's config, never a file, to its own client method (`13a88b0`, H81 row). The structural guard's
+  first version was a text scan of endpoint spellings; a non-author seat walked around it six ways
+  (concatenation, interpolation, `core/command`, `backend/command`, reflection, a method group). Round 2 (`15566fc`) closed the paths rather than the spellings, reading the
+  source with the compiler's parser: every HTTP call takes its endpoint from one constants class, that class
+  equals a reviewed allowlist, and `core/command`, `backend/command` and the delete, purge, rmdirs, cleanup,
+  move and mirror endpoints are banned in any string. Rounds 3-5 closed four, one and one more evasions
+  (r3: a preprocessor conditional, reflection outside three reviewed files, an HTTP request outside the client,
+  an alias of the constants class; r4 and r5: a wrapper that re-calls a deleter) and pinned each deleting constant to exactly one use, in
+  its own client method.
+- **Threat model, as the guard states it** (`0f070bf`): it stops an HONEST change from adding a second
+  destructive rclone path by accident, not a deliberate author with source access. Declaring it is what let
+  the review converge: "a subject with no declared threat model parks forever" (`TRAPS.md:17470`, conjugal).
+- **How it was checked here.** RED `8c41bcf`; each evasion planted and RED; seat B RATIFY on false alarms;
+  bar 3x green at `29616da`.
+- **Test another project can run (T2).** It measures which endpoints remove files on YOUR rclone, then asks
+  `GUARD` about each one not in `ALLOW` (the deletes you make on purpose; default Cloudvore's two). If your
+  guard is a scan of your code, `GUARD` can plant a one-line call to `$1` in a FRESH scratch copy of your source,
+  made for that call and discarded after it, and run the scan: a copy kept between calls keeps every earlier
+  plant, so once a deleter is planted every later endpoint is refused (contract clause 3). RED: `GUARD` admits a measured deleter outside `ALLOW`. GREEN: it refuses all of them, at
+  least one was judged, and the deleters `ALLOW` exempts are printed. INCONCLUSIVE: any of the eight endpoints
+  measured above as removing files (`EXPECT` in the block) removed none on this run, since the judged set would
+  silently shrink (the measurement did not work); `ALLOW` covers every measured deleter, so nothing was judged;
+  `GUARD` refuses an endpoint in `NEED` (the calls your project needs; default `operations/list` and
+  `sync/copy`), each of which this block must have measured removing 0 files, so a guard that refuses more
+  than the deleters cannot read GREEN; `GUARD` fails on any endpoint it is asked about; `GUARD` answers a `NEED`
+  endpoint or a judged deleter differently when asked again after the loop; an `ALLOW` entry is not an
+  endpoint the block measured; or something already listens on T2's port. It also lists, without a verdict, endpoints it did not measure that write, overwrite,
+  start servers or run other code, when `GUARD` admits them (INCONCLUSIVE if `rc/list` does not answer). The measured set is only what
+  this block exercises on local folders; a deny-by-default guard (the GREEN setting in RECEIPTS) does not
+  depend on it.
+
+```bash
+# T2: which rclone rc endpoints remove a file, MEASURED on this rclone, and would YOUR guard let new code call one?
+# GUARD hook ($1 = an rc endpoint path): exit 0 = your guard would let a new call to it land; exit 10 = refused;
+# any other exit reads INCONCLUSIVE (see dp-env.sh `hook`).
+# ALLOW: the deleting endpoints your project calls on purpose (their call sites pinned by other means); may be empty.
+# NEED: endpoints your project needs that this block measures removing 0 files; GUARD must admit every one.
+# Both lists split on any whitespace. Default GUARD: guard_names, a denylist of endpoint NAMES (the trap).
+guard_names(){ case "$1" in *delete*|*purge*|*rmdirs*|*cleanup*|*move*|*mirror*) exit 10 ;; esac; exit 0; }
+[ -e t2 ] && { echo "INCONCLUSIVE: t2 exists; run in a fresh directory"; exit 3; }
+mkdir t2; cd t2; . ../dp-env.sh
+knob GUARD 'guard_names "$1"'; knob ALLOW "operations/deletefile operations/rmdir"; knob NEED "operations/list sync/copy"
+[[ $GUARD =~ [^[:space:]] ]] || { echo "INCONCLUSIVE: GUARD is set but empty; calling nothing"; exit 3; }
+ALLOW=$(words "$ALLOW"); NEED=$(words "$NEED")
+echo "GUARD: $GUARD"; echo "ALLOW (parsed): $ALLOW"; echo "NEED (parsed): $NEED"
+: > "$RCLONE_CONFIG"
+PORT=55781; trap 'rcd_stop $PORT' EXIT              # stops only the rcd this script launched (dp-env.sh)
+rcd_start $PORT
+# m ENDPOINT ARGS...: run it against a fresh fixture F (F/a.bin, F/sub/b.bin); E is an empty folder, O elsewhere.
+# The args are templates: @F, @E and @O are substituted per run. Prints how many of the 2 files it removed.
+i=0; DELETERS=""; KEPT=""
+m(){ local ep=$1; shift; i=$((i+1)); local d="m$i"; rcd_alive || exit 3; mkdir -p "$d/F/sub" "$d/E" "$d/O"
+  echo a > "$d/F/a.bin"; echo b > "$d/F/sub/b.bin"
+  local F="$T/$d/F" E="$T/$d/E" O="$T/$d/O" a args=()
+  for a in "$@"; do a=${a//@F/$F}; a=${a//@E/$E}; a=${a//@O/$O}; args+=("$a"); done
+  local err; err=$(rc $PORT "$ep" "${args[@]}" 2>/dev/null | python -c '
+import json, re, sys
+try: e = json.load(sys.stdin).get("error")
+except ValueError: e = ""
+e = e if isinstance(e, str) else ""                  # core/command answers "error": false
+print(re.sub(r"\S*[A-Za-z]:[\\/]\S*?(?=:? |$)", "<path>", e))')
+  local gone=$(( 2 - $(nfiles "$d/F") ))
+  printf '%-22s removed %s of 2 file(s)%s\n' "$ep" "$gone" "${err:+ (rc error: $err)}"
+  if [ $gone -gt 0 ]; then DELETERS="$DELETERS $ep"; else KEPT="$KEPT $ep"; fi; }
+m operations/deletefile fs=@F remote=a.bin
+m operations/delete     fs=@F
+m operations/purge      fs=@F remote=sub
+m operations/rmdir      fs=@F remote=sub
+m operations/rmdirs     fs=@F remote= leaveRoot=true
+m operations/cleanup    fs=@F
+m operations/movefile   srcFs=@F srcRemote=a.bin dstFs=@O dstRemote=a.bin
+m sync/move             srcFs=@F dstFs=@O
+m sync/sync             srcFs=@E dstFs=@F
+m sync/copy             srcFs=@E dstFs=@F
+m operations/list       fs=@F remote=
+m core/command          command=delete 'arg=["@F"]'
+m job/batch             --json '{"inputs":[{"_path":"operations/deletefile","fs":"@F","remote":"a.bin"}]}'
+rcd_alive || exit 3
+mkdir -p e/empty; rc $PORT operations/rmdir fs="$T/e" remote=empty >/dev/null 2>&1
+echo "operations/rmdir on an EMPTY folder: $([ -d e/empty ] && echo 'left it' || echo 'removed it')"
+# the endpoints this rclone serves (for the unmeasured list below); then the rcd is stopped BEFORE GUARD is asked
+# anything, so a slow GUARD cannot outlive it and no GUARD call can reach it.
+rcd_alive || exit 3
+L=$(rc $PORT rc/list 2>/dev/null); rcd_stop $PORT
+# the measurement must have worked for EVERY endpoint this draft says deletes: one that removed nothing here (an
+# ambient filter, a dry run, a failed call) would silently leave the judged set, so no verdict at all.
+EXPECT="operations/deletefile operations/delete operations/purge operations/movefile sync/move sync/sync core/command job/batch"
+miss=""; for ep in $EXPECT; do case " $DELETERS " in *" $ep "*) ;; *) miss="$miss $ep" ;; esac; done
+[ -z "$miss" ] || { echo "INCONCLUSIVE: expected to remove files, but removed none here:$miss; the measurement did not work"; exit 3; }
+# every ALLOW entry must be an endpoint this block measured (a typo or another case would exempt nothing, silently).
+for ep in $ALLOW; do case " $DELETERS $KEPT " in *" $ep "*) ;; *) echo "INCONCLUSIVE: ALLOW names $ep, which this block did not measure"; exit 3 ;; esac; done
+# control: GUARD must admit every NEED endpoint, each measured above removing 0 files; refusing them is not GREEN.
+[ -n "$NEED" ] || { echo "INCONCLUSIVE: NEED is empty, so nothing shows GUARD admits a call that removes nothing"; exit 3; }
+for ep in $NEED; do
+  case " $KEPT " in *" $ep "*) ;; *) echo "INCONCLUSIVE: NEED names $ep, which this block did not measure removing 0 files"; exit 3 ;; esac
+  ask GUARD "$ep" "$ep"; case $? in
+    0)  echo "control: GUARD admits $ep, which removed 0 files above" ;;
+    10) echo "INCONCLUSIVE: GUARD refuses $ep, which removed 0 files above (it refuses more than the deleters)${WHY:+: $WHY}"; exit 3 ;;
+    *)  echo "INCONCLUSIVE: GUARD failed on $ep${WHY:+: $WHY}"; exit 3 ;; esac
+done
+echo "ALLOW (not judged):$(for ep in $DELETERS; do case " $ALLOW " in *" $ep "*) printf ' %s' "$ep" ;; esac; done)"
+red=0; judged=0; JUDGED=""
+for ep in $DELETERS; do
+  case " $ALLOW " in *" $ep "*) echo "$ep: in ALLOW (a reviewed delete)"; continue ;; esac
+  ask GUARD "$ep" "$ep"; case $? in
+    0)  echo "RED: GUARD admits $ep, which removed files above"; red=$((red+1)); judged=$((judged+1)) ;;
+    10) echo "GREEN: GUARD refuses $ep"; judged=$((judged+1)) ;;
+    *)  echo "INCONCLUSIVE: GUARD failed on $ep${WHY:+ ($WHY)}"; exit 3 ;; esac
+  JUDGED="$ep $JUDGED"                                  # newest first: the first-judged deleter is asked again last
+done
+# not measured here: endpoints that write, overwrite, start servers or run other code. Listed if GUARD admits them.
+case "$L" in *'"operations/list"'*) ;; *) echo "INCONCLUSIVE: rc/list did not answer, so the unmeasured endpoints were not asked about"; exit 3 ;; esac
+nm=""; for ep in backend/command sync/bisync mount/mount serve/start options/set operations/copyfile operations/copyurl operations/uploadfile pluginsctl/addPlugin; do
+  case "$L" in *"\"$ep\""*) ;; *) continue ;; esac
+  hook GUARD "$ep"; case $? in 0) nm="$nm $ep" ;; 10) ;; *) echo "INCONCLUSIVE: GUARD failed on $ep${WHY:+ ($WHY)}"; exit 3 ;; esac; done
+[ -n "$nm" ] && echo "not measured here, and GUARD admits:$nm"
+# the hook contract, checked after every other call: each NEED endpoint again, then every judged deleter in reverse
+# order. A GUARD whose answer depends on earlier calls (one that plants into a scratch copy it never resets refuses
+# everything once a deleter is planted) gives no verdict, even over RED.
+for ep in $NEED $JUDGED; do again GUARD "$ep" "$ep"; done
+echo "GUARD gave the same answer to all $(( $(words "$NEED $JUDGED" | wc -w) )) questions when asked again"
+# one summary line and its exit: GREEN needs at least one deleter judged, and every other one in the ALLOW printed above.
+[ $red -gt 0 ] && { echo "T2: RED (GUARD admits $red of $judged judged deleter(s))"; exit 1; }
+[ $judged -gt 0 ] || { echo "T2: INCONCLUSIVE (ALLOW covers every measured deleter, so GUARD judged none)"; exit 3; }
+echo "T2: GREEN (GUARD refuses all $judged judged deleter(s); the rest are in the ALLOW printed above)"; exit 0
+```
+
+## NOT FILED
+
+- **K59, a guard that reads git's FETCH_HEAD while other processes fetch** (merge `f35e31d`, ledger
+  `review/ledger-fetch-head-in-flight-2026-09-30.md`). Already on the bus: published from its own draft,
+  `review/doctrine-drafts/2026-09-30-fetch-head-in-flight-traps.md` (source `da9b1d3`, merged at `dbb0047`), at
+  bus `a2ae2ba` (`TRAPS.md:20832`), acknowledged by Cloudvore `85cadb3`. Left out here so the bus does not
+  receive it twice.
+- H81's partial-plant ownership (a copy that writes and then throws is still taken back after its bytes are
+  proven) and the Roslyn specifics of the guard. Project-local; the portable part is trap 2.
+- Seat B's wording nit on packet C (two crypt refusals fall through to the generic text): project-local.
+
+## ROWS
+
+Every commit on Cloudvore `origin/master` (first parent) since the previous publication source `1fb09ba`, at
+`85cadb3`. (`tools/doctrine-debt.py` counts 25 at `65b35ee`: every commit in the range, merged branches included.)
+
+| Row | Landing | Disposition |
+|---|---|---|
+| (no row) | `23c86e7`, `137df8f` | Doctrine records: the placement draft's merge and its publication ack; already on the bus at `2091eff`. |
+| H81 | merge `b50cb19` (record `c3d4f34`) | **Covered by this filing**, trap 2. This also files what the previous filing held for H78 (`TRAPS.md:20824`): the empty `.vault-canary/` and the structural pin. |
+| H73 | `d75eb9b` (live defect recorded) | **Covered by this filing**, trap 1. |
+| K59 | merge `f35e31d` (record `642c475`) | **Already on the bus** at `a2ae2ba`, from its own draft (NOT FILED above). |
+| H73 packet C | merge `367da48` (record `65b35ee`) | **Covered by this filing**, trap 1. |
+| (no row) | `dbb0047`, `85cadb3` | Doctrine records: K59's draft merge and its publication ack; already on the bus at `a2ae2ba`. |

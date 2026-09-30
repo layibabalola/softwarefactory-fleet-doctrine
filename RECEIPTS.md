@@ -6035,3 +6035,764 @@ $ READER="exit 1" python fh_trap.py reader
 INCONCLUSIVE: READER refuses a clone with a whole FETCH_HEAD and no fetch running
 (exit 3)
 ```
+
+<!-- cloudvore-filing:2026-09-30-rclone-crypt-and-delete-traps generated from review/doctrine-drafts/2026-09-30-rclone-crypt-and-delete-traps.md at e91570a -->
+
+## RECEIPTS
+
+Run on 2026-09-30 with rclone v1.74.4 on Windows 11 Pro 10.0.26200 under Git Bash, Python 3.14 and git
+2.55.0.windows.5. The runner replaces its own directory with `<dir>` (forward-slash and backslash forms) and the
+Python interpreter's full path with `<python>`; T2 prints rc error paths as `<path>`; CR bytes
+Python writes to a pipe on Windows are stripped; nothing else is edited. Encrypted names repeat across runs
+because every run uses the password `probe` and rclone's default salt. Each run ends with `exit N`, the
+block's own exit status.
+Every block, `runall.sh` and `cryptplace.py` were extracted from this draft's text into a fresh directory and
+the runner run there; the whole extraction and run were then repeated in a second fresh directory, and the
+output, the `place.py` run and the leftover listing were byte-identical to the first and to what is below.
+
+The GREEN sample reader used as `PLACE` (run from inside each test directory):
+```python
+# cryptplace.py SRC DEST: where a crypt destination stores its bytes, judged against the source; reads the config only.
+# A sample GREEN implementation for T1's PLACE hook; not Cloudvore's code. It places absolute local paths and crypt
+# sections whose remote= is one; anything else is refused as unplaced. Exit 0 = placed and independent; 10 = refused.
+import json, os, re, subprocess, sys
+src = os.path.normcase(os.path.abspath(sys.argv[1]))
+dump = subprocess.run(["rclone", "config", "dump"], capture_output=True, text=True, encoding="utf-8", timeout=120)
+conf = json.loads(dump.stdout)                          # no dump: crash, never "nothing configured"
+TRUE = {"1", "t", "T", "TRUE", "true", "True"}          # Go strconv.ParseBool, which rclone uses for booleans
+FALSE = {"0", "f", "F", "FALSE", "false", "False"}
+
+
+class Unplaced(Exception):
+    pass
+
+
+def rel(p):
+    if not re.match(r"^([A-Za-z]:[\\/]|[\\/]{2})", p):
+        raise Unplaced("not an absolute path: %r" % p)
+    r = os.path.normcase(os.path.abspath(p))
+    if r == src:
+        return "at"
+    if r.startswith(src + os.sep):
+        return "inside"
+    return "contains" if src.startswith(r + os.sep) else ""
+
+
+def judge(spec):
+    m = re.match(r"^([^:/\\]{2,}):(.*)$", spec)          # a remote name has 2+ characters; 'C:' is a drive
+    if not m:
+        if rel(spec):
+            raise Unplaced("overlaps the source: %r" % spec)
+        return
+    name, rest = m.groups()
+    sec = conf.get(name)
+    if sec is None or sec.get("type") != "crypt":
+        raise Unplaced("not a crypt over a local folder: %r" % spec)
+    root = sec.get("remote", "")
+    if not root:
+        raise Unplaced("a crypt with no remote=")
+    fe = sec.get("filename_encryption", "standard").lower()
+    if fe not in ("standard", "obfuscate", "off"):
+        raise Unplaced("a filename_encryption rclone refuses: %r" % fe)
+    dne = sec.get("directory_name_encryption", "true")
+    if dne not in TRUE | FALSE:
+        raise Unplaced("a directory_name_encryption rclone refuses: %r" % dne)
+    if fe == "off" or dne in FALSE:                     # folder names stored as typed: the bytes go to remote/subpath
+        where = root.rstrip("/\\") + ("/" + rest if rest else "")
+        if rel(where):
+            raise Unplaced("plain folder names store it at %r" % where)
+    elif rel(root) in ("at", "inside"):                 # encrypted names: everything lands under the root
+        raise Unplaced("encrypted names store it under %r" % root)
+
+
+try:
+    judge(sys.argv[2])
+    sys.exit(0)
+except Unplaced as e:
+    print("refused:", e)
+    sys.exit(10)
+```
+
+The runner that produced the output below (`GP` is T1's GREEN setting and `GG` T2's: a deny-by-default
+allowlist; the others are the in-block readers with a trap in them, a hook that refuses everything, one that
+refuses every remote, one that crashes, a guard that admits only `operations/list`, `GD` (the name denylist
+plus `job/*`) in a clean environment and under an ambient `RCLONE_EXCLUDE='*.bin'`, an `ALLOW` naming every
+measured deleter, ambient `RCLONE_DRY_RUN` and a hyphenated `RCLONE_CONFIG_E-PAR_...` that bash cannot unset,
+then the second defence alone (`nu/`: `dp-env.sh` with its scrub removed, so the ambient variable reaches
+rclone), the hook-contract cases (a hyphenated name dropped with `env -u`; a lowercase `rclone_exclude` with and
+without the scrub; a planting guard whose scratch copy is never reset, and the same guard with a fresh copy per
+call; a `PLACE` that answers by call count; `ALLOW` split by newline, tab and CR; an empty `ALLOW`; a hook set
+as `Guard`), and T2 run while a decoy rcd the runner started itself already serves T2's port; the runner then
+stops the decoy through its own rc):
+```bash
+GP='python ../cryptplace.py "$1" "$2"'           # the GREEN sample reader (the scripts run inside t1/)
+GG='case "$1" in operations/list|operations/check|operations/fsinfo|sync/copy|core/version|core/quit) exit 0;; *) exit 10;; esac'
+D=$(cygpath -m "$PWD")
+GD='case "$1" in *delete*|*purge*|*rmdirs*|*cleanup*|*move*|*mirror*|job/*) exit 10;; esac; exit 0'   # names + job/*
+run(){ local label=$1 dir=$2; shift 2; echo "== $label"; mkdir "$dir"; (cd "$dir" && cp ../dp-env.sh ../t1.sh ../t1w.sh ../t2.sh ../cryptplace.py . && env "$@" 2>&1; echo "exit $?") | tr -d '\r' | python -c '
+import re, sys
+d = sys.argv[1]; w = d.replace("/", "\\")
+for line in sys.stdin:
+    line = re.sub(r"\S*python\.exe:", "<python>:", line)
+    line = line.replace(w.replace("\\", "\\\\"), "<dir>").replace(w, "<dir>").replace(d, "<dir>")
+    sys.stdout.write(line)' "$D" | tr -d '\r'; }
+run "t1.sh (default PLACE: trusts fsinfo)"                    r1 bash t1.sh
+run "t1.sh PLACE=place_cfg alias (a crypt followed like an alias)" r2 PLACE='place_cfg alias "$1" "$2"' bash t1.sh
+run "t1.sh PLACE=place_cfg literal (name settings compared literally)" r3 PLACE='place_cfg literal "$1" "$2"' bash t1.sh
+run "t1.sh PLACE=\"\$GP\""                                     r4 PLACE="$GP" bash t1.sh
+run "t1.sh PLACE='exit 10' (a hook that refuses everything)"   r5 PLACE='exit 10' bash t1.sh
+run "t1.sh PLACE='case \"\$2\" in ?:/*) exit 0;; *) exit 10;; esac' (refuses every remote)" r6 PLACE='case "$2" in ?:/*) exit 0;; *) exit 10;; esac' bash t1.sh
+run "t1.sh PLACE='python ../nosuch.py \"\$1\" \"\$2\"' (a hook that crashes)" r7 PLACE='python ../nosuch.py "$1" "$2"' bash t1.sh
+run "t1w.sh"                                                  r12 bash t1w.sh
+run "t2.sh (default GUARD: a denylist of names)"               r8 bash t2.sh
+run "t2.sh GUARD=\"\$GG\" (deny by default)"                    r9 GUARD="$GG" bash t2.sh
+run "t2.sh GUARD='exit 10' (a guard that refuses everything)"  r10 GUARD='exit 10' bash t2.sh
+run "t2.sh GUARD='python ../nosuch.py \"\$1\"' (a guard that crashes)" r11 GUARD='python ../nosuch.py "$1"' bash t2.sh
+run "t2.sh GUARD='case \"\$1\" in operations/list) exit 0;; *) exit 10;; esac' (refuses sync/copy too)" r13 GUARD='case "$1" in operations/list) exit 0;; *) exit 10;; esac' bash t2.sh
+run "t2.sh GUARD=\"\$GD\" (names + job/*)"                      r15 GUARD="$GD" bash t2.sh
+run "t2.sh GUARD=\"\$GD\" RCLONE_EXCLUDE='*.bin' (an ambient rclone filter)" r16 GUARD="$GD" RCLONE_EXCLUDE='*.bin' bash t2.sh
+run "t2.sh GUARD=\"\$GG\" ALLOW=<every measured deleter> (nothing left to judge)" r18 GUARD="$GG" ALLOW='operations/deletefile operations/delete operations/purge operations/movefile sync/move sync/sync core/command job/batch' bash t2.sh
+run "t1.sh PLACE=\"\$GP\" RCLONE_DRY_RUN=true (an ambient dry run)" r19 PLACE="$GP" RCLONE_DRY_RUN=true bash t1.sh
+run "t1.sh PLACE=\"\$GP\" RCLONE_CONFIG_E-PAR_FILENAME_ENCRYPTION=off (a name bash cannot unset)" r20 PLACE="$GP" RCLONE_CONFIG_E-PAR_FILENAME_ENCRYPTION=off bash t1.sh
+# the second defence alone: dp-env.sh with its scrub (the three lines marked `# scrub`) removed
+mkdir nu; sed '/# scrub$/d' dp-env.sh > nu/dp-env.sh; cp t1.sh t1w.sh t2.sh cryptplace.py nu/
+run "t2.sh GUARD=\"\$GD\" RCLONE_EXCLUDE='*.bin', dp-env.sh without its scrub" nu/r17 GUARD="$GD" RCLONE_EXCLUDE='*.bin' bash t2.sh
+run "t1.sh PLACE=\"\$GP\" RCLONE_DRY_RUN=true, dp-env.sh without its scrub" nu/r21 PLACE="$GP" RCLONE_DRY_RUN=true bash t1.sh
+run "t2.sh GUARD=\"\$GD\" rclone_exclude='*.bin' (lowercase), dp-env.sh without its scrub" nu/r22 GUARD="$GD" rclone_exclude='*.bin' bash t2.sh
+# the hook contract
+run "t1.sh PLACE=\"\$GP\", the name bash cannot unset dropped with env -u" r23 RCLONE_CONFIG_E-PAR_FILENAME_ENCRYPTION=off env -u RCLONE_CONFIG_E-PAR_FILENAME_ENCRYPTION PLACE="$GP" bash t1.sh
+GS='echo "$1" >> ../plant.txt; ! grep -qE "delete|purge|rmdirs|cleanup|move|mirror" ../plant.txt || exit 10'  # scratch never reset
+GF='d=$(mktemp -d ./plant.XXXXXX); echo "$1" > "$d/p.txt"; grep -qE "delete|purge|rmdirs|cleanup|move|mirror" "$d/p.txt"; r=$?; rm -r "$d"; [ $r -eq 0 ] && exit 10; exit 0'
+run "t2.sh GUARD=\"\$GS\" (plants into one scratch file it never resets)" r24 GUARD="$GS" bash t2.sh
+run "t2.sh GUARD=\"\$GF\" (the same scan, a fresh scratch copy per call)" r25 GUARD="$GF" bash t2.sh
+run "t1.sh PLACE=<allows its calls 1, 2 and 9 only> (answers by call count)" r26 PLACE='n=$(( $(cat ../n 2>/dev/null || echo 0) + 1 )); echo $n > ../n; case $n in 1|2|9) exit 0;; *) exit 10;; esac' bash t1.sh
+run "t2.sh GUARD=\"\$GD\" rclone_exclude='*.bin' (lowercase, with the scrub)" r27 GUARD="$GD" rclone_exclude='*.bin' bash t2.sh
+run "t2.sh GUARD=\"\$GG\" ALLOW=<newline, tab and CR separated>" r28 GUARD="$GG" ALLOW=$'operations/deletefile\n\toperations/rmdir\r\n' bash t2.sh
+run "t2.sh GUARD=<GG that also admits operations/deletefile> ALLOW='' (exempts nothing)" r29 GUARD='case "$1" in operations/list|sync/copy|operations/deletefile) exit 0;; *) exit 10;; esac' ALLOW= bash t2.sh
+run "t2.sh Guard=\"\$GG\" (the setting in another case)" r30 Guard="$GG" bash t2.sh
+# A decoy rcd on T2's port, started HERE with its own credentials and a throwaway config; T2 must call nothing.
+mkdir rd; : > rd/decoy.conf; DP=$(python -c 'import secrets; print(secrets.token_hex(16))')
+timeout 120 rclone --config "$D/rd/decoy.conf" --cache-dir "$D/rd/cache" rcd --rc-addr 127.0.0.1:55781 \
+  --rc-user decoy --rc-pass "$DP" > rd/decoy.log 2>&1 & DPID=$!
+dq(){ timeout 120 rclone rc --url http://127.0.0.1:55781/ "$@"; }
+for i in $(seq 50); do dq --user decoy --pass "$DP" rc/noop >/dev/null 2>&1 && break; python -c 'import time; time.sleep(0.2)'; done
+run "t2.sh with a decoy rcd already serving 127.0.0.1:55781" r14 bash t2.sh
+echo "decoy asked with other credentials: HTTP $(dq --user u0 --pass p0 rc/noop 2>/dev/null | python -c 'import json,sys; print(json.load(sys.stdin).get("status"))' | tr -d '\r')"
+kill -0 $DPID && dq --user decoy --pass "$DP" core/quit >/dev/null && wait $DPID && echo "decoy: stopped through its own rc (the PID the runner launched), exit $?"
+```
+
+```
+== t1.sh (default PLACE: trusts fsinfo)
+PLACE: place_fsinfo "$1" "$2"
+control: <dir>/r1/t1/elsewhere allowed
+control: c-far: allowed
+fsinfo: c-in: IsLocal=False Root='' | p-off:src IsLocal=False Root='src'
+c-in     c-in:        source gained 2 file(s); inventory check: 0 differences found; PLACE -> RED: allowed, and it writes into the source
+c-at     c-at:        source gained 2 file(s); inventory check: 0 differences found; PLACE -> RED: allowed, and it writes into the source
+p-off    p-off:src    source gained 2 file(s); inventory check: 0 differences found; PLACE -> RED: allowed, and it writes into the source
+p-upper  p-upper:src  source gained 2 file(s); inventory check: 0 differences found; PLACE -> RED: allowed, and it writes into the source
+d-false  d-false:src  source gained 2 file(s); inventory check: 0 differences found; PLACE -> RED: allowed, and it writes into the source
+d-f      d-f:src      source gained 2 file(s); inventory check: 0 differences found; PLACE -> RED: allowed, and it writes into the source
+e-par    e-par:src    source gained 0 file(s); inventory check: 0 differences found; PLACE -> allowed (encrypted names land beside the source: correct)
+PLACE gave the same answer to all 9 questions when asked again
+T1: RED (6 of 7 case(s) RED, 0 INCONCLUSIVE)
+exit 1
+== t1.sh PLACE=place_cfg alias (a crypt followed like an alias)
+PLACE: place_cfg alias "$1" "$2"
+control: <dir>/r2/t1/elsewhere allowed
+control: c-far: allowed
+fsinfo: c-in: IsLocal=False Root='' | p-off:src IsLocal=False Root='src'
+c-in     c-in:        source gained 2 file(s); inventory check: 0 differences found; PLACE -> GREEN: refused
+c-at     c-at:        source gained 2 file(s); inventory check: 0 differences found; PLACE -> GREEN: refused
+p-off    p-off:src    source gained 2 file(s); inventory check: 0 differences found; PLACE -> GREEN: refused
+p-upper  p-upper:src  source gained 2 file(s); inventory check: 0 differences found; PLACE -> GREEN: refused
+d-false  d-false:src  source gained 2 file(s); inventory check: 0 differences found; PLACE -> GREEN: refused
+d-f      d-f:src      source gained 2 file(s); inventory check: 0 differences found; PLACE -> GREEN: refused
+e-par    e-par:src    source gained 0 file(s); inventory check: 0 differences found; PLACE -> RED: refused, a false alarm: this crypt writes nothing into the source
+PLACE gave the same answer to all 9 questions when asked again
+T1: RED (1 of 7 case(s) RED, 0 INCONCLUSIVE)
+exit 1
+== t1.sh PLACE=place_cfg literal (name settings compared literally)
+PLACE: place_cfg literal "$1" "$2"
+control: <dir>/r3/t1/elsewhere allowed
+control: c-far: allowed
+fsinfo: c-in: IsLocal=False Root='' | p-off:src IsLocal=False Root='src'
+c-in     c-in:        source gained 2 file(s); inventory check: 0 differences found; PLACE -> GREEN: refused
+c-at     c-at:        source gained 2 file(s); inventory check: 0 differences found; PLACE -> GREEN: refused
+p-off    p-off:src    source gained 2 file(s); inventory check: 0 differences found; PLACE -> GREEN: refused
+p-upper  p-upper:src  source gained 2 file(s); inventory check: 0 differences found; PLACE -> RED: allowed, and it writes into the source
+d-false  d-false:src  source gained 2 file(s); inventory check: 0 differences found; PLACE -> GREEN: refused
+d-f      d-f:src      source gained 2 file(s); inventory check: 0 differences found; PLACE -> RED: allowed, and it writes into the source
+e-par    e-par:src    source gained 0 file(s); inventory check: 0 differences found; PLACE -> allowed (encrypted names land beside the source: correct)
+PLACE gave the same answer to all 9 questions when asked again
+T1: RED (2 of 7 case(s) RED, 0 INCONCLUSIVE)
+exit 1
+== t1.sh PLACE="$GP"
+PLACE: python ../cryptplace.py "$1" "$2"
+control: <dir>/r4/t1/elsewhere allowed
+control: c-far: allowed
+fsinfo: c-in: IsLocal=False Root='' | p-off:src IsLocal=False Root='src'
+c-in     c-in:        source gained 2 file(s); inventory check: 0 differences found; PLACE -> GREEN: refused (refused: encrypted names store it under '<dir>/r4/t1/c-in/src/vault')
+c-at     c-at:        source gained 2 file(s); inventory check: 0 differences found; PLACE -> GREEN: refused (refused: encrypted names store it under '<dir>/r4/t1/c-at/src')
+p-off    p-off:src    source gained 2 file(s); inventory check: 0 differences found; PLACE -> GREEN: refused (refused: plain folder names store it at '<dir>/r4/t1/p-off/src')
+p-upper  p-upper:src  source gained 2 file(s); inventory check: 0 differences found; PLACE -> GREEN: refused (refused: plain folder names store it at '<dir>/r4/t1/p-upper/src')
+d-false  d-false:src  source gained 2 file(s); inventory check: 0 differences found; PLACE -> GREEN: refused (refused: plain folder names store it at '<dir>/r4/t1/d-false/src')
+d-f      d-f:src      source gained 2 file(s); inventory check: 0 differences found; PLACE -> GREEN: refused (refused: plain folder names store it at '<dir>/r4/t1/d-f/src')
+e-par    e-par:src    source gained 0 file(s); inventory check: 0 differences found; PLACE -> allowed (encrypted names land beside the source: correct)
+PLACE gave the same answer to all 9 questions when asked again
+T1: GREEN (all 7 cases measured and judged correctly)
+exit 0
+== t1.sh PLACE='exit 10' (a hook that refuses everything)
+PLACE: exit 10
+INCONCLUSIVE: PLACE does not allow an independent destination (<dir>/r5/t1/elsewhere)
+exit 3
+== t1.sh PLACE='case "$2" in ?:/*) exit 0;; *) exit 10;; esac' (refuses every remote)
+PLACE: case "$2" in ?:/*) exit 0;; *) exit 10;; esac
+control: <dir>/r6/t1/elsewhere allowed
+INCONCLUSIVE: PLACE does not allow an independent destination (c-far:)
+exit 3
+== t1.sh PLACE='python ../nosuch.py "$1" "$2"' (a hook that crashes)
+PLACE: python ../nosuch.py "$1" "$2"
+INCONCLUSIVE: PLACE does not allow an independent destination (<dir>/r7/t1/elsewhere): <python>: can't open file '<dir>\\r7\\nosuch.py': [Errno 2] No such file or directory
+exit 3
+== t1w.sh
+source now: a.txt b.txt vault/98kqa0talu3uroje9bun3jh160 vault/kfjb46mfhkntvmc6ajlenivm20 
+check src c-in: --files-from inventory.txt            -> 0 differences, 2 matching, 0 "file not in" errors
+check src c-in: --download --files-from inventory.txt -> 0 differences, 2 matching, 0 "file not in" errors
+check src c-in:                                       -> 2 differences, 2 matching, 2 "file not in" errors
+cryptcheck src c-in:                                  -> 2 differences, 2 matching, 2 "file not in" errors
+exit 0
+== t2.sh (default GUARD: a denylist of names)
+GUARD: guard_names "$1"
+ALLOW (parsed): operations/deletefile operations/rmdir
+NEED (parsed): operations/list sync/copy
+operations/deletefile  removed 1 of 2 file(s)
+operations/delete      removed 2 of 2 file(s)
+operations/purge       removed 1 of 2 file(s)
+operations/rmdir       removed 0 of 2 file(s) (rc error: remove <path>: The directory is not empty.)
+operations/rmdirs      removed 0 of 2 file(s)
+operations/cleanup     removed 0 of 2 file(s) (rc error: Local file system at <path> doesn't support cleanup)
+operations/movefile    removed 1 of 2 file(s)
+sync/move              removed 2 of 2 file(s)
+sync/sync              removed 2 of 2 file(s)
+sync/copy              removed 0 of 2 file(s)
+operations/list        removed 0 of 2 file(s)
+core/command           removed 2 of 2 file(s)
+job/batch              removed 1 of 2 file(s)
+operations/rmdir on an EMPTY folder: removed it
+control: GUARD admits operations/list, which removed 0 files above
+control: GUARD admits sync/copy, which removed 0 files above
+ALLOW (not judged): operations/deletefile
+operations/deletefile: in ALLOW (a reviewed delete)
+GREEN: GUARD refuses operations/delete
+GREEN: GUARD refuses operations/purge
+GREEN: GUARD refuses operations/movefile
+GREEN: GUARD refuses sync/move
+RED: GUARD admits sync/sync, which removed files above
+RED: GUARD admits core/command, which removed files above
+RED: GUARD admits job/batch, which removed files above
+not measured here, and GUARD admits: backend/command sync/bisync mount/mount serve/start options/set operations/copyfile operations/copyurl operations/uploadfile pluginsctl/addPlugin
+GUARD gave the same answer to all 9 questions when asked again
+T2: RED (GUARD admits 3 of 7 judged deleter(s))
+exit 1
+== t2.sh GUARD="$GG" (deny by default)
+GUARD: case "$1" in operations/list|operations/check|operations/fsinfo|sync/copy|core/version|core/quit) exit 0;; *) exit 10;; esac
+ALLOW (parsed): operations/deletefile operations/rmdir
+NEED (parsed): operations/list sync/copy
+operations/deletefile  removed 1 of 2 file(s)
+operations/delete      removed 2 of 2 file(s)
+operations/purge       removed 1 of 2 file(s)
+operations/rmdir       removed 0 of 2 file(s) (rc error: remove <path>: The directory is not empty.)
+operations/rmdirs      removed 0 of 2 file(s)
+operations/cleanup     removed 0 of 2 file(s) (rc error: Local file system at <path> doesn't support cleanup)
+operations/movefile    removed 1 of 2 file(s)
+sync/move              removed 2 of 2 file(s)
+sync/sync              removed 2 of 2 file(s)
+sync/copy              removed 0 of 2 file(s)
+operations/list        removed 0 of 2 file(s)
+core/command           removed 2 of 2 file(s)
+job/batch              removed 1 of 2 file(s)
+operations/rmdir on an EMPTY folder: removed it
+control: GUARD admits operations/list, which removed 0 files above
+control: GUARD admits sync/copy, which removed 0 files above
+ALLOW (not judged): operations/deletefile
+operations/deletefile: in ALLOW (a reviewed delete)
+GREEN: GUARD refuses operations/delete
+GREEN: GUARD refuses operations/purge
+GREEN: GUARD refuses operations/movefile
+GREEN: GUARD refuses sync/move
+GREEN: GUARD refuses sync/sync
+GREEN: GUARD refuses core/command
+GREEN: GUARD refuses job/batch
+GUARD gave the same answer to all 9 questions when asked again
+T2: GREEN (GUARD refuses all 7 judged deleter(s); the rest are in the ALLOW printed above)
+exit 0
+== t2.sh GUARD='exit 10' (a guard that refuses everything)
+GUARD: exit 10
+ALLOW (parsed): operations/deletefile operations/rmdir
+NEED (parsed): operations/list sync/copy
+operations/deletefile  removed 1 of 2 file(s)
+operations/delete      removed 2 of 2 file(s)
+operations/purge       removed 1 of 2 file(s)
+operations/rmdir       removed 0 of 2 file(s) (rc error: remove <path>: The directory is not empty.)
+operations/rmdirs      removed 0 of 2 file(s)
+operations/cleanup     removed 0 of 2 file(s) (rc error: Local file system at <path> doesn't support cleanup)
+operations/movefile    removed 1 of 2 file(s)
+sync/move              removed 2 of 2 file(s)
+sync/sync              removed 2 of 2 file(s)
+sync/copy              removed 0 of 2 file(s)
+operations/list        removed 0 of 2 file(s)
+core/command           removed 2 of 2 file(s)
+job/batch              removed 1 of 2 file(s)
+operations/rmdir on an EMPTY folder: removed it
+INCONCLUSIVE: GUARD refuses operations/list, which removed 0 files above (it refuses more than the deleters)
+exit 3
+== t2.sh GUARD='python ../nosuch.py "$1"' (a guard that crashes)
+GUARD: python ../nosuch.py "$1"
+ALLOW (parsed): operations/deletefile operations/rmdir
+NEED (parsed): operations/list sync/copy
+operations/deletefile  removed 1 of 2 file(s)
+operations/delete      removed 2 of 2 file(s)
+operations/purge       removed 1 of 2 file(s)
+operations/rmdir       removed 0 of 2 file(s) (rc error: remove <path>: The directory is not empty.)
+operations/rmdirs      removed 0 of 2 file(s)
+operations/cleanup     removed 0 of 2 file(s) (rc error: Local file system at <path> doesn't support cleanup)
+operations/movefile    removed 1 of 2 file(s)
+sync/move              removed 2 of 2 file(s)
+sync/sync              removed 2 of 2 file(s)
+sync/copy              removed 0 of 2 file(s)
+operations/list        removed 0 of 2 file(s)
+core/command           removed 2 of 2 file(s)
+job/batch              removed 1 of 2 file(s)
+operations/rmdir on an EMPTY folder: removed it
+INCONCLUSIVE: GUARD failed on operations/list: <python>: can't open file '<dir>\\r11\\nosuch.py': [Errno 2] No such file or directory
+exit 3
+== t2.sh GUARD='case "$1" in operations/list) exit 0;; *) exit 10;; esac' (refuses sync/copy too)
+GUARD: case "$1" in operations/list) exit 0;; *) exit 10;; esac
+ALLOW (parsed): operations/deletefile operations/rmdir
+NEED (parsed): operations/list sync/copy
+operations/deletefile  removed 1 of 2 file(s)
+operations/delete      removed 2 of 2 file(s)
+operations/purge       removed 1 of 2 file(s)
+operations/rmdir       removed 0 of 2 file(s) (rc error: remove <path>: The directory is not empty.)
+operations/rmdirs      removed 0 of 2 file(s)
+operations/cleanup     removed 0 of 2 file(s) (rc error: Local file system at <path> doesn't support cleanup)
+operations/movefile    removed 1 of 2 file(s)
+sync/move              removed 2 of 2 file(s)
+sync/sync              removed 2 of 2 file(s)
+sync/copy              removed 0 of 2 file(s)
+operations/list        removed 0 of 2 file(s)
+core/command           removed 2 of 2 file(s)
+job/batch              removed 1 of 2 file(s)
+operations/rmdir on an EMPTY folder: removed it
+control: GUARD admits operations/list, which removed 0 files above
+INCONCLUSIVE: GUARD refuses sync/copy, which removed 0 files above (it refuses more than the deleters)
+exit 3
+== t2.sh GUARD="$GD" (names + job/*)
+GUARD: case "$1" in *delete*|*purge*|*rmdirs*|*cleanup*|*move*|*mirror*|job/*) exit 10;; esac; exit 0
+ALLOW (parsed): operations/deletefile operations/rmdir
+NEED (parsed): operations/list sync/copy
+operations/deletefile  removed 1 of 2 file(s)
+operations/delete      removed 2 of 2 file(s)
+operations/purge       removed 1 of 2 file(s)
+operations/rmdir       removed 0 of 2 file(s) (rc error: remove <path>: The directory is not empty.)
+operations/rmdirs      removed 0 of 2 file(s)
+operations/cleanup     removed 0 of 2 file(s) (rc error: Local file system at <path> doesn't support cleanup)
+operations/movefile    removed 1 of 2 file(s)
+sync/move              removed 2 of 2 file(s)
+sync/sync              removed 2 of 2 file(s)
+sync/copy              removed 0 of 2 file(s)
+operations/list        removed 0 of 2 file(s)
+core/command           removed 2 of 2 file(s)
+job/batch              removed 1 of 2 file(s)
+operations/rmdir on an EMPTY folder: removed it
+control: GUARD admits operations/list, which removed 0 files above
+control: GUARD admits sync/copy, which removed 0 files above
+ALLOW (not judged): operations/deletefile
+operations/deletefile: in ALLOW (a reviewed delete)
+GREEN: GUARD refuses operations/delete
+GREEN: GUARD refuses operations/purge
+GREEN: GUARD refuses operations/movefile
+GREEN: GUARD refuses sync/move
+RED: GUARD admits sync/sync, which removed files above
+RED: GUARD admits core/command, which removed files above
+GREEN: GUARD refuses job/batch
+not measured here, and GUARD admits: backend/command sync/bisync mount/mount serve/start options/set operations/copyfile operations/copyurl operations/uploadfile pluginsctl/addPlugin
+GUARD gave the same answer to all 9 questions when asked again
+T2: RED (GUARD admits 2 of 7 judged deleter(s))
+exit 1
+== t2.sh GUARD="$GD" RCLONE_EXCLUDE='*.bin' (an ambient rclone filter)
+dp-env.sh: unset inherited RCLONE_EXCLUDE
+GUARD: case "$1" in *delete*|*purge*|*rmdirs*|*cleanup*|*move*|*mirror*|job/*) exit 10;; esac; exit 0
+ALLOW (parsed): operations/deletefile operations/rmdir
+NEED (parsed): operations/list sync/copy
+operations/deletefile  removed 1 of 2 file(s)
+operations/delete      removed 2 of 2 file(s)
+operations/purge       removed 1 of 2 file(s)
+operations/rmdir       removed 0 of 2 file(s) (rc error: remove <path>: The directory is not empty.)
+operations/rmdirs      removed 0 of 2 file(s)
+operations/cleanup     removed 0 of 2 file(s) (rc error: Local file system at <path> doesn't support cleanup)
+operations/movefile    removed 1 of 2 file(s)
+sync/move              removed 2 of 2 file(s)
+sync/sync              removed 2 of 2 file(s)
+sync/copy              removed 0 of 2 file(s)
+operations/list        removed 0 of 2 file(s)
+core/command           removed 2 of 2 file(s)
+job/batch              removed 1 of 2 file(s)
+operations/rmdir on an EMPTY folder: removed it
+control: GUARD admits operations/list, which removed 0 files above
+control: GUARD admits sync/copy, which removed 0 files above
+ALLOW (not judged): operations/deletefile
+operations/deletefile: in ALLOW (a reviewed delete)
+GREEN: GUARD refuses operations/delete
+GREEN: GUARD refuses operations/purge
+GREEN: GUARD refuses operations/movefile
+GREEN: GUARD refuses sync/move
+RED: GUARD admits sync/sync, which removed files above
+RED: GUARD admits core/command, which removed files above
+GREEN: GUARD refuses job/batch
+not measured here, and GUARD admits: backend/command sync/bisync mount/mount serve/start options/set operations/copyfile operations/copyurl operations/uploadfile pluginsctl/addPlugin
+GUARD gave the same answer to all 9 questions when asked again
+T2: RED (GUARD admits 2 of 7 judged deleter(s))
+exit 1
+== t2.sh GUARD="$GG" ALLOW=<every measured deleter> (nothing left to judge)
+GUARD: case "$1" in operations/list|operations/check|operations/fsinfo|sync/copy|core/version|core/quit) exit 0;; *) exit 10;; esac
+ALLOW (parsed): operations/deletefile operations/delete operations/purge operations/movefile sync/move sync/sync core/command job/batch
+NEED (parsed): operations/list sync/copy
+operations/deletefile  removed 1 of 2 file(s)
+operations/delete      removed 2 of 2 file(s)
+operations/purge       removed 1 of 2 file(s)
+operations/rmdir       removed 0 of 2 file(s) (rc error: remove <path>: The directory is not empty.)
+operations/rmdirs      removed 0 of 2 file(s)
+operations/cleanup     removed 0 of 2 file(s) (rc error: Local file system at <path> doesn't support cleanup)
+operations/movefile    removed 1 of 2 file(s)
+sync/move              removed 2 of 2 file(s)
+sync/sync              removed 2 of 2 file(s)
+sync/copy              removed 0 of 2 file(s)
+operations/list        removed 0 of 2 file(s)
+core/command           removed 2 of 2 file(s)
+job/batch              removed 1 of 2 file(s)
+operations/rmdir on an EMPTY folder: removed it
+control: GUARD admits operations/list, which removed 0 files above
+control: GUARD admits sync/copy, which removed 0 files above
+ALLOW (not judged): operations/deletefile operations/delete operations/purge operations/movefile sync/move sync/sync core/command job/batch
+operations/deletefile: in ALLOW (a reviewed delete)
+operations/delete: in ALLOW (a reviewed delete)
+operations/purge: in ALLOW (a reviewed delete)
+operations/movefile: in ALLOW (a reviewed delete)
+sync/move: in ALLOW (a reviewed delete)
+sync/sync: in ALLOW (a reviewed delete)
+core/command: in ALLOW (a reviewed delete)
+job/batch: in ALLOW (a reviewed delete)
+GUARD gave the same answer to all 2 questions when asked again
+T2: INCONCLUSIVE (ALLOW covers every measured deleter, so GUARD judged none)
+exit 3
+== t1.sh PLACE="$GP" RCLONE_DRY_RUN=true (an ambient dry run)
+dp-env.sh: unset inherited RCLONE_DRY_RUN
+PLACE: python ../cryptplace.py "$1" "$2"
+control: <dir>/r19/t1/elsewhere allowed
+control: c-far: allowed
+fsinfo: c-in: IsLocal=False Root='' | p-off:src IsLocal=False Root='src'
+c-in     c-in:        source gained 2 file(s); inventory check: 0 differences found; PLACE -> GREEN: refused (refused: encrypted names store it under '<dir>/r19/t1/c-in/src/vault')
+c-at     c-at:        source gained 2 file(s); inventory check: 0 differences found; PLACE -> GREEN: refused (refused: encrypted names store it under '<dir>/r19/t1/c-at/src')
+p-off    p-off:src    source gained 2 file(s); inventory check: 0 differences found; PLACE -> GREEN: refused (refused: plain folder names store it at '<dir>/r19/t1/p-off/src')
+p-upper  p-upper:src  source gained 2 file(s); inventory check: 0 differences found; PLACE -> GREEN: refused (refused: plain folder names store it at '<dir>/r19/t1/p-upper/src')
+d-false  d-false:src  source gained 2 file(s); inventory check: 0 differences found; PLACE -> GREEN: refused (refused: plain folder names store it at '<dir>/r19/t1/d-false/src')
+d-f      d-f:src      source gained 2 file(s); inventory check: 0 differences found; PLACE -> GREEN: refused (refused: plain folder names store it at '<dir>/r19/t1/d-f/src')
+e-par    e-par:src    source gained 0 file(s); inventory check: 0 differences found; PLACE -> allowed (encrypted names land beside the source: correct)
+PLACE gave the same answer to all 9 questions when asked again
+T1: GREEN (all 7 cases measured and judged correctly)
+exit 0
+== t1.sh PLACE="$GP" RCLONE_CONFIG_E-PAR_FILENAME_ENCRYPTION=off (a name bash cannot unset)
+INCONCLUSIVE: rclone would still inherit RCLONE_CONFIG_E-PAR_FILENAME_ENCRYPTION (bash cannot unset these); calling nothing. Run the block as: env -u NAME bash <block>.sh
+exit 3
+== t2.sh GUARD="$GD" RCLONE_EXCLUDE='*.bin', dp-env.sh without its scrub
+GUARD: case "$1" in *delete*|*purge*|*rmdirs*|*cleanup*|*move*|*mirror*|job/*) exit 10;; esac; exit 0
+ALLOW (parsed): operations/deletefile operations/rmdir
+NEED (parsed): operations/list sync/copy
+operations/deletefile  removed 1 of 2 file(s)
+operations/delete      removed 0 of 2 file(s)
+operations/purge       removed 1 of 2 file(s)
+operations/rmdir       removed 0 of 2 file(s) (rc error: remove <path>: The directory is not empty.)
+operations/rmdirs      removed 0 of 2 file(s) (rc error: failed to remove directories: remove <path>: The directory is not empty.)
+operations/cleanup     removed 0 of 2 file(s) (rc error: Local file system at <path> doesn't support cleanup)
+operations/movefile    removed 1 of 2 file(s)
+sync/move              removed 0 of 2 file(s)
+sync/sync              removed 0 of 2 file(s)
+sync/copy              removed 0 of 2 file(s)
+operations/list        removed 0 of 2 file(s)
+core/command           removed 0 of 2 file(s)
+job/batch              removed 1 of 2 file(s)
+operations/rmdir on an EMPTY folder: removed it
+INCONCLUSIVE: expected to remove files, but removed none here: operations/delete sync/move sync/sync core/command; the measurement did not work
+exit 3
+== t1.sh PLACE="$GP" RCLONE_DRY_RUN=true, dp-env.sh without its scrub
+PLACE: python ../cryptplace.py "$1" "$2"
+control: <dir>/nu/r21/t1/elsewhere allowed
+control: c-far: allowed
+fsinfo: c-in: IsLocal=False Root='' | p-off:src IsLocal=False Root='src'
+c-in     c-in:        source gained 0 file(s); inventory check: 2 differences found; PLACE -> INCONCLUSIVE: this case is meant to store 2 file(s) and write 2 into the source; it stored 0 and wrote 0
+c-at     c-at:        source gained 0 file(s); inventory check: 2 differences found; PLACE -> INCONCLUSIVE: this case is meant to store 2 file(s) and write 2 into the source; it stored 0 and wrote 0
+p-off    p-off:src    source gained 0 file(s); inventory check: 2 differences found; PLACE -> INCONCLUSIVE: this case is meant to store 2 file(s) and write 2 into the source; it stored 0 and wrote 0
+p-upper  p-upper:src  source gained 0 file(s); inventory check: 2 differences found; PLACE -> INCONCLUSIVE: this case is meant to store 2 file(s) and write 2 into the source; it stored 0 and wrote 0
+d-false  d-false:src  source gained 0 file(s); inventory check: 2 differences found; PLACE -> INCONCLUSIVE: this case is meant to store 2 file(s) and write 2 into the source; it stored 0 and wrote 0
+d-f      d-f:src      source gained 0 file(s); inventory check: 2 differences found; PLACE -> INCONCLUSIVE: this case is meant to store 2 file(s) and write 2 into the source; it stored 0 and wrote 0
+e-par    e-par:src    source gained 0 file(s); inventory check: 2 differences found; PLACE -> INCONCLUSIVE: this case is meant to store 2 file(s) and write 0 into the source; it stored 0 and wrote 0
+PLACE gave the same answer to all 9 questions when asked again
+T1: INCONCLUSIVE (7 of 7 case(s) not measured or not judged)
+exit 3
+== t2.sh GUARD="$GD" rclone_exclude='*.bin' (lowercase), dp-env.sh without its scrub
+GUARD: case "$1" in *delete*|*purge*|*rmdirs*|*cleanup*|*move*|*mirror*|job/*) exit 10;; esac; exit 0
+ALLOW (parsed): operations/deletefile operations/rmdir
+NEED (parsed): operations/list sync/copy
+operations/deletefile  removed 1 of 2 file(s)
+operations/delete      removed 0 of 2 file(s)
+operations/purge       removed 1 of 2 file(s)
+operations/rmdir       removed 0 of 2 file(s) (rc error: remove <path>: The directory is not empty.)
+operations/rmdirs      removed 0 of 2 file(s) (rc error: failed to remove directories: remove <path>: The directory is not empty.)
+operations/cleanup     removed 0 of 2 file(s) (rc error: Local file system at <path> doesn't support cleanup)
+operations/movefile    removed 1 of 2 file(s)
+sync/move              removed 0 of 2 file(s)
+sync/sync              removed 0 of 2 file(s)
+sync/copy              removed 0 of 2 file(s)
+operations/list        removed 0 of 2 file(s)
+core/command           removed 0 of 2 file(s)
+job/batch              removed 1 of 2 file(s)
+operations/rmdir on an EMPTY folder: removed it
+INCONCLUSIVE: expected to remove files, but removed none here: operations/delete sync/move sync/sync core/command; the measurement did not work
+exit 3
+== t1.sh PLACE="$GP", the name bash cannot unset dropped with env -u
+PLACE: python ../cryptplace.py "$1" "$2"
+control: <dir>/r23/t1/elsewhere allowed
+control: c-far: allowed
+fsinfo: c-in: IsLocal=False Root='' | p-off:src IsLocal=False Root='src'
+c-in     c-in:        source gained 2 file(s); inventory check: 0 differences found; PLACE -> GREEN: refused (refused: encrypted names store it under '<dir>/r23/t1/c-in/src/vault')
+c-at     c-at:        source gained 2 file(s); inventory check: 0 differences found; PLACE -> GREEN: refused (refused: encrypted names store it under '<dir>/r23/t1/c-at/src')
+p-off    p-off:src    source gained 2 file(s); inventory check: 0 differences found; PLACE -> GREEN: refused (refused: plain folder names store it at '<dir>/r23/t1/p-off/src')
+p-upper  p-upper:src  source gained 2 file(s); inventory check: 0 differences found; PLACE -> GREEN: refused (refused: plain folder names store it at '<dir>/r23/t1/p-upper/src')
+d-false  d-false:src  source gained 2 file(s); inventory check: 0 differences found; PLACE -> GREEN: refused (refused: plain folder names store it at '<dir>/r23/t1/d-false/src')
+d-f      d-f:src      source gained 2 file(s); inventory check: 0 differences found; PLACE -> GREEN: refused (refused: plain folder names store it at '<dir>/r23/t1/d-f/src')
+e-par    e-par:src    source gained 0 file(s); inventory check: 0 differences found; PLACE -> allowed (encrypted names land beside the source: correct)
+PLACE gave the same answer to all 9 questions when asked again
+T1: GREEN (all 7 cases measured and judged correctly)
+exit 0
+== t2.sh GUARD="$GS" (plants into one scratch file it never resets)
+GUARD: echo "$1" >> ../plant.txt; ! grep -qE "delete|purge|rmdirs|cleanup|move|mirror" ../plant.txt || exit 10
+ALLOW (parsed): operations/deletefile operations/rmdir
+NEED (parsed): operations/list sync/copy
+operations/deletefile  removed 1 of 2 file(s)
+operations/delete      removed 2 of 2 file(s)
+operations/purge       removed 1 of 2 file(s)
+operations/rmdir       removed 0 of 2 file(s) (rc error: remove <path>: The directory is not empty.)
+operations/rmdirs      removed 0 of 2 file(s)
+operations/cleanup     removed 0 of 2 file(s) (rc error: Local file system at <path> doesn't support cleanup)
+operations/movefile    removed 1 of 2 file(s)
+sync/move              removed 2 of 2 file(s)
+sync/sync              removed 2 of 2 file(s)
+sync/copy              removed 0 of 2 file(s)
+operations/list        removed 0 of 2 file(s)
+core/command           removed 2 of 2 file(s)
+job/batch              removed 1 of 2 file(s)
+operations/rmdir on an EMPTY folder: removed it
+control: GUARD admits operations/list, which removed 0 files above
+control: GUARD admits sync/copy, which removed 0 files above
+ALLOW (not judged): operations/deletefile
+operations/deletefile: in ALLOW (a reviewed delete)
+GREEN: GUARD refuses operations/delete
+GREEN: GUARD refuses operations/purge
+GREEN: GUARD refuses operations/movefile
+GREEN: GUARD refuses sync/move
+GREEN: GUARD refuses sync/sync
+GREEN: GUARD refuses core/command
+GREEN: GUARD refuses job/batch
+INCONCLUSIVE: GUARD answered operations/list with exit 0 at first and exit 10 when asked again: its answers depend on earlier calls, which the hook contract forbids
+exit 3
+== t2.sh GUARD="$GF" (the same scan, a fresh scratch copy per call)
+GUARD: d=$(mktemp -d ./plant.XXXXXX); echo "$1" > "$d/p.txt"; grep -qE "delete|purge|rmdirs|cleanup|move|mirror" "$d/p.txt"; r=$?; rm -r "$d"; [ $r -eq 0 ] && exit 10; exit 0
+ALLOW (parsed): operations/deletefile operations/rmdir
+NEED (parsed): operations/list sync/copy
+operations/deletefile  removed 1 of 2 file(s)
+operations/delete      removed 2 of 2 file(s)
+operations/purge       removed 1 of 2 file(s)
+operations/rmdir       removed 0 of 2 file(s) (rc error: remove <path>: The directory is not empty.)
+operations/rmdirs      removed 0 of 2 file(s)
+operations/cleanup     removed 0 of 2 file(s) (rc error: Local file system at <path> doesn't support cleanup)
+operations/movefile    removed 1 of 2 file(s)
+sync/move              removed 2 of 2 file(s)
+sync/sync              removed 2 of 2 file(s)
+sync/copy              removed 0 of 2 file(s)
+operations/list        removed 0 of 2 file(s)
+core/command           removed 2 of 2 file(s)
+job/batch              removed 1 of 2 file(s)
+operations/rmdir on an EMPTY folder: removed it
+control: GUARD admits operations/list, which removed 0 files above
+control: GUARD admits sync/copy, which removed 0 files above
+ALLOW (not judged): operations/deletefile
+operations/deletefile: in ALLOW (a reviewed delete)
+GREEN: GUARD refuses operations/delete
+GREEN: GUARD refuses operations/purge
+GREEN: GUARD refuses operations/movefile
+GREEN: GUARD refuses sync/move
+RED: GUARD admits sync/sync, which removed files above
+RED: GUARD admits core/command, which removed files above
+RED: GUARD admits job/batch, which removed files above
+not measured here, and GUARD admits: backend/command sync/bisync mount/mount serve/start options/set operations/copyfile operations/copyurl operations/uploadfile pluginsctl/addPlugin
+GUARD gave the same answer to all 9 questions when asked again
+T2: RED (GUARD admits 3 of 7 judged deleter(s))
+exit 1
+== t1.sh PLACE=<allows its calls 1, 2 and 9 only> (answers by call count)
+PLACE: n=$(( $(cat ../n 2>/dev/null || echo 0) + 1 )); echo $n > ../n; case $n in 1|2|9) exit 0;; *) exit 10;; esac
+control: <dir>/r26/t1/elsewhere allowed
+control: c-far: allowed
+fsinfo: c-in: IsLocal=False Root='' | p-off:src IsLocal=False Root='src'
+c-in     c-in:        source gained 2 file(s); inventory check: 0 differences found; PLACE -> GREEN: refused
+c-at     c-at:        source gained 2 file(s); inventory check: 0 differences found; PLACE -> GREEN: refused
+p-off    p-off:src    source gained 2 file(s); inventory check: 0 differences found; PLACE -> GREEN: refused
+p-upper  p-upper:src  source gained 2 file(s); inventory check: 0 differences found; PLACE -> GREEN: refused
+d-false  d-false:src  source gained 2 file(s); inventory check: 0 differences found; PLACE -> GREEN: refused
+d-f      d-f:src      source gained 2 file(s); inventory check: 0 differences found; PLACE -> GREEN: refused
+e-par    e-par:src    source gained 0 file(s); inventory check: 0 differences found; PLACE -> allowed (encrypted names land beside the source: correct)
+INCONCLUSIVE: PLACE answered e-par:src with exit 0 at first and exit 10 when asked again: its answers depend on earlier calls, which the hook contract forbids
+exit 3
+== t2.sh GUARD="$GD" rclone_exclude='*.bin' (lowercase, with the scrub)
+dp-env.sh: unset inherited rclone_exclude
+GUARD: case "$1" in *delete*|*purge*|*rmdirs*|*cleanup*|*move*|*mirror*|job/*) exit 10;; esac; exit 0
+ALLOW (parsed): operations/deletefile operations/rmdir
+NEED (parsed): operations/list sync/copy
+operations/deletefile  removed 1 of 2 file(s)
+operations/delete      removed 2 of 2 file(s)
+operations/purge       removed 1 of 2 file(s)
+operations/rmdir       removed 0 of 2 file(s) (rc error: remove <path>: The directory is not empty.)
+operations/rmdirs      removed 0 of 2 file(s)
+operations/cleanup     removed 0 of 2 file(s) (rc error: Local file system at <path> doesn't support cleanup)
+operations/movefile    removed 1 of 2 file(s)
+sync/move              removed 2 of 2 file(s)
+sync/sync              removed 2 of 2 file(s)
+sync/copy              removed 0 of 2 file(s)
+operations/list        removed 0 of 2 file(s)
+core/command           removed 2 of 2 file(s)
+job/batch              removed 1 of 2 file(s)
+operations/rmdir on an EMPTY folder: removed it
+control: GUARD admits operations/list, which removed 0 files above
+control: GUARD admits sync/copy, which removed 0 files above
+ALLOW (not judged): operations/deletefile
+operations/deletefile: in ALLOW (a reviewed delete)
+GREEN: GUARD refuses operations/delete
+GREEN: GUARD refuses operations/purge
+GREEN: GUARD refuses operations/movefile
+GREEN: GUARD refuses sync/move
+RED: GUARD admits sync/sync, which removed files above
+RED: GUARD admits core/command, which removed files above
+GREEN: GUARD refuses job/batch
+not measured here, and GUARD admits: backend/command sync/bisync mount/mount serve/start options/set operations/copyfile operations/copyurl operations/uploadfile pluginsctl/addPlugin
+GUARD gave the same answer to all 9 questions when asked again
+T2: RED (GUARD admits 2 of 7 judged deleter(s))
+exit 1
+== t2.sh GUARD="$GG" ALLOW=<newline, tab and CR separated>
+GUARD: case "$1" in operations/list|operations/check|operations/fsinfo|sync/copy|core/version|core/quit) exit 0;; *) exit 10;; esac
+ALLOW (parsed): operations/deletefile operations/rmdir
+NEED (parsed): operations/list sync/copy
+operations/deletefile  removed 1 of 2 file(s)
+operations/delete      removed 2 of 2 file(s)
+operations/purge       removed 1 of 2 file(s)
+operations/rmdir       removed 0 of 2 file(s) (rc error: remove <path>: The directory is not empty.)
+operations/rmdirs      removed 0 of 2 file(s)
+operations/cleanup     removed 0 of 2 file(s) (rc error: Local file system at <path> doesn't support cleanup)
+operations/movefile    removed 1 of 2 file(s)
+sync/move              removed 2 of 2 file(s)
+sync/sync              removed 2 of 2 file(s)
+sync/copy              removed 0 of 2 file(s)
+operations/list        removed 0 of 2 file(s)
+core/command           removed 2 of 2 file(s)
+job/batch              removed 1 of 2 file(s)
+operations/rmdir on an EMPTY folder: removed it
+control: GUARD admits operations/list, which removed 0 files above
+control: GUARD admits sync/copy, which removed 0 files above
+ALLOW (not judged): operations/deletefile
+operations/deletefile: in ALLOW (a reviewed delete)
+GREEN: GUARD refuses operations/delete
+GREEN: GUARD refuses operations/purge
+GREEN: GUARD refuses operations/movefile
+GREEN: GUARD refuses sync/move
+GREEN: GUARD refuses sync/sync
+GREEN: GUARD refuses core/command
+GREEN: GUARD refuses job/batch
+GUARD gave the same answer to all 9 questions when asked again
+T2: GREEN (GUARD refuses all 7 judged deleter(s); the rest are in the ALLOW printed above)
+exit 0
+== t2.sh GUARD=<GG that also admits operations/deletefile> ALLOW='' (exempts nothing)
+GUARD: case "$1" in operations/list|sync/copy|operations/deletefile) exit 0;; *) exit 10;; esac
+ALLOW (parsed): 
+NEED (parsed): operations/list sync/copy
+operations/deletefile  removed 1 of 2 file(s)
+operations/delete      removed 2 of 2 file(s)
+operations/purge       removed 1 of 2 file(s)
+operations/rmdir       removed 0 of 2 file(s) (rc error: remove <path>: The directory is not empty.)
+operations/rmdirs      removed 0 of 2 file(s)
+operations/cleanup     removed 0 of 2 file(s) (rc error: Local file system at <path> doesn't support cleanup)
+operations/movefile    removed 1 of 2 file(s)
+sync/move              removed 2 of 2 file(s)
+sync/sync              removed 2 of 2 file(s)
+sync/copy              removed 0 of 2 file(s)
+operations/list        removed 0 of 2 file(s)
+core/command           removed 2 of 2 file(s)
+job/batch              removed 1 of 2 file(s)
+operations/rmdir on an EMPTY folder: removed it
+control: GUARD admits operations/list, which removed 0 files above
+control: GUARD admits sync/copy, which removed 0 files above
+ALLOW (not judged):
+RED: GUARD admits operations/deletefile, which removed files above
+GREEN: GUARD refuses operations/delete
+GREEN: GUARD refuses operations/purge
+GREEN: GUARD refuses operations/movefile
+GREEN: GUARD refuses sync/move
+GREEN: GUARD refuses sync/sync
+GREEN: GUARD refuses core/command
+GREEN: GUARD refuses job/batch
+GUARD gave the same answer to all 10 questions when asked again
+T2: RED (GUARD admits 1 of 8 judged deleter(s))
+exit 1
+== t2.sh Guard="$GG" (the setting in another case)
+INCONCLUSIVE: Guard is set, but this block reads GUARD (the name is case-sensitive); calling nothing
+exit 3
+== t2.sh with a decoy rcd already serving 127.0.0.1:55781
+GUARD: guard_names "$1"
+ALLOW (parsed): operations/deletefile operations/rmdir
+NEED (parsed): operations/list sync/copy
+INCONCLUSIVE: something already listens on 127.0.0.1:55781; this block calls nothing there
+exit 3
+decoy asked with other credentials: HTTP 401
+decoy: stopped through its own rc (the PID the runner launched), exit 0
+```
+
+The bus's own sample reader, `place.py` (`RECEIPTS.md:5743-5816` at `fd86aa5`, copied unchanged), as T1's
+`PLACE`, run separately with the same `dp-env.sh` and `t1.sh` (from a directory `rb/` beside the runner's, as
+`PLACE='python ../place.py "$1" "$2"'`, with the same `<dir>` replacement and `exit N` line):
+```
+PLACE: python ../place.py "$1" "$2"
+control: <dir>/rb/t1/elsewhere allowed
+control: c-far: allowed
+fsinfo: c-in: IsLocal=False Root='' | p-off:src IsLocal=False Root='src'
+c-in     c-in:        source gained 2 file(s); inventory check: 0 differences found; PLACE -> GREEN: refused (refused: overlaps the source: '<dir>/rb/t1/c-in/src/vault')
+c-at     c-at:        source gained 2 file(s); inventory check: 0 differences found; PLACE -> GREEN: refused (refused: overlaps the source: '<dir>/rb/t1/c-at/src')
+p-off    p-off:src    source gained 2 file(s); inventory check: 0 differences found; PLACE -> GREEN: refused (refused: overlaps the source: '<dir>/rb/t1/p-off/src')
+p-upper  p-upper:src  source gained 2 file(s); inventory check: 0 differences found; PLACE -> GREEN: refused (refused: overlaps the source: '<dir>/rb/t1/p-upper/src')
+d-false  d-false:src  source gained 2 file(s); inventory check: 0 differences found; PLACE -> GREEN: refused (refused: overlaps the source: '<dir>/rb/t1/d-false/src')
+d-f      d-f:src      source gained 2 file(s); inventory check: 0 differences found; PLACE -> GREEN: refused (refused: overlaps the source: '<dir>/rb/t1/d-f/src')
+e-par    e-par:src    source gained 0 file(s); inventory check: 0 differences found; PLACE -> RED: refused, a false alarm: this crypt writes nothing into the source (refused: overlaps the source: '<dir>/rb/t1/e-par/src')
+PLACE gave the same answer to all 9 questions when asked again
+T1: RED (1 of 7 case(s) RED, 0 INCONCLUSIVE)
+exit 1
+```
+
+What each case left in its source folder after the run with the default `PLACE` (listed from `r1/t1/`):
+```
+c-in     src: a.txt b.txt vault/98kqa0talu3uroje9bun3jh160 vault/kfjb46mfhkntvmc6ajlenivm20
+c-at     src: 98kqa0talu3uroje9bun3jh160 a.txt b.txt kfjb46mfhkntvmc6ajlenivm20
+p-off    src: a.txt a.txt.bin b.txt b.txt.bin
+p-upper  src: a.txt a.txt.bin b.txt b.txt.bin
+d-false  src: 98kqa0talu3uroje9bun3jh160 a.txt b.txt kfjb46mfhkntvmc6ajlenivm20
+d-f      src: 98kqa0talu3uroje9bun3jh160 a.txt b.txt kfjb46mfhkntvmc6ajlenivm20
+e-par    src: a.txt b.txt
+e-par    parent: 397a93fgndm07hbkk8ka50jdt0/98kqa0talu3uroje9bun3jh160 397a93fgndm07hbkk8ka50jdt0/kfjb46mfhkntvmc6ajlenivm20 src/a.txt src/b.txt
+```
