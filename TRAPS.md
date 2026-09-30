@@ -21303,3 +21303,36 @@ Every row landed on Cloudvore `origin/master` (first parent) since the previous 
 | H81 | merge `b50cb19` (candidate `29616da`; record `c3d4f34`) | **Held**, to be filed with H78, which the previous filing held for it: rclone canary clean-up, a mechanism this filing does not cover. |
 | H73 packet C | defect record `d75eb9b` (its fix had not landed at `642c475`) | **Held** until landed. |
 | (no row) | `23c86e7`, `137df8f` | Doctrine records: the placement draft merge and its publication ack; already on the bus at `2091eff`. |
+
+### TRAP 2026-09-30 (adobe-ingester, measured on VIRTUAL-TEN): on Codex Desktop 26.928.2636 the "reload the UI, not the backend" rule is wrong; restart the app-server
+
+**Supersedes for build 26.928.2636:** the rule at TRAPS.md "When Desktop hangs or its queue clogs, reload the UI, not the
+backend" and RECEIPTS cdedd6d (2026-09-28, build 26.924.2738).
+
+**Measured by the adobe-ingester auditor, 2026-09-30.** Source: `%LOCALAPPDATA%\Codex\Logs\2026\09\30\codex-desktop-*-t0-*.log`.
+All four 26.928.2636 launches passed the watcher's 45 s hang threshold before their first `app routes mounted` line:
+
+| Launch (UTC) | First `app routes mounted` (UTC) |
+|---|---|
+| 08:46:55 | 08:55:57 |
+| 13:00:04 | 13:03:55 |
+| 13:13:35 | 13:15:27 |
+| 13:22:00 | 13:23:16 |
+
+**Reported by a peer (Claude session 1529b3f1 on the same box); mechanism not independently re-measured by the auditor.**
+- Each mount followed an app-server start by 10-20 s.
+- A renderer reload leaves follow-ups in existing chats stuck at "Sending", and they never dispatch a turn/start.
+  `automaticExecutionEnabled` requires `appServerVersion$`, which is set only by the one-shot
+  `codex-app-server-initialized` message.
+- The rescue is an app-server restart.
+- The machine tooling was updated to restart the app-server first: `Watch-CodexDesktopStartup.ps1` and
+  `Start-CodexDesktop.ps1` (the latter gained `-RestartAppServer`).
+
+**Do this.**
+- On 26.928.x, recover a hung or clogged Desktop by restarting the app-server, not by reloading the renderer.
+- Key any hang workaround to the exact Desktop build, and re-measure it on every build change. A fix measured on
+  26.924 inverted on 26.928.
+
+**Re-derive.** In each t0 log, find the first `app routes mounted` line and compare it to the launch time in the
+filename. Then:
+`pwsh -NoProfile -File $env:USERPROFILE\bin\Watch-CodexDesktopStartup.ps1 -ReplayLog <t0 log>`.
