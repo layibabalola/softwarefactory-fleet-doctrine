@@ -20826,3 +20826,480 @@ at `7accc50`:
 | H68 guard fix | merge `878d709` | **Project-local.** Cloudvore's own process-kill guard matched a test that shadowed `Get-Process`; the test was changed. No mechanism beyond that guard. |
 | K58, H81 | cut in `5d168ae` and `7accc50`; READY, not landed | **Held** until landed. |
 | (no row) | `490c47e`, `d5f361e` | Doctrine records: the stored-hash draft merge and its publication ack; already on the bus at `80db2e3`. |
+
+<!-- cloudvore-filing:2026-09-30-fetch-head-in-flight-traps generated from review/doctrine-drafts/2026-09-30-fetch-head-in-flight-traps.md at da9b1d3 -->
+
+# Draft for the fleet doctrine bus: Cloudvore, 2026-09-30 (a guard that reads FETCH_HEAD while other processes fetch)
+
+These are observations from one project, Cloudvore. Nothing here instructs another project: each trap states what was
+measured here, what Cloudvore changed, how that was checked here, and a test another project can run, or adapt, to find
+out whether it has the same trap.
+
+**Scope.** git 2.55.0.windows.5 on Windows 11 Pro 10.0.26200, Python 3.14 (the harness needs 3.10 or later). The
+demonstrations use throwaway repositories whose "upstream" is a local path, so fetches use git's local transport. The one
+measurement of a real clone (the attempt timings in T3) was read-only and ran no fetch. Other git versions, transports
+and platforms were not tested.
+
+**Sources.** Every Cloudvore commit cited is an ancestor of Cloudvore's `origin/master` at `642c475`:
+- RED `fb2a22c`;
+- rounds `7ef6da9`, `81735f1`, `6b26bd3`, `4e7e3b0` and `4536e0a`;
+- reviewed candidate `1f6c67d`, landed as merge `f35e31d` (row K59).
+
+Measurements, rounds, planted mutants and residuals are in `review/ledger-fetch-head-in-flight-2026-09-30.md`. Four
+non-author seats each attacked a different conclusion over four rounds:
+- a cross-family Codex seat attacked safety;
+- three Claude Opus seats attacked liveness, pin strength, and scope and accuracy.
+
+**Relation to the bus** (`TRAPS.md` at `fd86aa5`). Searched for `FETCH_HEAD`, `truncat`, `torn`, `stat-read-stat`,
+`in flight`, `settle`, `half-written` and `concurrent fetch`.
+- The nearest entry is "Verifying a credential write immediately after the command returns is a false negative"
+  (`TRAPS.md:931`, this project, 2026-08-10). It polls ONE writer's result, and its three exits differ:
+  - the target value ends the wait at once;
+  - a third value needs two consecutive equal reads;
+  - the original value must wait out the whole timeout.
+
+  Here, many processes rewrite a file a guard reads. Its retry needs the rest of what it read to be measured again
+  (T2), and a retry can itself accept wrongly (T4).
+- "`git fetch origin master` left `origin/master` stale" (`TRAPS.md:9010`, conjugal, 2026-09-14) is a different
+  mechanism. A checkout with no `remote.origin.fetch` rule updates only FETCH_HEAD on a named-branch fetch.
+
+## The harness
+
+`fh_trap.py` builds a bare "upstream", a clone of it, and 40 `review/*` branches, so FETCH_HEAD has many lines, as a
+real fleet clone's does. It has three modes:
+- `observe` records FETCH_HEAD and the tracking ref, about every millisecond, while one real fetch runs.
+- `failed` shows what two failing fetches leave behind.
+- `reader` runs YOUR reader while real fetches land in the background. Your reader is the hook `READER`: a shell command
+  whose clone path is in `$CLONE`, exiting 0 for "fresh, measured" and anything else for "refused".
+
+Every one of those fetches succeeds and leaves a whole FETCH_HEAD naming master, so a refusal while one is in flight is
+spurious. `reader` prints:
+- `RED` when your reader refused while a fetch was in flight;
+- `GREEN` when no refusal was observed in the looks it took. That is a sample, not a proof.
+- `INCONCLUSIVE` when:
+  - your reader ACCEPTS a clone whose FETCH_HEAD records no master: one naming only another branch, or an empty one,
+    which is what a failed fetch leaves (then it is not judging FETCH_HEAD, and "exit 0" could never be RED);
+  - it refuses a clone with a whole FETCH_HEAD and nothing running;
+  - it was never asked while a fetch was in flight;
+  - the fixture itself failed.
+
+An ask counts as "while a fetch was in flight" when your reader is STARTED during one, so a reader that looks at
+FETCH_HEAD only after that fetch has ended is not tested by the ask. A one-look reader that first sleeps 3 s read GREEN
+in one run and RED in another (the review record has both): its look lands wherever the next fetch happens to be.
+`reader` therefore prints how long its fetches took, and `FH_TRAP_MB` (default 4) sets the size of each one, and so
+its length. A reader that waits a bounded time and then refuses can read RED once the fetches outlast that wait: an
+ask that starts early in such a fetch ends before it does. The heuristic below did at `FH_TRAP_MB=48` (RECEIPTS);
+Cloudvore's guard is such a reader (T3).
+
+A reader that takes more than 30 s counts as refusing. Nothing it prints is captured, so a child it leaves running
+cannot hold the harness. The throwaway directory is removed at the end as far as it can be: a file that some process
+still holds open at that moment, such as a leftover child of your reader, leaves it behind. The default `READER` reads
+FETCH_HEAD once and asks for a master line, as Cloudvore's guard did.
+
+Only T1's test is runnable. The tests under T2 to T6 are recipes for a project's own suite, and were not executed here
+as written. Cloudvore's own executed versions are the pins named in its ledger.
+
+`fh_settle_reader.py` is a completeness HEURISTIC for comparison, not a proof. It judges FETCH_HEAD only when a stat
+before and after the read agree and the text ends a line, waiting at most 3 s. A partial write that happens to end
+exactly on a line boundary passes it: see Residuals.
+
+```python
+"""fh_trap.py -- does a FETCH_HEAD reader refuse while OTHER processes fetch the same clone?
+
+Everything lives in a throwaway directory, removed at the end as far as it can be (a file that some process still
+holds open leaves it behind): a bare "upstream", a clone of it (the upstream is a local path, so fetches use git's
+local transport), and fetches from one to the other. No network, no provider, no existing repository is read or
+written. Needs git and Python 3.10 or later.
+
+  python fh_trap.py observe             what a reader sees while one real fetch runs: FETCH_HEAD's size and which
+                                        master it names, and whether the tracking ref has moved, at every change
+  python fh_trap.py failed              what a fetch that FAILS leaves in FETCH_HEAD
+  python fh_trap.py reader [ROUNDS]     runs READER (a shell command; the clone's path is in $CLONE; exit 0 means
+                                        "fresh, measured", anything else means "refused") while real fetches land
+                                        in the background. Every fetch succeeds and leaves a whole FETCH_HEAD naming
+                                        master, so every refusal while one is in flight is spurious:
+                                        RED   -- READER refused at least once while a fetch was in flight
+                                        GREEN -- no refusal was observed in the looks taken while fetches were in
+                                                 flight (a sample, not a proof)
+                                        INCONCLUSIVE -- READER accepts a clone whose FETCH_HEAD records no master
+                                                 (one naming only another branch, or an empty one, which is what a
+                                                 failed fetch leaves), refuses one with a whole FETCH_HEAD and
+                                                 nothing running, was never asked while a fetch was in flight, or the
+                                                 fixture itself failed
+                                        An ask counts as "while a fetch was in flight" when READER is STARTED during
+                                        one. A READER that looks at FETCH_HEAD only after that fetch has ended is not
+                                        tested by the ask, so `reader` prints how long the fetches took; FH_TRAP_MB
+                                        (default 4) sets the size of each fetch, and so its length.
+
+The default READER reads FETCH_HEAD once and asks for a master line, which is what the Cloudvore guard did.
+"""
+import os
+import re
+import subprocess
+import sys
+import tempfile
+import threading
+import time
+from pathlib import Path
+
+ENV = {k: v for k, v in os.environ.items() if not k.startswith("GIT_")}
+ENV.update({"GIT_TERMINAL_PROMPT": "0", "GIT_AUTHOR_NAME": "t", "GIT_AUTHOR_EMAIL": "t@t", "GIT_COMMITTER_NAME": "t",
+            "GIT_COMMITTER_EMAIL": "t@t", "GIT_CONFIG_NOSYSTEM": "1", "GIT_CONFIG_GLOBAL": os.devnull})
+NAIVE = ('python -c "import os, re, sys; t = open(os.path.join(os.environ[\'CLONE\'], \'.git\', \'FETCH_HEAD\')).read(); '
+         'sys.exit(0 if re.search(r\\"^[0-9a-f]{40}\\t[^\\t]*\\tbranch .master. of \\", t, re.M) else 1)"')
+READER_SECONDS = 30                                             # a READER that takes longer is counted as refusing
+
+
+def scratch():
+    # Removed at the end; a file that some process still holds open (a READER's leftover child, or any other) is left
+    # behind rather than failing the run.
+    return tempfile.TemporaryDirectory(prefix="fh-trap-", ignore_cleanup_errors=True)
+
+
+def git(cwd, *args):
+    p = subprocess.run(["git", "-C", str(cwd), *args], capture_output=True, text=True, env=ENV, timeout=300)
+    if p.returncode:
+        raise RuntimeError(f"git {' '.join(args)}: {p.stderr.strip()}")
+    return p.stdout.strip()
+
+
+def fixture(root: Path, blob_mb: int):
+    up, work, clone = root / "up.git", root / "work", root / "clone"
+    git(root, "init", "-q", "--bare", "-b", "master", str(up))
+    git(root, "clone", "-q", str(up), str(work))
+    (work / "a.txt").write_text("a\n")
+    git(work, "add", "a.txt"); git(work, "commit", "-q", "-m", "one"); git(work, "push", "-q", "origin", "master")
+    for i in range(40):                                         # a FETCH_HEAD of many lines, as a real fleet clone has
+        git(work, "branch", f"review/r{i:02d}")
+    git(work, "push", "-q", "origin", "refs/heads/review/*:refs/heads/review/*")
+    git(root, "clone", "-q", str(up), str(clone))
+    git(clone, "fetch", "-q", "origin")                         # FETCH_HEAD exists and is whole
+
+    def publish(n: int) -> str:
+        (work / "big.bin").write_bytes(os.urandom(blob_mb * 1024 * 1024))
+        git(work, "add", "big.bin"); git(work, "commit", "-q", "-m", f"big {n}"); git(work, "push", "-q", "origin", "master")
+        return git(work, "rev-parse", "HEAD")
+    return clone, publish
+
+
+def observe() -> int:
+    with scratch() as tmp:
+        root = Path(tmp)
+        clone, publish = fixture(root, 16)
+        new = publish(1)
+        fh, ref = clone / ".git" / "FETCH_HEAD", clone / ".git" / "refs" / "remotes" / "origin" / "master"
+        seen, stop = [], threading.Event()
+
+        def poll():
+            while not stop.is_set():
+                t = time.perf_counter()
+                try:
+                    text = fh.read_text(errors="replace")
+                    line = re.search(r"^([0-9a-f]{40})\t[^\t]*\tbranch 'master' of ", text, re.M)
+                    state = (len(text.encode()), "no master line" if not line else "names the NEW master" if line.group(1) == new else "names the old master")
+                except OSError as exc:
+                    state = (-1, type(exc).__name__)
+                try:
+                    moved = ref.read_text().strip() == new
+                except OSError:
+                    moved = False
+                seen.append((t, state, moved))
+                time.sleep(0.001)
+        th = threading.Thread(target=poll); th.start()
+        try:
+            time.sleep(0.05)
+            t0 = time.perf_counter()
+            subprocess.run(["git", "-C", str(clone), "fetch", "--quiet", "origin"], env=ENV, check=True, timeout=300)
+            t1 = time.perf_counter()
+            time.sleep(0.05)
+        finally:
+            stop.set(); th.join()
+        print(f"{git(root, 'version')}; the fetch took {1000 * (t1 - t0):.0f} ms")
+        last = None
+        for t, state, moved in seen:
+            if (state, moved) != last:
+                size, what = state
+                print(f"{1000 * (t - t0):9.1f} ms  FETCH_HEAD {('unreadable (' + what + ')') if size < 0 else f'{size:>5} B, {what}':<32} ref moved: {moved}")
+                last = (state, moved)
+    return 0
+
+
+def failed() -> int:
+    """A fetch that FAILS leaves FETCH_HEAD empty: git truncates it before it even connects."""
+    with scratch() as tmp:
+        clone, _ = fixture(Path(tmp), 1)
+        fh = clone / ".git" / "FETCH_HEAD"
+        for label, args in (("the transport refused (protocol.file.allow=never)", ["-c", "protocol.file.allow=never", "fetch", "origin"]),
+                            ("a ref the remote does not have", ["fetch", "origin", "refs/heads/no-such-branch"])):
+            git(clone, "fetch", "-q", "origin")                 # whole again first
+            before = fh.stat().st_size
+            p = subprocess.run(["git", "-C", str(clone), *args], env=ENV, capture_output=True, timeout=300)
+            print(f"{label}: git exit {p.returncode}; FETCH_HEAD {before} B -> {fh.stat().st_size} B")
+    return 0
+
+
+def reader(rounds: int) -> int:
+    mb = os.environ.get("FH_TRAP_MB", "4")
+    if not mb.isdigit() or not int(mb):
+        raise SystemExit(f"FH_TRAP_MB must be a whole number of megabytes, not {mb!r}")
+    try:
+        with scratch() as tmp:
+            return run_reader(Path(tmp), rounds, int(mb))
+    except (RuntimeError, OSError, subprocess.SubprocessError) as exc:   # the harness's own failure is not a verdict
+        print(f"INCONCLUSIVE: the harness itself failed ({type(exc).__name__}: {exc})")
+        return 3
+
+
+def run_reader(root: Path, rounds: int, blob_mb: int) -> int:
+    command = os.environ.get("READER", NAIVE)
+    clone, publish = fixture(root, blob_mb)
+    env = {**os.environ, "CLONE": str(clone)}
+    fh = clone / ".git" / "FETCH_HEAD"
+
+    def ask() -> int:
+        # Only the exit code matters, so nothing is captured: a READER's child that outlives the timeout cannot then
+        # hold a pipe this harness waits on.
+        try:
+            return subprocess.run(command, shell=True, env=env, stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
+                                  stderr=subprocess.DEVNULL, timeout=READER_SECONDS).returncode
+        except subprocess.TimeoutExpired:
+            return -1                                           # did not answer in time: counted as a refusal
+    # Controls, with nothing running. A READER that accepts a FETCH_HEAD recording no master is not judging it at all,
+    # and would read GREEN below whatever it did; one that refuses a whole FETCH_HEAD cannot be asked about fetches.
+    good = fh.read_bytes()
+    for what, text in (("one naming only another branch", git(clone, "rev-parse", "HEAD") + "\t\tbranch 'other' of the-same-remote\n"),
+                       ("an empty one, which is what a failed fetch leaves", "")):
+        fh.write_bytes(text.encode())
+        if ask() == 0:
+            print(f"INCONCLUSIVE: READER accepts a clone whose FETCH_HEAD records no master ({what}): it is not judging FETCH_HEAD")
+            return 3
+    fh.write_bytes(good)
+    if ask() != 0:
+        print("INCONCLUSIVE: READER refuses a clone with a whole FETCH_HEAD and no fetch running")
+        return 3
+    fetching, done = threading.Event(), threading.Event()
+    refusals, asked, failure, took = [], [0], [], []
+
+    def fetches():
+        try:
+            for n in range(rounds):
+                publish(n + 2)
+                t0 = time.perf_counter()
+                fetching.set()
+                try:
+                    subprocess.run(["git", "-C", str(clone), "fetch", "--quiet", "origin"], env=ENV, check=True,
+                                   capture_output=True, timeout=300)
+                finally:
+                    fetching.clear()
+                    took.append(time.perf_counter() - t0)
+                time.sleep(0.2)
+        except (RuntimeError, OSError, subprocess.SubprocessError) as exc:
+            failure.append(exc)
+        finally:
+            done.set()
+    th = threading.Thread(target=fetches); th.start()
+    while not done.is_set():
+        if fetching.is_set():
+            asked[0] += 1
+            if ask() != 0:
+                refusals.append(asked[0])
+        else:
+            time.sleep(0.01)
+    th.join()
+    if failure:
+        print(f"INCONCLUSIVE: a fetch in the fixture failed ({failure[0]})")
+        return 3
+    if ask() != 0:
+        print("INCONCLUSIVE: READER refuses the settled clone after the last fetch")
+        return 3
+    span = f" ({min(took):.1f}-{max(took):.1f} s each)" if took else ""
+    print(f"READER was asked {asked[0]} times while {rounds} fetches of {blob_mb} MB were in flight{span}; "
+          f"it refused {len(refusals)} time(s)")
+    if not asked[0]:
+        print("INCONCLUSIVE: READER was never asked while a fetch was in flight")
+        return 3
+    if refusals:
+        print("RED: READER refused while a fetch was in flight -- every one of those fetches succeeded")
+        return 1
+    print("GREEN: no refusal observed in those looks (a sample, not a proof: a look taken after a fetch had ended was "
+          "not inside it)")
+    return 0
+
+
+if __name__ == "__main__":
+    mode = sys.argv[1] if len(sys.argv) > 1 else "observe"
+    if mode == "observe":
+        raise SystemExit(observe())
+    if mode == "failed":
+        raise SystemExit(failed())
+    if mode == "reader":
+        raise SystemExit(reader(int(sys.argv[2]) if len(sys.argv) > 2 else 6))
+    raise SystemExit(__doc__)
+```
+
+```python
+"""A FETCH_HEAD reader with a completeness HEURISTIC: stat, read, stat again, and judge only when the two stats agree
+and the text ends a line (git ends every line it writes). Until then it waits, a read every 0.1 s, for at most 3 s. It
+is not a proof of completeness: a partial write that happens to end exactly on a line boundary (git writes FETCH_HEAD in
+4096-byte chunks) passes it. Cloudvore's guard also measures again everything else it read (the draft's T2 to T4)."""
+import os
+import re
+import sys
+import time
+from pathlib import Path
+
+fh = Path(os.environ["CLONE"]) / ".git" / "FETCH_HEAD"
+deadline = time.monotonic() + 3.0
+text, steady = "", False
+while True:
+    try:
+        before = fh.stat()
+        text = fh.read_text(errors="replace")
+        after = fh.stat()
+        steady = (before.st_size, before.st_mtime_ns) == (after.st_size, after.st_mtime_ns) and text.endswith("\n")
+    except OSError:
+        steady = False
+    if steady or time.monotonic() >= deadline:
+        break
+    time.sleep(0.1)
+sys.exit(0 if steady and re.search(r"^[0-9a-f]{40}\t[^\t]*\tbranch 'master' of ", text, re.M) else 1)
+```
+
+## T1. FETCH_HEAD is empty for most of a fetch, and not a record until the fetch ends
+
+**Measured** (`observe` and `failed`, RECEIPTS). git truncates FETCH_HEAD when a fetch starts, before it even connects.
+- A fetch refused at the transport (`-c protocol.file.allow=never`) exits 128 and leaves FETCH_HEAD at 0 bytes. So does
+  a fetch of a ref the remote does not have.
+- A reader can hit a `PermissionError` at the truncation instant. The ledger's probe and the review record's runs
+  sampled one; none of the three `observe` runs in RECEIPTS did.
+- The file stayed at 0 bytes for the whole object transfer: 4.5-5.6 s in the three recorded runs.
+- It is written in 4096-byte chunks, and is whole only at the end.
+
+Cloudvore's Stop hook reads FETCH_HEAD after every turn to prove a shared clone fresh. The fleet fetches that clone from
+several processes (one fetch every 15-60 minutes by its reflog). The hook refused two turns in one session, each
+straight after a fetch that had written a good master line: its measurement had landed inside another process's fetch.
+
+**What Cloudvore changed.** An empty, cut-short or unreadable FETCH_HEAD, or one rewritten while it was read, is
+"unsettled". The guard waits for it to be whole and measures again, instead of refusing on it. T2 to T4 are why waiting
+alone was not enough.
+
+**Test** (runnable): `READER='<your reader>' python fh_trap.py reader`. RECEIPTS:
+- the default reader refused 40 of 49 looks during 6 successful fetches (RED);
+- the heuristic refused 0 of 6 (GREEN), and 30 of 37 once each fetch outlasted its 3 s wait (`FH_TRAP_MB=48`, RED);
+- hooks that always exit 0 or always exit 1 read INCONCLUSIVE.
+
+## T2. A retry that re-read only FETCH_HEAD compared a new master with the ref's old tip
+
+**Measured** (`observe`, RECEIPTS). In one of the three recorded runs a 4096-byte prefix of FETCH_HEAD already naming
+the NEW master was read while `origin/master` still held the old tip. The ref had moved by the next sample, 19.7 ms
+later, and the file was whole 37 ms after that. In the other two the ref had already moved at the first sample of the
+partial write.
+
+A retry that re-reads only FETCH_HEAD compares that new master against the tip it read earlier. Cloudvore's version of
+that refused with "does not carry the master last fetched".
+
+**What Cloudvore changed.** Its retry re-runs the whole check from the start: the tip, its reflog, the commit graph
+(cache cleared) and every FETCH_HEAD.
+
+**Test** (a recipe for your own suite; not executed here as written). Between your reader's read of the ref and its read
+of FETCH_HEAD, land a fetch: move the ref under a `fetch` reflog subject and write a whole FETCH_HEAD naming the new
+commit. Expect the measurement to accept after a bounded number of further attempts; Cloudvore's scheduling makes that
+exactly one. Cloudvore's suite also lands one in a linked worktree while the graph is being read, and one between the
+reflog's read and FETCH_HEAD's first look.
+
+## T3. A settle window opened when the measurement began was spent before the first retry
+
+**Measured.** One attempt of Cloudvore's check against the real clone took 4.6-12.9 s over eight read-only runs on a
+loaded laptop: nine git processes, ten once the fix added a second read of the reflog. Most of each attempt is one
+`git rev-list --parents --all --reflog`, which took 3.9-5.3 s in the runs where it was timed alone.
+
+A 5 s window that opened when the measurement began was already spent by the first attempt. So the retry never ran on
+the real clone, and the change altered only the refusal's wording. Every pin passed, because the fixture's attempts took
+well under a second.
+
+**What Cloudvore changed.**
+- The window opens at the first unsettled refusal.
+- Before measuring again, the guard waits cheaply (a stat and a read every 0.1 s, no git) until every unsettled FETCH_HEAD
+  is whole.
+- When the window closes on one still unsettled, it measures ONE last time instead of refusing on it: the next attempt
+  may not need that file at all.
+
+So the worst case is the window plus one attempt. Cloudvore's window is 3 s, not 5. Its Stop hook kills a measurement at
+60 s, and the slowest measurement timed was 42.1 s: 42.1 + 5 + 12.9 reached 60.0, while 42.1 + 3 + 12.9 is 58.0.
+
+**Test** (a recipe). Give your fake git a cost: advance your fake clock on every git call, not only on sleep. Cloudvore
+uses 1 s per call, so one attempt outlasts the window. Expect a second attempt. Separately, expect that a state which
+stays unsettled while every FETCH_HEAD is whole still ENDS, in a bounded number of attempts: Cloudvore's fake fails any
+case measured more than 20 times.
+
+## T4. Cloudvore's retry accepted a measurement taken across a change
+
+**Measured** (the Codex seat, two rounds):
+- **Mixed looks.** origin/master was rewound B -> A under a copied `fetch origin: forced-update` subject, with FETCH_HEAD
+  empty and older than the rewind. The first attempt refused and measured again. FETCH_HEAD was then made to name A,
+  with a time after the rewind, for the rewind check's look only, and put back before the freshness check's look. Every
+  check passed on that mix and the retry ACCEPTED. A fresh measurement of the final state refuses ("was rewound").
+- **A -> B -> A.** The ref moved away and back between the attempt's reflog read and its tip read, both times under
+  copied fetch subjects. The tip then equals the reflog's newest entry, so no tip comparison sees the rewind.
+
+**What Cloudvore changed.** Only a STEADY attempt accepts:
+- the same FETCH_HEAD `(size, mtime_ns)` at every look;
+- text that ends a line;
+- the tip at the reflog's newest entry;
+- the WHOLE reflog, read again just before accepting, unchanged.
+
+Anything else is measured again, or refused. A failed re-read is a refusal, never "unchanged".
+
+**Test** (a recipe). Land A -> B -> A right after your reader reads the history, with both moves copying the newest
+entry's own subject and time (`GIT_COMMITTER_DATE`), so the newest line reads exactly as before. Expect the attempt to be
+measured again, and refused. A reader that compares only the newest entry passes that attempt. Separately, make the
+history's second read fail, and expect a refusal.
+
+## T5. A second stat after the read dated old text as new
+
+**Measured.** Cloudvore's unfixed guard read FETCH_HEAD, then took its mtime with a second stat. A fetch that started
+between the two truncated the file: the old master line was dated "now", and a two-day-stale clone was accepted.
+
+**What Cloudvore changed.** Each look is stat, read, stat. The time is the first stat, and the look is steady only when
+both stats agree. The same applies to a linked worktree's FETCH_HEAD.
+
+**Test** (a recipe). Age a clone two days. Truncate FETCH_HEAD immediately after your reader reads it, and in a second
+case immediately after the whole look completes. Expect "stale" both times.
+
+## T6. An empty FETCH_HEAD is also what a failed fetch leaves
+
+**Measured** (T1). A fetch that fails leaves FETCH_HEAD at 0 bytes. So an empty FETCH_HEAD does not by itself mean a
+fetch is in flight, and a refusal text saying "a fetch is writing it" can be false.
+
+**What Cloudvore changed**, as a policy, not a diagnosis. An empty or cut-short FETCH_HEAD whose mtime is more than 60 s
+old is refused at once rather than waited for, with the cure "fetch before counting". A fetch whose transfer takes longer
+than a minute is therefore refused once. The texts for recent ones read "a fetch in flight, or one that failed".
+
+**Test** (a recipe). Empty FETCH_HEAD and age it an hour. Expect an immediate refusal that does not claim a fetch in
+flight.
+
+## Residuals
+
+- **Forging FETCH_HEAD's content and mtime still defeats this kind of check.** One steady measurement of a forged file
+  passes; no retry is needed.
+- **A 4096-byte partial write that ends exactly on a line** reads as whole. It is also steady if the partial phase
+  outlasts the attempt's own span. Cloudvore's real FETCH_HEAD has no 4096-byte boundary on a line end today.
+- **A change after the measurement's last look** is invisible. No measurement is atomic with its return.
+
+## NOT FILED
+
+- Two pre-existing defects the seats found in Cloudvore's guard, filed there as K60 and K61 and not landed: a forced
+  update fetched in a linked worktree reads as "rewound" until the next fetch in the main checkout, and SessionStart's
+  single 60 s cap can be overrun by the measurement's worst case. Both concern this guard's own design and budget.
+
+## ROWS
+
+Every row landed on Cloudvore `origin/master` (first parent) since the previous publication source `1fb09ba`, at
+`642c475`:
+
+| Row | Landing | Disposition |
+|---|---|---|
+| K59 | merge `f35e31d` (candidate `1f6c67d`, RED `fb2a22c`; record `642c475`) | **Covered by this filing**, T1 to T6. Its follow-ups K60 and K61, cut in the same record and not landed, are **held** until landed (see NOT FILED). |
+| H81 | merge `b50cb19` (candidate `29616da`; record `c3d4f34`) | **Held**, to be filed with H78, which the previous filing held for it: rclone canary clean-up, a mechanism this filing does not cover. |
+| H73 packet C | defect record `d75eb9b` (its fix had not landed at `642c475`) | **Held** until landed. |
+| (no row) | `23c86e7`, `137df8f` | Doctrine records: the placement draft merge and its publication ack; already on the bus at `2091eff`. |

@@ -5975,3 +5975,63 @@ rclone's help text for trap 5, read with `RCLONE_CONFIG` at a nonexistent file:
 By default the server binds to localhost:2022 - if you want it to be
 reachable externally then supply `--addr :2022` for example.
 ```
+
+<!-- cloudvore-filing:2026-09-30-fetch-head-in-flight-traps generated from review/doctrine-drafts/2026-09-30-fetch-head-in-flight-traps.md at da9b1d3 -->
+
+## RECEIPTS
+
+Runs made for this draft on 2026-09-30, on the host above, with the two blocks printed above. `observe` was run three
+times, and each run shows one observed sequence. Timings vary run to run. So do whether the ref has moved at the first
+sample of the partial write or only after it, and whether a sample lands on the instant of truncation. The `observe`
+and `failed` runs exited 0 and their exit lines are omitted; the `#` comments on three command lines were added here.
+
+```
+$ python fh_trap.py observe
+git version 2.55.0.windows.5; the fetch took 5781 ms
+    -50.4 ms  FETCH_HEAD  5395 B, names the old master    ref moved: False
+     65.2 ms  FETCH_HEAD     0 B, no master line          ref moved: False
+   5643.4 ms  FETCH_HEAD  4096 B, names the NEW master    ref moved: False
+   5663.1 ms  FETCH_HEAD  4096 B, names the NEW master    ref moved: True
+   5700.4 ms  FETCH_HEAD  5395 B, names the NEW master    ref moved: True
+
+$ python fh_trap.py observe
+git version 2.55.0.windows.5; the fetch took 4666 ms
+    -50.4 ms  FETCH_HEAD  5395 B, names the old master    ref moved: False
+     62.0 ms  FETCH_HEAD     0 B, no master line          ref moved: False
+   4517.1 ms  FETCH_HEAD  4096 B, names the NEW master    ref moved: True
+   4579.5 ms  FETCH_HEAD  5395 B, names the NEW master    ref moved: True
+
+$ python fh_trap.py observe
+git version 2.55.0.windows.5; the fetch took 5519 ms
+    -51.0 ms  FETCH_HEAD  5395 B, names the old master    ref moved: False
+     67.7 ms  FETCH_HEAD     0 B, no master line          ref moved: False
+   5383.8 ms  FETCH_HEAD  4096 B, names the NEW master    ref moved: True
+   5431.7 ms  FETCH_HEAD  5395 B, names the NEW master    ref moved: True
+
+$ python fh_trap.py failed
+the transport refused (protocol.file.allow=never): git exit 128; FETCH_HEAD 5395 B -> 0 B
+a ref the remote does not have: git exit 128; FETCH_HEAD 5395 B -> 0 B
+
+$ python fh_trap.py reader                                   # the default READER: one look
+READER was asked 49 times while 6 fetches of 4 MB were in flight (1.3-1.5 s each); it refused 40 time(s)
+RED: READER refused while a fetch was in flight -- every one of those fetches succeeded
+(exit 1)
+
+$ READER="python fh_settle_reader.py" python fh_trap.py reader
+READER was asked 6 times while 6 fetches of 4 MB were in flight (1.4-1.6 s each); it refused 0 time(s)
+GREEN: no refusal observed in those looks (a sample, not a proof: a look taken after a fetch had ended was not inside it)
+(exit 0)
+
+$ FH_TRAP_MB=48 READER="python fh_settle_reader.py" python fh_trap.py reader   # fetches longer than its 3 s wait
+READER was asked 37 times while 6 fetches of 48 MB were in flight (12.0-24.4 s each); it refused 30 time(s)
+RED: READER refused while a fetch was in flight -- every one of those fetches succeeded
+(exit 1)
+
+$ READER="exit 0" python fh_trap.py reader                   # a hook that judges nothing
+INCONCLUSIVE: READER accepts a clone whose FETCH_HEAD records no master (one naming only another branch): it is not judging FETCH_HEAD
+(exit 3)
+
+$ READER="exit 1" python fh_trap.py reader
+INCONCLUSIVE: READER refuses a clone with a whole FETCH_HEAD and no fetch running
+(exit 3)
+```
