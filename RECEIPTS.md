@@ -6796,3 +6796,2762 @@ d-f      src: 98kqa0talu3uroje9bun3jh160 a.txt b.txt kfjb46mfhkntvmc6ajlenivm20
 e-par    src: a.txt b.txt
 e-par    parent: 397a93fgndm07hbkk8ka50jdt0/98kqa0talu3uroje9bun3jh160 397a93fgndm07hbkk8ka50jdt0/kfjb46mfhkntvmc6ajlenivm20 src/a.txt src/b.txt
 ```
+
+<!-- cloudvore-filing:2026-09-30-git-reads-markdown-appends-msbuild-traps generated from review/doctrine-drafts/2026-09-30-git-reads-markdown-appends-msbuild-traps.md at 314af0f -->
+
+## RECEIPTS
+
+The six files below are the tests the traps name, printed in full. The runs after them were made for this draft on
+2026-09-30 on the host in Scope, under Git Bash, in fresh directories holding only these files, extracted byte for byte
+from this filing. Each run shows the command, its combined stdout and stderr exactly as printed (CRLF written as LF),
+and `(exit N)`. The harnesses print `$TMP` for their own temporary directory. In the MSBuild runs the project's
+directory is written `<dir>`, and those runs had `DOTNET_CLI_TELEMETRY_OPTOUT=1`, `DOTNET_NOLOGO=1`,
+`MSBUILDDISABLENODEREUSE=1` and `DOTNET_CLI_WORKLOAD_UPDATE_NOTIFY_DISABLE=1` set.
+
+### gitread_trap.py
+
+```python
+#!/usr/bin/env python3
+r"""gitread_trap.py -- does a git reader answer from the repository, or from what git has been told to pretend?
+
+Usage:  python gitread_trap.py MODE        MODE is parents, partial, store, pathspec or mergefile
+
+A hook mode builds small repositories -- every one inside a single
+tempfile.TemporaryDirectory(prefix="gitread-", ignore_cleanup_errors=True) -- asks a reader (the hook) one
+question per case, and judges each answer against a TRUTH the harness computes from the unfaked fixture.  Commit
+dates are fixed, so commit ids are the same on every run.  No temp path is printed (any that git or a hook
+prints is replaced by $TMP).  Output is ASCII with LF line ends.
+
+HOOK CONTRACT (the same for every hook mode)
+  A hook is a shell command held in an environment variable (PARENTS, READ_BLOB, WOULD_STORE or LAST_CHANGE).
+  The harness runs it as subprocess.Popen(cmd, shell=True, env=os.environ plus the case's inputs, stdin=DEVNULL)
+  in the harness's own working directory, so "python good_readers.py ..." resolves.  shell=True means cmd.exe
+  (COMSPEC) on Windows, /bin/sh elsewhere.  The inputs arrive as environment variables and always include REPO,
+  the absolute directory the question is about: a hook reads them as %REPO% under cmd.exe and $REPO under sh.  Its
+  stdout and stderr go to files, not pipes, so a process the hook leaves running cannot hold the harness.
+  - Good faith: the harness judges a hook that computes its answer from what it is shown.  A hook written against
+    the harness itself -- its fixed ids and truths, the names or values of its inputs, the order and number of
+    calls, state kept between calls -- can read GREEN without judging anything, and no black-box test rules that
+    out.  Fixture directories are named at random.  The cases sample the mechanisms each mode names: GREEN is not a
+    proof that a reader is right everywhere.  The answer is judged, not what the hook does on the way: it may change
+    the repository it reads (a lazy fetch does), and a process it leaves running after it exits is not tracked.
+  - Variable unset: the mode's built-in TRAPPED reader answers instead.  It is a git argv list, never a shell
+    string, run with the harness's git environment (below); each is given exactly under its mode.
+  - Variable set but empty or only whitespace: prints INCONCLUSIVE and exits 3 without running anything.
+  - Controls: each mode has at least one honest control case.  If the hook does not answer a control correctly
+    the run is INCONCLUSIVE: it cannot answer an honest repository, so nothing it says elsewhere is a verdict.
+    Each trap line then reads "INCONCLUSIVE (a control failed; alone: ...)".
+  - Fixture self-check: every trap case first proves its own fixture does what it claims (for example that
+    plain git really reports the fake parents).  If it does not, the case is INCONCLUSIVE and the hook is not
+    asked.
+  - Trap cases: the true answer, or a refusal as the mode defines it, is ok; any other answer is RED.  A hook
+    that does not finish within 30 s has not answered: INCONCLUSIVE.  It is then stopped with the processes still
+    linked to it: `taskkill /T /F` on Windows, which cannot reach a process whose parent has already exited, and
+    its process group elsewhere.  A temporary directory that cannot be removed after a hook run is reported,
+    whichever way the run ends.
+
+MODES (each case gets a fresh fixture)
+  parents    Hook PARENTS; input REPO.  Answer: the parent ids of HEAD, whitespace-separated and nothing else,
+             exit 0; any non-zero exit is a refusal.  Fixture: A <- B <- C on master (HEAD = C) and an
+             unrelated root commit X on branch other.  Truth: the parent lines of
+             `git --no-replace-objects cat-file commit C`, read before anything is faked (B).  Cases:
+               clean (control)  nothing faked
+               merge (control)  HEAD is M, a merge of C and X; the truth is C X
+               replace          `git replace C C'`, where C' is C's raw object with its parent line naming X,
+                                written by `git hash-object -t commit -w --stdin`
+               grafts           the file `git rev-parse --git-path info/grafts` names holds the line "C X"
+               commit-graph     `git commit-graph write --reachable`, then C's first-parent position in the
+                                CDAT chunk is set to X's position
+               grafts-worktree  the grafts file above, asked from a linked worktree: git reads grafts from the
+                                common directory, not from the linked worktree's own git directory
+               shallow          `git clone --depth 1 file://...` of a clean fixture; the truth is still B
+             Trapped reader: [git, -C, REPO, --no-replace-objects, log, -1, --format=%P, HEAD].
+  partial    Hook READ_BLOB; inputs REPO and SPEC ("REV:PATH").  Answer: the file's bytes and exit 0 when PATH
+             exists at REV; exit 1 when it does not; any other exit is a refusal ("cannot tell").  Fixture: an
+             upstream with c1 (keep.txt "keep v1\n", old.txt "old\n") and c2 (keep.txt "keep v2\n", old.txt
+             deleted), uploadpack.allowFilter=true and uploadpack.allowAnySHA1InWant=true.  Trap cases ask a
+             fresh `git clone --filter=blob:none file://...` (its checkout fetches HEAD's blobs only); the
+             controls ask a fresh full `git clone file://...` of the same upstream, because a control must be
+             an honest repository and a reader may refuse every partial clone.  Truth: the upstream's own
+             `git ls-tree` entry and blob.  Cases: HEAD:keep.txt (control), HEAD:old.txt (control, absent),
+             HEAD~1:old.txt and HEAD~1:keep.txt (traps: they exist at c1, but their blobs are not local),
+             HEAD~1:old.txt once more after the upstream is moved away, so no fetch can reach the blob, and
+             HEAD:keep.txt in a clone made with --no-checkout, which never fetched HEAD's blobs either, and
+             HEAD~1:old.txt in a clone whose remote is named upstream (git marks remote.<name>.promisor).
+             Trapped reader: [git, -C, REPO, cat-file, --batch] with GIT_NO_LAZY_FETCH=1 and stdin "SPEC\n";
+             a header ending in " missing" is taken as absent (exit 1), "OID blob SIZE" as the SIZE bytes that
+             follow (exit 0), anything else as a refusal.  The mode also prints, as KEY FACT, the exact header
+             bytes that command prints for a path that does not exist and for a blob that is not local.
+  store      Hook WOULD_STORE; inputs REPO and FILE (a path from the repository root).  Answer: the blob id
+             git would store if that working-copy file were committed, exit 0; non-zero is a refusal.  Fixture:
+             core.autocrlf=true, .gitattributes "raw.txt -text", "*.dat -text", "forced.txt text",
+             "forcednul.txt text" and "textstaged.txt text", and one file written as bytes:
+               plain (control)  plain.txt      "a\r\nb\r\n"
+               raw              raw.txt        "a\r\nb\r\n"       -text: stored with its CRLFs
+               lonecr           lonecr.txt     "a\r\nb\rc\r\n"    a lone CR: autocrlf's check calls it binary
+               nul              nulbyte.txt    "a\r\nb\x00\r\n"   a NUL byte: binary
+               glob             data.dat       "a\r\nb\r\n"       -text through a glob: stored with its CRLFs
+               text-lonecr      forced.txt     "a\r\nb\rc\r\n"    explicit text: converted despite the lone CR
+               text-nul         forcednul.txt  "a\r\nb\x00\r\n"   explicit text: converted despite the NUL
+               tracked-crlf     tracked.txt    "a\r\nb\r\nc\r\n" first committed as "a\r\nb\r\n" under
+                                core.autocrlf=false, so its index copy holds CRLF: git add keeps the CRLFs
+               staged-crlf      staged.txt     "a\r\nb\r\nc\r\n" "a\r\nb\r\n" staged, never committed: the
+                                index copy holds CRLF, HEAD has none: git add keeps the CRLFs
+               restaged-lf      restaged.txt   "a\r\nb\r\nc\r\n" committed as "a\r\nb\r\n", then staged as
+                                "a\nb\n": HEAD's copy holds CRLF, the index copy does not: git add converts
+               text-staged-crlf textstaged.txt "a\r\nb\r\nc\r\n" marked text; its index copy forced to
+                                "a\r\nb\r\n" (hash-object --no-filters, update-index): git add converts
+                                anyway -- the index copy's CRLF rule is text=auto's, not text's
+             A note after each hook says whether the case repository's index changed.
+             (The NUL file is not called nul.txt: Git for Windows 2.55 will not add a file of that name --
+             open("nul.txt") fails there -- although Windows 11 itself creates and reads it.)
+             Truth: `git add FILE` then `git ls-files -s FILE` in a twin fixture the hook never sees.
+             Trapped reader: FILE's bytes with every CRLF replaced by LF, piped to
+             [git, -C, REPO, hash-object, --stdin] (no --path, so no filters).
+  pathspec   Hook LAST_CHANGE; inputs REPO and TARGET=review/x.md, the path from the repository ROOT as
+             HEAD:review/x.md names it.  Answer: the id of the last commit that changed that file, exit 0;
+             non-zero is a refusal; an empty answer is a wrong answer.  Fixture: c1 adds review/x.md and
+             sub/keep.txt; c2 adds sub/review/x.md (shadowed) or changes sub/keep.txt (lonely); c3 changes
+             review/x.md; c4 adds review/other.md beside it and later commits change sub/keep.txt, 2, 1 and 3
+             commits after c3 in root, shadowed and lonely, so no fixed position from HEAD holds the answer.
+             Truth: `git log -1 --format=%H -- review/x.md` run at the root (c3).  Cases: root
+             (control, REPO = the root), shadowed and lonely (REPO = the subdirectory sub).
+             Trapped reader: [git, -C, REPO, log, -1, --format=%H, --, TARGET].
+  mergefile  A demonstration: no hook.  Where branch topic is one commit ahead of master:
+             (a) "message from stdin\n" is piped into `git merge --no-ff -F - topic`; (b) after a reset, the
+             same again with a file named "-" holding "message from a file named -\n" in git's working
+             directory; (c) `git commit --allow-empty -F -` with that file still there.  Prints each exit code,
+             git's exact stdout and stderr, and the message of any commit made, then checks all three.
+
+VERDICTS AND EXIT CODES
+  One line per case (name, what the hook answered with ids cut to 7 hex, the truth, the result), indented notes
+  (what each fixture self-check measured), then ONE summary line:
+    GREEN         exit 0  every control answered truly, every trap answered truly or refused
+    RED           exit 1  every control answered correctly and at least one trap answered falsely
+    INCONCLUSIVE  exit 3  a control not answered correctly, a case not judged, the hook variable set but empty,
+                          or a harness failure (git missing, a fixture step failing) -- never a bare traceback
+  mergefile ends DEMONSTRATED (exit 0) only when (a) failed and made no commit, (b) took the file named "-", and
+  (c) took the standard input; otherwise INCONCLUSIVE (exit 3), naming what this git did.  A usage error exits 2.
+
+GIT ENVIRONMENT for every git call the harness makes: os.environ minus every variable whose name starts with GIT_
+(case-insensitive), then GIT_CONFIG_NOSYSTEM=1, GIT_CONFIG_GLOBAL=os.devnull, GIT_TERMINAL_PROMPT=0, one fixed
+author and committer (Gitread Harness <harness@gitread.invalid>), and GIT_AUTHOR_DATE = GIT_COMMITTER_DATE: the
+n-th commit a fixture makes is dated 2026-01-01T00:00:00Z plus n minutes.  Every call has a 120 s timeout; output
+is read as bytes.  core.autocrlf is set in every repository the harness initialises (true for store, else false).
+"""
+
+import dataclasses
+import os
+import pathlib
+import re
+import shutil
+import signal
+import subprocess
+import sys
+import tempfile
+
+GREEN, RED, INCONCLUSIVE = 0, 1, 3
+HOOK_TIMEOUT = 30
+GIT_TIMEOUT = 120
+EPOCH = 1767225600                                  # 2026-01-01T00:00:00Z
+HEX40 = re.compile(r"[0-9a-f]{40}\Z")
+NO_LAZY = {"GIT_NO_LAZY_FETCH": "1"}
+
+
+class HarnessFailure(Exception):
+    """git is missing or a fixture step failed: the run is INCONCLUSIVE."""
+
+
+class Out:
+    """Prints LF-terminated ASCII lines and replaces every form of the temp root with $TMP."""
+
+    def __init__(self):
+        self.roots = []
+
+    def add_root(self, path):
+        for form in {str(path), os.path.realpath(path)}:
+            slashed = form.replace("\\", "/")
+            self.roots += [form, slashed]
+            if re.match(r"[A-Za-z]:/", slashed):
+                self.roots.append("/" + slashed[0].lower() + slashed[2:])
+        self.roots.sort(key=len, reverse=True)
+
+    def scrub(self, text):
+        for root in self.roots:
+            text = re.sub(re.escape(root), "$TMP", text, flags=re.IGNORECASE)
+        return re.sub(r"[^\s'\"]*gitread-[^\s'\"]*", "$TMP", text)
+
+    def line(self, text=""):
+        sys.stdout.buffer.write(self.scrub(text).encode("ascii", "backslashreplace") + b"\n")
+        sys.stdout.buffer.flush()
+
+
+def git_env(extra=None, tick=0):
+    env = {k: v for k, v in os.environ.items() if not k.upper().startswith("GIT_")}
+    date = f"@{EPOCH + 60 * tick} +0000"
+    env.update(GIT_CONFIG_NOSYSTEM="1", GIT_CONFIG_GLOBAL=os.devnull, GIT_TERMINAL_PROMPT="0",
+               GIT_AUTHOR_NAME="Gitread Harness", GIT_AUTHOR_EMAIL="harness@gitread.invalid",
+               GIT_COMMITTER_NAME="Gitread Harness", GIT_COMMITTER_EMAIL="harness@gitread.invalid",
+               GIT_AUTHOR_DATE=date, GIT_COMMITTER_DATE=date)
+    env.update(extra or {})
+    return env
+
+
+def run_git(args, cwd=None, stdin=b"", extra=None, tick=0):
+    """Runs git from an argv list (no shell); stdout and stderr come back as bytes."""
+    try:
+        return subprocess.run(["git", *args], cwd=cwd, input=stdin, capture_output=True,
+                              env=git_env(extra, tick), timeout=GIT_TIMEOUT)
+    except subprocess.TimeoutExpired:
+        raise HarnessFailure(f"`git {' '.join(args)}` did not finish within {GIT_TIMEOUT} s") from None
+    except OSError as exc:
+        raise HarnessFailure(f"cannot run git: {exc}") from None
+
+
+def said(run):
+    return run.stderr.decode("utf-8", "replace").strip().replace("\n", " | ")
+
+
+def git_version():
+    if shutil.which("git") is None:
+        raise HarnessFailure("git is not on PATH")
+    run = run_git(["version"])
+    if run.returncode != 0:
+        raise HarnessFailure(f"`git version` exited {run.returncode}: {said(run)}")
+    return run.stdout.decode("utf-8", "replace").strip()
+
+
+class Repo:
+    """A fixture repository (or a directory inside one); each commit it makes gets the next fixed date."""
+
+    def __init__(self, path):
+        self.path = pathlib.Path(path)
+        self.tick = 0
+
+    def git(self, *args, stdin=b"", extra=None, commit=False, check=True):
+        if commit:
+            self.tick += 1
+        run = run_git(args, cwd=self.path, stdin=stdin, extra=extra, tick=self.tick)
+        if check and run.returncode != 0:
+            raise HarnessFailure(f"fixture step `git {' '.join(args)}` exited {run.returncode}: {said(run)}")
+        return run
+
+    def text(self, *args, **kw):
+        return self.git(*args, **kw).stdout.decode("utf-8", "replace").strip()
+
+    def write(self, rel, data):
+        target = self.path / rel
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_bytes(data)
+
+    def commit(self, message, files, remove=()):
+        for rel, data in files.items():
+            self.write(rel, data)
+        for rel in remove:
+            self.git("rm", "-q", "--", rel)
+        self.git("add", "--", *files)
+        self.git("commit", "-q", "-m", message, commit=True)
+        return self.text("rev-parse", "HEAD")
+
+
+def init_repo(path, autocrlf="false"):
+    repo = Repo(path)
+    repo.path.mkdir(parents=True)
+    repo.git("-c", "init.defaultBranch=master", "init", "-q")
+    repo.git("config", "core.autocrlf", autocrlf)
+    return repo
+
+
+def spot(tmp):
+    """A path for a fresh fixture, under a randomly named directory: nothing in it tells one case from another."""
+    return pathlib.Path(tempfile.mkdtemp(dir=tmp)) / "r"
+
+
+def clone(source, dest, *options):
+    """git clone -q OPTIONS file://SOURCE DEST -- a file:// URI, so --depth and --filter are honoured."""
+    dest = pathlib.Path(dest)
+    run = run_git(["clone", "-q", *options, source.path.as_uri(), str(dest)], cwd=dest.parent)
+    if run.returncode != 0:
+        raise HarnessFailure(f"fixture step `git clone {' '.join(options)}` exited {run.returncode}: {said(run)}")
+    return Repo(dest)
+
+
+@dataclasses.dataclass
+class Reply:
+    code: object                # the exit code, or None when the reader did not finish in time
+    out: bytes = b""
+    err: bytes = b""
+
+
+def ask_hook(cmd, inputs, scratch):
+    """Output goes to files, not pipes: after a timeout subprocess.run still reads a pipe to its end, and a process
+    the hook left running can hold that end open."""
+    env = dict(os.environ)
+    env.update(inputs)
+    n = len(list(scratch.glob("*.out")))
+    out_path, err_path = scratch / f"{n}.out", scratch / f"{n}.err"
+    with open(out_path, "wb") as out, open(err_path, "wb") as err:
+        code = run_hook(cmd, env, out, err)
+    return Reply(None) if code is None else Reply(code, out_path.read_bytes(), err_path.read_bytes())
+
+
+def run_hook(cmd, env, out, err):
+    """The hook's exit code; None when it has not finished in HOOK_TIMEOUT s, after stopping it and the processes
+    still linked to it (taskkill /T on Windows, its process group elsewhere)."""
+    group = {} if os.name == "nt" else {"start_new_session": True}
+    proc = subprocess.Popen(cmd, shell=True, env=env, stdin=subprocess.DEVNULL, stdout=out, stderr=err, **group)
+    try:
+        return proc.wait(timeout=HOOK_TIMEOUT)
+    except subprocess.TimeoutExpired:
+        if os.name == "nt":
+            subprocess.run(["taskkill", "/T", "/F", "/PID", str(proc.pid)], stdout=subprocess.DEVNULL,
+                           stderr=subprocess.DEVNULL)
+        else:
+            os.killpg(proc.pid, signal.SIGKILL)
+        proc.wait()
+        return None
+
+
+def short(value, width=30):
+    shown = repr(value)
+    return shown if len(shown) <= width else shown[:width - 3] + "..."
+
+
+@dataclasses.dataclass
+class Case:
+    name: str
+    control: bool = False
+    answer: str = "-"
+    truth: str = "-"
+    result: str = ""
+    why: str = ""
+    notes: list = dataclasses.field(default_factory=list)
+
+    def settle(self, kind, answer, truth, reply):
+        """kind is what the reader did -- true, false, refused or timeout -- before the control/trap rules."""
+        self.answer, self.truth = answer, truth
+        if kind == "true":
+            self.result = "ok"
+        elif kind == "timeout":
+            self.result, self.why = "INCONCLUSIVE", f"no answer within {HOOK_TIMEOUT} s"
+        elif kind == "refused":
+            self.result, self.why = ("INCONCLUSIVE", "refused an honest repository") if self.control \
+                else ("ok", "refused")
+            first = reply.err.decode("utf-8", "replace").strip().splitlines()
+            if first:
+                self.notes.append(f"hook stderr: {first[0][:200]}")
+        else:
+            self.result, self.why = ("INCONCLUSIVE", "wrong on an honest repository") if self.control \
+                else ("RED", "")
+
+    def prove(self, checks, facts):
+        """Records what the fixture self-check measured; False (case INCONCLUSIVE) when a claim failed."""
+        self.notes.append("fixture: " + facts)
+        problems = [problem for passed, problem in checks if not passed]
+        if problems:
+            self.answer, self.result, self.why = "(not asked)", "INCONCLUSIVE", "fixture: " + "; ".join(problems)
+        return not problems
+
+
+def show_id(token, labels):
+    """An id cut to 7 hex, after its fixture label when it has one; anything else as a short repr."""
+    key = token.lower()
+    if key in labels:
+        return f"{labels[key]} {token[:7]}"
+    return token[:7] if HEX40.match(key) else short(token, 20)
+
+
+def listed(tokens, labels):
+    return " ".join(show_id(t, labels) for t in tokens) or "(nothing)"
+
+
+def judge_ids(case, reply, truth, labels):
+    """For answers that are whitespace-separated ids (hex compared without case); truth is a list of ids."""
+    if reply.code is None:
+        kind, answer = "timeout", "(no answer)"
+    elif reply.code != 0:
+        kind, answer = "refused", f"refused (exit {reply.code})"
+    else:
+        tokens = reply.out.decode("ascii", "replace").split()
+        kind = "true" if [t.lower() for t in tokens] == truth else "false"
+        answer = listed(tokens, labels)
+    case.settle(kind, answer, listed(truth, labels), reply)
+
+
+def judge_blob(case, reply, truth):
+    """truth is the file's bytes, or None when the path does not exist at that revision."""
+    if reply.code is None:
+        kind, answer = "timeout", "(no answer)"
+    elif reply.code == 0:
+        kind, answer = ("true" if truth is not None and reply.out == truth else "false"), short(reply.out)
+    elif reply.code == 1:
+        kind, answer = ("true" if truth is None else "false"), "absent (exit 1)"
+    else:
+        kind, answer = "refused", f"refused (exit {reply.code})"
+    case.settle(kind, answer, "absent" if truth is None else short(truth), reply)
+
+
+def summarize(out, cases):
+    failed = [c.name.split(" (")[0] for c in cases if c.control and c.result != "ok"]
+    rows = []
+    for c in cases:
+        result = c.result + (f" ({c.why})" if c.why else "")
+        if failed and not c.control:
+            result = f"INCONCLUSIVE (a control failed; alone: {result})"
+        rows.append((c, result))
+    nw = max(len(c.name) for c in cases)
+    aw = max(len(c.answer) for c in cases)
+    tw = max(len(c.truth) for c in cases)
+    for c, result in rows:
+        out.line(f"case {c.name:<{nw}}  answered {c.answer:<{aw}}  truth {c.truth:<{tw}}  {result}")
+        for note in c.notes:
+            out.line(f"     {note}")
+    traps = [c for c in cases if not c.control]
+    if failed:
+        out.line(f"INCONCLUSIVE: control {', '.join(failed)} not answered correctly, so no answer is a verdict")
+        return INCONCLUSIVE
+    red = [c.name.split(" (")[0] for c in traps if c.result == "RED"]
+    if red:
+        out.line(f"RED: {len(red)} of {len(traps)} trap cases answered falsely: {', '.join(red)}")
+        return RED
+    unjudged = [c.name.split(" (")[0] for c in cases if c.result != "ok"]
+    if unjudged:
+        out.line(f"INCONCLUSIVE: no trap answered falsely, but {', '.join(unjudged)} could not be judged")
+        return INCONCLUSIVE
+    refused = [c.name.split(" (")[0] for c in traps if c.why == "refused"]
+    tail = f"; refused: {', '.join(refused)}" if refused else ""
+    out.line(f"GREEN: all {len(cases)} cases answered truly or refused{tail}")
+    return GREEN
+
+
+# ---------------------------------------------------------------- parents
+
+PARENTS_TRAPPED = "git -C REPO --no-replace-objects log -1 --format=%P HEAD"
+
+
+def trapped_parents(inputs):
+    run = run_git(["-C", inputs["REPO"], "--no-replace-objects", "log", "-1", "--format=%P", "HEAD"])
+    return Reply(run.returncode, run.stdout, run.stderr)
+
+
+def abcx_fixture(path):
+    """A <- B <- C on master (HEAD = C) and an unrelated root commit X on branch other."""
+    repo = init_repo(path)
+    for name in "ABC":
+        repo.commit(name, {"f.txt": f"{name}\n".encode()})
+    blob = repo.text("hash-object", "-w", "--stdin", stdin=b"x\n")
+    tree = repo.text("mktree", stdin=f"100644 blob {blob}\tx.txt\n".encode())
+    x = repo.text("commit-tree", tree, "-m", "X", commit=True)
+    repo.git("update-ref", "refs/heads/other", x)
+    ids = {"A": repo.text("rev-parse", "HEAD~2"), "B": repo.text("rev-parse", "HEAD~1"),
+           "C": repo.text("rev-parse", "HEAD"), "X": x}
+    return repo, ids
+
+
+def raw_commit(repo, rev):
+    return repo.git("--no-replace-objects", "cat-file", "commit", rev).stdout
+
+
+def parent_lines(raw):
+    header = raw.split(b"\n\n", 1)[0]
+    return [line[7:].decode("ascii", "replace") for line in header.split(b"\n") if line.startswith(b"parent ")]
+
+
+def logged_parents(repo, *options):
+    run = repo.git(*options, "log", "-1", "--format=%P", "HEAD", check=False)
+    return run.stdout.decode("ascii", "replace").split(), run
+
+
+def patch_first_parent(graph, commit, parent):
+    """Sets COMMIT's first-parent position in the commit-graph's CDAT chunk to PARENT's position."""
+    body = bytearray(graph.read_bytes())
+    if bytes(body[:4]) != b"CGPH" or body[4] != 1 or body[5] != 1:
+        raise HarnessFailure("the commit-graph is not a version-1 SHA-1 graph")
+    chunks = {bytes(body[8 + 12 * k:12 + 12 * k]): int.from_bytes(body[12 + 12 * k:20 + 12 * k], "big")
+              for k in range(body[6])}
+    if not {b"OIDF", b"OIDL", b"CDAT"} <= set(chunks):
+        raise HarnessFailure(f"the commit-graph lacks a chunk it needs: {sorted(chunks)}")
+    total = int.from_bytes(body[chunks[b"OIDF"] + 4 * 255:chunks[b"OIDF"] + 4 * 256], "big")
+    oids = [bytes(body[chunks[b"OIDL"] + 20 * n:chunks[b"OIDL"] + 20 * (n + 1)]).hex() for n in range(total)]
+    if oids != sorted(oids) or commit not in oids or parent not in oids:
+        raise HarnessFailure("the commit-graph's OIDL chunk is not what the fixture wrote")
+    entry = chunks[b"CDAT"] + oids.index(commit) * 36 + 20        # 20-byte tree id, then parent-1 position
+    body[entry:entry + 4] = oids.index(parent).to_bytes(4, "big")
+    os.chmod(graph, 0o644)                                         # git writes it read-only
+    graph.write_bytes(bytes(body))
+
+
+def mode_parents(tmp, ask, out, cases):
+    clean, ids = abcx_fixture(spot(tmp))
+    names = {v: k for k, v in ids.items()}
+    out.line("fixture: " + " ".join(f"{k}={v[:7]}" for k, v in ids.items())
+             + " (HEAD = C, true parent B), the same ids in every case; in the merge control HEAD is M")
+
+    def fixture(case, name):
+        """A fresh A/B/C/X fixture whose ids must be the clean one's; sets the case's truth from raw C."""
+        repo, fresh = abcx_fixture(spot(tmp))
+        if fresh != ids:
+            raise HarnessFailure(f"the {name} fixture's ids differ from the clean fixture's")
+        raw = raw_commit(repo, ids["C"])
+        case.truth = listed(parent_lines(raw), names)
+        return repo, raw
+
+    def asked(case, repo, raw):
+        judge_ids(case, ask({"REPO": str(repo.path)}), parent_lines(raw), names)
+
+    def state(same):
+        return "unchanged" if same else "CHANGED"
+
+    case = Case("clean (control)", control=True)
+    cases.append(case)
+    asked(case, clean, raw_commit(clean, ids["C"]))
+
+    case = Case("merge (control)", control=True)
+    cases.append(case)
+    repo, _ = fixture(case, "merge")
+    merge = repo.text("commit-tree", repo.text("rev-parse", "HEAD^{tree}"), "-p", ids["C"], "-p", ids["X"],
+                      "-m", "M", commit=True)
+    repo.git("update-ref", "HEAD", merge)
+    names[merge] = "M"
+    raw = raw_commit(repo, merge)
+    case.truth = listed(parent_lines(raw), names)
+    case.notes.append(f"measured: HEAD = M {merge[:7]}, whose parent lines name {listed(parent_lines(raw), names)}")
+    asked(case, repo, raw)
+
+    case = Case("replace")
+    cases.append(case)
+    repo, raw = fixture(case, "replace")
+    fake = raw.replace(f"parent {ids['B']}\n".encode(), f"parent {ids['X']}\n".encode(), 1)
+    swap = repo.text("hash-object", "-t", "commit", "-w", "--stdin", stdin=fake)
+    names[swap] = "C'"
+    repo.git("replace", ids["C"], swap)
+    seen, _ = logged_parents(repo)
+    same = raw_commit(repo, "HEAD") == raw
+    if case.prove([(seen == [ids["X"]], f"plain git log -1 --format=%P HEAD = {listed(seen, names)}, not X"),
+                   (same, "the raw object of HEAD changed")],
+                  f"refs/replace/{ids['C'][:7]} -> C' {swap[:7]} (its parent line names X); plain "
+                  f"`git log -1 --format=%P HEAD` = {listed(seen, names)}; raw object of HEAD {state(same)}"):
+        asked(case, repo, raw)
+
+    case = Case("grafts")
+    cases.append(case)
+    repo, raw = fixture(case, "grafts")
+    grafts = repo.path / repo.text("rev-parse", "--git-path", "info/grafts")
+    grafts.parent.mkdir(parents=True, exist_ok=True)
+    grafts.write_bytes(f"{ids['C']} {ids['X']}\n".encode())
+    seen, run = logged_parents(repo, "--no-replace-objects")
+    same = raw_commit(repo, "HEAD") == raw
+    proven = case.prove([(seen == [ids["X"]], f"--no-replace-objects log reports {listed(seen, names)}, not X"),
+                         (same, "the raw object of HEAD changed")],
+                        f"info/grafts holds \"C X\"; `git --no-replace-objects log -1 --format=%P HEAD` = "
+                        f"{listed(seen, names)}; raw object of HEAD {state(same)}")
+    case.notes += [f"git stderr: {line}" for line in run.stderr.decode("utf-8", "replace").splitlines()]
+    if proven:
+        asked(case, repo, raw)
+
+    case = Case("grafts-worktree")
+    cases.append(case)
+    repo, raw = fixture(case, "grafts-worktree")
+    grafts = repo.path / repo.text("rev-parse", "--git-path", "info/grafts")
+    grafts.parent.mkdir(parents=True, exist_ok=True)
+    grafts.write_bytes(f"{ids['C']} {ids['X']}\n".encode())
+    linked = Repo(spot(tmp))
+    repo.git("worktree", "add", "-q", "--detach", str(linked.path), ids["C"])
+    seen, _ = logged_parents(linked, "--no-replace-objects")
+    own = os.path.normcase(os.path.abspath(linked.text("rev-parse", "--absolute-git-dir")))
+    common = os.path.normcase(os.path.abspath(linked.text("rev-parse", "--path-format=absolute", "--git-common-dir")))
+    same = raw_commit(linked, "HEAD") == raw
+    if case.prove([(seen == [ids["X"]], f"--no-replace-objects log reports {listed(seen, names)}, not X"),
+                   (own != common, "the linked worktree's git directory is the common directory"),
+                   (same, "the raw object of HEAD changed")],
+                  f"info/grafts in the common directory holds \"C X\"; asked from a linked worktree whose own git "
+                  f"directory is not the common one: `git --no-replace-objects log -1 --format=%P HEAD` = "
+                  f"{listed(seen, names)}; raw object of HEAD {state(same)}"):
+        asked(case, linked, raw)
+
+    case = Case("commit-graph")
+    cases.append(case)
+    repo, raw = fixture(case, "commit-graph")
+    repo.git("commit-graph", "write", "--reachable")
+    patch_first_parent(repo.path / repo.text("rev-parse", "--git-path", "objects/info/commit-graph"),
+                       ids["C"], ids["X"])
+    seen, _ = logged_parents(repo, "--no-replace-objects")
+    off, _ = logged_parents(repo, "--no-replace-objects", "-c", "core.commitGraph=false")
+    same = raw_commit(repo, "HEAD") == raw
+    if case.prove([(seen == [ids["X"]], f"--no-replace-objects log reports {listed(seen, names)}, not X"),
+                   (off == [ids["B"]], f"with core.commitGraph=false log reports {listed(off, names)}, not B"),
+                   (same, "the raw object of HEAD changed")],
+                  f"CDAT parent 1 of C set to X's position; `git --no-replace-objects log -1 --format=%P HEAD` = "
+                  f"{listed(seen, names)}, with -c core.commitGraph=false = {listed(off, names)}; raw object of "
+                  f"HEAD {state(same)}"):
+        asked(case, repo, raw)
+
+    case = Case("shallow")
+    cases.append(case)
+    source, raw = fixture(case, "shallow-source")
+    repo = clone(source, spot(tmp), "--depth", "1")
+    head = repo.text("rev-parse", "HEAD")
+    seen, _ = logged_parents(repo)
+    shallow = repo.text("rev-parse", "--is-shallow-repository")
+    same = raw_commit(repo, "HEAD") == raw
+    if case.prove([(head == ids["C"], f"HEAD is {show_id(head, names)}, not C"),
+                   (seen == [], f"plain git log -1 --format=%P HEAD = {listed(seen, names)}, not nothing"),
+                   (shallow == "true", f"--is-shallow-repository says {shallow!r}"),
+                   (same, "the raw object of HEAD differs from the source's C")],
+                  f"clone --depth 1 of a clean fixture: HEAD = {show_id(head, names)}, --is-shallow-repository = "
+                  f"{shallow}, plain `git log -1 --format=%P HEAD` = {listed(seen, names)}; raw object of HEAD "
+                  f"{'identical to the source' if same else 'DIFFERENT'}"):
+        asked(case, repo, raw)
+
+
+# ---------------------------------------------------------------- partial
+
+BLOB_TRAPPED = 'git -C REPO cat-file --batch, GIT_NO_LAZY_FETCH=1, stdin "SPEC\\n"; " missing" header = absent'
+
+
+def trapped_blob(inputs):
+    run = run_git(["-C", inputs["REPO"], "cat-file", "--batch"], stdin=inputs["SPEC"].encode() + b"\n",
+                  extra=NO_LAZY)
+    header, _, rest = run.stdout.partition(b"\n")
+    if run.returncode != 0:
+        return Reply(3, b"", run.stderr)
+    if header.endswith(b" missing"):
+        return Reply(1, b"", run.stderr)
+    fields = header.split(b" ")
+    if len(fields) == 3 and fields[1] == b"blob" and fields[2].isdigit():
+        return Reply(0, rest[:int(fields[2])], run.stderr)
+    return Reply(3, b"", header)
+
+
+def upstream_fixture(path):
+    """c1 adds keep.txt "keep v1" and old.txt "old"; c2 makes keep.txt "keep v2" and deletes old.txt."""
+    up = init_repo(path)
+    up.git("config", "uploadpack.allowFilter", "true")
+    up.git("config", "uploadpack.allowAnySHA1InWant", "true")
+    up.commit("c1", {"keep.txt": b"keep v1\n", "old.txt": b"old\n"})
+    up.commit("c2", {"keep.txt": b"keep v2\n"}, remove=["old.txt"])
+    return up
+
+
+def tree_blob(repo, spec):
+    """(blob id, bytes) of the file SPEC names, read through `git ls-tree`; (None, None) when there is none."""
+    rev, _, path = spec.partition(":")
+    listing = repo.git("ls-tree", "-z", "--full-tree", rev, "--", path).stdout
+    for item in listing.split(b"\0"):
+        meta, tab, name = item.partition(b"\t")
+        if tab and name == path.encode():
+            _, kind, oid = meta.decode("ascii").split(" ")
+            if kind != "blob":
+                raise HarnessFailure(f"{spec} is a {kind}, not a file")
+            return oid, repo.git("cat-file", "blob", oid).stdout
+    return None, None
+
+
+def objects_snapshot(repo):
+    root = repo.path / repo.text("rev-parse", "--git-path", "objects")
+    return sorted((str(p.relative_to(root)), p.stat().st_size) for p in root.rglob("*") if p.is_file())
+
+
+def not_local_checks(repo, spec, oid):
+    """Claims of a trap fixture: a promisor clone whose tree names OID for SPEC, and OID not in the clone."""
+    marks = repo.git("config", "--get-regexp", r"^remote\..*\.promisor$", check=False).stdout.decode("utf-8", "replace")
+    promisor = ", ".join(line.split(" ", 1)[0] for line in marks.splitlines() if line.endswith(" true")) or "none"
+    before = objects_snapshot(repo)
+    named = repo.git("rev-parse", spec, check=False)                 # lazy fetching allowed: must need none
+    after = objects_snapshot(repo)
+    named_oid = named.stdout.decode("ascii", "replace").strip()
+    local = repo.git("cat-file", "-e", oid, extra=NO_LAZY, check=False).returncode
+    checks = [(promisor != "none", "no remote.<name>.promisor is true"),
+              (named_oid == oid, f"rev-parse {spec} gave {short(named_oid, 12)}, not the upstream's blob"),
+              (before == after, f"rev-parse {spec} changed the object store"),
+              (local != 0, f"blob {oid[:7]} is already local")]
+    facts = (f"promisor: {promisor}; `git rev-parse {spec}` = {named_oid[:7]}, object store "
+             f"{'unchanged' if before == after else 'CHANGED'}; GIT_NO_LAZY_FETCH=1 `git cat-file -e "
+             f"{oid[:7]}` exit {local}")
+    return checks, facts
+
+
+def mode_partial(tmp, ask, out, cases):
+    up = upstream_fixture(spot(tmp))
+    probe = clone(up, spot(tmp), "--filter=blob:none")
+    oid, _ = tree_blob(up, "HEAD~1:old.txt")
+    absent, _ = tree_blob(up, "HEAD:old.txt")
+    checks, facts = not_local_checks(probe, "HEAD~1:old.txt", oid)
+    out.line("KEY FACT: git cat-file --batch with GIT_NO_LAZY_FETCH=1 in a fresh blobless clone prints")
+    if absent is not None or not all(passed for passed, _ in checks):
+        out.line(f"  not measured: the probe fixture is not what it claims ({facts})")
+    else:
+        rows = []
+        for label, spec in (("path not at revision", "HEAD:old.txt"), ("blob not local", "HEAD~1:old.txt")):
+            line = spec.encode() + b"\n"
+            run = probe.git("cat-file", "--batch", stdin=line, extra=NO_LAZY, check=False)
+            rows.append((spec, run))
+            out.line(f"  {label:<20}  stdin {line!r:<21} stdout {run.stdout!r:<27} "
+                     f"stderr {run.stderr!r} exit {run.returncode}")
+        alike = all(run.stdout == spec.encode() + b" missing\n" for spec, run in rows) \
+            and len({(run.stderr, run.returncode) for _, run in rows}) == 1
+        out.line("  -> " + ("indistinguishable: each header is the input line followed by b' missing\\n', with "
+                            "the same stderr and exit code" if alike else "the two differ beyond the input line"))
+    plan = (("HEAD:keep.txt (control)", "HEAD:keep.txt", True, False, False),
+            ("HEAD:old.txt (control)", "HEAD:old.txt", True, False, False),
+            ("HEAD~1:old.txt", "HEAD~1:old.txt", False, False, False),
+            ("HEAD~1:keep.txt", "HEAD~1:keep.txt", False, False, False),
+            ("HEAD~1:old.txt upstream-gone", "HEAD~1:old.txt", False, True, False),
+            ("HEAD:keep.txt no-checkout", "HEAD:keep.txt", False, False, True),
+            ("HEAD~1:old.txt remote-upstream", "HEAD~1:old.txt", False, False, False))
+    for name, spec, control, gone, no_checkout in plan:
+        case = Case(name, control)
+        cases.append(case)
+        up = upstream_fixture(spot(tmp))
+        oid, truth = tree_blob(up, spec)
+        case.truth = "absent" if truth is None else short(truth)
+        if control:
+            repo = clone(up, spot(tmp))
+            promisor = repo.git("config", "--get", "remote.origin.promisor", check=False)
+            case.notes.append("measured: a fresh full clone (no --filter); remote.origin.promisor "
+                              + ("unset" if promisor.returncode == 1 else repr(promisor.stdout)))
+            judge_blob(case, ask({"REPO": str(repo.path), "SPEC": spec}), truth)
+            continue
+        named_remote = ["-o", "upstream"] if name.endswith("remote-upstream") else []
+        repo = clone(up, spot(tmp), "--filter=blob:none", *(["--no-checkout"] if no_checkout else []), *named_remote)
+        if oid is None:
+            raise HarnessFailure(f"the upstream has no {spec}")
+        checks, facts = not_local_checks(repo, spec, oid)
+        if gone:
+            up.path.rename(up.path.with_name(up.path.name + "-moved"))
+            reachable = up.path.exists()
+            checks.append((not reachable, "the upstream is still at the clone's remote URL"))
+            facts += "; the upstream was then moved away: " + ("STILL THERE" if reachable else "no fetch can reach it")
+        if not case.prove(checks, facts):
+            continue
+        before = objects_snapshot(repo)
+        judge_blob(case, ask({"REPO": str(repo.path), "SPEC": spec}), truth)
+        local = repo.git("cat-file", "-e", oid, extra=NO_LAZY, check=False).returncode == 0
+        store = "unchanged" if objects_snapshot(repo) == before else "CHANGED"
+        case.notes.append(f"after the hook: object store {store}; blob {oid[:7]} "
+                          + ("is now local (fetched)" if local else "still not local"))
+
+
+# ---------------------------------------------------------------- store
+
+STORE_TRAPPED = "FILE's bytes with CRLF -> LF, piped to git -C REPO hash-object --stdin"
+ATTRIBUTES = b"raw.txt -text\n*.dat -text\nforced.txt text\nforcednul.txt text\ntextstaged.txt text\n"
+STORE_CASES = (  # label, file, bytes, whether git add converts them, what check-attr text must say, and what
+    # happened to the file first under core.autocrlf=false: ("commit", bytes), ("stage", bytes) or ("stage-raw", bytes),
+    # in order
+    ("plain", "plain.txt", b"a\r\nb\r\n", True, None, ()), ("raw", "raw.txt", b"a\r\nb\r\n", False, "unset", ()),
+    ("lonecr", "lonecr.txt", b"a\r\nb\rc\r\n", False, None, ()),
+    ("nul", "nulbyte.txt", b"a\r\nb\x00\r\n", False, None, ()),
+    ("glob", "data.dat", b"a\r\nb\r\n", False, "unset", ()),
+    ("text-lonecr", "forced.txt", b"a\r\nb\rc\r\n", True, "set", ()),
+    ("text-nul", "forcednul.txt", b"a\r\nb\x00\r\n", True, "set", ()),
+    ("tracked-crlf", "tracked.txt", b"a\r\nb\r\nc\r\n", False, None, (("commit", b"a\r\nb\r\n"),)),
+    ("staged-crlf", "staged.txt", b"a\r\nb\r\nc\r\n", False, None, (("stage", b"a\r\nb\r\n"),)),
+    ("restaged-lf", "restaged.txt", b"a\r\nb\r\nc\r\n", True, None, (("commit", b"a\r\nb\r\n"), ("stage", b"a\nb\n"))),
+    ("text-staged-crlf", "textstaged.txt", b"a\r\nb\r\nc\r\n", True, "set", (("stage-raw", b"a\r\nb\r\n"),)))
+
+
+def trapped_store(inputs):
+    data = (pathlib.Path(inputs["REPO"]) / inputs["FILE"]).read_bytes().replace(b"\r\n", b"\n")
+    run = run_git(["-C", inputs["REPO"], "hash-object", "--stdin"], stdin=data)
+    return Reply(run.returncode, run.stdout, run.stderr)
+
+
+def store_fixture(path, name, data, history=()):
+    """ATTRIBUTES and the working-copy file NAME under core.autocrlf=true.  HISTORY is what happened to NAME first,
+    under core.autocrlf=false: ("commit", bytes) commits those bytes, ("stage", bytes) only stages them, and
+    ("stage-raw", bytes) puts them in the index unfiltered (hash-object --no-filters, update-index), which a path marked
+    text would otherwise not allow; the index copy of NAME holds the last of them when the working copy changes."""
+    repo = init_repo(path, autocrlf="false" if history else "true")
+    repo.write(".gitattributes", ATTRIBUTES)
+    for step, content in history:
+        if step == "commit":
+            repo.commit(f"{name} committed", {".gitattributes": ATTRIBUTES, name: content})
+        elif step == "stage-raw":
+            oid = repo.text("hash-object", "-w", "--no-filters", "--stdin", stdin=content)
+            repo.git("update-index", "--add", "--cacheinfo", f"100644,{oid},{name}")
+        else:
+            repo.write(name, content)
+            repo.git("add", "--", name)
+    if history:
+        repo.git("config", "core.autocrlf", "true")
+    repo.write(name, data)
+    return repo
+
+
+def staged_bytes(repo, name):
+    """The bytes the index holds for NAME, or None."""
+    entry = repo.text("ls-files", "-s", "--", name).split()
+    return repo.git("cat-file", "blob", entry[1]).stdout if len(entry) >= 2 else None
+
+
+def head_bytes(repo, name):
+    run = repo.git("cat-file", "blob", f"HEAD:{name}", check=False)
+    return run.stdout if run.returncode == 0 else None
+
+
+def index_state(repo):
+    """The case repository's index file as bytes, or None when there is none."""
+    index = repo.path / repo.text("rev-parse", "--git-path", "index")
+    return index.read_bytes() if index.exists() else None
+
+
+def mode_store(tmp, ask, out, cases):
+    out.line('fixture: core.autocrlf=true, .gitattributes "raw.txt -text", "*.dat -text", "forced.txt text", '
+             '"forcednul.txt text", "textstaged.txt text"; one working-copy file per case; tracked.txt, staged.txt, '
+             'restaged.txt and textstaged.txt first committed or staged under core.autocrlf=false')
+    for label, name, data, converts, want_attr, history in STORE_CASES:
+        control = label == "plain"
+        case = Case(label + (" (control)" if control else ""), control)
+        cases.append(case)
+        twin = store_fixture(spot(tmp), name, data, history)
+        head, staged = head_bytes(twin, name), staged_bytes(twin, name)
+        twin.git("add", "--", name)
+        oid = twin.text("ls-files", "-s", "--", name).split()[1]
+        case.truth = oid[:7]
+        stored = twin.git("cat-file", "blob", oid).stdout
+        eol = " ".join(twin.text("ls-files", "--eol", "--", name).split("\t")[0].split())
+        attr = twin.text("check-attr", "text", "--", name).rsplit(": ", 1)[-1]
+        repo = store_fixture(spot(tmp), name, data, history)
+        autocrlf = repo.text("config", "--get", "core.autocrlf")
+        facts = (f"FILE={name} holds {data!r}; git add stored {stored!r} "
+                 f"({'unconverted' if stored == data else 'converted'}); ls-files --eol: {eol}; "
+                 f"check-attr text: {attr}; core.autocrlf={autocrlf}"
+                 + (f"; before the add, HEAD's copy {head!r} and the index copy {staged!r}" if history else ""))
+        if control:
+            case.notes.append("measured: " + facts)
+        else:
+            wrong = "did not convert" if converts else "converted"
+            checks = [(autocrlf == "true", f"core.autocrlf is {autocrlf!r}"),
+                      ((stored != data) == converts, f"git add {wrong} the file: the case would not show its claim"),
+                      (want_attr in (None, attr), f"check-attr text says {attr!r}, not {want_attr}"),
+                      (not history or staged == history[-1][1], "the index copy is not the bytes staged last")]
+            if not case.prove(checks, facts):
+                continue
+        before = index_state(repo)
+        judge_ids(case, ask({"REPO": str(repo.path), "FILE": name}), [oid], {})
+        case.notes.append("after the hook: the index " + ("unchanged" if index_state(repo) == before else "CHANGED"))
+
+
+# ---------------------------------------------------------------- pathspec
+
+PATHSPEC_TRAPPED = "git -C REPO log -1 --format=%H -- TARGET"
+TARGET = "review/x.md"
+
+
+def trapped_last_change(inputs):
+    run = run_git(["-C", inputs["REPO"], "log", "-1", "--format=%H", "--", inputs["TARGET"]])
+    return Reply(run.returncode, run.stdout, run.stderr)
+
+
+def paths_fixture(path, shadowed, tail):
+    """c1 to c3 as the docstring says, then TAIL more commits: c4 adds review/other.md, the rest change sub/keep.txt."""
+    repo = init_repo(path)
+    ids = {"c1": repo.commit("c1", {TARGET: b"root v1\n", "sub/keep.txt": b"keep\n"})}
+    ids["c2"] = repo.commit("c2", {f"sub/{TARGET}": b"sub v1\n"} if shadowed else {"sub/keep.txt": b"keep v2\n"})
+    ids["c3"] = repo.commit("c3", {TARGET: b"root v2\n"})
+    for n in range(4, 4 + tail):
+        change = {"review/other.md": b"other\n"} if n == 4 else {"sub/keep.txt": f"keep v{n}\n".encode()}
+        ids[f"c{n}"] = repo.commit(f"c{n}", change)
+    return repo, ids
+
+
+def mode_pathspec(tmp, ask, out, cases):
+    out.line(f"fixture: c1 adds {TARGET} and sub/keep.txt; c2 adds sub/{TARGET} (shadowed) or changes "
+             f"sub/keep.txt (lonely); c3 changes {TARGET}; c4 adds review/other.md and later commits change "
+             f"sub/keep.txt, 2, 1 and 3 commits after c3; TARGET={TARGET}; root uses the shadowed layout")
+    plan = (("root (control; REPO = root)", True, True, 2), ("shadowed (REPO = sub)", False, True, 1),
+            ("lonely (REPO = sub)", False, False, 3))
+    whose = {b"root v2\n": f"the root {TARGET}", b"sub v1\n": f"sub/{TARGET}"}
+    for name, control, shadowed, tail in plan:
+        case = Case(name, control)
+        cases.append(case)
+        repo, ids = paths_fixture(spot(tmp), shadowed, tail)
+        labels = {v: k for k, v in ids.items()}
+        truth = repo.text("log", "-1", "--format=%H", "--", TARGET)
+        case.truth = show_id(truth, labels)
+        where = repo if control else Repo(repo.path / "sub")
+        if not control:
+            prefix = where.text("rev-parse", "--show-prefix")
+            has_root = repo.git("cat-file", "-e", f"HEAD:{TARGET}", check=False).returncode == 0
+            history = repo.text("log", "--format=%H", "--", f"sub/{TARGET}").split()
+            wanted = [ids["c2"]] if shadowed else []
+            if not case.prove([(prefix == "sub/", f"REPO's prefix is {prefix!r}"),
+                               (has_root, f"HEAD:{TARGET} does not exist"),
+                               (history == wanted, f"sub/{TARGET} has history {history}")],
+                              f"REPO's --show-prefix = {prefix!r}; HEAD:{TARGET} "
+                              f"{'exists' if has_root else 'MISSING'}; commits that changed sub/{TARGET}: "
+                              + (listed(history, labels) if history else "none")):
+                continue
+            if shadowed:
+                plain = where.git("show", f"HEAD:{TARGET}").stdout
+                dotted = where.git("show", f"HEAD:./{TARGET}").stdout
+                case.notes.append(f"from sub: `git show HEAD:{TARGET}` prints {plain!r} "
+                                  f"({whose.get(plain, 'neither file')}); `git show HEAD:./{TARGET}` prints "
+                                  f"{dotted!r} ({whose.get(dotted, 'neither file')})")
+        judge_ids(case, ask({"REPO": str(where.path), "TARGET": TARGET}), [truth], labels)
+
+
+# ---------------------------------------------------------------- mergefile
+
+STDIN_MSG = b"message from stdin\n"
+FILE_MSG = b"message from a file named -\n"
+
+
+def mode_mergefile(out):
+    out.line(f"gitread_trap mergefile | {git_version()}")
+    with tempfile.TemporaryDirectory(prefix="gitread-", ignore_cleanup_errors=True) as tmp:
+        out.add_root(tmp)
+        repo = init_repo(pathlib.Path(tmp) / "merge")
+        base = repo.commit("base", {"f.txt": b"base\n"})
+        repo.git("checkout", "-q", "-b", "topic")
+        topic = repo.commit("topic work", {"t.txt": b"topic\n"})
+        repo.git("checkout", "-q", "master")
+        out.line(f"fixture: master = {base[:7]}, topic = {topic[:7]} (one commit ahead); every command below "
+                 f"runs at the repository root with stdin {STDIN_MSG!r}")
+
+        def attempt(step, setting, argv):
+            repo.git("reset", "-q", "--hard", base)
+            run = repo.git(*argv, stdin=STDIN_MSG, commit=True, check=False)
+            head = repo.text("rev-parse", "HEAD")
+            raw = repo.git("cat-file", "commit", "HEAD").stdout
+            message = raw.split(b"\n\n", 1)[1] if head != base else None
+            out.line(f"({step}) {setting}: git {' '.join(argv)}")
+            out.line(f"    exit {run.returncode}; stdout {run.stdout!r}; stderr {run.stderr!r}")
+            out.line("    new commit: " + (f"yes, {len(parent_lines(raw))} parent(s), message {message!r}"
+                                          if message is not None else "none (HEAD is still master)"))
+            return run.returncode, message
+
+        def took(message):
+            if message is None:
+                return "made no commit"
+            return {STDIN_MSG: "took stdin", FILE_MSG: "took the file named '-'"}.get(message, "took another text")
+
+        a_exit, a_msg = attempt("a", "no file named '-' in the working directory",
+                                ["merge", "--no-ff", "-F", "-", "topic"])
+        repo.write("-", FILE_MSG)
+        _, b_msg = attempt("b", f"after a reset, a file named '-' holding {FILE_MSG!r}",
+                           ["merge", "--no-ff", "-F", "-", "topic"])
+        _, c_msg = attempt("c", "after a reset, that file still there", ["commit", "--allow-empty", "-F", "-"])
+    said_ = (f"merge -F - with no file '-' exited {a_exit} and {took(a_msg)}; with the file it {took(b_msg)}; "
+             f"commit -F - with the file there {took(c_msg)}")
+    if a_exit != 0 and a_msg is None and b_msg == FILE_MSG and c_msg == STDIN_MSG:
+        out.line(f"DEMONSTRATED: {said_}")
+        return GREEN
+    out.line(f"INCONCLUSIVE: this git does not show the trap as stated: {said_}")
+    return INCONCLUSIVE
+
+
+# ---------------------------------------------------------------- main
+
+MODES = {"parents": ("PARENTS", PARENTS_TRAPPED, trapped_parents, mode_parents),
+         "partial": ("READ_BLOB", BLOB_TRAPPED, trapped_blob, mode_partial),
+         "store": ("WOULD_STORE", STORE_TRAPPED, trapped_store, mode_store),
+         "pathspec": ("LAST_CHANGE", PATHSPEC_TRAPPED, trapped_last_change, mode_pathspec)}
+
+
+def failure(exc):
+    return str(exc) if isinstance(exc, HarnessFailure) else f"{type(exc).__name__}: {exc}"
+
+
+def leftover(out, tmp):
+    """Reports a temporary directory that could not be removed; run on every exit path once it was made."""
+    if tmp is not None and os.path.isdir(tmp):
+        out.line("note: the temporary directory could not be removed: something still holds a file in it")
+
+
+def hook_mode(out, mode):
+    var, described, trapped, build = MODES[mode]
+    cmd = os.environ.get(var)
+    if cmd is not None and not cmd.strip():
+        out.line(f"INCONCLUSIVE: {var} is set but empty; nothing was run")
+        return INCONCLUSIVE
+    cases, tmp = [], None
+    try:
+        out.line(f"gitread_trap {mode} | {git_version()}")
+        if cmd is None:
+            out.line(f"hook: {var} unset -> built-in trapped reader: {described}")
+            ask = trapped
+        else:
+            out.line(f"hook: {var}={cmd}")
+        try:
+            with tempfile.TemporaryDirectory(prefix="gitread-", ignore_cleanup_errors=True) as tmp:
+                out.add_root(tmp)
+                scratch = pathlib.Path(tmp) / "hook-output"
+                scratch.mkdir()
+                if cmd is not None:
+                    ask = lambda inputs: ask_hook(cmd, inputs, scratch)    # noqa: E731
+                build(pathlib.Path(tmp), ask, out, cases)
+        finally:
+            leftover(out, tmp)
+        return summarize(out, cases)
+    except Exception as exc:                                       # a harness failure is never a bare traceback
+        for c in cases:
+            if c.result:
+                out.line(f"case {c.name}  answered {c.answer}  truth {c.truth}  {c.result} {c.why}".rstrip())
+        out.line(f"INCONCLUSIVE: harness failure: {failure(exc)}")
+        return INCONCLUSIVE
+
+
+def main(argv):
+    out = Out()
+    mode = argv[1] if len(argv) == 2 else None
+    if mode == "mergefile":
+        try:
+            return mode_mergefile(out)
+        except Exception as exc:
+            out.line(f"INCONCLUSIVE: harness failure: {failure(exc)}")
+            return INCONCLUSIVE
+    if mode not in MODES:
+        sys.stderr.write("usage: python gitread_trap.py {parents|partial|store|pathspec|mergefile}\n")
+        return 2
+    return hook_mode(out, mode)
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv))
+```
+
+### good_readers.py
+
+```python
+#!/usr/bin/env python3
+r"""good_readers.py -- sample honest readers, used as hooks by gitread_trap.py for its GREEN runs.
+
+Usage, as a hook command run in the harness's directory:  python good_readers.py MODE
+
+Inputs arrive as environment variables, as gitread_trap.py's hook contract sets them: REPO always, and SPEC,
+FILE or TARGET as the mode needs.  An answer goes to stdout as raw bytes (no newline translation, even on
+Windows); a refusal's reason goes to stderr.
+
+MODES
+  parents-raw           the parent lines of `git --no-replace-objects cat-file commit HEAD`, i.e. the raw commit
+                        object: replace refs are off, and grafts, a commit-graph and a shallow boundary change
+                        what git reports as parents but not the object's bytes (gitread_trap measures this)
+  parents-refuse        refuses when the file `git rev-parse --git-path info/grafts` names exists, or when
+                        `git rev-parse --is-shallow-repository` does not say false; otherwise answers
+                        `git --no-replace-objects -c core.commitGraph=false log -1 --format=%P HEAD`
+  blob-refuse           refuses in a partial clone (any remote.NAME.promisor true, or extensions.partialClone set,
+                        or either unreadable); otherwise reads SPEC as below with GIT_NO_LAZY_FETCH=1
+  blob-lazy             reads SPEC the same way WITHOUT GIT_NO_LAZY_FETCH, so a blob that is not local is fetched
+                        lazily from the promisor remote
+  store                 `git hash-object --path=FILE --stdin` fed FILE's bytes: git's own input filters for FILE,
+                        but not git add's rule for a tracked file whose index copy holds CR (gitread_trap shows it)
+  store-index           `git add FILE` into a COPY of the index (GIT_INDEX_FILE), then that copy's blob id: what
+                        git add would store, index rules included; the real index is not touched, and the blob is
+                        written to the object store as git add writes it
+  last-change           `git -C REPO log -1 --format=%H -- ":(top,literal)TARGET"`: the pathspec is anchored at
+                        the root whatever directory REPO is, and TARGET is taken as a path, not a glob
+  last-change-toplevel  `git log -1 --format=%H -- TARGET` run in `git -C REPO rev-parse --show-toplevel`
+
+Reading SPEC ("REV:PATH", PATH from the root): existence comes from the tree -- `git ls-tree -z --full-tree REV
+-- PATH` must list an entry named exactly PATH, or the answer is "absent" (exit 1) -- and the bytes come from
+`git cat-file blob` of that entry's id.  A listed blob that cannot be read is a refusal, never "absent".
+
+EXIT CODES: 0 answer; 1 absent (blob modes only); 3 refusal, which includes a usage error and any unexpected
+error, so a crash can never read as "absent".  Every git call has a 60 s timeout and runs with the environment
+minus GIT_* variables plus GIT_CONFIG_NOSYSTEM=1, GIT_CONFIG_GLOBAL=os.devnull and GIT_TERMINAL_PROMPT=0, so
+only the repository's own configuration speaks.
+"""
+
+import os
+import shutil
+import subprocess
+import sys
+import tempfile
+
+ABSENT, REFUSE = 1, 3
+NO_LAZY = {"GIT_NO_LAZY_FETCH": "1"}
+
+
+class Refusal(Exception):
+    """The reader cannot tell; it exits 3 with the reason on stderr."""
+
+
+def git(where, *args, stdin=b"", extra=None):
+    env = {k: v for k, v in os.environ.items() if not k.upper().startswith("GIT_")}
+    env.update(GIT_CONFIG_NOSYSTEM="1", GIT_CONFIG_GLOBAL=os.devnull, GIT_TERMINAL_PROMPT="0")
+    env.update(extra or {})
+    return subprocess.run(["git", "-C", where, *args], input=stdin, capture_output=True, env=env, timeout=60)
+
+
+def need(name):
+    value = os.environ.get(name, "")
+    if not value.strip():
+        raise Refusal(f"{name} is not set")
+    return value
+
+
+def parents_raw(repo):
+    run = git(repo, "--no-replace-objects", "cat-file", "commit", "HEAD")
+    if run.returncode != 0:
+        raise Refusal("cannot read HEAD's commit object")
+    header = run.stdout.split(b"\n\n", 1)[0]
+    return 0, b" ".join(line[7:] for line in header.split(b"\n") if line.startswith(b"parent ")) + b"\n"
+
+
+def parents_refuse(repo):
+    run = git(repo, "rev-parse", "--git-path", "info/grafts")
+    if run.returncode != 0:
+        raise Refusal("cannot locate info/grafts")
+    if os.path.lexists(os.path.join(repo, run.stdout.decode().strip())):
+        raise Refusal("a grafts file is present, so git may report parents the commit objects do not record")
+    run = git(repo, "rev-parse", "--is-shallow-repository")
+    if run.returncode != 0 or run.stdout.strip() != b"false":
+        raise Refusal("the repository is shallow (or will not say), so HEAD's parents may be cut away")
+    run = git(repo, "--no-replace-objects", "-c", "core.commitGraph=false", "log", "-1", "--format=%P", "HEAD")
+    if run.returncode != 0:
+        raise Refusal("git log failed")
+    return 0, run.stdout
+
+
+def partial_clone(repo):
+    """Why REPO counts as a partial clone, or None."""
+    run = git(repo, "config", "--type=bool", "--get-regexp", r"^remote\..*\.promisor$")
+    if run.returncode not in (0, 1):
+        return "remote.NAME.promisor is unreadable"
+    for line in run.stdout.decode("utf-8", "replace").splitlines():
+        key, _, value = line.rpartition(" ")
+        if value == "true":
+            return f"{key} is true"
+    run = git(repo, "config", "--get", "extensions.partialClone")
+    if run.returncode == 0:
+        return "extensions.partialClone is set"
+    if run.returncode != 1:
+        return "extensions.partialClone is unreadable"
+    return None
+
+
+def read_spec(repo, extra):
+    spec = need("SPEC")
+    rev, colon, path = spec.partition(":")
+    if not colon or not rev or not path:
+        raise Refusal(f"SPEC {spec!r} is not REV:PATH")
+    run = git(repo, "ls-tree", "-z", "--full-tree", rev, "--", path, extra=extra)
+    if run.returncode != 0:
+        raise Refusal(f"cannot list the tree of {rev}")
+    for item in run.stdout.split(b"\0"):
+        meta, tab, name = item.partition(b"\t")
+        if tab and name == path.encode():
+            break
+    else:
+        return ABSENT, b""
+    fields = meta.split(b" ")
+    if len(fields) != 3 or fields[1] != b"blob":
+        raise Refusal(f"{path} is not a file at {rev}")
+    run = git(repo, "cat-file", "blob", fields[2].decode("ascii"), extra=extra)
+    if run.returncode != 0:
+        raise Refusal(f"{path} exists at {rev}, but its blob cannot be read here")
+    return 0, run.stdout
+
+
+def blob_refuse(repo):
+    why = partial_clone(repo)
+    if why:
+        raise Refusal(f"partial clone ({why}): a blob not here would look like a path not there")
+    return read_spec(repo, NO_LAZY)
+
+
+def blob_lazy(repo):
+    return read_spec(repo, None)
+
+
+def store(repo):
+    name = need("FILE")
+    with open(os.path.join(repo, name), "rb") as handle:
+        data = handle.read()
+    run = git(repo, "hash-object", f"--path={name}", "--stdin", stdin=data)
+    if run.returncode != 0:
+        raise Refusal("git hash-object failed")
+    return 0, run.stdout
+
+
+def store_index(repo):
+    name = need("FILE")
+    run = git(repo, "rev-parse", "--git-path", "index")
+    if run.returncode != 0:
+        raise Refusal("cannot locate the index")
+    index = os.path.join(repo, run.stdout.decode("utf-8").strip())
+    scratch = tempfile.mkdtemp()
+    try:
+        copy = os.path.join(scratch, "index")
+        if os.path.exists(index):
+            shutil.copyfile(index, copy)
+        own = {"GIT_INDEX_FILE": copy}
+        if git(repo, "add", "--", name, extra=own).returncode != 0:
+            raise Refusal("git add into the index copy failed")
+        run = git(repo, "ls-files", "-s", "--", name, extra=own)
+        fields = run.stdout.split()
+        if run.returncode != 0 or len(fields) < 2:
+            raise Refusal("the index copy does not list FILE")
+        return 0, fields[1] + b"\n"
+    finally:
+        shutil.rmtree(scratch, ignore_errors=True)
+
+
+def last_change(repo):
+    target = need("TARGET")
+    run = git(repo, "log", "-1", "--format=%H", "--", f":(top,literal){target}")
+    if run.returncode != 0 or not run.stdout.strip():
+        raise Refusal(f"no commit found that changed {target}")
+    return 0, run.stdout
+
+
+def last_change_toplevel(repo):
+    target = need("TARGET")
+    run = git(repo, "rev-parse", "--show-toplevel")
+    if run.returncode != 0:
+        raise Refusal("REPO is not inside a working tree")
+    run = git(run.stdout.decode("utf-8").strip(), "log", "-1", "--format=%H", "--", target)
+    if run.returncode != 0 or not run.stdout.strip():
+        raise Refusal(f"no commit found that changed {target}")
+    return 0, run.stdout
+
+
+MODES = {"parents-raw": parents_raw, "parents-refuse": parents_refuse, "blob-refuse": blob_refuse,
+         "blob-lazy": blob_lazy, "store": store, "store-index": store_index, "last-change": last_change,
+         "last-change-toplevel": last_change_toplevel}
+
+
+def main(argv):
+    try:
+        if len(argv) != 2 or argv[1] not in MODES:
+            raise Refusal("usage: python good_readers.py {" + "|".join(MODES) + "}")
+        code, answer = MODES[argv[1]](need("REPO"))
+    except Refusal as why:
+        sys.stderr.write(f"good_readers: refused: {why}\n")
+        return REFUSE
+    except BaseException as exc:                   # never exit 1 by accident: in partial mode 1 means "absent"
+        sys.stderr.write(f"good_readers: error: {type(exc).__name__}: {exc}\n")
+        return REFUSE
+    sys.stdout.buffer.write(answer)
+    sys.stdout.buffer.flush()
+    return code
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv))
+```
+
+### draft_trap.py
+
+```python
+r"""draft_trap.py -- does your "safe to append?" check miss Markdown that swallows what follows?
+
+A shared Markdown file (a fleet TRAPS.md, say) takes appended entries from many projects. Each entry is split
+from a draft at its single "## RECEIPTS" heading line, and both parts are appended to shared files. A part that
+leaves a CommonMark block open -- a fenced code block (CommonMark 0.31.2 section 4.5, written "CM 4.5" below)
+or an HTML block of types 1-5 (CM 4.6) -- makes every later entry, other projects' too, render inside it.
+This harness hands your check small drafts whose right answers are fixed below and reports each one it gets
+wrong. Python 3.10+, standard library; markdown-it-py is used, when it imports, only to cross-check truths.
+
+    python draft_trap.py                                       judges the built-in TRAPPED checker
+    DRAFT_CHECK="python good_check.py tracker" python draft_trap.py
+
+Hook contract
+    DRAFT_CHECK  a shell command. For each draft the harness writes a file named draft.md in its own
+                 randomly named directory under a throwaway temp directory and runs
+                 subprocess.Popen(DRAFT_CHECK, shell=True, env=os.environ plus DRAFT, stdin=DEVNULL,
+                 stdout=DEVNULL, stderr=DEVNULL) in the harness's own working directory. shell=True means
+                 /bin/sh on POSIX and cmd.exe (COMSPEC) on Windows, even when the harness is started from
+                 Git Bash, so a hook reads the path as %DRAFT% under cmd.exe and $DRAFT under sh. Only the
+                 exit code is read, so nothing the hook leaves running can hold the harness. A hook that has
+                 not finished in 30 s is stopped with the processes still linked to it (taskkill /T /F on
+                 Windows, which cannot reach a process whose parent has already exited; its process group
+                 elsewhere); a process a hook leaves running after it exits is not tracked, and a temporary
+                 directory that cannot be removed afterwards is reported.
+    DRAFT        the absolute path of the draft: a Markdown file, bytes, LF line endings.
+    exit 0       safe to append: nothing is left open and the draft has exactly one heading line.
+    exit 10      refused.
+    other exit   the hook failed (a timeout counts as failing); that draft is INCONCLUSIVE.
+    A heading line is a line whose bytes are exactly "## RECEIPTS". The draft is split there; the part before
+    it and the part from it are each appended to a shared file, so each must close whatever it opens.
+    DRAFT_CHECK unset: the harness judges its built-in TRAPPED checker, trapped() below, which returns 0 or
+    10 like a hook. TRAPPED toggles an "open" state on every line that starts at column 0 with three
+    backticks or three tildes (no info-string rule, no length or character matching), ignores HTML blocks
+    entirely, and counts heading lines with data.count(b"\n## RECEIPTS\n"); it accepts when nothing is
+    open at the end of the whole draft and that count is 1.
+    DRAFT_CHECK set but empty or only whitespace: INCONCLUSIVE, exit 3, nothing is run.
+    Good faith: the harness judges a check that reads the draft it is given. A hook written against the harness
+    itself -- its fixed truths, the order and number of calls, state kept between calls -- can read GREEN
+    without reading anything, and no black-box test rules that out. The draft's path is random. The cases
+    sample the constructs named below: GREEN is not a proof that a check is right everywhere.
+
+Cases (CONTROLS and CASES below; each has a fixed TRUTH and a one-line CommonMark reason)
+    A draft is "# entry", a blank line, a body holding one construct, a blank line, the heading line and one
+    receipts line; the four heading-count cases differ. Must be refused (truth "unsafe"): open backtick and
+    tilde fences; a fence "closed" by a shorter run, by the other character, by a run followed by text, or by
+    a run indented 4 spaces or a tab (code, not a closing fence), or by a run followed by a form feed; a fence
+    opened 2 spaces in and never closed; a fence run inside a pre block, then another after it (that one opens);
+    unclosed pre with blank lines inside, PRE in capitals, a bare "pre" start at the end of its line, script,
+    style, textarea, a comment, a "<?php"
+    instruction, "<!DOCTYPE html" with no ">" anywhere after it, a CDATA section; the phase case (three
+    backticks then a`b is a paragraph line, so the next three-backtick line opens a fence); a type-1 start
+    indented 3 spaces; an open fence after the heading; a fence opened before the heading and closed after it
+    (one document balances it; each part leaves it open); two adjacent heading lines; a heading on line 1 plus a
+    later one; a heading line inside a closed fence plus the real one (a heading line counts wherever it sits);
+    no heading. Must be accepted (truth "safe"): closed fences of both characters; a comment start inside a
+    closed fence (code, not a comment); a fence
+    closed by a longer run; a fence closed by a run indented 3 spaces; three backticks indented 4 spaces after
+    a blank line (indented code, no fence); PRE closed by an upper-case end tag; pre closed by an end tag in the
+    middle of a line;
+    a lone three-backticks-a`b line; a tilde fence whose info string holds a
+    backtick; pre ended by a script end tag; a one-line comment; a comment closed mid-line on a later line;
+    pre indented 4 spaces after a blank line; an unclosed div (type 6) ended by a blank line; pre inline in
+    mid-sentence.
+
+Cross-check
+    When markdown-it-py imports, each truth is checked with MarkdownIt("commonmark"): the part before the
+    heading and the part from it are each rendered with "\n\n## SENTINEL\n" appended, and a part keeps the
+    sentinel when "<h2>SENTINEL</h2>" appears in its output (no fixture holds the word SENTINEL, so only the
+    appended line can put it there). If the renderer disagrees with a truth, or about which part swallows,
+    the case is INCONCLUSIVE and its line says why. Heading-count cases are not rendered; their lines give
+    the whole-line heading count and what bytes.count, str.count and re.findall of LF + heading + LF find.
+    Without markdown-it-py the truths are this harness's own reading of CommonMark 0.31.2, and it says so.
+
+Verdicts
+    The controls run first: the checker must accept a plain safe draft and refuse a plain open backtick
+    fence. If it fails either, it judges nothing: the run is INCONCLUSIVE and no case runs (hooks such as
+    "exit 0" and "exit 10" end there). Per case: ok = agrees with the truth; RED = accepted a draft that must
+    be refused (it would swallow later entries, or be split at the wrong line); FALSE REFUSAL = refused a
+    safe draft; INCONCLUSIVE = the hook failed or the renderer disputes the truth. A FALSE REFUSAL is a
+    wrong answer to "safe to append?", so it fails the run exactly as RED does; the summary counts the two
+    apart. One line per control and case (name, hook exit, truth, result, reason), then one SUMMARY line.
+
+Exit codes
+    0  GREEN: both controls and every case ok
+    1  RED: at least one RED or FALSE REFUSAL (a confirmed wrong answer outranks an INCONCLUSIVE case)
+    3  INCONCLUSIVE: DRAFT_CHECK blank, a control failed, a harness error, or INCONCLUSIVE cases and no
+       wrong answer
+"""
+import os
+import re
+import signal
+import subprocess
+import sys
+import tempfile
+import traceback
+
+BT = "`" * 3  # built, never literal: this file must paste unharmed into a Markdown code fence
+TL = "~" * 3
+HEADING = b"## RECEIPTS"
+NEEDLE = "\n## RECEIPTS\n"
+SENTINEL = "\n\n## SENTINEL\n"
+SENTINEL_H2 = "<h2>SENTINEL</h2>"
+ACCEPT, REFUSE = 0, 10
+
+
+def trapped(data):
+    """The built-in TRAPPED checker, exactly as the module docstring describes it."""
+    is_open = False
+    for line in data.split(b"\n"):
+        if line.startswith(BT.encode()) or line.startswith(TL.encode()):
+            is_open = not is_open
+    return REFUSE if is_open or data.count(b"\n## RECEIPTS\n") != 1 else ACCEPT
+
+
+class Case:
+    """where: the part the renderer must see swallowing the sentinel ("before" or "from" the heading, or
+    "both"), None for a safe draft, "count" for a heading-count case (not rendered)."""
+
+    def __init__(self, name, truth, where, data, reason):
+        self.name, self.truth, self.where, self.data, self.reason = name, truth, where, data, reason
+
+
+def draft(body, receipts="receipt: r1"):
+    return ("# entry\n\n" + body + "\n\n## RECEIPTS\n" + receipts + "\n").encode("ascii")
+
+
+def unsafe(name, body, reason, where="before", receipts="receipt: r1"):
+    return Case(name, "unsafe", where, draft(body, receipts), reason)
+
+
+def safe(name, body, reason):
+    return Case(name, "safe", None, draft(body), reason)
+
+
+def miscounted(name, text, reason):
+    return Case(name, "unsafe", "count", text.encode("ascii"), reason)
+
+
+CONTROLS = [
+    safe("control-plain-safe", "plain text; nothing is opened here",
+         "no fence and no HTML block, so nothing can be left open"),
+    unsafe("control-open-fence", BT + "\nopened, never closed",
+           "CM 4.5: a fence with no closing fence runs to the end of the document"),
+]
+
+CASES = [
+    unsafe("open-backtick-fence", BT + "python\nprint(1)",
+           "CM 4.5: no closing fence, so the code block runs to the end of the document"),
+    unsafe("open-tilde-fence", TL + "\nprint(1)",
+           "CM 4.5: no closing fence, so the code block runs to the end of the document"),
+    unsafe("fence-closed-by-shorter-run", "`" * 4 + "\nprint(1)\n" + BT,
+           "CM 4.5: a closing fence needs at least as many backticks as its opener (3 < 4)"),
+    unsafe("fence-closed-by-other-char", BT + "\nprint(1)\n" + TL,
+           "CM 4.5: a closing fence must use the opener's character; tildes cannot close backticks"),
+    unsafe("fence-closed-by-run-and-text", BT + "\nprint(1)\n" + BT + " done",
+           "CM 4.5: only spaces or tabs may follow a closing fence, so that line is code"),
+    unsafe("closing-fence-indented-4", BT + "\nprint(1)\n    " + BT,
+           "CM 4.5: a closing fence is indented at most 3 spaces; indented 4 the line is code"),
+    unsafe("closing-fence-indented-tab", BT + "\nprint(1)\n\t" + BT,
+           "CM 4.5, 2.2: a tab indents to column 4, so the line is code and the fence stays open"),
+    unsafe("fence-opened-2-spaces-in", "  " + BT + "\nprint(1)",
+           "CM 4.5: a fence may open 0-3 spaces in; this one never closes"),
+    unsafe("fence-closed-by-run-and-form-feed", BT + "\nprint(1)\n" + BT + "\f",
+           "CM 4.5: only spaces or tabs may follow a closing fence; with a form feed the line is code"),
+    unsafe("fence-run-inside-pre", "<pre>\n" + BT + "\n</pre>\n" + BT + "\nafter the block",
+           "CM 4.6, 4.5: inside the pre block the run is text; after </pre> the next run opens a fence, never closed"),
+    unsafe("bare-pre-at-line-end", "<pre\nline one\n\nline two",
+           "CM 4.6 type 1: <pre followed by the end of the line starts the block, which never ends"),
+    unsafe("pre-unclosed-blank-lines", "<pre>\nline one\n\nline two",
+           "CM 4.6 type 1: runs past blank lines to a line holding </pre>, </script>, </style> or </textarea>"),
+    unsafe("PRE-uppercase-unclosed", "<PRE>\nline one\n\nline two",
+           "CM 4.6 type 1: the start condition is case-insensitive"),
+    unsafe("script-unclosed", "<script>\nvar x = 1;\n\nvar y = 2;",
+           "CM 4.6 type 1: runs past blank lines and no end tag ever comes"),
+    unsafe("style-unclosed", "<style>\np { color: red; }\n\nh2 { color: blue; }",
+           "CM 4.6 type 1: runs past blank lines and no end tag ever comes"),
+    unsafe("textarea-unclosed", "<textarea>\nfirst\n\nsecond",
+           "CM 4.6 type 1: runs past blank lines and no end tag ever comes"),
+    unsafe("comment-unclosed", "<!-- never closed\n\nmore text",
+           "CM 4.6 type 2: runs past blank lines to a line holding -->"),
+    unsafe("php-unclosed", "<?php echo 1;\n\nmore text",
+           "CM 4.6 type 3: runs past blank lines to a line holding ?>"),
+    unsafe("doctype-without-gt", "<!DOCTYPE html\n\nno closing angle bracket after it",
+           "CM 4.6 type 4: <! plus a letter runs past blank lines to a line holding >"),
+    unsafe("cdata-unclosed", "<![CDATA[\nnever closed\n\nmore text",
+           "CM 4.6 type 5: runs past blank lines to a line holding ]]>"),
+    unsafe("fence-phase-backtick-info", BT + "a`b\ntext\n" + BT + "\nlater text\n## heading",
+           "CM 4.5: a backtick info string cannot hold a backtick, so line 1 is text and line 3 opens a fence"),
+    unsafe("pre-indented-3-spaces", "   <pre>\nline one\n\nline two",
+           "CM 4.6: start conditions count after 0-3 spaces of indentation"),
+    unsafe("open-fence-after-heading", "plain body text",
+           "CM 4.5: the part from the heading is appended too, and its fence never closes",
+           where="from", receipts="receipt: r1\n" + BT + "\nopened after the heading"),
+    unsafe("fence-across-the-heading", BT + "\ncode before the heading",
+           "CM 4.5: one document balances it, but each part is appended on its own and each leaves a fence open",
+           where="both", receipts="receipt: r1\n" + BT),
+    miscounted("two-adjacent-headings", "# entry\n\nbody text\n\n## RECEIPTS\n## RECEIPTS\nreceipt: r1\n",
+               "adjacent heading lines share one LF; {counts}"),
+    miscounted("heading-on-line-1-and-later",
+               "## RECEIPTS\nreceipt: r0\n\n# entry\n\nbody text\n\n## RECEIPTS\nreceipt: r1\n",
+               "no LF comes before a heading on line 1; {counts}"),
+    miscounted("no-heading", "# entry\n\nbody text\n\nreceipt: r1\n", "no line to split at; {counts}"),
+    miscounted("heading-line-inside-a-fence",
+               "# entry\n\n" + BT + "\n## RECEIPTS\n" + BT + "\n\n## RECEIPTS\nreceipt: r1\n",
+               "a heading line counts wherever it sits, fence or not: a split would cut at the first; {counts}"),
+    safe("closed-backtick-fence", BT + "python\nprint(1)\n" + BT,
+         "CM 4.5: a closing fence of the same character, at least as long, ends the block"),
+    safe("closed-tilde-fence", TL + "\nprint(1)\n" + TL,
+         "CM 4.5: a closing fence of the same character, at least as long, ends the block"),
+    safe("fence-closed-by-longer-run", BT + "\nprint(1)\n" + "`" * 4,
+         "CM 4.5: a closing fence may be longer than its opener"),
+    safe("opener-indented-4-after-blank", "a paragraph first\n\n    " + BT + "\n\nafter the code block",
+         "CM 4.4: 4 spaces after a blank line make indented code, so no fence opens"),
+    safe("fence-closed-3-spaces-in", BT + "\nprint(1)\n   " + BT,
+         "CM 4.5: a closing fence may be indented up to 3 spaces"),
+    safe("comment-start-inside-fence", BT + "\n<!--\n" + BT + "\nafter the fence",
+         "CM 4.5: inside a fence a comment start is code, and the fence closes"),
+    safe("PRE-closed-by-upper-end-tag", "<PRE>\nline one\n\nline two\n</PRE>\nafter the block",
+         "CM 4.6 type 1: the end condition is case-insensitive too"),
+    safe("pre-closed-mid-line", "<pre>\nline one\n\nline two</pre> and text\nafter the block",
+         "CM 4.6 type 1: the block ends with the line holding the end tag, wherever the tag sits in it"),
+    safe("lone-backtick-info-line", BT + "a`b",
+         "CM 4.5: a backtick info string cannot hold a backtick, so this line is a paragraph, not a fence"),
+    safe("tilde-fence-backtick-info", TL + "a`b\nprint(1)\n" + TL,
+         "CM 4.5: a tilde fence's info string may hold backticks, and this fence closes"),
+    safe("pre-ended-by-script-tag", "<pre>\nline one\n\nline two\n</script>\nafter the block",
+         "CM 4.6 type 1: any of the four end tags ends it; the end tag need not match the start"),
+    safe("one-line-comment", "<!-- a comment -->\nafter the comment",
+         "CM 4.6 type 2: the end condition met on the start line ends the block on that line"),
+    safe("comment-closed-mid-line", "<!-- opened here\nstill inside\nclosed --> and more text\nafter the comment",
+         "CM 4.6 type 2: the block ends with the line holding -->, wherever --> sits in it"),
+    safe("pre-indented-4-after-blank", "a paragraph first\n\n    <pre>\n\nafter the code block",
+         "CM 4.4, 4.6: 4 spaces after a blank line make indented code, not an HTML block"),
+    safe("div-type-6-blank-line", "<div>\nopened, never closed\n\nafter the blank line",
+         "CM 4.6 type 6: ends at the first blank line, end tag or not"),
+    safe("inline-pre-mid-sentence", "a sentence with <pre> in the middle of it",
+         "CM 4.6: a start condition must begin the line; mid-sentence <pre> is inline raw HTML"),
+]
+
+
+def heading_starts(data):
+    """Byte offsets of the heading lines: lines whose bytes are exactly HEADING."""
+    starts, offset = [], 0
+    for line in data.split(b"\n"):
+        if line == HEADING:
+            starts.append(offset)
+        offset += len(line) + 1
+    return starts
+
+
+def fixture_problems():
+    everything = CONTROLS + CASES
+    problems = [] if len({c.name for c in everything}) == len(everything) else ["duplicate case names"]
+    for c in everything:
+        lines = len(heading_starts(c.data))
+        if b"\r" in c.data or b"SENTINEL" in c.data:
+            problems.append(c.name + " holds a CR or the word SENTINEL")
+        if (c.where == "count") != (lines != 1):
+            problems.append(f"{c.name} has {lines} heading lines")
+        if (c.truth == "safe") != (c.where is None) or c.where not in (None, "before", "from", "both", "count"):
+            problems.append(c.name + " has an inconsistent truth")
+    return problems
+
+
+def renderer():
+    try:
+        import markdown_it
+    except ImportError:
+        return None, ("markdown-it-py is not importable: the truths are this harness's own reading of "
+                      "CommonMark 0.31.2")
+    return markdown_it.MarkdownIt("commonmark"), (f"truths cross-checked with markdown-it-py "
+                                                  f"{markdown_it.__version__}, MarkdownIt(\"commonmark\"), "
+                                                  "a sentinel after each part")
+
+
+def dispute(case, md):
+    """Why markdown-it-py disagrees with the fixed truth; None when it agrees or is not asked."""
+    if md is None or case.where == "count":
+        return None
+    cut = heading_starts(case.data)[0]
+    kept = [SENTINEL_H2 in md.render(part.decode("ascii") + SENTINEL) for part in (case.data[:cut], case.data[cut:])]
+    want = [case.where not in ("before", "both"), case.where not in ("from", "both")]
+    if kept == want:
+        return None
+
+    def say(flags):
+        return "%s after the part before the heading, %s after the part from it" % tuple(
+            "kept" if f else "swallowed" for f in flags)
+    return f"markdown-it-py disputes the truth: the sentinel is {say(kept)}; the truth says {say(want)}"
+
+
+def reason_of(case):
+    if case.where != "count":
+        return case.reason
+    text = case.data.decode("ascii")
+    counts = (f"heading lines {len(heading_starts(case.data))}; LF+heading+LF found by bytes.count "
+              f"{case.data.count(NEEDLE.encode())}, str.count {text.count(NEEDLE)}, re.findall "
+              f"{len(re.findall(NEEDLE, text))}; renderer check does not apply")
+    return case.reason.format(counts=counts)
+
+
+def make_judge(hook, tmp):
+    if hook is None:
+        return lambda n, data: trapped(data)
+
+    def run(n, data):
+        path = os.path.join(tempfile.mkdtemp(dir=tmp), "draft.md")
+        with open(path, "wb") as f:
+            f.write(data)
+        env = dict(os.environ, DRAFT=os.path.abspath(path))
+        group = {} if os.name == "nt" else {"start_new_session": True}
+        proc = subprocess.Popen(hook, shell=True, env=env, stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
+                                stderr=subprocess.DEVNULL, **group)
+        try:
+            return proc.wait(timeout=30)
+        except subprocess.TimeoutExpired:
+            if os.name == "nt":
+                subprocess.run(["taskkill", "/T", "/F", "/PID", str(proc.pid)], stdout=subprocess.DEVNULL,
+                               stderr=subprocess.DEVNULL)
+            else:
+                os.killpg(proc.pid, signal.SIGKILL)
+            proc.wait()
+            return "timeout"
+    return run
+
+
+def result_of(case, code, md):
+    notes = []
+    if code not in (ACCEPT, REFUSE):
+        notes.append("hook failed (" + ("timed out after 30 s" if code == "timeout" else f"exit {code}") + ")")
+    why = dispute(case, md)
+    if why:
+        notes.append(why)
+    if notes:
+        return "INCONCLUSIVE", "; ".join(notes)
+    if case.truth == "unsafe":
+        return ("ok" if code == REFUSE else "RED"), None
+    return ("ok" if code == ACCEPT else "FALSE REFUSAL"), None
+
+
+def show(case, code, result, note):
+    reason = reason_of(case) if note is None else note + " | " + reason_of(case)
+    print(f"{case.name:<29} exit {str(code):<3} {case.truth:<6} {result:<13} {reason}")
+
+
+def main():
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(newline="\n")  # LF on every platform, so two transcripts compare byte for byte
+    hook = os.environ.get("DRAFT_CHECK")
+    if hook is not None and not hook.strip():
+        print("draft_trap: DRAFT_CHECK is set but blank, so there is no checker to judge; nothing run")
+        print("SUMMARY INCONCLUSIVE: nothing judged; exit 3")
+        return 3
+    problems = fixture_problems()
+    if problems:
+        print("draft_trap: the harness's own fixtures are broken: " + "; ".join(problems))
+        print("SUMMARY INCONCLUSIVE: harness fixture error; exit 3")
+        return 3
+    print("draft_trap: checker = " + ("built-in TRAPPED (DRAFT_CHECK unset)" if hook is None
+                                      else "DRAFT_CHECK hook: " + hook))
+    md, note = renderer()
+    print("draft_trap: " + note)
+    tmp, failed, results = None, 0, []
+    try:
+        with tempfile.TemporaryDirectory(prefix="draft-trap-", ignore_cleanup_errors=True) as tmp:
+            judge = make_judge(hook, tmp)
+            for n, case in enumerate(CONTROLS, 1):
+                code = judge(n, case.data)
+                result, why = result_of(case, code, md)
+                if result != "ok":
+                    failed += 1
+                    why = why or {"RED": "it accepted this draft", "FALSE REFUSAL": "it refused this draft"}[result]
+                    result = "CONTROL FAILED"
+                show(case, code, result, why)
+            for n, case in enumerate([] if failed else CASES, len(CONTROLS) + 1):
+                code = judge(n, case.data)
+                result, why = result_of(case, code, md)
+                results.append(result)
+                show(case, code, result, why)
+    finally:
+        if tmp is not None and os.path.isdir(tmp):
+            print("draft_trap: note: the temporary directory could not be removed: something still holds a file in it")
+    if failed:
+        print(f"SUMMARY INCONCLUSIVE: the checker failed {failed} of {len(CONTROLS)} controls, so it judges "
+              f"nothing; {len(CASES)} cases not run; exit 3")
+        return 3
+    tally = {r: results.count(r) for r in ("ok", "RED", "FALSE REFUSAL", "INCONCLUSIVE")}
+    if tally["RED"] or tally["FALSE REFUSAL"]:
+        verdict, rc = "RED", 1
+    elif tally["INCONCLUSIVE"]:
+        verdict, rc = "INCONCLUSIVE", 3
+    else:
+        verdict, rc = "GREEN", 0
+    print(f"SUMMARY {verdict}: {tally['ok']} ok, {tally['RED']} RED (unsafe accepted), {tally['FALSE REFUSAL']} "
+          f"FALSE REFUSAL (safe refused, fails the run like RED), {tally['INCONCLUSIVE']} INCONCLUSIVE, "
+          f"of {len(CASES)} cases; exit {rc}")
+    return rc
+
+
+if __name__ == "__main__":
+    try:
+        sys.exit(main())
+    except Exception:
+        traceback.print_exc()
+        print("SUMMARY INCONCLUSIVE: harness error, traceback on stderr; exit 3")
+        sys.exit(3)
+```
+
+### good_check.py
+
+```python
+r"""good_check.py -- two sample DRAFT_CHECK hooks that draft_trap.py judges GREEN.
+
+Usage, per draft_trap.py's hook contract:
+    DRAFT=<absolute path> python good_check.py tracker
+    DRAFT=<absolute path> python good_check.py render
+exit 0   safe to append: exactly one heading line (a line whose bytes are exactly "## RECEIPTS"), and
+         neither the part before it nor the part from it ends inside a fenced code block or an HTML block
+         of types 1-5
+exit 10  refused; one line on stdout says why
+exit 2   cannot judge: bad usage, DRAFT unset or unreadable, or render mode without markdown-it-py
+
+Both modes refuse a draft holding a CR byte (the contract is LF line endings, and CommonMark would end a
+line at a bare CR, so a line-based count could differ from the renderer's), count heading lines as whole
+lines, split at the one heading line and judge each part on its own, because each part is appended to a
+shared file on its own. A check that judges the whole draft as one document would miss a fence opened
+before the heading and closed after it.
+
+tracker  A line-based reading of CommonMark 0.31.2 for exactly these constructs.
+         Fences (4.5): an opener is 3 or more backticks or tildes after 0-3 columns of indentation (a tab
+         advances to the next multiple of 4); a backtick opener's info string may not hold a backtick; a
+         closer uses the opener's character, is at least as long, sits at 0-3 columns and has only spaces
+         or tabs after it.
+         HTML blocks (4.6) of types 1-5: their start conditions after 0-3 columns, and their end
+         conditions, which may be met on the start line itself. Type 1 starts with pre, script, style or
+         textarea followed by a space, a tab, ">" or the end of the line, and ends at any of the four end
+         tags, in any letter case; type 4 starts with "<!" and an ASCII letter of either case.
+         Nothing else needs state for these constructs: fences and type 1-5 starts interrupt paragraphs,
+         and any line at 0-3 columns ends an indented code block.
+         Not modelled: block quotes, list items and HTML blocks of types 6 and 7. A line that CommonMark
+         reads as content of one of those, but that looks like a fence or a type 1-5 start at 0-3 columns,
+         puts the tracker out of phase in either direction, so it can wrongly refuse and it can miss.
+render   markdown-it-py's MarkdownIt("commonmark") renders each part with "\n\n## SENTINEL\n" appended; a
+         part is safe when the output ends with "<h2>SENTINEL</h2>" and a newline, that is, when the
+         sentinel came out as the last block and not as text inside a code or HTML block (so a draft that
+         itself holds that string cannot fake a pass). A draft that is not UTF-8 is refused. This mode is
+         exactly as right as markdown-it-py 4.2.0, which departs from the 0.31.2 text in places: for it
+         a lowercase "<!doctype" starts no HTML block (so an unclosed one is accepted), and a type 1 start
+         may also be followed by other whitespace, such as a form feed or a no-break space.
+"""
+import os
+import sys
+
+HEADING = b"## RECEIPTS"
+BACKTICK, TILDE = b"`", b"~"
+TYPE1 = (b"pre", b"script", b"style", b"textarea")
+END1 = (b"</pre>", b"</script>", b"</style>", b"</textarea>")
+ENDS = {2: b"-->", 3: b"?>", 4: b">", 5: b"]]>"}
+SENTINEL = "\n\n## SENTINEL\n"
+ACCEPT, REFUSE, CANNOT = 0, 10, 2
+
+
+def indent(line):
+    """(columns of leading indentation, tab stops every 4; index of the first other byte)."""
+    col = i = 0
+    while i < len(line) and line[i] in b" \t":
+        col = col + 4 - col % 4 if line[i] == 9 else col + 1
+        i += 1
+    return col, i
+
+
+def fence_opener(line):
+    """(character, run length) when the line opens a fence, else None."""
+    col, i = indent(line)
+    char, rest = line[i:i + 1], line[i:]
+    if col > 3 or char not in (BACKTICK, TILDE):
+        return None
+    run = len(rest) - len(rest.lstrip(char))
+    if run < 3 or (char == BACKTICK and BACKTICK in rest[run:]):
+        return None
+    return char, run
+
+
+def closes_fence(line, char, run):
+    col, i = indent(line)
+    rest = line[i:]
+    n = len(rest) - len(rest.lstrip(char))
+    return col <= 3 and n >= run and not rest[n:].strip(b" \t")
+
+
+def html_start(line):
+    """The HTML block type, 1 to 5, that this line starts; None for anything else."""
+    col, i = indent(line)
+    rest = line[i:]
+    if col > 3 or not rest.startswith(b"<"):
+        return None
+    low = rest.lower()
+    for name in TYPE1:
+        if low[1:1 + len(name)] == name and low[1 + len(name):2 + len(name)] in (b"", b" ", b"\t", b">"):
+            return 1
+    if rest.startswith(b"<!--"):
+        return 2
+    if rest.startswith(b"<?"):
+        return 3
+    if rest.startswith(b"<![CDATA["):
+        return 5
+    if rest[:2] == b"<!" and rest[2:3].isalpha():
+        return 4
+    return None
+
+
+def html_ends(kind, line):
+    if kind == 1:
+        return any(tag in line.lower() for tag in END1)
+    return ENDS[kind] in line
+
+
+def tracker_open(part, first_line):
+    """What the part ends inside, or None."""
+    state = None  # (what, does-this-line-close-it, line number)
+    for no, line in enumerate(part.split(b"\n"), first_line):
+        if state is None:
+            fence = fence_opener(line)
+            kind = None if fence else html_start(line)
+            if fence:
+                state = ("a fence", lambda text, f=fence: closes_fence(text, *f), no)
+            elif kind and not html_ends(kind, line):
+                state = (f"an HTML block of type {kind}", lambda text, k=kind: html_ends(k, text), no)
+        elif state[1](line):
+            state = None
+    return None if state is None else f"{state[0]} opened on line {state[2]}"
+
+
+def render_open(md, part):
+    html = md.render(part.decode("utf-8") + SENTINEL)
+    return None if html.endswith("<h2>SENTINEL</h2>\n") else "a block that swallows a heading appended after it"
+
+
+def judge(data, ends_inside):
+    """Why the draft must be refused, or None when it is safe to append."""
+    if b"\r" in data:
+        return "the draft holds a CR byte; the contract is LF line endings"
+    starts, offset = [], 0
+    for line in data.split(b"\n"):
+        if line == HEADING:
+            starts.append(offset)
+        offset += len(line) + 1
+    if len(starts) != 1:
+        return f"{len(starts)} heading lines; exactly one is required"
+    cut = starts[0]
+    parts = (("the part before the heading", data[:cut], 1),
+             ("the part from the heading", data[cut:], data[:cut].count(b"\n") + 1))
+    for label, part, first_line in parts:
+        why = ends_inside(part, first_line)
+        if why:
+            return f"{label} ends inside {why}"
+    return None
+
+
+def main(argv):
+    mode = argv[1] if len(argv) == 2 else None
+    if mode not in ("tracker", "render"):
+        print("usage: DRAFT=<absolute path> python good_check.py tracker|render", file=sys.stderr)
+        return CANNOT
+    path = os.environ.get("DRAFT")
+    if not path:
+        print("good_check: DRAFT is not set", file=sys.stderr)
+        return CANNOT
+    try:
+        with open(path, "rb") as f:
+            data = f.read()
+    except OSError as e:
+        print(f"good_check: cannot read DRAFT: {e.strerror}", file=sys.stderr)
+        return CANNOT
+    if mode == "tracker":
+        why = judge(data, tracker_open)
+    else:
+        try:
+            from markdown_it import MarkdownIt
+        except ImportError:
+            print("good_check: render mode needs markdown-it-py", file=sys.stderr)
+            return CANNOT
+        md = MarkdownIt("commonmark")
+        try:
+            data.decode("utf-8")
+        except UnicodeDecodeError:
+            why = "the draft is not UTF-8"
+        else:
+            why = judge(data, lambda part, first_line: render_open(md, part))
+    if why:
+        print("refused: " + why)
+        return REFUSE
+    print("safe to append")
+    return ACCEPT
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv))
+```
+
+### append_rollback.py
+
+```python
+"""append_rollback.py -- a writer appends to TWO files and promises both or neither: which rollbacks roll back?
+
+Each appender makes two choices: WHEN it records a file for rollback (after its write returns, or before the write
+starts) and WHAT its rollback catches (OSError, Exception, or BaseException). Faults are injected by wrapping the file
+object's write(), never by editing an appender. A fault either raises before B gets a byte, or writes HALF of the
+addition to A, flushes, and raises. KeyboardInterrupt (Ctrl-C) and SystemExit are not Exception subclasses.
+Everything happens in a throwaway directory. Needs Python 3.10 or later. Prints a table and exits 0, or 3 when
+the no-fault control did not write both files or a fault did not fire (then the table measures nothing).
+"""
+import io
+import os
+import pathlib
+import sys
+import tempfile
+from unittest import mock
+
+ADDITION = b"appended record 1\nappended record 2\n"
+SEED = {"A": b"A: original bytes\n", "B": b"B: original bytes\n"}
+
+
+def appender(record_before, catch):
+    def append_both(paths, addition):
+        recorded = []                                   # (path, size to cut back to)
+        try:
+            for path in paths:
+                if record_before:
+                    recorded.append((path, os.path.getsize(path)))
+                with open(path, "ab") as f:
+                    f.write(addition)
+                if not record_before:
+                    recorded.append((path, os.path.getsize(path) - len(addition)))
+        except catch:
+            for path, size in recorded:
+                if os.path.getsize(path) != size:
+                    os.truncate(path, size)
+            raise
+    return append_both
+
+
+APPENDERS = [("after/OSError", appender(False, OSError)),
+             ("after/BaseException", appender(False, BaseException)),
+             ("before/Exception", appender(True, Exception)),
+             ("before/BaseException", appender(True, BaseException))]
+
+
+def raise_before_writing(exc_type):
+    def write(real, data):
+        raise exc_type("injected before any byte was written")
+    return write
+
+
+def write_half_then_raise(exc_type):
+    def write(real, data):
+        real.write(data[:len(data) // 2])
+        real.flush()
+        raise exc_type("injected after half the bytes were written and flushed")
+    return write
+
+
+FAULTS = {"none (control)": (None, None),       # fault -> (file whose write() is wrapped, the replacement write)
+          "OSError on B": ("B", raise_before_writing(OSError)),
+          "Ctrl-C on B": ("B", raise_before_writing(KeyboardInterrupt)),
+          "half A, OSError": ("A", write_half_then_raise(OSError)),
+          "half A, Ctrl-C": ("A", write_half_then_raise(KeyboardInterrupt))}
+
+
+class FaultyFile:
+    """A real file object whose write() goes through the fault."""
+    def __init__(self, real, fault):
+        self._real, self._fault = real, fault
+
+    def write(self, data):
+        return self._fault(self._real, data)
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *exc_info):
+        self._real.close()
+        return False
+
+
+def opener(target, fault):
+    def faulty_open(path, *args, **kwargs):
+        real = io.open(path, *args, **kwargs)           # io.open is the builtin open, left unpatched
+        return FaultyFile(real, fault) if target and os.path.basename(path) == target else real
+    return faulty_open
+
+
+def run_case(workdir, append_both, fault_name):
+    paths = [os.path.join(workdir, name) for name in SEED]
+    for path, seed in zip(paths, SEED.values()):
+        pathlib.Path(path).write_bytes(seed)
+    target, fault = FAULTS[fault_name]
+    escaped = "nothing"
+    try:
+        with mock.patch("builtins.open", opener(target, fault)):
+            append_both(paths, ADDITION)
+    except BaseException as exc:                        # an injected Ctrl-C must not end the demonstration
+        escaped = type(exc).__name__
+    after = [pathlib.Path(path).read_bytes() for path in paths]
+    states = ["intact" if a == s else f"+{len(a) - len(s)} bytes" if a.startswith(s) else "CHANGED"
+              for a, s in zip(after, SEED.values())]
+    if after == list(SEED.values()):
+        return escaped, states, "neither"
+    if after == [s + ADDITION for s in SEED.values()]:
+        return escaped, states, "both"
+    return escaped, states, "BROKEN"
+
+
+def main():
+    print(f"Python {sys.version.split()[0]}; the addition is {len(ADDITION)} bytes; "
+          f"issubclass(KeyboardInterrupt, Exception) = {issubclass(KeyboardInterrupt, Exception)}")
+    row = "{:<21} {:<16} {:<18} {:<10} {:<10} {}"
+    print(row.format("recorded/caught", "fault", "escaped", "file A", "file B", "both or neither"))
+    broken, fixture = {}, []
+    with tempfile.TemporaryDirectory() as workdir:
+        for label, append_both in APPENDERS:
+            broken[label] = []
+            for fault_name in FAULTS:
+                escaped, states, verdict = run_case(workdir, append_both, fault_name)
+                print(row.format(label, fault_name, escaped, *states, verdict))
+                if fault_name == "none (control)" and verdict != "both":
+                    fixture.append(f"{label}: with no fault it wrote {verdict}, not both")
+                elif fault_name != "none (control)" and verdict == "both":
+                    fixture.append(f"{label}: the fault '{fault_name}' did not fire")
+                elif verdict == "BROKEN":
+                    broken[label].append(fault_name)
+    for label, names in broken.items():
+        print(f"{label}: {len(names)} of {len(FAULTS) - 1} faults left one file changed and the other not"
+              + (": " + "; ".join(names) if names else ""))
+    for problem in fixture:
+        print(f"INCONCLUSIVE: {problem}")
+    return 3 if fixture else 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
+```
+
+### logerror.proj
+
+```xml
+<Project>
+  <UsingTask TaskName="GateLog" TaskFactory="RoslynCodeTaskFactory"
+             AssemblyFile="$(MSBuildToolsPath)\Microsoft.Build.Tasks.Core.dll">
+    <Task>
+      <Code Type="Fragment" Language="cs">
+        Log.LogError("DEMO001: refused");
+      </Code>
+    </Task>
+  </UsingTask>
+
+  <UsingTask TaskName="GateReason" TaskFactory="RoslynCodeTaskFactory"
+             AssemblyFile="$(MSBuildToolsPath)\Microsoft.Build.Tasks.Core.dll">
+    <ParameterGroup>
+      <Reason ParameterType="System.String" Output="true" />
+    </ParameterGroup>
+    <Task>
+      <Code Type="Fragment" Language="cs">
+        Reason = "DEMO002: refused";
+      </Code>
+    </Task>
+  </UsingTask>
+
+  <UsingTask TaskName="GateLogFail" TaskFactory="RoslynCodeTaskFactory"
+             AssemblyFile="$(MSBuildToolsPath)\Microsoft.Build.Tasks.Core.dll">
+    <Task>
+      <Code Type="Fragment" Language="cs">
+        Log.LogError("DEMO003: refused");
+        Success = false;
+      </Code>
+    </Task>
+  </UsingTask>
+
+  <Target Name="GateA" BeforeTargets="BodyA">
+    <GateLog />
+  </Target>
+  <Target Name="BodyA">
+    <Message Importance="high" Text="BODY A RAN" />
+    <Touch Files="$(MSBuildThisFileDirectory)bodyA.ran" AlwaysCreate="true" />
+  </Target>
+
+  <Target Name="GateB" BeforeTargets="BodyB">
+    <GateReason>
+      <Output TaskParameter="Reason" PropertyName="Reason" />
+    </GateReason>
+    <Error Condition="'$(Reason)' != ''" Text="$(Reason)" />
+  </Target>
+  <Target Name="BodyB">
+    <Message Importance="high" Text="BODY B RAN" />
+    <Touch Files="$(MSBuildThisFileDirectory)bodyB.ran" AlwaysCreate="true" />
+  </Target>
+
+  <Target Name="GateC" BeforeTargets="BodyC">
+    <GateLogFail />
+  </Target>
+  <Target Name="BodyC">
+    <Message Importance="high" Text="BODY C RAN" />
+    <Touch Files="$(MSBuildThisFileDirectory)bodyC.ran" AlwaysCreate="true" />
+  </Target>
+</Project>
+```
+
+### Runs: gitread_trap.py (T1 to T5)
+
+```
+$ python gitread_trap.py parents
+gitread_trap parents | git version 2.55.0.windows.5
+hook: PARENTS unset -> built-in trapped reader: git -C REPO --no-replace-objects log -1 --format=%P HEAD
+fixture: A=046ab60 B=e56db88 C=1a72af6 X=abfe575 (HEAD = C, true parent B), the same ids in every case; in the merge control HEAD is M
+case clean (control)  answered B e56db88            truth B e56db88            ok
+case merge (control)  answered C 1a72af6 X abfe575  truth C 1a72af6 X abfe575  ok
+     measured: HEAD = M 47f5c78, whose parent lines name C 1a72af6 X abfe575
+case replace          answered B e56db88            truth B e56db88            ok
+     fixture: refs/replace/1a72af6 -> C' 4e28698 (its parent line names X); plain `git log -1 --format=%P HEAD` = X abfe575; raw object of HEAD unchanged
+case grafts           answered X abfe575            truth B e56db88            RED
+     fixture: info/grafts holds "C X"; `git --no-replace-objects log -1 --format=%P HEAD` = X abfe575; raw object of HEAD unchanged
+     git stderr: hint: Support for <GIT_DIR>/info/grafts is deprecated
+     git stderr: hint: and will be removed in a future Git version.
+     git stderr: hint:
+     git stderr: hint: Please use "git replace --convert-graft-file"
+     git stderr: hint: to convert the grafts into replace refs.
+     git stderr: hint:
+     git stderr: hint: Turn this message off by running
+     git stderr: hint: "git config set advice.graftFileDeprecated false"
+case grafts-worktree  answered X abfe575            truth B e56db88            RED
+     fixture: info/grafts in the common directory holds "C X"; asked from a linked worktree whose own git directory is not the common one: `git --no-replace-objects log -1 --format=%P HEAD` = X abfe575; raw object of HEAD unchanged
+case commit-graph     answered X abfe575            truth B e56db88            RED
+     fixture: CDAT parent 1 of C set to X's position; `git --no-replace-objects log -1 --format=%P HEAD` = X abfe575, with -c core.commitGraph=false = B e56db88; raw object of HEAD unchanged
+case shallow          answered (nothing)            truth B e56db88            RED
+     fixture: clone --depth 1 of a clean fixture: HEAD = C 1a72af6, --is-shallow-repository = true, plain `git log -1 --format=%P HEAD` = (nothing); raw object of HEAD identical to the source
+RED: 4 of 5 trap cases answered falsely: grafts, grafts-worktree, commit-graph, shallow
+(exit 1)
+
+$ PARENTS="python good_readers.py parents-raw" python gitread_trap.py parents
+gitread_trap parents | git version 2.55.0.windows.5
+hook: PARENTS=python good_readers.py parents-raw
+fixture: A=046ab60 B=e56db88 C=1a72af6 X=abfe575 (HEAD = C, true parent B), the same ids in every case; in the merge control HEAD is M
+case clean (control)  answered B e56db88            truth B e56db88            ok
+case merge (control)  answered C 1a72af6 X abfe575  truth C 1a72af6 X abfe575  ok
+     measured: HEAD = M 47f5c78, whose parent lines name C 1a72af6 X abfe575
+case replace          answered B e56db88            truth B e56db88            ok
+     fixture: refs/replace/1a72af6 -> C' 4e28698 (its parent line names X); plain `git log -1 --format=%P HEAD` = X abfe575; raw object of HEAD unchanged
+case grafts           answered B e56db88            truth B e56db88            ok
+     fixture: info/grafts holds "C X"; `git --no-replace-objects log -1 --format=%P HEAD` = X abfe575; raw object of HEAD unchanged
+     git stderr: hint: Support for <GIT_DIR>/info/grafts is deprecated
+     git stderr: hint: and will be removed in a future Git version.
+     git stderr: hint:
+     git stderr: hint: Please use "git replace --convert-graft-file"
+     git stderr: hint: to convert the grafts into replace refs.
+     git stderr: hint:
+     git stderr: hint: Turn this message off by running
+     git stderr: hint: "git config set advice.graftFileDeprecated false"
+case grafts-worktree  answered B e56db88            truth B e56db88            ok
+     fixture: info/grafts in the common directory holds "C X"; asked from a linked worktree whose own git directory is not the common one: `git --no-replace-objects log -1 --format=%P HEAD` = X abfe575; raw object of HEAD unchanged
+case commit-graph     answered B e56db88            truth B e56db88            ok
+     fixture: CDAT parent 1 of C set to X's position; `git --no-replace-objects log -1 --format=%P HEAD` = X abfe575, with -c core.commitGraph=false = B e56db88; raw object of HEAD unchanged
+case shallow          answered B e56db88            truth B e56db88            ok
+     fixture: clone --depth 1 of a clean fixture: HEAD = C 1a72af6, --is-shallow-repository = true, plain `git log -1 --format=%P HEAD` = (nothing); raw object of HEAD identical to the source
+GREEN: all 7 cases answered truly or refused
+(exit 0)
+
+$ PARENTS="python good_readers.py parents-refuse" python gitread_trap.py parents
+gitread_trap parents | git version 2.55.0.windows.5
+hook: PARENTS=python good_readers.py parents-refuse
+fixture: A=046ab60 B=e56db88 C=1a72af6 X=abfe575 (HEAD = C, true parent B), the same ids in every case; in the merge control HEAD is M
+case clean (control)  answered B e56db88            truth B e56db88            ok
+case merge (control)  answered C 1a72af6 X abfe575  truth C 1a72af6 X abfe575  ok
+     measured: HEAD = M 47f5c78, whose parent lines name C 1a72af6 X abfe575
+case replace          answered B e56db88            truth B e56db88            ok
+     fixture: refs/replace/1a72af6 -> C' 4e28698 (its parent line names X); plain `git log -1 --format=%P HEAD` = X abfe575; raw object of HEAD unchanged
+case grafts           answered refused (exit 3)     truth B e56db88            ok (refused)
+     fixture: info/grafts holds "C X"; `git --no-replace-objects log -1 --format=%P HEAD` = X abfe575; raw object of HEAD unchanged
+     git stderr: hint: Support for <GIT_DIR>/info/grafts is deprecated
+     git stderr: hint: and will be removed in a future Git version.
+     git stderr: hint:
+     git stderr: hint: Please use "git replace --convert-graft-file"
+     git stderr: hint: to convert the grafts into replace refs.
+     git stderr: hint:
+     git stderr: hint: Turn this message off by running
+     git stderr: hint: "git config set advice.graftFileDeprecated false"
+     hook stderr: good_readers: refused: a grafts file is present, so git may report parents the commit objects do not record
+case grafts-worktree  answered refused (exit 3)     truth B e56db88            ok (refused)
+     fixture: info/grafts in the common directory holds "C X"; asked from a linked worktree whose own git directory is not the common one: `git --no-replace-objects log -1 --format=%P HEAD` = X abfe575; raw object of HEAD unchanged
+     hook stderr: good_readers: refused: a grafts file is present, so git may report parents the commit objects do not record
+case commit-graph     answered B e56db88            truth B e56db88            ok
+     fixture: CDAT parent 1 of C set to X's position; `git --no-replace-objects log -1 --format=%P HEAD` = X abfe575, with -c core.commitGraph=false = B e56db88; raw object of HEAD unchanged
+case shallow          answered refused (exit 3)     truth B e56db88            ok (refused)
+     fixture: clone --depth 1 of a clean fixture: HEAD = C 1a72af6, --is-shallow-repository = true, plain `git log -1 --format=%P HEAD` = (nothing); raw object of HEAD identical to the source
+     hook stderr: good_readers: refused: the repository is shallow (or will not say), so HEAD's parents may be cut away
+GREEN: all 7 cases answered truly or refused; refused: grafts, grafts-worktree, shallow
+(exit 0)
+
+$ PARENTS="exit 0" python gitread_trap.py parents
+gitread_trap parents | git version 2.55.0.windows.5
+hook: PARENTS=exit 0
+fixture: A=046ab60 B=e56db88 C=1a72af6 X=abfe575 (HEAD = C, true parent B), the same ids in every case; in the merge control HEAD is M
+case clean (control)  answered (nothing)  truth B e56db88            INCONCLUSIVE (wrong on an honest repository)
+case merge (control)  answered (nothing)  truth C 1a72af6 X abfe575  INCONCLUSIVE (wrong on an honest repository)
+     measured: HEAD = M 47f5c78, whose parent lines name C 1a72af6 X abfe575
+case replace          answered (nothing)  truth B e56db88            INCONCLUSIVE (a control failed; alone: RED)
+     fixture: refs/replace/1a72af6 -> C' 4e28698 (its parent line names X); plain `git log -1 --format=%P HEAD` = X abfe575; raw object of HEAD unchanged
+case grafts           answered (nothing)  truth B e56db88            INCONCLUSIVE (a control failed; alone: RED)
+     fixture: info/grafts holds "C X"; `git --no-replace-objects log -1 --format=%P HEAD` = X abfe575; raw object of HEAD unchanged
+     git stderr: hint: Support for <GIT_DIR>/info/grafts is deprecated
+     git stderr: hint: and will be removed in a future Git version.
+     git stderr: hint:
+     git stderr: hint: Please use "git replace --convert-graft-file"
+     git stderr: hint: to convert the grafts into replace refs.
+     git stderr: hint:
+     git stderr: hint: Turn this message off by running
+     git stderr: hint: "git config set advice.graftFileDeprecated false"
+case grafts-worktree  answered (nothing)  truth B e56db88            INCONCLUSIVE (a control failed; alone: RED)
+     fixture: info/grafts in the common directory holds "C X"; asked from a linked worktree whose own git directory is not the common one: `git --no-replace-objects log -1 --format=%P HEAD` = X abfe575; raw object of HEAD unchanged
+case commit-graph     answered (nothing)  truth B e56db88            INCONCLUSIVE (a control failed; alone: RED)
+     fixture: CDAT parent 1 of C set to X's position; `git --no-replace-objects log -1 --format=%P HEAD` = X abfe575, with -c core.commitGraph=false = B e56db88; raw object of HEAD unchanged
+case shallow          answered (nothing)  truth B e56db88            INCONCLUSIVE (a control failed; alone: RED)
+     fixture: clone --depth 1 of a clean fixture: HEAD = C 1a72af6, --is-shallow-repository = true, plain `git log -1 --format=%P HEAD` = (nothing); raw object of HEAD identical to the source
+INCONCLUSIVE: control clean, merge not answered correctly, so no answer is a verdict
+(exit 3)
+
+$ python gitread_trap.py partial
+gitread_trap partial | git version 2.55.0.windows.5
+hook: READ_BLOB unset -> built-in trapped reader: git -C REPO cat-file --batch, GIT_NO_LAZY_FETCH=1, stdin "SPEC\n"; " missing" header = absent
+KEY FACT: git cat-file --batch with GIT_NO_LAZY_FETCH=1 in a fresh blobless clone prints
+  path not at revision  stdin b'HEAD:old.txt\n'     stdout b'HEAD:old.txt missing\n'   stderr b'' exit 0
+  blob not local        stdin b'HEAD~1:old.txt\n'   stdout b'HEAD~1:old.txt missing\n' stderr b'' exit 0
+  -> indistinguishable: each header is the input line followed by b' missing\n', with the same stderr and exit code
+case HEAD:keep.txt (control)         answered b'keep v2\n'     truth b'keep v2\n'  ok
+     measured: a fresh full clone (no --filter); remote.origin.promisor unset
+case HEAD:old.txt (control)          answered absent (exit 1)  truth absent        ok
+     measured: a fresh full clone (no --filter); remote.origin.promisor unset
+case HEAD~1:old.txt                  answered absent (exit 1)  truth b'old\n'      RED
+     fixture: promisor: remote.origin.promisor; `git rev-parse HEAD~1:old.txt` = 3367afd, object store unchanged; GIT_NO_LAZY_FETCH=1 `git cat-file -e 3367afd` exit 1
+     after the hook: object store unchanged; blob 3367afd still not local
+case HEAD~1:keep.txt                 answered absent (exit 1)  truth b'keep v1\n'  RED
+     fixture: promisor: remote.origin.promisor; `git rev-parse HEAD~1:keep.txt` = f49f7d1, object store unchanged; GIT_NO_LAZY_FETCH=1 `git cat-file -e f49f7d1` exit 1
+     after the hook: object store unchanged; blob f49f7d1 still not local
+case HEAD~1:old.txt upstream-gone    answered absent (exit 1)  truth b'old\n'      RED
+     fixture: promisor: remote.origin.promisor; `git rev-parse HEAD~1:old.txt` = 3367afd, object store unchanged; GIT_NO_LAZY_FETCH=1 `git cat-file -e 3367afd` exit 1; the upstream was then moved away: no fetch can reach it
+     after the hook: object store unchanged; blob 3367afd still not local
+case HEAD:keep.txt no-checkout       answered absent (exit 1)  truth b'keep v2\n'  RED
+     fixture: promisor: remote.origin.promisor; `git rev-parse HEAD:keep.txt` = e75e49d, object store unchanged; GIT_NO_LAZY_FETCH=1 `git cat-file -e e75e49d` exit 1
+     after the hook: object store unchanged; blob e75e49d still not local
+case HEAD~1:old.txt remote-upstream  answered absent (exit 1)  truth b'old\n'      RED
+     fixture: promisor: remote.upstream.promisor; `git rev-parse HEAD~1:old.txt` = 3367afd, object store unchanged; GIT_NO_LAZY_FETCH=1 `git cat-file -e 3367afd` exit 1
+     after the hook: object store unchanged; blob 3367afd still not local
+RED: 5 of 5 trap cases answered falsely: HEAD~1:old.txt, HEAD~1:keep.txt, HEAD~1:old.txt upstream-gone, HEAD:keep.txt no-checkout, HEAD~1:old.txt remote-upstream
+(exit 1)
+
+$ READ_BLOB="python good_readers.py blob-refuse" python gitread_trap.py partial
+gitread_trap partial | git version 2.55.0.windows.5
+hook: READ_BLOB=python good_readers.py blob-refuse
+KEY FACT: git cat-file --batch with GIT_NO_LAZY_FETCH=1 in a fresh blobless clone prints
+  path not at revision  stdin b'HEAD:old.txt\n'     stdout b'HEAD:old.txt missing\n'   stderr b'' exit 0
+  blob not local        stdin b'HEAD~1:old.txt\n'   stdout b'HEAD~1:old.txt missing\n' stderr b'' exit 0
+  -> indistinguishable: each header is the input line followed by b' missing\n', with the same stderr and exit code
+case HEAD:keep.txt (control)         answered b'keep v2\n'      truth b'keep v2\n'  ok
+     measured: a fresh full clone (no --filter); remote.origin.promisor unset
+case HEAD:old.txt (control)          answered absent (exit 1)   truth absent        ok
+     measured: a fresh full clone (no --filter); remote.origin.promisor unset
+case HEAD~1:old.txt                  answered refused (exit 3)  truth b'old\n'      ok (refused)
+     fixture: promisor: remote.origin.promisor; `git rev-parse HEAD~1:old.txt` = 3367afd, object store unchanged; GIT_NO_LAZY_FETCH=1 `git cat-file -e 3367afd` exit 1
+     hook stderr: good_readers: refused: partial clone (remote.origin.promisor is true): a blob not here would look like a path not there
+     after the hook: object store unchanged; blob 3367afd still not local
+case HEAD~1:keep.txt                 answered refused (exit 3)  truth b'keep v1\n'  ok (refused)
+     fixture: promisor: remote.origin.promisor; `git rev-parse HEAD~1:keep.txt` = f49f7d1, object store unchanged; GIT_NO_LAZY_FETCH=1 `git cat-file -e f49f7d1` exit 1
+     hook stderr: good_readers: refused: partial clone (remote.origin.promisor is true): a blob not here would look like a path not there
+     after the hook: object store unchanged; blob f49f7d1 still not local
+case HEAD~1:old.txt upstream-gone    answered refused (exit 3)  truth b'old\n'      ok (refused)
+     fixture: promisor: remote.origin.promisor; `git rev-parse HEAD~1:old.txt` = 3367afd, object store unchanged; GIT_NO_LAZY_FETCH=1 `git cat-file -e 3367afd` exit 1; the upstream was then moved away: no fetch can reach it
+     hook stderr: good_readers: refused: partial clone (remote.origin.promisor is true): a blob not here would look like a path not there
+     after the hook: object store unchanged; blob 3367afd still not local
+case HEAD:keep.txt no-checkout       answered refused (exit 3)  truth b'keep v2\n'  ok (refused)
+     fixture: promisor: remote.origin.promisor; `git rev-parse HEAD:keep.txt` = e75e49d, object store unchanged; GIT_NO_LAZY_FETCH=1 `git cat-file -e e75e49d` exit 1
+     hook stderr: good_readers: refused: partial clone (remote.origin.promisor is true): a blob not here would look like a path not there
+     after the hook: object store unchanged; blob e75e49d still not local
+case HEAD~1:old.txt remote-upstream  answered refused (exit 3)  truth b'old\n'      ok (refused)
+     fixture: promisor: remote.upstream.promisor; `git rev-parse HEAD~1:old.txt` = 3367afd, object store unchanged; GIT_NO_LAZY_FETCH=1 `git cat-file -e 3367afd` exit 1
+     hook stderr: good_readers: refused: partial clone (remote.upstream.promisor is true): a blob not here would look like a path not there
+     after the hook: object store unchanged; blob 3367afd still not local
+GREEN: all 7 cases answered truly or refused; refused: HEAD~1:old.txt, HEAD~1:keep.txt, HEAD~1:old.txt upstream-gone, HEAD:keep.txt no-checkout, HEAD~1:old.txt remote-upstream
+(exit 0)
+
+$ READ_BLOB="python good_readers.py blob-lazy" python gitread_trap.py partial
+gitread_trap partial | git version 2.55.0.windows.5
+hook: READ_BLOB=python good_readers.py blob-lazy
+KEY FACT: git cat-file --batch with GIT_NO_LAZY_FETCH=1 in a fresh blobless clone prints
+  path not at revision  stdin b'HEAD:old.txt\n'     stdout b'HEAD:old.txt missing\n'   stderr b'' exit 0
+  blob not local        stdin b'HEAD~1:old.txt\n'   stdout b'HEAD~1:old.txt missing\n' stderr b'' exit 0
+  -> indistinguishable: each header is the input line followed by b' missing\n', with the same stderr and exit code
+case HEAD:keep.txt (control)         answered b'keep v2\n'      truth b'keep v2\n'  ok
+     measured: a fresh full clone (no --filter); remote.origin.promisor unset
+case HEAD:old.txt (control)          answered absent (exit 1)   truth absent        ok
+     measured: a fresh full clone (no --filter); remote.origin.promisor unset
+case HEAD~1:old.txt                  answered b'old\n'          truth b'old\n'      ok
+     fixture: promisor: remote.origin.promisor; `git rev-parse HEAD~1:old.txt` = 3367afd, object store unchanged; GIT_NO_LAZY_FETCH=1 `git cat-file -e 3367afd` exit 1
+     after the hook: object store CHANGED; blob 3367afd is now local (fetched)
+case HEAD~1:keep.txt                 answered b'keep v1\n'      truth b'keep v1\n'  ok
+     fixture: promisor: remote.origin.promisor; `git rev-parse HEAD~1:keep.txt` = f49f7d1, object store unchanged; GIT_NO_LAZY_FETCH=1 `git cat-file -e f49f7d1` exit 1
+     after the hook: object store CHANGED; blob f49f7d1 is now local (fetched)
+case HEAD~1:old.txt upstream-gone    answered refused (exit 3)  truth b'old\n'      ok (refused)
+     fixture: promisor: remote.origin.promisor; `git rev-parse HEAD~1:old.txt` = 3367afd, object store unchanged; GIT_NO_LAZY_FETCH=1 `git cat-file -e 3367afd` exit 1; the upstream was then moved away: no fetch can reach it
+     hook stderr: good_readers: refused: old.txt exists at HEAD~1, but its blob cannot be read here
+     after the hook: object store unchanged; blob 3367afd still not local
+case HEAD:keep.txt no-checkout       answered b'keep v2\n'      truth b'keep v2\n'  ok
+     fixture: promisor: remote.origin.promisor; `git rev-parse HEAD:keep.txt` = e75e49d, object store unchanged; GIT_NO_LAZY_FETCH=1 `git cat-file -e e75e49d` exit 1
+     after the hook: object store CHANGED; blob e75e49d is now local (fetched)
+case HEAD~1:old.txt remote-upstream  answered b'old\n'          truth b'old\n'      ok
+     fixture: promisor: remote.upstream.promisor; `git rev-parse HEAD~1:old.txt` = 3367afd, object store unchanged; GIT_NO_LAZY_FETCH=1 `git cat-file -e 3367afd` exit 1
+     after the hook: object store CHANGED; blob 3367afd is now local (fetched)
+GREEN: all 7 cases answered truly or refused; refused: HEAD~1:old.txt upstream-gone
+(exit 0)
+
+$ READ_BLOB="exit 1" python gitread_trap.py partial
+gitread_trap partial | git version 2.55.0.windows.5
+hook: READ_BLOB=exit 1
+KEY FACT: git cat-file --batch with GIT_NO_LAZY_FETCH=1 in a fresh blobless clone prints
+  path not at revision  stdin b'HEAD:old.txt\n'     stdout b'HEAD:old.txt missing\n'   stderr b'' exit 0
+  blob not local        stdin b'HEAD~1:old.txt\n'   stdout b'HEAD~1:old.txt missing\n' stderr b'' exit 0
+  -> indistinguishable: each header is the input line followed by b' missing\n', with the same stderr and exit code
+case HEAD:keep.txt (control)         answered absent (exit 1)  truth b'keep v2\n'  INCONCLUSIVE (wrong on an honest repository)
+     measured: a fresh full clone (no --filter); remote.origin.promisor unset
+case HEAD:old.txt (control)          answered absent (exit 1)  truth absent        ok
+     measured: a fresh full clone (no --filter); remote.origin.promisor unset
+case HEAD~1:old.txt                  answered absent (exit 1)  truth b'old\n'      INCONCLUSIVE (a control failed; alone: RED)
+     fixture: promisor: remote.origin.promisor; `git rev-parse HEAD~1:old.txt` = 3367afd, object store unchanged; GIT_NO_LAZY_FETCH=1 `git cat-file -e 3367afd` exit 1
+     after the hook: object store unchanged; blob 3367afd still not local
+case HEAD~1:keep.txt                 answered absent (exit 1)  truth b'keep v1\n'  INCONCLUSIVE (a control failed; alone: RED)
+     fixture: promisor: remote.origin.promisor; `git rev-parse HEAD~1:keep.txt` = f49f7d1, object store unchanged; GIT_NO_LAZY_FETCH=1 `git cat-file -e f49f7d1` exit 1
+     after the hook: object store unchanged; blob f49f7d1 still not local
+case HEAD~1:old.txt upstream-gone    answered absent (exit 1)  truth b'old\n'      INCONCLUSIVE (a control failed; alone: RED)
+     fixture: promisor: remote.origin.promisor; `git rev-parse HEAD~1:old.txt` = 3367afd, object store unchanged; GIT_NO_LAZY_FETCH=1 `git cat-file -e 3367afd` exit 1; the upstream was then moved away: no fetch can reach it
+     after the hook: object store unchanged; blob 3367afd still not local
+case HEAD:keep.txt no-checkout       answered absent (exit 1)  truth b'keep v2\n'  INCONCLUSIVE (a control failed; alone: RED)
+     fixture: promisor: remote.origin.promisor; `git rev-parse HEAD:keep.txt` = e75e49d, object store unchanged; GIT_NO_LAZY_FETCH=1 `git cat-file -e e75e49d` exit 1
+     after the hook: object store unchanged; blob e75e49d still not local
+case HEAD~1:old.txt remote-upstream  answered absent (exit 1)  truth b'old\n'      INCONCLUSIVE (a control failed; alone: RED)
+     fixture: promisor: remote.upstream.promisor; `git rev-parse HEAD~1:old.txt` = 3367afd, object store unchanged; GIT_NO_LAZY_FETCH=1 `git cat-file -e 3367afd` exit 1
+     after the hook: object store unchanged; blob 3367afd still not local
+INCONCLUSIVE: control HEAD:keep.txt not answered correctly, so no answer is a verdict
+(exit 3)
+
+$ python gitread_trap.py store
+gitread_trap store | git version 2.55.0.windows.5
+hook: WOULD_STORE unset -> built-in trapped reader: FILE's bytes with CRLF -> LF, piped to git -C REPO hash-object --stdin
+fixture: core.autocrlf=true, .gitattributes "raw.txt -text", "*.dat -text", "forced.txt text", "forcednul.txt text", "textstaged.txt text"; one working-copy file per case; tracked.txt, staged.txt, restaged.txt and textstaged.txt first committed or staged under core.autocrlf=false
+case plain (control)   answered 422c2b7  truth 422c2b7  ok
+     measured: FILE=plain.txt holds b'a\r\nb\r\n'; git add stored b'a\nb\n' (converted); ls-files --eol: i/lf w/crlf attr/; check-attr text: unspecified; core.autocrlf=true
+     after the hook: the index unchanged
+case raw               answered 422c2b7  truth c30dea8  RED
+     fixture: FILE=raw.txt holds b'a\r\nb\r\n'; git add stored b'a\r\nb\r\n' (unconverted); ls-files --eol: i/crlf w/crlf attr/-text; check-attr text: unset; core.autocrlf=true
+     after the hook: the index unchanged
+case lonecr            answered 73dddfa  truth f272997  RED
+     fixture: FILE=lonecr.txt holds b'a\r\nb\rc\r\n'; git add stored b'a\r\nb\rc\r\n' (unconverted); ls-files --eol: i/-text w/-text attr/; check-attr text: unspecified; core.autocrlf=true
+     after the hook: the index unchanged
+case nul               answered 91e62d6  truth 300d788  RED
+     fixture: FILE=nulbyte.txt holds b'a\r\nb\x00\r\n'; git add stored b'a\r\nb\x00\r\n' (unconverted); ls-files --eol: i/-text w/-text attr/; check-attr text: unspecified; core.autocrlf=true
+     after the hook: the index unchanged
+case glob              answered 422c2b7  truth c30dea8  RED
+     fixture: FILE=data.dat holds b'a\r\nb\r\n'; git add stored b'a\r\nb\r\n' (unconverted); ls-files --eol: i/crlf w/crlf attr/-text; check-attr text: unset; core.autocrlf=true
+     after the hook: the index unchanged
+case text-lonecr       answered 73dddfa  truth 73dddfa  ok
+     fixture: FILE=forced.txt holds b'a\r\nb\rc\r\n'; git add stored b'a\nb\rc\n' (converted); ls-files --eol: i/-text w/-text attr/text; check-attr text: set; core.autocrlf=true
+     after the hook: the index unchanged
+case text-nul          answered 91e62d6  truth 91e62d6  ok
+     fixture: FILE=forcednul.txt holds b'a\r\nb\x00\r\n'; git add stored b'a\nb\x00\n' (converted); ls-files --eol: i/-text w/-text attr/text; check-attr text: set; core.autocrlf=true
+     after the hook: the index unchanged
+case tracked-crlf      answered de98044  truth b5eff57  RED
+     fixture: FILE=tracked.txt holds b'a\r\nb\r\nc\r\n'; git add stored b'a\r\nb\r\nc\r\n' (unconverted); ls-files --eol: i/crlf w/crlf attr/; check-attr text: unspecified; core.autocrlf=true; before the add, HEAD's copy b'a\r\nb\r\n' and the index copy b'a\r\nb\r\n'
+     after the hook: the index unchanged
+case staged-crlf       answered de98044  truth b5eff57  RED
+     fixture: FILE=staged.txt holds b'a\r\nb\r\nc\r\n'; git add stored b'a\r\nb\r\nc\r\n' (unconverted); ls-files --eol: i/crlf w/crlf attr/; check-attr text: unspecified; core.autocrlf=true; before the add, HEAD's copy None and the index copy b'a\r\nb\r\n'
+     after the hook: the index unchanged
+case restaged-lf       answered de98044  truth de98044  ok
+     fixture: FILE=restaged.txt holds b'a\r\nb\r\nc\r\n'; git add stored b'a\nb\nc\n' (converted); ls-files --eol: i/lf w/crlf attr/; check-attr text: unspecified; core.autocrlf=true; before the add, HEAD's copy b'a\r\nb\r\n' and the index copy b'a\nb\n'
+     after the hook: the index unchanged
+case text-staged-crlf  answered de98044  truth de98044  ok
+     fixture: FILE=textstaged.txt holds b'a\r\nb\r\nc\r\n'; git add stored b'a\nb\nc\n' (converted); ls-files --eol: i/lf w/crlf attr/text; check-attr text: set; core.autocrlf=true; before the add, HEAD's copy None and the index copy b'a\r\nb\r\n'
+     after the hook: the index unchanged
+RED: 6 of 10 trap cases answered falsely: raw, lonecr, nul, glob, tracked-crlf, staged-crlf
+(exit 1)
+
+$ WOULD_STORE="python good_readers.py store" python gitread_trap.py store
+gitread_trap store | git version 2.55.0.windows.5
+hook: WOULD_STORE=python good_readers.py store
+fixture: core.autocrlf=true, .gitattributes "raw.txt -text", "*.dat -text", "forced.txt text", "forcednul.txt text", "textstaged.txt text"; one working-copy file per case; tracked.txt, staged.txt, restaged.txt and textstaged.txt first committed or staged under core.autocrlf=false
+case plain (control)   answered 422c2b7  truth 422c2b7  ok
+     measured: FILE=plain.txt holds b'a\r\nb\r\n'; git add stored b'a\nb\n' (converted); ls-files --eol: i/lf w/crlf attr/; check-attr text: unspecified; core.autocrlf=true
+     after the hook: the index unchanged
+case raw               answered c30dea8  truth c30dea8  ok
+     fixture: FILE=raw.txt holds b'a\r\nb\r\n'; git add stored b'a\r\nb\r\n' (unconverted); ls-files --eol: i/crlf w/crlf attr/-text; check-attr text: unset; core.autocrlf=true
+     after the hook: the index unchanged
+case lonecr            answered f272997  truth f272997  ok
+     fixture: FILE=lonecr.txt holds b'a\r\nb\rc\r\n'; git add stored b'a\r\nb\rc\r\n' (unconverted); ls-files --eol: i/-text w/-text attr/; check-attr text: unspecified; core.autocrlf=true
+     after the hook: the index unchanged
+case nul               answered 300d788  truth 300d788  ok
+     fixture: FILE=nulbyte.txt holds b'a\r\nb\x00\r\n'; git add stored b'a\r\nb\x00\r\n' (unconverted); ls-files --eol: i/-text w/-text attr/; check-attr text: unspecified; core.autocrlf=true
+     after the hook: the index unchanged
+case glob              answered c30dea8  truth c30dea8  ok
+     fixture: FILE=data.dat holds b'a\r\nb\r\n'; git add stored b'a\r\nb\r\n' (unconverted); ls-files --eol: i/crlf w/crlf attr/-text; check-attr text: unset; core.autocrlf=true
+     after the hook: the index unchanged
+case text-lonecr       answered 73dddfa  truth 73dddfa  ok
+     fixture: FILE=forced.txt holds b'a\r\nb\rc\r\n'; git add stored b'a\nb\rc\n' (converted); ls-files --eol: i/-text w/-text attr/text; check-attr text: set; core.autocrlf=true
+     after the hook: the index unchanged
+case text-nul          answered 91e62d6  truth 91e62d6  ok
+     fixture: FILE=forcednul.txt holds b'a\r\nb\x00\r\n'; git add stored b'a\nb\x00\n' (converted); ls-files --eol: i/-text w/-text attr/text; check-attr text: set; core.autocrlf=true
+     after the hook: the index unchanged
+case tracked-crlf      answered de98044  truth b5eff57  RED
+     fixture: FILE=tracked.txt holds b'a\r\nb\r\nc\r\n'; git add stored b'a\r\nb\r\nc\r\n' (unconverted); ls-files --eol: i/crlf w/crlf attr/; check-attr text: unspecified; core.autocrlf=true; before the add, HEAD's copy b'a\r\nb\r\n' and the index copy b'a\r\nb\r\n'
+     after the hook: the index unchanged
+case staged-crlf       answered de98044  truth b5eff57  RED
+     fixture: FILE=staged.txt holds b'a\r\nb\r\nc\r\n'; git add stored b'a\r\nb\r\nc\r\n' (unconverted); ls-files --eol: i/crlf w/crlf attr/; check-attr text: unspecified; core.autocrlf=true; before the add, HEAD's copy None and the index copy b'a\r\nb\r\n'
+     after the hook: the index unchanged
+case restaged-lf       answered de98044  truth de98044  ok
+     fixture: FILE=restaged.txt holds b'a\r\nb\r\nc\r\n'; git add stored b'a\nb\nc\n' (converted); ls-files --eol: i/lf w/crlf attr/; check-attr text: unspecified; core.autocrlf=true; before the add, HEAD's copy b'a\r\nb\r\n' and the index copy b'a\nb\n'
+     after the hook: the index unchanged
+case text-staged-crlf  answered de98044  truth de98044  ok
+     fixture: FILE=textstaged.txt holds b'a\r\nb\r\nc\r\n'; git add stored b'a\nb\nc\n' (converted); ls-files --eol: i/lf w/crlf attr/text; check-attr text: set; core.autocrlf=true; before the add, HEAD's copy None and the index copy b'a\r\nb\r\n'
+     after the hook: the index unchanged
+RED: 2 of 10 trap cases answered falsely: tracked-crlf, staged-crlf
+(exit 1)
+
+$ WOULD_STORE="python good_readers.py store-index" python gitread_trap.py store
+gitread_trap store | git version 2.55.0.windows.5
+hook: WOULD_STORE=python good_readers.py store-index
+fixture: core.autocrlf=true, .gitattributes "raw.txt -text", "*.dat -text", "forced.txt text", "forcednul.txt text", "textstaged.txt text"; one working-copy file per case; tracked.txt, staged.txt, restaged.txt and textstaged.txt first committed or staged under core.autocrlf=false
+case plain (control)   answered 422c2b7  truth 422c2b7  ok
+     measured: FILE=plain.txt holds b'a\r\nb\r\n'; git add stored b'a\nb\n' (converted); ls-files --eol: i/lf w/crlf attr/; check-attr text: unspecified; core.autocrlf=true
+     after the hook: the index unchanged
+case raw               answered c30dea8  truth c30dea8  ok
+     fixture: FILE=raw.txt holds b'a\r\nb\r\n'; git add stored b'a\r\nb\r\n' (unconverted); ls-files --eol: i/crlf w/crlf attr/-text; check-attr text: unset; core.autocrlf=true
+     after the hook: the index unchanged
+case lonecr            answered f272997  truth f272997  ok
+     fixture: FILE=lonecr.txt holds b'a\r\nb\rc\r\n'; git add stored b'a\r\nb\rc\r\n' (unconverted); ls-files --eol: i/-text w/-text attr/; check-attr text: unspecified; core.autocrlf=true
+     after the hook: the index unchanged
+case nul               answered 300d788  truth 300d788  ok
+     fixture: FILE=nulbyte.txt holds b'a\r\nb\x00\r\n'; git add stored b'a\r\nb\x00\r\n' (unconverted); ls-files --eol: i/-text w/-text attr/; check-attr text: unspecified; core.autocrlf=true
+     after the hook: the index unchanged
+case glob              answered c30dea8  truth c30dea8  ok
+     fixture: FILE=data.dat holds b'a\r\nb\r\n'; git add stored b'a\r\nb\r\n' (unconverted); ls-files --eol: i/crlf w/crlf attr/-text; check-attr text: unset; core.autocrlf=true
+     after the hook: the index unchanged
+case text-lonecr       answered 73dddfa  truth 73dddfa  ok
+     fixture: FILE=forced.txt holds b'a\r\nb\rc\r\n'; git add stored b'a\nb\rc\n' (converted); ls-files --eol: i/-text w/-text attr/text; check-attr text: set; core.autocrlf=true
+     after the hook: the index unchanged
+case text-nul          answered 91e62d6  truth 91e62d6  ok
+     fixture: FILE=forcednul.txt holds b'a\r\nb\x00\r\n'; git add stored b'a\nb\x00\n' (converted); ls-files --eol: i/-text w/-text attr/text; check-attr text: set; core.autocrlf=true
+     after the hook: the index unchanged
+case tracked-crlf      answered b5eff57  truth b5eff57  ok
+     fixture: FILE=tracked.txt holds b'a\r\nb\r\nc\r\n'; git add stored b'a\r\nb\r\nc\r\n' (unconverted); ls-files --eol: i/crlf w/crlf attr/; check-attr text: unspecified; core.autocrlf=true; before the add, HEAD's copy b'a\r\nb\r\n' and the index copy b'a\r\nb\r\n'
+     after the hook: the index unchanged
+case staged-crlf       answered b5eff57  truth b5eff57  ok
+     fixture: FILE=staged.txt holds b'a\r\nb\r\nc\r\n'; git add stored b'a\r\nb\r\nc\r\n' (unconverted); ls-files --eol: i/crlf w/crlf attr/; check-attr text: unspecified; core.autocrlf=true; before the add, HEAD's copy None and the index copy b'a\r\nb\r\n'
+     after the hook: the index unchanged
+case restaged-lf       answered de98044  truth de98044  ok
+     fixture: FILE=restaged.txt holds b'a\r\nb\r\nc\r\n'; git add stored b'a\nb\nc\n' (converted); ls-files --eol: i/lf w/crlf attr/; check-attr text: unspecified; core.autocrlf=true; before the add, HEAD's copy b'a\r\nb\r\n' and the index copy b'a\nb\n'
+     after the hook: the index unchanged
+case text-staged-crlf  answered de98044  truth de98044  ok
+     fixture: FILE=textstaged.txt holds b'a\r\nb\r\nc\r\n'; git add stored b'a\nb\nc\n' (converted); ls-files --eol: i/lf w/crlf attr/text; check-attr text: set; core.autocrlf=true; before the add, HEAD's copy None and the index copy b'a\r\nb\r\n'
+     after the hook: the index unchanged
+GREEN: all 11 cases answered truly or refused
+(exit 0)
+
+$ WOULD_STORE="exit 1" python gitread_trap.py store
+gitread_trap store | git version 2.55.0.windows.5
+hook: WOULD_STORE=exit 1
+fixture: core.autocrlf=true, .gitattributes "raw.txt -text", "*.dat -text", "forced.txt text", "forcednul.txt text", "textstaged.txt text"; one working-copy file per case; tracked.txt, staged.txt, restaged.txt and textstaged.txt first committed or staged under core.autocrlf=false
+case plain (control)   answered refused (exit 1)  truth 422c2b7  INCONCLUSIVE (refused an honest repository)
+     measured: FILE=plain.txt holds b'a\r\nb\r\n'; git add stored b'a\nb\n' (converted); ls-files --eol: i/lf w/crlf attr/; check-attr text: unspecified; core.autocrlf=true
+     after the hook: the index unchanged
+case raw               answered refused (exit 1)  truth c30dea8  INCONCLUSIVE (a control failed; alone: ok (refused))
+     fixture: FILE=raw.txt holds b'a\r\nb\r\n'; git add stored b'a\r\nb\r\n' (unconverted); ls-files --eol: i/crlf w/crlf attr/-text; check-attr text: unset; core.autocrlf=true
+     after the hook: the index unchanged
+case lonecr            answered refused (exit 1)  truth f272997  INCONCLUSIVE (a control failed; alone: ok (refused))
+     fixture: FILE=lonecr.txt holds b'a\r\nb\rc\r\n'; git add stored b'a\r\nb\rc\r\n' (unconverted); ls-files --eol: i/-text w/-text attr/; check-attr text: unspecified; core.autocrlf=true
+     after the hook: the index unchanged
+case nul               answered refused (exit 1)  truth 300d788  INCONCLUSIVE (a control failed; alone: ok (refused))
+     fixture: FILE=nulbyte.txt holds b'a\r\nb\x00\r\n'; git add stored b'a\r\nb\x00\r\n' (unconverted); ls-files --eol: i/-text w/-text attr/; check-attr text: unspecified; core.autocrlf=true
+     after the hook: the index unchanged
+case glob              answered refused (exit 1)  truth c30dea8  INCONCLUSIVE (a control failed; alone: ok (refused))
+     fixture: FILE=data.dat holds b'a\r\nb\r\n'; git add stored b'a\r\nb\r\n' (unconverted); ls-files --eol: i/crlf w/crlf attr/-text; check-attr text: unset; core.autocrlf=true
+     after the hook: the index unchanged
+case text-lonecr       answered refused (exit 1)  truth 73dddfa  INCONCLUSIVE (a control failed; alone: ok (refused))
+     fixture: FILE=forced.txt holds b'a\r\nb\rc\r\n'; git add stored b'a\nb\rc\n' (converted); ls-files --eol: i/-text w/-text attr/text; check-attr text: set; core.autocrlf=true
+     after the hook: the index unchanged
+case text-nul          answered refused (exit 1)  truth 91e62d6  INCONCLUSIVE (a control failed; alone: ok (refused))
+     fixture: FILE=forcednul.txt holds b'a\r\nb\x00\r\n'; git add stored b'a\nb\x00\n' (converted); ls-files --eol: i/-text w/-text attr/text; check-attr text: set; core.autocrlf=true
+     after the hook: the index unchanged
+case tracked-crlf      answered refused (exit 1)  truth b5eff57  INCONCLUSIVE (a control failed; alone: ok (refused))
+     fixture: FILE=tracked.txt holds b'a\r\nb\r\nc\r\n'; git add stored b'a\r\nb\r\nc\r\n' (unconverted); ls-files --eol: i/crlf w/crlf attr/; check-attr text: unspecified; core.autocrlf=true; before the add, HEAD's copy b'a\r\nb\r\n' and the index copy b'a\r\nb\r\n'
+     after the hook: the index unchanged
+case staged-crlf       answered refused (exit 1)  truth b5eff57  INCONCLUSIVE (a control failed; alone: ok (refused))
+     fixture: FILE=staged.txt holds b'a\r\nb\r\nc\r\n'; git add stored b'a\r\nb\r\nc\r\n' (unconverted); ls-files --eol: i/crlf w/crlf attr/; check-attr text: unspecified; core.autocrlf=true; before the add, HEAD's copy None and the index copy b'a\r\nb\r\n'
+     after the hook: the index unchanged
+case restaged-lf       answered refused (exit 1)  truth de98044  INCONCLUSIVE (a control failed; alone: ok (refused))
+     fixture: FILE=restaged.txt holds b'a\r\nb\r\nc\r\n'; git add stored b'a\nb\nc\n' (converted); ls-files --eol: i/lf w/crlf attr/; check-attr text: unspecified; core.autocrlf=true; before the add, HEAD's copy b'a\r\nb\r\n' and the index copy b'a\nb\n'
+     after the hook: the index unchanged
+case text-staged-crlf  answered refused (exit 1)  truth de98044  INCONCLUSIVE (a control failed; alone: ok (refused))
+     fixture: FILE=textstaged.txt holds b'a\r\nb\r\nc\r\n'; git add stored b'a\nb\nc\n' (converted); ls-files --eol: i/lf w/crlf attr/text; check-attr text: set; core.autocrlf=true; before the add, HEAD's copy None and the index copy b'a\r\nb\r\n'
+     after the hook: the index unchanged
+INCONCLUSIVE: control plain not answered correctly, so no answer is a verdict
+(exit 3)
+
+$ python gitread_trap.py pathspec
+gitread_trap pathspec | git version 2.55.0.windows.5
+hook: LAST_CHANGE unset -> built-in trapped reader: git -C REPO log -1 --format=%H -- TARGET
+fixture: c1 adds review/x.md and sub/keep.txt; c2 adds sub/review/x.md (shadowed) or changes sub/keep.txt (lonely); c3 changes review/x.md; c4 adds review/other.md and later commits change sub/keep.txt, 2, 1 and 3 commits after c3; TARGET=review/x.md; root uses the shadowed layout
+case root (control; REPO = root)  answered c3 e54555e  truth c3 e54555e  ok
+case shadowed (REPO = sub)        answered c2 b71dd1b  truth c3 e54555e  RED
+     fixture: REPO's --show-prefix = 'sub/'; HEAD:review/x.md exists; commits that changed sub/review/x.md: c2 b71dd1b
+     from sub: `git show HEAD:review/x.md` prints b'root v2\n' (the root review/x.md); `git show HEAD:./review/x.md` prints b'sub v1\n' (sub/review/x.md)
+case lonely (REPO = sub)          answered (nothing)   truth c3 eb3496a  RED
+     fixture: REPO's --show-prefix = 'sub/'; HEAD:review/x.md exists; commits that changed sub/review/x.md: none
+RED: 2 of 2 trap cases answered falsely: shadowed, lonely
+(exit 1)
+
+$ LAST_CHANGE="python good_readers.py last-change" python gitread_trap.py pathspec
+gitread_trap pathspec | git version 2.55.0.windows.5
+hook: LAST_CHANGE=python good_readers.py last-change
+fixture: c1 adds review/x.md and sub/keep.txt; c2 adds sub/review/x.md (shadowed) or changes sub/keep.txt (lonely); c3 changes review/x.md; c4 adds review/other.md and later commits change sub/keep.txt, 2, 1 and 3 commits after c3; TARGET=review/x.md; root uses the shadowed layout
+case root (control; REPO = root)  answered c3 e54555e  truth c3 e54555e  ok
+case shadowed (REPO = sub)        answered c3 e54555e  truth c3 e54555e  ok
+     fixture: REPO's --show-prefix = 'sub/'; HEAD:review/x.md exists; commits that changed sub/review/x.md: c2 b71dd1b
+     from sub: `git show HEAD:review/x.md` prints b'root v2\n' (the root review/x.md); `git show HEAD:./review/x.md` prints b'sub v1\n' (sub/review/x.md)
+case lonely (REPO = sub)          answered c3 eb3496a  truth c3 eb3496a  ok
+     fixture: REPO's --show-prefix = 'sub/'; HEAD:review/x.md exists; commits that changed sub/review/x.md: none
+GREEN: all 3 cases answered truly or refused
+(exit 0)
+
+$ python gitread_trap.py mergefile
+gitread_trap mergefile | git version 2.55.0.windows.5
+fixture: master = 7d4d0b2, topic = c69923a (one commit ahead); every command below runs at the repository root with stdin b'message from stdin\n'
+(a) no file named '-' in the working directory: git merge --no-ff -F - topic
+    exit 129; stdout b''; stderr b"error: could not read file '-'\n"
+    new commit: none (HEAD is still master)
+(b) after a reset, a file named '-' holding b'message from a file named -\n': git merge --no-ff -F - topic
+    exit 0; stdout b"Merge made by the 'ort' strategy.\n t.txt | 1 +\n 1 file changed, 1 insertion(+)\n create mode 100644 t.txt\n"; stderr b''
+    new commit: yes, 2 parent(s), message b'message from a file named -\n'
+(c) after a reset, that file still there: git commit --allow-empty -F -
+    exit 0; stdout b'[master 9aa0c52] message from stdin\n'; stderr b''
+    new commit: yes, 1 parent(s), message b'message from stdin\n'
+DEMONSTRATED: merge -F - with no file '-' exited 129 and made no commit; with the file it took the file named '-'; commit -F - with the file there took stdin
+(exit 0)
+```
+
+### Runs: draft_trap.py (T6)
+
+```
+$ python draft_trap.py
+draft_trap: checker = built-in TRAPPED (DRAFT_CHECK unset)
+draft_trap: truths cross-checked with markdown-it-py 4.2.0, MarkdownIt("commonmark"), a sentinel after each part
+control-plain-safe            exit 0   safe   ok            no fence and no HTML block, so nothing can be left open
+control-open-fence            exit 10  unsafe ok            CM 4.5: a fence with no closing fence runs to the end of the document
+open-backtick-fence           exit 10  unsafe ok            CM 4.5: no closing fence, so the code block runs to the end of the document
+open-tilde-fence              exit 10  unsafe ok            CM 4.5: no closing fence, so the code block runs to the end of the document
+fence-closed-by-shorter-run   exit 0   unsafe RED           CM 4.5: a closing fence needs at least as many backticks as its opener (3 < 4)
+fence-closed-by-other-char    exit 0   unsafe RED           CM 4.5: a closing fence must use the opener's character; tildes cannot close backticks
+fence-closed-by-run-and-text  exit 0   unsafe RED           CM 4.5: only spaces or tabs may follow a closing fence, so that line is code
+closing-fence-indented-4      exit 10  unsafe ok            CM 4.5: a closing fence is indented at most 3 spaces; indented 4 the line is code
+closing-fence-indented-tab    exit 10  unsafe ok            CM 4.5, 2.2: a tab indents to column 4, so the line is code and the fence stays open
+fence-opened-2-spaces-in      exit 0   unsafe RED           CM 4.5: a fence may open 0-3 spaces in; this one never closes
+fence-closed-by-run-and-form-feed exit 0   unsafe RED           CM 4.5: only spaces or tabs may follow a closing fence; with a form feed the line is code
+fence-run-inside-pre          exit 0   unsafe RED           CM 4.6, 4.5: inside the pre block the run is text; after </pre> the next run opens a fence, never closed
+bare-pre-at-line-end          exit 0   unsafe RED           CM 4.6 type 1: <pre followed by the end of the line starts the block, which never ends
+pre-unclosed-blank-lines      exit 0   unsafe RED           CM 4.6 type 1: runs past blank lines to a line holding </pre>, </script>, </style> or </textarea>
+PRE-uppercase-unclosed        exit 0   unsafe RED           CM 4.6 type 1: the start condition is case-insensitive
+script-unclosed               exit 0   unsafe RED           CM 4.6 type 1: runs past blank lines and no end tag ever comes
+style-unclosed                exit 0   unsafe RED           CM 4.6 type 1: runs past blank lines and no end tag ever comes
+textarea-unclosed             exit 0   unsafe RED           CM 4.6 type 1: runs past blank lines and no end tag ever comes
+comment-unclosed              exit 0   unsafe RED           CM 4.6 type 2: runs past blank lines to a line holding -->
+php-unclosed                  exit 0   unsafe RED           CM 4.6 type 3: runs past blank lines to a line holding ?>
+doctype-without-gt            exit 0   unsafe RED           CM 4.6 type 4: <! plus a letter runs past blank lines to a line holding >
+cdata-unclosed                exit 0   unsafe RED           CM 4.6 type 5: runs past blank lines to a line holding ]]>
+fence-phase-backtick-info     exit 0   unsafe RED           CM 4.5: a backtick info string cannot hold a backtick, so line 1 is text and line 3 opens a fence
+pre-indented-3-spaces         exit 0   unsafe RED           CM 4.6: start conditions count after 0-3 spaces of indentation
+open-fence-after-heading      exit 10  unsafe ok            CM 4.5: the part from the heading is appended too, and its fence never closes
+fence-across-the-heading      exit 0   unsafe RED           CM 4.5: one document balances it, but each part is appended on its own and each leaves a fence open
+two-adjacent-headings         exit 0   unsafe RED           adjacent heading lines share one LF; heading lines 2; LF+heading+LF found by bytes.count 1, str.count 1, re.findall 1; renderer check does not apply
+heading-on-line-1-and-later   exit 0   unsafe RED           no LF comes before a heading on line 1; heading lines 2; LF+heading+LF found by bytes.count 1, str.count 1, re.findall 1; renderer check does not apply
+no-heading                    exit 10  unsafe ok            no line to split at; heading lines 0; LF+heading+LF found by bytes.count 0, str.count 0, re.findall 0; renderer check does not apply
+heading-line-inside-a-fence   exit 10  unsafe ok            a heading line counts wherever it sits, fence or not: a split would cut at the first; heading lines 2; LF+heading+LF found by bytes.count 2, str.count 2, re.findall 2; renderer check does not apply
+closed-backtick-fence         exit 0   safe   ok            CM 4.5: a closing fence of the same character, at least as long, ends the block
+closed-tilde-fence            exit 0   safe   ok            CM 4.5: a closing fence of the same character, at least as long, ends the block
+fence-closed-by-longer-run    exit 0   safe   ok            CM 4.5: a closing fence may be longer than its opener
+opener-indented-4-after-blank exit 0   safe   ok            CM 4.4: 4 spaces after a blank line make indented code, so no fence opens
+fence-closed-3-spaces-in      exit 10  safe   FALSE REFUSAL CM 4.5: a closing fence may be indented up to 3 spaces
+comment-start-inside-fence    exit 0   safe   ok            CM 4.5: inside a fence a comment start is code, and the fence closes
+PRE-closed-by-upper-end-tag   exit 0   safe   ok            CM 4.6 type 1: the end condition is case-insensitive too
+pre-closed-mid-line           exit 0   safe   ok            CM 4.6 type 1: the block ends with the line holding the end tag, wherever the tag sits in it
+lone-backtick-info-line       exit 10  safe   FALSE REFUSAL CM 4.5: a backtick info string cannot hold a backtick, so this line is a paragraph, not a fence
+tilde-fence-backtick-info     exit 0   safe   ok            CM 4.5: a tilde fence's info string may hold backticks, and this fence closes
+pre-ended-by-script-tag       exit 0   safe   ok            CM 4.6 type 1: any of the four end tags ends it; the end tag need not match the start
+one-line-comment              exit 0   safe   ok            CM 4.6 type 2: the end condition met on the start line ends the block on that line
+comment-closed-mid-line       exit 0   safe   ok            CM 4.6 type 2: the block ends with the line holding -->, wherever --> sits in it
+pre-indented-4-after-blank    exit 0   safe   ok            CM 4.4, 4.6: 4 spaces after a blank line make indented code, not an HTML block
+div-type-6-blank-line         exit 0   safe   ok            CM 4.6 type 6: ends at the first blank line, end tag or not
+inline-pre-mid-sentence       exit 0   safe   ok            CM 4.6: a start condition must begin the line; mid-sentence <pre> is inline raw HTML
+SUMMARY RED: 21 ok, 21 RED (unsafe accepted), 2 FALSE REFUSAL (safe refused, fails the run like RED), 0 INCONCLUSIVE, of 44 cases; exit 1
+(exit 1)
+
+$ DRAFT_CHECK="python good_check.py tracker" python draft_trap.py
+draft_trap: checker = DRAFT_CHECK hook: python good_check.py tracker
+draft_trap: truths cross-checked with markdown-it-py 4.2.0, MarkdownIt("commonmark"), a sentinel after each part
+control-plain-safe            exit 0   safe   ok            no fence and no HTML block, so nothing can be left open
+control-open-fence            exit 10  unsafe ok            CM 4.5: a fence with no closing fence runs to the end of the document
+open-backtick-fence           exit 10  unsafe ok            CM 4.5: no closing fence, so the code block runs to the end of the document
+open-tilde-fence              exit 10  unsafe ok            CM 4.5: no closing fence, so the code block runs to the end of the document
+fence-closed-by-shorter-run   exit 10  unsafe ok            CM 4.5: a closing fence needs at least as many backticks as its opener (3 < 4)
+fence-closed-by-other-char    exit 10  unsafe ok            CM 4.5: a closing fence must use the opener's character; tildes cannot close backticks
+fence-closed-by-run-and-text  exit 10  unsafe ok            CM 4.5: only spaces or tabs may follow a closing fence, so that line is code
+closing-fence-indented-4      exit 10  unsafe ok            CM 4.5: a closing fence is indented at most 3 spaces; indented 4 the line is code
+closing-fence-indented-tab    exit 10  unsafe ok            CM 4.5, 2.2: a tab indents to column 4, so the line is code and the fence stays open
+fence-opened-2-spaces-in      exit 10  unsafe ok            CM 4.5: a fence may open 0-3 spaces in; this one never closes
+fence-closed-by-run-and-form-feed exit 10  unsafe ok            CM 4.5: only spaces or tabs may follow a closing fence; with a form feed the line is code
+fence-run-inside-pre          exit 10  unsafe ok            CM 4.6, 4.5: inside the pre block the run is text; after </pre> the next run opens a fence, never closed
+bare-pre-at-line-end          exit 10  unsafe ok            CM 4.6 type 1: <pre followed by the end of the line starts the block, which never ends
+pre-unclosed-blank-lines      exit 10  unsafe ok            CM 4.6 type 1: runs past blank lines to a line holding </pre>, </script>, </style> or </textarea>
+PRE-uppercase-unclosed        exit 10  unsafe ok            CM 4.6 type 1: the start condition is case-insensitive
+script-unclosed               exit 10  unsafe ok            CM 4.6 type 1: runs past blank lines and no end tag ever comes
+style-unclosed                exit 10  unsafe ok            CM 4.6 type 1: runs past blank lines and no end tag ever comes
+textarea-unclosed             exit 10  unsafe ok            CM 4.6 type 1: runs past blank lines and no end tag ever comes
+comment-unclosed              exit 10  unsafe ok            CM 4.6 type 2: runs past blank lines to a line holding -->
+php-unclosed                  exit 10  unsafe ok            CM 4.6 type 3: runs past blank lines to a line holding ?>
+doctype-without-gt            exit 10  unsafe ok            CM 4.6 type 4: <! plus a letter runs past blank lines to a line holding >
+cdata-unclosed                exit 10  unsafe ok            CM 4.6 type 5: runs past blank lines to a line holding ]]>
+fence-phase-backtick-info     exit 10  unsafe ok            CM 4.5: a backtick info string cannot hold a backtick, so line 1 is text and line 3 opens a fence
+pre-indented-3-spaces         exit 10  unsafe ok            CM 4.6: start conditions count after 0-3 spaces of indentation
+open-fence-after-heading      exit 10  unsafe ok            CM 4.5: the part from the heading is appended too, and its fence never closes
+fence-across-the-heading      exit 10  unsafe ok            CM 4.5: one document balances it, but each part is appended on its own and each leaves a fence open
+two-adjacent-headings         exit 10  unsafe ok            adjacent heading lines share one LF; heading lines 2; LF+heading+LF found by bytes.count 1, str.count 1, re.findall 1; renderer check does not apply
+heading-on-line-1-and-later   exit 10  unsafe ok            no LF comes before a heading on line 1; heading lines 2; LF+heading+LF found by bytes.count 1, str.count 1, re.findall 1; renderer check does not apply
+no-heading                    exit 10  unsafe ok            no line to split at; heading lines 0; LF+heading+LF found by bytes.count 0, str.count 0, re.findall 0; renderer check does not apply
+heading-line-inside-a-fence   exit 10  unsafe ok            a heading line counts wherever it sits, fence or not: a split would cut at the first; heading lines 2; LF+heading+LF found by bytes.count 2, str.count 2, re.findall 2; renderer check does not apply
+closed-backtick-fence         exit 0   safe   ok            CM 4.5: a closing fence of the same character, at least as long, ends the block
+closed-tilde-fence            exit 0   safe   ok            CM 4.5: a closing fence of the same character, at least as long, ends the block
+fence-closed-by-longer-run    exit 0   safe   ok            CM 4.5: a closing fence may be longer than its opener
+opener-indented-4-after-blank exit 0   safe   ok            CM 4.4: 4 spaces after a blank line make indented code, so no fence opens
+fence-closed-3-spaces-in      exit 0   safe   ok            CM 4.5: a closing fence may be indented up to 3 spaces
+comment-start-inside-fence    exit 0   safe   ok            CM 4.5: inside a fence a comment start is code, and the fence closes
+PRE-closed-by-upper-end-tag   exit 0   safe   ok            CM 4.6 type 1: the end condition is case-insensitive too
+pre-closed-mid-line           exit 0   safe   ok            CM 4.6 type 1: the block ends with the line holding the end tag, wherever the tag sits in it
+lone-backtick-info-line       exit 0   safe   ok            CM 4.5: a backtick info string cannot hold a backtick, so this line is a paragraph, not a fence
+tilde-fence-backtick-info     exit 0   safe   ok            CM 4.5: a tilde fence's info string may hold backticks, and this fence closes
+pre-ended-by-script-tag       exit 0   safe   ok            CM 4.6 type 1: any of the four end tags ends it; the end tag need not match the start
+one-line-comment              exit 0   safe   ok            CM 4.6 type 2: the end condition met on the start line ends the block on that line
+comment-closed-mid-line       exit 0   safe   ok            CM 4.6 type 2: the block ends with the line holding -->, wherever --> sits in it
+pre-indented-4-after-blank    exit 0   safe   ok            CM 4.4, 4.6: 4 spaces after a blank line make indented code, not an HTML block
+div-type-6-blank-line         exit 0   safe   ok            CM 4.6 type 6: ends at the first blank line, end tag or not
+inline-pre-mid-sentence       exit 0   safe   ok            CM 4.6: a start condition must begin the line; mid-sentence <pre> is inline raw HTML
+SUMMARY GREEN: 44 ok, 0 RED (unsafe accepted), 0 FALSE REFUSAL (safe refused, fails the run like RED), 0 INCONCLUSIVE, of 44 cases; exit 0
+(exit 0)
+
+$ DRAFT_CHECK="python good_check.py render" python draft_trap.py
+draft_trap: checker = DRAFT_CHECK hook: python good_check.py render
+draft_trap: truths cross-checked with markdown-it-py 4.2.0, MarkdownIt("commonmark"), a sentinel after each part
+control-plain-safe            exit 0   safe   ok            no fence and no HTML block, so nothing can be left open
+control-open-fence            exit 10  unsafe ok            CM 4.5: a fence with no closing fence runs to the end of the document
+open-backtick-fence           exit 10  unsafe ok            CM 4.5: no closing fence, so the code block runs to the end of the document
+open-tilde-fence              exit 10  unsafe ok            CM 4.5: no closing fence, so the code block runs to the end of the document
+fence-closed-by-shorter-run   exit 10  unsafe ok            CM 4.5: a closing fence needs at least as many backticks as its opener (3 < 4)
+fence-closed-by-other-char    exit 10  unsafe ok            CM 4.5: a closing fence must use the opener's character; tildes cannot close backticks
+fence-closed-by-run-and-text  exit 10  unsafe ok            CM 4.5: only spaces or tabs may follow a closing fence, so that line is code
+closing-fence-indented-4      exit 10  unsafe ok            CM 4.5: a closing fence is indented at most 3 spaces; indented 4 the line is code
+closing-fence-indented-tab    exit 10  unsafe ok            CM 4.5, 2.2: a tab indents to column 4, so the line is code and the fence stays open
+fence-opened-2-spaces-in      exit 10  unsafe ok            CM 4.5: a fence may open 0-3 spaces in; this one never closes
+fence-closed-by-run-and-form-feed exit 10  unsafe ok            CM 4.5: only spaces or tabs may follow a closing fence; with a form feed the line is code
+fence-run-inside-pre          exit 10  unsafe ok            CM 4.6, 4.5: inside the pre block the run is text; after </pre> the next run opens a fence, never closed
+bare-pre-at-line-end          exit 10  unsafe ok            CM 4.6 type 1: <pre followed by the end of the line starts the block, which never ends
+pre-unclosed-blank-lines      exit 10  unsafe ok            CM 4.6 type 1: runs past blank lines to a line holding </pre>, </script>, </style> or </textarea>
+PRE-uppercase-unclosed        exit 10  unsafe ok            CM 4.6 type 1: the start condition is case-insensitive
+script-unclosed               exit 10  unsafe ok            CM 4.6 type 1: runs past blank lines and no end tag ever comes
+style-unclosed                exit 10  unsafe ok            CM 4.6 type 1: runs past blank lines and no end tag ever comes
+textarea-unclosed             exit 10  unsafe ok            CM 4.6 type 1: runs past blank lines and no end tag ever comes
+comment-unclosed              exit 10  unsafe ok            CM 4.6 type 2: runs past blank lines to a line holding -->
+php-unclosed                  exit 10  unsafe ok            CM 4.6 type 3: runs past blank lines to a line holding ?>
+doctype-without-gt            exit 10  unsafe ok            CM 4.6 type 4: <! plus a letter runs past blank lines to a line holding >
+cdata-unclosed                exit 10  unsafe ok            CM 4.6 type 5: runs past blank lines to a line holding ]]>
+fence-phase-backtick-info     exit 10  unsafe ok            CM 4.5: a backtick info string cannot hold a backtick, so line 1 is text and line 3 opens a fence
+pre-indented-3-spaces         exit 10  unsafe ok            CM 4.6: start conditions count after 0-3 spaces of indentation
+open-fence-after-heading      exit 10  unsafe ok            CM 4.5: the part from the heading is appended too, and its fence never closes
+fence-across-the-heading      exit 10  unsafe ok            CM 4.5: one document balances it, but each part is appended on its own and each leaves a fence open
+two-adjacent-headings         exit 10  unsafe ok            adjacent heading lines share one LF; heading lines 2; LF+heading+LF found by bytes.count 1, str.count 1, re.findall 1; renderer check does not apply
+heading-on-line-1-and-later   exit 10  unsafe ok            no LF comes before a heading on line 1; heading lines 2; LF+heading+LF found by bytes.count 1, str.count 1, re.findall 1; renderer check does not apply
+no-heading                    exit 10  unsafe ok            no line to split at; heading lines 0; LF+heading+LF found by bytes.count 0, str.count 0, re.findall 0; renderer check does not apply
+heading-line-inside-a-fence   exit 10  unsafe ok            a heading line counts wherever it sits, fence or not: a split would cut at the first; heading lines 2; LF+heading+LF found by bytes.count 2, str.count 2, re.findall 2; renderer check does not apply
+closed-backtick-fence         exit 0   safe   ok            CM 4.5: a closing fence of the same character, at least as long, ends the block
+closed-tilde-fence            exit 0   safe   ok            CM 4.5: a closing fence of the same character, at least as long, ends the block
+fence-closed-by-longer-run    exit 0   safe   ok            CM 4.5: a closing fence may be longer than its opener
+opener-indented-4-after-blank exit 0   safe   ok            CM 4.4: 4 spaces after a blank line make indented code, so no fence opens
+fence-closed-3-spaces-in      exit 0   safe   ok            CM 4.5: a closing fence may be indented up to 3 spaces
+comment-start-inside-fence    exit 0   safe   ok            CM 4.5: inside a fence a comment start is code, and the fence closes
+PRE-closed-by-upper-end-tag   exit 0   safe   ok            CM 4.6 type 1: the end condition is case-insensitive too
+pre-closed-mid-line           exit 0   safe   ok            CM 4.6 type 1: the block ends with the line holding the end tag, wherever the tag sits in it
+lone-backtick-info-line       exit 0   safe   ok            CM 4.5: a backtick info string cannot hold a backtick, so this line is a paragraph, not a fence
+tilde-fence-backtick-info     exit 0   safe   ok            CM 4.5: a tilde fence's info string may hold backticks, and this fence closes
+pre-ended-by-script-tag       exit 0   safe   ok            CM 4.6 type 1: any of the four end tags ends it; the end tag need not match the start
+one-line-comment              exit 0   safe   ok            CM 4.6 type 2: the end condition met on the start line ends the block on that line
+comment-closed-mid-line       exit 0   safe   ok            CM 4.6 type 2: the block ends with the line holding -->, wherever --> sits in it
+pre-indented-4-after-blank    exit 0   safe   ok            CM 4.4, 4.6: 4 spaces after a blank line make indented code, not an HTML block
+div-type-6-blank-line         exit 0   safe   ok            CM 4.6 type 6: ends at the first blank line, end tag or not
+inline-pre-mid-sentence       exit 0   safe   ok            CM 4.6: a start condition must begin the line; mid-sentence <pre> is inline raw HTML
+SUMMARY GREEN: 44 ok, 0 RED (unsafe accepted), 0 FALSE REFUSAL (safe refused, fails the run like RED), 0 INCONCLUSIVE, of 44 cases; exit 0
+(exit 0)
+
+$ DRAFT_CHECK="exit 0" python draft_trap.py
+draft_trap: checker = DRAFT_CHECK hook: exit 0
+draft_trap: truths cross-checked with markdown-it-py 4.2.0, MarkdownIt("commonmark"), a sentinel after each part
+control-plain-safe            exit 0   safe   ok            no fence and no HTML block, so nothing can be left open
+control-open-fence            exit 0   unsafe CONTROL FAILED it accepted this draft | CM 4.5: a fence with no closing fence runs to the end of the document
+SUMMARY INCONCLUSIVE: the checker failed 1 of 2 controls, so it judges nothing; 44 cases not run; exit 3
+(exit 3)
+
+$ DRAFT_CHECK="exit 10" python draft_trap.py
+draft_trap: checker = DRAFT_CHECK hook: exit 10
+draft_trap: truths cross-checked with markdown-it-py 4.2.0, MarkdownIt("commonmark"), a sentinel after each part
+control-plain-safe            exit 10  safe   CONTROL FAILED it refused this draft | no fence and no HTML block, so nothing can be left open
+control-open-fence            exit 10  unsafe ok            CM 4.5: a fence with no closing fence runs to the end of the document
+SUMMARY INCONCLUSIVE: the checker failed 1 of 2 controls, so it judges nothing; 44 cases not run; exit 3
+(exit 3)
+```
+
+### Runs: append_rollback.py (T7)
+
+```
+$ python append_rollback.py
+Python 3.14.4; the addition is 36 bytes; issubclass(KeyboardInterrupt, Exception) = False
+recorded/caught       fault            escaped            file A     file B     both or neither
+after/OSError         none (control)   nothing            +36 bytes  +36 bytes  both
+after/OSError         OSError on B     OSError            intact     intact     neither
+after/OSError         Ctrl-C on B      KeyboardInterrupt  +36 bytes  intact     BROKEN
+after/OSError         half A, OSError  OSError            +18 bytes  intact     BROKEN
+after/OSError         half A, Ctrl-C   KeyboardInterrupt  +18 bytes  intact     BROKEN
+after/BaseException   none (control)   nothing            +36 bytes  +36 bytes  both
+after/BaseException   OSError on B     OSError            intact     intact     neither
+after/BaseException   Ctrl-C on B      KeyboardInterrupt  intact     intact     neither
+after/BaseException   half A, OSError  OSError            +18 bytes  intact     BROKEN
+after/BaseException   half A, Ctrl-C   KeyboardInterrupt  +18 bytes  intact     BROKEN
+before/Exception      none (control)   nothing            +36 bytes  +36 bytes  both
+before/Exception      OSError on B     OSError            intact     intact     neither
+before/Exception      Ctrl-C on B      KeyboardInterrupt  +36 bytes  intact     BROKEN
+before/Exception      half A, OSError  OSError            intact     intact     neither
+before/Exception      half A, Ctrl-C   KeyboardInterrupt  +18 bytes  intact     BROKEN
+before/BaseException  none (control)   nothing            +36 bytes  +36 bytes  both
+before/BaseException  OSError on B     OSError            intact     intact     neither
+before/BaseException  Ctrl-C on B      KeyboardInterrupt  intact     intact     neither
+before/BaseException  half A, OSError  OSError            intact     intact     neither
+before/BaseException  half A, Ctrl-C   KeyboardInterrupt  intact     intact     neither
+after/OSError: 3 of 4 faults left one file changed and the other not: Ctrl-C on B; half A, OSError; half A, Ctrl-C
+after/BaseException: 2 of 4 faults left one file changed and the other not: half A, OSError; half A, Ctrl-C
+before/Exception: 2 of 4 faults left one file changed and the other not: Ctrl-C on B; half A, Ctrl-C
+before/BaseException: 0 of 4 faults left one file changed and the other not
+(exit 0)
+```
+
+### Runs: logerror.proj (T8)
+
+```
+$ dotnet --version
+9.0.312
+(exit 0)
+
+$ dotnet msbuild -version -nologo
+17.14.43.7001
+(exit 0)
+
+$ dotnet msbuild logerror.proj -t:BodyA -nologo -nodeReuse:false -v:m
+<dir>\logerror.proj(34,5): error : DEMO001: refused
+  BODY A RAN
+(exit 0)
+
+$ test -e bodyA.ran && echo "bodyA.ran exists" || echo "bodyA.ran absent"
+bodyA.ran exists
+(exit 0)
+
+$ rm -f bodyA.ran
+(exit 0)
+
+$ dotnet msbuild logerror.proj -t:BodyA -nologo -nodeReuse:false -v:m -clp:Summary
+<dir>\logerror.proj(34,5): error : DEMO001: refused
+  BODY A RAN
+
+Build succeeded.
+
+<dir>\logerror.proj(34,5): error : DEMO001: refused
+    0 Warning(s)
+    1 Error(s)
+
+Time Elapsed 00:00:01.09
+(exit 0)
+
+$ test -e bodyA.ran && echo "bodyA.ran exists" || echo "bodyA.ran absent"
+bodyA.ran exists
+(exit 0)
+
+$ dotnet msbuild logerror.proj -t:BodyB -nologo -nodeReuse:false -v:m
+<dir>\logerror.proj(45,5): error : DEMO002: refused
+(exit 1)
+
+$ test -e bodyB.ran && echo "bodyB.ran exists" || echo "bodyB.ran absent"
+bodyB.ran absent
+(exit 0)
+
+$ dotnet msbuild logerror.proj -t:BodyC -nologo -nodeReuse:false -v:m
+<dir>\logerror.proj(53,5): error : DEMO003: refused
+(exit 1)
+
+$ test -e bodyC.ran && echo "bodyC.ran exists" || echo "bodyC.ran absent"
+bodyC.ran absent
+(exit 0)
+
+$ ls -A
+bodyA.ran
+logerror.proj
+(exit 0)
+```

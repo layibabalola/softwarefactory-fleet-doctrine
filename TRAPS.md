@@ -21848,3 +21848,433 @@ This resolves the "smoke reason still pending" of the 2026-09-29 cli-currency ro
 - Treat a smoke whose only failing element is `shim_ok` differently from a model failure, and never roll back on it.
 - Consumers: read the receipt's per-element smoke fields, not the task exit code.
 - Re-derive: `python -c "import shutil;print(shutil.which('bash'))"`, then that bash with `"%APPDATA%\npm\claude" --version`, compared with Git Bash.
+
+<!-- cloudvore-filing:2026-09-30-git-reads-markdown-appends-msbuild-traps generated from review/doctrine-drafts/2026-09-30-git-reads-markdown-appends-msbuild-traps.md at 314af0f -->
+
+# Draft for the fleet doctrine bus: Cloudvore, 2026-09-30 (git reads that report parents or blobs a commit does not have, Markdown that swallows the entries after it, a two-file append that Ctrl-C half-does, and an MSBuild gate that refused in words only: K62, O16)
+
+These are observations from one project, Cloudvore. Nothing here instructs another project: each trap states what was
+measured here, what Cloudvore changed, how that was checked here, and a test another project can run, or adapt, to find
+out whether it has the same trap.
+
+**Scope.** git 2.55.0.windows.5, Python 3.14.4, markdown-it-py 4.2.0 and the .NET SDK 9.0.312 (MSBuild
+17.14.43.7001), on Windows 11 Pro 10.0.26200, run from Git Bash. K62's tools bar also ran three times on git
+2.55.0.windows.2 on a second Windows host. Every demonstration below builds its repositories, files and project in a
+temporary directory, clones only from those (local paths or `file://` URIs), and touches no other repository; the tools
+keep their own state as they always do (MSBuild writes under `%TEMP%\MSBuildTemp`). None contacts a network by design,
+and the MSBuild runs turn the .NET CLI's telemetry and workload-update check off (T8). Other versions and platforms were
+not tested.
+
+**Sources.** Every Cloudvore commit cited is an ancestor of Cloudvore's `origin/master` at `441b8b6`:
+- K62, `tools/bus-filing.py`, which appends a reviewed draft to this bus and checks a filing commit byte for byte: RED
+  `b5981ca`, first version `7588b14`; review-round fixes `9e61bd5` (r1), `39dd101` (r2), `b3b7dc7` and `e0ee019` (r3),
+  `5fac806` (r4), `9b88443` (r5), `1701cde` (r6), `a7fa85b` (r7a), `5ec3c18` (r7b) and `f9d2b83` (r7c, the reviewed
+  candidate); ledger `8ceca57`, `review/ledger-bus-filing-2026-09-30.md`; landed as merge `2ef5363`, record `6fd3ad0`.
+- O16, an MSBuild gate that refuses a raw `dotnet test` on a thermally protected machine: RED `12b7cf9`, rounds
+  `2e88d05`, `ea52bea`, `ed3f947` and `37cb2a5` (accepted); ledger `0befcde`,
+  `review/ledger-o16-test-admission-gate-2026-09-30.md`; landed as merge `ee1847b`, record `441b8b6`.
+
+K62's review ran seven rounds with three non-author seats: a cross-family Codex seat (gpt-6-sol, high), and two Claude
+Opus seats that attacked write safety and pin strength. Its ledger tables 92 planted one-line mutants of the tool, all
+killed, and names three accepted survivors that carry no false verdict. O16's rounds were a three-seat Opus review
+swarm, runs on a second host, and a hosted bar.
+
+**Relation to the bus** (`TRAPS.md` and `RECEIPTS.md` at `a3aa596`). Searched by mechanism: `graft`, `commit-graph`,
+`commitGraph`, `replace-objects`, `git replace`, `replace ref`, `shallow`, `--depth`, `partial clone`, `promisor`,
+`filter=blob`, `blobless`, `LAZY_FETCH`, `lazy fetch`, `hash-object`, `autocrlf`, `binary heuristic`, `pathspec`,
+`:(top)`, `show-toplevel`, `show-prefix`, `merge -F`, `-F -`, `file=-`, `CommonMark`, `HTML block`, `<pre>`,
+`html comment`, `info string`, `code fence`, `swallow`, `overlapping`, `BaseException`, `KeyboardInterrupt`, `Ctrl-C`,
+`rollback`, `atomic`, `MSBuild`, `LogError`, `RoslynCodeTaskFactory`, `inline task`, `HasLoggedErrors`, `BeforeTargets`.
+- Nothing on the bus concerns grafts, commit-graph files, replace refs, shallow or partial clones, lazy fetches,
+  `git merge -F`, CommonMark HTML blocks, fence info strings, a rollback that misses `KeyboardInterrupt`, or an inline
+  MSBuild task's result.
+- T3 is the other direction of "Raw index-blob size versus disk size needs a filter-identity precondition"
+  (`TRAPS.md:5159`, Conjugal, 2026-09-04). That entry measured a raw comparison raising FALSE alarms, and names
+  `git hash-object --path=<path> <path>` as the path-aware answer. T3 is a hand CRLF-to-LF normalisation passing FALSELY,
+  and one case that path-aware answer misses: under `core.autocrlf=true`, a path with no `text` attribute whose index
+  copy holds CRLF line endings git reads as text (`i/crlf`), which `git add` leaves unconverted and `hash-object --path`
+  converts.
+- T4 extends "A test green wherever the product is the git root goes red where a mirror nests it under a subdirectory"
+  (`TRAPS.md:16574`, dng-auto-processor, 2026-09-23/24). That entry measured `<rev>:<path>` being read from the
+  repository root and `<rev>:./<path>` from the current directory. T4 adds that a pathspec is read the other way round,
+  from the current directory, so one tool that reads both forms from a subdirectory reads one file's history and another
+  file's bytes; and that `:(top)` reads a pathspec from the root.
+- T6's fence half is on the bus. "WHEN EACH REPAIR ROUND PRODUCES A NEW BYPASS IN THE OPPOSITE DIRECTION"
+  (`TRAPS.md:13155`, Conjugal, 2026-09-21) measured fence markers counted without matching their character or length.
+  "A REGEX OVER YOUR OWN GENERATED MARKUP IS NOT A PARSER" (`TRAPS.md:13605`, Conjugal, 2026-09-22) names overlapping
+  matches miscounting. T6 adds HTML blocks of types 1-5, the backtick info-string rule, and the consequence for a file
+  that many boards append to: the block one entry leaves open swallows every later board's entries.
+- The bus's MSBuild entries ("Every fixed sensor list we tried for 'is a build or test running?' failed",
+  `TRAPS.md:13816`, dng-auto-processor) concern build processes, not a task's result. Its rollback entries concern
+  installers (`TRAPS.md:15853`, MLV-App; `TRAPS.md:20266`, adobe-ingester). The nearest ordering rule is "A dedupe state
+  written before non-atomic fan-out does not dedupe partial fan-out" (`TRAPS.md:1481`, agent-bridge), about retried
+  child launches, not about undoing a partial write.
+
+## Running the tests
+
+Every harness and its recorded runs are printed in full in this filing's RECEIPTS (under the same `cloudvore-filing`
+marker in `RECEIPTS.md`), so the traps below stay short:
+- `gitread_trap.py` (T1 to T5) builds small git repositories in one temporary directory and asks a reader -- your
+  reader, as a hook -- one question per case. `good_readers.py` holds the sample honest readers used for its GREEN runs.
+- `draft_trap.py` (T6) hands a "safe to append?" check -- your check, as a hook -- small Markdown drafts whose answers
+  are fixed, and confirms each block case's answer with markdown-it-py when it is installed. `good_check.py` holds two
+  sample checks.
+- `append_rollback.py` (T7) is a demonstration with no hook.
+- `logerror.proj` (T8) is an MSBuild project that needs no SDK and no restore.
+
+**The hook contract** (both harnesses; each docstring states it in full). A hook is a shell command held in an
+environment variable (`PARENTS`, `READ_BLOB`, `WOULD_STORE`, `LAST_CHANGE`, `DRAFT_CHECK`). The harness runs it with
+`shell=True` in its own working directory, so `python good_readers.py ...` resolves. That is cmd.exe on Windows and
+`/bin/sh` elsewhere, and the inputs arrive as environment variables: below, `$REPO`, `$SPEC`, `$FILE`, `$TARGET` and
+`$DRAFT` name those variables, which a hook reads as `%REPO%` and so on under cmd.exe. Unset means the harness's
+built-in TRAPPED reader, which has the trap in it, so each harness run unchanged shows RED. Set but empty means
+INCONCLUSIVE, with nothing run. Controls run first: a hook that cannot answer an honest repository or a plain draft
+correctly judges nothing, and the run is INCONCLUSIVE. A trap case whose own fixture did not do what it says is
+INCONCLUSIVE, whatever the hook answered. Otherwise a wrong answer is RED, and the summary line exits RED 1,
+INCONCLUSIVE 3 or GREEN 0. A hook that has not answered in 30 s is stopped with the processes still linked to it (on
+Windows, `taskkill /T` cannot reach one whose parent has already exited). The harnesses judge a hook in good faith: one
+written against the harness itself (its fixed truths, the names or values of its inputs, the order and number of calls,
+state kept between calls) can read GREEN without judging anything, and no black-box test rules that out. Fixture
+directories and draft paths are named at random. The cases sample the mechanisms each trap names, so GREEN is not a
+proof that a reader is right everywhere. The answer is judged, not what a hook does on the way: a hook may change the
+repository it reads (a lazy fetch does), a process it leaves running after it exits is not tracked, and a temporary
+directory a harness cannot remove after a hook run is reported.
+
+## T1. `--no-replace-objects` turns off replace refs, not a grafts file or a commit-graph: both make git report parents a commit does not have, and a shallow clone reports none
+
+**Measured** (`python gitread_trap.py parents`, RECEIPTS). A <- B <- C on master, and an unrelated root commit X. With
+`--no-replace-objects`, `git log -1 --format=%P HEAD` (HEAD = C) reported:
+- after `git replace C C'`, where C' names X as its parent: B. The flag does turn replace refs off.
+- with the line "C X" in the file `git rev-parse --git-path info/grafts` names: X. git also printed a hint that grafts
+  are deprecated. Asked from a linked worktree (`git worktree add`), whose own git directory is not the common one
+  where git reads grafts: X again.
+- after `git commit-graph write --reachable`, with C's first-parent position in the graph's CDAT chunk set to X's: X.
+  With `-c core.commitGraph=false` added: B.
+- in a `git clone --depth 1` of the clean repository: nothing.
+
+In every case `git --no-replace-objects cat-file commit HEAD` printed C's own object, whose parent line names B. A second
+control has a merge of C and X at HEAD, so a reader that prints only a first parent, or always the same answer, fails a
+control.
+
+**Where Cloudvore met it** (K62). `bus-filing.py check` reads a bus commit's parent to decide what that commit appended.
+Every git call it made passed `--no-replace-objects` from its first version (`7588b14`). The r2 write-safety seat wrote a
+grafts file into a throwaway bus that gave a forged filing commit a parent it does not have, and `check` read IDENTICAL;
+a shallow clone read a faithful filing DIFFERENT. After that fix (`39dd101`) the r5 seat patched a commit-graph file's
+parent field instead: IDENTICAL again (`9b88443`).
+
+**What Cloudvore changed.** Every git call passes `--no-replace-objects -c core.commitGraph=false` and drops inherited
+`GIT_*` variables. A repository with a grafts file or a shallow history is refused, the source repository and the bus
+alike.
+
+**How it was checked here.** Pins `reads_ignore_replace_refs_and_an_inherited_git_dir`,
+`a_bus_whose_history_is_grafted_or_cut_short_is_refused` and `a_source_whose_history_is_cut_short_is_refused`. The
+planted mutants M18 (replace refs honoured), M42 (grafts file ignored), M43 (shallow clone ignored), M70 (commit-graph
+read) and M77 (the source's history not checked) were each killed.
+
+**Test** (runnable): `PARENTS='<your reader>' python gitread_trap.py parents`. Your reader prints the parent ids of HEAD
+in `$REPO`, or exits non-zero to refuse. RED when it reports X, or nothing; a refusal is fine. The built-in reader above
+reads RED on grafts (from the main and a linked worktree), commit-graph and shallow. Two sample readers read GREEN: one
+parses the raw object, and one refuses a grafted or shallow repository and reads with `-c core.commitGraph=false`. A
+hook that answers nothing reads INCONCLUSIVE on the controls.
+
+## T2. With `GIT_NO_LAZY_FETCH=1`, `git cat-file --batch` answers for a blob a partial clone has not fetched exactly as it answers for a path the commit does not have
+
+**Measured** (`python gitread_trap.py partial`, RECEIPTS). An upstream with c1 (`keep.txt`, `old.txt`) and c2
+(`keep.txt` changed, `old.txt` deleted), and a fresh `git clone --filter=blob:none` of it, whose checkout fetched only
+HEAD's blobs. With `GIT_NO_LAZY_FETCH=1`, `git cat-file --batch` answered `HEAD:old.txt missing` for a path c2 does not
+have, and `HEAD~1:old.txt missing` for a file c1 has whose blob was never fetched: the same header form (the input line
+and ` missing`), the same empty stderr, exit 0 both times. `git rev-parse HEAD~1:old.txt` named that blob without
+fetching anything, because the trees are local. A reader that takes "missing" to mean "absent" called both c1 files
+absent. So it did in a case whose upstream was moved away after the clone, for `HEAD:keep.txt` in a clone made with
+`--no-checkout`, which never fetched HEAD's blobs either, and in a clone whose remote is named `upstream`, not `origin`
+(git marks a partial clone's remote `remote.<name>.promisor`). The sample reader `blob-lazy` (`git ls-tree`, then
+`git cat-file blob`, with lazy fetching allowed; the upstream is a local `file://` path) returned the files' bytes, and
+refused, rather than answer "absent", once the upstream was gone.
+
+**Where Cloudvore met it** (K62). r5 (`9b88443`) set `GIT_NO_LAZY_FETCH=1` on every call, so that a read could never
+fetch. The r7b write-safety seat then made a blobless partial clone of a bus: `check` read a faithful filing DIFFERENT,
+and a draft that is in the source commit read "not in commit".
+
+**What Cloudvore changed** (`5ec3c18`). A partial clone is refused by name. git 2.55 marks one with
+`remote.<name>.promisor`, and earlier versions with `extensions.partialClone`; the tool reads both.
+
+**How it was checked here.** Mutants M92 (a partial clone is not refused) and M93 (only the older mark read) were killed
+by `a_bus_whose_history_is_grafted_or_cut_short_is_refused`.
+
+**Test** (runnable): `READ_BLOB='<your reader>' python gitread_trap.py partial`. Your reader prints the file `$SPEC`
+(`REV:PATH`) names in `$REPO` and exits 0; exits 1 when the path does not exist at that revision; and exits anything else
+to refuse. The controls ask a full clone, so a reader that refuses every partial clone still passes them. RED when your
+reader calls a blob that is not local "absent" (at HEAD~1, with the upstream gone, at HEAD without a checkout, or
+through a remote not named `origin`), or prints other bytes.
+
+## T3. A hand CRLF-to-LF comparison is not what git would store: a path marked `-text`, and bytes git's autocrlf check takes for binary, keep their CRs; and, for a path with no `text` attribute under `core.autocrlf=true`, `git hash-object --path` is not what `git add` stores when the index copy holds CRLF as text
+
+**Measured** (`python gitread_trap.py store`, RECEIPTS). With `core.autocrlf=true`, eleven working-copy files with CRLF
+line endings. `git add` stored `plain.txt` converted to LF. It stored four unconverted, CRs and all:
+- `raw.txt`, which `.gitattributes` marks `-text` (`git ls-files --eol`: `i/crlf w/crlf attr/-text`);
+- `data.dat`, marked `-text` through the glob `*.dat -text`;
+- `lonecr.txt`, which also holds one CR not followed by LF (`i/-text`);
+- `nulbyte.txt`, which holds a NUL byte (`i/-text`).
+
+Given the same two contents under an explicit `text` attribute, git converted both anyway: `forced.txt` was stored with
+its CRLFs turned to LF and its lone CR kept, and `forcednul.txt` with its CRLFs turned to LF around the NUL. The last
+four have a history under `core.autocrlf=false`, and then one more line in the working copy under `core.autocrlf=true`:
+- `tracked.txt`, committed with CRLF endings: `git add` kept the CRLFs;
+- `staged.txt`, staged with CRLF endings and never committed: `git add` kept the CRLFs;
+- `restaged.txt`, committed with CRLF endings and then staged again with LF: `git add` converted it;
+- `textstaged.txt`, marked `text`, whose index copy was forced to CRLF (`git hash-object -w --no-filters`, then
+  `git update-index --cacheinfo`): `git add` converted it anyway.
+
+These runs show that, for a path with no `text` attribute, the index copy decides, not HEAD's, and that a path marked
+`text` is converted whatever the index copy holds. git 2.55's documentation agrees as far as it goes: by git-config,
+`core.autocrlf=true` sets the text attribute to `auto` on all files; by gitattributes, under `text=auto` a file "already
+in Git with CRLF endings" is not converted (it does not say which copy counts), while a path with `text` set is
+normalized every time it is checked in, "even if the file was previously added to Git with CRLF line endings".
+
+Three readers:
+- replacing every CRLF with LF and hashing the result with `git hash-object --stdin` (no `--path`, so no filters)
+  matched `plain.txt`, the three `text` files and `restaged.txt`, and gave the wrong blob id for the other six;
+- `git hash-object --path=<file> --stdin`, fed the same bytes, gave the id `git add` stored for the seven files with no
+  history, for `restaged.txt` and for `textstaged.txt`, and the converted id for `tracked.txt` and `staged.txt`: it
+  applies the path's attributes and filters, but not the index's rule for `text=auto`;
+- `git add` into a copy of the index (`GIT_INDEX_FILE` pointing at the copy, then `git ls-files -s`) gave the stored id
+  for all eleven, and the run's note after each case shows the real index unchanged.
+
+**Where Cloudvore met it** (K62). `write` appends to the bus working copy, where `core.autocrlf=true` checks TRAPS.md out
+with CRLF endings. It must know that the working copy is what git would store as HEAD's blob, or uncommitted edits would
+ride into the filing commit. It must also know that after the append git would store HEAD's blob plus the filing. The
+first version compared by hand. The r2 seat built a `-text` attribute, and bytes git's check calls binary: the hand
+comparison passed both, and git would have committed the CR bytes. The index-copy cases were found in this filing's
+review, not in K62's.
+
+**What Cloudvore changed** (`39dd101`). It asks git: `git hash-object --path=<path> --stdin`, fed the bytes. Both checks
+refuse on a mismatch before anything is written. By the index-copy measurements above, that check answers the converted
+id whenever the bus's index copy of TRAPS.md holds CRLF as text. Measured on throwaway buses (this filing's review):
+with HEAD's copy and the index copy both CRLF, `write` refuses a clean working copy, a false refusal; with CRLF staged
+over an LF HEAD, `write` passes, the commit rewrites the file's old lines, and `check` reads that commit DIFFERENT. So
+`check` catches the bad commit when it is run, and the author runs it before writing an ack; the ack gate itself does
+not run it yet (Cloudvore's K63). `write` itself should refuse that shape, a defect now on Cloudvore's queue (the row
+naming `bus-filing.py write` and CRLF staged over an LF HEAD). The bus marks no `text` attribute on either file and
+checks out with `core.autocrlf=true`, so `text=auto` applies; its index copies are LF (`git ls-files --eol`: `i/lf
+w/crlf`), the shape in which `write` and `check` agree.
+
+**How it was checked here.** Pins `write_asks_git_what_it_would_commit` and
+`write_refuses_a_working_copy_that_is_not_head_and_a_filing_already_made`. Mutants M48 (the working copy not checked
+against HEAD's blob) and M49 (the appended copy not checked against the filing) were killed.
+
+**Test** (runnable): `WOULD_STORE='<your reader>' python gitread_trap.py store`. Your reader prints the blob id git
+would store for the working-copy file `$FILE` in `$REPO` if it were committed. The truth is what `git add` stores in a
+twin repository the hook never sees. RED when your answer differs: the hand normalisation reads RED on six cases,
+`good_readers.py store` (`hash-object --path`) on `tracked.txt` and `staged.txt`, and `good_readers.py store-index` (the
+index copy) reads GREEN.
+
+## T4. A pathspec is read from the current directory and `<rev>:<path>` from the repository root, so a tool that uses both from a subdirectory reads one file's bytes and another file's history
+
+**Measured** (`python gitread_trap.py pathspec`, RECEIPTS). c1 adds `review/x.md` and `sub/keep.txt`, c2 adds
+`sub/review/x.md`, and c3 changes `review/x.md`. Then c4 adds `review/other.md` beside it and later commits change
+`sub/keep.txt`: 2, 1 and 3 commits follow c3 in the three repositories, so no fixed position from HEAD holds the answer.
+Run with `-C sub`, `git log -1 --format=%H -- review/x.md` named c2, the last change to `sub/review/x.md`. In a twin
+repository without `sub/review/` it named nothing. From `sub`,
+`git show HEAD:review/x.md` printed the root file's text and `git show HEAD:./review/x.md` printed sub's. The pathspec
+`:(top,literal)review/x.md` named c3 from `sub` in both repositories.
+
+**Where Cloudvore met it** (K62, r3, fixed at `b3b7dc7`). The tool reads a draft as
+`<source>:review/doctrine-drafts/<name>.md`, and finds the review's last commit with
+`git log -1 <source> -- review/doctrine-drafts/<name>.review.md`. With `--repo` naming the repository's `review`
+subdirectory, the first form still read the draft from the root. The pathspec named
+`review/review/doctrine-drafts/...`, which has no history, so a ratified draft was refused.
+
+**What Cloudvore changed.** The pathspec is written `:(top)review/doctrine-drafts/<name>.review.md`.
+
+**How it was checked here.** Pin `the_ratification_is_read_through_a_merge_and_from_a_subdirectory`. Mutant M66 (the
+review's history read from the current directory) was killed.
+
+**Test** (runnable): `LAST_CHANGE='<your reader>' python gitread_trap.py pathspec`. Your reader prints the last commit
+that changed `$TARGET`, a path from the repository root as `HEAD:$TARGET` names it, when asked about `$REPO`: the
+root in the control, a subdirectory in the traps. RED when it names another file's commit, or nothing.
+
+## T5. `git merge -F -` does not read standard input: it reads a file named `-`
+
+**Measured** (`python gitread_trap.py mergefile`, RECEIPTS). A branch `topic` one commit ahead of master, and
+"message from stdin" on standard input:
+- `git merge --no-ff -F - topic` exited 129 with `error: could not read file '-'`, and made no commit;
+- with a file named `-` in the working directory, the same command made the merge, and its message was that file's text;
+- `git commit --allow-empty -F -`, with that file still there, took its message from standard input.
+
+git 2.55's documentation says so: `git commit -F` reads the standard input for `-`, and `git merge -F` documents no
+such case.
+
+**Where Cloudvore met it.** The session that landed K62 piped its merge message into `git merge --no-ff -F - <branch>`.
+The merge made no commit, and the landing was redone with `-m`. Nothing in the repository records that attempt; the
+session's own transcript does, and this filing's review record in Cloudvore quotes it. The behaviour itself is what
+`mergefile` measures above.
+
+**Test** (runnable, a demonstration with no hook): `python gitread_trap.py mergefile`. For a project's own scripts, a
+recipe: search them for a `git merge` given `-F -` or `--file=-`.
+
+## T6. A text appended to a file other boards append to must close every CommonMark block it opens: HTML blocks of types 1-5 run past blank lines, a type-1 block ends at any of four end tags, and a backtick in a backtick fence's info string means it is no fence
+
+**Measured** (`python draft_trap.py`, RECEIPTS). The truths of the 40 block cases and both controls were confirmed by
+markdown-it-py 4.2.0, rendering each part with a sentinel heading appended; the 4 heading-count cases are whole-line
+counts and are not rendered. A draft is split at its one `## RECEIPTS` line and each part is appended to a shared file.
+The built-in checker tracks only fences, and toggles on any line starting with three backticks or tildes, without the
+info-string, length or character rules. It counts headings as `data.count(b"\n## RECEIPTS\n")`. Of 44 cases it got 23
+wrong:
+- it accepted every unclosed HTML block of types 1-5 (`<pre>`, `<PRE>`, a bare `<pre` at the end of its line,
+  `<script>`, `<style>`, `<textarea>`, `<!--`, `<?php`, `<!DOCTYPE html` with no `>`, `<![CDATA[`), and a `<pre>`
+  indented 3 spaces;
+- it accepted a fence opened 2 spaces in and never closed;
+- it accepted fences "closed" by a shorter run, by the other character, by a run followed by text, and by a run
+  followed by a form feed;
+- it accepted a fence run inside a `<pre>` block and another after `</pre>`: the first is text inside the block, and
+  the second opens a fence that never closes, while the toggle reads the pair as balanced;
+- it accepted the phase case: `` ```a`b `` is a paragraph line, so the next three-backtick line opens a fence that
+  swallows the heading after it, while the toggle reads the pair as balanced;
+- it accepted a fence opened before the heading and closed after it: balanced as one document, open in each part;
+- it accepted two adjacent heading lines, and a heading on line 1 with another later: `bytes.count`, `str.count` and
+  `re.findall` of LF + heading + LF each find 1 of the 2;
+- and it refused two safe drafts: a lone `` ```a`b `` line, which opens nothing, and a fence closed by a run indented
+  3 spaces.
+
+Its 21 correct answers include the open fences, a heading line inside a closed fence beside the real one (its substring
+count finds both), and the safe cases: a comment start inside a closed fence (code, not a comment), a `<pre>` closed by
+`</script>` (any of the four end tags ends a type-1 block), a `<PRE>` closed by `</PRE>` and a `<pre>` closed by an end
+tag in mid-line, a `<pre>` or three backticks indented 4 spaces after a blank line (indented code), a `<div>` ended by a
+blank line (type 6), and an inline `<pre>`. Because it reads runs only at column 0, it also refused, correctly, a fence
+whose "closing" run is indented 4 spaces or by a tab: that line is code, so the fence stays open. Two sample checks got
+all 44 right: a line-based tracker of exactly these constructs, and one that renders each part with markdown-it-py.
+
+**Where Cloudvore met it** (K62). Every filing is appended to this bus's TRAPS.md and RECEIPTS.md after every earlier
+board's entry and before every later one, so a block left open in one filing swallows later boards' entries.
+- r1 (`9e61bd5`, Codex): the first tracker took a backtick run whose info text holds a backtick for a fence, a false
+  refusal of a correct draft.
+- r2 (`39dd101`, Opus): an open `<pre>` or `<!--` swallows later entries like an open fence, and the tracker did not
+  follow HTML blocks.
+- r4 (`5fac806`, Codex): the seat said a `<pre>` closed by `</script>` stays open. Declined on evidence: CommonMark ends
+  a type-1 block at any of the four end tags ("it need not match the start tag"), and markdown-it-py 4.2.0 agreed.
+- r5 (`9b88443`, Opus): a form feed after a closing fence (CommonMark allows only spaces or tabs there); and blocks inside
+  list items, which the tracker does not follow, so a block opened 1-3 spaces in is refused unless it closes on its own
+  line.
+- r6 (`1701cde`) pinned every start condition of types 1-5; r7c (`f9d2b83`) pinned a closing run's length and character
+  as read after its indentation.
+- The seed publisher the tool replaced split a draft at the first `\n## RECEIPTS\n` (Python's `partition`), so it never
+  saw a second heading. The tool has counted heading lines overlap-safe since its first version.
+
+**What Cloudvore changed.** A draft is refused when either part leaves a fence or an HTML block of types 1-5 open,
+when it has zero or two heading lines, or when it opens a fence 1-3 spaces in, or an HTML block 1-3 spaces in that
+does not close on its own line: a refusal, never a pass.
+
+**How it was checked here.** Pins `a_draft_that_would_damage_the_shared_file_refuses`,
+`no_false_refusal_for_a_fence_or_html_block_that_commonmark_closes` and `a_draft_with_two_receipts_headings_refuses`.
+28 of the 92 killed mutants are in the tracker and the heading count, among them M01 (a non-overlapping count), M53 (a
+backtick info text opens a fence), M63 (a heading on the first line uncounted) and M69 (a type-1 block closes only on
+`</pre>`).
+
+**Test** (runnable): `DRAFT_CHECK='<your check>' python draft_trap.py`. Your check reads the draft `$DRAFT` and exits 0
+when it is safe to append (nothing left open in either part, one heading line), or 10 to refuse. RED when it accepts a
+draft that must be refused, or refuses one that is safe; the two are counted apart, and both fail the run.
+
+## T7. A Python "both files or neither" append: a file recorded for rollback only after its write returns escapes a write that failed part-way, and a rollback under `except OSError` or `except Exception` never runs on Ctrl-C
+
+**Measured** (`python append_rollback.py`, RECEIPTS). Two files, one 36-byte addition, four injected faults: an
+`OSError` or a `KeyboardInterrupt` raised before file B gets a byte, and half of the addition written to file A and
+flushed, followed by an `OSError` or a `KeyboardInterrupt`. `issubclass(KeyboardInterrupt, Exception)` is `False`.
+- Recorded after the write, rolled back under `except OSError`: 3 of the 4 faults left A changed and B not.
+- Recorded after the write, rolled back under `except BaseException`: both half-writes did. The write raised, so A was
+  never recorded, yet 18 bytes had landed in it.
+- Recorded before the write, rolled back under `except Exception`: both `KeyboardInterrupt` faults did. The rollback
+  never ran.
+- Recorded before the write, rolled back under `except BaseException`: none. Every fault left both files as they were,
+  and the exception still propagated.
+
+**Where Cloudvore met it** (K62). `write` appends to two files and promises both or neither.
+- r1 (`9e61bd5`, Codex): the first version recorded a file for rollback after its write returned, so an append that
+  failed part-way had already extended the file and escaped the rollback. The record now comes before the write.
+- r2 (`39dd101`, Opus): the rollback caught `OSError`, so Ctrl-C between the two appends left the first file appended.
+  It now catches `BaseException`, cuts back every recorded file that grew, and re-raises.
+- r7a (`a7fa85b`, Codex): Ctrl-C during the second append, with the first file's cut-back refused, re-raised a bare
+  `KeyboardInterrupt` and said nothing. It now names each file it could not cut back on stderr before re-raising.
+
+**How it was checked here.** Pin `an_append_that_fails_part_way_is_cut_back_in_both_files`. Mutants M51 (only `OSError`
+cut back), M52 (the rollback entry made after the write), M56, M75, M78, M79 and M91 were killed.
+
+**Test** (a recipe for your own suite; `append_rollback.py` is the runnable demonstration). Wrap your writer's file
+writes as the demonstration does and inject the same four faults. Expect every file byte-identical to before, and the
+fault still raised. The demonstration raises its interrupts synchronously from `write()`; a real Ctrl-C can also land
+inside the rollback itself, which none of these appenders guards against.
+
+## T8. An inline MSBuild task that calls `Log.LogError` does not stop the build: the target it guards runs, and MSBuild reports "Build succeeded" with one error
+
+**Measured** (`logerror.proj`, RECEIPTS; .NET SDK 9.0.312, MSBuild 17.14.43.7001). A RoslynCodeTaskFactory task with
+`<Code Type="Fragment">` that calls `Log.LogError("DEMO001: refused")`, run by a target that is `BeforeTargets` of
+`BodyA`:
+- the error printed, `BodyA` ran and created its marker file, and `dotnet msbuild` exited 0;
+- with `-clp:Summary` it printed `Build succeeded.`, `0 Warning(s)` and `1 Error(s)`, and still exited 0;
+- at `-v:m` MSBuild printed nothing about a task that logged an error and still reported success.
+
+Two variants stopped the build: exit 1, the guarded target did not run, no marker. One is the same fragment followed by
+`Success = false;`. The other is a task that only returns its reason through an `Output="true"` parameter, with the
+target refusing through the built-in `<Error Condition="'$(Reason)' != ''" Text="$(Reason)" />` task.
+
+**Where Cloudvore met it** (O16). Cloudvore's `Directory.Build.targets` runs an inline RoslynCodeTaskFactory task before
+the `VSTest` target, to refuse a raw `dotnet test` on a thermally protected machine. At r2 the task called
+`Log.LogError(...)`. Measured on a second host (`ed3f947`): the refusal code printed for both test projects, and the
+VSTest body then built and ran both suites anyway. A bare repro printed the error, ran the next target and exited 0.
+
+**What Cloudvore changed** (`ed3f947`). The task only returns its reason through an `Output="true"` parameter, and the
+target refuses with the built-in `<Error>` task, which stops the target it precedes.
+
+**How it was checked here.** Two of the gate's pins matched only the refusal's text, and passed the broken gate; the one
+that asserted nothing was built caught it. Every refusal case now asserts that the VSTest banner is absent, and every
+admit case that it is present. At `ed3f947`'s pin on the second host the base tree passed 1 of 8, and the r2 gate 5 of 8
+(failing on "the VSTest body ran"); the accepted `37cb2a5` passed 8 of 8, three times.
+
+**Test** (runnable, in a directory holding only `logerror.proj`: `DOTNET_CLI_TELEMETRY_OPTOUT=1 DOTNET_NOLOGO=1
+MSBUILDDISABLENODEREUSE=1 DOTNET_CLI_WORKLOAD_UPDATE_NOTIFY_DISABLE=1 dotnet msbuild logerror.proj -t:BodyA -nologo
+-nodeReuse:false -v:m`, then `-t:BodyB` and `-t:BodyC`; `DOTNET_CLI_TELEMETRY_OPTOUT` keeps the CLI from sending
+telemetry, and `DOTNET_CLI_WORKLOAD_UPDATE_NOTIFY_DISABLE` from checking for workload updates). For a project's own
+gate, a recipe: put the build in a state the gate must refuse, and
+assert that the guarded target's EFFECT is absent (its output file, its banner) and that the exit code is non-zero. An
+assertion that the refusal's text was printed passes a gate that refuses in words only.
+
+## Residuals
+
+- A tool that reads git cannot tell an object file rewritten in place inside `.git` (K62's stated trust boundary, not a
+  measured trap). T1 and T2 cover git's documented history features, not a forged object store.
+- T6's block-case truths are CommonMark 0.31.2 block structure, confirmed with one renderer (its heading-count cases
+  are line counts). markdown-it-py 4.2.0 departs from
+  0.31.2 twice, outside the cases: a lowercase `<!doctype` opens no block for it, and it starts a type-1 block after
+  `<pre` followed by any whitespace (a vertical tab or form feed too). `good_check.py` records both.
+- Found in this filing's review and not made cases (the review record names the evidence): an index copy git takes
+  for binary (CRLF with a lone CR: `i/-text`) does not keep a CRLF working copy unconverted, so the T3 rule needs the
+  index copy read as text; a commit-graph reached through alternates (`git clone --shared` of a repository with a
+  patched graph) fakes parents in a clone that has no graph file of its own; and a closing fence followed by a tab
+  closes, which a check that allows only spaces there refuses.
+- Not measured here: the HTML a renderer passes through. A `<pre>` ended by `</script>`, an inline `<pre>` or a type-6
+  `<div>`, each closed as far as CommonMark is concerned, may still leave an element open in a browser's page.
+- T6 does not follow list items or block quotes. Cloudvore's tool refuses a fence, or an HTML start that does not close
+  on its own line, opened 1-3 spaces in rather than track it; `good_check.py`'s tracker can be put out of phase by one.
+- T7's interrupts are raised synchronously; T8 was measured with one SDK version.
+
+## NOT FILED
+
+- K62's declined items (TRAPS-only filings, bus merges that move filed bytes, the git configuration at commit time)
+  concern this bus's own filing format; they are its follow-up row K63.
+- O16's structural guard that read a doubled slash in inline C# as a network-path marker is Cloudvore's own guard.
+- O16's ledger states, without a measurement, that `dotnet test <dll>`, `dotnet vstest` and IDE test explorers never
+  run the VSTest MSBuild target, so a gate hooked there does not see them. Not filed until measured.
+
+## ROWS
+
+Every row landed on Cloudvore `origin/master` (first parent) since the previous publication sources `e91570a` and
+`da9b1d3`, at `441b8b6`:
+
+| Row | Landing | Disposition |
+|---|---|---|
+| K62 | merge `2ef5363` of `8ceca57` (reviewed candidate `f9d2b83`, RED `b5981ca`; record `6fd3ad0`) | **Covered by this filing**, T1 to T7. K63, cut in `6fd3ad0` (the ack gate verifies the filed bytes), has not landed: **held** until landed. K41 was narrowed in the same record; no landed behaviour. |
+| O16 | merge `ee1847b` of `0befcde` (accepted candidate `37cb2a5`, RED `12b7cf9`; record `441b8b6`) | **Covered by this filing**, T8. Its admission policy itself (a machine-wide lease, a per-batch token, this laptop's thermal controller) is **project-local**. O17, cut in `441b8b6`, has not landed: **held** until landed. |
+| H76 | merge `ab3eb32` of `d58bbc9` (record `1286145`) | **Held**, to be filed with H75 and H73 packet B slice 1, which the 2026-09-29 filing held for H75. All three concern what licenses a verification cache's record to be trusted later: H76 persists a destination hash only when listings taken before and after the check agree, and its residual names H75's legacy records. Not found on the bus by mechanism (`sandwich`, `launder`, `TOCTOU`, `between the check`). |
+| H73 packet D | merge `8813d90` of `4758ad4` (record `7f3a5ba`, which also closed H73) | **Project-local**: it changes only the wording of Cloudvore's own refusal for two causes, a remote with nothing configured behind it and a setting Cloudvore cannot read exactly. Which cases refuse is unchanged, and it measured no rclone behaviour. |
+| H51B | defect records in `7f3a5ba` (two live defects confirmed and ruled) and `42bc341` (a third live shape); no fix landed | **Held** until landed. |
+| (no row) | `277849a`, `e1c70fd` | Doctrine records: the crypt-and-delete draft merge and its publication ack; already on the bus at `a3aa596`. |
+| (no row) | `dbb0047`, `85cadb3` | Doctrine records: the FETCH_HEAD draft merge and its publication ack; already on the bus at `a2ae2ba`, and named in the `e91570a` ack line. |
