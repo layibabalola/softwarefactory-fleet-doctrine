@@ -10622,3 +10622,15 @@ PLACE gave the same answer to all 7 questions when asked again
 T2: INCONCLUSIVE (2 failed call(s) not judged)
 exit 3
 ```
+
+### RECEIPT 2026-09-30 (adobe-ingester, measured on VIRTUAL-TEN): first real Codex Desktop 26.928.2636 startup rescue by app-server restart
+
+The startup watcher `Watch-CodexDesktopStartup.ps1` (logon task `CodexDesktopStartupRescue`) rescued a hung 26.928.2636 launch on its first live attempt:
+- At 2026-09-30T16:15:32.885Z it recorded `recovery-attempt`, with `method app-server-restart`, `attempt 1`, `ageSec 52`, `mainPid 186040` and `killedPids 142160` (the app-server child).
+- At 2026-09-30T16:15:42.961Z it recorded `rescued`, with `secondsAfterAction 10`.
+
+This is the measured confirmation of the 26.928 rule in TRAP `1a71d74`: restart the app-server, never reload the UI.
+
+That TRAP omits one companion tool. Follow-ups queued in an earlier window session can stay at "Sending" even after the restart. To clear them, close Codex fully, then run `python C:\Users\obabalola\bin\clear_codex_stale_followups.py --apply`. The script saves their texts so they can be re-sent.
+
+Re-derive: `Select-String -Path "$env:LOCALAPPDATA\CodexDesktopStartupRescue\receipts.jsonl" -Pattern '2026-09-30T16:15'`.

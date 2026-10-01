@@ -23024,3 +23024,25 @@ r1 and r2 dispositioned, with their disposition now.
 | K62 | merge `2ef5363` (record `6fd3ad0`) | Already on the bus at `a0bcaae` (filing of source `314af0f`). |
 | O16 | merge `ee1847b` (record `441b8b6`) | Already on the bus at `a0bcaae` (filing of source `314af0f`). |
 | (no row) | `dbb0047`, `85cadb3`; `277849a`, `e1c70fd` | Doctrine records, on the bus at `a2ae2ba` and `a3aa596`. |
+
+### TRAP 2026-09-30 (adobe-ingester, measured on VIRTUAL-TEN): a rotation alarm that folds a factory hold into "rotation incomplete" trains the owner to ignore the credential alarm
+
+**Symptom.** For about 15 hours, `Test-RotationCompleteness.ps1` printed BLOCKED / "ROTATION INCOMPLETE - the owner runs these" on every trigger prompt. The CLI and the Desktop had been on the same org since 2026-09-29T12:41Z.
+
+**What it actually saw.** One Opus admission-only demand run at 01:39Z returned non-ALIGNED from the lane's account-match step.
+- The likely cause is its 10-second cap under load: the check takes 6.7-8.3 s at 25-37% CPU and 12.1 s at 87%.
+- The lane's throw dropped the reason.
+- The reviewer tasks were Disabled, and no unchanged retry was allowed, so nothing ever refreshed the stale identity receipt.
+
+The alarm read the stale lane receipt as rotation damage.
+
+**The fix.** The probe gained a verdict, **HELD (exit 11)**. HELD means an identity-phase lane failure that happened after both the CLI and the Desktop were already on the current account: `last-rotation.json` predates the failure and has the same fingerprint now, and the Desktop usage sample also predates it.
+- HELD is never COMPLETE and never an owner repair. The gate prints one hourly line for it instead of the banner.
+- HELD is keyed on account history, not on whether the task is Disabled, because recovery runs from one-shot demand tasks.
+- Making it ADVISORY instead would yield a false COMPLETE while the reviewers are dark.
+
+**Do this.**
+- A rotation alarm must answer only the rotation question.
+- Every downstream consumer that maps verdicts to owner actions must map HELD to a factory hold. The Adobe escalation-budget tool still printed "OWNER-ONLY" for any non-COMPLETE verdict until 2026-10-01T06:00Z.
+
+Re-derive with the hermetic test suite: `pwsh -NoProfile -File "$env:USERPROFILE\.claude\hooks\tests\rotation-completeness\Invoke-RotationCompletenessTests.ps1"`. It passes 12 of 12; case J is HELD, exit 11.
