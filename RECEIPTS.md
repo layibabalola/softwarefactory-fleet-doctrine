@@ -9555,3 +9555,1070 @@ bodyA.ran
 logerror.proj
 (exit 0)
 ```
+
+<!-- cloudvore-filing:2026-09-30-rclone-overlap-undecided-traps generated from review/doctrine-drafts/2026-09-30-rclone-overlap-undecided-traps.md at 652e904 -->
+
+## RECEIPTS
+
+Run on 2026-10-01 with rclone v1.74.4 on Windows 11 Pro 10.0.26200 under Git Bash, Python 3.14.4 and git
+2.55.0.windows.5. The runner replaces its own directory with `<dir>` (forward-slash and backslash forms) and the
+Python interpreter's full path with `<python>`; T2 and T3 print the block's own directory as `<t>` and the
+source as `<src>`; CR bytes Python writes to a pipe on Windows are stripped; nothing else is edited. `c:` in T3
+is this host's drive. Each run ends with `exit N`, the block's own exit status.
+Every block, `runall.sh`, `sandwich.sh` and `spellplace.py` were extracted from this draft's text into a fresh
+directory and the runner run there; the whole extraction and run were then repeated in a second fresh
+directory, and the output was byte-identical to the first and to what is below.
+
+The GREEN sample step used as T1's `RECORD` (run from inside the test directory):
+```bash
+# sandwich.sh SRC DEST: a sample GREEN step for T1's RECORD; not Cloudvore's code. It lists the destination's hashes,
+# checks, lists them again, and records a hash only when both listings agree on every file. Exit 0 = verified (the
+# first output line is a.bin's recorded md5); 10 = refused; anything else = it could not run.
+L(){ timeout 120 rclone lsjson -R --files-only --hash --hash-type md5 "$1" | python -c '
+import json, sys
+print(json.dumps(sorted((e["Path"], e["Size"], e.get("Hashes", {}).get("md5")) for e in json.load(sys.stdin))))'; }
+pre=$(L "$2") || exit 3
+timeout 120 rclone check "$1" "$2" >/dev/null 2>&1 || { echo "refused: the check found a difference"; exit 10; }
+post=$(L "$2") || exit 3
+[ "$pre" = "$post" ] || { echo "refused: the destination changed while this step was verifying it; nothing recorded"; exit 10; }
+python -c 'import json, sys; print(dict((p, h) for p, s, h in json.loads(sys.argv[1]))["a.bin"] or "-")' "$post"
+```
+
+The GREEN sample reader used as T2's and T3's `PLACE`, fed `rclone config dump` on stdin by the hook:
+```python
+# spellplace.py SRC DEST, with `rclone config dump` on stdin: is DEST placed, and not inside or over SRC?
+# A sample GREEN implementation for T2's and T3's PLACE hook; not Cloudvore's code. It is decided only on positive
+# evidence: a dump it read, a spelling it parsed with rclone's grammar, a folder it rooted and judged, or a memory
+# remote. Everything else, including a dump it could not read, is refused. Exit 0 = placed; 10 = refused.
+import json, os, re, sys
+src = os.path.normcase(os.path.abspath(sys.argv[1]))
+
+
+class Unplaced(Exception):
+    pass
+
+
+try:
+    conf = json.loads(sys.stdin.read())                # an unread or empty dump is "cannot tell", never "nothing"
+except ValueError:
+    print("refused: could not read the rclone config, so cannot tell where it stores")
+    sys.exit(10)
+
+
+def rel(p):
+    r = os.path.normcase(os.path.abspath(p))
+    if r == src or r.startswith(src + os.sep) or src.startswith(r + os.sep):
+        raise Unplaced("stores at %s, which overlaps the source" % p)
+
+
+def split(spec):
+    """rclone's grammar: NAME[,key=value...]:path. A value may be quoted with ' or " where it starts, a doubled
+    quote inside stands for one, and the remote ends at the first colon OUTSIDE quotes. None if it is a path."""
+    if os.name == "nt" and re.match(r"^[A-Za-z]:", spec):
+        return None                                   # a single letter and a colon is a drive on Windows
+    m = re.match(r"^(:?[^:,/\\]+)", spec)
+    if not m or len(spec) == m.end() or spec[m.end()] not in ",:":
+        return None                                   # no remote name: a path
+    name, i, opts = m.group(1), m.end(), {}
+    while spec[i] == ",":
+        k = re.match(r"[A-Za-z0-9_]+=", spec[i + 1:])
+        if not k:
+            raise Unplaced("a connection string it cannot read exactly: %r" % spec)
+        key, i, val = k.group(0)[:-1], i + 1 + k.end(), ""
+        if i < len(spec) and spec[i] in "'\"":
+            q, i = spec[i], i + 1
+            while True:
+                j = spec.find(q, i)
+                if j < 0:
+                    raise Unplaced("an unterminated quote: %r" % spec)
+                val, i = val + spec[i:j], j + 1
+                if spec[i:i + 1] == q:
+                    val, i = val + q, i + 1
+                    continue
+                break
+        else:
+            j = re.search(r"[,:]", spec[i:])
+            if not j:
+                raise Unplaced("a connection string with no path: %r" % spec)
+            val, i = spec[i:i + j.start()], i + j.start()
+        if key in opts or i >= len(spec) or spec[i] not in ",:":
+            raise Unplaced("a connection string it cannot read exactly: %r" % spec)
+        opts[key] = val
+    return name, opts, spec[i + 1:]
+
+
+def judge(spec, depth=0):
+    if depth > 8:
+        raise Unplaced("an alias chain too deep to follow")
+    parts = split(spec)
+    if parts is None:
+        return rel(spec)                              # a path, drive-relative ones against the current directory
+    name, opts, path = parts
+    if any(k.lower() == "type" and k != "type" for k in opts):
+        raise Unplaced("a type key in another case (rclone ignores it; not relied on here)")
+    if name.startswith(":"):                          # on the fly: rclone takes the backend from the NAME
+        if "type" in opts:
+            raise Unplaced("an on-the-fly remote with a type key")
+        typ = name[1:]
+    else:
+        if name not in conf:
+            raise Unplaced("no section %r in the config" % name)
+        typ = opts.get("type", conf[name].get("type"))   # a named connection string's type retypes the section
+    if typ == "local":
+        return rel(path)
+    if typ == "memory":
+        return
+    if typ == "alias" and not name.startswith(":") and "type" not in opts:
+        target = conf[name].get("remote") or ""
+        if not target:
+            raise Unplaced("an alias with nothing behind it")
+        return judge(target.rstrip("/\\") + ("/" + path if path else ""), depth + 1)
+    raise Unplaced("a %s remote this sample does not place" % typ)
+
+
+try:
+    judge(sys.argv[2])
+    sys.exit(0)
+except Unplaced as e:
+    print("refused:", e)
+    sys.exit(10)
+```
+
+**Class hunt, round 3.** The round-2 seat's two findings had one root: the trap relied on the user, or on one
+chosen injection, to pick the right point. Each test now sweeps every point itself. The hunt then ran these
+steps, written as another project might write them, each unchanged:
+
+| Receipt | Test | Step | Verdict |
+|---|---|---|---|
+| `r33` | T1 | md5sum src, md5sum dst, compare, md5sum dst again to record, `rclone size` (seat's sandwich) | RED, rewrite after call 2 |
+| `r34` | T1 | the same, `SWAP_AFTER=md5sum` | RED, call 2 |
+| `r35` | T1 | `check` retried once, then record `hashsum md5` of the destination | RED, call 1 |
+| `r36` | T1 | read the destination md5 first, then `check`, record what was read | GREEN |
+| `r37` | T1 | `check`, then coreutils `md5sum` of the local file (no rclone call after) | RED, call 1 (the last) |
+| `r38` | T1 | Python spawns `rclone check`, then `rclone lsjson` records | INCONCLUSIVE, never exercised |
+| `r42` | T1 | `check --download`, then compare the listed hash with the source md5 before recording | GREEN |
+| `r40` | T1 | record the source md5 with no check | INCONCLUSIVE, verifies a differing destination |
+| `r43` | T2 | dump, retry an empty one once, then fall back to `place_dump` (seat's retry) | RED, "from" mode only |
+| `r44` | T2 | retry the dump up to 3 times, then hand `spellplace.py` whatever it has | GREEN |
+| `r45` | T2 | a name `listremotes` does not show is a path; otherwise `place_dump` | RED |
+| `r46` | T2 | `config show NAME`; a remote whose type it cannot read is not local | RED |
+| `r47` | T2 | `backend features`; no answer, or a broken one, refuses | GREEN |
+| `r50` | T2 | `place_dump` with `--config=X --low-level-retries 1` before the command | RED |
+| `r54` | T2 | refuse a failed or empty dump, then parse it leniently | RED, cut answer only |
+| `r51` | T3 | the `backend features` reader of `r47` | GREEN |
+| `r52` | T3 | `spellplace.py` fed a dump read with `--config` before the command | GREEN |
+
+Hooks of every kind were also run: refusing everything (`r4`, `r13`, `r20`), allowing everything (`r32`, `r40`),
+crashing after their calls (`r53`), only whitespace (`r41`), latching or counting (`r7`, `r14`), flipping
+(`r48`), settings in another case (`r8`, `r21`), and ambient settings in lower case (`r39`, `r49`). Each read as
+its clause says: `r32` RED, the scrubbed ones as without the setting, the rest INCONCLUSIVE. There are no list settings to hunt. Every verdict above is the one
+its step deserves. The limits that remain are the ones each GREEN line names.
+
+**Round 4: limits stated, not swept.** The round-3 seat found two steps whose verdicts are not the ones they
+deserve. These are limits of combinatorial injection, so this round states them in the printed lines and the
+prose instead of adding sweep modes, and records each:
+
+| Receipt | Test | Step | Verdict |
+|---|---|---|---|
+| `r55` | T1 | `rclone copy`, then `sandwich.sh` (correct) | INCONCLUSIVE at the "differs from the start" control; the line names both causes and says to leave the copy out |
+| `r56` | T1 | `rclone copy`, then `check`, then `lsjson` records (has the trap) | INCONCLUSIVE, the same line: T1 cannot tell it from `r55` |
+| `r57` | T2 | read the dump; if it errors, `listremotes`; a name not listed is a path | GREEN, with "two failures whose answers differ between calls" named as not tried; it allows the nested destination when the dump errors and `listremotes` answers empty |
+| `r58` | T2 | retry the dump until it succeeds, then `spellplace.py`; `HOOK_TIMEOUT=10` | INCONCLUSIVE: the "from" error and empty runs never end, are stopped at 10 s and say so |
+
+The runner that produced the output below (`GS` is T1's GREEN setting and `GP` T2's and T3's; the others are
+the in-block readers with a trap in them, a step that records the source's hash, hooks that refuse everything,
+a step that spawns rclone from Python and so bypasses the shim, a `SWAP_AFTER` the step never makes, hooks that
+answer by call count, settings spelled in another case, a hyphenated `RCLONE_CONFIG_E-PAR_TYPE` that bash cannot
+unset, and an ambient `RCLONE_CONFIG_NL_TYPE=memory` with and without the scrub). `r23` to `r32` are the
+falsification seat's round-1 cases: a step that refuses when its listing shows an extra file (under the r1 shim,
+whose swap marker sat inside the destination, it read GREEN); a step that compares twice; a swap after the
+default step's own record read; global flags before the command in both T1 and T2 (under the r1 shim the flag
+value `1` named both calls, so failing "one" failed both); a reader that reads the dump twice, refusing on the
+first failure but not the second (the r1 shim failed every call of a name at once); a partial bypass, which
+reads GREEN as the shim's stated limit says; and a `PLACE` that allows everything. Under the r3 blocks `r23` to
+`r27` read differently from r2: T1 now tries every position itself, so `r24` is RED without help, `r23` names
+both positions that record the rewrite, and `r26` shows that an occurrence number is no longer a setting. `r33` to `r54` are round 3: the round-2 seat's two
+findings (`r33`, `r43`) and the class hunt above; `r55` to `r58` are round 4, the limits above.
+```bash
+# runall.sh: every receipt below, in order (run from a fresh directory holding the extracted blocks)
+GS='bash ../sandwich.sh "$1" "$2"'                                               # T1's GREEN sample step
+GP='timeout 120 rclone config dump 2>/dev/null | python ../spellplace.py "$1" "$2"'   # T2's and T3's GREEN sample reader
+D=$(cygpath -m "$PWD")
+run(){ local label=$1 dir=$2; shift 2; echo "== $label"; mkdir "$dir"; (cd "$dir" && cp ../dp-env.sh ../t1.sh ../t2.sh ../t3.sh ../t3m.sh ../sandwich.sh ../spellplace.py . && env "$@" 2>&1; echo "exit $?") | tr -d '\r' | python -c '
+import re, sys
+d = sys.argv[1]; w = d.replace("/", "\\")
+for line in sys.stdin:
+    line = re.sub(r"\S*python\.exe:", "<python>:", line)
+    line = line.replace(w.replace("\\", "\\\\"), "<dir>").replace(w, "<dir>").replace(d, "<dir>")
+    sys.stdout.write(line)' "$D" | tr -d '\r'; }
+run "t1.sh (default RECORD: checks, then records the hash a later listing shows)" r1 bash t1.sh
+run "t1.sh RECORD=\"\$GS\" (the listing sandwich)" r2 RECORD="$GS" bash t1.sh
+run "t1.sh RECORD=<check, then record the SOURCE's md5> (records what the check compared)" r3 RECORD='timeout 120 rclone check "$1" "$2" >/dev/null 2>&1 || exit 10; timeout 120 rclone md5sum "$1" | cut -d" " -f1' bash t1.sh
+run "t1.sh RECORD='exit 10' (refuses everything)" r4 RECORD='exit 10' bash t1.sh
+run "t1.sh RECORD=<python spawning rclone.exe itself> (bypasses the shim)" r5 RECORD='python -c "import subprocess, sys; subprocess.run([\"rclone\", \"check\", sys.argv[1], sys.argv[2]], capture_output=True); print(\"-\")" "$1" "$2"' bash t1.sh
+run "t1.sh SWAP_AFTER=md5sum (a call the default step never makes)" r6 SWAP_AFTER=md5sum bash t1.sh
+run "t1.sh RECORD=<record_after on its first call, refuses after> (answers by call count)" r7 RECORD='n=$(( $(cat ../n 2>/dev/null || echo 0) + 1 )); echo $n > ../n; if [ $n -le 1 ]; then record_after "$1" "$2"; else exit 10; fi' bash t1.sh
+run "t1.sh Record=\"\$GS\" (the setting in another case)" r8 Record="$GS" bash t1.sh
+run "t1.sh RCLONE_CONFIG_E-PAR_TYPE=local (a name bash cannot unset)" r9 RCLONE_CONFIG_E-PAR_TYPE=local bash t1.sh
+run "t2.sh (default PLACE: an unread dump is nothing configured)" r10 bash t2.sh
+run "t2.sh PLACE=place_fsinfo (no features answer is not local)" r11 PLACE='place_fsinfo "$1" "$2"' bash t2.sh
+run "t2.sh PLACE=\"\$GP\"" r12 PLACE="$GP" bash t2.sh
+run "t2.sh PLACE='exit 10' (refuses everything)" r13 PLACE='exit 10' bash t2.sh
+run "t2.sh PLACE=<allows its first 2 calls, refuses after> (answers by call count)" r14 PLACE='n=$(( $(cat ../n 2>/dev/null || echo 0) + 1 )); echo $n > ../n; timeout 120 rclone config dump >/dev/null; [ $n -le 2 ] && exit 0; exit 10' bash t2.sh
+run "t2.sh PLACE=\"\$GP\" RCLONE_CONFIG_NL_TYPE=memory (an ambient override of the fixture's remote)" r15 PLACE="$GP" RCLONE_CONFIG_NL_TYPE=memory bash t2.sh
+# the second defence alone: dp-env.sh with its scrub (the three lines marked `# scrub`) removed
+mkdir nu; sed '/# scrub$/d' dp-env.sh > nu/dp-env.sh; cp t1.sh t2.sh t3.sh t3m.sh sandwich.sh spellplace.py nu/
+run "t2.sh PLACE=\"\$GP\" RCLONE_CONFIG_NL_TYPE=memory, dp-env.sh without its scrub" nu/r16 PLACE="$GP" RCLONE_CONFIG_NL_TYPE=memory bash t2.sh
+run "t3.sh (default PLACE: first colon, options ignored)" r17 bash t3.sh
+run "t3.sh PLACE=place_split typed (type= honoured, still first colon)" r18 PLACE='place_split typed "$1" "$2"' bash t3.sh
+run "t3.sh PLACE=\"\$GP\"" r19 PLACE="$GP" bash t3.sh
+run "t3.sh PLACE='exit 10' (refuses everything)" r20 PLACE='exit 10' bash t3.sh
+run "t3.sh place=\"\$GP\" (the setting in another case)" r21 place="$GP" bash t3.sh
+run "t3m.sh" r22 bash t3m.sh
+# r1 findings: a listing check after the swap, a compare made twice, a swap after the record's own read, flags before
+# the command, a reader that reads the dump twice, a partial bypass, and a PLACE that allows everything
+run "t1.sh RECORD=<check, refuse if the destination lists anything but a.bin, record its md5sum>" r23 RECORD='timeout 120 rclone check "$1" "$2" >/dev/null 2>&1 || exit 10; [ "$(timeout 120 rclone lsf "$2")" = a.bin ] || exit 10; timeout 120 rclone md5sum "$2" | cut -d" " -f1' bash t1.sh
+run "t1.sh RECORD=<check, then record_after> (compares twice)" r24 RECORD='timeout 120 rclone check "$1" "$2" >/dev/null 2>&1 || exit 10; record_after "$1" "$2"' bash t1.sh
+run "t1.sh RECORD=<check, then record_after> SWAP_AFTER=check (every position of check)" r25 RECORD='timeout 120 rclone check "$1" "$2" >/dev/null 2>&1 || exit 10; record_after "$1" "$2"' SWAP_AFTER=check bash t1.sh
+run "t1.sh RECORD=<check, then record_after> SWAP_AFTER='check#2' (an occurrence number, which r2 accepted)" r26 RECORD='timeout 120 rclone check "$1" "$2" >/dev/null 2>&1 || exit 10; record_after "$1" "$2"' SWAP_AFTER='check#2' bash t1.sh
+run "t1.sh SWAP_AFTER=lsjson (the default step's own record read)" r27 SWAP_AFTER=lsjson bash t1.sh
+run "t1.sh RECORD=<record_after with -vv --retries 1 --config before every command>" r28 RECORD='R(){ timeout 120 rclone -vv --retries 1 --config "$RCLONE_CONFIG" "$@"; }; record_after "$1" "$2"' bash t1.sh
+run "t2.sh PLACE=<refuses an unread first dump, then place_dump reads it again> (the same call twice)" r29 PLACE='d=$(timeout 120 rclone config dump 2>/dev/null); [ -n "$d" ] || exit 10; place_dump "$1" "$2"' bash t2.sh
+run "t2.sh PLACE=<refuses an unread dump, then place_fsinfo; --config, -vv, --retries 1 before each command>" r30 PLACE='R(){ timeout 120 rclone --config "$RCLONE_CONFIG" -vv --retries 1 "$@"; }; d=$(R config dump 2>/dev/null); [ -n "$d" ] || exit 10; place_fsinfo "$1" "$2"' bash t2.sh
+run "t2.sh PLACE=<one dump through PATH, then place_dump by absolute path> (a partial bypass)" r31 RB="$(command -v rclone)" PLACE='timeout 120 rclone config dump >/dev/null 2>&1 || exit 10; R(){ timeout 120 "$RB" "$@"; }; place_dump "$1" "$2"' bash t2.sh
+run "t2.sh PLACE='exit 0' (allows everything)" r32 PLACE='exit 0' bash t2.sh
+# r2 findings and the round-3 class hunt: realistic steps another project might write, each run unchanged
+MS='a=$(timeout 120 rclone md5sum "$1" | cut -d" " -f1); b=$(timeout 120 rclone md5sum "$2" | cut -d" " -f1); [ "$a" = "$b" ] || exit 10; h=$(timeout 120 rclone md5sum "$2" | cut -d" " -f1); timeout 120 rclone size "$2" >/dev/null; echo "$h"'
+FS='timeout 120 rclone backend features "$2" 2>/dev/null | python -c "import json, os, sys; d = json.loads(sys.stdin.read()); s = os.path.normcase(os.path.abspath(sys.argv[1])); r = os.path.normcase(os.path.abspath(d[\"Root\"].replace(\"//?/\", \"\"))); sys.exit(0 if not d[\"Features\"].get(\"IsLocal\") else 10 if r == s or r.startswith(s + os.sep) or s.startswith(r + os.sep) else 0)" "$1"; [ $? = 0 ] || { echo "refused: no features answer, or it stores in the source"; exit 10; }'
+run "t1.sh RECORD=<md5sum src, md5sum dst, compare, md5sum dst again to record, rclone size> (the r2 seat's sandwich)" r33 RECORD="$MS" bash t1.sh
+run "t1.sh RECORD=<the same> SWAP_AFTER=md5sum" r34 RECORD="$MS" SWAP_AFTER=md5sum bash t1.sh
+run "t1.sh RECORD=<check retried once, then record hashsum md5 of the destination>" r35 RECORD='for i in 1 2; do timeout 120 rclone check "$1" "$2" >/dev/null 2>&1 && ok=1 && break; done; [ -n "$ok" ] || exit 10; timeout 120 rclone hashsum md5 "$2" | cut -d" " -f1' bash t1.sh
+run "t1.sh RECORD=<read the destination md5 first, then check, record what was read>" r36 RECORD='h=$(timeout 120 rclone md5sum "$2" | cut -d" " -f1); timeout 120 rclone check "$1" "$2" >/dev/null 2>&1 || exit 10; echo "$h"' bash t1.sh
+run "t1.sh RECORD=<check, then coreutils md5sum of the local file> (no rclone call after the check)" r37 RECORD='timeout 120 rclone check "$1" "$2" >/dev/null 2>&1 || exit 10; md5sum "$2/a.bin" | cut -d" " -f1' bash t1.sh
+run "t1.sh RECORD=<python spawns rclone check, then rclone lsjson records> (the compare bypasses the shim)" r38 RECORD='python -c "import subprocess, sys; sys.exit(0 if subprocess.run([\"rclone\", \"check\", sys.argv[1], sys.argv[2]], capture_output=True).returncode == 0 else 10)" "$1" "$2" || exit 10; timeout 120 rclone lsjson --hash --hash-type md5 "$2" | python -c "import json, sys; print(json.load(sys.stdin)[0][\"Hashes\"][\"md5\"])"' bash t1.sh
+run "t1.sh rclone_exclude='*.bin' (an ambient setting in lower case)" r39 rclone_exclude='*.bin' bash t1.sh
+run "t1.sh RECORD=<record the source's md5sum, no check> (allows everything)" r40 RECORD='timeout 120 rclone md5sum "$1" | cut -d" " -f1' bash t1.sh
+run "t1.sh RECORD=' ' (only whitespace)" r41 RECORD=' ' bash t1.sh
+run "t1.sh RECORD=<check --download, then compare the listed hash with the source's md5sum before recording>" r42 RECORD='timeout 120 rclone check --download "$1" "$2" >/dev/null 2>&1 || exit 10; h=$(timeout 120 rclone lsjson --hash --hash-type md5 "$2" | python -c "import json, sys; print(json.load(sys.stdin)[0][\"Hashes\"][\"md5\"])"); s=$(timeout 120 rclone md5sum "$1" | cut -d" " -f1); [ "$h" = "$s" ] || exit 10; echo "$h"' bash t1.sh
+run "t2.sh PLACE=<reads the dump, retries an empty one once, then falls back to place_dump> (the r2 seat's retry)" r43 PLACE='d=$(timeout 120 rclone config dump 2>/dev/null); [ -n "$d" ] || d=$(timeout 120 rclone config dump 2>/dev/null); if [ -n "$d" ]; then printf "%s" "$d" | python ../spellplace.py "$1" "$2"; else place_dump "$1" "$2"; fi' bash t2.sh
+run "t2.sh PLACE=<retries the dump up to 3 times, then hands spellplace.py whatever it has>" r44 PLACE='for t in 1 2 3; do d=$(timeout 120 rclone config dump 2>/dev/null) && [ -n "$d" ] && break; d=; done; printf "%s" "$d" | python ../spellplace.py "$1" "$2"' bash t2.sh
+run "t2.sh PLACE=<a name listremotes does not show is a path; otherwise place_dump>" r45 PLACE='r=$(timeout 120 rclone listremotes 2>/dev/null); n=${2%%:*}; if printf "%s\n" "$r" | grep -qxF "$n:"; then place_dump "$1" "$2"; else python -c "import os, sys; s = os.path.normcase(os.path.abspath(sys.argv[1])); r = os.path.normcase(os.path.abspath(sys.argv[2])); sys.exit(10 if r == s or r.startswith(s + os.sep) else 0)" "$1" "$2"; fi' bash t2.sh
+run "t2.sh PLACE=<config show NAME; a remote whose type it cannot read is not local>" r46 PLACE='n=${2%%:*}; case "$2" in ?:*|/*) n= ;; esac; t=; [ -n "$n" ] && t=$(timeout 120 rclone config show "$n" 2>/dev/null | sed -n "s/^type = //p" | tr -d "\r"); [ "$t" = local ] || exit 0; python -c "import os, sys; s = os.path.normcase(os.path.abspath(sys.argv[1])); r = os.path.normcase(os.path.abspath(sys.argv[2])); sys.exit(10 if r == s or r.startswith(s + os.sep) else 0)" "$1" "${2#*:}"' bash t2.sh
+run "t2.sh PLACE=\"\$FS\" (backend features; no answer, or a broken one, refuses)" r47 PLACE="$FS" bash t2.sh
+run "t2.sh PLACE=<allows on odd calls, refuses on even ones> (flips)" r48 PLACE='n=$(( $(cat ../n 2>/dev/null || echo 0) + 1 )); echo $n > ../n; timeout 120 rclone config dump >/dev/null; [ $((n % 2)) = 1 ] && exit 0; exit 10' bash t2.sh
+run "t2.sh PLACE=\"\$GP\" rclone_config_nl_type=memory (the ambient override in lower case)" r49 PLACE="$GP" rclone_config_nl_type=memory bash t2.sh
+run "t2.sh PLACE=<place_dump with --config=X and --low-level-retries 1 before the command>" r50 PLACE='R(){ timeout 120 rclone --config="$RCLONE_CONFIG" --low-level-retries 1 "$@"; }; place_dump "$1" "$2"' bash t2.sh
+run "t3.sh PLACE=\"\$FS\"" r51 PLACE="$FS" bash t3.sh
+run "t3.sh PLACE=<\$GP with --config before the command>" r52 PLACE='timeout 120 rclone --config "$RCLONE_CONFIG" config dump 2>/dev/null | python ../spellplace.py "$1" "$2"' bash t3.sh
+run "t1.sh RECORD=<record_after, then exit 2> (crashes after its calls)" r53 RECORD='record_after "$1" "$2" >/dev/null; exit 2' bash t1.sh
+run "t2.sh PLACE=<refuses a failed or empty dump, then parses it leniently with place_dump's parser>" r54 PLACE='d=$(timeout 120 rclone config dump 2>/dev/null) && [ -n "$d" ] || exit 10; R(){ printf "%s" "$d"; }; place_dump "$1" "$2"' bash t2.sh
+# round 4: the limits the round-3 seat found, each stated in the printed line; and the hook timeout
+run "t1.sh RECORD=<rclone copy, then sandwich.sh> (correct, but it repairs the destination before it checks)" r55 RECORD='timeout 120 rclone copy "$1" "$2" >/dev/null 2>&1 || exit 3; bash ../sandwich.sh "$1" "$2"' bash t1.sh
+run "t1.sh RECORD=<rclone copy, then record_after> (has the trap, and repairs the destination first)" r56 RECORD='timeout 120 rclone copy "$1" "$2" >/dev/null 2>&1 || exit 3; record_after "$1" "$2"' bash t1.sh
+run "t2.sh PLACE=<the dump; if it errors, listremotes; a name it does not list is a path> (fails open on an error, then an empty answer)" r57 PLACE='d=$(timeout 120 rclone config dump 2>/dev/null) || { r=$(timeout 120 rclone listremotes 2>/dev/null) || exit 10; printf "%s\n" "$r" | grep -qxF "${2%%:*}:" && exit 10; python -c "import os, sys; s = os.path.normcase(os.path.abspath(sys.argv[1])); r = os.path.normcase(os.path.abspath(sys.argv[2])); sys.exit(10 if r == s or r.startswith(s + os.sep) else 0)" "$1" "$2"; exit $?; }; printf "%s" "$d" | python ../spellplace.py "$1" "$2"' bash t2.sh
+run "t2.sh PLACE=<retries the dump until it succeeds, then spellplace.py> HOOK_TIMEOUT=10 (never ends while every call fails)" r58 HOOK_TIMEOUT=10 PLACE='until d=$(timeout 120 rclone config dump 2>/dev/null) && [ -n "$d" ]; do :; done; printf "%s" "$d" | python ../spellplace.py "$1" "$2"' bash t2.sh
+```
+
+```
+== t1.sh (default RECORD: checks, then records the hash a later listing shows)
+RECORD: record_after "$1" "$2"
+HOOK_TIMEOUT: 300 s per hook call
+SWAP_AFTER: unset (every call position is tried)
+a.bin md5: compared 94cbfbe694444e77d471056afb576540, swapped in 880cc98f59b5d36d90d4d8694df18737 (same size)
+control: unchanged destination verified, recorded 94cbfbe694444e77d471056afb576540
+control: a destination that differs from the start refused
+calls RECORD makes through the shim, in order: 1 check, 2 lsjson
+rewrite after 1  check          -> RED: verified, and recorded 880cc98f59b5d36d90d4d8694df18737, the hash of bytes the check never compared
+   calls: check swapped lsjson
+rewrite after 2  lsjson         -> verified, recorded 94cbfbe694444e77d471056afb576540, the hash the check compared
+   calls: check lsjson swapped
+control: unchanged destination verified, recorded 94cbfbe694444e77d471056afb576540
+control: a destination that differs from the start refused
+RECORD gave the same answer to all 4 questions when asked again
+T1: RED (verified, and recorded the rewritten file's hash, with the rewrite after call(s) 1)
+exit 1
+== t1.sh RECORD="$GS" (the listing sandwich)
+RECORD: bash ../sandwich.sh "$1" "$2"
+HOOK_TIMEOUT: 300 s per hook call
+SWAP_AFTER: unset (every call position is tried)
+a.bin md5: compared 94cbfbe694444e77d471056afb576540, swapped in 880cc98f59b5d36d90d4d8694df18737 (same size)
+control: unchanged destination verified, recorded 94cbfbe694444e77d471056afb576540
+control: a destination that differs from the start refused
+calls RECORD makes through the shim, in order: 1 lsjson, 2 check, 3 lsjson
+rewrite after 1  lsjson         -> refused (refused: the check found a difference)
+   calls: lsjson swapped check
+rewrite after 2  check          -> refused (refused: the destination changed while this step was verifying it; nothing recorded)
+   calls: lsjson check swapped lsjson
+rewrite after 3  lsjson         -> verified, recorded 94cbfbe694444e77d471056afb576540, the hash the check compared
+   calls: lsjson check lsjson swapped
+control: unchanged destination verified, recorded 94cbfbe694444e77d471056afb576540
+control: a destination that differs from the start refused
+RECORD gave the same answer to all 5 questions when asked again
+T1: GREEN (the rewrite was tried after each of the 3 position(s) of the 3 call(s) the shim saw, and no answer recorded the rewritten hash; limit: a compare or read made outside the shim was not swept)
+exit 0
+== t1.sh RECORD=<check, then record the SOURCE's md5> (records what the check compared)
+RECORD: timeout 120 rclone check "$1" "$2" >/dev/null 2>&1 || exit 10; timeout 120 rclone md5sum "$1" | cut -d" " -f1
+HOOK_TIMEOUT: 300 s per hook call
+SWAP_AFTER: unset (every call position is tried)
+a.bin md5: compared 94cbfbe694444e77d471056afb576540, swapped in 880cc98f59b5d36d90d4d8694df18737 (same size)
+control: unchanged destination verified, recorded 94cbfbe694444e77d471056afb576540
+control: a destination that differs from the start refused
+calls RECORD makes through the shim, in order: 1 check, 2 md5sum
+rewrite after 1  check          -> verified, recorded 94cbfbe694444e77d471056afb576540, the hash the check compared
+   calls: check swapped md5sum
+rewrite after 2  md5sum         -> verified, recorded 94cbfbe694444e77d471056afb576540, the hash the check compared
+   calls: check md5sum swapped
+control: unchanged destination verified, recorded 94cbfbe694444e77d471056afb576540
+control: a destination that differs from the start refused
+RECORD gave the same answer to all 4 questions when asked again
+T1: GREEN (the rewrite was tried after each of the 2 position(s) of the 2 call(s) the shim saw, and no answer recorded the rewritten hash; limit: a compare or read made outside the shim was not swept)
+exit 0
+== t1.sh RECORD='exit 10' (refuses everything)
+RECORD: exit 10
+HOOK_TIMEOUT: 300 s per hook call
+SWAP_AFTER: unset (every call position is tried)
+a.bin md5: compared 94cbfbe694444e77d471056afb576540, swapped in 880cc98f59b5d36d90d4d8694df18737 (same size)
+INCONCLUSIVE: RECORD made no rclone call through the shim (exit 10), so there is no position to rewrite after (see dp-env.sh)
+exit 3
+== t1.sh RECORD=<python spawning rclone.exe itself> (bypasses the shim)
+RECORD: python -c "import subprocess, sys; subprocess.run([\"rclone\", \"check\", sys.argv[1], sys.argv[2]], capture_output=True); print(\"-\")" "$1" "$2"
+HOOK_TIMEOUT: 300 s per hook call
+SWAP_AFTER: unset (every call position is tried)
+a.bin md5: compared 94cbfbe694444e77d471056afb576540, swapped in 880cc98f59b5d36d90d4d8694df18737 (same size)
+INCONCLUSIVE: RECORD made no rclone call through the shim (exit 0), so there is no position to rewrite after (see dp-env.sh)
+exit 3
+== t1.sh SWAP_AFTER=md5sum (a call the default step never makes)
+RECORD: record_after "$1" "$2"
+HOOK_TIMEOUT: 300 s per hook call
+SWAP_AFTER: md5sum (every position of this call is tried)
+a.bin md5: compared 94cbfbe694444e77d471056afb576540, swapped in 880cc98f59b5d36d90d4d8694df18737 (same size)
+control: unchanged destination verified, recorded 94cbfbe694444e77d471056afb576540
+control: a destination that differs from the start refused
+calls RECORD makes through the shim, in order: 1 check, 2 lsjson
+INCONCLUSIVE: RECORD never ran `rclone md5sum` through the shim; unset SWAP_AFTER to try every position
+exit 3
+== t1.sh RECORD=<record_after on its first call, refuses after> (answers by call count)
+RECORD: n=$(( $(cat ../n 2>/dev/null || echo 0) + 1 )); echo $n > ../n; if [ $n -le 1 ]; then record_after "$1" "$2"; else exit 10; fi
+HOOK_TIMEOUT: 300 s per hook call
+SWAP_AFTER: unset (every call position is tried)
+a.bin md5: compared 94cbfbe694444e77d471056afb576540, swapped in 880cc98f59b5d36d90d4d8694df18737 (same size)
+control: unchanged destination verified, recorded 94cbfbe694444e77d471056afb576540
+control: a destination that differs from the start refused
+calls RECORD makes through the shim, in order: 1 check, 2 lsjson
+rewrite after 1  check          -> INCONCLUSIVE: the rewrite did not land right after the control's call 1 (calls: )
+rewrite after 2  lsjson         -> INCONCLUSIVE: the rewrite did not land right after the control's call 2 (calls: )
+INCONCLUSIVE: RECORD answered steady with exit 0 at first and exit 10 when asked again: its answers depend on earlier calls, which the hook contract forbids
+exit 3
+== t1.sh Record="$GS" (the setting in another case)
+INCONCLUSIVE: Record is set, but this block reads RECORD (the name is case-sensitive); calling nothing
+exit 3
+== t1.sh RCLONE_CONFIG_E-PAR_TYPE=local (a name bash cannot unset)
+INCONCLUSIVE: rclone would still inherit RCLONE_CONFIG_E-PAR_TYPE (bash cannot unset these); calling nothing. Run the block as: env -u NAME bash <block>.sh
+exit 3
+== t2.sh (default PLACE: an unread dump is nothing configured)
+PLACE: place_dump "$1" "$2"
+HOOK_TIMEOUT: 300 s per hook call
+measured: nl:<src>/backup stores into the source; nl:<t>/elsewhere stores into elsewhere/
+control: <t>/elsewhere allowed
+control: nl:<t>/elsewhere allowed
+every call working: refused
+calls PLACE makes through the shim, in order: 1 config dump
+1  config dump       only fail  -> RED: allowed while it could not tell (it stores into the source)
+1  config dump       only empty -> RED: allowed while it could not tell (it stores into the source)
+1  config dump       only cut   -> RED: allowed while it could not tell (it stores into the source)
+1  config dump       from fail  -> RED: allowed while it could not tell (it stores into the source)
+1  config dump       from empty -> RED: allowed while it could not tell (it stores into the source)
+1  config dump       from cut   -> RED: allowed while it could not tell (it stores into the source)
+PLACE gave the same answer to all 9 questions when asked again
+T2: RED (6 case(s) allowed a destination inside the source)
+exit 1
+== t2.sh PLACE=place_fsinfo (no features answer is not local)
+PLACE: place_fsinfo "$1" "$2"
+HOOK_TIMEOUT: 300 s per hook call
+measured: nl:<src>/backup stores into the source; nl:<t>/elsewhere stores into elsewhere/
+control: <t>/elsewhere allowed
+control: nl:<t>/elsewhere allowed
+every call working: refused
+calls PLACE makes through the shim, in order: 1 backend features
+1  backend features  only fail  -> RED: allowed while it could not tell (it stores into the source)
+1  backend features  only empty -> RED: allowed while it could not tell (it stores into the source)
+1  backend features  only cut   -> RED: allowed while it could not tell (it stores into the source)
+1  backend features  from fail  -> RED: allowed while it could not tell (it stores into the source)
+1  backend features  from empty -> RED: allowed while it could not tell (it stores into the source)
+1  backend features  from cut   -> RED: allowed while it could not tell (it stores into the source)
+PLACE gave the same answer to all 9 questions when asked again
+T2: RED (6 case(s) allowed a destination inside the source)
+exit 1
+== t2.sh PLACE="$GP"
+PLACE: timeout 120 rclone config dump 2>/dev/null | python ../spellplace.py "$1" "$2"
+HOOK_TIMEOUT: 300 s per hook call
+measured: nl:<src>/backup stores into the source; nl:<t>/elsewhere stores into elsewhere/
+control: <t>/elsewhere allowed
+control: nl:<t>/elsewhere allowed
+every call working: refused (refused: stores at <dir>/r12/t2/src/backup, which overlaps the source)
+calls PLACE makes through the shim, in order: 1 config dump
+1  config dump       only fail  -> GREEN: refused (refused: could not read the rclone config, so cannot tell where it stores)
+1  config dump       only empty -> GREEN: refused (refused: could not read the rclone config, so cannot tell where it stores)
+1  config dump       only cut   -> GREEN: refused (refused: could not read the rclone config, so cannot tell where it stores)
+1  config dump       from fail  -> GREEN: refused (refused: could not read the rclone config, so cannot tell where it stores)
+1  config dump       from empty -> GREEN: refused (refused: could not read the rclone config, so cannot tell where it stores)
+1  config dump       from cut   -> GREEN: refused (refused: could not read the rclone config, so cannot tell where it stores)
+PLACE gave the same answer to all 9 questions when asked again
+T2: GREEN (refused with every call working, and with each of the 1 call(s) it made through the shim failed by position, alone and with every later call failed too, as an error, an empty answer and a cut answer; NOT tried: a call that bypasses the shim, a call that never returns, two failures with a working call between them, two failures whose answers differ between calls (e.g. an error, then an empty answer))
+exit 0
+== t2.sh PLACE='exit 10' (refuses everything)
+PLACE: exit 10
+HOOK_TIMEOUT: 300 s per hook call
+measured: nl:<src>/backup stores into the source; nl:<t>/elsewhere stores into elsewhere/
+INCONCLUSIVE: PLACE does not allow an independent destination (<t>/elsewhere)
+exit 3
+== t2.sh PLACE=<allows its first 2 calls, refuses after> (answers by call count)
+PLACE: n=$(( $(cat ../n 2>/dev/null || echo 0) + 1 )); echo $n > ../n; timeout 120 rclone config dump >/dev/null; [ $n -le 2 ] && exit 0; exit 10
+HOOK_TIMEOUT: 300 s per hook call
+measured: nl:<src>/backup stores into the source; nl:<t>/elsewhere stores into elsewhere/
+control: <t>/elsewhere allowed
+control: nl:<t>/elsewhere allowed
+every call working: refused
+calls PLACE makes through the shim, in order: 1 config dump
+1  config dump       only fail  -> GREEN: refused (dp shim: injected failure of call 1 (config dump))
+1  config dump       only empty -> GREEN: refused
+1  config dump       only cut   -> GREEN: refused
+1  config dump       from fail  -> GREEN: refused (dp shim: injected failure of call 1 (config dump))
+1  config dump       from empty -> GREEN: refused
+1  config dump       from cut   -> GREEN: refused
+INCONCLUSIVE: PLACE answered nl:<dir>/r14/t2/elsewhere with exit 0 at first and exit 10 when asked again: its answers depend on earlier calls, which the hook contract forbids
+exit 3
+== t2.sh PLACE="$GP" RCLONE_CONFIG_NL_TYPE=memory (an ambient override of the fixture's remote)
+dp-env.sh: unset inherited RCLONE_CONFIG_NL_TYPE
+PLACE: timeout 120 rclone config dump 2>/dev/null | python ../spellplace.py "$1" "$2"
+HOOK_TIMEOUT: 300 s per hook call
+measured: nl:<src>/backup stores into the source; nl:<t>/elsewhere stores into elsewhere/
+control: <t>/elsewhere allowed
+control: nl:<t>/elsewhere allowed
+every call working: refused (refused: stores at <dir>/r15/t2/src/backup, which overlaps the source)
+calls PLACE makes through the shim, in order: 1 config dump
+1  config dump       only fail  -> GREEN: refused (refused: could not read the rclone config, so cannot tell where it stores)
+1  config dump       only empty -> GREEN: refused (refused: could not read the rclone config, so cannot tell where it stores)
+1  config dump       only cut   -> GREEN: refused (refused: could not read the rclone config, so cannot tell where it stores)
+1  config dump       from fail  -> GREEN: refused (refused: could not read the rclone config, so cannot tell where it stores)
+1  config dump       from empty -> GREEN: refused (refused: could not read the rclone config, so cannot tell where it stores)
+1  config dump       from cut   -> GREEN: refused (refused: could not read the rclone config, so cannot tell where it stores)
+PLACE gave the same answer to all 9 questions when asked again
+T2: GREEN (refused with every call working, and with each of the 1 call(s) it made through the shim failed by position, alone and with every later call failed too, as an error, an empty answer and a cut answer; NOT tried: a call that bypasses the shim, a call that never returns, two failures with a working call between them, two failures whose answers differ between calls (e.g. an error, then an empty answer))
+exit 0
+== t2.sh PLACE="$GP" RCLONE_CONFIG_NL_TYPE=memory, dp-env.sh without its scrub
+PLACE: timeout 120 rclone config dump 2>/dev/null | python ../spellplace.py "$1" "$2"
+HOOK_TIMEOUT: 300 s per hook call
+INCONCLUSIVE: nl:<dir>/nu/r16/t2/src/backup did not store into the source; nothing measured
+exit 3
+== t3.sh (default PLACE: first colon, options ignored)
+PLACE: place_split first "$1" "$2"
+HOOK_TIMEOUT: 300 s per hook call
+control: <t>/elsewhere allowed
+control: mm: allowed
+override  mm,type=local:<src>/backup                         stores into the source; PLACE -> RED: allowed
+quoted-1  mm,description='a:b',type=local:<src>/backup       stores into the source; PLACE -> RED: allowed
+quoted-2  mm,description="x,y:z",type=local:<src>/backup     stores into the source; PLACE -> RED: allowed
+alias     al:                                                stores into the source; PLACE -> RED: allowed
+letter    c:src/backup                                       stores into the source; PLACE -> RED: allowed
+PLACE gave the same answer to all 7 questions when asked again
+T3: RED (5 of 5 case(s) RED, 0 INCONCLUSIVE)
+exit 1
+== t3.sh PLACE=place_split typed (type= honoured, still first colon)
+PLACE: place_split typed "$1" "$2"
+HOOK_TIMEOUT: 300 s per hook call
+control: <t>/elsewhere allowed
+control: mm: allowed
+override  mm,type=local:<src>/backup                         stores into the source; PLACE -> GREEN: refused
+quoted-1  mm,description='a:b',type=local:<src>/backup       stores into the source; PLACE -> RED: allowed
+quoted-2  mm,description="x,y:z",type=local:<src>/backup     stores into the source; PLACE -> RED: allowed
+alias     al:                                                stores into the source; PLACE -> RED: allowed
+letter    c:src/backup                                       stores into the source; PLACE -> RED: allowed
+PLACE gave the same answer to all 7 questions when asked again
+T3: RED (4 of 5 case(s) RED, 0 INCONCLUSIVE)
+exit 1
+== t3.sh PLACE="$GP"
+PLACE: timeout 120 rclone config dump 2>/dev/null | python ../spellplace.py "$1" "$2"
+HOOK_TIMEOUT: 300 s per hook call
+control: <t>/elsewhere allowed
+control: mm: allowed
+override  mm,type=local:<src>/backup                         stores into the source; PLACE -> GREEN: refused (refused: stores at <dir>/r19/t3/src/backup, which overlaps the source)
+quoted-1  mm,description='a:b',type=local:<src>/backup       stores into the source; PLACE -> GREEN: refused (refused: stores at <dir>/r19/t3/src/backup, which overlaps the source)
+quoted-2  mm,description="x,y:z",type=local:<src>/backup     stores into the source; PLACE -> GREEN: refused (refused: stores at <dir>/r19/t3/src/backup, which overlaps the source)
+alias     al:                                                stores into the source; PLACE -> GREEN: refused (refused: stores at <dir>/r19/t3/src/backup, which overlaps the source)
+letter    c:src/backup                                       stores into the source; PLACE -> GREEN: refused (refused: stores at c:src/backup, which overlaps the source)
+PLACE gave the same answer to all 7 questions when asked again
+T3: GREEN (all 5 spellings measured storing into the source, and refused)
+exit 0
+== t3.sh PLACE='exit 10' (refuses everything)
+PLACE: exit 10
+HOOK_TIMEOUT: 300 s per hook call
+INCONCLUSIVE: PLACE does not allow an independent destination (<t>/elsewhere)
+exit 3
+== t3.sh place="$GP" (the setting in another case)
+INCONCLUSIVE: place is set, but this block reads PLACE (the name is case-sensitive); calling nothing
+exit 3
+== t3m.sh
+:memory,type=local:<d>                 fsinfo Name=:memory IsLocal=False   -> nothing on disk
+mm,type=local:<d>                      fsinfo Name=mm IsLocal=True         -> stored on disk
+mm,TYPE=local:<d>                      fsinfo Name=mm IsLocal=False        -> nothing on disk
+mm,description='a:b',type=local:<d>    fsinfo Name=mm IsLocal=True         -> stored on disk
+mm,description="a:b",type=local:<d>    fsinfo Name=mm IsLocal=True         -> stored on disk
+m: (a section [m] of type memory exists) -> Name=local IsLocal=True Root=//?/M:/
+mm: -> Name=mm IsLocal=False
+exit 0
+== t1.sh RECORD=<check, refuse if the destination lists anything but a.bin, record its md5sum>
+RECORD: timeout 120 rclone check "$1" "$2" >/dev/null 2>&1 || exit 10; [ "$(timeout 120 rclone lsf "$2")" = a.bin ] || exit 10; timeout 120 rclone md5sum "$2" | cut -d" " -f1
+HOOK_TIMEOUT: 300 s per hook call
+SWAP_AFTER: unset (every call position is tried)
+a.bin md5: compared 94cbfbe694444e77d471056afb576540, swapped in 880cc98f59b5d36d90d4d8694df18737 (same size)
+control: unchanged destination verified, recorded 94cbfbe694444e77d471056afb576540
+control: a destination that differs from the start refused
+calls RECORD makes through the shim, in order: 1 check, 2 lsf, 3 md5sum
+rewrite after 1  check          -> RED: verified, and recorded 880cc98f59b5d36d90d4d8694df18737, the hash of bytes the check never compared
+   calls: check swapped lsf md5sum
+rewrite after 2  lsf            -> RED: verified, and recorded 880cc98f59b5d36d90d4d8694df18737, the hash of bytes the check never compared
+   calls: check lsf swapped md5sum
+rewrite after 3  md5sum         -> verified, recorded 94cbfbe694444e77d471056afb576540, the hash the check compared
+   calls: check lsf md5sum swapped
+control: unchanged destination verified, recorded 94cbfbe694444e77d471056afb576540
+control: a destination that differs from the start refused
+RECORD gave the same answer to all 5 questions when asked again
+T1: RED (verified, and recorded the rewritten file's hash, with the rewrite after call(s) 1 2)
+exit 1
+== t1.sh RECORD=<check, then record_after> (compares twice)
+RECORD: timeout 120 rclone check "$1" "$2" >/dev/null 2>&1 || exit 10; record_after "$1" "$2"
+HOOK_TIMEOUT: 300 s per hook call
+SWAP_AFTER: unset (every call position is tried)
+a.bin md5: compared 94cbfbe694444e77d471056afb576540, swapped in 880cc98f59b5d36d90d4d8694df18737 (same size)
+control: unchanged destination verified, recorded 94cbfbe694444e77d471056afb576540
+control: a destination that differs from the start refused
+calls RECORD makes through the shim, in order: 1 check, 2 check, 3 lsjson
+rewrite after 1  check          -> refused
+   calls: check swapped check
+rewrite after 2  check          -> RED: verified, and recorded 880cc98f59b5d36d90d4d8694df18737, the hash of bytes the check never compared
+   calls: check check swapped lsjson
+rewrite after 3  lsjson         -> verified, recorded 94cbfbe694444e77d471056afb576540, the hash the check compared
+   calls: check check lsjson swapped
+control: unchanged destination verified, recorded 94cbfbe694444e77d471056afb576540
+control: a destination that differs from the start refused
+RECORD gave the same answer to all 5 questions when asked again
+T1: RED (verified, and recorded the rewritten file's hash, with the rewrite after call(s) 2)
+exit 1
+== t1.sh RECORD=<check, then record_after> SWAP_AFTER=check (every position of check)
+RECORD: timeout 120 rclone check "$1" "$2" >/dev/null 2>&1 || exit 10; record_after "$1" "$2"
+HOOK_TIMEOUT: 300 s per hook call
+SWAP_AFTER: check (every position of this call is tried)
+a.bin md5: compared 94cbfbe694444e77d471056afb576540, swapped in 880cc98f59b5d36d90d4d8694df18737 (same size)
+control: unchanged destination verified, recorded 94cbfbe694444e77d471056afb576540
+control: a destination that differs from the start refused
+calls RECORD makes through the shim, in order: 1 check, 2 check, 3 lsjson
+rewrite after 1  check          -> refused
+   calls: check swapped check
+rewrite after 2  check          -> RED: verified, and recorded 880cc98f59b5d36d90d4d8694df18737, the hash of bytes the check never compared
+   calls: check check swapped lsjson
+control: unchanged destination verified, recorded 94cbfbe694444e77d471056afb576540
+control: a destination that differs from the start refused
+RECORD gave the same answer to all 4 questions when asked again
+T1: RED (verified, and recorded the rewritten file's hash, with the rewrite after call(s) 2)
+exit 1
+== t1.sh RECORD=<check, then record_after> SWAP_AFTER='check#2' (an occurrence number, which r2 accepted)
+INCONCLUSIVE: SWAP_AFTER, when set, must be one rclone call name as the shim names it (e.g. check, md5sum, config dump) and nothing else: every position of it is tried; calling nothing
+exit 3
+== t1.sh SWAP_AFTER=lsjson (the default step's own record read)
+RECORD: record_after "$1" "$2"
+HOOK_TIMEOUT: 300 s per hook call
+SWAP_AFTER: lsjson (every position of this call is tried)
+a.bin md5: compared 94cbfbe694444e77d471056afb576540, swapped in 880cc98f59b5d36d90d4d8694df18737 (same size)
+control: unchanged destination verified, recorded 94cbfbe694444e77d471056afb576540
+control: a destination that differs from the start refused
+calls RECORD makes through the shim, in order: 1 check, 2 lsjson
+rewrite after 2  lsjson         -> verified, recorded 94cbfbe694444e77d471056afb576540, the hash the check compared
+   calls: check lsjson swapped
+control: unchanged destination verified, recorded 94cbfbe694444e77d471056afb576540
+control: a destination that differs from the start refused
+RECORD gave the same answer to all 3 questions when asked again
+T1: INCONCLUSIVE (no position put the rewrite between two calls the shim saw and got a refusal or the compared hash, so the trap was never exercised)
+exit 3
+== t1.sh RECORD=<record_after with -vv --retries 1 --config before every command>
+RECORD: R(){ timeout 120 rclone -vv --retries 1 --config "$RCLONE_CONFIG" "$@"; }; record_after "$1" "$2"
+HOOK_TIMEOUT: 300 s per hook call
+SWAP_AFTER: unset (every call position is tried)
+a.bin md5: compared 94cbfbe694444e77d471056afb576540, swapped in 880cc98f59b5d36d90d4d8694df18737 (same size)
+control: unchanged destination verified, recorded 94cbfbe694444e77d471056afb576540
+control: a destination that differs from the start refused
+calls RECORD makes through the shim, in order: 1 check, 2 lsjson
+rewrite after 1  check          -> RED: verified, and recorded 880cc98f59b5d36d90d4d8694df18737, the hash of bytes the check never compared
+   calls: check swapped lsjson
+rewrite after 2  lsjson         -> verified, recorded 94cbfbe694444e77d471056afb576540, the hash the check compared
+   calls: check lsjson swapped
+control: unchanged destination verified, recorded 94cbfbe694444e77d471056afb576540
+control: a destination that differs from the start refused
+RECORD gave the same answer to all 4 questions when asked again
+T1: RED (verified, and recorded the rewritten file's hash, with the rewrite after call(s) 1)
+exit 1
+== t2.sh PLACE=<refuses an unread first dump, then place_dump reads it again> (the same call twice)
+PLACE: d=$(timeout 120 rclone config dump 2>/dev/null); [ -n "$d" ] || exit 10; place_dump "$1" "$2"
+HOOK_TIMEOUT: 300 s per hook call
+measured: nl:<src>/backup stores into the source; nl:<t>/elsewhere stores into elsewhere/
+control: <t>/elsewhere allowed
+control: nl:<t>/elsewhere allowed
+every call working: refused
+calls PLACE makes through the shim, in order: 1 config dump, 2 config dump
+1  config dump       only fail  -> GREEN: refused
+1  config dump       only empty -> GREEN: refused
+1  config dump       only cut   -> GREEN: refused
+1  config dump       from fail  -> GREEN: refused
+1  config dump       from empty -> GREEN: refused
+1  config dump       from cut   -> RED: allowed while it could not tell (it stores into the source)
+2  config dump       only fail  -> RED: allowed while it could not tell (it stores into the source)
+2  config dump       only empty -> RED: allowed while it could not tell (it stores into the source)
+2  config dump       only cut   -> RED: allowed while it could not tell (it stores into the source)
+2  config dump       from fail  -> RED: allowed while it could not tell (it stores into the source)
+2  config dump       from empty -> RED: allowed while it could not tell (it stores into the source)
+2  config dump       from cut   -> RED: allowed while it could not tell (it stores into the source)
+PLACE gave the same answer to all 15 questions when asked again
+T2: RED (7 case(s) allowed a destination inside the source)
+exit 1
+== t2.sh PLACE=<refuses an unread dump, then place_fsinfo; --config, -vv, --retries 1 before each command>
+PLACE: R(){ timeout 120 rclone --config "$RCLONE_CONFIG" -vv --retries 1 "$@"; }; d=$(R config dump 2>/dev/null); [ -n "$d" ] || exit 10; place_fsinfo "$1" "$2"
+HOOK_TIMEOUT: 300 s per hook call
+measured: nl:<src>/backup stores into the source; nl:<t>/elsewhere stores into elsewhere/
+control: <t>/elsewhere allowed
+control: nl:<t>/elsewhere allowed
+every call working: refused
+calls PLACE makes through the shim, in order: 1 config dump, 2 backend features
+1  config dump       only fail  -> GREEN: refused
+1  config dump       only empty -> GREEN: refused
+1  config dump       only cut   -> GREEN: refused
+1  config dump       from fail  -> GREEN: refused
+1  config dump       from empty -> GREEN: refused
+1  config dump       from cut   -> RED: allowed while it could not tell (it stores into the source)
+2  backend features  only fail  -> RED: allowed while it could not tell (it stores into the source)
+2  backend features  only empty -> RED: allowed while it could not tell (it stores into the source)
+2  backend features  only cut   -> RED: allowed while it could not tell (it stores into the source)
+2  backend features  from fail  -> RED: allowed while it could not tell (it stores into the source)
+2  backend features  from empty -> RED: allowed while it could not tell (it stores into the source)
+2  backend features  from cut   -> RED: allowed while it could not tell (it stores into the source)
+PLACE gave the same answer to all 15 questions when asked again
+T2: RED (7 case(s) allowed a destination inside the source)
+exit 1
+== t2.sh PLACE=<one dump through PATH, then place_dump by absolute path> (a partial bypass)
+PLACE: timeout 120 rclone config dump >/dev/null 2>&1 || exit 10; R(){ timeout 120 "$RB" "$@"; }; place_dump "$1" "$2"
+HOOK_TIMEOUT: 300 s per hook call
+measured: nl:<src>/backup stores into the source; nl:<t>/elsewhere stores into elsewhere/
+control: <t>/elsewhere allowed
+control: nl:<t>/elsewhere allowed
+every call working: refused
+calls PLACE makes through the shim, in order: 1 config dump
+1  config dump       only fail  -> GREEN: refused
+1  config dump       only empty -> GREEN: refused
+1  config dump       only cut   -> GREEN: refused
+1  config dump       from fail  -> GREEN: refused
+1  config dump       from empty -> GREEN: refused
+1  config dump       from cut   -> GREEN: refused
+PLACE gave the same answer to all 9 questions when asked again
+T2: GREEN (refused with every call working, and with each of the 1 call(s) it made through the shim failed by position, alone and with every later call failed too, as an error, an empty answer and a cut answer; NOT tried: a call that bypasses the shim, a call that never returns, two failures with a working call between them, two failures whose answers differ between calls (e.g. an error, then an empty answer))
+exit 0
+== t2.sh PLACE='exit 0' (allows everything)
+PLACE: exit 0
+HOOK_TIMEOUT: 300 s per hook call
+measured: nl:<src>/backup stores into the source; nl:<t>/elsewhere stores into elsewhere/
+control: <t>/elsewhere allowed
+control: nl:<t>/elsewhere allowed
+every call working: RED: allowed, and it stores into the source
+calls PLACE makes through the shim: none, so none was failed
+PLACE gave the same answer to all 3 questions when asked again
+T2: RED (1 case(s) allowed a destination inside the source)
+exit 1
+== t1.sh RECORD=<md5sum src, md5sum dst, compare, md5sum dst again to record, rclone size> (the r2 seat's sandwich)
+RECORD: a=$(timeout 120 rclone md5sum "$1" | cut -d" " -f1); b=$(timeout 120 rclone md5sum "$2" | cut -d" " -f1); [ "$a" = "$b" ] || exit 10; h=$(timeout 120 rclone md5sum "$2" | cut -d" " -f1); timeout 120 rclone size "$2" >/dev/null; echo "$h"
+HOOK_TIMEOUT: 300 s per hook call
+SWAP_AFTER: unset (every call position is tried)
+a.bin md5: compared 94cbfbe694444e77d471056afb576540, swapped in 880cc98f59b5d36d90d4d8694df18737 (same size)
+control: unchanged destination verified, recorded 94cbfbe694444e77d471056afb576540
+control: a destination that differs from the start refused
+calls RECORD makes through the shim, in order: 1 md5sum, 2 md5sum, 3 md5sum, 4 size
+rewrite after 1  md5sum         -> refused
+   calls: md5sum swapped md5sum
+rewrite after 2  md5sum         -> RED: verified, and recorded 880cc98f59b5d36d90d4d8694df18737, the hash of bytes the check never compared
+   calls: md5sum md5sum swapped md5sum size
+rewrite after 3  md5sum         -> verified, recorded 94cbfbe694444e77d471056afb576540, the hash the check compared
+   calls: md5sum md5sum md5sum swapped size
+rewrite after 4  size           -> verified, recorded 94cbfbe694444e77d471056afb576540, the hash the check compared
+   calls: md5sum md5sum md5sum size swapped
+control: unchanged destination verified, recorded 94cbfbe694444e77d471056afb576540
+control: a destination that differs from the start refused
+RECORD gave the same answer to all 6 questions when asked again
+T1: RED (verified, and recorded the rewritten file's hash, with the rewrite after call(s) 2)
+exit 1
+== t1.sh RECORD=<the same> SWAP_AFTER=md5sum
+RECORD: a=$(timeout 120 rclone md5sum "$1" | cut -d" " -f1); b=$(timeout 120 rclone md5sum "$2" | cut -d" " -f1); [ "$a" = "$b" ] || exit 10; h=$(timeout 120 rclone md5sum "$2" | cut -d" " -f1); timeout 120 rclone size "$2" >/dev/null; echo "$h"
+HOOK_TIMEOUT: 300 s per hook call
+SWAP_AFTER: md5sum (every position of this call is tried)
+a.bin md5: compared 94cbfbe694444e77d471056afb576540, swapped in 880cc98f59b5d36d90d4d8694df18737 (same size)
+control: unchanged destination verified, recorded 94cbfbe694444e77d471056afb576540
+control: a destination that differs from the start refused
+calls RECORD makes through the shim, in order: 1 md5sum, 2 md5sum, 3 md5sum, 4 size
+rewrite after 1  md5sum         -> refused
+   calls: md5sum swapped md5sum
+rewrite after 2  md5sum         -> RED: verified, and recorded 880cc98f59b5d36d90d4d8694df18737, the hash of bytes the check never compared
+   calls: md5sum md5sum swapped md5sum size
+rewrite after 3  md5sum         -> verified, recorded 94cbfbe694444e77d471056afb576540, the hash the check compared
+   calls: md5sum md5sum md5sum swapped size
+control: unchanged destination verified, recorded 94cbfbe694444e77d471056afb576540
+control: a destination that differs from the start refused
+RECORD gave the same answer to all 5 questions when asked again
+T1: RED (verified, and recorded the rewritten file's hash, with the rewrite after call(s) 2)
+exit 1
+== t1.sh RECORD=<check retried once, then record hashsum md5 of the destination>
+RECORD: for i in 1 2; do timeout 120 rclone check "$1" "$2" >/dev/null 2>&1 && ok=1 && break; done; [ -n "$ok" ] || exit 10; timeout 120 rclone hashsum md5 "$2" | cut -d" " -f1
+HOOK_TIMEOUT: 300 s per hook call
+SWAP_AFTER: unset (every call position is tried)
+a.bin md5: compared 94cbfbe694444e77d471056afb576540, swapped in 880cc98f59b5d36d90d4d8694df18737 (same size)
+control: unchanged destination verified, recorded 94cbfbe694444e77d471056afb576540
+control: a destination that differs from the start refused
+calls RECORD makes through the shim, in order: 1 check, 2 hashsum
+rewrite after 1  check          -> RED: verified, and recorded 880cc98f59b5d36d90d4d8694df18737, the hash of bytes the check never compared
+   calls: check swapped hashsum
+rewrite after 2  hashsum        -> verified, recorded 94cbfbe694444e77d471056afb576540, the hash the check compared
+   calls: check hashsum swapped
+control: unchanged destination verified, recorded 94cbfbe694444e77d471056afb576540
+control: a destination that differs from the start refused
+RECORD gave the same answer to all 4 questions when asked again
+T1: RED (verified, and recorded the rewritten file's hash, with the rewrite after call(s) 1)
+exit 1
+== t1.sh RECORD=<read the destination md5 first, then check, record what was read>
+RECORD: h=$(timeout 120 rclone md5sum "$2" | cut -d" " -f1); timeout 120 rclone check "$1" "$2" >/dev/null 2>&1 || exit 10; echo "$h"
+HOOK_TIMEOUT: 300 s per hook call
+SWAP_AFTER: unset (every call position is tried)
+a.bin md5: compared 94cbfbe694444e77d471056afb576540, swapped in 880cc98f59b5d36d90d4d8694df18737 (same size)
+control: unchanged destination verified, recorded 94cbfbe694444e77d471056afb576540
+control: a destination that differs from the start refused
+calls RECORD makes through the shim, in order: 1 md5sum, 2 check
+rewrite after 1  md5sum         -> refused
+   calls: md5sum swapped check
+rewrite after 2  check          -> verified, recorded 94cbfbe694444e77d471056afb576540, the hash the check compared
+   calls: md5sum check swapped
+control: unchanged destination verified, recorded 94cbfbe694444e77d471056afb576540
+control: a destination that differs from the start refused
+RECORD gave the same answer to all 4 questions when asked again
+T1: GREEN (the rewrite was tried after each of the 2 position(s) of the 2 call(s) the shim saw, and no answer recorded the rewritten hash; limit: a compare or read made outside the shim was not swept)
+exit 0
+== t1.sh RECORD=<check, then coreutils md5sum of the local file> (no rclone call after the check)
+RECORD: timeout 120 rclone check "$1" "$2" >/dev/null 2>&1 || exit 10; md5sum "$2/a.bin" | cut -d" " -f1
+HOOK_TIMEOUT: 300 s per hook call
+SWAP_AFTER: unset (every call position is tried)
+a.bin md5: compared 94cbfbe694444e77d471056afb576540, swapped in 880cc98f59b5d36d90d4d8694df18737 (same size)
+control: unchanged destination verified, recorded 94cbfbe694444e77d471056afb576540
+control: a destination that differs from the start refused
+calls RECORD makes through the shim, in order: 1 check
+rewrite after 1  check          -> RED: verified, and recorded 880cc98f59b5d36d90d4d8694df18737, the hash of bytes the check never compared
+   calls: check swapped
+control: unchanged destination verified, recorded 94cbfbe694444e77d471056afb576540
+control: a destination that differs from the start refused
+RECORD gave the same answer to all 3 questions when asked again
+T1: RED (verified, and recorded the rewritten file's hash, with the rewrite after call(s) 1)
+exit 1
+== t1.sh RECORD=<python spawns rclone check, then rclone lsjson records> (the compare bypasses the shim)
+RECORD: python -c "import subprocess, sys; sys.exit(0 if subprocess.run([\"rclone\", \"check\", sys.argv[1], sys.argv[2]], capture_output=True).returncode == 0 else 10)" "$1" "$2" || exit 10; timeout 120 rclone lsjson --hash --hash-type md5 "$2" | python -c "import json, sys; print(json.load(sys.stdin)[0][\"Hashes\"][\"md5\"])"
+HOOK_TIMEOUT: 300 s per hook call
+SWAP_AFTER: unset (every call position is tried)
+a.bin md5: compared 94cbfbe694444e77d471056afb576540, swapped in 880cc98f59b5d36d90d4d8694df18737 (same size)
+control: unchanged destination verified, recorded 94cbfbe694444e77d471056afb576540
+control: a destination that differs from the start refused
+calls RECORD makes through the shim, in order: 1 lsjson
+rewrite after 1  lsjson         -> verified, recorded 94cbfbe694444e77d471056afb576540, the hash the check compared
+   calls: lsjson swapped
+control: unchanged destination verified, recorded 94cbfbe694444e77d471056afb576540
+control: a destination that differs from the start refused
+RECORD gave the same answer to all 3 questions when asked again
+T1: INCONCLUSIVE (no position put the rewrite between two calls the shim saw and got a refusal or the compared hash, so the trap was never exercised)
+exit 3
+== t1.sh rclone_exclude='*.bin' (an ambient setting in lower case)
+dp-env.sh: unset inherited rclone_exclude
+RECORD: record_after "$1" "$2"
+HOOK_TIMEOUT: 300 s per hook call
+SWAP_AFTER: unset (every call position is tried)
+a.bin md5: compared 94cbfbe694444e77d471056afb576540, swapped in 880cc98f59b5d36d90d4d8694df18737 (same size)
+control: unchanged destination verified, recorded 94cbfbe694444e77d471056afb576540
+control: a destination that differs from the start refused
+calls RECORD makes through the shim, in order: 1 check, 2 lsjson
+rewrite after 1  check          -> RED: verified, and recorded 880cc98f59b5d36d90d4d8694df18737, the hash of bytes the check never compared
+   calls: check swapped lsjson
+rewrite after 2  lsjson         -> verified, recorded 94cbfbe694444e77d471056afb576540, the hash the check compared
+   calls: check lsjson swapped
+control: unchanged destination verified, recorded 94cbfbe694444e77d471056afb576540
+control: a destination that differs from the start refused
+RECORD gave the same answer to all 4 questions when asked again
+T1: RED (verified, and recorded the rewritten file's hash, with the rewrite after call(s) 1)
+exit 1
+== t1.sh RECORD=<record the source's md5sum, no check> (allows everything)
+RECORD: timeout 120 rclone md5sum "$1" | cut -d" " -f1
+HOOK_TIMEOUT: 300 s per hook call
+SWAP_AFTER: unset (every call position is tried)
+a.bin md5: compared 94cbfbe694444e77d471056afb576540, swapped in 880cc98f59b5d36d90d4d8694df18737 (same size)
+control: unchanged destination verified, recorded 94cbfbe694444e77d471056afb576540
+INCONCLUSIVE: RECORD verified a destination whose bytes differ from the source's from the start (recorded '94cbfbe694444e77d471056afb576540'): either its check does not compare content, or it repairs the destination before it checks (e.g. it copies first); this trap is not measured. Leave any copy out of RECORD and give it only the verify-and-record part
+exit 3
+== t1.sh RECORD=' ' (only whitespace)
+INCONCLUSIVE: RECORD is set but empty; calling nothing
+exit 3
+== t1.sh RECORD=<check --download, then compare the listed hash with the source's md5sum before recording>
+RECORD: timeout 120 rclone check --download "$1" "$2" >/dev/null 2>&1 || exit 10; h=$(timeout 120 rclone lsjson --hash --hash-type md5 "$2" | python -c "import json, sys; print(json.load(sys.stdin)[0][\"Hashes\"][\"md5\"])"); s=$(timeout 120 rclone md5sum "$1" | cut -d" " -f1); [ "$h" = "$s" ] || exit 10; echo "$h"
+HOOK_TIMEOUT: 300 s per hook call
+SWAP_AFTER: unset (every call position is tried)
+a.bin md5: compared 94cbfbe694444e77d471056afb576540, swapped in 880cc98f59b5d36d90d4d8694df18737 (same size)
+control: unchanged destination verified, recorded 94cbfbe694444e77d471056afb576540
+control: a destination that differs from the start refused
+calls RECORD makes through the shim, in order: 1 check, 2 lsjson, 3 md5sum
+rewrite after 1  check          -> refused
+   calls: check swapped lsjson md5sum
+rewrite after 2  lsjson         -> verified, recorded 94cbfbe694444e77d471056afb576540, the hash the check compared
+   calls: check lsjson swapped md5sum
+rewrite after 3  md5sum         -> verified, recorded 94cbfbe694444e77d471056afb576540, the hash the check compared
+   calls: check lsjson md5sum swapped
+control: unchanged destination verified, recorded 94cbfbe694444e77d471056afb576540
+control: a destination that differs from the start refused
+RECORD gave the same answer to all 5 questions when asked again
+T1: GREEN (the rewrite was tried after each of the 3 position(s) of the 3 call(s) the shim saw, and no answer recorded the rewritten hash; limit: a compare or read made outside the shim was not swept)
+exit 0
+== t2.sh PLACE=<reads the dump, retries an empty one once, then falls back to place_dump> (the r2 seat's retry)
+PLACE: d=$(timeout 120 rclone config dump 2>/dev/null); [ -n "$d" ] || d=$(timeout 120 rclone config dump 2>/dev/null); if [ -n "$d" ]; then printf "%s" "$d" | python ../spellplace.py "$1" "$2"; else place_dump "$1" "$2"; fi
+HOOK_TIMEOUT: 300 s per hook call
+measured: nl:<src>/backup stores into the source; nl:<t>/elsewhere stores into elsewhere/
+control: <t>/elsewhere allowed
+control: nl:<t>/elsewhere allowed
+every call working: refused (refused: stores at <dir>/r43/t2/src/backup, which overlaps the source)
+calls PLACE makes through the shim, in order: 1 config dump
+1  config dump       only fail  -> GREEN: refused (refused: stores at <dir>/r43/t2/src/backup, which overlaps the source)
+1  config dump       only empty -> GREEN: refused (refused: stores at <dir>/r43/t2/src/backup, which overlaps the source)
+1  config dump       only cut   -> GREEN: refused (refused: could not read the rclone config, so cannot tell where it stores)
+1  config dump       from fail  -> RED: allowed while it could not tell (it stores into the source)
+   calls (every one from 1 on failed): config dump config dump config dump
+1  config dump       from empty -> RED: allowed while it could not tell (it stores into the source)
+   calls (every one from 1 on failed): config dump config dump config dump
+1  config dump       from cut   -> GREEN: refused (refused: could not read the rclone config, so cannot tell where it stores)
+PLACE gave the same answer to all 9 questions when asked again
+T2: RED (2 case(s) allowed a destination inside the source)
+exit 1
+== t2.sh PLACE=<retries the dump up to 3 times, then hands spellplace.py whatever it has>
+PLACE: for t in 1 2 3; do d=$(timeout 120 rclone config dump 2>/dev/null) && [ -n "$d" ] && break; d=; done; printf "%s" "$d" | python ../spellplace.py "$1" "$2"
+HOOK_TIMEOUT: 300 s per hook call
+measured: nl:<src>/backup stores into the source; nl:<t>/elsewhere stores into elsewhere/
+control: <t>/elsewhere allowed
+control: nl:<t>/elsewhere allowed
+every call working: refused (refused: stores at <dir>/r44/t2/src/backup, which overlaps the source)
+calls PLACE makes through the shim, in order: 1 config dump
+1  config dump       only fail  -> GREEN: refused (refused: stores at <dir>/r44/t2/src/backup, which overlaps the source)
+1  config dump       only empty -> GREEN: refused (refused: stores at <dir>/r44/t2/src/backup, which overlaps the source)
+1  config dump       only cut   -> GREEN: refused (refused: could not read the rclone config, so cannot tell where it stores)
+1  config dump       from fail  -> GREEN: refused (refused: could not read the rclone config, so cannot tell where it stores)
+   calls (every one from 1 on failed): config dump config dump config dump
+1  config dump       from empty -> GREEN: refused (refused: could not read the rclone config, so cannot tell where it stores)
+   calls (every one from 1 on failed): config dump config dump config dump
+1  config dump       from cut   -> GREEN: refused (refused: could not read the rclone config, so cannot tell where it stores)
+PLACE gave the same answer to all 9 questions when asked again
+T2: GREEN (refused with every call working, and with each of the 1 call(s) it made through the shim failed by position, alone and with every later call failed too, as an error, an empty answer and a cut answer; NOT tried: a call that bypasses the shim, a call that never returns, two failures with a working call between them, two failures whose answers differ between calls (e.g. an error, then an empty answer))
+exit 0
+== t2.sh PLACE=<a name listremotes does not show is a path; otherwise place_dump>
+PLACE: r=$(timeout 120 rclone listremotes 2>/dev/null); n=${2%%:*}; if printf "%s\n" "$r" | grep -qxF "$n:"; then place_dump "$1" "$2"; else python -c "import os, sys; s = os.path.normcase(os.path.abspath(sys.argv[1])); r = os.path.normcase(os.path.abspath(sys.argv[2])); sys.exit(10 if r == s or r.startswith(s + os.sep) else 0)" "$1" "$2"; fi
+HOOK_TIMEOUT: 300 s per hook call
+measured: nl:<src>/backup stores into the source; nl:<t>/elsewhere stores into elsewhere/
+control: <t>/elsewhere allowed
+control: nl:<t>/elsewhere allowed
+every call working: refused
+calls PLACE makes through the shim, in order: 1 listremotes, 2 config dump
+1  listremotes       only fail  -> RED: allowed while it could not tell (it stores into the source)
+1  listremotes       only empty -> RED: allowed while it could not tell (it stores into the source)
+1  listremotes       only cut   -> RED: allowed while it could not tell (it stores into the source)
+1  listremotes       from fail  -> RED: allowed while it could not tell (it stores into the source)
+1  listremotes       from empty -> RED: allowed while it could not tell (it stores into the source)
+1  listremotes       from cut   -> RED: allowed while it could not tell (it stores into the source)
+2  config dump       only fail  -> RED: allowed while it could not tell (it stores into the source)
+2  config dump       only empty -> RED: allowed while it could not tell (it stores into the source)
+2  config dump       only cut   -> RED: allowed while it could not tell (it stores into the source)
+2  config dump       from fail  -> RED: allowed while it could not tell (it stores into the source)
+2  config dump       from empty -> RED: allowed while it could not tell (it stores into the source)
+2  config dump       from cut   -> RED: allowed while it could not tell (it stores into the source)
+PLACE gave the same answer to all 15 questions when asked again
+T2: RED (12 case(s) allowed a destination inside the source)
+exit 1
+== t2.sh PLACE=<config show NAME; a remote whose type it cannot read is not local>
+PLACE: n=${2%%:*}; case "$2" in ?:*|/*) n= ;; esac; t=; [ -n "$n" ] && t=$(timeout 120 rclone config show "$n" 2>/dev/null | sed -n "s/^type = //p" | tr -d "\r"); [ "$t" = local ] || exit 0; python -c "import os, sys; s = os.path.normcase(os.path.abspath(sys.argv[1])); r = os.path.normcase(os.path.abspath(sys.argv[2])); sys.exit(10 if r == s or r.startswith(s + os.sep) else 0)" "$1" "${2#*:}"
+HOOK_TIMEOUT: 300 s per hook call
+measured: nl:<src>/backup stores into the source; nl:<t>/elsewhere stores into elsewhere/
+control: <t>/elsewhere allowed
+control: nl:<t>/elsewhere allowed
+every call working: refused
+calls PLACE makes through the shim, in order: 1 config show
+1  config show       only fail  -> RED: allowed while it could not tell (it stores into the source)
+1  config show       only empty -> RED: allowed while it could not tell (it stores into the source)
+1  config show       only cut   -> RED: allowed while it could not tell (it stores into the source)
+1  config show       from fail  -> RED: allowed while it could not tell (it stores into the source)
+1  config show       from empty -> RED: allowed while it could not tell (it stores into the source)
+1  config show       from cut   -> RED: allowed while it could not tell (it stores into the source)
+PLACE gave the same answer to all 9 questions when asked again
+T2: RED (6 case(s) allowed a destination inside the source)
+exit 1
+== t2.sh PLACE="$FS" (backend features; no answer, or a broken one, refuses)
+PLACE: timeout 120 rclone backend features "$2" 2>/dev/null | python -c "import json, os, sys; d = json.loads(sys.stdin.read()); s = os.path.normcase(os.path.abspath(sys.argv[1])); r = os.path.normcase(os.path.abspath(d[\"Root\"].replace(\"//?/\", \"\"))); sys.exit(0 if not d[\"Features\"].get(\"IsLocal\") else 10 if r == s or r.startswith(s + os.sep) or s.startswith(r + os.sep) else 0)" "$1"; [ $? = 0 ] || { echo "refused: no features answer, or it stores in the source"; exit 10; }
+HOOK_TIMEOUT: 300 s per hook call
+measured: nl:<src>/backup stores into the source; nl:<t>/elsewhere stores into elsewhere/
+control: <t>/elsewhere allowed
+control: nl:<t>/elsewhere allowed
+every call working: refused (refused: no features answer, or it stores in the source)
+calls PLACE makes through the shim, in order: 1 backend features
+1  backend features  only fail  -> GREEN: refused (Traceback (most recent call last):)
+1  backend features  only empty -> GREEN: refused (Traceback (most recent call last):)
+1  backend features  only cut   -> GREEN: refused (Traceback (most recent call last):)
+1  backend features  from fail  -> GREEN: refused (Traceback (most recent call last):)
+1  backend features  from empty -> GREEN: refused (Traceback (most recent call last):)
+1  backend features  from cut   -> GREEN: refused (Traceback (most recent call last):)
+PLACE gave the same answer to all 9 questions when asked again
+T2: GREEN (refused with every call working, and with each of the 1 call(s) it made through the shim failed by position, alone and with every later call failed too, as an error, an empty answer and a cut answer; NOT tried: a call that bypasses the shim, a call that never returns, two failures with a working call between them, two failures whose answers differ between calls (e.g. an error, then an empty answer))
+exit 0
+== t2.sh PLACE=<allows on odd calls, refuses on even ones> (flips)
+PLACE: n=$(( $(cat ../n 2>/dev/null || echo 0) + 1 )); echo $n > ../n; timeout 120 rclone config dump >/dev/null; [ $((n % 2)) = 1 ] && exit 0; exit 10
+HOOK_TIMEOUT: 300 s per hook call
+measured: nl:<src>/backup stores into the source; nl:<t>/elsewhere stores into elsewhere/
+control: <t>/elsewhere allowed
+INCONCLUSIVE: PLACE does not allow an independent destination (nl:<t>/elsewhere)
+exit 3
+== t2.sh PLACE="$GP" rclone_config_nl_type=memory (the ambient override in lower case)
+dp-env.sh: unset inherited rclone_config_nl_type
+PLACE: timeout 120 rclone config dump 2>/dev/null | python ../spellplace.py "$1" "$2"
+HOOK_TIMEOUT: 300 s per hook call
+measured: nl:<src>/backup stores into the source; nl:<t>/elsewhere stores into elsewhere/
+control: <t>/elsewhere allowed
+control: nl:<t>/elsewhere allowed
+every call working: refused (refused: stores at <dir>/r49/t2/src/backup, which overlaps the source)
+calls PLACE makes through the shim, in order: 1 config dump
+1  config dump       only fail  -> GREEN: refused (refused: could not read the rclone config, so cannot tell where it stores)
+1  config dump       only empty -> GREEN: refused (refused: could not read the rclone config, so cannot tell where it stores)
+1  config dump       only cut   -> GREEN: refused (refused: could not read the rclone config, so cannot tell where it stores)
+1  config dump       from fail  -> GREEN: refused (refused: could not read the rclone config, so cannot tell where it stores)
+1  config dump       from empty -> GREEN: refused (refused: could not read the rclone config, so cannot tell where it stores)
+1  config dump       from cut   -> GREEN: refused (refused: could not read the rclone config, so cannot tell where it stores)
+PLACE gave the same answer to all 9 questions when asked again
+T2: GREEN (refused with every call working, and with each of the 1 call(s) it made through the shim failed by position, alone and with every later call failed too, as an error, an empty answer and a cut answer; NOT tried: a call that bypasses the shim, a call that never returns, two failures with a working call between them, two failures whose answers differ between calls (e.g. an error, then an empty answer))
+exit 0
+== t2.sh PLACE=<place_dump with --config=X and --low-level-retries 1 before the command>
+PLACE: R(){ timeout 120 rclone --config="$RCLONE_CONFIG" --low-level-retries 1 "$@"; }; place_dump "$1" "$2"
+HOOK_TIMEOUT: 300 s per hook call
+measured: nl:<src>/backup stores into the source; nl:<t>/elsewhere stores into elsewhere/
+control: <t>/elsewhere allowed
+control: nl:<t>/elsewhere allowed
+every call working: refused
+calls PLACE makes through the shim, in order: 1 config dump
+1  config dump       only fail  -> RED: allowed while it could not tell (it stores into the source)
+1  config dump       only empty -> RED: allowed while it could not tell (it stores into the source)
+1  config dump       only cut   -> RED: allowed while it could not tell (it stores into the source)
+1  config dump       from fail  -> RED: allowed while it could not tell (it stores into the source)
+1  config dump       from empty -> RED: allowed while it could not tell (it stores into the source)
+1  config dump       from cut   -> RED: allowed while it could not tell (it stores into the source)
+PLACE gave the same answer to all 9 questions when asked again
+T2: RED (6 case(s) allowed a destination inside the source)
+exit 1
+== t3.sh PLACE="$FS"
+PLACE: timeout 120 rclone backend features "$2" 2>/dev/null | python -c "import json, os, sys; d = json.loads(sys.stdin.read()); s = os.path.normcase(os.path.abspath(sys.argv[1])); r = os.path.normcase(os.path.abspath(d[\"Root\"].replace(\"//?/\", \"\"))); sys.exit(0 if not d[\"Features\"].get(\"IsLocal\") else 10 if r == s or r.startswith(s + os.sep) or s.startswith(r + os.sep) else 0)" "$1"; [ $? = 0 ] || { echo "refused: no features answer, or it stores in the source"; exit 10; }
+HOOK_TIMEOUT: 300 s per hook call
+control: <t>/elsewhere allowed
+control: mm: allowed
+override  mm,type=local:<src>/backup                         stores into the source; PLACE -> GREEN: refused (refused: no features answer, or it stores in the source)
+quoted-1  mm,description='a:b',type=local:<src>/backup       stores into the source; PLACE -> GREEN: refused (refused: no features answer, or it stores in the source)
+quoted-2  mm,description="x,y:z",type=local:<src>/backup     stores into the source; PLACE -> GREEN: refused (refused: no features answer, or it stores in the source)
+alias     al:                                                stores into the source; PLACE -> GREEN: refused (refused: no features answer, or it stores in the source)
+letter    c:src/backup                                       stores into the source; PLACE -> GREEN: refused (refused: no features answer, or it stores in the source)
+PLACE gave the same answer to all 7 questions when asked again
+T3: GREEN (all 5 spellings measured storing into the source, and refused)
+exit 0
+== t3.sh PLACE=<$GP with --config before the command>
+PLACE: timeout 120 rclone --config "$RCLONE_CONFIG" config dump 2>/dev/null | python ../spellplace.py "$1" "$2"
+HOOK_TIMEOUT: 300 s per hook call
+control: <t>/elsewhere allowed
+control: mm: allowed
+override  mm,type=local:<src>/backup                         stores into the source; PLACE -> GREEN: refused (refused: stores at <dir>/r52/t3/src/backup, which overlaps the source)
+quoted-1  mm,description='a:b',type=local:<src>/backup       stores into the source; PLACE -> GREEN: refused (refused: stores at <dir>/r52/t3/src/backup, which overlaps the source)
+quoted-2  mm,description="x,y:z",type=local:<src>/backup     stores into the source; PLACE -> GREEN: refused (refused: stores at <dir>/r52/t3/src/backup, which overlaps the source)
+alias     al:                                                stores into the source; PLACE -> GREEN: refused (refused: stores at <dir>/r52/t3/src/backup, which overlaps the source)
+letter    c:src/backup                                       stores into the source; PLACE -> GREEN: refused (refused: stores at c:src/backup, which overlaps the source)
+PLACE gave the same answer to all 7 questions when asked again
+T3: GREEN (all 5 spellings measured storing into the source, and refused)
+exit 0
+== t1.sh RECORD=<record_after, then exit 2> (crashes after its calls)
+RECORD: record_after "$1" "$2" >/dev/null; exit 2
+HOOK_TIMEOUT: 300 s per hook call
+SWAP_AFTER: unset (every call position is tried)
+a.bin md5: compared 94cbfbe694444e77d471056afb576540, swapped in 880cc98f59b5d36d90d4d8694df18737 (same size)
+INCONCLUSIVE: RECORD failed on an unchanged destination
+exit 3
+== t2.sh PLACE=<refuses a failed or empty dump, then parses it leniently with place_dump's parser>
+PLACE: d=$(timeout 120 rclone config dump 2>/dev/null) && [ -n "$d" ] || exit 10; R(){ printf "%s" "$d"; }; place_dump "$1" "$2"
+HOOK_TIMEOUT: 300 s per hook call
+measured: nl:<src>/backup stores into the source; nl:<t>/elsewhere stores into elsewhere/
+control: <t>/elsewhere allowed
+control: nl:<t>/elsewhere allowed
+every call working: refused
+calls PLACE makes through the shim, in order: 1 config dump
+1  config dump       only fail  -> GREEN: refused
+1  config dump       only empty -> GREEN: refused
+1  config dump       only cut   -> RED: allowed while it could not tell (it stores into the source)
+1  config dump       from fail  -> GREEN: refused
+1  config dump       from empty -> GREEN: refused
+1  config dump       from cut   -> RED: allowed while it could not tell (it stores into the source)
+PLACE gave the same answer to all 9 questions when asked again
+T2: RED (2 case(s) allowed a destination inside the source)
+exit 1
+== t1.sh RECORD=<rclone copy, then sandwich.sh> (correct, but it repairs the destination before it checks)
+RECORD: timeout 120 rclone copy "$1" "$2" >/dev/null 2>&1 || exit 3; bash ../sandwich.sh "$1" "$2"
+HOOK_TIMEOUT: 300 s per hook call
+SWAP_AFTER: unset (every call position is tried)
+a.bin md5: compared 94cbfbe694444e77d471056afb576540, swapped in 880cc98f59b5d36d90d4d8694df18737 (same size)
+control: unchanged destination verified, recorded 94cbfbe694444e77d471056afb576540
+INCONCLUSIVE: RECORD verified a destination whose bytes differ from the source's from the start (recorded '94cbfbe694444e77d471056afb576540'): either its check does not compare content, or it repairs the destination before it checks (e.g. it copies first); this trap is not measured. Leave any copy out of RECORD and give it only the verify-and-record part
+exit 3
+== t1.sh RECORD=<rclone copy, then record_after> (has the trap, and repairs the destination first)
+RECORD: timeout 120 rclone copy "$1" "$2" >/dev/null 2>&1 || exit 3; record_after "$1" "$2"
+HOOK_TIMEOUT: 300 s per hook call
+SWAP_AFTER: unset (every call position is tried)
+a.bin md5: compared 94cbfbe694444e77d471056afb576540, swapped in 880cc98f59b5d36d90d4d8694df18737 (same size)
+control: unchanged destination verified, recorded 94cbfbe694444e77d471056afb576540
+INCONCLUSIVE: RECORD verified a destination whose bytes differ from the source's from the start (recorded '94cbfbe694444e77d471056afb576540'): either its check does not compare content, or it repairs the destination before it checks (e.g. it copies first); this trap is not measured. Leave any copy out of RECORD and give it only the verify-and-record part
+exit 3
+== t2.sh PLACE=<the dump; if it errors, listremotes; a name it does not list is a path> (fails open on an error, then an empty answer)
+PLACE: d=$(timeout 120 rclone config dump 2>/dev/null) || { r=$(timeout 120 rclone listremotes 2>/dev/null) || exit 10; printf "%s\n" "$r" | grep -qxF "${2%%:*}:" && exit 10; python -c "import os, sys; s = os.path.normcase(os.path.abspath(sys.argv[1])); r = os.path.normcase(os.path.abspath(sys.argv[2])); sys.exit(10 if r == s or r.startswith(s + os.sep) else 0)" "$1" "$2"; exit $?; }; printf "%s" "$d" | python ../spellplace.py "$1" "$2"
+HOOK_TIMEOUT: 300 s per hook call
+measured: nl:<src>/backup stores into the source; nl:<t>/elsewhere stores into elsewhere/
+control: <t>/elsewhere allowed
+control: nl:<t>/elsewhere allowed
+every call working: refused (refused: stores at <dir>/r57/t2/src/backup, which overlaps the source)
+calls PLACE makes through the shim, in order: 1 config dump
+1  config dump       only fail  -> GREEN: refused
+1  config dump       only empty -> GREEN: refused (refused: could not read the rclone config, so cannot tell where it stores)
+1  config dump       only cut   -> GREEN: refused (refused: could not read the rclone config, so cannot tell where it stores)
+1  config dump       from fail  -> GREEN: refused
+   calls (every one from 1 on failed): config dump listremotes
+1  config dump       from empty -> GREEN: refused (refused: could not read the rclone config, so cannot tell where it stores)
+1  config dump       from cut   -> GREEN: refused (refused: could not read the rclone config, so cannot tell where it stores)
+PLACE gave the same answer to all 9 questions when asked again
+T2: GREEN (refused with every call working, and with each of the 1 call(s) it made through the shim failed by position, alone and with every later call failed too, as an error, an empty answer and a cut answer; NOT tried: a call that bypasses the shim, a call that never returns, two failures with a working call between them, two failures whose answers differ between calls (e.g. an error, then an empty answer))
+exit 0
+== t2.sh PLACE=<retries the dump until it succeeds, then spellplace.py> HOOK_TIMEOUT=10 (never ends while every call fails)
+PLACE: until d=$(timeout 120 rclone config dump 2>/dev/null) && [ -n "$d" ]; do :; done; printf "%s" "$d" | python ../spellplace.py "$1" "$2"
+HOOK_TIMEOUT: 10 s per hook call
+measured: nl:<src>/backup stores into the source; nl:<t>/elsewhere stores into elsewhere/
+control: <t>/elsewhere allowed
+control: nl:<t>/elsewhere allowed
+every call working: refused (refused: stores at <dir>/r58/t2/src/backup, which overlaps the source)
+calls PLACE makes through the shim, in order: 1 config dump
+1  config dump       only fail  -> GREEN: refused (refused: stores at <dir>/r58/t2/src/backup, which overlaps the source)
+1  config dump       only empty -> GREEN: refused (refused: stores at <dir>/r58/t2/src/backup, which overlaps the source)
+1  config dump       only cut   -> GREEN: refused (refused: could not read the rclone config, so cannot tell where it stores)
+1  config dump       from fail  -> INCONCLUSIVE: the hook did not finish within HOOK_TIMEOUT=10 s and was stopped
+1  config dump       from empty -> INCONCLUSIVE: the hook did not finish within HOOK_TIMEOUT=10 s and was stopped
+1  config dump       from cut   -> GREEN: refused (refused: could not read the rclone config, so cannot tell where it stores)
+PLACE gave the same answer to all 7 questions when asked again
+T2: INCONCLUSIVE (2 failed call(s) not judged)
+exit 3
+```

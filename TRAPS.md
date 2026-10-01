@@ -22278,3 +22278,749 @@ Every row landed on Cloudvore `origin/master` (first parent) since the previous 
 | H51B | defect records in `7f3a5ba` (two live defects confirmed and ruled) and `42bc341` (a third live shape); no fix landed | **Held** until landed. |
 | (no row) | `277849a`, `e1c70fd` | Doctrine records: the crypt-and-delete draft merge and its publication ack; already on the bus at `a3aa596`. |
 | (no row) | `dbb0047`, `85cadb3` | Doctrine records: the FETCH_HEAD draft merge and its publication ack; already on the bus at `a2ae2ba`, and named in the `e91570a` ack line. |
+
+<!-- cloudvore-filing:2026-09-30-rclone-overlap-undecided-traps generated from review/doctrine-drafts/2026-09-30-rclone-overlap-undecided-traps.md at 652e904 -->
+
+# Draft for the fleet doctrine bus: Cloudvore, 2026-09-30 (a hash recorded after the check, an overlap nobody decided, and the spellings a first-colon reader misreads: H76, H51B)
+
+These are observations from one project, Cloudvore, a Windows app that decides whether a source folder may
+be wiped by asking rclone whether a destination holds an independent copy. Nothing here instructs another
+project: each trap states what was measured here, what Cloudvore changed, how that was checked here, and a
+test another project can run against its own code if it wants to know whether it has the same trap.
+
+**Scope.** Every rclone behaviour below was measured with **rclone v1.74.4** on one Windows 11 Pro host
+(10.0.26200), with a throwaway `RCLONE_CONFIG` and `RCLONE_CACHE_DIR`, local folders and rclone's in-process
+`memory` backend only. No `rclone rcd` was started, and no provider, OAuth endpoint or browser was contacted.
+Other versions and platforms were not tested; T3's drive-letter case and T3m's `m:` line are Windows behaviour.
+The runnable demonstrations are below; their recorded output, from runs made for this draft on 2026-10-01, is
+in `## RECEIPTS`.
+
+**Sources.** Every commit cited is an ancestor of Cloudvore's `origin/master` at `e8913a8`:
+
+- H76 (a destination hash persisted only when a listing before the check and one after it agree): merge
+  `ab3eb32` (candidate `d58bbc9`; RED `d48fb7b`, fix `7de58d9`; r2 RED `06e2af5`, fix `9afa88e`; r3 RED
+  `86cafca`, fix `981c002`), record `1286145`, ledger `review/ledger-h76-sweep-sandwich-2026-09-30.md`.
+- H51B (an overlap the scan cannot decide is refused before any copy): the two live defects were recorded at
+  `7f3a5ba` and a third shape at `42bc341`; merge `17f73f9` (candidate `5d826ec`; r1 RED `208ee62`, fix
+  `5b8b787`; r4 RED `d45c146`, fix `99246e6`; r5 fix `2a092bf`; r6 fix `71de941`; r7 RED `5f21d62`, fix
+  `f47f38e`, pin `0a7da72`) plus the landing fold `a7c15b4`, record `cc731b6`, ledger
+  `review/ledger-h51b-undecidable-overlap-2026-09-30.md` (rounds r1 to r7).
+The BACKLOG rows for these carry the review rounds and bars.
+
+**Relation to the bus** (fleet doctrine `TRAPS.md` and `RECEIPTS.md` at `a0bcaae`, which last changed both:
+this project's K62/O16 filing, of source `314af0f`. Before it, `66b5bde` appended an unrelated adobe-ingester
+entry to `TRAPS.md`. Both files only grew, so every line cited here is unchanged). Searched by mechanism over both
+files, the new entries included: `after the check`, `between the check`, `sandwich`, `launder`, `swapped`,
+`verified with`, `re-list`, `undecided`, `cannot tell`, `positive evidence`, `fail open`, `fail-open`, `retry`,
+`every later`, `connection string`, `type=local`, `on-the-fly`, `first colon`, `quoted`, `drive letter`. No hit
+describes a hash recorded after a check, an undecided mark that later boundaries read, a retry that hides a
+fail-open, or a quoted value in an rclone spelling. The new hits are the K62/O16 filing's row for H76
+(`TRAPS.md:22276`, which held H76; see ROWS), a git reader that exits "cannot tell" (`RECEIPTS.md`, K62), and
+Markdown blocks that swallow "every later" entry. Nearest neighbours are named per trap.
+
+## Shared preamble
+
+Every block sources `dp-env.sh` from its parent directory. It is the previous filing's preamble
+(`TRAPS.md:21376` onward) with the rcd parts removed and a shim added. It first unsets every exported variable
+whose name starts `RCLONE_` in ANY case and prints each name it unset, and stops INCONCLUSIVE if a child
+process would still see one, in any case (bash cannot unset a name that is not a shell identifier, such as
+`RCLONE_CONFIG_E-PAR_TYPE`, but passes it on; run the block as `env -u NAME bash t1.sh` to drop it for that run
+only). rclone reads any `RCLONE_<FLAG>` from the environment, and `RCLONE_CONFIG_<NAME>_TYPE` retypes a remote:
+an ambient `RCLONE_CONFIG_NL_TYPE=memory` moved T2's fixture out of the source, which T2's own measurement
+then reports as INCONCLUSIVE (RECEIPTS `nu/r16`, the scrub removed; `r15` with it reads GREEN). It then points
+rclone at a config and cache inside the current directory, so nothing reads or writes the live `rclone.conf`.
+Every rclone call runs under `timeout 120`. No block removes anything outside the folders it creates, and each
+refuses to run over a leftover one. The scripts need bash (Git Bash on Windows), Python 3, coreutils `timeout`
+and rclone on `PATH`.
+
+**The shim.** T1 and T2 must see YOUR step's rclone calls, so `dp-env.sh` writes an `rclone` script that is put
+first on `PATH` for hook calls only. It logs each call in order, by position and by name. The name is the
+subcommand, found by skipping rclone's global flags and their values, which it reads from `rclone help flags`, so
+`rclone --retries 1 --config X -vv config dump` is "config dump" (RECEIPTS `r28`, `r30`); a flag it does not know
+makes the name `?`. On request it fails the call at one POSITION, or that call and every later one: as an error
+(exit 1), as an empty answer (exit 0, no output), or as a cut answer (the call runs, and only the first half of
+its output is passed on). Or it rewrites a destination file right after the call at one position returns. It
+writes nothing but its own log, which lies outside every folder a step is asked about, and the one rewrite T1
+asks for.
+
+**Limit: the shim sees only calls that find `rclone` through `PATH`.** A call by absolute path, a Windows `.exe`
+spawned from Python or .NET (which never runs a bash script found on `PATH`), or a call through the rc API does
+not reach it. Such a call is never failed, never rewritten after and never counted, and nothing in these blocks
+can tell that it happened. What that does to each test:
+- T1 rewrites only after calls the shim saw. A step that makes no call through it reads INCONCLUSIVE (RECEIPTS
+  `r5`). A step that compares outside the shim and then records through it, with no call it saw in between,
+  reads INCONCLUSIVE, because no rewrite came between two calls it saw (`r38`). A step that makes SOME calls
+  outside the shim is judged on the positions the shim saw, and T1's GREEN line says so.
+- T2 fails only calls the shim saw. A step that makes no call through it reads RED if it allows the nested
+  destination with every call working (`r32`), and INCONCLUSIVE otherwise. A step that makes SOME calls outside
+  the shim is judged only on the calls the shim saw, and can read GREEN while a call it never failed is fail-open
+  (`r31`); T2's GREEN line says so.
+- T3 fails nothing, so a call outside the shim changes nothing there.
+To route your calls, point your step's rclone-path setting at `$DP_SHIM`, which is set during every hook call.
+It is a bash script, so a Windows process must run it through the bash that runs the block, by full path. Or wrap
+the step in a shell hook that runs rclone itself, as the GREEN sample `GP` does with `config dump`.
+
+**The hooks.** Each test takes YOUR decision as a shell command in a variable: `RECORD` (T1: verify destination
+folder `$2` against source folder `$1` and say which hash you record) and `PLACE` (T2, T3: is destination `$2`
+placed, and not inside or over the source folder `$1`?). Neither test asks you where your step compares, records
+or might fail: T1 rewrites the destination after EVERY call position in turn, and T2 fails every call position in
+turn. T1 also takes an optional `SWAP_AFTER`, a call name that limits its sweep to every position of that name.
+The defaults are small readers with the trap in them, so each block run unchanged shows RED.
+
+**What a run costs, and the hook timeout.** The sweeps are exhaustive, so their cost grows with your step. If
+your step makes M calls through the shim, T1 asks the hook at most 2M+4 times (two controls, M rewrite positions,
+then all of them and both controls again), each about M calls, so O(M²) rclone calls. If `PLACE` makes NC
+calls, T2 asks it 12·NC+6 times (two controls, the healthy case, NC positions in two modes with three answers,
+then all of those, the healthy case and both controls again), so O(NC²) calls, more if your reader retries. T3
+asks 14 times. The whole runner below took 22 to 24 minutes on the measuring host (1349 s and 1440 s in the two runs that
+produced RECEIPTS). Each hook call is bounded:
+`HOOK_TIMEOUT` (seconds, default 300; a whole number from 1 to 999999, anything else stops INCONCLUSIVE) stops a
+call that runs longer, with its process group, and that question reads INCONCLUSIVE, naming the timeout
+(RECEIPTS `r58`: a reader that retries until it succeeds loops forever under T2's "from" error and empty modes;
+with a cut answer it ends). So a T1 run takes
+at most about (2M+4)·`HOOK_TIMEOUT`. Limit: a process your hook starts in a process group of its own (coreutils
+`timeout` does this) is not stopped with the hook. If it still holds the hook's output, the block waits for it, up
+to that process's own bound (120 s for every rclone call in these blocks and samples); if it does not (its output
+is redirected, as in the samples' `>/dev/null 2>&1`), the call returns at `HOOK_TIMEOUT` and that process may
+outlive the call and the block, up to its own bound. Each question uses a fresh log and T1 a fresh fixture, so a
+straggler cannot change a later answer (measured: no false verdict). A hook that ignores TERM can run past
+`HOOK_TIMEOUT` before it is stopped, though its line still says it was stopped; and the watchdog's own `sleep` can
+linger up to `HOOK_TIMEOUT` after a fast call. Both are harmless to the verdict.
+
+**The hook contract.** This is the previous filing's six-clause contract (`TRAPS.md:21401-21432`, seven
+falsification rounds), reused as it applies here. A hook, setting or environment that breaks it gives
+INCONCLUSIVE, never GREEN or RED; each clause names the check that enforces it.
+1. *Answer* (`hook`). Exit 0 means allowed (T1: verified, with the recorded hash, or `-`, as its first output
+   line), **exit 10 means refused**; any other exit (a crash, a missing file), or a call stopped after
+   `HOOK_TIMEOUT` seconds, reads INCONCLUSIVE.
+2. *Not everything refused, not everything allowed* (`control`). Before the main loop the hook must allow
+   something genuinely safe (T1: an unchanged destination, recording the hash its check compared; T2: a plain
+   folder and a named local remote outside the source; T3: a plain folder and a `memory` remote), or the run
+   stops INCONCLUSIVE. T1 also needs its step to refuse a destination whose bytes differ before it starts. A step
+   that verifies that one either does not compare content (RECEIPTS `r40`), or repairs the destination before it
+   checks, as a step that copies first and then verifies does (`r55`, a correct copy-then-sandwich; `r56`, a
+   copy-then-check-then-list that has the trap). T1 stops at this control for both, so neither is measured, and
+   the INCONCLUSIVE line says which two causes are possible. Leave any copy out of `RECORD`: give T1 only the
+   verify-and-record part of your step. A T2 or T3 hook that allows everything reads RED (`r32`).
+3. *Independent calls* (`again`). Each call answers from its arguments alone: it must not depend on earlier
+   calls, their order or their count. T1 builds a FRESH fixture for every question; T2 and T3 never change
+   theirs between questions. After the main loop each block asks every question again (T1: every rewrite
+   position in reverse order, then both controls, which must make the same calls; T2: every failed position and
+   mode in reverse order, the healthy case, which must make the same calls, then both controls; T3: the five
+   cases in reverse order, then both controls); any answer that differs from the first reads INCONCLUSIVE, even
+   over RED (RECEIPTS `r7` and `r14`). Limit: re-asking sees only state that CHANGES between the two passes. A
+   hook whose state is set before a question is first asked and is unchanged when it is asked again -- a cache
+   of its own first answers, a latch set by an earlier call (for example a flag file written on its first
+   refusal), a scratch copy that has already saturated -- answers the same both times and cannot be told apart
+   from an independent one from outside. Clause 3 is a contract you keep, not one these blocks can fully check.
+   The same holds for calls your step runs concurrently: the shim numbers them in the order they start, which
+   can change between runs.
+4. *Isolated* (`hook`). The hook runs in a subshell with no stdin, so it cannot change the block's variables.
+   Its text is `eval`ed in the block's shell, so a command in it named like one of the block's own functions
+   (`R`, `md5`, `calls`, `hook`, `hookS`, `knob`, `ask`, `again`, `case_`, `control`, `lands`, `L`,
+   `say`, and the in-block readers) runs the block's function, not yours: call your tool by its full path. A
+   hook that writes into a fixture breaks that case's own measurement, which then reads INCONCLUSIVE.
+5. *Settings read as written* (`knob`). `RECORD`, `SWAP_AFTER`, `PLACE` and `HOOK_TIMEOUT` are read by those exact names; one
+   set in another case (`Record=...`, `place=...`) is not silently ignored but stops INCONCLUSIVE (RECEIPTS
+   `r8`, `r21`). Unset means the default; set but empty, or only whitespace, is INCONCLUSIVE (`r41`).
+   `SWAP_AFTER` must be one call name as the shim writes it (one or two bare lowercase words, such as `check`
+   or `config dump`), and nothing else: no position or occurrence number, because every position of that name is
+   tried. Anything else, including surrounding whitespace, a tab, a newline, a CR or a glob, stops INCONCLUSIVE.
+   There are no list settings in this filing.
+6. *Environment* (`dp-env.sh`). No `RCLONE_*` variable, in any case, reaches rclone (RECEIPTS `r9`, `r15`,
+   `r39`, `r49`), and the shim's own `DP_*` settings are unset at the start and set only around one hook call.
+**A verdict needs positive evidence that the measurement worked for everything it covers:** T1 needs, at each
+position it judges, the control's calls up to that position, then the rewrite logged right after it; a GREEN also
+needs at least one position whose rewrite came between two calls the shim saw. T2 needs the fixture measured
+storing into the source (and the control elsewhere), and each injected failure logged at the position it judges
+(and at every later call, in the mode that fails them all), after the same calls as the healthy run. T3 needs
+each spelling measured storing into the source before `PLACE` is asked about it. A case whose own fixture did not
+do what the block says it does reads INCONCLUSIVE, whatever the hook said. Each of T1, T2 and T3 ends with one
+summary line and exits with it: **RED exits 1**, **INCONCLUSIVE exits 3**, **GREEN exits 0**. A GREEN line names
+what was not tried. `sandwich.sh` and `spellplace.py` in RECEIPTS are sample positive implementations (not
+Cloudvore's code) used as the GREEN settings.
+
+```bash
+# dp-env.sh: throwaway rclone config and cache in $T; local folders and the memory backend only; no provider, no rcd.
+# rclone reads EVERY RCLONE_<FLAG> variable (RCLONE_EXCLUDE, RCLONE_FILTER, RCLONE_DRY_RUN, RCLONE_CONFIG_<NAME>_...),
+# so an ambient one changes what a block measures. On Windows it reads the names in any case (rclone_exclude
+# filters too). Unset them all first, in any spelling (names printed).
+for v in $(compgen -e | grep -i '^rclone_'); do echo "dp-env.sh: unset inherited $v"; unset "$v"; done   # scrub
+# bash cannot unset a name it does not import (RCLONE_CONFIG_E-PAR_...), yet passes it on: ask a child what is left.
+left=$(env | grep -io '^rclone_[^=]*' | tr '\n' ' ')                                                    # scrub
+[ -z "$left" ] || { echo "INCONCLUSIVE: rclone would still inherit $left(bash cannot unset these); calling nothing. Run the block as: env -u NAME bash <block>.sh"; exit 3; }   # scrub
+unset DP_LOG DP_FAIL_AT DP_FAIL_REST DP_MODE DP_SWAP_AT DP_SWAP_FILE DP_SHIM   # the shim's settings: set per call, below
+set -f                  # this script globs nothing it splits; hooks glob as usual
+T=$(cygpath -m "$PWD")                                  # Git Bash; elsewhere T=$PWD
+export RCLONE_CONFIG="$T/rclone.conf" RCLONE_CACHE_DIR="$T/cache"
+R(){ timeout 120 rclone "$@"; }
+md5(){ python -c 'import hashlib, sys; print(hashlib.md5(open(sys.argv[1], "rb").read()).hexdigest())' "$1"; }
+# The shim: an `rclone` placed first on PATH for YOUR hook's calls only (see `hookS`). It runs the real rclone and
+# logs each call's NAME: its first argument that is not a global flag or a flag's value (two words for `backend` and
+# `config`, e.g. "config dump"), with the flags read from `rclone help flags`; "?" when a flag before the name is
+# not one rclone lists. The log holds the calls in order, so a call is also known by its POSITION. With
+# DP_FAIL_AT=<k> it fails call k (and, with DP_FAIL_REST=1, every later call too): DP_MODE=fail does not run it and
+# exits 1 with a message, DP_MODE=empty does not run it and exits 0 printing nothing, DP_MODE=cut runs it and passes
+# on only the first half of its output. With DP_SWAP_AT=<k> and DP_SWAP_FILE=<file>, right after call k returns it
+# rewrites the file with different bytes of the same size; it writes nothing anywhere else but the log (and, for
+# a cut answer, a scratch file beside the log).
+# LIMIT: it sees only calls that find `rclone` through PATH. A call by absolute path, a Windows .exe spawned from
+# Python or .NET (which does not search a bash PATH for a script), or the rc API never reaches it: such a call is
+# never failed, never rewritten after and never counted, and nothing in these blocks can see that it happened. Point
+# your step's rclone-path setting at $DP_SHIM (set during each hook call; a bash script, so a Windows process runs
+# it as `bash "$DP_SHIM" ARGS...`).
+REAL=$(command -v rclone) || { echo "INCONCLUSIVE: no rclone on PATH"; exit 3; }
+mkdir -p shim
+R help flags 2>/dev/null | python -c '
+import re, sys
+for line in sys.stdin:                                 # "  -v, --verbose count   ...": a type other than count takes a value
+    m = re.match(r"^\s+(?:-(\w), )?--([a-z0-9][a-z0-9-]*)(?: (\S+))?\s{2,}", line)
+    if m:
+        kind = "b" if m.group(3) in (None, "count") else "v"
+        print("--%s %s" % (m.group(2), kind))
+        if m.group(1): print("-%s %s" % (m.group(1), kind))' | tr -d '\r' | sort -u > shim/flags
+grep -qx -e '--retries v' shim/flags && grep -qx -e '-v b' shim/flags && grep -qx -e '--config v' shim/flags ||
+  { echo "INCONCLUSIVE: could not read rclone's global flags from \`rclone help flags\`"; exit 3; }
+{ printf '#!/bin/bash\nREAL=%q FLAGS=%q\n' "$REAL" "$PWD/shim/flags"; cat <<'SHIM'
+set -f; declare -A F; while read -r f t; do F[$f]=$t; done < "$FLAGS"
+k=; skip=; bad=; end=
+for a in "$@"; do
+  if [ -n "$skip" ]; then skip=; continue; fi
+  if [ -z "$end" ]; then case "$a" in
+    --) end=1; continue ;;
+    --*=*) [ -n "${F[${a%%=*}]}" ] || bad=1; continue ;;
+    --?*) case "${F[$a]}" in v) skip=1 ;; b) ;; *) bad=1 ;; esac; continue ;;
+    -?*) s=${a#-}; while [ -n "$s" ]; do c=-${s:0:1}; s=${s:1}
+           case "${F[$c]}" in v) [ -z "$s" ] && skip=1; s= ;; b) ;; *) bad=1; s= ;; esac; done; continue ;;
+  esac; fi
+  if [ -z "$k" ]; then k=$a; case "$a" in backend|config) continue ;; esac; else k="$k $a"; fi; break
+done
+[[ -z $bad && $k =~ ^[a-z0-9]+( [a-z0-9]+)?$ ]] || k='?'
+n=0
+if [ -n "$DP_LOG" ]; then n=$(( $(grep -cv -e '^injected:' -e '^swapped$' "$DP_LOG") + 1 )); echo "$k" >> "$DP_LOG"
+  if [ -n "$DP_FAIL_AT" ] && { [ "$n" = "$DP_FAIL_AT" ] || { [ -n "$DP_FAIL_REST" ] && [ "$n" -gt "$DP_FAIL_AT" ]; }; }; then
+    echo "injected:$DP_MODE" >> "$DP_LOG"
+    case $DP_MODE in
+      empty) exit 0 ;;
+      cut) "$REAL" "$@" > "$DP_LOG.out"; r=$?; head -c $(( $(wc -c < "$DP_LOG.out") / 2 )) "$DP_LOG.out"; rm -f "$DP_LOG.out"; exit $r ;;
+      *) echo "dp shim: injected failure of call $n ($k)" >&2; exit 1 ;; esac; fi; fi
+"$REAL" "$@"; r=$?
+if [ -n "$DP_LOG" ] && [ -n "$DP_SWAP_FILE" ] && [ "$n" = "$DP_SWAP_AT" ]; then
+  python -c 'import sys; p = sys.argv[1]; b = open(p, "rb").read(); open(p, "wb").write(bytes(x ^ 0x20 for x in b))' "$DP_SWAP_FILE" &&
+  echo swapped >> "$DP_LOG"; fi
+exit $r
+SHIM
+} > shim/rclone; chmod +x shim/rclone; SHIMDIR=$PWD/shim
+# calls LOG: the calls a hook made through the shim, in order (the log without the shim's own event lines).
+calls(){ grep -v -e '^injected:' -e '^swapped$' "$1"; }
+# hook HOOK ARGS...: run YOUR command held in the variable named HOOK with ARGS as $1 $2 ...
+# exit 0 = allowed, exit 10 = refused, any other exit (a crash, a missing file) = the hook failed.
+# Its first output line is kept in $WHY. It runs in a subshell with no stdin, so it cannot change this script.
+# It runs in a process group of its own; a watchdog stops that group after HOOK_TIMEOUT seconds, and the call then
+# returns 124 with TIMEDOUT=1 and $WHY naming the timeout (a call that ends just as the watchdog fires reads the
+# same). LIMIT: a process the hook starts in a group of its own (coreutils `timeout` does this) is not stopped with
+# it; if it holds the hook's output the block waits for it, else it may outlive the call and the block, up to its
+# own bound.
+HTO=$PWD/shim/timedout
+hook(){ local h=$1 rc; shift; TIMEDOUT=; rm -f "$HTO"
+  WHY=$(set +f; set -- "$@"; set -m
+    (eval "${!h}") 2>&1 </dev/null & p=$!
+    (sleep "$HOOK_TIMEOUT"; : > "$HTO"; kill -TERM -- -"$p") >/dev/null 2>&1 </dev/null & w=$!   # mark, then stop
+    wait "$p"; r=$?; kill -TERM -- -"$w" 2>/dev/null; exit $r); rc=$?; WHY=${WHY%%$'\n'*}
+  [ -e "$HTO" ] || return $rc
+  rm -f "$HTO"; TIMEDOUT=1; WHY="the hook did not finish within HOOK_TIMEOUT=$HOOK_TIMEOUT s and was stopped"; return 124; }
+# hookS LOG HOOK ARGS...: hook, with the shim first on PATH and its calls logged to LOG (a fresh file per call).
+hookS(){ local PATH="$SHIMDIR:$PATH"; : > "$1"; DP_LOG=$1; DP_SHIM=$SHIMDIR/rclone
+  export DP_LOG DP_SHIM DP_FAIL_AT DP_FAIL_REST DP_MODE DP_SWAP_AT DP_SWAP_FILE; shift
+  hook "$@"; local r=$?; unset DP_LOG DP_SHIM; return $r; }
+# knob NAME DEFAULT: read YOUR setting NAME exactly as spelled; unset means DEFAULT (set but empty stays empty).
+# A variable spelled NAME in another case would be silently ignored, so the block stops instead.
+knob(){ local n=$1 v
+  for v in $(compgen -A export | grep -ix "$n" | grep -vx "$n"); do
+    echo "INCONCLUSIVE: $v is set, but this block reads $n (the name is case-sensitive); calling nothing"; exit 3; done
+  [ -n "${!n+set}" ] || printf -v "$n" '%s' "$2"; }
+# HOOK_TIMEOUT: the seconds one hook call may run before its process group is stopped (default 300).
+knob HOOK_TIMEOUT 300
+[[ $HOOK_TIMEOUT =~ ^[1-9][0-9]{0,5}$ ]] || { echo "INCONCLUSIVE: HOOK_TIMEOUT must be a whole number of seconds from 1 to 999999; calling nothing"; exit 3; }
+# ask KEY LOG HOOK ARGS...: hookS, and remember its exit as the first answer for KEY. again KEY LOG HOOK ARGS...:
+# ask once more and return the same exit; if it differs from the first answer, the hook is stateful and no verdict
+# stands.
+unset ANS; declare -A ANS=()
+ask(){ local k=$1; shift; hookS "$@"; ANS[$k]=$?; return ${ANS[$k]}; }
+again(){ local k=$1 h=$3 r; shift; hookS "$@"; r=$?; [ "$r" = "${ANS[$k]}" ] && return $r
+  echo "INCONCLUSIVE: $h answered $k with exit ${ANS[$k]} at first and exit $r when asked again: its answers depend on earlier calls, which the hook contract forbids${WHY:+ ($WHY)}"; exit 3; }
+```
+
+## TRAPS
+
+### 1. A destination hash read AFTER the check, and never compared to anything, is persisted as the hash the file was verified with; an object swapped after the check is then trusted for good
+
+**Adds to the bus:** not found by mechanism (searched above). It is a timing case of "A content check that reads
+one representation and a consumer that reads another is not a check" (`TRAPS.md:14039`, Conjugal): here the
+consumer reads the same representation, later. It is related to "a verifier that re-reads the working tree to
+check a sealed/attested receipt" (`TRAPS.md:19687`, mlv-app), where the check is tied to what is there now
+instead of what was attested. This project's stored-hash filing (`TRAPS.md:19911`) is about WHERE rclone's
+hash comes from; this trap is about WHEN it was read. The K62/O16 filing's T3 (`TRAPS.md:22010`) is adjacent: a
+hash computed by a rule other than the one the store uses (`git hash-object --path` against an index copy that
+holds CRLF) is not the hash of what is stored. That is a mismatch of rule at one moment; this is a hash read at
+the wrong moment, after the check.
+
+- **Measured here (H76 ledger, "Defect"; re-run as T1).** The verify ran the check, then a sweep that lists the
+  destination with hashes. For a file the check matched, the sweep kept the listing's hash without comparing it
+  to anything, and that value was persisted as the hash the file "was verified with": in the verification cache,
+  in the run manifest and in the MHL export built from it. The sequence was:
+  1. the check matched the file;
+  2. the destination object was swapped;
+  3. the sweep listed the new object's hash;
+  4. the run came out Verified, and the records held the new hash;
+  5. on the next incremental run, the trust audit compared today's hash with the recorded one, which agreed,
+     and trusted the file from then on.
+  T1 re-runs this on local folders: `rclone check`, a same-size rewrite of the destination file, then
+  `rclone lsjson --hash`. The step reported verified and recorded the rewritten file's md5.
+- **What changed here** (`7de58d9`, `9afa88e`, `981c002`). A listing is taken before the check (on both check
+  routes) and again after it. A destination hash is persisted only when the two agree (hex compared without
+  case). A file whose hash differs, that is absent from the first listing, or that shares a first-listing key
+  with another object is refused as "changed while this run was verifying" and its hash is withheld from every
+  persisting reader. A file with no hash in the first listing gets its own refusal and wording (r3: the generic
+  "no content hash ... size alone" text was false for it). A first listing that fails makes the run
+  could-not-run, never Verified. Three adjudication seats agreed on the defect. One proposed re-hashing the
+  source for every match instead, which T1 also accepts: it records the value the check compared.
+- **How it was checked here.** RED `d48fb7b`; six mutants, each killed (dropping the compare, a case-sensitive
+  compare, not withholding, not routing the bucket, skipping the first listing on incremental runs, a missing
+  first listing read as "no sandwich"). Round 2 pinned two more survivors (a first-listing key collision, a
+  first listing with no hash). Round 3 fixed a false statement in the rendered wording that the r2 pin could not
+  see, because it asserted only the absence of one word. Both seats RATIFY at r3; bar 3x green on the merged
+  tree. **Residuals, recorded in the ledger:** a swap from A to B and back to A between the two listings is
+  invisible by construction; on a local destination the first listing reads every byte again; records written
+  before the fix are not re-validated.
+- **Test another project can run (T1).** `RECORD` is your verify-and-record step. The destination already holds
+  a copy of `a.bin`. The block first learns, from a control run, the rclone calls your step makes, in order. It
+  then asks again once per call POSITION k, each time on a fresh fixture, and the shim rewrites the destination's
+  `a.bin` (same size, different bytes) right after call k returns. You do not say where your step compares or
+  where it reads what it records: every position is tried, so a step that compares, then reads the same file
+  again to record it, then makes another call, is caught at the position between the compare and the record read
+  (RECEIPTS `r33`). `SWAP_AFTER`, if you set it, limits the sweep to every position of that call name (`r34`).
+  RED: at some position your step reports verified and records the rewritten file's hash; the line names the
+  position. GREEN: at every position it refuses, records the hash its check compared, or records nothing, and at
+  least one position put the rewrite between two calls the shim saw and got a refusal or the compared hash (the
+  trap was exercised). INCONCLUSIVE: no position exercised it (`r27`, `r38`); at some position the step did not
+  make the control's calls up to k or the rewrite did not land; a position recorded a hash that is neither; a
+  call ran past `HOOK_TIMEOUT`; the controls fail; or a contract clause is broken. Limits: the rewrite comes only
+  after calls the shim saw. A step whose compare and record read both happen outside the shim, with no call it saw
+  between them, is not measured, and the GREEN line says so. A step that repairs the destination before it checks
+  (it copies first) passes the "differs from the start" control's destination, so T1 stops INCONCLUSIVE before
+  the sweep whether or not the step has the trap (`r55`, `r56`): leave the copy out of `RECORD`. The GREEN
+  setting in RECEIPTS is `sandwich.sh`.
+
+```bash
+# T1: is the destination hash YOUR step records the one its check compared, or one read after the check? (RECORD hook)
+# RECORD: YOUR verify-and-record step for source folder $1 and destination folder $2, which already holds a copy of
+# a.bin. Exit 0 = verified, with the hash it records for a.bin as its FIRST output line ("-" if it records none);
+# exit 10 = refused; any other exit reads INCONCLUSIVE (see dp-env.sh `hook`).
+# The block learns the rclone calls RECORD makes, in order, then asks once per call POSITION k, each time on a fresh
+# fixture whose a.bin the shim rewrites (same size, different bytes) right after call k returns. You do not say where
+# your step compares or records: every position is tried. SWAP_AFTER (optional, unset by default) limits the sweep
+# to every position of one call name, as the shim names it (e.g. check, md5sum, config dump).
+# Default RECORD: record_after, which checks, then lists the destination and records the hash it lists (the trap).
+[ -e t1 ] && { echo "INCONCLUSIVE: t1 exists; run in a fresh directory"; exit 3; }
+mkdir t1; cd t1; . ../dp-env.sh
+SWSET=${SWAP_AFTER+set}; knob RECORD 'record_after "$1" "$2"'; knob SWAP_AFTER ''
+[[ $RECORD =~ [^[:space:]] ]] || { echo "INCONCLUSIVE: RECORD is set but empty; calling nothing"; exit 3; }
+[ -z "$SWSET" ] || [[ $SWAP_AFTER =~ ^[a-z0-9]+( [a-z0-9]+)?$ ]] || { echo "INCONCLUSIVE: SWAP_AFTER, when set, must be one rclone call name as the shim names it (e.g. check, md5sum, config dump) and nothing else: every position of it is tried; calling nothing"; exit 3; }
+echo "RECORD: $RECORD"; echo "HOOK_TIMEOUT: $HOOK_TIMEOUT s per hook call"
+if [ -n "$SWSET" ]; then echo "SWAP_AFTER: $SWAP_AFTER (every position of this call is tried)"; else echo "SWAP_AFTER: unset (every call position is tried)"; fi
+record_after(){ R check "$1" "$2" >/dev/null 2>&1 || exit 10
+  R lsjson --hash --hash-type md5 "$2" 2>/dev/null | python -c '
+import json, sys
+print(next(e["Hashes"]["md5"] for e in json.load(sys.stdin) if e["Path"] == "a.bin"))'; }
+: > "$RCLONE_CONFIG"
+python -c 'import sys; open(sys.argv[1], "wb").write(bytes(range(65, 91)) * 40)' orig.bin      # 1040 bytes
+python -c 'import sys; p = sys.argv[1]; open(p + ".x", "wb").write(bytes(x ^ 0x20 for x in open(p, "rb").read()))' orig.bin
+H1=$(md5 orig.bin); H2=$(md5 orig.bin.x)                 # H1: the bytes the check compares; H2: the bytes swapped in
+echo "a.bin md5: compared $H1, swapped in $H2 (same size)"
+# case_ KEY AT KIND: a fresh fixture for EVERY question (src/a.bin and dst/a.bin, identical), then ask RECORD about it
+# (KIND: ask or again). AT=k: the shim rewrites dst/a.bin once, right after call k returns. AT=0: dst/a.bin holds the
+# rewritten bytes before the step starts. AT empty: no rewrite. Sets V (the exit), GOT (the hash), SEQ (the calls,
+# in order), LOG and LOGL (the log, and the log on one line).
+n=0; CSEQ=
+case_(){ n=$((n+1)); local d="$T/q$n"; mkdir -p "$d/src" "$d/dst"; cp orig.bin "$d/src/a.bin"; cp orig.bin "$d/dst/a.bin"
+  DP_SWAP_AT=; DP_SWAP_FILE=; case $2 in 0) cp orig.bin.x "$d/dst/a.bin" ;; ?*) DP_SWAP_AT=$2; DP_SWAP_FILE="$d/dst/a.bin" ;; esac
+  LOG="$T/q$n.log"; $3 "$1" "$LOG" RECORD "$d/src" "$d/dst"; V=$?; DP_SWAP_AT=; DP_SWAP_FILE=
+  GOT=$(printf '%s' "$WHY" | tr 'A-F' 'a-f' | tr -d ' \r'); SEQ=$(calls "$LOG"); LOGL=$(paste -sd' ' "$LOG"); }
+# controls, before the sweep: an unchanged destination must be verified with the hash the check compared, making the
+# same calls every time (CSEQ, learned on the first); and a destination whose bytes differ before the step starts
+# must be refused. A step that verifies it either does not compare content, or repairs the destination before it
+# checks (it copies first); either way nothing below measures this trap, so give RECORD only the verify-and-record part.
+control(){ case_ steady "" "$1"
+  [ -n "$SEQ" ] || { echo "INCONCLUSIVE: RECORD made no rclone call through the shim (exit $V), so there is no position to rewrite after (see dp-env.sh)"; exit 3; }
+  [ -n "$CSEQ" ] || CSEQ=$SEQ
+  [ "$SEQ" = "$CSEQ" ] || { echo "INCONCLUSIVE: RECORD made different calls on the same question (first: $(printf '%s' "$CSEQ" | paste -sd' '); now: $LOGL)"; exit 3; }
+  case $V in
+    0)  [ "$GOT" = "$H1" ] || { echo "INCONCLUSIVE: on an unchanged destination RECORD recorded '$GOT', not the file's md5 $H1"; exit 3; }
+        echo "control: unchanged destination verified, recorded $H1" ;;
+    10) echo "INCONCLUSIVE: RECORD refuses an unchanged destination${WHY:+: $WHY}"; exit 3 ;;
+    *)  echo "INCONCLUSIVE: RECORD failed on an unchanged destination${WHY:+: $WHY}"; exit 3 ;; esac
+  case_ differs 0 "$1"; case $V in
+    10) echo "control: a destination that differs from the start refused" ;;
+    0)  echo "INCONCLUSIVE: RECORD verified a destination whose bytes differ from the source's from the start (recorded '$GOT'): either its check does not compare content, or it repairs the destination before it checks (e.g. it copies first); this trap is not measured. Leave any copy out of RECORD and give it only the verify-and-record part"; exit 3 ;;
+    *)  echo "INCONCLUSIVE: RECORD failed on a destination that differs from the start${WHY:+: $WHY}"; exit 3 ;; esac; }
+control ask
+M=$(printf '%s\n' "$CSEQ" | grep -c .)
+echo "calls RECORD makes through the shim, in order: $(printf '%s\n' "$CSEQ" | awk '{ printf "%s%d %s", (NR > 1 ? ", " : ""), NR, $0 }')"
+if [ -n "$SWSET" ]; then POS=$(printf '%s\n' "$CSEQ" | grep -nx "$SWAP_AFTER" | cut -d: -f1)
+  [ -n "$POS" ] || { echo "INCONCLUSIVE: RECORD never ran \`rclone $SWAP_AFTER\` through the shim; unset SWAP_AFTER to try every position"; exit 3; }
+else POS=$(seq 1 "$M"); fi
+# the sweep: the rewrite right after call k, for every position k. A position is judged only if the step made the
+# control's first k calls and the rewrite then landed (logged once, right after them). It EXERCISED the trap if the
+# shim saw another call after the rewrite and the step still judged: refused, or recorded the compared hash.
+red=0; inc=0; ex=0; REDAT=; DONE=
+for k in $POS; do c=$(printf '%s\n' "$CSEQ" | sed -n "${k}p"); case_ "rewrite@$k" "$k" ask
+  printf 'rewrite after %-2s %-14s -> ' "$k" "$c"
+  [ -n "$TIMEDOUT" ] && { echo "INCONCLUSIVE: $WHY"; inc=$((inc+1)); continue; }
+  if [ "$(grep -cx swapped "$LOG")" -ne 1 ] || [ "$(sed '/^swapped$/,$d' "$LOG")" != "$(printf '%s\n' "$CSEQ" | head -n "$k")" ]; then
+    echo "INCONCLUSIVE: the rewrite did not land right after the control's call $k (calls: $LOGL)"; inc=$((inc+1)); continue; fi
+  DONE="$k $DONE"; after=$(sed '1,/^swapped$/d' "$LOG" | grep -c .)
+  case $V in
+    10) echo "refused${WHY:+ ($WHY)}"; [ "$after" -gt 0 ] && ex=$((ex+1)) ;;
+    0)  case "$GOT" in
+          "$H2") echo "RED: verified, and recorded $H2, the hash of bytes the check never compared"; red=$((red+1)); REDAT="$REDAT $k" ;;
+          "$H1") echo "verified, recorded $H1, the hash the check compared"; [ "$after" -gt 0 ] && ex=$((ex+1)) ;;
+          -|"")  echo "verified, recorded no hash" ;;
+          *)     echo "INCONCLUSIVE: verified and recorded '$GOT', neither the compared hash nor the rewritten one"; inc=$((inc+1)) ;; esac ;;
+    *)  echo "INCONCLUSIVE: RECORD failed${WHY:+ ($WHY)}"; inc=$((inc+1)) ;; esac
+  echo "   calls: $LOGL"
+done
+# the hook contract, checked after the sweep: every judged position again on a fresh fixture, in reverse order, then
+# both controls (the same calls, the same answers). A RECORD whose answer depends on earlier calls gives no verdict.
+for k in $DONE; do case_ "rewrite@$k" "$k" again; done
+control again
+echo "RECORD gave the same answer to all $(( $(printf '%s\n' $DONE | grep -c .) + 2 )) questions when asked again"
+[ $red -gt 0 ] && { echo "T1: RED (verified, and recorded the rewritten file's hash, with the rewrite after call(s)$REDAT)"; exit 1; }
+[ $inc -gt 0 ] && { echo "T1: INCONCLUSIVE ($inc position(s) not judged)"; exit 3; }
+[ $ex -gt 0 ] || { echo "T1: INCONCLUSIVE (no position put the rewrite between two calls the shim saw and got a refusal or the compared hash, so the trap was never exercised)"; exit 3; }
+echo "T1: GREEN (the rewrite was tried after each of the $(printf '%s\n' $POS | grep -c .) position(s) $([ -n "$SWSET" ] && echo "of \`$SWAP_AFTER\`" || echo "of the $M call(s)") the shim saw, and no answer recorded the rewritten hash; limit: a compare or read made outside the shim was not swept)"; exit 0
+```
+
+### 2. An overlap guard whose "cannot tell" passes at a later boundary copies into the source; the fix that held was an undecided default that only POSITIVE evidence clears
+
+**Adds to the bus:** its nearest neighbour is this project's H50 entry, "A guard's 'cannot tell' returned as
+its answer" (`TRAPS.md:15321`). There, one helper failed closed by returning the verdict's own value, so a caller
+that tells "overlaps" from "could not tell" got a false verdict at that call. This extends it from one call to a
+run. Here the "cannot tell" was returned honestly as a non-verdict, but nothing RECORDED it, and every later
+boundary read the missing record as "undecided, pass". The fix that held was not to make each arm return or
+record its non-verdict, which H50's marking did. It inverted the default, so "undecided" holds until positive
+evidence clears it. It also extends "The gate that matters is attendance, and unknown must mean no" (in
+"Attended-surface popups", `TRAPS.md:808`) and "placement must be positive" (`TRAPS.md:20661`), each a rule
+for one reader at one moment. This adds what broke that rule across a run's boundaries and across processes, arm
+by arm, over seven review rounds. It also adds a test that fails every call the reader makes, by position,
+alone and together with every later call. `TRAPS.md:20661`'s test changes the spelling, not the answers the
+reader gets.
+
+- **Measured here (H51B ledger).** Defect 2 (`7f3a5ba`): with fsinfo down at the scan, the guard answered
+  "cannot tell" for a destination nested in the source. The scan logged it and passed. Every later boundary
+  treated a non-verdict as "undecided, pass". The run made 1 copy into `src\backup`, touched the canary 3
+  times, and persisted Verified with `IsSafeToWipe=true`. Each fix round then found another arm that could not
+  decide and did not RECORD that it could not:
+  - against r2: a probe RPC timeout, or a config dump it could not read, recorded nothing, and a later boundary copied
+    into the source;
+  - against r3: fsinfo up but reporting a union as not local; the second or third dump read failing; the probe's dump
+    hanging past its bound; a new runner built from the store, which started with no mark. Each ended with
+    copies=1.
+  - against r4 (`42bc341`), after the default was inverted: a destination with no folder to judge, nothing reported
+    unplaceable and no proof either. Every boundary said "nothing to judge", and the run reached Verified with
+    `IsSafeToWipe=true`, judged=0, copies=1.
+- **What changed here.** Round 4 (`99246e6`) inverted the default instead of patching a fifth arm: "the flag's
+  default was the unsafe answer, and every arm had to remember to leave it" (ledger, r4). A run's
+  overlap-decided flag is false for every runner, including one built from the store, and every scan sets it
+  false again. Only two kinds of positive evidence set it: every folder judged "not nested", or a config dump
+  that was READ and whose placement walk proves no local-ish leaf. While it is false, any later boundary's
+  "cannot tell" refuses before any copy or canary. The arms that cannot decide do nothing, so none has to
+  remember to record anything. Round 5 (`2a092bf`) made "nothing to judge" decide only on that proof.
+- **How it was checked here.** Two opposing Opus seats per round, seven rounds; each round's attack was a
+  reproduced copy into the source through the real JobRunner. Mutants were planted every round (r4: every arm;
+  r7: 13 killed). Both seats RATIFY at r7; bar 3x green on Ultra Magnus (`cc731b6`). **Residuals, recorded in
+  the H51B row and ledger:**
+  - a run DECIDED at the scan whose config then moves onto the source while the guard cannot tell still copies
+    once, and ends Incomplete, never Verified, as on master (ledger r5, ATKC);
+  - a History re-verify, or a resume, whose first boundary cannot tell now refuses. That includes a share's SMB
+    blip at that moment. It was accepted: FAILED, never SAFE (ledger r4);
+  - H82, cut as a follow-up: when a later run is refused at the scan because it cannot tell, an earlier run's
+    persisted Verified with `IsSafeToWipe=true` stays in the store;
+  - Win32 error 87 from `OpenFileById`, read as "not this volume", stays unmeasured, because this host has no
+    FAT or exFAT volume.
+- **Test another project can run (T2).** `PLACE` is your placement decision. The block first measures that a
+  named local remote, `nl:<source>/backup`, stores into the source, and that `nl:<elsewhere>` does not. It then
+  learns the rclone calls `PLACE` makes, in order, while asking about the nested destination with every call
+  working. Then, for EVERY position k, it fails call k in two modes: (a) call k alone, so a reader that reads the
+  same call twice, refusing on the first failure but not the second, is found (RECEIPTS `r29`); and (b) call k and
+  every later call, an outage that persists, so a reader that retries or falls back and then fails open is found
+  (`r43`; H51B defect 2 was a persistent outage). Each mode runs with three answers: an error (exit 1), an empty
+  answer (exit 0, no output), and a cut answer (the call runs and only the first half of its output is passed
+  on), so a reader that rejects an empty answer but parses a broken one leniently is found (`r54`). You do not
+  say which call matters: every position, mode and answer is tried. RED: `PLACE` allows the nested destination in
+  any run, including with every call working, whether or not it made any call (`r32`). GREEN: it refuses it every
+  time. INCONCLUSIVE: `PLACE` crashes instead of refusing; it made no call the shim could see and did not allow
+  the nested case; the calls before call k were not those of the healthy run (the sequence cannot be
+  reproduced); the fixture did not store where it should; a call ran past `HOOK_TIMEOUT` (`r58`); the controls
+  fail; or a contract clause is broken. The GREEN line itself names what was NOT tried: calls that bypass the
+  shim (`r31`), a call that never returns, two failures with a working call between them, and two failures whose
+  answers differ between calls (for example an error, then an empty answer). Every run gives all its failed calls
+  ONE answer. So a reader that, when its dump errors, falls back to `listremotes` and treats a name it does not
+  list as a path allows the nested destination when the dump errors and `listremotes` answers empty, yet reads
+  GREEN on all six modes (`r57`); the same holds for a reader whose `backend features` errors and whose dump then
+  answers empty. Only calls your step makes on this fixture are exercised, so run it once for each boundary
+  where your code decides.
+
+```bash
+# T2: when a call YOUR placement check depends on fails, does "cannot tell" refuse, or pass? (PLACE hook)
+# PLACE: how YOUR tool decides that destination $2 is placed and is NOT inside or over the source folder $1: exit 0
+# = allowed, exit 10 = refused, any other exit reads INCONCLUSIVE (see dp-env.sh `hook`).
+# The block learns the rclone calls PLACE makes, in order, while asking about a named local remote INSIDE the source.
+# Then, for every position k, it fails call k in two modes: alone ("only"), and with every later call failed too
+# ("from", an outage that persists through retries and fallbacks). Each mode runs with three answers: an error (exit
+# 1), an empty answer (exit 0, no output) and a cut answer (the first half of the real output). Default PLACE:
+# place_dump, which reads `config dump` and treats a dump it cannot read as "nothing configured" (the trap).
+[ -e t2 ] && { echo "INCONCLUSIVE: t2 exists; run in a fresh directory"; exit 3; }
+mkdir t2; cd t2; . ../dp-env.sh
+knob PLACE 'place_dump "$1" "$2"'
+[[ $PLACE =~ [^[:space:]] ]] || { echo "INCONCLUSIVE: PLACE is set but empty; calling nothing"; exit 3; }
+echo "PLACE: $PLACE"; echo "HOOK_TIMEOUT: $HOOK_TIMEOUT s per hook call"
+place_dump(){ R config dump 2>/dev/null | python -c '
+import json, os, sys
+try: conf = json.load(sys.stdin)
+except ValueError: conf = {}                           # the trap: a dump it could not read is "nothing configured"
+src = os.path.normcase(os.path.abspath(sys.argv[1])); d = sys.argv[2]
+name, sep, path = d.partition(":")
+if len(name) < 2 or not sep: path = d                # a path (C:/..., or no colon at all)
+elif conf.get(name, {}).get("type") != "local": sys.exit(0)   # not a local remote, as far as it can tell
+r = os.path.normcase(os.path.abspath(path))
+sys.exit(10 if r == src or r.startswith(src + os.sep) or src.startswith(r + os.sep) else 0)' "$1" "$2"; }
+# place_fsinfo: another reader with the trap in it; it roots what `backend features` reports, and a destination
+# whose features it cannot read is "not local".
+place_fsinfo(){ R backend features "$2" 2>/dev/null | python -c '
+import json, os, sys
+try: d = json.load(sys.stdin)
+except ValueError: sys.exit(0)                         # the trap: no answer reads as "not a local folder"
+src = os.path.normcase(os.path.abspath(sys.argv[1])); root = d.get("Root", "").replace("//?/", "")
+if not (d.get("Features", {}).get("IsLocal") and os.path.isabs(root)): sys.exit(0)
+r = os.path.normcase(os.path.abspath(root))
+sys.exit(10 if r == src or r.startswith(src + os.sep) or src.startswith(r + os.sep) else 0)' "$1"; }
+printf '[nl]\ntype = local\n' > "$RCLONE_CONFIG"
+mkdir -p src/backup elsewhere; echo alpha > src/a.txt; echo probe > probe.txt; S="$T/src"; N="nl:$S/backup"
+# measurement: the named local really stores into the source, and the control really stores elsewhere.
+lands(){ R copyto probe.txt "$1/probe.txt" 2>/dev/null; [ -f "$2/probe.txt" ] && rm "$2/probe.txt"; }
+lands "$N" src/backup || { echo "INCONCLUSIVE: $N did not store into the source; nothing measured"; exit 3; }
+lands "nl:$T/elsewhere" elsewhere || { echo "INCONCLUSIVE: nl:<t>/elsewhere did not store into elsewhere/"; exit 3; }
+echo "measured: nl:<src>/backup stores into the source; nl:<t>/elsewhere stores into elsewhere/"
+DP_FAIL_AT=; DP_FAIL_REST=; DP_MODE=; i=0; L(){ i=$((i+1)); LOG="$T/c$i.log"; }   # a fresh log per question
+control(){ L; ask "$1" "$LOG" PLACE "$S" "$1" || { echo "INCONCLUSIVE: PLACE does not allow an independent destination (${1/$T/<t>})${WHY:+: $WHY}"; exit 3; }
+  echo "control: ${1/$T/<t>} allowed"; }
+control "$T/elsewhere"; control "nl:$T/elsewhere"
+red=0; inc=0; ok=0; JUDGED=""
+L; ask healthy "$LOG" PLACE "$S" "$N"; case $? in
+  10) echo "every call working: refused${WHY:+ ($WHY)}" ;;
+  0)  echo "every call working: RED: allowed, and it stores into the source"; red=$((red+1)) ;;
+  *)  echo "INCONCLUSIVE: PLACE failed with every call working${WHY:+ ($WHY)}"; exit 3 ;; esac
+# the calls PLACE makes, in order: call k is failed by its POSITION, so two calls with one name are failed apart.
+SEQ=$(calls "$T/c$i.log"); NC=$(printf '%s' "$SEQ" | grep -c .)
+if [ "$NC" -eq 0 ]; then
+  [ $red -gt 0 ] || { echo "INCONCLUSIVE: PLACE made no rclone call through the shim, so no call could be failed (see dp-env.sh)"; exit 3; }
+  echo "calls PLACE makes through the shim: none, so none was failed"
+else echo "calls PLACE makes through the shim, in order: $(printf '%s\n' "$SEQ" | awk '{ printf "%s%d %s", (NR > 1 ? ", " : ""), NR, $0 }')"; fi
+for k in $(seq 1 "$NC"); do c=$(printf '%s\n' "$SEQ" | sed -n "${k}p"); for w in only from; do for m in fail empty cut; do
+  DP_FAIL_AT=$k; DP_FAIL_REST=; [ $w = from ] && DP_FAIL_REST=1; DP_MODE=$m
+  L; ask "$k/$w/$m" "$LOG" PLACE "$S" "$N"; v=$?; DP_FAIL_AT=; DP_FAIL_REST=; DP_MODE=
+  printf '%-2s %-17s %-4s %-5s -> ' "$k" "$c" "$w" "$m"
+  [ -n "$TIMEDOUT" ] && { echo "INCONCLUSIVE: $WHY"; inc=$((inc+1)); continue; }
+  # the verdict needs call k to be the same call as in the healthy run, after the same calls, and failed: alone
+  # ("only"), or with every call from k on failed ("from"; a retry or fallback may add calls after k).
+  got=$(calls "$LOG" | grep -c .); want=1; [ $w = from ] && want=$((got - k + 1))
+  if [ "$(calls "$LOG" | head -n "$k")" != "$(printf '%s\n' "$SEQ" | head -n "$k")" ] || [ "$want" -lt 1 ] || [ "$(grep -cx "injected:$m" "$LOG")" -ne "$want" ]; then
+    echo "INCONCLUSIVE: call $k was not the same call this time (calls: $(paste -sd' ' "$LOG"))"; inc=$((inc+1)); continue; fi
+  JUDGED="$k/$w/$m
+$JUDGED"
+  case $v in
+    10) echo "GREEN: refused${WHY:+ ($WHY)}"; ok=$((ok+1)) ;;
+    0)  echo "RED: allowed while it could not tell (it stores into the source)"; red=$((red+1)) ;;
+    *)  echo "INCONCLUSIVE: PLACE failed instead of refusing${WHY:+ ($WHY)}"; inc=$((inc+1)) ;; esac
+  [ $w = from ] && [ "$got" -gt "$NC" ] && echo "   calls (every one from $k on failed): $(calls "$LOG" | paste -sd' ')"
+done; done; done
+# the hook contract, checked after the loop: every failed position and mode again in reverse order, the healthy case (which must
+# make the same calls, or a position means nothing), then both controls. A PLACE whose answer depends on earlier
+# calls gives no verdict, even over RED.
+while IFS= read -r km; do [ -n "$km" ] || continue
+  DP_FAIL_AT=${km%%/*}; DP_FAIL_REST=; [[ $km == */from/* ]] && DP_FAIL_REST=1; DP_MODE=${km##*/}
+  L; again "$km" "$LOG" PLACE "$S" "$N"; DP_FAIL_AT=; DP_FAIL_REST=; DP_MODE=; done <<< "$JUDGED"
+L; again healthy "$LOG" PLACE "$S" "$N"
+[ "$(calls "$T/c$i.log")" = "$SEQ" ] || { echo "INCONCLUSIVE: PLACE made different calls when asked the same question again (first: $(printf '%s' "$SEQ" | paste -sd' '); now: $(paste -sd' ' "$T/c$i.log")), so a call's position cannot be reproduced"; exit 3; }
+L; again "nl:$T/elsewhere" "$LOG" PLACE "$S" "nl:$T/elsewhere"; L; again "$T/elsewhere" "$LOG" PLACE "$S" "$T/elsewhere"
+echo "PLACE gave the same answer to all $(( $(printf '%s' "$JUDGED" | grep -c .) + 3 )) questions when asked again"
+[ $red -gt 0 ] && { echo "T2: RED ($red case(s) allowed a destination inside the source)"; exit 1; }
+[ $inc -gt 0 ] && { echo "T2: INCONCLUSIVE ($inc failed call(s) not judged)"; exit 3; }
+echo "T2: GREEN (refused with every call working, and with each of the $NC call(s) it made through the shim failed by position, alone and with every later call failed too, as an error, an empty answer and a cut answer; NOT tried: a call that bypasses the shim, a call that never returns, two failures with a working call between them, two failures whose answers differ between calls (e.g. an error, then an empty answer))"; exit 0
+```
+
+### 3. rclone reads a quoted value that holds `:` or `,`, lets a named remote's `type=` retype it, and reads a lone letter as a drive; a reader that splits at the first colon, or trusts the section's own type, calls a folder inside the source "not local"
+
+**Adds to the bus:** `TRAPS.md:20661` (T4) measured `nas,type=local:<source>` over a section typed `sftp`, and
+this project's stored-hash filing noted a hasher override without re-measuring it (`TRAPS.md:20246`). New here:
+quoted values, an alias whose target is such an override, a one-letter section name, and the fact that
+`type=` is honoured only on a NAMED remote and only in lower case (T3m). It is also an instance of "A guard that
+tests for a literal and a translator that tests for a pattern will disagree" (`TRAPS.md:13962`, conjugal): the
+translator is rclone's spelling grammar. It is weak-pin shape (c) as this project names it, two readers of one
+spelling with different domains.
+
+- **Measured here (H51B r6 and r7).** r6, seat A: `dropbox,description='x:y',type=local:<src>\backup`, and the
+  same with double quotes. The placement walk split the name from the path at the FIRST colon, which sits
+  inside the quotes, so the override read as `dropbox,description='x`, with no `type` key. It counted as "not
+  local", and all five shapes (top level with either quote, an alias, a union upstream, a crypt) made one copy
+  into the source. r7, seat A: after r6 fixed the walk, a second reader on the fsinfo-down path (the encoding
+  resolver's `LocalRootOf` and `Resolve`) still split at the first colon. It rooted
+  `a,description='x:<elsewhere>',type=local:<src>\backup` at a disjoint folder, and one copy went into the
+  source before a refusal. That shape needs a section literally named `a,description='x`, which rclone's
+  `config create` refuses. Also r7: `:dropbox,type=local:<src>\backup` counted as proof of "not local" and
+  reached Verified with `IsSafeToWipe=true` in the fake-rclone test. Whether rclone takes an on-the-fly backend
+  from its name or from `type` was unmeasured, so the fix failed closed on both readings. T3m now measures it on
+  1.74.4: the name wins (`:memory,type=local:<dir>` stores nothing on disk), a named `mm,type=local:<dir>`
+  stores on disk, `mm,TYPE=local:<dir>` does not, a quoted `'a:b'` or `"a:b"` value is read as one value, and
+  `m:` opens drive `M:` even though a section `[m]` exists.
+- **What changed here.** r6 (`71de941`): one quote-aware splitter with rclone's grammar is used at every split
+  site in the placement code. A name ends at its first `,` or `:`; a value may be quoted where it starts, with a
+  doubled quote standing for one; the remote ends at the first colon outside quotes. Anything that grammar does
+  not read exactly is local-ish, never proof. r7 (`f47f38e`): every reader of a destination spelling was
+  enumerated by grep (`IndexOf(':')`, `Split(':')`, `LastIndexOf(':')`, `StartsWith(':')`, `Regex`), and each
+  one now uses that splitter. An override is never rooted directly. An on-the-fly spelling with a `type` key, in
+  any case, is never proof. Cloudvore still refuses `:memory,type=local:`-style spellings, a false alarm by
+  design that its ledger records.
+- **How it was checked here.** r7 RED `5f21d62` (24 of 32 fail at r6). A 24-spelling differential through four
+  readers found 22 identical and 2 changed, both intended. 13 mutants were killed (T5 only after `0a7da72`
+  added a pin).
+- **Test another project can run (T3).** Five destinations, each measured storing into `src/backup` before
+  `PLACE` is asked: a named override `mm,type=local:`, the same with a single-quoted and a double-quoted
+  value holding `:` (and `,`), an alias whose `remote=` is the quoted override, and `<drive>:src/backup` with a
+  section named after the drive letter (drive-relative, resolved against the current directory, which is the
+  block's own). RED: `PLACE` allows any of them. GREEN: all five refused. Controls: a plain folder elsewhere and
+  a `memory` remote must be allowed. `place_split typed`, which honours `type=` but still splits at the first
+  colon (Cloudvore's r6 resolver shape), is in the block; RECEIPTS runs it. T3m needs no hook: it prints where
+  a copy lands for the `type` spellings above.
+
+```bash
+# T3: destination spellings rclone opens as a local folder INSIDE the source, which a reader that splits at the
+# first colon, or trusts a section's own type, calls "not local" (PLACE hook, as in T2).
+# Default PLACE: place_split first, which splits at the first colon, ignores a connection string's options and
+# follows aliases the same way (the trap). `place_split typed` also honours a `type=` option (still first colon).
+[ -e t3 ] && { echo "INCONCLUSIVE: t3 exists; run in a fresh directory"; exit 3; }
+mkdir t3; cd t3; . ../dp-env.sh
+knob PLACE 'place_split first "$1" "$2"'
+[[ $PLACE =~ [^[:space:]] ]] || { echo "INCONCLUSIVE: PLACE is set but empty; calling nothing"; exit 3; }
+echo "PLACE: $PLACE"; echo "HOOK_TIMEOUT: $HOOK_TIMEOUT s per hook call"
+place_split(){ R config dump | python -c '
+import json, os, sys
+conf = json.load(sys.stdin); mode = sys.argv[1]; src = os.path.normcase(os.path.abspath(sys.argv[2]))
+def rel(p):
+    r = os.path.normcase(os.path.abspath(p))
+    return r == src or r.startswith(src + os.sep) or src.startswith(r + os.sep)
+def judge(spec, depth=0):
+    head, sep, path = spec.partition(":")              # the trap: the FIRST colon ends the remote
+    if not sep or (len(head) == 1 and head not in conf): return rel(spec)   # a path; a lone letter with no section
+    name, _, opts = head.partition(",")
+    typ = conf.get(name, {}).get("type")
+    if mode == "typed":
+        for kv in opts.split(","):
+            k, _, v = kv.partition("=")
+            if k == "type": typ = v
+    if typ == "local": return rel(path)
+    if typ == "alias" and depth < 5: return judge(conf[name].get("remote", "") + ("/" + path if path else ""), depth + 1)
+    return False                                      # anything else: not a local folder
+sys.exit(10 if judge(sys.argv[3]) else 0)' "$@"; }
+mkdir -p src/backup elsewhere; echo alpha > src/a.txt; echo probe > probe.txt; S="$T/src"
+DL=$(printf '%s' "${T%%:*}" | tr 'A-Z' 'a-z')          # this directory's drive letter, as a remote name
+printf '[mm]\ntype = memory\n\n[al]\ntype = alias\nremote = mm,description='"'"'a:b'"'"',type=local:%s/backup\n\n[%s]\ntype = memory\n' "$S" "$DL" > "$RCLONE_CONFIG"
+# CASES: name|destination. Each must store into src/backup (measured below, per case, before PLACE is asked).
+CASES="override|mm,type=local:$S/backup
+quoted-1|mm,description='a:b',type=local:$S/backup
+quoted-2|mm,description=\"x,y:z\",type=local:$S/backup
+alias|al:
+letter|$DL:src/backup"
+i=0; L(){ i=$((i+1)); LOG="$T/c$i.log"; }
+lands(){ R copyto probe.txt "$1/probe.txt" 2>/dev/null; [ -f "$2/probe.txt" ] && rm "$2/probe.txt"; }
+control(){ L; ask "$1" "$LOG" PLACE "$S" "$1" || { echo "INCONCLUSIVE: PLACE does not allow an independent destination (${1/$T/<t>})${WHY:+: $WHY}"; exit 3; }
+  echo "control: ${1/$T/<t>} allowed"; }
+lands "$T/elsewhere" elsewhere && control "$T/elsewhere"
+control mm:                                          # a memory remote stores nothing in any folder
+red=0; inc=0; ok=0
+while IFS='|' read -r n d; do
+  printf '%-9s %-50s ' "$n" "$(printf '%s' "$d" | sed "s#$S#<src>#")"
+  if ! lands "$d" src/backup; then echo "INCONCLUSIVE: this spelling did not store into the source here"; inc=$((inc+1)); continue; fi
+  L; ask "$n" "$LOG" PLACE "$S" "$d"; case $? in
+    10) echo "stores into the source; PLACE -> GREEN: refused${WHY:+ ($WHY)}"; ok=$((ok+1)) ;;
+    0)  echo "stores into the source; PLACE -> RED: allowed"; red=$((red+1)) ;;
+    *)  echo "stores into the source; PLACE -> INCONCLUSIVE: PLACE failed${WHY:+ ($WHY)}"; inc=$((inc+1)) ;; esac
+done <<< "$CASES"
+# the hook contract, checked after the loop: every case again in reverse order, then both controls.
+while IFS='|' read -r n d; do L; again "$n" "$LOG" PLACE "$S" "$d"; done <<< "$(printf '%s\n' "$CASES" | tac)"
+L; again mm: "$LOG" PLACE "$S" mm:; L; again "$T/elsewhere" "$LOG" PLACE "$S" "$T/elsewhere"
+echo "PLACE gave the same answer to all 7 questions when asked again"
+[ $red -gt 0 ] && { echo "T3: RED ($red of 5 case(s) RED, $inc INCONCLUSIVE)"; exit 1; }
+[ $inc -gt 0 ] || [ $ok -ne 5 ] && { echo "T3: INCONCLUSIVE ($inc of 5 case(s) not measured or not judged)"; exit 3; }
+echo "T3: GREEN (all 5 spellings measured storing into the source, and refused)"; exit 0
+```
+
+```bash
+# T3m: how rclone reads a `type` key in a spelling, measured (no hook; it prints where each copy landed)
+[ -e t3m ] && { echo "INCONCLUSIVE: t3m exists; run in a fresh directory"; exit 3; }
+mkdir t3m; cd t3m; . ../dp-env.sh
+printf '[mm]\ntype = memory\n\n[m]\ntype = memory\n' > "$RCLONE_CONFIG"
+echo probe > probe.txt
+say(){ local d="$T/$1"; mkdir -p "$1"; R copyto probe.txt "$2$d/probe.txt" 2>/dev/null
+  local f=$(R backend features "$2$d" 2>/dev/null | python -c 'import json,sys; d=json.load(sys.stdin); print("Name=%s IsLocal=%s" % (d["Name"], d["Features"].get("IsLocal")))')
+  printf '%-38s fsinfo %-28s -> %s\n' "$2<d>" "$f" "$([ -f "$1/probe.txt" ] && echo "stored on disk" || echo "nothing on disk")"; }
+say f1 ':memory,type=local:'                 # on the fly: the backend NAME wins over a type key
+say f2 'mm,type=local:'                      # a named remote's connection string: type retypes it
+say f3 'mm,TYPE=local:'                      # ... but only spelled in lower case
+say f4 "mm,description='a:b',type=local:"    # a quoted value may hold ':' and ','
+say f5 'mm,description="a:b",type=local:'
+echo "m: (a section [m] of type memory exists) -> $(R backend features m: 2>/dev/null | python -c 'import json,sys; d=json.load(sys.stdin); print("Name=%s IsLocal=%s Root=%s" % (d["Name"], d["Features"].get("IsLocal"), d["Root"]))')"
+echo "mm: -> $(R backend features mm: 2>/dev/null | python -c 'import json,sys; d=json.load(sys.stdin); print("Name=%s IsLocal=%s" % (d["Name"], d["Features"].get("IsLocal")))')"
+```
+
+## NOT FILED
+
+- **H73d, a refusal that names its real cause and way out** (merge `8813d90`, candidate `4758ad4`, ledger
+  `review/ledger-h73d-exit-wording-2026-09-30.md`). Wording only; which cases refuse is unchanged. The lesson
+  ("name the cause and the remedy") has no test another project could run against its own code, so it is
+  project-local. H76 r3's wording defect, whose pin asserted the absence of one word, is weak-pin shape (b)
+  and already on the bus in this project's filings.
+- **K64, a fixture cleanup that swallows a failed recursive delete** (merge `61558e1`; the portable part is
+  recorded in `review/ledger-k64-fixture-temp-leak-2026-09-30.md` by `93ab2a2`). It is portable, and it is
+  not filed here. It is not an rclone or placement trap, and its test needs a Windows reparse-point fixture
+  and a .NET recursive delete, which this draft did not run: .NET runs were outside this session's machine
+  boundary. It is **carried forward**: the next filing should take it from that ledger section.
+- H76's cost residuals (a local destination read twice, a crypt run's unused listing) and H51B's volume-pause
+  and wording details. Project-local.
+- The previous filing (crypt placement and destructive rc calls) is on the bus at `a3aa596` and acknowledged
+  by `e1c70fd`; nothing of it is repeated here.
+
+## ROWS
+
+The interval this filing discharges: every commit on Cloudvore `origin/master` (first parent) since the previous
+publication source `314af0f` (bus `a0bcaae`, ack `e8913a8`), at `32f2452` (`git log --first-parent --oneline
+314af0f..origin/master`, 14 commits; `tools/doctrine-debt.py --ref origin/master` counts 60, every commit in the
+range with merged branches included). Then the rows that ack held for this filing, and earlier rows this draft's
+r1 and r2 dispositioned, with their disposition now.
+
+| Row | Landing | Disposition |
+|---|---|---|
+| K64 | merge `61558e1` (records `a50a3db`, `93ab2a2`) | **Carried forward**, portable but not in this filing (NOT FILED above). |
+| H51B | merge `17f73f9`, fold `a7c15b4` (record `cc731b6`) | **Covered by this filing**, traps 2 and 3. |
+| H82 | merge `9ba2431` (record `9ec9fca`) | **Held for the next filing.** A definite "nested" refusal withdraws an earlier verdict while a cannot-tell keeps it: portable, adjacent to trap 2, not measured here. |
+| H83 | `a03ff7e` | Closed by adjudication, no code (the at-risk legacy population was measured empty). Project-local. |
+| H75 | merge `2fa898e` (record `c321606`) | **Held for the next filing.** A verification cache record with no verdict provenance is trusted: portable, not measured here. |
+| V02J | `32f2452` | Closed by re-check, no code (the value registry `db03f25` already redacts registered secrets). Project-local. |
+| (no row) | `ce24ec9`, `e8913a8` | Doctrine records: the K62/O16 draft's merge and its publication ack; already on the bus at `a0bcaae`. |
+| H76 | merge `ab3eb32` (record `1286145`) | Held by the `e8913a8` ack. **Covered by this filing**, trap 1 (the listing sandwich). The ack named H75 and H73 packet B slice 1 as its company; their shared theme, what licenses a cache record to be trusted later, is not filed here. |
+| H51B | `7f3a5ba` (two live defects recorded), `42bc341` (a third live shape) | Held by the `e8913a8` ack. **Covered by this filing**, traps 2 and 3. |
+| H73d | merge `8813d90` (record `7f3a5ba`) | **Not filed**, project-local wording (NOT FILED above); the `e8913a8` ack says the same. |
+| K62 | merge `2ef5363` (record `6fd3ad0`) | Already on the bus at `a0bcaae` (filing of source `314af0f`). |
+| O16 | merge `ee1847b` (record `441b8b6`) | Already on the bus at `a0bcaae` (filing of source `314af0f`). |
+| (no row) | `dbb0047`, `85cadb3`; `277849a`, `e1c70fd` | Doctrine records, on the bus at `a2ae2ba` and `a3aa596`. |
