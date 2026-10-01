@@ -21825,3 +21825,26 @@ Every commit on Cloudvore `origin/master` (first parent) since the previous publ
 | K59 | merge `f35e31d` (record `642c475`) | **Already on the bus** at `a2ae2ba`, from its own draft (NOT FILED above). |
 | H73 packet C | merge `367da48` (record `65b35ee`) | **Covered by this filing**, trap 1. |
 | (no row) | `dbb0047`, `85cadb3` | Doctrine records: K59's draft merge and its publication ack; already on the bus at `a2ae2ba`. |
+
+### TRAP 2026-09-30 (adobe-ingester, measured on VIRTUAL-TEN): cli-currency's npm shim check runs under the WSL launcher, so every upgrade on a host with no WSL distribution "fails" its smoke
+
+This resolves the "smoke reason still pending" of the 2026-09-29 cli-currency rollback TRAP above.
+
+**Symptom.** Every CLI-Currency run on VIRTUAL-TEN since 2026-09-29 that upgraded anything ended `ROLLBACK-FAILED` or `UPGRADED-ENVIRONMENT-SMOKE-FAILED`, with task Last Result 1. That covers the runs at 09-29 06:27, 09-29 18:27, 09-30 00:27 and 09-30 18:27 CDT. In each one the model half of the smoke passed: rc 0, reply `READY`, `is_error` false. Only `shim_ok` was false. Each failure also triggered a rollback attempt against an in-use binary, which hit EBUSY (`rollback_rc` 4294963214 = -4082).
+
+**What was measured.** Source: `~/.claude/cli-currency/latest.json`, run of 2026-09-30T18:27:17-05:00.
+- The check is `tools/cli-currency.py` `shim_check()` (about line 265). It runs `[shutil.which("bash"), <npm extensionless shim>, "--version"]`.
+- On this host, Python's `shutil.which("bash")` returns `C:\WINDOWS\system32\bash.EXE`. That is the WSL launcher. With no distribution installed it exits 1 and prints, in UTF-16, "Windows Subsystem for Linux has no installed distributions."
+- Under Git Bash the same shims print the installed versions with rc 0: `bash "%APPDATA%\npm\claude" --version` gives `2.1.286`, and `bash "%APPDATA%\npm\codex" --version` gives `codex-cli 0.159.3`.
+- The old and new versions both fail this check, so the script keeps the new version, as R13.2 says. Before that, it attempts a rollback that cannot succeed while any session holds the exe open.
+
+**Consequences.**
+- The status and exit code are noise on any Windows host where `System32\bash.exe` comes before Git Bash in PATH as Python sees it. That is the default when WSL components are present and Git's `usr\bin` is not first.
+- Any consumer that gates on CLI-Currency success is blocked by every upgrade. Adobe's factory needed an extra owner directive (2026-09-30g) to accept a run whose real upgrade was fine.
+- The useless rollback attempt is what produced the EBUSY of the 09-29 TRAP.
+
+**Do this.**
+- In `shim_check`, resolve Git Bash explicitly. One way: prefer `shutil.which("bash")` only when it is not under `%SystemRoot%\System32`, otherwise try `%ProgramFiles%\Git\bin\bash.exe` and `%ProgramFiles%\Git\usr\bin\bash.exe`. Return None ("nothing to check") when only the WSL launcher exists.
+- Treat a smoke whose only failing element is `shim_ok` differently from a model failure, and never roll back on it.
+- Consumers: read the receipt's per-element smoke fields, not the task exit code.
+- Re-derive: `python -c "import shutil;print(shutil.which('bash'))"`, then that bash with `"%APPDATA%\npm\claude" --version`, compared with Git Bash.
