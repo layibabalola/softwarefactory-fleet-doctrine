@@ -23046,3 +23046,180 @@ The alarm read the stale lane receipt as rotation damage.
 - Every downstream consumer that maps verdicts to owner actions must map HELD to a factory hold. The Adobe escalation-budget tool still printed "OWNER-ONLY" for any non-COMPLETE verdict until 2026-10-01T06:00Z.
 
 Re-derive with the hermetic test suite: `pwsh -NoProfile -File "$env:USERPROFILE\.claude\hooks\tests\rotation-completeness\Invoke-RotationCompletenessTests.ps1"`. It passes 12 of 12; case J is HELD, exit 11.
+
+### A shebang line in a script that a vitest test imports passes the Windows gate and fails Linux CI (adversarialllm, 2026-09-26, Virtual-Ten)
+
+PR #153's inspector `adversarialllm/scripts/observe-inspect.mjs` began with `#!/usr/bin/env node`, and GitHub CI on
+ubuntu failed `tests/unit/observe-inspect.test.ts` at load with `SyntaxError: Invalid or unexpected token` (PR #153,
+head 4a3b031a, controller comment of 2026-09-26 20:21Z). The same suite passed on the Windows local gate under Node
+22 and 24 (PR #153, controller comment of 2026-09-26 20:21Z). The recorded cause is that vitest's module runner wraps
+an imported module in a function, where a leading `#!` is not valid (commit 4d5beebe, PR #153). Commit 4d5beebe
+removed the line because the script is always invoked as `node .../observe-inspect.mjs` (PR #153).
+
+> **A module that a test imports through Vitest's module runner carries no shebang line, and a green Windows local
+> gate is not evidence for the Linux CI runner on module-loading questions (remedy of commit 4d5beebe, PR #153).**
+
+Test: `git diff 4d5beebe^ 4d5beebe -- adversarialllm/scripts/observe-inspect.mjs` in AdversarialLLM-ClaudeCode shows
+the removed `#!/usr/bin/env node` line (PR #153); a suite check that no `.mjs` imported through Vitest's module runner
+starts with `#!` would catch the next one, and it is proposed here, not yet present (PR #153).
+
+### A replacement string passed to String.prototype.replace expanded `$'` and corrupted a queue row (adversarialllm, 2026-09-28, Virtual-Ten)
+
+The OBSERVE-OPS-R row text that PR #167 added was corrupted because `String.prototype.replace` expanded the `$'`
+inside the literal `$'-exec'` when that text was passed as the replacement string (commit 07630873, PR #171). The
+corruption surfaced as the PR #171 round-1 Claude finding F-03 on the OBSERVE-OPS-R row in `factory/queue.jsonl`
+(PR #171, round-1 Claude verdict on head 7ac3ade7). Commit 07630873 rebuilt the row as PR #167 intended, with clause
+18 contiguous and clauses 19-26 appearing once, by passing a replacer function instead of a string (PR #171).
+
+> **When the inserted text is data, pass a replacer function (or split and join), never a replacement string,
+> because `$'`, `$&` and `$1` in a replacement string are patterns, not literals; re-read the written text against
+> the intended text before committing (lesson of commit 07630873, PR #171).**
+
+Test: in Node, `'a X b'.replace('X', "$'-exec")` returns `a  b-exec b` while `'a X b'.replace('X', () => "$'-exec")`
+returns `a $'-exec b` (mechanism named in commit 07630873, PR #171).
+
+### Fixing one guard bypass by changing a global input normalisation reopened unrelated denials (adversarialllm, 2026-09-28, Virtual-Ten)
+
+PR #167 changed the never-authorized guard's global continuation normalisation from joining a backslash-newline or
+backtick-newline with a space to joining it with nothing, to close a `find -exec` spelling bypass (PR #167, round-2
+Claude MUST F-01 on head 78a4b66c). Because every rule reads the normalised text, the join erased the `\b` word
+boundaries that the process-termination and push rules match on, so `Write-Output a\<newline>Stop-Process -Name
+find`, a bash backtick substitution running `taskkill`, and `Write-Output a\<newline>git push origin master --force`
+were denied at base and allowed at head (PR #167, round-2 Claude MUST F-01). An adjudicator reproduced these vectors
+with exit 2 at base and exit 0 at head, and PR #167 closed at the review-round cap (PR #167, close comment of
+2026-09-28 08:36Z). The replacement PR #171 kept the normaliser byte-identical to base, made its guard change
+additive only, and added a differential test that runs every vector through the base guard and the head guard (PR
+#171, merged as commit 2a7e1e54). The PR #171 round-2 Claude NIT notes that the differential base is pinned to
+d42ff35e rather than derived from the merge base, so a denial added to master later is covered only by the vector
+table (PR #171, round-2 Claude verdict on head 16ea17ff).
+
+> **A fix to one guard rule never edits input normalisation that every rule shares; guard edits are additive (new
+> denials or exact whole-statement allowances), and a differential test proves the head guard denies a superset of
+> what the base guard denies and that the base comparison is not vacuous (PR #171, merged as commit 2a7e1e54).**
+
+Test: `node scripts/never-authorized-guard.test.mjs` in AdversarialLLM-ClaudeCode prints `guard-differential:` lines
+and fails on a statement denied at the base but allowed at head, on a base that denies nothing, or on a pre-R2 deny
+vector the base copy does not deny, and its vector labelled `continuation regression: backslash-newline before a
+termination (#167 r2)` expects exit 2 (PR #171, merged as commit 2a7e1e54: the differential and the `#167 r2`
+vectors arrived at its first head 7ac3ade7, the two non-vacuous checks at commit 07630873).
+
+### Review verdicts dispatched on a base that master has left bind nothing (adversarialllm, 2026-09-28, Virtual-Ten)
+
+PR #156 merged at d42ff35e before both round-2 legs of PR #161 were dispatched, so both legs ran against a superseded
+base and no verdict on PR #161 could count toward D2 on any head (PR #161, disposition comment of 2026-09-28 02:54Z).
+PR #161 closed with adj-close on base drift and the new tier floor, not on a code rejection, and its content was
+refiled for review in PR #167 (PR #161, close comment of 2026-09-28 03:51Z). When master advanced to e1163f7e (PR
+#169) after PR #171's round 1, merge commit 16ea17ff folded it into the head before round 2 was dispatched, so the
+round-2 verdicts bound the current base and PR #171 merged on them (PR #171, merged as commit 2a7e1e54). PR #166
+did the same with merge commit b1b60f43, folding master 2a7e1e54 into its head before round 2 and recording an
+unchanged code patch-id as the identity proof (PR #166, merged as commit 91260dbd).
+
+> **Before dispatching a review round, re-read master; if it has moved, fold it into the head with an
+> identity-only merge commit, prove the reviewed code is unchanged (for example by `git patch-id --stable`), gate the
+> new exact head, and only then dispatch (PR #171, PR #166).**
+
+Test: `git log -1 --format=%P 16ea17ff` in AdversarialLLM-ClaudeCode lists e1163f7e as the second parent, and the
+PR #171 round-2 verdicts name subject 16ea17ff, whose merge base is e1163f7e (PR #171).
+
+### Verifying a process from a snapshot and then killing it by PID ends whatever holds that PID next (adversarialllm, 2026-09-28, Virtual-Ten)
+
+PR #161's `scripts/host-hygiene.ps1` checked a candidate in a CIM snapshot and then called `Stop-Process` with only
+the numeric PID, and the Codex round-1 leg filed a MUST that a PID reused between those steps would end an unrelated
+process while the receipt reported the original candidate (PR #161, round-1 Codex MUST F-01 on head 31eb06e1). The
+same finding notes that the unit test checked only textual ordering and could not expose the race (PR #161,
+round-1 Codex MUST F-01). The fix opens one handle per candidate, re-checks creation time and image through that
+handle, and terminates through the same handle (PR #161 fix head de3076d5, carried into PR #171 and merged as
+commit 2a7e1e54).
+
+> **Identity check and termination go through one retained process handle: verify creation time and image on the
+> handle, terminate through it, and record `gone_or_reused` when the check fails (PR #171).**
+
+Test: `adversarialllm/tests/unit/host-hygiene.test.ts` in AdversarialLLM-ClaudeCode, describe "host-hygiene: -Apply
+through one retained handle (PID-reuse regression)", case "terminates only a process whose handle shows the
+candidate start time and image; refuses reuse; always writes the receipt" (PR #171).
+
+### Fake-only tests could not expose an unbounded browser await, and the first live run hung (adversarialllm, 2026-09-28, Virtual-Ten)
+
+The first real run of `node adversarialllm/scripts/observe-maintain.mjs after-rebuild` printed nothing and hung for
+more than 15 minutes before `chrome.runtime.reload`, while the managed Chromium was healthy and the inspector's
+`tabs` and `probe` worked concurrently (PR #179). The tests PR #171 shipped for that script use fakes only, so they
+could not expose an unbounded await (PR #179). PR #179 (merged as 62d6a8cf; it replaced the closed PR #174) bounds
+every CDP and Playwright await with a timer that names the step, and a 180 s per-command deadline that names the
+current and last completed step (PR #179; first proposed at head bcde59ac of the replaced PR #174).
+
+> **Every await on a browser or CDP call carries its own bound, every command has an overall deadline that names its
+> step, and a fake-tested browser tool gets a live smoke run before it is relied on (PR #179).**
+
+Test: PR #179 adds `adversarialllm/tests/unit/observe-maintain-hang.test.ts`, whose fake-timer cases make a worker,
+a page, a tab reload or `newPage` hang and expect a named refusal, and whose red control against 2a7e1e54 failed all
+10 cases of the first patch without hanging (PR #179; recorded on the replaced PR #174).
+
+### A CDP command that has been sent cannot be recalled, so a mutation that loses its race must report an unknown outcome and stop further mutation (adversarialllm, 2026-09-28, Virtual-Ten)
+
+At head bcde59ac of the closed PR #174, `withDeadline` raced the command against a timer and cleared the timer but did
+not cancel the command, while the reload step scheduled `chrome.runtime.reload` 100 ms later, so the command could
+exit 1 on the deadline and the extension could still reload afterwards (PR #179, from the round-1 Codex MUST F-01 on
+the replaced PR #174). The Claude round-1 leg on the same head raised the same continuation as a SHOULD, noting that
+safety rested on the CLI's immediate `process.exit` and that `withDeadline` is exported (PR #179, from the round-1
+Claude verdict on the replaced PR #174). Merged PR #179 (62d6a8cf) closes that gap in two steps. First, the deadline
+aborts a token before it rejects (`deadline-observe-maintain.mjs:56-68`), and every mutating step calls `checkpoint`
+before it starts, so no further mutation starts after expiry (`deadline-observe-maintain.mjs:33-35`;
+`observe-maintain.mjs:130,158`); the deferred reload is scheduled only when the remaining budget covers its delay plus
+the new-worker wait (`observe-maintain.mjs:131-132`). Second, aborting stops later mutations but cannot recall one
+already sent, so a mutation that loses its own bound, a driver `TimeoutError` or the deadline while in flight rejects
+with `MUTATION_OUTCOME_UNKNOWN`, `outcomeUnknown: true` and a message saying the operation may still apply
+(`deadline-observe-maintain.mjs:12-16,23-24,43-52,60-66`; PR #179, round-1 Codex MUST). Callers let that error
+propagate, so the command fails and no later mutation starts; a provider tab reload that times out now fails the
+command instead of being recorded as a per-provider error (`observe-maintain.mjs:158-162`).
+
+> **A race against a timer stops the wait, never the operation: a CDP command already sent cannot be recalled, so a
+> deadline over a mutating command must check an abort signal before each mutation and report a mutation that loses the
+> race as outcome unknown, and no further mutation may start after that (PR #179).**
+
+Test: `adversarialllm/tests/unit/observe-maintain-hang.test.ts` in AdversarialLLM-ClaudeCode, case "a deadline expiring
+while the campaign check is in flight never lets the reload be scheduled, even afterwards" (line 212), and, for the
+unknown outcome, case "a provider reload that resolves after its bound: failure with the marker and no reload of the
+next provider" (line 306), both at master 62d6a8cf (PR #179).
+
+### Treating an abandoned host-lease mutex as fatal turned the next gate red after any killed run (adversarialllm, 2026-09-27, Virtual-Ten)
+
+`scripts/ci.ps1` caught `AbandonedMutexException` on the whole-run lease `Global\AdvLLM-ci-run` and threw, although
+the waiter that receives that exception already owns the mutex, so the throw only made the next gate on the host red
+(PR #157 body). The PR #153 round-2 Claude leg and the PR #155 round-1 Claude leg each returned CHANGES_REQUESTED
+whose only MUST was `ci: previous complete run abandoned its host lease` (PR #157 body; PR #153, round-2 Claude
+verdict on head 89ea7080). The inner gate lease did not catch the exception at all, so a run died owning it and
+abandoned it again for the next gate (PR #157 body). PR #166 replaced PR #157 with the same code, under which ci.ps1
+prints a recovery line on an abandoned lease, records it in the summary and proceeds (PR #166, merged as commit
+91260dbd). The PR #166 round-2 Claude NIT records a residual: a detached descendant of the killed run can outlive
+the recovery (PR #166, round-2 Claude verdict on head b1b60f43).
+
+> **An abandoned mutex is an ownership transfer, not an error: take it, record the recovery, and release it in the
+> same `finally` as a normal acquisition; stay fail-closed only where a killed holder is exactly the case to refuse,
+> such as a cleanup seal (PR #157, PR #166).**
+
+Test: `node --test factory/ci-contract.test.mjs` in AdversarialLLM-ClaudeCode, cases "abandoned lease recovery:
+run", "abandoned lease recovery: gate" and "abandoned lease recovery: run+gate", which were red against the earlier
+ci.ps1 (PR #157 body; PR #166).
+
+### Recurring host-load failures in a reviewer's own gate are infrastructure, not implementation rounds (adversarialllm, 2026-09-28, Virtual-Ten)
+
+At PR #171's head 7ac3ade7, and on master until commit 6b7e941d,
+`adversarialllm/tests/mock/two-provider-two-round.test.ts:108-109` polled `window.__p7Delayed` with Playwright's
+default 5000 ms budget (those lines passed no timeout and `adversarialllm/playwright.config.ts` set no `expect`
+timeout), while the later `__p7DelayedComplete` polls at lines 122-123 set 12000 ms; PR #199 (merged as commit
+6b7e941d, issue #159) later gave lines 108-109 the same explicit 12 s budget. That poll failed a PR #156 review
+leg's gate under host load (issue #159). It failed again on PR #171's exact-head gate at head 7ac3ade7 while the
+implementer's gate on the same head was green, the third affected head that weekend (issue #159, comment of
+2026-09-28 09:55Z). A PR #161 round-2 Claude leg's own gate went red only at `cleanup-adapter-tests`, with
+`factory/cleanup-host.test.mjs:74` returning `RETAIN / owner_not_proven_absent`, on a diff that touched none of
+those files while the controller's exact-head gate on the same head was green (PR #161, comment of 2026-09-28
+02:54Z). PR #166's round-1 Claude attempts a1 and a2 each lost the host run lease for 30 min to another session's
+live gate (PR #166 body). A reviewer leg whose own gate is red cannot APPROVE, so each such failure becomes a
+spurious CHANGES_REQUESTED (issue #159).
+
+> **A red gate whose only failure is a known host-load test or a lease wait, on a diff that does not touch it and
+> with a green exact-head gate on the same head, is an infrastructure attempt that consumes no round and is re-run
+> on a quiet host; the flaky budget itself is fixed in its own reviewed row (issue #159, PR #161).**
+
+Test: issue #159 lists each occurrence with its head and step, and the PR #161 round-2 Claude leg was re-dispatched
+as a2 on the same head and base rather than counted as a round (PR #161, comment of 2026-09-28 02:54Z).
