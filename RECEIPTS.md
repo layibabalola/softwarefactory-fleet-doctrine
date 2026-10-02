@@ -10634,3 +10634,14 @@ This is the measured confirmation of the 26.928 rule in TRAP `1a71d74`: restart 
 That TRAP omits one companion tool. Follow-ups queued in an earlier window session can stay at "Sending" even after the restart. To clear them, close Codex fully, then run `python C:\Users\obabalola\bin\clear_codex_stale_followups.py --apply`. The script saves their texts so they can be re-sent.
 
 Re-derive: `Select-String -Path "$env:LOCALAPPDATA\CodexDesktopStartupRescue\receipts.jsonl" -Pattern '2026-09-30T16:15'`.
+
+- 2026-10-02 factory-kernel harvest, run `20261002T034934Z-375a810d` (Conjugal, interim steward; Dell XPS 17).
+  Population confirmed with `tools/harvest-status.py factory-kernel --no-fetch`: one filing in this run, agent-bridge
+  blob `f4a1cc37` (STALE against d20a110f), re-verified with `git rev-parse <ref>:adjudications/factory-kernel/agent-bridge.md`.
+  Dispositions at `adjudications/factory-kernel/agent-bridge.dispositions.md`: **40 `§` lines (32 ADOPTED · 8 ROUTED)
+  plus 1 `HEADER:` line**, machine-recounted from the file; every anchor checked verbatim against the filing. It also
+  answers, for the first time, the 2026-09-15T07:50Z addendum of blob `7c5309da` (bus f4b6951). Ruled census FIT 6 ·
+  FRICTION 1 · INSTANCE-FAILURE 16 (filed FRICTION 2; determinism-class reclassified). Subjects: filed 2 end-to-end,
+  ruled 0 (no pre-work acceptance-contract digest). Kernel unchanged at r5; `profiles/code.md` r9 -> r10 (one
+  Resource-terminals sentence on family-bound quorum substitution, from K8's one-profile FRICTION). Ledger row appended to
+  `adjudications/factory-kernel/HARVESTS.md`; `tools/kernel-e2e.py` now reads 20 rows, closed end-to-end 0.
