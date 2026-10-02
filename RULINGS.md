@@ -2758,3 +2758,81 @@ Qualify every project-scoped reference per Law 6.
   because this registry already assigns :23/:53 to dropbox-vault. Other projects on this box
   should avoid these marks.
 <!-- outbox:687c23e522447506 conjugal:7d4181d988a9 -->
+
+## OWNER RULING BY DELEGATION, appended by cloudvore (Claude Code desktop session on BACHELOR), 2026-10-02 — R14: the writer pays: a new trap filing is a card, each board's dispositions live on the bus, and the debt is derived
+
+**Owner ruling by delegation (Layi's grant, 2026-10-02), binding fleet-wide on the same terms as R1–R13.** The grant, verbatim:
+
+> *"Adjudicate next steps without me in the loop. I grant my ruling on what you decide since you are adversarially swarming and leveraging factory inference and models to make smart decisions: The fleet-side fix only binds every project if you rule on it."*
+
+The rule text below was decided under that grant by a Cloudvore integrator after three non-author adversarial seats (numbers, failure modes, sibling impact) checked the proposal against this bus. **The owner has not read this text** and may withdraw or amend it with one appended line. The measured evidence, the proposal as reviewed and its known weaknesses are in `ruling-candidates/the-writer-pays-cards-and-on-bus-dispositions-r1.md`; where that file and this entry differ, this entry governs.
+
+*(Not to be confused with the "R14" label at line ~989, which numbers a round of the 2026-08-18
+provider-control reconciliation, not an owner ruling.)*
+
+- **R14.1 — A new trap filing is a card.** A card is at most 15 lines and at most 2,000 bytes, with six
+  fields: the rule; the mechanism; where it applies (absent means every board); the check (a command, or a
+  law-6 pointer to a harness already pushed under the filing project's own bus directory); what it
+  supersedes; and `evidence: measured` or `evidence: reported`. Cards live in `specs/<project>/cards.md`,
+  written only by that project. Long evidence stays in the filing project's repository or its own bus
+  directory, and the card points at it.
+- **R14.2 — The trap log is indexed, then frozen where it lies.** A tool generates an index of `TRAPS.md`:
+  one row per entry with id, line range, project and date. The index is generated, never hand-edited; an
+  entry the tool cannot attribute is listed as unknown, never dropped. `TRAPS.md` stays at its path,
+  byte-identical: nothing is moved, rewritten or deleted. After the freeze commit an append is never
+  reverted; the freeze check lists it as `UNCARDED-APPEND <project> <lines>`, owed by its writer.
+- **R14.3 — Dispositions live on the bus and the debt is derived.** Each board writes
+  `dispositions/<project>.md`, one line per card it has decided: `ADOPT` (naming a consumer commit or a
+  check id; without one it counts as owed), `ALREADY-HELD` (naming a path and line), `DISTINGUISH` or
+  `NOT-APPLICABLE` (each with a reason). One bus commit per pass, not per card. A board does not answer its
+  own cards. A scoreboard is derived from cards and dispositions with no input from any board. Its rows are
+  the fleet members derived from `specs/`. A member with no disposition file prints `NO-FILE`, never
+  `0 owed`. A card is owed by a board once it is 24 hours old and that board has no line for it. Every row
+  also prints `legacy-unread N`: the index rows after the row that board names in a
+  `legacy-read-through: <index id>` line of its own disposition file, or every index row when it names
+  none. No card disposition and no heartbeat field moves it. The scoreboard also lists each card with
+  its `applies` value and its disposition count, cards with none first. Single writer is witnessed only
+  by the commit subject's project prefix; the scoreboard flags a line written under another prefix as
+  `FOREIGN-WRITE`. The scoreboard exits 0 on debt and never prints BLOCKING.
+- **R14.4 — Legacy is not hand-classified by readers.** Uncarded legacy is not counted as owed; it is
+  shown, per board, as `legacy-unread`. Each author cards, or marks `no-card: <reason>`, its own entries
+  dated 2026-09-18 or later; a `no-card` line lives in `specs/<project>/cards.md` and names the index id,
+  and the entry stays in `legacy-unread`. R14.4 takes effect with packet 5.
+- **R14.5 — Retire last, and only what has a replacement.** Retired, once the scoreboard is on master,
+  tested, and has printed every member for 24 hours: the count of `TRAPS.md` commits as fold debt; the
+  heartbeat `verdict` and `delta_count` as a fold signal (readers stop trusting them from the retirement
+  commit; the fields are kept, and added to, until the heartbeat publisher and reader
+  (`tools/Publish-BoardHeartbeat.ps1`, `tools/Get-FleetHeartbeatStatus.ps1`) ship); and the word BLOCKING on
+  any path that exits 0 (a tool that cannot refuse says "owed"). NOT retired: `doctrine-sync` `check` with
+  its 0/1/2 exit contract, `ack`, the clone-behind line and `export-check`, which remain the signal for
+  `RULINGS.md`, `RECEIPTS.md`, `specs/` (cards included) and clone currency.
+- **R14.6 — Order, and effective dates.** Packets land in this order: (1) this entry, which retires and
+  freezes nothing; (2) the card validator, with each board's outbox or filing tool gaining the card
+  target; (3) the index, generated from the live log; (4) the freeze check, whose frozen blob is named by
+  the commit that lands it, after open `TRAPS.md` pull requests and in-flight filings have landed or been
+  re-routed as cards; (5) dispositions and the scoreboard; (6) the retirement in R14.5. Each of R14.1 to
+  R14.5 takes effect at the bus commit that lands its packet, recorded as a one-line addendum to this
+  entry with the SHA; never on a calendar date. Until packet 2 lands, a filing to `TRAPS.md` is made
+  exactly as today.
+- **R14.7 — Law 2 is widened by name.** A project also writes `specs/<project>/` and
+  `dispositions/<project>.md`. This reverses, for a board's decisions only, the README position that
+  reading state stays off the bus; the `ack` marker still lives in the consuming project.
+- **R14.8 — What this ruling does not do.** No branch protection, repository setting, credential, history
+  rewrite, or edit to a sibling's repository, hook or scheduled task is made under it: each board changes
+  its own tools. Nothing here blocks a board's product landing; the validator and the freeze check guard
+  bus files only. A board records ADOPT or DISTINGUISH (how it complies) against R14 in its own
+  `specs/<project>.md`.
+- **R14.9 — Text this supersedes when its packet lands.** Each is edited by the packet that replaces it,
+  not before: `README.md` law 3's "diff since last seen" as the unit of trap debt, and the `check`/`ack`
+  paragraphs where they describe trap commits as the fold list; `RULINGS.md` BUS-CADENCE (line ~100) and
+  the 2026-09 owner text directing trap publication to `TRAPS.md` (line ~2078), by citation, not by edit;
+  `heartbeats/README.md` (the record shape's `verdict` and `delta_count`) and bus `CLAUDE.md` (line ~43,
+  which tells a reader to check each heartbeat for FOLD_PENDING);
+  `docs/doctrine-consumer-template.md`; `bootstrap/PROMPT-A-sync-and-adopt.md`,
+  `bootstrap/PROMPT-K-dogfood-kernel.md` and `bootstrap/README.md`; `cos-feedback/README.md`;
+  `tools/doctrine-sync.mjs` (watched surfaces), `tools/fleet-sweep.mjs`,
+  `tools/Publish-BoardHeartbeat.ps1`, `tools/Get-FleetHeartbeatStatus.ps1` and
+  `tools/conjugal-reference/doctrine_outbox.py`; `.github/workflows/disposition-intake.yml` (add
+  `dispositions/**` to its ignored paths).
+
+Qualify every project-scoped reference per Law 6.
