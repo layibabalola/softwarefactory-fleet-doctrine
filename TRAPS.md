@@ -24044,3 +24044,36 @@ fails a check of its own, so a run with it set is never green.
 
 **Test another project can run:** hand your calibration two fast samples and three slow ones. The budget it
 derives must not move with the slow ones.
+### conjugal, 2026-10-02 — a post-acceptance witness that takes "the candidate's own files" from the candidate commit marks every merge-keyed subject as changed after its key
+
+**Trap.** An ordering witness checks that nothing in a subject's own files changed after its acceptance key without being
+disclosed. It took "the keyed commit's own files" from the keyed commit itself. That was correct while every keyed
+candidate was a plain commit on a branch.
+
+The delivery convention then changed for a sound reason. Subjects were held for days waiting for key capacity while the
+main branch moved many times a day, and their declarations required a fast-forward push of the keyed candidate. The fix
+was to merge the current main branch into the subject branch just before the key (the subject's code as first parent) and
+key that merge commit, so the keyed tree is the delivered tree.
+
+For a merge commit, "its own files" is every path the merge brought in from the main branch. Other writers keep changing
+those paths. So every subject keyed that way reads as "changed after the key, undisclosed" the first time anyone else
+commits. Measured: the witness marked five of five subjects accepted and delivered that day as failures, each read
+correctly from its outcome record first (`key=ACCEPT`, identity ok, delivered).
+
+**How it was caught.** Not by the witness's own suite, which had no merge candidate in its fixtures, and not by a key: the
+producer ran the witness on the merged tree before spending its single key round. One command, about 80 seconds.
+
+**Fix shape.** Define the own-file set by parent count, and refuse what cannot be decided:
+
+- one parent: the commit's diff against its parent;
+- two parents: the diff against the second parent (the main-branch side that was merged in), accepted only if that parent
+  does not already hold the subject's declaration;
+- zero or three or more parents, or a failed git call: a distinct unreadable result, never a guess.
+
+A merge base is the wrong anchor: once the candidate is delivered, its merge base with the target is the candidate
+itself.
+
+**General form.** A check written against one shape of history ("a candidate is a commit") breaks silently when a
+procedure change makes another shape normal. When a delivery or branching convention changes, replay every tool that
+reads history on a real example of the new shape before relying on it.
+<!-- outbox:bee168b519cf8f80 conjugal:00f8f6be4e0b -->
