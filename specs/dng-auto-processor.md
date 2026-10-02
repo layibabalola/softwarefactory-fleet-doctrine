@@ -1,5 +1,5 @@
 # DNG Auto Processor — factory spec (one writer: the `dng-design-steward` seat, docs/13 P-STEWARD step 7d; a posture change made anywhere else reaches this file as a census item of that seat's next pass)
-source_commit: 5e47627d124f99924d5738f17ec7603b336b2b04
+source_commit: 50a0af6d08750361d32c585a6e741b2c21ff3695
 
 **Machine:** ULTRAMAGNUS (personal box). **Project root:** `C:\code\DngAutoProcessor - Claude`.
 **Product:** auto-grading pipeline for DNG timelapse clips emulating the operator's LRTimelapse
@@ -26,7 +26,8 @@ section it cites. Below the dispositions table is history: "current" or "must kn
   path it did not see — a relative path resolved from another directory, or, as the bus entry measured, an
   access-denied path — fails silently, and for a kill switch it fails toward running.
 - **Resume re-arms, reports and stops** (docs/13 P-RESUME steps 2, 6, 7): re-create only the seats its rows list,
-  ask about each other stranded task singly (a run with no person present asks nothing), relay every line a steward
+  ask about each other stranded task singly (a run with no person present asks nothing), report each queue line
+  with its owner — a card held for the USER's answer names the USER and the question — relay every line a steward
   receipt addresses to the USER — **each re-derived at the artifact it names before it is relayed: relayed with its
   receipt's stamp while its condition holds, and as RESOLVED, with the evidence, once it no longer does**, because a
   derived line relayed as live after its mechanism is gone sends the owner to act on nothing (adopted from this bus)
@@ -53,7 +54,11 @@ section it cites. Below the dispositions table is history: "current" or "must kn
   left in place it asserts a phase that never started, the liveness rule then calls its absent seat frozen, and
   that remedy relaunches into a live seat's worktree.
 - **A seat is live by evidence read INSIDE a 90 s poll, never by file age, a lease or the clock** (§3): a write
-  that appears, the seat's own process (its `pid` on the CLI route) or its host's API connection. Its first act,
+  that appears, the seat's own process (on the CLI route its `pid`, read as that seat only while the process's
+  creation time, truncated to the second, is the one recorded beside it, never the launch record's own stamp —
+  a pid goes to a new process once its holder exits, and alone it reads a dead seat LIVE for as long as a later
+  holder of its number runs; a record carrying no creation time is read by its pid alone, as before) or its host's
+  API connection. Its first act,
   if it can write, is one progress line, and none ten minutes after launch means it never started; a seat launched
   read-only cannot write one, so for it the absence means nothing and the poll reads its own process. A subagent never reads its
   host's signals as such: its own writes count, and so does a CPU-accruing process under its own worktree, or descended
@@ -63,13 +68,34 @@ section it cites. Below the dispositions table is history: "current" or "must kn
   and its relaunch puts a second writer into its live worktree. After its line it is FROZEN only once nothing of its own is
   newer than 30 minutes. FROZEN or DARK is skipped; its worktree is kept.
   **And the relaunch is bounded exactly as a key's is** (§3, §4 A2): a freeze is NOT a capacity death — that
-  exemption names a 429, a session limit, a provider outage and a host restart, all read from outside the seat —
-  so failover once and whole, one more relaunch only with a changed brief, and a third freeze on one attempt
-  advances the attempt. An exemption that moves no counter is an unbounded loop, and the ceiling it bypasses is
-  then unreachable by construction along that path.
+  exemption names a 429, a session limit, a provider outage and a host restart, and **a seat's silence is one of
+  them only where an artifact the reading seat may read names that cause for that seat; a silence none names as
+  one of them — or as a decline, which the next paragraph disposes of — is a freeze on this ladder, whatever caused
+  it**; a restart that falls after a silence had already made the seat FROZEN reads as its cause too, the direction
+  that spares a rung. So failover once and whole, one more relaunch only with a changed brief, and a third freeze on
+  one attempt advances the attempt. An exemption that moves no counter is an unbounded loop, and the ceiling it
+  bypasses is then unreachable by construction along that path. A hosted subagent's error goes to its host's
+  session, whose transcripts the reading seat may not open, so unless a readable artifact names it — such as the
+  record its host wrote on collecting the seat — a host that the same event stops leaves nothing that does; and a
+  classifier over whole transcripts declares healthy lanes dead on text they quoted (adopted from this bus), so a
+  classification no readable artifact supports is not made. The cost is stated rather than hidden: a capacity event that also stops the host
+  spends a rung on every executor seat it reaches, and a co-timed silence is a correlate of such an event, never a
+  read of its cause.
   **A seat that reached the model and DECLINED is not frozen, and that ladder is not its disposition** (§3,
-  §4 A2): a refusal, as distinct from a capacity, quota or connectivity error, is a property of the ASK, so the
-  disposition is to re-shape the brief or fail over, and it consumes no attempt. A whole relaunch puts the same
+  §4 A2): a refusal, as distinct from a capacity, quota or connectivity error, is a property of the ASK, and it
+  consumes no attempt. **An executor phase's decline route is a closed set**: at most two moves, each once and in
+  either order — a re-shaped brief, and a failover to the other family where a seat of it is eligible for the card
+  (held for capacity while that family is dark; a refusal darkens no family) — and a decline once no move is left
+  HOLDS the card for the owner's answer to the question its seats put. A held card spends no attempt or rung, names
+  each seat's return with its reason on its state line, and its queue line names the owner and that question, which
+  the status digest pushes where the owner has added it and resume reports; a decline on the act an existing hold
+  already holds on holds its own card at once. No further seat is launched on a held phase — another seat of the same
+  family on the same ask would be shopping for a seat that agrees, routing around the judgment the route exists to
+  carry. Only the owner's answer releases it: a session acting on the owner's direct words records it verbatim on
+  the card, and in the standing authority when it is a standing ruling, and disposes of the card as the answer
+  directs — where it lets the held phase proceed, the card returns READY at the same attempt. An edit of the rule
+  decides the disposition only and releases nothing it held. Left open-ended, a second decline
+  had no disposition, and a seat wrote a hold into its record before any rule held it. A whole relaunch puts the same
   ask to the same model, because a failover rule triggered by usage, quota, session-limit, auth or outage
   errors, or by a failed CLI probe, is not triggered by a refusal and so shifts nothing — a remedy that cannot
   make its own condition false. The cost is real and is stated rather than closed over: at the polling window,
@@ -236,7 +262,11 @@ section it cites. Below the dispositions table is history: "current" or "must kn
   the artifact — otherwise the seat that must catch a false premise is the one that asserted it.
   **Every Codex seat's launch names its effort — R11's high, medium only for a swarm lane — never the operator's
   default** (§2, adopted from this bus): a CLI seat launched with no effort flag runs at whatever tier the operator's
-  own CLI configuration sets as its default.
+  own CLI configuration sets as its default. **A `claude -p` seat's brief says it is headless** (§2, adopted from
+  this bus): its session ends when its turn does and nothing wakes it, so it ends no turn while a background task or
+  monitor it started is still running, and its deliverable is on disk before its last turn ends. This bounds the turn
+  rather than forbidding background work outright, because a key's deliverable is a file rather than a commit and
+  this board's commit hook alone can run close to a foreground tool ceiling.
 - **Approach before code** (§2, a USER unfreeze in §0): at most 60 lines, ONE round by the opposite family,
   every BLOCKER and MAJOR answered before the first product byte, never a second approach round; a review silent
   45 minutes is relaunched once, then IMPLEMENT proceeds with it recorded TIMEOUT. A card whose deliverable is a
@@ -345,7 +375,7 @@ section it cites. Below the dispositions table is history: "current" or "must kn
 |---|---|---|
 | Traffic cop `dng-traffic-cop` | Opus; an exhausted Opus defers the tick, never swaps | stateless scheduled tick, fresh session per fire: collect, land, dispatch, record; proceeds under stated assumptions (§2, §3; docs/13 P-COP) |
 | Design steward `dng-design-steward` | Opus, every six hours | acts only on OWNER-DEFECT tokens and PARKED cards a cop wrote, plus the doctrine loop; may edit docs/12, docs/13 (P-COP included, never P-STEWARD) and docs/14; disposes of a park as ONE dimensioned batch pass or as the ruling the park names; closes a token only by appending a CLOSED line; never dispatches, launches keys, lands or opens ordinary cards; writes this spec and this board's kernel filing; a receipt every run (§7a; docs/13 P-STEWARD) |
-| USER-directed orchestrator | Opus at medium effort (USER, §0) | launches each seat it drives as a CLI process (`codex exec`, `claude -p`) whose launch json, written first, carries `phase`, `"route": "cli"` and its `pid`; not an unfreeze: adds no lane, gate, tool or scheduled task, changes no cop seat, key tier or landing rule, edits no governing doc (§0; §2 launch route) |
+| USER-directed orchestrator | Opus at high effort (USER, §0, superseding an earlier medium) | launches each seat it drives as a CLI process (`codex exec`, `claude -p`) whose launch json, written first, carries `phase`, `"route": "cli"` and, once it starts, its `pid` with that process's own creation time; not an unfreeze: adds no lane, gate, tool or scheduled task, changes no cop seat, key tier or landing rule, edits no governing doc (§0; §2 launch route) |
 | Executor | Sonnet or Sol under the weave; Luna only for a fixed task with prewritten failing checks; complex diagnostics Sol, or Sonnet while Codex is dark; a retry (attempt 2 or later of an implementation card) the top-tier model of the card's own family at high effort, Fable for a Claude-family card and Astra for a Codex-family card, and Sonnet for a Claude-family retry while Codex is dark (USER, §0) | bounded brief, at most 4 files, dies at return; a Codex author runs §10's author route and a Sonnet committer commits (§2, §10; docs/13 C-COMMIT) |
 | Approach review | opposite family: Sol for a Claude author, Opus for a Codex author; Astra or Fable when the card touches a guard, hook, CI, the ratifier, the acceptance surface or a data-loss path, or when its deliverable is a test, fixture, receipt, scorer or harness (USER, §0) | one round before any product byte; refuses on ambiguity (§2; docs/13 B-APPROACH) |
 | Key 1 correctness | opposite family: Sol for a Claude author, Fable at high effort for a Codex author (USER, §0; the fleet's Opus floor for a review act) | per subject; named paths and a command budget (§2, §4a) |
@@ -357,6 +387,12 @@ section it cites. Below the dispositions table is history: "current" or "must kn
   USER's word "unfreeze", and each unfreeze §0 records authorises only its literal scope. No chips, lanes,
   leases, hubs, heartbeats or chronicles (docs/13 channel rule; WORK.md rule 2; §5).
 - **A product commit is one touching §4's PRODUCT closed set**, the only definition (§4; WORK.md rule 1).
+- **Standing USER rulings, each scoped literally** (§0): a hosted seat whose phase commits a card's work — its
+  implementing author or its committer — commits that work to the card's own `item/<card>` branch without a live
+  instruction each time; it lets no seat land, merge or push, or commit on master or another card's branch, and both
+  keys still gate landing. This board's seats run at high effort and swarm lanes at medium, a seat's effort read
+  from its own session record, never from the setting. The exact model ids `claude-fable-5-1` and `gpt-5.6-sol`
+  are the USER's choice (fleet R13.3), re-pinned only on the USER's word — a ruling on those two and no other pin.
 - **Layout**: the git root is the nested `DngAutoProcessor/` repo (run `git -C` on it); evidence lives OUTSIDE every git tree, in a
   per-seat ledger the procedure names (docs/13 P-COP "Layout"; §5). The root is not written here: it holds
   hundreds of per-subject ledgers and is two directory reads from dispositions carrying both reviewers'
@@ -370,8 +406,11 @@ section it cites. Below the dispositions table is history: "current" or "must kn
   item exactly one line: PUBLISH, ON-BUS (the bus path and entry heading), NOT-EXPORTABLE (one reason) or CARRIED
   (the event that releases it). Nothing is selected, and a PUBLISH is never downgraded for size, taste or time. Two
   read-only Opus lanes — evidence fidelity; law, format, overlap and public safety — ratify every entry, this spec
-  and the kernel filing before any push; each entry's stamped bytes are saved beside the receipt and every retry
-  re-uses them, never a re-draft.
+  and the kernel filing before any push; the fidelity lane runs every falsifier or check a draft prints, once on an
+  input where it should fire and once where it should not, and no entry travels on validation alone. Each entry's
+  stamped bytes are saved beside the receipt and every retry re-uses them, never a re-draft. A push of this spec
+  that the bus's own pin of it turns red is never held for the re-pin, which is the bus's to write and never this
+  board's: the receipt says so in one line addressed to the bus's owner, naming the row the bus must re-pin.
 
 ## Dispositions of fleet doctrine (docs/14 §9 verbatim; § = a docs/14 section; re-derive it there, never here)
 
