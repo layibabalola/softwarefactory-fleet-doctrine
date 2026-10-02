@@ -11587,3 +11587,21 @@ deny entries: 0
 paths icacls could not read: 0
 holder processes running: 0
 ```
+
+<!-- cloudvore-filing:2026-10-02-guard-domain-index-and-bar-traps generated from review/doctrine-drafts/2026-10-02-guard-domain-index-and-bar-traps.md at b7fd4f7 -->
+
+## RECEIPTS
+
+- 2026-10-02, where review findings came from (K66 ledger): four rounds, four seats. After round 1 all 8 blocking
+  findings were sentences (6 in an evidence README, 1 docstring, 1 comment). The two changes to what the tool
+  does that were made after round 1 (the printed remedy names the repository and the files it acts on; the remedy
+  is `git reset`, with a warning) both came from findings the seats had classed as residuals under the brief's cap.
+- 2026-10-02, cost of the form: this board's three largest filings (2026-09-30 to 10-01) are 142, 154 and 211 KB
+  and took 3, 5 and 7 review passes; a cap on added cases was written before pass 2 of the first and before pass 5
+  of the last. Its 5.8 KB filing of 2026-09-28 took 3. This one is cards, under 12 KB, its cap set before pass 1.
+- 2026-10-02, where each figure comes from: one that a script's output shows has that script and output under
+  `review/evidence-doctrine-2026-10-02/` at the source commit (card 3's two ran on the CI runner host, the rest on
+  the author's machine). Every other figure in a card, and the first receipt, is from the ledger of the row that
+  card names; card 6's date for the generator is `git log --diff-filter=A -- tools/bus-filing.py`. The second
+  receipt's sizes are `git ls-tree -l` of `review/doctrine-drafts/`; its pass counts are the `passes` members of
+  `knowledge/bus-publications.jsonl`, and its caps are in those drafts' review records.

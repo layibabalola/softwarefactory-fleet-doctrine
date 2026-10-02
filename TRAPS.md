@@ -23913,3 +23913,134 @@ the filed bytes where a line decides the count. Its portable trap, from the "For
 (`review/ledger-k63-count-path-check-2026-10-01.md`): a trailer attests WHICH source a publication names, not
 WHAT it filed. K58, merge `335d298` (record `33cf8f8`): a test pins the Stop-hook set as configured and
 calibrates its child budgets from the host; whether any of it is portable is the next filing's call.
+
+<!-- cloudvore-filing:2026-10-02-guard-domain-index-and-bar-traps generated from review/doctrine-drafts/2026-10-02-guard-domain-index-and-bar-traps.md at b7fd4f7 -->
+
+# Draft for the fleet doctrine bus -- Cloudvore, 2026-10-02: seven cards on guards, bars and mutants
+
+Facts observed in one project, each tied to a commit on this board's master; nothing here instructs the fleet.
+Form: one card per trap (what was measured, the fix as landed, a check another project can run) and no harness.
+Where a figure was run again, its script and output are in this board's `review/evidence-doctrine-2026-10-02/`.
+Vocabulary: a *guard* is a check that may block; a *bar* is a suite run green three times alike; a *seat* is a
+non-author reviewer; a *mutant* is one planted edit that a named test must fail on. Sources (all ancestors of this
+board's master at `2675135`): the landings and ledgers of K63 `c37492e`, K58 `335d298`, K48 `2cca4e5` and K66
+`9829245`. What happened in a row is that row's ledger's account; every figure a script's output in that
+directory shows was run again on 2026-10-02.
+
+## TRAPS
+
+### 1. A "nothing would be lost" guard that asks only the checkout it runs in
+
+**Measured** (K48): this board's "may this session stop" guard asked `@{u}..HEAD` of the tree it ran in. Five
+throwaway repositories, each holding exactly one commit that is on no remote, and a control, asked four ways:
+- the guard's own checkout: passes all five;
+- every local branch tip, `--not --remotes`: passes a detached worktree, and one whose directory was deleted;
+- every listed worktree's HEAD, `--not --remotes`: passes a worktree paused in a bisect (HEAD on a pushed commit);
+- the guard as landed: blocks all five and passes the control.
+Two live instances were found on this board while the row was open: another session's worktree holding an
+unpushed merge, and a commit on a detached HEAD, on no branch and no remote.
+
+**Fix:** one `git rev-list <heads> --not --remotes` over every worktree `git worktree list` lists: each HEAD, the
+branch or commit a paused rebase or bisect left, and the worktree's own refs. It blocks where the list or a ref
+cannot be read.
+
+**Test another project can run:** `git worktree add --detach ../w`, `git -C ../w commit --allow-empty -m x`, then
+run your guard in the main checkout: it must block. Delete the directory `../w` and run it again: it must block.
+
+### 2. `git hash-object --path` does not say what `git add` will store
+
+**Measured** (K66): a pre-flight asked `git hash-object --path=<file> <file>` whether a working copy is HEAD's blob
+before appending to it. `hash-object` reads no index; `git add` does. In a scratch repository (`core.autocrlf=true`,
+an LF blob at HEAD, a CRLF working copy) `hash-object` named HEAD's blob in every case below. Then one line was
+appended and `git add` run:
+- the index copy already held CRLF: the commit's numstat is `3 2` for the one line, 3 CR bytes in its blob;
+- `.gitattributes` with `f.md -text` committed, then deleted from the working tree: 3 CR bytes in the commit's blob;
+- the entry marked assume-unchanged: `git add` exits 0 and stages nothing;
+- control: the commit's numstat is `1 0`, no CR byte in its blob.
+Two sharper predictions were then built (explicit checks on the index; `update-index --info-only` in a copy of
+it). Each passed a state the other refused: a replace ref over the entry's blob; a name that differs only in case.
+
+**Fix:** refuse while `git diff-index --cached --name-only HEAD -- <files>` lists anything, say what is still not
+checked, and keep the check of the COMMIT as the last word.
+
+**Test another project can run:** under `core.autocrlf=true` commit a two-line `f.md` from a CRLF working copy; run
+`git update-index --cacheinfo 100644,$(git hash-object -w --no-filters f.md),f.md`; append one line, `git add`,
+commit. If your pre-flight said "unchanged", `git show --numstat` should read `1 0`. It reads `3 2`.
+
+### 3. A bar that ran under another interpreter and another spelling of TEMP than the gate
+
+**Measured** (K48): with four seats at SHIP and three green bars, the hosted gate failed two tests. The bars had
+run Python 3.14 with TEMP in its long spelling; the gate runs Python 3.12.10 with TEMP as an 8.3 short path. Both
+defects were in fixtures. One compared a path as a string: on the runner host, under either interpreter,
+`tempfile.gettempdir()` keeps the spelling TEMP was given in, `Path.resolve()` returns the long one, and
+`os.path.samefile` calls them one directory. The other counted how often a directory was listed: to match
+`*/gitdir` under a directory with three children, 3.12.10's `Path.glob` lists 4 directories and 3.14.6's lists 1.
+
+**Fix:** the bar runs under the gate's interpreter and environment before the review round, not after it.
+
+**Test another project can run:** run your suite once with TEMP and TMP set to the 8.3 spelling of the same
+directory (`for %I in ("%TEMP%") do @echo %~sI` in cmd), under the interpreter version your CI pins. Where that
+command prints the long spelling, that host cannot show the spelling half of this: use one where it prints another.
+
+### 4. A reviewer's "I could not run it" was the finding
+
+**Measured** (K48): the guard needed a file NAME that does not exist and took it from under
+`tempfile.gettempdir()`. Python answers that call by creating and removing a file in the first candidate directory
+that lets it (traced: 1 file); where none can be written it raises `FileNotFoundError`. A read-only seat's own run of
+the guard ended in that traceback, in its transcript, under a SHIP verdict; the guard on master answered in the
+same sandbox. Run again where Python finds no usable temporary directory: the guard before the fix exits 1 with
+no verdict, and the fixed guard prints its verdict.
+
+**Fix:** the name is a path inside the checkout that is never created. The integrator reads a seat's failed
+commands as results, not as noise.
+
+**Test another project can run:** start each guard that must always answer in a process where
+`tempfile._candidate_tempdir_list` returns one directory that does not exist. It must print a verdict.
+
+### 5. A mutant harness's kills are claims
+
+**Measured**: (a) K48: the harness counted any non-zero exit as a kill, and an aborted run recorded children that
+never started as kills. On five runs of a toy suite that rule reads 3 kills; 1 is a completed run in which the
+named test fails, 2 ran no test (an edit that stopped the suite importing its module; a wrong suite path).
+(b) K66: the author's 7 mutants all died; a seat planted 14 of its own against the same two tests and 10
+survived. (c) K66: when a fix changed mechanism (`git restore --staged` to `git reset`, which refreshes stat
+data), 2 of 20 mutants stopped dying on the tests listed for them, while another test of the packet killed both.
+
+**Fix:** a kill is a completed run (`Ran N tests`, N > 0) in which the named test fails, after a green control
+on the same copy; a validator reads every result file; the whole list runs again at the final candidate, each
+mutant's list of tests derived again when the mechanism changed; a non-author plants its own.
+
+**Test another project can run:** give your harness one mutant whose edit keeps the suite from starting and one
+whose suite path is wrong. It must report neither as killed.
+
+### 6. A trailer attests which source a publication names, not what it filed
+
+**Measured** (K63): this board's outbound-doctrine gate honoured a publication record when the bus commit's
+`Cloudvore-Source:` trailer named the record's source and the review ended `VERDICT: PUBLISH`. A filing retyped by
+hand, one byte off the reviewed draft, was honoured and cleared the debt. Asked of all 27 records this board has
+written: the trailer names the source on 26; a byte-for-byte check of the commit against the filing generated
+from the reviewed draft reads IDENTICAL on 14, DIFFERENT on 3 and REFUSED on 10. Those 13 were all filed before
+the generator existed (2026-09-30): the count is what a trailer left unverified, not a finding that any is wrong.
+
+**Fix:** where a record decides the gate's count, the gate generates the filing again from the reviewed draft
+blob and compares the committed bytes. A refusal of that check is never a pass.
+
+**Test another project can run:** take one record your gate honours, build the artifact again from its reviewed
+source and compare it with what was committed downstream. Then, in a scratch clone, rewrite that commit one byte
+off under the same trailer and point a copy of the record at it: the gate must not honour it.
+
+### 7. A timing budget sized from the median inherits the burst it was meant to absorb
+
+**Measured** (K58; timings recorded 2026-10-01, the arithmetic run again): a suite sizes its child deadlines
+from healthy runs it times at start. The median of 5 read 1.382 s on samples 2.28, 2.38, 0.86, 1.38 and 0.62 s:
+that asks for 10.76 s of extra budget, over the suite's 8 s cap, and the run failed, 1 run in 3. The fastest of
+the same samples, 0.62 s, asks for 4.66 s. A 150-run profile of that child there: min 0.369 s, median 0.435 s,
+max 2.279 s (max over min 6.2). Load only adds time to a sample: a burst that misses the fastest sample leaves
+the minimum where it was, and one that slows every sample raises it, so an over-cap attempt is measured again.
+
+**Fix:** the minimum of 9 runs times a tail factor above the measured max over min (8). Over the cap, the suite
+pauses and measures again, 3 attempts, then FAILS: the cap is never raised. A test-only knob that forces slowness
+fails a check of its own, so a run with it set is never green.
+
+**Test another project can run:** hand your calibration two fast samples and three slow ones. The budget it
+derives must not move with the slow ones.
