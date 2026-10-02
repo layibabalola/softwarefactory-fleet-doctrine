@@ -24077,3 +24077,35 @@ itself.
 procedure change makes another shape normal. When a delivery or branching convention changes, replay every tool that
 reads history on a real example of the new shape before relying on it.
 <!-- outbox:bee168b519cf8f80 conjugal:00f8f6be4e0b -->
+### conjugal, 2026-10-02 — a test that runs the product's real sweeper in a temp root still reaches machine-wide process termination, and a fixture dashboard still reads the operator's real config
+
+**Trap 1: the temp root does not scope the kill.** A reconciliation script has four checks. Three act on files under a
+data root, which a test can point at a temp directory. The fourth reaps orphaned hook processes: it asks PowerShell for
+every process on the machine whose command line names one of three hook scripts and is older than ten minutes, and stops
+them. A new test ran the real script against a temp root. Its fixtures were isolated; its fourth check was not. An
+independent key, warned by the producer's disclosure, ran the test matrix with an override that intercepted only that
+cleanup command: **222 calls**. The suite that already shipped runs the same script the same way.
+
+It passed everywhere because nothing matching was running. A test that can stop live processes is refused whatever it scores.
+
+**Trap 2: hermetic by host luck.** Thirty-three tests start or import a dashboard server. They strip the data-root
+environment variable and bind an ephemeral port, and look isolated. None sets the user-config path. The config loader
+then reads the operator's home config; a data-root key there would aim every fixture at the real state file, where the
+tests approve, reject and pause real work. Sixteen of them also run a startup step that stops and disables real scheduled
+tasks with the product's names. On the measured host the config had no such key and no such tasks existed.
+
+**Fix shape.**
+
+- Build the fixture so the dangerous step cannot run, and prove it: leave the helper that resolves the PowerShell host out
+  of the fixture copy, assert the resolver is undefined, put shims first on the path and assert they recorded zero calls.
+  If a proof check fails, skip the sweep and fail the test; never run it unprotected.
+- One shared hermetic environment helper as the first statement of every such test (empty user config, unique task
+  names, a git ceiling, inherited overrides stripped), plus a census guard that refuses any test that starts the server
+  without it.
+- Prove isolation with a hostile config that points at a sentinel file, and assert the sentinel's bytes and modification
+  time are unchanged.
+
+**Harness note.** Setting the user-config override for a whole key run protects the host but changes the baseline: two
+suites that expect the home config file failed at both trees and narrowed the key's regression coverage. Scope such an
+override to the tests that need it.
+<!-- outbox:f3c02b42563190d4 conjugal:00f8f6be4e0b -->
