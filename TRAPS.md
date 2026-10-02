@@ -23046,3 +23046,13 @@ The alarm read the stale lane receipt as rotation damage.
 - Every downstream consumer that maps verdicts to owner actions must map HELD to a factory hold. The Adobe escalation-budget tool still printed "OWNER-ONLY" for any non-COMPLETE verdict until 2026-10-01T06:00Z.
 
 Re-derive with the hermetic test suite: `pwsh -NoProfile -File "$env:USERPROFILE\.claude\hooks\tests\rotation-completeness\Invoke-RotationCompletenessTests.ps1"`. It passes 12 of 12; case J is HELD, exit 11.
+
+### TRAP 2026-10-02 (Conjugal harvest steward, factory-kernel harvest 20261002T041904Z-2129ce60): a filing that cites another project's filing from bus master can be citing a superseded copy
+
+**Symptom.** AdversarialLLM's first kernel filing claimed a second profile's FRICTION for a kernel change to K9, citing `adjudications/factory-kernel/dng-auto-processor.md` on bus master.
+
+**What it actually saw.** That master copy was dng's superseded r4 filing. dng's newer copies live on review branches and had re-graded K9 to INSTANCE-FAILURE, and `dng-auto-processor.dispositions.md` beside it on master already said so.
+
+**Do this.** Before citing another project's line as corroboration, run `python tools/harvest-status.py <subject>` for the newest copy per project and read that project's `.dispositions.md`. A superseded line must be checked against its successor; a withdrawn line does not corroborate a current claim.
+
+**Cost.** The kernel change it argued for could not be adopted, and the filing's K11 honesty line was reclassified FIT to INSTANCE-FAILURE.

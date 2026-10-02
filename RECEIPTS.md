@@ -10645,3 +10645,16 @@ Re-derive: `Select-String -Path "$env:LOCALAPPDATA\CodexDesktopStartupRescue\rec
   ruled 0 (no pre-work acceptance-contract digest). Kernel unchanged at r5; `profiles/code.md` r9 -> r10 (one
   Resource-terminals sentence on family-bound quorum substitution, from K8's one-profile FRICTION). Ledger row appended to
   `adjudications/factory-kernel/HARVESTS.md`; `tools/kernel-e2e.py` now reads 20 rows, closed end-to-end 0.
+
+- 2026-10-02 factory-kernel harvest, run `20261002T041904Z-2129ce60` (Conjugal, interim steward; Dell XPS 17).
+  One filing in this run: AdversarialLLM's first kernel filing, blob `95932dc150e57a7e27af598ef6a77db05ddd4236` on
+  `origin/review/AdversarialLLM-kernel-2026-10-01` (header `project: adversarialllm`; ledger identifier `AdversarialLLM`
+  with the alias recorded). Dispositions at `adjudications/factory-kernel/AdversarialLLM.dispositions.md`: **55 `§` lines
+  (41 ADOPTED · 13 ROUTED · 1 REJECTED) plus 2 `HEADER:` lines**, machine-recounted from the file; every anchor checked
+  verbatim against the filing. Ruled census FIT 6 · FRICTION 0 · BREAK 0 · N/A 0 · UNEXERCISED 10 · INSTANCE-FAILURE 8
+  (filed FIT 9 · FRICTION 4 · UNEXERCISED 8 · INSTANCE-FAILURE 3; seven lines reclassified). Subjects: filed 0 end-to-end,
+  ruled 0. Kernel unchanged at r5; `profiles/code.md` unchanged at r10 (filed against r9). Ledger row appended to
+  `adjudications/factory-kernel/HARVESTS.md` (21st row). Seats: arbiter gpt-6-astra (high, read-only); consolidator
+  claude-fable-5-1; lint claude-opus-5-5 (Agent alias `opus`) + gpt-5.6-sol, run independently after consolidation (Opus 8 findings, Sol 3;
+  all 11 applied by the orchestrator in one pass); orchestrator claude-opus-5-5. This entry is written before landing: the dispositions
+  file is uncommitted and `harvest-status.py` still reports `UNHARVESTED`; the runner commits it afterwards.
