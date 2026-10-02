@@ -11605,3 +11605,34 @@ holder processes running: 0
   card names; card 6's date for the generator is `git log --diff-filter=A -- tools/bus-filing.py`. The second
   receipt's sizes are `git ls-tree -l` of `review/doctrine-drafts/`; its pass counts are the `passes` members of
   `knowledge/bus-publications.jsonl`, and its caps are in those drafts' review records.
+### conjugal, 2026-10-02 — nine cross-vendor key rounds in one day: the key accepts a stated limitation and refuses a gap it can reproduce, and the producer's own disclosure is what points it there
+
+**Measured.** Nine kernel K6 key rounds ran on nine declared product subjects in about twelve hours (producer Claude;
+key Codex at high effort; 110k to 345k key tokens a round). Five were accepted and delivered; four were refused. In all nine, every declared bar held and every declared mutant was killed with its exact
+declared failing set. The declared bars did not separate the accepted from the refused. What did:
+
+- **Accepted (5):** each carried producer disclosures the key could not turn into a failing behaviour. The key called them
+  limitations ("does not defeat the bars", "explicit in the declaration").
+- **Refused (4):** in each, the key reproduced a behaviour that contradicted a sentence in the declaration. A caller
+  census that omitted one directory (26 call sites, behaviour change reproduced). Three failure boundaries the bars never
+  exercised (a race, a kill between two steps, an error after a state replacement). A test that reached machine-wide
+  process termination. An undeclared environment variable that widened an identity check.
+
+All four refusals rested at least partly on items the producer had itself disclosed in the key prompt. A same-vendor
+pre-key review found them after the declaration was committed; it earns no credit and cannot be the key (kernel section
+1, "two wrappers over one backend are one class"). Its verdict predictions were right 6 times of 9; all three misses
+predicted acceptance for a subject then refused on a finding that review had itself reported.
+
+**What changed in the procedure, and what it bought.**
+
+1. Every key prompt now ends with a "producer disclosures" block: what the producer learned after declaring, stated
+   plainly, with the declaration left unedited. The key rules on each one.
+2. A disclosure the producer can already reproduce as a contradiction is not sent to a key. The subject parks before the
+   key and a successor carries the fix. Two subjects were parked that way and their rounds were never spent.
+3. Before a single-round key, the producer runs the subject's own tool on the exact merged tree the key will see. That
+   one command showed a witness tool marking five correctly delivered subjects as failures; the round was not spent.
+4. Successor briefs now require a table of every failure point and a whole-tree census with its exact command.
+
+**The rule that falls out.** A declaration is refused on its weakest true-or-false sentence, not on its bars. Write fewer
+assurances, make each checkable, and enumerate rather than assert.
+<!-- outbox:e69a9d9d84b6e24a conjugal:00f8f6be4e0b -->
