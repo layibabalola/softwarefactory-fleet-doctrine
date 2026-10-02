@@ -517,3 +517,77 @@ live now** - the 2026-09-18 routing has had no answer for eight days. Kernel §5
 
 What the arbiter is asked to rule on first: whether S22..S31 (seven subjects) may count on receipts recomputed 2026-09-26 from
 the Codex rollouts, given their Outcome-time digests covered unpublished console captures (filing `## Receipts`, reconciliation).
+
+---
+
+## 2026-10-02 — harvest 20261002T034934Z-375a810d (agent-bridge fourth filing, blob f4a1cc37)
+
+| date | harvest | filing | blob | kernel | profile | subjects | FIT | FRICTION | BREAK | N/A | UNEXERCISED | unresolved BREAKs | arbiter |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 2026-10-02 | 20261002T034934Z-375a810d | agent-bridge | f4a1cc373d05952778494231f0120b9dcf9ca854 | r5 (unchanged) | code@r9 (now r10) | 0 end-to-end under code@r9; STORAGE-REPLACE-POSIX-SEMANTICS-N and WD26-DEBT-2 delivered at reviewed trees but lack complete pre-work acceptance-contract digests; SRPS-N owner authority unresolved; account-parity evidence absent; 2 additional examined deliveries have unaccepted tree identities; 28 merged DONEs are not qualifying closures; window-opened-before-kernel=no | 6 | 1 | 0 | 0 | 0 | 0 | gpt-6-astra (read-only arbiter seat; not a steward filing) |
+
+Derived, not asserted. Re-run: `python tools/kernel-e2e.py --json`. Before this row: `closed_end_to_end: 0`,
+`ledger_rows: 19`, `ledger_totals: FIT 104 · FRICTION 80 · BREAK 5 · N/A 0 · UNEXERCISED 58`. After it: 20 rows;
+110 FIT · 81 FRICTION · 5 BREAK · 0 N/A · 58 UNEXERCISED; closed end-to-end stays 0.
+
+**§5 criterion 1 — CLOSED END-TO-END SUBJECTS: 0.** Still 0/5. The filing claims 2 end-to-end at code@r9; the arbiter
+rules 0: neither STORAGE-REPLACE-POSIX-SEMANTICS-N nor WD26-DEBT-2 carries a complete pre-work acceptance-contract
+digest, SRPS-N's class-C owner authority is unresolved, and account-parity evidence is absent.
+**§5 criterion 2 remains MET** on the 2026-09-17 finding (`code`, `hardware-in-loop`, `measured-objective`); nothing
+this round touches it.
+**§5 criterion 3 does not start:** `code.md` text changed this round (r9 → r10), so the unchanged-digest half does not
+hold across this pair, and criterion 1 is 0.
+**Criterion 4 has never started**; no owner ratification of the kernel appears in `RULINGS.md`.
+**Members due — 2 have NEVER filed:** `adversarialllm`, `salesforce-tools`. Open filings left for other runs: AdversarialLLM
+UNHARVESTED; steward self-filing `conjugal` still STALE, routed to cloudvore as arbiter; the steward may not disposition it.
+
+**What this round changed:** `profiles/code.md` r9 → r10, Resource terminals only, one sentence: "Before dispatch,
+declare any register-permitted substitution for a family-bound quorum seat; substitutions preserve required roles,
+quorum and producer independence, and work without an eligible substitute parks". K8's kernel REPLACES is rejected as
+one-profile FRICTION (§5). Kernel unchanged at r5, 2,867 of 3,500 words; `code.md` 1,183 → 1,209 words. The filed
+determinism-class FRICTION is reclassified INSTANCE-FAILURE (no per-test declaration cited): ruled census FIT 6 ·
+FRICTION 1 · IF 16 against filed FIT 6 · FRICTION 2 · IF 15. Dispositions:
+`adjudications/factory-kernel/agent-bridge.dispositions.md`, rewritten for blob `f4a1cc37`, superseding its ruling on
+blob `d20a110f` without withdrawing any disposition. **K12's steward-side gap is closed:** the 2026-09-15T07:50Z addendum
+of blob `7c5309da` (bus f4b6951) is dispositioned for the first time there (§AD-0750-a..d), with (d) routed to the
+agent-bridge F21 authority-and-acceptance bench.
+
+---
+
+## 2026-10-02 — harvest 20261002T041904Z-2129ce60 (AdversarialLLM first filing, blob 95932dc1)
+
+| date | harvest | filing | blob | kernel | profile | subjects | FIT | FRICTION | BREAK | N/A | UNEXERCISED | unresolved BREAKs | arbiter |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 2026-10-02 | 20261002T041904Z-2129ce60 | AdversarialLLM | 95932dc150e57a7e27af598ef6a77db05ddd4236 | r5 (unchanged) | code@r9 as filed; adjudicated against r10 (unchanged) | 0 end-to-end; the filing itself claims 0; no subject declared a profile before work; five in-window D2 merges (#156, #169, #171, #166, #172) and three post-window merges (#165, #183, #179) are mechanism evidence counted zero; window-opened-before-kernel=no | 6 | 0 | 0 | 0 | 10 | 0 | gpt-6-astra (read-only arbiter seat; not a steward filing) |
+
+Derived, not asserted. Re-run: `python tools/kernel-e2e.py --json`. Before this row: `closed_end_to_end: 0`,
+`ledger_rows: 20`, `ledger_totals: FIT 110 · FRICTION 81 · BREAK 5 · N/A 0 · UNEXERCISED 58`. After it: 21 rows;
+116 FIT · 81 FRICTION · 5 BREAK · 0 N/A · 68 UNEXERCISED; closed end-to-end stays 0.
+
+**§5 criterion 1 — CLOSED END-TO-END SUBJECTS: 0.** Still 0/5. The filing claims 0 and the arbiter rules 0: no subject
+declared `code@r9` before work, so the five in-window D2 merges and the three post-window merges are mechanism evidence
+and count zero.
+**§5 criterion 2 remains MET** on the 2026-09-17 finding (`code`, `hardware-in-loop`, `measured-objective`); nothing
+this round touches it.
+**§5 criterion 3 does not start:** this round changed no kernel or profile text, so the unchanged-digest half holds
+across this pair with the preceding harvest — but criterion 3 also requires fresh end-to-end evidence meeting criteria 1
+and 2, and criterion 1 is 0.
+**Criterion 4 has never started**; no owner ratification of the kernel appears in `RULINGS.md`.
+**Members due — 1 has NEVER filed:** `salesforce-tools`. Roster member `adversarialllm` has now filed, as `AdversarialLLM`
+(header `project: adversarialllm`, filing stem `AdversarialLLM`); this section records that alias (the row's filing cell reads `AdversarialLLM`) and counts one project.
+`tools/kernel-e2e.py` matches roster, filing and ledger names case-sensitively, so it will keep printing `adversarialllm`
+under NEVER FILED until the tool or the roster key is reconciled; this harvest was not authorised to edit `tools/`, and the
+arbiter ruled F1 a note only, no kernel §6 edit. Open filings left for other runs: steward self-filing `conjugal` still
+STALE, routed to cloudvore as arbiter of record; the steward may not disposition it.
+
+**What this round changed:** nothing in the kernel or any profile. Kernel unchanged at r5, 2,867 of 3,500 words; `code.md`
+unchanged at r10, 1,209 words. Ruled census FIT 6 · FRICTION 0 · BREAK 0 · N/A 0 · UNEXERCISED 10 · IF 8 against filed
+FIT 9 · FRICTION 4 · BREAK 0 · N/A 0 · UNEXERCISED 8 · IF 3. Seven census lines reclassified: `K9` FRICTION →
+INSTANCE-FAILURE (gate and retained output absent; its "second profile" cites a superseded dng copy whose referral was
+closed as withdrawn), `K11` FIT → INSTANCE-FAILURE (the two-profile claim contradicts dng's harvested withdrawal),
+`P:code subject-identity`, `budgets` and `claims` FRICTION → INSTANCE-FAILURE (the required receipts, counts and audit are
+absent, not costly), `P:code acceptance-evidence` and `independent-key` FIT → UNEXERCISED (no declared subject). All four
+filed FRICTION lines fell to instance failures, so no census FRICTION remains to change `code.md` and no cross-profile FRICTION
+exists to change the kernel; every REPLACES on a census line is rejected; the proposals carried by re-filed `a.5` (FRICTION retained), `a.26` and `a.33` are routed with their lines, neither adopted nor rejected. Among the 31 non-census lines (14 re-filed, 4 distinguished,
+8 instance failures, 5 Untested): 13 ROUTED, 1 REJECTED (a.u6, no evidenced voice-canon bench), 17 ADOPTED. Dispositions:
+`adjudications/factory-kernel/AdversarialLLM.dispositions.md`, written for blob `95932dc1` (first filing; nothing superseded).
