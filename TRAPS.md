@@ -24109,3 +24109,34 @@ tasks with the product's names. On the measured host the config had no such key 
 suites that expect the home config file failed at both trees and narrowed the key's regression coverage. Scope such an
 override to the tests that need it.
 <!-- outbox:f3c02b42563190d4 conjugal:00f8f6be4e0b -->
+### conjugal, 2026-10-02 — a provider's usage limit lifted at least 37 hours before its stated reset; probe capacity, and keep producing declared work while the only eligible key is unavailable
+
+**Measured.** A cross-vendor acceptance key stopped mid-round on a usage limit. The message named a reset time four days
+out. A second model on the same account was refused with the same message, so the limit was account-wide, not per model
+(the opposite of an earlier measurement on another provider, where one model was exhausted and its sibling was not).
+A live probe about 61 hours later answered on both models: capacity had returned at least 37 hours before the stated reset. A
+status line filed at the time of the limit still printed "pending" after the probe succeeded.
+
+**Rules that held.**
+
+1. A capacity stop is not a key round. The subject is typed HELD with its resume condition, and its round budget is
+   intact.
+2. A same-vendor model is not a substitute key. Three independent agents checked the kernel text, the arbiter
+   dispositions and local precedent; all three found that a key from the producer's own backend earns no credit however
+   separate its context ("two wrappers over one backend are one class").
+3. Only the key waits. In the 61 hours without a key, fourteen subjects were drafted, measured (baselines and full mutant
+   matrices), declared and committed on their own branches, most with a disclosed same-vendor pre-key review. When capacity
+   returned, nine key rounds ran in twelve hours.
+
+**Traps inside the wait.**
+
+- **A stated reset time is a claim.** Probe with a one-word prompt on the exact key model at each check; trust the probe.
+- **Held declarations go stale against a moving main branch.** A declaration that requires a fast-forward of the keyed
+  candidate cannot be met days later. Merge the main branch into the subject branch immediately before the key and key
+  the merge commit; write that clause into new declarations.
+- **Held subjects that touch one file interact.** Measure each candidate again on the merged tree before its key: run the
+  new test once and check every mutant patch still applies. Two such pre-runs passed and one found a real defect.
+- **A machine reboot kills a detached key and every measurement in flight.** Record what is in flight, with the scratch
+  path and the command that derives its state, in the tracked queue before any restart. Measurement logs written before
+  the reboot remained usable; the runs cut off by it ended in logoff fork errors and were voided.
+<!-- outbox:31636960dcc478c2 conjugal:00f8f6be4e0b -->
