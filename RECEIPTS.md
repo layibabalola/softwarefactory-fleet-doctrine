@@ -10658,3 +10658,932 @@ Re-derive: `Select-String -Path "$env:LOCALAPPDATA\CodexDesktopStartupRescue\rec
   claude-fable-5-1; lint claude-opus-5-5 (Agent alias `opus`) + gpt-5.6-sol, run independently after consolidation (Opus 8 findings, Sol 3;
   all 11 applied by the orchestrator in one pass); orchestrator claude-opus-5-5. This entry is written before landing: the dispositions
   file is uncommitted and `harvest-status.py` still reports `UNHARVESTED`; the runner commits it afterwards.
+
+<!-- cloudvore-filing:2026-10-01-cache-withdraw-cleanup-traps generated from review/doctrine-drafts/2026-10-01-cache-withdraw-cleanup-traps.md at f881d15 -->
+
+## RECEIPTS
+
+Run on 2026-10-02 on Windows 11 Pro 10.0.26200 under Git Bash, with Python 3.14.4, PowerShell 7.6.6 (.NET
+10.0.12), Windows PowerShell 5.1.26100 and git 2.55.0.windows.5. The runner replaces its own directory with
+`<dir>` (forward-slash and backslash forms) and the Python interpreter's full path with `<python>`; CR bytes
+are stripped; nothing else is edited. Each run ends with `exit N`, the block's own exit status. Every block,
+`runall.sh`, `scrub.py`, `provcache.py`, `withdraw.py`, `cleancheck.sh` and `plantcheck.sh` were extracted from
+this draft's committed text (the git blob, LF) into a fresh directory and the runner run there; the whole
+extraction and run were then repeated in a second fresh directory, and the output was byte-identical to the
+first and to what is below. After each run no fixture folder, junction, deny entry or holder was left (the
+checks are under "Cleanup" below).
+
+The measurement on the second host (the .NET junction case of T1), made on 2026-10-01 and not repeated for this
+revision, with PowerShell only, run as
+`ssh <host> "pwsh -NoProfile -NonInteractive -EncodedCommand <the script as base64 UTF-16LE>"`, then its output:
+```powershell
+# um.ps1: .NET's recursive delete over a tree holding a junction, three times, in a fresh folder it deletes afterwards.
+$ProgressPreference = 'SilentlyContinue'
+$ErrorActionPreference = 'Stop'
+$base = Join-Path $env:LOCALAPPDATA ('Temp\k64dr-' + [guid]::NewGuid().ToString('N').Substring(0,8))
+New-Item -ItemType Directory -Path $base | Out-Null
+try {
+  "host=$env:COMPUTERNAME os=$([Environment]::OSVersion.Version) pwsh=$($PSVersionTable.PSVersion) clr=$([Environment]::Version)"
+  foreach ($i in 1..3) {
+    $root = Join-Path $base "r$i"; $sent = Join-Path $base "s$i"
+    New-Item -ItemType Directory -Path (Join-Path $root 'a\b') | Out-Null
+    Set-Content (Join-Path $root 'a\b\f.txt') 'x'; New-Item -ItemType Directory -Path $sent | Out-Null; Set-Content (Join-Path $sent 'keep.txt') 'keep'
+    New-Item -ItemType Junction -Path (Join-Path $root 'a\b\j') -Target $sent | Out-Null
+    $r1 = try { [IO.Directory]::Delete($root, $true); 'ok' } catch { 'threw: ' + $_.Exception.InnerException.GetType().Name + ': ' + $_.Exception.InnerException.Message }
+    $left = Test-Path -LiteralPath $root
+    $r2 = if ($left) { try { [IO.Directory]::Delete($root, $true); 'ok' } catch { 'threw again' } } else { 'n/a' }
+    "run $i : first=$r1 rootLeftAfterFirst=$left second=$r2 sentinelIntact=$(Test-Path (Join-Path $sent 'keep.txt'))"
+  }
+} finally {
+  Get-ChildItem -LiteralPath $base -Recurse -Force -Attributes ReparsePoint -ErrorAction SilentlyContinue | ForEach-Object { [IO.Directory]::Delete($_.FullName, $false) }
+  Remove-Item -LiteralPath $base -Recurse -Force
+  "cleanup: base exists afterwards = $(Test-Path -LiteralPath $base)"
+}
+```
+```text
+host=ULTRA-MAGNUS os=10.0.19045.0 pwsh=7.6.6 clr=10.0.12
+run 1 : first=threw: IOException: The parameter is incorrect. : 'j'. rootLeftAfterFirst=True second=ok sentinelIntact=True
+run 2 : first=threw: IOException: The parameter is incorrect. : 'j'. rootLeftAfterFirst=True second=ok sentinelIntact=True
+run 3 : first=threw: IOException: The parameter is incorrect. : 'j'. rootLeftAfterFirst=True second=ok sentinelIntact=True
+cleanup: base exists afterwards = False
+```
+
+The GREEN sample cleanup used as T1's `CLEAN`:
+```python
+# scrub.py ROOT: a sample GREEN cleanup for T1's CLEAN; not Cloudvore's code. It removes ROOT without following any
+# reparse point (a junction is removed as an entry, never entered), clears read-only, uses \\?\ paths so length does
+# not matter, retries what fails for 2 s, and exits 10 naming what is left if the root is still there: it never
+# swallows the failure. Exit 0 = removed.
+import os, stat, sys, time
+PFX = "\\\\?\\"
+root = PFX + os.path.abspath(sys.argv[1])
+
+
+def link(p):
+    return bool(os.lstat(p).st_file_attributes & stat.FILE_ATTRIBUTE_REPARSE_POINT)
+
+
+def rm(p, failed):
+    try:
+        if link(p):
+            os.rmdir(p) if os.path.isdir(p) else os.unlink(p)
+            return
+        if os.path.isdir(p):
+            for n in os.listdir(p):
+                rm(os.path.join(p, n), failed)
+            os.chmod(p, stat.S_IWRITE)
+            os.rmdir(p)
+        else:
+            os.chmod(p, stat.S_IWRITE)
+            os.unlink(p)
+    except OSError as e:
+        failed.append("%s (%s)" % (os.path.relpath(p, root).replace("\\", "/"), e.strerror))
+
+
+end = time.time() + 2
+while True:
+    failed = []
+    if os.path.lexists(root):
+        rm(root, failed)
+    if not os.path.lexists(root):
+        sys.exit(0)
+    if time.time() > end:
+        break
+    time.sleep(0.2)
+print("could not remove the fixture root: %d entr%s failed, first %s" % (len(failed), "y" if len(failed) == 1 else "ies", failed[0] if failed else "the root"))
+sys.exit(10)
+```
+
+The GREEN sample cache used as T2's `WRITE`, `READ` and `STRIP`:
+```python
+# provcache.py write|read|strip CACHE [FILE [VERDICT]]: a sample GREEN cache for T2's WRITE, READ and STRIP; not
+# Cloudvore's code. A record is written only for a verified run, and it carries the writer's provenance token. A
+# record is trusted only when its token is exactly that token and the file's size and mtime still match; one with no
+# token, or any other, is examined again. strip drops the token, as a build from before it existed would have.
+import json, os, sys
+TOKEN = "verified-run/1"
+op, cache = sys.argv[1], os.path.join(sys.argv[2], "cache.json")
+db = json.load(open(cache)) if os.path.exists(cache) else {}
+if op == "strip":
+    if os.path.exists(cache):
+        json.dump({k: {a: b for a, b in v.items() if a != "provenance"} for k, v in db.items()}, open(cache, "w"))
+    sys.exit(0)
+f = os.path.normcase(os.path.abspath(sys.argv[3]))
+st = os.stat(f)
+if op == "write":
+    if sys.argv[4] == "verified":
+        db[f] = {"size": st.st_size, "mtime_ns": st.st_mtime_ns, "provenance": TOKEN}
+        json.dump(db, open(cache, "w"))
+    sys.exit(0)
+r = db.get(f)
+if not r:
+    print("examine again: no record")
+elif r.get("provenance") != TOKEN:
+    print("examine again: the record does not say a verified run wrote it")
+elif r["size"] != st.st_size or r["mtime_ns"] != st.st_mtime_ns:
+    print("examine again: the file changed since it was recorded")
+else:
+    sys.exit(0)
+sys.exit(10)
+```
+
+The GREEN sample used as T3's `SEED`, `CHECK` and `VERDICT`:
+```python
+# withdraw.py seed|check|verdict STORE [SRC DST]: a sample GREEN implementation for T3's SEED, CHECK and VERDICT; not
+# Cloudvore's code. The verdict lives in STORE/verdict.json. check refuses when the destination resolves inside or over
+# the source, and then WITHDRAWS the earlier verdict first, because that is positive evidence it described the wrong
+# thing. It also refuses when it cannot tell where the destination resolves, and then KEEPS the verdict, because "cannot
+# tell" is not evidence that the verdict was wrong. Exit 0 = allowed (verdict: still on the record); 10 = refused
+# (verdict: withdrawn, or never given).
+import json, os, sys
+op, store = sys.argv[1], os.path.join(sys.argv[2], "verdict.json")
+
+
+def load():
+    return json.load(open(store)) if os.path.exists(store) else {}
+
+
+def place(src, dst):
+    """True: dst resolves inside or over src. False: it resolves elsewhere. None: cannot tell (with the reason)."""
+    try:
+        s = os.path.normcase(os.path.realpath(src, strict=True))
+        r = os.path.normcase(os.path.realpath(dst, strict=True))
+        os.listdir(r)
+    except OSError as e:
+        return None, "cannot tell where the destination stores (%s)" % e.strerror
+    if r == s or r.startswith(s + os.sep) or s.startswith(r + os.sep):
+        return True, "the destination resolves inside or over the source"
+    return False, ""
+
+
+if op == "verdict":
+    if load().get("verdict") == "verified":
+        sys.exit(0)
+    print("no verdict on the record")
+    sys.exit(10)
+nested, why = place(sys.argv[3], sys.argv[4])
+if op == "seed":
+    if nested is not False:
+        print("refused:", why)
+        sys.exit(10)
+    json.dump({"verdict": "verified"}, open(store, "w"))
+    sys.exit(0)
+if nested is True:                                    # positive evidence: withdraw the verdict, then refuse
+    v = load()
+    if v.get("verdict"):
+        json.dump({"verdict": None, "withdrawn": v["verdict"]}, open(store, "w"))
+    print("refused: %s; the earlier verdict is withdrawn" % why)
+    sys.exit(10)
+if nested is None:                                    # cannot tell: refuse, and keep the verdict
+    print("refused: %s; the earlier verdict is kept" % why)
+    sys.exit(10)
+sys.exit(0)
+```
+
+**What the receipts cover.** `r1` to `r8` run T1 over cleanups another project might have, each unchanged:
+Python's `rmtree` with `ignore_errors`, `scrub.py`, .NET's recursive delete inside an empty `catch` (the K64
+shape) and with its exception reported, `cmd`'s `rd /s /q`, PowerShell 7 with `SilentlyContinue`, Windows
+PowerShell 5.1 with its error reported, and Git Bash's `rm -rf` with its failure reported. `r9` to `r19` are hooks
+and settings that break the contract: refusing everything, removing nothing and reporting success, crashing after
+the work, only whitespace, a setting in another case, flipping, latching (`r15`'s latch sets during the first
+pass, at the first failure; the question that set it gets a different exit when it is asked again, and that is
+caught even over RED), a hook that outlives `HOOK_TIMEOUT`, a malformed `HOOK_TIMEOUT`, an ambient setting in
+lower case, and a name bash cannot unset. `r20` to `r29` are T2: the default, the H73 slice 1 fix alone (records
+only for a verified run, still no provenance: RED on the legacy record, which is H75), the GREEN sample, one hook
+set alone, readers that examine everything or trust everything, a `STRIP` that deletes the cache, a reader that
+answers by call count, a setting in another case and an empty one. `r30` to `r39` are T3: the default (H82), the
+GREEN sample, a sample that withdraws on every refusal (the mirror harm), hooks that allow or refuse everything, a
+`VERDICT` that always says the verdict is there, one hook set alone, a flipping `CHECK`, a setting in another
+case, and a `CHECK` that never refuses a destination it cannot read; in every one of them that reaches it, the
+parent-denied world is allowed. `r40` and `r41` are the two limits T2's GREEN line states: each step deserves RED
+and reads GREEN, and the line says why. `r42` is the limit T2's RED line states: the GREEN sample with a `STRIP`
+that does nothing reads RED, and the line says when that is wrong. `r43` to `r45` are T1's plants and its second
+pass, each with `JF`, a cleanup that deletes every file it can reach, following junctions, and then runs
+`scrub.py`: with a `pwsh` first on PATH that exits 1 the junction cannot be planted, and the block stops
+INCONCLUSIVE naming it; with the real `pwsh` the folder outside the root changes, RED; and a cleanup that is
+`scrub.py` for its first 12 calls and `JF` after them is RED the second time only. `r46` is T3 with the GREEN
+sample and a `CHECK` that exits 1 where the sample refuses: each of the four worlds it fails in reads INCONCLUSIVE
+naming `CHECK` and its exit, none reads RED, and the run ends INCONCLUSIVE (before this revision the two definite
+worlds, their verdicts withdrawn, were printed as withdrawn with the destination not in the source, and the run
+ended RED).
+```bash
+# runall.sh: every receipt below, in order (run from a fresh directory holding the extracted blocks)
+GC='python ../scrub.py "$1"'                                                       # T1's GREEN sample cleanup
+FOLLOW='python -c "import os, sys; [os.unlink(os.path.join(d, f)) for d, ds, fs in os.walk(sys.argv[1], followlinks=True) for f in fs]" "$1" 2>/dev/null'
+JF="$FOLLOW; $GC"                                # a cleanup that deletes every file it can reach, following junctions
+PW='python ../provcache.py write "$1" "$2" "$3"'; PR='python ../provcache.py read "$1" "$2"'; PS='python ../provcache.py strip "$1"'   # T2's
+WS='python ../withdraw.py seed "$1" "$2" "$3"'; WC='python ../withdraw.py check "$1" "$2" "$3"'; WV='python ../withdraw.py verdict "$1"'  # T3's
+D=$(cygpath -m "$PWD")
+run(){ local label=$1 dir=$2; shift 2; echo "== $label"; mkdir "$dir"; (cd "$dir" && cp ../cw-env.sh ../t1.sh ../t2.sh ../t3.sh ../scrub.py ../provcache.py ../withdraw.py . && env "$@" 2>&1; echo "exit $?") | tr -d '\r' | python -c '
+import re, sys
+d = sys.argv[1]; w = d.replace("/", "\\")
+for line in sys.stdin:
+    line = re.sub(r"\S*python\.exe:", "<python>:", line)
+    line = line.replace(w.replace("\\", "\\\\"), "<dir>").replace(w, "<dir>").replace(d, "<dir>")
+    sys.stdout.write(line)' "$D" | tr -d '\r'; }
+# T1: the default, the GREEN sample, and cleanups another project might have, each unchanged
+run "t1.sh (default CLEAN: shutil.rmtree with ignore_errors=True)" r1 bash t1.sh
+run "t1.sh CLEAN=\"\$GC\" (scrub.py)" r2 CLEAN="$GC" bash t1.sh
+run "t1.sh CLEAN=<.NET Directory.Delete(root, true) inside try { } catch { }> (the K64 shape)" r3 CLEAN="P=\"\$1\" pwsh -NoProfile -Command 'try { [IO.Directory]::Delete(\$env:P, \$true) } catch { }; exit 0'" bash t1.sh
+run "t1.sh CLEAN=<.NET Directory.Delete(root, true); an exception is reported>" r4 CLEAN="P=\"\$1\" pwsh -NoProfile -Command 'try { [IO.Directory]::Delete(\$env:P, \$true) } catch { \$_.Exception.InnerException.Message; exit 10 }'" bash t1.sh
+run "t1.sh CLEAN=<cmd's rd /s /q>" r5 CLEAN='cmd //c "rd /s /q $(cygpath -w "$1")"' bash t1.sh
+run "t1.sh CLEAN=<PowerShell 7 Remove-Item -Recurse -Force -ErrorAction SilentlyContinue>" r6 CLEAN="P=\"\$1\" pwsh -NoProfile -Command 'Remove-Item -LiteralPath \$env:P -Recurse -Force -ErrorAction SilentlyContinue; exit 0'" bash t1.sh
+run "t1.sh CLEAN=<Windows PowerShell 5.1 Remove-Item -Recurse -Force; an error is reported>" r7 CLEAN="P=\"\$1\" powershell -NoProfile -Command 'try { Remove-Item -LiteralPath \$env:P -Recurse -Force -ErrorAction Stop } catch { \$_.Exception.Message; exit 10 }'" bash t1.sh
+run "t1.sh CLEAN=<Git Bash rm -rf; a failure is reported>" r8 CLEAN='rm -rf "$1" 2>&1 || exit 10' bash t1.sh
+# T1: hooks that break the contract, settings and the environment
+run "t1.sh CLEAN='exit 10' (refuses everything)" r9 CLEAN='exit 10' bash t1.sh
+run "t1.sh CLEAN='exit 0' (removes nothing, reports success)" r10 CLEAN='exit 0' bash t1.sh
+run "t1.sh CLEAN=<scrub.py, then exit 2> (crashes after cleaning)" r11 CLEAN='python ../scrub.py "$1"; exit 2' bash t1.sh
+run "t1.sh CLEAN=' ' (only whitespace)" r12 CLEAN=' ' bash t1.sh
+run "t1.sh Clean=\"\$GC\" (the setting in another case)" r13 Clean="$GC" bash t1.sh
+run "t1.sh CLEAN=<scrub.py on odd calls, swallowing on even ones> (flips)" r14 CLEAN='n=$(( $(cat ../n 2>/dev/null || echo 0) + 1 )); echo $n > ../n; if [ $((n % 2)) = 1 ]; then python ../scrub.py "$1"; else python ../scrub.py "$1" >/dev/null; exit 0; fi' bash t1.sh
+run "t1.sh CLEAN=<scrub.py until its first failure, then success forever> (latches)" r15 CLEAN='[ -e ../latched ] && { python ../scrub.py "$1" >/dev/null; exit 0; }; python ../scrub.py "$1" && exit 0; : > ../latched; exit 10' bash t1.sh
+run "t1.sh CLEAN=<scrub.py, or sleep 30 when it fails> HOOK_TIMEOUT=5" r16 HOOK_TIMEOUT=5 CLEAN='python ../scrub.py "$1" || sleep 30' bash t1.sh
+run "t1.sh HOOK_TIMEOUT=5s" r17 HOOK_TIMEOUT=5s bash t1.sh
+run "t1.sh rclone_exclude='*' (an ambient setting in lower case)" r18 rclone_exclude='*' bash t1.sh
+run "t1.sh RCLONE_CONFIG_E-PAR_TYPE=local (a name bash cannot unset)" r19 RCLONE_CONFIG_E-PAR_TYPE=local bash t1.sh
+# T2
+run "t2.sh (default: records whatever the verdict, no provenance)" r20 bash t2.sh
+run "t2.sh WRITE=<records only for a verified run, no provenance> (the H73 slice 1 fix alone)" r21 WRITE='cache_write_verified "$1" "$2" "$3"' READ='cache_read "$1" "$2"' STRIP='cache_strip "$1"' bash t2.sh
+run "t2.sh WRITE, READ, STRIP = provcache.py" r22 WRITE="$PW" READ="$PR" STRIP="$PS" bash t2.sh
+run "t2.sh READ=provcache.py read, alone (WRITE and STRIP unset)" r23 READ="$PR" bash t2.sh
+run "t2.sh READ='exit 10' (examines everything again)" r24 WRITE="$PW" READ='exit 10' STRIP="$PS" bash t2.sh
+run "t2.sh READ='exit 0' (trusts everything)" r25 WRITE="$PW" READ='exit 0' STRIP="$PS" bash t2.sh
+run "t2.sh STRIP=<deletes the cache file>" r26 WRITE="$PW" READ="$PR" STRIP='rm -f "$1/cache.json"' bash t2.sh
+run "t2.sh READ=<provcache.py for its first 6 calls, then trusts everything> (answers by call count)" r27 WRITE="$PW" READ='n=$(( $(cat ../n 2>/dev/null || echo 0) + 1 )); echo $n > ../n; [ $n -gt 6 ] && exit 0; python ../provcache.py read "$1" "$2"' STRIP="$PS" bash t2.sh
+run "t2.sh read=\"\$PR\" (a setting in another case)" r28 WRITE="$PW" read="$PR" STRIP="$PS" bash t2.sh
+run "t2.sh WRITE=' ' (only whitespace)" r29 WRITE=' ' READ="$PR" STRIP="$PS" bash t2.sh
+# T3
+run "t3.sh (default: a definite refusal keeps the verdict)" r30 bash t3.sh
+run "t3.sh SEED, CHECK, VERDICT = withdraw.py" r31 SEED="$WS" CHECK="$WC" VERDICT="$WV" bash t3.sh
+run "t3.sh = verdict_eager (every refusal withdraws)" r32 SEED='verdict_eager seed "$1" "$2" "$3"' CHECK='verdict_eager check "$1" "$2" "$3"' VERDICT='verdict_eager verdict "$1"' bash t3.sh
+run "t3.sh CHECK='exit 0' (allows everything)" r33 SEED="$WS" CHECK='exit 0' VERDICT="$WV" bash t3.sh
+run "t3.sh CHECK='exit 10' (refuses everything)" r34 SEED="$WS" CHECK='exit 10' VERDICT="$WV" bash t3.sh
+run "t3.sh VERDICT='exit 0' (always says the verdict is there)" r35 SEED="$WS" CHECK="$WC" VERDICT='exit 0' bash t3.sh
+run "t3.sh SEED=withdraw.py seed, alone" r36 SEED="$WS" bash t3.sh
+run "t3.sh CHECK=<withdraw.py, allowing on every other call> (flips)" r37 SEED="$WS" CHECK='n=$(( $(cat ../n 2>/dev/null || echo 0) + 1 )); echo $n > ../n; [ $((n % 2)) = 0 ] && exit 0; python ../withdraw.py check "$1" "$2" "$3"' VERDICT="$WV" bash t3.sh
+run "t3.sh Check=\"\$WC\" (a setting in another case)" r38 SEED="$WS" Check="$WC" VERDICT="$WV" bash t3.sh
+run "t3.sh CHECK=<withdraws when nested; a destination it cannot read is allowed> (cannot-tell never refuses)" r39 SEED="$WS" CHECK='python -c "import os, sys; s = os.path.normcase(os.path.realpath(sys.argv[2])); r = os.path.normcase(os.path.realpath(sys.argv[3])); sys.exit(0 if not (r == s or r.startswith(s + os.sep) or s.startswith(r + os.sep)) else 10)" "$1" "$2" "$3" || { python ../withdraw.py check "$1" "$2" "$3"; exit 10; }' VERDICT="$WV" bash t3.sh
+# stated limits: steps whose verdicts are not the ones they deserve, recorded with the line that says so
+run "t2.sh READ=<trusts any record that carries ANY provenance value> (limit: provenance is never forged)" r40 WRITE="$PW" READ='python -c "import json, os, sys; c = os.path.join(sys.argv[1], \"cache.json\"); db = json.load(open(c)) if os.path.exists(c) else {}; r = db.get(os.path.normcase(os.path.abspath(sys.argv[2]))); st = os.stat(sys.argv[2]); sys.exit(0 if r and \"provenance\" in r and r[\"size\"] == st.st_size and r[\"mtime_ns\"] == st.st_mtime_ns else 10)" "$1" "$2"' STRIP="$PS" bash t2.sh
+run "t2.sh STRIP=<empties the cache instead of stripping it>, with the H73 slice 1 writer and the trusting reader (limit: STRIP is trusted)" r41 WRITE='cache_write_verified "$1" "$2" "$3"' READ='cache_read "$1" "$2"' STRIP='echo "{}" > "$1/cache.json"' bash t2.sh
+run "t2.sh STRIP=':' (does nothing), with provcache.py's writer and reader (limit: a STRIP that changes nothing is taken at its word)" r42 WRITE="$PW" READ="$PR" STRIP=':' bash t2.sh
+# T1: a plant that fails, a cleanup that follows junctions, and one that starts to after its 12th call
+run "t1.sh CLEAN=\"\$JF\", with a pwsh that exits 1 first on PATH (no junction can be planted)" r43 CLEAN="$JF" bash -c 'mkdir nopwsh && cp /usr/bin/false.exe nopwsh/pwsh.exe && PATH="$PWD/nopwsh:$PATH" bash t1.sh'
+run "t1.sh CLEAN=\"\$JF\" (deletes every file it can reach, following junctions, then scrub.py)" r44 CLEAN="$JF" bash t1.sh
+run "t1.sh CLEAN=<scrub.py for its first 12 calls, then \$JF> (turns after the first pass)" r45 CLEAN='n=$(( $(cat ../n 2>/dev/null || echo 0) + 1 )); echo $n > ../n; [ $n -gt 12 ] && { '"$FOLLOW"'; }; python ../scrub.py "$1"' bash t1.sh
+# T3: a hook exit that is neither 0 nor 10, where the GREEN sample refuses
+run "t3.sh CHECK=<withdraw.py; exit 1 where it refuses> (a CHECK that crashes where it should refuse)" r46 SEED="$WS" CHECK='python ../withdraw.py check "$1" "$2" "$3" || exit 1' VERDICT="$WV" bash t3.sh
+```
+
+```
+== t1.sh (default CLEAN: shutil.rmtree with ignore_errors=True)
+CLEAN: clean_swallow "$1"
+HOOK_TIMEOUT: 300 s per hook call
+control: a plain tree (top) removed, and reported removed
+control: a plain tree (deep) removed, and reported removed
+readonly  top  -> RED: reported the tree removed, but the root is still there with 1 entry in it (the failure was swallowed)
+readonly  deep -> RED: reported the tree removed, but the root is still there with 4 entries in it (the failure was swallowed)
+held      top  -> RED: reported the tree removed, but the root is still there with 1 entry in it (the failure was swallowed)
+held      deep -> RED: reported the tree removed, but the root is still there with 4 entries in it (the failure was swallowed)
+junction  top  -> removed, and reported removed
+junction  deep -> removed, and reported removed
+longpath  top  -> removed, and reported removed
+longpath  deep -> removed, and reported removed
+denied    top  -> RED: reported the tree removed, but the root is still there with 2 entries in it (the failure was swallowed)
+denied    deep -> RED: reported the tree removed, but the root is still there with 5 entries in it (the failure was swallowed)
+control: a plain tree (top) removed, and reported removed
+control: a plain tree (deep) removed, and reported removed
+CLEAN gave the same answer to all 12 questions when asked again
+T1: RED (6 outcome(s) swallowed a failed delete or reached outside the root)
+exit 1
+== t1.sh CLEAN="$GC" (scrub.py)
+CLEAN: python ../scrub.py "$1"
+HOOK_TIMEOUT: 300 s per hook call
+control: a plain tree (top) removed, and reported removed
+control: a plain tree (deep) removed, and reported removed
+readonly  top  -> removed, and reported removed
+readonly  deep -> removed, and reported removed
+held      top  -> left 1 entry, and reported that it could not remove the root (could not remove the fixture root: 2 entries failed, first held.txt (The process cannot access the file because it is being used by another process))
+held      deep -> left 4 entries, and reported that it could not remove the root (could not remove the fixture root: 5 entries failed, first a/b/c/held.txt (The process cannot access the file because it is being used by another process))
+junction  top  -> removed, and reported removed
+junction  deep -> removed, and reported removed
+longpath  top  -> removed, and reported removed
+longpath  deep -> removed, and reported removed
+denied    top  -> left 2 entries, and reported that it could not remove the root (could not remove the fixture root: 2 entries failed, first locked (Access is denied))
+denied    deep -> left 5 entries, and reported that it could not remove the root (could not remove the fixture root: 5 entries failed, first a/b/c/locked (Access is denied))
+control: a plain tree (top) removed, and reported removed
+control: a plain tree (deep) removed, and reported removed
+CLEAN gave the same answer to all 12 questions when asked again
+T1: GREEN (each of the 5 hazards, at the root and three levels down, was removed or reported; NOT tried: a non-name-surrogate reparse point such as a cloud-files placeholder (the K64 shape), the root itself held open, and anything your real fixtures hold that this tree does not)
+exit 0
+== t1.sh CLEAN=<.NET Directory.Delete(root, true) inside try { } catch { }> (the K64 shape)
+CLEAN: P="$1" pwsh -NoProfile -Command 'try { [IO.Directory]::Delete($env:P, $true) } catch { }; exit 0'
+HOOK_TIMEOUT: 300 s per hook call
+control: a plain tree (top) removed, and reported removed
+control: a plain tree (deep) removed, and reported removed
+readonly  top  -> RED: reported the tree removed, but the root is still there with 1 entry in it (the failure was swallowed)
+readonly  deep -> RED: reported the tree removed, but the root is still there with 4 entries in it (the failure was swallowed)
+held      top  -> RED: reported the tree removed, but the root is still there with 1 entry in it (the failure was swallowed)
+held      deep -> RED: reported the tree removed, but the root is still there with 4 entries in it (the failure was swallowed)
+junction  top  -> RED: reported the tree removed, but the root is still there with 0 entries in it (the failure was swallowed)
+junction  deep -> RED: reported the tree removed, but the root is still there with 3 entries in it (the failure was swallowed)
+longpath  top  -> removed, and reported removed
+longpath  deep -> removed, and reported removed
+denied    top  -> RED: reported the tree removed, but the root is still there with 2 entries in it (the failure was swallowed)
+denied    deep -> RED: reported the tree removed, but the root is still there with 5 entries in it (the failure was swallowed)
+control: a plain tree (top) removed, and reported removed
+control: a plain tree (deep) removed, and reported removed
+CLEAN gave the same answer to all 12 questions when asked again
+T1: RED (8 outcome(s) swallowed a failed delete or reached outside the root)
+exit 1
+== t1.sh CLEAN=<.NET Directory.Delete(root, true); an exception is reported>
+CLEAN: P="$1" pwsh -NoProfile -Command 'try { [IO.Directory]::Delete($env:P, $true) } catch { $_.Exception.InnerException.Message; exit 10 }'
+HOOK_TIMEOUT: 300 s per hook call
+control: a plain tree (top) removed, and reported removed
+control: a plain tree (deep) removed, and reported removed
+readonly  top  -> left 1 entry, and reported that it could not remove the root (Access to the path 'ro.txt' is denied.)
+readonly  deep -> left 4 entries, and reported that it could not remove the root (Access to the path 'ro.txt' is denied.)
+held      top  -> left 1 entry, and reported that it could not remove the root (The process cannot access the file 'held.txt' because it is being used by another process.)
+held      deep -> left 4 entries, and reported that it could not remove the root (The process cannot access the file 'held.txt' because it is being used by another process.)
+junction  top  -> left 0 entries, and reported that it could not remove the root (Access to the path 'j' is denied.)
+junction  deep -> left 3 entries, and reported that it could not remove the root (Access to the path 'j' is denied.)
+longpath  top  -> removed, and reported removed
+longpath  deep -> removed, and reported removed
+denied    top  -> left 2 entries, and reported that it could not remove the root (Access to the path '\\?\<dir>\r4\t1\q11\locked' is denied.)
+denied    deep -> left 5 entries, and reported that it could not remove the root (Access to the path '\\?\<dir>\r4\t1\q12\a\b\c\locked' is denied.)
+control: a plain tree (top) removed, and reported removed
+control: a plain tree (deep) removed, and reported removed
+CLEAN gave the same answer to all 12 questions when asked again
+T1: GREEN (each of the 5 hazards, at the root and three levels down, was removed or reported; NOT tried: a non-name-surrogate reparse point such as a cloud-files placeholder (the K64 shape), the root itself held open, and anything your real fixtures hold that this tree does not)
+exit 0
+== t1.sh CLEAN=<cmd's rd /s /q>
+CLEAN: cmd //c "rd /s /q $(cygpath -w "$1")"
+HOOK_TIMEOUT: 300 s per hook call
+control: a plain tree (top) removed, and reported removed
+control: a plain tree (deep) removed, and reported removed
+readonly  top  -> removed, and reported removed
+readonly  deep -> removed, and reported removed
+held      top  -> RED: reported the tree removed, but the root is still there with 1 entry in it (the failure was swallowed)
+held      deep -> RED: reported the tree removed, but the root is still there with 4 entries in it (the failure was swallowed)
+junction  top  -> removed, and reported removed
+junction  deep -> removed, and reported removed
+longpath  top  -> removed, and reported removed
+longpath  deep -> removed, and reported removed
+denied    top  -> RED: reported the tree removed, but the root is still there with 2 entries in it (the failure was swallowed)
+denied    deep -> RED: reported the tree removed, but the root is still there with 5 entries in it (the failure was swallowed)
+control: a plain tree (top) removed, and reported removed
+control: a plain tree (deep) removed, and reported removed
+CLEAN gave the same answer to all 12 questions when asked again
+T1: RED (4 outcome(s) swallowed a failed delete or reached outside the root)
+exit 1
+== t1.sh CLEAN=<PowerShell 7 Remove-Item -Recurse -Force -ErrorAction SilentlyContinue>
+CLEAN: P="$1" pwsh -NoProfile -Command 'Remove-Item -LiteralPath $env:P -Recurse -Force -ErrorAction SilentlyContinue; exit 0'
+HOOK_TIMEOUT: 300 s per hook call
+control: a plain tree (top) removed, and reported removed
+control: a plain tree (deep) removed, and reported removed
+readonly  top  -> removed, and reported removed
+readonly  deep -> removed, and reported removed
+held      top  -> RED: reported the tree removed, but the root is still there with 1 entry in it (the failure was swallowed)
+held      deep -> RED: reported the tree removed, but the root is still there with 4 entries in it (the failure was swallowed)
+junction  top  -> removed, and reported removed
+junction  deep -> removed, and reported removed
+longpath  top  -> removed, and reported removed
+longpath  deep -> removed, and reported removed
+denied    top  -> RED: reported the tree removed, but the root is still there with 3 entries in it (the failure was swallowed)
+denied    deep -> RED: reported the tree removed, but the root is still there with 7 entries in it (the failure was swallowed)
+control: a plain tree (top) removed, and reported removed
+control: a plain tree (deep) removed, and reported removed
+CLEAN gave the same answer to all 12 questions when asked again
+T1: RED (4 outcome(s) swallowed a failed delete or reached outside the root)
+exit 1
+== t1.sh CLEAN=<Windows PowerShell 5.1 Remove-Item -Recurse -Force; an error is reported>
+CLEAN: P="$1" powershell -NoProfile -Command 'try { Remove-Item -LiteralPath $env:P -Recurse -Force -ErrorAction Stop } catch { $_.Exception.Message; exit 10 }'
+HOOK_TIMEOUT: 300 s per hook call
+control: a plain tree (top) removed, and reported removed
+control: a plain tree (deep) removed, and reported removed
+readonly  top  -> removed, and reported removed
+readonly  deep -> removed, and reported removed
+held      top  -> left 2 entries, and reported that it could not remove the root (The process cannot access the file 'held.txt' because it is being used by another process.)
+held      deep -> left 5 entries, and reported that it could not remove the root (The process cannot access the file 'held.txt' because it is being used by another process.)
+junction  top  -> removed, and reported removed
+junction  deep -> removed, and reported removed
+longpath  top  -> removed, and reported removed
+longpath  deep -> removed, and reported removed
+denied    top  -> left 3 entries, and reported that it could not remove the root (Access to the path '<dir>\r7\t1\q11\locked' is denied.)
+denied    deep -> left 7 entries, and reported that it could not remove the root (Access to the path '<dir>\r7\t1\q12\a\b\c\locked' is denied.)
+control: a plain tree (top) removed, and reported removed
+control: a plain tree (deep) removed, and reported removed
+CLEAN gave the same answer to all 12 questions when asked again
+T1: GREEN (each of the 5 hazards, at the root and three levels down, was removed or reported; NOT tried: a non-name-surrogate reparse point such as a cloud-files placeholder (the K64 shape), the root itself held open, and anything your real fixtures hold that this tree does not)
+exit 0
+== t1.sh CLEAN=<Git Bash rm -rf; a failure is reported>
+CLEAN: rm -rf "$1" 2>&1 || exit 10
+HOOK_TIMEOUT: 300 s per hook call
+control: a plain tree (top) removed, and reported removed
+control: a plain tree (deep) removed, and reported removed
+readonly  top  -> removed, and reported removed
+readonly  deep -> removed, and reported removed
+held      top  -> left 1 entry, and reported that it could not remove the root (rm: cannot remove '<dir>/r8/t1/q5/held.txt': Device or resource busy)
+held      deep -> left 4 entries, and reported that it could not remove the root (rm: cannot remove '<dir>/r8/t1/q6/a/b/c/held.txt': Device or resource busy)
+junction  top  -> removed, and reported removed
+junction  deep -> removed, and reported removed
+longpath  top  -> removed, and reported removed
+longpath  deep -> removed, and reported removed
+denied    top  -> left 2 entries, and reported that it could not remove the root (rm: cannot remove '<dir>/r8/t1/q11/locked': Permission denied)
+denied    deep -> left 5 entries, and reported that it could not remove the root (rm: cannot remove '<dir>/r8/t1/q12/a/b/c/locked': Permission denied)
+control: a plain tree (top) removed, and reported removed
+control: a plain tree (deep) removed, and reported removed
+CLEAN gave the same answer to all 12 questions when asked again
+T1: GREEN (each of the 5 hazards, at the root and three levels down, was removed or reported; NOT tried: a non-name-surrogate reparse point such as a cloud-files placeholder (the K64 shape), the root itself held open, and anything your real fixtures hold that this tree does not)
+exit 0
+== t1.sh CLEAN='exit 10' (refuses everything)
+CLEAN: exit 10
+HOOK_TIMEOUT: 300 s per hook call
+INCONCLUSIVE: CLEAN did not remove a plain tree and report it removed (exit 10; 5 entries left; the folder outside the root: kept)
+exit 3
+== t1.sh CLEAN='exit 0' (removes nothing, reports success)
+CLEAN: exit 0
+HOOK_TIMEOUT: 300 s per hook call
+INCONCLUSIVE: CLEAN did not remove a plain tree and report it removed (exit 0; 5 entries left; the folder outside the root: kept)
+exit 3
+== t1.sh CLEAN=<scrub.py, then exit 2> (crashes after cleaning)
+CLEAN: python ../scrub.py "$1"; exit 2
+HOOK_TIMEOUT: 300 s per hook call
+INCONCLUSIVE: CLEAN did not remove a plain tree and report it removed (exit 2; the root is gone; the folder outside the root: kept)
+exit 3
+== t1.sh CLEAN=' ' (only whitespace)
+INCONCLUSIVE: CLEAN is set but empty; calling nothing
+exit 3
+== t1.sh Clean="$GC" (the setting in another case)
+INCONCLUSIVE: Clean is set, but this block reads CLEAN (the name is case-sensitive); calling nothing
+exit 3
+== t1.sh CLEAN=<scrub.py on odd calls, swallowing on even ones> (flips)
+CLEAN: n=$(( $(cat ../n 2>/dev/null || echo 0) + 1 )); echo $n > ../n; if [ $((n % 2)) = 1 ]; then python ../scrub.py "$1"; else python ../scrub.py "$1" >/dev/null; exit 0; fi
+HOOK_TIMEOUT: 300 s per hook call
+control: a plain tree (top) removed, and reported removed
+control: a plain tree (deep) removed, and reported removed
+readonly  top  -> removed, and reported removed
+readonly  deep -> removed, and reported removed
+held      top  -> left 1 entry, and reported that it could not remove the root (could not remove the fixture root: 2 entries failed, first held.txt (The process cannot access the file because it is being used by another process))
+held      deep -> RED: reported the tree removed, but the root is still there with 4 entries in it (the failure was swallowed)
+junction  top  -> removed, and reported removed
+junction  deep -> removed, and reported removed
+longpath  top  -> removed, and reported removed
+longpath  deep -> removed, and reported removed
+denied    top  -> left 2 entries, and reported that it could not remove the root (could not remove the fixture root: 2 entries failed, first locked (Access is denied))
+denied    deep -> RED: reported the tree removed, but the root is still there with 5 entries in it (the failure was swallowed)
+INCONCLUSIVE: CLEAN answered denied/deep with exit 0 at first and exit 10 when asked again: its answers depend on earlier calls, which the hook contract forbids (could not remove the fixture root: 5 entries failed, first a/b/c/locked (Access is denied))
+exit 3
+== t1.sh CLEAN=<scrub.py until its first failure, then success forever> (latches)
+CLEAN: [ -e ../latched ] && { python ../scrub.py "$1" >/dev/null; exit 0; }; python ../scrub.py "$1" && exit 0; : > ../latched; exit 10
+HOOK_TIMEOUT: 300 s per hook call
+control: a plain tree (top) removed, and reported removed
+control: a plain tree (deep) removed, and reported removed
+readonly  top  -> removed, and reported removed
+readonly  deep -> removed, and reported removed
+held      top  -> left 1 entry, and reported that it could not remove the root (could not remove the fixture root: 2 entries failed, first held.txt (The process cannot access the file because it is being used by another process))
+held      deep -> RED: reported the tree removed, but the root is still there with 4 entries in it (the failure was swallowed)
+junction  top  -> removed, and reported removed
+junction  deep -> removed, and reported removed
+longpath  top  -> removed, and reported removed
+longpath  deep -> removed, and reported removed
+denied    top  -> RED: reported the tree removed, but the root is still there with 2 entries in it (the failure was swallowed)
+denied    deep -> RED: reported the tree removed, but the root is still there with 5 entries in it (the failure was swallowed)
+INCONCLUSIVE: CLEAN answered held/top with exit 10 at first and exit 0 when asked again: its answers depend on earlier calls, which the hook contract forbids
+exit 3
+== t1.sh CLEAN=<scrub.py, or sleep 30 when it fails> HOOK_TIMEOUT=5
+CLEAN: python ../scrub.py "$1" || sleep 30
+HOOK_TIMEOUT: 5 s per hook call
+control: a plain tree (top) removed, and reported removed
+control: a plain tree (deep) removed, and reported removed
+readonly  top  -> removed, and reported removed
+readonly  deep -> removed, and reported removed
+held      top  -> INCONCLUSIVE: the hook did not finish within HOOK_TIMEOUT=5 s and was stopped
+held      deep -> INCONCLUSIVE: the hook did not finish within HOOK_TIMEOUT=5 s and was stopped
+junction  top  -> removed, and reported removed
+junction  deep -> removed, and reported removed
+longpath  top  -> removed, and reported removed
+longpath  deep -> removed, and reported removed
+denied    top  -> INCONCLUSIVE: the hook did not finish within HOOK_TIMEOUT=5 s and was stopped
+denied    deep -> INCONCLUSIVE: the hook did not finish within HOOK_TIMEOUT=5 s and was stopped
+control: a plain tree (top) removed, and reported removed
+control: a plain tree (deep) removed, and reported removed
+CLEAN gave the same answer to all 12 questions when asked again
+T1: INCONCLUSIVE (4 case(s) not judged)
+exit 3
+== t1.sh HOOK_TIMEOUT=5s
+INCONCLUSIVE: HOOK_TIMEOUT must be a whole number of seconds from 1 to 999999; calling nothing
+exit 3
+== t1.sh rclone_exclude='*' (an ambient setting in lower case)
+cw-env.sh: unset inherited rclone_exclude
+CLEAN: clean_swallow "$1"
+HOOK_TIMEOUT: 300 s per hook call
+control: a plain tree (top) removed, and reported removed
+control: a plain tree (deep) removed, and reported removed
+readonly  top  -> RED: reported the tree removed, but the root is still there with 1 entry in it (the failure was swallowed)
+readonly  deep -> RED: reported the tree removed, but the root is still there with 4 entries in it (the failure was swallowed)
+held      top  -> RED: reported the tree removed, but the root is still there with 1 entry in it (the failure was swallowed)
+held      deep -> RED: reported the tree removed, but the root is still there with 4 entries in it (the failure was swallowed)
+junction  top  -> removed, and reported removed
+junction  deep -> removed, and reported removed
+longpath  top  -> removed, and reported removed
+longpath  deep -> removed, and reported removed
+denied    top  -> RED: reported the tree removed, but the root is still there with 2 entries in it (the failure was swallowed)
+denied    deep -> RED: reported the tree removed, but the root is still there with 5 entries in it (the failure was swallowed)
+control: a plain tree (top) removed, and reported removed
+control: a plain tree (deep) removed, and reported removed
+CLEAN gave the same answer to all 12 questions when asked again
+T1: RED (6 outcome(s) swallowed a failed delete or reached outside the root)
+exit 1
+== t1.sh RCLONE_CONFIG_E-PAR_TYPE=local (a name bash cannot unset)
+INCONCLUSIVE: rclone would still inherit RCLONE_CONFIG_E-PAR_TYPE (bash cannot unset these); calling nothing. Run the block as: env -u NAME bash <block>.sh
+exit 3
+== t2.sh (default: records whatever the verdict, no provenance)
+WRITE: cache_write "$1" "$2" "$3"
+READ: cache_read "$1" "$2"
+STRIP: cache_strip "$1"
+HOOK_TIMEOUT: 300 s per hook call
+control: a verified run's record trusted; no record, and a changed file, examined again
+refused    -> RED: a record written by a run whose verdict was refused is trusted
+incomplete -> RED: a record written by a run whose verdict was incomplete is trusted
+legacy     -> RED: a record that does not say which kind of run wrote it is trusted (STRIP left the cache as it was: RED only if your records carry no provenance)
+control: a verified run's record trusted; no record, and a changed file, examined again
+WRITE, STRIP and READ gave the same answers to all 6 questions when asked again
+T2: RED (3 kind(s) of record trusted that no verified run vouched for; the legacy one was trusted after a STRIP that changed nothing, which is the trap only if your records carry no provenance: if they do, STRIP removed nothing and READ was shown its own stamped record, so make STRIP remove it and run again)
+exit 1
+== t2.sh WRITE=<records only for a verified run, no provenance> (the H73 slice 1 fix alone)
+WRITE: cache_write_verified "$1" "$2" "$3"
+READ: cache_read "$1" "$2"
+STRIP: cache_strip "$1"
+HOOK_TIMEOUT: 300 s per hook call
+control: a verified run's record trusted; no record, and a changed file, examined again
+refused    -> examined again (WRITE recorded nothing for it)
+incomplete -> examined again (WRITE recorded nothing for it)
+legacy     -> RED: a record that does not say which kind of run wrote it is trusted (STRIP left the cache as it was: RED only if your records carry no provenance)
+control: a verified run's record trusted; no record, and a changed file, examined again
+WRITE, STRIP and READ gave the same answers to all 6 questions when asked again
+T2: RED (1 kind(s) of record trusted that no verified run vouched for; the legacy one was trusted after a STRIP that changed nothing, which is the trap only if your records carry no provenance: if they do, STRIP removed nothing and READ was shown its own stamped record, so make STRIP remove it and run again)
+exit 1
+== t2.sh WRITE, READ, STRIP = provcache.py
+WRITE: python ../provcache.py write "$1" "$2" "$3"
+READ: python ../provcache.py read "$1" "$2"
+STRIP: python ../provcache.py strip "$1"
+HOOK_TIMEOUT: 300 s per hook call
+control: a verified run's record trusted; no record, and a changed file, examined again
+refused    -> examined again (WRITE recorded nothing for it)
+incomplete -> examined again (WRITE recorded nothing for it)
+legacy     -> examined again (STRIP changed the cache)
+control: a verified run's record trusted; no record, and a changed file, examined again
+WRITE, STRIP and READ gave the same answers to all 6 questions when asked again
+T2: GREEN (records from refused and incomplete runs, and a verified run's record without its provenance, are all examined again; NOT tried: a record whose provenance is forged or spelled differently (case, a newer writer's token), and any cache reader other than READ; limit: STRIP is trusted to leave a record READ can parse)
+exit 0
+== t2.sh READ=provcache.py read, alone (WRITE and STRIP unset)
+INCONCLUSIVE: READ set but WRITE STRIP not: set all of them or none; calling nothing
+exit 3
+== t2.sh READ='exit 10' (examines everything again)
+WRITE: python ../provcache.py write "$1" "$2" "$3"
+READ: exit 10
+STRIP: python ../provcache.py strip "$1"
+HOOK_TIMEOUT: 300 s per hook call
+INCONCLUSIVE: READ does not trust a record written for a verified run (exit 10)
+exit 3
+== t2.sh READ='exit 0' (trusts everything)
+WRITE: python ../provcache.py write "$1" "$2" "$3"
+READ: exit 0
+STRIP: python ../provcache.py strip "$1"
+HOOK_TIMEOUT: 300 s per hook call
+INCONCLUSIVE: READ answered exit 0 with nothing recorded
+exit 3
+== t2.sh STRIP=<deletes the cache file>
+WRITE: python ../provcache.py write "$1" "$2" "$3"
+READ: python ../provcache.py read "$1" "$2"
+STRIP: rm -f "$1/cache.json"
+HOOK_TIMEOUT: 300 s per hook call
+control: a verified run's record trusted; no record, and a changed file, examined again
+refused    -> examined again (WRITE recorded nothing for it)
+incomplete -> examined again (WRITE recorded nothing for it)
+legacy     -> INCONCLUSIVE: STRIP left no cache file, so no legacy record was measured
+control: a verified run's record trusted; no record, and a changed file, examined again
+WRITE, STRIP and READ gave the same answers to all 6 questions when asked again
+T2: INCONCLUSIVE (1 case(s) not judged)
+exit 3
+== t2.sh READ=<provcache.py for its first 6 calls, then trusts everything> (answers by call count)
+WRITE: python ../provcache.py write "$1" "$2" "$3"
+READ: n=$(( $(cat ../n 2>/dev/null || echo 0) + 1 )); echo $n > ../n; [ $n -gt 6 ] && exit 0; python ../provcache.py read "$1" "$2"
+STRIP: python ../provcache.py strip "$1"
+HOOK_TIMEOUT: 300 s per hook call
+control: a verified run's record trusted; no record, and a changed file, examined again
+refused    -> examined again (WRITE recorded nothing for it)
+incomplete -> examined again (WRITE recorded nothing for it)
+legacy     -> examined again (STRIP changed the cache)
+INCONCLUSIVE: READ answered legacy with exit 10 at first and exit 0 when asked again: its answers depend on earlier calls, which the hook contract forbids
+exit 3
+== t2.sh read="$PR" (a setting in another case)
+INCONCLUSIVE: read is set, but this block reads READ (the name is case-sensitive); calling nothing
+exit 3
+== t2.sh WRITE=' ' (only whitespace)
+INCONCLUSIVE: WRITE is set but empty; calling nothing
+exit 3
+== t3.sh (default: a definite refusal keeps the verdict)
+SEED: verdict_keep seed "$1" "$2" "$3"
+CHECK: verdict_keep check "$1" "$2" "$3"
+VERDICT: verdict_keep verdict "$1"
+HOOK_TIMEOUT: 300 s per hook call
+control: nothing changed; allowed, and the verdict stays
+inside        -> RED: refused, yet the earlier verdict is still on the record, and the destination now stores into the source (refused: inside or over the source)
+over          -> RED: refused, yet the earlier verdict is still on the record, and the destination now stores into the source (refused: inside or over the source)
+denied        -> refused, and the verdict was kept (refused: cannot tell)
+parent-denied -> allowed, and the verdict was kept
+target-denied -> refused, and the verdict was kept (refused: cannot tell)
+control: nothing changed; allowed, and the verdict stays
+SEED, CHECK and VERDICT gave the same answers to all 24 questions when asked again
+T3: RED (2 world(s) kept a verdict a refusal disproved, withdrew one nothing disproved, or allowed the source as its own copy)
+exit 1
+== t3.sh SEED, CHECK, VERDICT = withdraw.py
+SEED: python ../withdraw.py seed "$1" "$2" "$3"
+CHECK: python ../withdraw.py check "$1" "$2" "$3"
+VERDICT: python ../withdraw.py verdict "$1"
+HOOK_TIMEOUT: 300 s per hook call
+control: nothing changed; allowed, and the verdict stays
+inside        -> refused, and the verdict was withdrawn (refused: the destination resolves inside or over the source; the earlier verdict is withdrawn)
+over          -> refused, and the verdict was withdrawn (refused: the destination resolves inside or over the source; the earlier verdict is withdrawn)
+denied        -> refused, and the verdict was kept (refused: cannot tell where the destination stores (Access is denied); the earlier verdict is kept)
+parent-denied -> allowed, and the verdict was kept
+target-denied -> refused, and the verdict was kept (refused: cannot tell where the destination stores (Access is denied); the earlier verdict is kept)
+control: nothing changed; allowed, and the verdict stays
+SEED, CHECK and VERDICT gave the same answers to all 24 questions when asked again
+T3: GREEN (a destination moved inside or over the source was refused and its verdict withdrawn; in the 2 world(s) where the destination was still elsewhere and CHECK refused, the verdict was kept; NOT tried: a destination that disappears (whether that withdraws is your project's call), a cannot-tell that comes from anything but these filesystem worlds (a tool or service that fails), and any reader of the verdict other than VERDICT)
+exit 0
+== t3.sh = verdict_eager (every refusal withdraws)
+SEED: verdict_eager seed "$1" "$2" "$3"
+CHECK: verdict_eager check "$1" "$2" "$3"
+VERDICT: verdict_eager verdict "$1"
+HOOK_TIMEOUT: 300 s per hook call
+control: nothing changed; allowed, and the verdict stays
+inside        -> refused, and the verdict was withdrawn (refused: inside or over the source)
+over          -> refused, and the verdict was withdrawn (refused: inside or over the source)
+denied        -> RED: the verdict was withdrawn, but the destination is not in the source (it only became harder to read) (refused: cannot tell)
+parent-denied -> allowed, and the verdict was kept
+target-denied -> RED: the verdict was withdrawn, but the destination is not in the source (it only became harder to read) (refused: cannot tell)
+control: nothing changed; allowed, and the verdict stays
+SEED, CHECK and VERDICT gave the same answers to all 24 questions when asked again
+T3: RED (2 world(s) kept a verdict a refusal disproved, withdrew one nothing disproved, or allowed the source as its own copy)
+exit 1
+== t3.sh CHECK='exit 0' (allows everything)
+SEED: python ../withdraw.py seed "$1" "$2" "$3"
+CHECK: exit 0
+VERDICT: python ../withdraw.py verdict "$1"
+HOOK_TIMEOUT: 300 s per hook call
+control: nothing changed; allowed, and the verdict stays
+inside        -> RED: allowed, and the destination stores into the source
+over          -> RED: allowed, and the destination stores into the source
+denied        -> allowed, and the verdict was kept
+parent-denied -> allowed, and the verdict was kept
+target-denied -> allowed, and the verdict was kept
+control: nothing changed; allowed, and the verdict stays
+SEED, CHECK and VERDICT gave the same answers to all 24 questions when asked again
+T3: RED (2 world(s) kept a verdict a refusal disproved, withdrew one nothing disproved, or allowed the source as its own copy)
+exit 1
+== t3.sh CHECK='exit 10' (refuses everything)
+SEED: python ../withdraw.py seed "$1" "$2" "$3"
+CHECK: exit 10
+VERDICT: python ../withdraw.py verdict "$1"
+HOOK_TIMEOUT: 300 s per hook call
+INCONCLUSIVE: with nothing changed, CHECK answered exit 10 and VERDICT exit 0 (wanted 0 and 0)
+exit 3
+== t3.sh VERDICT='exit 0' (always says the verdict is there)
+SEED: python ../withdraw.py seed "$1" "$2" "$3"
+CHECK: python ../withdraw.py check "$1" "$2" "$3"
+VERDICT: exit 0
+HOOK_TIMEOUT: 300 s per hook call
+control: nothing changed; allowed, and the verdict stays
+inside        -> RED: refused, yet the earlier verdict is still on the record, and the destination now stores into the source (refused: the destination resolves inside or over the source; the earlier verdict is withdrawn)
+over          -> RED: refused, yet the earlier verdict is still on the record, and the destination now stores into the source (refused: the destination resolves inside or over the source; the earlier verdict is withdrawn)
+denied        -> refused, and the verdict was kept (refused: cannot tell where the destination stores (Access is denied); the earlier verdict is kept)
+parent-denied -> allowed, and the verdict was kept
+target-denied -> refused, and the verdict was kept (refused: cannot tell where the destination stores (Access is denied); the earlier verdict is kept)
+control: nothing changed; allowed, and the verdict stays
+SEED, CHECK and VERDICT gave the same answers to all 24 questions when asked again
+T3: RED (2 world(s) kept a verdict a refusal disproved, withdrew one nothing disproved, or allowed the source as its own copy)
+exit 1
+== t3.sh SEED=withdraw.py seed, alone
+INCONCLUSIVE: SEED set but CHECK VERDICT not: set all of them or none; calling nothing
+exit 3
+== t3.sh CHECK=<withdraw.py, allowing on every other call> (flips)
+SEED: python ../withdraw.py seed "$1" "$2" "$3"
+CHECK: n=$(( $(cat ../n 2>/dev/null || echo 0) + 1 )); echo $n > ../n; [ $((n % 2)) = 0 ] && exit 0; python ../withdraw.py check "$1" "$2" "$3"
+VERDICT: python ../withdraw.py verdict "$1"
+HOOK_TIMEOUT: 300 s per hook call
+control: nothing changed; allowed, and the verdict stays
+inside        -> RED: allowed, and the destination stores into the source
+over          -> refused, and the verdict was withdrawn (refused: the destination resolves inside or over the source; the earlier verdict is withdrawn)
+denied        -> allowed, and the verdict was kept
+parent-denied -> allowed, and the verdict was kept
+target-denied -> allowed, and the verdict was kept
+INCONCLUSIVE: CHECK answered target-denied/check with exit 0 at first and exit 10 when asked again: its answers depend on earlier calls, which the hook contract forbids (refused: cannot tell where the destination stores (Access is denied); the earlier verdict is kept)
+exit 3
+== t3.sh Check="$WC" (a setting in another case)
+INCONCLUSIVE: Check is set, but this block reads CHECK (the name is case-sensitive); calling nothing
+exit 3
+== t3.sh CHECK=<withdraws when nested; a destination it cannot read is allowed> (cannot-tell never refuses)
+SEED: python ../withdraw.py seed "$1" "$2" "$3"
+CHECK: python -c "import os, sys; s = os.path.normcase(os.path.realpath(sys.argv[2])); r = os.path.normcase(os.path.realpath(sys.argv[3])); sys.exit(0 if not (r == s or r.startswith(s + os.sep) or s.startswith(r + os.sep)) else 10)" "$1" "$2" "$3" || { python ../withdraw.py check "$1" "$2" "$3"; exit 10; }
+VERDICT: python ../withdraw.py verdict "$1"
+HOOK_TIMEOUT: 300 s per hook call
+control: nothing changed; allowed, and the verdict stays
+inside        -> refused, and the verdict was withdrawn (refused: the destination resolves inside or over the source; the earlier verdict is withdrawn)
+over          -> refused, and the verdict was withdrawn (refused: the destination resolves inside or over the source; the earlier verdict is withdrawn)
+denied        -> allowed, and the verdict was kept
+parent-denied -> allowed, and the verdict was kept
+target-denied -> allowed, and the verdict was kept
+control: nothing changed; allowed, and the verdict stays
+SEED, CHECK and VERDICT gave the same answers to all 24 questions when asked again
+T3: INCONCLUSIVE (CHECK refused in no world where the destination was still elsewhere, so keeping the verdict on a refusal that disproves nothing was never exercised)
+exit 3
+== t2.sh READ=<trusts any record that carries ANY provenance value> (limit: provenance is never forged)
+WRITE: python ../provcache.py write "$1" "$2" "$3"
+READ: python -c "import json, os, sys; c = os.path.join(sys.argv[1], \"cache.json\"); db = json.load(open(c)) if os.path.exists(c) else {}; r = db.get(os.path.normcase(os.path.abspath(sys.argv[2]))); st = os.stat(sys.argv[2]); sys.exit(0 if r and \"provenance\" in r and r[\"size\"] == st.st_size and r[\"mtime_ns\"] == st.st_mtime_ns else 10)" "$1" "$2"
+STRIP: python ../provcache.py strip "$1"
+HOOK_TIMEOUT: 300 s per hook call
+control: a verified run's record trusted; no record, and a changed file, examined again
+refused    -> examined again (WRITE recorded nothing for it)
+incomplete -> examined again (WRITE recorded nothing for it)
+legacy     -> examined again (STRIP changed the cache)
+control: a verified run's record trusted; no record, and a changed file, examined again
+WRITE, STRIP and READ gave the same answers to all 6 questions when asked again
+T2: GREEN (records from refused and incomplete runs, and a verified run's record without its provenance, are all examined again; NOT tried: a record whose provenance is forged or spelled differently (case, a newer writer's token), and any cache reader other than READ; limit: STRIP is trusted to leave a record READ can parse)
+exit 0
+== t2.sh STRIP=<empties the cache instead of stripping it>, with the H73 slice 1 writer and the trusting reader (limit: STRIP is trusted)
+WRITE: cache_write_verified "$1" "$2" "$3"
+READ: cache_read "$1" "$2"
+STRIP: echo "{}" > "$1/cache.json"
+HOOK_TIMEOUT: 300 s per hook call
+control: a verified run's record trusted; no record, and a changed file, examined again
+refused    -> examined again (WRITE recorded nothing for it)
+incomplete -> examined again (WRITE recorded nothing for it)
+legacy     -> examined again (STRIP changed the cache)
+control: a verified run's record trusted; no record, and a changed file, examined again
+WRITE, STRIP and READ gave the same answers to all 6 questions when asked again
+T2: GREEN (records from refused and incomplete runs, and a verified run's record without its provenance, are all examined again; NOT tried: a record whose provenance is forged or spelled differently (case, a newer writer's token), and any cache reader other than READ; limit: STRIP is trusted to leave a record READ can parse)
+exit 0
+== t2.sh STRIP=':' (does nothing), with provcache.py's writer and reader (limit: a STRIP that changes nothing is taken at its word)
+WRITE: python ../provcache.py write "$1" "$2" "$3"
+READ: python ../provcache.py read "$1" "$2"
+STRIP: :
+HOOK_TIMEOUT: 300 s per hook call
+control: a verified run's record trusted; no record, and a changed file, examined again
+refused    -> examined again (WRITE recorded nothing for it)
+incomplete -> examined again (WRITE recorded nothing for it)
+legacy     -> RED: a record that does not say which kind of run wrote it is trusted (STRIP left the cache as it was: RED only if your records carry no provenance)
+control: a verified run's record trusted; no record, and a changed file, examined again
+WRITE, STRIP and READ gave the same answers to all 6 questions when asked again
+T2: RED (1 kind(s) of record trusted that no verified run vouched for; the legacy one was trusted after a STRIP that changed nothing, which is the trap only if your records carry no provenance: if they do, STRIP removed nothing and READ was shown its own stamped record, so make STRIP remove it and run again)
+exit 1
+== t1.sh CLEAN="$JF", with a pwsh that exits 1 first on PATH (no junction can be planted)
+CLEAN: python -c "import os, sys; [os.unlink(os.path.join(d, f)) for d, ds, fs in os.walk(sys.argv[1], followlinks=True) for f in fs]" "$1" 2>/dev/null; python ../scrub.py "$1"
+HOOK_TIMEOUT: 300 s per hook call
+control: a plain tree (top) removed, and reported removed
+control: a plain tree (deep) removed, and reported removed
+readonly  top  -> removed, and reported removed
+readonly  deep -> removed, and reported removed
+held      top  -> left 1 entry, and reported that it could not remove the root (could not remove the fixture root: 2 entries failed, first held.txt (The process cannot access the file because it is being used by another process))
+held      deep -> left 4 entries, and reported that it could not remove the root (could not remove the fixture root: 5 entries failed, first a/b/c/held.txt (The process cannot access the file because it is being used by another process))
+INCONCLUSIVE: the block could not plant the junction hazard (top) (fx.py junction: pwsh exited 1); the hook was not asked about it, and no verdict stands
+exit 3
+== t1.sh CLEAN="$JF" (deletes every file it can reach, following junctions, then scrub.py)
+CLEAN: python -c "import os, sys; [os.unlink(os.path.join(d, f)) for d, ds, fs in os.walk(sys.argv[1], followlinks=True) for f in fs]" "$1" 2>/dev/null; python ../scrub.py "$1"
+HOOK_TIMEOUT: 300 s per hook call
+control: a plain tree (top) removed, and reported removed
+control: a plain tree (deep) removed, and reported removed
+readonly  top  -> removed, and reported removed
+readonly  deep -> removed, and reported removed
+held      top  -> left 1 entry, and reported that it could not remove the root (could not remove the fixture root: 2 entries failed, first held.txt (The process cannot access the file because it is being used by another process))
+held      deep -> left 4 entries, and reported that it could not remove the root (could not remove the fixture root: 5 entries failed, first a/b/c/held.txt (The process cannot access the file because it is being used by another process))
+junction  top  -> RED: the files of the folder the junction points to (outside the root) changed
+junction  deep -> RED: the files of the folder the junction points to (outside the root) changed
+longpath  top  -> removed, and reported removed
+longpath  deep -> removed, and reported removed
+denied    top  -> left 2 entries, and reported that it could not remove the root (could not remove the fixture root: 2 entries failed, first locked (Access is denied))
+denied    deep -> left 5 entries, and reported that it could not remove the root (could not remove the fixture root: 5 entries failed, first a/b/c/locked (Access is denied))
+control: a plain tree (top) removed, and reported removed
+control: a plain tree (deep) removed, and reported removed
+CLEAN gave the same answer to all 12 questions when asked again
+T1: RED (2 outcome(s) swallowed a failed delete or reached outside the root)
+exit 1
+== t1.sh CLEAN=<scrub.py for its first 12 calls, then $JF> (turns after the first pass)
+CLEAN: n=$(( $(cat ../n 2>/dev/null || echo 0) + 1 )); echo $n > ../n; [ $n -gt 12 ] && { python -c "import os, sys; [os.unlink(os.path.join(d, f)) for d, ds, fs in os.walk(sys.argv[1], followlinks=True) for f in fs]" "$1" 2>/dev/null; }; python ../scrub.py "$1"
+HOOK_TIMEOUT: 300 s per hook call
+control: a plain tree (top) removed, and reported removed
+control: a plain tree (deep) removed, and reported removed
+readonly  top  -> removed, and reported removed
+readonly  deep -> removed, and reported removed
+held      top  -> left 1 entry, and reported that it could not remove the root (could not remove the fixture root: 2 entries failed, first held.txt (The process cannot access the file because it is being used by another process))
+held      deep -> left 4 entries, and reported that it could not remove the root (could not remove the fixture root: 5 entries failed, first a/b/c/held.txt (The process cannot access the file because it is being used by another process))
+junction  top  -> removed, and reported removed
+junction  deep -> removed, and reported removed
+longpath  top  -> removed, and reported removed
+longpath  deep -> removed, and reported removed
+denied    top  -> left 2 entries, and reported that it could not remove the root (could not remove the fixture root: 2 entries failed, first locked (Access is denied))
+denied    deep -> left 5 entries, and reported that it could not remove the root (could not remove the fixture root: 5 entries failed, first a/b/c/locked (Access is denied))
+junction  deep -> asked again: RED: the files of the folder the junction points to (outside the root) changed
+junction  top  -> asked again: RED: the files of the folder the junction points to (outside the root) changed
+control: a plain tree (top) removed, and reported removed
+control: a plain tree (deep) removed, and reported removed
+CLEAN gave the same exit to all 12 questions when asked again, but 2 outcome(s) were RED the second time only
+T1: RED (2 outcome(s) swallowed a failed delete or reached outside the root)
+exit 1
+== t3.sh CHECK=<withdraw.py; exit 1 where it refuses> (a CHECK that crashes where it should refuse)
+SEED: python ../withdraw.py seed "$1" "$2" "$3"
+CHECK: python ../withdraw.py check "$1" "$2" "$3" || exit 1
+VERDICT: python ../withdraw.py verdict "$1"
+HOOK_TIMEOUT: 300 s per hook call
+control: nothing changed; allowed, and the verdict stays
+inside        -> INCONCLUSIVE: CHECK failed (exit 1): refused: the destination resolves inside or over the source; the earlier verdict is withdrawn
+over          -> INCONCLUSIVE: CHECK failed (exit 1): refused: the destination resolves inside or over the source; the earlier verdict is withdrawn
+denied        -> INCONCLUSIVE: CHECK failed (exit 1): refused: cannot tell where the destination stores (Access is denied); the earlier verdict is kept
+parent-denied -> allowed, and the verdict was kept
+target-denied -> INCONCLUSIVE: CHECK failed (exit 1): refused: cannot tell where the destination stores (Access is denied); the earlier verdict is kept
+control: nothing changed; allowed, and the verdict stays
+SEED, CHECK and VERDICT gave the same answers to all 24 questions when asked again
+T3: INCONCLUSIVE (4 world(s) not judged)
+exit 3
+```
+
+**Cleanup.** In each of the two directories the runner ran in, after its run, `cleancheck.sh` counted what was
+left, and `plantcheck.sh` then showed that every count can fail; both directories printed the same lines (CR
+bytes stripped). This is the third version of the check. The first passed `/T` to `icacls` from Git Bash, which
+rewrote it to `T:/`, so its deny count was 0 whatever was there. The second counted the text `(DENY)`, which
+`icacls` prints only for a deny of some rights; a deny of everything, the only kind these blocks plant, prints
+as `(N)` (`<user>:(OI)(CI)(N)` and `<user>:(N)` on the two folders `plantcheck.sh` denies), so over those two
+planted denies it counted 0. This one counts both spellings.
+```bash
+# cleancheck.sh: run in the runner's directory after runall.sh. Counts every fixture folder left in a block's
+# directory (q<n>, o<n>), every reparse point under it (never entered), every deny entry under it, every path whose
+# permissions icacls could not read, and every holder still running. icacls prints a deny of everything as `(N)` and
+# a deny of some rights as `(DENY)`; both are counted.
+python -c '
+import os, re, stat, subprocess
+left, links = 0, 0
+for d, dirs, files in os.walk("."):
+    for x in list(dirs) + files:
+        if os.lstat(os.path.join(d, x)).st_file_attributes & stat.FILE_ATTRIBUTE_REPARSE_POINT:
+            links += 1
+            if x in dirs:
+                dirs.remove(x)
+    if os.path.basename(d) in ("t1", "t2", "t3"):
+        left += sum(1 for x in dirs if re.fullmatch(r"[qo][0-9]+", x))
+out = subprocess.run(["icacls", os.getcwd(), "/T", "/C", "/Q"], capture_output=True, text=True)
+out = out.stdout + out.stderr
+print("fixture folders left: %d" % left)
+print("reparse points: %d" % links)
+print("deny entries: %d" % len(re.findall(r":(?:\([A-Z]+\))*\((?:N|DENY)\)", out)))
+print("paths icacls could not read: %d" % out.count("Access is denied"))'
+echo "holder processes running: $(pwsh -NoProfile -Command '@(Get-CimInstance Win32_Process | Where-Object { $_.Name -eq "python.exe" -and $_.CommandLine -match "fx\.py.? hold" }).Count')"
+```
+```
+fixture folders left: 0
+reparse points: 0
+deny entries: 0
+paths icacls could not read: 0
+holder processes running: 0
+```
+
+`plantcheck.sh` plants what a block could leave behind, confirms each plant, runs `cleancheck.sh` over it, removes
+it, and runs `cleancheck.sh` again:
+```bash
+# plantcheck.sh: can cleancheck.sh fail? Run in the runner's directory after cleancheck.sh. In a fresh folder pc/t1 it
+# plants what a block could leave behind: three fixture folders (q1, q2, o1), a junction (q2/j, to o1), two denied
+# folders (q1/locked, denied with everything it holds; q2/alone, denied by itself) and a holder of q1/held.txt. Each
+# plant is confirmed (cw-env.sh `plant`). It runs cleancheck.sh, removes everything it planted, and runs it again.
+[ -e pc ] && { echo "INCONCLUSIVE: pc exists; run in a fresh directory"; exit 3; }
+mkdir -p pc/t1; cd pc/t1; . ../../cw-env.sh
+mkdir -p q1/locked q2/alone o1; echo x > q1/locked/in.txt; echo y > q2/alone/in.txt; echo keep > o1/keep.txt
+HZ="a junction";               plant junction "$T/q2/j" "$T/o1"
+HZ="a denied folder";          plant deny "$T/q1/locked"
+HZ="a folder denied by itself"; plant deny-here "$T/q2/alone"
+python fx.py hold "$T/q1/held.txt" "$T/rel1" "$T/rdy1" 120 & HP=$!; REL=$T/rel1
+for _ in $(seq 200); do [ -e "$T/rdy1" ] && break; sleep 0.05; done
+HZ="a held file";              planted hold "$T/q1/held.txt"
+echo "-- planted: 3 fixture folders, 1 junction, 2 denied folders, 1 holder"
+(cd ../.. && bash cleancheck.sh)
+: > "$REL"; wait "$HP"; HP=
+python fx.py rm "$T/q1" "$T/q2" "$T/o1" "$T/rel1" "$T/rdy1" || { echo "INCONCLUSIVE: plantcheck.sh could not remove what it planted"; exit 3; }
+cd ../..; rm -rf pc
+echo "-- removed"
+bash cleancheck.sh
+```
+```
+-- planted: 3 fixture folders, 1 junction, 2 denied folders, 1 holder
+fixture folders left: 3
+reparse points: 1
+deny entries: 2
+paths icacls could not read: 2
+holder processes running: 1
+-- removed
+fixture folders left: 0
+reparse points: 0
+deny entries: 0
+paths icacls could not read: 0
+holder processes running: 0
+```

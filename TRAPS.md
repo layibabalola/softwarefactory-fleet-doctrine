@@ -23056,3 +23056,860 @@ Re-derive with the hermetic test suite: `pwsh -NoProfile -File "$env:USERPROFILE
 **Do this.** Before citing another project's line as corroboration, run `python tools/harvest-status.py <subject>` for the newest copy per project and read that project's `.dispositions.md`. A superseded line must be checked against its successor; a withdrawn line does not corroborate a current claim.
 
 **Cost.** The kernel change it argued for could not be adopted, and the filing's K11 honesty line was reclassified FIT to INSTANCE-FAILURE.
+
+<!-- cloudvore-filing:2026-10-01-cache-withdraw-cleanup-traps generated from review/doctrine-drafts/2026-10-01-cache-withdraw-cleanup-traps.md at f881d15 -->
+
+# Draft for the fleet doctrine bus: Cloudvore, 2026-10-01 (a cleanup that swallows a failed delete, a cache record nobody vouched for, and a refusal that must withdraw only what it disproves: K64, H75 with H73 slice 1, H82)
+
+These are observations from one project, Cloudvore, a Windows app that decides whether a source folder may
+be wiped by asking rclone whether a destination holds an independent copy. Nothing here instructs another
+project: each trap states what was measured here, what Cloudvore changed, how that was checked here, and a
+test another project can run against its own code if it wants to know whether it has the same trap.
+
+**Scope.** The three tests below are Windows tests. Every measurement in them was made on one Windows 11 Pro
+host (10.0.26200) under Git Bash, with Python 3.14.4, PowerShell 7.6.6 on .NET 10.0.12, Windows PowerShell
+5.1.26100 and icacls, from a non-elevated session; an elevated one was not run. One fact in T1 (the .NET
+junction case) was also measured on a second host, Windows 10 (10.0.19045) with the same PowerShell and .NET,
+over ssh with PowerShell only, in a fresh folder under its `%LOCALAPPDATA%\Temp` that the script deleted
+afterwards. Both hosts have `LongPathsEnabled=1`, so T1's long-path
+case exercises nothing there. No block calls rclone; none contacts a network. The only reparse points the
+blocks create are junctions, made by PowerShell's `New-Item -ItemType Junction`. The runnable demonstrations are
+below; their recorded output, from runs made for this draft on 2026-10-02 (the second host's on 2026-10-01), is
+in `## RECEIPTS`.
+
+**Sources.** Every commit cited as a source is an ancestor of Cloudvore's `origin/master` at `2a4db89`, this
+draft's base (the four commits ROWS names as landed during review come after it):
+
+- K64 (test fixtures that leaked `%TEMP%` through a swallowed recursive delete): merge `61558e1` (candidate
+  `c6c1163`; WIP `6e440da`), record `a50a3db`, portable section recorded by `93ab2a2`, ledger
+  `review/ledger-k64-fixture-temp-leak-2026-09-30.md`.
+- H73 packet B slice 1 (the verification cache trusts only a Verified run): merge `c5eb7ad` (candidate
+  `8def523`), record `8818e4a`, ledger `review/ledger-h73b-cache-verified-2026-09-29.md`.
+- H75 (a cache record without verified-run provenance is examined again): merge `2fa898e` (candidate `65f213e`;
+  RED `9512734`, fix `7e954f7`), record `c321606`, ledger `review/ledger-h75-cache-provenance-2026-10-01.md`.
+- H82 (a definite nested refusal withdraws the persisted verdict; a cannot-tell keeps it): merge `9ba2431`
+  (candidate `d3fb8a7`; RED `a17a11c`, fix `c6d9bbc`; r2 pins `c8c1083`, `5252ef2`), record `9ec9fca`,
+  ledger `review/ledger-h82-withdraw-on-nested-2026-09-30.md`.
+The BACKLOG rows for these carry the review rounds and bars.
+
+**Relation to the bus** (fleet doctrine `TRAPS.md` and `RECEIPTS.md`, searched at bus commit `70976e5`. Each file
+at `f8b4a35`, this project's H76/H51B filing of source `652e904`, is a byte prefix of the same file at `70976e5`:
+the first 1,876,992 bytes of `TRAPS.md` and the first 794,728 of `RECEIPTS.md`. Every line cited here by number
+lies inside that prefix, so it is the same line at both commits). Searched by mechanism over both files at
+`70976e5`: `swallow`, `Directory.Delete`, `rmtree`, `ignore_errors`, `SilentlyContinue`, `empty catch`,
+`junction`, `reparse`, `CANT_ACCESS`, `0x80070780`, `cleanup`, `teardown`, `Dispose`, `%TEMP%`, `leak`,
+`provenance`, `cache record`, `legacy`, `written before`, `trust audit`, `re-examine`, `withdraw`, `retract`,
+`revoke`, `definite`, `cannot tell`, `positive evidence`, `mirror`, `stale verdict`. No hit describes a test
+fixture whose cleanup swallows a failed delete, a .NET recursive delete that throws on a tree holding a
+junction, a cache record trusted because nothing says which kind of run wrote it, or a persisted verdict that a
+later definite refusal must withdraw and a cannot-tell must not. Nearest neighbours are named per trap. The
+previous filing named K64 as carried forward and H75 and H82 as held for this one (`TRAPS.md:22994`,
+`TRAPS.md:23016`, `TRAPS.md:23018`); the 2026-09-29 filing held H73 slice 1 for H75 (`TRAPS.md:20262`).
+
+## Shared preamble
+
+Every block sources `cw-env.sh` from its parent directory. It reuses the previous filing's preamble
+(`TRAPS.md:22444` onward) without the rclone shim, which these tests do not need: no block parses a command
+line, so the order of a hook's flags cannot mislead it. It first unsets every exported variable whose name
+starts `RCLONE_` in ANY case and prints each name it unset, and stops INCONCLUSIVE if a child process would
+still see one (bash cannot unset `RCLONE_CONFIG_E-PAR_TYPE`, but passes it on; run the block as `env -u NAME
+bash t1.sh` to drop it). No block calls rclone, but a hook may, and it then gets a throwaway `RCLONE_CONFIG`
+and `RCLONE_CACHE_DIR` inside the block's directory. The preamble writes `fx.py`, the fixture tools: it makes
+read-only files, held files, junctions, long paths and deny entries, confirms that each is really there before a
+hook is asked about it, and removes them again through `\\?\` paths without ever following a reparse point. No block removes anything outside the folders it creates, and
+each refuses to run over a leftover one. Every fixture folder a block makes, it removes itself after the
+question, and it stops INCONCLUSIVE if it cannot.
+
+**The hooks.** Each test takes YOUR code as shell commands in variables: `CLEAN` (T1: your fixture cleanup),
+`WRITE`, `READ` and `STRIP` (T2: your cache writer, your "is this file still the verified one" reader, and a
+rewrite of the cache as an older build left it), and `SEED`, `CHECK` and `VERDICT` (T3: your verify that
+persists a verdict, your next boundary on the same job, and a read of the persisted verdict). None of the tests
+asks you which case matters: T1 plants every hazard at two depths, T2 builds every kind of record, and T3
+changes the world in every way it has. The defaults are small samples with the trap in them, so each block run
+unchanged shows RED. A block that takes several hooks takes all of them or none: one of yours paired with a
+default measures neither, so that stops INCONCLUSIVE (RECEIPTS `r23`, `r36`).
+
+**What a run costs, and the hook timeout.** T1 asks `CLEAN` 24 times, T2 asks `READ` 12 times (with up to two
+`WRITE` or `STRIP` calls before each), and T3 asks 48 questions over 12 fixtures. The runner below took 24 to 28
+minutes on the measuring host (1649 s and 1476 s in the two runs that produced RECEIPTS). Each hook call is bounded: `HOOK_TIMEOUT` (seconds, default 300; a whole number from
+1 to 999999, anything else stops INCONCLUSIVE, `r17`) stops a call that runs longer, with its process group,
+and that question reads INCONCLUSIVE, naming the timeout (`r16`). Limit, as in the previous filing: a process
+your hook starts in a process group of its own (coreutils `timeout` does this) is not stopped with the hook; if
+it still holds the hook's output, the block waits for it, up to that process's own bound; if not, it may outlive
+the call and the block, up to its own bound. T1's held-file case runs a holder process of its own, released when
+the hook returns and bounded at `HOOK_TIMEOUT`+60 seconds.
+
+**The hook contract.** This is the previous filing's six-clause contract (`TRAPS.md:22390-22431`, five
+falsification rounds, after seven in the filing before it), reused as it applies here. A hook, setting or
+environment that breaks it gives INCONCLUSIVE, never GREEN or RED; each clause names the check that enforces it.
+One exception, in T1, is named under Residuals: a `CLEAN` that fails or is stopped after it has changed the folder
+outside the root reads RED.
+1. *Answer* (`hook`). Exit 0 means yes (T1: removed; T2 READ: trusted; T3 CHECK: allowed, VERDICT: still on the
+   record), **exit 10 means no** (T1: it says it could not remove the root; T2: examined again; T3 CHECK:
+   refused, VERDICT: withdrawn); any other exit (a crash, a missing file), or a call stopped after
+   `HOOK_TIMEOUT` seconds, reads INCONCLUSIVE (`r11`; in T3 the line names the hook and its exit, `r46`). `WRITE`,
+   `STRIP` and `SEED` must exit 0.
+2. *Not everything refused, not everything allowed* (`control`). Before the main loop each hook must give the
+   genuinely right answer on a case that has one, or the run stops INCONCLUSIVE: T1, a plain tree must be
+   removed and reported removed, at the root and three levels down (`r9`, `r10`); T2, a verified run's record
+   must be trusted, and neither an empty cache nor a changed file may be (`r24`, `r25`); T3, with nothing
+   changed, the job must be allowed and the verdict must stay (`r34`). A T3 `CHECK` that allows everything
+   reads RED (`r33`): it allows a destination inside the source.
+3. *Independent calls* (`again`, `judge`). Each call answers from its arguments alone. Every question gets a
+   fresh fixture, and after the main loop each block asks every question again, in reverse order, then the
+   controls. The second answer is judged in full, by the rules that judged the first: the hazard or world is
+   planted and confirmed again, T1 counts what is left in the root and compares the folder outside it, T2 looks
+   at the cache folder, and a T3 outcome is its two exits and nothing else. A hook exit that differs from the
+   first reads INCONCLUSIVE, even over RED (`r14`, `r15`, `r27`, `r37`). With the same exit, an outcome that is
+   RED the second time only counts as RED (`r45`: a `CLEAN` that starts to follow junctions at its 13th call
+   still exits 0, and the folder outside the root has changed); any other change of outcome reads INCONCLUSIVE.
+   Limit: re-asking sees only state that CHANGES between the two passes. A hook whose state is set before a
+   question is first asked and is unchanged when it is asked again -- a cache of its own first answers, a latch
+   set by an earlier call, a scratch copy that has already saturated -- answers the same both times and cannot
+   be told apart from an independent one from outside. Clause 3 is a contract you keep, not one these blocks
+   can fully check.
+4. *Isolated* (`hook`). The hook runs in a subshell with no stdin, so it cannot change the block's variables.
+   Its text is `eval`ed in the block's shell, so a command in it named like one of the block's own functions (`hook`,
+   `hooks`, `knob`, `ask`, `again`, `judge`, `plant`, `planted`, `noplant`, `case_`, `control`, `lands`, `cw_exit`,
+   and the in-block samples) runs the
+   block's function, not yours: call your tool by its full path. Point your code's storage at the folder the hook
+   is given (T2's cache, T3's store): a hook that writes its answer anywhere else shares it between questions,
+   which clause 3 forbids.
+5. *Settings read as written* (`knob`, `hooks`). `CLEAN`, `WRITE`, `READ`, `STRIP`, `SEED`, `CHECK`, `VERDICT`
+   and `HOOK_TIMEOUT` are read by those exact names; one set in another case (`Clean=...`, `read=...`) is not
+   silently ignored but stops INCONCLUSIVE (`r13`, `r28`, `r38`). Unset means the default; set but empty, or
+   only whitespace, is INCONCLUSIVE (`r12`, `r29`). There are no list settings in this filing.
+6. *Environment* (`cw-env.sh`). No `RCLONE_*` variable, in any case, reaches a hook (`r18`, `r19`).
+**A verdict needs positive evidence that the measurement worked for everything it covers:** T1 needs every
+hazard planted and CONFIRMED before `CLEAN` is asked, in both passes (`plant`): the plant's own exit status, and
+then the read-only attribute on the file, a held file that cannot be opened for delete, a reparse point that
+lists the folder it points to, a PermissionError on listing the denied folder, and the deep file at its long
+path. A plant that fails, or is not there afterwards, stops the block INCONCLUSIVE naming the hazard (`r43`: with
+a `pwsh` first on PATH that exits 1 no junction is made, and a cleanup that follows junctions is not called
+GREEN). For the junction T1 also needs the folder it points to unchanged; a GREEN also needs at least one case
+where the root was left behind and `CLEAN` said so. T2 needs, for the legacy case, a cache that still holds a
+file after `STRIP`; a GREEN needs that case examined again. T3 needs every world planted and confirmed the same
+way, and measured before `CHECK` is
+asked (a file written through the destination landed where the block says it stores), and the verdict found
+on the record before the world changed; a GREEN needs a definite refusal that withdrew and a refusal in a
+world where the destination was still elsewhere that kept it. A case whose own fixture did not do what the
+block says it does reads INCONCLUSIVE, whatever the hook said. Each of T1, T2 and T3 ends with one summary line
+and exits with it: **RED exits 1**, **INCONCLUSIVE exits 3**, **GREEN exits 0**. A GREEN line names what was
+not tried. `scrub.py`, `provcache.py` and `withdraw.py` in RECEIPTS are sample positive implementations (not
+Cloudvore's code) used as the GREEN settings.
+
+```bash
+# cw-env.sh: the shared preamble. Windows only: Git Bash, Python 3, PowerShell 7 (`pwsh`, for junctions) and icacls.
+# No block calls rclone, but a hook may, and rclone reads EVERY RCLONE_<FLAG> variable (RCLONE_EXCLUDE, RCLONE_FILTER,
+# RCLONE_DRY_RUN, RCLONE_CONFIG_<NAME>_...), so an ambient one changes what a hook measures. On Windows it reads the
+# names in any case (rclone_exclude filters too). Unset them all first, in any spelling (names printed).
+for v in $(compgen -e | grep -i '^rclone_'); do echo "cw-env.sh: unset inherited $v"; unset "$v"; done   # scrub
+# bash cannot unset a name it does not import (RCLONE_CONFIG_E-PAR_...), yet passes it on: ask a child what is left.
+left=$(env | grep -io '^rclone_[^=]*' | tr '\n' ' ')                                                    # scrub
+[ -z "$left" ] || { echo "INCONCLUSIVE: rclone would still inherit $left(bash cannot unset these); calling nothing. Run the block as: env -u NAME bash <block>.sh"; exit 3; }   # scrub
+set -f                  # this script globs nothing it splits; hooks glob as usual
+T=$(cygpath -m "$PWD")                                  # Git Bash: a forward-slash Windows path
+export RCLONE_CONFIG="$T/rclone.conf" RCLONE_CACHE_DIR="$T/cache"   # a hook that calls rclone gets a throwaway config
+# fx.py: the fixture tools. Every path it is given is used through \\?\, and it never follows a reparse point.
+cat > fx.py <<'PY'
+import ctypes, hashlib, os, re, stat, subprocess, sys, time
+from ctypes import wintypes
+PFX = "\\\\?\\"
+def L(p):
+    p = os.path.abspath(p)
+    return p if p.startswith(PFX) else PFX + p
+def sid():                                              # the current user, as icacls takes it
+    out = subprocess.run(["whoami", "/user", "/fo", "csv", "/nh"], capture_output=True, text=True, check=True).stdout
+    return "*" + out.strip().split(",")[-1].strip('"')
+def link(p):
+    try:
+        return bool(os.lstat(p).st_file_attributes & stat.FILE_ATTRIBUTE_REPARSE_POINT)
+    except FileNotFoundError:
+        return False
+def undeny(p):
+    subprocess.run(["icacls", p[len(PFX):], "/remove:d", sid(), "/T", "/C", "/Q"], capture_output=True)
+def rm(p):                                              # remove p; a junction is removed as an entry, never entered
+    if not os.path.lexists(p):
+        return
+    if link(p):
+        os.rmdir(p) if os.path.isdir(p) else os.unlink(p)
+        return
+    if os.path.isdir(p):
+        try:
+            names = os.listdir(p)
+        except PermissionError:
+            undeny(p)
+            names = os.listdir(p)
+        for n in names:
+            rm(os.path.join(p, n))
+        os.chmod(p, stat.S_IWRITE)
+        os.rmdir(p)
+    else:
+        os.chmod(p, stat.S_IWRITE)
+        os.unlink(p)
+def count(p):                                           # entries under p, a denied folder counted once; -1 if p is gone
+    if not os.path.lexists(p):
+        return -1
+    n = 0
+    try:
+        names = os.listdir(p)
+    except PermissionError:
+        return 1
+    for e in names:
+        q = os.path.join(p, e)
+        n += 1
+        if os.path.isdir(q) and not link(q):
+            n += max(count(q), 0)
+    return n
+def snap(p):                                            # every file under p, by relative name and bytes
+    h, k = hashlib.sha256(), 0
+    for d, dirs, files in sorted(os.walk(p)):
+        dirs.sort()
+        for f in sorted(files):
+            q = os.path.join(d, f)
+            h.update(os.path.relpath(q, p).encode() + b"\0" + open(q, "rb").read() + b"\0")
+            k += 1
+    return h.hexdigest()[:16] if k else "empty"
+def deep(p):                                            # the file "long" plants: more than 260 characters deep under p
+    for i in range(6):
+        p += "\\" + ("long%d" % i) * 12
+    return p + "\\deep.txt"
+def held(p):                                            # True if p cannot be opened for delete: another handle forbids it
+    k = ctypes.WinDLL("kernel32", use_last_error=True)
+    k.CreateFileW.restype = wintypes.HANDLE
+    k.CreateFileW.argtypes = [wintypes.LPCWSTR, wintypes.DWORD, wintypes.DWORD, ctypes.c_void_p, wintypes.DWORD, wintypes.DWORD, wintypes.HANDLE]
+    k.CloseHandle.argtypes = [wintypes.HANDLE]
+    h = k.CreateFileW(p, 0x00010000, 7, None, 3, 0, None)   # DELETE access, every sharing mode, OPEN_EXISTING: deletes nothing
+    if h == wintypes.HANDLE(-1).value:
+        return ctypes.get_last_error() == 32            # ERROR_SHARING_VIOLATION
+    k.CloseHandle(h)
+    return False
+def planted(kind, a):                                   # None if the hazard `kind` is really there, else what is missing
+    if kind == "ro":
+        return None if os.lstat(a[0]).st_file_attributes & stat.FILE_ATTRIBUTE_READONLY else "the file is not read-only"
+    if kind == "hold":
+        return None if held(a[0]) else "the file can be opened for delete, so nothing holds it"
+    if kind == "junction":
+        if not link(a[0]):
+            return "no reparse point is there"
+        names = sorted(os.listdir(a[0]))
+        return None if names and names == sorted(os.listdir(a[1])) else "it does not list the folder it should point to"
+    if kind in ("deny", "deny-here"):
+        try:
+            os.listdir(a[0])
+        except PermissionError:
+            return None
+        return "the folder can still be listed"
+    if kind == "long":
+        q = deep(a[0])
+        return None if os.path.isfile(q) and len(q) - len(PFX) > 260 else "no file is there more than 260 characters deep"
+    return "fx.py cannot confirm a %s" % kind
+op, a = sys.argv[1], [L(x) for x in sys.argv[2:]]
+try:
+    if op == "rm":
+        for x in a:
+            rm(x)
+        sys.exit(0 if not any(os.path.lexists(x) for x in a) else 1)
+    elif op == "rmall":                                # every fixture this block made in a[0]: q<n>, o<n>, rel<n>, rdy<n>
+        for x in os.listdir(a[0]):
+            if re.fullmatch(r"(q|o|rel|rdy)[0-9]+", x):
+                rm(os.path.join(a[0], x))
+    elif op == "count":
+        print(count(a[0]))
+    elif op == "snap":
+        print(snap(a[0]))
+    elif op == "ro":
+        os.chmod(a[0], stat.S_IREAD)
+    elif op in ("deny", "deny-here"):                 # deny you everything on a[0]: inherited by all it holds, or not
+        subprocess.run(["icacls", a[0][len(PFX):], "/deny", sid() + (":(OI)(CI)(F)" if op == "deny" else ":(F)")],
+                       capture_output=True, check=True)
+    elif op == "undeny":
+        undeny(a[0])
+    elif op == "junction":                              # a junction made by PowerShell's New-Item
+        subprocess.run(["pwsh", "-NoProfile", "-Command", "New-Item -ItemType Junction -Path $env:CW_L -Target $env:CW_T | Out-Null"],
+                       env=dict(os.environ, CW_L=a[0][len(PFX):], CW_T=a[1][len(PFX):]), capture_output=True, check=True)
+    elif op == "long":                                  # a file more than 260 characters deep under a[0]
+        os.makedirs(os.path.dirname(deep(a[0])))
+        open(deep(a[0]), "w").write("x")
+    elif op == "planted":                               # planted KIND ARGS: exit 0 only if what `fx.py KIND ARGS` plants is there
+        missing = planted(sys.argv[2], a[1:])
+        if missing:
+            print("after fx.py %s, %s" % (sys.argv[2], missing))
+            sys.exit(1)
+    elif op == "hold":                                  # hold a[0] open (no delete sharing) until a[1] exists or a bound
+        f = open(a[0], "w")
+        open(a[2], "w").close()
+        end = time.time() + int(sys.argv[5])
+        while time.time() < end and not os.path.exists(a[1]):
+            time.sleep(0.05)
+        f.close()
+    else:
+        print("fx.py: no operation %s" % op)
+        sys.exit(2)
+except subprocess.CalledProcessError as e:              # a plant that failed says so in one line and exits 1: no traceback
+    print("fx.py %s: %s exited %d" % (op, e.cmd[0], e.returncode))
+    sys.exit(1)
+except OSError as e:
+    print("fx.py %s: %s" % (op, e.strerror or e))
+    sys.exit(1)
+PY
+# On any exit, even one in the middle of a question, release a held file and remove every fixture this block made.
+HP=; cw_exit(){ [ -z "$HP" ] || { : > "$REL"; wait "$HP" 2>/dev/null; }; python fx.py rmall "$T" >/dev/null 2>&1; }
+trap cw_exit EXIT
+# hook HOOK ARGS...: run YOUR command held in the variable named HOOK with ARGS as $1 $2 ...
+# exit 0 = allowed, exit 10 = refused, any other exit (a crash, a missing file) = the hook failed.
+# Its first output line is kept in $WHY. It runs in a subshell with no stdin, so it cannot change this script.
+# It runs in a process group of its own; a watchdog stops that group after HOOK_TIMEOUT seconds, and the call then
+# returns 124 with TIMEDOUT=1 and $WHY naming the timeout (a call that ends just as the watchdog fires reads the
+# same). LIMIT: a process the hook starts in a group of its own (coreutils `timeout` does this) is not stopped with
+# it; if it holds the hook's output the block waits for it, else it may outlive the call and the block, up to its
+# own bound.
+HTO=$PWD/timedout
+hook(){ local h=$1 rc; shift; TIMEDOUT=; rm -f "$HTO"
+  WHY=$(set +f; set -- "$@"; set -m
+    (eval "${!h}") 2>&1 </dev/null & p=$!
+    (sleep "$HOOK_TIMEOUT"; : > "$HTO"; kill -TERM -- -"$p") >/dev/null 2>&1 </dev/null & w=$!   # mark, then stop
+    wait "$p"; r=$?; kill -TERM -- -"$w" 2>/dev/null; exit $r); rc=$?; WHY=${WHY%%$'\n'*}
+  [ -e "$HTO" ] || return $rc
+  rm -f "$HTO"; TIMEDOUT=1; WHY="the hook did not finish within HOOK_TIMEOUT=$HOOK_TIMEOUT s and was stopped"; return 124; }
+# knob NAME DEFAULT: read YOUR setting NAME exactly as spelled; unset means DEFAULT (set but empty stays empty).
+# A variable spelled NAME in another case would be silently ignored, so the block stops instead.
+knob(){ local n=$1 v
+  for v in $(compgen -A export | grep -ix "$n" | grep -vx "$n"); do
+    echo "INCONCLUSIVE: $v is set, but this block reads $n (the name is case-sensitive); calling nothing"; exit 3; done
+  [ -n "${!n+set}" ] || printf -v "$n" '%s' "$2"; }
+# hooks NAME DEFAULT [NAME DEFAULT]...: knob for each, then two more rules. A hook set to nothing but whitespace stops;
+# and when a block takes several hooks, either none is set (every default) or all are (yours): a default of one paired
+# with yours of another measures neither.
+hooks(){ local set= unset= n i j
+  for ((i = 1; i < $#; i += 2)); do n=${!i}; [ -n "${!n+set}" ] && set="$set $n" || unset="$unset $n"; done
+  for ((i = 1; i < $#; i += 2)); do j=$((i + 1)); knob "${!i}" "${!j}"; done
+  if [ -n "$set" ] && [ -n "$unset" ]; then echo "INCONCLUSIVE:$set set but$unset not: set all of them or none; calling nothing"; exit 3; fi
+  for n in $set; do [[ ${!n} =~ [^[:space:]] ]] || { echo "INCONCLUSIVE: $n is set but empty; calling nothing"; exit 3; }; done
+  for ((i = 1; i < $#; i += 2)); do n=${!i}; echo "$n: ${!n}"; done; }
+# HOOK_TIMEOUT: the seconds one hook call may run before its process group is stopped (default 300).
+knob HOOK_TIMEOUT 300
+[[ $HOOK_TIMEOUT =~ ^[1-9][0-9]{0,5}$ ]] || { echo "INCONCLUSIVE: HOOK_TIMEOUT must be a whole number of seconds from 1 to 999999; calling nothing"; exit 3; }
+# ask KEY HOOK ARGS...: hook, and remember its exit as the first answer for KEY. again KEY HOOK ARGS...: ask once more
+# and return the same exit; if it differs from the first answer, the hook is stateful and no verdict stands.
+unset ANS FIRST; declare -A ANS=() FIRST=()
+ask(){ local k=$1; shift; hook "$@"; ANS[$k]=$?; return ${ANS[$k]}; }
+again(){ local k=$1 h=$2 r; shift; hook "$@"; r=$?; [ "$r" = "${ANS[$k]}" ] && return $r
+  echo "INCONCLUSIVE: $h answered $k with exit ${ANS[$k]} at first and exit $r when asked again: its answers depend on earlier calls, which the hook contract forbids${WHY:+ ($WHY)}"; exit 3; }
+# `again` compares the hook's EXIT only. Each block then judges the second answer by the same rules as the first (its
+# `judge`) and compares the outcome with ${FIRST[KEY]}: an outcome that is RED the second time only still counts as RED.
+# plant OP ARGS...: `fx.py OP ARGS` plants a hazard, and `fx.py planted OP ARGS` then confirms it is really there: the
+# read-only attribute, a file that cannot be opened for delete, a reparse point that lists the folder it points to, a
+# PermissionError listing the denied folder, the deep file at its long path. A plant that fails, or is not there
+# afterwards, stops the block INCONCLUSIVE naming $HZ: a hook asked about a hazard nobody planted reads as handling it.
+noplant(){ echo "INCONCLUSIVE: the block could not plant $HZ (${1##*$'\n'}); the hook was not asked about it, and no verdict stands"; exit 3; }
+planted(){ local why; why=$(python fx.py planted "$@" 2>&1) || noplant "$why"; }
+plant(){ local why; why=$(python fx.py "$@" 2>&1) || noplant "$why"; planted "$@"; }
+```
+
+## TRAPS
+
+### 1. A fixture cleanup that swallows a failed recursive delete leaks silently, and on Windows ordinary contents make the delete fail: a held or read-only file, a denied folder, a reparse point, and for .NET even a junction
+
+**Adds to the bus:** not found by mechanism (searched above). Its nearest neighbours are failures that were
+swallowed elsewhere: a watchdog whose `-ErrorAction SilentlyContinue` hid a conversion error (`TRAPS.md:8276`,
+adobe) and an empty `catch` that hid a ReferenceError in a hook (`TRAPS.md:9433`, item 2). Neither is a cleanup,
+and neither measured which contents make a recursive delete fail. This project's own reparse entry
+(`TRAPS.md:12209`) is about a walk that stops at the wrong reparse tag; its test, a synthetic tag `0x00001234`
+made with `FSCTL_SET_REPARSE_POINT` (`TRAPS.md:12220`), is how to plant K64's own shape. The bus already holds one
+instance of the pattern: this project's K62/O16 GREEN sample (`good_readers.py`) ends a helper with
+`shutil.rmtree(scratch, ignore_errors=True)` (`RECEIPTS.md:7989`). It is a throwaway scratch copy of a git index,
+so a leak there costs disk, not a verdict.
+
+- **Measured here (K64 ledger).** On 2026-09-30 `%TEMP%` held 11,931 `vault-*` folders, the oldest from
+  2026-07-21: 8,599 from one overlap test class and 3,252 from another, each disposing with
+  `try { Directory.Delete(_root, recursive: true); } catch { }`. Other sessions' filtered runs were adding about
+  500 an hour. The ledger classified 2,014 leftovers older than 30 minutes. 1,321 were an empty root: the
+  contents were deleted and the root's own delete failed transiently (the same delete succeeded minutes later).
+  625 held a planted cloud-placeholder-shaped directory (a non-name-surrogate reparse tag, `0x1234`), and a
+  recursive `Directory.Delete` descends INTO it and fails with `0x80070780` (ERROR_CANT_ACCESS_FILE) every
+  time, while a non-recursive delete of that entry succeeds. 67 were transient; 1 was a killed test host.
+  T1 re-measures the class with hazards any project's fixtures can hold, and found one the ledger did not: on both
+  hosts, .NET 10's `Directory.Delete(root, true)` throws on a tree that holds a junction made by `New-Item
+  -ItemType Junction`, every time, and leaves the root behind. On the Windows 11 host the error is "Access to the
+  path 'j' is denied" and the junction itself is gone, so a junction directly in the root leaves an EMPTY root,
+  the ledger's most common shape. On the Windows 10 host it is "The parameter is incorrect". The same call made
+  again then succeeds; the junction's target is never touched (3 of 3 by hand on each host, and every junction
+  case of `r3` and `r4`). Why .NET fails there was not investigated. `cmd`'s `rd /s /q` exits 0 while leaving a
+  held file and a denied folder behind (`r5`); Python's `shutil.rmtree(..., ignore_errors=True)` leaves read-only
+  files too (`r1`).
+- **What changed here** (`6e440da`, folds to `c6c1163`). A scratch-directory helper used by both test projects:
+  each run gets `%TEMP%\vault-tests-<pid>-<process start>\<tag>-<hex>`. Its dispose deletes through `\\?\`
+  paths, removes a reparse point of any tag as an entry without entering it, clears read-only, drops explicit
+  deny entries inside the tree (never on its parent), retries transient failures for 2 s and then DEFERS the
+  path: it records it, retries at process exit, and the next run's sweep removes any run root whose owner pid
+  and start stamp are dead. A dead root it still cannot delete after 10 minutes fails a test on every later
+  run. A ratchet test counts every swallowed directory delete left in the test sources (133 in 91 files); each
+  count may only fall.
+- **How it was checked here.** RED at `441b8b6` through the REAL fixture class ("the fixture left its root
+  behind"). Three Opus seats: deletion safety RATIFY with two folds (no reset may follow a link; a trailing-dot
+  name must not retarget onto a sibling), weak pins REFUSE twice then RATIFY at r3 and r4, flakes RATIFY. 18 of
+  20 mutants killed on an elevated host, and the 19th (no ACL reset) on a non-elevated one; the last, an ACL
+  reset reaching above the tree, is a reviewed structural bound. A hosted bar caught a sibling guard every
+  filtered run had missed (the detector's own regex looked like inline JSON); hosted bar 3x green at `c6c1163`.
+  **Residuals, recorded in the ledger:** 133 swallowed deletes remain in older tests (the ratchet stops new
+  ones); a root still held at process exit waits for the next run's sweep.
+- **Test another project can run (T1).** `CLEAN` is your cleanup routine, run on a root the block made (so a
+  routine that only removes roots it created itself needs a way to be pointed at one). Every question gets a
+  fresh root holding a small tree and ONE hazard: a read-only file, a file another process holds open without
+  delete sharing, a junction to a folder OUTSIDE the root, a path longer than 260 characters, or a folder that
+  denies you everything. Each is planted directly in the root and, in another question, three levels down. RED:
+  `CLEAN` exits 0 and the root is still there (the failure was swallowed), or the files of the junction's target
+  changed (it deleted outside the root, `r44`), the first time it is asked or the second (`r45`). GREEN: every
+  case was removed or reported, and at least one left the
+  root behind and was reported. A cleanup that defers and records counts as reporting: make the hook exit 10
+  when your routine records a leftover. INCONCLUSIVE: a hazard could not be planted and confirmed (`r43`); no
+  case left the root behind; `CLEAN` crashed or timed out with the folder outside the root unchanged, or reported
+  a failure while the root is gone; the controls fail; or a contract clause is broken. The GREEN
+  line names what was NOT tried: a non-name-surrogate reparse point (K64's own shape; plant one with
+  `TRAPS.md:12220`'s recipe if your fixtures can hold one), the root itself held open, and anything your real
+  fixtures hold that this tree does not. Limit: T1 sees only the root, so a cleanup that moves the root
+  somewhere else instead of deleting it reads as removed. Then grep your tests for an empty or return-only
+  `catch` around a directory delete.
+
+```bash
+# T1: does YOUR fixture cleanup remove its root, or say that it could not? Or does it swallow the failure? (CLEAN hook)
+# CLEAN: YOUR cleanup routine, run on the fixture root $1 (a forward-slash Windows path). Exit 0 = it reports the tree
+# removed; exit 10 = it reports that it could not remove it (it raised, or recorded the leftover where your suite fails
+# on it); any other exit reads INCONCLUSIVE (see cw-env.sh `hook`), unless the folder outside the root changed: RED.
+# The block builds a fresh root for every question and plants ONE hazard in it, directly under the root and, in a
+# second question, three levels down: a read-only file, a file another process holds open, a junction to a folder
+# OUTSIDE the root, a path longer than 260 characters, and a folder that denies you access. You do not choose: every
+# hazard at both depths is tried. Default CLEAN: clean_swallow, Python's shutil.rmtree(ignore_errors=True) (the trap).
+[ -e t1 ] && { echo "INCONCLUSIVE: t1 exists; run in a fresh directory"; exit 3; }
+mkdir t1; cd t1; . ../cw-env.sh
+hooks CLEAN 'clean_swallow "$1"'; echo "HOOK_TIMEOUT: $HOOK_TIMEOUT s per hook call"
+clean_swallow(){ python -c 'import shutil, sys; shutil.rmtree(sys.argv[1], ignore_errors=True)' "$1"; }
+# case_ KEY HAZARD DEPTH KIND: a fresh root q<n> holding a small tree, with HAZARD planted at DEPTH (top: in the root;
+# deep: three levels down) and a marker folder o<n> OUTSIDE it; then ask CLEAN about the root (KIND: ask or again).
+# Sets V (the exit), LEFT (the entries left under the root; -1 if the root is gone) and OUT (kept, or CHANGED if the
+# marker folder's files changed). The block then removes whatever is left itself, and stops if it cannot.
+n=0
+case_(){ n=$((n+1)); local q="$T/q$n" o="$T/o$n" at hp=
+  mkdir -p "$q/a/b/c" "$o"; echo x > "$q/a/b/c/f.txt"; echo y > "$q/top.txt"; echo keep > "$o/keep.txt"
+  at=$q; [ "$3" = deep ] && at=$q/a/b/c; HZ="the $2 hazard ($3)"
+  case $2 in
+    readonly) echo z > "$at/ro.txt"; plant ro "$at/ro.txt" ;;
+    held)     python fx.py hold "$at/held.txt" "$T/rel$n" "$T/rdy$n" $((HOOK_TIMEOUT + 60)) & hp=$!; HP=$hp; REL=$T/rel$n
+              for _ in $(seq 200); do [ -e "$T/rdy$n" ] && break; sleep 0.05; done
+              [ -e "$T/rdy$n" ] || { echo "INCONCLUSIVE: the holder of the held file never opened it"; exit 3; }
+              planted hold "$at/held.txt" ;;
+    junction) plant junction "$at/j" "$o" ;;
+    longpath) plant long "$at" ;;
+    denied)   mkdir "$at/locked"; echo z > "$at/locked/in.txt"; plant deny "$at/locked" ;;
+  esac
+  OSNAP=$(python fx.py snap "$o")
+  $4 "$1" CLEAN "$q"; V=$?
+  [ -n "$hp" ] && { : > "$T/rel$n"; wait $hp; HP=; }
+  LEFT=$(python fx.py count "$q"); OUT=kept; [ "$(python fx.py snap "$o")" = "$OSNAP" ] || OUT=CHANGED
+  python fx.py rm "$q" "$o" "$T/rel$n" "$T/rdy$n" || { echo "INCONCLUSIVE: the block could not remove its own fixture q$n"; exit 3; }; }
+# controls, before the sweep: a plain tree, at the root and three levels down, must be removed and reported removed,
+# and the folder outside it left alone.
+control(){ local d; for d in top deep; do case_ "plain/$d" plain $d "$1"
+  [ $V = 0 ] && [ "$LEFT" = -1 ] && [ "$OUT" = kept ] || { echo "INCONCLUSIVE: CLEAN did not remove a plain tree and report it removed (exit $V; $([ "$LEFT" = -1 ] && echo "the root is gone" || echo "$LEFT entries left"); the folder outside the root: $OUT)${WHY:+: $WHY}"; exit 3; }
+  echo "control: a plain tree ($d) removed, and reported removed"; done; }
+# judge: the outcome of the case just asked, from V, LEFT, OUT and TIMEDOUT. J names it, SAY is its line, R is set if RED.
+judge(){ R=
+  if [ "$OUT" != kept ]; then J="reached outside the root"; R=1; SAY="RED: the files of the folder the junction points to (outside the root) changed"
+  elif [ -n "$TIMEDOUT" ]; then J="timed out"; SAY="INCONCLUSIVE: $WHY"
+  else case $V/$LEFT in
+    0/-1) J="removed"; SAY="removed, and reported removed" ;;
+    0/*)  J="swallowed"; R=1; SAY="RED: reported the tree removed, but the root is still there with $LEFT entr$([ "$LEFT" = 1 ] && echo y || echo ies) in it (the failure was swallowed)" ;;
+    10/-1) J="reported, with the root gone"; SAY="INCONCLUSIVE: reported a failure, but the root is gone${WHY:+ ($WHY)}" ;;
+    10/*) J="reported"; SAY="left $LEFT entr$([ "$LEFT" = 1 ] && echo y || echo ies), and reported that it could not remove the root${WHY:+ ($WHY)}" ;;
+    *)    J="failed"; SAY="INCONCLUSIVE: CLEAN failed (exit $V)${WHY:+: $WHY}" ;; esac; fi; }
+control ask
+# the sweep: every hazard at both depths. A case EXERCISED the trap if the root was left behind and CLEAN said so.
+red=0; inc=0; ex=0; late=0; DONE=
+for h in readonly held junction longpath denied; do for d in top deep; do
+  case_ "$h/$d" $h $d ask; judge; FIRST[$h/$d]=$J; printf '%-9s %-4s -> %s\n' $h $d "$SAY"
+  case $J in removed) ;; reported) ex=$((ex+1)) ;; *) [ -n "$R" ] && red=$((red+1)) || inc=$((inc+1)) ;; esac
+  DONE="$h/$d $DONE"
+done; done
+# the hook contract, checked after the sweep: every case again on a fresh root, in reverse order, then the controls.
+# The second answer is judged in full, like the first: the hazard is planted and confirmed, what is left in the root is
+# counted, and the folder outside is compared. A different exit stops in `again`. With the same exit, an outcome that
+# is RED this time only counts as RED; any other change of outcome is a hook whose answers depend on earlier calls.
+for c in $DONE; do case_ "$c" "${c%/*}" "${c#*/}" again; judge; [ "$J" = "${FIRST[$c]}" ] && continue
+  [ -n "$R" ] || { echo "INCONCLUSIVE: CLEAN answered $c with exit $V both times, but the outcome was \"${FIRST[$c]}\" at first and \"$J\" when asked again: its answers depend on earlier calls, which the hook contract forbids"; exit 3; }
+  printf '%-9s %-4s -> asked again: %s\n' "${c%/*}" "${c#*/}" "$SAY"; red=$((red+1)); late=$((late+1)); done
+control again
+if [ $late = 0 ]; then echo "CLEAN gave the same answer to all $(( $(printf '%s\n' $DONE | grep -c .) + 2 )) questions when asked again"
+else echo "CLEAN gave the same exit to all $(( $(printf '%s\n' $DONE | grep -c .) + 2 )) questions when asked again, but $late outcome(s) were RED the second time only"; fi
+[ $red -gt 0 ] && { echo "T1: RED ($red outcome(s) swallowed a failed delete or reached outside the root)"; exit 1; }
+[ $inc -gt 0 ] && { echo "T1: INCONCLUSIVE ($inc case(s) not judged)"; exit 3; }
+[ $ex -gt 0 ] || { echo "T1: INCONCLUSIVE (no hazard left the root behind, so a failure was never there to swallow)"; exit 3; }
+echo "T1: GREEN (each of the 5 hazards, at the root and three levels down, was removed or reported; NOT tried: a non-name-surrogate reparse point such as a cloud-files placeholder (the K64 shape), the root itself held open, and anything your real fixtures hold that this tree does not)"; exit 0
+```
+
+### 2. A verification cache record that does not say which kind of run wrote it is trusted for good, including one written by a run whose verdict was refused; stamp provenance on write and examine again anything without it
+
+**Adds to the bus:** not found by mechanism (searched above). Its nearest neighbours are state written under one
+assumption and read after the assumption failed: a cached declaration that outranked live signals, whose rule is
+that the cache must carry its own stamp and lose to a live signal (`TRAPS.md:1747`, Conjugal, item 2), and
+"a re-auth that correctly fixes identity drift does not clear identity-blind state written before it"
+(`TRAPS.md:4335`, adversarialllm). New here: the record is a licence to skip work, so a record from a run whose
+verdict was refused, or from a build that could not have known to refuse it, carries that verdict's error
+forward on every later run; and a check of today's object against the record cannot catch it, because the
+record agrees with what is there.
+
+- **Measured here (H73 slice 1 ledger; H75 ledger).** First (slice 1, RED at `ca70beb`): the cache writer
+  decided "trustworthy" from per-file facts only (the check matched, the sweep finished, the canary was proved,
+  the run was not cancelled) and never read the run's verdict. A destination that wraps the source passes every
+  per-file fact, and only the destination-level verdict refuses it, so a refused run wrote records (3 where 0
+  were expected). Then (H75, RED `9512734`): records written BEFORE that fix carry every field a trusted record
+  carries, and the reader trusted them. The trust audit, which compares today's listing with the recorded hash,
+  cannot catch them either: a wrapped destination serves the source, so today's listing agrees with the record.
+  The RED pin rewrote a record without the new field and ran a real scan and incremental verify: it was taken
+  on trust (settled 1, expected 0).
+- **What changed here.** Slice 1 (`c5eb7ad`): the writer takes the resolved verdict, with no default, and
+  records only for a Verified run. H75 (`7e954f7`): every record is stamped with the writer's provenance token
+  (`verified-run/1`), and the scan's only "is this still the verified file" reader trusts a record only when
+  the token matches ordinally; a missing token, or any other value, makes the file be examined again, the same
+  arm as an older record with no mtime. A token naming the writer was chosen over a stored verdict state (the
+  writer only ever writes for Verified, so a state would always read Verified) or a run id (which carries no
+  trust by itself). An older build that re-saves the cache drops the unknown field, which fails safe.
+- **How it was checked here.** Slice 1: 7 of 7 mutants killed; Codex r2 RATIFY; bar 3x green. H75: three RED
+  pins and a control through a real JobRunner (the control: a Verified run's record is still trusted by a
+  fresh runner); 6 of 6 mutants killed (the read deleted, missing treated as present, the token not written,
+  presence-only, a case-insensitive compare, the field not persisted); both seats RATIFY; bar 3x green on
+  Ultra Magnus. **Cost and residuals, recorded in the ledger:** one full re-check per destination after
+  upgrade, including honest records written between the two fixes; the token is not cryptographic (whoever can
+  edit the cache can forge every field); the token rests on the writer's single caller being gated on Verified.
+- **Test another project can run (T2).** `WRITE` is your cache writer as your run calls it with a verdict
+  (`verified`, `refused` or `incomplete`), `READ` your "is this file still the verified one?" reader, and
+  `STRIP` a rewrite of the cache as a build from before provenance would have left it (if your records never
+  carried any, `STRIP` does nothing, and every record you have is a legacy record). Every question gets a fresh
+  file and an empty cache. RED: `READ` trusts a record written for a refused or incomplete run, or a verified
+  run's record after `STRIP`. GREEN: it trusts none of them, and the legacy case was examined again with a cache
+  file still present. INCONCLUSIVE: the controls fail (a verified record must be trusted; no record, and a file
+  changed since its record, must not be); `STRIP` leaves no cache file; a hook crashes or times out; or a
+  contract clause is broken. Two limits are stated in the GREEN line and receipted: the test never forges or
+  respells a provenance value, so a reader that trusts ANY value reads GREEN (`r40`); and `STRIP` is trusted to
+  leave the record in place, so a `STRIP` that empties the cache instead reads GREEN over a reader that trusts
+  legacy records (`r41`). A third is stated in the RED line: a `STRIP` that changes no byte of the cache is taken
+  at its word. That is right when your records carry no provenance (the defaults, `r20` and `r21`). When they do
+  and `STRIP` leaves it there, `READ` is shown its own stamped record and a CORRECT reader reads RED (`r42`); the
+  block cannot tell the two apart, so the case line and the verdict line both say that `STRIP` changed nothing.
+
+```bash
+# T2: does YOUR "is this file still the verified one?" reader trust a cache record that does not say which kind of run
+# wrote it? (WRITE, READ and STRIP hooks: set all three, or none)
+# WRITE: YOUR cache writer, as YOUR run calls it when it ends with verdict $3 (verified, refused or incomplete): record
+#   file $2 in the cache folder $1. Exit 0 = done, whether or not it wrote anything; any other exit reads INCONCLUSIVE.
+# READ: YOUR reader: is file $2 still the file the cache in $1 says was verified? Exit 0 = trusted (it would not be
+#   checked again); exit 10 = it would be examined again; any other exit reads INCONCLUSIVE.
+# STRIP: rewrite the cache in $1 as a build from before your records carried provenance would have left it: the same
+#   records, without whatever says which kind of run wrote them. Exit 0 = done. If your records never carried any,
+#   make STRIP do nothing: every record you have is then a legacy record, and READ is judged on it.
+# Every question gets a fresh folder: data/a.bin (1040 bytes) and an empty cache/. Defaults: cache_write, which
+# records whatever the verdict, cache_read, which trusts a record whose size and mtime match, and cache_strip (the trap).
+[ -e t2 ] && { echo "INCONCLUSIVE: t2 exists; run in a fresh directory"; exit 3; }
+mkdir t2; cd t2; . ../cw-env.sh
+hooks WRITE 'cache_write "$1" "$2" "$3"' READ 'cache_read "$1" "$2"' STRIP 'cache_strip "$1"'
+echo "HOOK_TIMEOUT: $HOOK_TIMEOUT s per hook call"
+CACHE_PY='
+import json, os, sys
+op, cache, f = sys.argv[1], os.path.join(sys.argv[2], "cache.json"), os.path.normcase(os.path.abspath(sys.argv[3]))
+db = json.load(open(cache)) if os.path.exists(cache) else {}
+st = os.stat(f)
+if op == "write":                                      # the trap: a record whatever the verdict, and no provenance
+    db[f] = {"size": st.st_size, "mtime_ns": st.st_mtime_ns}
+    json.dump(db, open(cache, "w"))
+elif op == "write-verified":                           # writes only for a verified run; still no provenance
+    if sys.argv[4] == "verified":
+        db[f] = {"size": st.st_size, "mtime_ns": st.st_mtime_ns}
+        json.dump(db, open(cache, "w"))
+else:
+    r = db.get(f)
+    if r and r["size"] == st.st_size and r["mtime_ns"] == st.st_mtime_ns:
+        sys.exit(0)                                    # the trap: any matching record is trusted
+    print("re-examine: no matching record"); sys.exit(10)'
+cache_write(){ python -c "$CACHE_PY" write "$1" "$2" "$3"; }
+cache_write_verified(){ python -c "$CACHE_PY" write-verified "$1" "$2" "$3"; }
+cache_read(){ python -c "$CACHE_PY" read "$1" "$2"; }
+cache_strip(){ python -c 'import json, os, sys
+c = os.path.join(sys.argv[1], "cache.json")
+if os.path.exists(c):
+    db = json.load(open(c)); json.dump({k: {a: b for a, b in v.items() if a != "provenance"} for k, v in db.items()}, open(c, "w"))' "$1"; }
+python -c 'import sys; open(sys.argv[1], "wb").write(bytes(range(65, 91)) * 40)' orig.bin
+# case_ KEY STEPS KIND: a fresh folder q<n> (data/a.bin, empty cache/), then STEPS in order, then ask READ (KIND: ask
+# or again). A step is one of: w:<verdict> (WRITE), strip (STRIP), change (a.bin gets different bytes, a different
+# size and an mtime 10 s later). Sets V (READ's exit), and AFTER and LAST about the cache folder's files: AFTER is
+# "empty" if it holds none after the last step; LAST says whether the last step changed them.
+n=0
+case_(){ n=$((n+1)); local q="$T/q$n" s b; mkdir -p "$q/data" "$q/cache"; cp orig.bin "$q/data/a.bin"; AFTER=empty; LAST=
+  for s in $2; do b=$(python fx.py snap "$q/cache")
+    case $s in
+      w:*)    ask "$1/$s" WRITE "$q/cache" "$q/data/a.bin" "${s#w:}"; [ $? = 0 ] || { echo "INCONCLUSIVE: WRITE failed for verdict ${s#w:} (exit ${ANS[$1/$s]})${WHY:+: $WHY}"; exit 3; } ;;
+      strip)  ask "$1/$s" STRIP "$q/cache"; [ $? = 0 ] || { echo "INCONCLUSIVE: STRIP failed (exit ${ANS[$1/$s]})${WHY:+: $WHY}"; exit 3; } ;;
+      change) python -c 'import os, sys; p = sys.argv[1]; open(p, "ab").write(b"!"); s = os.stat(p); os.utime(p, ns=(s.st_atime_ns, s.st_mtime_ns + 10**10))' "$q/data/a.bin" ;;
+    esac; AFTER=$(python fx.py snap "$q/cache"); LAST="changed the cache"; [ "$AFTER" = "$b" ] && LAST="left the cache as it was"; done
+  $3 "$1" READ "$q/cache" "$q/data/a.bin"; V=$?
+  python fx.py rm "$q" || { echo "INCONCLUSIVE: the block could not remove its own fixture q$n"; exit 3; }; }
+# controls, before the sweep: a record from a verified run must be trusted; no record, or a record of a file that has
+# changed since, must not be. A READ that fails any of them does not measure what records it trusts.
+control(){ case_ verified w:verified "$1"
+  [ $V = 0 ] || { echo "INCONCLUSIVE: READ does not trust a record written for a verified run (exit $V)${WHY:+: $WHY}"; exit 3; }
+  case_ none "" "$1"
+  [ $V = 10 ] || { echo "INCONCLUSIVE: READ answered exit $V with nothing recorded${WHY:+: $WHY}"; exit 3; }
+  case_ changed "w:verified change" "$1"
+  [ $V = 10 ] || { echo "INCONCLUSIVE: READ answered exit $V for a file changed since a verified run recorded it: it does not compare the file${WHY:+: $WHY}"; exit 3; }
+  echo "control: a verified run's record trusted; no record, and a changed file, examined again"; }
+# judge KIND: the outcome of the case just asked, from V, AFTER, LAST and TIMEDOUT. J names it, SAY is its line, R is
+# set if RED, and NOOP if a legacy record was trusted after a STRIP that changed no byte of the cache.
+judge(){ R=
+  if [ -n "$TIMEDOUT" ]; then J="timed out"; SAY="INCONCLUSIVE: $WHY"; return; fi
+  case $1/$V in
+    legacy/0)  if [ "$AFTER" = empty ]; then J="trusted with no cache file"; SAY="INCONCLUSIVE: trusted with no cache file at all"
+               elif [ "$LAST" = "left the cache as it was" ]; then J="trusted"; R=1; NOOP=1; SAY="RED: a record that does not say which kind of run wrote it is trusted (STRIP left the cache as it was: RED only if your records carry no provenance)"
+               else J="trusted"; R=1; SAY="RED: a record that does not say which kind of run wrote it is trusted (STRIP $LAST)"; fi ;;
+    legacy/10) if [ "$AFTER" = empty ]; then J="examined again with no cache file"; SAY="INCONCLUSIVE: STRIP left no cache file, so no legacy record was measured"
+               else J="examined again"; SAY="examined again (STRIP $LAST)"; fi ;;
+    */0)       J="trusted"; R=1; SAY="RED: a record written by a run whose verdict was $1 is trusted" ;;
+    */10)      J="examined again"; if [ "$AFTER" = empty ]; then SAY="examined again (WRITE recorded nothing for it)"; else SAY="examined again (WRITE recorded something for it)"; fi ;;
+    *)         J="failed"; SAY="INCONCLUSIVE: READ failed (exit $V)${WHY:+: $WHY}" ;; esac; }
+control ask
+# the sweep: a record from a run that was refused or incomplete, and a verified run's record without its provenance.
+red=0; inc=0; ex=0; late=0; NOOP=
+for c in "refused:w:refused" "incomplete:w:incomplete" "legacy:w:verified strip"; do k=${c%%:*}; case_ "$k" "${c#*:}" ask
+  judge "$k"; FIRST[$k]=$J; printf '%-10s -> %s\n' "$k" "$SAY"
+  case $k/$J in legacy/"examined again") ex=$((ex+1)) ;; */"examined again") ;; *) [ -n "$R" ] && red=$((red+1)) || inc=$((inc+1)) ;; esac
+done
+# the hook contract, checked after the sweep: every case again on a fresh folder, in reverse order, then the controls.
+# The second answer is judged in full, like the first (the cache folder is looked at again). A different exit stops in
+# `again`. With the same exit, an outcome that is RED this time only counts as RED; any other change of outcome is a
+# hook whose answers depend on earlier calls.
+for c in "legacy:w:verified strip" "incomplete:w:incomplete" "refused:w:refused"; do k=${c%%:*}; case_ "$k" "${c#*:}" again
+  judge "$k"; [ "$J" = "${FIRST[$k]}" ] && continue
+  [ -n "$R" ] || { echo "INCONCLUSIVE: READ answered $k with exit $V both times, but the outcome was \"${FIRST[$k]}\" at first and \"$J\" when asked again: the hooks' answers depend on earlier calls, which the hook contract forbids"; exit 3; }
+  printf '%-10s -> asked again: %s\n' "$k" "$SAY"; red=$((red+1)); late=$((late+1)); done
+control again
+if [ $late = 0 ]; then echo "WRITE, STRIP and READ gave the same answers to all 6 questions when asked again"
+else echo "READ gave the same exit to all 6 questions when asked again, but $late outcome(s) were RED the second time only"; fi
+[ $red -gt 0 ] && { echo "T2: RED ($red kind(s) of record trusted that no verified run vouched for${NOOP:+; the legacy one was trusted after a STRIP that changed nothing, which is the trap only if your records carry no provenance: if they do, STRIP removed nothing and READ was shown its own stamped record, so make STRIP remove it and run again})"; exit 1; }
+[ $inc -gt 0 ] && { echo "T2: INCONCLUSIVE ($inc case(s) not judged)"; exit 3; }
+[ $ex -gt 0 ] || { echo "T2: INCONCLUSIVE (no legacy record was examined again)"; exit 3; }
+echo "T2: GREEN (records from refused and incomplete runs, and a verified run's record without its provenance, are all examined again; NOT tried: a record whose provenance is forged or spelled differently (case, a newer writer's token), and any cache reader other than READ; limit: STRIP is trusted to leave a record READ can parse)"; exit 0
+```
+
+### 3. A definite refusal is positive evidence that the persisted verdict described the wrong thing and must withdraw it; a refusal that only cannot tell must keep it
+
+**Adds to the bus:** its nearest neighbours are this project's previous trap 2, "An overlap guard whose 'cannot
+tell' passes at a later boundary" (`TRAPS.md:22704`), and its H50 entry, "A guard's 'cannot tell' returned as
+its answer" (`TRAPS.md:15321`). Both are about the refusal itself; this is about what a refusal does to a
+verdict an EARLIER run already persisted. It also applies "a refusal is not evidence until you know WHICH
+refusal" (in `TRAPS.md:2152`, agent-bridge) to a persisted verdict: one kind of refusal disproves it, the other
+says nothing about it, and treating them alike is wrong in either direction.
+
+- **Measured here (H82 ledger).** Three read-only seats found the row's original premise not live: each push
+  makes a new job record, and on the same record every reader that could say SAFE TO WIPE already fails closed
+  on the Failed phase a refusal sets. The real gap was an inconsistency. A DEFINITE nested refusal (the
+  destination now resolves into the source) is positive evidence that the earlier verdict described the wrong
+  thing, the same kind of evidence as two other refusals (a renamed root, a canary in the wrong namespace) that
+  already withdrew the verdict first. The definite nested refusal did not: the record kept `Verified` with
+  `IsSafeToWipe=true` next to the refusal (RED `a17a11c`: the App pins at two sites and the Core pins at the
+  scan and the transfer preflight each read back Verified after the refusal).
+- **What changed here** (`c6d9bbc`, r2 pins `c8c1083`, `5252ef2`). One funnel: when a refusal is a definite
+  overlap verdict, withdraw the persisted verdict (keeping the withdrawn state and time as the witness), then
+  refuse, in one write. All seven sites where a definite nested verdict leads to a refusal were enumerated and
+  routed through it. **Not changed, on purpose:** a refusal because the guard CANNOT TELL is not evidence the
+  earlier verdict was wrong ("it was true when it was made"), and a structural refusal (a setting Cloudvore
+  cannot read exactly) says nothing about where the folders are; both keep the verdict, and the Failed phase
+  stops every reader re-uttering it.
+- **How it was checked here.** The RED tree failed 4 of the new pins; the fix tree's local runs were all
+  stopped by thermal admission, so r2 ran on Ultra Magnus: 10 of 10 H82 pins pass, and the three mutants seat A
+  had found surviving are each killed (site 4 refusing plainly, site 2 refusing plainly, and EVERY guard
+  refusal withdrawing, the mirror harm, killed by two false-alarm pins that keep the verdict). Both seats
+  RATIFY at r2; bar 3x green on Ultra Magnus. **Residual, cut as H83 and closed:** a Verified verdict minted
+  before H51B on a configuration H51B now refuses as "cannot tell" may itself be false, and nothing withdraws
+  it; H83 measured that population empty (`a03ff7e`). Withdrawing on the cannot-tell itself would have been the
+  mirror harm.
+- **Test another project can run (T3).** `SEED` persists a verified verdict for an independent copy (`src/` and
+  `out/dst`) in a store folder; the block then changes ONE thing, and `CHECK`, your next boundary on that job,
+  is asked; `VERDICT` then says whether the verdict is still on the record. The block sweeps five worlds,
+  each measured by writing a file through the destination and finding it where the block says: two DEFINITE
+  ones, where `out/dst` becomes a junction into `src/backup` or onto `src` itself, and three where the
+  destination is still elsewhere but harder to read (you are denied the folder itself, its parent folder, or
+  the folder a junction at `out/dst` points to). RED: a definite world is allowed (it stores into the source),
+  or refused with the verdict still on the record (H82); or the verdict is withdrawn in a world where the
+  destination is still elsewhere (the mirror harm, `r32`). GREEN: every definite world refused and withdrew,
+  no other world withdrew, and at least one of those refused and kept the verdict. INCONCLUSIVE: no world
+  where the destination was elsewhere made `CHECK` refuse, so keeping a verdict on a cannot-tell was never
+  exercised (`r39`); a world could not be planted and confirmed; the controls fail; a hook crashes or times
+  out; or a contract clause is broken. Of the three harder-to-read worlds, RECEIPTS exercises a cannot-tell
+  refusal in two: every receipted `CHECK` ALLOWS the parent-denied world, because listing `out/dst` still
+  succeeds for a user who is denied `out` itself, so nothing there has to refuse, and the GREEN line counts 2
+  worlds. A destination
+  that disappears is deliberately not a world here: whether a missing copy withdraws a verdict is a project's own
+  call (Cloudvore withdraws when the destination's drive disconnects during a run). The GREEN line names what was
+  NOT tried: that world, a cannot-tell that comes from a failing tool or service rather than the filesystem (the
+  previous filing's T2 shim fails rclone calls by position, `TRAPS.md:22704` onward), and any reader of the
+  verdict other than `VERDICT`.
+
+```bash
+# T3: when YOUR next boundary refuses a job whose verdict is already persisted, does a refusal that proves the verdict
+# described the wrong thing withdraw it, and does one that only cannot tell keep it? (SEED, CHECK and VERDICT hooks:
+# set all three, or none)
+# SEED: YOUR verify of destination folder $3 against source folder $2, persisting its verdict in the folder $1 (point
+#   your store there). Exit 0 = a verified verdict is persisted; any other exit reads INCONCLUSIVE.
+# CHECK: YOUR next boundary on that same job (a re-verify, a resume, the check before a wipe), with the store $1, the
+#   source $2 and the destination $3. Exit 0 = allowed; exit 10 = refused; any other exit reads INCONCLUSIVE.
+# VERDICT: does the store $1 still hold the earlier verdict? Exit 0 = yes; exit 10 = it was withdrawn; any other exit
+#   reads INCONCLUSIVE.
+# Every question gets a fresh folder: src/ (two files), out/dst (a copy of them) and an empty store/. SEED runs, then
+# the block changes ONE thing, then CHECK runs. It sweeps every world: two that put the destination INSIDE or OVER the
+# source (a definite refusal must withdraw), and three where it is still elsewhere but harder to read (a refusal there
+# cannot be evidence, so the verdict must stay). Defaults: verdict_keep, which never withdraws (the trap).
+[ -e t3 ] && { echo "INCONCLUSIVE: t3 exists; run in a fresh directory"; exit 3; }
+mkdir t3; cd t3; . ../cw-env.sh
+hooks SEED 'verdict_keep seed "$1" "$2" "$3"' CHECK 'verdict_keep check "$1" "$2" "$3"' VERDICT 'verdict_keep verdict "$1"'
+echo "HOOK_TIMEOUT: $HOOK_TIMEOUT s per hook call"
+# verdict_keep: withdraw.py's placement, with the trap: a definite refusal keeps the verdict. verdict_eager: the mirror
+# trap, every refusal withdraws it.
+VERDICT_PY='
+import json, os, sys
+mode, op, store = sys.argv[1], sys.argv[2], os.path.join(sys.argv[3], "verdict.json")
+v = json.load(open(store)) if os.path.exists(store) else {}
+if op == "verdict":
+    sys.exit(0 if v.get("verdict") == "verified" else 10)
+try:
+    s = os.path.normcase(os.path.realpath(sys.argv[4], strict=True)); r = os.path.normcase(os.path.realpath(sys.argv[5], strict=True)); os.listdir(r)
+    nested = r == s or r.startswith(s + os.sep) or s.startswith(r + os.sep)
+except OSError:
+    nested = None
+if op == "seed":
+    if nested is not False: sys.exit(10)
+    json.dump({"verdict": "verified"}, open(store, "w")); sys.exit(0)
+if nested is False: sys.exit(0)
+if mode == "eager": json.dump({"verdict": None}, open(store, "w"))
+print("refused: " + ("inside or over the source" if nested else "cannot tell")); sys.exit(10)'
+verdict_keep(){ python -c "$VERDICT_PY" keep "$@"; }
+verdict_eager(){ python -c "$VERDICT_PY" eager "$@"; }
+# lands VIA REAL: a file written through VIA appears in REAL (then it is removed). The block's measurement of a world.
+lands(){ echo probe > "$1/cw-probe.txt" 2>/dev/null && [ -f "$2/cw-probe.txt" ] && rm "$2/cw-probe.txt"; }
+# case_ KEY WORLD KIND: a fresh folder q<n>; SEED; VERDICT (it must hold the verdict); WORLD; CHECK; VERDICT again
+# (KIND: ask or again for each of the four). Sets C (CHECK's exit) and A (VERDICT's exit after it), WHY (CHECK's first
+# output line, or the timeout's) and AWHY (VERDICT's).
+n=0
+case_(){ n=$((n+1)); local q="$T/q$n" k=$1 r; mkdir -p "$q/src/sub" "$q/out/dst/sub" "$q/store"; HZ="the $2 world"
+  echo alpha > "$q/src/a.txt"; echo beta > "$q/src/sub/b.txt"; cp "$q/src/a.txt" "$q/out/dst/"; cp "$q/src/sub/b.txt" "$q/out/dst/sub/"
+  $3 "$k/seed" SEED "$q/store" "$q/src" "$q/out/dst"; r=$?
+  [ $r = 0 ] || { echo "INCONCLUSIVE: SEED did not persist a verified verdict for an independent copy (exit $r)${WHY:+: $WHY}"; exit 3; }
+  $3 "$k/held" VERDICT "$q/store"; r=$?
+  [ $r = 0 ] || { echo "INCONCLUSIVE: VERDICT does not find the verdict SEED persisted (exit $r)${WHY:+: $WHY}"; exit 3; }
+  case $2 in
+    unchanged) ;;
+    inside)   mkdir "$q/src/backup"; cp -r "$q/out/dst/." "$q/src/backup/"; python fx.py rm "$q/out/dst"; plant junction "$q/out/dst" "$q/src/backup"
+              lands "$q/out/dst" "$q/src/backup" || { echo "INCONCLUSIVE: the destination did not store into src/backup"; exit 3; } ;;
+    over)     python fx.py rm "$q/out/dst"; plant junction "$q/out/dst" "$q/src"
+              lands "$q/out/dst" "$q/src" || { echo "INCONCLUSIVE: the destination did not store into src"; exit 3; } ;;
+    denied)   lands "$q/out/dst" "$q/out/dst" || { echo "INCONCLUSIVE: the destination did not store into itself"; exit 3; }
+              plant deny "$q/out/dst" ;;
+    parent-denied) lands "$q/out/dst" "$q/out/dst" || { echo "INCONCLUSIVE: the destination did not store into itself"; exit 3; }
+              plant deny-here "$q/out" ;;
+    target-denied) mkdir "$q/else"; cp -r "$q/out/dst/." "$q/else/"; python fx.py rm "$q/out/dst"; plant junction "$q/out/dst" "$q/else"
+              lands "$q/out/dst" "$q/else" || { echo "INCONCLUSIVE: the destination did not store into else/"; exit 3; }
+              plant deny "$q/else" ;;
+  esac
+  $3 "$k/check" CHECK "$q/store" "$q/src" "$q/out/dst"; C=$?; local cw=$WHY ct=$TIMEDOUT
+  $3 "$k/after" VERDICT "$q/store"; A=$?; AWHY=$WHY; [ -n "$TIMEDOUT" ] || WHY=$cw; TIMEDOUT=$ct$TIMEDOUT
+  python fx.py rm "$q" || { echo "INCONCLUSIVE: the block could not remove its own fixture q$n"; exit 3; }; }
+# control, before the sweep: with nothing changed, CHECK must allow the job and the verdict must stay.
+control(){ case_ unchanged unchanged "$1"
+  [ $C = 0 ] && [ $A = 0 ] || { echo "INCONCLUSIVE: with nothing changed, CHECK answered exit $C and VERDICT exit $A (wanted 0 and 0)${WHY:+: $WHY}"; exit 3; }
+  echo "control: nothing changed; allowed, and the verdict stays"; }
+control ask
+red=0; inc=0; exd=0; exc=0
+for w in inside over denied parent-denied target-denied; do case_ $w $w ask; printf '%-13s -> ' $w
+  if [ -n "$TIMEDOUT" ]; then echo "INCONCLUSIVE: $WHY"; inc=$((inc+1)); continue; fi
+  # an exit that is neither 0 nor 10 is a hook that failed, not an answer: no arm below may judge a world by one
+  case $C in 0|10) ;; *) echo "INCONCLUSIVE: CHECK failed (exit $C)${WHY:+: $WHY}"; inc=$((inc+1)); continue ;; esac
+  case $A in 0|10) ;; *) echo "INCONCLUSIVE: VERDICT failed (exit $A)${AWHY:+: $AWHY}"; inc=$((inc+1)); continue ;; esac
+  case $w/$C/$A in
+    inside/0/0|inside/0/10|over/0/0|over/0/10) echo "RED: allowed, and the destination stores into the source"; red=$((red+1)) ;;
+    inside/10/10|over/10/10) echo "refused, and the verdict was withdrawn${WHY:+ ($WHY)}"; exd=$((exd+1)) ;;
+    inside/10/0|over/10/0) echo "RED: refused, yet the earlier verdict is still on the record, and the destination now stores into the source${WHY:+ ($WHY)}"; red=$((red+1)) ;;
+    */0/10|*/10/10) echo "RED: the verdict was withdrawn, but the destination is not in the source (it only became harder to read)${WHY:+ ($WHY)}"; red=$((red+1)) ;;
+    */10/0)  echo "refused, and the verdict was kept${WHY:+ ($WHY)}"; exc=$((exc+1)) ;;
+    */0/0)   echo "allowed, and the verdict was kept" ;;
+    *)       echo "INCONCLUSIVE: CHECK answered exit $C and VERDICT exit $A${WHY:+ ($WHY)}"; inc=$((inc+1)) ;; esac   # not reached: both exits are 0 or 10 here
+done
+# the hook contract, checked after the sweep: every world again on a fresh folder, in reverse order, then the control.
+# Each world is planted, confirmed and measured again. A T3 outcome is CHECK's exit and VERDICT's exit and nothing else,
+# so comparing both exits in `again` is the full check: no outcome can change while they stay the same.
+for w in target-denied parent-denied denied over inside; do case_ $w $w again; done
+control again
+echo "SEED, CHECK and VERDICT gave the same answers to all 24 questions when asked again"
+[ $red -gt 0 ] && { echo "T3: RED ($red world(s) kept a verdict a refusal disproved, withdrew one nothing disproved, or allowed the source as its own copy)"; exit 1; }
+[ $inc -gt 0 ] && { echo "T3: INCONCLUSIVE ($inc world(s) not judged)"; exit 3; }
+[ $exd -gt 0 ] || { echo "T3: INCONCLUSIVE (no definite refusal was seen)"; exit 3; }
+[ $exc -gt 0 ] || { echo "T3: INCONCLUSIVE (CHECK refused in no world where the destination was still elsewhere, so keeping the verdict on a refusal that disproves nothing was never exercised)"; exit 3; }
+echo "T3: GREEN (a destination moved inside or over the source was refused and its verdict withdrawn; in the $exc world(s) where the destination was still elsewhere and CHECK refused, the verdict was kept; NOT tried: a destination that disappears (whether that withdraws is your project's call), a cannot-tell that comes from anything but these filesystem worlds (a tool or service that fails), and any reader of the verdict other than VERDICT)"; exit 0
+```
+
+## NOT FILED
+
+- **H83, a pre-H51B Verified on a configuration H51B now refuses** (`a03ff7e`). Closed by adjudication with no
+  code: the at-risk legacy population was measured empty. Project-local; its design note (withhold export of
+  such a record) is recorded in the row.
+- **V02J, secrets in captured output** (`32f2452`). Closed by re-check with no code: the value registry
+  (`db03f25`) already redacts every registered secret in the row's leak shapes. Project-local.
+- K64's project-specific parts (the run-root naming, the 10-minute dead-root failure, the legacy sweep budget)
+  and H75's cost estimate in History. Project-local.
+
+## Residuals
+
+- **The tests sample.** T1 plants five hazards at two depths, T2 builds three kinds of record and T3 changes the
+  world five ways, and each asks every question twice. GREEN is not a proof that a cleanup, a cache reader or a
+  refusal is right everywhere; each GREEN line names what was not tried.
+- **Review cap.** The second revision was the last that adds cases; the third added none, and one receipt (`r46`)
+  for the fix it made to T3's judging. After the second, a finding blocks this filing
+  only if it shows (a) a run that does not match RECEIPTS, (b) a false or unsupported claim in the prose, or (c) a
+  correct reader reading RED, or a broken hook reading GREEN, on a case this draft CLAIMS to detect. Any other
+  in-scope gap that no block exercises is named in this section and does not block.
+- Named, not exercised. T1: a `CLEAN` that crashes (any exit but 0 or 10) after it has deleted through the
+  junction reads RED, not INCONCLUSIVE, and one stopped at `HOOK_TIMEOUT` takes the same arm: `judge` compares the
+  folder outside the root before it reads the exit, and the line it prints, that the files outside the root
+  changed, is true whatever the exit was; a cleanup that moves the root elsewhere reads as removed; a hazard is confirmed
+  before `CLEAN` is asked and not again after it returns; the held-file check shows that some handle forbids
+  delete, not whose; only the junction plant has a receipted failure (`r43`), though every plant goes through the
+  same check. T2: a forged or respelled provenance value (`r40`), a `STRIP` that empties the cache (`r41`) and a
+  `STRIP` that changes nothing over records that carry provenance (`r42`) are each misjudged, and each line says
+  so; no receipt shows a T2 outcome that is RED the second time only (`r27` is a changed exit). T3: the
+  parent-denied world refuses in no receipted run. All three: state a hook sets before a question is first asked
+  and never changes (clause 3); an elevated session; any host but the two named in Scope.
+
+## ROWS
+
+The interval this filing discharges is what `python tools/doctrine-debt.py --ref <this draft's tip>` counts: every
+commit reachable from the tip and from neither `652e904` (the previous publication source; bus `f8b4a35`, ack
+`2a4db89`) nor the earlier source `314af0f`, merged branches included. At the draft's base `2a4db89` that is 20
+commits (10 on the first parent, `git log --first-parent --oneline 652e904..2a4db89`); every one of the 20 is
+below, then the row the previous filing carried forward. At the tip the tool also counts the draft branch's own
+commits. Cloudvore's `origin/master` was not merged into this branch after its base: a filing's source bounds its
+interval, and what landed later belongs to the next filing.
+
+| Row | Commits | Disposition |
+|---|---|---|
+| H82 | merge `9ba2431`; branch `a17a11c`, `c6d9bbc`, `6e82cdb`, `c8c1083`, `5252ef2`, `d3fb8a7`; record `9ec9fca` | **Covered by this filing**, trap 3. |
+| H83 | `a03ff7e` | **Not filed**, project-local (NOT FILED above). Cut by `9ec9fca`. |
+| H75 | merge `2fa898e`; branch `9512734`, `7e954f7`, `c9b9c38`, `65f213e`; record `c321606` | **Covered by this filing**, trap 2, with H73 slice 1 (`c5eb7ad`, held by the 2026-09-29 filing for H75). |
+| V02J | `32f2452` | **Not filed**, project-local (NOT FILED above). |
+| (no row) | `ce24ec9`, `e8913a8` | Doctrine records: the K62/O16 draft's merge and its publication ack; on the bus at `a0bcaae`. Reachable here because neither is an ancestor of `652e904`. |
+| (no row) | `13440eb`, `2a4db89` | Doctrine records: the H76/H51B draft's merge and its publication ack; on the bus at `f8b4a35`. |
+| K64 | merge `61558e1` (records `a50a3db`, `93ab2a2`); an ancestor of `652e904`, carried forward by its filing | **Covered by this filing**, trap 1. |
+| (no row) | the draft branch's own commits, from `e8f8cec` | This filing: up to this tip they change one file, this draft. Its review record is added by a later commit, when the review ends. |
+
+**Landed during review, held for the next filing.** Two rows had landed after this draft's base when this revision
+was written (Cloudvore's `origin/master` read at `33cf8f8`).
+They are not in its interval and were not merged in. K63, merge `c37492e` (record `8e43314`): the ack gate checks
+the filed bytes where a line decides the count. Its portable trap, from the "For the fleet" section of its ledger
+(`review/ledger-k63-count-path-check-2026-10-01.md`): a trailer attests WHICH source a publication names, not
+WHAT it filed. K58, merge `335d298` (record `33cf8f8`): a test pins the Stop-hook set as configured and
+calibrates its child budgets from the host; whether any of it is portable is the next filing's call.
