@@ -24540,3 +24540,173 @@ implicit until then let the reviewer find a narrower failure each round.
 Evidence tokens: HRR-R1-a6fd95e0 through HRR-R4-a6fd95e0, HRR-R3-a6fd95e0
 (refinement).
 <!-- outbox:9dd90403d90d1d4b agent-bridge:417557ccecee -->
+
+<!-- cloudvore-filing:2026-10-03-refs-environments-and-wording-cards generated from review/doctrine-drafts/2026-10-03-refs-environments-and-wording-cards.md at 9ca99c1 -->
+
+# Draft for the fleet doctrine bus -- Cloudvore, 2026-10-03: ten cards on refs, decodes, bars and wording
+
+Facts observed in one project, each tied to a commit on this board's master; nothing here instructs the fleet.
+Form: one card per trap -- the rule, the mechanism, where it applies, a check another project can run, the source
+-- and no harness, no scripts, no evidence directory. The cap, set before review pass 1: at most 12 cards, each
+at most 15 lines and 2,000 bytes; every figure in a card is in the ledger, BACKLOG row or file that card cites at
+this board's origin/master, or in this draft's review record. `evidence: measured` means measured in this project
+and recorded in the cited ledger or record; `evidence: reported` means taken from another session's account and
+not measured again for this draft. Vocabulary: a *pin* is a test that must fail if a named behaviour goes; a *bar*
+is a suite run green three times alike; a *seat* is a non-author reviewer; a *mutant* is one planted edit that a
+named test must fail on.
+
+## TRAPS
+
+### 1. An empty ref listing that exits 0 did not prove the ref absent
+
+- **Rule (observed):** git listed nothing, exited 0 and wrote nothing to stderr for a master that was there but
+  broken; the gate read that silence as "no master ref". Absence is now proved where git keeps the ref.
+- **Mechanism:** a master that is a symbolic ref to itself, a loop of two or a ref to nothing, and a truncated
+  master under `GIT_REF_PARANOIA=0`: `for-each-ref` was silent; the gate printed `landed=ok(no master ref)`, exit 0
+  under `--strict-landed`, a stranded row unreported. Fix: on an empty listing, `lstat` the `rev-parse --git-path`
+  of each spelling; anything there but a directory refuses (`is there and git does not list it`); only "no such
+  entry" is a negative; packed-refs is read whole; reftable, where no ref has a path, is refused.
+- **Where:** a tool that reads git's empty ref listing as "absent" (measured: files backend, git 2.55, Windows).
+- **Check:** in a throwaway clone, detach HEAD and write the line `ref: refs/heads/master` into
+  `.git/refs/heads/master`; `git for-each-ref refs/heads/master` prints nothing and exits 0. If your tool then
+  reports master absent instead of refusing, it reads the broken state as clean.
+- **Source:** K52, merge `b31c177`; `review/ledger-k52-gate-child-deadlines-2026-10-02.md`, round 4, findings 1-2
+  and section 1. `evidence: measured`.
+
+### 2. A read that names a ref by short name was answered by another ref
+
+- **Rule (observed):** `git show master:<file>` reads whatever git's short-name lookup finds first; a tag, another
+  ref or a file can answer, and git says so only on stderr, or not at all.
+- **Mechanism:** with `refs/heads/master` gone, a tag `master` (lightweight or annotated), `refs/master`,
+  `refs/remotes/master/HEAD`, a file `.git/master`, or a branch `MASTER` on this filesystem each answered; the gate
+  read `landed=ok(2 DONE rows)`, exit 0 under `--strict-landed`, a stranded row unreported. A tag beside the branch
+  exits 0 and warns `refname 'master' is ambiguous.` on stderr only. Fix: presence is the exact listing
+  `for-each-ref --format=%(objectname) %(refname) refs/heads/master`, matched on the full name; every later read
+  names that object id; a short `--landed-ref` is exactly one of `refs/heads/<name>` or `refs/remotes/<name>`.
+- **Where:** a tool that passes a short ref name to git and reads stdout and the exit code.
+- **Check:** in a throwaway clone, `git tag master <an older commit where that file differs>` beside the
+  branch; if your tool's read of master then returns the tag's content, the wrong ref answered.
+- **Source:** K52, merge `b31c177`; same ledger, round 4 finding 8, round 5 A, A3, section A, confirming pass.
+  `evidence: measured`.
+
+### 3. A slow required suite pushed a serial bar past its job timeout
+
+- **Rule (observed):** one required suite, run beside the serial lane inside the same job, fitted the bar under its
+  job timeout without moving any pin out of the required tier.
+- **Mechanism:** K52 grew `tools/gate.tests.py` from about 109 s to 1073 s on the hosted runner (four real 60 s
+  hook tests about 228 s of sleeping). Suites ran one after another: required-tier run `37087019083` passed all 29
+  and was cancelled by `timeout-minutes: 45` as the last suite finished. Fix: that suite on one worker thread beside
+  the serial lane, its own 1800 s timeout, the cap unchanged; a worker that raises or never starts reads `LOST`, a
+  required failure. Run `37096235356` at `b31c177`: 29/29 in 27 m 44 s, gate.tests.py 1052 s.
+- **Where:** a CI job that runs required suites one after another under a job timeout on a single runner.
+- **Check:** every one of the bar's last N runs, cancelled ones included, finished inside the job timeout minus
+  10%; `37087019083` fails it. Then plant a failing suite, and one whose worker never starts, in the parallel lane:
+  the bar must exit non-zero for each (mutants M2, M5 here).
+- **Source:** tools-bar lane, merge `61a48d5`; `review/ledger-tools-bar-parallel-lane-2026-10-02.md`; K52 ledger,
+  "Landing"; BACKLOG row K74. `evidence: measured`.
+
+### 4. A locale decode turned a non-ASCII worktree path into a path that named nothing
+
+- **Rule (observed):** Python's `subprocess.run(text=True)` decodes with the locale's encoding unless UTF-8 mode is
+  on; git prints paths in UTF-8. A worktree path holding a non-ASCII character decoded to a path that named nothing
+  on disk, and the guard's "worktrees clean" check read its tracked edit as clean: READY.
+- **Mechanism:** forced cp1252 decode, worktree `wt-é` with a tracked edit: `(True, 'all clean')`; fixed,
+  `(False, 'wt-é:1')`. A byte cp1252 does not map (0x9D) left stdout `None`: a traceback, no guard line. Fix:
+  decode as UTF-8 with `errors="surrogateescape"`. (Printing to a cp1252 stdout, also fixed here, is a known trap.)
+- **Where:** Python tools that read git's output with `text=True` outside UTF-8 mode (measured with cp1252 forced)
+  and skip a worktree whose folder does not exist; one that runs `git -C` there may error instead.
+- **Check:** create a linked worktree named `wt-é` with a tracked edit; run your guard in a child started
+  `python -X utf8=0` with `PYTHONUTF8` removed and a cp1252 locale encoding, confirmed by asserting the encoding the
+  child used (here CPython 3.11+'s private `subprocess._text_encoding()`, `cp1252`). Reported clean: the trap.
+- **Source:** K70, merge `9d6e929`; `review/ledger-k70-k71-rotation-guard-2026-10-02.md`; the comment above the
+  decode in `tools/rotation-ready.py`. `evidence: measured`.
+
+### 5. "Is it pushed" with no upstream: cannot answer is not yes
+
+- **Rule (observed):** where HEAD has no upstream, the guard's check could not answer and read `?`; an
+  unconditional yield in its place would have read OK on states where commits could be lost.
+- **Mechanism:** `?` (blocking) was a false alarm for a worktree detached at a pushed commit and a branch pushed
+  without `-u`. Yielding there instead (mutant M2) passed six losable states, among them an unlisted linked worktree
+  at an unpushed commit and a bare clone holding a commit origin lacks, where the second check ("worktrees pushed")
+  also read OK. Fix: count `HEAD --not --remotes` with replace objects and grafts ignored; 0 is OK, otherwise block
+  with the count and "no upstream"; `?` only when the count fails. Residual, stated: any remote-tracking ref counts
+  as holding the commit, a stale or hand-made one included.
+- **Where:** a "nothing unpushed" check that compares HEAD with its upstream.
+- **Check:** with no upstream set, detach HEAD two commits past origin: the check must block with a count. Detach
+  it at a pushed commit: it must read OK. If the first reads OK, the yield is unconditional.
+- **Source:** K71, merge `9d6e929`; same ledger, "K71 case table" and "Mutants"; BACKLOG row K71.
+  `evidence: measured`.
+
+### 6. Silence is not "no", and "started" is not "done"
+
+- **Rule:** a sentence about what has NOT happened ("stopped before copying anything") takes the same evidence as
+  one about what has, re-read at every boundary that reuses it.
+- **Mechanism:** one clause answers from what is known -- a byte count the engine reported: "had begun"; a marker
+  saved before the act: "may have begun"; the program's own writes (a self-test's planted file) named by what was
+  confirmed of them (read back, removed, not confirmed). A field a stored record lacks is loaded as unknown, not
+  false: an absent member reads "may", unless the record never ran or its operation cannot do the act.
+- **Where:** any refusal or status line reused across phases; any marker added to a persisted record.
+- **Check:** one test per boundary and evidence state asserting the whole sentence, and that the store holds what
+  the exception says; one-edit mutants on each answer, each killed after a green control.
+- **Source:** H87, merge `7e3487c`; `review/ledger-h87-refusal-copy-wording-2026-10-02.md`, "For the fleet".
+  `evidence: reported`.
+
+### 7. A reader's identity check is only as good as the identity the writer mints
+
+- **Rule:** before a reader verifies who wrote a file, what on disk tells the writer's file from a plant is
+  measured on the real machine; if nothing does, only the writer can mint it, and readers shipped before that
+  writer is deployed are a false tamper alarm on every reader at once.
+- **Mechanism:** the writer sets owner and a protected DACL in the create call, under a name the readers' glob
+  cannot match, moves the file into place, checks that descriptor on the handle before every append, and replaces
+  -- never adopts -- a file that fails it or that it may not write (a DACL granting it none; the read-only
+  attribute, cleared first where the file allows); a file it cannot replace stops its rows.
+- **Where:** any feed, lock or receipt in a folder other accounts can write.
+- **Check:** the descriptor compared with ACEs computed from the token, not from the writer's code; a swapped-in
+  file of each kind replaced with none of its rows surviving; a descriptor per write-class bit; the owner-ACE
+  mutant run unelevated as well as elevated (an elevated token makes it the same code).
+- **Source:** O10, merge `9c266cc`; `review/ledger-o10-feed-writer-identity-2026-10-02.md`, "For the fleet".
+  `evidence: reported`.
+
+### 8. A note appended to every verdict is a claim made in every state
+
+- **Rule:** each sentence of a shared note is keyed on the state that licenses it; in every other state only
+  sentences true whatever the run reached -- the route, the rule, or a conditional ("checks", not "compared";
+  "only a verified result confirms", not "this run did not confirm").
+- **Mechanism:** enumerate the states the route can actually reach (a listing that failed, a stopped run whose
+  comparison finished, a refusal for the source alone) and read each sentence against each, beside the account it
+  follows.
+- **Where:** any footer, disclaimer or note concatenated onto a verdict, report or receipt.
+- **Check:** one pin on the WHOLE rendered text where the note follows another account (an EndsWith pin let a
+  note contradict the sentence before it), and a matrix over the state chain asserting the licensed sentence
+  appears exactly in its state.
+- **Source:** H88, merge `a4bf20f`; `review/ledger-h88-archived-note-2026-10-02.md`, "For the fleet".
+  `evidence: reported`.
+
+### 9. A claim keyed on how the run set out to compare is made in every outcome
+
+- **Rule:** a disclosure keyed on the METHOD ("verified by read-back", "would have been caught") is a claim made
+  in every outcome; the past tense goes only with the persisted state that licenses it, and every other state
+  describes the method and the rule.
+- **Mechanism:** the key is picked from the persisted record and tested against fields a FAILED run also carries:
+  a self-test runs whatever the check returned (so it reads "detected" after a dead check), and a missed self-test
+  sits on a clean "OK" status; each narrower key is planted as a mutant.
+- **Where:** any certificate, receipt or badge that names how something was checked.
+- **Check:** whole-row equality in every document that prints the row, for each refusing state and a Verified
+  control. A note that says what "this certificate does not say" can be false: another part of the same document
+  may say it.
+- **Source:** H92, merge `4299d36`; `review/ledger-h92-download-wording-2026-10-03.md`, "For the fleet".
+  `evidence: reported`.
+
+### 10. A difference named by the comparison that found it, when the record does not hold which one did
+
+- **Rule:** a difference is named by what the run compared, not by which comparison found a given file, unless
+  the record holds which one did.
+- **Mechanism:** rclone's check reports a size difference before reading a byte or computing a hash (rclone
+  v1.74.4), so "failed the content-hash comparison" and "Hash mismatches" were false of a truncated file. Separately,
+  a pin asserting "failed the content-hash" survived a grep for the whole changed phrase and failed only in the
+  full suite.
+- **Where:** any report that names the comparison behind a difference; any rewording found by grep.
+- **Check:** truncate one file of a matched pair and run the comparison: the sentence must not name a hash. Grep
+  a changed phrase by its shortest distinctive fragment, not the whole phrase.
+- **Source:** H91, merge `8764a76`; `review/ledger-h91-difference-wording-2026-10-03.md`, "For the fleet".
+  `evidence: reported`.

@@ -11706,3 +11706,20 @@ assurances, make each checkable, and enumerate rather than assert.
   2. A rerun after a drop compared against the already-lowered contract and exited 0. LESSON: a regression detector must compare against an anchor the run cannot rewrite.
 - **Design review before dispatch (LANE_MODEL §6.1) caught:** a build route the dependency-lock gate would refuse, and an unauthenticated "previous report" used as an identity baseline. It was replaced by "only a TRX whose census hash equals the base pin".
 - **Re-derive:** airmypc ledger [787], [788] (now in VIDEO_COORDINATION-40 after a roll); the bus entries 35ba0db and c237abf before them.
+
+<!-- cloudvore-filing:2026-10-03-refs-environments-and-wording-cards generated from review/doctrine-drafts/2026-10-03-refs-environments-and-wording-cards.md at 9ca99c1 -->
+
+## RECEIPTS
+
+- 2026-10-03, the form: ten cards under a cap of 12, each at most 15 lines and 2,000 bytes, set before pass 1; no
+  harness. Cards 1-5 are this board's own packets (K52, the tools-bar lane, K70, K71); cards 6-10 began as other
+  sessions' bullets (H87 and H88, H92 from one session; O10 and H91 from another), tightened to this shape without
+  widening a claim. H91's two bullets are one card. Card 3 follows card 10 of this board's 2026-10-02 filing.
+- Where the figures are: every figure in a card is in the ledger, BACKLOG row or file that card names, at this
+  board's origin/master. Dropped because no cited record holds them: the cancelled run's duration (45.3 min);
+  how long after the last suite it was cancelled (the ledger says about 8 s, the run log 0.04 s; the card says
+  "as the last suite finished"); the claim that the slow suite "mostly waits" (narrowed to the K74 row's measured
+  parts).
+- Left out: K52's one scrubbed environment for every git child (`GIT_TRACE*` turned a healthy repository
+  "invalid"; an inherited `GIT_DIR` let another repository answer) and its hook-only whole-gate deadline, under a
+  cap of two K52 cards; the bus already holds an inherited-`GIT_DIR` fixture trap.
