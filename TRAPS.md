@@ -24710,3 +24710,128 @@ named test must fail on.
   a changed phrase by its shortest distinctive fragment, not the whole phrase.
 - **Source:** H91, merge `8764a76`; `review/ledger-h91-difference-wording-2026-10-03.md`, "For the fleet".
   `evidence: reported`.
+
+<!-- cloudvore-filing:2026-10-03-skip-reasons-and-claims-cards generated from review/doctrine-drafts/2026-10-03-skip-reasons-and-claims-cards.md at af78d57 -->
+
+# Draft for the fleet doctrine bus -- Cloudvore, 2026-10-03: eight cards on skip reasons, claims and review loops
+
+Facts observed in one project, each tied to a commit on this board's master; nothing here instructs the fleet.
+Form: one card per trap -- the rule, the mechanism, where it applies, a check another project can run, the source
+-- and no harness, no scripts, no evidence directory. The cap, set before review pass 1: at most 8 cards, each at
+most 15 lines and 2,000 bytes; every figure in a card is in the ledger that card cites at this board's
+origin/master, or in this draft's review record. `evidence: measured` means measured in this project and recorded
+in the cited ledger; `evidence: reported` means taken from another session's account and not measured again for
+this draft.
+Vocabulary: a *pin* is a test that must fail if a named behaviour goes; a *bar* is a suite run green three times
+alike; a *seat* is a non-author reviewer; a *mutant* is one planted edit that a named test must fail on.
+
+## TRAPS
+
+### 1. A test's skip reason is a sentence too, and a skip the bar declares by name keeps it
+
+- **Rule (observed):** a skip read "the mapped-drive rehearsal needs an elevated token for the admin share" on a
+  host whose token was elevated. The cause was the test's own drive-letter choice; because the bar declared that
+  skip by name, the false sentence stayed alive for a day and a half.
+- **Mechanism:** the test took the first letter, Z: down to H:, for which `!Directory.Exists(c + @":\")` held; an
+  empty optical drive answers false, so it chose `Z:` and `net use` exited 2, system error 85. Fix: a letter no
+  entry of `DriveInfo.GetDrives()` holds; on a nonzero exit, fail with the command, its exit code, all it printed
+  and the drives held -- no guessed cause; the bar's declared skips emptied in the same commit, the name required.
+- **Where:** a test that skips on a setup failure with a reason it did not observe; a bar that allows named skips.
+- **Check:** compare each skip's reason with the exit code and output it observed: here exit 2 and system error
+  85, which say nothing about a token. Feed the letter choice a drive list of `Z:\ (CDRom)`, `Y:\ (CDRom)`,
+  `C:\ (Fixed)`: it must answer `X`; the `!Directory.Exists` choice answers `Z` on a host with that drive.
+- **Source:** H89, merge `d20a2cc`; `review/ledger-h89-mapped-drive-letter-2026-10-03.md`, sections 1-5 and
+  "Landing". `evidence: measured`.
+
+### 2. An exclusion list's rationale is a sentence too
+
+- **Rule (observed):** "those never contain footage" was the exclusion policy's premise and the refusal's words;
+  the policy excludes `$RECYCLE.BIN` and `.Trashes`, which can hold files deleted from the volume, footage
+  included -- so the refusal for a source holding only excluded folders was false exactly when it mattered.
+- **Mechanism:** the premise was written once for the whole list and repeated by every sentence about it. Fix:
+  name the entries the premise does not hold for (a subset, matched exactly and case-insensitively; a system drive
+  spells it `$Recycle.Bin`), leave the list and its version unchanged, and let every sentence about the list read
+  that name.
+- **Where:** any exclusion or ignore list whose rationale is printed to a user.
+- **Check:** a source holding only a recycle bin with a deleted `.MOV` in it, driven through every refusal path:
+  the whole refusal pinned, and no "never contain" in it.
+- **Source:** H90, merge `456a1e9`; `review/ledger-h90-excluded-folders-wording-2026-10-03.md`, "The defect",
+  "For the fleet". `evidence: reported`.
+
+### 3. "Never" is a claim about every run, not the one that refuses
+
+- **Rule (observed):** the replacement wordings "never scanned" and then "never verified" were each false of
+  another route over the same folders.
+- **Mechanism:** a full live pass runs rclone's check over the whole source with no file list, and rclone walks a
+  recycle bin: on v1.74.4, a deleted clip in a local `$RECYCLE.BIN` absent from the destination was reported
+  "1 files missing". The refusal now says only "never uploaded" (the transfer copies the inventory).
+- **Where:** a sentence that puts "never" in front of a verb about items more than one route of the program touches.
+- **Check:** for each verb under "never", list the routes that touch the same items and run each over a fixture
+  holding them; if any route does the verb (here a whole-source check over a recycle bin), the sentence is false.
+- **Source:** H90, merge `456a1e9`; same ledger, "The defect", "For the fleet". `evidence: reported`.
+
+### 4. A self-test's failure is not evidence that the method ran
+
+- **Rule (observed):** a download run whose self-test missed its planted fault said "even though every byte was
+  downloaded and compared". A missed self-test says the method did not do what it was asked; it is not evidence
+  that the method ran. The account is worded by what the run asked for.
+- **Mechanism:** the planted file is one byte different at the same length, and a real download check of that pair
+  reports `differ` (a recorded capture), so a "match" says the bytes were not compared as asked. The sentence was
+  also untrue beside an unreadable file, a file missing from the destination and a size difference. Fix: "though
+  the run asked for a byte-for-byte download read-back", with no claim of read-back.
+- **Where:** any account, certificate or log line written after a self-test or canary that failed.
+- **Check:** through the real verifier with the self-test missed, a clean check and an unreadable, a missing and a
+  differing file: the whole account must not say the bytes were read ("every byte").
+- **Source:** H100, merge `d68f385`; `review/ledger-h100-download-selftest-account-2026-10-03.md`, "The defect",
+  "For the fleet". `evidence: reported`.
+
+### 5. When design seats split, a capture beats a vote
+
+- **Rule (observed):** of three read-only design seats, two would have kept the read-back sentence of card 4 in
+  the one case a recorded rclone reply contradicts; the capture decided the split, not the count.
+- **Mechanism:** the reply recorded for a real download check of the planted pair (`differ`) is a fact about the
+  tool; a seat's reading of what the tool would do is not. Where the two disagree, the reply settles it.
+- **Where:** a design or review decision among seats whose question a recorded tool reply can answer.
+- **Check:** for each split your record resolves, find the capture or run that settles it; a split resolved by
+  seat count where a reply could have been recorded fails.
+- **Source:** H100, merge `d68f385`; same ledger, "The defect", "For the fleet". `evidence: reported`.
+
+### 6. An open comment class finds a new instance every pass
+
+- **Rule (observed):** comments of one class took five comment-only rounds, the counterpart answering REVISE
+  four times, before the review was capped to rendered sentences, greens and alarms; the builder's lesson was to
+  sweep the class after two rounds.
+- **Mechanism:** the class was comments that described a download run as having read or compared its bytes, where
+  the run need not have ended Verified; each pass found another instance. After the cap, comment-only findings
+  were recorded in the ledger, not worked.
+- **Where:** a review loop where each pass finds another instance of one class.
+- **Check:** record each round's finding class; two consecutive rounds in one class with no sweep of that class
+  by the builder recorded after them is the broken state.
+- **Source:** H100, merge `d68f385`; same ledger, "What landed", "Evidence" (Review), "Residuals", "For the
+  fleet". `evidence: reported`.
+
+### 7. One writer and several readers: the distinction drifts at the reader that cannot see the writer
+
+- **Rule (observed):** the set tally decides whether a member counts; the chip, the certificate's Class row, the
+  queue's consequence line and History's badge each re-derived "is this member counted" from the storage class,
+  and each said, in its own words, that the set did not count a member opted into download verification.
+- **Mechanism:** fixing the chip left three readers saying the opposite; once the Class row said such a member
+  counts, the stale-verdict section beside it still said "It is not counted toward the set verdict". Fix: every
+  reader asks the tally's own predicate, and the readers are grepped when one of them is fixed.
+- **Where:** any distinction one component decides and several surfaces render.
+- **Check:** grep every reader of the distinction; drive each, through its real entry point, in a state where the
+  writer's predicate says yes and the old derivation says no (here an opted-in member not yet proved): any surface
+  that says the set does not count it there has drifted.
+- **Source:** H99, merge `dbb0804`; `review/ledger-h99-download-member-chip-2026-10-03.md`, "The defect", "What
+  landed", "For the fleet". `evidence: reported`.
+
+### 8. A pin that asserts a phrase is contained cannot tell two chips apart
+
+- **Rule (lesson):** a pin that asserts a phrase is contained passes for any chip that contains it; the builder's
+  lesson (ledger, "For the fleet") is to pin the whole chip.
+- **Mechanism:** the proved chip, the Unverifiable reasons and the plain storage-class chip were pinned exactly,
+  and the list of chips is pinned by count and name, so a new chip is a named change rather than a phrase match.
+- **Where:** any test of a short label or badge drawn from a set whose members share words.
+- **Check:** render another chip of the set that contains the asserted phrase in place of the expected one; a pin
+  that still passes is a containment pin.
+- **Source:** H99, merge `dbb0804`; same ledger, "What landed", "Evidence", "For the fleet". `evidence: reported`.

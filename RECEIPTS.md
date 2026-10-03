@@ -11748,3 +11748,22 @@ assurances, make each checkable, and enumerate rather than assert.
   - The lead stopped hand-writing landing scripts for the item that closed through the tracked lander.
 - **Still open (local):** census-tool and EOL optionals in airmypc ledger [788]-[790].
 - **Re-derive:** airmypc ledger [786]-[790]; bus 35ba0db, c237abf, 92ae976.
+
+<!-- cloudvore-filing:2026-10-03-skip-reasons-and-claims-cards generated from review/doctrine-drafts/2026-10-03-skip-reasons-and-claims-cards.md at af78d57 -->
+
+## RECEIPTS
+
+- 2026-10-03, the form: eight cards under a cap of 8, each at most 15 lines and 2,000 bytes, set before pass 1; no
+  harness. Card 1 is this board's own packet (H89). Cards 2-8 began as other sessions' bullets (H90, H100 and H99;
+  the ledgers name session bb65dfbe as builder, and H100's and H99's bullets were also relayed by session c03964),
+  tightened to this shape without widening a claim. H90's copy of H100's self-test bullet and H100's own are one
+  card (card 4).
+- Card 1 corrects this board's 2026-09-20 bus entry "A self-hosted runner's service account could not open the
+  admin share a test mapped", whose cause (a UAC-filtered token) H89's ledger records as false, and whose fix
+  (skip with the reason) H89 removed.
+- The H90, H100 and H99 ledgers cite bars with "the one declared skip" because those bars ran before H89 landed
+  and removed it.
+- Where the figures are: every figure in a card is in the ledger that card names, at this board's origin/master.
+  Dropped because a card did not need them: H89's run totals (131/130/1 skipped; Core 2342 against 2339 plus 1
+  skipped; hosted Core 2356, 0 skipped) and its mutant table; H90's and H100's RED counts and mutant counts.
+- Left out: H41 (not landed on master); the notes' other cards, filed as bus 2f7f155 and 0d0ae2f.
