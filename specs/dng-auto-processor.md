@@ -1,5 +1,5 @@
 # DNG Auto Processor — factory spec (one writer: the `dng-design-steward` seat, docs/13 P-STEWARD step 7d; a posture change made anywhere else reaches this file as a census item of that seat's next pass)
-source_commit: 50a0af6d08750361d32c585a6e741b2c21ff3695
+source_commit: db197676d57d7508a8d42303423b638c7247f8e0
 
 **Machine:** ULTRAMAGNUS (personal box). **Project root:** `C:\code\DngAutoProcessor - Claude`.
 **Product:** auto-grading pipeline for DNG timelapse clips emulating the operator's LRTimelapse
@@ -12,7 +12,7 @@ Board truth: `DngAutoProcessor/docs/14-ORCHESTRATION.md`, the design of record (
 section P-RESUME of `DngAutoProcessor/docs/13-RESET-PROMPTS.md` (docs/13); plan of record `docs/12-RESET-PLAN.md`;
 `WORK.md` on master is the only selector (§0). This block restates their rules with a section each and carries no
 state; where they differ, they win. It is rewritten when a docs/13 or docs/14 change since `source_commit` falls in a
-section it cites. Below the dispositions table is history: "current" or "must know" there meant then.
+section it cites, or when its `KERNEL:` block differs from the one docs/13 P-STEWARD 7e says it holds. Below the dispositions table is history: "current" or "must know" there meant then.
 
 ### Portable rules (measured on this board; offered to any board)
 - **Standing authority is one section every seat's boot reads verbatim** (§0; docs/13 P-COP, P-STEWARD), never
@@ -76,7 +76,8 @@ section it cites. Below the dispositions table is history: "current" or "must kn
   one attempt advances the attempt. An exemption that moves no counter is an unbounded loop, and the ceiling it
   bypasses is then unreachable by construction along that path. A hosted subagent's error goes to its host's
   session, whose transcripts the reading seat may not open, so unless a readable artifact names it — such as the
-  record its host wrote on collecting the seat — a host that the same event stops leaves nothing that does; and a
+  record its host wrote on collecting the seat — a host that the same event stops, or that never collects the seat,
+  can leave nothing the reading seat may read that names it; and a
   classifier over whole transcripts declares healthy lanes dead on text they quoted (adopted from this bus), so a
   classification no readable artifact supports is not made. The cost is stated rather than hidden: a capacity event that also stops the host
   spends a rung on every executor seat it reaches, and a co-timed silence is a correlate of such an event, never a
@@ -89,12 +90,13 @@ section it cites. Below the dispositions table is history: "current" or "must kn
   HOLDS the card for the owner's answer to the question its seats put. A held card spends no attempt or rung, names
   each seat's return with its reason on its state line, and its queue line names the owner and that question, which
   the status digest pushes where the owner has added it and resume reports; a decline on the act an existing hold
-  already holds on holds its own card at once. No further seat is launched on a held phase — another seat of the same
+  already holds on holds its own card at once. The cop launches no further seat on a held phase — another seat of the same
   family on the same ask would be shopping for a seat that agrees, routing around the judgment the route exists to
   carry. Only the owner's answer releases it: a session acting on the owner's direct words records it verbatim on
   the card, and in the standing authority when it is a standing ruling, and disposes of the card as the answer
-  directs — where it lets the held phase proceed, the card returns READY at the same attempt. An edit of the rule
-  decides the disposition only and releases nothing it held. Left open-ended, a second decline
+  directs — where it lets the held phase proceed, the card returns READY at the same attempt. A steward's edit of the
+  rule decides the disposition only, never the seats' question, and releases no card held under it, or held before it
+  on the case it disposes of. Left open-ended, a second decline
   had no disposition, and a seat wrote a hold into its record before any rule held it. A whole relaunch puts the same
   ask to the same model, because a failover rule triggered by usage, quota, session-limit, auth or outage
   errors, or by a failed CLI probe, is not triggered by a refusal and so shifts nothing — a remedy that cannot
@@ -374,7 +376,7 @@ section it cites. Below the dispositions table is history: "current" or "must kn
 | Seat | Model | Shape and jurisdiction |
 |---|---|---|
 | Traffic cop `dng-traffic-cop` | Opus; an exhausted Opus defers the tick, never swaps | stateless scheduled tick, fresh session per fire: collect, land, dispatch, record; proceeds under stated assumptions (§2, §3; docs/13 P-COP) |
-| Design steward `dng-design-steward` | Opus, every six hours | acts only on OWNER-DEFECT tokens and PARKED cards a cop wrote, plus the doctrine loop; may edit docs/12, docs/13 (P-COP included, never P-STEWARD) and docs/14; disposes of a park as ONE dimensioned batch pass or as the ruling the park names; closes a token only by appending a CLOSED line; never dispatches, launches keys, lands or opens ordinary cards; writes this spec and this board's kernel filing; a receipt every run (§7a; docs/13 P-STEWARD) |
+| Design steward `dng-design-steward` | Opus, every six hours | acts only on OWNER-DEFECT tokens and PARKED cards a cop wrote, plus the doctrine loop; may edit docs/12, docs/13 (P-COP included; P-STEWARD is edited by no seat, only by the USER or a session acting on the USER's direct words, §10 "Net rules", §7a) and docs/14; disposes of a park as ONE dimensioned batch pass or as the ruling the park names; closes a token only by appending a CLOSED line; never dispatches, launches keys, lands or opens ordinary cards; writes this spec and this board's kernel filing; a receipt every run (§7a; docs/13 P-STEWARD) |
 | USER-directed orchestrator | Opus at high effort (USER, §0, superseding an earlier medium) | launches each seat it drives as a CLI process (`codex exec`, `claude -p`) whose launch json, written first, carries `phase`, `"route": "cli"` and, once it starts, its `pid` with that process's own creation time; not an unfreeze: adds no lane, gate, tool or scheduled task, changes no cop seat, key tier or landing rule, edits no governing doc (§0; §2 launch route) |
 | Executor | Sonnet or Sol under the weave; Luna only for a fixed task with prewritten failing checks; complex diagnostics Sol, or Sonnet while Codex is dark; a retry (attempt 2 or later of an implementation card) the top-tier model of the card's own family at high effort, Fable for a Claude-family card and Astra for a Codex-family card, and Sonnet for a Claude-family retry while Codex is dark (USER, §0) | bounded brief, at most 4 files, dies at return; a Codex author runs §10's author route and a Sonnet committer commits (§2, §10; docs/13 C-COMMIT) |
 | Approach review | opposite family: Sol for a Claude author, Opus for a Codex author; Astra or Fable when the card touches a guard, hook, CI, the ratifier, the acceptance surface or a data-loss path, or when its deliverable is a test, fixture, receipt, scorer or harness (USER, §0) | one round before any product byte; refuses on ambiguity (§2; docs/13 B-APPROACH) |
@@ -411,6 +413,15 @@ section it cites. Below the dispositions table is history: "current" or "must kn
   stamped bytes are saved beside the receipt and every retry re-uses them, never a re-draft. A push of this spec
   that the bus's own pin of it turns red is never held for the re-pin, which is the bus's to write and never this
   board's: the receipt says so in one line addressed to the bus's owner, naming the row the bus must re-pin.
+- **The fleet factory kernel runs through PROMPT K's DOGFOOD route, never ADOPT** (§0, USER): the card §0's kernel
+  entry names writes the instance map, K1-K12, in `docs/KERNEL-INSTANCE-MAP.md`; the steward's kernel filing carries PROMPT K
+  §3's evidence, and its `KERNEL:` line is `DOGFOOD-PENDING` until that file is on master and PROMPT K §2's `DOGFOOD`
+  line naming it after. Only the `DOGFOOD` line is mirrored into this spec, as a block of its own beside this posture
+  (docs/13 P-STEWARD 7d, 7e). The USER's rulings for that card — its author from the Claude family only and never
+  Opus, its key 1 §2's Key 1 row for a Claude author and its key 2 Opus, no move changing the author's family or a
+  key's model; its review rounds always FIX, with no round cap; keys that wait while a family is dark, never a
+  failover; a non-review state with no move HELD on a question naming the USER — bind the card §0 names, alone, and
+  every other card keeps §4's ceiling and §2's failover. Recording ADOPT needs a new USER word.
 
 ## Dispositions of fleet doctrine (docs/14 §9 verbatim; § = a docs/14 section; re-derive it there, never here)
 
