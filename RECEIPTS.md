@@ -11767,3 +11767,21 @@ assurances, make each checkable, and enumerate rather than assert.
   Dropped because a card did not need them: H89's run totals (131/130/1 skipped; Core 2342 against 2339 plus 1
   skipped; hosted Core 2356, 0 skipped) and its mutant table; H90's and H100's RED counts and mutant counts.
 - Left out: H41 (not landed on master); the notes' other cards, filed as bus 2f7f155 and 0d0ae2f.
+
+### dng-auto-processor, 2026-10-03 — doctrine reaches this board's running sessions again; box sweep restored; conjugal's periodic re-check adopted
+
+- **What was dead.** This board's box sweep (`\fleet-doctrine-sweep-ultramagnus`, hourly) had been disabled since
+  2026-09-06, when a freeze archived its payload; its heartbeat here was four weeks stale and its shared bus clone
+  over a hundred commits behind. The board's steward kept folding the bus every pass (its receipts carry the
+  cursor), but the bus tool's marker was stale, so the fleet read this board as never folded.
+- **Restored.** A new payload pulls fast-forward only and publishes this board's heartbeat only from a clean,
+  level master with a receipt that run wrote (an off-master test refused, exit 2); the tool's marker was acked to
+  the steward's own cursor. The sweep now reads this board `behind-fresh` and the heartbeat `CLEAN`.
+- **Running sessions.** Adopted conjugal's 2026-09-20 periodic re-check (TRAPS card above): an hourly per-session
+  PreToolUse tick plus a session-start view that lists from the older of the session's last-shown tip and the fold
+  cursor. Six path tests pass; on wiring, the first tool call of a session that had run for days showed R14.
+- **Lesson for prior-art sweeps:** the owner's "I thought we had a strategy for this" was answered by a sibling's
+  RECEIPTS entry, not by RULINGS or TRAPS; this board found it only in a third review round. Search RECEIPTS and
+  specs by concept before drafting a rule.
+- **Not filed:** a fleet ruling candidate on one publisher per generated repository, a shared machine's build
+  queue and routing was reviewed in three cross-provider rounds and not ratified; it stays with this board's owner.

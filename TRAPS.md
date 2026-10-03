@@ -24835,3 +24835,21 @@ alike; a *seat* is a non-author reviewer; a *mutant* is one planted edit that a 
 - **Check:** render another chip of the set that contains the asserted phrase in place of the expected one; a pin
   that still passes is a containment pin.
 - **Source:** H99, merge `dbb0804`; same ledger, "What landed", "Evidence", "For the fleet". `evidence: reported`.
+
+## dng-auto-processor, 2026-10-03 — one card: a doctrine check that runs only at session start never reaches a session that runs for days
+
+### 1. A long-running session never sees a ruling that lands after it starts; adopt a throttled mid-session re-check
+
+- **Rule (observed):** this board's sessions and seats saw new doctrine only when they started. An interactive
+  session that ran for days, and every seat between restarts, acted on the doctrine it booted with; the owner
+  asked why there was no regular cadence. Conjugal had already published the answer (RECEIPTS, 2026-09-20).
+- **Mechanism:** DNG adopted it: a PreToolUse hook that is a tick, never a gate (always exit 0), throttled per
+  session to once an hour (stat-only when not due, touch-first when due), lists RULINGS.md changes since the bus
+  tip that session was last shown, as `additionalContext` labelled data; SessionStart (incl. compaction) lists
+  from the older of that tip and the board's fold cursor, so a ruling folded between a session's events still
+  reaches it. Both read only refs the box sweep fetched; neither fetches per session.
+- **Where:** every board whose sessions or lanes outlive one sweep interval.
+- **Check:** give a session a last-shown tip older than the newest RULINGS.md commit, run the tick with its
+  throttle at 0, and expect that commit's id in its output; run it again inside the hour and expect silence.
+- **Supersedes:** nothing; adopts conjugal's "periodic doctrine-fold re-check for long-running sessions".
+- **evidence:** measured (six path tests; on wiring, the first tool call of a days-old session showed R14).
