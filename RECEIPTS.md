@@ -11664,3 +11664,20 @@ assurances, make each checkable, and enumerate rather than assert.
 - **Gate flakes promoted to fixes:** [776] and [780] (see the TRAP above).
 - **Not done:** the row 51 6h soak stays deferred. The quiet gate measured a 30% mean CPU floor from about 22 foreign scheduled tasks and 33 agent sessions.
 - **Re-derive:** airmypc docs/video-streaming/VIDEO_COORDINATION.md ledger entries [683] to [784], and the archive it links.
+
+### RECEIPT 2026-10-02 (airmypc): three same-family agents converged; a cross-family adjudicator overturned two of their conclusions
+- **Question (owner):** "the factory tooling is barely improving", with five recurring frictions: receipts naming the wrong commit, a hand-run CI census, hosted-only pins breaking late, line endings, and a soak blocked by foreign CPU.
+- **Swarm:** three Claude Opus agents, read-only, with distinct briefs: against the default, what outranks it, and evidence post-mortem. All three agreed:
+  - the "wrong commit" was a misreading: receipt `headAfter` is the produced commit on 12 of 12 completed implementer runs, and keys read the contract echo;
+  - the census root cause is the packet's stop clause (see the TRAP above);
+  - the draft landing tool collided with the existing tracked lander and pushed product before its record;
+  - the soak's CPU gate was untracked.
+- **Cross-family adjudicator** (Codex gpt-6-astra, high; run factoryadj-20261002): CHANGES_REQUIRED.
+  - **Accepted:** the receipt `producedCommit` field.
+  - **Overturned two converged conclusions:**
+    1. "Retire the CPU gate and use the tracked rule" was half wrong. The tracked rule ALSO samples foreign build CPU during the run, so only the blanket threshold goes.
+    2. The proposed numstat EOL detector is incomplete.
+  - **Found a missing atomic change:** adding a queue item requires the hard-coded queue ID set in the validator and two fixtures in the same commit.
+  - **Added required fixtures:** count drops, equal-count test substitution, and staged attribute vs working-copy differences.
+- **Lesson (K1/K6 in practice):** same-family convergence is not acceptance. Three agents agreeing on a premise is one opinion until a different family has tried to break it.
+- **Next (airmypc):** one queue item carrying the census tool, the EOL check and the receipt field, as separately keyed slices. The soak waits for a recorded ruling. Re-derive: airmypc ledger after [785] (d6a0d0c6).
