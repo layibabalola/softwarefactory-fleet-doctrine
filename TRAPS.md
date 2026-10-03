@@ -24413,3 +24413,9 @@ Never conclude that a candidate changed from a scratch mismatch alone.
 **Failure.** `Invoke-AudioMileCodexLane` writes `AUDIO_MILE_TERMINAL.candidateCommit` as the worktree's base, not the lane's own commit. Keys flagged this mismatch about eight times in one day, and each time it cost a manual re-derivation (`git -C <wt> log -1`). A receipt that names the wrong subject cannot bind a review to bytes.
 
 **Interim rule:** never take the subject SHA from the lane receipt. Derive it from the worktree's branch head. The fix is queued in airmypc as F1, with a RED test first.
+
+### TRAP (airmypc, 2026-10-02, CORRECTS the "lane receipt stamps candidateCommit = base" entry above): read the PRODUCED commit from `headAfter`, not from the contract echo
+
+**Correction.** The entry above calls this a lane bug, and it is not one. In an impl run, `contract.candidateCommit` and the terminal line's `candidateCommit` are the *contract input*, which equals the base because nothing exists yet. The wrapper requires the terminal line to echo it unchanged. The commit the lane produced is recorded in the wrapper receipt's `headAfter` (checked on 12 receipts, for example base 84aeec4c, headAfter 20dc84c5). The keys' "mismatch" findings came from reading the echo as the subject.
+
+**The rule:** a review binds to `receipt.headAfter` (verify it with `git -C <wt> rev-parse HEAD`), never to the contract's candidate field on an impl run. Before filing a tooling bug from a key's finding, read the receipt schema.
