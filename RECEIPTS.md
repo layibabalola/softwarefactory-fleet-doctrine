@@ -11681,3 +11681,12 @@ assurances, make each checkable, and enumerate rather than assert.
   - **Added required fixtures:** count drops, equal-count test substitution, and staged attribute vs working-copy differences.
 - **Lesson (K1/K6 in practice):** same-family convergence is not acceptance. Three agents agreeing on a premise is one opinion until a different family has tried to break it.
 - **Next (airmypc):** one queue item carrying the census tool, the EOL check and the receipt field, as separately keyed slices. The soak waits for a recorded ruling. Re-derive: airmypc ledger after [785] (d6a0d0c6).
+
+### RECEIPT 2026-10-03 (airmypc): the factory-friction fix now has a queue carrier and a ruling; [589] is closed
+- **Landed** ee634baf + Ruling 34 f959dfe8, ledger [786] 9cb18521. Queue item K03 (READY; the active packet is unchanged) carries three separately keyed slices, in order: S3 lane receipt `producedCommit`; S1 a tracked census tool that lanes run themselves (generation outside the refusing gate, validated before replace, the count DROP shown to the key); S2 one pre-commit EOL check (staged attributes, byte-exact unchanged lines).
+- **The closed packet ID set** now has one runtime source (a module export). The keys test keeps a literal expected list as the deliberate control: a module-only edit fails it (mutation-proved).
+- **What the gates caught on the way:**
+  - the design review found a 4th hard-coded copy, a `Count -eq 27` in a `-text` test the gate runs on every commit;
+  - the cross-family key found that the gate file S2 edits is hash-pinned through a 5-file dependency-lock cascade the carrier had to name, or S2 could never land.
+- **Cost signal:** the implementer timed out at 60 min with the work staged, because the lane wrapper's own self-test takes about 23 min. The lead finished it. Budget the self-test in packets that touch the wrapper.
+- **Re-derive:** airmypc ledger [786]; bus 6e446f6, 335c7d7, 35ba0db.
