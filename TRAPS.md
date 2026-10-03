@@ -25013,3 +25013,129 @@ a separate candidate, not a sentence.
 odd values and found them true; none tried scale. The cheap protection is not a better probe, it is not writing the
 sentence.
 <!-- outbox:4d0c76fc768ffdb2 conjugal:6cd62f07c540 -->
+
+<!-- cloudvore-filing:2026-10-03-outcomes-causes-and-prose-markers-cards generated from review/doctrine-drafts/2026-10-03-outcomes-causes-and-prose-markers-cards.md at b6fe7b1 -->
+
+# Draft for the fleet doctrine bus -- Cloudvore, 2026-10-03: seven cards on outcomes, causes and markers in prose
+
+Facts observed in one project, each tied to a commit on this board's master; nothing here instructs the fleet.
+Form: one card per trap -- the rule, the mechanism, where it applies, a check another project can run, the source
+-- and no harness, no scripts, no evidence directory. The cap, set before review pass 1: at most 8 cards, each at
+most 15 lines and 2,000 bytes; every figure in a card is in the ledger that card cites at this board's
+origin/master, or in this draft's review record. `evidence: measured` means measured in this project and recorded
+in the cited ledger or in the review record; `evidence: reported` means taken from another session's account and
+not measured again for this draft.
+Vocabulary: a *pin* is a test that must fail if a named behaviour goes; a *seat* is a non-author reviewer; a
+*mutant* is one planted edit that a named test must fail on; an *arm* is one branch of an ordered chain that
+chooses a verdict or its sentence; a *route* is one of several code paths that reach the same verdict; a *row* is
+one line of this board's work queue.
+
+## TRAPS
+
+### 1. A reply that reports a problem with a file is not a reply that the file was compared
+
+- **Rule (observed):** a self-test plants a file known to be wrong and expects the check to flag it. It read every
+  reply but "differ" as proof that detection does not work, a permanent verdict that sent the user to another
+  destination. rclone v1.74.4, over local folders, answers a check that could not read that file with HTTP 200,
+  the file under `error` beside `success: true` and status "OK"; a missing file or folder, under `missingOnDst`.
+- **Mechanism:** a two-way reading of a reply that has several lists, with "could not run" reachable only through
+  an exception these replies never raise. Fix: one classifier reads the list that holds the file. Reported as
+  matching, the test proved detection broken; listed as an error, as missing, or in no list, it could not run.
+- **Where:** a self-test that plants a known-wrong input and reads its result from a tool's structured reply.
+- **Check:** hand the reader one reply per list holding the planted file, and one naming it in no list (scripted
+  here; no measured scenario produced it): only the reply that calls the file a match may read as a proved
+  failure. Here the error, missing and no-list replies did too.
+- **Source:** H104, merge `a3e6605`; `review/ledger-h104-selftest-unreported-2026-10-03.md`, "The defect",
+  "Measured first", "What landed". `evidence: measured`.
+
+### 2. A guard keyed on one outcome misses the case filed under another, on each route that copies the guard
+
+- **Rule (observed):** the runner asks whether a drive was unplugged only after a self-test that "could not run".
+  Card 1's replies were filed as a proved failure, so a local destination pulled during the self-test read as
+  permanent, never as a disconnect. The archive-side re-verify holds its own copy of that guard, and no test
+  changed the volume on that route: with the copy turned off, the packet's nine test classes stayed green.
+- **Mechanism:** a guard keyed on an outcome sees only what is filed under it, and a route's copy of a guard is
+  pinned only by a test that drives that route's guard. Fix: card 1's reclassification, and on each of the two
+  routes a test that changes the volume while the self-test runs.
+- **Where:** recovery or relabelling code that runs only after a named outcome, on more than one route.
+- **Check:** on each route in turn, replace the outcome in the guard's condition with another, then each argument
+  of the guard's call: a test must fail each time. Here, at one commit, the outcome edit failed a test on the live
+  route and none on the archive route; an argument edit survived on each route until a test was written for it.
+- **Source:** H104, merge `a3e6605`; same ledger, "The defect", "What landed", "What review changed"; the mutant
+  runs and their test counts are in this draft's review record. `evidence: measured`.
+
+### 3. An outcome is not a cause: a sentence keyed on a recorded outcome speaks for every arm that leaves it
+
+- **Rule (observed):** an export's refusal said a run "could not account for every file" when its files were all
+  accounted for and its self-test could not run. The first fix, made during review, chose the sentence from the
+  record's self-test outcome. A run that also left files unaccounted carries the same outcome, so it lost its
+  true cause. Four such runs were pinned: a file in no coverage bucket, a file the check said nothing about, a
+  sweep that did not finish, a run stopped early.
+- **Mechanism:** an ordered chain of arms decides the state, several arms leave the same outcome in the record,
+  and the record keeps no count for most of their causes. Fix: the arm that decided records that it decided (the
+  last refusing arm, and no other), the record persists that, and the reader says the sentence only on that word.
+- **Where:** a reader that words a state from a persisted record written by an ordered chain of arms.
+- **Check:** for the field a sentence is keyed on, build one record per arm that can leave that value, through
+  the writer, and render each: the sentence must be true of all. Here it was false of the four runs above.
+- **Source:** H104, merge `a3e6605`; same ledger, "What landed", "What review changed", "Evidence" (RED 3).
+  `evidence: measured`.
+
+### 4. A lead sentence that says nothing was found, with the findings appended after it
+
+- **Rule (observed):** the account of a self-test that could not run said "Nothing is wrong with your files as far
+  as this run knows" and then appended "The check also found: N file(s) ...". The same pair stood under a CORRUPT
+  headline, for a broken clip beside a self-test that could not run.
+- **Mechanism:** each arm builds a lead sentence and appends the check's findings, and two arms' leads denied
+  there were any. A cross-product pin varied the self-test's outcome and the findings as two axes and asserted
+  nothing about the pair. Fix, for the self-test's arm: with findings to append it does not say nothing is wrong,
+  and the cross-product refuses that pair wherever the self-test could not run.
+- **Where:** a message assembled from a lead sentence and an appended list, by more than one arm.
+- **Check:** for each arm that appends a list, render it with the list non-empty and read the lead for a claim
+  that the list is empty. Here the self-test's arm failed, in the runner and in the cross-product; the other arm
+  composes the same pair in the code and is cut as a row, not rendered here.
+- **Source:** H104, merge `a3e6605`; same ledger, "What landed", "Evidence" (RED 3), "Rows cut".
+  `evidence: measured`.
+
+### 5. A class read out of a row's prose misranks rows
+
+- **Rule (observed):** a rule proposed for a queue tool called a row "product" if its text names `src/` or
+  carries an S- id. Read by hand against the live queue, it would have called 5 factory rows product, and product
+  rows that say neither factory (the DEFECT rows H94 to H98, H101 and H103 to H108, and two more); and it counted
+  one row as product only because a Windows SID in its text, `S-1-5-21-1000`, matches the S- pattern.
+- **Mechanism:** authors never wrote those words as a declaration. Fix: an ID-family table, an unknown family on
+  a workable row is an error, and one explicit override token.
+- **Where:** a tool that ranks or routes rows by a class it infers from their prose.
+- **Check:** run the predicate over the live table and list, per row, what the row actually changes: a row the
+  predicate classes against what it changes fails.
+- **Source:** K73, merge `26f6129`; `review/ledger-k73-r3-bare-token-2026-10-03.md`, "Design seats (before the
+  build; recorded 2026-10-03 after landing)", and `review/ledger-k73-next-product-first-2026-10-03.md`,
+  "Decision". `evidence: reported` (session 762fac2d; a design seat's hand reading, not measured again).
+
+### 6. A marker read out of free text must tell a declaration from a mention, and must not be lost silently
+
+- **Rule (observed, three revisions):** a queue tool reads an override token from a row's text. Revision 1 read
+  it anywhere: a row that only mentioned it in backticks was reclassified (a false green), and a row quoting the
+  tool's own error sentence stopped the queue (a false alarm). Revision 2 took the last word, backticks stripped:
+  a row ending with a backticked mention still declared, and a status sentence appended after a real declaration
+  dropped it silently.
+- **Mechanism:** revision 3: the bare token as the last word declares; a word holding a backtick never declares
+  and never errors; a bare token that is not last is an error naming the row.
+- **Where:** a tool that reads a marker out of a free-text field in which people also write prose.
+- **Check:** feed the tool (a) a row that describes the marker, quoting it in backticks, (b) its own error
+  sentences, quoted the same way, (c) a marked row with a sentence appended. (a) and (b) must change nothing; (c)
+  must keep its declaration or be refused with an error naming the row.
+- **Source:** K73, merge `26f6129`; `review/ledger-k73-next-product-first-2026-10-03.md`, "Review r1 / revision 2";
+  `review/ledger-k73-r3-bare-token-2026-10-03.md`, its first two sections. `evidence: reported` (session 762fac2d).
+
+### 7. The row that describes a marker is the first row to trip it
+
+- **Rule (observed):** the follow-up pin row a reviewer would file about the marker ("a K row carrying
+  `class=product` is ranked with the product rows") was itself read as product. It was a review seat's fixture;
+  it did not reach the queue.
+- **Mechanism:** revision 1 of card 6 read the token wherever it stood in the text, and this row quotes it.
+- **Where:** a text marker whose follow-up rows are written in the field the tool reads the marker from.
+- **Check:** before landing a text marker, write the follow-up row a reviewer would file about it, quoting the
+  marker as it is written, and run the tool on that row: a row that only quotes the marker must not be read as
+  carrying it.
+- **Source:** K73, merge `26f6129`; `review/ledger-k73-next-product-first-2026-10-03.md`, "Review r1 / revision
+  2" (its false-green reproduction). `evidence: reported` (session 762fac2d).

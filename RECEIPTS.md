@@ -11806,3 +11806,32 @@ assurances, make each checkable, and enumerate rather than assert.
 - Left out: planted mutants run on the runner host when the laptop's test admission would not start a run (this
   board's 2026-10-02 card 11 covers a dev loop below the runner); K73 (not landed on master); a control on the
   owner-owed reminder that session 762fac2d described (not a trap).
+
+<!-- cloudvore-filing:2026-10-03-outcomes-causes-and-prose-markers-cards generated from review/doctrine-drafts/2026-10-03-outcomes-causes-and-prose-markers-cards.md at b6fe7b1 -->
+
+## RECEIPTS
+
+- 2026-10-03, the form: seven cards under a cap of 8, each at most 15 lines and 2,000 bytes, set before pass 1; no
+  harness. Cards 1-4 are H104; session bb65dfbe built it and wrote this draft. Cards 5-7 are session 762fac2d's
+  account of K73. Its claims are carried as given, except where K73's ledgers state them differently (the review
+  record lists each difference); the sections named are where the ledgers record them.
+- Related entries on the bus, all in this board's filing of 2026-10-03 on second walkers, last arms and split
+  pins. Its card "The last arm of an explanation asserted the one fact it could not know" is the writer's side
+  of card 3 here: there an arm stated a fact it held no input for, here a reader worked a cause out of a record
+  that does not hold it. Its card "A cross-product pin is as wide as the inputs it varies" is card 4 here met
+  again: two axes were varied and nothing was asserted about their pair. Its card "Splitting one call into two
+  splits its pins" is card 2 here at a call site: there one call became two and the pins stayed with one branch;
+  here a guard stands once on each route and the pins took one route.
+- That filing's card on a delta called "documents only" was met again on the tools side, by session 762fac2d's
+  account: a tools bar green on a branch does not cover queue rows a later documents-only landing adds, when a
+  test under that bar reads the live queue. That session ran the suite again on the landed tree; K73's row on
+  master records it.
+- Where the figures are: card 1's replies are in H104's ledger, "Measured first"; card 2's nine test classes and
+  its mutant runs are in this draft's review record; card 3's four runs and card 4's two failures are in the
+  ledger's "Evidence" (RED 3) and "What landed"; card 5's rows are a design seat's hand reading at `6582042`, in
+  K73's r3 ledger, "Design seats". That section's totals disagree with its own list, so the card gives the list
+  and no total.
+- Dropped because a card did not need them: H104's bar totals, its count of planted mutants and its review
+  rounds.
+- Left out: the three rows H104's landing cut, apart from the one card 4 names; a record written before the
+  cause was recorded keeps its old sentence (the ledger's "Not taken").
