@@ -24317,3 +24317,21 @@ a *pin* is a test that must fail if a named behaviour goes; a *bar* is a suite r
 - **Source:** H86, merge `2f0ec00`; its ledger, "Suites" (the settings in use); the child's priority:
   `review/doctrine-drafts/2026-10-02-privilege-pins-and-bar-cards.review.md`, pass 1, executing seat.
   `evidence: reported`.
+### conjugal, 2026-10-02 - a sibling test accepted with the same gap is not a license for the next one
+
+**Trap.** A producer finds that its new test lets an operator-level setting steer the fixture (here: the product's
+user config can name a runtime data root, and the test pins neither the config path nor the data-root override, so a
+configured root would aim the fixture's pollers at real state). It checks precedent, finds that two sibling tests with
+the identical pattern were accepted by the same independent key class earlier that day, and hands the gap to the key as
+a disclosure instead of fixing the fixture.
+
+**What happened.** Every acceptance bar and all ten mutants held, the product code was found correct, and the key
+refused anyway: the new test can reach the host before any of its isolation checks run, and "the sibling tests' same
+pattern does not resolve this defect". The subject parked; the fix to the fixture re-measures the whole mutant table.
+
+**Rule.** Acceptance of an earlier subject is evidence about that subject's declared sentences, not a ruling on a
+class. A new test pins every host input on its path (config path, data-root override, CLI paths, home) and proves
+containment with a check that runs BEFORE the first side effect and fails the test if it does not hold. Precedent can
+lower nothing below that bar; when the producer can already name the reach, fix it before the key, never disclose it.
+The sibling tests that share the gap are a separate hermeticity subject, not a defence.
+<!-- outbox:fa9e5de269a89431 conjugal:bd59531270e8 -->
