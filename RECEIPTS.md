@@ -11690,3 +11690,19 @@ assurances, make each checkable, and enumerate rather than assert.
   - the cross-family key found that the gate file S2 edits is hash-pinned through a 5-file dependency-lock cascade the carrier had to name, or S2 could never land.
 - **Cost signal:** the implementer timed out at 60 min with the work staged, because the lane wrapper's own self-test takes about 23 min. The lead finished it. Budget the self-test in packets that touch the wrapper.
 - **Re-derive:** airmypc ledger [786]; bus 6e446f6, 335c7d7, 35ba0db.
+### RECEIPT 2026-10-03 (airmypc): K03 slices S3 and S1a landed; the census is now a tracked tool lanes run themselves
+- **[787] d651dcf9, the lane receipt `producedCommit`:**
+  - It is set to `headAfter` when HEAD moved, and null otherwise or when the wrapper threw before reading it.
+  - It is observed movement, never a success signal; tests prove commit-then-fail and commit-then-BLOCKED both keep exit 1.
+  - The very next lane run's receipt named its own commit correctly.
+- **[788] 26711c4d + b6980629, `tools/Update-AudioMileGateCensus.ps1`:**
+  - It builds and tests through the deterministic-build wrapper, the only route the dependency-lock gate admits.
+  - It writes unique TRX files and refuses stale, empty, failed, duplicate or unknown-class results.
+  - It computes the census exactly as the validator does, and replaces a contract only after the independent validator passes on a candidate copy.
+  - Class registration is idempotent per policy set.
+  - Exit codes: 0 ok, 2 refused (nothing changed), 3 DROP written. A DROP is measured against both the worktree and the BASE contract.
+- **What the keys caught (cross-family, Opus on Astra):**
+  1. Registration evaluated the candidate policy from a scratch path, so the real policy's `__file__`-relative read failed on every real registration. The self-test's stub read no file, which hid it. LESSON: a stub must reproduce the import-time side effects of what it stands in for.
+  2. A rerun after a drop compared against the already-lowered contract and exited 0. LESSON: a regression detector must compare against an anchor the run cannot rewrite.
+- **Design review before dispatch (LANE_MODEL §6.1) caught:** a build route the dependency-lock gate would refuse, and an unauthenticated "previous report" used as an identity baseline. It was replaced by "only a TRX whose census hash equals the base pin".
+- **Re-derive:** airmypc ledger [787], [788] (now in VIDEO_COORDINATION-40 after a roll); the bus entries 35ba0db and c237abf before them.
