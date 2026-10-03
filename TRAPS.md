@@ -24383,3 +24383,33 @@ The sibling tests that share the gap are a separate hermeticity subject, not a d
 Never conclude that a candidate changed from a scratch mismatch alone.
 
 **Source.** Adobe falsifier for request 47, scratch commit parent `507d527` (adobe-ingester). Re-derive: `git worktree add --detach <abs> <base>`, then run `.factory/tools/Test-FactoryCandidateIntegrity.ps1 -Force -RequireReviewedCommit -RequireReviewedHead -RequireReadOnly` before and after copying the live bytes. `evidence: measured`.
+
+### TRAP (airmypc, 2026-10-02): Windows completes a CANCELLED socket read as IOException(995), not OperationCanceledException
+
+**Failure.** A clean Stop under load was logged as a fault, and the HAP channel was poisoned. A read pending on a `NetworkStream` was cancelled by the stop token. On Windows that read completes as `IOException` wrapping `SocketException(SocketError.OperationAborted)` (Win32 995), not `OperationCanceledException`. A catch-all treated it as transport corruption. Every "is this a cancel?" check that keys only on OCE/TaskCanceledException misclassifies the most common shutdown path.
+
+**The test that catches it:** classify a cancellation by the caller's token being cancelled AND the exception chain being OCE, *or* an IOException/SocketException carrying `OperationAborted`. Put that in ONE shared predicate (airmypc `SocketCancellation`) and use it at every reader. Re-derive: airmypc [776] 23fe94aa, [777] 87dedcc7.
+
+### TRAP (airmypc, 2026-10-02): a gate flake that passes 8/8 in isolation was a real product race, twice; reproduce by starving the THREAD POOL
+
+**Failure.** Twice in one day, a pre-commit gate test failed once and then passed 8/8 when re-run alone. The default disposition ("flaky, retry") would have shipped both bugs. Each was handed to an implementer lane with a repro brief: cap the pool with `ThreadPool.SetMinThreads` and saturate it with blocking work, then loop the scenario. Both reproduced as real races: a cancelled socket read misclassified (502 of 20,000 iterations, then 0 after the fix), and a Bluetooth endpoint re-armed after it was gone (2.51%, then 0).
+
+**The rule:** a gate flake is a finding until a pool-starvation repro says otherwise. Starve the pool, not the CPU; a busy CPU rarely reorders continuations. Re-derive: airmypc [776] 23fe94aa, [780] 3d88e584.
+
+### TRAP (airmypc, 2026-10-02): an edit helper that "normalizes" line endings silently rewrites `-text` files
+
+**Failure.** A lead's Python edit helper wrote CRLF. For ordinary text files that is harmless, because autocrlf normalizes on add. A file marked `-text` in `.gitattributes` is stored byte-for-byte, so a 4-line edit became a 2,379-line whole-file diff, and a key caught it before commit. The same repo has source pins (`M1AcceptanceTests.cs`, a diagnostics test) that are `-text` and LF.
+
+**The test that catches it:** run `git check-attr text -- <path>` before any scripted edit. When it says `unset`, read the blob's EOL and write the same bytes back. A landing check: `git diff --cached --stat` on a small edit must be small. Re-derive: airmypc [782] 808a86bb.
+
+### TRAP (airmypc, 2026-10-02): a field rename breaks a HOSTED-only source pin that the commit-filter gate never runs
+
+**Failure.** The commit gate runs a subset filter, and some source-pin tests live only in the hosted filter. An implementer renamed a private field. The commit gate passed, but the hosted pin naming the old field would have failed on CI. The lead's full hosted census caught it before landing.
+
+**The rule:** when a change renames an identifier, grep ALL tests (not only the commit-filter classes) for the old name. The lead runs both census filters on every landing, even when the commit gate is green. Re-derive: airmypc [784] cf9d0f4d.
+
+### TRAP (airmypc, 2026-10-02, OPEN): the implementer lane's terminal receipt stamps candidateCommit = the BASE commit
+
+**Failure.** `Invoke-AudioMileCodexLane` writes `AUDIO_MILE_TERMINAL.candidateCommit` as the worktree's base, not the lane's own commit. Keys flagged this mismatch about eight times in one day, and each time it cost a manual re-derivation (`git -C <wt> log -1`). A receipt that names the wrong subject cannot bind a review to bytes.
+
+**Interim rule:** never take the subject SHA from the lane receipt. Derive it from the worktree's branch head. The fix is queued in airmypc as F1, with a RED test first.

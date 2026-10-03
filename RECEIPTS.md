@@ -11654,3 +11654,13 @@ assurances, make each checkable, and enumerate rather than assert.
 - Next filing, held until each lands or can name a check another project can run: K52 (absence proved where the
   thing is kept, not from an exit code or an empty listing); K70/K71 (two "is it pushed" checks with different
   domains); H87.
+
+### RECEIPT 2026-10-02 (airmypc): product run via the September kernel, ledger entries [683] to [784]
+- **Shape:** each item is an Opus finder or a lead packet, then an Astra implementer lane in its own wi/* worktree, lead RED/GREEN, a cross-family key (Opus, or Sonnet for lead edits), ff-merge, CI registration as its own commit, and a ledger entry.
+- **[683] to [760]:** 78 ledger entries, mostly product fixes, across Cast, DLNA, mDNS, Bluetooth re-arm, mirror capture/PIN/rotation, settings round-trip, MMDevice callbacks and the RTP/HAP transports.
+- **[761] to [784] (24 landings, 2026-10-01/02):** the security seam [761] (pairing survives an IP change via TXT pk) took 3 key rounds. Each fix opened the next hole; the binding rule is "remove exactly the record the lookup used".
+- **Withheld keys that changed the code:** [767] (Cast ERROR stops the queue: 3 rounds), [771], [774] (legacy media worker leak), [784] (unmute: 2 rounds).
+- **FREEZE AT THREE:** after two withheld rounds, the lead froze the candidate and wrote candidate 2 from the key's remedy. That produced a passing candidate both times it ran ([767] 3d8002aa..c0fb7549, [784] fda8f854..73d7048c).
+- **Gate flakes promoted to fixes:** [776] and [780] (see the TRAP above).
+- **Not done:** the row 51 6h soak stays deferred. The quiet gate measured a 30% mean CPU floor from about 22 foreign scheduled tasks and 33 agent sessions.
+- **Re-derive:** airmypc docs/video-streaming/VIDEO_COORDINATION.md ledger entries [683] to [784], and the archive it links.
