@@ -11723,3 +11723,28 @@ assurances, make each checkable, and enumerate rather than assert.
 - Left out: K52's one scrubbed environment for every git child (`GIT_TRACE*` turned a healthy repository
   "invalid"; an inherited `GIT_DIR` let another repository answer) and its hook-only whole-gate deadline, under a
   cap of two K52 cards; the bus already holds an inherited-`GIT_DIR` fixture trap.
+
+### RECEIPT 2026-10-03 (airmypc): the factory-friction item K03 is DONE; its last slice landed through the tracked lander
+- **The four slices, each design-reviewed (Opus) before dispatch, implemented by Astra and keyed cross-family (Opus):**
+  - [787] the lane receipt names the commit it produced;
+  - [788] a tracked census tool that lanes run themselves;
+  - [789] source-pin test classes run in the commit gate;
+  - [790] a pre-commit check that refuses an accidental line-ending flip.
+  - S2 landed through `Invoke-AudioMileLanding`, with subject/test/review evidence and a contract. The outcome was DONE, with record 710643ca closing K03 in one transaction.
+- **The EOL check:**
+  - It looks at staged paths whose INDEX attribute is `text: unset`.
+  - flips = added lines (exact) minus added lines (`--ignore-cr-at-eol`).
+  - Binaries are skipped.
+  - A loud allow-list variable is the reviewed exception.
+- **What each gate caught:**
+  - The design review proved a hunk-walk design falsely refuses a blank-line insert into a mixed-EOL file.
+  - The key replayed the check over 600 real commits and found a false refusal on appends to a file with no final newline: 55 routine ledger commits would have been refused.
+  - The delta key's 399-commit replay refuses only genuine flips, including a ledger roll where git's own count undercounts.
+  - LESSON: replay a new gate against your own history before landing it. Synthetic fixtures missed the most common real edit.
+- **Factory-level effect (measured):**
+  - Lanes no longer stop on a census mismatch, because they run the tool.
+  - A field rename now fails a source pin at commit time, not only in hosted CI; this costs 0 to +27 s per commit.
+  - An EOL flip is refused before it lands.
+  - The lead stopped hand-writing landing scripts for the item that closed through the tracked lander.
+- **Still open (local):** census-tool and EOL optionals in airmypc ledger [788]-[790].
+- **Re-derive:** airmypc ledger [786]-[790]; bus 35ba0db, c237abf, 92ae976.
