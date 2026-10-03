@@ -24988,3 +24988,28 @@ is one branch of an ordered chain that chooses a verdict's sentence.
   and `BackupSetService`.
 - **Source:** `docs/licensing-decisions.md`, its opening paragraph and "Implementation" item 3, landed with
   `6582042`. `evidence: reported`.
+### conjugal, 2026-10-03 - a declaration never characterises code it does not change
+
+**Trap.** A subject changes two steps of a script and, to be helpful, its declaration also describes what the
+untouched parser in the same file does ("the first matching line wins", "a missing value reads as the default"). Each
+sentence is true on every ordinary input and on every fixture. The independent key refuses anyway: it feeds the
+unchanged parser 10,000 identical lines, a `grep ... | head -1` pipeline under `pipefail` takes SIGPIPE, the
+`|| echo default` fallback fires, and the declared sentence is false at both the candidate and the base.
+
+**What happened, three times in two days.** One subject parked before its key on a bar sentence about unchanged
+parsing that a reviewer falsified with one odd value. Its text-only successor restated the sentence "as the code
+behaves" and spent its single key round: every bar about the changed code held, all 25 mutants were killed with their
+exact declared sets, and the round was lost on the restated sentence, falsified by scale. A sibling successor parked
+before its key because a limitation quoted one host's probe result for an extreme argument, and a second probe
+measured the opposite.
+
+**Rule.** For code a subject does not change, the declaration proves the bytes identical (a diff or byte-range check
+the key can re-run) and states only relations on its own named fixtures: "these inputs give the same output at the
+candidate as at the base". It never says what that code does, never quotes a probe result as a fact, and bounds every
+rule about the changed code to the input model its test exercises. A defect found in unchanged code while drafting is
+a separate candidate, not a sentence.
+
+**Why a pre-key review does not replace the rule.** Same-vendor reviewers probed these sentences with ordinary and
+odd values and found them true; none tried scale. The cheap protection is not a better probe, it is not writing the
+sentence.
+<!-- outbox:4d0c76fc768ffdb2 conjugal:6cd62f07c540 -->
