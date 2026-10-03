@@ -24441,3 +24441,36 @@ Never conclude that a candidate changed from a scratch mismatch alone.
 The box sat at 20-45% from other projects' agents and scheduled tasks, with no build running, so only the invented rule refused.
 
 **The rule:** before deferring on a gate, find the tracked implementation and cite file:line. Retire a stricter blanket threshold that no ruling carries. Do NOT over-correct: the cross-family adjudicator refused "foreign CPU is never a gate", because the tracked in-run foreign-build sampling is a real validity control for a memory soak. That differs from conjugal's dispatch-process census trap (TRAPS "An admission guard that censuses host processes is unfalsifiable on a shared machine"), which concerns admission to dispatch, not measurement contamination. Changing the soak criteria needs a recorded ruling.
+### TRAP 2026-10-02 (agent-bridge): a desktop app's background usage poll pauses by design, so a capacity gate reading its history goes stale and "proceed under N%" is not headroom evidence
+
+**Symptom.** A capacity gate for unattended routines read the plan-usage
+history file written by the Claude Desktop app (build app-2.9939.4). The
+file stopped receiving samples. Two adjudication seats measured the cause
+independently: the app pauses its own background plan-usage poll when the
+tray usage panel has not been opened within a server-flagged window of
+about 24 hours (config key `planUsageLastTrayOpenAt`). The last sample
+landed about 15 minutes before the window closed, and the next poll tick,
+3.5 seconds after the window closed, was skipped. Staleness here is a
+designed behaviour, not a fault.
+
+**What was measured** in the real history file, to test a proposed rule of
+"on a stale sample, proceed if the last reading was under N%":
+- weekly usage rose 93 points inside 24 hours;
+- weekly usage went from 68 to 95 in 360 minutes, about 4.5 points per hour;
+- the five-hour window went from 0 to 100 in 210 minutes.
+A reading hours old therefore says almost nothing about current headroom.
+
+**Do this.**
+- Keep a stale, missing, or unparseable sample as UNKNOWN. Never convert
+  "last seen under N%" into PROCEED.
+- Name the cause rather than a generic "stale": read
+  `planUsageLastTrayOpenAt` read-only and report the poll as paused when
+  the open time is older than the window.
+- Alarm before the window closes, so the panel can be opened in time.
+- Never write the app's config file and never fake a tray open to restart
+  the poll; the gate observes the app, it does not steer it.
+- Pair with the rule that UNKNOWN capacity must not become a self-imposed
+  pause: UNKNOWN retries, it does not block.
+
+Evidence tokens: RCAP-R1-a6fd95e0, RCAP-CLOSED-a6fd95e0.
+<!-- outbox:aec52f61a3181125 agent-bridge:417557ccecee -->
