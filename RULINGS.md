@@ -2836,3 +2836,40 @@ provider-control reconciliation, not an owner ruling.)*
   `dispositions/**` to its ignored paths).
 
 Qualify every project-scoped reference per Law 6.
+
+## OWNER RULING, appended by dng-auto-processor (Claude Code desktop session, on Layi's instruction), 2026-10-03 — R15: a hub session that runs for days is shown new doctrine while it works
+
+**Owner ruling (Layi, 2026-10-03), binding fleet-wide on the same terms as R1–R14.** Given verbatim as:
+
+> *"make the mid-session doctrine re-check an owner ruling fleet-wide"*
+
+on a thread that began (excerpt) *"I thought we had a strategy for doctrine to be read at a regular cadence since sessions can run for days and agents can get tunnel vision and not know to check doctrine bus"*.
+
+*(Not to be confused with the "R15" round labels elsewhere on this bus — README "R15-R26 history" and the earlier
+"R15 panel" — which number rounds, not owner rulings.)*
+
+- **R15.1 — The outcome that binds.** A board's hub sessions — the template's "Hub" actor: interactive orchestrators
+  and scheduled seats, not lanes — are shown each new `RULINGS.md` change while they keep working, at their next work
+  event after an interval the board declares in its spec, not only when they start. "Shown" means the change's id and
+  title enter the session's context, labelled as data. Folding stays the board's duty; law 1 is unchanged.
+- **R15.2 — Lanes keep the template's boundary.** Lanes still get doctrine only through the doctrine-consumer
+  template's composition brief, and "Lanes must NOT browse or write the bus" stands. A board's mechanism must not
+  inject bus content into a lane or subagent context; a lane that needs newer doctrine gets it as brief-class data its
+  hub injects. Each board names in its spec any hub session type that has no work event during which the re-check can
+  run, and how that session type is refreshed instead.
+- **R15.3 — A reference mechanism, not a mandate.** Conjugal's (RECEIPTS, 2026-09-20, "periodic doctrine-fold re-check
+  for long-running sessions"), also adopted by dng-auto-processor (TRAPS card, 2026-10-03): a throttled tick on an event
+  the harness fires during work (in Claude Code a `PreToolUse` hook), which never gates the event (exit 0 always), costs
+  one file stat when not due, touches its stamp before checking, reads the bus refs the board already fetched instead
+  of fetching per session, and remembers per session the bus tip it last showed; at session start, resume and context
+  compaction it lists from the older of that tip and the board's fold cursor. Boards may meet R15.1 another way.
+- **R15.4 — A view is only as fresh as its source.** Each board keeps the bus refs its re-check reads current — its
+  scheduled `tools/fleet-sweep.mjs` run, or whatever else fetches its bus clone — and its re-check says when those refs
+  are older than the board's declared interval, rather than showing a stale view as current.
+- **R15.5 — Each board implements it in its own tools (R14.8) and records in its spec** which events carry the re-check,
+  its interval, and the hub session types it covers. Two checks, run against the real hook or tick: (a) delivery — with
+  a session's last-shown tip older than the newest `RULINGS.md` commit and the interval set to zero, the next work
+  event puts that commit's id and title into the session's context; (b) throttle — with the interval restored, a second
+  work event inside it shows nothing, and a new unseen `RULINGS.md` change is shown at the first work event after it.
+- **What it extends and leaves alone.** It extends BUS-CADENCE (2026-08-09, pull-diff-fold at boot) to the middle of a
+  hub session. It adds no other cadence, publishes nothing on one, and changes no heartbeat duty.
