@@ -1,5 +1,5 @@
 # DNG Auto Processor — factory spec (one writer: the `dng-design-steward` seat, docs/13 P-STEWARD step 7d; a posture change made anywhere else reaches this file as a census item of that seat's next pass)
-source_commit: db197676d57d7508a8d42303423b638c7247f8e0
+source_commit: 74bfe79be701d7e3c27277ad851f5221ed46bbd8
 
 **Machine:** ULTRAMAGNUS (personal box). **Project root:** `C:\code\DngAutoProcessor - Claude`.
 **Product:** auto-grading pipeline for DNG timelapse clips emulating the operator's LRTimelapse
@@ -153,7 +153,9 @@ section it cites, or when its `KERNEL:` block differs from the one docs/13 P-STE
   worktree made and removed on a key's scratch-worktree terms, never in the item worktree that holds the reviewed
   bytes. Falling with new classes:
   another round; flat or rising with new classes: SPLIT; the same class re-found: PARK into ONE dimensioned batch
-  pass. The three-round ceiling is the LAST test, and an unadjudicated round does not count. **Classify the
+  pass. **A count of one is not a trend** (§4b): when no round confirmed more than one BLOCKER or MAJOR and each
+  round's class is new, the SPLIT reading does not apply — take the next round, with the ceiling as the backstop.
+  The three-round ceiling is the LAST test, and an unadjudicated round does not count. **Classify the
   FAILED SET as well as the round** (§4b, adopted from this bus): when the parks share a SHAPE — build a NEW
   verifier deciding an unbounded property of a rich artifact from a lossy proxy — care inside that class does not
   rescue it, and a card of that kind declares bars that are total functions over an enumerable representation, or
@@ -197,6 +199,12 @@ section it cites, or when its `KERNEL:` block differs from the one docs/13 P-STE
   the disposition is to re-shape the brief or fail over — never to charge the card an attempt, and never to
   narrow what the factory will review. A causes list of capacity, connectivity and liveness only is a list a
   refusal falls straight through, landing by default on the attempt counter.
+- **The hook takes its build and test as ONE ticket of a machine build queue, so quiet is asked only while a card is
+  RUNNING** (§4): a job holding a ticket on the commit's own resource waits in line with it and is not derived. The
+  queue sees no job that holds no ticket — a key's or an author's build takes none — and the hook builds directly,
+  unordered, when the queue is missing or fails, so the process and build-output terms below are asked whenever a card
+  is RUNNING, exactly as written, and not otherwise; with none RUNNING the seat commits and its hook waits its turn.
+  The tree sensor, both hook-rejection rules and the rule that a test RED is never load bind on every commit.
 - **Quiet before a hook build is a closed-set question answered with named negatives** (§4): no live suite,
   build or decode the commit would corrupt, judged by rates across consecutive windows, `bin/`/`obj/` writes and
   what each RUNNING card's own clauses name, never by process presence or a load gauge. Every process in those
@@ -205,9 +213,20 @@ section it cites, or when its `KERNEL:` block differs from the one docs/13 P-STE
   reports its absence forever without ever reading false. **A command line that reads NULL answers nothing, so it
   never exculpates**: a process that exits while the census is being read comes back partly unpopulated, and the
   spawn-and-exit churn of a build or a restore is made of exactly such processes, so it is named UNREADABLE and
-  counts as live until a later window reads it, or finds it gone with no build-output write in between. A hook
+  counts as live until a later window reads it, or finds it gone with no build-output write in between — **unless
+  the windows can RATE it** (§4): one present in every window with the same pid and creation time, its CPU time read
+  as the process's kernel-mode plus user-mode time (a null CPU read is never a zero), and no descendant appearing or exiting inside
+  them, is decided by the idle floor like any other candidate, because a long-lived process no unelevated reader can
+  see into never gives either exit. A hook
   rejection naming a locked build output is a load reading: retry once, then defer, never `--no-verify`. A hold derives from
-  processes, never from card state. **A process sensor cannot see a peer's uncommitted BYTES, so the tree is
+  processes, never from card state. **A job this factory did not start is NAMED, never held for** (§4): walk each
+  process's parent chain to its root; a root that is the SSH service or a service other than this board's own runner
+  is FOREIGN, named in the receipt with that root, and that resolves its UNREADABLE term — this board's own CI runner
+  is held for like any factory suite. Foreign load reaches a commit only through the hook, so the rejection rule
+  governs it, and **a test the hook runs RED is never dismissed as that load**, even when the retry passes, until a
+  repro that starves the thread pool says otherwise (adopted from this bus). A card's MEASUREMENT is different: its
+  own gate decides and records the foreign jobs it saw, and only the owner of those runners can give it a
+  machine-wide quiet window. **A process sensor cannot see a peer's uncommitted BYTES, so the tree is
   read too**: take every path that is EITHER tracked-and-modified OR untracked with an extension the build
   compiles, AND newer — by the later of its write time and its creation time — than the newest `commit` or
   `commit (amend)` entry of this checkout's own HEAD reflog, AND not one this seat is about to stage by name; if
@@ -413,6 +432,23 @@ section it cites, or when its `KERNEL:` block differs from the one docs/13 P-STE
   stamped bytes are saved beside the receipt and every retry re-uses them, never a re-draft. A push of this spec
   that the bus's own pin of it turns red is never held for the re-pin, which is the bus's to write and never this
   board's: the receipt says so in one line addressed to the bus's owner, naming the row the bus must re-pin.
+- **Fleet RULINGS R15, the mid-session doctrine re-check (owner ruling): ADOPT, with two gaps OWED** — the R15.5 record
+  (fleet RULINGS R15; this board's workspace session hooks). Events: a `SessionStart` hook (startup, resume, clear and
+  compaction) shows the `RULINGS.md` changes since the older of the session's last-shown bus tip and the board's fold
+  cursor, and a `PreToolUse` tick re-checks during work; the tick never gates a tool (it always exits 0), only stats its
+  per-session stamp when not due, and touches that stamp before it checks. Interval: 60 minutes per session by default.
+  Covered: hub sessions — interactive sessions and scheduled seats — whose working directory is the workspace root, read
+  at each tick; a tick from any other directory stays silent, which keeps lanes and worktree seats out. Every covered
+  session type acts through tool calls, so none lacks a work event. **Owed, not met:** (R15.2) that guard reads the
+  working directory only, so a hosted subagent working at the root is not kept out; (R15.4) the view reads only the bus
+  refs an hourly box sweep fetches and says STALE only once that sweep's last run is three hours old, longer than the
+  interval. Until both are repaired in this board's hook, neither is a rule a sibling can cite as adopted here.
+- **Fleet RULINGS R14, the writer pays (owner ruling by delegation): ADOPT** — the R14.8 record. Until R14.6's packet
+  2 lands, this board files traps to `TRAPS.md` exactly as before. From packet 2 it writes its new trap filings as cards
+  to `specs/dng-auto-processor/cards.md`; from packet 5 it writes its decisions on other boards' cards to
+  `dispositions/dng-auto-processor.md`; and from the commit landing R14.4 it cards, or marks `no-card`, its own trap
+  entries that rule names — each through the steward's doctrine loop. Moving that loop's trap target changes docs/13
+  P-STEWARD, which no seat edits (§7a), so the steward pass that first sees packet 2's addendum raises it to the USER.
 - **The fleet factory kernel runs through PROMPT K's DOGFOOD route, never ADOPT** (§0, USER): the card §0's kernel
   entry names writes the instance map, K1-K12, in `docs/KERNEL-INSTANCE-MAP.md`; the steward's kernel filing carries PROMPT K
   §3's evidence, and its `KERNEL:` line is `DOGFOOD-PENDING` until that file is on master and PROMPT K §2's `DOGFOOD`
