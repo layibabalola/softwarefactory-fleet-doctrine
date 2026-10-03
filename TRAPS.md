@@ -24853,3 +24853,138 @@ alike; a *seat* is a non-author reviewer; a *mutant* is one planted edit that a 
   throttle at 0, and expect that commit's id in its output; run it again inside the hour and expect silence.
 - **Supersedes:** nothing; adopts conjugal's "periodic doctrine-fold re-check for long-running sessions".
 - **evidence:** measured (six path tests; on wiring, the first tool call of a days-old session showed R14).
+
+<!-- cloudvore-filing:2026-10-03-second-walkers-last-arms-and-split-pins-cards generated from review/doctrine-drafts/2026-10-03-second-walkers-last-arms-and-split-pins-cards.md at ce6210c -->
+
+# Draft for the fleet doctrine bus -- Cloudvore, 2026-10-03: eight cards on second walkers, last arms and split pins
+
+Facts observed in one project, each tied to a commit on this board's master; nothing here instructs the fleet.
+Form: one card per trap -- the rule, the mechanism, where it applies, a check another project can run, the source
+-- and no harness, no scripts, no evidence directory. The cap, set before review pass 1: at most 8 cards, each at
+most 15 lines and 2,000 bytes; every figure in a card is in the ledger or sheet that card cites at this board's
+origin/master, or in this draft's review record. `evidence: measured` means measured in this project and recorded
+in the cited ledger or in the review record; `evidence: reported` means taken from another session's account and
+not measured again for this draft.
+Vocabulary: a *pin* is a test that must fail if a named behaviour goes; a *bar* is a suite run green three times
+alike; a *seat* is a non-author reviewer; a *mutant* is one planted edit that a named test must fail on; an *arm*
+is one branch of an ordered chain that chooses a verdict's sentence.
+
+## TRAPS
+
+### 1. A list that narrows a scan does not narrow the tool that walks the tree again
+
+- **Rule (observed):** the scanner leaves five system folders out of the inventory and the transfer never uploads
+  them. The full verification pass called rclone's check with no file list, so rclone walked those folders and
+  reported their files missing: every full pass read "N file(s) never landed on the destination", and no re-push
+  could clear it.
+- **Mechanism:** two walkers of one tree, and the exclusion list held by one of them. The same call served a
+  two-way comparison of an original and an existing copy, where a trash folder on the copy read as a path only
+  the copy has. Fix: the second walker gets the list too, as root-anchored exclude rules on both sides, measured
+  first through the product's own request; a same-named folder deeper in the tree is still compared.
+- **Where:** a pipeline in which one component narrows a universe and another tool walks the same tree itself.
+- **Check:** a source with one file in each excluded folder, through the real full pass: the broken state lists
+  those five files as missing; the fixed one lists none of them.
+- **Source:** H102, merge `941023d`; `review/ledger-h102-full-pass-excluded-folders-2026-10-03.md`, "The defect",
+  "Measured first", "What landed", "Evidence". `evidence: measured`.
+
+### 2. "Ignore case" is not one set: the tool folded a letter the scanner's comparison keeps apart
+
+- **Rule (observed):** rclone v1.74.4's `IgnoreCase` treated a root folder named `.Trashes` with a long s
+  (U+017F) in place of an `s` as the excluded `.Trashes`. The scanner's comparison, .NET `OrdinalIgnoreCase`,
+  keeps the two apart, so it inventories that folder; the first fix's rules hid its files from the check.
+- **Mechanism:** one predicate written twice, in two runtimes that fold case differently. Fix: each ASCII letter
+  of a name is sent as its two-letter class and `IgnoreCase` is not sent; a non-ASCII name is refused; a pin
+  reads the rules the client sends and compares them with the scanner's predicate, on the product's runtime.
+- **Where:** a name match, glob or path rule implemented once in a program and once in a tool it drives.
+- **Check:** give both sides a name that differs from a listed one only by U+017F for `s`. Here the scanner's
+  predicate answers no and the tool's case-insensitive rule matches; a name on which the two disagree fails.
+- **Source:** H102, merge `941023d`; same ledger, "Measured first", "What landed", "Evidence". `evidence: measured`.
+
+### 3. Splitting one call into two splits its pins
+
+- **Rule (observed):** a fix split the runner's one check call in two, the new branch carrying the new argument.
+  The pins on the run's proof mode drove the branch that kept the old call. With hash mode planted on the new
+  branch alone, the whole suite gave the same result as without it; a download re-verify takes that branch.
+- **Mechanism:** a pin on a shared line covers every caller of that line; after the split it covers one branch.
+  Fix: one call again, the absent argument passed as empty; a wired pin that runs the full pass; then pins for
+  the reverse direction (a hash-mode check is never handed a read-back) and for the two-way check.
+- **Where:** a change that turns one call carrying a safety-relevant argument into two.
+- **Check:** on each call site in turn, replace the argument with a constant: a test that passes on the unedited
+  tree must fail for each site. Here the edit on the new branch changed no test's result, until the pin ran a
+  full pass.
+- **Source:** H102, merge `941023d`; same ledger, "What landed", "Evidence" (Review), "For the fleet".
+  `evidence: measured`.
+
+### 4. The last arm of an explanation asserted the one fact it could not know
+
+- **Rule (observed):** a cap was added above the check-derived arms with no sentence of its own. Over a clean,
+  complete check the account fell to its last arm and said "The verification check did not complete: OK.", under
+  a headline, and above advice, that blamed the destination for a fact about the source.
+- **Mechanism:** the fall-through arm stated that the check had not completed, and had no input that said so.
+  Fix: the cap records its cause on the verdict and its sentence opens the account; the verdict carries the
+  check's own success flag, and the last arm never says a check that succeeded did not complete.
+- **Where:** an explanation, status line or log message chosen by an ordered chain of arms with a default.
+- **Check:** list the conditions that can decide the outcome and the arms that word it; for each decider with no
+  arm, render the text: a sentence stating a fact no input of that arm carries fails. Here it said the check did
+  not complete beside that check's own status, "OK".
+- **Source:** H94, merge `d9b6b54`; `review/ledger-h94-identity-cap-account-2026-10-03.md`, "The defect", "What
+  landed", "For the fleet". `evidence: measured`.
+
+### 5. A cross-product pin is as wide as the inputs it varies
+
+- **Rule (observed):** a cross-product pin over the verifier's inputs never varied the source volume, and the
+  R-1 contract pins, which do vary it, check the account only for the absence of the words "safe to". A writer
+  keyed on the volume put a false sentence past both; the review found three more readers naming another cause.
+- **Mechanism:** the matrix certified the domain it was written for; the other pins say what the account must
+  not say, never what it says. Fix: a second enumeration takes the writers one at a time over every
+  source-volume shape and reads the account; the pin that holds the chip to the tally gained that axis. The first
+  matrix is unchanged.
+- **Where:** a theory or matrix test described as covering every state.
+- **Check:** for each input a writer reads, find a test that varies it and pins what the reader says; one that
+  asserts only an absence does not count. Here the matrix did not vary the volume, and the pins that did
+  asserted an absence.
+- **Source:** H94, merge `d9b6b54`; same ledger, "The defect", "What landed", "Evidence", "For the fleet".
+  `evidence: measured`.
+
+### 6. A delta called "documents only" is judged by who reads the files, not by the folder they sit in
+
+- **Rule (observed):** two packets were barred on a separate ref, each merged with what was ahead of it, and at
+  each landing the paths that differ from the barred tree had to lie in a declared set: the queue file, two named
+  sheets and the review folder. A seat then found that a byte-hygiene test under the bar reads every script in
+  the checkout, the review folder included, and that each landing had added evidence scripts there, after its bar.
+- **Mechanism:** a bar measures one tree, and a landing adds files after it. A set declared by folder assumes
+  that nothing under the bar reads the folder; a guard whose claim is "every source file of a kind" reads
+  everywhere. The added scripts were clean, and each push to master starts one pass of the product suite.
+- **Where:** a landing that compares the barred tree with the landed one by an allow-list of paths.
+- **Check:** list every path the landing adds or changes after the barred tree, its last commit included, and
+  search the tests under the bar for a reader of each file, its kind or its folder: a path with a reader was not
+  barred. Here each landing added two `.py` files, and a guard's patterns name `*.py` over the whole checkout.
+- **Source:** H94, merge `d9b6b54`, and H102, merge `941023d`; each ledger's "Evidence" (Bar) and "Correction",
+  and the review record. `evidence: measured`.
+
+### 7. A new test file trips a ratchet that no filtered run executes
+
+- **Rule (observed):** a new test class cleaned its fixture with a swallowed directory delete. Every filtered run
+  was green through three review rounds; the first full run, the hosted bar, stopped in its first pass on the
+  ratchet that refuses a new file doing that: Core 2375 of 2376.
+- **Mechanism:** a filtered run executes the classes it names, and a source-wide ratchet lives in a class of its
+  own; an existing file keeps its count and a new file is allowed none. Fix: the class takes the shared scratch
+  directory, and the ratchet's class joined the mutant harness's filter, so its control run executes it.
+- **Where:** a repository with source-wide lexical guards or ratchets, where packets are proved by filtered runs.
+- **Check:** add a file that breaks one source-wide guard and run the packet's own filter: a filter that stays
+  green does not contain the guard.
+- **Source:** H102, merge `941023d`; same ledger, "Evidence" (Full suite), "For the fleet". `evidence: measured`.
+
+### 8. A design sheet's statements about the code are checked against the tree before it lands
+
+- **Rule (observed):** a decision sheet written from four non-author seats carried six statements about the code
+  that were corrected at landing. One was the place of a gate: the method the sheet names has two callers and
+  also creates jobs of a kind the sheet says is never gated, so the gate cannot live inside it.
+- **Mechanism:** four seats worked in parallel and an integrator adjudicated; the sheet's statements about the
+  code were checked against the tree by one further non-author seat, and that check found the six.
+- **Where:** a design or decision document that states facts about existing code and will be built from later.
+- **Check:** for each statement of the form "one", "single" or "only", list every caller or instance in the tree:
+  a second one fails the statement. Here `JobManager.Create` has two callers under src, in `JobWizardViewModel`
+  and `BackupSetService`.
+- **Source:** `docs/licensing-decisions.md`, its opening paragraph and "Implementation" item 3, landed with
+  `6582042`. `evidence: reported`.

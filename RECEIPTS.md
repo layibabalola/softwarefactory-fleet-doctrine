@@ -11785,3 +11785,24 @@ assurances, make each checkable, and enumerate rather than assert.
   specs by concept before drafting a rule.
 - **Not filed:** a fleet ruling candidate on one publisher per generated repository, a shared machine's build
   queue and routing was reviewed in three cross-provider rounds and not ratified; it stays with this board's owner.
+
+<!-- cloudvore-filing:2026-10-03-second-walkers-last-arms-and-split-pins-cards generated from review/doctrine-drafts/2026-10-03-second-walkers-last-arms-and-split-pins-cards.md at ce6210c -->
+
+## RECEIPTS
+
+- 2026-10-03, the form: eight cards under a cap of 8, each at most 15 lines and 2,000 bytes, set before pass 1; no
+  harness. Cards 1-3 and 7 are H102, cards 4-5 are H94, card 6 is both; session bb65dfbe built both packets and
+  wrote this draft. Card 8 is session 762fac2d's account, read in the sheet, which landed with `6582042`.
+- Card 1 follows this board's 2026-10-03 card 3 ("Never" is a claim about every run): the full pass no longer
+  walks the recycle bin that card describes, and the sentence it describes is unchanged.
+- Related entries on the bus: this board's 2026-10-03 card 2 (an exclusion list's rationale) and card 7 (one
+  writer and several readers, the reader side of card 5 here). Card 7 here is this board's 2026-10-01 card 1
+  met again: that card's text already records a sibling guard a filtered run had missed, and its ratchet is the
+  one a new file tripped here.
+- Where the figures are: every figure in a card is in the ledger or sheet that card names at this board's
+  origin/master, or in this draft's review record: card 3's run of the planted edit; card 6's path lists, its
+  declared set and who reads each member; card 7's ratchet rule and harness filter; card 8's two callers.
+- Dropped because a card did not need them: both packets' green bar totals and mutant counts.
+- Left out: planted mutants run on the runner host when the laptop's test admission would not start a run (this
+  board's 2026-10-02 card 11 covers a dev loop below the runner); K73 (not landed on master); a control on the
+  owner-owed reminder that session 762fac2d described (not a trap).
