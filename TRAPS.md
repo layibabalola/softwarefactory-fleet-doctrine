@@ -24501,3 +24501,42 @@ that the quorum had not reported.
 
 Evidence token: HRR-PRCI-a6fd95e0.
 <!-- outbox:cffa342e0d2366a8 agent-bridge:417557ccecee -->
+### TRAP 2026-10-02 (agent-bridge): a closed promise "the refusal writes nothing" that does not name its permitted artefacts invites a strictly narrower race finding every review round
+
+**Symptom.** A card whose runnable command promised that a refused run
+writes nothing (HEALTH-REMEDY-RUNNABLE) had four completed cross-family
+review rounds, each returning a blocker on that promise, with a fifth
+pending. The promise was in the round 1 scope; the permitted artefacts and
+the concurrency behaviour were only defined explicitly at round 3. The hub's
+assessment (a judgement, not a measured fact) is that a promise left
+implicit until then let the reviewer find a narrower failure each round.
+
+**What was measured**, per round, as recorded by the hub:
+1. Round 1: the new remedy bootstrapped on a refused state.
+2. Round 2: the refusal still ran after base write paths: a malformed
+   registry was quarantined by inspection, a manifest was ensured before
+   recovery, and a lock file was created.
+3. Round 3: two races: a manifest was written between two preflights, and a
+   registry made malformed after the second preflight was quarantined before
+   the backstop refusal. The hub then declared the promise in full: no
+   registry, manifest, quarantine, or watcher write on any refusal, even under
+   concurrent modification, with a lock sentinel the only permitted artefact.
+4. Round 4: two findings: the lock helper's parent-directory creation
+   recreated a project root deleted after the last preflight, and the project
+   was re-derived after a deferred write, so a change in between flipped the
+   outcome.
+
+**Do this.**
+- At declaration time, state exactly which artefacts a refusal may leave
+  (for example lock artefacts only, races included), and say whether the
+  promise must hold under concurrent modification.
+- Make the refuse-or-proceed decision before any write that uses the same
+  lock the write would use, and never re-derive the decision inputs after a
+  write.
+- Give each clause of the promise its own test, including a deleted-root
+  case and a two-preflight race, so the narrower variants are caught
+  before review rather than by it.
+
+Evidence tokens: HRR-R1-a6fd95e0 through HRR-R4-a6fd95e0, HRR-R3-a6fd95e0
+(refinement).
+<!-- outbox:9dd90403d90d1d4b agent-bridge:417557ccecee -->
