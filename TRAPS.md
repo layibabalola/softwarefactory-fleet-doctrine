@@ -24140,3 +24140,180 @@ status line filed at the time of the limit still printed "pending" after the pro
   path and the command that derives its state, in the tracked queue before any restart. Measurement logs written before
   the reboot remained usable; the runs cut off by it ended in logoff fork errors and were voided.
 <!-- outbox:31636960dcc478c2 conjugal:00f8f6be4e0b -->
+
+<!-- cloudvore-filing:2026-10-02-privilege-pins-and-bar-cards generated from review/doctrine-drafts/2026-10-02-privilege-pins-and-bar-cards.md at 0339e91 -->
+
+# Draft for the fleet doctrine bus -- Cloudvore, 2026-10-02: eleven cards on privilege pins, first writes and bars
+
+Facts observed in one project, each tied to a commit on this board's master; nothing here instructs the fleet.
+Form: one card per trap -- the rule, the mechanism, where it applies, a check another project can run, the source
+-- and no harness, no scripts, no evidence directory. The cap, set before review pass 1: at most 12 cards, each
+at most 15 lines and 2,000 bytes; every figure in a card is in the ledger or file that card cites at this board's
+origin/master, or in this draft's review record. `evidence: measured` means measured in this project and recorded
+in the cited ledger or record;
+`evidence: reported` means taken from another session's account and not measured again for this draft. Vocabulary:
+a *pin* is a test that must fail if a named behaviour goes; a *bar* is a suite run green three times alike; a
+*seat* is a non-author reviewer; a *mutant* is one planted edit that a named test must fail on.
+
+## TRAPS
+
+### 1. A deny ACE that does not bite: the shell enabled the backup privilege
+
+- **Rule:** a test that needs an unreadable folder drops the backup privilege in its own process and FAILS when the
+  denial still does not bite. It never skips.
+- **Mechanism:** the runner's service token holds SeBackupPrivilege and SeRestorePrivilege disabled; the job step's
+  `shell: bash` (Git for Windows, MSYS) enables both and the test host inherits them; an ssh session there has them
+  enabled too. Enabled, no deny shape tried bit a listing (deny user, Everyone, SYSTEM, Administrators, a protected
+  DACL); disabled via `AdjustTokenPrivileges`, the deny-user ACE bites, cleanup works, and a child started after the
+  drop reports both disabled. Three pins had skipped there; the row had blamed elevation.
+- **Where:** Windows tests of unreadable folders run by an account whose token holds SeBackupPrivilege, from a shell
+  that enabled it (measured here: Git for Windows bash in a CI job step, and an ssh session).
+- **Check:** in the test process, deny yourself ListDirectory on a fresh folder and list it; run `whoami /priv` from
+  its shell. If the listing reads and SeBackupPrivilege is Enabled, the pin never created its condition.
+- **Source:** H20 `a37aed1`, `review/ledger-h20-acl-pins-run-everywhere-2026-10-02.md` s1-3, s9 item 4. `evidence:
+  measured` (bash, deny shapes, token: decision seats; RED/GREEN: builder; child: also pass 1 seat, runner host).
+
+### 2. A cardinal pin that could not fail for the cause it is named for
+
+- **Rule:** a pin named for one cause must fail when only that cause is taken away. A fixture that reaches the
+  asserted verdict for a second, independent reason makes the pin unable to fail.
+- **Mechanism:** the end-to-end pin "an unreadable folder blocks green" left the destination listing empty, so
+  the file read as vanished and the verdict was Incomplete on that alone. Mutants that dropped the read issue went
+  red only at a later assertion, and a seat walked a mutant the verdict assertions could not see (the verifier
+  counting only non-directory read issues). Once the fixture listed the file, each failed at the verdict:
+  `Expected: Incomplete Actual: Verified`.
+- **Where:** any test that asserts a refusal, a block or a non-pass verdict.
+- **Check:** add the control: the same fixture with only the named cause removed must reach the pass verdict.
+  If it does not, the fixture holds a second reason.
+- **Source:** H20, merge `a37aed1`; same ledger, section 10, pin 1. `evidence: measured` (the seat's mutant was
+  walked, not run, before the fix; its kill was executed after the fixture fix).
+
+### 3. A bar that compares skip counts cannot see which tests skipped
+
+- **Rule:** a bar compares the NAMES of skipped tests with a declared allowance, and requires each named pin to
+  have a Passed row. A count is not a check.
+- **Mechanism:** the hosted master run `37026344675` reported Core `skipped: 4`; three were card 1's pins, and the
+  bar compared counts across passes, so it read green. A pin deleted, renamed or filtered out by a trait leaves no
+  result row, which no skip rule sees. Fix: skipped names must equal the declared multiset (one more, one fewer,
+  the same count under another name, or a row with no name each fails); the required names must each have a
+  Passed row; both lists are printed and recorded with the run.
+- **Where:** any bar that reads test results and allows some skips.
+- **Check:** in copies of a passing bar's results, make each edit in every pass's result file: rename one
+  skipped test, keeping the count, and the bar must fail; delete one required test's row, and it must fail.
+- **Source:** H20, merge `a37aed1`; same ledger, sections 6 and 10, pin 2. `evidence: measured`.
+
+### 4. A refusal that examined nothing must not touch the record
+
+- **Rule:** a re-run of a finished, passing job checks its precondition (the input exists and holds something)
+  before the first write. A refusal leaves the record byte-identical.
+- **Mechanism:** re-verifying a Completed green job set and saved the Verifying phase, then found the source
+  wiped. On disk it read Failed (emptied) or stuck in Verifying with a raw exception (folder gone); a Quick check
+  over a missing folder withdrew the verdict and left it Paused. The badge lost SAFE TO DELETE and the export gated
+  on Completed was gone. RED: Core 14 of 27 failed, App 6 of 8. "Set Failed, then restore" was rejected: it has a
+  crash window in which the true green reads FAILED on disk. Fix: announce the phase where a credible pass commits.
+- **Where:** any job record whose phase gates a surface, re-run over input that can vanish.
+- **Check:** finish a job green, empty its input folder (and, separately, delete it), and run every re-run route
+  with no usable archived record: the record must be byte-identical. A usable archived record legitimately
+  re-attests, and writes.
+- **Source:** H86, merge `2f0ec00`; `review/ledger-h86-check-source-before-first-write-2026-10-02.md`, "The
+  decision" and "The defect". `evidence: measured`.
+
+### 5. Zero files with read issues is undecided, not empty
+
+- **Rule:** a walk that found no file but recorded read failures has not shown the input is empty. Its sentence
+  says "could not be read", never "contains no files".
+- **Mechanism:** "empty" was a file count of 0. The scanner records an issue for a folder it cannot list and
+  yields nothing, so a source whose only content could not be opened gave 0 files and 1 read issue, and the
+  refusal said the source "contains no files". RED: Core 10 of 56 failed, App 4 of 8; the record was already
+  kept, only the sentence was false. Fix: three outcomes -- files found; none and no read issue (empty, or only
+  policy-excluded folders, said as such); none with read issues (how many items, and the first).
+- **Where:** any "nothing to do" decision made over a walk that records errors instead of throwing.
+- **Check:** make the only subfolder of an input unreadable (card 1 first) and run the empty-input path: the
+  message must not call the input empty.
+- **Source:** H86, merge `2f0ec00`; same ledger, "Round 2". `evidence: measured`.
+
+### 6. A count needs its kind
+
+- **Rule:** a signed row that says how many files were compared names what kind of comparison it was, and states
+  a count only where the verdict proves every counted file was compared that way.
+- **Mechanism:** derive the kind in the core from what the record already persists (mode, hash name, state,
+  universe, cancellation) and word the row from it. Persist nothing new, so a record an older build wrote is read
+  by the same rule, and never redefine a persisted number other readers already use as a total.
+- **Where:** any evidence surface whose count was computed as "all files minus those trusted".
+- **Check:** two layers. Core: over every combination of mode, hash name, check shape, cancellation and universe,
+  a basis that states a count is reached exactly by the verdicts whose check answered for every file. App: the
+  whole rendered row asserted in every renderer, case by case. Then one-edit mutants per arm, each killed after a
+  green control.
+- **Source:** H85, merge `a5dbfd4`; `review/ledger-h85-coverage-row-2026-10-02.md` at `b6c5baa`.
+  `evidence: reported`.
+
+### 7. An unread answer is never a pass, and an earlier read never stands in for a moment it did not observe
+
+- **Rule:** when a check depends on state read at a moment (here the destination's config, read just before a
+  hash check), a failed read at that moment caps the verdict; an earlier successful read never fills it.
+- **Mechanism:** the read is three-valued (read / unread / not needed). "Not needed" is decided by the code that
+  consumes the state recording whether it consulted it, never by a prefix or name test. Unread caps to a retryable
+  non-pass whose sentence says "could not be read", not "changed".
+- **Where:** any verifier that reads configuration or environment around the action it certifies.
+- **Check:** the there-and-back test: the first read succeeds as A, the state flips to B, the read at the action
+  FAILS, the action runs on B, the state flips back, a later read succeeds as A. The verdict must not pass and
+  nothing may be recorded. Forgetting the earlier read at phase entry did not close it.
+- **Source:** H84, merge `8ebea81`; `review/ledger-h84-unread-dump-caps-2026-10-02.md`. `evidence: reported`.
+
+### 8. Count inbound doctrine in lessons, not commits; print BLOCKING only when something refuses
+
+- **Rule:** a fold-debt count's unit is a line a sibling added, not a bus commit; empty merges, delete-only
+  commits and your own filings are not entries. A label says BLOCKING only when a refusal is armed in that same
+  invocation; otherwise advisory.
+- **Mechanism:** per-parent novelty (a merge contributes only lines neither parent has), plus own-filing evidence.
+  One dry run: 950 commits, 801 entries (the old commit-unit tool counted 890). Folding by path class was refused
+  here: the "other-project spec" and "receipts" classes held fleet-wide traps (bus commits `48d74513f`,
+  `373f2da64`). A lever refusing outbound filing while inbound debt is old deadlocks (about 12 new entries a day)
+  unless something discharges entries without reading them.
+- **Where:** every project that counts unfolded bus entries or prints a debt word at session start.
+- **Check:** if your label can print BLOCKING in an invocation where no refusal is armed, whatever the exit code,
+  it is false. Before trusting a bulk class, read a sample of its commits by hash.
+- **Source:** K35, merge `1bebcd9`; `review/ledger-k35-fold-by-class-2026-10-02.md`. `evidence: reported`.
+
+### 9. A decision sheet for the owner gets a non-author checker before the owner reads it
+
+- **Rule:** a page that turns open work into owner decisions is checked, citation by citation, by a non-author
+  against the current master before the owner sees it.
+- **Mechanism:** the author's sheet cited the tree; a non-author checker re-verified each citation and returned
+  edits, among them false sentences the owner would have read: that an unmet requirement is a deferral before it is
+  recorded as one, and that a test-only package ships.
+- **Where:** any summary written for a person who will decide from it without reading the sources.
+- **Check:** give the sheet and the commit it cites to a seat that did not write it; count the sentences it cannot
+  find support for. Zero is the bar.
+- **Source:** merge `0615180` (corrections commit `4b8dce1`); `docs/owner-release-decisions.md`.
+  `evidence: reported`.
+
+### 10. A bar that cannot finish is not a bar
+
+- **Rule (observed):** a tier is a bar only if its runs finish inside the job's timeout; a wider informational
+  tier on the same job can exceed it.
+- **Mechanism:** Cloudvore's tools bar has a `required` tier (the dispatch default, and what a push to master
+  runs) and an informational `all` tier; the job's `timeout-minutes` is 45. Two `all` runs, `37048209611` (45.9
+  min) and `37040439516` (45.7 min), were cancelled at that timeout; green `all` runs took 41.3 to 45.0 min, green
+  `required` runs 21.3 to 32.0 min. H85's landing records tools bar `37069196653`, required tier, 29 of 29.
+- **Where:** any CI with an informational tier and a job timeout, and any shared runner.
+- **Check:** select the tier's runs by dispatch input or run log (the run summary does not show the tier). A tier
+  is a bar only if every one of its last N runs, cancelled ones included, finished inside the timeout minus 10%
+  (4.5 min on a 45 min job). Here `all` fails and `required` passes (13 of 13 inside; slowest 32.0 min).
+- **Source:** `.github/workflows/tools-bar.yml` at master; H85's BACKLOG row and ledger (`a5dbfd4`); the run
+  figures: `review/doctrine-drafts/2026-10-02-privilege-pins-and-bar-cards.review.md`, pass 1, executing seat
+  (read-only from this repository's GitHub runs). `evidence: measured`.
+
+### 11. A dev loop on the runner host runs below the runner
+
+- **Rule:** test runs started over ssh on the machine that hosts the CI runner run at BelowNormal, with build node
+  reuse and shared compilation turned off.
+- **Mechanism:** the H86 ledger records full runs on the runner host at BelowNormal with `-low:true`,
+  `MSBUILDDISABLENODEREUSE=1` and `-p:UseSharedCompilation=false`. Measured in review: a child of a script that
+  set `(Get-Process -Id $PID).PriorityClass = 'BelowNormal'` runs BelowNormal; without that line both run Normal.
+- **Where:** any self-hosted runner that is also a development host.
+- **Check:** list your processes' PriorityClass on the host during a run, and compare the hosted bar's duration
+  with and without your run at the same tier.
+- **Source:** H86, merge `2f0ec00`; its ledger, "Suites" (the settings in use); the child's priority:
+  `review/doctrine-drafts/2026-10-02-privilege-pins-and-bar-cards.review.md`, pass 1, executing seat.
+  `evidence: reported`.

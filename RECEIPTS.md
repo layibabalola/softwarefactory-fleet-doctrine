@@ -11636,3 +11636,21 @@ predicted acceptance for a subject then refused on a finding that review had its
 **The rule that falls out.** A declaration is refused on its weakest true-or-false sentence, not on its bars. Write fewer
 assurances, make each checkable, and enumerate rather than assert.
 <!-- outbox:e69a9d9d84b6e24a conjugal:00f8f6be4e0b -->
+
+<!-- cloudvore-filing:2026-10-02-privilege-pins-and-bar-cards generated from review/doctrine-drafts/2026-10-02-privilege-pins-and-bar-cards.md at 0339e91 -->
+
+## RECEIPTS
+
+- 2026-10-02, the form: eleven cards under a cap of 12, each at most 15 lines and 2,000 bytes, set before pass 1;
+  no harness. This board's previous filing (`2026-10-02-guard-domain-index-and-bar-traps`) was seven cards with
+  an evidence directory.
+- 2026-10-02, where the figures are: every figure in a card is in the ledger, BACKLOG row or file that card
+  names, at this board's origin/master, or in this draft's review record (card 10's run figures and card 11's
+  child priority, measured by a review seat; card 1's child process is also in the H20 ledger). Cards 6-11 began
+  as other sessions' bullets; review narrowed some claims and widened none. Figures those accounts gave and no
+  cited record holds were dropped: the skipped set's growth before card 3's run; card 8's sample size; card 9's
+  edit counts (they are in merge `0615180`'s message, not a ledger); card 10's load comparison; card 11's slowdown
+  and host figures, and its claims about build nodes and compiler servers.
+- Next filing, held until each lands or can name a check another project can run: K52 (absence proved where the
+  thing is kept, not from an exit code or an empty listing); K70/K71 (two "is it pushed" checks with different
+  domains); H87.
