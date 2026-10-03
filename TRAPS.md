@@ -24335,3 +24335,51 @@ containment with a check that runs BEFORE the first side effect and fails the te
 lower nothing below that bar; when the producer can already name the reach, fix it before the key, never disclose it.
 The sibling tests that share the gap are a separate hermeticity subject, not a defence.
 <!-- outbox:fa9e5de269a89431 conjugal:bd59531270e8 -->
+
+### TRAP 2026-10-02 (adobe-ingester, measured on VIRTUAL-TEN): a reviewer-workspace redactor keyed on exact peer keys leaks the peer verdict through flat keys
+
+**Symptom.** The second reviewer's isolated workspace carried a projected `state.yaml` that still showed the first reviewer's outcome. Lines such as `opus_report_outcome`, `opus_report_sha256` and `opus_open_p0_p1` under `review_dispatch` reached it.
+
+**Cause.** The state projection redacted only lines matching `^\s*<peer>:`, a nested block named exactly after the peer. The orchestrator records the first reviewer's result as flat peer-prefixed keys before it enables the second reviewer. The HUB projection in the same builder already redacted any peer token at word boundaries and asserted that none survived. The state projection had no such assertion.
+
+**Do this.**
+- Redact on the peer token at word boundaries in the key, the value or the comment, together with descendant and continuation lines.
+- After every projection and copy, assert that no file holds the current order's peer report path, report hash, run id or receipt hash. If one does, refuse to build the workspace.
+- Prove the tests fail on the old builder.
+- Treat every sequential second-reviewer run since flat keys appeared as independence-suspect.
+
+**Source.** Adobe builder repair `234ca4a`, consumed `de2c012`, install verified `507d527` (adobe-ingester). Found by a cross-family falsifier on owner directive 2026-10-02e. Re-derive: build both lane views from live state with `.factory/tools/New-FactoryClaudeReviewWorkspace.ps1` and grep each for the peer token. `evidence: measured`.
+
+### TRAP 2026-10-03 (adobe-ingester, measured on VIRTUAL-TEN): a walled gate started late in an orchestrator wake dies to the outer wall, not its own
+
+**Symptom.** A 300-second contained account-match rehearsal left two empty files and no receipt. The reviewer order went terminal with no verdict. No reviewer ran and no allowance was spent.
+
+**Cause.** The orchestrator wake runs under a 2400-second wrapper wall. It spent about 39 minutes on preflight work, including a heavy workspace inventory, and began the 300-second gate with about 34 seconds left. The wrapper killed the wake. The inner wall was never tested.
+- An earlier rule held back only the final reviewer start for lack of budget. It did not cover the walled steps that precede the start.
+- The wrapper gives the orchestrator no start time at all. A previous run's receipt describes the previous wake, and the run id is local time with a `Z` suffix.
+
+**Do this.**
+- Before any walled step inside a wake, compute the remaining budget from sources the wake can read. Here those are the parent agent process's CreationDate and the wrapper's prompt-file mtime. Use the earlier of the two, and also bound by the wrapper's own task-limit arithmetic, measured from its creation.
+- Require headroom of the step wall plus the post-step commit time plus a margin.
+- On missing or conflicting sources, or too little headroom, record a HOLD (not an attempt) and restore anything paused.
+- Put heavy work in an earlier wake. Escalate after two consecutive holds.
+
+**Source.** Adobe owner directive 2026-10-02f, committed into the orchestrator prompt at `7633e4a` and consumed at `45c26fa` (adobe-ingester). The cross-family falsifier needed four rounds to close the timing arithmetic; the 960-vs-901-second counterexample came from using the later start source. Re-derive: compare the order's rehearsal start with the wake's attempt time plus the 2400-second wall in the orchestrator receipt. `evidence: measured`.
+
+### TRAP 2026-10-03 (adobe-ingester, measured on VIRTUAL-TEN): strict candidate integrity false-fails in a fresh worktree
+
+**Symptom.** A falsifier's scratch worktree failed the strict 38-entry candidate integrity check with no change to the candidate.
+
+**Cause.**
+- The candidate files are read-only in the live tree but not in a fresh checkout.
+- Five candidate `.stdout` files are CRLF on disk in the live tree, while a checkout writes them LF from the same blob. The manifest hashes the live bytes.
+- The pre-commit hook also compares ledger mtimes, so a fresh checkout blocks the scratch commit.
+
+**Do this.** Before running a strict integrity check in a scratch worktree:
+- copy live mtimes (not content) for the ledgers;
+- copy the live candidate bytes;
+- set them read-only.
+
+Never conclude that a candidate changed from a scratch mismatch alone.
+
+**Source.** Adobe falsifier for request 47, scratch commit parent `507d527` (adobe-ingester). Re-derive: `git worktree add --detach <abs> <base>`, then run `.factory/tools/Test-FactoryCandidateIntegrity.ps1 -Force -RequireReviewedCommit -RequireReviewedHead -RequireReadOnly` before and after copying the live bytes. `evidence: measured`.
