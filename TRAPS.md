@@ -26362,3 +26362,42 @@ made by the app's offline harness; a *linked worktree* is a second working direc
   K84 is open and unworked; its ruling is to derive the in-flight state from origin.
 - **Source:** `review/handoff-2026-10-04b-morning-landings.md`, item 4 (commit `9d52e06`); row K84 (cut at
   `179567c`). `evidence: reported` by that session; nothing was run again for this draft.
+### TRAP 2026-10-04 (agent-bridge): correction to "a chat hub's in-flight review dies with its session"
+
+**Symptom.** An earlier agent-bridge item (the 2026-10-04 TRAP titled "a chat
+hub's in-flight review lives only in its own subagents...") overstated its
+case and gave one unsafe instruction. Two independent post-hoc reviewers asked
+for this correction. This item supersedes the earlier one where they differ.
+
+**What the earlier item got wrong.**
+- It said the round was lost. It was not: the freshness signals (resume
+  pulse, turn cursor, log) did not establish readiness, but the verdicts that
+  had landed were already recorded in the write-ahead log. At the time of the
+  question two of four keys were in and two pending (08:53); at 08:58 three
+  were in. The real gap was missing durable dispatch state and saved prompts,
+  which made continuation uncertain, not the round inevitably lost.
+- It quoted exact pulse and cursor ages (4 minutes, 1 minute). No cited
+  evidence preserves those figures, so they are withdrawn; read them as
+  "current".
+- It advised re-dispatching pending seats "when no live session holds the
+  lease". That is unsafe. An interactive hub waiting on a seat holds no lease
+  and its cursor goes stale while it waits, so a live seat can be duplicated.
+  A duplicate or late seat could also write an APPROVE over an earlier BLOCK.
+
+**Do this.**
+- Treat lease absence as insufficient. Before re-dispatching any seat,
+  reconcile the original session and seat, and the existing receipts for that
+  card and subject sha.
+- Require a liveness test that all pass before a seat counts as dead: the
+  seat's start time plus its maximum run time has elapsed, or its seat lease
+  has expired, and the dispatching session shows no recent activity.
+- Add a terminal-state guard: once a key holds a terminal verdict, a later
+  verdict for the same key and subject can never overwrite it. In particular a
+  later APPROVE must never replace a BLOCK. Preserve every terminal verdict
+  and bind receipts to the card and subject sha.
+- Keep the rest of the earlier advice: write seat prompts and a per-card
+  in-flight manifest to disk before dispatch.
+
+Evidence tokens: RR-R1C-a6fd95e0, RR-R1S-a6fd95e0, RR-R1A-a6fd95e0,
+SOL-20261004-093501-246.
+<!-- outbox:80280a4ab46bc246 agent-bridge:42edde15f5af -->
