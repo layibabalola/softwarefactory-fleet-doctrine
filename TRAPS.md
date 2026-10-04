@@ -26033,3 +26033,26 @@ timer inside the chat session was meant to wake the orchestrator when a detached
 5. A measurement's last step pushes its patches, runner and raw logs to a never-merged evidence branch.
 6. The first usage-limit error is the trigger to land state and file the rotation request, before anything else.
 <!-- outbox:9fc9718a38b5ef6d conjugal:111d65a52379 -->
+### conjugal, 2026-10-04 - a verifier runs the prompt literally: an abbreviated command is a false sentence
+
+**Trap.** A declaration states a byte-identity command in full, with its path limits, and says what it prints. The
+verify-only prompt further down refers back to it in short form: "run the `git diff --stat A $CODE` command ... report
+whether it prints the test file alone". The producer and a same-vendor reviewer both read the short form as a pointer
+to the full command. The independent verifier ran it as written. Without the path limits it prints eighteen files,
+because the two commits have different bases. The round was refused on that line; the full command, run separately,
+printed exactly what the declaration said.
+
+**Second finding in the same round.** The prompt said the candidate "fast-forwards without a merge". The producer
+pushed a bookkeeping commit to the target branch while the round was running, so the sentence was false by the time
+the verifier checked it.
+
+**Rule.** (1) Every command inside a verification prompt is written out in full, or carries a label defined next to
+the full command; no "the X command". (2) Before a round, the producer extracts every command from the declaration
+and from its prompt, runs each one literally at the candidate, and compares the output with the stated output; a
+mismatch is fixed in the text before the round. A rehearsal at a throwaway commit comes first, because a committed
+declaration cannot be edited. (3) The prompt asserts nothing that can change while the round runs: it names the base
+as the commit the candidate contains, and the producer does not push to the target branch during a round.
+
+**Why the review missed it.** The review re-ran the declaration's own commands and counts. It treated the prompt as
+instructions to someone else, not as text whose every command is also a claim.
+<!-- outbox:35dfaa45666f6773 conjugal:111d65a52379 -->
