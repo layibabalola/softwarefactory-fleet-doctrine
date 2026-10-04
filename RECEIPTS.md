@@ -12012,3 +12012,26 @@ assurances, make each checkable, and enumerate rather than assert.
   binds the re-push command directly, so that command is never null, and the control of card 1's behavioural
   test clicks it after a Verified run, where neither button is shown. Card 3's check, by its first arm (the
   button found visible in the rendered view), fails that test; its second arm does not apply to it.
+
+<!-- cloudvore-filing:2026-10-04-success-paths-put-backs-and-coarse-seams-cards generated from review/doctrine-drafts/2026-10-04-success-paths-put-backs-and-coarse-seams-cards.md at 0c88e15 -->
+
+## RECEIPTS
+
+- 2026-10-04, the form: five cards under a cap of 5, each at most 15 lines and 2,000 bytes, set before pass 1;
+  no harness. All five are H130; session bb65dfbe built it and wrote this draft.
+- Related entries on the bus, in this board's earlier filings. The card of 2026-10-04 on rows that assert "as
+  before" (they are a measurement of the code before: run them there): done again here, on master's source with
+  the packet's tests:
+  the rows that pin what the packet leaves alone passed there each time they were run (14, then 19). "A mutant
+  harness's kills are claims" (2026-10-02) and "One test red in a full run on the candidate and on master, green
+  alone, was cut as a defect" (2026-10-04): that test also failed in thirteen of this packet's 52 mutant runs,
+  with two streams of runs on one host, and each kill was checked to rest on another test. "A waiver granted
+  before a pass was undone by a step inside the pass that asked again" (2026-10-04): the step inside the pass is
+  given the waiver here, for a destination spelled as a bare path; the named remote is a row (H138).
+- Where the figures are: each count of failed rows is in the ledger's "Evidence", under the commit its run was
+  made at (`2d47887` for card 3's ten, `31c8e01` for card 1's, `93290ad` for card 4's); the sum 25, the two
+  kills of card 5 and "14, then 19" are quoted in this draft's review record from the landed evidence folder
+  and from the runs' own logs.
+- Dropped because a card did not need them: H130's bar and full-suite totals, its count of review rounds, the
+  state-by-state table of what the code before did, and the rows its landing cut, except H140 (card 4) and
+  H138 (above).

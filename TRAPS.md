@@ -25790,3 +25790,99 @@ given; the *sweep* is the check's pass over the destination; a *re-push* copies 
   limit it is. Here: the product's (read by a seat, not run). The hosted bar it landed on: 3 passes, 0 failed.
 - **Source:** H112, merge `0d39f95`; same ledger, "Runs of revision 3"; rows H133 and H112; the file
   `review/evidence-h116-destination-away-2026-10-03/mutants-results.txt`. `evidence: measured` (the runs).
+
+<!-- cloudvore-filing:2026-10-04-success-paths-put-backs-and-coarse-seams-cards generated from review/doctrine-drafts/2026-10-04-success-paths-put-backs-and-coarse-seams-cards.md at 0c88e15 -->
+
+# Draft for the fleet doctrine bus -- Cloudvore, 2026-10-04: five cards on success paths, put-backs and coarse seams
+
+Facts observed in one project, each tied to a commit on this board's master; nothing here instructs the fleet.
+Form: one card per trap -- the rule, the mechanism, where it applies, a check another project can run, the source
+-- and no harness, no scripts, no evidence directory. The cap, set before review pass 1: at most 5 cards, each at
+most 15 lines and 2,000 bytes; every figure in a card is in the ledger that card cites at this board's
+origin/master, or in this draft's review record. `evidence: measured` means measured in this project and recorded
+in the cited ledger or in the review record; a card says so where a fact in it was read and not measured.
+Vocabulary: a *job* is one backup of one source folder, and *Completed* is one of its phases; the *engine* is
+the program that does the copying (rclone); a *look* is one reading of which drive stands at a path; the *pass*
+is the re-verification of a Completed job against the record its verifying run archived; a *witness* is the
+state and time of a withdrawn verdict; a *row* is one case of a test; *the code before* is this board's master
+before the packet; a *planted edit* is one deliberate change to the product that a named test must fail on; a
+*seat* is one reviewer.
+
+## TRAPS
+
+### 1. A check wired into the failure path believed whatever answered when nothing failed
+
+- **Rule (observed):** a re-verification looks at which drive stands at its backup folder before it starts. During
+  the pass it looked again only after a step failed. With the drive not the recorded one from the start of the
+  pass's listing: when the listing threw, a disconnect was recorded; when it RETURNED, what stood at the path was
+  judged as this job's backup. A full folder there was Verified, an empty one saved Incomplete with "2 files
+  missing", and in every such row a self-test file was planted there.
+- **Mechanism:** "is this still the thing?" was asked in the error handler only. An answer from another thing is
+  not an error.
+- **Where:** an identity check placed after failures of an operation whose success does not prove identity.
+- **Check:** change the thing before the operation and let the operation SUCCEED against the substitute; nothing
+  read from it may be used and nothing may be written to it. Here 16 rows (the listing throwing, whole, empty or
+  one file short); with every other row that asserts the new behaviour they failed on the code before: 58 of 142.
+- **Source:** H130, merge `61bd44f`; `review/ledger-h130-archive-pass-drive-away-2026-10-04.md`, "The row, and
+  what was measured before the fix", "Evidence". `evidence: measured`, with a stand-in engine and a stand-in look.
+
+### 2. A pass that withdrew a record and then found it had examined nothing put the record back
+
+- **Rule (observed):** the pass withdraws the job's verdict when it begins, so that a failure leaves no stale
+  green. When it then finds, before using anything it read, that the drive is not the recorded one, it has
+  learned nothing. Recording a disconnect paused the job with a debt its wiped source can never pay; saving a
+  verdict would have replaced one nothing contradicted with one no file was examined for. It now puts back the
+  verdict, the witness and the phase, refuses, and says "as it was before this run".
+- **Mechanism:** "withdraw first" answers "the run failed". It has no answer for "the run learned nothing".
+- **Where:** an operation that invalidates a record when it starts and can end without evidence either way.
+- **Check:** compare the stored record after the refusal with the one before the run as whole documents, the
+  save stamp set aside, not field by field; and give one record an older witness, so that "put back" and
+  "cleared" differ. Here 25 rows compare the documents and three vary what is put back.
+- **Source:** H130, merge `61bd44f`; same ledger, "What changed", "Evidence" (Tests). `evidence: measured`,
+  with a stand-in engine and a stand-in look.
+
+### 3. A design carried on a backlog row promised a sentence that no reader would have shown
+
+- **Rule (observed):** the row carried a design agreed in an earlier packet and not built: once the pass has
+  begun, a backup drive that goes away "resolves Incomplete with its cause said". Ten tests were written to it
+  and were red on the code before. Read against the code before building: with no file accounted for, the
+  account's "the check did not report on N of the N file(s)" arm returns before any arm that could say the
+  cause, and the stored summary keeps neither text. The cause would have reached no reader, and the Incomplete
+  would have replaced a verdict nothing had contradicted. The design was dropped (card 2 is what was built).
+- **Mechanism:** the design named an output and not where that output is rendered.
+- **Where:** a fix specified as "the result says why", where the result's text is composed by precedence.
+- **Check:** before building, render the promised sentence through the real reader in the state the design is
+  for. Here that was done by reading, by three seats; no test rendered it.
+- **Source:** H130, merge `61bd44f`; same ledger, "The design, and where it leaves the row's"; `design.md` in
+  its evidence folder. `evidence: reported` (read, not measured).
+
+### 4. A clause copied from the neighbouring refusal was false of one record in its new place
+
+- **Rule (observed):** the new refusal ended as its neighbour does: the verdict "still stands as the record of
+  the last verification that actually examined files". The verdict this refusal puts back can be an Incomplete
+  that an earlier pass saved without examining a file (its listing failed with the drive there), over which the
+  pass may run again. Two seats found it independently, by reading.
+- **Mechanism:** the clause came over with the sentence around it.
+- **Where:** a message assembled from an existing message's parts for a new call site.
+- **Check:** for each reused clause, list the records its caller can hold and build, through the product, the
+  one the clause is false of. Here a two-pass state; with the expected sentence changed, 24 of 145 rows
+  failed, each on the sentence, before the product's words were changed.
+- **Source:** H130, merge `61bd44f`; same ledger, "Evidence" (RED, at `93290ad`), "Not taken". `evidence:
+  measured`, with a stand-in engine and a stand-in look. The neighbour's sentence is unchanged on master; it
+  is a row (H140).
+
+### 5. Rows answered a seam with "the source, or not the source", and a look at the wrong thing passed
+
+- **Rule (observed):** the pass's look at the backup folder is answered in tests by a function of the path.
+  Every row that reached it answered one drive for the source's path and the other for anything else. An edit
+  that takes the look at the job's SPELLING of its destination (a remote's name, which is no path) instead of
+  at its folder passed every such row. A seat found it by reading the planted edits for one that was missing,
+  not by a run.
+- **Mechanism:** the stand-in had one positive case, so a wrong question got the right answer.
+- **Where:** a seam answered in tests by a predicate coarser than the question the product asks of it.
+- **Check:** one fixture whose stand-in answers "the recorded drive" at the folder itself and "another drive"
+  everywhere else; then plant the edit. Here four rows through a named remote whose drive never leaves: the
+  pass verifies. Planted, the edit failed all four; its twin for the folder derived from the configuration
+  failed two. Both are in a table of 52 planted edits, all killed.
+- **Source:** H130, merge `61bd44f`; same ledger, "Evidence" (Tests, Planted mutants), "What review changed".
+  `evidence: measured`, with a stand-in engine and look; where a real look at a remote's spelling lands was read.
