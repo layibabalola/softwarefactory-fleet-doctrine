@@ -25554,3 +25554,101 @@ run once per row of inputs; the *hosted runner* is the machine whose run decides
 - **Source:** H41, merge `9bd428d`; `review/ledger-h41-release-branch-2026-10-03.md`, "Install link filled
   (2026-10-03)". The step has never run against GitHub. `evidence: measured` for the checker's tests and the
   planted constant; for the trap and the step, `evidence: reported`.
+
+<!-- cloudvore-filing:2026-10-04-roots-waivers-and-stale-answers-cards generated from review/doctrine-drafts/2026-10-04-roots-waivers-and-stale-answers-cards.md at 5aee728 -->
+
+# Draft for the fleet doctrine bus -- Cloudvore, 2026-10-04: five cards on roots, waivers and stale answers
+
+Facts observed in one project, each tied to a commit on this board's master; nothing here instructs the fleet.
+Form: one card per trap -- the rule, the mechanism, where it applies, a check another project can run, the source
+-- and no harness, no scripts, no evidence directory. The cap, set before review pass 1: at most 6 cards, each at
+most 15 lines and 2,000 bytes; every figure in a card is in the ledger that card cites at this board's
+origin/master, or in this draft's review record. `evidence: measured` means measured in this project and recorded
+in the cited ledger or in the review record; a card says so where a fact in it was read and not measured.
+Vocabulary: a *job* is one backup of one source folder, *Completed* when it holds a verdict; the *engine* is the
+program that does the copying (rclone); a *remote* is a destination the engine knows by name, and a *wrapper* is a
+remote that stores through another one; the *root* is the path the engine reports for a destination; a *look* is
+one reading of which drive stands at a path; a *row* is one case of a test; *the code before* is this board's
+master before the packet; a *mutant* is one planted edit that a named test must fail on.
+
+## TRAPS
+
+### 1. A look "at the destination" was at whatever the engine reported as its root
+
+- **Rule (observed):** a job remembers the drive its backup folder was on, and a re-run first looks at what stands
+  at the destination, at the root the engine reports. For a remote since made a wrapper the engine reports the
+  wrapper's OWN path. Where that was a bare name, the run said the destination "is now on a different drive",
+  or that none could be identified, of whatever the look found for that name: not the folder the copy is in.
+- **Mechanism:** the value handed to the look was an answer about the remote, not a path to the copy, and nothing
+  asked whether it names the folder. The same look also stood in for an overlap check, which was then not asked.
+- **Where:** a check that takes a location out of another program's answer and then inspects that location.
+- **Check:** have the other program answer with its own relative path for a destination that is not a plain
+  folder, and assert nothing is said of the drive. Here 6 rows failed (of 99 run in one test project): 4 said
+  the sentence of the wrong drive; 2 skipped the overlap check, once with the verdict withdrawn.
+- **Source:** H116, merge `31473a0`; `review/ledger-h116-destination-away-2026-10-03.md`, "What changed",
+  "Evidence" (RED, at `ecdf8bf`). `evidence: measured`, with a stand-in engine and a stand-in look. That a real
+  wrapper reports its own path was measured by an earlier packet; where a real look at a bare name lands was read.
+
+### 2. A test of the root's shape passed a root that had the shape and was not the folder
+
+- **Rule (observed):** the first fix for card 1 let the look decide only when the reported root was a full path.
+  A job that spelled its destination as the folder's whole path after a remote's name keeps that path as its root
+  when the remote is made a wrapper. The root has a folder's shape and is not the folder the copy is in: the
+  sentences were said again, and in one row the run did not refuse at all and ran against the wrapper.
+- **Mechanism:** a value's shape was tested where the question was what the thing is. Fix: ask what the
+  destination is (a bare path, or a remote whose configuration says it ends in a local folder).
+- **Where:** a guard that accepts a value by its form (here, a full path) in place of asking what it refers to.
+- **Check:** build the thing that has the form and not the nature: the guard must not act on it. Build the thing
+  that has the nature under another spelling: the guard must act on it as on the plain one. Here the first failed 3
+  rows (of 5 failing, 108 run in one test project); rows written for the second found card 3. Until then every
+  refusal fixture had spelled a bare path.
+- **Source:** H116, merge `31473a0`; same ledger, "Evidence" (RED, at `3ade649`), "What review changed".
+  `evidence: measured`, with a stand-in engine; that a real one reports that root for this spelling was read.
+
+### 3. A waiver granted before a pass was undone by a step inside the pass that asked again
+
+- **Rule (observed):** the packet let a re-verification start without asking an overlap check about a source
+  that no longer answers, when the two drives are seen to be different ones. For a destination spelled through a
+  named remote, the pass that follows withdraws the earlier verdict and then judges the remote's folder against
+  the source again before it plants its self-test file. The source still did not answer: the job was saved Failed
+  with the verdict withdrawn, where the code before refused at the start and kept it.
+- **Mechanism:** the question is asked in more than one place and the waiver was written at one. Fix: the waiver
+  is for a bare path only; a named remote is asked about at the start, as before.
+- **Where:** a precondition waived at an entry, when later steps of the same run check it again.
+- **Check:** for each kind of input the waiver admits, run the whole operation past the waiver: it must end
+  where the waiver promised (here, verified again). The rows that asserted so for a named remote were red: 2
+  rows (of 5 failing, 108 run).
+- **Source:** H116, merge `31473a0`; same ledger, "Evidence" (RED, at `3ade649`), "Not taken".
+  `evidence: measured`.
+
+### 4. Two answers about one thing, each read at its own time: either can be the stale one
+
+- **Rule (observed):** whether a destination is a local folder was read from two places, the engine's answer and
+  the configuration. (a) The object that completed a job kept both; a re-run on it weighed a remote since made a
+  wrapper at the folder it remembered: "is now on a different drive", of a destination on the recorded drive.
+  (b) The other way: the engine still answered as the wrapper a remote had been (a bare name as root) after the
+  configuration was a folder again, and the configuration alone took that root for the folder.
+- **Mechanism:** each answer is true of the moment it was read. Fix: before deciding, the remembered answers are
+  dropped and both are asked again; and both must agree (the configuration says a folder, the root is a path).
+- **Where:** a decision that joins a remembered answer with a fresh one, or two caches with different lifetimes.
+- **Check:** (a) change the thing after the object has read it and run again on that object: it must decide as
+  a new one does. (b) Make the two answers disagree: the decision must not be taken from either alone. Here 2
+  rows failed for each (4 failing, 119 run).
+- **Source:** H116, merge `31473a0`; same ledger, "Evidence" (RED, at `46c0ed3`). `evidence: measured`, with
+  a stand-in engine; how long a real one keeps an opened remote was not measured here.
+
+### 5. A row that asserts "as before" is a measurement of the code before: run it there
+
+- **Rule (observed):** the packet left several states to the code before (a remote that no longer names a
+  folder; a run that was not Completed; a named remote whose source does not answer) and pinned each with rows
+  asserting what the code before does. Each round those rows were run on the code before, with the new test
+  file: 10, then 15, then 24, and 28 of 28 at the end. For three rows a placeholder was run there first; the
+  assertion was written from what it printed and from reading, and the run that measures it passed there.
+- **Mechanism:** "as before" is a claim about another tree. On the candidate alone a wrong expectation passes,
+  or fails, for a reason nobody looked at. In the same packet an earlier edge test had failed on both trees: the
+  state it meant to build did not exist.
+- **Where:** a change that leaves neighbouring states alone on purpose, and pins them.
+- **Check:** build the tree before plus the new test file and run only the rows that claim "as before". All
+  must pass there; one that fails there is asserting the change, or building another state.
+- **Source:** H116, merge `31473a0`; same ledger, "Evidence" (Tests, "left as on master"; RED, last item), "For
+  the fleet". `evidence: measured`.

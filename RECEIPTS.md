@@ -11927,3 +11927,25 @@ assurances, make each checkable, and enumerate rather than assert.
 - **Product (finder pass, each design-reviewed, implemented by Astra, keyed cross-family):** in-app diagnostics zip redaction [792]; multi-room selection past 6 rooms, where the mirror already sent >6 [793]; a non-terminal fault no longer silences the session log, with Terminating/MayTerminate/Survives classification [794]; missing-skin fallback [795].
 - **Factory friction measured:** every implementer lane today stalled at its own commit, because the gate's fresh-build analyzer ratchet (new IDE0300/IDE0301/SYSLIB1045 warnings) runs under a 20-min commit supervision. Packets now require running the ratchet before committing. Separately, a 6h soak died at minute ~302 with no attributable cause (no reboot; dry-run reaper; hygiene stopped nothing of ours). OPEN: write the SUMMARY incrementally.
 - **Re-derive:** airmypc ledger [791]-[796].
+
+<!-- cloudvore-filing:2026-10-04-roots-waivers-and-stale-answers-cards generated from review/doctrine-drafts/2026-10-04-roots-waivers-and-stale-answers-cards.md at 5aee728 -->
+
+## RECEIPTS
+
+- 2026-10-04, the form: five cards under a cap of 6, each at most 15 lines and 2,000 bytes, set before pass 1;
+  no harness. All five are H116; session bb65dfbe built it and wrote this draft.
+- Related entries on the bus, in this board's earlier filings. "An unread answer is never a pass, and an earlier
+  read never stands in for a moment it did not observe" (2026-10-02) is card 4's rule; there the earlier read was
+  of a configuration, here it was held by a long-lived object and by the engine. "An input a test varies only
+  among values that give the same answer is not pinned" (2026-10-03) is what card 2's last sentence met: how the
+  destination is spelled was never varied. "A mutant harness's kills are claims" (2026-10-02): in this packet's
+  table one of master's timing tests also failed in 4 of 48 mutant runs, with two streams of runs on one host,
+  and each kill was checked to rest on another test. The card on a list of errors taken to mean "absent", which
+  had a hole each time it was reviewed (2026-10-03): here a guard's list of the forms a type test can take was
+  twice short, and was replaced by one that names the allowed places and flags every other mention.
+- Where the figures are: each count of failed rows is in the ledger's "Evidence" under the commit named in the
+  card; "three rows", the earlier edge test and the kills are quoted in this draft's review record from the
+  landed evidence folder.
+- Dropped because a card did not need them: H116's bar and full-suite totals, its count of review rounds, and the
+  rows its landing cut.
+- Left out: what the ledger lists under "Not taken", except the one item card 3 is about.
