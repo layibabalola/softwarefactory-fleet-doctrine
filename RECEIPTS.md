@@ -11949,3 +11949,66 @@ assurances, make each checkable, and enumerate rather than assert.
 - Dropped because a card did not need them: H116's bar and full-suite totals, its count of review rounds, and the
   rows its landing cut.
 - Left out: what the ledger lists under "Not taken", except the one item card 3 is about.
+
+<!-- cloudvore-filing:2026-10-04-labels-commands-and-one-headline-cards generated from review/doctrine-drafts/2026-10-04-labels-commands-and-one-headline-cards.md at 32672da -->
+
+## RECEIPTS
+
+- 2026-10-04, the form: four cards under a cap of 4, each at most 15 lines and 2,000 bytes, set before pass 1;
+  no harness. The writer built nothing of this packet and measured nothing for this draft: every card is written
+  from the ledger, the queue rows and the one evidence file it cites, and the landed code was read to check what
+  the fix is. The brief gives the builders as three agents of the landing session over three revisions; the
+  ledger names four builder sessions (revision 2 was begun by one and finished by another).
+- Related entries on the bus, in this board's earlier filings. "'The right one is shown' passes with both on the
+  screen" (2026-10-03): this packet's rendered tests read, for each cause, the expected headline and button and
+  that none of the others is shown; card 1 adds the command to what is read. "A screen that offers what the
+  next step refuses turns a true refusal into a failure record" (2026-10-03) is card 1's shape one step along:
+  there the offer and the refusal were decided in two places, here the words and the command. "A lead sentence
+  that says nothing was found, with the findings appended after it" (2026-10-03) is card 2 inside one account:
+  there a lead and its list disagreed, here a headline and the account under it. "An outcome is not a cause: a
+  sentence keyed on a recorded outcome speaks for every arm that leaves it" (2026-10-03) is the packet that
+  recorded the self-test's flag this panel now reads. "The last arm of an explanation asserted the one fact it
+  could not know" (2026-10-03) is near card 2: a default that speaks for causes it has no input for. "A row
+  that asserts "as before" is a measurement of the code before: run it there" (2026-10-04) is card 4's first
+  step, the base run beside the candidate; its packet's evidence file is the one card 4 cites.
+- Where the figures are. Card 1: three of four causes, for a backup, in revision 1's table under "The decision
+  built"; the residual and "normally sends nothing" in revision 1's "Residuals", and that it was wrong about the
+  code in "What revision 1 got wrong"; no copy and one check, and the control's one copy then one check, in
+  Revision 2's "Tests" and Revision 3's "The new behavioural case"; 11 of 139 and 1 of 139 in "Mutants of
+  revision 2" (M-m, command only; M-d). Card 2: 16 of 104 in "RED" (104 tests, 88 passed, 16 failed); the two
+  quoted phrases of the account and the withdrawn instruction in Revision 3; 4 of 145, the one test that reads
+  account and panel together, and "push" not in the account, in its "RED". Card 3: the
+  Verified verdict in Revision 2's "Tests"; the seat's item and the new test in "The new behavioural case"; its
+  failure on revision 2's code in Revision 3's "RED" (fourth row); the null property in "The new behavioural
+  case" and in Revision 2's "Readers and writers of the label and the command"; that the
+  earlier test took the command by name was read in the test file, which gets it by reflection on the name, and
+  is in no ledger. Card 4: the two full runs, the
+  message and 133 of 133 in "Runs of revision 3"; 30 s, 4 of 48 and both controls in row H133; 3 passes and 0
+  failed in row H112. The writer opened the evidence file: 24 mutant runs in each of two streams at the
+  candidate, the test named in four of them (K27, K31, K22, K13), each stream's control at 0 failed.
+- Dropped, and why. No candidate card was dropped: the ledger carries all four. From card 1, the brief's "three
+  adjudication seats read it": that is in queue row H112 and not in the ledger the card cites. From card 3, the
+  brief's "Completed job": the ledger says the earlier test clicked from a Verified job and no more. From card
+  4, any statement of why the test failed in the four mutant runs: the file gives names only.
+- Cut to keep a card within 15 lines. Card 1: that revision 1's rendered test found the button by the old
+  command and expected the new words on it; "It did not land" is now "Not landed". Card 2: the ledger's sentence
+  on the pinned row ("The old row was the finding."). Card 3: that the new test asserts the verdict's shape and
+  compares the command by reference; the quoted words "Re-push, then verify again"; that a mutant classing the
+  unreported-only case as the self-test's cause is not killed by the new behavioural test (R7; the rendered
+  tests kill it by the headline). Card 4: the row's sentence that a loaded machine or a slow share gets a user
+  refused for the machine's speed; that no run with the judgment's answer delayed past the limit by a fake is
+  recorded (it is row H133's acceptance). Nothing in card 4 says the failures came of load: each run records
+  nothing listed beside it, and green alone fits test order as well.
+- Dropped because a card did not need them: revision 1's 29 mutants, 21 of them not run, and its waits for the
+  runner; revision 2's discarded runs, when two run chains shared one remote clone; the equivalent mutant on the
+  headline's wrap attribute; the full-run totals.
+- Left out, or not closed: H126, a stale stop that swallows the first click after a stopped check, read in the
+  code, not reproduced and not fixed, so no card; the low rows H134 to H137, which card 2's Source names and
+  says no more of (H134 was read by two review seats; H135 and H136 were read, not run, and are the revision 2
+  builder's rows; H137 was met on master by a review seat); H133 itself, which card 4 reports as cut and not
+  fixed; the two residuals the seats named at revision 3 (an old headline inside a longer block would pass the
+  "Shows none of" assertion; the narrow-width layout test renders a Verified verdict only).
+- Card 3's trap still stands in one test of this tree, read in the code and not run: the other verdict panel
+  binds the re-push command directly, so that command is never null, and the control of card 1's behavioural
+  test clicks it after a Verified run, where neither button is shown. Card 3's check, by its first arm (the
+  button found visible in the rendered view), fails that test; its second arm does not apply to it.

@@ -25701,3 +25701,92 @@ master before the packet; a *mutant* is one planted edit that a named test must 
   a gate flake that passes 8/8 in isolation was a real product race, twice; reproduce by starving the THREAD POOL".
   `evidence: measured` (one instant, 01:52Z, by the steward's pass of that morning).
 <!-- outbox:a68dc555640aaadd dng-auto-processor:bcdbaeb372dbd2d5d8236e945d0b02395dad496f/foreign-job-named-by-ancestry -->
+
+<!-- cloudvore-filing:2026-10-04-labels-commands-and-one-headline-cards generated from review/doctrine-drafts/2026-10-04-labels-commands-and-one-headline-cards.md at 32672da -->
+
+# Draft for the fleet doctrine bus -- Cloudvore, 2026-10-04: four cards on labels, commands and one headline
+
+Facts observed in one project, each tied to a commit on this board's master; nothing here instructs the fleet.
+Form: one card per trap -- the rule, the mechanism, where it applies, a check another project can run, the source
+-- and no harness, no scripts, no evidence directory. The cap, set before review pass 1: at most 4 cards, each at
+most 15 lines and 2,000 bytes; every figure and quoted phrase in a card is in the ledger, queue row or evidence
+file that card cites at this board's origin/master. `evidence: measured` means measured in this project and
+recorded there; a card says so where a fact in it was read and not run.
+Vocabulary: a *verdict* is the result of one check of a backup, and *Incomplete* is the verdict that neither
+passes nor finds a broken file; the *panel* is the screen that shows a verdict: a *headline*, the *account* (the
+verdict's own explanation, written by another component) and one button; a *command* is the object a button is
+bound to, which runs on a click; a *rendered test* builds the real view and reads what it shows; a *recording
+fake* stands in for the copying engine and lists the calls it was sent; a *pin* is a test that must fail if a
+named behaviour goes; a *seat* is a non-author reviewer; a *mutant* is one planted edit that a named test must
+fail on; a *control* is the same run or test over the unchanged thing, beside which a result means something;
+a *full run* is every test with no filter; the *hosted bar* is the required test run that decides whether a
+change may land; the *integrator* is the session that briefs, reviews and lands a packet; a *queue row* is one
+line of this board's backlog; the *self-test* is the check's own proof that it works, without which no pass is
+given; the *sweep* is the check's pass over the destination; a *re-push* copies again and then checks; the
+*neutral headline* is "The check did not end in a pass".
+
+## TRAPS
+
+### 1. A button's words were changed and its command was not
+
+- **Rule (observed):** revision 1 chose a button's words by the verdict's cause. For a backup, three of four
+  causes read "Verify again" on a button still bound to the command that copies and then verifies. Not landed.
+- **Mechanism:** revision 1 recorded the unchanged command as a residual, on a belief that the copy "normally
+  sends nothing"; revision 2 found that wrong about the code. Fix: one switch returns headline, words and action
+  as one value. The view still has two bindings, words and command; a rendered test holds them together (the
+  shown button's words, its command by reference), and a behavioural test executes the check-only command.
+- **Where:** a control whose label is edited apart from the command it is bound to.
+- **Check:** for each button whose label changed, take its command from the rendered view, execute it over a
+  recording fake, list the calls. Pass: they are what the label says and no more. After the fix: no copy, one
+  check under "Verify again"; one copy, then one check, for the re-push. Revision 1 fails by reading, no run
+  recorded. Planted: the old binding kept, 11 of 139 red; the new command made to copy, 1 of 139.
+- **Source:** H112, merge `0d39f95`; `review/ledger-h112-incomplete-headline-2026-10-03.md`, "Residuals", "What
+  revision 1 got wrong", Revision 2's "The decision built" and "Tests", mutants M-m, M-d. `evidence: measured`.
+
+### 2. One headline stood over every cause of a state, and a pin held one cause under it
+
+- **Rule (observed):** the panel said "Not everything landed" for every Incomplete verdict: a check the user
+  stopped, a pass withheld by the self-test alone, a sweep that could not run. With per-cause tests added to
+  master, 16 of 104 failed, each on that headline. Revision 2 kept it, over a re-push, for files the check never
+  reported on, whose account says "nothing is known about them either way" and "Verify again".
+- **Mechanism:** the headline was a literal in the view. In revision 2 the integrator's instruction kept the
+  unreported-only case under it and a test row pinned it there. A review seat quoted the account; the instruction
+  was withdrawn. Fix: the case takes the neutral headline; one test reads account and panel together.
+- **Where:** a panel whose headline and action stand above an account that another component writes.
+- **Check:** per cause, build the record through its real writer, render the panel, and in one test read headline
+  and action against the account, expected words taken from it (here it holds "Verify again" and not "push").
+  Pass: neither says what the account denies. Revision 2 fails: the one test so written was red, among 4 of 145.
+- **Source:** H112, merge `0d39f95`; same ledger, "The defect", "RED", Revision 3 ("The finding", "The
+  withdrawn instruction", "RED"); rows H112, H134 to H137 (four more causes, not fixed). `evidence: measured`.
+
+### 3. The click was tested from a state in which the button is not shown
+
+- **Rule (observed):** revision 2's behavioural test executed the check-only command after a run that ended
+  Verified: no copy, one check. The button shows only for an Incomplete verdict; a seat asked for that click.
+- **Mechanism:** the test took the command by name (read in its code), so it never asked whether the view offers
+  it there. Fix: a test drives the real runner to an Incomplete verdict, takes the command from the property the
+  view binds and executes that object. On revision 2's code it failed: the words there were the re-push's.
+- **Where:** a behavioural test of a command that a view offers in some states only.
+- **Check:** in each such test, before the click, show that the view offers the button in the state the test
+  built: find it in the rendered view, visible, and take its command; or read the property the view binds, where
+  that property is null whenever the button is hidden. Pass: the button is offered there and its command is the
+  object then executed. Revision 2's test fails by reading, not run: that property is null for a Verified
+  verdict. Not closed: no such test for the self-test's cause.
+- **Source:** H112, merge `0d39f95`; same ledger, Revision 2 "Tests" and "Readers and writers of the label and
+  the command", Revision 3 "RED" and "The new behavioural case". `evidence: measured`.
+
+### 4. One test red in a full run on the candidate and on master, green alone, was cut as a defect
+
+- **Rule (observed):** the one full run of revision 3 failed one test, and so did the one of unmodified master:
+  the same test, in a file the packet does not touch, saying "the check of the destination's folder did not
+  finish in time". Alone it passed on both trees, 133 of 133 in its class. The ledger says it is not green.
+- **Mechanism:** equal failing sets clear the candidate, not the test. A review seat read the limit in the
+  product, the runner's RPC timeout, 30 s by default. Cut as row H133, not fixed. That row counts the test in 4
+  of 48 mutant runs of another packet, both controls at 0 failed; the file names the test there, no message.
+- **Where:** a test that fails in a full run and passes alone.
+- **Check:** run the full suite on the unmodified base too, then each red test alone on both. A test red in a
+  full run and green alone, on either tree, is not placed by one run each: repeat the full runs before blaming
+  the candidate. Then find the limit its message names. Pass: no such test is left without a row saying whose
+  limit it is. Here: the product's (read by a seat, not run). The hosted bar it landed on: 3 passes, 0 failed.
+- **Source:** H112, merge `0d39f95`; same ledger, "Runs of revision 3"; rows H133 and H112; the file
+  `review/evidence-h116-destination-away-2026-10-03/mutants-results.txt`. `evidence: measured` (the runs).
