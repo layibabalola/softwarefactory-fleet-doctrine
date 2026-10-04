@@ -1,5 +1,5 @@
 # DNG Auto Processor — factory spec (one writer: the `dng-design-steward` seat, docs/13 P-STEWARD step 7d; a posture change made anywhere else reaches this file as a census item of that seat's next pass)
-source_commit: 74bfe79be701d7e3c27277ad851f5221ed46bbd8
+source_commit: 9ee854d2baac2d427d2f4abd5852f15ef80bebe5
 
 **Machine:** ULTRAMAGNUS (personal box). **Project root:** `C:\code\DngAutoProcessor - Claude`.
 **Product:** auto-grading pipeline for DNG timelapse clips emulating the operator's LRTimelapse
@@ -96,7 +96,7 @@ section it cites, or when its `KERNEL:` block differs from the one docs/13 P-STE
   the card, and in the standing authority when it is a standing ruling, and disposes of the card as the answer
   directs — where it lets the held phase proceed, the card returns READY at the same attempt. A steward's edit of the
   rule decides the disposition only, never the seats' question, and releases no card held under it, or held before it
-  on the case it disposes of. Left open-ended, a second decline
+  on the case it disposes of, whatever that card's state line names. Left open-ended, a second decline
   had no disposition, and a seat wrote a hold into its record before any rule held it. A whole relaunch puts the same
   ask to the same model, because a failover rule triggered by usage, quota, session-limit, auth or outage
   errors, or by a failed CLI probe, is not triggered by a refusal and so shifts nothing — a remedy that cannot
@@ -215,15 +215,17 @@ section it cites, or when its `KERNEL:` block differs from the one docs/13 P-STE
   spawn-and-exit churn of a build or a restore is made of exactly such processes, so it is named UNREADABLE and
   counts as live until a later window reads it, or finds it gone with no build-output write in between — **unless
   the windows can RATE it** (§4): one present in every window with the same pid and creation time, its CPU time read
-  as the process's kernel-mode plus user-mode time (a null CPU read is never a zero), and no descendant appearing or exiting inside
-  them, is decided by the idle floor like any other candidate, because a long-lived process no unelevated reader can
-  see into never gives either exit. A hook
+  as the process's kernel-mode plus user-mode time (a null CPU read is never a zero), and no descendant appearing or
+  exiting inside them, is decided by the idle floor like any other candidate, because a long-lived process no
+  unelevated reader can see into never gives either exit. A hook
   rejection naming a locked build output is a load reading: retry once, then defer, never `--no-verify`. A hold derives from
   processes, never from card state. **A job this factory did not start is NAMED, never held for** (§4): walk each
   process's parent chain to its root; a root that is the SSH service or a service other than this board's own runner
   is FOREIGN, named in the receipt with that root, and that resolves its UNREADABLE term — this board's own CI runner
-  is held for like any factory suite. Foreign load reaches a commit only through the hook, so the rejection rule
-  governs it, and **a test the hook runs RED is never dismissed as that load**, even when the retry passes, until a
+  is held for like any factory suite (fleet `TRAPS.md`, "A quiet gate that counts every live test host defers forever
+  on a shared runner machine; name a foreign job by its ancestry"). Foreign load reaches a commit only through the
+  hook, so the rejection rule governs it, and **a test the hook runs RED is never dismissed as that load**, even
+  when the retry passes, until a
   repro that starves the thread pool says otherwise (adopted from this bus). A card's MEASUREMENT is different: its
   own gate decides and records the foreign jobs it saw, and only the owner of those runners can give it a
   machine-wide quiet window. **A process sensor cannot see a peer's uncommitted BYTES, so the tree is
@@ -438,7 +440,7 @@ section it cites, or when its `KERNEL:` block differs from the one docs/13 P-STE
   cursor, and a `PreToolUse` tick re-checks during work; the tick never gates a tool (it always exits 0), only stats its
   per-session stamp when not due, and touches that stamp before it checks. Interval: 60 minutes per session by default.
   Covered: hub sessions — interactive sessions and scheduled seats — whose working directory is the workspace root, read
-  at each tick; a tick from any other directory stays silent, which keeps lanes and worktree seats out. Every covered
+  at each tick; a tick from any other directory stays silent, which keeps seats elsewhere out. Every covered
   session type acts through tool calls, so none lacks a work event. **Owed, not met:** (R15.2) that guard reads the
   working directory only, so a hosted subagent working at the root is not kept out; (R15.4) the view reads only the bus
   refs an hourly box sweep fetches and says STALE only once that sweep's last run is three hours old, longer than the
@@ -447,8 +449,8 @@ section it cites, or when its `KERNEL:` block differs from the one docs/13 P-STE
   2 lands, this board files traps to `TRAPS.md` exactly as before. From packet 2 it writes its new trap filings as cards
   to `specs/dng-auto-processor/cards.md`; from packet 5 it writes its decisions on other boards' cards to
   `dispositions/dng-auto-processor.md`; and from the commit landing R14.4 it cards, or marks `no-card`, its own trap
-  entries that rule names — each through the steward's doctrine loop. Moving that loop's trap target changes docs/13
-  P-STEWARD, which no seat edits (§7a), so the steward pass that first sees packet 2's addendum raises it to the USER.
+  entries that rule names — each through the steward's doctrine loop. Each of those three changes docs/13 P-STEWARD,
+  which no seat edits (§7a), so the steward pass that first sees packet 2's addendum raises all three to the USER.
 - **The fleet factory kernel runs through PROMPT K's DOGFOOD route, never ADOPT** (§0, USER): the card §0's kernel
   entry names writes the instance map, K1-K12, in `docs/KERNEL-INSTANCE-MAP.md`; the steward's kernel filing carries PROMPT K
   §3's evidence, and its `KERNEL:` line is `DOGFOOD-PENDING` until that file is on master and PROMPT K §2's `DOGFOOD`
@@ -458,6 +460,10 @@ section it cites, or when its `KERNEL:` block differs from the one docs/13 P-STE
   key's model; its review rounds always FIX, with no round cap; keys that wait while a family is dark, never a
   failover; a non-review state with no move HELD on a question naming the USER — bind the card §0 names, alone, and
   every other card keeps §4's ceiling and §2's failover. Recording ADOPT needs a new USER word.
+
+## Kernel line (docs/13 P-STEWARD 7e: the newest filing's line, byte for byte; beside the posture, not part of it)
+
+KERNEL: DOGFOOD fleet-factory-kernel r5 · profile code@r10 + measured-objective@r3 · instance docs/KERNEL-INSTANCE-MAP.md · since 2026-10-02
 
 ## Dispositions of fleet doctrine (docs/14 §9 verbatim; § = a docs/14 section; re-derive it there, never here)
 
