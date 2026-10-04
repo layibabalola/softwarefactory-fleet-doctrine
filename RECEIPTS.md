@@ -12100,3 +12100,74 @@ assurances, make each checkable, and enumerate rather than assert.
 - **First census run ([800]):** no single path explains the growth. The top native suspect was a DXGI enumeration that creates a hardware D3D11 device on every call, run 139 times in 45 min. It was cleared in about 15 s by 620 calls in an isolated process (private flat, handles flat), reproduced by the lead and by two agents independently. A one-time step from the first window show was first misread as warm-up. LESSON: probe a native suspect in isolation before writing its fix packet. A per-window delta inside 4-8 MB of sample noise is not a per-render signal.
 - **Coverage gap found:** the soak harness uses the test skin bridge, so no WebView2 runs in any row 46 soak.
 - **Re-derive:** airmypc ledger [797]-[800]; Ruling 36 in `.claude-state/hub-20260710/DECISIONS-2026-09.md`.
+
+<!-- cloudvore-filing:2026-10-04-promises-stored-routes-and-zero-in-green-cards generated from review/doctrine-drafts/2026-10-04-promises-stored-routes-and-zero-in-green-cards.md at e3969f3 -->
+
+## RECEIPTS
+
+- 2026-10-04, the form: five cards under a cap of 5, each at most 15 lines and 2,000 bytes, set before pass 1;
+  no harness. The writer built nothing of these packets and measured nothing for this draft: every card is
+  written from the ledgers, the handoff and the queue rows it cites as origin/master `895dc26` holds them.
+  Facts from code or markup that are in no ledger are listed under "Read in code" below.
+- Where the figures are. Card 1: the chip's words are the H106 ledger's first table; 24 of 24 is the last line
+  of its "Mutants"; the seat's edit, "still counted one mapping call", the command no test executed, the
+  request list and "a stored member that can never count" are "Revision 2", "The finding, and the pin"; what
+  the pressing test does is the paragraph after it; R1 (runner host, red in that test alone) and R9 (laptop,
+  the same test) are "Mutants of revision 2". The ledger says the pins seat planted the edit and gives no run
+  of it; row H106 says one of three seats "found a mutant ... with every test green".
+- Card 2: "about 80 characters", the picker's Auto column, the remote's name squeezed and the tail lost, the
+  two wrap attributes (the picker's with a maximum width of 240), the two captures, the window size, "two
+  lines", "verifies it" and the three things not looked at are "The chip's fit"; the structural pin's kills
+  are R4 to R8 (no wrap on either chip, no width bound, an ellipsis, a one-line height), all on the laptop;
+  "No test lays the XAML out" is the ledger's weak-pin section (a), which also says what the tests read; that
+  the app was not run at revision 1 is its "Not run".
+- Card 3: the sentence, the three scans, what the Resume test ran and the row's "every scan of a backup" are
+  the H117 ledger's "Are the rows real", which says the sentence was false "in three of the four states that
+  render it"; the flag is "Decisions" ("The promise is the Scan button's"); 20 of 507 is "RED" (the commit
+  object it labels REDT: the tip's tests over master's product), whose list names the resumed, quick-check
+  and watched-job tests; A3, 6 failing, is "Mutants". That a Resume whose scan finds no file does stop at
+  the plan is in the ledger only as a seat's reading ("Review, round 1", seat A, item 3); the card rests it
+  on a test read at origin/master `895dc26`, in the App tests' `CompletedJobRefusalRenderingTests.cs`:
+  `Resuming_an_unfinished_job_over_an_empty_source_lands_on_the_plan_and_runs_nothing` attaches a job with
+  resume set and asserts the plan stage. The writer did not run it. The direct-verification route also
+  enters the Scanning screen, with a sentence of its own that never held the promise (the ledger's hint
+  table; `JobWizardViewModel.cs` lines 142 to 144 at `6fe01fc`); the card is about backup scans.
+- Card 4: the zero-file line and its inks are "Are the rows real" (H119) and the RED log's quoted line; the
+  unconditional success brush, the unread items and the spelling twin are "Not fixed here" items 1 and 12 and
+  row H153 (whose words are "matched only by a spelling variant that was never compared"); "0 corrupt" in
+  danger ink is item 2 and row H154;
+  "118 complete", "142 complete" and "0 corrupt" in red are "What the captures show"
+  (`dark-03-manifest.png`, `light-03g-manifest-allpresent-unread.png`), which says seven of the eighteen
+  images were opened by the builder. Rows H117 and H119 say a review seat opened all 18: reported there.
+- Card 5: every fact is item 4 of the handoff or row K84: 08:53 Central and NOT READY, the quoted words and
+  the checkpoint are the handoff's; nine hours, five landings, two builders, where the tool takes the
+  repository from and the ruling (two of three design seats) are the row's; its first words are that a change
+  of account stops every session with no warning. The checkpoint file is outside the repository and was not
+  read for this draft. The cause of what it named is not established: row K84 says the tool takes the
+  repository from the project directory and only the session id from the hook's payload, and the tool's own
+  note (`tools/rotation-ready.py`, `checkpoint_slug`, lines 869 to 871 at `895dc26`) says that directory, in
+  a linked worktree, is the worktree.
+- Not written, though the brief gave them. In card 2, that two seats found the missing wrap: the ledger names
+  the design seat alone. In card 1, that the seat found its mutant by reading and planted it afterwards: the
+  ledger says only that the pins seat planted it. In card 5, the row's four build items and its drill: they
+  are a plan, and nothing of it is built.
+- Cut to keep a card within 15 lines. Card 1: that a mutant overriding the mode inside the mapping call (M18)
+  was killed at revision 1 while the one after it survived; the single-destination path and its pin (R3).
+  Card 2: that the provider label is cut to "Enc" in the ticked capture and to "Encr" un-ticked, so the wrap
+  did not start that; that the harness exited 2 with 56 binding errors on History rows. Card 3: that at
+  revision 1 the watched queue job was pinned in one of its two phases, a seat's mutant keyed on the other
+  survived (reported) and is red at revision 2 (G1, G2); the direct-verification route, whose hint is
+  unchanged; the two reworded sentences about what a scan compares. Card 4: the cache note's tick, removed
+  beside an unread item; that no capture of master was made; that an earlier sweep for reassurance read a text
+  block's own ink and not the inks of the pieces inside it (the ledger's weak-pin section (b)). Card 5: that
+  row K84's stated target is bounded loss, not a seamless resume; the two other causes of NOT READY
+  (another session's dirty worktree, two worktrees with commits on no remote), which were true blocks.
+- Left out, or not closed: the H106 ledger's "Not fixed here" 1 to 5 (rows H146 to H150); the H117 ledger's
+  other items (rows H155 to H158 and those not cut); revision 1's mutants of both packets, not planted again
+  at the revision 2 tips; rows H21 and H22, which the handoff says hold part of card 5 and are unworked.
+- Read in code and in no ledger. Card 2: at `64ccdfb` both chip text blocks in the wizard's view bind the
+  chip and carry no wrapping and no trimming attribute. Card 4: at origin/master `895dc26` the two complete
+  counts and the clips' corrupt count each carry a fixed brush on their own run in that view. Card 5: at
+  `895dc26` the readiness tool runs the gate with no landed ref named, and the gate's default for it is
+  `master`; row K84 and the handoff say the same of the canonical checkout's local `master`.
+- Related entries on the bus were not looked up for this draft; the bus clone was not read.

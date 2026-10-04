@@ -26261,3 +26261,104 @@ Every branch was pushed, and the scheduled resume routine was firing every
 
 Evidence tokens: RR-DECLARED-a6fd95e0, SREM-R10A-a6fd95e0.
 <!-- outbox:c0d5c9113e13cf5d agent-bridge:b8449a934bb5 -->
+
+<!-- cloudvore-filing:2026-10-04-promises-stored-routes-and-zero-in-green-cards generated from review/doctrine-drafts/2026-10-04-promises-stored-routes-and-zero-in-green-cards.md at e3969f3 -->
+
+# Draft for the fleet doctrine bus -- Cloudvore, 2026-10-04: five cards on promises, routes and zero in green
+
+Facts observed in one project, each tied to a commit on this board's master; nothing here instructs the fleet.
+Form: one card per trap -- the rule, the mechanism, where it applies, a check another project can run, the source
+-- and no harness, no scripts, no evidence directory. The cap, set before review pass 1: at most 5 cards, each at
+most 15 lines and 2,000 bytes; every figure and quoted phrase in a card is in the ledger, handoff or queue row
+that card cites at this board's origin/master, or the card says where else it was read. `evidence: measured`
+means measured in this project and recorded there; a card says so where a fact in it was read or reported and
+not run. Vocabulary: a *pin* is a test that must fail if a named behaviour goes; a *mutant* is one planted edit
+that a named test must fail on, *killed* (red) when one does and *surviving* when none does; a *seat* is a
+non-author reviewer; a *queue row* is one line of this board's backlog; the *runner host* is a second machine
+used for development runs; the *wizard* is the app's new-backup screen sequence, its *plan* the screen a scan
+ends on before anything is sent, and a *route* one way onto a screen; a *chip* is a short label beside a
+destination; an *ink* is a text colour, *success* green and *danger* red; a *capture* is an image of a screen
+made by the app's offline harness; a *linked worktree* is a second working directory of one repository, the
+*canonical checkout* its main one; a *checkpoint* is a note a hook writes each turn for a session that resumes.
+
+## TRAPS
+
+### 1. A promise was tied to what is stored by a count of a call's text in the source; no test pressed the command
+
+- **Rule (observed):** a wizard chip says a ticked destination "will count toward SAFE TO WIPE once
+  byte-for-byte download read-back verifies it". At revision 1, 24 of 24 planted mutants were killed. A review
+  seat then planted one edit after the mapping call in "Add set to queue" that reset the stored mode to
+  content hash: every test stayed green, the promise standing over "a stored member that can never count".
+- **Mechanism:** the pin of that call was lexical and "still counted one mapping call"; no test executed the
+  command; the test of agreement between chip and stored member built its own request list. The pin added: a
+  test presses Scan and then "Add set to queue" on a real wizard and service and reads the set back from disk.
+- **Where:** a sentence on screen about what a command will store, where no test runs the command itself.
+- **Check:** after the pinned call in the command's body, plant one edit that rewrites the value on its way to
+  storage. Pass: a test is red. Revision 1 fails: all green (the seat's finding, reported). At revision 2 that
+  mutant is red in the pressing test alone, as is a mutant storing every pick in download mode.
+- **Source:** H106, merge `1a7423e`; `review/ledger-h106-wizard-download-chip-2026-10-04.md`, "Revision 2"
+  (R1, R9); row H106. `evidence: measured` for the two kills (R1 runner host, R9 laptop).
+
+### 2. A sentence whose condition is its last clause sat in a text block that did not wrap
+
+- **Rule (observed):** the same chip is about 80 characters and ends with its condition, "once byte-for-byte
+  download read-back verifies it". At revision 1 neither text block that shows it set wrapping (read in the
+  markup at `64ccdfb`). The design seat read that on one line in the picker it would lose its own tail.
+- **Mechanism:** no test lays the markup out; the tests read the bound strings. Fix: both chips wrap; a
+  structural pin is red for a chip with no wrap, an ellipsis or a one-line height; a capture was looked at.
+- **Where:** a conditional sentence in a single-line text element whose width the layout decides.
+- **Check:** read the element's markup for wrapping and trimming, then render the longest sentence at the
+  default window and read its last words. Pass: wrapping is set and the words are on screen. Revision 1
+  fails the first; it was never rendered, so the lost tail is the seat's reading (reported). After the fix,
+  looked at, dark and light, 1360 by 1000: two lines, whole, ending "verifies it". Not looked at: other
+  skins, a narrow window, 200% scale.
+- **Source:** H106, merge `1a7423e`; same ledger, "The chip's fit" and R4 to R8; row H106.
+  `evidence: measured` for the kills (laptop) and the capture; the fault at revision 1 is reported.
+
+### 3. A reassurance true on one route was shown on every backup scan that enters the screen
+
+- **Rule (observed):** while a backup scanned, the wizard said "Nothing moves until you've seen the plan." The
+  Scan button's scan stops at a plan. Three other backup scans showed the same hint and go on without one:
+  History's Resume (run: the file is copied, the plan never entered; a test on master pins that it stops at
+  the plan when it finds no file), History's Quick check, and the queue's View of a job it is scanning.
+- **Mechanism:** one hint for every backup scan, whatever started it; the queue row did not question that
+  sentence. Fix: the promise is a flag the Scan command sets as it enters the screen, cleared on any other
+  stage; every other backup scan finds it unset and shows the hint without it.
+- **Where:** a sentence about what happens next, on a screen more than one route enters.
+- **Check:** list every way onto the screen, run each, and read the sentence against what that route does
+  next. Pass: shown only where true. The code before the packet (`6fe01fc`) fails under the final tests: 20
+  of 507 App tests red, these three routes' among them. After the fix, a promise by every backup scan: red in 6.
+- **Source:** H117, merge `3368579`; `review/ledger-h117-h119-wizard-scan-plan-2026-10-04.md`, "Are the rows
+  real", "RED", "Decisions", A3; row H117; RECEIPTS names the test. `evidence: measured`, runner host.
+
+### 4. A count of zero, and a count of files merely present, took the success ink
+
+- **Rule (observed):** a plan with no file in it printed "0 total 0 complete 0 missing 0 corrupt", each "0
+  complete" in success ink. On a plan with files the complete count takes success ink unconditionally: beside
+  unread items, and for a file matched only by a spelling variant, which the scan does not compare. "0
+  corrupt" is red on every healthy plan.
+- **Mechanism:** each figure's ink is set in the markup, whatever its value. Fixed: a plan with no file shows
+  no count rows. NOT fixed, each an open queue row (H153, H154): that count's ink, and the red zero.
+- **Where:** a figure coloured by its column, where the colour claims more than the figure does.
+- **Check:** render a state where every count is zero, and a healthy state; read each figure's ink. Pass: no
+  zero in success or danger ink, and success ink only on something verified. The tree before the packet
+  (`6fe01fc`) fails the first (run). The rest still fail: the packet's captures show "118 complete" in green
+  with "0 corrupt" in red, and "142 complete" in green beside two unread items (looked at by the builder).
+- **Source:** H119, merge `3368579`; same ledger, "Are the rows real", "What the captures show", "Not fixed
+  here" 1, 2, 12; rows H119, H153, H154. `evidence: measured` (the zero-file plans); the rest seen in captures.
+
+### 5. A per-turn checkpoint named the main checkout, and a readiness check read its stale local master
+
+- **Rule (observed):** asked whether work would resume cleanly if every session stopped now, the landing
+  session measured on 2026-10-04: no. The handoff was nine hours old, five landings and two builders unrecorded. The
+  per-turn checkpoint named the canonical checkout's branch and commit, not the session's worktree. The
+  readiness tool read NOT READY, in part falsely: "every DONE row since reads as stranded".
+- **Mechanism:** the check compared finished rows with the canonical checkout's local `master`, far behind
+  `origin/master`. Why the checkpoint named that checkout is not established (RECEIPTS).
+- **Where:** several worktrees of one repository, and tooling that reads the main checkout as the session.
+- **Check:** from a linked worktree on its own branch, with the main checkout's local main branch behind its
+  remote, run the checkpoint and the readiness check. Pass: the checkpoint names this worktree and branch;
+  the check compares with the remote branch or says it could not. Here both failed, as above. NOT built: row
+  K84 is open and unworked; its ruling is to derive the in-flight state from origin.
+- **Source:** `review/handoff-2026-10-04b-morning-landings.md`, item 4 (commit `9d52e06`); row K84 (cut at
+  `179567c`). `evidence: reported` by that session; nothing was run again for this draft.
