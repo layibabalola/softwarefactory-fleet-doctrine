@@ -26126,3 +26126,96 @@ owning the machine (no builds while it runs), and that was not visible in the ch
 
 **Source:** airmypc session fb9bdda5; `~/.claude/hooks/session-checkpoint.py` v5, backups `*.bak-20261004T1400Z`.
 `evidence: measured`.
+
+### TRAP 2026-10-04 (adobe-ingester, measured on VIRTUAL-TEN): an orchestrator prompt that absorbs every directive verbatim eats its own wake budget
+
+**Symptom.** In the 36 hours to 2026-10-04T14:00Z the orchestrator logged 16 wakes that hit the 2400 s wrapper wall and 11 no-motion wakes. Two consecutive reviewer starts were held for missing the headroom check by 20.8 s and 6.7 s, after about 910 s of fixed reading.
+
+**Cause.**
+- Every adjudicated directive is appended verbatim to the orchestrator prompt, and the prompt is re-read at the start of every wake. It grew from 206,801 bytes on 2026-09-19 to 472,213 bytes on 2026-10-04: 40 KB in one day, about 8 KB per directive.
+- Each wake also reads the tail of an 11.5 MB ledger and a 677 KB state file.
+- So each fix makes every later wake more expensive.
+
+**Do this.**
+- Count prompt bytes as a cost when drafting a directive. Prefer a directive that supersedes an earlier one over one that only adds.
+- Compact the prompt into an index of active rules, with consumed directive bodies archived verbatim, in a governed generation run when no review window is open.
+- Measure fixed per-wake cost (elapsed time before the first gate) and alarm on its trend, not only on wall hits.
+
+**Source.** Adobe ingress OBSERVATION 2026-10-03T06:11Z (seq 117); sol-exec quarantine directory suffixes. Re-derive with:
+- `git cat-file -s <rev>:.factory/prompts/sol.md` for successive days;
+- a count of `*-timeout` and `*-nomotion` directories under `%LOCALAPPDATA%\AdobeIngesterFactory\evidence-quarantine\sol-exec`.
+
+`evidence: measured`.
+
+### TRAP 2026-10-04 (adobe-ingester, measured on VIRTUAL-TEN): on a shared workstation, other projects' load turns trivial orchestrator commands into minutes
+
+**Symptom.** Inside orchestrator wakes:
+- `Write-Output 'probe'` took 114 s;
+- `git add`, `git show` and `git commit` each took 70-260 s;
+- the commands alone summed to 1,284-3,111 s per 2400 s wake.
+
+The same retention suite passed in 1,024 s outside a wake but timed out at 1,800 s inside one, with no assertion failure.
+
+**Cause.** CPU was at 81-100% for hours. The heaviest consumers:
+- the WMI provider host, about 1 core, and one svchost, about 1.4 cores;
+- another project's CI pytest loops and a bridge runtime, running since 2026-09-29;
+- chat-app sessions;
+- per-turn Python hooks.
+
+Every process start inside the agent's sandboxed shell pays for it. The same `pwsh -Command` took about 2 s when run outside a wake.
+
+**Do this.**
+- Before diagnosing an agent as slow, sum its per-command durations from the transcript (the `succeeded in Nms` and `exited N in Nms` lines) and sample `\Processor(_Total)\% Processor Time` and `\Process(*)\% Processor Time`.
+- Run long validation suites outside agent wakes, or as the first heavy work of a fresh wake, never concurrently with another suite.
+- Give a governed project's review windows priority over other projects' CI on a shared box.
+
+**Source.** Adobe ingress OBSERVATIONs seq 119 and 121 (retention measurement; receipt DFA4C32225628E4DF01D49796B59BAA9969D193BE5D4DE027209D456F623D5F2), and the 2026-10-04 wake transcripts under the sol-exec quarantine. `evidence: measured`.
+
+### TRAP 2026-10-04 (adobe-ingester, measured on VIRTUAL-TEN): a supervised-process hard deadline of timeout plus one second fails teardown under load
+
+**Symptom.** "Bounded reviewer process termination exceeded hard deadline" appeared in at least five supervised runs:
+- 2026-09-29 07:20;
+- two at 09:11;
+- 18:02;
+- 2026-10-04 01:02.
+
+Every one ended with zero survivors. It also aborted a reviewer start at its identity preflight after 17.7 minutes. A gate that depended on it failed once more under load, and the work order ran out to TIMEOUT_48H.
+
+**Cause.** The hard deadline was `TimeoutSeconds*1000 + 1000` ms, and termination begins only after TimeoutSeconds. So kill, the kill-on-close fallback, the stable-gone wait, the zero-process proof and the Job-handle closure shared about one second. The kill always worked; the proof missed the deadline.
+
+**Do this.**
+- Give termination its own fixed, load-independent budget, separate from the execution timeout. Adobe chose 15 s from a teardown proxy: p99 0.3 s, longest clean teardown 6.8 s.
+- Show every enclosing wall is at least timeout plus budget.
+- Prove the fix with a deterministic fixture that injects a teardown delay of at least 2 s: it fails on the old bytes and passes on the new. A synthetic CPU-load run is evidence only, never a gate.
+
+**Source.** Adobe commit 3c2d600 (generation bounded-termination-budget-v1, consumed 0dff630, adobe-ingester). Cross-family falsifier report SHA-256 14483C6736D63AFFAEA3FE1B105E29FE09626A39F8E54FE4AEB3B11F37BC9380. Re-derive with the focused fixture in `.factory/tests/Test-FactoryReviewerCapacityRecovery.Tests.ps1` against the old and new `FactoryReviewerCapacityRecovery.Common.psm1`. `evidence: measured`.
+
+### TRAP 2026-10-04 (adobe-ingester, measured on VIRTUAL-TEN): a single-start allowance held in process memory is spent twice by the scheduler
+
+**Symptom.** One authorized reviewer start produced three runs:
+- one failed before the model started;
+- one started the model and was refused at report admission;
+- a third started a second model process on the already-spent allowance and published a report that had to be declared non-countable.
+
+**Cause.** The reviewer task fired every 5 minutes with IgnoreNew, and its start condition stayed true while no publication existed. The runner's mutex prevented only concurrent runs. The "allowance consumed" flag lived in process memory, so each new scheduled run started fresh.
+
+**Do this.** Before the model starts, after every non-model gate, atomically create a durable claim:
+- create it with `FileMode.CreateNew`, keyed by lane plus the SHA-256 of the exact dispatch signal id;
+- flush it to disk with `Flush(true)`, in a fixed local root with verified non-reparse ancestry and trusted ACLs;
+- if the claim exists or cannot be created, start no model;
+- a partial claim still consumes the allowance, and losing the claim store refuses dispatch;
+- retention and installer cleanup never touch claims;
+- test sequential, concurrent (separate mutex namespaces), crash-before-start and identity-failure-leaves-no-claim cases against the old bytes.
+
+**Source.** Adobe commit ddb657d (generation reviewer-dispatch-start-claim-v1, adobe-ingester). Cross-family falsifier reports for requests 48 (UNSAFE), 49 (UNSAFE) and 50 (SAFE-WITH-CONDITIONS), the last at SHA-256 316C961D2BF1BFCCD66D6882C32317850333FCFF5FCF978AFA758A8C3533808E. `evidence: measured`.
+
+### TRAP 2026-10-04 (adobe-ingester, measured on VIRTUAL-TEN): a resume heartbeat that omits obligations owed to the orchestrator does not survive an account rotation
+
+**Symptom.** The rotation-proof resume checkpoint listed board state, ingress response counts and the newest orchestrator drain. It did not list orchestrator requests still waiting for the auditor, usually mandatory cross-family falsifiers that block a generation. A session resumed after a rotation would see a healthy board and leave the orchestrator blocked.
+
+**Do this.**
+- Derive the open obligations mechanically in the heartbeat: each request newer than the highest answered `req_seq` and not superseded by a later "SUPERSEDES request N".
+- Older gaps are historical, because earlier answers carried `req_seq` 0. Listing every unanswered request ever filed gave 22 false rows.
+- After editing a hash-pinned scheduled script, prove the next run, not just the re-pin.
+
+**Source.** Adobe `.claude-state/tools/Write-ResumeCheckpoint.ps1`, SHA-256 2387FEEEC84528669AA175E970FE51686EA3D4DBE6547C0B9BBD9B0B3F8669B7, re-pinned with `Repin-ResumeCheckpointTask.ps1`. Verified run: exit 0, `open orchestrator requests: 0 (seq above the highest answered req_seq 51)`. `evidence: measured`.
