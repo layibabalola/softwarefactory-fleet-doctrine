@@ -25437,3 +25437,120 @@ which volume stands at a path; a *refusal* is a run that stops before it examine
 - **Source:** H115, merge `389c1e6`; same ledger, "What review changed" (the last two entries), commit
   `d0163c9`. `evidence: measured` for the kills; that the old count could not fail, and which assertion fails,
   were read by a reviewer.
+
+<!-- cloudvore-filing:2026-10-04-short-paths-retries-and-anchors-cards generated from review/doctrine-drafts/2026-10-04-short-paths-retries-and-anchors-cards.md at 7488545 -->
+
+# Draft for the fleet doctrine bus -- Cloudvore, 2026-10-04: six cards on short paths, retries and anchors
+
+Facts observed in one project, each tied to a commit on this board's master; nothing here instructs the fleet.
+Form: one card per trap -- the rule, the mechanism, where it applies, a check another project can run, the source
+-- and no harness, no scripts, no evidence directory. The cap, set before review pass 1: at most 6 cards, each at
+most 15 lines and 2,000 bytes; every figure in a card is in the ledger that card cites at this board's
+origin/master. `evidence: measured` means measured in this project and recorded in the cited ledger; `evidence:
+reported` means taken from the ledger's account of something that was reasoned and not run (card 6's trap). A
+card says so where a fact in it was read and not run.
+Vocabulary: a *pin* is a test that must fail if a named behaviour goes; a *seat* is a non-author reviewer; a
+*mutant* is one planted edit that a named test must fail on, and one that fails no test has *survived*; a
+*fixture* is a state a test builds to run against; an *8.3 short name* is the older second name Windows keeps
+for some directories (`DOCUME~1` for `Documents`); a *junction* is a directory that is a link to another; a
+*sweep* is one test that runs a tool once per git call the tool makes, a stand-in git (the *shim*) failing that
+one call, and requires that no section of the tool's output reads ok without its answer; a *theory* is a test
+run once per row of inputs; the *hosted runner* is the machine whose run decides whether a change may land.
+
+## TRAPS
+
+### 1. One side of a path comparison kept the short name the other side resolved away
+
+- **Rule (observed):** a suite was sped up by replaying git's recorded answers. It passed 229 of 229 under a long
+  TEMP; on the hosted runner, whose TEMP is an 8.3 short path, 2 of 229 failed, both the replay's own pins.
+- **Mechanism:** the pins named a fixture by `normcase(abspath(...))`, which keeps the short name; the recording's
+  keys carry the directory the tool hands its children, resolved to the long name. The replay itself was serving.
+  Fix: one function, `normcase` of the resolved path, for the keys and for the pins.
+- **Where:** tests that compare or key on a path with two spellings (here an 8.3 short TEMP), one side resolved.
+- **Check:** run the suite with TEMP itself spelled the other way (a short name, or a junction to it), so fixtures
+  are made under that spelling. Pass: no new failure. Here, under a short TEMP, the two hosted failures and a new
+  pin were 3 of 3 red before the fix, 3 of 3 green after; no run with TEMP as a junction is recorded. The new pin
+  reaches a fixture through a junction and covers the key function only; that it bites where no short names exist
+  is the ledger's reasoning (each red run recorded for it had a short TEMP).
+- **Source:** K74, merge `1fae810`; `review/ledger-k74-gate-tests-speed-2026-10-03.md`, "Timings on this laptop"
+  (full suite), "Hosted run 37155335072", "The path fix". `evidence: measured`.
+
+### 2. A retry for a run the load disturbed threw that run away unread
+
+- **Rule (observed):** a sweep was made to run four at a time. A run the load disturbed (the shim failed no call,
+  or the output held a timeout note) was run again alone, and only that second run was judged. A seat's mutant
+  made the tool read ok once, wrongly, with a timeout note beside it: the sweep's class passed 5 of 5.
+- **Mechanism:** the run that asked for the retry was dropped with nothing asserted on it. Fix: before a disturbed
+  run is replaced, each section that differs from the healthy reading must be not ok, say it is unavailable and
+  list nothing (a later round added a fourth assertion, on the note's cause); the run repeated alone is judged in
+  full; each retry is recorded and printed. The fix's two pins called the judging function directly; a later pin
+  runs the real sweep test over fabricated runs and fails when the sweep's own call to the judgment is deleted.
+- **Where:** a test that repeats a run it calls disturbed, when the product's own output marks the run so.
+- **Check:** hand the retry a fabricated first run that is disturbed and carries a wrong ok. Pass: the test fails
+  on that run. Here 2 of 2 such pins were red before the fix, when the seat's mutant passed; after it the mutant
+  failed on the disturbed run.
+- **Source:** K74, merge `1fae810`; same ledger, "Round 3", "Round 4" (item 1), "Landing". `evidence: measured`.
+
+### 3. A wrong ok given once passes a sweep that judges by difference from a healthy run
+
+- **Rule (observed):** after card 2's fix, a mutant that returns the healthy ok reading once after a read failed
+  with exit 128 still passed the sweep. The ledger says master's serial sweep passes it too (no run recorded).
+- **Mechanism:** the sweep fails one git call per run and holds no table of which call feeds which section. It
+  accepts a section equal to the healthy reading as one the failed call did not feed. Behind that stands, for each
+  section, a floor on the number of runs that make it refuse. Two of the three floors are slack: 10 and 16 counted
+  against floors of 6 and 8 (the third is exact, 4 against 4), so one swallowed read there trips nothing. They
+  were left: an exact floor turns every added or removed git call into a red sweep.
+- **Where:** a fault-injection sweep that judges the output by its difference from a healthy run.
+- **Check:** plant an edit that returns the healthy answer once after a failed call. Pass: the sweep fails. Here
+  it did not. Then print each count beside its floor. Pass: equal, or the gap is a stated choice, as here. The
+  ledger says a class that forces each child by name catches the edit made on every run; no such run is recorded.
+- **Source:** K74, merge `1fae810`; same ledger, "Round 4" (items 3 and 4), "Landing" (two more shapes, not
+  carried here). `evidence: measured` for the candidate's run and the counts.
+
+### 4. Anchors proved a file was listed, not that its offender reached the assertion
+
+- **Rule (observed):** a pin scans source bytes for one forbidden character and, so that a scope edit could not
+  pass on an empty read, asserted that three named files were read (anchors). Two mutants kept the file list and
+  filtered one tree's offenders out after the anchors, an offender planted there. Both survived.
+- **Mechanism:** the anchors read the list and the assertion read something computed later. Fix: one helper takes
+  (path, bytes) pairs and returns the offenders; the pin adds two synthetic probes, one per tree, to the real
+  files and asserts that the helper's return value, whole, is exactly the two probe lines.
+- **Where:** a scanning test that proves its scope by naming inputs it must have seen.
+- **Check:** plant an offender, then a filter at each stage (in the list; in the scan; before the assertion).
+  Pass: the test fails at each. Here, after the fix, filters dropping one whole tree's offenders were killed at
+  all three, in both trees. Read in the test, not run: a filter narrower than a tree keeps both probes and hides a
+  planted offender. Not closed: the fix proves a probe reaches the assertion, not a real offender.
+- **Source:** H109, merge `b09ad77`; `review/ledger-h109-verdict-replacement-char-2026-10-03.md`, the two sections
+  of mutants executed on Ultra Magnus, "Revision 2". `evidence: measured`.
+
+### 5. A cp1252 dash byte, re-encoded, stood as U+FFFD in two sentences users read
+
+- **Rule (observed):** one commit wrote an em dash into a C# source as the single byte 0x97, its Windows-1252
+  form. Another, the same day, re-encoded the file as UTF-8 and left `EF BF BD` (U+FFFD, the replacement
+  character) in each place: two comments and two rendered sentences of a verdict's account, which is stored with
+  the job, shown in History and printed in certificates signed at export.
+- **Mechanism:** the lone byte is not valid UTF-8, and the re-encode put the replacement character where it stood.
+  The three older tests that touch these sentences assert a fragment on one side of the dash. Fix: the em dash,
+  each account asserted whole, and a pin that reads the bytes under the source and test trees.
+- **Where:** source files that tools with different default encodings write, holding text users read.
+- **Check:** decode every tracked text file strictly as UTF-8. Pass: none fails. Not run here; by the ledger's
+  account it fails at the first commit, on four 0x97 bytes. Run here: a scan of the tree for `EF BF BD`, which
+  sees only the state after the re-encode: five at the base (four defects; one deliberate, respelled), none after.
+- **Source:** H109, merge `b09ad77`; same ledger, "Every U+FFFD in the tree", "The explanation string", "Golden
+  files" (two headings shortened); the two commits were read in history. `evidence: measured`.
+
+### 6. A release into a private repository would have reported success
+
+- **Rule (observed, by reading):** a release job creates a release in a separate releases repository with a token.
+  That repository is private until launch, by the owner's choice. With a valid token the create succeeds there and
+  the job is green: a release no stranger can open. Reasoned from the workflow's text; not run.
+- **Mechanism:** the job's success says the upload was accepted, not that anyone outside can read it. Fix: a step
+  reads the repository's visibility through the API with the release token and fails with a sentence unless the
+  answer is `public`. A checker requires the read, the comparison, the sentence, the failing exit and the token.
+- **Where:** a publish step whose target's visibility is set somewhere other than the workflow.
+- **Check:** fetch the release's address signed out, with no credentials. Pass: it opens. Not done here: no
+  release exists yet. What was run checks the workflow's text only, with this project's checker: each of those
+  five removed from a copy fails it (five tests), and so does the read replaced by a constant `public`.
+- **Source:** H41, merge `9bd428d`; `review/ledger-h41-release-branch-2026-10-03.md`, "Install link filled
+  (2026-10-03)". The step has never run against GitHub. `evidence: measured` for the checker's tests and the
+  planted constant; for the trap and the step, `evidence: reported`.

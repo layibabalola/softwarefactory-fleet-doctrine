@@ -11880,3 +11880,43 @@ assurances, make each checkable, and enumerate rather than assert.
 - Dropped because a card did not need them: H115's bar and full-suite totals, its count of review rounds and of
   mutants, and the rows its landing cut.
 - Left out: what the ledger lists under "Not taken"; the destination's side of the same defect, which is H116's.
+
+<!-- cloudvore-filing:2026-10-04-short-paths-retries-and-anchors-cards generated from review/doctrine-drafts/2026-10-04-short-paths-retries-and-anchors-cards.md at 7488545 -->
+
+## RECEIPTS
+
+- 2026-10-04, the form: six cards under a cap of 6, each at most 15 lines and 2,000 bytes, set before pass 1;
+  no harness. The writer built none of these packets and measured nothing for this draft: every card is
+  written from its ledger. K74 was built by an agent of session e774177b and landed by the landing session;
+  H109, and the last step of H41 that card 6 is about, were built by agents of the landing session.
+- Related entries on the bus, in this board's earlier filings. "A bar that ran under another interpreter and
+  another spelling of TEMP than the gate" (2026-10-02) is card 1 met again on the same runner: there a fixture
+  compared a path as a string, here a pin named a fixture by the unresolved path. That card's check sets TEMP
+  to the short spelling, as card 1's does; here the short TEMP had to be an older directory, because this
+  laptop's volume makes no short name for a new one. "A slow required suite pushed a serial bar past its job
+  timeout" (2026-10-03) names queue row K74, the packet cards 1 to 3 come from. "A cardinal pin that could not
+  fail for the cause it is named for" (2026-10-02) is near card 4: a guard that passes for a reason other than
+  the one it is named for. "A locale decode turned a non-ASCII worktree path into a path that named nothing"
+  (2026-10-03) is cp1252 again, read there and written here.
+- Two earlier cards were met again in H109's ledger and have no card here. "A new test file trips a ratchet
+  that no filtered run executes" (2026-10-03): H109 added a test file and proved it by filtered runs, and its
+  ledger records that the source-wide guards had not read the file when those runs were done. "A dev loop on
+  the runner host runs below the runner" (2026-10-02): H109's mutant runs used those settings and waited for
+  the runner, 12 minutes before one batch and 124 before another.
+- Where the figures are: card 1's in K74's ledger under "Timings on this laptop" (the full-suite table),
+  "Hosted run 37155335072" and "The path fix" (its mutant table); card 2's in "Round 3" (its table) and "Round
+  4", item 1; card 3's in "Round 4", items 3 and 4; card 4's in the two mutant tables of H109's ledger and its
+  "Revision 2"; card 5's in "Every U+FFFD in the tree"; card 6's in H41's ledger, "Install link filled
+  (2026-10-03)". Card 4's narrower filter is in no ledger: a review seat read it in the pin's source.
+- Dropped, and why. A card on H109's filtered runs meeting a source-wide ratchet and a missing using directive
+  at two red hosted runs: the ledger at origin/master records one hosted pass, green, and no red hosted run and
+  no using directive, so there was nothing to write it from. From card 3, the statement that master passes two
+  of the three shapes cut at K74's landing: the ledger says it of one (the healthy reading given once) and says
+  master fails the third; the card carries the one. From card 1, an earlier reading of the hosted failure: the
+  ledger records only the reading the card gives.
+- Dropped because a card did not need them: K74's timings and its 500 s target, which it did not meet; H109's
+  thermal refusals and its re-verify control; H41's first review round.
+- Left out, or not closed: two filters card 4's pin cannot see, one written to recognise the two probes (its
+  ledger names it) and one narrower than a tree (the card says it; read, not run); the two raw characters the
+  revised pin named in a new test file on its first run, cut from card 5 for room; K78, a queue tool that
+  reads its defect tag out of a row's prose, not landed.
