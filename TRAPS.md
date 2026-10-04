@@ -26534,3 +26534,14 @@ feed a prompt. A caller the census missed keeps its old behaviour, and the stdin
 Related: argv is not a prompt carrier (Windows). Check the wrapper before moving a payload from
 argv onto stdin: through this one it would have arrived empty.
 <!-- outbox:24993b1bd49c590b conjugal:dee4e5c1f960 -->
+
+### airmypc, 2026-10-04 - a "same target, keep the old result" cache keyed on rendered text held another target's result, three times
+
+**Trap.** A background reachability refresh was changed to keep the previous completed result for the SAME target, instead of flashing "Checking", which rebuilt every card twice per refresh. "Same target" was first decided by parsing the result's display text. Three review rounds each found a hole:
+1. A port prefix: 700 matched a port-7000 detail.
+2. IPv6 hosts and names containing " at ": "2001:db8::1:700" + ":8000" renders as a prefix of host "2001:db8::1" + ":700".
+3. With structured identity in place, comparing the WHOLE target record, including its guidance Hint, dropped valid holds.
+
+**Rule.** Key a cache or a hold on the structured identity fields (id, name, host, port), carried on the record itself. Never key it on rendered text, and never on presentation-only fields. Write the collision cases (IPv6, delimiter-bearing names, numeric prefixes) as tests before the first review.
+
+**Source:** airmypc [804] fa18b636, 8d407909, da2357ca; Opus key, then Astra keys x3 (PASS on round 3). `evidence: review + test`.
