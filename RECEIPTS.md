@@ -11835,3 +11835,29 @@ assurances, make each checkable, and enumerate rather than assert.
   rounds.
 - Left out: the three rows H104's landing cut, apart from the one card 4 names; a record written before the
   cause was recorded keeps its old sentence (the ledger's "Not taken").
+
+<!-- cloudvore-filing:2026-10-03-flags-universes-and-screen-pins-cards generated from review/doctrine-drafts/2026-10-03-flags-universes-and-screen-pins-cards.md at a6b31aa -->
+
+## RECEIPTS
+
+- 2026-10-03, the form: seven cards under a cap of 8, each at most 15 lines and 2,000 bytes, set before pass 1; no
+  harness. All seven are H103; session bb65dfbe built it and wrote this draft.
+- Related entries on the bus, in this board's earlier filings. "One writer and several readers: the distinction
+  drifts at the reader that cannot see the writer" (the filing of 2026-10-03 on skip reasons and claims) is card
+  1's mechanism met again on a screen: there readers of a record drifted, here surfaces of one view each read a
+  flag. "Zero files with read issues is undecided, not empty" (2026-10-02) is the refusal's side of card 1: that
+  fix told an empty source, one holding only excluded folders and an unread one apart in a refusal; the screen
+  shown before that refusal still did not. The card on "Never" as a claim about every run (2026-10-03) is card
+  2's shape for a word about time. "A refusal that examined nothing must not touch the record" (2026-10-02) is
+  card 3's neighbour: there a refusal stopped writing a finished job's record, here a screen stopped offering the
+  run that would be refused. "A pin that asserts a phrase is contained cannot tell two chips apart" (2026-10-03)
+  is card 6 at one phrase; "A cross-product pin is as wide as the inputs it varies" (2026-10-03) is card 5 for a
+  table of cases.
+- Where the figures are: card 1's 18 and 9, and card 2's 13, 3, 9 and 1, are in the ledger's "Evidence" (RED);
+  card 4's 22 of 24 is in its "Planted mutants" line; the mutants' descriptions and card 7's counts are quoted in
+  this draft's review record from the landed evidence folder, the commit and the row.
+- Dropped because a card did not need them: H103's bar totals, its full-suite totals, its review rounds and the
+  final count of its mutants.
+- Left out: a text block built from runs read as empty text in these tests (met while pinning a pointer in a
+  sentence; specific to one UI framework); the three rows on wording and ink that H103's landing cut; what the
+  ledger lists under "Not taken".

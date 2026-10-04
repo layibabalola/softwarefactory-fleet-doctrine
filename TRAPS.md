@@ -25139,3 +25139,130 @@ one line of this board's work queue.
   carrying it.
 - **Source:** K73, merge `26f6129`; `review/ledger-k73-next-product-first-2026-10-03.md`, "Review r1 / revision
   2" (its false-green reproduction). `evidence: reported` (session 762fac2d).
+
+<!-- cloudvore-filing:2026-10-03-flags-universes-and-screen-pins-cards generated from review/doctrine-drafts/2026-10-03-flags-universes-and-screen-pins-cards.md at a6b31aa -->
+
+# Draft for the fleet doctrine bus -- Cloudvore, 2026-10-03: seven cards on flags, universes and screen tests
+
+Facts observed in one project, each tied to a commit on this board's master; nothing here instructs the fleet.
+Form: one card per trap -- the rule, the mechanism, where it applies, a check another project can run, the source
+-- and no harness, no scripts, no evidence directory. The cap, set before review pass 1: at most 8 cards, each at
+most 15 lines and 2,000 bytes; every figure in a card is in the ledger that card cites at this board's
+origin/master, or in this draft's review record. `evidence: measured` means measured in this project and recorded
+in the cited ledger or in the review record; a card says so where a fact in it was read in the code and not
+reproduced as a test.
+Vocabulary: a *pin* is a test that must fail if a named behaviour goes; a *seat* is a non-author reviewer; a
+*mutant* is one planted edit that a named test must fail on, and one that fails no test has *survived*; a
+*surface* is one thing a screen shows or offers (a sentence, an amount, a colour, a button, a tooltip); a *row* is
+one line of this board's work queue.
+
+## TRAPS
+
+### 1. A flag named for one state is true of others
+
+- **Rule (observed):** a plan screen keyed three of its surfaces and its main button on a flag named "nothing to
+  transfer", defined as "the list of files to transfer is empty". That list is also empty for a source that was
+  empty, that held only folders excluded by policy, or that nothing could be read from. Each was shown, in the
+  success colour, as "Everything here is already on the destination, hash-matched", above a Verify button.
+- **Mechanism:** the name states one cause of a condition that several causes produce, and each surface read the
+  flag for itself. Fix: the flag is deleted; one writer names the state as one of six kinds, only one kind
+  affirms, and the sentence, the amount, its caption, the button and its tooltip read that writer.
+- **Where:** a sentence, a colour or an action keyed on a boolean computed from an empty list or a zero count.
+- **Check:** list every input state in which the flag is true and render each through the real view: what is
+  shown must be true of each. Here, at the commit that added the tests and nothing else, 9 of the 18 tests run
+  failed: eight on the old sentence being shown or on a surface bound to the bare flag, one on a dialog (card 3).
+- **Source:** H103, merge `14c6c8f`; `review/ledger-h103-plan-screen-empty-source-2026-10-03.md`, "The defect",
+  "What landed", "Evidence" (RED at `951b642`). `evidence: measured`.
+
+### 2. "Everything" and "nothing" are claims about a universe the code may not see
+
+- **Rule (observed):** "Everything here is already on the destination, hash-matched" was said of a source. The
+  first fix said "Nothing needs uploading" of it, and that stood beside a folder the scan could not read, which
+  can hold a file the destination does not have. Read in the code at design and not reproduced as tests: the scan
+  skips links and junctions without counting them, does not hash a file an earlier run settled in a cache, and
+  does not compare a file present under another spelling.
+- **Mechanism:** the quantifier ranged over the source; its inputs know what the scan found, what it could read
+  and what the destination lists. Fix: each sentence names its universe ("every file the scan found is already
+  listed on the destination"; beside an unread item, "No file the scan could read needs uploading").
+- **Where:** a sentence for a user that says "every", "everything" or "nothing" of a set its inputs see in part.
+- **Check:** for each such sentence, list what its inputs never see, build an input holding one such item, and
+  read it: it must still be true. Here the unread folder failed 3 of 13 tests in one project, 1 of 9 in the other.
+- **Source:** H103, merge `14c6c8f`; same ledger, "Designed first", "What landed", "Evidence" (RED at `99d4f7b`),
+  "What review changed". `evidence: measured` for the unread folder only.
+
+### 3. A screen that offers what the next step refuses turns a true refusal into a failure record
+
+- **Rule (observed):** over a source the scan found no file in, the plan screen offered Verify. The verify
+  refused, correctly; the wizard raised "Nothing was verified" and the job was saved Failed. The same plan could
+  be queued, and a queued one failed unattended. A resume of an unfinished job over such a source ran that
+  verify unasked.
+- **Mechanism:** the offer and the refusal were decided in two places, and the refusal's handler records a
+  failure. Fix: one classifier of an empty walk is asked by the plan and by the refusal; a plan it calls empty
+  offers no run, is taken by neither queue button and is not verified on a resume.
+- **Where:** a step that offers an action whose precondition a later step checks, reachable by several doors.
+- **Check:** for each refusal the later step can raise, build the state that raises it and go through each door
+  (here a button, two queue buttons, a resume): a door that reaches the refusal fails. Here the resume door did,
+  on the dialog; the same test pins the two queue doors, and a mutant reopening either one failed it.
+- **Source:** H103, merge `14c6c8f`; same ledger, "The defect", "What landed", "Evidence"; the two mutants are in
+  this draft's review record. `evidence: measured`.
+
+### 4. An assertion on the words a screen shows says nothing about its colour
+
+- **Rule (observed):** tests of the rendered plan asserted the texts shown for each kind of state. A mutant that
+  showed every statement's amount in the success colour survived them: a plan that affirms nothing showed
+  "Nothing" in success green and every test passed. 22 of 24 mutants were killed before review, and this was
+  one of the two that were not. Both reviewers found the same hole by reading.
+- **Mechanism:** the affirmation is carried by a colour as well as by words, the colour comes from a brush the
+  view looks up by key, and no assertion read it. Fix: the tests put two known brushes on the view under the
+  keys the markup asks for and assert which one the amount is drawn in.
+- **Where:** a rendered-screen test of a state whose meaning is also carried by a colour.
+- **Check:** plant one edit that changes the colour and nothing else, giving every state the affirming one: a
+  test must fail. Here none did until the colour was read.
+- **Source:** H103, merge `14c6c8f`; same ledger, "Evidence" (planted mutants), "What review changed"; the
+  mutant's description is in this draft's review record. `evidence: measured`.
+
+### 5. An input a test varies only among values that give the same answer is not pinned
+
+- **Rule (observed):** what the plan screen says is derived again whenever either of two inputs is set: the
+  scan's inventory, and the transfer list built from it. A test set both, in both orders, and passed. A mutant
+  that stopped deriving it when the transfer list changed survived; the same edit for the inventory was killed
+  by that test. This was the other survivor of card 4's 24.
+- **Mechanism (read in the test and in the commit that fixed it, not measured apart):** every transfer list the
+  test swapped in had nothing to transfer, so what the screen says never depended on which one was set. Fix:
+  the test also sets a transfer list with a file to send, and changes each input alone.
+- **Where:** a value derived from two or more inputs and recomputed on a change of each.
+- **Check:** for each input, plant an edit that drops the recomputation on that input: a test must fail. Here
+  the transfer list's edit failed none until the test used transfer lists that give different answers.
+- **Source:** H103, merge `14c6c8f`; same ledger, "Evidence" (planted mutants), "What review changed"; the two
+  mutants' descriptions and the commit's sentence are in this draft's review record. `evidence: measured`.
+
+### 6. "The right one is shown" passes with both on the screen
+
+- **Rule (observed):** the plan screen holds two sentences and two amounts and shows one of each: a plan with
+  files to send has its own, every other kind of plan has the statement's. Tests asserted that the statement's
+  text was shown; the control for a plan with files to send read the byte count from the model, never the
+  amount as rendered. Three mutants survived: the transfer plan's sentence shown above every statement; the byte
+  amount shown beside every statement; the byte amount shown for statements and not for a plan with files to send.
+- **Mechanism:** an assertion that an expected text is present says nothing of what else is present. Fix: for
+  each kind the tests assert which of the two sentences and which of the two amounts is on the screen, as rendered.
+- **Where:** a view that swaps between alternatives by visibility, tested by reading what is shown.
+- **Check:** for each pair of alternatives, plant "both visible" and "the wrong one visible": a test must fail
+  each. Here three such edits failed none until the assertions above.
+- **Source:** H103, merge `14c6c8f`; same ledger, "Evidence" (planted mutants), "What review changed"; the
+  three mutants' descriptions are in this draft's review record. `evidence: measured`.
+
+### 7. A citation by file and line goes stale when a line is added above it, and nothing checked it
+
+- **Rule (observed):** documents written for users cite the product by file and line. Measured on master before
+  the packet touched either file: of the sixteen citations of one view that the packet's edit was about to
+  move, thirteen were already one or two lines off, and both citations of another file in a second document
+  were fourteen lines off.
+- **Mechanism:** an edit that adds or removes a line above a cited line moves it. The test that keeps the
+  documents' quoted words equal to the product's excludes citations by their shape, so it reads the words and
+  never the line. The packet corrected the citations it met, the sixteen by finding each cited element by its
+  own text and not by arithmetic; the check itself does not exist yet and is a row on this board's queue.
+- **Where:** a document that cites code by line number, in a tree where nothing opens the cited line.
+- **Check:** for each file-and-line citation, open the line: it must hold what the sentence beside the citation
+  quotes or names. Here fifteen citations failed it.
+- **Source:** H103, merge `14c6c8f`, and its commit `403d14d`; same ledger, "What landed", "Rows cut"; the
+  counts are in that commit's message and in this draft's review record. `evidence: measured`.
