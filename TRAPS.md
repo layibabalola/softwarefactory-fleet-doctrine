@@ -25293,3 +25293,147 @@ process" or "no host variable reaches". (3) The adversary section says outright 
 the header executes, or intercepts the admission line or the runner, is out of scope, like a hostile executable on
 PATH. (4) Comments inside the test are bytes a verifier reads: they claim no more than the checks prove.
 <!-- outbox:8c231b1f664a9d07 conjugal:ec27391a2167 -->
+
+<!-- cloudvore-filing:2026-10-03-looks-errors-and-refusals-cards generated from review/doctrine-drafts/2026-10-03-looks-errors-and-refusals-cards.md at af4bebc -->
+
+# Draft for the fleet doctrine bus -- Cloudvore, 2026-10-03: eight cards on looks, errors and refusals
+
+Facts observed in one project, each tied to a commit on this board's master; nothing here instructs the fleet.
+Form: one card per trap -- the rule, the mechanism, where it applies, a check another project can run, the source
+-- and no harness, no scripts, no evidence directory. The cap, set before review pass 1: at most 8 cards, each at
+most 15 lines and 2,000 bytes; every figure in a card is in the ledger that card cites at this board's
+origin/master, or in this draft's review record. `evidence: measured` means measured in this project and recorded
+in the cited ledger or in the review record; a card says so where a fact in it was read in the code and not
+reproduced as a test.
+Vocabulary: a *pin* is a test that must fail if a named behaviour goes; a *seat* is a non-author reviewer; a
+*mutant* is one planted edit that a named test must fail on, and one that fails no test has *survived*; a *job*
+is one backup of one source folder, and it is *Completed* when it holds a verdict; a *look* is one reading of
+which volume stands at a path; a *refusal* is a run that stops before it examines anything and writes nothing.
+
+## TRAPS
+
+### 1. A look moved in front of a read leaves the read unwatched
+
+- **Rule (observed):** a job remembers the volume its source was on, and a look at the path decides whether what
+  is there is that volume. The first fix took one look before a probe that lists the source's root, and handed
+  it to a later check that used to look after the probe. A volume put at the path after that look was listed
+  by the probe, acted on if it held a reserved folder.
+- **Mechanism:** a look covers the instant it is taken. Moved earlier to cover a read that came before it, it no
+  longer covers that read. Fix: the later check looks again for itself, and the probe brackets its listing:
+  look, list, look again, and only then act on what was listed.
+- **Where:** an identity check followed by a read of the thing identified, when the thing can be swapped.
+- **Check:** make the n-th look answer differently from the first and run each entry: nothing read after the
+  swap may be acted on, or described as unread. Here that failed 1 test once the later check had lost its look
+  (of 5 failing in one test project there), and 8 for the instant between the look and the probe (of 19).
+- **Source:** H115, merge `389c1e6`; `review/ledger-h115-reverify-keeps-verdict-2026-10-03.md`, "What landed",
+  "Evidence" (RED at `034dea6`, `0838311`), "What review changed" (rounds 1, 2). `evidence: measured`.
+
+### 2. A refusal's sentence is true of the place it was first thrown from
+
+- **Rule (observed):** the refusal of another volume said "nothing on it was read or verified". That was true
+  where it was first thrown, before anything opened the path. It was then thrown by a later check, after a
+  probe had listed the volume's root, and on one route after its two folders had been opened.
+- **Mechanism:** a sentence states what has happened so far, and each throw site has a different "so far". Fix:
+  the sites after a read say a second form ("nothing read from it was used"); the refusal after a walk, which
+  had words of its own for it, says the same form; the route that opened its folders first now looks first.
+- **Where:** one message thrown from several points of a sequence that reads as it goes.
+- **Check:** for each throw site, list what the run has read before it and read the sentence against the list.
+  As a test: plant, per site, the edit that says the unread form after a read. Here the five rows that expect
+  the second form after the probe's listing failed (of 19 failing at that commit), and five such edits (three
+  sites after a read, the probe's bracket, one route's scan) each fail a test.
+- **Source:** H115, merge `389c1e6`; same ledger, "What landed", "Evidence" (RED at `0838311`), "What review
+  changed" (rounds 2, 3); the five mutants are quoted in this draft's review record. `evidence: measured`.
+
+### 3. "No production caller starts it here" was written without listing the callers
+
+- **Rule (observed):** a comment at the transfer said no production caller starts a Completed job there. A
+  button on the verdict screen does exactly that, on the screen's own runner. The runner refused such a run over
+  another volume, as it should; the screen had a handler for a cancellation and one for an interrupted volume
+  and none for a refusal, so its catch-all showed "Transfer failed".
+- **Mechanism:** the claim is about every caller, and it was false. Two reviewers found it in one round: one
+  named the line, and the other's finding about a neighbouring check sent the author to check it. Fix: the
+  comment says what the button does, and the screen says the refusal as a refusal.
+- **Where:** a comment or a design note that says nothing reaches a path in some state.
+- **Check:** before writing it, search for every caller of the entry and every command bound to one; for each,
+  ask what state the job can be in when it calls. Here reading the callers found the button, and a test through
+  the real screen failed on the dialog's title (1 of 56 tests) until the screen handled the refusal.
+- **Source:** H115, merge `389c1e6`; same ledger, "What landed", "Evidence" (RED at `034dea6`), "What review
+  changed" (round 1); the commit's message is quoted in this draft's review record. `evidence: measured`.
+
+### 4. A pin that also asserts how a finding survives fails when the finding survives better
+
+- **Rule (observed):** an earlier packet pinned that a finding of corruption still blocks an older green's
+  export after a later probe could not inspect the source, and also HOW it survived: as a withdrawn witness on
+  a job saved Failed. This packet stopped that probe writing to a Completed job whose source it cannot inspect.
+  The finding then survived whole, on an untouched record, and the pin failed on the route.
+- **Mechanism:** the assertions about the route (the refusal's type and words, the phase, the withdrawn state
+  and its time) are a claim that the route will not change, and it changed for the better. Re-pinned: the
+  purpose as before, and for that case the record as it now stays.
+- **Where:** a test that asserts both that a protected fact is kept and the mechanism that keeps it.
+- **Check:** for each assertion of such a pin, say whether it states the purpose or the route; then ask whether
+  a change that kept the purpose and changed the route would fail it for a reason a reader would call a defect.
+  Here 1 of 44 tests failed, on the route.
+- **Source:** H115, merge `389c1e6`; same ledger, "Re-pinned, deliberately", "Evidence" (RED at `942c075`).
+  `evidence: measured`.
+
+### 5. A fixture that counts calls by hand fails with every call a fix adds
+
+- **Rule (observed):** eight fixtures of an earlier packet counted the looks a run takes at the source volume
+  with literal numbers, to make the look after the n-th answer differently. Each fix here that added a look
+  changed the number, and a fixture left at the old one builds a state other than the one its name describes.
+- **Mechanism:** the count is a fact about the product's sequence, copied into each fixture. Fix: two named
+  constants say how many looks a run takes before its walk, with the list of what they are, and the fixtures
+  count by them.
+- **Where:** a test seam that answers by call index ("the third call returns X").
+- **Check:** search the tests for a literal index into such a seam; each must be a named count that says what
+  the calls before it are. Here, at two commits that put the count one look ahead of the product, the
+  fixtures failed with it: 4 of the 5 tests failing in one test project at the first, 8 of the 19 at the second.
+- **Source:** H115, merge `389c1e6`; same ledger, "Re-pinned, deliberately"; commits `034dea6` and `0838311`,
+  whose messages give their failures by kind. `evidence: measured`. The search was not run before filing; a
+  seat that ran it found literal indices left in other tests of the same class.
+
+### 6. A list of errors taken to mean "absent" had a hole each time it was reviewed
+
+- **Rule (observed):** a probe that could not list a source folder had to say whether the folder was gone. Apart
+  from the listing's own "not found", kept as it always was, five rules in turn read some failure as absence:
+  "exists" answering false; one exception type excluded; a list of errors; a shorter list; three exception
+  types. Each time a reviewer named, by reading, a source that is there and gives an answer the rule took for
+  absence (access denied; an unreachable network path; a device not ready; a drive not found).
+- **Mechanism:** an error says what was refused, not what is there, and "exists" answers false for an error as
+  readily as for an absence. Fix: after any other failure the path is asked what it is, and only an answer
+  decides (a folder, or not); an error there leaves it open, and a later refusal quotes what the listing said.
+- **Where:** code that infers "absent" from a failed call, an exception type, an error code or an exists test.
+- **Check:** table that question: each answer it can give and each kind of error the platform raises, against
+  what the code concludes; every error row must conclude "not known". Here the table has 19 rows, 14 errors.
+- **Source:** H115, merge `389c1e6`; same ledger, "What landed", "Evidence", "What review changed" (rounds 2,
+  4 to 8), "Not taken". `evidence: measured` for the table and for a folder that denies every question.
+
+### 7. The order of two calls is pinned only by a state in which the second one speaks first
+
+- **Rule (observed):** one route had to look at the source volume before it judged its two folders. A test
+  covered the look. Read, not planted at the time: an edit that kept the look and put it one line late, after
+  the judgment, would have failed no test, because in every tested state the judgment passed, so the order of
+  the two could not be seen.
+- **Mechanism:** an order is observable only when the two calls disagree. Fix: a state in which the judgment
+  refuses first (another volume that does not hold the original's folder), where the look must speak instead.
+- **Where:** two checks in sequence whose order is part of the claim (which refusal the user reads).
+- **Check:** for each such pair, plant the swap. If no test fails, find the state in which the second check
+  refuses on its own, and assert which refusal is shown. Here that state failed 1 test, on the refusal thrown
+  (of 4 failing at that commit); with the test in place, the swap and the removal each fail a test.
+- **Source:** H115, merge `389c1e6`; same ledger, "Evidence" (RED at `cc74633`), "What review changed" (round
+  3); the two mutants are quoted in this draft's review record. `evidence: measured`.
+
+### 8. "It did not happen", asserted by a count that would be zero if it had
+
+- **Rule (observed):** two tests asserted that no walk of the source took place by counting the walk's reads of
+  files: zero. Both fixtures use a folder that cannot be listed. A walk of such a folder meets no file, so the
+  count is zero whether or not the walk happens. A reviewer found it by reading, after shipping the tests.
+- **Mechanism:** the counter measures a consequence the fixture has already made impossible. Fix: the tests
+  count the looks at the source volume, which a walk adds to: the look at the entry and the probe's own, no more.
+- **Where:** a negative assertion ("was not called", "read nothing") in a fixture built to make something fail.
+- **Check:** for each "did not happen" assertion, ask what its counter would read in this fixture if the thing
+  had happened; if the same, it cannot fail. Here the edits that hand the folder on are killed, and a reviewer
+  read that the sentence asserted before the count is what fails under them.
+- **Source:** H115, merge `389c1e6`; same ledger, "What review changed" (the last two entries), commit
+  `d0163c9`. `evidence: measured` for the kills; that the old count could not fail, and which assertion fails,
+  were read by a reviewer.

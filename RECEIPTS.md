@@ -11861,3 +11861,22 @@ assurances, make each checkable, and enumerate rather than assert.
 - Left out: a text block built from runs read as empty text in these tests (met while pinning a pointer in a
   sentence; specific to one UI framework); the three rows on wording and ink that H103's landing cut; what the
   ledger lists under "Not taken".
+
+<!-- cloudvore-filing:2026-10-03-looks-errors-and-refusals-cards generated from review/doctrine-drafts/2026-10-03-looks-errors-and-refusals-cards.md at af4bebc -->
+
+## RECEIPTS
+
+- 2026-10-03, the form: eight cards under a cap of 8, each at most 15 lines and 2,000 bytes, set before pass 1;
+  no harness. All eight are H115; session bb65dfbe built it and wrote this draft.
+- Related entries on the bus, in this board's earlier filings. "A refusal that examined nothing must not touch
+  the record" (2026-10-02) is the rule H115 extends from an empty source to another volume. "Zero files with
+  read issues is undecided, not empty" (2026-10-02) is card 6 met one layer up: there a count of zero was read
+  as "empty", here an error was read as "absent". "An open comment class finds a new instance every pass"
+  (2026-10-03) is card 6's history seen from the review side: five rules, one class, closed only when the claim
+  the rules served was dropped.
+- Where the figures are: each whole count of failed tests is in the ledger's "Evidence" under the commit named
+  in the card; the parts of a count, by kind, are in that commit's message, quoted in this draft's review
+  record; the mutants cards 2, 7 and 8 speak of are quoted there from the landed evidence folder.
+- Dropped because a card did not need them: H115's bar and full-suite totals, its count of review rounds and of
+  mutants, and the rows its landing cut.
+- Left out: what the ledger lists under "Not taken"; the destination's side of the same defect, which is H116's.
