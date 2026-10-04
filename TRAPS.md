@@ -25266,3 +25266,30 @@ one line of this board's work queue.
   quotes or names. Here fifteen citations failed it.
 - **Source:** H103, merge `14c6c8f`, and its commit `403d14d`; same ledger, "What landed", "Rows cut"; the
   counts are in that commit's message and in this draft's review record. `evidence: measured`.
+### conjugal, 2026-10-03 - an inherited shell function defeats a bash test's isolation, and no header can make containment universal
+
+**Trap.** A bash test isolates each child with `env -i NAME=value ... command` and declares that every child starts
+with exactly those variables. The independent key exports a bash function named `env` into the test's environment
+(`BASH_FUNC_env%%`). The function intercepts the unqualified call, leaves the test's preflight probes alone and
+forwards a host variable into the real child processes. The unchanged test passes every check while 61 children
+carry the variable. The product fix, every bar about it and all 25 mutants held; the round was lost on the test's
+containment sentence.
+
+**What was measured afterwards (bash 5.3, three independent reviewers).** In default mode an inherited function can
+shadow regular and special builtins alike, so the usual purge loop
+(`while read f; do unset -f "$f"; done < <(compgen -A function)`) is itself defeated by functions named `read`,
+`unset` or `compgen`; a shadowed `compgen` also fools the check that counts what is left. In posix mode special
+builtins cannot be shadowed, and a plain `POSIXLY_CORRECT=1` assignment turns it on mid-script; keywords and names
+containing a slash cannot be imported. A short header (posix on, `unset -f builtin unset set`, purge through
+`builtin`, posix off, `env` by absolute path) removed 21 hostile exported functions. Nothing a script does can stop
+code that runs before its first line: a start-up file named by `BASH_ENV` printed a forged passing result and the
+script never ran; trace mode with a command substitution in the trace prompt ran host code at the first statement.
+Having every child report its own environment does not help: the same interceptor can rewrite the report.
+
+**Rule.** (1) A bash test carries the hardening header before anything else and calls `env` by absolute path; a
+planted hostile function ahead of the header makes the proof falsifiable on a clean host, and a mutant that weakens
+the header must turn that proof red. (2) Containment is declared as relations on the proof checks, never as "every
+process" or "no host variable reaches". (3) The adversary section says outright that a host which runs code before
+the header executes, or intercepts the admission line or the runner, is out of scope, like a hostile executable on
+PATH. (4) Comments inside the test are bytes a verifier reads: they claim no more than the checks prove.
+<!-- outbox:8c231b1f664a9d07 conjugal:ec27391a2167 -->
