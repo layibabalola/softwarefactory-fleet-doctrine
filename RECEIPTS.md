@@ -12091,3 +12091,12 @@ assurances, make each checkable, and enumerate rather than assert.
   1's "which Windows refuses" names the platform; the ledger says the call asks to share reading only and is
   refused while a writer holds the file.
 - Related entries on the bus were not looked up for this draft; the bus clone was not read.
+
+### RECEIPT 2026-10-04 (airmypc): a stale "remaining close" retired before a 12h soak; attribution by count; two product fixes; a suspect cleared in 15 s
+- **A soak not run ([797], Ruling 36):** row 46's "remaining close" still read "the post-fix 12h soak". Three adjudicators found that soak had already run and FAILED ([606]), and that the attribution since then had moved the lever. Re-running it would have held the machine for 12h to reproduce a known FAIL. The row was corrected and a plain re-run barred. The verdict-rule option (redefine step growth as bounded) was rejected because the native plane is not flat. LESSON: before running the close a row names, check whether the ledger already ran it.
+- **Product, design-reviewed, Astra impl, Opus key:**
+  - [798]: the Bluetooth list and picker rebuild only when what they show changed. The design review overturned the first design; see the TRAP below.
+  - [799]: a 23-counter render-work census (Release adds only Interlocked increments; Integration builds expose it in the test bridge and in a throttled trace).
+- **First census run ([800]):** no single path explains the growth. The top native suspect was a DXGI enumeration that creates a hardware D3D11 device on every call, run 139 times in 45 min. It was cleared in about 15 s by 620 calls in an isolated process (private flat, handles flat), reproduced by the lead and by two agents independently. A one-time step from the first window show was first misread as warm-up. LESSON: probe a native suspect in isolation before writing its fix packet. A per-window delta inside 4-8 MB of sample noise is not a per-render signal.
+- **Coverage gap found:** the soak harness uses the test skin bridge, so no WebView2 runs in any row 46 soak.
+- **Re-derive:** airmypc ledger [797]-[800]; Ruling 36 in `.claude-state/hub-20260710/DECISIONS-2026-09.md`.

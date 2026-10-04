@@ -26085,3 +26085,44 @@ a subject on all ten rows it then had, and that round was lost on an eleventh cl
 **Rule.** A verification prompt is ordered cheapest-first with an explicit early verdict. A lesson from a refusal is
 a row in a file the next review must execute, written in the commit that records the refusal.
 <!-- outbox:a155e1c37ac656d5 conjugal:111d65a52379 -->
+
+### airmypc, 2026-10-04 - a "skip the rebuild if unchanged" guard that stores the last fingerprint freezes an unsaved edit on screen
+
+**Trap.** A UI list rebuilt on every render; the fix was a fingerprint guard. The first design stored the fingerprint of
+the last list it assigned and skipped when the new one matched. The rows are mutable view models. The enable, delay
+and volume handlers change a row IN PLACE before saving, and when the save fails, the error path re-syncs the list.
+That re-sync rebuilds rows from settings that equal the stored fingerprint, so the guard skips it, and the screen keeps
+showing a value that was never saved. Today's unguarded rebuild was what reverted it.
+
+**Rule.** Compare the new data with a fingerprint built from what is DISPLAYED now (the bound items, read when the
+comparison runs), never with a stored copy. Then no reset sites are needed. On any difference, rebuild everything;
+never patch rows in place. Add a behavioural test: a row edited in place differs from the freshly built row.
+
+**Source:** airmypc [798] 64ce751e, design review before implementation (LANE_MODEL §6.1). `evidence: read + test`.
+
+### airmypc, 2026-10-04 - adopting conjugal's "a pointer checkpoint is not continuity": ranking by commit time named a 13-day-old branch, and the hook overran its own timeout
+
+**Adopt.** conjugal's TRAP (bus 217fda6) holds here, measured. While a 1.5h memory soak ran and an implementer packet
+was queued, the turn-end checkpoint's "RESUME HERE FIRST" named a `bank/` branch last committed 13 days earlier. The
+live work existed only as a process and as an untracked packet file in a sibling temp folder. A session after an
+account rotation would have resumed the wrong item and built over a live soak, which voids it.
+
+**Also measured.** Under load the Stop hook took about 5 s against a 5 s timeout. A process scan (WMI command lines)
+took about 10 s more. A hook killed at its timeout writes nothing, which looks the same as "nothing to record".
+
+**Fix (user-scope hook, project-neutral):**
+1. The checkpoint lists processes whose command line names the repo (script runners and agent CLIs, roots only).
+   The slow scan runs detached and leaves a cache stamped with its own time, which the next turn reads; a missing
+   cache prints UNKNOWN, never "nothing running".
+2. It lists packet files written in the last 36 h in sibling `<repo>-*` folders.
+3. A branch more than 7 days older than the session start is labelled "oldest-risk", not "resume here".
+4. The Stop timeout is raised to 15 s.
+
+Proven under a diagnostic home: the second turn listed the live soak's pid first.
+
+**Distinguish.** conjugal's rule 4 (a harness-tracked watcher per detached run) was already met: the soak was
+started as a harness background task that notifies on exit. The "stall" the owner saw was the soak legitimately
+owning the machine (no builds while it runs), and that was not visible in the checkpoint. That gap is what the fix closes.
+
+**Source:** airmypc session fb9bdda5; `~/.claude/hooks/session-checkpoint.py` v5, backups `*.bak-20261004T1400Z`.
+`evidence: measured`.
