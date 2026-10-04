@@ -12035,3 +12035,59 @@ assurances, make each checkable, and enumerate rather than assert.
 - Dropped because a card did not need them: H130's bar and full-suite totals, its count of review rounds, the
   state-by-state table of what the code before did, and the rows its landing cut, except H140 (card 4) and
   H138 (above).
+
+<!-- cloudvore-filing:2026-10-04-open-logs-other-builds-and-pins-in-one-state-cards generated from review/doctrine-drafts/2026-10-04-open-logs-other-builds-and-pins-in-one-state-cards.md at b4503c9 -->
+
+## RECEIPTS
+
+- 2026-10-04, the form: six cards under a cap of 6, each at most 15 lines and 2,000 bytes, set before pass 1;
+  no harness. The writer built nothing of these packets and measured nothing for this draft: every card is
+  written from the ledgers and queue rows it cites as origin/master `2e4e25e` holds them. One fact is from
+  code and in no ledger: card 3's first sentence, read in the test file at `0aab157`.
+- Where the figures are. Card 1: 114 of 114 is control C0 of the L5 ledger's first "Mutants" section; the
+  exception, the file and the quoted words are "A1", RED first; the results tool and the share mode are its
+  Cause; the three planted cases are R4, R4b and R3. The ledger says of its own tip that A1 was not yet seen
+  green on the hosted runner; the 3 green passes of run 37198086591 are in queue row L5 and not in the ledger.
+- Card 2: the helper, the output names, 1 of 114 and the 29 lines (the test assembly's `import` and four raw
+  `der` rules, its two copies, and `import` in two other binaries: five rules) are "A2"; the second red run at
+  the tests-only commit (`95d4f5a`) and the three passes of 118 are "A2" and "Runs in r2"; the red second pass
+  not shown is "Not run in r2"; the two other root readers are "Readers of the shared helper", which says neither
+  was tested on a multi-pass run.
+- Card 3: the planted tree's five added files and R1 to R3 are "B-as-pin"; 4 MB is R2's `4 * 1024 * 1024`.
+  The ledger's heading says "(the surviving mutant, closed)" and says no more of the review's finding.
+- Card 4: 14 of 14 is the first "Mutants" section; the two survivors, what every pin ran with, the pins added,
+  5,040 cases, the standing lines and floors, the kill counts and the control are "Revision 2" (A1, A2); 69,984
+  and that it was a one-off and is not a standing test are "The legitimate-negative matrix", which also says
+  the two states showed up there with no pin of their own.
+- Card 5: 45 days, 24 hours and 46 days are "Wire format" and item 1's "the bound"; the quoted words are item
+  1's Finding; 120, 5 and 4 are its RED at `3474aa8` and 120 of 120 its GREEN at `0f48373`; the seven mutants
+  are N1 to N7; the cost is the fourth of "Residuals". The ledger does not say which seat found item 1 or how.
+- Card 6: the two mechanisms, the platform's exception, N14 and N21 are "Revision 2: class B"; 0 of 123, N14b
+  at 1 of 123 and the same message are "Revision 3"; 0 of 120 is `review/ledger-l1-mutants-2026-10-03.md`,
+  the N14 line at `0f48373`. The pre-flight table's item 5 and queue row L1 both name N14 as surviving.
+- Not written, though the brief gave them. In card 1, that every local run was green because the local tool
+  writes its logs outside the tree: the ledger says where the hosted tool writes and nothing of the local one.
+  In card 2, that the three green runs reused one output name: the ledger says three one-pass runs and names
+  one output left by them, no more. In card 3, a tie to row H128 (a probe per tree proves the probe arrives):
+  the L5 ledger does not name that row. In card 4, that the cross-product asserted only a prefix in the second
+  state: not in the ledger. In card 5, that a seat found it by reading: not in the ledger.
+- Cut to keep a card within 15 lines. Card 1: that a review seat predicted the hosted failure (row L5), and
+  that the scan's own failure message in a log is pinned not to be a finding. Card 2: R5 to R9, all red; that
+  revision 1's three green passes were three separate one-pass runs (its "Not run": a fact, not a cause); that
+  the walk still lists other builds' files and no longer reads them, the cost not measured. Card 3: that the
+  planted tree now holds 27 files with an armoured key, and that each file must have exactly the findings
+  named. Card 5: that the offline root class is left as it was
+  and pinned so; that the future-issue answer comes before the term is judged; that nothing calls the verifier
+  yet and its compiled-in key set is empty, so no user met the fault. Card 6: that the direct assertion is
+  false for three bad points and true for two genuine keys; the ledger's sentence that the pin holds the
+  behaviour, not which of the two mechanisms gives it.
+- Left out, or not closed: L5's lists of what the scan does not see and of its known false alarms (they are
+  residuals of that pin, not traps of this draft); the L1 mutant M22, not run again at the landed code; the
+  residuals i to vii of the accounts ledger; the mutants of the accounts packet not planted again at revision 2.
+- Read in code and in no ledger (revision 2, from pass 1): that the shared helper also leaves out `bin` and
+  `obj` beside every project file under `src` and `tests`, whichever build wrote them, so card 2's "only"
+  holds under `artifacts/` (`tests/Shared/SourceGuard.cs`, `BuildOutputRootsUnder`); that the real-tree test
+  at `0aab157` asserts the kinds of file it read, so card 3 is about where a key was shown to the walk. Card
+  1's "which Windows refuses" names the platform; the ledger says the call asks to share reading only and is
+  refused while a writer holds the file.
+- Related entries on the bus were not looked up for this draft; the bus clone was not read.

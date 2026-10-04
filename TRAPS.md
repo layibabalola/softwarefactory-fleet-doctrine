@@ -25886,3 +25886,121 @@ before the packet; a *planted edit* is one deliberate change to the product that
   failed two. Both are in a table of 52 planted edits, all killed.
 - **Source:** H130, merge `61bd44f`; same ledger, "Evidence" (Tests, Planted mutants), "What review changed".
   `evidence: measured`, with a stand-in engine and look; where a real look at a remote's spelling lands was read.
+
+<!-- cloudvore-filing:2026-10-04-open-logs-other-builds-and-pins-in-one-state-cards generated from review/doctrine-drafts/2026-10-04-open-logs-other-builds-and-pins-in-one-state-cards.md at b4503c9 -->
+
+# Draft for the fleet doctrine bus -- Cloudvore, 2026-10-04: six cards on open logs, other builds and one-state pins
+
+Facts observed in one project, each tied to a commit on this board's master; nothing here instructs the fleet.
+Form: one card per trap -- the rule, the mechanism, where it applies, a check another project can run, the source
+-- and no harness, no scripts, no evidence directory. The cap, set before review pass 1: at most 6 cards, each at
+most 15 lines and 2,000 bytes; every figure and quoted phrase in a card is in the ledger or queue row that card
+cites at this board's origin/master, or the card says where else it was read. `evidence: measured` means
+measured in this project and recorded there; a card says so where a fact in it was read or reported and not run.
+Vocabulary: a *pin* is a test that must fail if a named behaviour goes; a *mutant* is one planted edit that a
+named test must fail on, *killed* when one does and *surviving* when none does; a *control* is the same run over
+the unchanged thing; a *seat* is a non-author reviewer; the *hosted bar* is the required test run that decides
+whether a change may land, and a *pass* is one of its runs of every test; the *admission tool* starts a test
+run on the builder's laptop; the *runner host* is a second machine used for development runs, not the bar of
+record; a *queue row* is one line of this board's backlog; the *scan* is one test that reads every file under
+the repository root for a private signing key, and its *walk* is the listing of those files; a *planted tree*
+is a throwaway directory a test fills and then scans; the *account* is the sentence a backup's verdict
+explains itself with; the *cross-product* is one test over every combination of the verdict's inputs.
+
+## TRAPS
+
+### 1. A test that reads every file in the checkout threw on the test run's own open log
+
+- **Rule (observed):** a test that reads every file under the repository root passed 114 of 114 on the laptop
+  and threw on the hosted bar, pass 1, with no key in the tree: an IOException naming `stderr.log` under
+  `product-bar-results`, pass 1, "being used by another process".
+- **Mechanism:** the bar's results tool holds each pass's `stdout.log` and `stderr.log` open for write inside
+  the checkout for the whole test run. The scan read with a call that shares reading only, which Windows
+  refuses while a writer holds the file. Fix: open sharing read, write and delete; nothing is skipped.
+- **Where:** a test that opens every file under a root in which the run of record is itself writing.
+- **Check:** run the whole-tree test while another handle holds a file under the root open for write, then
+  while one holds a file with no sharing. Pass: the first file is read; the second fails the test and is not
+  skipped. Revision 1's scan fails the first: the same exception, in a test at `95d4f5a`. Planted
+  after the fix: the old call, and sharing reading only, red with the bar's exception; a catch on the read, red.
+- **Source:** L5, merge `7bbb254`; `review/ledger-l5-no-private-key-pin-2026-10-04.md`, Revision 2 "A1"; hosted
+  runs 37190550681 (red) and 37198086591 (3 passes, 0 failed: row L5). `evidence: measured`.
+
+### 2. A whole-tree scan read another build's output, where each pass builds under its own name
+
+- **Rule (observed):** the scan left out build output through a shared helper that, under `artifacts/`,
+  leaves out only the output of the build that is running. The admission tool names each pass's output
+  `<prefix>-<n>`. A two-pass run of revision 1 was red in pass 1: 1 of 114, listing 29 lines under
+  `artifacts/l5-1/` (false matches of five of the scan's rules), left there by earlier runs.
+- **Mechanism:** the lines named binaries, the test project's own assembly among them. Fix: the scan leaves
+  out `artifacts/<name>/<project>/bin` and `obj`, anchored at the root; a test pins that git ignores that tree.
+- **Where:** a test that walks from the repository root where builds write under it by more than one name.
+- **Check:** build under one output name, then run the whole-tree test built under another. Pass: no finding
+  under the first. Revision 1 fails: measured as above, and again at the tests-only commit. Not observed: a
+  red second pass of one batch (it stops at the first red pass). After the fix: 3 passes, 118 of 118 each,
+  two earlier outputs present. Not closed: two other readers that start at the root, unchanged, not so tested.
+- **Source:** L5, merge `7bbb254`; same ledger, Revision 2 "A2", "Readers of the shared helper", "Not run in
+  r2"; revision 1's "Not run". `evidence: measured`, on the laptop.
+
+### 3. Rules were tested on handed bytes, and the walk was shown a key in one kind of file
+
+- **Rule (observed):** at revision 1 the rule cases handed bytes to the function that scans one file (read in
+  the test at `0aab157`); the walk read the real tree, which holds no key, and a planted tree whose keys all
+  sat in short text files. The ledger heads a skip in the walk "the surviving mutant", with no run of it then.
+- **Mechanism:** a line between the read and the scan that skips a file with a zero byte, or one over a size,
+  drops no planted key. Fix: the planted tree also holds a binary with zero bytes and the raw key, a UTF-16
+  script, a `.pfx`, a `.env` and a file with eight megabytes before the key; each is required back through
+  the walk with its rule and line.
+- **Where:** a scanner whose rules are tested on handed bytes and whose walk is shown a key in one kind of file.
+- **Check:** plant, between the walk's read and its scan, a skip for each kind of file the walk could drop.
+  Pass: each is red in a test through the walk. After the fix: a skip on a zero byte and a skip over 4 MB,
+  red on the planted tree; a swallowed read error, red on "No exception was thrown".
+- **Source:** L5, merge `7bbb254`; same ledger, Revision 2 "B-as-pin" (R1, R2, R3). `evidence: measured` for
+  the three kills; the survival at revision 1 is reported.
+
+### 4. Every pin of a sentence ran in one state, and a mutant keyed on a second state survived
+
+- **Rule (observed):** three sentences of a verdict's account were reworded, 14 of 14 mutants killed. A review
+  seat then found two that survived, each keyed on a state: the old words "these are not" brought back only
+  under the source-volume cap; master's download sentence brought back only when the state is Corrupt.
+- **Mechanism:** every pin of the first sentence ran uncapped; every test of a stopped check built the
+  Incomplete state, and one asserted only a fragment both sentences carry. Revision 1's one-off comparison of
+  69,984 accounts with master met both states. Fix, tests only: whole-account rows in the second state, and
+  lines over the cross-product's 5,040 cases: no account holds either old phrase; floors: each state occurred.
+- **Where:** a sentence one arm writes for several states, pinned by tests that each build one state.
+- **Check:** plant the old sentence back under one extra condition at a time, for each state the arm is
+  reached in. Pass: each is red. Revision 1 fails for two (the seat's finding, reported). At revision 2 the
+  first is red in 2 tests, the second in 3, each in the cross-product and on its own row; control 342 and 263 pass.
+- **Source:** H113, H127, H105, merge `63b200c`; `review/ledger-h113-h127-h105-accounts-2026-10-04.md`,
+  "Revision 2", "The legitimate-negative matrix". `evidence: measured` on the runner host (the kills).
+
+### 5. A limit on a term left the end unbounded from the time of checking
+
+- **Rule (observed):** for an online-class key the verifier refused a token whose end was over 45 days after
+  its issue time. Review of revision 1 found that a token "dated ten years ahead with a 45-day term was
+  licensed for ten years".
+- **Mechanism:** both times are the token's own, and the limit compared them only with each other. Fix: for
+  that class an issue time over 24 hours after the time of checking is undecided, so the end is at most 46
+  days from the moment of checking; pinned at 46 days exactly and one second over on each side.
+- **Where:** a limit on the difference of two fields that both come from the thing being checked.
+- **Check:** give input whose two times are moved far ahead together, their difference within the limit.
+  Pass: not accepted. Revision 1 fails: with the pins and no rule, 120 tests, 5 failed, 4 of them these pins;
+  120 of 120 with the rule; seven mutants of the rule killed. Cost recorded: a PC whose clock is more than 24
+  hours behind reads a fresh online licence as undecided.
+- **Source:** L1, merge `63213e7`; `review/ledger-l1-licence-token-verifier-2026-10-03.md`, "Revision 2: the
+  four class A findings" item 1, "Residuals"; runs at `3474aa8`, `0f48373`. `evidence: measured`, runner host.
+
+### 6. A planted mutant survived because a second mechanism gives the same refusal
+
+- **Rule (observed):** a public key that is not a point on the curve is refused at construction by two
+  mechanisms: a managed on-curve check, and a catch widened when the platform threw an exception the first
+  catch did not name. With the check taken out of the constructor (N14): 0 of 120 failed, then 0 of 123.
+- **Mechanism:** on Windows the constructor refuses a bad point by either mechanism with the same message, so
+  no test through the constructor can tell which one refused. Both removed (N21): killed. The ledger writes
+  N14 as SURVIVED each time. Revision 3 made the check internal and asserts it directly; a check that answers
+  true for every point is killed, 1 of 123. The constructor's call to it is still held by no test.
+- **Where:** two layers added for one fault, tested through an entry that gives one outcome for both.
+- **Check:** remove each layer alone, then both. Pass: each removal is red, or the record names the survivor
+  and the reason. A record that counts the lone removal as killed because the double one died fails. Here the
+  ledger, its pre-flight table and the queue row each say that removal survives.
+- **Source:** L1, merges `63213e7`, `8c0e1be`; `review/ledger-l1-licence-token-verifier-2026-10-03.md`, class B
+  and "Revision 3"; `review/ledger-l1-mutants-2026-10-03.md` (0 of 120); row L1. `evidence: measured`.
