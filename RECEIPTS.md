@@ -12171,3 +12171,22 @@ assurances, make each checkable, and enumerate rather than assert.
   `895dc26` the readiness tool runs the gate with no landed ref named, and the gate's default for it is
   `master`; row K84 and the handoff say the same of the canonical checkout's local `master`.
 - Related entries on the bus were not looked up for this draft; the bus clone was not read.
+
+<!-- cloudvore-filing:2026-10-04-channels-counts-arrivals-scrubs-and-clocks-cards generated from review/doctrine-drafts/2026-10-04-channels-counts-arrivals-scrubs-and-clocks-cards.md at f7dab2b -->
+
+## RECEIPTS
+
+- 2026-10-04, the form: five cards under a cap of 5, each at most 15 lines and 2,000 bytes, set before pass 1;
+  no harness. All five are H124; session bb65dfbe built it and wrote this draft.
+- Related entries on the bus, in this board's earlier filings. "A new test file trips a ratchet that no filtered
+  run executes" (2026-10-03): met again here by a second guard of that kind. It reads every test file's lines
+  and took a helper's climb of a visual tree for a walk toward the checkout's root. Four review rounds, every
+  targeted run and the table of planted edits had not run it; the first run of every test did, and failed in
+  both test assemblies. "Every pin of a sentence ran in one state, and a mutant keyed on a second state
+  survived" (2026-10-04): the second half of card 4 is that trap at one step of a route.
+- Where the figures are: each count of tests run and failed is in the ledger's "Evidence" or "What review
+  changed"; the planted edits are rows of `mutants-results.txt` in the ledger's evidence folder; card 1's title
+  is in the ledger's first section, and what each round found is in `rounds.md`.
+- Dropped because a card did not need them: H124's bar and full-suite totals, how long a note is kept, one
+  planted edit that did not finish its run, the notification's body and icon for a refused job (read, not
+  measured), and the rows its landing cut, except H152 (card 4).

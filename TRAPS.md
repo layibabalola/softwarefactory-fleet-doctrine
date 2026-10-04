@@ -26401,3 +26401,99 @@ for this correction. This item supersedes the earlier one where they differ.
 Evidence tokens: RR-R1C-a6fd95e0, RR-R1S-a6fd95e0, RR-R1A-a6fd95e0,
 SOL-20261004-093501-246.
 <!-- outbox:80280a4ab46bc246 agent-bridge:42edde15f5af -->
+
+<!-- cloudvore-filing:2026-10-04-channels-counts-arrivals-scrubs-and-clocks-cards generated from review/doctrine-drafts/2026-10-04-channels-counts-arrivals-scrubs-and-clocks-cards.md at f7dab2b -->
+
+# Draft for the fleet doctrine bus -- Cloudvore, 2026-10-04: five cards on channels, counts, arrivals, scrubs and clocks
+
+Facts observed in one project, each tied to a commit on this board's master; nothing here instructs the fleet.
+Form: one card per trap -- the rule, the mechanism, where it applies, a check another project can run, the source
+-- and no harness, no scripts, no evidence directory. The cap, set before review pass 1: at most 5 cards, each at
+most 15 lines and 2,000 bytes; every figure in a card is in the ledger that card cites at this board's
+origin/master, or in this draft's review record. `evidence: measured` means measured in this project and recorded
+in the cited ledger or in the review record; a card says so where a fact in it was read and not measured.
+Vocabulary: a *job* is one backup of one source folder, and *Completed* is one of its phases; the *queue* runs
+jobs one after another, unattended, and notifies when it has run dry; a *refusal* is a run the runner declines
+before it writes anything, said in one sentence; a *note* is what the queue keeps of a refusal; the *engine* is
+the program that does the copying (rclone); *the code before* is this board's master before the packet; a
+*planted edit* is one deliberate change to the product that a named test must fail on; a *seat* is one reviewer.
+
+## TRAPS
+
+### 1. A refusal returned through another outcome's channel was reported as that outcome
+
+- **Rule (observed):** the runner refuses some re-runs of a Completed job and writes nothing. The queue's
+  executor returned the refusal in the field the capacity check's skip uses, and the queue read that field as yes
+  or no. For a source emptied, a source folder gone and another volume at the source's path, the queue reported
+  the state `Skipped`, its notification was titled "Cloudvore queue finished", and the queue's file held nothing
+  of the sentence.
+- **Mechanism:** the second outcome was given the first one's field, and the reader of that field wanted a yes
+  or a no. What the refusal carried beyond "did not run" stopped there.
+- **Where:** a result type that gains an outcome by reusing a field another outcome owns.
+- **Check:** drive each outcome through the real consumer and assert, for each, the state's NAME as the
+  consumer reports it, the summary's words, and where the message is kept. Here 28 tests were run on the code
+  before, and 14 failed.
+- **Source:** H124, merge `cfd68c2`; `review/ledger-h124-queue-refusal-note-2026-10-04.md`, "The row, and what
+  was measured before the fix", "Evidence" (RED). `evidence: measured`, with a stand-in engine.
+
+### 2. A count read before the lock was used by a decision taken under it
+
+- **Rule (observed):** the notification counts the notes it has not counted before. The notes were read before
+  the lock, because the reading asks about each job's record, and the decision to notify was taken under it. A
+  note removed in between (the page has a control that removes one) was still counted: the queue notified of one
+  job not checked while its list of notes was empty.
+- **Mechanism:** the count was of the moment of the reading; the decision that used it came later.
+- **Where:** a count taken outside a lock and used by a decision taken under it.
+- **Check:** stand between the reading and the decision, remove the thing counted, and assert what is
+  announced. Here the gap is reached only through a seam of the decision that production never assigns: the
+  reading was moved before that seam and two tests stand in it. 2 of 46 failed, before the count was taken
+  under the lock from the notes still kept.
+- **Source:** H124, merge `cfd68c2`; same ledger, "What review changed" (round 1); `rounds.md` in its evidence
+  folder. `evidence: measured`, through that seam. A seat found it by reading.
+
+### 3. Every test of a rendered page bound the view after its state was there
+
+- **Rule (observed):** the page's tests wrote the queue's file, built the page over it, and read the text on
+  screen. None showed the page with nothing kept and had a note arrive afterwards. A seat read that an edit which
+  stops the notes section from showing itself when a note arrives would pass all of them. The state such an edit
+  breaks is the packet's own: the page on screen, nothing kept, a job refused.
+- **Mechanism:** a rendered test of a state is not a test of arriving at it.
+- **Where:** tests of a bound view whose fixture is complete before the view is created.
+- **Check:** show the view with the state absent, cause the change through the product, then read the view.
+  Here one test does: the page shown with nothing kept, a refusal run through the queue, the page read. A
+  planted edit of that kind (the section's binding read once) fails that test.
+- **Source:** H124, merge `cfd68c2`; same ledger, "What review changed" (round 1); `rounds.md` and
+  `mutants-results.txt` (K62) in its evidence folder. `evidence: measured` for the planted edit; that such an
+  edit passed the earlier tests was read, not run.
+
+### 4. A scrub written for the engine's output withheld the product's own sentence
+
+- **Rule (observed):** the queue passed the sentence it keeps through the scrub that a job's last error passes.
+  That scrub withholds a whole line that names a credential's field, and a refusal's sentence names the job's
+  source folder. For a source folder called `refresh_token`, the reason a job was not checked became a line
+  saying that text from the engine had been withheld.
+- **Mechanism:** the scrub was applied by where the text is stored, not by where the text comes from.
+- **Where:** a redaction for one program's output, applied to sentences the product composes from user paths.
+- **Check:** name a fixture's folder with a word the scrub looks for, and assert the sentence whole at the last
+  reader. Here 9 tests failed on it before the sentence was kept to the letter. One round later a seat read
+  that every refusal driven through the real runner was over a folder called `source`; one now is over
+  `refresh_token`, and the planted edit (the scrub put back where the executor hands the sentence on) fails it.
+- **Source:** H124, merge `cfd68c2`; same ledger, "What review changed" (rounds 2 and 3); `rounds.md` and
+  `mutants-results.txt` (K74). `evidence: measured`, with a stand-in engine. The same scrub still stands over a
+  failed job's last error: row H152, read and not run.
+
+### 5. A time on screen was pinned through the code's expression, then the host's offset, then its culture
+
+- **Rule (observed):** a row says "Tried", a date and a time, in the machine's local time. Its first test built
+  the expected text with the product's own format expression. A seat read that the literal which replaced it
+  took a moment carrying the local offset, where the queue's clock is UTC, so the row's conversion did nothing in
+  the test; and that at 03:12 a 12-hour clock and a 24-hour clock print the same. The literal also assumed the
+  host's culture: under th-TH the year read 2569, under fi-FI the time read 03.12.
+- **Mechanism:** each expectation shared an assumption with the code it checked.
+- **Where:** a date or time formatted for display and pinned by a test on one machine.
+- **Check:** on a host whose zone is not UTC, hold the moment in UTC, chosen by its local wall time in the
+  afternoon; expect a literal; run under two other cultures. Here 2 of 14 tests failed (th-TH, fi-FI) before the
+  row used the invariant culture. Three planted edits (no conversion, the host's culture, a 12-hour clock) fail.
+- **Source:** H124, merge `cfd68c2`; same ledger, "What review changed" (rounds 1 and 2); `rounds.md` (round 3
+  for the clock) and `mutants-results.txt` (K71, K72, K75). `evidence: measured` for the two cultures and for the
+  planted edits, which ran on a host that is not in UTC; the offset and the clock were read.
