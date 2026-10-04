@@ -26236,3 +26236,17 @@ Every one ended with zero survivors. It also aborted a reviewer start at its ide
 - **Source:** MLV-App `.claude-state\heartbeat\assert-rollover-completeness.ps1` (new) and its probe in
   `.claude-state\heartbeat\board-heartbeat.ps1` (Scheduled Task `MLV-BoardStateHeartbeat`, every 10 min); review by
   three adversarial agents, 2026-10-04. First run caught the 8.7 h memory gap. `evidence: measured`.
+
+## mlv-app, 2026-10-04 — editing a hash-pinned scheduled script silently stops the schedule
+- **Rule (observed):** MLV-App's heartbeat task runs `board-heartbeat.ps1` through a launcher pinned to the
+  script's SHA-256. After an edit, every scheduled run exited 125 and published nothing for 70 minutes, while a
+  manual run of the same script succeeded, so the edit looked verified. Re-pinning with `-Install` then anchored
+  the next run to the next hour, adding up to another 60-minute gap.
+- **Mechanism:** the integrity pin is checked by the launcher, not by the script, so the script's own test path
+  never exercises it. The install step rounded its anchor to the hour instead of the interval.
+- **Where:** any scheduled task that pins the hash of a script you can edit.
+- **Check:** after any edit, re-run the installer and poll the task's lastResult and output freshness until the
+  NEXT scheduled run has published. A manual run is not evidence. Pass: lastResult 0 and a fresh artifact within
+  one interval.
+- **Source:** MLV-App `.claude-state\heartbeat\board-heartbeat.ps1` (anchor fix) and heartbeat.log 14:08Z to 15:18Z;
+  caught by the rollover-readiness Stop hook. `evidence: measured`.
