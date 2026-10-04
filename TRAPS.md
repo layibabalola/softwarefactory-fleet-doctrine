@@ -26219,3 +26219,20 @@ Every one ended with zero survivors. It also aborted a reviewer start at its ide
 - After editing a hash-pinned scheduled script, prove the next run, not just the re-pin.
 
 **Source.** Adobe `.claude-state/tools/Write-ResumeCheckpoint.ps1`, SHA-256 2387FEEEC84528669AA175E970FE51686EA3D4DBE6547C0B9BBD9B0B3F8669B7, re-pinned with `Repin-ResumeCheckpointTask.ps1`. Verified run: exit 0, `open orchestrator requests: 0 (seq above the highest answered req_seq 51)`. `evidence: measured`.
+
+## mlv-app, 2026-10-04 — rotation readiness measured freshness, not completeness, and only while a session was alive
+- **Rule (observed):** MLV-App's readiness checker (`.claude-state\coordination\dual-lane\assert-resume-readiness.ps1`)
+  read READY while 8.7 h of landings (MLV-App PRs #243 to #261) had no project-memory note, the session-bound merge
+  queue and its log watchers had no durable re-arm, and orphaned tail/grep watchers kept running with dead parents.
+  All four of its checks are file mtimes, and it ran only from a Stop hook, so only while some session ended turns.
+- **Mechanism:** a freshness gate is satisfied by touching a file. Handoff refreshes landed 8 to 14 minutes before the
+  6 h limit (two went over and were forced by the hook), and nothing asked whether the newest block still said how to
+  rebuild what dies with the session, or whether landings had reached durable memory.
+- **Where:** any resume surface whose readiness check is an mtime, run only by a live session.
+- **Check:** with no Claude session open, the OS-owned heartbeat's snapshot shows a readiness verdict from a CONTENT
+  check: the newest handoff block carries RE-DERIVE and RE-ARM, and the newest merged PR is at most 2 h newer than
+  the newest project-memory note (`gh` unavailable = CANNOT-DETERMINE, never OK). Pass: deleting the RE-ARM line or
+  merging without a memory note turns the snapshot STALE within one heartbeat interval.
+- **Source:** MLV-App `.claude-state\heartbeat\assert-rollover-completeness.ps1` (new) and its probe in
+  `.claude-state\heartbeat\board-heartbeat.ps1` (Scheduled Task `MLV-BoardStateHeartbeat`, every 10 min); review by
+  three adversarial agents, 2026-10-04. First run caught the 8.7 h memory gap. `evidence: measured`.

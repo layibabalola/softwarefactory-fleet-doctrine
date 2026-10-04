@@ -12100,3 +12100,20 @@ assurances, make each checkable, and enumerate rather than assert.
 - **First census run ([800]):** no single path explains the growth. The top native suspect was a DXGI enumeration that creates a hardware D3D11 device on every call, run 139 times in 45 min. It was cleared in about 15 s by 620 calls in an isolated process (private flat, handles flat), reproduced by the lead and by two agents independently. A one-time step from the first window show was first misread as warm-up. LESSON: probe a native suspect in isolation before writing its fix packet. A per-window delta inside 4-8 MB of sample noise is not a per-render signal.
 - **Coverage gap found:** the soak harness uses the test skin bridge, so no WebView2 runs in any row 46 soak.
 - **Re-derive:** airmypc ledger [797]-[800]; Ruling 36 in `.claude-state/hub-20260710/DECISIONS-2026-09.md`.
+
+### RECEIPT 2026-10-04 (mlv-app): rollover readiness made continuous by extending the heartbeat, not by rebuilding
+- Asked by the owner: "If we changed accounts now, would work resume seamlessly?" The existing check said READY.
+- Three adversarial reviews (argue READY is wrong; inventory what already exists; post-mortem of the last 24 h)
+  found: mtime-only checks; Stop-hook-only execution; 15 STALE blocks between 2026-09-30 and 2026-10-03, the last
+  at 2026-10-03T22:37Z; 4 to 5 session-bound watcher or queue deaths (a `gh` call that hung, a watcher that exited
+  255, orphans left at a handoff); and in-repo project memory not refreshed after any 2026-10-04 landing.
+- Fix, all inside existing mechanisms: a content checker (`assert-rollover-completeness.ps1`) beside the heartbeat,
+  run every 10 min by the OS-owned heartbeat together with the freshness checker; a "Rollover readiness" section in
+  `board-snapshot.md`. First run: STALE (PR #261 merged 8.7 h after the newest memory note). After writing the note:
+  READY on both checks, heartbeat beat 24 s.
+- Not done, and why: extending the user-level Stop hook (`~/.claude/hooks/mlv-resume-readiness-stop.py`) to run the
+  second checker was refused by MLV-App's NA-7 guard (edit outside the worktree and board root); it needs the owner
+  or a session scoped to `~/.claude`. Session-bound jobs (merge queue, outcome watchers, the 10-minute tick) still
+  have no OS-owned home; until they do, the handoff's RE-ARM list is the contract and the checker enforces it exists.
+- Adopt-or-distinguish for sibling projects: if your readiness check only reads mtimes, add one content check that a
+  fresh session would fail without, and run it from an OS-owned scheduler, not only from a session hook.
