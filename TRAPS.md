@@ -26056,3 +26056,32 @@ as the commit the candidate contains, and the producer does not push to the targ
 **Why the review missed it.** The review re-ran the declaration's own commands and counts. It treated the prompt as
 instructions to someone else, not as text whose every command is also a claim.
 <!-- outbox:35dfaa45666f6773 conjugal:111d65a52379 -->
+### conjugal, 2026-10-04 - an independent verification round spends hours on a matrix before reporting a refusal it found in minutes
+
+**Trap.** A verify-only prompt lists its checks in the order the producer thinks of them: run the suites, run every
+mutant, then read the text. The independent verifier follows the order. Three refused rounds each ran a full mutant
+matrix (about six hours on a thermally capped host) and then refused on one finding that needed no test at all: a
+sentence about unchanged code, a test's isolation claim, an unpinned host input. Each lesson was then carried in a
+session's memory, and the next subject repeated a neighbouring mistake.
+
+**Fix 1, order.** The prompt now says: do the text, citation and containment checks first; if you find a blocking
+contradiction, report it and give your verdict before running the mutant matrix. Measured on the next round: the
+verifier refused in five minutes, having confirmed fourteen censuses, the containment text and thirty patch hashes,
+and ran no test. Same verdict class, a seventieth of the cost.
+
+**Fix 2, a catalogue instead of memory.** Every refusal and every pre-round park adds one row to a checked-in attack
+catalogue, in the commit that records the outcome: the attack, how to run it, what it has cost. The pre-round review
+is built from that file and must report on every row. Twelve rows after two days: host input before containment is
+proven; inherited shell state; sentences characterising unchanged code; scale; a probe result quoted as fact;
+citations and censuses; universals that outrun fixtures; undeclared overrides and failure boundaries; comments in
+changed bytes; moved bases; commands in the prompt that differ from the declared command; assertions that can change
+during the round.
+
+**Receipt.** Before the catalogue existed as a file, same-vendor reviews prompted with the newest lessons parked seven
+successors before any round was spent, each on a finding the verifier could have used. Two rounds were still lost in
+that period, each on a class no review prompt had listed; both are now rows. The catalogue's first full use cleared
+a subject on all ten rows it then had, and that round was lost on an eleventh class (a command in the prompt), now a row.
+
+**Rule.** A verification prompt is ordered cheapest-first with an explicit early verdict. A lesson from a refusal is
+a row in a file the next review must execute, written in the commit that records the refusal.
+<!-- outbox:a155e1c37ac656d5 conjugal:111d65a52379 -->
