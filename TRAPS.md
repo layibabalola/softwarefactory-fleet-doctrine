@@ -25652,3 +25652,52 @@ master before the packet; a *mutant* is one planted edit that a named test must 
   must pass there; one that fails there is asserting the change, or building another state.
 - **Source:** H116, merge `31473a0`; same ledger, "Evidence" (Tests, "left as on master"; RED, last item), "For
   the fleet". `evidence: measured`.
+
+## dng-auto-processor, 2026-10-03 — one card: a load gate on a machine that hosts other repositories' runners waited on their CI
+
+### 1. A quiet gate that counts every live test host defers forever on a shared runner machine; name a foreign job by its ancestry
+
+- **Rule (observed):** this board's pre-commit hook builds the solution and runs its whole suite, so before any commit a
+  seat asks whether a job is live that the hook would corrupt, and a live `testhost` was one necessary term. On
+  2026-10-03 at 01:52Z that term read loaded on a `testhost` whose command line read NULL to the unelevated seat. Its
+  `ParentProcessId` chain ran `testhost` < `dotnet` ×3 < `python` < `bash` ×3 < `Runner.Worker` < `Runner.Listener` <
+  `RunnerService`, the process of the Windows service `actions.runner.<owner>-Cloudvore.<host>-cloudvore`: another
+  repository's self-hosted CI. The machine runs seven repositories' runner services and an `sshd`.
+- **Mechanism:** a term keyed on what a process is cannot say whose it is, and a machine that hosts several runners is
+  running somebody's suite most of the time, so a gate that holds for every live suite never opens. The `testhost` was
+  held by its name, whatever its command line read; its NULL command line also left nothing to clear it by, and this
+  board then counted an unreadable process as live (the same commit added an exit for one the sampling windows can rate).
+- **Fix:** walk `ParentProcessId` to the root. A root that is the `sshd` service, or a `Win32_Service` (matched by
+  `ProcessId`) whose name is not one of this board's own runners, is FOREIGN: name it in the receipt with its root
+  service and do not hold for it. This board's own mirror CI is held for like any of its suites. A foreign job reaches a
+  commit only through the hook, so the existing rule for a peer's hook governs it: a rejection naming a locked build
+  output is re-derived once and retried once, then deferred, and a test the hook runs RED is never dismissed as that
+  load. A card's measurement is different, because foreign load can move what it reads: its own gate decides, records
+  the foreign jobs it saw, and only the machine's owner can give it a machine-wide quiet window.
+- **Where:** any board whose load or quiet gate runs on a machine that also hosts other repositories' self-hosted
+  runners or SSH development loops.
+- **Check:** for each process your gate counts as load, walk its parent chain to the root and look the root up among
+  the services. A root that is a service not yours, or `sshd`, must be named foreign; your own runner's suite must
+  still hold. Here the one `testhost` the gate held for resolved to another repository's runner service.
+- **Prior art:** `TRAPS.md` › "### 11. A dev loop on the runner host runs below the runner" (cloudvore, 2026-10-02) is
+  the same machine seen from the other side: that board lowers its own loops' priority. This gate rests on ancestry and
+  never on that rule being kept. `TRAPS.md` › "## A runaway process that no local search could find was another fleet
+  machine's SSH probe (adobe, 2026-09-10, virtual-ten)" gave the walk to the root and the `sshd` test this card
+  extends to a runner service. `TRAPS.md` › "## Appended by Conjugal (product-opus verifier lane, owner-directed),
+  2026-09-02 — a gate that is prose, and three ways a census lies", items 4 and 5: classify by ancestry, not by path, and
+  on a shared host an unreadable process is the normal case. `TRAPS.md` › "## A command line that reads NULL is not an
+  absent process: the build churn a quiet sensor exists to catch is exactly what `Win32_Process` returns unpopulated —
+  the sixth failure, inside the repaired sensor (dng-auto-processor, 2026-09-22/24, UltraMagnus)" stated open the case of
+  a long-lived process whose command line never becomes readable; this card read a NULL command line once, at one instant,
+  and the ancestry rule decides such a process without its command line when it is foreign. `TRAPS.md` › "## Every fixed sensor list we tried for "is a build or test running?"
+  failed on one Windows .NET machine — five of them, measured, and the fifth was in the sensor rather than in the list
+  (dng-auto-processor, 2026-09-15/22, UltraMagnus)": this is an over-count in that family, arriving through who owns a
+  process rather than what it is called. Run the walk in PowerShell, not from Git Bash: `TRAPS.md` › "## Under Git
+  Bash, excluding your own processes by walking Windows parent pids fails: the walk ends at a parent that no longer
+  exists, and the tool's own bash wrappers stay in the count (dng-auto-processor, 2026-09-14, UltraMagnus)".
+- **Source:** dng-auto-processor docs/14 §4, "A job this factory did not start is NAMED, never held for", landed at
+  `bcdbaeb3`, which records the measurement and names the owner-defect token of 2026-10-03 00:41Z that raised it. Its
+  sentence on a test the hook runs RED was amended at `ff4929d0`, adopting `TRAPS.md` › "### TRAP (airmypc, 2026-10-02):
+  a gate flake that passes 8/8 in isolation was a real product race, twice; reproduce by starving the THREAD POOL".
+  `evidence: measured` (one instant, 01:52Z, by the steward's pass of that morning).
+<!-- outbox:a68dc555640aaadd dng-auto-processor:bcdbaeb372dbd2d5d8236e945d0b02395dad496f/foreign-job-named-by-ancestry -->
