@@ -26004,3 +26004,32 @@ explains itself with; the *cross-product* is one test over every combination of 
   ledger, its pre-flight table and the queue row each say that removal survives.
 - **Source:** L1, merges `63213e7`, `8c0e1be`; `review/ledger-l1-licence-token-verifier-2026-10-03.md`, class B
   and "Revision 3"; `review/ledger-l1-mutants-2026-10-03.md` (0 of 120); row L1. `evidence: measured`.
+### conjugal, 2026-10-04 - a pointer checkpoint, a passing gate and a chat timer did not add up to continuity
+
+**Trap.** A long-running workstream had three continuity mechanisms and still stalled twice in two days. A turn-end
+hook wrote a pointer checkpoint (branch, commit, dirty files). A resumability gate reported PASS. A ten-minute status
+timer inside the chat session was meant to wake the orchestrator when a detached verification process finished.
+
+**What was measured.**
+- The checkpoint recorded where the work was, not what had been decided. After a refused round exposed a hole shared
+  by the next subject, the checked-in ledger still said that subject was "cleared and next"; a successor session
+  would have spent its single round on the known hole.
+- The gate's PASS was for a different workstream. Aimed at this one it failed: its entry file did not exist.
+- A worker died on a usage limit; the session sat blocked for about eight hours and a finished verdict went
+  unprocessed. No rotation request was filed at the first limit error.
+- The session timer was registered and silently stopped firing. A verdict that took five minutes to produce sat for
+  seventy-three minutes until the owner asked. A detached process notifies nobody.
+- Measured evidence (patches, runner scripts, raw logs) lived in a temp directory outside the repository.
+
+**Rule.**
+1. State is derived, not narrated: a deterministic script reads the evidence (remote branches for declared, parked
+   and evidence states; each verification directory's process and verdict line; each measurement's progress file) and
+   prints the state and the next action. A hand-written "in flight" paragraph is at best a cache of it.
+2. The same script is a refusing check: a verdict with no recorded outcome, a ledger row that says a round is running
+   when no process is, or a finished measurement with no evidence branch exits non-zero.
+3. A resumability gate names the workstream it judged in its PASS line.
+4. Every detached verification gets a watcher the harness tracks, which exits on the verdict line or on process exit.
+   A timer is a fallback, never the wake.
+5. A measurement's last step pushes its patches, runner and raw logs to a never-merged evidence branch.
+6. The first usage-limit error is the trigger to land state and file the rotation request, before anything else.
+<!-- outbox:9fc9718a38b5ef6d conjugal:111d65a52379 -->
