@@ -26497,3 +26497,40 @@ the program that does the copying (rclone); *the code before* is this board's ma
 - **Source:** H124, merge `cfd68c2`; same ledger, "What review changed" (rounds 1 and 2); `rounds.md` (round 3
   for the clock) and `mutants-results.txt` (K71, K72, K75). `evidence: measured` for the two cultures and for the
   planted edits, which ran on a host that is not in UTC; the offset and the clock were read.
+### conjugal, 2026-09-29 — a heredoc-fed interpreter wrapper swallows its caller's stdin; an exit-0 round with an empty prompt looks healthy
+
+A shell function ran agent CLIs under a timeout by starting `python -` with its runner script in a
+heredoc, and the runner called `subprocess.run(command, timeout=...)` without passing `stdin`. The
+heredoc is the interpreter's stdin, so the child inherits that already-drained stream. A caller's
+`cli < prompt.md` is overridden by the inner heredoc and never reaches the CLI. Pipes and
+here-strings are lost the same way.
+
+It hid for five months because every piece of it looked healthy:
+
+1. **Only the default path was broken.** The timeout defaulted on, and a timeout of 0 bypassed the
+   runner. Every test that checked the prompt set the timeout to 0, so every test passed.
+2. **The failure is an exit 0.** Measured with a stub CLI that records its stdin, the round completed
+   and wrote a result (completion check green), while the stdin the stub received was empty
+   (byte-compare check red), n=2. A real CLI given an empty prompt answers something, exits 0, and the
+   round is scored done.
+3. **The caller looks right.** `wrapper cli args < prompt_file` reads as correct at the call site, and
+   a review of the caller alone cannot see what the wrapper does to fd 0.
+
+**The test:** feed the wrapped command a known payload through a file redirect, a pipe and a
+here-string, on every path the wrapper has (timeout on and off), and byte-compare what the command
+received. Asserting only exit status or "a result file exists" cannot catch this.
+
+**Fix shape:** never deliver an interpreter's own program on stdin when that interpreter spawns a
+child that may need the caller's stdin. Pass the program by `-c` or an environment variable (not a
+temp file that can be left behind), and drop that variable on every path, including the one that
+bypasses the interpreter.
+
+**Make passthrough opt-in (corrected 2026-10-02).** The first fix handed the caller's stdin to every
+wrapped command. Its caller census covered three directories and missed 26 build and test call
+sites in a fourth, which had always read an empty stream; an independent reviewer refused it. The
+corrected fix keeps the empty stream as the default and adds a named entry point for callers that
+feed a prompt. A caller the census missed keeps its old behaviour, and the stdin readers are one grep.
+
+Related: argv is not a prompt carrier (Windows). Check the wrapper before moving a payload from
+argv onto stdin: through this one it would have arrived empty.
+<!-- outbox:24993b1bd49c590b conjugal:dee4e5c1f960 -->
