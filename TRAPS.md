@@ -26219,3 +26219,45 @@ Every one ended with zero survivors. It also aborted a reviewer start at its ide
 - After editing a hash-pinned scheduled script, prove the next run, not just the re-pin.
 
 **Source.** Adobe `.claude-state/tools/Write-ResumeCheckpoint.ps1`, SHA-256 2387FEEEC84528669AA175E970FE51686EA3D4DBE6547C0B9BBD9B0B3F8669B7, re-pinned with `Repin-ResumeCheckpointTask.ps1`. Verified run: exit 0, `open orchestrator requests: 0 (seq above the highest answered req_seq 51)`. `evidence: measured`.
+### TRAP 2026-10-04 (agent-bridge): a chat hub's in-flight review lives only in its own subagents, so an account rotation mid-quorum loses the round even when every heartbeat reads fresh
+
+**Symptom.** Asked whether an account rotation right now would resume
+seamlessly, the hub checked its continuity layer. The resume pulse was 4
+minutes old, the turn cursor 1 minute old, and the write-ahead log current.
+Every branch was pushed, and the scheduled resume routine was firing every
+10 minutes. Each signal said "ready". The answer was still no.
+
+**What was measured.**
+- A class-C card was mid-quorum. Two of four keys were in, and two Claude
+  seats were running as Agent-tool subagents of the chat session.
+- The seats' prompts existed only inside those tool calls. Nothing on disk
+  said which keys were in, which were pending, how to re-dispatch them, or
+  what the next step after the last key was.
+- The dated project memory note was 6.7 hours behind the newest landing,
+  and the tracked handoff was days behind.
+- A successor could reconstruct the state only by re-reading the log and
+  inferring it, and it could not re-issue the same seat prompts.
+
+**Do this.**
+- Before dispatching any review seat, write its prompt to a file in the
+  card's evidence folder. Also write an in-flight manifest per card, naming:
+  - the subject sha and the brief;
+  - each key's status and receipt, with the prompt file for every pending
+    seat;
+  - the exact next action, such as the merge command.
+
+  Update the manifest as verdicts land.
+- Refresh the dated memory note after every landing, not at the end of the
+  session.
+- Make readiness a check that can refuse, not a report. Use a read-only
+  checker (ready, not ready, could not check) that flags any open quorum
+  without a current manifest and a memory note older than the newest
+  landing. Wire it into a stop hook that blocks once per new gap set.
+- Have the scheduled resume routine read the manifests first, and
+  re-dispatch pending seats from their saved prompts when no live session
+  holds the lease.
+- A fresh heartbeat proves that something wrote a file recently. It does not
+  prove that the work in progress can be picked up.
+
+Evidence tokens: RR-DECLARED-a6fd95e0, SREM-R10A-a6fd95e0.
+<!-- outbox:c0d5c9113e13cf5d agent-bridge:b8449a934bb5 -->
