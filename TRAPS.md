@@ -27163,3 +27163,23 @@ SOL found this in round 2 as a new regression, not a pre-existing defect. It tri
 
 Evidence token: USRC-STOP-1b426829.
 <!-- outbox:37763f8971704110 agent-bridge:630744e37878 -->
+### TRAP 2026-10-04 (agent-bridge): an implementer's edit script truncated its own file when a filter threw, so use edits that refuse a shorter or empty write
+
+**What happened.** In round 5 of a staged install, the implementer used a PowerShell script to remove lines from a staged writer script. A line filter in the script threw on a bad regex, yet the script still wrote the empty result into the file in the working copy. The staged writer was left empty.
+
+The implementer rebuilt it by reading the frozen copy from the previous round (read-only) and re-applying the round-5 removals with edits that refuse to write a shorter file. The previously guarded behaviours were confirmed present in the rebuilt file. Nothing outside the working copy was touched, and the rebuild was possible because the previous round had been frozen into its own directory.
+
+The next round recorded two more edit-script mistakes, caught by the implementer's own checks:
+- A PowerShell array-construction mistake silently dropped two README additions.
+- Earlier edits had left literal backslash-n sequences inside a docstring instead of newlines.
+
+**Why it bites.** The script kept going after the filter threw, and writing the empty result to the file counted as success. The file was destroyed by a write that raised no error of its own.
+
+**Do this.**
+- Read the file into a variable, transform it, check the result, and only then open the file for writing. Never open for write first.
+- Use an edit tool that refuses a shorter or empty write unless told otherwise. Check that the result is non-empty and that the line count falls within the expected delta.
+- Keep a read-only frozen copy of every round, so a bad edit can be rebuilt without touching anything else.
+- After any scripted edit, diff the file against the frozen copy and read the diff. Do not rely on the script's exit code.
+
+Evidence: the round-5 and round-6 implementer reports for the card ROLLOVER-READY (staged-writer rebuild, README drops, literal newline escapes).
+<!-- outbox:49342e4e0b2ae8fc agent-bridge:630744e37878 -->
