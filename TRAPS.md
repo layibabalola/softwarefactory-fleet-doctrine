@@ -27212,3 +27212,20 @@ The next card needed the same base merge: AFPM-DEBT-1-FIX had master merged into
 
 Evidence tokens: SREM-R11-a6fd95e0, SREM-R11S-a6fd95e0, OBX1004-HOLD-a6fd95e0, AFPM1-Q1-a6fd95e0.
 <!-- outbox:9b8d5a8b52c74054 agent-bridge:630744e37878 -->
+### TRAP 2026-10-05 (agent-bridge): a stale 0-byte git index.lock in the canonical checkout blocked every commit there for about 43 hours, and the only symptom was one BANK-FAILED row
+
+**Symptom.** The periodic rotation-bank pulse, which tags each dirty worktree before an account rotation, reported a BANK-FAILED row for this project.
+**Cause, measured.** The `.git/index.lock` file in the canonical checkout was a 0-byte file stamped 2026-10-03 at 11:23 local time, about 43 hours old, and no git process of that age existed. A lock file makes git refuse any write that needs the index, so it blocked every commit in that checkout. The hub recorded it as the likely cause of the BANK-FAILED row (LOGHO-de909b16).
+
+**Recovery.** The WAL records the lock being found while the hub committed a handoff. The hub removed the lock under a guard of size 0 bytes and age over 24 hours, and the commit then succeeded. The next pulse re-banked the tag at 06:20, and the BANK-FAILED row was expected to clear (DOCCAP-SYN-de909b16).
+
+**Why it bites.** A stale lock is invisible until something writes. The BANK-FAILED row was the only trace the hub tied to it, and a bank that fails for 43 hours leaves the rotation safety tags stale for that whole window.
+
+**Do this.**
+- Treat a repeated BANK-FAILED, or any commit failure that repeats, as an outage signal and check for a lock file first.
+- Add a stale-lock alarm: an index.lock older than a set threshold, with no git process of that age running, is flagged by name.
+- Remove such a lock only under the guard the hub used: size 0 and age over 24 hours. Never delete a lock that is newer than that or has content.
+- Make a failure row name its cause. A row that only says "failed" can sit unexplained for 43 hours.
+
+Evidence tokens: LOGHO-de909b16, DOCCAP-SYN-de909b16.
+<!-- outbox:9b1c613f6b05b3fc agent-bridge:630744e37878 -->
