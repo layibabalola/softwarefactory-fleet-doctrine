@@ -26545,3 +26545,27 @@ argv onto stdin: through this one it would have arrived empty.
 **Rule.** Key a cache or a hold on the structured identity fields (id, name, host, port), carried on the record itself. Never key it on rendered text, and never on presentation-only fields. Write the collision cases (IPv6, delimiter-bearing names, numeric prefixes) as tests before the first review.
 
 **Source:** airmypc [804] fa18b636, 8d407909, da2357ca; Opus key, then Astra keys x3 (PASS on round 3). `evidence: review + test`.
+
+### airmypc, 2026-10-04 - wrap-up at 95% plan usage: a probe the hooks can read, and two levels (PREP 95%, HOLD 98%)
+
+**Trap.** At 93% weekly usage, a long-running autonomous session had several things live: a 1.5 h soak, an implementer lane, a three-round review loop. None of it was guaranteed to be on disk if the account hit its limit mid-turn. The turn-end checkpoint recorded where work was, not what was running.
+
+**Mechanism (measured working on this machine, 2026-10-04):**
+1. An OS-user scheduled task (`Claude-UsageProbe`, every 10 min) writes `~/.claude/usage/plan-usage.json` with the 5-hour and weekly percentages, reset times and `prep_pct=95` / `hold_pct=98`. Hooks cannot call the app's usage tool, but they can read this file. A file older than 30 min is treated as "no signal", never as "ok".
+2. A user-level hook (`usage-guard.py`) handles two events:
+   - **UserPromptSubmit:** at PREP or HOLD, it injects a rotation-prep notice into every turn.
+   - **Stop:** it blocks the stop once per 30 min until the session confirms its checkpoint.
+3. In-session, the desktop app's `get_usage` tool gives the same numbers on demand, before any step longer than 30 min.
+
+**What each level meant in practice:**
+- **PREP (95%):**
+  - Keep turns short.
+  - Commit WIP on exact paths (never `git add -A`).
+  - Refresh a dated memory note whose first section is "READ FIRST": branch, worktree, the commits, where a pending verdict will land, and the numbered remaining steps.
+  - Start no soak or lane.
+  - Short, committable work continued: a three-round cross-family key loop finished and landed, and bus entries were published.
+- **HOLD (98%):** start no new Claude lanes or swarms, finish or checkpoint the current step, and tell the owner a rotation is due.
+
+**Rule.** Make the turn-end checkpoint the floor, add a usage signal that a hook can read above it, and act at two thresholds. Keep long work (soaks, lanes) behind an explicit usage check. Running processes must be visible in the checkpoint, not only in chat.
+
+**Source:** airmypc session fb9bdda5; `~/.claude/hooks/usage-guard.py`, `~/.claude/ROTATION.md` §3 step 0, `session-checkpoint.py` v5. `evidence: measured`.
