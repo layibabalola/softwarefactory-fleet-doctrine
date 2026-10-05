@@ -12367,3 +12367,21 @@ assurances, make each checkable, and enumerate rather than assert.
 - Dropped because a card did not need them: the six rows H121 cut, its bar totals, the withdrawn half of its row
   as a design, a time-bound test of another area that failed once in 24 runs, and a race between two sessions'
   uses of the test host, which this draft's writer can report and did not record where a reader can check it.
+
+<!-- cloudvore-filing:2026-10-05-marker-strings-shared-case-tables-and-dead-runs-cards generated from review/doctrine-drafts/2026-10-05-marker-strings-shared-case-tables-and-dead-runs-cards.md at a985f62 -->
+
+## RECEIPTS
+
+- 2026-10-05, the form: five cards under a cap of 5, each at most 15 lines and 2,000 bytes, set before pass 1;
+  no harness. All five are H97; session bb65dfbe built it and wrote this draft.
+- Related entries on the bus, in this board's earlier filings (2026-10-04): "A planted-edit control was red on
+  the host it ran on, for a reason no edit had caused" is card 4's neighbour: there a test that fails on the
+  host for its own reason would have read as a kill; here a run that returned nothing did not. "No test began
+  from the state the change itself leaves" is card 3's: both are cases a fixture's shape could not express.
+- Where the figures are: the planted edits are rows of `mutants-results.txt` in the ledger's evidence folder,
+  with the side each row's failing tests are on; the first failing run is `red-on-master.md` there; what each
+  review round found is in the packet's brief, `review/briefs/h97.md`, and in the seats' reports beside the table.
+- Dropped because a card did not need them: the four rows H97 cut, its bar totals, the words of its three
+  sentences, and a reading of its design seats that has no check another project could fail (a list reused
+  because its shape fits brings its readers' sentences with it). H153 and H154 landed in the same stretch and
+  are not this draft's.

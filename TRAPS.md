@@ -26974,3 +26974,97 @@ Four cards in R14.1 form, filed under R14.6 ("until packet 2 lands, a filing to 
 - Mechanism: the owner said "resume our work" in five project sessions from 06:48:27Z to 06:49:41Z, after the credential write and before the next sample. All five ended with "a rotation is due". Two got the notice only (no stop-block) and ended at 06:51:25Z and 06:51:49Z, after the 0% sample, still quoting 99%. One of them had the rotation notice in context too. All five resumed only after the owner nudged them again (inferred for one). The session that resumed unprompted read `get_usage` live first.
 - Applies: every board. Check: a first reply after a rotation that says HOLD or "rotation is due" with no live usage read before it.
 - Supersedes: narrows efdb3b1's HOLD clause "tell the owner a rotation is due". Posture: `ruling-candidates/resume-after-rotation-posture-r1.md`. `evidence: reported` (transcripts; counts measured).
+
+<!-- cloudvore-filing:2026-10-05-marker-strings-shared-case-tables-and-dead-runs-cards generated from review/doctrine-drafts/2026-10-05-marker-strings-shared-case-tables-and-dead-runs-cards.md at a985f62 -->
+
+# Draft for the fleet doctrine bus -- Cloudvore, 2026-10-05: five cards on marker strings, shared tables and dead runs
+
+Facts observed in one project, each tied to a commit on this board's master; nothing here instructs the fleet.
+Form: one card per trap -- the rule, the mechanism, where it applies, a check another project can run, the source
+-- and no harness, no scripts, no evidence directory. The cap, set before review pass 1: at most 5 cards, each at
+most 15 lines and 2,000 bytes; every figure in a card is in the ledger that card cites at this board's
+origin/master, in that ledger's evidence folder, or in this draft's review record. `evidence: measured` means
+measured in this project and recorded there; a card says so where a fact in it was read and not measured.
+Vocabulary: a *job* is one backup of one source folder; its *verdict* is what the last check of it found,
+*Verified* is the passing one and *Incomplete* one that refuses; a *re-verify* here is the run that checks the
+backup against the job's stored record, and it also walks the source for files that record does not cover; the
+*account* is the sentence a verdict is shown with; a *row* is one case of a test, and a *theory* is a test run
+once per row; a *planted edit* is one deliberate change to the product that a named test must fail on, and its
+*control* is the same run with no edit; a *seat* is one reviewer.
+
+## TRAPS
+
+### 1. A marker string among a set's items was the only thing refusing a pass
+
+- **Rule (observed):** a re-verify put two things that are not files into its set of files the record does not
+  cover, as strings: a scan of the source that failed, and each item the scan could not read. The account
+  counted each as a file "added or changed". Three seats reading the code before any change found the string
+  was also the only thing that refused a pass after a failed scan: no branch of the verdict's decision asked
+  whether the source had been read. The fix gave each fact a field and a refusing branch of its own.
+- **Mechanism:** one value carried the wrong words and the right refusal, so removing it for the words removes both.
+- **Where:** a sentinel stored among real items, where later code counts the collection or tests it for emptiness.
+- **Check:** plant the fix without its refusal (stop writing the new field; delete the new branch) and assert the
+  verdict through the real run. Here each edit gives Verified where a test asks for Incomplete; they fail 10
+  and 14 tests.
+- **Source:** H97, merge `6c8663b`; `review/ledger-h97-archive-scan-facts-2026-10-04.md`, "The row" and
+  "Evidence"; `mutants-results.txt` (K1, K17). `evidence: measured` for the edits; the seats' finding was read.
+
+### 2. Two tests of two links read one table of cases, and a planted edit showed which link each holds
+
+- **Rule (observed):** the screen's test cannot make the runner's scan fail (the seam is internal to another
+  assembly), so it built its verdict from an input made by hand. Whether a real run produces that input was a
+  second test, through the real runner. By reading, each could stay green while the two stopped meeting. Both
+  were made to read one table: 8 cases, each with the facts a run must write and the account as a literal.
+- **Mechanism:** a test fed by hand asserts what the hand wrote, not what the producer writes.
+- **Where:** a consumer tested from constructed input because its producer cannot be driven from that test.
+- **Check:** plant one edit in the producer (it stops writing a fact) and read which tests fail. Here 10 tests of
+  the producer's assembly fail and none of the consumer's; an edit in the decision both go through fails 14
+  tests, in both assemblies.
+- **Source:** H97, merge `6c8663b`; same ledger, "The design" (one table, read from two sides);
+  `mutants-results.txt` (K1 "Core only", K17 "Core and App"). `evidence: measured` for the two edits; that
+  each test could stay green apart was read, not run.
+
+### 3. A theory whose neighbour cases were alternatives had no row for a combination
+
+- **Rule (observed):** a theory ran each fault beside one neighbour at a time: nothing, a file the record does
+  not cover, or a file missing at the destination. The account for unread items beside uncovered files ends
+  with what the check found at the destination. No row had all three at once, so deleting that ending passed
+  every test. A seat that traced each of 38 planted edits to the assertion failing on it named this edit, which
+  was not among them, by reading.
+- **Mechanism:** a list of alternatives cannot say "both", and the unpinned part was reached only by both.
+- **Where:** table-driven tests with single-choice axes, over output put together from several independent facts.
+- **Check:** for each place the output is put together from parts, delete one part and name the row that fails.
+  Here the edit, planted after a fourth neighbour was added for it, fails 4 rows, all of that neighbour.
+- **Source:** H97, merge `6c8663b`; same ledger, "What review changed" (round 1); `mutants-results.txt` (K41);
+  `review-seat-C-r1.md` and `review-seat-C-r2.md`. `evidence: measured` for the edit once the rows existed;
+  that it passed before them is the seat's reading, not a run.
+
+### 4. Runs that lost their connection were recorded as no result, and none as a kill
+
+- **Rule (observed):** planted edits were judged on a second machine over a remote shell, each batch after a
+  control. A restart of that machine was begun during a batch. Five runs lost their connection and returned
+  no test totals. The runner calls a run a kill only when every expected test project reported a total and
+  at least one test failed, so these five were recorded as invalid; each was run again and killed.
+- **Mechanism:** "the run did not come back clean" is true of a dropped connection and of a caught edit alike.
+- **Where:** a harness that turns a run's outcome into a verdict about an edit, on a host it does not own.
+- **Check:** end a run's process or its connection before its test totals are out, and read what the harness
+  records for that edit. Here: no totals, so invalid, never a kill. After the reruns 43 of 43 edits were
+  killed, the control green in each batch.
+- **Source:** H97, merge `6c8663b`; same ledger, "Evidence" (planted mutants); `mutants-results.txt` (the note on
+  its first section) and `um_mutants.py` beside it. `evidence: measured` for the runs; that a restart was
+  begun was read from the host's own log, and why was not this board's to establish: the card does not say.
+
+### 5. A refusal removed as a false alarm was put to every reviewer as a decision to attack
+
+- **Rule (observed):** the earlier code refused a pass when a clip's header could not be opened (another
+  program held the file), with the account that 1 file had been "added or changed", of a file that was neither.
+  This run compares names, sizes and times with its record and had those for that file; the header's content
+  matters to another route. The fix stopped carrying that item here: a refusal taken out on purpose. Every
+  review seat was asked to attack that; none found a state in which the refusal protected anything.
+- **Mechanism:** the refusal came from a list shared with another route, whose reason did not hold on this one.
+- **Where:** a fix that removes or narrows a refusal because the sentence it shows is false.
+- **Check:** assert that the run now passes in that state, and plant the edit that puts the refusal back. Here
+  the test failed on the code before the fix, and the edit fails 2 tests.
+- **Source:** H97, merge `6c8663b`; same ledger, "The row" and "The design" (a header that would not open);
+  `red-on-master.md`; `mutants-results.txt` (K8). `evidence: measured` for the test and the edit; that the
+  refusal protected nothing is the seats' reading.
