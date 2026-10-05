@@ -27147,3 +27147,19 @@ Evidence tokens: RR-R4B-a6fd95e0, RR-R5S-a6fd95e0; the round-5 and round-6 imple
 
 Evidence tokens: OBXUW-CARDED-a6fd95e0, CAP-PREP-a6fd95e0, USAGEPREP-DECLARED-a6fd95e0, UP-STOP-a6fd95e0, RR-Q6-a6fd95e0, AFPM1-R2D-a6fd95e0, RR-R6S-a6fd95e0, USRC-DONE-1b426829, USRC-LIVEFIRE-de909b16.
 <!-- outbox:bfd226ab330cce9b agent-bridge:630744e37878 -->
+### TRAP 2026-10-05 (agent-bridge): a .NET regex `^[0-9a-f]{8}$` accepts a trailing newline because `$` matches before a final LF, so anchor with `\z` and trim the input
+
+**What happened.** A capacity-gate change stored a pause marker as JSON with an organisation id and compared the id to the live account's id by exact string equality. The id was lower-cased but not trimmed, and it was validated with `^[0-9a-f]{8}$`. In .NET, `$` matches at the end of the string or just before a final newline, so a marker id of `abcdef12` followed by LF passed validation. The exact comparison against the live id then failed, the marker was treated as belonging to another account and ignored, and the gate reached PROCEED. The live gate's mtime fallback would have PAUSED in the same situation (USRC-STOP-).
+
+SOL found this in round 2 as a new regression, not a pre-existing defect. It tripped the card's pre-declared stop rule, so that part of the card was banked as a successor and the rest shipped. The next round's implementer prompt kept the marker logic byte-identical to the live one, kept the other fixes, and required `\z` anchoring (USRC-STOP-).
+
+**Why it bites.** The validation looks correct on inspection, and the failure runs in the quiet direction (PROCEED instead of PAUSE). Text read from a file or a pipe commonly ends with a newline.
+
+**Do this.**
+- Use `\z` (absolute end of string), or `\A...\z`, instead of `$` wherever a value must match exactly. `$` is fine only when a trailing newline is acceptable.
+- Trim, then validate, then compare. Do not rely on the pattern to reject whitespace.
+- Add a test input with a trailing LF, and one with CRLF, for every identifier that is read from a file or a pipe and compared exactly.
+- When a pause marker's identity cannot be matched exactly, prefer UNKNOWN over PROCEED.
+
+Evidence token: USRC-STOP-1b426829.
+<!-- outbox:37763f8971704110 agent-bridge:630744e37878 -->
