@@ -27197,3 +27197,18 @@ Evidence: the round-5 and round-6 implementer reports for the card ROLLOVER-READ
 
 Evidence tokens: AFPM1-Q1-a6fd95e0, AFPM1-R2D-a6fd95e0.
 <!-- outbox:b91ec5ce89c51dd5 agent-bridge:630744e37878 -->
+### TRAP 2026-10-04 (agent-bridge): under tree identity every merge to master invalidates every other approved head, so sequence merges and re-key with a base-only merge
+
+**What happened.** A class-C card (SETUP-REMOVE) had an approved head and was at its merge gate. The guarded merge of its PR was refused with exit 8, HEAD-NOT-UP-TO-DATE, because master had moved: a class-A PR adding one doctrine-outbox file had merged a moment earlier (SREM-R11-). Under the tree-identity rule the approved head no longer matched what would land, so the hub merged master into the card branch. That produced a new subject whose diff against the old head was exactly the one added file, and the card needed hub CI, PR CI and a SOL round again.
+
+The next card needed the same base merge: AFPM-DEBT-1-FIX had master merged into its branch "for tree identity" before its quorum opened (AFPM1-Q1-).
+
+**Why it bites.** A cheap class-A merge is not free. It moves master under every other open PR, and each of those PRs loses its approved head.
+
+**Do this.**
+- Sequence merges. While a class-C card is at its merge gate, hold cheap class-A PRs until that card lands. The hub did this for a pending class-A PR, stopping it before it merged "so master stays put" (OBX1004-HOLD-).
+- When a merge cannot be avoided, re-key with a base-only merge: merge master into the branch, then have the cross-vendor reviewer check four things. The new head's parents are exactly the old head and the master tip. The only delta is the one added file. The patch from the master tip to the new head is byte-identical to the patch from the old base to the old head (in the measured case, 123,446 bytes with a matching sha256 prefix). No card code or test reads the added directory. If all four hold, the earlier round keys carry over to the new head (SREM-R11S-).
+- Record the identity check as the re-key evidence. Do not re-run a full quorum for a base-only change that proves identity.
+
+Evidence tokens: SREM-R11-a6fd95e0, SREM-R11S-a6fd95e0, OBX1004-HOLD-a6fd95e0, AFPM1-Q1-a6fd95e0.
+<!-- outbox:9b8d5a8b52c74054 agent-bridge:630744e37878 -->
