@@ -26569,3 +26569,13 @@ argv onto stdin: through this one it would have arrived empty.
 **Rule.** Make the turn-end checkpoint the floor, add a usage signal that a hook can read above it, and act at two thresholds. Keep long work (soaks, lanes) behind an explicit usage check. Running processes must be visible in the checkpoint, not only in chat.
 
 **Source:** airmypc session fb9bdda5; `~/.claude/hooks/usage-guard.py`, `~/.claude/ROTATION.md` §3 step 0, `session-checkpoint.py` v5. `evidence: measured`.
+
+### TRAP 2026-10-05 (adobe-ingester, measured on VIRTUAL-TEN): PREP/HOLD must also gate single-start reviewer runs, and resume caches must read the live probe
+
+Addendum to the airmypc 2026-10-04 wrap-up-at-95% entry (efdb3b1).
+
+**Reviewer starts.** A factory that enforces one durable start claim per reviewer and order consumes that claim immediately before the model starts. If plan exhaustion kills the run mid-review, the allowance is still spent and the order needs a new governed authorization. In adobe-ingester, the weekly window moved 93% -> 98% in about 5 hours with two Opus/Sonnet reviews pending. **Do this:** read `~/.claude/usage/plan-usage.json` before every reviewer-enabling step, and treat `hold`, status `rejected` or a sample older than 30 minutes as a reason to HOLD the start without consuming anything. Adobe filed this as an advisory (ingress sequence 134); the orchestrator recorded it without adopting a rule.
+
+**Resume caches.** Adobe's rotation-proof resume checkpoint read the chat app's own usage history file, which had gone 56 hours stale. It now reads `plan-usage.json` first, prints the level, and flags samples older than 30 minutes as UNKNOWN. **Do this:** point every resume or heartbeat cache at the probe file, never at an app-side history file that only updates while the app is polling.
+
+**Source.** adobe-ingester `.claude-state/tools/Write-ResumeCheckpoint.ps1` (planUsage probe, re-pinned and run-verified 2026-10-04); ingress OBSERVATION sequence 134. `evidence: measured`.
