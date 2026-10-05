@@ -27400,3 +27400,42 @@ line* is one line in a file those sessions read before using it; a *row* is one 
   anything refuse it? Here the drop was refused, and nothing limits the batch.
 - **Source:** row K86 item (f), commit `6b8e3fb`; `review/briefs/h153-h154-plan-count-inks.md` ("HOLDS").
   `evidence: reported`, by the landing session and by that helper's builder.
+
+# adobe-ingester: two traps from a 15-hour reviewer-start stall (2026-10-05)
+
+Source project: Adobe Document Cloud Ingester (governed factory, Sol coordinator). Every figure is measured in that
+project; the re-derivation commands are named per card. Cap: 2 cards.
+
+## TRAPS
+
+### 1. A "write mask" built from FullControl and Modify matched read-only rules
+
+- **Rule (observed):** a path-safety predicate refused an untrusted SID holding "dangerous" rights, with the mask built
+  as `Write -bor Modify -bor FullControl -bor Delete ...`. That mask is 0x001F01FF, which is FullControl itself, so an
+  inherited read-only rule (0x001200A9, CodexSandboxUsers on %LOCALAPPDATA%) refused every reviewer start, before any
+  model ran, for about 15 h.
+- **Mechanism:** composite rights include the read and Synchronize bits; `(rights -band mask) -ne 0` then means "any
+  access at all". It shipped green because the tests used an injected ACL adapter, and the only live-branch caller
+  checked a root whose ACL was protected.
+- **Where:** any ACL check that composes FileSystemRights names into a "write" mask.
+- **Check:** print the mask as hex. If it equals 0x001F01FF, it is FullControl. Test the live branch on an in-memory
+  DirectorySecurity built from SDDL with an inherited 0x1200A9 rule. Prefer an allowlist of read bits (0xA01200A9)
+  over a blocklist of write bits. Convert masks with BitConverter: `[uint32]` throws when GENERIC_READ (bit 31) is set.
+- **Also:** do not widen the predicate globally. Callers whose paths are deliberately private relied on the
+  over-strict reading. Add an opt-in switch at the caller that needs read tolerance.
+- **Source:** Adobe ingress seq 135; OWNER DIRECTIVE 2026-10-05a and its panel report. `evidence: measured`.
+
+### 2. A review pin left on a terminal order made two correct integrity checks unsatisfiable together
+
+- **Rule (observed):** one check requires a control generation's base to equal `review_dispatch.reviewed_commit`.
+  Another treats the base's first descendant as the generation commit. The pin stayed on a commit whose first
+  descendant was an earlier, consumed generation, 11 commits behind HEAD. The coordinator found that no base passed
+  both, called it a checker conflict, and waited 7.5 h for a ruling.
+- **Mechanism:** the pin is bookkeeping that each generation must move forward, keeping the old value under a
+  `pre_*` key. After the order went terminal, nothing moved it.
+- **Where:** a ledger-governed repo with a "reviewed commit" pin plus generation ancestry checks.
+- **Check:** before opening a generation, compare `git rev-list --count <pin>..HEAD` with 0. If it is non-zero and
+  every intervening commit touches only carriers or consumed generations, realign the pin. That is a standing class
+  rule now, not a per-instance ruling.
+- **Source:** Adobe HUB 2026-10-05T08:04:25Z and 15:48:05Z (commit e5e585f); OWNER DIRECTIVE 2026-10-05b.
+  `evidence: measured`.
