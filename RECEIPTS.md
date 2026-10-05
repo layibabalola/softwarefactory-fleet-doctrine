@@ -12398,3 +12398,19 @@ The sweep prunes run folders whose PR is merged or closed: archives, frame-pacin
 
 **Falsifier:** with no sweep lock younger than 3 hours and the last task sweep at least 2 hours old, seed three disposable run folders written over 2 hours ago: a merged PR whose build folder holds a summary and a binary, an open PR, and no resolvable PR. After the next tick expect `-Status` to show a sweep with exit 0 and a matching pin; the receipt to carry its temp, merged-PR tally and end lines; the merged seed's binary manifested and gone, its summary kept; the other seeds untouched.
 <!-- outbox:7eafdbfeb46538b5 mlv-app:f2417925d43f -->
+### RECEIPT 2026-10-05 (agent-bridge): pre-declared stop rules turned three open-ended class-C review lineages into a narrowing, with no re-litigation
+
+**Scope.** Three class-C cards, on 2026-10-04 and 2026-10-05, each declared a stop rule BEFORE the round that could trigger it. The rule named the trigger family and the narrowed outcome. When the trigger fired, the hub executed the rule on the spot.
+
+**1. SETUP-REMOVE.** After round 4 a swarm of three Opus adversaries split 2 to 1 on whether to continue the card. The hub took the majority and declared: a round-5 SOL blocker in the concurrency family narrows the card to a dry run with instructions, and there is no round 6 on this mechanism (SREM-R4R-). Round 5 drew exactly that blocker, a concurrent bridge-root initialisation between the last check and the publish. The hub executed the rule "without re-litigation" (SREM-R5S-). The narrowed promises made the command read-only, made `--remove --apply` exit 2 with instructions, and removed the apply code instead of leaving it unreachable. The apply path was banked as a tag for a successor card (SREM-NARROW-).
+
+**2. USAGE-PREP.** The declaration said: if round 2 still draws a blocker on the scope of the prep step, narrow it to one log line and drop the listing (USAGEPREP-DECLARED-). SOL's round-2 blocker had three findings on that step: it persisted files outside its allowlist, it had synchronous reads that escaped its deadline, and a writer timeout could not prove nothing was written. The rule fired and the step narrowed to one log line posted by the routine itself. The script and its listing were deleted, so all three findings went with them (UP-STOP-).
+
+**3. USAGE-SOURCE.** The declaration said: if SOL finds a defect in the marker-org part after round 2, ship the other two parts and bank that one (USRC-DECLARED-). SOL found one (a trailing-newline regex defect). The rule fired and the part was banked as a successor card (USRC-STOP-). Round 3 shipped the remaining two parts and the quorum completed with every key approving (USRC-DONE-).
+
+**Counter-case.** The rule also cuts the other way. In AFPM-DEBT-1-FIX round 2 the hub recorded "STOP RULE: not triggered" with the reason: no reproduced interleaving ended with a wrong result, and both findings sat in a branch or in the test (AFPM1-R2S-).
+
+**What the three entries share.** The trigger was a finding family and a round, set in advance. The narrowed outcome removed code instead of hiding it, and the cut work was banked under a successor card, so nothing was dropped.
+
+Evidence tokens: SREM-R4R-a6fd95e0, SREM-R5S-a6fd95e0, SREM-NARROW-a6fd95e0, USAGEPREP-DECLARED-a6fd95e0, UP-STOP-a6fd95e0, USRC-DECLARED-1b426829, USRC-STOP-1b426829, USRC-DONE-1b426829, AFPM1-R2S-a6fd95e0.
+<!-- outbox:a08e36959007c07d agent-bridge:630744e37878 -->
