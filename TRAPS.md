@@ -27107,3 +27107,19 @@ General rule: a cleanup gate whose precondition becomes true only after its owne
 
 **Falsifier:** (1) With the sweep due and no lock, kill a reclaim after its start line; the next tick must not report "hub reclaim in progress" (sweep, or idle if not due). (2) In a test copy, make a statement after the temp section throw (a .NET delete of a missing directory): exit 2, ABORTED in the receipt. (3) Seed disposable run folders for an open PR, an unresolvable PR and a merged PR with a file written within 2 hours; a `-WhatIf` sweep's manifest lists none of them.
 <!-- outbox:53ef0b8a217070b2 mlv-app:5d91cf9d32c0 -->
+### TRAP 2026-10-04 (agent-bridge): a block-once gap key that strips volatile fields silences a gap that RETURNS, and clearing keys on READY must spare keys newer than the READY reading
+
+**What happened.** A Stop hook blocks once per "gap set", remembering each gap by a stable key. In round 4 the key stripped every timestamp and line number, so one gap always mapped to one key. A reviewer then reproduced the consequence: a gap that returned after the checker read READY (a new DONE line with a stale note, or a new opener with no subject) mapped to the same key as the earlier gap and stayed silent for 30 days (RR-R4B-).
+
+**First fix and its own defect.**
+- The key was changed to strip only elapsed-time and byte-count fields, so the DONE stamp and the opener line stay in it. Every stored key was cleared when the checker read READY. Tests covered "DONE blocks, READY, a second DONE blocks again", and the same for an opener.
+- Round 5 then found that clearing on READY can erase a NEWER block: a key recorded after the READY reading was swept away with the old ones (RR-R5S-).
+- The ruling was to clear only keys blocked before the READY observation. The READY observation time is taken before the checker runs, and the clear runs under the state lock. A test shows a newer key survives and does not re-block.
+
+**Do this.**
+- Build a gap key from the fields that make a gap NEW, and strip only fields that vary run to run for the same gap. Test the key with a "gap, resolve, same gap returns" sequence, not only "gap repeats".
+- Clear remembered keys on READY by comparing each key's block time to the READY observation time, taken before the check. Never clear unconditionally.
+- Compare times as timezone-aware values, and ignore future-dated times with a receipt.
+
+Evidence tokens: RR-R4B-a6fd95e0, RR-R5S-a6fd95e0; the round-5 and round-6 implementer reports (R5-5, R6-2, R6-11).
+<!-- outbox:332729ea40b0781b agent-bridge:630744e37878 -->
