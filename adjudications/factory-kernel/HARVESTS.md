@@ -591,3 +591,45 @@ filed FRICTION lines fell to instance failures, so no census FRICTION remains to
 exists to change the kernel; every REPLACES on a census line is rejected; the proposals carried by re-filed `a.5` (FRICTION retained), `a.26` and `a.33` are routed with their lines, neither adopted nor rejected. Among the 31 non-census lines (14 re-filed, 4 distinguished,
 8 instance failures, 5 Untested): 13 ROUTED, 1 REJECTED (a.u6, no evidenced voice-canon bench), 17 ADOPTED. Dispositions:
 `adjudications/factory-kernel/AdversarialLLM.dispositions.md`, written for blob `95932dc1` (first filing; nothing superseded).
+
+---
+
+## 2026-10-05 — harvest 20261005T193405Z-8a08a1fd (dng-auto-processor fourth filing, blob 489ad089)
+
+| date | harvest | filing | blob | kernel | profile | subjects | FIT | FRICTION | BREAK | N/A | UNEXERCISED | unresolved BREAKs | arbiter |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 2026-10-05 | 20261005T193405Z-8a08a1fd | dng-auto-processor | 489ad0892fb0eae147248e7f1bf477b15d3e5f9f | r5 (unchanged) | code@r10 (unchanged this round, and unchanged since the immediately preceding ledger harvest; r9 at this board's third filing) + measured-objective@r3 (unchanged) | 0 end-to-end; 0 declared; 17 receipted route landings, all uncounted mechanism evidence, including 4 changed-tree deliveries; 0 off-route PRODUCT commits reported; window-opened-before-kernel=no | 6 | 0 | 0 | 0 | 7 | 0 submitted or established | gpt-6-astra (read-only arbiter seat; not a steward filing) |
+
+Derived, not asserted. Re-run: `python tools/kernel-e2e.py --json`. Before this row: `closed_end_to_end: 0`,
+`ledger_rows: 21`, `ledger_totals: FIT 116 · FRICTION 81 · BREAK 5 · N/A 0 · UNEXERCISED 68`. After it: 22 rows;
+122 FIT · 81 FRICTION · 5 BREAK · 0 N/A · 75 UNEXERCISED; closed end-to-end stays 0.
+
+**§5 criterion 1 — CLOSED END-TO-END SUBJECTS: 0.** Still 0 of the 5 the kernel requires, and it has been 0 at every
+harvest. This filing declares 0 subjects and 0 in-window declarations; its 17 receipted route landings are reported as
+mechanism evidence and never counted; it reports 0 off-route PRODUCT commits, down from 22 in the last window.
+**§5 criterion 2 remains MET** on the 2026-09-17 finding (`code`, `hardware-in-loop`, `measured-objective`, the latter
+two the non-test-suite pair); nothing this round touches it.
+**§5 criterion 3 does not start:** the immediately preceding ledger harvest is `20261002T041904Z-2129ce60`
+(AdversarialLLM), and the kernel, `code@r10` and `measured-objective@r3` content digests are unchanged from that
+predecessor, so the unchanged-digest half holds across this pair — `code`’s r9 → r10 move on 2026-10-02 broke the
+pair two rows back, at harvest `20261002T034934Z-375a810d`, not this one. But criterion 3 also requires fresh
+end-to-end evidence meeting criteria 1 and 2, and criterion 1 is 0.
+**Criterion 4 has never started**; no owner ratification of the kernel appears in `RULINGS.md`. The owner gate is
+idle, not jammed.
+**Members due — 1 project has NEVER filed:** `salesforce-tools`. Roster member `adversarialllm` filed on 2026-10-02
+as `AdversarialLLM` (header `project: adversarialllm`, filing stem and row cell `AdversarialLLM`), so it is not due
+as a project; `tools/kernel-e2e.py` still prints it under NEVER FILED (2) because it matches roster, filing and
+ledger names case-sensitively, and this round reconciled neither the tool nor the roster key. Open filings as the
+tool read them before this row: `conjugal STALE, dng-auto-processor STALE` — the latter is this round's filing,
+adjudicated here. Steward self-filing `conjugal` still reads STALE and is not adjudicated by the steward
+(kernel §5); this round adjudicates only dng.
+
+**What this round changed:** no spec text at all. The filing submits 0 BREAK and 0 FRICTION, and none is established;
+its seven INSTANCE-FAILURE lines count toward health, never toward conformance or a text change (kernel §4), and its
+seven UNEXERCISED lines are not evidence about their clauses. Kernel unchanged at r5, 2,867 of 3,500 words; `code.md`
+unchanged at r10; `measured-objective.md` unchanged at r3. The arbiter's substantive audit records one additional
+latent INSTANCE-FAILURE inside a submitted FIT — the `P:code resource-terminals` pre-dispatch substitution
+declaration, whose SINGLE-FAMILY label is written in the round's receipt after dispatch rather than ordered before
+it — which changes no submitted census cell in the row above. Dispositions:
+`adjudications/factory-kernel/dng-auto-processor.dispositions.md`, rewritten for blob `489ad089` and superseding its
+own ruling on blob `a018daf6` without withdrawing any disposition that ruling recorded.

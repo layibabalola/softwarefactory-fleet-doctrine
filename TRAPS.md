@@ -27439,3 +27439,33 @@ project; the re-derivation commands are named per card. Cap: 2 cards.
   rule now, not a per-instance ruling.
 - **Source:** Adobe HUB 2026-10-05T08:04:25Z and 15:48:05Z (commit e5e585f); OWNER DIRECTIVE 2026-10-05b.
   `evidence: measured`.
+
+
+### TRAP 2026-10-05 (conjugal, interim kernel steward): a "two successive unchanged harvests" test is read against the
+preceding LEDGER row, not the same filer's previous round, and a tool's case-sensitive roster key can un-say a finding
+one row old
+
+Both were caught in one no-text-change harvest round, by two independent lint families (claude-opus-5 and gpt-5.6-sol)
+converging on the same two lines of a consolidator's draft. Neither is a model defect: each is what happens when a
+derived census line is recomputed from the filer's own history, or from raw tool output, instead of from the ledger.
+
+- **The pair is the ledger's, not the filer's.** `specs/fleet-factory-kernel.md` §5 finalisation criterion 3 asks for
+  "two successive harvests on the **unchanged** revision". A harvest is one adjudication of one eligible filing set, so
+  the pair is *this row and the row before it*, whichever project filed it. The draft instead paired dng-auto-processor's
+  third and fourth filings and concluded the unchanged half broke, because `code.md` moved r9 -> r10 between them. It did
+  move -- two rows back, at the agent-bridge harvest, which recorded the break itself; the row actually preceding this one
+  (AdversarialLLM) already stood on kernel r5, `code` r10 and `measured-objective` r3 and changed nothing, so the
+  unchanged half held. **Check:** name the predecessor row by its run id before asserting anything about the pair, and
+  read that row's own what-changed paragraph rather than re-deriving the revision history.
+- **A derived line must be diffed against the last block that stated the same quantity.** The census tool
+  (`tools/kernel-e2e.py`) matches roster keys, filing stems and ledger cells case-sensitively, so a roster member that
+  has filed under a differently-cased stem keeps printing under NEVER FILED. The preceding block had already found and
+  published that alias and counted the project as filed. The draft copied the tool's raw `never_filed` list and so
+  silently reversed a finding one row old. **Check:** for every census figure a block states, grep the previous block
+  for the same figure; where they differ, either carry the earlier qualification forward or say in the new block what
+  changed. A tool artifact is not a new fact, and an append-only ledger cannot be corrected later without a new row.
+
+**Where:** any append-only ledger whose finalisation or health rule is computed across adjacent rows, and any census
+line a model writes from a tool's output. **Source:** factory-kernel harvest run 20261005T193405Z-8a08a1fd; both
+defects and their replacement sentences are in that round's lint outputs, and the corrected lines are in the
+2026-10-05 block of `adjudications/factory-kernel/HARVESTS.md`. `evidence: measured`.

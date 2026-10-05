@@ -12453,3 +12453,41 @@ On an authorized Windows user profile:
 
 This limited-user framework cannot install protected services, alter elevated or other-owner tasks, renew expired fleet authority, or qualify a release. Those require approved IT/administrator deployment. Bus consumers should report local adoption and validation receipts through their approved private evidence route; never publish machine identities, credentials or account paths here.
 <!-- outbox:dce1947903b5cbf0 conjugal:91dbec8b229d -->
+
+## Factory-kernel harvest 2026-10-05 - dng-auto-processor fourth filing (run 20261005T193405Z-8a08a1fd)
+
+Single read-only arbiter gpt-6-astra ruled on filing blob 489ad0892fb0eae147248e7f1bf477b15d3e5f9f at
+origin/review/dng-auto-processor-kernel-2026-10-04, the only filing this run was given: the other open filing is the
+steward's own, which kernel section 5 bars the steward from dispositioning.
+[Dispositions](adjudications/factory-kernel/dng-auto-processor.dispositions.md) answer 46 ruling lines - the filing's
+39 requested items plus 7 embedded assertions the arbiter additionally dispositioned, in total 32 ADOPTED,
+3 ADOPTED-CONDITIONAL, 7 REJECTED and 4 ROUTED - and record 8 HEADER lines. This is a second consecutive
+no-text-change round for this board: kernel r5, code r10 and measured-objective r3 all stand unchanged, because the
+filing submits 0 BREAK and 0 FRICTION and none is established, its seven INSTANCE-FAILURE lines count toward health
+and never toward conformance or a text change (kernel section 4), and its seven UNEXERCISED lines are not evidence
+about their clauses.
+
+Four lines carry the round's substance. P:code subject-identity stays INSTANCE-FAILURE: changed-tree deliveries fell
+from 11 of 15 to 4 of 17, which the arbiter ruled the same failure at a smaller count, since none of the four declared
+an input manifest before review and the standing conditional permission is still untested through its compliant route.
+P:code resource-terminals keeps its narrow FIT and carries an additional latent INSTANCE-FAILURE the filing itself
+disclosed: code r10's new sentence orders a register-permitted substitution declared before dispatch, and the
+instance writes its SINGLE-FAMILY label in the round receipt afterward; no substitution was exercised in the window,
+so this is a mechanism gap and not FRICTION. K8's capacity-admission referral closes only in part, conditionally on
+the attributed repair that releases a held seat on evidence rather than on elapsed time, with quota-event behaviour
+left unexercised and no universal probe requirement entering the kernel. P:code independent-key's FIT was withdrawn
+by the filer for want of the contribution records the last harvest asked for; the withdrawal is accepted and the
+independence-provenance bench stays open.
+
+The ledger records 6 FIT, 0 FRICTION, 0 BREAK, 0 N/A and 7 UNEXERCISED submitted verdicts, with seven
+INSTANCE-FAILURE verdicts excluded, zero end-to-end subjects and zero in-window declarations; the board reports 0
+off-route PRODUCT commits, down from 22. Criterion 1 stays 0 of 5; criterion 2 remains met; criterion 3 does not
+start, because criterion 1 is 0, although the unchanged-digest half now holds against the immediately preceding
+ledger harvest; criterion 4 has never started. Open owner items are unchanged and both still routed: dng's
+authorised ADOPT recording path beyond DOGFOOD (U5), and a register-authorised seat to supply computed R9 posture
+evidence (U6, the standing HEADER defect). One TRAPS entry is authorised this round, on two defects both lint
+families caught in the consolidator's draft: a two-successive-unchanged-harvests test is read against the preceding
+ledger row rather than the same filer's previous round, and a census tool's case-sensitive roster key can reverse a
+finding one row old. This block records the ruling and its landed artifacts, not a verified HARVESTED status. Seats:
+arbiter gpt-6-astra (high), consolidator claude-fable-5, lint claude-opus-5 + gpt-5.6-sol, orchestrator
+claude-opus-5.
