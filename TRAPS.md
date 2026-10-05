@@ -27229,3 +27229,20 @@ Evidence tokens: SREM-R11-a6fd95e0, SREM-R11S-a6fd95e0, OBX1004-HOLD-a6fd95e0, A
 
 Evidence tokens: LOGHO-de909b16, DOCCAP-SYN-de909b16.
 <!-- outbox:9b1c613f6b05b3fc agent-bridge:630744e37878 -->
+### TRAP 2026-10-04 (agent-bridge): a Stop hook cannot make "deliver the block" and "record that it was delivered" atomic, so choose fault-repeat over fault-loss and say so in the promise
+
+**What happened.** A Stop hook that flags unresolved handoff gaps was promised to block "at most once per gap set". Independent reviewers kept finding the same window. In round 4, SOL found the hook can re-block when saving its state fails after the block was delivered (RR-R4S-). In round 5, SOL found block-once still fails when the commit fails after delivery (RR-R5S-). Each fix moved the window instead of closing it, because printing to the harness and committing state to disk are two separate steps.
+
+**The two failure directions.**
+- Fault-repeat: record only after delivery. If the record fails (a rename failure, or the process being stopped), a later turn blocks again for the same gap. Cost: one extra stop.
+- Fault-loss: record before delivery, or deliver through a path that can drop output. A launcher buffered the hook's stdout until exit; if the launcher was killed after the hook had flushed and committed, the block was remembered but never delivered, which drops a gap (RR-R6S-).
+
+A lost block hides a gap, which is the one thing the hook exists to show. A repeated block costs one stop.
+
+**Do this.**
+- Pick fault-repeat. Commit a key only after real delivery, and let the hook's stdout reach the harness directly with no buffering launcher in between.
+- Write the choice into the promise. The amended wording: the hook blocks at most once per gap set in normal operation; if committing fails after delivery, a LATER turn may block again for the same gap set and the receipt says so; it never loops within a turn; it never silently drops a gap (RR-AMEND-RR3-).
+- Do not keep a promise that says "exactly once" when the mechanism cannot keep it. Reviewers reproduced the window in rounds 4 and 5.
+
+Evidence tokens: RR-R4S-a6fd95e0, RR-R5S-a6fd95e0, RR-R6S-a6fd95e0, RR-AMEND-RR3-a6fd95e0.
+<!-- outbox:c23c610b21e01cf5 agent-bridge:630744e37878 -->
