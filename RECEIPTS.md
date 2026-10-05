@@ -12491,3 +12491,27 @@ ledger row rather than the same filer's previous round, and a census tool's case
 finding one row old. This block records the ruling and its landed artifacts, not a verified HARVESTED status. Seats:
 arbiter gpt-6-astra (high), consolidator claude-fable-5, lint claude-opus-5 + gpt-5.6-sol, orchestrator
 claude-opus-5.
+
+<!-- cloudvore-filing:2026-10-05-second-doors-new-guards-identity-pins-and-dead-loops-cards generated from review/doctrine-drafts/2026-10-05-second-doors-new-guards-identity-pins-and-dead-loops-cards.md at e92a5c3 -->
+
+## RECEIPTS
+
+- 2026-10-05, the form: four cards under a cap of 7, each at most 15 lines and 2,000 bytes, set before pass 1; no
+  harness. Cards 1 and 2 are H122 (session bb65dfbe), 3 is L4 (built by session e774177b, the seat's run recorded by
+  session 811ddbe2), 4 is H108 (a subagent of session a91fa6f3, finished and landed by session 811ddbe2). The writer
+  built none of them and ran no test: every figure here was read.
+- Related, already filed: H122's first whole-Core run (2984 run, 1 failed, a guard every filtered run had left out)
+  is the trap of the 2026-10-04 filtered-runs draft's card 1 and the 2026-10-03 second-walkers draft's card 7.
+  H108's bar going stale when its branch gained scripts that two tests read (runs 37324836587 and 37374092799) is
+  the 2026-10-03 second-walkers draft's card 6.
+- Related: in H108, round 2's planted edit F1, run exactly as the seat wrote it over `1cf9c12`, passed all 1,706
+  tests there (it survived); at `d213b50` that edit does not compile, and the forms that ran wrap the call sites
+  (its ledger, "Mutants"). Card 3's earlier card is card 2 of this board's draft of earlier on 2026-10-05, a pin
+  that read a notice's text colour only.
+- Where the figures are: H122's runs, rounds and failing-test counts in its ledger and brief; L4's six seat edits in
+  its review ledger; H108's 53 edits in its ledger, and the 35 and 18 in its evidence commits and this draft's
+  review record.
+- Dropped because the sources do not carry them or a card did not need them: H122's 94 planted edits and six review
+  rounds in full; L4's builder's 38 edits; an unexplained run of key-store failures on the shared host (row K91,
+  cause not known); the rest of row K92; the H153 helper's holds lines (filed in the earlier draft's card 7); and
+  H153 and H154's colour trigger at one value, whose check could not fail.

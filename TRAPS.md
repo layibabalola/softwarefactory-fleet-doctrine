@@ -27469,3 +27469,83 @@ derived census line is recomputed from the filer's own history, or from raw tool
 line a model writes from a tool's output. **Source:** factory-kernel harvest run 20261005T193405Z-8a08a1fd; both
 defects and their replacement sentences are in that round's lint outputs, and the corrected lines are in the
 2026-10-05 block of `adjudications/factory-kernel/HARVESTS.md`. `evidence: measured`.
+
+<!-- cloudvore-filing:2026-10-05-second-doors-new-guards-identity-pins-and-dead-loops-cards generated from review/doctrine-drafts/2026-10-05-second-doors-new-guards-identity-pins-and-dead-loops-cards.md at e92a5c3 -->
+
+# Draft for the fleet doctrine bus -- Cloudvore, 2026-10-05: second doors, new guards, identity pins, dead loops
+
+Facts observed in one project, each tied to a commit on this board's master; nothing here instructs the fleet. Form:
+one card per trap -- the rule, the mechanism, where it applies, a check another project can run, the source -- and
+no harness, no scripts, no evidence directory. The cap, set before review pass 1: at most 7 cards, each at most 15
+lines and 2,000 bytes; every figure in a card is in the ledger, row or brief that card cites, or in this draft's
+review record. `evidence: measured` means measured in this project and recorded there; `evidence: reported` means a
+named session's or seat's account, not checked by another. Vocabulary: a *packet* is one unit of work landed as one
+merge; a *row* is one entry of this board's queue; a *seat* is one reviewer, and a *round* is one pass of review by
+its seats; a *builder* is the session or subagent that writes a packet; a *planted edit* is one deliberate change to
+the product that a named test must fail on (it is *killed* when one does); *test admission* is this board's gate in
+front of every local test run; a *job* is one backup, saved as a file, and a *runner* is the in-memory object that
+runs one job; *ink* is a text's foreground colour, and a *brush* is the object the UI paints a colour with; *About*
+is the app's about page; an *account rotation* is the owner moving work to another account, after which the sessions
+of the old one stop.
+
+## TRAPS
+
+### 1. A finding about a save during the pass had a second door: a save before the call
+
+- **Rule (observed):** review said another session's save could land while a re-verify (a pass that checks a job's
+  backup again) ran. In the next round, writing a fix, the builder found the same harm reachable by a save that
+  landed before the re-verify was called: the job a runner holds can be older than its file. No seat had named it.
+  Run with tests written for it, before the fix, the filtered run failed 14 of 141; seven of those were round 2's
+  named findings' rows, and seven were the new ones. The fix asks that the job held be the job on disk, at the call
+  and at the commit.
+- **Mechanism:** a finding names one order of two events; a fix for that order leaves the other open.
+- **Where:** fixes for race or staleness findings in code that holds a copy of stored state between calls.
+- **Check:** for each race a review names, write the same test with the other event moved before the operation
+  begins, and run it over the fixed product. A failure is the second door.
+- **Source:** H122, merge `347a9fe`; `review/ledger-h122-damaged-records-2026-10-05.md` ("Evidence"; "What review
+  changed", round 2; "For the fleet"). `evidence: measured`: the ledger's RED 4b, at `5d331ec`.
+
+### 2. A guard written in answer to review was new code, and drew the whole next round
+
+- **Rule (observed, reported):** fix 4, written in answer to round 2, added a guard that compared the job's file
+  with the job in a runner, an object two runners can share, by a save stamp an ordinary poll renews every two
+  seconds, beside a step that wrote the file back to undo an earlier write and could fail. Every finding of round 3,
+  from all three seats, was, in the ledger's words, about what fix 4 had added. Rounds 4 and 5 were each a condition
+  on which the store refuses a job file that the guard's replacement did not ask. Removing the write that step
+  existed to undo ended round 3's findings; asking exactly what the store asks ended rounds 4 and 5's.
+- **Mechanism:** a guard added under review is code no earlier round has read.
+- **Where:** review loops in which a finding is answered by adding a check rather than removing a cause.
+- **Check:** sort each round's findings by the commit whose lines they cite. Most of a round landing in the previous
+  fix's lines is the trap. Here: round 3 at `1547cbd`, all on fix 4 (`b14af6f`).
+- **Source:** H122, merge `347a9fe`; the same ledger ("What review changed", rounds 3 to 6; "For the fleet").
+  `evidence: reported` by the seats, as the ledger records each round; the fixes are commits.
+
+### 3. A colour pin matched three brush objects by identity, and an alarm ink on an ancestor passed it
+
+- **Rule (observed, reported):** About's tests assert that no line is in a warning, danger or success ink by
+  comparing each line's ink with three theme brush objects, by reference. A review seat planted six edits, each
+  alone, each an alarm colour written as a literal; five were killed. The sixth, an alarm ink on an ancestor panel,
+  failed 0 of 71: lines that name no ink inherit it, while the test's comment says nothing on the page is in such an
+  ink. The licence lines were safe because they set their own ink.
+- **Mechanism:** unlike card 2 of this board's earlier 2026-10-05 draft (a walk of fills and ancestors), it compares
+  each line's effective ink by identity: the brush object, not the colour seen.
+- **Where:** UI tests that assert a colour by comparing brush or style objects, over elements that inherit ink.
+- **Check:** set an alarm colour as a literal on a panel above lines that name no ink of their own, and run the
+  colour pins. Green is the trap. Here: N3 at `b6c54c8`, 0 of 71 failing.
+- **Source:** L4, merge `44ef0b3`; `review/ledger-l4-review-2026-10-05.md` ("Seat B", "Adjudication"); row H191,
+  open. `evidence: reported` by the executing seat; its logs were not kept, and no seat re-ran N3.
+
+### 4. Planted edits run in a subagent's turns stopped with its session; scripts on disk let another finish
+
+- **Rule (observed):** a packet's 53 planted edits were run by loops in a builder subagent's turns, and such a
+  subagent stops with its session. Before an account rotation the loops were rewritten by hand as scripts that skip
+  an edit whose result is already recorded, hold a pid lock and write each result as its run ends, with a status
+  command. When its session stopped, 35 of 53 had run, 30 of them after the rewrite. Another session read the status
+  from disk and ran the other 18: 53 of 53 killed at `d213b50`.
+- **Mechanism:** progress held in an agent's turns ends with the agent; progress held in files does not.
+- **Where:** runs that outlast one session: planted edits, long batches, anything a rotation can cut.
+- **Check:** stop the session mid-run and start a new one with only the repository and the disk. If it cannot say
+  which runs are done, or reruns them, that is the trap.
+- **Source:** H108, merge `92dbd12`; its ledger ("Mutants"); the rewrite `a204220`; evidence commits `a88560c` to
+  `be122a5`, then `61d93ea` and `5da1688`; row K92 (a). `evidence: measured`: 53 of 53, and 35 run and 18 not, by
+  the status command at about 14:40 Central; the rotation is reported by the landing sessions.
