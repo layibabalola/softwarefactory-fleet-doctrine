@@ -12190,3 +12190,71 @@ assurances, make each checkable, and enumerate rather than assert.
 - Dropped because a card did not need them: H124's bar and full-suite totals, how long a note is kept, one
   planted edit that did not finish its run, the notification's body and icon for a refused job (read, not
   measured), and the rows its landing cut, except H152 (card 4).
+
+<!-- cloudvore-filing:2026-10-04-borrowed-bars-tidy-drills-and-absent-values-cards generated from review/doctrine-drafts/2026-10-04-borrowed-bars-tidy-drills-and-absent-values-cards.md at 46598c6 -->
+
+## RECEIPTS
+
+- 2026-10-04, the form: three cards under a cap of 5, each at most 15 lines and 2,000 bytes, set before pass
+  1; no harness. Revision 2 after review pass 1: card 2's title and Rule, card 1's Rule and card 3 claim less.
+  The writer built nothing of these packets and measured nothing for this draft: every card is written from
+  the ledgers and queue rows it cites as origin/master `f0db315` holds them.
+- Where the figures are. Card 1: the printed line (the stage, the run id, the action), "No bar ran for that
+  draft", "already merged and acknowledged on the mirror" and "so the answer is also unstable" are the K84
+  ledger's "Review, round 1", A1; "matched a land ref by containment alone" is departure 4 under "Where the
+  build departs from the brief"; the fix and the stage CONTAINED are the A1 row of "Round 2"; the
+  mutant's words are T1 of "Mutants, round 2" (T2 to T4 are the same finding's other arms, all killed); that
+  the draft "reads CONTAINED in the mirror" is the sentence under the board pasted at 21:24Z. The ledger
+  gives the three seats' verdicts and then the findings in one list: it does not say which seat printed A1,
+  and the card does not either. Row K84 says of the two FIX FIRST seats together that "the board told a
+  successor to merge an already published branch into master on another packet's green bar".
+- Card 2: "55 planted, 55 killed" is "Mutants", planted "in a scratch copy of the tools": by the table's rows,
+  35 in the board (S, B and C), 9 in the gate's finding (G) and 11 in the readiness tool (R); the three drills
+  and their fixture (H201 building, H202 at its bar with a queued run, H203 with no brief, one hold) are "The
+  drill"; "ran the board on the real repository", "two FIX FIRST, one SHIP", the three blocking findings (A1
+  to A3) and B7 are the ledger's head and "Review, round 1": the draft in another packet's ref is A1, the
+  holds made by chat A3, the DONE rows' branches B1; "every stage line matched" and the two wrong actions
+  ("dispatch the Product bar" for a packet whose delta touches nothing under the product or test directories;
+  "re-brief ONE builder" with a brief and no ledger, "the wrong verb") are "Review, round 2", verdict, B1 and
+  B2.
+- Card 3: "fails closed and is unpinned" is the H114 ledger's "Review, round 1", seat B, item 7; the red run
+  (Core 236, App 743, 3 failed), "one new pin", "under each of its three base records", and "The same null
+  handed to the predicate in memory fails closed" are "Revision 2 (tests only), and where it stopped"; "does
+  not write a null" and "takes its declared default" are "Not fixed here" 9; that the cause was first read and
+  not run, and the ruling to "turn the reading into a measurement", are the section after revision 2; what the
+  measuring pin asserts, and that "it behaved as the builder had read it", are "Revision 3"; green at
+  `805a63d` is the "RED and GREEN" table's tip row and item 9. Row H163 is that item as cut at the landing.
+- Dropped, two of the brief's five candidates, each because origin/master `f0db315` does not carry it.
+  (a) A packet that reached its hosted bar having run only its own test classes: the one account on master
+  of that red run (37241238480) is another packet's ledger and brief (H129's), which say the run was red in
+  its first pass on one guard test over a file of the other packet and that the packet was withdrawn for a
+  fix. Nothing on master says what that packet had run before; its row is READY and says nothing of the run,
+  and no ledger of it is on master. The trap's mechanism has no source, so there is no card.
+  (b) Session hooks running a stale copy of the tools: no row, ledger or handoff on master holds the
+  measurement (row K86 has items (a) to (d) and none on this). Not written.
+- Cut, the other half of the brief's fifth candidate (card 3 took the half the ledger supports best): in H114
+  the control and seven mutants of revision 2 ran after a red tip because "the chained job did not stop", and
+  the ledger calls those runs void and re-ran them at the next tip after a green control (7 of 7 killed).
+- Not written, though the brief gave them. That 81 mutants were void and regenerated: the ledger says the 81
+  ran at `d233a4b` after a green control and stand; what a seat found was that the committed list of them
+  named a control commit that was not green (one of two commits whose tests asked for a set row over a set
+  of one member), and the list was committed again as generated at `d233a4b`. That the cold-successor seat
+  found card 1's line: see card 1 above. The five things the brief lists as on the real repository in card 2
+  are the fourth drill's fixture; the card names what round 1 found instead.
+- Cut to keep a card within 15 lines. Card 1: that the newest containing ref won, "so the answer is also
+  unstable"; the CONTAINED line's words, "nothing of its own to land"; that row K84 says the same of the
+  round; that every ref ahead of master that is nobody's bar is now printed as commits waiting for master;
+  that a later revision reads the Tools bar for a packet touching no product code. Card 2: that the first
+  drill failed one item (no constraint named) and the board was changed; the fourth drill, on "a fixture that
+  looks like today" (one reader; of five things asked, one clause not said); round 1's A2 (a brief under a
+  name the matcher refused); the limits the ledger states for every drill (one prompt, the same model as the
+  builder, a run listing that is a file); round 1's B3 (a reviewed packet read as building, its verdicts in
+  its brief); that the suites ran under Python 3.14 and the hosted bar under 3.12. Card 3: that the builder,
+  told to stop if a pin added in revision 2 went red on the candidate, stopped and changed nothing ("Revision
+  2"); that by reading, not run, no writer in the product yields an absent mode today (item 9); that the
+  default is the content-hash mode; that the absent mode matters only for a record that also shares no hash
+  and missed its plant in a stopped run; that the in-memory pin of revision 2 stays; the label and note the
+  tally prints.
+- Left out, or not closed: K84's own list of what a change of account still costs (rows K86 to K89); H114's
+  "Not fixed here" 1 to 8 (rows H159 to H162 and those not cut).
+- Related entries on the bus were not looked up for this draft; the bus clone was not read.

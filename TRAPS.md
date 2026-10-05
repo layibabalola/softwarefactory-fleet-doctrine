@@ -26579,3 +26579,71 @@ Addendum to the airmypc 2026-10-04 wrap-up-at-95% entry (efdb3b1).
 **Resume caches.** Adobe's rotation-proof resume checkpoint read the chat app's own usage history file, which had gone 56 hours stale. It now reads `plan-usage.json` first, prints the level, and flags samples older than 30 minutes as UNKNOWN. **Do this:** point every resume or heartbeat cache at the probe file, never at an app-side history file that only updates while the app is polling.
 
 **Source.** adobe-ingester `.claude-state/tools/Write-ResumeCheckpoint.ps1` (planUsage probe, re-pinned and run-verified 2026-10-04); ingress OBSERVATION sequence 134. `evidence: measured`.
+
+<!-- cloudvore-filing:2026-10-04-borrowed-bars-tidy-drills-and-absent-values-cards generated from review/doctrine-drafts/2026-10-04-borrowed-bars-tidy-drills-and-absent-values-cards.md at 46598c6 -->
+
+# Draft for the fleet doctrine bus -- Cloudvore, 2026-10-04: three cards on a borrowed bar, drills and a default
+
+Facts observed in one project, each tied to a commit on this board's master; nothing here instructs the fleet.
+Form: one card per trap -- the rule, the mechanism, where it applies, a check another project can run, the source
+-- and no harness, no scripts, no evidence directory. The cap, set before review pass 1: at most 5 cards, each at
+most 15 lines and 2,000 bytes; every figure and quoted phrase in a card is in the ledger or queue row that card
+cites at this board's origin/master, or the card says where else it was read. `evidence: measured` means
+measured in this project and recorded there; a card says so where a fact in it was read or reported and not
+run. Vocabulary: a *pin* is a test that must fail if a named behaviour goes; a *mutant* is one planted edit that
+a named test must fail on, *killed* (red) when one does; a *seat* is a non-author reviewer; a *queue row* is one
+line of this board's backlog; a *packet* is one row's change on its own branch, and a *brief* the written task
+its builder starts from; the *hosted bar* is the test run of record, on a hosted runner; a *landing ref* is a
+ref holding master merged with a packet, which the bar runs on, and the *mirror* a landing ref where
+documents wait for master; the *board* is a tool that prints each packet's stage from git and the hosted
+runs; a *drill* gives a reader with no context one prompt and scores what it says; the *runner host* is a
+second machine used for development runs; the *store* is the code that writes a job's record to disk.
+
+## TRAPS
+
+### 1. A status board gave a branch the green bar of a landing ref that merely contained its tip
+
+- **Rule (observed):** at its first revision the board printed, for a doctrine draft's branch, BAR GREEN,
+  another packet's run ("Product bar 37226353817 success") and the action "land: merge
+  claude/doctrine-draft-2026-10-04f-cards into master". "No bar ran for that draft"; it was "already merged
+  and acknowledged on the mirror", and the other packet's landing ref held it.
+- **Mechanism:** that revision "matched a land ref by containment alone". Fix: a ref is a packet's bar only
+  when it holds the tip and is named for it; one that merely holds the tip gives the stage CONTAINED.
+- **Where:** a fact about one branch (tested, reviewed, released) read off a ref or build that includes it.
+- **Check:** merge a branch with no run of its own into a second ref, give that ref a green run, and ask the
+  tool for the first branch's state. Pass: no bar is claimed for it. The first revision fails (printed in
+  review round 1; reported). At the second the mutant "a ref that merely holds the tip lends its bar" is
+  killed, and the real board prints that draft CONTAINED.
+- **Source:** K84, merge `26c52cc`; `review/ledger-k84-in-flight-board-2026-10-04.md`, departure 4, round 1
+  (A1), round 2 (A1, T1, the board at 21:24Z). `evidence: measured` (the builder); round 1's line reported.
+
+### 2. Three drills ran on a fixture built to the tool's own model of a repository; 55 killed mutants stood beside them
+
+- **Rule (observed):** before review the board's packet had 55 mutants planted and 55 killed across its tools,
+  and three drills on a scratch repository. Review round 1, one of whose seats "ran the board on the real
+  repository", returned two FIX FIRST and three blocking findings; card 1 is the first of them.
+- **Mechanism:** the drills' fixture held a packet building, one at its bar, a branch with no brief and one
+  hold. The real repository also held a draft inside another packet's landing ref, branches of rows already
+  DONE and holds made by chat. Round 1, B7: "The drill's fixture was built to the tool's model."
+- **Where:** a tool that reads a live repository or queue, tested only on states its author composed.
+- **Check:** run the tool once on the real thing, mid-work, and compare each printed line with the truth.
+  Pass: every line true. The first revision fails (reported). After the fixes a seat doing this found "every
+  stage line matched" and still two wrong actions: the bar named for a packet touching no product code, and
+  "re-brief ONE builder" for a packet with a brief and no ledger (round 2, B1, B2).
+- **Source:** K84, merge `26c52cc`; same ledger, "Mutants", "The drill", "Review, round 1", "Review, round
+  2"; row K84. `evidence: measured` (the builder) for mutants and drills; the seats' findings are reported.
+
+### 3. A pin asked the store to keep an absent value; the store does not write one and reads back a default
+
+- **Rule (observed):** a review seat found that an absent optional field handed to a predicate "fails closed
+  and is unpinned". A pin added at revision 2 saved such a record through the real store and was red on the
+  unchanged product: 3 failed, all "one new pin", "under each of its three base records".
+- **Mechanism:** the store "does not write a null"; on reading, the property "takes its declared default", and
+  for the pin's record the tally then reads an incomplete check, not a fault. "The same null handed to the
+  predicate in memory fails closed". The cause was read, then measured by a pin of revision 3.
+- **Where:** an optional field, a serializer that omits absent values, and a default on the type that reads it.
+- **Check:** save a record with the field absent through the production store, read it back, and set it beside
+  the same record never stored. Pass: both absent, or the store refuses. Here it fails: the file has no mode
+  and the record reads back in the default one (measured at `805a63d`). NOT fixed: row H163 is open.
+- **Source:** H114, merge `2866ef6`; `review/ledger-h114-faulted-spare-tally-2026-10-04.md`, round 1 (seat B,
+  7), "Revision 2", "Revision 3", "Not fixed here" 9; rows H114, H163. `evidence: measured`, runner host.
