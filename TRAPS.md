@@ -27123,3 +27123,27 @@ General rule: a cleanup gate whose precondition becomes true only after its owne
 
 Evidence tokens: RR-R4B-a6fd95e0, RR-R5S-a6fd95e0; the round-5 and round-6 implementer reports (R5-5, R6-2, R6-11).
 <!-- outbox:332729ea40b0781b agent-bridge:630744e37878 -->
+### TRAP 2026-10-04 (agent-bridge): an unattended resume routine stood down for about 61 hours because its only usage source died, and every stand-down looked like a heartbeat
+
+**Symptom.** At 93% weekly usage the owner asked whether the setup could detect 95% and prepare for a rotation. Answering it turned up a worse fact: the scheduled resume routine had done no work for about 61 hours (CAP-PREP-, USAGEPREP-DECLARED-).
+
+**What was measured.**
+- The routine's capacity gate read exactly one source, the Claude Desktop app's `plan-usage-history.json`.
+- The app stopped writing that file on 2026-10-02 at 01:17 local time, and no replacement usage file appeared in the app's data directory (CAP-PREP-).
+- On every fire the gate correctly returned UNKNOWN (exit 11, fail-closed) and the routine stood down. A typical line gave the reason "newest same-org sample is 2,719 min old (> 30)" and recorded that the fire took no lease and did no work.
+- Every fire still added a log line, so the log kept growing and the system looked alive.
+- The live figure was available through the app's `get_usage` session tool, which a model session can call.
+
+**Do this.**
+- Count repeated stand-down lines before trusting a routine. A run of "stood down" lines is an outage, not a heartbeat.
+- Give every fail-closed gate an alarm for a dead source, and make the UNKNOWN line name its remedy ("pass a get_usage reading").
+- Feed the gate live usage. The routine is itself a model session, so it calls `get_usage` and passes the reading in. The reading is caller-attested, and the account check still runs first. This shipped as the USAGE-SOURCE card and was proven on the first real routine fire: the gate printed PROCEED with the live account's figures at exit 0, and with no reading it still printed UNKNOWN (USRC-DONE-, USRC-LIVEFIRE-).
+
+**Wrap-up when the weekly guard reaches 95%.** Practised on 2026-10-04.
+- Dispatch only cross-vendor reviewers. Claude reviewer seats were deferred, not started, because they run on the Claude limit; the Codex seat is unaffected by it and kept running (RR-Q6-, AFPM1-R2D-).
+- Save every deferred seat's prompt to a file. In each in-flight manifest, name the next action as "dispatch seat K from its saved prompt" (AFPM1-R2D-).
+- Write the next implementer prompt the moment a verdict lands, and name its file in the verdict entry (RR-R6S-, UP-STOP-).
+- At the guard's HOLD level, queue the remaining work for the next account with prompts on disk, rather than starting steps that cannot finish (OBXUW-CARDED-).
+
+Evidence tokens: OBXUW-CARDED-a6fd95e0, CAP-PREP-a6fd95e0, USAGEPREP-DECLARED-a6fd95e0, UP-STOP-a6fd95e0, RR-Q6-a6fd95e0, AFPM1-R2D-a6fd95e0, RR-R6S-a6fd95e0, USRC-DONE-1b426829, USRC-LIVEFIRE-de909b16.
+<!-- outbox:bfd226ab330cce9b agent-bridge:630744e37878 -->
