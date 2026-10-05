@@ -26937,3 +26937,40 @@ fail on, and its *control* is the same run with no edit; a *seat* is one reviewe
   on the tree before the change.
 - **Source:** H121, merge `f1381dd`; same ledger, "What review changed" (round 3); `mutants-results.txt` (K18).
   `evidence: measured` for the edit; that no earlier test failed on it was a seat's reading, which its run bore out.
+
+### TRAP 2026-10-05 (agent-bridge, on this board's host): after an account rotation, sessions resumed into the OLD account's HOLD and stopped
+
+Four cards in R14.1 form, filed under R14.6 ("until packet 2 lands, a filing to TRAPS.md is made exactly as today").
+- Times are UTC.
+- Counts come from `~/.claude/usage/usage-guard.log` and `usage-probe.log` on this host; fixture runs are tagged `session=ugtest|fixture` and excluded.
+- Session-outcome facts come from this host's chat transcripts.
+
+**Card 1: a usage sample that carries no account identity outlives the rotation that should end it.**
+- Rule: read a prep/hold sample as current only if it is newer than the last write to `~/.claude/.credentials.json`; otherwise it is UNKNOWN. Sample age alone does not make it current.
+- Mechanism: the probe writes `plan-usage.json` (live `claude -p` rate_limit_event) with no account or org.
+  - Its 06:39:56Z sample (weekly 99%, hold) came after a 5h20m probe gap and preceded the 06:47:21Z credential write. It read the old account's weekly figure; the next sample, at 06:50:13Z, read 0%.
+  - The sample was inside the guard's 30-minute window, so from 06:47:27Z to 06:50:12Z the guard injected HOLD into 8 sessions and stop-blocked 5, telling them to "end the turn".
+- Applies: every board whose sessions read `~/.claude/usage/plan-usage.json`.
+- Check: `grep -vE "session=(ugtest|fixture)" ~/.claude/usage/usage-guard.log | grep -E " (notice|stop-block) "`, limited to the time between the `.credentials.json` mtime and the next `PROBE` line. Any line in that window is this trap.
+- Supersedes: narrows efdb3b1 (wrap-up at 95%) and 7ca53c4 (samples over 30 minutes old are UNKNOWN).
+- Fix: host-local and not re-runnable from the bus. `~/.claude/hooks/usage-guard.py` treats such a sample as UNKNOWN, asks for a live read and never stop-blocks on it; `~/.claude/hooks/tests/test_usage_guard.py` passes 7/7, and a mutant with the stale check replaced by `if False:` (sed on a scratch copy) fails 3/7. `evidence: measured`.
+
+**Card 2: a pause marker that carries no account identity blocks the next account.**
+- Rule: a capacity pause written at >= 95% names the org that wrote it, and a gate ignores a marker from another org.
+- Mechanism: agent-bridge `CAPACITY-PAUSED-UNTIL` holds only a timestamp. Written at 06:39:20Z under the old org at weekly 99%, it would have held the routine on the new org (0%) until 07:39:18Z. The marker was renamed, not deleted, and the gate then exited 0 PROCEED.
+- Applies: any board with a file-based pause, hold or cooldown marker.
+- Check: `grep -cE "org|account" <your pause marker>` must be non-zero. If it is 0, the marker cannot tell accounts apart.
+- Supersedes: nothing. `evidence: measured`.
+
+**Card 3: the rotation notice was one-shot per project, and an earlier session used it up.**
+- Rule: a rotation notice is level-triggered. Every session that starts within a window after the change gets it, not only the first.
+- Mechanism: `session-checkpoint.py` (SessionStart) compared the account against a per-project `.account` file, printed `ACCOUNT ROTATION DETECTED` once, and overwrote the file. Whichever session started first in a project took the notice; which one did so here is not identified. The owner's own sessions, started a minute later, saw no rotation: the notice appeared in 2 of the 6 resume contexts.
+- Applies: any board whose hooks turn a state change into a one-time message.
+- Check: start two sessions in one project after a rotation. Both must print the notice.
+- Supersedes: nothing. Fix: host-local. The hook now records `.rotation.json` and repeats the notice for 6 h; 5 isolated-home cases pass. `evidence: measured`.
+
+**Card 4: a cached HOLD notice alone ended resume turns, even beside a fresher signal.**
+- Rule: on a rotation signal, re-measure capacity from a live, account-keyed source before obeying, or repeating, any cached HOLD.
+- Mechanism: the owner said "resume our work" in five project sessions from 06:48:27Z to 06:49:41Z, after the credential write and before the next sample. All five ended with "a rotation is due". Two got the notice only (no stop-block) and ended at 06:51:25Z and 06:51:49Z, after the 0% sample, still quoting 99%. One of them had the rotation notice in context too. All five resumed only after the owner nudged them again (inferred for one). The session that resumed unprompted read `get_usage` live first.
+- Applies: every board. Check: a first reply after a rotation that says HOLD or "rotation is due" with no live usage read before it.
+- Supersedes: narrows efdb3b1's HOLD clause "tell the owner a rotation is due". Posture: `ruling-candidates/resume-after-rotation-posture-r1.md`. `evidence: reported` (transcripts; counts measured).
