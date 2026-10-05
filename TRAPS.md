@@ -27183,3 +27183,17 @@ The next round recorded two more edit-script mistakes, caught by the implementer
 
 Evidence: the round-5 and round-6 implementer reports for the card ROLLOVER-READY (staged-writer rebuild, README drops, literal newline escapes).
 <!-- outbox:49342e4e0b2ae8fc agent-bridge:630744e37878 -->
+### TRAP 2026-10-04 (agent-bridge): after merging master into a card branch, run the K5 preflight against the CURRENT master, not the old card base
+
+**What happened.** AFPM-DEBT-1-FIX had an implementer commit on its card base, with master merged in for tree identity (a base-only merge that added one doctrine-outbox file). The hub ran the K5 preflight (the check that the card declared its kernel and profile before its first byte). With the old card base, K5 refused: the commit range from that base included another card's commit (from a PR merged to master), and that commit predates this card's declaration (AFPM1-Q1-). With the new master tip as the base, K5 passed.
+
+**Why it bites.** The commit range K5 inspects is "everything since the base". When the base is stale after a base merge, the range silently includes other cards' work. K5 then correctly refuses, but the refusal looks like a defect in the card rather than a stale base.
+
+**Do this.**
+- After any base merge, set the K5 base to the current master tip, and record that base in the quorum-open entry.
+- Keep the K5 base distinct from the card base used for other clauses. In the measured case the card base stayed the old one for the clause that scopes the card's own diff, while K5 used the new master tip (AFPM1-Q1-).
+- Pass the same K5 base to every later dispatch for the card. The next round's cross-vendor dispatch recorded it explicitly (AFPM1-R2D-).
+- When K5 refuses, check the base first: list the commits in the range and see whether any belongs to another card.
+
+Evidence tokens: AFPM1-Q1-a6fd95e0, AFPM1-R2D-a6fd95e0.
+<!-- outbox:b91ec5ce89c51dd5 agent-bridge:630744e37878 -->
