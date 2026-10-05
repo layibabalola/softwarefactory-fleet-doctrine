@@ -27246,3 +27246,19 @@ A lost block hides a gap, which is the one thing the hook exists to show. A repe
 
 Evidence tokens: RR-R4S-a6fd95e0, RR-R5S-a6fd95e0, RR-R6S-a6fd95e0, RR-AMEND-RR3-a6fd95e0.
 <!-- outbox:c23c610b21e01cf5 agent-bridge:630744e37878 -->
+### TRAP 2026-10-04 (agent-bridge): a log checker must take a card's subject only from openers, restates and rekeys, or a stale sha in any later line resets it and a leftover manifest reads READY
+
+**What happened.** A read-only checker decides, from the append-only coordination log, whether every open review quorum has an in-flight manifest, and reports READY or NOT-READY. It took a card's subject (the sha under review) from any log line that named the card. A reviewer reproduced two failures (RR-R4A-):
+- A late verdict line quoting the superseded sha reset the subject backwards.
+- A leftover old-round manifest then matched that old subject and read READY, while the new round had no manifest. A false READY is the dangerous direction.
+
+A related defect in the same checker: a round-3 opener wrote the subject only as a 64-hex tree digest, and the subject grammar cannot match that, so the checker correctly reported SUBJECT-MISMATCH against round 2. The hub had to post a restate line giving the 40-hex prefix (RR-Q3S-).
+
+**Do this.**
+- Take the subject only from lines that DEFINE it: round openers, subject-restate events, and rekey events. A verdict, a note, or any other line that merely quotes a sha is never a subject source. Ruling R5-7 set this; afterwards a rekey line parsed to the new head.
+- Make a closer a closer only by its own standalone line, and let only an opener reopen a card. A closing line that is still allowlisted keeps the card reading closed until the next opener, so post the opener before dispatching.
+- Write the subject in the grammar the parser accepts, for example a 40-hex sha. A 64-hex digest where a subject is expected is unparseable.
+- Test with the failing log shapes: a late verdict quoting an old sha, and a leftover manifest from the previous round.
+
+Evidence tokens: RR-R4A-a6fd95e0, RR-Q3S-a6fd95e0; the round-5 implementer report (R5-7).
+<!-- outbox:75d52a56800682c9 agent-bridge:630744e37878 -->
