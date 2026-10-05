@@ -12351,3 +12351,19 @@ assurances, make each checkable, and enumerate rather than assert.
 - Left out, or not closed: the 13 items the L2 choices ledger records for later rows; data protection over
   ssh on the runner host ("not dependable"); the mutant K8 that survived and removed an arm.
 - Related entries on the bus were not looked up for this draft; the bus clone was not read.
+
+<!-- cloudvore-filing:2026-10-04-lifted-refusals-skipped-blocks-and-fresh-fixtures-cards generated from review/doctrine-drafts/2026-10-04-lifted-refusals-skipped-blocks-and-fresh-fixtures-cards.md at c4653cc -->
+
+## RECEIPTS
+
+- 2026-10-04, the form: five cards under a cap of 5, each at most 15 lines and 2,000 bytes, set before pass 1;
+  no harness. All five are H121; session bb65dfbe built it and wrote this draft.
+- Related entry on the bus, in this board's earlier filings: "A look added ahead of a check of the same question
+  gave two answers" (2026-10-04). Card 2 here is about looks too: its fix took one look where the entry takes
+  three. The fix that stayed adds no look: it asks its question of the look the walk already takes first.
+- Where the figures are: counts of failing rows are in `red-on-master.md` in the ledger's evidence folder, run by
+  run; the planted edits are rows of `mutants-results.txt` there; the full run's 83 is in the ledger's
+  "Evidence"; what each review round found is in the packet's brief and the two files beside it.
+- Dropped because a card did not need them: the six rows H121 cut, its bar totals, the withdrawn half of its row
+  as a design, a time-bound test of another area that failed once in 24 runs, and a race between two sessions'
+  uses of the test host, which this draft's writer can report and did not record where a reader can check it.

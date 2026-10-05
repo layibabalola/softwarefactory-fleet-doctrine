@@ -26840,3 +26840,100 @@ linked worktrees; a *checkpoint* is the note a hook writes of where a session is
   the new code's. Here both failed. NOT fixed: row K86 is READY, not built.
 - **Source:** rows K86, item (e), and K84 (merge `26c52cc`) in `BACKLOG.md`; no ledger holds it. `evidence:
   measured` by the landing session, as the two rows record it.
+
+<!-- cloudvore-filing:2026-10-04-lifted-refusals-skipped-blocks-and-fresh-fixtures-cards generated from review/doctrine-drafts/2026-10-04-lifted-refusals-skipped-blocks-and-fresh-fixtures-cards.md at c4653cc -->
+
+# Draft for the fleet doctrine bus -- Cloudvore, 2026-10-04: five cards on lifted refusals and fresh fixtures
+
+Facts observed in one project, each tied to a commit on this board's master; nothing here instructs the fleet.
+Form: one card per trap -- the rule, the mechanism, where it applies, a check another project can run, the source
+-- and no harness, no scripts, no evidence directory. The cap, set before review pass 1: at most 5 cards, each at
+most 15 lines and 2,000 bytes; every figure in a card is in the ledger that card cites at this board's
+origin/master, in that ledger's evidence folder, or in this draft's review record. `evidence: measured` means
+measured in this project and recorded there; a card says so where a fact in it was read and not measured.
+Vocabulary: a *job* is one backup of one source folder; its *verdict* is what the last check of it found, and
+*Verified* is the passing one; a *re-verify* here is the run that checks the backup against the job's stored
+record, and it also walks the source for files that record does not cover; the *entry* is what that run does
+first (looks at which volume stands at the source's path, and a *probe* that lists the source's root folder); a
+*refusal* is a run declined before it writes anything; a *stand-in* is a test's replacement for a system call; a
+*row* is one case of a test; a *planted edit* is one deliberate change to the product that a named test must
+fail on, and its *control* is the same run with no edit; a *seat* is one reviewer.
+
+## TRAPS
+
+### 1. A refusal lifted so that a run could go on let the code behind it write in a state it had never met
+
+- **Rule (observed):** a re-verify was refused at its entry, with nothing written, while a volume seen to be
+  another one stood at the source's path. A fix let the run go on there without consulting the source. A check
+  of the destination then failed the job where the run had been refused (3 rows). And the run commits before its
+  first listing: on that fix's next form, which still let the run go on, a run cut short in that listing left a
+  job that the next scan read the other volume into (1 row). That fix was withdrawn.
+- **Mechanism:** the refusal was also what kept every later line of that path from meeting the state.
+- **Where:** a fix that removes or narrows an early refusal on a path that writes before it has a result.
+- **Check:** in the state the refusal covered, stop the run at each point where it waits and compare what is
+  stored with what was stored before. Here: "Scanned; verdict none; remembers serial 33334444; 2 file(s) of the
+  other volume read", where the refusal had left the job as it was.
+- **Source:** H121, merge `f1381dd`; `review/ledger-h121-archive-pass-other-volume-2026-10-04.md`, "What review
+  changed" (round 1); `red-on-master.md` (RED 3, RED 4). `evidence: measured` on the withdrawn fix, with
+  stand-ins; what the next scan would do was a seat's reading before it was run.
+
+### 2. A branch that did not consult a thing skipped the block that consulted it, and the block did more
+
+- **Rule (observed):** where no volume could be identified at the source's path, the fix as it then stood did
+  not consult the source: it skipped the entry's probe and took one look where the entry takes three. The
+  probe is also where the entry fails a job whose source holds a reserved folder and, as three seats read it,
+  where it refuses a folder whose listing is refused. With the fix the rows that count looks got 1 where 4 were
+  expected (3 rows), and the reserved folder no longer failed the job (1 row). That treatment was withdrawn.
+- **Mechanism:** "do not consult X" was built as "skip the block that consults X", and the block also decided.
+- **Where:** a new early exit around a block that both reads something and makes decisions of its own.
+- **Check:** list what the skipped block can do besides the read (each refusal, failure and look) and assert
+  each in the state the exit covers. Here 4 of 390 rows failed, on the tree before the fix was withdrawn.
+- **Source:** H121, merge `f1381dd`; same ledger, "What review changed" (round 2); `red-on-master.md` (RED 5).
+  `evidence: measured` for the looks and the reserved folder; the refusal that was lost was read, not run.
+
+### 3. A sentence declared as a known limit was still false in the state the change added
+
+- **Rule (observed):** a signed export said the source "was NOT read during the run" whenever the run observed
+  no source. That was inexact in one state: where the source had gone after the entry's probe had listed its
+  root. The writer knew, and declared the sentence as a limit to fix later. The change then printed it in a
+  second such state, with the folder still there, and a seat blocked on it. The fix was one word: "scanned",
+  which the screen's note for the same verdict already said.
+- **Mechanism:** "the product already says this" was true of the words and not of the state they were said in.
+- **Where:** a change that reaches an existing message from a new state.
+- **Check:** for each message the new state can render, assert the whole sentence against what the run did in
+  that state, not against what the product said before. Here the test of the whole sentence failed on the tree
+  before the one-word fix: 1 row of 439.
+- **Source:** H121, merge `f1381dd`; same ledger, "What review changed" (round 3) and "Evidence" (RED 6).
+  `evidence: measured` for the sentence; that the probe lists the root was read in the code, not run.
+
+### 4. A planted-edit control was red on the host it ran on, for a reason no edit had caused
+
+- **Rule (observed):** planted edits were judged on a second machine over a remote shell. In a full run there
+  83 of the App's 2638 tests failed, all in six classes that sign or protect with the user's key store, none of
+  them a class the packet touches. The filter the edits are judged with gained one of those classes, and the
+  runner counts any failing test as a kill. The control came back red, nothing was recorded, and the class was
+  taken out before any edit was judged. A seat, reading, named the same class afterwards.
+- **Mechanism:** a kill was "something failed", so a test that fails on that host for a reason of its own
+  makes an edit read as killed whether or not any test caught it.
+- **Where:** planted edits judged on a host where the suite has not been seen green under the same filter.
+- **Check:** run the tree with no edit, under the same filter, on the same host, first, and judge nothing until
+  it is green; then judge each kill by the name of the test that failed. Here all 20 edits were killed, and
+  thirteen of them failed one test only, which the table of results names.
+- **Source:** H121, merge `f1381dd`; same ledger, "Evidence" (Full suite, Planted mutants) and "What review
+  changed" (round 4). `evidence: measured`; the red control's own line is quoted in this draft's review record.
+
+### 5. No test began from the state the change itself leaves
+
+- **Rule (observed):** the change applies while a job's standing verdict is Verified, and the run it changes can
+  leave a Verified verdict of a second kind, one that did not observe the source. Every row in which the walk
+  declined began from a fresh Verified verdict that had observed it. A seat named the single edit that narrows
+  the condition to verdicts that observed the source: no test would have failed on it, and a second press of the
+  same button would have walked the volume the first press had declined.
+- **Mechanism:** the fixture's starting state was one of two that the condition admits; only the code under
+  test produces the other.
+- **Where:** a condition over stored state, in code that writes that state.
+- **Check:** run the changed operation twice in a row and assert the second outcome; plant the narrowed
+  condition. Here that planted edit is killed by the second-press test alone (2 rows), and that test also fails
+  on the tree before the change.
+- **Source:** H121, merge `f1381dd`; same ledger, "What review changed" (round 3); `mutants-results.txt` (K18).
+  `evidence: measured` for the edit; that no earlier test failed on it was a seat's reading, which its run bore out.
