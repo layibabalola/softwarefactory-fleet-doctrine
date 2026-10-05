@@ -27549,3 +27549,34 @@ of the old one stop.
 - **Source:** H108, merge `92dbd12`; its ledger ("Mutants"); the rewrite `a204220`; evidence commits `a88560c` to
   `be122a5`, then `61d93ea` and `5da1688`; row K92 (a). `evidence: measured`: 53 of 53, and 35 run and 18 not, by
   the status command at about 14:40 Central; the rotation is reported by the landing sessions.
+
+# adobe-ingester: three traps from one control fix that passed four checks and still broke its suite (2026-10-05)
+
+Source project: Adobe Document Cloud Ingester. Every figure was measured there, and the evidence is in its fable-ingress reports and OWNER DIRECTIVES 2026-10-05c and 05d. Cap: 3 cards.
+
+## TRAPS
+
+### 1. A falsifier that re-implements a change's tests can pass while the change's own tests fail
+
+- **Rule (observed):** a different-family falsifier passed a control change 35/35, and three adversarial reviews passed it too. The full suite then failed on two defects in the change's own test code. The falsifier had rebuilt the assertions in its own harness and never ran the suite's helper.
+- **Mechanism:** a re-implementation proves the predicate, not the test code that checks it.
+- **Where:** any gate where a reviewer "verifies" new tests without executing them.
+- **Check:** require the falsifier to extract and execute the staged suite's own helpers and new block, verbatim, with the line ranges named. Here that caught both defects.
+- **Source:** Adobe ingress req 53 (SAFE) versus HUB 2026-10-05T18:16Z (suite fail); req 54. `evidence: measured`.
+
+### 2. Typing a parameter that used to be duck-typed breaks every test fake that fed it
+
+- **Rule (observed):** a refactor gave a security predicate a `[FileSystemSecurity]` parameter. A test's global `Get-Acl` mock returned a PSCustomObject with `Owner` and `GetAccessRules`, which the old code accepted, and it now fails parameter binding at 9 call sites.
+- **Mechanism:** production always passes the real type, so only fakes break, and only in late stages.
+- **Where:** PowerShell or .NET code that tightens a parameter's type.
+- **Check:** grep the suite for fakes of that type (`[pscustomobject]` with the members, overrides of the producer) before you commit the type.
+- **Source:** Adobe OWNER DIRECTIVE 2026-10-05c. `evidence: measured`.
+
+### 3. Async pipe reads plus WaitForExit hang git when the thread pool stalls; git.exe on Windows is a launcher
+
+- **Rule (observed):** a helper drained `git show` with `CopyToAsync`/`ReadToEndAsync` and blocked in `WaitForExit(30000)`. It timed out on a 135 KB blob that takes about 0.1 s to read. Under a 200-item thread-pool backlog it reproduced at 30.2 s, and at 60.4 s with a 60 s wall.
+- **Mechanism:** on synchronous pipe streams, each "async" read is a blocking read on a pool thread. A stalled pool means git fills the 64 KB pipe and never exits.
+- **Also:** `C:\Program Files\Git\cmd\git.exe` starts `mingw64\bin\git.exe`. `Process.Kill()` leaves the inner git alive and holding the pipe: a hung grandchild took 26.4 s. Use `Kill($true)`. `Start-Process` stalled for more than 45 s under the same backlog.
+- **Where:** any .NET or PowerShell code that reads a child's output while waiting for it.
+- **Check:** read stdout synchronously on the calling thread, and run a tree-kill watchdog. Test the helper under a queued pool backlog and with a hung grandchild, and count surviving processes.
+- **Source:** Adobe OWNER DIRECTIVE 2026-10-05d and its panel report. `evidence: measured`.
