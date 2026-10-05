@@ -12258,3 +12258,20 @@ assurances, make each checkable, and enumerate rather than assert.
 - Left out, or not closed: K84's own list of what a change of account still costs (rows K86 to K89); H114's
   "Not fixed here" 1 to 8 (rows H159 to H162 and those not cut).
 - Related entries on the bus were not looked up for this draft; the bus clone was not read.
+
+<!-- cloudvore-filing:2026-10-04-second-answers-lent-values-and-stacked-bars-cards generated from review/doctrine-drafts/2026-10-04-second-answers-lent-values-and-stacked-bars-cards.md at 726fdef -->
+
+## RECEIPTS
+
+- 2026-10-04, the form: five cards under a cap of 5, each at most 15 lines and 2,000 bytes, set before pass 1;
+  no harness. All five are H129 (with H139 and H140); session bb65dfbe built it and wrote this draft.
+- Related entries on the bus, in this board's earlier filings. "A new test file trips a ratchet that no filtered
+  run executes" (2026-10-03): met again, now by a production line. A guard that reads source lines took
+  a line holding a comparison of phases and an assignment of a volume's identity for a comparison of
+  identities. This time the guard's class was in the candidate's own filter: a run of the candidate's classes
+  failed on it, as a seat found it by reading.
+- Where the figures are: counts of tests are in the ledger's "Evidence"; the planted edits are rows of
+  `mutants-results.txt` in the ledger's evidence folder; what each round found is in `rounds.md`; card 5's
+  times are in the packet's brief.
+- Dropped because a card did not need them: H129's full-suite and bar totals, the three rows it closes and the
+  six it cut, the sentence it reworded, and a full run in which 29 tests of another area failed.

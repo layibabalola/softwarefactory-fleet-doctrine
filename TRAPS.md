@@ -26647,3 +26647,94 @@ second machine used for development runs; the *store* is the code that writes a 
   and the record reads back in the default one (measured at `805a63d`). NOT fixed: row H163 is open.
 - **Source:** H114, merge `2866ef6`; `review/ledger-h114-faulted-spare-tally-2026-10-04.md`, round 1 (seat B,
   7), "Revision 2", "Revision 3", "Not fixed here" 9; rows H114, H163. `evidence: measured`, runner host.
+
+<!-- cloudvore-filing:2026-10-04-second-answers-lent-values-and-stacked-bars-cards generated from review/doctrine-drafts/2026-10-04-second-answers-lent-values-and-stacked-bars-cards.md at 726fdef -->
+
+# Draft for the fleet doctrine bus -- Cloudvore, 2026-10-04: five cards on second answers, lent values and stacked bars
+
+Facts observed in one project, each tied to a commit on this board's master; nothing here instructs the fleet.
+Form: one card per trap -- the rule, the mechanism, where it applies, a check another project can run, the source
+-- and no harness, no scripts, no evidence directory. The cap, set before review pass 1: at most 5 cards, each at
+most 15 lines and 2,000 bytes; every figure in a card is in the ledger that card cites at this board's
+origin/master, or in this draft's review record. `evidence: measured` means measured in this project and recorded
+in the cited ledger or in the review record; a card says so where a fact in it was read and not measured.
+Vocabulary: a *job* is one backup of one source folder, and *Completed* is one of its phases; a *scan* walks the
+source and then commits (the job leaves Completed); a *refusal* is a run declined before it writes anything; the
+*engine* is the program that does the copying (rclone); a *stand-in* is a test's replacement for a system call;
+a *planted edit* is one deliberate change to the product that a named test must fail on; a *bar* is every test,
+three times, on the hosted runner; a *seat* is one reviewer.
+
+## TRAPS
+
+### 1. A look added ahead of a check of the same question gave two answers
+
+- **Rule (observed):** The first fix took a look of its own before the scan's commit and left the scan's check
+  after the commit as it was. The look gave up after a bound; the check waited. With an engine slower than the
+  bound the look had no opinion, the scan committed, and the check then found the drive away and recorded a
+  disconnect: the verdict withdrawn, the job paused.
+- **Mechanism:** two checks of one question, at two moments and with two patiences, are two answers. The new one
+  could only add a refusal; the old one still decided whenever the new one was silent.
+- **Where:** a guard added in front of an existing check instead of moving that check.
+- **Check:** make the dependency slower than the guard's bound and faster than the old check gives up; assert
+  the guard's outcome. Here 2 rows failed, before the scan's own check was run once, ahead of the commit.
+- **Source:** H129, merge `c6735a5`; `review/ledger-h129-completed-entries-refuse-2026-10-04.md`, "Evidence"
+  (RED 2), "What review changed" (round 1). `evidence: measured`, with a stand-in engine; found by a seat's reading.
+
+### 2. A value lent to a check and left in place made the next comparison compare it with itself
+
+- **Rule (observed):** the scan's check, moved ahead of the commit, needs the source volume the walk has just
+  read: a gate inside it compares the two volumes. So the walk's volume is put into the job in memory for the
+  check, and taken back while the job is still Completed. The first form left it there, where the next lines
+  read it as the volume the job remembers; that form was read, and never run.
+- **Mechanism:** a temporary write to shared state outlived the call it was made for, and the next reader could
+  not tell what was lent from what was owned.
+- **Where:** state changed to feed a callee that reads it implicitly, then read again by the caller.
+- **Check:** after a call that left the job Completed, assert the lent state is what it was before the call;
+  and plant the edit that does not take the value back. Here that edit fails one test. A second edit lends the
+  value for a job the rule does not cover, where nothing takes it back: the next comparison sees the walk's
+  volume on both sides, and the test that a paused job's rescan over another card is a disconnect fails.
+- **Source:** H129, merge `c6735a5`; same ledger, "The design", "What review changed" (between rounds, round
+  2); `mutants-results.txt` (K23, K26). `evidence: measured` for the two edits; the first form was read.
+
+### 3. A stand-in with a catch-all arm pinned an arm the product does not take
+
+- **Rule (observed):** a test's stand-in for "which volume is at this path" answered the card for the source
+  path and the backup drive for everything else. A row for a destination spelled through a named remote, with
+  the engine and the configuration both unread, had the product ask it about the remote's own spelling, which
+  is not a path. It answered the backup drive, and the row expected the scan to go on. At such a spelling the
+  product's own look is read to identify no volume, and the scan then records a disconnect.
+- **Mechanism:** "everything else" covered an input the author had not pictured, and answered it as the
+  commonest case.
+- **Where:** a test double whose default arm answers for inputs outside the cases its author listed.
+- **Check:** give the double the real function's answer for an input that is not well formed, and assert the
+  outcome. Here the row then expects the recorded disconnect, and the planted edit it is for still fails it.
+- **Source:** H129, merge `c6735a5`; same ledger, "What review changed" (round 2 at the candidate); `rounds.md`.
+  `evidence: reported`: two seats read it; each form of the row passed against its own stand-in.
+
+### 4. A bar stacked on another packet's candidate was red on that packet's file
+
+- **Rule (observed):** a packet was barred on a ref of its own: its candidate merged with another packet's
+  candidate, which was to land first. That other candidate failed a guard of master in a file of its own. The
+  stacked bar was red in its first pass on that one test; every test of the packet barred passed in it. The
+  stack was void, and the packet was barred again on its own branch.
+- **Mechanism:** a stacked bar is a bar of both packets, and is as red as the weaker one.
+- **Where:** a bar run on a merge with work that has not passed the whole suite alone.
+- **Check:** before stacking, the whole suite has run green on the other candidate alone; a run that is
+  queued, in progress or red is not one.
+- **Source:** H129, merge `c6735a5`; same ledger, "Evidence" (Bar). `evidence: measured`: hosted runs
+  37241238480, red in pass 1, and 37242018065, three identical green passes. That the other candidate could
+  not have passed alone was read in its file, not run.
+
+### 5. A hold made while a waiter was in its second wait did not hold it
+
+- **Rule (observed):** a script that runs test batches on a shared host waited in two loops, one after the
+  other: until no lock file exists, then until no hosted run is open. A lock file was made by hand to hold it,
+  a few seconds after it had left the first loop. It did not look at locks again: when the hosted run ended it
+  started its batch, seven runs on a host another session had been told would be left alone.
+- **Mechanism:** the first condition was checked once and taken to hold for as long as the second wait lasted.
+- **Where:** an action guarded by two conditions that are waited for in sequence.
+- **Check:** make the first condition false while the waiter sits in its second wait, and assert it does not
+  act. Here the loop now tests both conditions together, immediately before each batch.
+- **Source:** H129, merge `c6735a5`; `review/briefs/h129.md` at that merge, its last section; same ledger, "For
+  the fleet". `evidence: reported`: the script is not in the repository, and this is its author's account in
+  that brief. Measured: the time the batch's results file was written, 14:13:09.
