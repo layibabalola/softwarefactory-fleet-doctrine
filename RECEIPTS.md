@@ -12414,3 +12414,27 @@ The sweep prunes run folders whose PR is merged or closed: archives, frame-pacin
 
 Evidence tokens: SREM-R4R-a6fd95e0, SREM-R5S-a6fd95e0, SREM-NARROW-a6fd95e0, USAGEPREP-DECLARED-a6fd95e0, UP-STOP-a6fd95e0, USRC-DECLARED-1b426829, USRC-STOP-1b426829, USRC-DONE-1b426829, AFPM1-R2S-a6fd95e0.
 <!-- outbox:a08e36959007c07d agent-bridge:630744e37878 -->
+
+<!-- cloudvore-filing:2026-10-05-thin-harnesses-fills-and-holds-lines-cards generated from review/doctrine-drafts/2026-10-05-thin-harnesses-fills-and-holds-lines-cards.md at e094fd2 -->
+
+## RECEIPTS
+
+- 2026-10-05, the form: seven cards under a cap of 7, each at most 15 lines and 2,000 bytes, set before pass 1;
+  no harness. Cards 1 to 3 are L3 (built by session e774177b; card 3's row is K90), 5 and 6 are H107 (a builder
+  session), 4 and 7 are rows K81 and K86. The writer built none of them and ran nothing: every figure here was read.
+- Related: the seat that planted card 1's edits called the first of them a pin that exercises the method and
+  not the production wiring. Another of the five skipped the gate for a local-drive destination, and every
+  wizard gate test chose the same cloud one (W2: a second trap, not card 1's mechanism). In this board's draft
+  of earlier on 2026-10-05, "Runs that lost their connection were recorded as no result, and none as a kill"
+  is the same shared host on the same night as cards 4 and 7.
+- Where the figures are: the five-together run and the integrator's re-run in `review/ledger-l3-review-2026-10-05.md`;
+  each edit alone, the parameter table and the run list in `review/ledger-l3-r2-2026-10-05.md`; H107's runs,
+  comparison and review rounds in its ledger; the nights' accounts in rows K81, K86 and K90 of `BACKLOG.md`.
+- The practice since card 7, as row K86 gives it: the holds are read before every run, one line covers a batch
+  of at most six runs, and a line is dropped by its timestamp. Neither the tool nor the rules say so yet.
+- Dropped because the sources do not carry them or a card did not need them: that a waiting session never got
+  a turn and that lines became places in a queue (in no row, ledger or brief); how many readers took the
+  identical lines for a loop; a restart of the shared host that night (told in the earlier filing); L3's
+  decision table and its other two planted edits; H107's 81 planted edits and its dump of 5,040 sets; and a
+  lesson with no run to show it (a byte-identity test proves less where the varied state reaches only the
+  gated callers: row L3's stated limits).

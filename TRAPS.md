@@ -27274,3 +27274,129 @@ Most of these produced a quiet success or a false "fine" on a host where the che
 
 Evidence tokens: RR-R2C-a6fd95e0, RR-R6S-a6fd95e0, AFPM1-PRCI1-a6fd95e0, AFPM1-R2S-a6fd95e0; the round-3 and round-6 implementer reports.
 <!-- outbox:8dfc05f5adedb66c agent-bridge:630744e37878 -->
+
+<!-- cloudvore-filing:2026-10-05-thin-harnesses-fills-and-holds-lines-cards generated from review/doctrine-drafts/2026-10-05-thin-harnesses-fills-and-holds-lines-cards.md at e094fd2 -->
+
+# Draft for the fleet doctrine bus -- Cloudvore, 2026-10-05: seven cards on thin harnesses, fills and holds lines
+
+Facts observed in one project, each tied to a commit on this board's master; nothing here instructs the fleet.
+Form: one card per trap -- the rule, the mechanism, where it applies, a check another project can run, the source
+-- and no harness, no scripts, no evidence directory. The cap, set before review pass 1: at most 7 cards, each at
+most 15 lines and 2,000 bytes; every figure in a card is in the ledger, row or brief that card cites at this
+board's origin/master, or in this draft's review record. `evidence: measured` means measured in this project and
+recorded there; `evidence: reported` means a named session's account of its own runs, not checked by another.
+Vocabulary: the *gate* of cards 1 to 3 decides whether a new backup may start under the licence state, and the
+*wizard* is the screen that starts one; a *set* is one source backed up to several destinations, each a *member*,
+and the set's own gate (cards 5 and 6) says whether the set is verified; a *spare* is a member the set does not
+count; a *planted edit* is one deliberate change to the product that a named test must fail on; a *seat* is one
+reviewer; the *shared host* is a second machine several sessions run tests on over a remote shell; a *holds
+line* is one line in a file those sessions read before using it; a *row* is one entry of this board's queue.
+
+## TRAPS
+
+### 1. The test harness left out a service production always passes, and a gate skipped on it stayed green
+
+- **Rule (observed):** a review seat planted five edits together in a candidate whose 368 licence tests were
+  green, and all 368 stayed green. One edit skipped the wizard's gate whenever the wizard held an arrival
+  service. The app's container always passes one; the harness called the constructor and passed none, in
+  every test.
+- **Mechanism:** an optional constructor parameter let the tests build an object production never builds.
+- **Where:** a class with optional collaborators, built by hand in tests and by a container in the product.
+- **Check:** list the constructor's parameters beside what the container registers and what the harness passes;
+  then plant an edit that skips the guarded step when an always-registered service is present. Here, once the
+  real container builds the test wizard from the app's own registrations, that edit alone fails 29 of 385.
+- **Source:** L3, merge `d4c61fc`; `review/ledger-l3-review-2026-10-05.md` (seat B: W1);
+  `review/ledger-l3-r2-2026-10-05.md` (the parameter table; W1). `evidence: measured`: the 368 by the seat, the
+  29 by the builder. Before the fix the five were run only together.
+
+### 2. A pin on a notice's ink read the text colour only, and a danger fill behind it stayed green
+
+- **Rule (observed):** a licence notice must not look like a tamper alarm, and a test asserted its text was in
+  the ordinary ink. One of card 1's five edits gave the notice the theme's danger brush as its background; the
+  pin read the foreground alone. The pin now fixes the markup's exact attributes, and walks the rendered notice
+  and its ancestors on both panels against the theme's alarm brushes.
+- **Mechanism:** what an element looks like is its ink and every fill and border it sits in.
+- **Where:** a pin that a message is not alarm-coloured, in a UI tree where attributes and ancestors add colour.
+- **Check:** give the element an alarm-coloured background and run the colour pin. Here that edit alone now
+  fails 2 of 385 tests. The stated limit: the alarm brushes are found by the names of their theme keys, so an
+  alarm colour under a key those names do not match, or one a style applies in a state no test renders, would
+  not be seen.
+- **Source:** L3, merge `d4c61fc`; the same two ledgers (V1; V2 is its twin on the other panel); row L3's
+  stated limits. `evidence: measured`: green with the fill in the five-together run, 2 failing after the pin.
+
+### 3. A planted edit that removed a guard made tests write the real settings folder of the account running them
+
+- **Rule (observed, reported):** the gate returns before reading anything while no licence key is compiled in,
+  and a wizard or set service built with no gate argument takes the app's own. A planted edit deleting that
+  early return was run on the shared host with no data root of its own. The session then listed that account's
+  real configuration folder and found a 230-byte clock-mark file, created and last written inside that run.
+- **Mechanism:** the default wiring points at the real profile; the guard under test was all that kept tests off it.
+- **Where:** tests that take production defaults for a store, when a planted edit or a later change makes
+  those defaults live. The row names the first compiled-in key as that later change.
+- **Check:** under a throwaway account, run the suite with the guard removed and no redirect, and list that
+  account's configuration folder before and after. A new file is the trap. Here: one file in the real
+  account's folder on that host, none on the laptop.
+- **Source:** L3, merge `d4c61fc`; `review/ledger-l3-r2-2026-10-05.md` ("The file on the runner host"); row K90.
+  `evidence: reported` by session e774177b from two timestamps and its own run list; it did not open the file.
+  Removing it is the owner's act; the row says no session has touched it.
+
+### 4. A rule for a shared host landed after one lane's brief, and that lane ran four times without it
+
+- **Rule (observed, reported):** a merge at 19:28 brought the convention of a holds file, and briefs committed
+  at 22:46 and 23:09 that evening tell their builders to read it and add a line before a run on the shared
+  host. One lane's brief was committed at 17:49 and has no such line. Its builder ran there in four windows
+  (one run, then three batches) between 00:53 and 02:20 that night with no line of its own, while other
+  sessions held lines and once during a hosted run in progress. It reports learning the rule from a message
+  at about 02:20; it discarded every one of those results and ran again on the laptop.
+- **Mechanism:** a rule written into what new sessions are given reaches no session already at work.
+- **Where:** several long-running agents or people sharing a machine under rules that change during the work.
+- **Check:** on the day a coordination rule is written, list who is already running and what each was briefed
+  from. Here the briefs of 22:46 and 23:09 carry the rule and the earlier one does not.
+- **Source:** rows K81 and K86 item (f), commit `6b8e3fb`; the merge is `26c52cc` (K84);
+  `review/ledger-l3-r2-2026-10-05.md` ("The ssh runs of r2, and the rule I broke"). `evidence: reported` by
+  session e774177b; the commit times were read.
+
+### 5. The gate and the surfaces describing a member each spelled the condition, and disagreed on one state
+
+- **Rule (observed):** a set's gate turned the set red for a spare whose stored verification mode this build
+  could not read. Every surface describing that member (a chip, a queue line, a badge, a dialog, the
+  certificate) asked a condition of its own and called it a redundancy copy. The fix is one question, asked
+  by the gate and by each surface.
+- **Mechanism:** the gate spelled two conditions; each reader spelled one of them for itself.
+- **Where:** a refusal decided in one place and described in several, each with its own copy of the test.
+- **Check:** build each state the gate refuses on and read every surface for words that call the cause
+  harmless. Here tests written before the fix failed 348 of 355 on such a word. To show the fix did not move
+  the gate, compare it with a frozen copy of the old one: here 1,244,252 sets, the same verdict from both.
+- **Source:** H107, merge `1e55383`; `review/ledger-h107-unreadable-mode-member-2026-10-04.md` ("What a user
+  saw", "The decision built", "RED and GREEN", "The gate did not move"). `evidence: measured`; how master's
+  readers were spelled is the ledger's reading.
+
+### 6. Moving a member out of one count made an unchanged sentence elsewhere false
+
+- **Rule (observed):** the first revision of card 5's fix stopped counting that member as a faulted spare, so
+  the summary's fault note stopped naming it. A function the change did not touch still said of the member's
+  earlier self-test "That earlier result is why this destination appears in the summary above". A review seat
+  named the state. The second revision renders the clause only for a member the summary speaks of, by the
+  count's own predicates.
+- **Mechanism:** the sentence's bytes did not change; what it pointed at did.
+- **Where:** output whose parts refer to each other ("above", "why") and are computed separately.
+- **Check:** after narrowing a count, find each sentence that refers to it and render it for an item that left.
+  Here tests of that sentence, written first, failed 17 of 21. A second seat read three states, in words older
+  than the change, where the clause names the wrong cause: row H182, open.
+- **Source:** H107, merge `1e55383`; the same ledger ("Review, round 1", seat B; "Round 2"; "Review, round
+  2"); rows H110 and H182. `evidence: measured` for the 17 of 21; the seats' findings are recorded as relayed.
+
+### 7. One holds line asked a host for 82 runs, and a removal by text matched more than one line
+
+- **Rule (observed, reported):** sessions took turns on the shared host by adding a line to a holds file and
+  dropping it after. Adding a line does not say how big a batch may be. On the file's first night one line for
+  82 runs (164 minutes) blocked another session's last 30 runs until the landing session intervened. Another
+  session's helper added a line before every run and dropped it by its text; one drop lost a push race,
+  two lines then matched, every later drop was refused, and the file filled with identical lines
+  that read as a loop. Nothing was livelocked.
+- **Mechanism:** nothing bounded what one line could ask for; a drop named words, not one line.
+- **Where:** a hand-made lock or turn file shared by agents and written by helpers in loops.
+- **Check:** add two lines with the same text and drop by that text; and add one line for hours of runs: does
+  anything refuse it? Here the drop was refused, and nothing limits the batch.
+- **Source:** row K86 item (f), commit `6b8e3fb`; `review/briefs/h153-h154-plan-count-inks.md` ("HOLDS").
+  `evidence: reported`, by the landing session and by that helper's builder.
