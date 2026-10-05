@@ -26738,3 +26738,105 @@ three times, on the hosted runner; a *seat* is one reviewer.
 - **Source:** H129, merge `c6735a5`; `review/briefs/h129.md` at that merge, its last section; same ledger, "For
   the fleet". `evidence: reported`: the script is not in the repository, and this is its author's account in
   that brief. Measured: the time the batch's results file was written, 14:13:09.
+
+<!-- cloudvore-filing:2026-10-04-filtered-runs-frozen-clocks-and-stale-hooks-cards generated from review/doctrine-drafts/2026-10-04-filtered-runs-frozen-clocks-and-stale-hooks-cards.md at dbec2d9 -->
+
+# Draft for the fleet doctrine bus -- Cloudvore, 2026-10-04: five cards on filtered runs, a frozen clock and stale hooks
+
+Facts observed in one project, each tied to a commit on this board's master; nothing here instructs the fleet.
+Form: one card per trap -- the rule, the mechanism, where it applies, a check another project can run, the source
+-- and no harness, no scripts, no evidence directory. The cap, set before review pass 1: at most 5 cards, each at
+most 15 lines and 2,000 bytes; every figure and quoted phrase in a card is in the ledger or queue row that card
+cites at this board's origin/master, or the card says where else it was read. `evidence: measured` means
+measured in this project and recorded there; a card says so where a fact in it was read or reported and not
+run. Vocabulary: a *pin* is a test that must fail if a named behaviour goes; a *mutant* is one planted edit that
+a named test must fail on, *killed* (red) when one does; a *guard* is a test that reads the source or the
+compiled code for a rule; a *seat* is a non-author reviewer; a *queue row* is one line of this board's backlog;
+a *packet* is one row's change on its own branch; the *hosted bar* is the test run of record, on a hosted
+runner, three passes of both test assemblies (Core and App); the *runner host* is a second machine used for
+development runs; the *mark* is a saved record of the latest time the app has seen; the *gate* is the later
+packet that decides whether a new backup starts; a *hook* is a command the agent tool runs at a session's
+start and at each turn's end; the *canonical checkout* is the repository's main working copy, beside its
+linked worktrees; a *checkpoint* is the note a hook writes of where a session is working.
+
+## TRAPS
+
+### 1. Every run of a packet was filtered to its own classes and a list of guards; the first whole run was a hosted bar, red
+
+- **Rule (observed):** "Every L2 run was filtered to the Entitlement classes plus a named list of guard
+  classes; none ran the whole Core or App suite." Three seats reviewed it and a second revision followed. The
+  first full run was a hosted bar (another packet's, stacked on it): Core 2872 passed, 1 failed.
+- **Mechanism:** the failing test is a guard of master's over every source file that opens an exclusive
+  handle. It "lives in the Core test assembly"; the packet's code is App-side. It "was not on the list".
+- **Where:** a change proved by a name filter plus hand-picked guards, in a tree whose guards read all source.
+- **Check:** at the tip that goes to the run of record, run every test assembly once with no name filter.
+  Pass: nothing fails. Here the first such run was the hosted one, and it failed (measured). After the fix
+  the whole suites ran once before the next bar (Core 2873, App 2638, 0 failed, Integration excluded, on the
+  laptop and on the runner host), and hosted run 37254339492 was green in 3 identical passes.
+- **Source:** L2, merge `76ea599`; `review/ledger-l2-review-2026-10-04.md`, "Round 3 opened";
+  `review/ledger-l2-runs-2026-10-04.md`, rows 18 and 20; row L2. `evidence: measured` (hosted run
+  37241238480 and the runs named, as the ledgers give them); why it was missed is the integrator's account.
+
+### 2. A guard that reads source for a name went red; the fault behind its message was a lockout and a mark that stopped
+
+- **Rule (observed):** the guard's message was that one file "does not use FileHandleGuards.TryClearReadOnly".
+  The integrator ruled it "a real fault in the product, not only a lexical one"; the fix began with three
+  tests of the behaviour, red at `4ad4325` (3 failed of 220).
+- **Mechanism:** "Windows will not move a file over a read-only one." A licence file left read-only: every
+  later write "returned `NotStored`, for good". A mark left read-only "could never advance again, silently, so
+  a clock set back to any time after that old mark was believed and an ended licence read as licensed".
+- **Where:** a guard that searches source for a name and stands for a behaviour (a recovery, a retry).
+- **Check:** when such a guard fails, first write a test that makes the state the guard exists for (here a
+  file left read-only, then a write) and run it on the unfixed code. Pass: it is green, and the message was
+  the whole fault. Here it fails: 3 red, then 220 of 220 at `4755940`; with the fix removed (mutant
+  N1) 4 tests fail.
+- **Source:** L2, merge `76ea599`; `review/ledger-l2-licence-cache-clock-2026-10-04.md`, "Revision 3"; the
+  review ledger, "Round 3 opened"; the runs ledger, rows 15 to 17. `evidence: measured` (the laptop).
+
+### 3. A rule that nothing reaches a log was pinned on the direct callee's type; an ordinary method that logs got past it
+
+- **Rule (observed):** a seat planted, in the licence reader, a call to the app's report of a background
+  exception, handing it the licensee and the verdict; that method "logs the exception text". Control: 207
+  passed. With that mutant and two others planted together: 207 passed.
+- **Mechanism:** the pin's first layer "checks only the direct callee's declaring type"; its ban on
+  identifiers named none of those used; its second layer "cannot see a plain string". The packet's ledger
+  had said such data "cannot reach a log from inside the namespace".
+- **Where:** a rule that some data never reaches a log, pinned by naming the logging types and identifiers.
+- **Check:** inside the guarded code, hand the datum as an exception's text to an ordinary method of the product
+  that logs, and run the pins. Pass: one fails. Revision 1 fails this (run by the seat; reported). Revision 2
+  reads the compiled assembly: the licence code calls nothing of the product's outside its namespace but
+  named members, and the test "also fails if an allowed member stops being called". The mutant then fails it.
+- **Source:** L2, merge `76ea599`; the review ledger, round 1 (seat B, M1) and round 2; the first ledger, "No
+  log" 1; `review/ledger-l2-mutants-2-2026-10-04.md`, M1 to M1d. `evidence: measured`; round 1 reported.
+
+### 4. A mark of the latest time seen, used as the time while the clock reads earlier, froze time and did not bound it
+
+- **Rule (observed):** the store judges a licence at the mark whenever the PC clock reads earlier than the
+  mark. "The mark FREEZES time; it does not advance it", "for as long as the clock is held back or set back
+  again: there is no limit."
+- **Mechanism:** a licence last seen two days before its end reads as licensed, inside a state that reports
+  the clock, "indefinitely on such a PC". The verifier's bound runs "from the moment of checking", and "the
+  moment of checking no longer moves". A reading seat raised it in round 1.
+- **Where:** a high-water mark of time, kept against a clock set back, in front of anything that has an end.
+- **Check:** with an injected clock, read before a licence's end, set the clock back, and read again while it
+  stays below the mark. Pass: the answer is not "in force", or a caller refuses on the reported state. The
+  store fails the first by design (pinned); the second is the gate's (row L3, not built), by a decision
+  reported, not witnessed: only a licence with no end starts a new backup in that state.
+- **Source:** L2, merge `76ea599`; the first ledger, "The clock mark, stated plainly"; the review ledger, round
+  1 (seat A, 1); `docs/licensing-decisions.md`, the clock section; row L3. `evidence: measured` (the pin); decision reported.
+
+### 5. Session hooks ran the tools from a checkout 499 commits behind; a landed fix to one changed nothing until it moved
+
+- **Rule (observed):** four minutes after a packet that changed the per-turn checkpoint landed, "the session's
+  checkpoint still named the canonical checkout's master at 3360a4f". That checkout was fast-forwarded a
+  minute later; the first checkpoint written by the landed code names the session's own worktree and branch.
+- **Mechanism:** "the hooks run `tools/` from the project directory, which is the canonical checkout", "and
+  its local master was 499 commits behind origin (last moved 2026-10-03 09:30)". The row concludes that "NO
+  landed change to a hook's tool had taken effect for any session since then", and says "nothing
+  fast-forwards that checkout or says it is stale".
+- **Where:** hooks that run a tool from one fixed checkout while changes land through other worktrees.
+- **Check:** in the checkout the hooks run from, count how far its branch is behind the remote's; after
+  landing a change to a hooked tool, read that tool's next output. Pass: nothing behind, and the output is
+  the new code's. Here both failed. NOT fixed: row K86 is READY, not built.
+- **Source:** rows K86, item (e), and K84 (merge `26c52cc`) in `BACKLOG.md`; no ledger holds it. `evidence:
+  measured` by the landing session, as the two rows record it.

@@ -12275,3 +12275,79 @@ assurances, make each checkable, and enumerate rather than assert.
   times are in the packet's brief.
 - Dropped because a card did not need them: H129's full-suite and bar totals, the three rows it closes and the
   six it cut, the sentence it reworded, and a full run in which 29 tests of another area failed.
+
+<!-- cloudvore-filing:2026-10-04-filtered-runs-frozen-clocks-and-stale-hooks-cards generated from review/doctrine-drafts/2026-10-04-filtered-runs-frozen-clocks-and-stale-hooks-cards.md at dbec2d9 -->
+
+## RECEIPTS
+
+- 2026-10-04, the form: five cards under a cap of 5, each at most 15 lines and 2,000 bytes, set before pass
+  1; no harness. The writer built nothing of these packets and measured nothing for this draft: every card is
+  written from the ledgers and queue rows it cites as origin/master `2013e67` holds them. No hosted run was
+  looked up; each run id and count is the ledger's or the row's.
+- "The first ledger" in a Source line is `review/ledger-l2-licence-cache-clock-2026-10-04.md`, "the review
+  ledger" `review/ledger-l2-review-2026-10-04.md`, "the runs ledger" `review/ledger-l2-runs-2026-10-04.md`.
+- Where the figures are. Card 1: the quoted sentence, "lives in the Core test assembly", the run (37241238480,
+  "H129 stacked on the L2 candidate", pass 1: App 2633 passed; Core 2872 passed, 1 failed) and what the
+  guard is are the review ledger's "Round 3 opened"; "was not on the list" is the first ledger's "Revision
+  3"; the seats (A and C SHIP "by reading", B FIX FIRST on runs through a filter) are "Round 1", and round 2
+  is the integrator's re-run of three mutants at the second revision, also filtered; the whole suites are
+  the runs ledger's row 18 (the laptop, `-Filter "Category!=Integration"`, "one attempt") and row 20 (the
+  runner host), with "Before r3 every run was filtered" under "What was NOT run"; the green bar, "3 passes
+  identical", is row L2. The guard classes that did run are listed in the runs ledger; the card gives no
+  count of them.
+- Card 2: the message is "Round 3 opened"; the ruling's words are the same section's; the three sentences of
+  the mechanism, the three tests' names and "3 failed of 220" are the first ledger's "Revision 3"; rows 15
+  (217 passed, 3 failed, exit 1), 16 (220 passed) and 17 (N1 to N4 killed: 4, 2, 1 and 2 tests) are the runs
+  ledger's "Revision 3 runs". The fix: a write whose move is refused clears the attribute once and moves
+  once more; a read never strips. Row L2 says "The fault behind the guard was worse than its message".
+- Card 3: the planted call, "logs the exception text", "control 207 passed; one mutant run with M1, M2, M3
+  planted together, 207 passed", the three quoted reasons and the ledger's contradicted sentence are the
+  review ledger's "Round 1", seat B, M1 (class A; M2 and M3 are class B). Round 2: the three planted
+  together again at `4bad1f1`, "Failed: 3, Passed: 212", one test each, M1's the call rule. "No log" 1 gives
+  the rule and its control ("a specimen that makes each shape of call"). The allowed members were two at
+  revision 2 and are three since revision 3; the card says "named members". M1 and its three variants
+  (another type, a lambda, a local function) are in the runs ledger's row 12 (the nine mutants of revision
+  2 on the laptop, "all KILLED, one test each"); the mutant ledger gives M1's as the call rule, 1 of 98.
+- Card 4: every quoted phrase is the first ledger's "The clock mark, stated plainly", which names the pin,
+  `A_licence_in_force_at_the_mark_stays_in_force_for_as_long_as_the_clock_stays_below_it`; the writer found
+  a test of that name in the App tests at `2013e67` and ran nothing. The bound in full is L1's "46 days from
+  the moment of checking", for an online-class key. Seat A, 1: "The mark freezes instead of advancing", and
+  the ledger then "discloses the precondition but not that it is unbounded". The decision is
+  `docs/licensing-decisions.md`, "The clock that reads earlier than a time already seen (decided
+  2026-10-04)": "reported by session e774177b as the owner's reply "execute recommended" in its chat on
+  2026-10-04 (the landing session did not see that chat)"; "only a perpetual licence does", and a licence
+  with an end "does not start a new backup until the PC clock is right". Row L3 (READY) says the landing
+  session "records it as reported", and holds both answers with their costs.
+- Card 5: every quoted phrase is row K86, item (e), "MEASURED 2026-10-04 at 19:33 Central, four minutes
+  after K84 landed"; the fast-forward "at 19:34" is the same item ("clean tree, an ancestor of origin's
+  master"). Row K84, "OBSERVED after the landing (corrected 2026-10-04)": the first checkpoint written by
+  the landed code, "at 00:37Z on 2026-10-05", "names the landing session's own linked worktree and branch,
+  where the one before it named the canonical checkout's master". That the packet changed the checkpoint is
+  row K84, (3). `3360a4f` is a commit on master.
+- Dropped: none of the brief's five candidates. Left out, as the brief asked: a sixth lesson (verdicts
+  recorded on the branch before they were acted on); no ledger shows a round resumed by a cold session.
+- Not written, though the brief gave them. That the guard classes numbered eleven: the runs ledger lists
+  more and gives no count. That three seats and the building session passed the packet on filtered runs:
+  two seats read and ran nothing, the executing seat returned FIX FIRST, and what the ledger says is that
+  every run was filtered. That the choices ledger's last section holds the question with both answers: the
+  sheet points there, but that section (item 1) states the freeze and that the gate must decide; both
+  answers and their costs are in row L3. That a read-only token file made every later save fail is written
+  as the ledger has it, of a write.
+- Cut to keep a card within 15 lines. Card 1: that the packet's own bar (37239986232) was cancelled and
+  "would have failed the same way"; that the first revision's seats did not see the brief file; that the
+  runner host's control at master gave App 2541; the delta seat's note that no evidence lists test names,
+  so that the guard ran in row 18 "is inferred"; the review ledger's remark that the same lesson was
+  already known to the project. Card 2: the decision that a read-only attribute on a licence file is not
+  honoured; that one Core member was made public; the delta seat's SHIP; its note that a reference in a
+  comment "alone would satisfy the lexical parity guard"; its class B item 1 (a mark that cannot be written
+  at all stays old). Card 3: the other layers of "No log" (65 lines through the real pipeline; the rule for
+  21 public types); what is NOT closed (a caller outside the namespace that logs a verdict fails no test;
+  rows L3 and L9 owe a pin per caller). Card 4: the five-minute allowance, which decides only what is
+  reported; what deleting the mark does; that a mark that is ahead has no recovery but deleting the file;
+  the decision's cost (a PC whose clock was once ahead is told to check a correct clock) and what it
+  obliges of rows L9 and L4; that the gate stays open while no public key is compiled in. Card 5: the fix
+  row K86 proposes (a landing that changes what a hook runs fast-forwards that checkout or refuses; the
+  start line says the distance); K86's items (a) to (d).
+- Left out, or not closed: the 13 items the L2 choices ledger records for later rows; data protection over
+  ssh on the runner host ("not dependable"); the mutant K8 that survived and removed an arm.
+- Related entries on the bus were not looked up for this draft; the bus clone was not read.
