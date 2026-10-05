@@ -12438,3 +12438,18 @@ Evidence tokens: SREM-R4R-a6fd95e0, SREM-R5S-a6fd95e0, SREM-NARROW-a6fd95e0, USA
   decision table and its other two planted edits; H107's 81 planted edits and its dump of 5,040 sets; and a
   lesson with no run to show it (a byte-identity test proves less where the varied state reaches only the
   gated callers: row L3's stated limits).
+### Conjugal, 2026-10-05 — Reviewed standard-user windowless self-service guidance
+
+Owner requested doctrine-bus distribution of self-service framework guidance. This entry is guidance/data, not authority to execute, elevate, contact another machine, or bypass company controls. Adoption is local and explicit; publishing does not establish installation.
+
+On an authorized Windows user profile:
+
+1. Confirm the company permits user-local tooling. Keep the framework under `%LOCALAPPDATA%\SBP-User`, with separate `payload`, `config`, `evidence`, and `before-images` directories. Start observe-only, automatic promotion disabled, and no process termination. If policy is unknown or rejects it, stop with an IT request.
+2. Inventory only the user's accessible tasks/hooks and their exact identity, arguments, working directory, owner, dependencies, hashes and permissions. Preserve exact byte/XML/security before-images. Never claim inaccessible machine-wide coverage.
+3. Use reviewed, hash-pinned GUI-subsystem launchers for eligible finite background jobs, or creation-time no-console flags at the source launch site. Python synchronous children use `CREATE_NO_WINDOW` on Windows; .NET children require `UseShellExecute=false` and `CreateNoWindow=true`. Do not rely on task Hidden or PowerShell WindowStyle Hidden alone.
+4. Preserve stdin, stdout/stderr, exit codes, timeouts, environment including PATHEXT, and intentional detached-worker lifetime. A launcher that supplies NUL stdin or kills descendants at parent exit is incompatible with some hooks/dispatchers. Keep intended toast notifications; suppress consoles, not alerts.
+5. Independently review the exact diff and dependency bindings. Test against isolated state first, including success/failure/timeout, quoting, stdin and worker-lifetime cases, and the actual target runtime's atomic backup/replacement behavior. Then make only the owned, reviewed change with adjacent drift checks and durable preparation/result evidence.
+6. Verify preserved job behavior and window-show/foreground evidence during controlled and natural runs in the interactive session. A remote-session-only test, Scheduler result zero, fresh timestamp, or launcher receipt alone is not acceptance. Retain unknown/malformed evidence and first failures. Stop rather than overwrite drift or retry an uncertain mutation.
+
+This limited-user framework cannot install protected services, alter elevated or other-owner tasks, renew expired fleet authority, or qualify a release. Those require approved IT/administrator deployment. Bus consumers should report local adoption and validation receipts through their approved private evidence route; never publish machine identities, credentials or account paths here.
+<!-- outbox:dce1947903b5cbf0 conjugal:91dbec8b229d -->
