@@ -27262,3 +27262,15 @@ A related defect in the same checker: a round-3 opener wrote the subject only as
 
 Evidence tokens: RR-R4A-a6fd95e0, RR-Q3S-a6fd95e0; the round-5 implementer report (R5-7).
 <!-- outbox:75d52a56800682c9 agent-bridge:630744e37878 -->
+### TRAP 2026-10-04 (agent-bridge): five Windows and PowerShell traps that fail silently or fail open, met in one day's staged installs and test harness
+
+Most of these produced a quiet success or a false "fine" on a host where the check ran. Test each on the real shell and layout, not by reading.
+
+- **`git apply` run inside a repo subfolder skips the patch.** Run from a subfolder, git apply skips patch paths outside it, so it applies nothing and exits 0. The implementer measured it in a throwaway repo: no output without `--verbose`, and the word "Skipped" appears only with it (a seat reproduced the skip as well, RR-R2C-). Apply outside any work tree, pass `--verbose`, refuse on a non-zero exit or "Skipped", and hash-compare the result with the staged copy.
+- **`pwsh -File script -Path "a","b"` passes ONE string.** An ancestry check therefore examined a single non-existent path and printed PLAIN: a fail-open. The script now takes each path as its own argument and refuses any argument containing a comma.
+- **Killing the Python Manager shim orphans the real interpreter.** The `python.exe` in the manager's bin directory is a shim whose real interpreter is its child. Killing only the shim left the child holding the harness's stdout pipe (22 s end to end against a 15 s timeout). Run the recorded real interpreter, and kill the whole tree: `Kill($true)` under pwsh 7, `Kill()` under Windows PowerShell 5.1 (RR-R6S-).
+- **A launcher that buffers stdout can drop a block it delivered.** If it is killed after the child flushed and committed state, the output never reaches the harness. Pass the child's stdout straight through (RR-R6S-).
+- **A cross-process "go" file can hit a sharing violation.** A worker got a PermissionError reading the go file while the controller wrote it; PR CI failed on that test with 2,742 others passing (AFPM1-PRCI1-). Write the file atomically and retry the read with a bound. Never count a harness-invalid run as a product outcome, and never discard a completed product outcome because the other worker was harness-invalid (AFPM1-R2S-).
+
+Evidence tokens: RR-R2C-a6fd95e0, RR-R6S-a6fd95e0, AFPM1-PRCI1-a6fd95e0, AFPM1-R2S-a6fd95e0; the round-3 and round-6 implementer reports.
+<!-- outbox:8dfc05f5adedb66c agent-bridge:630744e37878 -->
