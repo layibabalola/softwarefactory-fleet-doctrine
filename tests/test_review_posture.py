@@ -175,12 +175,125 @@ class Prompts(Env):
 
     @unittest.skipUnless(BASH, "no non-WSL bash available")
     def test_run_sh_dry_run_dispatches_nothing(self):
-        env = dict(os.environ, RP_REPO=str(ROOT))
-        p = subprocess.run([BASH, (TOOL / "run.sh").as_posix(), "--dry-run"], env=env, capture_output=True, text=True, timeout=120)
+        env, log = self._fakes()
+        p = self._run(env, "--dry-run")
+        self._assert_probes_were_fakes(log)
+        self._assert_nothing_dispatched(log, p)
         self.assertIn("dry-run: stage A prompts OK", p.stdout, p.stdout + p.stderr)
         self.assertIn("posture: conjugal-standard-PARTIAL (0/17", p.stdout)
         self.assertEqual(p.returncode, 1)
         self.assertFalse(list(self.out.glob("*.rc")), "a dry run must not dispatch any lane")
+
+    @unittest.skipUnless(BASH, "no non-WSL bash available")
+    def test_run_sh_survives_a_checkout_path_with_space_and_bang(self):
+        # airmypc 2026-09-14: the string-form PY split on `C:\!Layi Wkspc`, `eval ""` passed, 17/17 DID-NOT-RUN.
+        tool = self.tmp / "sp ace!dir" / "tools" / "review-posture"
+        shutil.copytree(TOOL, tool)
+        env, log = self._fakes()
+        p = self._run(env, "--dry-run", tool=tool)
+        self.assertIn("dry-run: stage A prompts OK", p.stdout, p.stdout + p.stderr)
+        self.assertNotIn("prompt generation failed", p.stdout)
+        self._assert_nothing_dispatched(log, p)
+
+    def _fakes(self, codex_body="echo 'fake codex'", claude_body="echo 'fake claude'"):
+        # Executable shims that log every call. `timeout` passes probes (--version/--help) through to the real
+        # coreutils timeout and refuses anything else, so a runner missing its guards still dispatches nothing real.
+        fake = self.tmp / "fakebin"; fake.mkdir(exist_ok=True)
+        log = self.tmp / "calls.log"
+        shims = {
+            "claude": f'#!/bin/sh\necho "claude $*" >> "{log.as_posix()}"\n{claude_body}\n',
+            "codex": f'#!/bin/sh\necho "codex $*" >> "{log.as_posix()}"\n{codex_body}\n',
+            # Probes run the fake CLI directly (no platform timeout needed); anything else is recorded, never run.
+            "timeout": ('#!/bin/sh\ncase " $* " in *" --version "*|*" --help "*)\n'
+                        '  while [ $# -gt 0 ]; do case "$1" in -k) shift 2;; -*) shift;; *) break;; esac; done\n'
+                        '  shift; exec "$@";;\nesac\n'
+                        f'echo "DISPATCH $*" >> "{log.as_posix()}"\nexit 99\n'),
+        }
+        for name, body in shims.items():
+            p = fake / name
+            p.write_text(body, encoding="utf-8", newline="\n")
+            p.chmod(0o755)
+        env = dict(os.environ, RP_REPO=str(ROOT), RP_FAKEBIN=str(fake))
+        return env, log
+
+    def _run(self, env, *args, tool=None):
+        # Prepend the fakes INSIDE bash: Git Bash's launcher puts /mingw64/bin, /usr/bin and $HOME/bin ahead of an
+        # inherited PATH, so a real CLI there would shadow a fake passed in from Python (Codex sol review round 4).
+        script = 'f="$RP_FAKEBIN"; command -v cygpath >/dev/null && f=$(cygpath -u "$f"); PATH="$f:$PATH"; exec bash "$@"'
+        run_sh = ((tool or TOOL) / "run.sh").as_posix()
+        return subprocess.run([BASH, "-c", script, "_", run_sh, *args], env=env, capture_output=True, text=True, timeout=180)
+
+    def _assert_probes_were_fakes(self, log):
+        calls = log.read_text(encoding="utf-8") if log.exists() else ""
+        for probe in ("claude --version", "claude --help"):
+            self.assertIn(probe, calls, "every launcher probe must be answered by a logged fake")
+
+    def _assert_nothing_dispatched(self, log, p):
+        calls = log.read_text(encoding="utf-8") if log.exists() else ""
+        self.assertNotIn("DISPATCH", calls, p.stdout + p.stderr)
+        self.assertNotIn("exec -m", calls)
+        self.assertNotIn(" -p ", calls)
+        self.assertFalse(list(self.out.glob("*.rc")), "no lane may start")
+
+    @unittest.skipUnless(BASH, "no non-WSL bash available")
+    def test_run_sh_refuses_to_dispatch_when_a_launcher_is_broken(self):
+        # airmypc 2026-09-14: a stray npm `node` shim made `codex` exit 127; every Codex lane died as if the family were absent.
+        env, log = self._fakes(codex_body="echo 'node: line 1: This: command not found'; exit 127")
+        p = self._run(env)
+        self.assertIn("LAUNCHER-BROKEN family=codex [codex --version] rc=127", p.stdout, p.stdout + p.stderr)
+        self.assertEqual(p.returncode, 2, p.stdout + p.stderr)
+        self._assert_nothing_dispatched(log, p)
+        self.assertIn("codex --version", log.read_text(encoding="utf-8"), "the fake, not a real CLI, must have answered")
+
+    @unittest.skipUnless(BASH, "no non-WSL bash available")
+    def test_run_sh_probes_the_exec_entrypoint_not_only_version(self):
+        # Codex sol review 2026-09-14: `--version` can pass while `codex exec` is broken.
+        env, log = self._fakes(codex_body='case "$1" in exec) exit 127;; esac; echo ok')
+        p = self._run(env)
+        self.assertIn("LAUNCHER-BROKEN family=codex [codex exec --help] rc=127", p.stdout, p.stdout + p.stderr)
+        self.assertEqual(p.returncode, 2)
+        self._assert_nothing_dispatched(log, p)
+
+    @unittest.skipUnless(BASH, "no non-WSL bash available")
+    def test_run_sh_never_evaluates_inventory_values_as_shell(self):
+        # Codex sol review 2026-09-14: `luna: gpt-5.6-luna; false` made `ids` succeed and the eval fail open.
+        (self.tmp / "inv.yaml").write_text(INVENTORY.replace("gpt-5.6-luna", "gpt-5.6-luna;touch PWNED"), encoding="utf-8")
+        env, log = self._fakes()
+        p = self._run(env)
+        self.assertIn("MODEL ID LINE REJECTED", p.stdout, p.stdout + p.stderr)
+        self.assertEqual(p.returncode, 2)
+        self.assertFalse((ROOT / "PWNED").exists() or (self.tmp / "PWNED").exists())
+        self._assert_nothing_dispatched(log, p)
+
+    @unittest.skipUnless(BASH, "no non-WSL bash available")
+    def test_run_sh_resolves_every_nickname_before_any_lane_starts(self):
+        # Codex sol review 2026-09-14: a roles.json nickname the inventory never defines used to exit only after
+        # earlier paid lanes in the same stage had started.
+        tool = self.tmp / "tool" / "tools" / "review-posture"
+        shutil.copytree(TOOL, tool)
+        roles = tool / "roles.json"
+        text = roles.read_text(encoding="utf-8")
+        self.assertIn('"luna"', text)
+        roles.write_text(text.replace('"luna"', '"terra"', 1), encoding="utf-8")
+        env, log = self._fakes()
+        p = self._run(env, tool=tool)
+        self.assertIn("UNRESOLVED nickname terra", p.stdout, p.stdout + p.stderr)
+        self.assertEqual(p.returncode, 2)
+        self._assert_nothing_dispatched(log, p)
+
+    @unittest.skipUnless(BASH, "no non-WSL bash available")
+    def test_retry_missing_does_not_preflight_families_it_will_not_dispatch(self):
+        # Codex sol review round 4: a broken Codex launcher blocked --retry-missing even when only Claude lanes were pending.
+        for l in rp.lanes("A") + rp.lanes("B"):
+            text = PANEL_OK.format(seat=l["name"]) if l["name"].startswith("panel-") else f"output of {l['name']}\nLANE-COMPLETE\n"
+            if l["name"] != "panel-fable":
+                self.lane(l["name"], text)
+        env, log = self._fakes(codex_body="echo 'node: line 1: This: command not found'; exit 127")
+        p = self._run(env, "--from", "B", "--retry-missing")
+        self.assertNotIn("LAUNCHER-BROKEN family=codex", p.stdout, p.stdout + p.stderr)
+        calls = log.read_text(encoding="utf-8") if log.exists() else ""
+        self.assertNotIn("codex", calls, "no Codex lane is pending, so Codex must be neither probed nor dispatched")
+        self.assertIn("DISPATCH", calls, "the pending Claude lane must reach the (fake) dispatcher")
 
 
 if __name__ == "__main__":
