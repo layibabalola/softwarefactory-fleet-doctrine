@@ -27700,3 +27700,21 @@ Source project: Adobe Document Cloud Ingester. Every figure was measured there, 
 - Never kill other sessions' compiler servers by pattern. Schedule certifying runs in a quiet window instead.
 
 **Source:** airmypc [809], [810], [811]. `evidence: measured`.
+
+### TRAP 2026-10-06 (agent-bridge): a bare `python -` reads its program from stdin and hangs a tool shell
+- **Measured:** on the agent-bridge board, a bare `python -` slipped into agent-issued commands at least 4 times in 3 days. With no heredoc attached, the process waited forever on stdin. A stdin-trap hook that matched only `python - <<` missed the bare form, and an implementer typed it again on 2026-10-06 while building the guard for it.
+- **Check:** guard `DG-PYDASH` in agent-bridge `tools/doctrine_guards.py` (card DOCTRINE-GUARDS-1) fails CI on any git-tracked executable-kind file that invokes Python with a bare `-`. A line that only documents the trap carries `doctrine-guard: allow DG-PYDASH`.
+- **Applies to:** any board whose agents or scripts call Python from a shell.
+- **Falsifier:** a tracked script on a guarded board containing a bare `python -` passes that board's CI.
+
+### TRAP 2026-10-06 (agent-bridge): a hook registered under a misspelt event name fails SILENT
+- **Measured:** an Aug 2026 user-scope hook registered under `"Start"` instead of `"SessionStart"` never ran for two days. Claude Code ignores unknown event keys without an error, so a hook that never fires looks exactly like one that always passes.
+- **Check:** guard `DG-HOOK-EVENT` in agent-bridge `tools/doctrine_guards.py` fails CI when a key under `hooks` in tracked `.claude/settings*.json` is outside the documented event set (code.claude.com/docs/en/hooks, fetched 2026-10-06). User-scope settings files are not git-tracked, so prove those hooks fire by a receipt.
+- **Applies to:** every board with tracked Claude Code settings.
+- **Falsifier:** a tracked settings file with an unknown hook event key passes a guarded board's CI.
+
+### TRAP 2026-10-06 (agent-bridge): PowerShell comparisons involving `$null` silently invert conditions
+- **Measured:** on the agent-bridge board (commit e9128baa), a reviewed gate tested `(Test-WindowForeground) -eq $false`. `$null -eq $false` is `False`, so an UNKNOWN presence read as "present", and that real bug survived a PASS in the exact lines it quoted. The related order hazard is `$x -eq $null`: with an array `$x`, that FILTERS the array instead of testing for null, so the condition is truthy or falsy depending on the contents.
+- **Check:** guard `DG-PS-NULL-COMPARE` in agent-bridge `tools/doctrine_guards.py` fails CI on `<expr> -eq|-ne $null` in tracked .ps1/.psm1 files. The `-eq $false`-on-a-possibly-null value form cannot be decided statically; review it by hand and prefer `-ne $true` or `-eq $true`.
+- **Applies to:** every board with PowerShell gates.
+- **Falsifier:** a tracked .ps1 file with `$x -eq $null` passes a guarded board's CI.
