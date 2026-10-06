@@ -9,6 +9,9 @@ on:
       - 'tools/Get-FleetHeartbeatStatus.ps1'
       - 'specs/*continuity*'
       - 'specs/*resumption*'
+      - 'specs/*/cards.md'
+      - 'examples/cards-v1.md'
+      - 'tools/validate-cards*.mjs'
       - '.github/workflows/doctrine-sync.yml'
   pull_request:
     paths:
@@ -18,6 +21,9 @@ on:
       - 'tools/Get-FleetHeartbeatStatus.ps1'
       - 'specs/*continuity*'
       - 'specs/*resumption*'
+      - 'specs/*/cards.md'
+      - 'examples/cards-v1.md'
+      - 'tools/validate-cards*.mjs'
       - '.github/workflows/doctrine-sync.yml'
   workflow_dispatch:
 permissions:
@@ -40,3 +46,7 @@ jobs:
         run: node tools/doctrine-sync.tests.mjs
       - name: Real member discovery and absent Cloudvore heartbeat
         run: node tools/fleet-membership.tests.mjs
+      - name: R14 card validator fixtures and the bus card files
+        run: |
+          node tools/validate-cards.tests.mjs
+          node tools/validate-cards.mjs
