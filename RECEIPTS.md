@@ -12515,3 +12515,20 @@ claude-opus-5.
   rounds in full; L4's builder's 38 edits; an unexplained run of key-store failures on the shared host (row K91,
   cause not known); the rest of row K92; the H153 helper's holds lines (filed in the earlier draft's card 7); and
   H153 and H154's colour trigger at one value, whose check could not fail.
+
+## First D2 closures re-filed against the fleet kernel count zero subjects because none declared a profile before work (adversarialllm, 2026-10-05)
+
+Measured by the claude implementer leg `impl-KERNEL-FILING-2-a1` on 2026-10-05 for AdversarialLLM's second kernel
+filing (staged at `factory/doctrine/kernel-filing-2026-10-05.md`). Between 2026-10-05T09:36Z and 19:01Z, four pull
+requests closed through the full D2 route: #229 (ee146978), #227 (1b7ea3fb), #226 (a085a5b7) and #233 (5d4858e1).
+Each has a `D2_SATISFIED` decision receipt, two round-1 APPROVE legs (codex gpt-6-luna and claude sonnet, both effort
+high) bound to the exact head and base, a corroborated claude-only authorship receipt, a GREEN local gate, three green
+named checks, and a `DELIVERED` publication reconcile. The squash commit's tree equals the reviewed head's tree and its
+parent equals the reviewed base in all four. On the same day the round cap closed three pull requests `adj-close`
+after genuine round-2 rejections: #224, #225 and #230. Only the #224 -> #230 -> #233 chain has delivered a replacement
+(row `supersededBy` links in `factory/queue.jsonl`). None of the four closures carried a kernel/profile declaration in
+its body. The filing therefore counts `subjects: 0` and grades K5 INSTANCE-FAILURE: PR #96 (2026-09-17) shows that
+this repository can declare before work. Census as filed: FIT 8 · FRICTION 0 · BREAK 0 · N/A 0 · UNEXERCISED 7;
+INSTANCE-FAILURE 9 separately. Re-derive: `gh pr view <n> --json body,mergeCommit,headRefOid,baseRefOid` for each of the
+four; `git rev-parse <head>^{tree} <merge>^{tree}`; and the `merge-<n>-{decision,decision-input,authorship,reconcile}.json`
+receipts under `AdversarialLLM-wt/<row>/.factory-local/`.

@@ -27580,3 +27580,81 @@ Source project: Adobe Document Cloud Ingester. Every figure was measured there, 
 - **Where:** any .NET or PowerShell code that reads a child's output while waiting for it.
 - **Check:** read stdout synchronously on the calling thread, and run a tree-kill watchdog. Test the helper under a queued pool backlog and with a hung grandchild, and count surviving processes.
 - **Source:** Adobe OWNER DIRECTIVE 2026-10-05d and its panel report. `evidence: measured`.
+
+### A per-run DOTNET_CLI_HOME without DOTNET_ADD_GLOBAL_TOOLS_TO_PATH=0 leaks one persistent user-PATH entry per run, and the combined PATH silently breaks cmd.exe (adversarialllm, 2026-10-05, Virtual-Ten)
+
+Another project's reviewer build isolation on the same host gives every run a throwaway .NET home. In Adobe Document
+Cloud Ingester, `.factory/tools/Invoke-FactoryClaudeLane.ps1:366,378` sets `DOTNET_CLI_HOME` to `<run>\dotnet-home`, and
+its test creates a fresh run under `%TEMP%\factory-reviewer-build-isolation-<guid>\run`
+(`.factory/tests/Test-FactoryReviewerBuildIsolation.Tests.ps1:109-111,116`). Neither sets
+`DOTNET_ADD_GLOBAL_TOOLS_TO_PATH=0` (read-only grep of both files). On each new home, .NET's first-run experience appends
+`<home>\.dotnet\tools` to the persistent user PATH. A read-only count on 2026-10-05
+(`[Environment]::GetEnvironmentVariable('Path','User')`) found 23 such entries in a 6,264-character user PATH. In
+AdversarialLLM, `factory/controller/run-gate.ps1` prepends the pinned Node runtime and a tripwire test prepends its own bin
+directory, which pushes the inherited PATH to about 8,350 characters, past cmd.exe's 8,191-character limit (PR #227
+body). cmd.exe then fails its PATH lookup with no visible error. The tripwire test's `git.cmd`/`gh.cmd` shims could not
+find bare `node`, `scripts/tripwire.ps1` suppressed the stderr, and ten tests in `factory/tripwire-adapter.test.mjs`
+failed as UNKNOWN observations (PR #227 body). npm lifecycle scripts, which also run under cmd.exe, failed the same way
+(issue #130, controller checkpoint of 2026-10-05T12:28:07Z). Gate attempts t1 and t2 of PR #224 went RED for this
+host cause and were recorded as infrastructure (checkpoint of 2026-10-05T07:48:38Z). Merged fix: the shims call
+`process.execPath` (PR #227, commit 1b7ea3fb, `factory/tripwire-adapter.test.mjs:99`), with a padded-PATH regression
+test. The process-scoped sanitizer is row PATH-HYGIENE, filed on open PR #231. A three-leg adjudication
+(`wf_4de3f220-a92`) refused a registry write because HKCU is outside this project's tree (§1.3). The entries are still
+present.
+
+> **A tool that gives each run its own `DOTNET_CLI_HOME` also sets `DOTNET_ADD_GLOBAL_TOOLS_TO_PATH=0` for that
+> run, because the first run of every new home writes a persistent user-PATH entry that outlives the run. A consumer whose children run under cmd.exe sanitises
+> PATH per process, and invokes interpreters by absolute path (`process.execPath`), rather than trusting the inherited
+> PATH's length.**
+
+Test (proposed, not run here; it needs a disposable user profile): run the isolated dotnet restore twice with fresh
+homes and compare the user PATH before and after. The leak predicts one new `...\dotnet-home\.dotnet\tools` entry per run
+without the variable and none with `DOTNET_ADD_GLOBAL_TOOLS_TO_PATH=0`. Measured here: the 23 entries already present,
+each under a distinct `factory-reviewer-build-isolation-<guid>` root. In AdversarialLLM-ClaudeCode,
+`node --test factory/tripwire-adapter.test.mjs` includes the padded-PATH case (PATH > 8,191 characters), which
+passes at 1b7ea3fb and fails against the bare-`node` shims (PR #227).
+
+### pwsh without a console decodes native stdout as the OEM code page, so a readback of a UTF-8 published artifact never matches, and a parent's console fix does not reach a CreateNoWindow grandchild (adversarialllm, 2026-10-05, Virtual-Ten)
+
+When pwsh runs without a console (launched from Git Bash or any CreateNoWindow parent), `[Console]::OutputEncoding` is
+code page 437, and PowerShell decodes the stdout of `& gh`, `& node` and `& git` with it (PR #232 body). Reproduced
+headless: `& node` emitting `c2 a7 e2 80 94` reads back as `9516,186,915,199,246`, and as `167,8212` once the console
+encoding is UTF-8 (PR #232 body). The merge driver decoded each published verdict twice (the comment readback, then
+the node output), so `review-state.mjs` refused `VERDICT_UNPUBLISHED` for any verdict containing non-ASCII. PR #226,
+approved by both families with green checks, could not merge (controller checkpoint, issue #130, 2026-10-05T14:52:17Z,
+"`—` -> `╬ô├ç├╢`"). The verdict-publication reconcile receipts read `WAITING`/`BODY_MISMATCH`
+(`AdversarialLLM-wt/R-LIVE-SIGNIN-LAUNCH/.factory-local/publications/*.reconcile.pre-utf8fix.json`), even though the
+POSTed body was correct. The worker host and the read-only reviewer wrapper built a `ProcessStartInfo` with no stream
+encodings, and setting the console encoding in a parent does not reach a CreateNoWindow grandchild (PR #232 body). No
+test caught it, because the fixture `gh` was a `.ps1` run in-process, so no bytes were ever decoded (PR #232 body).
+The fix is row UTF8-CAPTURE (PR #232, open at this staging; adjudicated in `wf_e540f597-904`).
+
+> **Every PowerShell driver that reads native output sets `[Console]::OutputEncoding` and `$OutputEncoding` to UTF-8
+> itself, and every `ProcessStartInfo` sets `StandardOutputEncoding`, `StandardErrorEncoding` and, where it writes stdin,
+> `StandardInputEncoding` explicitly. A parent's console setting is not inherited by a windowless grandchild. A
+> publication readback compares bytes, and its test uses a real native child emitting non-ASCII, never an in-process
+> fixture.**
+
+Test: from a CreateNoWindow parent (for example Git Bash), have pwsh read a native child that writes the bytes
+`c2 a7 e2 80 94` and print the decoded char codes. They are `9516,186,915,199,246` without the fix and `167,8212`
+with it (PR #232 body). Row UTF8-CAPTURE's tests pin the parent console to 437, so they fail on base whether or not
+the host has a console (PR #232 body).
+
+### A zip writer defaults each entry's modification time to the wall clock, so "deterministic exact bytes" fails across a two-second boundary (adversarialllm, 2026-10-05, Virtual-Ten)
+
+`adversarialllm/src/background/bundle/zip.ts` called fflate `zipSync(d, { level })` with no `mtime`, so fflate stamped
+every entry with `Date.now()` (PR #229 body). Two `prepareSourceBundle` calls produced zip bytes that differed only in
+the DOS last-modified time field of the local file header and the central directory (byte 71 vs 70). An unrelated pull
+request's gate failed `tests/unit/prepare-source-bundle.test.ts` "derives deterministic exact zip/PDF artifacts" (PR
+#224, head aa64d04d; PR #229 body). It surfaced only under host load. The fix pins `ZIP_FIXED_MTIME`, the DOS epoch,
+on both the deflate and store paths (`zip.ts:33,100-101`, commit ee146978, PR #229). The constant is built from local
+components, `new Date(1980, 0, 1, 0, 0, 0)`, because fflate encodes local time. `new Date('1980-01-01T00:00:00Z')`
+falls in 1979 in every zone behind UTC, and fflate then throws error 10 (date out of range) (PR #229 body).
+
+> **An artifact whose contract is deterministic bytes passes an explicit entry timestamp to its archive writer and
+> never relies on the writer's default. When that writer encodes local time, the constant is built from local
+> components, so it is the same instant in every time zone and stays inside the format's date range.**
+
+Test: `npx vitest run tests/unit/bundle-zip.test.ts` in AdversarialLLM-ClaudeCode/adversarialllm zips identical input
+twice across a 7-second fake-clock gap and asserts identical bytes, with every header mtime equal to `ZIP_FIXED_MTIME`.
+With only the two `mtime` arguments reverted, the three new tests fail (PR #229 body).
