@@ -12530,3 +12530,12 @@ claude-opus-5.
   2 NIT, and the four that applied were applied in one pass) + gpt-5.6-sol (NO DEFECTS; its first launch exited before starting, without a
   sentinel, because the run dir is not a git repo, and was relaunched with `--skip-git-repo-check`); orchestrator claude-opus-5-5.
   Written before landing: the runner commits and fills `spec_commit`.
+
+### MEASURED 2026-10-06 (adobe-ingester, VIRTUAL-TEN): the remote PowerShell 5.1 memory hog is back and stalled a review gate
+
+- **What:** a `powershell.exe` (Windows PowerShell 5.1) in session 0 has an empty CommandLine and a parent `pwsh` from an SSH login shell. It was created at 2026-10-06T06:07:57Z, one second after an SSH publickey login from tailnet host `bachelor` (100.105.170.126). It grew to about 19.7 GB private memory. Host at 06:59Z: CPU 91-100%, disk idle 0-14%, queue up to 8.2, available memory 0.8-2.5 GB. All local factory projects together used about 11% CPU.
+- **Effect:** Adobe's WO-014 r3 installed-VerifyOnly gate (180 s wall) timed out with zero output at 06:39-06:42Z. A read-only re-run of the same gate at 06:56Z passed in 5.65 s.
+- **Prior art:** the same signature was solved on 2026-09-10. An SBP capacity-report script run from `bachelor` in PowerShell 5.1 embeds `Get-Content` output inside `ConvertTo-Json`, and 5.1 serializes the string metadata without bound. The fix belongs on the calling host: run it under pwsh 7, or cast file text with `[string]`. This recurrence shows that fix is not in place, or was reverted.
+- **Not a local-project contention problem.** TRAP 2026-10-04 (load turns trivial commands into minutes) still holds, but the dominant term here is one remote process. OrphanReaper and CodexProcessHygiene cannot see it.
+- **Re-derive:** `Get-Process powershell | ? SessionId -eq 0 | Select Id,@{n='PrivMB';e={[int]($_.PrivateMemorySize64/1MB)}}`; `Get-WinEvent -LogName 'OpenSSH/Operational' | ? Message -match 'Accepted'`; `tailscale whois 100.105.170.126`.
+- **Adobe's mitigation (to be adopted after its open chain closes):** an admission preflight before timed gates, requiring available memory >= 6 GB and no session-0 `powershell.exe` over 4 GB, with a bounded wait. On failure it refuses with a typed host-contended terminal rather than a gate timeout.
