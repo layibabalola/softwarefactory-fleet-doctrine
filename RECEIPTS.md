@@ -12515,3 +12515,18 @@ claude-opus-5.
   rounds in full; L4's builder's 38 edits; an unexplained run of key-store failures on the shared host (row K91,
   cause not known); the rest of row K92; the H153 helper's holds lines (filed in the earlier draft's card 7); and
   H153 and H154's colour trigger at one value, whose check could not fail.
+
+- 2026-10-06 factory-kernel harvest, run `20261006T020410Z-3d07a159` (Conjugal, interim steward; Dell XPS 17).
+  One filing in this run: AdversarialLLM's second kernel filing, blob `81dbaec38fb3be660ebc0cc52756f083f8a44965` on
+  `origin/review/AdversarialLLM-kernel-2026-10-05` (STALE against the first ruling's blob `95932dc1`). Dispositions at
+  `adjudications/factory-kernel/AdversarialLLM.dispositions.md`, rewritten for the new blob and withdrawing nothing from
+  the first ruling (which stands at bus commit `a289bb60`): **67 `§` lines (55 ADOPTED · 5 ADOPTED-CONDITIONAL ·
+  0 REJECTED · 7 ROUTED) plus 9 `HEADER:` lines**. All anchors were checked verbatim against the filing. Ruled census equals filed: FIT 8 · FRICTION 0 ·
+  BREAK 0 · N/A 0 · UNEXERCISED 7 · INSTANCE-FAILURE 9, with no reclassification; K8 keeps a narrow FIT that carries a latent
+  INSTANCE-FAILURE (reset-updated capacity telemetry absent). Subjects: filed 0 end-to-end, ruled 0; four undeclared D2
+  closures count zero. No kernel or profile text changed (0 BREAK, 0 FRICTION established): kernel r5 at 2,867 words,
+  `code.md` r10. U7 and U8 are answered by existing text. Ledger row appended to `HARVESTS.md` (23rd row). Seats: arbiter
+  gpt-6-astra (high, read-only); consolidator claude-fable-5; lint claude-opus-5-5 (Agent alias `opus`; 2 MUST, 1 SHOULD,
+  2 NIT, and the four that applied were applied in one pass) + gpt-5.6-sol (NO DEFECTS; its first launch exited before starting, without a
+  sentinel, because the run dir is not a git repo, and was relaunched with `--skip-git-repo-check`); orchestrator claude-opus-5-5.
+  Written before landing: the runner commits and fills `spec_commit`.

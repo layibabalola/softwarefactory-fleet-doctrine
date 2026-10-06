@@ -633,3 +633,54 @@ declaration, whose SINGLE-FAMILY label is written in the round's receipt after d
 it — which changes no submitted census cell in the row above. Dispositions:
 `adjudications/factory-kernel/dng-auto-processor.dispositions.md`, rewritten for blob `489ad089` and superseding its
 own ruling on blob `a018daf6` without withdrawing any disposition that ruling recorded.
+
+---
+
+## 2026-10-06 — harvest 20261006T020410Z-3d07a159 (AdversarialLLM second filing, blob 81dbaec3)
+
+| date | harvest | filing | blob | kernel | profile | subjects | FIT | FRICTION | BREAK | N/A | UNEXERCISED | unresolved BREAKs | arbiter |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 2026-10-06 | 20261006T020410Z-3d07a159 | AdversarialLLM | 81dbaec38fb3be660ebc0cc52756f083f8a44965 | r5 (unchanged) | code@r10 (unchanged) | 0 end-to-end; 0 declared; four undeclared D2 closures #229/#227/#226/#233 uncounted mechanism evidence; window-opened-before-kernel=no | 8 | 0 | 0 | 0 | 7 | 0 | gpt-6-astra (read-only arbiter seat; not a steward filing) |
+
+Derived, not asserted. Re-run: `python tools/kernel-e2e.py --json`. Before this row: `closed_end_to_end: 0`,
+`ledger_rows: 22`, `ledger_totals: FIT 122 · FRICTION 81 · BREAK 5 · N/A 0 · UNEXERCISED 75`. After it: 23 rows;
+130 FIT · 81 FRICTION · 5 BREAK · 0 N/A · 82 UNEXERCISED; closed end-to-end stays 0.
+
+**§5 criterion 1 — CLOSED END-TO-END SUBJECTS: 0.** Still 0 of the 5 the kernel requires, and it has been 0 at every
+harvest. The filing declares 0 subjects and the arbiter rules 0: no subject declared a profile before work in the
+window, so the four D2 closures (#229, #227, #226, #233) are mechanism evidence counted zero, and their missing
+declarations are K5's INSTANCE-FAILURE for this window. PR #96's pre-work declaration (kernel r4, code@r4) is outside
+this window and lacks an adjudicated end-to-end receipt set; it supplies no current-window credit.
+**§5 criterion 2 remains MET** on the 2026-09-17 finding (`code`, `hardware-in-loop`, `measured-objective`); nothing
+this round touches it.
+**§5 criterion 3 does not start:** the immediately preceding ledger harvest is `20261005T193405Z-8a08a1fd`
+(dng-auto-processor), and the kernel and `code@r10` content digests are unchanged across this pair, so the
+unchanged-digest half holds — but criterion 3 also requires fresh end-to-end evidence meeting criteria 1 and 2, and
+criterion 1 is 0.
+**Criterion 4 has never started**; no owner ratification of the kernel appears in `RULINGS.md`.
+**Members due — 1 project has NEVER filed:** `salesforce-tools`. Roster member `adversarialllm` has now filed twice as
+`AdversarialLLM` (header `project: adversarialllm`, filing stem and row cell `AdversarialLLM`); the ledger alias counts
+one project. F1 persists: `tools/kernel-e2e.py` matches roster, filing and ledger names case-sensitively, so it still
+prints `adversarialllm` under NEVER FILED, a matching defect and not factual non-filing; this round reconciled neither
+the tool nor the roster key, and the arbiter again ruled F1 not evidence of non-filing, warranting no kernel roster amendment. Open
+filings left for other runs: steward self-filing `conjugal` still reads STALE and is not adjudicated by the steward
+(kernel §5); this round adjudicates only AdversarialLLM.
+
+**What this round changed:** no spec text at all. Harvest `20261006T020410Z-3d07a159` adjudicates AdversarialLLM's
+second filing, blob `81dbaec38fb3be660ebc0cc52756f083f8a44965`, superseding the dispositions file's first-blob coverage
+without withdrawing any prior disposition. Kernel r5 and `code@r10` remain unchanged: no submitted line establishes a
+new BREAK or FRICTION on its evidence; missing obligations and defect-induced costs are INSTANCE-FAILURE evidence,
+and UNEXERCISED lines supply no amendment basis. Kernel unchanged at r5, 2,867 of 3,500 words; `code.md` unchanged at
+r10. Ruled census matches the filing with no reclassification: FIT 8 · FRICTION 0 · BREAK 0 · N/A 0 · UNEXERCISED 7;
+INSTANCE-FAILURE 9 separately, plus a latent K8 reset-telemetry INSTANCE-FAILURE recorded inside K8's narrow FIT and
+outside the submitted census, which changes no census cell in the row above. K5 correctly records the missing
+declarations as an instance failure (UNEXERCISED → INSTANCE-FAILURE from the first window); K8 earns narrow
+parking/continuation FIT on the filing's first reported quota event (attributed); the verified first harvest supports K12's feedback-cycle
+FIT. The four undeclared D2 closures count zero toward end-to-end subjects. IF4 (R11 review effort) and IF5 (Claude
+executable resolution) repairs and the U5 staged-to-bus transport closure are ADOPTED-CONDITIONAL on attributed evidence, each within its stated scope only (U5's bus review-branch identity
+and disposition binding VERIFIED; its staged source and transport receipt, and the IF4/IF5 receipts, UNVERIFIED); the remaining routed fixtures (a.5, a.16, a.26, a.33, a.u3,
+U2/U3) stay open, new U6 (PR #226 publication-reconcile provenance) is routed, and every historical disposition
+survives. U7 (PR #96 as a historical subject run) and U8 (a family-computed Codex key under K6) are answered by
+existing text: no amendment. 67 `§` lines: 55 ADOPTED · 5 ADOPTED-CONDITIONAL · 0 REJECTED · 7 ROUTED, plus 9 `HEADER:`
+lines. Dispositions: `adjudications/factory-kernel/AdversarialLLM.dispositions.md`, rewritten for blob `81dbaec3` and
+superseding its own ruling on blob `95932dc1` without withdrawing any disposition that ruling recorded.
