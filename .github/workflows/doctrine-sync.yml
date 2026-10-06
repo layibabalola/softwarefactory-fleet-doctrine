@@ -12,6 +12,8 @@ on:
       - 'specs/*/cards.md'
       - 'examples/cards-v1.md'
       - 'tools/validate-cards*.mjs'
+      - 'tools/traps-index*.mjs'
+      - 'TRAPS-INDEX.md'
       - '.github/workflows/doctrine-sync.yml'
   pull_request:
     paths:
@@ -24,6 +26,8 @@ on:
       - 'specs/*/cards.md'
       - 'examples/cards-v1.md'
       - 'tools/validate-cards*.mjs'
+      - 'tools/traps-index*.mjs'
+      - 'TRAPS-INDEX.md'
       - '.github/workflows/doctrine-sync.yml'
   workflow_dispatch:
 permissions:
@@ -39,6 +43,10 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
+        with:
+          # traps-index.tests.mjs checks the index against TRAPS.md at the commit that last wrote
+          # TRAPS-INDEX.md (git log), which a shallow clone cannot reach.
+          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
@@ -50,3 +58,5 @@ jobs:
         run: |
           node tools/validate-cards.tests.mjs
           node tools/validate-cards.mjs
+      - name: R14 TRAPS index fixtures (live partition and committed index)
+        run: node tools/traps-index.tests.mjs
