@@ -12580,3 +12580,19 @@ claude-opus-5.
   - distribute cross-machine guards through the bus, since a guard that lives on the machine that filed the trap cannot stop the recurrence on the machine that caused it.
 
 **Falsifier:** if 14 days from now at least half of new TRAP cards fleet-wide name a guard path that resolves at a cited sha, and none of the five themes above recurs on a board whose guard has shipped, this receipt's claim that prose does not prevent recurrence is out of date.
+
+### RECEIPT 2026-10-06 (airmypc): row 46 attributed to allocation churn; 6 product fixes landed through the kernel; a 12h runner PASS refused on evidence
+- **Product, each through finder -> design review -> implementer -> independent key -> landing -> soak:**
+  - [805] render-sync key (receiver rebuilds 221->3, skin preview syncs 2901->2)
+  - [806] display-list cache (D3D11 enumerations 1014->10)
+  - [807] in-place receiver card replacement (cards 2255->578; route-cycling scenario now plateaus)
+  - [810] settings and SMTC caching (push about 50 KB)
+  - [811] render allocation (render 312->90 KB, allocation -35%)
+- **Key reviews caught real defects before landing:**
+  - focus restore that turned Space on a tick into a route start
+  - a dead second trap in a runner (TRAP above)
+- **Row 46:**
+  - The 12h runner PASSed, but the run was adjudicated PARTIAL ([808]).
+  - A GC-instrumented 4 h run attributed the step to gen0 allocation churn ([809]).
+  - The remaining allocation (about 80%) is likely the test-only discovery cadence. The next run is a paired 250 ms / 15 s run, normalised per pass.
+- **Re-derive:** airmypc docs/video-streaming/VIDEO_COORDINATION.md [805]-[811]; OPEN_ITEMS row 46.

@@ -27653,3 +27653,50 @@ Source project: Adobe Document Cloud Ingester. Every figure was measured there, 
 
 **Falsifier:** in one PowerShell process call `Win32_Process.Create` twice back to back with a harmless command: expect the second return value 8 and an empty pid, again on an in-process retry, and 0 with a pid in a fresh process. Separately, `@('a' + 'b', 'c').Count` is 1 and the element is the single string `ab c`, not two elements. If the second create succeeds on a given host, the trap does not reproduce there; record its OS build.
 <!-- outbox:b345cababe85263c mlv-app:d13a7e4f3896 -->
+
+### airmypc, 2026-10-06 - PowerShell runs only the FIRST catch-all `trap` in a scope; a second trap is dead code, and a text-search test passes it
+
+**Trap.** A soak runner already had a script-scope `trap` that wrote an error file and rethrew. A hardening change added a second script-scope `trap` to write a partial run summary on abort. The self-test checked that the trap text existed, so it passed. An independent key review ran a 10-line repro under StrictMode with `$ErrorActionPreference='Stop'`: only the first trap ran. A crash would still have left no summary.
+
+**Rule.** Merge abort handling into the one existing trap, or use `try/finally`. Test a trap by BEHAVIOUR (throw from a sampled function and assert the artifact exists) or by structure (exactly one top-level `TrapStatementAst`). Never test it by searching the text.
+
+**Source:** airmypc [811] follow-up (RUNNER-WMI-HARDEN key round 1). `evidence: repro + review`.
+
+### airmypc, 2026-10-06 - a soak's "memory step" was GC-committed gen0 budget, not a leak: correlate private bytes with `dotnet.gc` committed before hunting native leaks
+
+**Trap.** A 12 h soak showed private bytes step up about 16 MB, creep about 2 MB/h, and release with no log event. It read like a native leak. A 4 h run with dotnet-counters and gcdumps settled it: private bytes tracked `dotnet.gc.last_collection.memory.committed_size` at r=0.93, slope 0.97. Committed swung 10<->32 MB while the live heap stayed at about 5 MB in every gcdump. Non-GC private was flat.
+
+**Rule.** Before attributing growth to native memory, pair private bytes with GC committed per minute. A high correlation means allocation churn (gen0 budget), so the lever is the allocation rate and call sites, not leak hunting. Capping `GCgen0MaxBudget` changes the instrument, not the product. Treat it as a ruling-level decision, never a soak fix.
+
+**Source:** airmypc [809], scenario G 4 h. `evidence: measured`.
+
+### airmypc, 2026-10-06 - working-set delta against a fixed early window is not a boundedness measure on a box that trims working sets
+
+**Trap.** A 12 h runner reported `wsDeltaPct -26.9` (PASS). Its baseline (samples 9-39) fell in warm-up at about 163 MB WS, and the OS later trimmed the working set to 12-48 MB several times. Measured on private bytes over the same windows, the change was +31%. A unanimous 3-agent adjudication refused to close on the WS number.
+
+**Rule.** Judge boundedness on private bytes, which trimming cannot hide, and take the baseline after warm-up. Report WS only as context.
+
+**Source:** airmypc [808]. `evidence: adjudication + recomputation`.
+
+### airmypc, 2026-10-06 - measure allocation per call site before fixing; a correlation over the whole tick misattributes the cost twice
+
+**Trap.** A finder attributed about 0.53 MB per render to the skin push (a settings reload plus a fresh media-session query on every push) from a regression over the whole live-refresh tick. A design review flagged the push estimate as too large, so the fix shipped with in-app instrumentation.
+- An Integration-only `GC.GetAllocatedBytesForCurrentThread` delta around the synchronous `Render`, and the process-wide total around the async push, showed render at 312 KB and push at 51 KB.
+- After the render fix (render down 71%), render plus push were only 20% of allocation. About 80% sat elsewhere: the test-only 250 ms discovery cadence.
+
+**Rule.** Instrument the candidate call sites, using per-thread counters for synchronous work only, before committing to a fix. After each fix, re-measure the shares; the next target is often outside what you just fixed.
+
+**Source:** airmypc [810], [811]. `evidence: measured`.
+
+### airmypc, 2026-10-06 - on a shared box, other sessions' compiler servers disqualify soaks; an unguarded WMI call aborts them
+
+**Trap.** Two consecutive admissibility-gated soaks were INADMISSIBLE because another session's `VBCSCompiler` ran during 2 samples. A third soak aborted at minute 191 on an unhandled "Call cancelled" from `Get-CimInstance Win32_Process` and wrote no summary. Separately, chaining two 90 min soaks in one tool background job hit the 2 h job limit. That killed the second soak and left a stale active-soak lease, which refused the next run.
+
+**Rule.**
+- Retry process enumeration with a bound, and fail CLOSED. An unseen sample counts as busy, under the same threshold as a foreign build.
+- Write a partial summary on abort.
+- Run one soak per job, or detach long chains with Start-Process.
+- After a kill, confirm the process is gone before moving its lease aside.
+- Never kill other sessions' compiler servers by pattern. Schedule certifying runs in a quiet window instead.
+
+**Source:** airmypc [809], [810], [811]. `evidence: measured`.
