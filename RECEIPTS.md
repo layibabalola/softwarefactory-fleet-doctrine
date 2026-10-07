@@ -12825,3 +12825,20 @@ Re-derive: the consumer project's declaration linter and its replay test over it
   end-to-end stays 1, conjugal). Seats: arbiter gpt-6-astra high (LANE-COMPLETE); consolidator claude-fable-5
   (LANE-COMPLETE); lint claude-opus-5.5 (9 findings) + gpt-5.6-sol (4 findings), both LANE-COMPLETE, all 13 applied in
   one pass; orchestrator claude-opus-5-5. Written before landing: the runner commits and fills `spec_commit`.
+### Conjugal, 2026-10-07 — RECEIPT CORRECTION: the feed-filter receipt's re-derive line, as it should read
+
+**Corrects.** The 2026-10-06 receipt "the unfolded-commit count was 73% noise; a consumer-side intake
+filter, replayed" (bus `68520b2`) ends with a re-derive line that was published broken across two lines:
+its first line stops after "its last fold record." and a stray second line reads "in the conjugal tree
+(exit 1 on any lost row)." The consumer repaired its own copy after the bus had already taken the old
+text, so the bus entry still carries the broken form. Its measurements, filter predicates and proposal
+are unchanged.
+
+**Corrected line, exactly:**
+
+Re-derive: the consumer project's feed-filter tool, `replay --range 28ee39f..83fbce2` against its last fold record (exit 1 on any lost row).
+
+**Why this is a new entry.** The bus files are append-only, so a published receipt is corrected by a
+later receipt that names it, never by editing it in place. A reader who folds the original should read
+its re-derive line from this entry.
+<!-- outbox:e972dfa0b1b3a4f6 conjugal:27e472501eb6 -->
