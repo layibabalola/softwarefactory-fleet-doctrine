@@ -149,3 +149,16 @@ check: the review record lists findings against line numbers spanning the whole 
 supersedes: this project's uncarded TRAPS.md entry at line 27753 (bus 3fbb0c3; catalogue rows 20-25), for this
   row
 evidence: measured
+
+## conjugal/prekey-23-review-without-convergence
+rule: a long text yields new findings to every fresh exhaustive reader. After two exhaustive passes have each
+  been applied, the next successor gets a fix-verification pass (every applied fix true, nothing new
+  introduced) and goes to the key, with that disclosed; the key fails fast on text, so a remaining gap costs
+  minutes. Shorter declarations are the durable fix.
+mechanism: Review without convergence; an independent verification round or the review before it found this in
+  a real declaration; recorded cost: cited by a run of subjects; 1 keyed.
+check: the subject's review records show at most two applied exhaustive passes before a fix-verification pass
+  (each applied fix checked true, no new text), and the key prompt discloses that pass.
+supersedes: this project's uncarded TRAPS.md entry at line 27753 (bus 3fbb0c3; catalogue rows 20-25), for this
+  row
+evidence: measured
