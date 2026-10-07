@@ -14,6 +14,8 @@ posture: conjugal-standard-PARTIAL (0/17 lanes; missing: Designer-Scope 0/1; Des
 
 **Correction, 2026-10-07 (amends this blob before any ruling on it).** C3 is decided: S25 and S26 are **WITHDRAWN from credit**. C3 is met only by an attended human verifier other than the producer, or by a register row in force before the 2026-09-22 acceptances; the 2026-09-27 register does not reach back. Part 2 therefore carries S27, S29, S30 and S31 only, and does not re-key S25 or S26; where this filing below still lists them as NEEDS-KEY or as awaiting C3, this paragraph governs. The attestation text that stood under `## Owner items` was written in the owner's name and is removed: C3 remains open to the owner's own attestation; no model may complete it.
 
+**Part 2, 2026-10-07 (filed on this branch, after part 1; amends this blob before any ruling on it).** Part 2 **withdraws** S27, S29, S30 and S31 from credit instead of re-keying them; no key round was run. Detail under `## Part 2 — withdrawals`. Where this filing still lists any of them as NEEDS-KEY, or plans a round for them under `## Key plan`, part 2 governs.
+
 **Status.** Steward's own filing (§5), re-filed on the 2026-10-06 ruling (`adjudications/factory-kernel/conjugal.dispositions.md`, bus `1d29195`, ledger row `515f63f`; filing blob answered `0666f1e8`) and on PROMPT K's revision trigger (profile r9 → r10, bus `d53bac1`, 2026-10-01: one sentence added to resource-terminals, *"Before dispatch, declare any register-permitted substitution for a family-bound quorum seat …"*). Every finding of blob `0666f1e8` has a disposition, so nothing is carried verbatim; lines below are new evidence or a direct answer to a ruling item. Criterion-1 delta from this blob: **0** (conjugal already counts as 1 project on S22; a second credited subject does not move the project count).
 
 **Posture** computed 2026-10-07 by the R9 tool at bus `d339a22`: `python tools/review-posture/review_posture.py posture <empty dir>` → the line above, `cross_family: NO-CROSS-FAMILY-VALIDATION`, exit 1. No posture role ran in the window; the acceptance key ran outside the roles, no lane credit (R9.4).
@@ -86,7 +88,24 @@ P:code budgets | INSTANCE-FAILURE | "window counts of subjects accepted, deliver
 
 **Items the 2026-10-06 ruling routed to the owner (U1, U6, U7)** (corrected 2026-10-07; the decision text composed here for the owner is removed). U1 and U7 (trap filing form, R14) are being filed by Conjugal as R14 cards, separate work. U6 (K6 wording) is re-routed by the steward to cloudvore as arbiter of record, dng-auto-processor alternate (HARVESTS.md, steward routing 2026-10-07, bus `ef18c66`).
 
-## Key plan (part 2; NEEDS-KEY; not run; one at a time on this host)
+## Part 2 — withdrawals (2026-10-07)
+
+The ruling's next step for this filer reads *"discharge or withdraw C1–C4"* (`conjugal.dispositions.md:313`). Part 2 withdraws. Each subject below counts zero, and no credit is claimed for it in this filing or any later one, unless a future filing re-keys it under the carve-out below.
+
+| S | Condition | Governing line (`conjugal.dispositions.md`) | Disposition |
+|---|---|---|---|
+| S27 | C1 | *"A bare verdict line does not bind identity"* (C1, `:74-75`) | **WITHDRAWN from credit**; not re-keyed |
+| S29 | C1 | as S27 | **WITHDRAWN from credit**; not re-keyed |
+| S30 | C2 | *"the identity must be bound by more than a prefix"* (C2, `:79`) | **WITHDRAWN from credit**; not re-keyed |
+| S31 | C1, C4 | *"The round-2 contract differs from the declared one"* (C4, `:87`) | **WITHDRAWN from credit**; not re-keyed |
+
+With part 1's correction (S25, S26 withdrawn; C3 open only to the owner's own attestation), no subject of the 2026-10-06 ruling now awaits a key round from this filer.
+
+**Criterion 1 rests on S22.** The ruling says *"S22 carries its criterion-1 credit alone"* (`:110`), and the steward's routing for this re-filing (bus `2b2c60e`) states Conjugal already counts as 1 project on S22. A second credited subject does not move the project count, so a re-key of any of the four would gain nothing at criterion 1. The withdrawals change no criterion-1 figure.
+
+**Carve-out: any future re-key binds the original keyed tree.** If any withdrawn subject is ever re-keyed, the round runs at that subject's original keyed commit and its verdict line binds that commit's tree (the trees listed under `## Key plan`), because the profile's subject-identity field reads *"a key on a different subject identity does not transfer"* (`specs/fleet-factory-kernel/profiles/code.md:8`). No merge with the delivery target is made before or after that round, and nothing is pushed after it. Recorded in Conjugal's subjects ledger at Conjugal `5b2cc21a2`.
+
+## Key plan (part 2; NEEDS-KEY; not run; one at a time on this host) — superseded by `## Part 2 — withdrawals`; kept for the trees it names
 
 Each is one `codex exec -m gpt-6-astra` verify-only round at the subject's original keyed commit, judged by the declared bars quoted verbatim from the declaration commit, final line exactly `VERDICT: ACCEPT identity=<40-hex> key=gpt-6-astra class=codex-openai` or `VERDICT: REFUSE identity=<40-hex> …`, receipts by the S34 rule:
 
