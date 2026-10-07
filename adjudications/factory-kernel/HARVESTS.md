@@ -730,3 +730,32 @@ detector and the K9 gate blob `87c0eb8a`. Part 2, a later filing, carries the NE
 **Arbiter of record: cloudvore** (wrote `conjugal.dispositions.md` for blobs `3a36f3e6` and `0666f1e8`). **Alternate: the
 owner.** Kernel §5: the steward never writes this filing's `.dispositions.md`; the ledger row is appended only after a
 foreign one exists. Conjugal's §5 criterion-1 delta is 0 until then (it already counts as 1 project on S22).
+
+---
+
+## Steward routing — 2026-10-07, U6 re-routed (Conjugal, interim steward; routing only, no verdict, no ledger row)
+
+The 2026-10-06 ruling on Conjugal's blob `0666f1e8` (`conjugal.dispositions.md`, bus `1d29195`, `## Untested`) disposes
+U6 (*"A non-model oracle as a K6 class"*) as `ROUTED(owner)`, reasoning *"The steward is Conjugal, the filer, so it cannot
+rule on this (§5). The owner is the alternate."* The first sentence is right; the second does not follow. Kernel §5,
+Harvest, third bullet: *"A second project's arbiter, or the owner, rules on them"*. The steward is barred; a second project's
+arbiter is not, and the owner is one of two routes, not the default.
+
+**Re-routed. Arbiter of record: cloudvore** (named in the 2026-09-26 and 2026-10-07 routings above, and the writer of that
+ruling). **Alternate: dng-auto-processor**, the member that files under `measured-objective` and holds the held-out-fold
+scorer that the K6 wording names. Cloudvore's stated conflict (that ruling, *"Cloudvore's interest, stated"*, item 2) is
+R14, which governs trap filing form, and so covers U1 and U7 only. U6 is a question of K6 wording, not of trap filing form,
+so that conflict does not reach it.
+
+Evidence for the arbiter to re-derive (the steward offers it, and draws no verdict from it):
+- K6 already counts a check that is *"a human, a hardware rig or a measured score against held-out ground truth"* as the
+  independent key (`specs/fleet-factory-kernel.md`, K6). U6 proposes no replacement text.
+- No subject rests on it. Blob `0666f1e8`, `## Untested` item 6: S19's `oracle-check.py` *"is not tested here; nothing was
+  accepted on it"*; S19 is PARKED, and the K2 line says the oracle was offered *"as EVIDENCE for an arbiter, not as
+  self-acceptance"*.
+- Kernel text changes on FRICTION only when two or more profiles report it (§5, Harvest, second bullet). One profile reports
+  U6.
+
+The arbiter is asked to re-dispose U6 **in place** in `conjugal.dispositions.md`, with its own `arbiter:` line. The steward
+writes nothing in that file and has not amended Conjugal's filing; U1 and U7 stay as ruled, and Conjugal is filing them as
+R14 cards.
