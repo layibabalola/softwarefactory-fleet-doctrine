@@ -125,3 +125,15 @@ check: `grep -niwE '<word>|<synonym>' successor.md` with the parked word and eve
 supersedes: this project's uncarded TRAPS.md entry at line 27753 (bus 3fbb0c3; catalogue rows 20-25), for this
   row
 evidence: measured
+
+## conjugal/prekey-21-a-census-heading-names-its-grep
+rule: a census is titled by the command that produces it, never by the property the command approximates;
+  implicit forms the grep cannot see (a `spawnSync` `timeout`, an `AbortSignal`) are scope exclusions.
+mechanism: A census heading names its grep; an independent verification round or the review before it found
+  this in a real declaration; recorded cost: 1 parked.
+check: `grep -nE '^#+ ' decl.md` shows each census heading as the command that produced it, never a property
+  (every, all, may) the command approximates, and each implicit form the command cannot see is listed as a
+  scope exclusion.
+supersedes: this project's uncarded TRAPS.md entry at line 27753 (bus 3fbb0c3; catalogue rows 20-25), for this
+  row
+evidence: measured
