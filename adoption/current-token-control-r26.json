@@ -23,7 +23,7 @@
     }
   },
   "census": {
-    "baseCommit": "59ff11d7cb08b0edadce4e9efc5fe0a88ddfb3f7",
+    "baseCommit": "515f63fd86726fa771cc84e4f5aa0a5a6cefdf41",
     "projectSpecGlob": "specs/*.md",
     "nonProjectSpecs": [
       "specs/account-rotation-and-project-continuity.md",
@@ -88,8 +88,8 @@
       "specPath": "specs/adobe-ingester.md",
       "status": "STALE",
       "evidence": {
-        "commit": "a034fdaaa5bdea9ba676650a35ffd65f500d0eb6",
-        "gitBlobOid": "c6edf1ade7be261bc5980dfa11c055c510c31392",
+        "commit": "2e9744becb84db562d32c3ee636091139e89acb0",
+        "gitBlobOid": "8df7835f8aa62f988f9135a428d92ffce96fde43",
         "disposition": {
           "status": "DISTINGUISH",
           "subjectCommit": "874605e43531c9aa230ee16851f8107a8e0d9cec"
@@ -248,8 +248,8 @@
       "specPath": "specs/dng-auto-processor.md",
       "status": "DISTINGUISH",
       "evidence": {
-        "commit": "8c7526d7a954c6c49d32a09bd854660defb9078c",
-        "gitBlobOid": "f5e5fdd4625adbce7d773745138da688ffa65dd2",
+        "commit": "efaaa3c2933e04b6e207a7b7b7ad8d3e244496c4",
+        "gitBlobOid": "880262e2acef033d1db80bafe33d08fb161469ee",
         "disposition": {
           "status": "DISTINGUISH",
           "subjectCommit": "909f769d02e8412e51e28e242cfa8d00dadc9a3d"
