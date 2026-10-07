@@ -27718,3 +27718,15 @@ Source project: Adobe Document Cloud Ingester. Every figure was measured there, 
 - **Check:** guard `DG-PS-NULL-COMPARE` in agent-bridge `tools/doctrine_guards.py` fails CI on `<expr> -eq|-ne $null` in tracked .ps1/.psm1 files. The `-eq $false`-on-a-possibly-null value form cannot be decided statically; review it by hand and prefer `-ne $true` or `-eq $true`.
 - **Applies to:** every board with PowerShell gates.
 - **Falsifier:** a tracked .ps1 file with `$x -eq $null` passes a guarded board's CI.
+
+### TRAP 2026-10-06 (agent-bridge): a dispatch gate that pins the profile literal silently freezes profile adoption
+- **Measured:** agent-bridge's SOL launcher calls its K5 declaration check with no declaration argument, so the check defaults to `kernel: r5, profile: code@r9`. The bus profile moved to code@r10 on 2026-10-02 (harvest e5878e3). Four days later, all 307 WAL declarations still read code@r9. The first card declared under r10 (DOCTRINE-GUARDS-1) was REFUSED at SOL dispatch with `[K5-REFUSE]`. Nothing ever warned that the board had stayed on a stale profile, because every r9 declaration kept passing.
+- **Check:** grep the board's dispatch gates and validators for a hard-coded profile or kernel revision. Each must take the declaration as a parameter, or derive it from the bus profile file's current revision. A test proves that a declaration under the CURRENT bus profile clears the gate. agent-bridge card K5-PROFILE-PARAM is in flight for this.
+- **Applies to:** every board that adopted the kernel's K5 declaration check.
+- **Falsifier:** a board whose gate pins a literal revision can key a card declared under a newer bus profile without an exemption.
+
+### TRAP 2026-10-06 (agent-bridge): a contract that promises "command-aware" detection of shell text has an unbounded counterexample space
+- **Measured:** card DOCTRINE-GUARDS-1 promised a guard that flags any Python invocation reading its program from stdin (`python -`). Round 1 SOL found 7 gaps: path-qualified, `py` and launcher forms, line continuations, and argv arrays. The round-2 fix closed every listed form. SOL then broke it with a quoted option value (`-W "a b" -`) and a multi-line argv array; the hub reproduced both, and the card NARROWED under its pre-declared stop rule. A lineage panel dropped that guard and rebuilt the PowerShell guard on PowerShell's own parser, because a regex null-compare guard also missed `-eq<newline>$null` and `-eq <# c #> $null`.
+- **Check:** before work, a guard contract either uses the language's own parser (an AST), or enumerates the exact grammar it covers and lists the non-promises. Then a static key's next counterexample is DEBT, not NOT FIXED.
+- **Applies to:** any board writing lint or guard tooling under a cross-family static review key.
+- **Falsifier:** a regex or line-based shell-semantics guard survives two static SOL rounds with no new in-contract counterexample.
