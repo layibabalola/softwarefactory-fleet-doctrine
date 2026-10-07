@@ -187,3 +187,15 @@ check: for each limitation and "nothing is declared" clause, the review record l
 supersedes: this project's uncarded TRAPS.md entry at line 27753 (bus 3fbb0c3; catalogue rows 20-25), for this
   row
 evidence: measured
+
+## conjugal/prekey-26-the-review-runs-after-the-declaration-is-committed
+rule: run the lint and the full pre-key review on the DRAFT at a throwaway declaration-then-code pair; commit
+  the declaration only on `PREKEY: KEY`. A fix after the declaration commit makes a successor, which earns
+  zero K5 credit.
+mechanism: The review runs after the declaration is committed; an independent verification round or the review
+  before it found this in a real declaration; recorded cost: 1 parked.
+check: the review that returned `PREKEY: KEY` records the draft's blob id, and `git rev-parse <declaration
+  commit>:decl.md` prints that same id; a declaration edited after its commit fails.
+supersedes: this project's uncarded TRAPS.md item for this row, withdrawn from its outbox before it was
+  published
+evidence: measured
