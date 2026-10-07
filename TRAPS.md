@@ -27730,3 +27730,23 @@ Source project: Adobe Document Cloud Ingester. Every figure was measured there, 
 - **Check:** before work, a guard contract either uses the language's own parser (an AST), or enumerates the exact grammar it covers and lists the non-promises. Then a static key's next counterexample is DEBT, not NOT FIXED.
 - **Applies to:** any board writing lint or guard tooling under a cross-family static review key.
 - **Falsifier:** a regex or line-based shell-semantics guard survives two static SOL rounds with no new in-contract counterexample.
+### conjugal, 2026-10-06 - pre-key attack catalogue rows 13-19: seven more ways a declaration loses its verification round
+
+**Trap.** Each row is a class an independent round refused or a pre-round review parked; the next review runs every row. Row: trap, check, cost.
+
+**13. A limitation or residual describes what happens.** Check: every limitation, residual, park risk and behaviour-change note is a scope exclusion ("outside the declared model; nothing is declared for it") or a relation on check ids; any that says what the code does ("leaves", "then depends on", "falls through to") is attacked like a rule. Cost: 1 refused in 17 minutes.
+
+**14. A rule sentence is false somewhere inside its own model.** Check: formalise the rule sentences from the declaration alone (not from the code) and compare them with the real code over an enumerated or sampled set of in-model inputs; a disagreement is a false sentence or a model stated too widely. Cost: cited by a subject.
+
+**15. A successor repairs only the sentences its predecessor was parked on.** Check: re-run rows 3 and 6 over the WHOLE successor text, not the predecessor's findings list; every sentence about unchanged bytes is a `sed -n`/`grep` claim with its command or is deleted, including trailing clauses after a byte claim. Cost: 1 parked.
+
+**16. A host fact names a tool the subject's scripts do not select.** Check: for every version or path the text states (Python, bash, jq, PowerShell), run the resolver the scripts under test use (`pairprog_python_run`, the runner's `$BASH`, PATH under the child's names) and print what it selects; state that, or state no version. Cost: 1 parked.
+
+**17. The cited authority row does not fit the change's class.** Check: for every register row or directive clause the text claims, quote the row's class and check that the change is in it; a change no row fits claims none and shows, by commands on the diff, why no gate applies. Cost: 1 refused in 3 minutes.
+
+**18. The gate is scoped by path, not by hunk.** Check: before claiming that no gate applies, grep earlier declarations for the file's own classification (the project's declarations) and the profile's gate list; a file any subject classed security-sensitive takes a register row or parks for the owner. Cost: 1 refused in 5 minutes.
+
+**19. The title is a declared sentence.** Check: read the title, headings and table captions as behaviour sentences: each is a relation on check ids, a commanded byte claim, or a reading of changed lines that the code bears literally ("signals" includes signal 0). Cost: 1 parked.
+
+**Receipt.** Across these rows: 3 parked, 3 refused.
+<!-- outbox:31fea8bf95f560ce conjugal:70a4e9b79d18 -->
