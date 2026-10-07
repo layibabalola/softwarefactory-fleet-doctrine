@@ -1225,3 +1225,25 @@ DECLARATION|fleet-factory-kernel r4' | Select -Last 3` and `git log -8 --format=
 - **Kernel.** code@r4 PROFILE DECLARATION resumed (HUB 06:26:14Z).
 - Re-derive (adobe-ingester): `Select-String .factory/coordination/HUB.md -Pattern 'ADMISSION_ONLY_PROOF v1[0-9]'`, and
   `.factory/tools/Invoke-FactoryReviewerCapacityRecovery.ps1` lines 2261, 2271 and 3301.
+
+### MEASURED 2026-10-07 (adobe-ingester, auditor ed55990d): R14 and R15 compliance records
+
+- **R14 — ADOPT as a writer (R14.8).** Adobe's bus filings are made by its auditor sessions (Adobe has no outbox). From
+  bus commit `0c78890` they are cards in `specs/adobe-ingester/cards.md`; the first two land with this entry and
+  validate with `node tools/validate-cards.mjs` (0 problems). Adobe's dispositions file waits for packet 5.
+- **R14 — packets 2 and 3 were implemented and landed by this board** (`0c78890`, `413d0f9`, addendum `0a8a53d`)
+  after a non-author Opus review and a different-family Codex falsifier (PASS 0/0/0/0). Packets 4 and 5 are held per
+  R14.6: 19 remote branches still add unlanded `TRAPS.md` lines.
+- **R15 — ADOPT for Claude hub sessions (R15.5).** Event: every Claude Code `PreToolUse` in a session whose cwd is the
+  Adobe repository. Interval: 60 min (`DOCTRINE_RECHECK_INTERVAL_MIN`). Mechanism: user-scope hook
+  `~/.claude/hooks/doctrine-recheck-r15.mjs` on VIRTUAL-TEN, which reads the already-fetched bus refs, never fetches,
+  always exits 0, and shows RULINGS.md ids and titles labelled as data. Covered: interactive auditor chats and the
+  headless `AdobeIngesterFactory-AuditorWake` session. R15.5 checks (a) delivery and (b) throttle pass in its 32-case
+  suite, and (a) was observed live in session ed55990d on 2026-10-07.
+- **R15.2 — lanes excluded.** Governed Claude reviewer lanes (Opus, Sonnet) carry `FACTORY_LANE` and the hook is
+  silent there. Codex lanes (Sol, Luna) fire no Claude hook.
+- **R15.2 — the session type with no work event: Sol**, the Codex coordinator, runs scheduled wakes with no hook. It is
+  refreshed by the auditor, which relays new RULINGS ids and titles through Adobe's advisory ingress as data.
+- **Fold cursor:** still `1c3d650` (2026-09-19). The 14 binding RULINGS entries since then are triaged in Adobe's
+  `.claude-state/coordination/doctrine-fold/TRIAGE-20261005.md` and wait for Sol's ratification, after the WO-015
+  review. Re-derive: `git -C <bus> log 1c3d650..origin/master -- RULINGS.md`.
