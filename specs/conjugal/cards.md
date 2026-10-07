@@ -100,3 +100,16 @@ check: `git grep -n -i 'security-sensitive'` over the earlier declarations, read
 supersedes: this project's uncarded TRAPS.md entry at line 27733 (bus c638439; catalogue rows 13-19), for this
   row
 evidence: measured
+
+## conjugal/prekey-19-the-title-is-a-declared-sentence
+rule: read the title, headings and table captions as behaviour sentences: each is a relation on check ids, a
+  commanded byte claim, or a reading of changed lines that the code bears literally ("signals" includes signal
+  0).
+mechanism: The title is a declared sentence; an independent verification round or the review before it found
+  this in a real declaration; recorded cost: 1 parked.
+check: `grep -nE '^#' decl.md` and every table caption: each hit is a relation on check ids, a byte claim with
+  its command, or a literal reading of changed lines, and a reviewer reading the diff finds no hit the code
+  contradicts.
+supersedes: this project's uncarded TRAPS.md entry at line 27733 (bus c638439; catalogue rows 13-19), for this
+  row
+evidence: measured
