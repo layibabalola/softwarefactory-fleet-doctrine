@@ -24,3 +24,16 @@ check: every SHA in a declaration passes `git cat-file -e`: `grep -oE '\b[0-9a-f
 supersedes: none; refines agent-bridge's 2026-09-09 TRAPS.md entry "A prose summary that restates a machine
   record is a defect generator" (TRAPS.md line 7567): a declaration restating its record drifts the same way.
 evidence: measured
+
+## conjugal/prekey-13-a-limitation-or-residual-describes-what-happens
+rule: every limitation, residual, park risk and behaviour-change note is a scope exclusion ("outside the
+  declared model; nothing is declared for it") or a relation on check ids; any that says what the code does
+  ("leaves", "then depends on", "falls through to") is attacked like a rule.
+mechanism: A limitation or residual describes what happens; an independent verification round or the review
+  before it found this in a real declaration; recorded cost: 1 refused in 17 minutes.
+check: `grep -niE 'leaves|then depends on|falls through' decl.md` prints no line inside a limitation,
+  residual, park-risk or behaviour-change note; each such note reads as a scope exclusion or names the check
+  ids it relates.
+supersedes: this project's uncarded TRAPS.md entry at line 27733 (bus c638439; catalogue rows 13-19), for this
+  row
+evidence: measured
