@@ -12807,3 +12807,21 @@ line to the code profile's K6 section: lint the declaration before every verifie
 
 Re-derive: the consumer project's declaration linter and its replay test over its parked texts.
 <!-- outbox:83922985dcccdc57 conjugal:38ee614fe4a7 -->
+
+- 2026-10-07 factory-kernel harvest, run `20261007T144742Z-c524590e` (Conjugal, interim steward; Dell XPS 17).
+  One filing in this run: agent-bridge's fifth kernel filing (K12-FILE-R6), blob
+  `3bc530beeccdb8385ad69ec9c3076868057a65e7` on `origin/review/agent-bridge-kernel-2026-10-07` (STALE against the prior
+  ruling's blob `f4a1cc37`). The steward's own `conjugal` filing (blob `5cf3436e`, STALE) is excluded under kernel §5.
+  Dispositions at `adjudications/factory-kernel/agent-bridge.dispositions.md`, rewritten for the new blob and
+  withdrawing nothing from the prior ruling (which stands at bus commit `e5878e34`): **46 `§` lines (32 ADOPTED ·
+  0 ADOPTED-CONDITIONAL · 4 REJECTED · 10 ROUTED) plus 9 `HEADER:` lines**. Ruled census FIT 4 · FRICTION 0 · BREAK 0 ·
+  N/A 0 · UNEXERCISED 1 · INSTANCE-FAILURE 18 (filed FIT 5 · UNEXERCISED 1 · INSTANCE-FAILURE 17; K4 FIT reclassified to
+  INSTANCE-FAILURE on HSI1's relocated DONE sentinel). The filing's request is answered: a tree-identical merge whose
+  second parent is the keyed commit, first parent the keyed base, with a pre-merge target observation, a head-pinned
+  merge and a retained tip witness, can witness S22 test (d); AFPM-MSG-DEBT-1 still counts 0 (Codex account parity
+  absent, an unmet commit-tip contract promise, the D6 landing-receipt loss). Proposals W3 and W4 routed as instance
+  mechanism; W5, W6, W8-a and W8-b rejected. No kernel or profile text changed: kernel r5 at 2,867 of 3,500 words,
+  `code.md` r10 at 1,209 words. Ledger row appended to `adjudications/factory-kernel/HARVESTS.md` (25 rows; closed
+  end-to-end stays 1, conjugal). Seats: arbiter gpt-6-astra high (LANE-COMPLETE); consolidator claude-fable-5
+  (LANE-COMPLETE); lint claude-opus-5.5 (9 findings) + gpt-5.6-sol (4 findings), both LANE-COMPLETE, all 13 applied in
+  one pass; orchestrator claude-opus-5-5. Written before landing: the runner commits and fills `spec_commit`.

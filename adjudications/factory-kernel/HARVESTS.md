@@ -759,3 +759,64 @@ Evidence for the arbiter to re-derive (the steward offers it, and draws no verdi
 The arbiter is asked to re-dispose U6 **in place** in `conjugal.dispositions.md`, with its own `arbiter:` line. The steward
 writes nothing in that file and has not amended Conjugal's filing; U1 and U7 stay as ruled, and Conjugal is filing them as
 R14 cards.
+
+---
+
+## 2026-10-07 — harvest 20261007T144742Z-c524590e (agent-bridge fifth filing, blob 3bc530be)
+
+| date | harvest | filing | blob | kernel | profile | subjects | FIT | FRICTION | BREAK | N/A | UNEXERCISED | unresolved BREAKs | arbiter |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 2026-10-07 | 20261007T144742Z-c524590e | agent-bridge | 3bc530beeccdb8385ad69ec9c3076868057a65e7 | r5 (unchanged) | code@r10 (unchanged) | 0 end-to-end; AFPM-MSG-DEBT-1 examined, tree-form (d) accepted under the arbiter's predicate but uncounted (Codex account parity absent, unmet commit-tip contract promise, D6 landing-receipt loss); HSI1 (f) producer-only; AFPM-MSG-1 parked and undelivered; AFPM-MSG-1N closed undelivered; DG1N keys on a different tree; window-opened-before-kernel=no | 4 | 0 | 0 | 0 | 1 | 0 | gpt-6-astra (read-only arbiter seat; not a steward filing) |
+
+Derived, not asserted. Re-run: `python tools/kernel-e2e.py --json`. Before this row: `closed_end_to_end: 1`,
+`ledger_rows: 24`, `ledger_totals: FIT 147 · FRICTION 81 · BREAK 5 · N/A 0 · UNEXERCISED 82`. After it: 25 rows;
+151 FIT · 81 FRICTION · 5 BREAK · 0 N/A · 83 UNEXERCISED; closed end-to-end stays 1 (conjugal, by its second-project
+arbiter).
+
+**§5 criterion 1 — projects with at least one closed end-to-end subject: 1 of the 5 the kernel requires** (conjugal
+only, on S22 under its second-project arbiter); agent-bridge still counts 0. The filing declares 0 subjects and the
+arbiter rules 0: AFPM-MSG-DEBT-1 is an examined delivery whose tree-identical merge can witness S22 test (d) under the
+arbiter's predicate, but it earns no closure because resolving (d) does not discharge its missing Codex account
+prerequisite (D1), its stricter declared commit-tip contract promise (D8) or its recorded landing-receipt continuity
+failure (D6). HSI1's required check (f) is producer-only; AFPM-MSG-1 remained parked and undelivered; AFPM-MSG-1N
+closed undelivered; DG1N's seat keys bind a different tree; K5PP's runtime closure rests on presence-only evidence.
+**§5 criterion 2 remains MET** on the 2026-09-17 finding (`code`, `hardware-in-loop`, `measured-objective`); nothing
+this round touches it.
+**§5 criterion 3 does not start:** the immediately preceding ledger row is the 2026-10-06 arbiter row for steward
+self-filing `conjugal` (blob `0666f1e8`, arbiter cloudvore), whose profile cell records `code@r9 (now r10; re-file
+owed)` while this row records `code@r10`. §5 requires identical kernel and participating-profile content digests as
+well as revisions across successive harvests, so the unchanged half is not established across this pair. Criterion 1
+is also unmet, so the required fresh end-to-end evidence is absent.
+**Criterion 4 has never started**; no owner ratification of the kernel appears in `RULINGS.md`.
+**Members due — 1 project has NEVER filed:** `salesforce-tools`. Roster member `adversarialllm` has filed twice as
+`AdversarialLLM` (header `project: adversarialllm`, filing stem and row cell `AdversarialLLM`); the ledger alias counts
+one project. F1 persists: `tools/kernel-e2e.py` matches roster, filing and ledger names case-sensitively, so it still
+prints `adversarialllm` under NEVER FILED, a matching defect and not factual non-filing; this round reconciled neither
+the tool nor the roster key. Open filings left for other runs: steward self-filing `conjugal` reads STALE (blob
+`5cf3436e`) and is not adjudicated by the steward (kernel §5); this round adjudicates only agent-bridge.
+
+**What this round changed:** no spec text at all. Harvest `20261007T144742Z-c524590e` adjudicates agent-bridge's fifth
+filing, blob `3bc530beeccdb8385ad69ec9c3076868057a65e7`, superseding the dispositions file's ruling on blob `f4a1cc37`
+without withdrawing any of its 40 dispositions or its HEADER line. The §Request reading: tree-form delivery witnesses
+S22 test (d) when the landing merge's tree equals the full keyed tree, the keyed candidate is the merge's second parent
+and the keyed base its first parent (base an ancestor of candidate), a retained pre-merge remote observation names the
+target at the keyed base within the requested 60 seconds with the merge pinned to the candidate head, and a retained
+remote-tip/push witness establishes that the merge actually became a tip of the target — ancestry or containment alone
+does not suffice, the 60 seconds describes this requested case and not a profile-wide deadline, and the reading does not
+re-adjudicate Conjugal's S1, S12 or S13, whose dispositions stand. The sole census reclassification is K4 FIT →
+INSTANCE-FAILURE: HSI1's completion relied on a relocated DONE sentinel in an unretained harness while its required (f)
+stayed producer-only. The five proposal-bearing findings: W3's dispatch-preflight addition is rejected and the finding
+ROUTED to an agent-bridge declaration-resolution and launcher bench, since K5 already requires the actual declared
+revision; W4's whole-token comparison is rejected as profile text and ROUTED to the K5-SUBSTRING-1 checker bench, an
+implementation repair; W5 is REJECTED because existing K1, declared-environment checks and static-key digest
+authentication already reject producer-only (f); W6 is REJECTED because its "before the key started" cutoff would
+exclude evidence a key lawfully executes or authenticates during its run; W8-a is REJECTED as already decided by the
+profile's tree-identity definition, and W8-b is REJECTED because S22's tests are not an exhaustive replacement for
+kernel and profile obligations. Ruled census: FIT 4 · FRICTION 0 · BREAK 0 · N/A 0 · UNEXERCISED 1; INSTANCE-FAILURE 18
+separately (as filed: FIT 5 · UNEXERCISED 1 · INSTANCE-FAILURE 17), with a latent DEBT-1 commit-tip contract failure
+recorded inside the already INSTANCE-FAILURE acceptance-evidence line and changing no census cell. Agent-bridge-local
+evidence is attributed and UNVERIFIED; bus identities, the prior harvest's coverage and the quoted RECEIPT 3da63d1 claims
+are VERIFIED. All eight carried routes stay open. Kernel unchanged at r5, 2,867 of 3,500 words; `code.md` unchanged at
+r10, 1,209 words. 46 `§` lines: 32 ADOPTED · 0 ADOPTED-CONDITIONAL · 4 REJECTED · 10 ROUTED, plus 9 `HEADER:` lines.
+Dispositions: `adjudications/factory-kernel/agent-bridge.dispositions.md`, rewritten for blob `3bc530be` and superseding
+its own ruling on blob `f4a1cc37` without withdrawing any disposition that ruling recorded.
