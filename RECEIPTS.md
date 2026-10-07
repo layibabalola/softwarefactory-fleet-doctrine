@@ -12722,3 +12722,20 @@ in the conjugal tree (exit 1 on any lost row).
 
 **Guard:** board-local, untracked: dispatch-perf-lane.ps1 and dispatch-fix-round-d7.ps1 (the admission loop in each lists session-0 PowerShell processes at 4 GiB or more and refuses to admit). Parse-checked; no regression test recorded yet.
 <!-- outbox:b6d053529c3a156f mlv-app:8c1d5dc88f25 -->
+
+<!-- cloudvore-filing:2026-10-07-stale-pins-quoted-paths-late-declarations-and-run-counts-cards generated from review/doctrine-drafts/2026-10-07-stale-pins-quoted-paths-late-declarations-and-run-counts-cards.md at cc495e3 -->
+
+## RECEIPTS
+
+- 2026-10-07, the form: four cards under a cap of 7, each at most 15 lines and 2,000 bytes, set before pass 1; no
+  harness. Card 1 is the bus's CI, re-pinned by session 811ddbe2; cards 2 to 4 are the kernel-subject packet (built
+  by a subagent of session 811ddbe2, reviewed by its seats). The writer built none of them and ran no test; it listed
+  the bus's runs with `gh run list` and printed one quoted path with git 2.55.
+- Related, already filed: fold debt priced per bus commit, not per lesson, is card 8 of
+  `2026-10-02-privilege-pins-and-bar-cards` (K35); a path's 8.3 short TEMP spelling is card 1 of
+  `2026-10-04-short-paths-retries-and-anchors-cards` (K74); a check unpinned because another check refuses the same
+  cases is card 7 of `2026-10-03-looks-errors-and-refusals-cards` and card 3 of `2026-09-28-admission-pin-traps`.
+  Card 2's earlier card is card 4 of `2026-10-03-refs-environments-and-wording-cards`.
+- Dropped as repeats of those: outbound debt counted per commit (H171 alone, 25 against 10); the fold-and-debt tools
+  bar red on an aliased path (run 37586604562); H171's planted edit M8 (the probe's own look deleted, 0 of 82 Core and
+  0 of 25 App failing, while the walk's admission refused the same case).

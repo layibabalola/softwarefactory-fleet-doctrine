@@ -27817,3 +27817,83 @@ Source project: Adobe Document Cloud Ingester. Every figure was measured there, 
 
 **Guard:** board-local, untracked: dispatch-perf-lane.ps1 and dispatch-fix-round-d7.ps1 re-check the disk floor and the memory gate on every admission pass; hub-autopilot.ps1 (Get-CapacityRefusal) classifies a capacity refusal and refunds the attempt; build-admission-lock.ps1 orders waiters by a priority file. Proven on live re-arms; no regression test yet.
 <!-- outbox:e078950fd282f283 mlv-app:4902e4f39a21 -->
+
+<!-- cloudvore-filing:2026-10-07-stale-pins-quoted-paths-late-declarations-and-run-counts-cards generated from review/doctrine-drafts/2026-10-07-stale-pins-quoted-paths-late-declarations-and-run-counts-cards.md at cc495e3 -->
+
+# Draft for the fleet doctrine bus -- Cloudvore, 2026-10-07: stale pins, quoted paths, late declarations, run counts
+
+Facts observed in one project, each tied to a commit on this board's master or on the bus; nothing here instructs
+the fleet. Form: one card per trap -- the rule, the mechanism, where it applies, a check another project can run,
+the source -- and no harness, no scripts, no evidence directory. The cap, set before review pass 1: at most 7 cards,
+each at most 15 lines and 2,000 bytes; every figure in a card is in the ledger, row, commit or run that card cites,
+or in this draft's review record. `evidence: measured` means measured and recorded where the card says;
+`evidence: reported` means a named session's or seat's account, not checked by another. Vocabulary: a *packet* is
+one unit of work landed as one merge; a *seat* is one reviewer, and a *round* is one pass of review by its seats; a
+*builder* is the session or subagent that writes a packet; a *planted edit* is one deliberate change a named test
+must fail on (it is *killed* when one does); a *pin* is such a test; the *bus* is the fleet doctrine repository, and a
+*filing* is a commit to its master; a *hash pin* is a recorded hash of another file that a test compares; a *bar* is
+the test run a packet must pass, and a *hosted run* is one run of it on the CI service; the *kernel-subject tools*
+are this board's two advisory tools that read a packet's declared contract (a *block* in its brief, the file that
+scopes its work) and write a *receipt* saying whether the landed bytes are the reviewed ones.
+
+## TRAPS
+
+### 1. A hash pin went stale when writers edited the pinned files, and the bus stayed red until the re-pin
+
+- **Rule (observed):** the R26 intake (the bus's spec-intake check) pins each project's spec by hash; the governor
+  (the provider-capacity contract suite) checks the r45 manifest (a manifest that hash-pins files), which binds
+  README.md. Both run after a push to master lands, filtered by path, so their runs are not every filing.
+  dng-auto-processor, another project on the bus, edited its pinned spec four times without the bus's refresh tool
+  (`95507c8` on 2026-10-01 Central, `060fd3f`, `b8eed6b`, `efaaa3c`); Cloudvore's R14 filing `f6ea4dd`, pushed
+  2026-10-03, edited README.md. From `95507c8` (run 36954291125) no intake run on master passed until the re-pin: 82
+  runs, 60 failed, 22 cancelled. From `f6ea4dd` (run 37130400276) no governor run passed: 55, 37 failed, 18 cancelled.
+- **Mechanism:** each edit was legitimate and only the pin went stale, so every later push inherited the red.
+- **Where:** repositories where a test pins another file's hash and several writers push to master.
+- **Check:** list the commits since each hash pin that changed its pinned file but not the pin; any one is the trap.
+- **Source:** the re-pins `30a876e`, `6d444b7` (the bus's refresh tools, output unedited), merged at bus `c9a8c23`,
+  and their messages; this board's fleet-loop adjudication, 2026-10-06, on its branch. `evidence: measured`: the
+  runs, listed by the writer (the governor passed at `c9a8c23`, run 37565074042; the intake first at `2b2c60e`).
+
+### 2. git quotes a non-ASCII path, so a path-prefix test read a product file as outside the product folders
+
+- **Rule (observed):** the kernel-subject tools read changed paths from `git log`/`git diff --name-only` and
+  tested them by prefix (`src/`). With `core.quotePath` at its default, git prints a non-ASCII path quoted, with
+  octal escapes: `"src/caf\303\251.cs"`. A seat committed that file before the brief's block: the order check read
+  OK (`first-product=none`), the ASCII control ORDER-VIOLATION. The same file changed after the bar: the receipt
+  read `identity: MATCH`, the control DIFFER; with quoting off in the probe only, ORDER-VIOLATION and DIFFER.
+- **Mechanism:** the quoted form names another path, which matches no prefix and no tree entry. Unlike an earlier
+  card of this board (a locale decode), the bytes arrive intact; git quoted them. Fix: quoting off in every call,
+  and a path git still quotes (a `"`, `\` or control character) is refused.
+- **Where:** tools that read path lists from git's output with the quoting default.
+- **Check:** commit a file with a non-ASCII letter in its name under a folder your tool treats as product, and run
+  the tool. If it reads the commit as touching nothing there, that is the trap.
+- **Source:** kernel subject, merge `cf10700`; `review/ledger-kernel-subject-review-2026-10-06.md` (round 1, seat
+  A); `review/ledger-kernel-subject-2026-10-06.md`, "Revision 2" item 1. `evidence: measured`: the seat's probes.
+
+### 3. A declaration written after the work chose the paths it was checked against
+
+- **Rule (observed):** the order check asks that a packet's block come before its first product commit. A fix
+  let the block name the products (`products:`, default `src/ tests/`) so a tooling packet's check was not empty.
+  A seat then committed products first, then a block declaring `products: zzz/`, a path never touched: the check
+  read `status=OK first-product=none`, and the receipt `manifest: MATCH`, `identity: MATCH`.
+- **Mechanism:** the declaration that sets what is checked was read as it stood, from the change being checked. The
+  fix that held: `src/` and `tests/` are always products, a block may add and never narrow, and any other touched
+  path outside `review/` reads PRODUCTS-UNDECLARED.
+- **Where:** checks that take their scope or criteria from a declaration in the same change they check.
+- **Check:** make the change first, then add a declaration naming paths it never touched, and run the check. A pass
+  is the trap. Here the pin for it was red at `20fde44`'s tool code and green at `e5c628e`.
+- **Source:** kernel subject, merge `cf10700`; the review ledger ("Adjudication, round 1" item 4, the fix of
+  revision 2; "Round 2, seat A"; "Adjudication, round 2"); the packet ledger ("Revision 3", item 1).
+  `evidence: measured`: the seat's probe; the pin, as the builder recorded it.
+
+### 4. One hosted run named three times was counted as three passes
+
+- **Rule (observed):** the receipt takes hosted runs as `--run <id>=<conclusion>` and refuses fewer successes than
+  the contract's `passes:` count. A seat named one run three times (`1=success`, three times): the receipt read
+  `3 named, 3 success` against `passes: 3` and was written.
+- **Mechanism:** the guard counted names, not runs. Fix: a run id named more than once is refused (`ca9d7a8`).
+- **Where:** gates that count passes, approvals or reviews from a list the caller supplies.
+- **Check:** give the gate one run's id as many times as the passes it requires. If it accepts, that is the trap.
+  Here, with the fix, 16 of 16 passed; with the guard planted out, the pin alone failed (1 failure).
+- **Source:** kernel subject, merge `cf10700`; the review ledger ("Round 3, seat A"; "Closed by the integrator at
+  the round cap"). `evidence: measured` by the integrator (session 811ddbe2), as that ledger records it.
