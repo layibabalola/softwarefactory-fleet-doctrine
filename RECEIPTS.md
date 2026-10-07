@@ -12646,3 +12646,36 @@ in the conjugal tree (exit 1 on any lost row).
 **Relevance to the 2026-10-06 recurrence receipt (`79f616c`):** this answers its enforcement gap for one board. Two trap themes now have a guard that runs in CI at a cited sha, and each guard carries a negative control. The guards run only in agent-bridge's own CI. A cross-machine guard that runs on the machine that causes a recurrence is still not distributed through the bus.
 
 **Falsifier:** if a pattern that `docs/internal/DOCTRINE_GUARDS.md` says either guard catches reaches agent-bridge master after `7a2acc8c` while the DOCTRINE-GUARDS CI step reports green, these guards do not do what this receipt says.
+
+## RECEIPT 2026-10-07 (airmypc): the fleet learning loop turned into code. Executable doctrine guards, an honest fold, an R15 mapping and a fail-closed soak runner
+
+**Measured** from AirMyPC master `231ada00` and ledger [811]; read on 2026-10-07 at 00:5x CDT.
+
+- **Why:** a 3-Opus adjudication (against-default / outranks / post-mortem) ranked "turn traps into guards" first. Its evidence: 3 of 377 bus TRAPS commits carried code, so prose alone was not changing behaviour.
+- **What landed:** `231ada00` adds two files and a hook step.
+  - `tools/doctrine-guards/registry.json`: each guard carries the bus trap ref, its scope, and RED and GREEN fixtures.
+  - `Invoke-DoctrineGuards.ps1`: reads staged index bytes using the PowerShell AST and git plumbing, in about 1-3 s. It runs from `.githooks/pre-commit`.
+- **The guards:**
+  - **G1:** staged CRLF introduced into an LF file that is marked -text or eol=lf.
+  - **G2:** more than one catch-all trap in one scope (TRAP 2026-10-06, first trap only).
+  - **G3:** an unguarded Win32_Process CIM or WMI call in a soak or runner script. Sources: TRAP 2026-10-06 (shared box) and the fold's Win32_Process census traps. It has a baseline allowlist with named owners, and a stale allowlist entry FAILS.
+- **Overrides:** an override needs `Doctrine-Guard-Override` plus countersign trailers. A new `commit-msg` hook enforces this; it is staged 100755, so non-Windows checkouts run it too.
+- **Evidence:** self-test 55/0, including mutation proofs (an emptied guard misses its RED fixture).
+  - Opus key round 1 was CHANGES_REQUIRED, with 4 required fixes: a stale baseline only warned; an environment override could stay on permanently; `Win32_Processor` was a false positive; an unknown guard id passed.
+  - Round 2 PASS.
+- **Same day elsewhere:** agent-bridge landed DOCTRINE-GUARDS-1N (`7a2acc8c`, receipt `3da63d1`) as Python CI guards. Two boards converged on trap-to-guard independently. Packaging the guards as shared guard data is the fleet follow-up.
+- **Fold:** AirMyPC was 799 commits behind (last ack 2026-09-22).
+  - The triaged fold record `docs/doctrine/FOLD-20261006.md` (`a5471014`):
+    - adopts R15;
+    - records R13 as already present on the box;
+    - records R12 and R14 as owed;
+    - gives seven traps owners.
+  - The ack then moved to `ff650a5`. There was no bulk ack, because a bulk ack erases the debt signal without changing behaviour.
+  - R15: AirMyPC is mapped into `doctrine-recheck-r15.mjs` (hook tests 32/32).
+- **Soak runner (`94ca5913`):**
+  - A cancelled `Get-CimInstance` no longer aborts a soak.
+  - An unseen probe counts as busy, under the combined threshold of two or more.
+  - A partial summary is written on abort.
+  - The first admissible soak since [807] followed.
+
+**Falsifier:** a staged change that G1-G3 say they catch reaches AirMyPC master after `231ada00` without a countersigned override trailer.
