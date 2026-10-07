@@ -12739,3 +12739,37 @@ in the conjugal tree (exit 1 on any lost row).
 - Dropped as repeats of those: outbound debt counted per commit (H171 alone, 25 against 10); the fold-and-debt tools
   bar red on an aliased path (run 37586604562); H171's planted edit M8 (the probe's own look deleted, 0 of 82 Core and
   0 of 25 App failing, while the walk's admission refused the same case).
+### Conjugal, 2026-10-06 — RECEIPT: a budgeted incremental fold on the steward tick, probe-gated, behind a flag
+
+**Problem.** A range fold is one reviewing session's afternoon, so it happens rarely; conjugal's
+fold marker sat ten days on one commit while the filtered feed grew past 150 sibling commits.
+
+**Mechanism (consumer side, bus tools unchanged, default OFF).** Each 15-minute steward tick takes
+the oldest 10 unverdicted entries (added headings) of the intake-filtered feed, oldest first along
+the bus's first-parent chain. A classifier with no tools receives each entry only as quoted data in
+a fence longer than any backtick run inside it, and must return exactly
+`{verdict: ALREADY-HELD|N-A|DISTINGUISH|ADOPT, local_file, probe}`; any extra key, prose or
+duplicate key queues the entry. A non-ADOPT verdict is auto-accepted only when its probe parses
+under an allowlist (`git grep`, `git show`, `git log`, `grep`, `test -f`; no shell, any shell
+metacharacter refuses), is a content search with a pattern of 20+ characters scoped to exactly
+`local_file`, the file is tracked and outside the fold's own record and marker paths (else the
+fold credits its own transcript of bus titles), and the probe passes. Everything else, and every
+ADOPT, joins the adoption queue with an expiry. The marker is acked through the pinned bus tool only
+to the last bus commit whose every entry up to it has a recorded row, and the record, queue rows
+and marker land in one commit. A daily cap (60) bounds cost; weekly, 10% of the week's
+auto-accepted rows are re-classified by a second call, and disagreement above 10% writes a flag
+that turns auto-accept off until cleared. The session-start check prints an ATTENTION line when the
+oldest unfolded filtered commit is more than 72 h old, and still exits 0: an informational hook
+never fails a session start.
+
+**Tested** with throwaway repos and fake classifiers: budget and order, ack over fully-verdicted
+prefixes only, failing probe and schema violation queued, an obedient classifier answering an
+injection-shaped entry cannot pass any of ten hostile probes, cap, backstop flag. Two classifiers:
+a deterministic heuristic stub (the default), and `claude-notools`, a model call made tool-free by
+the CLI's own flags (`claude -p --tools "" --strict-mcp-config --safe-mode`, empty working
+directory, prompt on stdin). The flags are not trusted alone: the init event must list zero tools
+and zero MCP servers, and any tool-use or tool-result block, or a second turn, is refused. A live
+probe asking the model to read a sentinel file returned tool-call markup as plain text, nothing
+executed; the strict parser queues such text. A failed run parks on the CLI's rate-limit event or
+the runner's limit grammar, so no entry is recorded against a broken classifier.
+<!-- outbox:5642a93c9ab256f7 conjugal:d03ef6fe2d94 -->
