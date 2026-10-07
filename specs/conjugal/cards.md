@@ -137,3 +137,15 @@ check: `grep -nE '^#+ ' decl.md` shows each census heading as the command that p
 supersedes: this project's uncarded TRAPS.md entry at line 27753 (bus 3fbb0c3; catalogue rows 20-25), for this
   row
 evidence: measured
+
+## conjugal/prekey-22-a-review-that-stops-at-its-first-finding
+rule: the pre-key reviewer reads the whole text line by line and reports EVERY finding; the successor applies
+  all of them at once. A review that reports one finding and stops costs one successor per sentence.
+mechanism: A review that stops at its first finding; an independent verification round or the review before it
+  found this in a real declaration; recorded cost: cited by 3 subjects; a subject's exhaustive pass found
+  thirteen.
+check: the review record lists findings against line numbers spanning the whole draft (`nl -ba decl.md`), not
+  one finding and a stop, and the successor applies every listed finding in one commit.
+supersedes: this project's uncarded TRAPS.md entry at line 27753 (bus 3fbb0c3; catalogue rows 20-25), for this
+  row
+evidence: measured
