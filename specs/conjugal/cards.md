@@ -210,3 +210,14 @@ check: `git rev-parse origin/master^{tree}` right after the delivery push equals
 supersedes: this project's uncarded TRAPS.md item for this row, withdrawn from its outbox before it was
   published
 evidence: measured
+
+## conjugal/prekey-28-the-rehearsal-ran-at-a-base-the-subject-is-not-cut
+rule: build the throwaway declaration-then-code pair on the `origin/master` commit the subject branch will be
+  cut from, and after the real declaration and code commits rehearse every labelled command once more before
+  the key; restate any pinned-base command against the branch point.
+mechanism: The rehearsal ran at a base the subject is not cut from; an independent verification round or the
+  review before it found this in a real declaration; recorded cost: 1 parked.
+check: the rehearsal log names the pair's parent, and `git merge-base origin/master <code commit>` at the key
+  equals it or the log has a second rehearsal at the real commit.
+supersedes: none
+evidence: measured
