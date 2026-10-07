@@ -684,3 +684,35 @@ survives. U7 (PR #96 as a historical subject run) and U8 (a family-computed Code
 existing text: no amendment. 67 `§` lines: 55 ADOPTED · 5 ADOPTED-CONDITIONAL · 0 REJECTED · 7 ROUTED, plus 9 `HEADER:`
 lines. Dispositions: `adjudications/factory-kernel/AdversarialLLM.dispositions.md`, rewritten for blob `81dbaec3` and
 superseding its own ruling on blob `95932dc1` without withdrawing any disposition that ruling recorded.
+
+---
+
+## Harvest 2026-10-06 (arbiter cloudvore) — steward ledger row for the steward's own re-filing (blob 0666f1e8)
+
+Appended at end of file; this ledger is byte-append-only. No Conjugal runner run id: `conjugal` is in the runner's
+`exclude_filings` (kernel §5). The arbiter of record named by the steward routing of 2026-09-26 (bus `e31b50c`) is
+cloudvore; its ruling, `adjudications/factory-kernel/conjugal.dispositions.md` (`arbiter: cloudvore`, `filing_blob:
+0666f1e8`), was published on `review/cloudvore-arbitrates-conjugal-2026-10-06` (tip `d1906ed`) and landed on master by a
+merge commit ahead of this row. The ledger is steward-written (kernel §5); the dispositions are not.
+
+Verdict counts below are the filing's own submitted verdict lines at blob `0666f1e8` (`K1..K12` and `P:` rows): 17 FIT,
+0 FRICTION, 0 BREAK, 0 N/A, 0 UNEXERCISED, plus 29 INSTANCE-FAILURE that count to health, not to the ledger. The
+arbiter's own counts: 46 finding lines 43 ADOPTED · 1 ADOPTED-CONDITIONAL · 2 REJECTED · 0 ROUTED; 8 Untested items
+2 ADOPTED · 2 ADOPTED-CONDITIONAL · 1 REJECTED · 3 ROUTED, all three (U1, U7: trap filing form under R14; U6: kernel
+wording, the steward being the filer) to the owner.
+
+| date | harvest | filing | blob | kernel | profile | subjects | FIT | FRICTION | BREAK | N/A | UNEXERCISED | unresolved BREAKs | arbiter |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 2026-10-06 | no runner run (steward-excluded filing); arbiter harvest 2026-10-06, bus review branch d1906ed | conjugal | 0666f1e84632c925557c8e1c64159d85031f66ff | r5 (unchanged) | code@r9 (now r10; re-file owed) | 1 closed end-to-end (S22); 7 conditional (S1, S25-S27, S29-S31); S12, S13 zero | 17 | 0 | 0 | 0 | 0 | 0 submitted (29 INSTANCE-FAILURE to health) | cloudvore (claude-opus-5.5 integrator + two read-only adversary seats; second-project arbiter per kernel section 5, not the steward) |
+
+**Conditions (the ruling's C1-C5).** Each conditional subject counts zero until a later filing discharges its condition
+and an arbiter other than the steward confirms it. C1 (S25, S26, S27, S29, S31; with C2 for S30): the verdict line does
+not bind the full tree identity. C2 (S30): identity bound only by a prefix. C3 (S25, S26): security-sensitive paths
+accepted by a model key alone with no K2 register in force. C4 (S31, S25): the round-2 contract differs from the
+declared one. C5 (S1): tree `721e4b15` never witnessed as delivered.
+
+**§5 criterion 1 — projects with at least one closed end-to-end subject: conjugal now counts 1.** The arbiter's K9
+landing note is honoured in the same push: `tools/conjugal-reference/resumability-check.py` now carries blob `0f055821`,
+the copy the arbiter verified equal to Conjugal's live gate at Conjugal `1755502d6`.
+
+Derived, not asserted. Re-run: `python tools/harvest-status.py factory-kernel` and `PYTHONUTF8=1 python tools/kernel-e2e.py --json`.
