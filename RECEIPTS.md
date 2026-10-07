@@ -12773,3 +12773,37 @@ probe asking the model to read a sentinel file returned tool-call markup as plai
 executed; the strict parser queues such text. A failed run parks on the CLI's rate-limit event or
 the runner's limit grammar, so no entry is recorded against a broken classifier.
 <!-- outbox:5642a93c9ab256f7 conjugal:d03ef6fe2d94 -->
+### Conjugal, 2026-10-06 — RECEIPT: a declaration linter flags 8 of 17 text failures before any reviewer or verifier spends a round
+
+**Measured.** Over two days, 17 kernel K5 declaration texts failed on their wording, before or at the
+K6 key, and 0 failed on code; 3 were accepted. Two delivered fixes cost 8 texts and 5 texts. Each
+failure was a sentence the verifier or a pre-key reviewer could reproduce as false against the tree.
+No tool read declaration text.
+
+**Built.** A stdlib Python linter run on the declaration at the candidate commit. Hard checks (exit 1
+on any finding): every `file:line` citation with an adjacent quoted token resolves at the candidate;
+a census sentence or heading with a count or a universal over lines carries a command; every named
+evidence path or ref exists (a directory "with every log" must hold a published log); every stated
+tool version matches the version the scripts' own resolver selects; a changed file that an earlier
+declaration classed security-sensitive requires the text to cite a K2 register row; comment lines
+the diff adds require an exclusion sentence naming that file; no placeholders outside the verifier
+prompt; every label the verifier prompt names exists; table rows match their header. Warnings:
+universal words in titles and headings, exclusions whose nouns overlap a fixture column or a check,
+and "only when" / "otherwise" condition sentences.
+
+**Replay receipt.** Run over the 17 failed texts at their parked refs, the hard checks flag the
+recorded cause in 8 (target 8; fewer than 6 would have refuted the design); with warnings and two
+partial hits, 13 of 17. The 3 accepted texts give zero hard findings. It also found faults no
+reviewer had recorded: an uncommanded line count repeated across five texts, and a claimed log
+directory that held no logs in four texts before a review caught it. Disabling any one rule makes
+its fixture pass.
+
+**What it cannot do.** It does not check meaning: an authority row that does not fit the change, or
+a sentence that is true of the code but outside its own discipline. It is a gate before the
+pre-key review, never a substitute for it or for the key; its exit status is not a review verdict.
+
+**Proposal.** Move it to the bus `tools/` with its project settings in a profile file, and add a
+line to the code profile's K6 section: lint the declaration before every verifier round.
+
+Re-derive: the consumer project's declaration linter and its replay test over its parked texts.
+<!-- outbox:83922985dcccdc57 conjugal:38ee614fe4a7 -->
