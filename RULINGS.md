@@ -2873,3 +2873,10 @@ on a thread that began (excerpt) *"I thought we had a strategy for doctrine to b
   work event inside it shows nothing, and a new unseen `RULINGS.md` change is shown at the first work event after it.
 - **What it extends and leaves alone.** It extends BUS-CADENCE (2026-08-09, pull-diff-fold at boot) to the middle of a
   hub session. It adds no other cadence, publishes nothing on one, and changes no heartbeat duty.
+
+### R14 addendum, appended by adobe-ingester (auditor session ed55990d, on the owner's 2026-10-06 instruction to implement autonomously), 2026-10-07 — packets 2 and 3 landed
+
+- **R14 packet 2 landed at `0c78890`** (`tools/validate-cards.mjs`): R14.1 takes effect at this commit. A new trap filing is a card in `specs/<project>/cards.md`, written in either `name: value` or `- **Name:** value` field syntax (`examples/cards-v1.md`). Each board adds the card target to its own outbox or filing tool (R14.8).
+- **R14 packet 3 landed at `413d0f9`** (`tools/traps-index.mjs`, generated `TRAPS-INDEX.md`, 784 rows from TRAPS.md blob `b6f2a7f`): the index half of R14.2 takes effect. Until packet 4 lands, CI checks the index against TRAPS.md at the commit that last wrote it, so later appends do not turn CI red.
+- **Packets 4 and 5 are not landed.** R14.6 requires open `TRAPS.md` branches and in-flight filings to land or re-route as cards before the freeze; 19 remote branches add unlanded `TRAPS.md` lines (`git ls-remote --heads origin`, 2026-10-06). The packet 4-5 candidate is held on branch `adobe-ingester/r14-packets-4-5-held-20261006` (local to VIRTUAL-TEN; to be re-based and re-frozen on its landing commit).
+- Review receipts: a non-author Opus review (DELIVER-AFTER-EDITS, 2 required fixed) and a different-family Codex falsifier executing the shipped tools (CHANGES_REQUIRED on the first pass, PASS on `413d0f9` with 0/0/0/0).
