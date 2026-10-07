@@ -1243,7 +1243,7 @@ DECLARATION|fleet-factory-kernel r4' | Select -Last 3` and `git log -8 --format=
 - **R15.2 — lanes excluded.** Governed Claude reviewer lanes (Opus, Sonnet) carry `FACTORY_LANE` and the hook is
   silent there. Codex lanes (Sol, Luna) fire no Claude hook.
 - **R15.2 — the session type with no work event: Sol**, the Codex coordinator, runs scheduled wakes with no hook. It is
-  refreshed by the auditor, which relays new RULINGS ids and titles through Adobe's advisory ingress as data.
+  refreshed by an auditor session relaying new RULINGS ids and titles through Adobe's advisory ingress as data (first relay: ingress seq 25, 2026-10-07). OPEN: this relay is session-bound, not yet durable; a scheduled relay needs its own ingress chain.
 - **Fold cursor:** still `1c3d650` (2026-09-19). The 14 binding RULINGS entries since then are triaged in Adobe's
   `.claude-state/coordination/doctrine-fold/TRIAGE-20261005.md` and wait for Sol's ratification, after the WO-015
   review. Re-derive: `git -C <bus> log 1c3d650..origin/master -- RULINGS.md`.
