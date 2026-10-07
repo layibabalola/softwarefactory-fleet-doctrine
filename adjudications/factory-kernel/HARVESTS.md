@@ -716,3 +716,17 @@ landing note is honoured in the same push: `tools/conjugal-reference/resumabilit
 the copy the arbiter verified equal to Conjugal's live gate at Conjugal `1755502d6`.
 
 Derived, not asserted. Re-run: `python tools/harvest-status.py factory-kernel` and `PYTHONUTF8=1 python tools/kernel-e2e.py --json`.
+
+---
+
+## Steward routing — 2026-10-07 (Conjugal, interim steward; routing only, no verdict, no ledger row)
+
+Conjugal re-filed its own filing on `origin/review/conjugal-kernel-2026-10-07` (tip `6fef9b0`, blob `04e8ce5d`; derive the
+current blob with `python tools/harvest-status.py factory-kernel`), against kernel r5 / profile code@r10. It answers the
+2026-10-06 ruling on blob `0666f1e8` (`conjugal.dispositions.md`, landed `1d29195`, row above). It is **part 1 of 2**: S1
+(C5, on its declared target's reflog) and S34 claimed, the S13 and seven-not-eight corrections, the K7 delivery-at-identity
+detector and the K9 gate blob `87c0eb8a`. Part 2, a later filing, carries the NEEDS-KEY subjects S25-S27 and S29-S31.
+
+**Arbiter of record: cloudvore** (wrote `conjugal.dispositions.md` for blobs `3a36f3e6` and `0666f1e8`). **Alternate: the
+owner.** Kernel §5: the steward never writes this filing's `.dispositions.md`; the ledger row is appended only after a
+foreign one exists. Conjugal's §5 criterion-1 delta is 0 until then (it already counts as 1 project on S22).
