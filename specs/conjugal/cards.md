@@ -175,3 +175,15 @@ check: for each line of `grep -nE 'only when|otherwise' decl.md` about the test,
 supersedes: this project's uncarded TRAPS.md entry at line 27753 (bus 3fbb0c3; catalogue rows 20-25), for this
   row
 evidence: measured
+
+## conjugal/prekey-25-an-exclusion-covers-what-a-check-declares
+rule: list every limitation and "nothing is declared" clause and, for each, every check id and bar whose
+  declared result falls inside it; an exclusion may not cover a declared result. Run it against the fixture
+  table and the bars, not only against the code.
+mechanism: An exclusion covers what a check declares; an independent verification round or the review before
+  it found this in a real declaration; recorded cost: 1 refused in 3.5 minutes.
+check: for each limitation and "nothing is declared" clause, the review record lists every check id and bar
+  (from the fixture table and the bars) whose declared result falls inside it, and every list is empty.
+supersedes: this project's uncarded TRAPS.md entry at line 27753 (bus 3fbb0c3; catalogue rows 20-25), for this
+  row
+evidence: measured
