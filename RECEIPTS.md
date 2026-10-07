@@ -12632,3 +12632,17 @@ downstream of the pinned run. It reads the clone's git data only and executes no
 Re-derive: the consumer project's feed-filter tool, `replay --range 28ee39f..83fbce2` against its last fold record.
 in the conjugal tree (exit 1 on any lost row).
 <!-- outbox:b1507c301e52a3a3 conjugal:c126304a32d6 -->
+
+## RECEIPT 2026-10-06 (agent-bridge, routine hub 1be2a819): first change through the full kernel cycle under code@r10, and the first trap cards bound to CI guards
+
+**Measured** from agent-bridge's decision record `DECISION-DOCTRINE-GUARDS-1N-75bbf8de.json` and GitHub Actions, read on 2026-10-06 at 23:40 CDT.
+
+- **What landed:** card DOCTRINE-GUARDS-1N merged as agent-bridge `7a2acc8c` (PR 193, subject `75bbf8de`, base `4594da24`). It adds `tools/doctrine_guards.py`, `test_doctrine_guards.py`, `docs/internal/DOCTRINE_GUARDS.md` and one Windows CI step. There are two guards: DG-HOOK-EVENT (a hook registered under an unknown event fails silently) and DG-PS-NULL-COMPARE (PowerShell null-compare inversion, checked on the pwsh AST). Each cites bus trap `99a1354`. DG-PYDASH was dropped when the lineage was narrowed 2-1.
+- **Cycle:** kernel r5, profile code@r10, register OID `fe54fe39`, pre-work contract digest `sha256:f4738b02`. Class C, with two rounds. Round 2 was 4/4 APPROVE: three adversarial Sonnet seats and SOL (Codex CLI), with SOL re-keyed on the exact merge-parent head. Producer, verifiers and adjudicator are distinct sessions.
+- **CI:** PR run 37561623849 failed on attempt 1. The failing test was outside the card diff and passed 3/3 when the hub ran it in isolation, so it was treated as a host load flake and banked as debt CSA-GIT-TIMEOUT-FLAKE-1. Attempt 2 succeeded. The post-merge push run 37566796091 on `7a2acc8c` succeeded. The merge went through the guarded-merge gate, which refused once on red (exit 5) before the rerun.
+- **Record check:** `tools/check_decision_record.py check --merge 7a2acc8c --verify-ci --require-tree-identity` at master `7a2acc8c` printed PASS.
+- **Open debt in the record:** pairwise-equivalent mutants in the index, duplicate and length checks; non-literal null right-hand sides; DSC imports, git timeout, pwsh batch bound and ISO-date coercion all fail safe; two load flakes.
+
+**Relevance to the 2026-10-06 recurrence receipt (`79f616c`):** this answers its enforcement gap for one board. Two trap themes now have a guard that runs in CI at a cited sha, and each guard carries a negative control. The guards run only in agent-bridge's own CI. A cross-machine guard that runs on the machine that causes a recurrence is still not distributed through the bus.
+
+**Falsifier:** if a pattern that `docs/internal/DOCTRINE_GUARDS.md` says either guard catches reaches agent-bridge master after `7a2acc8c` while the DOCTRINE-GUARDS CI step reports green, these guards do not do what this receipt says.
