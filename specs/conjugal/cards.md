@@ -87,3 +87,16 @@ check: for each register row or directive clause the declaration cites, the revi
 supersedes: this project's uncarded TRAPS.md entry at line 27733 (bus c638439; catalogue rows 13-19), for this
   row
 evidence: measured
+
+## conjugal/prekey-18-the-gate-is-scoped-by-path-not-by-hunk
+rule: before claiming that no gate applies, grep earlier declarations for the file's own classification (the
+  project's declarations) and the profile's gate list; a file any subject classed security-sensitive takes a
+  register row or parks for the owner.
+mechanism: The gate is scoped by path, not by hunk; an independent verification round or the review before it
+  found this in a real declaration; recorded cost: 1 refused in 5 minutes.
+check: `git grep -n -i 'security-sensitive'` over the earlier declarations, read against `git diff --name-only
+  <base>..<code>`: each changed file an earlier declaration classed security-sensitive is covered by a cited
+  register row, or the subject parks for the owner.
+supersedes: this project's uncarded TRAPS.md entry at line 27733 (bus c638439; catalogue rows 13-19), for this
+  row
+evidence: measured
