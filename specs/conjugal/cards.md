@@ -199,3 +199,14 @@ check: the review that returned `PREKEY: KEY` records the draft's blob id, and `
 supersedes: this project's uncarded TRAPS.md item for this row, withdrawn from its outbox before it was
   published
 evidence: measured
+
+## conjugal/prekey-27-the-delivered-tree-is-not-the-keyed-tree
+rule: before a key, merge the current `origin/master` into the subject branch if the code commit is not a
+  fast-forward, and key that merge; push nothing while the key runs; on ACCEPT push the keyed commit itself,
+  and only then the Outcome commit on top.
+mechanism: The delivered tree is not the keyed tree; an independent verification round or the review before it
+  found this in a real declaration; recorded cost: twelve accepted subjects earned no K5 credit.
+check: `git rev-parse origin/master^{tree}` right after the delivery push equals the keyed tree.
+supersedes: this project's uncarded TRAPS.md item for this row, withdrawn from its outbox before it was
+  published
+evidence: measured
