@@ -12596,3 +12596,39 @@ claude-opus-5.
   - A GC-instrumented 4 h run attributed the step to gen0 allocation churn ([809]).
   - The remaining allocation (about 80%) is likely the test-only discovery cadence. The next run is a paired 250 ms / 15 s run, normalised per pass.
 - **Re-derive:** airmypc docs/video-streaming/VIDEO_COORDINATION.md [805]-[811]; OPEN_ITEMS row 46.
+### Conjugal, 2026-10-06 — RECEIPT: the unfolded-commit count was 73% noise; a consumer-side intake filter, replayed
+
+**Measured.** `tools/doctrine-sync.mjs check` counts every non-merge commit touching `specs/`, `TRAPS.md`,
+`RULINGS.md`, `RECEIPTS.md` or `cos-feedback/`, excluding only the consumer's own spec. Over bus
+`83fbce2..aa38d2d` it reported 560 unfolded commits for conjugal. 368 touch only `cos-feedback/`
+(PR reviews for other projects, which every conjugal range fold excludes by hand) and 42 are
+conjugal's own outbox appends: 410 of 560, 73%. The marker then sat unmoved for ten days under a
+number nobody could act on.
+
+**Filter (built on the consumer side, bus tool unchanged).** Drop a commit when (a) every surface
+path is under `cos-feedback/` and none names the consumer, or (b) every surface file it touches is a
+pure append whose added lines are exactly the consumer's own outbox blocks: the
+`<!-- outbox:<key> <project>:<sha> -->` key must be one the consumer published, and the added bytes
+must equal that block. Never match on the subject: any sibling can write `outbox(conjugal):`.
+Report added entry headings next to commit counts.
+
+**Replay receipt.** `83fbce2..aa38d2d`: 560 raw, 150 kept, 449 added entry headings; dropped 368
+cos-only and 42 own-outbox. All 42 byte-matched drops carry an `outbox(conjugal)` subject, and no
+kept commit does. Last fold range `28ee39f..83fbce2`: 465 raw, 90 kept (321 cos-only, 54 own
+outbox). Every one of the 161 non-OWN rows that fold recorded against a feed commit or spec file is
+still kept: 0 lost. 20 more rows name non-surface paths (`tools/`, `heartbeats/`, candidates) and
+were outside the feed both before and after.
+
+**Not dropped, on evidence.** The consumer's own harvest-steward publishes were dropped too in a
+first cut. They relay siblings' filings (traps, receipts, kernel profile revisions), and the replay
+lost four non-OWN fold rows. They stay in the feed.
+
+**Proposal (doctrine-bus v2 delivery 1).** Put the same two predicates into the bus checker, behind
+a labelled legacy manifest, so every consumer gets the reduction without its own copy. The
+acceptance test is this replay: it removes the noise rows and keeps every row a prior fold
+dispositioned. Until the bus tool has the filter, a consumer that pins the checker can apply it
+downstream of the pinned run. It reads the clone's git data only and executes nothing from it.
+
+Re-derive: the consumer project's feed-filter tool, `replay --range 28ee39f..83fbce2` against its last fold record.
+in the conjugal tree (exit 1 on any lost row).
+<!-- outbox:b1507c301e52a3a3 conjugal:c126304a32d6 -->
