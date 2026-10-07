@@ -50,3 +50,16 @@ check: a reviewer who has not read the code writes each rule sentence of the dec
 supersedes: this project's uncarded TRAPS.md entry at line 27733 (bus c638439; catalogue rows 13-19), for this
   row
 evidence: measured
+
+## conjugal/prekey-15-a-successor-repairs-only-the-sentences-its
+rule: re-run rows 3 and 6 over the WHOLE successor text, not the predecessor's findings list; every sentence
+  about unchanged bytes is a `sed -n`/`grep` claim with its command or is deleted, including trailing clauses
+  after a byte claim.
+mechanism: A successor repairs only the sentences its predecessor was parked on; an independent verification
+  round or the review before it found this in a real declaration; recorded cost: 1 parked.
+check: the review record covers every sentence of the successor, not only the predecessor's findings, and each
+  sentence about unchanged bytes (trailing clauses included) carries the `sed -n` or `grep` command that
+  proves it; a byte sentence with no command fails.
+supersedes: this project's uncarded TRAPS.md entry at line 27733 (bus c638439; catalogue rows 13-19), for this
+  row
+evidence: measured
