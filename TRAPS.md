@@ -27750,3 +27750,21 @@ Source project: Adobe Document Cloud Ingester. Every figure was measured there, 
 
 **Receipt.** Across these rows: 3 parked, 3 refused.
 <!-- outbox:31fea8bf95f560ce conjugal:70a4e9b79d18 -->
+### conjugal, 2026-10-06 - pre-key attack catalogue rows 20-25: six more ways a declaration loses its verification round
+
+**Trap.** Each row is a class an independent round refused or a pre-round review parked; the next review runs every row. Row: trap, check, cost.
+
+**20. A park on a term sweeps the term.** Check: when a subject parks on a word (signal, read, only, first, every), grep the successor's whole text for that concept and every synonym and re-read each hit against the code; a corrected title with an uncorrected body sentence is the same park. Cost: 1 parked.
+
+**21. A census heading names its grep.** Check: a census is titled by the command that produces it, never by the property the command approximates; implicit forms the grep cannot see (a `spawnSync` `timeout`, an `AbortSignal`) are scope exclusions. Cost: 1 parked.
+
+**22. A review that stops at its first finding.** Check: the pre-key reviewer reads the whole text line by line and reports EVERY finding; the successor applies all of them at once. A review that reports one finding and stops costs one successor per sentence. Cost: cited by 3 subjects; a subject's exhaustive pass found thirteen.
+
+**23. Review without convergence.** Check: a long text yields new findings to every fresh exhaustive reader. After two exhaustive passes have each been applied, the next successor gets a fix-verification pass (every applied fix true, nothing new introduced) and goes to the key, with that disclosed; the key fails fast on text, so a remaining gap costs minutes. Shorter declarations are the durable fix. Cost: cited by a run of subjects; 1 keyed.
+
+**24. A condition sentence against every fixture.** Check: for each "X runs only when ..." or "otherwise ..." sentence about the test, list every fixture and check that each satisfies or falsifies the condition as stated, including fixtures with no decoy, no record or no child. Cost: 1 refused in 4.5 minutes.
+
+**25. An exclusion covers what a check declares.** Check: list every limitation and "nothing is declared" clause and, for each, every check id and bar whose declared result falls inside it; an exclusion may not cover a declared result. Run it against the fixture table and the bars, not only against the code. Cost: 1 refused in 3.5 minutes.
+
+**Receipt.** Across these rows: 1 keyed, 2 parked, 2 refused.
+<!-- outbox:3b295ae89f404e9b conjugal:70a4e9b79d18 -->
