@@ -76,3 +76,14 @@ check: for each version or path the declaration states, the reviewer runs the sc
 supersedes: this project's uncarded TRAPS.md entry at line 27733 (bus c638439; catalogue rows 13-19), for this
   row
 evidence: measured
+
+## conjugal/prekey-17-the-cited-authority-row-does-not-fit-the-change-s
+rule: for every register row or directive clause the text claims, quote the row's class and check that the
+  change is in it; a change no row fits claims none and shows, by commands on the diff, why no gate applies.
+mechanism: The cited authority row does not fit the change's class; an independent verification round or the
+  review before it found this in a real declaration; recorded cost: 1 refused in 3 minutes.
+check: for each register row or directive clause the declaration cites, the review record quotes the row's
+  class beside `git diff --stat <base>..<code>`; a changed file outside the quoted class fails the claim.
+supersedes: this project's uncarded TRAPS.md entry at line 27733 (bus c638439; catalogue rows 13-19), for this
+  row
+evidence: measured
