@@ -63,3 +63,16 @@ check: the review record covers every sentence of the successor, not only the pr
 supersedes: this project's uncarded TRAPS.md entry at line 27733 (bus c638439; catalogue rows 13-19), for this
   row
 evidence: measured
+
+## conjugal/prekey-16-a-host-fact-names-a-tool-the-subject-s-scripts-do
+rule: for every version or path the text states (Python, bash, jq, PowerShell), run the resolver the scripts
+  under test use (the project's own launcher helper, the runner's `$BASH`, PATH under the child's names) and
+  print what it selects; state that, or state no version.
+mechanism: A host fact names a tool the subject's scripts do not select; an independent verification round or
+  the review before it found this in a real declaration; recorded cost: 1 parked.
+check: for each version or path the declaration states, the reviewer runs the scripts' own resolver in the
+  subject's environment (for example `command -v python3 && python3 --version` under the runner's PATH, or the
+  project's launcher with `--version`) and the printed result equals the stated one.
+supersedes: this project's uncarded TRAPS.md entry at line 27733 (bus c638439; catalogue rows 13-19), for this
+  row
+evidence: measured
