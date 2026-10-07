@@ -113,3 +113,15 @@ check: `grep -nE '^#' decl.md` and every table caption: each hit is a relation o
 supersedes: this project's uncarded TRAPS.md entry at line 27733 (bus c638439; catalogue rows 13-19), for this
   row
 evidence: measured
+
+## conjugal/prekey-20-a-park-on-a-term-sweeps-the-term
+rule: when a subject parks on a word (signal, read, only, first, every), grep the successor's whole text for
+  that concept and every synonym and re-read each hit against the code; a corrected title with an uncorrected
+  body sentence is the same park.
+mechanism: A park on a term sweeps the term; an independent verification round or the review before it found
+  this in a real declaration; recorded cost: 1 parked.
+check: `grep -niwE '<word>|<synonym>' successor.md` with the parked word and every synonym prints each hit,
+  and the review record re-reads every hit against the code; a hit that repeats the parked reading fails.
+supersedes: this project's uncarded TRAPS.md entry at line 27753 (bus 3fbb0c3; catalogue rows 20-25), for this
+  row
+evidence: measured
