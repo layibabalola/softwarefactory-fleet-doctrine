@@ -37,3 +37,16 @@ check: `grep -niE 'leaves|then depends on|falls through' decl.md` prints no line
 supersedes: this project's uncarded TRAPS.md entry at line 27733 (bus c638439; catalogue rows 13-19), for this
   row
 evidence: measured
+
+## conjugal/prekey-14-a-rule-sentence-is-false-somewhere-inside-its-own
+rule: formalise the rule sentences from the declaration alone (not from the code) and compare them with the
+  real code over an enumerated or sampled set of in-model inputs; a disagreement is a false sentence or a
+  model stated too widely.
+mechanism: A rule sentence is false somewhere inside its own model; an independent verification round or the
+  review before it found this in a real declaration; recorded cost: cited by a subject.
+check: a reviewer who has not read the code writes each rule sentence of the declaration as a predicate, runs
+  the predicate and the real code over the same enumerated or sampled in-model inputs, and records zero
+  disagreements, keeping the input list and both outputs with the review.
+supersedes: this project's uncarded TRAPS.md entry at line 27733 (bus c638439; catalogue rows 13-19), for this
+  row
+evidence: measured
