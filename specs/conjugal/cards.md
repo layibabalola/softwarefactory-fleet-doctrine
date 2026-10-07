@@ -162,3 +162,16 @@ check: the subject's review records show at most two applied exhaustive passes b
 supersedes: this project's uncarded TRAPS.md entry at line 27753 (bus 3fbb0c3; catalogue rows 20-25), for this
   row
 evidence: measured
+
+## conjugal/prekey-24-a-condition-sentence-against-every-fixture
+rule: for each "X runs only when ..." or "otherwise ..." sentence about the test, list every fixture and check
+  that each satisfies or falsifies the condition as stated, including fixtures with no decoy, no record or no
+  child.
+mechanism: A condition sentence against every fixture; an independent verification round or the review before
+  it found this in a real declaration; recorded cost: 1 refused in 4.5 minutes.
+check: for each line of `grep -nE 'only when|otherwise' decl.md` about the test, the review record has one
+  line per fixture saying whether that fixture satisfies or falsifies the condition, including fixtures with
+  no decoy, no record or no child.
+supersedes: this project's uncarded TRAPS.md entry at line 27753 (bus 3fbb0c3; catalogue rows 20-25), for this
+  row
+evidence: measured
