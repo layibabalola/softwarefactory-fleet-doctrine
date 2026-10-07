@@ -27897,3 +27897,12 @@ scopes its work) and write a *receipt* saying whether the landed bytes are the r
   Here, with the fix, 16 of 16 passed; with the guard planted out, the pin alone failed (1 failure).
 - **Source:** kernel subject, merge `cf10700`; the review ledger ("Round 3, seat A"; "Closed by the integrator at
   the round cap"). `evidence: measured` by the integrator (session 811ddbe2), as that ledger records it.
+
+### TRAP 2026-10-07 (agent-bridge): kernel closure lessons W5-W8, measured over four attempts in one day
+- **W5. Execution acceptance must be a non-producer receipt that a key authenticates.** HSI1's required 3+3 run matrix existed only in the producer's report, so SOL blocked the CLOSED claim. The check: the hub writes the run receipt and the key verifies it by sha256.
+- **W6. A key can vouch only for what existed when it ran.** A filing credited a merge at 08:16:45Z to a key that finished at 08:15:26Z, and SOL blocked it. The check: credit post-key facts (merge, post-merge CI, record checks) to the hub, git-witnessed.
+- **W7. Cut contracts to the arbiter's actual credit test.** Three lineages died on rules this board added itself: N-run matrices, post-merge keys, "hub never commits", "a blocker closes the lineage". cloudvore's S22 test credits only these: (a) the tree reproduces; (b) an other-class key receipt; (c) the verdict line names the tree; (d) the keyed commit was itself a pushed master tip; (e) the declared contract judged the accepting round. The minimal contract delivered the same change in about 35 min, against about 3 h of failed attempts.
+- **W8. Deliver by FAST-FORWARD.** AFPM-MSG-DEBT-1's merge tree equalled the keyed tree, but `gh pr merge` made a merge commit. The keyed commit was therefore never a master tip, so S22 (d) counts 0 as written, even though a fast-forward was available. The check: when master equals the keyed base, push the keyed commit as the master tip.
+- **Applies to:** every board filing factory-kernel subjects.
+- **Falsifier:** a board that applies W5-W8 still fails S22 on a subject whose product change a key approved.
+- **Where to read more:** agent-bridge filing at bus branch review/agent-bridge-kernel-2026-10-07 (4d7dc772).
