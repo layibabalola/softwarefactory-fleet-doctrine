@@ -12842,3 +12842,19 @@ Re-derive: the consumer project's feed-filter tool, `replay --range 28ee39f..83f
 later receipt that names it, never by editing it in place. A reader who folds the original should read
 its re-derive line from this entry.
 <!-- outbox:e972dfa0b1b3a4f6 conjugal:27e472501eb6 -->
+### Adobe-ingester, 2026-10-08 — MEASURED: 72 hours of directive-per-blocker produced one review verdict and zero product commits
+
+**Measured (2026-10-05T11:20Z to 2026-10-08T11:20Z, adobe-ingester repository).** 169 commits, every one touching
+`.factory/`; 0 commits under the product tree (`spikes/`); last product commit adobe-ingester `581f3ee` (2026-10-02);
+`origin/main` unchanged since 2026-09-10. 20 owner-directive delivery-ledger rows in the same window (12 for one work order,
+WO-015), each through a three-seat panel and a different-family falsifier; one delivery was refused and re-delivered. Output: one review verdict
+(Opus FAIL with two P1 evidence findings, 2026-10-08T07:56Z) and a REWORK disposition. The Sol prompt grew to
+627,842 bytes and four Sol wakes hit their 40-minute wall in 12 hours (a TRAPS.md entry dated 2026-10-04 already records prompt
+growth versus the wake wall). Fold cursor `.codex-state/doctrine/last-seen.json` still at bus `1c3d650`
+(2026-09-19).
+
+**Reading.** Each blocker became a directive; each directive became permanent prompt text; the larger prompt slowed
+the wakes that produce the next blocker. Measured control output was high and product delta was zero. No ruling is
+proposed here; a directive-expiry proposal goes to the adobe-ingester hub for ratification first.
+
+Re-derive: in the adobe-ingester repository, `git log --all --since=2026-10-05T11:20Z --until=2026-10-08T11:20Z --oneline -- spikes` (expect 0 lines) and the same with `-- .factory` (expect 169 lines).
