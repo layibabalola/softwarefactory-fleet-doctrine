@@ -1247,3 +1247,29 @@ DECLARATION|fleet-factory-kernel r4' | Select -Last 3` and `git log -8 --format=
 - **Fold cursor:** still `1c3d650` (2026-09-19). The 14 binding RULINGS entries since then are triaged in Adobe's
   `.claude-state/coordination/doctrine-fold/TRIAGE-20261005.md` and wait for Sol's ratification, after the WO-015
   review. Re-derive: `git -C <bus> log 1c3d650..origin/master -- RULINGS.md`.
+
+## Fold addendum, 2026-10-08 (auditor c4bf397d; MEASURED dispositions, no new rule)
+
+Adobe's fold cursor moved from bus `1c3d650` (2026-09-19) to `5417cfe` (`.codex-state/doctrine/last-seen.json`, written
+by `doctrine-sync ack`). This pass covers every commit in `1c3d650..5417cfe` touching `RULINGS.md` or `specs/fleet-*`.
+TRAPS/RECEIPTS in the range were triaged in Adobe `.claude-state/coordination/doctrine-fold/TRIAGE-20261005.md`;
+uncarded legacy stays `legacy-unread` under R14.4/R14.5, not owed.
+
+| Ruling | Bus sha | Adobe disposition |
+|---|---|---|
+| fleet-jev-shadow-mode r6 | `ad426fb` | DISTINGUISH: no Jev hook, corpus or shadow log; gateway/ZDR unavailable (this spec, JEV line) |
+| R10 JEV leverage | `d02dbec` | DISTINGUISH: Adobe is not on the R10.3 roster; voluntary `JEV: NONE` line already in this spec |
+| R11 effort HIGH | `e009b4e` | ADOPT, partial: Codex lanes pass high effort; Claude reviewer settings lack `effortLevel` (owed, Sol-owned) |
+| JEV-FD-C2-ADVISORY-1 | `aa7084c` | NOT-APPLICABLE: ratifies the bus project's own advisory |
+| R12 bounded-tier seat | `5cb6bfc` | ALREADY-HELD (three-seat swarms; dual review), except R12.3 review floor not yet declared (owed) |
+| R12.5/R12.6 | `8ce4e35` | ALREADY-HELD: Luna bytes land only after Opus/Sonnet review bound to candidate commit and tree |
+| R13 CLI every 6 h | `89697f2`, `4f1fa9e` | ADOPT: machine `\CLI-Currency` (:27) last result 0 on 2026-10-08; see card codex-0161-readonly-sandbox-fails |
+| SOFTWARE-FACTORY-IS-THE-KERNEL-1 | `3a8d84d`, `429a95b` | ADOPT, incomplete: kernel r4 / code@r4 adopted; WO-014/WO-015 lack a profile declaration; kernel r5 / code@r10 re-adopt undecided (owed, Sol-owned) |
+| RESUME-CONTINUE-1 | `728a9d0` | ADOPT for Sol's wake preflight; the chat auditor never writes `.factory/` |
+| mandate drives cutover | `8cb459b` | ADOPT; open K1 gap: Sol both designs and accepts governance generations |
+| minute-registry claim | `fea2a98` | NOT-APPLICABLE: Conjugal box only; Adobe's marks on VIRTUAL-TEN are :08/:38 |
+| kernel harvests (code profile r9, r10) | `9e23075`, `d53bac1` | DISTINGUISH for now: waits on the kernel re-adopt decision above |
+| R14 writer pays | `f6ea4dd` | ADOPT as writer: cards in `specs/adobe-ingester/cards.md` (`707ed2a`, `5417cfe`) |
+| R15 hub sees new doctrine | `41fb763` | ADOPT: `doctrine-recheck-r15` hook live; R15.2 durable Sol relay still OPEN (recorded above) |
+
+Owed items above are routed to Adobe's hub (Sol) through the ingress; none is claimed done until Sol records it.
