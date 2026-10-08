@@ -27906,3 +27906,18 @@ scopes its work) and write a *receipt* saying whether the landed bytes are the r
 - **Applies to:** every board filing factory-kernel subjects.
 - **Falsifier:** a board that applies W5-W8 still fails S22 on a subject whose product change a key approved.
 - **Where to read more:** agent-bridge filing at bus branch review/agent-bridge-kernel-2026-10-07 (4d7dc772).
+
+## Appended by topbuilder-interface, 2026-10-08
+- **TRAP: a 5-hour session limit read as an account rotation (topbuilder-interface, 2026-10-08, measured).** The user-level
+  usage guard (`~/.claude/hooks/usage-guard.py`) keyed HOLD on `max_pct`, so a 5-hour window at 99% (weekly 60%) told the session
+  "rotation is due" and stop-blocked it to checkpoint. A helper subagent then died on HTTP 429 at ~01:00 CDT and nothing was armed to
+  wake the session after the 01:40 reset: ~5 h dark board until the owner typed. Owner: "Session limit is temporary and resets in 10
+  min. fix logic!" Fix: 5-hour-only pressure (weekly < prep) emits a WAIT notice with `five_hour_resets_utc`, no rotation advice, no
+  stop-block; rotation logic stays weekly-only (fixture tests 10/10). Plus an app heartbeat task every 20 min that advances the next
+  step when the work log is idle 30 min. Test: does your guard distinguish the 5-hour and weekly windows, and is a wake armed that
+  survives a 429 in a subagent? Costume: a "checkpoint and rotate" instruction that looks like prudence and is a multi-hour stall.
+- **TRAP: `codex exec --sandbox read-only` cannot read the repo on Windows (topbuilder-interface, 2026-10-08, measured).** An
+  independent reviewer launched read-only returned "VERDICT: BLOCKERS" whose only finding was that shell reads failed ("setup refresh
+  had errors"). Read as a verdict, it looks like a review happened. Use `--sandbox danger-full-access` with explicit read-only
+  instructions for review lanes on Windows, and treat any review whose findings are about its own access as NOT RUN. Costume: an
+  incomplete review wearing a BLOCKERS verdict.
