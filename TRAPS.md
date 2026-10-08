@@ -27906,3 +27906,87 @@ scopes its work) and write a *receipt* saying whether the landed bytes are the r
 - **Applies to:** every board filing factory-kernel subjects.
 - **Falsifier:** a board that applies W5-W8 still fails S22 on a subject whose product change a key approved.
 - **Where to read more:** agent-bridge filing at bus branch review/agent-bridge-kernel-2026-10-07 (4d7dc772).
+
+### A resume note that only a model writes is absent exactly when a rotation needs it (adversarialllm, 2026-10-04)
+
+A post-mortem on 2026-10-04 answered the owner's question "if we changed accounts now, would work resume seamlessly?"
+with no, on four findings. (a) Step 6 of `adversarialllm/.claude-state/RESUME.md` (row RESUME-CHECKPOINT, PR #180,
+merged as commit ecab2021) points a resuming session at the newest `## Controller resume checkpoint` comment on issue
+#130, but no new one was posted between the checkpoints of 2026-09-29T07:34:44Z and 2026-10-04T13:57:25Z, while 31
+pull requests merged from PR #165 (2026-09-29T14:59Z, commit c1731ae8) through PR #222 (2026-10-04T07:49Z, commit
+2c373284). That includes PR #180, which delivered the checkpoint step itself on 2026-10-01T03:12Z; 22 more merged after
+it with no checkpoint posted. Every landing is a squash commit carrying `(#NNN)` in its subject, so count them with
+`git log c1731ae8^..2c373284 --first-parent --format=%s | grep -c '(#[0-9]*)$'` (prints 31) and, after PR #180,
+`git log ecab2021..2c373284 --first-parent --format=%h | wc -l` (prints 22). The same first-parent history holds two
+more merges between the two checkpoints but outside that PR range (PR #172 on 2026-09-29T11:41Z and PR #219 on
+2026-10-04T12:34Z). The note is advisory practice that a model has to
+remember to write, and no code writes it. (b) The repository's tracked
+memory was last written on 2026-10-02. (c) The user-level Stop-hook checkpoint listed 880 branch rows as in flight in
+the 2026-10-04 post-mortem (a later listing the same day showed 877), because it filters on `git for-each-ref
+--no-merged=refs/remotes/origin/master`, which never matches a squash-merged branch (every landing here is a squash
+merge), and it names no next command per PR. (d) The chains that drive gates and reviews are child processes of the
+session's `claude.exe`, so they end with the session. Every chain, worker leg and implementer leg descended from one
+`claude.exe` process started on 2026-09-29, so one rotation or crash ends them all, and the re-arm commands in the #130
+comment were the only recovery path. Every fact needed to derive the next step was already on disk or
+on GitHub: the PR head and base, the gate receipts `.factory-local/gate-<pr>-<head8>*-exact-ci.json`, the review
+attempt directories `review-<pr>-<head12>-<family>-r<N>-a<M>/.factory-local/verdict.json`, the published-verdict
+markers on the PR and the authorship receipts `.factory-local/impl-<row>-a<N>-authorship.json`. A three-agent
+adjudication of the same day rejected a GitHub POST in `run-gate.ps1`, `dispatch-review.ps1`, `post-verdict.ps1` or
+`merge-pr.ps1` (it would give gates a network failure mode and write outside the publication ledger, and
+`dispatch-review.ps1` is already at the 180-line adapter cap) and a scheduled task (barred by RESET-PLAN section 1.3
+and point 7), and adopted a read-only oracle.
+
+**Adopt.** This entry adopts two rules of conjugal's TRAP "a pointer checkpoint, a passing gate and a chat timer did
+not add up to continuity" (bus 217fda6), and adds the airmypc finding that adopted it (bus 90672fc, "adopt
+pointer-checkpoint": a checkpoint that ranks by commit time or hides live work sends a rotated session to the wrong
+item). Rule 1, state is derived and a hand-written "in flight" paragraph is at best a cache of it: here the derivation
+is `status.ps1 -Resume`. Rule 2, the same script is a refusing check: `status.ps1 -Resume` exits non-zero and prints
+the reason when a worker-host receipt says RUNNING but its pid is dead (review attempt
+`review-190-245015480221-claude-r1-a1`, pid 146644, still read RUNNING with #190 closed on 2026-10-01), when the
+newest `## Controller resume checkpoint` comment on issue #130 is older than the newest merge on origin/master, or
+when an open PR has no live leg and no verdict for its current head and base. A fact it cannot read is a refusal, not
+an all-clear (the airmypc cache that prints UNKNOWN rather than "nothing running" is the same rule).
+
+**Distinguish.** Rule 6, file the rotation on the first usage-limit error, is not adopted: here a rotation is
+performed by the owner and account rotation is on the never-authorized list for every agent (this repository's
+CLAUDE.md and `factory/RESET-PLAN.md` section 1.3), so the oracle
+reports state and never files anything. Rule 4, a harness-tracked watcher per detached run, is met here by the
+worker-host receipt (`.factory-local/host-output.json` carries the pid and process start time, and a leg is alive iff
+its process is). That is not where the gap was: the gap was the session-child chains that drive gates and reviews
+and end with the session's `claude.exe`, which is why the oracle re-derives the next command and the refusing check
+names the receipts whose process is gone. Rules 3 and 5 (a gate's PASS line names its workstream; measurement
+evidence on a never-merged branch) are not touched by this row.
+
+> **Derive the per-PR next command from receipts with a read-only oracle (`factory/controller/status.ps1 -Resume`,
+> backed by `factory/controller/resume-state.mjs`); a note a model writes is advisory only and is never the resume
+> path, and the oracle refuses (non-zero exit, reason printed) on a dead RUNNING receipt, a checkpoint older than the
+> newest merge, or an open PR nothing is driving. A branch list filtered with `--no-merged` cannot see squash merges,
+> so key landedness on the PR state on GitHub or on origin, never on the branch list. A fact the oracle cannot derive
+> is reported UNKNOWN, never guessed.**
+
+Test: `pwsh -NoProfile -File factory/controller/status.ps1 -Resume` in AdversarialLLM-ClaudeCode prints exactly one
+action (REFRESH, GATE, REVIEW, PUBLISH, REVISE, MERGE, ADJ-CLOSE, WAIT or UNKNOWN) with its command for every open PR
+and no line for a merged one, exits non-zero with the reasons while any of the three refusal conditions holds, and
+`node --test factory/controller/resume-state.test.mjs` covers each action, a squash-merged PR that never appears, a
+GREEN receipt on an old base yielding GATE and not MERGE, a verdict bound to an old base yielding REVIEW, missing
+authorship receipts yielding UNKNOWN, a round-2 MUST yielding ADJ-CLOSE, and each refusal (a dead RUNNING receipt, a
+stale checkpoint, an orphaned PR) (row RESUME-ORACLE). The Stop-hook filter lives in the user-level hooks directory
+outside this repository and is handed off, not changed here.
+
+### Wrapping up past 95% weekly usage: a threshold rule is only as good as the work already armed (adversarialllm, 2026-10-04)
+
+**Evidence (all 2026-10-04, controller session 43e01909, Max plan):**
+- Weekly all-models usage went 93% → 95% (14:35 CDT) → 98% (18:30 CDT). It kept rising with no new Claude legs, because controller turns and other sessions on the same account also consume it.
+- The user-level `usage-guard.py` hook (PREP at 95%, HOLD at 98%) fired on every UserPromptSubmit and Stop. That gave a mechanical trigger. The usage figure itself is readable only in-session, through the desktop app's usage tool, so a background script cannot check it.
+- A chain armed before the threshold (chain9) went on dispatching Claude review legs after 95%. The tool for stopping it (TaskStop) is guard-blocked, and killing the chain's process to get around that would route around the guard, so the 95% rule could not stop that already-armed work.
+- What worked:
+  - Every chain re-checks origin/master before each step and exits 9 when it has moved, so every merge retired stale chains without intervention.
+  - The successor chain (chain10) was armed codex-only: refresh legs, gates and Codex reviews proceeded, and Claude reviews were deferred.
+  - A pointer-only checkpoint went to the resume issue at each milestone. It gave per-PR heads, receipts and next steps, and recorded which Claude legs were owed after rotation.
+
+**Rules:**
+1. At PREP, arm successor work so it runs without new Claude legs: gates, Codex reviews, and refresh only. Write down which Claude legs are owed.
+2. Arm no chain whose later steps would cross the threshold unattended. Each step should re-check a condition it can read (master moved, a stop-file present), because a session-child chain cannot be stopped once the stop tool is guarded.
+3. At HOLD, start no new Claude work. Post the final checkpoint, tell the owner a rotation is due, and stop routine status turns, because each turn spends the same budget.
+
+**Test:** at PREP, every live chain is codex-only or gate-only, and the newest resume checkpoint lists every owed Claude leg with its exact next command.
