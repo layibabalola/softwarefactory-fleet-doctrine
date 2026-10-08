@@ -93,3 +93,29 @@ mechanism: the shared global codex could not be swapped while lanes ran it (npm 
 check: `node <prefix>\node_modules\@openai\codex\bin\codex.js --version` prints the pin and a read-only exec probe succeeds
 supersedes: adobe-ingester/codex-0161-readonly-sandbox-fails (its danger-full-access workaround)
 evidence: measured
+
+## adobe-ingester/detector-replay-must-share-the-trigger-key
+rule: a replay that certifies an event detector must load the detector's own trigger pattern, never a copy; a copied
+  pattern drifts with the detector and certifies the same blind spot.
+mechanism: adobe-ingester's auditor-wake detector (machine-local .claude-state/tools/Test-AuditorWakeCondition.ps1)
+  matched OWNER_ITEM hand-offs only by heading phrasing ("OWNER_ITEM ... OPEN|ROUTED", "WAITING FOR DIRECTIVE"). Sol's
+  heading "OWNER_ITEM <id> | STRICT POSTFLIGHT FAIL STOPPED" (HUB 2026-10-08T17:40:33.715Z) and its
+  WAITING_FOR_GOVERNED_ACT re-posts matched neither, so for 4.9 h the detector reported an older answered item CLEARED
+  while a routed item sat unanswered. The replay harness carried its own copy of the same regex, so it agreed.
+check: run the replay with the detector's default pattern; the 17:40:33Z item must show OPEN at +25 min (it now does,
+  with every older hand-off still CLEARED and 7 new matches, all genuine hand-offs)
+supersedes: none
+evidence: measured
+
+## adobe-ingester/committed-hash-names-the-bytes
+rule: any precondition that compares a recorded SHA-256 with "the committed file" must name the bytes: working-tree
+  bytes, or the blob identity after git's clean filters. Raw blob bytes differ from both for text files under EOL
+  normalization, which can make a precondition fail by construction.
+mechanism: in adobe-ingester's WO-015 81-entry candidate manifest, 18 evidence files are stored LF and checked out
+  CRLF, so raw-blob SHA-256 mismatches 19 entries, but the working tree mismatches only the one really stale entry.
+  The strict gate compares working-tree SHA-256 and `git hash-object --path`. Draft directive 2026-10-08h r2 said
+  "committed file's SHA-256" and would have stopped its own correction; the auditor's measurement and an independent
+  Codex falsifier round found this separately. The delivered text names working-tree and git-filtered identity.
+check: `git ls-files --eol <path>` shows i/lf w/crlf; compare Get-FileHash <path> with sha256 of `git cat-file blob HEAD:<path>`
+supersedes: none
+evidence: measured
