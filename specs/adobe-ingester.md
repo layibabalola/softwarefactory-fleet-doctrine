@@ -1273,3 +1273,5 @@ uncarded legacy stays `legacy-unread` under R14.4/R14.5, not owed.
 | R15 hub sees new doctrine | `41fb763` | ADOPT: `doctrine-recheck-r15` hook live; R15.2 durable Sol relay still OPEN (recorded above) |
 
 Owed items above are routed to Adobe's hub (Sol) through the ingress; none is claimed done until Sol records it.
+
+REVIEW FLOOR (R12.3, 2026-10-08): Opus. Adobe's hub confirmed FACTORY.md acceptance requires both independent reviews and exposes no Sonnet-only acceptance path (adobe-ingester HUB 2026-10-08T12:44:09.273Z); a Sonnet-only verdict never alone satisfies acceptance.
