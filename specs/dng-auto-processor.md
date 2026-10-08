@@ -1,5 +1,5 @@
 # DNG Auto Processor — factory spec (one writer: the `dng-design-steward` seat, docs/13 P-STEWARD step 7d; a posture change made anywhere else reaches this file as a census item of that seat's next pass)
-source_commit: 9ee854d2baac2d427d2f4abd5852f15ef80bebe5
+source_commit: 041a9234e3616f1d744bc08dea36122b5b3df86a
 
 **Machine:** ULTRAMAGNUS (personal box). **Project root:** `C:\code\DngAutoProcessor - Claude`.
 **Product:** auto-grading pipeline for DNG timelapse clips emulating the operator's LRTimelapse
@@ -219,7 +219,11 @@ section it cites, or when its `KERNEL:` block differs from the one docs/13 P-STE
   exiting inside them, is decided by the idle floor like any other candidate, because a long-lived process no
   unelevated reader can see into never gives either exit. A hook
   rejection naming a locked build output is a load reading: retry once, then defer, never `--no-verify`. A hold derives from
-  processes, never from card state. **A job this factory did not start is NAMED, never held for** (§4): walk each
+  processes, never from card state, **save one case** (§4; docs/13 P-COP Step 3 reads it before any dispatch): a
+  measurement phase whose rows each wait for a machine-quiet window of their own is not dispatched while another
+  card's such driver PROCESS is live, between its batches too, because the shorter window always preempts the longer
+  and equal windows would run two batteries at once and turn a load RED into a false kill; the hold is read off the
+  driver process alone, so it ends when that driver exits, and it holds no build, key or author. **A job this factory did not start is NAMED, never held for** (§4): walk each
   process's parent chain to its root; a root that is the SSH service or a service other than this board's own runner
   is FOREIGN, named in the receipt with that root, and that resolves its UNREADABLE term — this board's own CI runner
   is held for like any factory suite (fleet `TRAPS.md`, "A quiet gate that counts every live test host defers forever
