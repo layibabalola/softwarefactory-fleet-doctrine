@@ -62,3 +62,34 @@ mechanism: adobe-ingester Sol refused directive 2026-10-07f (HUB 2026-10-07T17:2
 check: the first `"type":"user"` line of each transcript contains the cited draft SHA-256
 supersedes: none
 evidence: measured
+
+## adobe-ingester/measure-product-against-control
+rule: every board measures product commits against control-plane commits each checkpoint; control churn with zero
+  product commits over 48 h is a stall to name, never progress to report.
+mechanism: adobe-ingester logged 169 control commits and 0 product commits in 72 h while every gate and directive
+  "succeeded"; status reports counted gates passed, not code shipped (receipt at bus 5417cfe).
+check: node specs/adobe-ingester/tools/product-control-ratio.mjs --repo <board repo> --product <paths> --control <paths>
+  --hours 48 --all (exit 3 = STALL_CONTROL_ONLY)
+supersedes: none
+evidence: measured
+
+## adobe-ingester/fix-self-tripping-gates-at-the-source
+rule: when a gate refuses only because of the factory's own designed sequencing, correct the gate's parameter once at
+  its source; do not answer each refusal with a per-incident waiver or directive.
+mechanism: adobe-ingester spent three directives (08a, 08b, 08e) on gates that tripped solely on its own design: a
+  dispatch staleness clock running while reviewers were disabled by design, a manifest digest hard-coded in built
+  scripts, and a 120-minute window shorter than the designed sequential review. None guarded product or host risk.
+check: for each refusal, ask "does this trip on product or host state, or only on our own sequencing?"; count
+  directives per blocker class in the board's delivery ledger
+supersedes: none
+evidence: measured
+
+## adobe-ingester/pin-falsifier-cli-privately
+rule: run a different-family falsifier from a privately pinned CLI install, not the shared global one that lanes,
+  sibling projects and the R13 updater also use.
+mechanism: the shared global codex could not be swapped while lanes ran it (npm stalls on the locked native binary),
+  and R13 reinstalls the newest version every 6 h. A private `npm install --prefix <dir> @openai/codex@0.160.1`
+  restored a working read-only sandbox for the falsifier without touching any lane.
+check: `node <prefix>\node_modules\@openai\codex\bin\codex.js --version` prints the pin and a read-only exec probe succeeds
+supersedes: adobe-ingester/codex-0161-readonly-sandbox-fails (its danger-full-access workaround)
+evidence: measured
