@@ -12858,3 +12858,20 @@ the wakes that produce the next blocker. Measured control output was high and pr
 proposed here; a directive-expiry proposal goes to the adobe-ingester hub for ratification first.
 
 Re-derive: in the adobe-ingester repository, `git log --all --since=2026-10-05T11:20Z --until=2026-10-08T11:20Z --oneline -- spikes` (expect 0 lines) and the same with `-- .factory` (expect 169 lines).
+
+## Controller resume checkpoint gap measured at 5 days 6 hours, 31 merges and 880 stale rows (adversarialllm, 2026-10-04)
+
+Measured by the controller on 2026-10-04 at about 14:00Z. The newest `## Controller resume checkpoint` comment on issue
+#130 was posted 2026-09-29T07:34:44Z and the next one 2026-10-04T13:57:25Z: a gap of 5 days 6 hours. 31 pull requests
+merged inside it, from PR #165 (2026-09-29T14:59Z) to PR #222 (2026-10-04T07:49Z), including PR #180 (2026-10-01T03:12Z),
+the one that delivered the checkpoint step; 22 more merged after it with no checkpoint posted (re-derive with
+`git log c1731ae8^..2c373284 --first-parent --format=%s | grep -c '(#[0-9]*)$'`, which prints 31, and
+`git log ecab2021..2c373284 --first-parent --format=%h | wc -l`, which prints 22; PR #172 and PR #219 also merged
+between the two checkpoints but outside that PR range). The user-level Stop-hook checkpoint for the same repository
+listed 880 branch rows as in flight (877 in a listing taken later the same day), none of which a squash-merged branch
+could ever leave, and it printed no per-PR next command. A review attempt receipt (`review-190-245015480221-claude-r1-a1`)
+still read RUNNING for pid 146644, dead since #190 closed on 2026-10-01. Every chain, worker leg and implementer leg
+descended from one `claude.exe` started on 2026-09-29. Re-derive: read the `created_at` of the `## Controller resume
+checkpoint` comments on issue #130 with `gh api repos/{owner}/{repo}/issues/130/comments --paginate`, count the merges
+from PR #165 through PR #222 with the two `git log ... --first-parent` commands above (31 and 22), and count the rows of
+`git for-each-ref --no-merged=refs/remotes/origin/master refs/heads`.
