@@ -232,3 +232,16 @@ check: for each prerequisite subject, `git show origin/master:<its declaration> 
   ACCEPTED'` prints `1`.
 supersedes: none
 evidence: measured
+
+## conjugal/prekey-30-the-key-prompt-s-harness-forbade-what-a-declared
+rule: build the key prompt's harness constraints from the declaration's own harness and checks, never from a
+  fixed block carried over from another subject; before launch, list every suite and command the declaration's
+  bars and Baseline require and confirm no harness line forbids one.
+mechanism: The key prompt's harness forbade what a declared check runs; an independent verification round or
+  the review before it found this in a real declaration; recorded cost: a key round was spent: an inherited
+  "start no dashboard" line stopped the key from running two declared dashboard suites, so one bar could not
+  be established.
+check: for each suite in the Baseline table, the prompt contains no constraint that the suite's own behaviour
+  (a dashboard on loopback, a network call, a scheduled-task read) would violate.
+supersedes: none
+evidence: measured
