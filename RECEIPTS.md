@@ -12878,3 +12878,20 @@ The Codex sandbox log carries the cause: "runtime read/execute validation failed
 
 **Re-run:** the two control commands above, with Codex Desktop running.
 <!-- outbox:1ea0825bbf9f9850 mlv-app:e555b5fb93a5 -->
+
+## RECEIPT 2026-10-09 (airmypc): the row 46 "no leak" claim was wrong; a .NET 10 ComWrappers leak was found and fixed twice; the leak verdict is now identity-free
+
+**Measured** from AirMyPC `master` `06a5be33` and ledger entries `[814]` to `[820]`. Four cards: `specs/airmypc/cards.md`.
+
+- **Correction.** The 2026-09-27 AirMyPC receipt in this file says "row 46 memory growth is high-water retention of ComWrappers lists, with no live managed leak". `[814]` refuted that. On .NET 10, each `ComWrappers.GetOrCreateComInterfaceForObject` call on the same long-lived object appends a duplicate `ManagedObjectWrapperHolder` slot that is never trimmed. That is a live, unbounded leak, and it was reproduced outside the app on .NET 10.0.12 (card `airmypc/dotnet10-comwrappers-duplicate-holder-slot`).
+- **Fix, round 1.** THEME-WRAP (`14c0ce5b`) cached the theme lookups and the window handle, and skipped unchanged content.
+- **Fix, round 2.**
+  - The 12 h re-make `[818]` still failed P5. Its holder lists grew 48, then 95, then 143, on button labels that toggle.
+  - Those labels are interned literals: one object for the life of the process (card `airmypc/interned-literal-is-one-process-lifetime-object`).
+  - THEME-WRAP-2 (`6358e060`) marshals an owned copy instead.
+  - A/B over 2 h each: the unfixed build grew lists of 8, 16 and 24 slots; the fixed build had no list of length 3 or more.
+- **The verdict.** Ruling 38 (`15f2078c`) amends Ruling 37. The P5 holder gate is judged only on identity-free bounds: total slots, list count (M) and the longest list. Holder bytes and per-key growth are report-only (card `airmypc/gcdump-cannot-follow-an-object-across-dumps`). M = 114 comes from three admissible fixed-build runs (list count +37, +36 and +57; longest list 28 in each), pinned by verdict-script SHA256 `6C8A3F34` in `[820]` before the certifying run's data exists.
+- **Off-box soaks.** Two 12 h certifying runs were VOID on a shared box (`[814]`: a foreign build; `[817]`: command failures, then power-off). Certifying runs now go to a second machine, reached over SSH and started through an interactive-logon task (card `airmypc/winui3-dies-in-ssh-session-0`).
+- **Honest gap.** In the last 72 h AirMyPC published 2 bus commits, both manual, and no heartbeat since 2026-09-26; its siblings published through drained outboxes. Its outbox (drain on landing, no OS timer until a recorded ruling allows one) and a mechanical fold-triage tool are in review.
+- **Re-derive:** `git -C <airmypc> log --format='%h %s' 85d361c9^..06a5be33`, and ledger entries `[814]` to `[820]` in `docs/video-streaming/VIDEO_COORDINATION.md`.
+- **Falsifier:** if the `[820]` certifying run on `06a5be33` scores P5 FAIL on list count or longest list, then the THEME-WRAP-2 fix is incomplete, and this receipt's "fixed" claim is withdrawn by the next AirMyPC receipt.
