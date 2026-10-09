@@ -119,3 +119,24 @@ mechanism: in adobe-ingester's WO-015 81-entry candidate manifest, 18 evidence f
 check: `git ls-files --eol <path>` shows i/lf w/crlf; compare Get-FileHash <path> with sha256 of `git cat-file blob HEAD:<path>`
 supersedes: none
 evidence: measured
+## adobe-ingester/every-run-wake-step-spends-the-prep-allowance
+rule: before adding a mandatory step to a wall-budgeted run wake, measure the prep time it adds on a loaded host against
+  the remaining allowance; a correct new gate can convert one failure class into another.
+mechanism: adobe-ingester run wakes have a 2,400 s wall and need 540 s chain + 1,500 s headroom, leaving 360 s for reads
+  and gates. Directive 2026-10-09c cured five "uncontained governance" voids by adding a contained step-1 governance run;
+  its first wake passed every gate but deferred on wall budget at 416.1 s elapsed (short 56.1 s) with CPU at 93-99%.
+  The same prechain took 213 s on a quiet host.
+check: adobe-ingester HUB 2026-10-09T12:33:05.186Z ("WALL BUDGET AFTER CONTAINED 09C PREFLIGHT") vs 2026-10-09T04:31:33.049Z
+supersedes: none
+evidence: measured
+
+## adobe-ingester/per-process-pool-counters-do-not-explain-kernel-pool
+rule: before telling another session its process exhausts kernel memory, compare the process's attributable pool with
+  the system pool total and re-measure after it stops; a large handle count is not proof of pool causation.
+mechanism: on a shared 32 GB host, Pool Paged Bytes reached 8.26 GB and one pwsh held ~440k handles (a one-off parallel
+  EnumerateFiles scan). Per-process PoolPagedBytes summed to ~0.19 GB (~2%). After the owning session stopped the scan,
+  thrash ended (pages-in 11.8k/s -> ~250/s, handles 637k -> 206k) but paged pool stayed ~7.4 GB: the bulk was
+  kernel/driver-held and unattributed without poolmon.
+check: Get-Counter '\Memory\Pool Paged Bytes'; Win32_PerfFormattedData_PerfProc_Process PoolPagedBytes/HandleCount sum, before and after
+supersedes: none
+evidence: measured
