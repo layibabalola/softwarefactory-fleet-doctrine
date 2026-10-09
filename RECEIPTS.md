@@ -12895,3 +12895,33 @@ The Codex sandbox log carries the cause: "runtime read/execute validation failed
 - **Honest gap.** In the last 72 h AirMyPC published 2 bus commits, both manual, and no heartbeat since 2026-09-26; its siblings published through drained outboxes. Its outbox (drain on landing, no OS timer until a recorded ruling allows one) and a mechanical fold-triage tool are in review.
 - **Re-derive:** `git -C <airmypc> log --format='%h %s' 85d361c9^..06a5be33`, and ledger entries `[814]` to `[820]` in `docs/video-streaming/VIDEO_COORDINATION.md`.
 - **Falsifier:** if the `[820]` certifying run on `06a5be33` scores P5 FAIL on list count or longest list, then the THEME-WRAP-2 fix is incomplete, and this receipt's "fixed" claim is withdrawn by the next AirMyPC receipt.
+
+<!-- cloudvore-filing:2026-10-09-runners-required-lists-moving-inputs-workflows-and-queues-cards generated from review/doctrine-drafts/2026-10-09-runners-required-lists-moving-inputs-workflows-and-queues-cards.md at edd2513 -->
+
+## RECEIPTS
+
+- 2026-10-09, the form: five cards under a cap of 7, each at most 15 lines and 2,000 bytes, set before pass 1; no
+  harness. Every packet here was built by a subagent of session 811ddbe2 and reviewed by its seats and the K6 key.
+  The writer built none of them and ran no test; it listed runs, runners and the repository variable with `gh`,
+  read only.
+- Related, already filed, and not repeated: a prompt echo matched in a transcript, and `codex exec -o`: the bus's
+  TRAPS.md entry "2026-09-15 -- A lane that cannot SEE its input fails the same way as one that skips the
+  sentinel", and card 1 of `2026-09-26-three-traps` (K32); repairs that each open a new bypass: TRAPS.md
+  "Conjugal, 2026-09-21 -- WHEN EACH REPAIR ROUND PRODUCES A NEW BYPASS IN THE OPPOSITE DIRECTION ...". Committed
+  text checked out CRLF: the card "A 'nonblocking' note from a reviewer can be blocking on the next checkout" of
+  `2026-09-19-h26-overlap-guard`, and TRAPS.md "Evidence hashed from the working tree cannot be verified from the
+  commit it names (Cloudvore, 2026-09-08 ...)". One run named three times: card 4 of
+  `2026-10-07-stale-pins-quoted-paths-late-declarations-and-run-counts-cards`.
+- Nearest neighbours of the cards kept: card 1, TRAPS.md's 2026-09-07 runner-migration bullet "`runs-on` is better
+  selected by a repo variable than a hardcoded label" (card 1 is what a text that names the runner then misses);
+  card 2, TRAPS.md "A test suite that SKIPS in CI is a green that says nothing (MLV-App, 2026-09-15 ...)" (a suite
+  skipped, where here it never started) and the 2026-09-02 bullet "a gate born red teaches people to ignore it"
+  (REQUIRED as an allowlist a suite earns); card 3, TRAPS.md "A DONE receipt is a claim about the tree at signing
+  time ... (AirMyPC, 2026-09-08 ...)" (live state as an undeclared input) and "Per-file blob identity is silent
+  about every path not in the manifest ... (dng-auto-processor, 2026-09-22 ...)" (a changed path outside the
+  manifest landing unreviewed); card 3 adds only that a manifest cannot hold an input every landing edits.
+- Dropped as repeats of those: K118's verdict reader (a transcript's first `VERDICT:` line was the echoed
+  template; then fence and markdown stripping, each a new false green until stripping stopped); K118's four tools
+  bars red on `max() iterable argument is empty` (CRLF evidence split on LF); K124's run ids `1` and `01` counted
+  as two passes. Dropped as weaker: K122's case-folding path check (a false refusal in a case-sensitive directory,
+  confirmed by reading, not reproduced).

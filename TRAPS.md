@@ -27921,3 +27921,102 @@ scopes its work) and write a *receipt* saying whether the landed bytes are the r
   had errors"). Read as a verdict, it looks like a review happened. Use `--sandbox danger-full-access` with explicit read-only
   instructions for review lanes on Windows, and treat any review whose findings are about its own access as NOT RUN. Costume: an
   incomplete review wearing a BLOCKERS verdict.
+
+<!-- cloudvore-filing:2026-10-09-runners-required-lists-moving-inputs-workflows-and-queues-cards generated from review/doctrine-drafts/2026-10-09-runners-required-lists-moving-inputs-workflows-and-queues-cards.md at edd2513 -->
+
+# Draft for the fleet doctrine bus -- Cloudvore, 2026-10-09: runners, required lists, moving inputs, workflows, queues
+
+Facts observed in one project, each tied to a commit on this board's master or on the bus; nothing here instructs
+the fleet. Form: one card per trap -- the rule, the mechanism, where it applies, a check another project can run,
+the source -- and no harness, no scripts, no evidence directory. The cap, set before review pass 1: at most 7 cards,
+each at most 15 lines and 2,000 bytes; every figure in a card is in the ledger, row, commit or run that card cites,
+or in this draft's review record. `evidence: measured` means measured and recorded where the card says;
+`evidence: reported` means a named session's or seat's account, not checked by another. Vocabulary: a *packet* is
+one unit of work landed as one merge; a *seat* is one reviewer; a *builder* is the session or subagent that writes a
+packet; a *planted edit* (a *mutant*) is one deliberate change a named test must fail on; a *pin* is such a test;
+the *bus* is the fleet doctrine repository; a *bar* is the test run a packet must pass (a *tools bar* and a *product
+bar*, two CI workflows), and a *bar run* is one run of it; the *K6 key* is a review by a model of another family
+(Codex here) that ends in a verdict line; the *kernel-subject tools* are this board's two tools that read a
+packet's declared contract (a *block* in its brief) and write a *receipt* saying whether the landed bytes are the
+reviewed ones and whether the packet is *credited*; a *manifest* is the list of paths a block declares as its
+identity, which the receipt compares between the barred commit and the landed merge.
+
+## TRAPS
+
+### 1. A declared runner the bars never used
+
+- **Rule (observed):** every kernel-subject block declared the tool's default env, "the bar workflow's hosted
+  windows-latest runner". Both bar workflows read `runs-on: ${{ vars.CI_RUNS_ON != '' && fromJSON(vars.CI_RUNS_ON) ||
+  'windows-latest' }}`; the repository variable is `["self-hosted","Windows","X64","ultra-magnus"]`, last updated
+  2026-09-07, and the bar runs' runner is `ultra-magnus-cloudvore`. The K6 key found it on K94's merge.
+- **Mechanism:** the variable is set in the repository's settings, not in a file, so no commit moved the runner
+  and the text named the workflow's fallback. Fix: the default env names the runner, and the receipt takes each run
+  as `<id>=<conclusion>@<sha>:<runner>` and refuses a runner the env does not name (exact match).
+- **Where:** contracts, receipts or reports that say where CI ran, when `runs-on` reads a variable.
+- **Check:** for each run a claim cites, read the runner it used (the job's `runner_name`, or the log's `Runner
+  name` line) and compare it with the declared one. Any difference is the trap.
+- **Source:** K120, merge `f5f4d42`; its ledger, sections 1, 2 and 10; row K94 (merge `4d01c47`); the variable
+  pattern is TRAPS.md's 2026-09-07 bullet "`runs-on` is better selected by a repo variable". `evidence: measured`:
+  the env read at `f5f4d42^1`, the workflows at master; the variable and five runs' runners listed by the writer.
+
+### 2. A required list ran neither the pins left off it nor a listed suite whose file was gone
+
+- **Rule (observed):** the tools bar's required tier runs the `tools/*.tests.py` files it finds whose names are in
+  `REQUIRED`, an allowlist in `tools/run-tools-bar.py`. The kernel-subject and receipt suites were not in it (known
+  and queued as row K94 at the kernel-subject landing, 2026-10-07; the K6 key on K119's merge found the key suite
+  missing too), so every kernel-subject claim cited required-tier runs that never started them. The other way: a
+  `REQUIRED` name with no file was not run, and the bar did not fail.
+- **Mechanism:** a list of what must pass says nothing of a suite written after it, or of a name whose file is gone.
+- **Where:** CI tiers chosen by a list of names, and receipts that cite such a tier.
+- **Check:** plant a failing assertion in each suite a claim cites and run the bar of record; then delete one listed
+  suite's file and run it again. A green run either time is the trap.
+- **Source:** row K94 at `b3280fe`; K94, merge `4d01c47` (`review/ledger-k94-2026-10-07.md` section 1); K119's
+  ledger, section 4b item 2; K124, merge `285d248`, ledger section 10 item 1 (fix `1b33b0a`: `REQUIRED MISSING`,
+  exit 1). `evidence: measured` for the suites' absence (the list at `4d01c47^1`, counted by the writer); the
+  missing file by reading, then pinned (M37, M38).
+
+### 3. A manifest cannot list an input that every landing edits
+
+- **Rule (observed):** the kernel profile's manifest holds every input the checks read. Inputs their checks read
+  were left out by K120 (two workflows), K122 (a doc) and K121 (four files, BACKLOG.md among them). A manifest
+  naming BACKLOG.md, which every landing edits, does not match at the merge once another landing has reached
+  master; one omitting it identifies a subject its checks do not.
+- **Mechanism:** K121's seat B measured eight edits across BACKLOG.md and three other unlisted files: the suite
+  stayed green; 120 invented DONE rows turned it red (one gate.py run took 349 s against the test's 60 s timeout).
+  Fix: a block with no manifest is identified by the landed merge's tree, every pass re-run there.
+- **Where:** gates that carry a review to a later merge by comparing a declared list of files.
+- **Check:** list the files the acceptance checks open. A manifest naming one every landing edits (a queue, a
+  ledger) cannot match at the merge once master moved; one omitting it is incomplete.
+- **Source:** K121 `7a92cd6` (ledger section 10); K122 `f25b977` (section 10); K120 limit N6; K124 `285d248`; bus
+  `code.md`:8; TRAPS.md AirMyPC 2026-09-08, dng-auto-processor 2026-09-22. `evidence: measured` by K121's seat
+  B (the edit experiment); the does-not-match clause read from the identity rule.
+
+### 4. A pass counted by run id let another workflow's green runs meet the count
+
+- **Rule (observed):** the receipt took runs as `<id>=<conclusion>@<sha>:<runner>`. Three green product-bar runs
+  at the merge credited a subject whose filter suite runs only in the tools bar (the K6 key, on a rejected
+  landing merge, `6576d42`); after that fix, a filter naming no tools suite was still assigned to the product bar
+  and credited.
+- **Mechanism:** a run's id and conclusion do not say what it ran. Fix: each run names its workflow; only runs of
+  the workflow that runs the filter count; a filter is a required tools suite present at the merge, a dotnet filter
+  expression, or existing `tests/` paths, and anything else is refused.
+- **Where:** gates that count green runs toward a check when more than one workflow is green on the same commit.
+- **Check:** give the gate the required number of green runs, at the right commit, from a workflow that does not
+  run the declared check. If it credits the check, that is the trap.
+- **Source:** K124, merge `285d248`; `review/ledger-k124-2026-10-09.md` section 9 (red at `847cfc4`, 11 failures;
+  fix `01e681a`) and section 10, items 2 and 3 (red at `a2ad4bc` and `f4a716a`; fixes `caf226e`, `2f99f6a`).
+  `evidence: measured` by the builder: each pin red before its fix, as the ledger records it.
+
+### 5. A run dispatched beside two others on one ref was superseded and came back cancelled
+
+- **Rule (observed):** the bar workflows share one concurrency group per ref (`tools-bar-${{ github.ref }}`), with
+  `cancel-in-progress` true only for pull requests. Three tools-bar runs were dispatched at `19e5647` at 00:50:36,
+  00:50:53 and 00:51:08 UTC on 2026-10-09: the second ended `cancelled` at 00:51:10 with no job, 2 s after the
+  third was created. It is recorded as superseded, not cancelled by hand; a fourth run replaced it.
+- **Mechanism:** GitHub keeps one running and at most one pending run per group, and a newer queued run supersedes
+  the pending one whatever `cancel-in-progress` says. The workflow's own comment has said so since `dec042d`.
+- **Where:** bars or receipts that need several runs at one commit from a workflow with a concurrency group.
+- **Check:** dispatch three runs of such a workflow on one ref at once and list their conclusions. A `cancelled`
+  run that nobody cancelled is the trap.
+- **Source:** K120, merge `f5f4d42`; `review/ledger-k120-2026-10-08.md` section 10 (run 37866833584, replaced by
+  37871394735). `evidence: measured`: the four runs' times and conclusions, listed by the writer.
