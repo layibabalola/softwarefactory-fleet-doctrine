@@ -221,3 +221,14 @@ check: the rehearsal log names the pair's parent, and `git merge-base origin/mas
   equals it or the log has a second rehearsal at the real commit.
 supersedes: none
 evidence: measured
+
+## conjugal/prekey-29-the-item-had-an-unmet-sequencing-gate
+rule: before choosing an item, grep the triage files and the queue for any sequencing wording on it ("sequence
+  after", "after both", "depends on", "blocked by", "held"), and choose it only when every prerequisite it
+  names is ACCEPTED on `origin/master`; the declaration carries a command showing each one.
+mechanism: The item had an unmet sequencing gate; an independent verification round or the review before it
+  found this in a real declaration; recorded cost: 1 refused, 1 parked.
+check: for each prerequisite subject, `git show origin/master:<its declaration> | grep -c '^## Outcome -
+  ACCEPTED'` prints `1`.
+supersedes: none
+evidence: measured
