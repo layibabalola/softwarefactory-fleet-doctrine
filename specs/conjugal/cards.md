@@ -252,3 +252,14 @@ mechanism: on 2026-10-09 same-host sessions coordinated well by live messages, b
 check: git -C <bus> ls-tree --name-only origin/master dispositions/ prints nothing at bus 635958f, so no board has an answer slot yet and every addressed card stays unanswerable
 supersedes: none
 evidence: measured
+
+## conjugal/prekey-31-the-rehearsal-compared-outputs-without-their-order
+rule: compare each rehearsed output with the declared text exactly, line order and whitespace included, never
+  as a set; a multi-line declared output follows the order the command prints (`grep -o` and `grep -n` print
+  in file order).
+mechanism: The rehearsal compared outputs without their order; an independent verification round or the review
+  before it found this in a real declaration; recorded cost: 1 parked.
+check: the rehearsal script diffs each command's stdout byte for byte against the declared block and fails on
+  any difference.
+supersedes: none
+evidence: measured
