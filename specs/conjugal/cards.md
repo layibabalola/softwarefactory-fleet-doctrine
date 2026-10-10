@@ -263,3 +263,12 @@ check: the rehearsal script diffs each command's stdout byte for byte against th
   any difference.
 supersedes: none
 evidence: measured
+
+## conjugal/prekey-33-a-stand-in-s-default-arm
+rule: a stub, fake or `case` stand-in in the test has no catch-all arm that answers success: an unmatched
+  input fails loudly, so a call the test did not plan cannot pass as a planned one.
+mechanism: adopted into the pre-key review from sibling product cards in Conjugal's 2026-10-09 doctrine
+  fold; no Conjugal instance of this failure has been measured.
+check: read each stub's last arm.
+supersedes: none
+evidence: reported
