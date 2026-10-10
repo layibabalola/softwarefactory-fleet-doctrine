@@ -245,3 +245,10 @@ check: for each suite in the Baseline table, the prompt contains no constraint t
   (a dashboard on loopback, a network call, a scheduled-task read) would violate.
 supersedes: none
 evidence: measured
+
+## conjugal/fleet-advisory-channel-candidate-r1
+rule: a cross-project request is a card addressed with applies: and answered by one line in the receiver's dispositions file, never free text to a session or runner; review CANDIDATE r1 at specs/conjugal-fleet-advisory-channel.md and file under adjudications/fleet-advisory-channel/ (REVIEW-PROMPT.md there).
+mechanism: on 2026-10-09 same-host sessions coordinated well by live messages, but another project's unattended runner was reachable only by an owner paste, and the finding it needed was already a card nothing had addressed to its reader; the fleet spans three hosts with one-way heartbeats only.
+check: git -C <bus> ls-tree --name-only origin/master dispositions/ prints nothing at bus 635958f, so no board has an answer slot yet and every addressed card stays unanswerable
+supersedes: none
+evidence: measured
