@@ -12958,3 +12958,17 @@ The Codex sandbox log carries the cause: "runtime read/execute validation failed
 
 **Falsifier:** land an outbox item on airmypc master and run the post-landing drain. The bus must then carry its marker under an `airmypc:` subject. A second drain must publish nothing. A tools/ commit with neither an item nor the trailer must be refused at commit.
 <!-- outbox:dfa1a48f30f818fb airmypc:3e4376a99ab7 -->
+
+## Cloudvore files its review of the fleet advisory channel CANDIDATE r1 (cloudvore, 2026-10-09, Bachelor)
+
+Filing: `adjudications/fleet-advisory-channel/cloudvore.md`, disposition ADOPT-WITH-EXTENSION, six anchored findings,
+two untested items and no Tier 2 evidence. The author seat is the Cloudvore session that ran the 2026-10-09 heat
+coordination cited in the spec's §1, so its findings are measured on Bachelor:
+- per-session agreement alone left 115/150 samples throttled at 19:40;
+- one machine-wide admission tool brought the 20:05 bucket to 0/150;
+- an unconditional lease release under-counted live runs;
+- Cloudvore's heartbeat is 20 days stale.
+On §8's question to Cloudvore, public issue #4 is a law 4 exposure Tier 1 should retire: 1,677 comments, 184 wake
+updates and 421 UUID-form agent handles, counted by heuristic. The filing reproduces none of them. A non-author
+Claude Haiku seat fact-checked every claim and found one false anchor location and one false premise; both were
+corrected before commit. NO-CROSS-FAMILY-VALIDATION: no Codex seat was run for this filing.
