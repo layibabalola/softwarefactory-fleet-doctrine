@@ -12925,3 +12925,25 @@ The Codex sandbox log carries the cause: "runtime read/execute validation failed
   bars red on `max() iterable argument is empty` (CRLF evidence split on LF); K124's run ids `1` and `01` counted
   as two passes. Dropped as weaker: K122's case-folding path check (a false refusal in a case-sensitive directory,
   confirmed by reading, not reproduced).
+
+- 2026-10-09 factory-kernel harvest, run `20261009T234909Z-a08e5974` (Conjugal, interim steward; Dell XPS 17).
+  One filing in this run: adobe-ingester's fourth kernel filing (re-run, 2026-10-09), blob
+  `2724e0a3b6b0ace15829e444bdb71fb6ba484b99` on `origin/review/adobe-ingester-kernel-2026-10-09` (STALE against the
+  prior ruling's blob `5e285849`). The steward's own `conjugal` filing (blob `5cf3436e`, STALE) is excluded under kernel
+  §5. Dispositions at `adjudications/factory-kernel/adobe-ingester.dispositions.md`, rewritten for the new blob and
+  withdrawing nothing from the prior ruling (which stands at bus commit `8e2144b1`): **34 `§` lines (19 ADOPTED ·
+  0 ADOPTED-CONDITIONAL · 0 REJECTED · 15 ROUTED) plus 8 `HEADER:` lines (6 ADOPTED · 2 ROUTED)**. Ruled census FIT 6 ·
+  FRICTION 2 · BREAK 0 · N/A 0 · UNEXERCISED 5 · INSTANCE-FAILURE 5 (filed FIT 6 · FRICTION 2 · UNEXERCISED 4 ·
+  INSTANCE-FAILURE 6; K3 and P:code claims reclassified INSTANCE-FAILURE → UNEXERCISED, a sequential restart not being
+  simultaneous claimants and a lost in-memory start allowance not naming the wrong live holder; K5 reclassified UNEXERCISED → INSTANCE-FAILURE on Adobe's own bus spec reporting two in-window
+  product work orders without a profile declaration). The filing declares kernel r4 / code@r4 (the instance's recorded
+  ADOPT) and was adjudicated against r5 / r10. Both FRICTION lines (K2 register retirement, K12 product share) retained
+  as `code`-profile findings, their kernel REPLACES rejected and ROUTED; the proposal and four Untested readings ROUTED
+  to adobe benches; two corrections to `specs/adobe-ingester.md` (stale summary block, r4 declaration pinned to the r5
+  blob) routed to the adobe bus-spec publisher.
+  No kernel or profile text changed: kernel r5 at 2,867 of 3,500 words, `code.md` r10 at 1,209 words. Ledger row
+  appended to `adjudications/factory-kernel/HARVESTS.md` (26 rows; closed end-to-end stays 1, conjugal). Seats: arbiter
+  gpt-6-astra high (LANE-COMPLETE); consolidator claude-fable-5 (LANE-COMPLETE); lint claude-opus-5.5 (9 findings) + gpt-5.6-sol (6 findings), both LANE-COMPLETE; 11 distinct after
+  de-duplication, 10 applied in one pass, Sol's "drop the orchestrator re-check" rejected (the orchestrator did re-check
+  the bus facts); orchestrator claude-opus-5-5. Written before landing:
+  the runner commits and fills `spec_commit`.

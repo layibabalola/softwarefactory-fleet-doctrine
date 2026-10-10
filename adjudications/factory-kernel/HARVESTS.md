@@ -820,3 +820,63 @@ are VERIFIED. All eight carried routes stay open. Kernel unchanged at r5, 2,867 
 r10, 1,209 words. 46 `§` lines: 32 ADOPTED · 0 ADOPTED-CONDITIONAL · 4 REJECTED · 10 ROUTED, plus 9 `HEADER:` lines.
 Dispositions: `adjudications/factory-kernel/agent-bridge.dispositions.md`, rewritten for blob `3bc530be` and superseding
 its own ruling on blob `f4a1cc37` without withdrawing any disposition that ruling recorded.
+
+## 2026-10-09 — harvest 20261009T234909Z-a08e5974 (adobe-ingester fourth filing, blob 2724e0a3)
+
+| date | harvest | filing | blob | kernel | profile | subjects | FIT | FRICTION | BREAK | N/A | UNEXERCISED | unresolved BREAKs | arbiter |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 2026-10-09 | 20261009T234909Z-a08e5974 | adobe-ingester | 2724e0a3b6b0ace15829e444bdb71fb6ba484b99 | r4 as filed (instance ADOPT r4); adjudicated against r5 (unchanged) | code@r4 as filed (instance ADOPT r4); adjudicated against r10 (unchanged) | 0 end-to-end; WO-PROD-PDF-INTAKE-IMPORT-CLOSURE-013 rev2 and -014 rev1 closed TIMEOUT_48H undelivered; -015 rev2 REVIEWING; WO-G0-A01 rev13 accepted pre-kernel and not counted; control generation reviewer-dispatch-start-claim-v1 consumed with its producer adjudicating (K1 INSTANCE-FAILURE); window-opened-before-kernel=no | 6 | 2 | 0 | 0 | 5 | 0 | gpt-6-astra (read-only arbiter seat; not a steward filing) |
+
+Derived, not asserted. Re-run: `python tools/kernel-e2e.py --json`. Before this row: `closed_end_to_end: 1`,
+`ledger_rows: 25`, `ledger_totals: FIT 151 · FRICTION 81 · BREAK 5 · N/A 0 · UNEXERCISED 83`. After it: 26 rows;
+157 FIT · 83 FRICTION · 5 BREAK · 0 N/A · 88 UNEXERCISED; closed end-to-end stays 1 (conjugal, by its second-project
+arbiter). This row contributes zero unresolved BREAKs; the five historical BREAK verdicts are not five unresolved BREAKs.
+
+**§5 criterion 1 — projects with at least one closed end-to-end subject: 1 of the 5 the kernel requires** (conjugal
+only, on S22 under its second-project arbiter); adobe-ingester still counts 0. The filing declares 0 subjects and the
+arbiter rules 0: WO-013 rev2 reached two valid Opus PASS reports and a noncountable duplicate Sonnet PASS, then closed
+TIMEOUT_48H because the instance requires both Claude reports; WO-014 rev1 closed TIMEOUT_48H with no reviewer report;
+WO-015 rev2 is still REVIEWING; WO-G0-A01 rev13 was accepted on reviews published before the kernel existed and is
+excluded; the consumed control generation reviewer-dispatch-start-claim-v1 is a K1 role failure, not an acceptance.
+**§5 criterion 2 remains MET** on the 2026-09-17 finding (`code`, `hardware-in-loop`, `measured-objective`); this
+`code`-only filing adds no profile.
+**§5 criterion 3 does not start:** the immediately preceding ledger row is the 2026-10-07 agent-bridge row, and the
+kernel and `code.md` bytes are unchanged between that harvest and this one (r5 blob `6821c4c3`, r10 blob `5511ccb3`),
+but unchanged bus bytes alone are insufficient: this filing reports running kernel r4 / code@r4 and contributes no fresh
+end-to-end evidence meeting criteria 1 and 2, so the qualifying clock does not start.
+**Criterion 4 has never started**; no owner ratification of the kernel appears in `RULINGS.md`; the owner's
+dogfood and adoption directions there are not appended final-v1 ratification.
+**Members due — 1 project has NEVER filed:** `salesforce-tools`. Roster member `adversarialllm` has filed as
+`AdversarialLLM`; F1 persists: `tools/kernel-e2e.py` matches roster, filing and ledger names case-sensitively, so it
+still prints `adversarialllm` under NEVER FILED, a matching defect and not factual non-filing; this round reconciled
+neither the tool nor the roster key. Open filings left for other runs: steward self-filing `conjugal` reads STALE (blob
+`5cf3436e`) and is not adjudicated by the steward (kernel §5); this round adjudicates only adobe-ingester.
+
+**What this round changed:** no spec text at all. Harvest `20261009T234909Z-a08e5974` adjudicates adobe-ingester's
+fourth filing, blob `2724e0a3b6b0ace15829e444bdb71fb6ba484b99`, superseding the dispositions file's ruling on blob
+`5e285849` (run 20260917T193405Z-ab7b8aef, spec commit `5d1d0d95`, dispositions commit `8e2144b1`) without withdrawing
+any of its 21 dispositions or its HEADER line. The filing declares kernel r4 / code@r4 (the instance's recorded ADOPT)
+and is adjudicated against the current r5 / r10 texts; that reading does not upgrade the instance's contract. Three
+census reclassifications: K3 INSTANCE-FAILURE → UNEXERCISED, because a sequential Sonnet restart after a terminal
+receipt does not establish simultaneous claimants and a claim store refusing a start is not itself a breach; P:code
+claims INSTANCE-FAILURE → UNEXERCISED on the same evidence, because loss of an in-memory start allowance does not show a
+claim named the wrong live holder; and K5 UNEXERCISED → INSTANCE-FAILURE, because Adobe's own `specs/adobe-ingester.md`
+("MEASURED 2026-09-25") reports two product work orders inside this window with no profile declaration — attributed
+evidence of a pre-work obligation failing, irrespective of later acceptance. Two corrections are routed to the adobe bus-spec
+publisher: the stale `DOGFOOD-PENDING` / `ADOPT: not recorded` summary block and its 2026-09-20 note, and the r4
+declaration pinned to the r5 blob `6821c4c3` when the r4 blob at `da4e920` is `79fc893c`. The two FRICTION lines are retained as `code`-profile
+findings and their kernel REPLACES rejected: K2's register retirement is reported by no second profile and is ROUTED
+to an adobe authority-register lifecycle bench; K12's product-share instrument rests on a dng-auto-processor ruling
+candidate that is a proposal, not a kernel verdict line, and on a Magic Lantern proposal previously ROUTED, so it is
+ROUTED to code product-share and cross-profile instrument benches with no §4 header field adopted. K8's FIT answers the
+prior ruling's dormant-terminal INSTANCE-FAILURE for the sampled event without withdrawing it; the posture line is now
+accepted by the bus parser in computed form, resolving the prior HEADER flag. The equal-window product share rose from
+about 0.16 % (1 of 609) to 1.46 % (16 of 1,093); the last-72-hour zero is recorded as a recent stall, not a decline.
+Ruled census: FIT 6 · FRICTION 2 · BREAK 0 · N/A 0 · UNEXERCISED 5; INSTANCE-FAILURE 5 separately (as filed: FIT 6 ·
+FRICTION 2 · UNEXERCISED 4 · INSTANCE-FAILURE 6). Adobe-local evidence is attributed and UNVERIFIED; bus identities, the
+prior harvest's binding and the quoted Adobe spec passages are VERIFIED. All six prior routes stay open (CF-K9 ADOPTED as evidence supporting its
+interrupted-effect route); the proposal and
+four Untested readings are ROUTED to adobe benches. Kernel unchanged at r5, 2,867 of 3,500 words; `code.md` unchanged at
+r10, 1,209 words. 34 `§` lines: 19 ADOPTED · 0 ADOPTED-CONDITIONAL · 0 REJECTED · 15 ROUTED, plus 8 `HEADER:` lines
+(6 ADOPTED · 2 ROUTED). Dispositions: `adjudications/factory-kernel/adobe-ingester.dispositions.md`, rewritten for blob
+`2724e0a3` and superseding its own ruling on blob `5e285849` without withdrawing any disposition that ruling recorded.
