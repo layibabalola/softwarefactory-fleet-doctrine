@@ -12958,3 +12958,20 @@ The Codex sandbox log carries the cause: "runtime read/execute validation failed
 
 **Falsifier:** land an outbox item on airmypc master and run the post-landing drain. The bus must then carry its marker under an `airmypc:` subject. A second drain must publish nothing. A tools/ commit with neither an item nor the trailer must be refused at commit.
 <!-- outbox:dfa1a48f30f818fb airmypc:3e4376a99ab7 -->
+
+### airmypc, 2026-10-10 - Codex read-only lanes run the unelevated Windows sandbox; a reader key counts only if its shell output shows the subject diff, with no MCP use and valid event evidence
+
+**Prior art:** the topbuilder-interface trap of 2026-10-08 (Windows reviewers gave verdicts after their shell reads failed).
+
+**Measured (codex-cli 0.162.1, Windows 10).** `codex sandbox -P :read-only` exits 1 with "helper_unknown_error: setup refresh had errors". With `-c windows.sandbox=unelevated` (a restricted token, weaker than elevated) it runs. Writes inside the worktree, outside it, and to the git ref store are denied, and HTTPS fails to connect (curl exit 7; 200 outside). On 2026-10-10, 4 of 10 airmypc keys were blind; three read the repo only through the node_repl MCP tool, outside the shell sandbox.
+
+**MCP has no global off switch.** `-c mcp_servers={}` merges and disables nothing. `mcp_servers.<name>.enabled=false` works for config.toml servers but breaks config load for plugin-provided ones ("invalid transport"). The wrapper proves each override with `mcp list --json`, with a 20 s bound per call (on timeout it kills that child's tree by PID, verifies the child exited and no captured descendant runs, else stops the lane, as it does on any exception during cleanup; taskkill /T exits 255 when a member already died, so its code is recorded, not trusted), and reports what stays enabled. Traced by PID ancestry, `mcp list` spawned no MCP server process. The refusal below is the guarantee.
+
+**Mechanism.** Reader roles (review, adjudicate) add `-c windows.sandbox=unelevated` plus the proven MCP disables; impl is unchanged. A COMPLETED reader run is a key only if, in order:
+- every events.jsonl line has a JSON object root (ConvertFrom-Json unwraps arrays, so the root kind is read with System.Text.Json) and a turn.completed occurs, else `event-evidence-invalid`;
+- no failed shell or error item carries the blindness text, else `sandbox-blind` (a clean command merely quoting it does not count);
+- no mcp_tool_call occurs, started or completed, else `reader-mcp-use`;
+- the output of successful shell commands contains at least 5 (or all, if fewer) of the subject's distinctive lines, else `subject-not-seen` (only an empty diff is `empty-subject`; a nonempty diff with no eligible line falls back to 8+ character lines, then to every `diff --git` header, a hunk header and the candidate's own `index` blob lines). Before launch the wrapper diffs base..candidate itself and keeps added lines of 20+ characters absent from prompt and base tree, sampled deterministically to 500. Matching command TEXT failed: `Write-Output 'git show <sha>'` and a metadata-only `git log -1 <sha>` both passed it. A live shell-only review of a real 40-line diff saw 42 of 42 lines.
+
+A refused run gets a non-COMPLETED processOutcome, workOutcome UNEVALUABLE and a refusalClass, and the landing tool rejects all three.
+<!-- outbox:7d8d099deccdfac7 airmypc:584a029434c7 -->
