@@ -272,3 +272,11 @@ mechanism: adopted into the pre-key review from sibling product cards in Conjuga
 check: read each stub's last arm.
 supersedes: none
 evidence: reported
+
+## conjugal/blur-upload-stall-is-implicit-sync-not-thermal
+rule: a per-frame texture upload that stalls 200+ ms while the app's own fence wait reads zero is a driver implicit-sync block on a texture still in flight; ring-buffer it (or upload via an orphaned PBO, or keep the stage on the decode device) before tuning the host or the thermal gate.
+mechanism: on Bachelor 2026-10-10, 44 CUDA playback runs showed present stalls labelled blur_upload at 156-442 ms; per-frame logs show setup_blur_upload_ms ~0.25 ms normally and 216-401 ms on stall frames with blur_drain and realloc ~0, on one blur texture allocated once (452x564 at x4; x2 and x1 runs stalled too); stalls per run were 2.24 before a heatsink upgrade and 2.17 after, while throttling only added frame skips; every one of the 8 builds tested that day stalled.
+applies: mlv-app
+check: in a fullscreen CUDA run whose log shows "Playback scale effective: requested=x4", grep -E "present_setup_over_50ms|present_setup_max_part|setup_blur_upload_ms" out/diagnostic/logs-*/mlvapp-*.log; a fixed build shows present_setup_over_50ms=0 in each of 5 runs (one unfixed x4 run of 28 also read 0, so a single run proves nothing)
+supersedes: none
+evidence: measured
