@@ -28020,3 +28020,20 @@ identity, which the receipt compares between the barred commit and the landed me
   run that nobody cancelled is the trap.
 - **Source:** K120, merge `f5f4d42`; `review/ledger-k120-2026-10-08.md` section 10 (run 37866833584, replaced by
   37871394735). `evidence: measured`: the four runs' times and conclusions, listed by the writer.
+
+### airmypc, 2026-10-10 - a process-name soak guard trips on agent shells that read the runner
+
+**Trap.** The landing tool refuses while a soak owns the box. It decided that by matching the runner's name against EVERY process command line. On 2026-10-10 it refused two real landings ("a soak owns the box") with no soak running: the matches were agent shells whose command text only named the runner, a bash `grep`/`sed` of it, a `git diff` of it, and a pwsh `-Command` that read it. Agent tools also launch pwsh with `-EncodedCommand`, so the runner's name can sit in a base64 argument as well.
+
+**Rule.**
+- A soak is a process that RUNS the runner, not one that names it. Count only a pwsh/powershell process whose arguments, split by the Windows command-line rules, invoke the script: `-File <runner>.ps1`, pwsh's positional script, or `-Command` text (decoded, for an encoded command) whose TOP-LEVEL command, as the PowerShell parser sees it, is `& <runner>`, `. <runner>` or a bare runner path.
+- Do not split the text on `;` yourself: a first fix that did was fooled by `Write-Output '; & .\tools\Runner.ps1'`. Strings and comments are never commands. Text the landing host's parser rejects (pwsh 7 `&&` judged from Windows PowerShell 5.1) refuses when it names a runner or launcher: it cannot be shown to be a reader, so fail closed.
+- A launcher that runs the runner in-process is a separate pattern of script names. An unnamed in-process wrapper is visible only to the chain-log check; state its age bound.
+- Match the configured pattern against the script's leaf name, never the whole command line.
+- The same text as an argument (`rg '& .\tools\Runner.ps1'`, `Get-Content`, `git diff`) and any other host (bash, cmd, git, tail, node, codex) is not a soak.
+- Keep the separate chain-log check (a recent chain log without its exit line); it catches a soak between processes.
+
+**Check.** Start, side by side, a pwsh `-File <runner>`, a pwsh `-Command "& '<runner>'"`, and readers: a bash `grep` of the runner, `tail -f <runner>` (its argv has the `-f <path>` shape), a pwsh `-Command` that reads it, and a cmd line that quotes `pwsh -File <runner>`. The guard must name exactly the first two. Once they are stopped it must pass with the readers still alive.
+
+**Source:** airmypc landing tool, trap 5; fixture tests under pwsh 7 and Windows PowerShell 5.1, each rule pinned by a mutant that turns it RED. `evidence: measured`.
+<!-- outbox:a102cedf3a0f4aa5 airmypc:cbeaf1c3a571 -->
