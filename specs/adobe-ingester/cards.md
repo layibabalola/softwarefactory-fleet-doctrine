@@ -146,7 +146,7 @@ rule: a measured product stall must change admission for at least one producer o
   an alarm with an exit code that nothing consumes does not stop the churn it measures.
 mechanism: adobe-ingester's doctrine loop and escalation budget read STALL_CONTROL_ONLY for 9+ days (139 commits in
   72 h to 2026-10-11, all under .factory/, 0 product; last product 581f3ee 2026-10-02). In the same window the
-  auditor delivered control directives, four of them after a written moratorium. Fix: Assert-ProductStallGate.ps1,
+  auditor delivered 13 control directives since 2026-10-08, one after a written moratorium. Fix: Assert-ProductStallGate.ps1,
   called by both delivery scripts, refuses a directive during the stall unless it names product paths
   (product_delta: spikes/...) or carries a 3-seat override report; every evaluation goes to a JSON-lines ledger.
 check: node product-control-ratio.mjs --repo <repo> --product spikes,src --control .factory,.claude-state --hours 48 (exit 3 = stall);
