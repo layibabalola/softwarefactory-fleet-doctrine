@@ -1,5 +1,5 @@
 # DNG Auto Processor — factory spec (one writer: the `dng-design-steward` seat, docs/13 P-STEWARD step 7d; a posture change made anywhere else reaches this file as a census item of that seat's next pass)
-source_commit: 041a9234e3616f1d744bc08dea36122b5b3df86a
+source_commit: 03c6dabc6d86a0fb93d1f21f325e7aec4a7f4c9c
 
 **Machine:** ULTRAMAGNUS (personal box). **Project root:** `C:\code\DngAutoProcessor - Claude`.
 **Product:** auto-grading pipeline for DNG timelapse clips emulating the operator's LRTimelapse
@@ -336,8 +336,9 @@ section it cites, or when its `KERNEL:` block differs from the one docs/13 P-STE
   return an error; two models of one provider are never
   cross-family; a card needing the network first takes a Claude-hosted seat, which is not darkness. **A family is
   read live by a call that answers, never by local credential state** (§2; docs/13 P-RESUME step 4; adopted from
-  this bus): the tick-start probe is §10's smoke form, one call per tick on the family's lowest-tier model by the CLI
-  route, and the family fails it unless that call answers — a quota reply is no probe failure, read by its meter; a
+  this bus): the tick-start probe is §10's PONG smoke form, one call per tick on the family's lowest-tier model by the
+  CLI route, and the family fails it unless that call answers — it asks whether a family answers, never whether its
+  sandbox runs — a quota reply is no probe failure, read by its meter; a
   CLI's login status or version reads local state, so it can show a family signed out and never that it answers — a
   token the provider has revoked still reads signed in — and a status report built on it says signed out or unknown,
   never live.
@@ -385,7 +386,11 @@ section it cites, or when its `KERNEL:` block differs from the one docs/13 P-STE
 - **CLI currency upgrades on a six-hour clock with no idle gate, smokes the launch form the tick really uses —
   isolated from user hooks — and rolls back only on evidence** (§10, USER, §0; fleet R13, adopted from this bus):
   a failed smoke reinstalls the previous version only when that version passes the smoke the new one failed,
-  because a smoke that fails on auth, quota or network fails the old version too. **Each landing receipt
+  because a smoke that fails on auth, quota or network fails the old version too. **A Codex upgrade also smokes the
+  read-only sandbox every key and approach review runs in**: one read-only command whose output is checked against the
+  repository, because a reply that runs no command passes a CLI whose every shell call fails; and a rolled-back version
+  is held — the check installs nothing — while the registry's newest version is one a rollback receipt names as
+  rejected (§10; fleet R13.2, adopted from this bus). **Each landing receipt
   measures every seat's cost and correctness; a provider joins only after admission drills** (§10, USER, §0).
 
 ### This board
