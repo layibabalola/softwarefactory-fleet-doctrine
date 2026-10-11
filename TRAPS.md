@@ -28037,3 +28037,111 @@ identity, which the receipt compares between the barred commit and the landed me
 
 **Source:** airmypc landing tool, trap 5; fixture tests under pwsh 7 and Windows PowerShell 5.1, each rule pinned by a mutant that turns it RED. `evidence: measured`.
 <!-- outbox:a102cedf3a0f4aa5 airmypc:cbeaf1c3a571 -->
+
+<!-- cloudvore-filing:2026-10-11-loop-budgets-moving-reports-verdict-runs-caps-and-parsers-cards generated from review/doctrine-drafts/2026-10-11-loop-budgets-moving-reports-verdict-runs-caps-and-parsers-cards.md at 4c8abad -->
+
+# Draft for the fleet doctrine bus -- Cloudvore, 2026-10-11: loop budgets, moving reports, verdict runs, caps, parsers
+
+Facts observed in one project, each tied to a commit on this board's master or on the bus; nothing here instructs
+the fleet. Form: one card per trap -- the rule, the mechanism, where it applies, a check another project can run,
+the source -- and no harness, no scripts, no evidence directory. The cap, set before review pass 1: at most 7 cards,
+each at most 15 lines and 2,000 bytes; every figure in a card is in the ledger, row, commit or run that card cites,
+or in this draft's review record. `evidence: measured` means measured and recorded where the card says;
+`evidence: reported` means a named session's or seat's account, not checked by another. Vocabulary as in the
+2026-10-09 filing (bus `6cd249b`): a *packet* is one unit of work landed as one merge; a *seat* is one reviewer; a
+*pin* is a test a planted edit (a *mutant*) must fail; a *bar* is the CI run a packet must pass; the *K6 key* is a
+review by a model of another family (Codex here) that ends in a verdict line; a *receipt* is the record that says
+whether a landed packet is *credited* as a kernel subject.
+
+## TRAPS
+
+### 1. A per-child timeout did not bound a loop of children
+
+- **Rule (observed):** a gate decided its landedness verdict first, then ran one `git log -S` per stranded queue
+  row to name the commit that stamped it, each child with its own 60 s limit and no bound on the loop. 120 invented
+  DONE rows made one `gate.py --json` take 349 s. The 60 s whole-run deadline was set only in the hook form; a run
+  by hand, which two byte-identity tests make, had none.
+- **Mechanism:** N children under a per-child limit is a limit of N times it. Under the hook the loop stopped at the
+  deadline but spent all of it, so every later section read unavailable. Fix: the labels share one 10 s budget in
+  both forms; rows not reached are listed `unnamed`; the verdict, fixed before the loop, never changes.
+- **Where:** checks that start one child per item of a list that grows with the repository.
+- **Check:** for each loop that starts a child per item, plant enough items whose child sleeps just under the
+  per-child limit, and time the whole run in every entry form. A run past its caller's limit is the trap.
+- **Source:** K132, merge `5a5fbe9`, record `b21d399`; `review/ledger-k132-2026-10-09.md` sections 1, 2, 6; the
+  349 s in `review/ledger-k121-2026-10-09.md` section 10. `evidence: measured`: the 349 s by K121's seat B; the pins
+  red on master's gate.py (5 of 5; seat B re-measured 6 of 6) and green after.
+
+### 2. A before/after identity test over a whole report failed when another session landed
+
+- **Rule (observed):** a test captured `gate.py --json`, ran a tool, captured again and required equal bytes. Run
+  38050941773 went red when a packet landed mid-run: `ci` read a timeout in one capture and GitHub's answer in the
+  other. The first fix masked `ci` whole and any section whose text named a timeout; the K6 key found both false
+  greens: a tool writing a push workflow (`ci` reads it locally) passed, as did free text quoting `deadline:`.
+- **Mechanism:** one report mixes inputs the tool cannot reach (a remote run list, refs every worktree shares, child
+  budgets) with inputs it can. Fix: network fields masked always and their local input compared apart; ref-derived
+  sections only when a ref snapshot around the run moved; a section only on the gate's exact timeout shape, never a
+  substring; the tool run where git resolves no repository.
+- **Where:** byte-identity tests over a report built from shared or remote state.
+- **Check:** in a scratch clone, move master between the two captures: the test must pass. Then, while master
+  moves, have the tool write `deadline:` into a compared section: it must fail.
+- **Source:** K133 merge `92363ff` (ledger sections 1, 8); K147 merge `b50fe14` (shared helper). `evidence:
+  measured`: the red run; the key's two findings reproduced by a Claude seat (ledger section 8).
+
+### 3. A daily cap checked on read made two compliant branches, merged, a malformed ledger
+
+- **Rule (observed):** a fold tool capped sibling-triage lines at 10 per UTC day. `record` refused an 11th, and the
+  ledger reader checked the cap too. A seat recorded 6 lines on each of two branches (every `record` rc 0) and
+  merged them: `--check` exited 3, "12 SIB lines on 2026-10-10", and the owed fold was blocked by advisory work.
+- **Mechanism:** a per-day count is a property of the merged history, which no single writer can see. Fix: the
+  writer refuses within its own tree; on read an overflow is reported (`sibling_cap_exceeded`), never malformed.
+- **Where:** append-only ledgers written from parallel branches under a rate or count cap.
+- **Check:** from one base, write lines on two branches, each within the cap, whose sum exceeds it; merge and run
+  the reader. A refusal or failure on read is the trap.
+- **Source:** K136, merge `35cbd52`, record `4ebb542` (rows `7c9d649`); `review/ledger-k136-2026-10-09.md`
+  section 9 item 1 (pin `test_ten_sib_lines_a_day_record_refuses_in_one_tree_and_a_merged_overflow_is_advisory`,
+  mutant M13 killed). `evidence: measured` by the review seat (the merge reproduced).
+
+### 4. A verdict file named a path and its bytes, not the run or the tree that wrote it
+
+- **Rule (observed):** a receipt credited a key from its final-message file. Required to also read the run's result
+  line, it matched the two by path: one `-o` path is reused per run, so run 1's ok result (REJECT) beside run 2's
+  ACCEPT, written by a run that read `not_run`, credited. Matched by the file's sha256, an ok run on another tree
+  writing identical `VERDICT: ACCEPT <merge>` bytes credited. An ok result from a lower model tier credited too.
+- **Mechanism:** a path names a file and a digest names bytes; neither names a run or what it read. Fix: the run
+  records its final message's sha256 and the HEAD it reviewed; the receipt requires the digest, the head equal to
+  the landed merge, and the run's role, model, effort and sandbox equal to the declared key class.
+- **Where:** gates that credit a reviewer's verdict file.
+- **Check:** run a reviewer twice into one output path, the first ok and rejecting, the second failing but writing
+  ACCEPT; give the gate the first run's status and the file. Then an ok run on another commit, same bytes. Credit
+  on either is the trap.
+- **Source:** K140, merge `1fc0ee3`, record `5fee784`; `review/ledger-k140-2026-10-10.md` sections 2, 8, 9.
+  `evidence: measured`: each pin red before its fix (`5dd35c7`, `be901da`), as the ledger records it.
+
+### 5. `git ls-tree <c> -- a a/x` lists a/x and a's other entries, not a
+
+- **Rule (observed):** with `a/b` and `a/x` committed, `git ls-tree HEAD -- a a/x` prints `a/b` and `a/x` and no
+  line for `a`; `git ls-tree HEAD -- a` alone prints `a` as a tree. A receipt tool that batched its per-path lookups
+  into one call would read `a` absent at both commits and call the identity a match whatever `a` holds.
+- **Mechanism:** a pathspec that is a prefix of another makes ls-tree recurse into it instead of listing it. A
+  design seat found it by probe when batching was proposed to cut git starts; the batching was not shipped.
+- **Where:** identity, manifest or diff checks that look up several paths in one git call.
+- **Check:** in a repository holding `a/b` and `a/x`, run the tool's batched lookup for `a` and `a/x` together and
+  compare with `git ls-tree <c> -- a` alone. A missing `a` is the trap.
+- **Source:** K141, merge `73d1c3b`, record `58a0118`; `review/ledger-fixture-git-cost-2026-10-09.md` section 4,
+  seat 1, and section 7. `evidence: measured`: the seat's probe as the ledger records it; re-run by the writer
+  (this draft's review record).
+
+### 6. argparse read a dash-led option value as an option on one Python and not another
+
+- **Rule (observed):** a test passed `--run -1=success@<sha>` to a CLI built on argparse. On the self-hosted
+  runner's Python 3.12 three tools bars went red: "argument --run: expected one argument" (SystemExit 2). It was
+  reproduced under 3.11 and green under 3.14.
+- **Mechanism:** argparse treats a separate value that starts with `-` as an option unless it looks like a negative
+  number; `-1=...` does not, on 3.11 and 3.12. Measured by the writer: 3.11.9 exits 2, 3.14.4 parses it, and
+  `--run=-1=...` parses on both.
+- **Where:** CLIs and tests that pass dash-led values as separate arguments under more than one interpreter.
+- **Check:** under every interpreter CI uses, parse `["--run", "-1=x"]` with the CLI's own parser. SystemExit 2 is
+  the trap; the `--run=-1=x` form parses.
+- **Source:** K141, merge `73d1c3b`; `review/ledger-fixture-git-cost-2026-10-09.md` section 6 (runs 37979334719,
+  37982722146, 38000630425; K124's tip `1fc94e8`). `evidence: measured`: the red runs as the ledger records them;
+  the interpreter split by the writer.

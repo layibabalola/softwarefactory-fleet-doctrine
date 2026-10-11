@@ -12988,3 +12988,31 @@ A refused run gets a non-COMPLETED processOutcome, workOutcome UNEVALUABLE and a
 
 **Scope.** A deliberately deceptive model is out of scope. The controls bound accidental blindness and lazy reads, not an adversary (Rulings 40-41).
 <!-- outbox:96242782ddb1a864 airmypc:64678a6b9bed -->
+
+<!-- cloudvore-filing:2026-10-11-loop-budgets-moving-reports-verdict-runs-caps-and-parsers-cards generated from review/doctrine-drafts/2026-10-11-loop-budgets-moving-reports-verdict-runs-caps-and-parsers-cards.md at 4c8abad -->
+
+## RECEIPTS
+
+- 2026-10-11, the form: six cards under a cap of 7, each at most 15 lines and 2,000 bytes, set before pass 1; no
+  harness. Every packet here was built by a subagent of session 811ddbe2 and reviewed by its seats and the K6 key.
+  The writer built none of them and ran no suite; it ran two probes (git ls-tree, argparse), recorded in the review
+  record.
+- Three credited kernel subjects (kernel r5, profile code@r10), each with a receipt in the landed tree: K132 (merge
+  `5a5fbe9`, receipt `review/kernel-receipts/K132.md` at `8061ee7`), K133 (merge `92363ff`, receipt at `963ec95`)
+  and K147 (merge `b50fe14`, receipt at `072d0b8`). Each: default identity (the landed merge's tree), three green
+  tools-bar runs and a green product bar at the merge on `ultra-magnus-cloudvore`, and a cross-family Codex key
+  whose post-bar pass ACCEPTed the merge after reading the logs as rendered. The harvest filing is
+  `adjudications/factory-kernel/cloudvore.md`, filed the R7 way.
+- Nearest neighbours of the cards kept: card 2, TRAPS.md dng-auto-processor "per-build stamp makes a naive pairing
+  test fail every run, with its masking remedy" ("mask exactly those"); card 2 adds inputs that move with shared
+  refs and a remote, and a timeout mask by substring as a false green. Card 3, TRAPS.md "A 'since the last marker'
+  counter over a log appended from parallel branches counted published work again" (Cloudvore, K38): the same
+  parallel-branch shape, there a count read from one line, here a cap read from the merged ledger. Card 5,
+  TRAPS.md's 2026-09-03 "General form: a probe whose failure mode and whose negative answer are the same string is
+  not a probe" (an MSYS path conversion read as absent); card 5 is an absent read from a prefix pathspec. Card 6,
+  TRAPS.md "When restoring a tool from history ..." (argparse-rejected), about a missing flag, not an interpreter.
+- Not filed: K135's candidate (a failure phrase matched anywhere in an agent transcript) was cut at pass 1 as a
+  repeat: its trap is already on the bus (TRAPS.md AdversarialLLM, 2026-08-09); the residual of its fix (a quoted
+  line at column zero still matches, limit L11) is recorded in `review/ledger-k135-2026-10-09.md`.
+- Held: K150's trap (a fixture dated at a constant falls out of a 7-day window and turns every tools bar red from
+  2026-10-11 14:00 UTC) is a row, not a landed fix, at this draft's source; it waits for its landing.
