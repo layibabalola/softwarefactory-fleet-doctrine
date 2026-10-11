@@ -1,0 +1,54 @@
+{
+  "schema": "fleet/product-throughput-classes/v1",
+  "note": "Line-mode classifier for tools/Get-ProductThroughput.ps1 -Lines. DIAGNOSTIC ONLY (metrics/README.md law 1): never a gate, never a target. Pattern rules: 'dir/' or 'file' = repo-relative prefix; './*.md' = root-level files only (wildcards via -like); a pattern without './' that contains '*' is matched with -like against the full path. The most specific pattern wins (count of non-wildcard characters); ties resolve in bucket order product, tests, vendored-copies, factory-tooling, coordination-paperwork. Unmatched paths are reported as 'unclassified', never dropped. Paths verified against each repo's HEAD tree on 2026-10-11. ref HEAD = the branch the canonical checkout works on (adobe-ingester never merges to main; its main is a month stale), recorded per run as ref_name and ref_sha.",
+  "projects": [
+    {
+      "name": "adobe-ingester",
+      "root": "C:/!Layi Wkspc/Adobe Document Cloud Ingester",
+      "ref": "HEAD",
+      "classes": {
+        "product": ["spikes/adobe-session/", "global.json"],
+        "tests": ["spikes/adobe-session/AdobeSessionSpike.Tests/"],
+        "factory-tooling": [".factory/tools/", ".factory/tests/", ".factory/prompts/", ".factory/automation-prompts/", ".factory/schemas/", ".factory/config/", ".factory/templates/", ".factory/fixtures/", ".factory/patches/", "tools/", "release/", ".githooks/", ".github/", ".claude/", ".gitattributes", ".gitignore", ".gitmessage.txt"],
+        "coordination-paperwork": [".factory/", "docs/", "./*.md"],
+        "vendored-copies": []
+      }
+    },
+    {
+      "name": "airmypc",
+      "root": "C:/temp/AirMyPC",
+      "ref": "HEAD",
+      "classes": {
+        "product": ["src/", "proto/", "openapi/", "host-integration/SkinHostAdapter.cs", "host-integration/host.html", "AudioMile.sln", "Directory.Build.props", "Directory.Build.targets", "global.json", "nuget.config"],
+        "tests": ["tests/", "fixtures/"],
+        "factory-tooling": ["tools/", ".githooks/", ".github/", ".claude/", "network-diagnostics/", "security/", "./*.ps1", ".editorconfig", ".gitattributes", ".gitignore"],
+        "coordination-paperwork": ["docs/", ".claude-state/", ".remember/", "COORDINATION/", "OPEN_ITEMS/", "agents/", "host-integration/", "./*.md"],
+        "vendored-copies": ["templates/"]
+      }
+    },
+    {
+      "name": "mlv-app",
+      "root": "C:/!Layi Wkspc/MLV-App",
+      "ref": "HEAD",
+      "classes": {
+        "product": ["src/", "platform/", "pixel_maps/", "osx_installer/"],
+        "tests": ["tests/"],
+        "factory-tooling": ["tools/", "tests/coordination/", ".github/", ".claude/", "claude/", "agents/", "closeout.config.json", ".gitattributes", ".gitignore", ".python-version"],
+        "coordination-paperwork": ["docs/", "receipts/", ".closeout-evidence/", ".dual-lane/", "doctrine-outbox/", "./*.md", "./*.json", "./*.sha256"],
+        "vendored-copies": ["src/librtprocess/"]
+      }
+    },
+    {
+      "name": "agent-bridge",
+      "root": "C:/!Layi Wkspc/agent-bridge",
+      "ref": "HEAD",
+      "classes": {
+        "product": ["agent_bridge/", "core/", "lane_coordination/", "protocol_packs/", "dashboard-launcher/", "./*.py", "./*.ps1", "pyproject.toml", "requirements.txt", "./*.example.json"],
+        "tests": ["tests/", "./test_*.py"],
+        "factory-tooling": ["tools/", ".github/", ".claude/", ".gitignore"],
+        "coordination-paperwork": ["docs/", "BRIDGE_PROTOCOL/", "agents/", "./*.md", "./*.stackdump"],
+        "vendored-copies": []
+      }
+    }
+  ]
+}

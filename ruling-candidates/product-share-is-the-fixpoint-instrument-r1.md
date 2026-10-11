@@ -95,3 +95,17 @@ because their failure domains and their billing were finally decoupled.
    before trusting a green. An instrument that cannot report red is a fixpoint accelerant.
 4. Window git by time with an **explicit UTC offset**. A naive timestamp is read as local time and
    silently drops commits at the window edge — measured, and it zeroed a real 7-day window.
+
+## 5. Addendum 2026-10-11 — count LINES as well as commits (owner defect D3)
+
+Commit share hides size. `tools/Get-ProductThroughput.ps1 -Lines` now counts changed lines by class; first
+fleet run, 14 days to 2026-10-11, merges excluded (rows in `metrics/product-share-lines.jsonl`):
+
+| project | product lines/wk | product share | largest bucket |
+|---|---|---|---|
+| mlv-app | 10,913 | 16.1 % | factory-tooling 80,279 |
+| airmypc | 5,480 | 10.7 % | vendored copy of tools 36,308 |
+| adobe-ingester | 17 | 0.05 % | coordination paperwork 54,709 |
+| agent-bridge | 0 | 0 % | docs 4,725 (only the working branch moved) |
+
+**Proposed:** report line share beside commit share. It stays a diagnostic (`metrics/README.md` law 1).

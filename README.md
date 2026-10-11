@@ -310,3 +310,17 @@ Calibration measured on 2026-09-23, same instrument, same day:
 
 A 164x spread. Run it on your own board before assuming which end you are on — adobe-ingester's
 governance controls all reported PASS throughout.
+
+**Line mode (`-Lines`, added 2026-10-11 for owner defect D3, "paperwork outweighs product").**
+Commit counts hide size; this counts changed lines (adds + deletes, `--numstat`, merges excluded,
+binaries ignored) per project and buckets them into product / tests / factory-tooling /
+coordination-paperwork / vendored-copies from `tools/product-throughput-classes.json`, then ranks
+projects by product lines per week. Unmatched paths are reported as `unclassified`, never dropped.
+It is DIAGNOSTIC ONLY (`metrics/README.md` law 1): it never exits 1 and must not be wired as a gate.
+
+```bash
+pwsh -NoProfile -File tools/Get-ProductThroughput.ps1 -Lines -WindowDays 14 -AsJson   # schema fleet/product-throughput-lines/v1
+node tools/Get-ProductThroughput.tests.mjs                                             # fixture-repo regressions
+```
+
+Fleet runs are appended to `metrics/product-share-lines.jsonl`.
