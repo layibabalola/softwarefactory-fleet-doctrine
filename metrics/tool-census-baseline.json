@@ -1,0 +1,29 @@
+{
+  "schema": "tool-census-baseline.v1",
+  "total": 11,
+  "families": {
+    "session-checkpoint": {
+      "copies": 4,
+      "distinct": 4
+    },
+    "doctrine-outbox": {
+      "copies": 3,
+      "distinct": 3
+    },
+    "check-doc-size": {
+      "copies": 3,
+      "distinct": 3
+    },
+    "doctrine-triage": {
+      "copies": 2,
+      "distinct": 2
+    }
+  },
+  "doubleRegistrations": [
+    "agent-bridge:session-checkpoint:SessionStart+Stop",
+    "mlv-app:session-checkpoint:Stop+SessionStart",
+    "adobe-ingester:session-checkpoint:SessionStart+Stop"
+  ],
+  "measuredAt": "2026-10-11T19:53:12.385Z",
+  "rule": "The count may only fall. tools/tool-census.mjs --update-baseline refuses a rise. It grades the fleet tool layout, never a lane (metrics law 1)."
+}

@@ -13,6 +13,7 @@ on:
       - 'examples/cards-v1.md'
       - 'tools/validate-cards*.mjs'
       - 'tools/traps-index*.mjs'
+      - 'tools/tool-census*'
       - 'TRAPS-INDEX.md'
       - '.github/workflows/doctrine-sync.yml'
   pull_request:
@@ -27,6 +28,7 @@ on:
       - 'examples/cards-v1.md'
       - 'tools/validate-cards*.mjs'
       - 'tools/traps-index*.mjs'
+      - 'tools/tool-census*'
       - 'TRAPS-INDEX.md'
       - '.github/workflows/doctrine-sync.yml'
   workflow_dispatch:
@@ -60,3 +62,5 @@ jobs:
           node tools/validate-cards.mjs
       - name: R14 TRAPS index fixtures (live partition and committed index)
         run: node tools/traps-index.tests.mjs
+      - name: Shared-tool census fixtures (versions, marker sections, double registration, ratchet)
+        run: node tools/tool-census.tests.mjs

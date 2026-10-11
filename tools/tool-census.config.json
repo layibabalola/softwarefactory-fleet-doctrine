@@ -1,0 +1,20 @@
+{
+  "_comment": "Shared factory tool families and the fleet roots tools/tool-census.mjs scans on this box. '@bus' = the bus clone running the tool; '~' = the OS user's home. A root absent on a box is skipped and named, never counted.",
+  "families": [
+    { "name": "session-checkpoint", "names": ["session-checkpoint.py", "session_checkpoint.py"] },
+    { "name": "doctrine-outbox", "names": ["doctrine_outbox.py", "doctrine-outbox.py"] },
+    { "name": "check-doc-size", "names": ["check-doc-size.py", "check_doc_size.py"], "sharedSectionMarker": "END CONFIG" },
+    { "name": "doctrine-triage", "names": ["fold-triage.mjs", "doctrine-triage.mjs"] }
+  ],
+  "roots": [
+    { "name": "bus", "path": "@bus", "kind": "bus" },
+    { "name": "airmypc", "path": "C:/temp/AirMyPC", "kind": "project" },
+    { "name": "agent-bridge", "path": "C:/!Layi Wkspc/agent-bridge", "kind": "project" },
+    { "name": "mlv-app", "path": "C:/!Layi Wkspc/MLV-App", "kind": "project" },
+    { "name": "adobe-ingester", "path": "C:/!Layi Wkspc/Adobe Document Cloud Ingester", "kind": "project" },
+    { "name": "adversarialllm", "path": "C:/!Layi Wkspc/AdversarialLLM-ClaudeCode", "kind": "project" },
+    { "name": "user-hooks", "path": "~/.claude/hooks", "kind": "user" }
+  ],
+  "userSettings": "~/.claude/settings.json",
+  "excludeDirs": [".git", "node_modules", "archive", "__pycache__", "worktrees"]
+}

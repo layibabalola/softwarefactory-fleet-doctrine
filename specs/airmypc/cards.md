@@ -29,3 +29,35 @@ mechanism: a dotnet-gcdump node's only key is its type, size and address. A comp
 check: pwsh -NoProfile -File tests/row46-verdict/Test-AudioMileRow46Verdict.SelfTest.ps1
 supersedes: none
 evidence: measured
+
+## airmypc/retire-shared-tool-copies-agent-bridge
+rule: delete agent-bridge tools/session-checkpoint.py and its SessionStart and Stop entries in .claude/settings.json; give tools/check_doc_size.py a CONFIG ... END CONFIG block or retire it; converge tools/doctrine-triage.mjs and AirMyPC tools/fold-triage.mjs onto one implementation run from one place.
+mechanism: the user settings already run ~/.claude/hooks/session-checkpoint.py (v4, 553 lines) on both events, so the 116-line project copy (v2) runs a second time per event and writes an older record. check_doc_size.py has no shared section to hash, so its drift from the AirMyPC and MLV-App ports cannot be measured. If the project copy does something v4 does not, move that into v4 first.
+applies: agent-bridge
+check: in the bus clone, node tools/tool-census.mjs --json shows no agent-bridge double registration and no agent-bridge session-checkpoint copy
+supersedes: none
+evidence: measured
+
+## airmypc/retire-shared-tool-copies-mlv-app
+rule: delete MLV-App tools/session-checkpoint.py (with tools/repo_hygiene/test_session_checkpoint.py, or retarget that test at the shared hook) and its Stop and SessionStart entries in .claude/settings.json; converge tools/coordination/doctrine_outbox.py with the bus and AirMyPC versions onto one implementation.
+mechanism: the user settings already run ~/.claude/hooks/session-checkpoint.py (v4, 553 lines) on both events, so the 214-line project copy (v3) runs a second time per event. doctrine_outbox.py exists in three versions (bus 449, AirMyPC 1,099, MLV-App 1,520 lines), so a fix in one never reaches the others. If the project copy does something v4 does not, move that into v4 first.
+applies: mlv-app
+check: in the bus clone, node tools/tool-census.mjs --json shows no mlv-app double registration and no mlv-app session-checkpoint copy
+supersedes: none
+evidence: measured
+
+## airmypc/retire-shared-tool-copies-adobe-ingester
+rule: delete Adobe Document Cloud Ingester tools/session-checkpoint.py and its SessionStart and Stop entries in .claude/settings.json.
+mechanism: the user settings already run ~/.claude/hooks/session-checkpoint.py (v4, 553 lines) on both events; the project copy is a different 229-line v3. Its entries are bare {type, command} objects directly under the event, not the matcher-group schema ({hooks: [...]}), so they may never have fired at all; deleting them removes both the double run and the doubt. If the project copy does something v4 does not, move that into v4 first.
+applies: adobe-ingester
+check: in the bus clone, node tools/tool-census.mjs --json shows no adobe-ingester double registration and no adobe-ingester session-checkpoint copy
+supersedes: none
+evidence: measured
+
+## airmypc/retire-shared-tool-copies-airmypc
+rule: retire the vendored tools/doctrine_outbox.py (and Invoke-AudioMileOutboxDrain.ps1's dependence on it) and tools/fold-triage.mjs in favour of one implementation run from the bus clone; keep tools/check-doc-size.py only with its section below END CONFIG equal to the shared one.
+mechanism: AirMyPC carries the 1,099-line doctrine_outbox.py against the bus 449 and MLV-App 1,520; fold-triage.mjs (492 lines) and agent-bridge doctrine-triage.mjs (291) solve the same problem twice; check-doc-size.py differs from the MLV-App port below a CONFIG block both files call the only edited part.
+applies: airmypc
+check: in the bus clone, node tools/tool-census.mjs --json shows one version each for doctrine-outbox, doctrine-triage and check-doc-size
+supersedes: none
+evidence: measured
