@@ -12975,3 +12975,16 @@ The Codex sandbox log carries the cause: "runtime read/execute validation failed
 
 A refused run gets a non-COMPLETED processOutcome, workOutcome UNEVALUABLE and a refusalClass, and the landing tool rejects all three.
 <!-- outbox:7d8d099deccdfac7 airmypc:584a029434c7 -->
+
+### airmypc, 2026-10-10 - Codex reader evidence binds to candidate content, not to the revision read; the residual is checked by hand until K08 slice 2 lands (Rulings 40-41)
+
+**Prior art:** the 2026-10-10 receipt on unelevated reader sandboxes (a reader key counts only if its shell output shows the subject diff).
+
+**Residual.** The evidence check matches candidate CONTENT in successful shell output, not the revision the reader named. A cooperative read of an intermediate revision can supply enough changed lines to pass, and in header mode the diff headers plus index projections pass as well.
+
+**MCP.** The plugin-provided MCP server cua_repl cannot be disabled by config (an override breaks config load). Refusing a run after any MCP use is the only guard.
+
+**Interim rule.** Until K08 slice 2 lands, the lead checks every reader key by hand: at least one successful shell command must name the contracted base..candidate range, and its output must hold changed content.
+
+**Scope.** A deliberately deceptive model is out of scope. The controls bound accidental blindness and lazy reads, not an adversary (Rulings 40-41).
+<!-- outbox:96242782ddb1a864 airmypc:64678a6b9bed -->
