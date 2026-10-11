@@ -294,3 +294,14 @@ mechanism: on Bachelor (XPS 17 9720, RTX 3060 Laptop, iGPU drives the panel), 20
 check: on an idle hybrid laptop, `(Get-PnpDeviceProperty -InstanceId <VEN_10DE id> -KeyName DEVPKEY_Device_PowerData).Data`, where bytes 4-7 minus 1 = D-state, reads 3. Then time one `nvidia-smi --query-gpu=pstate,power.draw,power.draw.average --format=csv,noheader`: expect >1 s, "P0" with ~20 W instantaneous and an average of a few W or less. D-state reads from 1 s after the call show D3 again.
 supersedes: none
 evidence: measured
+
+## conjugal/prekey-37-a-fixed-timeout-in-a-fixture-had-no-headroom-for-a
+rule: size every fixed wait or timeout in a test fixture from the slowest measurement on a throttled host
+  (record the package temperature with it), with at least 5x headroom, or make the check wait on the event
+  instead of the clock.
+mechanism: A fixed timeout in a fixture had no headroom for a throttled host; an independent verification
+  round or the review before it found this in a real declaration; recorded cost: 1 keyed, 1 refused.
+check: for each fixed timeout in the new test, the evidence carries its worst measured duration under load,
+  and the timeout is at least 5x it.
+supersedes: none
+evidence: measured
