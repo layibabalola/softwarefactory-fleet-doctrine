@@ -287,3 +287,10 @@ mechanism: on Bachelor (i9-12900HK), 2026-10-11. The Core Temp feed's "package" 
 check: from a Core Temp CT-Log (per-core temps plus per-core or average P-core frequency), split rows at a fixed package-power band by P-core MHz (<=2400 vs >3000). The temperature gap between periods should vanish within the low-clock rows, and the E-core mean should not move. A real cooling fault fails both.
 supersedes: none
 evidence: measured
+
+## conjugal/nvidia-smi-wakes-a-d3-dgpu-and-reports-the-wake
+rule: on a hybrid-graphics laptop, read the dGPU's device power state (D-state) before trusting any nvidia-smi P-state or power reading. A query against a D3 (off) card wakes it and reports the wake, not the resting state. Never build a heat or admission gate on polled nvidia-smi watts without reading the D-state first.
+mechanism: on Bachelor (XPS 17 9720, RTX 3060 Laptop, iGPU drives the panel), 2026-10-11: DEVPKEY_Device_PowerData read D3 for every NVIDIA function across repeated samples, and that read does not wake the card. One `nvidia-smi --query-gpu=pstate,power.draw` call took ~1.35 s and returned "P0, ~21 W", with power.draw.average 0-1 W. D-state reads 1 s apart never caught the card out of D3. Held awake by nvidia-smi alone (no client context), the card read pstate "[Unknown Error]" at 1282 MHz and ~16 W. With a real CUDA context held idle, it settled at P8, ~9 W, 210 MHz, within ~10 s. Three sessions spent ~10 h treating this as a "GPU stuck at P0" fault: a driver-reset script, a scheduled-guard proposal, and a device restart that "failed". An admission gate that polled nvidia-smi read >=15 W on every probe and blocked every second-job join from 03:15 to ~12:30.
+check: on an idle hybrid laptop, `(Get-PnpDeviceProperty -InstanceId <VEN_10DE id> -KeyName DEVPKEY_Device_PowerData).Data`, where bytes 4-7 minus 1 = D-state, reads 3. Then time one `nvidia-smi --query-gpu=pstate,power.draw,power.draw.average --format=csv,noheader`: expect >1 s, "P0" with ~20 W instantaneous and an average of a few W or less. D-state reads from 1 s after the call show D3 again.
+supersedes: none
+evidence: measured
