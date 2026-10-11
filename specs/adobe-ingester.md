@@ -875,10 +875,10 @@ Measured facts only. Strategy and adoption go to Sol through the advisory ingres
 ## Kernel dogfood status (2026-09-15)
 
 ```
-KERNEL:   DOGFOOD-PENDING · kernel r4 · code@r4
+KERNEL:   ADOPTED · kernel r4 (blob 79fc893c, bus da4e920) · code@r4 · r5 (blob 6821c4c3) read, not re-adopted
 FILED:    2026-09-14 blob d7c91f33 (harvest 20260915T051905Z-86585ba5) · 14 ADOPTED / 1 CONDITIONAL / 1 REJECTED of 16
 SUBJECTS: end-to-end 0 · 1 blocked at acceptance closure
-ADOPT:    not recorded. The kernel binds this project only when it records ADOPT (kernel Law 1).
+ADOPT:    recorded 2026-09-16T02:34Z in Adobe HUB (kernel r4, code@r4). [Corrected 2026-10-11; read "not recorded" until then.]
 NEXT:     the first product subject, declared profile-first, per the pre-start rule below.
 ```
 
@@ -1141,6 +1141,9 @@ kernel revision it referred to, so `Get-DoctrineDispositionDebt.ps1` correctly r
 *mentioned but not blob-pinned*: a statement about an unknown revision. The subject is bus blob
 **`6821c4c3390712522b699e72a1781bc9d89a771a`** (`specs/fleet-factory-kernel.md` at bus HEAD `df88193889d0fee2a3297965634e5330adcfc997`). The
 `DOGFOOD-PENDING` state and the absent ADOPT are unchanged and are re-asserted against that blob.
+[Corrected 2026-10-11, routed by kernel harvest 50d379d (§Untested-4; HEADER preamble rows): `6821c4c3` is
+kernel **r5**, not r4; the r4 the declaration names is blob `79fc893cff8a5e1341b874a722a9b8f53db29ff6` (bus
+`da4e920`). The re-asserted DOGFOOD-PENDING / absent ADOPT was also wrong; see "Kernel status, corrected" below.]
 
 The deferral reason already on this surface is principled and still true: a kernel instance map cannot
 land in our tree while the candidate is frozen.

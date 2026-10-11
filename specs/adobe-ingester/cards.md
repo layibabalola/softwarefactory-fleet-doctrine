@@ -140,3 +140,60 @@ mechanism: on a shared 32 GB host, Pool Paged Bytes reached 8.26 GB and one pwsh
 check: Get-Counter '\Memory\Pool Paged Bytes'; Win32_PerfFormattedData_PerfProc_Process PoolPagedBytes/HandleCount sum, before and after
 supersedes: none
 evidence: measured
+
+## adobe-ingester/stall-alarm-without-an-actuator-is-not-a-gate
+rule: a measured product stall must change admission for at least one producer of control work, and keep a history;
+  an alarm with an exit code that nothing consumes does not stop the churn it measures.
+mechanism: adobe-ingester's doctrine loop and escalation budget read STALL_CONTROL_ONLY for 9+ days (139 commits in
+  72 h to 2026-10-11, all under .factory/, 0 product; last product 581f3ee 2026-10-02). In the same window the
+  auditor delivered control directives, four of them after a written moratorium. Fix: Assert-ProductStallGate.ps1,
+  called by both delivery scripts, refuses a directive during the stall unless it names product paths
+  (product_delta: spikes/...) or carries a 3-seat override report; every evaluation goes to a JSON-lines ledger.
+check: node product-control-ratio.mjs --repo <repo> --product spikes,src --control .factory,.claude-state --hours 48 (exit 3 = stall);
+  then deliver a control-only draft: expect REFUSED and a STALL-GATE-LEDGER.jsonl row
+supersedes: none
+evidence: measured
+
+## adobe-ingester/fold-debt-keyed-on-binding-paths-never-fires
+rule: count every sibling doctrine entry (cards, TRAPS, RECEIPTS, specs) as fold debt, age it by its oldest commit,
+  and trigger the fold on that age; a debt keyed only on RULINGS.md and specs/fleet-* reads 0 while cards pile up.
+mechanism: adobe-ingester's doctrine loop computed fold_debt from RULINGS.md + specs/fleet-* only. Sibling learning
+  moved to specs/<project>/cards.md (R14.1), so fold_debt read 0 in 28 of 28 receipts while the cursor sat 106 bus
+  commits (~30 sibling doctrine entries, oldest ~75 h) behind, and the gated headless fold never launched once. Folds
+  happened only when an owner-prompted chat ran them. Fix: disposition_debt + oldest age; launch at >= 24 h.
+check: git -C <bus> log <cursor>..origin/master -- RULINGS.md TRAPS.md RECEIPTS.md "specs/*" minus own/heartbeat/
+  cos-feedback; compare its count with the loop's fold_debt
+supersedes: none
+evidence: measured
+
+## adobe-ingester/belownormal-task-priority-starves-commit-gates
+rule: before giving an orchestrator lane a fixed wall, time its commit-path gates at the task's real priority on a
+  loaded host; BelowNormal turns a one-minute gate into most of the wall.
+mechanism: adobe-ingester's Sol lane runs as a scheduled task at priority 7 (BelowNormal) with a 2,400 s wall. Its
+  commit-hook gates take 42 s + 20.5 s at normal priority and 600-900+ s under unrelated CPU load on the shared host.
+  On 2026-10-11 nine consecutive hourly wakes (09:55Z-17:55Z) ended -timeout; reviewed work sat staged, uncommitted, for 2+ wakes.
+check: (Get-ScheduledTask <lane>).Settings.Priority; time the pre-commit gate with Start-Process -PriorityClass
+  BelowNormal vs Normal under the same load
+supersedes: none
+evidence: measured
+
+## adobe-ingester/monitor-git-status-under-a-hard-kill-orphans-index-lock
+rule: monitors that run under a hard task time limit use `git --no-optional-locks`; a killed `git status` leaves
+  index.lock behind and the next governed commit fails closed.
+mechanism: adobe-ingester HUB 2026-10-10T08:49:03Z "GOVERNANCE GATE FAILURE AFTER FABLE DRAIN | TIMEOUT | INDEX LOCK
+  PRESERVED". Plain `git status` refreshes the index and takes the lock; read-only monitors (escalation budget,
+  resume checkpoint) were killed at their limits on a loaded host. Both now pass --no-optional-locks.
+check: grep monitors for `git status|git diff` without --no-optional-locks; kill one mid-run and test for .git/index.lock
+supersedes: none
+evidence: measured
+
+## adobe-ingester/redirected-stderr-growth-is-not-a-progress-signal
+rule: judge a headless lane's progress from its receipt, scheduler events or child processes, never from the byte
+  growth of a live redirected stderr file.
+mechanism: adobe-ingester's Sol lane redirects codex stderr to %TEMP%. Model streaming and tool output grow it whether
+  or not a step lands, so an auditor reading growth as progress mis-called stalled wakes healthy (2026-10-10/11).
+  Opening the live receipt instead broke the wrapper's atomic Move-Item. Reliable signals: scheduler events 100/102,
+  the quarantine dir's outcome suffix after exit, and new ledger headings or commits.
+check: across 5 runs, compare stderr growth with each run's quarantine outcome suffix and the ledger headings it landed
+supersedes: none
+evidence: measured
