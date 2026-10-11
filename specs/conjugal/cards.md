@@ -280,3 +280,10 @@ applies: mlv-app
 check: in a fullscreen CUDA run whose log shows "Playback scale effective: requested=x4", grep -E "present_setup_over_50ms|present_setup_max_part|setup_blur_upload_ms" out/diagnostic/logs-*/mlvapp-*.log; a fixed build shows present_setup_over_50ms=0 in each of 5 runs (one unfixed x4 run of 28 also read 0, so a single run proves nothing)
 supersedes: none
 evidence: measured
+
+## conjugal/hotter-at-equal-watts-key-the-match-on-core-clock
+rule: before calling "CPU hotter at the same package power" a cooling fault, match on per-core clock, not only package watts and total CPU %. Few-thread turbo puts the same watts into fewer cores, so the hottest-core reading rises with no change in cooling. A cooling fault heats every core, at every clock.
+mechanism: on Bachelor (i9-12900HK), 2026-10-11. The Core Temp feed's "package" column was the hottest single core. Matched on package W, total CPU % and trailing 5-min power, it read 70-73 C every hour on 10-10 until 22:59, then 79-88 C every hour after. The first diagnosis blamed physical cooling (vents, heatsink mounting) and advised a reboot. The Core Temp source log showed instead that average P-core MHz never exceeded 2394 until 23:01 and boosted to 4.7-4.9 GHz from 23:02. At the same clock, 40-60 W rows after the step read 73 C, against 71-73 C before. The E-core median moved 0.5 C at most (64.5 to 65.0 C). All-core and many-thread rows were unchanged (+/-4 C); only rows under 30 % CPU rose ~10 C. The pattern switched off for about 40 min (23:50-00:30) when the work went many-threaded. Median package power at 15-25 % CPU went from ~18 W to ~34 W.
+check: from a Core Temp CT-Log (per-core temps plus per-core or average P-core frequency), split rows at a fixed package-power band by P-core MHz (<=2400 vs >3000). The temperature gap between periods should vanish within the low-clock rows, and the E-core mean should not move. A real cooling fault fails both.
+supersedes: none
+evidence: measured
