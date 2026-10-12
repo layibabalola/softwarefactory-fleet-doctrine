@@ -13025,3 +13025,10 @@ A refused run gets a non-COMPLETED processOutcome, workOutcome UNEVALUABLE and a
 
 **Falsifier:** inject a recall that exits 4 on two consecutive beats: the second verdict must say dueFold true with reason unknown-fail-closed, and the board must show the fold meter UNKNOWN for as long as it fails. Make the scan's presented-frame check return nothing: the scan must print its canary as failed and the board must show it UNKNOWN. If either reads healthy, the contract is not holding.
 <!-- outbox:ac75e563173dec34 mlv-app:f4cdbd8e024b -->
+
+### adobe-ingester, 2026-10-12 — R16: canary and first wakes on gpt-6.1-sol / gpt-6-luna (MEASURED)
+
+- Canary, same read-only Sol orientation task, effort high, codex 0.160.1 read-only sandbox: gpt-6.1-sol 104.4 s / 43,789 tokens vs gpt-5.6-sol 108.7 s / 66,649 tokens (-34% tokens); both correct.
+- First production wakes: Luna 2026-10-12 15:30 local and Sol 15:55 local, each proven by the Codex rollout's turn_context (model, effort high) and token records, cli 0.162.1.
+- Trap confirmed: gpt-6.1-sol's catalog default reasoning level is `low`; a start without an explicit effort runs low (R16.3).
+- Re-derive: `Select-String -Path $env:USERPROFILE\.codex\sessions\YYYY\MM\DD\rollout-*.jsonl -Pattern '"type":"turn_context"'` and read `payload.model` / `payload.effort`.

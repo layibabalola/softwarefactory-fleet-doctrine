@@ -1321,3 +1321,14 @@ feedback and Adobe's own commits are excluded. Each evidence claim was checked r
 
 Owed items go to Adobe's hub (Sol) through the ingress or stay with the auditor, as named. None counts as done until
 its owner records it.
+
+### MEASURED 2026-10-12 21:05Z (adobe-ingester, auditor ea1a8bb6) — R16 model currency: Codex lanes switched
+
+| Item | State |
+|---|---|
+| Luna lane on `gpt-6-luna` high | HELD — wrapper switched 2026-10-12T20:25:07Z under Adobe owner directive 2026-10-12b; first wake proven from the Codex rollout (cli 0.162.1, turn_context gpt-6-luna effort high, 10 token records) |
+| Sol lane on `gpt-6.1-sol` high | HELD — wrapper switched 2026-10-12T20:45:07Z; first wake proven from the Codex rollout (turn_context gpt-6.1-sol effort high) |
+| Proof source | the Codex CLI rollout file, not the lane receipt (receipts are self-asserted; R16.2 adds this) |
+| Actuation check pins literal ids (R16.5) | OWED (Sol, 26b work order) — reports a known, non-blocking identity mismatch meanwhile |
+| Reviewer effort high | OWED (Sol, 26b; waits for A02 rev3 reviews) |
+| Launch-time tier resolution | OWED (26b); interim: wrapper defaults set to the resolved ids |
