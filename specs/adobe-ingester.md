@@ -1291,3 +1291,33 @@ REVIEW FLOOR (R12.3, 2026-10-08): Opus. Adobe's hub confirmed FACTORY.md accepta
 | Currency drift check (R16.4) | OWED (auditor host tooling) |
 
 Updated at landing with receipt hashes.
+
+## Fold addendum, 2026-10-12 (headless doctrine fold; MEASURED dispositions, no new rule)
+
+Range: bus `670e9be..dee0896` (Adobe cursor `.codex-state/doctrine/last-seen.json` was `670e9be`). Binding: one
+commit (`649bcc0`, R16). Sibling: 16 commits touching `TRAPS.md`, `RECEIPTS.md` or `specs/*`; heartbeats, CoS
+feedback and Adobe's own commits are excluded. Each evidence claim was checked read-only on VIRTUAL-TEN on 2026-10-12.
+
+| Ruling | Bus sha | Disposition and evidence |
+|---|---|---|
+| R16 model currency (binding) | `649bcc0` | ADOPT, incomplete. The R16 adoption table above (same commit) still holds. New since then: owner directive 2026-10-12a was delivered carrier-only (HUB 2026-10-12T18:00:05.657Z). Its control work order waits until A02 revision 3 reaches a terminal state, and A02 is still OPEN (HUB 18:11:02.089Z, round 10 UNSAFE). The literal ids are still pinned at `.factory/tools/Test-FactoryActuation.ps1:2268,2277` (`gpt-5.6-sol`/`gpt-5.6-luna`), so R16.5 is OWED. `Invoke-FactoryClaudeLane.ps1` has no `effort` argument, so R16.3 is OWED for the reviewers (Sol). The R16.4 check exists (`.claude-state/tools/Test-FactoryModelCurrency.ps1`, last run 16:29Z: luna STALE, sol UNKNOWN), but it is not scheduled, has no two-run rule and does not check effort (auditor). Its cache-age read moves timestamps by +5 h: `ConvertFrom-Json` makes `fetched_at` a UTC DateTime, `[string]` drops the zone, and `Parse` re-reads the result as local. The 16:29Z run recorded `cache_fetched_at` 21:29Z, five hours in the future. Owner: auditor. |
+| airmypc/retire-shared-tool-copies-adobe-ingester | `43e29cc` | OWED. Verified: `tools/session-checkpoint.py` is tracked (229 lines), and `.claude/settings.json` registers it under SessionStart and Stop as bare `{type, command}` entries. The user-scope v4 hook runs on both events. Removing the copy is a tracked change to the governed repo during an open generation, so Sol owns it. |
+| airmypc retire-copies cards for agent-bridge, mlv-app, airmypc | `43e29cc` | NOT-APPLICABLE: `applies:` names other boards |
+| dng crs-readback shared-reader blind spot | `7e6c2b4` | DISTINGUISH: ExifTool/XMP tag-name mechanics. Adobe has no ExifTool comparison path |
+| airmypc correction: gate scratch has no retention | `b4f4f31` | DISTINGUISH: AirMyPC task inventory |
+| airmypc rule-coverage census | `46f6ac6` | DISTINGUISH: AirMyPC tooling. Adobe has no bullet census (not adopted; noted only) |
+| airmypc per-run harness scratch fills drive | `0d1caf4` | DISTINGUISH: AirMyPC soak runners and VS gate. Adobe has no per-run app-copy harness |
+| dng report-don't-reclaim shared leftover | `c1ec685` | DISTINGUISH: dng pre-commit worktree reclaim. Adobe's A02 lease-disposal finding (HUB 18:11:02Z) is a different object and is Sol's |
+| mlv meters/waiters fail closed (receipt) | `3bcc006` | DISTINGUISH: MLV autopilot meters. Adobe's R16.4 check already exits 4 on UNKNOWN (file above) |
+| mlv/meter-fails-open | `a7e6b8f` | DISTINGUISH: same family as `3bcc006`. No Adobe meter was re-audited in this pass |
+| mlv/published-card-without-sibling-disposition | `af5fcb3` | NOT-APPLICABLE: a proposal, not a ruling. This table is Adobe's disposition of record |
+| mlv/product-share-starved-by-factory-work | `44982c3` | DISTINGUISH: an MLV trial remedy (reserved slot). Adobe already measures throughput: the factory escalation of 2026-10-12T19:11:07Z reads `days_since_last_product_commit=10.3` (limit 7). The meter is held, the remedy is not |
+| mlv/known-but-unenforced-incident | `bda61dc` | DISTINGUISH: MLV incident-recall process |
+| mlv/guard-only-in-the-hub-shell | `b3be99c` | DISTINGUISH: `evidence: reported`, MLV surfaces |
+| mlv/adopt-without-guard-is-not-adopted | `6828197` | DISTINGUISH: MLV guard registry. Adobe ADOPT rows here cite evidence but are not guard-counted |
+| mlv/codex-ignored-config-key-is-not-the-requested-mode | `57f7b62` | DISTINGUISH: grep of `.factory/tools` finds no codex `-c` containment key, only git `-c` |
+| conjugal/prekey-37 fixed timeout headroom | `a867671` | DISTINGUISH: Conjugal fixture |
+| cloudvore six cards (K132-K141) | `e644033` | DISTINGUISH: Cloudvore kernel gate and receipt mechanics |
+
+Owed items go to Adobe's hub (Sol) through the ingress or stay with the auditor, as named. None counts as done until
+its owner records it.
