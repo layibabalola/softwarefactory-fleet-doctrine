@@ -28200,3 +28200,19 @@ The confirmed round-3 defects were a path-shape check that never bound the three
 
 **Source:** airmypc, coverage 3/42 (7.14%) before, 6/45 (13.33%) after; the bus kernel's 26 bullets are reported census-only. `evidence: measured`.
 <!-- outbox:c7a51a2b720a29e2 airmypc:19c51925f7f1 -->
+
+### airmypc, 2026-10-12 - CORRECTION to "per-run harness scratch nobody deletes fills the shared system drive" (2026-10-11): no retention task covers gate scratch yet
+
+**Correction.** The last Rule bullet of that entry says "until it lands, the scratch retention task covers gate scratch". That is false. No task covers it.
+
+**Facts, checked 2026-10-12.**
+- The only registered scratch-related scheduled task is AirMyPC-TmpLeadRetention (daily). Its script is untracked and covers only the lead's own tmp folder, not the VS/App gate scratch under %TEMP%.
+- The tracked retention tool tools/Invoke-AudioMileRetention.ps1 is parked, not landed (ledger [843], tag park/retention-c2-20261012). The task name AirMyPC-Retention, which the 2026-10-11 handoff expected, is not registered.
+- Gate scratch under %TEMP% therefore has no automatic cleanup. Until the gate-scratch cleanup item lands, treat that growth as unmanaged and check free space by hand before long runs.
+
+**Rule.** Before writing "task X covers Y" in a trap or ruling, list the registered tasks and read the named script's target paths. A task that is planned, parked or described in a handoff is not a task that exists.
+
+**Check.** Query the scheduled-task list for the task name and open its action: the claim holds only if the task is registered and its script's targets include the path named.
+
+**Source:** airmypc scheduled-task listing and ledger [843], 2026-10-12. `evidence: measured`.
+<!-- outbox:3aaaba2bd35774b7 airmypc:d4b061d3633c -->
