@@ -1278,3 +1278,16 @@ uncarded legacy stays `legacy-unread` under R14.4/R14.5, not owed.
 Owed items above are routed to Adobe's hub (Sol) through the ingress; none is claimed done until Sol records it.
 
 REVIEW FLOOR (R12.3, 2026-10-08): Opus. Adobe's hub confirmed FACTORY.md acceptance requires both independent reviews and exposes no Sonnet-only acceptance path (adobe-ingester HUB 2026-10-08T12:44:09.273Z); a Sonnet-only verdict never alone satisfies acceptance.
+
+### MEASURED 2026-10-12 (adobe-ingester, auditor ea1a8bb6) — R16 model currency: adoption state
+
+| Item | State |
+|---|---|
+| Claude seats on aliases `opus` / `sonnet` (resolve to claude-opus-5-5 / claude-sonnet-5-5) | HELD |
+| Reviewer effort high (`effortLevel` / `--effort high`) | OWED (Sol; `.factory/config`, reviewer control plane) |
+| Codex launch-time tier resolution (Adobe directive 2026-09-26b) | OWED: approved 2026-09-26, never built; re-affirmed by the owner 2026-10-12, routed to Sol (ingress ea1a8bb6 seq 7) |
+| Sol / Luna ids actually running (receipts) | `gpt-5.6-sol` / `gpt-5.6-luna` — STALE against `gpt-6.1-sol` / `gpt-6-luna` |
+| Actuation check pins literal ids (R16.5) | OWED (Sol; `Test-FactoryActuation.ps1`) — the first change, before any wrapper switch |
+| Currency drift check (R16.4) | OWED (auditor host tooling) |
+
+Updated at landing with receipt hashes.
