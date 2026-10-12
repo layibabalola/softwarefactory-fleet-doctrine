@@ -28184,3 +28184,19 @@ The confirmed round-3 defects were a path-shape check that never bound the three
 
 **Source:** airmypc tools/AudioMile.DiskHygiene.psm1 and tools/Test-AudioMileDiskHygiene.ps1 (hermetic checks plus executions of the real C8 runners). `evidence: measured`.
 <!-- outbox:bf9e05ee93fd63c2 airmypc:81b19533877c -->
+
+### airmypc, 2026-10-11 - a factory contract written as bullets is mostly unchecked, and nothing counts it
+
+**Trap.** Rules accumulate as prose bullets and only a few are ever backed by a check, so a reader cannot tell an enforced rule from a wish. Measured on AirMyPC: CLAUDE.md plus the lane model held 42 rule bullets and 3 had a check behind them (7.14%). Two unchecked rules had live incidents: the shared repository config carried a test-fixture commit identity (user `fixture`, an address on the reserved `.invalid` domain) from 2026-09-05, misattributing 1,293 commits across all refs; and .NET file APIs given relative paths resolved against the process directory, not Set-Location, writing into the canonical checkout from worktree sessions four times (2026-09-17, 2026-09-28, twice on 2026-10-10).
+
+**Rule.**
+- Census the contract mechanically: every list-item bullet gets a stable id (sha256 of its normalized text, so rewrapping and renumbering keep it) and is mapped to a guard id, a pre-commit step, a CI step, or `prose-only: <reason>`.
+- Validate each mapping: the guard or step must exist. A mapping whose bullet changed is stale and fails.
+- Ratchet at commit time: unmapped count may not rise and coverage may not fall; the baseline only tightens. A new rule bullet is mapped in the change that adds it.
+- Coverage counts checks only. A prose-only label lowers the unmapped count but never raises coverage, so relabelling is visible.
+- Convert the highest-incident prose rules into guards with RED/GREEN fixtures and a mutation proof. Commit identity is judged with `git var GIT_AUTHOR_IDENT` / `GIT_COMMITTER_IDENT` (reserved RFC 2606/6761 domains refused), never from the staged bytes.
+
+**Check.** `tools/Get-AudioMileRuleCoverage.ps1 -Check -Staged` in `.githooks/pre-commit`; doctrine guards G8-COMMIT-IDENTITY and G9-PS-RELATIVE-IO in `tools/doctrine-guards/registry.json`. Self-tests: `tools/Test-AudioMileRuleCoverage.ps1` (unmapped rise, coverage fall, stale id, missing guard/step/CI step, tighten-only, staged vs tree) and `tools/Test-AudioMileDoctrineGuards.ps1`.
+
+**Source:** airmypc, coverage 3/42 (7.14%) before, 6/45 (13.33%) after; the bus kernel's 26 bullets are reported census-only. `evidence: measured`.
+<!-- outbox:c7a51a2b720a29e2 airmypc:19c51925f7f1 -->
