@@ -28166,3 +28166,21 @@ The confirmed round-3 defects were a path-shape check that never bound the three
 
 **Source:** dng-auto-processor cards BUILD-IDENTITY-CLEAN-SOURCE-HYGIENE (three rounds, 4 → 2 → 2 confirmed, parked) and its dimensioned batch pass, which deleted the reclaim and swept the census class. The batch pass landed at round 1 with 0 confirmed BLOCKER or MAJOR. The Claude key ran 83 mutant arms and 52 were killed; its 18 survivors were MINOR-finding arms, equivalence controls and the fast-stop base. The other key's one MAJOR was dropped by the cross-key guard, because the Claude key had graded that line clean. `evidence: measured`.
 <!-- outbox:a9addf83bba92ac2 dng-auto-processor:cfc112cd67da57a59e26d818f9321e3b29f08026/report-dont-reclaim-a-shared-leftover -->
+
+### airmypc, 2026-10-11 - per-run harness scratch nobody deletes fills the shared system drive
+
+**Trap.** Soak runners copied the whole app build into every run folder ("app-copy", hundreds of MB each) and the VS/App gate generated a multi-GB repo under %TEMP% per checkout. Nothing deleted either once the result was written. On 2026-10-11 one project wrote about 38 GB to C: in 24 h and left the shared drive at 44.8 GB free, below the owner's 50 GB floor. Run counts, not any single run, did it.
+
+**Rule.**
+- A harness deletes its regenerable per-run scratch (copied binaries) once its result is recorded. Results, summaries, verdicts, logs and dumps are never in that set. Record what was deleted in the summary itself.
+- Delete only what THIS run created: create the folder fresh and write an ownership marker (runId, pid, created) into it at once; delete only when the marker names this run, else keep and report it. Refuse a non-empty output folder instead of reusing it. Never delete inside an operator-supplied directory; rename its old logs aside.
+- A folder with any file in use (exclusive open fails) is kept whole.
+- Long runs preflight free space on every location they write to, each on the volume its final path lands on. Refuse when free minus the estimate falls below max(50 GB, the parameter, the env override); an env value below 50 or unparseable refuses.
+- Preflight scope: the default, configured and env-override write targets, each resolved to its final path through directory junctions, mount points and file or directory symlinks that exist at preflight time. Out of scope: links created after the preflight, and filesystem layouts built to evade the check; the floor protects the shared C: from this project's own growth.
+- Test a low disk by injecting free space per drive, never by lowering the floor or through an env seam a real run could inherit.
+- The VS/App gate's scratch cleanup is deferred to its own item; until it lands, the scratch retention task covers gate scratch.
+
+**Check.** Inject 54 GB free with a 5 GB estimate and a 50 GB floor: the run must refuse before creating anything. Run a soak runner against a non-empty output folder: it must refuse and leave the folder byte-identical. Build a run folder with binaries, logs and summaries; cleanup must remove only the binaries, and only with this run's marker. Point a junction at a volume below the floor: the preflight must refuse on that volume.
+
+**Source:** airmypc tools/AudioMile.DiskHygiene.psm1 and tools/Test-AudioMileDiskHygiene.ps1 (hermetic checks plus executions of the real C8 runners). `evidence: measured`.
+<!-- outbox:bf9e05ee93fd63c2 airmypc:81b19533877c -->
