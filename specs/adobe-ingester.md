@@ -1332,3 +1332,32 @@ its owner records it.
 | Actuation check pins literal ids (R16.5) | OWED (Sol, 26b work order) — reports a known, non-blocking identity mismatch meanwhile |
 | Reviewer effort high | OWED (Sol, 26b; waits for A02 rev3 reviews) |
 | Launch-time tier resolution | OWED (26b); interim: wrapper defaults set to the resolved ids |
+
+## Fold addendum, 2026-10-13 (headless doctrine fold; MEASURED dispositions, no new rule)
+
+Range: bus `dee0896..239549e` (Adobe cursor `.codex-state/doctrine/last-seen.json` was `dee0896`). Binding: one
+commit (`a0a1325`, code profile r10 → r11). Sibling: 15 commits touching `RULINGS.md`, `TRAPS.md`, `RECEIPTS.md` or
+`specs/*`; heartbeats, CoS feedback and Adobe's own commits are excluded. Each evidence claim was checked read-only on
+VIRTUAL-TEN on 2026-10-13.
+
+| Ruling | Bus sha | Disposition and evidence |
+|---|---|---|
+| code profile r11: K3 default component is `sha256` of the tree OID's lowercase hex text (binding) | `a0a1325` | DISTINGUISH for now. Adobe still runs `code@r4`: every product work order declares it (`.factory/work/WO-PROD-PDF-INTAKE-IMPORT-CLOSURE-015.md:35`, `-014.md:24`), and `.factory/prompts/sol.md:3002` records that no kernel r5 adoption decision was made. The r11 text waits on the kernel r5 / code re-adopt decision, which stays OWED (Sol), as in the 2026-10-08 addendum. |
+| factory-kernel harvest: Adobe supplement (blob `efe2ed91`) answered | `ce2132b` | ADOPT as the ruling of record: 6 `§` lines, all ROUTED; census FRICTION 2. One route asks Adobe for data. §Untested-1 ("Whether the stall gate shortens stalls") wants a measured window after installation. Measured 2026-10-13T19:00Z: `node .claude-state/tools/product-control-ratio.mjs --hours 48` exits 3 (`STALL_CONTROL_ONLY`, 0 product / 32 control commits; last product commit `581f3ee` 2026-10-02). `.claude-state/coordination/owner-directives/STALL-GATE-LEDGER.jsonl` holds 6 non-selftest evaluations since the gate was installed on 2026-10-11T18:38Z: 1 REFUSED (13a, later re-run) and 5 OVERRIDDEN (12a, 12b, 13a, 13b, 13c). Every directive the gate saw was delivered under a 3-seat override, and no product commit has landed. The gate has not shortened the stall in this window. |
+| mlv R16 adoption receipt | `4555cb5` | DISTINGUISH: MLV's resolver. Adobe's R16 state is the table above. R16.5 is still OWED: the literal ids are still at `.factory/tools/Test-FactoryActuation.ps1:2268,2277` (`gpt-5.6-sol`/`gpt-5.6-luna`). Launch-time tier resolution (26b) is still OWED (Sol). |
+| mlv/pinned-codex-cli-can-silently-exclude-a-newer-model | `c1f8d03` | DISTINGUISH for the lanes: Sol and Luna run the global Codex CLI, so no pin is involved. The same exposure holds on the auditor's falsifier pin: `.claude-state/tools/codex-auditor.ps1` pins 0.160.1, passes no model, and records no probed-model list. Its 2026-10-08 probe predates the switch, and `~/.codex/config.toml` now defaults to `gpt-6.1-sol`. The shared `models_cache.json` reads `client_version` 0.162.0. The pin is unproven for the model it now runs: OWED (auditor). |
+| agent-bridge R14.8 record | `a5098ce` | NOT-APPLICABLE: agent-bridge's own surface |
+| agent-bridge/select-first-leaves-lastexitcode-stale | `96e2e15` | DISTINGUISH: a multiline grep of `.claude-state/tools/*.ps1` finds no `Select-Object -First` followed by a `$LASTEXITCODE` read. `.factory/tools` was not audited (Sol's). |
+| agent-bridge/rerun-a-baseline-failure-without-the-harness-env | `fa80df1` | DISTINGUISH: Python wheel-install harness. Adobe has no such suite. |
+| agent-bridge/pwsh-file-exits-0-after-a-failing-native-command | `694251d` | ALREADY-HELD for the auditor's native-command wrapper: `.claude-state/tools/codex-auditor.ps1:17` ends with `exit $LASTEXITCODE`. Other wrappers were not audited in this pass. |
+| agent-bridge/match-head-commit-pins-the-head-not-the-base | `5892908` | NOT-APPLICABLE: Adobe sessions never merge into the governed repo (open the PR and stop). Reviews bind the candidate tree, not a GitHub merge. |
+| agent-bridge/git-archive-piped-to-tar-in-pwsh-extracts-nothing | `c180caa` | DISTINGUISH: no Adobe path pipes `git archive` into `tar` (not re-grepped under `.factory/`) |
+| agent-bridge/gh-run-view-can-serve-a-stale-row | `b923ea0` | DISTINGUISH: Adobe acceptance does not read GitHub Actions run state |
+| agent-bridge/argparse-invalid-choice-text-differs-by-python-version | `94acfa5` | DISTINGUISH: Python argparse tests. Adobe's product is not a Python CLI. |
+| agent-bridge/an-interrupted-pytest-run-still-prints-n-passed | `3418094` | DISTINGUISH: pytest CI cancellation. Adobe has no pytest acceptance suite. |
+| agent-bridge/a-windows-venv-python-is-a-launcher-plus-a-child | `ed146b5` | DISTINGUISH: Python venv process counting. Adobe's census counts pwsh/node lanes. |
+| dng spec posture §10 | `22e93d2` | NOT-APPLICABLE: dng's own surface |
+| dng per-frame-cost-on-a-subsample (TRAPS) | `076e98d` | DISTINGUISH: image-pipeline cost estimation. Adobe has no per-unit cost bound. |
+
+Owed items go to Adobe's hub (Sol) through the ingress or stay with the auditor, as named. None counts as done until
+its owner records it.
