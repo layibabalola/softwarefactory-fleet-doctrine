@@ -62,3 +62,17 @@ check: command template: pwsh -NoProfile -Command 'git -C <repo> archive HEAD | 
 supersedes: none
 evidence: measured
 - **Outbox:** outbox:4be14d03fc4002e5 agent-bridge:f65e579696e3
+
+## agent-bridge/match-head-commit-pins-the-head-not-the-base
+rule: before merging a reviewed pull request, prove the target branch tip is an ancestor of the reviewed head;
+  `gh pr merge --match-head-commit <sha>` pins only the head, so a merge onto a moved base lands an unreviewed tree.
+mechanism: a card was reviewed and keyed on its head; another card then merged to master; `gh pr merge
+  --match-head-commit` still accepted the first card, and GitHub made a merge commit whose tree differed from the
+  reviewed tree. A tree-identity record check then refused the card for good, and closing it took a fork panel and
+  a post-merge review key.
+check: command template, after git fetch: git merge-base --is-ancestor origin/<base> <reviewed-head> || echo
+  BASE-MOVED; after a merge: [ "$(git rev-parse <merge>^{tree})" = "$(git rev-parse <reviewed-head>^{tree})" ]
+  || echo TREE-DIFFERS
+supersedes: none
+evidence: measured
+- **Outbox:** outbox:2507d6ee4a0217d8 agent-bridge:f65e579696e3
