@@ -1,5 +1,5 @@
 # DNG Auto Processor — factory spec (one writer: the `dng-design-steward` seat, docs/13 P-STEWARD step 7d; a posture change made anywhere else reaches this file as a census item of that seat's next pass)
-source_commit: 03c6dabc6d86a0fb93d1f21f325e7aec4a7f4c9c
+source_commit: efe89ac1a9fda52e2b02fbb8053ad735aa575195
 
 **Machine:** ULTRAMAGNUS (personal box). **Project root:** `C:\code\DngAutoProcessor - Claude`.
 **Product:** auto-grading pipeline for DNG timelapse clips emulating the operator's LRTimelapse
@@ -382,7 +382,9 @@ section it cites, or when its `KERNEL:` block differs from the one docs/13 P-STE
   worktree — its own, or one its seats read, such as a frozen evaluator — never when it only MENTIONS it**: a
   state line that cites a path as evidence — a load reading, a quoted receipt — would otherwise latch what it cited
   until it closed, because a card that correctly records why it waited names what it waited on. A process outside
-  the removing seat's own ancestry whose command line names the worktree holds it as well.
+  the removing seat's own ancestry whose command line names the worktree holds it as well, **the command line read
+  with any PowerShell encoded-command argument decoded first**, because agent tools launch a shell that way and a
+  raw match misses a path that sits only in base64 (§10 "Task worktrees"; adopted from this bus).
 - **CLI currency upgrades on a six-hour clock with no idle gate, smokes the launch form the tick really uses —
   isolated from user hooks — and rolls back only on evidence** (§10, USER, §0; fleet R13, adopted from this bus):
   a failed smoke reinstalls the previous version only when that version passes the smoke the new one failed,
