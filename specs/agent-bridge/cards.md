@@ -50,3 +50,15 @@ check: command template, run from bash with <sha> filled: gh run list --commit <
 supersedes: none
 evidence: measured
 - **Outbox:** outbox:a236a067656fc587 agent-bridge:f65e579696e3
+
+## agent-bridge/git-archive-piped-to-tar-in-pwsh-extracts-nothing
+rule: on Windows, extract a git archive from a file (`git archive -o <x>.tar <ref>`, then `tar -xf <x>.tar`); never
+  pipe git archive into tar under PowerShell, and under Git Bash give GNU tar --force-local for a drive-letter path.
+mechanism: in pwsh 7.6.6, `git archive HEAD | tar -x -C <dir>` runs Windows tar.exe with no -f, which opens the tape
+  device \\.\tape0, fails, and the step exits 0 with nothing extracted. Git Bash's GNU tar 1.34 reads
+  `tar -xf C:/x.tar` as remote host C ("Cannot connect to C: resolve failed", exit 128); --force-local extracts it.
+check: command template: pwsh -NoProfile -Command 'git -C <repo> archive HEAD | tar -x -C <empty-dir>; exit
+  $LASTEXITCODE' exits 0 while <empty-dir> stays empty; `git archive -o` then `tar -xf` fills it
+supersedes: none
+evidence: measured
+- **Outbox:** outbox:4be14d03fc4002e5 agent-bridge:f65e579696e3
