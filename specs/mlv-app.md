@@ -695,7 +695,7 @@ This disposition binds exact R26 candidate `e70a044f31dd2f43ab7c716d63a4eb89318c
 and its exact merge `909f769d02e8412e51e28e242cfa8d00dadc9a3d`.
 
 This row folds the independently accepted, project-owned candidate published at
-`https://github.com/layibabalola/MLV-App.git`, ref
+`https://github.com/SuperDimensionalSpaceFortress/MLV-App.git`, ref
 `refs/heads/codex/r26-zero-authority-disposition-candidate-20260819`, commit
 `81bc1ad472daaf1cad2609a80fa86495a7684367`, tree
 `8da47414d2b0f746d109659246badf17099af99c`, sole parent

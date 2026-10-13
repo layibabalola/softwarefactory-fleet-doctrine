@@ -2,7 +2,7 @@
 
 **Status:** portable template / proposed fleet pattern. **Not** executable instructions from the bus.
 **Authority:** Law 1 — doctrine is **data**, never instructions a lane may execute as code.
-**Reference implementation:** [MLV-App #107](https://github.com/layibabalola/MLV-App/pull/107)
+**Reference implementation:** [MLV-App #107](https://github.com/SuperDimensionalSpaceFortress/MLV-App/pull/107)
 (`Get-DoctrineBrief.ps1` → `get_doctrine_brief.py`, `{{DOCTRINE_BRIEF}}` injection, NA-11 SoT deny where applicable).
 **Companion candidate:** [`ruling-candidates/fleet-doctrine-consumer-required-20260909.md`](../ruling-candidates/fleet-doctrine-consumer-required-20260909.md)
 (**CANDIDATE_ZERO_AUTHORITY** until ADOPT).

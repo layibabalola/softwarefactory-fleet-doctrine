@@ -271,7 +271,7 @@
           "subjectCommit": "909f769d02e8412e51e28e242cfa8d00dadc9a3d"
         },
         "projectCandidate": {
-          "remote": "https://github.com/layibabalola/MLV-App.git",
+          "remote": "https://github.com/SuperDimensionalSpaceFortress/MLV-App.git",
           "publishedRef": "refs/heads/codex/r26-zero-authority-disposition-candidate-20260819",
           "commit": "81bc1ad472daaf1cad2609a80fa86495a7684367",
           "tree": "8da47414d2b0f746d109659246badf17099af99c",
