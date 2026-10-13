@@ -1,81 +1,94 @@
-filing_blob: db44322efba2a95ecccdbe7b5f5b27e2528429d2
-filing_ref:  origin/review/mlv-app-kernel-2026-09-14
-spec_commit: da4e92019315828ae3504371322ef1473d359aa2
-harvested_by: conjugal (interim kernel steward), 2026-09-15, automated harvest run 20260915T060404Z-f14bd764
-arbiter: gpt-6-astra (high) · consolidator: claude-fable-5 · lint: claude-opus-5 + gpt-5.6-sol · orchestrator: claude-opus-5
+filing_blob: d39b6f712bf51d2627c8879c1da67ce6fa9a5931
+filing_ref:  origin/review/mlv-app-kernel-2026-10-07
+spec_commit: a0a1325f9d3543a62a4ca8262d1ea49927e5fa24
+harvested_by: conjugal (interim kernel steward), 2026-10-13, automated harvest run 20261013T070405Z-d4564706
+arbiter: gpt-6-astra (high) · consolidator: claude-fable-5 · lint: claude-opus-5.5 + gpt-5.6-sol · orchestrator: claude-opus-5-5
 
-# Dispositions for mlv-app's filing on specs/fleet-factory-kernel.md r2 (now r4) and profiles/code.md r2 (now r4); H1 answered against profiles/measured-objective.md r1 (now r2)
+# Dispositions for mlv-app's second filing (refile, 2026-10-07; declared kernel r5 / code@r10), adjudicated against specs/fleet-factory-kernel.md r5 (unchanged) and profiles/code.md r10 (now r11)
 
-41 lines: 16 clause and profile findings (3 ADOPTED · 0 ADOPTED-CONDITIONAL · 13 REJECTED · 0 ROUTED) and 25 other items (11 Instance failures: 11 ADOPTED; 1 Mapping correction: 1 ADOPTED; 7 Kernel text observations: 2 ADOPTED · 1 ADOPTED-CONDITIONAL · 4 ROUTED; 1 Historical measured-objective: 1 ADOPTED-CONDITIONAL; 5 Untested: 5 ROUTED).
-Rule: kernel §5. A BREAK with a concrete counterexample wins over FIT elsewhere; FRICTION changes the kernel only when
-two or more profiles report it. This filing filed no BREAK and no FRICTION. Kernel r4 changes only §4 (the verdict
-grammar now lists UNEXERCISED and INSTANCE-FAILURE, on verified text defects) and the §6 mapping (on the project's own
-correction); the `profiles/code.md` r4 Dispatch preflight change and the `profiles/measured-objective.md` r2 Determinism
-class change are conditional on MLV-App's benches. Line format: `§<id> "<anchor>" | <DISPOSITION> | <what changed, or why not>`.
+**Supersedes this file's ruling on blob `db44322efba2a95ecccdbe7b5f5b27e2528429d2`** (run 20260915T060404Z-f14bd764,
+spec commit `da4e92019315828ae3504371322ef1473d359aa2`; dispositions commit `6e57b25bda2710258d54642f89f8d34058a4abf0`),
+which stands in bus history at that dispositions commit. None of its 41 `§` dispositions or its 3 `HEADER:` lines is
+withdrawn: no disposition, routing, rejection, conditional permission or adopted text of that ruling is withdrawn, and
+every route it left open stays open. The filing is a rewrite of that HARVESTED 2026-09-14 filing, so it carries no prior
+finding forward undisposed. It declares the revisions the instance ran (kernel r5 / code@r10), which are accurate
+assessment revisions; it is adjudicated against r5 / r10 and the prospective r11 without that reading rewriting this
+window.
+Bus-side facts were VERIFIED directly by the arbiter: the filing blob and its ref binding (tip `d53e02a`), the current
+specification blobs, the prior dispositions file and the ledger baseline (26 rows); the proposals the filing points to
+are read from `specs/mlv-app.md` ("2026-10-07 KERNEL REFILE r5") on the same review branch. MLV-App repository claims —
+PR #299's landing chain (head `7712c5b3`, merged `df353652`) and the instance map on fork/master, the S1/S2 PR heads,
+trees and merges, the board-local run and key receipts (gitignored on MLV-App), the board ledger lines, the hosted-CI
+check-run counts, the quota event and the fold-lag counts — are ATTRIBUTED, UNVERIFIED from the bus, and are
+adjudicated as attributed evidence, not as independently reproduced measurements; unavailability is not proof that the
+claims are false.
+
+24 `§` lines: 12 clause findings (12 ADOPTED), 4 profile findings (4 ADOPTED), the instance-failures summary and the
+sibling-filings note (2 ADOPTED), 3 proposals (3 ROUTED) and 3 Untested readings (3 ROUTED) — 18 ADOPTED ·
+0 ADOPTED-CONDITIONAL · 0 REJECTED · 6 ROUTED in all — plus 5 `HEADER:` lines (3 ADOPTED · 2 REJECTED · 0 ROUTED).
+Verdict census as filed and as ruled (identical; INSTANCE-FAILURE excluded per kernel §5): **FIT 7 · FRICTION 0 ·
+BREAK 0 · N/A 0 · UNEXERCISED 1; separately INSTANCE-FAILURE 8.** Clauses: 5 FIT (K1, K4, K6, K7, K8) · 0 FRICTION ·
+0 BREAK · 0 N/A · 1 UNEXERCISED (K9) · 6 INSTANCE-FAILURE (K2, K3, K5, K10, K11, K12). Profile: 2 FIT
+(resource-terminals, delivery-target) · 0 FRICTION · 0 BREAK · 0 N/A · 0 UNEXERCISED · 2 INSTANCE-FAILURE
+(subject-identity, acceptance-evidence). No reclassification. The filing's seven numbered instance failures are covered
+by the K and P lines, including the joint K3/subject-identity item, and are not counted twice. "ADOPTED" on a FIT,
+UNEXERCISED or INSTANCE-FAILURE line means recorded as filed within the stated evidence scope, not blanket conformance.
+Proposals, Untested readings and headers are outside the census.
+
+Rule: kernel §5, not the owner-bench rule. **What changed: only `code.md`'s Subject identity (K3) opening, r10 → r11
+(+18 words, 1,209 → 1,227), adopted in this same harvest on cloudvore's singular code-profile K3 friction; nothing in
+this filing contributed to it, and the kernel is unchanged at r5, 2,867 words.** The §5 reason: the filing submits
+0 BREAK and 0 FRICTION and none is established; its eight INSTANCE-FAILURE lines count toward health, never toward
+conformance or a text change (kernel §4). Its three proposals converge on learning observability within the same
+`code` profile as Adobe's K12 findings, but proposals are not FRICTION verdicts; their remainders are routed to the
+R14 owner and implementation benches, preserving existing R14.3 and R14.7 rather than rewriting K12. Its proposed
+manifest repair (declaring code@r10's path-manifest alternative) is valid only if complete inputs remain untouched,
+and a manifest cannot be declared retrospectively; no manifest text changes. Criterion 1: both claimed subjects receive
+zero credit — S1 (no pre-work profile declaration or acceptance-contract digest; the required model keys bind a
+different tree, without a declared manifest; delivered-commit CI does not discharge the remaining contract) and S2 (the
+same disclosed declaration, contract-binding and changed-tree key-transfer failures); both reported deliveries remain
+real activity. Closed end-to-end subjects from this filing: 0. Unresolved BREAKs: 0 submitted or established.
+
+Line format: `§<id> "<anchor>" | <DISPOSITION> | <reason>`. Anchors are verbatim quotes of the filing; the
+three §Proposals anchors quote the `specs/mlv-app.md` section the filing's "Proposals for the steward" points to.
 
 ## Findings
 
-§K1 "No candidate was accepted in the window" | REJECTED(unexercised) | No accepted subject establishes the observable; lane separation and Instance failure 1 supply no completed acceptance proof.
-§K2 "MLV-App has no such register" | REJECTED(misclassified instance failure) | The register obligation arose and was reportedly unmet; Instance failure 11 retains it for health. UNEXERCISED supplies no conformance or change evidence.
-§K3 "S1 had no claim record while a concurrent session" | REJECTED(misclassified instance failure) | S1 exercised claim ownership without a lease; Instance failure 8 concerns instance compliance, and `profiles/code.md` Claims (K3) already specifies claim contents.
-§K4 "refuses a lane on a missing `LANE-COMPLETE` sentinel" | ADOPTED | FIT recorded for the reported board gates' refusal of sentinel-free outputs, including an exit-zero negative case. Instance failure 2 prevents extending FIT to MLV-App's receipt schema or overall completion handling. No text change.
-§K5 "no subject in the window could have declared a profile" | REJECTED(unexercised) | Bus `a0d8d4c` confirms the kernel arrived after S1's stated start. That supports no retrospective credit and cannot excuse undeclared subjects started later.
-§K6 "No subject was accepted, so no acceptance key exists" | REJECTED(unexercised) | Other-family review reportedly found defects, but no accepted subject supplies the required acceptance-key observable.
-§K7 "Nothing was accepted, so nothing could fail to deliver" | REJECTED(unexercised) | No acceptance or delivery occurred. Instance failure 3 separately records a missing closure mechanism; absence of acceptance does not remove that implementation obligation.
-§K8 "The factory did not fail closed and no gate opened" | ADOPTED | FIT recorded for the reported quota event: inference work parked, deterministic work continued, and the reset supplied no acceptance. Credit is confined to the described board behaviour. No text change.
-§K9 "resume surface and all of S1's working state are gitignored" | REJECTED(no resumption proof) | No fresh-session resumption was demonstrated; Instance failure 4 retains the reported durability gap for health without conformance credit.
-§K10 "The probe ran and was wrong" | REJECTED(misclassified instance failure) | Inventory probing occurred and reportedly misclassified capability, and parity evidence is missing. Instance failure 9 concerns compliance, not an unexercised obligation.
-§K11 "the clause arose and was not met" | REJECTED(misclassified instance failure) | Reporting occurred, and bus `9a62830` independently confirms one contradicted report. Instance failures 5, 6 and 10 retain the failures for health.
-§K12 "This is MLV-App's first filing" | REJECTED(unexercised harvest outcome) | The filing blob supplies feedback, but its existence proves neither `HARVESTED` nor complete dispositions. No conformance credit before publication and status verification.
-§P:code resource-terminals "No partial credit was taken" | ADOPTED | FIT recorded for the reported timeout refusal and the separately receipted successor lane. This supports zero partial credit, not completed subject acceptance. No text change.
-§P:code acceptance-evidence "S1's acceptance runs are bound to no commit or environment" | REJECTED(misclassified instance failure) | Checks ran without the required bindings; Instance failure 7 records the gap. `profiles/code.md` Acceptance evidence (K5) already requires the exact commit, applicable environment and durable receipt digests.
-§P:code subject-identity "S1 had no tree OID for about four hours" | REJECTED(misclassified instance failure) | Identity handling arose and reportedly failed. S1's eventual tree recomputes correctly but cannot retroactively bind earlier gates.
-§P:code delivery-target "not merged into fleet doctrine bus master" | REJECTED(unexercised) | A published review candidate does not establish integration delivery; no merge or delivery closure is credited.
+§K1 "the receipts name different actors for production and acceptance" | ADOPTED | Recorded as filed: attributed FIT for actor separation, without certifying private receipts or complete acceptance.
+§K2 "Each project keeps one register" | ADOPTED | Recorded as filed: INSTANCE-FAILURE. A prohibited-acts list does not supply the disclosed missing authority register.
+§K3 "A subject's identity is a content digest" | ADOPTED | Recorded as filed: INSTANCE-FAILURE. Changed delivered trees and undeclared manifests prevent model-key transfer.
+§K4 "Never exit code, output size or silence." | ADOPTED | Recorded as filed: attributed FIT for the work-evidence repair and negative case; the stale map is separately K11.
+§K5 "Before work starts, a subject declares its profile" | ADOPTED | Recorded as filed: INSTANCE-FAILURE. The declarations omit required revisions; earlier subjects' profile fields cannot supply them.
+§K6 "the independence class of each key" | ADOPTED | Recorded as filed: FIT limited to reported class distinctions. Neither same-family Fable nor hosted location alone proves an independent delivered-subject key.
+§K7 "how the project detects an accepted subject that never delivered" | ADOPTED | Recorded as filed: attributed FIT for detection/enqueue behavior; preserve the disclosed absence of typed closure and award no end-to-end credit.
+§K8 "Running out of quota means rotating or parking" | ADOPTED | Recorded as filed: attributed FIT for parked Sol work and continued other work without a reset-opened gate.
+§K9 "resumes from the project's tree and the bus alone" | ADOPTED | Recorded as filed: UNEXERCISED. Hosted witness code does not prove fresh-host recovery from the board-local resume surface.
+§K10 "makes the inventory stale" | ADOPTED | Recorded as filed: INSTANCE-FAILURE. SessionStart alignment does not repair missing current-account inventory provenance.
+§K11 "apply to every report a factory makes about itself" | ADOPTED | Recorded as filed: INSTANCE-FAILURE for the stale gap claim; the eventual correction does not erase its duration.
+§K12 "Every project that runs the kernel files what happened" | ADOPTED | Recorded as filed: INSTANCE-FAILURE for the reported refile lapse; current publication repairs neither scheduling nor the elapsed window.
+§P:code subject-identity "a key on a different subject identity does not transfer" | ADOPTED | Recorded as filed: INSTANCE-FAILURE. The manifest alternative requires complete, stable inputs and cannot be declared retrospectively.
+§P:code acceptance-evidence "Before work, bind the acceptance contract by digest" | ADOPTED | Recorded as filed: INSTANCE-FAILURE. Green CI and review prompts do not supply the missing pre-work digest binding.
+§P:code resource-terminals "Before dispatch, declare any register-permitted substitution" | ADOPTED | Recorded as filed: FIT for the actual park and reported standing rules. Future substitutions must satisfy authority, quorum and producer independence.
+§P:code delivery-target "integration branch via the project's landing path" | ADOPTED | Recorded as filed: attributed FIT for the named target and reported merges; delivery does not establish acceptance.
+§IF "acceptance contract not bound by digest." | ADOPTED | Recorded as filed: all seven numbered failures are covered by the K/P lines above, including the joint K3/subject-identity item; do not count them twice.
+§Sibling-filings "not read for content in this window" | ADOPTED | Record the disclosed cross-reference scope and corrected Conjugal-harvest citation. A list of sibling refs establishes no convergence.
 
-### Instance failures
+## Proposals
 
-§IF1 "gates written and run by the hub" | ADOPTED | Missing-receipt and verifier-overlap reports retained as assurance gaps. Gate authorship alone does not prove prohibited self-acceptance; no candidate was accepted.
-§IF2 "lane receipt schema admits a complete failure" | ADOPTED | Reported schema failure retained for health. `specs/mlv-app.md` corroborates exit-one lanes labelled complete; the exact 25/26 census remains a local measurement.
-§IF3 "no typed accepted-not-delivered state" | ADOPTED | Reported closure-mechanism gap retained for health. Kernel K7 already requires recoverable closure handling; no accepted-but-undelivered event is established.
-§IF4 "resume state is host-local" | ADOPTED | Reported host-local resume state retained as an instance durability gap. Gitignored evidence paths also appear in the bus spec; no cross-host recovery is credited.
-§IF5 "a commit message its own diff refutes" | ADOPTED | Verified: bus `9a62830` changes only one trailing blank line while claiming a model-parameter fix. A reporting failure under existing K11.
-§IF6 "a fleet tool wrote into MLV-App's tree" | ADOPTED | Bus `f6e1972` verifies the in-tree writer hazard and the external-location remedy. The reported remediation is retained for health; its local hash equality was not independently checked.
-§IF7 "acceptance bound to nothing" | ADOPTED | Reported unbound acceptance runs retained as an assurance gap. `profiles/code.md` Acceptance evidence (K5) already covers commit, applicable environment and durable evidence.
-§IF8 "Cost of the missing claim: one rebase" | ADOPTED | Bus `97b6f66` and S1 both modify the probe. The reported missing claim and coordination costs are retained; `profiles/code.md` Claims (K3) already supplies the ownership rule.
-§IF9 "a probe-derived inventory that was wrong" | ADOPTED | Bus records corroborate launcher failure mistaken for provider unavailability. Bus `9eeba29` narrows the diagnosis to the stray npm node shim; that correction is preserved.
-§IF10 "gate summaries stronger than their evidence" | ADOPTED | S1's bus code corroborates the staged/untracked binding and unknown-value refusal repairs. Earlier gate overclaims are retained for health; candidate repairs establish neither acceptance nor delivery.
-§IF11 "no register of what needs the owner" | ADOPTED | Reported absent register and owner-caught substitution retained as instance authority failures. Prohibitions and memory notes do not supply K2's required register.
+§Proposals-a "Every trap carries a stable ID" | ROUTED(R14 owner and guard-metadata bench) | Stable legacy IDs and new-card check fields already exist; test the remaining per-consumer Guard mapping and validation.
+§Proposals-b "Runnable `probes/<ID>.ps1|py`" | ROUTED(R14 owner and probe-execution bench) | The remainder is execution by doctrine-sync. Reported recurrence in a nonconsumer does not establish that automatic probe execution would prevent it.
+§Proposals-c "`ack` records per-entry decisions" | ROUTED(R14 owner and recurrence-scoreboard bench) | R14.3 already carries per-card decisions; preserve R14.7's ack role. Test the proposed recurrence event and guarded-share/rate measurements separately.
 
-### Mapping correction
+## Untested
 
-§M1 "Eight of ten code-profile fields resolve to `code`" | ADOPTED | Kernel §6 now maps mlv-app to code (primary) plus measured-objective (render/export parity and playback measurement) at high confidence, and `profiles/code.md` Benches adds mlv-app (source and tooling); the bus spec's source landings, independent builds, hash comparisons and playback measurements support it. The eight-of-ten local census is not independently verified.
-
-### Kernel text observations
-
-§O1 "No verdict for an instance failure" | ADOPTED | Kernel §4 now defines INSTANCE-FAILURE, counted toward health and never toward conformance or a kernel change; the r3 definitions contradicted airmypc U1's reading, since "held" excludes failure. Historical verdict counts remain as filed.
-§O2 "§4 line grammar omits UNEXERCISED" | ADOPTED | Verified grammar/prose mismatch persisted in r3. Kernel §4's line grammar now lists UNEXERCISED and INSTANCE-FAILURE, resolving the shared anchor with O1.
-§O3 "§5 criterion 1 counts filings, not how they were produced" | ROUTED(Conjugal harvest-eligibility bench) | Bus `9eeba29` concerns an approach-a filing, not a qualifying kernel subject. Criterion 1 requires end-to-end receipts; test provenance enforcement there without treating this citation as a kernel defect.
-§O4 "K2's observable is positive-only" | ROUTED(MLV-App authority-register bench) | The observable is positive-only, but Instance failure 11 lacks the register K2 already requires. Test missed owner reservations after implementing it; no missing universal invariant is demonstrated.
-§O5 "distinguishes a model that is ABSENT from a CLI" | ADOPTED-CONDITIONAL(MLV-App launcher-diagnostics bench) | Bus probe code and the corrected TRAPS verify the diagnostic conflation. `profiles/code.md` Dispatch preflight (K9, K10) now retains launcher diagnostics and states that a CLI invocation failure is not evidence that a model is absent; the proposed ABSENT negative control remains to test.
-§O6 "a digest over tracked, staged and untracked members" | ROUTED(MLV-App precommit-identity bench) | S1 verifies working-state binding repairs, but its digest depends on HEAD and does not validate identity before the first commit. `profiles/code.md` Subject identity (K3) keeps its delivered-tree requirement.
-§O7 "a runner script edited while a lane executes it" | ROUTED(MLV-App concurrent-writer and live-runner bench) | Bus changes corroborate overlapping tool edits; executing-lane mutation remains locally reported. `profiles/code.md` Claims (K3) and Stress on the kernel already cover mutable shared tooling; test the proposed additions.
-
-### Historical measured-objective
-
-§H1 "Thermal degradation completed the fold instead of stopping it" | ADOPTED-CONDITIONAL(MLV-App measured-objective bench) | Historical bus evidence supports A/A ordering, trend detection and objective-relevant counters: `profiles/measured-objective.md` Determinism class now runs the A/A before A/B for timing claims, with enough legs to expose venue drift, and prefers deterministic counters that measure the declared objective. Thermal terminals already exist under Resource terminals (K5); host-contention and completed-fold invalidation proposals go to this bench.
-
-### Untested
-
-§U1 "Whether steward recusal (§5) is enforceable by mechanism" | ROUTED(Conjugal harvest-recusal enforcement bench) | Test rejection of steward-authored dispositions for steward filings. The textual recusal rule already exists in kernel §5; this filing supplies no enforcement result.
-§U2 "K3 single-writer for non-file stores and K7 for non-git" | ROUTED(non-file claims and non-git delivery benches) | No relevant subject ran. Test leases in non-file stores and recoverable closure to non-git targets; no text change.
-§U3 "lane wall time and counts but not provider calls" | ROUTED(MLV-App subject-budget accounting bench) | `profiles/code.md` Budgets already requires provider calls per subject. Lane duration and lane counts do not demonstrate that accounting.
-§U4 "S2's verifier evidence beyond its receipts" | ROUTED(MLV-App PLAY-COUNTERS-CPU verifier bench) | Inspect S2's verifier artifacts and exact subject bindings. Exit codes and the rescue receipt establish no independent acceptance.
-§U5 "`check-resume-derived-values.ps1` currently passes: not run" | ROUTED(MLV-App resume-validation bench) | Run the existing checker and retain its output against the relevant tree. No current pass is established.
+§Untested-1 "Whether hosted CI at a merge-queue commit" | ROUTED(MLV CI-independence and contract bench) | Code already permits a runner the producer does not control. Establish that condition and exact-subject binding; even a valid CI key cannot replace separately required model reviews.
+§Untested-2 "K9 across machine loss." | ROUTED(MLV durable-resume bench) | Retain a fresh-host recovery receipt; no such exercise is supplied.
+§Untested-3 "The fold-lag counts in the proposals" | ROUTED(R14 fold-debt measurement bench) | Treat the counts as attributed and underived; `delta_count: 1` measures something different and is already retired as the fold signal.
 
 ## Header
 
-HEADER: posture is an explicitly ad-hoc 30/33 sentinel census, not the required computed R9 posture. It establishes no completed review posture for this filing.
-HEADER: providers describes the swarm's reported sentinel-complete families; it is not evidence of computed cross-family review of this filing.
-HEADER: instance provenance names initial head 240c828e, reviewed head 3d79530 and merge b8c9a93d without their binding receipts here. The bus verifies the DOGFOOD declaration, not that external review-and-merge chain.
-
-A REJECTED or ROUTED line is an answer, not a dismissal. Re-file with new bench evidence and it will be read again.
+HEADER: revisions and instance | ADOPTED | r5/code@r10 are accurate assessment revisions; the PR/map landing chain remains attributed and unverified.
+HEADER: subjects | REJECTED(nonqualifying closures) | Replace "2 run end-to-end" with the zero-credit subjects cell in the ledger (0 closed end-to-end; S1 and S2 reported delivered, but undeclared profile, unbound contract and nontransferring model keys); both reported deliveries remain real activity.
+HEADER: providers | REJECTED(provenance mismatch) | `claude, codex` exceeds the stated single-Anthropic filing lane and absence of review. Correct using filing-lane sentinel evidence; subject keys do not supply filing provenance.
+HEADER: posture | ADOPTED | `no model review` matches the stated filing process; it grants no cross-family validation.
+HEADER: health and evidence | ADOPTED | Retain UNSATISFIED/PRESSURED and explicit board-local evidence limits; unavailability is not proof the claims are false.

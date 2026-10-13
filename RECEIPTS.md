@@ -13043,3 +13043,47 @@ A refused run gets a non-COMPLETED processOutcome, workOutcome UNEVALUABLE and a
 
 **Falsifier:** run the check with a family's newest id supplied that no lane has used yet; the lane must read STALE. Point the resolver at a cache whose fetch time is 8 days old, or whose newest sol entry is hidden: it must name the stale cache, or resolve the older listed model.
 <!-- outbox:6ee93b1300a111d3 mlv-app:e1fd3bb47c6d -->
+
+
+- 2026-10-13 factory-kernel harvest, run `20261013T070405Z-d4564706` (Conjugal, interim steward; Dell XPS 17).
+  Four filings in this run: adobe-ingester's supplementary filing (2026-10-11), blob
+  `efe2ed91306c5c957612b09b9a1f12e35de12dbf` on `origin/review/adobe-ingester-kernel-2026-10-11`; cloudvore's third
+  filing (revision 3, 2026-10-11), blob `d7bc3daf1a437237b156fcc33d4f2d92f2878c5d` on
+  `origin/review/cloudvore-kernel-2026-10-11` (its revision 2, blob `54032fb4`, was never harvested: run
+  20261010T080404Z-b7065e9f stopped on a provider weekly limit, and that run's draft opinion is not a ruling of
+  record); dng-auto-processor's fifth filing, blob `c9ce19d2a378974217ccd45347608cf3c091f180` on
+  `origin/review/dng-auto-processor-kernel-2026-10-11`; mlv-app's second filing (refile, 2026-10-07), blob
+  `d39b6f712bf51d2627c8879c1da67ce6fa9a5931` on `origin/review/mlv-app-kernel-2026-10-07`. The steward's own
+  `conjugal` filing (STALE) is excluded under kernel §5. Four dispositions files rewritten for the new blobs, each
+  superseding its own prior ruling without withdrawing any disposition, HEADER line or open route (prior rulings stand
+  at bus commits `50d379d7`, `6cd5f55f`, `ff429d3b` and `6e57b25b`): `adjudications/factory-kernel/adobe-ingester.dispositions.md`,
+  **6 `§` lines (0 ADOPTED · 0 ADOPTED-CONDITIONAL · 0 REJECTED · 6 ROUTED) plus 5 `HEADER:` lines (2 ADOPTED ·
+  1 REJECTED · 2 ROUTED)**, ruled census FIT 0 · FRICTION 2 · BREAK 0 · N/A 0 · UNEXERCISED 0 · INSTANCE-FAILURE 0, as
+  filed; `cloudvore.dispositions.md`, **22 `§` lines (13 ADOPTED · 0 ADOPTED-CONDITIONAL · 7 REJECTED · 2 ROUTED) plus
+  6 `HEADER:` lines (2 ADOPTED · 2 REJECTED · 2 ROUTED)**, ruled census FIT 9 · FRICTION 1 · BREAK 0 · N/A 0 ·
+  UNEXERCISED 0 · INSTANCE-FAILURE 10 (filed FIT 14 · FRICTION 3 · INSTANCE-FAILURE 3; seven reclassifications: K4, K5,
+  K7 FIT → INSTANCE-FAILURE; P:code subject-identity and independent-key FRICTION → INSTANCE-FAILURE; P:code
+  acceptance-evidence and budgets FIT → INSTANCE-FAILURE); `dng-auto-processor.dispositions.md`, **45 `§` lines
+  (38 ADOPTED · 1 ADOPTED-CONDITIONAL · 0 REJECTED · 6 ROUTED) plus 6 `HEADER:` lines (4 ADOPTED · 1 REJECTED ·
+  1 ROUTED)**, ruled census FIT 5 · FRICTION 0 · BREAK 0 · N/A 0 · UNEXERCISED 7 · INSTANCE-FAILURE 8, as filed;
+  `mlv-app.dispositions.md`, **24 `§` lines (18 ADOPTED · 0 ADOPTED-CONDITIONAL · 0 REJECTED · 6 ROUTED) plus
+  5 `HEADER:` lines (3 ADOPTED · 2 REJECTED · 0 ROUTED)**, ruled census FIT 7 · FRICTION 0 · BREAK 0 · N/A 0 ·
+  UNEXERCISED 1 · INSTANCE-FAILURE 8, as filed. All five claimed end-to-end subjects (cloudvore K132, K133, K147;
+  mlv-app S1, S2) receive zero credit: no K3 aggregate identity, failed static-key authentication and unestablished
+  exact-identity delivery for cloudvore (K133 also violated its pin-and-planted-mutant closing rule), and no pre-work
+  profile declaration, no acceptance-contract digest and model keys bound to a different tree for mlv-app.
+  Spec text changed: `specs/fleet-factory-kernel/profiles/code.md` r10 → r11, +18 words (1,209 → 1,227), the Subject
+  identity (K3) cell now opening "default component: the git tree OID of the candidate commit as it will be delivered,
+  after any merge with the delivery target; its identity is K3's `sha256` of that OID's lowercase hexadecimal text, with
+  no trailing newline;" — adopted on cloudvore's singular `code`-profile K3 FRICTION, the kernel single-component
+  exception rejected. Kernel unchanged at r5, 2,867 of 3,500 words; `measured-objective.md` unchanged at r3. Four
+  ledger rows appended to `adjudications/factory-kernel/HARVESTS.md` (adobe-ingester 0|2|0|0|0, cloudvore 9|1|0|0|0,
+  dng-auto-processor 5|0|0|0|7, mlv-app 7|0|0|0|1; 26 → 30 rows; FIT 157 → 178, FRICTION 83 → 86, BREAK 5, N/A 0,
+  UNEXERCISED 88 → 96; closed end-to-end stays 1, conjugal; unresolved BREAKs 0). Cloudvore repository facts enumerated in
+  its dispositions file VERIFIED by the arbiter; Cloudvore's historical current-account parity, and adobe, mlv-app and dng
+  repository facts, ATTRIBUTED and UNVERIFIED. Seats: arbiter gpt-6-astra high
+  (LANE-COMPLETE); consolidator claude-fable-5 (LANE-COMPLETE); lint claude-opus-5.5 (3 findings, LANE-COMPLETE) + gpt-5.6-sol (3 findings,
+  LANE-COMPLETE), 5 distinct, all applied in one pass (a wrapped `§` prose line in the mlv-app file; a non-verbatim
+  escaped-quote anchor on adobe §P2, replaced by a verbatim one; the reflog's verification status; the scope of the
+  Cloudvore VERIFIED claim; the arbiter's sandbox-only kernel-e2e refusal);
+  orchestrator claude-opus-5-5. Written before landing: the runner commits and fills `spec_commit`.

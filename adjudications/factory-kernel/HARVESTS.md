@@ -880,3 +880,105 @@ four Untested readings are ROUTED to adobe benches. Kernel unchanged at r5, 2,86
 r10, 1,209 words. 34 `§` lines: 19 ADOPTED · 0 ADOPTED-CONDITIONAL · 0 REJECTED · 15 ROUTED, plus 8 `HEADER:` lines
 (6 ADOPTED · 2 ROUTED). Dispositions: `adjudications/factory-kernel/adobe-ingester.dispositions.md`, rewritten for blob
 `2724e0a3` and superseding its own ruling on blob `5e285849` without withdrawing any disposition that ruling recorded.
+
+## 2026-10-13 — harvest 20261013T070405Z-d4564706 (adobe-ingester supplement, cloudvore third filing, dng-auto-processor fifth filing, mlv-app second filing)
+
+| date | harvest | filing | blob | kernel | profile | subjects | FIT | FRICTION | BREAK | N/A | UNEXERCISED | unresolved BREAKs | arbiter |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 2026-10-13 | 20261013T070405Z-d4564706 | adobe-ingester | efe2ed91306c5c957612b09b9a1f12e35de12dbf | r4 as filed; adjudicated against r5 unchanged | code@r4 as filed; adjudicated against r10, now r11 | 0 closed end-to-end; WO-015 rev2 TIMEOUT_48H without reviewer start; control rev3 opened; supplement only | 0 | 2 | 0 | 0 | 0 | 0 | gpt-6-astra (read-only arbiter seat; not a steward filing) |
+| 2026-10-13 | 20261013T070405Z-d4564706 | cloudvore | d7bc3daf1a437237b156fcc33d4f2d92f2878c5d | r5 unchanged | code@r10 as filed; now r11 | 0 closed end-to-end; K132, K133 and K147 delivered packets, qualifying acceptance and exact-identity closure unestablished | 9 | 1 | 0 | 0 | 0 | 0 | gpt-6-astra (read-only arbiter seat; not a steward filing) |
+| 2026-10-13 | 20261013T070405Z-d4564706 | dng-auto-processor | c9ce19d2a378974217ccd45347608cf3c091f180 | r5 unchanged | code@r10 as filed, now r11; measured-objective@r3 unchanged | 0 closed end-to-end; 0 declared kernel subjects; 14 route landings reported as mechanism evidence only | 5 | 0 | 0 | 0 | 7 | 0 | gpt-6-astra (read-only arbiter seat; not a steward filing) |
+| 2026-10-13 | 20261013T070405Z-d4564706 | mlv-app | d39b6f712bf51d2627c8879c1da67ce6fa9a5931 | r5 unchanged | code@r10 as filed; now r11 | 0 closed end-to-end; S1 and S2 reported delivered, but undeclared profile, unbound contract and nontransferring model keys | 7 | 0 | 0 | 0 | 1 | 0 | gpt-6-astra (read-only arbiter seat; not a steward filing) |
+
+Derived, not asserted. Re-run: `python tools/kernel-e2e.py --json`. Before these rows: `closed_end_to_end: 1`,
+`ledger_rows: 26`, `ledger_totals: FIT 157 · FRICTION 83 · BREAK 5 · N/A 0 · UNEXERCISED 88` (the arbiter's read-only
+ledger reducer verified this baseline independently; the arbiter's own `kernel-e2e.py --json` run refused inside its
+sandbox because its child produced no parseable filing rows, and that refusal was not treated as an empty fleet; the
+orchestrator's and the Opus lint seat's runs in the harvest worktree at a5098ce returned this baseline). After them: 30 rows;
+178 FIT · 86 FRICTION · 5 BREAK · 0 N/A · 96 UNEXERCISED (after adobe-ingester 27 rows, 157 · 85 · 5 · 0 · 88; after
+cloudvore 28 rows, 166 · 86 · 5 · 0 · 88; after dng-auto-processor 29 rows, 171 · 86 · 5 · 0 · 95; after mlv-app 30
+rows, 178 · 86 · 5 · 0 · 96); closed end-to-end stays 1 (conjugal, by its second-project arbiter). The four rows add
+26 INSTANCE-FAILURE lines (0 + 10 + 8 + 8) to health reporting, never to ledger verdict totals. These rows contribute
+zero unresolved BREAKs; the five historical BREAK verdicts are not five unresolved BREAKs.
+
+**§5 criterion 1 — projects with at least one closed end-to-end subject: 1 of the 5 the kernel requires** (conjugal
+only, on S22 under its second-project arbiter); all four rows contribute zero, and the parser's per-project MAX is
+unchanged. The five claimed subjects receive zero credit: cloudvore K132 is real work with reproducible receipts but
+has no K3 aggregate identity, its static-key authentication fails, its required Claude-seat completion remains
+integrator-relay evidence and its exact-identity delivery is unestablished; cloudvore K133 has the same
+identity/authentication/delivery failures and its closure violated the declared pin-and-planted-mutant rule, which the
+later independent count check does not retrospectively satisfy; cloudvore K147 has better retained key telemetry but
+the same identity/authentication/delivery failures; mlv-app S1 has no pre-work profile declaration or
+acceptance-contract digest, its required model keys bind a different tree without a declared manifest, and
+delivered-commit CI does not discharge the remaining contract; mlv-app S2 has the same disclosed declaration,
+contract-binding and changed-tree key-transfer failures. Cloudvore's record commits each have exactly one parent, their
+respective merge, but their trees differ from the reviewed merge trees; the retained local reflog witnesses pushes of
+record commits, not keyed merges as target tips, and ancestry alone is insufficient under the recorded S22/S1
+precedent. Conjugal S22's existing credit stands.
+**§5 criterion 2 remains MET** under the recorded 2026-09-17 ruling (`code`, `hardware-in-loop`, `measured-objective`,
+the latter two supplying the non-test-suite pair); this harvest adds no fresh non-code acceptance.
+**§5 criterion 3 does not start:** these rows lack the required fresh end-to-end evidence, `code.md` r11 changes
+participating-profile content and so resets any unchanged-content comparison, and four rows in one harvest are not
+four successive harvests.
+**Criterion 4 has never started**; no appended final-v1 owner ratification was established.
+**Members due — 1 project has NEVER filed:** `salesforce-tools`. Roster member `adversarialllm` has filed as
+`AdversarialLLM`; F1 persists: `tools/kernel-e2e.py` matches roster, filing and ledger names case-sensitively, so its
+verified filing is hidden by that case-mismatch and it is not a nonfiler; this round reconciled neither the tool nor
+the roster key. Open filing left for another run: the steward's own `conjugal` filing reads STALE and is not
+adjudicated by the steward (kernel §5); it requires its separate authorised arbiter. Cloudvore's revision 2 (blob
+`54032fb4`, `origin/review/cloudvore-kernel-2026-10-10`) was never harvested — run 20261010T080404Z-b7065e9f stopped on
+a provider weekly limit before landing — and its draft arbiter opinion is not a ruling of record; revision 3 supersedes
+it wholesale and is the blob ruled on here.
+
+**What this round changed: `profiles/code.md` r10 → r11, +18 words (1,209 → 1,227); nothing else.** The Subject
+identity (K3) cell now opens "default component: the git tree OID of the candidate commit as it will be delivered,
+after any merge with the delivery target; its identity is K3's `sha256` of that OID's lowercase hexadecimal text, with
+no trailing newline;" (the old substring occurred once). The kernel is unchanged at r5, 2,867 of 3,500 words; every
+profile's "Profile of ... r5" is unchanged, `measured-objective.md` stays r3, and no README revision token needed
+replacement. The clarification is adopted on cloudvore's K3 FRICTION as singular `code`-profile friction: it selects
+the outer SHA-256 without a terminal newline, preserves the prior Cloudvore ruling that bare tree OIDs do not prove the
+aggregate identity, and does not retroactively repair receipts; the kernel single-component exception cloudvore
+proposed is rejected because it contradicts K3's required outer digest. Seven census reclassifications, all cloudvore:
+K4, K5 and K7 FIT → INSTANCE-FAILURE (the verified K118 ledger records the pre-repair parser crediting an echoed ACCEPT
+despite the real REJECT; exact-identity acceptance evidence is incomplete; merge-plus-record ancestry and record-tip
+pushes do not establish delivery of the keyed full-tree identity); P:code subject-identity and independent-key
+FRICTION → INSTANCE-FAILURE (the existing complete-input and untouched-path requirements already reject the K121
+manifest, which omitted acceptance inputs including BACKLOG.md; the existing requirement to authenticate by digest was
+unmet when all three keys declined independent log rehashing); P:code acceptance-evidence and budgets FIT →
+INSTANCE-FAILURE (contract completion unestablished; qualifying accepted/delivered totals corrected from 3 to 0).
+Cross-filing outcomes: no kernel change — no new concrete BREAK and no same-clause FRICTION from two distinct profiles,
+the historical cross-profile inventory friction having already produced the current K10 text and the hardware emulator
+BREAK having been resolved in its profile; the K3 identity clarification adopted in `code.md`; cloudvore's
+manifest-restriction REPLACES rejected as redundant and potentially broader than the actual intervening-range
+condition (mlv-app's proposed manifest repair is valid only if complete inputs remain untouched; dng never declared
+one) and its digest-recompute REPLACES rejected because it would prescribe the verification mechanism rather than
+permit a trusted verification tool; dng's 13/14 contribution records retained as mechanism evidence, not a FRICTION
+verdict, and routed to its independence-provenance bench; adobe's K12 actuator and adoption-latency findings retained as
+singular measured `code` FRICTION and routed to the code product-share bench, the cross-profile instrument bench and an
+R14 adoption-observability bench, with no mandatory profile gate adopted while the installed admission gate has no
+measured effect window; adobe P1 and mlv-app's three R14 tooling remainders routed to the R14 owner and implementation
+benches, preserving R14.3 and R14.7 rather than rewriting K12; cloudvore's "11 of 12" K147 evidence claim corrected to
+10 of 11 exact plus one CRLF-reconstructible match. Headers: revision declarations remain historical facts (adobe's
+r4/code@r4 preserved as declared and adjudicated against r5/r10, now r11); adobe's supplement cannot erase its
+already-dispositioned October 9 predecessor (REJECTED as an incomplete replacement, with all October 9 dispositions and
+routes preserved); dng's broad lineage withholding is not automatically required by Law 4; mlv-app's `claude, codex`
+providers header exceeds its stated single-Anthropic filing provenance. Cloudvore facts the arbiter checked (receipts,
+key messages, contracts, commit relationships, K108 READY at `ae2a44d`, the inventory fingerprint, the K147 file
+digests, the posture tool's exit code) are VERIFIED; adobe, mlv-app and dng repository facts are ATTRIBUTED and
+UNVERIFIED (the located dng checkout ends at July commit `de111a3c` and lacks `db197676`).
+Per-file line counts: `adobe-ingester.dispositions.md`, rewritten for blob `efe2ed91` and superseding its ruling on
+blob `2724e0a3` (34 `§` + 8 `HEADER:` lines, none withdrawn): 6 `§` lines (0 ADOPTED · 0 ADOPTED-CONDITIONAL ·
+0 REJECTED · 6 ROUTED) plus 5 `HEADER:` lines (2 ADOPTED · 1 REJECTED · 2 ROUTED); ruled census FIT 0 · FRICTION 2 ·
+BREAK 0 · N/A 0 · UNEXERCISED 0, INSTANCE-FAILURE 0 separately, as filed. `cloudvore.dispositions.md`, rewritten for
+blob `d7bc3daf` and superseding its ruling on blob `c124fcd2` (23 `§` + 4 `HEADER:` lines, none withdrawn): 22 `§`
+lines (13 ADOPTED · 0 ADOPTED-CONDITIONAL · 7 REJECTED · 2 ROUTED) plus 6 `HEADER:` lines (2 ADOPTED · 2 REJECTED ·
+2 ROUTED); ruled census FIT 9 · FRICTION 1 · BREAK 0 · N/A 0 · UNEXERCISED 0, INSTANCE-FAILURE 10 separately (as
+filed: FIT 14 · FRICTION 3 · UNEXERCISED 0 · INSTANCE-FAILURE 3). `dng-auto-processor.dispositions.md`, rewritten for
+blob `c9ce19d2` and superseding its ruling on blob `489ad089` (46 `§` + 8 `HEADER:` lines, none withdrawn): 45 `§`
+lines (38 ADOPTED · 1 ADOPTED-CONDITIONAL · 0 REJECTED · 6 ROUTED) plus 6 `HEADER:` lines (4 ADOPTED · 1 REJECTED ·
+1 ROUTED); ruled census FIT 5 · FRICTION 0 · BREAK 0 · N/A 0 · UNEXERCISED 7, INSTANCE-FAILURE 8 separately, as filed.
+`mlv-app.dispositions.md`, rewritten for blob `d39b6f71` and superseding its ruling on blob `db44322e` (41 `§` +
+3 `HEADER:` lines, none withdrawn): 24 `§` lines (18 ADOPTED · 0 ADOPTED-CONDITIONAL · 0 REJECTED · 6 ROUTED) plus
+5 `HEADER:` lines (3 ADOPTED · 2 REJECTED · 0 ROUTED); ruled census FIT 7 · FRICTION 0 · BREAK 0 · N/A 0 ·
+UNEXERCISED 1, INSTANCE-FAILURE 8 separately, as filed. In all: 97 `§` lines (69 ADOPTED · 1 ADOPTED-CONDITIONAL ·
+7 REJECTED · 20 ROUTED) plus 22 `HEADER:` lines (11 ADOPTED · 6 REJECTED · 5 ROUTED).
