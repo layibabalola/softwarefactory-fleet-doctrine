@@ -101,3 +101,16 @@ check: command template: `env -u PYTHONPATH python -m pytest <test-id> -q` on th
 supersedes: none
 evidence: measured
 - **Outbox:** outbox:fbf82fff433b9ea3 agent-bridge:f65e579696e3
+
+## agent-bridge/select-first-leaves-lastexitcode-stale
+rule: in PowerShell, never read $LASTEXITCODE after piping a native command into Select-Object -First; capture the
+  native output in a variable first, score $LASTEXITCODE, then slice the variable.
+mechanism: Select-Object -First stops the pipeline once it has its items, so the native command's exit code is never
+  recorded and $LASTEXITCODE keeps the previous native command's value; a drift compare that exits non-zero read 0.
+  Measured on pwsh 7.6.6, a command printing two lines then exiting 3: after a prior exit 0 it read 0, after a prior
+  exit 7 it read 7; with -First 5 (the pipeline ran to its end) it read 3.
+check: command template: cmd /c "exit 7"; $o = cmd /c "echo a& echo b& exit 3" | Select-Object -First 1;
+  "[$LASTEXITCODE]" prints [7], not [3]
+supersedes: none
+evidence: measured
+- **Outbox:** outbox:4955105402f4c5c7 agent-bridge:f65e579696e3
