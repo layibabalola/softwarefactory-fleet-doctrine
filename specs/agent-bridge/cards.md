@@ -36,3 +36,17 @@ check: command template: <python> -c "import argparse; p = argparse.ArgumentPars
 supersedes: none
 evidence: measured
 - **Outbox:** outbox:d901f42000ad12d1 agent-bridge:f65e579696e3
+
+## agent-bridge/gh-run-view-can-serve-a-stale-row
+rule: never report a CI run green from one gh read; take status and conclusion from the read keyed by the commit,
+  `gh run list --commit <sha>`, and treat any other reader's answer as corroboration only.
+mechanism: on one run id at one instant, `gh run watch <id> --exit-status` exited 0 and `gh run list --commit <sha>`
+  returned completed/success, while `gh run view <id> --json status,conclusion` returned in_progress with an empty
+  conclusion: two gh readers of the same run disagreed, and gh run view served a stale row.
+check: command template, run from bash with <sha> filled: gh run list --commit <sha> --json status,conclusion --jq
+  'if length == 0 then "NO RUN" else (.[] | select(.status != "completed" or .conclusion != "success") | "NOT GREEN")
+  end' prints NO RUN or NOT GREEN unless every run on the commit concluded success (measured: nothing for a green
+  commit, NO RUN for an all-zero sha; pwsh splits the quoted jq into extra arguments and gh refuses it)
+supersedes: none
+evidence: measured
+- **Outbox:** outbox:a236a067656fc587 agent-bridge:f65e579696e3
