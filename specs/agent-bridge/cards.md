@@ -76,3 +76,15 @@ check: command template, after git fetch: git merge-base --is-ancestor origin/<b
 supersedes: none
 evidence: measured
 - **Outbox:** outbox:2507d6ee4a0217d8 agent-bridge:f65e579696e3
+
+## agent-bridge/pwsh-file-exits-0-after-a-failing-native-command
+rule: a script whose steps are native commands, run under `pwsh -File`, must end with
+  `exit $LASTEXITCODE` (the line GitHub Actions appends to every pwsh step), or a failed step exits 0.
+mechanism: pwsh -File returns 0 when the script's last native command failed. A local CI-step runner
+  built on it scored a step exit 0 while pytest printed "1 failed". Measured on PowerShell 7.6.6:
+  unwrapped 0, with the trailing exit line 3, the same command under -Command 1.
+check: command template: a one-line script `python -c "import sys; sys.exit(3)"` run as
+  `pwsh -NoProfile -File <it>` must report 3; it reports 0 until `exit $LASTEXITCODE` is appended
+supersedes: none
+evidence: measured
+- **Outbox:** outbox:40fd2699cc78bff5 agent-bridge:f65e579696e3
