@@ -613,3 +613,18 @@ recorded as owed. **WITHDRAWN BY NAME** from the clauses above: the digest discr
 flagged and left unreconciled is CRLF checkout normalization, not revision drift — 21,871 raw bytes
 hash to `fe456952...`, and the same content as 21,668 LF bytes hashes to the seats’ `a9232331...`.
 Reconciled by a cross-family read-only seat, not by this board.
+
+## R14.1 card filing ADOPTED (R14.8 record) — 2026-10-13
+
+**ADOPT** R14.1 (bus packet `0c78890`). agent-bridge files a new trap as a card in `specs/agent-bridge/cards.md`, not as a `TRAPS.md` entry.
+
+- **Tool:** agent-bridge `tools/doctrine_outbox.py`, card OUTBOX-CARDS-1N, merged as agent-bridge commit `28b92841` after a class-C quorum (three adversary seats plus a cross-family key) and green CI.
+- **Card target:** `TARGETS` gains `specs/agent-bridge/cards.md`. A card item is `kind: trap`, starts `## agent-bridge/<id>`, and is at most 14 lines and 1936 bytes, leaving room for one `- **Outbox:**` marker line.
+- **Validation:** before commit, each card is validated with a VENDORED copy of this bus's `tools/validate-cards.mjs` and `tools/fleet-membership.mjs`, blob-pinned to `14c50e97` and `e325e616`. The drain refuses `CARD_VALIDATOR_DRIFT` (exit 2) when the tip's blobs differ from the pins, and it never executes a file fetched from the bus. Node is resolved only from absolute PATH entries outside the bus checkout and the working directory.
+- **Commit path:** the cards blob is built in memory from the tip blob and committed with git plumbing. The drain never writes through a worktree path.
+- **TRAPS.md refusal:** a new `TRAPS.md` filing is refused `R14_1_TRAP_FILING_IS_A_CARD` once the fetched tip carries the validator. The fifteen agent-bridge `TRAPS.md` items dated 2026-10-02..05 that landed before `0c78890` are grandfathered by name.
+- **First publish:** nine cards, bus commits `ed146b5..96e2e15` (2026-10-13). The bus validator reports 0 problems on the new tip.
+- **Still owed by agent-bridge:**
+  - R14.4: card or `no-card` its `TRAPS.md` entries dated 2026-09-18 or later, including the hand appends `bb93367` and `0114390`, once packet 5 lands.
+  - R14.3: `dispositions/agent-bridge.md`, once packet 5 lands.
+  - A reviewed procedure for re-pinning the vendored validator when this bus changes it. Until then the agent-bridge drain fails closed.
