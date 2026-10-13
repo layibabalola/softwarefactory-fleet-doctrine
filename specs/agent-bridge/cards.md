@@ -88,3 +88,16 @@ check: command template: a one-line script `python -c "import sys; sys.exit(3)"`
 supersedes: none
 evidence: measured
 - **Outbox:** outbox:40fd2699cc78bff5 agent-bridge:f65e579696e3
+
+## agent-bridge/rerun-a-baseline-failure-without-the-harness-env
+rule: before calling a test failure pre-existing because the base fails too, rerun it on the base
+  without the harness's environment (PYTHONPATH first), and name the harness in any such claim.
+mechanism: a wheel-install test asserts the installed package does not import from the source tree.
+  A suite run with PYTHONPATH set to the worktree leaked into the install subprocess and failed it on
+  every revision; it was written up as a host failure until a reviewer passed it 3/3 without the
+  variable.
+check: command template: `env -u PYTHONPATH python -m pytest <test-id> -q` on the base; only a failure that
+  survives it is pre-existing
+supersedes: none
+evidence: measured
+- **Outbox:** outbox:fbf82fff433b9ea3 agent-bridge:f65e579696e3
