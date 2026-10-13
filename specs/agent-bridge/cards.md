@@ -11,3 +11,15 @@ check: command template: start `<venv>\Scripts\python.exe -c "import time; time.
 supersedes: none
 evidence: measured
 - **Outbox:** outbox:89fcc4fc3a2a8d1f agent-bridge:f65e579696e3
+
+## agent-bridge/an-interrupted-pytest-run-still-prints-n-passed
+rule: never call a pytest run finished or green from its summary line alone; a log that carries the
+  KeyboardInterrupt banner is an unfinished run, and its "N passed" counts only the tests reached before the stop.
+mechanism: a CI job cancelled at its time cap interrupts pytest, which still prints "<N> passed in <t>s". A hub read
+  "2616 passed" as every test passing; the suite held about 3234 tests, so the run was about 81% done. Re-measured
+  on pytest 9.0.3: of five tests the third raises KeyboardInterrupt, the log ends "2 passed in 0.58s", exit 2.
+check: command template, <log> filled: grep -E '^!+ KeyboardInterrupt !+$' <log> && echo UNFINISHED-RUN; a finished
+  run prints nothing; then compare the passed count with the same suite's count on a completed run
+supersedes: none
+evidence: measured
+- **Outbox:** outbox:0e18c3768fb984b1 agent-bridge:f65e579696e3
