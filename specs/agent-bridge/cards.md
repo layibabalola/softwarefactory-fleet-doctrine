@@ -23,3 +23,16 @@ check: command template, <log> filled: grep -E '^!+ KeyboardInterrupt !+$' <log>
 supersedes: none
 evidence: measured
 - **Outbox:** outbox:0e18c3768fb984b1 agent-bridge:f65e579696e3
+
+## agent-bridge/argparse-invalid-choice-text-differs-by-python-version
+rule: a test that pins argparse's error wording is run under the CI runner's exact interpreter before it is trusted;
+  better, assert the exit status and the rejected value, not the message text.
+mechanism: argparse's invalid-choice message differs between interpreter releases. Measured here: 3.13.15 prints
+  "(choose from 'a', 'b')" and 3.14.3 prints "(choose from a, b)". A test pinned to the local 3.14.3 wording passed
+  in every local run and failed on a CI runner on 3.14.6, which quoted the choices like 3.13.
+check: command template: <python> -c "import argparse; p = argparse.ArgumentParser(prog='t'); p.add_argument('--m',
+  choices=['a', 'b']); p.parse_args(['--m', 'z'])" under the local and the runner interpreter; the last stderr
+  lines differ on an affected pair
+supersedes: none
+evidence: measured
+- **Outbox:** outbox:d901f42000ad12d1 agent-bridge:f65e579696e3
