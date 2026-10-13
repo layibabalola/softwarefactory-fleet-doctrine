@@ -16,6 +16,16 @@ any lane treats these files as part of its duty loop. Until wired, contents are 
 2. **Single writer.** **Only Chief of Staff / Grok Bot writes under `cos-feedback/`.**
    Projects and lanes are READ-only. Do not open PRs that mutate another board's feedback
    files from a project agent.
+   **Failover exception (Amendment 3, Layi-approved 2026-10-13 with conditions).** If CoS has
+   made no `cos-feedback/**` commits for 3h while reviews are pending, and a FRESH demand check
+   passes (≥1 pr-opened, pr-pushed, or tip-moved event in that window; stale backlog alone does
+   not count), Muse may claim a logged lease and write `cos-feedback/<project>/pr-<N>.md`
+   verdicts only, signed as Muse (`Muse:` commits, `failover: true` front-matter), never as
+   Chief of Staff. Failover verdicts are advisory CANDIDATE data: no merge, close, approve, or
+   review-leg authority, and no YELLOW/RED license on that PR. CoS reclaims the seat on its next
+   `cos-feedback/` commit (CoS wins any race and may overwrite). The lease stays **unactivated**
+   until the enactment gate is met (bus pushes need no per-verdict approval tap, or a standing
+   write grant exists). See [`../FAILOVER.md`](../FAILOVER.md) §5 invariants.
 3. **Push on change.** One wholesale rewrite per reviewed PR head — not cadence spam. If the
    reviewed `head` SHA has not changed, do not re-push the same file.
 4. **What never travels:** credentials, transcripts, customer data. PR numbers, SHAs, check
