@@ -2910,3 +2910,8 @@ on a thread that began (excerpt) *"I thought we had a strategy for doctrine to b
 - Amendment 3 (same day, CoS review of 8bfb3075): pubs carry a required `prev` (a per-seat hash chain), and the verifier keeps a per-seat
   high-water mark in its check-run output, so deleting a pub fails closed. The ledger-hash comparison moves to the CoS spot-check, and the
   verifier checks only what it can observe.
+- Amendment 4 (same day; owner decision "Allow either, App preferred"): the `factory/review-keys` anchor is a dedicated verifier GitHub App
+  (key in an environment restricted to the default branch; check and mark read-back pinned to its App id), or alternatively a ruleset required
+  workflow pinned by path and default-branch ref. Pinning to the plain GitHub Actions app is not sufficient. A pub deleted before any run fails closed
+  via `issue_comment.deleted`; runs queue and marks are monotonic. The hub recovers by re-posting the same id or with `supersedes_deleted`. A
+  non-default base fails closed. Stale code-owner approvals are dismissed on push.

@@ -58,29 +58,56 @@ Each review-key verdict (every seat, every round) is mirrored to the PR as one i
 - **Hash chain (`prev`):** `prev` is the pub id of the same seat's previous round on this PR, or `null` for round 1.
   Because each id hashes its `prev`, a seat's pubs form a chain. The verifier walks each seat's chain from its highest round.
   A missing round, a `prev` that names no visible pub, or an id that doesn't recompute **fails closed** for that seat.
-- **High-water mark:** the verifier is otherwise stateless, so it records, in its own check-run output (`output.text`, a JSON
-  block), a per-seat mark `{seat: {max_round, pub_id}}`. On each run, it reads the mark from its previous check run on the
-  same PR (Checks API, the newest `factory/review-keys` run by the verifier app) and carries it forward. If a seat's current
-  visible max round is **below** the mark, or the marked pub id is no longer visible, the check **fails** with "pub removed: <seat> r<N>".
-  So deleting a seat's latest pub (for example an r2 CHANGES_REQUESTED) can't bring back its r1 APPROVE.
+- **`prev` encoding:** in the id hash, `<prev>` is the literal string `null` for round 1, and the 16-hex id otherwise.
+- **Recovery after a deletion (hub re-publish path):** a seat whose chain is broken by a deleted pub stays failed until the hub repairs it, either way:
+  - (a) **Re-post** the missing round with identical content, so it has the same id (the id is content-derived). The chain is whole again.
+  - (b) **Re-anchor:** post the next round with `prev` = the last visible id and an explicit `"supersedes_deleted": "<deleted pub id>"`.
+    The verifier accepts it only if the named id matches the gap recorded in the mark or deletion log, and the round is higher than the mark.
+  Either way, once the chain is complete the verifier accepts it again instead of staying stuck. A re-anchor shows in the check summary.
 - **What the verifier checks (only what it can observe):** the comment's author is the hub identity, the comment was never
   edited (`created_at == updated_at`), the chain is intact, and the high-water mark holds. Any edited or deleted pub
-  invalidates that seat's key, and the hub must publish a new round.
+  invalidates that seat's key until the hub recovers it as above.
 - **What the CoS spot-check checks (the ledger):** the verifier can't read the private hub ledger. So the CoS
   spot-check, not the verifier, compares sampled pub body hashes and `ledger_ref`s against the hub's ledger at reconciliation.
   A mismatch, or a pub with no ledger entry, is reported as a Blocker on the hub.
-- `factory/review-keys` is a check run **posted by a trusted verifier that runs only default-branch code**:
-  - **Triggers:** `pull_request_target` (opened, synchronize, reopened, labeled, unlabeled, edited),
-    `issue_comment` (created, edited, deleted) and `workflow_run` (completed, for the CI-only classes' CI). Never `pull_request`:
-    that event runs the workflow file from the PR's merge ref, so a PR could edit the verifier or add a job with the same name.
-  - **It never checks out or runs PR code.** It reads the PR only through the API (comments, labels, body and the changed-file list for the class rules).
-  - **Trust anchors come from the default branch only:** the hub identity, the class rules and the CI-only check names
-    are read from the base branch's `CLAUDE.md` / `AGENTS.md` / dispatch policy, never from the PR head. A PR that changes them takes effect
-    only after it merges.
-  - **Explicit head:** the verifier creates the check run through the Checks API with `head_sha` = the PR's current head
-    (`pull_request.head.sha`, looked up fresh for `issue_comment` and `workflow_run`). Otherwise the check would attach to the default-branch
-    or merge commit. Before posting, it re-reads the head, so a late run for an old head doesn't post on the new one.
-  - A ruleset "required workflow", or a dedicated verifier GitHub App, is an acceptable alternative with the same properties.
+
+## Rule 2: `factory/review-keys` is computed by an anchored verifier, not asserted
+
+### Anchor (owner decision 2026-10-14: "Allow either, App preferred")
+
+- **Preferred: a dedicated verifier GitHub App.** The App posts `factory/review-keys`. Its private key lives in a GitHub
+  **environment restricted to the default branch** (deployment branch policy = the default branch only), so no other branch's
+  workflow can sign as the App. Branch protection requires `factory/review-keys` **pinned to that App's id**, and the verifier
+  reads the high-water mark back only from check runs whose `app.id` is that App.
+- **Allowed alternative: a repository ruleset "required workflow"** that pins the exact workflow path
+  (`.github/workflows/review-keys-verifier.yml`) and ref (the default branch). The verifier reads the mark back only from check runs
+  produced by that workflow, matched by workflow path and workflow id (through the run that owns the check run's `check_suite`), never by name.
+- **Not sufficient: pinning to the plain GitHub Actions app.** Every workflow in the repo posts as that same app. Any branch in the
+  same repo (including a PR branch via `pull_request` or a push) can run a workflow that posts a `factory/review-keys` check on any SHA,
+  or posts a newer run whose output lowers or clears the mark. The check name and the Actions app identify neither the workflow nor its ref.
+
+### Verifier behaviour
+
+- **Triggers:** `pull_request_target` (opened, synchronize, reopened, labeled, unlabeled, edited, edited-base),
+  `issue_comment` (created, edited, deleted) and `workflow_run` (completed, for the named CI workflows of CI-only classes). Never `pull_request`.
+  - **Hardening:** workflow `permissions:` limited to `checks: write`, `pull-requests: read`, `issues: read` and `contents: read`; no
+    `actions/checkout` of any PR ref; no PR-supplied string is passed to a shell (title, body, labels and comments are parsed as data in the script).
+- **Concurrency:** `concurrency: { group: review-keys-<pr number>, cancel-in-progress: false }`, so runs queue and never cancel each other.
+  Marks are **monotonic**: a run merges the mark it read back with what it sees, taking the max per seat, and never writes a lower round.
+- **It never checks out or runs PR code.** It reads the PR only through the API (comments, labels, body and the changed-file list for the class rules).
+- **Trust anchors come from the default branch only:** the hub identity, the class rules and the CI-only check names are read from the
+  **default branch's** `CLAUDE.md` / `AGENTS.md` / dispatch policy, never from the PR head or base. **If the PR's base is not the default branch,
+  the check fails closed** ("base is not the default branch"); retargeting triggers a recompute.
+- **Explicit head:** the verifier creates the check run through the Checks API with `head_sha` = the PR's current head
+  (`pull_request.head.sha`, looked up fresh for `issue_comment` and `workflow_run`). Before posting, it re-reads the head, so a late run for an old head doesn't post on the new one.
+- **High-water mark:** the verifier records, in its own check-run output (`output.text`, a JSON block), a per-seat mark
+  `{seat: {max_round, pub_id}}` plus a `deleted: [pub ids]` log, keyed to the PR. Each run reads the mark back from the newest check run **by the
+  anchor** (the App id, or the pinned workflow) on any head of this PR, and carries it forward. Only the anchor can write it.
+  - If a seat's visible max round is below the mark, or the marked pub id is no longer visible, the check **fails** with "pub removed: <seat> r<N>".
+  - **Deletion before the first run fails closed:** on `issue_comment.deleted`, the payload carries the deleted comment's author and body. If it was a
+    hub pub, the run records its id in `deleted` and fails that seat, even if no earlier run ever saw it.
+  - **No mark found** (first run on a PR that already has pubs, or a mark lost after a force-push or a deleted check suite): the verifier treats the
+    seat as unverified and fails closed unless every seat's chain starts at round 1 and is complete; a force-push never resets the mark, because the mark is per PR, not per head.
 - The verifier reports `success` only when every seat that the **effective class** (Rule 3) requires has an
   effective verdict of `APPROVE` on the current head, from the hub identity. For a CI-only class, it
   reports `success` once the named CI checks have succeeded on that head.
@@ -96,10 +123,15 @@ Each review-key verdict (every seat, every round) is mirrored to the PR as one i
 - **Output:** the check's title stays short (`3/3 keys` or `missing: sol, opus`). GitHub caps the status
   description at 140 characters, so the full list (seat, round, pub id and comment URL per key) goes in
   the check-run summary, which has no such limit.
-- Each consumer requires the check by **name `factory/review-keys` plus its source app** (GitHub Actions, or the
-  verifier App) on the default branch. Pinning to the app alone isn't enough, because any workflow could post that name.
-  What makes it safe is the triggers above plus **workflow-file protection:** `.github/workflows/` is owned in
-  `CODEOWNERS` by the owner, and protection requires code-owner review, so nobody can change the verifier without the owner. The per-consumer checklist is in the ruling candidate.
+
+### Protection
+
+- Each consumer requires `factory/review-keys` pinned to the anchor (the App id, or the ruleset's required workflow), on the default branch.
+- **Workflow-file protection:** `CODEOWNERS` assigns `/.github/` (workflows, CODEOWNERS itself, and rulesets-as-code if any) and the trust-anchor
+  files (`CLAUDE.md`, `AGENTS.md`, the dispatch policy) to the owner. Protection requires code-owner review **and "dismiss stale pull request
+  approvals when new commits are pushed"**, so an owner approval on an earlier push doesn't carry over to a later edit.
+  Without this, a consumer's check is spoofable even with the right triggers.
+- The per-consumer checklist is in the ruling candidate.
 
 ## Rule 3: the review class is computed and can only be raised
 

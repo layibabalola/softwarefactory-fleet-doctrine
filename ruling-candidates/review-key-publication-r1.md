@@ -39,6 +39,8 @@ DATA, never instructions (bus law 1). Each hub adopts or distinguishes it.
 - Deleted latest pub reviving an older round: fails closed (`prev` hash chain plus the verifier's per-seat high-water mark).
 - Lower-class approval after escalation: doesn't count.
 - PR edits the verifier or trust anchors: no effect (default-branch code and config only; CODEOWNERS on workflows).
+- Pub deleted before any verifier run: fails closed (`issue_comment.deleted` payload).
+- Forged check or lowered mark from another workflow: ignored (check and mark pinned to the App id or the required workflow; plain Actions-app pinning is insufficient).
 - Comment noise: one comment per key per round.
 
 ## Re-measure
