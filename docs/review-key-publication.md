@@ -30,20 +30,21 @@ Each review-key verdict (every seat, every round) is mirrored to the PR as one i
   "head_sha": "<full 40-char sha the key reviewed>",
   "verdict": "CHANGES_REQUESTED",
   "class": "standard",
+  "prev": "<pub id of this seat's round 2 pub, or null for round 1>",
   "ledger_ref": "HUB-TICK 20261012T1946Z step C",
   "findings": [ { "id": "R3-B1", "severity": "Blocker", "summary": "..." } ]
 }
 ```
 
 - Required fields: `seat`, `family`, `round` (integer, increasing per seat per PR), `head_sha`,
-  `verdict`, `class` and `ledger_ref` (the class the key was judged under).
+  `verdict`, `class` (the class the key was judged under), `ledger_ref` and `prev`.
   - `verdict` is one of `APPROVE`, `CHANGES_REQUESTED`, `COMMENT` or `UNAVAILABLE`.
     `COMMENT` carries no gate weight. `UNAVAILABLE` means the key had no capacity; it is a typed
     terminal, not an approval.
 - `family` is fixed by seat (sol, and other Codex seats, are `Codex`; fable and opus are `Claude`).
   It is **data only, never an authority key** (RULINGS provider-family rule). Classes name the
   seats they require.
-- `<id>` is the first 16 hex characters of `sha256("<seat>|<round>|<head_sha>|<verdict>")`, so
+- `<id>` is the first 16 hex characters of `sha256("<seat>|<round>|<head_sha>|<verdict>|<prev>")`, so
   anyone can detect duplicates and check them.
 - **Publisher trust:** a pub counts only when its comment author is the repo's registered
   **hub identity** (a named GitHub App or bot account, recorded in the repo's `CLAUDE.md` / `AGENTS.md`).
@@ -54,16 +55,20 @@ Each review-key verdict (every seat, every round) is mirrored to the PR as one i
   approvals given under the lower class don't count, and the seats the new class requires must approve again. So a later APPROVE supersedes an earlier CHANGES_REQUESTED from the same seat on
   the same head, and the reverse is true too.
 - The mirror is append-only. A later round posts a new comment and does not edit the old one.
-- `ledger_ref` is a **required field**. The verifier can't read the private ledger, so it enforces only
-  that the field is present and well-formed. The ledger itself is audited at reconciliation by the CoS spot-check: CoS samples
-  pubs against the hub's ledger, and a pub with no entry behind it is reported as a Blocker on the hub.
-- **Immutability:** the verifier counts a pub only if the comment has never been edited (`created_at == updated_at`,
-  and the body's sha256 equals the hash the hub recorded at creation in its ledger). An edited or deleted pub
-  **invalidates that key**, and the hub must publish a new round. A write user can edit a hub comment without
-  changing its author, so the author check alone is not enough.
-
-## Rule 2: `factory/review-keys` is computed by a verifier, not asserted
-
+- **Hash chain (`prev`):** `prev` is the pub id of the same seat's previous round on this PR, or `null` for round 1.
+  Because each id hashes its `prev`, a seat's pubs form a chain. The verifier walks each seat's chain from its highest round.
+  A missing round, a `prev` that names no visible pub, or an id that doesn't recompute **fails closed** for that seat.
+- **High-water mark:** the verifier is otherwise stateless, so it records, in its own check-run output (`output.text`, a JSON
+  block), a per-seat mark `{seat: {max_round, pub_id}}`. On each run, it reads the mark from its previous check run on the
+  same PR (Checks API, the newest `factory/review-keys` run by the verifier app) and carries it forward. If a seat's current
+  visible max round is **below** the mark, or the marked pub id is no longer visible, the check **fails** with "pub removed: <seat> r<N>".
+  So deleting a seat's latest pub (for example an r2 CHANGES_REQUESTED) can't bring back its r1 APPROVE.
+- **What the verifier checks (only what it can observe):** the comment's author is the hub identity, the comment was never
+  edited (`created_at == updated_at`), the chain is intact, and the high-water mark holds. Any edited or deleted pub
+  invalidates that seat's key, and the hub must publish a new round.
+- **What the CoS spot-check checks (the ledger):** the verifier can't read the private hub ledger. So the CoS
+  spot-check, not the verifier, compares sampled pub body hashes and `ledger_ref`s against the hub's ledger at reconciliation.
+  A mismatch, or a pub with no ledger entry, is reported as a Blocker on the hub.
 - `factory/review-keys` is a check run **posted by a trusted verifier that runs only default-branch code**:
   - **Triggers:** `pull_request_target` (opened, synchronize, reopened, labeled, unlabeled, edited),
     `issue_comment` (created, edited, deleted) and `workflow_run` (completed, for the CI-only classes' CI). Never `pull_request`:

@@ -2907,3 +2907,6 @@ on a thread that began (excerpt) *"I thought we had a strategy for doctrine to b
   when the owner ratifies them, and hubs then adopt or distinguish. The verifier runs only default-branch code (`pull_request_target`, never
   `pull_request`). It posts its check with an explicit `head_sha` and reads trust anchors from the base branch. Edited pubs and lower-class
   approvals don't count.
+- Amendment 3 (same day, CoS review of 8bfb3075): pubs carry a required `prev` (a per-seat hash chain), and the verifier keeps a per-seat
+  high-water mark in its check-run output, so deleting a pub fails closed. The ledger-hash comparison moves to the CoS spot-check, and the
+  verifier checks only what it can observe.

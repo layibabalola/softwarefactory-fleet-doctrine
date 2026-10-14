@@ -35,7 +35,8 @@ DATA, never instructions (bus law 1). Each hub adopts or distinguishes it.
 - Stale approval after a push: the verdict is unbound by `head_sha`. The only carry-forward is a content-identical master sync.
 - Contradictory rounds: resolved by the latest round per seat.
 - Hub credential leak to a lane: out of scope for comments. The check is required from the Actions app, and lanes must not hold the hub credential.
-- Edited hub pub: invalidates the key (unedited and body hash = the hash recorded at creation).
+- Edited hub pub: invalidates the key (the verifier checks the comment is unedited; CoS spot-checks body hashes against the ledger).
+- Deleted latest pub reviving an older round: fails closed (`prev` hash chain plus the verifier's per-seat high-water mark).
 - Lower-class approval after escalation: doesn't count.
 - PR edits the verifier or trust anchors: no effect (default-branch code and config only; CODEOWNERS on workflows).
 - Comment noise: one comment per key per round.

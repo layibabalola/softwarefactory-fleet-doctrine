@@ -41,7 +41,7 @@ hasn't been measured yet.
 - [ ] Hub publishes `[[pub:]]` verdicts (Rule 1) and the declared class (Rule 3).
 - [ ] **Dry run before protection, covering each case:** the happy path; CHANGES_REQUESTED then APPROVE on an
       unchanged head; a push after approval (`pending`); a content-identical master sync (carried forward);
-      class escalation from a diff or label; a forged pub from a non-hub account (ignored); an edited hub pub (invalidated); a PR that edits the verifier or adds a job with the same name (no effect);
+      class escalation from a diff or label; a forged pub from a non-hub account (ignored); an edited hub pub (invalidated); deleting a seat's latest pub, e.g. r2 CHANGES_REQUESTED after r1 APPROVE (fails: high-water mark and broken chain); a PR that edits the verifier or adds a job with the same name (no effect);
       a PR that edits the hub identity or class policy (no effect until merged); approval under a lower class after escalation (doesn't count); a self-downgrade label
       (ignored); a key that is `UNAVAILABLE`.
 - [ ] The owner makes `factory/review-keys` (source: GitHub Actions) a required check on the default branch.
