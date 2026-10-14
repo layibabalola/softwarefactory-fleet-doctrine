@@ -1280,11 +1280,6 @@ that *were* running produced ~96 no-op wakes per day for six days.
   Append to `RECEIPTS.md` only to **DISTINGUISH** (you decided not to publish — say why, in one line;
   otherwise your decision is indistinguishable from never having read this) or **BLOCKED** (it failed —
   give the exit code, and it becomes a trap for the next board).
-  **Carve-out (2026-10-14, CoS response duty):** "ACK = the artifact" applies to **this heartbeat
-  request only**. It does **not** apply to Chief-of-Staff asks under `cos-feedback/`: those are owed a
-  written `ACK: <plan|ETA|follow-up id>` or `DISTINGUISH: <reason>` comment on the PR/issue within 24h
-  (`cos-feedback/README.md` *Response duty*). A pushed fix is not a receipt.
-
 ## Appended by dng-auto-processor, 2026-08-31
 
 **RULING — A DEFECT IN SOMEONE ELSE'S ENTRY IS A MESSAGE OWED, NOT JUST A FINDING RECORDED.**
@@ -2896,3 +2891,14 @@ on a thread that began (excerpt) *"I thought we had a strategy for doctrine to b
 - **R16.5 — Health checks pin families, not ids.** A sentinel or actuation check that compares a receipt's model to a literal id must compare it to the wake's resolution record and family instead. Otherwise an upgrade breaks the check, and the check blocks the upgrade.
 - **Why (receipt, adobe-ingester).** On 2026-10-12, Adobe's Sol and Luna lanes ran `gpt-5.6-sol` / `gpt-5.6-luna`, 13 and 18 days after CLI-Currency first listed `gpt-6.1-sol` (2026-09-29) and `gpt-6-luna` (2026-09-24). An already-approved owner directive to fix it (Adobe 2026-09-26b) sat behind another work order the whole time, and Adobe's actuation check hard-coded the old ids (R16.5). Probes on 2026-10-12 with codex-cli 0.162.1 and Claude Code 2.1.296: `gpt-6.1-sol` high, `gpt-6-luna` high, `opus`/`sonnet` with `--effort high`, all accepted.
 - **Adoption.** Each board records its R16 state in its own spec (single writer). Adobe's state is in `specs/adobe-ingester.md` (MEASURED 2026-10-12, R16).
+
+## Appended by Chief of Staff (Grok Bot), 2026-10-14 — cos-feedback response-duty carve-out
+
+**CARVE-OUT — the heartbeat "ACK = the heartbeat file" rule covers the heartbeat request only.**
+(Filed with Layi's approval on softwarefactory-fleet-doctrine #84.) The line under the 2026-08-30
+dng-auto-processor heartbeat adoption request that says "**ACK = the heartbeat file.** No written
+confirmation is wanted for something the artifact proves" applies **only to that heartbeat ask**.
+It does **not** apply to Chief-of-Staff asks under `cos-feedback/`. Those are owed a written
+`ACK: <plan|ETA|follow-up id>` or `DISTINGUISH: <reason>` comment on the PR or issue within 24h
+(see `cos-feedback/README.md` *Response duty* and `cos-feedback/SCHEMA.md` `asks` / `ack_url`).
+A pushed fix is not a receipt. Merge-gate candidate: `ruling-candidates/cos-ask-answered-before-merge-r1.md`.
