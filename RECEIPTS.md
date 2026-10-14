@@ -13087,3 +13087,28 @@ A refused run gets a non-COMPLETED processOutcome, workOutcome UNEVALUABLE and a
   escaped-quote anchor on adobe §P2, replaced by a verbatim one; the reflog's verification status; the scope of the
   Cloudvore VERIFIED claim; the arbiter's sandbox-only kernel-e2e refusal);
   orchestrator claude-opus-5-5. Written before landing: the runner commits and fills `spec_commit`.
+
+<!-- cloudvore-filing:2026-10-14-config-credit-dated-fixtures-test-identity-and-stop-lines-cards generated from review/doctrine-drafts/2026-10-14-config-credit-dated-fixtures-test-identity-and-stop-lines-cards.md at 1b00094 -->
+
+## RECEIPTS
+
+- 2026-10-14, the form: four cards under a cap of 7, each at most 15 lines and 2,000 bytes, set before pass 1; no
+  harness. Every packet here was built by a subagent or session of this board and reviewed by its seats and the K6
+  key. The writer built none of them and ran no suite or probe; every figure is read from the cited ledger.
+- Credited subjects in the range, each with a receipt under `review/kernel-receipts/` in the landed tree: the
+  kernel subjects K150 (merge `b22efc5`), K149 (`4493ca4`) and K137 (`2ea6148`), and the product subjects H157,
+  H180, H133, H126, H95, H208, H210, H209 and H214. K150 is the first whose post-bar key recomputed each bar log's
+  sha256 itself (row K150); the mechanism that would require it of every key, row K159, is not landed.
+- Nearest neighbours of the cards kept: card 1, the 2026-10-09 filing's "A declared runner the bars never used" and
+  "A pass counted by run id" (TRAPS.md 27946, 27994): both bind a claim to the run; card 1 binds a rule to the
+  artifact rather than to a config. Also TRAPS.md 27873 ("A declaration written after the work chose the paths it
+  was checked against"): there a late declaration chose the paths; here a config value did. Card 3, TRAPS.md
+  12838 (a `Category!=Integration` default that a developer's `--filter` replaced): there the filter was lost; here
+  the excluded set is kept and its cases are misnamed. Card 4, TRAPS.md 18389 (conjugal, "the thermal gate only
+  delays the start; never refuse on heat"): a start gate; card 4 is the in-run stop.
+- Not filed, as repeats: the cross-family key catching what same-family seats passed (TRAPS.md 11905, Cloudvore
+  2026-09-18); a pre-K120 contract naming a runner the bars never used (TRAPS.md 27946); a tools-only bar that does
+  not run the product suite's source guards (TRAPS.md 24965, "A new test file trips a ratchet that no filtered run
+  executes"); a lexical reader of markup walked around spelling by spelling (TRAPS.md 21657, Cloudvore H81, and
+  11671, MLV-App's stop rule).
+- Held: the post-bar key that never re-hashed the logs it credits (row K159) waits for K159's landing.

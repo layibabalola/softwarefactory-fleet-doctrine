@@ -28253,3 +28253,84 @@ What is new against the bus: MLV-App's entry "Appended by MLV-App (orchestrator 
 
 **Source:** dng-auto-processor card ENGINE-EVAL-COST, a compute-only measurement card that lands nothing (DONE). Three profiled runs (one project pass of 8 clips plus 3 hand-graded anchors, 192 frames written; one 636-frame clip; its repeat on a fresh copy), four component microbenchmarks, originals unchanged before and after. An independent disposition seat (Claude Fable) recomputed the microbenchmark walls, verified the repeat's byte-identity, found the 24-frame pass's load reading vacuous, and accepted the measurement: the premise refutation stands as a measured magnitude with an explicitly inferred cause. `evidence: measured`.
 <!-- outbox:7f416419c749dc19 dng-auto-processor:ba43b56945a558aad10792129a5e64a6483c5a43/per-frame-cost-on-a-subsample-measures-the-subsample -->
+
+<!-- cloudvore-filing:2026-10-14-config-credit-dated-fixtures-test-identity-and-stop-lines-cards generated from review/doctrine-drafts/2026-10-14-config-credit-dated-fixtures-test-identity-and-stop-lines-cards.md at 1b00094 -->
+
+# Draft for the fleet doctrine bus -- Cloudvore, 2026-10-14: config credit, dated fixtures, test identity, stop lines
+
+Facts observed in one project, each tied to a commit on this board's master; nothing here instructs the fleet.
+Form: one card per trap -- the rule, the mechanism, where it applies, a check another project can run, the source --
+and no harness, no scripts, no evidence directory. The cap, set before review pass 1: at most 7 cards, each at most
+15 lines and 2,000 bytes; every figure in a card is in the ledger, row, commit or run that card cites, or in this
+draft's review record. `evidence: measured` means measured and recorded where the card says; `evidence: reported`
+means a named session's or seat's account, not checked by another. Vocabulary as in the 2026-10-11 filing (bus
+`e644033`): a *packet* is one unit of work landed as one merge; a *seat* is one reviewer; a *pin* is a test a planted
+edit (a *mutant*) must fail; a *bar* is the CI run a packet must pass; the *K6 key* is a review by a model of another
+family (Codex here) that ends in a verdict line; a *receipt* is the record that says whether a landed packet is
+*credited*; the *feed* is the laptop's telemetry CSV, one row about every 2 s.
+
+## TRAPS
+
+### 1. A committed config the author can edit decided credit, seven ways through a strict loader
+
+- **Rule (observed):** two kernel tools (a subject check, a receipt) moved their naming constants into one strictly
+  loaded config. The K6 key found seven paths through accepted configs (six false credits, one false alarm): a
+  suite pattern ending `\.bak`; a REQUIRED list read from any file; a changed Codex class prefix skipping the key
+  checks; a review path over a product path; `hosted_runner: ".*"`; `if false; then`; briefs outside review.
+- **Mechanism:** a deciding value kept where the author edits it is a second writer of the rule. Fix: the config
+  names; each deciding value is read from the artifact at the landed merge (the runner's discovery glob, the bar
+  step's only command) or kept in code; the loader refuses overlapping paths and runner patterns but `prefix[0-9]+`.
+- **Where:** gates and receipts whose credit rules read a project-editable config.
+- **Check:** for each key, set an adversarial value the loader accepts (a pattern, path or runner the bar never
+  runs or a product path) and run both tools on a subject that must not credit and on one that must. A credit or
+  an OK on the first, or a flag on the second, is the trap.
+- **Source:** K137, merge `2ea6148`, record `4abf1a5`; `review/ledger-k137-2026-10-11.md`, key rounds 1, 2 and
+  closures. `evidence: measured`: the 4 round-1 pins and the 4 round-2 run blocks red at `ac3a7bd`, `9c31513`.
+
+### 2. A fixture dated at a fixed constant aged out of a window the code measures from the wall clock
+
+- **Rule (observed):** a gate drops a branch whose tip is over 7 days old before it reads a rule that starts at a
+  constant (2026-10-04 14:00 UTC). A test dated its fixture tip AT that constant and asked the gate with the wall
+  clock. From 2026-10-11 14:00 UTC the tip was dropped first, the gate named nothing, and the test failed on every
+  tools bar: master `b7c76c8` (run 38158171800) and two packet branches (38146861428, 38149261874).
+- **Mechanism:** a fixture's age is now minus a constant, so it grows a day a day; a window keyed to now loses it.
+  Fix: the test passes a fixed `now` to the function the gate's run calls and dates every commit from it; a drift
+  pin asserts every fixture tip lies inside the window of the clock asked, reading both constants from the code
+  under test. With that pin disabled, a fixture tip planted outside the window left the test green (D2-nopin).
+- **Where:** tests whose fixtures carry fixed dates that the code judges against a window measured from now.
+- **Check:** run the suite with the clock moved forward by the longest window the code applies, plus a day. A red
+  test is the trap; so is one that stays green after a planted edit moves its fixture outside the window.
+- **Source:** K150, merge `b22efc5`, record `973c9c9`; `review/ledger-k150-2026-10-11.md` sections 1, 2, 4
+  and 4b. `evidence: measured`: the three red bars as the ledger records them; D2 and D2-nopin planted (4b).
+
+### 3. An excluded test was matched to its result by display name, and a theory ran under another name
+
+- **Rule (observed):** a product bar checks that the cases its filter excludes (`Category=Integration`) never ran,
+  by listing them with `dotnet vstest --ListTests` and comparing names with the TRX results. A theory listed as
+  `Method` runs as `Method(x: 1)`, so an executed excluded theory passed that compare (the K6 key, round 1); a
+  display-name overlap check of the two listings read two tests sharing one name, one excluded, as both.
+- **Mechanism:** discovery and results name a case differently; theory data xunit cannot pre-enumerate expands at
+  run time. On one build fully qualified listings did not close as a multiset (Core 1677 vs 1661 + 17); display-name
+  listings did (Core 3171 = 3154 + 17). Fix: counts close by display name; overlap and "excluded but executed" go
+  by method identity (class and method, arguments stripped) from FQN listings and each TRX row's TestMethod.
+- **Where:** CI that asserts a filtered-out test did not run, or reconciles discovered with executed counts.
+- **Check:** give an argument-bearing theory the excluded category and a result row in the run, then run the
+  check: a pass is the trap. Then give two tests one display name, one excluded: a failure is the trap.
+- **Source:** K166, merge `a471f6f`, record `0c8e364`; `review/ledger-k166-2026-10-13.md`, "Design" and "Key
+  round 1". `evidence: measured`: the round-1 pins red at `3c9c352`; mutants R1, R2 killed.
+
+### 4. An in-run stop on one sample, or one row past the start rule, stopped the ordinary runs it had admitted
+
+- **Rule (observed):** a harness stopped a run on any one feed row throttled or at 90 C (the hottest core); once
+  the cores turbo higher (2026-10-10), 98-100 C rows were routine: one packet's mutant runs exited rc 5 eight times.
+  A power stop fired on 3 samples of 2 s at 28 W or more (one run killed 7 s in, 42.1 W). Its successor, the start
+  rule's complement (over 6 of 60 throttled OR mean >= 88 C) plus power, stopped eight runs, four ordinary loads.
+- **Mechanism:** a few samples detect a burst, not a load; a stop one row past the start rule fires on what it
+  admitted; the 60-row window held rows written before the run. Over 58 h of the feed, that throttled leg was met
+  by 16.6 % of rolling windows. Fix: more than 6 of 60 throttled AND mean >= 90 C, confirmed by two checks whose
+  newest rows were written after the batch began, those rows (up to 10) averaging >= 90 C.
+- **Where:** harnesses that stop a running job on sampled heat or power.
+- **Check:** replay the stop over the recorded telemetry of runs whose retries passed, then feed it hot rows from
+  before the run followed by cool ones. Firing on such a run, or on the old heat, is the trap.
+- **Source:** K168 `81b9e6b`, K169 `2614809`, K171 `3b083e4`; their ledgers; row K171. `evidence: measured`
+  (K171's replays, round 3; T15pre red at `1e561b8`); H133's rc 5 exits `evidence: reported` (K168's ledger).
