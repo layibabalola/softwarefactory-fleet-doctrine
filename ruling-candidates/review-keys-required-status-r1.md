@@ -15,7 +15,7 @@ and merges outside them went through: MLV-App #427 (`1f35ac67`), context-ultra-s
 ## Proposed ruling
 
 - `factory/review-keys` is a check run with an explicit `head_sha`, posted by a verifier that runs only default-branch code
-  (`pull_request_target`, `issue_comment` and `workflow_run`; never `pull_request`; never checks out PR code). It reads trust anchors from the base branch
+  (`pull_request_target`, `issue_comment` and `workflow_run`; never `pull_request`; never checks out PR code). It reads trust anchors from the default branch
   and computes the result from unedited hub pubs and the effective class (`docs/review-key-publication.md` Rules 1 to 3).
 - Each consumer requires the check by name plus source app, and protects `.github/workflows/` with CODEOWNERS (owner) and
   required code-owner review.
@@ -29,14 +29,16 @@ Measured so far: MLV-App, agent-bridge, context-ultra-salesforce and Adversarial
 hasn't been measured yet.
 
 - [ ] **Anchor (owner decision: "Allow either, App preferred"):** preferred, create a verifier GitHub App, with its key in an environment
-      restricted to the default branch, and pin the required check to its App id. Allowed alternative: a ruleset required workflow pinned by path and
+      restricted to the default branch, and pin the required check to its App id. Allowed alternative (org repos only; personal `layibabalola/*` repos must use the App): an org ruleset required workflow pinned by path and
       default-branch ref. Pinning to the plain GitHub Actions app is NOT sufficient.
 - [ ] Branch protection: code-owner review plus "dismiss stale approvals on new push"; CODEOWNERS covers `/.github/` and the trust-anchor files.
 - [ ] Register the **hub identity** (a GitHub App, preferred, or a dedicated bot account) in `CLAUDE.md` / `AGENTS.md`.
       Implementer lanes never hold its credential.
 - [ ] **Credentials, least privilege, split by job:**
       - hub identity: Pull requests read/write and Issues read/write (fine-grained), to post pub comments and set labels and body lines;
-      - verifier: the workflow's own `GITHUB_TOKEN` (under `pull_request_target`) with `checks: write`, `pull-requests: read`, `issues: read` and `contents: read`. It needs no PAT.
+      - verifier App (App path): an installation token minted per run from the App private key held in a default-branch-only environment; App
+        permissions `checks: write`, `pull_requests: read`, `issues: read` and `contents: read` only, installed on the consumer repo only;
+      - verifier workflow (ruleset path, or the App path's runner): the workflow's own `GITHUB_TOKEN` (under `pull_request_target`) with `checks: write`, `pull-requests: read`, `issues: read` and `contents: read`, plus `actions: write` on the ruleset path for re-runs. It needs no PAT.
       - Classic `repo:status` is not used; the check comes from Actions.
 - [ ] Write the path and diff class rules in the repo's dispatch policy, so the computed class exists. Until then everything is strictest.
 - [ ] Add `review-keys-verifier.yml` to the default branch (a class C change where the policy says so). Its triggers are
@@ -49,7 +51,8 @@ hasn't been measured yet.
       a PR that edits the hub identity or class policy (no effect until merged); approval under a lower class after escalation (doesn't count); a self-downgrade label
       (ignored); a key that is `UNAVAILABLE`; a pub published and deleted before any verifier run (fails: `issue_comment.deleted`);
       recovery by re-posting the same id and by `supersedes_deleted` (accepted once complete); a forged lower mark from another workflow or branch (ignored: mark read only from the anchor);
-      a forged `factory/review-keys` check on any SHA from a non-anchor workflow (doesn't satisfy protection); two racing runs (queued; mark monotonic);
+      a forged `factory/review-keys` check on any SHA from a non-anchor workflow (doesn't satisfy protection); two racing runs and a deletion run behind a pending run (no group or `queue: max`; union read-back keeps the mark);
+      no mark found while pubs exist (fails closed unless chains are complete from r1);
       a force-push after keys (mark kept per PR); a PR retargeted to a non-default base (fails closed); an owner approval followed by a new push to workflows (approval dismissed).
 - [ ] The owner makes `factory/review-keys` a required check on the default branch, pinned to the anchor: the verifier App's id
       (preferred), or the ruleset required workflow pinned by path (`.github/workflows/review-keys-verifier.yml`) and default-branch ref (alternative).

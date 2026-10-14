@@ -79,9 +79,19 @@ Each review-key verdict (every seat, every round) is mirrored to the PR as one i
   **environment restricted to the default branch** (deployment branch policy = the default branch only), so no other branch's
   workflow can sign as the App. Branch protection requires `factory/review-keys` **pinned to that App's id**, and the verifier
   reads the high-water mark back only from check runs whose `app.id` is that App.
-- **Allowed alternative: a repository ruleset "required workflow"** that pins the exact workflow path
-  (`.github/workflows/review-keys-verifier.yml`) and ref (the default branch). The verifier reads the mark back only from check runs
-  produced by that workflow, matched by workflow path and workflow id (through the run that owns the check run's `check_suite`), never by name.
+- **Allowed alternative (org repos only): a ruleset "Require workflows to pass before merging" rule.** GitHub's docs say
+  "Ruleset workflows can be configured at the organization or enterprise level", with the source repository and workflow chosen
+  in organization settings (https://docs.github.com/en/enterprise-cloud@latest/repositories/configuring-branches-and-merges-in-your-repository/managing-rulesets/available-rules-for-rulesets). So:
+  - **Personal repos (`layibabalola/*`) must use the verifier App.** They have no org ruleset to hold a required workflow.
+  - **Org repos (for example `SuperDimensionalSpaceFortress/MLV-App`) may use the ruleset path.** The org ruleset names the source repo
+    and `.github/workflows/review-keys-verifier.yml` at a pinned ref (the default branch, or a pinned SHA or tag).
+  - **Check-to-workflow mapping:** for each candidate check run, the verifier takes `check_run.check_suite.id`, lists workflow runs
+    (`GET /repos/{owner}/{repo}/actions/runs?check_suite_id=<id>`), and accepts the check only if that run's `path` equals the pinned
+    workflow path, its `workflow_id` equals the pinned workflow's id, and its `event` is `pull_request_target`, `pull_request` (ruleset-run) or `merge_group`.
+  - **Executed-ref verification:** it also requires the run's executed workflow definition to be the pinned one: `head_branch` / ref of the
+    definition is the default branch (for `pull_request_target`, `github.workflow_ref` = `<owner>/<repo>/.github/workflows/review-keys-verifier.yml@refs/heads/<default>`),
+    which the run writes into its own check output for read-back, together with `github.workflow_sha`. It ignores checks whose run used any other ref.
+  - Required-workflow runs fire only on `pull_request`, `pull_request_target` and `merge_group` (same doc), and the trigger list must include `merge_group` if a merge queue is used.
 - **Not sufficient: pinning to the plain GitHub Actions app.** Every workflow in the repo posts as that same app. Any branch in the
   same repo (including a PR branch via `pull_request` or a push) can run a workflow that posts a `factory/review-keys` check on any SHA,
   or posts a newer run whose output lowers or clears the mark. The check name and the Actions app identify neither the workflow nor its ref.
@@ -92,7 +102,13 @@ Each review-key verdict (every seat, every round) is mirrored to the PR as one i
   `issue_comment` (created, edited, deleted) and `workflow_run` (completed, for the named CI workflows of CI-only classes). Never `pull_request`.
   - **Hardening:** workflow `permissions:` limited to `checks: write`, `pull-requests: read`, `issues: read` and `contents: read`; no
     `actions/checkout` of any PR ref; no PR-supplied string is passed to a shell (title, body, labels and comments are parsed as data in the script).
-- **Concurrency:** `concurrency: { group: review-keys-<pr number>, cancel-in-progress: false }`, so runs queue and never cancel each other.
+- **Concurrency (cited, https://docs.github.com/en/actions/writing-workflows/choosing-what-your-workflow-does/control-the-concurrency-of-workflows-and-jobs):** by default a group allows one running and **one pending** run; a newer pending run cancels the older
+  pending one, even with `cancel-in-progress: false`. The doc adds `queue: max` (up to 100 pending, FIFO by wait start; it can't combine with
+  `cancel-in-progress: true`). So:
+  - recompute events use `concurrency: { group: review-keys-${{ github.event.pull_request.number || github.event.issue.number }}, queue: max, cancel-in-progress: false }`;
+  - **`issue_comment.deleted` runs use no concurrency group** (a job-level `concurrency` that resolves to `github.run_id`), so a deletion run can never be dropped
+    before it records the gap;
+  - correctness doesn't depend on ordering anyway, because of the union read-back below.
   Marks are **monotonic**: a run merges the mark it read back with what it sees, taking the max per seat, and never writes a lower round.
 - **It never checks out or runs PR code.** It reads the PR only through the API (comments, labels, body and the changed-file list for the class rules).
 - **Trust anchors come from the default branch only:** the hub identity, the class rules and the CI-only check names are read from the
@@ -101,13 +117,20 @@ Each review-key verdict (every seat, every round) is mirrored to the PR as one i
 - **Explicit head:** the verifier creates the check run through the Checks API with `head_sha` = the PR's current head
   (`pull_request.head.sha`, looked up fresh for `issue_comment` and `workflow_run`). Before posting, it re-reads the head, so a late run for an old head doesn't post on the new one.
 - **High-water mark:** the verifier records, in its own check-run output (`output.text`, a JSON block), a per-seat mark
-  `{seat: {max_round, pub_id}}` plus a `deleted: [pub ids]` log, keyed to the PR. Each run reads the mark back from the newest check run **by the
-  anchor** (the App id, or the pinned workflow) on any head of this PR, and carries it forward. Only the anchor can write it.
+  `{seat: {max_round, pub_id}}` plus a `deleted: [pub ids]` log, keyed to the PR. Each run reads the mark back as the **union across ALL check runs by the
+  anchor** (the App id, or the pinned workflow via the mapping above) on every head of this PR: per seat it takes the max round, and it
+  unions every `deleted` log. It never reads only the newest run, so a dropped, cancelled or out-of-order run can't lower the mark. Only the anchor can write it.
   - If a seat's visible max round is below the mark, or the marked pub id is no longer visible, the check **fails** with "pub removed: <seat> r<N>".
   - **Deletion before the first run fails closed:** on `issue_comment.deleted`, the payload carries the deleted comment's author and body. If it was a
     hub pub, the run records its id in `deleted` and fails that seat, even if no earlier run ever saw it.
-  - **No mark found** (first run on a PR that already has pubs, or a mark lost after a force-push or a deleted check suite): the verifier treats the
-    seat as unverified and fails closed unless every seat's chain starts at round 1 and is complete; a force-push never resets the mark, because the mark is per PR, not per head.
+  - **No mark found while pubs exist** (first run on a PR that already has pubs, or a mark lost after a force-push or a deleted check suite): the verifier treats the
+    seat as unverified and **fails closed** unless every seat's chain starts at round 1 (`prev: null`) and is complete with no recorded deletion; a force-push never resets the mark, because the mark is per PR, not per head.
+- **How a comment-triggered recompute updates the gate:**
+  - **App path:** any trigger (`issue_comment`, `pull_request_target` or `workflow_run`) runs the default-branch verifier. It mints an App
+    installation token from the environment-held key and creates a **new** `factory/review-keys` check run on the PR head. Protection reads the newest App check on the head.
+  - **Ruleset path:** only the required workflow's own `pull_request` / `pull_request_target` / `merge_group` run satisfies the rule, so an
+    `issue_comment` or `workflow_run` run can't update the gate itself. It **re-runs** the required workflow's latest run for the current head
+    (`POST /repos/{owner}/{repo}/actions/runs/<id>/rerun`, which needs `actions: write`), and that re-run recomputes and sets the result.
 - The verifier reports `success` only when every seat that the **effective class** (Rule 3) requires has an
   effective verdict of `APPROVE` on the current head, from the hub identity. For a CI-only class, it
   reports `success` once the named CI checks have succeeded on that head.

@@ -2915,3 +2915,7 @@ on a thread that began (excerpt) *"I thought we had a strategy for doctrine to b
   workflow pinned by path and default-branch ref. Pinning to the plain GitHub Actions app is not sufficient. A pub deleted before any run fails closed
   via `issue_comment.deleted`; runs queue and marks are monotonic. The hub recovers by re-posting the same id or with `supersedes_deleted`. A
   non-default base fails closed. Stale code-owner approvals are dismissed on push.
+- Amendment 5 (same day): Amendment 4 supersedes Amendment 1's "required from that app" wording; the check is pinned to the anchor, never the
+  plain Actions app. In Amendment 2, "base branch" means the default branch. Deletion runs have no concurrency group, recomputes use `queue: max`,
+  and the mark is read as the union across every anchor run on the PR. The ruleset required-workflow alternative is an org or enterprise feature,
+  so personal `layibabalola/*` repos must use the verifier App.
