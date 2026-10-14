@@ -18,6 +18,23 @@ required). Blank line, then Markdown sections.
 | `event` | yes | Why this rewrite happened. One of: `pr-opened` \| `pr-pushed` \| `review-requested`. |
 | `verdict` | yes | CoS summary posture. One of: `merge-ready` \| `merge-when-ci-green` \| `not-merge-ready` \| `info`. |
 | `ci_summary` | yes | One line on CI / checks state as observed at review time (or `unknown` / `n/a`). |
+| `asks` | no (additive) | Semicolon-separated list of open asks owed a receipt, each `<id>: <one-line ask>` (e.g. `A1: fix PR id for late teardown faults; A2: ETA for round-2 legs`). Empty or absent = no response owed. |
+| `ack_url` | no (additive) | URL of the PR/issue comment where the hub must post `ACK:` / `DISTINGUISH:` (usually the CoS ask comment's thread). Absent = reply on the PR itself. |
+
+### Response duty (`asks` / `ack_url`)
+
+When `asks` is non-empty, the owning hub replies **within 24h** (or before merge/close, whichever
+is first) on `ack_url` (or the PR), one line per ask id:
+
+```text
+ACK A1: <plan | ETA | follow-up PR or issue id>
+DISTINGUISH A2: <one-line reason>
+```
+
+Plain `ACK: <...>` / `DISTINGUISH: <...>` is accepted when there is one ask. This is a **receipt,
+not obedience**: `DISTINGUISH` is compliant; a silent fix is not. Silence escalates to the owner.
+CoS clears an answered ask from `asks` on its next rewrite. Full rule: [`README.md`](README.md)
+*Response duty*.
 
 ### `event` values
 
@@ -65,6 +82,8 @@ reviewed_utc: 2026-09-10T16:00:00Z
 event: pr-pushed
 verdict: merge-when-ci-green
 ci_summary: unit green; e2e pending on ubuntu-latest
+asks: A1: ETA for the parseRow cleanup or DISTINGUISH
+ack_url: https://github.com/layibabalola/mlv-app/pull/123
 
 ## Blockers
 

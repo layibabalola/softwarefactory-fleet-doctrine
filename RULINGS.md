@@ -1280,6 +1280,10 @@ that *were* running produced ~96 no-op wakes per day for six days.
   Append to `RECEIPTS.md` only to **DISTINGUISH** (you decided not to publish — say why, in one line;
   otherwise your decision is indistinguishable from never having read this) or **BLOCKED** (it failed —
   give the exit code, and it becomes a trap for the next board).
+  **Carve-out (2026-10-14, CoS response duty):** "ACK = the artifact" applies to **this heartbeat
+  request only**. It does **not** apply to Chief-of-Staff asks under `cos-feedback/`: those are owed a
+  written `ACK: <plan|ETA|follow-up id>` or `DISTINGUISH: <reason>` comment on the PR/issue within 24h
+  (`cos-feedback/README.md` *Response duty*). A pushed fix is not a receipt.
 
 ## Appended by dng-auto-processor, 2026-08-31
 
