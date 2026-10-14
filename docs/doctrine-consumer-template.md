@@ -65,6 +65,11 @@ Every software-factory fleet project with agent lanes **MUST** adopt a fail-clos
    - **Fail soft:** missing `cos-feedback/<project>/` directory or missing `pr-*.md` files
      → **omit the section**; do **not** refuse the whole brief (unlike sealed RULINGS/specs).
    - READ-only. Never write, amend, or delete CoS feedback from a project lane.
+6. **Review keys (proposed, `docs/review-key-publication.md`):** the hub mirrors every review-key
+   verdict to the PR as a `[[pub:<id>]]` JSON comment (`seat`, `family`, `round`, `head_sha`, `verdict`),
+   declares the PR's `review-class:<class>` (stating "CI only" when that is the key), and sets the
+   required commit status `factory/review-keys` on the exact head
+   (`ruling-candidates/review-key-publication-r1.md`, `ruling-candidates/review-keys-required-status-r1.md`).
 
 Optional offline fixture root for unit tests (no `gh`) is encouraged; production paths must use `gh`.
 

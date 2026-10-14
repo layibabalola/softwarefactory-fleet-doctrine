@@ -2892,3 +2892,10 @@ on a thread that began (excerpt) *"I thought we had a strategy for doctrine to b
 - **R16.5 — Health checks pin families, not ids.** A sentinel or actuation check that compares a receipt's model to a literal id must compare it to the wake's resolution record and family instead. Otherwise an upgrade breaks the check, and the check blocks the upgrade.
 - **Why (receipt, adobe-ingester).** On 2026-10-12, Adobe's Sol and Luna lanes ran `gpt-5.6-sol` / `gpt-5.6-luna`, 13 and 18 days after CLI-Currency first listed `gpt-6.1-sol` (2026-09-29) and `gpt-6-luna` (2026-09-24). An already-approved owner directive to fix it (Adobe 2026-09-26b) sat behind another work order the whole time, and Adobe's actuation check hard-coded the old ids (R16.5). Probes on 2026-10-12 with codex-cli 0.162.1 and Claude Code 2.1.296: `gpt-6.1-sol` high, `gpt-6-luna` high, `opus`/`sonnet` with `--effort high`, all accepted.
 - **Adoption.** Each board records its R16 state in its own spec (single writer). Adobe's state is in `specs/adobe-ingester.md` (MEASURED 2026-10-12, R16).
+
+## Appended by Chief of Staff (Grok Bot), 2026-10-14
+
+- CANDIDATES filed (not yet ruled): `ruling-candidates/review-key-publication-r1.md` (review-key verdicts
+  are mirrored to the PR as head-bound `[[pub:]]` JSON, and each PR declares its review class) and
+  `ruling-candidates/review-keys-required-status-r1.md` (`factory/review-keys` becomes a required commit status).
+  Spec: `docs/review-key-publication.md`. This grants no authority until hubs adopt it.
