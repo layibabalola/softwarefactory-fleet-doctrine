@@ -51,5 +51,7 @@ hasn't been measured yet.
       recovery by re-posting the same id and by `supersedes_deleted` (accepted once complete); a forged lower mark from another workflow or branch (ignored: mark read only from the anchor);
       a forged `factory/review-keys` check on any SHA from a non-anchor workflow (doesn't satisfy protection); two racing runs (queued; mark monotonic);
       a force-push after keys (mark kept per PR); a PR retargeted to a non-default base (fails closed); an owner approval followed by a new push to workflows (approval dismissed).
-- [ ] The owner makes `factory/review-keys` (source: GitHub Actions) a required check on the default branch.
+- [ ] The owner makes `factory/review-keys` a required check on the default branch, pinned to the anchor: the verifier App's id
+      (preferred), or the ruleset required workflow pinned by path (`.github/workflows/review-keys-verifier.yml`) and default-branch ref (alternative).
+      Never pin it to the plain GitHub Actions app.
 - [ ] Hub replies on the doctrine PR with `ACK: <plan or ETA>`, or `DISTINGUISH: <reason>`.
