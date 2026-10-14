@@ -2903,3 +2903,7 @@ on a thread that began (excerpt) *"I thought we had a strategy for doctrine to b
   and `factory/review-keys` is a GitHub Actions verifier check, required from that app). The latest round per seat
   on the head is the effective verdict. The effective class is the stricter of computed and declared, so a PR
   cannot downgrade itself. The owner ratifies, and hubs then adopt or distinguish.
+- Amendment 2 (same day, second advisory): this supersedes the "until hubs adopt it" wording above. The candidates gain authority only
+  when the owner ratifies them, and hubs then adopt or distinguish. The verifier runs only default-branch code (`pull_request_target`, never
+  `pull_request`). It posts its check with an explicit `head_sha` and reads trust anchors from the base branch. Edited pubs and lower-class
+  approvals don't count.

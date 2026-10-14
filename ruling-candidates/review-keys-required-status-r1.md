@@ -14,10 +14,11 @@ and merges outside them went through: MLV-App #427 (`1f35ac67`), context-ultra-s
 
 ## Proposed ruling
 
-- `factory/review-keys` is a GitHub Actions check computed by a verifier workflow from trusted pubs and the
-  effective class (`docs/review-key-publication.md` Rules 1 to 3). Nobody posts the result directly.
-- Each consumer requires that check **from the GitHub Actions app** on its default branch, so a status with the
-  same name from any other poster never satisfies protection.
+- `factory/review-keys` is a check run with an explicit `head_sha`, posted by a verifier that runs only default-branch code
+  (`pull_request_target`, `issue_comment` and `workflow_run`; never `pull_request`; never checks out PR code). It reads trust anchors from the base branch
+  and computes the result from unedited hub pubs and the effective class (`docs/review-key-publication.md` Rules 1 to 3).
+- Each consumer requires the check by name plus source app, and protects `.github/workflows/` with CODEOWNERS (owner) and
+  required code-owner review.
 - On a new head the check reads `pending` (recomputed with no bound verdicts), except for a content-identical
   master sync, which carries its keys forward. This matches the spec.
 
@@ -31,15 +32,17 @@ hasn't been measured yet.
       Implementer lanes never hold its credential.
 - [ ] **Credentials, least privilege, split by job:**
       - hub identity: Pull requests read/write and Issues read/write (fine-grained), to post pub comments and set labels and body lines;
-      - verifier: the workflow's own `GITHUB_TOKEN` with `checks: write`, `pull-requests: read` and `issues: read`. It needs no PAT.
+      - verifier: the workflow's own `GITHUB_TOKEN` (under `pull_request_target`) with `checks: write`, `pull-requests: read`, `issues: read` and `contents: read`. It needs no PAT.
       - Classic `repo:status` is not used; the check comes from Actions.
 - [ ] Write the path and diff class rules in the repo's dispatch policy, so the computed class exists. Until then everything is strictest.
-- [ ] Add `review-keys-verifier.yml` to the default branch (a class C change where the policy says so). It is triggered by
-      `pull_request` (opened, synchronize, labeled, unlabeled, edited) and `issue_comment`.
+- [ ] Add `review-keys-verifier.yml` to the default branch (a class C change where the policy says so). Its triggers are
+      `pull_request_target`, `issue_comment` (created, edited, deleted) and `workflow_run`. It does no checkout of PR code and posts its check with an explicit `head_sha`.
+- [ ] Add `CODEOWNERS`: `/.github/workflows/ @layibabalola`, and require code-owner review on the default branch.
 - [ ] Hub publishes `[[pub:]]` verdicts (Rule 1) and the declared class (Rule 3).
 - [ ] **Dry run before protection, covering each case:** the happy path; CHANGES_REQUESTED then APPROVE on an
       unchanged head; a push after approval (`pending`); a content-identical master sync (carried forward);
-      class escalation from a diff or label; a forged pub from a non-hub account (ignored); a self-downgrade label
+      class escalation from a diff or label; a forged pub from a non-hub account (ignored); an edited hub pub (invalidated); a PR that edits the verifier or adds a job with the same name (no effect);
+      a PR that edits the hub identity or class policy (no effect until merged); approval under a lower class after escalation (doesn't count); a self-downgrade label
       (ignored); a key that is `UNAVAILABLE`.
 - [ ] The owner makes `factory/review-keys` (source: GitHub Actions) a required check on the default branch.
 - [ ] Hub replies on the doctrine PR with `ACK: <plan or ETA>`, or `DISTINGUISH: <reason>`.
