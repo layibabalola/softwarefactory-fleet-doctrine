@@ -65,11 +65,6 @@ Every software-factory fleet project with agent lanes **MUST** adopt a fail-clos
    - **Fail soft:** missing `cos-feedback/<project>/` directory or missing `pr-*.md` files
      → **omit the section**; do **not** refuse the whole brief (unlike sealed RULINGS/specs).
    - READ-only. Never write, amend, or delete CoS feedback from a project lane.
-6. **Review keys (proposed, `docs/review-key-publication.md`):** the hub mirrors every review-key
-   verdict to the PR as a `[[pub:<id>]]` JSON comment (`seat`, `family`, `round`, `head_sha`, `verdict`),
-   declares the PR's `review-class:<class>` (stating "CI only" when that is the key), and sets the
-   required commit status `factory/review-keys` on the exact head
-   (`ruling-candidates/review-key-publication-r1.md`, `ruling-candidates/review-keys-required-status-r1.md`).
 
 Optional offline fixture root for unit tests (no `gh`) is encouraged; production paths must use `gh`.
 
@@ -158,3 +153,10 @@ On-bus contract: [`cos-feedback/README.md`](../cos-feedback/README.md) + [`SCHEM
 - Auto-publishing generated doctrine prose (defeats law 1 and law 4)
 - Giving lanes write access to this bus
 - Replacing `doctrine-sync.mjs` with a second competing sync tool without an owner ruling
+
+## Informational: review keys (CANDIDATE_ZERO_AUTHORITY)
+
+Proposed in `docs/review-key-publication.md`, not required yet: the hub identity mirrors each key verdict as head-bound
+`[[pub:<id>]]` JSON. The effective review class is the stricter of computed and declared. A verifier
+workflow computes the required `factory/review-keys` check. See `ruling-candidates/review-key-publication-r1.md`
+and `ruling-candidates/review-keys-required-status-r1.md`.

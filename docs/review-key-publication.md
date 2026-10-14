@@ -21,7 +21,7 @@ Measured 2026-10-14 by Chief of Staff (Grok Bot):
 Each review-key verdict (every seat, every round) is mirrored to the PR as one issue comment, in this form:
 
 ```
-[[pub:<16-hex id>]]
+[[pub:<id>]]
 
 {
   "seat": "sol",
@@ -35,36 +35,68 @@ Each review-key verdict (every seat, every round) is mirrored to the PR as one i
 }
 ```
 
-- Required fields: `seat`, `family`, `round`, `head_sha`, `verdict`.
-  - `verdict` is one of `APPROVE`, `CHANGES_REQUESTED` or `COMMENT`.
-  - The `family` mapping is fixed: `sol` (and other Codex seats) means `Codex`; `fable` and `opus` mean `Claude`.
-    A new seat name has to state its family in the comment.
-- A verdict binds only to `head_sha`. Any new push leaves it unbound for the new head.
+- Required fields: `seat`, `family`, `round` (integer, increasing per seat per PR), `head_sha`,
+  `verdict` and `class` (the class the key was judged under).
+  - `verdict` is one of `APPROVE`, `CHANGES_REQUESTED`, `COMMENT` or `UNAVAILABLE`.
+    `COMMENT` carries no gate weight. `UNAVAILABLE` means the key had no capacity; it is a typed
+    terminal, not an approval.
+- `family` is fixed by seat (sol, and other Codex seats, are `Codex`; fable and opus are `Claude`).
+  It is **data only, never an authority key** (RULINGS provider-family rule). Classes name the
+  seats they require.
+- `<id>` is the first 16 hex characters of `sha256("<seat>|<round>|<head_sha>|<verdict>")`, so
+  anyone can detect duplicates and check them.
+- **Publisher trust:** a pub counts only when its comment author is the repo's registered
+  **hub identity** (a named GitHub App or bot account, recorded in the repo's `CLAUDE.md` / `AGENTS.md`).
+  Pubs from any other author, including the owner's account or a lane that shares a token, are ignored.
+  An implementer lane must never hold the hub identity's credential.
+- **Effective verdict:** for each seat, only the pub with the highest `round` whose `head_sha` equals the
+  current head counts. So a later APPROVE supersedes an earlier CHANGES_REQUESTED from the same seat on
+  the same head, and the reverse is true too.
 - The mirror is append-only. A later round posts a new comment and does not edit the old one.
-- The hub's private ledger stays authoritative for the hub. The PR comment is the public mirror
-  that CoS, the owner and branch protection can see.
+- The hub ledger stays authoritative for the hub. Each pub carries a `ledger_ref`, and a pub that has no
+  ledger entry behind it is a defect.
 
-## Rule 2: `factory/review-keys` required commit status
+## Rule 2: `factory/review-keys` is computed by a verifier, not asserted
 
-- The hub sets the commit status `factory/review-keys` on the exact PR head:
-  - `success` only when every key that the PR's declared class requires has a published
-    `[[pub:]]` verdict of `APPROVE` with that `head_sha`;
-  - `pending` while keys are outstanding;
-  - `failure` when any required key has `CHANGES_REQUESTED` on that head.
-- The status `description` lists the satisfying pub ids, or what is missing.
-- Each consumer marks `factory/review-keys` as a **required status check** on its default branch.
-  Merges without the keys are then refused by GitHub, not just by the hub's own guard scripts.
-  The per-consumer checklist is in the ruling candidate.
+- `factory/review-keys` is a **GitHub Actions check** (workflow `review-keys-verifier.yml`, job
+  `factory/review-keys`). It runs on `pull_request` (opened, synchronize, labeled, unlabeled, edited)
+  and on `issue_comment` (created). It reads the PR's comments and labels and recomputes
+  the result on every run. Nobody posts the result directly. The verifier runs from the default
+  branch's workflow definition, so a PR cannot edit the verifier it is judged by.
+- The verifier reports `success` only when every seat that the **effective class** (Rule 3) requires has an
+  effective verdict of `APPROVE` on the current head, from the hub identity. For a CI-only class, it
+  reports `success` once the named CI checks have succeeded on that head.
+- It reports `failure` when any required seat's effective verdict is `CHANGES_REQUESTED`. It reports
+  `failure` with a "key unavailable" summary when a required seat is `UNAVAILABLE` and the class
+  allows no substitute. Otherwise the check is `in_progress` or `pending` (keys outstanding).
+- **New head:** the check is recomputed, and verdicts bound to the old head don't count, so it reads
+  `pending`, never `success` carried over from the old head.
+  **Exception, a content-identical master sync:** if the new head is a merge of the default branch
+  whose tree diff against the default branch is identical to the reviewed head's (`git diff
+  <base>...<old_head>` and `git diff <base>...<new_head>` hash the same), the verifier carries the old
+  head's effective verdicts forward and names the carried head in its summary.
+- **Output:** the check's title stays short (`3/3 keys` or `missing: sol, opus`). GitHub caps the status
+  description at 140 characters, so the full list (seat, round, pub id and comment URL per key) goes in
+  the check-run summary, which has no such limit.
+- Each consumer makes the **`factory/review-keys` check from the GitHub Actions app** required on its
+  default branch (protection pins the check to its source app). A status with the same name from any
+  other poster doesn't satisfy it. The per-consumer checklist is in the ruling candidate.
 
-## Rule 3: declare the review class on the PR
+## Rule 3: the review class is computed and can only be raised
 
-- Each factory PR carries exactly one label, `review-class:<class>`, and repeats it in the body
-  as the line `Review class: <class> — keys required: <list>`.
-- When **CI alone is the key**, as with agent-bridge "Routine local" / class-A (K6 = GitHub
-  Actions PR CI on the exact head), that must be stated:
+- **The computed class** comes from path and diff rules written in the repo's dispatch policy (for
+  example agent-bridge `docs/internal/DISPATCH_AND_REVIEW_POLICY.md`), and the verifier evaluates them
+  on the current diff. If the rules haven't been written yet, the computed class is the strictest one
+  (fail closed).
+- **Declared class:** a `review-class:<class>` label plus the body line
+  `Review class: <class> — keys required: <list>`. Only the hub identity or the owner (Layi) may set it.
+  The verifier ignores a label applied by anyone else.
+- **Effective class** = the stricter of computed and declared. A declared class that is lower than
+  the computed class is ignored, so a PR cannot downgrade itself. Conflicting labels, more than one label,
+  or a body line that disagrees with the label all fall back to the strictest class.
+- When CI alone is the key (agent-bridge Routine local / class-A, where K6 is GitHub Actions PR CI on the
+  exact head), the PR must say so:
   `Review class: routine-local (class-A) — keys required: CI on exact head; no model key`.
-  For that class the hub sets `factory/review-keys` to `success` from the CI conclusion on the head,
-  and its description says so.
-- If the class is missing, the PR is treated as the strictest class the repo defines.
-- If the class changes (for example, a push widens scope into a critical surface), the hub
-  relabels it and resets the status to `pending`.
+  It holds only if the computed class is also routine-local.
+- Any change to labels, the body or the diff triggers a recompute. If the effective class
+  goes up after `success`, the check drops back to `pending` until the newly required seats approve.

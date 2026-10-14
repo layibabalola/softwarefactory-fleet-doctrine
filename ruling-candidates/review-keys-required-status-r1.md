@@ -1,4 +1,4 @@
-# Ruling candidate: `factory/review-keys` is a required commit status on every consumer R1
+# Ruling candidate (R1): `factory/review-keys` is a required, verifier-computed check on every consumer
 
 Status: **PROPOSED ONLY — NOT YET A RATIFIED RULING OR PROJECT RUNTIME AUTHORITY.** Doctrine is
 DATA (bus law 1). This file changes no branch protection. Each repo's owner or hub does the wiring.
@@ -14,21 +14,32 @@ and merges outside them went through: MLV-App #427 (`1f35ac67`), context-ultra-s
 
 ## Proposed ruling
 
-- The hub posts the commit status `factory/review-keys` on the exact PR head:
-  `success` only once every key its declared class requires has an `APPROVE` `[[pub:]]` verdict on that head
-  (for a CI-only class, once CI succeeds on that head).
-- Each consumer adds `factory/review-keys` to its default branch's required status checks.
-- A new push leaves the status absent on the new head until the hub sets it again, so stale keys never satisfy it.
+- `factory/review-keys` is a GitHub Actions check computed by a verifier workflow from trusted pubs and the
+  effective class (`docs/review-key-publication.md` Rules 1 to 3). Nobody posts the result directly.
+- Each consumer requires that check **from the GitHub Actions app** on its default branch, so a status with the
+  same name from any other poster never satisfies protection.
+- On a new head the check reads `pending` (recomputed with no bound verdicts), except for a content-identical
+  master sync, which carries its keys forward. This matches the spec.
 
 ## Per-consumer wiring checklist
 
-For each of MLV-App, agent-bridge, context-ultra-salesforce, AdversarialLLM, dng-auto-processor,
-cloudvore, airmypc, adobe-ingester (and any later consumer):
+Measured so far: MLV-App, agent-bridge, context-ultra-salesforce and AdversarialLLM. The other consumers
+(dng-auto-processor, cloudvore, airmypc, adobe-ingester) are listed for completeness, and their review flow
+hasn't been measured yet.
 
-- [ ] The hub can post commit statuses (a token with `repo:status` only; nothing broader).
-- [ ] The hub publishes `[[pub:]]` verdicts (Rule 1) and the `review-class:*` label and body line (Rule 3).
-- [ ] The hub sets `factory/review-keys` on every head push and every new key verdict.
-- [ ] The required-key set per class is written in the repo's `CLAUDE.md` / `AGENTS.md` (or its dispatch policy).
-- [ ] Dry run: one PR shows `pending`, then `success`, before protection is turned on.
-- [ ] Owner adds `factory/review-keys` as a required check on the default branch.
+- [ ] Register the **hub identity** (a GitHub App, preferred, or a dedicated bot account) in `CLAUDE.md` / `AGENTS.md`.
+      Implementer lanes never hold its credential.
+- [ ] **Credentials, least privilege, split by job:**
+      - hub identity: Pull requests read/write and Issues read/write (fine-grained), to post pub comments and set labels and body lines;
+      - verifier: the workflow's own `GITHUB_TOKEN` with `checks: write`, `pull-requests: read` and `issues: read`. It needs no PAT.
+      - Classic `repo:status` is not used; the check comes from Actions.
+- [ ] Write the path and diff class rules in the repo's dispatch policy, so the computed class exists. Until then everything is strictest.
+- [ ] Add `review-keys-verifier.yml` to the default branch (a class C change where the policy says so). It is triggered by
+      `pull_request` (opened, synchronize, labeled, unlabeled, edited) and `issue_comment`.
+- [ ] Hub publishes `[[pub:]]` verdicts (Rule 1) and the declared class (Rule 3).
+- [ ] **Dry run before protection, covering each case:** the happy path; CHANGES_REQUESTED then APPROVE on an
+      unchanged head; a push after approval (`pending`); a content-identical master sync (carried forward);
+      class escalation from a diff or label; a forged pub from a non-hub account (ignored); a self-downgrade label
+      (ignored); a key that is `UNAVAILABLE`.
+- [ ] The owner makes `factory/review-keys` (source: GitHub Actions) a required check on the default branch.
 - [ ] Hub replies on the doctrine PR with `ACK: <plan or ETA>`, or `DISTINGUISH: <reason>`.

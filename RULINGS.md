@@ -2899,3 +2899,7 @@ on a thread that began (excerpt) *"I thought we had a strategy for doctrine to b
   are mirrored to the PR as head-bound `[[pub:]]` JSON, and each PR declares its review class) and
   `ruling-candidates/review-keys-required-status-r1.md` (`factory/review-keys` becomes a required commit status).
   Spec: `docs/review-key-publication.md`. This grants no authority until hubs adopt it.
+- Amendment (same day, after advisory review): the candidates now pin publisher trust (only hub-identity pubs count,
+  and `factory/review-keys` is a GitHub Actions verifier check, required from that app). The latest round per seat
+  on the head is the effective verdict. The effective class is the stricter of computed and declared, so a PR
+  cannot downgrade itself. The owner ratifies, and hubs then adopt or distinguish.
