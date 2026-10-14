@@ -88,7 +88,7 @@ Each review-key verdict (every seat, every round) is mirrored to the PR as one i
 
 ### Verifier behaviour
 
-- **Triggers:** `pull_request_target` (opened, synchronize, reopened, labeled, unlabeled, edited, edited-base),
+- **Triggers:** `pull_request_target` (opened, synchronize, reopened, labeled, unlabeled, edited; a base retarget arrives as `edited` with `changes.base`),
   `issue_comment` (created, edited, deleted) and `workflow_run` (completed, for the named CI workflows of CI-only classes). Never `pull_request`.
   - **Hardening:** workflow `permissions:` limited to `checks: write`, `pull-requests: read`, `issues: read` and `contents: read`; no
     `actions/checkout` of any PR ref; no PR-supplied string is passed to a shell (title, body, labels and comments are parsed as data in the script).
