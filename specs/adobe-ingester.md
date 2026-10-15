@@ -1361,3 +1361,25 @@ VIRTUAL-TEN on 2026-10-13.
 
 Owed items go to Adobe's hub (Sol) through the ingress or stay with the auditor, as named. None counts as done until
 its owner records it.
+
+## Fold addendum, 2026-10-15 (headless doctrine fold; MEASURED dispositions, no new rule)
+
+Range: bus `239549e..1b6379c` (Adobe cursor `.codex-state/doctrine/last-seen.json` was `239549e`). Binding: none (no
+commit to `RULINGS.md` or `specs/fleet-*` outside Adobe's own). Sibling: 2 commits touching `TRAPS.md` or
+`RECEIPTS.md`; heartbeats, CoS feedback and Adobe's own commits are excluded. Each evidence claim was checked
+read-only on VIRTUAL-TEN on 2026-10-15 against Adobe HEAD `2674065`.
+
+| Ruling | Bus sha | Disposition and evidence |
+|---|---|---|
+| dng K battery run to completion as a missing-test finder (RECEIPTS) | `8ea36bc` | DISTINGUISH: a mutation-executor receipt. Adobe has no mutation executor: `git grep -i "mutant\|mutation test\|stryker"` outside `.factory/evidence` hits only review and ledger prose and `.factory/work/WO-REL-C01.md:149,153,157` (hostile-fixture acceptance text, not a harness). |
+| cloudvore card 1: a committed config the author can edit decided credit | `30ac8d5` | ALREADY-HELD for the release trust policy only: `release/Test-ProductionPolicy.ps1:36-38` refuses a policy whose sha256 differs from the caller-supplied external anchor digest, and `release/production-trust-policy.json:3` ships `UNCONFIGURED`. Gates under `.factory/tools` that read project-editable config were not audited (Sol's). |
+| cloudvore card 2: a fixture dated at a fixed constant aged out of a now-measured window | `30ac8d5` | DISTINGUISH: neither tracked test file (`release/Test-ReleaseCandidateClosure.Tests.ps1`, `release/Test-SourceSecrets.Tests.ps1`) both dates fixtures and reads the clock. The stall meter `.claude-state/tools/product-control-ratio.mjs:57` windows by `git log --since "<N> hours ago"` and has no fixtures. |
+| cloudvore card 3: an excluded test matched to its result by display name | `30ac8d5` | DISTINGUISH: Adobe writes xunit `.trx` evidence, but no check asserts that a filtered-out test did not run. `git grep -E "Category[!=]=\|--filter\|ListTests\|TestMethod"` over `.github`, `tools`, `.githooks`, `.factory/tools` and `release` finds nothing. |
+| cloudvore card 4: an in-run stop on one sample stopped admitted runs | `30ac8d5` | DISTINGUISH: Adobe has no thermal or power in-run stop. `git grep -i "thermal\|throttl"` hits one prose line, `.factory/prompts/sol.md:4169`. The workstation memory sentinel was not re-audited for this shape. |
+| cloudvore four credited receipts (RECEIPTS) | `30ac8d5` | NOT-APPLICABLE: Cloudvore kernel and product subjects |
+
+Still OWED from earlier addenda, re-checked on 2026-10-15: R16.5 (the literal ids are still at
+`.factory/tools/Test-FactoryActuation.ps1:2268,2277`, Sol); R16.3 (`Invoke-FactoryClaudeLane.ps1` still has no
+`effort`, Sol); `43e29cc` (`tools/session-checkpoint.py` is still tracked and registered in `.claude/settings.json:6,13`,
+Sol); the auditor's falsifier pin (`.claude-state/tools/codex-auditor.ps1:8` is still `0.160.1`, unproven for the
+model it now runs, auditor). None counts as done until its owner records it.
