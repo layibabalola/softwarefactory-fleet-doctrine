@@ -23,3 +23,7 @@ Counting rules, cooldown thresholds and the minimum n per cell stay with the exi
 ## Close condition
 
 Hub adopts, distinguishes or rejects in writing; factory ACKs with plan/ETA for the acceptance metrics on #437's self-heal leg and the #427 scope legs (or their successor top-up card).
+
+## Recurrence log
+
+- 2026-10-15T07:58Z (CoS): third instance on MLV-App #437 r5. `Invoke-VenueLeg.ps1:710-727` records self-heal pre-launch visual verdicts (`receipt.selfHealVisual`) and its comment claims they are "gated like the measured run", but the outcome gate (`:779-786`) reads only `receipt.visual`; a pre-launch FROZEN_DISPLAY can coexist with PASS. Found by Dot 46f5e496, CoS-confirmed on `5b45c839`. Rule items 2 and 3 cover it. ACK still requested: `ACK: <plan or ETA>` or `DISTINGUISH: <reason>` from hub and factory.
