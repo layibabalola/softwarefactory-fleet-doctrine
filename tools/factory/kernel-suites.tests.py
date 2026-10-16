@@ -34,8 +34,28 @@ NEEDS_PROJECT_TREE: dict[str, dict[str, str]] = {
         "BlockTests.test_both_bar_workflows_resolve_runs_on_from_ci_runs_on_as_the_default_env_says":
             ".github/workflows/{tools,product}-bar.yml",
     },
-    "kernel-receipt.tests.py": {},
-    "codex-review.tests.py": {},
+    "kernel-receipt.tests.py": {
+        "KeyVerdictSemanticsTests.test_the_real_k115_key_transcript_is_refused_and_its_final_message_reads_reject":
+            "review/evidence-k118-2026-10-08/k115-key-verdict.txt",
+        "KeyVerdictSemanticsTests.test_the_prompt_builder_never_puts_the_merge_on_a_verdict_line":
+            "review/evidence-k96-2026-10-07/build_prompt.py.txt",
+        "FilterEvidenceTests.test_the_tools_bar_fails_when_a_required_suite_file_is_missing":
+            "tools/run-tools-bar.py",
+        "FilterEvidenceTests.test_every_required_suite_exists_in_this_tree":
+            "tools/run-tools-bar.py",
+        "StepAndJobKeyTests.test_the_real_tools_bar_binds_at_head_and_the_k132_and_k133_merges":
+            ".github/workflows/tools-bar.yml at HEAD and at the project's K132 and K133 merges",
+        "ExcludedCountTests.test_a_real_pre_k166_product_bar_log_reports_nothing":
+            "review/evidence-h126-2026-10-12/landing/run-38351017597.log.txt",
+        "FactoryConfigRunnerTests.test_the_real_k132_runs_refuse_under_a_config_naming_another_runner":
+            "the project's git history (the K132 landing merge 5a5fbe99b)",
+    },
+    "codex-review.tests.py": {
+        "RoleTableMatchesTheDocTests.test_doc_table_equals_tool_table_in_both_directions":
+            "docs/operating-contract-model-routing.md",
+        "RoleTableMatchesTheDocTests.test_mutating_one_table_entry_turns_this_red":
+            "docs/operating-contract-model-routing.md",
+    },
 }
 
 RUNNER = r'''
