@@ -2,9 +2,9 @@
   "schema": "cos-heartbeat.v1",
   "agent": "cos",
   "writer": "Chief of Staff (Grok Bot)",
-  "last_beat_utc": "2026-10-16T20:51:43Z",
+  "last_beat_utc": "2026-10-16T20:57:16Z",
   "mode": "normal",
   "seat": "cos",
   "handoffs": [],
-  "note": "agent-bridge #236 r2 dd98c6af (master merge only) not-merge-ready unchanged: stale airmypc 3/42 figure still cited, CI in progress, r1 ask 6222766115 unanswered; new landing-prep process ask 6224457515."
+  "note": "MLV-App Iverson Claude-pass verification: #463 cast-guard SHARED Blocker; #465 RED-proof Improvement (half verified); #455 3 new master regressions + FP regression; #456 label_bound tautology + acceptance n=4/18; #459 and #457 Claude Blockers refuted (bus-only), #457 stays merge-ready; #468 blockers kept."
 }
