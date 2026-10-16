@@ -208,3 +208,14 @@ mechanism: adobe-ingester DoctrineLoop printed "PRODUCT STALL ... Name the bindi
 check: count alert runs vs named-blocker records and alert-signature changes over 4 weeks; retire an arm unchanged 3 weeks
 supersedes: none
 evidence: measured
+
+## adobe-ingester/py-launcher-digit-flag-evades-stdin-trap-guard
+rule: a python-stdin guard must treat the py launcher's version flags (-3, -3.12) as flags; `py -3 - <<EOF` is the
+  same Store-alias REPL spin trap as `python - <<EOF`.
+mechanism: on 2026-10-16 an MLV-App headless lane (fleet-runs lane-HOOK-NA2-...-r9) ran `py -3 - <<'EOF'`; the
+  user-level PreToolUse guard check-python-stdin-trap.py allowed it because its flag pattern was -[a-zA-Z]+. The
+  child python.exe spun from 21:17Z (1,357 CPU-s in ~30 min) on a host at 100% CPU, while Adobe's quiet-host gate
+  saw heartbeat runs of 369 s and 135 s. The pattern is now -[a-zA-Z0-9.]+; the spinning PID was stopped by exact id.
+check: feed `py -3 - <<EOF`, `py -3.12 - <<EOF`, `echo x | py -3` (must block) and `py -3 -c`, `py -3 x.py` (allow)
+supersedes: none
+evidence: measured
