@@ -121,6 +121,19 @@ import subprocess
 import sys
 from pathlib import Path
 
+# Bus K154 review: the siblings load only from beside an ABSOLUTE __file__ that holds them. Run in-process by
+# pin-runner (a pin without `with`), __file__ is the relative bus path, and with_name() would resolve it against the
+# caller's cwd and execute an unpinned file from the caller's tree. Refuse instead (pin it as a group: --with).
+_HERE = Path(__file__)
+_MISSING = [n for n in ("kernel-subjects.py", "codex-review.py")
+            if not (_HERE.is_absolute() and _HERE.with_name(n).is_file())]
+if _MISSING:
+    _MSG = (f"REFUSE kernel-receipt: {', '.join(_MISSING)} must sit beside this file ({__file__}); "
+            "run it as a pinned group (pin-runner pin kernel-receipt --with kernel-subjects --with codex-review)")
+    if __name__ == "__main__":
+        print(_MSG, file=sys.stderr)
+        sys.exit(2)
+    raise ImportError(_MSG)
 _SPEC = importlib.util.spec_from_file_location("cloudvore_kernel_subjects_for_receipt",
                                                Path(__file__).with_name("kernel-subjects.py"))
 KS = importlib.util.module_from_spec(_SPEC)

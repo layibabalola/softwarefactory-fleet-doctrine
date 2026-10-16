@@ -67,8 +67,11 @@ CONFIG_NAME = "factory-config.json"
 # config in FACTORY_KERNEL_CONFIG (a path; relative resolves against the caller's cwd). Unset or empty: beside this
 # file, as a project copy has always read it. Either way the file is loaded strictly below, never defaulted.
 CONFIG_ENV = "FACTORY_KERNEL_CONFIG"
+# Bus review of K154: in-process under pin-runner (python -I, no `with`) __file__ is the RELATIVE bus path, so "beside
+# this file" would silently read <caller's cwd>/tools/factory/factory-config.json. Beside-the-file needs an absolute
+# __file__; otherwise CONFIG_PATH is None and load_config refuses, naming the variable.
 CONFIG_PATH = (Path(os.environ[CONFIG_ENV]) if os.environ.get(CONFIG_ENV)
-               else Path(__file__).with_name(CONFIG_NAME))
+               else Path(__file__).with_name(CONFIG_NAME) if Path(__file__).is_absolute() else None)
 CONFIG_SCHEMA = 1                     # the config layout this code reads
 # K120 round 1 (tools/kernel-receipt.py): the one runner-name domain, words of [0-9A-Za-z._-] joined by single spaces.
 RUNNER_WORDS = r"[0-9A-Za-z._-]+(?: [0-9A-Za-z._-]+)*"
@@ -111,8 +114,11 @@ def row_in_subject(row: str) -> re.Pattern:
     return re.compile(r"\((" + row + r")\)\s*$")
 
 
-def load_config(path: Path) -> dict:
+def load_config(path: Path | None) -> dict:
     """The parsed config at `path`, every key checked; ConfigError naming the file and the key otherwise."""
+    if path is None:
+        raise ConfigError(f"no config: ${CONFIG_ENV} is unset and this file has no directory of its own (a pinned run "
+                          f"names its config in ${CONFIG_ENV}; K137, never defaulted)")
     where = f"{path}"
     try:
         raw = path.read_bytes()

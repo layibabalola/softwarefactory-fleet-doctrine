@@ -21,9 +21,17 @@ from pathlib import Path
 
 
 def check(config: str) -> int:
+    # Bus K154 review: load the sibling only from beside an ABSOLUTE __file__. In-process under pin-runner (a pin
+    # without `with`) __file__ is the relative bus path, which would resolve against the caller's cwd and execute an
+    # unpinned file from the caller's tree.
+    here = Path(__file__)
+    if not (here.is_absolute() and here.with_name("kernel-subjects.py").is_file()):
+        print(f"REFUSE kernel-config: kernel-subjects.py must sit beside this file ({__file__}); run it as a pinned "
+              "group (pin-runner pin kernel-config --with kernel-subjects)", file=sys.stderr)
+        return 2
     os.environ["FACTORY_KERNEL_CONFIG"] = config
     spec = importlib.util.spec_from_file_location("factory_kernel_subjects_for_config",
-                                                  Path(__file__).with_name("kernel-subjects.py"))
+                                                  here.with_name("kernel-subjects.py"))
     ks = importlib.util.module_from_spec(spec)
     try:
         spec.loader.exec_module(ks)

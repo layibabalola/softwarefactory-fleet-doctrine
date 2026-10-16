@@ -206,6 +206,44 @@ class SeedProjectThroughThePinRunner(unittest.TestCase):
             p = self.pr("run", "kernel-config", "--", "check", "factory-config.json", isolated=iso)
             self.assertTrue(p.stdout.startswith("CONFIG OK factory-config.json"), p.stdout)
 
+    def test_a_group_tool_pinned_without_its_members_refuses_and_never_loads_the_callers_sibling(self):
+        # Bus review of K154: in-process (python -I) a pin without `with` runs with __file__ = the relative bus path,
+        # so a sibling load resolved against the caller's cwd and ran an unpinned decoy from the caller's tree.
+        decoy = self.repo / "tools" / "factory"
+        decoy.mkdir(parents=True)
+        for sib in ("kernel-subjects.py", "codex-review.py"):
+            (decoy / sib).write_text("print('DECOY-RAN')\nraise SystemExit(42)\n", encoding="utf-8")
+        for tool in ("kernel-receipt", "kernel-config"):
+            pins_file = self.repo / "factory-pins" / "factory-pins.json"
+            pins = json.loads(pins_file.read_text(encoding="utf-8"))
+            pins["tools"][tool].pop("with")
+            pins_file.write_text(json.dumps(pins), encoding="utf-8")
+            for iso in (False, True):
+                with self.subTest(tool=tool, isolated=iso):
+                    a = ("--", "--help") if tool == "kernel-receipt" else ("--", "check", "factory-config.json")
+                    p = self.pr("run", tool, *a, isolated=iso, check=False)
+                    self.assertEqual(2, p.returncode, p.stdout + p.stderr)
+                    self.assertNotIn("DECOY-RAN", p.stdout + p.stderr)
+                    self.assertIn(f"REFUSE {tool}", p.stderr)
+
+    def test_unset_config_variable_refuses_and_never_reads_a_config_from_the_callers_tree(self):
+        # Bus review of K154: in-process, "beside this file" resolved against the caller's cwd.
+        planted = self.repo / "tools" / "factory"
+        planted.mkdir(parents=True)
+        cfg = json.loads((SEED / "factory-config.json").read_text(encoding="utf-8"))
+        cfg["subject"]["prefix"] = "planted/"
+        (planted / "factory-config.json").write_text(json.dumps(cfg), encoding="utf-8")
+        env = env_without(FACTORY_PINS_CACHE=str(self.cache))
+        for iso in (False, True):
+            with self.subTest(isolated=iso):
+                p = subprocess.run([sys.executable, *(["-I"] if iso else []),
+                                    str(self.repo / "factory-pins" / "pin-runner.py"), "run", "kernel-subjects", "--",
+                                    "block", "--row", "S2", "--filter", "t.py", "--bus-sha", "abcdef0"],
+                                   capture_output=True, text=True, cwd=str(self.repo), env=env)
+                self.assertEqual(2, p.returncode, p.stdout + p.stderr)
+                self.assertNotIn("planted/", p.stdout)
+                self.assertIn("REFUSE kernel-subjects", p.stderr)
+
     def test_verify_passes_then_fails_on_one_flipped_byte_and_passes_restored(self):
         self.pr("verify")
         runner = self.repo / "factory-pins" / "pin-runner.py"

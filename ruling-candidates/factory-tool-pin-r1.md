@@ -71,3 +71,17 @@ settings entries and the pre-push layer. Pins file schema: `factory-pins.v1`.
   HEAD --json`, the `kernel-receipt` and `kernel-config` groups, through this runner).
 - **Not decided here.** Whether rule 2 names groups explicitly is the ruling's call; nothing on bus master changes
   until it is merged.
+- **reviewed:** independent adversarial review, Claude Opus 5.5 reviewer session dispatched from Conjugal, 2026-10-16,
+  at `382276a3` merged with bus master `0f3f6d9c`. Holds: `with` names and member paths are validated before
+  anything is read (`../` member name and `..` member path both refuse, exit 2); every member is verified by blob,
+  size and sha256 like the tool itself; a group never runs in-process, runs `python -I` with `PYTHON*`/`NODE_*`
+  stripped, so neither the script directory, the cwd nor `PYTHONPATH` can supply a module; Conjugal and
+  magic-lantern pins files load unchanged. Two defects found and fixed on this branch, each with a test shown red
+  first (`kernel-tools.tests.py`): (1) a group tool pinned WITHOUT `with` and run in-process (`python -I`) resolved
+  its relative `__file__` against the caller's cwd and executed an unpinned `tools/factory/kernel-subjects.py` from
+  the caller's tree (decoy exit 42) -- `kernel-receipt.py` and `kernel-config.py` now refuse (exit 2) unless their
+  siblings sit beside an absolute `__file__`; (2) with `$FACTORY_KERNEL_CONFIG` unset, an in-process
+  `kernel-subjects` silently read `<cwd>/tools/factory/factory-config.json` while the subprocess form refused -- it
+  now refuses in both. Never the bundled fixture config. Residual, pre-existing class: the verify-to-exec window in
+  the private temp directory (same-user only); the post-write blob re-check and directory-set check are
+  defense-in-depth that no test kills (reviewer mutants: 4/7 killed, 1 equivalent, those 2 survived).
