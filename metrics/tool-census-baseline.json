@@ -85,7 +85,10 @@
         "session-start-auth",
         "resumability-check",
         "check-evidence-dumps",
-        "fleet-scorecard"
+        "fleet-scorecard",
+        "doctrine-periodic",
+        "account-parity",
+        "realign-cli"
       ],
       "total": 0,
       "measuredAt": "2026-10-16T20:01:55.046Z"

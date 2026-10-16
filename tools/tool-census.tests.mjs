@@ -256,6 +256,53 @@ try {
   assert.ok(busView && busView.roots.length === 1 && busView.roots[0] === 'bus', "the committed baseline carries the CI-measurable 'bus' view");
   assert.deepEqual([...busView.families].sort(), realCfg.families.map((f) => f.name).sort(), "the 'bus' view counts every configured family"); cases++;
 
+  // ---- E2 (re-expressed on the views design): runner release identity, scan roots, new-member notice ----
+  // 18. Identity is the git blob id: identical bytes are one version wherever they sit; a vendored
+  //     factory-pins/pin-runner.py equal to ANY blob on the bus's origin/master (else master) history of the canonical
+  //     path joins it (CRLF checkout included); an edited or misplaced old copy diverges; no history = no equivalence.
+  const gitIn = (dir, ...a) => execFileSync('git', ['-C', dir, '-c', 'user.email=t@example.invalid', '-c', 'user.name=t', '-c', 'core.autocrlf=false', ...a], { encoding: 'utf8' });
+  const RUN = (n) => `print("runner release ${n}")\n`;
+  execFileSync('git', ['init', '-q', '-b', 'master', join(root, 'busrel')]);
+  for (const n of [1, 2, 3]) { put('busrel/tools/factory/pin-runner.py', RUN(n)); gitIn(join(root, 'busrel'), 'add', '-A'); gitIn(join(root, 'busrel'), 'commit', '-qm', `release ${n}`); }
+  const prFam = { name: 'pinrunner', names: ['pin-runner.py'], canonical: 'tools/factory/pin-runner.py', releaseHistory: true };
+  const prCfg = (name, ...rootNames) => { put(name, JSON.stringify({ families: [prFam], roots: rootNames.map((n) => ({ name: n, path: n, kind: n === 'busrel' ? 'bus' : 'project' })) })); return join(root, name); };
+  const prRep = (cfg, ...extra) => fam(JSON.parse(census(['--json', '--config', cfg, ...extra]).stdout), 'pinrunner');
+  put('r1/factory-pins/pin-runner.py', RUN(1).replace(/\n/g, '\r\n'));   // an OLD release, CRLF checkout
+  put('r2/factory-pins/pin-runner.py', RUN(3));                          // the current release
+  let pr = prRep(prCfg('rc.json', 'busrel', 'r1', 'r2', 'r3', 'r4'));
+  assert.equal(pr.excess, 0, 'old + current release + the bus canonical are one version');
+  assert.equal(pr.copies.find((c) => c.root === 'r1').release, 'history'); assert.equal(pr.copies.find((c) => c.root === 'busrel').release, 'canonical'); assert.equal(pr.historyRef, 'master'); cases++;
+  put('r3/factory-pins/pin-runner.py', RUN(2) + '# local edit\n');
+  pr = prRep(join(root, 'rc.json'));
+  assert.equal(pr.excess, 1, 'a modified vendored runner is divergent'); assert.equal(pr.copies.find((c) => c.root === 'r3').release, undefined); cases++;
+  put('r4/tools/pin-runner.py', RUN(1));
+  assert.equal(prRep(join(root, 'rc.json')).excess, 2, 'an old release outside factory-pins/ is still divergent'); cases++;
+  put('r5/tools/pin-runner.py', RUN(3));
+  assert.equal(prRep(prCfg('rc3.json', 'busrel', 'r5')).excess, 0, 'the CURRENT canonical bytes outside factory-pins/ are the same version'); cases++;
+  assert.equal(prRep(prCfg('rc2.json', 'r1', 'r2')).excess, 1, 'no bus clone, no history: no equivalence is assumed'); cases++;
+  const bus1 = join(root, 'busrel');
+  gitIn(bus1, 'checkout', '-q', '-b', 'side'); put('busrel/tools/factory/pin-runner.py', RUN(9)); gitIn(bus1, 'add', '-A'); gitIn(bus1, 'commit', '-qm', 'unmerged release'); gitIn(bus1, 'checkout', '-q', 'master');
+  put('r5b/factory-pins/pin-runner.py', RUN(9)); const rc4 = prCfg('rc4.json', 'busrel', 'r5b');
+  assert.equal(prRep(rc4).excess, 1, 'a release that exists only on another branch is not canonical history');
+  assert.equal(prRep(rc4, '--bus-ref', 'side').excess, 0, 'control: the same blob on the ref the history is read from'); cases++;
+
+  // 19. A root's "scan" limits a non-repository workspace to named subdirectories; a missing scan dir is UNMEASURED.
+  put('ws/tools/session-checkpoint.py', 'print("ws live")\n'); put('ws/corpus/deep/session-checkpoint.py', 'print("in the corpus")\n');
+  put('scan.json', JSON.stringify({ families: [{ name: 'checkpoint', names: ['session-checkpoint.py'] }], roots: [{ name: 'ws', path: 'ws', kind: 'project', scan: ['tools'] }] }));
+  assert.deepEqual(fam(JSON.parse(census(['--json', '--config', join(root, 'scan.json')]).stdout), 'checkpoint').copies.map((c) => c.path), ['tools/session-checkpoint.py'], 'only the scanned subdir is walked');
+  put('scan2.json', JSON.stringify({ families: [{ name: 'checkpoint', names: ['session-checkpoint.py'] }], roots: [{ name: 'ws', path: 'ws', kind: 'project', scan: ['tools', 'no-such-dir'] }] }));
+  const scan2 = JSON.parse(census(['--json', '--config', join(root, 'scan2.json')]).stdout);
+  assert.deepEqual([scan2.measuredRoots, scan2.absentRoots], [[], ['ws']], 'a missing scan dir is not a measured zero'); assert.match(scan2.absentWhy.ws, /scan dir\(s\) missing: no-such-dir/); cases++;
+
+  // 20. Configured members that no baseline view lists are named (informational; the verdict is unchanged).
+  put('nm.json', JSON.stringify({ families: [{ name: 'checkpoint', names: ['session-checkpoint.py'] }, { name: 'newfam', names: ['newfam.py'] }],
+    roots: [{ name: 'bus', path: 'nmbus', kind: 'bus' }, { name: 'newroot', path: 'nmbus', kind: 'project' }] }));
+  put('nmbus/tools/session-checkpoint.py', 'x()\n');
+  const nmBase = join(root, 'nm-baseline.json');
+  writeFileSync(nmBase, JSON.stringify({ total: 0, roots: ['bus'], families: { checkpoint: {} } }));
+  r = census(['--check', '--config', join(root, 'nm.json'), '--baseline', nmBase]);
+  assert.equal(r.status, 0, r.out); assert.match(r.out, /NEW-MEMBERS-UNBASELINED: root:newroot, family:newfam/); assert.match(r.out, /Informational/); cases++;
+
   assert.ok(existsSync(tool));
   console.log(`tool-census fixtures: ${cases} cases passed`);
 } finally { rmSync(root, { recursive: true, force: true }); }

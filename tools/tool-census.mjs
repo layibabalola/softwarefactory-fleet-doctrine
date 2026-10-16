@@ -89,14 +89,16 @@ function expand(p, { root, home }) {
   return resolve(root, p);
 }
 
-function listFiles(dir, excludeDirs) {
+// scan (optional): only these subdirectories of a root are looked in.
+function listFiles(dir, excludeDirs, scan = null) {
+  const inScan = (f) => !scan || scan.some((s) => f === s || f.startsWith(`${s}/`));
   if (existsSync(join(dir, '.git'))) {
     try {
       const out = execFileSync('git', ['-C', dir, 'ls-files', '--cached', '--others', '--exclude-standard', '-z'], {
         encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], timeout: 60000, maxBuffer: 256 * 1024 * 1024,
         env: { ...process.env, GIT_TERMINAL_PROMPT: '0', GIT_OPTIONAL_LOCKS: '0' },
       });
-      return out.split('\0').filter(Boolean).filter((f) => !f.split('/').some((s) => excludeDirs.has(s)) && existsSync(join(dir, f)));
+      return out.split('\0').filter(Boolean).filter((f) => !f.split('/').some((s) => excludeDirs.has(s)) && inScan(f) && existsSync(join(dir, f)));
     } catch { /* fall through to a walk */ }
   }
   const files = [];
@@ -108,7 +110,7 @@ function listFiles(dir, excludeDirs) {
       else if (e.isFile()) files.push(r);
     }
   };
-  walk(dir, '');
+  if (scan) for (const s of scan) walk(join(dir, s), s); else walk(dir, '');
   return files;
 }
 
@@ -117,6 +119,42 @@ export function markerLineRe(marker) {
   const m = marker.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/\s+/g, '\\s+');
   return new RegExp('^\\s*(?:#|//|--|;)?[\\s=#*~_-]*' + m + '[\\s=#*~_-]*$');
 }
+
+// The git blob id of a file read as LF (the id the bus stores; a CRLF checkout is the same release).
+function blobIdLF(file) {
+  const buf = Buffer.from(readFileSync(file).toString('latin1').replace(/\r\n/g, '\n'), 'latin1');
+  return createHash('sha1').update(`blob ${buf.length}\0`).update(buf).digest('hex');
+}
+
+const gitOut = (dir, ...a) => {
+  const env = { ...process.env, GIT_TERMINAL_PROMPT: '0', GIT_OPTIONAL_LOCKS: '0' };
+  for (const k of ['GIT_DIR', 'GIT_WORK_TREE', 'GIT_INDEX_FILE']) delete env[k];
+  return execFileSync('git', ['-C', dir, ...a], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'], timeout: 60000, env }).trim();
+};
+
+// The ref the bus's released history is read from: origin/master, else master (never whatever branch is checked
+// out); an explicit override is for tests. null = this clone has no such ref (no history, no equivalence).
+export function busRef(dir, override = null) {
+  for (const c of override ? [override] : ['origin/master', 'master']) {
+    try { gitOut(dir, 'rev-parse', '--verify', '--quiet', `${c}^{commit}`); return c; } catch { /* next */ }
+  }
+  return null;
+}
+
+// Every blob the bus ever committed at relPath on that ref (git log of the path, then rev-parse <sha>:<path>),
+// derived at run time, never a hand-kept list. For DUPLICATE COUNTING only: any past release is one version with
+// the canonical; it is not an approval (verify/status still flag a stale pin).
+export function busHistoryBlobs(busDir, relPath, override = null) {
+  const blobs = new Set();
+  const ref = busRef(busDir, override);
+  if (!ref) return { blobs, ref: null };
+  let shas = [];
+  try { shas = gitOut(busDir, 'log', '--format=%H', ref, '--', relPath).split('\n').filter(Boolean).slice(0, 2000); } catch { return { blobs, ref }; }
+  for (const sha of shas) { try { blobs.add(gitOut(busDir, 'rev-parse', '--verify', '--quiet', `${sha}:${relPath}`)); } catch { /* deleted there */ } }
+  return { blobs, ref };
+}
+
+const isDir = (p) => { try { return statSync(p).isDirectory(); } catch { return false; } };
 
 function versionOf(file, marker, canonical = false) {
   const text = readFileSync(file, 'utf8').replace(/\r\n/g, '\n');
@@ -164,30 +202,56 @@ function familyEvents(scripts, fam) {
   return events;
 }
 
-export function census({ config, root, home }) {
+export function census({ config, root, home, busRefOverride = null }) {
   const excludeDirs = new Set(config.excludeDirs || ['.git', 'node_modules', 'archive', '__pycache__', 'worktrees']);
   const roots = (config.roots || []).map((r) => ({ ...r, dir: expand(r.path, { root, home }) }));
   const userSettings = config.userSettings ? expand(config.userSettings, { root, home }) : null;
   const userScripts = userSettings ? hookScripts(userSettings) : null;
-  const absent = roots.filter((r) => !existsSync(r.dir) || !statSync(r.dir).isDirectory()).map((r) => r.name);
+  // A root is MEASURED only if its directory exists and every "scan" subdirectory exists: a scan dir that is not
+  // there (a moved workspace layout) is UNMEASURED, never a measured zero. (An existing but empty root stays
+  // measured at 0: that is how a retired copy ratchets down, rule 7.)
   const fileCache = new Map();
+  const absentWhy = new Map();
+  for (const r of roots) {
+    if (!isDir(r.dir)) { absentWhy.set(r.name, 'directory absent'); continue; }
+    const gone = (r.scan || []).filter((s) => !isDir(join(r.dir, s)));
+    if (gone.length) { absentWhy.set(r.name, `scan dir(s) missing: ${gone.join(', ')}`); continue; }
+    const files = listFiles(r.dir, excludeDirs, r.scan || null);
+    fileCache.set(r.name, files);
+  }
+  const absent = [...absentWhy.keys()];
   const families = [];
   const doubles = [];
   for (const fam of config.families || []) {
     const res = (fam.names || []).map(globRe);
     const copies = [];
+    // releaseHistory: a family whose canonical bus file is RELEASED over time (the pin runner). Version identity is
+    // the git blob id of the LF bytes, so identical bytes are one version wherever they sit. A vendored copy
+    // (<vendoredDir>/<name>, default factory-pins) equal to ANY blob in the bus history of the canonical path is
+    // aliased to the canonical's version; only an edited copy is divergent.
+    const rel = !!(fam.releaseHistory && fam.canonical);
+    const busRoot = rel ? roots.find((r) => r.kind === 'bus' && !absent.includes(r.name)) : null;
+    const hist = busRoot ? busHistoryBlobs(busRoot.dir, fam.canonical, busRefOverride) : { blobs: new Set(), ref: null };
+    const canonBlob = busRoot && existsSync(join(busRoot.dir, fam.canonical)) ? blobIdLF(join(busRoot.dir, fam.canonical)) : null;
+    const vendoredDir = fam.vendoredDir || 'factory-pins';
     for (const r of roots) {
       if (absent.includes(r.name)) continue;
-      if (!fileCache.has(r.name)) fileCache.set(r.name, listFiles(r.dir, excludeDirs));
       for (const f of fileCache.get(r.name)) {
         if (!res.some((re) => re.test(baseName(f)))) continue;
         const canonical = r.kind === 'bus' && !!fam.canonical && f === fam.canonical;
         const v = versionOf(join(r.dir, f), fam.sharedSectionMarker, canonical);
-        copies.push({ root: r.name, path: f, ...v, ...(canonical ? { canonical: true } : {}) });
+        let version = v.hash, extra = {};
+        if (rel) {
+          const blob = blobIdLF(join(r.dir, f));
+          const release = canonical ? 'canonical' : (busRoot && r.kind !== 'bus' && f.split('/').slice(-2, -1)[0] === vendoredDir && hist.blobs.has(blob)) ? 'history' : null;
+          version = `blob:${release && canonBlob ? canonBlob : blob}`;
+          extra = { blob, ...(release ? { release } : {}) };
+        }
+        copies.push({ root: r.name, path: f, ...v, version, ...extra, ...(canonical ? { canonical: true } : {}) });
       }
     }
-    const distinct = [...new Set(copies.map((c) => c.hash))];
-    families.push({ name: fam.name, marker: fam.sharedSectionMarker || null, copies, distinct: distinct.length, excess: Math.max(distinct.length - 1, 0) });
+    const distinct = [...new Set(copies.map((c) => c.version))];
+    families.push({ name: fam.name, marker: fam.sharedSectionMarker || null, copies, distinct: distinct.length, excess: Math.max(distinct.length - 1, 0), ...(rel ? { historyRef: hist.ref } : {}) });
     for (const r of roots) {
       if (r.kind === 'user' || absent.includes(r.name)) continue;
       const proj = familyEvents(hookScripts(join(r.dir, '.claude', 'settings.json')), fam);
@@ -199,7 +263,7 @@ export function census({ config, root, home }) {
   const total = families.reduce((s, f) => s + f.excess, 0) + doubles.length;
   const measuredRoots = roots.filter((r) => !absent.includes(r.name)).map((r) => r.name);
   const fleetRootsSeen = roots.filter((r) => r.kind !== 'bus' && !absent.includes(r.name)).length;
-  return { total, families, doubleRegistrations: doubles, absentRoots: absent, measuredRoots, fleetRootsSeen };
+  return { total, families, doubleRegistrations: doubles, absentRoots: absent, absentWhy: Object.fromEntries(absentWhy), measuredRoots, fleetRootsSeen };
 }
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
@@ -248,10 +312,10 @@ function human(rep) {
   const L = [];
   for (const f of rep.families) {
     L.push(`[tool-census] ${f.name}: ${f.copies.length} cop${f.copies.length === 1 ? 'y' : 'ies'}, ${f.distinct} distinct version(s)${f.marker ? ` (hashed below '${f.marker}')` : ''}`);
-    for (const c of f.copies) L.push(`    ${c.hash.slice(0, 10)}  ${String(c.lines).padStart(5)} lines  ${c.root}: ${c.path}${c.canonical ? '   CANONICAL (hashed whole; copies converge on it)' : c.markerFound === false ? '   NO MARKER (hashed whole)' : ''}`);
+    for (const c of f.copies) L.push(`    ${c.hash.slice(0, 10)}  ${String(c.lines).padStart(5)} lines  ${c.root}: ${c.path}${c.release === 'history' ? '   RELEASE (equals a bus-history blob: counted as the canonical)' : c.canonical ? '   CANONICAL (hashed whole; copies converge on it)' : c.markerFound === false ? '   NO MARKER (hashed whole)' : ''}`);
   }
   for (const d of rep.doubleRegistrations) L.push(`[tool-census] DOUBLE REGISTRATION: ${d.family} wired by ${d.project} .claude/settings.json AND user settings on ${d.events.join(', ')}${d.projectFlat ? ' (project entry is FLAT, not the matcher-group schema: may never fire)' : ''}`);
-  if (rep.absentRoots.length) L.push(`[tool-census] roots absent on this box (skipped): ${rep.absentRoots.join(', ')}`);
+  if (rep.absentRoots.length) L.push(`[tool-census] roots absent on this box (skipped): ${rep.absentRoots.map((n) => ((rep.absentWhy || {})[n] && rep.absentWhy[n] !== 'directory absent' ? `${n} [${rep.absentWhy[n]}]` : n)).join(', ')}`);
   L.push(`[tool-census] count = ${rep.families.reduce((s, f) => s + f.excess, 0)} excess version(s) + ${rep.doubleRegistrations.length} double registration(s) = ${rep.total}`);
   return L.join('\n');
 }
@@ -401,7 +465,7 @@ function main() {
 
   if (!existsSync(configPath)) { console.error(`[tool-census] config not found: ${configPath}`); return EXIT_FAIL; }
   const config = JSON.parse(readFileSync(configPath, 'utf8'));
-  const rep = census({ config, root, home });
+  const rep = census({ config, root, home, busRefOverride: typeof args['bus-ref'] === 'string' ? args['bus-ref'] : null });
 
   if (args['add-view']) {
     const name = String(args['add-view']);
@@ -477,6 +541,12 @@ function main() {
       const ahead = next ? `; next deadline: max ${next.max} by ${next.by}${vrep.total > next.max ? ` (${vrep.total - next.max} to retire)` : ''}` : '';
       console.error(`[tool-census] ${tag}ok: count ${vrep.total} <= baseline ${view.total}${current ? ` and <= max ${current.max} due ${current.by}` : ''}${vrep.total < view.total ? ' (lower: run --update-baseline to ratchet down)' : ''}${ahead}.`);
     }
+    // Configured members that no baseline view lists are counted nowhere (rule 7: a view counts only its own roots x
+    // families). Named here so they are never silently outside the ratchet; --add-view seeds them at today's count.
+    const vs = viewsOf(baseline);
+    const freshRoots = vs.some((v) => !v.roots) ? [] : (config.roots || []).filter((r) => !vs.some((v) => v.roots.includes(r.name))).map((r) => `root:${r.name}`);
+    const freshFams = vs.some((v) => !v.families) ? [] : (config.families || []).filter((f) => !vs.some((v) => v.families.includes(f.name))).map((f) => `family:${f.name}`);
+    if (freshRoots.length || freshFams.length) console.error(`[tool-census] NEW-MEMBERS-UNBASELINED: ${[...freshRoots, ...freshFams].join(', ')} (in no baseline view, so counted nowhere; an owner seeds them with --add-view <name> --roots <a,b>). Informational: the verdict above is unchanged.`);
     if (failed) return EXIT_ACTION;
     if (!seen) return EXIT_UNMEASURED;
   }
