@@ -61,6 +61,10 @@ CENSUS = {      # counted, no bus canonical yet: refuse a NEW copy only
     "doctrine-outbox": ("doctrine_outbox.py", "doctrine-outbox.py"),
     "doctrine-triage": ("fold-triage.mjs", "doctrine-triage.mjs"),
     "resumability-check": ("resumability-check.py", "resumability_check.py"),
+    "doctrine-periodic": ("doctrine-periodic.py", "doctrine_periodic.py"),
+    "account-parity": ("check-account-parity.py", "check_account_parity.py", "check-account-parity.ps1",
+                       "check_account_parity.ps1", "account-parity.py", "account-parity.ps1"),
+    "realign-cli": ("realign-cli.py", "realign_cli.py", "realign-cli.ps1", "realign_cli.ps1"),
 }
 
 
