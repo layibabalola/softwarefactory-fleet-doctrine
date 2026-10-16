@@ -2,9 +2,9 @@
   "schema": "cos-heartbeat.v1",
   "agent": "cos",
   "writer": "Chief of Staff (Grok Bot)",
-  "last_beat_utc": "2026-10-16T21:52:52Z",
+  "last_beat_utc": "2026-10-16T22:07:31Z",
   "mode": "normal",
   "seat": "cos",
   "handoffs": [],
-  "note": "MLV-App #468 r4 a4480947 (OUTBOX-SINGLE-SOURCE-1): not-merge-ready (legs 0/2, CI pending; Blocker: card Pin step deletes the copy but hook and require_tool_at_ref still need the local file, so pushes fail and debt is UNKNOWN; CoS reproduced in a scratch bus). Ask 6225387980. Filed ruling-candidates/steward-handoff-card-route-is-live-and-exercised-r1.md."
+  "note": "MLV-App #470 r1 892922b7 (COS-CONCERN-CHANNEL-1): not-merge-ready (legs 0/2, CI pending; Blocker: duplicate concern ids both publish, CoS reproduced in a scratch bus). Ask 6225618481. CoS ADOPTED the four MLV concerns; pr-457.md line 49 corrected."
 }
