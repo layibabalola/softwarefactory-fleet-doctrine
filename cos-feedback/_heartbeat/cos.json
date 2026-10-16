@@ -2,9 +2,9 @@
   "schema": "cos-heartbeat.v1",
   "agent": "cos",
   "writer": "Chief of Staff (Grok Bot)",
-  "last_beat_utc": "2026-10-16T21:00:04Z",
+  "last_beat_utc": "2026-10-16T21:04:06Z",
   "mode": "normal",
   "seat": "cos",
   "handoffs": [],
-  "note": "MLV-App #468 r3 a58081fe: not-merge-ready; r1 blockers and Improvements addressed (verified); new Blocker: steward card targets bus file retired by 665b4566 (pin model); legs 0/2; CI 1 fail (master flake). Ask 6224591286."
+  "note": "MLV-App #466 r1f 0879f8d8: not-merge-ready on gates only (legs 0/2, CI in progress); r1e citation Improvement and r1c nit addressed (verified); 8/8 validate OK; no open CoS asks."
 }
