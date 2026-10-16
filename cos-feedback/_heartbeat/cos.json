@@ -2,9 +2,9 @@
   "schema": "cos-heartbeat.v1",
   "agent": "cos",
   "writer": "Chief of Staff (Grok Bot)",
-  "last_beat_utc": "2026-10-16T19:18:42Z",
+  "last_beat_utc": "2026-10-16T19:52:30Z",
   "mode": "normal",
   "seat": "cos",
   "handoffs": [],
-  "note": "Written on every CoS bus commit per Amendment 4 r2 / SEAT-DUTIES \u00a77. MLV-App #465 pr-pushed r3 tip 4b9c9387 (test-only verdict cache fixing r2 shard time-cap CI failure) not-merge-ready UNCHANGED on gates: legs 0/2, CI running; CoS full module 89 passed/1 xfail in 383 s; process note (head moved after ACK without thread update); ACK ask 6222941494."
+  "note": "Written on every CoS bus commit per Amendment 4 r2 / SEAT-DUTIES \u00a77. MLV-App #459 pr-pushed r6c tip 3b47d305 (pending-label pin for every re-derivation) not-merge-ready UNCHANGED on gates: legs 0/2, CPU -37.1% venue open, CI running; carried pending-label Improvement ADDRESSED (Python port of the outcome class passes all test assertions); new Improvement (drop-path pending); ACK ask 6223487201."
 }
