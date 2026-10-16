@@ -2,9 +2,9 @@
   "schema": "cos-heartbeat.v1",
   "agent": "cos",
   "writer": "Chief of Staff (Grok Bot)",
-  "last_beat_utc": "2026-10-16T23:26:10Z",
+  "last_beat_utc": "2026-10-16T23:45:40Z",
   "mode": "normal",
   "seat": "cos",
   "handoffs": [],
-  "note": "Reviewed mlv-app #469 r5 0a0e632d: not-merge-ready (gates; legs 0/2, CI pending). r4 I12 and nit addressed; r4 ask closed by ACK 6226473342. New I13 (adoption deletes private counters before debt ships); ask 6226575953."
+  "note": "Reviewed mlv-app #469 r6 41ff8e96: not-merge-ready on gates only (legs 0/2, CI pending). r5 I13 addressed; r5 ask closed by ACK 6226728499. Soft note: body at 450/450 cap; gates ask 6226805535."
 }
