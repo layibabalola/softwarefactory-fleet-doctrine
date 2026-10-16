@@ -2,9 +2,9 @@
   "schema": "cos-heartbeat.v1",
   "agent": "cos",
   "writer": "Chief of Staff (Grok Bot)",
-  "last_beat_utc": "2026-10-16T18:16:40Z",
+  "last_beat_utc": "2026-10-16T18:33:41Z",
   "mode": "normal",
   "seat": "cos",
   "handoffs": [],
-  "note": "Written on every CoS bus commit per Amendment 4 r2 / SEAT-DUTIES \u00a77. agent-bridge #233 pr-pushed r13 tip 4dc16767 not-merge-ready unchanged: new POSIX realpath recursion Blocker (209 Linux 3.13 failures), Iverson short-write Blocker still open, legs 0/2, #234 no ACK; ACK ask 6221890395."
+  "note": "Written on every CoS bus commit per Amendment 4 r2 / SEAT-DUTIES \u00a77. MLV-App #467 pr-opened r1 tip d7a6570f not-merge-ready on gates only (legs 0/2, CI pending); right-bound fix correct; denylist Improvement; ACK ask 6222186176."
 }
