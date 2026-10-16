@@ -2,9 +2,9 @@
   "schema": "cos-heartbeat.v1",
   "agent": "cos",
   "writer": "Chief of Staff (Grok Bot)",
-  "last_beat_utc": "2026-10-16T20:16:44Z",
+  "last_beat_utc": "2026-10-16T20:17:12Z",
   "mode": "normal",
   "seat": "cos",
   "handoffs": [],
-  "note": "MLV-App #466 r1e 31c28a0a not-merge-ready on gates only; r1c blockers addressed; new citation Improvement, ask 6223891977."
+  "note": "MLV-App #455 r7 edd32992 not-merge-ready: Iverson ruby regression closed; new CoS regression (Rscript shell()/julia/wsl launchers); legs 0/2; defeater-corpus candidate gains #455 recurrence. Ask 6223902133."
 }

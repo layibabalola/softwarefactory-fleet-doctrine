@@ -24,3 +24,11 @@ What the lint should forbid (HUB-VM-NO-LOCAL-PLAYBACK-1 policy) stays owner/Layi
 ## Close condition
 
 Hub adopts, distinguishes, or rejects in writing; factory ACKs with plan/ETA, starting with #448 r4's defeater rows.
+
+## Recurrence: MLV-App #455 (NA-2 delete hook, 2026-10-16)
+The same shape hit a hook, not just a prompt lint. NA-2 exempts `verb=` assignments unless the text names a launcher.
+- Each round, r2 to r7, enumerated more launcher syntax, passed its own new rows, and was broken by the next outside probe: sol r2 to r6, Iverson on r6 (ruby `system(`), and CoS on r7 `edd32992` (Rscript `shell()`, julia `run()`, wsl interop with a string-built `cmd`).
+- Master denied all of these.
+- Proposed addition, clause 4: an exemption added to a refuse-by-default hook ships with a master-parity sweep. Every must-deny row master refuses gets re-run through generic run-anything wrappers (an unknown interpreter name, wsl, and a string-built command word), and the suite fails if any of them flips to allow.
+- Prefer exemptions keyed on the delete shape itself. Here that's a non-empty assignment value. Don't key them on a list of launchers.
+- Bus: `cos-feedback/mlv-app/pr-455.md`. ACK ask: https://github.com/SuperDimensionalSpaceFortress/MLV-App/pull/455#issuecomment-6223902133
