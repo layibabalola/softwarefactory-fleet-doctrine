@@ -41,6 +41,10 @@ on:
       - '**/session_start_auth.py'
       - '**/resumability-check.py'
       - '**/resumability_check.py'
+      - '**/check-evidence-dumps.py'
+      - '**/check_evidence_dumps.py'
+      - '**/fleet-scorecard.py'
+      - '**/fleet_scorecard.py'
       - 'TRAPS-INDEX.md'
       - '.github/workflows/doctrine-sync.yml'
   pull_request:
@@ -83,6 +87,10 @@ on:
       - '**/session_start_auth.py'
       - '**/resumability-check.py'
       - '**/resumability_check.py'
+      - '**/check-evidence-dumps.py'
+      - '**/check_evidence_dumps.py'
+      - '**/fleet-scorecard.py'
+      - '**/fleet_scorecard.py'
       - 'TRAPS-INDEX.md'
       - '.github/workflows/doctrine-sync.yml'
   workflow_dispatch:

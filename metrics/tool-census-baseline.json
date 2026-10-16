@@ -83,10 +83,12 @@
         "git-optional-locks",
         "no-unpinned-tool",
         "session-start-auth",
-        "resumability-check"
+        "resumability-check",
+        "check-evidence-dumps",
+        "fleet-scorecard"
       ],
-      "total": 1,
-      "measuredAt": "2026-10-16T19:49:28.363Z"
+      "total": 0,
+      "measuredAt": "2026-10-16T20:01:55.046Z"
     },
     {
       "name": "xps17",
@@ -109,10 +111,12 @@
         "git-optional-locks",
         "no-unpinned-tool",
         "session-start-auth",
-        "resumability-check"
+        "resumability-check",
+        "check-evidence-dumps",
+        "fleet-scorecard"
       ],
-      "total": 8,
-      "measuredAt": "2026-10-16T19:50:00.136Z"
+      "total": 5,
+      "measuredAt": "2026-10-16T20:01:55.047Z"
     }
   ]
 }

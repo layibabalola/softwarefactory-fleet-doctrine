@@ -11,7 +11,9 @@
     { "name": "git-optional-locks", "names": ["git-optional-locks.py", "git_optional_locks.py"] },
     { "name": "no-unpinned-tool", "names": ["pre-push-no-unpinned-tool.py", "pre_push_no_unpinned_tool.py"] },
     { "name": "session-start-auth", "names": ["session-start-auth.py", "session_start_auth.py"] },
-    { "name": "resumability-check", "names": ["resumability-check.py", "resumability_check.py"] }
+    { "name": "resumability-check", "names": ["resumability-check.py", "resumability_check.py"] },
+    { "name": "check-evidence-dumps", "names": ["check-evidence-dumps.py", "check_evidence_dumps.py"] },
+    { "name": "fleet-scorecard", "names": ["fleet-scorecard.py", "fleet_scorecard.py"] }
   ],
   "roots": [
     { "name": "bus", "path": "@bus", "kind": "bus" },

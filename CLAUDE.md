@@ -46,11 +46,11 @@ python tools/check-account-parity.py   # R6 desktop/CLI account parity
 ```
 
 **Known-broken instruments** — do not read their silence as a pass:
-- `tools/session-start-auth.py` resolves `ROOT` to `C:\code` rather than the repo, so its checker
-  path never exists; the wrapper always exits 0, so it fails **silently** on every machine.
-- `tools/conjugal-reference/resumability-check.py` is Conjugal-layout-specific. It fails here on
-  layout (`FAIL ENTRY: docs/architecture/approach-a\RESUME.md missing`) and that is not a finding
-  about this repo. This repo has not adopted that gate.
+- `tools/session-start-auth.py` and `tools/conjugal-reference/*` are RETIRED (2026-10-16): stale
+  forks of Conjugal tools that nothing on the bus executed. The SessionStart auth hook is now the
+  canonical `tools/factory/session-start-auth.py`, run by pin (`tools/factory/README.md`); the
+  resumability gate and doctrine outbox live only in Conjugal (`coordination/tools/`), at the commit
+  its harvest records. A copy re-added anywhere fails the census `bus` view in CI.
 - There is **no** `gate.py`, `state.py` or `review/RESUME.md` here. Machine-level notes that
   mention them are describing the DropBox Vault factory, not this repo.
 

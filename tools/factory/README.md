@@ -10,10 +10,17 @@ is how it falls. One implementation lives here; a project supplies only **data**
 |---|---|
 | [`pin-runner.py`](pin-runner.py) | the one generic runner: `pin`, `adopt-runner`, `verify`, `status`, `run <tool> -- args` |
 | [`check-doc-size.py`](check-doc-size.py) | markdown size budgets; every tier, glob, exemption, scan mode and unit from `--config` |
+| [`session-start-auth.py`](session-start-auth.py) | SessionStart hook: runs the project's CLI auth/parity checker, surfaces the verdict, always exits 0, never re-auths (`--checker`, `--repair-hint`, `--live`) |
 | [`fixtures/check-doc-size/`](fixtures/check-doc-size/) | the three projects' tier tables as configs (test fixtures and adoption starting points) |
 | [`check-evidence-dumps.py`](check-evidence-dumps.py) | refuses committed raw evidence; an evidence dir is `SHA256SUMS` + `EVIDENCE-REF` naming the ref that holds the bytes (verified when local) |
 | [`fixtures/check-evidence-dumps/`](fixtures/check-evidence-dumps/) | Cloudvore and Conjugal start configs |
-| [`../../hooks/`](../../hooks/README.md) | generic refusing hooks: ff-only pre-push, exact-path add, optional-locks observers |
+| [`../../hooks/`](../../hooks/README.md) | generic refusing hooks: ff-only pre-push, no-unpinned-tool pre-push, exact-path add, optional-locks observers |
+
+**Sharing is the default.** A tool here is never copied into a project: the project pins it.
+`hooks/pre-push-no-unpinned-tool.py` refuses a consumer push that adds or edits a file named like any
+tool here (or a new copy of a census-counted family), and `tools/tool-census.mjs` counts what is
+left; its baseline only falls (rules 4, 7, 8 in its header; CI judges the `bus` view and the
+ratchet history on every push).
 
 Tests (stdlib only, Windows and POSIX):
 
@@ -21,7 +28,9 @@ Tests (stdlib only, Windows and POSIX):
 python tools/factory/pin-runner.tests.py
 python tools/factory/check-doc-size.tests.py
 python tools/factory/check-evidence-dumps.tests.py
+python tools/factory/session-start-auth.tests.py
 python hooks/hooks.tests.py
+node tools/tool-census.tests.mjs
 ```
 
 ## Install contract (consumer project)

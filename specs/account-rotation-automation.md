@@ -4,6 +4,13 @@
 
 **Scope:** All projects using Claude Code with multi-account rotation workflows
 
+> **Superseded implementation (2026-10-16).** The auto-remedy below (logout, login, then writing the CLI's own
+> email in as the desktop email) was withdrawn by Conjugal on 2026-09-15: it made parity true by construction
+> (self-certification) and a logout followed by an abandoned login leaves no credential. The canonical hook is bus
+> `tools/factory/session-start-auth.py`: it surfaces the verdict, always exits 0, never re-auths, and prints the
+> sanctioned repair (`tools/realign-cli.py --auto`). The old `tools/session-start-auth.py` is retired. Install it
+> by pin, not by copy -- see "Implementation".
+
 ## Purpose
 
 Automate CLI account parity recovery during account rotations. When a user switches the desktop app to a new Anthropic account, the Claude Code CLI credential store does not automatically follow. This doctrine provides a SessionStart hook that:
@@ -18,13 +25,18 @@ Automate CLI account parity recovery during account rotations. When a user switc
 
 ## Implementation
 
-### 1. Copy the hook to your project
+### 1. Pin the hook (never copy it)
 
-Download `session-start-auth.py` from the doctrine repo tools and place it in your project's `coordination/tools/` directory:
+Vendor the pin runner once and pin the canonical hook (`tools/factory/README.md`, install contract):
 
 ```bash
-cp "$DOCTRINE_REPO/tools/session-start-auth.py" "$PROJECT/.claude/tools/"
+python factory-pins/pin-runner.py pin session-start-auth --commit <reviewed-bus-sha> \
+    --path tools/factory/session-start-auth.py --reviewer <who> --reason <why>
+python factory-pins/pin-runner.py verify
 ```
+
+A project copy is refused at push time by bus `hooks/pre-push-no-unpinned-tool.py` and counted by
+`tools/tool-census.mjs`.
 
 ### 2. Register the hook in `.claude/settings.json`
 
@@ -38,7 +50,7 @@ Ensure your project's `.claude/settings.json` has:
         "hooks": [
           {
             "type": "command",
-            "command": "python \"$CLAUDE_PROJECT_DIR/coordination/tools/session-start-auth.py\"",
+            "command": "python -I \"$CLAUDE_PROJECT_DIR/factory-pins/pin-runner.py\" run session-start-auth",
             "timeout": 60
           }
         ]

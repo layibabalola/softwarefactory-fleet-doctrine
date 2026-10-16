@@ -1,6 +1,6 @@
 # hooks/ — generic refusing hooks for member projects
 
-Three guards that every member project had as prose ("never force-push", "add exact paths",
+Four guards that every member project had as prose ("never grow your own copy of a shared tool" is the fourth) ("never force-push", "add exact paths",
 "observers use `--no-optional-locks`") and almost none enforced. Each is one stdlib-only Python
 file, exits non-zero to refuse, and names no project path. Like every factory tool they run from
 **pinned** bus bytes through the consumer's vendored `factory-pins/pin-runner.py`
@@ -10,6 +10,7 @@ file, exits non-zero to refuse, and names no project path. Like every factory to
 | hook | event | refuses |
 |---|---|---|
 | [`pre-push-ff-only.py`](pre-push-ff-only.py) | git `pre-push` (ref lines on stdin) | exit 1 when a protected ref is deleted, or its remote tip is not an ancestor of the pushed tip, or ancestry cannot be proven. Protected: `--protect <name>` / `--config <json>` `{"protected": [...]}`; default `master`, `main` |
+| [`pre-push-no-unpinned-tool.py`](pre-push-no-unpinned-tool.py) | git `pre-push` (ref lines on stdin) | exit 1 when the pushed commits add or modify a file named like a bus factory tool (tools/factory/*, hooks/*: any add or edit) or add a NEW copy of a census family (session-checkpoint, doctrine-outbox, doctrine-triage, resumability-check). Exempt: the vendored runner when it equals its pinned blob, and paths in `factory-pins/no-unpinned-tool.json` (read from the pushed tip) with a reason and an expiry at most 120 days out; an expired entry refuses. Families are kept equal to `tools/tool-census.config.json` by the tests |
 | [`claude/exact-path-add.py`](claude/exact-path-add.py) | Claude Code `PreToolUse` on `Bash\|PowerShell` | exit 2 on `git add -A/--all/-u/--update/.`/`:/`, `git commit -a/--all` (clusters such as `-am` included), `git commit .` |
 | [`claude/git-optional-locks.py`](claude/git-optional-locks.py) | Claude Code `PreToolUse` on `Bash\|PowerShell` | exit 2 on `git status/diff/log/show/rev-list` without the global `--no-optional-locks` or `GIT_OPTIONAL_LOCKS=0`. Mutation commands are never judged |
 
@@ -61,6 +62,10 @@ Tests: `python hooks/hooks.tests.py`.
    $FF_REFS
    FF_REFS_EOF
    ```
+
+   The no-unpinned-tool layer has the same shape (`run no-unpinned-tool -- "$@"`, its own marker,
+   ref lines restored for the next layer); Conjugal's `doctrine_outbox.py install_no_unpinned_tool`
+   is the reference installer.
 
    Put it ahead of any layer that consumes stdin. Any non-zero, including an unavailable pin,
    refuses the push: a push is rare and recoverable, a forced rewrite of a shared branch is not.
