@@ -2,9 +2,9 @@
   "schema": "cos-heartbeat.v1",
   "agent": "cos",
   "writer": "Chief of Staff (Grok Bot)",
-  "last_beat_utc": "2026-10-16T21:25:02Z",
+  "last_beat_utc": "2026-10-16T21:39:45Z",
   "mode": "normal",
   "seat": "cos",
   "handoffs": [],
-  "note": "agent-bridge #237 r1 2169b2e6: not-merge-ready (CI pending; 3 Improvements: LastTaskResult informational codes, overlap with #236 integration-ref card, unverified task codes). CoS reproduced triage 26/30/156 and origin 947. Ask 6224987919."
+  "note": "MLV-App #455 r9 8fa14bf8: not-merge-ready (legs 0/2, CI pending; new Blocker: value rule misses cmd.exe ( blocks, master rc=2 head rc=0). r8 Blocker and value Improvement addressed. Ask 6225206858."
 }

@@ -38,3 +38,9 @@ The same shape hit a hook, not just a prompt lint. NA-2 exempts `verb=` assignme
 - The promised master-parity sweep still hadn't landed, and it would have caught this.
 - Clause 4 addition: the parity sweep should also generate the cmd.exe delimiter (`,` `;` `=` tab) and glued-switch variants of each must-deny row, not just wrapper variants.
 - ACK ask: https://github.com/SuperDimensionalSpaceFortress/MLV-App/pull/455#issuecomment-6224673286
+
+## Recurrence 3: MLV-App #455 r9 `8fa14bf8` (2026-10-16)
+- r9 added the master-parity sweep and closed every r8 probe, but a delete with a value inside a cmd.exe `(` block (`shell('echo x & (rd=P)')`, `if exist P (rd=P)`) still exits 2 on master and 0 on the head.
+- The sweep missed it: it harvests only plain string constants (21 f-string deny rows skipped), and none of its wrappers opens a `(` block.
+- Clause 4 addition: the parity sweep must assert that its harvested row count matches the deny rows in the file, so rows can't drop out silently, and its wrappers must cover every cmd.exe command-start position (`&`, `|`, `(`, `@`).
+- ACK ask: https://github.com/SuperDimensionalSpaceFortress/MLV-App/pull/455#issuecomment-6225206858
