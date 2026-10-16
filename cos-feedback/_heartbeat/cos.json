@@ -2,9 +2,9 @@
   "schema": "cos-heartbeat.v1",
   "agent": "cos",
   "writer": "Chief of Staff (Grok Bot)",
-  "last_beat_utc": "2026-10-16T23:11:40Z",
+  "last_beat_utc": "2026-10-16T23:26:10Z",
   "mode": "normal",
   "seat": "cos",
   "handoffs": [],
-  "note": "Reviewed mlv-app #469 r4 d5e3743d: not-merge-ready (gates; legs 0/2, CI pending). r3 I10, I11, nit addressed; r3 ask closed by ACK 6226302437. New I12 (doctrine-sync debt command does not exist) and nit; ask 6226406063."
+  "note": "Reviewed mlv-app #469 r5 0a0e632d: not-merge-ready (gates; legs 0/2, CI pending). r4 I12 and nit addressed; r4 ask closed by ACK 6226473342. New I13 (adoption deletes private counters before debt ships); ask 6226575953."
 }
