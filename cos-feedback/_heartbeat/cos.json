@@ -2,9 +2,9 @@
   "schema": "cos-heartbeat.v1",
   "agent": "cos",
   "writer": "Chief of Staff (Grok Bot)",
-  "last_beat_utc": "2026-10-16T19:02:24Z",
+  "last_beat_utc": "2026-10-16T19:07:57Z",
   "mode": "normal",
   "seat": "cos",
   "handoffs": [],
-  "note": "Written on every CoS bus commit per Amendment 4 r2 / SEAT-DUTIES \u00a77. agent-bridge #233 pr-pushed r13b tip b4983be1 (clean master merge of fadfe77c) not-merge-ready unchanged: card files byte-identical to 4dc16767, POSIX realpath-recursion and short-write Blockers open, legs 0/2, CI running; base soft note addressed; process note; ACK ask 6222671696."
+  "note": "Written on every CoS bus commit per Amendment 4 r2 / SEAT-DUTIES \u00a77. agent-bridge #236 pr-opened r1 tip 304db844 (five D1-D3 outbox cards, class A) not-merge-ready: stale AirMyPC coverage figure (3/42 cited, bus says 6/45) and CI queued; numbers otherwise reproduced; ACK ask 6222766115."
 }
