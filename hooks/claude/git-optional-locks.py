@@ -17,6 +17,8 @@ judges only the read-only observers, and never suppresses or bypasses a real loc
 
 The command is tokenised like a POSIX shell (quotes, ; && || | & newlines, $( ), backticks,
 comments, heredoc bodies skipped), so quoted text that merely mentions git never trips it.
+`--observe-only` (opt-in, per project): the same judgement, printed as OBSERVED on stderr with exit 0;
+for a project whose runbooks still use plain observers. The default refuses.
 Stdin: the Claude Code hook payload. Exit 0 allow, 2 refuse. Stdlib only; one file, no imports
 from siblings (it runs as a single pinned blob).
 """
@@ -243,6 +245,12 @@ def main() -> int:
         return 0
     found = refusals(command)
     if not found:
+        return 0
+    if "--observe-only" in sys.argv[1:]:
+        # Opt-in for a project whose runbooks still say plain `git status` (magic-lantern, 2026-10-16): the
+        # finding is recorded on stderr and the call proceeds. The default stays refusing.
+        print("OBSERVED (git-optional-locks, observe-only, not refused): " + ", ".join(sorted(set(found)))
+              + " without --no-optional-locks.", file=sys.stderr)
         return 0
     print("REFUSED (git-optional-locks): " + ", ".join(sorted(set(found))) + " without --no-optional-locks.\n"
           "A read-only observer in a shared checkout must not take the index's optional lock.\n"

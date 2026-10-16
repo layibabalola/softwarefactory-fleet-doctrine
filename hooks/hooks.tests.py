@@ -350,5 +350,108 @@ class NoUnpinnedTool(unittest.TestCase):
                 self.assertTrue(any(name in v for v in mod.CANONICAL.values()), f"bus factory tool {name} is not a canonical family")
 
 
+RUNNER_SRC = HERE.parent / "tools" / "factory" / "pin-runner.py"
+README = HERE / "README.md"
+
+
+def readme_layer() -> str:
+    """The documented ff-only pre-push layer, extracted verbatim from hooks/README.md (dedented)."""
+    text = README.read_text(encoding="utf-8").replace("\r\n", "\n")
+    start = text.index("   ```sh\n   # factory-ff-only\n") + len("   ```sh\n")
+    end = text.index("   ```\n", start)
+    return "".join(l[3:] if l.startswith("   ") else l for l in text[start:end].splitlines(True))
+
+
+class FfOnlyLayerSnippet(unittest.TestCase):
+    """Regression (magic-lantern adoption, 2026-10-16): the layer read the runner and pins from
+    refs/remotes/origin/master only, so a repository whose work never reaches master refused EVERY push.
+    The README layer now judges from the first protected remote-tracking ref holding the runner, else the
+    pushed commit; protected branches come from factory-pins/ff-only.json at that ref."""
+
+    def setUp(self):
+        self._tmp = tempfile.TemporaryDirectory()
+        t = Path(self._tmp.name)
+        self.bus, self.repo, self.remote, self.seen = t / "bus", t / "consumer", t / "remote.git", t / "seen.txt"
+        self.env = {k: v for k, v in os.environ.items() if not k.startswith("GIT_") and k != "FACTORY_BUS_CLONE"}
+        self.env["FACTORY_PINS_CACHE"] = str(t / "cache")
+        lf = lambda p: p.read_bytes().replace(b"\r\n", b"\n")
+        (self.bus / "hooks").mkdir(parents=True)
+        (self.bus / "tools" / "factory").mkdir(parents=True)
+        (self.bus / "hooks" / "pre-push-ff-only.py").write_bytes(lf(FF))
+        (self.bus / "tools" / "factory" / "pin-runner.py").write_bytes(lf(RUNNER_SRC))
+        subprocess.run(["git", "init", "-q", str(self.bus)], check=True)
+        self.g(self.bus, "add", "--", "hooks", "tools")
+        self.g(self.bus, "commit", "-qm", "bus")
+        c = self.g(self.bus, "rev-parse", "HEAD")
+        subprocess.run(["git", "init", "-q", "--bare", str(self.remote)], check=True)
+        subprocess.run(["git", "init", "-q", "-b", "codex/audit-remediation", str(self.repo)], check=True)
+        self.g(self.repo, "remote", "add", "origin", str(self.remote))
+        (self.repo / "factory-pins").mkdir()
+        (self.repo / "factory-pins" / "pin-runner.py").write_bytes(lf(RUNNER_SRC))
+        (self.repo / "factory-pins" / "factory-pins.json").write_text(
+            json.dumps({"schema": "factory-pins.v1", "bus_clone": [self.bus.as_posix()], "tools": {}}), encoding="utf-8")
+        for a in (["pin", "pre-push-ff-only", "--commit", c, "--path", "hooks/pre-push-ff-only.py", "--reviewer", "t", "--reason", "fixture"],
+                  ["adopt-runner", "--commit", c]):
+            p = subprocess.run([sys.executable, str(self.repo / "factory-pins" / "pin-runner.py"), *a],
+                               capture_output=True, text=True, env=self.env, cwd=str(self.repo))
+            self.assertEqual(p.returncode, 0, p.stdout + p.stderr)
+        self.g(self.repo, "add", "--", "factory-pins")
+        self.g(self.repo, "commit", "-qm", "adopt")
+        hook = Path(self.g(self.repo, "rev-parse", "--path-format=absolute", "--git-path", "hooks/pre-push"))
+        hook.parent.mkdir(parents=True, exist_ok=True)
+        hook.write_text("#!/bin/sh\nset -e\n" + readme_layer() + f'cat > "{self.seen.as_posix()}"\n', encoding="utf-8", newline="\n")
+        os.chmod(hook, 0o755)
+
+    def tearDown(self):
+        self._tmp.cleanup()
+
+    def g(self, repo, *a: str) -> str:
+        return subprocess.run(["git", "-C", str(repo), "-c", "user.email=t@example.invalid", "-c", "user.name=t",
+                               "-c", "core.autocrlf=false", *a], check=True, capture_output=True, text=True,
+                              env=self.env).stdout.strip()
+
+    def push(self, repo, *a: str) -> subprocess.CompletedProcess:
+        return subprocess.run(["git", "-C", str(repo), "-c", "core.autocrlf=false", "push", "origin", *a],
+                              capture_output=True, text=True, env=self.env)
+
+    def test_repo_whose_only_branch_is_not_master_pushes(self):
+        self.assertNotIn("master", self.g(self.repo, "branch", "-a"))
+        r = self.push(self.repo, "HEAD:refs/heads/codex/audit-remediation")
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertIn("refs/heads/codex/audit-remediation", self.seen.read_text(encoding="utf-8"), "stdin handed on")
+        (self.repo / "a.txt").write_text("a\n", encoding="utf-8")
+        self.g(self.repo, "add", "--", "a.txt")
+        self.g(self.repo, "commit", "-qm", "a")
+        r = self.push(self.repo, "HEAD:refs/heads/codex/audit-remediation")
+        self.assertEqual(r.returncode, 0, r.stderr)
+
+    def test_consumer_config_protects_its_own_branch_and_a_linked_worktree_pushes(self):
+        (self.repo / "factory-pins" / "ff-only.json").write_text(json.dumps({"protected": ["codex/*"]}), encoding="utf-8")
+        self.g(self.repo, "add", "--", "factory-pins/ff-only.json")
+        self.g(self.repo, "commit", "-qm", "protect codex/*")
+        self.assertEqual(self.push(self.repo, "HEAD:refs/heads/codex/audit-remediation").returncode, 0)
+        self.g(self.repo, "fetch", "-q", "origin")
+        self.g(self.repo, "commit", "-q", "--amend", "-m", "rewrite")
+        r = self.push(self.repo, "--force", "HEAD:refs/heads/codex/audit-remediation")
+        self.assertNotEqual(r.returncode, 0, "a configured protected branch moves fast-forward only")
+        self.assertIn("[ff-only] PUSH REFUSED", r.stderr)
+        self.g(self.repo, "reset", "-q", "--hard", "refs/remotes/origin/codex/audit-remediation")
+        wt = Path(self._tmp.name) / "linked"
+        self.g(self.repo, "worktree", "add", "-q", "--detach", str(wt))
+        (wt / "b.txt").write_text("b\n", encoding="utf-8")
+        self.g(wt, "add", "--", "b.txt")
+        self.g(wt, "commit", "-qm", "b")
+        r = self.push(wt, "HEAD:refs/heads/codex/audit-remediation")
+        self.assertEqual(r.returncode, 0, r.stderr)
+
+    def test_observe_only_mode_of_optional_locks(self):
+        self.assertEqual(hook(LOCKS, "git status"), 2, "default refuses")
+        payload = json.dumps({"tool_name": "Bash", "tool_input": {"command": "git status"}})
+        e = {k: v for k, v in os.environ.items() if k != "GIT_OPTIONAL_LOCKS"}
+        p = subprocess.run([sys.executable, str(LOCKS), "--observe-only"], input=payload, capture_output=True, text=True, env=e)
+        self.assertEqual(p.returncode, 0)
+        self.assertIn("OBSERVED", p.stderr)
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=1)
