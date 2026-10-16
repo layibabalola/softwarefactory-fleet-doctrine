@@ -16,6 +16,18 @@
 //   6. A count that could not see the fleet is UNMEASURED: never ok, never failed. --check exits 3 when a
 //      root the baseline measured (its 'roots' list) is absent here or, for a baseline without that list,
 //      when no project or user root is present at all (a CI runner that cannot see the sibling clones).
+//   7. VIEWS. A count is only comparable over a fixed (roots x families) set, and the fleet spans boxes
+//      that see different clones. The top-level baseline is the PRIMARY view; 'views' adds more:
+//      [{name, roots, families, total}]. --check and --update-baseline judge every view whose roots are
+//      all visible here and name the rest UNMEASURED; exit 3 only when NO view is measurable. The view
+//      'bus' (roots ["bus"]) is always measurable, so CI refuses any duplicate added on the bus itself.
+//      --add-view <name> [--roots a,b] seeds a NEW view at today's count (it loosens nothing).
+//   8. NEVER RAISED SILENTLY. --check-ratchet <base-ref> compares the baseline file with its copy at
+//      the base revision. Any loosening of a view that existed there (removed; total raised; a root or
+//      family dropped; a schedule max raised or a date moved later) exits 1 unless the same change adds
+//      an entry to metrics/tool-census-rulings.json: {view, change, from?, to?, ruling, date}, change one
+//      of view-removed | total-raised (with from/to) | roots-removed | families-removed |
+//      schedule-loosened, ruling citing the owner ruling. CI runs it against the push/PR base.
 //   Measured 2026-10-11: session-checkpoint.py in 4 versions, wired by 3 projects AND the user settings.
 //
 // What it counts
@@ -38,19 +50,21 @@
 //   node tools/tool-census.mjs --json                machine report
 //   node tools/tool-census.mjs --check               exit 1 if the count rose above the baseline or is
 //                                                    over the schedule's current max; 3 if UNMEASURED
-//   node tools/tool-census.mjs --update-baseline     write the baseline; refuses a rise; keeps the schedule
+//   node tools/tool-census.mjs --update-baseline     lower every measured view that fell; refuses a rise
+//   node tools/tool-census.mjs --add-view <name> [--roots a,b]   seed a new view (rule 7)
+//   node tools/tool-census.mjs --check-ratchet <ref> [--repo <dir>] [--rulings <json>]   rule 8
 //   overrides: --config <json> --baseline <json> --root <dir for relative paths> --home <dir for '~'>
 //              --today YYYY-MM-DD (the date the schedule is read at; default the local calendar date)
 //   '@bus' in the config is this script's own repository.
 // Exit: 0 ok; 1 the count rose or is over its deadline (or a refused raise); 2 tool or environment
 //       failure (including a malformed schedule); 3 UNMEASURED (the fleet roots are not visible here).
-// It reads the fleet and writes only the baseline file, and only on --update-baseline (law 1, law 2).
+// It reads the fleet and writes only the baseline file, only on --update-baseline/--add-view (law 1, law 2).
 
 import { createHash } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
 import { existsSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
-import { dirname, join, resolve } from 'node:path';
+import { dirname, join, relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const EXIT_OK = 0, EXIT_ACTION = 1, EXIT_FAIL = 2, EXIT_UNMEASURED = 3;
@@ -75,14 +89,16 @@ function expand(p, { root, home }) {
   return resolve(root, p);
 }
 
-function listFiles(dir, excludeDirs) {
+// scan (optional): only these subdirectories of a root are looked in.
+function listFiles(dir, excludeDirs, scan = null) {
+  const inScan = (f) => !scan || scan.some((s) => f === s || f.startsWith(`${s}/`));
   if (existsSync(join(dir, '.git'))) {
     try {
       const out = execFileSync('git', ['-C', dir, 'ls-files', '--cached', '--others', '--exclude-standard', '-z'], {
         encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], timeout: 60000, maxBuffer: 256 * 1024 * 1024,
         env: { ...process.env, GIT_TERMINAL_PROMPT: '0', GIT_OPTIONAL_LOCKS: '0' },
       });
-      return out.split('\0').filter(Boolean).filter((f) => !f.split('/').some((s) => excludeDirs.has(s)) && existsSync(join(dir, f)));
+      return out.split('\0').filter(Boolean).filter((f) => !f.split('/').some((s) => excludeDirs.has(s)) && inScan(f) && existsSync(join(dir, f)));
     } catch { /* fall through to a walk */ }
   }
   const files = [];
@@ -94,7 +110,7 @@ function listFiles(dir, excludeDirs) {
       else if (e.isFile()) files.push(r);
     }
   };
-  walk(dir, '');
+  if (scan) for (const s of scan) walk(join(dir, s), s); else walk(dir, '');
   return files;
 }
 
@@ -103,6 +119,42 @@ export function markerLineRe(marker) {
   const m = marker.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/\s+/g, '\\s+');
   return new RegExp('^\\s*(?:#|//|--|;)?[\\s=#*~_-]*' + m + '[\\s=#*~_-]*$');
 }
+
+// The git blob id of a file read as LF (the id the bus stores; a CRLF checkout is the same release).
+function blobIdLF(file) {
+  const buf = Buffer.from(readFileSync(file).toString('latin1').replace(/\r\n/g, '\n'), 'latin1');
+  return createHash('sha1').update(`blob ${buf.length}\0`).update(buf).digest('hex');
+}
+
+const gitOut = (dir, ...a) => {
+  const env = { ...process.env, GIT_TERMINAL_PROMPT: '0', GIT_OPTIONAL_LOCKS: '0' };
+  for (const k of ['GIT_DIR', 'GIT_WORK_TREE', 'GIT_INDEX_FILE']) delete env[k];
+  return execFileSync('git', ['-C', dir, ...a], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'], timeout: 60000, env }).trim();
+};
+
+// The ref the bus's released history is read from: origin/master, else master (never whatever branch is checked
+// out); an explicit override is for tests. null = this clone has no such ref (no history, no equivalence).
+export function busRef(dir, override = null) {
+  for (const c of override ? [override] : ['origin/master', 'master']) {
+    try { gitOut(dir, 'rev-parse', '--verify', '--quiet', `${c}^{commit}`); return c; } catch { /* next */ }
+  }
+  return null;
+}
+
+// Every blob the bus ever committed at relPath on that ref (git log of the path, then rev-parse <sha>:<path>),
+// derived at run time, never a hand-kept list. For DUPLICATE COUNTING only: any past release is one version with
+// the canonical; it is not an approval (verify/status still flag a stale pin).
+export function busHistoryBlobs(busDir, relPath, override = null) {
+  const blobs = new Set();
+  const ref = busRef(busDir, override);
+  if (!ref) return { blobs, ref: null };
+  let shas = [];
+  try { shas = gitOut(busDir, 'log', '--format=%H', ref, '--', relPath).split('\n').filter(Boolean).slice(0, 2000); } catch { return { blobs, ref }; }
+  for (const sha of shas) { try { blobs.add(gitOut(busDir, 'rev-parse', '--verify', '--quiet', `${sha}:${relPath}`)); } catch { /* deleted there */ } }
+  return { blobs, ref };
+}
+
+const isDir = (p) => { try { return statSync(p).isDirectory(); } catch { return false; } };
 
 function versionOf(file, marker, canonical = false) {
   const text = readFileSync(file, 'utf8').replace(/\r\n/g, '\n');
@@ -150,30 +202,56 @@ function familyEvents(scripts, fam) {
   return events;
 }
 
-export function census({ config, root, home }) {
+export function census({ config, root, home, busRefOverride = null }) {
   const excludeDirs = new Set(config.excludeDirs || ['.git', 'node_modules', 'archive', '__pycache__', 'worktrees']);
   const roots = (config.roots || []).map((r) => ({ ...r, dir: expand(r.path, { root, home }) }));
   const userSettings = config.userSettings ? expand(config.userSettings, { root, home }) : null;
   const userScripts = userSettings ? hookScripts(userSettings) : null;
-  const absent = roots.filter((r) => !existsSync(r.dir) || !statSync(r.dir).isDirectory()).map((r) => r.name);
+  // A root is MEASURED only if its directory exists and every "scan" subdirectory exists: a scan dir that is not
+  // there (a moved workspace layout) is UNMEASURED, never a measured zero. (An existing but empty root stays
+  // measured at 0: that is how a retired copy ratchets down, rule 7.)
   const fileCache = new Map();
+  const absentWhy = new Map();
+  for (const r of roots) {
+    if (!isDir(r.dir)) { absentWhy.set(r.name, 'directory absent'); continue; }
+    const gone = (r.scan || []).filter((s) => !isDir(join(r.dir, s)));
+    if (gone.length) { absentWhy.set(r.name, `scan dir(s) missing: ${gone.join(', ')}`); continue; }
+    const files = listFiles(r.dir, excludeDirs, r.scan || null);
+    fileCache.set(r.name, files);
+  }
+  const absent = [...absentWhy.keys()];
   const families = [];
   const doubles = [];
   for (const fam of config.families || []) {
     const res = (fam.names || []).map(globRe);
     const copies = [];
+    // releaseHistory: a family whose canonical bus file is RELEASED over time (the pin runner). Version identity is
+    // the git blob id of the LF bytes, so identical bytes are one version wherever they sit. A vendored copy
+    // (<vendoredDir>/<name>, default factory-pins) equal to ANY blob in the bus history of the canonical path is
+    // aliased to the canonical's version; only an edited copy is divergent.
+    const rel = !!(fam.releaseHistory && fam.canonical);
+    const busRoot = rel ? roots.find((r) => r.kind === 'bus' && !absent.includes(r.name)) : null;
+    const hist = busRoot ? busHistoryBlobs(busRoot.dir, fam.canonical, busRefOverride) : { blobs: new Set(), ref: null };
+    const canonBlob = busRoot && existsSync(join(busRoot.dir, fam.canonical)) ? blobIdLF(join(busRoot.dir, fam.canonical)) : null;
+    const vendoredDir = fam.vendoredDir || 'factory-pins';
     for (const r of roots) {
       if (absent.includes(r.name)) continue;
-      if (!fileCache.has(r.name)) fileCache.set(r.name, listFiles(r.dir, excludeDirs));
       for (const f of fileCache.get(r.name)) {
         if (!res.some((re) => re.test(baseName(f)))) continue;
         const canonical = r.kind === 'bus' && !!fam.canonical && f === fam.canonical;
         const v = versionOf(join(r.dir, f), fam.sharedSectionMarker, canonical);
-        copies.push({ root: r.name, path: f, ...v, ...(canonical ? { canonical: true } : {}) });
+        let version = v.hash, extra = {};
+        if (rel) {
+          const blob = blobIdLF(join(r.dir, f));
+          const release = canonical ? 'canonical' : (busRoot && r.kind !== 'bus' && f.split('/').slice(-2, -1)[0] === vendoredDir && hist.blobs.has(blob)) ? 'history' : null;
+          version = `blob:${release && canonBlob ? canonBlob : blob}`;
+          extra = { blob, ...(release ? { release } : {}) };
+        }
+        copies.push({ root: r.name, path: f, ...v, version, ...extra, ...(canonical ? { canonical: true } : {}) });
       }
     }
-    const distinct = [...new Set(copies.map((c) => c.hash))];
-    families.push({ name: fam.name, marker: fam.sharedSectionMarker || null, copies, distinct: distinct.length, excess: Math.max(distinct.length - 1, 0) });
+    const distinct = [...new Set(copies.map((c) => c.version))];
+    families.push({ name: fam.name, marker: fam.sharedSectionMarker || null, copies, distinct: distinct.length, excess: Math.max(distinct.length - 1, 0), ...(rel ? { historyRef: hist.ref } : {}) });
     for (const r of roots) {
       if (r.kind === 'user' || absent.includes(r.name)) continue;
       const proj = familyEvents(hookScripts(join(r.dir, '.claude', 'settings.json')), fam);
@@ -185,7 +263,7 @@ export function census({ config, root, home }) {
   const total = families.reduce((s, f) => s + f.excess, 0) + doubles.length;
   const measuredRoots = roots.filter((r) => !absent.includes(r.name)).map((r) => r.name);
   const fleetRootsSeen = roots.filter((r) => r.kind !== 'bus' && !absent.includes(r.name)).length;
-  return { total, families, doubleRegistrations: doubles, absentRoots: absent, measuredRoots, fleetRootsSeen };
+  return { total, families, doubleRegistrations: doubles, absentRoots: absent, absentWhy: Object.fromEntries(absentWhy), measuredRoots, fleetRootsSeen };
 }
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
@@ -234,16 +312,17 @@ function human(rep) {
   const L = [];
   for (const f of rep.families) {
     L.push(`[tool-census] ${f.name}: ${f.copies.length} cop${f.copies.length === 1 ? 'y' : 'ies'}, ${f.distinct} distinct version(s)${f.marker ? ` (hashed below '${f.marker}')` : ''}`);
-    for (const c of f.copies) L.push(`    ${c.hash.slice(0, 10)}  ${String(c.lines).padStart(5)} lines  ${c.root}: ${c.path}${c.canonical ? '   CANONICAL (hashed whole; copies converge on it)' : c.markerFound === false ? '   NO MARKER (hashed whole)' : ''}`);
+    for (const c of f.copies) L.push(`    ${c.hash.slice(0, 10)}  ${String(c.lines).padStart(5)} lines  ${c.root}: ${c.path}${c.release === 'history' ? '   RELEASE (equals a bus-history blob: counted as the canonical)' : c.canonical ? '   CANONICAL (hashed whole; copies converge on it)' : c.markerFound === false ? '   NO MARKER (hashed whole)' : ''}`);
   }
   for (const d of rep.doubleRegistrations) L.push(`[tool-census] DOUBLE REGISTRATION: ${d.family} wired by ${d.project} .claude/settings.json AND user settings on ${d.events.join(', ')}${d.projectFlat ? ' (project entry is FLAT, not the matcher-group schema: may never fire)' : ''}`);
-  if (rep.absentRoots.length) L.push(`[tool-census] roots absent on this box (skipped): ${rep.absentRoots.join(', ')}`);
+  if (rep.absentRoots.length) L.push(`[tool-census] roots absent on this box (skipped): ${rep.absentRoots.map((n) => ((rep.absentWhy || {})[n] && rep.absentWhy[n] !== 'directory absent' ? `${n} [${rep.absentWhy[n]}]` : n)).join(', ')}`);
   L.push(`[tool-census] count = ${rep.families.reduce((s, f) => s + f.excess, 0)} excess version(s) + ${rep.doubleRegistrations.length} double registration(s) = ${rep.total}`);
   return L.join('\n');
 }
 
 function baselineOf(rep, old) {
   return {
+    ...(old || {}),
     schema: 'tool-census-baseline.v1',
     total: rep.total,
     ...(old && old.schedule !== undefined ? { schedule: old.schedule } : {}),
@@ -255,57 +334,221 @@ function baselineOf(rep, old) {
   };
 }
 
+// --- views (rule 7) --------------------------------------------------------------------------------
+// One count over one fixed (roots x families) set. The top-level baseline is the PRIMARY view (its
+// roots list and families map); 'views' adds more, e.g. the bus alone (always measurable, so CI
+// enforces it) and each fleet box's own root set. A view is measured only where all its roots are.
+export function viewsOf(baseline) {
+  const primary = {
+    name: 'primary', primary: true, total: baseline.total,
+    roots: Array.isArray(baseline.roots) ? baseline.roots : null,
+    families: baseline.families && typeof baseline.families === 'object' ? Object.keys(baseline.families) : null,
+    schedule: baseline.schedule,
+  };
+  const extra = (baseline.views || []).map((v, i) => {
+    if (!v || typeof v.name !== 'string' || !v.name || v.name === 'primary') throw new Error(`views[${i}].name must be a non-empty string other than 'primary'`);
+    if (!Number.isInteger(v.total) || v.total < 0) throw new Error(`views[${i}].total must be a non-negative integer`);
+    if (!Array.isArray(v.roots) || !v.roots.length) throw new Error(`views[${i}].roots must be a non-empty array`);
+    if (!Array.isArray(v.families) || !v.families.length) throw new Error(`views[${i}].families must be a non-empty array`);
+    return { ...v, primary: false };
+  });
+  const names = new Set();
+  for (const v of extra) { if (names.has(v.name)) throw new Error(`duplicate view '${v.name}'`); names.add(v.name); }
+  return [primary, ...extra];
+}
+
+export function restrict(config, view) {
+  return {
+    ...config,
+    roots: view.roots ? (config.roots || []).filter((r) => view.roots.includes(r.name)) : config.roots,
+    families: view.families ? (config.families || []).filter((f) => view.families.includes(f.name)) : config.families,
+  };
+}
+
+function viewUnmeasured(rep, view) {
+  if (view.roots) {
+    const missing = view.roots.filter((r) => !rep.measuredRoots.includes(r));
+    return missing.length ? `root(s) the view measured are not visible here: ${missing.join(', ')}` : null;
+  }
+  return rep.fleetRootsSeen === 0 ? 'no project or user root is visible here (the sibling clones are absent)' : null;
+}
+
+function measureViews(config, baseline, { root, home }) {
+  return viewsOf(baseline).map((view) => {
+    const rep = census({ config: restrict(config, view), root, home });
+    return { view, rep, why: viewUnmeasured(rep, view) };
+  });
+}
+
+// --- ratchet history (rule 8) ---------------------------------------------------------------------
+// Compares the baseline at a base revision with the one now. Every LOOSENING of a view that existed at
+// the base -- removed, total raised, a root or family dropped, a schedule max raised or a date moved
+// later -- needs a NEW entry in the rulings file (metrics/tool-census-rulings.json) naming that view
+// and citing the ruling. A lowering, a new view, or a tighter schedule needs nothing.
+function maxAt(schedule, d) {
+  const passed = schedule.filter((e) => e.by <= d);
+  return passed.length ? passed[passed.length - 1].max : Infinity;
+}
+
+export function loosenings(base, head) {
+  const out = [];
+  const headViews = new Map(viewsOf(head).map((v) => [v.name, v]));
+  for (const b of viewsOf(base)) {
+    const h = headViews.get(b.name);
+    if (!h) { out.push({ view: b.name, change: 'view-removed', detail: `view '${b.name}' removed` }); continue; }
+    if (typeof h.total !== 'number' || h.total > b.total) out.push({ view: b.name, change: 'total-raised', from: b.total, to: h.total, detail: `total ${b.total} -> ${h.total}` });
+    if (b.roots && (!h.roots || b.roots.some((r) => !h.roots.includes(r)))) out.push({ view: b.name, change: 'roots-removed', detail: `roots dropped: ${b.roots.filter((r) => !(h.roots || []).includes(r)).join(', ') || 'list removed'}` });
+    if (b.families && (!h.families || b.families.some((f) => !h.families.includes(f)))) out.push({ view: b.name, change: 'families-removed', detail: `families dropped: ${b.families.filter((f) => !(h.families || []).includes(f)).join(', ') || 'list removed'}` });
+    const bs = parseSchedule({ schedule: b.schedule }), hs = parseSchedule({ schedule: h.schedule });
+    const loose = [...new Set([...bs, ...hs].map((e) => e.by))].sort().find((d) => maxAt(hs, d) > maxAt(bs, d));
+    if (loose) out.push({ view: b.name, change: 'schedule-loosened', detail: `schedule allows ${maxAt(hs, loose)} on ${loose} where it allowed ${maxAt(bs, loose)}` });
+  }
+  return out;
+}
+
+export function unruled(found, baseRulings, headRulings) {
+  const seen = new Set(((baseRulings && baseRulings.rulings) || []).map((r) => JSON.stringify(r)));
+  const fresh = ((headRulings && headRulings.rulings) || []).filter((r) => !seen.has(JSON.stringify(r))
+    && r && typeof r.ruling === 'string' && r.ruling.trim() && typeof r.date === 'string' && DATE_RE.test(r.date));
+  return found.filter((l) => !fresh.some((r) => r.view === l.view && r.change === l.change
+    && (l.change !== 'total-raised' || (r.from === l.from && r.to === l.to))));
+}
+
+function gitShowJson(repo, ref, rel) {
+  try {
+    const out = execFileSync('git', ['--no-optional-locks', '-C', repo, 'show', `${ref}:${rel}`], {
+      encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], timeout: 30000,
+      env: { ...process.env, GIT_TERMINAL_PROMPT: '0', GIT_OPTIONAL_LOCKS: '0' },
+    });
+    return JSON.parse(out);
+  } catch (err) {
+    if (/does not exist|exists on disk, but not in|bad revision|invalid object name/i.test(String(err.stderr || err.message))) {
+      // the path is absent at the base (a first baseline); an unknown REVISION is a tool failure
+      execFileSync('git', ['--no-optional-locks', '-C', repo, 'rev-parse', '--verify', '--quiet', `${ref}^{commit}`], { stdio: 'ignore' });
+      return null;
+    }
+    throw err;
+  }
+}
+
+function readJsonIf(p) { return existsSync(p) ? JSON.parse(readFileSync(p, 'utf8')) : null; }
+
 function main() {
   const args = parseArgs(process.argv.slice(2));
   const root = resolve(args.root ? String(args.root) : process.cwd());
   const home = resolve(args.home ? String(args.home) : homedir());
   const configPath = resolve(args.config ? String(args.config) : join(BUS, 'tools', 'tool-census.config.json'));
   const baselinePath = resolve(args.baseline ? String(args.baseline) : join(BUS, 'metrics', 'tool-census-baseline.json'));
+  const rulingsPath = resolve(args.rulings ? String(args.rulings) : join(dirname(baselinePath), 'tool-census-rulings.json'));
   const today = args.today ? String(args.today) : localDate();
   if (!DATE_RE.test(today)) { console.error(`[tool-census] --today must be YYYY-MM-DD, got '${today}'`); return EXIT_FAIL; }
-  if (!existsSync(configPath)) { console.error(`[tool-census] config not found: ${configPath}`); return EXIT_FAIL; }
-  const config = JSON.parse(readFileSync(configPath, 'utf8'));
-  const rep = census({ config, root, home });
 
-  if (args['update-baseline']) {
-    const old = existsSync(baselinePath) ? JSON.parse(readFileSync(baselinePath, 'utf8')) : null;
-    if (old) parseSchedule(old);
-    const why = old ? unmeasuredReason(rep, old) : (rep.fleetRootsSeen === 0 ? 'no project or user root is visible here' : null);
-    if (why) {
-      console.error(`[tool-census] UNMEASURED: ${why}. A partial count is not comparable; the baseline is unchanged.`);
-      return EXIT_UNMEASURED;
-    }
-    if (old && rep.total > old.total) {
-      console.error(`[tool-census] REFUSED: count ${rep.total} is above the baseline ${old.total}. The baseline only falls; retire the copy instead.`);
+  if (args['check-ratchet']) {
+    const ref = String(args['check-ratchet']);
+    const repo = resolve(args.repo ? String(args.repo) : BUS);
+    const relOf = (p) => relative(repo, p).split(sep).join('/');
+    const head = readJsonIf(baselinePath);
+    if (!head) { console.error(`[tool-census] no baseline at ${baselinePath}`); return EXIT_FAIL; }
+    const base = gitShowJson(repo, ref, relOf(baselinePath));
+    if (!base) { console.error(`[tool-census] ratchet: no baseline at ${ref}; nothing to compare.`); return EXIT_OK; }
+    const found = loosenings(base, head);
+    const missing = unruled(found, gitShowJson(repo, ref, relOf(rulingsPath)), readJsonIf(rulingsPath));
+    for (const l of found) console.error(`[tool-census] ratchet: view '${l.view}' ${l.detail}${missing.includes(l) ? '  UNRULED' : '  (ruled)'}`);
+    if (missing.length) {
+      console.error(`[tool-census] RATCHET REFUSED: ${missing.length} loosening(s) since ${ref} without a new entry in ${relOf(rulingsPath)} `
+        + '({view, change, from?, to?, ruling, date}). The baseline only falls; raising it is an owner ruling, recorded in that file in the same change.');
       return EXIT_ACTION;
     }
-    if (old && rep.total === old.total) { console.log(`[tool-census] count ${rep.total} equals the baseline; unchanged.`); return EXIT_OK; }
-    writeFileSync(baselinePath, JSON.stringify(baselineOf(rep, old), null, 2) + '\n');
-    console.log(`[tool-census] baseline ${old ? `lowered ${old.total} -> ` : 'seeded at '}${rep.total}: ${baselinePath}`);
+    console.error(`[tool-census] ratchet ok since ${ref}: ${found.length ? `${found.length} loosening(s), each ruled` : 'nothing loosened'}.`);
+    return EXIT_OK;
+  }
+
+  if (!existsSync(configPath)) { console.error(`[tool-census] config not found: ${configPath}`); return EXIT_FAIL; }
+  const config = JSON.parse(readFileSync(configPath, 'utf8'));
+  const rep = census({ config, root, home, busRefOverride: typeof args['bus-ref'] === 'string' ? args['bus-ref'] : null });
+
+  if (args['add-view']) {
+    const name = String(args['add-view']);
+    const old = readJsonIf(baselinePath);
+    if (!old) { console.error(`[tool-census] no baseline at ${baselinePath}; seed it first`); return EXIT_FAIL; }
+    if (viewsOf(old).some((v) => v.name === name)) { console.error(`[tool-census] REFUSED: view '${name}' exists; a view is lowered by --update-baseline, never re-seeded`); return EXIT_ACTION; }
+    const only = args.roots ? String(args.roots).split(',').map((s) => s.trim()).filter(Boolean) : rep.measuredRoots;
+    const absent = only.filter((r) => !rep.measuredRoots.includes(r));
+    if (absent.length) { console.error(`[tool-census] UNMEASURED: root(s) not visible here: ${absent.join(', ')}`); return EXIT_UNMEASURED; }
+    const view = { name, roots: only, families: (config.families || []).map((f) => f.name) };
+    const vrep = census({ config: restrict(config, view), root, home });
+    const entry = { ...view, total: vrep.total, measuredAt: new Date().toISOString() };
+    writeFileSync(baselinePath, JSON.stringify({ ...old, views: [...(old.views || []), entry] }, null, 2) + '\n');
+    console.log(`[tool-census] view '${name}' seeded at ${vrep.total} over ${only.join(', ')}`);
+    return EXIT_OK;
+  }
+
+  if (args['update-baseline']) {
+    const old = readJsonIf(baselinePath);
+    if (!old) {
+      if (rep.fleetRootsSeen === 0) { console.error('[tool-census] UNMEASURED: no project or user root is visible here. A partial count is not comparable; the baseline is unchanged.'); return EXIT_UNMEASURED; }
+      writeFileSync(baselinePath, JSON.stringify(baselineOf(rep, null), null, 2) + '\n');
+      console.log(`[tool-census] baseline seeded at ${rep.total}: ${baselinePath}`);
+      return EXIT_OK;
+    }
+    parseSchedule(old);
+    const measured = measureViews(config, old, { root, home });
+    const seen = measured.filter((m) => !m.why);
+    for (const m of measured.filter((x) => x.why)) console.error(`[tool-census] view '${m.view.name}' UNMEASURED: ${m.why}; unchanged.`);
+    if (!seen.length) { console.error('[tool-census] UNMEASURED: no view is measurable here. A partial count is not comparable; the baseline is unchanged.'); return EXIT_UNMEASURED; }
+    const rose = seen.filter((m) => m.rep.total > m.view.total);
+    if (rose.length) {
+      for (const m of rose) console.error(`[tool-census] REFUSED: view '${m.view.name}' count ${m.rep.total} is above the baseline ${m.view.total}. The baseline only falls; retire the copy instead.`);
+      return EXIT_ACTION;
+    }
+    const fell = seen.filter((m) => m.rep.total < m.view.total);
+    if (!fell.length) { console.log(`[tool-census] every measured view equals its baseline (${seen.map((m) => `${m.view.name}=${m.rep.total}`).join(', ')}); unchanged.`); return EXIT_OK; }
+    let next = { ...old };
+    for (const m of fell) {
+      if (m.view.primary) {
+        const { views, ...rest } = next;
+        next = { ...baselineOf(m.rep, rest), ...(views ? { views } : {}) };
+      } else {
+        next.views = next.views.map((v) => (v.name === m.view.name ? { ...v, total: m.rep.total, measuredAt: new Date().toISOString() } : v));
+      }
+      console.log(`[tool-census] view '${m.view.name}' lowered ${m.view.total} -> ${m.rep.total}`);
+    }
+    writeFileSync(baselinePath, JSON.stringify(next, null, 2) + '\n');
+    console.log(`[tool-census] baseline written: ${baselinePath}`);
     return EXIT_OK;
   }
   if (args.json) console.log(JSON.stringify(rep, null, 2)); else console.log(human(rep));
   if (args.check) {
     if (!existsSync(baselinePath)) { console.error(`[tool-census] no baseline at ${baselinePath}`); return EXIT_FAIL; }
     const baseline = JSON.parse(readFileSync(baselinePath, 'utf8'));
-    const base = baseline.total;
-    if (typeof base !== 'number') { console.error('[tool-census] baseline has no numeric total'); return EXIT_FAIL; }
-    const schedule = parseSchedule(baseline);
-    const why = unmeasuredReason(rep, baseline);
-    if (why) {
-      console.error(`[tool-census] UNMEASURED: ${why}. Neither ok nor failed; run --check on a box that holds the fleet clones.`);
-      return EXIT_UNMEASURED;
+    if (typeof baseline.total !== 'number') { console.error('[tool-census] baseline has no numeric total'); return EXIT_FAIL; }
+    parseSchedule(baseline);
+    const measured = measureViews(config, baseline, { root, home });
+    let failed = false, seen = 0;
+    for (const { view, rep: vrep, why } of measured) {
+      const tag = view.primary ? '' : `view '${view.name}': `;
+      if (why) { console.error(`[tool-census] ${tag}UNMEASURED: ${why}. Neither ok nor failed; run --check on a box that holds the fleet clones.`); continue; }
+      seen++;
+      const schedule = parseSchedule({ schedule: view.schedule });
+      const { current, next } = scheduleAt(schedule, today);
+      let bad = false;
+      if (vrep.total > view.total) { console.error(`[tool-census] ${tag}ROSE: count ${vrep.total} > baseline ${view.total}. A shared tool was copied or re-registered; run it from one place.${view.primary ? '' : ` Over: ${over(vrep).join('; ') || 'none'}.`}`); bad = true; }
+      if (current && vrep.total > current.max) {
+        console.error(`[tool-census] ${tag}OVERDUE: count ${vrep.total} > max ${current.max} due by ${current.by} (today ${today}). Still over: ${over(vrep).join('; ')}. Retire the copies; the deadline is not moved to fit.`);
+        bad = true;
+      }
+      if (bad) { failed = true; continue; }
+      const ahead = next ? `; next deadline: max ${next.max} by ${next.by}${vrep.total > next.max ? ` (${vrep.total - next.max} to retire)` : ''}` : '';
+      console.error(`[tool-census] ${tag}ok: count ${vrep.total} <= baseline ${view.total}${current ? ` and <= max ${current.max} due ${current.by}` : ''}${vrep.total < view.total ? ' (lower: run --update-baseline to ratchet down)' : ''}${ahead}.`);
     }
-    const { current, next } = scheduleAt(schedule, today);
-    let failed = false;
-    if (rep.total > base) { console.error(`[tool-census] ROSE: count ${rep.total} > baseline ${base}. A shared tool was copied or re-registered; run it from one place.`); failed = true; }
-    if (current && rep.total > current.max) {
-      console.error(`[tool-census] OVERDUE: count ${rep.total} > max ${current.max} due by ${current.by} (today ${today}). Still over: ${over(rep).join('; ')}. Retire the copies; the deadline is not moved to fit.`);
-      failed = true;
-    }
+    // Configured members that no baseline view lists are counted nowhere (rule 7: a view counts only its own roots x
+    // families). Named here so they are never silently outside the ratchet; --add-view seeds them at today's count.
+    const vs = viewsOf(baseline);
+    const freshRoots = vs.some((v) => !v.roots) ? [] : (config.roots || []).filter((r) => !vs.some((v) => v.roots.includes(r.name))).map((r) => `root:${r.name}`);
+    const freshFams = vs.some((v) => !v.families) ? [] : (config.families || []).filter((f) => !vs.some((v) => v.families.includes(f.name))).map((f) => `family:${f.name}`);
+    if (freshRoots.length || freshFams.length) console.error(`[tool-census] NEW-MEMBERS-UNBASELINED: ${[...freshRoots, ...freshFams].join(', ')} (in no baseline view, so counted nowhere; an owner seeds them with --add-view <name> --roots <a,b>). Informational: the verdict above is unchanged.`);
     if (failed) return EXIT_ACTION;
-    const ahead = next ? `; next deadline: max ${next.max} by ${next.by}${rep.total > next.max ? ` (${rep.total - next.max} to retire)` : ''}` : '';
-    console.error(`[tool-census] ok: count ${rep.total} <= baseline ${base}${current ? ` and <= max ${current.max} due ${current.by}` : ''}${rep.total < base ? ' (lower: run --update-baseline to ratchet down)' : ''}${ahead}.`);
+    if (!seen) return EXIT_UNMEASURED;
   }
   return EXIT_OK;
 }

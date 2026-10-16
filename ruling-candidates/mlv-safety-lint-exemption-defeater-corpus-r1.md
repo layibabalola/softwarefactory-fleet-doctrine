@@ -24,3 +24,23 @@ What the lint should forbid (HUB-VM-NO-LOCAL-PLAYBACK-1 policy) stays owner/Layi
 ## Close condition
 
 Hub adopts, distinguishes, or rejects in writing; factory ACKs with plan/ETA, starting with #448 r4's defeater rows.
+
+## Recurrence: MLV-App #455 (NA-2 delete hook, 2026-10-16)
+The same shape hit a hook, not just a prompt lint. NA-2 exempts `verb=` assignments unless the text names a launcher.
+- Each round, r2 to r7, enumerated more launcher syntax, passed its own new rows, and was broken by the next outside probe: sol r2 to r6, Iverson on r6 (ruby `system(`), and CoS on r7 `edd32992` (Rscript `shell()`, julia `run()`, wsl interop with a string-built `cmd`).
+- Master denied all of these.
+- Proposed addition, clause 4: an exemption added to a refuse-by-default hook ships with a master-parity sweep. Every must-deny row master refuses gets re-run through generic run-anything wrappers (an unknown interpreter name, wsl, and a string-built command word), and the suite fails if any of them flips to allow.
+- Prefer exemptions keyed on the delete shape itself. Here that's a non-empty assignment value. Don't key them on a list of launchers.
+- Bus: `cos-feedback/mlv-app/pr-455.md`. ACK ask: https://github.com/SuperDimensionalSpaceFortress/MLV-App/pull/455#issuecomment-6223902133
+
+## Recurrence 2: MLV-App #455 r8 `3fc38755` (2026-10-16)
+- r8 switched to a delete-shape trigger, as CoS asked. It closed every listed-launcher probe, but the shape regex was narrower than cmd.exe. Glued switches (`rd=/s/q`), cmd argument delimiters after `=` (`rd=,/s`, `rd=;/s`, `rd==/s`) and an escaped tab still exit 0 on the head and exit 2 on master.
+- The promised master-parity sweep still hadn't landed, and it would have caught this.
+- Clause 4 addition: the parity sweep should also generate the cmd.exe delimiter (`,` `;` `=` tab) and glued-switch variants of each must-deny row, not just wrapper variants.
+- ACK ask: https://github.com/SuperDimensionalSpaceFortress/MLV-App/pull/455#issuecomment-6224673286
+
+## Recurrence 3: MLV-App #455 r9 `8fa14bf8` (2026-10-16)
+- r9 added the master-parity sweep and closed every r8 probe, but a delete with a value inside a cmd.exe `(` block (`shell('echo x & (rd=P)')`, `if exist P (rd=P)`) still exits 2 on master and 0 on the head.
+- The sweep missed it: it harvests only plain string constants (21 f-string deny rows skipped), and none of its wrappers opens a `(` block.
+- Clause 4 addition: the parity sweep must assert that its harvested row count matches the deny rows in the file, so rows can't drop out silently, and its wrappers must cover every cmd.exe command-start position (`&`, `|`, `(`, `@`).
+- ACK ask: https://github.com/SuperDimensionalSpaceFortress/MLV-App/pull/455#issuecomment-6225206858

@@ -43,7 +43,7 @@
     "pinned": "check-evidence-dumps",
     "args": [
       "--config",
-      "{bus}/tools/factory/fixtures/check-evidence-dumps/conjugal.config.json",
+      "{bus:tools/factory/fixtures/check-evidence-dumps/conjugal.config.json}",
       "--repo",
       "{root}",
       "--tree",

@@ -5,10 +5,18 @@
     { "name": "doctrine-outbox", "names": ["doctrine_outbox.py", "doctrine-outbox.py"] },
     { "name": "check-doc-size", "names": ["check-doc-size.py", "check_doc_size.py"], "sharedSectionMarker": "END CONFIG", "canonical": "tools/factory/check-doc-size.py" },
     { "name": "doctrine-triage", "names": ["fold-triage.mjs", "doctrine-triage.mjs"] },
-    { "name": "pin-runner", "names": ["pin-runner.py", "pin_runner.py"] },
+    { "name": "pin-runner", "names": ["pin-runner.py", "pin_runner.py"], "canonical": "tools/factory/pin-runner.py", "releaseHistory": true, "vendoredDir": "factory-pins" },
     { "name": "pre-push-ff-only", "names": ["pre-push-ff-only.py", "pre_push_ff_only.py"] },
     { "name": "exact-path-add", "names": ["exact-path-add.py", "exact_path_add.py"] },
-    { "name": "git-optional-locks", "names": ["git-optional-locks.py", "git_optional_locks.py"] }
+    { "name": "git-optional-locks", "names": ["git-optional-locks.py", "git_optional_locks.py"] },
+    { "name": "no-unpinned-tool", "names": ["pre-push-no-unpinned-tool.py", "pre_push_no_unpinned_tool.py"] },
+    { "name": "session-start-auth", "names": ["session-start-auth.py", "session_start_auth.py"] },
+    { "name": "resumability-check", "names": ["resumability-check.py", "resumability_check.py"] },
+    { "name": "check-evidence-dumps", "names": ["check-evidence-dumps.py", "check_evidence_dumps.py"] },
+    { "name": "fleet-scorecard", "names": ["fleet-scorecard.py", "fleet_scorecard.py"] },
+    { "name": "doctrine-periodic", "names": ["doctrine-periodic.py", "doctrine_periodic.py"] },
+    { "name": "account-parity", "names": ["check-account-parity.py", "check_account_parity.py", "check-account-parity.ps1", "check_account_parity.ps1", "account-parity.py", "account-parity.ps1"] },
+    { "name": "realign-cli", "names": ["realign-cli.py", "realign_cli.py", "realign-cli.ps1", "realign_cli.ps1"] }
   ],
   "roots": [
     { "name": "bus", "path": "@bus", "kind": "bus" },
@@ -20,8 +28,10 @@
     { "name": "conjugal", "path": "C:/code/Conjugal", "kind": "project" },
     { "name": "cloudvore", "path": "C:/code/DropBox Vault", "kind": "project" },
     { "name": "magic-lantern", "path": "C:/code/magic-lantern_dannephoto", "kind": "project" },
+    { "name": "dng", "path": "C:/code/DngAutoProcessor - Claude/DngAutoProcessor", "kind": "project" },
+    { "name": "dng-workspace", "path": "C:/code/DngAutoProcessor - Claude", "kind": "project", "scan": ["tools", "coordination/tools"] },
     { "name": "user-hooks", "path": "~/.claude/hooks", "kind": "user" }
   ],
   "userSettings": "~/.claude/settings.json",
-  "excludeDirs": [".git", "node_modules", "archive", "__pycache__", "worktrees"]
+  "excludeDirs": [".git", "node_modules", "archive", "__pycache__", "worktrees", ".claude-worktrees", ".codex-worktrees"]
 }

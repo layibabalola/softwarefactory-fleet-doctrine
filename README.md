@@ -325,6 +325,22 @@ node tools/Get-ProductThroughput.tests.mjs                                      
 
 Fleet runs are appended to `metrics/product-share-lines.jsonl`.
 
+**Bytes, commit classes and `-Repo` (added 2026-10-16, owner defect D3).** Lines hide mega-line
+paperwork (one 62 KB packet state-line rewrite is 2 lines), so line mode also reports changed **bytes**
+per class (`bytes`, `total_bytes`, `product_share_bytes`, beside `product_share_lines`): the raw byte
+length of every added and removed line, each counting its newline (a final line with no EOL does not),
+read from git's stdout as bytes so CRLF, a lone CR and non-UTF-8 content are exact. A binary file
+counts old size + new size when its blob changed (`binary_files`; `binary_files_ignored` is a
+deprecated alias): binary files add no lines. Paths are read from `git log --raw --numstat -z` (NUL
+separated), never from `Binary files a/x and b/y differ` prose, so a name with ` and `, spaces or a tab
+lands in the right bucket. `commit_classes` (product / tests / paperwork-only / tooling-only /
+paperwork-and-tooling / other, by the buckets a commit touches) and
+`paperwork_tooling_commits_per_product_commit` count commits. `-NoBytes` skips the bytes pass (a second
+`git log -p`). All of it is additive to the row schema below, `-AsRows` rows included. `-Repo <path>`
+(alias of `-Root`) measures any checkout: classes come from the config entry whose root is that repo, or
+from `-Project <name>`; no entry = exit 4. `-Days` is an alias of `-WindowDays`; classic mode honours
+`-Since` too. Pin a commit with upstream's `-At` (a raw SHA works and labels the row with the SHA).
+
 Conjugal and Cloudvore joined the classifier on 2026-10-16 (ref `origin/master`; their rows carry
 `classifier_sha256` of the committed LF bytes of `tools/product-throughput-classes.json`).
 
@@ -343,15 +359,20 @@ Conjugal's harvest steward publishes the ratio once per ISO week (`harvest_runne
 it runs the census at a pinned bus commit for every configured root present on its machine and
 appends the rows here. Publication is the point; the rows still gate nothing (metrics law 1).
 
-**Rule tags (`tools/check-rule-tags.py`, added 2026-10-16 for owner defect "most rules are prose").**
-Every rule bullet in a configured markdown section carries `[enforced: <path>]` (a check at that
-project-relative path refuses a breach; the path must exist) or `[prose]` (nothing refuses). Exit 1 on
-an untagged, dangling or mixed bullet; `--report` measures and exits 0; exit 2 when the census could
-not run. Projects and sections live in `tools/rule-tags.config.json`. The tool proves the path
-exists, never that it refuses: the citation is reviewed like the rule.
+**Rule tags (`tools/check-rule-tags.py`, added 2026-10-16 for owner defect "most rules are prose"; v2 same day).**
+Every rule bullet in a configured markdown section is `enforced` (`[enforced: <path>]` inline, or an entry in a
+sidecar `rule_map` file of schema `rule-map.v1` keyed by the sha256 of the whitespace-normalised rule text, so a
+project never edits governing prose to tag it), `judgement` or `record` (both left out of the coverage denominator;
+a warning prints if they exceed 50% of the rules) or `prose`. An enforcer must exist AND be referenced from a file in
+the project's `invocation_surfaces` (hooks, workflows, tests), else it counts as `enforced-uninvoked`, not backed.
+`floor_schedule` is a rising ratchet: `--check` exits 1 when the backed count is below the latest dated floor.
+Headings and bullets inside code fences are ignored. Exit 1 on an untagged, dangling, mixed or uninvoked bullet;
+`--report` measures and exits 0; exit 2 when the census could not run. Config: `tools/rule-tags.config.json`.
 
 ```bash
-python tools/check-rule-tags.py --report        # e.g. rule-tags conjugal: 12 rules, 4 backed, 8 prose, ...
+python tools/check-rule-tags.py --report                 # rule-tags conjugal: 12 rules, 4 backed, 8 prose, ...
+python tools/check-rule-tags.py --project NAME --emit-map out.json   # skeleton map, every rule kind prose
+python tools/check-rule-tags.py --check [--today YYYY-MM-DD] [--strict-map]
 python tools/check-rule-tags.tests.py
 ```
 
@@ -408,11 +429,21 @@ gate or drain; nothing depends on Conjugal's steward:
 ```bash
 python factory-pins/pin-runner.py run fleet-scorecard -- --root . --project <name> --publish
 python tools/factory/fleet-scorecard.tests.py      # stdlib; temp fixture repos only, never the host
+# fleet health, as the bus (every member cloned on this machine; the rest UNMEASURED), daily per machine:
+python tools/factory/fleet-scorecard.py --fleet --bus <bus clone> --publish     # --dry-run --print to look
 ```
+
+`--fleet` (added 2026-10-16, owner request for regular fleet self-improvement health checks) derives the
+members from `specs/` on origin/master through `tools/fleet-membership.mjs --stdin`, reads clone paths from
+the machine-local `~/.fleet-roots.json` (`--roots`; the map `fleet-sweep.mjs` reads), runs the bus tools in
+`BUS_TOOLS` from the checkout that holds the script (it runs AS the bus, like CI; project mode keeps pins),
+and adds a `health` block judged by `metrics/fleet-health-thresholds.json` (`--thresholds`). Absent members
+are UNMEASURED rows: printed and written with `--out`, never published. `--print` is a human table,
+`--json` the rows, `--dry-run` writes nothing. Diagnostic: the exit code never depends on a value.
 
 Publishing appends to `origin/master` through a private temporary worktree of the bus clone (`--bus`,
 `$FACTORY_BUS_CLONE`, or the pins' `bus_clone`; never implied), fast-forward only, re-reading the
-remote on a rejected push; a row whose `(project, date)` is already there is not appended again, so a
+remote on a rejected push; a row whose `(project, date, machine)` is already there is not appended again, so a
 daily caller may run it every tick. Before publishing, each row is screened (addresses, uuids, tokens,
 user-home paths, coordination paths); a match refuses that row (exit 2) and never edits it. Exit 0
 rows produced; 2 config error or a screened row; 3 no bus clone or the push failed.
@@ -423,6 +454,8 @@ it declares the project's own fold marker and queue, outbox and evidence command
 regexes, branch and remote. An entry with `config` defers to a file in that project's root, so a steward
 measuring a sibling reads the sibling's own declarations. Starting configs:
 `tools/factory/fixtures/fleet-scorecard/{conjugal,cloudvore,magic-lantern}.config.json`.
+Bus data (metrics rows, census and rule-tag configs, `{bus:<path>}` arguments) is read as committed on the
+clone's `origin/master`, never from its worktree, so a stale or edited clone cannot skew a row.
 
 **Row schema `fleet/scorecard-row/v1`** (one JSON object per line):
 
@@ -447,7 +480,7 @@ measured", never zero.
 
 | field | value | produced by |
 |---|---|---|
-| `tool_census` | `{project_copies, fleet_total, baseline_total, measured, absent_roots}` | pinned `tool-census --json` (+ `metrics/tool-census-baseline.json` total) |
+| `tool_census` | `{project_copies` (non-canonical copies in this project), `fleet_total` (the census total: excess copies fleet-wide, the baselined number), `baseline_total, measured, absent_roots}` | pinned `tool-census --json` (+ `metrics/tool-census-baseline.json` total) |
 | `rule_tags` | `{bullets, backed, prose, untagged, dangling, mixed}` | pinned `check-rule-tags --report --json --project P --root <root>` |
 | `evidence_dumps` | int violations | config source, e.g. pinned `check-evidence-dumps --tree refs/remotes/origin/master` |
 | `product_share` | `{product_share, product_lines_per_week, window_days, measured_at}` | last row for the project in `metrics/product-share-lines.jsonl` |
@@ -457,3 +490,13 @@ measured", never zero.
 | `master_vs_origin` | `{ahead, behind}` | `git rev-list --left-right --count refs/heads/B...refs/remotes/R/B` (local refs; no fetch) |
 | `kernel_24h` | `{delivered, refused}` distinct subject ids | `git log` subjects in the last 24 h by author date, matched by config `kernel` regexes |
 | `pin_stale` | int | the project's own `pin-runner.py status`, lines with `*** STALE ***` |
+| `rule_coverage` | `{percent, floor}` | config `rule_coverage` source (the project's OWN coverage census) + `floor` or `floor_json {file, path}` |
+| `bus_publish` | `{days_since, commit, via}` | newest origin/master commit touching `specs/<p>.md`, `specs/<p>/`, `metrics/<p>/` (`own-surface`), or to TRAPS/RECEIPTS/RULINGS/DISCOVERIES with `<p>` as a subject token (`subject-tag`); `days_since` null = never |
+| `fold_lag` | `{cursor, unfolded, oldest_age_hours}` | `git log <fold marker lastSeen>..origin/master` commits touching doctrine-sync's surfaces (not `specs/<p>.md`, not `cos-feedback/_heartbeat/`) |
+| `kernel_filing` | `{days_since, commit}` | newest commit on origin/master or `origin/review/*` touching `adjudications/factory-kernel/<p>.md` or `<p>-*.md` (case-insensitive; never `*.dispositions.md`) |
+
+Row keys added 2026-10-16: `machine` (the measuring host; part of the idempotency key) and, when a
+thresholds file is present, `health {status, reasons, unmeasured, thresholds_sha256}`: RED lists every
+overdue duty, GREEN means none and at least one measured, UNMEASURED means nothing judgeable was measured.
+`tool_census` also carries `project_doubles`, `schedule_max` (in force today), `schedule_next` and
+`over_schedule`; `product_share` carries `source` (`live` or `row`).

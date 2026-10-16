@@ -1,0 +1,33 @@
+{
+  "schema": "factory-registry.v1",
+  "_comment": "Tools a project may install with `pin-runner.py install <tool>`. DATA read from the reviewed bus commit, never executed. Add a tool here in the same commit that adds it under tools/factory/.",
+  "tools": {
+    "check-doc-size": {
+      "path": "tools/factory/check-doc-size.py",
+      "interpreter": "python",
+      "purpose": "markdown size budgets by role; every tier, glob, exemption and scan mode comes from --config"
+    },
+    "kernel-subjects": {
+      "path": "tools/factory/kernel-subjects.py",
+      "interpreter": "python",
+      "purpose": "factory kernel: is a packet a declared kernel subject, declared before its first byte; config from $FACTORY_KERNEL_CONFIG"
+    },
+    "codex-review": {
+      "path": "tools/factory/codex-review.py",
+      "interpreter": "python",
+      "purpose": "dispatch one codex exec review with an explicit, recorded model/effort tier"
+    },
+    "kernel-receipt": {
+      "path": "tools/factory/kernel-receipt.py",
+      "interpreter": "python",
+      "purpose": "factory kernel: write or dry-run a landing's kernel receipt (a pinned group; install its members first)",
+      "with": ["kernel-subjects", "codex-review"]
+    },
+    "kernel-config": {
+      "path": "tools/factory/kernel-config.py",
+      "interpreter": "python",
+      "purpose": "check a project's kernel config with the loader of record (a pinned group; install kernel-subjects first)",
+      "with": ["kernel-subjects"]
+    }
+  }
+}

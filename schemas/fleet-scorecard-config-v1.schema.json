@@ -17,7 +17,7 @@
   "$defs": {
     "source": {
       "type": "object",
-      "description": "How a count is produced. pinned = a bus tool run through the executor's pin-runner (Law 1); argv = a project command run with cwd <root>. {root}, {bus}, {python} are substituted. Parse with json (dot path) or regex (group 1) + zero_regex.",
+      "description": "How a count is produced. pinned = a bus tool run through the executor's pin-runner (Law 1); argv = a project command run with cwd <root>. {root}, {bus} (the clone path), {bus:<path>} (that file as committed on the clone origin/master, materialized in a temp dir) and {python} are substituted. Parse with json (dot path) or regex (group 1) + zero_regex.",
       "properties": {
         "pinned": {"type": "string"},
         "args": {"type": "array", "items": {"type": "string"}},
@@ -59,6 +59,16 @@
           }
         },
         "outbox": {"$ref": "#/$defs/source"},
+        "rule_coverage": {
+          "description": "the project's OWN rule-coverage census (a source spec yielding a percent) and its own floor",
+          "allOf": [{"$ref": "#/$defs/source"}],
+          "properties": {
+            "floor": {"type": "number"},
+            "floor_json": {"type": "object", "required": ["file", "path"], "properties": {"file": {"type": "string"}, "path": {"type": "string", "description": "dot path"}}}
+          }
+        },
+        "bus_names": {"type": "array", "items": {"type": "string"}, "description": "names the project publishes under on the bus (bus_publish, fold_lag); default [name]"},
+        "kernel_names": {"type": "array", "items": {"type": "string"}, "description": "factory-kernel filing basenames (matched case-insensitively); default [name]"},
         "evidence_dumps": {"$ref": "#/$defs/source"},
         "kernel": {
           "type": "object",

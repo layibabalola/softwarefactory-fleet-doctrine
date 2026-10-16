@@ -62,7 +62,10 @@ settings entries and the pre-push layer. Pins file schema: `factory-pins.v1`.
   never runs in-process. One level: a member with its own `with` is refused, as are an unpinned member, a duplicate, a
   self-reference and two members with one file name. Pins without `with` behave exactly as before; a runner from before
   this key refuses a pins file that uses it (exit 2), so no group ever runs short of its members.
-- **Evidence.** `tools/factory/pin-runner.tests.py` class `PinnedGroup` (decoy sibling in the caller's tree never
+  `tools/factory/registry.json` entries may carry the same optional `with` (registered python members with no `with`
+  of their own); `install <group>` refuses until every member is installed, then records the group. A registry is
+  read only by the runner blob at the same commit, so an older runner never meets the key.
+- **Evidence.** `tools/factory/pin-runner.tests.py` classes `PinnedGroup` and `InstallGroup` (decoy sibling in the caller's tree never
   loads; tampered or absent member refuses or is unavailable; malformed groups refuse) and
   `tools/factory/kernel-tools.tests.py` (a fresh `git init` project pins the kernel and runs `kernel-subjects check
   HEAD --json`, the `kernel-receipt` and `kernel-config` groups, through this runner).

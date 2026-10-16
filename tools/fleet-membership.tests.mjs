@@ -73,6 +73,10 @@ try {
   assert.deepEqual(heartbeat.boards.map((b) => b.board).sort(), ['adobe-ingester', 'cloudvore', 'provider-foo']);
   assert.equal(heartbeat.boards.find((b) => b.board === 'cloudvore').status, 'ABSENT');
   assert.deepEqual(fleetMembers(['specs/cloudvore.md', 'specs/fleet-x.md', 'specs/provider-model-benchmarking.md', 'specs/provider-audit-consumer-provenance.md', 'specs/provider-foo.md']), ['cloudvore', 'provider-foo']);
+  // --stdin: the same rule over committed paths (fleet-scorecard.py --fleet pipes `git ls-tree specs/`)
+  const viaStdin = JSON.parse(run(process.execPath, [join(tools, 'fleet-membership.mjs'), '--stdin'],
+    { input: 'specs/cloudvore.md\nspecs/cloudvore\nspecs/fleet-x.md\r\nspecs/provider-model-benchmarking.md\nspecs/provider-foo.md\n' }));
+  assert.deepEqual(viaStdin.members, ['cloudvore', 'provider-foo']);
   writeFileSync(join(tools, 'fleet-membership.mjs'), "process.stdout.write(JSON.stringify({members:[{bad:'object'}]}));\n");
   assert.throws(() => run(ps, ['-NoProfile', '-File', join(tools, 'Get-FleetHeartbeatStatus.ps1'), '-BusRoot', bus, '-Json']), (err) => err.status === 1);
   console.log('fleet membership: shared classifier agrees across sweep and heartbeat reader');

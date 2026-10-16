@@ -1,12 +1,31 @@
 {
   "schema": "fleet/rule-tags/v1",
-  "_comment": "Rule-tag census for tools/check-rule-tags.py. A root absent on a box makes the census exit 2 for that run, never a zero count. Each rule bullet carries [enforced: <path relative to root>] or [prose]. DIAGNOSTIC in --report mode; a project may wire the default mode as its own gate.",
+  "_comment": "Rule-tag census for tools/check-rule-tags.py. A root absent on a box makes the census exit 2 for that run, never a zero count. A rule is enforced ([enforced: <path relative to root>] inline, or a rule_map sidecar entry), judgement or record (both excluded from the coverage denominator) or prose; an enforcer must be WIRED in: a non-comment line of an invocation_surfaces file resolves to it (list a test file as a surface only if a hook or CI job runs it), and each enforced rule carries an anchor found in the enforcer. floor_schedule is the rising ratchet that --check enforces. root_candidates: tried in order, then root; a relative one resolves against this bus clone. DIAGNOSTIC in --report mode; a project may wire --check as its own gate. The DNG bullet regex matches the 138 units R-D2 reports (117 in docs/14 + 21 in AGENTS.md, whole files, no section) because DNG rules are bold-led paragraphs and numbered items as well as dash bullets.",
   "projects": [
     {
       "name": "conjugal",
       "root": "C:/code/Conjugal",
       "files": [
         { "path": "CLAUDE.md", "section": "## Non-negotiables", "bullet": "^- " }
+      ]
+    },
+    {
+      "name": "dng-auto-processor",
+      "root": "C:/code/DngAutoProcessor - Claude/DngAutoProcessor",
+      "root_candidates": ["C:/code/DngAutoProcessor - Claude/DngAutoProcessor", "../DngAutoProcessor - Claude/DngAutoProcessor"],
+      "files": [
+        { "path": "docs/14-ORCHESTRATION.md", "bullet": "^(- |[0-9]+\\. |\\*\\*)" },
+        { "path": "AGENTS.md", "bullet": "^(- |[0-9]+\\. |\\*\\*)" }
+      ],
+      "rule_map": "factory/rule-map.json",
+      "invocation_surfaces": [".githooks/*", ".github/workflows/*.yml"],
+      "invocation_exclude": ["*.frozen-*"],
+      "placement_invoked": [".githooks/pre-commit", ".githooks/commit-msg", ".githooks/pre-push", ".githooks/post-commit", ".githooks/post-merge"],
+      "floor_schedule": [
+        { "date": "2026-10-16", "backed": 1 },
+        { "date": "2026-10-23", "backed": 20 },
+        { "date": "2026-10-30", "backed": 35 },
+        { "date": "2026-11-06", "backed": 46 }
       ]
     }
   ]

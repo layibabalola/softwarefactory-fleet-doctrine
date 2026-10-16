@@ -182,5 +182,276 @@ class FastForwardOnly(unittest.TestCase):
         self.assertEqual(self.push(lines), 1)
 
 
+NUT = HERE / "pre-push-no-unpinned-tool.py"
+TODAY = "2026-10-16"
+
+
+def _g(repo: str, *a: str, env: dict | None = None) -> str:
+    return subprocess.run(["git", "-C", repo, "-c", "user.email=t@example.invalid", "-c", "user.name=t", *a],
+                          check=True, capture_output=True, text=True, env=env).stdout.strip()
+
+
+class NoUnpinnedTool(unittest.TestCase):
+    """A consumer push that adds or modifies a shared tool's file is refused unless it is the pinned runner
+    or allowlisted with a reason and an unexpired expiry."""
+
+    def setUp(self):
+        self._tmp = tempfile.TemporaryDirectory()
+        t = Path(self._tmp.name)
+        self.remote, self.repo = str(t / "remote.git"), str(t / "work")
+        subprocess.run(["git", "init", "-q", "--bare", self.remote], check=True)
+        subprocess.run(["git", "init", "-q", "-b", "master", self.repo], check=True)
+        _g(self.repo, "remote", "add", "origin", self.remote)
+        self.write("tools/session-checkpoint.py", "print(1)\n")      # a census copy the project already has
+        self.write("README.md", "x\n")
+        self.commit("base")
+        _g(self.repo, "push", "-q", "origin", "master")
+        self.base = _g(self.repo, "rev-parse", "HEAD")
+
+    def tearDown(self):
+        self._tmp.cleanup()
+
+    def write(self, rel: str, body: str):
+        p = Path(self.repo) / rel
+        p.parent.mkdir(parents=True, exist_ok=True)
+        p.write_text(body, encoding="utf-8", newline="\n")
+
+    def commit(self, msg: str) -> str:
+        _g(self.repo, "add", "-A", ".")
+        _g(self.repo, "commit", "-q", "-m", msg)
+        return _g(self.repo, "rev-parse", "HEAD")
+
+    def judge(self, line: str | None = None, *extra: str) -> subprocess.CompletedProcess:
+        head = _g(self.repo, "rev-parse", "HEAD")
+        line = line or f"refs/heads/master {head} refs/heads/master {self.base}"
+        return subprocess.run([sys.executable, str(NUT), "origin", self.remote, "--repo", self.repo, "--today", TODAY, *extra],
+                              input=line + "\n", capture_output=True, text=True)
+
+    def allow(self, entries):
+        self.write("factory-pins/no-unpinned-tool.json", json.dumps({"allow": entries}))
+
+    def test_canonical_copy_added_or_modified_refuses(self):
+        self.write("coordination/tools/check-doc-size.py", "copy()\n")
+        self.commit("copy")
+        r = self.judge()
+        self.assertEqual(r.returncode, 1, r.stderr)
+        self.assertIn("adds coordination/tools/check-doc-size.py", r.stderr)
+        self.assertIn("pin-runner.py run check-doc-size", r.stderr)
+        for name in ("pre_push_ff_only.py", "exact-path-add.py", "Git-Optional-Locks.py", "session_start_auth.py",
+                     "pre-push-no-unpinned-tool.py", "pin-runner.py"):
+            with self.subTest(name=name):
+                self.write(f"elsewhere/{name}", "x\n")
+                self.commit(name)
+                self.assertEqual(self.judge().returncode, 1)
+
+    def test_census_family_new_copy_refuses_existing_edit_allowed(self):
+        self.write("tools/session-checkpoint.py", "print(2)\n")
+        self.commit("edit the project's own copy")
+        self.assertEqual(self.judge().returncode, 0, "editing the existing census copy is allowed")
+        self.write("other/session_checkpoint.py", "print(3)\n")
+        self.commit("second copy")
+        r = self.judge()
+        self.assertEqual(r.returncode, 1)
+        self.assertIn("a NEW copy of the census-counted tool 'session-checkpoint'", r.stderr)
+
+    def test_unrelated_files_deletion_and_removal_pass(self):
+        self.write("src/check-doc-size.md", "doc\n")
+        self.write("src/app.py", "x\n")
+        self.commit("unrelated")
+        self.assertEqual(self.judge().returncode, 0)
+        Path(self.repo, "tools/session-checkpoint.py").unlink()
+        self.commit("retire the copy")
+        self.assertEqual(self.judge().returncode, 0, "deleting a copy is what the hook wants")
+        self.assertEqual(self.judge(f"(delete) {Z} refs/heads/master {self.base}").returncode, 0)
+
+    def test_allowlist_needs_reason_and_unexpired_bounded_expiry(self):
+        path = "coordination/tools/check-doc-size.py"
+        self.write(path, "forward()\n")
+        for entry, rc, why in (
+            ({"path": path, "reason": "forwarder; deliver.py names this path", "expires": "2026-11-06"}, 0, None),
+            ({"path": path, "reason": "", "expires": "2026-11-06"}, 1, "has no reason"),
+            ({"path": path, "reason": "r", "expires": "soon"}, 1, "no valid 'expires'"),
+            ({"path": path, "reason": "r", "expires": "2026-10-15"}, 1, "EXPIRED 2026-10-15"),
+            ({"path": path, "reason": "r", "expires": "2027-06-01"}, 1, "more than 120 days out"),
+        ):
+            with self.subTest(entry=entry):
+                self.allow([entry])
+                self.commit(json.dumps(entry))
+                r = self.judge()
+                self.assertEqual(r.returncode, rc, r.stderr)
+                if why:
+                    self.assertIn(why, r.stderr)
+        self.write("factory-pins/no-unpinned-tool.json", "{not json")
+        self.commit("broken allowlist")
+        self.assertEqual(self.judge().returncode, 2, "an unreadable allowlist refuses (exit 2)")
+
+    def test_vendored_runner_only_when_it_equals_the_pin(self):
+        body = "RUNNER = 1\n"
+        self.write("factory-pins/pin-runner.py", body)
+        blob = subprocess.run(["git", "hash-object", "--stdin"], input=body.encode(), capture_output=True,
+                              check=True).stdout.decode().strip()   # bytes: text-mode stdin is CRLF on Windows
+        self.write("factory-pins/factory-pins.json", json.dumps({"runner": {"blob": blob}}))
+        self.commit("adopt runner")
+        self.assertEqual(self.judge().returncode, 0, "the pinned vendored runner passes")
+        self.write("factory-pins/pin-runner.py", "RUNNER = 2  # local edit\n")
+        self.commit("edit runner")
+        r = self.judge()
+        self.assertEqual(r.returncode, 1)
+        self.assertIn("is not the runner blob pinned", r.stderr)
+
+    def test_new_branch_is_judged_against_its_merge_base(self):
+        _g(self.repo, "fetch", "-q", "origin")
+        _g(self.repo, "checkout", "-q", "-b", "feature")
+        self.write("src/ok.py", "x\n")
+        head = self.commit("feature work")
+        self.assertEqual(self.judge(f"refs/heads/feature {head} refs/heads/feature {Z}").returncode, 0,
+                         "a new branch is judged by its own commits, not the whole tree")
+        self.write("lib/check_doc_size.py", "x\n")
+        head = self.commit("copy on a branch")
+        self.assertEqual(self.judge(f"refs/heads/feature {head} refs/heads/feature {Z}").returncode, 1)
+
+    def test_real_push_from_a_linked_worktree(self):
+        # git runs the hook with GIT_DIR exported when the push starts in a linked worktree (58017fbbe).
+        hooks = Path(_g(self.repo, "rev-parse", "--path-format=absolute", "--git-common-dir")) / "hooks"
+        hooks.mkdir(exist_ok=True)
+        py = Path(sys.executable).as_posix()
+        (hooks / "pre-push").write_text(f'#!/bin/sh\nexec "{py}" "{NUT.as_posix()}" --today {TODAY} "$@"\n',
+                                        encoding="utf-8", newline="\n")
+        os.chmod(hooks / "pre-push", 0o755)
+        wt = str(Path(self._tmp.name) / "linked")
+        _g(self.repo, "worktree", "add", "-q", "-b", "wt", wt, "master")
+        Path(wt, "src").mkdir()
+        Path(wt, "src", "app.py").write_text("x\n", encoding="utf-8")
+        _g(wt, "add", "--", "src/app.py")
+        _g(wt, "commit", "-q", "-m", "clean")
+        ok = subprocess.run(["git", "-C", wt, "push", "-q", "origin", "HEAD:refs/heads/master"], capture_output=True, text=True)
+        self.assertEqual(ok.returncode, 0, ok.stderr)
+        Path(wt, "src", "check-doc-size.py").write_text("copy\n", encoding="utf-8")
+        _g(wt, "add", "--", "src/check-doc-size.py")
+        _g(wt, "commit", "-q", "-m", "copy")
+        bad = subprocess.run(["git", "-C", wt, "push", "-q", "origin", "HEAD:refs/heads/master"], capture_output=True, text=True)
+        self.assertNotEqual(bad.returncode, 0)
+        self.assertIn("[no-unpinned-tool] PUSH REFUSED", bad.stderr)
+        self.assertIn("adds src/check-doc-size.py", bad.stderr)
+
+    def test_families_equal_the_census_config(self):
+        import importlib.util
+        spec = importlib.util.spec_from_file_location("nut", NUT)
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        cfg = json.loads((HERE.parent / "tools" / "tool-census.config.json").read_text(encoding="utf-8"))
+        census = {f["name"]: sorted(f["names"]) for f in cfg["families"]}
+        hook = {k: sorted(v) for k, v in {**mod.CANONICAL, **mod.CENSUS}.items()}
+        self.assertEqual(hook, census, "hook families drifted from tools/tool-census.config.json")
+        bus_tools = {p.name for d in ("tools/factory", "hooks", "hooks/claude") for p in (HERE.parent / d).glob("*.py")
+                     if not p.name.endswith(".tests.py")}
+        for name in bus_tools:
+            with self.subTest(name=name):
+                self.assertTrue(any(name in v for v in mod.CANONICAL.values()), f"bus factory tool {name} is not a canonical family")
+
+
+RUNNER_SRC = HERE.parent / "tools" / "factory" / "pin-runner.py"
+README = HERE / "README.md"
+
+
+def readme_layer() -> str:
+    """The documented ff-only pre-push layer, extracted verbatim from hooks/README.md (dedented)."""
+    text = README.read_text(encoding="utf-8").replace("\r\n", "\n")
+    start = text.index("   ```sh\n   # factory-ff-only\n") + len("   ```sh\n")
+    end = text.index("   ```\n", start)
+    return "".join(l[3:] if l.startswith("   ") else l for l in text[start:end].splitlines(True))
+
+
+class FfOnlyLayerSnippet(unittest.TestCase):
+    """Regression (magic-lantern adoption, 2026-10-16): the layer read the runner and pins from
+    refs/remotes/origin/master only, so a repository whose work never reaches master refused EVERY push.
+    The README layer now judges from the first protected remote-tracking ref holding the runner, else the
+    pushed commit; protected branches come from factory-pins/ff-only.json at that ref."""
+
+    def setUp(self):
+        self._tmp = tempfile.TemporaryDirectory()
+        t = Path(self._tmp.name)
+        self.bus, self.repo, self.remote, self.seen = t / "bus", t / "consumer", t / "remote.git", t / "seen.txt"
+        self.env = {k: v for k, v in os.environ.items() if not k.startswith("GIT_") and k != "FACTORY_BUS_CLONE"}
+        self.env["FACTORY_PINS_CACHE"] = str(t / "cache")
+        lf = lambda p: p.read_bytes().replace(b"\r\n", b"\n")
+        (self.bus / "hooks").mkdir(parents=True)
+        (self.bus / "tools" / "factory").mkdir(parents=True)
+        (self.bus / "hooks" / "pre-push-ff-only.py").write_bytes(lf(FF))
+        (self.bus / "tools" / "factory" / "pin-runner.py").write_bytes(lf(RUNNER_SRC))
+        subprocess.run(["git", "init", "-q", str(self.bus)], check=True)
+        self.g(self.bus, "add", "--", "hooks", "tools")
+        self.g(self.bus, "commit", "-qm", "bus")
+        c = self.g(self.bus, "rev-parse", "HEAD")
+        subprocess.run(["git", "init", "-q", "--bare", str(self.remote)], check=True)
+        subprocess.run(["git", "init", "-q", "-b", "codex/audit-remediation", str(self.repo)], check=True)
+        self.g(self.repo, "remote", "add", "origin", str(self.remote))
+        (self.repo / "factory-pins").mkdir()
+        (self.repo / "factory-pins" / "pin-runner.py").write_bytes(lf(RUNNER_SRC))
+        (self.repo / "factory-pins" / "factory-pins.json").write_text(
+            json.dumps({"schema": "factory-pins.v1", "bus_clone": [self.bus.as_posix()], "tools": {}}), encoding="utf-8")
+        for a in (["pin", "pre-push-ff-only", "--commit", c, "--path", "hooks/pre-push-ff-only.py", "--reviewer", "t", "--reason", "fixture"],
+                  ["adopt-runner", "--commit", c]):
+            p = subprocess.run([sys.executable, str(self.repo / "factory-pins" / "pin-runner.py"), *a],
+                               capture_output=True, text=True, env=self.env, cwd=str(self.repo))
+            self.assertEqual(p.returncode, 0, p.stdout + p.stderr)
+        self.g(self.repo, "add", "--", "factory-pins")
+        self.g(self.repo, "commit", "-qm", "adopt")
+        hook = Path(self.g(self.repo, "rev-parse", "--path-format=absolute", "--git-path", "hooks/pre-push"))
+        hook.parent.mkdir(parents=True, exist_ok=True)
+        hook.write_text("#!/bin/sh\nset -e\n" + readme_layer() + f'cat > "{self.seen.as_posix()}"\n', encoding="utf-8", newline="\n")
+        os.chmod(hook, 0o755)
+
+    def tearDown(self):
+        self._tmp.cleanup()
+
+    def g(self, repo, *a: str) -> str:
+        return subprocess.run(["git", "-C", str(repo), "-c", "user.email=t@example.invalid", "-c", "user.name=t",
+                               "-c", "core.autocrlf=false", *a], check=True, capture_output=True, text=True,
+                              env=self.env).stdout.strip()
+
+    def push(self, repo, *a: str) -> subprocess.CompletedProcess:
+        return subprocess.run(["git", "-C", str(repo), "-c", "core.autocrlf=false", "push", "origin", *a],
+                              capture_output=True, text=True, env=self.env)
+
+    def test_repo_whose_only_branch_is_not_master_pushes(self):
+        self.assertNotIn("master", self.g(self.repo, "branch", "-a"))
+        r = self.push(self.repo, "HEAD:refs/heads/codex/audit-remediation")
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertIn("refs/heads/codex/audit-remediation", self.seen.read_text(encoding="utf-8"), "stdin handed on")
+        (self.repo / "a.txt").write_text("a\n", encoding="utf-8")
+        self.g(self.repo, "add", "--", "a.txt")
+        self.g(self.repo, "commit", "-qm", "a")
+        r = self.push(self.repo, "HEAD:refs/heads/codex/audit-remediation")
+        self.assertEqual(r.returncode, 0, r.stderr)
+
+    def test_consumer_config_protects_its_own_branch_and_a_linked_worktree_pushes(self):
+        (self.repo / "factory-pins" / "ff-only.json").write_text(json.dumps({"protected": ["codex/*"]}), encoding="utf-8")
+        self.g(self.repo, "add", "--", "factory-pins/ff-only.json")
+        self.g(self.repo, "commit", "-qm", "protect codex/*")
+        self.assertEqual(self.push(self.repo, "HEAD:refs/heads/codex/audit-remediation").returncode, 0)
+        self.g(self.repo, "fetch", "-q", "origin")
+        self.g(self.repo, "commit", "-q", "--amend", "-m", "rewrite")
+        r = self.push(self.repo, "--force", "HEAD:refs/heads/codex/audit-remediation")
+        self.assertNotEqual(r.returncode, 0, "a configured protected branch moves fast-forward only")
+        self.assertIn("[ff-only] PUSH REFUSED", r.stderr)
+        self.g(self.repo, "reset", "-q", "--hard", "refs/remotes/origin/codex/audit-remediation")
+        wt = Path(self._tmp.name) / "linked"
+        self.g(self.repo, "worktree", "add", "-q", "--detach", str(wt))
+        (wt / "b.txt").write_text("b\n", encoding="utf-8")
+        self.g(wt, "add", "--", "b.txt")
+        self.g(wt, "commit", "-qm", "b")
+        r = self.push(wt, "HEAD:refs/heads/codex/audit-remediation")
+        self.assertEqual(r.returncode, 0, r.stderr)
+
+    def test_observe_only_mode_of_optional_locks(self):
+        self.assertEqual(hook(LOCKS, "git status"), 2, "default refuses")
+        payload = json.dumps({"tool_name": "Bash", "tool_input": {"command": "git status"}})
+        e = {k: v for k, v in os.environ.items() if k != "GIT_OPTIONAL_LOCKS"}
+        p = subprocess.run([sys.executable, str(LOCKS), "--observe-only"], input=payload, capture_output=True, text=True, env=e)
+        self.assertEqual(p.returncode, 0)
+        self.assertIn("OBSERVED", p.stderr)
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=1)

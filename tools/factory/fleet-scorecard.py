@@ -38,6 +38,7 @@ import datetime as dt
 import hashlib
 import json
 import os
+import platform
 import re
 import shutil
 import subprocess
@@ -53,7 +54,25 @@ DEFAULT_CONFIG = "factory-pins/fleet-scorecard.config.json"
 DEFAULT_PINS = "factory-pins/factory-pins.json"
 TIMEOUT = 300
 FIELDS = ("tool_census", "rule_tags", "evidence_dumps", "product_share", "doctrine_fold", "outbox_unsent",
-          "commits_no_remote", "master_vs_origin", "kernel_24h", "pin_stale")
+          "commits_no_remote", "master_vs_origin", "kernel_24h", "pin_stale",
+          "rule_coverage", "bus_publish", "fold_lag", "kernel_filing")
+MASTER = "refs/remotes/origin/master"
+DEFAULT_MARKER = ".codex-state/doctrine/last-seen.json"
+# Health thresholds (diagnostic flags, never a gate): shipped beside this script, so a run judges by the
+# thresholds of the reviewed checkout it runs from. Schema fleet/health-thresholds/v1.
+THRESHOLDS = "metrics/fleet-health-thresholds.json"
+THRESHOLDS_SCHEMA = "fleet/health-thresholds/v1"
+# The doctrine-bearing bus surfaces a consumer folds: tools/doctrine-sync.mjs BUS_SURFACES verbatim (the
+# tests assert parity). A bus commit counts toward fold lag when it touches one of them other than the
+# project's own specs/<p>.md - exactly what `doctrine-sync check` lists - minus the CoS heartbeat pulse.
+DOCTRINE_SURFACES = ("specs/", "TRAPS.md", "RULINGS.md", "RECEIPTS.md", "cos-feedback/")
+FOLD_EXCLUDE = ("cos-feedback/_heartbeat/",)
+# --fleet runs as the bus itself: these bus tools run from the checkout that holds this script (as CI runs
+# them), not through a project's pins. Project mode keeps Law 1 pins.
+BUS_TOOLS = {"tool-census": ("node", "tools/tool-census.mjs"),
+             "check-rule-tags": ("python", "tools/check-rule-tags.py"),
+             "check-evidence-dumps": ("python", "tools/factory/check-evidence-dumps.py")}
+SCRIPT_BUS = Path(__file__).resolve().parents[2]
 
 # The publish screen (bus Law 4: no coordination surfaces, transcripts, credentials or addresses travel).
 # A row is refused, never edited, when any pattern matches its serialized bytes.
@@ -110,16 +129,44 @@ class Ctx:
     """Placeholder rendering: a recorded command names <root>, <bus>, <pins>, never a machine path."""
 
     def __init__(self, root: Path, bus: Path | None, pins: Path | None, config: Path | None,
-                 own_pins: Path | None = None):
+                 own_pins: Path | None = None, bus_direct: Path | None = None):
         # pins = the EXECUTOR's pins (whose review authorizes running bus tools); own_pins = the measured
         # project's pins (pin_stale). They differ when one project's steward measures a sibling.
+        # bus_direct = --fleet: the bus checkout whose own tools run directly (BUS_TOOLS).
         self.root, self.bus, self.pins, self.config = root, bus, pins, config
         self.own_pins = own_pins or pins
+        self.bus_direct = bus_direct
+        self._data: Path | None = None
+
+    def bus_file(self, rel: str) -> Path | None:
+        """A bus data file as committed on the clone's origin/master, materialized in a private temp dir.
+        The clone's own worktree may be stale or edited; the published line is what the fleet reads."""
+        if not self.bus:
+            return None
+        if self._data is None:
+            self._data = Path(tempfile.mkdtemp(prefix="fleet-scorecard-data-"))
+        out = self._data / rel
+        if out.is_file():
+            return out
+        p = subprocess.run(["git", "--no-optional-locks", "-C", str(self.bus), "show", f"refs/remotes/origin/master:{rel}"],
+                           capture_output=True, timeout=TIMEOUT)
+        if p.returncode != 0:
+            return None
+        out.parent.mkdir(parents=True, exist_ok=True)
+        out.write_bytes(p.stdout)
+        return out
+
+    def cleanup(self):
+        if self._data:
+            shutil.rmtree(self._data, ignore_errors=True)
 
     def render(self, parts) -> str:
-        subs = [(str(p), tag) for p, tag in ((self.pins.parent if self.pins else None, "<pins>"),
+        subs = [(str(p), tag) for p, tag in ((self._data, "<bus@origin/master>"),
+                                             (self.pins.parent if self.pins else None, "<pins>"),
                                              (self.own_pins.parent if self.own_pins and self.own_pins != self.pins
                                               else None, "<own-pins>"),
+                                             (self.bus_direct if self.bus_direct != self.bus else None,
+                                              "<bus-checkout>"),
                                              (self.bus, "<bus>"), (self.config, "<config>"),
                                              (self.root, "<root>"), (Path(sys.executable), "python")) if p]
         subs.sort(key=lambda x: -len(x[0]))
@@ -142,16 +189,22 @@ def field(value=None, cmd: str = "", error: str | None = None) -> dict:
     return {"value": value, "cmd": cmd, "error": error}
 
 
-def run_cmd(argv: list[str], cwd: Path) -> subprocess.CompletedProcess:
+def run_cmd(argv: list[str], cwd: Path, timeout: int = TIMEOUT, stdin: str | None = None) -> subprocess.CompletedProcess:
     env = {k: v for k, v in os.environ.items() if k.upper() not in ("GIT_DIR", "GIT_WORK_TREE", "GIT_INDEX_FILE")}
     return subprocess.run(argv, cwd=str(cwd), capture_output=True, text=True, encoding="utf-8",
-                          errors="replace", env=env, timeout=TIMEOUT)
+                          errors="replace", env=env, timeout=timeout, input=stdin)
 
 
 # ---------- pinned bus tools ----------
 
 def pinned_argv(ctx: Ctx, tool: str) -> list[str] | None:
-    """argv prefix that runs a pinned tool through the project's runner, or None when it is not pinned."""
+    """argv prefix that runs a pinned tool through the project's runner, or None when it is not pinned.
+    Under --fleet (ctx.bus_direct) a BUS_TOOLS tool runs from that bus checkout instead."""
+    if ctx.bus_direct and tool in BUS_TOOLS:
+        interp, rel = BUS_TOOLS[tool]
+        script = ctx.bus_direct / rel
+        if script.is_file():
+            return (["node"] if interp == "node" else [sys.executable]) + [str(script)]
     if not ctx.pins or not ctx.pins.is_file():
         return None
     runner = ctx.pins.parent / "pin-runner.py"
@@ -170,6 +223,7 @@ def pinned_argv(ctx: Ctx, tool: str) -> list[str] | None:
 def source_argv(ctx: Ctx, spec: dict) -> tuple[list[str] | None, str | None]:
     """A config source spec -> (argv, error). {"pinned": tool, "args": [...]} or {"argv": [...]}."""
     def sub(a):
+        a = re.sub(r"\{bus:([^}]+)\}", lambda m: str(ctx.bus_file(m.group(1)) or m.group(0)), str(a))
         return str(a).replace("{root}", str(ctx.root)).replace("{bus}", str(ctx.bus or "")).replace(
             "{python}", sys.executable)
     if spec.get("pinned"):
@@ -198,7 +252,8 @@ def parse_output(spec: dict, p: subprocess.CompletedProcess):
     if spec.get("regex"):
         m = re.search(spec["regex"], out)
         if m:
-            return int(m.group(1))
+            v = m.group(1)
+            return int(v) if re.fullmatch(r"-?\d+", v) else float(v)
         raise ValueError("output matched neither regex nor zero_regex")
     raise ValueError("source has no json or regex parse")
 
@@ -227,29 +282,95 @@ def from_source(ctx: Ctx, spec: dict | None, name: str = "") -> dict:
 
 # ---------- the fields ----------
 
-def f_tool_census(ctx: Ctx, proj: dict) -> dict:
+_CENSUS: dict = {}           # one fleet-wide census per run serves every project's row (99fab0c)
+
+
+def schedule_max(baseline: dict | None, today: str) -> int | None:
+    """The tool-census schedule max in force on 'today' (latest 'by' <= today; tool-census.mjs rule 5)."""
+    passed = sorted((e for e in ((baseline or {}).get("schedule") or [])
+                     if isinstance(e, dict) and isinstance(e.get("by"), str) and e["by"] <= today),
+                    key=lambda e: e["by"])
+    return passed[-1].get("max") if passed else None
+
+
+def census_views(rep: dict, baseline: dict | None) -> list[dict]:
+    """Per-view counts (tool-census.mjs rule 7): one count over each baseline view's fixed (roots x families)
+    set, recomputed from the --json report the same way tool-census counts. A view whose roots are not all
+    visible here is UNMEASURED (count null), never compared."""
+    b = baseline or {}
+    views = [{"name": "primary", "roots": b.get("roots"), "families": list((b.get("families") or {}).keys()) or None,
+              "baseline": b.get("total")}]
+    views += [{"name": v.get("name"), "roots": v.get("roots"), "families": v.get("families"), "baseline": v.get("total")}
+              for v in (b.get("views") or []) if isinstance(v, dict)]
+    measured = set(rep.get("measuredRoots") or [])
+    out = []
+    for v in views:
+        roots, fams = v["roots"], v["families"]
+        if not isinstance(roots, list) or not set(roots) <= measured:
+            out.append({"name": v["name"], "count": None, "baseline": v["baseline"]})
+            continue
+        count = 0
+        for f in rep.get("families") or []:
+            if fams and f.get("name") not in fams:
+                continue
+            distinct = {c.get("hash") for c in f.get("copies") or [] if c.get("root") in roots}
+            count += max(len(distinct) - 1, 0)
+        count += sum(1 for d in rep.get("doubleRegistrations") or []
+                     if d.get("project") in roots and (not fams or d.get("family") in fams))
+        out.append({"name": v["name"], "count": count, "baseline": v["baseline"]})
+    return out
+
+
+def f_tool_census(ctx: Ctx, proj: dict, now: dt.datetime | None = None) -> dict:
     pre = pinned_argv(ctx, "tool-census")
     if pre is None:
         return field(cmd="pinned:tool-census", error="NOT_PINNED")
     if not ctx.bus:
         return field(cmd="pinned:tool-census", error="ABSENT: no bus clone")
-    argv = pre + ["--json", "--config", str(ctx.bus / "tools" / "tool-census.config.json"),
-                  "--baseline", str(ctx.bus / "metrics" / "tool-census-baseline.json")]
-    cmd = ctx.render(argv)
+    cfg, base = ctx.bus_file("tools/tool-census.config.json"), ctx.bus_file("metrics/tool-census-baseline.json")
+    if cfg is None:
+        return field(cmd="pinned:tool-census", error="ABSENT: no tool-census config on bus origin/master")
+    # The census resolves '@bus' as its own script's parent; under the pin runner that is a temp dir (it
+    # once walked all of %TEMP% for ten minutes). Name the clone in the materialized config (data) instead.
     try:
-        p = run_cmd(argv, ctx.bus)
-        rep = json.loads(p.stdout)
+        cj = json.loads(cfg.read_text(encoding="utf-8"))
+        for r in cj.get("roots") or []:
+            if r.get("path") == "@bus":
+                r["path"] = str(ctx.bus)
+        cfg.write_text(json.dumps(cj), encoding="utf-8")
+    except (OSError, ValueError, AttributeError) as e:
+        return field(cmd="pinned:tool-census", error=f"FAILED: census config unreadable ({type(e).__name__})")
+    argv = pre + ["--json", "--config", str(cfg)] + (["--baseline", str(base)] if base else [])
+    cmd = ctx.render(argv)
+    key = (str(ctx.pins), tuple(pre), str(ctx.bus), git_out(ctx.bus, "rev-parse", MASTER))
+    try:
+        if key not in _CENSUS:
+            _CENSUS[key] = json.loads(run_cmd(argv, ctx.bus).stdout)
+        rep = _CENSUS[key]
     except (OSError, subprocess.TimeoutExpired, ValueError) as e:
         return field(cmd=cmd, error=f"FAILED: {ctx.scrub(str(e))[:160]}")
     name = proj.get("census_root") or proj["name"]
     copies = [c for f in rep.get("families") or [] for c in f.get("copies") or [] if c.get("root") == name]
     baseline = None
     try:
-        baseline = json.loads((ctx.bus / "metrics" / "tool-census-baseline.json").read_text(encoding="utf-8")).get("total")
-    except (OSError, ValueError):
+        baseline = json.loads(base.read_text(encoding="utf-8"))
+    except (OSError, ValueError, AttributeError):
         pass
+    today = (now or dt.datetime.now(dt.timezone.utc)).astimezone(dt.timezone.utc).date().isoformat()
+    smax = schedule_max(baseline, today)
+    views = census_views(rep, baseline)
+    primary = next((v for v in views if v["name"] == "primary"), {}).get("count")
     return field({"project_copies": len([c for c in copies if not c.get("canonical")]),
-                  "fleet_total": rep.get("total"), "baseline_total": baseline,
+                  "project_doubles": sum(1 for d in rep.get("doubleRegistrations") or [] if d.get("project") == name),
+                  "fleet_total": rep.get("total"), "baseline_total": (baseline or {}).get("total"),
+                  "views": views,
+                  "primary_count": primary,
+                  "schedule_max": smax,
+                  "schedule_next": next(({"by": e["by"], "max": e.get("max")} for e in sorted(
+                      (e for e in ((baseline or {}).get("schedule") or []) if isinstance(e, dict)
+                       and isinstance(e.get("by"), str) and e["by"] > today), key=lambda e: e["by"])), None),
+                  # the schedule caps the PRIMARY view (the top-level baseline); unmeasurable here = None
+                  "over_schedule": (primary > smax) if isinstance(primary, int) and isinstance(smax, int) else None,
                   "measured": name in (rep.get("measuredRoots") or []),
                   "absent_roots": rep.get("absentRoots") or []}, cmd)
 
@@ -261,7 +382,7 @@ def f_rule_tags(ctx: Ctx, proj: dict) -> dict:
     pre = pinned_argv(ctx, "check-rule-tags")
     if pre is None:
         return field(cmd="pinned:check-rule-tags", error="NOT_PINNED")
-    cfg = (ctx.root / rt["config"]) if rt.get("config") else (ctx.bus / "tools" / "rule-tags.config.json" if ctx.bus else None)
+    cfg = (ctx.root / rt["config"]) if rt.get("config") else ctx.bus_file("tools/rule-tags.config.json")
     if cfg is None or not cfg.is_file():
         return field(cmd="pinned:check-rule-tags", error="NOT_CONFIGURED: no rule-tags config")
     argv = pre + ["--config", str(cfg), "--project", rt.get("project") or proj["name"], "--root", str(ctx.root),
@@ -280,9 +401,45 @@ def f_rule_tags(ctx: Ctx, proj: dict) -> dict:
     return field({k: counts.get(k) for k in ("bullets", "backed", "prose", "untagged", "dangling", "mixed")}, cmd)
 
 
+def live_shares(bus_checkout: Path, names: list[str], window_days: int) -> dict:
+    """--fleet --share live: ONE Get-ProductThroughput.ps1 -Lines run over the members cloned here that its
+    class config declares. Returns {name: field}; an undeclared member is absent (falls back to the row)."""
+    script = bus_checkout / "tools" / "Get-ProductThroughput.ps1"
+    try:
+        declared = {x.get("name") for x in json.loads(
+            (bus_checkout / "tools" / "product-throughput-classes.json").read_text(encoding="utf-8")).get("projects") or []}
+    except (OSError, ValueError):
+        return {}
+    want = [n for n in names if n in declared]
+    if not want or not script.is_file():
+        return {}
+    argv = [shutil.which("pwsh") or "pwsh", "-NoProfile", "-File", str(script), "-Lines", "-AsJson",
+            "-WindowDays", str(window_days), "-Project", ",".join(want)]
+    cmd = " ".join(["pwsh", "-NoProfile", "-File", "<bus-checkout>/tools/Get-ProductThroughput.ps1", "-Lines", "-AsJson",
+                    "-WindowDays", str(window_days), "-Project", ",".join(want)])
+    try:
+        p = run_cmd(argv, bus_checkout, timeout=1200)
+        data = json.loads(p.stdout)
+    except (OSError, subprocess.TimeoutExpired, ValueError) as e:
+        return {n: field(cmd=cmd, error=f"FAILED: {type(e).__name__}") for n in want}
+    out = {}
+    for e in data.get("projects") or []:
+        n = e.get("project")
+        if n not in want:
+            continue
+        if e.get("error"):
+            out[n] = field(cmd=cmd, error=f"FAILED: {str(e['error'])[:120]}")
+        else:
+            out[n] = field({"product_share": e.get("product_share"), "product_lines_per_week": e.get("product_lines_per_week"),
+                            "window_days": window_days, "measured_at": data.get("until_utc"), "source": "live"}, cmd)
+    return out
+
+
 def f_product_share(ctx: Ctx, proj: dict) -> dict:
-    path = ctx.bus / "metrics" / "product-share-lines.jsonl" if ctx.bus else None
-    cmd = ctx.render(["read", str(path or "<bus>/metrics/product-share-lines.jsonl"),
+    if proj.get("_live_share"):
+        return proj["_live_share"]
+    path = ctx.bus_file("metrics/product-share-lines.jsonl")
+    cmd = ctx.render(["read", "<bus@origin/master>/metrics/product-share-lines.jsonl",
                       f"last-row project={proj.get('census_root') or proj['name']}"])
     if path is None or not path.is_file():
         return field(cmd=cmd, error="ABSENT")
@@ -298,7 +455,7 @@ def f_product_share(ctx: Ctx, proj: dict) -> dict:
     if last is None:
         return field(cmd=cmd, error="ABSENT: no row for this project")
     return field({"product_share": last.get("product_share"), "product_lines_per_week": last.get("product_lines_per_week"),
-                  "window_days": last.get("window_days"), "measured_at": last.get("ts")}, cmd)
+                  "window_days": last.get("window_days"), "measured_at": last.get("ts"), "source": "row"}, cmd)
 
 
 def f_doctrine_fold(ctx: Ctx, proj: dict, now: dt.datetime) -> dict:
@@ -398,6 +555,193 @@ def f_pin_stale(ctx: Ctx, proj: dict) -> dict:
     return field(sum(1 for l in p.stdout.splitlines() if "*** STALE ***" in l), cmd)
 
 
+def _json_path(node, path: str):
+    for k in path.split("."):
+        node = node[k]
+    return node
+
+
+def f_rule_coverage(ctx: Ctx, proj: dict) -> dict:
+    """The project's OWN rule-coverage census (a project command; config rule_coverage = a source spec plus
+    an optional floor: a number, or floor_json {file, path} read from the project root)."""
+    spec = proj.get("rule_coverage")
+    if not spec:
+        return field(error="NOT_CONFIGURED")
+    f = from_source(ctx, spec, "rule_coverage")
+    if f["value"] is None:
+        return f
+    floor, ferr = spec.get("floor"), None
+    if floor is None and spec.get("floor_json"):
+        fj = spec["floor_json"]
+        try:
+            floor = _json_path(json.loads((ctx.root / fj["file"]).read_text(encoding="utf-8-sig")), fj["path"])
+        except (OSError, ValueError, KeyError, TypeError) as e:
+            ferr = f"floor ABSENT ({type(e).__name__})"
+    f["value"] = {"percent": f["value"], "floor": floor}
+    f["error"] = ferr
+    return f
+
+
+def _log_rows(repo: Path, *args) -> list[tuple[str, str, str]] | None:
+    """git log --format=%H%x09%cI%x09%s -> [(sha, committer ISO, subject)]; None when git failed."""
+    p = git(repo, "log", "--format=%H%x09%cI%x09%s", *args)
+    if p.returncode != 0:
+        return None
+    return [tuple((l.split("\t", 2) + ["", ""])[:3]) for l in p.stdout.splitlines() if l.strip()]
+
+
+def _age_days(now: dt.datetime, iso: str) -> float:
+    return round((now - parse_ts(iso)).total_seconds() / 86400, 1)
+
+
+def f_bus_publish(ctx: Ctx, proj: dict, now: dt.datetime) -> dict:
+    """Days since the newest origin/master commit ATTRIBUTED to the project. Attribution (single writer, law 2):
+    a commit touching the project's own surfaces specs/<p>.md, specs/<p>/ or metrics/<p>/; or a commit to the
+    shared append-only files TRAPS/RECEIPTS/RULINGS/DISCOVERIES whose subject names the project as a token.
+    heartbeats/ (a pulse) and cos-feedback/ (CoS-written) are never a project publish."""
+    if not ctx.bus:
+        return field(error="ABSENT: no bus clone")
+    names = proj.get("bus_names") or [proj["name"]]
+    own = [s for n in names for s in (f"specs/{n}.md", f"specs/{n}/", f"metrics/{n}/")]
+    shared = ["TRAPS.md", "RECEIPTS.md", "RULINGS.md", "DISCOVERIES.md"]
+    cmd = (ctx.render(["git", "-C", str(ctx.bus), "log", "-1", "--no-merges", MASTER, "--", *own])
+           + " ; newest subject-tagged commit to " + "/".join(shared))
+    a = _log_rows(ctx.bus, "-1", "--no-merges", MASTER, "--", *own)
+    b = _log_rows(ctx.bus, "-n", "400", "--no-merges", MASTER, "--", *shared)
+    if a is None or b is None:
+        return field(cmd=cmd, error="FAILED: git log on the bus clone")
+    tag = re.compile(r"(?i)(?<![\w-])(?:" + "|".join(map(re.escape, names)) + r")(?![\w-])")
+    cands = [(r, "own-surface") for r in a] + [(r, "subject-tag") for r in b if tag.search(r[2])][:1]
+    if not cands:
+        return field({"days_since": None, "commit": None, "via": None}, cmd)
+    (sha, when, _), via = max(cands, key=lambda c: parse_ts(c[0][1]))
+    return field({"days_since": _age_days(now, when), "commit": sha[:12], "via": via}, cmd)
+
+
+def is_doctrine_surface(path: str, project: str) -> bool:
+    """tools/doctrine-sync.mjs isSiblingSurface, minus the CoS heartbeat pulse."""
+    if path == f"specs/{project}.md" or path.startswith(FOLD_EXCLUDE):
+        return False
+    return any(path.startswith(s) if s.endswith("/") else path == s for s in DOCTRINE_SURFACES)
+
+
+def f_fold_lag(ctx: Ctx, proj: dict, now: dt.datetime) -> dict:
+    """Doctrine-bearing bus commits after the project's fold cursor (its doctrine-sync ack, lastSeen) on
+    origin/master: how many, and the age of the oldest, by committer date."""
+    if not ctx.bus:
+        return field(error="ABSENT: no bus clone")
+    marker = (proj.get("fold") or {}).get("marker") or DEFAULT_MARKER
+    cmd = ctx.render(["git", "-C", str(ctx.bus), "log", "--no-merges", "--name-only", f"<{marker}:lastSeen>..{MASTER}"]) \
+        + " | doctrine-sync surfaces minus specs/<p>.md and cos-feedback/_heartbeat/"
+    try:
+        cursor = str(json.loads((ctx.root / marker).read_text(encoding="utf-8"))["lastSeen"])
+    except (OSError, ValueError, KeyError, TypeError) as e:
+        return field(cmd=cmd, error=f"ABSENT: no fold cursor ({type(e).__name__})")
+    if not re.fullmatch(r"[0-9a-fA-F]{7,40}", cursor):
+        return field(cmd=cmd, error="FAILED: fold cursor is not a commit id")
+    if git(ctx.bus, "merge-base", "--is-ancestor", cursor, MASTER).returncode != 0:
+        return field({"cursor": cursor[:12], "unfolded": None, "oldest_age_hours": None}, cmd,
+                     "UNREACHABLE: the fold cursor is not on origin/master here")
+    p = git(ctx.bus, "log", "--no-merges", "--name-only", "--format=%x00%H%x09%cI", f"{cursor}..{MASTER}")
+    if p.returncode != 0:
+        return field(cmd=cmd, error="FAILED: git log on the bus clone")
+    name = (proj.get("bus_names") or [proj["name"]])[0]
+    dates = []
+    for chunk in p.stdout.split("\0")[1:]:
+        lines = chunk.splitlines()
+        if not lines:
+            continue
+        _, _, when = lines[0].partition("\t")
+        if any(is_doctrine_surface(f.strip(), name) for f in lines[1:] if f.strip()):
+            dates.append(parse_ts(when))
+    oldest = round((now - min(dates)).total_seconds() / 3600, 1) if dates else None
+    return field({"cursor": cursor[:12], "unfolded": len(dates), "oldest_age_hours": oldest}, cmd)
+
+
+def f_kernel_filing(ctx: Ctx, proj: dict, now: dt.datetime) -> dict:
+    """Days since the project's newest factory-kernel filing (adjudications/factory-kernel/<p>.md or <p>-*.md,
+    case-insensitive, never *.dispositions.md) on origin/master or any origin/review/* branch (R7 filings
+    land on review branches)."""
+    if not ctx.bus:
+        return field(error="ABSENT: no bus clone")
+    names = proj.get("kernel_names") or [proj["name"]]
+    review = (git_out(ctx.bus, "for-each-ref", "--format=%(refname)", "refs/remotes/origin/review/") or "").split()
+    specs = [s for n in names for s in (f":(icase)adjudications/factory-kernel/{n}.md",
+                                        f":(glob,icase)adjudications/factory-kernel/{n}-*.md")]
+    specs.append(":(exclude,glob)adjudications/factory-kernel/*.dispositions.md")
+    cmd = ctx.render(["git", "-C", str(ctx.bus), "log", "-1", MASTER, "refs/remotes/origin/review/*", "--", *specs])
+    rows = _log_rows(ctx.bus, "-1", MASTER, *review, "--", *specs)
+    if rows is None:
+        return field(cmd=cmd, error="FAILED: git log on the bus clone")
+    if not rows:
+        return field({"days_since": None, "commit": None}, cmd)
+    return field({"days_since": _age_days(now, rows[0][1]), "commit": rows[0][0][:12]}, cmd)
+
+
+# ---------- health (diagnostic flags; never a gate, never a target: metrics law 1) ----------
+
+def load_thresholds(path: Path | None) -> tuple[dict | None, str | None]:
+    f = path or (SCRIPT_BUS / THRESHOLDS)
+    if not f.is_file():
+        if path:
+            raise ConfigError(f"thresholds not found: {path}")
+        return None, None
+    data = f.read_bytes()
+    try:
+        th = json.loads(data.decode("utf-8"))
+    except ValueError as e:
+        raise ConfigError(f"thresholds {f.name}: {e}")
+    if th.get("schema") != THRESHOLDS_SCHEMA:
+        raise ConfigError(f"thresholds {f.name}: schema is not {THRESHOLDS_SCHEMA}")
+    return th, hashlib.sha256(data.replace(b"\r\n", b"\n")).hexdigest()
+
+
+def health(fields: dict, th: dict, th_sha: str | None) -> dict:
+    """RED when any duty is OVERDUE by the thresholds; GREEN when none is and at least one was measured;
+    UNMEASURED when nothing judgeable was measured. Null is 'not measured', never 'fine'."""
+    t = th.get("thresholds") or {}
+    reasons, unmeasured = [], []
+
+    def val(n):
+        return (fields.get(n) or {}).get("value")
+
+    c = val("tool_census")
+    if c is None:
+        unmeasured.append("census")
+    elif c.get("over_schedule") and (c.get("project_copies") or c.get("project_doubles")):
+        reasons.append(f"census primary view {c['primary_count']} > schedule max {c['schedule_max']} "
+                       f"({c.get('project_copies')} copies, {c.get('project_doubles')} double registrations here)")
+    rc = fields.get("rule_coverage") or {}
+    if rc.get("value"):
+        pc, fl = rc["value"].get("percent"), rc["value"].get("floor")
+        if isinstance(pc, (int, float)) and isinstance(fl, (int, float)) and pc < fl:
+            reasons.append(f"rule coverage {pc}% < own floor {fl}%")
+    elif rc.get("error") != "NOT_CONFIGURED":
+        unmeasured.append("coverage")
+    if val("product_share") is None:
+        unmeasured.append("product_share")
+    for name, key, limit_key, unit, never in (
+            ("bus_publish", "days_since", "bus_publish_days", "d", "no attributed bus publish"),
+            ("kernel_filing", "days_since", "kernel_filing_days", "d", "no kernel filing")):
+        v = val(name)
+        if v is None:
+            unmeasured.append(name)
+        elif v.get(key) is None:
+            reasons.append(never)
+        elif isinstance(t.get(limit_key), (int, float)) and v[key] > t[limit_key]:
+            reasons.append(f"{name.replace('_', ' ')} {v[key]}{unit} > {t[limit_key]}{unit}")
+    fl = val("fold_lag")
+    if fl is None or fl.get("unfolded") is None:
+        unmeasured.append("fold_lag")
+    elif fl.get("oldest_age_hours") is not None and isinstance(t.get("fold_oldest_unfolded_hours"), (int, float)) \
+            and fl["oldest_age_hours"] > t["fold_oldest_unfolded_hours"]:
+        reasons.append(f"fold lag {fl['unfolded']} unfolded, oldest {fl['oldest_age_hours']}h > "
+                       f"{t['fold_oldest_unfolded_hours']}h")
+    judged = {"census", "coverage", "bus_publish", "kernel_filing", "fold_lag"} - set(unmeasured)
+    status = "RED" if reasons else ("GREEN" if judged else "UNMEASURED")
+    return {"status": status, "reasons": reasons, "unmeasured": unmeasured, "thresholds_sha256": th_sha}
+
+
 # ---------- config, bus, row ----------
 
 def load_config(root: Path, path: str | None, project: str | None) -> tuple[list[dict], Path | None, str | None]:
@@ -489,10 +833,32 @@ def own_blob(pins: Path | None) -> str | None:
 
 
 def build_row(p: dict, root: Path, bus: Path | None, pins: Path | None, cfg_path, cfg_sha, now: dt.datetime,
-              own_pins: Path | None = None) -> dict:
-    ctx = Ctx(root, bus, pins, cfg_path, own_pins)
+              own_pins: Path | None = None, bus_direct: Path | None = None, th: dict | None = None,
+              th_sha: str | None = None) -> dict:
+    ctx = Ctx(root, bus, pins, cfg_path, own_pins, bus_direct)
+    try:
+        row = _build_row(ctx, p, root, bus, pins, cfg_sha, now)
+    finally:
+        ctx.cleanup()
+    if th is not None:
+        row["health"] = health(row["fields"], th, th_sha)
+    return row
+
+
+def machine() -> str:
+    return (os.environ.get("COMPUTERNAME") or platform.node() or "unknown").upper()
+
+
+def unmeasured_row(name: str, now: dt.datetime, why: str) -> dict:
+    """A derived member this box cannot measure (no local clone). Never published; listed, never skipped."""
+    return {"schema": ROW_SCHEMA, "date": now.astimezone(dt.timezone.utc).date().isoformat(), "ts": utc(now),
+            "project": name, "machine": machine(), "fields": {},
+            "health": {"status": "UNMEASURED", "reasons": [why], "unmeasured": ["all"], "thresholds_sha256": None}}
+
+
+def _build_row(ctx: "Ctx", p: dict, root: Path, bus: Path | None, pins: Path | None, cfg_sha, now: dt.datetime) -> dict:
     fields = {
-        "tool_census": f_tool_census(ctx, p),
+        "tool_census": f_tool_census(ctx, p, now),
         "rule_tags": f_rule_tags(ctx, p),
         "evidence_dumps": from_source(ctx, p.get("evidence_dumps"), "evidence_dumps"),
         "product_share": f_product_share(ctx, p),
@@ -502,12 +868,17 @@ def build_row(p: dict, root: Path, bus: Path | None, pins: Path | None, cfg_path
         "master_vs_origin": f_master_vs_origin(ctx, p),
         "kernel_24h": f_kernel(ctx, p, now),
         "pin_stale": f_pin_stale(ctx, p),
+        "rule_coverage": f_rule_coverage(ctx, p),
+        "bus_publish": f_bus_publish(ctx, p, now),
+        "fold_lag": f_fold_lag(ctx, p, now),
+        "kernel_filing": f_kernel_filing(ctx, p, now),
     }
     return {
         "schema": ROW_SCHEMA,
         "date": now.astimezone(dt.timezone.utc).date().isoformat(),
         "ts": utc(now),
         "project": p["name"],
+        "machine": machine(),
         "project_head": git_out(root, "rev-parse", "HEAD"),
         "bus_commit": git_out(bus, "rev-parse", "refs/remotes/origin/master") if bus else None,
         "generator": {"path": GENERATOR, "blob": own_blob(pins)},
@@ -528,13 +899,17 @@ def screen(row: dict) -> str | None:
 
 # ---------- publish ----------
 
+def row_key(r: dict) -> tuple:
+    """Idempotency key: project + UTC date + measuring machine (two boxes may each measure a project)."""
+    return (r.get("project"), r.get("date"), r.get("machine"))
+
+
 def existing_keys(text: str) -> set:
     keys = set()
     for line in text.splitlines():
         try:
-            r = json.loads(line)
-            keys.add((r.get("project"), r.get("date")))
-        except ValueError:
+            keys.add(row_key(json.loads(line)))
+        except (ValueError, AttributeError):
             pass
     return keys
 
@@ -558,7 +933,7 @@ def publish(bus: Path, rows: list[dict], retries: int = 5, remote: str = "origin
             target = wt / OUTPUT
             old = target.read_bytes() if target.is_file() else b""
             have = existing_keys(old.decode("utf-8", "replace"))
-            new = [r for r in rows if (r["project"], r["date"]) not in have]
+            new = [r for r in rows if row_key(r) not in have]
             if not new:
                 report.append(f"[scorecard] already published for {', '.join(sorted({r['project'] for r in rows}))} "
                               f"on {rows[0]['date'] if rows else '?'}; nothing to push")
@@ -586,6 +961,106 @@ def publish(bus: Path, rows: list[dict], retries: int = 5, remote: str = "origin
         shutil.rmtree(work, ignore_errors=True)
 
 
+
+# ---------- fleet mode ----------
+
+def fleet_members(bus: Path, checkout: Path) -> list[str]:
+    """Members derived the way fleet-sweep derives them: specs/ on the bus origin/master through the ONE
+    classifier, tools/fleet-membership.mjs (--stdin). No second roster."""
+    names = git_out(bus, "ls-tree", "--name-only", MASTER, "specs/")
+    if names is None:
+        raise Unavailable("cannot list specs/ on the bus origin/master")
+    p = run_cmd(["node", str(checkout / "tools" / "fleet-membership.mjs"), "--stdin"], checkout, stdin=names + "\n")
+    if p.returncode != 0:
+        raise Unavailable(f"fleet-membership failed: {(p.stderr or p.stdout).strip()[:160]}")
+    members = json.loads(p.stdout).get("members") or []
+    if not members:
+        raise Unavailable("zero members derived from specs/ - refusing to report an empty fleet")
+    return members
+
+
+def load_roots(path: str | None) -> dict:
+    """The machine-local member -> clone map fleet-sweep reads (schema fleet-roots.v1, default ~/.fleet-roots.json)."""
+    f = Path(path) if path else Path.home() / ".fleet-roots.json"
+    if not f.is_file():
+        raise ConfigError(f"no machine-local roots map at {f} ({{\"schema\":\"fleet-roots.v1\",\"roots\":{{...}}}})")
+    try:
+        return json.loads(f.read_text(encoding="utf-8-sig")).get("roots") or {}
+    except ValueError as e:
+        raise ConfigError(f"roots map {f.name}: {e}")
+
+
+def _cell(row: dict, name: str):
+    return (row.get("fields", {}).get(name) or {}).get("value")
+
+
+def table(rows: list[dict]) -> str:
+    """--print: one line per measured member, then the UNMEASURED members on one line each reason."""
+    hdr = ("project", "status", "census copies/primary/max", "cov%/floor", "share14", "publish d", "fold n/oldest h",
+           "kernel d", "reasons")
+    out = []
+    for r in rows:
+        h = r.get("health") or {}
+        if h.get("status") == "UNMEASURED" and not r.get("fields"):
+            continue
+        c, rc, ps = _cell(r, "tool_census"), _cell(r, "rule_coverage"), _cell(r, "product_share")
+        bp, fl, kf = _cell(r, "bus_publish"), _cell(r, "fold_lag"), _cell(r, "kernel_filing")
+        dash = "-"
+        out.append((r["project"], h.get("status", "?"),
+                    (f"{c['project_copies']}/{c['primary_count'] if c.get('primary_count') is not None else 'UNMEAS'}/{c['schedule_max'] if c.get('schedule_max') is not None else dash}"
+                     + (f" (next {c['schedule_next']['max']} by {c['schedule_next']['by'][5:]})" if c.get("schedule_next") else ""))
+                    if c else "UNMEAS",
+                    f"{rc['percent']}/{rc['floor'] if rc.get('floor') is not None else dash}" if rc else
+                    ("NONE" if (r["fields"].get("rule_coverage") or {}).get("error") == "NOT_CONFIGURED" else "UNMEAS"),
+                    f"{ps['product_share']:.3f}" if ps and isinstance(ps.get("product_share"), (int, float)) else "UNMEAS",
+                    (str(bp["days_since"]) if bp.get("days_since") is not None else "never") if bp else "UNMEAS",
+                    (f"{fl['unfolded']}/{fl['oldest_age_hours'] if fl.get('oldest_age_hours') is not None else dash}"
+                     if fl and fl.get("unfolded") is not None else "UNMEAS"),
+                    (str(kf["days_since"]) if kf.get("days_since") is not None else "never") if kf else "UNMEAS",
+                    "; ".join(h.get("reasons") or [])))
+    widths = [max(len(str(x[i])) for x in [hdr, *out]) for i in range(len(hdr) - 1)]
+    lines = ["  ".join(str(v).ljust(widths[i]) for i, v in enumerate(x[:-1])) + "  " + x[-1] for x in [hdr, *out]]
+    absent = [r["project"] for r in rows if (r.get("health") or {}).get("status") == "UNMEASURED" and not r.get("fields")]
+    if absent:
+        lines.append(f"UNMEASURED ({len(absent)}, no local clone on {machine()}): {', '.join(absent)}")
+    return "\n".join(lines)
+
+
+def fleet_rows(a, now: dt.datetime) -> list[dict]:
+    if not a.bus:
+        raise ConfigError("--fleet needs --bus <the bus clone> (a publish target is always named explicitly)")
+    bus = Path(a.bus).resolve()
+    checkout = SCRIPT_BUS
+    if not a.no_fetch:
+        git(bus, "fetch", "-q", "origin", "master")
+    th, th_sha = load_thresholds(Path(a.thresholds).resolve() if a.thresholds else None)
+    if th is None:
+        raise ConfigError(f"no thresholds file at {checkout / THRESHOLDS}")
+    roots = load_roots(a.roots)
+    members = fleet_members(bus, checkout)
+    if a.project:
+        members = [m for m in members if m == a.project]
+    present, rows = [], []
+    for m in members:
+        r = roots.get(m)
+        if r and Path(r).is_dir():
+            present.append((m, Path(r).resolve()))
+    shares = live_shares(checkout, [m for m, _ in present], int(th.get("product_share_window_days", 14))) \
+        if a.share == "live" else {}
+    by_name = dict(present)
+    for m in members:
+        if m not in by_name:
+            rows.append(unmeasured_row(m, now, "no local clone on this machine (fleet-roots map)"))
+            continue
+        proot = by_name[m]
+        p = overlay({"name": m, "config": DEFAULT_CONFIG, **((th.get("projects") or {}).get(m) or {})}, proot)
+        if m in shares:
+            p["_live_share"] = shares[m]
+        own_pins = proot / (p.get("pins") or DEFAULT_PINS)
+        rows.append(build_row(p, proot, bus, own_pins, None, None, now, own_pins, checkout, th, th_sha))
+    return rows
+
+
 # ---------- CLI ----------
 
 def main(argv=None) -> int:
@@ -596,8 +1071,19 @@ def main(argv=None) -> int:
     ap.add_argument("--pins", help=f"the EXECUTOR's pins file whose runner runs pinned bus tools (default: each "
                                    f"project's own <root>/{DEFAULT_PINS}); pin_stale always reads the project's own")
     ap.add_argument("--bus", help="local bus clone (default $FACTORY_BUS_CLONE, the pins' bus_clone, or this script's repo)")
-    ap.add_argument("--publish", action="store_true", help=f"append the rows to the bus {OUTPUT} (idempotent per project+date)")
+    ap.add_argument("--fleet", action="store_true", help="measure EVERY derived member cloned on this box (roots map); "
+                                                         "the rest are UNMEASURED rows. Needs --bus")
+    ap.add_argument("--roots", help="--fleet: machine-local roots map (default ~/.fleet-roots.json, as fleet-sweep)")
+    ap.add_argument("--thresholds", help=f"health thresholds (default {THRESHOLDS} beside this script)")
+    ap.add_argument("--share", choices=("live", "row"), help="product share: live Get-ProductThroughput run "
+                                                             "(--fleet default) or the last published row")
+    ap.add_argument("--no-fetch", action="store_true", help="--fleet: do not fetch the bus clone first")
+    ap.add_argument("--publish", action="store_true", help=f"append the rows to the bus {OUTPUT} (idempotent per "
+                                                           f"project+date+machine; UNMEASURED members are never published)")
     ap.add_argument("--out", help="also append the rows to this local file")
+    ap.add_argument("--dry-run", action="store_true", help="measure and print only: no --out write, no publish")
+    ap.add_argument("--print", dest="print_table", action="store_true", help="human table instead of JSON rows")
+    ap.add_argument("--json", action="store_true", help="JSON rows (the default; with --print, both)")
     ap.add_argument("--field", choices=FIELDS, help="print one field of each row (shows its command)")
     ap.add_argument("--now", help="ISO instant to measure at (tests)")
     a = ap.parse_args(argv)
@@ -606,33 +1092,47 @@ def main(argv=None) -> int:
             s.reconfigure(errors="backslashreplace")
     root = Path(a.root).resolve()
     now = parse_ts(a.now) if a.now else dt.datetime.now(dt.timezone.utc)
+    if a.share is None:
+        a.share = "live" if a.fleet else "row"
+    rows = []
     try:
-        if not root.is_dir():
-            raise ConfigError(f"root is not a directory: {a.root}")
-        projects, cfg_path, cfg_sha = load_config(root, a.config, a.project)
+        if a.fleet:
+            rows = fleet_rows(a, now)
+        else:
+            if not root.is_dir():
+                raise ConfigError(f"root is not a directory: {a.root}")
+            projects, cfg_path, cfg_sha = load_config(root, a.config, a.project)
+            th, th_sha = load_thresholds(Path(a.thresholds).resolve() if a.thresholds else None)
+            for p in projects:
+                proot = project_root(p, root, cfg_path)
+                if not proot.is_dir():
+                    print(f"fleet-scorecard: SKIP {p['name']}: root absent on this machine", file=sys.stderr)
+                    continue
+                p = overlay(p, proot)
+                own_pins = proot / (p.get("pins") or DEFAULT_PINS)
+                pins = Path(a.pins).resolve() if a.pins else own_pins
+                bus = Path(a.bus).resolve() if a.bus else find_bus(None, pins)
+                rows.append(build_row(p, proot, bus, pins, cfg_path, cfg_sha, now, own_pins, None, th, th_sha))
     except ConfigError as e:
         print(f"fleet-scorecard: ERROR {e}", file=sys.stderr)
         return 2
-    rows = []
-    for p in projects:
-        proot = project_root(p, root, cfg_path)
-        if not proot.is_dir():
-            print(f"fleet-scorecard: SKIP {p['name']}: root absent on this machine", file=sys.stderr)
-            continue
-        p = overlay(p, proot)
-        own_pins = proot / (p.get("pins") or DEFAULT_PINS)
-        pins = Path(a.pins).resolve() if a.pins else own_pins
-        bus = Path(a.bus).resolve() if a.bus else find_bus(None, pins)
-        rows.append(build_row(p, proot, bus, pins, cfg_path, cfg_sha, now, own_pins))
+    except Unavailable as e:
+        print(f"fleet-scorecard: UNAVAILABLE {e}", file=sys.stderr)
+        return 3
     refused = [(r["project"], why) for r in rows if (why := screen(r))]
     for proj, why in refused:
         print(f"fleet-scorecard: REFUSED row {proj}: publish screen ({why})", file=sys.stderr)
     rows = [r for r in rows if not screen(r)]
-    for r in rows:
-        if a.field:
-            print(json.dumps({"project": r["project"], a.field: r["fields"][a.field]}, ensure_ascii=False))
-        else:
-            print(json.dumps(r, ensure_ascii=False, separators=(",", ":")))
+    if a.print_table:
+        print(table(rows))
+    if a.json or not a.print_table:
+        for r in rows:
+            if a.field:
+                print(json.dumps({"project": r["project"], a.field: r["fields"].get(a.field)}, ensure_ascii=False))
+            else:
+                print(json.dumps(r, ensure_ascii=False, separators=(",", ":")))
+    if a.dry_run:
+        return 2 if refused else 0
     if a.out and rows:
         with open(a.out, "a", encoding="utf-8", newline="\n") as fh:
             for r in rows:
@@ -642,9 +1142,10 @@ def main(argv=None) -> int:
         if bus is None:
             print("fleet-scorecard: UNAVAILABLE no bus clone (--bus, $FACTORY_BUS_CLONE or pins bus_clone)", file=sys.stderr)
             return 3
-        if rows:
+        measured = [r for r in rows if r.get("fields")]
+        if measured:
             try:
-                for line in publish(bus, rows):
+                for line in publish(bus, measured):
                     print(line, file=sys.stderr)
             except Unavailable as e:
                 print(f"fleet-scorecard: UNAVAILABLE {e}", file=sys.stderr)

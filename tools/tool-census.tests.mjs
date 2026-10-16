@@ -176,6 +176,136 @@ try {
   rmSync(join(root, 'busfix/tools/other/check-doc-size.py')); rmSync(join(root, 'q1/tools/check-doc-size.py')); rmSync(join(root, 'q2/tools/check-doc-size.py'));
   assert.equal(fam(JSON.parse(census(['--json', '--config', join(root, 'canon.json')]).stdout), 'docsize').excess, 0, 'only the canonical left = no excess'); cases++;
 
+  // 13. Views (rule 7): each box's root set is its own count; the 'bus' view is always measurable,
+  //     so a CI runner without the sibling clones still refuses a duplicate added on the bus.
+  put('v.json', JSON.stringify({ families: [{ name: 'checkpoint', names: ['session-checkpoint.py'] }],
+    roots: [{ name: 'bus', path: 'vbus', kind: 'bus' }, { name: 'far', path: 'not-on-this-box', kind: 'project' }, { name: 'v1', path: 'v1', kind: 'project' }] }));
+  put('vbus/tools/session-checkpoint.py', 'a()\n');
+  put('v1/session-checkpoint.py', 'b()\n');
+  const vb = join(root, 'vbase.json');
+  writeFileSync(vb, JSON.stringify({ total: 9, roots: ['bus', 'far'], families: { checkpoint: {} } }));
+  const vc = (...extra) => census(['--config', join(root, 'v.json'), '--baseline', vb, ...extra]);
+  r = vc('--add-view', 'bus', '--roots', 'bus');
+  assert.equal(r.status, 0); assert.match(r.out, /view 'bus' seeded at 0/); cases++;
+  assert.equal(vc('--add-view', 'bus', '--roots', 'bus').status, 1, 'an existing view is never re-seeded'); cases++;
+  assert.equal(vc('--add-view', 'farview', '--roots', 'far').status, 3, 'a view over an invisible root cannot be seeded'); cases++;
+  r = vc('--check');
+  assert.equal(r.status, 0, 'primary UNMEASURED + bus view ok = 0'); assert.match(r.out, /UNMEASURED: .*far/); assert.match(r.out, /view 'bus': ok: count 0/); cases++;
+  put('vbus/other/session-checkpoint.py', 'c()\n');
+  r = vc('--check');
+  assert.equal(r.status, 1, 'a second bus copy fails CI even with the fleet invisible'); assert.match(r.out, /view 'bus': ROSE: count 1 > baseline 0/); cases++;
+  assert.equal(vc('--update-baseline').status, 1, 'a view rise is refused'); cases++;
+  rmSync(join(root, 'vbus/other/session-checkpoint.py'));
+  r = vc('--add-view', 'box');
+  assert.equal(r.status, 0); assert.match(r.out, /view 'box' seeded at 1 over bus, v1/); cases++;
+  rmSync(join(root, 'v1/session-checkpoint.py'));
+  r = vc('--update-baseline');
+  assert.equal(r.status, 0); assert.match(r.out, /view 'box' lowered 1 -> 0/);
+  const vjs = JSON.parse(readFileSync(vb, 'utf8'));
+  assert.equal(vjs.total, 9, 'the unmeasured primary is untouched'); assert.equal(vjs.views.find((v) => v.name === 'box').total, 0); cases++;
+
+  // 14. Ratchet history (rule 8): a hand-edited raise is refused unless a ruling entry lands with it.
+  const g = join(root, 'ratchet');
+  mkdirSync(join(g, 'metrics'), { recursive: true });
+  const gb = join(g, 'metrics', 'tool-census-baseline.json'), gr = join(g, 'metrics', 'tool-census-rulings.json');
+  const sh = (...a) => execFileSync('git', ['-C', g, ...a], { encoding: 'utf8' });
+  sh('init', '-q'); sh('config', 'user.email', 't@t'); sh('config', 'user.name', 't');
+  const baseDoc = { total: 5, roots: ['bus'], families: { checkpoint: {} }, schedule: [{ by: '2026-11-01', max: 3 }], views: [{ name: 'bus', roots: ['bus'], families: ['checkpoint'], total: 2 }] };
+  writeFileSync(gb, JSON.stringify(baseDoc)); sh('add', '--', 'metrics/tool-census-baseline.json'); sh('commit', '-qm', 'base');
+  const rc = () => census(['--check-ratchet', 'HEAD', '--repo', g, '--baseline', gb]);
+  const edit = (f) => { const d = JSON.parse(JSON.stringify(baseDoc)); f(d); writeFileSync(gb, JSON.stringify(d)); };
+  edit((d) => { d.total = 4; d.views[0].total = 1; d.schedule = [{ by: '2026-10-25', max: 3 }]; });
+  r = rc(); assert.equal(r.status, 0, 'lowering and tightening need nothing'); assert.match(r.out, /nothing loosened/); cases++;
+  for (const [what, f, change] of [
+    ['primary raise', (d) => { d.total = 6; }, 'total-raised'],
+    ['view raise', (d) => { d.views[0].total = 3; }, 'total-raised'],
+    ['view removed', (d) => { d.views = []; }, 'view-removed'],
+    ['root dropped', (d) => { d.views[0].roots = ['x']; }, 'roots-removed'],
+    ['family dropped', (d) => { d.families = {}; }, 'families-removed'],
+    ['date moved later', (d) => { d.schedule = [{ by: '2026-11-08', max: 3 }]; }, 'schedule-loosened'],
+    ['max raised', (d) => { d.schedule = [{ by: '2026-11-01', max: 4 }]; }, 'schedule-loosened'],
+  ]) {
+    edit(f); r = rc();
+    assert.equal(r.status, 1, `${what} without a ruling is refused`); assert.match(r.out, /RATCHET REFUSED/);
+    assert.match(r.out, new RegExp(`${change === 'total-raised' ? 'total' : change === 'view-removed' ? 'removed' : change === 'roots-removed' ? 'roots dropped' : change === 'families-removed' ? 'families dropped' : 'schedule allows'}.*UNRULED`));
+    cases++;
+  }
+  edit((d) => { d.views[0].total = 3; });
+  writeFileSync(gr, JSON.stringify({ rulings: [{ view: 'bus', change: 'total-raised', from: 2, to: 4, ruling: 'x', date: '2026-10-16' }] }));
+  assert.equal(rc().status, 1, 'a ruling for a different raise does not cover this one'); cases++;
+  writeFileSync(gr, JSON.stringify({ rulings: [{ view: 'bus', change: 'total-raised', from: 2, to: 3, ruling: 'RULINGS.md owner 2026-10-16', date: '2026-10-16' }] }));
+  r = rc(); assert.equal(r.status, 0, 'a matching new ruling entry admits the raise'); assert.match(r.out, /\(ruled\)/); cases++;
+  sh('add', '--', 'metrics/tool-census-baseline.json', 'metrics/tool-census-rulings.json'); sh('commit', '-qm', 'ruled raise');
+  edit((d) => { d.views[0].total = 4; });
+  assert.equal(rc().status, 1, 'a ruling already at the base is spent: 3 -> 4 needs a new entry'); cases++;
+  assert.equal(census(['--check-ratchet', 'no-such-ref', '--repo', g, '--baseline', gb]).status, 2, 'unknown base revision is a tool failure'); cases++;
+
+  // 15. CI sees every family: the doctrine-sync workflow's push AND pull_request path filters name every
+  //     census family basename ('**/<name>'), so adding a copy anywhere on the bus runs the 'bus' view.
+  const busRoot = join(dirname(tool), '..');
+  const wf = readFileSync(join(busRoot, '.github', 'workflows', 'doctrine-sync.yml'), 'utf8').replace(/\r\n/g, '\n');
+  const realCfg = JSON.parse(readFileSync(join(busRoot, 'tools', 'tool-census.config.json'), 'utf8'));
+  const pushBlock = wf.slice(wf.indexOf('  push:'), wf.indexOf('  pull_request:'));
+  const prBlock = wf.slice(wf.indexOf('  pull_request:'), wf.indexOf('  workflow_dispatch:'));
+  for (const f of realCfg.families) for (const n of f.names) {
+    assert.ok(pushBlock.includes(`- '**/${n}'`) && prBlock.includes(`- '**/${n}'`), `workflow path filters miss family name ${n}`);
+  }
+  assert.ok(wf.includes('--check-ratchet'), 'CI runs the ratchet history check'); cases++;
+  const realBase = JSON.parse(readFileSync(join(busRoot, 'metrics', 'tool-census-baseline.json'), 'utf8'));
+  const busView = (realBase.views || []).find((v) => v.name === 'bus');
+  assert.ok(busView && busView.roots.length === 1 && busView.roots[0] === 'bus', "the committed baseline carries the CI-measurable 'bus' view");
+  assert.deepEqual([...busView.families].sort(), realCfg.families.map((f) => f.name).sort(), "the 'bus' view counts every configured family"); cases++;
+
+  // ---- E2 (re-expressed on the views design): runner release identity, scan roots, new-member notice ----
+  // 18. Identity is the git blob id: identical bytes are one version wherever they sit; a vendored
+  //     factory-pins/pin-runner.py equal to ANY blob on the bus's origin/master (else master) history of the canonical
+  //     path joins it (CRLF checkout included); an edited or misplaced old copy diverges; no history = no equivalence.
+  const gitIn = (dir, ...a) => execFileSync('git', ['-C', dir, '-c', 'user.email=t@example.invalid', '-c', 'user.name=t', '-c', 'core.autocrlf=false', ...a], { encoding: 'utf8' });
+  const RUN = (n) => `print("runner release ${n}")\n`;
+  execFileSync('git', ['init', '-q', '-b', 'master', join(root, 'busrel')]);
+  for (const n of [1, 2, 3]) { put('busrel/tools/factory/pin-runner.py', RUN(n)); gitIn(join(root, 'busrel'), 'add', '-A'); gitIn(join(root, 'busrel'), 'commit', '-qm', `release ${n}`); }
+  const prFam = { name: 'pinrunner', names: ['pin-runner.py'], canonical: 'tools/factory/pin-runner.py', releaseHistory: true };
+  const prCfg = (name, ...rootNames) => { put(name, JSON.stringify({ families: [prFam], roots: rootNames.map((n) => ({ name: n, path: n, kind: n === 'busrel' ? 'bus' : 'project' })) })); return join(root, name); };
+  const prRep = (cfg, ...extra) => fam(JSON.parse(census(['--json', '--config', cfg, ...extra]).stdout), 'pinrunner');
+  put('r1/factory-pins/pin-runner.py', RUN(1).replace(/\n/g, '\r\n'));   // an OLD release, CRLF checkout
+  put('r2/factory-pins/pin-runner.py', RUN(3));                          // the current release
+  let pr = prRep(prCfg('rc.json', 'busrel', 'r1', 'r2', 'r3', 'r4'));
+  assert.equal(pr.excess, 0, 'old + current release + the bus canonical are one version');
+  assert.equal(pr.copies.find((c) => c.root === 'r1').release, 'history'); assert.equal(pr.copies.find((c) => c.root === 'busrel').release, 'canonical'); assert.equal(pr.historyRef, 'master'); cases++;
+  put('r3/factory-pins/pin-runner.py', RUN(2) + '# local edit\n');
+  pr = prRep(join(root, 'rc.json'));
+  assert.equal(pr.excess, 1, 'a modified vendored runner is divergent'); assert.equal(pr.copies.find((c) => c.root === 'r3').release, undefined); cases++;
+  put('r4/tools/pin-runner.py', RUN(1));
+  assert.equal(prRep(join(root, 'rc.json')).excess, 2, 'an old release outside factory-pins/ is still divergent'); cases++;
+  put('r5/tools/pin-runner.py', RUN(3));
+  assert.equal(prRep(prCfg('rc3.json', 'busrel', 'r5')).excess, 0, 'the CURRENT canonical bytes outside factory-pins/ are the same version'); cases++;
+  assert.equal(prRep(prCfg('rc2.json', 'r1', 'r2')).excess, 1, 'no bus clone, no history: no equivalence is assumed'); cases++;
+  const bus1 = join(root, 'busrel');
+  gitIn(bus1, 'checkout', '-q', '-b', 'side'); put('busrel/tools/factory/pin-runner.py', RUN(9)); gitIn(bus1, 'add', '-A'); gitIn(bus1, 'commit', '-qm', 'unmerged release'); gitIn(bus1, 'checkout', '-q', 'master');
+  put('r5b/factory-pins/pin-runner.py', RUN(9)); const rc4 = prCfg('rc4.json', 'busrel', 'r5b');
+  assert.equal(prRep(rc4).excess, 1, 'a release that exists only on another branch is not canonical history');
+  assert.equal(prRep(rc4, '--bus-ref', 'side').excess, 0, 'control: the same blob on the ref the history is read from'); cases++;
+
+  // 19. A root's "scan" limits a non-repository workspace to named subdirectories; a missing scan dir is UNMEASURED.
+  put('ws/tools/session-checkpoint.py', 'print("ws live")\n'); put('ws/corpus/deep/session-checkpoint.py', 'print("in the corpus")\n');
+  put('scan.json', JSON.stringify({ families: [{ name: 'checkpoint', names: ['session-checkpoint.py'] }], roots: [{ name: 'ws', path: 'ws', kind: 'project', scan: ['tools'] }] }));
+  assert.deepEqual(fam(JSON.parse(census(['--json', '--config', join(root, 'scan.json')]).stdout), 'checkpoint').copies.map((c) => c.path), ['tools/session-checkpoint.py'], 'only the scanned subdir is walked');
+  put('scan2.json', JSON.stringify({ families: [{ name: 'checkpoint', names: ['session-checkpoint.py'] }], roots: [{ name: 'ws', path: 'ws', kind: 'project', scan: ['tools', 'no-such-dir'] }] }));
+  const scan2 = JSON.parse(census(['--json', '--config', join(root, 'scan2.json')]).stdout);
+  assert.deepEqual([scan2.measuredRoots, scan2.absentRoots], [[], ['ws']], 'a missing scan dir is not a measured zero'); assert.match(scan2.absentWhy.ws, /scan dir\(s\) missing: no-such-dir/); cases++;
+
+  execFileSync('git', ['init', '-q', join(root, 'ws')]);   // the same root as a git checkout: ls-files lists corpus/ too, scan must still limit it
+  assert.deepEqual(fam(JSON.parse(census(['--json', '--config', join(root, 'scan.json')]).stdout), 'checkpoint').copies.map((c) => c.path), ['tools/session-checkpoint.py'], 'scan limits a git root as well'); cases++;
+
+  // 20. Configured members that no baseline view lists are named (informational; the verdict is unchanged).
+  put('nm.json', JSON.stringify({ families: [{ name: 'checkpoint', names: ['session-checkpoint.py'] }, { name: 'newfam', names: ['newfam.py'] }],
+    roots: [{ name: 'bus', path: 'nmbus', kind: 'bus' }, { name: 'newroot', path: 'nmbus', kind: 'project' }] }));
+  put('nmbus/tools/session-checkpoint.py', 'x()\n');
+  const nmBase = join(root, 'nm-baseline.json');
+  writeFileSync(nmBase, JSON.stringify({ total: 0, roots: ['bus'], families: { checkpoint: {} } }));
+  r = census(['--check', '--config', join(root, 'nm.json'), '--baseline', nmBase]);
+  assert.equal(r.status, 0, r.out); assert.match(r.out, /NEW-MEMBERS-UNBASELINED: root:newroot, family:newfam/); assert.match(r.out, /Informational/); cases++;
+
   assert.ok(existsSync(tool));
   console.log(`tool-census fixtures: ${cases} cases passed`);
 } finally { rmSync(root, { recursive: true, force: true }); }

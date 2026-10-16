@@ -48,8 +48,7 @@ these when you have a third category (vendored code, docs you consider product-a
 
 .PARAMETER Lines
 LINE MODE (added 2026-10-11, owner defect D3 "paperwork outweighs product"). Counts CHANGED LINES
-(adds + deletes from `git log --numstat`; merge commits excluded; binary files ignored and counted
-separately) per project over the window, bucketed into product / tests / factory-tooling /
+(adds + deletes from `git log --numstat`; merge commits excluded; binary files: lines not counted, counted separately as binary_files; their bytes are counted) per project over the window, bucketed into product / tests / factory-tooling /
 coordination-paperwork / vendored-copies using the per-project path classes in -ClassConfig.
 Unmatched paths are reported as 'unclassified', never dropped. Emits product share
 (= product / total) and a table ranked by product lines per week. Walks the configured ref of each
@@ -63,6 +62,16 @@ fleet/product-throughput-classes/v1; pattern rules are documented in the file's 
 
 .PARAMETER Project
 Line mode: restrict to these project names from the config. Default: all.
+
+.PARAMETER Root
+Alias -Repo. The repo to measure. Classic mode: required classifier via -ProductPath. Line mode: when given,
+measures THIS checkout instead of the config's root, using the config entry whose root matches it, or the
+entry named by -Project. Refuses (exit 4) when neither exists. Any project can measure itself:
+  pwsh -File tools/Get-ProductThroughput.ps1 -Lines -Repo C:\code\X -Project dng -Days 14 -AsJson
+
+.PARAMETER NoBytes
+Line mode: skip the second `git log -p` pass (changed-BYTES column). Bytes are on by default: line counts
+hide mega-line paperwork (one 62 KB packet state-line rewrite is 2 lines but ~125 KB).
 
 .PARAMETER At
 Line mode: walk this commit instead of the project's configured ref, so a published row can be
@@ -84,7 +93,7 @@ it at the same classifier_sha256 reproduces the row's numbers.
 Line mode -AsRows: the run_id stamped on every row (default product-share-lines-<until>).
 
 .PARAMETER Since
-Line mode window start. MUST carry an explicit offset ('2026-09-27T00:00:00Z' or '...-05:00'):
+Window start, both modes (alias of the window is -Days/-WindowDays). MUST carry an explicit offset ('2026-09-27T00:00:00Z' or '...-05:00'):
 a naive timestamp is read as local time and silently moves the window edge (ruling candidate
 product-share-is-the-fixpoint-instrument-r1 §4.4). Default: now (UTC) minus -WindowDays.
 
@@ -107,15 +116,16 @@ param(
     # Not [Mandatory]: that would PROMPT under -File, which hangs an unattended caller.
     # The explicit check below refuses with exit 4 instead, so it fails closed and fast.
     [string[]]$ProductPath = @(),
-    [string]$Root = (Get-Location).Path,
+    [Alias('Repo')][string]$Root = (Get-Location).Path,
     [string[]]$CoordinationPath = @(),
-    [int]$WindowDays = 30,
+    [Alias('Days')][int]$WindowDays = 30,
     [int]$MaxAgeDays = 7,
     [Alias('Json')][switch]$AsJson,
     [switch]$Lines,
     [string]$ClassConfig = (Join-Path $PSScriptRoot 'product-throughput-classes.json'),
     [string[]]$Project = @(),
     [string]$Since = '',
+    [switch]$NoBytes,
     [string[]]$At = @(),
     [string]$Until = '',
     [switch]$AsRows,
@@ -123,6 +133,8 @@ param(
 )
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
+$RepoArgGiven = $PSBoundParameters.ContainsKey('Root')
+$SinceArgGiven = -not [string]::IsNullOrWhiteSpace($Since)
 
 if ($Lines) {
     $Buckets = @('product', 'tests', 'vendored-copies', 'factory-tooling', 'coordination-paperwork')
@@ -177,6 +189,33 @@ if ($Lines) {
     for ($i = 0; $i -lt $cfgBytes.Length; $i++) { if (-not ($cfgBytes[$i] -eq 13 -and $i + 1 -lt $cfgBytes.Length -and $cfgBytes[$i + 1] -eq 10)) { $lf.Add($cfgBytes[$i]) } }
     $classifierSha = -join ([Security.Cryptography.SHA256]::Create().ComputeHash($lf.ToArray()) | ForEach-Object { $_.ToString('x2') })
 
+    function Get-NormPath([string]$p) {
+        try { $p = [IO.Path]::GetFullPath($p) } catch { }
+        return (($p -replace '\\', '/').TrimEnd('/')).ToLowerInvariant()
+    }
+    # -Repo <path>: measure ANY repo checkout. Classes come from the config entry whose root is that
+    # repo, or from the entry named by -Project (applied to the -Repo path). No entry = refuse (exit 4):
+    # the classifier is required, never guessed (rule A).
+    if ($RepoArgGiven) {
+        $topRaw = & git -C $Root rev-parse --show-toplevel 2>$null
+        if ($LASTEXITCODE -ne 0 -or -not $topRaw) { Write-Output "FAILED: -Repo is not a git repository: $Root"; exit 4 }
+        $repoTop = ([string]$topRaw).Trim()
+        if ($wanted.Count -gt 0) { $tmpl = $projects[0] }
+        else {
+            # compare through git's own toplevel so 8.3 short names / junctions / trailing slashes do not defeat the match
+            $hit = @($projects | Where-Object {
+                $cr = Get-NormPath $_.root
+                $gt = if (Test-Path -LiteralPath $_.root) { [string](& git -C $_.root rev-parse --show-toplevel 2>$null) } else { '' }
+                $cr -eq (Get-NormPath $repoTop) -or $cr -eq (Get-NormPath $Root) -or ($gt -and (Get-NormPath $gt) -eq (Get-NormPath $repoTop)) })
+            if ($hit.Count -eq 0) {
+                Write-Output "FAILED: no class entry in the config has root '$repoTop'; add one, or pass -Project <name> to apply that project's classes to this repo."; exit 4
+            }
+            $tmpl = $hit[0]
+        }
+        $tmplRef = if ($tmpl.PSObject.Properties['ref'] -and $tmpl.ref) { [string]$tmpl.ref } else { 'HEAD' }
+        $projects = @([pscustomobject]@{ name = [string]$tmpl.name; root = $repoTop; ref = $tmplRef; classes = $tmpl.classes })
+    }
+
     # Flatten one project's classes into rules ranked by specificity (non-wildcard chars), then by
     # bucket order. './x' = root-level only. A pattern with '*' uses -like; otherwise prefix/exact.
     function Get-Rules($classes) {
@@ -208,11 +247,23 @@ if ($Lines) {
         }
         return 'unclassified'
     }
-    # numstat rename forms: 'a/{old => new}/f' and 'old => new'. Attribute to the new path.
-    function Resolve-NumstatPath([string]$p) {
-        $p = [regex]::Replace($p, '\{([^{}]*) => ([^{}]*)\}', '$2')
-        if ($p.Contains(' => ')) { $p = $p.Substring($p.IndexOf(' => ') + 4) }
-        return ($p -replace '//+', '/')
+    # git stdout as BYTES (a temp file, never a PowerShell string: strings drop CRs and mangle non-UTF-8).
+    function Get-GitBytes([string]$repo, [string[]]$gitArgs) {
+        $tmp = [IO.Path]::GetTempFileName()
+        try {
+            & git -c core.quotepath=off -C $repo @gitArgs "--output=$tmp" 2>$null
+            if ($LASTEXITCODE -ne 0) { return $null }
+            return , [IO.File]::ReadAllBytes($tmp)
+        } finally { Remove-Item -LiteralPath $tmp -Force -ErrorAction SilentlyContinue }
+    }
+    function Split-NulTokens([byte[]]$bytes) {
+        $out = [Collections.Generic.List[string]]::new(); $pos = 0; $n = $bytes.Length
+        while ($pos -lt $n) {
+            $e = [Array]::IndexOf[byte]($bytes, [byte]0, $pos)
+            if ($e -lt 0) { $e = $n }
+            $out.Add([Text.Encoding]::UTF8.GetString($bytes, $pos, $e - $pos)); $pos = $e + 1
+        }
+        return , $out
     }
 
     $prevEnc = [Console]::OutputEncoding
@@ -220,51 +271,179 @@ if ($Lines) {
     $rows = [Collections.Generic.List[object]]::new(); $failed = $false
     try {
         foreach ($pr in $projects) {
-            $root = [string]$pr.root
+            $repoRoot = [string]$pr.root
             $ref = if ($pr.PSObject.Properties['ref'] -and $pr.ref) { [string]$pr.ref } else { 'HEAD' }
             if ($atMap.ContainsKey([string]$pr.name)) { $ref = [string]$atMap[[string]$pr.name] }
-            $row = [ordered]@{ project = [string]$pr.name; root = $root; ref = $ref; ref_sha = $null; ref_name = $null; error = $null }
-            if (-not (Test-Path -LiteralPath (Join-Path $root '.git'))) {
+            $row = [ordered]@{ project = [string]$pr.name; root = $repoRoot; ref = $ref; ref_sha = $null; ref_name = $null; error = $null }
+            if (-not (Test-Path -LiteralPath (Join-Path $repoRoot '.git'))) {
                 $row.error = 'not a git repository'; $rows.Add([pscustomobject]$row); $failed = $true; continue
             }
-            $sha = & git -C $root rev-parse --verify -q "$ref^{commit}" 2>$null
+            $sha = & git -C $repoRoot rev-parse --verify -q "$ref^{commit}" 2>$null
             if ($LASTEXITCODE -ne 0 -or -not $sha) {
                 $row.error = "ref not found: $ref"; $rows.Add([pscustomobject]$row); $failed = $true; continue
             }
             $row.ref_sha = ([string]$sha).Trim()
             # A pinned -At sha has no symbolic name: rev-parse --abbrev-ref prints nothing (or the sha); record the input.
-            $abbrev = & git -C $root rev-parse --abbrev-ref $ref 2>$null
+            $abbrev = & git -C $repoRoot rev-parse --abbrev-ref $ref 2>$null
             $row.ref_name = if ($LASTEXITCODE -eq 0 -and $abbrev) { ([string]$abbrev).Trim() } else { $ref }
             try { $rules = Get-Rules $pr.classes }
             catch { $row.error = "bad classes: $($_.Exception.Message)"; $rows.Add([pscustomobject]$row); $failed = $true; continue }
             $sum = [ordered]@{}; foreach ($b in $Buckets + 'unclassified') { $sum[$b] = [int64]0 }
-            $unc = @{}; $commits = 0; $binary = 0
-            $raw = & git -c core.quotepath=off -C $root log $row.ref_sha --no-merges "--since=$sinceIso" "--until=$untilIso" --numstat '--format=%x00%H' 2>&1
-            if ($LASTEXITCODE -ne 0) { $row.error = 'git log failed'; $rows.Add([pscustomobject]$row); $failed = $true; continue }
-            foreach ($line in $raw) {
-                $l = [string]$line
-                if ($l.StartsWith([char]0)) { $commits++; continue }
-                if ([string]::IsNullOrWhiteSpace($l)) { continue }
-                $f = $l.Split("`t", 3)
-                if ($f.Count -lt 3) { continue }
-                if ($f[0] -eq '-' -or $f[1] -eq '-') { $binary++; continue }
-                $n = [int64]$f[0] + [int64]$f[1]
-                $path = Resolve-NumstatPath $f[2]
-                $b = Get-Bucket $path $rules
-                $sum[$b] += $n
-                if ($b -eq 'unclassified') {
-                    $k = if ($path.Contains('/')) { $path.Substring(0, $path.IndexOf('/') + 1) } else { $path }
-                    $unc[$k] = [int64]($(if ($unc.ContainsKey($k)) { $unc[$k] } else { 0 })) + $n
+            $unc = @{}; $commits = 0; $binary = 0; $binaryChanged = 0
+            $cc = [ordered]@{ product = 0; tests = 0; 'paperwork-only' = 0; 'tooling-only' = 0; 'paperwork-and-tooling' = 0; other = 0 }
+            $bytes = $null; $bytesTotal = [int64]0
+
+            # PASS 1: `git log --raw --numstat -z` read as BYTES and split on NUL, so a path is never parsed out of
+            # prose (a ' and ' or a tab in a name cannot move a file between buckets). Per commit: raw entries
+            # (old/new blob ids, path; a rename has old and new paths) then numstat entries in the same order
+            # ('-' '-' = binary). Lines, commit classes and binary sizes come from here.
+            $b1 = Get-GitBytes $repoRoot @('log', $row.ref_sha, '--no-merges', "--since=$sinceIso", "--until=$untilIso", '--raw', '--numstat', '-z', '--no-abbrev', '--format=%x01%H')
+            if ($null -eq $b1) { $row.error = 'git log failed'; $rows.Add([pscustomobject]$row); $failed = $true; continue }
+            $toks = Split-NulTokens $b1
+            $commitFiles = [Collections.Generic.List[object]]::new(); $commitShas = [Collections.Generic.List[string]]::new()
+            $cur = $null; $ni = 0; $bad = $null; $ti = 0
+            while ($ti -lt $toks.Count -and -not $bad) {
+                $t = $toks[$ti]; $ti++
+                if ($t.StartsWith([char]1)) {
+                    $cur = [Collections.Generic.List[object]]::new(); $commitFiles.Add($cur); $commitShas.Add($t.Substring(1).Trim()); $ni = 0; $commits++; continue
+                }
+                $t2 = $t.TrimStart("`n")
+                if ($t2 -eq '') { continue }
+                if ($null -eq $cur) { $bad = "token before the first commit: $t2"; break }
+                if ($t2.StartsWith(':')) {
+                    $meta = $t2.Split(' ')
+                    if ($meta.Count -lt 5) { $bad = "bad raw entry: $t2"; break }
+                    $st = $meta[4]
+                    if (($st.StartsWith('R') -or $st.StartsWith('C')) -and $ti + 1 -lt $toks.Count) { $path = $toks[$ti + 1]; $ti += 2 }
+                    else { $path = $toks[$ti]; $ti++ }
+                    $cur.Add([pscustomobject]@{ path = $path; bucket = (Get-Bucket $path $rules); old = $meta[2]; new = $meta[3]; status = $st; n = $null; binary = $false })
+                    continue
+                }
+                $nm = [regex]::Match($t2, '^(\d+|-)\t(\d+|-)\t(.*)$', 'Singleline')
+                if ($nm.Success) {
+                    $np = $nm.Groups[3].Value
+                    if ($np -eq '' -and $ti + 1 -lt $toks.Count) { $np = $toks[$ti + 1]; $ti += 2 }
+                    if ($ni -ge $cur.Count -or $cur[$ni].path -cne $np) { $bad = "numstat entry '$np' does not match the raw entry at that position"; break }
+                    $f = $cur[$ni]; $ni++
+                    if ($nm.Groups[1].Value -eq '-' -or $nm.Groups[2].Value -eq '-') { $f.binary = $true } else { $f.n = [int64]$nm.Groups[1].Value + [int64]$nm.Groups[2].Value }
+                    continue
+                }
+                $bad = "unrecognised token: $t2"
+            }
+            if ($bad) { $row.error = "unparseable git log -z output: $bad"; $rows.Add([pscustomobject]$row); $failed = $true; continue }
+            foreach ($cf in $commitFiles) {
+                $touched = @{}
+                foreach ($f in $cf) {
+                    $touched[$f.bucket] = $true
+                    if ($f.binary) { $binary++; if ($f.old -ne $f.new) { $binaryChanged++ }; continue }   # identical blob ids = a pure rename/mode change: nothing changed
+                    $sum[$f.bucket] += $f.n
+                    if ($f.bucket -eq 'unclassified') {
+                        $k = if ($f.path.Contains('/')) { $f.path.Substring(0, $f.path.IndexOf('/') + 1) } else { $f.path }
+                        $unc[$k] = [int64]($(if ($unc.ContainsKey($k)) { $unc[$k] } else { 0 })) + $f.n
+                    }
+                }
+                if ($touched.ContainsKey('product')) { $cc['product']++ }
+                elseif ($touched.ContainsKey('tests')) { $cc['tests']++ }
+                else {
+                    $pw = $touched.ContainsKey('coordination-paperwork'); $tl = $touched.ContainsKey('factory-tooling')
+                    $rest = @($touched.Keys | Where-Object { $_ -ne 'coordination-paperwork' -and $_ -ne 'factory-tooling' }).Count
+                    if ($rest -gt 0 -or (-not $pw -and -not $tl)) { $cc['other']++ }
+                    elseif ($pw -and $tl) { $cc['paperwork-and-tooling']++ }
+                    elseif ($pw) { $cc['paperwork-only']++ } else { $cc['tooling-only']++ }
                 }
             }
-            $merges = [int](& git -C $root rev-list --count --merges "--since=$sinceIso" "--until=$untilIso" $row.ref_sha)
+
+            # PASS 2 (BYTES): the RAW byte length of every added + removed line, from `git log -p` read as bytes
+            # (PowerShell string capture drops CRs, splits on a lone CR and turns invalid UTF-8 into U+FFFD).
+            # A line costs its bytes after the +/- marker plus its LF, which is the raw line length with the
+            # marker and without the LF; a final line with no EOL (`\ No newline at end of file`) has no LF.
+            # No path is read from the patch: the Nth `diff --git` of a commit is the Nth raw entry of pass 1
+            # (same diff queue), so quoting or odd names cannot misplace bytes. A binary file counts old size +
+            # new size from its blob ids (a replace is a removal plus an addition, even at equal size).
+            if (-not $NoBytes) {
+                $bsum = [ordered]@{}; foreach ($b in $Buckets + 'unclassified') { $bsum[$b] = [int64]0 }
+                $utf8 = [Text.UTF8Encoding]::new($false)
+                $b2 = Get-GitBytes $repoRoot @('log', $row.ref_sha, '--no-merges', "--since=$sinceIso", "--until=$untilIso", '-p', '-U0', '--no-ext-diff', '--no-textconv', '--no-color', '--submodule=short', '--format=%x00%H')
+                if ($null -eq $b2) { $row.error = 'git log -p failed'; $rows.Add([pscustomobject]$row); $failed = $true; continue }
+                # Expected `diff --git` sections per commit: one per raw entry, two for a typechange (T: the old file is
+                # removed and the new one added), each attributed to that entry's bucket. --submodule=short keeps a
+                # gitlink change a normal section whatever diff.submodule says in the seat's git config.
+                $commitSecs = [Collections.Generic.List[object]]::new()
+                foreach ($cf in $commitFiles) {
+                    $sb = [Collections.Generic.List[string]]::new()
+                    foreach ($f in $cf) { $sb.Add($f.bucket); if ($f.status.StartsWith('T')) { $sb.Add($f.bucket) } }
+                    $commitSecs.Add($sb)
+                }
+                $buf = $b2; $n = $buf.Length; $pos = 0
+                $ci = -1; $fi = -1; $inHunk = $false; $curBucket = 'unclassified'; $lastBucket = $null; $desync = $null
+                while ($pos -lt $n) {
+                    $e = [Array]::IndexOf[byte]($buf, [byte]10, $pos)
+                    if ($e -lt 0) { $e = $n }
+                    $len = $e - $pos
+                    $c = if ($len -gt 0) { $buf[$pos] } else { -1 }
+                    if ($inHunk) {
+                        if ($c -eq 43 -or $c -eq 45) { $bsum[$curBucket] += $len; $lastBucket = $curBucket; $pos = $e + 1; continue }
+                        if ($c -eq 92) {   # '\ No newline at end of file': the previous +/- line had no LF
+                            if ($null -ne $lastBucket) { $bsum[$lastBucket] -= 1; $lastBucket = $null }
+                            $pos = $e + 1; continue
+                        }
+                    }
+                    $lastBucket = $null
+                    if ($c -eq 0) {
+                        if ($ci -ge 0 -and $fi + 1 -ne $commitSecs[$ci].Count) { $desync = "commit $ci has $($fi + 1) diff sections, expected $($commitSecs[$ci].Count)"; break }
+                        $inHunk = $false; $ci++; $fi = -1
+                        if ($ci -ge $commitShas.Count -or $commitShas[$ci] -ne $utf8.GetString($buf, $pos + 1, $len - 1).Trim()) { $desync = "commit $ci"; break }
+                    } elseif ($c -eq 100 -and $len -ge 11 -and $utf8.GetString($buf, $pos, 11) -ceq 'diff --git ') {
+                        $inHunk = $false; $fi++
+                        if ($ci -lt 0 -or $fi -ge $commitSecs[$ci].Count) { $desync = "section $fi of commit $ci (expected $(if ($ci -ge 0) { $commitSecs[$ci].Count } else { 0 }))"; break }
+                        $curBucket = $commitSecs[$ci][$fi]
+                    } elseif ($c -eq 64) { $inHunk = $true }
+                    else { $inHunk = $false }
+                    $pos = $e + 1
+                }
+                if (-not $desync -and $ci -ge 0 -and $fi + 1 -ne $commitSecs[$ci].Count) { $desync = "commit $ci has $($fi + 1) diff sections, expected $($commitSecs[$ci].Count)" }
+                if (-not $desync) {
+                    if ($ci + 1 -ne $commitFiles.Count) { $desync = "commit count $($ci + 1) vs $($commitFiles.Count)" }
+                }
+                if ($desync) { $row.error = "bytes pass out of step with the file list: $desync"; $rows.Add([pscustomobject]$row); $failed = $true; continue }
+                # binary files: sizes of the blobs (all-zero id = absent = 0 bytes)
+                $bins = @($commitFiles | ForEach-Object { $_ } | Where-Object { $_.binary -and $_.old -ne $_.new })
+                if ($bins.Count -gt 0) {
+                    $sizes = @{}
+                    foreach ($id in @($bins | ForEach-Object { $_.old; $_.new } | Where-Object { $_ -notmatch '^0+$' } | Sort-Object -Unique)) {
+                        $sz = & git -C $repoRoot cat-file -s $id 2>$null
+                        if ($LASTEXITCODE -eq 0 -and $sz) { $sizes[$id] = [int64]([string]$sz).Trim() }
+                    }
+                    foreach ($f in $bins) {
+                        $ob = if ($sizes.ContainsKey($f.old)) { $sizes[$f.old] } else { 0 }
+                        $nb = if ($sizes.ContainsKey($f.new)) { $sizes[$f.new] } else { 0 }
+                        $bsum[$f.bucket] += $ob + $nb
+                    }
+                }
+                foreach ($v in $bsum.Values) { $bytesTotal += $v }
+                $bytes = [pscustomobject]$bsum
+            }
+
+            $merges = [int](& git -C $repoRoot rev-list --count --merges "--since=$sinceIso" "--until=$untilIso" $row.ref_sha)
             $total = [int64]0; foreach ($v in $sum.Values) { $total += $v }
             $row.commits_counted = $commits
             $row.merges_excluded = $merges
-            $row.binary_files_ignored = $binary
+            $row.binary_files = $binaryChanged           # binary files whose content CHANGED: their LINES are not counted; their BYTES are (unless -NoBytes)
+            $row.binary_files_ignored = $binary          # DEPRECATED, ORIGINAL meaning exactly: every file numstat calls binary, pure renames and mode-only changes included
             $row.lines = [pscustomobject]$sum
             $row.total_lines = $total
             $row.product_share = if ($total -gt 0) { [math]::Round($sum['product'] / $total, 4) } else { $null }
+            # additive fields (2026-10-16): the line metric hides mega-line paperwork, bytes do not
+            $row.product_share_lines = $row.product_share
+            $row.bytes = $bytes
+            $row.total_bytes = if ($null -ne $bytes) { $bytesTotal } else { $null }
+            $row.product_share_bytes = if ($null -ne $bytes -and $bytesTotal -gt 0) { [math]::Round($bytes.product / $bytesTotal, 4) } else { $null }
+            $row.commit_classes = [pscustomobject]$cc
+            $row.commits_touching_product = $cc['product']
+            $row.commits_paperwork_tooling_only = $cc['paperwork-only'] + $cc['tooling-only'] + $cc['paperwork-and-tooling']
+            $row.commits_paperwork_only = $cc['paperwork-only']
+            $row.paperwork_tooling_commits_per_product_commit = if ($cc['product'] -gt 0) { [math]::Round($row.commits_paperwork_tooling_only / $cc['product'], 2) } else { $null }
+            $row.paperwork_only_commits_per_product_commit = if ($cc['product'] -gt 0) { [math]::Round($cc['paperwork-only'] / $cc['product'], 2) } else { $null }
             $row.product_lines_per_week = [math]::Round($sum['product'] / $days * 7, 1)
             $row.top_unclassified = @($unc.GetEnumerator() | Sort-Object Value -Descending | Select-Object -First 5 |
                 ForEach-Object { [pscustomobject]@{ prefix = $_.Key; lines = $_.Value } })
@@ -278,13 +457,18 @@ if ($Lines) {
     $ranking = @($ranked | ForEach-Object {
         $rank++
         [pscustomobject]@{ rank = $rank; project = $_.project; product_lines_per_week = $_.product_lines_per_week
-            product_share = $_.product_share; product_lines = $_.lines.product; total_lines = $_.total_lines }
+            product_share = $_.product_share; product_lines = $_.lines.product; total_lines = $_.total_lines
+            product_share_lines = $_.product_share_lines; product_share_bytes = $_.product_share_bytes
+            product_bytes = $(if ($null -ne $_.bytes) { $_.bytes.product } else { $null }); total_bytes = $_.total_bytes
+            commits_touching_product = $_.commits_touching_product; commits_paperwork_tooling_only = $_.commits_paperwork_tooling_only
+            paperwork_tooling_commits_per_product_commit = $_.paperwork_tooling_commits_per_product_commit }
     })
     if ($AsRows) {
         $rid = if ($RunId) { $RunId } else { "product-share-lines-$untilIso" }
         foreach ($r in $ranking) {
             $p = @($rows | Where-Object { $_.project -eq $r.project })[0]
-            $cmd = "pwsh -NoProfile -File tools/Get-ProductThroughput.ps1 -Lines -AsRows -Project $($p.project) -At $($p.ref_sha) -Since $sinceIso -Until $untilIso"
+            $repoArg = if (-not $RepoArgGiven) { '' } elseif ($p.root -match '\s') { ' -Repo "' + $p.root + '"' } else { ' -Repo ' + $p.root }
+            $cmd = "pwsh -NoProfile -File tools/Get-ProductThroughput.ps1 -Lines -AsRows$repoArg -Project $($p.project) -At $($p.ref_sha) -Since $sinceIso -Until $untilIso"
             [ordered]@{
                 ts = $measuredUtc.ToString('yyyy-MM-ddTHH:mm:ssZ'); run_id = $rid; schema = 'fleet/product-throughput-lines/v1'
                 project = $p.project; ref = $p.ref; ref_name = $p.ref_name; ref_sha = $p.ref_sha
@@ -292,7 +476,15 @@ if ($Lines) {
                 classifier_sha256 = $classifierSha; commits_counted = $p.commits_counted; merges_excluded = $p.merges_excluded
                 binary_files_ignored = $p.binary_files_ignored; lines = $p.lines; total_lines = $p.total_lines
                 product_share = $p.product_share; product_lines_per_week = $p.product_lines_per_week; rank = $r.rank
-                top_unclassified = @($p.top_unclassified); error = $null; command = $cmd
+                top_unclassified = @($p.top_unclassified); error = $null
+                # additive (bytes + commit classes, E3): absent keys never break an existing reader
+                binary_files = $p.binary_files; product_share_lines = $p.product_share_lines
+                bytes = $p.bytes; total_bytes = $p.total_bytes; product_share_bytes = $p.product_share_bytes
+                commit_classes = $p.commit_classes; commits_touching_product = $p.commits_touching_product
+                commits_paperwork_tooling_only = $p.commits_paperwork_tooling_only; commits_paperwork_only = $p.commits_paperwork_only
+                paperwork_tooling_commits_per_product_commit = $p.paperwork_tooling_commits_per_product_commit
+                paperwork_only_commits_per_product_commit = $p.paperwork_only_commits_per_product_commit
+                command = $cmd
             } | ConvertTo-Json -Depth 6 -Compress
         }
         foreach ($p in @($rows | Where-Object { $_.error })) { [Console]::Error.WriteLine("FAILED {0}: {1}" -f $p.project, $p.error) }
@@ -312,12 +504,14 @@ if ($Lines) {
         } | ConvertTo-Json -Depth 6
     } else {
         Write-Output ("=========== PRODUCT SHARE BY CHANGED LINES (since {0}, {1:N1} d) ===========" -f $sinceIso, $days)
-        Write-Output ('{0,-4} {1,-16} {2,10} {3,9} {4,9} {5,9} {6,9} {7,9} {8,9} {9,9} {10,8}' -f 'rank', 'project', 'prod/wk', 'product', 'tests', 'tooling', 'paper', 'vendored', 'unclass', 'total', 'share')
+        Write-Output ('{0,-4} {1,-16} {2,10} {3,9} {4,9} {5,9} {6,9} {7,9} {8,9} {9,9} {10,8} {11,8} {12,7}' -f 'rank', 'project', 'prod/wk', 'product', 'tests', 'tooling', 'paper', 'vendored', 'unclass', 'total', 'share', 'bshare', 'pc/ac')
         foreach ($r in $ranking) {
             $p = @($rows | Where-Object { $_.project -eq $r.project })[0]
-            Write-Output ('{0,-4} {1,-16} {2,10} {3,9} {4,9} {5,9} {6,9} {7,9} {8,9} {9,9} {10,8}' -f $r.rank, $r.project, $r.product_lines_per_week,
+            Write-Output ('{0,-4} {1,-16} {2,10} {3,9} {4,9} {5,9} {6,9} {7,9} {8,9} {9,9} {10,8} {11,8} {12,7}' -f $r.rank, $r.project, $r.product_lines_per_week,
                 $p.lines.product, $p.lines.tests, $p.lines.'factory-tooling', $p.lines.'coordination-paperwork', $p.lines.'vendored-copies',
-                $p.lines.unclassified, $p.total_lines, $(if ($null -ne $p.product_share) { '{0:P1}' -f $p.product_share } else { 'n/a' }))
+                $p.lines.unclassified, $p.total_lines, $(if ($null -ne $p.product_share) { '{0:P1}' -f $p.product_share } else { 'n/a' }),
+                $(if ($null -ne $p.product_share_bytes) { '{0:P2}' -f $p.product_share_bytes } else { 'n/a' }),
+                $(if ($null -ne $p.paperwork_tooling_commits_per_product_commit) { $p.paperwork_tooling_commits_per_product_commit } else { 'n/a' }))
         }
         foreach ($p in @($rows | Where-Object { $_.error })) { Write-Output ("FAILED {0}: {1}" -f $p.project, $p.error) }
         Write-Output 'DIAGNOSTIC ONLY (metrics/README.md law 1): never a gate, never a target.'
@@ -356,8 +550,12 @@ function Classify([string]$path) {
     return 'other'
 }
 
-$since = (Get-Date).ToUniversalTime().AddDays(-$WindowDays).ToString('yyyy-MM-dd')
-$raw = & git -C $Root log --all --since=$since --name-only --format="%x00%H%x1f%cI" 2>&1
+$sinceClassic = (Get-Date).ToUniversalTime().AddDays(-$WindowDays).ToString('yyyy-MM-dd')
+if ($SinceArgGiven) {
+    if ($Since -notmatch '(Z|[+-]\d\d:?\d\d)$') { Write-Output "FAILED: -Since '$Since' has no explicit UTC offset; refusing to guess the window edge."; exit 4 }
+    $sinceClassic = ([datetimeoffset]::Parse($Since, [Globalization.CultureInfo]::InvariantCulture)).UtcDateTime.ToString('yyyy-MM-ddTHH:mm:ssZ')
+}
+$raw = & git -C $Root log --all --since=$sinceClassic --name-only --format="%x00%H%x1f%cI" 2>&1
 if ($LASTEXITCODE -ne 0) { Write-Output 'FAILED: git log failed'; exit 4 }
 
 $script:productCommits = 0; $script:coordinationOnly = 0; $script:totalCommits = 0

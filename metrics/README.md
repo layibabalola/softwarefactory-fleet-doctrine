@@ -34,6 +34,28 @@ operator's 2026-08-09 20:07 directive (one repo, not a second one).
 
 Graphs are derived, rendered as artifacts by whoever wants them, and never stored here as state.
 
+## Fleet self-improvement health (daily rows, weekly review; added 2026-10-16)
+
+Owner request 2026-10-16: regular checks of each fleet project's self-improvement health. One tool, no
+second copy: `tools/factory/fleet-scorecard.py` (row schema `fleet/scorecard-row/v1`, file
+`metrics/scorecard-daily.jsonl`, documented in the root README "Fleet scorecard"). Each row now carries
+`machine` and a `health` block `{status: GREEN|RED|UNMEASURED, reasons, unmeasured, thresholds_sha256}`
+judged by [`fleet-health-thresholds.json`](fleet-health-thresholds.json).
+
+- **Cadence.** DAILY, one machine task per machine, mechanical (no model calls):
+  `python tools/factory/fleet-scorecard.py --fleet --bus <bus clone> --publish`. `--fleet` measures every
+  member derived from `specs/` (the shared `tools/fleet-membership.mjs` rule) that has a clone in the
+  machine-local `~/.fleet-roots.json`; every other member is an UNMEASURED row, listed and never published.
+  WEEKLY, the hub's model review reads the rows (trend, RED reasons, members no machine measured).
+- **Measures** (per project): census copies and double registrations against the tool-census schedule max
+  in force; the project's own rule coverage against its own floor (NONE when it has no census);
+  14-day product share (one `Get-ProductThroughput.ps1 -Lines` run); days since the newest bus commit
+  attributed to the project; fold lag = doctrine-bearing commits after its `doctrine-sync` ack cursor
+  (doctrine-sync's surfaces, minus `cos-feedback/_heartbeat/`) and the oldest one's age; days since its
+  newest `adjudications/factory-kernel/<project>*.md` filing on master or a review branch.
+- **Rows are diagnostic (law 1).** RED names an OVERDUE duty; it never blocks a commit, a landing or a
+  lane, and the exit code never depends on a value (`--dry-run --print` for a human look).
+
 ## Amendment log
 - 2026-08-09 (Cloudvore): +VERIFY, +BEAT — filed as the first CORRECTION seam by the compiler
   lane against the ratifying hub's own schema (the ruling omitted lane-state's VERIFY terminal
