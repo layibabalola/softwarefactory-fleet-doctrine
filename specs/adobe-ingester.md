@@ -1383,3 +1383,36 @@ Still OWED from earlier addenda, re-checked on 2026-10-15: R16.5 (the literal id
 `effort`, Sol); `43e29cc` (`tools/session-checkpoint.py` is still tracked and registered in `.claude/settings.json:6,13`,
 Sol); the auditor's falsifier pin (`.claude-state/tools/codex-auditor.ps1:8` is still `0.160.1`, unproven for the
 model it now runs, auditor). None counts as done until its owner records it.
+
+## Status addendum, 2026-10-16 (owner re-asked defects D1/D2/D3; MEASURED, no new rule)
+
+The owner asked on 2026-10-16 whether the 2026-10-11 defects are resolved: D1 duplicated factory tools that no
+project can install, D2 contract rules that are prose rather than checks, D3 paperwork outweighing product. Auditor
+session df0b873e measured read-only, put three adversarial Opus adjudicators (against-default, what-outranks,
+post-mortem) on a default plan, and acted on the synthesis. The adjudicators cut most of the default plan: a new
+installer or a 116-row coverage sidecar would join the tools nobody invokes (`tool-census.mjs` had no caller since
+`43e29cc`; the count was 11 on 10-11 and still 11 on 10-16). Bus at `91862fc`, Adobe HEAD `7f31c0d`.
+
+| Defect | Status 2026-10-16 | Success criterion (command, baseline today) |
+|---|---|---|
+| D1 duplicated tools | NOT RESOLVED. `node tools/tool-census.mjs` = 11 (8 excess versions + 3 double registrations), unchanged since baseline. session-checkpoint in 4 versions. No project has retired a copy. | `node tools/tool-census.mjs --json` → `.total` < 11. Baseline 11. |
+| D2 prose rules | NOT RESOLVED. `FACTORY.md` (116 bullets, unchanged since `3e2ee8e`) is read once by `.factory/tools/Test-FactoryGovernance.ps1:188` and checked once (`:1021`, a heading). A 30-bullet sample had 2 of 21 actual rules enforced. The contract Sol runs on is `.factory/prompts/sol.md`, 855,475 B and growing with each directive. | FACTORY.md rules with an enforcer that a governance run executes. Baseline 1. |
+| D3 paperwork vs product | NOT RESOLVED, and mis-stated as a `reviews/` ratio. Adobe 14 d: 527 commits, product 0, tests 0, factory-tooling 6,223, coordination-paperwork 39,718 (`Get-ProductThroughput.ps1 -Lines -WindowDays 14`). `reviews/` is 516 lines. 72 h: 71 of 81 commits touched only `HUB.md` and/or `state.yaml`. The binding cause is serialization: Luna (sole product implementer) is idle while the governance work order waits on a CLI-Currency time window and AC-07 needs the owner. | Adobe row of `Get-ProductThroughput.ps1 -Lines -WindowDays 14 -AsJson`: `lines.product` > 0. Baseline 0. Secondary: HUB/state-only commit share over 72 h. Baseline 71/81. |
+
+Acted on (2026-10-16):
+- **D1 invocation.** The census now runs at every interactive SessionStart in every fleet project, through
+  `~/.claude/hooks/session-start-loader.mjs` (machine-local; read-only; 25 s cap; skipped for lanes; ~3 s). It prints
+  the fleet count against the baseline and the copies the current project must retire. Proven fired for adobe-ingester
+  (2 items) and mlv-app (4 items) on 2026-10-16. This is the same fix that made `doctrine-sync.mjs` run: a tool with no
+  caller measured nothing for five days. Retiring copies stays with each project's own channel (R14.8).
+- **D3 measurement.** Four rows appended to `metrics/product-share-lines.jsonl` (run `2026-10-16T16:46:41Z`). These are
+  diagnostic only (metrics law 1); they record D3, they do not resolve it.
+
+Owed, to Adobe's hub through the ingress after the pending R8 reviewer start (ingress records defer reviewer
+starts): one advisory PROPOSAL covering (1) retire `tools/session-checkpoint.py` and its flat `.claude/settings.json`
+registration (owed since `43e29cc`); (2) amend OWNER DIRECTIVE 2026-09-09c(d) so a no-change wake writes its receipt
+outside `HUB.md` and makes no commit; (3) give directives in `sol.md` an expiry and prune expired ones, since the
+operative contract grows with every directive and the 2026-10-09 cap proposal (ingress seq 10) was drained without a
+cap; (4) let Luna implement a banked product work order while the governance work order waits on a time window.
+Adopted from AirMyPC's `46f6ac6` only if Sol chooses a contract to census; until then the 2026-10-11 DISTINGUISH row
+stands. None counts as done until its owner records it.
