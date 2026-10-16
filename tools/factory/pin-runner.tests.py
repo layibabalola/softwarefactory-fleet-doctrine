@@ -7,6 +7,8 @@ factory-pins/) exercise pin, adopt-runner, verify, status and run end to end.
 from __future__ import annotations
 
 import json
+import os
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -24,11 +26,17 @@ def git(repo: Path, *a: str) -> str:
                            "-c", "core.autocrlf=false", *a], check=True, capture_output=True, text=True).stdout.strip()
 
 
+def _force(func, path, _exc):
+    os.chmod(path, 0o700)  # git marks objects read-only; Windows refuses to delete them otherwise
+    func(path)
+
+
 class PinRunner(unittest.TestCase):
     def setUp(self):
         self._tmp = tempfile.TemporaryDirectory()
         t = Path(self._tmp.name)
         self.bus, self.consumer = t / "bus", t / "consumer"
+        self.cache = t / "cache"
         self.bus.mkdir()
         git(self.bus, "init", "-q")
         (self.bus / "tools" / "factory").mkdir(parents=True)
@@ -53,9 +61,13 @@ class PinRunner(unittest.TestCase):
     def tearDown(self):
         self._tmp.cleanup()
 
-    def run_pr(self, *a: str, stdin: str = "", cwd: Path | None = None) -> subprocess.CompletedProcess:
-        return subprocess.run([sys.executable, str(self.consumer / "factory-pins" / "pin-runner.py"), *a], input=stdin,
-                              capture_output=True, text=True, cwd=str(cwd or self.consumer))
+    def run_pr(self, *a: str, stdin: str = "", cwd: Path | None = None, isolated: bool = False) -> subprocess.CompletedProcess:
+        # The blob cache lives in this test's temp dir: a test never reads or writes the host's cache.
+        env = {**os.environ, "FACTORY_PINS_CACHE": str(self.cache)}
+        env.pop("FACTORY_BUS_CLONE", None)
+        return subprocess.run([sys.executable, *(["-I"] if isolated else []),
+                               str(self.consumer / "factory-pins" / "pin-runner.py"), *a], input=stdin,
+                              capture_output=True, text=True, cwd=str(cwd or self.consumer), env=env)
 
     def pin_echo(self):
         p = self.run_pr("pin", "echo", "--commit", self.c1, "--path", "tools/factory/echo.py",
@@ -145,6 +157,52 @@ class PinRunner(unittest.TestCase):
                         "--reviewer", "t", "--reason", "r")
         self.assertEqual(p.returncode, 2)
 
+
+    def test_pins_ref_from_a_linked_worktree_hook_environment(self):
+        # Regression (verifier 2026-10-16): git exports GIT_DIR to a hook run from a linked worktree. With it
+        # set, `git -C factory-pins rev-parse --show-toplevel` answered factory-pins/ itself, so --pins-ref
+        # looked up <ref>:factory-pins.json and refused EVERY push from a worktree (exit 2).
+        self.pin_echo()
+        git(self.consumer, "add", "factory-pins")
+        git(self.consumer, "commit", "-qm", "pins")
+        wt = self.consumer.parent / "wt"
+        git(self.consumer, "worktree", "add", "-q", "--detach", str(wt))
+        gitdir = git(wt, "rev-parse", "--absolute-git-dir")
+        env = {**os.environ, "FACTORY_PINS_CACHE": str(self.cache), "GIT_DIR": gitdir}
+        env.pop("FACTORY_BUS_CLONE", None)
+        for iso in ([], ["-I"]):
+            p = subprocess.run([sys.executable, *iso, str(wt / "factory-pins" / "pin-runner.py"),
+                                "--pins", str(wt / "factory-pins" / "factory-pins.json"), "--pins-ref", "HEAD",
+                                "run", "echo", "--", "0"], capture_output=True, text=True, cwd=str(wt), env=env)
+            self.assertEqual((p.returncode, "v1" in p.stdout), (0, True), p.stderr)
+
+    def test_isolated_runner_executes_in_process_with_same_contract(self):
+        self.pin_echo()
+        p = self.run_pr("run", "echo", "--", "7", "--config", "x.json", stdin="abc", isolated=True)
+        self.assertEqual(p.returncode, 7, p.stderr)
+        self.assertIn("v1 ['7', '--config', 'x.json'] 3", p.stdout)
+        self.assertEqual(self.run_pr("run", "echo", "--", "0", isolated=True).returncode, 0)
+
+    def test_cache_keeps_reviewed_bytes_running_without_the_clone(self):
+        self.pin_echo()
+        self.assertEqual(self.run_pr("run", "echo", "--", "0").returncode, 0)  # populates the cache
+        shutil.rmtree(self.bus, onerror=_force)  # clone gone: the verified cached copy still runs
+        for iso in (False, True):
+            p = self.run_pr("run", "echo", "--", "5", isolated=iso)
+            self.assertEqual((p.returncode, "v1" in p.stdout), (5, True), p.stderr)
+
+    def test_tampered_cache_never_runs(self):
+        self.pin_echo()
+        blob = json.loads(self.pins.read_text(encoding="utf-8"))["tools"]["echo"]["blob"]
+        self.cache.mkdir(parents=True, exist_ok=True)
+        for iso in (False, True):
+            (self.cache / blob).write_bytes(b"print('EVIL')\n")
+            p = self.run_pr("run", "echo", "--", "0", isolated=iso)  # bus present: the clone's verified bytes run
+            self.assertEqual((p.returncode, "v1" in p.stdout, "EVIL" in p.stdout), (0, True, False), p.stderr)
+        (self.cache / blob).write_bytes(b"print('EVIL')\n")
+        shutil.rmtree(self.bus, onerror=_force)
+        p = self.run_pr("run", "echo", "--", "0", isolated=True)  # bus absent: unavailable, never the tampered copy
+        self.assertEqual((p.returncode, "EVIL" in p.stdout), (3, False))
 
 if __name__ == "__main__":
     unittest.main(verbosity=1)

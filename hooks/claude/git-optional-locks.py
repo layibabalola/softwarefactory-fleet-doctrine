@@ -81,6 +81,16 @@ def tokenize(cmd: str) -> list[list[str]]:
             j = cmd.find("\n", i)
             i = n if j < 0 else j
             continue
+        if c == "@" and not in_word and cmd[i + 1:i + 2] in ("'", '"') and cmd[i + 2:i + 4].lstrip("\r")[:1] == "\n":
+            # PowerShell here-string @'...'@ / @"..."@: its body is one word, however many quotes or
+            # lines it holds, and it ends only at a line that starts with '@ (or "@).
+            q = cmd[i + 1]
+            body = cmd.find("\n", i) + 1
+            end = cmd.find("\n" + q + "@", body - 1)
+            in_word = True
+            word.append(cmd[body:] if end < 0 else cmd[body:end].rstrip("\r"))
+            i = n if end < 0 else end + 3
+            continue
         if c == "'":
             in_word = True
             j = cmd.find("'", i + 1)
@@ -129,6 +139,35 @@ def tokenize(cmd: str) -> list[list[str]]:
     return [s for s in segs if s]
 
 
+SHELLS = {"bash", "sh", "zsh", "dash", "ksh", "pwsh", "powershell", "cmd"}
+SHELL_CMD_FLAGS = {"-c", "-command", "/c", "/k", "-commandwithargs", "-cwa"}
+
+
+def segments(cmd: str, depth: int = 0) -> list[list[str]]:
+    """tokenize(), plus the command text a segment hands to a nested shell (`bash -c '...'`,
+    `pwsh -Command "..."`, `cmd /c ...`, `eval ...`), which runs as a command just the same."""
+    out: list[list[str]] = []
+    for seg in tokenize(cmd):
+        out.append(seg)
+        if depth >= 3:
+            continue
+        k = 0
+        while k < len(seg) and (ASSIGN.match(seg[k]) or seg[k] in WRAPPERS or seg[k] == "env"):
+            k += 1
+        if k >= len(seg):
+            continue
+        prog = seg[k].replace("\\", "/").rsplit("/", 1)[-1].lower()
+        prog = prog[:-4] if prog.endswith(".exe") else prog
+        if prog == "eval":
+            out += segments(" ".join(seg[k + 1:]), depth + 1)
+        elif prog in SHELLS:
+            for j in range(k + 1, len(seg) - 1):
+                if seg[j].lower() in SHELL_CMD_FLAGS:
+                    out += segments(" ".join(seg[j + 1:]) if prog == "cmd" else seg[j + 1], depth + 1)
+                    break
+    return out
+
+
 def git_invocation(seg: list[str]):
     """(env assignments, git global options, subcommand, args) or None when the segment is not git."""
     env, k = [], 0
@@ -156,15 +195,31 @@ def git_invocation(seg: list[str]):
 
 # ------------------------------------------------------------------------------------------------
 OBSERVERS = {"status", "diff", "log", "show", "rev-list"}
-SESSION_SET = re.compile(r"(?:\bexport\s+|\$env:)GIT_OPTIONAL_LOCKS\s*=\s*['\"]?0['\"]?(?![0-9A-Za-z])", re.I)
+PS_ASSIGN = re.compile(r"\$env:GIT_OPTIONAL_LOCKS\s*=\s*0\Z", re.I)
+PS_SETTERS = {"set-item", "si", "set-content", "sc", "new-item", "ni"}
+PS_ENV_PATH = re.compile(r"(?:-path:?)?env:[\\/]?GIT_OPTIONAL_LOCKS\Z", re.I)
+
+
+def sets_session(seg: list[str]) -> bool:
+    """True when the segment itself is a statement that sets GIT_OPTIONAL_LOCKS=0 for what follows:
+    `export GIT_OPTIONAL_LOCKS=0`, `$env:GIT_OPTIONAL_LOCKS = '0'`, `Set-Item Env:GIT_OPTIONAL_LOCKS 0`.
+    Anchored at the segment's first word, so quoted text that merely mentions it covers nothing."""
+    if seg[0] == "export":
+        return "GIT_OPTIONAL_LOCKS=0" in seg[1:]
+    if PS_ASSIGN.match(" ".join(seg)):
+        return True
+    if seg[0].lower() in PS_SETTERS and seg[-1] == "0":
+        return any(PS_ENV_PATH.match(w) for w in seg[1:-1]) or any(
+            w.lower() == "-path" and PS_ENV_PATH.match(seg[i + 1]) for i, w in enumerate(seg[1:-1], 1))
+    return False
 
 
 def refusals(command: str, environ=os.environ) -> list[str]:
     if environ.get("GIT_OPTIONAL_LOCKS") == "0":
         return []
     out, covered = [], False
-    for seg in tokenize(command):
-        if SESSION_SET.search(" ".join(seg)) or (seg[:1] == ["export"] and "GIT_OPTIONAL_LOCKS=0" in seg):
+    for seg in segments(command):
+        if sets_session(seg):
             covered = True
         inv = git_invocation(seg)
         if not inv or covered:

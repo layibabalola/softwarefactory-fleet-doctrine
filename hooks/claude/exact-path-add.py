@@ -7,8 +7,10 @@ git commit". This hook enforces it on the command text before the shell sees it.
 
 Refused (exit 2, reason on stderr -> shown to the agent):
     git add|stage   -A  --all  -u  --update  --no-ignore-removal  (also inside a short cluster, -Av)
-                    or a sweeping pathspec: .  ./  :/  :/*  *  :(top)
-    git commit      -a  --all  (also clustered: -am, -va) or a sweeping pathspec (. ./ :/ *)
+                    or a sweeping pathspec: one naming the whole tree (.  ./.  ..  sub/..  :/  :  :/:
+                    :(top)  *  **  :(glob)**) or exclusions alone (':!x' stages everything but x)
+    git commit      -a  --all  (also clustered: -am, -va) or a sweeping pathspec (as above)
+Nested shells are judged too: bash/sh/pwsh/cmd -c|-Command|/c '<command>' and eval '<command>'.
 Allowed: everything else, including `git add -- path/a path/b`, `git add -p file`, `git commit -m`.
 
 The command is tokenised like a POSIX shell (quotes, escapes, ; && || | & newlines, $( ), backticks,
@@ -19,6 +21,7 @@ from siblings (it runs as a single pinned blob).
 from __future__ import annotations
 
 import json
+import posixpath
 import re
 import sys
 
@@ -76,6 +79,16 @@ def tokenize(cmd: str) -> list[list[str]]:
             j = cmd.find("\n", i)
             i = n if j < 0 else j
             continue
+        if c == "@" and not in_word and cmd[i + 1:i + 2] in ("'", '"') and cmd[i + 2:i + 4].lstrip("\r")[:1] == "\n":
+            # PowerShell here-string @'...'@ / @"..."@: its body is one word, however many quotes or
+            # lines it holds, and it ends only at a line that starts with '@ (or "@).
+            q = cmd[i + 1]
+            body = cmd.find("\n", i) + 1
+            end = cmd.find("\n" + q + "@", body - 1)
+            in_word = True
+            word.append(cmd[body:] if end < 0 else cmd[body:end].rstrip("\r"))
+            i = n if end < 0 else end + 3
+            continue
         if c == "'":
             in_word = True
             j = cmd.find("'", i + 1)
@@ -124,6 +137,35 @@ def tokenize(cmd: str) -> list[list[str]]:
     return [s for s in segs if s]
 
 
+SHELLS = {"bash", "sh", "zsh", "dash", "ksh", "pwsh", "powershell", "cmd"}
+SHELL_CMD_FLAGS = {"-c", "-command", "/c", "/k", "-commandwithargs", "-cwa"}
+
+
+def segments(cmd: str, depth: int = 0) -> list[list[str]]:
+    """tokenize(), plus the command text a segment hands to a nested shell (`bash -c '...'`,
+    `pwsh -Command "..."`, `cmd /c ...`, `eval ...`), which runs as a command just the same."""
+    out: list[list[str]] = []
+    for seg in tokenize(cmd):
+        out.append(seg)
+        if depth >= 3:
+            continue
+        k = 0
+        while k < len(seg) and (ASSIGN.match(seg[k]) or seg[k] in WRAPPERS or seg[k] == "env"):
+            k += 1
+        if k >= len(seg):
+            continue
+        prog = seg[k].replace("\\", "/").rsplit("/", 1)[-1].lower()
+        prog = prog[:-4] if prog.endswith(".exe") else prog
+        if prog == "eval":
+            out += segments(" ".join(seg[k + 1:]), depth + 1)
+        elif prog in SHELLS:
+            for j in range(k + 1, len(seg) - 1):
+                if seg[j].lower() in SHELL_CMD_FLAGS:
+                    out += segments(" ".join(seg[j + 1:]) if prog == "cmd" else seg[j + 1], depth + 1)
+                    break
+    return out
+
+
 def git_invocation(seg: list[str]):
     """(env assignments, git global options, subcommand, args) or None when the segment is not git."""
     env, k = [], 0
@@ -150,7 +192,41 @@ def git_invocation(seg: list[str]):
 
 
 # ------------------------------------------------------------------------------------------------
-SWEEP_PATHSPECS = {".", "./", ".\\", ":/", ":/*", "*", ":(top)", ":(top)*"}
+SHORT_MAGIC = {"/": "top", "!": "exclude", "^": "exclude"}
+
+
+def pathspec_kind(spec: str) -> str:
+    """'exclude' (an exclusion pathspec), 'whole' (matches the whole tree or everything below the cwd's
+    ancestors: ., ./., .., sub/.., :/, :, :/:, :(top), *, **, :(glob)**, ...) or 'path'."""
+    rest, magic = spec, set()
+    if rest.startswith(":("):
+        j = rest.find(")")
+        if j < 0:
+            return "path"
+        magic = {m.strip().split(":", 1)[0].lower() for m in rest[2:j].split(",")}
+        rest = rest[j + 1:]
+    elif rest.startswith(":"):
+        k = 1
+        while k < len(rest) and rest[k] in SHORT_MAGIC:
+            magic.add(SHORT_MAGIC[rest[k]])
+            k += 1
+        rest = rest[k + 1:] if rest[k:k + 1] == ":" else rest[k:]
+    if "exclude" in magic:
+        return "exclude"
+    norm = posixpath.normpath(rest.replace("\\", "/")) if rest else "."
+    if norm == "." or set(norm) <= set("*/") or all(seg == ".." for seg in norm.split("/")):
+        return "whole"
+    return "path"
+
+
+def sweeping_spec(specs: list[str]) -> str | None:
+    """The pathspec that sweeps: one matching the whole tree, or exclusions alone (':!x' = all but x)."""
+    for a in specs:
+        if pathspec_kind(a) == "whole":
+            return a
+    if specs and all(pathspec_kind(a) == "exclude" for a in specs):
+        return specs[0]
+    return None
 ADD_SWEEP_LONG = {"--all", "--update", "--no-ignore-removal"}
 COMMIT_VALUE_SHORT = set("mFCctSu")  # the rest of a short cluster after one of these is its value
 COMMIT_VALUE_LONG = {"--message", "--file", "--reuse-message", "--reedit-message", "--template", "--author",
@@ -159,7 +235,7 @@ COMMIT_VALUE_LONG = {"--message", "--file", "--reuse-message", "--reedit-message
 
 
 def add_refusal(args: list[str]) -> str | None:
-    dashdash = False
+    dashdash, specs = False, []
     for a in args:
         if not dashdash and a == "--":
             dashdash = True
@@ -172,13 +248,12 @@ def add_refusal(args: list[str]) -> str | None:
             if "A" in a[1:] or "u" in a[1:]:
                 return a
             continue
-        if a in SWEEP_PATHSPECS:
-            return a
-    return None
+        specs.append(a)
+    return sweeping_spec(specs)
 
 
 def commit_refusal(args: list[str]) -> str | None:
-    dashdash, skip = False, False
+    dashdash, skip, specs = False, False, []
     for a in args:
         if skip:
             skip = False
@@ -201,14 +276,13 @@ def commit_refusal(args: list[str]) -> str | None:
                         skip = True  # value is the next word
                     break
             continue
-        if a in SWEEP_PATHSPECS:
-            return a
-    return None
+        specs.append(a)
+    return sweeping_spec(specs)
 
 
 def refusals(command: str) -> list[str]:
     out = []
-    for seg in tokenize(command):
+    for seg in segments(command):
         inv = git_invocation(seg)
         if not inv:
             continue

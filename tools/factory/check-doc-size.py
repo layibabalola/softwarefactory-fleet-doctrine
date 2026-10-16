@@ -189,7 +189,12 @@ class Checker:
         try:
             return str(candidate.resolve().relative_to(self.repo)).replace("\\", "/")
         except ValueError:
-            return None if Path(rel).is_absolute() else posixpath.normpath(rel)
+            # A "refuse" domain never measures a file outside the repo, however it is spelled (Cloudvore's
+            # rewrite: --path skips it, --headroom exits 2). "lenient" keeps Conjugal's normpath of a
+            # relative escape.
+            if Path(rel).is_absolute() or self.cfg["path_domain"] == "refuse":
+                return None
+            return posixpath.normpath(rel)
         except OSError:
             return posixpath.normpath(rel)
 

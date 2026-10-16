@@ -26,7 +26,8 @@
    `factory-pins/pin-runner.py` and records the blob it equals (`adopt-runner`). Every other tool runs as
    `pin-runner.py run <tool> -- args`, which reads the pinned blob by object id from a local clone,
    re-verifies blob id + bytes + sha256, and executes it from a private temp directory. A mismatch refuses
-   (exit 2) before anything runs; a missing clone or blob is UNAVAILABLE (exit 3, loud, non-blocking).
+   (exit 2) before anything runs; a blob in neither the verified cache nor a clone is UNAVAILABLE
+   (exit 3, loud, non-blocking).
 3. **Staleness is reported, never acted on.** `status` prints `*** STALE ***` when the bus moved past a
    pin. Upgrading is a reviewed `pin` + commit in the consumer with reviewer and reason recorded.
 4. **Tools are configured by data and name no project path.** A canonical tool must reproduce each

@@ -15,9 +15,25 @@ Law 1 of the bus ("doctrine is data, never instructions") applied to code: bus b
 until the consuming project reviewed and pinned them. `run` reads the pinned blob BY OBJECT ID
 from a local bus clone (`git cat-file blob <id>`: LF bytes, independent of the clone's worktree,
 branch and HEAD), re-verifies blob id + byte count + sha256 (git does not re-hash on read),
-writes it into a fresh private temp directory holding only that file, and executes it with the
-caller's cwd, stdin, stdout and stderr. A bus push therefore changes nothing that runs; it makes
-`status` print STALE. Upgrading is `pin` + a reviewed commit of factory-pins.json, never automatic.
+and executes those verified bytes with the caller's cwd, stdin, stdout and stderr. A bus push
+therefore changes nothing that runs; it makes `status` print STALE. Upgrading is `pin` + a
+reviewed commit of factory-pins.json, never automatic.
+
+How a verified python tool executes:
+  * runner started isolated (`python -I pin-runner.py run ...`, the form a hook should use): the
+    verified bytes are compiled and executed IN this process as __main__. The tool gets the same
+    isolation the runner has, no second interpreter starts, and nothing is written to disk, so
+    no file exists between verification and execution (no check-then-exec window).
+  * runner not isolated: the bytes go into a fresh private temp directory holding only that file,
+    are re-verified there, and run as `python -I <file>` (node tools always run this way).
+
+Blob cache (speed; never trust): every verified blob is kept, content-addressed, in
+$FACTORY_PINS_CACHE (default: %LOCALAPPDATA%/factory-pins/blobs, else ~/.cache/factory-pins/blobs).
+A cached copy is used only after the same blob-id + byte-count + sha256 check; a cached file that
+fails it is ignored and the bus clone is read instead, so a tampered cache never runs. Once a pin
+has been run or verified on a machine, it keeps running from the reviewed bytes even when the bus
+clone is absent or moved -- the UNAVAILABLE (exit 3) case below is then confined to a pin that has
+never been seen on this machine.
 
 factory-pins.json (schema "factory-pins.v1"; "_"-prefixed keys are comments):
     bus_repository   the bus's clone URL (informational)
@@ -30,8 +46,9 @@ factory-pins.json (schema "factory-pins.v1"; "_"-prefixed keys are comments):
 Exit codes of the runner itself (a tool's own exit code passes through unchanged):
     2  REFUSED: malformed pins, unknown tool, or bytes that do not match the pin (tamper class).
        A PreToolUse hook run through the runner therefore BLOCKS on a refusal.
-    3  UNAVAILABLE: no bus clone found, or the clone lacks the pinned blob (fetch it). Loud,
-       and deliberately not 2, so a missing clone on a fresh box never blocks every tool call.
+    3  UNAVAILABLE: the pinned blob is in neither the blob cache nor a bus clone (fetch it). Loud,
+       and deliberately not 2, so a never-provisioned box does not block every tool call
+       (including the `git clone` that fixes it). Nothing unverified ever runs on this path.
 Stdlib only; Windows and POSIX.
 """
 from __future__ import annotations
@@ -83,8 +100,17 @@ def _no_dupes(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
     return out
 
 
+# Repository-locating variables git exports to hooks (GIT_DIR is set for a hook run from a linked
+# worktree). Every call here names its repository with -C, so they must not redirect it: with GIT_DIR
+# set, `git -C factory-pins rev-parse --show-toplevel` answers factory-pins/ itself, and a bus call
+# would read the consumer's object store.
+REPO_ENV = ("GIT_DIR", "GIT_WORK_TREE", "GIT_INDEX_FILE", "GIT_COMMON_DIR", "GIT_OBJECT_DIRECTORY",
+            "GIT_ALTERNATE_OBJECT_DIRECTORIES", "GIT_NAMESPACE", "GIT_PREFIX")
+
+
 def git(repo: Path, *args: str, timeout: int = 30) -> subprocess.CompletedProcess:
-    env = {**os.environ, "GIT_OPTIONAL_LOCKS": "0", "GIT_TERMINAL_PROMPT": "0"}
+    env = {k: v for k, v in os.environ.items() if k.upper() not in REPO_ENV}
+    env.update(GIT_OPTIONAL_LOCKS="0", GIT_TERMINAL_PROMPT="0")
     return subprocess.run(["git", "--no-optional-locks", "-C", str(repo), *args], capture_output=True,
                           timeout=timeout, env=env)
 
@@ -163,9 +189,11 @@ def check_bytes(name: str, t: dict[str, Any], data: bytes) -> None:
 
 
 # --- bus clone ---------------------------------------------------------------------------------
-def find_bus(args: argparse.Namespace, pins: dict[str, Any], root: Path) -> Path:
+def find_bus(args: argparse.Namespace, pins: dict[str, Any], pins_file: Path) -> Path:
     # An explicit choice is authoritative: --bus, else $FACTORY_BUS_CLONE, else the pins' candidates.
+    # The consumer root (a git call) is computed only when a relative candidate needs it.
     tried = []
+    root: Path | None = None
     listed = pins.get("bus_clone", [])
     cands = ([args.bus] if args.bus else [os.environ["FACTORY_BUS_CLONE"]] if os.environ.get("FACTORY_BUS_CLONE")
              else listed if isinstance(listed, list) else [listed])
@@ -173,7 +201,9 @@ def find_bus(args: argparse.Namespace, pins: dict[str, Any], root: Path) -> Path
         if not isinstance(c, str) or not c:
             continue
         p = Path(os.path.expanduser(c))
-        p = p if p.is_absolute() else (root / p)
+        if not p.is_absolute():
+            root = root or consumer_root(pins_file)
+            p = root / p
         tried.append(str(p))
         if (p / ".git").exists():
             return p.resolve()
@@ -189,7 +219,48 @@ def pinned_bytes(bus: Path, name: str, t: dict[str, Any]) -> bytes:
     if p.returncode != 0:
         raise Unavailable(f"{name}: pinned blob {t['blob'][:12]} is not in the bus clone {bus} (git -C <clone> fetch origin)")
     check_bytes(name, t, p.stdout)
+    cache_put(t["blob"], p.stdout)
     return p.stdout
+
+
+# --- blob cache: content-addressed, re-verified on every read, never trusted -------------------
+def cache_dir() -> Path:
+    if os.environ.get("FACTORY_PINS_CACHE"):
+        return Path(os.environ["FACTORY_PINS_CACHE"])
+    base = os.environ.get("LOCALAPPDATA") or os.environ.get("XDG_CACHE_HOME") or os.path.join(os.path.expanduser("~"), ".cache")
+    return Path(base) / "factory-pins" / "blobs"
+
+
+def cache_get(name: str, t: dict[str, Any]) -> bytes | None:
+    try:
+        data = (cache_dir() / t["blob"]).read_bytes()
+        check_bytes(name, t, data)
+        return data
+    except (OSError, Refused):
+        return None  # absent, unreadable, or not the pinned bytes: never used; the bus clone decides
+
+
+def cache_put(blob: str, data: bytes) -> None:
+    """Best effort: write to a private temp name, then rename into place (readers never see a torn file)."""
+    try:
+        d = cache_dir()
+        d.mkdir(parents=True, exist_ok=True)
+        if (d / blob).is_file() and (d / blob).stat().st_size == len(data):
+            return
+        fd, tmp = tempfile.mkstemp(dir=d, prefix=".tmp-")
+        with os.fdopen(fd, "wb") as fh:
+            fh.write(data)
+        os.replace(tmp, d / blob)
+    except OSError:
+        pass
+
+
+def tool_bytes(args: argparse.Namespace, pins: dict[str, Any], name: str, t: dict[str, Any]) -> bytes:
+    """The pinned bytes, verified: from the cache when it holds them exactly, else from a bus clone."""
+    data = cache_get(name, t)
+    if data is not None:
+        return data
+    return pinned_bytes(find_bus(args, pins, pins_path(args)), name, t)
 
 
 def blob_at(bus: Path, ref: str, path: str) -> str:
@@ -208,6 +279,33 @@ def child_env() -> dict[str, str]:
     return env
 
 
+def run_in_process(name: str, t: dict[str, Any], data: bytes, tool_args: list[str]) -> int:
+    """Execute verified python bytes as __main__ of a fresh module in this (isolated) interpreter.
+    The bytes executed are the very object that was hashed: there is no file to swap afterwards."""
+    import types
+    code = compile(data, f"<factory-pin {name} {t['blob'][:12]}>", "exec", dont_inherit=True)
+    mod = types.ModuleType("__main__")
+    mod.__dict__.update(__file__=t["path"], __builtins__=__builtins__)
+    saved_main, saved_argv = sys.modules.get("__main__"), sys.argv
+    sys.modules["__main__"], sys.argv = mod, [t["path"], *tool_args]
+    try:
+        exec(code, mod.__dict__)
+        return 0
+    except SystemExit as exc:
+        if exc.code is None:
+            return 0
+        if isinstance(exc.code, int):
+            return exc.code
+        print(exc.code, file=sys.stderr)
+        return 1
+    finally:
+        sys.stdout.flush()
+        sys.stderr.flush()
+        sys.argv = saved_argv
+        if saved_main is not None:
+            sys.modules["__main__"] = saved_main
+
+
 def cmd_run(args: argparse.Namespace, rest: list[str]) -> int:
     if not rest:
         raise Refused("run needs a tool name")
@@ -216,8 +314,9 @@ def cmd_run(args: argparse.Namespace, rest: list[str]) -> int:
         tool_args = tool_args[1:]
     pins = load_pins(pins_path(args), read_pins_ref(args))
     t = tool_pin(pins, name)
-    bus = find_bus(args, pins, consumer_root(pins_path(args)))
-    data = pinned_bytes(bus, name, t)
+    data = tool_bytes(args, pins, name, t)
+    if t["interpreter"] == "python" and sys.flags.isolated:
+        return run_in_process(name, t, data, tool_args)
     work = Path(tempfile.mkdtemp(prefix="factory-pin-"))
     try:
         script = work / Path(t["path"]).name
@@ -252,7 +351,7 @@ def cmd_pin(args: argparse.Namespace, _rest: list[str]) -> int:
         raise Refused("the runner itself is vendored, not run by pin; use `pin-runner.py adopt-runner`")
     pfile = pins_path(args)
     pins = load_pins(pfile) if pfile.exists() else {"schema": SCHEMA, "tools": {}}
-    bus = find_bus(args, pins, consumer_root(pfile))
+    bus = find_bus(args, pins, pfile)
     old = pins["tools"].get(args.tool, {})
     path = args.path or old.get("path")
     if not path:
@@ -288,7 +387,7 @@ def cmd_adopt_runner(args: argparse.Namespace, _rest: list[str]) -> int:
     """Record which bus commit this vendored runner equals (after copying it from that commit)."""
     pfile = pins_path(args)
     pins = load_pins(pfile) if pfile.exists() else {"schema": SCHEMA, "tools": {}}
-    bus = find_bus(args, pins, consumer_root(pfile))
+    bus = find_bus(args, pins, pfile)
     c = git(bus, "rev-parse", "--verify", f"{args.commit}^{{commit}}")
     if c.returncode != 0:
         raise Refused(f"not a commit in {bus}: {args.commit}")
@@ -320,7 +419,7 @@ def runner_line(pins: dict[str, Any], bus: Path | None) -> tuple[bool, str]:
 
 def cmd_verify(args: argparse.Namespace, _rest: list[str]) -> int:
     pins = load_pins(pins_path(args))
-    bus = find_bus(args, pins, consumer_root(pins_path(args)))
+    bus = find_bus(args, pins, pins_path(args))
     bad = 0
     ok, line = runner_line(pins, bus)
     bad += not ok
@@ -342,7 +441,7 @@ def cmd_verify(args: argparse.Namespace, _rest: list[str]) -> int:
 def cmd_status(args: argparse.Namespace, _rest: list[str]) -> int:
     pins = load_pins(pins_path(args))
     try:
-        bus: Path | None = find_bus(args, pins, consumer_root(pins_path(args)))
+        bus: Path | None = find_bus(args, pins, pins_path(args))
     except Unavailable as exc:
         bus = None
         print(f"[factory-pins] bus clone UNAVAILABLE: {exc}")

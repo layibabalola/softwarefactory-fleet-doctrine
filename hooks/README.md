@@ -32,12 +32,16 @@ Tests: `python hooks/hooks.tests.py`.
 
    ```json
    "PreToolUse": [{ "matcher": "Bash|PowerShell", "hooks": [
-     { "type": "command", "command": "python \"$CLAUDE_PROJECT_DIR/factory-pins/pin-runner.py\" run exact-path-add", "timeout": 30 },
-     { "type": "command", "command": "python \"$CLAUDE_PROJECT_DIR/factory-pins/pin-runner.py\" run git-optional-locks", "timeout": 30 } ] }]
+     { "type": "command", "command": "python -I \"$CLAUDE_PROJECT_DIR/factory-pins/pin-runner.py\" run exact-path-add", "timeout": 30 },
+     { "type": "command", "command": "python -I \"$CLAUDE_PROJECT_DIR/factory-pins/pin-runner.py\" run git-optional-locks", "timeout": 30 } ] }]
    ```
 
-   The runner exits 2 (blocks) when the pinned bytes do not match, and 3 (non-blocking, loud) when
-   no bus clone holds them, so a box without the clone is warned, not bricked.
+   `-I` matters: an isolated runner executes the verified bytes in its own process (no second
+   interpreter, no temp file), which is what keeps a hook on every Bash call cheap. The runner exits
+   2 (blocks) when the pinned bytes do not match. It exits 3 (non-blocking, loud) only when the
+   pinned blob is in neither the runner's verified blob cache nor a bus clone -- a pin never seen on
+   this machine -- so a never-provisioned box is warned, not bricked; once a pin has run, a missing
+   or moved clone no longer switches the guard off.
 
 3. `.git/hooks/pre-push`: a layer that reads the ref lines once, judges them with the runner AND
    the pins as committed on the remote-tracking ref (a pushed branch cannot weaken or re-pin its

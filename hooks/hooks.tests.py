@@ -60,6 +60,31 @@ class ExactPathAdd(unittest.TestCase):
         p = subprocess.run([sys.executable, str(ADD)], input="not json", capture_output=True, text=True)
         self.assertEqual(p.returncode, 0)
 
+    # Regression (verifier 2026-10-16): each of these staged every file in a scratch repo, and passed.
+    SWEEP_SPELLINGS = [
+        "git add ':!secret.txt'", "git add -- ':(exclude)x'", "git add ':^a'", "git add ..", "git add ./.",
+        "git add .//", "git add sub/..", "cd sub && git add ../", "git add :", "git add ':/:'", "git add '**'",
+        "git add ':(glob)**'", "git add ':(top,glob)**'", "git add ':(top)'", "git commit -m x -- ':!a'",
+        "git commit -m x ..", "bash -c 'git add -A'", "pwsh -Command \"git add .\"", "eval 'git add -A'",
+        "cmd /c git add -A", "sh -c 'cd x && git commit -am y'",
+    ]
+    EXACT_SPELLINGS = [
+        "git add ':!x' src/a.py", "git add ':(attr:foo)src'", "git add 'src/*.py'", "git add '*.md'",
+        "git add ../sibling/a.py", "git add .gitignore", "git add ':/src/a.py'", "bash -c 'git add -- a.py'",
+        "git commit -m @'\nDon't stage everything\ngit add -A was the old way\n'@",
+        "git commit -m @\"\nSay \"no\"\ngit commit -a was the old way\n\"@\ngit status",
+    ]
+
+    def test_refuses_every_whole_tree_spelling(self):
+        for c in self.SWEEP_SPELLINGS:
+            with self.subTest(c=c):
+                self.assertEqual(hook(ADD, c), 2)
+
+    def test_allows_exact_paths_and_powershell_here_strings(self):
+        for c in self.EXACT_SPELLINGS:
+            with self.subTest(c=c):
+                self.assertEqual(hook(ADD, c, tool="PowerShell"), 0)
+
 
 class OptionalLocks(unittest.TestCase):
     REFUSE = [
@@ -89,6 +114,17 @@ class OptionalLocks(unittest.TestCase):
 
     def test_session_env_already_suppresses(self):
         self.assertEqual(hook(LOCKS, "git status", env={"GIT_OPTIONAL_LOCKS": "0"}), 0)
+
+    def test_quoted_mention_never_covers_and_statements_do(self):
+        # Regression (verifier 2026-10-16): text that merely MENTIONED the variable covered what followed.
+        for c in ("echo 'export GIT_OPTIONAL_LOCKS=0'; git status", "echo \"$env:GIT_OPTIONAL_LOCKS=0\"; git diff",
+                  "bash -c 'git status'", "eval 'git log -1'"):
+            with self.subTest(c=c):
+                self.assertEqual(hook(LOCKS, c), 2)
+        for c in ("Set-Item Env:GIT_OPTIONAL_LOCKS 0; git status", "$env:GIT_OPTIONAL_LOCKS = \"0\"\ngit log -1",
+                  "git commit -m @'\nDon't\ngit status said so\n'@", "bash -c 'git --no-optional-locks status'"):
+            with self.subTest(c=c):
+                self.assertEqual(hook(LOCKS, c, tool="PowerShell"), 0)
 
 
 class FastForwardOnly(unittest.TestCase):

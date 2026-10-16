@@ -11,6 +11,7 @@ rewrite's module constants on 2026-10-16 (live-tree parity was measured the same
 from __future__ import annotations
 
 import json
+import os
 import subprocess
 import sys
 import tempfile
@@ -145,6 +146,15 @@ class Cloudvore(Base):
         self.r.write("tools/x.py", 10, track=False)
         self.assertEqual(self.r.run("cloudvore", "--path", "tools/x.py")[0], 2)
         self.assertEqual(self.r.run("cloudvore", "--headroom", ".venv/a.md")[0], 2)
+
+    def test_relative_escape_out_of_the_repo_is_never_measured(self):
+        # Regression (verifier 2026-10-16): `--path ../<other repo>/HUB.md` gated a sibling repo's file
+        # (exit 1) where Cloudvore's rewrite skipped it (0), and --headroom measured it where it refused (2).
+        with tempfile.TemporaryDirectory() as other:
+            (Path(other) / "BIG.md").write_bytes(b"x" * 200_000)
+            rel = os.path.relpath(Path(other) / "BIG.md", self.r.root)
+            self.assertEqual(self.r.run("cloudvore", "--path", rel)[0], 0)
+            self.assertEqual(self.r.run("cloudvore", "--headroom", rel)[0], 2)
 
     def test_headroom_reports_breach(self):
         self.r.write("README.md", 9_000)

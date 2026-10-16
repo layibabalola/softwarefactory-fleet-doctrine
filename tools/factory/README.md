@@ -37,8 +37,11 @@ them.** A bus push changes nothing that runs anywhere; it makes `status` print `
 3. **Point at a local bus clone** in `factory-pins.json` `bus_clone` (relative or absolute
    candidates), or `--bus` / `$FACTORY_BUS_CLONE`. The clone is a **data** source: the runner
    reads the pinned blob by object id (`git cat-file blob`), re-verifies blob id + bytes + sha256,
-   and executes it from a private temp directory (python `-I`, `NODE_*`/`PYTHON*` stripped) with
-   the caller's cwd, stdin, stdout and stderr. Nothing from the clone's worktree ever executes.
+   and executes it with the caller's cwd, stdin, stdout and stderr: in-process when the runner was
+   started with `python -I` (no file exists between check and exec), else from a private temp
+   directory (python `-I`, `NODE_*`/`PYTHON*` stripped). Verified blobs are cached content-addressed
+   (`$FACTORY_PINS_CACHE`, default `%LOCALAPPDATA%/factory-pins/blobs`) and re-verified on every
+   read; a cached file that fails the check is ignored. Nothing from the clone's worktree ever executes.
 4. **Configure by data.** Tool configs live in the consumer (e.g.
    `factory-pins/check-doc-size.config.json`); start from `fixtures/check-doc-size/`.
 5. **Call through the runner** everywhere the old copy was called:
