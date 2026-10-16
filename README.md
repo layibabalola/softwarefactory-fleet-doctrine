@@ -328,6 +328,21 @@ Fleet runs are appended to `metrics/product-share-lines.jsonl`.
 Conjugal and Cloudvore joined the classifier on 2026-10-16 (ref `origin/master`; their rows carry
 `classifier_sha256` of the committed LF bytes of `tools/product-throughput-classes.json`).
 
+**Reproducible rows and weekly publication (added 2026-10-16).** A row is re-derivable only when it
+pins its commit and both window edges: `-At <sha>` (or `name=sha` per project) walks that commit
+instead of the configured ref, `-Until <iso>` ends the window (`git log --until`), and `-AsRows`
+prints rows in this file's schema with `until_utc` and the exact `command` that reproduces them,
+always written with `-At <ref_sha> -Since -Until`. Re-run that command at a bus commit whose
+classifier hashes to the row's `classifier_sha256` and the numbers match:
+
+```bash
+pwsh -NoProfile -File tools/Get-ProductThroughput.ps1 -Lines -AsRows -Project conjugal -At 601b9b7fd8a5fe81b4cdef6738a24a82f513340d -Since 2026-10-02T16:56:44Z -Until 2026-10-16T16:56:44Z
+```
+
+Conjugal's harvest steward publishes the ratio once per ISO week (`harvest_runner.py product-share`):
+it runs the census at a pinned bus commit for every configured root present on its machine and
+appends the rows here. Publication is the point; the rows still gate nothing (metrics law 1).
+
 **Rule tags (`tools/check-rule-tags.py`, added 2026-10-16 for owner defect "most rules are prose").**
 Every rule bullet in a configured markdown section carries `[enforced: <path>]` (a check at that
 project-relative path refuses a breach; the path must exist) or `[prose]` (nothing refuses). Exit 1 on
@@ -357,6 +372,25 @@ bus now ships the canonical tools and refusing hooks; a project installs them **
    exit codes on your live tree before deleting the copy.
 4. `verify` before committing pins; `status` reports `*** STALE ***` when the bus moves. Re-pinning is
    a reviewed commit, never automatic (law 1).
+
+**Evidence is hashes plus a branch (`tools/factory/check-evidence-dumps.py`, added 2026-10-16).**
+Owner rule: paperwork shrinks as a rule. Raw evidence (logs, dumps, mutant JSON, large text,
+screenshots) lives on a git ref, not on the main line. An evidence directory on the main line holds
+only `SHA256SUMS` (sha256sum format, names relative to the directory), `EVIDENCE-REF` (`ref: <git
+ref>`, optional `path: <dir on that ref>`, optional `commit: <sha>`) and an optional short summary
+`.md` under the byte caps. The check refuses (exit 1) a raw file anywhere in its configured scope, a
+file in an evidence directory that is not one of those, an over-cap directory, a missing pointer, and,
+when the pointer resolves locally, any listed blob that is absent or hashes differently; an
+unavailable ref is reported `UNVERIFIED` unless `--require-ref`. A directory holding `SHA256SUMS` is
+an evidence directory wherever it sits. Run `--range origin/master..HEAD` as the refusing gate on new
+work and `--tree` to measure the backlog; start configs are in
+`tools/factory/fixtures/check-evidence-dumps/`. It gates artifact type and size only, never the
+product-share ratio (metrics law 1).
+
+```bash
+python tools/factory/check-evidence-dumps.py --config <cfg> --repo . --range origin/master..HEAD
+python tools/factory/check-evidence-dumps.tests.py
+```
 
 Procedure: [`tools/factory/README.md`](tools/factory/README.md) and [`hooks/README.md`](hooks/README.md).
 Candidate: [`ruling-candidates/factory-tool-pin-r1.md`](ruling-candidates/factory-tool-pin-r1.md).

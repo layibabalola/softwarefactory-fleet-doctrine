@@ -1,0 +1,18 @@
+{
+  "schema": "factory-check-evidence-dumps.v1",
+  "_what": "Cloudvore starting config. Run as a refusing pre-push/CI step on NEW commits only: check-evidence-dumps.py --config <this> --repo . --range origin/master..HEAD. The legacy review/evidence-* dumps already on master fail --tree; they shrink by moving to an evidence ref, never by a mass delete.",
+  "scope": ["review/*"],
+  "exclude": [],
+  "evidence_dirs": ["review/evidence-*"],
+  "sums_marks_evidence_dir": true,
+  "raw_patterns": ["*.log", "*.out", "*.err", "*.dump", "*.trx", "*.jsonl", "*mutant*.json", "*.diff", "*.patch", "*.png", "*.zip"],
+  "large_text": {"patterns": ["*.txt", "*.json", "*.csv", "*.tsv"], "max_bytes": 8192},
+  "allowed_in_evidence_dir": ["*.md"],
+  "max_file_bytes": 16384,
+  "max_dir_bytes": 32768,
+  "pointer_name": "EVIDENCE-REF",
+  "remedy": [
+    "Push the raw files to an evidence branch (e.g. evidence/<dir-name>), keeping the same relative names.",
+    "Commit only <dir>/SHA256SUMS (sha256sum output for those files), <dir>/EVIDENCE-REF ('ref: refs/heads/evidence/<dir-name>') and an optional short summary .md."
+  ]
+}

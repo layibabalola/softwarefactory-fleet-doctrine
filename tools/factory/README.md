@@ -11,6 +11,8 @@ is how it falls. One implementation lives here; a project supplies only **data**
 | [`pin-runner.py`](pin-runner.py) | the one generic runner: `pin`, `adopt-runner`, `verify`, `status`, `run <tool> -- args` |
 | [`check-doc-size.py`](check-doc-size.py) | markdown size budgets; every tier, glob, exemption, scan mode and unit from `--config` |
 | [`fixtures/check-doc-size/`](fixtures/check-doc-size/) | the three projects' tier tables as configs (test fixtures and adoption starting points) |
+| [`check-evidence-dumps.py`](check-evidence-dumps.py) | refuses committed raw evidence; an evidence dir is `SHA256SUMS` + `EVIDENCE-REF` naming the ref that holds the bytes (verified when local) |
+| [`fixtures/check-evidence-dumps/`](fixtures/check-evidence-dumps/) | Cloudvore and Conjugal start configs |
 | [`../../hooks/`](../../hooks/README.md) | generic refusing hooks: ff-only pre-push, exact-path add, optional-locks observers |
 
 Tests (stdlib only, Windows and POSIX):
@@ -18,6 +20,7 @@ Tests (stdlib only, Windows and POSIX):
 ```
 python tools/factory/pin-runner.tests.py
 python tools/factory/check-doc-size.tests.py
+python tools/factory/check-evidence-dumps.tests.py
 python hooks/hooks.tests.py
 ```
 

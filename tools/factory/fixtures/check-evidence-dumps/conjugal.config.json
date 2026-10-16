@@ -1,0 +1,18 @@
+{
+  "schema": "factory-check-evidence-dumps.v1",
+  "_what": "Conjugal kernel-dogfood evidence paths. Raw evidence already lives on origin/kernel-dogfood/s<N>-evidence (deliver.py stage verifies SHA256SUMS there); this keeps dumps off master. Test fixtures are excluded.",
+  "scope": ["coordination/kernel-dogfood/*"],
+  "exclude": ["coordination/kernel-dogfood/*-fixtures/*", "coordination/kernel-dogfood/test-header/*"],
+  "evidence_dirs": ["coordination/kernel-dogfood/evidence/*"],
+  "sums_marks_evidence_dir": true,
+  "raw_patterns": ["*.log", "*.out", "*.err", "*.dump", "*.jsonl", "*mutant*.json", "*.stdout", "*.stderr"],
+  "large_text": {"patterns": ["*.txt", "*.json", "*.tsv", "*.csv"], "max_bytes": 8192},
+  "allowed_in_evidence_dir": ["*.md"],
+  "max_file_bytes": 16384,
+  "max_dir_bytes": 32768,
+  "pointer_name": "EVIDENCE-REF",
+  "remedy": [
+    "Raw evidence goes on origin/kernel-dogfood/s<N>-evidence under coordination/kernel-dogfood/evidence/S<N>/.",
+    "Master carries at most <dir>/SHA256SUMS + <dir>/EVIDENCE-REF ('ref: refs/heads/kernel-dogfood/s<N>-evidence')."
+  ]
+}
