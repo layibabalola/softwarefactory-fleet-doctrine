@@ -2,7 +2,7 @@
 // Offline fixtures for tools/tool-census.mjs. Builds a fake fleet (projects, user hooks dir, settings)
 // in a temp dir and drives the real CLI through --config/--root/--home/--baseline.
 import assert from 'node:assert/strict';
-import { execFileSync } from 'node:child_process';
+import { execFileSync, spawnSync } from 'node:child_process';
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync, existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
@@ -13,10 +13,11 @@ const tool = fileURLToPath(new URL('./tool-census.mjs', import.meta.url));
 const put = (rel, body) => { const p = join(root, rel); mkdirSync(dirname(p), { recursive: true }); writeFileSync(p, body); return p; };
 const hooks = (event, cmd) => JSON.stringify({ hooks: { [event]: [{ hooks: [{ type: 'command', command: cmd }] }] } });
 const census = (extra = [], allow = true) => {
-  try { return { status: 0, out: execFileSync(process.execPath, [tool, '--config', join(root, 'census.json'), '--root', root, '--home', join(root, 'home'), '--baseline', join(root, 'baseline.json'), ...extra], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }) }; }
-  catch (e) { if (!allow) throw e; return { status: e.status, out: `${e.stdout || ''}${e.stderr || ''}` }; }
+  const r = spawnSync(process.execPath, [tool, '--config', join(root, 'census.json'), '--root', root, '--home', join(root, 'home'), '--baseline', join(root, 'baseline.json'), ...extra], { encoding: 'utf8' });
+  if (r.status !== 0 && !allow) throw new Error(`census exited ${r.status}: ${r.stderr}`);
+  return { status: r.status, out: `${r.stdout || ''}${r.stderr || ''}`, stdout: r.stdout };
 };
-const json = () => JSON.parse(census(['--json']).out);
+const json = () => JSON.parse(census(['--json']).stdout);
 const fam = (rep, name) => rep.families.find((f) => f.name === name);
 
 try {
@@ -102,6 +103,50 @@ try {
   put('p1/.gitignore', 'ignored/\n');
   put('p1/ignored/session-checkpoint.py', 'print("ignored")\n');
   assert.equal(fam(json(), 'checkpoint').copies.filter((c) => c.root === 'p1').length, 1, 'gitignored copy skipped'); cases++;
+
+  // 9. Deadline schedule (owner D1-D3 adjudication 2026-10-16). Hand-written baselines pin the count.
+  const now = json().total;
+  assert.ok(now >= 2, `fixture count ${now} must be >= 2 for the schedule cases`);
+  const sched = (body) => { put('sched.json', JSON.stringify(body)); return join(root, 'sched.json'); };
+  const check = (baselinePath, today) => census(['--check', '--baseline', baselinePath, '--today', today]);
+  const schedule = [{ by: '2026-10-23', max: now - 1 }, { by: '2026-11-06', max: 0 }];
+  let b = sched({ total: now, schedule });
+  r = check(b, '2026-10-22');
+  assert.equal(r.status, 0, 'before the first date: old rule only'); assert.match(r.out, new RegExp(`next deadline: max ${now - 1} by 2026-10-23`)); cases++;
+  r = check(b, '2026-10-23');
+  assert.equal(r.status, 1, 'on the date and over the max = exit 1'); assert.match(r.out, /OVERDUE: count \d+ > max \d+ due by 2026-10-23/);
+  assert.match(r.out, /Still over: .*checkpoint/, 'names the families over'); cases++;
+  r = check(sched({ total: now, schedule: [{ by: '2026-10-23', max: now }, { by: '2026-11-06', max: 0 }] }), '2026-10-30');
+  assert.equal(r.status, 0, 'at the max passes'); cases++;
+  r = check(sched({ total: now, schedule: [{ by: '2026-10-23', max: now + 5 }] }), '2026-12-01');
+  assert.equal(r.status, 0, 'below the max passes'); cases++;
+  r = check(sched({ total: now, schedule }), '2026-11-06');
+  assert.equal(r.status, 1, 'the latest date reached governs'); assert.match(r.out, /max 0 due by 2026-11-06/); cases++;
+  r = check(sched({ total: now, schedule: [{ by: '2026-11-06', max: 0 }, { by: '2026-10-23', max: now }] }), '2026-10-30');
+  assert.equal(r.status, 0, 'schedule order in the file does not matter'); cases++;
+  r = check(sched({ total: now }), '2099-01-01');
+  assert.equal(r.status, 0, 'no schedule = old behaviour'); assert.doesNotMatch(r.out, /deadline|OVERDUE/); cases++;
+  r = check(sched({ total: now - 1 }), '2099-01-01');
+  assert.equal(r.status, 1, 'no schedule: the rise rule still fails'); assert.match(r.out, /ROSE/); cases++;
+  r = check(sched({ total: now, schedule: [{ by: '23/10/2026', max: 1 }] }), '2026-10-30');
+  assert.equal(r.status, 2, 'malformed schedule = tool failure, never a silent pass'); cases++;
+
+  // 10. --update-baseline keeps the schedule and records the roots it measured.
+  b = sched({ total: now + 3, schedule });
+  r = census(['--update-baseline', '--baseline', b]);
+  assert.equal(r.status, 0); const kept = JSON.parse(readFileSync(b, 'utf8'));
+  assert.deepEqual(kept.schedule, schedule, 'schedule survives a lowering');
+  assert.ok(kept.roots.includes('p1') && !kept.roots.includes('gone'), 'measured roots recorded'); cases++;
+
+  // 11. UNMEASURED: a root the baseline measured is not visible, or no fleet root at all (CI).
+  r = check(sched({ total: now, schedule, roots: ['p1', 'p9'] }), '2026-12-01');
+  assert.equal(r.status, 3, 'missing measured root = exit 3, not a pass or a fail'); assert.match(r.out, /UNMEASURED: .*p9/); cases++;
+  r = census(['--update-baseline', '--baseline', sched({ total: now + 3, roots: ['p9'] })]);
+  assert.equal(r.status, 3, 'a partial count never lowers the baseline'); cases++;
+  put('ci.json', JSON.stringify({ families: [{ name: 'checkpoint', names: ['session-checkpoint.py'] }],
+    roots: [{ name: 'p1', path: 'nowhere-1', kind: 'project' }, { name: 'u', path: '~/nowhere', kind: 'user' }] }));
+  r = census(['--check', '--config', join(root, 'ci.json'), '--baseline', sched({ total: 11, schedule }), '--today', '2026-12-01']);
+  assert.equal(r.status, 3, 'legacy baseline + no fleet root visible = UNMEASURED'); assert.match(r.out, /sibling clones are absent/); cases++;
 
   assert.ok(existsSync(tool));
   console.log(`tool-census fixtures: ${cases} cases passed`);

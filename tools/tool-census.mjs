@@ -8,6 +8,14 @@
 //   3. A copy that MUST exist (a project-specific CONFIG block) is checked by the hash of its shared
 //      section only — the text below its 'sharedSectionMarker' line (e.g. END CONFIG).
 //   4. The census count may only FALL. --check fails when it rose; --update-baseline refuses to raise.
+//   5. A ratchet forbids worse but never requires better, so the baseline may carry a DEADLINE schedule,
+//      "schedule": [{"by":"YYYY-MM-DD","max":N}, ...]. From each 'by' date on (calendar date, inclusive)
+//      --check also fails when the count exceeds the max of the latest date already reached, naming the
+//      families still over (owner D1-D3 adjudication 2026-10-16). It caps DUPLICATE COPIES, a defect
+//      count, never a lane or product target (metrics law 1). No schedule = rule 4 alone.
+//   6. A count that could not see the fleet is UNMEASURED: never ok, never failed. --check exits 3 when a
+//      root the baseline measured (its 'roots' list) is absent here or, for a baseline without that list,
+//      when no project or user root is present at all (a CI runner that cannot see the sibling clones).
 //   Measured 2026-10-11: session-checkpoint.py in 4 versions, wired by 3 projects AND the user settings.
 //
 // What it counts
@@ -22,11 +30,14 @@
 // Usage
 //   node tools/tool-census.mjs                       human report
 //   node tools/tool-census.mjs --json                machine report
-//   node tools/tool-census.mjs --check               exit 1 if the count rose above the baseline
-//   node tools/tool-census.mjs --update-baseline     write the baseline; refuses a rise
+//   node tools/tool-census.mjs --check               exit 1 if the count rose above the baseline or is
+//                                                    over the schedule's current max; 3 if UNMEASURED
+//   node tools/tool-census.mjs --update-baseline     write the baseline; refuses a rise; keeps the schedule
 //   overrides: --config <json> --baseline <json> --root <dir for relative paths> --home <dir for '~'>
+//              --today YYYY-MM-DD (the date the schedule is read at; default the local calendar date)
 //   '@bus' in the config is this script's own repository.
-// Exit: 0 ok; 1 the count rose (or a refused raise); 2 tool or environment failure.
+// Exit: 0 ok; 1 the count rose or is over its deadline (or a refused raise); 2 tool or environment
+//       failure (including a malformed schedule); 3 UNMEASURED (the fleet roots are not visible here).
 // It reads the fleet and writes only the baseline file, and only on --update-baseline (law 1, law 2).
 
 import { createHash } from 'node:crypto';
@@ -36,7 +47,7 @@ import { homedir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const EXIT_OK = 0, EXIT_ACTION = 1, EXIT_FAIL = 2;
+const EXIT_OK = 0, EXIT_ACTION = 1, EXIT_FAIL = 2, EXIT_UNMEASURED = 3;
 const BUS = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 
 function parseArgs(argv) {
@@ -158,7 +169,51 @@ export function census({ config, root, home }) {
     }
   }
   const total = families.reduce((s, f) => s + f.excess, 0) + doubles.length;
-  return { total, families, doubleRegistrations: doubles, absentRoots: absent };
+  const measuredRoots = roots.filter((r) => !absent.includes(r.name)).map((r) => r.name);
+  const fleetRootsSeen = roots.filter((r) => r.kind !== 'bus' && !absent.includes(r.name)).length;
+  return { total, families, doubleRegistrations: doubles, absentRoots: absent, measuredRoots, fleetRootsSeen };
+}
+
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+
+// Validates a baseline's optional schedule; returns [] when there is none, throws on a malformed one.
+export function parseSchedule(baseline) {
+  if (baseline.schedule === undefined) return [];
+  if (!Array.isArray(baseline.schedule)) throw new Error('baseline schedule must be an array of {by, max}');
+  return baseline.schedule.map((e, i) => {
+    if (!e || typeof e.by !== 'string' || !DATE_RE.test(e.by) || Number.isNaN(Date.parse(e.by))) throw new Error(`schedule[${i}].by must be a YYYY-MM-DD date`);
+    if (!Number.isInteger(e.max) || e.max < 0) throw new Error(`schedule[${i}].max must be a non-negative integer`);
+    return { by: e.by, max: e.max };
+  }).sort((a, b) => a.by.localeCompare(b.by));
+}
+
+// The entry in force on 'today' (the latest 'by' <= today), and the next one still ahead.
+export function scheduleAt(schedule, today) {
+  const passed = schedule.filter((e) => e.by <= today);
+  return { current: passed.length ? passed[passed.length - 1] : null, next: schedule.find((e) => e.by > today) || null };
+}
+
+// Whether a count can be compared with the baseline at all (rule 6).
+export function unmeasuredReason(rep, baseline) {
+  if (Array.isArray(baseline.roots)) {
+    const missing = baseline.roots.filter((r) => !rep.measuredRoots.includes(r));
+    if (missing.length) return `root(s) the baseline measured are not visible here: ${missing.join(', ')}`;
+    return null;
+  }
+  if (rep.fleetRootsSeen === 0) return 'no project or user root is visible here (the sibling clones are absent)';
+  return null;
+}
+
+function localDate() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+function over(rep) {
+  return [
+    ...rep.families.filter((f) => f.excess > 0).map((f) => `${f.name} (+${f.excess})`),
+    ...rep.doubleRegistrations.map((d) => `${d.project}:${d.family} double registration`),
+  ];
 }
 
 function human(rep) {
@@ -173,14 +228,16 @@ function human(rep) {
   return L.join('\n');
 }
 
-function baselineOf(rep) {
+function baselineOf(rep, old) {
   return {
     schema: 'tool-census-baseline.v1',
     total: rep.total,
+    ...(old && old.schedule !== undefined ? { schedule: old.schedule } : {}),
+    roots: rep.measuredRoots,
     families: Object.fromEntries(rep.families.map((f) => [f.name, { copies: f.copies.length, distinct: f.distinct }])),
     doubleRegistrations: rep.doubleRegistrations.map((d) => `${d.project}:${d.family}:${d.events.join('+')}`),
     measuredAt: new Date().toISOString(),
-    rule: 'The count may only fall. tools/tool-census.mjs --update-baseline refuses a rise. It grades the fleet tool layout, never a lane (metrics law 1).',
+    rule: 'The count may only fall, and must be at or below the max of the latest schedule date reached. tools/tool-census.mjs --update-baseline refuses a rise and keeps the schedule. It grades the fleet tool layout, never a lane (metrics law 1).',
   };
 }
 
@@ -190,28 +247,51 @@ function main() {
   const home = resolve(args.home ? String(args.home) : homedir());
   const configPath = resolve(args.config ? String(args.config) : join(BUS, 'tools', 'tool-census.config.json'));
   const baselinePath = resolve(args.baseline ? String(args.baseline) : join(BUS, 'metrics', 'tool-census-baseline.json'));
+  const today = args.today ? String(args.today) : localDate();
+  if (!DATE_RE.test(today)) { console.error(`[tool-census] --today must be YYYY-MM-DD, got '${today}'`); return EXIT_FAIL; }
   if (!existsSync(configPath)) { console.error(`[tool-census] config not found: ${configPath}`); return EXIT_FAIL; }
   const config = JSON.parse(readFileSync(configPath, 'utf8'));
   const rep = census({ config, root, home });
 
   if (args['update-baseline']) {
     const old = existsSync(baselinePath) ? JSON.parse(readFileSync(baselinePath, 'utf8')) : null;
+    if (old) parseSchedule(old);
+    const why = old ? unmeasuredReason(rep, old) : (rep.fleetRootsSeen === 0 ? 'no project or user root is visible here' : null);
+    if (why) {
+      console.error(`[tool-census] UNMEASURED: ${why}. A partial count is not comparable; the baseline is unchanged.`);
+      return EXIT_UNMEASURED;
+    }
     if (old && rep.total > old.total) {
       console.error(`[tool-census] REFUSED: count ${rep.total} is above the baseline ${old.total}. The baseline only falls; retire the copy instead.`);
       return EXIT_ACTION;
     }
     if (old && rep.total === old.total) { console.log(`[tool-census] count ${rep.total} equals the baseline; unchanged.`); return EXIT_OK; }
-    writeFileSync(baselinePath, JSON.stringify(baselineOf(rep), null, 2) + '\n');
+    writeFileSync(baselinePath, JSON.stringify(baselineOf(rep, old), null, 2) + '\n');
     console.log(`[tool-census] baseline ${old ? `lowered ${old.total} -> ` : 'seeded at '}${rep.total}: ${baselinePath}`);
     return EXIT_OK;
   }
   if (args.json) console.log(JSON.stringify(rep, null, 2)); else console.log(human(rep));
   if (args.check) {
     if (!existsSync(baselinePath)) { console.error(`[tool-census] no baseline at ${baselinePath}`); return EXIT_FAIL; }
-    const base = JSON.parse(readFileSync(baselinePath, 'utf8')).total;
+    const baseline = JSON.parse(readFileSync(baselinePath, 'utf8'));
+    const base = baseline.total;
     if (typeof base !== 'number') { console.error('[tool-census] baseline has no numeric total'); return EXIT_FAIL; }
-    if (rep.total > base) { console.error(`[tool-census] ROSE: count ${rep.total} > baseline ${base}. A shared tool was copied or re-registered; run it from one place.`); return EXIT_ACTION; }
-    console.error(`[tool-census] ok: count ${rep.total} <= baseline ${base}${rep.total < base ? ' (lower: run --update-baseline to ratchet down)' : ''}.`);
+    const schedule = parseSchedule(baseline);
+    const why = unmeasuredReason(rep, baseline);
+    if (why) {
+      console.error(`[tool-census] UNMEASURED: ${why}. Neither ok nor failed; run --check on a box that holds the fleet clones.`);
+      return EXIT_UNMEASURED;
+    }
+    const { current, next } = scheduleAt(schedule, today);
+    let failed = false;
+    if (rep.total > base) { console.error(`[tool-census] ROSE: count ${rep.total} > baseline ${base}. A shared tool was copied or re-registered; run it from one place.`); failed = true; }
+    if (current && rep.total > current.max) {
+      console.error(`[tool-census] OVERDUE: count ${rep.total} > max ${current.max} due by ${current.by} (today ${today}). Still over: ${over(rep).join('; ')}. Retire the copies; the deadline is not moved to fit.`);
+      failed = true;
+    }
+    if (failed) return EXIT_ACTION;
+    const ahead = next ? `; next deadline: max ${next.max} by ${next.by}${rep.total > next.max ? ` (${rep.total - next.max} to retire)` : ''}` : '';
+    console.error(`[tool-census] ok: count ${rep.total} <= baseline ${base}${current ? ` and <= max ${current.max} due ${current.by}` : ''}${rep.total < base ? ' (lower: run --update-baseline to ratchet down)' : ''}${ahead}.`);
   }
   return EXIT_OK;
 }

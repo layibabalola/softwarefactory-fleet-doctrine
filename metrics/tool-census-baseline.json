@@ -1,6 +1,30 @@
 {
   "schema": "tool-census-baseline.v1",
-  "total": 11,
+  "total": 12,
+  "schedule": [
+    {
+      "by": "2026-10-23",
+      "max": 8
+    },
+    {
+      "by": "2026-11-06",
+      "max": 3
+    },
+    {
+      "by": "2026-11-20",
+      "max": 0
+    }
+  ],
+  "scheduleNote": "Owner D1-D3 adjudication 2026-10-16 (specs/airmypc/cards.md airmypc/d1-d3-not-resolved-20261016). Re-baselined 11 -> 12 on 2026-10-16 after ee843be: the bus canonical tools/factory/check-doc-size.py is the target the project copies converge on, counted as a 4th version until they pin it. 12 -> 8 by 2026-10-23 (the session-checkpoint copies and double registrations retire by deletion; v4 user hook exists). -> 3 by 2026-11-06 (check-doc-size copies retire through the pin runner, tools/factory/pin-runner.py). -> 0 by 2026-11-20 (doctrine-outbox and doctrine-triage have no bus canonical yet; one must land and be pinned). Counts DUPLICATE COPIES, never a lane target (metrics law 1). Moving a date or raising a max is an owner ruling. Roots conjugal, cloudvore, magic-lantern were absent on the box that measured this; a box without the roots listed here reports UNMEASURED.",
+  "roots": [
+    "bus",
+    "airmypc",
+    "agent-bridge",
+    "mlv-app",
+    "adobe-ingester",
+    "adversarialllm",
+    "user-hooks"
+  ],
   "families": {
     "session-checkpoint": {
       "copies": 4,
@@ -11,12 +35,28 @@
       "distinct": 3
     },
     "check-doc-size": {
-      "copies": 3,
-      "distinct": 3
+      "copies": 4,
+      "distinct": 4
     },
     "doctrine-triage": {
       "copies": 2,
       "distinct": 2
+    },
+    "pin-runner": {
+      "copies": 1,
+      "distinct": 1
+    },
+    "pre-push-ff-only": {
+      "copies": 1,
+      "distinct": 1
+    },
+    "exact-path-add": {
+      "copies": 1,
+      "distinct": 1
+    },
+    "git-optional-locks": {
+      "copies": 1,
+      "distinct": 1
     }
   },
   "doubleRegistrations": [
@@ -24,6 +64,6 @@
     "mlv-app:session-checkpoint:Stop+SessionStart",
     "adobe-ingester:session-checkpoint:SessionStart+Stop"
   ],
-  "measuredAt": "2026-10-11T19:53:12.385Z",
-  "rule": "The count may only fall. tools/tool-census.mjs --update-baseline refuses a rise. It grades the fleet tool layout, never a lane (metrics law 1)."
+  "measuredAt": "2026-10-16T16:56:39.552Z",
+  "rule": "The count may only fall, and must be at or below the max of the latest schedule date reached. tools/tool-census.mjs --update-baseline refuses a rise and keeps the schedule. It grades the fleet tool layout, never a lane (metrics law 1)."
 }
