@@ -87,6 +87,11 @@ only raise the rule count). `bullet` is a regex matched at the start of a line; 
 next bullet, heading or blank line. Files are read as UTF-8 (a BOM is ignored) as DATA (bus Law 1); a file
 that is not valid UTF-8 is exit 2.
 
+Known limits (follow-ups): a bare quoted path line in a .ps1 counts as a run (the same text does run in sh);
+a no-space `#` comment (`pass# ANCHOR`) is not recognised; an unanchored and an anchored claim on a one-line
+enforcer can both back a rule; invocation is lexical, so the floor is only as strong as review of rule-map and
+hook/workflow diffs -- the fan-in table (enforcer, anchor@line) is the aid for that review.
+
 Exit: 0 every bullet tagged and every cited path present and invoked (or --report; or --check floor met);
 1 an untagged, dangling, mixed, uninvoked, anchor-duplicate or anchor-ambiguous bullet (--check: dangling,
 mixed, below the floor, or fail-closed); 2 usage, config or read/write error (the census did not run).
@@ -135,6 +140,11 @@ DEFAULT_ROOT_VARS = ["$ROOT", "${ROOT}", "$PSScriptRoot/..", "$(git rev-parse --
 SHELL_EXT = frozenset(("", ".sh", ".bash", ".ps1", ".cmd", ".bat"))
 YAML_EXT = frozenset((".yml", ".yaml"))
 LEAD_WORDS = frozenset("if then else elif do while until ! { } exec call & . source command time".split())
+# interpreter flags after which no script is run (python -c/-m/-V, bash -c, node --check, pwsh -Command ...)
+NO_SCRIPT_FLAGS = frozenset("--help -h -c --version -V --check -m -command -encodedcommand -commandwithargs".split())
+# interpreter flags that take a value, so the next word is not the script (compared case-folded except -V -W -X)
+VALUE_FLAGS = frozenset("-W -X -executionpolicy -ep -workingdirectory -wd -windowstyle -inputformat -outputformat "
+                        "-r --require".split())
 ENV_ASSIGN_RX = re.compile(r"^[A-Za-z_]\w*=")
 HEREDOC_RX = re.compile(r"(?<!<)<<(-?)\s*(['\"]?)([A-Za-z_][\w.]*)\2")
 RUN_RX = re.compile(r"^(\s*)(?:-\s+)?run:\s*(.*)$")
@@ -282,13 +292,13 @@ def code_lines(text: str) -> list[tuple[int, str]]:
                 buf.append(" ")
                 continue
             hit = next(((o, c) for o, c in BLOCK_OPEN
-                        if line.startswith(o, i) and (o[0] in "\"'" or i == 0 or line[i - 1].isspace())), None)
+                        if line.startswith(o, i) and (o[0] in "\"'" or i == 0 or line[i - 1].isspace() or line[i - 1] == ";")), None)
             if hit:
                 closer = hit[1]
                 i += len(hit[0])
                 continue
             ch = line[i]
-            if (ch == "#" or line.startswith("//", i)) and (i == 0 or line[i - 1].isspace()):
+            if (ch == "#" or line.startswith("//", i)) and (i == 0 or line[i - 1].isspace() or line[i - 1] == ";"):
                 break
             buf.append(ch)
             i += 1
@@ -510,7 +520,16 @@ class Invocation:
             prog = prog[:-4] if prog.endswith(".exe") else prog
             if prog not in INTERPRETERS:
                 continue
-            for a in words[1:]:
+            args, k = words[1:], 0
+            while k < len(args):
+                a = args[k]
+                k += 1
+                key = a if a in ("-V", "-W", "-X") else a.lower()
+                if key.split("=", 1)[0] in NO_SCRIPT_FLAGS:
+                    break                                 # --help, -c "code", -m module, --check ...: no script runs
+                if key in VALUE_FLAGS:
+                    k += 1                                # -W ignore, -ExecutionPolicy Bypass: the next word is a value
+                    continue
                 if a.startswith("-") or (prog == "cmd" and re.fullmatch(r"/[A-Za-z]", a)):
                     continue
                 ident = self.resolve(a, here)
@@ -530,10 +549,9 @@ class Invocation:
                     depth += 1
                 elif c[0] in ("fi", "done", "esac", "}"):
                     depth -= 1
-            terminal = bool(cmds) and cmds[0][0] == "exit" and depth <= 0 and len(cmds) == 1
+            if cmds and cmds[0][0] == "exit" and depth <= 0:
+                break                       # nothing after (or on the line after) an unconditional top-level exit runs
             self.command_refs(line, here, found)
-            if terminal:
-                break                                     # nothing after an unconditional top-level exit runs
 
     def refs(self, hit: str, ident: str) -> set[str]:
         """Identities of the files the surface file actually invokes (static approximation)."""
@@ -563,7 +581,7 @@ class Invocation:
                     while k < len(code) and len(code[k][1]) - len(code[k][1].lstrip()) > indent:
                         block.append(code[k][1])
                         k += 1
-                    self.script_refs("\n".join(block), here, ".sh", found)
+                    self.script_refs((" " if val[0] == ">" else "\n").join(block), here, ".sh", found)
                 elif val:
                     self.script_refs(val.strip("'\""), here, ".sh", found)
         elif ext in SHELL_EXT:

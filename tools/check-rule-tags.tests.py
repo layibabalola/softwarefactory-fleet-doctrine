@@ -430,7 +430,7 @@ class V2(unittest.TestCase):
                 "exec python tools/gate.py\n", "FOO=1 BAR=2 python tools/gate.py\n", "if python tools/gate.py; then\n  :\nfi\n",
                 "set -e\ntools/gate.py\n", "bash tools/gate.py\n", ". tools/gate.py\n", "source tools/gate.py\n",
                 "echo start && python tools/gate.py\n", "false || python tools/gate.py\n", "x=$(python tools/gate.py)\n",
-                "node --check tools/gate.py\n", "pwsh -NoProfile -File tools/gate.py -Run\n", "python tools/gate.py 2>&1 | tee log\n",
+                "node --require tools/x.js tools/gate.py\n", "pwsh -NoProfile -File tools/gate.py -Run\n", "python tools/gate.py 2>&1 | tee log\n",
                 'python "tools/gate.py"\n', "python 'tools/gate.py'\n", "cd . && python tools/gate.py > out.txt\n",
                 "  python tools/gate.py\n", "python tools/gate.py \\\n   --more\n", "python \\\n   tools/gate.py\n")):
             self.assertEqual(self.backed_by(f".githooks/c{i}.sh", text), 1, text)
@@ -440,6 +440,9 @@ class V2(unittest.TestCase):
                 "echo python tools/gate.py\n", "echo tools/gate.py\n", "printf '%s\\n' tools/gate.py\n", "X=tools/gate.py\n",
                 "export X=tools/gate.py\n", "Y=tools/gate.py echo hi\n", "python tools/other.py tools/gate.py\n",
                 "python -m pytest tools/gate.py\n", "dotnet test tools/gate.py\n", "cat tools/gate.py\n", "grep x tools/gate.py\n",
+                "node --check tools/gate.py\n", "python --help tools/gate.py\n", "python -c tools/gate.py\n",
+                "python -V tools/gate.py\n", "python --version tools/gate.py\n", "bash -c tools/gate.py\n",
+                "pwsh -Command tools/gate.py\n", "powershell -NoProfile -Command tools/gate.py\n", "node -h tools/gate.py\n",
                 "ls tools/gate.py\n", "[ -f tools/gate.py ] && echo ok\n", "test -x tools/gate.py\n", "echo hi > tools/gate.py.log\n",
                 "see also tools/gate.py\n", "# python tools/gate.py\n", "python tools/gate.pyc\n", "python xgate.py\n",
                 "python tools/gate.py.disabled\n")):
@@ -457,6 +460,47 @@ class V2(unittest.TestCase):
         self.assertEqual(self.backed_by(".githooks/h9.sh", "cat <<EOF\ntext\nEOF\npython tools/gate.py\n"), 1)     # after the body
         self.assertEqual(self.backed_by(".githooks/h8.sh", "# cat <<EOF\npython tools/gate.py\n"), 1)            # a comment opens none
         self.assertEqual(self.backed_by(".githooks/h7.sh", "cat <<< word\npython tools/gate.py\n"), 1)            # here-string, no body
+
+    def test_interpreter_value_flags_are_skipped_so_the_real_script_is_credited(self):
+        # DNG's factory-ci.yml writes its CI steps this way (7 times); `Bypass` is a value, not the script
+        self.assertEqual(self.backed_by(".githooks/f1.ps1", "powershell -NoProfile -ExecutionPolicy Bypass -File .\\tools\\gate.py\n"), 1)
+        self.assertEqual(self.backed_by(".githooks/f2.ps1", "pwsh -ExecutionPolicy Bypass -File tools/gate.py\n"), 1)
+        self.assertEqual(self.backed_by(".githooks/f3.sh", "python -W ignore tools/gate.py\n"), 1)
+        self.assertEqual(self.backed_by(".githooks/f4.sh", "python -X utf8 tools/gate.py\n"), 1)
+        self.assertEqual(self.backed_by(".githooks/f5.sh", "node -r tools/x.js tools/gate.py\n"), 1)
+        self.assertEqual(self.backed_by(".githooks/f6.yml", "steps:\n  - run: powershell -NoProfile -ExecutionPolicy Bypass -File tools/gate.py\n"), 1)
+        # negative controls: the value is not the script, and a value flag does not swallow a no-script flag
+        self.assertEqual(self.backed_by(".githooks/f7.sh", "powershell -ExecutionPolicy tools/gate.py -File other.ps1\n"), 0)
+        self.assertEqual(self.backed_by(".githooks/f8.sh", "python -W ignore -c tools/gate.py\n"), 0)
+        self.assertEqual(self.backed_by(".githooks/f9.sh", "python -m unittest tools/gate.py\n"), 0)
+
+    def test_nothing_on_the_line_of_a_top_level_exit_counts_either(self):
+        self.assertEqual(self.backed_by(".githooks/x1.sh", "exit 0; python tools/gate.py\n"), 0)
+        self.assertEqual(self.backed_by(".githooks/x2.sh", "exit 0 && python tools/gate.py\n"), 0)
+        self.assertEqual(self.backed_by(".githooks/x3.sh", 'test -z "$SKIP" || exit 0; python tools/gate.py\n'), 1)   # conditional exit
+        self.assertEqual(self.backed_by(".githooks/x4.sh", "python tools/gate.py; exit 0\n"), 1)                       # run before the exit
+
+    def test_a_folded_yaml_run_block_is_one_command_line(self):
+        # `run: >` folds its lines with spaces: the second line is an argument of `echo`, not a new command
+        self.assertEqual(self.backed_by(".githooks/y1.yml", "steps:\n  - run: >\n      echo hi\n      python tools/gate.py\n"), 0)
+        self.assertEqual(self.backed_by(".githooks/y2.yml", "steps:\n  - run: >-\n      echo hi\n      tools/gate.py\n"), 0)
+        # realistic folded forms are still credited
+        self.assertEqual(self.backed_by(".githooks/y3.yml", "steps:\n  - run: >-\n      python\n      tools/gate.py\n"), 1)
+        self.assertEqual(self.backed_by(".githooks/y4.yml", "steps:\n  - run: >\n      python tools/gate.py\n      --strict\n"), 1)
+        self.assertEqual(self.backed_by(".githooks/y5.yml", "steps:\n  - run: >\n      echo hi &&\n      python tools/gate.py\n"), 1)
+        # a literal block keeps one command per line
+        self.assertEqual(self.backed_by(".githooks/y6.yml", "steps:\n  - run: |\n      echo hi\n      python tools/gate.py\n"), 1)
+
+    def test_a_comment_opener_directly_after_a_semicolon_is_a_comment(self):
+        self.assertEqual(self.backed_by(".githooks/s1.ps1", "Write-Output ok;<#\npython tools/gate.py\n#>\n"), 0)
+        self.assertEqual(self.backed_by(".githooks/s2.sh", "x=1;/* python tools/gate.py */\n"), 0)
+        self.assertEqual(self.backed_by(".githooks/s3.sh", "x=1;# python tools/gate.py\n"), 0)
+        self.assertEqual(self.backed_by(".githooks/s4.sh", "x=1;// python tools/gate.py\n"), 0)
+        self.assertEqual(self.backed_by(".githooks/s5.sh", "x=1;<!-- python tools/gate.py -->\n"), 0)
+        self.assertEqual(self.backed_by(".githooks/s6.sh", "x=1;/* c */ python tools/gate.py\n"), 1)                  # code after the comment
+        self.assertEqual([l.strip() for _n, l in crt.code_lines("const x = 1;/* ANCHOR_TEXT */")], ["const x = 1;"])
+        # a glob and a URL are still not comments
+        self.assertEqual([l for _n, l in crt.code_lines("ls tools/*;ls tmp/*")], ["ls tools/*;ls tmp/*"])
 
     def test_nothing_after_an_unconditional_top_level_exit_counts(self):
         self.assertEqual(self.backed_by(".githooks/e1.sh", "exit 0\npython tools/gate.py\n"), 0)
@@ -1050,7 +1094,7 @@ class V2(unittest.TestCase):
         self.assertEqual(dng["root_candidates"][0], "C:/code/DngAutoProcessor - Claude/DngAutoProcessor")
         self.assertEqual(dng["invocation_surfaces"], [".githooks/*", ".github/workflows/*.yml"])
         self.assertEqual([(f["date"], f["backed"]) for f in dng["floor_schedule"]],
-                         [("2026-10-16", 3), ("2026-10-23", 20), ("2026-10-30", 35), ("2026-11-06", 46)])
+                         [("2026-10-16", 1), ("2026-10-23", 20), ("2026-10-30", 35), ("2026-11-06", 46)])
         crt.parse_floors(dng)
         self.doc("- dash\n1. numbered\n**Bold-led.** paragraph\nnot a rule\n\nplain\n")
         c = self.counts(rule_map=None, files=[{"path": "RULES.md", "bullet": dng["files"][0]["bullet"]}])

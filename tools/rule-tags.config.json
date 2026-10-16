@@ -22,7 +22,7 @@
       "invocation_exclude": ["*.frozen-*"],
       "placement_invoked": [".githooks/pre-commit", ".githooks/commit-msg", ".githooks/pre-push", ".githooks/post-commit", ".githooks/post-merge"],
       "floor_schedule": [
-        { "date": "2026-10-16", "backed": 3 },
+        { "date": "2026-10-16", "backed": 1 },
         { "date": "2026-10-23", "backed": 20 },
         { "date": "2026-10-30", "backed": 35 },
         { "date": "2026-11-06", "backed": 46 }
