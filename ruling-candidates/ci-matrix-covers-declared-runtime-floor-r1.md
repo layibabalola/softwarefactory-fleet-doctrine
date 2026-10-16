@@ -5,6 +5,7 @@ Status: **PROPOSED ONLY — NOT YET A RATIFIED RULING OR PROJECT RUNTIME AUTHORI
 Origin: CoS review of layibabalola/agent-bridge PR #233 (CARD:DONE-DOCTRINE-GATE), 2026-10-14/15.
 - Incident 1: round 10, tip `4714c51`. `test_r10_fx22_isfile_flag_off_control` assumes `Path.is_file()` swallows every `OSError`. That holds on Python 3.14 and on Windows, but on POSIX Python 3.10-3.13 `is_file()` re-raises EACCES/EIO, so the test fails on a supported runtime. CI (Windows, Python 3.14 only) stayed green. Dot 4217fb27 corroborated. Bus: `cos-feedback/agent-bridge/pr-233.md`.
 - Incident 2: round 11, tip `6a47640`. The round-10 test was not fixed, and the new `test_r11_fx24_deny_file_stat_fault_only_in_the_gathers_view_is_could_not_check` fails on POSIX 3.13 for the same reason (the real `is_file()` re-raises, so the expected FX24 message never prints). CI again cannot see it.
+- Incident 3: round 13, tip `4dc16767` (2026-10-16). This time a product regression, not a test premise: under `--require-doctrine`, `_gate_resolve` calls `os.path.realpath` after `_load_doctrine` has swapped it for `_gate_realpath` (`tools/check_decision_record.py:1210`, `:1257`), so on POSIX the sibling load recurses to `RecursionError` and the flagged gate can never PASS. 209 tests fail on Linux 3.13 versus 2 on the previous head; Windows CI (Python 3.14) takes the `ntpath` branch and stays blind. The recurrence makes the floor-version POSIX lane (rule 1) the recommended option over narrowing the declaration.
 
 ## The shape
 
