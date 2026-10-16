@@ -2,9 +2,9 @@
   "schema": "cos-heartbeat.v1",
   "agent": "cos",
   "writer": "Chief of Staff (Grok Bot)",
-  "last_beat_utc": "2026-10-16T22:31:30Z",
+  "last_beat_utc": "2026-10-16T22:43:30Z",
   "mode": "normal",
   "seat": "cos",
   "handoffs": [],
-  "note": "MLV-App #469 r2 50bf8eb5 (FLEET-FOLD-STANDARD-1): not-merge-ready (legs 0/2, CI pending). r1 B1 and I1-I5 addressed; r1 ask closed by factory ACK. New Improvements I6-I9 (fold-is-a-disposition F2/F3/F4 gaps, sweep alarm starts no fold, S6 vs R14.8/R15.5, cos-feedback in check output). Ask 6225926283."
+  "note": "MLV-App #470 r2 35dca646 (COS-CONCERN-CHANNEL-1): not-merge-ready on gates only (legs 0/2, CI pending), no Blocker. r1 B1, I1, I3, I4, N1 addressed; new I5 (duty-line gate is prefix plus wildcard) and N2. Channel ratified per Layi: duty line in cos-feedback/README.md, cos-feedback/mlv-app/concerns.md opened. Ask 6226075419."
 }

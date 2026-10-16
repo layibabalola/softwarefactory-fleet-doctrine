@@ -61,7 +61,11 @@ live `pr-<N>.md` files appear when CoS reviews that board's open work.
 
 ## Writer duties (CoS / Grok Bot only)
 
-- Write only under `cos-feedback/<project>/pr-<N>.md` (or `_example/` for fixtures).
+- Write only under `cos-feedback/<project>/pr-<N>.md`, `cos-feedback/<project>/concerns.md` (or `_example/` for fixtures).
+- The CoS reads `CoS-CONCERN:` PR comments and every `specs/*/cos-concerns.md` each pass.
+- Answer each concern once: an R1 `CoS-CONCERN:` comment on its own PR thread, and an R2 id with one line
+  `<id> ADOPTED|DISTINGUISHED|NEEDS-INFO <reason>` in `cos-feedback/<project>/concerns.md`. Open = no answer
+  line and not expired, derived and never stored. Ratified by Layi 2026-10-16 (MLV-App #470).
 - Populate header fields per [`SCHEMA.md`](SCHEMA.md) (`schema: cos-feedback.v1`, …).
 - Prefer concrete, actionable blockers and improvements over prose.
 - One rewrite per reviewed head; do not spam identical content.
