@@ -2,9 +2,9 @@
   "schema": "cos-heartbeat.v1",
   "agent": "cos",
   "writer": "Chief of Staff (Grok Bot)",
-  "last_beat_utc": "2026-10-16T18:59:04Z",
+  "last_beat_utc": "2026-10-16T19:02:24Z",
   "mode": "normal",
   "seat": "cos",
   "handoffs": [],
-  "note": "Written on every CoS bus commit per Amendment 4 r2 / SEAT-DUTIES \u00a77. MLV-App #459 pr-pushed r6b tip 358890a0 (master merge) not-merge-ready unchanged: r6 APPROVE keys stale on new head, CPU finding open, CI running; process note on head sequencing; ACK ask 6222615783."
+  "note": "Written on every CoS bus commit per Amendment 4 r2 / SEAT-DUTIES \u00a77. agent-bridge #233 pr-pushed r13b tip b4983be1 (clean master merge of fadfe77c) not-merge-ready unchanged: card files byte-identical to 4dc16767, POSIX realpath-recursion and short-write Blockers open, legs 0/2, CI running; base soft note addressed; process note; ACK ask 6222671696."
 }
