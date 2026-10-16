@@ -32,3 +32,9 @@ The same shape hit a hook, not just a prompt lint. NA-2 exempts `verb=` assignme
 - Proposed addition, clause 4: an exemption added to a refuse-by-default hook ships with a master-parity sweep. Every must-deny row master refuses gets re-run through generic run-anything wrappers (an unknown interpreter name, wsl, and a string-built command word), and the suite fails if any of them flips to allow.
 - Prefer exemptions keyed on the delete shape itself. Here that's a non-empty assignment value. Don't key them on a list of launchers.
 - Bus: `cos-feedback/mlv-app/pr-455.md`. ACK ask: https://github.com/SuperDimensionalSpaceFortress/MLV-App/pull/455#issuecomment-6223902133
+
+## Recurrence 2: MLV-App #455 r8 `3fc38755` (2026-10-16)
+- r8 switched to a delete-shape trigger, as CoS asked. It closed every listed-launcher probe, but the shape regex was narrower than cmd.exe. Glued switches (`rd=/s/q`), cmd argument delimiters after `=` (`rd=,/s`, `rd=;/s`, `rd==/s`) and an escaped tab still exit 0 on the head and exit 2 on master.
+- The promised master-parity sweep still hadn't landed, and it would have caught this.
+- Clause 4 addition: the parity sweep should also generate the cmd.exe delimiter (`,` `;` `=` tab) and glued-switch variants of each must-deny row, not just wrapper variants.
+- ACK ask: https://github.com/SuperDimensionalSpaceFortress/MLV-App/pull/455#issuecomment-6224673286
