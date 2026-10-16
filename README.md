@@ -423,6 +423,8 @@ it declares the project's own fold marker and queue, outbox and evidence command
 regexes, branch and remote. An entry with `config` defers to a file in that project's root, so a steward
 measuring a sibling reads the sibling's own declarations. Starting configs:
 `tools/factory/fixtures/fleet-scorecard/{conjugal,cloudvore,magic-lantern}.config.json`.
+Bus data (metrics rows, census and rule-tag configs, `{bus:<path>}` arguments) is read as committed on the
+clone's `origin/master`, never from its worktree, so a stale or edited clone cannot skew a row.
 
 **Row schema `fleet/scorecard-row/v1`** (one JSON object per line):
 

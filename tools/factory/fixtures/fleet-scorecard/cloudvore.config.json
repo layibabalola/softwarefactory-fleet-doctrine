@@ -11,7 +11,7 @@
     "pinned": "check-evidence-dumps",
     "args": [
       "--config",
-      "{bus}/tools/factory/fixtures/check-evidence-dumps/cloudvore.config.json",
+      "{bus:tools/factory/fixtures/check-evidence-dumps/cloudvore.config.json}",
       "--repo",
       "{root}",
       "--tree",

@@ -17,7 +17,7 @@
   "$defs": {
     "source": {
       "type": "object",
-      "description": "How a count is produced. pinned = a bus tool run through the executor's pin-runner (Law 1); argv = a project command run with cwd <root>. {root}, {bus}, {python} are substituted. Parse with json (dot path) or regex (group 1) + zero_regex.",
+      "description": "How a count is produced. pinned = a bus tool run through the executor's pin-runner (Law 1); argv = a project command run with cwd <root>. {root}, {bus} (the clone path), {bus:<path>} (that file as committed on the clone origin/master, materialized in a temp dir) and {python} are substituted. Parse with json (dot path) or regex (group 1) + zero_regex.",
       "properties": {
         "pinned": {"type": "string"},
         "args": {"type": "array", "items": {"type": "string"}},

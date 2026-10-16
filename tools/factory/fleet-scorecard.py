@@ -115,9 +115,33 @@ class Ctx:
         # project's pins (pin_stale). They differ when one project's steward measures a sibling.
         self.root, self.bus, self.pins, self.config = root, bus, pins, config
         self.own_pins = own_pins or pins
+        self._data: Path | None = None
+
+    def bus_file(self, rel: str) -> Path | None:
+        """A bus data file as committed on the clone's origin/master, materialized in a private temp dir.
+        The clone's own worktree may be stale or edited; the published line is what the fleet reads."""
+        if not self.bus:
+            return None
+        if self._data is None:
+            self._data = Path(tempfile.mkdtemp(prefix="fleet-scorecard-data-"))
+        out = self._data / rel
+        if out.is_file():
+            return out
+        p = subprocess.run(["git", "--no-optional-locks", "-C", str(self.bus), "show", f"refs/remotes/origin/master:{rel}"],
+                           capture_output=True, timeout=TIMEOUT)
+        if p.returncode != 0:
+            return None
+        out.parent.mkdir(parents=True, exist_ok=True)
+        out.write_bytes(p.stdout)
+        return out
+
+    def cleanup(self):
+        if self._data:
+            shutil.rmtree(self._data, ignore_errors=True)
 
     def render(self, parts) -> str:
-        subs = [(str(p), tag) for p, tag in ((self.pins.parent if self.pins else None, "<pins>"),
+        subs = [(str(p), tag) for p, tag in ((self._data, "<bus@origin/master>"),
+                                             (self.pins.parent if self.pins else None, "<pins>"),
                                              (self.own_pins.parent if self.own_pins and self.own_pins != self.pins
                                               else None, "<own-pins>"),
                                              (self.bus, "<bus>"), (self.config, "<config>"),
@@ -170,6 +194,7 @@ def pinned_argv(ctx: Ctx, tool: str) -> list[str] | None:
 def source_argv(ctx: Ctx, spec: dict) -> tuple[list[str] | None, str | None]:
     """A config source spec -> (argv, error). {"pinned": tool, "args": [...]} or {"argv": [...]}."""
     def sub(a):
+        a = re.sub(r"\{bus:([^}]+)\}", lambda m: str(ctx.bus_file(m.group(1)) or m.group(0)), str(a))
         return str(a).replace("{root}", str(ctx.root)).replace("{bus}", str(ctx.bus or "")).replace(
             "{python}", sys.executable)
     if spec.get("pinned"):
@@ -233,8 +258,10 @@ def f_tool_census(ctx: Ctx, proj: dict) -> dict:
         return field(cmd="pinned:tool-census", error="NOT_PINNED")
     if not ctx.bus:
         return field(cmd="pinned:tool-census", error="ABSENT: no bus clone")
-    argv = pre + ["--json", "--config", str(ctx.bus / "tools" / "tool-census.config.json"),
-                  "--baseline", str(ctx.bus / "metrics" / "tool-census-baseline.json")]
+    cfg, base = ctx.bus_file("tools/tool-census.config.json"), ctx.bus_file("metrics/tool-census-baseline.json")
+    if cfg is None:
+        return field(cmd="pinned:tool-census", error="ABSENT: no tool-census config on bus origin/master")
+    argv = pre + ["--json", "--config", str(cfg)] + (["--baseline", str(base)] if base else [])
     cmd = ctx.render(argv)
     try:
         p = run_cmd(argv, ctx.bus)
@@ -245,8 +272,8 @@ def f_tool_census(ctx: Ctx, proj: dict) -> dict:
     copies = [c for f in rep.get("families") or [] for c in f.get("copies") or [] if c.get("root") == name]
     baseline = None
     try:
-        baseline = json.loads((ctx.bus / "metrics" / "tool-census-baseline.json").read_text(encoding="utf-8")).get("total")
-    except (OSError, ValueError):
+        baseline = json.loads(base.read_text(encoding="utf-8")).get("total")
+    except (OSError, ValueError, AttributeError):
         pass
     return field({"project_copies": len([c for c in copies if not c.get("canonical")]),
                   "fleet_total": rep.get("total"), "baseline_total": baseline,
@@ -261,7 +288,7 @@ def f_rule_tags(ctx: Ctx, proj: dict) -> dict:
     pre = pinned_argv(ctx, "check-rule-tags")
     if pre is None:
         return field(cmd="pinned:check-rule-tags", error="NOT_PINNED")
-    cfg = (ctx.root / rt["config"]) if rt.get("config") else (ctx.bus / "tools" / "rule-tags.config.json" if ctx.bus else None)
+    cfg = (ctx.root / rt["config"]) if rt.get("config") else ctx.bus_file("tools/rule-tags.config.json")
     if cfg is None or not cfg.is_file():
         return field(cmd="pinned:check-rule-tags", error="NOT_CONFIGURED: no rule-tags config")
     argv = pre + ["--config", str(cfg), "--project", rt.get("project") or proj["name"], "--root", str(ctx.root),
@@ -281,8 +308,8 @@ def f_rule_tags(ctx: Ctx, proj: dict) -> dict:
 
 
 def f_product_share(ctx: Ctx, proj: dict) -> dict:
-    path = ctx.bus / "metrics" / "product-share-lines.jsonl" if ctx.bus else None
-    cmd = ctx.render(["read", str(path or "<bus>/metrics/product-share-lines.jsonl"),
+    path = ctx.bus_file("metrics/product-share-lines.jsonl")
+    cmd = ctx.render(["read", "<bus@origin/master>/metrics/product-share-lines.jsonl",
                       f"last-row project={proj.get('census_root') or proj['name']}"])
     if path is None or not path.is_file():
         return field(cmd=cmd, error="ABSENT")
@@ -491,6 +518,13 @@ def own_blob(pins: Path | None) -> str | None:
 def build_row(p: dict, root: Path, bus: Path | None, pins: Path | None, cfg_path, cfg_sha, now: dt.datetime,
               own_pins: Path | None = None) -> dict:
     ctx = Ctx(root, bus, pins, cfg_path, own_pins)
+    try:
+        return _build_row(ctx, p, root, bus, pins, cfg_sha, now)
+    finally:
+        ctx.cleanup()
+
+
+def _build_row(ctx: "Ctx", p: dict, root: Path, bus: Path | None, pins: Path | None, cfg_sha, now: dt.datetime) -> dict:
     fields = {
         "tool_census": f_tool_census(ctx, p),
         "rule_tags": f_rule_tags(ctx, p),

@@ -222,6 +222,16 @@ class FieldTests(Fixture):
         self.assertEqual(rows[0]["fields"]["doctrine_fold"]["value"]["queued"], 1)
         self.assertEqual(rows[0]["own_config"], "own.json")
 
+    def test_bus_data_is_read_from_origin_master_not_the_clone_worktree(self):
+        (self.bus / "metrics" / "product-share-lines.jsonl").write_text(
+            json.dumps({"project": "proj", "product_share": 0.99}) + "\n", encoding="utf-8")   # uncommitted edit
+        self.cfg["evidence_dumps"]["args"] = ["--cfg", "{bus:metrics/tool-census-baseline.json}"]
+        self.write_cfg()
+        _, rows, _ = self.run_tool()
+        f = rows[0]["fields"]
+        self.assertEqual(f["product_share"]["value"]["product_share"], 0.2)
+        self.assertIn("<bus@origin/master>/metrics/tool-census-baseline.json", f["evidence_dumps"]["cmd"])
+
     def test_absent_root_is_skipped(self):
         fleet = {"schema": sc.CONFIG_SCHEMA, "projects": [{"name": "proj", "root": str(self.root)},
                                                           {"name": "gone", "root": str(self.tmp / "nope")}]}
