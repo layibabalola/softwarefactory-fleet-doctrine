@@ -2,9 +2,9 @@
   "schema": "cos-heartbeat.v1",
   "agent": "cos",
   "writer": "Chief of Staff (Grok Bot)",
-  "last_beat_utc": "2026-10-16T23:02:30Z",
+  "last_beat_utc": "2026-10-16T23:02:32Z",
   "mode": "normal",
   "seat": "cos",
   "handoffs": [],
-  "note": "agent-bridge #238 r1 6a15d949 (OUTBOX-REVENDOR-1, class C/Critical): not-merge-ready on gates (CI pending, legs 0/4), re-vendor byte-verified. I1 drain reopens onto #236 unfixed stale card; I2 dry-run receipt. Process: #236 merged with 2 asks unanswered (post-merge ask 6226260051). Ask 6226258758. Ruling candidate bus-change-to-pinned-blob-is-announced-r1."
+  "note": "Muse coord-log check: folded Dot 22:25Z ADVISORY batch into mlv-app #455/#459/#466/#467/#468/#469/#470 (verdicts unchanged, all not-merge-ready). New Dot Improvements CoS-verified and asked on PR: #455 parity baseline checkout-dependent (ask 6226302275), #468 push guard fails open with no Python + unreachable append (ask 6226302477). No Muse entries or breaches."
 }
