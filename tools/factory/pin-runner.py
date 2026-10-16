@@ -468,13 +468,22 @@ def cmd_install(args: argparse.Namespace, _rest: list[str]) -> int:
     before = json.dumps(pins, sort_keys=True)
     bus = find_bus(args, pins, pfile)
     commit = resolve_commit(bus, args.commit)
+    # Law 1 on the installer itself: before anything is read from the registry or written, the bytes RUNNING
+    # this install and the bytes it will vendor must both be the reviewed blob at --commit (git's own object id).
+    want = git(bus, "rev-parse", "--verify", f"{commit}:{RUNNER_BUS_PATH}").stdout.decode().strip()
+    if not HEX40.match(want):
+        raise Refused(f"{commit[:12]} has no {RUNNER_BUS_PATH}")
+    if blob_id(own_bytes()) != want:
+        raise Refused(f"this running pin-runner.py is not byte-identical to {commit[:12]}:{RUNNER_BUS_PATH}; install only runs "
+                      f"from the reviewed blob: git -C <bus> show {commit[:12]}:{RUNNER_BUS_PATH} > factory-pins/pin-runner.py, "
+                      f"then python factory-pins/pin-runner.py install ...")
     reg = registry_at(bus, commit)
     if args.tool not in reg:
         raise Refused(f"unknown tool {args.tool!r}; the registry at {commit[:12]} lists: {', '.join(sorted(reg)) or '(none)'}")
     r = reg[args.tool]
     rb = git(bus, "cat-file", "blob", f"{commit}:{RUNNER_BUS_PATH}")
-    if rb.returncode != 0:
-        raise Refused(f"{commit[:12]} has no {RUNNER_BUS_PATH}")
+    if rb.returncode != 0 or blob_id(rb.stdout) != want:
+        raise Refused(f"the bus returned bytes for {commit[:12]}:{RUNNER_BUS_PATH} that are not object {want[:12]}; nothing vendored")
     vendored = pfile.parent / "pin-runner.py"
     have = vendored.read_bytes().replace(b"\r\n", b"\n") if vendored.is_file() else None
     rec = pins.get("runner")
@@ -497,6 +506,10 @@ def cmd_install(args: argparse.Namespace, _rest: list[str]) -> int:
     pfile.parent.mkdir(parents=True, exist_ok=True)
     if vendor:
         vendored.write_bytes(rb.stdout)
+        wrote = vendored.read_bytes().replace(bytes([13, 10]), bytes([10]))
+        if blob_id(wrote) != want or hashlib.sha256(wrote).hexdigest() != hashlib.sha256(rb.stdout).hexdigest():
+            vendored.unlink(missing_ok=True)
+            raise Refused(f"{vendored} does not hold the reviewed runner after writing (object {want[:12]}); removed")
     if adopt:
         pins["runner"] = runner_record(commit, rb.stdout)
     if args.bus:

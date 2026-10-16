@@ -319,6 +319,77 @@ class Install(unittest.TestCase):
         self.assertTrue(self.runner.read_bytes().endswith(b"# local edit\n"))
         self.assertFalse(self.pins.exists())
 
+    def test_tampered_running_runner_refuses_before_writing_anything(self):
+        # Law 1 on the installer: the bytes RUNNING install must be the reviewed blob at --commit.
+        edited = (RUNNER.read_bytes().replace(b"\r\n", b"\n")) + b"\nprint('UNREVIEWED INSTALLER CODE')\n"
+        tampered = self.elsewhere / "tampered-runner.py"
+        tampered.write_bytes(edited)
+        p = self.sh(tampered, "install", "echo", "--commit", self.c1, "--reviewer", "t", "--reason", "r",
+                    "--project-root", str(self.proj), "--bus", str(self.bus))
+        self.assertEqual(p.returncode, 2)
+        self.assertNotIn("UNREVIEWED", p.stdout)
+        self.assertIn("not byte-identical", p.stderr)
+        self.assertFalse((self.proj / "factory-pins").exists())
+        # The reviewed repro: a bus WORKTREE that moved past (or edits) the reviewed commit is not the installer.
+        bus_runner = self.bus / "tools" / "factory" / "pin-runner.py"
+        bus_runner.write_bytes(edited)
+        p = self.install("echo")
+        self.assertEqual((p.returncode, "UNREVIEWED" in p.stdout), (2, False))
+        self.assertFalse((self.proj / "factory-pins").exists())
+
+    def _module(self):
+        import importlib.util
+        spec = importlib.util.spec_from_file_location("pin_runner_under_test", RUNNER)
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        return mod
+
+    def _args(self, mod, **kw):
+        import argparse
+        return argparse.Namespace(tool="echo", project_root=str(self.proj), pins=None, bus=str(self.bus), commit=self.c1,
+                                  reviewer="t", reason="r", date="2026-10-16", **kw)
+
+    def test_corrupted_object_bytes_refuse_and_vendor_nothing(self):
+        mod = self._module()
+        real = mod.git
+        target = ("cat-file", "blob", f"{self.c1}:tools/factory/pin-runner.py")
+
+        def corrupt(repo, *a, **kw):
+            p = real(repo, *a, **kw)
+            return subprocess.CompletedProcess(p.args, 0, p.stdout + b"\n# substituted object bytes\n", p.stderr) if a == target else p
+        mod.git = corrupt
+        with self.assertRaises(mod.Refused) as cm:
+            mod.cmd_install(self._args(mod), [])
+        self.assertIn("not object", str(cm.exception))
+        self.assertFalse((self.proj / "factory-pins").exists())
+        mod.git = real  # control: the same call without the fault installs
+        import contextlib, io
+        with contextlib.redirect_stdout(io.StringIO()):
+            self.assertEqual(mod.cmd_install(self._args(mod), []), 0)
+        self.assertTrue(self.runner.is_file())
+
+    def test_vendored_file_that_does_not_read_back_as_the_blob_is_removed(self):
+        mod = self._module()
+        real_write = Path.write_bytes
+        Path.write_bytes = lambda self_, data: real_write(self_, b"print('swapped')\n")
+        try:
+            with self.assertRaises(mod.Refused) as cm:
+                mod.cmd_install(self._args(mod), [])
+        finally:
+            Path.write_bytes = real_write
+        self.assertIn("does not hold the reviewed runner", str(cm.exception))
+        self.assertFalse(self.runner.exists())
+        self.assertFalse(self.pins.exists())
+
+    def test_bootstrap_from_the_reviewed_blob_installs(self):
+        self.runner.parent.mkdir()
+        self.runner.write_bytes(git_blob(self.bus, self.c1, "tools/factory/pin-runner.py"))  # git show <sha>:path > factory-pins/pin-runner.py
+        p = self.sh(self.runner, "install", "echo", "--commit", self.c1, "--reviewer", "t", "--reason", "r",
+                    "--bus", str(self.bus), cwd=self.proj)
+        self.assertEqual(p.returncode, 0, p.stderr)
+        self.assertIn("adopted runner", p.stdout)
+        self.assertEqual(self.sh(self.runner, "verify", cwd=self.proj).returncode, 0)
+
     def test_list_prints_the_registry(self):
         p = self.sh(self.bus / "tools" / "factory" / "pin-runner.py", "list", "--bus", str(self.bus))
         self.assertEqual(p.returncode, 0, p.stderr)
