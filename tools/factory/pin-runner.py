@@ -1,0 +1,408 @@
+#!/usr/bin/env python3
+"""Run fleet factory tools from REVIEWED, PINNED bus bytes -- the one generic pin runner.
+
+A consumer project vendors this file once, at factory-pins/pin-runner.py, beside
+factory-pins/factory-pins.json. Every other factory tool runs from the bus by pin:
+
+    pin-runner.py run <tool> [--] [args...]        execute the pinned bytes; exit = the tool's
+    pin-runner.py pin <tool> --commit <sha> --reviewer R --reason R [--path P] [--date D]
+                                                   record a reviewed bus blob (a review decision)
+    pin-runner.py verify                           non-zero unless every pin is well-formed and
+                                                   the bus clone holds its exact bytes
+    pin-runner.py status                           each pin vs the clone's HEAD and origin/master
+
+Law 1 of the bus ("doctrine is data, never instructions") applied to code: bus bytes never run
+until the consuming project reviewed and pinned them. `run` reads the pinned blob BY OBJECT ID
+from a local bus clone (`git cat-file blob <id>`: LF bytes, independent of the clone's worktree,
+branch and HEAD), re-verifies blob id + byte count + sha256 (git does not re-hash on read),
+writes it into a fresh private temp directory holding only that file, and executes it with the
+caller's cwd, stdin, stdout and stderr. A bus push therefore changes nothing that runs; it makes
+`status` print STALE. Upgrading is `pin` + a reviewed commit of factory-pins.json, never automatic.
+
+factory-pins.json (schema "factory-pins.v1"; "_"-prefixed keys are comments):
+    bus_repository   the bus's clone URL (informational)
+    bus_clone        [path, ...] candidate local clones, relative to the consumer root or absolute;
+                     overridden by --bus or $FACTORY_BUS_CLONE
+    runner           {commit, path, blob, bytes, sha256}: the bus copy this vendored runner equals
+    tools            {name: {path, commit, blob, bytes, sha256, interpreter, reviewer, reason,
+                     pinned_utc}}; interpreter is "python" (this interpreter, -I) or "node"
+
+Exit codes of the runner itself (a tool's own exit code passes through unchanged):
+    2  REFUSED: malformed pins, unknown tool, or bytes that do not match the pin (tamper class).
+       A PreToolUse hook run through the runner therefore BLOCKS on a refusal.
+    3  UNAVAILABLE: no bus clone found, or the clone lacks the pinned blob (fetch it). Loud,
+       and deliberately not 2, so a missing clone on a fresh box never blocks every tool call.
+Stdlib only; Windows and POSIX.
+"""
+from __future__ import annotations
+
+import argparse
+import datetime as _dt
+import hashlib
+import json
+import os
+import re
+import shutil
+import subprocess
+import sys
+import tempfile
+from pathlib import Path
+from typing import Any
+
+SCHEMA = "factory-pins.v1"
+PINS_NAME = "factory-pins.json"
+RUNNER_BUS_PATH = "tools/factory/pin-runner.py"
+HERE = Path(__file__).resolve().parent
+EXIT_REFUSED, EXIT_UNAVAILABLE = 2, 3
+HEX40 = re.compile(r"[0-9a-f]{40}\Z")
+HEX64 = re.compile(r"[0-9a-f]{64}\Z")
+NAME = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]{0,63}\Z")
+TOOL_KEYS = {"path", "commit", "blob", "bytes", "sha256", "interpreter", "reviewer", "reason", "pinned_utc"}
+INTERPRETERS = ("python", "node")
+MAX_PINS_BYTES, MAX_TOOL_BYTES = 256 * 1024, 4 * 1024 * 1024
+
+
+class Refused(Exception):
+    pass
+
+
+class Unavailable(Exception):
+    pass
+
+
+def blob_id(data: bytes) -> str:
+    return hashlib.sha1(b"blob %d\0" % len(data) + data).hexdigest()
+
+
+def _no_dupes(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
+    out: dict[str, Any] = {}
+    for k, v in pairs:
+        if k in out:
+            raise Refused(f"pins: duplicate key {k!r}")
+        out[k] = v
+    return out
+
+
+def git(repo: Path, *args: str, timeout: int = 30) -> subprocess.CompletedProcess:
+    env = {**os.environ, "GIT_OPTIONAL_LOCKS": "0", "GIT_TERMINAL_PROMPT": "0"}
+    return subprocess.run(["git", "--no-optional-locks", "-C", str(repo), *args], capture_output=True,
+                          timeout=timeout, env=env)
+
+
+# --- pins file ---------------------------------------------------------------------------------
+def pins_path(args: argparse.Namespace) -> Path:
+    return Path(args.pins).resolve() if args.pins else HERE / PINS_NAME
+
+
+def consumer_root(pins_file: Path) -> Path:
+    """The consumer repository: the git toplevel above the pins file, else its parent's parent."""
+    try:
+        p = git(pins_file.parent, "rev-parse", "--show-toplevel", timeout=10)
+        if p.returncode == 0 and p.stdout.strip():
+            return Path(p.stdout.decode().strip())
+    except (OSError, subprocess.TimeoutExpired):
+        pass
+    return pins_file.parent.parent
+
+
+def load_pins(path: Path, raw: bytes | None = None) -> dict[str, Any]:
+    if raw is None:
+        try:
+            raw = path.read_bytes()
+        except OSError:
+            raise Refused(f"pins unreadable at {path}") from None
+    if len(raw) > MAX_PINS_BYTES:
+        raise Refused("pins: over size cap")
+    try:
+        pins = json.loads(raw.decode("utf-8-sig"), object_pairs_hook=_no_dupes,
+                          parse_constant=lambda c: (_ for _ in ()).throw(Refused("pins: non-finite number")))
+    except (UnicodeError, json.JSONDecodeError) as exc:
+        raise Refused(f"pins: invalid JSON ({exc.__class__.__name__})") from exc
+    if not isinstance(pins, dict) or pins.get("schema") != SCHEMA:
+        raise Refused(f"pins: schema must be {SCHEMA!r}")
+    tools = pins.get("tools")
+    if not isinstance(tools, dict):
+        raise Refused("pins: 'tools' must be an object")
+    for name, t in tools.items():
+        if name.startswith("_"):
+            continue
+        validate_tool(name, t)
+    return pins
+
+
+def validate_tool(name: str, t: Any) -> None:
+    if not NAME.match(name):
+        raise Refused(f"pins: bad tool name {name!r}")
+    if not isinstance(t, dict) or {k for k in t if not k.startswith("_")} != TOOL_KEYS:
+        raise Refused(f"pins: tool {name!r} key set must be exactly {sorted(TOOL_KEYS)}")
+    p = t["path"]
+    if (not isinstance(p, str) or not p or p.startswith(("/", "\\")) or ":" in p or "\\" in p
+            or any(seg in ("", ".", "..") for seg in p.split("/"))):
+        raise Refused(f"pins: tool {name!r} path must be a plain bus-relative POSIX path")
+    if not (HEX40.match(str(t["commit"])) and HEX40.match(str(t["blob"])) and HEX64.match(str(t["sha256"]))
+            and type(t["bytes"]) is int and 0 < t["bytes"] <= MAX_TOOL_BYTES):
+        raise Refused(f"pins: tool {name!r} has a malformed commit/blob/bytes/sha256")
+    if t["interpreter"] not in INTERPRETERS:
+        raise Refused(f"pins: tool {name!r} interpreter must be one of {INTERPRETERS}")
+    for k in ("reviewer", "reason", "pinned_utc"):
+        if not isinstance(t[k], str) or not t[k].strip():
+            raise Refused(f"pins: tool {name!r} needs a non-empty {k} (a pin is a review decision)")
+
+
+def tool_pin(pins: dict[str, Any], name: str) -> dict[str, Any]:
+    t = pins["tools"].get(name)
+    if t is None or name.startswith("_"):
+        known = ", ".join(sorted(k for k in pins["tools"] if not k.startswith("_"))) or "(none)"
+        raise Refused(f"no pin for tool {name!r}; pinned: {known}")
+    return t
+
+
+def check_bytes(name: str, t: dict[str, Any], data: bytes) -> None:
+    if len(data) != t["bytes"] or hashlib.sha256(data).hexdigest() != t["sha256"] or blob_id(data) != t["blob"]:
+        raise Refused(f"{name}: bytes do not match the pin (blob {t['blob'][:12]}, {t['bytes']} bytes)")
+
+
+# --- bus clone ---------------------------------------------------------------------------------
+def find_bus(args: argparse.Namespace, pins: dict[str, Any], root: Path) -> Path:
+    # An explicit choice is authoritative: --bus, else $FACTORY_BUS_CLONE, else the pins' candidates.
+    tried = []
+    listed = pins.get("bus_clone", [])
+    cands = ([args.bus] if args.bus else [os.environ["FACTORY_BUS_CLONE"]] if os.environ.get("FACTORY_BUS_CLONE")
+             else listed if isinstance(listed, list) else [listed])
+    for c in cands:
+        if not isinstance(c, str) or not c:
+            continue
+        p = Path(os.path.expanduser(c))
+        p = p if p.is_absolute() else (root / p)
+        tried.append(str(p))
+        if (p / ".git").exists():
+            return p.resolve()
+    raise Unavailable("no bus clone found (tried: " + ("; ".join(tried) or "nothing") +
+                      "). Pass --bus, set FACTORY_BUS_CLONE, or list one in factory-pins.json bus_clone.")
+
+
+def pinned_bytes(bus: Path, name: str, t: dict[str, Any]) -> bytes:
+    try:
+        p = git(bus, "cat-file", "blob", t["blob"])
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        raise Unavailable(f"git cannot read the pinned blob ({exc.__class__.__name__})") from None
+    if p.returncode != 0:
+        raise Unavailable(f"{name}: pinned blob {t['blob'][:12]} is not in the bus clone {bus} (git -C <clone> fetch origin)")
+    check_bytes(name, t, p.stdout)
+    return p.stdout
+
+
+def blob_at(bus: Path, ref: str, path: str) -> str:
+    try:
+        p = git(bus, "rev-parse", "--verify", "--quiet", f"{ref}:{path}", timeout=10)
+    except (OSError, subprocess.TimeoutExpired):
+        return "(unreadable)"
+    return p.stdout.decode().strip() if p.returncode == 0 else "(absent)"
+
+
+# --- commands ----------------------------------------------------------------------------------
+def child_env() -> dict[str, str]:
+    # NODE_OPTIONS / NODE_PATH and PYTHON* would load code the pin never saw (python also gets -I).
+    env = {k: v for k, v in os.environ.items() if not k.upper().startswith(("NODE_", "PYTHON"))}
+    env["NoDefaultCurrentDirectoryInExePath"] = "1"
+    return env
+
+
+def cmd_run(args: argparse.Namespace, rest: list[str]) -> int:
+    if not rest:
+        raise Refused("run needs a tool name")
+    name, tool_args = rest[0], rest[1:]
+    if tool_args[:1] == ["--"]:
+        tool_args = tool_args[1:]
+    pins = load_pins(pins_path(args), read_pins_ref(args))
+    t = tool_pin(pins, name)
+    bus = find_bus(args, pins, consumer_root(pins_path(args)))
+    data = pinned_bytes(bus, name, t)
+    work = Path(tempfile.mkdtemp(prefix="factory-pin-"))
+    try:
+        script = work / Path(t["path"]).name
+        script.write_bytes(data)
+        if [x.name for x in work.iterdir()] != [script.name] or blob_id(script.read_bytes()) != t["blob"]:
+            raise Refused("materialized directory differs from the pin")
+        argv = [sys.executable, "-I", str(script)] if t["interpreter"] == "python" else ["node", str(script)]
+        try:
+            return subprocess.run([*argv, *tool_args], env=child_env()).returncode
+        except OSError as exc:
+            raise Unavailable(f"cannot start {argv[0]} ({exc})") from None
+    finally:
+        shutil.rmtree(work, ignore_errors=True)
+
+
+def read_pins_ref(args: argparse.Namespace) -> bytes | None:
+    """--pins-ref REF: read factory-pins/factory-pins.json from a git ref of the consumer (a pre-push
+    layer judges with the pins on origin/master, so a pushed branch cannot re-pin its own judge)."""
+    if not getattr(args, "pins_ref", None):
+        return None
+    pins_file = pins_path(args)
+    root = consumer_root(pins_file)
+    rel = pins_file.relative_to(root).as_posix() if pins_file.is_relative_to(root) else f"factory-pins/{PINS_NAME}"
+    p = git(root, "show", f"{args.pins_ref}:{rel}")
+    if p.returncode != 0:
+        raise Refused(f"cannot read {args.pins_ref}:{rel} (git fetch origin)")
+    return p.stdout
+
+
+def cmd_pin(args: argparse.Namespace, _rest: list[str]) -> int:
+    if args.tool == "pin-runner":
+        raise Refused("the runner itself is vendored, not run by pin; use `pin-runner.py adopt-runner`")
+    pfile = pins_path(args)
+    pins = load_pins(pfile) if pfile.exists() else {"schema": SCHEMA, "tools": {}}
+    bus = find_bus(args, pins, consumer_root(pfile))
+    old = pins["tools"].get(args.tool, {})
+    path = args.path or old.get("path")
+    if not path:
+        raise Refused(f"new tool {args.tool!r}: pass --path <bus path>")
+    c = git(bus, "rev-parse", "--verify", f"{args.commit}^{{commit}}")
+    if c.returncode != 0:
+        raise Refused(f"not a commit in {bus}: {args.commit}")
+    commit = c.stdout.decode().strip()
+    b = git(bus, "cat-file", "blob", f"{commit}:{path}")
+    if b.returncode != 0:
+        raise Refused(f"{commit[:12]} has no {path}")
+    data = b.stdout
+    entry = {k: v for k, v in old.items() if k.startswith("_")}
+    entry.update({"path": path, "commit": commit, "blob": blob_id(data), "bytes": len(data),
+                  "sha256": hashlib.sha256(data).hexdigest(),
+                  "interpreter": args.interpreter or old.get("interpreter") or ("node" if path.endswith((".mjs", ".js")) else "python"),
+                  "reviewer": args.reviewer, "reason": args.reason,
+                  "pinned_utc": args.date or _dt.datetime.now(_dt.timezone.utc).strftime("%Y-%m-%d")})
+    validate_tool(args.tool, entry)
+    pins["tools"][args.tool] = entry
+    pfile.parent.mkdir(parents=True, exist_ok=True)
+    pfile.write_text(json.dumps(pins, indent=2) + "\n", encoding="utf-8", newline="\n")
+    print(f"PINNED {args.tool}: {path} blob {entry['blob'][:12]} at bus {commit[:12]} -> {pfile}")
+    return 0
+
+
+def own_bytes() -> bytes:
+    # Hash as LF: a CRLF checkout of the vendored copy is the same reviewed bytes.
+    return Path(__file__).read_bytes().replace(b"\r\n", b"\n")
+
+
+def cmd_adopt_runner(args: argparse.Namespace, _rest: list[str]) -> int:
+    """Record which bus commit this vendored runner equals (after copying it from that commit)."""
+    pfile = pins_path(args)
+    pins = load_pins(pfile) if pfile.exists() else {"schema": SCHEMA, "tools": {}}
+    bus = find_bus(args, pins, consumer_root(pfile))
+    c = git(bus, "rev-parse", "--verify", f"{args.commit}^{{commit}}")
+    if c.returncode != 0:
+        raise Refused(f"not a commit in {bus}: {args.commit}")
+    commit = c.stdout.decode().strip()
+    b = git(bus, "cat-file", "blob", f"{commit}:{RUNNER_BUS_PATH}")
+    if b.returncode != 0 or b.stdout != own_bytes():
+        raise Refused(f"this runner is not byte-identical to {commit[:12]}:{RUNNER_BUS_PATH}; copy that blob first")
+    pins["runner"] = {"commit": commit, "path": RUNNER_BUS_PATH, "blob": blob_id(b.stdout), "bytes": len(b.stdout),
+                      "sha256": hashlib.sha256(b.stdout).hexdigest()}
+    pfile.write_text(json.dumps(pins, indent=2) + "\n", encoding="utf-8", newline="\n")
+    print(f"RUNNER {RUNNER_BUS_PATH} blob {pins['runner']['blob'][:12]} at bus {commit[:12]} -> {pfile}")
+    return 0
+
+
+def runner_line(pins: dict[str, Any], bus: Path | None) -> tuple[bool, str]:
+    r = pins.get("runner")
+    data = own_bytes()
+    if not isinstance(r, dict):
+        return False, "runner: no 'runner' record in the pins (run adopt-runner)"
+    if blob_id(data) != r.get("blob") or hashlib.sha256(data).hexdigest() != r.get("sha256"):
+        return False, f"runner: this vendored pin-runner.py differs from the recorded bus blob {str(r.get('blob'))[:12]}"
+    if bus is None:
+        return True, f"runner: vendored copy = bus blob {r['blob'][:12]}"
+    moved = [f"{ref} {got[:8]}" for ref in ("HEAD", "origin/master")
+             if (got := blob_at(bus, ref, RUNNER_BUS_PATH)) != r["blob"]]
+    return True, (f"runner: vendored copy = bus blob {r['blob'][:12]}"
+                  + (f"  *** STALE *** bus moved: {', '.join(moved)}" if moved else "  (current)"))
+
+
+def cmd_verify(args: argparse.Namespace, _rest: list[str]) -> int:
+    pins = load_pins(pins_path(args))
+    bus = find_bus(args, pins, consumer_root(pins_path(args)))
+    bad = 0
+    ok, line = runner_line(pins, bus)
+    bad += not ok
+    print(("VERIFIED " if ok else "DRIFT ") + line)
+    for name, t in sorted(pins["tools"].items()):
+        if name.startswith("_"):
+            continue
+        try:
+            pinned_bytes(bus, name, t)
+            if blob_at(bus, t["commit"], t["path"]) != t["blob"]:
+                raise Refused(f"{name}: commit {t['commit'][:12]} does not carry blob {t['blob'][:12]} at {t['path']}")
+            print(f"VERIFIED {name}: {t['path']} blob {t['blob'][:12]} exact in {bus}")
+        except (Refused, Unavailable) as exc:
+            bad += 1
+            print(f"DRIFT {exc}")
+    return EXIT_REFUSED if bad else 0
+
+
+def cmd_status(args: argparse.Namespace, _rest: list[str]) -> int:
+    pins = load_pins(pins_path(args))
+    try:
+        bus: Path | None = find_bus(args, pins, consumer_root(pins_path(args)))
+    except Unavailable as exc:
+        bus = None
+        print(f"[factory-pins] bus clone UNAVAILABLE: {exc}")
+    print(f"[factory-pins] {runner_line(pins, bus)[1]}")
+    stale = 0
+    for name, t in sorted(pins["tools"].items()):
+        if name.startswith("_"):
+            continue
+        if bus is None:
+            print(f"[factory-pins] {name}: pinned {t['blob'][:12]} (staleness UNKNOWN)")
+            continue
+        moved = [f"{ref} {got[:8]}" for ref in ("HEAD", "origin/master")
+                 if (got := blob_at(bus, ref, t["path"])) != t["blob"]]
+        stale += bool(moved)
+        print(f"[factory-pins] {name}: pinned {t['blob'][:12]} @ bus {t['commit'][:8]} "
+              + (f"*** STALE *** {t['path']} moved: {', '.join(moved)}. The reviewed copy still runs; review "
+                 f"`git -C <bus> diff {t['commit'][:12]}..origin/master -- {t['path']}` then re-pin." if moved else "(current)"))
+    if stale:
+        print(f"[factory-pins] {stale} stale pin(s). Never auto-upgraded: re-pin is a reviewed commit.")
+    return 0
+
+
+def main(argv: list[str] | None = None) -> int:
+    ap = argparse.ArgumentParser(description=__doc__.splitlines()[0], allow_abbrev=False)
+    ap.add_argument("--pins", help=f"the pins file (default: {PINS_NAME} beside this runner)")
+    ap.add_argument("--pins-ref", help="read the pins file from this git ref of the consumer instead of the worktree")
+    ap.add_argument("--bus", help="the local bus clone (data source for pinned blobs)")
+    sub = ap.add_subparsers(dest="cmd", required=True)
+    sub.add_parser("run", help="run <tool> [--] [args...]", add_help=False)
+    p = sub.add_parser("pin", allow_abbrev=False)
+    p.add_argument("tool")
+    p.add_argument("--commit", required=True)
+    p.add_argument("--reviewer", required=True)
+    p.add_argument("--reason", required=True)
+    p.add_argument("--path")
+    p.add_argument("--date")
+    p.add_argument("--interpreter", choices=INTERPRETERS)
+    a = sub.add_parser("adopt-runner", allow_abbrev=False)
+    a.add_argument("--commit", required=True)
+    sub.add_parser("verify")
+    sub.add_parser("status")
+    argv = sys.argv[1:] if argv is None else argv
+    cmds_names = ("run", "pin", "adopt-runner", "verify", "status")
+    # Everything after `run` belongs to the tool, verbatim (argparse must not eat the tool's flags).
+    first = next((i for i, a in enumerate(argv) if a in cmds_names), None)
+    if first is not None and argv[first] == "run":
+        i = first
+        args, rest = ap.parse_args(argv[:i + 1]), argv[i + 1:]
+    else:
+        args, rest = ap.parse_args(argv), []
+    cmds = {"run": cmd_run, "pin": cmd_pin, "adopt-runner": cmd_adopt_runner, "verify": cmd_verify, "status": cmd_status}
+    try:
+        return cmds[args.cmd](args, rest)
+    except Refused as exc:
+        print(f"[factory-pins] *** REFUSED *** {exc}; nothing executed", file=sys.stderr)
+        return EXIT_REFUSED
+    except Unavailable as exc:
+        print(f"[factory-pins] *** UNAVAILABLE *** {exc}; nothing executed", file=sys.stderr)
+        return EXIT_UNAVAILABLE
+
+
+if __name__ == "__main__":
+    sys.exit(main())

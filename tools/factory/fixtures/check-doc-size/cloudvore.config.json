@@ -1,0 +1,107 @@
+{
+  "schema": "factory-check-doc-size.v1",
+  "_what": "Fixture: the Cloudvore tier table (2026-10-16), moved verbatim from its tools/check-doc-size.py. KiB-exact caps; worktree walk (untracked review/ is the scope); CRLF-normalised sizes; the newest dated handoff is entry tier.",
+  "policy": "knowledge/FRAGMENTATION.md",
+  "scan": "worktree",
+  "skip_dirs": [
+    ".git",
+    ".venv",
+    "__pycache__",
+    "bin",
+    "node_modules",
+    "obj"
+  ],
+  "path_domain": "refuse",
+  "measure": "crlf",
+  "tiers": {
+    "index": {
+      "soft": 3072,
+      "hard": 4096,
+      "why": "pointers only; the moment an index explains something it has become a leaf",
+      "globs": [
+        "knowledge/INDEX*.md",
+        "**/INDEX*.md",
+        "**/00-INDEX*.md"
+      ]
+    },
+    "entry": {
+      "soft": 6144,
+      "hard": 8192,
+      "why": "read unconditionally by every cold session; every byte taxes every session",
+      "globs": [
+        "AGENTS.md",
+        "CLAUDE.md",
+        "README.md",
+        "review/RESUME.md",
+        "review/COLLAB.md",
+        "knowledge/FRAGMENTATION.md"
+      ]
+    },
+    "ledger": {
+      "soft": 24576,
+      "hard": 40960,
+      "why": "append-only; roll the CLOSED set to a dated archive at the soft cap, down to ~30%",
+      "globs": [
+        "review/gate-list.md",
+        "review/gate-list-*.md",
+        "review/inbox.md",
+        "review/inbox-*.md",
+        "review/ledger-*.md",
+        "review/HANDOFF-*.md"
+      ]
+    },
+    "leaf": {
+      "soft": 9216,
+      "hard": 12288,
+      "why": "one topic per file; tracked project memory and user-facing docs",
+      "globs": [
+        "knowledge/**",
+        "docs/**"
+      ]
+    },
+    "working": {
+      "soft": 25600,
+      "hard": 40960,
+      "why": "read in full once by one lane: reviews, designs, audits, plans",
+      "globs": [
+        "review/**",
+        "skin-review/**",
+        "*.md"
+      ]
+    }
+  },
+  "tier_order": [
+    "index",
+    "entry",
+    "ledger",
+    "leaf",
+    "working"
+  ],
+  "fallback_tier": "working",
+  "exempt": [
+    ".claude/**",
+    ".codex/**",
+    "review/archive/**",
+    "**/*-archive-*.md",
+    "**/archive/**",
+    "**/*-presplit-*.md",
+    "**/*-snapshot-*.md",
+    "**/presplit-originals/**",
+    "**/presplit-*/**",
+    "**/*-snapshots/**",
+    "**/bin/**",
+    "**/obj/**",
+    "**/node_modules/**",
+    "artifacts/**",
+    "docs/pdf/.venv/**"
+  ],
+  "derived_entry": {
+    "tier": "entry",
+    "dir": "review",
+    "glob": "HANDOFF-*.md",
+    "regex": "^review/HANDOFF-\\d{4}-\\d{2}-\\d{2}.*\\.md$"
+  },
+  "remedy": [
+    "Over the hard cap -> demote the file to an index IN PLACE and move the detail into `<stem>-<slug>.md` siblings."
+  ]
+}

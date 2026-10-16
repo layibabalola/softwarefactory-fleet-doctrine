@@ -324,3 +324,25 @@ node tools/Get-ProductThroughput.tests.mjs                                      
 ```
 
 Fleet runs are appended to `metrics/product-share-lines.jsonl`.
+
+## Factory tools: one copy, run by pin (`tools/factory/`, `hooks/`, added 2026-10-16)
+
+Every member used to hand-build its own factory: `check-doc-size.py` was three divergent rewrites
+(Conjugal, Cloudvore, magic-lantern) and the guards in each project's `CLAUDE.md` were prose. The
+bus now ships the canonical tools and refusing hooks; a project installs them **by pin**, never by copy:
+
+1. Copy `tools/factory/pin-runner.py` once to `factory-pins/pin-runner.py`, then
+   `python factory-pins/pin-runner.py adopt-runner --commit <bus-sha>`.
+2. Pin each tool you reviewed:
+   `python factory-pins/pin-runner.py pin <tool> --commit <bus-sha> --path <bus path> --reviewer <who> --reason <why>`
+   (`check-doc-size` = `tools/factory/check-doc-size.py`; `pre-push-ff-only`, `exact-path-add`,
+   `git-optional-locks` under `hooks/`).
+3. Keep the tool's config in your repo (start from `tools/factory/fixtures/check-doc-size/`) and call
+   `python factory-pins/pin-runner.py run <tool> -- <args>` wherever the old copy ran. Prove identical
+   exit codes on your live tree before deleting the copy.
+4. `verify` before committing pins; `status` reports `*** STALE ***` when the bus moves. Re-pinning is
+   a reviewed commit, never automatic (law 1).
+
+Procedure: [`tools/factory/README.md`](tools/factory/README.md) and [`hooks/README.md`](hooks/README.md).
+Candidate: [`ruling-candidates/factory-tool-pin-r1.md`](ruling-candidates/factory-tool-pin-r1.md).
+`tools/tool-census.mjs` counts the copies still standing; the count may only fall.

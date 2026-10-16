@@ -1,0 +1,96 @@
+{
+  "schema": "factory-check-doc-size.v1",
+  "_what": "Fixture: the Conjugal tier table (2026-10-16). Reasons neutralised; globs, caps, baseline and deferral patterns verbatim.",
+  "policy": "coordination/doc-fragmentation-policy.md",
+  "scan": "git-tracked",
+  "measure": "disk",
+  "path_domain": "lenient",
+  "tiers": {
+    "entry": {
+      "soft": 8000,
+      "hard": 12000,
+      "why": "read by every cold session or every lane seating; every byte taxes every session",
+      "globs": [
+        "CLAUDE.md",
+        "README.md",
+        "coordination/RESUME.md",
+        "coordination/doc-fragmentation-policy.md",
+        "coordination/LANE-BOOTSTRAPS.md",
+        "coordination/prompts/PROMPT-*-lane-bootstrap.md",
+        "**/README.md",
+        "**/INDEX.md",
+        "**/00-INDEX*.md",
+        "docs/00-overview/*.md"
+      ]
+    },
+    "working": {
+      "soft": 25000,
+      "hard": 40000,
+      "why": "read in full by one lane when it picks the item up",
+      "globs": [
+        "coordination/**",
+        "docs/**",
+        "mockups/**",
+        "templates/**",
+        "dashboard/**",
+        "dashboard-design-pack/**",
+        "integrations/**",
+        "branding/**",
+        "ops/**",
+        "scripts/**",
+        "*.md"
+      ]
+    },
+    "ledger": {
+      "soft": 30000,
+      "hard": 60000,
+      "why": "append-only; the live head is capped and the tail rotates to a dated archive",
+      "globs": [
+        "coordination/HUB.md",
+        "coordination/lanes/*.md",
+        "coordination/comms/*.md",
+        "coordination/product/HUB.md",
+        "coordination/product/lanes/*.md",
+        "coordination/product/comms/*.md"
+      ]
+    }
+  },
+  "tier_order": [
+    "entry",
+    "ledger",
+    "working"
+  ],
+  "fallback_tier": "working",
+  "exempt": [
+    "completed/**",
+    "dead/**",
+    "paused/**",
+    "inbox/**",
+    "**/fixtures/**",
+    "**/test-fixtures/**",
+    "samples/**",
+    "**/*-archive-*.md",
+    "**/archive/**",
+    "**/archived-specs/**"
+  ],
+  "_baseline": "Governed files already over their hard cap on adoption day (2026-07-27), at that day's byte count. May shrink, may not grow; delete the entry when the file is under its cap. Raising a number is the cap-weakening the policy forbids.",
+  "baseline": {
+    "coordination/prompts/PROMPT-fable-lane-bootstrap.md": 24894,
+    "coordination/prompts/PROMPT-sol-lane-bootstrap.md": 16142,
+    "docs/00-overview/03-glossary.md": 17278,
+    "coordination/task-hub-retention-first-apply-spec.md": 71352,
+    "coordination/task-hub-retention-v1-spec.md": 69552
+  },
+  "_deferred": "Measured and printed, excluded from exit status; each names the gate that releases it (policy section 2).",
+  "deferred": {
+    "coordination/HUB.md": "append-only ledger; compaction is owner-gated",
+    "coordination/lanes/*.md": "append-only ledger; compaction is owner-gated",
+    "coordination/comms/*.md": "append-only ledger; compaction is owner-gated",
+    "coordination/product/HUB.md": "append-only ledger; compaction is owner-gated",
+    "coordination/product/lanes/*.md": "append-only ledger; compaction is owner-gated",
+    "coordination/product/comms/*.md": "append-only ledger; compaction is owner-gated"
+  },
+  "remedy": [
+    "Over the hard cap -> demote the file to an index in place; see the policy."
+  ]
+}

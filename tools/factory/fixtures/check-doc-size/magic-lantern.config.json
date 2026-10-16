@@ -1,0 +1,75 @@
+{
+  "schema": "factory-check-doc-size.v1",
+  "_what": "Fixture: the magic-lantern tier table (2026-10-16), moved verbatim from its tools/roadmap/check-doc-size.py. Markdown inherited from upstream (present on origin/master) is exempt.",
+  "policy": "roadmap/doc-fragmentation-policy.md",
+  "scan": "git-tracked",
+  "measure": "disk",
+  "path_domain": "lenient",
+  "exempt_ref": "origin/master",
+  "tiers": {
+    "entry": {
+      "soft": 8000,
+      "hard": 12000,
+      "why": "read unconditionally by every cold session; every byte is a tax on every session",
+      "globs": [
+        "CLAUDE.md",
+        "README.md",
+        "roadmap/HANDOFF.md",
+        "roadmap/doc-fragmentation-policy.md",
+        "**/README.md",
+        "**/INDEX.md",
+        "**/00-INDEX*.md"
+      ]
+    },
+    "working": {
+      "soft": 25000,
+      "hard": 40000,
+      "why": "read in full by one lane when it picks the item up",
+      "globs": [
+        "roadmap/**",
+        "draft specs/**",
+        "Claude - Implementation Plans/**",
+        "audit-packet/*.md",
+        "prompts/**",
+        "*.md"
+      ]
+    },
+    "ledger": {
+      "soft": 30000,
+      "hard": 60000,
+      "why": "append-only; the live head is capped and the tail rotates to a dated archive",
+      "globs": [
+        "audit-packet/45-workplan-evidence.md",
+        "audit-packet/45-workplan-evidence/**"
+      ]
+    }
+  },
+  "tier_order": [
+    "entry",
+    "ledger",
+    "working"
+  ],
+  "fallback_tier": "working",
+  "exempt": [
+    "Claude - Audit & Documentation/**",
+    "Codex - *.md",
+    "**/*-archive-*.md",
+    "**/archive/**",
+    "**/review-packet-*.md",
+    "audit-packet/*-proof/**",
+    "audit-packet/repro-*/**",
+    "audit-packet/fixed/**",
+    "audit-packet/downloads/**",
+    "audit-packet/06-qemu/**",
+    "audit-packet/11-reproducibility/**",
+    "modules/tcc/**",
+    "modules/lua/dietlibc/**",
+    "modules/lua/umm_malloc/**",
+    "modules/fpu_emu/**",
+    "contrib/**",
+    "platform/unmaintained/**"
+  ],
+  "remedy": [
+    "Over the hard cap -> demote the file to an index in place and move the detail into children."
+  ]
+}
