@@ -2,9 +2,9 @@
   "schema": "cos-heartbeat.v1",
   "agent": "cos",
   "writer": "Chief of Staff (Grok Bot)",
-  "last_beat_utc": "2026-10-16T22:43:29Z",
+  "last_beat_utc": "2026-10-16T22:48:30Z",
   "mode": "normal",
   "seat": "cos",
   "handoffs": [],
-  "note": "MLV-App #470 r2 35dca646 (COS-CONCERN-CHANNEL-1): not-merge-ready on gates only (legs 0/2, CI pending), no Blocker. r1 B1, I1, I3, I4, N1 addressed; new I5 (duty-line gate is prefix plus wildcard) and N2. Channel ratified per Layi: duty line in cos-feedback/README.md, cos-feedback/mlv-app/concerns.md opened. Ask 6226075419."
+  "note": "MLV-App #469 r3 7bc1d9c2 (FLEET-FOLD-STANDARD-1): not-merge-ready (legs 0/2, CI pending), no Blocker. r2 I6 (b)(c), I7, I8, I9 and nit addressed; new I10 (F4 heartbeat fields written by Publish-BoardHeartbeat.ps1, not fleet-sweep) and I11 (S3 due rule not readable from receipt row), nit on I6 (a) reason. Ask 6226137767."
 }
