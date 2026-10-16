@@ -2,9 +2,9 @@
   "schema": "cos-heartbeat.v1",
   "agent": "cos",
   "writer": "Chief of Staff (Grok Bot)",
-  "last_beat_utc": "2026-10-16T23:45:40Z",
+  "last_beat_utc": "2026-10-16T23:59:25Z",
   "mode": "normal",
   "seat": "cos",
   "handoffs": [],
-  "note": "Reviewed mlv-app #469 r6 41ff8e96: not-merge-ready on gates only (legs 0/2, CI pending). r5 I13 addressed; r5 ask closed by ACK 6226728499. Soft note: body at 450/450 cap; gates ask 6226805535."
+  "note": "Reviewed mlv-app #468 r5+r6 b5310592: not-merge-ready on gates (legs 0/2, CI pending). r4 Blocker and Improvements plus Dot items addressed; new I1 repaired guard fail-open (reproduced), I2 e2e route test skips in CI; ask 6226980669."
 }
