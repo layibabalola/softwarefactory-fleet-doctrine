@@ -17,6 +17,11 @@ is how it falls. One implementation lives here; a project supplies only **data**
 | [`check-evidence-dumps.py`](check-evidence-dumps.py) | refuses committed raw evidence; an evidence dir is `SHA256SUMS` + `EVIDENCE-REF` naming the ref that holds the bytes (verified when local) |
 | [`fixtures/check-evidence-dumps/`](fixtures/check-evidence-dumps/) | Cloudvore and Conjugal start configs |
 | [`../../hooks/`](../../hooks/README.md) | generic refusing hooks: ff-only pre-push, no-unpinned-tool pre-push, exact-path add, optional-locks observers |
+| [`kernel-subjects.py`](kernel-subjects.py) | factory kernel: is a packet a declared kernel subject, declared before its first byte (`check`, `advisory`, `block`) |
+| [`kernel-receipt.py`](kernel-receipt.py) | factory kernel: write or dry-run a landing's kernel receipt; loads kernel-subjects.py and codex-review.py beside itself, so it is pinned as a **group** |
+| [`codex-review.py`](codex-review.py) | dispatch one `codex exec` review with an explicit, recorded model/effort tier |
+| [`kernel-config.py`](kernel-config.py), [`factory-config.schema.json`](factory-config.schema.json) | check a project's kernel config with the loader of record (kernel-subjects.py `load_config`); the schema describes the same keys for editors |
+| [`fixtures/kernel/`](fixtures/kernel/) | `seed-repo/` (a minimal project: queue, a brief with a kernel block, a stub config, one product file) and Cloudvore's config (the suites' fixture) |
 
 **Sharing is the default.** A tool here is never copied into a project: the project pins it.
 `hooks/pre-push-no-unpinned-tool.py` refuses a consumer push that adds or edits a file named like any
@@ -33,6 +38,8 @@ python tools/factory/check-evidence-dumps.tests.py
 python tools/factory/session-start-auth.tests.py
 python hooks/hooks.tests.py
 node tools/tool-census.tests.mjs
+python tools/factory/kernel-tools.tests.py      # config location, schema = loader, seed project through the runner
+python tools/factory/kernel-suites.tests.py     # the kernel's own suites, staged as a project's tools/ directory
 ```
 
 ## Install contract (consumer project)
@@ -104,3 +111,43 @@ Runner exit codes: a tool's own exit status passes through; `2` = refused (malfo
 unknown tool, bytes that do not match: tamper class, so a PreToolUse hook blocks); `3` =
 unavailable (no clone, or the clone lacks the blob: fetch it; non-blocking for Claude hooks).
 `verify` exits 2 on any drift. Contract of record: `ruling-candidates/factory-tool-pin-r1.md`.
+
+## The factory kernel (bus K154)
+
+The kernel tools came from Cloudvore (origin/master `31315b2`) with one change: kernel-subjects.py reads its
+config from the file `$FACTORY_KERNEL_CONFIG` names (relative to the caller's cwd), else `factory-config.json`
+beside itself as before. A pinned tool runs from a private directory, so a consumer always sets the variable.
+
+```
+# install from the registry (members first; the registry's `with` makes kernel-receipt and kernel-config groups)
+python factory-pins/pin-runner.py install kernel-subjects --commit <bus-sha> --reviewer R --reason W
+python factory-pins/pin-runner.py install codex-review    --commit <bus-sha> --reviewer R --reason W
+python factory-pins/pin-runner.py install kernel-receipt  --commit <bus-sha> --reviewer R --reason W
+python factory-pins/pin-runner.py install kernel-config   --commit <bus-sha> --reviewer R --reason W
+# or pin by hand (the same records)
+python factory-pins/pin-runner.py pin kernel-subjects --commit <bus-sha> --path tools/factory/kernel-subjects.py --reviewer R --reason W
+python factory-pins/pin-runner.py pin codex-review    --commit <bus-sha> --path tools/factory/codex-review.py    --reviewer R --reason W
+python factory-pins/pin-runner.py pin kernel-receipt  --commit <bus-sha> --path tools/factory/kernel-receipt.py  --reviewer R --reason W --with kernel-subjects --with codex-review
+python factory-pins/pin-runner.py pin kernel-config   --commit <bus-sha> --path tools/factory/kernel-config.py   --reviewer R --reason W --with kernel-subjects
+# run (PowerShell: $env:FACTORY_KERNEL_CONFIG = "factory-pins/factory-config.json")
+FACTORY_KERNEL_CONFIG=factory-pins/factory-config.json python factory-pins/pin-runner.py run kernel-config -- check factory-pins/factory-config.json
+FACTORY_KERNEL_CONFIG=factory-pins/factory-config.json python factory-pins/pin-runner.py run kernel-subjects -- check HEAD --json
+```
+
+**Config contract.** One JSON file, `schema: 1`; every key in `factory-config.schema.json` is required and no
+other key is allowed; contradicting keys are refused (the schema's description lists them). The config NAMES
+project things (subject prefix, row pattern, paths, runner and workflow names, default contract text); what
+decides credit stays in code, the bar runner and the workflows (K137). Start from
+`fixtures/kernel/seed-repo/factory-config.json`.
+
+**Pinned group.** `pin --with T` records `with: [T, ...]` on a python tool: `run` verifies every member's pinned
+blob as it verifies the tool's own, writes them all into one private directory, checks that directory holds
+exactly those blobs, and runs the tool there with `python -I`, never in-process. One level only. A runner from
+before this key refuses a pins file that uses it (exit 2). Proposed in `ruling-candidates/factory-tool-pin-r1.md`
+(addendum A1).
+
+**Known limits.** kernel-receipt.py still carries Cloudvore's .NET product-bar vocabulary (the excluded-count
+log line names the `DropboxVault.App.Tests` and `DropboxVault.Core.Tests` assemblies; the product-bar filter
+grammar is `dotnet test`'s). kernel-subjects.py (`check`, `advisory`, `block`) names no such thing; moving the
+receipt's names into the config is the next kernel change. The kernel-suites harness excludes,
+by name, the tests that read a project tree around `tools/`; they remain pins in the adopting project's run.

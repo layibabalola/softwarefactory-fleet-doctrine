@@ -31,7 +31,7 @@ def _force(func, path, _exc):
     func(path)
 
 
-class PinRunner(unittest.TestCase):
+class _Fixture(unittest.TestCase):
     def setUp(self):
         self._tmp = tempfile.TemporaryDirectory()
         t = Path(self._tmp.name)
@@ -76,6 +76,7 @@ class PinRunner(unittest.TestCase):
         p = self.run_pr("adopt-runner", "--commit", self.c1)
         self.assertEqual(p.returncode, 0, p.stderr + p.stdout)
 
+class PinRunner(_Fixture):
     def test_pin_verify_run_passes_args_stdin_and_exit_code(self):
         self.pin_echo()
         self.assertEqual(self.run_pr("verify").returncode, 0)
@@ -204,6 +205,98 @@ class PinRunner(unittest.TestCase):
         p = self.run_pr("run", "echo", "--", "0", isolated=True)  # bus absent: unavailable, never the tampered copy
         self.assertEqual((p.returncode, "EVIL" in p.stdout), (3, False))
 
+MAIN_G = (b"import importlib.util, sys\nfrom pathlib import Path\n"
+          b"s = importlib.util.spec_from_file_location('sib', Path(__file__).with_name('sib.py'))\n"
+          b"m = importlib.util.module_from_spec(s); s.loader.exec_module(m)\n"
+          b"print('main+' + m.WHO, sys.argv[1:])\nsys.exit(int(sys.argv[1]) if sys.argv[1:] else 0)\n")
+SIB_G = b"WHO = 'reviewed-sib'\n"
+
+
+class PinnedGroup(_Fixture):
+    """Bus K154: a tool that loads siblings by file name (tools/factory/kernel-receipt.py) runs as a pinned group."""
+
+    def setUp(self):
+        super().setUp()
+        (self.bus / "tools" / "factory" / "main.py").write_bytes(MAIN_G)
+        (self.bus / "tools" / "factory" / "sib.py").write_bytes(SIB_G)
+        (self.bus / "tools" / "factory" / "sib2.py").write_bytes(SIB_G)
+        git(self.bus, "add", "-A")
+        git(self.bus, "commit", "-qm", "group")
+        self.c2 = git(self.bus, "rev-parse", "HEAD")
+
+    def pin(self, tool: str, path: str, *extra: str) -> subprocess.CompletedProcess:
+        return self.run_pr("pin", tool, "--commit", self.c2, "--path", path, "--reviewer", "t", "--reason", "r", *extra)
+
+    def pin_group(self):
+        self.pin_echo()
+        self.assertEqual(self.pin("sib", "tools/factory/sib.py").returncode, 0)
+        p = self.pin("main", "tools/factory/main.py", "--with", "sib")
+        self.assertEqual(p.returncode, 0, p.stderr)
+
+    def test_group_runs_with_its_verified_member_beside_it(self):
+        self.pin_group()
+        self.assertEqual(json.loads(self.pins.read_text(encoding="utf-8"))["tools"]["main"]["with"], ["sib"])
+        for iso in (False, True):
+            p = self.run_pr("run", "main", "--", "4", isolated=iso)
+            self.assertEqual((p.returncode, "main+reviewed-sib ['4']" in p.stdout), (4, True), p.stderr)
+        self.assertEqual(self.run_pr("verify").returncode, 0)
+
+    def test_isolated_group_never_reads_a_sibling_from_the_callers_tree(self):
+        # In-process, __file__ is the bus path: a sibling load would read <cwd>/tools/factory/sib.py.
+        self.pin_group()
+        decoy = self.consumer / "tools" / "factory"
+        decoy.mkdir(parents=True)
+        (decoy / "sib.py").write_bytes(b"WHO = 'DECOY'\n")
+        p = self.run_pr("run", "main", "--", "0", isolated=True)
+        self.assertEqual((p.returncode, "reviewed-sib" in p.stdout, "DECOY" in p.stdout), (0, True, False), p.stderr)
+
+    def test_repin_keeps_the_group(self):
+        self.pin_group()
+        self.assertEqual(self.pin("main", "tools/factory/main.py").returncode, 0)
+        self.assertEqual(json.loads(self.pins.read_text(encoding="utf-8"))["tools"]["main"]["with"], ["sib"])
+
+    def test_a_tampered_member_refuses_and_runs_nothing(self):
+        self.pin_group()
+        pins = json.loads(self.pins.read_text(encoding="utf-8"))
+        pins["tools"]["sib"]["sha256"] = "0" * 64
+        self.pins.write_text(json.dumps(pins), encoding="utf-8")
+        for iso in (False, True):
+            p = self.run_pr("run", "main", "--", "0", isolated=iso)
+            self.assertEqual((p.returncode, "main+" in p.stdout), (2, False))
+
+    def test_malformed_groups_refuse(self):
+        self.pin_group()
+        good = json.loads(self.pins.read_text(encoding="utf-8"))
+        self.assertEqual(self.pin("sib2", "tools/factory/sib2.py").returncode, 0)
+        good = json.loads(self.pins.read_text(encoding="utf-8"))
+        bad_with = ([], ["nope"], ["sib", "sib"], ["main"], "sib", [7])
+        for w in bad_with:
+            pins = json.loads(json.dumps(good))
+            pins["tools"]["main"]["with"] = w
+            self.pins.write_text(json.dumps(pins), encoding="utf-8")
+            with self.subTest(with_=w):
+                self.assertEqual(self.run_pr("run", "main", "--", "0").returncode, 2)
+        pins = json.loads(json.dumps(good))
+        pins["tools"]["sib"]["with"] = ["echo"]                       # a member with its own group
+        self.pins.write_text(json.dumps(pins), encoding="utf-8")
+        self.assertEqual(self.run_pr("run", "main", "--", "0").returncode, 2)
+        pins = json.loads(json.dumps(good))
+        pins["tools"]["sib2"]["path"] = "tools/factory/main.py"       # two files named main.py in one directory
+        pins["tools"]["main"]["with"] = ["sib2"]
+        self.pins.write_text(json.dumps(pins), encoding="utf-8")
+        self.assertEqual(self.run_pr("run", "main", "--", "0").returncode, 2)
+        p = self.pin("main", "tools/factory/main.py", "--with", "absent")
+        self.assertEqual(p.returncode, 2)
+
+    def test_a_group_member_missing_from_the_clone_is_unavailable(self):
+        self.pin_group()
+        pins = json.loads(self.pins.read_text(encoding="utf-8"))
+        data = b"WHO = 'never committed'\n"
+        import hashlib
+        pins["tools"]["sib"].update(blob=hashlib.sha1(b"blob %d\0" % len(data) + data).hexdigest(),
+                                    bytes=len(data), sha256=hashlib.sha256(data).hexdigest())
+        self.pins.write_text(json.dumps(pins), encoding="utf-8")
+        self.assertEqual(self.run_pr("run", "main", "--", "0").returncode, 3)
 
 def git_blob(repo: Path, rev: str, path: str) -> bytes:
     return subprocess.run(["git", "-C", str(repo), "cat-file", "blob", f"{rev}:{path}"], check=True, capture_output=True).stdout
@@ -519,6 +612,56 @@ class Install(unittest.TestCase):
         self.assertEqual(p.returncode, 0, p.stderr)
         self.assertIn("echo\tpython\ttools/factory/echo.py\techo fixture", p.stdout)
         self.assertIn("side\tpython", p.stdout)
+
+
+class InstallGroup(unittest.TestCase):
+    """Bus K154: a registry entry with `with` installs as a pinned group once its members are installed.
+    Reuses Install's fixture (not its tests)."""
+    SIDE = Install.SIDE
+    tearDown, write_registry, sh, install = Install.tearDown, Install.write_registry, Install.sh, Install.install
+
+    def setUp(self):
+        Install.setUp(self)
+        f = self.bus / "tools" / "factory"
+        (f / "main.py").write_bytes(MAIN_G)
+        (f / "sib.py").write_bytes(SIB_G)
+        self.write_group_registry({"with": ["sib"]})
+        git(self.bus, "add", "-A")
+        git(self.bus, "commit", "-qm", "group")
+        self.c1 = git(self.bus, "rev-parse", "HEAD")
+
+    def write_group_registry(self, main_extra: dict, sib_extra: dict | None = None):
+        tools = {n: {"path": f"tools/factory/{n}.py", "interpreter": "python", "purpose": f"{n} fixture"}
+                 for n in ("echo", "side", "sib", "main")}
+        tools["main"].update(main_extra)
+        tools["sib"].update(sib_extra or {})
+        (self.bus / "tools" / "factory" / "registry.json").write_text(
+            json.dumps({"schema": "factory-registry.v1", "tools": tools}), encoding="utf-8")
+
+    def test_a_group_installs_after_its_members_and_runs(self):
+        p = self.install("main")
+        self.assertEqual(p.returncode, 2)
+        self.assertIn("install sib first", p.stderr)
+        self.assertEqual(self.install("sib").returncode, 0)
+        p = self.install("main")
+        self.assertEqual(p.returncode, 0, p.stderr)
+        self.assertEqual(json.loads(self.pins.read_text(encoding="utf-8"))["tools"]["main"]["with"], ["sib"])
+        self.assertIn("NO-OP", self.install("main").stdout)
+        for iso in ([], ["-I"]):
+            r = subprocess.run([sys.executable, *iso, str(self.runner), "run", "main", "--", "6"], capture_output=True,
+                               text=True, cwd=str(self.proj), env={**os.environ, "FACTORY_PINS_CACHE": str(self.cache)})
+            self.assertEqual((r.returncode, "main+reviewed-sib ['6']" in r.stdout), (6, True), r.stderr)
+
+    def test_a_malformed_registry_group_refuses(self):
+        for main_extra, sib_extra in (({"with": []}, None), ({"with": ["nope"]}, None), ({"with": ["main"]}, None),
+                                      ({"with": ["sib", "sib"]}, None), ({"with": ["sib"]}, {"with": ["echo"]}),
+                                      ({"with": ["sib"], "interpreter": "node"}, None)):
+            self.write_group_registry(main_extra, sib_extra)
+            git(self.bus, "commit", "-qam", "bad registry")
+            with self.subTest(main=main_extra, sib=sib_extra):
+                p = self.install("echo", git(self.bus, "rev-parse", "HEAD"))
+                self.assertEqual(p.returncode, 2, p.stdout)
+                self.assertIn("registry at", p.stderr)
 
 
 if __name__ == "__main__":

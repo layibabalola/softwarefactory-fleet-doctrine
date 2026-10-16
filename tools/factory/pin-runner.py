@@ -47,7 +47,12 @@ factory-pins.json (schema "factory-pins.v1"; "_"-prefixed keys are comments):
                      overridden by --bus or $FACTORY_BUS_CLONE
     runner           {commit, path, blob, bytes, sha256}: the bus copy this vendored runner equals
     tools            {name: {path, commit, blob, bytes, sha256, interpreter, reviewer, reason,
-                     pinned_utc}}; interpreter is "python" (this interpreter, -I) or "node"
+                     pinned_utc[, with]}}; interpreter is "python" (this interpreter, -I) or "node"
+                     with (optional, python only; `pin --with T`): other pinned tools whose verified bytes
+                     are materialised beside this one in the private directory (a pinned GROUP, for a tool
+                     that loads siblings by file name). A group always runs from that directory, never
+                     in-process; one level (a member with its own `with` is refused). A runner without
+                     this key refuses such a pins file (exit 2) rather than run a group short of members.
 
 Exit codes of the runner itself (a tool's own exit code passes through unchanged):
     2  REFUSED: malformed pins, unknown tool, or bytes that do not match the pin (tamper class).
@@ -162,6 +167,7 @@ def load_pins(path: Path, raw: bytes | None = None) -> dict[str, Any]:
         if name.startswith("_"):
             continue
         validate_tool(name, t)
+    validate_groups(tools)
     return pins
 
 
@@ -173,8 +179,8 @@ def bad_path(p: Any) -> bool:
 def validate_tool(name: str, t: Any) -> None:
     if not NAME.match(name):
         raise Refused(f"pins: bad tool name {name!r}")
-    if not isinstance(t, dict) or {k for k in t if not k.startswith("_")} != TOOL_KEYS:
-        raise Refused(f"pins: tool {name!r} key set must be exactly {sorted(TOOL_KEYS)}")
+    if not isinstance(t, dict) or {k for k in t if not k.startswith("_")} - {"with"} != TOOL_KEYS:
+        raise Refused(f"pins: tool {name!r} key set must be exactly {sorted(TOOL_KEYS)} (plus an optional 'with')")
     if bad_path(t["path"]):
         raise Refused(f"pins: tool {name!r} path must be a plain bus-relative POSIX path")
     if not (HEX40.match(str(t["commit"])) and HEX40.match(str(t["blob"])) and HEX64.match(str(t["sha256"]))
@@ -185,6 +191,35 @@ def validate_tool(name: str, t: Any) -> None:
     for k in ("reviewer", "reason", "pinned_utc"):
         if not isinstance(t[k], str) or not t[k].strip():
             raise Refused(f"pins: tool {name!r} needs a non-empty {k} (a pin is a review decision)")
+    if "with" in t:
+        w = t["with"]
+        if (not isinstance(w, list) or not w or len(set(map(str, w))) != len(w)
+                or not all(isinstance(m, str) and NAME.match(m) and m != name for m in w)):
+            raise Refused(f"pins: tool {name!r} 'with' must be a non-empty list of distinct other tool names")
+        if t["interpreter"] != "python":
+            raise Refused(f"pins: tool {name!r} 'with' is for python tools only")
+
+
+def validate_groups(tools: dict[str, Any]) -> None:
+    """A pinned GROUP (bus K154): a tool whose `with` names other pinned tools runs with every member's verified
+    bytes beside it, so it can load them by file name. One level: a member's own `with` is not followed, so a
+    member that declares one is refused rather than silently run without its siblings."""
+    for name, t in tools.items():
+        if name.startswith("_") or "with" not in t:
+            continue
+        names = {Path(t["path"]).name}
+        for m in t["with"]:
+            mt = tools.get(m)
+            if mt is None or m.startswith("_"):
+                raise Refused(f"pins: tool {name!r} runs with {m!r}, which is not pinned")
+            if "with" in mt:
+                raise Refused(f"pins: tool {name!r} runs with {m!r}, which has its own 'with' (groups are one level)")
+            if mt["interpreter"] != "python":
+                raise Refused(f"pins: tool {name!r} runs with {m!r}, which is not a python tool")
+            base = Path(mt["path"]).name
+            if base in names:
+                raise Refused(f"pins: tool {name!r} group has two files named {base!r}")
+            names.add(base)
 
 
 def tool_pin(pins: dict[str, Any], name: str) -> dict[str, Any]:
@@ -327,13 +362,20 @@ def cmd_run(args: argparse.Namespace, rest: list[str]) -> int:
     pins = load_pins(pins_path(args), read_pins_ref(args))
     t = tool_pin(pins, name)
     data = tool_bytes(args, pins, name, t)
-    if t["interpreter"] == "python" and sys.flags.isolated:
+    # A group (`with`) loads its members by file name beside itself, so it never runs in-process: there its
+    # __file__ is the bus path, and a sibling load would read the CALLER's tree. Every member is verified first.
+    members = [(m, pins["tools"][m], tool_bytes(args, pins, m, pins["tools"][m])) for m in t.get("with", [])]
+    if t["interpreter"] == "python" and sys.flags.isolated and not members:
         return run_in_process(name, t, data, tool_args)
     work = Path(tempfile.mkdtemp(prefix="factory-pin-"))
     try:
         script = work / Path(t["path"]).name
         script.write_bytes(data)
-        if [x.name for x in work.iterdir()] != [script.name] or blob_id(script.read_bytes()) != t["blob"]:
+        for _m, mt, mdata in members:
+            (work / Path(mt["path"]).name).write_bytes(mdata)
+        want = {script.name: t["blob"], **{Path(mt["path"]).name: mt["blob"] for _m, mt, _d in members}}
+        if ({x.name for x in work.iterdir()} != set(want)
+                or any(blob_id((work / f).read_bytes()) != b for f, b in want.items())):
             raise Refused("materialized directory differs from the pin")
         argv = [sys.executable, "-I", str(script)] if t["interpreter"] == "python" else ["node", str(script)]
         try:
@@ -404,7 +446,11 @@ def cmd_pin(args: argparse.Namespace, _rest: list[str]) -> int:
         raise Refused(f"new tool {args.tool!r}: pass --path <bus path>")
     commit = resolve_commit(bus, args.commit)
     entry = pin_entry(bus, commit, path, old, args.interpreter, args.reviewer, args.reason, args.date)
+    group = args.with_ or old.get("with")
+    if group:
+        entry["with"] = list(group)
     validate_tool(args.tool, entry)
+    validate_groups({**pins["tools"], args.tool: entry})
     pins["tools"][args.tool] = entry
     pfile.parent.mkdir(parents=True, exist_ok=True)
     pfile.write_text(json.dumps(pins, indent=2) + "\n", encoding="utf-8", newline="\n")
@@ -444,10 +490,21 @@ def load_registry(raw: bytes, where: str) -> dict[str, dict[str, Any]]:
         raise Refused(f"registry at {where}: schema must be {REGISTRY_SCHEMA!r} with a 'tools' object")
     tools = {k: v for k, v in reg["tools"].items() if not k.startswith("_")}
     for name, t in tools.items():
-        if (not NAME.match(name) or not isinstance(t, dict) or {k for k in t if not k.startswith("_")} != REGISTRY_KEYS
+        if (not NAME.match(name) or not isinstance(t, dict)
+                or {k for k in t if not k.startswith("_")} - {"with"} != REGISTRY_KEYS
                 or bad_path(t["path"]) or t["interpreter"] not in INTERPRETERS
                 or not isinstance(t["purpose"], str) or not t["purpose"].strip()):
-            raise Refused(f"registry at {where}: malformed entry {name!r} (need exactly {sorted(REGISTRY_KEYS)})")
+            raise Refused(f"registry at {where}: malformed entry {name!r} (need exactly {sorted(REGISTRY_KEYS)}, "
+                          "plus an optional 'with')")
+        # Bus K154: a registry group names registered python members (installed first, then the group).
+        w = t.get("with")
+        if "with" in t and (t["interpreter"] != "python" or not isinstance(w, list) or not w
+                            or len(set(map(str, w))) != len(w)
+                            or not all(isinstance(m, str) and m != name and m in tools
+                                       and tools[m].get("interpreter") == "python" and "with" not in tools[m]
+                                       for m in w)):
+            raise Refused(f"registry at {where}: entry {name!r} 'with' must list distinct other registered python "
+                          "tools that have no 'with' of their own")
     return tools
 
 
@@ -509,10 +566,16 @@ def cmd_install(args: argparse.Namespace, _rest: list[str]) -> int:
                       f"let install vendor a reviewed copy, or adopt-runner it at the commit it equals")
     old = pins["tools"].get(args.tool, {})
     entry = pin_entry(bus, commit, r["path"], old, r["interpreter"], args.reviewer, args.reason, args.date)
-    same = all(old.get(k) == entry[k] for k in ("path", "commit", "blob", "interpreter"))
+    if r.get("with"):
+        missing = [m for m in r["with"] if m not in pins["tools"]]
+        if missing:
+            raise Refused(f"{args.tool} runs with {', '.join(missing)}: install {' and '.join(missing)} first")
+        entry["with"] = list(r["with"])
+    same = all(old.get(k) == entry.get(k) for k in ("path", "commit", "blob", "interpreter", "with"))
     if same:
         entry = old
     validate_tool(args.tool, entry)
+    validate_groups({**pins["tools"], args.tool: entry})
     pfile.parent.mkdir(parents=True, exist_ok=True)
     if vendor:
         vendored.write_bytes(runner_bytes)
@@ -647,6 +710,8 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--path")
     p.add_argument("--date")
     p.add_argument("--interpreter", choices=INTERPRETERS)
+    p.add_argument("--with", dest="with_", action="append", metavar="TOOL",
+                   help="a pinned tool whose verified bytes run beside this one (repeat; a pinned group)")
     a = sub.add_parser("adopt-runner", allow_abbrev=False)
     a.add_argument("--commit", required=True)
     sub.add_parser("verify")
