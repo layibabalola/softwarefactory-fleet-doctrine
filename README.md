@@ -325,6 +325,21 @@ node tools/Get-ProductThroughput.tests.mjs                                      
 
 Fleet runs are appended to `metrics/product-share-lines.jsonl`.
 
+Conjugal and Cloudvore joined the classifier on 2026-10-16 (ref `origin/master`; their rows carry
+`classifier_sha256` of the committed LF bytes of `tools/product-throughput-classes.json`).
+
+**Rule tags (`tools/check-rule-tags.py`, added 2026-10-16 for owner defect "most rules are prose").**
+Every rule bullet in a configured markdown section carries `[enforced: <path>]` (a check at that
+project-relative path refuses a breach; the path must exist) or `[prose]` (nothing refuses). Exit 1 on
+an untagged, dangling or mixed bullet; `--report` measures and exits 0; exit 2 when the census could
+not run. Projects and sections live in `tools/rule-tags.config.json`. The tool proves the path
+exists, never that it refuses: the citation is reviewed like the rule.
+
+```bash
+python tools/check-rule-tags.py --report        # e.g. rule-tags conjugal: 12 rules, 4 backed, 8 prose, ...
+python tools/check-rule-tags.tests.py
+```
+
 ## Factory tools: one copy, run by pin (`tools/factory/`, `hooks/`, added 2026-10-16)
 
 Every member used to hand-build its own factory: `check-doc-size.py` was three divergent rewrites

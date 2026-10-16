@@ -1,0 +1,13 @@
+{
+  "schema": "fleet/rule-tags/v1",
+  "_comment": "Rule-tag census for tools/check-rule-tags.py. A root absent on a box makes the census exit 2 for that run, never a zero count. Each rule bullet carries [enforced: <path relative to root>] or [prose]. DIAGNOSTIC in --report mode; a project may wire the default mode as its own gate.",
+  "projects": [
+    {
+      "name": "conjugal",
+      "root": "C:/code/Conjugal",
+      "files": [
+        { "path": "CLAUDE.md", "section": "## Non-negotiables", "bullet": "^- " }
+      ]
+    }
+  ]
+}
