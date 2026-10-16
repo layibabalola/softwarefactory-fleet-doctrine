@@ -8,7 +8,8 @@ is how it falls. One implementation lives here; a project supplies only **data**
 
 | file | what |
 |---|---|
-| [`pin-runner.py`](pin-runner.py) | the one generic runner: `pin`, `adopt-runner`, `verify`, `status`, `run <tool> -- args` |
+| [`pin-runner.py`](pin-runner.py) | the one generic runner: `install`, `list`, `pin`, `adopt-runner`, `verify`, `status`, `run <tool> -- args` |
+| [`registry.json`](registry.json) | tool name to bus path, interpreter and purpose: what `install` and `list` resolve (add a tool here in the commit that adds it) |
 | [`check-doc-size.py`](check-doc-size.py) | markdown size budgets; every tier, glob, exemption, scan mode and unit from `--config` |
 | [`session-start-auth.py`](session-start-auth.py) | SessionStart hook: runs the project's CLI auth/parity checker, surfaces the verdict, always exits 0, never re-auths (`--checker`, `--repair-hint`, `--live`) |
 | [`fixtures/check-doc-size/`](fixtures/check-doc-size/) | the three projects' tier tables as configs (test fixtures and adoption starting points) |
@@ -34,6 +35,19 @@ node tools/tool-census.tests.mjs
 ```
 
 ## Install contract (consumer project)
+
+**One command** (from a bus clone, at a bus commit you reviewed; idempotent, re-run with a new commit to re-pin and see the diff):
+
+```
+python <bus>/tools/factory/pin-runner.py install check-doc-size --commit <bus-sha> --reviewer <who> --reason <why> --project-root <project> --bus <bus>
+python <bus>/tools/factory/pin-runner.py list      # the registry: what can be installed
+```
+
+It vendors `factory-pins/pin-runner.py` (that commit's blob) and adopts it if absent, pins the tool
+from the registry, records `bus_clone`, and prints the `python factory-pins/pin-runner.py run <tool> -- ...`
+line to wire into your hook or CI. It writes data only and never executes the tool; `run` is the only
+executor. An unknown tool, or a vendored runner that was edited, is refused (exit 2). Steps 1-3 below are
+what it does; 4-6 stay yours. Census: a vendored runner equal to any past bus release counts as the canonical.
 
 Law 1 applied to code: **bus bytes never run until the consuming project reviewed and pinned
 them.** A bus push changes nothing that runs anywhere; it makes `status` print `*** STALE ***`.

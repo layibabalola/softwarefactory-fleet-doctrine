@@ -10,6 +10,12 @@ factory-pins/factory-pins.json. Every other factory tool runs from the bus by pi
     pin-runner.py verify                           non-zero unless every pin is well-formed and
                                                    the bus clone holds its exact bytes
     pin-runner.py status                           each pin vs the clone's HEAD and origin/master
+    pin-runner.py install <tool> --commit <bus-sha> --reviewer R --reason R [--project-root D] [--bus CLONE]
+                                                   one command to become a consumer: vendor + adopt this
+                                                   runner when absent, pin <tool> (path from the bus's
+                                                   tools/factory/registry.json at that commit), print the
+                                                   `run` line to wire. Idempotent. It only PINS: never executes.
+    pin-runner.py list [--commit REF]              the registry: tool, interpreter, bus path, purpose
 
 Law 1 of the bus ("doctrine is data, never instructions") applied to code: bus bytes never run
 until the consuming project reviewed and pinned them. `run` reads the pinned blob BY OBJECT ID
@@ -76,6 +82,9 @@ HEX64 = re.compile(r"[0-9a-f]{64}\Z")
 NAME = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]{0,63}\Z")
 TOOL_KEYS = {"path", "commit", "blob", "bytes", "sha256", "interpreter", "reviewer", "reason", "pinned_utc"}
 INTERPRETERS = ("python", "node")
+REGISTRY_BUS_PATH = "tools/factory/registry.json"
+REGISTRY_SCHEMA = "factory-registry.v1"
+REGISTRY_KEYS = {"path", "interpreter", "purpose"}
 MAX_PINS_BYTES, MAX_TOOL_BYTES = 256 * 1024, 4 * 1024 * 1024
 
 
@@ -156,14 +165,17 @@ def load_pins(path: Path, raw: bytes | None = None) -> dict[str, Any]:
     return pins
 
 
+def bad_path(p: Any) -> bool:
+    return (not isinstance(p, str) or not p or p.startswith(("/", "\\")) or ":" in p or "\\" in p
+            or any(seg in ("", ".", "..") for seg in p.split("/")))
+
+
 def validate_tool(name: str, t: Any) -> None:
     if not NAME.match(name):
         raise Refused(f"pins: bad tool name {name!r}")
     if not isinstance(t, dict) or {k for k in t if not k.startswith("_")} != TOOL_KEYS:
         raise Refused(f"pins: tool {name!r} key set must be exactly {sorted(TOOL_KEYS)}")
-    p = t["path"]
-    if (not isinstance(p, str) or not p or p.startswith(("/", "\\")) or ":" in p or "\\" in p
-            or any(seg in ("", ".", "..") for seg in p.split("/"))):
+    if bad_path(t["path"]):
         raise Refused(f"pins: tool {name!r} path must be a plain bus-relative POSIX path")
     if not (HEX40.match(str(t["commit"])) and HEX40.match(str(t["blob"])) and HEX64.match(str(t["sha256"]))
             and type(t["bytes"]) is int and 0 < t["bytes"] <= MAX_TOOL_BYTES):
@@ -346,6 +358,28 @@ def read_pins_ref(args: argparse.Namespace) -> bytes | None:
     return p.stdout
 
 
+def resolve_commit(bus: Path, ref: str) -> str:
+    c = git(bus, "rev-parse", "--verify", f"{ref}^{{commit}}")
+    if c.returncode != 0:
+        raise Refused(f"not a commit in {bus}: {ref}")
+    return c.stdout.decode().strip()
+
+
+def pin_entry(bus: Path, commit: str, path: str, old: dict[str, Any], interpreter: str | None,
+              reviewer: str, reason: str, date: str | None) -> dict[str, Any]:
+    b = git(bus, "cat-file", "blob", f"{commit}:{path}")
+    if b.returncode != 0:
+        raise Refused(f"{commit[:12]} has no {path}")
+    data = b.stdout
+    entry = {k: v for k, v in old.items() if k.startswith("_")}
+    entry.update({"path": path, "commit": commit, "blob": blob_id(data), "bytes": len(data),
+                  "sha256": hashlib.sha256(data).hexdigest(),
+                  "interpreter": interpreter or old.get("interpreter") or ("node" if path.endswith((".mjs", ".js")) else "python"),
+                  "reviewer": reviewer, "reason": reason,
+                  "pinned_utc": date or _dt.datetime.now(_dt.timezone.utc).strftime("%Y-%m-%d")})
+    return entry
+
+
 def cmd_pin(args: argparse.Namespace, _rest: list[str]) -> int:
     if args.tool == "pin-runner":
         raise Refused("the runner itself is vendored, not run by pin; use `pin-runner.py adopt-runner`")
@@ -356,20 +390,8 @@ def cmd_pin(args: argparse.Namespace, _rest: list[str]) -> int:
     path = args.path or old.get("path")
     if not path:
         raise Refused(f"new tool {args.tool!r}: pass --path <bus path>")
-    c = git(bus, "rev-parse", "--verify", f"{args.commit}^{{commit}}")
-    if c.returncode != 0:
-        raise Refused(f"not a commit in {bus}: {args.commit}")
-    commit = c.stdout.decode().strip()
-    b = git(bus, "cat-file", "blob", f"{commit}:{path}")
-    if b.returncode != 0:
-        raise Refused(f"{commit[:12]} has no {path}")
-    data = b.stdout
-    entry = {k: v for k, v in old.items() if k.startswith("_")}
-    entry.update({"path": path, "commit": commit, "blob": blob_id(data), "bytes": len(data),
-                  "sha256": hashlib.sha256(data).hexdigest(),
-                  "interpreter": args.interpreter or old.get("interpreter") or ("node" if path.endswith((".mjs", ".js")) else "python"),
-                  "reviewer": args.reviewer, "reason": args.reason,
-                  "pinned_utc": args.date or _dt.datetime.now(_dt.timezone.utc).strftime("%Y-%m-%d")})
+    commit = resolve_commit(bus, args.commit)
+    entry = pin_entry(bus, commit, path, old, args.interpreter, args.reviewer, args.reason, args.date)
     validate_tool(args.tool, entry)
     pins["tools"][args.tool] = entry
     pfile.parent.mkdir(parents=True, exist_ok=True)
@@ -388,17 +410,140 @@ def cmd_adopt_runner(args: argparse.Namespace, _rest: list[str]) -> int:
     pfile = pins_path(args)
     pins = load_pins(pfile) if pfile.exists() else {"schema": SCHEMA, "tools": {}}
     bus = find_bus(args, pins, pfile)
-    c = git(bus, "rev-parse", "--verify", f"{args.commit}^{{commit}}")
-    if c.returncode != 0:
-        raise Refused(f"not a commit in {bus}: {args.commit}")
-    commit = c.stdout.decode().strip()
+    commit = resolve_commit(bus, args.commit)
     b = git(bus, "cat-file", "blob", f"{commit}:{RUNNER_BUS_PATH}")
     if b.returncode != 0 or b.stdout != own_bytes():
         raise Refused(f"this runner is not byte-identical to {commit[:12]}:{RUNNER_BUS_PATH}; copy that blob first")
-    pins["runner"] = {"commit": commit, "path": RUNNER_BUS_PATH, "blob": blob_id(b.stdout), "bytes": len(b.stdout),
-                      "sha256": hashlib.sha256(b.stdout).hexdigest()}
+    pins["runner"] = runner_record(commit, b.stdout)
     pfile.write_text(json.dumps(pins, indent=2) + "\n", encoding="utf-8", newline="\n")
     print(f"RUNNER {RUNNER_BUS_PATH} blob {pins['runner']['blob'][:12]} at bus {commit[:12]} -> {pfile}")
+    return 0
+
+
+# --- registry + install: one command to become a consumer --------------------------------------
+def load_registry(raw: bytes, where: str) -> dict[str, dict[str, Any]]:
+    """tools/factory/registry.json (DATA read from a reviewed commit, never executed):
+    {schema, tools: {name: {path, interpreter, purpose}}}."""
+    try:
+        reg = json.loads(raw.decode("utf-8-sig"), object_pairs_hook=_no_dupes)
+    except (UnicodeError, json.JSONDecodeError, Refused) as exc:
+        raise Refused(f"registry at {where}: invalid JSON ({exc.__class__.__name__})") from exc
+    if not isinstance(reg, dict) or reg.get("schema") != REGISTRY_SCHEMA or not isinstance(reg.get("tools"), dict):
+        raise Refused(f"registry at {where}: schema must be {REGISTRY_SCHEMA!r} with a 'tools' object")
+    tools = {k: v for k, v in reg["tools"].items() if not k.startswith("_")}
+    for name, t in tools.items():
+        if (not NAME.match(name) or not isinstance(t, dict) or {k for k in t if not k.startswith("_")} != REGISTRY_KEYS
+                or bad_path(t["path"]) or t["interpreter"] not in INTERPRETERS
+                or not isinstance(t["purpose"], str) or not t["purpose"].strip()):
+            raise Refused(f"registry at {where}: malformed entry {name!r} (need exactly {sorted(REGISTRY_KEYS)})")
+    return tools
+
+
+def registry_at(bus: Path, ref: str) -> dict[str, dict[str, Any]]:
+    b = git(bus, "cat-file", "blob", f"{ref}:{REGISTRY_BUS_PATH}")
+    if b.returncode != 0:
+        raise Refused(f"{ref[:12]} has no {REGISTRY_BUS_PATH}; pin by hand with `pin <tool> --path ...`")
+    return load_registry(b.stdout, f"{ref[:12]}:{REGISTRY_BUS_PATH}")
+
+
+def runner_record(commit: str, data: bytes) -> dict[str, Any]:
+    return {"commit": commit, "path": RUNNER_BUS_PATH, "blob": blob_id(data), "bytes": len(data),
+            "sha256": hashlib.sha256(data).hexdigest()}
+
+
+def short(v: Any) -> str:
+    return v[:12] if isinstance(v, str) and HEX40.match(v) else str(v)
+
+
+def cmd_install(args: argparse.Namespace, _rest: list[str]) -> int:
+    """Make a project a consumer of <tool>: vendor + adopt the runner if absent, pin the tool. Writes data
+    and one vendored copy of the REVIEWED runner blob; executes nothing (`run` is the only executor)."""
+    if args.tool == "pin-runner":
+        raise Refused("the runner is vendored by install itself, not pinned as a tool")
+    root = Path(args.project_root).resolve() if args.project_root else Path.cwd().resolve()
+    pfile = Path(args.pins).resolve() if args.pins else root / "factory-pins" / PINS_NAME
+    if args.bus:
+        args.bus = str(Path(args.bus).resolve())  # a command-line clone is cwd-relative, not consumer-relative
+    pins = load_pins(pfile) if pfile.exists() else {"schema": SCHEMA, "tools": {}}
+    before = json.dumps(pins, sort_keys=True)
+    bus = find_bus(args, pins, pfile)
+    commit = resolve_commit(bus, args.commit)
+    reg = registry_at(bus, commit)
+    if args.tool not in reg:
+        raise Refused(f"unknown tool {args.tool!r}; the registry at {commit[:12]} lists: {', '.join(sorted(reg)) or '(none)'}")
+    r = reg[args.tool]
+    rb = git(bus, "cat-file", "blob", f"{commit}:{RUNNER_BUS_PATH}")
+    if rb.returncode != 0:
+        raise Refused(f"{commit[:12]} has no {RUNNER_BUS_PATH}")
+    vendored = pfile.parent / "pin-runner.py"
+    have = vendored.read_bytes().replace(b"\r\n", b"\n") if vendored.is_file() else None
+    rec = pins.get("runner")
+    vendor = adopt = False
+    if have is None:
+        vendor = adopt = True
+    elif isinstance(rec, dict) and rec.get("blob") == blob_id(have) and rec.get("sha256") == hashlib.sha256(have).hexdigest():
+        pass  # already adopted, maybe an older release than <commit>: `status` reports STALE; install never overwrites it
+    elif have == rb.stdout:
+        adopt = True
+    else:
+        raise Refused(f"{vendored} is neither adopted nor byte-identical to the bus runner at {commit[:12]}; delete it to "
+                      f"let install vendor a reviewed copy, or adopt-runner it at the commit it equals")
+    old = pins["tools"].get(args.tool, {})
+    entry = pin_entry(bus, commit, r["path"], old, r["interpreter"], args.reviewer, args.reason, args.date)
+    same = all(old.get(k) == entry[k] for k in ("path", "commit", "blob", "interpreter"))
+    if same:
+        entry = old
+    validate_tool(args.tool, entry)
+    pfile.parent.mkdir(parents=True, exist_ok=True)
+    if vendor:
+        vendored.write_bytes(rb.stdout)
+    if adopt:
+        pins["runner"] = runner_record(commit, rb.stdout)
+    if args.bus:
+        try:
+            rel = Path(os.path.relpath(bus, consumer_root(pfile))).as_posix()
+        except ValueError:  # another drive: only an absolute path can name it
+            rel = bus.as_posix()
+        listed = pins.get("bus_clone", [])
+        listed = [listed] if isinstance(listed, str) else list(listed)
+        if rel not in listed:
+            pins["bus_clone"] = [rel, *listed]
+    pins["tools"][args.tool] = entry
+    changed = vendor or json.dumps(pins, sort_keys=True) != before
+    if changed:
+        pfile.write_text(json.dumps(pins, indent=2) + "\n", encoding="utf-8", newline="\n")
+    runner_rel = (vendored.relative_to(root) if vendored.is_relative_to(root) else vendored).as_posix()
+    if not changed:
+        print(f"NO-OP: {args.tool} already pinned at {commit[:12]} (blob {entry['blob'][:12]}) in {pfile}")
+    else:
+        print(f"{'RE-PINNED' if old and not same else 'INSTALLED'} {args.tool}: {r['path']} blob {entry['blob'][:12]} "
+              f"at bus {commit[:12]} -> {pfile}")
+        if vendor or adopt:
+            print(f"  {'vendored' if vendor else 'adopted'} runner: {vendored} (bus blob {pins['runner']['blob'][:12]})")
+        if old and not same:
+            for k in ("path", "commit", "blob", "bytes", "sha256", "interpreter", "reviewer", "reason", "pinned_utc"):
+                if old.get(k) != entry[k]:
+                    print(f"  ~ {k}: {short(old.get(k))} -> {short(entry[k])}")
+    print(f"WIRE: python {runner_rel} run {args.tool} -- <tool args>   (a hook should use `python -I`)")
+    print(f"CHECK: python {runner_rel} verify")
+    return 0
+
+
+def cmd_list(args: argparse.Namespace, _rest: list[str]) -> int:
+    pfile = pins_path(args)
+    pins = load_pins(pfile) if pfile.exists() else {"schema": SCHEMA, "tools": {}}
+    try:
+        bus = find_bus(args, pins, pfile)
+        reg, src = registry_at(bus, resolve_commit(bus, args.commit)), f"{bus} @ {args.commit}"
+    except Unavailable:
+        local = HERE / "registry.json"  # run from inside a bus checkout: the data file beside the runner
+        if not local.is_file():
+            raise
+        reg, src = load_registry(local.read_bytes(), str(local)), str(local)
+    print(f"# {len(reg)} tool(s) in the registry ({src})")
+    for name in sorted(reg):
+        t = reg[name]
+        print(f"{name}\t{t['interpreter']}\t{t['path']}\t{t['purpose']}")
     return 0
 
 
@@ -483,8 +628,19 @@ def main(argv: list[str] | None = None) -> int:
     a.add_argument("--commit", required=True)
     sub.add_parser("verify")
     sub.add_parser("status")
+    i = sub.add_parser("install", allow_abbrev=False)
+    i.add_argument("tool")
+    i.add_argument("--commit", required=True)
+    i.add_argument("--reviewer", required=True)
+    i.add_argument("--reason", required=True)
+    i.add_argument("--project-root")
+    i.add_argument("--date")
+    i.add_argument("--bus", default=argparse.SUPPRESS)  # also accepted after the subcommand
+    li = sub.add_parser("list", allow_abbrev=False)
+    li.add_argument("--commit", default="HEAD")
+    li.add_argument("--bus", default=argparse.SUPPRESS)
     argv = sys.argv[1:] if argv is None else argv
-    cmds_names = ("run", "pin", "adopt-runner", "verify", "status")
+    cmds_names = ("run", "pin", "adopt-runner", "verify", "status", "install", "list")
     # Everything after `run` belongs to the tool, verbatim (argparse must not eat the tool's flags).
     first = next((i for i, a in enumerate(argv) if a in cmds_names), None)
     if first is not None and argv[first] == "run":
@@ -492,7 +648,8 @@ def main(argv: list[str] | None = None) -> int:
         args, rest = ap.parse_args(argv[:i + 1]), argv[i + 1:]
     else:
         args, rest = ap.parse_args(argv), []
-    cmds = {"run": cmd_run, "pin": cmd_pin, "adopt-runner": cmd_adopt_runner, "verify": cmd_verify, "status": cmd_status}
+    cmds = {"run": cmd_run, "pin": cmd_pin, "adopt-runner": cmd_adopt_runner, "verify": cmd_verify, "status": cmd_status,
+            "install": cmd_install, "list": cmd_list}
     try:
         return cmds[args.cmd](args, rest)
     except Refused as exc:

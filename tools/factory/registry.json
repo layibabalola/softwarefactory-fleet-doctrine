@@ -1,0 +1,11 @@
+{
+  "schema": "factory-registry.v1",
+  "_comment": "Tools a project may install with `pin-runner.py install <tool>`. DATA read from the reviewed bus commit, never executed. Add a tool here in the same commit that adds it under tools/factory/.",
+  "tools": {
+    "check-doc-size": {
+      "path": "tools/factory/check-doc-size.py",
+      "interpreter": "python",
+      "purpose": "markdown size budgets by role; every tier, glob, exemption and scan mode comes from --config"
+    }
+  }
+}

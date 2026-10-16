@@ -204,5 +204,127 @@ class PinRunner(unittest.TestCase):
         p = self.run_pr("run", "echo", "--", "0", isolated=True)  # bus absent: unavailable, never the tampered copy
         self.assertEqual((p.returncode, "EVIL" in p.stdout), (3, False))
 
+
+def git_blob(repo: Path, rev: str, path: str) -> bytes:
+    return subprocess.run(["git", "-C", str(repo), "cat-file", "blob", f"{rev}:{path}"], check=True, capture_output=True).stdout
+
+
+class Install(unittest.TestCase):
+    """`install`: one command to become a consumer. The bus's own runner is the installer; the project starts empty."""
+    SIDE = b"open('ran.marker', 'w').write('x')\nprint('side-effect tool ran')\n"
+
+    def setUp(self):
+        self._tmp = tempfile.TemporaryDirectory()
+        t = Path(self._tmp.name)
+        self.bus, self.proj, self.cache, self.elsewhere = t / "bus", t / "proj", t / "cache", t / "elsewhere"
+        for d in (self.bus / "tools" / "factory", self.proj, self.elsewhere):
+            d.mkdir(parents=True)
+        git(self.bus, "init", "-q")
+        f = self.bus / "tools" / "factory"
+        (f / "echo.py").write_bytes(TOOL_V1)
+        (f / "side.py").write_bytes(self.SIDE)
+        (f / "pin-runner.py").write_bytes(RUNNER.read_bytes().replace(b"\r\n", b"\n"))
+        self.write_registry({"echo": "tools/factory/echo.py", "side": "tools/factory/side.py"})
+        git(self.bus, "add", "-A")
+        git(self.bus, "commit", "-qm", "v1")
+        self.c1 = git(self.bus, "rev-parse", "HEAD")
+        git(self.proj, "init", "-q")
+        self.pins = self.proj / "factory-pins" / "factory-pins.json"
+        self.runner = self.proj / "factory-pins" / "pin-runner.py"
+
+    def tearDown(self):
+        self._tmp.cleanup()
+
+    def write_registry(self, tools: dict, interpreter: str = "python"):
+        reg = {"schema": "factory-registry.v1",
+               "tools": {n: {"path": p, "interpreter": interpreter, "purpose": f"{n} fixture"} for n, p in tools.items()}}
+        (self.bus / "tools" / "factory" / "registry.json").write_text(json.dumps(reg), encoding="utf-8")
+
+    def sh(self, script: Path, *a: str, cwd: Path | None = None) -> subprocess.CompletedProcess:
+        env = {**os.environ, "FACTORY_PINS_CACHE": str(self.cache)}
+        env.pop("FACTORY_BUS_CLONE", None)
+        return subprocess.run([sys.executable, str(script), *a], capture_output=True, text=True, cwd=str(cwd or self.elsewhere), env=env)
+
+    def install(self, tool: str, commit: str | None = None, *extra: str) -> subprocess.CompletedProcess:
+        return self.sh(self.bus / "tools" / "factory" / "pin-runner.py", "install", tool, "--commit", commit or self.c1,
+                       "--reviewer", "tester", "--reason", "fixture", "--project-root", str(self.proj), "--bus", str(self.bus), *extra)
+
+    def test_install_makes_a_working_consumer(self):
+        p = self.install("echo")
+        self.assertEqual(p.returncode, 0, p.stderr)
+        self.assertIn("WIRE: python factory-pins/pin-runner.py run echo --", p.stdout)
+        self.assertEqual(self.runner.read_bytes(), git_blob(self.bus, self.c1, "tools/factory/pin-runner.py"))
+        pins = json.loads(self.pins.read_text(encoding="utf-8"))
+        self.assertEqual((pins["tools"]["echo"]["commit"], pins["runner"]["commit"], pins["bus_clone"]), (self.c1, self.c1, ["../bus"]))
+        self.assertEqual(self.sh(self.runner, "verify", cwd=self.proj).returncode, 0)  # runner adopted, clone recorded, tool pinned
+        r = self.sh(self.runner, "run", "echo", "--", "3", cwd=self.proj)
+        self.assertEqual((r.returncode, "v1 ['3']" in r.stdout), (3, True))
+
+    def test_reinstall_same_commit_is_a_noop_and_a_new_commit_repins_with_a_diff(self):
+        self.assertEqual(self.install("echo").returncode, 0)
+        before = {q: q.read_bytes() for q in (self.pins, self.runner)}
+        p = self.install("echo")
+        self.assertEqual(p.returncode, 0, p.stderr)
+        self.assertIn("NO-OP", p.stdout)
+        self.assertEqual(before, {q: q.read_bytes() for q in before})
+        (self.bus / "tools" / "factory" / "echo.py").write_bytes(TOOL_V2)
+        git(self.bus, "commit", "-qam", "v2")
+        c2 = git(self.bus, "rev-parse", "HEAD")
+        p = self.install("echo", c2)
+        self.assertEqual(p.returncode, 0, p.stderr)
+        self.assertIn("RE-PINNED", p.stdout)
+        self.assertIn(f"~ commit: {self.c1[:12]} -> {c2[:12]}", p.stdout)
+        self.assertIn("~ blob:", p.stdout)
+        self.assertEqual(json.loads(self.pins.read_text(encoding="utf-8"))["tools"]["echo"]["commit"], c2)
+        self.assertEqual(self.runner.read_bytes(), before[self.runner], "an adopted runner is never overwritten by a re-pin")
+        self.assertIn("v2", self.sh(self.runner, "run", "echo", cwd=self.proj).stdout)
+
+    def test_unknown_tool_and_unregistered_commit_refuse_and_write_nothing(self):
+        p = self.install("nope")
+        self.assertEqual(p.returncode, 2)
+        self.assertIn("echo", p.stderr)  # names what the registry does list
+        self.assertFalse((self.proj / "factory-pins").exists())
+        self.assertEqual(self.install("pin-runner").returncode, 2)
+        git(self.bus, "rm", "-q", "tools/factory/registry.json")
+        git(self.bus, "commit", "-qm", "no registry")
+        self.assertEqual(self.install("echo", git(self.bus, "rev-parse", "HEAD")).returncode, 2)
+        self.assertFalse((self.proj / "factory-pins").exists())
+
+    def test_malformed_registry_refuses(self):
+        for bad in ('{"schema": "factory-registry.v1", "tools": {"echo": {"path": "../x", "interpreter": "python", "purpose": "p"}}}',
+                    '{"schema": "factory-registry.v1", "tools": {"echo": {"path": "tools/factory/echo.py", "interpreter": "bash", "purpose": "p"}}}',
+                    '{"schema": "factory-registry.v1", "tools": {"echo": {"path": "tools/factory/echo.py", "interpreter": "python"}}}',
+                    '{"schema": "factory-registry.v1", "tools": {}, "tools": {}}'):
+            (self.bus / "tools" / "factory" / "registry.json").write_text(bad, encoding="utf-8")
+            git(self.bus, "commit", "-qam", "bad registry")
+            self.assertEqual(self.install("echo", git(self.bus, "rev-parse", "HEAD")).returncode, 2, bad)
+        self.assertFalse((self.proj / "factory-pins").exists())
+
+    def test_install_never_executes_the_tool_and_run_is_the_only_executor(self):
+        for where in (self.elsewhere, self.proj):
+            (where / "ran.marker").unlink(missing_ok=True)
+        p = self.install("side")
+        self.assertEqual(p.returncode, 0, p.stderr)
+        self.assertNotIn("side-effect tool ran", p.stdout + p.stderr)
+        self.assertEqual([(self.elsewhere / "ran.marker").exists(), (self.proj / "ran.marker").exists()], [False, False])
+        r = self.sh(self.runner, "run", "side", cwd=self.proj)  # the control: the same bytes DO leave the marker through `run`
+        self.assertEqual((r.returncode, (self.proj / "ran.marker").exists()), (0, True))
+
+    def test_modified_vendored_runner_is_not_overwritten_or_adopted(self):
+        self.runner.parent.mkdir()
+        self.runner.write_bytes(RUNNER.read_bytes().replace(b"\r\n", b"\n") + b"\n# local edit\n")
+        p = self.install("echo")
+        self.assertEqual(p.returncode, 2)
+        self.assertIn("neither adopted nor byte-identical", p.stderr)
+        self.assertTrue(self.runner.read_bytes().endswith(b"# local edit\n"))
+        self.assertFalse(self.pins.exists())
+
+    def test_list_prints_the_registry(self):
+        p = self.sh(self.bus / "tools" / "factory" / "pin-runner.py", "list", "--bus", str(self.bus))
+        self.assertEqual(p.returncode, 0, p.stderr)
+        self.assertIn("echo\tpython\ttools/factory/echo.py\techo fixture", p.stdout)
+        self.assertIn("side\tpython", p.stdout)
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=1)
