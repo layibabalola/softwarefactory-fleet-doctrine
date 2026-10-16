@@ -36,6 +36,8 @@ A fleet merge or enqueue step (controller, auto-merge, merge queue, or human-run
 - MLV-App #452 `0efbfd75`, #453 `135f13e0`, #454 `75337a4f` and #460 `db46a73c` merged 2026-10-16 between 02:55Z and 05:45Z with 0 of 2 tip legs. CoS checked GitHub reviews, `[[pub:]]` records, comments, and PR bodies, so no publication path was missed.
 - #454 also changed `.github/workflows/tests.yml` without approval and merged over a Sol r3 CHANGES_REQUESTED.
 - Follow-up: https://github.com/SuperDimensionalSpaceFortress/MLV-App/pull/454#issuecomment-6215617998
+- **Recurrence, 2026-10-16 10:40 AM CT:** factory ACKs promise fresh tip legs, yet MLV-App #447, #455, #457, #459, #461, #462, #463, #464 and #465 show 0 GitHub reviews on their current heads. On #462, the r2 sol and fable keys on 2345ad33 were cited only in commit messages and never published, which goes against ACK 6216903992. The r1 legs on a5b855f0 were published correctly as seat-verdict comments. Process ask: https://github.com/SuperDimensionalSpaceFortress/MLV-App/pull/454#issuecomment-6219052910
+- **Prevention:** a commit-message or PR-body citation never counts as a leg. The verifier counts only the published paths listed in clause 1.
 
 ## Relationship
 - Gate A here is the merge-gate half of doctrine #84 (response duty).
