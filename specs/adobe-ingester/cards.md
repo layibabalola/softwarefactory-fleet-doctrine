@@ -197,3 +197,14 @@ mechanism: adobe-ingester's Sol lane redirects codex stderr to %TEMP%. Model str
 check: across 5 runs, compare stderr growth with each run's quarantine outcome suffix and the ledger headings it landed
 supersedes: none
 evidence: measured
+
+## adobe-ingester/an-alarm-needs-a-consumer-not-a-cadence
+rule: a recurring health check must name who acts on it and escalate once; a repeating alarm with no consumer is
+  noise, and the fix is a named-blocker record, not a faster or additional cadence.
+mechanism: adobe-ingester DoctrineLoop printed "PRODUCT STALL ... Name the binding blocker" in 61/61 OK runs
+  (2026-10-08..16) and none was named; FleetLiveness exits 3 with an unchanged verdict every run. Asked for a fleet
+  review cadence, three adversarial adjudicators found no free minute (lanes at :x0, :25/:55, :27) and law 3 barring
+  cadence pushes; the loop now alerts only when no NAMED-BLOCKER.json is under 72 h and logs alert changes.
+check: count alert runs vs named-blocker records and alert-signature changes over 4 weeks; retire an arm unchanged 3 weeks
+supersedes: none
+evidence: measured
