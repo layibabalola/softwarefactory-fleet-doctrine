@@ -2,9 +2,9 @@
   "schema": "cos-heartbeat.v1",
   "agent": "cos",
   "writer": "Chief of Staff (Grok Bot)",
-  "last_beat_utc": "2026-10-16T21:39:45Z",
+  "last_beat_utc": "2026-10-16T21:44:24Z",
   "mode": "normal",
   "seat": "cos",
   "handoffs": [],
-  "note": "MLV-App #455 r9 8fa14bf8: not-merge-ready (legs 0/2, CI pending; new Blocker: value rule misses cmd.exe ( blocks, master rc=2 head rc=0). r8 Blocker and value Improvement addressed. Ask 6225206858."
+  "note": "MLV-App #469 r1 d704df62 (FLEET-FOLD-STANDARD-1): not-merge-ready (legs 0/2, CI running; Blocker B1: no relationship to existing doctrine, S3 per-board task contradicts the 2026-08-30 fleet-sweep correction, R15 and the open fold-is-a-disposition candidate). Ask 6225269455. Filed ruling-candidates/ruling-candidates-name-what-they-supersede-r1.md."
 }
