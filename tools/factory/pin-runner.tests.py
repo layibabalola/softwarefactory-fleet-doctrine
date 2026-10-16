@@ -7,7 +7,6 @@ factory-pins/) exercise pin, adopt-runner, verify, status and run end to end.
 from __future__ import annotations
 
 import json
-import shutil
 import subprocess
 import sys
 import tempfile
@@ -34,7 +33,10 @@ class PinRunner(unittest.TestCase):
         git(self.bus, "init", "-q")
         (self.bus / "tools" / "factory").mkdir(parents=True)
         (self.bus / "tools" / "factory" / "echo.py").write_bytes(TOOL_V1)
-        shutil.copyfile(RUNNER, self.bus / "tools" / "factory" / "pin-runner.py")
+        # The fake bus commits with core.autocrlf=false, so it must hold the runner as the real bus blob
+        # is: LF. A Windows autocrlf checkout of this file is CRLF on disk; committing that would make
+        # every adopt/verify mismatch here although the runner itself compares as LF (own_bytes()).
+        (self.bus / "tools" / "factory" / "pin-runner.py").write_bytes(RUNNER.read_bytes().replace(b"\r\n", b"\n"))
         git(self.bus, "add", "-A")
         git(self.bus, "commit", "-qm", "v1")
         git(self.bus, "update-ref", "refs/remotes/origin/master", "HEAD")
@@ -42,7 +44,9 @@ class PinRunner(unittest.TestCase):
         self.consumer.mkdir()
         git(self.consumer, "init", "-q")
         (self.consumer / "factory-pins").mkdir()
-        shutil.copyfile(RUNNER, self.consumer / "factory-pins" / "pin-runner.py")
+        # Vendored as the install contract says: the bus blob's bytes (LF). test_crlf_checkout_... then
+        # makes the CRLF variant itself; starting from a CRLF working copy would double the CRs.
+        (self.consumer / "factory-pins" / "pin-runner.py").write_bytes(RUNNER.read_bytes().replace(b"\r\n", b"\n"))
         self.pins = self.consumer / "factory-pins" / "factory-pins.json"
         self.pins.write_text(json.dumps({"schema": "factory-pins.v1", "bus_clone": ["../bus"], "tools": {}}), encoding="utf-8")
 
