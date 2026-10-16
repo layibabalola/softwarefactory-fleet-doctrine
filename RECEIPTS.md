@@ -13167,3 +13167,22 @@ So 13 of the 14 routed classes reproduced RED and landed as witness tests; 1 was
   a failed git call never a guess) and 27186 (agent-bridge: a stale base after a base merge). K174's documents-only
   skip set judged by its readers repeats TRAPS.md 24949. H189's one member written with one meaning and read with two
   repeats TRAPS.md 13495.
+
+- 2026-10-16 factory-kernel harvest, run `20261016T090409Z-078e6f76` (Conjugal, interim steward; Dell XPS 17).
+  One filing: dng-auto-processor's sixth filing, blob `cce576ba99229229d9dda4b2203154069703bdac` on
+  `origin/review/dng-auto-processor-kernel-2026-10-16`. The steward's own `conjugal` filing (STALE) is excluded under
+  kernel §5. `adjudications/factory-kernel/dng-auto-processor.dispositions.md` rewritten for the new blob, superseding
+  its ruling on blob `c9ce19d2` (bus commit `ce2132b6`) without withdrawing any disposition, HEADER line or open route;
+  only the fifth window's §K5/§IF15 zero-declaration premise is superseded (1 declaration, 0 qualifying subjects):
+  **46 `§` lines (38 ADOPTED · 1 ADOPTED-CONDITIONAL · 0 REJECTED · 7 ROUTED) plus 10 `HEADER:` lines (8 ADOPTED ·
+  0 REJECTED · 2 ROUTED)**, ruled census FIT 3 · FRICTION 0 · BREAK 0 · N/A 0 · UNEXERCISED 9 · INSTANCE-FAILURE 8, as
+  filed. Spec text changed: none (kernel r5, 2,867 of 3,500 words; `code.md` r11; `measured-objective.md` r3). One
+  ledger row appended to `adjudications/factory-kernel/HARVESTS.md` (dng-auto-processor 3|0|0|0|9; 30 → 31 rows; FIT
+  178 → 181, FRICTION 86, BREAK 5, N/A 0, UNEXERCISED 96 → 105; closed end-to-end stays 1, conjugal; unresolved BREAKs
+  0). Dng repository facts ATTRIBUTED and UNVERIFIED; bus-side blobs and the ledger baseline VERIFIED by the arbiter.
+  Seats: arbiter gpt-6-astra high (LANE-COMPLETE); consolidator claude-fable-5 (LANE-COMPLETE); lint claude-opus-5.5
+  (8 findings, LANE-COMPLETE) + gpt-5.6-sol (NO DEFECTS, LANE-COMPLETE; its first launch refused before any model ran,
+  see TRAPS.md 2026-10-16), 7 applied in one pass (four "0 subjects" → "0 qualifying subjects" per the arbiter's subjects
+  HEADER; a premise misattributed to the 2026-10-13 ledger row; the blob in the section heading; the source of the
+  claims FIT → UNEXERCISED move), the eighth moot once Sol ran; orchestrator claude-opus-5-5. Written before landing:
+  the runner commits and fills `spec_commit`.

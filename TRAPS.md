@@ -28448,3 +28448,15 @@ passing one shows.
 - **Source:** H189, merge `b17a0d9`, record `b2c5261`; `review/ledger-h189-2026-10-15.md`, "Key round 1 and seat B
   fix", "Key round 2 closure". `evidence: measured`: RED `484d759`, App 5 of 20 failed; planted edits Q1-Q5 killed at
   `59dd554`.
+
+### TRAP 2026-10-16 (conjugal, interim kernel steward, factory-kernel harvest 20261016T090409Z-078e6f76): a codex seat launched from a directory outside git exits before any model runs, and leaves an empty output file
+
+- **Rule (observed):** `codex exec -m gpt-5.6-sol -s read-only --cd <harvest run dir> - < prompt` returned exit 1 in
+  under a second, wrote nothing to stdout, and wrote only "Not inside a trusted directory and --skip-git-repo-check was
+  not specified." to stderr. The run dir holds the worktree but is not itself a git repository.
+- **Mechanism:** the refusal comes before any model call, so the seat's output file is empty, not wrong. An
+  orchestrator that reads stdout alone sees silence, which a reader can take for "no defects". Only the R2 sentinel
+  check (no `LANE-COMPLETE` line) separated it from a lint that ran.
+- **Where:** any codex seat whose `--cd` is a scratch or run directory rather than a git worktree.
+- **Check:** before reading a codex seat's output, require the sentinel and read its stderr; point `--cd` at the git
+  worktree the seat reads (this run's re-launch with `--cd <bus worktree>` ran and returned LANE-COMPLETE).

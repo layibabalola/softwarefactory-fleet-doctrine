@@ -982,3 +982,47 @@ lines (38 ADOPTED · 1 ADOPTED-CONDITIONAL · 0 REJECTED · 6 ROUTED) plus 6 `HE
 5 `HEADER:` lines (3 ADOPTED · 2 REJECTED · 0 ROUTED); ruled census FIT 7 · FRICTION 0 · BREAK 0 · N/A 0 ·
 UNEXERCISED 1, INSTANCE-FAILURE 8 separately, as filed. In all: 97 `§` lines (69 ADOPTED · 1 ADOPTED-CONDITIONAL ·
 7 REJECTED · 20 ROUTED) plus 22 `HEADER:` lines (11 ADOPTED · 6 REJECTED · 5 ROUTED).
+
+## 2026-10-16 — harvest 20261016T090409Z-078e6f76 (dng-auto-processor sixth filing, blob cce576ba)
+
+| date | harvest | filing | blob | kernel | profile | subjects | FIT | FRICTION | BREAK | N/A | UNEXERCISED | unresolved BREAKs | arbiter |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 2026-10-16 | 20261016T090409Z-078e6f76 | dng-auto-processor | cce576ba99229229d9dda4b2203154069703bdac | r5 unchanged | code@r11 as filed (instance map still declares r10); measured-objective@r3 unchanged | 0 closed end-to-end; 0 declared kernel subjects in the window (fifth window's count corrected to 1 declaration, 0 qualifying subjects); 11 route landings reported as mechanism evidence only | 3 | 0 | 0 | 0 | 9 | 0 | gpt-6-astra (read-only arbiter seat; not a steward filing) |
+
+Derived, not asserted. Re-run: `python tools/kernel-e2e.py --json`. Before this row: `closed_end_to_end: 1`,
+`ledger_rows: 30`, `ledger_totals: FIT 178 · FRICTION 86 · BREAK 5 · N/A 0 · UNEXERCISED 96` (the arbiter's read-only
+ledger reducer confirmed it; the arbiter's own `kernel-e2e.py --json` refused in its sandbox because its child produced
+no filing rows, not an empty-fleet result; the orchestrator's run at bus base `d411647` returned this baseline). After
+it: 31 rows; 181 FIT · 86 FRICTION · 5 BREAK · 0 N/A · 105 UNEXERCISED; closed end-to-end stays 1 (conjugal). The row
+adds 8 INSTANCE-FAILURE lines (K9, K10, K11; P:code subject-identity, claims-audit, resource-terminals, delivery-target,
+dispatch-preflight) to health only, never to ledger totals, and zero unresolved BREAKs.
+
+**§5 criterion 1 — projects with at least one closed end-to-end subject: 1 of the 5 the kernel requires** (conjugal
+only, on S22); this row contributes zero: the prepared 2026-10-09 declaration (fifth window) establishes no acceptance and is no qualifying subject, and the 11 route landings
+lack a declared profile, recorded K3 digest and qualifying acceptance. **§5 criterion 2 remains MET** under the
+2026-09-17 ruling (`code`, `hardware-in-loop`, `measured-objective`). **§5 criterion 3 does not start:** no fresh
+end-to-end evidence, and one harvest is not two successive harvests. **Criterion 4 has never started.**
+**Members due — 1 project has NEVER filed:** `salesforce-tools`. Roster member `adversarialllm` has filed as
+`AdversarialLLM`; F1 persists: `tools/kernel-e2e.py` matches names case-sensitively, so its verified filing is hidden
+and it is not a nonfiler; neither the tool nor the roster key was reconciled. Open filing left for another run: the
+steward's own `conjugal` filing reads STALE and is not adjudicated by the steward (kernel §5); it needs its separate
+authorised arbiter.
+
+**What this round changed: nothing in the spec.** Kernel r5 unchanged at 2,867 of 3,500 words; `code.md` unchanged at
+r11 (`a31b27a7`); `measured-objective.md` unchanged at r3 (`4e8bcacc`). Cross-filing outcome: a single filing with
+0 BREAK and 0 FRICTION, so no text question arose; INSTANCE-FAILURE counts toward health only (kernel §4). K3 and P:code
+claims moved FIT → UNEXERCISED as filed (no observer stale-release exercise this window); K9 stays the adopted
+registration/resume failure; the overwritten hosted-CI red interval (2 h 24 min, 2026-10-14) is recorded under K11 and
+cross-referenced at delivery-target, counted once; the narrowed Law 4 withholding is accepted as responsive. Four routes
+stay open (U8, independence-provenance, §a.u4, U6; U7 additionally conditional); newly routed: U9 to dng's
+doctrine-consumer stewardship, and the stale code@r10 instance map (pinned `5511ccb3`) to its authorised maintainer.
+Posture: POSTURE-NOT-R9-COMPUTED. **Declaration correction:** the filing's case-insensitive sweep found one
+`K5-DECLARATION.json` dated 2026-10-09 inside the fifth window, so the prior dispositions' §K5/§IF15 premise of 0 declarations in a
+third consecutive window is superseded by 1 declaration, 0 qualifying subjects; the 2026-10-13 row and the prior dispositions stay in history
+unedited, and no closure credit changes. Dng repository facts remain ATTRIBUTED and UNVERIFIED; bus-side blobs and the
+ledger baseline are VERIFIED.
+Per-file line counts: `dng-auto-processor.dispositions.md`, rewritten for blob `cce576ba` and superseding its ruling on
+blob `c9ce19d2` (45 `§` + 6 `HEADER:` lines, none withdrawn; only the §K5/§IF15 zero-declaration premise superseded):
+46 `§` lines (38 ADOPTED · 1 ADOPTED-CONDITIONAL · 0 REJECTED · 7 ROUTED) plus 10 `HEADER:` lines (8 ADOPTED ·
+0 REJECTED · 2 ROUTED); ruled census FIT 3 · FRICTION 0 · BREAK 0 · N/A 0 · UNEXERCISED 9, INSTANCE-FAILURE 8
+separately, as filed.
