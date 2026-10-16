@@ -17,6 +17,30 @@ on:
       - 'tools/factory/**'
       - 'hooks/**'
       - 'metrics/tool-census-baseline.json'
+      - 'metrics/tool-census-rulings.json'
+      # every census family basename, anywhere: a new copy on the bus is judged by the 'bus' view
+      - '**/session-checkpoint.py'
+      - '**/session_checkpoint.py'
+      - '**/doctrine_outbox.py'
+      - '**/doctrine-outbox.py'
+      - '**/check-doc-size.py'
+      - '**/check_doc_size.py'
+      - '**/fold-triage.mjs'
+      - '**/doctrine-triage.mjs'
+      - '**/pin-runner.py'
+      - '**/pin_runner.py'
+      - '**/pre-push-ff-only.py'
+      - '**/pre_push_ff_only.py'
+      - '**/exact-path-add.py'
+      - '**/exact_path_add.py'
+      - '**/git-optional-locks.py'
+      - '**/git_optional_locks.py'
+      - '**/pre-push-no-unpinned-tool.py'
+      - '**/pre_push_no_unpinned_tool.py'
+      - '**/session-start-auth.py'
+      - '**/session_start_auth.py'
+      - '**/resumability-check.py'
+      - '**/resumability_check.py'
       - 'TRAPS-INDEX.md'
       - '.github/workflows/doctrine-sync.yml'
   pull_request:
@@ -35,6 +59,30 @@ on:
       - 'tools/factory/**'
       - 'hooks/**'
       - 'metrics/tool-census-baseline.json'
+      - 'metrics/tool-census-rulings.json'
+      # every census family basename, anywhere: a new copy on the bus is judged by the 'bus' view
+      - '**/session-checkpoint.py'
+      - '**/session_checkpoint.py'
+      - '**/doctrine_outbox.py'
+      - '**/doctrine-outbox.py'
+      - '**/check-doc-size.py'
+      - '**/check_doc_size.py'
+      - '**/fold-triage.mjs'
+      - '**/doctrine-triage.mjs'
+      - '**/pin-runner.py'
+      - '**/pin_runner.py'
+      - '**/pre-push-ff-only.py'
+      - '**/pre_push_ff_only.py'
+      - '**/exact-path-add.py'
+      - '**/exact_path_add.py'
+      - '**/git-optional-locks.py'
+      - '**/git_optional_locks.py'
+      - '**/pre-push-no-unpinned-tool.py'
+      - '**/pre_push_no_unpinned_tool.py'
+      - '**/session-start-auth.py'
+      - '**/session_start_auth.py'
+      - '**/resumability-check.py'
+      - '**/resumability_check.py'
       - 'TRAPS-INDEX.md'
       - '.github/workflows/doctrine-sync.yml'
   workflow_dispatch:
@@ -74,12 +122,13 @@ jobs:
         run: |
           python3 tools/factory/pin-runner.tests.py
           python3 tools/factory/check-doc-size.tests.py
+          python3 tools/factory/session-start-auth.tests.py
           python3 hooks/hooks.tests.py
-      - name: Shared-tool census against the live fleet (deadline schedule; UNMEASURED without the clones)
-        # The census counts copies in the sibling project clones named in tools/tool-census.config.json.
-        # A hosted runner holds only this repository, so the tool exits 3 (UNMEASURED) there: that is
-        # reported as a warning annotation, never as a pass. Exit 1 (rose, or over the schedule's current
-        # max) fails the job wherever the clones are visible (a fleet box, or the CLI run by hand).
+      - name: Shared-tool census - every view this runner can see (the 'bus' view always; fleet views UNMEASURED)
+        # tools/tool-census.mjs rule 7: the baseline holds one count per root set. The 'bus' view counts
+        # copies on this repository alone, so a hosted runner measures it and exit 1 refuses a duplicate
+        # added here. Fleet views (sibling clones) are UNMEASURED on a hosted runner and are named, never
+        # passed; exit 3 (no view measurable at all) stays a warning annotation.
         shell: bash
         run: |
           set +e
@@ -87,7 +136,20 @@ jobs:
           rc=$?
           set -e
           if [ "$rc" -eq 3 ]; then
-            echo "::warning title=tool-census UNMEASURED::the fleet clones are not visible on this runner; the deadline schedule was not checked here. Run 'node tools/tool-census.mjs --check' on a fleet box."
+            echo "::warning title=tool-census UNMEASURED::no census view is measurable on this runner. Run 'node tools/tool-census.mjs --check' on a fleet box."
             exit 0
           fi
           exit "$rc"
+      - name: Shared-tool census ratchet - the baseline never rises without a ruling entry
+        # tools/tool-census.mjs rule 8: any loosening of the baseline since the push/PR base (a raised
+        # total, a dropped view/root/family, a later or looser deadline) fails unless the same change adds
+        # an entry to metrics/tool-census-rulings.json citing the owner ruling.
+        shell: bash
+        env:
+          BASE: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
+        run: |
+          if [ -z "$BASE" ] || [ "$BASE" = "0000000000000000000000000000000000000000" ]; then
+            echo "no base revision (new branch or manual run): comparing with HEAD~1"
+            BASE=HEAD~1
+          fi
+          node tools/tool-census.mjs --check-ratchet "$BASE"

@@ -8,7 +8,10 @@
     { "name": "pin-runner", "names": ["pin-runner.py", "pin_runner.py"] },
     { "name": "pre-push-ff-only", "names": ["pre-push-ff-only.py", "pre_push_ff_only.py"] },
     { "name": "exact-path-add", "names": ["exact-path-add.py", "exact_path_add.py"] },
-    { "name": "git-optional-locks", "names": ["git-optional-locks.py", "git_optional_locks.py"] }
+    { "name": "git-optional-locks", "names": ["git-optional-locks.py", "git_optional_locks.py"] },
+    { "name": "no-unpinned-tool", "names": ["pre-push-no-unpinned-tool.py", "pre_push_no_unpinned_tool.py"] },
+    { "name": "session-start-auth", "names": ["session-start-auth.py", "session_start_auth.py"] },
+    { "name": "resumability-check", "names": ["resumability-check.py", "resumability_check.py"] }
   ],
   "roots": [
     { "name": "bus", "path": "@bus", "kind": "bus" },

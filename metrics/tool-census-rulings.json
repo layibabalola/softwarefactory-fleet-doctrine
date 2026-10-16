@@ -1,0 +1,5 @@
+{
+  "schema": "tool-census-rulings.v1",
+  "_what": "The only way the tool-census baseline (metrics/tool-census-baseline.json) may loosen. tools/tool-census.mjs --check-ratchet <base> (run by CI on every push and PR that touches the census) refuses any loosening of a view that existed at the base -- view-removed, total-raised (with from/to), roots-removed, families-removed, schedule-loosened -- unless the SAME change adds an entry here: {view, change, from?, to?, ruling, date}. 'ruling' cites the owner ruling (e.g. a RULINGS.md heading). Entries are append-only; one already at the base is spent.",
+  "rulings": []
+}

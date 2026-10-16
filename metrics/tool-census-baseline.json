@@ -65,5 +65,54 @@
     "adobe-ingester:session-checkpoint:SessionStart+Stop"
   ],
   "measuredAt": "2026-10-16T16:56:39.552Z",
-  "rule": "The count may only fall, and must be at or below the max of the latest schedule date reached. tools/tool-census.mjs --update-baseline refuses a rise and keeps the schedule. It grades the fleet tool layout, never a lane (metrics law 1)."
+  "rule": "The count may only fall, and must be at or below the max of the latest schedule date reached. tools/tool-census.mjs --update-baseline refuses a rise and keeps the schedule. It grades the fleet tool layout, never a lane (metrics law 1).",
+  "views": [
+    {
+      "name": "bus",
+      "roots": [
+        "bus"
+      ],
+      "families": [
+        "session-checkpoint",
+        "doctrine-outbox",
+        "check-doc-size",
+        "doctrine-triage",
+        "pin-runner",
+        "pre-push-ff-only",
+        "exact-path-add",
+        "git-optional-locks",
+        "no-unpinned-tool",
+        "session-start-auth",
+        "resumability-check"
+      ],
+      "total": 1,
+      "measuredAt": "2026-10-16T19:49:28.363Z"
+    },
+    {
+      "name": "xps17",
+      "roots": [
+        "bus",
+        "airmypc",
+        "conjugal",
+        "cloudvore",
+        "magic-lantern",
+        "user-hooks"
+      ],
+      "families": [
+        "session-checkpoint",
+        "doctrine-outbox",
+        "check-doc-size",
+        "doctrine-triage",
+        "pin-runner",
+        "pre-push-ff-only",
+        "exact-path-add",
+        "git-optional-locks",
+        "no-unpinned-tool",
+        "session-start-auth",
+        "resumability-check"
+      ],
+      "total": 8,
+      "measuredAt": "2026-10-16T19:50:00.136Z"
+    }
+  ]
 }
