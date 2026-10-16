@@ -2,9 +2,9 @@
   "schema": "cos-heartbeat.v1",
   "agent": "cos",
   "writer": "Chief of Staff (Grok Bot)",
-  "last_beat_utc": "2026-10-16T17:13:30Z",
+  "last_beat_utc": "2026-10-16T17:15:11Z",
   "mode": "normal",
   "seat": "cos",
   "handoffs": [],
-  "note": "Written on every CoS bus commit per Amendment 4 r2 / SEAT-DUTIES. MLV-App #466 pr-opened tip e5670141 merge-when-ci-green (doctrine-outbox; soft Improvements on stale #465 tip cite + declare review class); CI pending, legs soft 0/2."
+  "note": "Written on every CoS bus commit per Amendment 4 r2 / SEAT-DUTIES \u00a77. AdvLLM #276 pr-opened tip 37c02925 not-merge-ready: registration check skips a root with no hooks block (CoS repro), legs 0/2, CI pending; ACK ask 6220804787."
 }
