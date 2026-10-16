@@ -1,0 +1,36 @@
+{
+  "schema": 1,
+  "about": "K137: the project constants tools/kernel-subjects.py and tools/kernel-receipt.py read. A missing or malformed file is refused (exit 2), never defaulted. Every key is required and no other key is allowed. Paths are repository-relative with forward slashes; patterns are Python regular expressions.",
+  "subject": {
+    "prefix": "cloudvore/",
+    "row": "[A-Z]+\\d+[A-Z]?",
+    "branch_prefix": "claude/",
+    "delivery": "master via --no-ff landing",
+    "default_products": ["src/", "tests/"]
+  },
+  "paths": {
+    "briefs": "review/briefs/",
+    "review": "review/",
+    "receipts": "review/kernel-receipts/",
+    "subjects_tool": "tools/kernel-subjects.py",
+    "tools_bar_runner": "tools/run-tools-bar.py"
+  },
+  "bar": {
+    "runner": "ultra-magnus-cloudvore",
+    "hosted_runner": "GitHub Actions [0-9]+",
+    "tools_workflow": "tools-bar",
+    "product_workflow": "product-bar",
+    "workflow_suffix": "-bar"
+  },
+  "contract_defaults": {
+    "bar": "the CI bar workflows (product-bar and tools-bar, required tier) dispatched at the exact candidate SHA and at the landing merge, running on the runner CI_RUNS_ON resolves to; each run is the bar of record for its SHA",
+    "passes": "3 identical green passes at one SHA; passed, failed, skipped and excluded counted separately",
+    "env": "the bar workflow's runs-on as resolved at the run: repository variable CI_RUNS_ON, at this writing the self-hosted ultra-magnus runner (Runner name {runner}), else windows-latest; its Python; TEMP and TMP as that runner sets them; CLOUDVORE_DATA_ROOT unset",
+    "harness-limits": "the bar workflow's job timeout and tools/run-tools-bar.py's per-suite timeouts, as committed at the candidate SHA",
+    "seats": "2-3 non-author read-only review seats, each with a different attack question (operating-contract.md, Model routing)",
+    "review-scope": "the packet's diff against master at the candidate SHA, and every reader of what it changes",
+    "rounds": "not capped by count; a finding blocks only with a reproduction at the candidate SHA (operating-contract-swarm-rules.md section 2)",
+    "planted-edits": "every new pin is shown red by a planted break and mutants are executed before review (operating-contract-swarm-rules.md section 1, items 3 and 5)",
+    "charter": "no independent key dispatched (pending-cross-family); a key's charter, execution or static review, is declared here before dispatch"
+  }
+}

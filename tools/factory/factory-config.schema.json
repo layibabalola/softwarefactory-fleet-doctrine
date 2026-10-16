@@ -1,0 +1,70 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "tools/factory/factory-config.schema.json",
+  "title": "factory kernel config (schema 1)",
+  "description": "The project constants tools/factory/kernel-subjects.py and kernel-receipt.py read (K137). The loader of record is kernel-subjects.py load_config, which also refuses contradicting keys this schema cannot express (workflow names ending in workflow_suffix, briefs and receipts strictly inside review, review never overlapping src/ tests/ tools/ or the default products, hosted_runner a literal prefix plus [0-9]+ that does not match runner, contract_defaults.env naming `Runner name {runner}`). Check a config with tools/factory/kernel-config.py check <file>.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "about", "subject", "paths", "bar", "contract_defaults"],
+  "properties": {
+    "schema": {"const": 1},
+    "about": {"type": "string"},
+    "subject": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["prefix", "row", "branch_prefix", "delivery", "default_products"],
+      "properties": {
+        "prefix": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*/$"},
+        "row": {"type": "string", "minLength": 1, "description": "a Python regular expression for a queue row id"},
+        "branch_prefix": {"type": "string", "minLength": 1},
+        "delivery": {"type": "string", "minLength": 1},
+        "default_products": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"$ref": "#/$defs/dir"}}
+      }
+    },
+    "paths": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["briefs", "review", "receipts", "subjects_tool", "tools_bar_runner"],
+      "properties": {
+        "briefs": {"$ref": "#/$defs/dir"},
+        "review": {"$ref": "#/$defs/dir"},
+        "receipts": {"$ref": "#/$defs/dir"},
+        "subjects_tool": {"$ref": "#/$defs/file"},
+        "tools_bar_runner": {"$ref": "#/$defs/file"}
+      }
+    },
+    "bar": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["runner", "hosted_runner", "tools_workflow", "product_workflow", "workflow_suffix"],
+      "properties": {
+        "runner": {"type": "string", "pattern": "^[0-9A-Za-z._-]+(?: [0-9A-Za-z._-]+)*$"},
+        "hosted_runner": {"type": "string", "pattern": "^[A-Za-z0-9 _-]+\\[0-9\\]\\+$"},
+        "tools_workflow": {"type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$"},
+        "product_workflow": {"type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$"},
+        "workflow_suffix": {"type": "string", "minLength": 1}
+      }
+    },
+    "contract_defaults": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["bar", "passes", "env", "harness-limits", "seats", "review-scope", "rounds", "planted-edits", "charter"],
+      "properties": {
+        "bar": {"$ref": "#/$defs/text"},
+        "passes": {"$ref": "#/$defs/text"},
+        "env": {"$ref": "#/$defs/text"},
+        "harness-limits": {"$ref": "#/$defs/text"},
+        "seats": {"$ref": "#/$defs/text"},
+        "review-scope": {"$ref": "#/$defs/text"},
+        "rounds": {"$ref": "#/$defs/text"},
+        "planted-edits": {"$ref": "#/$defs/text"},
+        "charter": {"$ref": "#/$defs/text"}
+      }
+    }
+  },
+  "$defs": {
+    "text": {"type": "string", "minLength": 1},
+    "dir": {"type": "string", "pattern": "^[A-Za-z0-9._-]+(?:/[A-Za-z0-9._-]+)*/$"},
+    "file": {"type": "string", "pattern": "^[A-Za-z0-9._-]+(?:/[A-Za-z0-9._-]+)*[A-Za-z0-9._-]$"}
+  }
+}

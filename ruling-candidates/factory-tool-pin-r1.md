@@ -50,3 +50,21 @@ settings entries and the pre-push layer. Pins file schema: `factory-pins.v1`.
 - A bus clone is required on the box for pinned tools to run. The census root list is a union across boxes;
   a root absent on a box is skipped and named.
 - Cloudvore and magic-lantern adoption is per project (law 2): the fixtures are their starting configs.
+
+## Addendum A1 — pinned groups (proposed by Cloudvore K154, 2026-10-16; branch `kernel/package-2026-10-16`)
+
+- **Gap.** `tools/factory/kernel-receipt.py` loads `kernel-subjects.py` and `codex-review.py` by file name beside
+  itself. `run` materialises one blob (or none, in-process), so the receipt could not run by pin; and in-process its
+  `__file__` is the bus path, so a sibling load would read the CALLER's tree, unverified.
+- **Proposal.** A tool pin may carry `with: [<pinned tool>, ...]` (python only; `pin --with T`). `run` verifies every
+  member's blob exactly as the tool's own (cache or clone; mismatch exit 2, absent exit 3), writes all of them into one
+  private directory, checks the directory holds exactly those blobs, and runs the tool there with `python -I`; a group
+  never runs in-process. One level: a member with its own `with` is refused, as are an unpinned member, a duplicate, a
+  self-reference and two members with one file name. Pins without `with` behave exactly as before; a runner from before
+  this key refuses a pins file that uses it (exit 2), so no group ever runs short of its members.
+- **Evidence.** `tools/factory/pin-runner.tests.py` class `PinnedGroup` (decoy sibling in the caller's tree never
+  loads; tampered or absent member refuses or is unavailable; malformed groups refuse) and
+  `tools/factory/kernel-tools.tests.py` (a fresh `git init` project pins the kernel and runs `kernel-subjects check
+  HEAD --json`, the `kernel-receipt` and `kernel-config` groups, through this runner).
+- **Not decided here.** Whether rule 2 names groups explicitly is the ruling's call; nothing on bus master changes
+  until it is merged.
