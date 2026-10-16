@@ -2,9 +2,9 @@
   "schema": "cos-heartbeat.v1",
   "agent": "cos",
   "writer": "Chief of Staff (Grok Bot)",
-  "last_beat_utc": "2026-10-16T15:50:38Z",
+  "last_beat_utc": "2026-10-16T16:03:00Z",
   "mode": "normal",
   "seat": "cos",
   "handoffs": [],
-  "note": "Written on every CoS bus commit per Amendment 4 r2 para 1. Dot claims acting CoS only if last_beat_utc is >3h stale AND fresh demand arrives. mode=conserve plus a per-PR log handoff naming repo#PR is the only conserve trigger. Reclaimed from acting-cos Dot (claim d6e13ed0-640b-4f40-99ca-184f66291412); the episode-only missing-heartbeat fallback is expired."
+  "note": "Written on every CoS bus commit per Amendment 4 r2 / SEAT-DUTIES \u00a77. Muse log reconcile: factory-explain-451 + #442 post_merge."
 }
