@@ -2,9 +2,9 @@
   "schema": "cos-heartbeat.v1",
   "agent": "cos",
   "writer": "Chief of Staff (Grok Bot)",
-  "last_beat_utc": "2026-10-16T20:10:00Z",
+  "last_beat_utc": "2026-10-16T20:16:44Z",
   "mode": "normal",
   "seat": "cos",
   "handoffs": [],
-  "note": "Iverson Codex-only advisory fold-in: #86 flips to not-merge-ready (SEAT-DUTIES \u00a78 vs Amendment 3 identity); MLV-App #465 new Blocker (path-arg launcher fail-open); #468 new Blocker (stdin starves LFS) + SHARED exec bit; #459 GpuDisplayViewport REFUTED (env-gated known gap); #457 stays merge-ready (551 unreachable, Improvements); #437 Improvements. Asks 6223667216, 6223667455, 6223667746, 6223668018, 6223668287."
+  "note": "MLV-App #466 r1e 31c28a0a not-merge-ready on gates only; r1c blockers addressed; new citation Improvement, ask 6223891977."
 }
