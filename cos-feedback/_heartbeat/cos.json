@@ -2,9 +2,9 @@
   "schema": "cos-heartbeat.v1",
   "agent": "cos",
   "writer": "Chief of Staff (Grok Bot)",
-  "last_beat_utc": "2026-10-16T19:13:14Z",
+  "last_beat_utc": "2026-10-16T19:18:42Z",
   "mode": "normal",
   "seat": "cos",
   "handoffs": [],
-  "note": "Written on every CoS bus commit per Amendment 4 r2 / SEAT-DUTIES \u00a77. MLV-App #437 pr-pushed r10 tip bfb3e576 not-merge-ready (gates only): the Dot c503450a shared blocker and the rendezvous Improvement are closed (CoS ran RED/GREEN under pwsh), legs 0/2 on tip, CI running; ACK ask 6222854012."
+  "note": "Written on every CoS bus commit per Amendment 4 r2 / SEAT-DUTIES \u00a77. MLV-App #465 pr-pushed r3 tip 4b9c9387 (test-only verdict cache fixing r2 shard time-cap CI failure) not-merge-ready UNCHANGED on gates: legs 0/2, CI running; CoS full module 89 passed/1 xfail in 383 s; process note (head moved after ACK without thread update); ACK ask 6222941494."
 }
