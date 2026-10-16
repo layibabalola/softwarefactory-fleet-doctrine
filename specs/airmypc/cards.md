@@ -61,3 +61,20 @@ applies: airmypc
 check: in the bus clone, node tools/tool-census.mjs --json shows one version each for doctrine-outbox, doctrine-triage and check-doc-size
 supersedes: none
 evidence: measured
+
+## airmypc/d1-d3-not-resolved-20261016
+rule: a defect closes when a mechanism requires its number to fall by a date and an owner carries it; measuring it, ratcheting it or filing an unowned card is not a fix. Until then report it NOT RESOLVED, with the number.
+mechanism: owner defects D1-D3 (2026-10-11) were measured, ratcheted and carded, then treated as handled. Adjudicated 2026-10-16, all NOT RESOLVED: D1 tool census 11 = baseline 11; D2 AirMyPC rule coverage 6/45 = 13.33% (tools\Get-AudioMileRuleCoverage.ps1 -Check); D3 AirMyPC 14-day product share 7.97% (Get-ProductThroughput.ps1 -Lines; diagnostic only, metrics law 1). Anti-pattern: measure and call it fixed; ratchets forbid worse, never require better; cards with no owner.
+  Adopted: a census deadline (metrics/tool-census-baseline.json schedule, 11 -> 7 by 2026-10-23 -> 0 by 2026-11-06, enforced by --check); an AirMyPC rule-coverage rising floor; the retire-shared-tool-copies cards turned into owned AirMyPC queue items. The last two are AirMyPC-side and owed.
+check: in the bus clone on a fleet box, node tools/tool-census.mjs --check exits 0 (1 = rose or over the current deadline, naming the families; 3 = UNMEASURED)
+supersedes: none
+evidence: measured
+
+## airmypc/adobe-sessionstart-hook-runs-git-checkout-and-cherry-pick
+rule: a SessionStart hook never changes the checkout (no git checkout, add or cherry-pick); resumption reads and reports state, and the session decides.
+mechanism: Adobe tools/session-checkpoint.py at HEAD 7f31c0d (v3, 2343adf) sets AUTO_RESUME_ENABLED = True (line 15). At SessionStart, when the recorded account changed (line 161), auto_resume (call at 167) runs git checkout of the prior branch (78), git add of the recorded staged files, and git cherry-pick of its master..branch commits (91). A new account's first session thus moves the primary checkout before anyone reads the board. The user-level v4 ~/.claude/hooks/session-checkpoint.py already checkpoints both events and never writes to git. Adobe's entries are flat {type, command}, so they may not fire today; fixing that schema would arm this.
+  Recommended: delete both .claude/settings.json entries, or set AUTO_RESUME_ENABLED = False. Evidence only; adobe-ingester owns the fix (R14.8).
+applies: adobe-ingester
+check: in the Adobe repo, git show HEAD:.claude/settings.json names no session-checkpoint.py, or git show HEAD:tools/session-checkpoint.py has no "AUTO_RESUME_ENABLED = True"
+supersedes: none
+evidence: measured
