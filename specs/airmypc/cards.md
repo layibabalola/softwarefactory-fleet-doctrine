@@ -78,3 +78,11 @@ applies: adobe-ingester
 check: in the Adobe repo, git show HEAD:.claude/settings.json names no session-checkpoint.py, or git show HEAD:tools/session-checkpoint.py has no "AUTO_RESUME_ENABLED = True"
 supersedes: none
 evidence: measured
+
+## airmypc/factory-check-doc-size-drops-non-ascii-paths
+rule: a tool that lists files from git output decodes it as UTF-8 explicitly (encoding="utf-8", errors="surrogateescape") and reports a listed path it cannot read; it never skips one silently.
+mechanism: bus tools/factory/check-doc-size.py (ee843be), git-tracked mode: subprocess.run(... "ls-files", "-z", "*.md"], capture_output=True, text=True) at lines 137-138 decodes with the locale codec (cp1252 on Windows), so a UTF-8 name such as notes-é.md becomes mojibake. row() then hits OSError on read_bytes() and returns None (lines 169-170): the file vanishes from the verdict, including a BREACH. Measured 2026-10-16 (Python 3, cp1252): a repo with plain.md and notes-é.md, both 50,000 bytes against hard 2,000, printed "1 governed files ... 1 breach" and exit 1, never naming notes-é.md. MLV-App's copy already passes errors="surrogateescape". Evidence only; the steward (conjugal) owns the fix (R14.8); magic-lantern, not a fleet member, adopts the same tool.
+applies: conjugal, cloudvore
+check: in a git repo holding a committed non-ASCII-named .md over its hard cap, python tools/factory/check-doc-size.py --config <cfg> --repo <repo> --all lists that path as BREACH
+supersedes: none
+evidence: measured
