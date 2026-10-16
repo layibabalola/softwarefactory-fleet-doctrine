@@ -343,15 +343,20 @@ Conjugal's harvest steward publishes the ratio once per ISO week (`harvest_runne
 it runs the census at a pinned bus commit for every configured root present on its machine and
 appends the rows here. Publication is the point; the rows still gate nothing (metrics law 1).
 
-**Rule tags (`tools/check-rule-tags.py`, added 2026-10-16 for owner defect "most rules are prose").**
-Every rule bullet in a configured markdown section carries `[enforced: <path>]` (a check at that
-project-relative path refuses a breach; the path must exist) or `[prose]` (nothing refuses). Exit 1 on
-an untagged, dangling or mixed bullet; `--report` measures and exits 0; exit 2 when the census could
-not run. Projects and sections live in `tools/rule-tags.config.json`. The tool proves the path
-exists, never that it refuses: the citation is reviewed like the rule.
+**Rule tags (`tools/check-rule-tags.py`, added 2026-10-16 for owner defect "most rules are prose"; v2 same day).**
+Every rule bullet in a configured markdown section is `enforced` (`[enforced: <path>]` inline, or an entry in a
+sidecar `rule_map` file of schema `rule-map.v1` keyed by the sha256 of the whitespace-normalised rule text, so a
+project never edits governing prose to tag it), `judgement` or `record` (both left out of the coverage denominator;
+a warning prints if they exceed 50% of the rules) or `prose`. An enforcer must exist AND be referenced from a file in
+the project's `invocation_surfaces` (hooks, workflows, tests), else it counts as `enforced-uninvoked`, not backed.
+`floor_schedule` is a rising ratchet: `--check` exits 1 when the backed count is below the latest dated floor.
+Headings and bullets inside code fences are ignored. Exit 1 on an untagged, dangling, mixed or uninvoked bullet;
+`--report` measures and exits 0; exit 2 when the census could not run. Config: `tools/rule-tags.config.json`.
 
 ```bash
-python tools/check-rule-tags.py --report        # e.g. rule-tags conjugal: 12 rules, 4 backed, 8 prose, ...
+python tools/check-rule-tags.py --report                 # rule-tags conjugal: 12 rules, 4 backed, 8 prose, ...
+python tools/check-rule-tags.py --project NAME --emit-map out.json   # skeleton map, every rule kind prose
+python tools/check-rule-tags.py --check [--today YYYY-MM-DD] [--strict-map]
 python tools/check-rule-tags.tests.py
 ```
 
