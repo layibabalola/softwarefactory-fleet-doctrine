@@ -28382,3 +28382,69 @@ What is new against the bus: Conjugal's `TRAPS.md` › "conjugal, 2026-09-29 —
 
 **Source:** dng-auto-processor, card HOOK-GOVERNING-DOCS-NO-BUILD: round 1 key 2 REVISE on one confirmed MAJOR (the error exit maps to the skip), fixed at attempt 2 to skip only on an exit of exactly 1, with harness cases that stub an erroring grep, and landed with both keys ACCEPT (`8fbec461`). `evidence: measured`.
 <!-- outbox:4b15f0756346ee78 dng-auto-processor:8fbec46193c15530a74556630ef0b0364de727bc/hook-skip-reads-grep-error-exit-as-match -->
+
+<!-- cloudvore-filing:2026-10-16-diff-path-lists-standing-warnings-and-fallback-records-cards generated from review/doctrine-drafts/2026-10-16-diff-path-lists-standing-warnings-and-fallback-records-cards.md at 8881051 -->
+
+# Draft for the fleet doctrine bus -- Cloudvore, 2026-10-16: diff path lists, standing warnings, fallback records
+
+Facts observed in one project, each tied to a commit on this board's master; nothing here instructs the fleet. Form:
+one card per trap -- the rule, the mechanism, where it applies, a check another project can run, the source -- and no
+harness, no scripts, no evidence directory. The cap, set before review pass 1: at most 7 cards, each at most 15 lines
+and 2,000 bytes; every figure in a card is in the ledger, row, commit or run that card cites, or in this draft's
+review record. `evidence: measured` means measured and recorded where the card says; `evidence: reported` means a
+named session's or seat's account, not checked by another. Vocabulary as in the 2026-10-14 filing (bus `30ac8d5`): a
+*packet* is one unit of work landed as one merge; a *seat* is one reviewer; a *planted edit* (a *mutant*) is one a
+pin must fail; the *K6 key* is a review by a model of another family (Codex here) that ends in a verdict line; a
+*receipt* says whether a landed packet is *credited*. A *verdict* is a job's stored verification result (*Verified*
+passes, *Incomplete* refuses); a *Re-verify* checks a finished job's destination again; ARCHIVE INTACT is what a
+passing one shows.
+
+## TRAPS
+
+### 1. A diff's path list hid a changed path: rename detection names one side, a local config drops a gitlink
+
+- **Rule (observed):** two workflows skip master pushes that change only `BACKLOG.md`, `review/**` or `knowledge/**`.
+  A status reader carries a green from run X to head H when every path `git diff --name-only X H` lists matches that
+  workflow's own `paths-ignore`, read at H. With rename detection on, a file moved from `tools/` into `review/` lists
+  only its new path, so the deletion from code would carry green; with `diff.ignoreSubmodules=all` in the local
+  config, a gitlink bump was not listed and the green carried.
+- **Mechanism:** the path list is shaped by git's defaults and local config, and its classifier inherits both. Fix:
+  `--no-renames --ignore-submodules=none -z`, matching case-sensitive by whole segment; a `paths:` filter, a pattern
+  other than a literal path or `dir/**`, or any git failure refuses (unknown, never green).
+- **Where:** a tool that decides from a `git diff` path list that a delta touches only ignorable paths.
+- **Check:** in a scratch repo, move a code file into the ignored folder; separately, with `git config
+  diff.ignoreSubmodules all`, bump a gitlink. A classifier that calls either delta ignorable shows the trap.
+- **Source:** K174, merge `e0648db`, record `2db4a8a`; `review/ledger-k174-2026-10-14.md`, "Decision", "Results",
+  "Candidate seats", "Key round 1". `evidence: measured`: RED `32b2ed0`; M1 and M12 killed.
+
+### 2. A pass that observed only the destination replaced a verdict that warned about the source
+
+- **Rule (observed):** a Re-verify compares the destination with the job's archived record and walks the source only
+  for files beyond it. Over a standing Incomplete that warned of the source ("Do not delete": files beyond the
+  record, a failed scan, an unread item), a pass whose source was gone ended Verified, ARCHIVE INTACT.
+- **Mechanism:** the newest verdict replaces the last, and the stored one did not say whether it warned of the
+  source. Fix: each verdict records that, with the warning's account; a pass that observed no source (no folder, a
+  volume not admitted, an incomplete scan, a failed listing) hands the warning on, refuses green and quotes it once;
+  an unrecorded verdict that is not Verified is kept. The failed listing is there because its Incomplete does not
+  warn of the source: the next pass would end intact.
+- **Where:** a verdict a later run overwrites, where that run can finish without observing what it warned of.
+- **Check:** store a verdict that warns of input A, remove A, run a pass that checks only B and passes: a clean
+  verdict is the trap. Again with a pass that fails another way between the two.
+- **Source:** H172, merge `7c6440c`, record `878d933`; `review/ledger-h172-2026-10-15.md`, "The design", "Evidence".
+  `evidence: measured`: RED `fac5a9e` (5 rows ARCHIVE INTACT); planted K3 (a failed listing hands nothing on) killed.
+
+### 3. A size summed from an older record printed a figure for a record that was empty or another job's
+
+- **Rule (observed):** for a job saved before its size was stored, the certificate and History fall back to the sum
+  of the entries in its archived run record. The K6 key found the sum asked nothing of the record: with `Entries`
+  removed it printed "Size: 0 B" for a 100 B job, `"Entries": null` threw on every draw, and a record at this job's
+  path whose `JobId` was another job's, or with an entry the verdict did not count, printed a size.
+- **Mechanism:** an absent list summed as empty is a figure, not a silence; a record at the job's path is not thereby
+  the job's. Fix: a size only from entries that are present, none null, as many as the files the verdict counted, in
+  the record the verdict covered whose `JobId` is the job's; otherwise no Size line.
+- **Where:** a reader that prints a figure from an older or separately stored record when its own is absent.
+- **Check:** hand the fallback, in turn, a record with its list removed, with the list null, with one entry more than
+  the subject counted, and with another subject's id: a printed figure, or a throw, is the trap.
+- **Source:** H189, merge `b17a0d9`, record `b2c5261`; `review/ledger-h189-2026-10-15.md`, "Key round 1 and seat B
+  fix", "Key round 2 closure". `evidence: measured`: RED `484d759`, App 5 of 20 failed; planted edits Q1-Q5 killed at
+  `59dd554`.

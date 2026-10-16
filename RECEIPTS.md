@@ -13139,3 +13139,31 @@ So 13 of the 14 routed classes reproduced RED and landed as witness tests; 1 was
 
 **Falsifier (read-only):** in the nested DNG repo, run `for s in 89bae41c 1de6bfd4 95de0a22 8e6b672a; do git merge-base --is-ancestor $s master || echo "NOT-ON-MASTER $s"; git diff-tree --no-commit-id --name-only -r $s; done`. Each sha must be an ancestor of master and print only `DngAutoProcessor.Tests/ExposureRampReceiptTests.cs`. If one prints `NOT-ON-MASTER` or any other path, "four test-only commits landed" is false.
 <!-- outbox:c8ecefaf7b4e950b dng-auto-processor:ae60a58dff69b57ef7cc1ba0a66a04ecedf77b42/k-battery-run-to-completion-as-missing-test-finder -->
+
+<!-- cloudvore-filing:2026-10-16-diff-path-lists-standing-warnings-and-fallback-records-cards generated from review/doctrine-drafts/2026-10-16-diff-path-lists-standing-warnings-and-fallback-records-cards.md at 8881051 -->
+
+## RECEIPTS
+
+- 2026-10-16, the form: three cards under a cap of 7, each at most 15 lines and 2,000 bytes, set before pass 1; no
+  harness. Every packet here was built by a subagent or session of this board and reviewed by its seats and the K6
+  key. The writer built none of them and ran no suite or probe; every figure is read from the cited ledger or its
+  evidence directory.
+- Credited subjects in the range, each with a receipt under `review/kernel-receipts/` in the landed tree: the product
+  subjects H213 (merge `4f3eed3`), H172 (`7c6440c`) and H189 (`b17a0d9`). K170 (`0d9dea6`) and K174 (`e0648db`) are
+  factory defects, not kernel subjects.
+- Nearest neighbours of the cards kept (TRAPS.md lines at bus `b113b6c`): card 1, TRAPS.md 24949 ("A delta called
+  'documents only' is judged by who reads the files"): there the path set was too wide for its readers; here the path
+  list missed paths the delta changed. Also 11037 (a job skipped by an `if:` reports success), which is why the skip
+  here is a trigger filter and a carry, not a job-level skip. Card 2, TRAPS.md 25829 ("A pass that withdrew a record
+  and then found it had examined nothing put the record back") and 24205 ("A refusal that examined nothing must not
+  touch the record"): there the pass learned nothing; here it learned something true about the destination, and its
+  verdict dropped a warning about the source it never read. Card 3, TRAPS.md 13495 ("A field doing double duty") and
+  24221 ("Zero files with read issues is undecided, not empty"): card 3 is the fallback that the double-duty fix
+  added, and an absent list read as an empty one.
+- Not filed, as repeats: H213's fold key built with .NET `OrdinalIgnoreCase` (upper case) where rclone lowers with Go
+  `strings.ToLower` repeats TRAPS.md 24890 ("'Ignore case' is not one set", Cloudvore H102); the pair that showed it
+  here was sigma and final sigma, not the long s that card's check uses. K170's merge of master into a packet branch
+  read as a landing repeats TRAPS.md 24047 (conjugal: own files by parent count, the side that holds the declaration,
+  a failed git call never a guess) and 27186 (agent-bridge: a stale base after a base merge). K174's documents-only
+  skip set judged by its readers repeats TRAPS.md 24949. H189's one member written with one meaning and read with two
+  repeats TRAPS.md 13495.
