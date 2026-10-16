@@ -111,7 +111,6 @@ live `pr-<N>.md` files appear when CoS reviews that board's open work.
 - Sync tool: [`../tools/doctrine-sync.mjs`](../tools/doctrine-sync.mjs) (`BUS_SURFACES`)
 - Consumer template: [`../docs/doctrine-consumer-template.md`](../docs/doctrine-consumer-template.md)
 
-
 ## Seat duties
 
 Every holder of the CoS seat (primary or acting) is bound by [`SEAT-DUTIES.md`](SEAT-DUTIES.md).
