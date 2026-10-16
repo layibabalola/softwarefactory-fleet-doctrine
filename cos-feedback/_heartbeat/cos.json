@@ -2,7 +2,7 @@
   "schema": "cos-heartbeat.v1",
   "agent": "cos",
   "writer": "Chief of Staff (Grok Bot)",
-  "last_beat_utc": "2026-10-16T12:11Z",
+  "last_beat_utc": "2026-10-16T12:12Z",
   "mode": "normal",
   "seat": "cos",
   "handoffs": [],
