@@ -1,0 +1,10 @@
+{
+  "schema": "fleet/scorecard-config/v1",
+  "name": "magic-lantern",
+  "census_root": "magic-lantern",
+  "branch": "master",
+  "remote": "origin",
+  "fold": {
+    "marker": ".codex-state/doctrine/last-seen.json"
+  }
+}
