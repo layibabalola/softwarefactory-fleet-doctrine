@@ -47,6 +47,9 @@ sh tools/factory/bootstrap.sh <bus> <bus-sha> check-doc-size <reviewer> <reason>
 pwsh tools/factory/bootstrap.ps1 -Bus <bus> -Sha <bus-sha> -Tool check-doc-size -Reviewer <who> -Reason <why> [-Project <dir>]
 ```
 
+The bootstrap script is itself bus bytes: run it from a clone at `<bus-sha>`, or first confirm
+`git -C <bus> diff --quiet <bus-sha> -- tools/factory/bootstrap.sh tools/factory/bootstrap.ps1` exits 0.
+
 By hand, never skip (b) (PowerShell's `>` re-encodes; use `cmd /c "git -C <bus> show <sha>:tools/factory/pin-runner.py > factory-pins/pin-runner.py"`):
 
 ```
