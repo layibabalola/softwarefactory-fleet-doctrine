@@ -257,6 +257,64 @@ try {
   assert.equal(orow.bytes.product, 145); assert.equal(orow.product_share_bytes, O.product_share_bytes);
   assert.equal(orow.commit_classes.product, 2); assert.match(orow.command, /-At [0-9a-f]{40} -Since \S+ -Until \S+$/);
 
+  // ---- final fix pass: pass-2 desync guards, typechange, -Repo in the command, binary_files_ignored keeps its meaning ----
+  const plumb = (r, args) => git(r, ['-c', 'core.protectNTFS=false', ...args]);
+  const blobOf = (r, text) => { const t = join(root, 'blob2.tmp'); writeFileSync(t, text); return git(r, ['hash-object', '-w', t]); };
+  const measure = (r) => { const o = run(['-Lines', '-ClassConfig', dcfg, '-Repo', r, '-Project', 'dng', '-Days', '30', '-Json']); assert.equal(o.code, 0, o.out); return JSON.parse(o.out).projects[0]; };
+  // A: a gitlink (product path, sorts before docs/) and a docs edit in ONE commit. With diff.submodule=log git prints no
+  // `diff --git` header for the gitlink, which used to shift docs/x.md's 6 bytes onto the product entry silently.
+  const fa = newRepo('fx-a');
+  put(fa, 'DngAutoProcessor.Core/keep.cs', 'k\n'); put(fa, 'docs/x.md', '');
+  commit(fa, 'base');                                                                      // product 2 B
+  plumb(fa, ['update-index', '--add', '--cacheinfo', `160000,${'1'.repeat(40)},DngAutoProcessor.Core/sub`]);
+  put(fa, 'docs/x.md', 'hello\n'); git(fa, ['add', 'docs/x.md']);
+  git(fa, ['commit', '-q', '-m', 'gitlink + docs edit']);                                  // product 59 ("+Subproject commit " + 40 hex), paperwork 6
+  const A0 = measure(fa);
+  assert.equal(A0.error, null); assert.equal(A0.bytes.product, 2 + 59); assert.equal(A0.bytes['coordination-paperwork'], 6);
+  git(fa, ['config', 'diff.submodule', 'log']);                                            // the seat setting that broke the positional mapping
+  const A1 = measure(fa);
+  assert.equal(A1.error, null); assert.deepEqual({ ...A1.bytes }, { ...A0.bytes }, 'diff.submodule=log must not change a single byte');
+  git(fa, ['config', 'diff.submodule', 'diff']);
+  assert.deepEqual({ ...measure(fa).bytes }, { ...A0.bytes });
+  // B: a typechange (regular file -> symlink) is ONE raw entry but TWO diff sections, both attributed to its bucket
+  const fb = newRepo('fx-b');
+  put(fb, 'DngAutoProcessor.Core/a.cs', 'x\n'); put(fb, 'docs/link.md', 'one\n');
+  commit(fb, 'base');                                                                      // product 2, paperwork 4
+  put(fb, 'DngAutoProcessor.Core/a.cs', 'xy\n'); git(fb, ['add', '-A']);                   // product -x +xy = 5
+  plumb(fb, ['update-index', '--cacheinfo', `120000,${blobOf(fb, 'target')},docs/link.md`]);
+  git(fb, ['commit', '-q', '-m', 'typechange + edit']);                                    // paperwork -one 4 + +target 7 - no-EOL 1 = 10
+  assert.match(git(fb, ['log', '-1', '--raw', '--format=']), /\sT\sdocs\/link\.md/);
+  const B0 = measure(fb);
+  assert.equal(B0.error, null); assert.equal(B0.bytes.product, 2 + 5); assert.equal(B0.bytes['coordination-paperwork'], 4 + 10);
+  assert.equal(B0.commit_classes.product, 2);
+  // C: binary_files_ignored keeps its ORIGINAL meaning (every numstat '-' entry, pure renames and mode-only changes
+  // included); binary_files counts only binaries whose content changed
+  const fc = newRepo('fx-c');
+  mkdirSync(join(fc, 'DngAutoProcessor.Core'));
+  writeFileSync(join(fc, 'DngAutoProcessor.Core', 'old.bin'), Buffer.alloc(40, 0));
+  writeFileSync(join(fc, 'DngAutoProcessor.Core', 'mode.bin'), Buffer.alloc(40, 1).fill(0, 0, 1));
+  commit(fc, 'base');                                                                      // 2 binary adds
+  git(fc, ['mv', 'DngAutoProcessor.Core/old.bin', 'DngAutoProcessor.Core/new.bin']);       // pure binary rename
+  git(fc, ['update-index', '--chmod=+x', 'DngAutoProcessor.Core/mode.bin']);               // mode-only binary change
+  git(fc, ['commit', '-q', '-m', 'rename + mode']);
+  const numstatBinary = git(fc, ['log', '--numstat', '--format=']).split('\n').filter((l) => /^-\t-\t/.test(l)).length;
+  assert.equal(numstatBinary, 4);
+  const C0 = measure(fc);
+  assert.equal(C0.binary_files_ignored, numstatBinary, 'deprecated field = every numstat binary entry, as before');
+  assert.equal(C0.binary_files, 2, 'new field = binaries whose content changed');
+  assert.equal(C0.bytes.product, 80);
+  // -AsRows: the command carries -Repo when the row was measured with it, and re-running it reproduces the row
+  const rr2 = run(['-Lines', '-AsRows', '-ClassConfig', dcfg, '-Repo', fa, '-Project', 'dng', '-Days', '30']);
+  assert.equal(rr2.code, 0, rr2.out);
+  const arow = JSON.parse(rr2.out.trim());
+  assert.match(arow.command, / -AsRows -Repo \S+fx-a -Project dng -At [0-9a-f]{40} -Since /, arow.command);
+  assert.equal(arow.bytes.product, 61);
+  const cargs = arow.command.split(' ').slice(arow.command.split(' ').indexOf('-Lines'));
+  const again2 = JSON.parse(run([...cargs, '-ClassConfig', dcfg]).out.trim());
+  assert.deepEqual(again2.bytes, arow.bytes); assert.deepEqual(again2.lines, arow.lines); assert.equal(again2.command, arow.command);
+  // and a row measured WITHOUT -Repo has no -Repo in its command
+  assert.doesNotMatch(JSON.parse(run(['-Lines', '-AsRows', '-ClassConfig', odCfg, '-Days', '14']).out.trim()).command, /-Repo/);
+
   // every commit-class branch with a nonzero count, plus the paperwork-only variants
   const cc = newRepo('classes');
   const step = (files, msg) => { Object.entries(files).forEach(([k, v]) => put(cc, k, v)); commit(cc, msg); };

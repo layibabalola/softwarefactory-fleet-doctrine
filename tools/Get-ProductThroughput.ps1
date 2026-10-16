@@ -289,7 +289,7 @@ if ($Lines) {
             try { $rules = Get-Rules $pr.classes }
             catch { $row.error = "bad classes: $($_.Exception.Message)"; $rows.Add([pscustomobject]$row); $failed = $true; continue }
             $sum = [ordered]@{}; foreach ($b in $Buckets + 'unclassified') { $sum[$b] = [int64]0 }
-            $unc = @{}; $commits = 0; $binary = 0
+            $unc = @{}; $commits = 0; $binary = 0; $binaryChanged = 0
             $cc = [ordered]@{ product = 0; tests = 0; 'paperwork-only' = 0; 'tooling-only' = 0; 'paperwork-and-tooling' = 0; other = 0 }
             $bytes = $null; $bytesTotal = [int64]0
 
@@ -316,7 +316,7 @@ if ($Lines) {
                     $st = $meta[4]
                     if (($st.StartsWith('R') -or $st.StartsWith('C')) -and $ti + 1 -lt $toks.Count) { $path = $toks[$ti + 1]; $ti += 2 }
                     else { $path = $toks[$ti]; $ti++ }
-                    $cur.Add([pscustomobject]@{ path = $path; bucket = (Get-Bucket $path $rules); old = $meta[2]; new = $meta[3]; n = $null; binary = $false })
+                    $cur.Add([pscustomobject]@{ path = $path; bucket = (Get-Bucket $path $rules); old = $meta[2]; new = $meta[3]; status = $st; n = $null; binary = $false })
                     continue
                 }
                 $nm = [regex]::Match($t2, '^(\d+|-)\t(\d+|-)\t(.*)$', 'Singleline')
@@ -335,7 +335,7 @@ if ($Lines) {
                 $touched = @{}
                 foreach ($f in $cf) {
                     $touched[$f.bucket] = $true
-                    if ($f.binary) { if ($f.old -ne $f.new) { $binary++ }; continue }   # identical blob ids = a pure rename/mode change: nothing changed
+                    if ($f.binary) { $binary++; if ($f.old -ne $f.new) { $binaryChanged++ }; continue }   # identical blob ids = a pure rename/mode change: nothing changed
                     $sum[$f.bucket] += $f.n
                     if ($f.bucket -eq 'unclassified') {
                         $k = if ($f.path.Contains('/')) { $f.path.Substring(0, $f.path.IndexOf('/') + 1) } else { $f.path }
@@ -363,8 +363,17 @@ if ($Lines) {
             if (-not $NoBytes) {
                 $bsum = [ordered]@{}; foreach ($b in $Buckets + 'unclassified') { $bsum[$b] = [int64]0 }
                 $utf8 = [Text.UTF8Encoding]::new($false)
-                $b2 = Get-GitBytes $repoRoot @('log', $row.ref_sha, '--no-merges', "--since=$sinceIso", "--until=$untilIso", '-p', '-U0', '--no-ext-diff', '--no-textconv', '--no-color', '--format=%x00%H')
+                $b2 = Get-GitBytes $repoRoot @('log', $row.ref_sha, '--no-merges', "--since=$sinceIso", "--until=$untilIso", '-p', '-U0', '--no-ext-diff', '--no-textconv', '--no-color', '--submodule=short', '--format=%x00%H')
                 if ($null -eq $b2) { $row.error = 'git log -p failed'; $rows.Add([pscustomobject]$row); $failed = $true; continue }
+                # Expected `diff --git` sections per commit: one per raw entry, two for a typechange (T: the old file is
+                # removed and the new one added), each attributed to that entry's bucket. --submodule=short keeps a
+                # gitlink change a normal section whatever diff.submodule says in the seat's git config.
+                $commitSecs = [Collections.Generic.List[object]]::new()
+                foreach ($cf in $commitFiles) {
+                    $sb = [Collections.Generic.List[string]]::new()
+                    foreach ($f in $cf) { $sb.Add($f.bucket); if ($f.status.StartsWith('T')) { $sb.Add($f.bucket) } }
+                    $commitSecs.Add($sb)
+                }
                 $buf = $b2; $n = $buf.Length; $pos = 0
                 $ci = -1; $fi = -1; $inHunk = $false; $curBucket = 'unclassified'; $lastBucket = $null; $desync = $null
                 while ($pos -lt $n) {
@@ -381,16 +390,18 @@ if ($Lines) {
                     }
                     $lastBucket = $null
                     if ($c -eq 0) {
+                        if ($ci -ge 0 -and $fi + 1 -ne $commitSecs[$ci].Count) { $desync = "commit $ci has $($fi + 1) diff sections, expected $($commitSecs[$ci].Count)"; break }
                         $inHunk = $false; $ci++; $fi = -1
                         if ($ci -ge $commitShas.Count -or $commitShas[$ci] -ne $utf8.GetString($buf, $pos + 1, $len - 1).Trim()) { $desync = "commit $ci"; break }
                     } elseif ($c -eq 100 -and $len -ge 11 -and $utf8.GetString($buf, $pos, 11) -ceq 'diff --git ') {
                         $inHunk = $false; $fi++
-                        if ($ci -lt 0 -or $fi -ge $commitFiles[$ci].Count) { $desync = "file $fi of commit $ci"; break }
-                        $curBucket = $commitFiles[$ci][$fi].bucket
+                        if ($ci -lt 0 -or $fi -ge $commitSecs[$ci].Count) { $desync = "section $fi of commit $ci (expected $(if ($ci -ge 0) { $commitSecs[$ci].Count } else { 0 }))"; break }
+                        $curBucket = $commitSecs[$ci][$fi]
                     } elseif ($c -eq 64) { $inHunk = $true }
                     else { $inHunk = $false }
                     $pos = $e + 1
                 }
+                if (-not $desync -and $ci -ge 0 -and $fi + 1 -ne $commitSecs[$ci].Count) { $desync = "commit $ci has $($fi + 1) diff sections, expected $($commitSecs[$ci].Count)" }
                 if (-not $desync) {
                     if ($ci + 1 -ne $commitFiles.Count) { $desync = "commit count $($ci + 1) vs $($commitFiles.Count)" }
                 }
@@ -417,8 +428,8 @@ if ($Lines) {
             $total = [int64]0; foreach ($v in $sum.Values) { $total += $v }
             $row.commits_counted = $commits
             $row.merges_excluded = $merges
-            $row.binary_files = $binary                  # files git calls binary: their LINES are not counted; their BYTES are (unless -NoBytes)
-            $row.binary_files_ignored = $binary          # DEPRECATED alias of binary_files, kept for existing readers; the name predates the bytes column
+            $row.binary_files = $binaryChanged           # binary files whose content CHANGED: their LINES are not counted; their BYTES are (unless -NoBytes)
+            $row.binary_files_ignored = $binary          # DEPRECATED, ORIGINAL meaning exactly: every file numstat calls binary, pure renames and mode-only changes included
             $row.lines = [pscustomobject]$sum
             $row.total_lines = $total
             $row.product_share = if ($total -gt 0) { [math]::Round($sum['product'] / $total, 4) } else { $null }
@@ -456,7 +467,8 @@ if ($Lines) {
         $rid = if ($RunId) { $RunId } else { "product-share-lines-$untilIso" }
         foreach ($r in $ranking) {
             $p = @($rows | Where-Object { $_.project -eq $r.project })[0]
-            $cmd = "pwsh -NoProfile -File tools/Get-ProductThroughput.ps1 -Lines -AsRows -Project $($p.project) -At $($p.ref_sha) -Since $sinceIso -Until $untilIso"
+            $repoArg = if (-not $RepoArgGiven) { '' } elseif ($p.root -match '\s') { ' -Repo "' + $p.root + '"' } else { ' -Repo ' + $p.root }
+            $cmd = "pwsh -NoProfile -File tools/Get-ProductThroughput.ps1 -Lines -AsRows$repoArg -Project $($p.project) -At $($p.ref_sha) -Since $sinceIso -Until $untilIso"
             [ordered]@{
                 ts = $measuredUtc.ToString('yyyy-MM-ddTHH:mm:ssZ'); run_id = $rid; schema = 'fleet/product-throughput-lines/v1'
                 project = $p.project; ref = $p.ref; ref_name = $p.ref_name; ref_sha = $p.ref_sha
