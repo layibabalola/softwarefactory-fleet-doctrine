@@ -449,7 +449,7 @@ measured", never zero.
 
 | field | value | produced by |
 |---|---|---|
-| `tool_census` | `{project_copies, fleet_total, baseline_total, measured, absent_roots}` | pinned `tool-census --json` (+ `metrics/tool-census-baseline.json` total) |
+| `tool_census` | `{project_copies` (non-canonical copies in this project), `fleet_total` (the census total: excess copies fleet-wide, the baselined number), `baseline_total, measured, absent_roots}` | pinned `tool-census --json` (+ `metrics/tool-census-baseline.json` total) |
 | `rule_tags` | `{bullets, backed, prose, untagged, dangling, mixed}` | pinned `check-rule-tags --report --json --project P --root <root>` |
 | `evidence_dumps` | int violations | config source, e.g. pinned `check-evidence-dumps --tree refs/remotes/origin/master` |
 | `product_share` | `{product_share, product_lines_per_week, window_days, measured_at}` | last row for the project in `metrics/product-share-lines.jsonl` |
