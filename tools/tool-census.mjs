@@ -21,7 +21,13 @@
 // What it counts
 //   count = sum over families of (distinct versions - 1) + double registrations.
 //   A version is the sha256 of the file (CRLF read as LF), or of its shared section when the family
-//   names a marker; a copy lacking the marker hashes whole and is flagged. A double registration is a
+//   names a marker; a copy lacking the marker hashes whole and is flagged. The marker is a DELIMITER
+//   LINE: after an optional comment token (#, //, --, ;) and fill (= - # * ~ _), the line holds the
+//   marker and nothing else, e.g. '# ===== END CONFIG ====='; a prose mention ("below this line to
+//   END CONFIG is repo-specific") is not one. A family may name its 'canonical' bus path (e.g.
+//   tools/factory/check-doc-size.py): that config-by-data implementation has no CONFIG block, so it
+//   hashes whole, is labelled CANONICAL and is never flagged; the copies converge on it, so it is
+//   still one version among the family's distinct versions. A double registration is a
 //   (project, family) pair where the project's .claude/settings.json and the user settings both wire
 //   the family on at least one common hook event.
 //   Copies are found with `git ls-files --cached --others --exclude-standard` in a git root (tracked
@@ -92,12 +98,19 @@ function listFiles(dir, excludeDirs) {
   return files;
 }
 
-function versionOf(file, marker) {
+// A marker delimiter line: optional comment token, fill, the marker, fill; nothing else.
+export function markerLineRe(marker) {
+  const m = marker.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/\s+/g, '\\s+');
+  return new RegExp('^\\s*(?:#|//|--|;)?[\\s=#*~_-]*' + m + '[\\s=#*~_-]*$');
+}
+
+function versionOf(file, marker, canonical = false) {
   const text = readFileSync(file, 'utf8').replace(/\r\n/g, '\n');
   let section = text, markerFound = null;
-  if (marker) {
+  if (marker && !canonical) {
     const lines = text.split('\n');
-    const i = lines.findIndex((l) => l.includes(marker));
+    const re = markerLineRe(marker);
+    const i = lines.findIndex((l) => re.test(l));
     markerFound = i >= 0;
     if (i >= 0) section = lines.slice(i + 1).join('\n');
   }
@@ -154,8 +167,9 @@ export function census({ config, root, home }) {
       if (!fileCache.has(r.name)) fileCache.set(r.name, listFiles(r.dir, excludeDirs));
       for (const f of fileCache.get(r.name)) {
         if (!res.some((re) => re.test(baseName(f)))) continue;
-        const v = versionOf(join(r.dir, f), fam.sharedSectionMarker);
-        copies.push({ root: r.name, path: f, ...v });
+        const canonical = r.kind === 'bus' && !!fam.canonical && f === fam.canonical;
+        const v = versionOf(join(r.dir, f), fam.sharedSectionMarker, canonical);
+        copies.push({ root: r.name, path: f, ...v, ...(canonical ? { canonical: true } : {}) });
       }
     }
     const distinct = [...new Set(copies.map((c) => c.hash))];
@@ -220,7 +234,7 @@ function human(rep) {
   const L = [];
   for (const f of rep.families) {
     L.push(`[tool-census] ${f.name}: ${f.copies.length} cop${f.copies.length === 1 ? 'y' : 'ies'}, ${f.distinct} distinct version(s)${f.marker ? ` (hashed below '${f.marker}')` : ''}`);
-    for (const c of f.copies) L.push(`    ${c.hash.slice(0, 10)}  ${String(c.lines).padStart(5)} lines  ${c.root}: ${c.path}${c.markerFound === false ? '   NO MARKER (hashed whole)' : ''}`);
+    for (const c of f.copies) L.push(`    ${c.hash.slice(0, 10)}  ${String(c.lines).padStart(5)} lines  ${c.root}: ${c.path}${c.canonical ? '   CANONICAL (hashed whole; copies converge on it)' : c.markerFound === false ? '   NO MARKER (hashed whole)' : ''}`);
   }
   for (const d of rep.doubleRegistrations) L.push(`[tool-census] DOUBLE REGISTRATION: ${d.family} wired by ${d.project} .claude/settings.json AND user settings on ${d.events.join(', ')}${d.projectFlat ? ' (project entry is FLAT, not the matcher-group schema: may never fire)' : ''}`);
   if (rep.absentRoots.length) L.push(`[tool-census] roots absent on this box (skipped): ${rep.absentRoots.join(', ')}`);

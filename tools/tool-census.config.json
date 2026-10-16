@@ -3,7 +3,7 @@
   "families": [
     { "name": "session-checkpoint", "names": ["session-checkpoint.py", "session_checkpoint.py"] },
     { "name": "doctrine-outbox", "names": ["doctrine_outbox.py", "doctrine-outbox.py"] },
-    { "name": "check-doc-size", "names": ["check-doc-size.py", "check_doc_size.py"], "sharedSectionMarker": "END CONFIG" },
+    { "name": "check-doc-size", "names": ["check-doc-size.py", "check_doc_size.py"], "sharedSectionMarker": "END CONFIG", "canonical": "tools/factory/check-doc-size.py" },
     { "name": "doctrine-triage", "names": ["fold-triage.mjs", "doctrine-triage.mjs"] },
     { "name": "pin-runner", "names": ["pin-runner.py", "pin_runner.py"] },
     { "name": "pre-push-ff-only", "names": ["pre-push-ff-only.py", "pre_push_ff_only.py"] },

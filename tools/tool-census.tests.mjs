@@ -62,6 +62,17 @@ try {
   assert.equal(fam(rep, 'docsize').copies.find((c) => c.root === 'p3').markerFound, false, 'missing marker flagged');
   assert.equal(fam(rep, 'docsize').distinct, 3); cases++;
 
+  // 2b. The marker is a delimiter line, not the first prose mention (AirMyPC/MLV copies, 2026-10-16):
+  //     a docstring or comment naming END CONFIG above the real '# ==== END CONFIG ====' line is ignored.
+  const docsizeBefore = fam(json(), 'docsize').distinct;
+  put('p1/tools/check-doc-size.py', '"""The machinery below END CONFIG is shared."""\n# Everything below this line to END CONFIG is repo-specific.\nLIMIT = 100\n# ============ END CONFIG ============\nshared()\n');
+  rep = json();
+  assert.equal(fam(rep, 'docsize').copies.find((c) => c.root === 'p1').markerFound, true);
+  assert.equal(fam(rep, 'docsize').distinct, docsizeBefore, 'prose mentions do not move the section start: p1 still hashes as shared()'); cases++;
+  put('p1/tools/check-doc-size.py', '# Everything below this line to END CONFIG is repo-specific.\nLIMIT = 100\nshared()\n');
+  assert.equal(fam(json(), 'docsize').copies.find((c) => c.root === 'p1').markerFound, false, 'a prose mention alone is not a marker'); cases++;
+  put('p1/tools/check-doc-size.py', 'LIMIT = 100\n# END CONFIG\nshared()\n');
+
   // 3. Double registration: same family, same event, in a project AND the user settings.
   put('home/.claude/settings.json', hooks('Stop', 'python "C:/x/.claude/hooks/session-checkpoint.py"'));
   put('p1/.claude/settings.json', hooks('Stop', 'python "$CLAUDE_PROJECT_DIR/tools/session-checkpoint.py"'));
@@ -147,6 +158,23 @@ try {
     roots: [{ name: 'p1', path: 'nowhere-1', kind: 'project' }, { name: 'u', path: '~/nowhere', kind: 'user' }] }));
   r = census(['--check', '--config', join(root, 'ci.json'), '--baseline', sched({ total: 11, schedule }), '--today', '2026-12-01']);
   assert.equal(r.status, 3, 'legacy baseline + no fleet root visible = UNMEASURED'); assert.match(r.out, /sibling clones are absent/); cases++;
+
+  // 12. A canonical bus copy (config-by-data, no CONFIG block) is hashed whole, labelled, never flagged,
+  //     and still one version: copies converge on it, so each diverged copy is one excess.
+  put('canon.json', JSON.stringify({ families: [{ name: 'docsize', names: ['check-doc-size.py'], sharedSectionMarker: 'END CONFIG', canonical: 'tools/factory/check-doc-size.py' }],
+    roots: [{ name: 'bus', path: 'busfix', kind: 'bus' }, { name: 'q1', path: 'q1', kind: 'project' }, { name: 'q2', path: 'q2', kind: 'project' }] }));
+  put('busfix/tools/factory/check-doc-size.py', 'def main(config): pass\n');
+  put('busfix/tools/other/check-doc-size.py', 'stray()\n');
+  put('q1/tools/check-doc-size.py', 'L = 1\n# ==== END CONFIG ====\nold_a()\n');
+  put('q2/tools/check-doc-size.py', 'L = 2\n# ==== END CONFIG ====\nold_a()\n');
+  const canonRep = JSON.parse(census(['--json', '--config', join(root, 'canon.json')]).stdout);
+  const cf = fam(canonRep, 'docsize');
+  const canonCopy = cf.copies.find((c) => c.path === 'tools/factory/check-doc-size.py');
+  assert.equal(canonCopy.canonical, true); assert.equal(canonCopy.markerFound, null, 'canonical is not flagged NO MARKER');
+  assert.equal(cf.copies.find((c) => c.path === 'tools/other/check-doc-size.py').markerFound, false, 'only the named bus path is canonical');
+  assert.equal(cf.distinct, 3, 'canonical + stray + one shared q1/q2 version'); cases++;
+  rmSync(join(root, 'busfix/tools/other/check-doc-size.py')); rmSync(join(root, 'q1/tools/check-doc-size.py')); rmSync(join(root, 'q2/tools/check-doc-size.py'));
+  assert.equal(fam(JSON.parse(census(['--json', '--config', join(root, 'canon.json')]).stdout), 'docsize').excess, 0, 'only the canonical left = no excess'); cases++;
 
   assert.ok(existsSync(tool));
   console.log(`tool-census fixtures: ${cases} cases passed`);
