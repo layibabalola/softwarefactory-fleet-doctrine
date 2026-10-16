@@ -472,7 +472,8 @@ class Install(unittest.TestCase):
             f.chmod(0o755)  # POSIX skips a non-executable file on PATH: without this the shim is silently bypassed (CI 2026-10-16)
         env = {**os.environ, "REAL_GIT": real, "PATH": str(shim) + os.pathsep + os.environ["PATH"], "PYTHON": sys.executable}
         found = shutil.which("git", path=env["PATH"])  # the shim must really be what `git` resolves to, or the test proves nothing
-        self.assertTrue(found and Path(found).resolve().parent == shim.resolve(), f"the git shim is not first on PATH: {found}")
+        if os.name != "nt" or kind == "cmd":  # (python's which() cannot see an extension-less script on Windows; Git Bash can)
+            self.assertTrue(found and Path(found).resolve().parent == shim.resolve(), f"the git shim is not first on PATH: {found}")
         return env
 
     def _check_bootstrap(self, argv: list, tamper_env: dict, clean_env: dict):
