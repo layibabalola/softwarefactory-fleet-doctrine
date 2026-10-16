@@ -252,6 +252,9 @@ def from_source(ctx: Ctx, spec: dict | None, name: str = "") -> dict:
 
 # ---------- the fields ----------
 
+_CENSUS: dict = {}
+
+
 def f_tool_census(ctx: Ctx, proj: dict) -> dict:
     pre = pinned_argv(ctx, "tool-census")
     if pre is None:
@@ -261,11 +264,23 @@ def f_tool_census(ctx: Ctx, proj: dict) -> dict:
     cfg, base = ctx.bus_file("tools/tool-census.config.json"), ctx.bus_file("metrics/tool-census-baseline.json")
     if cfg is None:
         return field(cmd="pinned:tool-census", error="ABSENT: no tool-census config on bus origin/master")
-    argv = pre + ["--json", "--config", str(cfg)] + (["--baseline", str(base)] if base else [])
-    cmd = ctx.render(argv)
+    # The census resolves '@bus' as its own script's parent; under the pin runner that is a temp dir (it
+    # once walked all of %TEMP% for ten minutes). Name the clone in the materialized config (data) instead.
     try:
-        p = run_cmd(argv, ctx.bus)
-        rep = json.loads(p.stdout)
+        cj = json.loads(cfg.read_text(encoding="utf-8"))
+        for r in cj.get("roots") or []:
+            if r.get("path") == "@bus":
+                r["path"] = str(ctx.bus)
+        cfg.write_text(json.dumps(cj), encoding="utf-8")
+    except (OSError, ValueError, AttributeError) as e:
+        return field(cmd="pinned:tool-census", error=f"FAILED: census config unreadable ({type(e).__name__})")
+    argv =pre + ["--json", "--config", str(cfg)] + (["--baseline", str(base)] if base else [])
+    cmd = ctx.render(argv)
+    key = (str(ctx.pins), str(ctx.bus), git_out(ctx.bus, "rev-parse", "refs/remotes/origin/master"))
+    try:
+        if key not in _CENSUS:      # one fleet-wide census per run serves every project's row
+            _CENSUS[key] = json.loads(run_cmd(argv, ctx.bus).stdout)
+        rep = _CENSUS[key]
     except (OSError, subprocess.TimeoutExpired, ValueError) as e:
         return field(cmd=cmd, error=f"FAILED: {ctx.scrub(str(e))[:160]}")
     name = proj.get("census_root") or proj["name"]

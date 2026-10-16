@@ -33,6 +33,9 @@ if "status" in a:
     sys.exit(0)
 tool = a[a.index("run") + 1]
 if tool == "tool-census":
+    cfg = json.load(open(a[a.index("--config") + 1], encoding="utf-8"))
+    if any(r.get("path") == "@bus" for r in cfg.get("roots", [])):   # '@bus' under the runner = a temp dir
+        sys.exit(9)
     print(json.dumps({"total": 5, "measuredRoots": ["bus", "proj"], "absentRoots": ["far"], "families": [
         {"name": "x", "copies": [{"root": "proj", "path": "a.py"}, {"root": "bus", "path": "b.py", "canonical": True},
                                  {"root": "proj", "path": "c.py"}, {"root": "other", "path": "d.py"}]}]}))
@@ -79,7 +82,8 @@ class Fixture(unittest.TestCase):
             + json.dumps({"project": "proj", "product_share": 0.2, "product_lines_per_week": 20, "window_days": 14, "ts": "new"}) + "\n",
             encoding="utf-8")
         (seed / "metrics" / "tool-census-baseline.json").write_text(json.dumps({"total": 7}), encoding="utf-8")
-        (seed / "tools" / "tool-census.config.json").write_text("{}", encoding="utf-8")
+        (seed / "tools" / "tool-census.config.json").write_text(
+            json.dumps({"roots": [{"name": "bus", "path": "@bus"}]}), encoding="utf-8")
         (seed / "tools" / "rule-tags.config.json").write_text("{}", encoding="utf-8")
         git(seed, "add", "-A")
         git(seed, "commit", "-q", "-m", "seed")
