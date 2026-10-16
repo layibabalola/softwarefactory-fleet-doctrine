@@ -325,6 +325,22 @@ node tools/Get-ProductThroughput.tests.mjs                                      
 
 Fleet runs are appended to `metrics/product-share-lines.jsonl`.
 
+**Bytes, commit classes and `-Repo` (added 2026-10-16, owner defect D3).** Lines hide mega-line
+paperwork (one 62 KB packet state-line rewrite is 2 lines), so line mode also reports changed **bytes**
+per class (`bytes`, `total_bytes`, `product_share_bytes`, beside `product_share_lines`): the raw byte
+length of every added and removed line, each counting its newline (a final line with no EOL does not),
+read from git's stdout as bytes so CRLF, a lone CR and non-UTF-8 content are exact. A binary file
+counts old size + new size when its blob changed (`binary_files`; `binary_files_ignored` is a
+deprecated alias): binary files add no lines. Paths are read from `git log --raw --numstat -z` (NUL
+separated), never from `Binary files a/x and b/y differ` prose, so a name with ` and `, spaces or a tab
+lands in the right bucket. `commit_classes` (product / tests / paperwork-only / tooling-only /
+paperwork-and-tooling / other, by the buckets a commit touches) and
+`paperwork_tooling_commits_per_product_commit` count commits. `-NoBytes` skips the bytes pass (a second
+`git log -p`). All of it is additive to the row schema below, `-AsRows` rows included. `-Repo <path>`
+(alias of `-Root`) measures any checkout: classes come from the config entry whose root is that repo, or
+from `-Project <name>`; no entry = exit 4. `-Days` is an alias of `-WindowDays`; classic mode honours
+`-Since` too. Pin a commit with upstream's `-At` (a raw SHA works and labels the row with the SHA).
+
 Conjugal and Cloudvore joined the classifier on 2026-10-16 (ref `origin/master`; their rows carry
 `classifier_sha256` of the committed LF bytes of `tools/product-throughput-classes.json`).
 

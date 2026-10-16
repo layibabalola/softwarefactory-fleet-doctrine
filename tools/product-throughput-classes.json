@@ -1,6 +1,6 @@
 {
   "schema": "fleet/product-throughput-classes/v1",
-  "note": "Line-mode classifier for tools/Get-ProductThroughput.ps1 -Lines. DIAGNOSTIC ONLY (metrics/README.md law 1): never a gate, never a target. Pattern rules: 'dir/' or 'file' = repo-relative prefix; './*.md' = root-level files only (wildcards via -like); a pattern without './' that contains '*' is matched with -like against the full path. The most specific pattern wins (count of non-wildcard characters); ties resolve in bucket order product, tests, vendored-copies, factory-tooling, coordination-paperwork. Unmatched paths are reported as 'unclassified', never dropped. Paths verified against each repo's HEAD tree on 2026-10-11. ref HEAD = the branch the canonical checkout works on (adobe-ingester never merges to main; its main is a month stale), recorded per run as ref_name and ref_sha. conjugal and cloudvore added 2026-10-16 (ref origin/master: the landed line; Conjugal's canonical checkout works on subject branches): paths verified against each repo's origin/master tree that day; Conjugal coordination/*.py|ps1|sh|mjs and Cloudvore tools/ count as factory-tooling, every other coordination/ and review/ path as paperwork. Conjugal factory-pins/ (landed 2026-10-16 after the first rows) added as factory-tooling the same day; it was unclassified, never dropped.",
+  "note": "Line-mode classifier for tools/Get-ProductThroughput.ps1 -Lines. DIAGNOSTIC ONLY (metrics/README.md law 1): never a gate, never a target. Pattern rules: 'dir/' or 'file' = repo-relative prefix; './*.md' = root-level files only (wildcards via -like); a pattern without './' that contains '*' is matched with -like against the full path. The most specific pattern wins (count of non-wildcard characters); ties resolve in bucket order product, tests, vendored-copies, factory-tooling, coordination-paperwork. Unmatched paths are reported as 'unclassified', never dropped. Paths verified against each repo's HEAD tree on 2026-10-11. ref HEAD = the branch the canonical checkout works on (adobe-ingester never merges to main; its main is a month stale), recorded per run as ref_name and ref_sha. conjugal and cloudvore added 2026-10-16 (ref origin/master: the landed line; Conjugal's canonical checkout works on subject branches): paths verified against each repo's origin/master tree that day; Conjugal coordination/*.py|ps1|sh|mjs and Cloudvore tools/ count as factory-tooling, every other coordination/ and review/ path as paperwork. Conjugal factory-pins/ (landed 2026-10-16 after the first rows) added as factory-tooling the same day; it was unclassified, never dropped. dng added 2026-10-16 (ref master, the nested DngAutoProcessor repo): app = DngAutoProcessor.Core/, .CorpusBridge/, .App/, any other DngAutoProcessor.* project except .Tests/ (more specific, wins) and profiles/ (runtime data the App reads, e.g. look-teaching-store.json); tests = DngAutoProcessor.Tests/ and corpus/ (the validation corpus: 105k tracked evidence frames, agent-run votes and agreement files that the grading validation reads; counting it as product would flatter, as paperwork would inflate); tooling = tools/ scripts/ hooks CI, analysis/*.py, and the historical .agents/ .software-factory/ and root *.bat|sh|ps1 (deleted from HEAD, still in history); paperwork = WORK.md, packets/, metrics/, docs/, the state dirs, audit-artifacts/, AGENTS/, skill-specs/, _FROZEN-*, analysis/ data and root *.md|txt|csv|json. Every top-level entry of master 280ba148 was classified on 2026-10-16 and the full history (-Days 105) leaves unclassified near zero (asserted by the measurement receipt, not by this note). Line mode also reports changed BYTES per class and commit classes (additive fields); -Repo measures any checkout.",
   "projects": [
     {
       "name": "adobe-ingester",
@@ -71,6 +71,18 @@
         "tests": ["tests/"],
         "factory-tooling": ["tools/", "scripts/", "ops/", ".claude/", ".github/", ".gitattributes", ".gitignore", "./*.sh"],
         "coordination-paperwork": ["review/", "docs/", "specs/", "coordination/", "adjudications/", "archive/", "knowledge/", "skin-review/", "ops/*.md", "./*.md", "./*.json", "LICENSE"],
+        "vendored-copies": []
+      }
+    },
+    {
+      "name": "dng",
+      "root": "C:/code/DngAutoProcessor - Claude/DngAutoProcessor",
+      "ref": "master",
+      "classes": {
+        "product": ["DngAutoProcessor.Core/", "DngAutoProcessor.CorpusBridge/", "DngAutoProcessor.App/", "DngAutoProcessor.*/*", "profiles/"],
+        "tests": ["DngAutoProcessor.Tests/", "corpus/"],
+        "factory-tooling": ["tools/", "scripts/", ".githooks/", ".github/", ".claude/", "DngAutoProcessor.sln", "global.json", ".editorconfig", ".gitattributes", ".gitignore", "analysis/*.py", ".agents/", ".software-factory/", "./*.bat", "./*.sh", "./*.ps1"],
+        "coordination-paperwork": ["WORK.md", "WORK-DONE.md", "packets/", "metrics/", "docs/", "review/", "receipts/", "analysis/", "audit-artifacts/", ".claude-state/", ".codex-state/", ".remember/", "AGENTS/", "skill-specs/", "coordination/", "_FROZEN-*", "./*.md", "./*.txt", "./*.csv", "./*.json"],
         "vendored-copies": []
       }
     }
