@@ -116,6 +116,30 @@ class Census(unittest.TestCase):
         self.assertEqual(rc, 1)
         self.assertIn("DANGLING", out)
 
+    def test_tag_inside_code_span_is_not_a_tag(self):
+        # A rule that only MENTIONS the tag syntax in a code span carries no tag of its own.
+        self.write(DOC.replace(" [prose]", " Write `[prose]` or `[enforced: tools/gate.py]` on each rule."))
+        rc, out, _ = self.run_cli()
+        self.assertEqual(rc, 1, out)
+        self.assertIn("UNTAGGED p RULES.md:6", out)
+        self.write(DOC.replace("[prose]", "``[prose]`` [prose]"))      # a real tag beside a quoted one still counts
+        self.assertEqual(self.counts()["prose"], 1)
+
+    def test_path_escaping_the_root_is_dangling(self):
+        open(os.path.join(self.tmp, "outside.py"), "w").close()
+        for cited in ("../outside.py", os.path.join(self.tmp, "outside.py"), "tools/../../outside.py"):
+            self.write(DOC.replace("tools/other.py", cited))
+            rc, out, _ = self.run_cli()
+            self.assertEqual(rc, 1, (cited, out))
+            self.assertIn("DANGLING", out)
+
+    def test_directory_is_not_a_check(self):
+        for cited in ("tools", "tools/", "."):
+            self.write(DOC.replace("tools/other.py", cited))
+            rc, out, _ = self.run_cli()
+            self.assertEqual(rc, 1, (cited, out))
+            self.assertIn("DANGLING", out)
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

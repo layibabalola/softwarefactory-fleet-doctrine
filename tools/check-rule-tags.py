@@ -9,8 +9,9 @@ in a configured markdown section must carry exactly one kind of tag:
                        it must exist. Several enforced tags may name several checks.
   [prose]              nothing refuses a breach; the rule holds only by being read.
 
-A bullet with neither tag is UNTAGGED; one whose enforced path does not exist is DANGLING; one with
-both kinds is MIXED. The tag is a claim the author makes; this tool proves only that the cited path
+A bullet with neither tag is UNTAGGED; one whose enforced path is not a regular file inside the root
+(missing, a directory, absolute, or escaping by `..`) is DANGLING; one with both kinds is MIXED. A tag
+inside a `code span` is a mention of the syntax, not a tag. The tag is a claim the author makes; this tool proves only that the cited path
 exists, never that it refuses -- review the citation the way you review the rule.
 
 Config (JSON, schema fleet/rule-tags/v1; default: rule-tags.config.json beside this script):
@@ -78,7 +79,25 @@ def bullets(numbered: list[tuple[int, str]], bullet_rx: re.Pattern) -> list[tupl
     return out
 
 
+CODE_SPAN_RX = re.compile(r"(`+)(?!`).*?(?<!`)\1(?!`)", re.S)
+
+
+def cited_check(root: str, path: str) -> bool:
+    """True only for a regular file inside root: an absolute path, a `..` escape or a directory
+    names no check of this project, so it can never back a rule."""
+    if os.path.isabs(path) or os.path.splitdrive(path)[0]:
+        return False
+    base = os.path.realpath(root)
+    full = os.path.realpath(os.path.join(base, path))
+    try:
+        inside = os.path.commonpath([base, full]) == base
+    except ValueError:          # another drive
+        return False
+    return inside and full != base and os.path.isfile(full)
+
+
 def classify(text: str, root: str) -> tuple[str, list[str]]:
+    text = CODE_SPAN_RX.sub("", text)      # a tag quoted in a code span is a mention, not a tag
     paths = ENFORCED_RX.findall(text)
     prose = bool(PROSE_RX.search(text))
     if paths and prose:
@@ -87,7 +106,7 @@ def classify(text: str, root: str) -> tuple[str, list[str]]:
         return "prose", []
     if not paths:
         return "untagged", []
-    missing = [p for p in paths if not os.path.exists(os.path.join(root, p))]
+    missing = [p for p in paths if not cited_check(root, p)]
     return ("dangling", missing) if missing else ("backed", paths)
 
 
