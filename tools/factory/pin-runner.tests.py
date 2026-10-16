@@ -381,6 +381,124 @@ class Install(unittest.TestCase):
         self.assertFalse(self.runner.exists())
         self.assertFalse(self.pins.exists())
 
+    def _substituting(self, mod, spec: str, payload: bytes):
+        real = mod.git
+
+        def fake(repo, *a, **kw):
+            p = real(repo, *a, **kw)
+            return subprocess.CompletedProcess(p.args, 0, payload, p.stderr) if a == ("cat-file", "blob", spec) else p
+        mod.git = fake
+        return real
+
+    def test_substituted_tool_or_registry_bytes_are_never_recorded(self):
+        # Round 2 BLOCKER: the tool blob (and the registry) were hashed into trusted pins without being compared with
+        # the commit's tree entry, so substituted bytes became the pin. Every blob read is proven in-process now.
+        import argparse
+        evil = b"print('UNREVIEWED TOOL EXECUTED')\n"
+        for spec, label in ((f"{self.c1}:tools/factory/echo.py", "tool"), (f"{self.c1}:tools/factory/registry.json", "registry")):
+            mod = self._module()
+            real = self._substituting(mod, spec, evil)
+            with self.assertRaises(mod.Refused, msg=label) as cm:
+                mod.cmd_install(self._args(mod), [])
+            self.assertIn("not object", str(cm.exception), label)
+            self.assertFalse((self.proj / "factory-pins").exists(), label)
+            mod.git = real
+        # `pin` goes through the same reader.
+        mod = self._module()
+        self._substituting(mod, f"{self.c1}:tools/factory/echo.py", evil)
+        a = argparse.Namespace(tool="echo", path="tools/factory/echo.py", commit=self.c1, reviewer="t", reason="r", date=None,
+                               interpreter=None, pins=str(self.pins), bus=str(self.bus))
+        with self.assertRaises(mod.Refused):
+            mod.cmd_pin(a, [])
+        self.assertFalse(self.pins.exists())
+        # adopt-runner as well (the vendored copy is the real one, the bus answer is substituted).
+        self.runner.parent.mkdir()
+        self.runner.write_bytes(git_blob(self.bus, self.c1, "tools/factory/pin-runner.py"))
+        self.pins.write_text(json.dumps({"schema": "factory-pins.v1", "tools": {}}), encoding="utf-8")
+        mod = self._module()
+        self._substituting(mod, f"{self.c1}:tools/factory/pin-runner.py", evil)
+        with self.assertRaises(mod.Refused):
+            mod.cmd_adopt_runner(argparse.Namespace(commit=self.c1, pins=str(self.pins), bus=str(self.bus)), [])
+        self.assertNotIn("runner", json.loads(self.pins.read_text(encoding="utf-8")))
+
+    def test_run_and_verify_refuse_substituted_bytes_for_a_recorded_blob(self):
+        import argparse
+        self.assertEqual(self.install("echo").returncode, 0)
+        blob = json.loads(self.pins.read_text(encoding="utf-8"))["tools"]["echo"]["blob"]
+        evil = b"open('ran.marker', 'w').write('x')\nprint('UNREVIEWED TOOL EXECUTED')\n"
+        old_cache = os.environ.get("FACTORY_PINS_CACHE")
+        os.environ["FACTORY_PINS_CACHE"] = str(self.cache)
+        try:
+            mod = self._module()
+            self._substituting(mod, blob, evil)
+            ns = argparse.Namespace(pins=str(self.pins), pins_ref=None, bus=str(self.bus))
+            cwd = os.getcwd()
+            os.chdir(self.elsewhere)
+            try:
+                with self.assertRaises(mod.Refused):
+                    mod.cmd_run(ns, ["echo"])
+                import contextlib, io
+                with contextlib.redirect_stdout(io.StringIO()):
+                    self.assertEqual(mod.cmd_verify(ns, []), 2)
+            finally:
+                os.chdir(cwd)
+        finally:
+            if old_cache is None:
+                os.environ.pop("FACTORY_PINS_CACHE", None)
+            else:
+                os.environ["FACTORY_PINS_CACHE"] = old_cache
+        self.assertFalse((self.elsewhere / "ran.marker").exists())
+
+    # --- bootstrap scripts: the reviewed blob is proven BEFORE any of its bytes run -------------------------------
+    TAMPER = 'import pathlib; pathlib.Path("ran.marker").write_text("x")'
+
+    def _bash(self):
+        git_exe = shutil.which("git")
+        cands = [Path(git_exe).resolve().parent.parent / "bin" / "bash.exe"] if git_exe else []
+        cands += [Path(p) for p in (shutil.which("bash"), shutil.which("sh")) if p]
+        return next((c for c in cands if c.is_file() and "system32" not in str(c).lower()), None)
+
+    def _shim_env(self, kind: str) -> dict:
+        shim = Path(self._tmp.name) / f"shim-{kind}"
+        shim.mkdir()
+        real = shutil.which("git")
+        if kind == "sh":
+            (shim / "git").write_bytes(('#!/bin/sh\ncase " $* " in *" show "*) "$REAL_GIT" "$@"; echo \'' + self.TAMPER + '\' ;;\n'
+                                        '*) exec "$REAL_GIT" "$@" ;; esac\n').encode())
+        else:
+            (shim / "git.cmd").write_bytes(('@echo off\r\nif not "%~3"=="show" goto passthru\r\n"%REAL_GIT%" %*\r\n'
+                                            'echo ' + self.TAMPER + '\r\nexit /b 0\r\n:passthru\r\n"%REAL_GIT%" %*\r\nexit /b %errorlevel%\r\n').encode())
+        return {**os.environ, "REAL_GIT": real, "PATH": str(shim) + os.pathsep + os.environ["PATH"], "PYTHON": sys.executable}
+
+    def _check_bootstrap(self, argv: list, tamper_env: dict, clean_env: dict):
+        script_args = [str(self.bus), self.c1, "echo", "tester", "fixture", str(self.proj)]
+        p = subprocess.run(argv(script_args), capture_output=True, text=True, cwd=str(self.elsewhere), env=tamper_env)
+        self.assertEqual(p.returncode, 2, p.stdout + p.stderr)
+        self.assertIn("REFUSED", p.stderr)
+        self.assertFalse((self.elsewhere / "ran.marker").exists() or (self.proj / "ran.marker").exists(), "the runner must never start")
+        self.assertFalse(self.runner.exists() or (self.runner.parent / "pin-runner.py.tmp").exists(), "the tampered file is removed")
+        self.assertFalse(self.pins.exists())
+        p = subprocess.run(argv(script_args), capture_output=True, text=True, cwd=str(self.elsewhere), env=clean_env)  # control
+        self.assertEqual(p.returncode, 0, p.stdout + p.stderr)
+        self.assertEqual(self.sh(self.runner, "verify", cwd=self.proj).returncode, 0)
+
+    def test_bootstrap_sh_refuses_a_tampered_blob_and_installs_a_clean_one(self):
+        bash = self._bash()
+        if bash is None:
+            self.skipTest("no POSIX shell")
+        script = (Path(__file__).resolve().parent / "bootstrap.sh").as_posix()
+        clean = {**os.environ, "PYTHON": sys.executable}
+        self._check_bootstrap(lambda a: [str(bash), script, *[x.replace("\\", "/") for x in a]], self._shim_env("sh"), clean)
+
+    def test_bootstrap_ps1_refuses_a_tampered_blob_and_installs_a_clean_one(self):
+        pwsh = shutil.which("pwsh") or shutil.which("powershell")
+        if os.name != "nt" or pwsh is None:
+            self.skipTest("PowerShell on Windows only (the script drives cmd for raw redirection)")
+        script = str(Path(__file__).resolve().parent / "bootstrap.ps1")
+        names = ["-Bus", "-Sha", "-Tool", "-Reviewer", "-Reason", "-Project"]
+        self._check_bootstrap(lambda a: [pwsh, "-NoProfile", "-File", script, *[x for n, v in zip(names, a) for x in (n, v)]],
+                              self._shim_env("cmd"), {**os.environ})
+
     def test_bootstrap_from_the_reviewed_blob_installs(self):
         self.runner.parent.mkdir()
         self.runner.write_bytes(git_blob(self.bus, self.c1, "tools/factory/pin-runner.py"))  # git show <sha>:path > factory-pins/pin-runner.py
