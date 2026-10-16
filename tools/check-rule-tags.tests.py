@@ -358,6 +358,14 @@ class V2(unittest.TestCase):
         self.assertEqual(rc, 1, out)                       # the lost rule is now visible and fatal
         self.assertIn("UNTAGGED p RULES.md:7", out)
 
+    def test_a_later_fence_cannot_close_a_fence_whose_list_item_already_ended(self):
+        # the dedent ends the container: a LATER, unrelated fence pair must not pair up with the stale opener and
+        # hide the top-level rule in between
+        self.doc("## Rules" + chr(10) + "- keep [prose]" + chr(10) + chr(10) + "  ```text" + chr(10) + "  sample" + chr(10) + chr(10)
+                 + "- untagged outside list" + chr(10) + chr(10) + "```" + chr(10) + "code" + chr(10) + "```" + chr(10))
+        j = self.census_json(rule_map=None)
+        self.assertEqual((j["counts"]["bullets"], j["counts"]["untagged"]), (2, 1))
+
     def test_a_closed_fence_inside_a_list_item_still_masks_its_contents(self):
         self.doc("## Rules\n- keep [prose]\n\n  ```text\n  - fake\n  ## Not a heading\n  ```\n- two [prose]\n")
         c = self.counts(rule_map=None)
